@@ -802,12 +802,11 @@ function conflictMessage(reasons){
 }
 
 function render(){
- const liveConflict=sourceConflicts();
  board.style.gridTemplateColumns=`repeat(${n},minmax(0,1fr))`;board.style.gridTemplateRows=`repeat(${n},minmax(0,1fr))`;board.innerHTML="";
  for(let r=0;r<n;r++)for(let c=0;c<n;c++){
   let d=document.createElement("div");
   let highlighted=(hi&&hi[0]===r&&hi[1]===c)||hiCells.some(q=>q[0]===r&&q[1]===c);
-  d.className="cell"+(highlighted?" hi":"")+(liveConflict.bad.has(r+","+c)?" conflict":"");
+  d.className="cell"+(highlighted?" hi":"");
   let g=puz.reg[r][c],tc=TERRITORY_COLORS[g%TERRITORY_COLORS.length];
   d.style.setProperty("--territory",tc);
   d.dataset.t=(r===0||puz.reg[r-1][c]!==g)?"1":"0";
@@ -821,8 +820,7 @@ function render(){
   if(shown===3)d.classList.add("auto-x");
   d.onclick=()=>{hist.push(state.map(x=>x.slice()));let shown=displayedCellState(r,c);if(shown===3){state[r][c]=2}else{state[r][c]=(state[r][c]+1)%3}hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";render()};board.appendChild(d)
  }
- let q=state.flat().filter(v=>v===2).length;const countEl=document.getElementById("count");countEl.textContent=liveConflict.bad.size?"⚠ Conflit":q+"/"+n;
- if(liveConflict.bad.size&&q<n)msg.textContent=conflictMessage(liveConflict.reasons);
+ let q=state.flat().filter(v=>v===2).length;const countEl=document.getElementById("count");countEl.textContent=q+"/"+n;
  if(q===n){
    // Victory must validate the 6 placed sources themselves.
    // Manual/automatic exclusion marks must never make a correct completed board fail.
@@ -840,14 +838,10 @@ function render(){
      msg.textContent="Constellation complète.";
      celebrateSuccess();
    }else if(placed.length===n){
-     if(conflicts.length){
-       const uniq=[...new Map(conflicts.map(x=>[x.join(","),x])).values()];
-       hiCells=uniq;
-       msg.textContent="Presque ! Deux sources se touchent, y compris en diagonale.";
-       requestAnimationFrame(()=>document.querySelectorAll(".cell").forEach((el,k)=>{const r=Math.floor(k/n),c=k%n;if(uniq.some(x=>x[0]===r&&x[1]===c))el.classList.add("hi")}));
-     }else if(rows.size<n)msg.textContent="Presque ! Il faut exactement une source par ligne.";
-     else if(cols.size<n)msg.textContent="Presque ! Il faut exactement une source par colonne.";
-     else if(regs.size<n)msg.textContent="Presque ! Il faut exactement une source par territoire.";
+     // Do not reveal the location or nature of the mistake automatically.
+     // The player can explicitly request a hint if they want help.
+     hi=null;hiCells=[];
+     msg.textContent="Cette constellation ne fonctionne pas encore. Tu peux la corriger ou demander un indice.";
    }
  }
 }
