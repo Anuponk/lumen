@@ -377,7 +377,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 <span>Assistance auto</span>
 </label><div id="learningNote" class="learning-note"></div>
 <div id="difficulty" style="text-align:center;font-weight:700;color:#666;margin:-8px 0 12px"></div><div class="status"><span>◷ <span id="time">0:00</span><span id="speedCountdown" class="speed-countdown" hidden aria-live="polite"></span></span><span><span class="guardian-counter-icon"></span> <span id="count"></span></span></div>
-<div id="campaignMapLabel" class="campaign-map-label">Quête 1</div><div id="rewardLive" class="reward-live"><span id="masteryLive" class="mastery-live">✓ Maîtrise en cours</span><span id="progressLive" class="progress-live"></span></div><div id="board"></div><div id="rewardToast" class="reward-toast" aria-live="polite"></div><div class="hint-wallet"><span class="hint-wallet-label">Éclats</span><span id="shardMeter" class="shard-meter" role="button" tabindex="0" aria-label="Éclats de lumière disponibles. Voir les règles"></span><span class="shard-help" aria-hidden="true">ⓘ</span></div><div class="actions"><button id="undo">Annuler</button><button id="hint">Indice · gratuit</button><button id="clearHint" class="clear-hint" hidden>Revoir la carte</button><button id="boardNext" class="clear-hint" hidden>Quête suivante</button></div>
+<div id="campaignMapLabel" class="campaign-map-label">Quête 1</div><div id="rewardLive" class="reward-live"><span id="masteryLive" class="mastery-live">✓ Maîtrise en cours</span><span id="progressLive" class="progress-live"></span></div><div id="board"></div><div id="rewardToast" class="reward-toast" aria-live="polite"></div><div class="hint-wallet"><span class="hint-wallet-label">Éclats</span><span id="shardMeter" class="shard-meter" role="button" tabindex="0" aria-label="Éclats de lumière disponibles. Voir les règles"></span><span class="shard-help" aria-hidden="true">ⓘ</span></div><div class="actions"><button id="undo">Annuler</button><button id="hint">Indice · gratuit</button><button id="clearHint" class="clear-hint" hidden>Revoir la quête</button><button id="boardNext" class="clear-hint" hidden>Quête suivante</button></div>
 <div class="msg" id="msg"></div>
 
 
@@ -675,7 +675,7 @@ function choose(){levelIndex=Math.max(0,Math.min(levelIndex,99));const [size,slo
 function loadPuzzle(){init();}
 
 function hintCost(){if(levelIndex<=4)return 0;if(hintUsesThisGame===0)return 0;if(hintUsesThisGame===1)return 1;return 2}
-function updateShardMeter(){const m=document.getElementById("shardMeter");if(!m)return;const sh=Math.max(0,Math.min(5,lumenProgress.shards||0));m.innerHTML=Array.from({length:5},(_,i)=>`<span class="shard-gem${i<sh?" on":""}" aria-hidden="true">✦</span>`).join("");m.setAttribute("aria-label",sh+" éclat"+(sh>1?"s":"")+" de lumière disponible"+(sh>1?"s":"")+". Voir les règles.")}function updateHintButton(){const b=document.getElementById("hint");if(!b)return;const q=questFor(levelIndex),cost=hintCost(),sh=lumenProgress.shards||0;b.textContent=cost===0?"Indice · gratuit":"Indice · "+cost+" ✦";b.title="Éclats disponibles : "+sh+"/5";updateShardMeter();if(q&&q.type===2&&!lumenProgress.stars[q.id])return}
+function updateShardMeter(){const m=document.getElementById("shardMeter");if(!m)return;const sh=Math.max(0,Math.min(5,lumenProgress.shards||0));m.innerHTML=Array.from({length:5},(_,i)=>`<span class="shard-gem${i<sh?" on":""}" aria-hidden="true">✦</span>`).join("");m.setAttribute("aria-label",sh+" éclat"+(sh>1?"s":"")+" de lumière disponible"+(sh>1?"s":"")+". Voir les règles.")}function updateHintButton(){const b=document.getElementById("hint");if(!b)return;const q=bonusChallengeFor(levelIndex),cost=hintCost(),sh=lumenProgress.shards||0;b.textContent=cost===0?"Indice · gratuit":"Indice · "+cost+" ✦";b.title="Éclats disponibles : "+sh+"/5";updateShardMeter();if(q&&q.type===2&&!lumenProgress.stars[q.id])return}
 function consumeHintCost(){const cost=hintCost(),sh=lumenProgress.shards||0;if(cost>sh){if(sh===0&&activeGameSeconds()>=90){hintWasGranted=true;hintUsesThisGame++;msg.textContent="Après 90 s de recherche, cet indice est offert.";updateHintButton();return true}msg.textContent="Il te manque "+(cost-sh)+" ✦ éclat"+(cost-sh>1?"s":"")+" pour cet indice. Continue à chercher : à 0 éclat, un indice devient gratuit après 90 s.";return false}if(cost>0){lumenProgress.shards=sh-cost;saveLumenProgress()}hintWasGranted=true;hintUsesThisGame++;updateHintButton();return true}
 function configureLearningMode(){
  const cb=document.getElementById("autoCross"),wrap=document.getElementById("autoCrossWrap"),note=document.getElementById("learningNote");
@@ -685,7 +685,7 @@ function configureLearningMode(){
  else{cb.checked=false;cb.disabled=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=true;note.textContent=""}}
 }
 function applyQuestRestrictions(){
- const q=questFor(levelIndex),cb=document.getElementById("autoCross"),wrap=document.getElementById("autoCrossWrap"),note=document.getElementById("learningNote"),hint=document.getElementById("hint");
+ const q=bonusChallengeFor(levelIndex),cb=document.getElementById("autoCross"),wrap=document.getElementById("autoCrossWrap"),note=document.getElementById("learningNote"),hint=document.getElementById("hint");
  if(hint)hint.disabled=false;
  if(!q||lumenProgress.stars[q.id])return;
  if(q.noAuto){
@@ -702,13 +702,13 @@ function maybeShowAutonomy(){
  lumenProgress.autonomySeen=1;saveLumenProgress();
  const o=document.getElementById("autonomyOverlay");if(o){o.hidden=false;o.style.display="flex"}
 }
-function prepareQuestStart(){let q=questFor(levelIndex),o=document.getElementById("questStart");questFailed=false;if(!q||lumenProgress.stars[q.id]){questStarted=true;o.hidden=true;resumeGameClock();return}questStarted=false;pauseGameClock();document.getElementById("questStartTitle").textContent=q.title;document.getElementById("questStartRule").textContent=q.copy+" Récompense : +25 XP et +1 ✦ éclat.";o.hidden=false}
+function prepareQuestStart(){let q=bonusChallengeFor(levelIndex),o=document.getElementById("questStart");questFailed=false;if(!q||lumenProgress.stars[q.id]){questStarted=true;o.hidden=true;resumeGameClock();return}questStarted=false;pauseGameClock();document.getElementById("questStartTitle").textContent=q.title;document.getElementById("questStartRule").textContent=q.copy+" Récompense : +25 XP et +1 ✦ éclat.";o.hidden=false}
 document.getElementById("questGo").onclick=()=>{document.getElementById("questStart").hidden=true;questStarted=true;activeElapsedMs=0;activeSince=performance.now();clock()};
 function init(){choose();configureLearningMode();applyQuestRestrictions();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl)cl.textContent="Quête "+(levelIndex+1);document.getElementById("difficulty").textContent=n===7?"7 × 7 · constellation étendue":n===8?"8 × 8 · constellation étendue":"";state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;updateHintButton();hideSuccess();start=Date.now();activeElapsedMs=0;activeSince=document.visibilityState==="visible"?performance.now():null;msg.textContent="";drawLevels();render();clearInterval(timer);timer=setInterval(clock,1000);clock();prepareQuestStart()}
 function drawLevels(){let e=document.getElementById("levels");e.innerHTML="";LEVELS.forEach(([name,x])=>{let b=document.createElement("button");b.className="level"+(x===n?" active":"");b.innerHTML=name+"<small>"+x+" × "+x+"</small>";b.onclick=()=>{n=x;init()};e.appendChild(b)})}
 function activeGameMs(){return activeElapsedMs+(activeSince!==null?Math.max(0,performance.now()-activeSince):0)}
 function activeGameSeconds(){return Math.max(0,Math.floor(activeGameMs()/1000))}
-function clock(){let s=activeGameSeconds();document.getElementById("time").textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");const cd=document.getElementById("speedCountdown"),speedEligible=hintUsesThisGame===0&&!autoUsedThisGame&&mistakesThisGame===0;if(cd){const left=60-s,show=!celebrated&&speedEligible&&left<=10&&left>0;cd.hidden=!show;if(show){cd.textContent="⌛ "+left;cd.classList.toggle("urgent",left<=3);countdownSound(left)}else{cd.classList.remove("urgent");lastCountdownSound=null}}let q=questFor(levelIndex);if(q&&questStarted&&!lumenProgress.stars[q.id]){if(q.seconds!==null&&s>q.seconds)questFailed=true;if(q.type===2&&usedHintThisGame)questFailed=true;let b=document.getElementById("challengeCopy");if(b&&questFailed)b.textContent="Défi échoué · termine la quête à ton rythme."}}
+function clock(){let s=activeGameSeconds();document.getElementById("time").textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");const cd=document.getElementById("speedCountdown"),speedEligible=hintUsesThisGame===0&&!autoUsedThisGame&&mistakesThisGame===0;if(cd){const left=60-s,show=!celebrated&&speedEligible&&left<=10&&left>0;cd.hidden=!show;if(show){cd.textContent="⌛ "+left;cd.classList.toggle("urgent",left<=3);countdownSound(left)}else{cd.classList.remove("urgent");lastCountdownSound=null}}let q=bonusChallengeFor(levelIndex);if(q&&questStarted&&!lumenProgress.stars[q.id]){if(q.seconds!==null&&s>q.seconds)questFailed=true;if(q.type===2&&usedHintThisGame)questFailed=true;let b=document.getElementById("challengeCopy");if(b&&questFailed)b.textContent="Défi échoué · termine la quête à ton rythme."}}
 function pauseGameClock(){if(activeSince!==null){activeElapsedMs+=Math.max(0,performance.now()-activeSince);activeSince=null}clock()}
 function resumeGameClock(){if(!celebrated&&questStarted&&activeSince===null){activeSince=performance.now();clock()}}
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")pauseGameClock();else resumeGameClock()});
@@ -810,7 +810,7 @@ function celebrateSuccess(){
  if(firstCompletion)lumenProgress.skyScore=Math.min(SKY_TARGET,skyEarnedBefore+skyStarsForGrid(levelIndex));
  if(firstCompletion)lumenProgress.xp=(lumenProgress.xp||0)+10;
  if(firstCompletion&&!usedHintThisGame)lumenProgress.xp+=5;
- const ch=questFor(levelIndex);let questPassed=false;
+ const ch=bonusChallengeFor(levelIndex);let questPassed=false;
  if(ch&&!lumenProgress.stars[ch.id]){
    questPassed=!questFailed&&(ch.seconds!==null?activeGameSeconds()<=ch.seconds:(ch.type===2?!usedHintThisGame:true));
    if(questPassed){lumenProgress.stars[ch.id]=1;lumenProgress.challenges[ch.id]=1;lumenProgress.xp+=25;lumenProgress.shards=Math.min(5,(lumenProgress.shards||0)+1)}
@@ -1200,7 +1200,7 @@ function runHintTests(){
    return document.getElementById("successNew").textContent.trim()==="Quête suivante";
  });
 
- test("Campagne : Réinitialiser conserve la même carte",()=>{
+ test("Campagne : Réinitialiser conserve la même quête",()=>{
    return document.getElementById("new").textContent.trim()==="Réinitialiser";
  });
  test("Campagne : seule une victoire permet d'avancer",()=>{
@@ -1264,7 +1264,7 @@ function runHintTests(){
   puz=oldP;state=oldS;celebrated=oldCelebrated;render();
   return ok;
  });
- test("Indice : bouton Revoir la carte présent",()=>{
+ test("Indice : bouton Revoir la quête présent",()=>{
   return !!document.getElementById("clearHint");
  });
  test("Exclusions : anneau ambre identique en manuel et automatique",()=>{
@@ -1382,8 +1382,8 @@ clearHintBtn.onclick=()=>{
 };
 document.getElementById("undo").onclick=()=>{if(celebrated)return;if(hist.length){state=hist.pop();hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";render()}};
 const ac=document.getElementById("autoCross");
-ac.checked=localStorage.getItem("regaliaAutoCross")!=="0";
-ac.onchange=()=>{if(celebrated){ac.checked=!ac.checked;return}if(ac.checked)autoUsedThisGame=true;localStorage.setItem("regaliaAutoCross",ac.checked?"1":"0");hi=null;render()};
+const lumenAutoCrossStored=localStorage.getItem("lumenAutoCross");const legacyAutoCrossStored=localStorage.getItem("regaliaAutoCross");ac.checked=(lumenAutoCrossStored??legacyAutoCrossStored)!=="0";if(lumenAutoCrossStored===null&&legacyAutoCrossStored!==null){localStorage.setItem("lumenAutoCross",legacyAutoCrossStored);localStorage.removeItem("regaliaAutoCross")};
+ac.onchange=()=>{if(celebrated){ac.checked=!ac.checked;return}if(ac.checked)autoUsedThisGame=true;localStorage.setItem("lumenAutoCross",ac.checked?"1":"0");hi=null;render()};
 function advanceToNextPuzzle(){
  if(!lumenProgress.solved[levelIndex])return;
  const next=replayMode?Math.min(sequentialSolvedCount,99):levelIndex+1;
@@ -1487,7 +1487,7 @@ function showSkyReveal(beforeEarned=null,checkpoint=null){
  canvas.innerHTML='<svg class="sky-reveal-svg" viewBox="0 0 290 115">'+lines+stars+'</svg><div>'+p.lit+' / '+p.count+' étoiles</div>';o.hidden=false;if(completedIndex>=0)celebrateConstellationReveal();
 }
 document.getElementById("skyRevealContinue").onclick=()=>{const o=document.getElementById("skyReveal");o.hidden=true;o.classList.remove("complete-celebration");o.querySelectorAll(".sky-bravo").forEach(x=>x.remove());document.querySelectorAll(".sky-spark").forEach(x=>x.remove());document.getElementById("successOverlay").classList.add("show")};
-function renderXP(){let q=questFor(levelIndex),m=milestoneFor(levelIndex),ch=m||q,box=document.getElementById("challengeBanner");if(!box)return;box.hidden=!ch;if(ch){let done=q&&lumenProgress.stars[q.id];document.getElementById("challengeTitle").textContent=ch.title+(done?" · ★":"");document.getElementById("challengeCopy").textContent=done?"Bonus obtenu":ch.copy}}
+function renderXP(){let q=bonusChallengeFor(levelIndex),m=milestoneFor(levelIndex),ch=m||q,box=document.getElementById("challengeBanner");if(!box)return;box.hidden=!ch;if(ch){let done=q&&lumenProgress.stars[q.id];document.getElementById("challengeTitle").textContent=ch.title+(done?" · ★":"");document.getElementById("challengeCopy").textContent=done?"Bonus obtenu":ch.copy}}
 function awards(){let t=Object.keys(lumenProgress.solved).length;if(t>=1)lumenProgress.badges.first=1;if(t>=20)lumenProgress.badges.explorer=1;if(t>=50)lumenProgress.badges.beacon=1;if(t>=100)lumenProgress.badges.master=1;if(challengeRewardKeys().length>=1)lumenProgress.badges.challenge1=1;if(challengeRewardKeys().length>=16)lumenProgress.badges.challengeAll=1;saveLumenProgress()}
 function refreshJourney(){awards();let sky=constellationProgress(),earned=skyStarsEarned(),completed=CONSTELLATIONS.slice(0,sky.index).length;
 document.getElementById("progressFill").style.width=(sky.count?Math.round(sky.lit/sky.count*100):0)+"%";
