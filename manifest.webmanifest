@@ -1,7 +1,7 @@
 {
   "name": "LUMEN — Puzzle de lumière",
   "short_name": "LUMEN",
-  "description": "Puzzle logique de lumière : une source par ligne, colonne et territoire.",
+  "description": "Accomplis des quêtes en positionnant les Gardiens pour retrouver les étoiles et rallumer les constellations.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
