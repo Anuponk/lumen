@@ -749,9 +749,14 @@ function setupBetaFeedback(){
   status.textContent="Merci, retour envoyé.";document.getElementById("feedbackText").value="";setTimeout(()=>{modal.hidden=true;btn.disabled=false},800);
  };
  document.querySelectorAll(".difficulty-choices button").forEach(b=>b.onclick=async()=>{
+  // Immediate acknowledgement: return to the solved grid as soon as the player chooses.
+  const rating=b.dataset.rating,puzzleId=levelIndex+1;
+  hideSuccess();
   if(!lumenSupabase)return;
-  const {error}=await lumenSupabase.rpc("lumen_rate_difficulty",{p_anonymous_id:lumenAnonymousId,p_puzzle_id:levelIndex+1,p_rating:b.dataset.rating});
-  if(!error){document.getElementById("difficultyBox").classList.add("done");document.getElementById("difficultyBox").innerHTML="Merci pour ton retour ✦"}
+  try{
+   const {error}=await lumenSupabase.rpc("lumen_rate_difficulty",{p_anonymous_id:lumenAnonymousId,p_puzzle_id:puzzleId,p_rating:rating});
+   if(error)console.warn("LUMEN difficulty rating",error);
+  }catch(e){console.warn("LUMEN difficulty rating",e)}
  });
 }
 function hideSuccess(){
