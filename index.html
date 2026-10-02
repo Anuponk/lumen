@@ -852,8 +852,9 @@ function celebrateSuccess(){
  const m=milestoneFor(levelIndex),sub=document.getElementById("successSub");if(sub)sub.textContent=m?(m.kind==="boss"?"Défi final réussi · constellation complétée":"Défi intermédiaire réussi · +1 ★ bonus"):(questPassed?"Quête réussie · +25 XP et +1 ✦":"Ton ciel progresse");
  configureSuccessFeedback(questPassed);
  const skyEarnedAfter=skyStarsEarned(),crossedConstellation=firstCompletion&&(()=>{let total=0;for(const cs of CONSTELLATIONS){total+=cs.count;if(skyEarnedBefore<total&&skyEarnedAfter>=total)return true}return false})();
+ const checkpoint=firstCompletion&&!crossedConstellation?constellationCheckpoint(skyEarnedBefore,skyEarnedAfter):null;
  const revealDelay=earnedThisRun>0?2250:0;
- if(questPassed||crossedConstellation){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>showSkyReveal(skyEarnedBefore),revealDelay)}else setTimeout(()=>document.getElementById("successOverlay").classList.add("show"),revealDelay);
+ if(questPassed||crossedConstellation||checkpoint){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>showSkyReveal(skyEarnedBefore,checkpoint),revealDelay)}else setTimeout(()=>document.getElementById("successOverlay").classList.add("show"),revealDelay);
 
  // Deliberately varied shapes/positions; purely visual, no game-state effect.
  const palette=["#68e7ff","#5ea7ff","#8b7cff","#67d8c2","#d7f8ff","#87bfff"];
@@ -1186,6 +1187,9 @@ function runHintTests(){
  test("Campagne : un secteur exige 20/20 pour débloquer le suivant",()=>{
    return sectorUnlocked.toString().includes("===20");
  });
+ test("Récompense : deux respirations célestes existent dans chaque constellation",()=>{
+   return CONSTELLATIONS.every(c=>Math.ceil(c.count/3)<Math.ceil(c.count*2/3)&&Math.ceil(c.count*2/3)<c.count);
+ });
  test("Récompense : une grille terminée peut être rejouée pour améliorer ses badges",()=>{
    const b=document.getElementById("successRetry");
    return !!b&&b.textContent.includes("Réessayer");
@@ -1421,19 +1425,38 @@ function constellationProgress(){let earned=skyStarsEarned(),total=0;for(let i=0
 function starDisplayName(p,i){return p.stars&&p.stars[i]?p.stars[i]:"Étoile "+(i+1)}
 function constellationLitAt(index){let earned=skyStarsEarned(),before=0;for(let i=0;i<index;i++)before+=CONSTELLATIONS[i].count;return Math.max(0,Math.min(CONSTELLATIONS[index].count,earned-before))}
 function renderSky(index=mapConstellation){let el=document.getElementById("skyCard");if(!el)return;index=Math.max(0,Math.min(index,CONSTELLATIONS.length-1));let c=CONSTELLATIONS[index],lit=constellationLitAt(index),p={index,...c,lit},active=index===constellationProgress().index,lines=p.edges.map(e=>'<line class="sky-line '+(e[0]<lit&&e[1]<lit?'on':'')+'" x1="'+p.pts[e[0]][0]+'" y1="'+p.pts[e[0]][1]+'" x2="'+p.pts[e[1]][0]+'" y2="'+p.pts[e[1]][1]+'"/>').join(""),stars=p.pts.map((v,i)=>'<g><circle class="sky-star '+(i<lit?'on':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i<lit?4:3)+'"/>'+(i<lit?'<text class="sky-label" x="'+(v[0]+6)+'" y="'+(v[1]-5)+'">'+starDisplayName(p,i)+'</text>':'')+'</g>').join("");el.innerHTML='<div class="sky-head"><span class="sky-name">'+p.name+'</span><span>'+lit+' / '+p.count+' étoiles</span></div><svg class="sky-svg" viewBox="0 0 290 115">'+lines+stars+'</svg><div class="sky-note">'+(active?"Constellation active":lit===p.count?"Constellation complétée":lit===0?"Constellation à découvrir":"Constellation en cours")+'</div>'}
+function constellationCheckpoint(beforeEarned,afterEarned){
+ let base=0;
+ for(let i=0;i<CONSTELLATIONS.length;i++){
+  const count=CONSTELLATIONS[i].count,start=base,end=base+count;
+  if(afterEarned>start&&afterEarned<end){
+   const before=Math.max(0,beforeEarned-start),after=Math.max(0,afterEarned-start);
+   const checkpoints=[Math.ceil(count/3),Math.ceil(count*2/3)];
+   const hit=checkpoints.find(x=>before<x&&after>=x);
+   if(hit)return {index:i,lit:after,count,stage:hit===checkpoints[0]?1:2};
+  }
+  base=end;
+ }
+ return null;
+}
 function constellationStateForEarned(earned){let total=0;for(let i=0;i<CONSTELLATIONS.length;i++){const c=CONSTELLATIONS[i];if(earned<=total+c.count)return {index:i,...c,lit:Math.max(0,Math.min(c.count,earned-total)),complete:earned===total+c.count};total+=c.count}const c=CONSTELLATIONS[CONSTELLATIONS.length-1];return {index:CONSTELLATIONS.length-1,...c,lit:c.count,complete:true}}
-function showSkyReveal(beforeEarned=null){
+function showSkyReveal(beforeEarned=null,checkpoint=null){
  const after=skyStarsEarned(),crossed=beforeEarned!==null&&after>beforeEarned;
  const completed=[];
  if(crossed){let total=0;for(let i=0;i<CONSTELLATIONS.length;i++){total+=CONSTELLATIONS[i].count;if(beforeEarned<total&&after>=total)completed.push(i)}}
  const completedIndex=completed.length?completed[completed.length-1]:-1;
- const p=completedIndex>=0?{index:completedIndex,...CONSTELLATIONS[completedIndex],lit:CONSTELLATIONS[completedIndex].count}:constellationProgress();
+ const p=completedIndex>=0?{index:completedIndex,...CONSTELLATIONS[completedIndex],lit:CONSTELLATIONS[completedIndex].count}:checkpoint?{index:checkpoint.index,...CONSTELLATIONS[checkpoint.index],lit:checkpoint.lit}:constellationProgress();
  const idx=Math.max(0,p.lit-1),canvas=document.getElementById("skyRevealCanvas"),o=document.getElementById("skyReveal"),k=document.getElementById("skyRevealKicker"),t=document.getElementById("skyRevealTitle");
  if(completedIndex>=0){
    constellationSound();
    k.textContent="CONSTELLATION COMPLÉTÉE";
    t.textContent="✦ "+p.name.replace(" · Grand Chariot","");
    document.getElementById("skyRevealName").textContent=completedIndex<CONSTELLATIONS.length-1?"La constellation suivante est maintenant à découvrir.":"Ton ciel est entièrement révélé.";
+ }else if(checkpoint){
+   k.textContent=checkpoint.stage===1?"TON CIEL PREND FORME":"PRESQUE RÉVÉLÉE";
+   t.textContent="✦ "+p.name.replace(" · Grand Chariot","");
+   const remaining=p.count-p.lit;
+   document.getElementById("skyRevealName").textContent=checkpoint.stage===1?"La constellation prend forme. Continue à l’illuminer.":remaining===1?"Plus qu’une étoile avant de la révéler.":"Plus que "+remaining+" étoiles avant de la révéler.";
  }else{
    k.textContent="NOUVELLE ÉTOILE";
    t.textContent="Une nouvelle étoile s’allume";
