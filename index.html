@@ -758,15 +758,14 @@ function setupBetaFeedback(){
   if(error){status.textContent="Envoi impossible. Réessaie.";console.warn("LUMEN feedback",error);btn.disabled=false;return}
   status.textContent="Merci, retour envoyé.";document.getElementById("feedbackText").value="";setTimeout(()=>{modal.hidden=true;btn.disabled=false},800);
  };
- document.querySelectorAll(".difficulty-choices button").forEach(b=>b.onclick=async()=>{
-  // Immediate acknowledgement: return to the solved grid as soon as the player chooses.
+ document.querySelectorAll(".difficulty-choices button").forEach(b=>b.onclick=()=>{
+  // Rating is the final action on the completion card: advance immediately.
   const rating=b.dataset.rating,puzzleId=levelIndex+1;
-  hideSuccess();
+  advanceToNextPuzzle();
   if(!lumenSupabase)return;
-  try{
-   const {error}=await lumenSupabase.rpc("lumen_rate_difficulty",{p_anonymous_id:lumenAnonymousId,p_puzzle_id:puzzleId,p_rating:rating});
-   if(error)console.warn("LUMEN difficulty rating",error);
-  }catch(e){console.warn("LUMEN difficulty rating",e)}
+  lumenSupabase.rpc("lumen_rate_difficulty",{p_anonymous_id:lumenAnonymousId,p_puzzle_id:puzzleId,p_rating:rating})
+   .then(({error})=>{if(error)console.warn("LUMEN difficulty rating",error)})
+   .catch(e=>console.warn("LUMEN difficulty rating",e));
  });
 }
 function hideSuccess(){
@@ -1281,14 +1280,15 @@ document.getElementById("undo").onclick=()=>{if(hist.length){state=hist.pop();hi
 const ac=document.getElementById("autoCross");
 ac.checked=localStorage.getItem("regaliaAutoCross")!=="0";
 ac.onchange=()=>{localStorage.setItem("regaliaAutoCross",ac.checked?"1":"0");hi=null;render()};
-document.getElementById("successClose").onclick=hideSuccess;
-document.getElementById("successNew").onclick=()=>{
+function advanceToNextPuzzle(){
  hideSuccess();
  if(!lumenProgress.solved[levelIndex])return;
  const next=levelIndex+1;
- if(next<100 && sectorUnlocked(Math.floor(next/20))) levelIndex=next;
+ if(next<100 && sectorUnlocked(Math.floor(next/20)))levelIndex=next;
  loadPuzzle();usedHintThisGame=false;refreshJourney();
-};
+}
+document.getElementById("successClose").onclick=hideSuccess;
+document.getElementById("successNew").onclick=advanceToNextPuzzle;
 document.getElementById("new").onclick=init;arrangeDesktopPanels();setupMobileAuth();setupDailyInfo();init();setupTutorial();
 
 let mapSector=0;const badgeDefs=[["first","Première lueur"],["explorer","Explorateur"],["beacon","Phare"],["master","Maître LUMEN"],["challenge1","Éclair"],["challengeAll","Maître des défis"],["sector0","Étincelle"],["sector1","Halo"],["sector2","Rayonnement"],["sector3","Prisme"],["sector4","Nova"]];
