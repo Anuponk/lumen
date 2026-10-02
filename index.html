@@ -519,6 +519,24 @@ function setupMobileAuth(){
    await lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+location.pathname}});
  };
 }
+function lumenId(key){
+ try{let v=localStorage.getItem(key);if(!v){v=(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2));localStorage.setItem(key,v)}return v}catch(e){return Date.now()+"-"+Math.random().toString(36).slice(2)}
+}
+const lumenAnonymousId=lumenId("lumenAnonymousIdV1");
+const lumenSessionId=(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2));
+let lastTrackedPuzzle=null;
+async function trackLumenEvent(name,puzzleId=null,properties={}){
+ if(!lumenSupabase)return;
+ try{await lumenSupabase.rpc("lumen_track_event",{p_anonymous_id:lumenAnonymousId,p_event_name:name,p_session_id:lumenSessionId,p_puzzle_id:puzzleId,p_properties:properties})}catch(e){console.warn("LUMEN analytics",e)}
+}
+async function loadEntitlements(){
+ if(!lumenSupabase||!lumenUser)return [];
+ const {data,error}=await lumenSupabase.rpc("lumen_get_entitlements");
+ if(error){console.warn("LUMEN entitlements",error);return []}
+ return data||[];
+}
+trackLumenEvent("session_start",null,{standalone:window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches});
+
 async function cloudSavePuzzle(index){
  if(!lumenSupabase||!lumenUser)return;
  const seconds=Math.max(0,Math.floor((Date.now()-start)/1000));
@@ -642,7 +660,7 @@ function maybeShowAutonomy(){
  lumenProgress.autonomySeen=1;saveLumenProgress();
  const o=document.getElementById("autonomyOverlay");if(o){o.hidden=false;o.style.display="flex"}
 }
-function init(){choose();configureLearningMode();maybeShowAutonomy();let cl=document.getElementById("campaignMapLabel");if(cl)cl.textContent="Carte actuelle "+(levelIndex+1)+" · "+SECTORS[Math.floor(levelIndex/20)].name;document.getElementById("difficulty").textContent=(n===6?"":n===7?"Facile • éliminations simples":n===8?"Moyen • plusieurs étapes": "Difficile • chaînes de déductions");state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};hintStage=0;hintFocus=null;hiCells=[];celebrated=false;hideSuccess();start=Date.now();msg.textContent="";drawLevels();render();clearInterval(timer);timer=setInterval(clock,1000);clock()}
+function init(){choose();configureLearningMode();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl)cl.textContent="Carte actuelle "+(levelIndex+1)+" · "+SECTORS[Math.floor(levelIndex/20)].name;document.getElementById("difficulty").textContent=(n===6?"":n===7?"Facile • éliminations simples":n===8?"Moyen • plusieurs étapes": "Difficile • chaînes de déductions");state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};hintStage=0;hintFocus=null;hiCells=[];celebrated=false;hideSuccess();start=Date.now();msg.textContent="";drawLevels();render();clearInterval(timer);timer=setInterval(clock,1000);clock()}
 function drawLevels(){let e=document.getElementById("levels");e.innerHTML="";LEVELS.forEach(([name,x])=>{let b=document.createElement("button");b.className="level"+(x===n?" active":"");b.innerHTML=name+"<small>"+x+" × "+x+"</small>";b.onclick=()=>{n=x;init()};e.appendChild(b)})}
 function clock(){let s=Math.floor((Date.now()-start)/1000);document.getElementById("time").textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
 function edge(r,c){let g=puz.reg[r][c],s="";if(c===0||puz.reg[r][c-1]!==g)s+="border-left:3px solid #222;";if(c===n-1||puz.reg[r][c+1]!==g)s+="border-right:3px solid #222;";if(r===0||puz.reg[r-1][c]!==g)s+="border-top:3px solid #222;";if(r===n-1||puz.reg[r+1][c]!==g)s+="border-bottom:3px solid #222;";return s}
@@ -692,6 +710,7 @@ function hideSuccess(){
 }
 function celebrateSuccess(){
  if(celebrated)return;
+ trackLumenEvent("puzzle_complete",levelIndex+1,{duration_seconds:Math.max(0,Math.floor((Date.now()-start)/1000)),hint_used:!!usedHintThisGame});
  celebrated=true;
  // Progress is tied to the game's real victory event (not overlay visibility).
  lumenProgress.solved[levelIndex]=1;
@@ -1221,7 +1240,7 @@ function renderMap(){const sectorTabs=document.getElementById("sectorTabs"),puzz
 function openJourneyMap(){mapSector=Math.floor(levelIndex/20);renderMap();document.getElementById("mapModal").hidden=false}
 document.getElementById("openMap").onclick=openJourneyMap;
 const mobileJourney=document.getElementById("mobileJourney");if(mobileJourney)mobileJourney.onclick=openJourneyMap;
-document.getElementById("closeMap").onclick=()=>document.getElementById("mapModal").hidden=true;document.getElementById("hint").addEventListener("click",()=>usedHintThisGame=true);
+document.getElementById("closeMap").onclick=()=>document.getElementById("mapModal").hidden=true;document.getElementById("hint").addEventListener("click",()=>trackLumenEvent("hint_used",levelIndex+1);usedHintThisGame=true);
 
 const autonomyClose=document.getElementById("autonomyClose");if(autonomyClose)autonomyClose.onclick=()=>{let o=document.getElementById("autonomyOverlay");o.hidden=true;o.style.display="none"};
 document.getElementById("new").onclick=()=>{
