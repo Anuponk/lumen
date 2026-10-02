@@ -375,9 +375,6 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 <div id="mobileAuthPopover" class="mobile-auth-popover" hidden><div id="mobileAuthStatus">Progression enregistrée sur cet appareil</div><div id="nicknameBox" hidden><input id="nicknameInput" type="text" maxlength="24" autocomplete="nickname" placeholder="Ton pseudo" aria-label="Ton pseudo"><button id="nicknameSave" type="button">Enregistrer le pseudo</button></div><button id="mobileAuthAction" type="button">Se connecter avec Google</button></div><div class="levels" id="levels"></div><div class="auth-box"><span id="authUser">Progression enregistrée sur cet appareil</span><button id="authLogin">Sauvegarder ma progression</button><button id="authLogout" hidden>Déconnexion</button></div><section class="journey"><div class="journey-top"><div><span class="journey-kicker">MON CIEL</span><strong id="journeyTitle">Grande Ourse</strong></div><button id="openMap">Quêtes</button></div><div class="progress-track"><span id="progressFill"></span></div><div class="progress-copy"><strong id="progressText">Mon ciel · 0 %</strong></div><div id="sectorProgress" class="sector-progress">0/9 étoiles · 0/150 au total</div><button id="openSky" class="sky-entry" type="button" aria-label="Ouvrir mon ciel"><span class="sky-entry-main">✦ Mon ciel</span><span id="skySummary" class="sky-entry-progress">Grande Ourse · 0/9 ★</span><span class="sky-entry-arrow">›</span></button></section><div id="mapModal" class="map-modal" hidden><div class="map-sheet"><div class="map-head"><h2>Mes quêtes</h2><button id="closeMap">Fermer</button></div><div id="sectorTabs" class="sector-tabs"></div><div id="puzzleGrid" class="puzzle-grid"></div><div id="performanceLegend" class="performance-legend" role="button" tabindex="0" aria-label="Voir les règles détaillées des badges"><span class="hint">⌕ Sans indice</span><span class="speed">⌛ Moins d’1 min</span><span class="assist">◉ Sans assistance</span><span class="clean">✓ Maîtrise</span><span class="performance-legend-info" aria-hidden="true">i</span></div><h3>Mon ciel</h3><div id="skyCard" class="sky-card"></div></div></div><div id="badgeRulesModal" class="badge-rules-modal" hidden role="dialog" aria-modal="true" aria-labelledby="badgeRulesTitle"><div class="badge-rules-card"><div class="badge-rules-head"><h2 id="badgeRulesTitle">Comment gagner les badges ?</h2><button id="closeBadgeRules" class="badge-rules-close" type="button">Fermer</button></div><p class="badge-rules-intro">Chaque badge récompense une performance réalisée sur une grille. Rejoue une grille terminée pour tenter d’en obtenir de nouveaux.</p><div class="badge-rule hint"><span class="badge-rule-icon">⌕</span><div><strong>Sans indice</strong><p>Termine la grille sans utiliser aucun indice.</p></div></div><div class="badge-rule speed"><span class="badge-rule-icon">⌛</span><div><strong>Moins d’une minute</strong><p>Termine la grille en moins de 60 secondes, sans indice et sans Assistance auto.</p></div></div><div class="badge-rule assist"><span class="badge-rule-icon">◉</span><div><strong>Sans Assistance auto</strong><p>Termine la grille sans utiliser l’Assistance auto.</p></div></div><div class="badge-rule clean"><span class="badge-rule-icon">✓</span><div><strong>Maîtrise</strong><p>Termine la grille sans indice, sans Assistance auto et sans aucune faute.</p></div></div><p class="badge-rules-note">Les conditions d’un badge exigeant doivent être réunies au cours d’une même tentative. Les badges déjà obtenus restent acquis.</p></div></div><div id="challengeBanner" class="challenge-banner" hidden><strong id="challengeTitle"></strong><small id="challengeCopy"></small></div><label class="auto-cross" id="autoCrossWrap">
 <input type="checkbox" id="autoCross" checked>
 <span>Assistance auto</span>
-</label><label class="auto-cross" id="guidedErrorsWrap">
-<input type="checkbox" id="guidedErrors">
-<span>Correction immédiate</span>
 </label><div id="learningNote" class="learning-note"></div>
 <div id="difficulty" style="text-align:center;font-weight:700;color:#666;margin:-8px 0 12px"></div><div class="status"><span>◷ <span id="time">0:00</span><span id="speedCountdown" class="speed-countdown" hidden aria-live="polite"></span></span><span><span class="guardian-counter-icon"></span> <span id="count"></span></span></div>
 <div id="campaignMapLabel" class="campaign-map-label">Quête 1</div><div id="rewardLive" class="reward-live"><span id="masteryLive" class="mastery-live">✓ Maîtrise en cours</span><span id="progressLive" class="progress-live"></span></div><div id="board"></div><div id="rewardToast" class="reward-toast" aria-live="polite"></div><div class="hint-wallet"><span class="hint-wallet-label">Éclats</span><span id="shardMeter" class="shard-meter" role="button" tabindex="0" aria-label="Éclats de lumière disponibles. Voir les règles"></span><span class="shard-help" aria-hidden="true">ⓘ</span></div><div class="actions"><button id="undo">Annuler</button><button id="hint">Indice · gratuit</button><button id="clearHint" class="clear-hint" hidden>Revoir la quête</button><button id="boardNext" class="clear-hint" hidden>Quête suivante</button></div>
@@ -424,7 +421,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  </div>
 </div>
 <div id="autonomyOverlay" role="dialog" aria-modal="true" hidden style="position:fixed;inset:0;z-index:1100;align-items:center;justify-content:center;background:rgba(3,7,13,.88);padding:24px">
- <div class="autonomy-card"><div class="autonomy-icon">✦</div><div class="autonomy-title">Mode autonome débloqué</div><div class="autonomy-copy">Tu maîtrises maintenant les règles de LUMEN.<br>La Correction immédiate devient optionnelle : tu peux la conserver ou jouer en autonomie.</div><button id="autonomyClose">Continuer</button></div>
+ <div class="autonomy-card"><div class="autonomy-icon">✦</div><div class="autonomy-title">Mode autonome débloqué</div><div class="autonomy-copy">Tu maîtrises maintenant les règles de LUMEN.<br>À toi d’identifier les emplacements impossibles.</div><button id="autonomyClose">Continuer</button></div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -432,7 +429,7 @@ const TUTORIAL_STEPS=[
  {title:"Ta mission",copy:"Positionne les 6 Gardiens : exactement un par ligne, un par colonne et un par territoire coloré.",visual:'<div class="tutorial-mini-grid"><span></span><span class="orb guardian-mini"></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>'},
  {title:"Les Gardiens gardent leurs distances",copy:"Deux Gardiens ne peuvent jamais être voisins, même en diagonale. Chaque Gardien doit avoir de l’espace autour de lui.",visual:'<div class="tutorial-mini-grid"><span class="orb guardian-mini"></span><span></span><span></span><span></span><span>↘</span><span class="orb guardian-mini"></span><span></span><span></span><span></span></div>'},
  {title:"Écarte les emplacements impossibles",copy:"Un appui écarte une case avec un anneau ambre. Un deuxième appui y place un Gardien. Un troisième appui libère la case.",visual:'<div class="tutorial-mini-grid"><span></span><span class="dim">○</span><span></span><span></span><span class="orb guardian-mini"></span><span></span><span></span><span></span><span></span></div>'},
- {title:"LUMEN t’aide au début",copy:"Quêtes 1 à 5 : une erreur est bloquée et expliquée immédiatement. Quêtes 6 à 10 : elle est encore bloquée avec une explication plus légère. À partir de la quête 11, tu joues en autonomie, sauf si tu conserves la Correction immédiate.",visual:"<span>1–5 ✦ → 6–10 ◐ → 11+ ✧</span>"},
+ {title:"LUMEN t’aide au début",copy:"Sur les quêtes 1 à 5, l’Assistance auto est activée. Des quêtes 6 à 10, elle est désactivée par défaut mais reste disponible. À partir de la quête 11, elle reste optionnelle.",visual:"<span>1–5 ✦ → 6–10 ◐ → 11+ ✧</span>"},
  {title:"Bloqué ? Utilise Indice",copy:"LUMEN ne révèle pas simplement la solution : il te guide vers la prochaine déduction logique. Tu peux demander davantage de précision si nécessaire.",visual:"<span>💡 &nbsp; Indice logique</span>"}
 ];
 let tutorialStep=0;
@@ -680,15 +677,12 @@ function loadPuzzle(){init();}
 function hintCost(){if(levelIndex<=4)return 0;if(hintUsesThisGame===0)return 0;if(hintUsesThisGame===1)return 1;return 2}
 function updateShardMeter(){const m=document.getElementById("shardMeter");if(!m)return;const sh=Math.max(0,Math.min(5,lumenProgress.shards||0));m.innerHTML=Array.from({length:5},(_,i)=>`<span class="shard-gem${i<sh?" on":""}" aria-hidden="true">✦</span>`).join("");m.setAttribute("aria-label",sh+" éclat"+(sh>1?"s":"")+" de lumière disponible"+(sh>1?"s":"")+". Voir les règles.")}function updateHintButton(){const b=document.getElementById("hint");if(!b)return;const q=bonusChallengeFor(levelIndex),cost=hintCost(),sh=lumenProgress.shards||0;b.textContent=cost===0?"Indice · gratuit":"Indice · "+cost+" ✦";b.title="Éclats disponibles : "+sh+"/5";updateShardMeter();if(q&&q.type===2&&!lumenProgress.stars[q.id])return}
 function consumeHintCost(){const cost=hintCost(),sh=lumenProgress.shards||0;if(cost>sh){if(sh===0&&activeGameSeconds()>=90){hintWasGranted=true;hintUsesThisGame++;msg.textContent="Après 90 s de recherche, cet indice est offert.";updateHintButton();return true}msg.textContent="Il te manque "+(cost-sh)+" ✦ éclat"+(cost-sh>1?"s":"")+" pour cet indice. Continue à chercher : à 0 éclat, un indice devient gratuit après 90 s.";return false}if(cost>0){lumenProgress.shards=sh-cost;saveLumenProgress()}hintWasGranted=true;hintUsesThisGame++;updateHintButton();return true}
-function guidedErrorsEnabled(){const cb=document.getElementById("guidedErrors");return !!cb&&cb.checked}
 function configureLearningMode(){
  const cb=document.getElementById("autoCross"),wrap=document.getElementById("autoCrossWrap"),note=document.getElementById("learningNote"),guided=document.getElementById("guidedErrors"),gwrap=document.getElementById("guidedErrorsWrap");
  if(!cb||!wrap)return;
- const stored=localStorage.getItem("lumenGuidedErrors");
- if(guided){guided.checked=stored===null?levelIndex<=9:stored==="1";if(gwrap)gwrap.hidden=false}
- if(levelIndex<=4){cb.checked=true;cb.disabled=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=false;note.textContent="Mode guidé · les erreurs sont bloquées et expliquées immédiatement."}}
- else if(levelIndex<=9){cb.disabled=false;cb.checked=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=false;note.textContent="Mode accompagné · les erreurs sont encore bloquées, avec une explication plus légère."}}
- else{cb.checked=false;cb.disabled=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=false;note.textContent=guidedErrorsEnabled()?"Correction immédiate conservée · tu peux la désactiver à tout moment.":"";}}
+ if(levelIndex<=4){cb.checked=true;cb.disabled=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=false;note.textContent="Apprentissage · l’Assistance auto marque les cases devenues impossibles."}}
+ else if(levelIndex<=9){cb.disabled=false;cb.checked=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=false;note.textContent="Entraînement · l’Assistance auto reste disponible."}}
+ else{cb.checked=false;cb.disabled=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=true;note.textContent=""}}
 }
 function applyQuestRestrictions(){
  const q=bonusChallengeFor(levelIndex),cb=document.getElementById("autoCross"),wrap=document.getElementById("autoCrossWrap"),note=document.getElementById("learningNote"),hint=document.getElementById("hint");
@@ -913,19 +907,6 @@ function rewardProgressPulse(q){
 function launchWinStar(stars){
  if(stars<=0)return;victorySound();setTimeout(starArrivalSound,1900);const x=document.createElement("div");x.className="win-flight";x.textContent=stars>1?"★ +"+stars:"★";document.body.appendChild(x);showRewardToast(stars>1?"+"+stars+" étoiles gagnées":"Étoile gagnée");setTimeout(()=>x.remove(),2550);
 }
-function immediateErrorForAction(r,c,next){
- if(next===2&&puz.sol[r]!==c){
-   const placed=[];for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(state[y][x]===2)placed.push([y,x]);
-   const sameRow=placed.find(([y])=>y===r),sameCol=placed.find(([,x])=>x===c),sameReg=placed.find(([y,x])=>puz.reg[y][x]===puz.reg[r][c]),touch=placed.find(([y,x])=>Math.abs(y-r)<=1&&Math.abs(x-c)<=1);
-   if(sameRow)return "Cette ligne a déjà son Gardien.";
-   if(sameCol)return "Cette colonne a déjà son Gardien.";
-   if(sameReg)return "Ce territoire a déjà son Gardien.";
-   if(touch)return "Deux Gardiens ne peuvent pas se toucher, même en diagonale.";
-   return levelIndex<=4?"Ce Gardien conduirait à une impasse. Essaie un autre emplacement.":"Ce choix conduit à une impasse.";
- }
- return "";
-}
-
 function render(){
  board.style.gridTemplateColumns=`repeat(${n},minmax(0,1fr))`;board.style.gridTemplateRows=`repeat(${n},minmax(0,1fr))`;board.innerHTML="";
  for(let r=0;r<n;r++)for(let c=0;c<n;c++){
@@ -946,21 +927,9 @@ function render(){
   d.onclick=()=>{if(celebrated)return;
  let shown=displayedCellState(r,c),next=shown===3?2:(state[r][c]+1)%3,currentGuardians=state.flat().filter(v=>v===2).length;
  if(next===2&&state[r][c]!==2&&currentGuardians>=n)return;
- const before=state[r][c];
  hist.push(state.map(x=>x.slice()));
  if(shown===3){state[r][c]=2}else{state[r][c]=next}
  hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";
- const guided=levelIndex<=9||guidedErrorsEnabled();
- if(guided&&next===2){
-   const err=immediateErrorForAction(r,c,next);
-   if(err){
-     mistakesThisGame++;errorSound();render();
-     const bad=[...board.children][r*n+c];if(bad)bad.classList.add("conflict");
-     msg.textContent="✕ "+err;
-     setTimeout(()=>{if(celebrated)return;state[r][c]=before;render();msg.textContent="Essaie un autre emplacement.";},1100);
-     return;
-   }
- }
  render()};board.appendChild(d)
  }
  let q=state.flat().filter(v=>v===2).length;const countEl=document.getElementById("count");countEl.textContent=q+"/"+n;rewardProgressPulse(q);
@@ -1216,9 +1185,7 @@ function runHintTests(){
  test("Campagne : 100 quêtes réparties sur 12 constellations",()=>CONSTELLATION_GRID_COUNTS.length===12&&CONSTELLATION_GRID_COUNTS.reduce((a,b)=>a+b,0)===100);
  test("Campagne : le ciel contient exactement 150 étoiles",()=>CONSTELLATIONS.reduce((a,c)=>a+c.count,0)===SKY_TARGET&&SKY_TARGET===150);
  test("Campagne : chaque quête appartient à une constellation",()=>Array.from({length:100},(_,i)=>chapterForGrid(i)).every(i=>i>=0&&i<CONSTELLATIONS.length));
- test("Apprentissage : erreurs immédiates actives sur les 10 premières quêtes",()=>{const src=render.toString();return src.includes("levelIndex<=9||guidedErrorsEnabled()")&&typeof immediateErrorForAction==="function"});
- test("Apprentissage : le Gardien erroné est affiché avant retour automatique",()=>{const src=render.toString();return src.includes('bad.classList.add("conflict")')&&src.includes("state[r][c]=before")&&src.includes("1100")});
- test("Apprentissage : correction immédiate reste optionnelle après la quête 10",()=>!!document.getElementById("guidedErrors")&&configureLearningMode.toString().includes("lumenGuidedErrors"));
+ test("Interaction : le cycle reste exclusion, Gardien, case libre",()=>{const src=render.toString();return src.includes("(state[r][c]+1)%3")&&!src.includes("immediateErrorForAction")});
  test("Narratif : les pièces placées sont des Gardiens",()=>{
    const src=render.toString(),rules=document.querySelector(".rules")?.textContent||"";
    return src.includes('aria-label="Gardien positionné"')&&src.includes('+"/"+n+" Gardiens"')&&rules.includes("un Gardien par ligne")&&!rules.includes("source de lumière");
@@ -1424,7 +1391,6 @@ document.getElementById("undo").onclick=()=>{if(celebrated)return;if(hist.length
 const ac=document.getElementById("autoCross");
 const lumenAutoCrossStored=localStorage.getItem("lumenAutoCross");const legacyAutoCrossStored=localStorage.getItem("regaliaAutoCross");ac.checked=(lumenAutoCrossStored??legacyAutoCrossStored)!=="0";if(lumenAutoCrossStored===null&&legacyAutoCrossStored!==null){localStorage.setItem("lumenAutoCross",legacyAutoCrossStored);localStorage.removeItem("regaliaAutoCross")};
 ac.onchange=()=>{if(celebrated){ac.checked=!ac.checked;return}if(ac.checked)autoUsedThisGame=true;localStorage.setItem("lumenAutoCross",ac.checked?"1":"0");hi=null;render()};
-const guidedErrorsCb=document.getElementById("guidedErrors");if(guidedErrorsCb)guidedErrorsCb.onchange=()=>{localStorage.setItem("lumenGuidedErrors",guidedErrorsCb.checked?"1":"0");configureLearningMode()};
 function advanceToNextPuzzle(){
  if(!lumenProgress.solved[levelIndex])return;
  const next=replayMode?Math.min(sequentialSolvedCount,99):levelIndex+1;
