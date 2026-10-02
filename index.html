@@ -331,13 +331,18 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 }
 
 /* Mobile play-first layout: metadata is compact and the board appears immediately. */
-.mobile-journey,.mobile-streak{display:none}
+.mobile-journey,.mobile-streak,.mobile-account,.mobile-auth-popover{display:none}
 @media (max-width:700px){
  .app{padding:8px 10px 28px}
  .head{margin:0 0 5px;align-items:center}
  .head h1{margin:0;line-height:1}
  .lumen-brand{font-size:27px!important}
- .head-actions{display:flex;align-items:center;gap:6px}
+ .head-actions{display:flex;align-items:center;gap:5px}
+ .mobile-account{display:inline-flex!important;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:50%;font-size:18px;background:#101d2e;border:1px solid #28415b;color:#b9cee1}
+ .mobile-auth-popover{display:block;position:absolute;z-index:50;top:55px;right:10px;width:min(290px,calc(100vw - 20px));padding:12px;background:#101d2e;border:1px solid #28415b;border-radius:15px;box-shadow:0 16px 40px rgba(0,0,0,.35);font-size:12px;color:#9fb3c8}
+ .mobile-auth-popover[hidden]{display:none!important}
+ .mobile-auth-popover button{width:100%;margin-top:9px;padding:9px 11px;font-size:12px}
+ .game-core{position:relative}
  .head #new{font-size:0;width:38px;height:38px;padding:0;border-radius:50%}
  .head #new::after{content:"↻";font-size:21px}
  .mobile-journey{display:block;border:0;background:transparent;padding:3px 0 0;border-radius:0;color:#8fa6bd;font-size:12px;text-align:left}
@@ -357,8 +362,8 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .rules{margin-top:7px;padding:12px;font-size:12px}
 }
 </style><meta name="lumen-build" content="diversity-100"></head><body><main class="app"><aside class="desktop-side desktop-left"><div id="desktopLeftSlot"></div></aside><section class="game-core">
-<div class="head"><div><h1><span class="lumen-brand">LUMEN</span></h1><button id="mobileJourney" class="mobile-journey" type="button">Étincelle · 1/20</button></div><div class="head-actions"><span id="mobileStreak" class="mobile-streak">✦ 0/7</span><button id="new">Réinitialiser</button></div></div>
-<div class="levels" id="levels"></div><div class="auth-box"><span id="authUser">Progression enregistrée sur cet appareil</span><button id="authLogin">Sauvegarder ma progression</button><button id="authLogout" hidden>Déconnexion</button></div><section class="journey"><section id="dailyCard" class="daily-card"><div><div class="daily-kicker">CONSTELLATION QUOTIDIENNE</div><div id="dailyTitle" class="daily-title">Joue aujourd’hui pour allumer une étoile</div><div id="dailyStars" class="daily-stars"></div><div id="dailyMeta" class="daily-meta">Série · 0 jour</div></div><div id="dailyReward" class="daily-reward">7 jours → Halo Azur</div></section><div class="journey-top"><div><span class="journey-kicker">PARCOURS</span><strong id="journeyTitle">Étincelle</strong></div><button id="openMap">100 cartes</button></div><div class="progress-track"><span id="progressFill"></span></div><div class="progress-copy"><strong id="progressText">0 / 100 cartes réussies</strong><span id="badgeCount">0 badges</span></div><div id="sectorProgress" class="sector-progress">Étincelle : 0/20</div></section><div id="mapModal" class="map-modal" hidden><div class="map-sheet"><div class="map-head"><h2>Parcours LUMEN</h2><button id="closeMap">Fermer</button></div><div id="sectorTabs" class="sector-tabs"></div><div id="puzzleGrid" class="puzzle-grid"></div><h3>Badges</h3><div id="badgeGrid" class="badge-grid"></div></div></div><label class="auto-cross" id="autoCrossWrap">
+<div class="head"><div><h1><span class="lumen-brand">LUMEN</span></h1><button id="mobileJourney" class="mobile-journey" type="button">Étincelle · 1/20</button></div><div class="head-actions"><button id="mobileAccount" class="mobile-account" type="button" aria-label="Compte et sauvegarde">♙</button><span id="mobileStreak" class="mobile-streak">✦ 0/7</span><button id="new">Réinitialiser</button></div></div>
+<div id="mobileAuthPopover" class="mobile-auth-popover" hidden><div id="mobileAuthStatus">Progression enregistrée sur cet appareil</div><button id="mobileAuthAction" type="button">Se connecter avec Google</button></div><div class="levels" id="levels"></div><div class="auth-box"><span id="authUser">Progression enregistrée sur cet appareil</span><button id="authLogin">Sauvegarder ma progression</button><button id="authLogout" hidden>Déconnexion</button></div><section class="journey"><section id="dailyCard" class="daily-card"><div><div class="daily-kicker">CONSTELLATION QUOTIDIENNE</div><div id="dailyTitle" class="daily-title">Joue aujourd’hui pour allumer une étoile</div><div id="dailyStars" class="daily-stars"></div><div id="dailyMeta" class="daily-meta">Série · 0 jour</div></div><div id="dailyReward" class="daily-reward">7 jours → Halo Azur</div></section><div class="journey-top"><div><span class="journey-kicker">PARCOURS</span><strong id="journeyTitle">Étincelle</strong></div><button id="openMap">100 cartes</button></div><div class="progress-track"><span id="progressFill"></span></div><div class="progress-copy"><strong id="progressText">0 / 100 cartes réussies</strong><span id="badgeCount">0 badges</span></div><div id="sectorProgress" class="sector-progress">Étincelle : 0/20</div></section><div id="mapModal" class="map-modal" hidden><div class="map-sheet"><div class="map-head"><h2>Parcours LUMEN</h2><button id="closeMap">Fermer</button></div><div id="sectorTabs" class="sector-tabs"></div><div id="puzzleGrid" class="puzzle-grid"></div><h3>Badges</h3><div id="badgeGrid" class="badge-grid"></div></div></div><label class="auto-cross" id="autoCrossWrap">
 <input type="checkbox" id="autoCross" checked>
 <span>Assombrir automatiquement les cases incompatibles</span>
 </label><div id="learningNote" class="learning-note"></div>
@@ -390,6 +395,12 @@ const LUMEN_SUPABASE_URL="https://tjdjlavmusmncuszhsuw.supabase.co";
 const LUMEN_SUPABASE_KEY="sb_publishable_E1B-j_wvKmkmWq8YLhHf3Q_uL1yLcNo";
 let lumenSupabase=null,lumenUser=null,lumenCloudReady=false;
 try{lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY)}catch(e){console.warn("LUMEN cloud unavailable",e)}
+function syncMobileAuthUI(){
+ const status=document.getElementById("mobileAuthStatus"),action=document.getElementById("mobileAuthAction"),icon=document.getElementById("mobileAccount");
+ if(!status||!action||!icon)return;
+ if(lumenUser){status.textContent=lumenUser.email||"Progression synchronisée";action.textContent="Déconnexion";icon.textContent="●";icon.setAttribute("aria-label","Compte connecté")}
+ else{status.textContent="Progression enregistrée sur cet appareil";action.textContent="Se connecter avec Google";icon.textContent="♙";icon.setAttribute("aria-label","Se connecter")}
+}
 function updateAuthUI(){
  const u=document.getElementById("authUser"),login=document.getElementById("authLogin"),logout=document.getElementById("authLogout");
  if(!u||!login||!logout)return;
@@ -400,6 +411,18 @@ function updateAuthUI(){
    u.textContent="Progression enregistrée sur cet appareil";
    login.hidden=false; logout.hidden=true;
  }
+ syncMobileAuthUI();
+}
+function setupMobileAuth(){
+ const menu=document.getElementById("mobileAuthPopover"),account=document.getElementById("mobileAccount"),action=document.getElementById("mobileAuthAction");
+ if(!menu||!account||!action)return;
+ account.onclick=()=>{menu.hidden=!menu.hidden};
+ action.onclick=async()=>{
+   menu.hidden=true;
+   if(!lumenSupabase)return;
+   if(lumenUser){await lumenSupabase.auth.signOut();return}
+   await lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+location.pathname}});
+ };
 }
 async function cloudSavePuzzle(index){
  if(!lumenSupabase||!lumenUser)return;
@@ -1048,7 +1071,7 @@ document.getElementById("successNew").onclick=()=>{
  if(next<100 && sectorUnlocked(Math.floor(next/20))) levelIndex=next;
  loadPuzzle();usedHintThisGame=false;refreshJourney();
 };
-document.getElementById("new").onclick=init;arrangeDesktopPanels();init();
+document.getElementById("new").onclick=init;arrangeDesktopPanels();setupMobileAuth();init();
 
 let mapSector=0;const badgeDefs=[["first","Première lueur"],["explorer","Explorateur"],["beacon","Phare"],["master","Maître LUMEN"],["sector0","Étincelle"],["sector1","Halo"],["sector2","Rayonnement"],["sector3","Prisme"],["sector4","Nova"]];
 function awards(){let t=Object.keys(lumenProgress.solved).length;if(t>=1)lumenProgress.badges.first=1;if(t>=20)lumenProgress.badges.explorer=1;if(t>=50)lumenProgress.badges.beacon=1;if(t>=100)lumenProgress.badges.master=1;for(let s=0;s<5;s++)if(sectorSolved(s)===20)lumenProgress.badges["sector"+s]=1;saveLumenProgress()}
