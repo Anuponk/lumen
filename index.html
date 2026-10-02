@@ -407,6 +407,10 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .tutorial-actions button{border-color:#34536d;background:#102238;color:#dceaf6}
 #tutorialNext{background:#68e7ff;color:#06202a;border-color:#68e7ff}
 @media(max-width:700px){.tutorial-help{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;font-size:15px}.tutorial-card{padding:18px}.tutorial-visual{height:100px}.tutorial-title{font-size:22px}.tutorial-copy{min-height:90px;font-size:14px}}
+
+.beta-feedback-btn{position:fixed;right:14px;bottom:14px;z-index:850;border:1px solid rgba(104,231,255,.35);background:#0d2134;color:#bdefff;border-radius:999px;padding:9px 13px;font-size:13px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.22)}
+.beta-modal{position:fixed;inset:0;z-index:1200;background:rgba(2,9,16,.72);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:18px}.beta-modal[hidden]{display:none}.beta-card{width:min(430px,94vw);background:#0c1928;color:#eaf9ff;border:1px solid rgba(104,231,255,.25);border-radius:22px;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.45)}.beta-card h2{margin:0 0 6px}.beta-card p{color:#9eb7c8}.beta-kinds,.difficulty-choices{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}.beta-kinds button,.difficulty-choices button{background:#12283d;color:#dff8ff;border:1px solid rgba(104,231,255,.22);border-radius:13px;padding:11px 8px}.beta-kinds button.selected{border-color:#68e7ff;box-shadow:0 0 0 2px rgba(104,231,255,.18)}#feedbackText{width:100%;min-height:90px;box-sizing:border-box;border-radius:13px;padding:11px;background:#07111d;color:#fff;border:1px solid #29465e;resize:vertical}.beta-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}.difficulty-box{margin-top:18px;padding-top:14px;border-top:1px solid rgba(104,231,255,.16)}.difficulty-box.done{opacity:.65}
+@media(max-width:500px){.beta-feedback-btn{right:10px;bottom:10px;padding:8px 11px;font-size:12px}}
 </style><meta name="lumen-build" content="diversity-100"></head><body><main class="app"><aside class="desktop-side desktop-left"><div id="desktopLeftSlot"></div></aside><section class="game-core">
 <div class="head"><div><h1><span class="lumen-brand">LUMEN</span></h1><button id="mobileJourney" class="mobile-journey" type="button">Étincelle · 1/20</button></div><div class="head-actions"><button id="tutorialHelp" class="tutorial-help" type="button" aria-label="Revoir le tutoriel">?</button><button id="mobileAccount" class="mobile-account" type="button" aria-label="Compte et sauvegarde">♙</button><button id="mobileStreak" class="mobile-streak" type="button" aria-label="Constellation quotidienne">✦ 0/7</button><button id="new">Réinitialiser</button></div></div>
 <div id="dailyInfoPopover" class="daily-info-popover" hidden>
@@ -437,12 +441,23 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
   <div class="tutorial-actions"><button id="tutorialPrev">Retour</button><button id="tutorialNext">Suivant</button></div>
  </div>
 </div>
+<button id="betaFeedbackBtn" class="beta-feedback-btn" type="button">⚑ Signaler un problème</button>
+<div id="feedbackModal" class="beta-modal" hidden role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
+ <div class="beta-card">
+  <h2 id="feedbackTitle">Retour bêta</h2><p>Le contexte de la carte sera joint automatiquement.</p>
+  <div class="beta-kinds"><button data-kind="bug">🐞 Bug</button><button data-kind="rule">? Règle / indice</button><button data-kind="difficulty">🧠 Trop difficile</button><button data-kind="other">… Autre</button></div>
+  <textarea id="feedbackText" maxlength="2000" placeholder="Que s'est-il passé ? (facultatif)"></textarea>
+  <div class="beta-actions"><button id="feedbackCancel">Annuler</button><button id="feedbackSend">Envoyer</button></div>
+  <p id="feedbackStatus" aria-live="polite"></p>
+ </div>
+</div>
 <div id="successOverlay" role="dialog" aria-modal="true" aria-labelledby="successTitle">
  <div class="success-card">
   <div class="success-gem"><span class="lumen-orb big" aria-hidden="true"></span></div>
   <div class="success-title" id="successTitle">Constellation complète</div>
   <div class="success-sub">Toutes les sources sont synchronisées</div>
   <div class="success-time">◷ <span id="successTime">0:00</span></div>
+  <div id="difficultyBox" class="difficulty-box"><div>Comment as-tu trouvé cette grille ?</div><div class="difficulty-choices"><button data-rating="easy">😌 Facile</button><button data-rating="balanced">🙂 Bien dosée</button><button data-rating="hard">🧠 Difficile</button><button data-rating="frustrating">😵 Frustrante</button></div></div>
   <div class="success-actions">
    <button id="successClose">Voir la grille</button>
    <button id="successNew">Carte suivante</button>
@@ -702,6 +717,28 @@ function displayedCellState(r,c){
  return isAutoCross(r,c)?3:0;
 }
 
+const LUMEN_APP_VERSION="beta-2026.10";
+let feedbackKind="bug";
+function setupBetaFeedback(){
+ const modal=document.getElementById("feedbackModal"),status=document.getElementById("feedbackStatus");
+ document.getElementById("betaFeedbackBtn").onclick=()=>{modal.hidden=false;status.textContent=""};
+ document.getElementById("feedbackCancel").onclick=()=>modal.hidden=true;
+ modal.onclick=e=>{if(e.target===modal)modal.hidden=true};
+ document.querySelectorAll(".beta-kinds button").forEach(b=>b.onclick=()=>{feedbackKind=b.dataset.kind;document.querySelectorAll(".beta-kinds button").forEach(x=>x.classList.toggle("selected",x===b))});
+ document.querySelector('.beta-kinds button[data-kind="bug"]').classList.add("selected");
+ document.getElementById("feedbackSend").onclick=async()=>{
+  const btn=document.getElementById("feedbackSend");btn.disabled=true;status.textContent="Envoi…";
+  if(!lumenSupabase){status.textContent="Connexion indisponible.";btn.disabled=false;return}
+  const {error}=await lumenSupabase.rpc("lumen_send_feedback",{p_anonymous_id:lumenAnonymousId,p_kind:feedbackKind,p_message:document.getElementById("feedbackText").value,p_puzzle_id:levelIndex+1,p_board_state:{state:state,regions:puz.reg},p_elapsed_seconds:Math.max(0,Math.floor((Date.now()-start)/1000)),p_hints_used:usedHintThisGame?1:0,p_app_version:LUMEN_APP_VERSION,p_user_agent:navigator.userAgent});
+  if(error){status.textContent="Envoi impossible. Réessaie.";console.warn("LUMEN feedback",error);btn.disabled=false;return}
+  status.textContent="Merci, retour envoyé.";document.getElementById("feedbackText").value="";setTimeout(()=>{modal.hidden=true;btn.disabled=false},800);
+ };
+ document.querySelectorAll(".difficulty-choices button").forEach(b=>b.onclick=async()=>{
+  if(!lumenSupabase)return;
+  const {error}=await lumenSupabase.rpc("lumen_rate_difficulty",{p_anonymous_id:lumenAnonymousId,p_puzzle_id:levelIndex+1,p_rating:b.dataset.rating});
+  if(!error){document.getElementById("difficultyBox").classList.add("done");document.getElementById("difficultyBox").innerHTML="Merci pour ton retour ✦"}
+ });
+}
 function hideSuccess(){
  let o=document.getElementById("successOverlay");
  if(o)o.classList.remove("show");
@@ -1253,6 +1290,7 @@ document.getElementById("new").onclick=()=>{
 refreshJourney();
 renderDaily();
 
+setupBetaFeedback();
 initLumenCloud();
 </script><script>
 if("serviceWorker" in navigator){
