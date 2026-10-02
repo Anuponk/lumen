@@ -1277,7 +1277,7 @@ function renderMap(){const sectorTabs=document.getElementById("sectorTabs"),puzz
 function openJourneyMap(){mapSector=Math.floor(levelIndex/20);renderMap();document.getElementById("mapModal").hidden=false}
 document.getElementById("openMap").onclick=openJourneyMap;
 const mobileJourney=document.getElementById("mobileJourney");if(mobileJourney)mobileJourney.onclick=openJourneyMap;
-document.getElementById("closeMap").onclick=()=>document.getElementById("mapModal").hidden=true;document.getElementById("hint").addEventListener("click",()=>trackLumenEvent("hint_used",levelIndex+1);usedHintThisGame=true);
+document.getElementById("closeMap").onclick=()=>document.getElementById("mapModal").hidden=true;document.getElementById("hint").addEventListener("click",()=>{trackLumenEvent("hint_used",levelIndex+1);usedHintThisGame=true});
 
 const autonomyClose=document.getElementById("autonomyClose");if(autonomyClose)autonomyClose.onclick=()=>{let o=document.getElementById("autonomyOverlay");o.hidden=true;o.style.display="none"};
 document.getElementById("new").onclick=()=>{
