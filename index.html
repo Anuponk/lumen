@@ -690,7 +690,7 @@ function configureLearningMode(){
  if(!cb||!wrap)return;
  if(levelIndex<=4){cb.checked=true;cb.disabled=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=false;note.textContent="Apprentissage · l’Assistance auto marque les cases devenues impossibles. Tu peux la désactiver à tout moment."}}
  else if(levelIndex<=9){cb.disabled=false;cb.checked=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=false;note.textContent="Entraînement · l’Assistance auto est désactivée par défaut, mais reste disponible."}}
- else{cb.checked=false;cb.disabled=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=false;note.textContent="Mode autonome · l’Assistance auto est désactivée par défaut, mais reste disponible si tu le souhaites."}}
+ else{cb.checked=false;cb.disabled=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=true;note.textContent=""}}
 }
 function applyQuestRestrictions(){
  const q=questFor(levelIndex),cb=document.getElementById("autoCross"),wrap=document.getElementById("autoCrossWrap"),note=document.getElementById("learningNote"),hint=document.getElementById("hint");
