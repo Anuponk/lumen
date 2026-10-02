@@ -457,7 +457,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
   <p id="feedbackStatus" aria-live="polite"></p>
  </div>
 </div>
-<div id="skyReveal" class="sky-reveal" hidden role="dialog" aria-modal="true"><div class="sky-reveal-card"><div class="sky-reveal-kicker">QUÊTE RÉUSSIE</div><div class="sky-reveal-title">Une nouvelle étoile s’allume</div><div id="skyRevealName" class="sky-reveal-name"></div><div id="skyRevealCanvas"></div><button id="skyRevealContinue" type="button">Continuer</button></div></div>
+<div id="skyReveal" class="sky-reveal" hidden role="dialog" aria-modal="true"><div class="sky-reveal-card"><div id="skyRevealKicker" class="sky-reveal-kicker">QUÊTE RÉUSSIE</div><div id="skyRevealTitle" class="sky-reveal-title">Une nouvelle étoile s’allume</div><div id="skyRevealName" class="sky-reveal-name"></div><div id="skyRevealCanvas"></div><button id="skyRevealContinue" type="button">Continuer</button></div></div>
 <div id="questStart" class="quest-start" hidden role="dialog" aria-modal="true"><div class="quest-start-card"><div class="quest-start-icon">✦</div><div class="quest-start-title" id="questStartTitle">Quête céleste</div><div class="quest-start-rule" id="questStartRule"></div><button id="questGo" type="button">GO</button></div></div>
 <div id="successOverlay" role="dialog" aria-modal="true" aria-labelledby="successTitle">
  <div class="success-card">
@@ -815,6 +815,7 @@ function celebrateSuccess(){
  celebrated=true;
  // Progress is tied to the game's real victory event (not overlay visibility).
  const firstCompletion=!lumenProgress.solved[levelIndex];
+ const skyEarnedBefore=skyStarsEarned();
  lumenProgress.solved[levelIndex]=1;
  if(firstCompletion)lumenProgress.xp=(lumenProgress.xp||0)+10;
  if(firstCompletion&&!usedHintThisGame)lumenProgress.xp+=5;
@@ -842,7 +843,8 @@ function celebrateSuccess(){
  const qr=document.getElementById("questResult");if(ch){qr.hidden=false;qr.className="quest-result "+(questPassed||lumenProgress.stars[ch.id]?"success":"fail");qr.textContent=questPassed?"★ Quête réussie ! Une étoile bonus et un éclat gagnés.":lumenProgress.stars[ch.id]?"★ Quête déjà accomplie":"Quête échouée — la grille est tout de même terminée."}else qr.hidden=true;
  const m=milestoneFor(levelIndex),sub=document.getElementById("successSub");if(sub)sub.textContent=m?(m.kind==="boss"?"Défi final réussi · +2 ★ bonus":"Défi intermédiaire réussi · +1 ★ bonus"):(questPassed?"Quête réussie · +1 ★ bonus":"Ton ciel progresse");
  configureSuccessFeedback(questPassed);
- if(questPassed){document.getElementById("successOverlay").classList.remove("show");showSkyReveal()}else document.getElementById("successOverlay").classList.add("show");
+ const skyEarnedAfter=skyStarsEarned(),crossedConstellation=firstCompletion&&(()=>{let total=0;for(const cs of CONSTELLATIONS){total+=cs.count;if(skyEarnedBefore<total&&skyEarnedAfter>=total)return true}return false})();
+ if(questPassed||crossedConstellation){document.getElementById("successOverlay").classList.remove("show");showSkyReveal(skyEarnedBefore)}else document.getElementById("successOverlay").classList.add("show");
 
  // Deliberately varied shapes/positions; purely visual, no game-state effect.
  const palette=["#68e7ff","#5ea7ff","#8b7cff","#67d8c2","#d7f8ff","#87bfff"];
@@ -1364,9 +1366,23 @@ function constellationProgress(){let earned=skyStarsEarned(),total=0;for(let i=0
 function starDisplayName(p,i){return p.stars&&p.stars[i]?p.stars[i]:"Étoile "+(i+1)}
 function constellationLitAt(index){let earned=skyStarsEarned(),before=0;for(let i=0;i<index;i++)before+=CONSTELLATIONS[i].count;return Math.max(0,Math.min(CONSTELLATIONS[index].count,earned-before))}
 function renderSky(index=mapConstellation){let el=document.getElementById("skyCard");if(!el)return;index=Math.max(0,Math.min(index,CONSTELLATIONS.length-1));let c=CONSTELLATIONS[index],lit=constellationLitAt(index),p={index,...c,lit},active=index===constellationProgress().index,lines=p.edges.map(e=>'<line class="sky-line '+(e[0]<lit&&e[1]<lit?'on':'')+'" x1="'+p.pts[e[0]][0]+'" y1="'+p.pts[e[0]][1]+'" x2="'+p.pts[e[1]][0]+'" y2="'+p.pts[e[1]][1]+'"/>').join(""),stars=p.pts.map((v,i)=>'<g><circle class="sky-star '+(i<lit?'on':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i<lit?4:3)+'"/>'+(i<lit?'<text class="sky-label" x="'+(v[0]+6)+'" y="'+(v[1]-5)+'">'+starDisplayName(p,i)+'</text>':'')+'</g>').join("");el.innerHTML='<div class="sky-head"><span class="sky-name">'+p.name+'</span><span>'+lit+' / '+p.count+' étoiles</span></div><svg class="sky-svg" viewBox="0 0 290 115">'+lines+stars+'</svg><div class="sky-note">'+(active?"Constellation active":lit===p.count?"Constellation complétée":lit===0?"Constellation à découvrir":"Constellation en cours")+'</div>'}
-function showSkyReveal(){
- const p=constellationProgress(),idx=Math.max(0,p.lit-1),canvas=document.getElementById("skyRevealCanvas"),o=document.getElementById("skyReveal");
- document.getElementById("skyRevealName").textContent=starDisplayName(p,idx)+" · "+p.name;
+function constellationStateForEarned(earned){let total=0;for(let i=0;i<CONSTELLATIONS.length;i++){const c=CONSTELLATIONS[i];if(earned<=total+c.count)return {index:i,...c,lit:Math.max(0,Math.min(c.count,earned-total)),complete:earned===total+c.count};total+=c.count}const c=CONSTELLATIONS[CONSTELLATIONS.length-1];return {index:CONSTELLATIONS.length-1,...c,lit:c.count,complete:true}}
+function showSkyReveal(beforeEarned=null){
+ const after=skyStarsEarned(),crossed=beforeEarned!==null&&after>beforeEarned;
+ const completed=[];
+ if(crossed){let total=0;for(let i=0;i<CONSTELLATIONS.length;i++){total+=CONSTELLATIONS[i].count;if(beforeEarned<total&&after>=total)completed.push(i)}}
+ const completedIndex=completed.length?completed[completed.length-1]:-1;
+ const p=completedIndex>=0?{index:completedIndex,...CONSTELLATIONS[completedIndex],lit:CONSTELLATIONS[completedIndex].count}:constellationProgress();
+ const idx=Math.max(0,p.lit-1),canvas=document.getElementById("skyRevealCanvas"),o=document.getElementById("skyReveal"),k=document.getElementById("skyRevealKicker"),t=document.getElementById("skyRevealTitle");
+ if(completedIndex>=0){
+   k.textContent="CONSTELLATION COMPLÉTÉE";
+   t.textContent="✦ "+p.name.replace(" · Grand Chariot","");
+   document.getElementById("skyRevealName").textContent=completedIndex<CONSTELLATIONS.length-1?"La constellation suivante est maintenant à découvrir.":"Ton ciel est entièrement révélé.";
+ }else{
+   k.textContent="NOUVELLE ÉTOILE";
+   t.textContent="Une nouvelle étoile s’allume";
+   document.getElementById("skyRevealName").textContent=starDisplayName(p,idx)+" · "+p.name;
+ }
  let lines=p.edges.map(e=>{let on=e[0]<p.lit&&e[1]<p.lit,newLine=on&&(e[0]===idx||e[1]===idx);return '<line class="sky-line '+(on?'on ':'')+(newLine?'new-line':'')+'" x1="'+p.pts[e[0]][0]+'" y1="'+p.pts[e[0]][1]+'" x2="'+p.pts[e[1]][0]+'" y2="'+p.pts[e[1]][1]+'"/>'}).join("");
  let stars=p.pts.map((v,i)=>'<circle class="sky-star '+(i<p.lit?'on ':'')+(i===idx?'new-star':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i===idx?6:i<p.lit?4:3)+'"/>').join("");
  canvas.innerHTML='<svg class="sky-reveal-svg" viewBox="0 0 290 115">'+lines+stars+'</svg><div>'+p.lit+' / '+p.count+' étoiles</div>';o.hidden=false;
