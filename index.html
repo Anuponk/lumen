@@ -574,7 +574,9 @@ async function cloudMergeProgress(){
  const local=Object.keys(lumenProgress.solved||{}).filter(k=>lumenProgress.solved[k]).map(Number).filter(x=>x>=0&&x<100);
  const union=new Set([...cloud,...local]);
  const count=Math.min(100,union.size);
+ const skyBeforeMerge=skyStarsEarned();
  lumenProgress.solved={}; for(let i=0;i<count;i++)lumenProgress.solved[i]=1;
+ lumenProgress.skyScore=skyBeforeMerge;
  saveLumenProgress();
  for(const i of local)if(!cloud.has(i)){
    const {error:e}=await lumenSupabase.rpc("lumen_save_progress",{p_puzzle_id:i+1,p_duration_seconds:null,p_hints_used:(lumenProgress.noHint&&lumenProgress.noHint[i])?0:1});
@@ -607,7 +609,7 @@ const LUMEN_META=[{"id":1,"sector":0,"score":9,"steps":7},{"id":2,"sector":0,"sc
 
 function loadLumenProgress(){try{return JSON.parse(localStorage.getItem("lumenProgressV1"))||{solved:{},badges:{}}}catch(e){return {solved:{},badges:{}}}}
 let lumenProgress=loadLumenProgress(),usedHintThisGame=false,questStarted=true,questFailed=false;if(!lumenProgress.xp)lumenProgress.xp=0;if(!lumenProgress.challenges)lumenProgress.challenges={};if(!lumenProgress.stars)lumenProgress.stars={};if(!Number.isFinite(lumenProgress.shards))lumenProgress.shards=3;if(!lumenProgress.performances)lumenProgress.performances={};
-if(!lumenProgress.daily)lumenProgress.daily={dates:{},rewards:{}};
+if(!lumenProgress.daily)lumenProgress.daily={dates:{},rewards:{}};if(!Number.isFinite(lumenProgress.skyScore))lumenProgress.skyScore=null;
 function localDateKey(d=new Date()){let y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");return y+"-"+m+"-"+day}
 function dateOffsetKey(n){let d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+n);return localDateKey(d)}
 function dailyStreak(){let n=0;for(let i=0;i<365;i++){if(lumenProgress.daily.dates[dateOffsetKey(-i)])n++;else break}return n}
@@ -817,6 +819,7 @@ function celebrateSuccess(){
  const firstCompletion=!lumenProgress.solved[levelIndex];
  const skyEarnedBefore=skyStarsEarned();
  lumenProgress.solved[levelIndex]=1;
+ if(firstCompletion)lumenProgress.skyScore=Math.min(SKY_TARGET,skyEarnedBefore+skyStarsForGrid(levelIndex));
  if(firstCompletion)lumenProgress.xp=(lumenProgress.xp||0)+10;
  if(firstCompletion&&!usedHintThisGame)lumenProgress.xp+=5;
  const ch=questFor(levelIndex);let questPassed=false;
@@ -1361,7 +1364,7 @@ function constellationGridRange(index){let start=0;for(let j=0;j<index;j++)start
 function chapterForGrid(i){let start=0;for(let j=0;j<CONSTELLATION_GRID_COUNTS.length;j++){let end=start+CONSTELLATION_GRID_COUNTS[j];if(i<end)return j;start=end}return CONSTELLATIONS.length-1}
 function milestoneFor(i){const ci=chapterForGrid(i),r=constellationGridRange(ci),pos=i-r.start,mid=Math.floor((r.count-1)/2);if(i===r.end)return {kind:"boss",title:"✹ Défi final · "+CONSTELLATIONS[ci].name.replace(" · Grand Chariot",""),bonus:2,copy:"Dernière carte de la constellation · +2 ★ et constellation complétée."};if(pos===mid)return {kind:"mid",title:"✦ Défi de constellation",bonus:1,copy:"Étape intermédiaire · +1 ★ pour ton ciel."};return null}
 function skyStarsForGrid(i){const ci=chapterForGrid(i),r=constellationGridRange(ci),target=CONSTELLATIONS[ci].count,extra=target-r.count,pos=i-r.start;if(pos===r.count-1)return 1+Math.min(2,extra);const remaining=Math.max(0,extra-2),mid=Math.floor((r.count-1)/2);if(pos===mid)return 1+Math.min(1,remaining);const extraSlots=Math.max(0,remaining-1);if(extraSlots>0&&pos<extraSlots)return 2;return 1}
-function skyStarsEarned(){let total=0;for(const k of Object.keys(lumenProgress.solved||{})){if(lumenProgress.solved[k])total+=skyStarsForGrid(Number(k))}return Math.min(SKY_TARGET,total)}
+function legacySkyStarsEarned(){return Math.min(SKY_TARGET,Math.floor(solvedCount()/2)+questStarKeys().length+(()=>{let bonus=0;for(const k of Object.keys(lumenProgress.solved||{})){if(!lumenProgress.solved[k])continue;let pos=(Number(k)%15)+1;if(pos===8)bonus+=1;if(pos===15)bonus+=2}return bonus})())}function ensureSkyScore(){if(Number.isFinite(lumenProgress.skyScore))return;const historical=legacySkyStarsEarned();lumenProgress.skyScore=historical;saveLumenProgress()}function skyStarsEarned(){ensureSkyScore();return Math.max(0,Math.min(SKY_TARGET,lumenProgress.skyScore||0))}
 function questStarKeys(){return Object.keys(lumenProgress.stars||{}).filter(k=>k.startsWith("sky2-"))}
 function questFor(i){if((i+1)%6!==0)return null;let num=(i+1)/6,type=((num-1)%3)+1,seconds=type===1?55+Math.floor((num-1)/4)*10:null,noAuto=type===1;return {id:"sky2-"+num,num,type,noAuto,title:type===1?"⚡ Quête Éclair":type===2?"🧠 Quête Esprit clair":"✦ Quête céleste",seconds,copy:type===1?"Termine cette grille en moins de "+seconds+" s. · Assistance auto interdite.":type===2?"Termine cette grille sans indice.":"Termine cette grille et gagne le bonus céleste."}}
 function challengeFor(i){return milestoneFor(i)||questFor(i)}
