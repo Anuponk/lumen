@@ -491,7 +491,9 @@ function updateAuthUI(){
 function setupDailyInfo(){
  const btn=document.getElementById("mobileStreak"),pop=document.getElementById("dailyInfoPopover"),auth=document.getElementById("mobileAuthPopover");
  if(!btn||!pop)return;
- btn.onclick=()=>{if(auth)auth.hidden=true;pop.hidden=!pop.hidden};
+ btn.onclick=(e)=>{e.stopPropagation();if(auth)auth.hidden=true;pop.hidden=!pop.hidden};
+ pop.onclick=(e)=>e.stopPropagation();
+ document.addEventListener("click",()=>{if(!pop.hidden)pop.hidden=true});
 }
 function setupMobileAuth(){
  const menu=document.getElementById("mobileAuthPopover"),account=document.getElementById("mobileAccount"),action=document.getElementById("mobileAuthAction");
