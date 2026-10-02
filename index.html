@@ -279,9 +279,15 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
     margin-right:auto!important;
   }
 }
+
+/* LUMEN account / cloud sync */
+.auth-box{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin:-4px 0 8px;font-size:12px;color:#8fa0b8}
+.auth-box button{padding:7px 11px;font-size:12px}
+#authUser{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:500px){.auth-box{justify-content:center;flex-wrap:wrap;margin-top:0}}
 </style><meta name="lumen-build" content="energy-map-v5b-safe-hints"></head><body><main class="app">
 <div class="head"><div><h1><span class="lumen-brand">LUMEN</span></h1></div><button id="new">Réinitialiser</button></div>
-<div class="levels" id="levels"></div><section class="journey"><div class="journey-top"><div><span class="journey-kicker">PARCOURS</span><strong id="journeyTitle">Étincelle</strong></div><button id="openMap">100 cartes</button></div><div class="progress-track"><span id="progressFill"></span></div><div class="progress-copy"><strong id="progressText">0 / 100 cartes réussies</strong><span id="badgeCount">0 badges</span></div><div id="sectorProgress" class="sector-progress">Étincelle : 0/20</div></section><div id="mapModal" class="map-modal" hidden><div class="map-sheet"><div class="map-head"><h2>Parcours LUMEN</h2><button id="closeMap">Fermer</button></div><div id="sectorTabs" class="sector-tabs"></div><div id="puzzleGrid" class="puzzle-grid"></div><h3>Badges</h3><div id="badgeGrid" class="badge-grid"></div></div></div><label class="auto-cross">
+<div class="levels" id="levels"></div><div class="auth-box"><span id="authUser">Progression enregistrée sur cet appareil</span><button id="authLogin">Sauvegarder ma progression</button><button id="authLogout" hidden>Déconnexion</button></div><section class="journey"><div class="journey-top"><div><span class="journey-kicker">PARCOURS</span><strong id="journeyTitle">Étincelle</strong></div><button id="openMap">100 cartes</button></div><div class="progress-track"><span id="progressFill"></span></div><div class="progress-copy"><strong id="progressText">0 / 100 cartes réussies</strong><span id="badgeCount">0 badges</span></div><div id="sectorProgress" class="sector-progress">Étincelle : 0/20</div></section><div id="mapModal" class="map-modal" hidden><div class="map-sheet"><div class="map-head"><h2>Parcours LUMEN</h2><button id="closeMap">Fermer</button></div><div id="sectorTabs" class="sector-tabs"></div><div id="puzzleGrid" class="puzzle-grid"></div><h3>Badges</h3><div id="badgeGrid" class="badge-grid"></div></div></div><label class="auto-cross">
 <input type="checkbox" id="autoCross" checked>
 <span>Assombrir automatiquement les cases incompatibles</span>
 </label>
@@ -304,6 +310,65 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
   </div>
  </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const LUMEN_SUPABASE_URL="https://tjdjlavmusmncuszhsuw.supabase.co";
+const LUMEN_SUPABASE_KEY="sb_publishable_E1B-j_wvKmkmWq8YLhHf3Q_uL1yLcNo";
+let lumenSupabase=null,lumenUser=null,lumenCloudReady=false;
+try{lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY)}catch(e){console.warn("LUMEN cloud unavailable",e)}
+function updateAuthUI(){
+ const u=document.getElementById("authUser"),login=document.getElementById("authLogin"),logout=document.getElementById("authLogout");
+ if(!u||!login||!logout)return;
+ if(lumenUser){
+   u.textContent=lumenUser.email||"Progression synchronisée";
+   login.hidden=true; logout.hidden=false;
+ }else{
+   u.textContent="Progression enregistrée sur cet appareil";
+   login.hidden=false; logout.hidden=true;
+ }
+}
+async function cloudSavePuzzle(index){
+ if(!lumenSupabase||!lumenUser)return;
+ const seconds=Math.max(0,Math.floor((Date.now()-start)/1000));
+ const {error}=await lumenSupabase.rpc("lumen_save_progress",{p_puzzle_id:index+1,p_duration_seconds:seconds,p_hints_used:usedHintThisGame?1:0});
+ if(error)console.warn("LUMEN sync save",error);
+}
+async function cloudMergeProgress(){
+ if(!lumenSupabase||!lumenUser)return;
+ const {data,error}=await lumenSupabase.rpc("lumen_get_progress");
+ if(error){console.warn("LUMEN sync load",error);return}
+ const cloud=new Set((data||[]).map(x=>Number(x.puzzle_id)-1).filter(x=>x>=0&&x<100));
+ const local=Object.keys(lumenProgress.solved||{}).filter(k=>lumenProgress.solved[k]).map(Number).filter(x=>x>=0&&x<100);
+ const union=new Set([...cloud,...local]);
+ const count=Math.min(100,union.size);
+ lumenProgress.solved={}; for(let i=0;i<count;i++)lumenProgress.solved[i]=1;
+ saveLumenProgress();
+ for(const i of local)if(!cloud.has(i)){
+   const {error:e}=await lumenSupabase.rpc("lumen_save_progress",{p_puzzle_id:i+1,p_duration_seconds:null,p_hints_used:(lumenProgress.noHint&&lumenProgress.noHint[i])?0:1});
+   if(e)console.warn("LUMEN import local",e);
+ }
+ levelIndex=Math.min(count,99);
+ refreshJourney(); init();
+ lumenCloudReady=true;
+}
+async function initLumenCloud(){
+ if(!lumenSupabase){updateAuthUI();return}
+ const {data}=await lumenSupabase.auth.getSession();
+ lumenUser=data.session?.user||null; updateAuthUI();
+ if(lumenUser)await cloudMergeProgress();
+ lumenSupabase.auth.onAuthStateChange((event,session)=>{
+   const previous=lumenUser?.id; lumenUser=session?.user||null; updateAuthUI();
+   if(lumenUser&&lumenUser.id!==previous)setTimeout(()=>cloudMergeProgress(),0);
+ });
+ const login=document.getElementById("authLogin"),logout=document.getElementById("authLogout");
+ if(login)login.onclick=async()=>{
+   const redirectTo=location.origin+location.pathname;
+   const {error}=await lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo}});
+   if(error)alert("Connexion impossible : "+error.message);
+ };
+ if(logout)logout.onclick=async()=>{await lumenSupabase.auth.signOut();lumenUser=null;lumenCloudReady=false;updateAuthUI()};
+}
+</script>
 <script>
 const LUMEN_META=[{"id":1,"sector":0,"score":9,"steps":7},{"id":2,"sector":0,"score":9,"steps":7},{"id":3,"sector":0,"score":9,"steps":7},{"id":4,"sector":0,"score":9,"steps":7},{"id":5,"sector":0,"score":12,"steps":8},{"id":6,"sector":0,"score":12,"steps":8},{"id":7,"sector":0,"score":12,"steps":8},{"id":8,"sector":0,"score":12,"steps":8},{"id":9,"sector":0,"score":12,"steps":8},{"id":10,"sector":0,"score":12,"steps":8},{"id":11,"sector":0,"score":12,"steps":8},{"id":12,"sector":0,"score":12,"steps":8},{"id":13,"sector":0,"score":12,"steps":8},{"id":14,"sector":0,"score":12,"steps":8},{"id":15,"sector":0,"score":12,"steps":8},{"id":16,"sector":0,"score":12,"steps":8},{"id":17,"sector":0,"score":12,"steps":8},{"id":18,"sector":0,"score":12,"steps":8},{"id":19,"sector":0,"score":12,"steps":8},{"id":20,"sector":0,"score":15,"steps":8},{"id":21,"sector":1,"score":15,"steps":8},{"id":22,"sector":1,"score":15,"steps":8},{"id":23,"sector":1,"score":15,"steps":8},{"id":24,"sector":1,"score":15,"steps":8},{"id":25,"sector":1,"score":15,"steps":8},{"id":26,"sector":1,"score":15,"steps":8},{"id":27,"sector":1,"score":15,"steps":8},{"id":28,"sector":1,"score":15,"steps":8},{"id":29,"sector":1,"score":15,"steps":8},{"id":30,"sector":1,"score":15,"steps":8},{"id":31,"sector":1,"score":15,"steps":8},{"id":32,"sector":1,"score":15,"steps":8},{"id":33,"sector":1,"score":15,"steps":8},{"id":34,"sector":1,"score":15,"steps":8},{"id":35,"sector":1,"score":15,"steps":9},{"id":36,"sector":1,"score":15,"steps":9},{"id":37,"sector":1,"score":15,"steps":9},{"id":38,"sector":1,"score":15,"steps":9},{"id":39,"sector":1,"score":15,"steps":9},{"id":40,"sector":1,"score":15,"steps":9},{"id":41,"sector":2,"score":15,"steps":9},{"id":42,"sector":2,"score":15,"steps":9},{"id":43,"sector":2,"score":15,"steps":9},{"id":44,"sector":2,"score":15,"steps":9},{"id":45,"sector":2,"score":15,"steps":9},{"id":46,"sector":2,"score":18,"steps":8},{"id":47,"sector":2,"score":18,"steps":8},{"id":48,"sector":2,"score":18,"steps":8},{"id":49,"sector":2,"score":18,"steps":8},{"id":50,"sector":2,"score":18,"steps":9},{"id":51,"sector":2,"score":18,"steps":9},{"id":52,"sector":2,"score":18,"steps":9},{"id":53,"sector":2,"score":18,"steps":9},{"id":54,"sector":2,"score":18,"steps":10},{"id":55,"sector":2,"score":21,"steps":9},{"id":56,"sector":2,"score":21,"steps":9},{"id":57,"sector":2,"score":21,"steps":9},{"id":58,"sector":2,"score":21,"steps":9},{"id":59,"sector":2,"score":21,"steps":10},{"id":60,"sector":2,"score":21,"steps":10},{"id":61,"sector":3,"score":21,"steps":10},{"id":62,"sector":3,"score":21,"steps":10},{"id":63,"sector":3,"score":21,"steps":10},{"id":64,"sector":3,"score":21,"steps":10},{"id":65,"sector":3,"score":21,"steps":10},{"id":66,"sector":3,"score":21,"steps":10},{"id":67,"sector":3,"score":21,"steps":10},{"id":68,"sector":3,"score":21,"steps":10},{"id":69,"sector":3,"score":21,"steps":10},{"id":70,"sector":3,"score":21,"steps":10},{"id":71,"sector":3,"score":21,"steps":10},{"id":72,"sector":3,"score":21,"steps":10},{"id":73,"sector":3,"score":21,"steps":10},{"id":74,"sector":3,"score":21,"steps":10},{"id":75,"sector":3,"score":21,"steps":10},{"id":76,"sector":3,"score":21,"steps":10},{"id":77,"sector":3,"score":21,"steps":10},{"id":78,"sector":3,"score":21,"steps":10},{"id":79,"sector":3,"score":21,"steps":10},{"id":80,"sector":3,"score":21,"steps":10},{"id":81,"sector":4,"score":21,"steps":10},{"id":82,"sector":4,"score":24,"steps":10},{"id":83,"sector":4,"score":24,"steps":10},{"id":84,"sector":4,"score":24,"steps":11},{"id":85,"sector":4,"score":24,"steps":11},{"id":86,"sector":4,"score":24,"steps":11},{"id":87,"sector":4,"score":24,"steps":11},{"id":88,"sector":4,"score":25,"steps":10},{"id":89,"sector":4,"score":27,"steps":10},{"id":90,"sector":4,"score":27,"steps":10},{"id":91,"sector":4,"score":27,"steps":10},{"id":92,"sector":4,"score":27,"steps":10},{"id":93,"sector":4,"score":27,"steps":10},{"id":94,"sector":4,"score":27,"steps":10},{"id":95,"sector":4,"score":27,"steps":10},{"id":96,"sector":4,"score":27,"steps":11},{"id":97,"sector":4,"score":27,"steps":11},{"id":98,"sector":4,"score":28,"steps":10},{"id":99,"sector":4,"score":29,"steps":9},{"id":100,"sector":4,"score":30,"steps":12}];
 const SECTORS=[{name:"Étincelle",icon:"✦"},{name:"Halo",icon:"◉"},{name:"Rayonnement",icon:"◎"},{name:"Prisme",icon:"◇"},{name:"Nova",icon:"✹"}];
@@ -386,6 +451,7 @@ function celebrateSuccess(){
    lumenProgress.noHint[levelIndex]=1;
  }
  saveLumenProgress();
+ cloudSavePuzzle(levelIndex);
  refreshJourney();
  clearInterval(timer);
  clock();
@@ -881,4 +947,6 @@ document.getElementById("new").onclick=()=>{
 };
 refreshJourney();
 
+
+initLumenCloud();
 </script></body></html>
