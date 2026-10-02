@@ -467,6 +467,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
   <div class="success-time">◷ <span id="successTime">0:00</span></div><div id="successRewards" class="success-rewards" aria-label="Récompenses obtenues"></div><div id="questResult" class="quest-result" hidden></div>
   <div id="difficultyBox" class="difficulty-box"><div>Comment as-tu trouvé cette grille ?</div><div class="difficulty-choices"><button type="button" data-rating="easy">😌 Facile</button><button type="button" data-rating="balanced">🙂 Bien dosée</button><button type="button" data-rating="hard">🧠 Difficile</button><button type="button" data-rating="frustrating">😵 Frustrante</button></div></div>
   <div class="success-actions">
+   <button id="successRetry">↻ Réessayer</button>
    <button id="successSky">✦ Mon ciel</button>
    <button id="successNew">Carte suivante</button>
   </div>
@@ -1185,6 +1186,10 @@ function runHintTests(){
  test("Campagne : un secteur exige 20/20 pour débloquer le suivant",()=>{
    return sectorUnlocked.toString().includes("===20");
  });
+ test("Récompense : une grille terminée peut être rejouée pour améliorer ses badges",()=>{
+   const b=document.getElementById("successRetry");
+   return !!b&&b.textContent.includes("Réessayer");
+ });
  test("Campagne : progression strictement séquentielle",()=>{
    return document.getElementById("successNew").textContent.trim()==="Carte suivante";
  });
@@ -1373,6 +1378,14 @@ function advanceToNextPuzzle(){
  if(next<100)levelIndex=next;
  loadPuzzle();usedHintThisGame=false;refreshJourney();
 }
+document.getElementById("successRetry").onclick=()=>{
+ replayMode=true;
+ hideSuccess();
+ document.getElementById("undo").disabled=false;
+ document.getElementById("hint").disabled=false;
+ document.getElementById("autoCross").disabled=false;
+ loadPuzzle();usedHintThisGame=false;refreshJourney();
+};
 document.getElementById("successSky").onclick=()=>{hideSuccess();openJourneyMap(true)};
 document.getElementById("successNew").onclick=advanceToNextPuzzle;
 document.getElementById("boardNext").onclick=advanceToNextPuzzle;
