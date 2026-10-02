@@ -958,7 +958,7 @@ function render(){
   else if(shown===2)d.innerHTML='<span class="lumen-orb" aria-label="Source activée"></span>';
   else d.innerHTML="";
   if(shown===3)d.classList.add("auto-x");
-  d.onclick=()=>{if(celebrated)return;hist.push(state.map(x=>x.slice()));let shown=displayedCellState(r,c),next=shown===3?2:(state[r][c]+1)%3;if(next===2&&puz.sol[r]!==c){}if(shown===3){state[r][c]=2}else{state[r][c]=next}hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";render()};board.appendChild(d)
+  d.onclick=()=>{if(celebrated)return;let shown=displayedCellState(r,c),next=shown===3?2:(state[r][c]+1)%3,currentSources=state.flat().filter(v=>v===2).length;if(next===2&&state[r][c]!==2&&currentSources>=n)return;hist.push(state.map(x=>x.slice()));if(shown===3){state[r][c]=2}else{state[r][c]=next}hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";render()};board.appendChild(d)
  }
  let q=state.flat().filter(v=>v===2).length;const countEl=document.getElementById("count");countEl.textContent=q+"/"+n;rewardProgressPulse(q);
  if(q===n){
