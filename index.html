@@ -1176,9 +1176,9 @@ function runHintTests(){
    return keys.every((v,i)=>v===i);
  });
 
- test("Campagne : un secteur exige 20/20 pour débloquer le suivant",()=>{
-   return sectorUnlocked.toString().includes("===20");
- });
+ test("Campagne : 100 quêtes réparties sur 12 constellations",()=>CONSTELLATION_GRID_COUNTS.length===12&&CONSTELLATION_GRID_COUNTS.reduce((a,b)=>a+b,0)===100);
+ test("Campagne : le ciel contient exactement 150 étoiles",()=>CONSTELLATIONS.reduce((a,c)=>a+c.count,0)===SKY_TARGET&&SKY_TARGET===150);
+ test("Campagne : chaque quête appartient à une constellation",()=>Array.from({length:100},(_,i)=>chapterForGrid(i)).every(i=>i>=0&&i<CONSTELLATIONS.length));
  test("Narratif : les pièces placées sont des Gardiens",()=>{
    const src=render.toString(),rules=document.querySelector(".rules")?.textContent||"";
    return src.includes('aria-label="Gardien positionné"')&&src.includes('+"/"+n+" Gardiens"')&&rules.includes("un Gardien par ligne")&&!rules.includes("source de lumière");
