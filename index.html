@@ -302,7 +302,34 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .app{height:auto!important;min-height:100vh!important;overflow:visible!important}
  .rules{display:block!important;margin-top:8px}
 }
-</style><meta name="lumen-build" content="diversity-100"></head><body><main class="app">
+
+/* Wide desktop workspace: progression left, board center, guide/hints right. */
+.game-core{min-width:0}
+.desktop-side{display:none}
+@media (min-width:1100px){
+ html,body{height:100%!important;overflow:hidden!important}
+ body{min-height:0!important}
+ .app{max-width:1440px!important;width:min(96vw,1440px)!important;height:100dvh!important;min-height:0!important;padding:12px 18px!important;display:grid!important;grid-template-columns:minmax(245px,300px) minmax(520px,620px) minmax(245px,300px);gap:clamp(18px,2.5vw,38px);align-items:start;overflow:hidden!important}
+ .desktop-side{display:block;min-width:0;padding-top:68px}
+ .game-core{width:100%;max-width:620px;justify-self:center;min-width:0}
+ .desktop-left .journey{margin:0!important}
+ .desktop-left .daily-card{margin-bottom:12px}
+ .desktop-right{position:relative}
+ .guide-card{background:linear-gradient(145deg,#101d2e,#0b1522);border:1px solid #28415b;border-radius:20px;padding:18px;min-height:230px;box-shadow:0 16px 42px rgba(0,0,0,.16)}
+ .guide-kicker{font-size:11px;letter-spacing:.14em;font-weight:900;color:#68e7ff;margin-bottom:13px}
+ .desktop-right .rules{display:block!important;margin:0!important;background:transparent;border:0;padding:0;color:#aebed0}
+ .desktop-right .rules b{display:block;color:#eefcff;font-size:18px;margin-bottom:8px}
+ .desktop-right .rules p{line-height:1.5;margin:0}
+ .desktop-right .msg{display:block!important;width:auto!important;min-height:0!important;margin:0!important;padding:0!important;text-align:left!important;color:#dce9f7;font-size:14px;line-height:1.5}
+ .desktop-right .msg:not(:empty){margin-bottom:16px!important;padding-bottom:16px!important;border-bottom:1px solid #28415b}
+ .game-core>.journey,.game-core>.rules,.game-core>.msg{display:none!important}
+ #board{width:min(100%,55dvh)!important}
+ .actions{width:min(100%,55dvh)!important}
+ .head{margin-bottom:5px!important}
+ .auth-box{margin-bottom:5px}
+ .learning-note{margin-bottom:5px}
+}
+</style><meta name="lumen-build" content="diversity-100"></head><body><main class="app"><aside class="desktop-side desktop-left"><div id="desktopLeftSlot"></div></aside><section class="game-core">
 <div class="head"><div><h1><span class="lumen-brand">LUMEN</span></h1></div><button id="new">Réinitialiser</button></div>
 <div class="levels" id="levels"></div><div class="auth-box"><span id="authUser">Progression enregistrée sur cet appareil</span><button id="authLogin">Sauvegarder ma progression</button><button id="authLogout" hidden>Déconnexion</button></div><section class="journey"><section id="dailyCard" class="daily-card"><div><div class="daily-kicker">CONSTELLATION QUOTIDIENNE</div><div id="dailyTitle" class="daily-title">Joue aujourd’hui pour allumer une étoile</div><div id="dailyStars" class="daily-stars"></div><div id="dailyMeta" class="daily-meta">Série · 0 jour</div></div><div id="dailyReward" class="daily-reward">7 jours → Halo Azur</div></section><div class="journey-top"><div><span class="journey-kicker">PARCOURS</span><strong id="journeyTitle">Étincelle</strong></div><button id="openMap">100 cartes</button></div><div class="progress-track"><span id="progressFill"></span></div><div class="progress-copy"><strong id="progressText">0 / 100 cartes réussies</strong><span id="badgeCount">0 badges</span></div><div id="sectorProgress" class="sector-progress">Étincelle : 0/20</div></section><div id="mapModal" class="map-modal" hidden><div class="map-sheet"><div class="map-head"><h2>Parcours LUMEN</h2><button id="closeMap">Fermer</button></div><div id="sectorTabs" class="sector-tabs"></div><div id="puzzleGrid" class="puzzle-grid"></div><h3>Badges</h3><div id="badgeGrid" class="badge-grid"></div></div></div><label class="auto-cross" id="autoCrossWrap">
 <input type="checkbox" id="autoCross" checked>
@@ -313,7 +340,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 <div class="msg" id="msg"></div>
 
 
-<div class="rules"><b>Règles</b><p>Active une source de lumière par ligne, colonne et territoire. Deux sources ne peuvent pas se toucher, même en diagonale. Un appui assombrit un emplacement, deux appuis l’active, trois appuis le libèrent.</p></div>
+<div class="rules"><b>Règles</b><p>Active une source de lumière par ligne, colonne et territoire. Deux sources ne peuvent pas se toucher, même en diagonale. Un appui assombrit un emplacement, deux appuis l’active, trois appuis le libèrent.</p></div></section><aside class="desktop-side desktop-right"><div class="guide-card"><div class="guide-kicker">GUIDE LUMEN</div><div id="desktopGuide"></div></div></aside>
 </main>
 <div id="successOverlay" role="dialog" aria-modal="true" aria-labelledby="successTitle">
  <div class="success-card">
@@ -433,6 +460,24 @@ const COLORS=["#efb37e","#91b5ed","#b4a0db","#a9d692","#ff8267","#ddd9d2","#e5ef
 const TERRITORY_COLORS=["#46c7e8","#6d8fe8","#8b70d7","#49b49b","#d38a54","#b55f86","#67a6bf","#7e9c69","#a8875b"];
 let n=6,puz,state,hist=[],start,timer,last={},hi=null,proofs={},hintStage=0,hintFocus=null,celebrated=false,levelIndex=Math.min(sequentialSolvedCount,99);
 const board=document.getElementById("board"),msg=document.getElementById("msg");
+function arrangeDesktopPanels(){
+ const left=document.getElementById("desktopLeftSlot"),guide=document.getElementById("desktopGuide"),core=document.querySelector(".game-core");
+ const journey=document.querySelector(".journey"),rules=document.querySelector(".rules");
+ if(!left||!guide||!core||!journey||!rules)return;
+ if(window.matchMedia("(min-width:1100px)").matches){
+   if(journey.parentElement!==left)left.appendChild(journey);
+   if(msg.parentElement!==guide)guide.appendChild(msg);
+   if(rules.parentElement!==guide)guide.appendChild(rules);
+ }else{
+   const actions=core.querySelector(".actions");
+   const clear=core.querySelector("#clearHint");
+   if(journey.parentElement!==core){const modal=core.querySelector("#mapModal");core.insertBefore(journey,modal)}
+   if(msg.parentElement!==core)actions.insertAdjacentElement("afterend",msg);
+   if(rules.parentElement!==core)msg.insertAdjacentElement("afterend",rules);
+ }
+}
+window.addEventListener("resize",arrangeDesktopPanels);
+
 function choose(){let a=CAT[n];levelIndex=Math.max(0,Math.min(levelIndex,a.length-1));puz=a[levelIndex];last[n]=levelIndex}
 function loadPuzzle(){init();}
 
@@ -974,7 +1019,7 @@ document.getElementById("successNew").onclick=()=>{
  if(next<100 && sectorUnlocked(Math.floor(next/20))) levelIndex=next;
  loadPuzzle();usedHintThisGame=false;refreshJourney();
 };
-document.getElementById("new").onclick=init;init();
+document.getElementById("new").onclick=init;arrangeDesktopPanels();init();
 
 let mapSector=0;const badgeDefs=[["first","Première lueur"],["explorer","Explorateur"],["beacon","Phare"],["master","Maître LUMEN"],["sector0","Étincelle"],["sector1","Halo"],["sector2","Rayonnement"],["sector3","Prisme"],["sector4","Nova"]];
 function awards(){let t=Object.keys(lumenProgress.solved).length;if(t>=1)lumenProgress.badges.first=1;if(t>=20)lumenProgress.badges.explorer=1;if(t>=50)lumenProgress.badges.beacon=1;if(t>=100)lumenProgress.badges.master=1;for(let s=0;s<5;s++)if(sectorSolved(s)===20)lumenProgress.badges["sector"+s]=1;saveLumenProgress()}
