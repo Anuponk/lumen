@@ -420,7 +420,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  <div id="dailyInfoStars" class="daily-info-stars"></div>
  <p>Termine au moins une carte aujourd’hui pour allumer l’étoile du jour. Reviens <b>7 jours de suite</b> pour compléter la constellation.</p>
  <div id="dailyInfoStatus" class="daily-info-status"></div>
- <div class="daily-info-reward">✦ Récompense à 7 jours : <b>Halo Azur</b></div>
+ <div class="daily-info-reward">★ Récompense à 7 jours : <b>étoile bonus</b></div>
 </div><div id="mobileAuthPopover" class="mobile-auth-popover" hidden><div id="mobileAuthStatus">Progression enregistrée sur cet appareil</div><button id="mobileAuthAction" type="button">Se connecter avec Google</button></div><div class="levels" id="levels"></div><div class="auth-box"><span id="authUser">Progression enregistrée sur cet appareil</span><button id="authLogin">Sauvegarder ma progression</button><button id="authLogout" hidden>Déconnexion</button></div><section class="journey"><section id="dailyCard" class="daily-card"><div><div class="daily-kicker">CONSTELLATION QUOTIDIENNE</div><div id="dailyTitle" class="daily-title">Joue aujourd’hui pour allumer une étoile</div><div id="dailyStars" class="daily-stars"></div><div id="dailyMeta" class="daily-meta">Série · 0 jour</div></div><div id="dailyReward" class="daily-reward">7 jours → ★ bonus céleste</div></section><div class="journey-top"><div><span class="journey-kicker">PARCOURS</span><strong id="journeyTitle">Étincelle</strong></div><button id="openMap">100 cartes</button></div><div class="progress-track"><span id="progressFill"></span></div><div class="progress-copy"><strong id="progressText">0 / 100 cartes réussies</strong><span id="skySummary">Grande Ourse · 0/7 ★</span></div><div id="sectorProgress" class="sector-progress">Étincelle : 0/20</div></section><div id="mapModal" class="map-modal" hidden><div class="map-sheet"><div class="map-head"><h2>Parcours LUMEN</h2><button id="closeMap">Fermer</button></div><div id="sectorTabs" class="sector-tabs"></div><div id="puzzleGrid" class="puzzle-grid"></div><h3>Mon ciel</h3><div id="skyCard" class="sky-card"></div></div></div><div id="challengeBanner" class="challenge-banner" hidden><strong id="challengeTitle"></strong><small id="challengeCopy"></small></div><label class="auto-cross" id="autoCrossWrap">
 <input type="checkbox" id="autoCross" checked>
 <span>Assombrir automatiquement les cases incompatibles</span>
@@ -624,8 +624,8 @@ function maybeShowReturnWelcome(){
  const toast=document.getElementById("returnToast"),copy=document.getElementById("returnToastCopy"),stars=document.getElementById("returnToastStars");if(!toast)return;
  const done=!!lumenProgress.daily.dates[today],streak=dailyStreak(),lit=Math.min(streak,7),remaining=Math.max(0,7-lit),sector=Math.floor(levelIndex/20);
  copy.textContent=done?"Ton étoile du jour est allumée ✓ · "+SECTORS[sector].name+" · carte "+(levelIndex%20+1)+"/20":(streak?"Ta constellation compte "+lit+"/7 étoile"+(lit>1?"s":"")+". Termine une carte aujourd’hui pour poursuivre ta série.":"Une nouvelle étoile t’attend aujourd’hui. Tu reprends "+SECTORS[sector].name+" · carte "+(levelIndex%20+1)+"/20.");
- if(done&&remaining)copy.textContent+=" · Plus que "+remaining+" pour le Halo Azur.";
- if(streak>=7)copy.textContent+=" · Halo Azur débloqué ✦";
+ if(done&&remaining)copy.textContent+=" · Plus que "+remaining+" jour"+(remaining>1?"s":"")+" pour l’étoile bonus.";
+ if(streak>=7)copy.textContent+=" · Étoile bonus débloquée ★";
  stars.textContent="✦".repeat(lit)+"·".repeat(7-lit);toast.hidden=false;
  const close=()=>{toast.classList.add("hide");setTimeout(()=>toast.hidden=true,260)};toast.onclick=close;setTimeout(close,5200);
 }
