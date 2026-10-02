@@ -960,13 +960,9 @@ function render(){
      msg.textContent="Constellation complète.";
      celebrateSuccess();
    }else if(placed.length===n){
-     // A wrong tap that is corrected is not a mastery fault. Only submitting a
-     // complete invalid constellation counts as a real failed attempt.
-     mistakesThisGame++;
-     updateLiveReward(q);
-     showRewardToast("Maîtrise à retenter");
-     // Do not reveal the location or nature of the mistake automatically.
-     // The player can explicitly request a hint if they want help.
+     // There is no explicit "Validate" action: reaching n sources can be a
+     // transient state while correcting a tap. Never turn that into a mastery
+     // fault automatically.
      hi=null;hiCells=[];
      msg.textContent="Cette constellation ne fonctionne pas encore. Tu peux la corriger ou demander un indice.";
    }
@@ -1220,9 +1216,10 @@ function runHintTests(){
    return src.includes('if(next===2&&puz.sol[r]!==c){errorSound();showRewardToast("Tu peux encore corriger")}') &&
           !src.includes('if(next===2&&puz.sol[r]!==c){mistakesThisGame++');
  });
- test("Maîtrise : seule une constellation complète invalide compte comme faute",()=>{
+ test("Maîtrise : une constellation temporairement complète mais invalide ne pénalise pas",()=>{
    const src=render.toString();
-   return src.includes('}else if(placed.length===n){')&&src.includes('mistakesThisGame++;')&&src.includes('updateLiveReward(q);');
+   const branch=src.slice(src.indexOf('}else if(placed.length===n){'));
+   return branch.includes('Cette constellation ne fonctionne pas encore')&&!branch.slice(0,500).includes('mistakesThisGame++');
  });
  test("Victoire : les exclusions restantes ne bloquent pas une constellation valide",()=>{
    const p=CAT["6"][0], n0=p.reg.length;
