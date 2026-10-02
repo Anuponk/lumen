@@ -1,5 +1,15 @@
 <!doctype html><html lang="fr"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>LUMEN — Puzzle de lumière</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111d">
+<meta name="application-name" content="LUMEN">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LUMEN">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon.svg">
+<title>LUMEN — Puzzle de lumière</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f7f5ef;color:#202124;font-family:Arial,sans-serif}.app{max-width:680px;margin:auto;padding:20px 16px 42px}
 .head{display:flex;justify-content:space-between;align-items:center}h1{font-size:38px;margin:4px 0 0}.sub{font-size:20px;font-weight:700;color:#777;margin-bottom:24px}
@@ -1191,4 +1201,8 @@ refreshJourney();
 renderDaily();
 
 initLumenCloud();
+</script><script>
+if("serviceWorker" in navigator){
+ window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(e=>console.warn("LUMEN service worker",e)));
+}
 </script></body></html>
