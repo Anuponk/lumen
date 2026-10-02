@@ -750,14 +750,23 @@ function render(){
    const rows=new Set(placed.map(x=>x[0]));
    const cols=new Set(placed.map(x=>x[1]));
    const regs=new Set(placed.map(([r,c])=>puz.reg[r][c]));
-   let nonTouching=true;
+   let nonTouching=true,conflicts=[];
    for(let i=0;i<placed.length;i++)for(let j=i+1;j<placed.length;j++){
      const [r1,c1]=placed[i],[r2,c2]=placed[j];
-     if(Math.abs(r1-r2)<=1&&Math.abs(c1-c2)<=1)nonTouching=false;
+     if(Math.abs(r1-r2)<=1&&Math.abs(c1-c2)<=1){nonTouching=false;conflicts.push([r1,c1],[r2,c2])}
    }
    if(placed.length===n&&rows.size===n&&cols.size===n&&regs.size===n&&nonTouching){
      msg.textContent="Constellation complète.";
      celebrateSuccess();
+   }else if(placed.length===n){
+     if(conflicts.length){
+       const uniq=[...new Map(conflicts.map(x=>[x.join(","),x])).values()];
+       hiCells=uniq;
+       msg.textContent="Presque ! Deux sources se touchent, y compris en diagonale.";
+       requestAnimationFrame(()=>document.querySelectorAll(".cell").forEach((el,k)=>{const r=Math.floor(k/n),c=k%n;if(uniq.some(x=>x[0]===r&&x[1]===c))el.classList.add("hi")}));
+     }else if(rows.size<n)msg.textContent="Presque ! Il faut exactement une source par ligne.";
+     else if(cols.size<n)msg.textContent="Presque ! Il faut exactement une source par colonne.";
+     else if(regs.size<n)msg.textContent="Presque ! Il faut exactement une source par territoire.";
    }
  }
 }
