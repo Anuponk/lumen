@@ -786,10 +786,10 @@ function sourceConflicts(){
  const bad=new Set(),reasons=new Set();
  for(let i=0;i<placed.length;i++)for(let j=i+1;j<placed.length;j++){
   const [r1,c1]=placed[i],[r2,c2]=placed[j];
-  if(r1===r2){bad.add(key(r1,c1));bad.add(key(r2,c2));reasons.add("ligne")}
-  if(c1===c2){bad.add(key(r1,c1));bad.add(key(r2,c2));reasons.add("colonne")}
-  if(puz.reg[r1][c1]===puz.reg[r2][c2]){bad.add(key(r1,c1));bad.add(key(r2,c2));reasons.add("territoire")}
-  if(Math.abs(r1-r2)<=1&&Math.abs(c1-c2)<=1){bad.add(key(r1,c1));bad.add(key(r2,c2));reasons.add("voisinage")}
+  if(r1===r2){bad.add(r1+","+c1);bad.add(r2+","+c2);reasons.add("ligne")}
+  if(c1===c2){bad.add(r1+","+c1);bad.add(r2+","+c2);reasons.add("colonne")}
+  if(puz.reg[r1][c1]===puz.reg[r2][c2]){bad.add(r1+","+c1);bad.add(r2+","+c2);reasons.add("territoire")}
+  if(Math.abs(r1-r2)<=1&&Math.abs(c1-c2)<=1){bad.add(r1+","+c1);bad.add(r2+","+c2);reasons.add("voisinage")}
  }
  return {bad,reasons};
 }
@@ -807,7 +807,7 @@ function render(){
  for(let r=0;r<n;r++)for(let c=0;c<n;c++){
   let d=document.createElement("div");
   let highlighted=(hi&&hi[0]===r&&hi[1]===c)||hiCells.some(q=>q[0]===r&&q[1]===c);
-  d.className="cell"+(highlighted?" hi":"")+(liveConflict.bad.has(key(r,c))?" conflict":"");
+  d.className="cell"+(highlighted?" hi":"")+(liveConflict.bad.has(r+","+c)?" conflict":"");
   let g=puz.reg[r][c],tc=TERRITORY_COLORS[g%TERRITORY_COLORS.length];
   d.style.setProperty("--territory",tc);
   d.dataset.t=(r===0||puz.reg[r-1][c]!==g)?"1":"0";
