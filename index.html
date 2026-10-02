@@ -666,7 +666,7 @@ function loadPuzzle(){init();}
 function configureLearningMode(){
  const cb=document.getElementById("autoCross"),wrap=document.getElementById("autoCrossWrap"),note=document.getElementById("learningNote");
  if(!cb||!wrap)return;
- if(levelIndex<=4){cb.checked=true;cb.disabled=true;wrap.hidden=false;wrap.classList.add("learning-locked");if(note){note.hidden=false;note.textContent="Apprentissage · LUMEN montre automatiquement les conséquences de chaque source."}}
+ if(levelIndex<=4){cb.checked=true;cb.disabled=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=false;note.textContent="Apprentissage · LUMEN montre automatiquement les conséquences de chaque source. Tu peux désactiver cette aide à tout moment."}}
  else if(levelIndex<=9){cb.disabled=false;cb.checked=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=false;note.textContent="Entraînement · l’aide automatique reste disponible si tu en as besoin."}}
  else{cb.checked=false;cb.disabled=true;wrap.hidden=true;wrap.classList.remove("learning-locked");if(note)note.hidden=true}
 }
