@@ -209,6 +209,56 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
   .auto-cross{margin-bottom:4px}
   .msg{min-height:24px;padding:3px 4px}
 }
+
+/* LUMEN desktop fit v2 — explicit board sizing from viewport height */
+@media (min-width:701px){
+  html,body{height:100%;overflow:hidden}
+  body{min-height:0}
+  .app{
+    width:min(96vw,650px);
+    height:100dvh;
+    padding:10px 18px 8px;
+    overflow:hidden;
+  }
+  .head{height:58px;margin:0 0 8px}
+  .lumen-brand{font-size:30px}
+  .head button{padding:9px 14px}
+  .journey{margin:0 0 8px;padding:9px 12px}
+  .journey-top button{padding:8px 12px}
+  .progress-track{margin:5px 0 4px}
+  .auto-cross{margin:0 2px 7px;font-size:14px}
+  .auto-cross input{width:18px;height:18px}
+  .status{font-size:15px;margin:0 3px 6px}
+  .campaign-map-label{margin:0 2px 5px;font-size:11px}
+  #board{
+    width:min(100%,48dvh)!important;
+    height:auto!important;
+    max-width:none!important;
+    flex:none!important;
+    aspect-ratio:1!important;
+    align-self:center;
+    padding:8px;
+    gap:2px;
+    border-radius:22px;
+  }
+  .actions{width:min(100%,48dvh);align-self:center;margin-top:7px;gap:8px}
+  .actions button{padding:8px 12px}
+  .msg{width:min(100%,48dvh);align-self:center;min-height:24px;padding:4px;font-size:13px}
+  .rules{display:none}
+}
+@media (min-width:701px) and (max-height:760px){
+  .app{padding-top:6px}
+  .head{height:48px;margin-bottom:5px}
+  .lumen-brand{font-size:27px}
+  .journey{padding:6px 10px;margin-bottom:5px}
+  .journey-kicker{display:none}
+  .sector-progress{margin-top:4px}
+  .auto-cross{margin-bottom:4px;font-size:13px}
+  .status{margin-bottom:4px}
+  .campaign-map-label{margin-bottom:3px}
+  #board,.actions,.msg{width:min(100%,46dvh)!important}
+  .actions{margin-top:5px}
+}
 </style><meta name="lumen-build" content="energy-map-v5b-safe-hints"></head><body><main class="app">
 <div class="head"><div><h1><span class="lumen-brand">LUMEN</span></h1></div><button id="new">Réinitialiser</button></div>
 <div class="levels" id="levels"></div><section class="journey"><div class="journey-top"><div><span class="journey-kicker">PARCOURS</span><strong id="journeyTitle">Étincelle</strong></div><button id="openMap">100 cartes</button></div><div class="progress-track"><span id="progressFill"></span></div><div class="progress-copy"><strong id="progressText">0 / 100 cartes réussies</strong><span id="badgeCount">0 badges</span></div><div id="sectorProgress" class="sector-progress">Étincelle : 0/20</div></section><div id="mapModal" class="map-modal" hidden><div class="map-sheet"><div class="map-head"><h2>Parcours LUMEN</h2><button id="closeMap">Fermer</button></div><div id="sectorTabs" class="sector-tabs"></div><div id="puzzleGrid" class="puzzle-grid"></div><h3>Badges</h3><div id="badgeGrid" class="badge-grid"></div></div></div><label class="auto-cross">
