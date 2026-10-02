@@ -361,8 +361,31 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .msg:empty{display:none}
  .rules{margin-top:7px;padding:12px;font-size:12px}
 }
+
+/* First-run tutorial */
+.tutorial-help{width:36px;height:36px;padding:0;border-radius:50%;background:#101d2e;border:1px solid #28415b;color:#b9cee1}
+.tutorial-overlay{position:fixed;inset:0;z-index:1400;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(3,7,13,.9);backdrop-filter:blur(7px)}
+.tutorial-overlay[hidden]{display:none}
+.tutorial-card{width:min(430px,94vw);background:linear-gradient(145deg,#101d2e,#09131f);border:1px solid #2b4964;border-radius:25px;padding:22px;color:#eaf7ff;box-shadow:0 24px 70px rgba(0,0,0,.5)}
+.tutorial-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}
+.tutorial-brand{font-size:12px;letter-spacing:.15em;font-weight:900;color:#68e7ff}
+.tutorial-skip{border:0;background:transparent;color:#8fa6bd;padding:4px;font-size:12px}
+.tutorial-visual{height:116px;display:flex;align-items:center;justify-content:center;gap:12px;margin:4px 0 13px;border-radius:18px;background:#09131f;border:1px solid #20364b;font-size:35px}
+.tutorial-mini-grid{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(3,42px);gap:3px}
+.tutorial-mini-grid span{display:flex;align-items:center;justify-content:center;border-radius:8px;background:#12253a;border:1px solid #29445e;font-size:20px}
+.tutorial-mini-grid .orb{box-shadow:inset 0 0 0 3px #5eeaff;color:#8ff4ff}
+.tutorial-mini-grid .dim{color:#ffad32}
+.tutorial-title{font-size:25px;font-weight:900;margin-bottom:8px}
+.tutorial-copy{min-height:78px;color:#b9c9d8;line-height:1.5;font-size:15px}
+.tutorial-dots{display:flex;gap:6px;justify-content:center;margin:14px 0}
+.tutorial-dot{width:7px;height:7px;border-radius:50%;background:#29445e}
+.tutorial-dot.on{background:#68e7ff;box-shadow:0 0 9px rgba(104,231,255,.7)}
+.tutorial-actions{display:grid;grid-template-columns:auto 1fr;gap:8px}
+.tutorial-actions button{border-color:#34536d;background:#102238;color:#dceaf6}
+#tutorialNext{background:#68e7ff;color:#06202a;border-color:#68e7ff}
+@media(max-width:700px){.tutorial-help{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;font-size:15px}.tutorial-card{padding:18px}.tutorial-visual{height:100px}.tutorial-title{font-size:22px}.tutorial-copy{min-height:90px;font-size:14px}}
 </style><meta name="lumen-build" content="diversity-100"></head><body><main class="app"><aside class="desktop-side desktop-left"><div id="desktopLeftSlot"></div></aside><section class="game-core">
-<div class="head"><div><h1><span class="lumen-brand">LUMEN</span></h1><button id="mobileJourney" class="mobile-journey" type="button">Étincelle · 1/20</button></div><div class="head-actions"><button id="mobileAccount" class="mobile-account" type="button" aria-label="Compte et sauvegarde">♙</button><span id="mobileStreak" class="mobile-streak">✦ 0/7</span><button id="new">Réinitialiser</button></div></div>
+<div class="head"><div><h1><span class="lumen-brand">LUMEN</span></h1><button id="mobileJourney" class="mobile-journey" type="button">Étincelle · 1/20</button></div><div class="head-actions"><button id="tutorialHelp" class="tutorial-help" type="button" aria-label="Revoir le tutoriel">?</button><button id="mobileAccount" class="mobile-account" type="button" aria-label="Compte et sauvegarde">♙</button><span id="mobileStreak" class="mobile-streak">✦ 0/7</span><button id="new">Réinitialiser</button></div></div>
 <div id="mobileAuthPopover" class="mobile-auth-popover" hidden><div id="mobileAuthStatus">Progression enregistrée sur cet appareil</div><button id="mobileAuthAction" type="button">Se connecter avec Google</button></div><div class="levels" id="levels"></div><div class="auth-box"><span id="authUser">Progression enregistrée sur cet appareil</span><button id="authLogin">Sauvegarder ma progression</button><button id="authLogout" hidden>Déconnexion</button></div><section class="journey"><section id="dailyCard" class="daily-card"><div><div class="daily-kicker">CONSTELLATION QUOTIDIENNE</div><div id="dailyTitle" class="daily-title">Joue aujourd’hui pour allumer une étoile</div><div id="dailyStars" class="daily-stars"></div><div id="dailyMeta" class="daily-meta">Série · 0 jour</div></div><div id="dailyReward" class="daily-reward">7 jours → Halo Azur</div></section><div class="journey-top"><div><span class="journey-kicker">PARCOURS</span><strong id="journeyTitle">Étincelle</strong></div><button id="openMap">100 cartes</button></div><div class="progress-track"><span id="progressFill"></span></div><div class="progress-copy"><strong id="progressText">0 / 100 cartes réussies</strong><span id="badgeCount">0 badges</span></div><div id="sectorProgress" class="sector-progress">Étincelle : 0/20</div></section><div id="mapModal" class="map-modal" hidden><div class="map-sheet"><div class="map-head"><h2>Parcours LUMEN</h2><button id="closeMap">Fermer</button></div><div id="sectorTabs" class="sector-tabs"></div><div id="puzzleGrid" class="puzzle-grid"></div><h3>Badges</h3><div id="badgeGrid" class="badge-grid"></div></div></div><label class="auto-cross" id="autoCrossWrap">
 <input type="checkbox" id="autoCross" checked>
 <span>Assombrir automatiquement les cases incompatibles</span>
@@ -374,6 +397,16 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 
 <div class="rules"><b>Règles</b><p>Active une source de lumière par ligne, colonne et territoire. Deux sources ne peuvent pas se toucher, même en diagonale. Un appui assombrit un emplacement, deux appuis l’active, trois appuis le libèrent.</p></div></section><aside class="desktop-side desktop-right"><div class="guide-card"><div class="guide-kicker">GUIDE LUMEN</div><div id="desktopGuide"></div></div></aside>
 </main>
+<div id="tutorialOverlay" class="tutorial-overlay" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle" hidden>
+ <div class="tutorial-card">
+  <div class="tutorial-top"><span class="tutorial-brand">APPRENDRE LUMEN</span><button id="tutorialSkip" class="tutorial-skip">Passer</button></div>
+  <div id="tutorialVisual" class="tutorial-visual"></div>
+  <div id="tutorialTitle" class="tutorial-title"></div>
+  <div id="tutorialCopy" class="tutorial-copy"></div>
+  <div id="tutorialDots" class="tutorial-dots"></div>
+  <div class="tutorial-actions"><button id="tutorialPrev">Retour</button><button id="tutorialNext">Suivant</button></div>
+ </div>
+</div>
 <div id="successOverlay" role="dialog" aria-modal="true" aria-labelledby="successTitle">
  <div class="success-card">
   <div class="success-gem"><span class="lumen-orb big" aria-hidden="true"></span></div>
@@ -391,6 +424,31 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+const TUTORIAL_STEPS=[
+ {title:"Ton objectif ✦",copy:"Place 6 sources de lumière : exactement une par ligne, une par colonne et une par territoire coloré.",visual:'<div class="tutorial-mini-grid"><span></span><span class="orb">✦</span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>'},
+ {title:"Elles ne se touchent jamais",copy:"Deux sources ne peuvent jamais être voisines, même en diagonale. Chaque source doit avoir de l’espace autour d’elle.",visual:'<div class="tutorial-mini-grid"><span class="orb">✦</span><span></span><span></span><span></span><span>↘</span><span class="orb">✦</span><span></span><span></span><span></span></div>'},
+ {title:"Éteins les cases impossibles",copy:"Un appui marque une case impossible avec un anneau ambre. Un deuxième appui y place une source. Un troisième appui libère la case.",visual:'<div class="tutorial-mini-grid"><span></span><span class="dim">○</span><span></span><span></span><span class="orb">✦</span><span></span><span></span><span></span><span></span></div>'},
+ {title:"LUMEN t’aide au début",copy:"Sur les cartes 1 à 5, les conséquences d’une source sont marquées automatiquement. De 6 à 10, cette aide devient optionnelle. À partir de la carte 11, tu joues en autonomie.",visual:"<span>1–5 ✦ → 6–10 ◐ → 11+ ✧</span>"},
+ {title:"Bloqué ? Utilise Indice",copy:"LUMEN ne révèle pas simplement la solution : il te guide vers la prochaine déduction logique. Tu peux demander davantage de précision si nécessaire.",visual:"<span>💡 &nbsp; Indice logique</span>"}
+];
+let tutorialStep=0;
+function renderTutorial(){
+ const x=TUTORIAL_STEPS[tutorialStep],dots=document.getElementById("tutorialDots");
+ document.getElementById("tutorialTitle").textContent=x.title;document.getElementById("tutorialCopy").textContent=x.copy;document.getElementById("tutorialVisual").innerHTML=x.visual;
+ dots.innerHTML=TUTORIAL_STEPS.map((_,i)=>'<span class="tutorial-dot'+(i===tutorialStep?' on':'')+'"></span>').join("");
+ document.getElementById("tutorialPrev").style.visibility=tutorialStep?"visible":"hidden";
+ document.getElementById("tutorialNext").textContent=tutorialStep===TUTORIAL_STEPS.length-1?"✦ Allumer ma première constellation":"Suivant";
+}
+function openTutorial(){tutorialStep=0;renderTutorial();document.getElementById("tutorialOverlay").hidden=false}
+function closeTutorial(mark=true){document.getElementById("tutorialOverlay").hidden=true;if(mark)try{localStorage.setItem("lumenTutorialSeen","1")}catch(e){}}
+function setupTutorial(){
+ const next=document.getElementById("tutorialNext"),prev=document.getElementById("tutorialPrev"),skip=document.getElementById("tutorialSkip"),help=document.getElementById("tutorialHelp");
+ next.onclick=()=>{if(tutorialStep<TUTORIAL_STEPS.length-1){tutorialStep++;renderTutorial()}else closeTutorial()};
+ prev.onclick=()=>{if(tutorialStep){tutorialStep--;renderTutorial()}};
+ skip.onclick=()=>closeTutorial();help.onclick=openTutorial;
+ let seen=false;try{seen=localStorage.getItem("lumenTutorialSeen")==="1"}catch(e){}
+ if(!seen)openTutorial();
+}
 const LUMEN_SUPABASE_URL="https://tjdjlavmusmncuszhsuw.supabase.co";
 const LUMEN_SUPABASE_KEY="sb_publishable_E1B-j_wvKmkmWq8YLhHf3Q_uL1yLcNo";
 let lumenSupabase=null,lumenUser=null,lumenCloudReady=false;
@@ -1071,7 +1129,7 @@ document.getElementById("successNew").onclick=()=>{
  if(next<100 && sectorUnlocked(Math.floor(next/20))) levelIndex=next;
  loadPuzzle();usedHintThisGame=false;refreshJourney();
 };
-document.getElementById("new").onclick=init;arrangeDesktopPanels();setupMobileAuth();init();
+document.getElementById("new").onclick=init;arrangeDesktopPanels();setupMobileAuth();init();setupTutorial();
 
 let mapSector=0;const badgeDefs=[["first","Première lueur"],["explorer","Explorateur"],["beacon","Phare"],["master","Maître LUMEN"],["sector0","Étincelle"],["sector1","Halo"],["sector2","Rayonnement"],["sector3","Prisme"],["sector4","Nova"]];
 function awards(){let t=Object.keys(lumenProgress.solved).length;if(t>=1)lumenProgress.badges.first=1;if(t>=20)lumenProgress.badges.explorer=1;if(t>=50)lumenProgress.badges.beacon=1;if(t>=100)lumenProgress.badges.master=1;for(let s=0;s<5;s++)if(sectorSolved(s)===20)lumenProgress.badges["sector"+s]=1;saveLumenProgress()}
