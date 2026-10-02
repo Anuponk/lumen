@@ -769,6 +769,15 @@ function setupBetaFeedback(){
    .catch(e=>console.warn("LUMEN difficulty rating",e));
  });
 }
+function shouldAskDifficulty(i,questPassed){
+ if(questPassed)return false;
+ const card=i+1;
+ return card===3||card===10||card===20||(card>20&&card%10===0);
+}
+function configureSuccessFeedback(questPassed){
+ const box=document.getElementById("difficultyBox"),ask=shouldAskDifficulty(levelIndex,questPassed);
+ if(box)box.hidden=!ask;
+}
 function hideSuccess(){
  let o=document.getElementById("successOverlay");
  if(o)o.classList.remove("show");
@@ -803,6 +812,7 @@ function celebrateSuccess(){
  board.classList.add("win");
  document.getElementById("successTime").textContent=document.getElementById("time").textContent;
  const qr=document.getElementById("questResult");if(ch){qr.hidden=false;qr.className="quest-result "+(questPassed||lumenProgress.stars[ch.id]?"success":"fail");qr.textContent=questPassed?"★ Quête réussie ! Une nouvelle étoile s’allume dans ton ciel.":lumenProgress.stars[ch.id]?"★ Quête déjà accomplie":"Quête échouée — la carte est tout de même terminée."}else qr.hidden=true;
+ configureSuccessFeedback(questPassed);
  if(questPassed){document.getElementById("successOverlay").classList.remove("show");showSkyReveal()}else document.getElementById("successOverlay").classList.add("show");
 
  // Deliberately varied shapes/positions; purely visual, no game-state effect.
