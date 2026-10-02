@@ -155,6 +155,17 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 }
 .lumen-orb:after{border-color:rgba(78,211,255,.26);box-shadow:0 0 12px rgba(33,169,235,.18)}
 
+/* LUMEN v5 — placed pieces are celestial stars, not orbs */
+.lumen-orb{
+ width:52%;aspect-ratio:1;border:0;border-radius:0;background:transparent;box-shadow:none;
+ display:flex;align-items:center;justify-content:center;animation:orbPulse 2.1s ease-in-out infinite;
+ color:#eaffff;font-size:clamp(24px,7vw,42px);line-height:1;
+ text-shadow:0 0 5px #fff,0 0 12px rgba(104,231,255,.98),0 0 27px rgba(22,151,232,.82);
+}
+.lumen-orb:before{content:"✦";position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.lumen-orb:after{content:"";position:absolute;inset:22%;border:0;border-radius:50%;background:#efffff;box-shadow:0 0 9px #fff,0 0 22px rgba(104,231,255,.95);z-index:-1}
+.lumen-orb.big{width:74px;font-size:64px}
+
 /* LUMEN v3 — one visual language for every excluded cell.
    Manual/automatic provenance remains internal only. */
 .lumen-dim,
@@ -436,7 +447,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 <div class="msg" id="msg"></div>
 
 
-<div class="rules"><b>Règles</b><p>Active une source de lumière par ligne, colonne et territoire. Deux sources ne peuvent pas se toucher, même en diagonale. Un appui assombrit un emplacement, deux appuis l’active, trois appuis le libèrent.</p></div></section><aside class="desktop-side desktop-right"><div class="guide-card"><div class="guide-kicker">GUIDE LUMEN</div><div id="desktopGuide"></div></div></aside>
+<div class="rules"><b>Règles</b><p>Place une étoile par ligne, colonne et territoire. Deux étoiles ne peuvent pas se toucher, même en diagonale. Un appui écarte un emplacement, deux appuis y place une étoile, trois appuis le libèrent.</p></div></section><aside class="desktop-side desktop-right"><div class="guide-card"><div class="guide-kicker">GUIDE LUMEN</div><div id="desktopGuide"></div></div></aside>
 </main>
 <div id="shardRulesModal" class="shard-rules-modal" hidden role="dialog" aria-modal="true" aria-labelledby="shardRulesTitle"><div class="shard-rules-card"><div class="shard-rules-head"><h2 id="shardRulesTitle">Les Éclats de lumière</h2><button id="closeShardRules" type="button">Fermer</button></div><p>Les Éclats servent à payer certains indices. Tu peux en conserver jusqu’à 5.</p><div class="shard-rule-list"><div class="shard-rule"><strong>Coût des indices</strong><br>Le premier indice d’une grille est gratuit. Le deuxième coûte 1 ✦, puis les suivants 2 ✦.</div><div class="shard-rule"><strong>Gagner des Éclats</strong><br>Tu gagnes 1 ✦ toutes les 3 nouvelles grilles terminées sans indice. Certaines quêtes réussies donnent aussi 1 ✦.</div><div class="shard-rule"><strong>À court d’Éclats ?</strong><br>À 0 ✦, après 90 secondes de recherche sur la grille, un indice peut être offert.</div><div class="shard-rule"><strong>Pas de recharge automatique</strong><br>Les Éclats ne se renouvellent pas avec le temps : ils se gagnent en jouant.</div></div></div></div><div id="tutorialOverlay" class="tutorial-overlay" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle" hidden>
  <div class="tutorial-card">
@@ -481,9 +492,9 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const TUTORIAL_STEPS=[
- {title:"Ton objectif ✦",copy:"Place 6 sources de lumière : exactement une par ligne, une par colonne et une par territoire coloré.",visual:'<div class="tutorial-mini-grid"><span></span><span class="orb">✦</span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>'},
- {title:"Elles ne se touchent jamais",copy:"Deux sources ne peuvent jamais être voisines, même en diagonale. Chaque source doit avoir de l’espace autour d’elle.",visual:'<div class="tutorial-mini-grid"><span class="orb">✦</span><span></span><span></span><span></span><span>↘</span><span class="orb">✦</span><span></span><span></span><span></span></div>'},
- {title:"Éteins les cases impossibles",copy:"Un appui marque une case impossible avec un anneau ambre. Un deuxième appui y place une source. Un troisième appui libère la case.",visual:'<div class="tutorial-mini-grid"><span></span><span class="dim">○</span><span></span><span></span><span class="orb">✦</span><span></span><span></span><span></span><span></span></div>'},
+ {title:"Ton objectif ✦",copy:"Retrouve les 6 étoiles cachées : exactement une par ligne, une par colonne et une par territoire coloré.",visual:'<div class="tutorial-mini-grid"><span></span><span class="orb">✦</span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>'},
+ {title:"Les étoiles gardent leurs distances",copy:"Deux étoiles ne peuvent jamais être voisines, même en diagonale. Chaque étoile doit avoir de l’espace autour d’elle.",visual:'<div class="tutorial-mini-grid"><span class="orb">✦</span><span></span><span></span><span></span><span>↘</span><span class="orb">✦</span><span></span><span></span><span></span></div>'},
+ {title:"Écarte les emplacements impossibles",copy:"Un appui écarte une case avec un anneau ambre. Un deuxième appui y place une étoile. Un troisième appui libère la case.",visual:'<div class="tutorial-mini-grid"><span></span><span class="dim">○</span><span></span><span></span><span class="orb">✦</span><span></span><span></span><span></span><span></span></div>'},
  {title:"LUMEN t’aide au début",copy:"Sur les cartes 1 à 5, l’Assistance auto est activée. De 6 à 10, elle est désactivée par défaut mais reste disponible. À partir de la carte 11, elle reste optionnelle.",visual:"<span>1–5 ✦ → 6–10 ◐ → 11+ ✧</span>"},
  {title:"Bloqué ? Utilise Indice",copy:"LUMEN ne révèle pas simplement la solution : il te guide vers la prochaine déduction logique. Tu peux demander davantage de précision si nécessaire.",visual:"<span>💡 &nbsp; Indice logique</span>"}
 ];
@@ -925,10 +936,10 @@ function sourceConflicts(){
  return {bad,reasons};
 }
 function conflictMessage(reasons){
- if(reasons.has("voisinage"))return "Conflit : deux sources se touchent, y compris en diagonale.";
- if(reasons.has("territoire"))return "Conflit : deux sources occupent le même territoire.";
- if(reasons.has("ligne"))return "Conflit : deux sources occupent la même ligne.";
- if(reasons.has("colonne"))return "Conflit : deux sources occupent la même colonne.";
+ if(reasons.has("voisinage"))return "Conflit : deux étoiles se touchent, y compris en diagonale.";
+ if(reasons.has("territoire"))return "Conflit : deux étoiles occupent le même territoire.";
+ if(reasons.has("ligne"))return "Conflit : deux étoiles occupent la même ligne.";
+ if(reasons.has("colonne"))return "Conflit : deux étoiles occupent la même colonne.";
  return "";
 }
 
@@ -950,7 +961,7 @@ function updateLiveReward(q){
  const m=document.getElementById("masteryLive"),p=document.getElementById("progressLive");if(!m||!p)return;
  const mastery=hintUsesThisGame===0&&!autoUsedThisGame&&mistakesThisGame===0;
  m.textContent=mastery?"✓ Maîtrise en cours":"○ Maîtrise à retenter";m.classList.toggle("lost",!mastery);
- p.textContent=q+"/"+n+" sources";
+ p.textContent=q+"/"+n+" étoiles";
 }
 function showRewardToast(text){
  const t=document.getElementById("rewardToast");if(!t)return;t.textContent=text;t.classList.add("show");clearTimeout(rewardToastTimer);rewardToastTimer=setTimeout(()=>t.classList.remove("show"),1900);
@@ -977,7 +988,7 @@ function render(){
   d.dataset.r=(c===n-1||puz.reg[r][c+1]!==g)?"1":"0";
   let shown=displayedCellState(r,c);
   if(shown===1||shown===3)d.innerHTML='<span class="lumen-dim" aria-label="Emplacement assombri"></span>';
-  else if(shown===2)d.innerHTML='<span class="lumen-orb" aria-label="Source activée"></span>';
+  else if(shown===2)d.innerHTML='<span class="lumen-orb" aria-label="Étoile placée"></span>';
   else d.innerHTML="";
   if(shown===3)d.classList.add("auto-x");
   d.onclick=()=>{if(celebrated)return;let shown=displayedCellState(r,c),next=shown===3?2:(state[r][c]+1)%3,currentSources=state.flat().filter(v=>v===2).length;if(next===2&&state[r][c]!==2&&currentSources>=n)return;hist.push(state.map(x=>x.slice()));if(shown===3){state[r][c]=2}else{state[r][c]=next}hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";render()};board.appendChild(d)
@@ -1234,6 +1245,10 @@ function runHintTests(){
 
  test("Campagne : un secteur exige 20/20 pour débloquer le suivant",()=>{
    return sectorUnlocked.toString().includes("===20");
+ });
+ test("Narratif : les pièces placées sont des étoiles",()=>{
+   const src=render.toString(),rules=document.querySelector(".rules")?.textContent||"";
+   return src.includes('aria-label="Étoile placée"')&&src.includes('+"/"+n+" étoiles"')&&rules.includes("une étoile par ligne")&&!rules.includes("source de lumière");
  });
  test("Récompense : une constellation terminée déclenche une célébration dédiée",()=>{
    return typeof celebrateConstellationReveal==="function"&&showSkyReveal.toString().includes("celebrateConstellationReveal()");
