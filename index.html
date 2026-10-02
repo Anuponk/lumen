@@ -259,6 +259,12 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
   #board,.actions,.msg{width:min(100%,46dvh)!important}
   .actions{margin-top:5px}
 }
+
+/* LUMEN desktop alignment v3 — center the play area */
+@media (min-width:701px){
+  #board{margin-left:auto!important;margin-right:auto!important}
+  .actions,.msg{margin-left:auto;margin-right:auto}
+}
 </style><meta name="lumen-build" content="energy-map-v5b-safe-hints"></head><body><main class="app">
 <div class="head"><div><h1><span class="lumen-brand">LUMEN</span></h1></div><button id="new">Réinitialiser</button></div>
 <div class="levels" id="levels"></div><section class="journey"><div class="journey-top"><div><span class="journey-kicker">PARCOURS</span><strong id="journeyTitle">Étincelle</strong></div><button id="openMap">100 cartes</button></div><div class="progress-track"><span id="progressFill"></span></div><div class="progress-copy"><strong id="progressText">0 / 100 cartes réussies</strong><span id="badgeCount">0 badges</span></div><div id="sectorProgress" class="sector-progress">Étincelle : 0/20</div></section><div id="mapModal" class="map-modal" hidden><div class="map-sheet"><div class="map-head"><h2>Parcours LUMEN</h2><button id="closeMap">Fermer</button></div><div id="sectorTabs" class="sector-tabs"></div><div id="puzzleGrid" class="puzzle-grid"></div><h3>Badges</h3><div id="badgeGrid" class="badge-grid"></div></div></div><label class="auto-cross">
