@@ -427,7 +427,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 </style><meta name="lumen-build" content="diversity-100"></head><body><main class="app"><aside class="desktop-side desktop-left"><div id="desktopLeftSlot"></div></aside><section class="game-core">
 <div class="head"><div><h1><span class="lumen-brand">LUMEN</span></h1><button id="mobileJourney" class="mobile-journey" type="button" aria-label="Ouvrir ma progression et mon ciel"><span id="mobileJourneyText">Grande Ourse · 0/9 ★</span><span class="mobile-journey-sky">✦ Mon ciel ›</span></button></div><div class="head-actions"><button id="soundToggle" class="tutorial-help" type="button" aria-label="Couper les sons" title="Sons">🔊</button><button id="tutorialHelp" class="tutorial-help" type="button" aria-label="Revoir le tutoriel">?</button><button id="mobileAccount" class="mobile-account" type="button" aria-label="Compte et sauvegarde">♙</button><button id="new">Réinitialiser</button></div></div>
 <div id="pushOptin" class="push-optin" hidden role="dialog" aria-modal="true" aria-labelledby="pushOptinTitle"><div class="push-optin-card"><div class="push-optin-icon">✦</div><h2 id="pushOptinTitle">Ton ciel peut t’appeler</h2><p>Active un rappel discret si tu n’as pas joué depuis 24 h. Maximum un rappel par semaine.</p><div class="push-optin-actions"><button id="pushEnable" class="primary" type="button">Activer le rappel</button><button id="pushLater" type="button">Plus tard</button></div></div></div>
-<div id="mobileAuthPopover" class="mobile-auth-popover" hidden><div id="mobileAuthStatus">Progression enregistrée sur cet appareil</div><button id="mobileAuthAction" type="button">Se connecter avec Google</button></div><div class="levels" id="levels"></div><div class="auth-box"><span id="authUser">Progression enregistrée sur cet appareil</span><button id="authLogin">Sauvegarder ma progression</button><button id="authLogout" hidden>Déconnexion</button></div><section class="journey"><div class="journey-top"><div><span class="journey-kicker">MON CIEL</span><strong id="journeyTitle">Grande Ourse</strong></div><button id="openMap">Grilles</button></div><div class="progress-track"><span id="progressFill"></span></div><div class="progress-copy"><strong id="progressText">Mon ciel · 0 %</strong></div><div id="sectorProgress" class="sector-progress">0/9 étoiles · 0/150 au total</div><button id="openSky" class="sky-entry" type="button" aria-label="Ouvrir mon ciel"><span class="sky-entry-main">✦ Mon ciel</span><span id="skySummary" class="sky-entry-progress">Grande Ourse · 0/9 ★</span><span class="sky-entry-arrow">›</span></button></section><div id="mapModal" class="map-modal" hidden><div class="map-sheet"><div class="map-head"><h2>Mes grilles</h2><button id="closeMap">Fermer</button></div><div id="sectorTabs" class="sector-tabs"></div><div id="puzzleGrid" class="puzzle-grid"></div><div id="performanceLegend" class="performance-legend" role="button" tabindex="0" aria-label="Voir les règles détaillées des badges"><span class="hint">⌕ Sans indice</span><span class="speed">⌛ Moins d’1 min</span><span class="assist">◉ Sans assistance</span><span class="clean">✓ Maîtrise</span><span class="performance-legend-info" aria-hidden="true">i</span></div><h3>Mon ciel</h3><div id="skyCard" class="sky-card"></div></div></div><div id="badgeRulesModal" class="badge-rules-modal" hidden role="dialog" aria-modal="true" aria-labelledby="badgeRulesTitle"><div class="badge-rules-card"><div class="badge-rules-head"><h2 id="badgeRulesTitle">Comment gagner les badges ?</h2><button id="closeBadgeRules" class="badge-rules-close" type="button">Fermer</button></div><p class="badge-rules-intro">Chaque badge récompense une performance réalisée sur une grille. Rejoue une grille terminée pour tenter d’en obtenir de nouveaux.</p><div class="badge-rule hint"><span class="badge-rule-icon">⌕</span><div><strong>Sans indice</strong><p>Termine la grille sans utiliser aucun indice.</p></div></div><div class="badge-rule speed"><span class="badge-rule-icon">⌛</span><div><strong>Moins d’une minute</strong><p>Termine la grille en moins de 60 secondes, sans indice et sans Assistance auto.</p></div></div><div class="badge-rule assist"><span class="badge-rule-icon">◉</span><div><strong>Sans Assistance auto</strong><p>Termine la grille sans utiliser l’Assistance auto.</p></div></div><div class="badge-rule clean"><span class="badge-rule-icon">✓</span><div><strong>Maîtrise</strong><p>Termine la grille sans indice, sans Assistance auto et sans aucune faute.</p></div></div><p class="badge-rules-note">Les conditions d’un badge exigeant doivent être réunies au cours d’une même tentative. Les badges déjà obtenus restent acquis.</p></div></div><div id="challengeBanner" class="challenge-banner" hidden><strong id="challengeTitle"></strong><small id="challengeCopy"></small></div><label class="auto-cross" id="autoCrossWrap">
+<div id="mobileAuthPopover" class="mobile-auth-popover" hidden><div id="mobileAuthStatus">Progression enregistrée sur cet appareil</div><div id="nicknameBox" hidden><input id="nicknameInput" type="text" maxlength="24" autocomplete="nickname" placeholder="Ton pseudo" aria-label="Ton pseudo"><button id="nicknameSave" type="button">Enregistrer le pseudo</button></div><button id="mobileAuthAction" type="button">Se connecter avec Google</button></div><div class="levels" id="levels"></div><div class="auth-box"><span id="authUser">Progression enregistrée sur cet appareil</span><button id="authLogin">Sauvegarder ma progression</button><button id="authLogout" hidden>Déconnexion</button></div><section class="journey"><div class="journey-top"><div><span class="journey-kicker">MON CIEL</span><strong id="journeyTitle">Grande Ourse</strong></div><button id="openMap">Grilles</button></div><div class="progress-track"><span id="progressFill"></span></div><div class="progress-copy"><strong id="progressText">Mon ciel · 0 %</strong></div><div id="sectorProgress" class="sector-progress">0/9 étoiles · 0/150 au total</div><button id="openSky" class="sky-entry" type="button" aria-label="Ouvrir mon ciel"><span class="sky-entry-main">✦ Mon ciel</span><span id="skySummary" class="sky-entry-progress">Grande Ourse · 0/9 ★</span><span class="sky-entry-arrow">›</span></button></section><div id="mapModal" class="map-modal" hidden><div class="map-sheet"><div class="map-head"><h2>Mes grilles</h2><button id="closeMap">Fermer</button></div><div id="sectorTabs" class="sector-tabs"></div><div id="puzzleGrid" class="puzzle-grid"></div><div id="performanceLegend" class="performance-legend" role="button" tabindex="0" aria-label="Voir les règles détaillées des badges"><span class="hint">⌕ Sans indice</span><span class="speed">⌛ Moins d’1 min</span><span class="assist">◉ Sans assistance</span><span class="clean">✓ Maîtrise</span><span class="performance-legend-info" aria-hidden="true">i</span></div><h3>Mon ciel</h3><div id="skyCard" class="sky-card"></div></div></div><div id="badgeRulesModal" class="badge-rules-modal" hidden role="dialog" aria-modal="true" aria-labelledby="badgeRulesTitle"><div class="badge-rules-card"><div class="badge-rules-head"><h2 id="badgeRulesTitle">Comment gagner les badges ?</h2><button id="closeBadgeRules" class="badge-rules-close" type="button">Fermer</button></div><p class="badge-rules-intro">Chaque badge récompense une performance réalisée sur une grille. Rejoue une grille terminée pour tenter d’en obtenir de nouveaux.</p><div class="badge-rule hint"><span class="badge-rule-icon">⌕</span><div><strong>Sans indice</strong><p>Termine la grille sans utiliser aucun indice.</p></div></div><div class="badge-rule speed"><span class="badge-rule-icon">⌛</span><div><strong>Moins d’une minute</strong><p>Termine la grille en moins de 60 secondes, sans indice et sans Assistance auto.</p></div></div><div class="badge-rule assist"><span class="badge-rule-icon">◉</span><div><strong>Sans Assistance auto</strong><p>Termine la grille sans utiliser l’Assistance auto.</p></div></div><div class="badge-rule clean"><span class="badge-rule-icon">✓</span><div><strong>Maîtrise</strong><p>Termine la grille sans indice, sans Assistance auto et sans aucune faute.</p></div></div><p class="badge-rules-note">Les conditions d’un badge exigeant doivent être réunies au cours d’une même tentative. Les badges déjà obtenus restent acquis.</p></div></div><div id="challengeBanner" class="challenge-banner" hidden><strong id="challengeTitle"></strong><small id="challengeCopy"></small></div><label class="auto-cross" id="autoCrossWrap">
 <input type="checkbox" id="autoCross" checked>
 <span>Assistance auto</span>
 </label><div id="learningNote" class="learning-note"></div>
@@ -509,17 +509,32 @@ const LUMEN_SUPABASE_URL="https://tjdjlavmusmncuszhsuw.supabase.co";
 const LUMEN_SUPABASE_KEY="sb_publishable_E1B-j_wvKmkmWq8YLhHf3Q_uL1yLcNo";
 let lumenSupabase=null,lumenUser=null,lumenCloudReady=false;
 try{lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY)}catch(e){console.warn("LUMEN cloud unavailable",e)}
+let lumenNickname="";
+async function loadLumenProfile(){
+ if(!lumenSupabase||!lumenUser)return;
+ const {data,error}=await lumenSupabase.rpc("lumen_get_profile");if(error){console.warn("LUMEN profile",error);return}
+ lumenNickname=(data&&data[0]&&data[0].nickname)||"";
+ const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname;
+ updateAuthUI();
+}
+async function saveLumenNickname(){
+ const input=document.getElementById("nicknameInput"),value=(input?.value||"").trim();
+ if(value.length<2||value.length>24){showRewardToast("Pseudo : 2 à 24 caractères");return}
+ const {data,error}=await lumenSupabase.rpc("lumen_set_nickname",{p_nickname:value});
+ if(error){showRewardToast("Ce pseudo n’est pas valide");return}
+ lumenNickname=data||value;updateAuthUI();showRewardToast("Pseudo enregistré ✦");
+}
 function syncMobileAuthUI(){
  const status=document.getElementById("mobileAuthStatus"),action=document.getElementById("mobileAuthAction"),icon=document.getElementById("mobileAccount");
  if(!status||!action||!icon)return;
- if(lumenUser){status.textContent=lumenUser.email||"Progression synchronisée";action.textContent="Déconnexion";icon.textContent="●";icon.setAttribute("aria-label","Compte connecté")}
- else{status.textContent="Progression enregistrée sur cet appareil";action.textContent="Se connecter avec Google";icon.textContent="♙";icon.setAttribute("aria-label","Se connecter")}
+ if(lumenUser){status.textContent=lumenNickname||"Progression synchronisée";action.textContent="Déconnexion";icon.textContent="●";icon.setAttribute("aria-label","Compte connecté");const box=document.getElementById("nicknameBox");if(box)box.hidden=false}
+ else{status.textContent="Progression enregistrée sur cet appareil";action.textContent="Se connecter avec Google";icon.textContent="♙";icon.setAttribute("aria-label","Se connecter");const box=document.getElementById("nicknameBox");if(box)box.hidden=true}
 }
 function updateAuthUI(){
  const u=document.getElementById("authUser"),login=document.getElementById("authLogin"),logout=document.getElementById("authLogout");
  if(!u||!login||!logout)return;
  if(lumenUser){
-   u.textContent=lumenUser.email||"Progression synchronisée";
+   u.textContent=lumenNickname||"Progression synchronisée";
    login.hidden=true; logout.hidden=false;
  }else{
    u.textContent="Progression enregistrée sur cet appareil";
@@ -597,7 +612,7 @@ async function initLumenCloud(){
  if(!lumenSupabase){updateAuthUI();return}
  const {data}=await lumenSupabase.auth.getSession();
  lumenUser=data.session?.user||null; updateAuthUI();
- if(lumenUser){await cloudMergeProgress();}
+ if(lumenUser){await loadLumenProfile();await cloudMergeProgress();}
  lumenSupabase.auth.onAuthStateChange((event,session)=>{
    const previous=lumenUser?.id; lumenUser=session?.user||null; updateAuthUI();
    if(lumenUser&&lumenUser.id!==previous)setTimeout(async()=>{await cloudMergeProgress()},0);
@@ -1205,6 +1220,7 @@ document.getElementById("hint").onclick=()=>{
 };
 
 function runHintTests(){
+ test("Compte : le pseudo est stocké côté profil utilisateur",()=>typeof saveLumenNickname==="function"&&saveLumenNickname.toString().includes("lumen_set_nickname"));
  test("Rappel : la popup LUMEN disparaît avant la demande Android",()=>{
    const src=enableLumenPush.toString(),hide=src.indexOf("optin.hidden=true"),ask=src.indexOf("Notification.requestPermission");
    return hide>=0&&ask>hide;
@@ -1559,6 +1575,7 @@ refreshJourney();
 maybeShowReturnWelcome();
 
 setupBetaFeedback();
+const nicknameSave=document.getElementById("nicknameSave");if(nicknameSave)nicknameSave.onclick=saveLumenNickname;
 const pushEnable=document.getElementById("pushEnable"),pushLater=document.getElementById("pushLater");
 if(pushEnable)pushEnable.onclick=enableLumenPush;
 if(pushLater)pushLater.onclick=()=>{document.getElementById("pushOptin").hidden=true;localStorage.setItem("lumenPushChoice","later")};
