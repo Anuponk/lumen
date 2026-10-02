@@ -15,7 +15,7 @@
 .head{display:flex;justify-content:space-between;align-items:center}h1{font-size:38px;margin:4px 0 0}.sub{font-size:20px;font-weight:700;color:#777;margin-bottom:24px}
 button{font:inherit;font-weight:700;background:#fff;border:1.8px solid #555;border-radius:24px;padding:12px 17px}.levels{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 22px}
 .level{border-radius:15px;padding:11px 3px}.level.active{background:#222;color:#fff}.level small{display:block;margin-top:4px}.status{display:flex;justify-content:space-between;font-size:20px;font-weight:bold;margin:8px 3px 17px}
-#board{display:grid;width:100%;aspect-ratio:1;border:5px solid #222;border-radius:10px;overflow:hidden;background:#fff}.board{touch-action:none}
+#board{display:grid;width:100%;aspect-ratio:1;border:5px solid #222;border-radius:10px;overflow:hidden;background:#fff}.board{touch-action:none;overscroll-behavior:contain}
 .cell{display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;overflow:hidden;line-height:1;border-right:1px solid #555;border-bottom:1px solid #555;font-size:clamp(18px,6vw,35px);font-weight:bold;user-select:none}
 .cell .x{opacity:.55}.cell.hi{box-shadow:inset 0 0 0 5px #222}
 .cell.conflict{background:rgba(255,62,82,.10)!important;box-shadow:inset 0 0 0 3px #ff4d63,0 0 15px rgba(255,77,99,.32);animation:conflictPulse .48s ease-out}
@@ -914,34 +914,48 @@ function dragCrossCellAt(x,y){
  if(!el||!board.contains(el))return null;
  return [Number(el.dataset.row),Number(el.dataset.col)];
 }
+function paintCell(r,c){
+ const d=board.querySelector('.cell[data-row="'+r+'"][data-col="'+c+'"]');if(!d)return;
+ const shown=displayedCellState(r,c);
+ d.innerHTML=shown===1||shown===3?'<span class="lumen-dim" aria-label="Emplacement assombri"></span>':shown===2?'<span class="lumen-orb" aria-label="Étoile placée"></span>':"";
+ d.classList.toggle("auto-x",shown===3);
+}
+function paintBoardState(){
+ for(let r=0;r<n;r++)for(let c=0;c<n;c++)paintCell(r,c);
+ const q=state.flat().filter(v=>v===2).length,countEl=document.getElementById("count");if(countEl)countEl.textContent=q+"/"+n;
+ updateLiveReward(q);
+}
 function markDragCross(r,c){
  if(!dragCross||dragCross.visited.has(r+","+c)||state[r]?.[c]===2)return;
  dragCross.visited.add(r+","+c);
- if(state[r][c]!==1){state[r][c]=1;dragCross.changed=true}
+ if(state[r][c]!==1){state[r][c]=1;dragCross.changed=true;paintCell(r,c)}
 }
 board.addEventListener("pointerdown",e=>{
  if(celebrated||e.pointerType==="mouse")return;
  const cell=e.target.closest(".cell");if(!cell)return;
+ e.preventDefault();
+ try{board.setPointerCapture(e.pointerId)}catch(_){}
  dragCross={id:e.pointerId,startX:e.clientX,startY:e.clientY,dragging:false,changed:false,visited:new Set(),snapshot:state.map(x=>x.slice())};
-});
+},{passive:false});
 board.addEventListener("pointermove",e=>{
  if(!dragCross||dragCross.id!==e.pointerId)return;
+ e.preventDefault();
  if(!dragCross.dragging&&Math.hypot(e.clientX-dragCross.startX,e.clientY-dragCross.startY)>8){
    dragCross.dragging=true;dragCrossSuppressClick=true;
    const start=dragCrossCellAt(dragCross.startX,dragCross.startY);if(start)markDragCross(start[0],start[1]);
  }
  if(!dragCross.dragging)return;
- e.preventDefault();
- const hit=dragCrossCellAt(e.clientX,e.clientY);if(hit){markDragCross(hit[0],hit[1]);render()}
+ const hit=dragCrossCellAt(e.clientX,e.clientY);if(hit)markDragCross(hit[0],hit[1]);
 },{passive:false});
 function endDragCross(e){
  if(!dragCross||dragCross.id!==e.pointerId)return;
  const wasDragging=dragCross.dragging,changed=dragCross.changed,snapshot=dragCross.snapshot;
+ try{board.releasePointerCapture(e.pointerId)}catch(_){}
  dragCross=null;
  if(wasDragging){
    if(changed)hist.push(snapshot);
    hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";
-   render();setTimeout(()=>{dragCrossSuppressClick=false},0);
+   paintBoardState();setTimeout(()=>{dragCrossSuppressClick=false},0);
  }
 }
 board.addEventListener("pointerup",endDragCross);
@@ -971,7 +985,10 @@ function render(){
  hist.push(state.map(x=>x.slice()));
  if(shown===3){state[r][c]=2}else{state[r][c]=next}
  hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";
- render()};board.appendChild(d)
+ paintBoardState();
+ const q=state.flat().filter(v=>v===2).length;
+ if(q===n)render()
+};board.appendChild(d)
  }
  let q=state.flat().filter(v=>v===2).length;const countEl=document.getElementById("count");countEl.textContent=q+"/"+n;rewardProgressPulse(q);
  if(q===n){
