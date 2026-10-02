@@ -685,7 +685,8 @@ function arrangeDesktopPanels(){
 }
 window.addEventListener("resize",arrangeDesktopPanels);
 
-function choose(){levelIndex=Math.max(0,Math.min(levelIndex,99));const sevenAt=[19,39,59,79,99],slot=sevenAt.indexOf(levelIndex);puz=slot>=0?CAT["7"][slot]:CAT["6"][levelIndex];n=puz.reg.length;last[n]=levelIndex}
+const CAMPAIGN6_ORDER=[0,45,72,2,50,71,82,73,90,81,80,98,40,8,78,14,76,94,95,17,7,59,48,5,34,18,57,23,38,75,66,49,68,53,28,26,88,67,9,96,55,30,43,87,32,56,93,20,15,86,92,35,51,39,6,16,13,77,46,4,61,85,21,29,64,44,65,79,99,91,70,54,63,42,52,84,24,41,62,12,60,47,1,36,3,10,11,97,22,83,89,31,58,33,27];
+function choose(){levelIndex=Math.max(0,Math.min(levelIndex,99));const sevenAt=[19,39,59,79,99],slot=sevenAt.indexOf(levelIndex);if(slot>=0)puz=CAT["7"][slot];else{let rank=levelIndex-sevenAt.filter(x=>x<levelIndex).length;puz=CAT["6"][CAMPAIGN6_ORDER[rank]]}n=puz.reg.length;last[n]=levelIndex}
 function loadPuzzle(){init();}
 
 function configureLearningMode(){
@@ -706,7 +707,7 @@ function init(){choose();configureLearningMode();maybeShowAutonomy();if(lastTrac
 function drawLevels(){let e=document.getElementById("levels");e.innerHTML="";LEVELS.forEach(([name,x])=>{let b=document.createElement("button");b.className="level"+(x===n?" active":"");b.innerHTML=name+"<small>"+x+" × "+x+"</small>";b.onclick=()=>{n=x;init()};e.appendChild(b)})}
 function activeGameMs(){return activeElapsedMs+(activeSince!==null?Math.max(0,performance.now()-activeSince):0)}
 function activeGameSeconds(){return Math.max(0,Math.floor(activeGameMs()/1000))}
-function clock(){let s=activeGameSeconds();document.getElementById("time").textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");let q=questFor(levelIndex);if(q&&questStarted&&!lumenProgress.stars[q.id]){if(q.seconds!==null&&s>q.seconds)questFailed=true;if(q.id%3===2&&usedHintThisGame)questFailed=true;let b=document.getElementById("challengeCopy");if(b&&questFailed)b.textContent="Quête échouée · termine la grille à ton rythme."}}
+function clock(){let s=activeGameSeconds();document.getElementById("time").textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");let q=questFor(levelIndex);if(q&&questStarted&&!lumenProgress.stars[q.id]){if(q.seconds!==null&&s>q.seconds)questFailed=true;if(q.type===2&&usedHintThisGame)questFailed=true;let b=document.getElementById("challengeCopy");if(b&&questFailed)b.textContent="Quête échouée · termine la grille à ton rythme."}}
 function pauseGameClock(){if(activeSince!==null){activeElapsedMs+=Math.max(0,performance.now()-activeSince);activeSince=null}clock()}
 function resumeGameClock(){if(!celebrated&&questStarted&&activeSince===null){activeSince=performance.now();clock()}}
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")pauseGameClock();else resumeGameClock()});
@@ -804,7 +805,7 @@ function celebrateSuccess(){
  if(firstCompletion&&!usedHintThisGame)lumenProgress.xp+=5;
  const ch=questFor(levelIndex);let questPassed=false;
  if(ch&&!lumenProgress.stars[ch.id]){
-   questPassed=!questFailed&&(ch.seconds!==null?activeGameSeconds()<=ch.seconds:(ch.id%3===2?!usedHintThisGame:true));
+   questPassed=!questFailed&&(ch.seconds!==null?activeGameSeconds()<=ch.seconds:(ch.type===2?!usedHintThisGame:true));
    if(questPassed){lumenProgress.stars[ch.id]=1;lumenProgress.challenges[ch.id]=1;lumenProgress.xp+=25}
  }
  if(!usedHintThisGame){
@@ -1315,14 +1316,12 @@ let mapSector=0;const badgeDefs=[["first","Première lueur"],["explorer","Explor
 const CONSTELLATIONS=[
  {name:"Grande Ourse · Grand Chariot",count:7,stars:["Dubhe","Merak","Phecda","Megrez","Alioth","Mizar","Alkaïd"],pts:[[78,18],[82,76],[135,79],[137,34],[180,42],[218,51],[263,43]],edges:[[0,1],[1,2],[2,3],[3,0],[3,4],[4,5],[5,6]],note:"Le Grand Chariot est l’astérisme de 7 étoiles le plus reconnaissable de la Grande Ourse."},
  {name:"Cassiopée",count:5,stars:["Caph","Schedar","Navi","Ruchbah","Segin"],pts:[[28,68],[82,34],[139,66],[198,29],[254,61]],edges:[[0,1],[1,2],[2,3],[3,4]]},
- {name:"Orion",count:7,stars:["Bételgeuse","Bellatrix","Alnitak","Alnilam","Mintaka","Saiph","Rigel"],pts:[[62,18],[218,25],[105,59],[140,62],[176,58],[77,99],[219,102]],edges:[[0,2],[1,4],[2,3],[3,4],[2,5],[4,6]]},
- {name:"Cygne",count:6,stars:["Deneb","Sadr","Gienah","Delta Cygni","Albireo","Zeta Cygni"],pts:[[140,12],[140,51],[76,52],[205,43],[142,101],[224,83]],edges:[[0,1],[1,2],[1,3],[1,4],[3,5]]},
- {name:"Lyre",count:5,stars:["Véga","Sheliak","Sulafat","Zeta Lyrae","Delta² Lyrae"],pts:[[72,17],[119,67],[183,73],[109,34],[165,38]],edges:[[0,3],[3,4],[4,2],[2,1],[1,3]]},
- {name:"LUMEN",count:3,stars:["Lumen I","Lumen II","Lumen III"],pts:[[55,82],[140,22],[225,82]],edges:[[0,1],[1,2],[2,0]]}
+ {name:"Croix du Sud",count:4,stars:["Acrux","Mimosa","Gacrux","Imai"],pts:[[140,100],[76,55],[140,12],[205,55]],edges:[[0,2],[1,3]],note:"La Croix du Sud est une petite constellation emblématique du ciel austral."}
 ];
-function questFor(i){if((i+1)%3!==0)return null;let id=(i+1)/3,seconds=id%3===1?45+Math.floor(id/6)*10:null,type=id%3;return {id,title:type===1?"⚡ Quête Éclair":type===2?"🧠 Quête Esprit clair":"✦ Quête céleste",seconds,copy:type===1?"Termine cette grille en moins de "+seconds+" s.":type===2?"Termine cette grille sans indice.":"Termine cette grille pour allumer une étoile."}}
+function questStarKeys(){return Object.keys(lumenProgress.stars||{}).filter(k=>k.startsWith("sky2-"))}
+function questFor(i){if((i+1)%6!==0)return null;let num=(i+1)/6,type=((num-1)%3)+1,seconds=type===1?55+Math.floor((num-1)/4)*10:null;return {id:"sky2-"+num,num,type,title:type===1?"⚡ Quête Éclair":type===2?"🧠 Quête Esprit clair":"✦ Quête céleste",seconds,copy:type===1?"Termine cette grille en moins de "+seconds+" s.":type===2?"Termine cette grille sans indice.":"Termine cette grille pour allumer une étoile."}}
 function challengeFor(i){return questFor(i)}
-function constellationProgress(){let earned=Object.keys(lumenProgress.stars||{}).length,total=0;for(let i=0;i<CONSTELLATIONS.length;i++){let c=CONSTELLATIONS[i];if(earned<total+c.count)return {index:i,...c,lit:Math.max(0,earned-total)};total+=c.count}let c=CONSTELLATIONS[CONSTELLATIONS.length-1];return {index:CONSTELLATIONS.length-1,...c,lit:c.count}}
+function constellationProgress(){let earned=questStarKeys().length,total=0;for(let i=0;i<CONSTELLATIONS.length;i++){let c=CONSTELLATIONS[i];if(earned<total+c.count)return {index:i,...c,lit:Math.max(0,earned-total)};total+=c.count}let c=CONSTELLATIONS[CONSTELLATIONS.length-1];return {index:CONSTELLATIONS.length-1,...c,lit:c.count}}
 function renderSky(){let el=document.getElementById("skyCard");if(!el)return;let p=constellationProgress(),lines=p.edges.map(e=>'<line class="sky-line '+(e[0]<p.lit&&e[1]<p.lit?'on':'')+'" x1="'+p.pts[e[0]][0]+'" y1="'+p.pts[e[0]][1]+'" x2="'+p.pts[e[1]][0]+'" y2="'+p.pts[e[1]][1]+'"/>').join(""),stars=p.pts.map((v,i)=>'<g><circle class="sky-star '+(i<p.lit?'on':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i<p.lit?4:3)+'"/>'+(i<p.lit?'<text class="sky-label" x="'+(v[0]+6)+'" y="'+(v[1]-5)+'">'+p.stars[i]+'</text>':'')+'</g>').join("");el.innerHTML='<div class="sky-head"><span class="sky-name">'+p.name+'</span><span>'+p.lit+' / '+p.count+' étoiles</span></div><svg class="sky-svg" viewBox="0 0 290 115">'+lines+stars+'</svg>'+(p.note?'<div class="sky-note">'+p.note+'</div>':'')}
 function showSkyReveal(){
  const p=constellationProgress(),idx=Math.max(0,p.lit-1),canvas=document.getElementById("skyRevealCanvas"),o=document.getElementById("skyReveal");
@@ -1333,7 +1332,7 @@ function showSkyReveal(){
 }
 document.getElementById("skyRevealContinue").onclick=()=>{document.getElementById("skyReveal").hidden=true;document.getElementById("successOverlay").classList.add("show")};
 function renderXP(){let ch=questFor(levelIndex),box=document.getElementById("challengeBanner");if(!box)return;box.hidden=!ch;if(ch){document.getElementById("challengeTitle").textContent=ch.title+(lumenProgress.stars[ch.id]?" · ★":"");document.getElementById("challengeCopy").textContent=lumenProgress.stars[ch.id]?"Étoile obtenue":ch.copy}}
-function awards(){let t=Object.keys(lumenProgress.solved).length;if(t>=1)lumenProgress.badges.first=1;if(t>=20)lumenProgress.badges.explorer=1;if(t>=50)lumenProgress.badges.beacon=1;if(t>=100)lumenProgress.badges.master=1;if(Object.keys(lumenProgress.stars||{}).length>=1)lumenProgress.badges.challenge1=1;if(Object.keys(lumenProgress.stars||{}).length>=33)lumenProgress.badges.challengeAll=1;for(let s=0;s<5;s++)if(sectorSolved(s)===20)lumenProgress.badges["sector"+s]=1;saveLumenProgress()}
+function awards(){let t=Object.keys(lumenProgress.solved).length;if(t>=1)lumenProgress.badges.first=1;if(t>=20)lumenProgress.badges.explorer=1;if(t>=50)lumenProgress.badges.beacon=1;if(t>=100)lumenProgress.badges.master=1;if(questStarKeys().length>=1)lumenProgress.badges.challenge1=1;if(questStarKeys().length>=16)lumenProgress.badges.challengeAll=1;for(let s=0;s<5;s++)if(sectorSolved(s)===20)lumenProgress.badges["sector"+s]=1;saveLumenProgress()}
 function refreshJourney(){awards();let t=Object.keys(lumenProgress.solved).length,s=Math.floor(levelIndex/20);
 document.getElementById("progressFill").style.width=t+"%";
 document.getElementById("progressText").textContent="Progression globale · "+t+"/100";
