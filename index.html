@@ -443,6 +443,17 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .lumen-orb.big{width:64px;font-size:0}
 .guardian-mini{display:inline-block!important;width:17px!important;height:21px!important;border-radius:45% 45% 55% 55%!important;background:#57dff5!important;clip-path:polygon(50% 0,92% 17%,86% 66%,50% 100%,14% 66%,8% 17%)!important;color:transparent!important}
 .reward-star{display:inline-block;font-size:74px;line-height:1;color:#ffe3a1;text-shadow:0 0 8px #fff3bf,0 0 24px rgba(255,190,70,.75);animation:gemBounce .8s ease-in-out}
+
+/* LUMEN — subtle territory wash for faster visual grouping */
+.cell{
+  background:color-mix(in srgb,var(--territory) 5%,rgba(31,49,73,.20))!important;
+}
+.cell.hi{
+  background:color-mix(in srgb,var(--territory) 8%,rgba(31,49,73,.28))!important;
+}
+@supports not (background:color-mix(in srgb,#000 50%,#fff)){
+  .cell{background:rgba(31,49,73,.24)!important}
+}
 </style><meta name="lumen-build" content="diversity-100"></head><body><main class="app"><aside class="desktop-side desktop-left"><div id="desktopLeftSlot"></div></aside><section class="game-core">
 <div class="head"><div><h1><span class="lumen-brand">LUMEN</span></h1><button id="mobileJourney" class="mobile-journey" type="button" aria-label="Ouvrir ma progression et mon ciel"><span id="mobileJourneyText">Grande Ourse · 0/9 ★</span><span class="mobile-journey-sky">✦ Mon ciel ›</span></button></div><div class="head-actions"><button id="soundToggle" class="tutorial-help" type="button" aria-label="Couper les sons" title="Sons">🔊</button><button id="tutorialHelp" class="tutorial-help" type="button" aria-label="Revoir le tutoriel">?</button><button id="mobileAccount" class="mobile-account" type="button" aria-label="Compte et sauvegarde">♙</button><button id="new">Réinitialiser</button></div></div>
 <div id="pushOptin" class="push-optin" hidden role="dialog" aria-modal="true" aria-labelledby="pushOptinTitle"><div class="push-optin-card"><div class="push-optin-icon">✦</div><h2 id="pushOptinTitle">Ton ciel peut t’appeler</h2><p>Active un rappel discret si tu n’as pas joué depuis 24 h. Maximum un rappel par semaine.</p><div class="push-optin-actions"><button id="pushEnable" class="primary" type="button">Activer le rappel</button><button id="pushLater" type="button">Plus tard</button></div></div></div>
