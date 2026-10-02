@@ -293,6 +293,15 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .auto-cross.learning-locked{opacity:.88}.auto-cross.learning-locked input{cursor:not-allowed}
 .autonomy-card{width:min(430px,92vw);background:#0d1828;border:1px solid #31506e;border-radius:26px;padding:28px 24px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.45)}
 .autonomy-icon{font-size:48px;color:#68e7ff;text-shadow:0 0 22px rgba(104,231,255,.7)}.autonomy-title{font-size:25px;font-weight:950;color:#eefcff;margin:10px 0}.autonomy-copy{color:#9db0c6;line-height:1.45;margin-bottom:18px}
+
+/* Desktop: content added over time must remain reachable. Keep the compact board,
+   but allow normal vertical scrolling for rules and long hint explanations. */
+@media (min-width:701px){
+ html,body{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important}
+ body{min-height:100vh!important}
+ .app{height:auto!important;min-height:100vh!important;overflow:visible!important}
+ .rules{display:block!important;margin-top:8px}
+}
 </style><meta name="lumen-build" content="diversity-100"></head><body><main class="app">
 <div class="head"><div><h1><span class="lumen-brand">LUMEN</span></h1></div><button id="new">Réinitialiser</button></div>
 <div class="levels" id="levels"></div><div class="auth-box"><span id="authUser">Progression enregistrée sur cet appareil</span><button id="authLogin">Sauvegarder ma progression</button><button id="authLogout" hidden>Déconnexion</button></div><section class="journey"><section id="dailyCard" class="daily-card"><div><div class="daily-kicker">CONSTELLATION QUOTIDIENNE</div><div id="dailyTitle" class="daily-title">Joue aujourd’hui pour allumer une étoile</div><div id="dailyStars" class="daily-stars"></div><div id="dailyMeta" class="daily-meta">Série · 0 jour</div></div><div id="dailyReward" class="daily-reward">7 jours → Halo Azur</div></section><div class="journey-top"><div><span class="journey-kicker">PARCOURS</span><strong id="journeyTitle">Étincelle</strong></div><button id="openMap">100 cartes</button></div><div class="progress-track"><span id="progressFill"></span></div><div class="progress-copy"><strong id="progressText">0 / 100 cartes réussies</strong><span id="badgeCount">0 badges</span></div><div id="sectorProgress" class="sector-progress">Étincelle : 0/20</div></section><div id="mapModal" class="map-modal" hidden><div class="map-sheet"><div class="map-head"><h2>Parcours LUMEN</h2><button id="closeMap">Fermer</button></div><div id="sectorTabs" class="sector-tabs"></div><div id="puzzleGrid" class="puzzle-grid"></div><h3>Badges</h3><div id="badgeGrid" class="badge-grid"></div></div></div><label class="auto-cross" id="autoCrossWrap">
