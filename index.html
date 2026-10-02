@@ -441,7 +441,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
   <div class="tutorial-actions"><button id="tutorialPrev">Retour</button><button id="tutorialNext">Suivant</button></div>
  </div>
 </div>
-<button id="betaFeedbackBtn" class="beta-feedback-btn" type="button">⚑ Signaler un problème</button>
+<button id="betaFeedbackBtn" class="beta-feedback-btn" type="button" onclick="openBetaFeedback()">⚑ Signaler un problème</button>
 <div id="feedbackModal" class="beta-modal" hidden role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
  <div class="beta-card">
   <h2 id="feedbackTitle">Retour bêta</h2><p>Le contexte de la carte sera joint automatiquement.</p>
@@ -719,9 +719,10 @@ function displayedCellState(r,c){
 
 const LUMEN_APP_VERSION="beta-2026.10";
 let feedbackKind="bug";
+function openBetaFeedback(){const modal=document.getElementById("feedbackModal"),status=document.getElementById("feedbackStatus");if(!modal)return;modal.hidden=false;if(status)status.textContent="";}
 function setupBetaFeedback(){
  const modal=document.getElementById("feedbackModal"),status=document.getElementById("feedbackStatus");
- document.getElementById("betaFeedbackBtn").onclick=()=>{modal.hidden=false;status.textContent=""};
+ document.getElementById("betaFeedbackBtn").onclick=openBetaFeedback;
  document.getElementById("feedbackCancel").onclick=()=>modal.hidden=true;
  modal.onclick=e=>{if(e.target===modal)modal.hidden=true};
  document.querySelector(".beta-kinds").addEventListener("click",e=>{const b=e.target.closest("button[data-kind]");if(!b)return;e.preventDefault();feedbackKind=b.dataset.kind;document.querySelectorAll(".beta-kinds button").forEach(x=>x.classList.toggle("selected",x===b));const labels={bug:"Bug",rule:"Règle / indice",difficulty:"Trop difficile",other:"Autre"};document.getElementById("feedbackChoice").textContent="Type sélectionné : "+labels[feedbackKind]});
@@ -1288,6 +1289,6 @@ setupBetaFeedback();
 initLumenCloud();
 </script><script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(e=>console.warn("LUMEN service worker",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=3",{updateViaCache:"none"}).then(r=>r.update()).catch(e=>console.warn("LUMEN service worker",e)));
 }
 </script></body></html>
