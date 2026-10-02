@@ -573,10 +573,10 @@ async function cloudMergeProgress(){
  const cloud=new Set((data||[]).map(x=>Number(x.puzzle_id)-1).filter(x=>x>=0&&x<100));
  const local=Object.keys(lumenProgress.solved||{}).filter(k=>lumenProgress.solved[k]).map(Number).filter(x=>x>=0&&x<100);
  const union=new Set([...cloud,...local]);
- const count=Math.min(100,union.size);
- const skyBeforeMerge=skyStarsEarned();
- lumenProgress.solved={}; for(let i=0;i<count;i++)lumenProgress.solved[i]=1;
- lumenProgress.skyScore=skyBeforeMerge;
+ let count=0;while(count<100&&union.has(count))count++;
+ lumenProgress.solved={};for(let i=0;i<count;i++)lumenProgress.solved[i]=1;
+ lumenProgress.skyScore=exactSkyScoreForSolvedPrefix();
+ lumenProgress.skyHistoryVersion=2;
  saveLumenProgress();
  for(const i of local)if(!cloud.has(i)){
    const {error:e}=await lumenSupabase.rpc("lumen_save_progress",{p_puzzle_id:i+1,p_duration_seconds:null,p_hints_used:(lumenProgress.noHint&&lumenProgress.noHint[i])?0:1});
@@ -649,8 +649,8 @@ function completeDaily(){
  saveLumenProgress();cloudSaveDaily(today,levelIndex);renderDaily();
 }
 function normalizeSequentialProgress(){
- const count=Math.min(100,Object.keys(lumenProgress.solved||{}).filter(k=>lumenProgress.solved[k]).length);
- const seq={}; for(let i=0;i<count;i++)seq[i]=1;
+ let count=0;while(count<100&&lumenProgress.solved&&lumenProgress.solved[count])count++;
+ const seq={};for(let i=0;i<count;i++)seq[i]=1;
  lumenProgress.solved=seq;
  return count;
 }
@@ -1364,7 +1364,7 @@ function constellationGridRange(index){let start=0;for(let j=0;j<index;j++)start
 function chapterForGrid(i){let start=0;for(let j=0;j<CONSTELLATION_GRID_COUNTS.length;j++){let end=start+CONSTELLATION_GRID_COUNTS[j];if(i<end)return j;start=end}return CONSTELLATIONS.length-1}
 function milestoneFor(i){const ci=chapterForGrid(i),r=constellationGridRange(ci),pos=i-r.start,mid=Math.floor((r.count-1)/2);if(i===r.end)return {kind:"boss",title:"✹ Défi final · "+CONSTELLATIONS[ci].name.replace(" · Grand Chariot",""),bonus:2,copy:"Dernière carte de la constellation · +2 ★ et constellation complétée."};if(pos===mid)return {kind:"mid",title:"✦ Défi de constellation",bonus:1,copy:"Étape intermédiaire · +1 ★ pour ton ciel."};return null}
 function skyStarsForGrid(i){const ci=chapterForGrid(i),r=constellationGridRange(ci),target=CONSTELLATIONS[ci].count,extra=target-r.count,pos=i-r.start;if(pos===r.count-1)return 1+Math.min(2,extra);const remaining=Math.max(0,extra-2),mid=Math.floor((r.count-1)/2);if(pos===mid)return 1+Math.min(1,remaining);const extraSlots=Math.max(0,remaining-1);if(extraSlots>0&&pos<extraSlots)return 2;return 1}
-function legacySkyStarsEarned(){return Math.min(SKY_TARGET,Math.floor(solvedCount()/2)+questStarKeys().length+(()=>{let bonus=0;for(const k of Object.keys(lumenProgress.solved||{})){if(!lumenProgress.solved[k])continue;let pos=(Number(k)%15)+1;if(pos===8)bonus+=1;if(pos===15)bonus+=2}return bonus})())}function ensureSkyScore(){if(Number.isFinite(lumenProgress.skyScore))return;const historical=legacySkyStarsEarned();lumenProgress.skyScore=historical;saveLumenProgress()}function skyStarsEarned(){ensureSkyScore();return Math.max(0,Math.min(SKY_TARGET,lumenProgress.skyScore||0))}
+function legacySkyStarsEarned(){return Math.min(SKY_TARGET,Math.floor(solvedCount()/2)+questStarKeys().length+(()=>{let bonus=0;for(const k of Object.keys(lumenProgress.solved||{})){if(!lumenProgress.solved[k])continue;let pos=(Number(k)%15)+1;if(pos===8)bonus+=1;if(pos===15)bonus+=2}return bonus})())}function exactSkyScoreForSolvedPrefix(){let total=0;for(let i=0;i<100&&lumenProgress.solved&&lumenProgress.solved[i];i++)total+=skyStarsForGrid(i);return Math.min(SKY_TARGET,total)}function ensureSkyScore(){if(lumenProgress.skyHistoryVersion===2&&Number.isFinite(lumenProgress.skyScore))return;lumenProgress.skyScore=exactSkyScoreForSolvedPrefix();lumenProgress.skyHistoryVersion=2;saveLumenProgress()}function skyStarsEarned(){ensureSkyScore();return Math.max(0,Math.min(SKY_TARGET,lumenProgress.skyScore||0))}
 function questStarKeys(){return Object.keys(lumenProgress.stars||{}).filter(k=>k.startsWith("sky2-"))}
 function questFor(i){if((i+1)%6!==0)return null;let num=(i+1)/6,type=((num-1)%3)+1,seconds=type===1?55+Math.floor((num-1)/4)*10:null,noAuto=type===1;return {id:"sky2-"+num,num,type,noAuto,title:type===1?"⚡ Quête Éclair":type===2?"🧠 Quête Esprit clair":"✦ Quête céleste",seconds,copy:type===1?"Termine cette grille en moins de "+seconds+" s. · Assistance auto interdite.":type===2?"Termine cette grille sans indice.":"Termine cette grille et gagne le bonus céleste."}}
 function challengeFor(i){return milestoneFor(i)||questFor(i)}
