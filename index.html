@@ -56,33 +56,6 @@ font-weight:700;color:#555;font-size:15px;cursor:pointer}
 }
 
 
-/* EMBER — Fire & Water */
-:root{--ember:#ef5b2a;--ember-deep:#b92f16;--water:#3196c7;--ink:#25211f;--paper:#fffaf3}
-body{background:radial-gradient(circle at 50% -15%,#fff0dc 0,#fffaf3 38%,#f4f1ec 100%);color:var(--ink)}
-.brand-fire{font-weight:950;letter-spacing:.16em;background:linear-gradient(180deg,#ff9b42,#e84b24 58%,#a92717);
- -webkit-background-clip:text;background-clip:text;color:transparent}
-#board{box-shadow:0 14px 40px rgba(62,39,28,.13);border-color:#332a26!important;background:#fffdf9!important}
-.ember-flame{display:inline-block;position:relative;width:42%;height:55%;min-width:16px;min-height:22px;
- background:linear-gradient(145deg,#ffb13b 4%,#f36a2d 47%,#c82f1d 90%);
- border-radius:58% 42% 60% 40%/68% 58% 42% 32%;transform:rotate(45deg);
- box-shadow:0 3px 9px rgba(201,48,28,.28)}
-.ember-flame:after{content:"";position:absolute;width:40%;height:48%;left:38%;top:38%;
- background:#ffd76b;border-radius:60% 40% 55% 45%;opacity:.92}
-.ember-flame.big{width:48px;height:66px}
-.ember-drop{display:inline-block;width:27%;height:36%;min-width:10px;min-height:14px;
- background:linear-gradient(145deg,#80d4ef,#2789bc);border-radius:62% 38% 65% 35%/68% 44% 56% 32%;
- transform:rotate(45deg);box-shadow:0 2px 6px rgba(39,137,188,.2);opacity:.9}
-.cell.auto .ember-drop,.cell.autoCross .ember-drop{opacity:.42}
-.success-card{background:linear-gradient(180deg,#fffaf3,#fff);border:1px solid rgba(239,91,42,.18)}
-.success-title{color:var(--ember-deep)}
-#successOverlay{background:rgba(39,30,25,.48)}
-
-
-.mini-flame{display:inline-block;width:13px;height:17px;vertical-align:-3px;
- background:linear-gradient(145deg,#ffb13b,#f36a2d 50%,#c82f1d);
- border-radius:58% 42% 60% 40%/68% 58% 42% 32%;transform:rotate(45deg)}
-
-
 /* LUMEN — ENERGY MAP */
 :root{--void:#090d16;--ink:#edf5ff;--muted:#8190a8;--cyan:#68e7ff}
 html{background:#090d16}
@@ -109,7 +82,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .lumen-orb.big{width:74px;display:inline-block}
 .lumen-dim{width:16%;aspect-ratio:1;border-radius:50%;background:#344158;box-shadow:0 0 0 1px #53627a;opacity:.9}
 .cell.auto-x .lumen-dim{opacity:.3}
-.mini-flame{width:12px;height:12px;border-radius:50%;background:#8ef0ff;transform:none;box-shadow:0 0 8px rgba(104,231,255,.85);vertical-align:0}
+.guardian-counter-icon{width:12px;height:12px;border-radius:50%;background:#8ef0ff;transform:none;box-shadow:0 0 8px rgba(104,231,255,.85);vertical-align:0}
 .rules{background:#101827;border:1px solid #263650;border-radius:20px;color:#b7c6da}.rules b{color:#edf7ff}
 .msg{color:#9fb1c8}.success-card{background:linear-gradient(180deg,#121c2d,#0c1320);border:1px solid #2d4966;color:#eefaff}
 .success-title{color:#c8f8ff}.success-sub{color:#8da3bb}#successOverlay{background:rgba(4,8,15,.72)}.success-gem{display:flex;justify-content:center}
@@ -117,69 +90,11 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 @media(max-width:500px){.app{padding:18px 12px 38px}.lumen-brand{font-size:30px}#board{padding:8px;gap:2px;border-radius:23px}}
 
 
-/* LUMEN v2 — stronger state contrast */
-.cell{
- background:rgba(31,49,73,.20)!important;
- box-shadow:inset 0 0 0 1px rgba(124,160,199,.075);
-}
-.cell:before{
- inset:25%;
- border:1px solid rgba(164,202,235,.34);
- background:radial-gradient(circle,rgba(40,68,99,.46),rgba(17,29,47,.58));
- box-shadow:inset 0 0 10px rgba(85,144,194,.07);
-}
-.lumen-dim{
- width:24%;aspect-ratio:1;border-radius:50%;
- background:#77849a;
- box-shadow:0 0 0 2px rgba(181,197,218,.34),0 2px 8px rgba(0,0,0,.35);
- opacity:1;
-}
-.cell.auto-x .lumen-dim{
- width:17%;
- background:#344157;
- box-shadow:0 0 0 1px rgba(104,122,149,.34);
- opacity:.68;
-}
-.lumen-orb{
- width:48%;
- box-shadow:0 0 8px #e7fdff,0 0 20px rgba(104,231,255,.95),0 0 38px rgba(55,144,221,.68);
-}
+/* LUMEN — cell/core contrast */
+.cell{box-shadow:inset 0 0 0 1px rgba(124,160,199,.075)}
+.cell:before{inset:25%;border:1px solid rgba(164,202,235,.34);background:radial-gradient(circle,rgba(40,68,99,.46),rgba(17,29,47,.58));box-shadow:inset 0 0 10px rgba(85,144,194,.07)}
 
-
-/* LUMEN v2.2 — flat cyan core + blue halo for consistent cross-display rendering */
-.lumen-orb{
- width:48%;
- background:radial-gradient(circle,#eaffff 0 13%,#8ef7ff 14% 30%,#35d7f5 31% 55%,#1598dd 56% 76%,#0865bd 77% 100%);
- border:1px solid rgba(117,238,255,.82);
- box-shadow:0 0 7px rgba(220,255,255,.98),0 0 17px rgba(72,221,255,.90),0 0 31px rgba(22,151,232,.62);
-}
-.lumen-orb:after{border-color:rgba(78,211,255,.26);box-shadow:0 0 12px rgba(33,169,235,.18)}
-
-/* LUMEN v5 — placed pieces are celestial stars, not orbs */
-.lumen-orb{
- width:52%;aspect-ratio:1;border:0;border-radius:0;background:transparent;box-shadow:none;
- display:flex;align-items:center;justify-content:center;animation:orbPulse 2.1s ease-in-out infinite;
- color:#eaffff;font-size:clamp(24px,7vw,42px);line-height:1;
- text-shadow:0 0 5px #fff,0 0 12px rgba(104,231,255,.98),0 0 27px rgba(22,151,232,.82);
-}
-.lumen-orb:before{content:"✦";position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-.lumen-orb:after{content:"";position:absolute;inset:22%;border:0;border-radius:50%;background:#efffff;box-shadow:0 0 9px #fff,0 0 22px rgba(104,231,255,.95);z-index:-1}
-.lumen-orb.big{width:74px;font-size:64px}
-
-/* LUMEN v3 — one visual language for every excluded cell.
-   Manual/automatic provenance remains internal only. */
-.lumen-dim,
-.cell.auto-x .lumen-dim{
- width:24%;
- aspect-ratio:1;
- border-radius:50%;
- background:#66758d;
- box-shadow:0 0 0 2px rgba(166,187,211,.27),0 2px 8px rgba(0,0,0,.30);
- opacity:.88;
-}
-
-
-/* LUMEN v4 — exclusions = amber energy rings */
+/* LUMEN — exclusions = amber energy rings */
 .lumen-dim,
 .cell.auto-x .lumen-dim{
  width:30%;
@@ -461,7 +376,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 <input type="checkbox" id="autoCross" checked>
 <span>Assistance auto</span>
 </label><div id="learningNote" class="learning-note"></div>
-<div id="difficulty" style="text-align:center;font-weight:700;color:#666;margin:-8px 0 12px"></div><div class="status"><span>◷ <span id="time">0:00</span><span id="speedCountdown" class="speed-countdown" hidden aria-live="polite"></span></span><span><span class="mini-flame"></span> <span id="count"></span></span></div>
+<div id="difficulty" style="text-align:center;font-weight:700;color:#666;margin:-8px 0 12px"></div><div class="status"><span>◷ <span id="time">0:00</span><span id="speedCountdown" class="speed-countdown" hidden aria-live="polite"></span></span><span><span class="guardian-counter-icon"></span> <span id="count"></span></span></div>
 <div id="campaignMapLabel" class="campaign-map-label">Quête 1</div><div id="rewardLive" class="reward-live"><span id="masteryLive" class="mastery-live">✓ Maîtrise en cours</span><span id="progressLive" class="progress-live"></span></div><div id="board"></div><div id="rewardToast" class="reward-toast" aria-live="polite"></div><div class="hint-wallet"><span class="hint-wallet-label">Éclats</span><span id="shardMeter" class="shard-meter" role="button" tabindex="0" aria-label="Éclats de lumière disponibles. Voir les règles"></span><span class="shard-help" aria-hidden="true">ⓘ</span></div><div class="actions"><button id="undo">Annuler</button><button id="hint">Indice · gratuit</button><button id="clearHint" class="clear-hint" hidden>Revoir la carte</button><button id="boardNext" class="clear-hint" hidden>Quête suivante</button></div>
 <div class="msg" id="msg"></div>
 
@@ -799,7 +714,6 @@ function resumeGameClock(){if(!celebrated&&questStarted&&activeSince===null){act
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")pauseGameClock();else resumeGameClock()});
 window.addEventListener("pagehide",pauseGameClock);
 window.addEventListener("pageshow",()=>{if(document.visibilityState==="visible")resumeGameClock()});
-function edge(r,c){let g=puz.reg[r][c],s="";if(c===0||puz.reg[r][c-1]!==g)s+="border-left:3px solid #222;";if(c===n-1||puz.reg[r][c+1]!==g)s+="border-right:3px solid #222;";if(r===0||puz.reg[r-1][c]!==g)s+="border-top:3px solid #222;";if(r===n-1||puz.reg[r+1][c]!==g)s+="border-bottom:3px solid #222;";return s}
 function solutions(){
  let out=[],a=Array(n).fill(-1);
  function bt(r,cols,regs,prev){
@@ -883,7 +797,7 @@ function hideSuccess(){
 }
 function starsAwardedForGrid(i,firstCompletion,questPassed){if(!firstCompletion)return 0;return skyStarsForGrid(i)}
 function performanceRun(){let noHint=hintUsesThisGame===0,noAssist=!autoUsedThisGame,clean=mistakesThisGame===0;return {noHint,noAssist,mastery:noHint&&noAssist&&clean,speed:noHint&&noAssist&&activeGameSeconds()<60}}
-function savePerformance(i,stars){let old=lumenProgress.performances[i]||{},run=performanceRun(),seconds=activeGameSeconds(),candidate={time:seconds,hints:hintUsesThisGame,mistakes:mistakesThisGame,autoUsed:autoUsedThisGame,badges:{hint:run.noHint,assist:run.noAssist,mastery:run.mastery,speed:run.speed},stars:Math.max(old.stars||0,stars),quest:!!questFor(i),milestone:milestoneFor(i)?.kind||null,attempts:(old.attempts||0)+1};let prior=old.badges||{},merged={hint:!!prior.hint||run.noHint,assist:!!prior.assist||run.noAssist,mastery:!!prior.mastery||run.mastery,speed:!!prior.speed||run.speed},better=!old.time||(candidate.hints<old.hints)||(candidate.hints===old.hints&&candidate.mistakes<old.mistakes)||(candidate.hints===old.hints&&candidate.mistakes===old.mistakes&&seconds<old.time);lumenProgress.performances[i]=better?{...candidate,badges:merged,stars:Math.max(old.stars||0,stars),attempts:candidate.attempts}:{...old,badges:merged,stars:Math.max(old.stars||0,stars),attempts:candidate.attempts};}
+function savePerformance(i,stars){let old=lumenProgress.performances[i]||{},run=performanceRun(),seconds=activeGameSeconds(),candidate={time:seconds,hints:hintUsesThisGame,mistakes:mistakesThisGame,autoUsed:autoUsedThisGame,badges:{hint:run.noHint,assist:run.noAssist,mastery:run.mastery,speed:run.speed},stars:Math.max(old.stars||0,stars),quest:!!bonusChallengeFor(i),milestone:milestoneFor(i)?.kind||null,attempts:(old.attempts||0)+1};let prior=old.badges||{},merged={hint:!!prior.hint||run.noHint,assist:!!prior.assist||run.noAssist,mastery:!!prior.mastery||run.mastery,speed:!!prior.speed||run.speed},better=!old.time||(candidate.hints<old.hints)||(candidate.hints===old.hints&&candidate.mistakes<old.mistakes)||(candidate.hints===old.hints&&candidate.mistakes===old.mistakes&&seconds<old.time);lumenProgress.performances[i]=better?{...candidate,badges:merged,stars:Math.max(old.stars||0,stars),attempts:candidate.attempts}:{...old,badges:merged,stars:Math.max(old.stars||0,stars),attempts:candidate.attempts};}
 function renderSuccessRewards(stars){let el=document.getElementById("successRewards");if(!el)return;let run=performanceRun(),rewards=[];if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});if(run.noHint)rewards.push({cls:"hint",icon:performanceIcon("hint"),label:"Sans indice"});if(run.speed)rewards.push({cls:"speed",icon:performanceIcon("speed"),label:"Moins d’1 min"});if(run.noAssist)rewards.push({cls:"assist",icon:performanceIcon("assist"),label:"Sans assistance"});if(run.mastery)rewards.push({cls:"clean",icon:performanceIcon("clean"),label:"Maîtrise"});el.innerHTML=rewards.map(r=>'<span class="success-reward '+r.cls+'"><span>'+r.icon+'</span><span>'+r.label+'</span></span>').join("")}
 function celebrateSuccess(){
  if(celebrated)return;
@@ -942,7 +856,7 @@ function celebrateSuccess(){
  setTimeout(()=>document.querySelectorAll(".confetti").forEach(x=>x.remove()),4300);
 }
 
-function sourceConflicts(){
+function guardianConflicts(){
  const placed=[];for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(state[r][c]===2)placed.push([r,c]);
  const bad=new Set(),reasons=new Set();
  for(let i=0;i<placed.length;i++)for(let j=i+1;j<placed.length;j++){
@@ -965,7 +879,7 @@ function conflictMessage(reasons){
 let soundEnabled=localStorage.getItem("lumenSound")!=="off",audioCtx=null,lastCountdownSound=null;
 function audioContext(){if(!soundEnabled)return null;try{if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx}catch(e){return null}}
 function tone(freq,dur=.09,vol=.035,delay=0,type="sine"){const a=audioContext();if(!a)return;const t=a.currentTime+delay,o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(freq,t);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+dur+.03)}
-function sourceSound(q){tone(420+q*48,.11,.085)}
+function guardianSound(q){tone(420+q*48,.11,.085)}
 function errorSound(){tone(145,.16,.09,0,"triangle")}
 function halfSound(){tone(560,.16,.08);tone(740,.22,.085,.11)}
 function countdownSound(left){if(lastCountdownSound===left)return;lastCountdownSound=left;tone(left<=3?720:510,left<=3?.11:.075,left<=3?.095:.055,0,"triangle")}
@@ -986,7 +900,7 @@ function showRewardToast(text){
  const t=document.getElementById("rewardToast");if(!t)return;t.textContent=text;t.classList.add("show");clearTimeout(rewardToastTimer);rewardToastTimer=setTimeout(()=>t.classList.remove("show"),1900);
 }
 function rewardProgressPulse(q){
- if(q>lastPlacedCount){sourceSound(q);requestAnimationFrame(()=>{const cells=[...board.querySelectorAll(".cell")];for(const d of cells){if(d.querySelector(".lumen-orb"))d.classList.add("just-lit")}setTimeout(()=>cells.forEach(d=>d.classList.remove("just-lit")),380)})}
+ if(q>lastPlacedCount){guardianSound(q);requestAnimationFrame(()=>{const cells=[...board.querySelectorAll(".cell")];for(const d of cells){if(d.querySelector(".lumen-orb"))d.classList.add("just-lit")}setTimeout(()=>cells.forEach(d=>d.classList.remove("just-lit")),380)})}
  if(!halfRewardShown&&q>=Math.ceil(n/2)){halfRewardShown=true;halfSound();board.classList.add("board-half");showRewardToast("✦ Mi-chemin");setTimeout(()=>board.classList.remove("board-half"),650)}
  lastPlacedCount=q;updateLiveReward(q);
 }
@@ -1010,11 +924,11 @@ function render(){
   else if(shown===2)d.innerHTML='<span class="lumen-orb" aria-label="Gardien positionné"></span>';
   else d.innerHTML="";
   if(shown===3)d.classList.add("auto-x");
-  d.onclick=()=>{if(celebrated)return;let shown=displayedCellState(r,c),next=shown===3?2:(state[r][c]+1)%3,currentSources=state.flat().filter(v=>v===2).length;if(next===2&&state[r][c]!==2&&currentSources>=n)return;hist.push(state.map(x=>x.slice()));if(shown===3){state[r][c]=2}else{state[r][c]=next}hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";render()};board.appendChild(d)
+  d.onclick=()=>{if(celebrated)return;let shown=displayedCellState(r,c),next=shown===3?2:(state[r][c]+1)%3,currentGuardians=state.flat().filter(v=>v===2).length;if(next===2&&state[r][c]!==2&&currentGuardians>=n)return;hist.push(state.map(x=>x.slice()));if(shown===3){state[r][c]=2}else{state[r][c]=next}hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";render()};board.appendChild(d)
  }
  let q=state.flat().filter(v=>v===2).length;const countEl=document.getElementById("count");countEl.textContent=q+"/"+n;rewardProgressPulse(q);
  if(q===n){
-   // Victory must validate the 6 placed sources themselves.
+   // Victory must validate the placed Guardians themselves.
    // Manual/automatic exclusion marks must never make a correct completed board fail.
    const placed=[];
    for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(state[r][c]===2)placed.push([r,c]);
@@ -1149,7 +1063,7 @@ document.getElementById("hint").onclick=()=>{
   if(d&&d.rule==="contradiction"){
    hi=h.cell;
    if(hintStage===1){
-    msg.textContent=`Piste : teste mentalement la case L${h.cell[0]+1}C${h.cell[1]+1}. Suppose qu'elle contient une source et suis les contraintes : ligne, colonne, territoire et cases voisines.`;
+    msg.textContent=`Piste : teste mentalement la case L${h.cell[0]+1}C${h.cell[1]+1}. Suppose qu'elle accueille un Gardien et suis les contraintes : ligne, colonne, territoire et cases voisines.`;
     render();return;
    }
    if(hintStage===2){
@@ -1181,15 +1095,15 @@ document.getElementById("hint").onclick=()=>{
    hiCells=d.source.slice();
    let axisName=d.axis==="col"?"colonne":"ligne", num=d.index+1;
    if(hintStage===1){
-    msg.textContent=`Piste : observe les ${d.source.length} cases surlignées de cette territoire. Elles sont toutes sur la même ${axisName}. Qu'est-ce que cela implique pour le Gardien de ce territoire ?`;
+    msg.textContent=`Piste : observe les ${d.source.length} cases surlignées de ce territoire. Elles sont toutes sur la même ${axisName}. Qu'est-ce que cela implique pour le Gardien de ce territoire ?`;
     render();return;
    }
    if(hintStage===2){
-    msg.textContent=`Indice : le Gardien de ce territoire sera forcément quelque part sur la ${axisName} ${num}. Comme une ${axisName} ne peut contenir qu'un seul source, aucune case de cette ${axisName} située hors de la territoire ne peut en contenir.`;
+    msg.textContent=`Indice : le Gardien de ce territoire sera forcément quelque part sur la ${axisName} ${num}. Comme une ${axisName} ne peut accueillir qu'un seul Gardien, aucune case de cette ${axisName} située hors du territoire ne peut en accueillir.`;
     render();return;
    }
    hiCells=d.source.concat([h.cell]);
-   msg.textContent=`À jouer : L${h.cell[0]+1}C${h.cell[1]+1} est hors de cette territoire mais sur la ${axisName} ${num}. Tu peux donc l’éteindre.`;
+   msg.textContent=`À jouer : L${h.cell[0]+1}C${h.cell[1]+1} est hors de ce territoire mais sur la ${axisName} ${num}. Tu peux donc l’éteindre.`;
    render();return;
   }
 
@@ -1241,7 +1155,7 @@ document.getElementById("hint").onclick=()=>{
   }
   // 6. Third press: reveal the forced placement as last resort.
   hi=h.cell;
-  msg.textContent=`Indice final : la case L${h.cell[0]+1}C${h.cell[1]+1} est forcée. Tu peux y placer une source.`;
+  msg.textContent=`Indice final : la case L${h.cell[0]+1}C${h.cell[1]+1} est forcée. Tu peux y placer un Gardien.`;
   render();return;
  }
 
@@ -1393,7 +1307,7 @@ function runHintTests(){
   state[0][p.sol[0]]=1;
   return !!playerError();
  });
- test("Un mauvais source est détecté comme erreur",()=>{
+ test("Un mauvais Gardien est détecté comme erreur",()=>{
   let p=CAT[n][0];puz=p;state=Array.from({length:n},()=>Array(n).fill(0));
   let c=(p.sol[0]+1)%n;state[0][c]=2;
   return !!playerError();
@@ -1516,10 +1430,10 @@ function constellationGridRange(index){let start=0;for(let j=0;j<index;j++)start
 function chapterForGrid(i){let start=0;for(let j=0;j<CONSTELLATION_GRID_COUNTS.length;j++){let end=start+CONSTELLATION_GRID_COUNTS[j];if(i<end)return j;start=end}return CONSTELLATIONS.length-1}
 function milestoneFor(i){const ci=chapterForGrid(i),r=constellationGridRange(ci),pos=i-r.start,mid=Math.floor((r.count-1)/2);if(i===r.end)return {kind:"boss",title:"✹ Défi final · "+CONSTELLATIONS[ci].name.replace(" · Grand Chariot",""),bonus:2,copy:"Dernière quête de la constellation · +2 ★ et constellation complétée."};if(pos===mid)return {kind:"mid",title:"✦ Défi de constellation",bonus:1,copy:"Étape intermédiaire · +1 ★ pour ton ciel."};return null}
 function skyStarsForGrid(i){const ci=chapterForGrid(i),r=constellationGridRange(ci),target=CONSTELLATIONS[ci].count,extra=target-r.count,pos=i-r.start;if(pos===r.count-1)return 1+Math.min(2,extra);const remaining=Math.max(0,extra-2),mid=Math.floor((r.count-1)/2);if(pos===mid)return 1+Math.min(1,remaining);const extraSlots=Math.max(0,remaining-1);if(extraSlots>0&&pos<extraSlots)return 2;return 1}
-function legacySkyStarsEarned(){return Math.min(SKY_TARGET,Math.floor(solvedCount()/2)+questStarKeys().length+(()=>{let bonus=0;for(const k of Object.keys(lumenProgress.solved||{})){if(!lumenProgress.solved[k])continue;let pos=(Number(k)%15)+1;if(pos===8)bonus+=1;if(pos===15)bonus+=2}return bonus})())}function exactSkyScoreForSolvedPrefix(){let total=0;for(let i=0;i<100&&lumenProgress.solved&&lumenProgress.solved[i];i++)total+=skyStarsForGrid(i);return Math.min(SKY_TARGET,total)}function ensureSkyScore(){if(lumenProgress.skyHistoryVersion===4&&Number.isFinite(lumenProgress.skyScore))return;lumenProgress.skyScore=exactSkyScoreForSolvedPrefix();lumenProgress.skyHistoryVersion=4;saveLumenProgress()}function skyStarsEarned(){ensureSkyScore();return Math.max(0,Math.min(SKY_TARGET,lumenProgress.skyScore||0))}
-function questStarKeys(){return Object.keys(lumenProgress.stars||{}).filter(k=>k.startsWith("sky2-"))}
-function questFor(i){if((i+1)%6!==0)return null;let num=(i+1)/6,type=((num-1)%3)+1,seconds=type===1?55+Math.floor((num-1)/4)*10:null,noAuto=type===1;return {id:"sky2-"+num,num,type,noAuto,title:type===1?"⚡ Défi Éclair":type===2?"🧠 Défi Esprit clair":"✦ Défi céleste",seconds,copy:type===1?"Accomplis cette quête en moins de "+seconds+" s. · Assistance auto interdite.":type===2?"Accomplis cette quête sans indice.":"Accomplis cette quête et gagne le bonus céleste."}}
-function challengeFor(i){return milestoneFor(i)||questFor(i)}
+function exactSkyScoreForSolvedPrefix(){let total=0;for(let i=0;i<100&&lumenProgress.solved&&lumenProgress.solved[i];i++)total+=skyStarsForGrid(i);return Math.min(SKY_TARGET,total)}function ensureSkyScore(){if(lumenProgress.skyHistoryVersion===4&&Number.isFinite(lumenProgress.skyScore))return;lumenProgress.skyScore=exactSkyScoreForSolvedPrefix();lumenProgress.skyHistoryVersion=4;saveLumenProgress()}function skyStarsEarned(){ensureSkyScore();return Math.max(0,Math.min(SKY_TARGET,lumenProgress.skyScore||0))}
+function challengeRewardKeys(){return Object.keys(lumenProgress.stars||{}).filter(k=>k.startsWith("sky2-"))}
+function bonusChallengeFor(i){if((i+1)%6!==0)return null;let num=(i+1)/6,type=((num-1)%3)+1,seconds=type===1?55+Math.floor((num-1)/4)*10:null,noAuto=type===1;return {id:"sky2-"+num,num,type,noAuto,title:type===1?"⚡ Défi Éclair":type===2?"🧠 Défi Esprit clair":"✦ Défi céleste",seconds,copy:type===1?"Accomplis cette quête en moins de "+seconds+" s. · Assistance auto interdite.":type===2?"Accomplis cette quête sans indice.":"Accomplis cette quête et gagne le bonus céleste."}}
+function challengeFor(i){return milestoneFor(i)||bonusChallengeFor(i)}
 function constellationProgress(){let earned=skyStarsEarned(),total=0;for(let i=0;i<CONSTELLATIONS.length;i++){let c=CONSTELLATIONS[i];if(earned<total+c.count)return {index:i,...c,lit:Math.max(0,earned-total)};total+=c.count}let c=CONSTELLATIONS[CONSTELLATIONS.length-1];return {index:CONSTELLATIONS.length-1,...c,lit:c.count}}
 function starDisplayName(p,i){return p.stars&&p.stars[i]?p.stars[i]:"Étoile "+(i+1)}
 function constellationLitAt(index){let earned=skyStarsEarned(),before=0;for(let i=0;i<index;i++)before+=CONSTELLATIONS[i].count;return Math.max(0,Math.min(CONSTELLATIONS[index].count,earned-before))}
@@ -1574,7 +1488,7 @@ function showSkyReveal(beforeEarned=null,checkpoint=null){
 }
 document.getElementById("skyRevealContinue").onclick=()=>{const o=document.getElementById("skyReveal");o.hidden=true;o.classList.remove("complete-celebration");o.querySelectorAll(".sky-bravo").forEach(x=>x.remove());document.querySelectorAll(".sky-spark").forEach(x=>x.remove());document.getElementById("successOverlay").classList.add("show")};
 function renderXP(){let q=questFor(levelIndex),m=milestoneFor(levelIndex),ch=m||q,box=document.getElementById("challengeBanner");if(!box)return;box.hidden=!ch;if(ch){let done=q&&lumenProgress.stars[q.id];document.getElementById("challengeTitle").textContent=ch.title+(done?" · ★":"");document.getElementById("challengeCopy").textContent=done?"Bonus obtenu":ch.copy}}
-function awards(){let t=Object.keys(lumenProgress.solved).length;if(t>=1)lumenProgress.badges.first=1;if(t>=20)lumenProgress.badges.explorer=1;if(t>=50)lumenProgress.badges.beacon=1;if(t>=100)lumenProgress.badges.master=1;if(questStarKeys().length>=1)lumenProgress.badges.challenge1=1;if(questStarKeys().length>=16)lumenProgress.badges.challengeAll=1;saveLumenProgress()}
+function awards(){let t=Object.keys(lumenProgress.solved).length;if(t>=1)lumenProgress.badges.first=1;if(t>=20)lumenProgress.badges.explorer=1;if(t>=50)lumenProgress.badges.beacon=1;if(t>=100)lumenProgress.badges.master=1;if(challengeRewardKeys().length>=1)lumenProgress.badges.challenge1=1;if(challengeRewardKeys().length>=16)lumenProgress.badges.challengeAll=1;saveLumenProgress()}
 function refreshJourney(){awards();let sky=constellationProgress(),earned=skyStarsEarned(),completed=CONSTELLATIONS.slice(0,sky.index).length;
 document.getElementById("progressFill").style.width=(sky.count?Math.round(sky.lit/sky.count*100):0)+"%";
 document.getElementById("progressText").textContent=completed+" constellation"+(completed>1?"s":"")+" découverte"+(completed>1?"s":"");
@@ -1617,6 +1531,6 @@ markLumenSeen();
 initLumenCloud();
 </script><script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=4",{updateViaCache:"none"}).then(r=>r.update()).catch(e=>console.warn("LUMEN service worker",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=5",{updateViaCache:"none"}).then(r=>r.update()).catch(e=>console.warn("LUMEN service worker",e)));
 }
 </script></body></html>
