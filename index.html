@@ -1403,6 +1403,40 @@ function runHintTests(){
   });
  });
 
+ // Performance regressions: keep ordinary play incremental and cheap.
+ test("Performance : un clic ordinaire ne reconstruit pas toute la grille",()=>{
+   const src=render.toString(),clickStart=src.indexOf("d.onclick=()=>"),clickEnd=src.indexOf("};board.appendChild(d)",clickStart);
+   const clickBody=src.slice(clickStart,clickEnd);
+   return clickBody.includes("paintBoardState()")&&!clickBody.includes("board.innerHTML")&&!clickBody.includes("render()};");
+ });
+ test("Performance : le drag ne lance aucun render complet pendant pointermove",()=>{
+   const src=document.documentElement.innerHTML,begin=src.indexOf('board.addEventListener("pointermove"'),end=src.indexOf("function endDragCross",begin);
+   return begin>=0&&end>begin&&!src.slice(begin,end).includes("render()");
+ });
+ test("Performance : mise à jour visuelle interactive sous 16 ms sur grille courante",()=>{
+   // Warm-up, then median of several runs to reduce one-off JIT/layout noise.
+   paintBoardState();
+   const samples=[];
+   for(let i=0;i<15;i++){const t=performance.now();paintBoardState();samples.push(performance.now()-t)}
+   samples.sort((a,b)=>a-b);
+   const median=samples[Math.floor(samples.length/2)];
+   window.lumenPerfLast={metric:"paintBoardState",medianMs:median,samples};
+   return median<16;
+ });
+ test("Performance : mise à jour d'une cellule sous 8 ms",()=>{
+   paintCell(0,0);
+   const samples=[];
+   for(let i=0;i<25;i++){const t=performance.now();paintCell(0,0);samples.push(performance.now()-t)}
+   samples.sort((a,b)=>a-b);
+   const median=samples[Math.floor(samples.length/2)];
+   window.lumenPerfCellLast={metric:"paintCell",medianMs:median,samples};
+   return median<8;
+ });
+ test("Mobile : le plateau bloque le scroll natif pendant le drag",()=>{
+   const css=getComputedStyle(board);
+   return css.touchAction==="none"&&(css.overscrollBehavior==="contain"||css.overscrollBehaviorY==="contain");
+ });
+
  // Replay each puzzle automatically. Every requested next step must be explainable.
  test("Replay complet : jamais bloqué, jamais d'indice opaque",()=>{
   return CAT[n].every(p=>{
