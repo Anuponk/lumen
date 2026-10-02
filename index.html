@@ -411,6 +411,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .beta-feedback-btn{position:fixed;right:14px;bottom:14px;z-index:850;border:1px solid rgba(104,231,255,.35);background:#0d2134;color:#bdefff;border-radius:999px;padding:9px 13px;font-size:13px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.22)}
 .beta-modal{position:fixed;inset:0;z-index:1200;background:rgba(2,9,16,.72);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:18px}.beta-modal[hidden]{display:none}.beta-card{width:min(430px,94vw);background:#0c1928;color:#eaf9ff;border:1px solid rgba(104,231,255,.25);border-radius:22px;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.45)}.beta-card h2{margin:0 0 6px}.beta-card p{color:#9eb7c8}.beta-kinds,.difficulty-choices{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}.beta-kinds button,.difficulty-choices button{background:#12283d;color:#dff8ff;border:1px solid rgba(104,231,255,.22);border-radius:13px;padding:11px 8px;cursor:pointer;touch-action:manipulation;position:relative;z-index:1}.beta-kinds button.selected{background:#17405a;color:#fff;border-color:#68e7ff;box-shadow:0 0 0 2px rgba(104,231,255,.3),0 0 16px rgba(104,231,255,.18)}#feedbackText{width:100%;min-height:90px;box-sizing:border-box;border-radius:13px;padding:11px;background:#07111d;color:#fff;border:1px solid #29465e;resize:vertical}.beta-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}.difficulty-box{margin-top:18px;padding-top:14px;border-top:1px solid rgba(104,231,255,.16)}.difficulty-box.done{opacity:.65}
 @media(max-width:500px){.beta-feedback-btn{right:10px;bottom:10px;padding:8px 11px;font-size:12px}}
+.return-toast{position:fixed;left:50%;top:max(14px,env(safe-area-inset-top));transform:translateX(-50%);z-index:1150;width:min(430px,calc(100vw - 28px));padding:14px 16px;border:1px solid rgba(104,231,255,.3);border-radius:18px;background:rgba(10,25,40,.97);color:#eafaff;box-shadow:0 16px 44px rgba(0,0,0,.38);transition:opacity .25s,transform .25s}.return-toast[hidden]{display:none}.return-toast.hide{opacity:0;transform:translate(-50%,-10px)}.return-toast-title{font-weight:950;font-size:16px}.return-toast-copy{color:#9fb7ca;font-size:13px;margin-top:4px;line-height:1.35}.return-toast-stars{color:#68e7ff;letter-spacing:3px;margin-top:7px;text-shadow:0 0 8px rgba(104,231,255,.65)}
 </style><meta name="lumen-build" content="diversity-100"></head><body><main class="app"><aside class="desktop-side desktop-left"><div id="desktopLeftSlot"></div></aside><section class="game-core">
 <div class="head"><div><h1><span class="lumen-brand">LUMEN</span></h1><button id="mobileJourney" class="mobile-journey" type="button">Étincelle · 1/20</button></div><div class="head-actions"><button id="tutorialHelp" class="tutorial-help" type="button" aria-label="Revoir le tutoriel">?</button><button id="mobileAccount" class="mobile-account" type="button" aria-label="Compte et sauvegarde">♙</button><button id="mobileStreak" class="mobile-streak" type="button" aria-label="Constellation quotidienne">✦ 0/7</button><button id="new">Réinitialiser</button></div></div>
 <div id="dailyInfoPopover" class="daily-info-popover" hidden>
@@ -441,6 +442,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
   <div class="tutorial-actions"><button id="tutorialPrev">Retour</button><button id="tutorialNext">Suivant</button></div>
  </div>
 </div>
+<div id="returnToast" class="return-toast" hidden role="status" aria-live="polite"><div class="return-toast-title">Content de te revoir ✦</div><div id="returnToastCopy" class="return-toast-copy"></div><div id="returnToastStars" class="return-toast-stars"></div></div>
 <button id="betaFeedbackBtn" class="beta-feedback-btn" type="button" onclick="openBetaFeedback()">⚑ Signaler un problème</button>
 <div id="feedbackModal" class="beta-modal" hidden role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
  <div class="beta-card">
@@ -614,6 +616,18 @@ function renderDaily(){
  const infoStars=document.getElementById("dailyInfoStars");if(infoStars){infoStars.innerHTML="";for(let i=6;i>=0;i--){let e=document.createElement("span");e.className=lumenProgress.daily.dates[dateOffsetKey(-i)]?"on":"";e.textContent="✦";infoStars.appendChild(e)}}
  const infoStatus=document.getElementById("dailyInfoStatus");if(infoStatus)infoStatus.textContent=done?"✓ Étoile d’aujourd’hui allumée · série de "+streak+" jour"+(streak>1?"s":""):"Aujourd’hui : termine une carte pour continuer ta série de "+streak+" jour"+(streak>1?"s":"");
 
+}
+function maybeShowReturnWelcome(){
+ const today=localDateKey(),key="lumenWelcomeDayV1",seen=localStorage.getItem(key),hasHistory=Object.keys(lumenProgress.solved||{}).length>0||Object.keys(lumenProgress.daily.dates||{}).length>0;
+ if(seen===today||!hasHistory)return;
+ localStorage.setItem(key,today);
+ const toast=document.getElementById("returnToast"),copy=document.getElementById("returnToastCopy"),stars=document.getElementById("returnToastStars");if(!toast)return;
+ const done=!!lumenProgress.daily.dates[today],streak=dailyStreak(),lit=Math.min(streak,7),remaining=Math.max(0,7-lit),sector=Math.floor(levelIndex/20);
+ copy.textContent=done?"Ton étoile du jour est allumée ✓ · "+SECTORS[sector].name+" · carte "+(levelIndex%20+1)+"/20":(streak?"Ta constellation compte "+lit+"/7 étoile"+(lit>1?"s":"")+". Termine une carte aujourd’hui pour poursuivre ta série.":"Une nouvelle étoile t’attend aujourd’hui. Tu reprends "+SECTORS[sector].name+" · carte "+(levelIndex%20+1)+"/20.");
+ if(done&&remaining)copy.textContent+=" · Plus que "+remaining+" pour le Halo Azur.";
+ if(streak>=7)copy.textContent+=" · Halo Azur débloqué ✦";
+ stars.textContent="✦".repeat(lit)+"·".repeat(7-lit);toast.hidden=false;
+ const close=()=>{toast.classList.add("hide");setTimeout(()=>toast.hidden=true,260)};toast.onclick=close;setTimeout(close,5200);
 }
 async function cloudSaveDaily(date,index){if(!lumenSupabase||!lumenUser)return;let {error}=await lumenSupabase.rpc("lumen_save_daily",{p_play_date:date,p_puzzle_id:index+1});if(error)console.warn("LUMEN daily save",error)}
 async function cloudMergeDaily(){
@@ -1284,6 +1298,7 @@ document.getElementById("new").onclick=()=>{
 };
 refreshJourney();
 renderDaily();
+maybeShowReturnWelcome();
 
 setupBetaFeedback();
 initLumenCloud();
