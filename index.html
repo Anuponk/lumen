@@ -698,10 +698,17 @@ function configureLearningMode(){
  else{cb.checked=false;cb.disabled=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=false;note.textContent="Mode autonome · l’aide automatique est désactivée par défaut, mais reste disponible si tu le souhaites."}}
 }
 function applyQuestRestrictions(){
- const q=questFor(levelIndex),cb=document.getElementById("autoCross"),wrap=document.getElementById("autoCrossWrap"),note=document.getElementById("learningNote");
- if(!q||!q.noAuto||lumenProgress.stars[q.id])return;
- cb.checked=false;cb.disabled=true;wrap.classList.add("learning-locked");
- if(note){note.hidden=false;note.textContent="Quête Éclair · assombrissement automatique désactivé pour ce défi."}
+ const q=questFor(levelIndex),cb=document.getElementById("autoCross"),wrap=document.getElementById("autoCrossWrap"),note=document.getElementById("learningNote"),hint=document.getElementById("hint");
+ if(hint)hint.disabled=false;
+ if(!q||lumenProgress.stars[q.id])return;
+ if(q.noAuto){
+  cb.checked=false;cb.disabled=true;wrap.classList.add("learning-locked");
+  if(note){note.hidden=false;note.textContent="Quête Éclair · assombrissement automatique désactivé pour ce défi."}
+ }
+ if(q.type===2){
+  if(hint)hint.disabled=true;
+  if(note){note.hidden=false;note.textContent="Quête Esprit clair · aucun indice disponible pendant ce défi."}
+ }
 }
 function maybeShowAutonomy(){
  if(levelIndex!==10||lumenProgress.autonomySeen)return;
