@@ -923,7 +923,6 @@ function immediateErrorForAction(r,c,next){
    if(touch)return "Deux Gardiens ne peuvent pas se toucher, même en diagonale.";
    return levelIndex<=4?"Ce Gardien conduirait à une impasse. Essaie un autre emplacement.":"Ce choix conduit à une impasse.";
  }
- if(next===1&&puz.sol[r]===c)return levelIndex<=4?"Cette case est nécessaire : l’écarter rendrait la quête impossible.":"Cette exclusion conduit à une impasse.";
  return "";
 }
 
@@ -1218,7 +1217,7 @@ function runHintTests(){
  test("Campagne : le ciel contient exactement 150 étoiles",()=>CONSTELLATIONS.reduce((a,c)=>a+c.count,0)===SKY_TARGET&&SKY_TARGET===150);
  test("Campagne : chaque quête appartient à une constellation",()=>Array.from({length:100},(_,i)=>chapterForGrid(i)).every(i=>i>=0&&i<CONSTELLATIONS.length));
  test("Apprentissage : erreurs immédiates actives sur les 10 premières quêtes",()=>{const src=render.toString();return src.includes("levelIndex<=9||guidedErrorsEnabled()")&&typeof immediateErrorForAction==="function"});
- test("Apprentissage : le Gardien erroné est affiché avant retour automatique",()=>{const src=render.toString();return src.includes('bad.classList.add("conflict")')&&src.includes("state[r][c]=before")&&src.includes("1100")});return src.indexOf("state[r][c]=next")<src.indexOf("immediateErrorForAction(r,c,next)")&&src.includes("Corrige d’abord le Gardien signalé")});
+ test("Apprentissage : le Gardien erroné est affiché avant retour automatique",()=>{const src=render.toString();return src.includes('bad.classList.add("conflict")')&&src.includes("state[r][c]=before")&&src.includes("1100")});
  test("Apprentissage : correction immédiate reste optionnelle après la quête 10",()=>!!document.getElementById("guidedErrors")&&configureLearningMode.toString().includes("lumenGuidedErrors"));
  test("Narratif : les pièces placées sont des Gardiens",()=>{
    const src=render.toString(),rules=document.querySelector(".rules")?.textContent||"";
@@ -1573,6 +1572,6 @@ markLumenSeen();
 initLumenCloud();
 </script><script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=5",{updateViaCache:"none"}).then(r=>r.update()).catch(e=>console.warn("LUMEN service worker",e)));
+ window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=6",{updateViaCache:"none"}).then(r=>r.update()).catch(e=>console.warn("LUMEN service worker",e)));
 }
 </script></body></html>
