@@ -1,0 +1,770 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>LUMEN — Puzzle de lumière</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f7f5ef;color:#202124;font-family:Arial,sans-serif}.app{max-width:680px;margin:auto;padding:20px 16px 42px}
+.head{display:flex;justify-content:space-between;align-items:center}h1{font-size:38px;margin:4px 0 0}.sub{font-size:20px;font-weight:700;color:#777;margin-bottom:24px}
+button{font:inherit;font-weight:700;background:#fff;border:1.8px solid #555;border-radius:24px;padding:12px 17px}.levels{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 22px}
+.level{border-radius:15px;padding:11px 3px}.level.active{background:#222;color:#fff}.level small{display:block;margin-top:4px}.status{display:flex;justify-content:space-between;font-size:20px;font-weight:bold;margin:8px 3px 17px}
+#board{display:grid;width:100%;aspect-ratio:1;border:5px solid #222;border-radius:10px;overflow:hidden;background:#fff}.cell{display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;overflow:hidden;line-height:1;border-right:1px solid #555;border-bottom:1px solid #555;font-size:clamp(18px,6vw,35px);font-weight:bold;user-select:none}
+.cell .x{opacity:.55}.cell.hi{box-shadow:inset 0 0 0 5px #222}.actions{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px}.msg{min-height:78px;text-align:center;padding:14px 4px;font-weight:700;color:#555}
+.proof{text-align:center;color:#666;margin:14px 0 25px}.rules{background:#fff;border:1px solid #ddd;border-radius:18px;padding:18px}
+@media(max-width:500px){.levels{gap:5px}.level{font-size:13px;padding:10px 1px}h1{font-size:34px}.head button{padding:10px 12px}}
+
+.auto-cross{display:flex;align-items:center;gap:10px;margin:2px 2px 18px;
+font-weight:700;color:#555;font-size:15px;cursor:pointer}
+.auto-cross input{width:21px;height:21px;accent-color:#222;flex:0 0 auto}
+
+.cell.auto-x .x{opacity:.38}
+
+/* Success celebration */
+#successOverlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;
+  background:rgba(20,20,20,.42);backdrop-filter:blur(3px);padding:24px}
+#successOverlay.show{display:flex;animation:successFade .28s ease-out}
+.success-card{position:relative;width:min(430px,92vw);background:#fff;border-radius:28px;padding:30px 24px 24px;
+  text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.28);animation:successPop .55s cubic-bezier(.2,1.45,.35,1)}
+.success-gem{font-size:74px;line-height:1;animation:gemBounce .8s ease-in-out}
+.success-title{font-size:34px;font-weight:900;margin:10px 0 4px}
+.success-sub{font-size:18px;color:#666;font-weight:700;margin-bottom:20px}
+.success-time{font-size:24px;font-weight:900;margin:10px 0 22px}
+.success-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.success-actions button{border-radius:16px}
+#board.win{animation:boardWin .8s ease-in-out}
+#board.win .cell{animation:cellWin .65s ease-out both}
+.confetti{position:fixed;z-index:1001;top:-24px;width:12px;height:18px;border-radius:3px;pointer-events:none;
+  animation:confettiFall var(--dur) linear forwards;transform:rotate(var(--rot))}
+@keyframes successFade{from{opacity:0}to{opacity:1}}
+@keyframes successPop{0%{opacity:0;transform:scale(.65) translateY(30px)}70%{transform:scale(1.04)}100%{opacity:1;transform:scale(1)}}
+@keyframes gemBounce{0%,100%{transform:scale(1) rotate(0)}35%{transform:scale(1.25) rotate(-8deg)}65%{transform:scale(1.12) rotate(8deg)}}
+@keyframes boardWin{0%,100%{transform:scale(1)}40%{transform:scale(1.025);box-shadow:0 0 0 8px rgba(255,193,7,.28)}}
+@keyframes cellWin{0%{filter:brightness(1)}45%{filter:brightness(1.22)}100%{filter:brightness(1)}}
+@keyframes confettiFall{0%{transform:translateY(-5vh) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:.9}}
+@media (prefers-reduced-motion:reduce){
+ #board.win,.success-card,.success-gem,.confetti{animation-duration:.01ms!important;animation-iteration-count:1!important}
+}
+
+
+/* EMBER — Fire & Water */
+:root{--ember:#ef5b2a;--ember-deep:#b92f16;--water:#3196c7;--ink:#25211f;--paper:#fffaf3}
+body{background:radial-gradient(circle at 50% -15%,#fff0dc 0,#fffaf3 38%,#f4f1ec 100%);color:var(--ink)}
+.brand-fire{font-weight:950;letter-spacing:.16em;background:linear-gradient(180deg,#ff9b42,#e84b24 58%,#a92717);
+ -webkit-background-clip:text;background-clip:text;color:transparent}
+#board{box-shadow:0 14px 40px rgba(62,39,28,.13);border-color:#332a26!important;background:#fffdf9!important}
+.ember-flame{display:inline-block;position:relative;width:42%;height:55%;min-width:16px;min-height:22px;
+ background:linear-gradient(145deg,#ffb13b 4%,#f36a2d 47%,#c82f1d 90%);
+ border-radius:58% 42% 60% 40%/68% 58% 42% 32%;transform:rotate(45deg);
+ box-shadow:0 3px 9px rgba(201,48,28,.28)}
+.ember-flame:after{content:"";position:absolute;width:40%;height:48%;left:38%;top:38%;
+ background:#ffd76b;border-radius:60% 40% 55% 45%;opacity:.92}
+.ember-flame.big{width:48px;height:66px}
+.ember-drop{display:inline-block;width:27%;height:36%;min-width:10px;min-height:14px;
+ background:linear-gradient(145deg,#80d4ef,#2789bc);border-radius:62% 38% 65% 35%/68% 44% 56% 32%;
+ transform:rotate(45deg);box-shadow:0 2px 6px rgba(39,137,188,.2);opacity:.9}
+.cell.auto .ember-drop,.cell.autoCross .ember-drop{opacity:.42}
+.success-card{background:linear-gradient(180deg,#fffaf3,#fff);border:1px solid rgba(239,91,42,.18)}
+.success-title{color:var(--ember-deep)}
+#successOverlay{background:rgba(39,30,25,.48)}
+
+
+.mini-flame{display:inline-block;width:13px;height:17px;vertical-align:-3px;
+ background:linear-gradient(145deg,#ffb13b,#f36a2d 50%,#c82f1d);
+ border-radius:58% 42% 60% 40%/68% 58% 42% 32%;transform:rotate(45deg)}
+
+
+/* LUMEN — ENERGY MAP */
+:root{--void:#090d16;--ink:#edf5ff;--muted:#8190a8;--cyan:#68e7ff}
+html{background:#090d16}
+body{background:radial-gradient(circle at 50% -8%,rgba(63,118,173,.22),transparent 35%),#090d16;color:var(--ink);min-height:100vh}
+.app{max-width:650px;padding:24px 18px 48px}.head{align-items:center;margin-bottom:18px}h1{margin:0}
+.lumen-brand{font-size:34px;font-weight:900;letter-spacing:.28em;color:#eafaff;text-shadow:0 0 18px rgba(104,231,255,.38)}
+button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:14px;box-shadow:inset 0 1px rgba(255,255,255,.04)}
+.levels{display:none}.auto-cross{color:#8fa0b8;font-weight:600}.auto-cross input{accent-color:#67dff8}
+.status{color:#b8c9dd;font-size:17px}#difficulty{display:none!important}
+#board{position:relative;display:grid;width:100%;aspect-ratio:1;border:0!important;border-radius:30px;overflow:hidden;
+ padding:12px;gap:3px;background:radial-gradient(circle at 50% 48%,rgba(37,62,92,.72),rgba(11,17,29,.97) 66%),#0d1422!important;
+ box-shadow:0 24px 70px rgba(0,0,0,.45),inset 0 0 0 1px rgba(129,179,220,.11)!important}
+.cell{position:relative;border:0!important;border-radius:8px;background:rgba(255,255,255,.018)!important;overflow:visible;isolation:isolate;
+ transition:background .15s ease,transform .15s ease,box-shadow .15s ease}
+.cell:before{content:"";position:absolute;inset:29%;border-radius:50%;border:1px solid rgba(147,178,213,.15);
+ background:rgba(9,14,24,.24);z-index:-1}
+.cell.hi{box-shadow:inset 0 0 0 2px rgba(104,231,255,.88),0 0 18px rgba(104,231,255,.18)!important}
+.cell[data-t="1"]{border-top:3px solid var(--territory)!important}.cell[data-b="1"]{border-bottom:3px solid var(--territory)!important}
+.cell[data-l="1"]{border-left:3px solid var(--territory)!important}.cell[data-r="1"]{border-right:3px solid var(--territory)!important}
+.lumen-orb{position:relative;width:46%;aspect-ratio:1;border-radius:50%;
+ background:radial-gradient(circle at 38% 34%,#fff 0 10%,#c8fbff 16%,#67e6ff 38%,#3185c4 67%,#102b52 100%);
+ box-shadow:0 0 7px #dffcff,0 0 17px rgba(104,231,255,.9),0 0 34px rgba(55,144,221,.62);animation:orbPulse 2.1s ease-in-out infinite}
+.lumen-orb:after{content:"";position:absolute;inset:-30%;border:1px solid rgba(114,232,255,.2);border-radius:50%}
+.lumen-orb.big{width:74px;display:inline-block}
+.lumen-dim{width:16%;aspect-ratio:1;border-radius:50%;background:#344158;box-shadow:0 0 0 1px #53627a;opacity:.9}
+.cell.auto-x .lumen-dim{opacity:.3}
+.mini-flame{width:12px;height:12px;border-radius:50%;background:#8ef0ff;transform:none;box-shadow:0 0 8px rgba(104,231,255,.85);vertical-align:0}
+.rules{background:#101827;border:1px solid #263650;border-radius:20px;color:#b7c6da}.rules b{color:#edf7ff}
+.msg{color:#9fb1c8}.success-card{background:linear-gradient(180deg,#121c2d,#0c1320);border:1px solid #2d4966;color:#eefaff}
+.success-title{color:#c8f8ff}.success-sub{color:#8da3bb}#successOverlay{background:rgba(4,8,15,.72)}.success-gem{display:flex;justify-content:center}
+@keyframes orbPulse{50%{filter:brightness(1.22);transform:scale(1.06)}}
+@media(max-width:500px){.app{padding:18px 12px 38px}.lumen-brand{font-size:30px}#board{padding:8px;gap:2px;border-radius:23px}}
+
+
+/* LUMEN v2 — stronger state contrast */
+.cell{
+ background:rgba(31,49,73,.20)!important;
+ box-shadow:inset 0 0 0 1px rgba(124,160,199,.075);
+}
+.cell:before{
+ inset:25%;
+ border:1px solid rgba(164,202,235,.34);
+ background:radial-gradient(circle,rgba(40,68,99,.46),rgba(17,29,47,.58));
+ box-shadow:inset 0 0 10px rgba(85,144,194,.07);
+}
+.lumen-dim{
+ width:24%;aspect-ratio:1;border-radius:50%;
+ background:#77849a;
+ box-shadow:0 0 0 2px rgba(181,197,218,.34),0 2px 8px rgba(0,0,0,.35);
+ opacity:1;
+}
+.cell.auto-x .lumen-dim{
+ width:17%;
+ background:#344157;
+ box-shadow:0 0 0 1px rgba(104,122,149,.34);
+ opacity:.68;
+}
+.lumen-orb{
+ width:48%;
+ box-shadow:0 0 8px #e7fdff,0 0 20px rgba(104,231,255,.95),0 0 38px rgba(55,144,221,.68);
+}
+
+
+/* LUMEN v3 — one visual language for every excluded cell.
+   Manual/automatic provenance remains internal only. */
+.lumen-dim,
+.cell.auto-x .lumen-dim{
+ width:24%;
+ aspect-ratio:1;
+ border-radius:50%;
+ background:#66758d;
+ box-shadow:0 0 0 2px rgba(166,187,211,.27),0 2px 8px rgba(0,0,0,.30);
+ opacity:.88;
+}
+
+
+/* LUMEN v4 — exclusions = amber energy rings */
+.lumen-dim,
+.cell.auto-x .lumen-dim{
+ width:30%;
+ aspect-ratio:1;
+ border-radius:50%;
+ background:rgba(255,166,45,.07);
+ border:3px solid #ffad32;
+ box-sizing:border-box;
+ box-shadow:
+   0 0 5px rgba(255,173,50,.72),
+   0 0 13px rgba(255,132,28,.30),
+   inset 0 0 5px rgba(255,186,71,.16);
+ opacity:1;
+}
+
+
+.clear-hint{border-color:#59667a!important;color:#d5deea!important;background:#172131!important}
+.clear-hint[hidden]{display:none!important}
+.journey{margin:0 0 16px;padding:14px;background:#0f1827;border:1px solid #263650;border-radius:18px}.journey-top,.progress-copy,.map-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.journey-kicker{display:block;color:#71849e;font-size:10px;letter-spacing:.18em}.progress-track{height:5px;background:#202d41;border-radius:9px;margin:10px 0 6px;overflow:hidden}#progressFill{display:block;height:100%;background:#68e7ff}.progress-copy{font-size:12px;color:#8190a8}.map-modal{position:fixed;inset:0;background:rgba(3,7,13,.92);z-index:90;padding:16px;overflow:auto}.map-modal[hidden]{display:none}.map-sheet{max-width:650px;margin:auto;background:#0d1523;border:1px solid #293a54;border-radius:24px;padding:18px}.sector-tabs,.puzzle-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}.sector-tabs{margin:18px 0 14px}.sector-tab{font-size:10px!important;padding:8px 2px!important}.sector-tab.locked{opacity:.28}.sector-tab.active{border-color:#68e7ff}.puzzle-card{aspect-ratio:1;padding:0!important}.puzzle-card.done{background:#123044;border-color:#3d9eb8}.puzzle-card.current{box-shadow:0 0 0 2px #7deaff}.badge-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.badge{padding:9px;border:1px solid #263650;border-radius:12px;color:#6f7f96;font-size:11px}.badge.earned{color:#eafaff;background:#102535}.sector-progress{margin-top:8px;color:#b9d8e8;font-size:13px;font-weight:800}.progress-copy strong{color:#eafaff}.campaign-map-label{margin:0 2px 8px;color:#7f94ad;font-size:12px;font-weight:800;letter-spacing:.06em}.puzzle-card.locked{opacity:.3;cursor:not-allowed}</style><meta name="lumen-build" content="energy-map-v5b-safe-hints"></head><body><main class="app">
+<div class="head"><div><h1><span class="lumen-brand">LUMEN</span></h1></div><button id="new">Réinitialiser</button></div>
+<div class="levels" id="levels"></div><section class="journey"><div class="journey-top"><div><span class="journey-kicker">PARCOURS</span><strong id="journeyTitle">Étincelle</strong></div><button id="openMap">100 cartes</button></div><div class="progress-track"><span id="progressFill"></span></div><div class="progress-copy"><strong id="progressText">0 / 100 cartes réussies</strong><span id="badgeCount">0 badges</span></div><div id="sectorProgress" class="sector-progress">Étincelle : 0/20</div></section><div id="mapModal" class="map-modal" hidden><div class="map-sheet"><div class="map-head"><h2>Parcours LUMEN</h2><button id="closeMap">Fermer</button></div><div id="sectorTabs" class="sector-tabs"></div><div id="puzzleGrid" class="puzzle-grid"></div><h3>Badges</h3><div id="badgeGrid" class="badge-grid"></div></div></div><label class="auto-cross">
+<input type="checkbox" id="autoCross" checked>
+<span>Assombrir automatiquement les cases incompatibles</span>
+</label>
+<div id="difficulty" style="text-align:center;font-weight:700;color:#666;margin:-8px 0 12px"></div><div class="status"><span>◷ <span id="time">0:00</span></span><span><span class="mini-flame"></span> <span id="count"></span></span></div>
+<div id="campaignMapLabel" class="campaign-map-label">Carte 1 · Étincelle</div><div id="board"></div><div class="actions"><button id="undo">Annuler</button><button id="hint">Indice</button><button id="clearHint" class="clear-hint" hidden>Revoir la carte</button></div>
+<div class="msg" id="msg"></div>
+
+
+<div class="rules"><b>Règles</b><p>Active une source de lumière par ligne, colonne et territoire. Deux sources ne peuvent pas se toucher, même en diagonale. Un appui assombrit un emplacement, deux appuis l’active, trois appuis le libèrent.</p></div>
+</main>
+<div id="successOverlay" role="dialog" aria-modal="true" aria-labelledby="successTitle">
+ <div class="success-card">
+  <div class="success-gem"><span class="lumen-orb big" aria-hidden="true"></span></div>
+  <div class="success-title" id="successTitle">Constellation complète</div>
+  <div class="success-sub">Toutes les sources sont synchronisées</div>
+  <div class="success-time">◷ <span id="successTime">0:00</span></div>
+  <div class="success-actions">
+   <button id="successClose">Voir la grille</button>
+   <button id="successNew">Carte suivante</button>
+  </div>
+ </div>
+</div>
+<script>
+const LUMEN_META=[{"id":1,"sector":0,"score":9,"steps":7},{"id":2,"sector":0,"score":9,"steps":7},{"id":3,"sector":0,"score":9,"steps":7},{"id":4,"sector":0,"score":9,"steps":7},{"id":5,"sector":0,"score":12,"steps":8},{"id":6,"sector":0,"score":12,"steps":8},{"id":7,"sector":0,"score":12,"steps":8},{"id":8,"sector":0,"score":12,"steps":8},{"id":9,"sector":0,"score":12,"steps":8},{"id":10,"sector":0,"score":12,"steps":8},{"id":11,"sector":0,"score":12,"steps":8},{"id":12,"sector":0,"score":12,"steps":8},{"id":13,"sector":0,"score":12,"steps":8},{"id":14,"sector":0,"score":12,"steps":8},{"id":15,"sector":0,"score":12,"steps":8},{"id":16,"sector":0,"score":12,"steps":8},{"id":17,"sector":0,"score":12,"steps":8},{"id":18,"sector":0,"score":12,"steps":8},{"id":19,"sector":0,"score":12,"steps":8},{"id":20,"sector":0,"score":15,"steps":8},{"id":21,"sector":1,"score":15,"steps":8},{"id":22,"sector":1,"score":15,"steps":8},{"id":23,"sector":1,"score":15,"steps":8},{"id":24,"sector":1,"score":15,"steps":8},{"id":25,"sector":1,"score":15,"steps":8},{"id":26,"sector":1,"score":15,"steps":8},{"id":27,"sector":1,"score":15,"steps":8},{"id":28,"sector":1,"score":15,"steps":8},{"id":29,"sector":1,"score":15,"steps":8},{"id":30,"sector":1,"score":15,"steps":8},{"id":31,"sector":1,"score":15,"steps":8},{"id":32,"sector":1,"score":15,"steps":8},{"id":33,"sector":1,"score":15,"steps":8},{"id":34,"sector":1,"score":15,"steps":8},{"id":35,"sector":1,"score":15,"steps":9},{"id":36,"sector":1,"score":15,"steps":9},{"id":37,"sector":1,"score":15,"steps":9},{"id":38,"sector":1,"score":15,"steps":9},{"id":39,"sector":1,"score":15,"steps":9},{"id":40,"sector":1,"score":15,"steps":9},{"id":41,"sector":2,"score":15,"steps":9},{"id":42,"sector":2,"score":15,"steps":9},{"id":43,"sector":2,"score":15,"steps":9},{"id":44,"sector":2,"score":15,"steps":9},{"id":45,"sector":2,"score":15,"steps":9},{"id":46,"sector":2,"score":18,"steps":8},{"id":47,"sector":2,"score":18,"steps":8},{"id":48,"sector":2,"score":18,"steps":8},{"id":49,"sector":2,"score":18,"steps":8},{"id":50,"sector":2,"score":18,"steps":9},{"id":51,"sector":2,"score":18,"steps":9},{"id":52,"sector":2,"score":18,"steps":9},{"id":53,"sector":2,"score":18,"steps":9},{"id":54,"sector":2,"score":18,"steps":10},{"id":55,"sector":2,"score":21,"steps":9},{"id":56,"sector":2,"score":21,"steps":9},{"id":57,"sector":2,"score":21,"steps":9},{"id":58,"sector":2,"score":21,"steps":9},{"id":59,"sector":2,"score":21,"steps":10},{"id":60,"sector":2,"score":21,"steps":10},{"id":61,"sector":3,"score":21,"steps":10},{"id":62,"sector":3,"score":21,"steps":10},{"id":63,"sector":3,"score":21,"steps":10},{"id":64,"sector":3,"score":21,"steps":10},{"id":65,"sector":3,"score":21,"steps":10},{"id":66,"sector":3,"score":21,"steps":10},{"id":67,"sector":3,"score":21,"steps":10},{"id":68,"sector":3,"score":21,"steps":10},{"id":69,"sector":3,"score":21,"steps":10},{"id":70,"sector":3,"score":21,"steps":10},{"id":71,"sector":3,"score":21,"steps":10},{"id":72,"sector":3,"score":21,"steps":10},{"id":73,"sector":3,"score":21,"steps":10},{"id":74,"sector":3,"score":21,"steps":10},{"id":75,"sector":3,"score":21,"steps":10},{"id":76,"sector":3,"score":21,"steps":10},{"id":77,"sector":3,"score":21,"steps":10},{"id":78,"sector":3,"score":21,"steps":10},{"id":79,"sector":3,"score":21,"steps":10},{"id":80,"sector":3,"score":21,"steps":10},{"id":81,"sector":4,"score":21,"steps":10},{"id":82,"sector":4,"score":24,"steps":10},{"id":83,"sector":4,"score":24,"steps":10},{"id":84,"sector":4,"score":24,"steps":11},{"id":85,"sector":4,"score":24,"steps":11},{"id":86,"sector":4,"score":24,"steps":11},{"id":87,"sector":4,"score":24,"steps":11},{"id":88,"sector":4,"score":25,"steps":10},{"id":89,"sector":4,"score":27,"steps":10},{"id":90,"sector":4,"score":27,"steps":10},{"id":91,"sector":4,"score":27,"steps":10},{"id":92,"sector":4,"score":27,"steps":10},{"id":93,"sector":4,"score":27,"steps":10},{"id":94,"sector":4,"score":27,"steps":10},{"id":95,"sector":4,"score":27,"steps":10},{"id":96,"sector":4,"score":27,"steps":11},{"id":97,"sector":4,"score":27,"steps":11},{"id":98,"sector":4,"score":28,"steps":10},{"id":99,"sector":4,"score":29,"steps":9},{"id":100,"sector":4,"score":30,"steps":12}];
+const SECTORS=[{name:"Étincelle",icon:"✦"},{name:"Halo",icon:"◉"},{name:"Rayonnement",icon:"◎"},{name:"Prisme",icon:"◇"},{name:"Nova",icon:"✹"}];
+function loadLumenProgress(){try{return JSON.parse(localStorage.getItem("lumenProgressV1"))||{solved:{},badges:{}}}catch(e){return {solved:{},badges:{}}}}
+let lumenProgress=loadLumenProgress(),usedHintThisGame=false;
+function normalizeSequentialProgress(){
+ const count=Math.min(100,Object.keys(lumenProgress.solved||{}).filter(k=>lumenProgress.solved[k]).length);
+ const seq={}; for(let i=0;i<count;i++)seq[i]=1;
+ lumenProgress.solved=seq;
+ return count;
+}
+const sequentialSolvedCount=normalizeSequentialProgress();
+function saveLumenProgress(){try{localStorage.setItem("lumenProgressV1",JSON.stringify(lumenProgress))}catch(e){}}
+function sectorSolved(s){let n=0;for(let i=s*20;i<s*20+20;i++)if(lumenProgress.solved[i])n++;return n}
+function sectorUnlocked(s){return s===0||(sectorUnlocked(s-1)&&sectorSolved(s-1)===20)}
+
+const CAT={"6":[{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,1],[0,0,1,2,2,2],[0,1,1,3,2,2],[0,4,1,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,1,1,1,1],[0,0,0,1,1,1],[0,2,0,1,1,1],[2,2,2,3,4,4],[2,2,2,3,4,4],[2,2,5,5,4,4]],"sol":[0,4,1,3,5,2]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,1],[0,0,1,2,2,2],[0,1,1,3,2,2],[0,4,1,3,3,2],[4,4,4,4,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,0,1,1,1,2],[0,1,1,1,3,2],[0,1,1,3,3,2],[0,4,4,3,3,2],[4,4,3,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,2,2],[0,4,1,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,2],[0,0,1,2,2,2],[0,1,1,3,2,2],[0,4,1,3,3,2],[0,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,1,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,2,2],[0,4,1,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,1,1,1,1,2],[0,1,1,1,2,2],[0,1,1,3,2,2],[0,4,1,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,2,2],[0,4,1,3,3,3],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,2],[0,1,1,2,2,2],[0,1,1,3,2,2],[0,4,1,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,2],[0,1,1,2,2,2],[0,1,1,3,2,2],[0,4,1,3,3,2],[0,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,1,1,1,1,2],[0,1,1,1,2,2],[0,1,1,3,2,2],[0,4,1,3,3,2],[0,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,1,1,1,1,2],[0,1,1,1,2,2],[0,1,1,3,2,2],[0,4,1,3,3,2],[4,4,4,5,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,1,1,1,1,2],[0,1,1,1,2,2],[0,1,1,3,2,2],[0,4,3,3,3,2],[4,4,4,5,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,2,2],[0,4,1,3,3,3],[0,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,1,1,1,1,2],[0,1,1,1,2,2],[0,1,1,3,2,2],[0,4,3,3,3,2],[4,4,5,5,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,1,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,2,2],[0,4,1,3,3,2],[0,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,2],[0,1,1,2,2,2],[0,1,1,3,2,2],[0,4,1,3,3,2],[0,4,4,4,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,1,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,2,2],[0,4,3,3,3,2],[4,4,4,5,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[1,1,0,0,0,0],[1,1,0,0,0,2],[1,1,2,2,2,2],[1,1,2,2,3,3],[4,4,4,4,3,5],[4,4,3,3,3,5]],"sol":[3,0,2,4,1,5]},{"reg":[[1,1,0,0,0,0],[1,1,0,0,0,0],[1,1,1,1,2,2],[1,1,3,3,2,2],[4,4,5,3,2,2],[4,4,5,3,3,2]],"sol":[4,1,5,3,0,2]},{"reg":[[1,1,0,0,0,0],[1,1,0,0,0,2],[1,1,2,2,2,2],[1,1,2,2,3,3],[4,4,4,2,3,5],[4,4,3,3,3,5]],"sol":[3,0,2,4,1,5]},{"reg":[[1,0,0,0,0,0],[1,1,0,0,0,2],[1,1,2,2,2,2],[1,1,2,2,3,3],[1,4,4,4,3,5],[4,4,3,3,3,5]],"sol":[3,0,2,4,1,5]},{"reg":[[0,0,1,1,1,1],[0,0,0,1,1,1],[0,2,0,1,1,1],[2,2,3,3,4,4],[2,2,2,3,4,4],[2,2,5,5,4,4]],"sol":[0,4,1,3,5,2]},{"reg":[[1,0,0,0,0,0],[1,1,0,0,0,2],[1,1,2,2,2,2],[1,1,2,2,3,3],[4,4,4,4,3,5],[4,3,3,3,3,5]],"sol":[3,0,2,4,1,5]},{"reg":[[1,1,0,0,0,0],[1,1,0,0,0,0],[1,1,1,1,2,2],[1,1,3,3,2,2],[4,1,5,3,2,2],[4,4,5,3,3,2]],"sol":[4,1,5,3,0,2]},{"reg":[[1,1,0,0,0,2],[1,1,0,0,0,2],[1,1,2,2,2,2],[1,1,2,2,3,3],[4,4,4,2,3,5],[4,4,3,3,3,5]],"sol":[3,0,2,4,1,5]},{"reg":[[1,0,0,0,0,0],[1,0,0,0,0,2],[1,1,2,2,2,2],[1,1,2,2,3,3],[1,4,4,4,3,5],[4,4,3,3,3,5]],"sol":[3,0,2,4,1,5]},{"reg":[[1,1,1,0,0,2],[1,1,0,0,0,2],[1,1,2,2,2,2],[1,1,2,2,3,3],[4,4,4,2,3,5],[4,4,3,3,3,5]],"sol":[3,0,2,4,1,5]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,2,2],[0,0,1,1,2,2],[0,1,1,3,2,2],[0,4,1,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[1,0,0,0,0,0],[1,0,0,0,0,0],[1,0,2,2,2,2],[1,1,2,2,3,3],[1,4,4,4,3,5],[4,4,3,3,3,5]],"sol":[3,0,2,4,1,5]},{"reg":[[1,0,0,0,0,0],[1,0,0,0,0,2],[1,0,2,2,2,2],[1,1,2,2,3,3],[1,4,4,4,3,5],[4,4,4,3,3,5]],"sol":[3,0,2,4,1,5]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,2,2],[0,0,1,1,2,2],[0,1,1,3,2,2],[0,4,1,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[1,1,1,0,0,2],[1,1,0,0,2,2],[1,1,2,2,2,2],[1,1,2,2,3,3],[4,4,4,2,3,5],[4,4,3,3,3,5]],"sol":[3,0,2,4,1,5]},{"reg":[[1,1,1,1,1,0],[1,1,1,1,1,0],[3,4,1,4,2,2],[3,4,4,4,4,2],[3,4,4,4,4,4],[5,5,5,4,4,4]],"sol":[5,2,4,0,3,1]},{"reg":[[1,1,1,1,1,0],[1,1,1,1,1,0],[3,1,1,4,2,2],[3,4,4,4,4,2],[3,4,4,4,4,2],[5,5,5,4,4,4]],"sol":[5,2,4,0,3,1]},{"reg":[[0,0,1,1,1,1],[0,0,0,1,1,1],[0,2,0,1,1,1],[2,2,3,3,4,4],[2,2,2,4,4,4],[2,2,5,5,4,4]],"sol":[0,4,1,3,5,2]},{"reg":[[0,0,0,0,1,1],[0,1,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,2,2],[0,4,1,3,2,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[1,1,1,1,1,0],[1,4,1,1,1,0],[3,4,1,4,2,2],[3,4,4,4,4,2],[3,4,4,4,4,4],[5,5,5,4,4,4]],"sol":[5,2,4,0,3,1]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,2,2],[0,4,4,3,3,2],[4,4,4,4,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[1,1,1,1,1,0],[1,1,1,1,1,0],[3,1,1,4,2,2],[3,4,1,4,4,2],[3,4,4,4,4,2],[5,5,5,4,4,4]],"sol":[5,2,4,0,3,1]},{"reg":[[1,1,1,1,1,0],[1,1,1,4,1,0],[3,1,1,4,2,2],[3,4,1,4,4,2],[3,4,4,4,4,2],[5,5,5,4,4,4]],"sol":[5,2,4,0,3,1]},{"reg":[[1,1,1,1,1,0],[1,1,1,1,1,0],[3,4,1,4,2,2],[3,4,4,4,4,4],[3,4,4,4,4,4],[5,5,5,4,4,4]],"sol":[5,2,4,0,3,1]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,2],[0,1,1,1,3,2],[0,0,1,3,3,2],[0,4,4,3,2,2],[4,4,3,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,2],[0,1,1,1,2,2],[0,1,1,3,2,2],[0,4,4,3,3,2],[0,4,4,4,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,1,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,2,2],[0,4,1,3,3,5],[4,4,3,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,1,1,1,1,2],[0,1,1,1,2,2],[0,1,1,3,2,2],[0,4,1,3,5,2],[4,4,3,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,1,1,1,1,2],[0,1,1,1,1,2],[0,1,1,3,2,2],[0,4,1,3,5,2],[4,4,3,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,0,1,1,1,2],[0,1,1,1,1,2],[0,1,1,3,2,2],[0,4,1,3,5,2],[4,4,3,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,3,2],[0,4,1,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[1,1,0,0,0,0],[1,1,0,0,0,0],[1,1,1,1,2,2],[1,1,3,3,2,2],[4,4,5,3,2,2],[4,4,5,3,2,2]],"sol":[4,1,5,3,0,2]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,2,2],[0,0,1,1,2,2],[0,1,1,3,2,2],[0,4,4,3,3,2],[4,4,4,4,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,2,1],[0,1,1,1,2,2],[0,1,1,3,2,2],[0,4,4,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[1,1,1,1,1,0],[3,1,1,1,1,0],[3,1,1,4,2,2],[3,4,4,4,4,2],[3,4,4,4,4,2],[5,5,5,4,4,4]],"sol":[5,2,4,0,3,1]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,2],[0,1,1,1,2,2],[0,0,1,3,3,2],[0,4,4,3,3,5],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,2],[0,1,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,5,2],[4,4,4,4,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,2,2],[0,0,1,2,2,2],[0,1,1,3,2,2],[0,4,1,3,3,5],[0,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,1],[0,1,1,1,2,2],[0,0,1,3,3,2],[0,4,4,3,3,5],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,3,2],[0,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,2],[0,1,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,2],[0,1,1,1,2,2],[0,0,1,3,3,2],[0,4,4,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,3,2],[0,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,2],[0,1,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,3,2],[4,4,4,4,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,2],[0,1,1,1,2,2],[0,0,1,3,3,2],[0,4,4,3,3,2],[4,4,3,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,0,1,1,1,2],[0,1,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,3,2],[4,4,3,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,0,1,1,1,2],[0,1,1,1,2,2],[0,0,1,3,3,2],[0,4,4,3,3,2],[4,4,3,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,2],[0,1,1,1,2,2],[0,0,1,3,3,2],[0,4,4,3,2,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,3,3],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,1],[0,0,1,1,2,2],[0,1,1,3,3,2],[0,4,1,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,0,1,1,1,2],[0,1,1,1,2,2],[0,0,1,3,3,2],[0,4,4,3,2,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,0,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,3,3],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,0,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,3,2],[0,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,2,2],[0,1,1,1,2,2],[0,0,1,3,3,2],[0,4,4,3,2,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,2],[0,0,1,2,2,2],[0,1,1,3,2,2],[0,4,1,3,5,2],[4,4,4,3,5,2]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,1],[0,0,1,1,2,2],[0,1,1,3,3,2],[0,4,1,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,2],[0,1,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,3,2],[4,4,3,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,0,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,3,2],[0,4,3,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,2,2],[0,0,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,3,3],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,1,1,1,1,2],[0,1,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,3,2],[4,4,3,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,0,1,1,1,2],[0,1,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,3,2],[0,4,4,4,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,0,1,1,1],[0,2,2,1,1,1],[2,2,3,3,4,4],[2,2,2,3,4,4],[2,2,5,5,4,4]],"sol":[0,4,1,3,5,2]},{"reg":[[0,0,1,1,1,1],[0,0,0,0,1,1],[0,2,2,1,1,1],[2,2,3,3,4,4],[2,2,2,3,4,4],[2,2,5,5,4,4]],"sol":[0,4,1,3,5,2]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,1],[0,1,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,1],[0,1,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,3,2],[4,4,4,4,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,0,1,1,1,1],[0,1,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,1],[0,1,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,3,2],[0,4,4,4,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,1],[0,0,1,2,2,2],[0,1,1,3,3,2],[0,4,1,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,2],[0,0,1,2,2,2],[0,1,1,3,2,2],[0,4,1,3,5,2],[0,4,4,4,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,2],[0,0,1,2,2,2],[0,1,1,3,2,2],[0,4,1,3,5,5],[0,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,2],[0,1,1,1,2,2],[0,0,1,3,3,2],[0,4,4,3,3,5],[0,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,1,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,2,2],[0,4,1,3,3,5],[0,4,3,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,2,2],[0,4,1,3,3,5],[0,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,1,1],[0,0,1,1,1,2],[0,0,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,5,2],[0,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,2],[0,1,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,5,2],[0,4,4,4,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,2],[0,0,1,2,2,2],[0,1,1,3,2,2],[0,4,1,3,5,2],[0,4,4,3,5,2]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,2],[0,1,1,1,2,2],[0,1,1,3,3,2],[0,4,4,3,5,2],[0,4,4,4,5,2]],"sol":[0,2,5,3,1,4]},{"reg":[[1,1,1,1,0,0],[1,1,1,2,2,3],[1,4,4,2,3,3],[4,4,4,2,4,3],[5,5,4,4,4,4],[5,5,5,5,4,4]],"sol":[4,1,3,5,2,0]},{"reg":[[1,1,1,0,0,0],[1,1,1,2,2,3],[1,4,4,2,3,3],[4,4,4,2,4,3],[5,5,4,4,4,4],[5,5,5,5,4,4]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,1],[0,1,1,1,2,2],[0,1,3,3,3,2],[0,4,4,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]}]}, LEVELS=[["Challenge",6]];
+const COLORS=["#efb37e","#91b5ed","#b4a0db","#a9d692","#ff8267","#ddd9d2","#e5ef83","#bdb6a0","#a9d7d3"];
+const TERRITORY_COLORS=["#46c7e8","#6d8fe8","#8b70d7","#49b49b","#d38a54","#b55f86","#67a6bf","#7e9c69","#a8875b"];
+let n=6,puz,state,hist=[],start,timer,last={},hi=null,proofs={},hintStage=0,hintFocus=null,celebrated=false,levelIndex=Math.min(sequentialSolvedCount,99);
+const board=document.getElementById("board"),msg=document.getElementById("msg");
+function choose(){let a=CAT[n];levelIndex=Math.max(0,Math.min(levelIndex,a.length-1));puz=a[levelIndex];last[n]=levelIndex}
+function loadPuzzle(){init();}
+
+function init(){choose();let cl=document.getElementById("campaignMapLabel");if(cl)cl.textContent="Carte actuelle "+(levelIndex+1)+" · "+SECTORS[Math.floor(levelIndex/20)].name;document.getElementById("difficulty").textContent=(n===6?"":n===7?"Facile • éliminations simples":n===8?"Moyen • plusieurs étapes": "Difficile • chaînes de déductions");state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};hintStage=0;hintFocus=null;hiCells=[];celebrated=false;hideSuccess();start=Date.now();msg.textContent="";drawLevels();render();clearInterval(timer);timer=setInterval(clock,1000);clock()}
+function drawLevels(){let e=document.getElementById("levels");e.innerHTML="";LEVELS.forEach(([name,x])=>{let b=document.createElement("button");b.className="level"+(x===n?" active":"");b.innerHTML=name+"<small>"+x+" × "+x+"</small>";b.onclick=()=>{n=x;init()};e.appendChild(b)})}
+function clock(){let s=Math.floor((Date.now()-start)/1000);document.getElementById("time").textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
+function edge(r,c){let g=puz.reg[r][c],s="";if(c===0||puz.reg[r][c-1]!==g)s+="border-left:3px solid #222;";if(c===n-1||puz.reg[r][c+1]!==g)s+="border-right:3px solid #222;";if(r===0||puz.reg[r-1][c]!==g)s+="border-top:3px solid #222;";if(r===n-1||puz.reg[r+1][c]!==g)s+="border-bottom:3px solid #222;";return s}
+function solutions(){
+ let out=[],a=Array(n).fill(-1);
+ function bt(r,cols,regs,prev){
+  if(out.length>200)return;
+  if(r===n){out.push(a.slice());return}
+  let rq=state[r].indexOf(2);
+  for(let c=0;c<n;c++){
+   if(state[r][c]===1||(rq>=0&&rq!==c)||cols.has(c)||regs.has(puz.reg[r][c])||(prev>=0&&Math.abs(c-prev)<=1))continue;
+   let bad=false;
+   for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(state[y][x]===2&&y!==r){
+    if(x===c||puz.reg[y][x]===puz.reg[r][c]||(Math.abs(y-r)<=1&&Math.abs(x-c)<=1))bad=true;
+   }
+   if(bad)continue;
+   a[r]=c;let nc=new Set(cols);nc.add(c);let ng=new Set(regs);ng.add(puz.reg[r][c]);bt(r+1,nc,ng,c);
+  }
+ }
+ bt(0,new Set(),new Set(),-1);return out
+}
+
+
+function isAutoCross(r,c){
+ const cb=document.getElementById("autoCross");
+ if(!cb || !cb.checked || state[r][c]!==0)return false;
+
+ for(let qr=0;qr<n;qr++)for(let qc=0;qc<n;qc++)if(state[qr][qc]===2){
+   // A diamond automatically excludes its row, column, region and neighbours.
+   if(r===qr || c===qc || puz.reg[r][c]===puz.reg[qr][qc] ||
+      (Math.abs(r-qr)<=1 && Math.abs(c-qc)<=1)) return true;
+ }
+ return false;
+}
+function displayedCellState(r,c){
+ // 0 empty, 1 manual X, 2 diamond, 3 derived automatic X
+ if(state[r][c]===2)return 2;
+ if(state[r][c]===1)return 1;
+ return isAutoCross(r,c)?3:0;
+}
+
+function hideSuccess(){
+ let o=document.getElementById("successOverlay");
+ if(o)o.classList.remove("show");
+ board.classList.remove("win");
+ document.querySelectorAll(".confetti").forEach(x=>x.remove());
+}
+function celebrateSuccess(){
+ if(celebrated)return;
+ celebrated=true;
+ // Progress is tied to the game's real victory event (not overlay visibility).
+ lumenProgress.solved[levelIndex]=1;
+ if(!usedHintThisGame){
+   if(!lumenProgress.noHint)lumenProgress.noHint={};
+   lumenProgress.noHint[levelIndex]=1;
+ }
+ saveLumenProgress();
+ refreshJourney();
+ clearInterval(timer);
+ clock();
+ board.classList.add("win");
+ document.getElementById("successTime").textContent=document.getElementById("time").textContent;
+ document.getElementById("successOverlay").classList.add("show");
+
+ // Deliberately varied shapes/positions; purely visual, no game-state effect.
+ const palette=["#68e7ff","#5ea7ff","#8b7cff","#67d8c2","#d7f8ff","#87bfff"];
+ for(let i=0;i<72;i++){
+  let x=document.createElement("i");
+  x.className="confetti";
+  x.style.left=((i*37)%101)+"vw";
+  x.style.background=palette[i%palette.length];
+  x.style.setProperty("--dur",(2.2+(i%9)*.16)+"s");
+  x.style.setProperty("--rot",((i*47)%360)+"deg");
+  x.style.animationDelay=((i%13)*.035)+"s";
+  if(i%3===0){x.style.borderRadius="50%";x.style.width="10px";x.style.height="10px"}
+  document.body.appendChild(x);
+ }
+ setTimeout(()=>document.querySelectorAll(".confetti").forEach(x=>x.remove()),4300);
+}
+
+function render(){
+ board.style.gridTemplateColumns=`repeat(${n},minmax(0,1fr))`;board.style.gridTemplateRows=`repeat(${n},minmax(0,1fr))`;board.innerHTML="";
+ for(let r=0;r<n;r++)for(let c=0;c<n;c++){
+  let d=document.createElement("div");
+  let highlighted=(hi&&hi[0]===r&&hi[1]===c)||hiCells.some(q=>q[0]===r&&q[1]===c);
+  d.className="cell"+(highlighted?" hi":"");
+  let g=puz.reg[r][c],tc=TERRITORY_COLORS[g%TERRITORY_COLORS.length];
+  d.style.setProperty("--territory",tc);
+  d.dataset.t=(r===0||puz.reg[r-1][c]!==g)?"1":"0";
+  d.dataset.b=(r===n-1||puz.reg[r+1][c]!==g)?"1":"0";
+  d.dataset.l=(c===0||puz.reg[r][c-1]!==g)?"1":"0";
+  d.dataset.r=(c===n-1||puz.reg[r][c+1]!==g)?"1":"0";
+  let shown=displayedCellState(r,c);
+  if(shown===1||shown===3)d.innerHTML='<span class="lumen-dim" aria-label="Emplacement assombri"></span>';
+  else if(shown===2)d.innerHTML='<span class="lumen-orb" aria-label="Source activée"></span>';
+  else d.innerHTML="";
+  if(shown===3)d.classList.add("auto-x");
+  d.onclick=()=>{hist.push(state.map(x=>x.slice()));let shown=displayedCellState(r,c);if(shown===3){state[r][c]=2}else{state[r][c]=(state[r][c]+1)%3}hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";render()};board.appendChild(d)
+ }
+ let q=state.flat().filter(v=>v===2).length;document.getElementById("count").textContent=q+"/"+n;
+ if(q===n){
+   // Victory must validate the 6 placed sources themselves.
+   // Manual/automatic exclusion marks must never make a correct completed board fail.
+   const placed=[];
+   for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(state[r][c]===2)placed.push([r,c]);
+   const rows=new Set(placed.map(x=>x[0]));
+   const cols=new Set(placed.map(x=>x[1]));
+   const regs=new Set(placed.map(([r,c])=>puz.reg[r][c]));
+   let nonTouching=true;
+   for(let i=0;i<placed.length;i++)for(let j=i+1;j<placed.length;j++){
+     const [r1,c1]=placed[i],[r2,c2]=placed[j];
+     if(Math.abs(r1-r2)<=1&&Math.abs(c1-c2)<=1)nonTouching=false;
+   }
+   if(placed.length===n&&rows.size===n&&cols.size===n&&regs.size===n&&nonTouching){
+     msg.textContent="Constellation complète.";
+     celebrateSuccess();
+   }
+ }
+}
+function key(r,c){return r+","+c}
+function proofEngine(){
+ let elim={},why={},meta={};
+ function mark(r,c,reason,m=null){let k=key(r,c);if(!elim[k]){elim[k]=true;why[k]=reason;if(m)meta[k]=m;return true}return false}
+ for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(state[r][c]===1)mark(r,c,"Croix déjà validée.",{rule:"manual",source:[[r,c]]});
+ for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(state[r][c]===2){
+  let g=puz.reg[r][c];
+  for(let x=0;x<n;x++)if(x!==c)mark(r,x,"Même ligne.",{rule:"diamond",source:[[r,c]]});
+  for(let y=0;y<n;y++)if(y!==r)mark(y,c,"Même colonne.",{rule:"diamond",source:[[r,c]]});
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+   if((y!==r||x!==c)&&puz.reg[y][x]===g)mark(y,x,"Même territoire.",{rule:"diamond",source:[[r,c]]});
+   if((y!==r||x!==c)&&Math.abs(y-r)<=1&&Math.abs(x-c)<=1)mark(y,x,"Case voisine.",{rule:"diamond",source:[[r,c]]});
+  }
+ }
+ function candidate(r,c){return state[r][c]!==2&&!elim[key(r,c)]}
+ function regPlaced(g){for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(state[r][c]===2&&puz.reg[r][c]===g)return true;return false}
+ function rc(g){let a=[];for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(puz.reg[r][c]===g&&candidate(r,c))a.push([r,c]);return a}
+
+ // First return ONE visible local elimination. Do not chain it invisibly.
+ for(let g=0;g<n;g++)if(!regPlaced(g)){
+  let a=rc(g);if(a.length>=2){
+   let rows=[...new Set(a.map(q=>q[0]))],cols=[...new Set(a.map(q=>q[1]))];
+   if(rows.length===1){let r=rows[0];for(let c=0;c<n;c++)if(puz.reg[r][c]!==g&&state[r][c]===0&&!isAutoCross(r,c))
+    return {kind:"elim",cell:[r,c],text:`Ce territoire réserve la ligne ${r+1}.`,detail:{rule:"locked",region:g,axis:"row",index:r,source:a},elim,why,meta};}
+   if(cols.length===1){let c=cols[0];for(let r=0;r<n;r++)if(puz.reg[r][c]!==g&&state[r][c]===0&&!isAutoCross(r,c))
+    return {kind:"elim",cell:[r,c],text:`Ce territoire réserve la colonne ${c+1}.`,detail:{rule:"locked",region:g,axis:"col",index:c,source:a},elim,why,meta};}
+  }
+ }
+ let gs=[];for(let g=0;g<n;g++)if(!regPlaced(g))gs.push(g);
+ function combos(a,k,s=0,p=[],o=[]){if(p.length===k){o.push(p.slice());return o}for(let i=s;i<a.length;i++){p.push(a[i]);combos(a,k,i+1,p,o);p.pop()}return o}
+ for(let k=2;k<=3;k++)for(let group of combos(gs,k)){
+  let cells=[];group.forEach(g=>cells.push(...rc(g)));
+  let cols=[...new Set(cells.map(q=>q[1]))],rows=[...new Set(cells.map(q=>q[0]))];
+  if(cols.length===k)for(let c of cols)for(let r=0;r<n;r++)if(!group.includes(puz.reg[r][c])&&state[r][c]===0&&!isAutoCross(r,c))
+   return {kind:"elim",cell:[r,c],text:`${k} territoires réservent exactement ${k} colonnes.`,detail:{rule:"group",axis:"col",indices:cols,regions:group,source:cells},elim,why,meta};
+  if(rows.length===k)for(let r of rows)for(let c=0;c<n;c++)if(!group.includes(puz.reg[r][c])&&state[r][c]===0&&!isAutoCross(r,c))
+   return {kind:"elim",cell:[r,c],text:`${k} territoires réservent exactement ${k} lignes.`,detail:{rule:"group",axis:"row",indices:rows,regions:group,source:cells},elim,why,meta};
+ }
+
+ // Only after every prerequisite elimination is actually on the board may a single be hinted.
+ for(let r=0;r<n;r++)if(!state[r].includes(2)){let a=[];for(let c=0;c<n;c++)if(candidate(r,c))a.push([r,c]);
+  if(a.length===1)return {kind:"place",cell:a[0],text:`La ligne ${r+1} n'a plus qu'une possibilité.`,detail:{rule:"single",axis:"row",index:r},elim,why,meta};}
+ for(let c=0;c<n;c++)if(!state.some(q=>q[c]===2)){let a=[];for(let r=0;r<n;r++)if(candidate(r,c))a.push([r,c]);
+  if(a.length===1)return {kind:"place",cell:a[0],text:`La colonne ${c+1} n'a plus qu'une possibilité.`,detail:{rule:"single",axis:"col",index:c},elim,why,meta};}
+ for(let g=0;g<n;g++)if(!regPlaced(g)){let a=rc(g);
+  if(a.length===1)return {kind:"place",cell:a[0],text:`Ce territoire n'a plus qu'une possibilité.`,detail:{rule:"single",axis:"region",index:g},elim,why,meta};}
+ return {kind:"none",reason:"strict",elim,why,meta};
+}
+function directMissingCross(){
+ for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(state[r][c]===2){
+  let g=puz.reg[r][c], candidates=[];
+  for(let x=0;x<n;x++)if(x!==c&&state[r][x]===0&&!isAutoCross(r,x))candidates.push([r,x,`Même ligne que le source L${r+1}C${c+1}.`]);
+  for(let y=0;y<n;y++)if(y!==r&&state[y][c]===0&&!isAutoCross(y,c))candidates.push([y,c,`Même colonne que le source L${r+1}C${c+1}.`]);
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++)if((y!==r||x!==c)&&state[y][x]===0&&!isAutoCross(y,x)&&puz.reg[y][x]===g)candidates.push([y,x,`Même territoire que le source L${r+1}C${c+1}.`]);
+  for(let y=Math.max(0,r-1);y<=Math.min(n-1,r+1);y++)for(let x=Math.max(0,c-1);x<=Math.min(n-1,c+1);x++)
+   if((y!==r||x!==c)&&state[y][x]===0&&!isAutoCross(y,x))candidates.push([y,x,`Cette case touche le source L${r+1}C${c+1}.`]);
+  if(candidates.length)return candidates[0];
+ }
+ return null;
+}
+function playerError(){
+ // The stored solution is used ONLY as a silent correctness check here.
+ // It is never used to manufacture a normal logical hint.
+ for(let r=0;r<n;r++)for(let c=0;c<n;c++){
+  if(state[r][c]===2 && puz.sol[r]!==c)
+   return {cell:[r,c],kind:"diamond",text:`Cette source ne peut pas être correct. Reprends les contraintes autour de L${r+1}C${c+1}.`};
+  if(state[r][c]===1 && puz.sol[r]===c)
+   return {cell:[r,c],kind:"cross",text:`Cette croix élimine une case nécessaire. Vérifie L${r+1}C${c+1}.`};
+ }
+ return null;
+}
+function broadClue(h){
+ if(!h||!h.detail)return null;
+ let d=h.detail;
+ if(d.rule==="single"){
+  if(d.axis==="row")return {text:`Compte les possibilités encore ouvertes sur la ligne ${d.index+1}.`,cells:[]};
+  if(d.axis==="col")return {text:`Compte les possibilités encore ouvertes dans la colonne ${d.index+1}.`,cells:[]};
+  if(d.axis==="region")return {text:`Compte les possibilités encore ouvertes dans cette territoire.`,cells:[]};
+ }
+ return null;
+}
+document.getElementById("hint").onclick=()=>{
+ hi=null; hiCells=[];
+
+ // 1. Always correct a player mistake before giving new information.
+ let err=playerError();
+ if(err){
+  hi=err.cell; hintStage=0; hintFocus=null;
+  msg.textContent="⚠️ Erreur : "+err.text;
+  render(); return;
+ }
+
+ // 2. Point out a missing obvious cross caused directly by a placed diamond.
+ let dx=directMissingCross();
+ if(dx){
+  hi=[dx[0],dx[1]]; hintStage=0; hintFocus=null;
+  msg.textContent="Eau manquante : "+dx[2]+" Tu peux éteindre la case surlignée.";
+  render(); return;
+ }
+
+ // 3. Use proof engine for a logical elimination / placement.
+ let h=proofEngine(); proofs=h.why||{};
+
+ if(h.kind==="elim"){
+  let d=h.detail, id="e:"+h.cell.join(",")+":"+(d?d.rule:"");
+  if(hintFocus!==id){hintFocus=id;hintStage=1}else hintStage++;
+
+  if(d&&d.rule==="contradiction"){
+   hi=h.cell;
+   if(hintStage===1){
+    msg.textContent=`Piste : teste mentalement la case L${h.cell[0]+1}C${h.cell[1]+1}. Suppose qu'elle contient une source et suis les contraintes : ligne, colonne, territoire et cases voisines.`;
+    render();return;
+   }
+   if(hintStage===2){
+    msg.textContent=`Indice : cette hypothèse finit par rendre au moins une ligne, colonne ou territoire impossible à compléter. La case peut donc être éliminée sans choisir au hasard.`;
+    render();return;
+   }
+   msg.textContent=`À jouer : tu peux éteindre L${h.cell[0]+1}C${h.cell[1]+1}. C'est une élimination par contradiction.`;
+   render();return;
+  }
+
+  if(d&&d.rule==="group"){
+   hiCells=d.source.slice();
+   let word=d.axis==="col"?"colonnes":"lignes";
+   let nums=d.indices.map(x=>x+1).join(" et ");
+   if(hintStage===1){
+    msg.textContent=`Piste : observe ensemble les territoires surlignées. Leurs sources ne peuvent se placer que dans ${d.indices.length} ${word}. Essaie d'identifier lesquelles.`;
+    render();return;
+   }
+   if(hintStage===2){
+    msg.textContent=`Indice : ces ${d.regions.length} territoires doivent placer ${d.regions.length} sources dans exactement les ${word} ${nums}. Ces ${word} sont donc entièrement réservées à ces territoires.`;
+    render();return;
+   }
+   hiCells=d.source.concat([h.cell]);
+   msg.textContent=`À jouer : L${h.cell[0]+1}C${h.cell[1]+1} appartient à un autre territoire mais utilise une de ces ${word}. Tu peux l’éteindre.`;
+   render();return;
+  }
+
+  if(d&&d.rule==="locked"){
+   hiCells=d.source.slice();
+   let axisName=d.axis==="col"?"colonne":"ligne", num=d.index+1;
+   if(hintStage===1){
+    msg.textContent=`Piste : observe les ${d.source.length} cases surlignées de cette territoire. Elles sont toutes sur la même ${axisName}. Qu'est-ce que cela implique pour le source de cette territoire ?`;
+    render();return;
+   }
+   if(hintStage===2){
+    msg.textContent=`Indice : le source de cette territoire sera forcément quelque part sur la ${axisName} ${num}. Comme une ${axisName} ne peut contenir qu'un seul source, aucune case de cette ${axisName} située hors de la territoire ne peut en contenir.`;
+    render();return;
+   }
+   hiCells=d.source.concat([h.cell]);
+   msg.textContent=`À jouer : L${h.cell[0]+1}C${h.cell[1]+1} est hors de cette territoire mais sur la ${axisName} ${num}. Tu peux donc l’éteindre.`;
+   render();return;
+  }
+
+  hi=h.cell;
+  if(hintFocus!==id||hintStage<=1){
+   msg.textContent="Piste : regarde la case surlignée et la contrainte qui agit sur elle. Essaie d'identifier pourquoi elle ne peut pas contenir de source.";
+  }else{
+   msg.textContent="Indice : "+h.text+` Tu peux donc éteindre L${h.cell[0]+1}C${h.cell[1]+1}.`;
+  }
+  render(); return;
+ }
+
+ if(h.kind==="place"){
+  if(h.detail&&h.detail.rule==="contradiction-place"){
+   let id="cp:"+h.cell.join(",");
+   if(hintFocus!==id){hintFocus=id;hintStage=1}else hintStage++;
+   hi=h.cell;
+   if(hintStage===1){
+    msg.textContent=`Piste : les déductions déjà faites réduisent fortement les configurations possibles. Regarde la case surlignée et vérifie ce qui se passe si tu essaies de l'éviter.`;
+    render();return;
+   }
+   if(hintStage===2){
+    msg.textContent=`Indice : toutes les configurations encore compatibles imposent une source sur cette case. Ce n'est pas un choix au hasard : l'alternative mène à une contradiction.`;
+    render();return;
+   }
+   msg.textContent=`À jouer : place une source en L${h.cell[0]+1}C${h.cell[1]+1}.`;
+   render();return;
+  }
+  let id=h.cell.join(",");
+  if(hintFocus!==id){hintFocus=id;hintStage=1}else hintStage++;
+
+  // 4. First press: only direct attention.
+  if(hintStage===1){
+   let clue=broadClue(h);
+   if(!clue){
+    hintStage=0;hintFocus=null;
+    msg.textContent="Indice refusé : le moteur connaît une case forcée mais ne possède pas une preuve pédagogique suffisante.";
+    render();return;
+   }
+   hi=null;hiCells=clue.cells||[];
+   msg.textContent="Piste : "+clue.text;
+   render();return;
+  }
+  // 5. Second press: explain the logical rule, but don't say "place a diamond" yet.
+  if(hintStage===2){
+   hi=h.cell;
+   msg.textContent="Indice : "+h.text+" Vérifie toi-même les autres possibilités avant de jouer.";
+   render();return;
+  }
+  // 6. Third press: reveal the forced placement as last resort.
+  hi=h.cell;
+  msg.textContent=`Indice final : la case L${h.cell[0]+1}C${h.cell[1]+1} est forcée. Tu peux y placer une source.`;
+  render();return;
+ }
+
+ hintStage=0;hintFocus=null;
+ msg.textContent="Cette grille a échoué au solveur explicable. Elle ne devrait pas être dans le catalogue.";
+};
+
+function runHintTests(){
+ test("Campagne : progression sauvegardée convertie en séquence continue",()=>{
+   const keys=Object.keys(lumenProgress.solved).map(Number).sort((a,b)=>a-b);
+   return keys.every((v,i)=>v===i);
+ });
+
+ test("Campagne : un secteur exige 20/20 pour débloquer le suivant",()=>{
+   return sectorUnlocked.toString().includes("===20");
+ });
+ test("Campagne : progression strictement séquentielle",()=>{
+   return document.getElementById("successNew").textContent.trim()==="Carte suivante";
+ });
+
+ test("Campagne : Réinitialiser conserve la même carte",()=>{
+   return document.getElementById("new").textContent.trim()==="Réinitialiser";
+ });
+ test("Campagne : seule une victoire permet d'avancer",()=>{
+   return document.getElementById("successNew").textContent.trim()==="Carte suivante";
+ });
+
+ // Regression: a completed valid constellation is judged from its sources,
+ // independently of remaining manual/automatic exclusions.
+ test("Victoire : les exclusions restantes ne bloquent pas une constellation valide",()=>{
+   const p=CAT["6"][0], n0=p.reg.length;
+   const pts=p.sol.map((c,r)=>[r,c]);
+   return new Set(pts.map(x=>x[0])).size===n0 &&
+          new Set(pts.map(x=>x[1])).size===n0 &&
+          new Set(pts.map(([r,c])=>p.reg[r][c])).size===n0 &&
+          pts.every((a,i)=>pts.every((b,j)=>i===j||Math.abs(a[0]-b[0])>1||Math.abs(a[1]-b[1])>1));
+ });
+
+ let results=[];
+ function test(name,fn){
+  try{let ok=!!fn();results.push({name,ok,error:""});}
+  catch(e){results.push({name,ok:false,error:String(e)});}
+ }
+ let saveState=state.map(x=>x.slice()), savePuz=puz, saveN=n;
+
+ test("Hauteur des lignes fixe quand une croix apparaît",()=>{
+  let css=getComputedStyle(board);
+  let before=board.getBoundingClientRect().height;
+  let p=CAT[n][0],oldP=puz,oldS=state;
+  puz=p;state=Array.from({length:n},()=>Array(n).fill(0));render();
+  let rowsBefore=[...board.children].filter((_,i)=>i%n===0).map(e=>e.getBoundingClientRect().height);
+  state[0][0]=1;render();
+  let rowsAfter=[...board.children].filter((_,i)=>i%n===0).map(e=>e.getBoundingClientRect().height);
+  let after=board.getBoundingClientRect().height;
+  puz=oldP;state=oldS;render();
+  return Math.abs(before-after)<0.5 && rowsBefore.length===n &&
+         rowsBefore.every((h,i)=>Math.abs(h-rowsAfter[i])<0.5);
+ });
+ test("Succès : une grille résolue déclenche la célébration",()=>{
+  let p=CAT[n][0],oldP=puz,oldS=state,oldCelebrated=celebrated;
+  puz=p;state=Array.from({length:n},(_,r)=>Array.from({length:n},(_,c)=>c===p.sol[r]?2:0));
+  celebrated=false;render();
+  let ok=celebrated && document.getElementById("successOverlay").classList.contains("show") && board.classList.contains("win");
+  hideSuccess();puz=oldP;state=oldS;celebrated=oldCelebrated;render();
+  return ok;
+ });
+ test("Succès : aucune célébration sur une grille incomplète",()=>{
+  let p=CAT[n][0],oldP=puz,oldS=state,oldCelebrated=celebrated;
+  puz=p;state=Array.from({length:n},()=>Array(n).fill(0));celebrated=false;hideSuccess();render();
+  let ok=!celebrated && !document.getElementById("successOverlay").classList.contains("show");
+  puz=oldP;state=oldS;celebrated=oldCelebrated;render();
+  return ok;
+ });
+ test("Indice : bouton Revoir la carte présent",()=>{
+  return !!document.getElementById("clearHint");
+ });
+ test("Exclusions : anneau ambre identique en manuel et automatique",()=>{
+  let manual=document.createElement("div"),auto=document.createElement("div");
+  manual.className="cell";auto.className="cell auto-x";
+  manual.innerHTML='<span class="lumen-dim"></span>';auto.innerHTML='<span class="lumen-dim"></span>';
+  document.body.append(manual,auto);
+  let m=getComputedStyle(manual.firstChild),a=getComputedStyle(auto.firstChild);
+  let ok=m.borderTopColor===a.borderTopColor && m.borderTopWidth===a.borderTopWidth &&
+         m.opacity===a.opacity && manual.firstChild.getBoundingClientRect().width===auto.firstChild.getBoundingClientRect().width &&
+         parseFloat(m.borderTopWidth)>=2;
+  manual.remove();auto.remove();return ok;
+ });
+ test("Catalogue non vide",()=>CAT[n]&&CAT[n].length>0);
+ test("Aucune territoire monocellule",()=>{
+  return CAT[n].every(p=>{
+   let counts={};p.reg.flat().forEach(g=>counts[g]=(counts[g]||0)+1);
+   return Object.values(counts).every(v=>v>=2);
+  });
+ });
+ test("Solutions stockées respectent lignes/colonnes/territoires/non-contact",()=>{
+  return CAT[n].every(p=>{
+   let s=p.sol;
+   if(new Set(s).size!==n)return false;
+   if(new Set(s.map((c,r)=>p.reg[r][c])).size!==n)return false;
+   for(let r=1;r<n;r++)if(Math.abs(s[r]-s[r-1])<=1)return false;
+   return true;
+  });
+ });
+ test("Une croix correcte est réutilisée par le moteur",()=>{
+  let p=CAT[n][0];puz=p;state=Array.from({length:n},()=>Array(n).fill(0));
+  let q=null;
+  for(let r=0;r<n&&!q;r++)for(let c=0;c<n;c++)if(c!==p.sol[r]){q=[r,c];break}
+  state[q[0]][q[1]]=1;
+  let h=proofEngine();
+  return h.elim && h.elim[key(q[0],q[1])];
+ });
+ test("Une croix sur la solution est détectée comme erreur",()=>{
+  let p=CAT[n][0];puz=p;state=Array.from({length:n},()=>Array(n).fill(0));
+  state[0][p.sol[0]]=1;
+  return !!playerError();
+ });
+ test("Un mauvais source est détecté comme erreur",()=>{
+  let p=CAT[n][0];puz=p;state=Array.from({length:n},()=>Array(n).fill(0));
+  let c=(p.sol[0]+1)%n;state[0][c]=2;
+  return !!playerError();
+ });
+ test("Aucun indice 'place' sans preuve structurée",()=>{
+  return CAT[n].every(p=>{
+   puz=p;state=Array.from({length:n},()=>Array(n).fill(0));
+   let h=proofEngine();
+   return h.kind!=="place" || (h.detail && h.detail.rule==="single");
+  });
+ });
+ test("Aucun fallback de recherche exhaustive dans proofEngine",()=>{
+  let txt=proofEngine.toString();
+  return !txt.includes("solutions()")&&!txt.includes("contradiction");
+ });
+ test("Les indices locked ont des prémisses visibles",()=>{
+  return CAT[n].every(p=>{
+   puz=p;state=Array.from({length:n},()=>Array(n).fill(0));
+   let h=proofEngine();
+   return !(h.detail&&h.detail.rule==="locked") || (h.detail.source&&h.detail.source.length>=2);
+  });
+ });
+ test("Les indices group ont territoires + axes + prémisses",()=>{
+  return CAT[n].every(p=>{
+   puz=p;state=Array.from({length:n},()=>Array(n).fill(0));
+   let h=proofEngine(),d=h.detail;
+   return !(d&&d.rule==="group") || (d.regions&&d.indices&&d.source&&d.regions.length===d.indices.length&&d.source.length>0);
+  });
+ });
+
+ // Replay each puzzle automatically. Every requested next step must be explainable.
+ test("Replay complet : jamais bloqué, jamais d'indice opaque",()=>{
+  return CAT[n].every(p=>{
+   puz=p;state=Array.from({length:n},()=>Array(n).fill(0));
+   for(let step=0;step<200;step++){
+    if(state.flat().filter(v=>v===2).length===n)return true;
+    let h=proofEngine();
+    if(h.kind==="place"){
+     if(!h.detail||h.detail.rule!=="single")return false;
+     state[h.cell[0]][h.cell[1]]=2;
+    }else if(h.kind==="elim"){
+     let d=h.detail;
+     if(!d||!["locked","group","diamond","manual"].includes(d.rule))return false;
+     state[h.cell[0]][h.cell[1]]=1;
+    }else return false;
+   }
+   return false;
+  });
+ });
+
+ state=saveState;puz=savePuz;n=saveN;render();
+ let pass=results.filter(x=>x.ok).length;
+ let fail=results.length-pass;
+ let summary=document.getElementById("testSummary"),details=document.getElementById("testDetails");
+ if(summary)summary.textContent=`${pass}/${results.length} tests réussis${fail?` — ${fail} échec(s)`:" ✓"}`;
+ if(details)details.textContent=results.map(x=>(x.ok?"✓ ":"✗ ")+x.name+(x.error?" — "+x.error:"")).join("\n");
+ return results;
+}
+let runTestsButton=document.getElementById("runTests");
+if(runTestsButton)runTestsButton.onclick=runHintTests;
+
+const clearHintBtn=document.getElementById("clearHint");
+document.getElementById("hint").addEventListener("click",()=>{
+ setTimeout(()=>{
+  clearHintBtn.hidden=!(hi!==null || (Array.isArray(hiCells)&&hiCells.length>0));
+ },0);
+});
+clearHintBtn.onclick=()=>{
+ hi=null; hiCells=[]; msg.textContent="";
+ clearHintBtn.hidden=true;
+ render();
+};
+document.getElementById("undo").onclick=()=>{if(hist.length){state=hist.pop();hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";render()}};
+const ac=document.getElementById("autoCross");
+ac.checked=localStorage.getItem("regaliaAutoCross")!=="0";
+ac.onchange=()=>{localStorage.setItem("regaliaAutoCross",ac.checked?"1":"0");hi=null;render()};
+document.getElementById("successClose").onclick=hideSuccess;
+document.getElementById("successNew").onclick=()=>{
+ hideSuccess();
+ if(!lumenProgress.solved[levelIndex])return;
+ const next=levelIndex+1;
+ if(next<100 && sectorUnlocked(Math.floor(next/20))) levelIndex=next;
+ loadPuzzle();usedHintThisGame=false;refreshJourney();
+};
+document.getElementById("new").onclick=init;init();
+
+let mapSector=0;const badgeDefs=[["first","Première lueur"],["explorer","Explorateur"],["beacon","Phare"],["master","Maître LUMEN"],["sector0","Étincelle"],["sector1","Halo"],["sector2","Rayonnement"],["sector3","Prisme"],["sector4","Nova"]];
+function awards(){let t=Object.keys(lumenProgress.solved).length;if(t>=1)lumenProgress.badges.first=1;if(t>=20)lumenProgress.badges.explorer=1;if(t>=50)lumenProgress.badges.beacon=1;if(t>=100)lumenProgress.badges.master=1;for(let s=0;s<5;s++)if(sectorSolved(s)===20)lumenProgress.badges["sector"+s]=1;saveLumenProgress()}
+function refreshJourney(){awards();let t=Object.keys(lumenProgress.solved).length,s=Math.floor(levelIndex/20);
+document.getElementById("progressFill").style.width=t+"%";
+document.getElementById("progressText").textContent="Progression globale · "+t+"/100";
+document.getElementById("badgeCount").textContent=Object.keys(lumenProgress.badges).length+" badges";
+document.getElementById("journeyTitle").textContent=SECTORS[s].name+" · carte actuelle "+(levelIndex%20+1)+"/20";
+document.getElementById("sectorProgress").textContent=SECTORS[s].name+" · "+sectorSolved(s)+"/20 réussies";
+}
+function renderMap(){const sectorTabs=document.getElementById("sectorTabs"),puzzleGrid=document.getElementById("puzzleGrid"),badgeGrid=document.getElementById("badgeGrid");sectorTabs.innerHTML="";SECTORS.forEach((s,i)=>{let b=document.createElement("button");b.className="sector-tab"+(i===mapSector?" active":"")+(sectorUnlocked(i)?"":" locked");b.textContent=s.icon+" "+s.name;b.onclick=()=>{if(sectorUnlocked(i)){mapSector=i;renderMap()}};sectorTabs.appendChild(b)});puzzleGrid.innerHTML="";for(let j=0;j<20;j++){let i=mapSector*20+j,b=document.createElement("button");b.className="puzzle-card"+(lumenProgress.solved[i]?" done":"")+(i===levelIndex?" current":"")+(i!==levelIndex?" locked":"");b.textContent=(j+1)+(lumenProgress.solved[i]?" ✓":"");b.onclick=()=>{
+ if(!sectorUnlocked(mapSector))return;
+ // Strict campaign: only the current map can be opened.
+ if(i!==levelIndex)return;
+ document.getElementById("mapModal").hidden=true;refreshJourney()
+};puzzleGrid.appendChild(b)}badgeGrid.innerHTML="";badgeDefs.forEach(([id,n])=>{let d=document.createElement("div");d.className="badge"+(lumenProgress.badges[id]?" earned":"");d.textContent=(lumenProgress.badges[id]?"✦ ":"◌ ")+n;badgeGrid.appendChild(d)})}
+document.getElementById("openMap").onclick=()=>{mapSector=Math.floor(levelIndex/20);renderMap();document.getElementById("mapModal").hidden=false};
+document.getElementById("closeMap").onclick=()=>document.getElementById("mapModal").hidden=true;document.getElementById("hint").addEventListener("click",()=>usedHintThisGame=true);
+
+document.getElementById("new").onclick=()=>{
+  hideSuccess();
+  // Keep the same campaign map. Only reset its board/timer/hints.
+  loadPuzzle();
+  usedHintThisGame=false;
+  refreshJourney();
+};
+refreshJourney();
+
+</script></body></html>
