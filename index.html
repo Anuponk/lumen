@@ -15,7 +15,8 @@
 .head{display:flex;justify-content:space-between;align-items:center}h1{font-size:38px;margin:4px 0 0}.sub{font-size:20px;font-weight:700;color:#777;margin-bottom:24px}
 button{font:inherit;font-weight:700;background:#fff;border:1.8px solid #555;border-radius:24px;padding:12px 17px}.levels{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 22px}
 .level{border-radius:15px;padding:11px 3px}.level.active{background:#222;color:#fff}.level small{display:block;margin-top:4px}.status{display:flex;justify-content:space-between;font-size:20px;font-weight:bold;margin:8px 3px 17px}
-#board{display:grid;width:100%;aspect-ratio:1;border:5px solid #222;border-radius:10px;overflow:hidden;background:#fff}.cell{display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;overflow:hidden;line-height:1;border-right:1px solid #555;border-bottom:1px solid #555;font-size:clamp(18px,6vw,35px);font-weight:bold;user-select:none}
+#board{display:grid;width:100%;aspect-ratio:1;border:5px solid #222;border-radius:10px;overflow:hidden;background:#fff}.board{touch-action:none}
+.cell{display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;overflow:hidden;line-height:1;border-right:1px solid #555;border-bottom:1px solid #555;font-size:clamp(18px,6vw,35px);font-weight:bold;user-select:none}
 .cell .x{opacity:.55}.cell.hi{box-shadow:inset 0 0 0 5px #222}
 .cell.conflict{background:rgba(255,62,82,.10)!important;box-shadow:inset 0 0 0 3px #ff4d63,0 0 15px rgba(255,77,99,.32);animation:conflictPulse .48s ease-out}
 .cell.conflict .lumen-orb{box-shadow:0 0 0 4px rgba(255,77,99,.72),0 0 22px rgba(255,77,99,.62),inset 0 0 14px rgba(255,255,255,.7)}
@@ -907,6 +908,45 @@ function rewardProgressPulse(q){
 function launchWinStar(stars){
  if(stars<=0)return;victorySound();setTimeout(starArrivalSound,1900);const x=document.createElement("div");x.className="win-flight";x.textContent=stars>1?"★ +"+stars:"★";document.body.appendChild(x);showRewardToast(stars>1?"+"+stars+" étoiles gagnées":"Étoile gagnée");setTimeout(()=>x.remove(),2550);
 }
+let dragCross=null,dragCrossSuppressClick=false;
+function dragCrossCellAt(x,y){
+ const el=document.elementFromPoint(x,y)?.closest?.(".cell");
+ if(!el||!board.contains(el))return null;
+ return [Number(el.dataset.row),Number(el.dataset.col)];
+}
+function markDragCross(r,c){
+ if(!dragCross||dragCross.visited.has(r+","+c)||state[r]?.[c]===2)return;
+ dragCross.visited.add(r+","+c);
+ if(state[r][c]!==1){state[r][c]=1;dragCross.changed=true}
+}
+board.addEventListener("pointerdown",e=>{
+ if(celebrated||e.pointerType==="mouse")return;
+ const cell=e.target.closest(".cell");if(!cell)return;
+ dragCross={id:e.pointerId,startX:e.clientX,startY:e.clientY,dragging:false,changed:false,visited:new Set(),snapshot:state.map(x=>x.slice())};
+});
+board.addEventListener("pointermove",e=>{
+ if(!dragCross||dragCross.id!==e.pointerId)return;
+ if(!dragCross.dragging&&Math.hypot(e.clientX-dragCross.startX,e.clientY-dragCross.startY)>8){
+   dragCross.dragging=true;dragCrossSuppressClick=true;
+   const start=dragCrossCellAt(dragCross.startX,dragCross.startY);if(start)markDragCross(start[0],start[1]);
+ }
+ if(!dragCross.dragging)return;
+ e.preventDefault();
+ const hit=dragCrossCellAt(e.clientX,e.clientY);if(hit){markDragCross(hit[0],hit[1]);render()}
+},{passive:false});
+function endDragCross(e){
+ if(!dragCross||dragCross.id!==e.pointerId)return;
+ const wasDragging=dragCross.dragging,changed=dragCross.changed,snapshot=dragCross.snapshot;
+ dragCross=null;
+ if(wasDragging){
+   if(changed)hist.push(snapshot);
+   hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";
+   render();setTimeout(()=>{dragCrossSuppressClick=false},0);
+ }
+}
+board.addEventListener("pointerup",endDragCross);
+board.addEventListener("pointercancel",endDragCross);
+
 function render(){
  board.style.gridTemplateColumns=`repeat(${n},minmax(0,1fr))`;board.style.gridTemplateRows=`repeat(${n},minmax(0,1fr))`;board.innerHTML="";
  for(let r=0;r<n;r++)for(let c=0;c<n;c++){
@@ -924,7 +964,8 @@ function render(){
   else if(shown===2)d.innerHTML='<span class="lumen-orb" aria-label="Gardien positionné"></span>';
   else d.innerHTML="";
   if(shown===3)d.classList.add("auto-x");
-  d.onclick=()=>{if(celebrated)return;
+  d.dataset.row=r;d.dataset.col=c;
+  d.onclick=()=>{if(celebrated||dragCrossSuppressClick)return;
  let shown=displayedCellState(r,c),next=shown===3?2:(state[r][c]+1)%3,currentGuardians=state.flat().filter(v=>v===2).length;
  if(next===2&&state[r][c]!==2&&currentGuardians>=n)return;
  hist.push(state.map(x=>x.slice()));
