@@ -669,10 +669,17 @@ async function currentPushSubscription(){if(!("serviceWorker"in navigator))retur
 async function pushApi(action,extra={}){try{await fetch(LUMEN_PUSH_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,...extra})})}catch(e){console.warn("LUMEN push",e)}}
 async function enableLumenPush(){
  if(!("Notification"in window)||!("PushManager"in window)){showRewardToast("Rappels non disponibles sur cet appareil");return}
- const permission=await Notification.requestPermission();if(permission!=="granted"){localStorage.setItem("lumenPushChoice","denied");document.getElementById("pushOptin").hidden=true;return}
- const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
- if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:pushKey(LUMEN_PUSH_PUBLIC_KEY)});
- await pushApi("subscribe",{subscription:sub.toJSON()});localStorage.setItem("lumenPushChoice","enabled");document.getElementById("pushOptin").hidden=true;showRewardToast("Rappel LUMEN activé ✦");
+ const optin=document.getElementById("pushOptin");
+ // Close LUMEN's prompt before Android takes over, so it cannot reappear behind the system dialog.
+ optin.hidden=true;
+ let permission;
+ try{permission=await Notification.requestPermission()}catch(e){optin.hidden=false;return}
+ if(permission!=="granted"){localStorage.setItem("lumenPushChoice","denied");return}
+ try{
+  const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
+  if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:pushKey(LUMEN_PUSH_PUBLIC_KEY)});
+  await pushApi("subscribe",{subscription:sub.toJSON()});localStorage.setItem("lumenPushChoice","enabled");showRewardToast("Rappel LUMEN activé ✦");
+ }catch(e){console.warn("LUMEN push subscribe",e);localStorage.removeItem("lumenPushChoice");showRewardToast("Impossible d’activer le rappel pour le moment")}
 }
 async function markLumenSeen(){if(localStorage.getItem("lumenPushChoice")!=="enabled")return;const sub=await currentPushSubscription();if(sub)pushApi("seen",{endpoint:sub.endpoint})}
 function maybeOfferPush(){if(solvedCount()<3||localStorage.getItem("lumenPushChoice"))return;if(!("Notification"in window)||Notification.permission==="denied")return;document.getElementById("pushOptin").hidden=false}
@@ -1198,6 +1205,10 @@ document.getElementById("hint").onclick=()=>{
 };
 
 function runHintTests(){
+ test("Rappel : la popup LUMEN disparaît avant la demande Android",()=>{
+   const src=enableLumenPush.toString(),hide=src.indexOf("optin.hidden=true"),ask=src.indexOf("Notification.requestPermission");
+   return hide>=0&&ask>hide;
+ });
  test("Rappel : opt-in seulement après 3 grilles et action explicite",()=>{const src=maybeOfferPush.toString();return src.includes("solvedCount()<3")&&document.getElementById("pushEnable")&&enableLumenPush.toString().includes("Notification.requestPermission")});
  test("Rappel : retour du joueur recale le délai d’inactivité",()=>markLumenSeen.toString().includes('"seen"'));
  test("Campagne : progression sauvegardée convertie en séquence continue",()=>{
