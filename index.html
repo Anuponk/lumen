@@ -331,7 +331,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 }
 
 /* Mobile play-first layout: metadata is compact and the board appears immediately. */
-.mobile-journey,.mobile-streak,.mobile-account,.mobile-auth-popover{display:none}
+.mobile-journey,.mobile-streak,.mobile-account,.mobile-auth-popover,.daily-info-popover{display:none}
 @media (max-width:700px){
  .app{padding:8px 10px 28px}
  .head{margin:0 0 5px;align-items:center}
@@ -339,6 +339,16 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .lumen-brand{font-size:27px!important}
  .head-actions{display:flex;align-items:center;gap:5px}
  .mobile-account{display:inline-flex!important;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:50%;font-size:18px;background:#101d2e;border:1px solid #28415b;color:#b9cee1}
+ .daily-info-popover{display:block;position:absolute;z-index:55;top:55px;right:10px;width:min(315px,calc(100vw - 20px));padding:14px;background:#101d2e;border:1px solid #28415b;border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.38);color:#aebfd0;font-size:12px;line-height:1.45}
+ .daily-info-popover[hidden]{display:none!important}
+ .daily-info-kicker{font-size:9px;letter-spacing:.16em;color:#68e7ff;font-weight:900}
+ .daily-info-title{font-size:17px;color:#eefcff;font-weight:900;margin:3px 0 9px}
+ .daily-info-stars{display:flex;gap:7px;margin:6px 0 10px}
+ .daily-info-stars span{font-size:20px;color:#35465c}
+ .daily-info-stars span.on{color:#68e7ff;text-shadow:0 0 9px rgba(104,231,255,.8)}
+ .daily-info-popover p{margin:0 0 9px}
+ .daily-info-status{color:#e4f5ff;font-weight:800;margin-bottom:8px}
+ .daily-info-reward{padding-top:8px;border-top:1px solid #28415b;color:#ffbd59}
  .mobile-auth-popover{display:block;position:absolute;z-index:50;top:55px;right:10px;width:min(290px,calc(100vw - 20px));padding:12px;background:#101d2e;border:1px solid #28415b;border-radius:15px;box-shadow:0 16px 40px rgba(0,0,0,.35);font-size:12px;color:#9fb3c8}
  .mobile-auth-popover[hidden]{display:none!important}
  .mobile-auth-popover button{width:100%;margin-top:9px;padding:9px 11px;font-size:12px}
@@ -385,8 +395,15 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 #tutorialNext{background:#68e7ff;color:#06202a;border-color:#68e7ff}
 @media(max-width:700px){.tutorial-help{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;font-size:15px}.tutorial-card{padding:18px}.tutorial-visual{height:100px}.tutorial-title{font-size:22px}.tutorial-copy{min-height:90px;font-size:14px}}
 </style><meta name="lumen-build" content="diversity-100"></head><body><main class="app"><aside class="desktop-side desktop-left"><div id="desktopLeftSlot"></div></aside><section class="game-core">
-<div class="head"><div><h1><span class="lumen-brand">LUMEN</span></h1><button id="mobileJourney" class="mobile-journey" type="button">Étincelle · 1/20</button></div><div class="head-actions"><button id="tutorialHelp" class="tutorial-help" type="button" aria-label="Revoir le tutoriel">?</button><button id="mobileAccount" class="mobile-account" type="button" aria-label="Compte et sauvegarde">♙</button><span id="mobileStreak" class="mobile-streak">✦ 0/7</span><button id="new">Réinitialiser</button></div></div>
-<div id="mobileAuthPopover" class="mobile-auth-popover" hidden><div id="mobileAuthStatus">Progression enregistrée sur cet appareil</div><button id="mobileAuthAction" type="button">Se connecter avec Google</button></div><div class="levels" id="levels"></div><div class="auth-box"><span id="authUser">Progression enregistrée sur cet appareil</span><button id="authLogin">Sauvegarder ma progression</button><button id="authLogout" hidden>Déconnexion</button></div><section class="journey"><section id="dailyCard" class="daily-card"><div><div class="daily-kicker">CONSTELLATION QUOTIDIENNE</div><div id="dailyTitle" class="daily-title">Joue aujourd’hui pour allumer une étoile</div><div id="dailyStars" class="daily-stars"></div><div id="dailyMeta" class="daily-meta">Série · 0 jour</div></div><div id="dailyReward" class="daily-reward">7 jours → Halo Azur</div></section><div class="journey-top"><div><span class="journey-kicker">PARCOURS</span><strong id="journeyTitle">Étincelle</strong></div><button id="openMap">100 cartes</button></div><div class="progress-track"><span id="progressFill"></span></div><div class="progress-copy"><strong id="progressText">0 / 100 cartes réussies</strong><span id="badgeCount">0 badges</span></div><div id="sectorProgress" class="sector-progress">Étincelle : 0/20</div></section><div id="mapModal" class="map-modal" hidden><div class="map-sheet"><div class="map-head"><h2>Parcours LUMEN</h2><button id="closeMap">Fermer</button></div><div id="sectorTabs" class="sector-tabs"></div><div id="puzzleGrid" class="puzzle-grid"></div><h3>Badges</h3><div id="badgeGrid" class="badge-grid"></div></div></div><label class="auto-cross" id="autoCrossWrap">
+<div class="head"><div><h1><span class="lumen-brand">LUMEN</span></h1><button id="mobileJourney" class="mobile-journey" type="button">Étincelle · 1/20</button></div><div class="head-actions"><button id="tutorialHelp" class="tutorial-help" type="button" aria-label="Revoir le tutoriel">?</button><button id="mobileAccount" class="mobile-account" type="button" aria-label="Compte et sauvegarde">♙</button><button id="mobileStreak" class="mobile-streak" type="button" aria-label="Constellation quotidienne">✦ 0/7</button><button id="new">Réinitialiser</button></div></div>
+<div id="dailyInfoPopover" class="daily-info-popover" hidden>
+ <div class="daily-info-kicker">CONSTELLATION QUOTIDIENNE</div>
+ <div class="daily-info-title">Allume une étoile chaque jour</div>
+ <div id="dailyInfoStars" class="daily-info-stars"></div>
+ <p>Termine au moins une carte aujourd’hui pour allumer l’étoile du jour. Reviens <b>7 jours de suite</b> pour compléter la constellation.</p>
+ <div id="dailyInfoStatus" class="daily-info-status"></div>
+ <div class="daily-info-reward">✦ Récompense à 7 jours : <b>Halo Azur</b></div>
+</div><div id="mobileAuthPopover" class="mobile-auth-popover" hidden><div id="mobileAuthStatus">Progression enregistrée sur cet appareil</div><button id="mobileAuthAction" type="button">Se connecter avec Google</button></div><div class="levels" id="levels"></div><div class="auth-box"><span id="authUser">Progression enregistrée sur cet appareil</span><button id="authLogin">Sauvegarder ma progression</button><button id="authLogout" hidden>Déconnexion</button></div><section class="journey"><section id="dailyCard" class="daily-card"><div><div class="daily-kicker">CONSTELLATION QUOTIDIENNE</div><div id="dailyTitle" class="daily-title">Joue aujourd’hui pour allumer une étoile</div><div id="dailyStars" class="daily-stars"></div><div id="dailyMeta" class="daily-meta">Série · 0 jour</div></div><div id="dailyReward" class="daily-reward">7 jours → Halo Azur</div></section><div class="journey-top"><div><span class="journey-kicker">PARCOURS</span><strong id="journeyTitle">Étincelle</strong></div><button id="openMap">100 cartes</button></div><div class="progress-track"><span id="progressFill"></span></div><div class="progress-copy"><strong id="progressText">0 / 100 cartes réussies</strong><span id="badgeCount">0 badges</span></div><div id="sectorProgress" class="sector-progress">Étincelle : 0/20</div></section><div id="mapModal" class="map-modal" hidden><div class="map-sheet"><div class="map-head"><h2>Parcours LUMEN</h2><button id="closeMap">Fermer</button></div><div id="sectorTabs" class="sector-tabs"></div><div id="puzzleGrid" class="puzzle-grid"></div><h3>Badges</h3><div id="badgeGrid" class="badge-grid"></div></div></div><label class="auto-cross" id="autoCrossWrap">
 <input type="checkbox" id="autoCross" checked>
 <span>Assombrir automatiquement les cases incompatibles</span>
 </label><div id="learningNote" class="learning-note"></div>
@@ -471,10 +488,15 @@ function updateAuthUI(){
  }
  syncMobileAuthUI();
 }
+function setupDailyInfo(){
+ const btn=document.getElementById("mobileStreak"),pop=document.getElementById("dailyInfoPopover"),auth=document.getElementById("mobileAuthPopover");
+ if(!btn||!pop)return;
+ btn.onclick=()=>{if(auth)auth.hidden=true;pop.hidden=!pop.hidden};
+}
 function setupMobileAuth(){
  const menu=document.getElementById("mobileAuthPopover"),account=document.getElementById("mobileAccount"),action=document.getElementById("mobileAuthAction");
  if(!menu||!account||!action)return;
- account.onclick=()=>{menu.hidden=!menu.hidden};
+ account.onclick=()=>{const d=document.getElementById("dailyInfoPopover");if(d)d.hidden=true;menu.hidden=!menu.hidden};
  action.onclick=async()=>{
    menu.hidden=true;
    if(!lumenSupabase)return;
@@ -541,6 +563,8 @@ function renderDaily(){
  document.getElementById("dailyMeta").textContent="Série · "+streak+" jour"+(streak>1?"s":"");
  document.getElementById("dailyReward").textContent=streak>=7?"✦ Halo Azur débloqué":"7 jours → Halo Azur";
  const ms=document.getElementById("mobileStreak");if(ms)ms.textContent="✦ "+Math.min(streak,7)+"/7";
+ const infoStars=document.getElementById("dailyInfoStars");if(infoStars){infoStars.innerHTML="";for(let i=6;i>=0;i--){let e=document.createElement("span");e.className=lumenProgress.daily.dates[dateOffsetKey(-i)]?"on":"";e.textContent="✦";infoStars.appendChild(e)}}
+ const infoStatus=document.getElementById("dailyInfoStatus");if(infoStatus)infoStatus.textContent=done?"✓ Étoile d’aujourd’hui allumée · série de "+streak+" jour"+(streak>1?"s":""):"Aujourd’hui : termine une carte pour continuer ta série de "+streak+" jour"+(streak>1?"s":"");
 
 }
 async function cloudSaveDaily(date,index){if(!lumenSupabase||!lumenUser)return;let {error}=await lumenSupabase.rpc("lumen_save_daily",{p_play_date:date,p_puzzle_id:index+1});if(error)console.warn("LUMEN daily save",error)}
@@ -1129,7 +1153,7 @@ document.getElementById("successNew").onclick=()=>{
  if(next<100 && sectorUnlocked(Math.floor(next/20))) levelIndex=next;
  loadPuzzle();usedHintThisGame=false;refreshJourney();
 };
-document.getElementById("new").onclick=init;arrangeDesktopPanels();setupMobileAuth();init();setupTutorial();
+document.getElementById("new").onclick=init;arrangeDesktopPanels();setupMobileAuth();setupDailyInfo();init();setupTutorial();
 
 let mapSector=0;const badgeDefs=[["first","Première lueur"],["explorer","Explorateur"],["beacon","Phare"],["master","Maître LUMEN"],["sector0","Étincelle"],["sector1","Halo"],["sector2","Rayonnement"],["sector3","Prisme"],["sector4","Nova"]];
 function awards(){let t=Object.keys(lumenProgress.solved).length;if(t>=1)lumenProgress.badges.first=1;if(t>=20)lumenProgress.badges.explorer=1;if(t>=50)lumenProgress.badges.beacon=1;if(t>=100)lumenProgress.badges.master=1;for(let s=0;s<5;s++)if(sectorSolved(s)===20)lumenProgress.badges["sector"+s]=1;saveLumenProgress()}
