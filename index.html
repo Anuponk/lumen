@@ -854,7 +854,7 @@ function celebrateSuccess(){
  const skyEarnedAfter=skyStarsEarned(),crossedConstellation=firstCompletion&&(()=>{let total=0;for(const cs of CONSTELLATIONS){total+=cs.count;if(skyEarnedBefore<total&&skyEarnedAfter>=total)return true}return false})();
  const checkpoint=firstCompletion&&!crossedConstellation?constellationCheckpoint(skyEarnedBefore,skyEarnedAfter):null;
  const revealDelay=earnedThisRun>0?2250:0;
- if(questPassed||crossedConstellation||checkpoint){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>showSkyReveal(skyEarnedBefore,checkpoint),revealDelay)}else setTimeout(()=>document.getElementById("successOverlay").classList.add("show"),revealDelay);
+ if(firstCompletion&&earnedThisRun>0){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>showSkyReveal(skyEarnedBefore,checkpoint),revealDelay)}else if(questPassed||crossedConstellation||checkpoint){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>showSkyReveal(skyEarnedBefore,checkpoint),revealDelay)}else setTimeout(()=>document.getElementById("successOverlay").classList.add("show"),revealDelay);
 
  // Deliberately varied shapes/positions; purely visual, no game-state effect.
  const palette=["#68e7ff","#5ea7ff","#8b7cff","#67d8c2","#d7f8ff","#87bfff"];
@@ -1186,6 +1186,9 @@ function runHintTests(){
 
  test("Campagne : un secteur exige 20/20 pour débloquer le suivant",()=>{
    return sectorUnlocked.toString().includes("===20");
+ });
+ test("Récompense : chaque première étoile gagnée ouvre le ciel",()=>{
+   return celebrateSuccess.toString().includes("firstCompletion&&earnedThisRun>0")&&celebrateSuccess.toString().includes("showSkyReveal(skyEarnedBefore,checkpoint)");
  });
  test("Récompense : deux respirations célestes existent dans chaque constellation",()=>{
    return CONSTELLATIONS.every(c=>Math.ceil(c.count/3)<Math.ceil(c.count*2/3)&&Math.ceil(c.count*2/3)<c.count);
