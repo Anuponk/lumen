@@ -703,7 +703,7 @@ function updateLiveReward(q){
  const m=document.getElementById("masteryLive"),p=document.getElementById("progressLive");if(!m||!p)return;
  const eligibility=performanceEligibility(levelIndex),assisted=!!attemptEngine.snapshot()?.assistanceUsed,within=activeGameSeconds()<speedTargetSeconds(levelIndex),mastery=eligibility.mastery&&!assisted&&within;
  m.textContent=!Object.values(eligibility).some(Boolean)?"Performances bientôt":eligibility.mastery?(mastery?"✦ Maîtrise en cours":"○ Maîtrise à retenter"):"⚡ Rapidité disponible";m.classList.toggle("lost",eligibility.mastery&&!mastery);
- p.textContent=q+"/"+n+" Gardiens";
+ p.textContent="";
 }
 function showRewardToast(text){
  const t=document.getElementById("rewardToast");if(!t)return;t.textContent=text;t.classList.add("show");clearTimeout(rewardToastTimer);rewardToastTimer=setTimeout(()=>t.classList.remove("show"),1900);
