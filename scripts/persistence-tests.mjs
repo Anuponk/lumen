@@ -56,7 +56,10 @@ for(const options of scenarios){
  const normalized=plain(actual);
  if(!options.guest&&!options.networkError){
    normalized.progress.daily.dates={};
-   normalized.trace=normalized.trace.filter(x=>x.name!=='lumen_get_daily'&&x.ui!=='renderDaily'&&!(x.save&&x.save.daily?.dates?.['2026-10-01']));
+   normalized.trace=normalized.trace.filter(x=>x.name!=='lumen_get_daily'&&x.ui!=='renderDaily');
+   // cloudMergeDaily persists the merged model once; normalize that intentional save
+   // to the pre-#29 daily state instead of dropping the whole save trace.
+   for(const x of normalized.trace)if(x.save?.daily?.dates?.['2026-10-01'])x.save.daily.dates={};
  }
  assert.deepEqual(normalized,legacy,'Cloud/persistence behavior changed outside intentional #29 daily sync: '+JSON.stringify(options));
  if(!options.guest&&!options.networkError){
