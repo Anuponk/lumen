@@ -1,3 +1,6 @@
+import {createAnalytics} from "../analytics/events.js";
+import {createHintTestSuite} from "../testing/hint-tests.js";
+import {createDiagnostics} from "../testing/diagnostics.js";
 import {createLocalPersistence} from "../persistence/local.js";
 import {createCloudPersistence} from "../persistence/cloud.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
@@ -27,7 +30,6 @@ const {renderTutorial,openTutorial,closeTutorial,setupTutorial}=createTutorial(s
 let lumenSupabase=null,lumenUser=null,lumenCloudReady=false;
 try{lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY)}catch(e){console.warn("LUMEN cloud unavailable",e)}
 let lumenNickname="";
-
 
 function syncMobileAuthUI(){
  const status=document.getElementById("mobileAuthStatus"),action=document.getElementById("mobileAuthAction"),icon=document.getElementById("mobileAccount");
@@ -65,16 +67,9 @@ function setupMobileAuth(){
    await lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+location.pathname}});
  };
 }
-function lumenId(key){
- try{let v=localStorage.getItem(key);if(!v){v=(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2));localStorage.setItem(key,v)}return v}catch(e){return Date.now()+"-"+Math.random().toString(36).slice(2)}
-}
-const lumenAnonymousId=lumenId("lumenAnonymousIdV1");
-const lumenSessionId=(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2));
+
+const {lumenAnonymousId,lumenSessionId,trackLumenEvent,captureReferral}=createAnalytics(()=>lumenSupabase,{localStorage,crypto,location,console});
 let lastTrackedPuzzle=null;
-async function trackLumenEvent(name,puzzleId=null,properties={}){
- if(!lumenSupabase)return;
- try{await lumenSupabase.rpc("lumen_track_event",{p_anonymous_id:lumenAnonymousId,p_event_name:name,p_session_id:lumenSessionId,p_puzzle_id:puzzleId,p_properties:properties})}catch(e){console.warn("LUMEN analytics",e)}
-}
 
 trackLumenEvent("session_start",null,{standalone:window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches});
 function lumenIsStandalone(){return !!((window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||navigator.standalone)}
@@ -131,18 +126,10 @@ async function shareLumenResult(){
  }catch(err){if(err?.name==="AbortError")return;try{await navigator.clipboard.writeText(text+"\n"+url);showShareToast("Résultat copié — prêt à partager")}catch(_){}}
  trackLumenEvent("result_shared",levelIndex+1,{method,ref:lumenReferralCode(),achievement:a.kicker});
 }
-function captureReferral(){const ref=new URLSearchParams(location.search).get("ref");if(!ref)return;const clean=ref.replace(/[^a-zA-Z0-9_-]/g,"").slice(0,64);if(!clean)return;try{localStorage.setItem("lumenReferral",clean)}catch(e){}trackLumenEvent("referral_visit",null,{ref:clean})}captureReferral();
-
-
-
-
-
-
-
+captureReferral();
 
 let lumenProgress=loadLumenProgress(),usedHintThisGame=false,questStarted=true,questFailed=false;if(!lumenProgress.xp)lumenProgress.xp=0;if(!lumenProgress.challenges)lumenProgress.challenges={};if(!lumenProgress.stars)lumenProgress.stars={};if(!Number.isFinite(lumenProgress.shards))lumenProgress.shards=3;if(!lumenProgress.performances)lumenProgress.performances={};
 if(!lumenProgress.daily)lumenProgress.daily={dates:{},rewards:{}};if(!Number.isFinite(lumenProgress.skyScore))lumenProgress.skyScore=null;
-
 
 function dailyStreak(){let n=0;for(let i=0;i<365;i++){if(lumenProgress.daily.dates[dateOffsetKey(-i)])n++;else break}return n}
 function renderDaily(){
@@ -170,14 +157,12 @@ function maybeShowReturnWelcome(){
  const close=()=>{toast.classList.add("hide");setTimeout(()=>toast.hidden=true,260)};toast.onclick=close;setTimeout(close,5200);
 }
 
-
 function completeDaily(){
  const today=localDateKey();if(lumenProgress.daily.dates[today])return;
  lumenProgress.daily.dates[today]=1;
  if(dailyStreak()>=7)lumenProgress.daily.rewards.skyBonus=1;
  saveLumenProgress();cloudSaveDaily(today,levelIndex);renderDaily();
 }
-
 
 let sequentialSolvedCount=normalizeSequentialProgress();
 
@@ -204,7 +189,6 @@ async function markLumenSeen(){if(localStorage.getItem("lumenPushChoice")!=="ena
 function maybeOfferPush(){if(solvedCount()<3||localStorage.getItem("lumenPushChoice"))return;if(!("Notification"in window)||Notification.permission==="denied")return;document.getElementById("pushOptin").hidden=false}
 async function disableLumenPush(){const sub=await currentPushSubscription();if(sub){await pushApi("unsubscribe",{endpoint:sub.endpoint});await sub.unsubscribe()}localStorage.setItem("lumenPushChoice","off");}
 
-
 const COLORS=["#efb37e","#91b5ed","#b4a0db","#a9d692","#ff8267","#ddd9d2","#e5ef83","#bdb6a0","#a9d7d3"];
 const TERRITORY_COLORS=["#46c7e8","#6d8fe8","#8b70d7","#49b49b","#d38a54","#b55f86","#67a6bf","#7e9c69","#a8875b"];
 let n=6,puz,state,hist=[],start,timer,activeElapsedMs=0,activeSince=null,last={},hi=null,proofs={},hintStage=0,hintFocus=null,celebrated=false,hintUsesThisGame=0,hintWasGranted=false,mistakesThisGame=0,verifyUsesThisGame=0,verifyPending=null,autoUsedThisGame=false,replayMode=false,levelIndex=Math.min(sequentialSolvedCount,99);
@@ -228,8 +212,6 @@ function arrangeDesktopPanels(){
  }
 }
 window.addEventListener("resize",arrangeDesktopPanels);
-
-
 
 function choose(){levelIndex=Math.max(0,Math.min(levelIndex,99));const [size,slot]=CAMPAIGN_SIZE_SCHEDULE[levelIndex];puz=size==="6"?CAT["6"][CAMPAIGN6_ORDER[slot]]:CAT[size][slot];n=puz.reg.length;last[n]=levelIndex}
 function loadPuzzle(){init();}
@@ -410,7 +392,6 @@ function closeManualCrossTip(){const tip=document.getElementById("manualCrossTip
 function guidedErrorsEnabled(){const g=document.getElementById("guidedErrors");return !!(g&&g.checked)}
 let guidedPending=null;
 
-
 function guidedCell(r,c){return board.querySelector('.cell[data-row="'+r+'"][data-col="'+c+'"]')}
 function drawGuidedLink(a,b){
  const ca=guidedCell(a[0],a[1]),cb=guidedCell(b[0],b[1]);if(!ca||!cb)return;
@@ -509,9 +490,6 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 window.addEventListener("pagehide",pauseGameClock);
 window.addEventListener("pageshow",()=>{if(document.visibilityState==="visible")resumeGameClock()});
 
-
-
-
 function displayedCellState(r,c){
  // 0 empty, 1 manual X, 2 diamond, 3 derived automatic X
  if(state[r][c]===2)return 2;
@@ -579,8 +557,6 @@ function hideSuccess(){
  if(celebrated){let bn=document.getElementById("boardNext");if(bn)bn.hidden=levelIndex>=99;document.getElementById("undo").disabled=true;document.getElementById("hint").disabled=true;document.getElementById("autoCross").disabled=true}
 }
 
-
-
 function renderSuccessRewards(stars){let el=document.getElementById("successRewards");if(!el)return;let run=performanceRun(),rewards=[];if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});if(run.noHint)rewards.push({cls:"hint",icon:performanceIcon("hint"),label:"Sans indice"});if(run.speed)rewards.push({cls:"speed",icon:performanceIcon("speed"),label:"Moins d’1 min"});if(run.noAssist)rewards.push({cls:"assist",icon:performanceIcon("assist"),label:"Sans assistance"});if(run.mastery)rewards.push({cls:"clean",icon:performanceIcon("clean"),label:"Maîtrise"});el.innerHTML=rewards.map(r=>'<span class="success-reward '+r.cls+'"><span>'+r.icon+'</span><span>'+r.label+'</span></span>').join("")}
 function celebrateSuccess(){
  if(celebrated)return;
@@ -638,9 +614,6 @@ function celebrateSuccess(){
  }
  setTimeout(()=>document.querySelectorAll(".confetti").forEach(x=>x.remove()),4300);
 }
-
-
-
 
 const {audioContext,tone,guardianSound,errorSound,halfSound,victorySound,starArrivalSound,constellationSound,updateSoundToggle,setSoundEnabled}=createSound();
 let halfRewardShown=false,lastPlacedCount=0,rewardToastTimer=null;
@@ -775,9 +748,6 @@ function render(){
    }
  }
 }
-
-
-
 
 function broadClue(h){
  if(!h||!h.detail)return null;
@@ -920,273 +890,17 @@ document.getElementById("hint").onclick=()=>{
  msg.textContent="Cette quête a échoué au solveur explicable. Elle ne devrait pas être dans le catalogue.";
 };
 
-async function runHintTests(){
- let results=[],cases=[];
- test("Campagne : toutes les quêtes ont une grille dans le catalogue",()=>Object.values(CAMPAIGN_SIZE_SCHEDULE).every(([size,slot])=>!!CAT[size]?.[size==="6"?CAMPAIGN6_ORDER[slot]:slot]));
- test("PWA : installation proposée seulement après 3 quêtes",()=>maybeOfferInstall.toString().includes("solvedCount()<3")&&document.getElementById("installEnable"));
- test("PWA : le mode standalone empêche de reproposer l’installation",()=>maybeOfferInstall.toString().includes("lumenIsStandalone()"));
- test("Partage : le résultat contient un lien de parrainage traçable",()=>lumenShareUrl().includes("ref=")&&shareLumenResult.toString().includes("result_shared"));
- test("Partage : la réussite met en avant quête et constellation",()=>typeof successAchievement==="function"&&document.getElementById("successAchievement")&&successAchievement.toString().includes("Quête "));
- test("Partage : une carte image est générée quand le téléphone le permet",()=>shareLumenResult.toString().includes("shareCardCanvas")&&shareLumenResult.toString().includes("canShare"));
- test("Referral : le paramètre ref est nettoyé avant analytics",()=>captureReferral.toString().includes("replace(/[^a-zA-Z0-9_-]/g"));
- test("Compte : le pseudo est stocké côté profil utilisateur",()=>typeof saveLumenNickname==="function"&&saveLumenNickname.toString().includes("lumen_set_nickname"));
- test("Rappel : la popup LUMEN disparaît avant la demande Android",()=>{
-   const src=enableLumenPush.toString(),hide=src.indexOf("optin.hidden=true"),ask=src.indexOf("Notification.requestPermission");
-   return hide>=0&&ask>hide;
- });
- test("Rappel : opt-in seulement après 3 quêtes et action explicite",()=>{const src=maybeOfferPush.toString();return src.includes("solvedCount()<3")&&document.getElementById("pushEnable")&&enableLumenPush.toString().includes("Notification.requestPermission")});
- test("Rappel : retour du joueur recale le délai d’inactivité",()=>markLumenSeen.toString().includes('"seen"'));
- test("Campagne : progression sauvegardée convertie en séquence continue",()=>{
-   const keys=Object.keys(lumenProgress.solved).map(Number).sort((a,b)=>a-b);
-   return keys.every((v,i)=>v===i);
- });
-
- test("Campagne : 100 quêtes réparties sur 12 constellations",()=>CONSTELLATION_GRID_COUNTS.length===12&&CONSTELLATION_GRID_COUNTS.reduce((a,b)=>a+b,0)===100);
- test("Campagne : le ciel contient exactement 150 étoiles",()=>CONSTELLATIONS.reduce((a,c)=>a+c.count,0)===SKY_TARGET&&SKY_TARGET===150);
- test("Campagne : chaque quête appartient à une constellation",()=>Array.from({length:100},(_,i)=>chapterForGrid(i)).every(i=>i>=0&&i<CONSTELLATIONS.length));
- test("Interaction : le cycle reste exclusion, Gardien, case libre",()=>{const src=render.toString();return src.includes("(state[r][c]+1)%3")});
- test("Guidage : contrôle activable avec explication persistante",()=>!!document.getElementById("guidedErrors")&&!!document.getElementById("guidedCard")&&typeof guidedConflictForAction==="function"&&typeof showGuidedConflict==="function");
- test("Guidage : validation logique utilise le solveur",()=>guidedConflictForAction.toString().includes("solutions("));
- test("Guidage : feedback visuel distingue ligne, colonne, territoire et contact",()=>["row","col","region","touch","deadend"].every(k=>guidedConflictForAction.toString().includes('"'+k+'"')));
- test("Rendu : le plateau contient n × n cellules après render",()=>{render();return board.children.length===n*n});
- test("Mobile : glisser assombrit plusieurs cases",()=>document.querySelector("#board")&&getComputedStyle(board).touchAction==="none"&&typeof moveDragCross==="function");
- test("Narratif : les pièces placées sont des Gardiens",()=>{
-   const src=render.toString(),rules=document.querySelector(".rules")?.textContent||"";
-   return src.includes('aria-label="Gardien positionné"')&&paintCell.toString().includes('aria-label="Gardien positionné"')&&document.getElementById("progressLive").textContent.endsWith("/"+n+" Gardiens")&&rules.includes("un Gardien par ligne")&&!rules.includes("source de lumière");
- });
- test("Récompense : une constellation terminée déclenche une célébration dédiée",()=>{
-   return typeof celebrateConstellationReveal==="function"&&showSkyReveal.toString().includes("celebrateConstellationReveal()");
- });
- test("Récompense : chaque première étoile gagnée ouvre le ciel",()=>{
-   return celebrateSuccess.toString().includes("firstCompletion&&earnedThisRun>0")&&celebrateSuccess.toString().includes("showSkyReveal(skyEarnedBefore,checkpoint)");
- });
- test("Récompense : deux respirations célestes existent dans chaque constellation",()=>{
-   return CONSTELLATIONS.every(c=>Math.ceil(c.count/3)<Math.ceil(c.count*2/3)&&Math.ceil(c.count*2/3)<c.count);
- });
- test("Récompense : une quête terminée peut être rejouée pour améliorer ses badges",()=>{
-   const b=document.getElementById("successRetry");
-   return !!b&&b.textContent.includes("Réessayer");
- });
- test("Campagne : progression strictement séquentielle",()=>{
-   return document.getElementById("successNew").textContent.trim()==="Quête suivante";
- });
-
- test("Campagne : Réinitialiser conserve la même quête",()=>{
-   return document.getElementById("new").textContent.trim()==="Réinitialiser";
- });
- test("Campagne : seule une victoire permet d'avancer",()=>{
-   return document.getElementById("successNew").textContent.trim()==="Quête suivante";
- });
- test("UX modales : toucher hors de Quête accomplie avance",()=>setupOutsideDefaults.toString().includes('"successOverlay"')&&setupOutsideDefaults.toString().includes("advanceToNextPuzzle"));
- test("UX modales : les overlays informatifs ont une action par défaut",()=>["skyReveal","questStart","autonomyOverlay","mapModal"].every(id=>setupOutsideDefaults.toString().includes('"'+id+'"')));
- test("UX consentement : installation et rappel choisissent Plus tard hors popup",()=>setupOutsideDefaults.toString().includes("dismissInstallLater")&&setupOutsideDefaults.toString().includes("dismissPushLater"));
- test("UX apprentissage : premier tutoriel ne se ferme pas par accident",()=>setupOutsideDefaults.toString().includes("lumenTutorialSeen")&&setupOutsideDefaults.toString().includes("if(seen)closeTutorial(false)"));
- test("UX correction : guidage et vérification restent explicites",()=>!setupOutsideDefaults.toString().includes('"guidedCard"')&&!setupOutsideDefaults.toString().includes('"verifyCard"'));
- test("Apprentissage guidé : quêtes 1 à 5 imposent le contrôle",()=>configureLearningMode.toString().includes("levelIndex<=4")&&configureLearningMode.toString().includes("guided.disabled=true"));
- test("Apprentissage guidé : quêtes 6 à 10 le rendent optionnel",()=>configureLearningMode.toString().includes("levelIndex<=9")&&configureLearningMode.toString().includes("guided.disabled=false"));
- test("Autonomie : la quête 11 propose de jouer sans contrôle guidé",()=>maybeShowAutonomy.toString().includes("levelIndex!==10")&&!!document.getElementById("autonomyTry")&&!!document.getElementById("autonomyKeep"));
- test("Autonomie : toucher hors popup choisit sans aide",()=>closeAutonomyOverlay.toString().includes("finishAutonomyChoice(false)"));
- test("Tutoriel joué : quêtes 1 et 2 n’enseignent que les Gardiens",()=>scriptedLearningActive.toString().includes("levelIndex<=1")&&render.toString().includes("scriptedAllowsGuardian"));
- test("Tutoriel joué : Marquage auto verrouillée sur les deux premières quêtes",()=>configureLearningMode.toString().includes("cb.disabled=levelIndex<=1"));
- test("Tutoriel joué : le glisser des exclusions est bloqué pendant le scénario",()=>document.querySelector("#board")&&scriptedLearningActive.toString().includes("levelIndex<=1"));
- test("Tip exclusions : apparaît au premier arrêt de le Marquage auto",()=>ac.onchange.toString().includes("maybeShowManualCrossTip")&&maybeShowManualCrossTip.toString().includes("lumenManualCrossTipSeen"));
-
- // Regression: a completed valid constellation is judged from its guardians,
- // independently of remaining manual/automatic exclusions.
- test("Maîtrise : un cercle erroné corrigé ne compte pas comme faute",()=>{
-   const src=render.toString();
-   return !src.includes('if(next===2&&puz.sol[r]!==c){errorSound()') &&
-          !src.includes('if(next===2&&puz.sol[r]!==c){mistakesThisGame++') &&
-          !src.includes('Tu peux encore corriger');
- });
- test("Maîtrise : une constellation temporairement complète mais invalide ne pénalise pas",()=>{
-   const src=render.toString();
-   const branch=src.slice(src.indexOf('}else if(placed.length===n){'));
-   return branch.includes('Cette constellation ne fonctionne pas encore')&&!branch.slice(0,500).includes('mistakesThisGame++');
- });
- test("Victoire : les exclusions restantes ne bloquent pas une constellation valide",()=>{
-   const p=CAT["6"][0], n0=p.reg.length;
-   const pts=p.sol.map((c,r)=>[r,c]);
-   return new Set(pts.map(x=>x[0])).size===n0 &&
-          new Set(pts.map(x=>x[1])).size===n0 &&
-          new Set(pts.map(([r,c])=>p.reg[r][c])).size===n0 &&
-          pts.every((a,i)=>pts.every((b,j)=>i===j||Math.abs(a[0]-b[0])>1||Math.abs(a[1]-b[1])>1));
- });
-
-
- function test(name,fn){
-  cases.push({name,fn});
- }
- let saveState=state.map(x=>x.slice()), savePuz=puz, saveN=n;
-
- test("Hauteur des lignes fixe quand une croix apparaît",()=>{
-  let css=getComputedStyle(board);
-  let before=board.getBoundingClientRect().height;
-  let p=CAT[n][0],oldP=puz,oldS=state;
-  puz=p;state=Array.from({length:n},()=>Array(n).fill(0));render();
-  let rowsBefore=[...board.children].filter((_,i)=>i%n===0).map(e=>e.getBoundingClientRect().height);
-  state[0][0]=1;render();
-  let rowsAfter=[...board.children].filter((_,i)=>i%n===0).map(e=>e.getBoundingClientRect().height);
-  let after=board.getBoundingClientRect().height;
-  puz=oldP;state=oldS;render();
-  return Math.abs(before-after)<0.5 && rowsBefore.length===n &&
-         rowsBefore.every((h,i)=>Math.abs(h-rowsAfter[i])<0.5);
- });
- test("Succès : une quête accomplie déclenche la célébration",async()=>{
-  let p=CAT[n][0],oldP=puz,oldS=state,oldCelebrated=celebrated;
-  puz=p;state=Array.from({length:n},(_,r)=>Array.from({length:n},(_,c)=>c===p.sol[r]?2:0));
-  celebrated=false;render();
-  const deadline=performance.now()+3000;
-  while(performance.now()<deadline&&!document.getElementById("successOverlay").classList.contains("show")&&document.getElementById("skyReveal").hidden)await new Promise(resolve=>setTimeout(resolve,25));
-  let ok=celebrated && (document.getElementById("successOverlay").classList.contains("show")||!document.getElementById("skyReveal").hidden) && board.classList.contains("win");
-  document.getElementById("skyReveal").hidden=true;
-  hideSuccess();puz=oldP;state=oldS;celebrated=oldCelebrated;render();
-  return ok;
- });
- test("Succès : aucune célébration sur une quête incomplète",()=>{
-  let p=CAT[n][0],oldP=puz,oldS=state,oldCelebrated=celebrated;
-  puz=p;state=Array.from({length:n},()=>Array(n).fill(0));celebrated=false;hideSuccess();render();
-  let ok=!celebrated && !document.getElementById("successOverlay").classList.contains("show");
-  puz=oldP;state=oldS;celebrated=oldCelebrated;render();
-  return ok;
- });
- test("Indice : bouton Revoir la quête présent",()=>{
-  return !!document.getElementById("clearHint");
- });
- test("Exclusions : anneau ambre identique en manuel et automatique",()=>{
-  let manual=document.createElement("div"),auto=document.createElement("div");
-  manual.className="cell";auto.className="cell auto-x";
-  manual.innerHTML='<span class="lumen-dim"></span>';auto.innerHTML='<span class="lumen-dim"></span>';
-  document.body.append(manual,auto);
-  let m=getComputedStyle(manual.firstChild),a=getComputedStyle(auto.firstChild);
-  let ok=m.borderTopColor===a.borderTopColor && m.borderTopWidth===a.borderTopWidth &&
-         m.opacity===a.opacity && manual.firstChild.getBoundingClientRect().width===auto.firstChild.getBoundingClientRect().width &&
-         parseFloat(m.borderTopWidth)>=2;
-  manual.remove();auto.remove();return ok;
- });
- test("Catalogue non vide",()=>CAT[n]&&CAT[n].length>0);
- test("Territoires : pas de monocellule hors des deux introductions scriptées",()=>{
-  return CAT[n].every(p=>{
-   let counts={};p.reg.flat().forEach(g=>counts[g]=(counts[g]||0)+1);
-   return Object.entries(counts).every(([g,count])=>count>=2||(n===5&&((p===CAT["5"][0]&&Number(g)===2&&p.reg[2][2]===2)||(p===CAT["5"][1]&&Number(g)===0&&p.reg[0][0]===0))));
-  });
- });
- test("Solutions stockées respectent lignes/colonnes/territoires/non-contact",()=>{
-  return CAT[n].every(p=>{
-   let s=p.sol;
-   if(new Set(s).size!==n)return false;
-   if(new Set(s.map((c,r)=>p.reg[r][c])).size!==n)return false;
-   for(let r=1;r<n;r++)if(Math.abs(s[r]-s[r-1])<=1)return false;
-   return true;
-  });
- });
- test("Une croix correcte est réutilisée par le moteur",()=>{
-  let p=CAT[n][0];puz=p;state=Array.from({length:n},()=>Array(n).fill(0));
-  let q=null;
-  for(let r=0;r<n&&!q;r++)for(let c=0;c<n;c++)if(c!==p.sol[r]){q=[r,c];break}
-  state[q[0]][q[1]]=1;
-  let h=proofEngine();
-  return h.elim && h.elim[key(q[0],q[1])];
- });
- test("Une croix sur la solution est détectée comme erreur",()=>{
-  let p=CAT[n][0];puz=p;state=Array.from({length:n},()=>Array(n).fill(0));
-  state[0][p.sol[0]]=1;
-  return !!playerError();
- });
- test("Un mauvais Gardien est détecté comme erreur",()=>{
-  let p=CAT[n][0];puz=p;state=Array.from({length:n},()=>Array(n).fill(0));
-  let c=(p.sol[0]+1)%n;state[0][c]=2;
-  return !!playerError();
- });
- test("Aucun indice 'place' sans preuve structurée",()=>{
-  return CAT[n].every(p=>{
-   puz=p;state=Array.from({length:n},()=>Array(n).fill(0));
-   let h=proofEngine();
-   return h.kind!=="place" || (h.detail && h.detail.rule==="single");
-  });
- });
- test("Aucun fallback de recherche exhaustive dans proofEngine",()=>{
-  let txt=proofEngine.toString();
-  return !txt.includes("solutions()")&&!txt.includes("contradiction");
- });
- test("Les indices locked ont des prémisses visibles",()=>{
-  return CAT[n].every(p=>{
-   puz=p;state=Array.from({length:n},()=>Array(n).fill(0));
-   let h=proofEngine();
-   return !(h.detail&&h.detail.rule==="locked") || (h.detail.source&&h.detail.source.length>=2);
-  });
- });
- test("Les indices group ont territoires + axes + prémisses",()=>{
-  return CAT[n].every(p=>{
-   puz=p;state=Array.from({length:n},()=>Array(n).fill(0));
-   let h=proofEngine(),d=h.detail;
-   return !(d&&d.rule==="group") || (d.regions&&d.indices&&d.source&&d.regions.length===d.indices.length&&d.source.length>0);
-  });
- });
-
- // Performance regressions: keep ordinary play incremental and cheap.
- test("Performance : un clic ordinaire ne reconstruit pas toute la grille",()=>{
-   const src=render.toString(),clickStart=src.search(/d\.onclick=(?:async)?\(\)=>/),clickEnd=src.indexOf("};board.appendChild(d)",clickStart);
-   const clickBody=src.slice(clickStart,clickEnd);
-   return clickStart>=0&&clickEnd>clickStart&&clickBody.includes("paintBoardState()")&&!clickBody.includes("board.innerHTML")&&!clickBody.includes("render()};");
- });
- test("Performance : le drag ne lance aucun render complet pendant pointermove",()=>{
-   const src=moveDragCross.toString(),begin=0,end=src.length;
-   return begin>=0&&end>begin&&!src.slice(begin,end).includes("render()");
- });
- test("Performance : mise à jour visuelle interactive sous 16 ms sur grille courante",()=>{
-   // Warm-up, then median of several runs to reduce one-off JIT/layout noise.
-   paintBoardState();
-   const samples=[];
-   for(let i=0;i<15;i++){const t=performance.now();paintBoardState();samples.push(performance.now()-t)}
-   samples.sort((a,b)=>a-b);
-   const median=samples[Math.floor(samples.length/2)];
-   window.lumenPerfLast={metric:"paintBoardState",medianMs:median,samples};
-   return median<16;
- });
- test("Performance : mise à jour d'une cellule sous 8 ms",()=>{
-   paintCell(0,0);
-   const samples=[];
-   for(let i=0;i<25;i++){const t=performance.now();paintCell(0,0);samples.push(performance.now()-t)}
-   samples.sort((a,b)=>a-b);
-   const median=samples[Math.floor(samples.length/2)];
-   window.lumenPerfCellLast={metric:"paintCell",medianMs:median,samples};
-   return median<8;
- });
- test("Mobile : le plateau bloque le scroll natif pendant le drag",()=>{
-   const css=getComputedStyle(board);
-   return css.touchAction==="none"&&(css.overscrollBehavior==="contain"||css.overscrollBehaviorY==="contain");
- });
-
- // Replay each puzzle automatically. Every requested next step must be explainable.
- test("Replay complet : jamais bloqué, jamais d'indice opaque",()=>{
-  return CAT[n].every(p=>{
-   puz=p;state=Array.from({length:n},()=>Array(n).fill(0));
-   for(let step=0;step<200;step++){
-    if(state.flat().filter(v=>v===2).length===n)return true;
-    let h=proofEngine();
-    if(h.kind==="place"){
-     if(!h.detail||h.detail.rule!=="single")return false;
-     state[h.cell[0]][h.cell[1]]=2;
-    }else if(h.kind==="elim"){
-     let d=h.detail;
-     if(!d||!["locked","group","diamond","manual"].includes(d.rule))return false;
-     state[h.cell[0]][h.cell[1]]=1;
-    }else return false;
-   }
-   return false;
-  });
- });
-
- for(const {name,fn} of cases){try{results.push({name,ok:!!(await fn()),error:""})}catch(e){results.push({name,ok:false,error:String(e)})}}
- state=saveState;puz=savePuz;n=saveN;render();
- let pass=results.filter(x=>x.ok).length;
- let fail=results.length-pass;
- let summary=document.getElementById("testSummary"),details=document.getElementById("testDetails");
- if(summary)summary.textContent=`${pass}/${results.length} tests réussis${fail?` — ${fail} échec(s)`:" ✓"}`;
- if(details)details.textContent=results.map(x=>(x.ok?"✓ ":"✗ ")+x.name+(x.error?" — "+x.error:"")).join("\n");
- return results;
-}
+const testModel={
+get n(){return n},set n(value){n=value},
+get puz(){return puz},set puz(value){puz=value},
+get state(){return state},set state(value){state=value},
+get celebrated(){return celebrated},set celebrated(value){celebrated=value},
+get lumenProgress(){return lumenProgress},set lumenProgress(value){lumenProgress=value},
+get ac(){return ac},
+get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
+get replayMode(){return replayMode},set replayMode(value){replayMode=value}
+};
+const runHintTests=createHintTestSuite(testModel,{saveLumenNickname,maybeOfferInstall,lumenShareUrl,successAchievement,shareLumenResult,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults});
 let runTestsButton=document.getElementById("runTests");
 if(runTestsButton)runTestsButton.onclick=runHintTests;
 
@@ -1230,22 +944,9 @@ document.getElementById("boardNext").onclick=advanceToNextPuzzle;
 
 let mapConstellation=0;
 
-
-
-
-
-
-
-
-
-
-
-
-
 function starDisplayName(p,i){return p.stars&&p.stars[i]?p.stars[i]:"Étoile "+(i+1)}
 
 function renderSky(index=mapConstellation){let el=document.getElementById("skyCard");if(!el)return;index=Math.max(0,Math.min(index,CONSTELLATIONS.length-1));let c=CONSTELLATIONS[index],lit=constellationLitAt(index),p={index,...c,lit},active=index===constellationProgress().index,lines=p.edges.map(e=>'<line class="sky-line '+(e[0]<lit&&e[1]<lit?'on':'')+'" x1="'+p.pts[e[0]][0]+'" y1="'+p.pts[e[0]][1]+'" x2="'+p.pts[e[1]][0]+'" y2="'+p.pts[e[1]][1]+'"/>').join(""),stars=p.pts.map((v,i)=>'<g><circle class="sky-star '+(i<lit?'on':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i<lit?4:3)+'"/>'+(i<lit?'<text class="sky-label" x="'+(v[0]+6)+'" y="'+(v[1]-5)+'">'+starDisplayName(p,i)+'</text>':'')+'</g>').join("");el.innerHTML='<div class="sky-head"><span class="sky-name">'+p.name+'</span><span>'+lit+' / '+p.count+' étoiles</span></div><svg class="sky-svg" viewBox="0 0 290 115">'+lines+stars+'</svg><div class="sky-note">'+(active?"Constellation active":lit===p.count?"Constellation complétée":lit===0?"Constellation à découvrir":"Constellation en cours")+'</div>'}
-
 
 function celebrateConstellationReveal(){
  const o=document.getElementById("skyReveal"),card=o?.querySelector(".sky-reveal-card");if(!o||!card)return;
@@ -1365,20 +1066,7 @@ if("serviceWorker" in navigator){
  window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=7",{updateViaCache:"none"}).then(r=>r.update()).catch(e=>console.warn("LUMEN service worker",e)));
 }
 
-// Explicit entry points for the existing HTML action and browser diagnostics.
-window.openBetaFeedback=openBetaFeedback;
+// Preserve the public browser testing entry points.
 window.runHintTests=runHintTests;
-window.lumenDiagnostics={
- async runAllHintTests(){
-  levelIndex=2;init();const suites=[];
-  for(const size of [5,6,7,8]){
-   n=size;puz=CAT[size][0];state=Array.from({length:n},()=>Array(n).fill(0));
-   const results=await runHintTests();suites.push({size,total:results.length,failures:results.filter(t=>!t.ok)});
-  }
-  return suites;
- },
- snapshot(){return {n,levelIndex,puz,state,celebrated,replayMode,progress:lumenProgress}},
- setupQuest(index){levelIndex=index;init();setSoundEnabled(false);document.getElementById("autoCross").checked=false;document.getElementById("guidedErrors").checked=false;closeTutorial(false);document.getElementById("skyReveal").hidden=true;hideSuccess()},
- setBoard(value){state=value;render()}
-};
+window.lumenDiagnostics=createDiagnostics(testModel,{init,runHintTests,setSoundEnabled,closeTutorial,hideSuccess,render});
 }

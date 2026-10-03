@@ -11,7 +11,9 @@ A cell cycles: **empty -> exclusion -> Guardian -> empty**.
 The current campaign contains 100 sequential quests grouped into 12 constellations and awards exactly 150 sky stars. Players cannot skip the current unsolved quest; solved quests can be replayed to improve performance badges.
 
 ## Architecture
-The current app is intentionally compact and mostly lives in `index.html`: UI/CSS, puzzle catalogue, solver/proof engine, progression, persistence, analytics and embedded regression/performance tests. `manifest.webmanifest` and `sw.js` provide PWA support.
+LUMEN is a static application using native ES modules, with no framework or build step. `index.html` contains markup and loads `src/main.js`. Modules under `src/` separate game rules/proofs, campaign/catalogue, persistence, UI, analytics and browser tests. `manifest.webmanifest` and `sw.js` retain PWA support.
+
+For local use, serve the repository over HTTP (for example `python -m http.server 8000`) and open `http://127.0.0.1:8000/`. ES modules require an HTTP server. Supabase and fonts retain their existing external CDN loading. See the task-to-module map in `docs/DATA_AND_ARCHITECTURE.md` and reproducible checks in `docs/TESTING.md`.
 
 See:
 - `AGENTS.md` — mandatory instructions for Codex/agents

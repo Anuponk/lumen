@@ -1,0 +1,22 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
+import {functionSource} from './source-tools.mjs';
+import {createAnalytics} from '../src/analytics/events.js';
+const baseline='dcd9f3c872e623541be698edc212b64589d3b164';
+const source=(process.argv[2]?fs.readFileSync(process.argv[2],'utf8'):execFileSync('git',['show',baseline+':index.html'],{encoding:'utf8'})).replace(/\r/g,'');
+async function fixture(search,legacy,offline){
+ const values=new Map(),calls=[],warnings=[];let sequence=0,client=null;
+ const environment={localStorage:{getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,value)},crypto:{randomUUID:()=>++sequence===1?'anonymous-id':'session-id'},location:{search},console:{warn:(...args)=>warnings.push(String(args[0]))}};
+ let api,context;
+ if(legacy){context={...environment,URLSearchParams,lumenSupabase:null};vm.createContext(context);vm.runInContext(functionSource(source,'lumenId')+'\nconst lumenAnonymousId=lumenId("lumenAnonymousIdV1");const lumenSessionId=crypto.randomUUID();\n'+functionSource(source,'trackLumenEvent')+'\n'+functionSource(source,'captureReferral'),context);api=context}
+ else api=createAnalytics(()=>client,environment);
+ await api.trackLumenEvent('ignored_before_client');
+ client={async rpc(name,args){calls.push({name,args});if(offline)throw Error('fixture offline');return {error:null}}};
+ if(legacy)context.lumenSupabase=client;
+ await api.trackLumenEvent('session_start',null,{standalone:false});await api.trackLumenEvent('puzzle_start',3,{sector:0});await api.trackLumenEvent('hint_used',3);api.captureReferral();await new Promise(resolve=>setTimeout(resolve,0));
+ return {values:[...values],calls:JSON.parse(JSON.stringify(calls)),warnings:[...warnings]};
+}
+for(const search of ['', '?ref=friend_123','?ref=%3Cbad%3E%20reference','?ref='+('x'.repeat(100))])for(const offline of [false,true])assert.deepEqual(await fixture(search,false,offline),await fixture(search,true,offline));
+console.log(JSON.stringify({baseline,fixtures:8,identityStorage:'identical',eventsAndPayloads:'identical',referralSanitization:'identical',liveWrites:false}));

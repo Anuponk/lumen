@@ -1,17 +1,7 @@
 // Requires a local static server and an isolated Chrome debugging profile.
 import fs from 'node:fs';
-const endpoint=process.env.LUMEN_CDP_URL||'http://127.0.0.1:9222';
-const targets=await(await fetch(endpoint+'/json')).json();
-const ws=new WebSocket(targets.find(t=>t.type==='page').webSocketDebuggerUrl);
-await new Promise(resolve=>ws.onopen=resolve);
-let id=0;const pending=new Map(),errors=[];
-ws.onmessage=event=>{
- const message=JSON.parse(event.data);
- if(message.id){pending.get(message.id)?.(message);pending.delete(message.id)}
- else if(message.method==='Runtime.exceptionThrown')errors.push(message.params.exceptionDetails);
-};
-function send(method,params={}){return new Promise((resolve,reject)=>{const key=++id;pending.set(key,message=>message.error?reject(Error(JSON.stringify(message.error))):resolve(message.result));ws.send(JSON.stringify({id:key,method,params}))})}
-async function evaluate(expression,awaitPromise=false){const result=await send('Runtime.evaluate',{expression,awaitPromise,returnByValue:true});if(result.exceptionDetails)throw Error(result.exceptionDetails.exception?.description||JSON.stringify(result.exceptionDetails));return result.result.value}
+import {connectBrowser} from './cdp-client.mjs';
+const {send,evaluate,errors}=await connectBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function assert(value,message){if(!value)throw Error(message)}
 const url=process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/';
@@ -50,8 +40,19 @@ try{
  const progressBefore=await evaluate('localStorage.getItem("lumenProgressV1")');
  await send('Page.reload',{ignoreCache:true});await sleep(1500);
  assert(await evaluate('localStorage.getItem("lumenProgressV1")')===progressBefore,'Progress lost on reload');
+ // Chrome's ignoreCache reload bypasses the controller; test normal navigation too.
+ await send('Page.reload',{ignoreCache:false});await sleep(1500);
+ const pwa=await evaluate(`(async()=>{
+  const registration=await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('Service worker not ready')),5000))]);
+  const manifestURL=document.querySelector('link[rel="manifest"]').href;
+  const manifest=await(await fetch(manifestURL)).json();
+  const resources=[manifestURL,registration.active.scriptURL,...manifest.icons.map(icon=>new URL(icon.src,location.href).href),...performance.getEntriesByType('resource').map(entry=>entry.name).filter(name=>name.startsWith(location.origin+'/src/'))];
+  const assets=await Promise.all([...new Set(resources)].map(async url=>{const response=await fetch(url);if(!response.ok)throw Error('PWA asset failed: '+url);return new URL(url).pathname}));
+  return {registered:!!registration.active,controlled:!!navigator.serviceWorker.controller,display:manifest.display,startURL:manifest.start_url,assets};
+ })()`,true);
+ assert(pwa.registered&&pwa.controlled&&pwa.display==='standalone'&&pwa.startURL==='/'&&pwa.assets.includes('/src/main.js'),'PWA regression: '+JSON.stringify(pwa));
  assert(errors.length===0,'Uncaught browser errors: '+JSON.stringify(errors));
- const report={suites,mobile:{tapCycle:[1,2,0],drag:true,guardianPreserved:true,noScroll:true,reset:true},guestReload:true,uncaughtErrors:errors};
+ const report={suites,mobile:{tapCycle:[1,2,0],drag:true,guardianPreserved:true,noScroll:true,reset:true},guestReload:true,pwa,uncaughtErrors:errors};
  if(output)fs.writeFileSync(output,JSON.stringify(report,null,2)+'\n');
  console.log(JSON.stringify(report));
 }finally{await send('Browser.close')}

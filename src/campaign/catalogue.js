@@ -4,4 +4,3 @@ CAT["5"]=[
  {reg:[[0,0,0,1,1],[0,0,0,1,1],[3,3,2,4,1],[3,3,3,4,1],[3,3,4,4,1]],sol:[1,4,2,0,3],learnOrder:[[2,2],[4,3],[3,0],[0,1],[1,4]],audit:{boardSize:5,solutionCount:1,proofSteps:22,rules:{group:17,single:5},hardestRule:"group"}},
  {reg:[[0,1,1,1,1],[1,1,1,2,2],[2,2,2,2,2],[3,3,3,3,3],[4,4,4,4,4]],sol:[0,2,4,1,3],audit:{boardSize:5,solutionCount:1,proofSteps:11,rules:{group:6,single:5},hardestRule:"group"}}
 ];
-

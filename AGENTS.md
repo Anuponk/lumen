@@ -27,8 +27,12 @@ This repository is the source of truth for LUMEN. Read this file and the documen
 ## Before changing generated/catalogued grids
 Read `docs/GRID_CATALOG.md` and `docs/TESTING.md`. Do not add a grid solely because it has a mathematical solution: it must pass uniqueness, structural, explainability and replay audits.
 
-## Current implementation warning
-The application is currently a monolithic `index.html`. The embedded tests are useful but are not a substitute for a real browser/E2E suite. Do not claim browser validation unless it was actually executed.
+## Current implementation and navigation
+The static application uses native ES modules without a build step. `index.html` is markup; `src/main.js` starts the UI controller. Domain ownership: `src/game/` (rules/proofs), `src/campaign/` (catalogue/progression), `src/persistence/` (local/cloud), `src/ui/` (rendering/input/tutorial/audio), `src/analytics/` (events), `src/testing/` (browser regression suite/diagnostics).
+
+Read the task → modules → tests map in `docs/DATA_AND_ARCHITECTURE.md` and the executable commands in `docs/TESTING.md`. `window.runHintTests` and `window.lumenDiagnostics` remain available. The UI owns one live board and progress object; injected adapters must read current values, including during async callbacks. Do not add parallel state stores.
+
+Browser automation exists under `scripts/`, alongside strict catalogue and differential tests. Do not claim browser validation unless it was actually executed. Refactoring must preserve existing behavior; pending badges/learning issues #30/#31 require separate work.
 
 ## Documentation maintenance
 When a product rule, reward, progression rule, data contract, UX invariant, analytics contract or release procedure changes, update the matching document in the same PR/commit. Durable decisions made in chat must be transferred to the repository; chat history is not the project source of truth. Prefer enriching an existing document over creating a competing source. If code and docs disagree, investigate rather than silently choosing one.

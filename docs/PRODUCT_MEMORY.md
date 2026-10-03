@@ -93,3 +93,11 @@ The strict audit verifies 134 catalogue entries, 100 distinct campaign reference
 At the player's request, all 22 entries listed above were replaced with newly generated, unique, connected grids that the existing proof engine can fully explain. Their exact catalogue indices were retained, preserving quest identifiers, saved progression, rewards and campaign order. The two scripted introductions and all previously passing grids were retained. No brute-force fallback was added to the hint engine.
 
 The deterministic offline generator and accepted JSON are retained under `scripts/`; GRID_CATALOG describes the acceptance rules and commands. The strict audit now passes all 134 entries, and the actual browser suite passes all 66 cases on each of the four board sizes. The earlier failing report is retained as historical evidence; the new replacement reports record the passing local validation. Production deployment remains a separate operation.
+
+## Modular migration #20–#26 — 2026-10-03
+
+The user authorized a progressive refactor on `codex/modular-refactor`, starting at main `dcd9f3c`, with one validated commit per extraction. Native ES modules preserve the static hosting model. The engine, catalogue/campaign, local/cloud persistence, UI/styles/tutorial/audio, analytics and browser test infrastructure now have explicit owners under `src/`.
+
+The key constraint is functional equivalence. Live accessors preserve board/progress/auth state across resets, replay and asynchronous callbacks; snapshots must not replace the canonical mutable state. Full browser suites, strict catalogue audits and differential comparisons against the original main protect this decision. No gameplay or badge-policy correction was bundled into the migration. Pending #30/#31 remain separate even where current implementation and desired future semantics differ.
+
+The HTML feedback inline handler/global bridge was redundant with its existing bound listener and removed. Browser test entry points remain available. PWA caching/navigation policy and existing CDN/backend contracts are unchanged. This is local branch validation, not a production deployment record.
