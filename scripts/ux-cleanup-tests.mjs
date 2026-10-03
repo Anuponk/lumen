@@ -61,6 +61,9 @@ try{
  await evaluate(`lumenDiagnostics.setupQuest(10);document.getElementById('manualCrossTip').hidden=true;document.getElementById('questStart').hidden=true`);
  const beforeLearning=await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress)`);
  await click('#tutorialHelp');await click('#replayLearning');await sleep(120);
+ const learningContract=await evaluate(`(()=>({stage:document.getElementById('board').dataset.learningStage,nextHidden:document.getElementById('scriptedLearnNext').hidden,realCells:document.querySelectorAll('#board .cell').length}))()`);
+ check(learningContract.realCells>0,'learning uses real grid cells');
+ if(['row','column','neighbors','territory'].includes(learningContract.stage))check(learningContract.nextHidden,'manual marking stage cannot be skipped');
  check(await evaluate(`lumenDiagnostics.snapshot().levelIndex===0&&!document.getElementById('scriptedLearn').hidden`),'learning replay starts real quest 1 teaching mode');
  check(await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress)`)===beforeLearning,'starting learning replay changed progression');
  check(errors.length===0,'Browser exceptions: '+JSON.stringify(errors));
