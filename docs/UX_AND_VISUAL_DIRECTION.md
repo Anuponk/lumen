@@ -49,3 +49,12 @@ Touch interaction should feel immediate. Full board rerenders during drag are sp
 Missing direct exclusions use “Marquage manquant” and “écarter”, replacing the obsolete water-themed message. Remaining hint instructions also use “écarter” instead of “éteindre”; hint logic is unchanged. After victory, “Quête suivante” is the highlighted primary action; sharing remains secondary. The success card scrolls within the viewport on compact screens so the action stays reachable.
 
 Detailed rules are available through “? Revoir les règles” instead of a permanent paragraph below the board. The modal supports its close button, Escape and a backdrop click, then restores focus to the help button. Consultation preserves board/progress and the scripted teaching step; clicks in the modal must never advance onboarding.
+
+
+## One responsive game UI
+
+Lumen uses one game DOM, one game state and one set of gameplay handlers across phones, tablets and desktop. Responsive behavior belongs primarily in CSS: the same journey component becomes compact on narrow viewports and occupies the left workspace on wide screens; the same contextual message occupies the normal flow or the wide right workspace.
+
+JavaScript must not re-parent gameplay or progression components based on viewport width. A breakpoint may change presentation, but not which implementation is active. Interaction differences must be capability-driven: for example, drag-to-exclude is implemented with Pointer Events and ignores mouse pointers rather than assuming that a narrow viewport is touch-capable.
+
+Do not introduce parallel `MobileX` / `DesktopX` gameplay components. If a compact presentation is needed, adapt the canonical component with CSS and preserve the same state, semantics and handlers.
