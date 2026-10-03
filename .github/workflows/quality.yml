@@ -1,0 +1,80 @@
+name: Lumen quality gate
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Static and data quality gates
+        run: |
+          node scripts/audit-catalogue.mjs
+          node scripts/engine-equivalence.mjs
+          node scripts/campaign-tests.mjs
+          node scripts/persistence-tests.mjs
+          node scripts/analytics-tests.mjs
+          node scripts/module-structure-tests.mjs
+          node scripts/responsive-architecture-tests.mjs
+
+      - name: Start local server
+        run: |
+          python3 -m http.server 8000 > /tmp/lumen-http.log 2>&1 &
+          echo $! > /tmp/lumen-http.pid
+          for i in {1..20}; do
+            curl -fsS http://127.0.0.1:8000/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/lumen-http.log
+          exit 1
+
+      - name: Start isolated Chromium
+        run: |
+          mkdir -p /tmp/lumen-chrome
+          chromium --headless=new --remote-debugging-port=9222 --remote-debugging-address=127.0.0.1 --user-data-dir=/tmp/lumen-chrome --no-first-run --no-default-browser-check --disable-dev-shm-usage --no-sandbox about:blank > /tmp/lumen-chrome.log 2>&1 &
+          echo $! > /tmp/lumen-chrome.pid
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:9222/json/version >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/lumen-chrome.log
+          exit 1
+
+      - name: Browser regression suite
+        run: node scripts/browser-tests.mjs docs/validation/ci-browser.json
+
+      - name: UX regression suite
+        run: |
+          rm -rf /tmp/lumen-chrome
+          chromium --headless=new --remote-debugging-port=9222 --remote-debugging-address=127.0.0.1 --user-data-dir=/tmp/lumen-chrome --no-first-run --no-default-browser-check --disable-dev-shm-usage --no-sandbox about:blank > /tmp/lumen-chrome-ux.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:9222/json/version >/dev/null && break
+            sleep 1
+          done
+          node scripts/ux-cleanup-tests.mjs docs/validation/ci-ux.json
+
+      - name: Upload validation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lumen-validation-reports
+          path: |
+            docs/validation/ci-browser.json
+            docs/validation/ci-ux.json
+          if-no-files-found: ignore
