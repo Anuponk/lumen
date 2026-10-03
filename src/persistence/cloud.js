@@ -60,10 +60,10 @@ async function initLumenCloud(){
  if(!model.lumenSupabase){updateAuthUI();return}
  const {data}=await model.lumenSupabase.auth.getSession();
  model.lumenUser=data.session?.user||null; updateAuthUI();
- if(model.lumenUser){await loadLumenProfile();await cloudMergeProgress();}
+ if(model.lumenUser){await loadLumenProfile();await cloudMergeProgress();await cloudMergeDaily();}
  model.lumenSupabase.auth.onAuthStateChange((event,session)=>{
    const previous=model.lumenUser?.id; model.lumenUser=session?.user||null; updateAuthUI();
-   if(model.lumenUser&&model.lumenUser.id!==previous)setTimeout(async()=>{await cloudMergeProgress()},0);
+   if(model.lumenUser&&model.lumenUser.id!==previous)setTimeout(async()=>{await cloudMergeProgress();await cloudMergeDaily()},0);
  });
  const login=document.getElementById("authLogin"),logout=document.getElementById("authLogout");
  if(login)login.onclick=async()=>{
