@@ -52,3 +52,28 @@ A major consolidation removed obsolete EMBER/Fire & Water concepts and old progr
 
 ## Agent rule
 When changing a behavior that exists because of a past regression, add/preserve a regression test that states the reason. Do not “simplify” away unusual-looking logic without checking this history.
+
+
+## Knowledge-base policy
+The repository documentation is the shared memory for humans and coding agents. Chat history is useful for discovery, but it is not authoritative project documentation.
+
+When a conversation produces a durable decision, invariant, regression lesson, data contract, operational procedure or UX rule, update the relevant repository document. Prefer enriching an existing document over creating overlapping notes.
+
+Documentation responsibilities:
+- `AGENTS.md` contains short non-negotiable instructions that an agent must read before editing;
+- specification documents describe current intended behavior;
+- this file records why important product choices exist and which regressions they protect against;
+- obsolete ideas may remain here only when clearly labelled historical, so they cannot be mistaken for current requirements.
+
+When code, tests and documentation disagree, do not silently rewrite history. Determine which behavior is intended, fix the inconsistent artifacts together, and preserve a regression test when the discrepancy came from a bug.
+
+## Recent regression lessons
+Several recent iterations reinforced the following rules:
+- completion detection must be independent of exclusion marks;
+- progression counters must derive from the canonical constellation/campaign state rather than competing legacy counters;
+- a reset must never behave like a random/new-grid selector;
+- mobile bulk marking needs drag-to-exclude because repeated individual taps create avoidable friction;
+- a first tap is an exclusion, so guidance must not interpret it as an illegal Guardian placement;
+- deployment state and Git state are different facts: branch merges, application version strings and the Vercel Production commit must be checked separately.
+
+These are not cosmetic preferences; they are regression guards and should be reflected in tests when the affected code changes.
