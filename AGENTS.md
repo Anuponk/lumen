@@ -31,4 +31,4 @@ Read `docs/GRID_CATALOG.md` and `docs/TESTING.md`. Do not add a grid solely beca
 The application is currently a monolithic `index.html`. The embedded tests are useful but are not a substitute for a real browser/E2E suite. Do not claim browser validation unless it was actually executed.
 
 ## Documentation maintenance
-When a product rule, reward, progression rule, data contract or release procedure changes, update the matching document in the same PR/commit. If code and docs disagree, investigate rather than silently choosing one.
+When a product rule, reward, progression rule, data contract, UX invariant, analytics contract or release procedure changes, update the matching document in the same PR/commit. Durable decisions made in chat must be transferred to the repository; chat history is not the project source of truth. Prefer enriching an existing document over creating a competing source. If code and docs disagree, investigate rather than silently choosing one.
