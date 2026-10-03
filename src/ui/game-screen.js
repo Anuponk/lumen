@@ -763,6 +763,7 @@ function render(){
  if(guidedErrorsEnabled()){
   const guidedError=guidedConflictForAction(r,c,next);
   if(guidedError){
+   attemptEngine.markAssistance();
    mistakesThisGame++;
    msg.textContent="";
    errorSound();
@@ -773,6 +774,7 @@ function render(){
  }
  hist.push(state.map(x=>x.slice()));
  if(shown===3){state[r][c]=2}else{state[r][c]=next}
+ if(next===2&&document.getElementById("autoCross")?.checked)attemptEngine.markAssistance();
  clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";
  if(scriptedLearningActive()&&next===2)await runLearningPlacement(r,c);else paintBoardState();persistAttemptBoard();
  const q=state.flat().filter(v=>v===2).length;
