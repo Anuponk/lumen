@@ -55,6 +55,7 @@ async function runHintTests(){
  test("UX : fermer Mon ciel après réussite enchaîne sur la quête suivante",()=>openJourneyMap.toString().includes("advanceOnClose")&&closeMapOverlay.toString().includes("advanceToNextPuzzle"));
  test("UX : la prochaine quête débloquée est visible comme Nouvelle dans Mon ciel",()=>renderMap.toString().includes("puzzle-new-label")&&renderMap.toString().includes("Nouvelle quête disponible"));
  test("UX : Mon ciel reste au-dessus du masque de tentative",()=>Number.parseInt(getComputedStyle(document.getElementById("mapModal")).zIndex,10)>Number.parseInt(getComputedStyle(document.getElementById("attemptMask")).zIndex,10));
+ test("UX mobile : Pause ne recouvre pas le raccourci Mon ciel",()=>{const c=getComputedStyle(document.getElementById("attemptPause")?.parentElement);return innerWidth>700||c.position!=="absolute"});
  test("UX : les règles sont accessibles à la demande",()=>!!document.getElementById("tutorialHelp")&&!!document.getElementById("rulesModal")&&!!document.getElementById("replayLearning"));
  test("Vocabulaire : les indices n'utilisent plus l'ancien thème de l'eau",()=>!/Eau manquante|éteindre/.test(document.getElementById("hint").onclick.toString()));
  test("Campagne : progression strictement séquentielle",()=>{
