@@ -168,9 +168,16 @@ function maybeShowReturnWelcome(){
  stars.textContent="✦".repeat(cycle)+"·".repeat(7-cycle);toast.hidden=false;
  const close=()=>{toast.classList.add("hide");setTimeout(()=>toast.hidden=true,260)};toast.onclick=close;setTimeout(close,5200);
 }
-function completeDaily(){
+async function completeDaily(){
+ if(persistenceModel.lumenUser){
+   const claim=await cloudSaveDaily(localDateKey(),levelIndex);
+   if(!claim)return null;
+   await cloudMergeDaily();
+   if(Number(claim.reward)>0)showRewardToast("Série de lumière · +"+Number(claim.reward)+" ✦");
+   return claim;
+ }
  const today=localDateKey(),result=grantDaily(lumenProgress,today);if(!result.credited)return result;
- saveLumenProgress();cloudSaveDaily(today,levelIndex);renderDaily();
+ saveLumenProgress();renderDaily();
  if(result.reward)showRewardToast("Série de lumière · +"+result.reward+" ✦");
  return result;
 }
