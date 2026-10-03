@@ -25,7 +25,7 @@ assert(currentStyles.includes('.attempt-mask'),'Attempt lifecycle mask styling m
 const labels=source=>[...source.matchAll(/\btest\("([^"\n]+)"/g)].map(match=>match[1]);
 const tests=labels(fs.readFileSync('src/testing/hint-tests.js','utf8'));
 const originalTests=labels(functionSource(original,'runHintTests'));
-const additionalTests=["UX : Quête suivante est le CTA principal après réussite","UX : les règles sont accessibles à la demande","Vocabulaire : les indices n'utilisent plus l'ancien thème de l'eau"];
+const additionalTests=["UX : Quête suivante est le CTA principal après réussite","UX : les règles sont accessibles à la demande","Vocabulaire : les indices n'utilisent plus l'ancien thème de l'eau","UX : fermer Mon ciel après réussite enchaîne sur la quête suivante","UX : la prochaine quête débloquée est visible comme Nouvelle dans Mon ciel","UX : Mon ciel reste au-dessus du masque de tentative","UX mobile : les contrôles de tentative ne recouvrent pas le raccourci Mon ciel"];
 assert.equal(originalTests.length,66);
 assert.equal(tests.length,originalTests.length+additionalTests.length);
 const intentionalRenames=new Map([["Indice : bouton Revoir la quête présent","Indice : fermeture contextuelle remplace Revoir la quête"]]);
