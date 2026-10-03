@@ -99,9 +99,9 @@ function successAchievement(){
  let kicker="QUÊTE "+(levelIndex+1)+" ACCOMPLIE",main=(ch?.name||"Constellation")+" · "+pos+"/"+range.count+" quêtes",detail=solved+"/100 quêtes accomplies";
  const milestone=milestoneFor(levelIndex);
  if(milestone?.kind==="boss"){kicker="CONSTELLATION COMPLÉTÉE";main=ch.name;detail=solved+"/100 quêtes accomplies · "+skyStarsEarned()+" étoiles allumées"}
- else if(run.mastery){kicker="MAÎTRISE";main="Sans indice · sans erreur";detail=(ch?.name||"Constellation")+" · Quête "+(levelIndex+1)+" · "+formatDuration(secs)}
- else if(run.speed){kicker="ÉCLAIR";main="Quête "+(levelIndex+1)+" en "+formatDuration(secs);detail=(run.noHint?"Sans indice · ":"")+(ch?.name||"Constellation")}
- else if(run.noHint){kicker="SANS INDICE";main=(ch?.name||"Constellation")+" · Quête "+(levelIndex+1);detail=formatDuration(secs)+" · "+solved+"/100 quêtes accomplies"}
+ else if(run.qualifying&&run.mastery){kicker="MAÎTRISE";main="Autonome et rapide";detail=(ch?.name||"Constellation")+" · Quête "+(levelIndex+1)+" · "+formatDuration(secs)}
+ else if(run.qualifying&&run.speed){kicker="RAPIDITÉ";main="Quête "+(levelIndex+1)+" en "+formatDuration(secs);detail=(ch?.name||"Constellation")}
+ else if(run.qualifying&&run.autonomy){kicker="AUTONOMIE";main=(ch?.name||"Constellation")+" · Quête "+(levelIndex+1);detail=formatDuration(secs)+" · sans aide"}
  return {kicker,main,detail,ch,pos,total:range.count,solved,run,secs};
 }
 function renderSuccessAchievement(){
@@ -594,7 +594,7 @@ function celebrateLearningReplaySuccess(){
  setLearningReplaySuccessMode(true);document.getElementById("successOverlay").classList.add("show");
 }
 
-function renderSuccessRewards(stars){let el=document.getElementById("successRewards");if(!el)return;let run=performanceRun(levelIndex),rewards=[];if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});if(run.noHint)rewards.push({cls:"hint",icon:performanceIcon("hint"),label:"Sans indice"});if(run.speed)rewards.push({cls:"speed",icon:performanceIcon("speed"),label:"Moins d’1 min"});if(run.noAssist)rewards.push({cls:"assist",icon:performanceIcon("assist"),label:"Sans assistance"});if(run.mastery)rewards.push({cls:"clean",icon:performanceIcon("clean"),label:"Maîtrise"});el.innerHTML=rewards.map(r=>'<span class="success-reward '+r.cls+'"><span>'+r.icon+'</span><span>'+r.label+'</span></span>').join("")}
+function renderSuccessRewards(stars){let el=document.getElementById("successRewards");if(!el)return;let run=performanceRun(levelIndex),rewards=[];if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});if(run.qualifying&&run.autonomy)rewards.push({cls:"autonomy",icon:performanceIcon("autonomy"),label:"Autonomie"});if(run.qualifying&&run.speed)rewards.push({cls:"speed",icon:performanceIcon("speed"),label:"Rapidité"});if(run.qualifying&&run.mastery)rewards.push({cls:"mastery",icon:performanceIcon("mastery"),label:"Maîtrise"});el.innerHTML=rewards.map(r=>'<span class="success-reward '+r.cls+'"><span>'+r.icon+'</span><span>'+r.label+'</span></span>').join("")}
 function celebrateSuccess(){
  if(celebrated)return;
  if(learningReplayActive()){celebrateLearningReplaySuccess();return}
@@ -657,8 +657,8 @@ const {audioContext,tone,guardianSound,errorSound,halfSound,victorySound,starArr
 let halfRewardShown=false,lastPlacedCount=0,rewardToastTimer=null;
 function updateLiveReward(q){
  const m=document.getElementById("masteryLive"),p=document.getElementById("progressLive");if(!m||!p)return;
- const mastery=hintUsesThisGame===0&&!autoUsedThisGame&&mistakesThisGame===0;
- m.textContent=mastery?"✓ Maîtrise en cours":"○ Maîtrise à retenter";m.classList.toggle("lost",!mastery);
+ const eligibility=performanceEligibility(levelIndex),assisted=!!attemptEngine.snapshot()?.assistanceUsed,within=activeGameSeconds()<speedTargetSeconds(levelIndex),mastery=eligibility.mastery&&!assisted&&within;
+ m.textContent=!Object.values(eligibility).some(Boolean)?"Performances bientôt":eligibility.mastery?(mastery?"✦ Maîtrise en cours":"○ Maîtrise à retenter"):"⚡ Rapidité disponible";m.classList.toggle("lost",eligibility.mastery&&!mastery);
  p.textContent=q+"/"+n+" Gardiens";
 }
 function showRewardToast(text){
@@ -1047,8 +1047,12 @@ document.getElementById("sectorProgress").textContent=sky.lit+"/"+sky.count+" é
 updateHintButton();renderXP();
 }
 
-function performanceIcon(type){const icons={hint:'<svg class="performance-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"></circle><path d="M15 15l5 5"></path></svg>',speed:'<svg class="performance-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12M6 21h12M7 3c0 5 3 6 5 9-2 3-5 4-5 9M17 3c0 5-3 6-5 9 2 3 5 4 5 9"></path></svg>',assist:'<svg class="performance-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.7M20 12a8 8 0 0 1-13.7 5.7"></path><path d="M18 3v4h-4M6 21v-4h4"></path><path d="M9 12l2 2 4-5"></path></svg>',clean:'<svg class="performance-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"></path></svg>'};return icons[type]}
-function performanceBadges(i){let p=lumenProgress.performances&&lumenProgress.performances[i],stored=p&&p.badges,legacyNoHint=!!(lumenProgress.solved[i]&&lumenProgress.noHint&&lumenProgress.noHint[i]);let earned=stored?stored:{hint:p?p.hints===0:legacyNoHint,assist:p?p.autoUsed===false:false,mastery:p?p.hints===0&&p.autoUsed===false&&p.mistakes===0:false,speed:p?p.hints===0&&p.autoUsed===false&&p.time<60:false};let badges=[{cls:"hint",earned:!!earned.hint,label:"Sans indice"},{cls:"speed",earned:!!earned.speed,label:"Moins d’une minute sans indice ni assistance"},{cls:"assist",earned:!!earned.assist,label:"Sans Marquage auto"},{cls:"clean",earned:!!earned.mastery,label:"Maîtrise : sans indice, sans assistance et sans faute"}];return '<span class="performance-grid" aria-label="Performance">'+badges.map(x=>'<span class="performance-slot '+x.cls+(x.earned?' earned':'')+'" title="'+x.label+'" aria-label="'+x.label+(x.earned?' obtenu':' non obtenu')+'">'+(x.earned?performanceIcon(x.cls):'')+'</span>').join("")+'</span>'}
+function performanceIcon(type){const icons={autonomy:'<span aria-hidden="true">🧠</span>',speed:'<span aria-hidden="true">⚡</span>',mastery:'<span aria-hidden="true">✦</span>'};return icons[type]||""}
+function performanceBadges(i){
+ const p=lumenProgress.performances?.[i],earned=p?.version===2?p.badges||{}:{},eligibility=performanceEligibility(i);
+ const badges=[{cls:"autonomy",key:"autonomy",label:"Autonomie"},{cls:"speed",key:"speed",label:"Rapidité"},{cls:"mastery",key:"mastery",label:"Maîtrise"}];
+ return '<span class="performance-grid" aria-label="Performance">'+badges.map(x=>{const locked=!eligibility[x.key],got=!!earned[x.key],state=locked?" verrouillé":got?" obtenu":" disponible";return '<span class="performance-slot '+x.cls+(got?' earned':'')+(locked?' locked':'')+'" title="'+x.label+state+'" aria-label="'+x.label+state+'">'+(locked?'🔒':got?performanceIcon(x.cls):'')+'</span>'}).join("")+'</span>'
+}
 function startReplay(i){if(!lumenProgress.solved[i])return;levelIndex=i;replayMode=true;document.getElementById("mapModal").hidden=true;document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;loadPuzzle();usedHintThisGame=false;refreshJourney()}
 function renderMap(){const tabs=document.getElementById("sectorTabs"),puzzleGrid=document.getElementById("puzzleGrid");tabs.innerHTML="";CONSTELLATIONS.forEach((c,i)=>{let b=document.createElement("button"),unlocked=i<=chapterForGrid(Math.min(sequentialSolvedCount,99));b.className="sector-tab"+(i===mapConstellation?" active":"")+(unlocked?"":" locked");b.textContent="✦ "+c.name.replace(" · Grand Chariot","");b.onclick=()=>{if(unlocked){mapConstellation=i;renderMap();renderSky(i)}};tabs.appendChild(b)});puzzleGrid.innerHTML="";let range=constellationGridRange(mapConstellation),start=range.start,end=range.end+1;for(let i=start;i<end;i++){let solved=!!lumenProgress.solved[i],current=i===Math.min(sequentialSolvedCount,99),b=document.createElement("button"),pos=i-start+1,meta=performanceBadges(i);b.className="puzzle-card"+(solved?" done":"")+(current?" current":"")+(!solved&&!current?" locked":"");b.innerHTML=solved?meta:(current?"✦":"");b.title=solved?"Rejouer la quête "+pos+" pour améliorer ta performance":current?"Quête "+pos+" · à jouer":"Quête "+pos+" · verrouillée";b.onclick=()=>{if(solved){startReplay(i);return}if(!current)return;levelIndex=i;replayMode=false;document.getElementById("mapModal").hidden=true;loadPuzzle();refreshJourney()};puzzleGrid.appendChild(b)}renderSky(mapConstellation)}
 function openJourneyMap(focusSky=false){mapConstellation=chapterForGrid(levelIndex);renderMap();document.getElementById("mapModal").hidden=false;if(focusSky){requestAnimationFrame(()=>{const sky=document.getElementById("skyCard");if(sky){sky.scrollIntoView({behavior:"smooth",block:"center"});sky.classList.add("sky-focus");setTimeout(()=>sky.classList.remove("sky-focus"),900)}})}}
