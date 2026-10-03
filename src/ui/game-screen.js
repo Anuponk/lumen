@@ -332,7 +332,7 @@ function updateScriptedLearning(){
  if(!learningSequenceActive&&!learningRestoring)rememberLearningStep();
  button.hidden=learningStage==="place";button.disabled=learningSequenceActive;button.textContent="Suivant →";
  document.getElementById("scriptedLearnPrev").disabled=learningHistoryIndex<=0&&!learningSequenceActive;
- const hint=document.getElementById("scriptedLearnHint");hint.hidden=learningStage==="place";hint.textContent=learningSequenceActive?"Observe l’animation…":"Touche n’importe où pour continuer";
+ const hint=document.getElementById("scriptedLearnHint");hint.hidden=learningStage==="place"||["row","column","neighbors","territory"].includes(learningStage);hint.textContent="Touche n’importe où pour continuer";
  const title=document.getElementById("scriptedLearnTitle"),copy=document.getElementById("scriptedLearnCopy");
  if(learningStage==="territories"||learningStage==="rule"){
   labelLearningTerritories();
