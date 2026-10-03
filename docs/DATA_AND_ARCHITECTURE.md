@@ -31,3 +31,21 @@ Push support should not be considered complete merely because subscription/serve
 
 ## Security
 The public Supabase client key in browser code must be treated as public. Security must rely on RLS/RPC authorization, not secrecy of browser credentials. Never add service-role keys or other server secrets to this repository.
+
+
+## Anonymous player observability
+Anonymous play is a deliberate product mode, not an error state. Analytics should make it possible to distinguish:
+- an anonymous installation/player identity;
+- sessions/visits for that identity;
+- authenticated user identity after sign-in;
+- campaign progress such as solved quest count/current constellation;
+- key engagement events such as puzzle start/completion, hints, replay, share and install.
+
+Do not equate the number of authenticated Supabase users with the total player population. Guest players may exist only through local progress plus anonymous analytics.
+
+When a guest later authenticates, progression merge must preserve the strongest valid continuous progress. Analytics identity linking should avoid double-counting where practical while keeping authentication data and gameplay analytics responsibilities distinct.
+
+## Data ownership principles
+Campaign truth (catalogue, quest order, constellation mapping and rules) belongs to version-controlled application data/code. Player-specific mutable state belongs to local persistence and/or Supabase.
+
+Derived UI counters should be recomputed from canonical state rather than becoming independent sources of truth. This is especially important for solved-quest totals, constellation progress, stars and unlock state: duplicated counters can drift and previously caused visible inconsistencies.
