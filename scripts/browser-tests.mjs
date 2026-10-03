@@ -36,10 +36,10 @@ try{
  console.log('browser-test: drag:start');await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[dragPoints[0]]});
  for(let c=1;c<dragPoints.length;c++){await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[dragPoints[c]]});await sleep(30)}
  await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});console.log('browser-test: drag:done');
- await sleep(100);const dragged=await snapshot();
+ await sleep(100);console.log('browser-test: drag-snapshot:start');const dragged=await snapshot();console.log('browser-test: drag-snapshot:done');
  assert(dragged.state[1].filter(v=>v===1).length>=4&&dragged.state[0][column]===2,'Drag regression');
- assert(await evaluate('scrollY')===scroll,'Board scrolled during drag');
- assert(await evaluate('!window.lumenBoardRebuilt'),'Drag rebuilt the board');
+ console.log('browser-test: drag-scroll-check:start');assert(await evaluate('scrollY')===scroll,'Board scrolled during drag');console.log('browser-test: drag-scroll-check:done');
+ console.log('browser-test: drag-rebuild-check:start');assert(await evaluate('!window.lumenBoardRebuilt'),'Drag rebuilt the board');console.log('browser-test: drag-rebuild-check:done');
  await evaluate('lumenBoardObserver.disconnect()');
  await evaluate('document.getElementById("new").click()');
  assert((await snapshot()).levelIndex===2&&(await snapshot()).state.flat().every(v=>v===0),'Reset changed quest');
