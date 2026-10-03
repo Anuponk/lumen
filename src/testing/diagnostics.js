@@ -17,8 +17,10 @@ return {
   // those surfaces before re-entering init so the diagnostic transition is
   // deterministic and cannot wait on a UI animation/timer.
   closeTutorial(false);hideSuccess();const sky=document.getElementById("skyReveal");if(sky)sky.hidden=true;
-  model.levelIndex=index;init();setSoundEnabled(false);
-  const auto=document.getElementById("autoCross"),guided=document.getElementById("guidedErrors");if(auto)auto.checked=false;if(guided)guided.checked=false;
+  model.levelIndex=index;init();
+  // Keep this diagnostic hook deliberately minimal. Calling preference setters
+  // after init can synchronously persist/broadcast state and makes CDP wait for
+  // work unrelated to setting up the board under test.
  },
  setBoard(value){model.state=value;render()}
 };
