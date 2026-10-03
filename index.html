@@ -388,7 +388,12 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 @supports not (background:color-mix(in srgb,#000 50%,#fff)){
   .cell{background:rgba(31,49,73,.24)!important}
 }
-/* PWA install + viral sharing */.install-optin{position:fixed;inset:0;z-index:1250;display:flex;align-items:center;justify-content:center;background:rgba(3,7,13,.88);padding:24px}.install-optin[hidden]{display:none}.install-card{width:min(420px,100%);background:#0d1a29;color:#eefaff;border:1px solid rgba(104,231,255,.35);border-radius:24px;padding:24px;text-align:center;box-shadow:0 18px 70px rgba(0,0,0,.45)}.install-icon{font-size:42px;color:#eaffff;text-shadow:0 0 14px rgba(104,231,255,.9)}.install-card h2{margin:8px 0 10px}.install-card p{color:#bfd0df;line-height:1.45}.install-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.install-actions .primary{background:#eaffff;color:#07111d}#successShare{border-color:rgba(104,231,255,.7)}.share-toast{position:fixed;left:50%;bottom:24px;z-index:1400;transform:translateX(-50%);background:#0d1a29;color:#eefaff;border:1px solid rgba(104,231,255,.4);border-radius:999px;padding:10px 16px;font-weight:700;box-shadow:0 8px 28px rgba(0,0,0,.35)}.lumen-version{text-align:center;margin:14px 0 2px;font-size:11px;letter-spacing:.08em;opacity:.45;user-select:text}</style><meta name="lumen-build" content="v1.8.1-dev-verify"></head><body><main class="app"><aside class="desktop-side desktop-left"><div id="desktopLeftSlot"></div></aside><section class="game-core">
+/* PWA install + viral sharing */.install-optin{position:fixed;inset:0;z-index:1250;display:flex;align-items:center;justify-content:center;background:rgba(3,7,13,.88);padding:24px}.install-optin[hidden]{display:none}.install-card{width:min(420px,100%);background:#0d1a29;color:#eefaff;border:1px solid rgba(104,231,255,.35);border-radius:24px;padding:24px;text-align:center;box-shadow:0 18px 70px rgba(0,0,0,.45)}.install-icon{font-size:42px;color:#eaffff;text-shadow:0 0 14px rgba(104,231,255,.9)}.install-card h2{margin:8px 0 10px}.install-card p{color:#bfd0df;line-height:1.45}.install-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.install-actions .primary{background:#eaffff;color:#07111d}#successShare{border-color:rgba(104,231,255,.7)}
+.success-achievement{margin:14px 0 4px;padding:12px 14px;border:1px solid rgba(104,231,255,.28);border-radius:16px;background:rgba(104,231,255,.06);text-align:center}
+.success-achievement-kicker{font-size:11px;font-weight:950;letter-spacing:.12em;color:#68e7ff;text-transform:uppercase}
+.success-achievement-main{font-size:18px;font-weight:950;color:#eefaff;margin-top:4px}
+.success-achievement-detail{font-size:13px;color:#9fb7ca;margin-top:3px}
+#successShare.share-primary{background:linear-gradient(135deg,#68e7ff,#8b7cff);color:#07111d;border-color:transparent;box-shadow:0 0 22px rgba(104,231,255,.2)}.share-toast{position:fixed;left:50%;bottom:24px;z-index:1400;transform:translateX(-50%);background:#0d1a29;color:#eefaff;border:1px solid rgba(104,231,255,.4);border-radius:999px;padding:10px 16px;font-weight:700;box-shadow:0 8px 28px rgba(0,0,0,.35)}.lumen-version{text-align:center;margin:14px 0 2px;font-size:11px;letter-spacing:.08em;opacity:.45;user-select:text}</style><meta name="lumen-build" content="v1.9.0-dev-share-achievement"></head><body><main class="app"><aside class="desktop-side desktop-left"><div id="desktopLeftSlot"></div></aside><section class="game-core">
 <div class="head"><div><h1><span class="lumen-brand">LUMEN</span></h1><button id="mobileJourney" class="mobile-journey" type="button" aria-label="Ouvrir ma progression et mon ciel"><span id="mobileJourneyText">Grande Ourse · 0/9 ★</span><span class="mobile-journey-sky">✦ Mon ciel ›</span></button></div><div class="head-actions"><button id="soundToggle" class="tutorial-help" type="button" aria-label="Couper les sons" title="Sons">🔊</button><button id="tutorialHelp" class="tutorial-help" type="button" aria-label="Revoir le tutoriel">?</button><button id="mobileAccount" class="mobile-account" type="button" aria-label="Compte et sauvegarde">♙</button><button id="new">Réinitialiser</button></div></div>
 <div id="installOptin" class="install-optin" hidden role="dialog" aria-modal="true" aria-labelledby="installOptinTitle"><div class="install-card"><div class="install-icon">✦</div><h2 id="installOptinTitle">Garde LUMEN à portée de main</h2><p id="installOptinCopy">Ajoute LUMEN à ton écran d’accueil pour retrouver ton ciel en un geste.</p><div class="install-actions"><button id="installEnable" class="primary" type="button">Installer LUMEN</button><button id="installLater" type="button">Plus tard</button></div></div></div><div id="pushOptin" class="push-optin" hidden role="dialog" aria-modal="true" aria-labelledby="pushOptinTitle"><div class="push-optin-card"><div class="push-optin-icon">✦</div><h2 id="pushOptinTitle">Ton ciel peut t’appeler</h2><p>Active un rappel discret si tu n’as pas joué depuis 24 h. Maximum un rappel par semaine.</p><div class="push-optin-actions"><button id="pushEnable" class="primary" type="button">Activer le rappel</button><button id="pushLater" type="button">Plus tard</button></div></div></div>
 <div id="mobileAuthPopover" class="mobile-auth-popover" hidden><div id="mobileAuthStatus">Progression enregistrée sur cet appareil</div><div id="nicknameBox" hidden><input id="nicknameInput" type="text" maxlength="24" autocomplete="nickname" placeholder="Ton pseudo" aria-label="Ton pseudo"><button id="nicknameSave" type="button">Enregistrer le pseudo</button></div><button id="mobileAuthAction" type="button">Se connecter avec Google</button></div><div class="levels" id="levels"></div><div class="auth-box"><span id="authUser">Progression enregistrée sur cet appareil</span><button id="authLogin">Sauvegarder ma progression</button><button id="authLogout" hidden>Déconnexion</button></div><section class="journey"><div class="journey-top"><div><span class="journey-kicker">MON CIEL</span><strong id="journeyTitle">Grande Ourse</strong></div><button id="openMap">Quêtes</button></div><div class="progress-track"><span id="progressFill"></span></div><div class="progress-copy"><strong id="progressText">Mon ciel · 0 %</strong></div><div id="sectorProgress" class="sector-progress">0/9 étoiles · 0/150 au total</div><button id="openSky" class="sky-entry" type="button" aria-label="Ouvrir mon ciel"><span class="sky-entry-main">✦ Mon ciel</span><span id="skySummary" class="sky-entry-progress">Grande Ourse · 0/9 ★</span><span class="sky-entry-arrow">›</span></button></section><div id="mapModal" class="map-modal" hidden><div class="map-sheet"><div class="map-head"><h2>Mes quêtes</h2><button id="closeMap">Fermer</button></div><div id="sectorTabs" class="sector-tabs"></div><div id="puzzleGrid" class="puzzle-grid"></div><div id="performanceLegend" class="performance-legend" role="button" tabindex="0" aria-label="Voir les règles détaillées des badges"><span class="hint">⌕ Sans indice</span><span class="speed">⌛ Moins d’1 min</span><span class="assist">◉ Sans assistance</span><span class="clean">✓ Maîtrise</span><span class="performance-legend-info" aria-hidden="true">i</span></div><h3>Mon ciel</h3><div id="skyCard" class="sky-card"></div></div></div><div id="badgeRulesModal" class="badge-rules-modal" hidden role="dialog" aria-modal="true" aria-labelledby="badgeRulesTitle"><div class="badge-rules-card"><div class="badge-rules-head"><h2 id="badgeRulesTitle">Comment gagner les badges ?</h2><button id="closeBadgeRules" class="badge-rules-close" type="button">Fermer</button></div><p class="badge-rules-intro">Chaque badge récompense une performance réalisée sur une grille. Rejoue une grille terminée pour tenter d’en obtenir de nouveaux.</p><div class="badge-rule hint"><span class="badge-rule-icon">⌕</span><div><strong>Sans indice</strong><p>Termine la grille sans utiliser aucun indice.</p></div></div><div class="badge-rule speed"><span class="badge-rule-icon">⌛</span><div><strong>Moins d’une minute</strong><p>Termine la grille en moins de 60 secondes, sans indice et sans Assistance auto.</p></div></div><div class="badge-rule assist"><span class="badge-rule-icon">◉</span><div><strong>Sans Assistance auto</strong><p>Termine la grille sans utiliser l’Assistance auto.</p></div></div><div class="badge-rule clean"><span class="badge-rule-icon">✓</span><div><strong>Maîtrise</strong><p>Termine la grille sans indice, sans Assistance auto et sans aucune faute.</p></div></div><p class="badge-rules-note">Les conditions d’un badge exigeant doivent être réunies au cours d’une même tentative. Les badges déjà obtenus restent acquis.</p></div></div><div id="challengeBanner" class="challenge-banner" hidden><strong id="challengeTitle"></strong><small id="challengeCopy"></small></div><label class="auto-cross" id="autoCrossWrap">
@@ -416,7 +421,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  </div>
 </div>
 <div id="returnToast" class="return-toast" hidden role="status" aria-live="polite"><div class="return-toast-title">Content de te revoir ✦</div><div id="returnToastCopy" class="return-toast-copy"></div><div id="returnToastStars" class="return-toast-stars"></div></div>
-<button id="betaFeedbackBtn" class="beta-feedback-btn" type="button" onclick="openBetaFeedback()">⚑ Signaler un problème</button><div id="lumenVersion" class="lumen-version" title="Version LUMEN">LUMEN · v1.8.1-dev</div>
+<button id="betaFeedbackBtn" class="beta-feedback-btn" type="button" onclick="openBetaFeedback()">⚑ Signaler un problème</button><div id="lumenVersion" class="lumen-version" title="Version LUMEN">LUMEN · v1.9.0-dev</div>
 <div id="feedbackModal" class="beta-modal" hidden role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
  <div class="beta-card">
   <h2 id="feedbackTitle">Retour bêta</h2><p>Le contexte de la quête sera joint automatiquement.</p>
@@ -433,10 +438,10 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
   <div class="success-gem"><span class="reward-star" aria-hidden="true">★</span></div>
   <div class="success-title" id="successTitle">Quête accomplie</div>
   <div class="success-sub" id="successSub">Ton ciel progresse</div>
-  <div class="success-time">◷ <span id="successTime">0:00</span></div><div id="successRewards" class="success-rewards" aria-label="Récompenses obtenues"></div><div id="questResult" class="quest-result" hidden></div>
+  <div class="success-time">◷ <span id="successTime">0:00</span></div><div id="successAchievement" class="success-achievement"><div id="successAchievementKicker" class="success-achievement-kicker">MA RÉUSSITE</div><div id="successAchievementMain" class="success-achievement-main"></div><div id="successAchievementDetail" class="success-achievement-detail"></div></div><div id="successRewards" class="success-rewards" aria-label="Récompenses obtenues"></div><div id="questResult" class="quest-result" hidden></div>
   <div id="difficultyBox" class="difficulty-box"><div>Comment as-tu trouvé cette quête ?</div><div class="difficulty-choices"><button type="button" data-rating="easy">😌 Facile</button><button type="button" data-rating="balanced">🙂 Bien dosée</button><button type="button" data-rating="hard">🧠 Difficile</button><button type="button" data-rating="frustrating">😵 Frustrante</button></div></div>
   <div class="success-actions">
-   <button id="successRetry">↻ Réessayer</button><button id="successShare">↗ Partager</button>
+   <button id="successRetry">↻ Réessayer</button><button id="successShare" class="share-primary">↗ Partager ma réussite</button>
    <button id="successSky">✦ Mon ciel</button>
    <button id="successNew">Quête suivante</button>
   </div>
@@ -553,7 +558,51 @@ async function installLumen(){const box=document.getElementById("installOptin"),
 function lumenReferralCode(){return lumenUser?.id?("u"+lumenUser.id.replace(/-/g,"").slice(0,12)):("a"+lumenAnonymousId.replace(/-/g,"").slice(0,12))}
 function lumenShareUrl(){const u=new URL(location.origin+location.pathname);u.searchParams.set("ref",lumenReferralCode());return u.toString()}
 function showShareToast(t){let e=document.createElement("div");e.className="share-toast";e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),1800)}
-async function shareLumenResult(){const ch=CONSTELLATIONS[chapterForGrid(levelIndex)],time=document.getElementById("successTime")?.textContent||document.getElementById("time")?.textContent||"";const text="✦ LUMEN\n"+(ch?.name||"Constellation")+" · Quête "+(levelIndex+1)+"\n◷ "+time+" · "+skyStarsEarned()+"/"+SKY_TARGET+" étoiles\n\nPeux-tu rallumer le ciel ?";const url=lumenShareUrl();let method="copy";try{if(navigator.share){await navigator.share({title:"LUMEN",text,url});method="native"}else{await navigator.clipboard.writeText(text+"\n"+url);showShareToast("Résultat copié — prêt à partager")}}catch(e){if(e?.name==="AbortError")return;try{await navigator.clipboard.writeText(text+"\n"+url);showShareToast("Résultat copié — prêt à partager")}catch(_){}}trackLumenEvent("result_shared",levelIndex+1,{method,ref:lumenReferralCode()})}
+function successAchievement(){
+ const ch=CONSTELLATIONS[chapterForGrid(levelIndex)],range=constellationGridRange(chapterForGrid(levelIndex)),pos=Math.min(range.count,levelIndex-range.start+1),run=performanceRun(),secs=activeGameSeconds(),solved=Math.max(solvedCount(),levelIndex+1);
+ let kicker="QUÊTE "+(levelIndex+1)+" ACCOMPLIE",main=(ch?.name||"Constellation")+" · "+pos+"/"+range.count+" quêtes",detail=solved+"/100 quêtes accomplies";
+ const milestone=milestoneFor(levelIndex);
+ if(milestone?.kind==="boss"){kicker="CONSTELLATION COMPLÉTÉE";main=ch.name;detail=solved+"/100 quêtes accomplies · "+skyStarsEarned()+" étoiles allumées"}
+ else if(run.mastery){kicker="MAÎTRISE";main="Sans indice · sans erreur";detail=(ch?.name||"Constellation")+" · Quête "+(levelIndex+1)+" · "+formatDuration(secs)}
+ else if(run.speed){kicker="ÉCLAIR";main="Quête "+(levelIndex+1)+" en "+formatDuration(secs);detail=(run.noHint?"Sans indice · ":"")+(ch?.name||"Constellation")}
+ else if(run.noHint){kicker="SANS INDICE";main=(ch?.name||"Constellation")+" · Quête "+(levelIndex+1);detail=formatDuration(secs)+" · "+solved+"/100 quêtes accomplies"}
+ return {kicker,main,detail,ch,pos,total:range.count,solved,run,secs};
+}
+function renderSuccessAchievement(){
+ const a=successAchievement(),k=document.getElementById("successAchievementKicker"),m=document.getElementById("successAchievementMain"),d=document.getElementById("successAchievementDetail");
+ if(k)k.textContent=a.kicker;if(m)m.textContent=a.main;if(d)d.textContent=a.detail;
+}
+function formatDuration(seconds){seconds=Math.max(0,Math.round(seconds||0));return Math.floor(seconds/60)+":"+String(seconds%60).padStart(2,"0")}
+function shareCardCanvas(a){
+ const canvas=document.createElement("canvas");canvas.width=1080;canvas.height=1350;const x=canvas.getContext("2d"),cx=540;
+ const bg=x.createLinearGradient(0,0,0,1350);bg.addColorStop(0,"#07111d");bg.addColorStop(1,"#10233a");x.fillStyle=bg;x.fillRect(0,0,1080,1350);
+ // deterministic star field
+ x.fillStyle="#dffaff";for(let i=0;i<70;i++){const sx=(i*173+71)%1040+20,sy=(i*257+53)%1280+20,r=i%9===0?3:1.5;x.globalAlpha=.25+(i%5)*.12;x.beginPath();x.arc(sx,sy,r,0,Math.PI*2);x.fill()}x.globalAlpha=1;
+ x.textAlign="center";x.fillStyle="#68e7ff";x.font="900 52px Arial";x.fillText("L U M E N",cx,125);
+ x.fillStyle="#ffe3a1";x.shadowColor="rgba(255,210,100,.8)";x.shadowBlur=25;x.font="900 120px Arial";x.fillText("★",cx,300);x.shadowBlur=0;
+ x.fillStyle="#68e7ff";x.font="900 30px Arial";x.fillText(a.kicker,cx,410);
+ x.fillStyle="#f2fbff";x.font="900 58px Arial";wrapCanvasText(x,a.main,cx,495,900,70);
+ x.fillStyle="#a9bfd0";x.font="700 30px Arial";wrapCanvasText(x,a.detail,cx,660,900,42);
+ x.strokeStyle="rgba(104,231,255,.35)";x.lineWidth=2;x.strokeRect(105,790,870,210);
+ x.fillStyle="#f2fbff";x.font="900 44px Arial";x.fillText("Quête "+(levelIndex+1)+" / 100",cx,860);
+ x.fillStyle="#68e7ff";x.font="800 32px Arial";x.fillText((a.ch?.name||"Constellation")+" · "+a.pos+"/"+a.total,cx,920);
+ x.fillStyle="#a9bfd0";x.font="700 28px Arial";x.fillText("◷ "+formatDuration(a.secs)+(a.run.noHint?"   ·   Sans indice":""),cx,970);
+ x.fillStyle="#eefaff";x.font="800 32px Arial";x.fillText("Peux-tu rallumer le ciel ?",cx,1120);
+ x.fillStyle="#7891a5";x.font="700 24px Arial";x.fillText(location.host,cx,1190);
+ return canvas;
+}
+function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight){const words=String(text).split(" ");let line="",yy=y;for(const w of words){const test=line?line+" "+w:w;if(ctx.measureText(test).width>maxWidth&&line){ctx.fillText(line,x,yy);line=w;yy+=lineHeight}else line=test}if(line)ctx.fillText(line,x,yy)}
+async function shareLumenResult(){
+ const a=successAchievement(),url=lumenShareUrl(),text="✦ LUMEN · "+a.kicker+"\n"+a.main+"\n"+a.detail+"\n\nPeux-tu rallumer le ciel ?";
+ let method="copy";
+ try{
+  const canvas=shareCardCanvas(a),blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png")),file=blob?new File([blob],"lumen-quete-"+(levelIndex+1)+".png",{type:"image/png"}):null;
+  if(navigator.share&&file&&navigator.canShare?.({files:[file]})){await navigator.share({title:"Ma réussite LUMEN",text,url,files:[file]});method="native_image"}
+  else if(navigator.share){await navigator.share({title:"Ma réussite LUMEN",text,url});method="native"}
+  else{await navigator.clipboard.writeText(text+"\n"+url);showShareToast("Résultat copié — prêt à partager")}
+ }catch(err){if(err?.name==="AbortError")return;try{await navigator.clipboard.writeText(text+"\n"+url);showShareToast("Résultat copié — prêt à partager")}catch(_){}}
+ trackLumenEvent("result_shared",levelIndex+1,{method,ref:lumenReferralCode(),achievement:a.kicker});
+}
 function captureReferral(){const ref=new URLSearchParams(location.search).get("ref");if(!ref)return;const clean=ref.replace(/[^a-zA-Z0-9_-]/g,"").slice(0,64);if(!clean)return;try{localStorage.setItem("lumenReferral",clean)}catch(e){}trackLumenEvent("referral_visit",null,{ref:clean})}captureReferral();
 
 async function cloudSavePuzzle(index){
@@ -949,7 +998,7 @@ function celebrateSuccess(){
  const earnedThisRun=starsAwardedForGrid(levelIndex,firstCompletion,questPassed);
  launchWinStar(earnedThisRun);
  savePerformance(levelIndex,earnedThisRun);
- renderSuccessRewards(earnedThisRun);
+ renderSuccessRewards(earnedThisRun);renderSuccessAchievement();
  if(!usedHintThisGame){
    if(!lumenProgress.noHint)lumenProgress.noHint={};
    lumenProgress.noHint[levelIndex]=1;
@@ -1370,6 +1419,8 @@ function runHintTests(){
  test("PWA : installation proposée seulement après 3 quêtes",()=>maybeOfferInstall.toString().includes("solvedCount()<3")&&document.getElementById("installEnable"));
  test("PWA : le mode standalone empêche de reproposer l’installation",()=>maybeOfferInstall.toString().includes("lumenIsStandalone()"));
  test("Partage : le résultat contient un lien de parrainage traçable",()=>lumenShareUrl().includes("ref=")&&shareLumenResult.toString().includes("result_shared"));
+ test("Partage : la réussite met en avant quête et constellation",()=>typeof successAchievement==="function"&&document.getElementById("successAchievement")&&successAchievement.toString().includes("Quête "));
+ test("Partage : une carte image est générée quand le téléphone le permet",()=>shareLumenResult.toString().includes("shareCardCanvas")&&shareLumenResult.toString().includes("canShare"));
  test("Referral : le paramètre ref est nettoyé avant analytics",()=>captureReferral.toString().includes("replace(/[^a-zA-Z0-9_-]/g"));
  test("Compte : le pseudo est stocké côté profil utilisateur",()=>typeof saveLumenNickname==="function"&&saveLumenNickname.toString().includes("lumen_set_nickname"));
  test("Rappel : la popup LUMEN disparaît avant la demande Android",()=>{
