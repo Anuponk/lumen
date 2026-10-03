@@ -84,7 +84,7 @@ async function runHintTests(){
  test("Autonomie : la quête 11 propose de jouer sans contrôle guidé",()=>maybeShowAutonomy.toString().includes("levelIndex!==10")&&!!document.getElementById("autonomyTry")&&!!document.getElementById("autonomyKeep"));
  test("Autonomie : toucher hors popup choisit sans aide",()=>closeAutonomyOverlay.toString().includes("finishAutonomyChoice(false)"));
  test("Tutoriel joué : quêtes 1 et 2 n’enseignent que les Gardiens",()=>scriptedLearningActive.toString().includes("levelIndex<=1")&&render.toString().includes("scriptedAllowsGuardian"));
- test("Tutoriel joué : Marquage auto verrouillée sur les deux premières quêtes",()=>configureLearningMode.toString().includes("cb.disabled=levelIndex<=1"));
+ test("Tutoriel joué : Marquage auto verrouillé pendant les cinq premières quêtes",()=>{const src=configureLearningMode.toString();return src.includes("levelIndex<=4")&&src.includes("cb.checked=false")&&src.includes("cb.disabled=true")});
  test("Tutoriel joué : le glisser des exclusions est bloqué pendant le scénario",()=>document.querySelector("#board")&&scriptedLearningActive.toString().includes("levelIndex<=1"));
  test("Tip exclusions : apparaît au premier arrêt de le Marquage auto",()=>model.ac.onchange.toString().includes("maybeShowManualCrossTip")&&maybeShowManualCrossTip.toString().includes("lumenManualCrossTipSeen"));
 
