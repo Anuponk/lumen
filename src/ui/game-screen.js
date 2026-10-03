@@ -49,6 +49,16 @@ function updateAuthUI(){
  }
  syncMobileAuthUI();
 }
+function setupRulesHelp(){
+ const open=document.getElementById("rulesHelp"),modal=document.getElementById("rulesModal"),close=document.getElementById("closeRulesModal");
+ if(!open||!modal||!close)return;
+ const hide=()=>{modal.hidden=true;open.focus()};
+ open.onclick=()=>{modal.hidden=false;close.focus()};
+ close.onclick=hide;
+ modal.onclick=e=>{if(e.target===modal)hide()};
+ modal.addEventListener("keydown",e=>{if(e.key==="Escape")hide()});
+}
+setupRulesHelp();
 function setupDailyInfo(){
  const btn=document.getElementById("mobileStreak"),pop=document.getElementById("dailyInfoPopover"),auth=document.getElementById("mobileAuthPopover");
  if(!btn||!pop)return;
@@ -776,7 +786,7 @@ document.getElementById("hint").onclick=()=>{
  let dx=directMissingCross();
  if(dx){
   hi=[dx[0],dx[1]]; hintStage=0; hintFocus=null;
-  msg.textContent="Eau manquante : "+dx[2]+" Tu peux éteindre la case surlignée.";
+  msg.textContent="Marquage manquant : "+dx[2]+" Tu peux écarter la case surlignée.";
   render(); return;
  }
 
