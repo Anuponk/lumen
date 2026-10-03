@@ -20,7 +20,7 @@ function setupTutorial(){
  const next=document.getElementById("tutorialNext"),prev=document.getElementById("tutorialPrev"),skip=document.getElementById("tutorialSkip");
  next.onclick=()=>{if(tutorialStep<TUTORIAL_STEPS.length-1){tutorialStep++;renderTutorial()}else closeTutorial()};
  prev.onclick=()=>{if(tutorialStep){tutorialStep--;renderTutorial()}};
- skip.onclick=()=>closeTutorial();help.onclick=openTutorial;
+ skip.onclick=()=>closeTutorial();
  let seen=false;try{seen=localStorage.getItem("lumenTutorialSeen")==="1"}catch(e){}
  if(!seen&&!scriptedLearningActive())openTutorial();
 }
