@@ -32,6 +32,7 @@ jobs:
           node scripts/analytics-tests.mjs
           node scripts/module-structure-tests.mjs
           node scripts/responsive-architecture-tests.mjs
+          node scripts/attempt-engine-tests.mjs
 
       - name: Start local server
         run: |

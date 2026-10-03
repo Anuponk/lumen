@@ -126,3 +126,12 @@ When a guest later authenticates, progression merge must preserve the strongest 
 Campaign truth (catalogue, quest order, constellation mapping and rules) belongs to version-controlled application data/code. Player-specific mutable state belongs to local persistence and/or Supabase.
 
 Derived UI counters should be recomputed from canonical state rather than becoming independent sources of truth. This is especially important for solved-quest totals, constellation progress, stars and unlock state: duplicated counters can drift and previously caused visible inconsistencies.
+
+
+## Attempt lifecycle
+
+Timed play is owned by `src/game/attempt-engine.js`, not by screen-open time. A canonical attempt has a stable `attemptId` and moves through `READY -> RUNNING <-> PAUSED -> COMPLETED`, or to `ABANDONED`. The engine measures accumulated active duration only.
+
+A newly displayed board starts in READY behind a protective mask. The first intentional board gesture starts the attempt. Backgrounding pauses a running attempt; returning never silently resumes it. Reload restoration also returns a previously running attempt as PAUSED. Board state, accumulated duration, assistance and reset count are persisted with the attempt.
+
+Reset clears the board while retaining attempt identity, elapsed active time and assistance history. Campaign, replay and challenge share this lifecycle; badge eligibility (#30) and challenge one-shot business rules (#18) remain owned by their respective features rather than duplicated in the engine.
