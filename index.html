@@ -389,6 +389,37 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 @supports not (background:color-mix(in srgb,#000 50%,#fff)){
   .cell{background:rgba(31,49,73,.24)!important}
 }
+/* Keep every learning territory visible while explaining one placement. */
+#board.scripted-board .cell{background:var(--territory)!important;background:color-mix(in srgb,var(--territory) 48%,#101827)!important;opacity:1;filter:none}
+#board.scripted-board .cell[data-t="1"]{border-top-width:4px!important}
+#board.scripted-board .cell[data-b="1"]{border-bottom-width:4px!important}
+#board.scripted-board .cell[data-l="1"]{border-left-width:4px!important}
+#board.scripted-board .cell[data-r="1"]{border-right-width:4px!important}
+#board.scripted-board .scripted-territory{animation:none;box-shadow:none}
+#board.scripted-board .learning-source{box-shadow:inset 0 0 0 3px #e5fcff,0 0 14px rgba(104,231,255,.55)}
+.scripted-learn button{display:block;width:100%;margin-top:12px;padding:10px 14px;background:#dffcff;color:#07111d}
+.scripted-learn button[hidden]{display:none}
+.territory-label{position:absolute;top:5px;left:5px;min-width:20px;height:20px;padding:2px;border-radius:6px;background:#07111d;color:#fff;font-size:12px;font-weight:900;line-height:16px;pointer-events:none}
+#board.scripted-board[data-learning-stage="territories"] .cell:before,#board.scripted-board[data-learning-stage="rule"] .cell:before{opacity:.25}
+.learning-board-wrap{position:relative}
+.learning-board-wrap.is-learning{padding-top:var(--coach-space,158px)}
+.learning-board-wrap .scripted-learn{position:absolute;top:0;z-index:12;width:min(290px,calc(100% - 16px));min-height:130px;margin:0;padding:12px 14px;border:1px solid #e8bd64;border-radius:18px;background:#122233;color:#eaf7ff;font-size:13px;line-height:1.4;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.learning-board-wrap .scripted-learn strong{font-size:14px;color:#ffe1a0}
+.learning-board-wrap .scripted-learn:after{content:"";position:absolute;bottom:-8px;left:var(--coach-arrow-x,50%);width:14px;height:14px;background:#122233;border-right:1px solid #e8bd64;border-bottom:1px solid #e8bd64;transform:translateX(-50%) rotate(45deg)}
+.learning-board-wrap .scripted-learn button{padding:7px 10px;margin-top:9px;font-size:12px}
+.learning-board-wrap .scripted-learn button:disabled{opacity:.6;cursor:wait}
+.learning-coach-nav{display:flex;gap:8px;margin-top:9px}
+.learning-board-wrap .learning-coach-nav button{flex:1;width:auto;margin:0}
+.learning-board-wrap .learning-coach-nav button:first-child{background:transparent;color:#eaf7ff;border-color:#53677b}
+.learning-coach-hint{display:block;margin-top:8px;color:#a9bed1;font-size:11px;text-align:center}
+.learning-coach-link{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:10}
+.learning-coach-link[hidden]{display:none}
+#board.scripted-board .learning-zone{box-shadow:inset 0 0 0 2px rgba(255,205,111,.75)}
+#board.scripted-board .learning-tick{animation:learningTick .5s ease-out}
+#board.scripted-board .lumen-dim{position:relative;display:flex;align-items:center;justify-content:center;width:34%}
+#board.scripted-board .lumen-dim:after{content:"✓";font-size:clamp(10px,3vw,18px);line-height:1;color:#ffd06b}
+@keyframes learningTick{from{transform:scale(.8);box-shadow:inset 0 0 0 3px #ffd06b,0 0 18px rgba(255,205,111,.55)}to{transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){#board.scripted-board .learning-tick{animation:none}}
 /* PWA install + viral sharing */.install-optin{position:fixed;inset:0;z-index:1250;display:flex;align-items:center;justify-content:center;background:rgba(3,7,13,.88);padding:24px}.install-optin[hidden]{display:none}.install-card{width:min(420px,100%);background:#0d1a29;color:#eefaff;border:1px solid rgba(104,231,255,.35);border-radius:24px;padding:24px;text-align:center;box-shadow:0 18px 70px rgba(0,0,0,.45)}.install-icon{font-size:42px;color:#eaffff;text-shadow:0 0 14px rgba(104,231,255,.9)}.install-card h2{margin:8px 0 10px}.install-card p{color:#bfd0df;line-height:1.45}.install-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.install-actions .primary{background:#eaffff;color:#07111d}#successShare{border-color:rgba(104,231,255,.7)}
 .success-achievement{margin:14px 0 4px;padding:12px 14px;border:1px solid rgba(104,231,255,.28);border-radius:16px;background:rgba(104,231,255,.06);text-align:center}
 .success-achievement-kicker{font-size:11px;font-weight:950;letter-spacing:.12em;color:#68e7ff;text-transform:uppercase}
@@ -405,7 +436,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 <span>Contrôle guidé</span>
 </label></div><div id="learningNote" class="learning-note"></div>
 <div id="difficulty" style="text-align:center;font-weight:700;color:#666;margin:-8px 0 12px"></div><div class="status"><span>◷ <span id="time">0:00</span><span id="speedCountdown" class="speed-countdown" hidden aria-label="Temps restant pour le badge Éclair"><span class="speed-countdown-icon" aria-hidden="true">⌛</span><span class="speed-countdown-track" aria-hidden="true"><span id="speedCountdownFill" class="speed-countdown-fill"></span></span></span></span><span><span class="guardian-counter-icon"></span> <span id="count"></span></span></div>
-<div id="campaignMapLabel" class="campaign-map-label">Quête 1</div><div id="scriptedLearn" class="scripted-learn" hidden role="status"><strong id="scriptedLearnTitle"></strong><span id="scriptedLearnCopy"></span></div><div id="rewardLive" class="reward-live"><span id="masteryLive" class="mastery-live">✓ Maîtrise en cours</span><span id="progressLive" class="progress-live"></span></div><div style="position:relative"><div id="board"></div><div id="verifyCelebration" class="verify-celebration" hidden aria-live="polite"></div></div><div id="guidedCard" class="guided-card" hidden role="status"><strong id="guidedTitle"></strong><p id="guidedCopy"></p><button id="guidedAck" type="button">J’ai compris</button></div><div id="verifyCard" class="verify-card" hidden role="status"><strong id="verifyTitle">Des choix sont à corriger</strong><p id="verifyCopy"></p><button id="verifyFix" type="button">Corriger</button></div><div id="rewardToast" class="reward-toast" aria-live="polite"></div><div class="hint-wallet"><span class="hint-wallet-label">Éclats</span><span id="shardMeter" class="shard-meter" role="button" tabindex="0" aria-label="Éclats de lumière disponibles. Voir les règles"></span><span class="shard-help" aria-hidden="true">ⓘ</span></div><div class="actions"><button id="undo">Annuler</button><button id="verify">✓ Vérifier</button><button id="hint">Indice · gratuit</button><button id="clearHint" class="clear-hint" hidden>Revoir la quête</button><button id="boardNext" class="clear-hint" hidden>Quête suivante</button></div>
+<div id="campaignMapLabel" class="campaign-map-label">Quête 1</div><div id="rewardLive" class="reward-live"><span id="masteryLive" class="mastery-live">✓ Maîtrise en cours</span><span id="progressLive" class="progress-live"></span></div><div id="learningBoardWrap" class="learning-board-wrap"><div id="scriptedLearn" class="scripted-learn" hidden role="status"><strong id="scriptedLearnTitle"></strong><span id="scriptedLearnCopy"></span><div class="learning-coach-nav"><button id="scriptedLearnPrev" type="button">← Précédent</button><button id="scriptedLearnNext" type="button">Suivant →</button></div><small id="scriptedLearnHint" class="learning-coach-hint">Touche n’importe où pour continuer</small></div><svg id="learningCoachLink" class="learning-coach-link" aria-hidden="true" hidden></svg><div id="board"></div><div id="verifyCelebration" class="verify-celebration" hidden aria-live="polite"></div></div><div id="guidedCard" class="guided-card" hidden role="status"><strong id="guidedTitle"></strong><p id="guidedCopy"></p><button id="guidedAck" type="button">J’ai compris</button></div><div id="verifyCard" class="verify-card" hidden role="status"><strong id="verifyTitle">Des choix sont à corriger</strong><p id="verifyCopy"></p><button id="verifyFix" type="button">Corriger</button></div><div id="rewardToast" class="reward-toast" aria-live="polite"></div><div class="hint-wallet"><span class="hint-wallet-label">Éclats</span><span id="shardMeter" class="shard-meter" role="button" tabindex="0" aria-label="Éclats de lumière disponibles. Voir les règles"></span><span class="shard-help" aria-hidden="true">ⓘ</span></div><div class="actions"><button id="undo">Annuler</button><button id="verify">✓ Vérifier</button><button id="hint">Indice · gratuit</button><button id="clearHint" class="clear-hint" hidden>Revoir la quête</button><button id="boardNext" class="clear-hint" hidden>Quête suivante</button></div>
 <div class="msg" id="msg"></div>
 
 
@@ -477,7 +508,7 @@ function setupTutorial(){
  prev.onclick=()=>{if(tutorialStep){tutorialStep--;renderTutorial()}};
  skip.onclick=()=>closeTutorial();help.onclick=openTutorial;
  let seen=false;try{seen=localStorage.getItem("lumenTutorialSeen")==="1"}catch(e){}
- if(!seen)openTutorial();
+ if(!seen&&!scriptedLearningActive())openTutorial();
 }
 const LUMEN_SUPABASE_URL="https://tjdjlavmusmncuszhsuw.supabase.co";
 const LUMEN_SUPABASE_KEY="sb_publishable_E1B-j_wvKmkmWq8YLhHf3Q_uL1yLcNo";
@@ -731,6 +762,12 @@ async function disableLumenPush(){const sub=await currentPushSubscription();if(s
 
 
 const CAT={"6":[{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,1],[0,0,1,2,2,2],[0,1,1,3,2,2],[0,4,1,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,1,2,2,2],[3,3,1,2,2,4],[3,1,1,5,4,4],[3,3,5,5,5,4],[3,5,5,5,4,4],[5,5,5,4,4,4]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,0,1,1,1],[2,0,0,0,0,1],[2,2,2,0,1,1],[2,2,3,0,0,1],[2,3,3,0,4,1],[5,5,3,4,4,1]],"sol":[5,3,0,2,4,1]},{"reg":[[0,1,2,2,3,3],[0,1,4,2,2,3],[0,4,4,2,5,5],[0,0,4,4,5,5],[0,4,4,4,4,5],[0,0,0,0,4,4]],"sol":[4,1,3,5,2,0]},{"reg":[[0,1,1,1,2,2],[0,0,1,1,3,2],[4,0,0,3,3,3],[4,0,0,0,0,3],[4,0,4,0,5,5],[4,4,4,4,4,4]],"sol":[2,5,3,1,4,0]},{"reg":[[0,0,0,0,0,0],[1,1,2,2,2,0],[1,2,2,2,2,0],[3,3,3,2,2,0],[4,3,5,5,2,2],[4,5,5,5,5,2]],"sol":[5,1,4,2,0,3]},{"reg":[[0,0,0,0,0,1],[2,2,3,0,1,1],[4,3,3,1,1,1],[4,4,1,1,1,5],[4,4,1,1,5,5],[5,5,5,5,5,5]],"sol":[3,0,2,4,1,5]},{"reg":[[0,0,0,0,0,0],[0,1,0,1,2,2],[0,1,1,1,1,2],[1,1,3,4,4,4],[1,1,3,3,5,5],[1,3,3,3,3,3]],"sol":[0,4,1,3,5,2]},{"reg":[[0,1,1,1,1,1],[0,1,2,1,1,1],[3,3,2,1,1,4],[3,2,2,1,2,4],[3,2,2,2,2,4],[2,2,2,5,5,5]],"sol":[0,3,1,5,2,4]},{"reg":[[0,1,1,1,2,2],[0,3,3,3,2,2],[0,3,3,2,2,2],[3,3,3,3,2,2],[3,3,3,4,2,2],[3,3,3,4,5,5]],"sol":[2,0,4,1,3,5]},{"reg":[[0,0,1,1,2,3],[0,1,1,4,2,3],[5,5,1,4,4,3],[5,5,4,4,3,3],[5,4,4,4,4,3],[4,4,3,3,3,3]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,0,0,1,1],[2,0,0,3,3,4],[2,5,5,3,3,4],[2,5,5,5,4,4],[2,2,5,5,5,5],[2,2,2,5,5,5]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,0,1,2,2],[3,0,0,1,1,1],[3,4,4,1,1,5],[3,3,4,4,5,5],[3,3,4,4,5,5],[3,3,3,4,4,4]],"sol":[4,1,3,5,2,0]},{"reg":[[0,1,2,2,2,3],[0,1,1,2,2,3],[1,1,1,3,3,3],[4,4,3,3,3,5],[4,4,3,5,5,5],[4,5,5,5,5,5]],"sol":[3,0,2,4,1,5]},{"reg":[[0,0,0,1,1,1],[0,0,0,0,0,2],[3,0,0,0,0,2],[3,3,0,4,0,2],[5,4,4,4,0,4],[5,4,4,4,4,4]],"sol":[4,2,5,1,3,0]},{"reg":[[0,0,0,1,1,1],[2,1,1,1,1,3],[2,1,4,1,1,3],[2,4,4,1,3,3],[4,4,4,1,4,5],[4,4,4,4,4,5]],"sol":[1,3,0,4,2,5]},{"reg":[[0,1,1,1,1,1],[0,0,1,2,3,3],[0,0,0,2,2,4],[5,0,0,0,4,4],[5,5,0,0,4,4],[5,5,5,5,5,5]],"sol":[2,5,3,1,4,0]},{"reg":[[0,0,0,0,0,1],[0,2,0,0,0,1],[3,2,0,2,4,4],[3,2,2,2,2,4],[3,2,2,2,2,2],[5,5,5,2,2,2]],"sol":[5,2,4,0,3,1]},{"reg":[[0,0,0,0,0,1],[0,2,0,2,1,1],[0,2,2,2,2,1],[0,2,2,3,3,3],[2,2,4,4,4,5],[2,4,4,4,4,5]],"sol":[0,4,1,3,5,2]},{"reg":[[0,0,0,0,1,1],[2,0,3,4,4,5],[2,3,3,4,5,5],[2,2,3,5,5,5],[2,3,3,3,3,3],[2,2,2,3,3,3]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,1,1,1,1],[0,0,1,1,1,1],[2,0,3,3,4,1],[2,3,3,3,4,4],[2,2,2,3,4,4],[5,5,2,3,3,3]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,1,1,1,2],[0,0,0,3,1,2],[4,4,3,3,1,1],[4,4,3,3,3,3],[4,4,5,5,3,3],[4,4,4,5,5,3]],"sol":[5,1,4,2,0,3]},{"reg":[[0,0,1,1,2,2],[0,1,1,3,2,4],[5,5,1,3,3,4],[5,5,3,3,4,4],[5,3,3,3,3,4],[3,3,4,4,4,4]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,0,1,2,2],[0,0,1,1,2,2],[0,0,1,1,1,2],[0,3,3,3,1,2],[4,3,5,1,1,1],[4,5,5,5,1,1]],"sol":[5,1,4,2,0,3]},{"reg":[[0,1,2,3,3,4],[0,1,2,5,3,4],[0,0,2,5,5,4],[0,0,0,5,4,4],[0,5,5,5,5,4],[5,5,5,4,4,4]],"sol":[1,4,2,0,3,5]},{"reg":[[0,1,1,1,1,2],[0,0,3,1,2,2],[3,3,3,2,2,4],[5,5,2,2,2,4],[5,5,2,4,4,4],[4,4,4,4,4,4]],"sol":[3,0,2,4,1,5]},{"reg":[[0,0,1,1,1,2],[0,3,3,3,3,2],[0,0,0,3,3,2],[0,0,3,3,3,3],[0,0,4,3,3,3],[5,5,4,4,3,3]],"sol":[3,5,1,4,2,0]},{"reg":[[0,0,1,2,2,3],[4,1,1,5,2,3],[4,4,1,5,5,3],[4,4,5,5,5,3],[4,5,5,5,5,3],[5,5,3,3,3,3]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,0,0,0,1],[2,0,0,0,1,1],[2,2,2,2,1,1],[3,3,2,2,1,1],[4,3,5,5,5,5],[4,3,3,3,3,5]],"sol":[2,5,3,1,4,0]},{"reg":[[0,1,1,1,1,2],[0,0,0,0,1,2],[3,3,4,4,1,1],[3,3,4,4,4,4],[3,3,5,5,5,4],[3,5,5,5,5,5]],"sol":[5,1,4,2,0,3]},{"reg":[[0,0,1,1,1,1],[0,0,1,1,1,2],[0,0,3,2,2,2],[0,0,3,2,4,4],[3,3,3,3,5,5],[3,3,3,3,5,5]],"sol":[2,0,3,5,1,4]},{"reg":[[0,0,1,2,2,2],[3,1,1,4,2,5],[3,3,1,4,4,5],[3,3,3,4,5,5],[4,4,4,4,4,5],[4,4,4,5,5,5]],"sol":[1,4,2,0,3,5]},{"reg":[[0,1,1,1,2,2],[0,3,1,1,2,2],[3,3,3,1,2,2],[4,2,2,2,2,5],[4,4,2,5,2,5],[4,5,5,5,5,5]],"sol":[3,0,2,4,1,5]},{"reg":[[0,0,1,1,1,2],[3,4,4,1,1,2],[3,4,4,5,5,2],[3,3,5,5,5,2],[3,5,5,5,2,2],[5,5,2,2,2,2]],"sol":[1,4,2,0,3,5]},{"reg":[[0,1,1,1,1,1],[0,0,2,1,2,1],[0,2,2,2,2,1],[0,3,3,4,2,2],[5,3,4,4,2,2],[5,4,4,4,2,2]],"sol":[5,1,4,2,0,3]},{"reg":[[0,1,1,2,3,3],[0,0,1,2,2,2],[0,0,1,1,4,2],[0,0,1,1,4,2],[0,5,5,5,4,2],[5,5,5,5,4,4]],"sol":[5,3,0,2,4,1]},{"reg":[[0,1,1,2,3,3],[0,1,1,2,2,4],[0,5,5,2,2,4],[0,0,5,5,4,4],[0,0,5,5,5,4],[0,0,0,5,5,5]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,0,0,1,1],[0,0,0,2,2,3],[0,4,4,2,3,3],[4,4,4,2,4,3],[5,5,4,4,4,4],[5,5,5,5,4,4]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,1,2,2,2],[0,0,1,1,2,2],[0,1,1,1,2,2],[0,1,3,3,3,2],[1,1,1,4,3,5],[1,1,4,4,4,5]],"sol":[0,4,1,3,5,2]},{"reg":[[0,0,1,1,1,1],[2,3,3,1,1,1],[2,2,3,4,4,1],[2,4,3,4,4,4],[4,4,4,4,5,5],[4,4,5,5,5,5]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,0,1,2,2],[0,0,0,1,3,3],[0,0,0,0,3,3],[4,0,0,3,3,3],[4,0,0,0,3,3],[4,5,5,5,3,3]],"sol":[5,3,1,4,0,2]},{"reg":[[0,0,0,1,2,3],[4,0,5,1,2,3],[4,5,5,1,3,3],[4,4,5,3,3,3],[4,5,5,5,5,3],[4,4,4,5,5,5]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,0,0,1,1],[2,0,0,0,1,3],[2,2,4,4,1,3],[2,2,4,4,1,3],[2,2,4,3,3,3],[2,4,4,3,5,5]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,0,1,2,2],[3,3,0,1,1,1],[3,3,0,0,0,1],[3,3,0,0,4,1],[5,5,5,5,4,4],[5,5,5,5,4,4]],"sol":[5,3,0,2,4,1]},{"reg":[[0,0,0,0,0,1],[2,2,2,0,1,1],[2,2,3,3,1,4],[2,2,3,3,1,4],[2,2,3,4,4,4],[2,2,3,4,5,5]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,0,0,1,1],[0,0,0,1,1,1],[0,0,0,1,2,1],[3,3,4,4,2,2],[3,3,3,2,2,2],[3,3,5,5,2,2]],"sol":[5,1,4,2,0,3]},{"reg":[[0,1,1,1,1,2],[0,0,0,1,2,2],[3,0,0,4,4,4],[3,0,0,0,0,4],[3,0,0,0,5,5],[3,3,3,3,3,5]],"sol":[2,5,3,1,4,0]},{"reg":[[0,0,1,1,1,1],[2,3,3,1,1,4],[2,2,3,5,5,4],[2,2,5,5,4,4],[2,2,5,5,5,4],[5,5,5,4,4,4]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,1,1,2,2],[3,3,1,2,2,2],[3,3,2,2,2,2],[3,3,3,2,2,4],[3,2,2,2,2,4],[3,3,5,5,5,4]],"sol":[0,2,4,1,5,3]},{"reg":[[0,0,0,0,1,1],[0,0,0,0,1,1],[2,2,2,3,1,1],[4,4,2,3,1,1],[5,5,3,3,3,3],[5,5,3,3,3,3]],"sol":[3,5,2,0,4,1]},{"reg":[[0,1,1,1,1,1],[0,1,1,1,1,1],[2,2,3,1,1,4],[2,3,3,1,3,4],[2,3,3,3,3,4],[3,3,3,5,5,5]],"sol":[0,3,1,5,2,4]},{"reg":[[0,1,1,1,1,1],[0,0,1,1,1,2],[3,0,4,4,2,2],[3,0,4,4,2,2],[3,3,3,4,2,2],[5,5,3,4,4,2]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,1,1,1,1],[2,0,1,1,1,3],[2,0,4,4,3,3],[2,0,4,4,3,3],[2,2,2,4,3,3],[5,5,2,4,4,3]],"sol":[4,1,3,5,2,0]},{"reg":[[0,1,1,2,2,2],[0,1,1,1,2,2],[0,0,0,0,2,2],[3,3,0,0,2,2],[4,3,0,5,5,5],[4,3,3,3,5,5]],"sol":[2,5,3,1,4,0]},{"reg":[[0,1,1,1,2,2],[0,1,2,2,2,3],[1,1,4,4,3,3],[4,4,4,4,5,3],[5,5,5,5,5,3],[5,5,5,5,5,3]],"sol":[0,4,1,3,5,2]},{"reg":[[0,0,1,2,3,3],[1,1,1,2,3,3],[1,4,2,2,3,3],[1,4,2,2,3,3],[4,4,5,3,3,3],[4,5,5,5,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,0,0,1,1],[2,0,3,1,1,4],[2,5,3,4,4,4],[5,5,5,4,4,4],[5,5,5,4,4,4]],"sol":[5,3,0,2,4,1]},{"reg":[[0,0,0,1,1,1],[0,0,0,1,1,1],[0,0,0,2,1,3],[0,4,4,2,5,3],[4,4,5,5,5,5],[4,4,4,5,5,5]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,0,1,2,2],[3,0,0,1,1,4],[3,5,5,1,4,4],[3,5,5,5,4,4],[3,3,5,5,4,5],[3,3,3,5,5,5]],"sol":[4,1,3,5,2,0]},{"reg":[[0,1,1,1,1,1],[0,0,1,2,1,1],[0,0,2,2,2,1],[3,3,3,2,2,1],[4,5,3,5,2,2],[4,5,5,5,5,2]],"sol":[5,1,4,2,0,3]},{"reg":[[0,1,1,1,2,2],[0,1,3,4,2,5],[0,3,3,4,5,5],[0,0,3,5,5,5],[0,3,3,3,3,5],[0,0,0,3,3,3]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,0,0,1,1],[0,0,0,0,1,1],[2,2,0,3,4,4],[2,2,0,3,3,3],[2,2,5,5,5,3],[2,2,5,5,5,5]],"sol":[4,1,5,3,0,2]},{"reg":[[0,1,2,3,3,3],[0,1,2,4,3,5],[0,0,2,4,4,5],[0,0,0,4,5,5],[0,4,4,4,4,5],[4,4,4,5,5,5]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,1,1,2,2],[0,0,3,2,2,2],[0,0,3,3,2,2],[4,4,4,5,2,5],[4,4,4,5,5,5],[4,4,4,4,5,5]],"sol":[3,0,2,4,1,5]},{"reg":[[0,1,1,1,1,2],[0,1,2,2,2,2],[1,1,3,3,4,4],[3,3,3,3,4,4],[3,5,5,5,4,4],[5,5,5,5,5,4]],"sol":[0,4,1,3,5,2]},{"reg":[[0,1,1,1,1,1],[0,0,1,2,2,2],[0,0,3,3,2,2],[4,0,3,3,2,2],[4,4,4,3,2,2],[5,5,4,3,3,2]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,0,1,1,2],[0,0,1,1,2,2],[0,0,2,2,2,2],[0,0,2,2,3,3],[4,4,4,2,3,5],[4,4,3,3,3,5]],"sol":[3,0,2,4,1,5]},{"reg":[[0,0,0,1,2,2],[3,0,0,1,1,1],[3,3,0,0,0,1],[4,3,0,0,5,1],[4,4,4,4,5,5],[4,4,4,4,5,5]],"sol":[5,3,0,2,4,1]},{"reg":[[0,0,1,1,1,1],[0,0,1,1,1,1],[0,0,2,3,3,3],[0,0,2,3,4,4],[2,2,2,2,5,5],[2,2,2,2,5,5]],"sol":[2,0,3,5,1,4]},{"reg":[[0,1,1,1,1,1],[0,1,1,1,1,2],[3,3,4,1,1,2],[3,4,4,4,4,2],[3,4,4,4,4,2],[4,4,4,5,5,5]],"sol":[0,3,1,5,2,4]},{"reg":[[0,1,2,2,2,3],[0,1,1,2,3,3],[1,1,1,3,3,4],[5,5,3,3,3,4],[5,5,3,4,4,4],[5,4,4,4,4,4]],"sol":[3,0,2,4,1,5]},{"reg":[[0,0,0,0,0,1],[0,0,0,0,0,1],[2,0,0,3,4,4],[2,3,0,3,3,4],[2,3,3,3,3,4],[5,5,5,3,3,3]],"sol":[5,2,4,0,3,1]},{"reg":[[0,0,1,1,1,1],[0,0,0,1,1,1],[0,2,0,1,1,1],[2,2,3,3,4,4],[2,2,2,4,4,4],[2,2,5,5,4,4]],"sol":[0,4,1,3,5,2]},{"reg":[[0,0,0,0,1,1],[0,0,1,1,1,1],[1,1,1,2,1,3],[4,1,1,2,3,3],[4,4,4,2,2,3],[4,4,4,4,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,0,0],[0,1,0,1,2,2],[0,1,1,1,1,3],[0,1,1,3,3,3],[1,1,4,4,3,5],[1,4,4,4,5,5]],"sol":[0,4,1,3,5,2]},{"reg":[[0,0,0,0,0,1],[0,2,0,2,1,1],[0,2,2,2,2,1],[2,2,3,4,4,4],[2,2,3,3,5,5],[2,3,3,3,3,3]],"sol":[0,4,1,3,5,2]},{"reg":[[0,0,0,1,1,1],[2,0,0,0,1,1],[2,2,0,0,0,1],[2,3,3,0,1,1],[4,3,3,5,5,1],[4,4,3,5,5,5]],"sol":[5,3,0,2,4,1]},{"reg":[[0,1,1,1,2,3],[0,1,1,2,2,3],[0,0,0,2,2,2],[4,0,0,0,5,5],[4,4,4,0,5,5],[4,4,4,4,4,5]],"sol":[2,5,3,1,4,0]},{"reg":[[0,0,0,0,0,0],[1,1,2,0,2,0],[1,2,2,2,2,0],[1,3,3,4,2,2],[5,5,4,4,2,2],[5,4,4,4,4,2]],"sol":[5,1,4,2,0,3]},{"reg":[[0,0,1,1,1,2],[0,0,0,1,3,2],[4,0,3,3,3,5],[4,0,0,0,5,5],[4,4,0,0,5,5],[4,4,0,5,5,5]],"sol":[2,5,3,1,4,0]},{"reg":[[0,0,0,0,1,1],[0,0,0,0,1,1],[2,2,1,1,1,1],[2,2,3,3,1,1],[2,2,3,4,5,5],[2,3,3,4,5,5]],"sol":[1,4,0,2,5,3]},{"reg":[[0,0,1,1,1,1],[0,0,1,1,1,1],[0,0,0,0,2,2],[0,0,3,3,2,2],[4,0,5,3,2,2],[4,4,5,3,3,2]],"sol":[4,1,5,3,0,2]},{"reg":[[0,0,0,1,1,1],[2,1,1,1,1,1],[2,1,1,1,1,1],[2,1,3,1,4,4],[3,3,3,3,3,5],[3,3,3,3,3,5]],"sol":[1,3,0,4,2,5]},{"reg":[[0,1,2,2,2,3],[0,1,4,2,2,3],[0,4,4,5,5,3],[0,0,5,5,5,3],[0,5,5,5,3,3],[5,5,5,3,3,3]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,1,2,2,3],[0,0,1,2,3,3],[4,4,2,2,3,3],[4,4,4,4,3,3],[4,4,5,5,5,5],[4,4,5,5,5,5]],"sol":[2,0,3,5,1,4]},{"reg":[[0,0,1,1,1,1],[0,0,1,1,1,1],[2,2,3,1,4,4],[3,3,3,1,4,4],[3,5,5,5,4,4],[5,5,5,5,4,4]],"sol":[1,4,0,2,5,3]},{"reg":[[0,0,0,1,1,1],[2,0,0,0,0,3],[2,0,0,4,0,3],[2,2,0,4,4,3],[5,4,0,4,4,4],[5,4,4,4,4,4]],"sol":[4,2,5,1,3,0]},{"reg":[[0,0,1,1,1,2],[0,0,1,1,3,2],[0,0,1,3,3,4],[5,0,0,0,0,4],[5,0,5,0,4,4],[5,5,5,5,5,4]],"sol":[2,5,3,1,4,0]},{"reg":[[0,0,0,1,1,1],[0,0,0,1,1,1],[2,3,3,1,1,1],[2,4,3,5,5,1],[4,4,4,4,5,5],[4,4,4,5,5,5]],"sol":[1,4,2,0,3,5]},{"reg":[[0,1,1,1,2,3],[0,1,1,4,2,3],[0,5,5,4,4,3],[0,5,5,5,3,3],[0,0,5,5,5,3],[0,0,0,5,5,5]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,1,1,1,1],[0,0,0,0,1,1],[2,0,3,0,0,0],[2,2,3,0,0,4],[2,3,3,4,4,4],[5,5,4,4,4,4]],"sol":[5,3,0,2,4,1]},{"reg":[[0,1,1,1,2,2],[0,3,1,2,2,2],[0,3,3,3,2,4],[5,5,2,2,2,4],[5,5,2,2,4,4],[5,5,5,2,4,4]],"sol":[3,0,2,4,1,5]},{"reg":[[0,1,1,1,1,2],[0,0,1,3,1,2],[0,0,0,3,3,3],[4,0,0,0,5,5],[4,4,0,4,5,5],[4,4,4,4,4,5]],"sol":[2,5,3,1,4,0]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,1],[2,0,0,3,1,4],[2,2,2,3,3,4],[2,2,2,5,5,5],[2,2,2,5,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,2],[0,1,1,1,3,2],[0,0,1,3,3,2],[0,4,4,3,2,2],[4,4,3,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[2,0,0,0,1,1],[2,3,0,0,0,1],[2,3,3,0,1,1],[2,2,3,4,4,1],[5,5,3,3,4,4]],"sol":[5,3,0,2,4,1]},{"reg":[[0,1,1,1,1,2],[0,1,3,3,2,2],[3,3,3,2,2,2],[3,4,2,2,2,5],[4,4,5,2,5,5],[4,5,5,5,5,5]],"sol":[3,0,2,4,1,5]},{"reg":[[0,0,1,1,2,2],[3,0,4,1,2,5],[3,4,4,1,5,5],[3,4,4,4,4,5],[3,4,4,4,4,5],[3,3,3,3,4,4]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,0,0,0,0],[0,0,1,1,2,2],[0,1,1,1,2,2],[1,1,1,3,3,2],[1,1,4,3,5,5],[1,4,4,4,4,4]],"sol":[0,4,1,3,5,2]},{"reg":[[0,1,1,1,2,2],[0,3,1,2,2,2],[4,3,3,3,2,5],[4,4,2,2,2,5],[4,4,2,2,5,5],[4,4,4,2,5,5]],"sol":[3,0,2,4,1,5]}],"7":[{"reg":[[3,3,0,0,2,2,1],[3,3,3,2,2,2,1],[3,3,3,3,2,2,2],[3,3,3,4,4,4,4],[3,3,3,4,4,4,5],[3,3,4,4,4,5,5],[3,6,6,4,4,4,5]],"sol":[2,6,4,0,3,5,1]},{"reg":[[1,1,1,1,1,0,0],[1,1,1,1,1,0,0],[1,1,1,1,1,0,2],[5,5,3,3,0,0,2],[4,5,5,5,6,6,6],[4,5,5,6,6,6,6],[6,6,6,6,6,6,6]],"sol":[5,1,6,3,0,2,4]},{"reg":[[1,1,1,1,4,2,0],[3,1,1,1,4,2,0],[3,3,1,4,4,2,2],[3,5,5,4,4,4,4],[5,5,5,4,4,4,4],[5,5,5,6,4,4,4],[5,5,6,6,4,4,4]],"sol":[6,2,5,0,4,1,3]},{"reg":[[3,0,0,0,0,0,0],[3,0,0,1,1,1,2],[3,3,0,1,1,2,2],[3,3,0,0,0,4,4],[3,3,0,0,4,4,4],[3,3,3,3,6,5,5],[3,3,6,6,6,5,5]],"sol":[1,3,5,0,4,6,2]},{"reg":[[1,0,0,2,2,2,2],[1,0,2,2,2,2,2],[3,3,2,2,2,2,2],[3,3,2,2,2,2,2],[3,3,2,2,4,4,4],[3,3,2,2,4,4,5],[3,6,6,6,5,5,5]],"sol":[2,0,5,1,4,6,3]},{"reg":[[0,0,0,0,0,1,1],[2,2,0,0,0,1,1],[4,2,2,3,3,5,1],[4,4,3,3,3,5,5],[4,4,4,3,3,5,5],[4,4,4,3,5,5,5],[4,4,4,5,5,6,6]],"sol":[2,5,1,3,0,4,6]},{"reg":[[2,2,2,0,0,2,2],[1,2,2,2,2,2,2],[1,2,2,2,2,2,2],[2,2,2,2,3,3,3],[4,4,4,3,3,3,3],[4,4,4,3,3,3,5],[4,4,4,3,6,6,5]],"sol":[3,0,2,5,1,6,4]},{"reg":[[0,0,0,0,0,0,0],[0,0,0,1,2,2,2],[0,0,0,1,2,2,2],[0,0,0,3,3,2,5],[0,4,0,3,3,2,5],[0,4,4,6,5,5,5],[4,4,6,6,5,5,5]],"sol":[0,3,6,4,1,5,2]},{"reg":[[2,0,0,0,0,0,0],[2,0,0,0,1,1,1],[2,3,3,0,0,5,5],[3,3,3,4,5,5,5],[3,5,4,4,4,5,5],[5,5,5,5,5,5,5],[6,6,5,5,5,5,5]],"sol":[3,5,0,2,4,6,1]},{"reg":[[0,0,0,0,0,1,1],[0,0,0,0,0,1,1],[2,2,2,2,3,4,1],[2,2,3,3,3,4,4],[2,2,3,3,4,4,4],[2,2,3,3,6,5,5],[2,2,6,6,6,6,5]],"sol":[1,5,0,2,4,6,3]},{"reg":[[0,2,2,3,3,1,1],[0,2,3,3,3,1,1],[2,2,3,3,3,3,1],[3,3,3,3,3,3,1],[3,3,3,3,3,3,4],[3,3,3,5,5,3,4],[3,6,6,5,5,3,4]],"sol":[0,5,1,3,6,4,2]},{"reg":[[0,0,2,2,2,3,3],[0,1,1,2,2,3,3],[4,4,4,2,2,3,3],[4,4,4,3,3,3,3],[4,4,4,4,4,3,3],[4,4,4,4,5,5,3],[4,4,4,6,6,5,5]],"sol":[0,2,4,6,1,5,3]},{"reg":[[3,3,3,1,0,0,0],[3,3,3,1,1,1,0],[3,3,3,1,2,2,0],[3,3,3,1,2,2,0],[3,3,3,3,4,2,2],[5,5,5,3,4,2,2],[5,5,6,6,4,2,2]],"sol":[6,3,5,1,4,0,2]},{"reg":[[2,3,1,1,0,0,0],[2,3,3,1,1,1,0],[2,2,3,3,1,1,0],[2,2,3,3,3,4,4],[2,2,3,3,4,4,4],[2,2,3,4,4,5,5],[2,6,6,6,4,5,5]],"sol":[5,3,0,2,4,6,1]},{"reg":[[0,0,0,0,1,1,1],[0,0,0,0,1,1,1],[0,2,0,1,1,1,1],[2,2,4,1,3,1,1],[2,2,4,6,3,1,1],[4,4,4,6,6,5,1],[4,4,4,6,6,5,5]],"sol":[0,6,1,4,2,5,3]},{"reg":[[0,0,0,0,0,1,1],[0,0,0,0,1,1,1],[0,0,0,3,2,2,1],[3,3,3,3,2,2,1],[4,3,3,3,2,2,1],[4,6,3,3,3,5,5],[4,6,6,3,3,5,5]],"sol":[3,6,4,2,0,5,1]},{"reg":[[0,0,0,0,3,1,1],[4,4,4,0,3,3,1],[4,4,2,2,3,5,5],[4,4,5,5,3,5,5],[4,4,5,5,5,5,5],[4,6,5,5,5,5,5],[4,6,5,5,5,5,5]],"sol":[3,6,2,4,0,5,1]},{"reg":[[1,1,0,0,0,0,0],[1,1,0,0,0,0,0],[1,0,0,0,2,2,3],[6,6,6,4,6,3,3],[5,5,6,4,6,6,6],[5,6,6,6,6,6,6],[5,6,6,6,6,6,6]],"sol":[5,1,4,6,3,0,2]},{"reg":[[0,0,0,0,0,0,0],[0,1,0,0,0,0,0],[1,1,4,4,2,2,2],[3,3,4,4,2,2,5],[4,4,4,4,5,5,5],[5,5,5,5,5,5,5],[5,5,5,5,5,6,6]],"sol":[3,1,5,0,2,4,6]},{"reg":[[3,2,2,0,0,2,1],[3,2,2,2,2,2,1],[3,2,2,2,2,2,2],[3,3,5,2,2,4,4],[5,5,5,5,5,4,4],[5,5,5,5,5,5,5],[5,5,5,5,6,6,6]],"sol":[3,6,2,0,5,1,4]}],"8":[{"reg":[[0,0,0,1,1,1,1,1],[0,3,1,1,1,1,1,1],[3,3,3,2,1,1,1,1],[3,3,3,2,1,1,1,1],[3,3,4,2,1,1,1,1],[4,4,4,2,5,5,5,5],[4,4,4,6,6,7,5,5],[4,4,4,6,6,7,7,5]],"sol":[1,5,3,0,2,7,4,6]},{"reg":[[3,3,3,2,1,1,0,0],[3,3,3,2,1,1,1,1],[3,3,3,2,2,2,2,1],[3,3,3,3,3,3,5,1],[6,6,6,3,4,4,5,5],[6,6,6,6,6,6,5,5],[6,6,6,6,6,6,6,6],[7,7,6,6,6,6,6,6]],"sol":[7,5,3,1,4,6,2,0]},{"reg":[[5,3,3,1,1,1,0,0],[5,3,3,3,1,1,2,0],[5,3,3,3,1,1,2,0],[5,3,3,3,6,1,1,4],[5,3,3,6,6,4,4,4],[5,6,6,6,6,6,4,4],[6,6,6,6,6,6,4,4],[7,7,7,6,6,6,6,4]],"sol":[7,4,6,2,5,0,3,1]},{"reg":[[1,1,0,0,2,2,2,2],[1,1,3,0,2,2,2,2],[3,3,3,2,2,2,2,2],[3,3,3,2,2,2,2,2],[3,3,3,2,2,2,4,4],[5,3,3,2,2,2,4,4],[5,5,3,2,2,6,4,4],[5,5,3,6,6,6,7,7]],"sol":[3,1,4,2,6,0,5,7]},{"reg":[[1,0,0,1,1,1,1,1],[1,1,1,1,1,1,1,2],[1,1,1,1,1,1,1,2],[1,1,3,3,3,3,3,4],[5,5,3,3,3,3,4,4],[5,5,3,6,3,3,3,3],[7,7,3,6,3,3,3,3],[7,6,6,6,3,3,3,3]],"sol":[2,5,7,4,6,1,3,0]},{"reg":[[2,2,0,0,0,0,1,1],[2,2,2,0,0,1,1,3],[2,3,3,3,3,3,3,3],[4,4,3,3,3,3,3,3],[4,4,4,5,3,3,3,3],[4,4,4,5,3,3,6,6],[4,4,4,3,3,3,6,6],[4,4,3,3,3,7,7,6]],"sol":[2,6,0,4,1,3,7,5]},{"reg":[[0,0,0,1,1,1,1,1],[2,0,5,1,1,1,4,4],[2,5,5,1,1,4,4,4],[2,5,5,5,3,3,3,4],[5,5,5,5,6,7,4,4],[7,7,5,5,6,7,7,7],[7,7,7,6,6,7,7,7],[7,7,7,7,7,7,7,7]],"sol":[1,3,0,5,7,2,4,6]},{"reg":[[5,0,0,0,0,2,2,2],[5,5,5,1,1,2,2,2],[5,5,5,5,1,2,2,2],[5,5,5,5,3,2,2,2],[5,5,5,5,3,4,4,2],[5,5,5,5,6,4,4,2],[5,5,5,6,6,6,6,2],[5,5,7,7,7,6,2,2]],"sol":[1,3,7,4,6,0,5,2]},{"reg":[[1,1,1,1,1,1,0,0],[1,1,1,1,1,2,0,4],[3,3,1,1,1,2,2,4],[3,3,3,4,4,4,2,4],[3,3,3,4,4,4,4,4],[6,6,5,5,4,4,4,4],[6,4,4,4,4,4,4,4],[6,7,7,4,4,4,4,4]],"sol":[7,4,6,1,5,3,0,2]},{"reg":[[1,0,0,0,0,1,1,1],[1,1,1,1,1,1,1,1],[2,1,1,1,1,1,1,1],[2,6,4,1,7,1,1,3],[6,6,4,7,7,7,5,3],[6,6,4,7,7,7,5,3],[6,6,6,7,7,7,7,7],[7,7,7,7,7,7,7,7]],"sol":[3,5,0,7,2,6,1,4]},{"reg":[[3,0,0,0,0,0,0,1],[3,3,0,0,0,2,1,1],[3,3,3,3,0,2,4,4],[3,3,3,3,4,4,4,4],[5,5,3,3,3,4,4,4],[5,5,3,3,4,4,4,4],[7,5,3,6,4,4,4,4],[7,5,3,6,4,4,4,4]],"sol":[4,7,5,2,6,1,3,0]},{"reg":[[1,1,1,0,0,3,3,2],[1,1,1,1,1,3,3,2],[1,1,1,1,3,3,3,2],[3,3,3,3,3,3,6,6],[5,3,3,3,4,4,6,6],[5,3,3,3,6,6,6,6],[5,3,3,3,6,6,6,6],[7,7,3,3,6,6,6,6]],"sol":[4,2,7,3,5,0,6,1]}]}, LEVELS=[["Challenge",6]];
+// Opening quests start with one forced cell, then each placement reveals the next.
+CAT["4"]=[{reg:[[1,0,1,1],[1,1,1,1],[2,2,2,2],[3,3,3,3]],sol:[1,3,0,2]}];
+CAT["5"]=[
+ {reg:[[0,0,0,1,1],[0,0,0,1,1],[3,3,2,4,1],[3,3,3,4,1],[3,3,4,4,1]],sol:[1,4,2,0,3],learnOrder:[[2,2],[4,3],[3,0],[0,1],[1,4]]},
+ {reg:[[0,1,1,1,1],[1,1,1,2,2],[2,2,2,2,2],[3,3,3,3,3],[4,4,4,4,4]],sol:[0,2,4,1,3]}
+];
 const COLORS=["#efb37e","#91b5ed","#b4a0db","#a9d692","#ff8267","#ddd9d2","#e5ef83","#bdb6a0","#a9d7d3"];
 const TERRITORY_COLORS=["#46c7e8","#6d8fe8","#8b70d7","#49b49b","#d38a54","#b55f86","#67a6bf","#7e9c69","#a8875b"];
 let n=6,puz,state,hist=[],start,timer,activeElapsedMs=0,activeSince=null,last={},hi=null,proofs={},hintStage=0,hintFocus=null,celebrated=false,hintUsesThisGame=0,hintWasGranted=false,mistakesThisGame=0,verifyUsesThisGame=0,verifyPending=null,autoUsedThisGame=false,replayMode=false,levelIndex=Math.min(sequentialSolvedCount,99);
@@ -754,7 +791,7 @@ function arrangeDesktopPanels(){
 window.addEventListener("resize",arrangeDesktopPanels);
 
 const CAMPAIGN6_ORDER=[0,45,72,50,71,82,73,90,80,98,40,8,78,14,94,95,17,7,59,5,34,18,57,23,75,66,49,68,53,26,88,67,9,96,55,43,87,32,56,93,15,86,92,35,51,6,16,13,77,46,4,85,21,29,64,44,79,99,91,70,54,42,52,84,24,41,12,60,47,1,36,3,11,97,22,83,89,58,33,27];
-const CAMPAIGN_SIZE_SCHEDULE={"0":["4",0],"1":["5",0],"2":["6",2],"3":["6",3],"4":["6",4],"5":["6",5],"6":["6",6],"7":["6",7],"8":["6",8],"9":["6",9],"10":["6",10],"11":["7",0],"12":["6",11],"13":["6",12],"14":["6",13],"15":["6",14],"16":["6",15],"17":["7",1],"18":["6",16],"19":["6",17],"20":["6",18],"21":["6",19],"22":["6",20],"23":["6",21],"24":["7",2],"25":["6",22],"26":["6",23],"27":["6",24],"28":["6",25],"29":["6",26],"30":["7",3],"31":["6",27],"32":["6",28],"33":["6",29],"34":["6",30],"35":["6",31],"36":["6",32],"37":["7",4],"38":["6",33],"39":["6",34],"40":["6",35],"41":["6",36],"42":["6",37],"43":["7",5],"44":["6",38],"45":["6",39],"46":["6",40],"47":["8",0],"48":["6",41],"49":["6",42],"50":["7",6],"51":["6",43],"52":["6",44],"53":["6",45],"54":["6",46],"55":["6",47],"56":["7",7],"57":["6",48],"58":["6",49],"59":["6",50],"60":["8",1],"61":["6",51],"62":["6",52],"63":["7",8],"64":["6",53],"65":["6",54],"66":["6",55],"67":["6",56],"68":["6",57],"69":["7",9],"70":["6",58],"71":["6",59],"72":["8",2],"73":["6",60],"74":["6",61],"75":["7",10],"76":["6",62],"77":["6",63],"78":["6",64],"79":["6",65],"80":["6",66],"81":["7",11],"82":["6",67],"83":["6",68],"84":["6",69],"85":["8",3],"86":["6",70],"87":["7",12],"88":["6",71],"89":["6",72],"90":["6",73],"91":["6",74],"92":["6",75],"93":["7",13],"94":["6",76],"95":["6",77],"96":["8",4],"97":["6",78],"98":["7",14],"99":["6",79]};
+const CAMPAIGN_SIZE_SCHEDULE={"0":["5",0],"1":["5",1],"2":["6",2],"3":["6",3],"4":["6",4],"5":["6",5],"6":["6",6],"7":["6",7],"8":["6",8],"9":["6",9],"10":["6",10],"11":["7",0],"12":["6",11],"13":["6",12],"14":["6",13],"15":["6",14],"16":["6",15],"17":["7",1],"18":["6",16],"19":["6",17],"20":["6",18],"21":["6",19],"22":["6",20],"23":["6",21],"24":["7",2],"25":["6",22],"26":["6",23],"27":["6",24],"28":["6",25],"29":["6",26],"30":["7",3],"31":["6",27],"32":["6",28],"33":["6",29],"34":["6",30],"35":["6",31],"36":["6",32],"37":["7",4],"38":["6",33],"39":["6",34],"40":["6",35],"41":["6",36],"42":["6",37],"43":["7",5],"44":["6",38],"45":["6",39],"46":["6",40],"47":["8",0],"48":["6",41],"49":["6",42],"50":["7",6],"51":["6",43],"52":["6",44],"53":["6",45],"54":["6",46],"55":["6",47],"56":["7",7],"57":["6",48],"58":["6",49],"59":["6",50],"60":["8",1],"61":["6",51],"62":["6",52],"63":["7",8],"64":["6",53],"65":["6",54],"66":["6",55],"67":["6",56],"68":["6",57],"69":["7",9],"70":["6",58],"71":["6",59],"72":["8",2],"73":["6",60],"74":["6",61],"75":["7",10],"76":["6",62],"77":["6",63],"78":["6",64],"79":["6",65],"80":["6",66],"81":["7",11],"82":["6",67],"83":["6",68],"84":["6",69],"85":["8",3],"86":["6",70],"87":["7",12],"88":["6",71],"89":["6",72],"90":["6",73],"91":["6",74],"92":["6",75],"93":["7",13],"94":["6",76],"95":["6",77],"96":["8",4],"97":["6",78],"98":["7",14],"99":["6",79]};
 function choose(){levelIndex=Math.max(0,Math.min(levelIndex,99));const [size,slot]=CAMPAIGN_SIZE_SCHEDULE[levelIndex];puz=size==="6"?CAT["6"][CAMPAIGN6_ORDER[slot]]:CAT[size][slot];n=puz.reg.length;last[n]=levelIndex}
 function loadPuzzle(){init();}
 
@@ -795,7 +832,7 @@ function showVerificationErrors(errors){
  document.getElementById("verifyCard").hidden=false;board.setAttribute("aria-disabled","true");
 }
 function runVerification(){
- if(celebrated||guidedPending||verifyPending)return;
+ if(celebrated||guidedPending||verifyPending||learningSequenceActive||scriptedLearningActive())return;
  if(!consumeVerifyCost())return;
  const errors=verificationErrors();
  if(errors.length){mistakesThisGame++;showVerificationErrors(errors);errorSound();updateLiveReward(state.flat().filter(v=>v===2).length)}
@@ -806,35 +843,135 @@ function fixVerificationErrors(){
  hist.push(state.map(x=>x.slice()));verifyPending.forEach(e=>state[e.r][e.c]=0);verifyPending=null;
  document.getElementById("verifyCard").hidden=true;board.removeAttribute("aria-disabled");msg.textContent="Les choix incorrects ont été effacés.";render();
 }
-let scriptedLearnStep=0;
+let learningStage="territories",learningSource=null,learningGroups=null,learningAnchor=null,learningRunId=0,learningStepCells=[],learningHistory=[],learningHistoryIndex=-1,learningRestoring=false;
 function scriptedLearningActive(){return levelIndex<=1}
 function scriptedTarget(){
  if(!scriptedLearningActive())return null;
- const placed=new Set();for(let r=0;r<n;r++)for(let cc=0;cc<n;cc++)if(state[r][cc]===2)placed.add(r);
- for(let r=0;r<n;r++)if(!placed.has(r))return [r,puz.sol[r]];
- return null;
+ const order=puz.learnOrder||puz.sol.map((c,r)=>[r,c]);
+ return order.find(([r,c])=>state[r][c]!==2)||null;
 }
-function updateScriptedLearning(){
- const card=document.getElementById("scriptedLearn");if(!card)return;
- board.querySelectorAll(".cell").forEach(x=>x.classList.remove("scripted-focus","scripted-territory","scripted-dim"));
- if(!scriptedLearningActive()){card.hidden=true;return}
- const target=scriptedTarget();if(!target){card.hidden=true;return}
- const [r,c]=target,q=state.flat().filter(v=>v===2).length,cell=board.querySelector('.cell[data-row="'+r+'"][data-col="'+c+'"]'),territory=puz.reg[r][c];
- board.querySelectorAll(".cell").forEach(x=>{const rr=Number(x.dataset.row),cc=Number(x.dataset.col);if(puz.reg[rr][cc]===territory)x.classList.add("scripted-territory");else x.classList.add("scripted-dim")});
- if(cell)cell.classList.add("scripted-focus");
- card.hidden=false;
- const title=document.getElementById("scriptedLearnTitle"),copy=document.getElementById("scriptedLearnCopy");
- if(levelIndex===0){
-  if(q===0){title.textContent="Observe ce territoire";copy.textContent="Il n’a qu’une seule possibilité. Place le Gardien sur la case illuminée."}
-  else if(q===1){title.textContent="Regarde les exclusions";copy.textContent="Le Marquage auto a écarté sa ligne, sa colonne, son territoire et les cases voisines. Il ne reste qu’une possibilité ici : place le Gardien illuminé."}
-  else{title.textContent="Une seule possibilité";copy.textContent="Les exclusions précédentes rendent ce Gardien certain. Continue sur la case illuminée."}
- }else{
-  if(q===0){title.textContent="À toi d’observer";copy.textContent="Cherche le territoire qui n’a plus qu’une seule possibilité. La case illuminée te montre cette première déduction."}
-  else if(q<Math.ceil(n/2)){title.textContent="Déduction en chaîne";copy.textContent="Les Gardiens déjà placés éliminent des lignes, colonnes, territoires et voisinages. Quelle possibilité reste certaine ?"}
-  else{title.textContent="Tu as compris la mécanique";copy.textContent="Continue à partir des exclusions automatiques : chaque Gardien certain en révèle un autre."}
+function labelLearningTerritories(){
+ for(const territory of new Set(puz.reg.flat())){
+  const cells=[];for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(puz.reg[r][c]===territory)cells.push([r,c]);
+  const cy=cells.reduce((v,p)=>v+p[0],0)/cells.length,cx=cells.reduce((v,p)=>v+p[1],0)/cells.length;
+  const [r,c]=cells.sort((a,b)=>(a[0]-cy)**2+(a[1]-cx)**2-(b[0]-cy)**2-(b[1]-cx)**2)[0];
+  const label=document.createElement("span");label.className="territory-label";label.textContent=territory+1;
+  guidedCell(r,c)?.appendChild(label);
  }
 }
-function scriptedAllowsGuardian(r,c){const t=scriptedTarget();return !t||(t[0]===r&&t[1]===c)}
+function positionLearningCoach(){
+ const wrap=document.getElementById("learningBoardWrap"),card=document.getElementById("scriptedLearn"),link=document.getElementById("learningCoachLink");
+ if(!wrap||card.hidden||!scriptedLearningActive())return;
+ wrap.style.setProperty("--coach-space",(card.offsetHeight+20)+"px");
+ const target=learningAnchor||(learningStage==="place"?scriptedTarget():learningSource)||[Math.floor(n/2),Math.floor(n/2)];
+ const cell=guidedCell(...target);if(!cell)return;
+ const wr=wrap.getBoundingClientRect(),cr=cell.getBoundingClientRect(),tx=cr.left-wr.left+cr.width/2,ty=cr.top-wr.top+6;
+ const left=Math.max(8,Math.min(tx-card.offsetWidth/2,wrap.clientWidth-card.offsetWidth-8));card.style.left=left+"px";
+ const arrow=Math.max(20,Math.min(tx-left,card.offsetWidth-20));card.style.setProperty("--coach-arrow-x",arrow+"px");
+ const sx=left+arrow,sy=card.offsetHeight+8;
+ link.removeAttribute("hidden");link.setAttribute("viewBox","0 0 "+wrap.clientWidth+" "+wrap.clientHeight);
+ link.innerHTML='<path d="M '+sx+' '+sy+' C '+sx+' '+(sy+20)+', '+tx+' '+(ty-25)+', '+tx+' '+ty+'" fill="none" stroke="#e8bd64" stroke-width="2" stroke-dasharray="4 4"/><circle cx="'+tx+'" cy="'+ty+'" r="4" fill="#ffd06b" stroke="#122233" stroke-width="2"/>';
+}
+window.addEventListener("resize",()=>requestAnimationFrame(positionLearningCoach));
+function updateScriptedLearning(){
+ const card=document.getElementById("scriptedLearn"),button=document.getElementById("scriptedLearnNext"),wrap=document.getElementById("learningBoardWrap"),link=document.getElementById("learningCoachLink");if(!card||!button)return;
+ board.dataset.learningStage=learningStage;
+ board.querySelectorAll(".cell").forEach(x=>x.classList.remove("scripted-focus","scripted-territory","scripted-dim","learning-source","learning-zone"));
+ board.querySelectorAll(".territory-label").forEach(x=>x.remove());
+ const visible=scriptedLearningActive()&&learningStage!=="complete";wrap.classList.toggle("is-learning",visible);
+ if(!visible){card.hidden=true;link.setAttribute("hidden","");return}
+ card.hidden=false;
+ if(!learningSequenceActive&&!learningRestoring)rememberLearningStep();
+ button.hidden=learningStage==="place";button.disabled=learningSequenceActive;button.textContent="Suivant →";
+ document.getElementById("scriptedLearnPrev").disabled=learningHistoryIndex<=0&&!learningSequenceActive;
+ const hint=document.getElementById("scriptedLearnHint");hint.hidden=learningStage==="place";hint.textContent=learningSequenceActive?"Observe l’animation…":"Touche n’importe où pour continuer";
+ const title=document.getElementById("scriptedLearnTitle"),copy=document.getElementById("scriptedLearnCopy");
+ if(learningStage==="territories"||learningStage==="rule"){
+  labelLearningTerritories();
+  if(learningStage==="territories"){title.textContent="Cinq couleurs, cinq territoires";copy.textContent="Observe les contours et les numéros : chaque couleur forme un territoire."}
+  else{title.textContent="Un Gardien par territoire";copy.textContent="Chaque territoire doit avoir exactement un Gardien. Il en faudra donc cinq pour terminer cette grille."}
+ }else if(learningStage==="place"){
+  const target=scriptedTarget();if(!target)return;
+  const [r,c]=target,territory=puz.reg[r][c];guidedCell(r,c)?.classList.add("scripted-focus");
+  board.querySelectorAll(".cell").forEach(x=>{if(puz.reg[Number(x.dataset.row)][Number(x.dataset.col)]===territory)x.classList.add("scripted-territory")});
+  const first=!state.flat().includes(2);title.textContent=first?"Pose ton premier Gardien ici":"Cette case est la seule possibilité";
+  copy.textContent=first&&levelIndex===0?"Ce petit territoire au centre n’a qu’une case. Touche-la pour poser son Gardien.":"Les autres cases de ce territoire sont écartées. Touche la case illuminée pour poser son Gardien.";
+ }else{
+  if(learningSource){
+   const [r,c]=learningSource;guidedCell(r,c)?.classList.add("learning-source");
+   for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+    const inZone=learningStage==="row"?y===r:learningStage==="column"?x===c:learningStage==="neighbors"?Math.abs(y-r)<=1&&Math.abs(x-c)<=1:puz.reg[y][x]===puz.reg[r][c];
+    if(inZone&&!(y===r&&x===c)&&!learningVisibleAuto.has(y+","+x))guidedCell(y,x)?.classList.add("learning-zone");
+   }
+  }
+  if(learningStage==="row"){title.textContent="Observe cette ligne";copy.textContent="Un seul Gardien par ligne : les autres cases se cochent une par une."}
+  else if(learningStage==="column"){title.textContent="Observe maintenant cette colonne";copy.textContent="Un seul Gardien par colonne : ses autres cases se cochent aussi. Les coches précédentes restent."}
+  else if(learningStage==="neighbors"){title.textContent="Observe les cases voisines";copy.textContent="Deux Gardiens ne peuvent pas se toucher, même en diagonale. Ces cases se cochent à leur tour."}
+  else{title.textContent="Ce territoire est déjà occupé";copy.textContent="Il a son Gardien : toutes ses autres cases sont écartées."}
+  const zone=learningStage==="row"?"de cette ligne":learningStage==="column"?"de cette colonne":learningStage==="neighbors"?"adjacentes au Gardien":"de ce territoire";
+  if(!learningStepCells.length)copy.textContent="Les cases "+zone+" sont déjà cochées. Il n’y a aucune nouvelle case à écarter.";
+  else if(!learningSequenceActive){const location=learningStage==="row"?"sur cette ligne":learningStage==="column"?"dans cette colonne":learningStage==="neighbors"?"autour du Gardien":"dans ce territoire";copy.textContent=learningStepCells.length+" nouvelle"+(learningStepCells.length>1?"s cases ont été cochées":" case a été cochée")+" "+location+". Les coches précédentes sont conservées."}
+ }
+ positionLearningCoach();requestAnimationFrame(positionLearningCoach);
+}
+function scriptedAllowsGuardian(r,c){const t=scriptedTarget();return learningStage==="place"&&!!t&&t[0]===r&&t[1]===c}
+async function animateLearningExclusions(index){
+ const runId=++learningRunId,cells=learningGroups[index].filter(([r,c])=>state[r][c]===0&&!learningVisibleAuto.has(r+","+c));learningStepCells=cells.map(x=>x.slice());learningSequenceActive=cells.length>0;
+ learningAnchor=cells[0]||learningSource;paintBoardState();
+ for(const [r,c] of cells){
+  learningAnchor=[r,c];positionLearningCoach();
+  await new Promise(resolve=>setTimeout(resolve,500));
+  if(runId!==learningRunId)return;
+  if(learningVisibleAuto.has(r+","+c)||state[r][c]!==0)continue;
+  learningVisibleAuto.add(r+","+c);paintCell(r,c);
+  const cell=guidedCell(r,c);if(cell){cell.classList.add("learning-tick");setTimeout(()=>cell.classList.remove("learning-tick"),500)}
+ }
+ if(runId!==learningRunId)return;
+ learningSequenceActive=false;updateScriptedLearning();
+}
+async function advanceLearningStep(){
+ if(!scriptedLearningActive()||learningSequenceActive)return;
+ if(learningHistoryIndex<learningHistory.length-1){restoreLearningStep(learningHistoryIndex+1);return}
+ learningAnchor=null;learningStepCells=[];
+ if(learningStage==="territories")learningStage="rule";
+ else if(learningStage==="rule")learningStage="place";
+ else if(learningStage==="row"){learningStage="column";await animateLearningExclusions(1);return}
+ else if(learningStage==="column"){learningStage="neighbors";await animateLearningExclusions(3);return}
+ else if(learningStage==="neighbors"&&learningGroups[2].length){learningStage="territory";await animateLearningExclusions(2);return}
+ else if(learningStage==="neighbors"||learningStage==="territory"){
+  learningSource=null;learningGroups=null;learningStage=scriptedTarget()?"place":"complete";
+ }else return;
+ paintBoardState();if(learningStage==="complete")render();
+}
+
+function rememberLearningStep(){
+ const snapshot={stage:learningStage,source:learningSource?.slice()||null,groups:learningGroups?.map(g=>g.map(p=>p.slice()))||null,anchor:learningAnchor?.slice()||null,cells:learningStepCells.map(p=>p.slice()),state:state.map(row=>row.slice()),marks:[...(learningVisibleAuto||[])]};
+ if(JSON.stringify(learningHistory[learningHistoryIndex])===JSON.stringify(snapshot))return;
+ learningHistory.splice(learningHistoryIndex+1);learningHistory.push(snapshot);learningHistoryIndex=learningHistory.length-1;
+}
+function restoreLearningStep(index){
+ const snapshot=learningHistory[index];if(!snapshot)return;
+ learningRunId++;learningSequenceActive=false;learningHistoryIndex=index;learningRestoring=true;
+ learningStage=snapshot.stage;learningSource=snapshot.source?.slice()||null;learningGroups=snapshot.groups?.map(g=>g.map(p=>p.slice()))||null;learningAnchor=snapshot.anchor?.slice()||null;learningStepCells=snapshot.cells.map(p=>p.slice());state=snapshot.state.map(row=>row.slice());learningVisibleAuto=new Set(snapshot.marks);
+ board.querySelectorAll(".learning-tick").forEach(x=>x.classList.remove("learning-tick"));paintBoardState();learningRestoring=false;
+}
+function previousLearningStep(){
+ if(!scriptedLearningActive())return;
+ const index=learningSequenceActive?learningHistoryIndex:learningHistoryIndex-1;
+ if(index>=0)restoreLearningStep(index);
+}
+function handleLearningTap(event){
+ if(!scriptedLearningActive()||learningStage==="complete"||document.getElementById("scriptedLearn").hidden)return;
+ const target=event.target instanceof Element?event.target:null;if(!target)return;
+ if(target.closest("#scriptedLearnPrev")){event.preventDefault();event.stopImmediatePropagation();previousLearningStep();return}
+ // Keep account, help, reset and modal actions available.
+ if(target.closest("button,input,a,[role=button]")&&!target.closest("#scriptedLearnNext"))return;
+ if(document.querySelector('#mapModal:not([hidden]),#tutorialOverlay:not([hidden]),#feedbackModal:not([hidden]),#shardRulesModal:not([hidden]),#badgeRulesModal:not([hidden]),#skyReveal:not([hidden]),#successOverlay.show'))return;
+ if(learningStage==="place")return;
+ event.preventDefault();event.stopImmediatePropagation();
+ if(!learningSequenceActive)advanceLearningStep();
+}
+
 function maybeShowManualCrossTip(){
  let seen=false;try{seen=localStorage.getItem("lumenManualCrossTipSeen")==="1"}catch(_){}
  if(seen)return;const tip=document.getElementById("manualCrossTip");if(tip)tip.hidden=false;
@@ -904,6 +1041,7 @@ function dismissGuidedOnAnyTap(e){
 }
 document.addEventListener("pointerdown",dismissGuidedOnAnyTap,true);
 function configureLearningMode(){
+ for(const id of ["undo","hint","verify"])document.getElementById(id).disabled=scriptedLearningActive();
  const cb=document.getElementById("autoCross"),wrap=document.getElementById("autoCrossWrap"),note=document.getElementById("learningNote"),guided=document.getElementById("guidedErrors"),gwrap=document.getElementById("guidedErrorsWrap");
  if(!cb||!wrap)return;
  if(levelIndex<=4){cb.checked=true;cb.disabled=levelIndex<=1;wrap.hidden=false;wrap.classList.toggle("learning-locked",levelIndex<=1);if(note){note.hidden=false;note.textContent="Apprentissage · le Marquage auto marque les cases devenues impossibles."}}
@@ -923,7 +1061,7 @@ function configureLearningMode(){
 }
 function applyQuestRestrictions(){
  const q=bonusChallengeFor(levelIndex),cb=document.getElementById("autoCross"),wrap=document.getElementById("autoCrossWrap"),note=document.getElementById("learningNote"),hint=document.getElementById("hint");
- if(hint)hint.disabled=false;
+ if(hint)hint.disabled=scriptedLearningActive();
  if(!q||lumenProgress.stars[q.id])return;
  if(q.noAuto){
   cb.checked=false;cb.disabled=true;wrap.classList.add("learning-locked");
@@ -949,7 +1087,7 @@ function maybeShowAutonomy(){
 }
 function prepareQuestStart(){let q=bonusChallengeFor(levelIndex),o=document.getElementById("questStart");questFailed=false;if(!q||lumenProgress.stars[q.id]){questStarted=true;o.hidden=true;resumeGameClock();return}questStarted=false;pauseGameClock();document.getElementById("questStartTitle").textContent=q.title;document.getElementById("questStartRule").textContent=q.copy+" Récompense : +25 XP et +1 ✦ éclat.";o.hidden=false}
 document.getElementById("questGo").onclick=()=>{document.getElementById("questStart").hidden=true;questStarted=true;activeElapsedMs=0;activeSince=performance.now();clock()};
-function init(){choose();configureLearningMode();applyQuestRestrictions();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl)cl.textContent="Quête "+(levelIndex+1);document.getElementById("difficulty").textContent=n===7?"7 × 7 · constellation étendue":n===8?"8 × 8 · constellation étendue":"";state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();activeElapsedMs=0;activeSince=document.visibilityState==="visible"?performance.now():null;msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,100);clock();prepareQuestStart()}
+function init(){learningHistory=[];learningHistoryIndex=-1;learningRestoring=false;learningStepCells=[];learningRunId++;learningAnchor=null;learningSequenceActive=false;learningVisibleAuto=scriptedLearningActive()?new Set():null;learningStage="territories";learningSource=null;learningGroups=null;choose();configureLearningMode();applyQuestRestrictions();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl)cl.textContent="Quête "+(levelIndex+1);document.getElementById("difficulty").textContent=n===7?"7 × 7 · constellation étendue":n===8?"8 × 8 · constellation étendue":"";state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();activeElapsedMs=0;activeSince=document.visibilityState==="visible"?performance.now():null;msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,100);clock();prepareQuestStart()}
 function drawLevels(){let e=document.getElementById("levels");e.innerHTML="";LEVELS.forEach(([name,x])=>{let b=document.createElement("button");b.className="level"+(x===n?" active":"");b.innerHTML=name+"<small>"+x+" × "+x+"</small>";b.onclick=()=>{n=x;init()};e.appendChild(b)})}
 function activeGameMs(){return activeElapsedMs+(activeSince!==null?Math.max(0,performance.now()-activeSince):0)}
 function activeGameSeconds(){return Math.max(0,Math.floor(activeGameMs()/1000))}
@@ -999,29 +1137,18 @@ function displayedCellState(r,c){
 let learningSequenceActive=false,learningVisibleAuto=null;
 function learningAutoAllowed(r,c){return !scriptedLearningActive()||learningVisibleAuto===null||learningVisibleAuto.has(r+","+c)}
 function learningExclusionsFrom(r,c){
- const groups=[[],[],[],[]],seen=new Set(),add=(g,y,x)=>{const k=y+","+x;if((y===r&&x===c)||seen.has(k)||state[y][x]!==0)return;seen.add(k);groups[g].push([y,x])};
+ const groups=[[],[],[],[]],seen=new Set(),add=(g,y,x)=>{const k=y+","+x;if((y===r&&x===c)||seen.has(k)||state[y][x]!==0||learningVisibleAuto?.has(k))return;seen.add(k);groups[g].push([y,x])};
  for(let x=0;x<n;x++)add(0,r,x);
  for(let y=0;y<n;y++)add(1,y,c);
- for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(puz.reg[y][x]===puz.reg[r][c])add(2,y,x);
  for(let y=Math.max(0,r-1);y<=Math.min(n-1,r+1);y++)for(let x=Math.max(0,c-1);x<=Math.min(n-1,c+1);x++)add(3,y,x);
+ for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(puz.reg[y][x]===puz.reg[r][c])add(2,y,x);
  return groups;
 }
-function waitLearning(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
 async function runLearningPlacement(r,c){
- learningSequenceActive=true;learningVisibleAuto=new Set();
- paintBoardState();await waitLearning(levelIndex===0?550:350);
- const card=document.getElementById("scriptedLearn"),title=document.getElementById("scriptedLearnTitle"),copy=document.getElementById("scriptedLearnCopy");
- if(card){card.hidden=false;title.textContent="Observe les conséquences";copy.textContent="Ce Gardien bloque sa ligne, sa colonne, son territoire et les cases voisines."}
- const labels=["Sa ligne est bloquée","Sa colonne est bloquée","Son territoire est bloqué","Ses cases voisines sont bloquées"],groups=learningExclusionsFrom(r,c),pause=levelIndex===0?330:190;
- for(let g=0;g<groups.length;g++){
-  if(copy)copy.textContent=labels[g]+".";
-  for(const [y,x] of groups[g]){
-   learningVisibleAuto.add(y+","+x);paintCell(y,x);const el=guidedCell(y,x);if(el){el.classList.add("learning-wave");setTimeout(()=>el.classList.remove("learning-wave"),360)}
-   await waitLearning(pause);
-  }
-  await waitLearning(levelIndex===0?260:120);
- }
- learningVisibleAuto=null;learningSequenceActive=false;paintBoardState();
+ // Keep all previously explained exclusions visible between placements.
+ if(learningHistoryIndex<learningHistory.length-1){restoreLearningStep(learningHistoryIndex+1);return}
+ learningSource=[r,c];learningGroups=learningExclusionsFrom(r,c);
+ learningStage="row";await animateLearningExclusions(0);
 }
 
 const LUMEN_APP_VERSION="beta-2026.10";
@@ -1187,6 +1314,8 @@ function dragCrossCellAt(x,y){
 function paintCell(r,c){
  const d=board.querySelector('.cell[data-row="'+r+'"][data-col="'+c+'"]');if(!d)return;
  const shown=displayedCellState(r,c);
+ if(d.dataset.shown===String(shown))return;
+ d.dataset.shown=String(shown);
  d.innerHTML=shown===1||shown===3?'<span class="lumen-dim" aria-label="Emplacement assombri"></span>':shown===2?'<span class="lumen-orb" aria-label="Étoile placée"></span>':"";
  d.classList.toggle("auto-x",shown===3);
 }
@@ -1230,6 +1359,7 @@ board.addEventListener("pointerup",endDragCross);
 board.addEventListener("pointercancel",endDragCross);
 
 function render(){
+ board.classList.toggle("scripted-board",scriptedLearningActive());
  board.style.gridTemplateColumns=`repeat(${n},minmax(0,1fr))`;board.style.gridTemplateRows=`repeat(${n},minmax(0,1fr))`;board.innerHTML="";
  for(let r=0;r<n;r++)for(let c=0;c<n;c++){
   let d=document.createElement("div");
@@ -1242,6 +1372,7 @@ function render(){
   d.dataset.l=(c===0||puz.reg[r][c-1]!==g)?"1":"0";
   d.dataset.r=(c===n-1||puz.reg[r][c+1]!==g)?"1":"0";
   let shown=displayedCellState(r,c);
+  d.dataset.shown=String(shown);
   if(shown===1||shown===3)d.innerHTML='<span class="lumen-dim" aria-label="Emplacement assombri"></span>';
   else if(shown===2)d.innerHTML='<span class="lumen-orb" aria-label="Gardien positionné"></span>';
   else d.innerHTML="";
@@ -1249,7 +1380,7 @@ function render(){
   d.dataset.row=r;d.dataset.col=c;
   d.onclick=async()=>{if(celebrated||dragCrossSuppressClick||guidedPending||verifyPending||learningSequenceActive||performance.now()<suppressGuidedClickUntil)return;
  let shown=displayedCellState(r,c),next=shown===3?2:(state[r][c]+1)%3,currentGuardians=state.flat().filter(v=>v===2).length;
- if(scriptedLearningActive()){if(!scriptedAllowsGuardian(r,c)){msg.textContent="Pour cette quête d’apprentissage, suis la déduction illuminée.";return}next=2}
+ if(scriptedLearningActive()){if(!scriptedAllowsGuardian(r,c)){msg.textContent=learningStage==="place"?"Touche la case illuminée pour poser le Gardien.":"Observe la grille, puis touche « J’ai compris » pour continuer.";return}next=2}
  if(next===2&&state[r][c]!==2&&currentGuardians>=n)return;
  if(guidedErrorsEnabled()){
   const guidedError=guidedConflictForAction(r,c,next);
@@ -1267,11 +1398,11 @@ function render(){
  hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";
  if(scriptedLearningActive()&&next===2)await runLearningPlacement(r,c);else paintBoardState();
  const q=state.flat().filter(v=>v===2).length;
- if(q===n)render()
+ if(q===n&&!scriptedLearningActive())render()
 };board.appendChild(d)
  }
- let q=state.flat().filter(v=>v===2).length;const countEl=document.getElementById("count");countEl.textContent=q+"/"+n;rewardProgressPulse(q);if(scriptedLearningActive())updateScriptedLearning();
- if(q===n){
+ let q=state.flat().filter(v=>v===2).length;const countEl=document.getElementById("count");countEl.textContent=q+"/"+n;rewardProgressPulse(q);updateScriptedLearning();
+ if(q===n&&(!scriptedLearningActive()||learningStage==="complete")){
    // Victory must validate the placed Guardians themselves.
    // Manual/automatic exclusion marks must never make a correct completed board fail.
    const placed=[];
@@ -1378,6 +1509,7 @@ function broadClue(h){
  return null;
 }
 document.getElementById("hint").onclick=()=>{
+ if(learningSequenceActive||scriptedLearningActive())return;
  if(!consumeHintCost())return;
  hi=null; hiCells=[];
 
@@ -1508,6 +1640,7 @@ document.getElementById("hint").onclick=()=>{
 };
 
 function runHintTests(){
+ test("Campagne : toutes les quêtes ont une grille dans le catalogue",()=>Object.values(CAMPAIGN_SIZE_SCHEDULE).every(([size,slot])=>!!CAT[size]?.[size==="6"?CAMPAIGN6_ORDER[slot]:slot]));
  test("PWA : installation proposée seulement après 3 quêtes",()=>maybeOfferInstall.toString().includes("solvedCount()<3")&&document.getElementById("installEnable"));
  test("PWA : le mode standalone empêche de reproposer l’installation",()=>maybeOfferInstall.toString().includes("lumenIsStandalone()"));
  test("Partage : le résultat contient un lien de parrainage traçable",()=>lumenShareUrl().includes("ref=")&&shareLumenResult.toString().includes("result_shared"));
@@ -1783,7 +1916,7 @@ clearHintBtn.onclick=()=>{
  clearHintBtn.hidden=true;
  render();
 };
-document.getElementById("undo").onclick=()=>{if(celebrated)return;if(hist.length){state=hist.pop();hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";render()}};
+document.getElementById("undo").onclick=()=>{if(celebrated||learningSequenceActive||scriptedLearningActive())return;if(hist.length){state=hist.pop();hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";render()}};
 const ac=document.getElementById("autoCross");
 const lumenAutoCrossStored=localStorage.getItem("lumenAutoCross");const legacyAutoCrossStored=localStorage.getItem("regaliaAutoCross");ac.checked=(lumenAutoCrossStored??legacyAutoCrossStored)!=="0";if(lumenAutoCrossStored===null&&legacyAutoCrossStored!==null){localStorage.setItem("lumenAutoCross",legacyAutoCrossStored);localStorage.removeItem("regaliaAutoCross")};
 ac.onchange=()=>{if(celebrated){ac.checked=!ac.checked;return}if(levelIndex<=1){ac.checked=true;return}if(ac.checked)autoUsedThisGame=true;localStorage.setItem("lumenAutoCross",ac.checked?"1":"0");if(!ac.checked)maybeShowManualCrossTip();hi=null;render()};
@@ -1809,7 +1942,6 @@ document.getElementById("successRetry").onclick=()=>{
 document.getElementById("successSky").onclick=()=>{hideSuccess();openJourneyMap(true)};
 document.getElementById("successNew").onclick=advanceToNextPuzzle;
 document.getElementById("boardNext").onclick=advanceToNextPuzzle;
-document.getElementById("new").onclick=init;arrangeDesktopPanels();setupMobileAuth();init();setupTutorial();setupOutsideDefaults();
 
 let mapConstellation=0;const badgeDefs=[["first","Première lueur"],["explorer","Explorateur"],["beacon","Phare"],["master","Maître LUMEN"],["challenge1","Éclair"],["challengeAll","Maître des défis"]];
 const SKY_TARGET=150;
@@ -1947,6 +2079,11 @@ document.getElementById("new").onclick=()=>{
   usedHintThisGame=false;
   refreshJourney();
 };
+document.getElementById("scriptedLearnNext").onclick=advanceLearningStep;
+document.getElementById("scriptedLearnPrev").onclick=previousLearningStep;
+document.addEventListener("click",handleLearningTap,true);
+// Start after the campaign and constellation data have been initialized.
+arrangeDesktopPanels();setupMobileAuth();init();setupTutorial();setupOutsideDefaults();
 refreshJourney();
 maybeShowReturnWelcome();
 
