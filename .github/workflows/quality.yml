@@ -64,7 +64,8 @@ jobs:
       - name: UX regression suite
         timeout-minutes: 4
         run: |
-          rm -rf /tmp/lumen-chrome
+          pkill -f 'chromium.*remote-debugging-port=9222' || true
+          for i in {1..20}; do rm -rf /tmp/lumen-chrome 2>/dev/null && break; sleep 0.25; done
           chromium --headless=new --remote-debugging-port=9222 --remote-debugging-address=127.0.0.1 --user-data-dir=/tmp/lumen-chrome --no-first-run --no-default-browser-check --disable-dev-shm-usage --no-sandbox about:blank > /tmp/lumen-chrome-ux.log 2>&1 &
           for i in {1..30}; do
             curl -fsS http://127.0.0.1:9222/json/version >/dev/null && break
