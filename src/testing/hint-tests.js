@@ -53,6 +53,7 @@ async function runHintTests(){
  });
  test("UX : Quête suivante est le CTA principal après réussite",()=>document.getElementById("successNew")?.classList.contains("success-primary")&&!document.getElementById("successShare")?.classList.contains("share-primary"));
  test("UX : fermer Mon ciel après réussite enchaîne sur la quête suivante",()=>openJourneyMap.toString().includes("advanceOnClose")&&closeMapOverlay.toString().includes("advanceToNextPuzzle"));
+ test("UX : la prochaine quête débloquée est visible comme Nouvelle dans Mon ciel",()=>renderMap.toString().includes("puzzle-new-label")&&renderMap.toString().includes("Nouvelle quête disponible"));
  test("UX : les règles sont accessibles à la demande",()=>!!document.getElementById("tutorialHelp")&&!!document.getElementById("rulesModal")&&!!document.getElementById("replayLearning"));
  test("Vocabulaire : les indices n'utilisent plus l'ancien thème de l'eau",()=>!/Eau manquante|éteindre/.test(document.getElementById("hint").onclick.toString()));
  test("Campagne : progression strictement séquentielle",()=>{
