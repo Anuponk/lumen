@@ -71,8 +71,8 @@ function performanceRun(i){
 
 function savePerformance(i,stars){
  const attempt=getAttempt(),seconds=attempt.activeGameSeconds(),run=performanceRun(i),day=localCalendarDay(),old=getProgress().performances[i]||{};
- const eligible=performanceEligibility(i),qualifying=!!attempt.qualifying&&old.lastQualifiedDay!==day;
- const badges=qualifying?mergeEarnedBadges(old.badges,run,eligible):mergeEarnedBadges(old.badges,{},{});
+ const eligible=performanceEligibility(i),qualifying=!!attempt.qualifying&&old.lastQualifiedDay!==day,priorBadges=old.version===2?old.badges:{};
+ const badges=qualifying?mergeEarnedBadges(priorBadges,run,eligible):mergeEarnedBadges(priorBadges,{},{});
  const bestTime=!Number.isFinite(old.bestTime)||seconds<old.bestTime?seconds:old.bestTime;
  getProgress().performances[i]={...old,version:2,questIndex:i,badges,bestTime,time:bestTime,stars:Math.max(old.stars||0,stars),quest:!!bonusChallengeFor(i),milestone:milestoneFor(i)?.kind||null,attempts:(old.attempts||0)+1,lastQualifiedDay:qualifying?day:old.lastQualifiedDay||null};
  return {run,qualifying,badges};
