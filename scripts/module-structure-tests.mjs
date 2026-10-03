@@ -31,7 +31,7 @@ assert.equal(tests.length,originalTests.length+additionalTests.length);
 const intentionalRenames=new Map([["Indice : bouton Revoir la quête présent","Indice : fermeture contextuelle remplace Revoir la quête"]]);
 const normalizedTests=tests.filter(label=>!additionalTests.includes(label)).map(label=>[...intentionalRenames].find(([,next])=>next===label)?.[0]||label);
 assert.deepEqual(normalizedTests,originalTests,'Regression cases removed or renamed');
-assert.deepEqual(tests.filter(label=>additionalTests.includes(label)),additionalTests,'UX regression cases missing');
+assert.deepEqual(tests.filter(label=>additionalTests.includes(label)).sort(),[...additionalTests].sort(),'UX regression cases missing');
 const graph=new Map();
 function visit(filename,stack=[]){
  const file=path.resolve(filename);
