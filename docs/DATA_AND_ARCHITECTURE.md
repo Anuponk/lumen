@@ -5,6 +5,27 @@ LUMEN is currently a monolithic static web/PWA application. `index.html` contain
 
 This architecture makes cross-feature regressions easy. Refactoring into modules is desirable only if behavior is protected first by tests.
 
+## Modular refactor: stage #21
+
+Native ES modules are served directly by the existing static host; no build tool or framework is required. The two former inline scripts share one module scope to preserve their initialization order. `src/ui/format.js` contains the existing date/duration formatting functions. The remaining application stays in `index.html` until its domain is extracted in a separately validated stage.
+
+The application still owns one live board (`n`, `puz`, `state`) and one canonical `lumenProgress`. Functions that use those values must read current state rather than capture a board that becomes stale on reset/replay. The first startup phase initializes tutorial/auth/identity, then local progress, then board/campaign/handlers; cloud initialization remains last. The HTML feedback action retains its explicit `window.openBetaFeedback` entry point. `window.runHintTests` and `window.lumenDiagnostics` are the browser testing entry points, not additional stores of game state.
+
+The service worker remains network-first for scripts and the HTML navigation remains network-only. Module paths are relative to their importing file; CDN Supabase loading still precedes application execution. `hiCells`, formerly an implicit global, is now explicitly declared in the shared module scope.
+
+### Task navigation
+
+| Change | Source | Validation |
+|---|---|---|
+| Date/duration presentation | `src/ui/format.js` | Browser suite |
+| Rules/proof engine | `index.html` (pending #22) | Browser suite + strict catalogue audit |
+| Campaign/catalogue | `index.html` (pending #23) | Browser suite + strict catalogue audit |
+| Persistence/auth | `index.html` (pending #24) | Guest reload + cloud contract tests |
+| Board/tutorial/UI | `index.html` (pending #25) | Browser suite + touch smoke |
+| Analytics/tests | `index.html` (pending #26), `scripts/browser-tests.mjs` | Full regression gate |
+
+`scripts/browser-tests.mjs` runs all 66 embedded cases on each of the four board sizes through Chrome DevTools, followed by actual touch cycle/drag/reset and guest reload checks. Use an isolated guest profile, a local static server on port 8000 and Chrome remote debugging on port 9222. Pass a report path as its first argument. Endpoints can be overridden with `LUMEN_TEST_URL` and `LUMEN_CDP_URL`. The runner closes the isolated browser after testing.
+
 ## Local/guest mode
 Guest play is first-class. Progress is stored in localStorage under `lumenProgressV1`; tutorial, install/push choices, anonymous/session identity and UX preferences also use localStorage keys.
 

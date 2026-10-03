@@ -484,7 +484,8 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  <div class="autonomy-card"><div class="autonomy-icon">✦</div><div class="autonomy-title">Prêt à voler de tes propres ailes ?</div><div class="autonomy-copy">Tu connais maintenant les règles de LUMEN.<br>Essaie cette quête sans Contrôle guidé. Tu pourras toujours le réactiver si besoin.</div><button id="autonomyTry" class="primary" type="button">J’essaie sans aide</button><button id="autonomyKeep" type="button">Garder le contrôle guidé</button></div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
+<script type="module">
+import {localDateKey,dateOffsetKey,formatDuration} from "./src/ui/format.js";
 const TUTORIAL_STEPS=[
  {title:"Ta mission",copy:"Positionne les 6 Gardiens : exactement un par ligne, un par colonne et un par territoire coloré.",visual:'<div class="tutorial-mini-grid"><span></span><span class="orb guardian-mini"></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>'},
  {title:"Les Gardiens gardent leurs distances",copy:"Deux Gardiens ne peuvent jamais être voisins, même en diagonale. Chaque Gardien doit avoir de l’espace autour de lui.",visual:'<div class="tutorial-mini-grid"><span class="orb guardian-mini"></span><span></span><span></span><span></span><span>↘</span><span class="orb guardian-mini"></span><span></span><span></span><span></span></div>'},
@@ -605,7 +606,7 @@ function renderSuccessAchievement(){
  const a=successAchievement(),k=document.getElementById("successAchievementKicker"),m=document.getElementById("successAchievementMain"),d=document.getElementById("successAchievementDetail");
  if(k)k.textContent=a.kicker;if(m)m.textContent=a.main;if(d)d.textContent=a.detail;
 }
-function formatDuration(seconds){seconds=Math.max(0,Math.round(seconds||0));return Math.floor(seconds/60)+":"+String(seconds%60).padStart(2,"0")}
+
 function shareCardCanvas(a){
  const canvas=document.createElement("canvas");canvas.width=1080;canvas.height=1350;const x=canvas.getContext("2d"),cx=540;
  const bg=x.createLinearGradient(0,0,0,1350);bg.addColorStop(0,"#07111d");bg.addColorStop(1,"#10233a");x.fillStyle=bg;x.fillRect(0,0,1080,1350);
@@ -685,15 +686,14 @@ async function initLumenCloud(){
  };
  if(logout)logout.onclick=async()=>{await lumenSupabase.auth.signOut();lumenUser=null;lumenCloudReady=false;updateAuthUI()};
 }
-</script>
-<script>
+
 const LUMEN_META=[{"id":1,"sector":0,"score":9,"steps":7},{"id":2,"sector":0,"score":9,"steps":7},{"id":3,"sector":0,"score":9,"steps":7},{"id":4,"sector":0,"score":9,"steps":7},{"id":5,"sector":0,"score":12,"steps":8},{"id":6,"sector":0,"score":12,"steps":8},{"id":7,"sector":0,"score":12,"steps":8},{"id":8,"sector":0,"score":12,"steps":8},{"id":9,"sector":0,"score":12,"steps":8},{"id":10,"sector":0,"score":12,"steps":8},{"id":11,"sector":0,"score":12,"steps":8},{"id":12,"sector":0,"score":12,"steps":8},{"id":13,"sector":0,"score":12,"steps":8},{"id":14,"sector":0,"score":12,"steps":8},{"id":15,"sector":0,"score":12,"steps":8},{"id":16,"sector":0,"score":12,"steps":8},{"id":17,"sector":0,"score":12,"steps":8},{"id":18,"sector":0,"score":12,"steps":8},{"id":19,"sector":0,"score":12,"steps":8},{"id":20,"sector":0,"score":15,"steps":8},{"id":21,"sector":1,"score":15,"steps":8},{"id":22,"sector":1,"score":15,"steps":8},{"id":23,"sector":1,"score":15,"steps":8},{"id":24,"sector":1,"score":15,"steps":8},{"id":25,"sector":1,"score":15,"steps":8},{"id":26,"sector":1,"score":15,"steps":8},{"id":27,"sector":1,"score":15,"steps":8},{"id":28,"sector":1,"score":15,"steps":8},{"id":29,"sector":1,"score":15,"steps":8},{"id":30,"sector":1,"score":15,"steps":8},{"id":31,"sector":1,"score":15,"steps":8},{"id":32,"sector":1,"score":15,"steps":8},{"id":33,"sector":1,"score":15,"steps":8},{"id":34,"sector":1,"score":15,"steps":8},{"id":35,"sector":1,"score":15,"steps":9},{"id":36,"sector":1,"score":15,"steps":9},{"id":37,"sector":1,"score":15,"steps":9},{"id":38,"sector":1,"score":15,"steps":9},{"id":39,"sector":1,"score":15,"steps":9},{"id":40,"sector":1,"score":15,"steps":9},{"id":41,"sector":2,"score":15,"steps":9},{"id":42,"sector":2,"score":15,"steps":9},{"id":43,"sector":2,"score":15,"steps":9},{"id":44,"sector":2,"score":15,"steps":9},{"id":45,"sector":2,"score":15,"steps":9},{"id":46,"sector":2,"score":18,"steps":8},{"id":47,"sector":2,"score":18,"steps":8},{"id":48,"sector":2,"score":18,"steps":8},{"id":49,"sector":2,"score":18,"steps":8},{"id":50,"sector":2,"score":18,"steps":9},{"id":51,"sector":2,"score":18,"steps":9},{"id":52,"sector":2,"score":18,"steps":9},{"id":53,"sector":2,"score":18,"steps":9},{"id":54,"sector":2,"score":18,"steps":10},{"id":55,"sector":2,"score":21,"steps":9},{"id":56,"sector":2,"score":21,"steps":9},{"id":57,"sector":2,"score":21,"steps":9},{"id":58,"sector":2,"score":21,"steps":9},{"id":59,"sector":2,"score":21,"steps":10},{"id":60,"sector":2,"score":21,"steps":10},{"id":61,"sector":3,"score":21,"steps":10},{"id":62,"sector":3,"score":21,"steps":10},{"id":63,"sector":3,"score":21,"steps":10},{"id":64,"sector":3,"score":21,"steps":10},{"id":65,"sector":3,"score":21,"steps":10},{"id":66,"sector":3,"score":21,"steps":10},{"id":67,"sector":3,"score":21,"steps":10},{"id":68,"sector":3,"score":21,"steps":10},{"id":69,"sector":3,"score":21,"steps":10},{"id":70,"sector":3,"score":21,"steps":10},{"id":71,"sector":3,"score":21,"steps":10},{"id":72,"sector":3,"score":21,"steps":10},{"id":73,"sector":3,"score":21,"steps":10},{"id":74,"sector":3,"score":21,"steps":10},{"id":75,"sector":3,"score":21,"steps":10},{"id":76,"sector":3,"score":21,"steps":10},{"id":77,"sector":3,"score":21,"steps":10},{"id":78,"sector":3,"score":21,"steps":10},{"id":79,"sector":3,"score":21,"steps":10},{"id":80,"sector":3,"score":21,"steps":10},{"id":81,"sector":4,"score":21,"steps":10},{"id":82,"sector":4,"score":24,"steps":10},{"id":83,"sector":4,"score":24,"steps":10},{"id":84,"sector":4,"score":24,"steps":11},{"id":85,"sector":4,"score":24,"steps":11},{"id":86,"sector":4,"score":24,"steps":11},{"id":87,"sector":4,"score":24,"steps":11},{"id":88,"sector":4,"score":25,"steps":10},{"id":89,"sector":4,"score":27,"steps":10},{"id":90,"sector":4,"score":27,"steps":10},{"id":91,"sector":4,"score":27,"steps":10},{"id":92,"sector":4,"score":27,"steps":10},{"id":93,"sector":4,"score":27,"steps":10},{"id":94,"sector":4,"score":27,"steps":10},{"id":95,"sector":4,"score":27,"steps":10},{"id":96,"sector":4,"score":27,"steps":11},{"id":97,"sector":4,"score":27,"steps":11},{"id":98,"sector":4,"score":28,"steps":10},{"id":99,"sector":4,"score":29,"steps":9},{"id":100,"sector":4,"score":30,"steps":12}];
 
 function loadLumenProgress(){try{const p=JSON.parse(localStorage.getItem("lumenProgressV1"))||{solved:{},badges:{}};if(!p.historyBackup&&p.solved&&Object.keys(p.solved).length)p.historyBackup={...p.solved};return p}catch(e){return {solved:{},badges:{}}}}
 let lumenProgress=loadLumenProgress(),usedHintThisGame=false,questStarted=true,questFailed=false;if(!lumenProgress.xp)lumenProgress.xp=0;if(!lumenProgress.challenges)lumenProgress.challenges={};if(!lumenProgress.stars)lumenProgress.stars={};if(!Number.isFinite(lumenProgress.shards))lumenProgress.shards=3;if(!lumenProgress.performances)lumenProgress.performances={};
 if(!lumenProgress.daily)lumenProgress.daily={dates:{},rewards:{}};if(!Number.isFinite(lumenProgress.skyScore))lumenProgress.skyScore=null;
-function localDateKey(d=new Date()){let y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");return y+"-"+m+"-"+day}
-function dateOffsetKey(n){let d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+n);return localDateKey(d)}
+
+
 function dailyStreak(){let n=0;for(let i=0;i<365;i++){if(lumenProgress.daily.dates[dateOffsetKey(-i)])n++;else break}return n}
 function renderDaily(){
  const stars=document.getElementById("dailyStars");if(!stars)return;stars.innerHTML="";
@@ -771,6 +771,7 @@ const COLORS=["#efb37e","#91b5ed","#b4a0db","#a9d692","#ff8267","#ddd9d2","#e5ef
 const TERRITORY_COLORS=["#46c7e8","#6d8fe8","#8b70d7","#49b49b","#d38a54","#b55f86","#67a6bf","#7e9c69","#a8875b"];
 let n=6,puz,state,hist=[],start,timer,activeElapsedMs=0,activeSince=null,last={},hi=null,proofs={},hintStage=0,hintFocus=null,celebrated=false,hintUsesThisGame=0,hintWasGranted=false,mistakesThisGame=0,verifyUsesThisGame=0,verifyPending=null,autoUsedThisGame=false,replayMode=false,levelIndex=Math.min(sequentialSolvedCount,99);
 const board=document.getElementById("board"),msg=document.getElementById("msg");
+let hiCells=[];
 function arrangeDesktopPanels(){
  const left=document.getElementById("desktopLeftSlot"),guide=document.getElementById("desktopGuide"),core=document.querySelector(".game-core");
  const journey=document.querySelector(".journey"),rules=document.querySelector(".rules");
@@ -2102,10 +2103,27 @@ if(pushEnable)pushEnable.onclick=enableLumenPush;
 if(pushLater)pushLater.onclick=dismissPushLater;
 markLumenSeen();
 initLumenCloud();
-</script><script>
+
 if("serviceWorker" in navigator){
  let lumenReloadingForSW=false;
  navigator.serviceWorker.addEventListener("controllerchange",()=>{if(lumenReloadingForSW)return;lumenReloadingForSW=true;location.reload()});
  window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=7",{updateViaCache:"none"}).then(r=>r.update()).catch(e=>console.warn("LUMEN service worker",e)));
 }
+
+// Explicit entry points for the existing HTML action and browser diagnostics.
+window.openBetaFeedback=openBetaFeedback;
+window.runHintTests=runHintTests;
+window.lumenDiagnostics={
+ async runAllHintTests(){
+  levelIndex=2;init();const suites=[];
+  for(const size of [5,6,7,8]){
+   n=size;puz=CAT[size][0];state=Array.from({length:n},()=>Array(n).fill(0));
+   const results=await runHintTests();suites.push({size,total:results.length,failures:results.filter(t=>!t.ok)});
+  }
+  return suites;
+ },
+ snapshot(){return {n,levelIndex,puz,state,celebrated,replayMode,progress:lumenProgress}},
+ setupQuest(index){levelIndex=index;init();soundEnabled=false;document.getElementById("autoCross").checked=false;document.getElementById("guidedErrors").checked=false;closeTutorial(false);document.getElementById("skyReveal").hidden=true;hideSuccess()},
+ setBoard(value){state=value;render()}
+};
 </script></body></html>
