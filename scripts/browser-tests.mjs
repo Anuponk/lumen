@@ -40,9 +40,9 @@ try{
  assert(dragged.state[1].filter(v=>v===1).length>=4&&dragged.state[0][column]===2,'Drag regression');
  console.log('browser-test: drag-scroll-check:start');assert(await evaluate('scrollY')===scroll,'Board scrolled during drag');console.log('browser-test: drag-scroll-check:done');
  console.log('browser-test: drag-rebuild-check:start');assert(await evaluate('!window.lumenBoardRebuilt'),'Drag rebuilt the board');console.log('browser-test: drag-rebuild-check:done');
- await evaluate('lumenBoardObserver.disconnect()');
- await evaluate('document.getElementById("new").click()');
- assert((await snapshot()).levelIndex===2&&(await snapshot()).state.flat().every(v=>v===0),'Reset changed quest');
+ console.log('browser-test: observer-disconnect:start');await evaluate('lumenBoardObserver.disconnect()');console.log('browser-test: observer-disconnect:done');
+ console.log('browser-test: reset-click:start');await evaluate('document.getElementById("new").click()');console.log('browser-test: reset-click:done');
+ console.log('browser-test: reset-snapshot:start');const resetSnapshot=await snapshot();console.log('browser-test: reset-snapshot:done');assert(resetSnapshot.levelIndex===2&&resetSnapshot.state.flat().every(v=>v===0),'Reset changed quest');
  const progressBefore=await evaluate('localStorage.getItem("lumenProgressV1")');
  await send('Page.reload',{ignoreCache:true});await sleep(1500);
  assert(await evaluate('localStorage.getItem("lumenProgressV1")')===progressBefore,'Progress lost on reload');
