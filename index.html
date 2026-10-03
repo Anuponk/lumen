@@ -20,7 +20,26 @@ button{font:inherit;font-weight:700;background:#fff;border:1.8px solid #555;bord
 .cell .x{opacity:.55}.cell.hi{box-shadow:inset 0 0 0 5px #222}
 .cell.conflict{background:rgba(255,62,82,.10)!important;box-shadow:inset 0 0 0 3px #ff4d63,0 0 15px rgba(255,77,99,.32);animation:conflictPulse .48s ease-out}
 .cell.conflict .lumen-orb{box-shadow:0 0 0 4px rgba(255,77,99,.72),0 0 22px rgba(255,77,99,.62),inset 0 0 14px rgba(255,255,255,.7)}
-@keyframes conflictPulse{0%{transform:scale(.9)}55%{transform:scale(1.045)}100%{transform:scale(1)}}.actions{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px}.msg{min-height:78px;text-align:center;padding:14px 4px;font-weight:700;color:#555}
+@keyframes conflictPulse{0%{transform:scale(.9)}55%{transform:scale(1.045)}100%{transform:scale(1)}}
+.guided-attempt{background:rgba(255,111,74,.18)!important;box-shadow:inset 0 0 0 3px #ff6f4a,0 0 18px rgba(255,111,74,.38)}
+.guided-cause{box-shadow:inset 0 0 0 3px #f2b84b,0 0 16px rgba(242,184,75,.45)!important;animation:guidedCausePulse 1.1s ease-in-out infinite alternate}
+.guided-path{background-image:linear-gradient(rgba(242,184,75,.20),rgba(242,184,75,.20))!important}
+.guided-region{filter:brightness(.92);box-shadow:inset 0 0 0 2px rgba(242,184,75,.8)}
+.guided-link{position:absolute;height:4px;background:#f2b84b;border-radius:4px;transform-origin:0 50%;pointer-events:none;z-index:8;box-shadow:0 0 8px rgba(242,184,75,.75)}
+#board{position:relative}
+.guided-card{margin:12px 0 4px;padding:14px 16px;border:2px solid #f2b84b;border-radius:16px;background:#fff9e8;box-shadow:0 6px 20px rgba(0,0,0,.08)}
+.scripted-learn{margin:8px 0 10px;padding:13px 15px;border:1px solid rgba(104,231,255,.28);border-radius:15px;background:rgba(10,31,47,.94);color:#dffcff;line-height:1.4;box-shadow:0 8px 24px rgba(0,0,0,.18)}.scripted-learn[hidden]{display:none}.scripted-learn strong{display:block;color:#68e7ff;margin-bottom:4px}.scripted-focus{box-shadow:inset 0 0 0 3px rgba(104,231,255,.82),0 0 18px rgba(104,231,255,.38)!important;animation:scriptedFocus 1.05s ease-in-out infinite alternate}.scripted-dim{opacity:.48}@keyframes scriptedFocus{to{filter:brightness(1.18)}}.manual-cross-tip{position:fixed;left:50%;bottom:22px;z-index:1700;width:min(420px,calc(100vw - 28px));transform:translateX(-50%);padding:14px 16px;border:1px solid #31516a;border-radius:16px;background:#081722;color:#dffcff;box-shadow:0 16px 42px rgba(0,0,0,.48)}.manual-cross-tip[hidden]{display:none}.manual-cross-tip strong{display:block;color:#68e7ff;margin-bottom:4px}.manual-cross-tip button{width:100%;margin-top:10px;padding:9px 12px}
+.guided-card[hidden]{display:none}.guided-card strong{display:block;font-size:17px;margin-bottom:5px}.guided-card p{margin:0 0 12px;line-height:1.35}.guided-card button{width:100%;background:#202124;color:#fff;border-color:#202124;padding:10px 14px}
+@keyframes guidedCausePulse{from{filter:brightness(1)}to{filter:brightness(.88)}}
+.verify-error{background:rgba(255,77,99,.14)!important;box-shadow:inset 0 0 0 3px #ff4d63,0 0 15px rgba(255,77,99,.34)!important;animation:verifyErrorPulse .8s ease-in-out infinite alternate}
+.verify-ok{animation:verifyOkPulse .75s ease-out}
+.verify-ok .lumen-orb{box-shadow:0 0 0 3px rgba(48,178,108,.5),0 0 20px rgba(48,178,108,.55),inset 0 0 14px rgba(255,255,255,.7)}
+.verify-celebration{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:20;overflow:hidden}
+.verify-celebration[hidden]{display:none}.verify-check{font-size:clamp(80px,28vw,150px);font-weight:900;color:#24a866;text-shadow:0 5px 20px rgba(36,168,102,.35);animation:verifyCheckPop 1.25s ease both}
+.verify-spark{position:absolute;color:#24a866;font-size:24px;animation:verifySpark 1.2s ease-out both}
+.verify-card{margin:12px 0 4px;padding:14px 16px;border:2px solid #ff6b72;border-radius:16px;background:#fff6f6;box-shadow:0 6px 20px rgba(0,0,0,.08)}
+.verify-card[hidden]{display:none}.verify-card strong{display:block;font-size:17px;margin-bottom:5px}.verify-card p{margin:0 0 12px;line-height:1.35}.verify-card button{width:100%;background:#202124;color:#fff;border-color:#202124;padding:10px 14px}
+@keyframes verifyErrorPulse{from{filter:brightness(1)}to{filter:brightness(.9)}}@keyframes verifyOkPulse{0%{transform:scale(1)}45%{transform:scale(1.04)}100%{transform:scale(1)}}@keyframes verifyCheckPop{0%{opacity:0;transform:scale(.3) rotate(-12deg)}45%{opacity:1;transform:scale(1.12) rotate(3deg)}70%{transform:scale(.96)}100%{opacity:0;transform:scale(1)}}@keyframes verifySpark{0%{opacity:0;transform:translate(0,0) scale(.4)}35%{opacity:1}100%{opacity:0;transform:translate(var(--sx),var(--sy)) scale(1.3)}}.actions{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px}.msg{min-height:78px;text-align:center;padding:14px 4px;font-weight:700;color:#555}
 .proof{text-align:center;color:#666;margin:14px 0 25px}.rules{background:#fff;border:1px solid #ddd;border-radius:18px;padding:18px}
 @media(max-width:500px){.levels{gap:5px}.level{font-size:13px;padding:10px 1px}h1{font-size:34px}.head button{padding:10px 12px}}
 
@@ -238,7 +257,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .daily-card{margin:0 0 10px;padding:11px 13px;border:1px solid #28415b;border-radius:16px;background:linear-gradient(135deg,#101d2e,#0d1725);display:flex;align-items:center;justify-content:space-between;gap:12px}
 .daily-kicker{font-size:9px;letter-spacing:.18em;color:#6f8aa8;font-weight:900}.daily-title{font-weight:900;color:#e8faff;font-size:14px;margin:2px 0 5px}.daily-stars{display:flex;gap:5px}.daily-star{font-size:16px;color:#35465c;text-shadow:none}.daily-star.on{color:#68e7ff;text-shadow:0 0 9px rgba(104,231,255,.8)}.daily-star.today{outline:1px solid #68e7ff;border-radius:50%;padding:0 2px}.daily-meta{font-size:11px;color:#8295ad;margin-top:4px}.daily-reward{font-size:10px;color:#ffbd59;font-weight:800;white-space:nowrap}
 
-.learning-note{margin:-8px 2px 10px;text-align:center;font-size:12px;color:#7f94ad;font-weight:700}.speed-countdown{display:inline-flex;align-items:center;justify-content:center;min-width:42px;margin-left:5px;padding:3px 8px;border:1px solid rgba(232,190,105,.42);border-radius:999px;color:#f0cc7a;font-weight:900;font-variant-numeric:tabular-nums;transition:.18s}.speed-countdown[hidden]{display:none}.speed-countdown.urgent{animation:speedPulse .72s ease-in-out infinite}@keyframes speedPulse{50%{transform:scale(1.13);box-shadow:0 0 16px rgba(240,204,122,.35)}}.reward-live{display:flex;align-items:center;justify-content:center;gap:10px;min-height:28px;margin:4px 0 8px;font-size:12px;font-weight:900;letter-spacing:.03em}.mastery-live{color:#6fe6c5;transition:.25s}.mastery-live.lost{color:#53677b;opacity:.58}.progress-live{color:#83a4bf}.reward-toast{position:fixed;left:50%;top:18%;z-index:1550;transform:translate(-50%,-8px) scale(.96);padding:10px 16px;border:1px solid #31516a;border-radius:999px;background:rgba(7,20,32,.95);color:#dffaff;font-size:13px;font-weight:900;box-shadow:0 10px 36px rgba(0,0,0,.35),0 0 24px rgba(104,231,255,.12);opacity:0;pointer-events:none;transition:.22s}.reward-toast.show{opacity:1;transform:translate(-50%,0) scale(1)}.cell.just-lit .lumen-orb{animation:orbReward .34s ease-out}.board-half{animation:boardHalf .55s ease-out}.win-flight{position:fixed;z-index:1600;font-size:30px;color:#dffcff;text-shadow:0 0 18px #68e7ff;pointer-events:none;animation:starFlight 2.4s cubic-bezier(.2,.75,.25,1) forwards}@keyframes orbReward{0%{transform:scale(.55);filter:brightness(1.8)}70%{transform:scale(1.18)}100%{transform:scale(1)}}@keyframes boardHalf{50%{box-shadow:0 0 0 3px rgba(104,231,255,.38),0 0 28px rgba(104,231,255,.24)}}@keyframes starFlight{0%{left:50%;top:52%;transform:translate(-50%,-50%) scale(.45);opacity:0}12%{transform:translate(-50%,-50%) scale(1.25);opacity:1}42%{left:50%;top:52%;transform:translate(-50%,-50%) scale(1.05);opacity:1}82%{opacity:1}100%{left:50%;top:14%;transform:translate(-50%,-50%) scale(1.5);opacity:0}}.hint-wallet{display:flex;align-items:center;justify-content:center;gap:7px;margin:8px 0 2px}.hint-wallet-label{font-size:10px;font-weight:900;letter-spacing:.12em;color:#8295ad;text-transform:uppercase}.shard-meter{display:flex;gap:5px;padding:5px 7px;border:1px solid #22344c;border-radius:999px;background:#09131f;cursor:pointer}.shard-meter:focus-visible{outline:2px solid #68e7ff;outline-offset:2px}.shard-gem{font-size:16px;line-height:1;color:#33475b;text-shadow:none;transition:.18s}.shard-gem.on{color:#68e7ff;text-shadow:0 0 8px rgba(104,231,255,.8)}.shard-help{font-size:11px;color:#688097}.shard-rules-modal{position:fixed;inset:0;z-index:1460;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(2,7,13,.78);backdrop-filter:blur(5px)}.shard-rules-modal[hidden]{display:none}.shard-rules-card{width:min(430px,94vw);padding:20px;border:1px solid #29435b;border-radius:20px;background:#08131f;color:#eafaff;box-shadow:0 24px 70px rgba(0,0,0,.45)}.shard-rules-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.shard-rules-head h2{margin:0;font-size:21px}.shard-rules-card p{color:#a9bdd0;font-size:13px;line-height:1.5}.shard-rule-list{display:grid;gap:8px;margin-top:12px}.shard-rule{padding:10px 11px;border:1px solid #1b2b3d;border-radius:11px;background:#0d1d2b;color:#b9d8e8;font-size:12px;line-height:1.4}.shard-rule strong{color:#eafaff}
+.learning-note{margin:-8px 2px 10px;text-align:center;font-size:12px;color:#7f94ad;font-weight:700}.speed-countdown{display:inline-flex;align-items:center;gap:7px;width:min(52vw,260px);margin-left:7px;color:#f0cc7a;vertical-align:middle}.speed-countdown[hidden]{display:none}.speed-countdown-icon{flex:0 0 auto;font-size:15px;line-height:1}.speed-countdown-track{height:7px;flex:1;overflow:hidden;border:1px solid rgba(232,190,105,.34);border-radius:999px;background:rgba(232,190,105,.08)}.speed-countdown-fill{display:block;width:100%;height:100%;border-radius:inherit;background:linear-gradient(90deg,rgba(240,204,122,.65),#f0cc7a);transform-origin:left center;transform:scaleX(1);transition:transform .18s linear;box-shadow:0 0 8px rgba(240,204,122,.24)}.reward-live{display:flex;align-items:center;justify-content:center;gap:10px;min-height:28px;margin:4px 0 8px;font-size:12px;font-weight:900;letter-spacing:.03em}.mastery-live{color:#6fe6c5;transition:.25s}.mastery-live.lost{color:#53677b;opacity:.58}.progress-live{color:#83a4bf}.reward-toast{position:fixed;left:50%;top:18%;z-index:1550;transform:translate(-50%,-8px) scale(.96);padding:10px 16px;border:1px solid #31516a;border-radius:999px;background:rgba(7,20,32,.95);color:#dffaff;font-size:13px;font-weight:900;box-shadow:0 10px 36px rgba(0,0,0,.35),0 0 24px rgba(104,231,255,.12);opacity:0;pointer-events:none;transition:.22s}.reward-toast.show{opacity:1;transform:translate(-50%,0) scale(1)}.cell.just-lit .lumen-orb{animation:orbReward .34s ease-out}.board-half{animation:boardHalf .55s ease-out}.win-flight{position:fixed;z-index:1600;font-size:30px;color:#dffcff;text-shadow:0 0 18px #68e7ff;pointer-events:none;animation:starFlight 2.4s cubic-bezier(.2,.75,.25,1) forwards}@keyframes orbReward{0%{transform:scale(.55);filter:brightness(1.8)}70%{transform:scale(1.18)}100%{transform:scale(1)}}@keyframes boardHalf{50%{box-shadow:0 0 0 3px rgba(104,231,255,.38),0 0 28px rgba(104,231,255,.24)}}@keyframes starFlight{0%{left:50%;top:52%;transform:translate(-50%,-50%) scale(.45);opacity:0}12%{transform:translate(-50%,-50%) scale(1.25);opacity:1}42%{left:50%;top:52%;transform:translate(-50%,-50%) scale(1.05);opacity:1}82%{opacity:1}100%{left:50%;top:14%;transform:translate(-50%,-50%) scale(1.5);opacity:0}}.hint-wallet{display:flex;align-items:center;justify-content:center;gap:7px;margin:8px 0 2px}.hint-wallet-label{font-size:10px;font-weight:900;letter-spacing:.12em;color:#8295ad;text-transform:uppercase}.shard-meter{display:flex;gap:5px;padding:5px 7px;border:1px solid #22344c;border-radius:999px;background:#09131f;cursor:pointer}.shard-meter:focus-visible{outline:2px solid #68e7ff;outline-offset:2px}.shard-gem{font-size:16px;line-height:1;color:#33475b;text-shadow:none;transition:.18s}.shard-gem.on{color:#68e7ff;text-shadow:0 0 8px rgba(104,231,255,.8)}.shard-help{font-size:11px;color:#688097}.shard-rules-modal{position:fixed;inset:0;z-index:1460;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(2,7,13,.78);backdrop-filter:blur(5px)}.shard-rules-modal[hidden]{display:none}.shard-rules-card{width:min(430px,94vw);padding:20px;border:1px solid #29435b;border-radius:20px;background:#08131f;color:#eafaff;box-shadow:0 24px 70px rgba(0,0,0,.45)}.shard-rules-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.shard-rules-head h2{margin:0;font-size:21px}.shard-rules-card p{color:#a9bdd0;font-size:13px;line-height:1.5}.shard-rule-list{display:grid;gap:8px;margin-top:12px}.shard-rule{padding:10px 11px;border:1px solid #1b2b3d;border-radius:11px;background:#0d1d2b;color:#b9d8e8;font-size:12px;line-height:1.4}.shard-rule strong{color:#eafaff}
 .auto-cross.learning-locked{opacity:.88}.auto-cross.learning-locked input{cursor:not-allowed}
 .autonomy-card{width:min(430px,92vw);background:#0d1828;border:1px solid #31506e;border-radius:26px;padding:28px 24px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.45)}
 .autonomy-icon{font-size:48px;color:#68e7ff;text-shadow:0 0 22px rgba(104,231,255,.7)}.autonomy-title{font-size:25px;font-weight:950;color:#eefcff;margin:10px 0}.autonomy-copy{color:#9db0c6;line-height:1.45;margin-bottom:18px}
@@ -370,7 +389,12 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 @supports not (background:color-mix(in srgb,#000 50%,#fff)){
   .cell{background:rgba(31,49,73,.24)!important}
 }
-/* PWA install + viral sharing */.install-optin{position:fixed;inset:0;z-index:1250;display:flex;align-items:center;justify-content:center;background:rgba(3,7,13,.88);padding:24px}.install-optin[hidden]{display:none}.install-card{width:min(420px,100%);background:#0d1a29;color:#eefaff;border:1px solid rgba(104,231,255,.35);border-radius:24px;padding:24px;text-align:center;box-shadow:0 18px 70px rgba(0,0,0,.45)}.install-icon{font-size:42px;color:#eaffff;text-shadow:0 0 14px rgba(104,231,255,.9)}.install-card h2{margin:8px 0 10px}.install-card p{color:#bfd0df;line-height:1.45}.install-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.install-actions .primary{background:#eaffff;color:#07111d}#successShare{border-color:rgba(104,231,255,.7)}.share-toast{position:fixed;left:50%;bottom:24px;z-index:1400;transform:translateX(-50%);background:#0d1a29;color:#eefaff;border:1px solid rgba(104,231,255,.4);border-radius:999px;padding:10px 16px;font-weight:700;box-shadow:0 8px 28px rgba(0,0,0,.35)}.lumen-version{text-align:center;margin:14px 0 2px;font-size:11px;letter-spacing:.08em;opacity:.45;user-select:text}</style><meta name="lumen-build" content="v1.7.3-dev-syntax-fix"></head><body><main class="app"><aside class="desktop-side desktop-left"><div id="desktopLeftSlot"></div></aside><section class="game-core">
+/* PWA install + viral sharing */.install-optin{position:fixed;inset:0;z-index:1250;display:flex;align-items:center;justify-content:center;background:rgba(3,7,13,.88);padding:24px}.install-optin[hidden]{display:none}.install-card{width:min(420px,100%);background:#0d1a29;color:#eefaff;border:1px solid rgba(104,231,255,.35);border-radius:24px;padding:24px;text-align:center;box-shadow:0 18px 70px rgba(0,0,0,.45)}.install-icon{font-size:42px;color:#eaffff;text-shadow:0 0 14px rgba(104,231,255,.9)}.install-card h2{margin:8px 0 10px}.install-card p{color:#bfd0df;line-height:1.45}.install-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.install-actions .primary{background:#eaffff;color:#07111d}#successShare{border-color:rgba(104,231,255,.7)}
+.success-achievement{margin:14px 0 4px;padding:12px 14px;border:1px solid rgba(104,231,255,.28);border-radius:16px;background:rgba(104,231,255,.06);text-align:center}
+.success-achievement-kicker{font-size:11px;font-weight:950;letter-spacing:.12em;color:#68e7ff;text-transform:uppercase}
+.success-achievement-main{font-size:18px;font-weight:950;color:#eefaff;margin-top:4px}
+.success-achievement-detail{font-size:13px;color:#9fb7ca;margin-top:3px}
+#successShare.share-primary{background:linear-gradient(135deg,#68e7ff,#8b7cff);color:#07111d;border-color:transparent;box-shadow:0 0 22px rgba(104,231,255,.2)}.share-toast{position:fixed;left:50%;bottom:24px;z-index:1400;transform:translateX(-50%);background:#0d1a29;color:#eefaff;border:1px solid rgba(104,231,255,.4);border-radius:999px;padding:10px 16px;font-weight:700;box-shadow:0 8px 28px rgba(0,0,0,.35)}.lumen-version{text-align:center;margin:14px 0 2px;font-size:11px;letter-spacing:.08em;opacity:.45;user-select:text}</style><meta name="lumen-build" content="v1.10.0-dev-scripted-learning"></head><body><main class="app"><aside class="desktop-side desktop-left"><div id="desktopLeftSlot"></div></aside><section class="game-core">
 <div class="head"><div><h1><span class="lumen-brand">LUMEN</span></h1><button id="mobileJourney" class="mobile-journey" type="button" aria-label="Ouvrir ma progression et mon ciel"><span id="mobileJourneyText">Grande Ourse · 0/9 ★</span><span class="mobile-journey-sky">✦ Mon ciel ›</span></button></div><div class="head-actions"><button id="soundToggle" class="tutorial-help" type="button" aria-label="Couper les sons" title="Sons">🔊</button><button id="tutorialHelp" class="tutorial-help" type="button" aria-label="Revoir le tutoriel">?</button><button id="mobileAccount" class="mobile-account" type="button" aria-label="Compte et sauvegarde">♙</button><button id="new">Réinitialiser</button></div></div>
 <div id="installOptin" class="install-optin" hidden role="dialog" aria-modal="true" aria-labelledby="installOptinTitle"><div class="install-card"><div class="install-icon">✦</div><h2 id="installOptinTitle">Garde LUMEN à portée de main</h2><p id="installOptinCopy">Ajoute LUMEN à ton écran d’accueil pour retrouver ton ciel en un geste.</p><div class="install-actions"><button id="installEnable" class="primary" type="button">Installer LUMEN</button><button id="installLater" type="button">Plus tard</button></div></div></div><div id="pushOptin" class="push-optin" hidden role="dialog" aria-modal="true" aria-labelledby="pushOptinTitle"><div class="push-optin-card"><div class="push-optin-icon">✦</div><h2 id="pushOptinTitle">Ton ciel peut t’appeler</h2><p>Active un rappel discret si tu n’as pas joué depuis 24 h. Maximum un rappel par semaine.</p><div class="push-optin-actions"><button id="pushEnable" class="primary" type="button">Activer le rappel</button><button id="pushLater" type="button">Plus tard</button></div></div></div>
 <div id="mobileAuthPopover" class="mobile-auth-popover" hidden><div id="mobileAuthStatus">Progression enregistrée sur cet appareil</div><div id="nicknameBox" hidden><input id="nicknameInput" type="text" maxlength="24" autocomplete="nickname" placeholder="Ton pseudo" aria-label="Ton pseudo"><button id="nicknameSave" type="button">Enregistrer le pseudo</button></div><button id="mobileAuthAction" type="button">Se connecter avec Google</button></div><div class="levels" id="levels"></div><div class="auth-box"><span id="authUser">Progression enregistrée sur cet appareil</span><button id="authLogin">Sauvegarder ma progression</button><button id="authLogout" hidden>Déconnexion</button></div><section class="journey"><div class="journey-top"><div><span class="journey-kicker">MON CIEL</span><strong id="journeyTitle">Grande Ourse</strong></div><button id="openMap">Quêtes</button></div><div class="progress-track"><span id="progressFill"></span></div><div class="progress-copy"><strong id="progressText">Mon ciel · 0 %</strong></div><div id="sectorProgress" class="sector-progress">0/9 étoiles · 0/150 au total</div><button id="openSky" class="sky-entry" type="button" aria-label="Ouvrir mon ciel"><span class="sky-entry-main">✦ Mon ciel</span><span id="skySummary" class="sky-entry-progress">Grande Ourse · 0/9 ★</span><span class="sky-entry-arrow">›</span></button></section><div id="mapModal" class="map-modal" hidden><div class="map-sheet"><div class="map-head"><h2>Mes quêtes</h2><button id="closeMap">Fermer</button></div><div id="sectorTabs" class="sector-tabs"></div><div id="puzzleGrid" class="puzzle-grid"></div><div id="performanceLegend" class="performance-legend" role="button" tabindex="0" aria-label="Voir les règles détaillées des badges"><span class="hint">⌕ Sans indice</span><span class="speed">⌛ Moins d’1 min</span><span class="assist">◉ Sans assistance</span><span class="clean">✓ Maîtrise</span><span class="performance-legend-info" aria-hidden="true">i</span></div><h3>Mon ciel</h3><div id="skyCard" class="sky-card"></div></div></div><div id="badgeRulesModal" class="badge-rules-modal" hidden role="dialog" aria-modal="true" aria-labelledby="badgeRulesTitle"><div class="badge-rules-card"><div class="badge-rules-head"><h2 id="badgeRulesTitle">Comment gagner les badges ?</h2><button id="closeBadgeRules" class="badge-rules-close" type="button">Fermer</button></div><p class="badge-rules-intro">Chaque badge récompense une performance réalisée sur une grille. Rejoue une grille terminée pour tenter d’en obtenir de nouveaux.</p><div class="badge-rule hint"><span class="badge-rule-icon">⌕</span><div><strong>Sans indice</strong><p>Termine la grille sans utiliser aucun indice.</p></div></div><div class="badge-rule speed"><span class="badge-rule-icon">⌛</span><div><strong>Moins d’une minute</strong><p>Termine la grille en moins de 60 secondes, sans indice et sans Assistance auto.</p></div></div><div class="badge-rule assist"><span class="badge-rule-icon">◉</span><div><strong>Sans Assistance auto</strong><p>Termine la grille sans utiliser l’Assistance auto.</p></div></div><div class="badge-rule clean"><span class="badge-rule-icon">✓</span><div><strong>Maîtrise</strong><p>Termine la grille sans indice, sans Assistance auto et sans aucune faute.</p></div></div><p class="badge-rules-note">Les conditions d’un badge exigeant doivent être réunies au cours d’une même tentative. Les badges déjà obtenus restent acquis.</p></div></div><div id="challengeBanner" class="challenge-banner" hidden><strong id="challengeTitle"></strong><small id="challengeCopy"></small></div><label class="auto-cross" id="autoCrossWrap">
@@ -380,8 +404,8 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 <input type="checkbox" id="guidedErrors">
 <span>Contrôle guidé</span>
 </label><div id="learningNote" class="learning-note"></div>
-<div id="difficulty" style="text-align:center;font-weight:700;color:#666;margin:-8px 0 12px"></div><div class="status"><span>◷ <span id="time">0:00</span><span id="speedCountdown" class="speed-countdown" hidden aria-live="polite"></span></span><span><span class="guardian-counter-icon"></span> <span id="count"></span></span></div>
-<div id="campaignMapLabel" class="campaign-map-label">Quête 1</div><div id="rewardLive" class="reward-live"><span id="masteryLive" class="mastery-live">✓ Maîtrise en cours</span><span id="progressLive" class="progress-live"></span></div><div id="board"></div><div id="rewardToast" class="reward-toast" aria-live="polite"></div><div class="hint-wallet"><span class="hint-wallet-label">Éclats</span><span id="shardMeter" class="shard-meter" role="button" tabindex="0" aria-label="Éclats de lumière disponibles. Voir les règles"></span><span class="shard-help" aria-hidden="true">ⓘ</span></div><div class="actions"><button id="undo">Annuler</button><button id="hint">Indice · gratuit</button><button id="clearHint" class="clear-hint" hidden>Revoir la quête</button><button id="boardNext" class="clear-hint" hidden>Quête suivante</button></div>
+<div id="difficulty" style="text-align:center;font-weight:700;color:#666;margin:-8px 0 12px"></div><div class="status"><span>◷ <span id="time">0:00</span><span id="speedCountdown" class="speed-countdown" hidden aria-label="Temps restant pour le badge Éclair"><span class="speed-countdown-icon" aria-hidden="true">⌛</span><span class="speed-countdown-track" aria-hidden="true"><span id="speedCountdownFill" class="speed-countdown-fill"></span></span></span></span><span><span class="guardian-counter-icon"></span> <span id="count"></span></span></div>
+<div id="campaignMapLabel" class="campaign-map-label">Quête 1</div><div id="scriptedLearn" class="scripted-learn" hidden role="status"><strong id="scriptedLearnTitle"></strong><span id="scriptedLearnCopy"></span></div><div id="rewardLive" class="reward-live"><span id="masteryLive" class="mastery-live">✓ Maîtrise en cours</span><span id="progressLive" class="progress-live"></span></div><div style="position:relative"><div id="board"></div><div id="verifyCelebration" class="verify-celebration" hidden aria-live="polite"></div></div><div id="guidedCard" class="guided-card" hidden role="status"><strong id="guidedTitle"></strong><p id="guidedCopy"></p><button id="guidedAck" type="button">J’ai compris</button></div><div id="verifyCard" class="verify-card" hidden role="status"><strong id="verifyTitle">Des choix sont à corriger</strong><p id="verifyCopy"></p><button id="verifyFix" type="button">Corriger</button></div><div id="rewardToast" class="reward-toast" aria-live="polite"></div><div class="hint-wallet"><span class="hint-wallet-label">Éclats</span><span id="shardMeter" class="shard-meter" role="button" tabindex="0" aria-label="Éclats de lumière disponibles. Voir les règles"></span><span class="shard-help" aria-hidden="true">ⓘ</span></div><div class="actions"><button id="undo">Annuler</button><button id="verify">✓ Vérifier</button><button id="hint">Indice · gratuit</button><button id="clearHint" class="clear-hint" hidden>Revoir la quête</button><button id="boardNext" class="clear-hint" hidden>Quête suivante</button></div>
 <div class="msg" id="msg"></div>
 
 
@@ -398,7 +422,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  </div>
 </div>
 <div id="returnToast" class="return-toast" hidden role="status" aria-live="polite"><div class="return-toast-title">Content de te revoir ✦</div><div id="returnToastCopy" class="return-toast-copy"></div><div id="returnToastStars" class="return-toast-stars"></div></div>
-<button id="betaFeedbackBtn" class="beta-feedback-btn" type="button" onclick="openBetaFeedback()">⚑ Signaler un problème</button><div id="lumenVersion" class="lumen-version" title="Version LUMEN">LUMEN · v1.7.3-dev</div>
+<button id="betaFeedbackBtn" class="beta-feedback-btn" type="button" onclick="openBetaFeedback()">⚑ Signaler un problème</button><div id="lumenVersion" class="lumen-version" title="Version LUMEN">LUMEN · v1.10.0-dev</div>
 <div id="feedbackModal" class="beta-modal" hidden role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
  <div class="beta-card">
   <h2 id="feedbackTitle">Retour bêta</h2><p>Le contexte de la quête sera joint automatiquement.</p>
@@ -415,24 +439,25 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
   <div class="success-gem"><span class="reward-star" aria-hidden="true">★</span></div>
   <div class="success-title" id="successTitle">Quête accomplie</div>
   <div class="success-sub" id="successSub">Ton ciel progresse</div>
-  <div class="success-time">◷ <span id="successTime">0:00</span></div><div id="successRewards" class="success-rewards" aria-label="Récompenses obtenues"></div><div id="questResult" class="quest-result" hidden></div>
+  <div class="success-time">◷ <span id="successTime">0:00</span></div><div id="successAchievement" class="success-achievement"><div id="successAchievementKicker" class="success-achievement-kicker">MA RÉUSSITE</div><div id="successAchievementMain" class="success-achievement-main"></div><div id="successAchievementDetail" class="success-achievement-detail"></div></div><div id="successRewards" class="success-rewards" aria-label="Récompenses obtenues"></div><div id="questResult" class="quest-result" hidden></div>
   <div id="difficultyBox" class="difficulty-box"><div>Comment as-tu trouvé cette quête ?</div><div class="difficulty-choices"><button type="button" data-rating="easy">😌 Facile</button><button type="button" data-rating="balanced">🙂 Bien dosée</button><button type="button" data-rating="hard">🧠 Difficile</button><button type="button" data-rating="frustrating">😵 Frustrante</button></div></div>
   <div class="success-actions">
-   <button id="successRetry">↻ Réessayer</button><button id="successShare">↗ Partager</button>
+   <button id="successRetry">↻ Réessayer</button><button id="successShare" class="share-primary">↗ Partager ma réussite</button>
    <button id="successSky">✦ Mon ciel</button>
    <button id="successNew">Quête suivante</button>
   </div>
  </div>
 </div>
+<div id="manualCrossTip" class="manual-cross-tip" hidden role="dialog" aria-modal="false"><strong>À toi de marquer les impossibilités</strong><div>Sans Assistance auto, touche une case pour la marquer. Pour aller plus vite, maintiens puis fais glisser ton doigt sur plusieurs cases.</div><button id="manualCrossTipOk" type="button">J’ai compris</button></div>
 <div id="autonomyOverlay" role="dialog" aria-modal="true" hidden style="position:fixed;inset:0;z-index:1100;align-items:center;justify-content:center;background:rgba(3,7,13,.88);padding:24px">
- <div class="autonomy-card"><div class="autonomy-icon">✦</div><div class="autonomy-title">Mode autonome débloqué</div><div class="autonomy-copy">Tu maîtrises maintenant les règles de LUMEN.<br>À toi d’identifier les emplacements impossibles.</div><button id="autonomyClose">Continuer</button></div>
+ <div class="autonomy-card"><div class="autonomy-icon">✦</div><div class="autonomy-title">Prêt à voler de tes propres ailes ?</div><div class="autonomy-copy">Tu connais maintenant les règles de LUMEN.<br>Essaie cette quête sans Contrôle guidé. Tu pourras toujours le réactiver si besoin.</div><button id="autonomyTry" class="primary" type="button">J’essaie sans aide</button><button id="autonomyKeep" type="button">Garder le contrôle guidé</button></div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const TUTORIAL_STEPS=[
  {title:"Ta mission",copy:"Positionne les 6 Gardiens : exactement un par ligne, un par colonne et un par territoire coloré.",visual:'<div class="tutorial-mini-grid"><span></span><span class="orb guardian-mini"></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>'},
  {title:"Les Gardiens gardent leurs distances",copy:"Deux Gardiens ne peuvent jamais être voisins, même en diagonale. Chaque Gardien doit avoir de l’espace autour de lui.",visual:'<div class="tutorial-mini-grid"><span class="orb guardian-mini"></span><span></span><span></span><span></span><span>↘</span><span class="orb guardian-mini"></span><span></span><span></span><span></span></div>'},
- {title:"Écarte les emplacements impossibles",copy:"Un appui écarte une case avec un anneau ambre. Un deuxième appui y place un Gardien. Un troisième appui libère la case.",visual:'<div class="tutorial-mini-grid"><span></span><span class="dim">○</span><span></span><span></span><span class="orb guardian-mini"></span><span></span><span></span><span></span><span></span></div>'},
+ {title:"Observe les emplacements impossibles",copy:"Au début, l’Assistance auto marque pour toi les cases devenues impossibles. Concentre-toi sur les Gardiens et sur les déductions.",visual:'<div class="tutorial-mini-grid"><span></span><span class="dim">○</span><span></span><span></span><span class="orb guardian-mini"></span><span></span><span></span><span></span><span></span></div>'},
  {title:"LUMEN t’aide au début",copy:"Sur les quêtes 1 à 5, l’Assistance auto est activée. Des quêtes 6 à 10, elle est désactivée par défaut mais reste disponible. À partir de la quête 11, elle reste optionnelle.",visual:"<span>1–5 ✦ → 6–10 ◐ → 11+ ✧</span>"},
  {title:"Bloqué ? Utilise Indice",copy:"LUMEN ne révèle pas simplement la solution : il te guide vers la prochaine déduction logique. Tu peux demander davantage de précision si nécessaire.",visual:"<span>💡 &nbsp; Indice logique</span>"}
 ];
@@ -535,7 +560,51 @@ async function installLumen(){const box=document.getElementById("installOptin"),
 function lumenReferralCode(){return lumenUser?.id?("u"+lumenUser.id.replace(/-/g,"").slice(0,12)):("a"+lumenAnonymousId.replace(/-/g,"").slice(0,12))}
 function lumenShareUrl(){const u=new URL(location.origin+location.pathname);u.searchParams.set("ref",lumenReferralCode());return u.toString()}
 function showShareToast(t){let e=document.createElement("div");e.className="share-toast";e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),1800)}
-async function shareLumenResult(){const ch=CONSTELLATIONS[chapterForGrid(levelIndex)],time=document.getElementById("successTime")?.textContent||document.getElementById("time")?.textContent||"";const text="✦ LUMEN\n"+(ch?.name||"Constellation")+" · Quête "+(levelIndex+1)+"\n◷ "+time+" · "+skyStarsEarned()+"/"+SKY_TARGET+" étoiles\n\nPeux-tu rallumer le ciel ?";const url=lumenShareUrl();let method="copy";try{if(navigator.share){await navigator.share({title:"LUMEN",text,url});method="native"}else{await navigator.clipboard.writeText(text+"\n"+url);showShareToast("Résultat copié — prêt à partager")}}catch(e){if(e?.name==="AbortError")return;try{await navigator.clipboard.writeText(text+"\n"+url);showShareToast("Résultat copié — prêt à partager")}catch(_){}}trackLumenEvent("result_shared",levelIndex+1,{method,ref:lumenReferralCode()})}
+function successAchievement(){
+ const ch=CONSTELLATIONS[chapterForGrid(levelIndex)],range=constellationGridRange(chapterForGrid(levelIndex)),pos=Math.min(range.count,levelIndex-range.start+1),run=performanceRun(),secs=activeGameSeconds(),solved=Math.max(solvedCount(),levelIndex+1);
+ let kicker="QUÊTE "+(levelIndex+1)+" ACCOMPLIE",main=(ch?.name||"Constellation")+" · "+pos+"/"+range.count+" quêtes",detail=solved+"/100 quêtes accomplies";
+ const milestone=milestoneFor(levelIndex);
+ if(milestone?.kind==="boss"){kicker="CONSTELLATION COMPLÉTÉE";main=ch.name;detail=solved+"/100 quêtes accomplies · "+skyStarsEarned()+" étoiles allumées"}
+ else if(run.mastery){kicker="MAÎTRISE";main="Sans indice · sans erreur";detail=(ch?.name||"Constellation")+" · Quête "+(levelIndex+1)+" · "+formatDuration(secs)}
+ else if(run.speed){kicker="ÉCLAIR";main="Quête "+(levelIndex+1)+" en "+formatDuration(secs);detail=(run.noHint?"Sans indice · ":"")+(ch?.name||"Constellation")}
+ else if(run.noHint){kicker="SANS INDICE";main=(ch?.name||"Constellation")+" · Quête "+(levelIndex+1);detail=formatDuration(secs)+" · "+solved+"/100 quêtes accomplies"}
+ return {kicker,main,detail,ch,pos,total:range.count,solved,run,secs};
+}
+function renderSuccessAchievement(){
+ const a=successAchievement(),k=document.getElementById("successAchievementKicker"),m=document.getElementById("successAchievementMain"),d=document.getElementById("successAchievementDetail");
+ if(k)k.textContent=a.kicker;if(m)m.textContent=a.main;if(d)d.textContent=a.detail;
+}
+function formatDuration(seconds){seconds=Math.max(0,Math.round(seconds||0));return Math.floor(seconds/60)+":"+String(seconds%60).padStart(2,"0")}
+function shareCardCanvas(a){
+ const canvas=document.createElement("canvas");canvas.width=1080;canvas.height=1350;const x=canvas.getContext("2d"),cx=540;
+ const bg=x.createLinearGradient(0,0,0,1350);bg.addColorStop(0,"#07111d");bg.addColorStop(1,"#10233a");x.fillStyle=bg;x.fillRect(0,0,1080,1350);
+ // deterministic star field
+ x.fillStyle="#dffaff";for(let i=0;i<70;i++){const sx=(i*173+71)%1040+20,sy=(i*257+53)%1280+20,r=i%9===0?3:1.5;x.globalAlpha=.25+(i%5)*.12;x.beginPath();x.arc(sx,sy,r,0,Math.PI*2);x.fill()}x.globalAlpha=1;
+ x.textAlign="center";x.fillStyle="#68e7ff";x.font="900 52px Arial";x.fillText("L U M E N",cx,125);
+ x.fillStyle="#ffe3a1";x.shadowColor="rgba(255,210,100,.8)";x.shadowBlur=25;x.font="900 120px Arial";x.fillText("★",cx,300);x.shadowBlur=0;
+ x.fillStyle="#68e7ff";x.font="900 30px Arial";x.fillText(a.kicker,cx,410);
+ x.fillStyle="#f2fbff";x.font="900 58px Arial";wrapCanvasText(x,a.main,cx,495,900,70);
+ x.fillStyle="#a9bfd0";x.font="700 30px Arial";wrapCanvasText(x,a.detail,cx,660,900,42);
+ x.strokeStyle="rgba(104,231,255,.35)";x.lineWidth=2;x.strokeRect(105,790,870,210);
+ x.fillStyle="#f2fbff";x.font="900 44px Arial";x.fillText("Quête "+(levelIndex+1)+" / 100",cx,860);
+ x.fillStyle="#68e7ff";x.font="800 32px Arial";x.fillText((a.ch?.name||"Constellation")+" · "+a.pos+"/"+a.total,cx,920);
+ x.fillStyle="#a9bfd0";x.font="700 28px Arial";x.fillText("◷ "+formatDuration(a.secs)+(a.run.noHint?"   ·   Sans indice":""),cx,970);
+ x.fillStyle="#eefaff";x.font="800 32px Arial";x.fillText("Peux-tu rallumer le ciel ?",cx,1120);
+ x.fillStyle="#7891a5";x.font="700 24px Arial";x.fillText(location.host,cx,1190);
+ return canvas;
+}
+function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight){const words=String(text).split(" ");let line="",yy=y;for(const w of words){const test=line?line+" "+w:w;if(ctx.measureText(test).width>maxWidth&&line){ctx.fillText(line,x,yy);line=w;yy+=lineHeight}else line=test}if(line)ctx.fillText(line,x,yy)}
+async function shareLumenResult(){
+ const a=successAchievement(),url=lumenShareUrl(),text="✦ LUMEN · "+a.kicker+"\n"+a.main+"\n"+a.detail+"\n\nPeux-tu rallumer le ciel ?";
+ let method="copy";
+ try{
+  const canvas=shareCardCanvas(a),blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png")),file=blob?new File([blob],"lumen-quete-"+(levelIndex+1)+".png",{type:"image/png"}):null;
+  if(navigator.share&&file&&navigator.canShare?.({files:[file]})){await navigator.share({title:"Ma réussite LUMEN",text,url,files:[file]});method="native_image"}
+  else if(navigator.share){await navigator.share({title:"Ma réussite LUMEN",text,url});method="native"}
+  else{await navigator.clipboard.writeText(text+"\n"+url);showShareToast("Résultat copié — prêt à partager")}
+ }catch(err){if(err?.name==="AbortError")return;try{await navigator.clipboard.writeText(text+"\n"+url);showShareToast("Résultat copié — prêt à partager")}catch(_){}}
+ trackLumenEvent("result_shared",levelIndex+1,{method,ref:lumenReferralCode(),achievement:a.kicker});
+}
 function captureReferral(){const ref=new URLSearchParams(location.search).get("ref");if(!ref)return;const clean=ref.replace(/[^a-zA-Z0-9_-]/g,"").slice(0,64);if(!clean)return;try{localStorage.setItem("lumenReferral",clean)}catch(e){}trackLumenEvent("referral_visit",null,{ref:clean})}captureReferral();
 
 async function cloudSavePuzzle(index){
@@ -664,7 +733,7 @@ async function disableLumenPush(){const sub=await currentPushSubscription();if(s
 const CAT={"6":[{"reg":[[0,0,0,1,1,1],[0,1,1,1,1,1],[0,0,1,2,2,2],[0,1,1,3,2,2],[0,4,1,3,3,2],[4,4,4,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,1,2,2,2],[3,3,1,2,2,4],[3,1,1,5,4,4],[3,3,5,5,5,4],[3,5,5,5,4,4],[5,5,5,4,4,4]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,0,1,1,1],[2,0,0,0,0,1],[2,2,2,0,1,1],[2,2,3,0,0,1],[2,3,3,0,4,1],[5,5,3,4,4,1]],"sol":[5,3,0,2,4,1]},{"reg":[[0,1,2,2,3,3],[0,1,4,2,2,3],[0,4,4,2,5,5],[0,0,4,4,5,5],[0,4,4,4,4,5],[0,0,0,0,4,4]],"sol":[4,1,3,5,2,0]},{"reg":[[0,1,1,1,2,2],[0,0,1,1,3,2],[4,0,0,3,3,3],[4,0,0,0,0,3],[4,0,4,0,5,5],[4,4,4,4,4,4]],"sol":[2,5,3,1,4,0]},{"reg":[[0,0,0,0,0,0],[1,1,2,2,2,0],[1,2,2,2,2,0],[3,3,3,2,2,0],[4,3,5,5,2,2],[4,5,5,5,5,2]],"sol":[5,1,4,2,0,3]},{"reg":[[0,0,0,0,0,1],[2,2,3,0,1,1],[4,3,3,1,1,1],[4,4,1,1,1,5],[4,4,1,1,5,5],[5,5,5,5,5,5]],"sol":[3,0,2,4,1,5]},{"reg":[[0,0,0,0,0,0],[0,1,0,1,2,2],[0,1,1,1,1,2],[1,1,3,4,4,4],[1,1,3,3,5,5],[1,3,3,3,3,3]],"sol":[0,4,1,3,5,2]},{"reg":[[0,1,1,1,1,1],[0,1,2,1,1,1],[3,3,2,1,1,4],[3,2,2,1,2,4],[3,2,2,2,2,4],[2,2,2,5,5,5]],"sol":[0,3,1,5,2,4]},{"reg":[[0,1,1,1,2,2],[0,3,3,3,2,2],[0,3,3,2,2,2],[3,3,3,3,2,2],[3,3,3,4,2,2],[3,3,3,4,5,5]],"sol":[2,0,4,1,3,5]},{"reg":[[0,0,1,1,2,3],[0,1,1,4,2,3],[5,5,1,4,4,3],[5,5,4,4,3,3],[5,4,4,4,4,3],[4,4,3,3,3,3]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,0,0,1,1],[2,0,0,3,3,4],[2,5,5,3,3,4],[2,5,5,5,4,4],[2,2,5,5,5,5],[2,2,2,5,5,5]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,0,1,2,2],[3,0,0,1,1,1],[3,4,4,1,1,5],[3,3,4,4,5,5],[3,3,4,4,5,5],[3,3,3,4,4,4]],"sol":[4,1,3,5,2,0]},{"reg":[[0,1,2,2,2,3],[0,1,1,2,2,3],[1,1,1,3,3,3],[4,4,3,3,3,5],[4,4,3,5,5,5],[4,5,5,5,5,5]],"sol":[3,0,2,4,1,5]},{"reg":[[0,0,0,1,1,1],[0,0,0,0,0,2],[3,0,0,0,0,2],[3,3,0,4,0,2],[5,4,4,4,0,4],[5,4,4,4,4,4]],"sol":[4,2,5,1,3,0]},{"reg":[[0,0,0,1,1,1],[2,1,1,1,1,3],[2,1,4,1,1,3],[2,4,4,1,3,3],[4,4,4,1,4,5],[4,4,4,4,4,5]],"sol":[1,3,0,4,2,5]},{"reg":[[0,1,1,1,1,1],[0,0,1,2,3,3],[0,0,0,2,2,4],[5,0,0,0,4,4],[5,5,0,0,4,4],[5,5,5,5,5,5]],"sol":[2,5,3,1,4,0]},{"reg":[[0,0,0,0,0,1],[0,2,0,0,0,1],[3,2,0,2,4,4],[3,2,2,2,2,4],[3,2,2,2,2,2],[5,5,5,2,2,2]],"sol":[5,2,4,0,3,1]},{"reg":[[0,0,0,0,0,1],[0,2,0,2,1,1],[0,2,2,2,2,1],[0,2,2,3,3,3],[2,2,4,4,4,5],[2,4,4,4,4,5]],"sol":[0,4,1,3,5,2]},{"reg":[[0,0,0,0,1,1],[2,0,3,4,4,5],[2,3,3,4,5,5],[2,2,3,5,5,5],[2,3,3,3,3,3],[2,2,2,3,3,3]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,1,1,1,1],[0,0,1,1,1,1],[2,0,3,3,4,1],[2,3,3,3,4,4],[2,2,2,3,4,4],[5,5,2,3,3,3]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,1,1,1,2],[0,0,0,3,1,2],[4,4,3,3,1,1],[4,4,3,3,3,3],[4,4,5,5,3,3],[4,4,4,5,5,3]],"sol":[5,1,4,2,0,3]},{"reg":[[0,0,1,1,2,2],[0,1,1,3,2,4],[5,5,1,3,3,4],[5,5,3,3,4,4],[5,3,3,3,3,4],[3,3,4,4,4,4]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,0,1,2,2],[0,0,1,1,2,2],[0,0,1,1,1,2],[0,3,3,3,1,2],[4,3,5,1,1,1],[4,5,5,5,1,1]],"sol":[5,1,4,2,0,3]},{"reg":[[0,1,2,3,3,4],[0,1,2,5,3,4],[0,0,2,5,5,4],[0,0,0,5,4,4],[0,5,5,5,5,4],[5,5,5,4,4,4]],"sol":[1,4,2,0,3,5]},{"reg":[[0,1,1,1,1,2],[0,0,3,1,2,2],[3,3,3,2,2,4],[5,5,2,2,2,4],[5,5,2,4,4,4],[4,4,4,4,4,4]],"sol":[3,0,2,4,1,5]},{"reg":[[0,0,1,1,1,2],[0,3,3,3,3,2],[0,0,0,3,3,2],[0,0,3,3,3,3],[0,0,4,3,3,3],[5,5,4,4,3,3]],"sol":[3,5,1,4,2,0]},{"reg":[[0,0,1,2,2,3],[4,1,1,5,2,3],[4,4,1,5,5,3],[4,4,5,5,5,3],[4,5,5,5,5,3],[5,5,3,3,3,3]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,0,0,0,1],[2,0,0,0,1,1],[2,2,2,2,1,1],[3,3,2,2,1,1],[4,3,5,5,5,5],[4,3,3,3,3,5]],"sol":[2,5,3,1,4,0]},{"reg":[[0,1,1,1,1,2],[0,0,0,0,1,2],[3,3,4,4,1,1],[3,3,4,4,4,4],[3,3,5,5,5,4],[3,5,5,5,5,5]],"sol":[5,1,4,2,0,3]},{"reg":[[0,0,1,1,1,1],[0,0,1,1,1,2],[0,0,3,2,2,2],[0,0,3,2,4,4],[3,3,3,3,5,5],[3,3,3,3,5,5]],"sol":[2,0,3,5,1,4]},{"reg":[[0,0,1,2,2,2],[3,1,1,4,2,5],[3,3,1,4,4,5],[3,3,3,4,5,5],[4,4,4,4,4,5],[4,4,4,5,5,5]],"sol":[1,4,2,0,3,5]},{"reg":[[0,1,1,1,2,2],[0,3,1,1,2,2],[3,3,3,1,2,2],[4,2,2,2,2,5],[4,4,2,5,2,5],[4,5,5,5,5,5]],"sol":[3,0,2,4,1,5]},{"reg":[[0,0,1,1,1,2],[3,4,4,1,1,2],[3,4,4,5,5,2],[3,3,5,5,5,2],[3,5,5,5,2,2],[5,5,2,2,2,2]],"sol":[1,4,2,0,3,5]},{"reg":[[0,1,1,1,1,1],[0,0,2,1,2,1],[0,2,2,2,2,1],[0,3,3,4,2,2],[5,3,4,4,2,2],[5,4,4,4,2,2]],"sol":[5,1,4,2,0,3]},{"reg":[[0,1,1,2,3,3],[0,0,1,2,2,2],[0,0,1,1,4,2],[0,0,1,1,4,2],[0,5,5,5,4,2],[5,5,5,5,4,4]],"sol":[5,3,0,2,4,1]},{"reg":[[0,1,1,2,3,3],[0,1,1,2,2,4],[0,5,5,2,2,4],[0,0,5,5,4,4],[0,0,5,5,5,4],[0,0,0,5,5,5]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,0,0,1,1],[0,0,0,2,2,3],[0,4,4,2,3,3],[4,4,4,2,4,3],[5,5,4,4,4,4],[5,5,5,5,4,4]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,1,2,2,2],[0,0,1,1,2,2],[0,1,1,1,2,2],[0,1,3,3,3,2],[1,1,1,4,3,5],[1,1,4,4,4,5]],"sol":[0,4,1,3,5,2]},{"reg":[[0,0,1,1,1,1],[2,3,3,1,1,1],[2,2,3,4,4,1],[2,4,3,4,4,4],[4,4,4,4,5,5],[4,4,5,5,5,5]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,0,1,2,2],[0,0,0,1,3,3],[0,0,0,0,3,3],[4,0,0,3,3,3],[4,0,0,0,3,3],[4,5,5,5,3,3]],"sol":[5,3,1,4,0,2]},{"reg":[[0,0,0,1,2,3],[4,0,5,1,2,3],[4,5,5,1,3,3],[4,4,5,3,3,3],[4,5,5,5,5,3],[4,4,4,5,5,5]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,0,0,1,1],[2,0,0,0,1,3],[2,2,4,4,1,3],[2,2,4,4,1,3],[2,2,4,3,3,3],[2,4,4,3,5,5]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,0,1,2,2],[3,3,0,1,1,1],[3,3,0,0,0,1],[3,3,0,0,4,1],[5,5,5,5,4,4],[5,5,5,5,4,4]],"sol":[5,3,0,2,4,1]},{"reg":[[0,0,0,0,0,1],[2,2,2,0,1,1],[2,2,3,3,1,4],[2,2,3,3,1,4],[2,2,3,4,4,4],[2,2,3,4,5,5]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,0,0,1,1],[0,0,0,1,1,1],[0,0,0,1,2,1],[3,3,4,4,2,2],[3,3,3,2,2,2],[3,3,5,5,2,2]],"sol":[5,1,4,2,0,3]},{"reg":[[0,1,1,1,1,2],[0,0,0,1,2,2],[3,0,0,4,4,4],[3,0,0,0,0,4],[3,0,0,0,5,5],[3,3,3,3,3,5]],"sol":[2,5,3,1,4,0]},{"reg":[[0,0,1,1,1,1],[2,3,3,1,1,4],[2,2,3,5,5,4],[2,2,5,5,4,4],[2,2,5,5,5,4],[5,5,5,4,4,4]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,1,1,2,2],[3,3,1,2,2,2],[3,3,2,2,2,2],[3,3,3,2,2,4],[3,2,2,2,2,4],[3,3,5,5,5,4]],"sol":[0,2,4,1,5,3]},{"reg":[[0,0,0,0,1,1],[0,0,0,0,1,1],[2,2,2,3,1,1],[4,4,2,3,1,1],[5,5,3,3,3,3],[5,5,3,3,3,3]],"sol":[3,5,2,0,4,1]},{"reg":[[0,1,1,1,1,1],[0,1,1,1,1,1],[2,2,3,1,1,4],[2,3,3,1,3,4],[2,3,3,3,3,4],[3,3,3,5,5,5]],"sol":[0,3,1,5,2,4]},{"reg":[[0,1,1,1,1,1],[0,0,1,1,1,2],[3,0,4,4,2,2],[3,0,4,4,2,2],[3,3,3,4,2,2],[5,5,3,4,4,2]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,1,1,1,1],[2,0,1,1,1,3],[2,0,4,4,3,3],[2,0,4,4,3,3],[2,2,2,4,3,3],[5,5,2,4,4,3]],"sol":[4,1,3,5,2,0]},{"reg":[[0,1,1,2,2,2],[0,1,1,1,2,2],[0,0,0,0,2,2],[3,3,0,0,2,2],[4,3,0,5,5,5],[4,3,3,3,5,5]],"sol":[2,5,3,1,4,0]},{"reg":[[0,1,1,1,2,2],[0,1,2,2,2,3],[1,1,4,4,3,3],[4,4,4,4,5,3],[5,5,5,5,5,3],[5,5,5,5,5,3]],"sol":[0,4,1,3,5,2]},{"reg":[[0,0,1,2,3,3],[1,1,1,2,3,3],[1,4,2,2,3,3],[1,4,2,2,3,3],[4,4,5,3,3,3],[4,5,5,5,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,0,0,1,1],[2,0,3,1,1,4],[2,5,3,4,4,4],[5,5,5,4,4,4],[5,5,5,4,4,4]],"sol":[5,3,0,2,4,1]},{"reg":[[0,0,0,1,1,1],[0,0,0,1,1,1],[0,0,0,2,1,3],[0,4,4,2,5,3],[4,4,5,5,5,5],[4,4,4,5,5,5]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,0,1,2,2],[3,0,0,1,1,4],[3,5,5,1,4,4],[3,5,5,5,4,4],[3,3,5,5,4,5],[3,3,3,5,5,5]],"sol":[4,1,3,5,2,0]},{"reg":[[0,1,1,1,1,1],[0,0,1,2,1,1],[0,0,2,2,2,1],[3,3,3,2,2,1],[4,5,3,5,2,2],[4,5,5,5,5,2]],"sol":[5,1,4,2,0,3]},{"reg":[[0,1,1,1,2,2],[0,1,3,4,2,5],[0,3,3,4,5,5],[0,0,3,5,5,5],[0,3,3,3,3,5],[0,0,0,3,3,3]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,0,0,1,1],[0,0,0,0,1,1],[2,2,0,3,4,4],[2,2,0,3,3,3],[2,2,5,5,5,3],[2,2,5,5,5,5]],"sol":[4,1,5,3,0,2]},{"reg":[[0,1,2,3,3,3],[0,1,2,4,3,5],[0,0,2,4,4,5],[0,0,0,4,5,5],[0,4,4,4,4,5],[4,4,4,5,5,5]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,1,1,2,2],[0,0,3,2,2,2],[0,0,3,3,2,2],[4,4,4,5,2,5],[4,4,4,5,5,5],[4,4,4,4,5,5]],"sol":[3,0,2,4,1,5]},{"reg":[[0,1,1,1,1,2],[0,1,2,2,2,2],[1,1,3,3,4,4],[3,3,3,3,4,4],[3,5,5,5,4,4],[5,5,5,5,5,4]],"sol":[0,4,1,3,5,2]},{"reg":[[0,1,1,1,1,1],[0,0,1,2,2,2],[0,0,3,3,2,2],[4,0,3,3,2,2],[4,4,4,3,2,2],[5,5,4,3,3,2]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,0,1,1,2],[0,0,1,1,2,2],[0,0,2,2,2,2],[0,0,2,2,3,3],[4,4,4,2,3,5],[4,4,3,3,3,5]],"sol":[3,0,2,4,1,5]},{"reg":[[0,0,0,1,2,2],[3,0,0,1,1,1],[3,3,0,0,0,1],[4,3,0,0,5,1],[4,4,4,4,5,5],[4,4,4,4,5,5]],"sol":[5,3,0,2,4,1]},{"reg":[[0,0,1,1,1,1],[0,0,1,1,1,1],[0,0,2,3,3,3],[0,0,2,3,4,4],[2,2,2,2,5,5],[2,2,2,2,5,5]],"sol":[2,0,3,5,1,4]},{"reg":[[0,1,1,1,1,1],[0,1,1,1,1,2],[3,3,4,1,1,2],[3,4,4,4,4,2],[3,4,4,4,4,2],[4,4,4,5,5,5]],"sol":[0,3,1,5,2,4]},{"reg":[[0,1,2,2,2,3],[0,1,1,2,3,3],[1,1,1,3,3,4],[5,5,3,3,3,4],[5,5,3,4,4,4],[5,4,4,4,4,4]],"sol":[3,0,2,4,1,5]},{"reg":[[0,0,0,0,0,1],[0,0,0,0,0,1],[2,0,0,3,4,4],[2,3,0,3,3,4],[2,3,3,3,3,4],[5,5,5,3,3,3]],"sol":[5,2,4,0,3,1]},{"reg":[[0,0,1,1,1,1],[0,0,0,1,1,1],[0,2,0,1,1,1],[2,2,3,3,4,4],[2,2,2,4,4,4],[2,2,5,5,4,4]],"sol":[0,4,1,3,5,2]},{"reg":[[0,0,0,0,1,1],[0,0,1,1,1,1],[1,1,1,2,1,3],[4,1,1,2,3,3],[4,4,4,2,2,3],[4,4,4,4,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,0,0,0],[0,1,0,1,2,2],[0,1,1,1,1,3],[0,1,1,3,3,3],[1,1,4,4,3,5],[1,4,4,4,5,5]],"sol":[0,4,1,3,5,2]},{"reg":[[0,0,0,0,0,1],[0,2,0,2,1,1],[0,2,2,2,2,1],[2,2,3,4,4,4],[2,2,3,3,5,5],[2,3,3,3,3,3]],"sol":[0,4,1,3,5,2]},{"reg":[[0,0,0,1,1,1],[2,0,0,0,1,1],[2,2,0,0,0,1],[2,3,3,0,1,1],[4,3,3,5,5,1],[4,4,3,5,5,5]],"sol":[5,3,0,2,4,1]},{"reg":[[0,1,1,1,2,3],[0,1,1,2,2,3],[0,0,0,2,2,2],[4,0,0,0,5,5],[4,4,4,0,5,5],[4,4,4,4,4,5]],"sol":[2,5,3,1,4,0]},{"reg":[[0,0,0,0,0,0],[1,1,2,0,2,0],[1,2,2,2,2,0],[1,3,3,4,2,2],[5,5,4,4,2,2],[5,4,4,4,4,2]],"sol":[5,1,4,2,0,3]},{"reg":[[0,0,1,1,1,2],[0,0,0,1,3,2],[4,0,3,3,3,5],[4,0,0,0,5,5],[4,4,0,0,5,5],[4,4,0,5,5,5]],"sol":[2,5,3,1,4,0]},{"reg":[[0,0,0,0,1,1],[0,0,0,0,1,1],[2,2,1,1,1,1],[2,2,3,3,1,1],[2,2,3,4,5,5],[2,3,3,4,5,5]],"sol":[1,4,0,2,5,3]},{"reg":[[0,0,1,1,1,1],[0,0,1,1,1,1],[0,0,0,0,2,2],[0,0,3,3,2,2],[4,0,5,3,2,2],[4,4,5,3,3,2]],"sol":[4,1,5,3,0,2]},{"reg":[[0,0,0,1,1,1],[2,1,1,1,1,1],[2,1,1,1,1,1],[2,1,3,1,4,4],[3,3,3,3,3,5],[3,3,3,3,3,5]],"sol":[1,3,0,4,2,5]},{"reg":[[0,1,2,2,2,3],[0,1,4,2,2,3],[0,4,4,5,5,3],[0,0,5,5,5,3],[0,5,5,5,3,3],[5,5,5,3,3,3]],"sol":[1,4,2,0,3,5]},{"reg":[[0,0,1,2,2,3],[0,0,1,2,3,3],[4,4,2,2,3,3],[4,4,4,4,3,3],[4,4,5,5,5,5],[4,4,5,5,5,5]],"sol":[2,0,3,5,1,4]},{"reg":[[0,0,1,1,1,1],[0,0,1,1,1,1],[2,2,3,1,4,4],[3,3,3,1,4,4],[3,5,5,5,4,4],[5,5,5,5,4,4]],"sol":[1,4,0,2,5,3]},{"reg":[[0,0,0,1,1,1],[2,0,0,0,0,3],[2,0,0,4,0,3],[2,2,0,4,4,3],[5,4,0,4,4,4],[5,4,4,4,4,4]],"sol":[4,2,5,1,3,0]},{"reg":[[0,0,1,1,1,2],[0,0,1,1,3,2],[0,0,1,3,3,4],[5,0,0,0,0,4],[5,0,5,0,4,4],[5,5,5,5,5,4]],"sol":[2,5,3,1,4,0]},{"reg":[[0,0,0,1,1,1],[0,0,0,1,1,1],[2,3,3,1,1,1],[2,4,3,5,5,1],[4,4,4,4,5,5],[4,4,4,5,5,5]],"sol":[1,4,2,0,3,5]},{"reg":[[0,1,1,1,2,3],[0,1,1,4,2,3],[0,5,5,4,4,3],[0,5,5,5,3,3],[0,0,5,5,5,3],[0,0,0,5,5,5]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,1,1,1,1],[0,0,0,0,1,1],[2,0,3,0,0,0],[2,2,3,0,0,4],[2,3,3,4,4,4],[5,5,4,4,4,4]],"sol":[5,3,0,2,4,1]},{"reg":[[0,1,1,1,2,2],[0,3,1,2,2,2],[0,3,3,3,2,4],[5,5,2,2,2,4],[5,5,2,2,4,4],[5,5,5,2,4,4]],"sol":[3,0,2,4,1,5]},{"reg":[[0,1,1,1,1,2],[0,0,1,3,1,2],[0,0,0,3,3,3],[4,0,0,0,5,5],[4,4,0,4,5,5],[4,4,4,4,4,5]],"sol":[2,5,3,1,4,0]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,1],[2,0,0,3,1,4],[2,2,2,3,3,4],[2,2,2,5,5,5],[2,2,2,5,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[0,0,1,1,1,2],[0,1,1,1,3,2],[0,0,1,3,3,2],[0,4,4,3,2,2],[4,4,3,3,5,5]],"sol":[0,2,5,3,1,4]},{"reg":[[0,0,0,1,1,1],[2,0,0,0,1,1],[2,3,0,0,0,1],[2,3,3,0,1,1],[2,2,3,4,4,1],[5,5,3,3,4,4]],"sol":[5,3,0,2,4,1]},{"reg":[[0,1,1,1,1,2],[0,1,3,3,2,2],[3,3,3,2,2,2],[3,4,2,2,2,5],[4,4,5,2,5,5],[4,5,5,5,5,5]],"sol":[3,0,2,4,1,5]},{"reg":[[0,0,1,1,2,2],[3,0,4,1,2,5],[3,4,4,1,5,5],[3,4,4,4,4,5],[3,4,4,4,4,5],[3,3,3,3,4,4]],"sol":[4,1,3,5,2,0]},{"reg":[[0,0,0,0,0,0],[0,0,1,1,2,2],[0,1,1,1,2,2],[1,1,1,3,3,2],[1,1,4,3,5,5],[1,4,4,4,4,4]],"sol":[0,4,1,3,5,2]},{"reg":[[0,1,1,1,2,2],[0,3,1,2,2,2],[4,3,3,3,2,5],[4,4,2,2,2,5],[4,4,2,2,5,5],[4,4,4,2,5,5]],"sol":[3,0,2,4,1,5]}],"7":[{"reg":[[3,3,0,0,2,2,1],[3,3,3,2,2,2,1],[3,3,3,3,2,2,2],[3,3,3,4,4,4,4],[3,3,3,4,4,4,5],[3,3,4,4,4,5,5],[3,6,6,4,4,4,5]],"sol":[2,6,4,0,3,5,1]},{"reg":[[1,1,1,1,1,0,0],[1,1,1,1,1,0,0],[1,1,1,1,1,0,2],[5,5,3,3,0,0,2],[4,5,5,5,6,6,6],[4,5,5,6,6,6,6],[6,6,6,6,6,6,6]],"sol":[5,1,6,3,0,2,4]},{"reg":[[1,1,1,1,4,2,0],[3,1,1,1,4,2,0],[3,3,1,4,4,2,2],[3,5,5,4,4,4,4],[5,5,5,4,4,4,4],[5,5,5,6,4,4,4],[5,5,6,6,4,4,4]],"sol":[6,2,5,0,4,1,3]},{"reg":[[3,0,0,0,0,0,0],[3,0,0,1,1,1,2],[3,3,0,1,1,2,2],[3,3,0,0,0,4,4],[3,3,0,0,4,4,4],[3,3,3,3,6,5,5],[3,3,6,6,6,5,5]],"sol":[1,3,5,0,4,6,2]},{"reg":[[1,0,0,2,2,2,2],[1,0,2,2,2,2,2],[3,3,2,2,2,2,2],[3,3,2,2,2,2,2],[3,3,2,2,4,4,4],[3,3,2,2,4,4,5],[3,6,6,6,5,5,5]],"sol":[2,0,5,1,4,6,3]},{"reg":[[0,0,0,0,0,1,1],[2,2,0,0,0,1,1],[4,2,2,3,3,5,1],[4,4,3,3,3,5,5],[4,4,4,3,3,5,5],[4,4,4,3,5,5,5],[4,4,4,5,5,6,6]],"sol":[2,5,1,3,0,4,6]},{"reg":[[2,2,2,0,0,2,2],[1,2,2,2,2,2,2],[1,2,2,2,2,2,2],[2,2,2,2,3,3,3],[4,4,4,3,3,3,3],[4,4,4,3,3,3,5],[4,4,4,3,6,6,5]],"sol":[3,0,2,5,1,6,4]},{"reg":[[0,0,0,0,0,0,0],[0,0,0,1,2,2,2],[0,0,0,1,2,2,2],[0,0,0,3,3,2,5],[0,4,0,3,3,2,5],[0,4,4,6,5,5,5],[4,4,6,6,5,5,5]],"sol":[0,3,6,4,1,5,2]},{"reg":[[2,0,0,0,0,0,0],[2,0,0,0,1,1,1],[2,3,3,0,0,5,5],[3,3,3,4,5,5,5],[3,5,4,4,4,5,5],[5,5,5,5,5,5,5],[6,6,5,5,5,5,5]],"sol":[3,5,0,2,4,6,1]},{"reg":[[0,0,0,0,0,1,1],[0,0,0,0,0,1,1],[2,2,2,2,3,4,1],[2,2,3,3,3,4,4],[2,2,3,3,4,4,4],[2,2,3,3,6,5,5],[2,2,6,6,6,6,5]],"sol":[1,5,0,2,4,6,3]},{"reg":[[0,2,2,3,3,1,1],[0,2,3,3,3,1,1],[2,2,3,3,3,3,1],[3,3,3,3,3,3,1],[3,3,3,3,3,3,4],[3,3,3,5,5,3,4],[3,6,6,5,5,3,4]],"sol":[0,5,1,3,6,4,2]},{"reg":[[0,0,2,2,2,3,3],[0,1,1,2,2,3,3],[4,4,4,2,2,3,3],[4,4,4,3,3,3,3],[4,4,4,4,4,3,3],[4,4,4,4,5,5,3],[4,4,4,6,6,5,5]],"sol":[0,2,4,6,1,5,3]},{"reg":[[3,3,3,1,0,0,0],[3,3,3,1,1,1,0],[3,3,3,1,2,2,0],[3,3,3,1,2,2,0],[3,3,3,3,4,2,2],[5,5,5,3,4,2,2],[5,5,6,6,4,2,2]],"sol":[6,3,5,1,4,0,2]},{"reg":[[2,3,1,1,0,0,0],[2,3,3,1,1,1,0],[2,2,3,3,1,1,0],[2,2,3,3,3,4,4],[2,2,3,3,4,4,4],[2,2,3,4,4,5,5],[2,6,6,6,4,5,5]],"sol":[5,3,0,2,4,6,1]},{"reg":[[0,0,0,0,1,1,1],[0,0,0,0,1,1,1],[0,2,0,1,1,1,1],[2,2,4,1,3,1,1],[2,2,4,6,3,1,1],[4,4,4,6,6,5,1],[4,4,4,6,6,5,5]],"sol":[0,6,1,4,2,5,3]},{"reg":[[0,0,0,0,0,1,1],[0,0,0,0,1,1,1],[0,0,0,3,2,2,1],[3,3,3,3,2,2,1],[4,3,3,3,2,2,1],[4,6,3,3,3,5,5],[4,6,6,3,3,5,5]],"sol":[3,6,4,2,0,5,1]},{"reg":[[0,0,0,0,3,1,1],[4,4,4,0,3,3,1],[4,4,2,2,3,5,5],[4,4,5,5,3,5,5],[4,4,5,5,5,5,5],[4,6,5,5,5,5,5],[4,6,5,5,5,5,5]],"sol":[3,6,2,4,0,5,1]},{"reg":[[1,1,0,0,0,0,0],[1,1,0,0,0,0,0],[1,0,0,0,2,2,3],[6,6,6,4,6,3,3],[5,5,6,4,6,6,6],[5,6,6,6,6,6,6],[5,6,6,6,6,6,6]],"sol":[5,1,4,6,3,0,2]},{"reg":[[0,0,0,0,0,0,0],[0,1,0,0,0,0,0],[1,1,4,4,2,2,2],[3,3,4,4,2,2,5],[4,4,4,4,5,5,5],[5,5,5,5,5,5,5],[5,5,5,5,5,6,6]],"sol":[3,1,5,0,2,4,6]},{"reg":[[3,2,2,0,0,2,1],[3,2,2,2,2,2,1],[3,2,2,2,2,2,2],[3,3,5,2,2,4,4],[5,5,5,5,5,4,4],[5,5,5,5,5,5,5],[5,5,5,5,6,6,6]],"sol":[3,6,2,0,5,1,4]}],"8":[{"reg":[[0,0,0,1,1,1,1,1],[0,3,1,1,1,1,1,1],[3,3,3,2,1,1,1,1],[3,3,3,2,1,1,1,1],[3,3,4,2,1,1,1,1],[4,4,4,2,5,5,5,5],[4,4,4,6,6,7,5,5],[4,4,4,6,6,7,7,5]],"sol":[1,5,3,0,2,7,4,6]},{"reg":[[3,3,3,2,1,1,0,0],[3,3,3,2,1,1,1,1],[3,3,3,2,2,2,2,1],[3,3,3,3,3,3,5,1],[6,6,6,3,4,4,5,5],[6,6,6,6,6,6,5,5],[6,6,6,6,6,6,6,6],[7,7,6,6,6,6,6,6]],"sol":[7,5,3,1,4,6,2,0]},{"reg":[[5,3,3,1,1,1,0,0],[5,3,3,3,1,1,2,0],[5,3,3,3,1,1,2,0],[5,3,3,3,6,1,1,4],[5,3,3,6,6,4,4,4],[5,6,6,6,6,6,4,4],[6,6,6,6,6,6,4,4],[7,7,7,6,6,6,6,4]],"sol":[7,4,6,2,5,0,3,1]},{"reg":[[1,1,0,0,2,2,2,2],[1,1,3,0,2,2,2,2],[3,3,3,2,2,2,2,2],[3,3,3,2,2,2,2,2],[3,3,3,2,2,2,4,4],[5,3,3,2,2,2,4,4],[5,5,3,2,2,6,4,4],[5,5,3,6,6,6,7,7]],"sol":[3,1,4,2,6,0,5,7]},{"reg":[[1,0,0,1,1,1,1,1],[1,1,1,1,1,1,1,2],[1,1,1,1,1,1,1,2],[1,1,3,3,3,3,3,4],[5,5,3,3,3,3,4,4],[5,5,3,6,3,3,3,3],[7,7,3,6,3,3,3,3],[7,6,6,6,3,3,3,3]],"sol":[2,5,7,4,6,1,3,0]},{"reg":[[2,2,0,0,0,0,1,1],[2,2,2,0,0,1,1,3],[2,3,3,3,3,3,3,3],[4,4,3,3,3,3,3,3],[4,4,4,5,3,3,3,3],[4,4,4,5,3,3,6,6],[4,4,4,3,3,3,6,6],[4,4,3,3,3,7,7,6]],"sol":[2,6,0,4,1,3,7,5]},{"reg":[[0,0,0,1,1,1,1,1],[2,0,5,1,1,1,4,4],[2,5,5,1,1,4,4,4],[2,5,5,5,3,3,3,4],[5,5,5,5,6,7,4,4],[7,7,5,5,6,7,7,7],[7,7,7,6,6,7,7,7],[7,7,7,7,7,7,7,7]],"sol":[1,3,0,5,7,2,4,6]},{"reg":[[5,0,0,0,0,2,2,2],[5,5,5,1,1,2,2,2],[5,5,5,5,1,2,2,2],[5,5,5,5,3,2,2,2],[5,5,5,5,3,4,4,2],[5,5,5,5,6,4,4,2],[5,5,5,6,6,6,6,2],[5,5,7,7,7,6,2,2]],"sol":[1,3,7,4,6,0,5,2]},{"reg":[[1,1,1,1,1,1,0,0],[1,1,1,1,1,2,0,4],[3,3,1,1,1,2,2,4],[3,3,3,4,4,4,2,4],[3,3,3,4,4,4,4,4],[6,6,5,5,4,4,4,4],[6,4,4,4,4,4,4,4],[6,7,7,4,4,4,4,4]],"sol":[7,4,6,1,5,3,0,2]},{"reg":[[1,0,0,0,0,1,1,1],[1,1,1,1,1,1,1,1],[2,1,1,1,1,1,1,1],[2,6,4,1,7,1,1,3],[6,6,4,7,7,7,5,3],[6,6,4,7,7,7,5,3],[6,6,6,7,7,7,7,7],[7,7,7,7,7,7,7,7]],"sol":[3,5,0,7,2,6,1,4]},{"reg":[[3,0,0,0,0,0,0,1],[3,3,0,0,0,2,1,1],[3,3,3,3,0,2,4,4],[3,3,3,3,4,4,4,4],[5,5,3,3,3,4,4,4],[5,5,3,3,4,4,4,4],[7,5,3,6,4,4,4,4],[7,5,3,6,4,4,4,4]],"sol":[4,7,5,2,6,1,3,0]},{"reg":[[1,1,1,0,0,3,3,2],[1,1,1,1,1,3,3,2],[1,1,1,1,3,3,3,2],[3,3,3,3,3,3,6,6],[5,3,3,3,4,4,6,6],[5,3,3,3,6,6,6,6],[5,3,3,3,6,6,6,6],[7,7,3,3,6,6,6,6]],"sol":[4,2,7,3,5,0,6,1]}]}, LEVELS=[["Challenge",6]];
 const COLORS=["#efb37e","#91b5ed","#b4a0db","#a9d692","#ff8267","#ddd9d2","#e5ef83","#bdb6a0","#a9d7d3"];
 const TERRITORY_COLORS=["#46c7e8","#6d8fe8","#8b70d7","#49b49b","#d38a54","#b55f86","#67a6bf","#7e9c69","#a8875b"];
-let n=6,puz,state,hist=[],start,timer,activeElapsedMs=0,activeSince=null,last={},hi=null,proofs={},hintStage=0,hintFocus=null,celebrated=false,hintUsesThisGame=0,hintWasGranted=false,mistakesThisGame=0,autoUsedThisGame=false,replayMode=false,levelIndex=Math.min(sequentialSolvedCount,99);
+let n=6,puz,state,hist=[],start,timer,activeElapsedMs=0,activeSince=null,last={},hi=null,proofs={},hintStage=0,hintFocus=null,celebrated=false,hintUsesThisGame=0,hintWasGranted=false,mistakesThisGame=0,verifyUsesThisGame=0,verifyPending=null,autoUsedThisGame=false,replayMode=false,levelIndex=Math.min(sequentialSolvedCount,99);
 const board=document.getElementById("board"),msg=document.getElementById("msg");
 function arrangeDesktopPanels(){
  const left=document.getElementById("desktopLeftSlot"),guide=document.getElementById("desktopGuide"),core=document.querySelector(".game-core");
@@ -692,28 +761,148 @@ function loadPuzzle(){init();}
 function hintCost(){if(levelIndex<=4)return 0;if(hintUsesThisGame===0)return 0;if(hintUsesThisGame===1)return 1;return 2}
 function updateShardMeter(){const m=document.getElementById("shardMeter");if(!m)return;const sh=Math.max(0,Math.min(5,lumenProgress.shards||0));m.innerHTML=Array.from({length:5},(_,i)=>`<span class="shard-gem${i<sh?" on":""}" aria-hidden="true">✦</span>`).join("");m.setAttribute("aria-label",sh+" éclat"+(sh>1?"s":"")+" de lumière disponible"+(sh>1?"s":"")+". Voir les règles.")}function updateHintButton(){const b=document.getElementById("hint");if(!b)return;const q=bonusChallengeFor(levelIndex),cost=hintCost(),sh=lumenProgress.shards||0;b.textContent=cost===0?"Indice · gratuit":"Indice · "+cost+" ✦";b.title="Éclats disponibles : "+sh+"/5";updateShardMeter();if(q&&q.type===2&&!lumenProgress.stars[q.id])return}
 function consumeHintCost(){const cost=hintCost(),sh=lumenProgress.shards||0;if(cost>sh){if(sh===0&&activeGameSeconds()>=90){hintWasGranted=true;hintUsesThisGame++;msg.textContent="Après 90 s de recherche, cet indice est offert.";updateHintButton();return true}msg.textContent="Il te manque "+(cost-sh)+" ✦ éclat"+(cost-sh>1?"s":"")+" pour cet indice. Continue à chercher : à 0 éclat, un indice devient gratuit après 90 s.";return false}if(cost>0){lumenProgress.shards=sh-cost;saveLumenProgress()}hintWasGranted=true;hintUsesThisGame++;updateHintButton();return true}
-function guidedErrorsEnabled(){const g=document.getElementById("guidedErrors");return !!(g&&g.checked)}
-function immediateErrorForAction(r,c,next){
- if(next!==2)return "";
- if(puz.sol[r]!==c)return "Ce Gardien n’est pas au bon emplacement.";
- for(let rr=0;rr<n;rr++)for(let cc=0;cc<n;cc++)if(state[rr][cc]===2&&!(rr===r&&cc===c)){
-  if(rr===r)return "Il y a déjà un Gardien sur cette ligne.";
-  if(cc===c)return "Il y a déjà un Gardien dans cette colonne.";
-  if(puz.reg[rr][cc]===puz.reg[r][c])return "Il y a déjà un Gardien dans ce territoire.";
-  if(Math.abs(rr-r)<=1&&Math.abs(cc-c)<=1)return "Deux Gardiens ne peuvent pas se toucher, même en diagonale.";
+function verifyCost(){return verifyUsesThisGame===0?0:1}
+function updateVerifyButton(){const b=document.getElementById("verify");if(!b)return;const cost=verifyCost();b.textContent=cost===0?"✓ Vérifier · gratuit":"✓ Vérifier · "+cost+" ✦";b.title="Vérifie uniquement tes choix déjà marqués."}
+function consumeVerifyCost(){const cost=verifyCost(),sh=lumenProgress.shards||0;if(cost>sh){msg.textContent="Il te manque "+(cost-sh)+" ✦ éclat"+(cost-sh>1?"s":"")+" pour vérifier.";return false}if(cost){lumenProgress.shards=sh-cost;saveLumenProgress();updateShardMeter()}verifyUsesThisGame++;updateVerifyButton();return true}
+function verificationErrors(){
+ const errors=[];
+ // The campaign grids have a single audited solution. A Guardian must be on it;
+ // a manual exclusion is wrong when it removes that required cell.
+ for(let r=0;r<n;r++)for(let c=0;c<n;c++){
+  if(state[r][c]===2&&puz.sol[r]!==c)errors.push({r,c,kind:"guardian"});
+  else if(state[r][c]===1&&puz.sol[r]===c)errors.push({r,c,kind:"exclude"});
  }
- return "";
+ return errors;
+}
+function verificationHappyCopy(){
+ const q=state.flat().filter(v=>v===2).length;
+ if(q<=2)return ["Bien parti !","Tous tes choix sont corrects. Continue comme ça."];
+ if(q>=n-2)return ["Presque là !","Aucune erreur détectée. La constellation est presque complète."];
+ return ["Excellent !","Tout est juste jusqu’ici. Ton raisonnement tient bon."];
+}
+function showVerificationSuccess(){
+ const [title,copy]=verificationHappyCopy(),overlay=document.getElementById("verifyCelebration");
+ board.classList.add("verify-ok");board.querySelectorAll(".cell .lumen-orb").forEach(o=>o.parentElement.classList.add("verify-ok"));
+ overlay.innerHTML='<div class="verify-check">✓</div>'+[['-120px','-90px'],['120px','-75px'],['-135px','70px'],['135px','80px'],['0px','-130px']].map(([x,y])=>'<span class="verify-spark" style="--sx:'+x+';--sy:'+y+'">✦</span>').join("");
+ overlay.hidden=false;msg.textContent="✓ "+title+" "+copy;
+ setTimeout(()=>{overlay.hidden=true;overlay.innerHTML="";board.classList.remove("verify-ok");board.querySelectorAll(".cell").forEach(x=>x.classList.remove("verify-ok"))},1350);
+}
+function showVerificationErrors(errors){
+ verifyPending=errors;errors.forEach(e=>guidedCell(e.r,e.c)?.classList.add("verify-error"));
+ const g=errors.filter(e=>e.kind==="guardian").length,x=errors.length-g;
+ document.getElementById("verifyCopy").textContent=errors.length+" choix incorrect"+(errors.length>1?"s":"")+" détecté"+(errors.length>1?"s":"")+". "+(g?g+" Gardien"+(g>1?"s":"")+" mal placé"+(g>1?"s":"")+". ":"")+(x?x+" case"+(x>1?"s":"")+" écartée"+(x>1?"s":"")+" à tort.":"");
+ document.getElementById("verifyCard").hidden=false;board.setAttribute("aria-disabled","true");
+}
+function runVerification(){
+ if(celebrated||guidedPending||verifyPending)return;
+ if(!consumeVerifyCost())return;
+ const errors=verificationErrors();
+ if(errors.length){mistakesThisGame++;showVerificationErrors(errors);errorSound();updateLiveReward(state.flat().filter(v=>v===2).length)}
+ else showVerificationSuccess();
+}
+function fixVerificationErrors(){
+ if(!verifyPending)return;
+ hist.push(state.map(x=>x.slice()));verifyPending.forEach(e=>state[e.r][e.c]=0);verifyPending=null;
+ document.getElementById("verifyCard").hidden=true;board.removeAttribute("aria-disabled");msg.textContent="Les choix incorrects ont été effacés.";render();
+}
+let scriptedLearnStep=0;
+function scriptedLearningActive(){return levelIndex<=1&&!lumenProgress.solved[levelIndex]}
+function scriptedTarget(){
+ if(!scriptedLearningActive())return null;
+ const placed=new Set();for(let r=0;r<n;r++)for(let cc=0;cc<n;cc++)if(state[r][cc]===2)placed.add(r);
+ for(let r=0;r<n;r++)if(!placed.has(r))return [r,puz.sol[r]];
+ return null;
+}
+function updateScriptedLearning(){
+ const card=document.getElementById("scriptedLearn");if(!card)return;
+ board.querySelectorAll(".cell").forEach(x=>x.classList.remove("scripted-focus","scripted-dim"));
+ if(!scriptedLearningActive()){card.hidden=true;return}
+ const target=scriptedTarget();if(!target){card.hidden=true;return}
+ const [r,c]=target,q=state.flat().filter(v=>v===2).length,cell=board.querySelector('.cell[data-row="'+r+'"][data-col="'+c+'"]');
+ if(cell)cell.classList.add("scripted-focus");
+ card.hidden=false;
+ const title=document.getElementById("scriptedLearnTitle"),copy=document.getElementById("scriptedLearnCopy");
+ if(levelIndex===0){
+  if(q===0){title.textContent="Observe ce territoire";copy.textContent="Il n’a qu’une seule possibilité. Place le Gardien sur la case illuminée."}
+  else if(q===1){title.textContent="Regarde les exclusions";copy.textContent="L’Assistance auto a écarté sa ligne, sa colonne, son territoire et les cases voisines. Il ne reste qu’une possibilité ici : place le Gardien illuminé."}
+  else{title.textContent="Une seule possibilité";copy.textContent="Les exclusions précédentes rendent ce Gardien certain. Continue sur la case illuminée."}
+ }else{
+  if(q===0){title.textContent="À toi d’observer";copy.textContent="Cherche le territoire qui n’a plus qu’une seule possibilité. La case illuminée te montre cette première déduction."}
+  else if(q<Math.ceil(n/2)){title.textContent="Déduction en chaîne";copy.textContent="Les Gardiens déjà placés éliminent des lignes, colonnes, territoires et voisinages. Quelle possibilité reste certaine ?"}
+  else{title.textContent="Tu as compris la mécanique";copy.textContent="Continue à partir des exclusions automatiques : chaque Gardien certain en révèle un autre."}
+ }
+}
+function scriptedAllowsGuardian(r,c){const t=scriptedTarget();return !t||(t[0]===r&&t[1]===c)}
+function maybeShowManualCrossTip(){
+ let seen=false;try{seen=localStorage.getItem("lumenManualCrossTipSeen")==="1"}catch(_){}
+ if(seen)return;const tip=document.getElementById("manualCrossTip");if(tip)tip.hidden=false;
+}
+function closeManualCrossTip(){const tip=document.getElementById("manualCrossTip");if(tip)tip.hidden=true;try{localStorage.setItem("lumenManualCrossTipSeen","1")}catch(_){}}
+function guidedErrorsEnabled(){const g=document.getElementById("guidedErrors");return !!(g&&g.checked)}
+let guidedPending=null;
+function guardianOnlyState(extraR=-1,extraC=-1){
+ return state.map((row,r)=>row.map((v,c)=>(v===2||(r===extraR&&c===extraC))?2:0));
+}
+function guidedConflictForAction(r,c,next){
+ if(next!==2)return null;
+ let direct=null;
+ for(let rr=0;rr<n;rr++)for(let cc=0;cc<n;cc++)if(state[rr][cc]===2&&!(rr===r&&cc===c)){
+  if(rr===r){direct={type:"row",cause:[rr,cc],title:"Deux Gardiens sur la même ligne",copy:"Une ligne ne peut contenir qu’un seul Gardien."};break}
+  if(cc===c){direct={type:"col",cause:[rr,cc],title:"Deux Gardiens dans la même colonne",copy:"Une colonne ne peut contenir qu’un seul Gardien."};break}
+  if(puz.reg[rr][cc]===puz.reg[r][c]){direct={type:"region",cause:[rr,cc],title:"Deux Gardiens dans le même territoire",copy:"Chaque territoire ne peut contenir qu’un seul Gardien."};break}
+  if(Math.abs(rr-r)<=1&&Math.abs(cc-c)<=1){direct={type:"touch",cause:[rr,cc],title:"Ces deux Gardiens se touchent",copy:"Deux Gardiens ne peuvent jamais être voisins, même en diagonale."};break}
+ }
+ if(direct)return direct;
+ const saved=state;
+ state=guardianOnlyState(r,c);
+ let possible=false;
+ try{possible=solutions().length>0}catch(_){possible=puz.sol[r]===c}
+ state=saved;
+ if(!possible)return {type:"deadend",cause:null,title:"Ce placement mène à une impasse",copy:"Avec ce Gardien ici, il devient impossible de compléter toute la constellation sans violer une règle."};
+ return null;
+}
+function guidedCell(r,c){return board.querySelector('.cell[data-row="'+r+'"][data-col="'+c+'"]')}
+function drawGuidedLink(a,b){
+ const ca=guidedCell(a[0],a[1]),cb=guidedCell(b[0],b[1]);if(!ca||!cb)return;
+ const br=board.getBoundingClientRect(),ra=ca.getBoundingClientRect(),rb=cb.getBoundingClientRect();
+ const x1=ra.left-br.left+ra.width/2,y1=ra.top-br.top+ra.height/2,x2=rb.left-br.left+rb.width/2,y2=rb.top-br.top+rb.height/2;
+ const line=document.createElement("div");line.className="guided-link";line.style.left=x1+"px";line.style.top=y1+"px";line.style.width=Math.hypot(x2-x1,y2-y1)+"px";line.style.transform="rotate("+Math.atan2(y2-y1,x2-x1)+"rad)";board.appendChild(line);
+}
+function showGuidedConflict(r,c,info){
+ guidedPending={r,c,info};
+ const attempt=guidedCell(r,c);if(!attempt)return;
+ attempt.innerHTML='<span class="lumen-orb" aria-label="Gardien tenté"></span>';attempt.classList.add("guided-attempt");
+ if(info.cause){
+  const cause=guidedCell(info.cause[0],info.cause[1]);if(cause)cause.classList.add("guided-cause");
+  if(info.type==="row"){for(let x=Math.min(c,info.cause[1]);x<=Math.max(c,info.cause[1]);x++)guidedCell(r,x)?.classList.add("guided-path")}
+  if(info.type==="col"){for(let y=Math.min(r,info.cause[0]);y<=Math.max(r,info.cause[0]);y++)guidedCell(y,c)?.classList.add("guided-path")}
+  if(info.type==="region"){const g=puz.reg[r][c];for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(puz.reg[y][x]===g)guidedCell(y,x)?.classList.add("guided-region")}
+  if(info.type==="touch")drawGuidedLink([r,c],info.cause);
+ }
+ document.getElementById("guidedTitle").textContent=info.title;
+ document.getElementById("guidedCopy").textContent=info.copy;
+ document.getElementById("guidedCard").hidden=false;
+ board.setAttribute("aria-disabled","true");
+}
+function closeGuidedConflict(){
+ guidedPending=null;document.getElementById("guidedCard").hidden=true;board.removeAttribute("aria-disabled");render();
 }
 function configureLearningMode(){
  const cb=document.getElementById("autoCross"),wrap=document.getElementById("autoCrossWrap"),note=document.getElementById("learningNote"),guided=document.getElementById("guidedErrors"),gwrap=document.getElementById("guidedErrorsWrap");
  if(!cb||!wrap)return;
- if(levelIndex<=4){cb.checked=true;cb.disabled=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=false;note.textContent="Apprentissage · l’Assistance auto marque les cases devenues impossibles."}}
+ if(levelIndex<=4){cb.checked=true;cb.disabled=levelIndex<=1;wrap.hidden=false;wrap.classList.toggle("learning-locked",levelIndex<=1);if(note){note.hidden=false;note.textContent="Apprentissage · l’Assistance auto marque les cases devenues impossibles."}}
  else if(levelIndex<=9){cb.disabled=false;cb.checked=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=false;note.textContent="Entraînement · l’Assistance auto reste disponible."}}
  else{cb.checked=false;cb.disabled=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=true;note.textContent=""}}
  if(guided&&gwrap){
   let saved=null;try{saved=localStorage.getItem("lumenGuidedErrors")}catch(_){}
-  guided.checked=saved===null?levelIndex<=9:saved==="on";
-  guided.disabled=false;gwrap.hidden=false;
+  gwrap.hidden=false;gwrap.classList.remove("learning-locked");
+  if(levelIndex<=4){
+   guided.checked=true;guided.disabled=true;gwrap.classList.add("learning-locked");
+  }else if(levelIndex<=9){
+   guided.disabled=false;guided.checked=saved===null?true:saved==="on";
+  }else{
+   guided.disabled=false;guided.checked=saved==="on";
+  }
  }
 }
 function applyQuestRestrictions(){
@@ -729,18 +918,26 @@ function applyQuestRestrictions(){
   if(note){note.hidden=false;note.textContent="Quête Esprit clair · aucun indice disponible pendant ce défi."}
  }
 }
+function setGuidedPreference(enabled){
+ const guided=document.getElementById("guidedErrors");if(guided){guided.checked=enabled;guided.disabled=false}
+ try{localStorage.setItem("lumenGuidedErrors",enabled?"on":"off")}catch(_){}
+}
+function finishAutonomyChoice(keepGuided){
+ setGuidedPreference(!!keepGuided);lumenProgress.autonomySeen=1;saveLumenProgress();
+ const o=document.getElementById("autonomyOverlay");if(o){o.hidden=true;o.style.display="none"}
+ trackLumenEvent("guided_autonomy_choice",levelIndex+1,{guided:!!keepGuided});
+}
 function maybeShowAutonomy(){
  if(levelIndex!==10||lumenProgress.autonomySeen)return;
- lumenProgress.autonomySeen=1;saveLumenProgress();
- const o=document.getElementById("autonomyOverlay");if(o){o.hidden=false;o.style.display="flex"}
+ const o=document.getElementById("autonomyOverlay");if(o){o.hidden=false;o.style.display="flex";pauseGameClock()}
 }
 function prepareQuestStart(){let q=bonusChallengeFor(levelIndex),o=document.getElementById("questStart");questFailed=false;if(!q||lumenProgress.stars[q.id]){questStarted=true;o.hidden=true;resumeGameClock();return}questStarted=false;pauseGameClock();document.getElementById("questStartTitle").textContent=q.title;document.getElementById("questStartRule").textContent=q.copy+" Récompense : +25 XP et +1 ✦ éclat.";o.hidden=false}
 document.getElementById("questGo").onclick=()=>{document.getElementById("questStart").hidden=true;questStarted=true;activeElapsedMs=0;activeSince=performance.now();clock()};
-function init(){choose();configureLearningMode();applyQuestRestrictions();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl)cl.textContent="Quête "+(levelIndex+1);document.getElementById("difficulty").textContent=n===7?"7 × 7 · constellation étendue":n===8?"8 × 8 · constellation étendue":"";state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();hideSuccess();start=Date.now();activeElapsedMs=0;activeSince=document.visibilityState==="visible"?performance.now():null;msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,1000);clock();prepareQuestStart()}
+function init(){choose();configureLearningMode();applyQuestRestrictions();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl)cl.textContent="Quête "+(levelIndex+1);document.getElementById("difficulty").textContent=n===7?"7 × 7 · constellation étendue":n===8?"8 × 8 · constellation étendue":"";state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();activeElapsedMs=0;activeSince=document.visibilityState==="visible"?performance.now():null;msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,100);clock();prepareQuestStart()}
 function drawLevels(){let e=document.getElementById("levels");e.innerHTML="";LEVELS.forEach(([name,x])=>{let b=document.createElement("button");b.className="level"+(x===n?" active":"");b.innerHTML=name+"<small>"+x+" × "+x+"</small>";b.onclick=()=>{n=x;init()};e.appendChild(b)})}
 function activeGameMs(){return activeElapsedMs+(activeSince!==null?Math.max(0,performance.now()-activeSince):0)}
 function activeGameSeconds(){return Math.max(0,Math.floor(activeGameMs()/1000))}
-function clock(){let s=activeGameSeconds();document.getElementById("time").textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");const cd=document.getElementById("speedCountdown"),speedEligible=hintUsesThisGame===0&&!autoUsedThisGame&&mistakesThisGame===0;if(cd){const left=60-s,show=!celebrated&&speedEligible&&left<=10&&left>0;cd.hidden=!show;if(show){cd.textContent="⌛ "+left;cd.classList.toggle("urgent",left<=3);countdownSound(left)}else{cd.classList.remove("urgent");lastCountdownSound=null}}let q=bonusChallengeFor(levelIndex);if(q&&questStarted&&!lumenProgress.stars[q.id]){if(q.seconds!==null&&s>q.seconds)questFailed=true;if(q.type===2&&usedHintThisGame)questFailed=true;let b=document.getElementById("challengeCopy");if(b&&questFailed)b.textContent="Défi échoué · termine la quête à ton rythme."}}
+function clock(){let ms=activeGameMs(),s=Math.max(0,Math.floor(ms/1000));document.getElementById("time").textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");const cd=document.getElementById("speedCountdown"),fill=document.getElementById("speedCountdownFill"),speedEligible=hintUsesThisGame===0&&!autoUsedThisGame&&mistakesThisGame===0;if(cd){const remainingMs=60000-ms,show=!celebrated&&speedEligible&&remainingMs<=10000&&remainingMs>0;cd.hidden=!show;if(show&&fill)fill.style.transform="scaleX("+Math.max(0,Math.min(1,remainingMs/10000))+")";else if(fill)fill.style.transform="scaleX(1)"}let q=bonusChallengeFor(levelIndex);if(q&&questStarted&&!lumenProgress.stars[q.id]){if(q.seconds!==null&&s>q.seconds)questFailed=true;if(q.type===2&&usedHintThisGame)questFailed=true;let b=document.getElementById("challengeCopy");if(b&&questFailed)b.textContent="Défi échoué · termine la quête à ton rythme."}}
 function pauseGameClock(){if(activeSince!==null){activeElapsedMs+=Math.max(0,performance.now()-activeSince);activeSince=null}clock()}
 function resumeGameClock(){if(!celebrated&&questStarted&&activeSince===null){activeSince=performance.now();clock()}}
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")pauseGameClock();else resumeGameClock()});
@@ -850,7 +1047,7 @@ function celebrateSuccess(){
  const earnedThisRun=starsAwardedForGrid(levelIndex,firstCompletion,questPassed);
  launchWinStar(earnedThisRun);
  savePerformance(levelIndex,earnedThisRun);
- renderSuccessRewards(earnedThisRun);
+ renderSuccessRewards(earnedThisRun);renderSuccessAchievement();
  if(!usedHintThisGame){
    if(!lumenProgress.noHint)lumenProgress.noHint={};
    lumenProgress.noHint[levelIndex]=1;
@@ -908,13 +1105,12 @@ function conflictMessage(reasons){
  return "";
 }
 
-let soundEnabled=localStorage.getItem("lumenSound")!=="off",audioCtx=null,lastCountdownSound=null;
+let soundEnabled=localStorage.getItem("lumenSound")!=="off",audioCtx=null;
 function audioContext(){if(!soundEnabled)return null;try{if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx}catch(e){return null}}
 function tone(freq,dur=.09,vol=.035,delay=0,type="sine"){const a=audioContext();if(!a)return;const t=a.currentTime+delay,o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(freq,t);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+dur+.03)}
 function guardianSound(q){tone(420+q*48,.11,.085)}
 function errorSound(){tone(145,.16,.09,0,"triangle")}
 function halfSound(){tone(560,.16,.08);tone(740,.22,.085,.11)}
-function countdownSound(left){if(lastCountdownSound===left)return;lastCountdownSound=left;tone(left<=3?720:510,left<=3?.11:.075,left<=3?.095:.055,0,"triangle")}
 function victorySound(){tone(523,.28,.09);tone(659,.3,.085,.1);tone(784,.5,.105,.2)}
 function starArrivalSound(){tone(988,.28,.085);tone(1318,.42,.07,.08)}
 function constellationSound(){[523,659,784,1047].forEach((f,i)=>tone(f,.62,.105,i*.13))}
@@ -954,7 +1150,7 @@ function paintCell(r,c){
 function paintBoardState(){
  for(let r=0;r<n;r++)for(let c=0;c<n;c++)paintCell(r,c);
  const q=state.flat().filter(v=>v===2).length,countEl=document.getElementById("count");if(countEl)countEl.textContent=q+"/"+n;
- updateLiveReward(q);
+ updateLiveReward(q);if(scriptedLearningActive())updateScriptedLearning();
 }
 function markDragCross(r,c){
  if(!dragCross||dragCross.visited.has(r+","+c)||state[r]?.[c]===2)return;
@@ -962,7 +1158,7 @@ function markDragCross(r,c){
  if(state[r][c]!==1){state[r][c]=1;dragCross.changed=true;paintCell(r,c)}
 }
 board.addEventListener("pointerdown",e=>{
- if(celebrated||e.pointerType==="mouse")return;
+ if(celebrated||guidedPending||verifyPending||scriptedLearningActive()||e.pointerType==="mouse")return;
  const cell=e.target.closest(".cell");if(!cell)return;
  e.preventDefault();
  dragCross={id:e.pointerId,startX:e.clientX,startY:e.clientY,dragging:false,changed:false,visited:new Set(),snapshot:state.map(x=>x.slice())};
@@ -1008,17 +1204,17 @@ function render(){
   else d.innerHTML="";
   if(shown===3)d.classList.add("auto-x");
   d.dataset.row=r;d.dataset.col=c;
-  d.onclick=()=>{if(celebrated||dragCrossSuppressClick)return;
+  d.onclick=()=>{if(celebrated||dragCrossSuppressClick||guidedPending||verifyPending)return;
  let shown=displayedCellState(r,c),next=shown===3?2:(state[r][c]+1)%3,currentGuardians=state.flat().filter(v=>v===2).length;
+ if(scriptedLearningActive()){if(!scriptedAllowsGuardian(r,c)){msg.textContent="Pour cette quête d’apprentissage, suis la déduction illuminée.";return}next=2}
  if(next===2&&state[r][c]!==2&&currentGuardians>=n)return;
  if(guidedErrorsEnabled()){
-  const guidedError=immediateErrorForAction(r,c,next);
+  const guidedError=guidedConflictForAction(r,c,next);
   if(guidedError){
    mistakesThisGame++;
-   msg.textContent=guidedError;
-   d.classList.add("conflict");
+   msg.textContent="";
    errorSound();
-   setTimeout(()=>d.classList.remove("conflict"),1100);
+   showGuidedConflict(r,c,guidedError);
    updateLiveReward(state.flat().filter(v=>v===2).length);
    return;
   }
@@ -1031,7 +1227,7 @@ function render(){
  if(q===n)render()
 };board.appendChild(d)
  }
- let q=state.flat().filter(v=>v===2).length;const countEl=document.getElementById("count");countEl.textContent=q+"/"+n;rewardProgressPulse(q);
+ let q=state.flat().filter(v=>v===2).length;const countEl=document.getElementById("count");countEl.textContent=q+"/"+n;rewardProgressPulse(q);if(scriptedLearningActive())updateScriptedLearning();
  if(q===n){
    // Victory must validate the placed Guardians themselves.
    // Manual/automatic exclusion marks must never make a correct completed board fail.
@@ -1272,6 +1468,8 @@ function runHintTests(){
  test("PWA : installation proposée seulement après 3 quêtes",()=>maybeOfferInstall.toString().includes("solvedCount()<3")&&document.getElementById("installEnable"));
  test("PWA : le mode standalone empêche de reproposer l’installation",()=>maybeOfferInstall.toString().includes("lumenIsStandalone()"));
  test("Partage : le résultat contient un lien de parrainage traçable",()=>lumenShareUrl().includes("ref=")&&shareLumenResult.toString().includes("result_shared"));
+ test("Partage : la réussite met en avant quête et constellation",()=>typeof successAchievement==="function"&&document.getElementById("successAchievement")&&successAchievement.toString().includes("Quête "));
+ test("Partage : une carte image est générée quand le téléphone le permet",()=>shareLumenResult.toString().includes("shareCardCanvas")&&shareLumenResult.toString().includes("canShare"));
  test("Referral : le paramètre ref est nettoyé avant analytics",()=>captureReferral.toString().includes("replace(/[^a-zA-Z0-9_-]/g"));
  test("Compte : le pseudo est stocké côté profil utilisateur",()=>typeof saveLumenNickname==="function"&&saveLumenNickname.toString().includes("lumen_set_nickname"));
  test("Rappel : la popup LUMEN disparaît avant la demande Android",()=>{
@@ -1289,7 +1487,9 @@ function runHintTests(){
  test("Campagne : le ciel contient exactement 150 étoiles",()=>CONSTELLATIONS.reduce((a,c)=>a+c.count,0)===SKY_TARGET&&SKY_TARGET===150);
  test("Campagne : chaque quête appartient à une constellation",()=>Array.from({length:100},(_,i)=>chapterForGrid(i)).every(i=>i>=0&&i<CONSTELLATIONS.length));
  test("Interaction : le cycle reste exclusion, Gardien, case libre",()=>{const src=render.toString();return src.includes("(state[r][c]+1)%3")});
- test("Guidage : contrôle activable et erreur immédiate sur mauvais Gardien",()=>!!document.getElementById("guidedErrors")&&render.toString().includes("immediateErrorForAction")&&typeof immediateErrorForAction==="function");
+ test("Guidage : contrôle activable avec explication persistante",()=>!!document.getElementById("guidedErrors")&&!!document.getElementById("guidedCard")&&typeof guidedConflictForAction==="function"&&typeof showGuidedConflict==="function");
+ test("Guidage : validation logique utilise le solveur",()=>guidedConflictForAction.toString().includes("solutions()"));
+ test("Guidage : feedback visuel distingue ligne, colonne, territoire et contact",()=>["row","col","region","touch","deadend"].every(k=>guidedConflictForAction.toString().includes('"'+k+'"')));
  test("Rendu : le plateau contient n × n cellules après render",()=>{render();return board.children.length===n*n});
  test("Mobile : glisser assombrit plusieurs cases",()=>document.querySelector("#board")&&getComputedStyle(board).touchAction==="none"&&document.documentElement.innerHTML.includes('board.addEventListener("pointermove"'));
  test("Narratif : les pièces placées sont des Gardiens",()=>{
@@ -1319,6 +1519,19 @@ function runHintTests(){
  test("Campagne : seule une victoire permet d'avancer",()=>{
    return document.getElementById("successNew").textContent.trim()==="Quête suivante";
  });
+ test("UX modales : toucher hors de Quête accomplie avance",()=>setupOutsideDefaults.toString().includes('"successOverlay"')&&setupOutsideDefaults.toString().includes("advanceToNextPuzzle"));
+ test("UX modales : les overlays informatifs ont une action par défaut",()=>["skyReveal","questStart","autonomyOverlay","mapModal"].every(id=>setupOutsideDefaults.toString().includes('"'+id+'"')));
+ test("UX consentement : installation et rappel choisissent Plus tard hors popup",()=>setupOutsideDefaults.toString().includes("dismissInstallLater")&&setupOutsideDefaults.toString().includes("dismissPushLater"));
+ test("UX apprentissage : premier tutoriel ne se ferme pas par accident",()=>setupOutsideDefaults.toString().includes("lumenTutorialSeen")&&setupOutsideDefaults.toString().includes("if(seen)closeTutorial(false)"));
+ test("UX correction : guidage et vérification restent explicites",()=>!setupOutsideDefaults.toString().includes('"guidedCard"')&&!setupOutsideDefaults.toString().includes('"verifyCard"'));
+ test("Apprentissage guidé : quêtes 1 à 5 imposent le contrôle",()=>configureLearningMode.toString().includes("levelIndex<=4")&&configureLearningMode.toString().includes("guided.disabled=true"));
+ test("Apprentissage guidé : quêtes 6 à 10 le rendent optionnel",()=>configureLearningMode.toString().includes("levelIndex<=9")&&configureLearningMode.toString().includes("guided.disabled=false"));
+ test("Autonomie : la quête 11 propose de jouer sans contrôle guidé",()=>maybeShowAutonomy.toString().includes("levelIndex!==10")&&!!document.getElementById("autonomyTry")&&!!document.getElementById("autonomyKeep"));
+ test("Autonomie : toucher hors popup choisit sans aide",()=>closeAutonomyOverlay.toString().includes("finishAutonomyChoice(false)"));
+ test("Tutoriel joué : quêtes 1 et 2 n’enseignent que les Gardiens",()=>scriptedLearningActive.toString().includes("levelIndex<=1")&&render.toString().includes("scriptedAllowsGuardian"));
+ test("Tutoriel joué : Assistance auto verrouillée sur les deux premières quêtes",()=>configureLearningMode.toString().includes("cb.disabled=levelIndex<=1"));
+ test("Tutoriel joué : le glisser des exclusions est bloqué pendant le scénario",()=>document.querySelector("#board")&&scriptedLearningActive.toString().includes("levelIndex<=1"));
+ test("Tip exclusions : apparaît au premier arrêt de l’Assistance auto",()=>ac.onchange.toString().includes("maybeShowManualCrossTip")&&maybeShowManualCrossTip.toString().includes("lumenManualCrossTipSeen"));
 
  // Regression: a completed valid constellation is judged from its guardians,
  // independently of remaining manual/automatic exclusions.
@@ -1530,7 +1743,7 @@ clearHintBtn.onclick=()=>{
 document.getElementById("undo").onclick=()=>{if(celebrated)return;if(hist.length){state=hist.pop();hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";render()}};
 const ac=document.getElementById("autoCross");
 const lumenAutoCrossStored=localStorage.getItem("lumenAutoCross");const legacyAutoCrossStored=localStorage.getItem("regaliaAutoCross");ac.checked=(lumenAutoCrossStored??legacyAutoCrossStored)!=="0";if(lumenAutoCrossStored===null&&legacyAutoCrossStored!==null){localStorage.setItem("lumenAutoCross",legacyAutoCrossStored);localStorage.removeItem("regaliaAutoCross")};
-ac.onchange=()=>{if(celebrated){ac.checked=!ac.checked;return}if(ac.checked)autoUsedThisGame=true;localStorage.setItem("lumenAutoCross",ac.checked?"1":"0");hi=null;render()};
+ac.onchange=()=>{if(celebrated){ac.checked=!ac.checked;return}if(levelIndex<=1&&!lumenProgress.solved[levelIndex]){ac.checked=true;return}if(ac.checked)autoUsedThisGame=true;localStorage.setItem("lumenAutoCross",ac.checked?"1":"0");if(!ac.checked)maybeShowManualCrossTip();hi=null;render()};
 function advanceToNextPuzzle(){
  if(!lumenProgress.solved[levelIndex])return;
  const next=replayMode?Math.min(sequentialSolvedCount,99):levelIndex+1;
@@ -1553,7 +1766,7 @@ document.getElementById("successRetry").onclick=()=>{
 document.getElementById("successSky").onclick=()=>{hideSuccess();openJourneyMap(true)};
 document.getElementById("successNew").onclick=advanceToNextPuzzle;
 document.getElementById("boardNext").onclick=advanceToNextPuzzle;
-document.getElementById("new").onclick=init;arrangeDesktopPanels();setupMobileAuth();init();setupTutorial();
+document.getElementById("new").onclick=init;arrangeDesktopPanels();setupMobileAuth();init();setupTutorial();setupOutsideDefaults();
 
 let mapConstellation=0;const badgeDefs=[["first","Première lueur"],["explorer","Explorateur"],["beacon","Phare"],["master","Maître LUMEN"],["challenge1","Éclair"],["challengeAll","Maître des défis"]];
 const SKY_TARGET=150;
@@ -1653,12 +1866,37 @@ function openJourneyMap(focusSky=false){mapConstellation=chapterForGrid(levelInd
 
 const performanceLegend=document.getElementById("performanceLegend"),badgeRulesModal=document.getElementById("badgeRulesModal"),closeBadgeRules=document.getElementById("closeBadgeRules");function openBadgeRules(){if(badgeRulesModal){badgeRulesModal.hidden=false;closeBadgeRules&&closeBadgeRules.focus()}}function hideBadgeRules(){if(badgeRulesModal){badgeRulesModal.hidden=true;performanceLegend&&performanceLegend.focus()}}if(performanceLegend){performanceLegend.onclick=openBadgeRules;performanceLegend.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openBadgeRules()}}}if(closeBadgeRules)closeBadgeRules.onclick=hideBadgeRules;if(badgeRulesModal)badgeRulesModal.onclick=e=>{if(e.target===badgeRulesModal)hideBadgeRules()};document.addEventListener("keydown",e=>{if(e.key==="Escape"&&badgeRulesModal&&!badgeRulesModal.hidden)hideBadgeRules()});
 const shardMeter=document.getElementById("shardMeter"),shardRulesModal=document.getElementById("shardRulesModal"),closeShardRules=document.getElementById("closeShardRules");function openShardRules(){if(shardRulesModal){shardRulesModal.hidden=false;closeShardRules&&closeShardRules.focus()}}function hideShardRules(){if(shardRulesModal){shardRulesModal.hidden=true;shardMeter&&shardMeter.focus()}}if(shardMeter){shardMeter.onclick=openShardRules;shardMeter.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openShardRules()}}}if(closeShardRules)closeShardRules.onclick=hideShardRules;if(shardRulesModal)shardRulesModal.onclick=e=>{if(e.target===shardRulesModal)hideShardRules()};document.addEventListener("keydown",e=>{if(e.key==="Escape"&&shardRulesModal&&!shardRulesModal.hidden)hideShardRules()});
+function bindOutsideDefault(id,action){
+ const o=document.getElementById(id);if(!o)return;
+ o.addEventListener("click",e=>{if(e.target!==o)return;e.preventDefault();action()});
+}
+function dismissInstallLater(){const o=document.getElementById("installOptin");if(!o||o.hidden)return;o.hidden=true;try{localStorage.setItem("lumenInstallLater",String(Date.now()))}catch(_){}trackLumenEvent("pwa_install_later")}
+function dismissPushLater(){const o=document.getElementById("pushOptin");if(!o||o.hidden)return;o.hidden=true;try{localStorage.setItem("lumenPushChoice","later")}catch(_){}}
+function continueSkyReveal(){document.getElementById("skyRevealContinue")?.click()}
+function startQuestFromOverlay(){document.getElementById("questGo")?.click()}
+function closeAutonomyOverlay(){finishAutonomyChoice(false);resumeGameClock()}
+function closeMapOverlay(){const o=document.getElementById("mapModal");if(o)o.hidden=true}
+function setupOutsideDefaults(){
+ bindOutsideDefault("successOverlay",()=>advanceToNextPuzzle());
+ bindOutsideDefault("skyReveal",continueSkyReveal);
+ bindOutsideDefault("questStart",startQuestFromOverlay);
+ bindOutsideDefault("autonomyOverlay",closeAutonomyOverlay);
+ bindOutsideDefault("mapModal",closeMapOverlay);
+ bindOutsideDefault("installOptin",dismissInstallLater);
+ bindOutsideDefault("pushOptin",dismissPushLater);
+ // badgeRulesModal, shardRulesModal and feedbackModal already close on their backdrop.
+ // Guided explanations and verification corrections deliberately require their explicit action.
+ const tutorial=document.getElementById("tutorialOverlay");
+ if(tutorial)tutorial.addEventListener("click",e=>{if(e.target!==tutorial)return;let seen=false;try{seen=localStorage.getItem("lumenTutorialSeen")==="1"}catch(_){}if(seen)closeTutorial(false)});
+}
 document.getElementById("openMap").onclick=()=>openJourneyMap(false);
 const openSky=document.getElementById("openSky");if(openSky)openSky.onclick=()=>openJourneyMap(true);
 const mobileJourney=document.getElementById("mobileJourney");if(mobileJourney)mobileJourney.onclick=()=>openJourneyMap(true);
-document.getElementById("closeMap").onclick=()=>document.getElementById("mapModal").hidden=true;document.getElementById("hint").addEventListener("click",()=>{if(!hintWasGranted)return;hintWasGranted=false;trackLumenEvent("hint_used",levelIndex+1);usedHintThisGame=true;updateHintButton()});
+document.getElementById("closeMap").onclick=closeMapOverlay;document.getElementById("hint").addEventListener("click",()=>{if(!hintWasGranted)return;hintWasGranted=false;trackLumenEvent("hint_used",levelIndex+1);usedHintThisGame=true;updateHintButton()});
 
-const autonomyClose=document.getElementById("autonomyClose");if(autonomyClose)autonomyClose.onclick=()=>{let o=document.getElementById("autonomyOverlay");o.hidden=true;o.style.display="none"};
+const autonomyTry=document.getElementById("autonomyTry"),autonomyKeep=document.getElementById("autonomyKeep");
+if(autonomyTry)autonomyTry.onclick=()=>{finishAutonomyChoice(false);resumeGameClock()};
+if(autonomyKeep)autonomyKeep.onclick=()=>{finishAutonomyChoice(true);resumeGameClock()};
 document.getElementById("new").onclick=()=>{
   hideSuccess();
   // Keep the same campaign map. Only reset its board/timer/hints.
@@ -1670,12 +1908,15 @@ refreshJourney();
 maybeShowReturnWelcome();
 
 setupBetaFeedback();
+const manualCrossTipOk=document.getElementById("manualCrossTipOk");if(manualCrossTipOk)manualCrossTipOk.onclick=closeManualCrossTip;
+const guidedAck=document.getElementById("guidedAck");if(guidedAck)guidedAck.onclick=closeGuidedConflict;
+const verifyBtn=document.getElementById("verify");if(verifyBtn)verifyBtn.onclick=runVerification;const verifyFix=document.getElementById("verifyFix");if(verifyFix)verifyFix.onclick=fixVerificationErrors;
 const nicknameSave=document.getElementById("nicknameSave");if(nicknameSave)nicknameSave.onclick=saveLumenNickname;
-const guidedErrors=document.getElementById("guidedErrors");if(guidedErrors)guidedErrors.onchange=()=>localStorage.setItem("lumenGuidedErrors",guidedErrors.checked?"on":"off");
-const installEnable=document.getElementById("installEnable"),installLater=document.getElementById("installLater");if(installEnable)installEnable.onclick=installLumen;if(installLater)installLater.onclick=()=>{document.getElementById("installOptin").hidden=true;localStorage.setItem("lumenInstallLater",String(Date.now()));trackLumenEvent("pwa_install_later")};const successShare=document.getElementById("successShare");if(successShare)successShare.onclick=shareLumenResult;
+const guidedErrors=document.getElementById("guidedErrors");if(guidedErrors)guidedErrors.onchange=()=>{if(levelIndex<=4){guidedErrors.checked=true;return}localStorage.setItem("lumenGuidedErrors",guidedErrors.checked?"on":"off")};
+const installEnable=document.getElementById("installEnable"),installLater=document.getElementById("installLater");if(installEnable)installEnable.onclick=installLumen;if(installLater)installLater.onclick=dismissInstallLater;const successShare=document.getElementById("successShare");if(successShare)successShare.onclick=shareLumenResult;
 const pushEnable=document.getElementById("pushEnable"),pushLater=document.getElementById("pushLater");
 if(pushEnable)pushEnable.onclick=enableLumenPush;
-if(pushLater)pushLater.onclick=()=>{document.getElementById("pushOptin").hidden=true;localStorage.setItem("lumenPushChoice","later")};
+if(pushLater)pushLater.onclick=dismissPushLater;
 markLumenSeen();
 initLumenCloud();
 </script><script>
