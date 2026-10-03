@@ -81,6 +81,23 @@ async function cloudSaveDaily(date,index){
  return data?.[0]||null;
 }
 
+async function cloudMergeHistoricalPerformance(anonymousId){
+ if(!model.lumenSupabase)return;
+ const {data,error}=await model.lumenSupabase.rpc("lumen_get_historical_performance",{p_anonymous_id:anonymousId||null});
+ if(error){console.warn("LUMEN history recovery",error);return}
+ model.lumenProgress.performances=model.lumenProgress.performances||{};
+ let changed=false;
+ for(const row of data||[]){
+   const i=Number(row.puzzle_id)-1;if(i<0||i>=100)continue;
+   const old=model.lumenProgress.performances[i]||{},badges=old.badges||{};
+   const merged={autonomy:!!badges.autonomy||!!row.autonomy,speed:!!badges.speed||!!row.speed,mastery:!!badges.mastery||!!row.mastery};
+   if(merged.autonomy!==!!badges.autonomy||merged.speed!==!!badges.speed||merged.mastery!==!!badges.mastery){
+     model.lumenProgress.performances[i]={...old,version:2,questIndex:i,badges:merged};changed=true;
+   }
+ }
+ if(changed){saveLumenProgress();refreshJourney()}
+}
+
 async function cloudMergeDaily(){
  if(!model.lumenSupabase||!model.lumenUser)return;
  const [{data,error},{data:engagement,error:engagementError}]=await Promise.all([
@@ -104,5 +121,5 @@ async function cloudMergeDaily(){
  saveLumenProgress();renderDaily();
 }
 
-return {loadLumenProfile,saveLumenNickname,loadEntitlements,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily};
+return {loadLumenProfile,saveLumenNickname,loadEntitlements,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance};
 }
