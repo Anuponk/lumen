@@ -24,5 +24,8 @@ See:
 - `docs/PRODUCT_MEMORY.md` — decision history, regressions and product reasoning
 - `docs/UX_AND_VISUAL_DIRECTION.md` — visual identity and UX principles
 
+## Knowledge base
+This repository is the shared project memory for humans, ChatGPT/Codex and other coding agents. Durable decisions from conversations must be consolidated here. Start with `AGENTS.md`, then use the topic documents above; avoid creating parallel documentation that duplicates an existing source.
+
 ## Current version note
 At the time this documentation was introduced (2026-10-03), `main` pointed to commit `1683d1a480bccd813677a23b683bfad6919e0129`; the UI constant was `LUMEN_APP_VERSION="beta-2026.10"`. Git tags/marketing versions and this UI constant must not be assumed to be equivalent.
