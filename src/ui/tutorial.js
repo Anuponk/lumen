@@ -17,7 +17,7 @@ function renderTutorial(){
 function openTutorial(){tutorialStep=0;renderTutorial();document.getElementById("tutorialOverlay").hidden=false}
 function closeTutorial(mark=true){document.getElementById("tutorialOverlay").hidden=true;if(mark)try{localStorage.setItem("lumenTutorialSeen","1")}catch(e){}}
 function setupTutorial(){
- const next=document.getElementById("tutorialNext"),prev=document.getElementById("tutorialPrev"),skip=document.getElementById("tutorialSkip"),help=document.getElementById("tutorialHelp");
+ const next=document.getElementById("tutorialNext"),prev=document.getElementById("tutorialPrev"),skip=document.getElementById("tutorialSkip");
  next.onclick=()=>{if(tutorialStep<TUTORIAL_STEPS.length-1){tutorialStep++;renderTutorial()}else closeTutorial()};
  prev.onclick=()=>{if(tutorialStep){tutorialStep--;renderTutorial()}};
  skip.onclick=()=>closeTutorial();help.onclick=openTutorial;

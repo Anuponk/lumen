@@ -413,3 +413,48 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .success-achievement-main{font-size:18px;font-weight:950;color:#eefaff;margin-top:4px}
 .success-achievement-detail{font-size:13px;color:#9fb7ca;margin-top:3px}
 #successShare.share-primary{background:linear-gradient(135deg,#68e7ff,#8b7cff);color:#07111d;border-color:transparent;box-shadow:0 0 22px rgba(104,231,255,.2)}.success-actions #successNew.success-primary{background:linear-gradient(135deg,#68e7ff,#8b7cff);color:#07111d;border-color:transparent;box-shadow:0 0 22px rgba(104,231,255,.2)}.share-toast{position:fixed;left:50%;bottom:24px;z-index:1400;transform:translateX(-50%);background:#0d1a29;color:#eefaff;border:1px solid rgba(104,231,255,.4);border-radius:999px;padding:10px 16px;font-weight:700;box-shadow:0 8px 28px rgba(0,0,0,.35)}.lumen-version{text-align:center;margin:14px 0 2px;font-size:11px;letter-spacing:.08em;opacity:.45;user-select:text}
+
+
+/* Issue #27 — play-first viewport and unified Lumen assistance */
+.hint-guided-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hint-guided-head strong{margin:0}
+.hint-guided-close{width:30px!important;height:30px;padding:0!important;border-radius:50%;font-size:20px;line-height:1;background:transparent!important;color:#5b3b00!important;border-color:rgba(91,59,0,.3)!important}
+.hint-guided-card{border-color:#f2b84b}
+.help-card h3{margin:16px 0 6px;color:#eafaff;font-size:15px}
+.help-learning{margin-top:14px;padding-top:14px;border-top:1px solid #28415b}
+.help-learning>strong{color:#eafaff}
+.help-learning p{margin:5px 0 11px}
+.help-learning button{width:100%}
+
+@media (max-width:700px){
+ html,body{height:100%;overflow:hidden}
+ body{min-height:0}
+ .app{height:100dvh;min-height:0;overflow:hidden;padding-bottom:max(8px,env(safe-area-inset-bottom))}
+ .game-core{min-height:0}
+ #board{
+   width:min(100%,calc(100dvh - 255px))!important;
+   margin-left:auto!important;
+   margin-right:auto!important;
+ }
+ .actions{
+   width:min(100%,calc(100dvh - 255px));
+   margin-left:auto;
+   margin-right:auto;
+   grid-template-columns:repeat(3,minmax(0,1fr));
+   gap:5px;
+ }
+ .actions button{min-width:0;padding:7px 4px;font-size:11px;line-height:1.15}
+ .hint-wallet{margin:4px 0 0}
+ .reward-live{min-height:22px;margin:2px 0 4px}
+ #guidedCard,#hintCard{
+   position:fixed;
+   left:10px;
+   right:10px;
+   bottom:max(10px,env(safe-area-inset-bottom));
+   z-index:1200;
+   margin:0;
+   max-height:min(42dvh,300px);
+   overflow:auto;
+   box-shadow:0 18px 50px rgba(0,0,0,.42);
+ }
+}
