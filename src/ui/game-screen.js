@@ -332,7 +332,7 @@ function updateScriptedLearning(){
  if(!learningSequenceActive&&!learningRestoring)rememberLearningStep();
  button.hidden=learningStage==="place";button.disabled=learningSequenceActive;button.textContent="Suivant →";
  document.getElementById("scriptedLearnPrev").disabled=learningHistoryIndex<=0&&!learningSequenceActive;
- const hint=document.getElementById("scriptedLearnHint");hint.hidden=learningStage==="place";hint.textContent=learningSequenceActive?"Observe l’animation…":"Touche n’importe où pour continuer";
+ const hint=document.getElementById("scriptedLearnHint");hint.hidden=learningStage==="place"||["row","column","neighbors","territory"].includes(learningStage);hint.textContent="Touche n’importe où pour continuer";
  const title=document.getElementById("scriptedLearnTitle"),copy=document.getElementById("scriptedLearnCopy");
  if(learningStage==="territories"||learningStage==="rule"){
   labelLearningTerritories();
@@ -352,17 +352,44 @@ function updateScriptedLearning(){
     if(inZone&&!(y===r&&x===c)&&!learningVisibleAuto.has(y+","+x))guidedCell(y,x)?.classList.add("learning-zone");
    }
   }
-  if(learningStage==="row"){title.textContent="Observe cette ligne";copy.textContent="Un seul Gardien par ligne : les autres cases se cochent une par une."}
-  else if(learningStage==="column"){title.textContent="Observe maintenant cette colonne";copy.textContent="Un seul Gardien par colonne : ses autres cases se cochent aussi. Les coches précédentes restent."}
-  else if(learningStage==="neighbors"){title.textContent="Observe les cases voisines";copy.textContent="Deux Gardiens ne peuvent pas se toucher, même en diagonale. Ces cases se cochent à leur tour."}
-  else{title.textContent="Ce territoire est déjà occupé";copy.textContent="Il a son Gardien : toutes ses autres cases sont écartées."}
+  if(learningStage==="row"){title.textContent="À toi de marquer la ligne";copy.textContent="Un seul Gardien par ligne. Marque toi-même les cases illuminées où un Gardien ne peut plus aller."}
+  else if(learningStage==="column"){title.textContent="Marque maintenant la colonne";copy.textContent="Même règle pour la colonne : marque les cases illuminées."}
+  else if(learningStage==="neighbors"){title.textContent="Apprends le cliquer-glisser";copy.textContent=(matchMedia("(pointer:coarse)").matches?"Maintiens le doigt et glisse":"Maintiens le clic et glisse")+" sur les cases illuminées. Deux Gardiens ne peuvent pas se toucher, même en diagonale."}
+  else{title.textContent="Marque le territoire occupé";copy.textContent="Ce territoire a déjà son Gardien. Marque ses autres cases impossibles."}
   const zone=learningStage==="row"?"de cette ligne":learningStage==="column"?"de cette colonne":learningStage==="neighbors"?"adjacentes au Gardien":"de ce territoire";
-  if(!learningStepCells.length)copy.textContent="Les cases "+zone+" sont déjà cochées. Il n’y a aucune nouvelle case à écarter.";
-  else if(!learningSequenceActive){const location=learningStage==="row"?"sur cette ligne":learningStage==="column"?"dans cette colonne":learningStage==="neighbors"?"autour du Gardien":"dans ce territoire";copy.textContent=learningStepCells.length+" nouvelle"+(learningStepCells.length>1?"s cases ont été cochées":" case a été cochée")+" "+location+". Les coches précédentes sont conservées."}
+  if(!learningStepCells.length)copy.textContent="Les cases "+zone+" sont déjà marquées.";
+  else copy.textContent+=" Il reste "+learningStepCells.filter(([r,c])=>state[r][c]!==1).length+" case(s) à marquer.";
  }
  positionLearningCoach();requestAnimationFrame(positionLearningCoach);
 }
 function scriptedAllowsGuardian(r,c){const t=scriptedTarget();return learningStage==="place"&&!!t&&t[0]===r&&t[1]===c}
+function learningExpectedKeys(){return new Set((learningStepCells||[]).map(([r,c])=>r+","+c))}
+function learningMarkAllowed(r,c){return ["row","column","neighbors","territory"].includes(learningStage)&&learningExpectedKeys().has(r+","+c)}
+function learningMarksComplete(){return !!learningStepCells.length&&learningStepCells.every(([r,c])=>state[r]?.[c]===1)}
+function finishManualLearningMarks(){
+ if(!scriptedLearningActive()||!learningMarksComplete())return false;
+ for(const [r,c] of learningStepCells)learningVisibleAuto.add(r+","+c);
+ learningStepCells=[];learningAnchor=learningSource;learningSequenceActive=false;
+ if(learningStage==="row")learningStage="column";
+ else if(learningStage==="column")learningStage="neighbors";
+ else if(learningStage==="neighbors"&&learningGroups?.[2]?.some(([r,c])=>state[r][c]===0))learningStage="territory";
+ else if(learningStage==="neighbors"||learningStage==="territory"){learningSource=null;learningGroups=null;learningStage=scriptedTarget()?"place":"complete"}
+ prepareManualLearningStage();paintBoardState();if(learningStage==="complete")render();return true;
+}
+function prepareManualLearningStage(){
+ if(!scriptedLearningActive()||!learningGroups)return;
+ const index=learningStage==="row"?0:learningStage==="column"?1:learningStage==="neighbors"?3:learningStage==="territory"?2:-1;
+ if(index<0)return;
+ learningStepCells=learningGroups[index].filter(([r,c])=>state[r][c]===0);
+ learningAnchor=learningStepCells[0]||learningSource;
+ if(!learningStepCells.length){
+  if(learningStage==="row")learningStage="column";
+  else if(learningStage==="column")learningStage="neighbors";
+  else if(learningStage==="neighbors"&&learningGroups[2].some(([r,c])=>state[r][c]===0))learningStage="territory";
+  else {learningSource=null;learningGroups=null;learningStage=scriptedTarget()?"place":"complete"}
+  prepareManualLearningStage();
+ }
+}
 async function animateLearningExclusions(index){
  const runId=++learningRunId,cells=learningGroups[index].filter(([r,c])=>state[r][c]===0&&!learningVisibleAuto.has(r+","+c));learningStepCells=cells.map(x=>x.slice());learningSequenceActive=cells.length>0;
  learningAnchor=cells[0]||learningSource;paintBoardState();
@@ -545,10 +572,10 @@ function learningExclusionsFrom(r,c){
  return groups;
 }
 async function runLearningPlacement(r,c){
- // Keep all previously explained exclusions visible between placements.
+ // The tutorial uses the real board state: exclusions are made by the player, never animated into existence.
  if(learningHistoryIndex<learningHistory.length-1){restoreLearningStep(learningHistoryIndex+1);return}
- learningSource=[r,c];learningGroups=learningExclusionsFrom(r,c);
- learningStage="row";await animateLearningExclusions(0);
+ learningSource=[r,c];learningGroups=learningExclusionsFrom(r,c);learningStage="row";learningSequenceActive=false;
+ prepareManualLearningStage();paintBoardState();
 }
 
 const LUMEN_APP_VERSION="beta-2026.10";
@@ -710,12 +737,14 @@ function paintBoardState(){
 }
 function markDragCross(r,c){
  if(!dragCross||dragCross.visited.has(r+","+c)||state[r]?.[c]===2)return;
+ if(scriptedLearningActive()&&!learningMarkAllowed(r,c))return;
  dragCross.visited.add(r+","+c);
  if(state[r][c]!==1){state[r][c]=1;dragCross.changed=true;paintCell(r,c)}
 }
 board.addEventListener("pointerdown",e=>{
  ensureAttemptStarted();
- if(celebrated||guidedPending||verifyPending||scriptedLearningActive()||e.pointerType==="mouse")return;
+ if(celebrated||guidedPending||verifyPending||e.pointerType==="mouse")return;
+ if(scriptedLearningActive()&&!["row","column","neighbors","territory"].includes(learningStage))return;
  const cell=e.target.closest(".cell");if(!cell)return;
  e.preventDefault();
  dragCross={id:e.pointerId,startX:e.clientX,startY:e.clientY,dragging:false,changed:false,visited:new Set(),snapshot:state.map(x=>x.slice())};
@@ -738,7 +767,7 @@ function endDragCross(e){
  if(wasDragging){
    if(changed){hist.push(snapshot);persistAttemptBoard()}
    hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";
-   paintBoardState();setTimeout(()=>{dragCrossSuppressClick=false},0);
+   paintBoardState();if(scriptedLearningActive())finishManualLearningMarks();setTimeout(()=>{dragCrossSuppressClick=false},0);
  }
 }
 board.addEventListener("pointerup",endDragCross);
@@ -766,7 +795,11 @@ function render(){
   d.dataset.row=r;d.dataset.col=c;
   d.onclick=async()=>{ensureAttemptStarted();if(celebrated||dragCrossSuppressClick||guidedPending||verifyPending||learningSequenceActive||performance.now()<suppressGuidedClickUntil)return;
  let shown=displayedCellState(r,c),next=shown===3?2:(state[r][c]+1)%3,currentGuardians=state.flat().filter(v=>v===2).length;
- if(scriptedLearningActive()){if(!scriptedAllowsGuardian(r,c)){msg.textContent=learningStage==="place"?"Touche la case illuminée.":"Observe la grille, puis touche « J’ai compris » pour continuer.";return}if(state[r][c]===0){next=1}else if(state[r][c]===1){next=2}else next=0}
+ if(scriptedLearningActive()){
+  if(learningStage==="place"){if(!scriptedAllowsGuardian(r,c)){msg.textContent="Touche la case illuminée.";return}if(state[r][c]===0){next=1}else if(state[r][c]===1){next=2}else next=0}
+  else if(learningMarkAllowed(r,c)){next=1}
+  else {msg.textContent="Marque uniquement les cases illuminées.";return}
+ }
  if(next===2&&state[r][c]!==2&&currentGuardians>=n)return;
  if(guidedErrorsEnabled()){
   const guidedError=guidedConflictForAction(r,c,next);
@@ -784,7 +817,7 @@ function render(){
  if(shown===3){state[r][c]=2}else{state[r][c]=next}
  if(next===2&&document.getElementById("autoCross")?.checked)attemptEngine.markAssistance();
  clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";
- if(scriptedLearningActive()&&next===2)await runLearningPlacement(r,c);else paintBoardState();persistAttemptBoard();
+ if(scriptedLearningActive()&&next===2)await runLearningPlacement(r,c);else {paintBoardState();if(scriptedLearningActive()&&next===1)finishManualLearningMarks()}persistAttemptBoard();
  const q=state.flat().filter(v=>v===2).length;
  if(q===n&&!scriptedLearningActive())render()
 };board.appendChild(d)
