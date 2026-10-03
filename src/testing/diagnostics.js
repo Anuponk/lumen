@@ -18,7 +18,7 @@ return {
   // deterministic and cannot wait on a UI animation/timer.
   // `init()` already normalizes overlays and board state. Keep this hook to a
   // single synchronous transition so CDP can return deterministically.
-  model.levelIndex=index;init();
+  model.levelIndex=index;init();closeTutorial(false);
  },
  setBoard(value){model.state=value;render()}
 };
