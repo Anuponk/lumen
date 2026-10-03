@@ -475,3 +475,6 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .attempt-controls{display:flex;justify-content:center;gap:7px;margin:0 0 5px}
 .attempt-controls button{padding:5px 10px;font-size:11px}
 @media(max-width:700px){.attempt-mask{border-radius:18px}.attempt-mask strong{font-size:16px}.attempt-controls{position:absolute;right:2px;top:41px;z-index:20}}
+
+/* Must come after the base learning coach rules so mobile does not inherit the 158px desktop spacer. */
+@media (max-width:700px){.learning-board-wrap.is-learning{padding-top:0}}
