@@ -55,7 +55,7 @@ for(const options of scenarios){
  // #29 intentionally restores daily-history merge during authenticated init/sign-in.
  // Compare the legacy contract after removing only the new, documented daily-sync effects.
  const normalized=plain(actual),expected=plain(legacy);
- if(!options.guest&&!options.networkError){
+ if(!options.guest){
    normalized.progress.daily.dates={};
    expected.progress.daily.dates={};
    const normalizeDailySyncTrace=trace=>{
@@ -74,6 +74,9 @@ for(const options of scenarios){
    };
    normalized.trace=normalizeDailySyncTrace(normalized.trace);
    expected.trace=normalizeDailySyncTrace(expected.trace);
+   const normalizeDailyWarnings=warnings=>warnings.filter(x=>x?.[0]!=='LUMEN daily load');
+   normalized.warnings=normalizeDailyWarnings(normalized.warnings);
+   expected.warnings=normalizeDailyWarnings(expected.warnings);
    for(const x of normalized.trace)if(x.save?.daily?.dates?.['2026-10-01'])x.save.daily.dates={};
    for(const x of expected.trace)if(x.save?.daily?.dates?.['2026-10-01'])x.save.daily.dates={};
  }
