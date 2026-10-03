@@ -74,12 +74,52 @@ async function initLumenCloud(){
  if(logout)logout.onclick=async()=>{await model.lumenSupabase.auth.signOut();model.lumenUser=null;model.lumenCloudReady=false;updateAuthUI()};
 }
 
-async function cloudSaveDaily(date,index){if(!model.lumenSupabase||!model.lumenUser)return;let {error}=await model.lumenSupabase.rpc("lumen_save_daily",{p_play_date:date,p_puzzle_id:index+1});if(error)console.warn("LUMEN daily save",error)}
-
-async function cloudMergeDaily(){
- if(!model.lumenSupabase||!model.lumenUser)return;let {data,error}=await model.lumenSupabase.rpc("lumen_get_daily");if(error){console.warn("LUMEN daily load",error);return}
- for(const x of data||[])model.lumenProgress.daily.dates[String(x.play_date)]=1;saveLumenProgress();renderDaily();
+async function cloudSaveDaily(date,index){
+ if(!model.lumenSupabase||!model.lumenUser)return null;
+ const {data,error}=await model.lumenSupabase.rpc("lumen_claim_daily",{p_puzzle_id:index+1});
+ if(error){console.warn("LUMEN daily save",error);return null}
+ return data?.[0]||null;
 }
 
-return {loadLumenProfile,saveLumenNickname,loadEntitlements,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily};
+async function cloudMergeHistoricalPerformance(anonymousId){
+ if(!model.lumenSupabase)return;
+ const {data,error}=await model.lumenSupabase.rpc("lumen_get_historical_performance",{p_anonymous_id:anonymousId||null});
+ if(error){console.warn("LUMEN history recovery",error);return}
+ model.lumenProgress.performances=model.lumenProgress.performances||{};
+ let changed=false;
+ for(const row of data||[]){
+   const i=Number(row.puzzle_id)-1;if(i<0||i>=100)continue;
+   const old=model.lumenProgress.performances[i]||{},badges=old.badges||{};
+   const merged={autonomy:!!badges.autonomy||!!row.autonomy,speed:!!badges.speed||!!row.speed,mastery:!!badges.mastery||!!row.mastery};
+   if(merged.autonomy!==!!badges.autonomy||merged.speed!==!!badges.speed||merged.mastery!==!!badges.mastery){
+     model.lumenProgress.performances[i]={...old,version:2,questIndex:i,badges:merged};changed=true;
+   }
+ }
+ if(changed){saveLumenProgress();refreshJourney()}
+}
+
+async function cloudMergeDaily(){
+ if(!model.lumenSupabase||!model.lumenUser)return;
+ const [{data,error},{data:engagement,error:engagementError}]=await Promise.all([
+   model.lumenSupabase.rpc("lumen_get_daily"),
+   model.lumenSupabase.rpc("lumen_get_engagement")
+ ]);
+ if(error){console.warn("LUMEN daily load",error);return}
+ if(engagementError)console.warn("LUMEN engagement load",engagementError);
+ model.lumenProgress.daily=model.lumenProgress.daily||{dates:{},rewards:{}};
+ model.lumenProgress.daily.dates=model.lumenProgress.daily.dates||{};
+ model.lumenProgress.daily.rewards=model.lumenProgress.daily.rewards||{};
+ for(const x of data||[])model.lumenProgress.daily.dates[String(x.play_date)]=1;
+ const rewards=engagement?.[0]?.rewarded_days||{};
+ for(const [day,amountRaw] of Object.entries(rewards)){
+   const key="streak:"+day,amount=Math.max(0,Number(amountRaw)||0);
+   if(amount&&!model.lumenProgress.daily.rewards[key]){
+     model.lumenProgress.daily.rewards[key]=amount;
+     model.lumenProgress.shards=Math.max(0,Number(model.lumenProgress.shards)||0)+amount;
+   }
+ }
+ saveLumenProgress();renderDaily();
+}
+
+return {loadLumenProfile,saveLumenNickname,loadEntitlements,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance};
 }

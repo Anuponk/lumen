@@ -27,7 +27,7 @@ async function fixture(options,legacy){
  const controls=new Map();const document={getElementById:id=>{if(!controls.has(id))controls.set(id,{value:'Tester'});return controls.get(id)}};
  const model={lumenSupabase:null,lumenUser:options.guest?null:{id:'test-user'},lumenCloudReady:false,lumenNickname:'',lumenProgress:{solved:{0:1,1:1,2:1},historyBackup:{0:1,1:1,2:1},noHint:{0:1},daily:{dates:{},rewards:{}},badges:{},performances:{}},sequentialSolvedCount:3,levelIndex:2,usedHintThisGame:false};
  const client={
-  async rpc(name,args){trace.push({name,args});if(options.networkError)return {data:null,error:{message:'fixture offline'}};return {error:null,data:name==='lumen_get_progress'?options.cloud:name==='lumen_get_daily'?[{play_date:'2026-10-01'}]:name==='lumen_get_profile'?[{nickname:'Player'}]:name==='lumen_set_nickname'?'Tester':name==='lumen_get_entitlements'?['fixture']:null}},
+  async rpc(name,args){trace.push({name,args});if(options.networkError)return {data:null,error:{message:'fixture offline'}};return {error:null,data:name==='lumen_get_progress'?options.cloud:name==='lumen_get_daily'?[{play_date:'2026-10-01'}]:name==='lumen_get_engagement'?[{server_day:'2026-10-03',shards:4,rewarded_days:{'2026-10-01':1}}]:name==='lumen_claim_daily'?[{server_day:'2026-10-03',credited:true,reward:1,streak:3}]:name==='lumen_get_profile'?[{nickname:'Player'}]:name==='lumen_set_nickname'?'Tester':name==='lumen_get_entitlements'?['fixture']:null}},
   auth:{async getSession(){return {data:{session:options.guest?null:{user:{id:'test-user'}}}}},onAuthStateChange(callback){authCallback=callback},async signOut(){trace.push({auth:'signOut'})},async signInWithOAuth(args){trace.push({auth:'signInWithOAuth',args});return {error:null}}}
  };
  model.lumenSupabase=client;
@@ -61,7 +61,7 @@ for(const options of scenarios){
    const normalizeDailySyncTrace=trace=>{
      const out=[];
      for(let i=0;i<trace.length;i++){
-       if(trace[i].name==='lumen_get_daily'){
+       if(trace[i].name==='lumen_get_daily'||trace[i].name==='lumen_get_engagement'){
          // #29 adds this sync during authenticated init/sign-in. Its immediate
          // save + render are implementation effects of the same intentional sync.
          if(trace[i+1]?.save)i++;
@@ -74,16 +74,24 @@ for(const options of scenarios){
    };
    normalized.trace=normalizeDailySyncTrace(normalized.trace);
    expected.trace=normalizeDailySyncTrace(expected.trace);
-   const normalizeDailyWarnings=warnings=>warnings.filter(x=>x?.[0]!=='LUMEN daily load');
+   const normalizeDailyWarnings=warnings=>warnings.filter(x=>x?.[0]!=='LUMEN daily load'&&x?.[0]!=='LUMEN engagement load');
    normalized.warnings=normalizeDailyWarnings(normalized.warnings);
    expected.warnings=normalizeDailyWarnings(expected.warnings);
    for(const x of normalized.trace)if(x.save?.daily?.dates?.['2026-10-01'])x.save.daily.dates={};
    for(const x of expected.trace)if(x.save?.daily?.dates?.['2026-10-01'])x.save.daily.dates={};
+   // The signed-in write is now an atomic server claim instead of trusting the client date.
+   for(const x of normalized.trace)if(x.name==='lumen_claim_daily'){x.name='lumen_save_daily';x.args={p_play_date:'2026-10-03',p_puzzle_id:x.args.p_puzzle_id}}
+   normalized.progress.daily.rewards={}; expected.progress.daily.rewards={};
+   delete normalized.progress.shards; delete expected.progress.shards;
+   for(const x of normalized.trace)if(x.save){x.save.daily.rewards={};delete x.save.shards}
+   for(const x of expected.trace)if(x.save){x.save.daily.rewards={};delete x.save.shards}
  }
  assert.deepEqual(normalized,expected,'Cloud/persistence behavior changed outside intentional #29 daily sync: '+JSON.stringify(options));
  if(!options.guest&&!options.networkError){
    assert.equal(actual.progress.daily.dates['2026-10-01'],1,'Authenticated init must merge server daily history');
    assert.ok(actual.trace.some(x=>x.name==='lumen_get_daily'),'Authenticated init must call lumen_get_daily');
+   assert.ok(actual.trace.some(x=>x.name==='lumen_get_engagement'),'Authenticated init must merge the server reward ledger');
+   assert.ok(actual.trace.some(x=>x.name==='lumen_claim_daily'),'Authenticated daily completion must use the atomic server claim');
  }
 }
 console.log(JSON.stringify({baseline,localFixtures:4,cloudFixtures:scenarios.length,authCallbacks:true,rpcPayloads:'legacy except intentional daily sync',result:'passing',liveCloudWrites:false}));
