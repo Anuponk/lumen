@@ -485,12 +485,27 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
+import {createLocalPersistence} from "./src/persistence/local.js";
+import {createCloudPersistence} from "./src/persistence/cloud.js";
+import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "./src/persistence/config.js";
 import {CAT,LEVELS} from "./src/campaign/catalogue.js";
 import {LUMEN_META,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,badgeDefs} from "./src/campaign/data.js";
 import {createCampaign,sequentialCount,constellationGridRange,chapterForGrid,milestoneFor,skyStarsForGrid,bonusChallengeFor,challengeFor,constellationCheckpoint,constellationStateForEarned,starsAwardedForGrid} from "./src/campaign/progression.js";
 import {createGameEngine} from "./src/game/engine.js";
 import {localDateKey,dateOffsetKey,formatDuration} from "./src/ui/format.js";
 const {normalizeSequentialProgress,solvedCount,exactSkyScoreForSolvedPrefix,ensureSkyScore,skyStarsEarned,challengeRewardKeys,constellationProgress,constellationLitAt,awards,performanceRun,savePerformance}=createCampaign(()=>lumenProgress,()=>saveLumenProgress(),()=>({hintUsesThisGame,autoUsedThisGame,mistakesThisGame,activeGameSeconds}));
+const {loadLumenProgress,saveLumenProgress}=createLocalPersistence(localStorage,()=>lumenProgress);
+const persistenceModel={
+get lumenSupabase(){return lumenSupabase},set lumenSupabase(value){lumenSupabase=value},
+get lumenUser(){return lumenUser},set lumenUser(value){lumenUser=value},
+get lumenCloudReady(){return lumenCloudReady},set lumenCloudReady(value){lumenCloudReady=value},
+get lumenNickname(){return lumenNickname},set lumenNickname(value){lumenNickname=value},
+get lumenProgress(){return lumenProgress},set lumenProgress(value){lumenProgress=value},
+get sequentialSolvedCount(){return sequentialSolvedCount},set sequentialSolvedCount(value){sequentialSolvedCount=value},
+get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
+get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
+};
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),updateAuthUI:(...args)=>updateAuthUI(...args),showRewardToast:(...args)=>showRewardToast(...args),renderDaily:(...args)=>renderDaily(...args)},{document,location,alert,setTimeout,console});
 const TUTORIAL_STEPS=[
  {title:"Ta mission",copy:"Positionne les 6 Gardiens : exactement un par ligne, un par colonne et un par territoire coloré.",visual:'<div class="tutorial-mini-grid"><span></span><span class="orb guardian-mini"></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>'},
  {title:"Les Gardiens gardent leurs distances",copy:"Deux Gardiens ne peuvent jamais être voisins, même en diagonale. Chaque Gardien doit avoir de l’espace autour de lui.",visual:'<div class="tutorial-mini-grid"><span class="orb guardian-mini"></span><span></span><span></span><span></span><span>↘</span><span class="orb guardian-mini"></span><span></span><span></span><span></span></div>'},
@@ -516,25 +531,13 @@ function setupTutorial(){
  let seen=false;try{seen=localStorage.getItem("lumenTutorialSeen")==="1"}catch(e){}
  if(!seen&&!scriptedLearningActive())openTutorial();
 }
-const LUMEN_SUPABASE_URL="https://tjdjlavmusmncuszhsuw.supabase.co";
-const LUMEN_SUPABASE_KEY="sb_publishable_E1B-j_wvKmkmWq8YLhHf3Q_uL1yLcNo";
+
+
 let lumenSupabase=null,lumenUser=null,lumenCloudReady=false;
 try{lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY)}catch(e){console.warn("LUMEN cloud unavailable",e)}
 let lumenNickname="";
-async function loadLumenProfile(){
- if(!lumenSupabase||!lumenUser)return;
- const {data,error}=await lumenSupabase.rpc("lumen_get_profile");if(error){console.warn("LUMEN profile",error);return}
- lumenNickname=(data&&data[0]&&data[0].nickname)||"";
- const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname;
- updateAuthUI();
-}
-async function saveLumenNickname(){
- const input=document.getElementById("nicknameInput"),value=(input?.value||"").trim();
- if(value.length<2||value.length>24){showRewardToast("Pseudo : 2 à 24 caractères");return}
- const {data,error}=await lumenSupabase.rpc("lumen_set_nickname",{p_nickname:value});
- if(error){showRewardToast("Ce pseudo n’est pas valide");return}
- lumenNickname=data||value;updateAuthUI();showRewardToast("Pseudo enregistré ✦");
-}
+
+
 function syncMobileAuthUI(){
  const status=document.getElementById("mobileAuthStatus"),action=document.getElementById("mobileAuthAction"),icon=document.getElementById("mobileAccount");
  if(!status||!action||!icon)return;
@@ -581,12 +584,7 @@ async function trackLumenEvent(name,puzzleId=null,properties={}){
  if(!lumenSupabase)return;
  try{await lumenSupabase.rpc("lumen_track_event",{p_anonymous_id:lumenAnonymousId,p_event_name:name,p_session_id:lumenSessionId,p_puzzle_id:puzzleId,p_properties:properties})}catch(e){console.warn("LUMEN analytics",e)}
 }
-async function loadEntitlements(){
- if(!lumenSupabase||!lumenUser)return [];
- const {data,error}=await lumenSupabase.rpc("lumen_get_entitlements");
- if(error){console.warn("LUMEN entitlements",error);return []}
- return data||[];
-}
+
 trackLumenEvent("session_start",null,{standalone:window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches});
 function lumenIsStandalone(){return !!((window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||navigator.standalone)}
 let lumenInstallPrompt=null;
@@ -644,57 +642,13 @@ async function shareLumenResult(){
 }
 function captureReferral(){const ref=new URLSearchParams(location.search).get("ref");if(!ref)return;const clean=ref.replace(/[^a-zA-Z0-9_-]/g,"").slice(0,64);if(!clean)return;try{localStorage.setItem("lumenReferral",clean)}catch(e){}trackLumenEvent("referral_visit",null,{ref:clean})}captureReferral();
 
-async function cloudSavePuzzle(index){
- if(!lumenSupabase||!lumenUser)return;
- const seconds=activeGameSeconds();
- const {error}=await lumenSupabase.rpc("lumen_save_progress",{p_puzzle_id:index+1,p_duration_seconds:seconds,p_hints_used:usedHintThisGame?1:0});
- if(error)console.warn("LUMEN sync save",error);
-}
-async function cloudMergeProgress(){
- if(!lumenSupabase||!lumenUser)return;
- const {data,error}=await lumenSupabase.rpc("lumen_get_progress");
- if(error){console.warn("LUMEN sync load",error);return}
- const cloud=new Set((data||[]).map(x=>Number(x.puzzle_id)-1).filter(x=>x>=0&&x<100));
- const local=Object.keys(lumenProgress.solved||{}).filter(k=>lumenProgress.solved[k]).map(Number).filter(x=>x>=0&&x<100);
- const backup=Object.keys(lumenProgress.historyBackup||{}).filter(k=>lumenProgress.historyBackup[k]).map(Number).filter(x=>x>=0&&x<100);
- const authoritative=cloud.size?cloud:new Set([...backup,...local]);
- let count=0;while(count<100&&authoritative.has(count))count++;
- const restored={};for(let i=0;i<count;i++)restored[i]=1;
- lumenProgress.solved=restored;
- lumenProgress.historyBackup={...restored};
- sequentialSolvedCount=count;
- lumenProgress.skyScore=exactSkyScoreForSolvedPrefix();
- lumenProgress.skyHistoryVersion=4;
- saveLumenProgress();
- for(const i of local)if(!cloud.has(i)){
-   const {error:e}=await lumenSupabase.rpc("lumen_save_progress",{p_puzzle_id:i+1,p_duration_seconds:null,p_hints_used:(lumenProgress.noHint&&lumenProgress.noHint[i])?0:1});
-   if(e)console.warn("LUMEN import local",e);
- }
- levelIndex=Math.min(count,99);
- refreshJourney(); init();
- lumenCloudReady=true;
-}
-async function initLumenCloud(){
- if(!lumenSupabase){updateAuthUI();return}
- const {data}=await lumenSupabase.auth.getSession();
- lumenUser=data.session?.user||null; updateAuthUI();
- if(lumenUser){await loadLumenProfile();await cloudMergeProgress();}
- lumenSupabase.auth.onAuthStateChange((event,session)=>{
-   const previous=lumenUser?.id; lumenUser=session?.user||null; updateAuthUI();
-   if(lumenUser&&lumenUser.id!==previous)setTimeout(async()=>{await cloudMergeProgress()},0);
- });
- const login=document.getElementById("authLogin"),logout=document.getElementById("authLogout");
- if(login)login.onclick=async()=>{
-   const redirectTo=location.origin+location.pathname;
-   const {error}=await lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo}});
-   if(error)alert("Connexion impossible : "+error.message);
- };
- if(logout)logout.onclick=async()=>{await lumenSupabase.auth.signOut();lumenUser=null;lumenCloudReady=false;updateAuthUI()};
-}
 
 
 
-function loadLumenProgress(){try{const p=JSON.parse(localStorage.getItem("lumenProgressV1"))||{solved:{},badges:{}};if(!p.historyBackup&&p.solved&&Object.keys(p.solved).length)p.historyBackup={...p.solved};return p}catch(e){return {solved:{},badges:{}}}}
+
+
+
+
 let lumenProgress=loadLumenProgress(),usedHintThisGame=false,questStarted=true,questFailed=false;if(!lumenProgress.xp)lumenProgress.xp=0;if(!lumenProgress.challenges)lumenProgress.challenges={};if(!lumenProgress.stars)lumenProgress.stars={};if(!Number.isFinite(lumenProgress.shards))lumenProgress.shards=3;if(!lumenProgress.performances)lumenProgress.performances={};
 if(!lumenProgress.daily)lumenProgress.daily={dates:{},rewards:{}};if(!Number.isFinite(lumenProgress.skyScore))lumenProgress.skyScore=null;
 
@@ -724,11 +678,8 @@ function maybeShowReturnWelcome(){
  stars.textContent="✦".repeat(lit)+"·".repeat(7-lit);toast.hidden=false;
  const close=()=>{toast.classList.add("hide");setTimeout(()=>toast.hidden=true,260)};toast.onclick=close;setTimeout(close,5200);
 }
-async function cloudSaveDaily(date,index){if(!lumenSupabase||!lumenUser)return;let {error}=await lumenSupabase.rpc("lumen_save_daily",{p_play_date:date,p_puzzle_id:index+1});if(error)console.warn("LUMEN daily save",error)}
-async function cloudMergeDaily(){
- if(!lumenSupabase||!lumenUser)return;let {data,error}=await lumenSupabase.rpc("lumen_get_daily");if(error){console.warn("LUMEN daily load",error);return}
- for(const x of data||[])lumenProgress.daily.dates[String(x.play_date)]=1;saveLumenProgress();renderDaily();
-}
+
+
 function completeDaily(){
  const today=localDateKey();if(lumenProgress.daily.dates[today])return;
  lumenProgress.daily.dates[today]=1;
@@ -738,7 +689,7 @@ function completeDaily(){
 
 
 let sequentialSolvedCount=normalizeSequentialProgress();
-function saveLumenProgress(){try{localStorage.setItem("lumenProgressV1",JSON.stringify(lumenProgress))}catch(e){}}
+
 const LUMEN_PUSH_PUBLIC_KEY="BCL-qkJ1SC1tTi8VMB080_bbliipUDgx2KyrQ1u8hL9HX-EL8xYNPjT1m6Sa8InjWQjjeizlSw1_CuYE_Rn3bqk";
 const LUMEN_PUSH_URL=LUMEN_SUPABASE_URL+"/functions/v1/lumen-push";
 function pushKey(s){const p="=".repeat((4-s.length%4)%4),b=(s+p).replace(/-/g,"+").replace(/_/g,"/"),raw=atob(b);return Uint8Array.from([...raw].map(x=>x.charCodeAt(0)))}
