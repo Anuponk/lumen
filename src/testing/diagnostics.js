@@ -16,11 +16,9 @@ return {
   // embedded suite may leave transient tutorial/overlay state active. Clear
   // those surfaces before re-entering init so the diagnostic transition is
   // deterministic and cannot wait on a UI animation/timer.
-  closeTutorial(false);hideSuccess();const sky=document.getElementById("skyReveal");if(sky)sky.hidden=true;
+  // `init()` already normalizes overlays and board state. Keep this hook to a
+  // single synchronous transition so CDP can return deterministically.
   model.levelIndex=index;init();
-  // Keep this diagnostic hook deliberately minimal. Calling preference setters
-  // after init can synchronously persist/broadcast state and makes CDP wait for
-  // work unrelated to setting up the board under test.
  },
  setBoard(value){model.state=value;render()}
 };
