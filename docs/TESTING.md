@@ -1,7 +1,11 @@
 # Testing and quality gate
 
 ## Mandatory rule
-After **every modification affecting LUMEN gameplay**, run the complete test battery and strict grid audit before delivery. Do this even for changes that appear purely visual if they touch board DOM/input/state.
+After **every modification affecting LUMEN code, gameplay or a product feature**, update the automated test contract in the same change and run the complete applicable test battery before delivery. This has two inseparable goals:
+- **non-regression**: existing behavior that must remain stable stays covered; when an intentional product change invalidates an old assertion, adapt that assertion explicitly rather than simply deleting or bypassing it;
+- **feature coverage**: add tests for the new behavior itself, including its important edge cases, persistence/reload semantics and interactions with existing features.
+
+For gameplay, board, progression or catalogue changes, also run the strict grid audit. Do this even for changes that appear purely visual if they touch board DOM/input/state. A feature is not complete when its implementation exists but its test contract still describes the previous behavior.
 
 ## Browser regression suite
 The app exposes `await window.runHintTests()`; the 66 original cases plus three UX regressions (#16/#17/#19) live in `src/testing/hint-tests.js`. The narrative assertion now reads the on-demand rules modal. `window.lumenDiagnostics.runAllHintTests()` runs the suite for every size. The suite runs cases sequentially and waits for asynchronous victory/reveal behavior. It covers, among other things:
