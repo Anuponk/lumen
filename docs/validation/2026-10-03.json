@@ -1,0 +1,306 @@
+{
+  "date": "2026-10-03",
+  "branch": "codex/work-in-progress",
+  "baseCommit": "f8d94f379a27b5f8aa98ab43d53bbcdc025de708",
+  "baselineComparison": "1683d1a",
+  "unchangedBaseline": {
+    "catalogueSizes": [
+      6,
+      7,
+      8
+    ],
+    "proofEngine": true
+  },
+  "suites": [
+    {
+      "size": 5,
+      "total": 66,
+      "failures": []
+    },
+    {
+      "size": 6,
+      "total": 66,
+      "failures": []
+    },
+    {
+      "size": 7,
+      "total": 66,
+      "failures": [
+        {
+          "name": "Replay complet : jamais bloqué, jamais d'indice opaque",
+          "ok": false,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "size": 8,
+      "total": 66,
+      "failures": [
+        {
+          "name": "Replay complet : jamais bloqué, jamais d'indice opaque",
+          "ok": false,
+          "error": ""
+        }
+      ]
+    }
+  ],
+  "catalogue": {
+    "count": 134,
+    "campaign": 100,
+    "constellations": 12,
+    "stars": 150,
+    "failures": [
+      {
+        "id": "7/1",
+        "kind": "explainability",
+        "step": 35,
+        "hint": "none"
+      },
+      {
+        "id": "7/2",
+        "kind": "explainability",
+        "step": 23,
+        "hint": "none"
+      },
+      {
+        "id": "7/5",
+        "kind": "explainability",
+        "step": 29,
+        "hint": "none"
+      },
+      {
+        "id": "7/6",
+        "kind": "explainability",
+        "step": 40,
+        "hint": "none"
+      },
+      {
+        "id": "7/11",
+        "kind": "explainability",
+        "step": 40,
+        "hint": "none"
+      },
+      {
+        "id": "7/13",
+        "kind": "explainability",
+        "step": 17,
+        "hint": "none"
+      },
+      {
+        "id": "7/14",
+        "kind": "explainability",
+        "step": 9,
+        "hint": "none"
+      },
+      {
+        "id": "7/15",
+        "kind": "explainability",
+        "step": 25,
+        "hint": "none"
+      },
+      {
+        "id": "7/17",
+        "kind": "explainability",
+        "step": 25,
+        "hint": "none"
+      },
+      {
+        "id": "7/18",
+        "kind": "explainability",
+        "step": 32,
+        "hint": "none"
+      },
+      {
+        "id": "7/19",
+        "kind": "explainability",
+        "step": 42,
+        "hint": "none"
+      },
+      {
+        "id": "8/0",
+        "kind": "explainability",
+        "step": 40,
+        "hint": "none"
+      },
+      {
+        "id": "8/2",
+        "kind": "explainability",
+        "step": 46,
+        "hint": "none"
+      },
+      {
+        "id": "8/3",
+        "kind": "explainability",
+        "step": 55,
+        "hint": "none"
+      },
+      {
+        "id": "8/4",
+        "kind": "explainability",
+        "step": 55,
+        "hint": "none"
+      },
+      {
+        "id": "8/5",
+        "kind": "explainability",
+        "step": 43,
+        "hint": "none"
+      },
+      {
+        "id": "8/6",
+        "kind": "explainability",
+        "step": 33,
+        "hint": "none"
+      },
+      {
+        "id": "8/7",
+        "kind": "explainability",
+        "step": 48,
+        "hint": "none"
+      },
+      {
+        "id": "8/8",
+        "kind": "explainability",
+        "step": 38,
+        "hint": "none"
+      },
+      {
+        "id": "8/9",
+        "kind": "explainability",
+        "step": 48,
+        "hint": "none"
+      },
+      {
+        "id": "8/10",
+        "kind": "explainability",
+        "step": 35,
+        "hint": "none"
+      },
+      {
+        "id": "8/11",
+        "kind": "explainability",
+        "step": 42,
+        "hint": "none"
+      }
+    ],
+    "metadata": [
+      {
+        "id": "5/0",
+        "solutions": 1,
+        "steps": 22,
+        "rules": {
+          "group": 17,
+          "single": 5
+        }
+      },
+      {
+        "id": "5/1",
+        "solutions": 1,
+        "steps": 11,
+        "rules": {
+          "group": 6,
+          "single": 5
+        }
+      }
+    ],
+    "campaignFailures": [
+      {
+        "id": "7/1",
+        "kind": "explainability",
+        "step": 35,
+        "hint": "none",
+        "quest": 18
+      },
+      {
+        "id": "7/2",
+        "kind": "explainability",
+        "step": 23,
+        "hint": "none",
+        "quest": 25
+      },
+      {
+        "id": "7/5",
+        "kind": "explainability",
+        "step": 29,
+        "hint": "none",
+        "quest": 44
+      },
+      {
+        "id": "7/6",
+        "kind": "explainability",
+        "step": 40,
+        "hint": "none",
+        "quest": 51
+      },
+      {
+        "id": "7/11",
+        "kind": "explainability",
+        "step": 40,
+        "hint": "none",
+        "quest": 82
+      },
+      {
+        "id": "7/13",
+        "kind": "explainability",
+        "step": 17,
+        "hint": "none",
+        "quest": 94
+      },
+      {
+        "id": "7/14",
+        "kind": "explainability",
+        "step": 9,
+        "hint": "none",
+        "quest": 99
+      },
+      {
+        "id": "8/0",
+        "kind": "explainability",
+        "step": 40,
+        "hint": "none",
+        "quest": 48
+      },
+      {
+        "id": "8/2",
+        "kind": "explainability",
+        "step": 46,
+        "hint": "none",
+        "quest": 73
+      },
+      {
+        "id": "8/3",
+        "kind": "explainability",
+        "step": 55,
+        "hint": "none",
+        "quest": 86
+      },
+      {
+        "id": "8/4",
+        "kind": "explainability",
+        "step": 55,
+        "hint": "none",
+        "quest": 97
+      }
+    ]
+  },
+  "mobile": {
+    "tapCycle": [
+      1,
+      2,
+      0
+    ],
+    "dragMarked": 5,
+    "guardianPreserved": true,
+    "boardScrolled": false
+  },
+  "learning": {
+    "freeTap": true,
+    "backwardsRestore": true,
+    "animationCancellation": true,
+    "stableExclusionNodes": true,
+    "alreadyMarkedExplanation": true
+  },
+  "releaseGate": "failing-existing-explainability",
+  "productionDeploymentVerified": false
+}
