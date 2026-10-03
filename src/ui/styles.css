@@ -478,3 +478,5 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 
 /* Must come after the base learning coach rules so mobile does not inherit the 158px desktop spacer. */
 @media (max-width:700px){.learning-board-wrap.is-learning{padding-top:0}}
+
+.sky-tour{margin:8px 0 12px;padding:10px 12px;border:1px solid rgba(232,189,100,.45);border-radius:12px;background:rgba(232,189,100,.08);display:grid;gap:6px}.sky-tour[hidden]{display:none}.sky-tour strong{color:#ffe3a1}.sky-tour span{font-size:12px;line-height:1.4;color:#c8d8e5}.sky-tour button{justify-self:end;padding:6px 10px}

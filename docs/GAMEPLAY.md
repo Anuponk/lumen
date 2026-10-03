@@ -16,7 +16,7 @@ A wrong intermediate Guardian is allowed to exist long enough for the player to 
 There is no separate Validate action. Reaching N Guardians triggers evaluation. A correct set of Guardians wins even if unrelated exclusion marks remain. An invalid complete placement must not count as a mistake merely because it temporarily contains N Guardians.
 
 ## Learning curve
-- Quests 1–2: scripted learning. Teach Guardians through progressive consequences; interactions are constrained while the scripted sequence is active.
+- Quests 1–2: scripted learning. Teach Guardians through progressive consequences; interactions are constrained while the scripted sequence is active, but a Guardian uses the normal two-step cell cycle: first tap excludes, second tap places the Guardian.
 - Quests 1–5: automatic marking/guided control forced.
 - Quests 6–10: assistance available but optional; automatic marking defaults off.
 - Quest 11: autonomy choice is presented; playing without guided control is a valid/default dismissal path.
@@ -30,7 +30,7 @@ Existing exclusions remain visible and are never animated again. If a zone has n
 
 Previous restores the earlier explanation, Guardians and exclusions. It can cancel an in-progress animation; replaying an already visited explanation does not repeat its marking animation. Reset clears this in-memory teaching history and keeps the current quest and persisted campaign progress.
 
-In scripted onboarding, the final legal placement is followed by its explanations before completion is recorded. Outside onboarding, a legal complete placement is evaluated immediately. In both cases victory depends on legal Guardians, not on marking every remaining cell.
+After quest 2, the success path opens Mon ciel with a dismissible contextual explanation of stars, constellations, unlocks and the link between solved quests and sky progression.\n\nIn scripted onboarding, the final legal placement is followed by its explanations before completion is recorded. Outside onboarding, a legal complete placement is evaluated immediately. In both cases victory depends on legal Guardians, not on marking every remaining cell.
 
 ## Mobile input
 Dragging a finger over cells marks exclusions. It must:
