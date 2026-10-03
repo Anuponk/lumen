@@ -31,10 +31,11 @@ try{
  for(const expected of [1,2,0]){console.log('browser-test: tap:start',expected);await tap(p);console.log('browser-test: tap:done',expected);const snap=await snapshot();console.log('browser-test: tap:snapshot',expected);const actual=snap.state[0][column];if(actual!==expected){const target=await evaluate(`document.elementFromPoint(${p.x},${p.y})?.outerHTML`);throw Error('Tap cycle regression: expected '+expected+', got '+actual+'; target '+target)}}
  console.log('browser-test: guardian-setup:start');await tap(p);await tap(p);console.log('browser-test: guardian-setup:done');
  console.log('browser-test: observer:start');await evaluate('window.lumenBoardRebuilt=false;window.lumenBoardObserver=new MutationObserver(records=>{if(records.some(record=>record.target===document.getElementById("board")&&record.type==="childList"))window.lumenBoardRebuilt=true});lumenBoardObserver.observe(document.getElementById("board"),{childList:true})');console.log('browser-test: observer:done');
- const scroll=await evaluate('scrollY');
- await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[await point(1,0)]});
- for(const c of [1,2,3,4]){await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[await point(1,c)]});await sleep(30)}
- await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ console.log('browser-test: scroll:start');const scroll=await evaluate('scrollY');console.log('browser-test: scroll:done');
+ console.log('browser-test: drag-points:start');const dragPoints=[];for(const c of [0,1,2,3,4])dragPoints.push(await point(1,c));console.log('browser-test: drag-points:done');
+ console.log('browser-test: drag:start');await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[dragPoints[0]]});
+ for(let c=1;c<dragPoints.length;c++){await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[dragPoints[c]]});await sleep(30)}
+ await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});console.log('browser-test: drag:done');
  await sleep(100);const dragged=await snapshot();
  assert(dragged.state[1].filter(v=>v===1).length>=4&&dragged.state[0][column]===2,'Drag regression');
  assert(await evaluate('scrollY')===scroll,'Board scrolled during drag');
