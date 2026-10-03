@@ -4,18 +4,15 @@ import vm from 'node:vm';
 import crypto from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import {CAT} from '../src/campaign/catalogue.js';
+import {createGameEngine} from '../src/game/engine.js';
 
-const appUrl=new URL('../index.html',import.meta.url);
+const appUrl=new URL('../src/campaign/catalogue.js',import.meta.url);
 const source=fs.readFileSync(appUrl,'utf8');
-const normalized=source.replace(/\r/g,'');
-function section(from,to){return normalized.slice(normalized.indexOf(from),normalized.indexOf(to,normalized.indexOf(from)))}
-const context={document:{getElementById:()=>({checked:true})}};
+const context={createGameEngine,CAT};
 vm.createContext(context);
 vm.runInContext([
-  section('const CAT=','const COLORS='),
-  section('function isAutoCross(','function displayedCellState('),
-  section('function key(','function directMissingCross()'),
-  'let n=6,puz=CAT["6"][0],state=[];'
+  'let n=6,puz=CAT["6"][0],state=[];const {proofEngine}=createGameEngine(()=>({n,puz,state}),()=>true);'
 ].join('\n'),context);
 const catalogue=JSON.parse(vm.runInContext('JSON.stringify(CAT)',context));
 const original=structuredClone(catalogue);

@@ -1,0 +1,37 @@
+{
+  "suites": [
+    {
+      "size": 5,
+      "total": 66,
+      "failures": []
+    },
+    {
+      "size": 6,
+      "total": 66,
+      "failures": []
+    },
+    {
+      "size": 7,
+      "total": 66,
+      "failures": []
+    },
+    {
+      "size": 8,
+      "total": 66,
+      "failures": []
+    }
+  ],
+  "mobile": {
+    "tapCycle": [
+      1,
+      2,
+      0
+    ],
+    "drag": true,
+    "guardianPreserved": true,
+    "noScroll": true,
+    "reset": true
+  },
+  "guestReload": true,
+  "uncaughtErrors": []
+}

@@ -1,7 +1,7 @@
 # Grid catalogue, generation and audit
 
 ## Current state
-Production does **not generate campaign grids on demand**. The campaign uses a pre-generated catalogue embedded as `CAT` in `index.html`, with a fixed `CAMPAIGN_SIZE_SCHEDULE` and a curated order for 6x6 puzzles.
+Production does **not generate campaign grids on demand**. The campaign uses the pre-generated `CAT` in `src/campaign/catalogue.js`, with a fixed `CAMPAIGN_SIZE_SCHEDULE` and curated 6x6 order in `src/campaign/data.js`.
 
 The 100-quest schedule starts with two 5x5 onboarding grids, then uses 6x6, 7x7 and 8x8 puzzles. Do not replace this with runtime random generation without an explicit product decision.
 
@@ -55,7 +55,7 @@ Run `node scripts/audit-catalogue.mjs` for a reproducible offline audit using th
 
 ## Offline replacement tooling — 2026-10-03
 
-`node scripts/replace-blocked-grids.mjs` generates replacements for entries in the 7x7 and 8x8 catalogues that the actual proof engine cannot finish. Add `--write` to insert them at their existing catalogue indices and immediately audit the entire catalogue; an audit failure restores the original application file. A catalogue with no blocked entries is left untouched.
+`node scripts/replace-blocked-grids.mjs` generates replacements for entries in the 7x7 and 8x8 catalogues that the actual proof engine cannot finish. Add `--write` to insert them at their existing catalogue indices in `src/campaign/catalogue.js` and immediately audit the entire catalogue; an audit failure restores the original catalogue file. A catalogue with no blocked entries is left untouched.
 
 The generator uses seed `20261003`, legal non-touching Guardian permutations and connected territory growth. It rejects singletons, multiple solutions and stalled/incorrect proof steps. Accepted layouts are deduplicated against the existing catalogue and each other under all eight square symmetries, independently of territory labels. It stores board size, solution count, proof steps, rule mix and hardest rule. Board size plus proof length/rules provide deterministic difficulty information; existing campaign sizes and indices are retained rather than silently reordering quests.
 
