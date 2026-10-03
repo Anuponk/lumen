@@ -25,6 +25,10 @@ The intended progression:
 4. optional assistance;
 5. autonomous play.
 
+For quests 1–2, use speech bubbles with a pointer to the observed grid zone rather than a fixed instruction banner. Keep the bubble outside the board so it cannot cover a placement. Emphasize newly affected cells; existing exclusion markers must remain stable in the DOM and must not flash or animate again when the explanation changes.
+
+The row, column and neighbours are separate explanations. Mark only new exclusions, one every 500 ms. When all relevant cells are already marked, explain that fact instead of replaying an animation. Let a free tap advance after the animation, offer Previous to revisit the exact earlier board state, and keep placement steps dependent on an actual Guardian placement.
+
 ## Error UX
 No lives system. When guidance is active, illegal/conflicting Guardian reasoning should identify the relevant rule and source cells. A correction should be persistent enough to be understood rather than disappearing on an accidental outside tap.
 

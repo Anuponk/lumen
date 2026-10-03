@@ -22,7 +22,15 @@ There is no separate Validate action. Reaching N Guardians triggers evaluation. 
 - Quest 11: autonomy choice is presented; playing without guided control is a valid/default dismissal path.
 - When automatic marking is first disabled, explain manual exclusion and drag interaction.
 
-The intended teaching sequence is visual and progressive: Guardian placement, then exclusions caused by line, column, territory and neighbourhood constraints. Quest 1 should be more deliberate/slower than quest 2.
+The first two quests use curated 5x5 boards. Quest 1 starts with the single-cell territory in the centre; quest 2 uses a different board. These are deliberate onboarding exceptions to the normal territory-size rule (see GRID_CATALOG).
+
+The sequence introduces the five territories and the one-Guardian-per-territory rule before the first placement. Anchored speech bubbles then explain the row, column, neighbouring cells including diagonals, and any remaining cells of the occupied territory separately. New exclusions appear one at a time at 500 ms intervals in both quests; the player controls the time between explanations.
+
+Existing exclusions remain visible and are never animated again. If a zone has no new exclusions, the bubble explicitly says its cells are already marked. After an animation, tapping any non-control area advances the explanation; the optional Next button does the same. A Guardian must still be placed on the indicated cell. Account/help/reset controls and corrective modals retain their own actions.
+
+Previous restores the earlier explanation, Guardians and exclusions. It can cancel an in-progress animation; replaying an already visited explanation does not repeat its marking animation. Reset clears this in-memory teaching history and keeps the current quest and persisted campaign progress.
+
+In scripted onboarding, the final legal placement is followed by its explanations before completion is recorded. Outside onboarding, a legal complete placement is evaluated immediately. In both cases victory depends on legal Guardians, not on marking every remaining cell.
 
 ## Mobile input
 Dragging a finger over cells marks exclusions. It must:

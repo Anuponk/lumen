@@ -3,7 +3,7 @@
 ## Current state
 Production does **not generate campaign grids on demand**. The campaign uses a pre-generated catalogue embedded as `CAT` in `index.html`, with a fixed `CAMPAIGN_SIZE_SCHEDULE` and a curated order for 6x6 puzzles.
 
-The 100-quest schedule mixes 4x4/5x5 onboarding grids with 6x6, 7x7 and 8x8 puzzles. Do not replace this with runtime random generation without an explicit product decision.
+The 100-quest schedule starts with two 5x5 onboarding grids, then uses 6x6, 7x7 and 8x8 puzzles. Do not replace this with runtime random generation without an explicit product decision.
 
 ## Required puzzle representation
 Each puzzle stores:
@@ -18,7 +18,9 @@ Every catalogue entry must satisfy:
 4. all solution territories unique;
 5. consecutive solution rows may not have columns within distance 1 (no touching diagonally/vertically);
 6. every territory used by the puzzle is coherent with the one-per-territory rule;
-7. no single-cell territory (current regression invariant).
+7. no single-cell territory outside the two explicitly scripted onboarding entries. The approved exceptions are `CAT["5"][0]`, territory 2 at row/column 2 (the central first Guardian), and `CAT["5"][1]`, territory 0 at row/column 0. Indices are zero-based. No other singleton territory is permitted.
+
+These two exceptions implement the explicit product request to introduce a forced first Guardian. They do not relax structural validity, connectivity, uniqueness or explainable replay. The former unused 4x4 onboarding entry has been removed.
 
 ## Uniqueness
 The code comments describe campaign grids as having a **single audited solution**. Any future generator/audit must explicitly enumerate/count valid Guardian arrangements and require exactly one solution. Merely validating the stored `sol` is insufficient.
@@ -44,5 +46,17 @@ A safe offline generator should:
 
 Generation belongs in an offline/dev script, not the player's runtime path.
 
+The two onboarding grids were audited with one solution each. With the current proof engine, the central grid replays in 22 structured steps (17 group eliminations, 5 singles); the second replays in 11 (6 group eliminations, 5 singles). Their scripted placement order must also consist of forced territory placements rather than guesses.
+
 ## Mandatory catalogue audit
 After any change touching `CAT`, solver/proof rules, board semantics or campaign schedule, audit **all campaign grids**, not only the currently displayed size. Check validity, unique solution, explainable replay, campaign count=100, constellation mapping and absence of duplicate/broken schedule references.
+
+Run `node scripts/audit-catalogue.mjs` for a reproducible offline audit using the application's actual catalogue and proof engine. It checks all catalogue entries and campaign references and exits nonzero on failure. Known failures must remain visible; do not treat them as an allowlist or a passing release gate.
+
+## Offline replacement tooling — 2026-10-03
+
+`node scripts/replace-blocked-grids.mjs` generates replacements for entries in the 7x7 and 8x8 catalogues that the actual proof engine cannot finish. Add `--write` to insert them at their existing catalogue indices and immediately audit the entire catalogue; an audit failure restores the original application file. A catalogue with no blocked entries is left untouched.
+
+The generator uses seed `20261003`, legal non-touching Guardian permutations and connected territory growth. It rejects singletons, multiple solutions and stalled/incorrect proof steps. Accepted layouts are deduplicated against the existing catalogue and each other under all eight square symmetries, independently of territory labels. It stores board size, solution count, proof steps, rule mix and hardest rule. Board size plus proof length/rules provide deterministic difficulty information; existing campaign sizes and indices are retained rather than silently reordering quests.
+
+The 22 replacements (11 per size) were selected from 1,970 candidates. The 7x7 replacements need 45–48 structured proof steps; the 8x8 replacements need 61–64. `scripts/generated/replacements-2026-10-03.json` records the exact accepted grids, audits and hashes of the replaced data. Generation is offline only, and neither the proof engine nor player persistence changed. All 134 catalogue entries now pass the strict audit.
