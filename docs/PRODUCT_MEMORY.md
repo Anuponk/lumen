@@ -101,3 +101,9 @@ The user authorized a progressive refactor on `codex/modular-refactor`, starting
 The key constraint is functional equivalence. Live accessors preserve board/progress/auth state across resets, replay and asynchronous callbacks; snapshots must not replace the canonical mutable state. Full browser suites, strict catalogue audits and differential comparisons against the original main protect this decision. No gameplay or badge-policy correction was bundled into the migration. Pending #30/#31 remain separate even where current implementation and desired future semantics differ.
 
 The HTML feedback inline handler/global bridge was redundant with its existing bound listener and removed. Browser test entry points remain available. PWA caching/navigation policy and existing CDN/backend contracts are unchanged. This is local branch validation, not a production deployment record.
+
+## PR #38 review corrections — 2026-10-03
+
+Browser validation exposed two integration problems in the UX cleanup: scripted free-tap handling intercepted clicks in the new rules modal (advancing the lesson and blocking backdrop dismissal), and the success CTA fell below a 360x640 viewport. The modal is now excluded from the teaching interceptor, and the success card scrolls within a capped height. No puzzle, campaign, persistence, badge or learning policy changed.
+
+Four remaining hint instructions still said “éteindre”; these now say “écarter”, with no proof or deduction change. The original narrative test read the retired permanent rules paragraph; it now asserts Guardian vocabulary in the rules modal. The structural freeze test now explicitly permits the approved CTA/scroll CSS and requires all original test labels plus the three new UX cases. A browser regression script covers twelve modal scenarios and vocabulary/CTA behavior on three screen sizes. PR #38 remains unmerged during this validation.

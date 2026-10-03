@@ -1,0 +1,114 @@
+{
+  "baseline": "dcd9f3c872e623541be698edc212b64589d3b164",
+  "cases": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "quest": 1,
+      "emptyAndMarked": "identical"
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "quest": 3,
+      "emptyAndMarked": "identical"
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "quest": 12,
+      "emptyAndMarked": "identical"
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "quest": 48,
+      "emptyAndMarked": "identical"
+    },
+    {
+      "viewport": {
+        "width": 360,
+        "height": 640,
+        "mobile": true
+      },
+      "quest": 1,
+      "emptyAndMarked": "identical"
+    },
+    {
+      "viewport": {
+        "width": 360,
+        "height": 640,
+        "mobile": true
+      },
+      "quest": 3,
+      "emptyAndMarked": "identical"
+    },
+    {
+      "viewport": {
+        "width": 360,
+        "height": 640,
+        "mobile": true
+      },
+      "quest": 12,
+      "emptyAndMarked": "identical"
+    },
+    {
+      "viewport": {
+        "width": 360,
+        "height": 640,
+        "mobile": true
+      },
+      "quest": 48,
+      "emptyAndMarked": "identical"
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "mobile": false
+      },
+      "quest": 1,
+      "emptyAndMarked": "identical"
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "mobile": false
+      },
+      "quest": 3,
+      "emptyAndMarked": "identical"
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "mobile": false
+      },
+      "quest": 12,
+      "emptyAndMarked": "identical"
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "mobile": false
+      },
+      "quest": 48,
+      "emptyAndMarked": "identical"
+    }
+  ],
+  "uncaughtErrors": []
+}

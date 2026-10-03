@@ -4,7 +4,7 @@
 After **every modification affecting LUMEN gameplay**, run the complete test battery and strict grid audit before delivery. Do this even for changes that appear purely visual if they touch board DOM/input/state.
 
 ## Browser regression suite
-The app exposes `await window.runHintTests()`; the 66 cases live in `src/testing/hint-tests.js` and retain their original assertions. `window.lumenDiagnostics.runAllHintTests()` runs the suite for every size. The suite runs cases sequentially and waits for asynchronous victory/reveal behavior. It covers, among other things:
+The app exposes `await window.runHintTests()`; the 66 original cases plus three UX regressions (#16/#17/#19) live in `src/testing/hint-tests.js`. The narrative assertion now reads the on-demand rules modal. `window.lumenDiagnostics.runAllHintTests()` runs the suite for every size. The suite runs cases sequentially and waits for asynchronous victory/reveal behavior. It covers, among other things:
 - PWA install timing and standalone behavior;
 - sharing/referral and account/profile behavior;
 - reminder opt-in rules;
@@ -93,7 +93,7 @@ For real browser checks, start a local static server (`python -m http.server 800
 node scripts/browser-tests.mjs docs/validation/refactor-26.json
 ```
 
-The runner closes that isolated browser. It seeds the first two solved quests so its victory fixture has a valid continuous prefix, then removes the fixture script before testing guest reload. It runs 66 cases for each of four sizes, actual touch cycle, drag without board reconstruction/scroll/Guardian overwrite, reset on the same quest and guest persistence. It checks active/controlling service worker after normal navigation, manifest, icon/module asset responses and uncaught exceptions. An additional forced reload bypasses cache to verify persistence independently of service-worker caching. `LUMEN_TEST_URL` and `LUMEN_CDP_URL` override server/debug endpoints.
+The runner closes that isolated browser. It seeds the first two solved quests so its victory fixture has a valid continuous prefix, then removes the fixture script before testing guest reload. It runs 69 cases for each of four sizes (276 total, including all 264 original checks), actual touch cycle, drag without board reconstruction/scroll/Guardian overwrite, reset on the same quest and guest persistence. It checks active/controlling service worker after normal navigation, manifest, icon/module asset responses and uncaught exceptions. An additional forced reload bypasses cache to verify persistence independently of service-worker caching. `LUMEN_TEST_URL` and `LUMEN_CDP_URL` override server/debug endpoints.
 
 To reproduce render equivalence, temporarily save the same baseline as `.refactor-baseline.html` in the server root, launch a fresh isolated debugging browser and run `node scripts/ui-equivalence.mjs`. Remove the temporary baseline afterwards. This compares full board DOM, geometry/colors/borders and control states on 12 quest/viewport combinations, both empty and marked.
 
@@ -102,6 +102,12 @@ To reproduce render equivalence, temporarily save the same baseline as `.refacto
 Reports `docs/validation/refactor-21.json` through `refactor-26.json` record the complete browser gate after each issue. `refactor-engine-equivalence.json` and `refactor-ui-equivalence.json` retain the differential results. The final gate covers all 134 catalogue grids, all 100 quest calculations, historical local/cloud fixtures, eight analytics scenarios and the original 66 regression labels/CSS. Campaign, tutorial timings and badge behavior are unchanged; #30/#31 were excluded.
 
 Cloud synchronization and analytics equivalence use simulated RPCs. Live OAuth, authenticated backend writes, push delivery and Production deployment were not tested or changed. Browser performance results are local regression measurements, not device-independent guarantees.
+
+## PR #38 UX validation
+
+`node scripts/ux-cleanup-tests.mjs docs/validation/pr38-ux.json` uses the same isolated Chrome setup and closes the browser afterwards. It tests real mouse/key input on 390x844, 360x640 and 1440x900 viewports: twelve rules-modal scenarios across quests 1, 2, 6 and 11, open/close button, Escape, backdrop, focus restoration and preservation of board/progress/teaching state. It also triggers a missing-mark hint and an actual victory/next-quest action on each viewport. The compact mobile success card must scroll so its primary CTA remains reachable.
+
+The structural gate retains import/shell checks and all 66 original labels in order, verifies the three additional UX cases, and allows only the documented primary-CTA and scrollability CSS changes against the refactor baseline. It does not waive other CSS differences. Historical refactor reports remain unchanged; PR #38 browser and UX reports are `pr38-browser.json` and `pr38-ux.json`. `pr38-board-equivalence.json` records twelve passing board/control comparisons with the historical baseline; `pr38-audit.json` records the full 134-grid audit.
 
 ## Definition of done
 A gameplay change is not done unless:

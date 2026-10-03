@@ -13,11 +13,21 @@ for(const script of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)){
 }
 assert(html.includes('src="./src/main.js"'),'Module bootstrap missing');
 const styles=original.match(/<style>([\s\S]*?)<\/style>/)[1].trim();
-assert.equal(fs.readFileSync('src/ui/styles.css','utf8').replace(/\r/g,'').trim(),styles,'Styles changed');
+// #17 adds a primary CTA; small viewports must also keep success actions reachable.
+const primaryCTA='.success-actions #successNew.success-primary{background:linear-gradient(135deg,#68e7ff,#8b7cff);color:#07111d;border-color:transparent;box-shadow:0 0 22px rgba(104,231,255,.2)}';
+const currentStyles=fs.readFileSync('src/ui/styles.css','utf8').replace(/\r/g,'').trim();
+assert(currentStyles.includes(primaryCTA),'Primary CTA styling missing');
+const reachableSuccess='max-height:calc(100dvh - 48px);overflow-y:auto;';
+assert(currentStyles.includes(reachableSuccess),'Success card cannot scroll on small screens');
+assert.equal(currentStyles.replace(primaryCTA,'').replace(reachableSuccess,''),styles,'Unexpected styles changed');
 const labels=source=>[...source.matchAll(/\btest\("([^"\n]+)"/g)].map(match=>match[1]);
 const tests=labels(fs.readFileSync('src/testing/hint-tests.js','utf8'));
-assert.equal(tests.length,66);
-assert.deepEqual(tests,labels(functionSource(original,'runHintTests')),'Regression cases removed or renamed');
+const originalTests=labels(functionSource(original,'runHintTests'));
+const additionalTests=["UX : Quête suivante est le CTA principal après réussite","UX : les règles sont accessibles à la demande","Vocabulaire : les indices n'utilisent plus l'ancien thème de l'eau"];
+assert.equal(originalTests.length,66);
+assert.equal(tests.length,originalTests.length+additionalTests.length);
+assert.deepEqual(tests.filter(label=>!additionalTests.includes(label)),originalTests,'Regression cases removed or renamed');
+assert.deepEqual(tests.filter(label=>additionalTests.includes(label)),additionalTests,'UX regression cases missing');
 const graph=new Map();
 function visit(filename,stack=[]){
  const file=path.resolve(filename);
@@ -29,4 +39,4 @@ function visit(filename,stack=[]){
  for(const target of imports){assert(fs.existsSync(target),'Missing import '+target);visit(target,[...stack,file])}
 }
 visit('src/main.js');
-console.log(JSON.stringify({baseline,modules:graph.size,acyclic:true,shell:true,css:'identical',regressionCases:tests.length}));
+console.log(JSON.stringify({baseline,modules:graph.size,acyclic:true,shell:true,css:'original preserved plus CTA and success scrolling',originalRegressionCases:originalTests.length,additionalRegressionCases:additionalTests.length,regressionCases:tests.length}));
