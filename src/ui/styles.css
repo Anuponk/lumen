@@ -258,26 +258,17 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .rules{display:block!important;margin-top:8px}
 }
 
-/* Wide desktop workspace: progression left, board center, guide/hints right. */
+/* Responsive workspace: one DOM composition, presentation only changes with CSS.
+   The journey and contextual message remain the same elements at every size. */
 .game-core{min-width:0}
-.desktop-side{display:none}
 @media (min-width:1100px){
  html,body{height:100%!important;overflow:hidden!important}
  body{min-height:0!important}
- .app{max-width:1440px!important;width:min(96vw,1440px)!important;height:100dvh!important;min-height:0!important;padding:12px 18px!important;display:grid!important;grid-template-columns:minmax(245px,300px) minmax(520px,620px) minmax(245px,300px);gap:clamp(18px,2.5vw,38px);align-items:start;overflow:hidden!important}
- .desktop-side{display:block;min-width:0;padding-top:68px}
- .game-core{width:100%;max-width:620px;justify-self:center;min-width:0}
- .desktop-left .journey{margin:0!important}
- .desktop-left .daily-card{margin-bottom:12px}
- .desktop-right{position:relative}
- .guide-card{background:linear-gradient(145deg,#101d2e,#0b1522);border:1px solid #28415b;border-radius:20px;padding:18px;min-height:230px;box-shadow:0 16px 42px rgba(0,0,0,.16)}
- .guide-kicker{font-size:11px;letter-spacing:.14em;font-weight:900;color:#68e7ff;margin-bottom:13px}
- .desktop-right .rules{display:block!important;margin:0!important;background:transparent;border:0;padding:0;color:#aebed0}
- .desktop-right .rules b{display:block;color:#eefcff;font-size:18px;margin-bottom:8px}
- .desktop-right .rules p{line-height:1.5;margin:0}
- .desktop-right .msg{display:block!important;width:auto!important;min-height:0!important;margin:0!important;padding:0!important;text-align:left!important;color:#dce9f7;font-size:14px;line-height:1.5}
- .desktop-right .msg:not(:empty){margin-bottom:16px!important;padding-bottom:16px!important;border-bottom:1px solid #28415b}
- .game-core>.journey,.game-core>.rules,.game-core>.msg{display:none!important}
+ .app{max-width:620px!important;width:min(56vw,620px)!important;height:100dvh!important;min-height:0!important;padding:12px 18px!important;display:block!important;overflow:hidden!important}
+ .game-core{width:100%;max-width:620px;margin:auto;min-width:0}
+ .journey{position:fixed;top:80px;left:max(18px,calc(50vw - 510px));width:clamp(190px,22vw,280px);margin:0!important}
+ .msg{position:fixed;top:80px;right:max(18px,calc(50vw - 510px));width:clamp(190px,22vw,280px);min-height:180px!important;margin:0!important;padding:18px!important;border:1px solid #28415b;border-radius:20px;background:linear-gradient(145deg,#101d2e,#0b1522);color:#dce9f7;font-size:14px;line-height:1.5;text-align:left!important;box-shadow:0 16px 42px rgba(0,0,0,.16)}
+ .msg:empty{display:none}
  #board{width:min(100%,55dvh)!important}
  .actions{width:min(100%,55dvh)!important}
  .head{margin-bottom:5px!important}
@@ -286,7 +277,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 }
 
 /* Mobile play-first layout: metadata is compact and the board appears immediately. */
-.mobile-journey,.mobile-streak,.mobile-account,.mobile-auth-popover,.daily-info-popover{display:none}
+.mobile-streak,.mobile-account,.mobile-auth-popover,.daily-info-popover{display:none}
 @media (max-width:700px){
  .app{padding:8px 10px 28px}
  .head{margin:0 0 5px;align-items:center}
@@ -314,7 +305,14 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .mobile-journey-sky{color:#68e7ff;font-weight:900;white-space:nowrap}
  .mobile-journey:active{transform:scale(.98)}
  .mobile-streak{display:inline-flex;align-items:center;white-space:nowrap;font-size:12px;font-weight:900;color:#68e7ff;border:1px solid #28415b;background:#101d2e;border-radius:18px;padding:7px 9px}
- .levels,.auth-box,.journey{display:none!important}
+ .levels,.auth-box{display:none!important}
+ .journey{display:flex!important;align-items:center;justify-content:space-between;gap:8px;margin:0 0 5px;padding:5px 8px;border-radius:13px}
+ .journey-top{width:100%;gap:8px}
+ .journey-kicker,.progress-track,.progress-copy,.sector-progress,.sky-entry{display:none!important}
+ .journey-top>div{min-width:0}
+ #journeyTitle{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:#a9bdd0}
+ #openMap{padding:5px 8px!important;font-size:11px!important;white-space:nowrap}
+
  .auto-cross{margin:2px 1px 5px;font-size:12px;gap:6px}
  .auto-cross input{width:17px;height:17px}
  .learning-note{margin:0 2px 5px;font-size:10px;line-height:1.2}

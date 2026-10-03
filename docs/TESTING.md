@@ -109,6 +109,10 @@ Cloud synchronization and analytics equivalence use simulated RPCs. Live OAuth, 
 
 The structural gate retains import/shell checks and all 66 original labels in order, verifies the three additional UX cases, and allows only the documented primary-CTA and scrollability CSS changes against the refactor baseline. It does not waive other CSS differences. Historical refactor reports remain unchanged; PR #38 browser and UX reports are `pr38-browser.json` and `pr38-ux.json`. `pr38-board-equivalence.json` records twelve passing board/control comparisons with the historical baseline; `pr38-audit.json` records the full 134-grid audit.
 
+## Responsive architecture gate
+
+For responsive UI work, run `node scripts/responsive-architecture-tests.mjs`. It guards the #28 architecture: no desktop-only re-parenting slots, no duplicate compact journey, no viewport-driven DOM moves, CSS-owned layout breakpoints, and Pointer Events capability handling for drag-to-exclude. This gate supplements rather than replaces the browser suite, UI equivalence checks and strict catalogue audit.
+
 ## Definition of done
 A gameplay change is not done unless:
 - all automated tests pass;

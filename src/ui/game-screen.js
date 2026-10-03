@@ -206,21 +206,6 @@ let n=6,puz,state,hist=[],start,timer,activeElapsedMs=0,activeSince=null,last={}
 const board=document.getElementById("board"),msg=document.getElementById("msg");
 let hiCells=[];
 const {validateGuardians,key,solutions,isAutoCross,verificationErrors,guardianConflicts,conflictMessage,proofEngine,directMissingCross,playerError,guardianOnlyState,guidedConflictForAction}=createGameEngine(()=>({n,puz,state}),()=>!!document.getElementById("autoCross")?.checked);
-function arrangeDesktopPanels(){
- const left=document.getElementById("desktopLeftSlot"),guide=document.getElementById("desktopGuide"),core=document.querySelector(".game-core");
- const journey=document.querySelector(".journey");
- if(!left||!guide||!core||!journey)return;
- if(window.matchMedia("(min-width:1100px)").matches){
-   if(journey.parentElement!==left)left.appendChild(journey);
-   if(msg.parentElement!==guide)guide.appendChild(msg);
- }else{
-   const actions=core.querySelector(".actions");
-   if(journey.parentElement!==core){const modal=core.querySelector("#mapModal");core.insertBefore(journey,modal)}
-   if(msg.parentElement!==core)actions.insertAdjacentElement("afterend",msg);
- }
-}
-window.addEventListener("resize",arrangeDesktopPanels);
-
 function choose(){levelIndex=Math.max(0,Math.min(levelIndex,99));const [size,slot]=CAMPAIGN_SIZE_SCHEDULE[levelIndex];puz=size==="6"?CAT["6"][CAMPAIGN6_ORDER[slot]]:CAT[size][slot];n=puz.reg.length;last[n]=levelIndex}
 function loadPuzzle(){init();}
 function startLearningReplay(){
@@ -1030,7 +1015,7 @@ document.getElementById("progressText").textContent=completed+" constellation"+(
 let ss=document.getElementById("skySummary");if(ss)ss.textContent=sky.name.replace(" · Grand Chariot","")+" · "+sky.lit+"/"+sky.count+" ★";
 document.getElementById("journeyTitle").textContent=sky.name.replace(" · Grand Chariot","");
 document.getElementById("sectorProgress").textContent=sky.lit+"/"+sky.count+" étoiles · "+earned+"/"+SKY_TARGET+" dans le ciel";
-const mj=document.getElementById("mobileJourney"),mjt=document.getElementById("mobileJourneyText");if(mjt)mjt.textContent=sky.name.replace(" · Grand Chariot","")+" · "+sky.lit+"/"+sky.count+" ★";else if(mj)mj.textContent=sky.name+" · "+sky.lit+"/"+sky.count+" ★";updateHintButton();renderXP();
+updateHintButton();renderXP();
 }
 
 function performanceIcon(type){const icons={hint:'<svg class="performance-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"></circle><path d="M15 15l5 5"></path></svg>',speed:'<svg class="performance-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12M6 21h12M7 3c0 5 3 6 5 9-2 3-5 4-5 9M17 3c0 5-3 6-5 9 2 3 5 4 5 9"></path></svg>',assist:'<svg class="performance-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.7M20 12a8 8 0 0 1-13.7 5.7"></path><path d="M18 3v4h-4M6 21v-4h4"></path><path d="M9 12l2 2 4-5"></path></svg>',clean:'<svg class="performance-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"></path></svg>'};return icons[type]}
@@ -1066,7 +1051,6 @@ function setupOutsideDefaults(){
 }
 document.getElementById("openMap").onclick=()=>openJourneyMap(false);
 const openSky=document.getElementById("openSky");if(openSky)openSky.onclick=()=>openJourneyMap(true);
-const mobileJourney=document.getElementById("mobileJourney");if(mobileJourney)mobileJourney.onclick=()=>openJourneyMap(true);
 document.getElementById("closeMap").onclick=closeMapOverlay;document.getElementById("hint").addEventListener("click",()=>{if(!hintWasGranted)return;hintWasGranted=false;trackLumenEvent("hint_used",levelIndex+1);usedHintThisGame=true;updateHintButton()});
 
 const autonomyTry=document.getElementById("autonomyTry"),autonomyKeep=document.getElementById("autonomyKeep");
@@ -1083,7 +1067,7 @@ document.getElementById("scriptedLearnNext").onclick=advanceLearningStep;
 document.getElementById("scriptedLearnPrev").onclick=previousLearningStep;
 document.addEventListener("click",handleLearningTap,true);
 // Start after the campaign and constellation data have been initialized.
-arrangeDesktopPanels();setupMobileAuth();init();setupTutorial();setupOutsideDefaults();
+setupMobileAuth();init();setupTutorial();setupOutsideDefaults();
 refreshJourney();
 maybeShowReturnWelcome();
 
