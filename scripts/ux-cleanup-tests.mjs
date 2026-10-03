@@ -29,7 +29,7 @@ try{
    await click('#tutorialHelp');
    check(await evaluate(`!document.getElementById('rulesModal').hidden&&document.activeElement.id==='closeRulesModal'`),label+' open/focus');
    check(await evaluate(`(()=>{const r=document.querySelector('#rulesModal .shard-rules-card').getBoundingClientRect(),b=document.getElementById('board').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1&&b.width<=innerWidth&&!!document.getElementById('replayLearning')})()`),label+' help layout');
-   if(viewport.mobile)check(await evaluate(`(()=>{const b=document.getElementById('board').getBoundingClientRect(),a=document.querySelector('.actions').getBoundingClientRect();return document.documentElement.scrollHeight<=innerHeight+1&&b.top>=0&&b.bottom<=innerHeight&&a.bottom<=innerHeight})()`),label+' play viewport fits without vertical scroll');
+   if(viewport.mobile){const fit=await evaluate(`(()=>{const b=document.getElementById('board').getBoundingClientRect(),a=document.querySelector('.actions').getBoundingClientRect(),w=document.getElementById('learningBoardWrap')?.getBoundingClientRect();return {ok:document.documentElement.scrollHeight<=innerHeight+1&&b.top>=0&&b.bottom<=innerHeight&&a.bottom<=innerHeight,scrollHeight:document.documentElement.scrollHeight,innerHeight,board:[b.top,b.bottom,b.height],actions:[a.top,a.bottom,a.height],wrap:w?[w.top,w.bottom,w.height]:null,bodyScroll:document.body.scrollHeight}})()`);if(!fit.ok)console.log('ux-fit:',label,JSON.stringify(fit));check(fit.ok,label+' play viewport fits without vertical scroll');}
    await click('#rulesModal p');
    check(await snapshot()===before,label+' modal content changed quest/teaching state');
    await click('#closeRulesModal');
