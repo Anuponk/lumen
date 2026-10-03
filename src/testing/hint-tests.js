@@ -3,7 +3,7 @@ import {CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATIONS,CONSTEL
 import {chapterForGrid} from "../campaign/progression.js";
 
 export function createHintTestSuite(model,api){
-const {saveLumenNickname,maybeOfferInstall,lumenShareUrl,successAchievement,shareLumenResult,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults,openJourneyMap,closeMapOverlay,renderMap}=api;
+const {saveLumenNickname,maybeOfferInstall,lumenShareUrl,successAchievement,shareLumenResult,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults,openJourneyMap,closeMapOverlay,renderMap,advanceToNextPuzzle,startReplay}=api;
 async function runHintTests(){
  let results=[],cases=[];
  test("Campagne : toutes les quêtes ont une grille dans le catalogue",()=>Object.values(CAMPAIGN_SIZE_SCHEDULE).every(([size,slot])=>!!CAT[size]?.[size==="6"?CAMPAIGN6_ORDER[slot]:slot]));
@@ -56,6 +56,8 @@ async function runHintTests(){
  test("UX : la prochaine quête débloquée est visible comme Nouvelle dans Mon ciel",()=>renderMap().toString().includes("puzzle-new-label")&&renderMap().toString().includes("Nouvelle quête disponible"));
  test("UX : Mon ciel reste au-dessus du masque de tentative",()=>Number.parseInt(getComputedStyle(document.getElementById("mapModal")).zIndex,10)>Number.parseInt(getComputedStyle(document.getElementById("attemptMask")).zIndex,10));
  test("UX mobile : les contrôles de tentative ne recouvrent pas le raccourci Mon ciel",()=>{const controls=document.getElementById("attemptPause")?.parentElement,pause=document.getElementById("attemptPause"),abandon=document.getElementById("attemptAbandon");if(innerWidth>700||!controls)return true;const c=getComputedStyle(controls);return c.position!=="absolute"&&!!pause&&!!abandon});
+ test("Navigation : Quête suivante après rejeu reste relative à la quête jouée",()=>advanceToNextPuzzle.toString().includes("const next=levelIndex+1")&&!advanceToNextPuzzle.toString().includes("replayMode?Math.min(sequentialSolvedCount"));
+ test("Navigation : le rejeu conserve séparément la progression maximale",()=>startReplay.toString().includes("levelIndex=i")&&startReplay.toString().includes("replayMode=true")&&!startReplay.toString().includes("sequentialSolvedCount="));
  test("UX : les règles sont accessibles à la demande",()=>!!document.getElementById("tutorialHelp")&&!!document.getElementById("rulesModal")&&!!document.getElementById("replayLearning"));
  test("Vocabulaire : les indices n'utilisent plus l'ancien thème de l'eau",()=>!/Eau manquante|éteindre/.test(document.getElementById("hint").onclick.toString()));
  test("Campagne : progression strictement séquentielle",()=>{
