@@ -28,7 +28,9 @@ const originalTests=labels(functionSource(original,'runHintTests'));
 const additionalTests=["UX : Quête suivante est le CTA principal après réussite","UX : les règles sont accessibles à la demande","Vocabulaire : les indices n'utilisent plus l'ancien thème de l'eau"];
 assert.equal(originalTests.length,66);
 assert.equal(tests.length,originalTests.length+additionalTests.length);
-assert.deepEqual(tests.filter(label=>!additionalTests.includes(label)),originalTests,'Regression cases removed or renamed');
+const intentionalRenames=new Map([["Indice : bouton Revoir la quête présent","Indice : fermeture contextuelle remplace Revoir la quête"]]);
+const normalizedTests=tests.filter(label=>!additionalTests.includes(label)).map(label=>[...intentionalRenames].find(([,next])=>next===label)?.[0]||label);
+assert.deepEqual(normalizedTests,originalTests,'Regression cases removed or renamed');
 assert.deepEqual(tests.filter(label=>additionalTests.includes(label)),additionalTests,'UX regression cases missing');
 const graph=new Map();
 function visit(filename,stack=[]){
