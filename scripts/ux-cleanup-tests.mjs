@@ -25,18 +25,18 @@ try{
    await evaluate(`lumenDiagnostics.setupQuest(${quest});document.getElementById('manualCrossTip').hidden=true;document.getElementById('questStart').hidden=true;document.getElementById('rulesModal').hidden=true`);
    if(await evaluate(`!document.getElementById('autonomyOverlay').hidden`))await click('#autonomyTry');
    const before=await snapshot();
-   check(await evaluate(`document.querySelector('.rules').children.length===1&&document.querySelector('.rules').textContent.trim()==='? Revoir les règles'&&document.getElementById('rulesModal').hidden`),label+' permanent rules');
-   await click('#rulesHelp');
+   check(await evaluate(`!document.getElementById('rulesHelp')&&!document.getElementById('boardNext')&&!document.getElementById('clearHint')&&document.getElementById('rulesModal').hidden`),label+' redundant controls removed');
+   await click('#tutorialHelp');
    check(await evaluate(`!document.getElementById('rulesModal').hidden&&document.activeElement.id==='closeRulesModal'`),label+' open/focus');
    check(await evaluate(`(()=>{const r=document.querySelector('#rulesModal .shard-rules-card').getBoundingClientRect(),b=document.getElementById('board').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1&&b.width<=innerWidth})()`),label+' layout');
    await click('#rulesModal p');
    check(await snapshot()===before,label+' modal content changed quest/teaching state');
    await click('#closeRulesModal');
-   check(await evaluate(`document.getElementById('rulesModal').hidden&&document.activeElement.id==='rulesHelp'`),label+' close/focus');
-   await click('#rulesHelp');
+   check(await evaluate(`document.getElementById('rulesModal').hidden&&document.activeElement.id==='tutorialHelp'`),label+' close/focus');
+   await click('#tutorialHelp');
    await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape'});await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape'});
    check(await evaluate(`document.getElementById('rulesModal').hidden`),label+' Escape');
-   await click('#rulesHelp');
+   await click('#tutorialHelp');
    await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,x:5,y:5});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,x:5,y:5});
    check(await evaluate(`document.getElementById('rulesModal').hidden`),label+' backdrop');
    check(await snapshot()===before,label+' modal interactions changed quest/teaching state');
@@ -44,8 +44,10 @@ try{
   }
   await evaluate(`(()=>{lumenDiagnostics.setupQuest(5);document.getElementById('manualCrossTip').hidden=true;document.getElementById('questStart').hidden=true;const s=lumenDiagnostics.snapshot();s.state[0][s.puz.sol[0]]=2;lumenDiagnostics.setBoard(s.state)})()`);
   await click('#hint');
-  const message=await evaluate(`document.getElementById('msg').textContent`);
-  check(message.startsWith('Marquage manquant :')&&message.includes('écarter')&&!message.includes('Eau manquante'),viewport.width+' hint vocabulary: '+message);
+  const hint=await evaluate(`({hidden:document.getElementById('hintCard').hidden,title:document.getElementById('hintTitle').textContent,copy:document.getElementById('hintCopy').textContent,highlighted:document.querySelectorAll('#board .cell.hi').length})`);
+  check(!hint.hidden&&hint.title==='Marquage à compléter'&&hint.copy.includes('écarter')&&!hint.copy.includes('Eau manquante')&&hint.highlighted>0,viewport.width+' guided hint: '+JSON.stringify(hint));
+  await click('#hintClose');
+  check(await evaluate(`document.getElementById('hintCard').hidden&&document.querySelectorAll('#board .cell.hi').length===0`),viewport.width+' hint close clears visuals');
   await evaluate(`(()=>{lumenDiagnostics.setupQuest(2);document.getElementById('questStart').hidden=true;const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
   await sleep(500);
   const cta=await evaluate(`(()=>{const next=document.getElementById('successNew'),share=document.getElementById('successShare');return {visible:document.getElementById('successOverlay').classList.contains('show'),text:next.textContent.trim(),next:getComputedStyle(next).backgroundImage,share:getComputedStyle(share).backgroundImage}})()`);
