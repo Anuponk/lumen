@@ -28,7 +28,7 @@ try{
  const tap=async p=>{await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[p]});await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await sleep(50)};
  console.log('browser-test: snapshot:start');
  const initial=await snapshot();console.log('browser-test: snapshot:done');const column=initial.puz.sol[0];console.log('browser-test: point:start');const p=await point(0,column);console.log('browser-test: point:done');
- for(const expected of [1,2,0]){await tap(p);const actual=(await snapshot()).state[0][column];assert(actual===expected,'Tap cycle regression: expected '+expected+', got '+actual+'; target '+await evaluate(`document.elementFromPoint(${p.x},${p.y})?.outerHTML`))}
+ for(const expected of [1,2,0]){console.log('browser-test: tap:start',expected);await tap(p);console.log('browser-test: tap:done',expected);const snap=await snapshot();console.log('browser-test: tap:snapshot',expected);const actual=snap.state[0][column];if(actual!==expected){const target=await evaluate(`document.elementFromPoint(${p.x},${p.y})?.outerHTML`);throw Error('Tap cycle regression: expected '+expected+', got '+actual+'; target '+target)}}
  await tap(p);await tap(p);
  await evaluate('window.lumenBoardRebuilt=false;window.lumenBoardObserver=new MutationObserver(records=>{if(records.some(record=>record.target===document.getElementById("board")&&record.type==="childList"))window.lumenBoardRebuilt=true});lumenBoardObserver.observe(document.getElementById("board"),{childList:true})');
  const scroll=await evaluate('scrollY');
