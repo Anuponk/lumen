@@ -11,7 +11,7 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 12
     steps:
       - name: Checkout PR
         uses: actions/checkout@v4
@@ -58,9 +58,11 @@ jobs:
           exit 1
 
       - name: Browser regression suite
+        timeout-minutes: 4
         run: node scripts/browser-tests.mjs docs/validation/ci-browser.json
 
       - name: UX regression suite
+        timeout-minutes: 4
         run: |
           rm -rf /tmp/lumen-chrome
           chromium --headless=new --remote-debugging-port=9222 --remote-debugging-address=127.0.0.1 --user-data-dir=/tmp/lumen-chrome --no-first-run --no-default-browser-check --disable-dev-shm-usage --no-sandbox about:blank > /tmp/lumen-chrome-ux.log 2>&1 &
