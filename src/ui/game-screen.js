@@ -989,7 +989,7 @@ document.getElementById("successRetry").onclick=()=>{
  document.getElementById("autoCross").disabled=false;
  loadPuzzle();usedHintThisGame=false;refreshJourney();
 };
-document.getElementById("successSky").onclick=()=>{hideSuccess();openJourneyMap(true)};
+document.getElementById("successSky").onclick=()=>{hideSuccess();openJourneyMap(true,{showContinue:true})};
 function handleSuccessAdvance(){
  if(learningReplayActive()){
   hideSuccess();
@@ -1066,7 +1066,7 @@ function performanceBadges(i){
 }
 function startReplay(i){if(!lumenProgress.solved[i])return;levelIndex=i;replayMode=true;document.getElementById("mapModal").hidden=true;document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;loadPuzzle();usedHintThisGame=false;refreshJourney()}
 function renderMap(){const tabs=document.getElementById("sectorTabs"),puzzleGrid=document.getElementById("puzzleGrid");tabs.innerHTML="";CONSTELLATIONS.forEach((c,i)=>{let b=document.createElement("button"),unlocked=i<=chapterForGrid(Math.min(sequentialSolvedCount,99));b.className="sector-tab"+(i===mapConstellation?" active":"")+(unlocked?"":" locked");b.textContent="✦ "+c.name.replace(" · Grand Chariot","");b.onclick=()=>{if(unlocked){mapConstellation=i;renderMap();renderSky(i)}};tabs.appendChild(b)});puzzleGrid.innerHTML="";let range=constellationGridRange(mapConstellation),start=range.start,end=range.end+1;for(let i=start;i<end;i++){let solved=!!lumenProgress.solved[i],current=i===Math.min(sequentialSolvedCount,99),b=document.createElement("button"),pos=i-start+1,meta=performanceBadges(i);b.className="puzzle-card"+(solved?" done":"")+(current?" current":"")+(!solved&&!current?" locked":"");b.innerHTML=solved?meta:(current?"✦":"");b.title=solved?"Rejouer la quête "+pos+" pour améliorer ta performance":current?"Quête "+pos+" · à jouer":"Quête "+pos+" · verrouillée";b.onclick=()=>{if(solved){startReplay(i);return}if(!current)return;levelIndex=i;replayMode=false;document.getElementById("mapModal").hidden=true;loadPuzzle();refreshJourney()};puzzleGrid.appendChild(b)}renderSky(mapConstellation)}
-function openJourneyMap(focusSky=false){mapConstellation=chapterForGrid(levelIndex);renderMap();document.getElementById("mapModal").hidden=false;if(focusSky){requestAnimationFrame(()=>{const sky=document.getElementById("skyCard");if(sky){sky.scrollIntoView({behavior:"smooth",block:"center"});sky.classList.add("sky-focus");setTimeout(()=>sky.classList.remove("sky-focus"),900)}})}}
+function openJourneyMap(focusSky=false,{showContinue=false}={}){mapConstellation=chapterForGrid(levelIndex);renderMap();const modal=document.getElementById("mapModal");modal.hidden=false;modal.dataset.showContinue=showContinue&&!!lumenProgress.solved[levelIndex]?"1":"";const continueBtn=document.getElementById("mapContinue");if(continueBtn)continueBtn.hidden=modal.dataset.showContinue!=="1";if(focusSky){requestAnimationFrame(()=>{const sky=document.getElementById("skyCard");if(sky){sky.scrollIntoView({behavior:"smooth",block:"center"});sky.classList.add("sky-focus");setTimeout(()=>sky.classList.remove("sky-focus"),900)}})}}
 
 const performanceLegend=document.getElementById("performanceLegend"),badgeRulesModal=document.getElementById("badgeRulesModal"),closeBadgeRules=document.getElementById("closeBadgeRules");function openBadgeRules(){if(badgeRulesModal){badgeRulesModal.hidden=false;closeBadgeRules&&closeBadgeRules.focus()}}function hideBadgeRules(){if(badgeRulesModal){badgeRulesModal.hidden=true;performanceLegend&&performanceLegend.focus()}}if(performanceLegend){performanceLegend.onclick=openBadgeRules;performanceLegend.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openBadgeRules()}}}if(closeBadgeRules)closeBadgeRules.onclick=hideBadgeRules;if(badgeRulesModal)badgeRulesModal.onclick=e=>{if(e.target===badgeRulesModal)hideBadgeRules()};document.addEventListener("keydown",e=>{if(e.key==="Escape"&&badgeRulesModal&&!badgeRulesModal.hidden)hideBadgeRules()});
 const shardMeter=document.getElementById("shardMeter"),shardRulesModal=document.getElementById("shardRulesModal"),closeShardRules=document.getElementById("closeShardRules");function openShardRules(){if(shardRulesModal){shardRulesModal.hidden=false;closeShardRules&&closeShardRules.focus()}}function hideShardRules(){if(shardRulesModal){shardRulesModal.hidden=true;shardMeter&&shardMeter.focus()}}if(shardMeter){shardMeter.onclick=openShardRules;shardMeter.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openShardRules()}}}if(closeShardRules)closeShardRules.onclick=hideShardRules;if(shardRulesModal)shardRulesModal.onclick=e=>{if(e.target===shardRulesModal)hideShardRules()};document.addEventListener("keydown",e=>{if(e.key==="Escape"&&shardRulesModal&&!shardRulesModal.hidden)hideShardRules()});
@@ -1079,7 +1079,7 @@ function dismissPushLater(){const o=document.getElementById("pushOptin");if(!o||
 function continueSkyReveal(){document.getElementById("skyRevealContinue")?.click()}
 function startQuestFromOverlay(){document.getElementById("questGo")?.click()}
 function closeAutonomyOverlay(){finishAutonomyChoice(false);resumeGameClock()}
-function closeMapOverlay(){const o=document.getElementById("mapModal");if(o)o.hidden=true}
+function closeMapOverlay(){const o=document.getElementById("mapModal");if(o){o.hidden=true;o.dataset.showContinue=""}const b=document.getElementById("mapContinue");if(b)b.hidden=true}
 function setupOutsideDefaults(){
  bindOutsideDefault("successOverlay",handleSuccessAdvance);
  bindOutsideDefault("skyReveal",continueSkyReveal);
@@ -1095,7 +1095,7 @@ function setupOutsideDefaults(){
 }
 document.getElementById("openMap").onclick=()=>openJourneyMap(false);
 const openSky=document.getElementById("openSky");if(openSky)openSky.onclick=()=>openJourneyMap(true);
-document.getElementById("closeMap").onclick=closeMapOverlay;document.getElementById("hint").addEventListener("click",()=>{if(!hintWasGranted)return;attemptEngine.markAssistance();hintWasGranted=false;trackLumenEvent("hint_used",levelIndex+1);usedHintThisGame=true;updateHintButton()});
+document.getElementById("closeMap").onclick=closeMapOverlay;const mapContinue=document.getElementById("mapContinue");if(mapContinue)mapContinue.onclick=()=>{closeMapOverlay();advanceToNextPuzzle()};document.getElementById("hint").addEventListener("click",()=>{if(!hintWasGranted)return;attemptEngine.markAssistance();hintWasGranted=false;trackLumenEvent("hint_used",levelIndex+1);usedHintThisGame=true;updateHintButton()});
 
 const autonomyTry=document.getElementById("autonomyTry"),autonomyKeep=document.getElementById("autonomyKeep");
 if(autonomyTry)autonomyTry.onclick=()=>{finishAutonomyChoice(false);resumeGameClock()};
