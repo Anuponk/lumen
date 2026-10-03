@@ -54,15 +54,18 @@ for(const options of scenarios){
  const actual=await fixture(options,false),legacy=await fixture(options,true);
  // #29 intentionally restores daily-history merge during authenticated init/sign-in.
  // Compare the legacy contract after removing only the new, documented daily-sync effects.
- const normalized=plain(actual);
+ const normalized=plain(actual),expected=plain(legacy);
  if(!options.guest&&!options.networkError){
    normalized.progress.daily.dates={};
+   expected.progress.daily.dates={};
    normalized.trace=normalized.trace.filter(x=>x.name!=='lumen_get_daily'&&x.ui!=='renderDaily');
+   expected.trace=expected.trace.filter(x=>x.name!=='lumen_get_daily'&&x.ui!=='renderDaily');
    // cloudMergeDaily persists the merged model once; normalize that intentional save
    // to the pre-#29 daily state instead of dropping the whole save trace.
    for(const x of normalized.trace)if(x.save?.daily?.dates?.['2026-10-01'])x.save.daily.dates={};
+   for(const x of expected.trace)if(x.save?.daily?.dates?.['2026-10-01'])x.save.daily.dates={};
  }
- assert.deepEqual(normalized,legacy,'Cloud/persistence behavior changed outside intentional #29 daily sync: '+JSON.stringify(options));
+ assert.deepEqual(normalized,expected,'Cloud/persistence behavior changed outside intentional #29 daily sync: '+JSON.stringify(options));
  if(!options.guest&&!options.networkError){
    assert.equal(actual.progress.daily.dates['2026-10-01'],1,'Authenticated init must merge server daily history');
    assert.ok(actual.trace.some(x=>x.name==='lumen_get_daily'),'Authenticated init must call lumen_get_daily');
