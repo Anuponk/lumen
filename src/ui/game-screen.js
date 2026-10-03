@@ -206,21 +206,6 @@ let n=6,puz,state,hist=[],start,timer,activeElapsedMs=0,activeSince=null,last={}
 const board=document.getElementById("board"),msg=document.getElementById("msg");
 let hiCells=[];
 const {validateGuardians,key,solutions,isAutoCross,verificationErrors,guardianConflicts,conflictMessage,proofEngine,directMissingCross,playerError,guardianOnlyState,guidedConflictForAction}=createGameEngine(()=>({n,puz,state}),()=>!!document.getElementById("autoCross")?.checked);
-function arrangeDesktopPanels(){
- const left=document.getElementById("desktopLeftSlot"),guide=document.getElementById("desktopGuide"),core=document.querySelector(".game-core");
- const journey=document.querySelector(".journey");
- if(!left||!guide||!core||!journey)return;
- if(window.matchMedia("(min-width:1100px)").matches){
-   if(journey.parentElement!==left)left.appendChild(journey);
-   if(msg.parentElement!==guide)guide.appendChild(msg);
- }else{
-   const actions=core.querySelector(".actions");
-   if(journey.parentElement!==core){const modal=core.querySelector("#mapModal");core.insertBefore(journey,modal)}
-   if(msg.parentElement!==core)actions.insertAdjacentElement("afterend",msg);
- }
-}
-window.addEventListener("resize",arrangeDesktopPanels);
-
 function choose(){levelIndex=Math.max(0,Math.min(levelIndex,99));const [size,slot]=CAMPAIGN_SIZE_SCHEDULE[levelIndex];puz=size==="6"?CAT["6"][CAMPAIGN6_ORDER[slot]]:CAT[size][slot];n=puz.reg.length;last[n]=levelIndex}
 function loadPuzzle(){init();}
 function startLearningReplay(){
@@ -1066,7 +1051,6 @@ function setupOutsideDefaults(){
 }
 document.getElementById("openMap").onclick=()=>openJourneyMap(false);
 const openSky=document.getElementById("openSky");if(openSky)openSky.onclick=()=>openJourneyMap(true);
-const mobileJourney=document.getElementById("mobileJourney");if(mobileJourney)mobileJourney.onclick=()=>openJourneyMap(true);
 document.getElementById("closeMap").onclick=closeMapOverlay;document.getElementById("hint").addEventListener("click",()=>{if(!hintWasGranted)return;hintWasGranted=false;trackLumenEvent("hint_used",levelIndex+1);usedHintThisGame=true;updateHintButton()});
 
 const autonomyTry=document.getElementById("autonomyTry"),autonomyKeep=document.getElementById("autonomyKeep");
@@ -1083,7 +1067,7 @@ document.getElementById("scriptedLearnNext").onclick=advanceLearningStep;
 document.getElementById("scriptedLearnPrev").onclick=previousLearningStep;
 document.addEventListener("click",handleLearningTap,true);
 // Start after the campaign and constellation data have been initialized.
-arrangeDesktopPanels();setupMobileAuth();init();setupTutorial();setupOutsideDefaults();
+setupMobileAuth();init();setupTutorial();setupOutsideDefaults();
 refreshJourney();
 maybeShowReturnWelcome();
 
