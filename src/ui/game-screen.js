@@ -1015,7 +1015,7 @@ document.getElementById("progressText").textContent=completed+" constellation"+(
 let ss=document.getElementById("skySummary");if(ss)ss.textContent=sky.name.replace(" · Grand Chariot","")+" · "+sky.lit+"/"+sky.count+" ★";
 document.getElementById("journeyTitle").textContent=sky.name.replace(" · Grand Chariot","");
 document.getElementById("sectorProgress").textContent=sky.lit+"/"+sky.count+" étoiles · "+earned+"/"+SKY_TARGET+" dans le ciel";
-const mj=document.getElementById("mobileJourney"),mjt=document.getElementById("mobileJourneyText");if(mjt)mjt.textContent=sky.name.replace(" · Grand Chariot","")+" · "+sky.lit+"/"+sky.count+" ★";else if(mj)mj.textContent=sky.name+" · "+sky.lit+"/"+sky.count+" ★";updateHintButton();renderXP();
+updateHintButton();renderXP();
 }
 
 function performanceIcon(type){const icons={hint:'<svg class="performance-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"></circle><path d="M15 15l5 5"></path></svg>',speed:'<svg class="performance-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12M6 21h12M7 3c0 5 3 6 5 9-2 3-5 4-5 9M17 3c0 5-3 6-5 9 2 3 5 4 5 9"></path></svg>',assist:'<svg class="performance-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.7M20 12a8 8 0 0 1-13.7 5.7"></path><path d="M18 3v4h-4M6 21v-4h4"></path><path d="M9 12l2 2 4-5"></path></svg>',clean:'<svg class="performance-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"></path></svg>'};return icons[type]}
