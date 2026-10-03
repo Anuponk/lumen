@@ -217,7 +217,16 @@ function updateAttemptUI(){
  if(pause){pause.hidden=!a||![ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(a.state);pause.textContent=paused?"Reprendre":"Pause"}
  if(abandon)abandon.hidden=!a||attemptMode()==="campaign"||![ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(a.state);
 }
-function ensureAttemptStarted(){const a=attemptEngine.snapshot();if(a?.state===ATTEMPT_STATES.READY)attemptEngine.start()}
+function ensureAttemptStarted(){
+ const a=attemptEngine.snapshot();if(a?.state!==ATTEMPT_STATES.READY)return;
+ if(a.qualifying){
+  lumenProgress.performances=lumenProgress.performances||{};
+  const old=lumenProgress.performances[levelIndex]||{};
+  lumenProgress.performances[levelIndex]={...old,questIndex:levelIndex,lastQualifiedDay:localCalendarDay()};
+  saveLumenProgress();
+ }
+ attemptEngine.start();
+}
 function persistAttemptBoard(){attemptEngine.updateBoard(state)}
 
 const board=document.getElementById("board"),msg=document.getElementById("msg");
