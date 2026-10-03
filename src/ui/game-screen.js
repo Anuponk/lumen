@@ -468,9 +468,8 @@ function configureLearningMode(){
  for(const id of ["undo","hint","verify"])document.getElementById(id).disabled=scriptedLearningActive();
  const cb=document.getElementById("autoCross"),wrap=document.getElementById("autoCrossWrap"),note=document.getElementById("learningNote"),guided=document.getElementById("guidedErrors"),gwrap=document.getElementById("guidedErrorsWrap");
  if(!cb||!wrap)return;
- if(levelIndex<=4){cb.checked=true;cb.disabled=levelIndex<=1;wrap.hidden=false;wrap.classList.toggle("learning-locked",levelIndex<=1);if(note){note.hidden=false;note.textContent="Apprentissage · le Marquage auto marque les cases devenues impossibles."}}
- else if(levelIndex<=9){cb.disabled=false;cb.checked=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=false;note.textContent="Entraînement · le Marquage auto reste disponible."}}
- else{cb.checked=false;cb.disabled=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=true;note.textContent=""}}
+ if(levelIndex<=4){cb.checked=false;cb.disabled=true;wrap.hidden=false;wrap.classList.add("learning-locked");if(note){note.hidden=false;note.textContent="Apprentissage · joue en manuel pour apprendre à écarter les cases toi-même."}}
+ else{cb.disabled=false;cb.checked=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=levelIndex>5;note.textContent=levelIndex===5?"Nouveau · Marquage auto débloqué. Active-le si tu veux que LUMEN écarte les cases impossibles à ta place.":""}}
  if(guided&&gwrap){
   let saved=null;try{saved=localStorage.getItem("lumenGuidedErrors")}catch(_){}
   gwrap.hidden=false;gwrap.classList.remove("learning-locked");
@@ -970,7 +969,7 @@ if(hintClose)hintClose.onclick=()=>{clearHintDisplay();hintStage=0;hintFocus=nul
 document.getElementById("undo").onclick=()=>{if(celebrated||learningSequenceActive||scriptedLearningActive())return;if(hist.length){state=hist.pop();clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";render();persistAttemptBoard()}};
 const ac=document.getElementById("autoCross");
 const lumenAutoCrossStored=localStorage.getItem("lumenAutoCross");const legacyAutoCrossStored=localStorage.getItem("regaliaAutoCross");ac.checked=(lumenAutoCrossStored??legacyAutoCrossStored)!=="0";if(lumenAutoCrossStored===null&&legacyAutoCrossStored!==null){localStorage.setItem("lumenAutoCross",legacyAutoCrossStored);localStorage.removeItem("regaliaAutoCross")};
-ac.onchange=()=>{if(celebrated){ac.checked=!ac.checked;return}if(levelIndex<=1){ac.checked=true;return}if(ac.checked){autoUsedThisGame=true;attemptEngine.markAssistance()}localStorage.setItem("lumenAutoCross",ac.checked?"1":"0");if(!ac.checked)maybeShowManualCrossTip();hi=null;render()};
+ac.onchange=()=>{if(celebrated){ac.checked=!ac.checked;return}if(levelIndex<=4){ac.checked=false;return}if(ac.checked){autoUsedThisGame=true;attemptEngine.markAssistance()}localStorage.setItem("lumenAutoCross",ac.checked?"1":"0");if(!ac.checked)maybeShowManualCrossTip();hi=null;render()};
 function advanceToNextPuzzle(){
  if(!lumenProgress.solved[levelIndex])return;
  // "Quête suivante" is relative to the quest just played, including replays.
