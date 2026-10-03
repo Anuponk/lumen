@@ -3,7 +3,7 @@ import {CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATIONS,CONSTEL
 import {chapterForGrid} from "../campaign/progression.js";
 
 export function createHintTestSuite(model,api){
-const {saveLumenNickname,maybeOfferInstall,lumenShareUrl,successAchievement,shareLumenResult,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults}=api;
+const {saveLumenNickname,maybeOfferInstall,lumenShareUrl,successAchievement,shareLumenResult,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults,openJourneyMap,closeMapOverlay,renderMap}=api;
 async function runHintTests(){
  let results=[],cases=[];
  test("Campagne : toutes les quêtes ont une grille dans le catalogue",()=>Object.values(CAMPAIGN_SIZE_SCHEDULE).every(([size,slot])=>!!CAT[size]?.[size==="6"?CAMPAIGN6_ORDER[slot]:slot]));
@@ -52,8 +52,8 @@ async function runHintTests(){
    return !!b&&b.textContent.includes("Réessayer");
  });
  test("UX : Quête suivante est le CTA principal après réussite",()=>document.getElementById("successNew")?.classList.contains("success-primary")&&!document.getElementById("successShare")?.classList.contains("share-primary"));
- test("UX : fermer Mon ciel après réussite enchaîne sur la quête suivante",()=>openJourneyMap.toString().includes("advanceOnClose")&&closeMapOverlay.toString().includes("advanceToNextPuzzle"));
- test("UX : la prochaine quête débloquée est visible comme Nouvelle dans Mon ciel",()=>renderMap.toString().includes("puzzle-new-label")&&renderMap.toString().includes("Nouvelle quête disponible"));
+ test("UX : fermer Mon ciel après réussite enchaîne sur la quête suivante",()=>openJourneyMap().toString().includes("advanceOnClose")&&closeMapOverlay().toString().includes("advanceToNextPuzzle"));
+ test("UX : la prochaine quête débloquée est visible comme Nouvelle dans Mon ciel",()=>renderMap().toString().includes("puzzle-new-label")&&renderMap().toString().includes("Nouvelle quête disponible"));
  test("UX : Mon ciel reste au-dessus du masque de tentative",()=>Number.parseInt(getComputedStyle(document.getElementById("mapModal")).zIndex,10)>Number.parseInt(getComputedStyle(document.getElementById("attemptMask")).zIndex,10));
  test("UX mobile : les contrôles de tentative ne recouvrent pas le raccourci Mon ciel",()=>{const controls=document.getElementById("attemptPause")?.parentElement,pause=document.getElementById("attemptPause"),abandon=document.getElementById("attemptAbandon");if(innerWidth>700||!controls)return true;const c=getComputedStyle(controls);return c.position!=="absolute"&&!!pause&&!!abandon});
  test("UX : les règles sont accessibles à la demande",()=>!!document.getElementById("tutorialHelp")&&!!document.getElementById("rulesModal")&&!!document.getElementById("replayLearning"));
