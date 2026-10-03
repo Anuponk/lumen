@@ -490,7 +490,7 @@ function maybeShowAutonomy(){
 }
 function prepareQuestStart(){let q=bonusChallengeFor(levelIndex),o=document.getElementById("questStart");questFailed=false;if(!q||lumenProgress.stars[q.id]){questStarted=true;o.hidden=true;resumeGameClock();return}questStarted=false;pauseGameClock();document.getElementById("questStartTitle").textContent=q.title;document.getElementById("questStartRule").textContent=q.copy+" Récompense : +25 XP et +1 ✦ éclat.";o.hidden=false}
 document.getElementById("questGo").onclick=()=>{document.getElementById("questStart").hidden=true;questStarted=true;activeElapsedMs=0;activeSince=performance.now();clock()};
-function init(){setLearningReplaySuccessMode(false);document.getElementById("successNew").textContent="Quête suivante";learningHistory=[];learningHistoryIndex=-1;learningRestoring=false;learningStepCells=[];learningRunId++;learningAnchor=null;learningSequenceActive=false;learningVisibleAuto=scriptedLearningActive()?new Set():null;learningStage="territories";learningSource=null;learningGroups=null;choose();configureLearningMode();applyQuestRestrictions();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl)cl.textContent="Quête "+(levelIndex+1);document.getElementById("difficulty").textContent=n===7?"7 × 7 · constellation étendue":n===8?"8 × 8 · constellation étendue":"";state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();activeElapsedMs=0;activeSince=document.visibilityState==="visible"?performance.now():null;msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,100);clock();prepareQuestStart()}
+function init(){setLearningReplaySuccessMode(false);document.getElementById("successNew").textContent="Quête suivante";learningHistory=[];learningHistoryIndex=-1;learningRestoring=false;learningStepCells=[];learningRunId++;learningAnchor=null;learningSequenceActive=false;learningVisibleAuto=scriptedLearningActive()?new Set():null;learningStage="territories";learningSource=null;learningGroups=null;choose();configureLearningMode();applyQuestRestrictions();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl)cl.textContent="Quête "+(levelIndex+1);document.getElementById("difficulty").textContent=n===7?"7 × 7 · constellation étendue":n===8?"8 × 8 · constellation étendue":"";state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];const hintCard=document.getElementById("hintCard");if(hintCard)hintCard.hidden=true;celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();activeElapsedMs=0;activeSince=document.visibilityState==="visible"?performance.now():null;msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,100);clock();prepareQuestStart()}
 function drawLevels(){let e=document.getElementById("levels");e.innerHTML="";LEVELS.forEach(([name,x])=>{let b=document.createElement("button");b.className="level"+(x===n?" active":"");b.innerHTML=name+"<small>"+x+" × "+x+"</small>";b.onclick=()=>{n=x;init()};e.appendChild(b)})}
 function activeGameMs(){return activeElapsedMs+(activeSince!==null?Math.max(0,performance.now()-activeSince):0)}
 function activeGameSeconds(){return Math.max(0,Math.floor(activeGameMs()/1000))}
@@ -749,7 +749,7 @@ function render(){
  }
  hist.push(state.map(x=>x.slice()));
  if(shown===3){state[r][c]=2}else{state[r][c]=next}
- hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";
+ clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";
  if(scriptedLearningActive()&&next===2)await runLearningPlacement(r,c);else paintBoardState();
  const q=state.flat().filter(v=>v===2).length;
  if(q===n&&!scriptedLearningActive())render()
@@ -783,6 +783,17 @@ function broadClue(h){
  }
  return null;
 }
+function clearHintDisplay(){
+ hi=null;hiCells=[];const card=document.getElementById("hintCard");if(card)card.hidden=true;
+}
+function showHintMessage(text){
+ const raw=String(text||""),card=document.getElementById("hintCard"),title=document.getElementById("hintTitle"),copy=document.getElementById("hintCopy");
+ if(!card||!title||!copy){msg.textContent=raw;return}
+ let label="Indice Lumen",body=raw;
+ const match=raw.match(/^(Piste|Indice final|Indice|À jouer|Marquage manquant|⚠️ Erreur)\s*:\s*(.*)$/s);
+ if(match){label=match[1]==="⚠️ Erreur"?"À vérifier":match[1]==="Marquage manquant"?"Marquage à compléter":match[1];body=match[2]}
+ title.textContent=label;copy.textContent=body;card.hidden=false;msg.textContent="";
+}
 document.getElementById("hint").onclick=()=>{
  if(learningSequenceActive||scriptedLearningActive())return;
  if(!consumeHintCost())return;
@@ -792,7 +803,7 @@ document.getElementById("hint").onclick=()=>{
  let err=playerError();
  if(err){
   hi=err.cell; hintStage=0; hintFocus=null;
-  msg.textContent="⚠️ Erreur : "+err.text;
+  showHintMessage("⚠️ Erreur : "+err.text);
   render(); return;
  }
 
@@ -800,7 +811,7 @@ document.getElementById("hint").onclick=()=>{
  let dx=directMissingCross();
  if(dx){
   hi=[dx[0],dx[1]]; hintStage=0; hintFocus=null;
-  msg.textContent="Marquage manquant : "+dx[2]+" Tu peux écarter la case surlignée.";
+  showHintMessage("Marquage manquant : "+dx[2]+" Tu peux écarter la case surlignée.");
   render(); return;
  }
 
@@ -814,14 +825,14 @@ document.getElementById("hint").onclick=()=>{
   if(d&&d.rule==="contradiction"){
    hi=h.cell;
    if(hintStage===1){
-    msg.textContent=`Piste : teste mentalement la case L${h.cell[0]+1}C${h.cell[1]+1}. Suppose qu'elle accueille un Gardien et suis les contraintes : ligne, colonne, territoire et cases voisines.`;
+    showHintMessage(`Piste : teste mentalement la case L${h.cell[0]+1}C${h.cell[1]+1}. Suppose qu'elle accueille un Gardien et suis les contraintes : ligne, colonne, territoire et cases voisines.`);
     render();return;
    }
    if(hintStage===2){
-    msg.textContent=`Indice : cette hypothèse finit par rendre au moins une ligne, colonne ou territoire impossible à compléter. La case peut donc être éliminée sans choisir au hasard.`;
+    showHintMessage(`Indice : cette hypothèse finit par rendre au moins une ligne, colonne ou territoire impossible à compléter. La case peut donc être éliminée sans choisir au hasard.`);
     render();return;
    }
-   msg.textContent=`À jouer : tu peux écarter L${h.cell[0]+1}C${h.cell[1]+1}. C'est une élimination par contradiction.`;
+   showHintMessage(`À jouer : tu peux écarter L${h.cell[0]+1}C${h.cell[1]+1}. C'est une élimination par contradiction.`);
    render();return;
   }
 
@@ -830,15 +841,15 @@ document.getElementById("hint").onclick=()=>{
    let word=d.axis==="col"?"colonnes":"lignes";
    let nums=d.indices.map(x=>x+1).join(" et ");
    if(hintStage===1){
-    msg.textContent=`Piste : observe ensemble les territoires surlignées. Leurs Gardiens ne peuvent se placer que dans ${d.indices.length} ${word}. Essaie d'identifier lesquelles.`;
+    showHintMessage(`Piste : observe ensemble les territoires surlignées. Leurs Gardiens ne peuvent se placer que dans ${d.indices.length} ${word}. Essaie d'identifier lesquelles.`);
     render();return;
    }
    if(hintStage===2){
-    msg.textContent=`Indice : ces ${d.regions.length} territoires doivent placer ${d.regions.length} Gardiens dans exactement les ${word} ${nums}. Ces ${word} sont donc entièrement réservées à ces territoires.`;
+    showHintMessage(`Indice : ces ${d.regions.length} territoires doivent placer ${d.regions.length} Gardiens dans exactement les ${word} ${nums}. Ces ${word} sont donc entièrement réservées à ces territoires.`);
     render();return;
    }
    hiCells=d.source.concat([h.cell]);
-   msg.textContent=`À jouer : L${h.cell[0]+1}C${h.cell[1]+1} appartient à un autre territoire mais utilise une de ces ${word}. Tu peux l’écarter.`;
+   showHintMessage(`À jouer : L${h.cell[0]+1}C${h.cell[1]+1} appartient à un autre territoire mais utilise une de ces ${word}. Tu peux l’écarter.`);
    render();return;
   }
 
@@ -846,23 +857,23 @@ document.getElementById("hint").onclick=()=>{
    hiCells=d.source.slice();
    let axisName=d.axis==="col"?"colonne":"ligne", num=d.index+1;
    if(hintStage===1){
-    msg.textContent=`Piste : observe les ${d.source.length} cases surlignées de ce territoire. Elles sont toutes sur la même ${axisName}. Qu'est-ce que cela implique pour le Gardien de ce territoire ?`;
+    showHintMessage(`Piste : observe les ${d.source.length} cases surlignées de ce territoire. Elles sont toutes sur la même ${axisName}. Qu'est-ce que cela implique pour le Gardien de ce territoire ?`);
     render();return;
    }
    if(hintStage===2){
-    msg.textContent=`Indice : le Gardien de ce territoire sera forcément quelque part sur la ${axisName} ${num}. Comme une ${axisName} ne peut accueillir qu'un seul Gardien, aucune case de cette ${axisName} située hors du territoire ne peut en accueillir.`;
+    showHintMessage(`Indice : le Gardien de ce territoire sera forcément quelque part sur la ${axisName} ${num}. Comme une ${axisName} ne peut accueillir qu'un seul Gardien, aucune case de cette ${axisName} située hors du territoire ne peut en accueillir.`);
     render();return;
    }
    hiCells=d.source.concat([h.cell]);
-   msg.textContent=`À jouer : L${h.cell[0]+1}C${h.cell[1]+1} est hors de ce territoire mais sur la ${axisName} ${num}. Tu peux donc l’écarter.`;
+   showHintMessage(`À jouer : L${h.cell[0]+1}C${h.cell[1]+1} est hors de ce territoire mais sur la ${axisName} ${num}. Tu peux donc l’écarter.`);
    render();return;
   }
 
   hi=h.cell;
   if(hintFocus!==id||hintStage<=1){
-   msg.textContent="Piste : regarde la case surlignée et la contrainte qui agit sur elle. Essaie d'identifier pourquoi elle ne peut pas accueillir de Gardien.";
+   showHintMessage("Piste : regarde la case surlignée et la contrainte qui agit sur elle. Essaie d'identifier pourquoi elle ne peut pas accueillir de Gardien.");
   }else{
-   msg.textContent="Indice : "+h.text+` Tu peux donc écarter L${h.cell[0]+1}C${h.cell[1]+1}.`;
+   showHintMessage("Indice : "+h.text+` Tu peux donc écarter L${h.cell[0]+1}C${h.cell[1]+1}.`);
   }
   render(); return;
  }
@@ -873,14 +884,14 @@ document.getElementById("hint").onclick=()=>{
    if(hintFocus!==id){hintFocus=id;hintStage=1}else hintStage++;
    hi=h.cell;
    if(hintStage===1){
-    msg.textContent=`Piste : les déductions déjà faites réduisent fortement les configurations possibles. Regarde la case surlignée et vérifie ce qui se passe si tu essaies de l'éviter.`;
+    showHintMessage(`Piste : les déductions déjà faites réduisent fortement les configurations possibles. Regarde la case surlignée et vérifie ce qui se passe si tu essaies de l'éviter.`);
     render();return;
    }
    if(hintStage===2){
-    msg.textContent=`Indice : toutes les configurations encore compatibles imposent un Gardien sur cette case. Ce n'est pas un choix au hasard : l'alternative mène à une contradiction.`;
+    showHintMessage(`Indice : toutes les configurations encore compatibles imposent un Gardien sur cette case. Ce n'est pas un choix au hasard : l'alternative mène à une contradiction.`);
     render();return;
    }
-   msg.textContent=`À jouer : place un Gardien en L${h.cell[0]+1}C${h.cell[1]+1}.`;
+   showHintMessage(`À jouer : place un Gardien en L${h.cell[0]+1}C${h.cell[1]+1}.`);
    render();return;
   }
   let id=h.cell.join(",");
@@ -891,27 +902,27 @@ document.getElementById("hint").onclick=()=>{
    let clue=broadClue(h);
    if(!clue){
     hintStage=0;hintFocus=null;
-    msg.textContent="Indice refusé : le moteur connaît une case forcée mais ne possède pas une preuve pédagogique suffisante.";
+    showHintMessage("Indice refusé : le moteur connaît une case forcée mais ne possède pas une preuve pédagogique suffisante.");
     render();return;
    }
    hi=null;hiCells=clue.cells||[];
-   msg.textContent="Piste : "+clue.text;
+   showHintMessage("Piste : "+clue.text);
    render();return;
   }
   // 5. Second press: explain the logical rule, but don't say "place a diamond" yet.
   if(hintStage===2){
    hi=h.cell;
-   msg.textContent="Indice : "+h.text+" Vérifie toi-même les autres possibilités avant de jouer.";
+   showHintMessage("Indice : "+h.text+" Vérifie toi-même les autres possibilités avant de jouer.");
    render();return;
   }
   // 6. Third press: reveal the forced placement as last resort.
   hi=h.cell;
-  msg.textContent=`Indice final : la case L${h.cell[0]+1}C${h.cell[1]+1} est forcée. Tu peux y placer un Gardien.`;
+  showHintMessage(`Indice final : la case L${h.cell[0]+1}C${h.cell[1]+1} est forcée. Tu peux y placer un Gardien.`);
   render();return;
  }
 
  hintStage=0;hintFocus=null;
- msg.textContent="Cette quête a échoué au solveur explicable. Elle ne devrait pas être dans le catalogue.";
+ showHintMessage("Cette quête a échoué au solveur explicable. Elle ne devrait pas être dans le catalogue.");
 };
 
 const testModel={
@@ -928,18 +939,9 @@ const runHintTests=createHintTestSuite(testModel,{saveLumenNickname,maybeOfferIn
 let runTestsButton=document.getElementById("runTests");
 if(runTestsButton)runTestsButton.onclick=runHintTests;
 
-const clearHintBtn=document.getElementById("clearHint");
-document.getElementById("hint").addEventListener("click",()=>{
- setTimeout(()=>{
-  clearHintBtn.hidden=!(hi!==null || (Array.isArray(hiCells)&&hiCells.length>0));
- },0);
-});
-clearHintBtn.onclick=()=>{
- hi=null; hiCells=[]; msg.textContent="";
- clearHintBtn.hidden=true;
- render();
-};
-document.getElementById("undo").onclick=()=>{if(celebrated||learningSequenceActive||scriptedLearningActive())return;if(hist.length){state=hist.pop();hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";render()}};
+const hintClose=document.getElementById("hintClose");
+if(hintClose)hintClose.onclick=()=>{clearHintDisplay();hintStage=0;hintFocus=null;render()};
+document.getElementById("undo").onclick=()=>{if(celebrated||learningSequenceActive||scriptedLearningActive())return;if(hist.length){state=hist.pop();clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";render()}};
 const ac=document.getElementById("autoCross");
 const lumenAutoCrossStored=localStorage.getItem("lumenAutoCross");const legacyAutoCrossStored=localStorage.getItem("regaliaAutoCross");ac.checked=(lumenAutoCrossStored??legacyAutoCrossStored)!=="0";if(lumenAutoCrossStored===null&&legacyAutoCrossStored!==null){localStorage.setItem("lumenAutoCross",legacyAutoCrossStored);localStorage.removeItem("regaliaAutoCross")};
 ac.onchange=()=>{if(celebrated){ac.checked=!ac.checked;return}if(levelIndex<=1){ac.checked=true;return}if(ac.checked)autoUsedThisGame=true;localStorage.setItem("lumenAutoCross",ac.checked?"1":"0");if(!ac.checked)maybeShowManualCrossTip();hi=null;render()};
