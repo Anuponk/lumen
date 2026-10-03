@@ -22,10 +22,12 @@ try{
  assert(suites.every(s=>s.total>=66&&!s.failures.length),'Embedded regressions: '+JSON.stringify(suites));
  console.log('browser-test: setup-quest');
  await evaluate('lumenDiagnostics.setupQuest(2)');
+ console.log('browser-test: setup-quest:done');
  const snapshot=()=>evaluate('lumenDiagnostics.snapshot()');
  const point=async(r,c)=>evaluate(`(()=>{const rect=document.querySelector('.cell[data-row="${r}"][data-col="${c}"]').getBoundingClientRect();return {x:rect.left+rect.width/2,y:rect.top+rect.height/2}})()`);
  const tap=async p=>{await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[p]});await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await sleep(50)};
- const initial=await snapshot(),column=initial.puz.sol[0],p=await point(0,column);
+ console.log('browser-test: snapshot:start');
+ const initial=await snapshot();console.log('browser-test: snapshot:done');const column=initial.puz.sol[0];console.log('browser-test: point:start');const p=await point(0,column);console.log('browser-test: point:done');
  for(const expected of [1,2,0]){await tap(p);const actual=(await snapshot()).state[0][column];assert(actual===expected,'Tap cycle regression: expected '+expected+', got '+actual+'; target '+await evaluate(`document.elementFromPoint(${p.x},${p.y})?.outerHTML`))}
  await tap(p);await tap(p);
  await evaluate('window.lumenBoardRebuilt=false;window.lumenBoardObserver=new MutationObserver(records=>{if(records.some(record=>record.target===document.getElementById("board")&&record.type==="childList"))window.lumenBoardRebuilt=true});lumenBoardObserver.observe(document.getElementById("board"),{childList:true})');
