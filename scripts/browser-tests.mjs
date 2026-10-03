@@ -16,8 +16,11 @@ try{
  assert(await evaluate('!!window.lumenDiagnostics'),'Application did not start: '+JSON.stringify(errors));
  if(fixture.identifier)await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier}).catch(error=>{if(!String(error).includes('Script not found'))throw error});
  await sleep(1500);
+ console.log('browser-test: embedded-regressions:start');
  const suites=await evaluate('lumenDiagnostics.runAllHintTests()',true);
+ console.log('browser-test: embedded-regressions:done');
  assert(suites.every(s=>s.total>=66&&!s.failures.length),'Embedded regressions: '+JSON.stringify(suites));
+ console.log('browser-test: setup-quest');
  await evaluate('lumenDiagnostics.setupQuest(2)');
  const snapshot=()=>evaluate('lumenDiagnostics.snapshot()');
  const point=async(r,c)=>evaluate(`(()=>{const rect=document.querySelector('.cell[data-row="${r}"][data-col="${c}"]').getBoundingClientRect();return {x:rect.left+rect.width/2,y:rect.top+rect.height/2}})()`);
@@ -42,6 +45,7 @@ try{
  assert(await evaluate('localStorage.getItem("lumenProgressV1")')===progressBefore,'Progress lost on reload');
  // Chrome's ignoreCache reload bypasses the controller; test normal navigation too.
  await send('Page.reload',{ignoreCache:false});await sleep(1500);
+ console.log('browser-test: pwa:start');
  const pwa=await evaluate(`(async()=>{
   const registration=await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('Service worker not ready')),5000))]);
   const manifestURL=document.querySelector('link[rel="manifest"]').href;
@@ -50,6 +54,7 @@ try{
   const assets=await Promise.all([...new Set(resources)].map(async url=>{const response=await fetch(url);if(!response.ok)throw Error('PWA asset failed: '+url);return new URL(url).pathname}));
   return {registered:!!registration.active,controlled:!!navigator.serviceWorker.controller,display:manifest.display,startURL:manifest.start_url,assets};
  })()`,true);
+ console.log('browser-test: pwa:done');
  assert(pwa.registered&&pwa.controlled&&pwa.display==='standalone'&&pwa.startURL==='/'&&pwa.assets.includes('/src/main.js'),'PWA regression: '+JSON.stringify(pwa));
  assert(errors.length===0,'Uncaught browser errors: '+JSON.stringify(errors));
  const report={suites,mobile:{tapCycle:[1,2,0],drag:true,guardianPreserved:true,noScroll:true,reset:true},guestReload:true,pwa,uncaughtErrors:errors};
