@@ -456,8 +456,8 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 const TUTORIAL_STEPS=[
  {title:"Ta mission",copy:"Positionne les 6 Gardiens : exactement un par ligne, un par colonne et un par territoire coloré.",visual:'<div class="tutorial-mini-grid"><span></span><span class="orb guardian-mini"></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>'},
  {title:"Les Gardiens gardent leurs distances",copy:"Deux Gardiens ne peuvent jamais être voisins, même en diagonale. Chaque Gardien doit avoir de l’espace autour de lui.",visual:'<div class="tutorial-mini-grid"><span class="orb guardian-mini"></span><span></span><span></span><span></span><span>↘</span><span class="orb guardian-mini"></span><span></span><span></span><span></span></div>'},
- {title:"Observe les emplacements impossibles",copy:"Au début, l’Marquage auto marque pour toi les cases devenues impossibles. Concentre-toi sur les Gardiens et sur les déductions.",visual:'<div class="tutorial-mini-grid"><span></span><span class="dim">○</span><span></span><span></span><span class="orb guardian-mini"></span><span></span><span></span><span></span><span></span></div>'},
- {title:"LUMEN t’aide au début",copy:"Sur les quêtes 1 à 5, l’Marquage auto est activée. Des quêtes 6 à 10, elle est désactivée par défaut mais reste disponible. À partir de la quête 11, elle reste optionnelle.",visual:"<span>1–5 ✦ → 6–10 ◐ → 11+ ✧</span>"},
+ {title:"Observe les emplacements impossibles",copy:"Au début, le Marquage auto marque pour toi les cases devenues impossibles. Concentre-toi sur les Gardiens et sur les déductions.",visual:'<div class="tutorial-mini-grid"><span></span><span class="dim">○</span><span></span><span></span><span class="orb guardian-mini"></span><span></span><span></span><span></span><span></span></div>'},
+ {title:"LUMEN t’aide au début",copy:"Sur les quêtes 1 à 5, le Marquage auto est activée. Des quêtes 6 à 10, elle est désactivée par défaut mais reste disponible. À partir de la quête 11, elle reste optionnelle.",visual:"<span>1–5 ✦ → 6–10 ◐ → 11+ ✧</span>"},
  {title:"Bloqué ? Utilise Indice",copy:"LUMEN ne révèle pas simplement la solution : il te guide vers la prochaine déduction logique. Tu peux demander davantage de précision si nécessaire.",visual:"<span>💡 &nbsp; Indice logique</span>"}
 ];
 let tutorialStep=0;
@@ -905,8 +905,8 @@ document.addEventListener("pointerdown",dismissGuidedOnAnyTap,true);
 function configureLearningMode(){
  const cb=document.getElementById("autoCross"),wrap=document.getElementById("autoCrossWrap"),note=document.getElementById("learningNote"),guided=document.getElementById("guidedErrors"),gwrap=document.getElementById("guidedErrorsWrap");
  if(!cb||!wrap)return;
- if(levelIndex<=4){cb.checked=true;cb.disabled=levelIndex<=1;wrap.hidden=false;wrap.classList.toggle("learning-locked",levelIndex<=1);if(note){note.hidden=false;note.textContent="Apprentissage · l’Marquage auto marque les cases devenues impossibles."}}
- else if(levelIndex<=9){cb.disabled=false;cb.checked=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=false;note.textContent="Entraînement · l’Marquage auto reste disponible."}}
+ if(levelIndex<=4){cb.checked=true;cb.disabled=levelIndex<=1;wrap.hidden=false;wrap.classList.toggle("learning-locked",levelIndex<=1);if(note){note.hidden=false;note.textContent="Apprentissage · le Marquage auto marque les cases devenues impossibles."}}
+ else if(levelIndex<=9){cb.disabled=false;cb.checked=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=false;note.textContent="Entraînement · le Marquage auto reste disponible."}}
  else{cb.checked=false;cb.disabled=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=true;note.textContent=""}}
  if(guided&&gwrap){
   let saved=null;try{saved=localStorage.getItem("lumenGuidedErrors")}catch(_){}
@@ -1546,7 +1546,7 @@ function runHintTests(){
  test("Tutoriel joué : quêtes 1 et 2 n’enseignent que les Gardiens",()=>scriptedLearningActive.toString().includes("levelIndex<=1")&&render.toString().includes("scriptedAllowsGuardian"));
  test("Tutoriel joué : Marquage auto verrouillée sur les deux premières quêtes",()=>configureLearningMode.toString().includes("cb.disabled=levelIndex<=1"));
  test("Tutoriel joué : le glisser des exclusions est bloqué pendant le scénario",()=>document.querySelector("#board")&&scriptedLearningActive.toString().includes("levelIndex<=1"));
- test("Tip exclusions : apparaît au premier arrêt de l’Marquage auto",()=>ac.onchange.toString().includes("maybeShowManualCrossTip")&&maybeShowManualCrossTip.toString().includes("lumenManualCrossTipSeen"));
+ test("Tip exclusions : apparaît au premier arrêt de le Marquage auto",()=>ac.onchange.toString().includes("maybeShowManualCrossTip")&&maybeShowManualCrossTip.toString().includes("lumenManualCrossTipSeen"));
 
  // Regression: a completed valid constellation is judged from its guardians,
  // independently of remaining manual/automatic exclusions.
