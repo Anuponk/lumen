@@ -73,3 +73,27 @@ revoke all on function public.lumen_save_daily(date,integer) from public;
 grant execute on function public.lumen_save_daily(date,integer) to authenticated;
 revoke all on function public.lumen_get_daily() from public;
 grant execute on function public.lumen_get_daily() to authenticated;
+
+
+-- One-time conservative recovery of performance trophies from historical data.
+create table if not exists lumen.historical_performance (
+ player_key text not null,user_id uuid null references auth.users(id) on delete set null,anonymous_id text null,
+ puzzle_id integer not null check(puzzle_id between 1 and 100),autonomy boolean not null default false,
+ speed boolean not null default false,mastery boolean not null default false,
+ source text not null default 'history_recovery_20261003',recovered_at timestamptz not null default now(),
+ primary key(player_key,puzzle_id)
+);
+alter table lumen.historical_performance enable row level security;
+-- The production migration additionally backfills this table from lumen.progress and
+-- lumen.analytics_events. Only badges directly evidenced by stored hint/time data are credited.
+create or replace function public.lumen_get_historical_performance(p_anonymous_id text)
+returns table(puzzle_id integer,autonomy boolean,speed boolean,mastery boolean)
+language sql security definer set search_path='' as $$
+ select h.puzzle_id,bool_or(h.autonomy),bool_or(h.speed),bool_or(h.mastery)
+ from lumen.historical_performance h
+ where (auth.uid() is not null and h.user_id=auth.uid())
+    or (p_anonymous_id is not null and h.anonymous_id=p_anonymous_id)
+ group by h.puzzle_id order by h.puzzle_id
+$$;
+revoke all on function public.lumen_get_historical_performance(text) from public;
+grant execute on function public.lumen_get_historical_performance(text) to anon,authenticated;
