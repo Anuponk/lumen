@@ -28,7 +28,8 @@ try{
    check(await evaluate(`!document.getElementById('rulesHelp')&&!document.getElementById('boardNext')&&!document.getElementById('clearHint')&&document.getElementById('rulesModal').hidden`),label+' redundant controls removed');
    await click('#tutorialHelp');
    check(await evaluate(`!document.getElementById('rulesModal').hidden&&document.activeElement.id==='closeRulesModal'`),label+' open/focus');
-   check(await evaluate(`(()=>{const r=document.querySelector('#rulesModal .shard-rules-card').getBoundingClientRect(),b=document.getElementById('board').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1&&b.width<=innerWidth})()`),label+' layout');
+   check(await evaluate(`(()=>{const r=document.querySelector('#rulesModal .shard-rules-card').getBoundingClientRect(),b=document.getElementById('board').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1&&b.width<=innerWidth&&!!document.getElementById('replayLearning')})()`),label+' help layout');
+   if(viewport.mobile)check(await evaluate(`(()=>{const b=document.getElementById('board').getBoundingClientRect(),a=document.querySelector('.actions').getBoundingClientRect();return document.documentElement.scrollHeight<=innerHeight+1&&b.top>=0&&b.bottom<=innerHeight&&a.bottom<=innerHeight})()`),label+' play viewport fits without vertical scroll');
    await click('#rulesModal p');
    check(await snapshot()===before,label+' modal content changed quest/teaching state');
    await click('#closeRulesModal');
@@ -56,6 +57,12 @@ try{
   const nextState=await evaluate(`(()=>{const r=document.getElementById('successNew').getBoundingClientRect();return {quest:lumenDiagnostics.snapshot().levelIndex,rect:[r.x,r.y,r.width,r.height],viewport:[innerWidth,innerHeight],hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.id}})()`);
   check(nextState.quest===3,viewport.width+' next quest action: '+JSON.stringify(nextState));
  }
+ await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,mobile:true,deviceScaleFactor:1});
+ await evaluate(`lumenDiagnostics.setupQuest(10);document.getElementById('manualCrossTip').hidden=true;document.getElementById('questStart').hidden=true`);
+ const beforeLearning=await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress)`);
+ await click('#tutorialHelp');await click('#replayLearning');await sleep(120);
+ check(await evaluate(`lumenDiagnostics.snapshot().levelIndex===0&&!document.getElementById('scriptedLearn').hidden`),'learning replay starts real quest 1 teaching mode');
+ check(await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress)`)===beforeLearning,'starting learning replay changed progression');
  check(errors.length===0,'Browser exceptions: '+JSON.stringify(errors));
  const report={modalScenarios:results,vocabularyAndCTAViewports:3,failures,uncaughtErrors:errors};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2)+'\n');
