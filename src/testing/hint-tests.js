@@ -52,7 +52,7 @@ async function runHintTests(){
    return !!b&&b.textContent.includes("Réessayer");
  });
  test("UX : Quête suivante est le CTA principal après réussite",()=>document.getElementById("successNew")?.classList.contains("success-primary")&&!document.getElementById("successShare")?.classList.contains("share-primary"));
- test("UX : les règles sont accessibles à la demande",()=>document.getElementById("rulesHelp")&&document.getElementById("rulesModal")&&document.querySelector(".rules")?.textContent.includes("Revoir les règles"));
+ test("UX : les règles sont accessibles à la demande",()=>!!document.getElementById("tutorialHelp")&&!!document.getElementById("rulesModal")&&!!document.getElementById("replayLearning"));
  test("Vocabulaire : les indices n'utilisent plus l'ancien thème de l'eau",()=>!/Eau manquante|éteindre/.test(document.getElementById("hint").onclick.toString()));
  test("Campagne : progression strictement séquentielle",()=>{
    return document.getElementById("successNew").textContent.trim()==="Quête suivante";
@@ -64,7 +64,7 @@ async function runHintTests(){
  test("Campagne : seule une victoire permet d'avancer",()=>{
    return document.getElementById("successNew").textContent.trim()==="Quête suivante";
  });
- test("UX modales : toucher hors de Quête accomplie avance",()=>setupOutsideDefaults.toString().includes('"successOverlay"')&&setupOutsideDefaults.toString().includes("advanceToNextPuzzle"));
+ test("UX modales : toucher hors de Quête accomplie avance",()=>setupOutsideDefaults.toString().includes('"successOverlay"')&&setupOutsideDefaults.toString().includes("handleSuccessAdvance"));
  test("UX modales : les overlays informatifs ont une action par défaut",()=>["skyReveal","questStart","autonomyOverlay","mapModal"].every(id=>setupOutsideDefaults.toString().includes('"'+id+'"')));
  test("UX consentement : installation et rappel choisissent Plus tard hors popup",()=>setupOutsideDefaults.toString().includes("dismissInstallLater")&&setupOutsideDefaults.toString().includes("dismissPushLater"));
  test("UX apprentissage : premier tutoriel ne se ferme pas par accident",()=>setupOutsideDefaults.toString().includes("lumenTutorialSeen")&&setupOutsideDefaults.toString().includes("if(seen)closeTutorial(false)"));
@@ -137,8 +137,8 @@ async function runHintTests(){
   model.puz=oldP;model.state=oldS;model.celebrated=oldCelebrated;render();
   return ok;
  });
- test("Indice : bouton Revoir la quête présent",()=>{
-  return !!document.getElementById("clearHint");
+ test("Indice : fermeture contextuelle remplace Revoir la quête",()=>{
+  return !document.getElementById("clearHint")&&!!document.getElementById("hintClose");
  });
  test("Exclusions : anneau ambre identique en manuel et automatique",()=>{
   let manual=document.createElement("div"),auto=document.createElement("div");
