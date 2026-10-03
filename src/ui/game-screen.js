@@ -208,24 +208,32 @@ let hiCells=[];
 const {validateGuardians,key,solutions,isAutoCross,verificationErrors,guardianConflicts,conflictMessage,proofEngine,directMissingCross,playerError,guardianOnlyState,guidedConflictForAction}=createGameEngine(()=>({n,puz,state}),()=>!!document.getElementById("autoCross")?.checked);
 function arrangeDesktopPanels(){
  const left=document.getElementById("desktopLeftSlot"),guide=document.getElementById("desktopGuide"),core=document.querySelector(".game-core");
- const journey=document.querySelector(".journey"),rules=document.querySelector(".rules");
- if(!left||!guide||!core||!journey||!rules)return;
+ const journey=document.querySelector(".journey");
+ if(!left||!guide||!core||!journey)return;
  if(window.matchMedia("(min-width:1100px)").matches){
    if(journey.parentElement!==left)left.appendChild(journey);
    if(msg.parentElement!==guide)guide.appendChild(msg);
-   if(rules.parentElement!==guide)guide.appendChild(rules);
  }else{
    const actions=core.querySelector(".actions");
-   const clear=core.querySelector("#clearHint");
    if(journey.parentElement!==core){const modal=core.querySelector("#mapModal");core.insertBefore(journey,modal)}
    if(msg.parentElement!==core)actions.insertAdjacentElement("afterend",msg);
-   if(rules.parentElement!==core)msg.insertAdjacentElement("afterend",rules);
  }
 }
 window.addEventListener("resize",arrangeDesktopPanels);
 
 function choose(){levelIndex=Math.max(0,Math.min(levelIndex,99));const [size,slot]=CAMPAIGN_SIZE_SCHEDULE[levelIndex];puz=size==="6"?CAT["6"][CAMPAIGN6_ORDER[slot]]:CAT[size][slot];n=puz.reg.length;last[n]=levelIndex}
 function loadPuzzle(){init();}
+function startLearningReplay(){
+ if(learningReplayReturn===null)learningReplayReturn={levelIndex,replayMode};
+ learningReplayReturn.active=true;levelIndex=0;replayMode=true;loadPuzzle();
+}
+function learningReplayActive(){return !!(learningReplayReturn&&learningReplayReturn.active)}
+function finishLearningReplay(){
+ const back=learningReplayReturn||{levelIndex:Math.min(sequentialSolvedCount,99),replayMode:false};
+ learningReplayReturn=null;levelIndex=back.levelIndex;replayMode=back.replayMode;
+ document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;
+ loadPuzzle();refreshJourney();
+}
 
 const UNLIMITED_SHARDS_TEST=true;
 function hintCost(){if(levelIndex<=4)return 0;if(hintUsesThisGame===0)return 0;if(hintUsesThisGame===1)return 1;return 2}
@@ -568,8 +576,8 @@ function hideSuccess(){
  if(celebrated){document.getElementById("undo").disabled=true;document.getElementById("hint").disabled=true;document.getElementById("autoCross").disabled=true}
 }
 function setLearningReplaySuccessMode(active){
- const ids=["successRetry","successShare","successSky","difficultyBox","successAchievement","successRewards","questResult"];
- ids.forEach(id=>{const el=document.getElementById(id);if(el)el.hidden=active});
+ for(const id of ["successRetry","successShare","successSky","successAchievement","successRewards"]){const el=document.getElementById(id);if(el)el.hidden=active}
+ if(active){const difficulty=document.getElementById("difficultyBox"),result=document.getElementById("questResult");if(difficulty)difficulty.hidden=true;if(result)result.hidden=true}
 }
 function celebrateLearningReplaySuccess(){
  celebrated=true;pauseGameClock();clearInterval(timer);board.classList.add("win");
@@ -950,7 +958,6 @@ function advanceToNextPuzzle(){
  const next=replayMode?Math.min(sequentialSolvedCount,99):levelIndex+1;
  replayMode=false;
  if(next>=100)return;
- const bn=document.getElementById("boardNext");if(bn)bn.hidden=true;
  document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;
  hideSuccess();
  if(next<100)levelIndex=next;
@@ -965,14 +972,15 @@ document.getElementById("successRetry").onclick=()=>{
  loadPuzzle();usedHintThisGame=false;refreshJourney();
 };
 document.getElementById("successSky").onclick=()=>{hideSuccess();openJourneyMap(true)};
-document.getElementById("successNew").onclick=()=>{
+function handleSuccessAdvance(){
  if(learningReplayActive()){
   hideSuccess();
   if(levelIndex===0){levelIndex=1;loadPuzzle()}else finishLearningReplay();
   return;
  }
  advanceToNextPuzzle();
-};
+}
+document.getElementById("successNew").onclick=handleSuccessAdvance;
 
 let mapConstellation=0;
 
@@ -1044,7 +1052,7 @@ function startQuestFromOverlay(){document.getElementById("questGo")?.click()}
 function closeAutonomyOverlay(){finishAutonomyChoice(false);resumeGameClock()}
 function closeMapOverlay(){const o=document.getElementById("mapModal");if(o)o.hidden=true}
 function setupOutsideDefaults(){
- bindOutsideDefault("successOverlay",()=>advanceToNextPuzzle());
+ bindOutsideDefault("successOverlay",handleSuccessAdvance);
  bindOutsideDefault("skyReveal",continueSkyReveal);
  bindOutsideDefault("questStart",startQuestFromOverlay);
  bindOutsideDefault("autonomyOverlay",closeAutonomyOverlay);
