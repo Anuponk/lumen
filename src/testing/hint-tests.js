@@ -51,6 +51,9 @@ async function runHintTests(){
    const b=document.getElementById("successRetry");
    return !!b&&b.textContent.includes("Réessayer");
  });
+ test("UX : Quête suivante est le CTA principal après réussite",()=>document.getElementById("successNew")?.classList.contains("success-primary")&&!document.getElementById("successShare")?.classList.contains("share-primary"));
+ test("UX : les règles sont accessibles à la demande",()=>document.getElementById("rulesHelp")&&document.getElementById("rulesModal")&&document.querySelector(".rules")?.textContent.includes("Revoir les règles"));
+ test("Vocabulaire : les indices n'utilisent plus l'ancien thème de l'eau",()=>!document.getElementById("hint").onclick.toString().includes("Eau manquante"));
  test("Campagne : progression strictement séquentielle",()=>{
    return document.getElementById("successNew").textContent.trim()==="Quête suivante";
  });
