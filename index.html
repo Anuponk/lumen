@@ -1646,6 +1646,8 @@ markLumenSeen();
 initLumenCloud();
 </script><script>
 if("serviceWorker" in navigator){
- window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=6",{updateViaCache:"none"}).then(r=>r.update()).catch(e=>console.warn("LUMEN service worker",e)));
+ let lumenReloadingForSW=false;
+ navigator.serviceWorker.addEventListener("controllerchange",()=>{if(lumenReloadingForSW)return;lumenReloadingForSW=true;location.reload()});
+ window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=7",{updateViaCache:"none"}).then(r=>r.update()).catch(e=>console.warn("LUMEN service worker",e)));
 }
 </script></body></html>
