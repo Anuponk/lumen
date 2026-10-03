@@ -11,15 +11,23 @@ Every sixth quest is a bonus challenge, rotating challenge types. Current challe
 ## Shards
 Designed economy:
 - initial balance: 3;
-- maximum: 5;
+- no wallet cap: every earned shard is retained;
 - first hint in an attempt: free;
 - second: 1 shard;
 - subsequent: 2 shards;
 - zero-shard safety valve: free hint after 90 seconds;
 - no passive timed refill;
-- first completion milestones can grant shards, including the current every-3-new-wins rule and successful bonus challenges.
+- successful bonus challenges grant +1 shard;
+- every 3 new quests completed in Autonomy grant +1 shard, using the same assistance definition as performance badges.
 
-Important: the current code contains `UNLIMITED_SHARDS_TEST=true`, which overrides the designed economy for testing. Do not mistake test mode for the product specification.
+The current code contains `UNLIMITED_SHARDS_TEST=true`, which overrides spending for testing. It does not change the stored product balance.
+
+## Série de lumière
+A meaningful activity validates at most one calendar day: either a first campaign completion, or a qualifying replay that actually improves an eligible performance badge. Merely opening or starting a quest does not count.
+
+The streak is continuous and is not reset every seven days. One missed calendar day is tolerated as a grace day and does not increment the streak. A second missed day breaks it. Rewards repeat independently of the global streak count: +1 shard on day 3 of each seven-day cycle and +2 on day 7. Reward records are keyed by calendar day so a reload cannot credit the same local daily reward twice.
+
+Guest state is persisted locally. Authenticated daily dates synchronize through the existing `lumen_save_daily` / `lumen_get_daily` RPCs. A future compatible Supabase RPC evolution is still required for server-authoritative calendar time and atomic reward credit across simultaneous devices.
 
 ## Performance badges
 Per-quest performance has exactly three badges:

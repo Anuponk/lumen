@@ -34,6 +34,7 @@ jobs:
           node scripts/responsive-architecture-tests.mjs
           node scripts/attempt-engine-tests.mjs
           node scripts/performance-badge-tests.mjs
+          node scripts/daily-engagement-tests.mjs
 
       - name: Start local server
         run: |
@@ -68,10 +69,15 @@ jobs:
           pkill -f 'chromium.*remote-debugging-port=9222' || true
           for i in {1..20}; do rm -rf /tmp/lumen-chrome 2>/dev/null && break; sleep 0.25; done
           chromium --headless=new --remote-debugging-port=9222 --remote-debugging-address=127.0.0.1 --user-data-dir=/tmp/lumen-chrome --no-first-run --no-default-browser-check --disable-dev-shm-usage --no-sandbox about:blank > /tmp/lumen-chrome-ux.log 2>&1 &
+          ready=0
           for i in {1..30}; do
-            curl -fsS http://127.0.0.1:9222/json/version >/dev/null && break
+            if curl -fsS http://127.0.0.1:9222/json/version >/dev/null; then ready=1; break; fi
             sleep 1
           done
+          if [ "$ready" -ne 1 ]; then
+            cat /tmp/lumen-chrome-ux.log
+            exit 1
+          fi
           node scripts/ux-cleanup-tests.mjs docs/validation/ci-ux.json
 
       - name: Upload validation reports

@@ -11,6 +11,7 @@ import {createCampaign,sequentialCount,constellationGridRange,chapterForGrid,mil
 import {createGameEngine} from "../game/engine.js";
 import {createAttemptEngine,ATTEMPT_STATES} from "../game/attempt-engine.js";
 import {localDateKey,dateOffsetKey,formatDuration} from "../ui/format.js";
+import {streakFromDates,dailyState,cycleDay,nextReward,qualifiesDailyActivity,grantDaily,grantAutonomyMilestone} from "../campaign/daily-engagement.js";
 import {createTutorial} from "./tutorial.js";
 import {createSound} from "./sound.js";
 
@@ -144,37 +145,34 @@ captureReferral();
 let lumenProgress=loadLumenProgress(),usedHintThisGame=false,questStarted=true,questFailed=false;if(!lumenProgress.xp)lumenProgress.xp=0;if(!lumenProgress.challenges)lumenProgress.challenges={};if(!lumenProgress.stars)lumenProgress.stars={};if(!Number.isFinite(lumenProgress.shards))lumenProgress.shards=3;if(!lumenProgress.performances)lumenProgress.performances={};
 if(!lumenProgress.daily)lumenProgress.daily={dates:{},rewards:{}};if(!Number.isFinite(lumenProgress.skyScore))lumenProgress.skyScore=null;
 
-function dailyStreak(){let n=0;for(let i=0;i<365;i++){if(lumenProgress.daily.dates[dateOffsetKey(-i)])n++;else break}return n}
+function dailyStreak(){return streakFromDates(lumenProgress.daily.dates,localDateKey())}
 function renderDaily(){
  const stars=document.getElementById("dailyStars");if(!stars)return;stars.innerHTML="";
- const streak=dailyStreak(),today=localDateKey(),done=!!lumenProgress.daily.dates[today];
- for(let i=6;i>=0;i--){let e=document.createElement("span");e.className="daily-star"+(lumenProgress.daily.dates[dateOffsetKey(-i)]?" on":"")+(i===0?" today":"");e.textContent="✦";stars.appendChild(e)}
- document.getElementById("dailyTitle").textContent=done?"Étoile du jour allumée":"Joue aujourd’hui pour allumer une étoile";
- document.getElementById("dailyMeta").textContent="Série · "+streak+" jour"+(streak>1?"s":"");
- document.getElementById("dailyReward").textContent=streak>=7?"★ Bonus céleste obtenu":"7 jours → ★ bonus céleste";
- const ms=document.getElementById("mobileStreak");if(ms)ms.textContent="✦ "+Math.min(streak,7)+"/7";
- const infoStars=document.getElementById("dailyInfoStars");if(infoStars){infoStars.innerHTML="";for(let i=6;i>=0;i--){let e=document.createElement("span");e.className=lumenProgress.daily.dates[dateOffsetKey(-i)]?"on":"";e.textContent="✦";infoStars.appendChild(e)}}
- const infoStatus=document.getElementById("dailyInfoStatus");if(infoStatus)infoStatus.textContent=done?"✓ Étoile d’aujourd’hui allumée · série de "+streak+" jour"+(streak>1?"s":""):"Aujourd’hui : termine une quête pour continuer ta série de "+streak+" jour"+(streak>1?"s":"");
-
+ const today=localDateKey(),status=dailyState(lumenProgress.daily.dates,today),streak=status.streak,cycle=cycleDay(streak),next=nextReward(streak);
+ for(let i=1;i<=7;i++){let e=document.createElement("span");e.className="daily-star"+(i<=cycle?" on":"")+(i===cycle?" today":"");e.textContent="✦";stars.appendChild(e)}
+ document.getElementById("dailyTitle").textContent=status.done?"Lumière du jour entretenue":status.grace?"Ta Série de lumière est protégée aujourd’hui":"Joue aujourd’hui pour continuer ta Série";
+ document.getElementById("dailyMeta").textContent="Série · "+streak+" jour"+(streak>1?"s":"")+" · Cycle "+cycle+"/7";
+ document.getElementById("dailyReward").textContent="Prochaine récompense : +"+next.amount+" ✦ à J"+next.cycleDay;
+ const ms=document.getElementById("mobileStreak");if(ms)ms.textContent="🔥 "+streak;
+ const infoStars=document.getElementById("dailyInfoStars");if(infoStars){infoStars.innerHTML="";for(let i=1;i<=7;i++){let e=document.createElement("span");e.className=i<=cycle?"on":"";e.textContent="✦";infoStars.appendChild(e)}}
+ const infoStatus=document.getElementById("dailyInfoStatus");if(infoStatus)infoStatus.textContent=status.done?"✓ Aujourd’hui validé · série de "+streak+" jour"+(streak>1?"s":""):status.grace?"Ta Série de lumière est protégée aujourd’hui. Joue pour la continuer.":"Aujourd’hui : réussis une nouvelle quête ou améliore un badge éligible.";
 }
 function maybeShowReturnWelcome(){
  const today=localDateKey(),key="lumenWelcomeDayV1",seen=localStorage.getItem(key),hasHistory=Object.keys(lumenProgress.solved||{}).length>0||Object.keys(lumenProgress.daily.dates||{}).length>0;
  if(seen===today||!hasHistory)return;
  localStorage.setItem(key,today);
  const toast=document.getElementById("returnToast"),copy=document.getElementById("returnToastCopy"),stars=document.getElementById("returnToastStars");if(!toast)return;
- const done=!!lumenProgress.daily.dates[today],streak=dailyStreak(),lit=Math.min(streak,7),remaining=Math.max(0,7-lit);
- copy.textContent=done?"Ta progression est bien enregistrée.":"Reprends ton exploration du ciel là où tu l’as laissée.";
- if(done&&remaining)copy.textContent+=" · Plus que "+remaining+" jour"+(remaining>1?"s":"")+" pour l’étoile bonus.";
- if(streak>=7)copy.textContent+=" · Étoile bonus débloquée ★";
- stars.textContent="✦".repeat(lit)+"·".repeat(7-lit);toast.hidden=false;
+ const status=dailyState(lumenProgress.daily.dates,today),streak=status.streak,cycle=cycleDay(streak),next=nextReward(streak);
+ copy.textContent=status.done?"Ta progression est bien enregistrée.":status.grace?"Ta Série de lumière est protégée aujourd’hui. Joue pour la continuer.":"Reprends ton exploration du ciel là où tu l’as laissée.";
+ if(status.done)copy.textContent+=" · Prochaine récompense : +"+next.amount+" ✦ à J"+next.cycleDay+".";
+ stars.textContent="✦".repeat(cycle)+"·".repeat(7-cycle);toast.hidden=false;
  const close=()=>{toast.classList.add("hide");setTimeout(()=>toast.hidden=true,260)};toast.onclick=close;setTimeout(close,5200);
 }
-
 function completeDaily(){
- const today=localDateKey();if(lumenProgress.daily.dates[today])return;
- lumenProgress.daily.dates[today]=1;
- if(dailyStreak()>=7)lumenProgress.daily.rewards.skyBonus=1;
+ const today=localDateKey(),result=grantDaily(lumenProgress,today);if(!result.credited)return result;
  saveLumenProgress();cloudSaveDaily(today,levelIndex);renderDaily();
+ if(result.reward)showRewardToast("Série de lumière · +"+result.reward+" ✦");
+ return result;
 }
 
 let sequentialSolvedCount=normalizeSequentialProgress();
@@ -618,16 +616,20 @@ function celebrateSuccess(){
  const ch=bonusChallengeFor(levelIndex);let questPassed=false;
  if(ch&&!lumenProgress.stars[ch.id]){
    questPassed=!questFailed&&(ch.seconds!==null?activeGameSeconds()<=ch.seconds:(ch.type===2?!usedHintThisGame:true));
-   if(questPassed){lumenProgress.stars[ch.id]=1;lumenProgress.challenges[ch.id]=1;lumenProgress.xp+=25;lumenProgress.shards=Math.min(5,(lumenProgress.shards||0)+1)}
+   if(questPassed){lumenProgress.stars[ch.id]=1;lumenProgress.challenges[ch.id]=1;lumenProgress.xp+=25;lumenProgress.shards=(lumenProgress.shards||0)+1}
  }
  const earnedThisRun=starsAwardedForGrid(levelIndex,firstCompletion,questPassed);
+ const priorPerformance=lumenProgress.performances[levelIndex]||{},priorBadges=priorPerformance.version===2?{...(priorPerformance.badges||{})}:{};
  launchWinStar(earnedThisRun);
- savePerformance(levelIndex,earnedThisRun);
+ const savedPerformance=savePerformance(levelIndex,earnedThisRun);
+ const autonomyShard=grantAutonomyMilestone(lumenProgress,{firstCompletion,autonomy:!!savedPerformance.run.autonomy});
+ const dailyQualified=qualifiesDailyActivity({firstCompletion,performanceQualifying:savedPerformance.qualifying,priorBadges,earnedBadges:savedPerformance.badges});
+ if(dailyQualified)completeDaily();
  renderSuccessRewards(earnedThisRun);renderSuccessAchievement();
  if(!usedHintThisGame){
    if(!lumenProgress.noHint)lumenProgress.noHint={};
    lumenProgress.noHint[levelIndex]=1;
-   if(firstCompletion&&solvedCount()%3===0)lumenProgress.shards=Math.min(5,(lumenProgress.shards||0)+1);
+   // Autonomy rewards are handled from the shared #30 assistance definition.
  }
  saveLumenProgress();
  if(firstCompletion){cloudSavePuzzle(levelIndex);setTimeout(maybeOfferInstall,1600);setTimeout(maybeOfferPush,5200)}

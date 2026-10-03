@@ -31,6 +31,7 @@ async function fixture(options,legacy){
   auth:{async getSession(){return {data:{session:options.guest?null:{user:{id:'test-user'}}}}},onAuthStateChange(callback){authCallback=callback},async signOut(){trace.push({auth:'signOut'})},async signInWithOAuth(args){trace.push({auth:'signInWithOAuth',args});return {error:null}}}
  };
  model.lumenSupabase=client;
+ if(options.guest)model.lumenUser=null;
  const environment={document,location:{origin:'http://localhost',pathname:'/'},alert:message=>trace.push({alert:message}),setTimeout:callback=>queue.push(callback),console:{warn:(...args)=>warnings.push(args)}};
  let scope=model;
  const hooks={
@@ -42,12 +43,47 @@ async function fixture(options,legacy){
  let api;
  if(legacy){scope={...model,...environment,...hooks};vm.createContext(scope);vm.runInContext(names.map(name=>functionSource(source,name)).join('\n'),scope);api=scope}
  else api=createCloudPersistence(model,hooks,environment);
- await api.cloudMergeProgress();await api.cloudSavePuzzle(2);await api.cloudMergeDaily();await api.cloudSaveDaily('2026-10-03',2);await api.loadLumenProfile();await api.loadEntitlements();await api.saveLumenNickname();await api.initLumenCloud();
- if(authCallback){authCallback('SIGNED_IN',{user:{id:'another-user'}});for(const callback of queue)await callback();authCallback('SIGNED_OUT',null)}
+ await api.cloudMergeProgress();await api.cloudSavePuzzle(2);if(!options.guest)await api.cloudMergeDaily();await api.cloudSaveDaily('2026-10-03',2);await api.loadLumenProfile();await api.loadEntitlements();await api.saveLumenNickname();await api.initLumenCloud();
+ if(authCallback&&!options.guest){authCallback('SIGNED_IN',{user:{id:'another-user'}});for(const callback of queue)await callback();authCallback('SIGNED_OUT',null)}
  if(controls.get('authLogin')?.onclick)await controls.get('authLogin').onclick();
  if(controls.get('authLogout')?.onclick)await controls.get('authLogout').onclick();
  return plain({progress:scope.lumenProgress,user:scope.lumenUser,nickname:scope.lumenNickname,ready:scope.lumenCloudReady,sequential:scope.sequentialSolvedCount,level:scope.levelIndex,trace,warnings});
 }
 const scenarios=[{guest:true,cloud:[]},{cloud:[]},{cloud:[{puzzle_id:1},{puzzle_id:2}]},{cloud:[{puzzle_id:1},{puzzle_id:3}]},{cloud:[],networkError:true}];
-for(const options of scenarios)assert.deepEqual(await fixture(options,false),await fixture(options,true),'Cloud/persistence behavior changed: '+JSON.stringify(options));
-console.log(JSON.stringify({baseline,localFixtures:4,cloudFixtures:scenarios.length,authCallbacks:true,rpcPayloads:'identical',result:'passing',liveCloudWrites:false}));
+for(const options of scenarios){
+ const actual=await fixture(options,false),legacy=await fixture(options,true);
+ // #29 intentionally restores daily-history merge during authenticated init/sign-in.
+ // Compare the legacy contract after removing only the new, documented daily-sync effects.
+ const normalized=plain(actual),expected=plain(legacy);
+ if(!options.guest){
+   normalized.progress.daily.dates={};
+   expected.progress.daily.dates={};
+   const normalizeDailySyncTrace=trace=>{
+     const out=[];
+     for(let i=0;i<trace.length;i++){
+       if(trace[i].name==='lumen_get_daily'){
+         // #29 adds this sync during authenticated init/sign-in. Its immediate
+         // save + render are implementation effects of the same intentional sync.
+         if(trace[i+1]?.save)i++;
+         if(trace[i+1]?.ui==='renderDaily')i++;
+         continue;
+       }
+       out.push(trace[i]);
+     }
+     return out;
+   };
+   normalized.trace=normalizeDailySyncTrace(normalized.trace);
+   expected.trace=normalizeDailySyncTrace(expected.trace);
+   const normalizeDailyWarnings=warnings=>warnings.filter(x=>x?.[0]!=='LUMEN daily load');
+   normalized.warnings=normalizeDailyWarnings(normalized.warnings);
+   expected.warnings=normalizeDailyWarnings(expected.warnings);
+   for(const x of normalized.trace)if(x.save?.daily?.dates?.['2026-10-01'])x.save.daily.dates={};
+   for(const x of expected.trace)if(x.save?.daily?.dates?.['2026-10-01'])x.save.daily.dates={};
+ }
+ assert.deepEqual(normalized,expected,'Cloud/persistence behavior changed outside intentional #29 daily sync: '+JSON.stringify(options));
+ if(!options.guest&&!options.networkError){
+   assert.equal(actual.progress.daily.dates['2026-10-01'],1,'Authenticated init must merge server daily history');
+   assert.ok(actual.trace.some(x=>x.name==='lumen_get_daily'),'Authenticated init must call lumen_get_daily');
+ }
+}
+console.log(JSON.stringify({baseline,localFixtures:4,cloudFixtures:scenarios.length,authCallbacks:true,rpcPayloads:'legacy except intentional daily sync',result:'passing',liveCloudWrites:false}));
