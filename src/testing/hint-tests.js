@@ -40,7 +40,7 @@ async function runHintTests(){
  test("Mobile : glisser assombrit plusieurs cases",()=>document.querySelector("#board")&&getComputedStyle(board).touchAction==="none"&&typeof moveDragCross==="function");
  test("Narratif : les pièces placées sont des Gardiens",()=>{
    const src=render.toString(),rules=document.getElementById("rulesModal")?.textContent||"";
-   return src.includes('aria-label="Gardien positionné"')&&paintCell.toString().includes('aria-label="Gardien positionné"')&&document.getElementById("progressLive").textContent.endsWith("/"+model.n+" Gardiens")&&rules.includes("un Gardien par ligne")&&!rules.includes("source de lumière");
+   return src.includes('aria-label="Gardien positionné"')&&paintCell.toString().includes('aria-label="Gardien positionné"')&&document.getElementById("count").textContent.endsWith("/"+model.n)&&document.querySelectorAll("#count").length===1&&rules.includes("un Gardien par ligne")&&!rules.includes("source de lumière");
  });
  test("Récompense : une constellation terminée déclenche une célébration dédiée",()=>{
    return typeof celebrateConstellationReveal==="function"&&showSkyReveal.toString().includes("celebrateConstellationReveal()");
