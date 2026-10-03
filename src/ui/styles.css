@@ -316,6 +316,13 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .auto-cross{margin:2px 1px 5px;font-size:12px;gap:6px}
  .auto-cross input{width:17px;height:17px}
  .learning-note{margin:0 2px 5px;font-size:10px;line-height:1.2}
+ /* Scripted quests 1-2 need coach space above the board without growing the mobile viewport. */
+ .learning-board-wrap.is-learning{padding-top:clamp(92px,15dvh,118px)}
+ .learning-board-wrap .scripted-learn{min-height:0;padding:8px 10px;font-size:11px;line-height:1.25;border-radius:14px}
+ .learning-board-wrap .scripted-learn strong{font-size:12px}
+ .learning-board-wrap .scripted-learn button{padding:5px 8px;margin-top:5px;font-size:11px}
+ .learning-coach-nav{gap:5px;margin-top:5px}
+ .learning-coach-hint{margin-top:4px;font-size:10px;line-height:1.15}
  #difficulty{display:none}
  .status{font-size:13px;margin:0 3px 4px}
  .campaign-map-label{display:none}
