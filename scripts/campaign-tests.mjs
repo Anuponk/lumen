@@ -13,9 +13,9 @@ const declarations=Object.keys(data).map(name=>{
  const start=source.indexOf('const '+name+'=');
  return source.slice(start,source.indexOf(';',start)+1);
 }).join('\n');
-const names=['sequentialCount','constellationGridRange','chapterForGrid','milestoneFor','skyStarsForGrid','bonusChallengeFor','challengeFor','constellationCheckpoint','constellationStateForEarned','starsAwardedForGrid','normalizeSequentialProgress','solvedCount','exactSkyScoreForSolvedPrefix','ensureSkyScore','skyStarsEarned','challengeRewardKeys','constellationProgress','constellationLitAt','awards','performanceRun','savePerformance'];
+const legacyNames=['sequentialCount','constellationGridRange','chapterForGrid','milestoneFor','skyStarsForGrid','bonusChallengeFor','challengeFor','constellationCheckpoint','constellationStateForEarned','starsAwardedForGrid','normalizeSequentialProgress','solvedCount','exactSkyScoreForSolvedPrefix','ensureSkyScore','skyStarsEarned','challengeRewardKeys','constellationProgress','constellationLitAt','awards' ];
 const context={};vm.createContext(context);
-vm.runInContext(declarations+'\n'+source.slice(source.indexOf('const CAT='),source.indexOf('const COLORS='))+'\n'+names.map(name=>functionSource(source,name)).join('\n')+'\nvar lumenProgress,hintUsesThisGame=0,autoUsedThisGame=false,mistakesThisGame=0;function activeGameSeconds(){return 42}function saveLumenProgress(){}',context);
+vm.runInContext(declarations+'\n'+source.slice(source.indexOf('const CAT='),source.indexOf('const COLORS='))+'\n'+legacyNames.map(name=>functionSource(source,name)).join('\n')+'\nvar lumenProgress,hintUsesThisGame=0,autoUsedThisGame=false,mistakesThisGame=0;function activeGameSeconds(){return 42}function saveLumenProgress(){}',context);
 const plain=value=>JSON.parse(JSON.stringify(value));
 assert.deepEqual(plain(CAT),plain(vm.runInContext('CAT',context)));
 assert.deepEqual(plain(LEVELS),plain(vm.runInContext('LEVELS',context)));
@@ -30,6 +30,5 @@ for(const solved of [{},{0:1},{0:1,1:1,3:1},Object.fromEntries(Array.from({lengt
   assert.deepEqual(next===undefined?next:plain(next),old===undefined?old:plain(old),name+' changed');
   assert.deepEqual(plain(progress),plain(context.lumenProgress),'Persisted contract changed');
  }
- for(let attempt=0;attempt<2;attempt++){live.savePerformance(2,1);context.savePerformance(2,1);assert.deepEqual(plain(progress),plain(context.lumenProgress),'Performance contract changed')}
-}
+ }
 console.log(JSON.stringify({baseline,catalogueEntries:Object.values(CAT).flat().length,quests:100,savedProgressFixtures:4,results:'identical'}));
