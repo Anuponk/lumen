@@ -77,3 +77,19 @@ Several recent iterations reinforced the following rules:
 - deployment state and Git state are different facts: branch merges, application version strings and the Vercel Production commit must be checked separately.
 
 These are not cosmetic preferences; they are regression guards and should be reflected in tests when the affected code changes.
+
+## Interactive onboarding decisions and audit — 2026-10-03
+
+The player requested five visible territories, a forced first Guardian in a singleton territory at the centre, explanations tied to the observed zone, separate row/column/neighbour animations at one new mark per 500 ms, free-tap advancement, and backwards navigation. These decisions supersede the former blanket singleton ban only for the two explicitly scripted 5x5 introductions; see GAMEPLAY and GRID_CATALOG for the exact scope.
+
+Repeating/recreating previously marked cells made the lesson appear to erase or re-mark earlier reasoning. Existing marks now retain their DOM nodes. Empty consequence groups explain that the zone is already marked. Previous restores a snapshot of the explanation and board, cancels an active animation, and reviews visited steps without another marking animation. Teaching history is transient; it does not change persisted solved quests or unlock rules.
+
+The documentation review found that previous browser checks had not included the mandatory full embedded suite or strict all-grid audit. The suite also initialized its result array after calling the first tests, making the entire suite abort. This has been corrected. Tests now handle the async click handler and delayed victory/reveal without deleting their assertions; the singleton regression has two exact documented exceptions and still rejects every other singleton.
+
+The strict audit verifies 134 catalogue entries, 100 distinct campaign references, 12 constellations and 150 sky stars. All stored puzzles are mathematically valid, connected and unique. The two new introductions replay with structured proofs. Existing explainability failures remain in `7/1, 7/2, 7/5, 7/6, 7/11, 7/13, 7/14, 7/15, 7/17, 7/18, 7/19` and `8/0, 8/2, 8/3, 8/4, 8/5, 8/6, 8/7, 8/8, 8/9, 8/10, 8/11` (size/catalogue index, zero-based). Comparison with commit `1683d1a` confirms the 6x6/7x7/8x8 catalogues and proof engine were not changed by the onboarding work. These failures must be fixed before claiming a passing release gate.
+
+### Resolution of the catalogue failures — 2026-10-03
+
+At the player's request, all 22 entries listed above were replaced with newly generated, unique, connected grids that the existing proof engine can fully explain. Their exact catalogue indices were retained, preserving quest identifiers, saved progression, rewards and campaign order. The two scripted introductions and all previously passing grids were retained. No brute-force fallback was added to the hint engine.
+
+The deterministic offline generator and accepted JSON are retained under `scripts/`; GRID_CATALOG describes the acceptance rules and commands. The strict audit now passes all 134 entries, and the actual browser suite passes all 66 cases on each of the four board sizes. The earlier failing report is retained as historical evidence; the new replacement reports record the passing local validation. Production deployment remains a separate operation.
