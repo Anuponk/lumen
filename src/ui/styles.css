@@ -308,9 +308,9 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .levels,.auth-box{display:none!important}
  .journey{display:flex!important;align-items:center;justify-content:space-between;gap:8px;margin:0 0 5px;padding:5px 8px;border-radius:13px}
  .journey-top{width:100%;gap:8px}
- .journey-kicker,.progress-track,.progress-copy,.sector-progress,.sky-entry{display:none!important}
+ .journey-kicker,.progress-track,.progress-copy,.sector-progress{display:none!important}
  .journey-top>div{min-width:0}
- #journeyTitle{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:#a9bdd0}
+ #journeyTitle{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:#a9bdd0}.sky-entry{width:auto;margin:0;padding:5px 8px!important;flex:0 0 auto}.sky-entry-progress,.sky-entry-arrow{display:none}.sky-entry-main{font-size:11px;white-space:nowrap}
  #openMap{padding:5px 8px!important;font-size:11px!important;white-space:nowrap}
 
  .auto-cross{margin:2px 1px 5px;font-size:12px;gap:6px}
