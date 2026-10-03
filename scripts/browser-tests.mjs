@@ -14,7 +14,7 @@ try{
  await send('Page.navigate',{url});
  for(let attempt=0;attempt<100;attempt++){if(await evaluate('!!window.lumenDiagnostics'))break;await sleep(100)}
  assert(await evaluate('!!window.lumenDiagnostics'),'Application did not start: '+JSON.stringify(errors));
- await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});
+ if(fixture.identifier)await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier}).catch(error=>{if(!String(error).includes('Script not found'))throw error});
  await sleep(1500);
  const suites=await evaluate('lumenDiagnostics.runAllHintTests()',true);
  assert(suites.every(s=>s.total>=66&&!s.failures.length),'Embedded regressions: '+JSON.stringify(suites));
