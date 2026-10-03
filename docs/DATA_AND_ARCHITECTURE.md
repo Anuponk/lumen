@@ -18,13 +18,19 @@ The service worker remains network-first for scripts and the HTML navigation rem
 | Change | Source | Validation |
 |---|---|---|
 | Date/duration presentation | `src/ui/format.js` | Browser suite |
-| Rules/proof engine | `index.html` (pending #22) | Browser suite + strict catalogue audit |
+| Rules/proof engine | `src/game/engine.js` | Browser suite + strict catalogue audit + `scripts/engine-equivalence.mjs` |
 | Campaign/catalogue | `index.html` (pending #23) | Browser suite + strict catalogue audit |
 | Persistence/auth | `index.html` (pending #24) | Guest reload + cloud contract tests |
 | Board/tutorial/UI | `index.html` (pending #25) | Browser suite + touch smoke |
 | Analytics/tests | `index.html` (pending #26), `scripts/browser-tests.mjs` | Full regression gate |
 
 `scripts/browser-tests.mjs` runs all 66 embedded cases on each of the four board sizes through Chrome DevTools, followed by actual touch cycle/drag/reset and guest reload checks. Use an isolated guest profile, a local static server on port 8000 and Chrome remote debugging on port 9222. Pass a report path as its first argument. Endpoints can be overridden with `LUMEN_TEST_URL` and `LUMEN_CDP_URL`. The runner closes the isolated browser after testing.
+
+## Stage #22: game engine
+
+`src/game/engine.js` exposes `createGameEngine(getBoard, getAutoCrossEnabled)`. It reads the current `{n,puz,state}` through the injected accessor and never accesses the DOM. Its API contains enumeration (`solutions`), automatic exclusions, stored-solution verification, Guardian conflict/validity checks, guided action checks and the existing proof engine. Algorithms, traversal order, reasons and hint text are retained. `solutions(board)` accepts an explicit board for the guided hypothetical placement, avoiding any mutation of application state during that calculation.
+
+Victory validation is now called by the renderer through `validateGuardians`; rendering and celebrations remain in the application. The catalogue audit and offline generator import the same engine used in the browser instead of copying its source from HTML. `scripts/engine-equivalence.mjs` compares complete proof objects and guided/error/enumeration outputs against main commit `dcd9f3c872e623541be698edc212b64589d3b164`, across every catalogue grid and automatic-marking modes. An optional first argument supplies that baseline HTML without invoking Git.
 
 ## Local/guest mode
 Guest play is first-class. Progress is stored in localStorage under `lumenProgressV1`; tutorial, install/push choices, anonymous/session identity and UX preferences also use localStorage keys.
