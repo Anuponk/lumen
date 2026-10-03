@@ -35,7 +35,7 @@ async function runHintTests(){
  test("Rendu : le plateau contient n × n cellules après render",()=>{render();return board.children.length===model.n*model.n});
  test("Mobile : glisser assombrit plusieurs cases",()=>document.querySelector("#board")&&getComputedStyle(board).touchAction==="none"&&typeof moveDragCross==="function");
  test("Narratif : les pièces placées sont des Gardiens",()=>{
-   const src=render.toString(),rules=document.querySelector(".rules")?.textContent||"";
+   const src=render.toString(),rules=document.getElementById("rulesModal")?.textContent||"";
    return src.includes('aria-label="Gardien positionné"')&&paintCell.toString().includes('aria-label="Gardien positionné"')&&document.getElementById("progressLive").textContent.endsWith("/"+model.n+" Gardiens")&&rules.includes("un Gardien par ligne")&&!rules.includes("source de lumière");
  });
  test("Récompense : une constellation terminée déclenche une célébration dédiée",()=>{
@@ -53,7 +53,7 @@ async function runHintTests(){
  });
  test("UX : Quête suivante est le CTA principal après réussite",()=>document.getElementById("successNew")?.classList.contains("success-primary")&&!document.getElementById("successShare")?.classList.contains("share-primary"));
  test("UX : les règles sont accessibles à la demande",()=>document.getElementById("rulesHelp")&&document.getElementById("rulesModal")&&document.querySelector(".rules")?.textContent.includes("Revoir les règles"));
- test("Vocabulaire : les indices n'utilisent plus l'ancien thème de l'eau",()=>!document.getElementById("hint").onclick.toString().includes("Eau manquante"));
+ test("Vocabulaire : les indices n'utilisent plus l'ancien thème de l'eau",()=>!/Eau manquante|éteindre/.test(document.getElementById("hint").onclick.toString()));
  test("Campagne : progression strictement séquentielle",()=>{
    return document.getElementById("successNew").textContent.trim()==="Quête suivante";
  });

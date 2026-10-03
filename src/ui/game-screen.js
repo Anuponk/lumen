@@ -388,7 +388,7 @@ function handleLearningTap(event){
  if(target.closest("#scriptedLearnPrev")){event.preventDefault();event.stopImmediatePropagation();previousLearningStep();return}
  // Keep account, help, reset and modal actions available.
  if(target.closest("button,input,a,[role=button]")&&!target.closest("#scriptedLearnNext"))return;
- if(document.querySelector('#mapModal:not([hidden]),#tutorialOverlay:not([hidden]),#feedbackModal:not([hidden]),#shardRulesModal:not([hidden]),#badgeRulesModal:not([hidden]),#skyReveal:not([hidden]),#successOverlay.show'))return;
+ if(document.querySelector('#mapModal:not([hidden]),#tutorialOverlay:not([hidden]),#feedbackModal:not([hidden]),#rulesModal:not([hidden]),#shardRulesModal:not([hidden]),#badgeRulesModal:not([hidden]),#skyReveal:not([hidden]),#successOverlay.show'))return;
  if(learningStage==="place")return;
  event.preventDefault();event.stopImmediatePropagation();
  if(!learningSequenceActive)advanceLearningStep();
@@ -807,7 +807,7 @@ document.getElementById("hint").onclick=()=>{
     msg.textContent=`Indice : cette hypothèse finit par rendre au moins une ligne, colonne ou territoire impossible à compléter. La case peut donc être éliminée sans choisir au hasard.`;
     render();return;
    }
-   msg.textContent=`À jouer : tu peux éteindre L${h.cell[0]+1}C${h.cell[1]+1}. C'est une élimination par contradiction.`;
+   msg.textContent=`À jouer : tu peux écarter L${h.cell[0]+1}C${h.cell[1]+1}. C'est une élimination par contradiction.`;
    render();return;
   }
 
@@ -824,7 +824,7 @@ document.getElementById("hint").onclick=()=>{
     render();return;
    }
    hiCells=d.source.concat([h.cell]);
-   msg.textContent=`À jouer : L${h.cell[0]+1}C${h.cell[1]+1} appartient à un autre territoire mais utilise une de ces ${word}. Tu peux l’éteindre.`;
+   msg.textContent=`À jouer : L${h.cell[0]+1}C${h.cell[1]+1} appartient à un autre territoire mais utilise une de ces ${word}. Tu peux l’écarter.`;
    render();return;
   }
 
@@ -840,7 +840,7 @@ document.getElementById("hint").onclick=()=>{
     render();return;
    }
    hiCells=d.source.concat([h.cell]);
-   msg.textContent=`À jouer : L${h.cell[0]+1}C${h.cell[1]+1} est hors de ce territoire mais sur la ${axisName} ${num}. Tu peux donc l’éteindre.`;
+   msg.textContent=`À jouer : L${h.cell[0]+1}C${h.cell[1]+1} est hors de ce territoire mais sur la ${axisName} ${num}. Tu peux donc l’écarter.`;
    render();return;
   }
 
@@ -848,7 +848,7 @@ document.getElementById("hint").onclick=()=>{
   if(hintFocus!==id||hintStage<=1){
    msg.textContent="Piste : regarde la case surlignée et la contrainte qui agit sur elle. Essaie d'identifier pourquoi elle ne peut pas accueillir de Gardien.";
   }else{
-   msg.textContent="Indice : "+h.text+` Tu peux donc éteindre L${h.cell[0]+1}C${h.cell[1]+1}.`;
+   msg.textContent="Indice : "+h.text+` Tu peux donc écarter L${h.cell[0]+1}C${h.cell[1]+1}.`;
   }
   render(); return;
  }

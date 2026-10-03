@@ -40,7 +40,7 @@ button{font:inherit;font-weight:700;background:#fff;border:1.8px solid #555;bord
 #successOverlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;
   background:rgba(20,20,20,.42);backdrop-filter:blur(3px);padding:24px}
 #successOverlay.show{display:flex;animation:successFade .28s ease-out}
-.success-card{position:relative;width:min(430px,92vw);background:#fff;border-radius:28px;padding:30px 24px 24px;
+.success-card{position:relative;width:min(430px,92vw);max-height:calc(100dvh - 48px);overflow-y:auto;background:#fff;border-radius:28px;padding:30px 24px 24px;
   text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.28);animation:successPop .55s cubic-bezier(.2,1.45,.35,1)}
 .success-gem{font-size:74px;line-height:1;animation:gemBounce .8s ease-in-out}
 .success-title{font-size:34px;font-weight:900;margin:10px 0 4px}
