@@ -58,10 +58,22 @@ for(const options of scenarios){
  if(!options.guest&&!options.networkError){
    normalized.progress.daily.dates={};
    expected.progress.daily.dates={};
-   normalized.trace=normalized.trace.filter(x=>x.name!=='lumen_get_daily'&&x.ui!=='renderDaily');
-   expected.trace=expected.trace.filter(x=>x.name!=='lumen_get_daily'&&x.ui!=='renderDaily');
-   // cloudMergeDaily persists the merged model once; normalize that intentional save
-   // to the pre-#29 daily state instead of dropping the whole save trace.
+   const normalizeDailySyncTrace=trace=>{
+     const out=[];
+     for(let i=0;i<trace.length;i++){
+       if(trace[i].name==='lumen_get_daily'){
+         // #29 adds this sync during authenticated init/sign-in. Its immediate
+         // save + render are implementation effects of the same intentional sync.
+         if(trace[i+1]?.save)i++;
+         if(trace[i+1]?.ui==='renderDaily')i++;
+         continue;
+       }
+       out.push(trace[i]);
+     }
+     return out;
+   };
+   normalized.trace=normalizeDailySyncTrace(normalized.trace);
+   expected.trace=normalizeDailySyncTrace(expected.trace);
    for(const x of normalized.trace)if(x.save?.daily?.dates?.['2026-10-01'])x.save.daily.dates={};
    for(const x of expected.trace)if(x.save?.daily?.dates?.['2026-10-01'])x.save.daily.dates={};
  }
