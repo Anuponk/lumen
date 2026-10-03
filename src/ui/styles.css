@@ -316,6 +316,15 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .auto-cross{margin:2px 1px 5px;font-size:12px;gap:6px}
  .auto-cross input{width:17px;height:17px}
  .learning-note{margin:0 2px 5px;font-size:10px;line-height:1.2}
+ /* Scripted quests 1-2 need coach space above the board without growing the mobile viewport. */
+ .learning-board-wrap.is-learning{padding-top:0}
+ .learning-board-wrap.is-learning .scripted-learn{position:fixed;left:10px;right:10px;bottom:max(10px,env(safe-area-inset-bottom));top:auto;width:auto;z-index:1250;box-shadow:0 18px 50px rgba(0,0,0,.48)}
+ .learning-board-wrap.is-learning .scripted-learn:after,.learning-board-wrap.is-learning .learning-coach-link{display:none}
+ .learning-board-wrap .scripted-learn{min-height:0;padding:8px 10px;font-size:11px;line-height:1.25;border-radius:14px}
+ .learning-board-wrap .scripted-learn strong{font-size:12px}
+ .learning-board-wrap .scripted-learn button{padding:5px 8px;margin-top:5px;font-size:11px}
+ .learning-coach-nav{gap:5px;margin-top:5px}
+ .learning-coach-hint{margin-top:4px;font-size:10px;line-height:1.15}
  #difficulty{display:none}
  .status{font-size:13px;margin:0 3px 4px}
  .campaign-map-label{display:none}
@@ -466,3 +475,6 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .attempt-controls{display:flex;justify-content:center;gap:7px;margin:0 0 5px}
 .attempt-controls button{padding:5px 10px;font-size:11px}
 @media(max-width:700px){.attempt-mask{border-radius:18px}.attempt-mask strong{font-size:16px}.attempt-controls{position:absolute;right:2px;top:41px;z-index:20}}
+
+/* Must come after the base learning coach rules so mobile does not inherit the 158px desktop spacer. */
+@media (max-width:700px){.learning-board-wrap.is-learning{padding-top:0}}

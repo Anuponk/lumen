@@ -11,7 +11,15 @@ return {
   return suites;
  },
  snapshot(){return {n:model.n,levelIndex:model.levelIndex,puz:model.puz,state:model.state,celebrated:model.celebrated,replayMode:model.replayMode,progress:model.lumenProgress}},
- setupQuest(index){model.levelIndex=index;init();setSoundEnabled(false);document.getElementById("autoCross").checked=false;document.getElementById("guidedErrors").checked=false;closeTutorial(false);document.getElementById("skyReveal").hidden=true;hideSuccess()},
+ setupQuest(index){
+  // Browser tests call this immediately after runAllHintTests(), whose final
+  // embedded suite may leave transient tutorial/overlay state active. Clear
+  // those surfaces before re-entering init so the diagnostic transition is
+  // deterministic and cannot wait on a UI animation/timer.
+  // `init()` already normalizes overlays and board state. Keep this hook to a
+  // single synchronous transition so CDP can return deterministically.
+  model.levelIndex=index;init();closeTutorial(false);
+ },
  setBoard(value){model.state=value;render()}
 };
 }
