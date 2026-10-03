@@ -5,12 +5,13 @@ This repository is the source of truth for LUMEN. Read this file and the documen
 ## Non-negotiable workflow
 1. Understand the affected invariant before editing.
 2. Preserve campaign progression and existing player data.
-3. After **every gameplay change**, run the complete in-app test suite (`runHintTests()`) and the strict catalogue/grid audit described in `docs/GRID_CATALOG.md`.
-4. Never weaken/delete a regression test merely to make a change pass.
-5. A grid is shippable only if it is valid, has one audited solution, and remains solvable by the explainable proof engine.
-6. Test mobile interactions when touching board input: tap cycle and drag-to-exclude.
-7. Before release, verify victory detection, progression, replay, rewards and persistence.
-8. Do not treat a Git push as a production release. Report the Git commit SHA and verify the deployment corresponding to the intended Production commit.
+3. Every code/gameplay/feature change must update the test contract in the same change: preserve or adapt existing non-regression tests when behavior intentionally changes, and add dedicated tests for the new behavior and its edge cases.
+4. After **every gameplay change**, run the complete in-app test suite (`runHintTests()`) and the strict catalogue/grid audit described in `docs/GRID_CATALOG.md`.
+5. Never weaken/delete a regression test merely to make a change pass. A changed assertion must be justified by an intentional product-contract change and replaced by coverage of the new contract.
+6. A grid is shippable only if it is valid, has one audited solution, and remains solvable by the explainable proof engine.
+7. Test mobile interactions when touching board input: tap cycle and drag-to-exclude.
+8. Before release, verify victory detection, progression, replay, rewards and persistence.
+9. Do not treat a Git push as a production release. Report the Git commit SHA and verify the deployment corresponding to the intended Production commit.
 
 ## Product invariants
 - 100 sequential quests across 12 constellations; exactly 150 sky stars.
