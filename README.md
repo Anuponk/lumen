@@ -21,6 +21,8 @@ See:
 - `docs/DATA_AND_ARCHITECTURE.md` — persistence, Supabase and PWA architecture
 - `docs/TESTING.md` — mandatory regression/performance checks
 - `docs/RELEASE.md` — Git/Vercel workflow and release checklist
+- `docs/PRODUCT_MEMORY.md` — decision history, regressions and product reasoning
+- `docs/UX_AND_VISUAL_DIRECTION.md` — visual identity and UX principles
 
 ## Current version note
 At the time this documentation was introduced (2026-10-03), `main` pointed to commit `1683d1a480bccd813677a23b683bfad6919e0129`; the UI constant was `LUMEN_APP_VERSION="beta-2026.10"`. Git tags/marketing versions and this UI constant must not be assumed to be equivalent.
