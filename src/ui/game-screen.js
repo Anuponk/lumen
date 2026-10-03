@@ -961,7 +961,7 @@ get ac(){return ac},
 get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get replayMode(){return replayMode},set replayMode(value){replayMode=value}
 };
-const runHintTests=createHintTestSuite(testModel,{saveLumenNickname,maybeOfferInstall,lumenShareUrl,successAchievement,shareLumenResult,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults});
+const runHintTests=createHintTestSuite(testModel,{saveLumenNickname,maybeOfferInstall,lumenShareUrl,successAchievement,shareLumenResult,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults,openJourneyMap:()=>openJourneyMap,closeMapOverlay:()=>closeMapOverlay,renderMap:()=>renderMap});
 let runTestsButton=document.getElementById("runTests");
 if(runTestsButton)runTestsButton.onclick=runHintTests;
 
