@@ -38,7 +38,7 @@ async function fixture(options,legacy){
   activeGameSeconds:()=>42,
   exactSkyScoreForSolvedPrefix(){let score=0;for(let i=0;i<100&&scope.lumenProgress.solved[i];i++)score+=skyStarsForGrid(i);return score},
   saveLumenProgress:()=>trace.push({save:plain(scope.lumenProgress)}),
-  refreshJourney:()=>trace.push({ui:'refreshJourney'}),init:()=>trace.push({ui:'init'}),onAccountChanged:event=>trace.push({ui:'account',event}),renderDaily:()=>trace.push({ui:'renderDaily'})
+  refreshJourney:()=>trace.push({ui:'refreshJourney'}),init:()=>trace.push({ui:'init'}),updateAuthUI:()=>trace.push({ui:'updateAuthUI'}),showRewardToast:copy=>trace.push({toast:copy}),onAccountChanged:event=>trace.push({ui:'account',event}),renderDaily:()=>trace.push({ui:'renderDaily'})
  };
  let api;
  if(legacy){scope={...model,...environment,...hooks};vm.createContext(scope);vm.runInContext(names.map(name=>functionSource(source,name)).join('\n'),scope);api=scope}
