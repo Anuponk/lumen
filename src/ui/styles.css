@@ -524,7 +524,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .constellation-card svg{width:100%;height:clamp(30px,7vh,64px);flex:0 1 auto}.constellation-card strong{max-width:100%;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.constellation-card small{font-size:11px;color:#b9d8e8}.constellation-card.locked{opacity:.55}
 .constellation-pages{display:flex;align-items:center;justify-content:center;gap:18px;flex:0 0 auto;font-size:12px}.constellation-pages button{padding:5px 16px}.constellation-pages button:disabled{opacity:.3}
 .map-detail{display:flex;flex-direction:column;gap:8px;min-height:0;flex:1}.constellation-back{align-self:flex-start;padding:6px 10px;font-size:12px;flex:0 0 auto}
-#mapDetail .puzzle-grid{margin:0;grid-template-columns:repeat(auto-fit,minmax(46px,1fr));gap:6px;flex:0 0 auto;max-height:150px;overflow:auto}#mapDetail .puzzle-card{min-height:42px;padding:6px}
+#mapDetail .puzzle-grid{margin:0;grid-template-columns:repeat(auto-fit,minmax(46px,1fr));gap:6px;flex:0 0 auto;max-height:150px;overflow:hidden}#mapDetail .puzzle-card{min-width:0;min-height:42px;padding:6px}
 #mapDetail .performance-legend{margin:0;flex:0 0 auto;gap:8px;font-size:11px}#mapDetail .sky-card{margin:0;min-height:0;flex:1;overflow:hidden;padding:10px;display:flex;flex-direction:column}#mapDetail .sky-svg{flex:1;min-height:0;max-height:200px;width:100%}
 #mapModal .my-challenges-entry{flex:0 0 auto;margin:0;padding:8px}#mapModal .sky-tour{margin:0;flex:0 0 auto;padding:8px;gap:4px}
 #mapModal:has(.sky-tour:not([hidden])):not([data-tour-target="skyNavigation"]) .sky-navigation{display:none}
@@ -538,10 +538,13 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  #mapModal .adventure-summary{line-height:1.25}
  #mapModal #sectorTabs{gap:7px}
  #mapModal .constellation-pages{min-height:34px}
- #mapDetail .performance-legend{grid-template-columns:repeat(2,minmax(0,1fr));padding:8px 36px 8px 8px;column-gap:8px;row-gap:6px;width:100%;min-width:0}
- #mapDetail .performance-legend span{min-width:0;white-space:nowrap;font-size:clamp(9px,2.8vw,11px);gap:4px}
- #mapDetail .performance-legend .performance-icon{width:14px;height:14px}
- #mapDetail .sky-card{padding:8px}
+ #mapDetail{gap:10px}
+ #mapDetail .puzzle-grid{max-height:none;overflow:hidden;gap:7px}
+ #mapDetail .performance-legend{box-sizing:border-box;grid-template-columns:repeat(2,minmax(0,1fr));padding:10px 38px 10px 10px;column-gap:10px;row-gap:8px;width:100%;max-width:100%;min-width:0;overflow:hidden;font-size:12px}
+ #mapDetail .performance-legend span{min-width:0;white-space:nowrap;font-size:clamp(10px,3vw,12px);gap:5px}
+ #mapDetail .performance-legend .performance-icon{width:15px;height:15px}
+ #mapDetail .sky-card{padding:8px;flex:0 1 42%;min-height:180px;max-height:300px}
+ #mapDetail .sky-svg{max-height:170px}
  #mapModal .my-challenges-entry{min-height:44px}
 }
 @media(min-width:701px){#sectorTabs{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}.constellation-card strong{font-size:14px}}
