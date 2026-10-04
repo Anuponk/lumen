@@ -506,6 +506,14 @@ function showLearningTip(id,title,copy){
 }
 function updateScriptedLearning(){
  const card=document.getElementById("scriptedLearn"),wrap=document.getElementById("learningBoardWrap");if(!card)return;
+ const skip=document.getElementById("learningSkip");
+ if(replayMode&&!learningReplayActive()){
+  learningTip=null;learningStage="complete";board.dataset.learningStage=learningStage;
+  card.hidden=true;if(skip)skip.hidden=true;
+  board.classList.remove("scripted-board","learning-guided");
+  board.querySelectorAll(".cell").forEach(cell=>cell.setAttribute("aria-disabled","false"));
+  return;
+ }
  const guided=scriptedLearningActive(),step=guided?currentLearningStep():null;
  learningStage=step?.phase||"complete";
  board.dataset.learningStage=learningStage;
@@ -523,7 +531,7 @@ function updateScriptedLearning(){
  const blocked=celebrated||!!guidedPending||!!verifyPending;
  card.hidden=blocked||(!guided&&!learningTip);
  document.getElementById("learningCoachDismiss").hidden=guided;
- const next=document.getElementById("learningCoachNext"),skip=document.getElementById("learningSkip");
+ const next=document.getElementById("learningCoachNext");
  if(next){next.hidden=!(guided&&step?.phase==="intro");next.textContent=step?.introStep===LEARNING_INTRO.length-1?"À moi de jouer":"Suivant"}
  if(skip)skip.hidden=!(learningReplayActive()&&tutorialCompletedProof());
  if(levelIndex<=1&&!socialChallenge)for(const id of ["undo","hint","verify"])document.getElementById(id).disabled=guided;
