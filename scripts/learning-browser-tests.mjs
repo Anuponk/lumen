@@ -170,13 +170,16 @@ try {
     assert.equal(await evaluate('document.getElementById("scriptedLearn").hidden'),true,'Ordinary replay has no imposed lesson');
 
     assert.equal(await evaluate('document.getElementById("learningSkip").hidden'),true,'First-time learning never exposes skip');
+    const returnQuest=(await snapshot()).levelIndex;
     await evaluate('localStorage.setItem("lumenTutorialCompletedV1","1");document.getElementById("replayLearning").click()');
     await sleep(80);
     const beforeSkip=await evaluate('JSON.stringify((()=>{const p=lumenDiagnostics.snapshot().progress;return {solved:p.solved,badges:p.badges,shards:p.shards}})())');
     assert.equal(await evaluate('document.getElementById("learningSkip").hidden'),false,'Completed learner may skip a voluntary learning replay');
     await evaluate('document.getElementById("learningSkip").click()');
     await sleep(80);
-    assert.equal(await evaluate('learningReplayReturn===null'),true,'Skip exits learning replay');
+    const afterSkip=await snapshot();
+    assert.equal(afterSkip.levelIndex,returnQuest,'Skip returns to the original quest');
+    assert.equal(await evaluate('document.getElementById("scriptedLearn").hidden'),true,'Skip exits the learning UI');
     assert.equal(await evaluate('JSON.stringify((()=>{const p=lumenDiagnostics.snapshot().progress;return {solved:p.solved,badges:p.badges,shards:p.shards}})())'),beforeSkip,'Skip must not award progress, badges or shards');
     results.push({viewport,stages,realDrag:true,reload:true,reset:true,guidedQuest2Drag:true,partialQuest2Reload:true,freeQuest2:true,skyTour:true,freeReplay:true,firstTimerNoSkip:true,completedReplaySkip:true});
 
