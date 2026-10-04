@@ -1035,14 +1035,15 @@ function broadClue(h){
  if(!h||!h.detail)return null;
  let d=h.detail;
  if(d.rule==="single"){
-  if(d.axis==="row")return {text:`Compte les possibilités encore ouvertes sur la ligne ${d.index+1}.`,cells:[]};
-  if(d.axis==="col")return {text:`Compte les possibilités encore ouvertes dans la colonne ${d.index+1}.`,cells:[]};
-  if(d.axis==="region")return {text:"Il ne reste qu’une seule case possible dans ce territoire : place le Gardien sur la case surlignée.",cells:[]};
+  const cells=(d.source&&d.source.length?d.source:[h.cell]).map(cell=>cell.slice());
+  if(d.axis==="row")return {text:`Sur la ligne ${d.index+1}, il ne reste qu’une possibilité : la case surlignée.`,cells};
+  if(d.axis==="col")return {text:`Dans la colonne ${d.index+1}, il ne reste qu’une possibilité : la case surlignée.`,cells};
+  if(d.axis==="region")return {text:"Dans ce territoire, il ne reste qu’une possibilité : la case surlignée.",cells};
  }
  return null;
 }
 function clearHintDisplay(){
- hi=null;hiCells=[];const card=document.getElementById("hintCard");if(card)card.hidden=true;
+ hi=null;hiCells=[];hintStage=0;hintFocus=null;const card=document.getElementById("hintCard");if(card)card.hidden=true;
 }
 function showHintMessage(text){
  learningTip=null;document.getElementById("scriptedLearn").hidden=true;
@@ -1082,7 +1083,7 @@ document.getElementById("hint").onclick=()=>{
   if(hintFocus!==id){hintFocus=id;hintStage=1}else hintStage++;
 
   if(d&&d.rule==="contradiction"){
-   hi=h.cell;
+   hi=h.cell;hiCells=[];
    if(hintStage===1){
     showHintMessage(`Piste : teste mentalement la case L${h.cell[0]+1}C${h.cell[1]+1}. Suppose qu'elle accueille un Gardien et suis les contraintes : ligne, colonne, territoire et cases voisines.`);
     render();return;
@@ -1128,7 +1129,7 @@ document.getElementById("hint").onclick=()=>{
    render();return;
   }
 
-  hi=h.cell;
+  hi=h.cell;hiCells=[];
   if(hintFocus!==id||hintStage<=1){
    showHintMessage("Piste : regarde la case surlignée et la contrainte qui agit sur elle. Essaie d'identifier pourquoi elle ne peut pas accueillir de Gardien.");
   }else{
@@ -1141,7 +1142,7 @@ document.getElementById("hint").onclick=()=>{
   if(h.detail&&h.detail.rule==="contradiction-place"){
    let id="cp:"+h.cell.join(",");
    if(hintFocus!==id){hintFocus=id;hintStage=1}else hintStage++;
-   hi=h.cell;
+   hi=h.cell;hiCells=[];
    if(hintStage===1){
     showHintMessage(`Piste : les déductions déjà faites réduisent fortement les configurations possibles. Regarde la case surlignée et vérifie ce qui se passe si tu essaies de l'éviter.`);
     render();return;
@@ -1170,12 +1171,12 @@ document.getElementById("hint").onclick=()=>{
   }
   // 5. Second press: explain the logical rule, but don't say "place a diamond" yet.
   if(hintStage===2){
-   hi=h.cell;
+   hi=h.cell;hiCells=[];
    showHintMessage("Indice : "+h.text+" Vérifie toi-même les autres possibilités avant de jouer.");
    render();return;
   }
   // 6. Third press: reveal the forced placement as last resort.
-  hi=h.cell;
+  hi=h.cell;hiCells=[];
   showHintMessage(`Indice final : la case L${h.cell[0]+1}C${h.cell[1]+1} est forcée. Tu peux y placer un Gardien.`);
   render();return;
  }
