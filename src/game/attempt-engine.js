@@ -15,12 +15,12 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
  function activeMs(){return attempt?attempt.activeDuration+(attempt.state===ATTEMPT_STATES.RUNNING&&activeSince!==null?Math.max(0,perfNow()-activeSince):0):0}
  function persist(){if(!attempt)return storage?.removeItem?.(STORAGE_KEY);const copy={...attempt,board:cloneBoard(attempt.board),activeDuration:activeMs(),updatedAt:now()};storage?.setItem?.(STORAGE_KEY,JSON.stringify(copy))}
  function create({questId,mode="campaign",qualifying=false,challengeId=null,board=[]}){
-  attempt={attemptId:newId(),questId,mode,state:ATTEMPT_STATES.READY,startedAt:null,activeDuration:0,lastActiveAt:null,assistanceUsed:false,resetCount:0,qualifying:!!qualifying,challengeId,board:cloneBoard(board),createdAt:now(),updatedAt:now()};activeSince=null;emit();return snapshot()
+  attempt={attemptId:newId(),questId,mode,state:ATTEMPT_STATES.READY,startedAt:null,activeDuration:0,lastActiveAt:null,assistanceUsed:false,mistakeCommitted:false,wrongGuardianPending:null,resetCount:0,qualifying:!!qualifying,challengeId,board:cloneBoard(board),createdAt:now(),updatedAt:now()};activeSince=null;emit();return snapshot()
  }
  function restore({questId,mode}={}){
   const saved=safeParse(storage?.getItem?.(STORAGE_KEY));if(!saved||!saved.attemptId)return null;
   if(questId!=null&&saved.questId!==questId)return null;if(mode&&saved.mode!==mode)return null;
-  attempt={...saved,board:cloneBoard(saved.board),activeDuration:Number(saved.activeDuration)||0};
+  attempt={...saved,board:cloneBoard(saved.board),activeDuration:Number(saved.activeDuration)||0,assistanceUsed:!!saved.assistanceUsed,mistakeCommitted:!!saved.mistakeCommitted,wrongGuardianPending:saved.wrongGuardianPending||null};
   activeSince=null;
   if(attempt.state===ATTEMPT_STATES.RUNNING)attempt.state=ATTEMPT_STATES.PAUSED;
   emit();return snapshot()
@@ -39,9 +39,23 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
  }
  function complete(){if(!attempt)return null;if(attempt.state===ATTEMPT_STATES.RUNNING)pause();attempt.state=ATTEMPT_STATES.COMPLETED;activeSince=null;emit();return snapshot()}
  function abandon(){if(!attempt)return null;if(attempt.state===ATTEMPT_STATES.RUNNING)pause();attempt.state=ATTEMPT_STATES.ABANDONED;activeSince=null;emit();return snapshot()}
- function reset(board=[]){if(!attempt)return null;attempt.resetCount=(attempt.resetCount||0)+1;attempt.board=cloneBoard(board);emit();return snapshot()}
+ function reset(board=[]){
+  if(!attempt)return null;
+  attempt.resetCount=(attempt.resetCount||0)+1;attempt.board=cloneBoard(board);
+  attempt.wrongGuardianPending=null;
+  // Campaign/replay reset starts a fresh badge run without changing attemptId.
+  // Social challenge remains one-shot: elapsed time, assistance and mistakes persist.
+  if(attempt.mode!=="challenge"){
+   attempt.assistanceUsed=false;attempt.mistakeCommitted=false;attempt.activeDuration=0;attempt.startedAt=attempt.state===ATTEMPT_STATES.READY?null:now();attempt.lastActiveAt=attempt.state===ATTEMPT_STATES.READY?null:now();
+   activeSince=attempt.state===ATTEMPT_STATES.RUNNING?perfNow():null;
+  }
+  emit();return snapshot()
+ }
  function updateBoard(board){if(!attempt)return;attempt.board=cloneBoard(board);emit()}
  function markAssistance(){if(!attempt||attempt.assistanceUsed)return;attempt.assistanceUsed=true;emit()}
+ function setWrongGuardianPending(cellKey){if(!attempt||attempt.mistakeCommitted)return;attempt.wrongGuardianPending=cellKey||null;emit()}
+ function clearWrongGuardianPending(cellKey=null){if(!attempt||!attempt.wrongGuardianPending)return;if(cellKey&&attempt.wrongGuardianPending!==cellKey)return;attempt.wrongGuardianPending=null;emit()}
+ function commitMistake(){if(!attempt)return;if(attempt.mistakeCommitted&&attempt.wrongGuardianPending===null)return;attempt.mistakeCommitted=true;attempt.wrongGuardianPending=null;emit()}
  function clear(){attempt=null;activeSince=null;storage?.removeItem?.(STORAGE_KEY);onChange(null)}
- return {create,restore,start,pause,resume,complete,abandon,reset,updateBoard,markAssistance,clear,snapshot,activeMs,states:ATTEMPT_STATES,storageKey:STORAGE_KEY};
+ return {create,restore,start,pause,resume,complete,abandon,reset,updateBoard,markAssistance,setWrongGuardianPending,clearWrongGuardianPending,commitMistake,clear,snapshot,activeMs,states:ATTEMPT_STATES,storageKey:STORAGE_KEY};
 }
