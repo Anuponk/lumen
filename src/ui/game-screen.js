@@ -1,3 +1,4 @@
+import {learningStep, learningAllows, learningCopy} from "../game/learning.js";
 import {createAnalytics} from "../analytics/events.js";
 import {createHintTestSuite} from "../testing/hint-tests.js";
 import {createDiagnostics} from "../testing/diagnostics.js";
@@ -30,7 +31,7 @@ get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
 const {loadLumenProfile,saveLumenNickname,loadEntitlements,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),updateAuthUI:(...args)=>updateAuthUI(...args),showRewardToast:(...args)=>showRewardToast(...args),renderDaily:(...args)=>renderDaily(...args)},{document,location,alert,setTimeout,console});
-const {renderTutorial,openTutorial,closeTutorial,setupTutorial}=createTutorial(scriptedLearningActive);
+const {renderTutorial,openTutorial,closeTutorial,setupTutorial}=createTutorial(()=>levelIndex<=1);
 let lumenSupabase=null,lumenUser=null,lumenCloudReady=false;
 try{lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY)}catch(e){console.warn("LUMEN cloud unavailable",e)}
 let lumenNickname="";
@@ -314,7 +315,7 @@ function updateAttemptUI(){
  const a=attemptEngine.snapshot(),mask=document.getElementById("attemptMask"),pause=document.getElementById("attemptPause"),abandon=document.getElementById("attemptAbandon");
  if(!mask)return;
  const ready=a?.state===ATTEMPT_STATES.READY,paused=a?.state===ATTEMPT_STATES.PAUSED;
- mask.hidden=!(ready||paused);
+ mask.hidden=!(ready||paused)||(ready&&learningQuestActive());
  document.getElementById("attemptMaskTitle").textContent=paused?"Tentative en pause":"Touchez la grille pour commencer";
  document.getElementById("attemptMaskCopy").textContent=paused?"Reprendre pour continuer la même tentative.":"Le chrono démarrera au premier geste.";
  if(pause){pause.hidden=!a||![ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(a.state);pause.textContent=paused?"Reprendre":"Pause"}
@@ -374,10 +375,11 @@ function showVerificationErrors(errors){
  verifyPending=errors;errors.forEach(e=>guidedCell(e.r,e.c)?.classList.add("verify-error"));
  const g=errors.filter(e=>e.kind==="guardian").length,x=errors.length-g;
  document.getElementById("verifyCopy").textContent=errors.length+" choix incorrect"+(errors.length>1?"s":"")+" détecté"+(errors.length>1?"s":"")+". "+(g?g+" Gardien"+(g>1?"s":"")+" mal placé"+(g>1?"s":"")+". ":"")+(x?x+" case"+(x>1?"s":"")+" écartée"+(x>1?"s":"")+" à tort.":"");
- document.getElementById("verifyCard").hidden=false;board.setAttribute("aria-disabled","true");
+ document.getElementById("scriptedLearn").hidden=true;document.getElementById("verifyCard").hidden=false;board.setAttribute("aria-disabled","true");
 }
 function runVerification(){
- if(celebrated||guidedPending||verifyPending||learningSequenceActive||scriptedLearningActive())return;
+ if(celebrated||guidedPending||verifyPending||scriptedLearningActive())return;
+ showLearningTip("verify","Vérifier tes choix","Vérifier examine les cases que tu as déjà marquées. La première vérification est gratuite ; les suivantes coûtent un Éclat. Elle compte comme une aide.");
  if(!consumeVerifyCost())return;
  attemptEngine.markAssistance();
  const errors=verificationErrors();
@@ -389,160 +391,61 @@ function fixVerificationErrors(){
  hist.push(state.map(x=>x.slice()));verifyPending.forEach(e=>state[e.r][e.c]=0);verifyPending=null;
  document.getElementById("verifyCard").hidden=true;board.removeAttribute("aria-disabled");msg.textContent="Les choix incorrects ont été effacés.";render();
 }
-let learningStage="territories",learningSource=null,learningGroups=null,learningAnchor=null,learningRunId=0,learningStepCells=[],learningHistory=[],learningHistoryIndex=-1,learningRestoring=false;
-function scriptedLearningActive(){return levelIndex<=1}
-function scriptedTarget(){
- if(!scriptedLearningActive())return null;
- const order=puz.learnOrder||puz.sol.map((c,r)=>[r,c]);
- return order.find(([r,c])=>state[r][c]!==2)||null;
-}
-function labelLearningTerritories(){
- for(const territory of new Set(puz.reg.flat())){
-  const cells=[];for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(puz.reg[r][c]===territory)cells.push([r,c]);
-  const cy=cells.reduce((v,p)=>v+p[0],0)/cells.length,cx=cells.reduce((v,p)=>v+p[1],0)/cells.length;
-  const [r,c]=cells.sort((a,b)=>(a[0]-cy)**2+(a[1]-cx)**2-(b[0]-cy)**2-(b[1]-cx)**2)[0];
-  const label=document.createElement("span");label.className="territory-label";label.textContent=territory+1;
-  guidedCell(r,c)?.appendChild(label);
- }
-}
+let learningStage="place",learningTip=null,learningTipSeen=new Set();
+function learningQuestActive(){return levelIndex===0&&!socialChallenge&&(!replayMode||learningReplayActive())}
+function scriptedLearningActive(){return learningQuestActive()&&!!state&&learningStep(puz,state).phase!=="complete"}
+function learningMarkAllowed(r,c){const step=learningStep(puz,state);return step.phase!=="place"&&learningAllows(step,r,c)}
+function scriptedAllowsGuardian(r,c){const step=learningStep(puz,state);return step.phase==="place"&&learningAllows(step,r,c)}
+function learningDragAllowed(){return !scriptedLearningActive()||["reuse","drag","practice"].includes(learningStep(puz,state).phase)}
 function positionLearningCoach(){
- const wrap=document.getElementById("learningBoardWrap"),card=document.getElementById("scriptedLearn"),link=document.getElementById("learningCoachLink");
- if(!wrap||card.hidden||!scriptedLearningActive())return;
- wrap.style.setProperty("--coach-space",(card.offsetHeight+20)+"px");
- const target=learningAnchor||(learningStage==="place"?scriptedTarget():learningSource)||[Math.floor(n/2),Math.floor(n/2)];
- const cell=guidedCell(...target);if(!cell)return;
- const wr=wrap.getBoundingClientRect(),cr=cell.getBoundingClientRect(),tx=cr.left-wr.left+cr.width/2,ty=cr.top-wr.top+6;
- const left=Math.max(8,Math.min(tx-card.offsetWidth/2,wrap.clientWidth-card.offsetWidth-8));card.style.left=left+"px";
- const arrow=Math.max(20,Math.min(tx-left,card.offsetWidth-20));card.style.setProperty("--coach-arrow-x",arrow+"px");
- const sx=left+arrow,sy=card.offsetHeight+8;
- link.removeAttribute("hidden");link.setAttribute("viewBox","0 0 "+wrap.clientWidth+" "+wrap.clientHeight);
- link.innerHTML='<path d="M '+sx+' '+sy+' C '+sx+' '+(sy+20)+', '+tx+' '+(ty-25)+', '+tx+' '+ty+'" fill="none" stroke="#e8bd64" stroke-width="2" stroke-dasharray="4 4"/><circle cx="'+tx+'" cy="'+ty+'" r="4" fill="#ffd06b" stroke="#122233" stroke-width="2"/>';
+ const card=document.getElementById("scriptedLearn");
+ if(card.hidden)return;
+ const rect=board.getBoundingClientRect(),mobile=innerWidth<=1100;
+ const width=Math.min(mobile?innerWidth-20:330,innerWidth-20);
+ card.style.width=width+"px";
+ const actions=document.querySelector(".actions").getBoundingClientRect();
+ const top=mobile?Math.min(innerHeight-card.offsetHeight-8,Math.max(rect.bottom,actions.bottom)+10):Math.max(12,Math.min(rect.top,innerHeight-card.offsetHeight-12));
+ const left=mobile?Math.max(10,(innerWidth-width)/2):rect.right+14+width<=innerWidth?rect.right+14:Math.max(10,rect.left-width-14);
+ card.style.left=left+"px";card.style.top=top+"px";
 }
 window.addEventListener("resize",()=>requestAnimationFrame(positionLearningCoach));
+function showLearningTip(id,title,copy){
+ if(socialChallenge||!((levelIndex===0&&learningQuestActive())||(levelIndex===1&&!replayMode))||learningTipSeen.has(id))return;
+ learningTipSeen.add(id);learningTip={title,copy};updateScriptedLearning();
+}
 function updateScriptedLearning(){
- const card=document.getElementById("scriptedLearn"),button=document.getElementById("scriptedLearnNext"),wrap=document.getElementById("learningBoardWrap"),link=document.getElementById("learningCoachLink");if(!card||!button)return;
+ const card=document.getElementById("scriptedLearn"),wrap=document.getElementById("learningBoardWrap");if(!card)return;
+ const guided=scriptedLearningActive(),step=guided?learningStep(puz,state):null;
+ learningStage=step?.phase||"complete";
  board.dataset.learningStage=learningStage;
- board.querySelectorAll(".cell").forEach(x=>x.classList.remove("scripted-focus","scripted-territory","scripted-dim","learning-source","learning-zone"));
- board.querySelectorAll(".territory-label").forEach(x=>x.remove());
- const visible=scriptedLearningActive()&&learningStage!=="complete";wrap.classList.toggle("is-learning",visible);
- if(!visible){card.hidden=true;link.setAttribute("hidden","");return}
- card.hidden=false;
- if(!learningSequenceActive&&!learningRestoring)rememberLearningStep();
- button.hidden=learningStage==="place";button.disabled=learningSequenceActive;button.textContent="Suivant →";
- document.getElementById("scriptedLearnPrev").disabled=learningHistoryIndex<=0&&!learningSequenceActive;
- const hint=document.getElementById("scriptedLearnHint");hint.hidden=learningStage==="place"||["row","column","neighbors","territory"].includes(learningStage);hint.textContent="Touche n’importe où pour continuer";
- const title=document.getElementById("scriptedLearnTitle"),copy=document.getElementById("scriptedLearnCopy");
- if(learningStage==="territories"||learningStage==="rule"){
-  labelLearningTerritories();
-  if(learningStage==="territories"){title.textContent="Cinq couleurs, cinq territoires";copy.textContent="Observe les contours et les numéros : chaque couleur forme un territoire."}
-  else{title.textContent="Un Gardien par territoire";copy.textContent="Chaque territoire doit avoir exactement un Gardien. Il en faudra donc cinq pour terminer cette grille."}
- }else if(learningStage==="place"){
-  const target=scriptedTarget();if(!target)return;
-  const [r,c]=target,territory=puz.reg[r][c];guidedCell(r,c)?.classList.add("scripted-focus");
-  board.querySelectorAll(".cell").forEach(x=>{if(puz.reg[Number(x.dataset.row)][Number(x.dataset.col)]===territory)x.classList.add("scripted-territory")});
-  const first=!state.flat().includes(2);title.textContent=first?"Pose ton premier Gardien ici":"Cette case est la seule possibilité";
-  copy.textContent=first&&levelIndex===0?"Ce petit territoire au centre n’a qu’une case. Comme partout dans LUMEN : 1er toucher = écarter, 2e toucher = poser le Gardien.":"Les autres cases de ce territoire sont écartées. Touche la case illuminée pour poser son Gardien.";
- }else{
-  if(learningSource){
-   const [r,c]=learningSource;guidedCell(r,c)?.classList.add("learning-source");
-   for(let y=0;y<n;y++)for(let x=0;x<n;x++){
-    const inZone=learningStage==="row"?y===r:learningStage==="column"?x===c:learningStage==="neighbors"?Math.abs(y-r)<=1&&Math.abs(x-c)<=1:puz.reg[y][x]===puz.reg[r][c];
-    if(inZone&&!(y===r&&x===c)&&!learningVisibleAuto.has(y+","+x))guidedCell(y,x)?.classList.add("learning-zone");
-   }
-  }
-  if(learningStage==="row"){title.textContent="À toi de marquer la ligne";copy.textContent="Un seul Gardien par ligne. Marque toi-même les cases illuminées où un Gardien ne peut plus aller."}
-  else if(learningStage==="column"){title.textContent="Marque maintenant la colonne";copy.textContent="Même règle pour la colonne : marque les cases illuminées."}
-  else if(learningStage==="neighbors"){title.textContent="Apprends le cliquer-glisser";copy.textContent=(matchMedia("(pointer:coarse)").matches?"Maintiens le doigt et glisse":"Maintiens le clic et glisse")+" sur les cases illuminées. Deux Gardiens ne peuvent pas se toucher, même en diagonale."}
-  else{title.textContent="Marque le territoire occupé";copy.textContent="Ce territoire a déjà son Gardien. Marque ses autres cases impossibles."}
-  const zone=learningStage==="row"?"de cette ligne":learningStage==="column"?"de cette colonne":learningStage==="neighbors"?"adjacentes au Gardien":"de ce territoire";
-  if(!learningStepCells.length)copy.textContent="Les cases "+zone+" sont déjà marquées.";
-  else copy.textContent+=" Il reste "+learningStepCells.filter(([r,c])=>state[r][c]!==1).length+" case(s) à marquer.";
- }
- positionLearningCoach();requestAnimationFrame(positionLearningCoach);
+ board.classList.remove("scripted-board");board.classList.toggle("learning-guided",guided);
+ board.querySelectorAll(".cell").forEach(cell=>{
+  cell.classList.remove("scripted-focus","scripted-territory","scripted-dim","learning-source","learning-zone");
+  const r=Number(cell.dataset.row),c=Number(cell.dataset.col),allowed=guided&&learningAllows(step,r,c);
+  cell.classList.toggle("coach-dim",guided&&!allowed&&(step.territory===undefined||puz.reg[r][c]!==step.territory));
+  cell.classList.toggle("coach-zone",guided&&(allowed||(step.territory!==undefined&&puz.reg[r][c]===step.territory)));
+  cell.classList.toggle("coach-target",guided&&step.number===1&&allowed);
+  cell.setAttribute("aria-disabled",guided&&!allowed?"true":"false");
+ });
+ wrap.classList.remove("is-learning");
+ const blocked=celebrated||!!guidedPending||!!verifyPending;
+ card.hidden=blocked||(!guided&&!learningTip);
+ document.getElementById("learningCoachDismiss").hidden=guided;
+ if(levelIndex<=1&&!socialChallenge)for(const id of ["undo","hint","verify"])document.getElementById(id).disabled=guided;
+ if(card.hidden)return;
+ const text=step?learningCopy(step,state,matchMedia("(pointer:coarse)").matches):learningTip;
+ document.getElementById("scriptedLearnTitle").textContent=text.title;
+ document.getElementById("scriptedLearnCopy").textContent=text.copy;
+ requestAnimationFrame(positionLearningCoach);
 }
-function scriptedAllowsGuardian(r,c){const t=scriptedTarget();return learningStage==="place"&&!!t&&t[0]===r&&t[1]===c}
-function learningExpectedKeys(){return new Set((learningStepCells||[]).map(([r,c])=>r+","+c))}
-function learningMarkAllowed(r,c){return ["row","column","neighbors","territory"].includes(learningStage)&&learningExpectedKeys().has(r+","+c)}
-function learningMarksComplete(){return !!learningStepCells.length&&learningStepCells.every(([r,c])=>state[r]?.[c]===1)}
-function finishManualLearningMarks(){
- if(!scriptedLearningActive()||!learningMarksComplete())return false;
- for(const [r,c] of learningStepCells)learningVisibleAuto.add(r+","+c);
- learningStepCells=[];learningAnchor=learningSource;learningSequenceActive=false;
- if(learningStage==="row")learningStage="column";
- else if(learningStage==="column")learningStage="neighbors";
- else if(learningStage==="neighbors"&&learningGroups?.[2]?.some(([r,c])=>state[r][c]===0))learningStage="territory";
- else if(learningStage==="neighbors"||learningStage==="territory"){learningSource=null;learningGroups=null;learningStage=scriptedTarget()?"place":"complete"}
- prepareManualLearningStage();paintBoardState();if(learningStage==="complete")render();return true;
-}
-function prepareManualLearningStage(){
- if(!scriptedLearningActive()||!learningGroups)return;
- const index=learningStage==="row"?0:learningStage==="column"?1:learningStage==="neighbors"?3:learningStage==="territory"?2:-1;
- if(index<0)return;
- learningStepCells=learningGroups[index].filter(([r,c])=>state[r][c]===0);
- learningAnchor=learningStepCells[0]||learningSource;
- if(!learningStepCells.length){
-  if(learningStage==="row")learningStage="column";
-  else if(learningStage==="column")learningStage="neighbors";
-  else if(learningStage==="neighbors"&&learningGroups[2].some(([r,c])=>state[r][c]===0))learningStage="territory";
-  else {learningSource=null;learningGroups=null;learningStage=scriptedTarget()?"place":"complete"}
-  prepareManualLearningStage();
- }
-}
-async function animateLearningExclusions(index){
- const runId=++learningRunId,cells=learningGroups[index].filter(([r,c])=>state[r][c]===0&&!learningVisibleAuto.has(r+","+c));learningStepCells=cells.map(x=>x.slice());learningSequenceActive=cells.length>0;
- learningAnchor=cells[0]||learningSource;paintBoardState();
- for(const [r,c] of cells){
-  learningAnchor=[r,c];positionLearningCoach();
-  await new Promise(resolve=>setTimeout(resolve,500));
-  if(runId!==learningRunId)return;
-  if(learningVisibleAuto.has(r+","+c)||state[r][c]!==0)continue;
-  learningVisibleAuto.add(r+","+c);paintCell(r,c);
-  const cell=guidedCell(r,c);if(cell){cell.classList.add("learning-tick");setTimeout(()=>cell.classList.remove("learning-tick"),500)}
- }
- if(runId!==learningRunId)return;
- learningSequenceActive=false;updateScriptedLearning();
-}
-async function advanceLearningStep(){
- if(!scriptedLearningActive()||learningSequenceActive)return;
- if(learningHistoryIndex<learningHistory.length-1){restoreLearningStep(learningHistoryIndex+1);return}
- learningAnchor=null;learningStepCells=[];
- if(learningStage==="territories")learningStage="rule";
- else if(learningStage==="rule")learningStage="place";
- else if(learningStage==="row"){learningStage="column";await animateLearningExclusions(1);return}
- else if(learningStage==="column"){learningStage="neighbors";await animateLearningExclusions(3);return}
- else if(learningStage==="neighbors"&&learningGroups[2].length){learningStage="territory";await animateLearningExclusions(2);return}
- else if(learningStage==="neighbors"||learningStage==="territory"){
-  learningSource=null;learningGroups=null;learningStage=scriptedTarget()?"place":"complete";
- }else return;
- paintBoardState();if(learningStage==="complete")render();
-}
-
-function rememberLearningStep(){
- const snapshot={stage:learningStage,source:learningSource?.slice()||null,groups:learningGroups?.map(g=>g.map(p=>p.slice()))||null,anchor:learningAnchor?.slice()||null,cells:learningStepCells.map(p=>p.slice()),state:state.map(row=>row.slice()),marks:[...(learningVisibleAuto||[])]};
- if(JSON.stringify(learningHistory[learningHistoryIndex])===JSON.stringify(snapshot))return;
- learningHistory.splice(learningHistoryIndex+1);learningHistory.push(snapshot);learningHistoryIndex=learningHistory.length-1;
-}
-function restoreLearningStep(index){
- const snapshot=learningHistory[index];if(!snapshot)return;
- learningRunId++;learningSequenceActive=false;learningHistoryIndex=index;learningRestoring=true;
- learningStage=snapshot.stage;learningSource=snapshot.source?.slice()||null;learningGroups=snapshot.groups?.map(g=>g.map(p=>p.slice()))||null;learningAnchor=snapshot.anchor?.slice()||null;learningStepCells=snapshot.cells.map(p=>p.slice());state=snapshot.state.map(row=>row.slice());learningVisibleAuto=new Set(snapshot.marks);
- board.querySelectorAll(".learning-tick").forEach(x=>x.classList.remove("learning-tick"));paintBoardState();learningRestoring=false;
-}
-function previousLearningStep(){
- if(!scriptedLearningActive())return;
- const index=learningSequenceActive?learningHistoryIndex:learningHistoryIndex-1;
- if(index>=0)restoreLearningStep(index);
-}
+function finishManualLearningMarks(){updateScriptedLearning();return true}
 function handleLearningTap(event){
- if(!scriptedLearningActive()||learningStage==="complete"||document.getElementById("scriptedLearn").hidden)return;
+ if(!scriptedLearningActive())return;
  const target=event.target instanceof Element?event.target:null;if(!target)return;
- if(target.closest("#scriptedLearnPrev")){event.preventDefault();event.stopImmediatePropagation();previousLearningStep();return}
- // Keep account, help, reset and modal actions available.
- if(target.closest("button,input,a,[role=button]")&&!target.closest("#scriptedLearnNext"))return;
- if(document.querySelector('#mapModal:not([hidden]),#tutorialOverlay:not([hidden]),#feedbackModal:not([hidden]),#rulesModal:not([hidden]),#shardRulesModal:not([hidden]),#badgeRulesModal:not([hidden]),#skyReveal:not([hidden]),#successOverlay.show'))return;
- if(learningStage==="place")return;
+ if(document.querySelector('#mapModal:not([hidden]),#rulesModal:not([hidden]),#feedbackModal:not([hidden]),#tutorialOverlay:not([hidden]),#shardRulesModal:not([hidden]),#badgeRulesModal:not([hidden])'))return;
+ if(target.closest("#new,#tutorialHelp,#attemptPause,#attemptMask,#mobileAccount,#mobileAuthPopover,#feedbackBtn"))return;
+ if(target.closest("#board .cell"))return;
  event.preventDefault();event.stopImmediatePropagation();
- if(!learningSequenceActive)advanceLearningStep();
 }
 
 function maybeShowManualCrossTip(){
@@ -562,6 +465,7 @@ function drawGuidedLink(a,b){
 }
 function showGuidedConflict(r,c,info){
  attemptEngine.markAssistance();
+ learningTip=null;document.getElementById("scriptedLearn").hidden=true;
  guidedPending={r,c,info};
  const attempt=guidedCell(r,c);if(!attempt)return;
  attempt.innerHTML='<span class="lumen-orb" aria-label="Gardien tenté"></span>';attempt.classList.add("guided-attempt");
@@ -573,7 +477,9 @@ function showGuidedConflict(r,c,info){
   if(info.type==="touch")drawGuidedLink([r,c],info.cause);
  }
  document.getElementById("guidedTitle").textContent=info.title;
- document.getElementById("guidedCopy").textContent=info.copy;
+ const introduceAssist=levelIndex<=1&&!learningTipSeen.has("assist");
+ if(introduceAssist)learningTipSeen.add("assist");
+ document.getElementById("guidedCopy").textContent=info.copy+(introduceAssist?" Assist te prévient quand une action enfreint une règle. Corrige ton choix, puis continue.":"");
  document.getElementById("guidedCard").hidden=false;
  board.setAttribute("aria-disabled","true");
 }
@@ -598,7 +504,7 @@ function configureLearningMode(){
  for(const id of ["undo","hint","verify"])document.getElementById(id).disabled=scriptedLearningActive();
  const cb=document.getElementById("autoCross"),wrap=document.getElementById("autoCrossWrap"),note=document.getElementById("learningNote"),guided=document.getElementById("guidedErrors"),gwrap=document.getElementById("guidedErrorsWrap");
  if(!cb||!wrap)return;
- if(levelIndex<=4){cb.checked=false;cb.disabled=true;wrap.hidden=false;wrap.classList.add("learning-locked");if(note){note.hidden=false;note.textContent="Apprentissage · joue en manuel pour apprendre à écarter les cases toi-même."}}
+ if(levelIndex<=4){cb.checked=false;cb.disabled=true;wrap.hidden=false;wrap.classList.add("learning-locked");if(note){note.hidden=true;note.textContent=""}}
  else{cb.disabled=false;cb.checked=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=levelIndex>5;note.textContent=levelIndex===5?"Nouveau · Marquage auto débloqué. Active-le si tu veux que LUMEN écarte les cases impossibles à ta place.":""}}
  if(guided&&gwrap){
   let saved=null;try{saved=localStorage.getItem("lumenGuidedErrors")}catch(_){}
@@ -640,10 +546,10 @@ function maybeShowAutonomy(){
 }
 function prepareQuestStart(){let q=bonusChallengeFor(levelIndex),o=document.getElementById("questStart");questFailed=false;if(!q||lumenProgress.stars[q.id]){questStarted=true;o.hidden=true;resumeGameClock();return}questStarted=false;pauseGameClock();document.getElementById("questStartTitle").textContent=q.title;document.getElementById("questStartRule").textContent=q.copy+" Récompense : +25 XP et +1 ✦ éclat.";o.hidden=false}
 document.getElementById("questGo").onclick=()=>{document.getElementById("questStart").hidden=true;questStarted=true;clock();updateAttemptUI()};
-function init(){setLearningReplaySuccessMode(false);document.getElementById("successNew").textContent="Quête suivante";learningHistory=[];learningHistoryIndex=-1;learningRestoring=false;learningStepCells=[];learningRunId++;learningAnchor=null;learningSequenceActive=false;learningVisibleAuto=scriptedLearningActive()?new Set():null;learningStage="territories";learningSource=null;learningGroups=null;choose();configureLearningMode();applyQuestRestrictions();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl)cl.textContent="Quête "+(levelIndex+1);document.getElementById("difficulty").textContent=n===7?"7 × 7 · constellation étendue":n===8?"8 × 8 · constellation étendue":"";state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];const hintCard=document.getElementById("hintCard");if(hintCard)hintCard.hidden=true;celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,100);
+function init(){setLearningReplaySuccessMode(false);document.getElementById("successNew").textContent="Quête suivante";learningTip=null;learningTipSeen=new Set();learningStage="place";choose();configureLearningMode();applyQuestRestrictions();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl)cl.textContent="Quête "+(levelIndex+1);document.getElementById("difficulty").textContent=n===7?"7 × 7 · constellation étendue":n===8?"8 × 8 · constellation étendue":"";state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];const hintCard=document.getElementById("hintCard");if(hintCard)hintCard.hidden=true;celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,100);
  const restored=attemptEngine.restore({questId:levelIndex+1,mode:attemptMode()});
  if(restored&&Array.isArray(restored.board)&&restored.board.length===n){state=restored.board.map(row=>row.slice());render()}else {const perf=lumenProgress.performances?.[levelIndex],eligible=performanceEligibility(levelIndex),hasEligible=Object.values(eligible).some(Boolean),qualifying=hasEligible&&perf?.lastQualifiedDay!==localCalendarDay();attemptEngine.create({questId:levelIndex+1,mode:attemptMode(),qualifying:socialChallenge?false:qualifying,challengeId:socialChallenge?.challenge_id||null,board:state});}
- clock();prepareQuestStart();updateAttemptUI()}
+ clock();prepareQuestStart();updateAttemptUI();updateScriptedLearning()}
 function drawLevels(){let e=document.getElementById("levels");e.innerHTML="";LEVELS.forEach(([name,x])=>{let b=document.createElement("button");b.className="level"+(x===n?" active":"");b.innerHTML=name+"<small>"+x+" × "+x+"</small>";b.onclick=()=>{n=x;init()};e.appendChild(b)})}
 function activeGameMs(){return attemptEngine.activeMs()}
 function activeGameSeconds(){return Math.max(0,Math.floor(activeGameMs()/1000))}
@@ -657,23 +563,7 @@ function displayedCellState(r,c){
  // 0 empty, 1 manual X, 2 diamond, 3 derived automatic X
  if(state[r][c]===2)return 2;
  if(state[r][c]===1)return 1;
- return isAutoCross(r,c)&&learningAutoAllowed(r,c)?3:0;
-}
-let learningSequenceActive=false,learningVisibleAuto=null;
-function learningAutoAllowed(r,c){return !scriptedLearningActive()||learningVisibleAuto===null||learningVisibleAuto.has(r+","+c)}
-function learningExclusionsFrom(r,c){
- const groups=[[],[],[],[]],seen=new Set(),add=(g,y,x)=>{const k=y+","+x;if((y===r&&x===c)||seen.has(k)||state[y][x]!==0||learningVisibleAuto?.has(k))return;seen.add(k);groups[g].push([y,x])};
- for(let x=0;x<n;x++)add(0,r,x);
- for(let y=0;y<n;y++)add(1,y,c);
- for(let y=Math.max(0,r-1);y<=Math.min(n-1,r+1);y++)for(let x=Math.max(0,c-1);x<=Math.min(n-1,c+1);x++)add(3,y,x);
- for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(puz.reg[y][x]===puz.reg[r][c])add(2,y,x);
- return groups;
-}
-async function runLearningPlacement(r,c){
- // The tutorial uses the real board state: exclusions are made by the player, never animated into existence.
- if(learningHistoryIndex<learningHistory.length-1){restoreLearningStep(learningHistoryIndex+1);return}
- learningSource=[r,c];learningGroups=learningExclusionsFrom(r,c);learningStage="row";learningSequenceActive=false;
- prepareManualLearningStage();paintBoardState();
+ return isAutoCross(r,c)?3:0;
 }
 
 const LUMEN_APP_VERSION="beta-2026.10";
@@ -779,6 +669,8 @@ function celebrateSuccess(){
  document.getElementById("successTime").textContent=document.getElementById("time").textContent;
  const qr=document.getElementById("questResult");if(ch){qr.hidden=false;qr.className="quest-result "+(questPassed||lumenProgress.stars[ch.id]?"success":"fail");qr.textContent=questPassed?"✦ Défi réussi ! +25 XP et un éclat gagné.":lumenProgress.stars[ch.id]?"✦ Défi déjà accompli":"Défi échoué — la quête est tout de même accomplie."}else qr.hidden=true;
  const m=milestoneFor(levelIndex),sub=document.getElementById("successSub");if(sub)sub.textContent=m?(m.kind==="boss"?"Défi final réussi · constellation complétée":"Défi intermédiaire réussi · +1 ★ bonus"):(questPassed?"Quête réussie · +25 XP et +1 ✦":"Ton ciel progresse");
+ if(levelIndex===1&&sub)sub.textContent="Ton ciel progresse. Rapidité arrive à la quête 3 ; Autonomie et Maîtrise à la quête 6.";
+ if(levelIndex<=1)try{localStorage.setItem("lumenTutorialSeen","1")}catch(_){}
  configureSuccessFeedback(questPassed);
  const skyEarnedAfter=skyStarsEarned(),crossedConstellation=firstCompletion&&(()=>{let total=0;for(const cs of CONSTELLATIONS){total+=cs.count;if(skyEarnedBefore<total&&skyEarnedAfter>=total)return true}return false})();
  const checkpoint=firstCompletion&&!crossedConstellation?constellationCheckpoint(skyEarnedBefore,skyEarnedAfter):null;
@@ -846,11 +738,13 @@ function markDragCross(r,c){
  if(state[r][c]!==1){state[r][c]=1;dragCross.changed=true;paintCell(r,c)}
 }
 board.addEventListener("pointerdown",e=>{
- ensureAttemptStarted();
- if(celebrated||guidedPending||verifyPending||e.pointerType==="mouse")return;
- if(scriptedLearningActive()&&!["row","column","neighbors","territory"].includes(learningStage))return;
+ if(celebrated||guidedPending||verifyPending)return;
+ if(!learningDragAllowed())return;
  const cell=e.target.closest(".cell");if(!cell)return;
- e.preventDefault();
+ if(scriptedLearningActive()&&!learningMarkAllowed(Number(cell.dataset.row),Number(cell.dataset.col)))return;
+ if(e.pointerType==="mouse"&&e.button!==0)return;
+ ensureAttemptStarted();
+ if(e.pointerType!=="mouse")e.preventDefault();
  dragCross={id:e.pointerId,startX:e.clientX,startY:e.clientY,dragging:false,changed:false,visited:new Set(),snapshot:state.map(x=>x.slice())};
 },{passive:false});
 function moveDragCross(e){
@@ -878,7 +772,8 @@ board.addEventListener("pointerup",endDragCross);
 board.addEventListener("pointercancel",endDragCross);
 
 function render(){
- board.classList.toggle("scripted-board",scriptedLearningActive());
+ board.dataset.size=String(n);
+ board.classList.remove("scripted-board");
  board.style.gridTemplateColumns=`repeat(${n},minmax(0,1fr))`;board.style.gridTemplateRows=`repeat(${n},minmax(0,1fr))`;board.innerHTML="";
  for(let r=0;r<n;r++)for(let c=0;c<n;c++){
   let d=document.createElement("div");
@@ -897,13 +792,14 @@ function render(){
   else d.innerHTML="";
   if(shown===3)d.classList.add("auto-x");
   d.dataset.row=r;d.dataset.col=c;
-  d.onclick=async()=>{ensureAttemptStarted();if(celebrated||dragCrossSuppressClick||guidedPending||verifyPending||learningSequenceActive||performance.now()<suppressGuidedClickUntil)return;
+  d.onclick=async()=>{if(celebrated||dragCrossSuppressClick||guidedPending||verifyPending||performance.now()<suppressGuidedClickUntil)return;
  let shown=displayedCellState(r,c),next=shown===3?2:(state[r][c]+1)%3,currentGuardians=state.flat().filter(v=>v===2).length;
  if(scriptedLearningActive()){
-  if(learningStage==="place"){if(!scriptedAllowsGuardian(r,c)){msg.textContent="Touche la case illuminée.";return}if(state[r][c]===0){next=1}else if(state[r][c]===1){next=2}else next=0}
+  if(learningStage==="place"){if(!scriptedAllowsGuardian(r,c))return;if(state[r][c]===0){next=1}else if(state[r][c]===1){next=2}else next=0}
   else if(learningMarkAllowed(r,c)){next=1}
-  else {msg.textContent="Marque uniquement les cases illuminées.";return}
+  else return;
  }
+ ensureAttemptStarted();
  if(next===2&&state[r][c]!==2&&currentGuardians>=n)return;
  if(guidedErrorsEnabled()){
   const guidedError=guidedConflictForAction(r,c,next);
@@ -921,7 +817,7 @@ function render(){
  if(shown===3){state[r][c]=2}else{state[r][c]=next}
  if(next===2&&document.getElementById("autoCross")?.checked)attemptEngine.markAssistance();
  clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";
- if(scriptedLearningActive()&&next===2)await runLearningPlacement(r,c);else {paintBoardState();if(scriptedLearningActive()&&next===1)finishManualLearningMarks()}persistAttemptBoard();
+ paintBoardState();updateScriptedLearning();if(levelIndex===1&&next===2)showLearningTip("tools","Cette quête est à toi","Tu joues librement. Vérifier examine tes choix ; Indice aide à trouver une déduction. Le premier usage de chacun est gratuit. Utilise-les seulement si tu en as besoin.");persistAttemptBoard();
  const q=state.flat().filter(v=>v===2).length;
  if(q===n&&!scriptedLearningActive())render()
 };board.appendChild(d)
@@ -958,15 +854,16 @@ function clearHintDisplay(){
  hi=null;hiCells=[];const card=document.getElementById("hintCard");if(card)card.hidden=true;
 }
 function showHintMessage(text){
+ learningTip=null;document.getElementById("scriptedLearn").hidden=true;
  const raw=String(text||""),card=document.getElementById("hintCard"),title=document.getElementById("hintTitle"),copy=document.getElementById("hintCopy");
  if(!card||!title||!copy){msg.textContent=raw;return}
  let label="Indice Lumen",body=raw;
  const match=raw.match(/^(Piste|Indice final|Indice|À jouer|Marquage manquant|⚠️ Erreur)\s*:\s*(.*)$/s);
  if(match){label=match[1]==="⚠️ Erreur"?"À vérifier":match[1]==="Marquage manquant"?"Marquage à compléter":match[1];body=match[2]}
- title.textContent=label;copy.textContent=body;card.hidden=false;msg.textContent="";
+ title.textContent=label;copy.textContent=body+(levelIndex===1&&hintUsesThisGame===1?" Cet indice est offert. Tu peux demander une explication plus précise si tu en as besoin.":"");card.hidden=false;msg.textContent="";
 }
 document.getElementById("hint").onclick=()=>{
- if(learningSequenceActive||scriptedLearningActive())return;
+ if(scriptedLearningActive())return;
  if(!consumeHintCost())return;
  hi=null; hiCells=[];
 
@@ -1112,7 +1009,7 @@ if(runTestsButton)runTestsButton.onclick=runHintTests;
 
 const hintClose=document.getElementById("hintClose");
 if(hintClose)hintClose.onclick=()=>{clearHintDisplay();hintStage=0;hintFocus=null;render()};
-document.getElementById("undo").onclick=()=>{if(celebrated||learningSequenceActive||scriptedLearningActive())return;if(hist.length){state=hist.pop();clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";render();persistAttemptBoard()}};
+document.getElementById("undo").onclick=()=>{if(celebrated||scriptedLearningActive())return;if(hist.length){state=hist.pop();clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";render();persistAttemptBoard()}};
 const ac=document.getElementById("autoCross");
 const lumenAutoCrossStored=localStorage.getItem("lumenAutoCross");const legacyAutoCrossStored=localStorage.getItem("regaliaAutoCross");ac.checked=(lumenAutoCrossStored??legacyAutoCrossStored)!=="0";if(lumenAutoCrossStored===null&&legacyAutoCrossStored!==null){localStorage.setItem("lumenAutoCross",legacyAutoCrossStored);localStorage.removeItem("regaliaAutoCross")};
 ac.onchange=()=>{if(celebrated){ac.checked=!ac.checked;return}if(levelIndex<=4){ac.checked=false;return}if(ac.checked){autoUsedThisGame=true;attemptEngine.markAssistance()}localStorage.setItem("lumenAutoCross",ac.checked?"1":"0");if(!ac.checked)maybeShowManualCrossTip();hi=null;render()};
@@ -1143,6 +1040,7 @@ function handleSuccessAdvance(){
   if(levelIndex===0){levelIndex=1;loadPuzzle()}else finishLearningReplay();
   return;
  }
+ if(levelIndex===1&&!replayMode&&!socialChallenge){hideSuccess();openJourneyMap(true,{advanceOnClose:true,learningTour:true});return}
  advanceToNextPuzzle();
 }
 document.getElementById("successNew").onclick=handleSuccessAdvance;
@@ -1240,7 +1138,7 @@ function setupOutsideDefaults(){
  const tutorial=document.getElementById("tutorialOverlay");
  if(tutorial)tutorial.addEventListener("click",e=>{if(e.target!==tutorial)return;let seen=false;try{seen=localStorage.getItem("lumenTutorialSeen")==="1"}catch(_){}if(seen)closeTutorial(false)});
 }
-const skyTourSkip=document.getElementById("skyTourSkip");if(skyTourSkip)skyTourSkip.onclick=()=>{document.getElementById("skyTour").hidden=true;try{localStorage.setItem("lumenSkyTourSeen","1")}catch(_){}};
+const skyTourSkip=document.getElementById("skyTourSkip");if(skyTourSkip)skyTourSkip.onclick=()=>{document.getElementById("skyTour").hidden=true;try{localStorage.setItem("lumenSkyTourSeen","1")}catch(_){}closeMapOverlay()};
 
 const openSky=document.getElementById("openSky");if(openSky)openSky.onclick=()=>openJourneyMap(true);
 document.getElementById("closeMap").onclick=closeMapOverlay;document.getElementById("hint").addEventListener("click",()=>{if(!hintWasGranted)return;attemptEngine.markAssistance();hintWasGranted=false;trackLumenEvent("hint_used",levelIndex+1);usedHintThisGame=true;updateHintButton()});
@@ -1255,8 +1153,7 @@ document.getElementById("new").onclick=()=>{
   state=Array.from({length:n},()=>Array(n).fill(0));hist=[];clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";
   attemptEngine.reset(state);render();refreshJourney();
 };
-document.getElementById("scriptedLearnNext").onclick=advanceLearningStep;
-document.getElementById("scriptedLearnPrev").onclick=previousLearningStep;
+document.getElementById("learningCoachDismiss").onclick=()=>{learningTip=null;updateScriptedLearning()};
 document.addEventListener("click",handleLearningTap,true);
 // Start after campaign data are initialized. A deep-linked social challenge resolves its
 // server snapshot before the board is created so campaign progression is never mutated.

@@ -25,9 +25,9 @@ The intended progression:
 4. optional assistance;
 5. autonomous play.
 
-For quests 1–2, use speech bubbles with a pointer to the observed grid zone rather than a fixed instruction banner. Keep the bubble outside the board so it cannot cover a placement. Emphasize newly affected cells; existing exclusion markers must remain stable in the DOM and must not flash or animate again when the explanation changes.
+Quest 1 uses the same board, cell marks, controls and input handlers as ordinary play. A compact contextual bubble stays outside the board and normal action buttons. Spotlight the central singleton for the first Guardian, then whole territories for subsequent deductions. Dim unrelated cells gently; ignore unrelated taps. Keep guidance through the fifth Guardian with increasingly shorter prompts, as requested for issue #57.
 
-The row, column and neighbours are separate explanations. Mark only new exclusions, one every 500 ms. When all relevant cells are already marked, explain that fact instead of replaying an animation. Let a free tap advance after the animation, offer Previous to revisit the exact earlier board state, and keep placement steps dependent on an actual Guardian placement.
+The player marks exclusions manually. Row, column and diagonal neighbors are taught separately; introduce the real touch/mouse drag only after the second Guardian. There are no tutorial Next/Previous buttons or automated marking animations. Quest 2 is free play with dismissible advice at the first actual need, then a short Mon ciel tour. The shared responsive board sizing on short mobile screens reserves room for advice while retaining visible controls and avoiding scroll. Reduced-motion preferences suppress coach transitions.
 
 ## Error UX
 No lives system. When guidance is active, illegal/conflicting Guardian reasoning should identify the relevant rule and source cells. A correction should be persistent enough to be understood rather than disappearing on an accidental outside tap.

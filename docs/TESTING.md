@@ -148,3 +148,11 @@ Any change to challenge behavior must additionally verify:
 - RPC idempotency/concurrency and RLS/direct-write boundaries.
 
 Challenge changes are gameplay-adjacent and therefore still require the complete browser `runHintTests()` suite and strict all-grid catalogue audit before delivery.
+
+## Learning gate (#57)
+
+Run `node scripts/learning-tests.mjs`, then launch an isolated debugging Chrome and run `node scripts/learning-browser-tests.mjs docs/validation/issue57-learning.json`. The browser runner closes its own Chrome. The complete existing browser suite still contains 79 cases per size (316 executions). Two historical source assertions were intentionally renamed/adapted: quest 2 now accepts free play, and drag is enabled for the lesson's reuse/drag/practice phases. Their replacement coverage is the real interaction runner, not an allowlist or deleted regression.
+
+The learning gate checks every taught Guardian is forced by the territory's remaining candidates, no solution cell is excluded, no coach action mutates the board, wrong taps cannot start the attempt, half of a two-tap placement survives reload, actual touch/mouse dragging does not rebuild/scroll the board, and coach bubbles fit without covering the board or normal controls. It also checks quest 1 victory/progression, free quest 2 placement/Verify, normal quest 2 victory, the sky tour and transition to quest 3. Run the full catalogue audit and existing Node/browser/UX/social gates in addition.
+
+Local validation for #57: all 13 Node gates passed, including the unchanged 134-grid / 100-quest catalogue audit. The full browser suite passed 79/79 cases on each of four grid sizes, and the UX suite passed its 12 quest/viewport scenarios. The learning interaction runner passed the full two-quest/tour/replay journey on four viewport sizes. Reports are `docs/validation/issue57-{node,browser,ux,learning}.json`; screenshots are `docs/validation/learning-{360,390,768,1440}.png`. These are isolated local guest-profile results, not live OAuth/cloud or Production validation.
