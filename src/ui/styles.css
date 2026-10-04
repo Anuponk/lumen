@@ -504,3 +504,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 
 /* QA new-player simulation */
 .qa-banner{position:sticky;top:0;z-index:2000;display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 12px;background:#2b1d06;border-bottom:1px solid #d99b2b;color:#ffe6ad;font-size:12px;letter-spacing:.04em}.qa-banner[hidden]{display:none}.qa-banner span{opacity:.78}.qa-banner button{padding:5px 10px;border:1px solid #d99b2b;background:#171006;color:#ffe6ad;border-radius:9px}.qa-mode .app{padding-top:10px}@media(max-width:600px){.qa-banner{flex-wrap:wrap;gap:6px 10px}.qa-banner span{width:100%;text-align:center;order:3}}
+
+.badge-unlock-overlay{position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;background:rgba(3,7,13,.88);padding:24px}
+.badge-unlock-card{width:min(520px,100%);border:1px solid rgba(95,220,255,.28);border-radius:22px;padding:24px;background:#0d1828;box-shadow:0 24px 70px rgba(0,0,0,.45);text-align:center}
+.badge-unlock-card .primary{margin-top:18px;width:100%}
