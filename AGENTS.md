@@ -46,3 +46,18 @@ When a product rule, reward, progression rule, data contract, UX invariant, anal
 - Hide the sender's reference performance until the recipient's attempt is terminal.
 - Challenge play must never mutate campaign progression, stars, badges, daily qualification or unlocks.
 - Guests remain supported but require a display name. Never put PII or performance data in challenge URLs.
+
+
+## Mandatory onboarding impact check
+Onboarding is a dependent product surface, not a one-off tutorial. **Any change to a rule, unlock level, badge eligibility, assistance, interaction gesture, progression concept, navigation destination, or player-facing terminology MUST include an onboarding impact check before delivery.**
+
+For every such change:
+1. Identify whether the concept is introduced, demonstrated, unlocked, or explained anywhere in learning quests, success dialogs, Mon ciel tours, contextual tips, or assistance/badge tutorials.
+2. If the underlying behavior or availability changes, update the corresponding onboarding in the same change/PR.
+3. Prefer deriving tutorial timing from the same source of truth as gameplay. Do not duplicate quest numbers when an eligibility/unlock function can answer the question.
+4. Add/update a regression test that compares onboarding timing/content with the gameplay source of truth.
+5. In the PR description, include an **Onboarding impact** line: list the adapted learning steps, or explicitly state why no onboarding change is required.
+
+Example: if Rapidité moves from quest 3 to quest 8, its introduction must move to the first quest where `performanceEligibility(...).speed` becomes true. A PR that changes eligibility without adapting that teaching milestone is incomplete.
+
+This check is mandatory even when the requested change does not explicitly mention the tutorial.
