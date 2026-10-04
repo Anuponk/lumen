@@ -94,6 +94,23 @@ function setupMobileAuth(){
    if(lumenUser){await lumenSupabase.auth.signOut();return}
    await lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+location.pathname}});
  };
+ const qaSwitch=document.getElementById("qaAccountSwitch"),qaReset=document.getElementById("qaAccountReset");
+ if(qaSwitch){
+   qaSwitch.textContent=qaActive?"Revenir à mon profil réel":"Tester comme nouveau joueur";
+   qaSwitch.onclick=()=>{
+     const url=new URL(location.href);
+     if(qaActive)url.searchParams.delete("qa");else url.searchParams.set("qa","new");
+     location.href=url.pathname+url.search+url.hash;
+   };
+ }
+ if(qaReset){
+   qaReset.hidden=!qaActive;
+   qaReset.onclick=()=>{
+     if(!confirm("Réinitialiser toute la progression de test QA et recommencer comme un nouveau joueur ?"))return;
+     Object.keys(localStorage).filter(key=>key.startsWith("lumenQa")).forEach(key=>localStorage.removeItem(key));
+     const url=new URL(location.href);url.searchParams.set("qa","new");location.href=url.pathname+url.search+url.hash;
+   };
+ }
 }
 
 const {lumenAnonymousId,lumenSessionId,trackLumenEvent,captureReferral}=createAnalytics(()=>lumenSupabase,{localStorage,crypto,location,console,qaMode});
