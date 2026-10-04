@@ -35,6 +35,13 @@ async function runHintTests(){
  test("Apprentissage : après la quête 2 Mon ciel propose une visite contextuelle",()=>{const src=openJourneyMap().toString();return !!document.getElementById("skyTour")&&!!document.getElementById("skyTourSkip")&&src.includes("learningTour")});
  test("Guidage : contrôle activable avec explication persistante",()=>!!document.getElementById("guidedErrors")&&!!document.getElementById("guidedCard")&&typeof guidedConflictForAction==="function"&&typeof showGuidedConflict==="function");
  test("Guidage : validation logique utilise le solveur",()=>guidedConflictForAction.toString().includes("solutions("));
+ test("Guidage : une exclusion qui supprime toute solution est refusée",()=>{
+   const p=CAT[model.n][0],oldP=model.puz,oldS=model.state;
+   model.puz=p;model.state=Array.from({length:model.n},()=>Array(model.n).fill(0));
+   const r=0,c=p.sol[0],conflict=guidedConflictForAction(r,c,1);
+   model.puz=oldP;model.state=oldS;
+   return conflict?.type==="deadend"&&conflict.title.includes("exclusion");
+ });
  test("Guidage : feedback visuel distingue ligne, colonne, territoire et contact",()=>["row","col","region","touch","deadend"].every(k=>guidedConflictForAction.toString().includes('"'+k+'"')));
  test("Rendu : le plateau contient n × n cellules après render",()=>{render();return board.children.length===model.n*model.n});
  test("Mobile : glisser assombrit plusieurs cases",()=>document.querySelector("#board")&&getComputedStyle(board).touchAction==="none"&&typeof moveDragCross==="function");

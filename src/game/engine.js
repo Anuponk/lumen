@@ -151,6 +151,13 @@ function guardianOnlyState(extraR=-1,extraC=-1){
 
 function guidedConflictForAction(r,c,next){
  let {n,puz,state}=getBoard();
+ if(next===1){
+  const candidate=state.map(row=>row.slice());candidate[r][c]=1;
+  let possible=false;
+  try{possible=solutions({n,puz,state:candidate}).length>0}catch(_){possible=puz.sol[r]!==c}
+  if(!possible)return {type:"deadend",cause:null,title:"Cette exclusion bloque la constellation",copy:"En écartant cette case, il ne reste plus de solution possible. Au moins une ligne, une colonne ou un territoire ne pourrait plus recevoir son Gardien."};
+  return null;
+ }
  if(next!==2)return null;
  let direct=null;
  for(let rr=0;rr<n;rr++)for(let cc=0;cc<n;cc++)if(state[rr][cc]===2&&!(rr===r&&cc===c)){
