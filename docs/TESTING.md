@@ -188,3 +188,7 @@ Attempt analytics must use the attempt engine active duration and stable `attemp
 
 ### Quality gate orchestration rule
 Do not duplicate browser/server setup in GitHub Actions. Add new mandatory suites to `scripts/quality-gate.mjs` so local and CI execution stay identical.
+
+
+## Difficulty audit (#81)
+Run `node scripts/difficulty-audit.mjs [optional-report.json]` to measure the campaign independently of player telemetry. The deterministic score combines board size, explainable proof workload and the pressure of `locked/group` rules. It uses fixed thresholds rather than campaign percentiles, so future packs can be compared to the base game. The quality gate runs the audit to ensure every scheduled quest remains fully replayable; changing the score formula requires an explicit product decision and documentation.

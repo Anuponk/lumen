@@ -195,3 +195,11 @@ Real touch tests then exposed two player-facing defects: badge/auto-marking dial
 - Local and CI validation now share `node scripts/quality-gate.mjs`.
 - The runner owns its Node static server and isolated Chrome/Chromium profiles, runs all current Node + browser + UX + learning gates, retains reports and cleans only processes it started.
 - GitHub Actions is intentionally thin and delegates orchestration to this script so local/CI drift cannot silently reappear.
+
+
+## 2026-10-04 — Difficulty measurement foundation (#81)
+- Difficulty changes must start from a reproducible solver-derived metric, not board size or subjective ordering alone.
+- The baseline metric combines board scale, proof-step workload and weighted complex deductions (`group` > `locked` > `single`).
+- Fixed score thresholds keep future packs/add-ons comparable with the base campaign.
+- The report tracks five 20-quest campaign segments, late-game expert density and the highest peaks. Player analytics from #65 will later validate whether solver difficulty correlates with real solve time, resets, help usage and abandonment.
+- Reordering/replacing grids is deliberately a second phase after the baseline curve is measured.

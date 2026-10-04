@@ -10,6 +10,7 @@ const validationDir=path.join(root,"docs","validation");
 fs.mkdirSync(validationDir,{recursive:true});
 const nodeSuites=[
  "audit-catalogue.mjs",
+ "difficulty-audit.mjs",
  "engine-equivalence.mjs",
  "campaign-tests.mjs",
  "persistence-tests.mjs",
