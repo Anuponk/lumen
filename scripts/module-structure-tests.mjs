@@ -26,6 +26,21 @@ const labels=source=>[...source.matchAll(/\btest\("([^"\n]+)"/g)].map(match=>mat
 const tests=labels(fs.readFileSync('src/testing/hint-tests.js','utf8'));
 const originalTests=labels(functionSource(original,'runHintTests'));
 const additionalTests=["UX : Quête suivante est le CTA principal après réussite","UX : les règles sont accessibles à la demande","Vocabulaire : les indices n'utilisent plus l'ancien thème de l'eau","UX : fermer Mon ciel après réussite enchaîne sur la quête suivante","UX : la prochaine quête débloquée est visible comme Nouvelle dans Mon ciel","UX : Mon ciel reste au-dessus du masque de tentative","UX mobile : les contrôles de tentative ne recouvrent pas le raccourci Mon ciel","Navigation : Quête suivante après rejeu reste relative à la quête jouée","Navigation : le rejeu conserve séparément la progression maximale","Apprentissage : poser un Gardien utilise le vrai cycle à deux touchers","Apprentissage : les cinq premières quêtes imposent le jeu manuel","Apprentissage : le Marquage auto se débloque à la quête 6 sans s’activer seul","Apprentissage : après la quête 2 Mon ciel propose une visite contextuelle"];
+// New onboarding/assistance contracts remain explicit: deriving this list from
+// the current suite would hide accidental removal of a regression case.
+additionalTests.push(
+ "Guidage : une exclusion qui supprime toute solution est refusée",
+ "Apprentissage : voir puis comprendre avant d’agir",
+ "Apprentissage : la fin de quête 2 exige explicitement la découverte du ciel",
+ "Apprentissage : le ciel est expliqué zone par zone",
+ "Apprentissage : le déblocage du Marquage auto explique le choix et les badges",
+ "Apprentissage : les fenêtres de jalons cachées ne bloquent pas le plateau",
+ "Apprentissage : le choix du Contrôle guidé explique l’intervention réelle sur les badges",
+ "Apprentissage : Rapidité est introduit exactement à la quête 3",
+ "Apprentissage : Autonomie et Maîtrise sont introduits à la quête 6",
+ "Badges : les jalons pédagogiques suivent l’éligibilité réelle",
+ "Onboarding : les jalons de badges suivent l’éligibilité réelle"
+);
 assert.equal(originalTests.length,66);
 assert.equal(tests.length,originalTests.length+additionalTests.length);
 const intentionalRenames=new Map([["Tutoriel joué : quêtes 1 et 2 n’enseignent que les Gardiens","Apprentissage : les deux premières quêtes guident les actions réelles"],["Tutoriel joué : le glisser des exclusions est bloqué pendant le scénario","Apprentissage : le glissé utilise le plateau normal dans les étapes autorisées"],["Indice : bouton Revoir la quête présent","Indice : fermeture contextuelle remplace Revoir la quête"],["Tutoriel joué : Marquage auto verrouillée sur les deux premières quêtes","Tutoriel joué : Marquage auto verrouillé pendant les cinq premières quêtes"]]);

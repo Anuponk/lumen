@@ -1,3 +1,16 @@
+// Test fixtures enter quests directly. Acknowledge teaching milestones through
+// their real buttons before exercising the board or opening another modal.
+export async function acknowledgeLearningMilestones(evaluate){
+ return evaluate(`(()=>{
+  const acknowledged=[];
+  for(const [overlayId,buttonId] of [["badgeUnlockOverlay","badgeUnlockOk"],["autoCrossUnlockOverlay","autoCrossUnlockOk"]]){
+   const overlay=document.getElementById(overlayId);
+   if(overlay&&!overlay.hidden){document.getElementById(buttonId).click();if(!overlay.hidden)throw Error("Milestone did not close: "+overlayId);acknowledged.push(overlayId)}
+  }
+  return acknowledged;
+ })()`);
+}
+
 export async function connectBrowser(){
  const endpoint=process.env.LUMEN_CDP_URL||'http://127.0.0.1:9222';
  const targets=await(await fetch(endpoint+'/json')).json();

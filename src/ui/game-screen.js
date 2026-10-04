@@ -892,7 +892,9 @@ function render(){
  }
  ensureAttemptStarted();
  if(next===2&&state[r][c]!==2&&currentGuardians>=n)return;
- if(guidedErrorsEnabled()){
+ // The first tap is the intermediate exclusion in the real placement cycle.
+ // Validate the Guardian on the second tap so the correct cell stays playable.
+ if(guidedErrorsEnabled()&&next===2){
   const guidedError=guidedConflictForAction(r,c,next);
   if(guidedError){
    attemptEngine.markAssistance();
@@ -1092,9 +1094,10 @@ get celebrated(){return celebrated},set celebrated(value){celebrated=value},
 get lumenProgress(){return lumenProgress},set lumenProgress(value){lumenProgress=value},
 get ac(){return ac},
 get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
-get replayMode(){return replayMode},set replayMode(value){replayMode=value}
+get replayMode(){return replayMode},set replayMode(value){replayMode=value},
+get learningIntroStep(){return learningIntroStep},set learningIntroStep(value){learningIntroStep=value}
 };
-const runHintTests=createHintTestSuite(testModel,{saveLumenNickname,maybeOfferInstall,lumenShareUrl,successAchievement,shareLumenResult,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults,openJourneyMap:()=>openJourneyMap,closeMapOverlay:()=>closeMapOverlay,renderMap:()=>renderMap,advanceToNextPuzzle,startReplay});
+const runHintTests=createHintTestSuite(testModel,{handleSuccessAdvance,getSkyTourSteps:()=>SKY_TOUR_STEPS,maybeShowAutoCrossUnlock,maybeShowBadgeMilestone,saveLumenNickname,maybeOfferInstall,lumenShareUrl,successAchievement,shareLumenResult,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults,openJourneyMap:()=>openJourneyMap,closeMapOverlay:()=>closeMapOverlay,renderMap:()=>renderMap,advanceToNextPuzzle,startReplay});
 let runTestsButton=document.getElementById("runTests");
 if(runTestsButton)runTestsButton.onclick=runHintTests;
 

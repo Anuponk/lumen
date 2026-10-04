@@ -98,3 +98,5 @@ Do not explain performance badges before they can be earned. The onboarding must
 Treat learning content as a live projection of the product, not static copy. A change to when or how a mechanic becomes available must trigger a review of every place that teaches that mechanic: rules, gestures, assistance, badge eligibility, unlocks, progression, Mon ciel, success flows and terminology.
 
 Where possible, compute a teaching milestone from the same rule used by gameplay rather than copying a quest number into onboarding. If a mechanic deliberately needs a fixed pedagogical delay, document that exception. Every rule-changing PR must state its onboarding impact.
+
+Milestone dialogs must respect `hidden` even when their visible layout uses `display:flex` or an inline display value. A hidden badge/assistance introduction must neither cover the board nor receive pointer input. Keep a visible/hidden browser regression for both dialogs.
