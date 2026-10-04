@@ -5,6 +5,9 @@ const html=fs.readFileSync('index.html','utf8');
 const ui=fs.readFileSync('src/ui/game-screen.js','utf8');
 const css=fs.readFileSync('src/ui/styles.css','utf8');
 const docs=fs.readFileSync('docs/UX_AND_VISUAL_DIRECTION.md','utf8');
+const sky=fs.readFileSync('src/ui/sky-navigation.js','utf8');
+assert(!/innerWidth|matchMedia|MobileSky|DesktopSky/.test(sky),'Mon ciel must use one viewport-independent component');
+assert(css.includes('grid-template-columns:repeat(2,minmax(0,1fr))')&&css.includes('grid-template-columns:repeat(3,minmax(0,1fr))'),'Mon ciel common grid must adapt through CSS');
 
 assert(!html.includes('desktopLeftSlot'),'desktop-only progression slot remains');
 assert(!html.includes('desktopGuide'),'desktop-only guide slot remains');

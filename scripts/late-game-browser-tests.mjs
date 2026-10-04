@@ -49,7 +49,7 @@ try{
   await evaluate('document.getElementById("attemptMask").click();document.getElementById("openSky").click();document.getElementById("closeMap").click()');
   assert.equal((await snapshot()).levelIndex,100,'Closing the map preserves the unsolved quest');
   await evaluate(`lumenDiagnostics.setupQuest(${campaignQuestCount()-1})`);
-  assert.equal((await snapshot()).levelIndex,campaignQuestCount()-1,'The actual last quest is loadable');
+  assert((await snapshot()).levelIndex<campaignQuestCount()-1,'An unstarted locked Adventure cannot be loaded');
   await evaluate(`localStorage.setItem("lumenProgressV1",JSON.stringify({solved:Object.fromEntries(Array.from({length:${campaignQuestCount()-1}},(_,i)=>[i,1])),badges:{historical:1},skyScore:150,skyHistoryVersion:4}));localStorage.removeItem("lumenActiveAttemptV1")`);
   await send('Page.reload',{ignoreCache:true});await sleep(500);await until('!!window.lumenDiagnostics');
   current=await snapshot();assert.equal(current.levelIndex,campaignQuestCount()-1);

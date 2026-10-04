@@ -272,3 +272,11 @@ Real touch tests then exposed two player-facing defects: badge/auto-marking dial
 - The sky target is the sum of constellation stars. Short extension constellations earn all their stars across their quests. Existing version-4 saves capped at 150 recover stars already earned by their solved prefix, idempotently, while preserving historical badges, attempts and rewards. Already-earned Mastery is not revoked when the campaign endpoint grows.
 - Cloud fallback, actual final-quest detection and result-card totals derive from the content model. Synthetic future additions cover 1/2/3/10 quests and different star counts without editing production content.
 - Onboarding impact: teaching timing, rules and eligibility remain unchanged. Mon ciel already renders totals from campaign data, so it now reflects the expanded sky; the full learning interaction suite verifies its existing handoff and tour.
+
+## 2026-10-04 — Mon ciel Adventures and pagination (#96)
+- User decisions: group constellations 1–10 / 11–20 / 21–24, keep access to Adventures already started, and lock following unstarted Adventures. Store these decisions in the content/access model; do not fork progression.
+- Player terminology is Ciel → Aventure → Constellation. One horizontal Adventure rail and one selected detail replace the growing vertical list. Six cards/page share one responsive DOM: 2×3 mobile, 3×2 desktop.
+- Viewing an Adventure/page is ephemeral and separate from the actual current quest. Old solved/cloud history and started local attempts preserve access; an unstarted READY boundary and social play do not grant it. No unlock economy, payment or backend ownership change is implemented.
+- Constellation detail retains quest badges, replay and drawing. Adventure completion shows stars/badges and a next-Adventure CTA, respecting access. Actual campaign completion keeps its final sky celebration.
+- Onboarding impact: the first Mon ciel tour adds Ciels/Aventures before the four existing real zones and switches panes accordingly. Closing/backdrop cannot bypass that first tour.
+- Current and synthetic huge catalogues are tested at 360×640, 390×844 and desktop, including real touch swipe, access refresh, legacy continuation, replay, final partial pages and stable modal height. Long current-quest labels no longer push Mon ciel outside the mobile viewport.

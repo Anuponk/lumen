@@ -155,7 +155,9 @@ try {
     await evaluate('document.getElementById("successNew").click()');await sleep(100);
     assert.equal(await evaluate('document.getElementById("mapModal").hidden'),false);
     assert.equal(await evaluate('document.getElementById("skyTour").hidden'),false);
-    for(const target of ['sectorTabs','puzzleGrid','performanceLegend','skyCard']){
+    await evaluate('document.getElementById("closeMap").click();document.getElementById("mapModal").click()');
+    assert.equal((await snapshot()).levelIndex,1,'Closing or touching the backdrop cannot skip the first sky tour');
+    for(const target of ['skyNavigation','sectorTabs','puzzleGrid','performanceLegend','skyCard']){
       assert.equal((await snapshot()).levelIndex,1,'The tour cannot advance before its last step');
       assert.equal(await evaluate(`document.getElementById("${target}").classList.contains("sky-tour-focus")`),true,'The tour explains each real sky zone');
       await evaluate('document.getElementById("skyTourNext").click()');
@@ -165,7 +167,7 @@ try {
     assert.match(await evaluate('document.getElementById("badgeUnlockCopy").textContent'),/Rapidité/);
     await acknowledgeLearningMilestones(evaluate);
     assert.equal(await evaluate('document.getElementById("scriptedLearn").hidden'),true);
-    await evaluate('document.getElementById("openSky").click();document.querySelector("#puzzleGrid .puzzle-card.done").click()');
+    await evaluate('document.getElementById("openSky").click();document.querySelector("#sectorTabs .constellation-card").click();document.querySelector("#puzzleGrid .puzzle-card.done").click()');
     assert.equal((await snapshot()).replayMode,true);
     assert.equal(await evaluate('document.getElementById("scriptedLearn").hidden'),true,'Ordinary replay has no imposed lesson');
 

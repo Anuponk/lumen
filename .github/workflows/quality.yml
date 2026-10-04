@@ -38,4 +38,5 @@ jobs:
             docs/validation/ci-ux.json
             docs/validation/ci-learning.json
             docs/validation/ci-late-game.json
+            docs/validation/ci-sky-navigation.json
           if-no-files-found: ignore

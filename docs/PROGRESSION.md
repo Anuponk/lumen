@@ -5,6 +5,16 @@ The campaign is sequential and represented through constellations. Quest count d
 
 A quest belongs to one constellation. Each constellation has an intermediate milestone and a final/boss quest. First completion awards the quest's sky-star value; replay does not farm additional sky stars.
 
+## Adventures and access (#96)
+
+The real-sky catalogue is grouped into Adventures of at most ten constellations, configured in `content.js`. The current groups are 1–10, 11–20 and 21–24. The first Adventure is included; subsequent Adventures remain visible but locked unless already owned or already started by an existing player. Their unlock mechanism is deferred. The grouping size is a product rule, not a campaign-size ceiling: new Adventures are derived as the catalogue grows.
+
+The user's migration decision is to **retain access to Adventures already started and lock subsequent unstarted Adventures**. A solved quest in an Adventure proves it was started; a locally restored campaign/replay attempt with `startedAt` also proves it, including an unsolved first quest. Merely reaching a READY quest at the next Adventure boundary does not grant access. Social attempts do not grant campaign access. `legacyAdventureAccess` retains proven Adventure IDs in the existing local progress object, idempotently; solved history restored from cloud can reconstruct access without a new entitlement or backend RPC. An unsolved local attempt has the same device-local persistence scope as before.
+
+Keep the existing `base-real-sky`, `real-NN`, `base-qNNN` IDs and numeric saved quest keys. Later Adventures have stable `real-adventure-NN` pack IDs. The historical `baseCampaignQuestCount()`/`baseQuestId()` namespace still describes the full real-sky legacy schedule, not the size of the free Adventure. Pack metadata determines its range/access; do not equate the full catalogue with immediately playable content.
+
+Browsing another Adventure never changes gameplay state. Loading/continuation must respect pack access in addition to sequential progression. When the next Adventure is locked, continuation shows its notice; reload offers the last accessible quest for replay while preserving the solved prefix, stars and badges. Finishing an Adventure does not automatically unlock another. Existing entitled packs still use the real entitlement model; no acquisition flow is added.
+
 ## Bonus quests
 Every sixth quest is a bonus challenge, rotating challenge types. Current challenge rewards are **+25 XP and +1 shard**. Challenge rewards do not replace the campaign's sky-star accounting.
 

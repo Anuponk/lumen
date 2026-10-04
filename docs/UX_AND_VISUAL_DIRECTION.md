@@ -45,6 +45,20 @@ No lives system. When guidance is active, illegal/conflicting Guardian reasoning
 ## Navigation
 The campaign should answer “what do I play now?” without requiring the player to interpret multiple competing counters. The current unsolved quest is the path forward. Solved content can be replayed intentionally.
 
+### Mon ciel: Ciel → Aventure → Constellation (#96)
+
+Use **Aventure** in player-facing text; `pack` remains the content-model term. Mon ciel has a compact Ciel selector, a horizontal Adventure rail and exactly one detailed Adventure. The selected Adventure shows its name, completed/total constellations and state. Other Adventures stay compact, including locked ones; their notice explains that the unlock method will be announced later. No store, currency price or new unlock mechanism is introduced here.
+
+Show at most six constellation cards per page: 2×3 on mobile and 3×2 on desktop, using the same DOM/component and pagination. Cards show silhouette, name, earned/total stars, progression lock/completion and an optional mastery indicator for all mastery-eligible quests in that constellation. Previous/Next and horizontal touch swipe change the page without changing progression. The final partial page contains only actual cards. The main modal height remains bounded even with dozens of Adventures and hundreds of constellations; use horizontal navigation rather than vertical stacking.
+
+Selecting an unlocked constellation opens its detail in the same sheet: quests, performance badges and stars, with a **Toutes les constellations** back button. Completed quests keep their replay behavior. Mes défis stays reachable from the main sheet. Keyboard navigation is contained in the modal, Escape closes the appropriate notice/sheet, and notices restore focus. Long current-quest labels truncate on mobile so Mon ciel remains reachable.
+
+Browsing and progression are separate: opening Mon ciel defaults to the Adventure of the player's real accessible progress; consulting a previous Adventure does not change the board, current attempt, unlocked quest or rewards. A refreshed access model must invalidate an inaccessible viewed Adventure and return to an accessible view. Browsing preference is intentionally not persisted across reloads.
+
+The first guided visit after quest 2 now teaches five real zones in order: Ciels/Aventures, constellations, quests, performances, constellation drawing. Each step reveals the corresponding overview/detail pane. The first tour cannot be skipped by closing the sheet or touching the backdrop; only its final step offers **Jouer la quête 3**.
+
+Finishing an Adventure shows a brief summary of its constellations, stars and earned performance badges. **Découvrir l’Aventure suivante** opens the next available Adventure for consultation, or its lock notice when unavailable; it never grants access or advances an unsolved quest. The actual final campaign quest retains its full-sky celebration.
+
 ## Success/reward UX
 Victory should feel meaningful: quest accomplishment, stars and constellation reveal/milestones. The sky/constellation is the long-term progress visualization, not a collection of legacy rank names.
 

@@ -6,7 +6,8 @@ import {createLocalPersistence} from "../persistence/local.js";
 import {createCloudPersistence} from "../persistence/cloud.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
-import {BASE_SKY_ID,contentMapModel} from "../campaign/content.js";
+import {contentMapModel,packForLegacyQuest,contentAccessForLegacyQuest,preserveStartedAdventureAccess} from "../campaign/content.js";
+import {createSkyNavigation} from "./sky-navigation.js";
 import {LUMEN_META,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,badgeDefs} from "../campaign/data.js";
 import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt} from "../campaign/performance.js";
 import {challengeEligibility,challengeSnapshot,compareChallenge,createChallengeClient,normalizeChallengeName,validChallengeName} from "../campaign/social-challenge.js";
@@ -253,6 +254,8 @@ async function completeDaily(){
  return result;
 }
 
+let legacyAttempt=null;try{legacyAttempt=JSON.parse(localStorage.getItem(qaKey("lumenActiveAttemptV1")))}catch(_){}
+if(preserveStartedAdventureAccess(lumenProgress,legacyAttempt))saveLumenProgress();
 let sequentialSolvedCount=normalizeSequentialProgress();
 
 const LUMEN_PUSH_PUBLIC_KEY="BCL-qkJ1SC1tTi8VMB080_bbliipUDgx2KyrQ1u8hL9HX-EL8xYNPjT1m6Sa8InjWQjjeizlSw1_CuYE_Rn3bqk";
@@ -376,7 +379,7 @@ async function bootstrapSocialChallenge(){
 
 const COLORS=["#efb37e","#91b5ed","#b4a0db","#a9d692","#ff8267","#ddd9d2","#e5ef83","#bdb6a0","#a9d7d3"];
 const TERRITORY_COLORS=["#46c7e8","#6d8fe8","#8b70d7","#49b49b","#d38a54","#b55f86","#67a6bf","#7e9c69","#a8875b"];
-let n=6,puz,state,hist=[],start,timer,last={},hi=null,proofs={},hintStage=0,hintFocus=null,celebrated=false,hintUsesThisGame=0,hintWasGranted=false,mistakesThisGame=0,verifyUsesThisGame=0,verifyPending=null,autoUsedThisGame=false,replayMode=false,levelIndex=Math.min(sequentialSolvedCount,campaignQuestCount()-1),learningReplayReturn=null,endgamePending=false;
+let n=6,puz,state,hist=[],start,timer,last={},hi=null,proofs={},hintStage=0,hintFocus=null,celebrated=false,hintUsesThisGame=0,hintWasGranted=false,mistakesThisGame=0,verifyUsesThisGame=0,verifyPending=null,autoUsedThisGame=false,replayMode=false,levelIndex=Math.min(sequentialSolvedCount,campaignQuestCount()-1),learningReplayReturn=null,endgamePending=false,adventurePending=null;
 let socialChallenge=null,lastChallengeOffer=null,pendingChallengeUrl="";
 const attemptEngine=createAttemptEngine({onChange:()=>updateAttemptUI()});
 function attemptMode(){return socialChallenge?"challenge":replayMode?"replay":"campaign"}
@@ -406,7 +409,8 @@ function persistAttemptBoard(){attemptEngine.updateBoard(state)}
 const board=document.getElementById("board"),msg=document.getElementById("msg");
 let hiCells=[];
 const {validateGuardians,key,solutions,isAutoCross,verificationErrors,guardianConflicts,conflictMessage,simpleForcedPlacement,proofEngine,directMissingCross,playerError,guardianOnlyState,guidedConflictForAction}=createGameEngine(()=>({n,puz,state}),()=>!!document.getElementById("autoCross")?.checked);
-function choose(){levelIndex=Math.max(0,Math.min(levelIndex,campaignQuestCount()-1));const [size,slot]=CAMPAIGN_SIZE_SCHEDULE[levelIndex];puz=size==="6"?CAT["6"][CAMPAIGN6_ORDER[slot]]:CAT[size][slot];n=puz.reg.length;last[n]=levelIndex}
+function questIsAccessible(index){return contentAccessForLegacyQuest(index,lumenEntitlements,undefined,lumenProgress,attemptEngine.snapshot()).accessible}
+function choose(){levelIndex=Math.max(0,Math.min(levelIndex,campaignQuestCount()-1));if(!socialChallenge&&!questIsAccessible(levelIndex)){while(levelIndex>0&&!questIsAccessible(levelIndex))levelIndex--;replayMode=!!lumenProgress.solved[levelIndex]}const [size,slot]=CAMPAIGN_SIZE_SCHEDULE[levelIndex];puz=size==="6"?CAT["6"][CAMPAIGN6_ORDER[slot]]:CAT[size][slot];n=puz.reg.length;last[n]=levelIndex}
 function loadPuzzle(){init();}
 function startLearningReplay(){
  if(learningReplayReturn===null)learningReplayReturn={levelIndex,replayMode};
@@ -792,6 +796,7 @@ function celebrateSuccess(){
  // Progress is tied to the game's real victory event (not overlay visibility).
  const skyEarnedBefore=skyStarsEarned();
  lumenProgress.solved[levelIndex]=1;
+ const playedPack=packForLegacyQuest(levelIndex);adventurePending=firstCompletion&&playedPack&&levelIndex===playedPack.legacyQuestStart+playedPack.questCount-1&&!isCampaignFinalQuest(levelIndex)?playedPack:null;
  endgamePending=firstCompletion&&isCampaignFinalQuest(levelIndex)&&isCampaignComplete(lumenProgress.solved);
  if(firstCompletion)lumenProgress.skyScore=Math.min(SKY_TARGET,skyEarnedBefore+skyStarsForGrid(levelIndex));
  if(firstCompletion)lumenProgress.xp=(lumenProgress.xp||0)+10;
@@ -1203,6 +1208,7 @@ function advanceToNextPuzzle(){
  const next=levelIndex+1;
  replayMode=false;
  if(next>=campaignQuestCount())return;
+ if(!questIsAccessible(next)){hideSuccess();openJourneyMap();skyNavigation.showLocked(packForLegacyQuest(next));return}
  document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;
  hideSuccess();
  if(next<campaignQuestCount())levelIndex=next;
@@ -1226,6 +1232,9 @@ function clearSkyTourFocus(){document.querySelectorAll(".sky-tour-focus").forEac
 function renderSkyTourStep(){
  const tour=document.getElementById("skyTour");if(!tour||tour.hidden)return;
  const step=SKY_TOUR_STEPS[Math.min(skyTourStep,SKY_TOUR_STEPS.length-1)],target=document.getElementById(step.target);
+ document.getElementById("mapModal").dataset.tourTarget=step.target;
+ skyNavigation.setView(["skyNavigation","sectorTabs"].includes(step.target)?"overview":"detail");
+ document.getElementById("closeMap").disabled=skyTourStep<SKY_TOUR_STEPS.length-1;
  clearSkyTourFocus();if(target){target.classList.add("sky-tour-focus");target.scrollIntoView({behavior:"smooth",block:"center"})}
  document.getElementById("skyTourTitle").textContent=step.title;
  document.getElementById("skyTourCopy").textContent=step.copy;
@@ -1255,8 +1264,10 @@ const attemptAbandon=document.getElementById("attemptAbandon");
 if(attemptAbandon)attemptAbandon.onclick=async()=>{const a=attemptEngine.snapshot();if(!a)return;if(!confirm("Abandonner cette tentative ?"))return;trackAttemptEvent("attempt_abandoned",{reason:"explicit"});attemptEngine.abandon();if(socialChallenge){trackLumenEvent("challenge_abandoned",levelIndex+1,currentAttemptAnalytics({reason:"explicit"}));await finishSocialChallenge("abandoned");return}attemptEngine.clear();init()};
 
 
-let mapConstellation=0,skyTourStep=0;
+let mapConstellation=0,skyTourStep=0,mapCatalogueOverride=null;
+const skyNavigation=createSkyNavigation({document,getModel:()=>mapCatalogueOverride||contentMapModel(lumenEntitlements,{progress:lumenProgress,attempt:attemptEngine.snapshot()}),getQuest:()=>Math.min(sequentialSolvedCount,campaignQuestCount()-1),getSolved:i=>!!lumenProgress.solved[i],getLit:entry=>CONSTELLATIONS[entry.legacyIndex]?constellationLitAt(entry.legacyIndex):0,getShape:entry=>entry.shape||CONSTELLATIONS[entry.legacyIndex],getMastered:entry=>{const eligible=Array.from({length:entry.questCount},(_,offset)=>entry.questStart+offset).filter(i=>performanceEligibility(i).mastery);return eligible.length>0&&eligible.every(i=>lumenProgress.performances?.[i]?.badges?.mastery)},getBadgeCounts:pack=>{const badges={autonomy:0,speed:0,noError:0,mastery:0};for(let i=pack.legacyQuestStart;i<pack.legacyQuestStart+pack.questCount;i++)for(const key of Object.keys(badges))if(lumenProgress.performances?.[i]?.badges?.[key])badges[key]++;return badges},onConstellation:entry=>{if(CONSTELLATIONS[entry.legacyIndex]){mapConstellation=entry.legacyIndex;renderMap()}}});
 const SKY_TOUR_STEPS=[
+ {target:"skyNavigation",title:"Ciels et Aventures",copy:"Choisis un Ciel, puis une Aventure. Les autres restent compactes ; un cadenas indique un contenu verrouillé. Consulter une autre Aventure ne change pas ta progression."},
  {target:"sectorTabs",title:"Tes constellations",copy:"Ton ciel est organisé en constellations. Elles se débloquent au fil de ton aventure."},
  {target:"puzzleGrid",title:"Tes quêtes",copy:"Chaque constellation regroupe ses quêtes. Ici tu vois celles qui sont réussies, celle à jouer et celles encore verrouillées."},
  {target:"performanceLegend",title:"Tes performances",copy:"Les badges récompensent ta façon de résoudre une quête : autonomie, rapidité, sans erreur et maîtrise. Tu pourras revenir améliorer une quête réussie."},
@@ -1299,7 +1310,7 @@ function showSkyReveal(beforeEarned=null,checkpoint=null){
  let stars=p.pts.map((v,i)=>'<circle class="sky-star '+(i<p.lit?'on ':'')+(i===idx?'new-star':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i===idx?6:i<p.lit?4:3)+'"/>').join("");
  canvas.innerHTML='<svg class="sky-reveal-svg" viewBox="0 0 290 115">'+lines+stars+'</svg><div>'+p.lit+' / '+p.count+' étoiles</div>';o.hidden=false;if(completedIndex>=0)celebrateConstellationReveal();
 }
-document.getElementById("skyRevealContinue").onclick=()=>{const o=document.getElementById("skyReveal");o.hidden=true;o.classList.remove("complete-celebration");o.querySelectorAll(".sky-bravo").forEach(x=>x.remove());document.querySelectorAll(".sky-spark").forEach(x=>x.remove());if(endgamePending){endgamePending=false;showEndgameCelebration();return}document.getElementById("successOverlay").classList.add("show")};
+document.getElementById("skyRevealContinue").onclick=()=>{const o=document.getElementById("skyReveal");o.hidden=true;o.classList.remove("complete-celebration");o.querySelectorAll(".sky-bravo").forEach(x=>x.remove());document.querySelectorAll(".sky-spark").forEach(x=>x.remove());if(adventurePending){const completed=adventurePending;adventurePending=null;hideSuccess();openJourneyMap();skyNavigation.showCompletion(completed);return}if(endgamePending){endgamePending=false;showEndgameCelebration();return}document.getElementById("successOverlay").classList.add("show")};
 function renderXP(){let q=bonusChallengeFor(levelIndex),m=milestoneFor(levelIndex),ch=m||q,box=document.getElementById("challengeBanner");if(!box)return;box.hidden=!ch;if(ch){let done=q&&lumenProgress.stars[q.id];document.getElementById("challengeTitle").textContent=ch.title+(done?" · ★":"");document.getElementById("challengeCopy").textContent=done?"Bonus obtenu":ch.copy}}
 
 function refreshJourney(){awards();let sky=constellationProgress(),earned=skyStarsEarned(),completed=CONSTELLATIONS.slice(0,sky.index).length;
@@ -1308,7 +1319,7 @@ document.getElementById("progressText").textContent=completed+" constellation"+(
 let ss=document.getElementById("skySummary");if(ss)ss.textContent=sky.name.replace(" · Grand Chariot","")+" · "+sky.lit+"/"+sky.count+" ★";
 document.getElementById("journeyTitle").textContent=sky.name.replace(" · Grand Chariot","");
 document.getElementById("sectorProgress").textContent=sky.lit+"/"+sky.count+" étoiles · "+earned+"/"+SKY_TARGET+" dans le ciel";
-updateHintButton();renderXP();
+updateHintButton();renderXP();if(!document.getElementById("mapModal").hidden)skyNavigation.render();
 }
 
 function performanceIcon(type){const icons={autonomy:'<span aria-hidden="true">🧠</span>',speed:'<span aria-hidden="true">⚡</span>',noError:'<span aria-hidden="true">✓</span>',mastery:'<span aria-hidden="true">✦</span>'};return icons[type]||""}
@@ -1319,12 +1330,10 @@ function performanceBadges(i){
 }
 function startReplay(i){if(!lumenProgress.solved[i])return;levelIndex=i;replayMode=true;document.getElementById("mapModal").hidden=true;document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;loadPuzzle();usedHintThisGame=false;refreshJourney()}
 function renderMap(){
- const tabs=document.getElementById("sectorTabs"),puzzleGrid=document.getElementById("puzzleGrid"),model=contentMapModel(lumenEntitlements),baseSky=model.skies.find(s=>s.id===BASE_SKY_ID),entries=baseSky?.constellations||[];
- tabs.innerHTML="";
- entries.forEach(entry=>{const i=entry.legacyIndex,c=CONSTELLATIONS[i];let b=document.createElement("button"),unlocked=entry.accessible&&i<=chapterForGrid(Math.min(sequentialSolvedCount,campaignQuestCount()-1));b.className="sector-tab"+(i===mapConstellation?" active":"")+(unlocked?"":" locked");b.textContent="✦ "+(entry.label||c.name).replace(" · Grand Chariot","");b.dataset.contentId=entry.id;b.dataset.packId=entry.packId;b.onclick=()=>{if(unlocked){mapConstellation=i;renderMap();renderSky(i)}};tabs.appendChild(b)});
+ skyNavigation.render();const puzzleGrid=document.getElementById("puzzleGrid");
  puzzleGrid.innerHTML="";let range=constellationGridRange(mapConstellation),start=range.start,end=range.end+1;for(let i=start;i<end;i++){let solved=!!lumenProgress.solved[i],current=i===Math.min(sequentialSolvedCount,campaignQuestCount()-1),b=document.createElement("button"),pos=i-start+1,meta=performanceBadges(i);b.className="puzzle-card"+(solved?" done":"")+(current?" current":"")+(!solved&&!current?" locked":"");b.innerHTML=solved?meta:(current?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+pos+'</span>':"");b.title=solved?"Rejouer la quête "+pos+" pour améliorer ta performance":current?"Nouvelle quête disponible · quête "+pos:"Quête "+pos+" · verrouillée";b.onclick=()=>{if(solved){startReplay(i);return}if(!current)return;levelIndex=i;replayMode=false;document.getElementById("mapModal").hidden=true;loadPuzzle();refreshJourney()};puzzleGrid.appendChild(b)}renderSky(mapConstellation)
 }
-function openJourneyMap(focusSky=false,{advanceOnClose=false,learningTour=false}={}){mapConstellation=chapterForGrid(levelIndex);renderMap();const modal=document.getElementById("mapModal");modal.hidden=false;const tour=document.getElementById("skyTour");if(tour)tour.hidden=!learningTour;if(learningTour){skyTourStep=0;requestAnimationFrame(renderSkyTourStep)}else clearSkyTourFocus();modal.dataset.advanceOnClose=advanceOnClose&&!!lumenProgress.solved[levelIndex]?"1":"";const attemptMask=document.getElementById("attemptMask");if(attemptMask)attemptMask.hidden=true;if(focusSky){requestAnimationFrame(()=>{const sky=document.getElementById("skyCard");if(sky){sky.scrollIntoView({behavior:"smooth",block:"center"});sky.classList.add("sky-focus");setTimeout(()=>sky.classList.remove("sky-focus"),900)}})}}
+function openJourneyMap(focusSky=false,{advanceOnClose=false,learningTour=false}={}){mapConstellation=chapterForGrid(levelIndex);const modal=document.getElementById("mapModal");modal.hidden=false;skyNavigation.open();renderMap();const tour=document.getElementById("skyTour");document.getElementById("closeMap").disabled=learningTour;if(tour)tour.hidden=!learningTour;if(learningTour){skyTourStep=0;requestAnimationFrame(renderSkyTourStep)}else clearSkyTourFocus();modal.dataset.advanceOnClose=advanceOnClose&&!!lumenProgress.solved[levelIndex]?"1":"";const attemptMask=document.getElementById("attemptMask");if(attemptMask)attemptMask.hidden=true;document.getElementById(learningTour?"skyTourNext":"closeMap").focus();}
 
 const performanceLegend=document.getElementById("performanceLegend"),badgeRulesModal=document.getElementById("badgeRulesModal"),closeBadgeRules=document.getElementById("closeBadgeRules");function openBadgeRules(){if(badgeRulesModal){badgeRulesModal.hidden=false;closeBadgeRules&&closeBadgeRules.focus()}}function hideBadgeRules(){if(badgeRulesModal){badgeRulesModal.hidden=true;performanceLegend&&performanceLegend.focus()}}if(performanceLegend){performanceLegend.onclick=openBadgeRules;performanceLegend.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openBadgeRules()}}}if(closeBadgeRules)closeBadgeRules.onclick=hideBadgeRules;if(badgeRulesModal)badgeRulesModal.onclick=e=>{if(e.target===badgeRulesModal)hideBadgeRules()};document.addEventListener("keydown",e=>{if(e.key==="Escape"&&badgeRulesModal&&!badgeRulesModal.hidden)hideBadgeRules()});
 const shardMeter=document.getElementById("shardMeter"),shardRulesModal=document.getElementById("shardRulesModal"),closeShardRules=document.getElementById("closeShardRules");function openShardRules(){if(shardRulesModal){shardRulesModal.hidden=false;closeShardRules&&closeShardRules.focus()}}function hideShardRules(){if(shardRulesModal){shardRulesModal.hidden=true;shardMeter&&shardMeter.focus()}}if(shardMeter){shardMeter.onclick=openShardRules;shardMeter.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openShardRules()}}}if(closeShardRules)closeShardRules.onclick=hideShardRules;if(shardRulesModal)shardRulesModal.onclick=e=>{if(e.target===shardRulesModal)hideShardRules()};document.addEventListener("keydown",e=>{if(e.key==="Escape"&&shardRulesModal&&!shardRulesModal.hidden)hideShardRules()});
@@ -1337,7 +1346,7 @@ function dismissPushLater(){const o=document.getElementById("pushOptin");if(!o||
 function continueSkyReveal(){document.getElementById("skyRevealContinue")?.click()}
 function startQuestFromOverlay(){document.getElementById("questGo")?.click()}
 function closeAutonomyOverlay(){finishAutonomyChoice(false);resumeGameClock()}
-function closeMapOverlay(){const o=document.getElementById("mapModal");if(!o)return;const advance=o.dataset.advanceOnClose==="1";o.hidden=true;const tour=document.getElementById("skyTour");if(tour)tour.hidden=true;o.dataset.advanceOnClose="";if(advance){advanceToNextPuzzle();return}updateAttemptUI()}
+function closeMapOverlay(){const o=document.getElementById("mapModal");if(!o)return;if(!document.getElementById("skyTour").hidden&&skyTourStep<SKY_TOUR_STEPS.length-1)return;const advance=o.dataset.advanceOnClose==="1";o.hidden=true;const tour=document.getElementById("skyTour");if(tour)tour.hidden=true;o.dataset.advanceOnClose="";if(advance){advanceToNextPuzzle();return}updateAttemptUI();document.getElementById("openSky").focus()}
 function setupOutsideDefaults(){
  const successOverlay=document.getElementById("successOverlay");
  if(successOverlay)successOverlay.addEventListener("click",e=>{if(e.target!==successOverlay)return;e.preventDefault();if(learningSkyDiscoveryRequired())return;handleSuccessAdvance()});
@@ -1414,4 +1423,5 @@ if("serviceWorker" in navigator){
 // Preserve the public browser testing entry points.
 window.runHintTests=runHintTests;
 window.lumenDiagnostics=createDiagnostics(testModel,{init,runHintTests,setSoundEnabled,closeTutorial,hideSuccess,render});
+Object.assign(window.lumenDiagnostics,{skySnapshot:()=>skyNavigation.snapshot(),setSkyCatalogue:(model,{reset=true}={})=>{mapCatalogueOverride=model;if(reset)skyNavigation.open();else skyNavigation.render()},refreshSky:()=>skyNavigation.render()});
 }

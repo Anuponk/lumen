@@ -1,0 +1,74 @@
+{
+  "results": [
+    {
+      "viewport": {
+        "width": 360,
+        "height": 640,
+        "mobile": true
+      },
+      "height": 616,
+      "pagination": [
+        1,
+        6,
+        7,
+        12,
+        103
+      ],
+      "adventures": 40,
+      "multipleSkies": true,
+      "accessPreserved": true,
+      "browsingIsolated": true,
+      "lockedAdventure": true,
+      "replay": true,
+      "completion": true,
+      "noVerticalOverflow": true
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "height": 620,
+      "pagination": [
+        1,
+        6,
+        7,
+        12,
+        103
+      ],
+      "adventures": 40,
+      "multipleSkies": true,
+      "accessPreserved": true,
+      "browsingIsolated": true,
+      "lockedAdventure": true,
+      "replay": true,
+      "completion": true,
+      "noVerticalOverflow": true
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "mobile": false
+      },
+      "height": 620,
+      "pagination": [
+        1,
+        6,
+        7,
+        12,
+        103
+      ],
+      "adventures": 40,
+      "multipleSkies": true,
+      "accessPreserved": true,
+      "browsingIsolated": true,
+      "lockedAdventure": true,
+      "replay": true,
+      "completion": true,
+      "noVerticalOverflow": true
+    }
+  ],
+  "uncaughtErrors": []
+}
