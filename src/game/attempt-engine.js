@@ -37,7 +37,7 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
   if(!attempt||attempt.state!==ATTEMPT_STATES.PAUSED)return snapshot();
   attempt.state=ATTEMPT_STATES.RUNNING;attempt.lastActiveAt=now();activeSince=perfNow();emit();return snapshot()
  }
- function complete(){if(!attempt)return null;if(attempt.state===ATTEMPT_STATES.RUNNING)pause();attempt.state=ATTEMPT_STATES.COMPLETED;activeSince=null;emit();return snapshot()}
+ function complete(){if(!attempt)return null;if(attempt.state===ATTEMPT_STATES.RUNNING){attempt.activeDuration=activeMs();attempt.lastActiveAt=now()}attempt.state=ATTEMPT_STATES.COMPLETED;activeSince=null;emit();return snapshot()}
  function abandon(){if(!attempt)return null;if(attempt.state===ATTEMPT_STATES.RUNNING)pause();attempt.state=ATTEMPT_STATES.ABANDONED;activeSince=null;emit();return snapshot()}
  function reset(board=[]){
   if(!attempt)return null;
