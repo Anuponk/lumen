@@ -55,7 +55,7 @@ for(const options of scenarios){
  // #29 intentionally restores daily-history merge during authenticated init/sign-in.
  // Compare the legacy contract after removing only the new, documented daily-sync effects.
  const normalized=plain(actual),expected=plain(legacy);
- if(!options.guest&&!options.networkError)assert.ok(actual.trace.some(x=>x.name==='lumen_get_entitlements'),'Authenticated init must load persistent entitlements');
+ if(!options.guest&&!options.networkError){assert.ok(actual.trace.some(x=>x.name==='lumen_get_entitlements'),'Authenticated init must load persistent entitlements');assert.ok(actual.trace.some(x=>x.name==='lumen_get_internal_capabilities'),'Authenticated init must load internal capabilities')}
  assert.deepEqual(actual.entitlements,[],'Fixture ends signed out: account entitlements must be cleared locally');
  assert.deepEqual(actual.capabilities,[],'Fixture ends signed out: internal capabilities must be cleared locally');
  normalized.entitlements=[];expected.entitlements=[];normalized.capabilities=[];expected.capabilities=[];
@@ -64,7 +64,7 @@ for(const options of scenarios){
    for(let i=0;i<trace.length;i++){
      const x=trace[i];
      if(x.name==='lumen_get_entitlements'||x.name==='lumen_get_internal_capabilities'){
-       if(trace[i+1]?.ui==='refreshJourney')i++;
+       while(trace[i+1]?.ui==='refreshJourney'||trace[i+1]?.ui==='updateAuthUI')i++;
        continue;
      }
      if(x.auth==='signOut'){afterSignOut=true;out.push(x);continue}
