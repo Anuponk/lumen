@@ -66,3 +66,9 @@ Keep the challenge loop celestial and performance-led, not leaderboard-heavy. Be
 A remarkable first-play Mastery deserves stronger visual emphasis around “Défier un ami”, while “Quête suivante” remains the primary campaign continuation for an ordinary first completion. Do not turn replay Mastery into a challenge CTA.
 
 “Mes défis” belongs under Mon ciel. New results use a small unread indicator. Push permission must be requested contextually (“Préviens-moi quand quelqu'un relève mes défis”), never as an unexplained first-launch permission prompt.
+
+
+## Onboarding is coupled to product rules
+Treat learning content as a live projection of the product, not static copy. A change to when or how a mechanic becomes available must trigger a review of every place that teaches that mechanic: rules, gestures, assistance, badge eligibility, unlocks, progression, Mon ciel, success flows and terminology.
+
+Where possible, compute a teaching milestone from the same rule used by gameplay rather than copying a quest number into onboarding. If a mechanic deliberately needs a fixed pedagogical delay, document that exception. Every rule-changing PR must state its onboarding impact.
