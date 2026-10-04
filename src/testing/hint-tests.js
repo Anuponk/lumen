@@ -29,6 +29,7 @@ async function runHintTests(){
  test("Campagne : le ciel contient exactement 150 étoiles",()=>CONSTELLATIONS.reduce((a,c)=>a+c.count,0)===SKY_TARGET&&SKY_TARGET===150);
  test("Campagne : chaque quête appartient à une constellation",()=>Array.from({length:100},(_,i)=>chapterForGrid(i)).every(i=>i>=0&&i<CONSTELLATIONS.length));
  test("Interaction : le cycle reste exclusion, Gardien, case libre",()=>{const src=render.toString();return src.includes("(state[r][c]+1)%3")});
+ test("Apprentissage : voir puis comprendre avant d’agir",()=>{const src=scriptedLearningActive.toString()+render.toString();return !!document.getElementById("learningCoachNext")&&src.includes("learningIntroActive")&&document.querySelectorAll(".learning-territory-number").length>=5});
  test("Apprentissage : poser un Gardien utilise le vrai cycle à deux touchers",()=>{const src=render.toString();return src.includes("state[r][c]===0){next=1")&&src.includes("state[r][c]===1){next=2")&&!src.includes("scriptedAllowsGuardian(r,c)){if(!scriptedAllowsGuardian")});
  test("Apprentissage : les cinq premières quêtes imposent le jeu manuel",()=>{const src=configureLearningMode.toString();return src.includes("levelIndex<=4")&&src.includes("cb.checked=false")&&src.includes("cb.disabled=true")});
  test("Apprentissage : le Marquage auto se débloque à la quête 6 sans s’activer seul",()=>{const src=configureLearningMode.toString();return src.includes("levelIndex===5")&&src.includes("Marquage auto débloqué")&&src.includes("cb.checked=false")});
