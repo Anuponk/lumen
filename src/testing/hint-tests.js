@@ -6,7 +6,7 @@ import {createAttemptEngine} from "../game/attempt-engine.js";
 
 export function createHintTestSuite(model,api){
 const {handleSuccessAdvance,getSkyTourSteps,maybeShowAutoCrossUnlock,maybeShowBadgeMilestone}=api;
-const {saveLumenNickname,maybeOfferInstall,lumenShareUrl,successAchievement,shareLumenResult,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,updateLiveReward,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults,openJourneyMap,closeMapOverlay,renderMap,advanceToNextPuzzle,startReplay}=api;
+const {saveLumenNickname,maybeOfferInstall,lumenShareUrl,successAchievement,shareLumenResult,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,simpleForcedPlacement,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,updateLiveReward,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults,openJourneyMap,closeMapOverlay,renderMap,advanceToNextPuzzle,startReplay}=api;
 async function runHintTests(){
  let results=[],cases=[];
  test("Campagne : toutes les quêtes ont une grille dans le catalogue",()=>Object.values(CAMPAIGN_SIZE_SCHEDULE).every(([size,slot])=>!!CAT[size]?.[size==="6"?CAMPAIGN6_ORDER[slot]:slot]));
@@ -206,8 +206,8 @@ async function runHintTests(){
   return !!playerError();
  });
  test("Indice : une case unique de territoire passe avant les raisonnements complexes",()=>{
-   const src=proofEngine.toString(),single=src.indexOf('detail:{rule:"single",axis:"region"'),locked=src.indexOf('detail:{rule:"locked"'),group=src.indexOf('detail:{rule:"group"');
-   return single>=0&&locked>single&&group>single&&src.includes("Il ne reste qu’une seule case possible dans ce territoire");
+   const hintSrc=document.getElementById("hint").onclick.toString(),simpleSrc=simpleForcedPlacement.toString();
+   return hintSrc.includes("simpleForcedPlacement()||proofEngine()")&&simpleSrc.includes('axis:"region"')&&simpleSrc.includes("Il ne reste qu’une seule case possible dans ce territoire");
  });
  test("Indice : les formulations générées restent grammaticalement correctes",()=>{
    const src=proofEngine.toString()+document.getElementById("hint").onclick.toString();
