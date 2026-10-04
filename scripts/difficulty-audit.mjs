@@ -24,9 +24,8 @@ function replayDifficulty(questIndex){
  }
  if(steps>=250)throw Error("Quest "+(questIndex+1)+" exceeded difficulty replay limit");
  const work=Math.max(0,steps-size);
- // Fixed deterministic score. Board size matters, but logical workload is the main signal.
- // Group deductions weigh more than locked deductions; singles mostly close a chain.
- const score=Math.round((size-5)*6+work*0.45+rules.group*1.25+rules.locked*0.6);
+ // Human-oriented deterministic score: logical workload dominates board size.
+ const score=Math.round((size-5)*5+work*0.5+rules.group*1.4+rules.locked*0.7);
  return {
   quest:questIndex+1,size,catalogueIndex,steps,rules,
   groupShare:steps?Math.round(rules.group/steps*1000)/10:0,
@@ -35,25 +34,25 @@ function replayDifficulty(questIndex){
  };
 }
 function tier(score){
- if(score<40)return "accessible";
- if(score<55)return "intermediate";
- if(score<70)return "hard";
- if(score<90)return "expert";
- return "expert+";
+ if(score<30)return "beginner";
+ if(score<45)return "easy";
+ if(score<60)return "intermediate";
+ if(score<80)return "hard";
+ return "expert";
 }
 const quests=Array.from({length:Object.keys(CAMPAIGN_SIZE_SCHEDULE).length},(_,i)=>replayDifficulty(i)).map(x=>({...x,tier:tier(x.score)}));
 function segment(start,end){
  const xs=quests.slice(start-1,end),scores=xs.map(x=>x.score).sort((a,b)=>a-b);
  const avg=scores.reduce((a,b)=>a+b,0)/scores.length;
  const median=scores[Math.floor(scores.length/2)];
- return {range:start+"-"+end,average:Math.round(avg*10)/10,median,min:scores[0],max:scores.at(-1),expert:xs.filter(x=>["expert","expert+"].includes(x.tier)).length};
+ return {range:start+"-"+end,average:Math.round(avg*10)/10,median,min:scores[0],max:scores.at(-1),expert:xs.filter(x=>x.tier==="expert").length};
 }
 const segments=[[1,20],[21,40],[41,60],[61,80],[81,100]].map(([a,b])=>segment(a,b));
 const last20=quests.slice(80,100);
 const peaks=[...quests].sort((a,b)=>b.score-a.score).slice(0,15).map(({quest,size,score,tier,steps,rules})=>({quest,size,score,tier,steps,rules}));
 const segmentAverages=segments.map(x=>x.average);
 const lateExpert=last20.filter(x=>["expert","expert+"].includes(x.tier)).length;
-const lateExpertPlus=last20.filter(x=>x.tier==="expert+").length;
+const lateExpertPlus=last20.filter(x=>x.tier==="expert").length;
 const lateBreathers=last20.filter(x=>x.score<55).length;
 // The established rising curve and expert+ Orion finale cover quests 1–100.
 // Wave 2 appends a new segment; every appended puzzle is still proof-audited above.
@@ -64,14 +63,14 @@ const curveChecks={
  lateExpertDensity:lateExpert>=7,
  lateExpertPlusPeaks:lateExpertPlus>=4,
  lateBreathers:lateBreathers>=5,
- expertFinale:finalQuest?.tier==="expert+"
+ expertFinale:finalQuest?.tier==="expert"
 };
 if(Object.values(curveChecks).some(value=>!value))throw Error("Difficulty curve regression: "+JSON.stringify({segments,curveChecks,finalQuest}));
 const report={
- version:1,
+ version:2,
  metric:{
-  formula:"round((size-5)*6 + max(0,steps-size)*0.45 + group*1.25 + locked*0.6)",
-  tiers:{accessible:"<40",intermediate:"40-54",hard:"55-69",expert:"70-89","expert+":"90+"},
+  formula:"round((size-5)*5 + max(0,steps-size)*0.5 + group*1.4 + locked*0.7)",
+  tiers:{beginner:"<30",easy:"30-44",intermediate:"45-59",hard:"60-79",expert:"80+"},
   note:"Fixed score for comparison across current and future content; no player-behaviour data is included."
  },
  segments,

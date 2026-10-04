@@ -8,8 +8,11 @@ import {CAT} from "../src/campaign/catalogue.js";
 const args=Object.fromEntries(process.argv.slice(2).map(arg=>{const [k,v="true"]=arg.replace(/^--/,"").split("=");return [k,v]}));
 const target=Number(args.count||64);
 const sizes=(args.sizes||"6,7,8").split(",").map(Number);
-const minScore=Number(args.minScore||55);
-const maxScore=Number(args.maxScore||120);
+const TIERS={beginner:[0,29],easy:[30,44],intermediate:[45,59],hard:[60,79],expert:[80,140]};
+const requestedTier=args.tier||null;
+if(requestedTier&&!TIERS[requestedTier])throw Error("Unknown tier "+requestedTier);
+const minScore=Number(args.minScore||(requestedTier?TIERS[requestedTier][0]:55));
+const maxScore=Number(args.maxScore||(requestedTier?TIERS[requestedTier][1]:120));
 let seed=Number(args.seed||20261004);
 
 const context={createGameEngine,CAT};
@@ -78,6 +81,12 @@ function generate(n){
  const labels=new Map();for(const row of reg)for(let c=0;c<n;c++){const g=row[c];if(!labels.has(g))labels.set(g,labels.size);row[c]=labels.get(g)}
  return {reg,sol};
 }
+function structuralScore(p){
+ const n=p.reg.length,areas=Array(n).fill(0);for(const g of p.reg.flat())areas[g]++;
+ const flexible=areas.filter(x=>x>=4).length,veryFlexible=areas.filter(x=>x>=7).length;
+ const spread=areas.reduce((s,x)=>s+Math.abs(x-n),0)/n;
+ return Math.round((n-5)*5+flexible*1.5+veryFlexible*2+Math.min(8,spread));
+}
 function replay(p){context.candidate=p;return replayScript.runInContext(context,{timeout:1000})}
 
 const seen=new Set(Object.values(CAT).flat().map(p=>signature(p.reg)));
@@ -86,13 +95,16 @@ const maxAttempts=target*150000;
 while(accepted.length<target&&attempts<maxAttempts){
  attempts++;const size=sizes[Math.floor(random()*sizes.length)],p=generate(size);if(!p||!connected(p.reg))continue;
  const sig=signature(p.reg);if(seen.has(sig)||solutionCount(p)!==1)continue;
+ const structural=structuralScore(p);
+ // Cheap a-priori rejection: keep a generous margin because structure is only a predictor.
+ if(structural<Math.max(0,minScore-55)||structural>maxScore+25)continue;
  const audit=replay(p);if(!audit||audit.score<minScore||audit.score>maxScore)continue;
- seen.add(sig);accepted.push({...p,audit:{...audit,solutionCount:1,size}});
+ seen.add(sig);accepted.push({...p,audit:{...audit,structuralScore:structural,solutionCount:1,size}});
  if(accepted.length%10===0||accepted.length===target)console.log("accepted",accepted.length+"/"+target,"attempts",attempts);
 }
 if(accepted.length<target)throw Error("Generation budget exhausted: "+accepted.length+"/"+target+" accepted after "+attempts+" attempts");
 accepted.sort((a,b)=>a.audit.score-b.audit.score||a.reg.length-b.reg.length);
-const report={version:1,seed:Number(args.seed||20261004),target,sizes,minScore,maxScore,attempts,generated:accepted.length,tiers:Object.fromEntries(["hard","expert","expert+"].map(t=>[t,accepted.filter(x=>x.audit.tier===t).length])),puzzles:accepted};
+const report={version:2,seed:Number(args.seed||20261004),target,sizes,targetTier:requestedTier,minScore,maxScore,attempts,generated:accepted.length,tiers:Object.fromEntries(["hard","expert","expert+"].map(t=>[t,accepted.filter(x=>x.audit.tier===t).length])),puzzles:accepted};
 const output=args.output||"scripts/generated/expansion-wave-2.json";
 fs.mkdirSync(new URL("./generated/",import.meta.url),{recursive:true});
 fs.writeFileSync(new URL("../"+output,import.meta.url),JSON.stringify(report,null,2)+"\n");
