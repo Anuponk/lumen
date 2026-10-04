@@ -216,3 +216,7 @@ The production backend already exposes `lumen_get_entitlements()` over `lumen.en
 Do not use `lumenTutorialSeen` as proof of onboarding completion: it only means the introductory slides were dismissed/completed. Durable skip eligibility is `lumenTutorialCompletedV1`, granted only after Q2 succeeds, with Q1+Q2 solved progress as a recovery fallback after cloud restore.
 
 A genuine first-time player never sees “Passer le tutoriel”. A player who has already completed Q1+Q2 may skip only a voluntary learning replay; doing so returns to the prior quest and must not mutate solved quests, badges, shards or milestone state. QA new-player mode uses its isolated `lumenQa...` namespace and a fresh QA reset clears that proof.
+
+
+## Rapidité countdown UX (#88)
+The Rapidité badge threshold itself is unchanged. The visual countdown window is 30 seconds: the indicator appears when 30 s remain and its fill represents `remaining / 30s`. The first 20 seconds stay deliberately subdued; only the final 10 seconds receive a modest visual emphasis. No blinking/pulsing animation is allowed and the countdown must remain outside the puzzle grid.

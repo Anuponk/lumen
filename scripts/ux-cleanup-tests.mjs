@@ -63,6 +63,11 @@ try{
  await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,mobile:true,deviceScaleFactor:1});
  await evaluate(`lumenDiagnostics.setupQuest(10);document.getElementById('manualCrossTip').hidden=true;document.getElementById('questStart').hidden=true`);
  await acknowledgeLearningMilestones(evaluate);
+ check(await evaluate('clock.toString().includes("visualWindowMs=30000")'),'Rapidité countdown opens at 30 seconds');
+ check(await evaluate('clock.toString().includes("remainingMs<=10000")'),'Only the final 10 seconds use the stronger state');
+ check(await evaluate('getComputedStyle(document.getElementById("speedCountdownFill")).animationName==="none"'),'Rapidité countdown does not blink or pulse');
+ check(await evaluate('speedTargetSeconds(10)===90'),'Badge timing threshold is unchanged');
+
  const beforeLearning=await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress)`);
  await click('#tutorialHelp');await click('#replayLearning');await sleep(120);
  const learningContract=await evaluate(`(()=>({stage:document.getElementById('board').dataset.learningStage,noAdvanceControl:!document.getElementById('scriptedLearnNext'),realCells:document.querySelectorAll('#board .cell').length,allowedCells:document.querySelectorAll('#board .cell[aria-disabled="false"]').length}))()`);

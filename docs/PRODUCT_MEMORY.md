@@ -234,3 +234,10 @@ Real touch tests then exposed two player-facing defects: badge/auto-marking dial
 - First-time players never see a tutorial-skip CTA.
 - Eligible players may skip a voluntary replay of the learning sequence and return to where they were, with no artificial rewards/progression.
 - QA New Player uses isolated completion proof and fresh QA mode clears it, so the real profile cannot leak skip eligibility into first-player testing.
+
+
+## 2026-10-04 — Rapidité countdown calm UX (#88)
+- Rapidité timing rules are unchanged.
+- The visual countdown appears at 30 seconds remaining instead of 10.
+- Its progress is spread over the full 30-second window to reduce perceived speed and stress.
+- The final 10 seconds receive only a mild emphasis; no flashing or pulse is introduced.
