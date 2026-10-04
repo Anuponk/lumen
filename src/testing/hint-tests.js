@@ -32,7 +32,7 @@ async function runHintTests(){
  test("Apprentissage : poser un Gardien utilise le vrai cycle à deux touchers",()=>{const src=render.toString();return src.includes("state[r][c]===0){next=1")&&src.includes("state[r][c]===1){next=2")&&!src.includes("scriptedAllowsGuardian(r,c)){if(!scriptedAllowsGuardian")});
  test("Apprentissage : les cinq premières quêtes imposent le jeu manuel",()=>{const src=configureLearningMode.toString();return src.includes("levelIndex<=4")&&src.includes("cb.checked=false")&&src.includes("cb.disabled=true")});
  test("Apprentissage : le Marquage auto se débloque à la quête 6 sans s’activer seul",()=>{const src=configureLearningMode.toString();return src.includes("levelIndex===5")&&src.includes("Marquage auto débloqué")&&src.includes("cb.checked=false")});
- test("Apprentissage : après la quête 2 Mon ciel propose une visite contextuelle",()=>{const src=openJourneyMap().toString();return !!document.getElementById("skyTour")&&!!document.getElementById("skyTourSkip")&&src.includes("learningTour")});
+ test("Apprentissage : après la quête 2 Mon ciel propose une visite contextuelle",()=>{const src=openJourneyMap().toString();return !!document.getElementById("skyTour")&&!!document.getElementById("skyTourNext")&&src.includes("learningTour")});
  test("Guidage : contrôle activable avec explication persistante",()=>!!document.getElementById("guidedErrors")&&!!document.getElementById("guidedCard")&&typeof guidedConflictForAction==="function"&&typeof showGuidedConflict==="function");
  test("Guidage : validation logique utilise le solveur",()=>guidedConflictForAction.toString().includes("solutions("));
  test("Guidage : une exclusion qui supprime toute solution est refusée",()=>{
@@ -232,6 +232,13 @@ async function runHintTests(){
 
  test("Apprentissage : la fin de quête 2 exige explicitement la découverte du ciel",()=>{const src=handleSuccessAdvance.toString()+setupOutsideDefaults.toString();return src.includes("learningSkyDiscoveryRequired")&&!src.includes('bindOutsideDefault("successOverlay"')&&document.getElementById("skyTourNext")});
 
+ test("Apprentissage : le ciel est expliqué zone par zone",()=>SKY_TOUR_STEPS.length>=4&&SKY_TOUR_STEPS.some(s=>s.target==="sectorTabs")&&SKY_TOUR_STEPS.some(s=>s.target==="puzzleGrid")&&SKY_TOUR_STEPS.some(s=>s.target==="performanceLegend")&&SKY_TOUR_STEPS.some(s=>s.target==="skyCard"));
+ test("Apprentissage : le déblocage du Marquage auto explique le choix et les badges",()=>{const o=document.getElementById("autoCrossUnlockOverlay");return maybeShowAutoCrossUnlock.toString().includes("levelIndex!==5")&&!!o&&o.textContent.includes("Rapidité")&&o.textContent.includes("Autonomie")&&o.textContent.includes("Maîtrise")});
+ test("Apprentissage : le choix du Contrôle guidé explique l’intervention réelle sur les badges",()=>{const o=document.getElementById("autonomyOverlay");return maybeShowAutonomy.toString().includes("levelIndex!==10")&&o.textContent.includes("ne te pénalise pas tant qu")&&o.textContent.includes("s’il bloque une erreur")&&o.textContent.includes("Rapidité")});
+ test("Apprentissage : Rapidité est introduit exactement à la quête 3",()=>{const src=maybeShowBadgeMilestone.toString();return src.includes("levelIndex===2")&&document.getElementById("badgeUnlockOverlay")});
+ test("Apprentissage : Autonomie et Maîtrise sont introduits à la quête 6",()=>{const src=maybeShowBadgeMilestone.toString();return src.includes("levelIndex===5")&&src.includes("Autonomie")&&src.includes("Maîtrise")&&src.includes("Rapidité")});
+ test("Badges : les jalons pédagogiques suivent l’éligibilité réelle",()=>{const q2=performanceEligibility(1),q3=performanceEligibility(2),q6=performanceEligibility(5);return !Object.values(q2).some(Boolean)&&q3.speed&&!q3.autonomy&&!q3.mastery&&q6.speed&&q6.autonomy&&q6.mastery});
+ test("Onboarding : les jalons de badges suivent l’éligibilité réelle",()=>{const firstEligible=badge=>{for(let i=0;i<100;i++)if(performanceEligibility(i)[badge])return i;return -1};return firstEligible("speed")===2&&firstEligible("autonomy")===5&&firstEligible("mastery")===5});
  // Performance regressions: keep ordinary play incremental and cheap.
  test("Performance : un clic ordinaire ne reconstruit pas toute la grille",()=>{
    const src=render.toString(),clickStart=src.search(/d\.onclick=(?:async)?\(\)=>/),clickEnd=src.indexOf("};board.appendChild(d)",clickStart);
