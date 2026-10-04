@@ -58,6 +58,7 @@ for(const options of scenarios){
  assert.deepEqual(actual.entitlements,[],'Fixture ends signed out: account entitlements must be cleared locally');
  assert.deepEqual(actual.capabilities,[],'Fixture ends signed out: internal capabilities must be cleared locally');
  normalized.entitlements=[];expected.entitlements=[];normalized.capabilities=[];expected.capabilities=[];
+ const normalizePresentationTrace=trace=>trace.filter(x=>x.ui!=='updateAuthUI'&&x.ui!=='account'&&!x.toast);
  const normalizeOwnershipTrace=trace=>{
    const out=[];let afterSignOut=false;
    for(let i=0;i<trace.length;i++){
