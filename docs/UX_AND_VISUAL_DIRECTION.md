@@ -16,6 +16,16 @@ Mobile play is primary. Marking many impossible cells one-by-one was identified 
 Board rows/cells must not visually jump when exclusion markers appear. Exclusion appearance should remain consistent between manual and automatic marking.
 
 ## Learning UX
+The onboarding has a protected **SEE -> UNDERSTAND -> ACT** order. “Learn by playing” does not mean “act immediately”: before the first board interaction, quest 1 gives the player a short visual model of what the board is and what success means.
+
+**SEE:** show the real quest-1 board without accepting board input. Temporarily number the five colored territories 1–5 so a new player can perceive that color/shape defines distinct territories. These numbers are teaching scaffolding only and must disappear from ordinary play.
+
+**UNDERSTAND:** still before the first move, explain on the real board that the goal is to place Guardians and that there is exactly one Guardian per territory, one per row, one per column, and that Guardians cannot touch even diagonally.
+
+**ACT:** only after those concepts have been presented, teach the real cell cycle: first tap/click = exclusion mark, second tap/click = Guardian. Then continue with the interactive deductions and drag lesson.
+
+This ordering is a regression guard. A tutorial redesign may shorten copy or improve presentation, but must not require a deduction or board action before SEE and UNDERSTAND are complete.
+
 The player should learn by playing rather than reading a large rule dump. Early quests progressively demonstrate consequences of Guardians. Guidance should explain *why* a move conflicts.
 
 The intended progression:
@@ -66,3 +76,25 @@ Keep the challenge loop celestial and performance-led, not leaderboard-heavy. Be
 A remarkable first-play Mastery deserves stronger visual emphasis around “Défier un ami”, while “Quête suivante” remains the primary campaign continuation for an ordinary first completion. Do not turn replay Mastery into a challenge CTA.
 
 “Mes défis” belongs under Mon ciel. New results use a small unread indicator. Push permission must be requested contextually (“Préviens-moi quand quelqu'un relève mes défis”), never as an unexplained first-launch permission prompt.
+
+
+### Quest 2 → Mon ciel learning handoff
+The end of quest 2 is part of onboarding, not ordinary success navigation. The primary CTA explicitly teaches the destination: **Découvrir Mon ciel**. The success backdrop is inert at this point; opening the sky must be an intentional action.
+
+On the first guided visit, teach the real screen progressively rather than with one generic paragraph: highlight and explain (1) constellation navigation, (2) quest/progression cards, (3) performance badges, and (4) the constellation drawing and earned stars. Use **SEE → UNDERSTAND → ACT**: one highlighted real zone and one short explanation at a time. Only the final step offers **Jouer la quête 3**.
+
+
+### Progressive assistance unlocks
+Assistance options are introduced only when they become meaningful. On quest 6, announce **Marquage auto** with a short modal: it is an optional, legitimate comfort-oriented alternative to manual marking, not the “wrong” way to play. Explain the reward trade-off before play: using it counts as assistance, so Rapidité remains possible but Autonomie and consequently Maîtrise do not.
+
+When the player reaches the autonomy milestone (quest 11), explain the **Contrôle guidé** choice. The player may turn it off and may re-enable it later. The important distinction is intervention, not the visual toggle alone: keeping guided control enabled does not invalidate an attempt unless it actually prevents/corrects an error. An intervention counts as assistance and removes Autonomie/Maîtrise; Rapidité remains available. Teach trade-offs without shaming assisted play.
+
+
+### Badge learning milestones
+Do not explain performance badges before they can be earned. The onboarding must derive its timing from the real eligibility model: quests 1–2 have no badge, quest 3 introduces **Rapidité** because it is the first earnable performance reward, and quest 6 introduces **Autonomie** and **Maîtrise** when the complete badge system becomes available. Explain the conditions in player language: Rapidité = beat the target time; Autonomie = succeed without assistance; Maîtrise = earn Autonomie and Rapidité on the same attempt. At quest 6, connect this explanation to assistance choices without portraying assisted play as inferior.
+
+
+## Onboarding is coupled to product rules
+Treat learning content as a live projection of the product, not static copy. A change to when or how a mechanic becomes available must trigger a review of every place that teaches that mechanic: rules, gestures, assistance, badge eligibility, unlocks, progression, Mon ciel, success flows and terminology.
+
+Where possible, compute a teaching milestone from the same rule used by gameplay rather than copying a quest number into onboarding. If a mechanic deliberately needs a fixed pedagogical delay, document that exception. Every rule-changing PR must state its onboarding impact.
