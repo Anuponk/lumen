@@ -146,7 +146,7 @@ function successAchievement(){
  const ch=CONSTELLATIONS[chapterForGrid(levelIndex)],range=constellationGridRange(chapterForGrid(levelIndex)),pos=Math.min(range.count,levelIndex-range.start+1),run=performanceRun(levelIndex),secs=activeGameSeconds(),solved=Math.max(solvedCount(),levelIndex+1);
  let kicker="QUÊTE "+(levelIndex+1)+" ACCOMPLIE",main=(ch?.name||"Constellation")+" · "+pos+"/"+range.count+" quêtes",detail=solved+"/"+campaignQuestCount()+" quêtes accomplies";
  const milestone=milestoneFor(levelIndex);
- if(milestone?.kind==="boss"){kicker="CONSTELLATION COMPLÉTÉE";main=ch.name;detail=solved+"/100 quêtes accomplies · "+skyStarsEarned()+" étoiles allumées"}
+ if(milestone?.kind==="boss"){kicker="CONSTELLATION COMPLÉTÉE";main=ch.name;detail=solved+"/"+campaignQuestCount()+" quêtes accomplies · "+skyStarsEarned()+" étoiles allumées"}
  else if(run.qualifying&&run.mastery){kicker="MAÎTRISE";main="Rapide, autonome et sans erreur";detail=(ch?.name||"Constellation")+" · Quête "+(levelIndex+1)+" · "+formatDuration(secs)}
  else if(run.qualifying&&run.noError){kicker="SANS ERREUR";main=(ch?.name||"Constellation")+" · Quête "+(levelIndex+1);detail=formatDuration(secs)+" · résolution propre"}
  else if(run.qualifying&&run.speed){kicker="RAPIDITÉ";main="Quête "+(levelIndex+1)+" en "+formatDuration(secs);detail=(ch?.name||"Constellation")}
@@ -1164,10 +1164,10 @@ function advanceToNextPuzzle(){
  // sequentialSolvedCount remains the highest unlocked campaign position.
  const next=levelIndex+1;
  replayMode=false;
- if(next>=100)return;
+ if(next>=campaignQuestCount())return;
  document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;
  hideSuccess();
- if(next<100)levelIndex=next;
+ if(next<campaignQuestCount())levelIndex=next;
  loadPuzzle();usedHintThisGame=false;refreshJourney();
 }
 document.getElementById("successRetry").onclick=()=>{

@@ -41,7 +41,7 @@ async function cloudMergeProgress(){
  const local=Object.keys(model.lumenProgress.solved||{}).filter(k=>model.lumenProgress.solved[k]).map(Number).filter(x=>x>=0&&x<campaignQuestCount());
  const backup=Object.keys(model.lumenProgress.historyBackup||{}).filter(k=>model.lumenProgress.historyBackup[k]).map(Number).filter(x=>x>=0&&x<campaignQuestCount());
  const authoritative=cloud.size?cloud:new Set([...backup,...local]);
- let count=0;while(count<100&&authoritative.has(count))count++;
+ let count=0;while(count<campaignQuestCount()&&authoritative.has(count))count++;
  const restored={};for(let i=0;i<count;i++)restored[i]=1;
  model.lumenProgress.solved=restored;
  model.lumenProgress.historyBackup={...restored};
@@ -90,7 +90,7 @@ async function cloudMergeHistoricalPerformance(anonymousId){
  model.lumenProgress.performances=model.lumenProgress.performances||{};
  let changed=false;
  for(const row of data||[]){
-   const i=Number(row.puzzle_id)-1;if(i<0||i>=100)continue;
+   const i=Number(row.puzzle_id)-1;if(i<0||i>=campaignQuestCount())continue;
    const old=model.lumenProgress.performances[i]||{},badges=old.badges||{};
    // Historical cloud recovery predates Sans erreur. Preserve any local Sans erreur
    // trophy while merging the older autonomy/speed/mastery evidence.
