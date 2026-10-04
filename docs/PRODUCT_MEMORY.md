@@ -125,3 +125,12 @@ Sharing without interaction was also rejected as low-value. In the current produ
 The user authorized implementation and requested more guidance through the end of quest 1. The audited existing first grid was retained after proving the exact five forced territory deductions. Replace explanatory Next/Previous/automatic animations with user-made actions on the ordinary board. Guide the singleton, row, column and diagonals separately, explain the second deduction, then introduce the ordinary drag gesture. Keep lighter territory-focused guidance for the remaining Guardians. The user additionally requested partial guidance in quest 2 to learn click-and-drag. Guide its first singleton Guardian, then require a real mouse/touch drag across the other cells in that row before releasing free play with contextual tips and actual Assist/Verify/Hint feedback. Its ordinary success leads through Mon ciel to quest 3; badge eligibility remains unchanged.
 
 Lesson state is derived from the canonical persisted board, preserving reset/pause/reload semantics. Normal replay and social challenges bypass the lesson. Add pure lesson tests and real browser interaction coverage to CI; retain/adapt the original regression contract and run the complete strict grid audit. Shared short-screen sizing keeps both ordinary controls and advice visible.
+
+
+## 2026-10-04 — Onboarding regression guard: SEE -> UNDERSTAND -> ACT
+
+A later interactive-onboarding refactor made quest 1 start too quickly: the player was asked to act before having time to understand the colored territories and the complete rule model. This unintentionally removed an earlier pedagogical layer.
+
+The durable product philosophy is therefore **SEE -> UNDERSTAND -> ACT**. Quest 1 first exposes the real board as an object to observe, with temporary territory numbers 1–5. It then explains the goal and the four constraints (one Guardian per territory, row and column; no touching including diagonals). Only after that does the player touch the board and learn the real two-tap cycle: exclusion first, Guardian second.
+
+“Learning through real gameplay” from issue #57 remains valid after this pre-action phase. It means that once interaction starts, teaching uses the real board and real gestures; it must not be interpreted again as permission to skip perception and rule comprehension. Any future onboarding refactor must preserve this ordering and its regression tests.
