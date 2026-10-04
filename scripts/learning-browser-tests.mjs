@@ -143,6 +143,11 @@ try {
     await input(await point(2,4),viewport.mobile);await input(await point(2,4),viewport.mobile);
     assert.equal((await snapshot()).state[2][4],2,'Quest 2 free placement: '+JSON.stringify({viewport,board:await snapshot(),layout:await geometry()}));
     assert.equal(await evaluate('document.getElementById("verify").disabled'),false);
+    assert.equal(await evaluate('document.getElementById("hint").textContent'),'Indice · OFFERT','Quest 2 advertises learning hints as offered');
+    const shardsBeforeHint=await evaluate('lumenDiagnostics.snapshot().progress.shards||0');
+    await evaluate('document.getElementById("hint").click()');await sleep(40);
+    assert.equal(await evaluate('lumenDiagnostics.snapshot().progress.shards||0'),shardsBeforeHint,'Quest 2 hint never spends a shard');
+    assert.match(await evaluate('document.getElementById("hintCopy").textContent'),/offert|déduction|logique/i);
     await evaluate('document.getElementById("learningCoachDismiss").click();document.getElementById("verify").click()');
     assert.match(await evaluate('document.getElementById("scriptedLearnCopy").textContent'),/première vérification/);
     await evaluate('document.getElementById("learningCoachDismiss").click()');
