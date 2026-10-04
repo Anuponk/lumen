@@ -415,7 +415,7 @@ function startLearningReplay(){
 function learningReplayActive(){return !!(learningReplayReturn&&learningReplayReturn.active)}
 function finishLearningReplay(){
  const back=learningReplayReturn||{levelIndex:Math.min(sequentialSolvedCount,campaignQuestCount()-1),replayMode:false};
- learningReplayReturn=null;levelIndex=back.levelIndex;replayMode=back.replayMode;
+ learningReplayReturn=null;levelIndex=back.levelIndex;replayMode=levelIndex<=1&&lumenProgress.solved?.[levelIndex]?true:!!back.replayMode;
  document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;
  learningTip=null;
  const learnCard=document.getElementById("scriptedLearn"),learnSkip=document.getElementById("learningSkip");
