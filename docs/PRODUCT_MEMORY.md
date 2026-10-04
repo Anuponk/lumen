@@ -107,3 +107,15 @@ The HTML feedback inline handler/global bridge was redundant with its existing b
 Browser validation exposed two integration problems in the UX cleanup: scripted free-tap handling intercepted clicks in the new rules modal (advancing the lesson and blocking backdrop dismissal), and the success CTA fell below a 360x640 viewport. The modal is now excluded from the teaching interceptor, and the success card scrolls within a capped height. No puzzle, campaign, persistence, badge or learning policy changed.
 
 Four remaining hint instructions still said “éteindre”; these now say “écarter”, with no proof or deduction change. The original narrative test read the retired permanent rules paragraph; it now asserts Guardian vocabulary in the rules modal. The structural freeze test now explicitly permits the approved CTA/scroll CSS and requires all original test labels plus the three new UX cases. A browser regression script covers twelve modal scenarios and vocabulary/CTA behavior on three screen sizes. PR #38 remains unmerged during this validation.
+
+## Why social challenges use first plays — 2026-10-04
+
+The initial #18 concept was a strict one-shot recipient challenge against any shared performance. This was rejected as unfair: the sender may have replayed a fixed grid many times and memorized its solution before sharing a very fast run. Giving the recipient the same number of retries was also rejected because repeated exposure rapidly turns a logic puzzle into memory.
+
+The chosen philosophy is therefore asymmetric but honest: **the sender may create a challenge only from their first play; the recipient gets one challenge attempt**. LUMEN can guarantee the sender condition. It cannot guarantee the recipient has never seen that quest, because the recipient may be further ahead in campaign. V1 accepts that limitation rather than preventing friends at different progression levels from challenging each other.
+
+A challenge attempt is not sudden-death. Wrong choices may be corrected; it ends on solve or explicit abandon. The sender's performance stays secret until then.
+
+“Performance remarquable” is not a vague percentile or generic good run. For social challenges it means exactly **Mastery on the first play**. That condition strengthens the challenge CTA because it combines speed and autonomy before the sender could learn the solution. Replayed Mastery can still matter to personal progression but is deliberately excluded from challenge creation.
+
+Sharing without interaction was also rejected as low-value. In the current product philosophy, social sharing exists to create a challenge loop. Results return to the sender in “Mes défis” and through contextual push notifications; guests remain allowed but must choose a visible first name/nickname.
