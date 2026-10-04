@@ -16,6 +16,16 @@ Mobile play is primary. Marking many impossible cells one-by-one was identified 
 Board rows/cells must not visually jump when exclusion markers appear. Exclusion appearance should remain consistent between manual and automatic marking.
 
 ## Learning UX
+The onboarding has a protected **SEE -> UNDERSTAND -> ACT** order. “Learn by playing” does not mean “act immediately”: before the first board interaction, quest 1 gives the player a short visual model of what the board is and what success means.
+
+**SEE:** show the real quest-1 board without accepting board input. Temporarily number the five colored territories 1–5 so a new player can perceive that color/shape defines distinct territories. These numbers are teaching scaffolding only and must disappear from ordinary play.
+
+**UNDERSTAND:** still before the first move, explain on the real board that the goal is to place Guardians and that there is exactly one Guardian per territory, one per row, one per column, and that Guardians cannot touch even diagonally.
+
+**ACT:** only after those concepts have been presented, teach the real cell cycle: first tap/click = exclusion mark, second tap/click = Guardian. Then continue with the interactive deductions and drag lesson.
+
+This ordering is a regression guard. A tutorial redesign may shorten copy or improve presentation, but must not require a deduction or board action before SEE and UNDERSTAND are complete.
+
 The player should learn by playing rather than reading a large rule dump. Early quests progressively demonstrate consequences of Guardians. Guidance should explain *why* a move conflicts.
 
 The intended progression:
