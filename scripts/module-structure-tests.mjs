@@ -37,9 +37,14 @@ additionalTests.push(
  "Apprentissage : les fenêtres de jalons cachées ne bloquent pas le plateau",
  "Apprentissage : le choix du Contrôle guidé explique l’intervention réelle sur les badges",
  "Apprentissage : Rapidité est introduit exactement à la quête 3",
- "Apprentissage : Autonomie et Maîtrise sont introduits à la quête 6",
+ "Apprentissage : Autonomie, Sans erreur et Maîtrise sont introduits à la quête 6",
  "Badges : les jalons pédagogiques suivent l’éligibilité réelle",
- "Onboarding : les jalons de badges suivent l’éligibilité réelle"
+ "Onboarding : les jalons de badges suivent l’éligibilité réelle",
+ "Badges : Sans erreur exige zéro assistance et zéro erreur confirmée",
+ "Badges : Maîtrise exige les trois badges sur le même essai",
+ "Tentative : reset campagne garde attemptId mais réinitialise chrono, aide et erreur",
+ "Tentative : reset défi reste one-shot",
+ "UI badges : Mon ciel et les règles affichent Sans erreur"
 );
 assert.equal(originalTests.length,66);
 assert.equal(tests.length,originalTests.length+additionalTests.length);
