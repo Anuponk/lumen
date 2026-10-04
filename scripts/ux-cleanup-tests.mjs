@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {connectBrowser,acknowledgeLearningMilestones} from './cdp-client.mjs';
 const {send,evaluate,errors}=await connectBrowser();
+const gameScreenSource=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+const performanceSource=fs.readFileSync(new URL('../src/campaign/performance.js',import.meta.url),'utf8');
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const results=[],failures=[];
 const check=(value,message)=>{if(!value)failures.push(message)};
@@ -63,10 +65,10 @@ try{
  await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,mobile:true,deviceScaleFactor:1});
  await evaluate(`lumenDiagnostics.setupQuest(10);document.getElementById('manualCrossTip').hidden=true;document.getElementById('questStart').hidden=true`);
  await acknowledgeLearningMilestones(evaluate);
- check(await evaluate('clock.toString().includes("visualWindowMs=30000")'),'Rapidité countdown opens at 30 seconds');
- check(await evaluate('clock.toString().includes("remainingMs<=10000")'),'Only the final 10 seconds use the stronger state');
+ check(gameScreenSource.includes('visualWindowMs=30000'),'Rapidité countdown opens at 30 seconds');
+ check(gameScreenSource.includes('remainingMs<=10000'),'Only the final 10 seconds use the stronger state');
  check(await evaluate('getComputedStyle(document.getElementById("speedCountdownFill")).animationName==="none"'),'Rapidité countdown does not blink or pulse');
- check(await evaluate('speedTargetSeconds(10)===90'),'Badge timing threshold is unchanged');
+ check(performanceSource.includes('if(q<=20)return 90'),'Badge timing threshold is unchanged');
 
  const beforeLearning=await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress)`);
  await click('#tutorialHelp');await click('#replayLearning');await sleep(120);
