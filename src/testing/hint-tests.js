@@ -221,6 +221,12 @@ async function runHintTests(){
   });
  });
 
+ // Product/onboarding coupling: badge eligibility changes must update the corresponding teaching milestone.
+ test("Onboarding : les jalons de badges suivent l’éligibilité réelle",()=>{
+  const firstEligible=badge=>{for(let i=0;i<100;i++)if(performanceEligibility(i)[badge])return i;return -1};
+  return firstEligible("speed")===2&&firstEligible("autonomy")===5&&firstEligible("mastery")===5;
+ });
+
  // Performance regressions: keep ordinary play incremental and cheap.
  test("Performance : un clic ordinaire ne reconstruit pas toute la grille",()=>{
    const src=render.toString(),clickStart=src.search(/d\.onclick=(?:async)?\(\)=>/),clickEnd=src.indexOf("};board.appendChild(d)",clickStart);
