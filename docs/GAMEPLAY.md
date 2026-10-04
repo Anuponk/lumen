@@ -16,21 +16,19 @@ A wrong intermediate Guardian is allowed to exist long enough for the player to 
 There is no separate Validate action. Reaching N Guardians triggers evaluation. A correct set of Guardians wins even if unrelated exclusion marks remain. An invalid complete placement must not count as a mistake merely because it temporarily contains N Guardians.
 
 ## Learning curve
-- Quests 1–2: scripted learning. Teach Guardians through progressive consequences; interactions are constrained while the scripted sequence is active, but a Guardian uses the normal two-step cell cycle: first tap excludes, second tap places the Guardian.
-- Quests 1–5: automatic marking/guided control forced.
+- Quest 1: play the normal board with a contextual coach. Only the expected cell actions are allowed during guided steps; unrelated taps are ignored without errors or starting the attempt. Help, pause, account and reset remain available.
+- Quest 2: guide the first Guardian in the singleton territory, then require a real held mouse/touch drag across the remaining first-row cells. Taps cannot skip this gesture lesson. Partial drags persist and may be resumed, including from an already excluded cell; the Guardian and cells outside the row remain protected throughout the gesture. Once the row is excluded, release the normal controls for free play. Dismissible advice appears on the first Guardian and first Verify use; the first hint explains its operation in the actual hint card. Assist explains its first real conflict in context.
+- Quests 1–5: manual marking, automatic marking locked off, guided control forced on.
 - Quests 6–10: assistance available but optional; automatic marking defaults off.
 - Quest 11: autonomy choice is presented; playing without guided control is a valid/default dismissal path.
-- When automatic marking is first disabled, explain manual exclusion and drag interaction.
 
-The first two quests use curated 5x5 boards. Quest 1 starts with the single-cell territory in the centre; quest 2 uses a different board. These are deliberate onboarding exceptions to the normal territory-size rule (see GRID_CATALOG).
+Quest 1 retains the audited 5x5 grid with its deliberate singleton at (2,2), using zero-based coordinates. The pedagogical sequence is verified against the actual topology: Guardian (2,2), manual row exclusions, column exclusions, adjacent/diagonal exclusions, forced Guardian (4,3), reuse of the rules, drag across (4,0) and (4,1), then Guardian (3,0), followed by lighter guided practice for (0,1) and (1,4). The user requested guidance through the end of quest 1, so the later bubbles remain short and spotlight a territory rather than revealing a target cell.
 
-The sequence introduces the five territories and the one-Guardian-per-territory rule before the first placement. Anchored speech bubbles then explain the row, column, neighbouring cells including diagonals, and any remaining cells of the occupied territory separately. New exclusions appear one at a time at 500 ms intervals in both quests; the player controls the time between explanations.
+Every Guardian uses the real empty -> exclusion -> Guardian cycle. All exclusions are made by the player. The first row/column/neighbors use individual taps; drag is introduced after the second Guardian with the exact same input handler as free play. Individual taps remain available as an accessible alternative to the drag. No explanatory Next/Previous buttons, automatic actions, alternative cell marks or tutorial-specific board styling are used. Only the temporary spotlight/dimming and coach bubble differ from ordinary gameplay.
 
-Existing exclusions remain visible and are never animated again. If a zone has no new exclusions, the bubble explicitly says its cells are already marked. After an animation, tapping any non-control area advances the explanation; the optional Next button does the same. A Guardian must still be placed on the indicated cell. Account/help/reset controls and corrective modals retain their own actions.
+The lesson is derived from canonical board state by `src/game/learning.js`. Reload restores the same attempt and half-completed tap cycle; pause/background restoration still requires explicit resume. Reset returns to the first deduction without changing attempt identity, elapsed time, assistance or campaign progression. Ordinary replay and social challenges do not activate the constrained lesson; explicit learning replay does.
 
-Previous restores the earlier explanation, Guardians and exclusions. It can cancel an in-progress animation; replaying an already visited explanation does not repeat its marking animation. Reset clears this in-memory teaching history and keeps the current quest and persisted campaign progress.
-
-After quest 2, the success path opens Mon ciel with a dismissible contextual explanation of stars, constellations, unlocks and the link between solved quests and sky progression.\n\nIn scripted onboarding, the final legal placement is followed by its explanations before completion is recorded. Outside onboarding, a legal complete placement is evaluated immediately. In both cases victory depends on legal Guardians, not on marking every remaining cell.
+Quest 1 uses the normal success experience. Quest 2 success explains the actual badge availability (Rapidité at quest 3; Autonomie/Maîtrise at quest 6) and its normal next CTA opens a lightweight Mon ciel tour. The tour points out stars, constellations and the next quest; its CTA or close action leads to quest 3. No imposed coach remains from quest 3 onward, while the existing Assist eligibility continues.
 
 ## Mobile input
 Dragging a finger over cells marks exclusions. It must:

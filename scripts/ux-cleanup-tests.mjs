@@ -61,9 +61,10 @@ try{
  await evaluate(`lumenDiagnostics.setupQuest(10);document.getElementById('manualCrossTip').hidden=true;document.getElementById('questStart').hidden=true`);
  const beforeLearning=await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress)`);
  await click('#tutorialHelp');await click('#replayLearning');await sleep(120);
- const learningContract=await evaluate(`(()=>({stage:document.getElementById('board').dataset.learningStage,nextHidden:document.getElementById('scriptedLearnNext').hidden,realCells:document.querySelectorAll('#board .cell').length}))()`);
+ const learningContract=await evaluate(`(()=>({stage:document.getElementById('board').dataset.learningStage,noAdvanceControl:!document.getElementById('scriptedLearnNext'),realCells:document.querySelectorAll('#board .cell').length,allowedCells:document.querySelectorAll('#board .cell[aria-disabled="false"]').length}))()`);
  check(learningContract.realCells>0,'learning uses real grid cells');
- if(['row','column','neighbors','territory'].includes(learningContract.stage))check(learningContract.nextHidden,'manual marking stage cannot be skipped');
+ check(learningContract.noAdvanceControl,'learning cannot skip real actions through a Next button');
+ check(learningContract.stage==='place'&&learningContract.allowedCells===1,'learning replay starts with only the forced central cell interactive');
  check(await evaluate(`lumenDiagnostics.snapshot().levelIndex===0&&!document.getElementById('scriptedLearn').hidden`),'learning replay starts real quest 1 teaching mode');
  check(await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress)`)===beforeLearning,'starting learning replay changed progression');
  check(errors.length===0,'Browser exceptions: '+JSON.stringify(errors));

@@ -35,6 +35,7 @@ jobs:
           node scripts/attempt-engine-tests.mjs
           node scripts/performance-badge-tests.mjs
           node scripts/daily-engagement-tests.mjs
+          node scripts/learning-tests.mjs
           node scripts/social-challenge-tests.mjs
           node scripts/social-challenge-ui-tests.mjs
 
@@ -82,6 +83,20 @@ jobs:
           fi
           node scripts/ux-cleanup-tests.mjs docs/validation/ci-ux.json
 
+      - name: Learning interaction suite
+        timeout-minutes: 4
+        env:
+          LUMEN_CDP_URL: http://127.0.0.1:9223
+        run: |
+          chromium --headless=new --remote-debugging-port=9223 --remote-debugging-address=127.0.0.1 --user-data-dir=/tmp/lumen-chrome-learning --no-first-run --no-default-browser-check --disable-dev-shm-usage --no-sandbox about:blank > /tmp/lumen-chrome-learning.log 2>&1 &
+          ready=0
+          for i in {1..30}; do
+            if curl -fsS "$LUMEN_CDP_URL/json/version" >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then cat /tmp/lumen-chrome-learning.log; exit 1; fi
+          node scripts/learning-browser-tests.mjs docs/validation/ci-learning.json
+
       - name: Upload validation reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -90,4 +105,5 @@ jobs:
           path: |
             docs/validation/ci-browser.json
             docs/validation/ci-ux.json
+            docs/validation/ci-learning.json
           if-no-files-found: ignore
