@@ -13,6 +13,8 @@ const nodeSuites=[
  "difficulty-audit.mjs",
  "engine-equivalence.mjs",
  "campaign-tests.mjs",
+ "content-architecture-tests.mjs",
+ "extraordinary-skies-tests.mjs",
  "persistence-tests.mjs",
  "analytics-tests.mjs",
  "module-structure-tests.mjs",
@@ -84,19 +86,27 @@ async function stopProcess(child){
 async function startChrome(port){
  const executable=chromeCandidates();
  if(!executable)throw Error("Chrome/Chromium not found. Set LUMEN_CHROME_BIN to the browser executable.");
- const profile=fs.mkdtempSync(path.join(os.tmpdir(),"lumen-quality-"));
- const args=["--headless=new","--remote-debugging-port="+port,"--remote-debugging-address=127.0.0.1","--user-data-dir="+profile,"--no-first-run","--no-default-browser-check","--disable-dev-shm-usage","--no-sandbox","about:blank"];
- const child=spawn(executable,args,{cwd:root,stdio:["ignore","ignore","pipe"],shell:false});
- let chromeStderr="";child.stderr?.on("data",chunk=>{chromeStderr=(chromeStderr+chunk.toString()).slice(-8000)});
- let cleaned=false;
- const cleanup=async()=>{if(cleaned)return;cleaned=true;await stopProcess(child);fs.rmSync(profile,{recursive:true,force:true})};
- started.push(cleanup);
- for(let i=0;i<300;i++){
-  if(child.exitCode!==null)throw Error("Chrome exited before CDP became ready");
-  try{const response=await fetch("http://127.0.0.1:"+port+"/json/version");if(response.ok)return {child,profile,cleanup}}catch(_){}
-  await sleep(100);
+ let lastError="";
+ for(let attempt=1;attempt<=2;attempt++){
+  const profile=fs.mkdtempSync(path.join(os.tmpdir(),"lumen-quality-"));
+  const args=["--headless=new","--remote-debugging-port="+port,"--remote-debugging-address=127.0.0.1","--user-data-dir="+profile,"--no-first-run","--no-default-browser-check","--disable-dev-shm-usage","--disable-background-networking","--disable-component-update","--no-sandbox","about:blank"];
+  const child=spawn(executable,args,{cwd:root,stdio:["ignore","ignore","pipe"],shell:false});
+  let chromeStderr="";child.stderr?.on("data",chunk=>{chromeStderr=(chromeStderr+chunk.toString()).slice(-8000)});
+  let cleaned=false;
+  const cleanup=async()=>{if(cleaned)return;cleaned=true;await stopProcess(child);fs.rmSync(profile,{recursive:true,force:true})};
+  started.push(cleanup);
+  let ready=false;
+  for(let i=0;i<300;i++){
+   if(child.exitCode!==null){lastError="Chrome exited before CDP became ready";break}
+   try{const response=await fetch("http://127.0.0.1:"+port+"/json/version");if(response.ok){ready=true;break}}catch(_){}
+   await sleep(100);
+  }
+  if(ready)return {child,profile,cleanup};
+  lastError=(lastError||"Chrome CDP did not become ready on port "+port)+(chromeStderr?"\nChrome stderr:\n"+chromeStderr:"");
+  await cleanup();const index=started.indexOf(cleanup);if(index>=0)started.splice(index,1);
+  if(attempt<2){console.warn("Chrome startup attempt "+attempt+" failed on CDP port "+port+"; retrying with a fresh profile.");await sleep(500)}
  }
- throw Error("Chrome CDP did not become ready on port "+port+(chromeStderr?"\nChrome stderr:\n"+chromeStderr:""));
+ throw Error(lastError);
 }
 async function runBrowser(script,output,port){
  const chrome=await startChrome(port);
@@ -116,8 +126,8 @@ try{
  for(const suite of nodeSuites)await run(process.execPath,[path.join("scripts",suite)],{label:suite});
  await startServer();
  await runBrowser("browser-tests.mjs","ci-browser.json",9222);
- await runBrowser("ux-cleanup-tests.mjs","ci-ux.json",9222);
- await runBrowser("learning-browser-tests.mjs","ci-learning.json",9223);
+ await runBrowser("ux-cleanup-tests.mjs","ci-ux.json",9223);
+ await runBrowser("learning-browser-tests.mjs","ci-learning.json",9224);
 }catch(error){failed=error;console.error("\nQUALITY GATE FAILED:",error.message)}
 finally{
  await cleanup();

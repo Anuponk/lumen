@@ -23,11 +23,10 @@ function replayDifficulty(questIndex){
   rules[rule]=(rules[rule]||0)+1;
  }
  if(steps>=250)throw Error("Quest "+(questIndex+1)+" exceeded difficulty replay limit");
- const complex=rules.group*3+rules.locked*1.8;
  const work=Math.max(0,steps-size);
- // Fixed deterministic score: board scale + logical workload + complex-rule pressure.
- // It is intentionally not a percentile, so future packs remain comparable to the base game.
- const score=Math.round((size-5)*18+work*0.7+complex*0.55);
+ // Fixed deterministic score. Board size matters, but logical workload is the main signal.
+ // Group deductions weigh more than locked deductions; singles mostly close a chain.
+ const score=Math.round((size-5)*6+work*0.45+rules.group*1.25+rules.locked*0.6);
  return {
   quest:questIndex+1,size,catalogueIndex,steps,rules,
   groupShare:steps?Math.round(rules.group/steps*1000)/10:0,
@@ -36,10 +35,10 @@ function replayDifficulty(questIndex){
  };
 }
 function tier(score){
- if(score<28)return "accessible";
- if(score<48)return "intermediate";
+ if(score<40)return "accessible";
+ if(score<55)return "intermediate";
  if(score<70)return "hard";
- if(score<92)return "expert";
+ if(score<90)return "expert";
  return "expert+";
 }
 const quests=Array.from({length:Object.keys(CAMPAIGN_SIZE_SCHEDULE).length},(_,i)=>replayDifficulty(i)).map(x=>({...x,tier:tier(x.score)}));
@@ -52,22 +51,39 @@ function segment(start,end){
 const segments=[[1,20],[21,40],[41,60],[61,80],[81,100]].map(([a,b])=>segment(a,b));
 const last20=quests.slice(80);
 const peaks=[...quests].sort((a,b)=>b.score-a.score).slice(0,15).map(({quest,size,score,tier,steps,rules})=>({quest,size,score,tier,steps,rules}));
+const segmentAverages=segments.map(x=>x.average);
+const lateExpert=last20.filter(x=>["expert","expert+"].includes(x.tier)).length;
+const lateExpertPlus=last20.filter(x=>x.tier==="expert+").length;
+const lateBreathers=last20.filter(x=>x.score<55).length;
+const finalQuest=quests.at(-1);
+const curveChecks={
+ ascendingSegments:segmentAverages.every((value,index)=>index===0||value>segmentAverages[index-1]),
+ meaningfulLift:segmentAverages.at(-1)>=segmentAverages[0]+18,
+ lateExpertDensity:lateExpert>=7,
+ lateExpertPlusPeaks:lateExpertPlus>=4,
+ lateBreathers:lateBreathers>=5,
+ expertFinale:finalQuest?.tier==="expert+"
+};
+if(Object.values(curveChecks).some(value=>!value))throw Error("Difficulty curve regression: "+JSON.stringify({segments,curveChecks,finalQuest}));
 const report={
  version:1,
  metric:{
-  formula:"round((size-5)*18 + max(0,steps-size)*0.7 + (group*3 + locked*1.8)*0.55)",
-  tiers:{accessible:"<28",intermediate:"28-47",hard:"48-69",expert:"70-91","expert+":"92+"},
+  formula:"round((size-5)*6 + max(0,steps-size)*0.45 + group*1.25 + locked*0.6)",
+  tiers:{accessible:"<40",intermediate:"40-54",hard:"55-69",expert:"70-89","expert+":"90+"},
   note:"Fixed score for comparison across current and future content; no player-behaviour data is included."
  },
  segments,
  lateGame:{
   average:Math.round(last20.reduce((a,b)=>a+b.score,0)/last20.length*10)/10,
-  experts:last20.filter(x=>["expert","expert+"].includes(x.tier)).length,
-  peakCount:last20.filter(x=>x.score>=92).length
+  experts:lateExpert,
+  expertPlus:lateExpertPlus,
+  breathers:lateBreathers,
+  peakCount:last20.filter(x=>x.score>=90).length
  },
+ curveChecks,
  peaks,
  quests
 };
 const output=process.argv[2];
 if(output)fs.writeFileSync(output,JSON.stringify(report,null,2)+"\n");
-console.log(JSON.stringify({segments,lateGame:report.lateGame,peaks},null,2));
+console.log(JSON.stringify({segments,lateGame:report.lateGame,curveChecks,peaks},null,2));

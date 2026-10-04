@@ -168,7 +168,23 @@ try {
     await evaluate('document.getElementById("openSky").click();document.querySelector("#puzzleGrid .puzzle-card.done").click()');
     assert.equal((await snapshot()).replayMode,true);
     assert.equal(await evaluate('document.getElementById("scriptedLearn").hidden'),true,'Ordinary replay has no imposed lesson');
-    results.push({viewport,stages,realDrag:true,reload:true,reset:true,guidedQuest2Drag:true,partialQuest2Reload:true,freeQuest2:true,skyTour:true,freeReplay:true});
+
+    assert.equal(await evaluate('document.getElementById("learningSkip").hidden'),true,'First-time learning never exposes skip');
+    const returnQuest=(await snapshot()).levelIndex;
+    await evaluate('localStorage.setItem("lumenTutorialCompletedV1","1");document.getElementById("replayLearning").click()');
+    await sleep(80);
+    const beforeSkip=await evaluate('JSON.stringify((()=>{const p=lumenDiagnostics.snapshot().progress;return {solved:p.solved,badges:p.badges,shards:p.shards}})())');
+    assert.equal(await evaluate('document.getElementById("learningSkip").hidden'),false,'Completed learner may skip a voluntary learning replay');
+    assert.notEqual(await evaluate('document.getElementById("board").dataset.learningStage'),'complete','Replay is actively teaching before skip');
+    await evaluate('document.getElementById("learningSkip").click()');
+    await sleep(80);
+    const afterSkip=await snapshot();
+    assert.equal(afterSkip.levelIndex,returnQuest,'Skip returns to the original quest');
+    if(returnQuest<=1)assert.equal(afterSkip.replayMode,true,'Completed learning quests return as ordinary replays');
+    assert.equal(await evaluate('document.getElementById("scriptedLearn").hidden'),true,'Skip exits the learning UI');
+    assert.equal(await evaluate('JSON.stringify((()=>{const p=lumenDiagnostics.snapshot().progress;return {solved:p.solved,badges:p.badges,shards:p.shards}})())'),beforeSkip,'Skip must not award progress, badges or shards');
+    results.push({viewport,stages,realDrag:true,reload:true,reset:true,guidedQuest2Drag:true,partialQuest2Reload:true,freeQuest2:true,skyTour:true,freeReplay:true,firstTimerNoSkip:true,completedReplaySkip:true});
+
   }
   assert.deepEqual(errors,[]);
   const report={results,uncaughtErrors:errors};if(output)fs.writeFileSync(output,JSON.stringify(report,null,2));console.log(JSON.stringify(report));

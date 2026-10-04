@@ -192,3 +192,35 @@ Do not duplicate browser/server setup in GitHub Actions. Add new mandatory suite
 
 ## Difficulty audit (#81)
 Run `node scripts/difficulty-audit.mjs [optional-report.json]` to measure the campaign independently of player telemetry. The deterministic score combines board size, explainable proof workload and the pressure of `locked/group` rules. It uses fixed thresholds rather than campaign percentiles, so future packs can be compared to the base game. The quality gate runs the audit to ensure every scheduled quest remains fully replayable; changing the score formula requires an explicit product decision and documentation.
+
+
+## Late-game difficulty curve (#81 phase 2)
+The base campaign intentionally consumes every currently audited 7×7 and 8×8 catalogue entry. The second half alternates easier 6×6 breathing quests with 7×7 hard steps and 8×8 expert peaks instead of using grid size as a monotonic ladder. `scripts/difficulty-audit.mjs` guards the curve itself: all five 20-quest segment averages must rise, the final segment must materially exceed the first, Q81–100 must contain several expert/expert+ peaks and several breathers, and Q100 must be expert+.
+
+The fixed metric is `round((size-5)*6 + max(0,steps-size)*0.45 + group*1.25 + locked*0.6)`. Tiers: accessible <40, intermediate 40–54, hard 55–69, expert 70–89, expert+ ≥90. This is a reproducible solver proxy, not a claim about human solve time; validate it against #65 telemetry as data accumulates.
+
+
+## Extensible content registry (#47)
+`src/campaign/content.js` is the stable content boundary for future skies and packs. The current 100-quest game is pack `base-real-sky` inside `real-sky`. Existing numeric quest indices remain the legacy progression key so current players lose nothing. Future packs receive stable IDs and can be entitlement-gated without changing the puzzle engine.
+
+The base campaign length is intentionally distinct from future catalogue length. Progression/UI/cloud merge paths derive the current base length from the content model instead of duplicating the literal 100. Payment, pack pricing and the final future-catalogue UX remain out of scope until engagement data justifies them.
+
+
+## Ownership integration (#66)
+The production backend already exposes `lumen_get_entitlements()` over `lumen.entitlements` (`entitlement`, `source`, `granted_at`, optional `expires_at`). Do not create a parallel ownership table. Authenticated startup/sign-in loads that RPC into the client content model; sign-out/anonymous mode clears account entitlements and therefore sees only packs whose registry access is `included`.
+
+`Mon ciel` obtains its constellation navigation from `contentMapModel()`, including stable content/pack IDs and access state, while preserving the existing legacy constellation indexes and puzzle progress keys. Future skies/packs can therefore extend the registry without duplicating the base catalogue in UI code.
+
+
+## Tutorial skip eligibility (#80)
+Do not use `lumenTutorialSeen` as proof of onboarding completion: it only means the introductory slides were dismissed/completed. Durable skip eligibility is `lumenTutorialCompletedV1`, granted only after Q2 succeeds, with Q1+Q2 solved progress as a recovery fallback after cloud restore.
+
+A genuine first-time player never sees “Passer le tutoriel”. A player who has already completed Q1+Q2 may skip only a voluntary learning replay; doing so returns to the prior quest and must not mutate solved quests, badges, shards or milestone state. QA new-player mode uses its isolated `lumenQa...` namespace and a fresh QA reset clears that proof.
+
+
+## Rapidité countdown UX (#88)
+The Rapidité badge threshold itself is unchanged. The visual countdown window is 30 seconds: the indicator appears when 30 s remain and its fill represents `remaining / 30s`. The first 20 seconds stay deliberately subdued; only the final 10 seconds receive a modest visual emphasis. No blinking/pulsing animation is allowed and the countdown must remain outside the puzzle grid.
+
+
+## Internal tester capabilities (#33)
+Never authorize admin/tester tools from a browser email comparison or localStorage alone. The client must first receive the capability from `lumen_get_internal_capabilities()`. Local device preferences may only toggle a capability already granted by the server. Commercial ownership remains in `lumen.entitlements`; internal tester capabilities live separately in `lumen.internal_capabilities`.

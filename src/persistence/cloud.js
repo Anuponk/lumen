@@ -1,5 +1,6 @@
 export function createCloudPersistence(model,hooks,environment){
 const {activeGameSeconds,exactSkyScoreForSolvedPrefix,saveLumenProgress,refreshJourney,init,updateAuthUI,showRewardToast,renderDaily}=hooks;
+const campaignQuestCount=()=>Math.max(0,Number(hooks.campaignQuestCount?.()??100));
 const {document,location,alert,setTimeout,console}=environment;
 const cloudWritesDisabled=()=>!!environment.qaMode;
 async function loadLumenProfile(){
@@ -18,11 +19,18 @@ async function saveLumenNickname(){
  model.lumenNickname=data||value;updateAuthUI();showRewardToast("Pseudo enregistré ✦");
 }
 
+async function loadInternalCapabilities(){
+ if(!model.lumenSupabase||!model.lumenUser){model.lumenCapabilities=[];return []}
+ const {data,error}=await model.lumenSupabase.rpc("lumen_get_internal_capabilities");
+ if(error){console.warn("LUMEN capabilities",error);model.lumenCapabilities=[];return []}
+ model.lumenCapabilities=data||[];updateAuthUI();return model.lumenCapabilities;
+}
+
 async function loadEntitlements(){
- if(!model.lumenSupabase||!model.lumenUser)return [];
+ if(!model.lumenSupabase||!model.lumenUser){model.lumenEntitlements=[];return []}
  const {data,error}=await model.lumenSupabase.rpc("lumen_get_entitlements");
- if(error){console.warn("LUMEN entitlements",error);return []}
- return data||[];
+ if(error){console.warn("LUMEN entitlements",error);model.lumenEntitlements=[];return []}
+ model.lumenEntitlements=data||[];refreshJourney();return model.lumenEntitlements;
 }
 
 async function cloudSavePuzzle(index){
@@ -36,11 +44,11 @@ async function cloudMergeProgress(){
  if(cloudWritesDisabled()||!model.lumenSupabase||!model.lumenUser)return;
  const {data,error}=await model.lumenSupabase.rpc("lumen_get_progress");
  if(error){console.warn("LUMEN sync load",error);return}
- const cloud=new Set((data||[]).map(x=>Number(x.puzzle_id)-1).filter(x=>x>=0&&x<100));
- const local=Object.keys(model.lumenProgress.solved||{}).filter(k=>model.lumenProgress.solved[k]).map(Number).filter(x=>x>=0&&x<100);
- const backup=Object.keys(model.lumenProgress.historyBackup||{}).filter(k=>model.lumenProgress.historyBackup[k]).map(Number).filter(x=>x>=0&&x<100);
+ const cloud=new Set((data||[]).map(x=>Number(x.puzzle_id)-1).filter(x=>x>=0&&x<campaignQuestCount()));
+ const local=Object.keys(model.lumenProgress.solved||{}).filter(k=>model.lumenProgress.solved[k]).map(Number).filter(x=>x>=0&&x<campaignQuestCount());
+ const backup=Object.keys(model.lumenProgress.historyBackup||{}).filter(k=>model.lumenProgress.historyBackup[k]).map(Number).filter(x=>x>=0&&x<campaignQuestCount());
  const authoritative=cloud.size?cloud:new Set([...backup,...local]);
- let count=0;while(count<100&&authoritative.has(count))count++;
+ let count=0;while(count<campaignQuestCount()&&authoritative.has(count))count++;
  const restored={};for(let i=0;i<count;i++)restored[i]=1;
  model.lumenProgress.solved=restored;
  model.lumenProgress.historyBackup={...restored};
@@ -61,10 +69,10 @@ async function initLumenCloud(){
  if(!model.lumenSupabase){updateAuthUI();return}
  const {data}=await model.lumenSupabase.auth.getSession();
  model.lumenUser=data.session?.user||null; updateAuthUI();
- if(model.lumenUser){await loadLumenProfile();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily();}}
+ if(model.lumenUser){await loadLumenProfile();await loadEntitlements();await loadInternalCapabilities();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily();}}else {model.lumenEntitlements=[];model.lumenCapabilities=[];}
  model.lumenSupabase.auth.onAuthStateChange((event,session)=>{
    const previous=model.lumenUser?.id; model.lumenUser=session?.user||null; updateAuthUI();
-   if(!cloudWritesDisabled()&&model.lumenUser&&model.lumenUser.id!==previous)setTimeout(async()=>{await cloudMergeProgress();await cloudMergeDaily()},0);
+   if(model.lumenUser&&model.lumenUser.id!==previous)setTimeout(async()=>{await loadEntitlements();await loadInternalCapabilities();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily()}},0);else if(!model.lumenUser){model.lumenEntitlements=[];model.lumenCapabilities=[];refreshJourney();updateAuthUI()}
  });
  const login=document.getElementById("authLogin"),logout=document.getElementById("authLogout");
  if(login)login.onclick=async()=>{
@@ -72,7 +80,7 @@ async function initLumenCloud(){
    const {error}=await model.lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo}});
    if(error)alert("Connexion impossible : "+error.message);
  };
- if(logout)logout.onclick=async()=>{await model.lumenSupabase.auth.signOut();model.lumenUser=null;model.lumenCloudReady=false;updateAuthUI()};
+ if(logout)logout.onclick=async()=>{await model.lumenSupabase.auth.signOut();model.lumenUser=null;model.lumenEntitlements=[];model.lumenCapabilities=[];model.lumenCloudReady=false;updateAuthUI();refreshJourney()};
 }
 
 async function cloudSaveDaily(date,index){
@@ -89,7 +97,7 @@ async function cloudMergeHistoricalPerformance(anonymousId){
  model.lumenProgress.performances=model.lumenProgress.performances||{};
  let changed=false;
  for(const row of data||[]){
-   const i=Number(row.puzzle_id)-1;if(i<0||i>=100)continue;
+   const i=Number(row.puzzle_id)-1;if(i<0||i>=campaignQuestCount())continue;
    const old=model.lumenProgress.performances[i]||{},badges=old.badges||{};
    // Historical cloud recovery predates Sans erreur. Preserve any local Sans erreur
    // trophy while merging the older autonomy/speed/mastery evidence.
@@ -124,5 +132,5 @@ async function cloudMergeDaily(){
  saveLumenProgress();renderDaily();
 }
 
-return {loadLumenProfile,saveLumenNickname,loadEntitlements,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance};
+return {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance};
 }

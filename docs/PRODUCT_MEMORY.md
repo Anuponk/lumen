@@ -203,3 +203,58 @@ Real touch tests then exposed two player-facing defects: badge/auto-marking dial
 - Fixed score thresholds keep future packs/add-ons comparable with the base campaign.
 - The report tracks five 20-quest campaign segments, late-game expert density and the highest peaks. Player analytics from #65 will later validate whether solver difficulty correlates with real solve time, resets, help usage and abandonment.
 - Reordering/replacing grids is deliberately a second phase after the baseline curve is measured.
+
+
+## 2026-10-04 — P0 difficulty phase 2 (#81)
+- The campaign now uses all 20 audited 7×7 and all 12 audited 8×8 catalogue grids; previously 5 of the 7×7 and 7 of the 8×8 grids were unused.
+- New late-game rhythm deliberately alternates 6×6 breathers with hard 7×7 and expert 8×8 peaks.
+- Solver-derived segment averages target a clear lift: approximately 44 → 50 → 51 → 62 → 67 across five 20-quest bands.
+- Q81–100 contains at least seven expert/expert+ quests, at least four expert+ peaks, at least five breathers, and an expert+ Q100.
+- Difficulty scoring was recalibrated so board size no longer dominates classification; group/locked logical work carries most of the score.
+
+
+## 2026-10-04 — Extensible content foundation (#47)
+- Current free content now has stable identifiers: sky `real-sky`, pack `base-real-sky`, constellation IDs and base quest IDs.
+- Existing numeric quest indices remain untouched for backward compatibility.
+- Future packs can be represented as entitlement-gated content without changing the puzzle engine.
+- Base campaign length (currently 100) is a content-model concept rather than a scattered hard-coded constant in progression/UI/cloud merge.
+- This intentionally does not implement payment, pack pricing or premium content; those remain data-driven decisions for later.
+
+
+## 2026-10-04 — Ownership and Mon ciel integration (#66)
+- Existing Supabase ownership is authoritative: `lumen.entitlements` + `lumen_get_entitlements()`; no duplicate table is introduced.
+- The client now recognizes the real backend field `entitlement` and loads entitlements on authenticated startup and account changes.
+- Anonymous/sign-out state contains no account entitlements; included/free packs remain accessible through registry policy.
+- Mon ciel constellation navigation is now derived from `contentMapModel()`, with stable constellation/pack IDs attached to UI tabs while legacy numeric indices continue to drive existing progression.
+
+
+## 2026-10-04 — Tutorial skip rule (#80)
+- “Slides seen” and “tutorial completed” are separate facts.
+- Skip eligibility is granted only after successful completion of Q2 (or inferred from restored solved Q1+Q2).
+- First-time players never see a tutorial-skip CTA.
+- Eligible players may skip a voluntary replay of the learning sequence and return to where they were, with no artificial rewards/progression.
+- QA New Player uses isolated completion proof and fresh QA mode clears it, so the real profile cannot leak skip eligibility into first-player testing.
+
+
+## 2026-10-04 — Rapidité countdown calm UX (#88)
+- Rapidité timing rules are unchanged.
+- The visual countdown appears at 30 seconds remaining instead of 10.
+- Its progress is spread over the full 30-second window to reduce perceived speed and stress.
+- The final 10 seconds receive only a mild emphasis; no flashing or pulse is introduced.
+
+
+## 2026-10-04 — Internal capability model (#33)
+- Removed the globally hard-coded unlimited-shards switch.
+- Tester/admin powers are server-authoritative capabilities from `lumen.internal_capabilities` via `lumen_get_internal_capabilities()`.
+- Initial `unlimited_shards` grant is server-side; the browser contains no privileged email allowlist.
+- Capability state is cleared on logout/anonymous mode.
+- Enabling/disabling the tool is a local per-device preference, but localStorage alone cannot grant access.
+- Internal capabilities are separate from commercial content entitlements.
+
+
+## 2026-10-04 — Extraordinary skies creative direction (#67)
+- Six initial creative universes are defined, including two deliberately bolder directions: famous/historical figures and absurd/farfetched constellations.
+- Initial catalogue: 48 constellation concepts, eight per sky.
+- Silhouettes target 7–14 stars and roughly 120 px mobile readability.
+- Artistic shapes remain strictly decoupled from puzzle generation.
+- Famous-character content defaults to historical, mythological or public-domain figures; modern licensed characters require rights validation.
