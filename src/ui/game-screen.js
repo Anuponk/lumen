@@ -210,7 +210,7 @@ async function enableLumenPush(){
   await pushApi("subscribe",{subscription:sub.toJSON(),social_enabled:true});localStorage.setItem("lumenPushChoice","enabled");showRewardToast("Notifications LUMEN activées ✦");
  }catch(e){console.warn("LUMEN push subscribe",e);localStorage.removeItem("lumenPushChoice");showRewardToast("Impossible d’activer le rappel pour le moment")}
 }
-async function markLumenSeen(){if(localStorage.getItem("lumenPushChoice")!=="enabled")return;const sub=await currentPushSubscription();if(sub)pushApi("seen",{endpoint:sub.endpoint})}
+async function markLumenSeen(){if(localStorage.getItem("lumenPushChoice")!=="enabled")return;const sub=await currentPushSubscription();if(sub){await pushApi("subscribe",{subscription:sub.toJSON(),social_enabled:true});pushApi("seen",{endpoint:sub.endpoint})}}
 function maybeOfferPush(){if(solvedCount()<3||localStorage.getItem("lumenPushChoice"))return;if(!("Notification"in window)||Notification.permission==="denied")return;document.getElementById("pushOptin").hidden=false}
 async function disableLumenPush(){const sub=await currentPushSubscription();if(sub){await pushApi("unsubscribe",{endpoint:sub.endpoint});await sub.unsubscribe()}localStorage.setItem("lumenPushChoice","off");}
 
