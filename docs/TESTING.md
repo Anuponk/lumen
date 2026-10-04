@@ -76,6 +76,16 @@ The Chrome runner automates the tap/drag/reset/reload/PWA checks below. Keep exp
 12. sign-in merges local progress;
 13. install/share flows do not block play.
 
+## Unified local / CI quality gate (#58)
+
+Use Node 22+ and Chrome/Chromium. No npm install or application build is needed. The same command is used locally and by GitHub Actions:
+
+```powershell
+node scripts/quality-gate.mjs
+```
+
+The orchestrator runs every current Node gate, starts its own static HTTP server, launches isolated temporary browser profiles for browser/UX/learning suites, writes the usual reports under `docs/validation/`, and closes only the server/browser processes it started. On Windows it auto-detects Chrome or Edge; on Linux it looks for Chromium/Chrome. Set `LUMEN_CHROME_BIN` when the browser lives elsewhere. Any failing suite returns a non-zero exit code with a timing/status summary.
+
 ## Reproducible modular-refactor checks
 
 Use a recent Node runtime with native ES modules, built-in `fetch` and `WebSocket` (validated with Node 22.22.3). No npm install or bundler is needed. From the repository root:
@@ -174,3 +184,7 @@ Local repair validation: all 13 Node gates pass, including the strict 134-grid /
 
 ## Product telemetry gate (#65)
 Attempt analytics must use the attempt engine active duration and stable `attempt_id`; never rebuild duration from page timestamps. A campaign/replay Reset increments `run_index` while retaining `attempt_id`; challenge Reset remains one-shot. Run `node scripts/analytics-tests.mjs` after telemetry changes. Do not add cell-by-cell telemetry without a concrete product decision.
+
+
+### Quality gate orchestration rule
+Do not duplicate browser/server setup in GitHub Actions. Add new mandatory suites to `scripts/quality-gate.mjs` so local and CI execution stay identical.

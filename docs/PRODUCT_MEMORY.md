@@ -189,3 +189,9 @@ Real touch tests then exposed two player-facing defects: badge/auto-marking dial
 - A qualifying replay that newly earns **Sans erreur** can validate the daily activity exactly like the other performance badges.
 - The Shard wallet is explicitly uncapped in player-facing copy; no reward is clipped because of an existing balance.
 - Existing J3/J7 cycle, grace day, server-authoritative account day and idempotent reward ledger remain unchanged.
+
+
+## 2026-10-04 — Unified quality command (#58)
+- Local and CI validation now share `node scripts/quality-gate.mjs`.
+- The runner owns its Node static server and isolated Chrome/Chromium profiles, runs all current Node + browser + UX + learning gates, retains reports and cleans only processes it started.
+- GitHub Actions is intentionally thin and delegates orchestration to this script so local/CI drift cannot silently reappear.
