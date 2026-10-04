@@ -951,7 +951,7 @@ function broadClue(h){
  if(d.rule==="single"){
   if(d.axis==="row")return {text:`Compte les possibilités encore ouvertes sur la ligne ${d.index+1}.`,cells:[]};
   if(d.axis==="col")return {text:`Compte les possibilités encore ouvertes dans la colonne ${d.index+1}.`,cells:[]};
-  if(d.axis==="region")return {text:`Compte les possibilités encore ouvertes dans cette territoire.`,cells:[]};
+  if(d.axis==="region")return {text:"Il ne reste qu’une seule case possible dans ce territoire : place le Gardien sur la case surlignée.",cells:[]};
  }
  return null;
 }
@@ -1014,7 +1014,7 @@ document.getElementById("hint").onclick=()=>{
    let word=d.axis==="col"?"colonnes":"lignes";
    let nums=d.indices.map(x=>x+1).join(" et ");
    if(hintStage===1){
-    showHintMessage(`Piste : observe ensemble les territoires surlignées. Leurs Gardiens ne peuvent se placer que dans ${d.indices.length} ${word}. Essaie d'identifier lesquelles.`);
+    showHintMessage(`Piste : observe ensemble les territoires surlignés. Leurs Gardiens ne peuvent se placer que dans ${d.indices.length} ${word}. Essaie d'identifier lesquelles.`);
     render();return;
    }
    if(hintStage===2){

@@ -205,6 +205,14 @@ async function runHintTests(){
   let c=(p.sol[0]+1)%model.n;model.state[0][c]=2;
   return !!playerError();
  });
+ test("Indice : une case unique de territoire passe avant les raisonnements complexes",()=>{
+   const src=proofEngine.toString(),single=src.indexOf('detail:{rule:"single",axis:"region"'),locked=src.indexOf('detail:{rule:"locked"'),group=src.indexOf('detail:{rule:"group"');
+   return single>=0&&locked>single&&group>single&&src.includes("Il ne reste qu’une seule case possible dans ce territoire");
+ });
+ test("Indice : les formulations générées restent grammaticalement correctes",()=>{
+   const src=proofEngine.toString()+document.getElementById("hint").onclick.toString();
+   return !src.includes("cette territoire")&&!src.includes("territoires surlignées")&&src.includes("ce territoire");
+ });
  test("Aucun indice 'place' sans preuve structurée",()=>{
   return CAT[model.n].every(p=>{
    model.puz=p;model.state=Array.from({length:model.n},()=>Array(model.n).fill(0));

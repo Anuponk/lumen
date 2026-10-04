@@ -56,7 +56,7 @@ Touch interaction should feel immediate. Full board rerenders during drag are sp
 
 ## UX cleanup #16/#17/#19
 
-Missing direct exclusions use “Marquage manquant” and “écarter”, replacing the obsolete water-themed message. Remaining hint instructions also use “écarter” instead of “éteindre”; hint logic is unchanged. After victory, “Quête suivante” is the highlighted primary action; sharing remains secondary. The success card scrolls within the viewport on compact screens so the action stays reachable.
+Missing direct exclusions use “Marquage manquant” and “écarter”, replacing the obsolete water-themed message. Remaining hint instructions also use “écarter” instead of “éteindre”. Hint pedagogy follows a simplest-valid-explanation rule: a forced single in a territory is preferred first, then row/column singles, before locked/group deductions. Generated French must stay natural and grammatically correct. After victory, “Quête suivante” is the highlighted primary action; sharing remains secondary. The success card scrolls within the viewport on compact screens so the action stays reachable.
 
 Detailed rules are available through “? Revoir les règles” instead of a permanent paragraph below the board. The modal supports its close button, Escape and a backdrop click, then restores focus to the help button. Consultation preserves board/progress and the scripted teaching step; clicks in the modal must never advance onboarding.
 

@@ -86,7 +86,16 @@ function proofEngine(){
  function regPlaced(g){for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(state[r][c]===2&&puz.reg[r][c]===g)return true;return false}
  function rc(g){let a=[];for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(puz.reg[r][c]===g&&candidate(r,c))a.push([r,c]);return a}
 
- // First return ONE visible local elimination. Do not chain it invisibly.
+ // Prefer the simplest visible deduction before any compound elimination.
+ // A single remaining case in a territory is the clearest explanation, then row/column singles.
+ for(let g=0;g<n;g++)if(!regPlaced(g)){let a=rc(g);
+  if(a.length===1)return {kind:"place",cell:a[0],text:"Il ne reste qu’une seule case possible dans ce territoire : place le Gardien ici.",detail:{rule:"single",axis:"region",index:g},elim,why,meta};}
+ for(let r=0;r<n;r++)if(!state[r].includes(2)){let a=[];for(let c=0;c<n;c++)if(candidate(r,c))a.push([r,c]);
+  if(a.length===1)return {kind:"place",cell:a[0],text:`Il ne reste qu’une seule case possible sur la ligne ${r+1} : place le Gardien ici.`,detail:{rule:"single",axis:"row",index:r},elim,why,meta};}
+ for(let c=0;c<n;c++)if(!state.some(q=>q[c]===2)){let a=[];for(let r=0;r<n;r++)if(candidate(r,c))a.push([r,c]);
+  if(a.length===1)return {kind:"place",cell:a[0],text:`Il ne reste qu’une seule case possible dans la colonne ${c+1} : place le Gardien ici.`,detail:{rule:"single",axis:"col",index:c},elim,why,meta};}
+
+ // Only when no direct placement is available, return ONE visible local elimination.
  for(let g=0;g<n;g++)if(!regPlaced(g)){
   let a=rc(g);if(a.length>=2){
    let rows=[...new Set(a.map(q=>q[0]))],cols=[...new Set(a.map(q=>q[1]))];
@@ -106,14 +115,6 @@ function proofEngine(){
   if(rows.length===k)for(let r of rows)for(let c=0;c<n;c++)if(!group.includes(puz.reg[r][c])&&state[r][c]===0&&!isAutoCross(r,c))
    return {kind:"elim",cell:[r,c],text:`${k} territoires réservent exactement ${k} lignes.`,detail:{rule:"group",axis:"row",indices:rows,regions:group,source:cells},elim,why,meta};
  }
-
- // Only after every prerequisite elimination is actually on the board may a single be hinted.
- for(let r=0;r<n;r++)if(!state[r].includes(2)){let a=[];for(let c=0;c<n;c++)if(candidate(r,c))a.push([r,c]);
-  if(a.length===1)return {kind:"place",cell:a[0],text:`La ligne ${r+1} n'a plus qu'une possibilité.`,detail:{rule:"single",axis:"row",index:r},elim,why,meta};}
- for(let c=0;c<n;c++)if(!state.some(q=>q[c]===2)){let a=[];for(let r=0;r<n;r++)if(candidate(r,c))a.push([r,c]);
-  if(a.length===1)return {kind:"place",cell:a[0],text:`La colonne ${c+1} n'a plus qu'une possibilité.`,detail:{rule:"single",axis:"col",index:c},elim,why,meta};}
- for(let g=0;g<n;g++)if(!regPlaced(g)){let a=rc(g);
-  if(a.length===1)return {kind:"place",cell:a[0],text:`Ce territoire n'a plus qu'une possibilité.`,detail:{rule:"single",axis:"region",index:g},elim,why,meta};}
  return {kind:"none",reason:"strict",elim,why,meta};
 }
 

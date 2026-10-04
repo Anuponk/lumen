@@ -45,7 +45,9 @@ additionalTests.push(
  "Tentative : reset campagne garde attemptId mais réinitialise chrono, aide et erreur",
  "Tentative : reset défi reste one-shot",
  "UI badges : Mon ciel et les règles affichent Sans erreur",
- "Sans erreur : l’état d’erreur reste invisible pendant la partie"
+ "Sans erreur : l’état d’erreur reste invisible pendant la partie",
+ "Indice : une case unique de territoire passe avant les raisonnements complexes",
+ "Indice : les formulations générées restent grammaticalement correctes"
 );
 assert.equal(originalTests.length,66);
 assert.equal(tests.length,originalTests.length+additionalTests.length);
