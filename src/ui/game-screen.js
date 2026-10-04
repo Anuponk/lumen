@@ -18,8 +18,14 @@ import {createTutorial} from "./tutorial.js";
 import {createSound} from "./sound.js";
 
 export function startGameScreen(){
-const qaMode=new URL(location.href).searchParams.get("qa")==="new"?"new":null;
+const qaParams=new URL(location.href).searchParams;
+const qaMode=qaParams.get("qa")==="new"?"new":null;
 const qaActive=qaMode==="new";
+const qaFresh=qaActive&&qaParams.get("qaFresh")==="1";
+if(qaFresh){
+ Object.keys(localStorage).filter(key=>key.startsWith("lumenQa")).forEach(key=>localStorage.removeItem(key));
+ history.replaceState(null,"",location.pathname+"?"+(()=>{const p=new URLSearchParams(location.search);p.delete("qaFresh");return p.toString()})()+location.hash);
+}
 const qaKey=suffix=>qaActive?"lumenQa"+suffix:suffix;
 const {normalizeSequentialProgress,solvedCount,exactSkyScoreForSolvedPrefix,ensureSkyScore,skyStarsEarned,challengeRewardKeys,constellationProgress,constellationLitAt,awards,performanceRun,savePerformance}=createCampaign(()=>lumenProgress,()=>saveLumenProgress(),()=>({activeGameSeconds,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,qualifying:!!attemptEngine.snapshot()?.qualifying}));
 const {loadLumenProgress,saveLumenProgress}=createLocalPersistence(localStorage,()=>lumenProgress,{progressKey:qaActive?"lumenQaProgressV1":"lumenProgressV1"});
@@ -99,7 +105,7 @@ function setupMobileAuth(){
    qaSwitch.textContent=qaActive?"Revenir à mon profil réel":"Tester comme nouveau joueur";
    qaSwitch.onclick=()=>{
      const url=new URL(location.href);
-     if(qaActive)url.searchParams.delete("qa");else url.searchParams.set("qa","new");
+     if(qaActive){url.searchParams.delete("qa");url.searchParams.delete("qaFresh");}else{url.searchParams.set("qa","new");url.searchParams.set("qaFresh","1");}
      location.href=url.pathname+url.search+url.hash;
    };
  }
