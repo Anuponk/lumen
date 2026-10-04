@@ -66,3 +66,7 @@ Keep the challenge loop celestial and performance-led, not leaderboard-heavy. Be
 A remarkable first-play Mastery deserves stronger visual emphasis around “Défier un ami”, while “Quête suivante” remains the primary campaign continuation for an ordinary first completion. Do not turn replay Mastery into a challenge CTA.
 
 “Mes défis” belongs under Mon ciel. New results use a small unread indicator. Push permission must be requested contextually (“Préviens-moi quand quelqu'un relève mes défis”), never as an unexplained first-launch permission prompt.
+
+
+### Badge learning milestones
+Do not explain performance badges before they can be earned. The onboarding must derive its timing from the real eligibility model: quests 1–2 have no badge, quest 3 introduces **Rapidité** because it is the first earnable performance reward, and quest 6 introduces **Autonomie** and **Maîtrise** when the complete badge system becomes available. Explain the conditions in player language: Rapidité = beat the target time; Autonomie = succeed without assistance; Maîtrise = earn Autonomie and Rapidité on the same attempt. At quest 6, connect this explanation to assistance choices without portraying assisted play as inferior.
