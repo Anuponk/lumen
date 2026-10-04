@@ -7,6 +7,7 @@ const lumenAnonymousId=lumenId("lumenAnonymousIdV1");
 const lumenSessionId=(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2));
 async function trackLumenEvent(name,puzzleId=null,properties={}){
  const lumenSupabase=getClient();
+ if(environment.qaMode)properties={...properties,qa_mode:environment.qaMode};
  if(!lumenSupabase)return;
  try{await lumenSupabase.rpc("lumen_track_event",{p_anonymous_id:lumenAnonymousId,p_event_name:name,p_session_id:lumenSessionId,p_puzzle_id:puzzleId,p_properties:properties})}catch(e){console.warn("LUMEN analytics",e)}
 }
