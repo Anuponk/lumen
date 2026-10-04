@@ -48,8 +48,8 @@ function startServer(){
   const server=http.createServer((req,res)=>{
    try{
     const url=new URL(req.url,"http://127.0.0.1"),raw=decodeURIComponent(url.pathname),relative=raw==="/"?"index.html":raw.replace(/^\/+/, "");
-    const file=path.resolve(root,relative);
-    if(!file.startsWith(root)){res.writeHead(403);res.end("Forbidden");return}
+    const file=path.resolve(root,relative),fromRoot=path.relative(root,file);
+    if(fromRoot.startsWith("..")||path.isAbsolute(fromRoot)){res.writeHead(403);res.end("Forbidden");return}
     const stat=fs.existsSync(file)?fs.statSync(file):null;
     const target=stat?.isDirectory()?path.join(file,"index.html"):file;
     if(!fs.existsSync(target)){res.writeHead(404);res.end("Not found");return}
@@ -70,7 +70,7 @@ function chromeCandidates(){
  }else{
   c.push("/usr/bin/chromium","/usr/bin/chromium-browser","/usr/bin/google-chrome","/usr/bin/google-chrome-stable");
  }
- return c.find(Boolean&&((x)=>fs.existsSync(x)));
+ return c.find(x=>x&&fs.existsSync(x));
 }
 async function stopProcess(child){
  if(!child||child.exitCode!==null)return;
@@ -86,7 +86,8 @@ async function startChrome(port){
  const profile=fs.mkdtempSync(path.join(os.tmpdir(),"lumen-quality-"));
  const args=["--headless=new","--remote-debugging-port="+port,"--remote-debugging-address=127.0.0.1","--user-data-dir="+profile,"--no-first-run","--no-default-browser-check","--disable-dev-shm-usage","--no-sandbox","about:blank"];
  const child=spawn(executable,args,{cwd:root,stdio:"ignore",shell:false});
- const cleanup=async()=>{await stopProcess(child);fs.rmSync(profile,{recursive:true,force:true})};
+ let cleaned=false;
+ const cleanup=async()=>{if(cleaned)return;cleaned=true;await stopProcess(child);fs.rmSync(profile,{recursive:true,force:true})};
  started.push(cleanup);
  for(let i=0;i<60;i++){
   if(child.exitCode!==null)throw Error("Chrome exited before CDP became ready");
@@ -102,7 +103,7 @@ async function runBrowser(script,output,port){
    env:{...process.env,LUMEN_TEST_URL:"http://127.0.0.1:"+(process.env.LUMEN_TEST_PORT||8000)+"/",LUMEN_CDP_URL:"http://127.0.0.1:"+port},
    label:script
   });
- }finally{await chrome.cleanup()}
+ }finally{await chrome.cleanup();const index=started.indexOf(chrome.cleanup);if(index>=0)started.splice(index,1)}
 }
 async function cleanup(){
  while(started.length){const fn=started.pop();try{await fn()}catch(_){}}
