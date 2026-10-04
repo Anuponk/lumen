@@ -53,11 +53,21 @@ try {
     assert.equal(board.levelIndex,0);
     assert.equal(await evaluate('document.getElementById("attemptMask").hidden'),true,'First quest starts directly on the real cell');
     const untouched=JSON.stringify(board.state);
+    assert.equal(await evaluate('document.querySelectorAll(".learning-territory-number").length'),5,'SEE numbers the five territories');
     await input(await point(0,0),viewport.mobile);
-    assert.equal(JSON.stringify((await snapshot()).state),untouched,'Outside action is ignored');
-    assert.equal(await evaluate('JSON.parse(localStorage.getItem("lumenActiveAttemptV1")).state'),'READY','Ignored taps cannot start the attempt');
+    assert.equal(JSON.stringify((await snapshot()).state),untouched,'SEE/UNDERSTAND blocks board actions');
+    assert.equal(await evaluate('JSON.parse(localStorage.getItem("lumenActiveAttemptV1")).state'),'READY','Ignored intro taps cannot start the attempt');
+    const introTitles=[];
+    for(let intro=0;intro<6;intro++){
+      introTitles.push(await evaluate('document.getElementById("scriptedLearnTitle").textContent'));
+      assert.equal(JSON.stringify((await snapshot()).state),untouched,'Intro navigation never changes the board');
+      await evaluate('document.getElementById("learningCoachNext").click()');
+      await sleep(40);
+    }
+    assert.deepEqual(introTitles,['Observe le plateau','Ton objectif','Un par territoire','Un par ligne et par colonne','Ils gardent leurs distances','Comment jouer'],'SEE -> UNDERSTAND -> ACT intro remains complete and navigable');
+    assert.equal(await evaluate('document.querySelectorAll(".learning-territory-number").length'),0,'Teaching numbers disappear before ACT');
     await input(await point(2,2),viewport.mobile);
-    assert.equal((await snapshot()).state[2][2],1);
+    assert.equal((await snapshot()).state[2][2],1,'ACT begins only after the intro');
     await send('Page.reload',{ignoreCache:true});await sleep(100);await ready();
     assert.equal((await snapshot()).state[2][2],1,'Half of the real cell cycle survives reload');
     await evaluate('document.getElementById("attemptMask").click()');
