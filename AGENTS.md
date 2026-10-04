@@ -46,3 +46,5 @@ When a product rule, reward, progression rule, data contract, UX invariant, anal
 - Hide the sender's reference performance until the recipient's attempt is terminal.
 - Challenge play must never mutate campaign progression, stars, badges, daily qualification or unlocks.
 - Guests remain supported but require a display name. Never put PII or performance data in challenge URLs.
+
+- Learning handoff after quest 2 is protected: the success CTA must explicitly say **Découvrir Mon ciel**; tapping the success backdrop must not silently navigate. The first visit to Mon ciel is a sequential tour of the real UI zones (constellations, quests, performance badges, constellation/stars) before quest 3. Preserve this when changing success or map navigation.
