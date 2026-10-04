@@ -20,10 +20,10 @@ async function saveLumenNickname(){
 }
 
 async function loadEntitlements(){
- if(!model.lumenSupabase||!model.lumenUser)return [];
+ if(!model.lumenSupabase||!model.lumenUser){model.lumenEntitlements=[];return []}
  const {data,error}=await model.lumenSupabase.rpc("lumen_get_entitlements");
- if(error){console.warn("LUMEN entitlements",error);return []}
- return data||[];
+ if(error){console.warn("LUMEN entitlements",error);model.lumenEntitlements=[];return []}
+ model.lumenEntitlements=data||[];refreshJourney();return model.lumenEntitlements;
 }
 
 async function cloudSavePuzzle(index){
@@ -62,10 +62,10 @@ async function initLumenCloud(){
  if(!model.lumenSupabase){updateAuthUI();return}
  const {data}=await model.lumenSupabase.auth.getSession();
  model.lumenUser=data.session?.user||null; updateAuthUI();
- if(model.lumenUser){await loadLumenProfile();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily();}}
+ if(model.lumenUser){await loadLumenProfile();await loadEntitlements();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily();}}else model.lumenEntitlements=[];
  model.lumenSupabase.auth.onAuthStateChange((event,session)=>{
    const previous=model.lumenUser?.id; model.lumenUser=session?.user||null; updateAuthUI();
-   if(!cloudWritesDisabled()&&model.lumenUser&&model.lumenUser.id!==previous)setTimeout(async()=>{await cloudMergeProgress();await cloudMergeDaily()},0);
+   if(model.lumenUser&&model.lumenUser.id!==previous)setTimeout(async()=>{await loadEntitlements();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily()}},0);else if(!model.lumenUser){model.lumenEntitlements=[];refreshJourney()}
  });
  const login=document.getElementById("authLogin"),logout=document.getElementById("authLogout");
  if(login)login.onclick=async()=>{
@@ -73,7 +73,7 @@ async function initLumenCloud(){
    const {error}=await model.lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo}});
    if(error)alert("Connexion impossible : "+error.message);
  };
- if(logout)logout.onclick=async()=>{await model.lumenSupabase.auth.signOut();model.lumenUser=null;model.lumenCloudReady=false;updateAuthUI()};
+ if(logout)logout.onclick=async()=>{await model.lumenSupabase.auth.signOut();model.lumenUser=null;model.lumenEntitlements=[];model.lumenCloudReady=false;updateAuthUI();refreshJourney()};
 }
 
 async function cloudSaveDaily(date,index){

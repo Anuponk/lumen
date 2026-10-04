@@ -219,3 +219,10 @@ Real touch tests then exposed two player-facing defects: badge/auto-marking dial
 - Future packs can be represented as entitlement-gated content without changing the puzzle engine.
 - Base campaign length (currently 100) is a content-model concept rather than a scattered hard-coded constant in progression/UI/cloud merge.
 - This intentionally does not implement payment, pack pricing or premium content; those remain data-driven decisions for later.
+
+
+## 2026-10-04 — Ownership and Mon ciel integration (#66)
+- Existing Supabase ownership is authoritative: `lumen.entitlements` + `lumen_get_entitlements()`; no duplicate table is introduced.
+- The client now recognizes the real backend field `entitlement` and loads entitlements on authenticated startup and account changes.
+- Anonymous/sign-out state contains no account entitlements; included/free packs remain accessible through registry policy.
+- Mon ciel constellation navigation is now derived from `contentMapModel()`, with stable constellation/pack IDs attached to UI tabs while legacy numeric indices continue to drive existing progression.

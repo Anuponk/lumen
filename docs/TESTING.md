@@ -204,3 +204,9 @@ The fixed metric is `round((size-5)*6 + max(0,steps-size)*0.45 + group*1.25 + lo
 `src/campaign/content.js` is the stable content boundary for future skies and packs. The current 100-quest game is pack `base-real-sky` inside `real-sky`. Existing numeric quest indices remain the legacy progression key so current players lose nothing. Future packs receive stable IDs and can be entitlement-gated without changing the puzzle engine.
 
 The base campaign length is intentionally distinct from future catalogue length. Progression/UI/cloud merge paths derive the current base length from the content model instead of duplicating the literal 100. Payment, pack pricing and the final future-catalogue UX remain out of scope until engagement data justifies them.
+
+
+## Ownership integration (#66)
+The production backend already exposes `lumen_get_entitlements()` over `lumen.entitlements` (`entitlement`, `source`, `granted_at`, optional `expires_at`). Do not create a parallel ownership table. Authenticated startup/sign-in loads that RPC into the client content model; sign-out/anonymous mode clears account entitlements and therefore sees only packs whose registry access is `included`.
+
+`Mon ciel` obtains its constellation navigation from `contentMapModel()`, including stable content/pack IDs and access state, while preserving the existing legacy constellation indexes and puzzle progress keys. Future skies/packs can therefore extend the registry without duplicating the base catalogue in UI code.

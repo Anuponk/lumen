@@ -25,9 +25,9 @@ assert.deepEqual(denied.loadLumenProgress(),{solved:{},badges:{}});denied.saveLu
 async function fixture(options,legacy){
  const trace=[],queue=[],warnings=[];let authCallback;
  const controls=new Map();const document={getElementById:id=>{if(!controls.has(id))controls.set(id,{value:'Tester'});return controls.get(id)}};
- const model={lumenSupabase:null,lumenUser:options.guest?null:{id:'test-user'},lumenCloudReady:false,lumenNickname:'',lumenProgress:{solved:{0:1,1:1,2:1},historyBackup:{0:1,1:1,2:1},noHint:{0:1},daily:{dates:{},rewards:{}},badges:{},performances:{}},sequentialSolvedCount:3,levelIndex:2,usedHintThisGame:false};
+ const model={lumenSupabase:null,lumenUser:options.guest?null:{id:'test-user'},lumenCloudReady:false,lumenNickname:'',lumenEntitlements:[],lumenProgress:{solved:{0:1,1:1,2:1},historyBackup:{0:1,1:1,2:1},noHint:{0:1},daily:{dates:{},rewards:{}},badges:{},performances:{}},sequentialSolvedCount:3,levelIndex:2,usedHintThisGame:false};
  const client={
-  async rpc(name,args){trace.push({name,args});if(options.networkError)return {data:null,error:{message:'fixture offline'}};return {error:null,data:name==='lumen_get_progress'?options.cloud:name==='lumen_get_daily'?[{play_date:'2026-10-01'}]:name==='lumen_get_engagement'?[{server_day:'2026-10-03',shards:4,rewarded_days:{'2026-10-01':1}}]:name==='lumen_claim_daily'?[{server_day:'2026-10-03',credited:true,reward:1,streak:3}]:name==='lumen_get_profile'?[{nickname:'Player'}]:name==='lumen_set_nickname'?'Tester':name==='lumen_get_entitlements'?['fixture']:null}},
+  async rpc(name,args){trace.push({name,args});if(options.networkError)return {data:null,error:{message:'fixture offline'}};return {error:null,data:name==='lumen_get_progress'?options.cloud:name==='lumen_get_daily'?[{play_date:'2026-10-01'}]:name==='lumen_get_engagement'?[{server_day:'2026-10-03',shards:4,rewarded_days:{'2026-10-01':1}}]:name==='lumen_claim_daily'?[{server_day:'2026-10-03',credited:true,reward:1,streak:3}]:name==='lumen_get_profile'?[{nickname:'Player'}]:name==='lumen_set_nickname'?'Tester':name==='lumen_get_entitlements'?[{entitlement:'future-pack',source:'manual',expires_at:null}]:null}},
   auth:{async getSession(){return {data:{session:options.guest?null:{user:{id:'test-user'}}}}},onAuthStateChange(callback){authCallback=callback},async signOut(){trace.push({auth:'signOut'})},async signInWithOAuth(args){trace.push({auth:'signInWithOAuth',args});return {error:null}}}
  };
  model.lumenSupabase=client;
@@ -47,7 +47,7 @@ async function fixture(options,legacy){
  if(authCallback&&!options.guest){authCallback('SIGNED_IN',{user:{id:'another-user'}});for(const callback of queue)await callback();authCallback('SIGNED_OUT',null)}
  if(controls.get('authLogin')?.onclick)await controls.get('authLogin').onclick();
  if(controls.get('authLogout')?.onclick)await controls.get('authLogout').onclick();
- return plain({progress:scope.lumenProgress,user:scope.lumenUser,nickname:scope.lumenNickname,ready:scope.lumenCloudReady,sequential:scope.sequentialSolvedCount,level:scope.levelIndex,trace,warnings});
+ return plain({progress:scope.lumenProgress,user:scope.lumenUser,nickname:scope.lumenNickname,entitlements:scope.lumenEntitlements||[],ready:scope.lumenCloudReady,sequential:scope.sequentialSolvedCount,level:scope.levelIndex,trace,warnings});
 }
 const scenarios=[{guest:true,cloud:[]},{cloud:[]},{cloud:[{puzzle_id:1},{puzzle_id:2}]},{cloud:[{puzzle_id:1},{puzzle_id:3}]},{cloud:[],networkError:true}];
 for(const options of scenarios){
@@ -55,7 +55,11 @@ for(const options of scenarios){
  // #29 intentionally restores daily-history merge during authenticated init/sign-in.
  // Compare the legacy contract after removing only the new, documented daily-sync effects.
  const normalized=plain(actual),expected=plain(legacy);
+ if(!options.guest&&!options.networkError)assert.equal(actual.entitlements.some(x=>x.entitlement==='future-pack'),true,'Authenticated init must load persistent entitlements');
+ if(options.guest)assert.deepEqual(actual.entitlements,[],'Guest must only rely on included content');
+ normalized.entitlements=[];expected.entitlements=[];
  if(!options.guest){
+   const stripEntitlementReads=trace=>trace.filter(x=>x.name!=='lumen_get_entitlements');normalized.trace=stripEntitlementReads(normalized.trace);expected.trace=stripEntitlementReads(expected.trace);
    normalized.progress.daily.dates={};
    expected.progress.daily.dates={};
    const normalizeDailySyncTrace=trace=>{
