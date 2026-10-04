@@ -35,6 +35,8 @@ jobs:
           node scripts/attempt-engine-tests.mjs
           node scripts/performance-badge-tests.mjs
           node scripts/daily-engagement-tests.mjs
+          node scripts/social-challenge-tests.mjs
+          node scripts/social-challenge-ui-tests.mjs
 
       - name: Start local server
         run: |

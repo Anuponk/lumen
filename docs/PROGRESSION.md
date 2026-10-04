@@ -46,3 +46,9 @@ Existing performance data is migrated conservatively: only the current versioned
 Only victory unlocks the next unsolved quest. Persisted solved history is normalized to a continuous prefix. A player may revisit solved quests but may not jump ahead to locked content.
 
 When changing progression, test old/local data migration behavior and cloud merge behavior; never silently erase historical progress.
+
+## Social challenge isolation
+
+Social challenges are outside campaign progression. Completing a challenge never solves the corresponding campaign quest, unlocks a constellation, awards campaign stars/badges, changes the daily qualifying attempt, or transfers the challenged quest into normal progression. This remains true when the challenged quest is the participant's current campaign quest.
+
+A challenge participation has its own attempt identity and is terminal after success or explicit abandon. Reload/background restore the same challenge attempt through the shared attempt engine; they do not grant a fresh attempt.

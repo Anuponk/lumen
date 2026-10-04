@@ -135,3 +135,25 @@ Timed play is owned by `src/game/attempt-engine.js`, not by screen-open time. A 
 A newly displayed board starts in READY behind a protective mask. The first intentional board gesture starts the attempt. Backgrounding pauses a running attempt; returning never silently resumes it. Reload restoration also returns a previously running attempt as PAUSED. Board state, accumulated duration, assistance and reset count are persisted with the attempt.
 
 Reset clears the board while retaining attempt identity, elapsed active time and assistance history. Campaign, replay and challenge share this lifecycle; badge eligibility (#30) and challenge one-shot business rules (#18) remain owned by their respective features rather than duplicated in the engine.
+
+## Social challenge architecture (#18)
+
+Social challenges use the existing static/PWA client plus Supabase RPCs. `src/campaign/social-challenge.js` owns the domain rules and RPC adapter; `game-screen.js` only orchestrates UI/gameplay. The normal board, rule engine and attempt engine are reused: there is no duplicate challenge gameplay implementation.
+
+Backend objects:
+- `lumen.social_challenges`: immutable sender snapshot (quest, first-play performance, sender identity/display name);
+- `lumen.social_challenge_participations`: one row per challenge + participant identity, with started/completed/abandoned state, performance and sender read/push state;
+- `public.lumen_push_subscriptions`: existing PWA subscription store, extended with authenticated/anonymous ownership and a social-notification preference.
+
+Challenge URLs contain only an opaque UUID (`?challenge=<id>`). They contain no nickname, time, badge, email or other PII. The pre-play RPC intentionally withholds the sender's performance until that participant has completed/abandoned; the sender can always inspect their own snapshot.
+
+Authenticated ownership uses `auth.uid()`. Guests use the existing stable anonymous browser ID and must provide a 2–24 character display name before social participation. The unique server key `(challenge_id, participant_key)` makes a normal guest/browser one-shot. Clearing browser storage or changing browser/device can bypass guest identity, so the product must never claim absolute anonymous anti-cheat.
+
+Challenge writes go through SECURITY DEFINER RPCs while both social tables keep RLS enabled and no direct client write contract. The live migration is named `lumen_social_challenges`; its repository companion is `supabase/migrations/20261004_lumen_social_challenges.sql`.
+
+The existing `lumen-push` Edge Function also owns challenge-result delivery. A completed participation triggers a server-verified challenge-result notification to subscriptions owned by the sender. Push payloads reveal only that a result exists, not the result itself, and deep-link to `?myChallenges=<challenge-id>`. Notification tags are challenge-scoped so repeated results for the same shared link collapse instead of flooding the device.
+
+One challenge link may have many independent participants. “Mes défis” is therefore sender-centric and shows participant count, unread results and each terminal result. This data model intentionally leaves sender/recipient account links compatible with the later Social V2 issue without requiring an internal friends/inbox system now.
+
+### Security-advisor note
+Supabase reports the two social tables as `rls_enabled_no_policy` and the anonymous social RPCs as callable SECURITY DEFINER functions. For #18 this is intentional: guests are a product requirement, direct table access is denied by RLS, and the narrow RPCs enforce the ownership/one-attempt contract. These warnings are not a claim that the whole project is security-clean; unrelated existing advisor warnings remain and must be reviewed separately.
