@@ -156,3 +156,15 @@ The tutorial and later learning milestones are dependent product surfaces. They 
 The structural test manifest lagged behind ten new embedded regressions, so main CI stopped before executing any browser checks. Once that manifest was reconciled, missing test adapters and a quest 1 assertion running on ordinary boards exposed further harness failures. The fix retains every regression label and exercises the full introduction using a restored fixture instead of weakening its assertion.
 
 Real touch tests then exposed two player-facing defects: badge/auto-marking dialogs with `hidden` were still displayed by their flex CSS, and the new exclusion-dead-end diagnostic blocked the first tap on every required Guardian cell. Because a Guardian requires an intermediate exclusion, the interactive handler must validate its placement on the second tap. The exclusion diagnostic remains tested in the engine, while ordinary tap placement and real learning actions remain possible. Teaching dialogs still appear and are acknowledged at their intended milestones; only hidden dialogs stop intercepting input.
+
+
+## 2026-10-04 — Performance badge: Sans erreur
+- **Sans erreur** becomes earnable from quest 6, alongside Autonomie and Maîtrise.
+- A wrong Guardian does not count immediately. It becomes a confirmed error only if the player performs another logical board action before removing/undoing that Guardian.
+- Tracking is completely silent during play.
+- Any effective assistance (Indice, Vérifier, Marquage auto, guided intervention) makes Sans erreur ineligible for the current badge run.
+- **Maîtrise = Autonomie + Rapidité + Sans erreur on the same badge run.**
+- Campaign/replay Reset starts a fresh badge run, including timer/assistance/error state, while preserving the technical attempt identity.
+- Social challenge Reset never grants a fresh one-shot attempt: elapsed time, assistance and committed errors remain.
+- Existing saved Maîtrise badges are grandfathered and are never removed retroactively.
+- Onboarding introduces Sans erreur at quest 6 in the same milestone that introduces the full badge system.
