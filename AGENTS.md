@@ -46,3 +46,5 @@ When a product rule, reward, progression rule, data contract, UX invariant, anal
 - Hide the sender's reference performance until the recipient's attempt is terminal.
 - Challenge play must never mutate campaign progression, stars, badges, daily qualification or unlocks.
 - Guests remain supported but require a display name. Never put PII or performance data in challenge URLs.
+
+- Badge onboarding must follow actual `performanceEligibility`: quests 1–2 teach no badge; quest 3 introduces Rapidité (the only eligible badge on quests 3–5); quest 6 introduces Autonomie and Maîtrise when all three become eligible. Explain badge conditions at those exact milestones, not earlier. Keep this synchronized with performance.js if eligibility changes.
