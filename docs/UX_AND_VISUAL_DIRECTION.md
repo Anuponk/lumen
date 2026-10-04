@@ -85,13 +85,13 @@ On the first guided visit, teach the real screen progressively rather than with 
 
 
 ### Progressive assistance unlocks
-Assistance options are introduced only when they become meaningful. On quest 6, announce **Marquage auto** with a short modal: it is an optional, legitimate comfort-oriented alternative to manual marking, not the “wrong” way to play. Explain the reward trade-off before play: using it counts as assistance, so Rapidité remains possible but Autonomie and consequently Maîtrise do not.
+Assistance options are introduced only when they become meaningful. On quest 6, announce **Marquage auto** with a short modal: it is an optional, legitimate comfort-oriented alternative to manual marking, not the “wrong” way to play. Explain the reward trade-off before play: using it counts as assistance, so Rapidité remains possible but Autonomie, Sans erreur and consequently Maîtrise do not.
 
-When the player reaches the autonomy milestone (quest 11), explain the **Contrôle guidé** choice. The player may turn it off and may re-enable it later. The important distinction is intervention, not the visual toggle alone: keeping guided control enabled does not invalidate an attempt unless it actually prevents/corrects an error. An intervention counts as assistance and removes Autonomie/Maîtrise; Rapidité remains available. Teach trade-offs without shaming assisted play.
+When the player reaches the autonomy milestone (quest 11), explain the **Contrôle guidé** choice. The player may turn it off and may re-enable it later. The important distinction is intervention, not the visual toggle alone: keeping guided control enabled does not invalidate an attempt unless it actually prevents/corrects an error. An intervention counts as assistance and removes Autonomie/Sans erreur/Maîtrise; Rapidité remains available. Teach trade-offs without shaming assisted play.
 
 
 ### Badge learning milestones
-Do not explain performance badges before they can be earned. The onboarding must derive its timing from the real eligibility model: quests 1–2 have no badge, quest 3 introduces **Rapidité** because it is the first earnable performance reward, and quest 6 introduces **Autonomie** and **Maîtrise** when the complete badge system becomes available. Explain the conditions in player language: Rapidité = beat the target time; Autonomie = succeed without assistance; Maîtrise = earn Autonomie and Rapidité on the same attempt. At quest 6, connect this explanation to assistance choices without portraying assisted play as inferior.
+Do not explain performance badges before they can be earned. The onboarding must derive its timing from the real eligibility model: quests 1–2 have no badge, quest 3 introduces **Rapidité** because it is the first earnable performance reward, and quest 6 introduces **Autonomie**, **Sans erreur** and **Maîtrise** when the complete four-badge system becomes available. Explain the conditions in player language: Rapidité = beat the target time; Autonomie = succeed without assistance; Sans erreur = use no assistance and never continue after a wrong Guardian; Maîtrise = earn Autonomie, Rapidité and Sans erreur on the same badge run. A wrong Guardian removed or immediately undone before any other logical move does not break Sans erreur. Never expose the pending/error state during play. At quest 6, connect this explanation to assistance choices without portraying assisted play as inferior.
 
 
 ## Onboarding is coupled to product rules
@@ -100,3 +100,9 @@ Treat learning content as a live projection of the product, not static copy. A c
 Where possible, compute a teaching milestone from the same rule used by gameplay rather than copying a quest number into onboarding. If a mechanic deliberately needs a fixed pedagogical delay, document that exception. Every rule-changing PR must state its onboarding impact.
 
 Milestone dialogs must respect `hidden` even when their visible layout uses `display:flex` or an inline display value. A hidden badge/assistance introduction must neither cover the board nor receive pointer input. Keep a visible/hidden browser regression for both dialogs.
+
+
+### Sans erreur feedback rule
+Sans erreur must never become an implicit correctness assistant. A wrong Guardian may be tracked internally as pending, but the UI must not change its color, sound, message, haptics or badge-state indicator. If the player removes or immediately undoes that Guardian before another logical board mutation, the pending error disappears. Otherwise it becomes a committed error for that badge run.
+
+Campaign/replay Reset deliberately gives the player a fresh badge run and restarts its timer/assistance/error state. Social challenge Reset is different: the challenge remains the same one-shot attempt and keeps elapsed time, assistance and committed errors.
