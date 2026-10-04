@@ -420,13 +420,27 @@ function fixVerificationErrors(){
  hist.push(state.map(x=>x.slice()));verifyPending.forEach(e=>state[e.r][e.c]=0);verifyPending=null;
  document.getElementById("verifyCard").hidden=true;board.removeAttribute("aria-disabled");msg.textContent="Les choix incorrects ont été effacés.";render();
 }
-let learningStage="place",learningTip=null,learningTipSeen=new Set();
+let learningStage="place",learningTip=null,learningTipSeen=new Set(),learningIntroStep=0;
+const LEARNING_INTRO=[
+ {title:"Observe le plateau",copy:"La grille est découpée en plusieurs territoires colorés. Les numéros 1 à 5 t’aident à les distinguer : chaque couleur forme un territoire."},
+ {title:"Ton objectif",copy:"Tu vas placer des Gardiens sur la grille. Pour réussir, tous les Gardiens doivent respecter les mêmes quatre règles."},
+ {title:"Un par territoire",copy:"Chaque territoire coloré doit contenir exactement un Gardien."},
+ {title:"Un par ligne et par colonne",copy:"Chaque ligne contient exactement un Gardien, et chaque colonne aussi."},
+ {title:"Ils gardent leurs distances",copy:"Deux Gardiens ne peuvent jamais se toucher, même en diagonale."},
+ {title:"Comment jouer",copy:"Un premier toucher pose une croix pour écarter une case. Un deuxième toucher sur la même case y pose un Gardien. Maintenant, essaie-le toi-même."}
+];
 function learningQuestActive(){return levelIndex<=1&&!socialChallenge&&(!replayMode||learningReplayActive())}
-function currentLearningStep(){return levelIndex===1?dragLearningStep(puz,state):learningStep(puz,state)}
+function learningIntroActive(){return levelIndex===0&&learningQuestActive()&&state&&state.flat().every(v=>v===0)&&learningIntroStep<LEARNING_INTRO.length}
+function currentLearningStep(){if(learningIntroActive())return {phase:"intro",introStep:learningIntroStep,cells:[],number:0};return levelIndex===1?dragLearningStep(puz,state):learningStep(puz,state)}
 function scriptedLearningActive(){return learningQuestActive()&&!!state&&currentLearningStep().phase!=="complete"}
 function learningMarkAllowed(r,c){const step=currentLearningStep();return step.phase!=="place"&&learningAllows(step,r,c)}
 function scriptedAllowsGuardian(r,c){const step=currentLearningStep();return step.phase==="place"&&learningAllows(step,r,c)}
 function learningDragAllowed(){return !scriptedLearningActive()||["reuse","drag","practice"].includes(currentLearningStep().phase)}
+function advanceLearningIntro(){
+ if(!learningIntroActive())return;
+ learningIntroStep++;
+ render();
+}
 function positionLearningCoach(){
  const card=document.getElementById("scriptedLearn");
  if(card.hidden)return;
@@ -451,6 +465,7 @@ function updateScriptedLearning(){
  board.classList.remove("scripted-board");board.classList.toggle("learning-guided",guided);
  board.querySelectorAll(".cell").forEach(cell=>{
   cell.classList.remove("scripted-focus","scripted-territory","scripted-dim","learning-source","learning-zone");
+  cell.classList.toggle("learning-intro-cell",guided&&step?.phase==="intro");
   const r=Number(cell.dataset.row),c=Number(cell.dataset.col),allowed=guided&&learningAllows(step,r,c);
   cell.classList.toggle("coach-dim",guided&&!allowed&&(step.territory===undefined||puz.reg[r][c]!==step.territory));
   cell.classList.toggle("coach-zone",guided&&(allowed||(step.territory!==undefined&&puz.reg[r][c]===step.territory)));
@@ -461,9 +476,11 @@ function updateScriptedLearning(){
  const blocked=celebrated||!!guidedPending||!!verifyPending;
  card.hidden=blocked||(!guided&&!learningTip);
  document.getElementById("learningCoachDismiss").hidden=guided;
+ const next=document.getElementById("learningCoachNext");
+ if(next){next.hidden=!(guided&&step?.phase==="intro");next.textContent=step?.introStep===LEARNING_INTRO.length-1?"À moi de jouer":"Suivant"}
  if(levelIndex<=1&&!socialChallenge)for(const id of ["undo","hint","verify"])document.getElementById(id).disabled=guided;
  if(card.hidden)return;
- const text=step?learningCopy(step,state,matchMedia("(pointer:coarse)").matches):learningTip;
+ const text=step?.phase==="intro"?LEARNING_INTRO[step.introStep]:step?learningCopy(step,state,matchMedia("(pointer:coarse)").matches):learningTip;
  document.getElementById("scriptedLearnTitle").textContent=text.title;
  document.getElementById("scriptedLearnCopy").textContent=text.copy;
  requestAnimationFrame(positionLearningCoach);
@@ -576,7 +593,7 @@ function maybeShowAutonomy(){
 }
 function prepareQuestStart(){let q=bonusChallengeFor(levelIndex),o=document.getElementById("questStart");questFailed=false;if(!q||lumenProgress.stars[q.id]){questStarted=true;o.hidden=true;resumeGameClock();return}questStarted=false;pauseGameClock();document.getElementById("questStartTitle").textContent=q.title;document.getElementById("questStartRule").textContent=q.copy+" Récompense : +25 XP et +1 ✦ éclat.";o.hidden=false}
 document.getElementById("questGo").onclick=()=>{document.getElementById("questStart").hidden=true;questStarted=true;clock();updateAttemptUI()};
-function init(){setLearningReplaySuccessMode(false);document.getElementById("successNew").textContent="Quête suivante";learningTip=null;learningTipSeen=new Set();learningStage="place";choose();configureLearningMode();applyQuestRestrictions();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl)cl.textContent="Quête "+(levelIndex+1);document.getElementById("difficulty").textContent=n===7?"7 × 7 · constellation étendue":n===8?"8 × 8 · constellation étendue":"";state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];const hintCard=document.getElementById("hintCard");if(hintCard)hintCard.hidden=true;celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,100);
+function init(){setLearningReplaySuccessMode(false);document.getElementById("successNew").textContent="Quête suivante";learningTip=null;learningTipSeen=new Set();learningStage="place";learningIntroStep=0;choose();configureLearningMode();applyQuestRestrictions();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl)cl.textContent="Quête "+(levelIndex+1);document.getElementById("difficulty").textContent=n===7?"7 × 7 · constellation étendue":n===8?"8 × 8 · constellation étendue":"";state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];const hintCard=document.getElementById("hintCard");if(hintCard)hintCard.hidden=true;celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,100);
  const restored=attemptEngine.restore({questId:levelIndex+1,mode:attemptMode()});
  if(restored&&Array.isArray(restored.board)&&restored.board.length===n){state=restored.board.map(row=>row.slice());render()}else {const perf=lumenProgress.performances?.[levelIndex],eligible=performanceEligibility(levelIndex),hasEligible=Object.values(eligible).some(Boolean),qualifying=hasEligible&&perf?.lastQualifiedDay!==localCalendarDay();attemptEngine.create({questId:levelIndex+1,mode:attemptMode(),qualifying:socialChallenge?false:qualifying,challengeId:socialChallenge?.challenge_id||null,board:state});}
  clock();prepareQuestStart();updateAttemptUI();updateScriptedLearning()}
@@ -771,6 +788,7 @@ board.addEventListener("pointerdown",e=>{
  if(celebrated||guidedPending||verifyPending)return;
  if(!learningDragAllowed())return;
  const cell=e.target.closest(".cell");if(!cell)return;
+ if(scriptedLearningActive()&&currentLearningStep().phase==="intro")return;
  if(scriptedLearningActive()&&!learningMarkAllowed(Number(cell.dataset.row),Number(cell.dataset.col)))return;
  if(e.pointerType==="mouse"&&e.button!==0)return;
  ensureAttemptStarted();
@@ -820,11 +838,16 @@ function render(){
   if(shown===1||shown===3)d.innerHTML='<span class="lumen-dim" aria-label="Emplacement assombri"></span>';
   else if(shown===2)d.innerHTML='<span class="lumen-orb" aria-label="Gardien positionné"></span>';
   else d.innerHTML="";
+  if(levelIndex===0&&learningIntroActive()&&shown===0){
+   let first=true;for(let rr=0;rr<n&&first;rr++)for(let cc=0;cc<n;cc++)if(puz.reg[rr][cc]===g){first=rr===r&&cc===c;break}
+   if(first)d.innerHTML='<span class="learning-territory-number" aria-label="Territoire '+(g+1)+'">'+(g+1)+'</span>';
+  }
   if(shown===3)d.classList.add("auto-x");
   d.dataset.row=r;d.dataset.col=c;
   d.onclick=async()=>{if(celebrated||dragCrossSuppressClick||guidedPending||verifyPending||performance.now()<suppressGuidedClickUntil)return;
  let shown=displayedCellState(r,c),next=shown===3?2:(state[r][c]+1)%3,currentGuardians=state.flat().filter(v=>v===2).length;
  if(scriptedLearningActive()){
+  if(learningStage==="intro")return;
   if(learningStage==="place"){if(!scriptedAllowsGuardian(r,c))return;if(state[r][c]===0){next=1}else if(state[r][c]===1){next=2}else next=0}
   else if(currentLearningStep().dragLesson)return;
   else if(learningMarkAllowed(r,c)){next=1}
@@ -1185,6 +1208,7 @@ document.getElementById("new").onclick=()=>{
   attemptEngine.reset(state);render();refreshJourney();
 };
 document.getElementById("learningCoachDismiss").onclick=()=>{learningTip=null;updateScriptedLearning()};
+document.getElementById("learningCoachNext").onclick=advanceLearningIntro;
 document.addEventListener("click",handleLearningTap,true);
 // Start after campaign data are initialized. A deep-linked social challenge resolves its
 // server snapshot before the board is created so campaign progression is never mutated.
