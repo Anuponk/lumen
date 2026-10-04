@@ -65,16 +65,16 @@ function awards(){
  const lumenProgress=getProgress();let t=Object.keys(lumenProgress.solved).length;if(t>=1)lumenProgress.badges.first=1;if(t>=20)lumenProgress.badges.explorer=1;if(t>=50)lumenProgress.badges.beacon=1;if(t>=100)lumenProgress.badges.master=1;if(challengeRewardKeys().length>=1)lumenProgress.badges.challenge1=1;if(challengeRewardKeys().length>=16)lumenProgress.badges.challengeAll=1;saveLumenProgress()}
 
 function performanceRun(i){
- const attempt=getAttempt(),seconds=attempt.activeGameSeconds(),run=performanceAttempt({questIndex:i,seconds,assistanceUsed:!!attempt.assistanceUsed});
+ const attempt=getAttempt(),seconds=attempt.activeGameSeconds(),run=performanceAttempt({questIndex:i,seconds,assistanceUsed:!!attempt.assistanceUsed,mistakeCommitted:!!attempt.mistakeCommitted});
  return {...run,qualifying:!!attempt.qualifying};
 }
 
 function savePerformance(i,stars){
  const attempt=getAttempt(),seconds=attempt.activeGameSeconds(),run=performanceRun(i),day=localCalendarDay(),old=getProgress().performances[i]||{};
- const eligible=performanceEligibility(i),qualifying=!!attempt.qualifying,priorBadges=old.version===2?old.badges:{};
+ const eligible=performanceEligibility(i),qualifying=!!attempt.qualifying,priorBadges=old.version>=2?old.badges:{};
  const badges=qualifying?mergeEarnedBadges(priorBadges,run,eligible):mergeEarnedBadges(priorBadges,{},{});
  const bestTime=!Number.isFinite(old.bestTime)||seconds<old.bestTime?seconds:old.bestTime;
- getProgress().performances[i]={...old,version:2,questIndex:i,badges,bestTime,time:bestTime,stars:Math.max(old.stars||0,stars),quest:!!bonusChallengeFor(i),milestone:milestoneFor(i)?.kind||null,attempts:(old.attempts||0)+1,lastQualifiedDay:qualifying?day:old.lastQualifiedDay||null};
+ getProgress().performances[i]={...old,version:3,questIndex:i,badges,bestTime,time:bestTime,stars:Math.max(old.stars||0,stars),quest:!!bonusChallengeFor(i),milestone:milestoneFor(i)?.kind||null,attempts:(old.attempts||0)+1,lastQualifiedDay:qualifying?day:old.lastQualifiedDay||null};
  return {run,qualifying,badges};
 }
 
