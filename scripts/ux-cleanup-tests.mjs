@@ -1,7 +1,7 @@
 // Real browser checks for #16/#17/#19; use the isolated CDP setup in docs/TESTING.md.
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import {connectBrowser} from './cdp-client.mjs';
+import {connectBrowser,acknowledgeLearningMilestones} from './cdp-client.mjs';
 const {send,evaluate,errors}=await connectBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const results=[],failures=[];
@@ -23,6 +23,7 @@ try{
   for(const quest of [0,1,5,10]){
    const label=`${viewport.width}x${viewport.height} quest ${quest+1}`,start=failures.length;
    await evaluate(`lumenDiagnostics.setupQuest(${quest});document.getElementById('manualCrossTip').hidden=true;document.getElementById('questStart').hidden=true;document.getElementById('rulesModal').hidden=true`);
+   await acknowledgeLearningMilestones(evaluate);
    if(await evaluate(`!document.getElementById('autonomyOverlay').hidden`))await click('#autonomyTry');
    const before=await snapshot();
    check(await evaluate(`!document.getElementById('rulesHelp')&&!document.getElementById('boardNext')&&!document.getElementById('clearHint')&&document.getElementById('rulesModal').hidden`),label+' redundant controls removed');
@@ -44,12 +45,14 @@ try{
    results.push({viewport,quest:quest+1,failures:failures.slice(start)});
   }
   await evaluate(`(()=>{lumenDiagnostics.setupQuest(5);document.getElementById('manualCrossTip').hidden=true;document.getElementById('questStart').hidden=true;const s=lumenDiagnostics.snapshot();s.state[0][s.puz.sol[0]]=2;lumenDiagnostics.setBoard(s.state)})()`);
+  await acknowledgeLearningMilestones(evaluate);
   await click('#hint');
   const hint=await evaluate(`({hidden:document.getElementById('hintCard').hidden,title:document.getElementById('hintTitle').textContent,copy:document.getElementById('hintCopy').textContent,highlighted:document.querySelectorAll('#board .cell.hi').length})`);
   check(!hint.hidden&&hint.title==='Marquage à compléter'&&hint.copy.includes('écarter')&&!hint.copy.includes('Eau manquante')&&hint.highlighted>0,viewport.width+' guided hint: '+JSON.stringify(hint));
   await click('#hintClose');
   check(await evaluate(`document.getElementById('hintCard').hidden&&document.querySelectorAll('#board .cell.hi').length===0`),viewport.width+' hint close clears visuals');
   await evaluate(`(()=>{lumenDiagnostics.setupQuest(2);document.getElementById('questStart').hidden=true;const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
+  await acknowledgeLearningMilestones(evaluate);
   await sleep(500);
   const cta=await evaluate(`(()=>{const next=document.getElementById('successNew'),share=document.getElementById('successShare');return {visible:document.getElementById('successOverlay').classList.contains('show'),text:next.textContent.trim(),next:getComputedStyle(next).backgroundImage,share:getComputedStyle(share).backgroundImage}})()`);
   check(cta.visible&&cta.text==='Quête suivante'&&cta.next.includes('linear-gradient')&&cta.share==='none',viewport.width+' primary CTA: '+JSON.stringify(cta));
@@ -59,12 +62,16 @@ try{
  }
  await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,mobile:true,deviceScaleFactor:1});
  await evaluate(`lumenDiagnostics.setupQuest(10);document.getElementById('manualCrossTip').hidden=true;document.getElementById('questStart').hidden=true`);
+ await acknowledgeLearningMilestones(evaluate);
  const beforeLearning=await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress)`);
  await click('#tutorialHelp');await click('#replayLearning');await sleep(120);
  const learningContract=await evaluate(`(()=>({stage:document.getElementById('board').dataset.learningStage,noAdvanceControl:!document.getElementById('scriptedLearnNext'),realCells:document.querySelectorAll('#board .cell').length,allowedCells:document.querySelectorAll('#board .cell[aria-disabled="false"]').length}))()`);
  check(learningContract.realCells>0,'learning uses real grid cells');
  check(learningContract.noAdvanceControl,'learning cannot skip real actions through a Next button');
- check(learningContract.stage==='place'&&learningContract.allowedCells===1,'learning replay starts with only the forced central cell interactive');
+ check(learningContract.stage==='intro'&&learningContract.allowedCells===0,'learning replay begins with SEE/UNDERSTAND before board actions');
+ check(await evaluate(`document.querySelectorAll('.learning-territory-number').length===5`),'learning replay numbers its five territories');
+ for(let step=0;step<6;step++)await click('#learningCoachNext');
+ check(await evaluate(`document.getElementById('board').dataset.learningStage==='place'&&document.querySelectorAll('#board .cell[aria-disabled="false"]').length===1&&document.querySelectorAll('.learning-territory-number').length===0`),'after the intro only the forced central cell becomes interactive');
  check(await evaluate(`lumenDiagnostics.snapshot().levelIndex===0&&!document.getElementById('scriptedLearn').hidden`),'learning replay starts real quest 1 teaching mode');
  check(await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress)`)===beforeLearning,'starting learning replay changed progression');
  check(errors.length===0,'Browser exceptions: '+JSON.stringify(errors));

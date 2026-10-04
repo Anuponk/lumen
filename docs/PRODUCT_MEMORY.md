@@ -150,3 +150,9 @@ Badge onboarding is progressive and tied to `performanceEligibility`, not arbitr
 
 ## 2026-10-04 — Onboarding dependency rule
 The tutorial and later learning milestones are dependent product surfaces. They must never drift from gameplay rules. Any future change to rules, unlock timing, badge eligibility, assistance behavior, gestures, progression/navigation concepts or terminology requires an onboarding impact check even if the original request does not mention onboarding. Prefer one source of truth: teaching should derive its timing from gameplay eligibility/unlock rules whenever possible. Example: moving Rapidité eligibility to quest 8 must automatically or explicitly move its teaching milestone to quest 8. PRs changing such concepts are incomplete until onboarding and its regression tests are reviewed.
+
+## 2026-10-04 — CI repair exposes blocked placement and hidden dialogs
+
+The structural test manifest lagged behind ten new embedded regressions, so main CI stopped before executing any browser checks. Once that manifest was reconciled, missing test adapters and a quest 1 assertion running on ordinary boards exposed further harness failures. The fix retains every regression label and exercises the full introduction using a restored fixture instead of weakening its assertion.
+
+Real touch tests then exposed two player-facing defects: badge/auto-marking dialogs with `hidden` were still displayed by their flex CSS, and the new exclusion-dead-end diagnostic blocked the first tap on every required Guardian cell. Because a Guardian requires an intermediate exclusion, the interactive handler must validate its placement on the second tap. The exclusion diagnostic remains tested in the engine, while ordinary tap placement and real learning actions remain possible. Teaching dialogs still appear and are acknowledged at their intended milestones; only hidden dialogs stop intercepting input.

@@ -1,8 +1,10 @@
 import {CAT} from "../campaign/catalogue.js";
 import {CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATIONS,CONSTELLATION_GRID_COUNTS} from "../campaign/data.js";
 import {chapterForGrid} from "../campaign/progression.js";
+import {performanceEligibility} from "../campaign/performance.js";
 
 export function createHintTestSuite(model,api){
+const {handleSuccessAdvance,getSkyTourSteps,maybeShowAutoCrossUnlock,maybeShowBadgeMilestone}=api;
 const {saveLumenNickname,maybeOfferInstall,lumenShareUrl,successAchievement,shareLumenResult,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults,openJourneyMap,closeMapOverlay,renderMap,advanceToNextPuzzle,startReplay}=api;
 async function runHintTests(){
  let results=[],cases=[];
@@ -228,12 +230,35 @@ async function runHintTests(){
   });
  });
 
- test("Apprentissage : voir puis comprendre avant d’agir",()=>{const src=scriptedLearningActive.toString()+render.toString();return !!document.getElementById("learningCoachNext")&&src.includes("learningIntroActive")&&document.querySelectorAll(".learning-territory-number").length>=5});
+ test("Apprentissage : voir puis comprendre avant d’agir",()=>{
+   // The complete suite normally runs quest 3 at four sizes. Exercise the
+   // actual quest 1 fixture rather than expecting intro numbers on that board.
+   const saved={n:model.n,puz:model.puz,state:model.state,levelIndex:model.levelIndex,replayMode:model.replayMode,celebrated:model.celebrated,learningIntroStep:model.learningIntroStep};
+   try{
+     model.n=5;model.puz=CAT[5][0];model.state=Array.from({length:5},()=>Array(5).fill(0));
+     model.levelIndex=0;model.replayMode=false;model.celebrated=false;model.learningIntroStep=0;render();
+     const expected=["Observe le plateau","Ton objectif","Un par territoire","Un par ligne et par colonne","Ils gardent leurs distances","Comment jouer"];
+     for(const title of expected){
+       if(board.dataset.learningStage!=="intro"||document.getElementById("scriptedLearnTitle").textContent!==title||document.querySelectorAll(".learning-territory-number").length!==5)return false;
+       board.querySelector('.cell[data-row="2"][data-col="2"]').click();
+       if(model.state.flat().some(Boolean))return false;
+       document.getElementById("learningCoachNext").click();
+     }
+     return board.dataset.learningStage==="place"&&document.querySelectorAll(".learning-territory-number").length===0&&model.state.flat().every(v=>v===0);
+   }finally{Object.assign(model,saved);render()}
+ });
 
  test("Apprentissage : la fin de quête 2 exige explicitement la découverte du ciel",()=>{const src=handleSuccessAdvance.toString()+setupOutsideDefaults.toString();return src.includes("learningSkyDiscoveryRequired")&&!src.includes('bindOutsideDefault("successOverlay"')&&document.getElementById("skyTourNext")});
 
- test("Apprentissage : le ciel est expliqué zone par zone",()=>SKY_TOUR_STEPS.length>=4&&SKY_TOUR_STEPS.some(s=>s.target==="sectorTabs")&&SKY_TOUR_STEPS.some(s=>s.target==="puzzleGrid")&&SKY_TOUR_STEPS.some(s=>s.target==="performanceLegend")&&SKY_TOUR_STEPS.some(s=>s.target==="skyCard"));
+ test("Apprentissage : le ciel est expliqué zone par zone",()=>{const steps=getSkyTourSteps();return steps.length>=4&&steps.some(s=>s.target==="sectorTabs")&&steps.some(s=>s.target==="puzzleGrid")&&steps.some(s=>s.target==="performanceLegend")&&steps.some(s=>s.target==="skyCard")});
  test("Apprentissage : le déblocage du Marquage auto explique le choix et les badges",()=>{const o=document.getElementById("autoCrossUnlockOverlay");return maybeShowAutoCrossUnlock.toString().includes("levelIndex!==5")&&!!o&&o.textContent.includes("Rapidité")&&o.textContent.includes("Autonomie")&&o.textContent.includes("Maîtrise")});
+ test("Apprentissage : les fenêtres de jalons cachées ne bloquent pas le plateau",()=>{
+   return ["autoCrossUnlockOverlay","badgeUnlockOverlay"].every(id=>{
+     const overlay=document.getElementById(id),hidden=overlay.hidden,style=overlay.style.cssText;
+     try{overlay.style.display="flex";overlay.hidden=false;if(getComputedStyle(overlay).display!=="flex")return false;overlay.hidden=true;return getComputedStyle(overlay).display==="none"}
+     finally{overlay.hidden=hidden;overlay.style.cssText=style}
+   });
+ });
  test("Apprentissage : le choix du Contrôle guidé explique l’intervention réelle sur les badges",()=>{const o=document.getElementById("autonomyOverlay");return maybeShowAutonomy.toString().includes("levelIndex!==10")&&o.textContent.includes("ne te pénalise pas tant qu")&&o.textContent.includes("s’il bloque une erreur")&&o.textContent.includes("Rapidité")});
  test("Apprentissage : Rapidité est introduit exactement à la quête 3",()=>{const src=maybeShowBadgeMilestone.toString();return src.includes("levelIndex===2")&&document.getElementById("badgeUnlockOverlay")});
  test("Apprentissage : Autonomie et Maîtrise sont introduits à la quête 6",()=>{const src=maybeShowBadgeMilestone.toString();return src.includes("levelIndex===5")&&src.includes("Autonomie")&&src.includes("Maîtrise")&&src.includes("Rapidité")});
