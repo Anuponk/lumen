@@ -46,3 +46,5 @@ When a product rule, reward, progression rule, data contract, UX invariant, anal
 - Hide the sender's reference performance until the recipient's attempt is terminal.
 - Challenge play must never mutate campaign progression, stars, badges, daily qualification or unlocks.
 - Guests remain supported but require a display name. Never put PII or performance data in challenge URLs.
+
+- Assistance unlocks are teaching milestones. At quest 6 (index 5), introduce Marquage auto as an optional comfort playstyle and explain badge impact before normal play. At quest 11 (index 10), when Contrôle guidé becomes an autonomy choice, explain that it can be re-enabled; merely being enabled does not invalidate badges, but an actual guided intervention marks assistance. Assistance removes Autonomie and therefore Maîtrise, while Rapidité remains possible. Do not present assisted play as inferior.
