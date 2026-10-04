@@ -41,7 +41,7 @@ assert.equal(campaign.isCampaignComplete(Object.fromEntries(Array.from({length:9
 assert.equal(campaign.isCampaignComplete({...Object.fromEntries(Array.from({length:100},(_,i)=>[i,1])),42:0}),false);
 
 {
- const expected={66:["7",16],68:["8",8],72:["7",19],75:["8",7],78:["7",15],79:["8",10],83:["8",6],88:["7",18],90:["8",9],95:["8",11],98:["7",17],100:["8",5]};
+ const expected={66:["7",16],68:["8",8],72:["7",19],75:["8",7],78:["7",15],79:["8",10],83:["8",6],85:["7",18],90:["8",9],95:["8",11],98:["7",17],100:["8",5]};
  for(const [quest,pair] of Object.entries(expected))assert.deepEqual(data.CAMPAIGN_SIZE_SCHEDULE[Number(quest)-1],pair,"Late-game difficulty schedule Q"+quest);
  const refs=Object.values(data.CAMPAIGN_SIZE_SCHEDULE).map(([size,index])=>size+"/"+(size==="6"?data.CAMPAIGN6_ORDER[index]:index));
  assert.equal(new Set(refs).size,100,"Campaign must keep 100 unique puzzle references");

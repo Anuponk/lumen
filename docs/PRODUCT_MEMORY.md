@@ -208,7 +208,7 @@ Real touch tests then exposed two player-facing defects: badge/auto-marking dial
 ## 2026-10-04 — P0 difficulty phase 2 (#81)
 - The campaign now uses all 20 audited 7×7 and all 12 audited 8×8 catalogue grids; previously 5 of the 7×7 and 7 of the 8×8 grids were unused.
 - New late-game rhythm deliberately alternates 6×6 breathers with hard 7×7 and expert 8×8 peaks.
-- Solver-derived segment averages target a clear lift: approximately 44 → 50 → 51 → 62 → 66 across five 20-quest bands.
+- Solver-derived segment averages target a clear lift: approximately 44 → 50 → 51 → 62 → 67 across five 20-quest bands.
 - Q81–100 contains at least seven expert/expert+ quests, at least four expert+ peaks, at least five breathers, and an expert+ Q100.
 - Difficulty scoring was recalibrated so board size no longer dominates classification; group/locked logical work carries most of the score.
 
