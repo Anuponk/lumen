@@ -414,10 +414,16 @@ function startLearningReplay(){
 }
 function learningReplayActive(){return !!(learningReplayReturn&&learningReplayReturn.active)}
 function finishLearningReplay(){
- const back=learningReplayReturn||{levelIndex:Math.min(sequentialSolvedCount,99),replayMode:false};
+ const back=learningReplayReturn||{levelIndex:Math.min(sequentialSolvedCount,campaignQuestCount()-1),replayMode:false};
  learningReplayReturn=null;levelIndex=back.levelIndex;replayMode=back.replayMode;
  document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;
- loadPuzzle();refreshJourney();
+ learningTip=null;
+ const learnCard=document.getElementById("scriptedLearn"),learnSkip=document.getElementById("learningSkip");
+ if(learnCard)learnCard.hidden=true;if(learnSkip)learnSkip.hidden=true;
+ loadPuzzle();
+ if(learnCard)learnCard.hidden=true;if(learnSkip)learnSkip.hidden=true;
+ board.classList.remove("scripted-board","learning-guided");
+ refreshJourney();
 }
 
 function hintCost(){if(levelIndex<=4)return 0;if(hintUsesThisGame===0)return 0;if(hintUsesThisGame===1)return 1;return 2}
