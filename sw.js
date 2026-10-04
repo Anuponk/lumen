@@ -1,4 +1,4 @@
-const CACHE="lumen-assets-v7";
+const CACHE="lumen-assets-v8";
 const SHELL=["/manifest.webmanifest","/icon.svg","/icon-maskable.svg"];
 
 self.addEventListener("install",e=>{
@@ -41,7 +41,7 @@ self.addEventListener("push",function(e){
  e.waitUntil(self.registration.showNotification(d.title||"LUMEN",{
   body:d.body||"Une étoile t’attend.",
   icon:"/icon.svg",
-  tag:"lumen-return",
+  tag:d.tag||"lumen-return",
   data:{url:d.url||"/"}
  }));
 });
