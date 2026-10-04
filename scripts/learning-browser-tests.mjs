@@ -175,6 +175,7 @@ try {
     await sleep(80);
     const beforeSkip=await evaluate('JSON.stringify((()=>{const p=lumenDiagnostics.snapshot().progress;return {solved:p.solved,badges:p.badges,shards:p.shards}})())');
     assert.equal(await evaluate('document.getElementById("learningSkip").hidden'),false,'Completed learner may skip a voluntary learning replay');
+    assert.notEqual(await evaluate('document.getElementById("board").dataset.learningStage'),'complete','Replay is actively teaching before skip');
     await evaluate('document.getElementById("learningSkip").click()');
     await sleep(80);
     const afterSkip=await snapshot();
