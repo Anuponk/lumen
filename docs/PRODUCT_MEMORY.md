@@ -156,3 +156,50 @@ The tutorial and later learning milestones are dependent product surfaces. They 
 The structural test manifest lagged behind ten new embedded regressions, so main CI stopped before executing any browser checks. Once that manifest was reconciled, missing test adapters and a quest 1 assertion running on ordinary boards exposed further harness failures. The fix retains every regression label and exercises the full introduction using a restored fixture instead of weakening its assertion.
 
 Real touch tests then exposed two player-facing defects: badge/auto-marking dialogs with `hidden` were still displayed by their flex CSS, and the new exclusion-dead-end diagnostic blocked the first tap on every required Guardian cell. Because a Guardian requires an intermediate exclusion, the interactive handler must validate its placement on the second tap. The exclusion diagnostic remains tested in the engine, while ordinary tap placement and real learning actions remain possible. Teaching dialogs still appear and are acknowledged at their intended milestones; only hidden dialogs stop intercepting input.
+
+
+## 2026-10-04 — Performance badge: Sans erreur
+- **Sans erreur** becomes earnable from quest 6, alongside Autonomie and Maîtrise.
+- A wrong Guardian does not count immediately. It becomes a confirmed error only if the player performs another logical board action before removing/undoing that Guardian.
+- Tracking is completely silent during play.
+- Any effective assistance (Indice, Vérifier, Marquage auto, guided intervention) makes Sans erreur ineligible for the current badge run.
+- **Maîtrise = Autonomie + Rapidité + Sans erreur on the same badge run.**
+- Campaign/replay Reset starts a fresh badge run, including timer/assistance/error state, while preserving the technical attempt identity.
+- Social challenge Reset never grants a fresh one-shot attempt: elapsed time, assistance and committed errors remain.
+- Existing saved Maîtrise badges are grandfathered and are never removed retroactively.
+- Onboarding introduces Sans erreur at quest 6 in the same milestone that introduces the full badge system.
+
+
+## 2026-10-04 — Product analytics contract (#65)
+- Lifetime analytics are attempt/run based, not cell-click based.
+- `attempt_id` remains the technical identity; `run_index = reset_count + 1` distinguishes fresh campaign/replay runs after Reset.
+- Active duration comes exclusively from the attempt engine.
+- Start, completion, abandon, reset, Hint, Verify, guided intervention and Auto marking are measurable with quest, grid size, constellation and current campaign progress.
+- Telemetry stays pseudonymous and avoids unnecessary personal data.
+
+
+## 2026-10-04 — Endgame experience (#46)
+- Completing the final **currently available** quest triggers a dedicated campaign-ending celebration after the final constellation reveal.
+- The recap shows current content count, constellations, stars, Autonomy, Sans erreur and Mastery totals.
+- Post-game direction is replay/completion of missing badges and Mon ciel.
+- Final-quest detection derives from campaign content size, and the seen key includes that size so later content extensions can produce a new ending.
+
+
+## 2026-10-04 — Daily engagement alignment after Sans erreur (#29/#82)
+- A qualifying replay that newly earns **Sans erreur** can validate the daily activity exactly like the other performance badges.
+- The Shard wallet is explicitly uncapped in player-facing copy; no reward is clipped because of an existing balance.
+- Existing J3/J7 cycle, grace day, server-authoritative account day and idempotent reward ledger remain unchanged.
+
+
+## 2026-10-04 — Unified quality command (#58)
+- Local and CI validation now share `node scripts/quality-gate.mjs`.
+- The runner owns its Node static server and isolated Chrome/Chromium profiles, runs all current Node + browser + UX + learning gates, retains reports and cleans only processes it started.
+- GitHub Actions is intentionally thin and delegates orchestration to this script so local/CI drift cannot silently reappear.
+
+
+## 2026-10-04 — Difficulty measurement foundation (#81)
+- Difficulty changes must start from a reproducible solver-derived metric, not board size or subjective ordering alone.
+- The baseline metric combines board scale, proof-step workload and weighted complex deductions (`group` > `locked` > `single`).
+- Fixed score thresholds keep future packs/add-ons comparable with the base campaign.
+- The report tracks five 20-quest campaign segments, late-game expert density and the highest peaks. Player analytics from #65 will later validate whether solver difficulty correlates with real solve time, resets, help usage and abandonment.
+- Reordering/replacing grids is deliberately a second phase after the baseline curve is measured.

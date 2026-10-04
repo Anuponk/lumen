@@ -13,6 +13,7 @@ assert.equal(cycleDay(8),1);assert.deepEqual(nextReward(4),{inDays:3,amount:2,cy
 assert.equal(qualifiesDailyActivity({firstCompletion:true}),true);
 assert.equal(qualifiesDailyActivity({performanceQualifying:true,priorBadges:{speed:false},earnedBadges:{speed:true}}),true);
 assert.equal(qualifiesDailyActivity({performanceQualifying:true,priorBadges:{speed:true},earnedBadges:{speed:true}}),false);
+assert.equal(qualifiesDailyActivity({performanceQualifying:true,priorBadges:{noError:false},earnedBadges:{noError:true}}),true);
 assert.equal(qualifiesDailyActivity({firstCompletion:true,isolatedMode:true}),false);
 let p={daily:{dates:{},rewards:{}},shards:9};grantDaily(p,"2026-01-01");grantDaily(p,"2026-01-02");let r=grantDaily(p,"2026-01-03");assert.equal(r.reward,1);assert.equal(p.shards,10);
 assert.equal(grantDaily(p,"2026-01-03").reward,0);assert.equal(p.shards,10);

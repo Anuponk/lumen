@@ -3,7 +3,7 @@ import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {functionSource} from './source-tools.mjs';
-import {createAnalytics} from '../src/analytics/events.js';
+import {createAnalytics,attemptAnalyticsProperties} from '../src/analytics/events.js';
 const baseline='dcd9f3c872e623541be698edc212b64589d3b164';
 const source=(process.argv[2]?fs.readFileSync(process.argv[2],'utf8'):execFileSync('git',['show',baseline+':index.html'],{encoding:'utf8'})).replace(/\r/g,'');
 async function fixture(search,legacy,offline){
@@ -20,3 +20,15 @@ async function fixture(search,legacy,offline){
 }
 for(const search of ['', '?ref=friend_123','?ref=%3Cbad%3E%20reference','?ref='+('x'.repeat(100))])for(const offline of [false,true])assert.deepEqual(await fixture(search,false,offline),await fixture(search,true,offline));
 console.log(JSON.stringify({baseline,fixtures:8,identityStorage:'identical',eventsAndPayloads:'identical',referralSanitization:'identical',liveWrites:false}));
+
+
+{
+ const props=attemptAnalyticsProperties({
+  attempt:{attemptId:"a-1",mode:"campaign",activeDuration:12345,resetCount:2,assistanceUsed:true,mistakeCommitted:false,qualifying:true},
+  questIndex:19,gridSize:7,constellationIndex:2,constellationName:"Orion",solvedCount:19,questAttemptNumber:3,guidedEnabled:true,autoMarkingEnabled:false
+ },{outcome:"success"});
+ assert.deepEqual(props,{
+  attempt_id:"a-1",attempt_mode:"campaign",run_index:3,active_seconds:12.3,reset_count:2,assistance_used:true,mistake_committed:false,qualifying:true,
+  quest_index:19,grid_size:7,constellation_index:2,constellation_name:"Orion",progress_solved:19,quest_attempt_number:3,guided_enabled:true,auto_marking_enabled:false,outcome:"success"
+ });
+}

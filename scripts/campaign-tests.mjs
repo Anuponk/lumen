@@ -32,3 +32,10 @@ for(const solved of [{},{0:1},{0:1,1:1,3:1},Object.fromEntries(Array.from({lengt
  }
  }
 console.log(JSON.stringify({baseline,catalogueEntries:Object.values(CAT).flat().length,quests:100,savedProgressFixtures:4,results:'identical'}));
+
+assert.equal(campaign.campaignQuestCount(),100);
+assert.equal(campaign.isCampaignFinalQuest(99),true);
+assert.equal(campaign.isCampaignFinalQuest(98),false);
+assert.equal(campaign.isCampaignComplete(Object.fromEntries(Array.from({length:100},(_,i)=>[i,1]))),true);
+assert.equal(campaign.isCampaignComplete(Object.fromEntries(Array.from({length:99},(_,i)=>[i,1]))),false);
+assert.equal(campaign.isCampaignComplete({...Object.fromEntries(Array.from({length:100},(_,i)=>[i,1])),42:0}),false);

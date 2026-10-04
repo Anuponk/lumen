@@ -1,6 +1,9 @@
 import {CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,SKY_TARGET} from "./data.js";
 import {performanceAttempt,performanceEligibility,localCalendarDay,mergeEarnedBadges} from "./performance.js";
-export function sequentialCount(source){let count=0;while(count<100&&source&&source[count])count++;return count}
+export function campaignQuestCount(){return CONSTELLATION_GRID_COUNTS.reduce((sum,count)=>sum+count,0)}
+export function sequentialCount(source){let count=0,total=campaignQuestCount();while(count<total&&source&&source[count])count++;return count}
+export function isCampaignFinalQuest(index){return Number(index)===campaignQuestCount()-1}
+export function isCampaignComplete(source){return sequentialCount(source||{})>=campaignQuestCount()}
 
 export function constellationGridRange(index){let start=0;for(let j=0;j<index;j++)start+=CONSTELLATION_GRID_COUNTS[j];return {start,end:start+CONSTELLATION_GRID_COUNTS[index]-1,count:CONSTELLATION_GRID_COUNTS[index]}}
 
@@ -65,16 +68,16 @@ function awards(){
  const lumenProgress=getProgress();let t=Object.keys(lumenProgress.solved).length;if(t>=1)lumenProgress.badges.first=1;if(t>=20)lumenProgress.badges.explorer=1;if(t>=50)lumenProgress.badges.beacon=1;if(t>=100)lumenProgress.badges.master=1;if(challengeRewardKeys().length>=1)lumenProgress.badges.challenge1=1;if(challengeRewardKeys().length>=16)lumenProgress.badges.challengeAll=1;saveLumenProgress()}
 
 function performanceRun(i){
- const attempt=getAttempt(),seconds=attempt.activeGameSeconds(),run=performanceAttempt({questIndex:i,seconds,assistanceUsed:!!attempt.assistanceUsed});
+ const attempt=getAttempt(),seconds=attempt.activeGameSeconds(),run=performanceAttempt({questIndex:i,seconds,assistanceUsed:!!attempt.assistanceUsed,mistakeCommitted:!!attempt.mistakeCommitted});
  return {...run,qualifying:!!attempt.qualifying};
 }
 
 function savePerformance(i,stars){
  const attempt=getAttempt(),seconds=attempt.activeGameSeconds(),run=performanceRun(i),day=localCalendarDay(),old=getProgress().performances[i]||{};
- const eligible=performanceEligibility(i),qualifying=!!attempt.qualifying,priorBadges=old.version===2?old.badges:{};
+ const eligible=performanceEligibility(i),qualifying=!!attempt.qualifying,priorBadges=old.version>=2?old.badges:{};
  const badges=qualifying?mergeEarnedBadges(priorBadges,run,eligible):mergeEarnedBadges(priorBadges,{},{});
  const bestTime=!Number.isFinite(old.bestTime)||seconds<old.bestTime?seconds:old.bestTime;
- getProgress().performances[i]={...old,version:2,questIndex:i,badges,bestTime,time:bestTime,stars:Math.max(old.stars||0,stars),quest:!!bonusChallengeFor(i),milestone:milestoneFor(i)?.kind||null,attempts:(old.attempts||0)+1,lastQualifiedDay:qualifying?day:old.lastQualifiedDay||null};
+ getProgress().performances[i]={...old,version:3,questIndex:i,badges,bestTime,time:bestTime,stars:Math.max(old.stars||0,stars),quest:!!bonusChallengeFor(i),milestone:milestoneFor(i)?.kind||null,attempts:(old.attempts||0)+1,lastQualifiedDay:qualifying?day:old.lastQualifiedDay||null};
  return {run,qualifying,badges};
 }
 

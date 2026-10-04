@@ -68,6 +68,37 @@ function conflictMessage(reasons){
  return "";
 }
 
+function simpleForcedPlacement(){
+ const {n,puz,state}=getBoard();
+ const eliminated=new Set();
+ const mark=(r,c)=>eliminated.add(key(r,c));
+ for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(state[r][c]===1)mark(r,c);
+ for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(state[r][c]===2){
+  const g=puz.reg[r][c];
+  for(let x=0;x<n;x++)if(x!==c)mark(r,x);
+  for(let y=0;y<n;y++)if(y!==r)mark(y,c);
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+   if((y!==r||x!==c)&&puz.reg[y][x]===g)mark(y,x);
+   if((y!==r||x!==c)&&Math.abs(y-r)<=1&&Math.abs(x-c)<=1)mark(y,x);
+  }
+ }
+ const candidate=(r,c)=>state[r][c]!==2&&!eliminated.has(key(r,c));
+ const regPlaced=g=>{for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(state[r][c]===2&&puz.reg[r][c]===g)return true;return false};
+ for(let g=0;g<n;g++)if(!regPlaced(g)){
+  const cells=[];for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(puz.reg[r][c]===g&&candidate(r,c))cells.push([r,c]);
+  if(cells.length===1)return {kind:"place",cell:cells[0],text:"Il ne reste qu’une seule case possible dans ce territoire : place le Gardien ici.",detail:{rule:"single",axis:"region",index:g}};
+ }
+ for(let r=0;r<n;r++)if(!state[r].includes(2)){
+  const cells=[];for(let c=0;c<n;c++)if(candidate(r,c))cells.push([r,c]);
+  if(cells.length===1)return {kind:"place",cell:cells[0],text:`Il ne reste qu’une seule case possible sur la ligne ${r+1} : place le Gardien ici.`,detail:{rule:"single",axis:"row",index:r}};
+ }
+ for(let c=0;c<n;c++)if(!state.some(row=>row[c]===2)){
+  const cells=[];for(let r=0;r<n;r++)if(candidate(r,c))cells.push([r,c]);
+  if(cells.length===1)return {kind:"place",cell:cells[0],text:`Il ne reste qu’une seule case possible dans la colonne ${c+1} : place le Gardien ici.`,detail:{rule:"single",axis:"col",index:c}};
+ }
+ return null;
+}
+
 function proofEngine(){
  const {n,puz,state}=getBoard();
  let elim={},why={},meta={};
@@ -190,5 +221,5 @@ function validateGuardians(){
    }
  return {placed,rows,cols,regs,nonTouching,conflicts};
 }
-return {validateGuardians,key,solutions,isAutoCross,verificationErrors,guardianConflicts,conflictMessage,proofEngine,directMissingCross,playerError,guardianOnlyState,guidedConflictForAction};
+return {validateGuardians,key,solutions,isAutoCross,verificationErrors,guardianConflicts,conflictMessage,simpleForcedPlacement,proofEngine,directMissingCross,playerError,guardianOnlyState,guidedConflictForAction};
 }

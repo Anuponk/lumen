@@ -1,11 +1,12 @@
 import {CAT} from "../campaign/catalogue.js";
 import {CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATIONS,CONSTELLATION_GRID_COUNTS} from "../campaign/data.js";
 import {chapterForGrid} from "../campaign/progression.js";
-import {performanceEligibility} from "../campaign/performance.js";
+import {performanceEligibility,performanceAttempt} from "../campaign/performance.js";
+import {createAttemptEngine} from "../game/attempt-engine.js";
 
 export function createHintTestSuite(model,api){
 const {handleSuccessAdvance,getSkyTourSteps,maybeShowAutoCrossUnlock,maybeShowBadgeMilestone}=api;
-const {saveLumenNickname,maybeOfferInstall,lumenShareUrl,successAchievement,shareLumenResult,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults,openJourneyMap,closeMapOverlay,renderMap,advanceToNextPuzzle,startReplay}=api;
+const {saveLumenNickname,maybeOfferInstall,lumenShareUrl,successAchievement,shareLumenResult,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,simpleForcedPlacement,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,updateLiveReward,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults,openJourneyMap,closeMapOverlay,renderMap,advanceToNextPuzzle,startReplay}=api;
 async function runHintTests(){
  let results=[],cases=[];
  test("Campagne : toutes les quêtes ont une grille dans le catalogue",()=>Object.values(CAMPAIGN_SIZE_SCHEDULE).every(([size,slot])=>!!CAT[size]?.[size==="6"?CAMPAIGN6_ORDER[slot]:slot]));
@@ -204,6 +205,14 @@ async function runHintTests(){
   let c=(p.sol[0]+1)%model.n;model.state[0][c]=2;
   return !!playerError();
  });
+ test("Indice : une case unique de territoire passe avant les raisonnements complexes",()=>{
+   const hintSrc=document.getElementById("hint").onclick.toString(),simpleSrc=simpleForcedPlacement.toString();
+   return hintSrc.includes("simpleForcedPlacement()||proofEngine()")&&simpleSrc.includes('axis:"region"')&&simpleSrc.includes("Il ne reste qu’une seule case possible dans ce territoire");
+ });
+ test("Indice : les formulations générées restent grammaticalement correctes",()=>{
+   const src=proofEngine.toString()+document.getElementById("hint").onclick.toString();
+   return !src.includes("cette territoire")&&!src.includes("territoires surlignées")&&src.includes("ce territoire");
+ });
  test("Aucun indice 'place' sans preuve structurée",()=>{
   return CAT[model.n].every(p=>{
    model.puz=p;model.state=Array.from({length:model.n},()=>Array(model.n).fill(0));
@@ -261,9 +270,15 @@ async function runHintTests(){
  });
  test("Apprentissage : le choix du Contrôle guidé explique l’intervention réelle sur les badges",()=>{const o=document.getElementById("autonomyOverlay");return maybeShowAutonomy.toString().includes("levelIndex!==10")&&o.textContent.includes("ne te pénalise pas tant qu")&&o.textContent.includes("s’il bloque une erreur")&&o.textContent.includes("Rapidité")});
  test("Apprentissage : Rapidité est introduit exactement à la quête 3",()=>{const src=maybeShowBadgeMilestone.toString();return src.includes("levelIndex===2")&&document.getElementById("badgeUnlockOverlay")});
- test("Apprentissage : Autonomie et Maîtrise sont introduits à la quête 6",()=>{const src=maybeShowBadgeMilestone.toString();return src.includes("levelIndex===5")&&src.includes("Autonomie")&&src.includes("Maîtrise")&&src.includes("Rapidité")});
- test("Badges : les jalons pédagogiques suivent l’éligibilité réelle",()=>{const q2=performanceEligibility(1),q3=performanceEligibility(2),q6=performanceEligibility(5);return !Object.values(q2).some(Boolean)&&q3.speed&&!q3.autonomy&&!q3.mastery&&q6.speed&&q6.autonomy&&q6.mastery});
- test("Onboarding : les jalons de badges suivent l’éligibilité réelle",()=>{const firstEligible=badge=>{for(let i=0;i<100;i++)if(performanceEligibility(i)[badge])return i;return -1};return firstEligible("speed")===2&&firstEligible("autonomy")===5&&firstEligible("mastery")===5});
+ test("Apprentissage : Autonomie, Sans erreur et Maîtrise sont introduits à la quête 6",()=>{const src=maybeShowBadgeMilestone.toString();return src.includes("levelIndex===5")&&src.includes("Autonomie")&&src.includes("Sans erreur")&&src.includes("Maîtrise")&&src.includes("Rapidité")});
+ test("Badges : les jalons pédagogiques suivent l’éligibilité réelle",()=>{const q2=performanceEligibility(1),q3=performanceEligibility(2),q6=performanceEligibility(5);return !Object.values(q2).some(Boolean)&&q3.speed&&!q3.autonomy&&!q3.noError&&!q3.mastery&&q6.speed&&q6.autonomy&&q6.noError&&q6.mastery});
+ test("Onboarding : les jalons de badges suivent l’éligibilité réelle",()=>{const firstEligible=badge=>{for(let i=0;i<100;i++)if(performanceEligibility(i)[badge])return i;return -1};return firstEligible("speed")===2&&firstEligible("autonomy")===5&&firstEligible("noError")===5&&firstEligible("mastery")===5});
+ test("Badges : Sans erreur exige zéro assistance et zéro erreur confirmée",()=>{const clean=performanceAttempt({questIndex:5,seconds:60}),wrong=performanceAttempt({questIndex:5,seconds:60,mistakeCommitted:true}),assisted=performanceAttempt({questIndex:5,seconds:60,assistanceUsed:true});return clean.noError&&clean.mastery&&!wrong.noError&&!wrong.mastery&&!assisted.autonomy&&!assisted.noError&&!assisted.mastery});
+ test("Badges : Maîtrise exige les trois badges sur le même essai",()=>{const fastClean=performanceAttempt({questIndex:5,seconds:60}),slowClean=performanceAttempt({questIndex:5,seconds:999}),fastWrong=performanceAttempt({questIndex:5,seconds:60,mistakeCommitted:true});return fastClean.autonomy&&fastClean.speed&&fastClean.noError&&fastClean.mastery&&slowClean.autonomy&&slowClean.noError&&!slowClean.speed&&!slowClean.mastery&&fastWrong.autonomy&&fastWrong.speed&&!fastWrong.noError&&!fastWrong.mastery});
+ test("Tentative : reset campagne garde attemptId mais réinitialise chrono, aide et erreur",()=>{const mem=new Map(),storage={getItem:k=>mem.get(k)||null,setItem:(k,v)=>mem.set(k,v),removeItem:k=>mem.delete(k)};let t=0;const e=createAttemptEngine({storage,now:()=>1000+t,perfNow:()=>t});e.create({questId:6,mode:"campaign",board:[[0]]});const id=e.snapshot().attemptId;e.start();t=5000;e.markAssistance();e.setWrongGuardianPending("0,0");e.commitMistake();e.reset([[0]]);const a=e.snapshot();return a.attemptId===id&&a.resetCount===1&&a.activeDuration===0&&!a.assistanceUsed&&!a.mistakeCommitted&&!a.wrongGuardianPending});
+ test("Tentative : reset défi reste one-shot",()=>{const mem=new Map(),storage={getItem:k=>mem.get(k)||null,setItem:(k,v)=>mem.set(k,v),removeItem:k=>mem.delete(k)};let t=0;const e=createAttemptEngine({storage,now:()=>1000+t,perfNow:()=>t});e.create({questId:6,mode:"challenge",board:[[0]]});const id=e.snapshot().attemptId;e.start();t=5000;e.markAssistance();e.setWrongGuardianPending("0,0");e.commitMistake();e.reset([[0]]);const a=e.snapshot();return a.attemptId===id&&a.activeDuration>=5000&&a.assistanceUsed&&a.mistakeCommitted});
+ test("UI badges : Mon ciel et les règles affichent Sans erreur",()=>{const legend=document.getElementById("performanceLegend"),rules=document.getElementById("badgeRulesModal");return legend?.textContent.includes("Sans erreur")&&rules?.textContent.includes("Sans erreur")&&rules?.textContent.includes("Autonomie, Rapidité et Sans erreur")});
+ test("Sans erreur : l’état d’erreur reste invisible pendant la partie",()=>!updateLiveReward.toString().includes("mistakeCommitted")&&!updateLiveReward.toString().includes("noError"));
  // Performance regressions: keep ordinary play incremental and cheap.
  test("Performance : un clic ordinaire ne reconstruit pas toute la grille",()=>{
    const src=render.toString(),clickStart=src.search(/d\.onclick=(?:async)?\(\)=>/),clickEnd=src.indexOf("};board.appendChild(d)",clickStart);
