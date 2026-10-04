@@ -44,7 +44,8 @@ additionalTests.push(
  "Badges : Maîtrise exige les trois badges sur le même essai",
  "Tentative : reset campagne garde attemptId mais réinitialise chrono, aide et erreur",
  "Tentative : reset défi reste one-shot",
- "UI badges : Mon ciel et les règles affichent Sans erreur"
+ "UI badges : Mon ciel et les règles affichent Sans erreur",
+ "Sans erreur : l’état d’erreur reste invisible pendant la partie"
 );
 assert.equal(originalTests.length,66);
 assert.equal(tests.length,originalTests.length+additionalTests.length);
