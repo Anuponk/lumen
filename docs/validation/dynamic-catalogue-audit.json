@@ -1,0 +1,1348 @@
+{
+  "count": 134,
+  "campaign": 134,
+  "constellations": 24,
+  "stars": 298,
+  "failures": [],
+  "metadata": [
+    {
+      "id": "5/0",
+      "solutions": 1,
+      "steps": 22,
+      "rules": {
+        "group": 17,
+        "single": 5
+      }
+    },
+    {
+      "id": "5/1",
+      "solutions": 1,
+      "steps": 11,
+      "rules": {
+        "group": 6,
+        "single": 5
+      }
+    },
+    {
+      "id": "6/0",
+      "solutions": 1,
+      "steps": 35,
+      "rules": {
+        "locked": 5,
+        "group": 24,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/1",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 13,
+        "group": 14,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/2",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 13,
+        "group": 15,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/3",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 7,
+        "group": 21,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/4",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 6,
+        "group": 22,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/5",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 6,
+        "group": 22,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/6",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 10,
+        "group": 17,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/7",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 9,
+        "group": 18,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/8",
+      "solutions": 1,
+      "steps": 31,
+      "rules": {
+        "locked": 10,
+        "group": 15,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/9",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 13,
+        "group": 13,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/10",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 10,
+        "group": 18,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/11",
+      "solutions": 1,
+      "steps": 35,
+      "rules": {
+        "locked": 16,
+        "group": 13,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/12",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 14,
+        "group": 14,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/13",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 12,
+        "group": 16,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/14",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 13,
+        "group": 14,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/15",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 14,
+        "group": 12,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/16",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 10,
+        "group": 17,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/17",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 10,
+        "group": 17,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/18",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 9,
+        "group": 19,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/19",
+      "solutions": 1,
+      "steps": 35,
+      "rules": {
+        "locked": 6,
+        "group": 23,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/20",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 7,
+        "group": 19,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/21",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 7,
+        "group": 19,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/22",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "group": 22,
+        "locked": 4,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/23",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 9,
+        "group": 19,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/24",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 10,
+        "group": 18,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/25",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "group": 20,
+        "locked": 7,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/26",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 10,
+        "group": 17,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/27",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 9,
+        "group": 19,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/28",
+      "solutions": 1,
+      "steps": 31,
+      "rules": {
+        "locked": 5,
+        "group": 20,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/29",
+      "solutions": 1,
+      "steps": 31,
+      "rules": {
+        "locked": 8,
+        "group": 17,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/30",
+      "solutions": 1,
+      "steps": 31,
+      "rules": {
+        "locked": 7,
+        "group": 18,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/31",
+      "solutions": 1,
+      "steps": 35,
+      "rules": {
+        "locked": 11,
+        "group": 18,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/32",
+      "solutions": 1,
+      "steps": 35,
+      "rules": {
+        "locked": 11,
+        "group": 18,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/33",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 13,
+        "group": 14,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/34",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 7,
+        "group": 21,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/35",
+      "solutions": 1,
+      "steps": 31,
+      "rules": {
+        "locked": 5,
+        "group": 20,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/36",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 14,
+        "group": 14,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/37",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 9,
+        "group": 19,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/38",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 11,
+        "group": 17,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/39",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 6,
+        "group": 22,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/40",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 13,
+        "group": 13,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/41",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 9,
+        "group": 19,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/42",
+      "solutions": 1,
+      "steps": 31,
+      "rules": {
+        "locked": 8,
+        "group": 17,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/43",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 5,
+        "group": 21,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/44",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 10,
+        "group": 16,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/45",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 11,
+        "group": 16,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/46",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "group": 24,
+        "locked": 4,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/47",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 10,
+        "group": 17,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/48",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 10,
+        "group": 17,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/49",
+      "solutions": 1,
+      "steps": 31,
+      "rules": {
+        "locked": 7,
+        "group": 18,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/50",
+      "solutions": 1,
+      "steps": 31,
+      "rules": {
+        "locked": 10,
+        "group": 15,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/51",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 7,
+        "group": 19,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/52",
+      "solutions": 1,
+      "steps": 31,
+      "rules": {
+        "locked": 8,
+        "group": 17,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/53",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 5,
+        "group": 21,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/54",
+      "solutions": 1,
+      "steps": 31,
+      "rules": {
+        "locked": 10,
+        "group": 15,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/55",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 8,
+        "group": 18,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/56",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 11,
+        "group": 15,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/57",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 11,
+        "group": 16,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/58",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 11,
+        "group": 16,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/59",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 13,
+        "group": 14,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/60",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 7,
+        "group": 20,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/61",
+      "solutions": 1,
+      "steps": 31,
+      "rules": {
+        "locked": 4,
+        "group": 21,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/62",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 9,
+        "group": 19,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/63",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 5,
+        "group": 21,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/64",
+      "solutions": 1,
+      "steps": 31,
+      "rules": {
+        "locked": 8,
+        "group": 17,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/65",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 8,
+        "group": 18,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/66",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 7,
+        "group": 19,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/67",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 5,
+        "group": 21,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/68",
+      "solutions": 1,
+      "steps": 31,
+      "rules": {
+        "locked": 7,
+        "group": 18,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/69",
+      "solutions": 1,
+      "steps": 31,
+      "rules": {
+        "locked": 9,
+        "group": 16,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/70",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 13,
+        "group": 15,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/71",
+      "solutions": 1,
+      "steps": 31,
+      "rules": {
+        "locked": 10,
+        "group": 15,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/72",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 11,
+        "group": 16,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/73",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 11,
+        "group": 17,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/74",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 10,
+        "group": 18,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/75",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 9,
+        "group": 19,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/76",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "group": 22,
+        "locked": 5,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/77",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 12,
+        "group": 16,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/78",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 6,
+        "group": 20,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/79",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 8,
+        "group": 20,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/80",
+      "solutions": 1,
+      "steps": 31,
+      "rules": {
+        "locked": 7,
+        "group": 18,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/81",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 4,
+        "group": 23,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/82",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 13,
+        "group": 13,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/83",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 10,
+        "group": 17,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/84",
+      "solutions": 1,
+      "steps": 31,
+      "rules": {
+        "locked": 7,
+        "group": 18,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/85",
+      "solutions": 1,
+      "steps": 31,
+      "rules": {
+        "locked": 7,
+        "group": 18,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/86",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 13,
+        "group": 13,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/87",
+      "solutions": 1,
+      "steps": 35,
+      "rules": {
+        "locked": 7,
+        "group": 22,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/88",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 5,
+        "group": 21,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/89",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 9,
+        "group": 18,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/90",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 8,
+        "group": 20,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/91",
+      "solutions": 1,
+      "steps": 32,
+      "rules": {
+        "locked": 4,
+        "group": 22,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/92",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 13,
+        "group": 14,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/93",
+      "solutions": 1,
+      "steps": 31,
+      "rules": {
+        "locked": 7,
+        "group": 18,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/94",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 11,
+        "group": 17,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/95",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 14,
+        "group": 14,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/96",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 10,
+        "group": 18,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/97",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "group": 21,
+        "locked": 7,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/98",
+      "solutions": 1,
+      "steps": 33,
+      "rules": {
+        "locked": 9,
+        "group": 18,
+        "single": 6
+      }
+    },
+    {
+      "id": "6/99",
+      "solutions": 1,
+      "steps": 34,
+      "rules": {
+        "locked": 6,
+        "group": 22,
+        "single": 6
+      }
+    },
+    {
+      "id": "7/0",
+      "solutions": 1,
+      "steps": 48,
+      "rules": {
+        "locked": 20,
+        "group": 21,
+        "single": 7
+      }
+    },
+    {
+      "id": "7/1",
+      "solutions": 1,
+      "steps": 45,
+      "rules": {
+        "locked": 17,
+        "group": 21,
+        "single": 7
+      }
+    },
+    {
+      "id": "7/2",
+      "solutions": 1,
+      "steps": 45,
+      "rules": {
+        "locked": 19,
+        "group": 19,
+        "single": 7
+      }
+    },
+    {
+      "id": "7/3",
+      "solutions": 1,
+      "steps": 48,
+      "rules": {
+        "group": 29,
+        "locked": 12,
+        "single": 7
+      }
+    },
+    {
+      "id": "7/4",
+      "solutions": 1,
+      "steps": 47,
+      "rules": {
+        "locked": 18,
+        "group": 22,
+        "single": 7
+      }
+    },
+    {
+      "id": "7/5",
+      "solutions": 1,
+      "steps": 46,
+      "rules": {
+        "locked": 19,
+        "group": 20,
+        "single": 7
+      }
+    },
+    {
+      "id": "7/6",
+      "solutions": 1,
+      "steps": 46,
+      "rules": {
+        "locked": 21,
+        "group": 18,
+        "single": 7
+      }
+    },
+    {
+      "id": "7/7",
+      "solutions": 1,
+      "steps": 42,
+      "rules": {
+        "locked": 12,
+        "group": 23,
+        "single": 7
+      }
+    },
+    {
+      "id": "7/8",
+      "solutions": 1,
+      "steps": 45,
+      "rules": {
+        "locked": 16,
+        "group": 22,
+        "single": 7
+      }
+    },
+    {
+      "id": "7/9",
+      "solutions": 1,
+      "steps": 45,
+      "rules": {
+        "group": 31,
+        "locked": 7,
+        "single": 7
+      }
+    },
+    {
+      "id": "7/10",
+      "solutions": 1,
+      "steps": 46,
+      "rules": {
+        "locked": 23,
+        "group": 16,
+        "single": 7
+      }
+    },
+    {
+      "id": "7/11",
+      "solutions": 1,
+      "steps": 46,
+      "rules": {
+        "locked": 18,
+        "group": 21,
+        "single": 7
+      }
+    },
+    {
+      "id": "7/12",
+      "solutions": 1,
+      "steps": 43,
+      "rules": {
+        "locked": 16,
+        "group": 20,
+        "single": 7
+      }
+    },
+    {
+      "id": "7/13",
+      "solutions": 1,
+      "steps": 45,
+      "rules": {
+        "locked": 19,
+        "group": 19,
+        "single": 7
+      }
+    },
+    {
+      "id": "7/14",
+      "solutions": 1,
+      "steps": 47,
+      "rules": {
+        "locked": 18,
+        "group": 22,
+        "single": 7
+      }
+    },
+    {
+      "id": "7/15",
+      "solutions": 1,
+      "steps": 48,
+      "rules": {
+        "locked": 18,
+        "group": 23,
+        "single": 7
+      }
+    },
+    {
+      "id": "7/16",
+      "solutions": 1,
+      "steps": 39,
+      "rules": {
+        "locked": 10,
+        "group": 22,
+        "single": 7
+      }
+    },
+    {
+      "id": "7/17",
+      "solutions": 1,
+      "steps": 48,
+      "rules": {
+        "locked": 8,
+        "group": 33,
+        "single": 7
+      }
+    },
+    {
+      "id": "7/18",
+      "solutions": 1,
+      "steps": 48,
+      "rules": {
+        "locked": 16,
+        "group": 25,
+        "single": 7
+      }
+    },
+    {
+      "id": "7/19",
+      "solutions": 1,
+      "steps": 46,
+      "rules": {
+        "locked": 22,
+        "group": 17,
+        "single": 7
+      }
+    },
+    {
+      "id": "8/0",
+      "solutions": 1,
+      "steps": 63,
+      "rules": {
+        "locked": 17,
+        "group": 38,
+        "single": 8
+      }
+    },
+    {
+      "id": "8/1",
+      "solutions": 1,
+      "steps": 59,
+      "rules": {
+        "locked": 32,
+        "group": 19,
+        "single": 8
+      }
+    },
+    {
+      "id": "8/2",
+      "solutions": 1,
+      "steps": 61,
+      "rules": {
+        "locked": 34,
+        "group": 19,
+        "single": 8
+      }
+    },
+    {
+      "id": "8/3",
+      "solutions": 1,
+      "steps": 61,
+      "rules": {
+        "locked": 27,
+        "group": 26,
+        "single": 8
+      }
+    },
+    {
+      "id": "8/4",
+      "solutions": 1,
+      "steps": 62,
+      "rules": {
+        "locked": 33,
+        "group": 21,
+        "single": 8
+      }
+    },
+    {
+      "id": "8/5",
+      "solutions": 1,
+      "steps": 62,
+      "rules": {
+        "locked": 20,
+        "group": 34,
+        "single": 8
+      }
+    },
+    {
+      "id": "8/6",
+      "solutions": 1,
+      "steps": 64,
+      "rules": {
+        "locked": 31,
+        "group": 25,
+        "single": 8
+      }
+    },
+    {
+      "id": "8/7",
+      "solutions": 1,
+      "steps": 62,
+      "rules": {
+        "locked": 28,
+        "group": 26,
+        "single": 8
+      }
+    },
+    {
+      "id": "8/8",
+      "solutions": 1,
+      "steps": 61,
+      "rules": {
+        "locked": 34,
+        "group": 19,
+        "single": 8
+      }
+    },
+    {
+      "id": "8/9",
+      "solutions": 1,
+      "steps": 61,
+      "rules": {
+        "locked": 21,
+        "group": 32,
+        "single": 8
+      }
+    },
+    {
+      "id": "8/10",
+      "solutions": 1,
+      "steps": 64,
+      "rules": {
+        "locked": 31,
+        "group": 25,
+        "single": 8
+      }
+    },
+    {
+      "id": "8/11",
+      "solutions": 1,
+      "steps": 61,
+      "rules": {
+        "locked": 21,
+        "group": 32,
+        "single": 8
+      }
+    }
+  ],
+  "campaignFailures": []
+}

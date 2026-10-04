@@ -14,7 +14,7 @@ This repository is the source of truth for LUMEN. Read this file and the documen
 9. Do not treat a Git push as a production release. Report the Git commit SHA and verify the deployment corresponding to the intended Production commit.
 
 ## Product invariants
-- 100 sequential quests across 12 constellations; exactly 150 sky stars.
+- Campaign size and sky stars derive from the content catalogue, never fixed limits. Currently: 134 sequential quests across 24 constellations / 298 stars, including the preserved historical 100 quests / 12 constellations / 150 stars. Every constellation's quest rewards must sum exactly to its star count.
 - The player cannot skip an unsolved quest. “Réinitialiser” resets the current board; only victory unlocks the next quest.
 - Cell cycle: empty -> exclusion -> Guardian -> empty. The first tap must never be rejected as an invalid Guardian.
 - Victory depends on the Guardian placement satisfying the puzzle, not on whether all remaining cells are manually excluded.
@@ -27,6 +27,15 @@ This repository is the source of truth for LUMEN. Read this file and the documen
 
 ## Before changing generated/catalogued grids
 Read `docs/GRID_CATALOG.md` and `docs/TESTING.md`. Do not add a grid solely because it has a mathematical solution: it must pass uniqueness, structural, explainability and replay audits.
+
+## Evolving catalogue: mandatory design rule
+Treat catalogue growth as normal throughout development, including features that do not edit content directly. Follow the [evolving catalogue contract](docs/DATA_AND_ARCHITECTURE.md#evolving-catalogue-contract).
+- Derive campaign/pack boundaries, constellation ranges, star totals, completion and navigation from their owning content model. Never introduce a fixed total or last index in code, UI, analytics, persistence, fallback paths or CI.
+- Distinguish all audited catalogue grids from quests scheduled in a campaign and from content accessible to a player. These counts are not interchangeable.
+- Preserve existing quest IDs, grid assignments, saved history, badges and active attempts. Append content; any reordering/removal requires an explicit compatible migration. A previously complete campaign must resume at newly appended content without replaying its old finale.
+- Check impacts on loading, local/cloud restoration, rewards, replay, final celebration, Mon ciel, sharing, onboarding, access and backend contracts before delivery. Record applicable impacts in the PR.
+- Test hypothetical growth from N to N+k and recovery of an old completed/capped save. Assert contiguous coverage, unique references and exact rewards per constellation against data, rather than replacing old fixed totals with new ones.
+- Fixed quest numbers are permitted for explicitly documented teaching milestones and frozen historical regression fixtures; they must not become limits on current content. Run the unified quality gate for content/progression changes.
 
 ## Current implementation and navigation
 The static application uses native ES modules without a build step. `index.html` is markup; `src/main.js` starts the UI controller. Domain ownership: `src/game/` (rules/proofs), `src/campaign/` (catalogue/progression), `src/persistence/` (local/cloud), `src/ui/` (rendering/input/tutorial/audio), `src/analytics/` (events), `src/testing/` (browser regression suite/diagnostics).

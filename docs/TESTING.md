@@ -13,7 +13,7 @@ The app exposes `await window.runHintTests()`; the 66 original cases plus three 
 - sharing/referral and account/profile behavior;
 - reminder opt-in rules;
 - continuous sequential progression;
-- 100 quests / 12 constellations / 150 stars;
+- catalogue-driven campaign size, constellation mapping and exact per-constellation/total star rewards;
 - cell cycle;
 - guided conflicts and solver use;
 - N x N board rendering;
@@ -77,6 +77,14 @@ The Chrome runner automates the tap/drag/reset/reload/PWA checks below. Keep exp
 13. install/share flows do not block play.
 
 ## Unified local / CI quality gate (#58)
+
+The gate also runs `node scripts/late-game-tests.mjs` and the isolated-browser `node scripts/late-game-browser-tests.mjs <report-path>`. They cover quest 100 → 101, unsolved-quest locking, replay, the actual campaign boundary, cloud restoration with extended histories, the normal celebration CTA on mobile/desktop, reward preservation, reload of quest 101 and restoration of its active attempt.
+
+On 2026-10-04, against main `57c958e` plus the continuation fix, these dedicated checks pass. The complete embedded suite was executed for 5x5, 6x6, 7x7 and 8x8: 96/98 cases pass per size, with the existing 100 quests / 12 constellations and exactly 150 sky stars assertions failing after #94. The strict catalogue audit and difficulty/campaign/content-architecture gates also fail on the expansion's existing count, historical-data and finale contracts. These assertions remain intact; the unified gate is not green. Reports are `quest100-transition.json`, `quest100-embedded.json` and `quest100-node.json` under `docs/validation/`.
+
+The subsequent CI repair replaces those fixed-total assertions with cross-checks of the content model, contiguous schedule, unique puzzle references and exact rewards for every constellation. Catalogue growth must automatically affect loading, cloud restore, final-quest detection, registry IDs, shared result cards and sky totals. Campaign tests retain the immutable first-100 schedule and rewards, historical save comparisons and Q81–100 difficulty contract; that historic Orion finale is distinct from the current campaign endpoint. Additional fixtures simulate appending 1, 2, 3 and 10 quests with different constellation star counts, verifying updated boundaries, IDs, rewards and recovery of previously capped saves without changing actual catalogue data.
+
+Repair validation: all 17 Node gates and all four browser runners pass in the unified gate. The actual embedded suite passes 98/98 cases on each of 5x5, 6x6, 7x7 and 8x8 (392 cases); touch cycle/drag, reset, reload, PWA, UX and learning suites pass. The late-game browser runner also restores a capped pre-final save, completes the actual final quest and verifies the full sky and endgame celebration on mobile/desktop. Reports are `docs/validation/dynamic-catalogue-{audit,browser,ux,learning,late-game,summary}` (JSON). These are isolated local guest tests and simulated cloud fixtures, not live OAuth or Production verification.
 
 Use Node 22+ and Chrome/Chromium. No npm install or application build is needed. The same command is used locally and by GitHub Actions:
 

@@ -258,3 +258,17 @@ Real touch tests then exposed two player-facing defects: badge/auto-marking dial
 - Silhouettes target 7–14 stars and roughly 120 px mobile readability.
 - Artistic shapes remain strictly decoupled from puzzle generation.
 - Famous-character content defaults to historical, mythological or public-domain figures; modern licensed characters require rights validation.
+
+## 2026-10-04 — Quest 100 continuation after wave 2
+- #94 expanded the schedule to 134 quests and 24 constellations, but quest selection and cloud restoration retained a last-index limit of 99. Continuing after quest 100 reloaded the completed quest and its celebration.
+- Both limits now derive from `campaignQuestCount()`. Victory remains required for continuation, and navigation does not rewrite existing player history or rewards.
+- Dedicated real-browser tests cover the celebration CTA, quest 101 reload and active-attempt restoration on mobile and desktop; cloud mocks cover histories below, at and above quest 100 and the current final boundary.
+- Onboarding impact: quests 1–2, Mon ciel handoff and assistance/badge milestones are unchanged; only loading the already-scheduled extension is repaired.
+- The expansion still conflicts with historical campaign-count, stars, differential-content and difficulty-finale test contracts. Full embedded tests and the strict audit were executed and their failures are recorded rather than waived. No Production validation is implied by this fix.
+
+## 2026-10-04 — Dynamic catalogue CI and reward repair
+- User requirement: the catalogue will grow; campaign limits, totals and CI assertions must follow content automatically. Current 134/24/298 totals are descriptive, not new permanent constants.
+- Strict audit and embedded/content/campaign gates now cross-check content quest counts, contiguous schedule/constellation coverage, unique references and exact star allocation for every constellation. Historical first-100 data, rewards and schedule comparisons remain frozen; the difficulty curve and expert+ Orion Q100 finale remain protected independently of appended content.
+- The sky target is the sum of constellation stars. Short extension constellations earn all their stars across their quests. Existing version-4 saves capped at 150 recover stars already earned by their solved prefix, idempotently, while preserving historical badges, attempts and rewards. Already-earned Mastery is not revoked when the campaign endpoint grows.
+- Cloud fallback, actual final-quest detection and result-card totals derive from the content model. Synthetic future additions cover 1/2/3/10 quests and different star counts without editing production content.
+- Onboarding impact: teaching timing, rules and eligibility remain unchanged. Mon ciel already renders totals from campaign data, so it now reflects the expanded sky; the full learning interaction suite verifies its existing handoff and tour.

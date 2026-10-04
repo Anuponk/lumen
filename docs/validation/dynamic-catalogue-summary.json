@@ -1,0 +1,112 @@
+{
+    "local":  true,
+    "suites":  [
+                   {
+                       "suite":  "audit-catalogue.mjs",
+                       "seconds":  0.6,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "difficulty-audit.mjs",
+                       "seconds":  0.4,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "engine-equivalence.mjs",
+                       "seconds":  18.5,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "campaign-tests.mjs",
+                       "seconds":  0.2,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "late-game-tests.mjs",
+                       "seconds":  0.1,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "content-architecture-tests.mjs",
+                       "seconds":  0.1,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "extraordinary-skies-tests.mjs",
+                       "seconds":  0.1,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "persistence-tests.mjs",
+                       "seconds":  0.1,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "analytics-tests.mjs",
+                       "seconds":  0.3,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "module-structure-tests.mjs",
+                       "seconds":  0.2,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "responsive-architecture-tests.mjs",
+                       "seconds":  0.1,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "attempt-engine-tests.mjs",
+                       "seconds":  0.1,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "performance-badge-tests.mjs",
+                       "seconds":  0.1,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "daily-engagement-tests.mjs",
+                       "seconds":  0.1,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "learning-tests.mjs",
+                       "seconds":  0.1,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "social-challenge-tests.mjs",
+                       "seconds":  0.1,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "social-challenge-ui-tests.mjs",
+                       "seconds":  0.1,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "browser-tests.mjs",
+                       "seconds":  8.9,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "ux-cleanup-tests.mjs",
+                       "seconds":  10.5,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "learning-browser-tests.mjs",
+                       "seconds":  55.6,
+                       "passed":  true
+                   },
+                   {
+                       "suite":  "late-game-browser-tests.mjs",
+                       "seconds":  16.7,
+                       "passed":  true
+                   }
+               ],
+    "nodeVersion":  "24.19.0",
+    "passed":  true
+}

@@ -192,7 +192,7 @@ function shareCardCanvas(a){
  x.fillStyle="#f2fbff";x.font="900 58px Arial";wrapCanvasText(x,a.main,cx,495,900,70);
  x.fillStyle="#a9bfd0";x.font="700 30px Arial";wrapCanvasText(x,a.detail,cx,660,900,42);
  x.strokeStyle="rgba(104,231,255,.35)";x.lineWidth=2;x.strokeRect(105,790,870,210);
- x.fillStyle="#f2fbff";x.font="900 44px Arial";x.fillText("Quête "+(levelIndex+1)+" / 100",cx,860);
+ x.fillStyle="#f2fbff";x.font="900 44px Arial";x.fillText("Quête "+(levelIndex+1)+" / "+campaignQuestCount(),cx,860);
  x.fillStyle="#68e7ff";x.font="800 32px Arial";x.fillText((a.ch?.name||"Constellation")+" · "+a.pos+"/"+a.total,cx,920);
  x.fillStyle="#a9bfd0";x.font="700 28px Arial";x.fillText("◷ "+formatDuration(a.secs)+(a.run.noHint?"   ·   Sans indice":""),cx,970);
  x.fillStyle="#eefaff";x.font="800 32px Arial";x.fillText("Peux-tu rallumer le ciel ?",cx,1120);
@@ -406,7 +406,7 @@ function persistAttemptBoard(){attemptEngine.updateBoard(state)}
 const board=document.getElementById("board"),msg=document.getElementById("msg");
 let hiCells=[];
 const {validateGuardians,key,solutions,isAutoCross,verificationErrors,guardianConflicts,conflictMessage,simpleForcedPlacement,proofEngine,directMissingCross,playerError,guardianOnlyState,guidedConflictForAction}=createGameEngine(()=>({n,puz,state}),()=>!!document.getElementById("autoCross")?.checked);
-function choose(){levelIndex=Math.max(0,Math.min(levelIndex,99));const [size,slot]=CAMPAIGN_SIZE_SCHEDULE[levelIndex];puz=size==="6"?CAT["6"][CAMPAIGN6_ORDER[slot]]:CAT[size][slot];n=puz.reg.length;last[n]=levelIndex}
+function choose(){levelIndex=Math.max(0,Math.min(levelIndex,campaignQuestCount()-1));const [size,slot]=CAMPAIGN_SIZE_SCHEDULE[levelIndex];puz=size==="6"?CAT["6"][CAMPAIGN6_ORDER[slot]]:CAT[size][slot];n=puz.reg.length;last[n]=levelIndex}
 function loadPuzzle(){init();}
 function startLearningReplay(){
  if(learningReplayReturn===null)learningReplayReturn={levelIndex,replayMode};

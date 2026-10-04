@@ -1,6 +1,7 @@
+import {baseCampaignQuestCount} from "../campaign/content.js";
 export function createCloudPersistence(model,hooks,environment){
 const {activeGameSeconds,exactSkyScoreForSolvedPrefix,saveLumenProgress,refreshJourney,init,updateAuthUI,showRewardToast,renderDaily}=hooks;
-const campaignQuestCount=()=>Math.max(0,Number(hooks.campaignQuestCount?.()??100));
+const campaignQuestCount=()=>Math.max(0,Number(hooks.campaignQuestCount?.()??baseCampaignQuestCount()));
 const {document,location,alert,setTimeout,console}=environment;
 const cloudWritesDisabled=()=>!!environment.qaMode;
 async function loadLumenProfile(){
@@ -60,7 +61,7 @@ async function cloudMergeProgress(){
    const {error:e}=await model.lumenSupabase.rpc("lumen_save_progress",{p_puzzle_id:i+1,p_duration_seconds:null,p_hints_used:(model.lumenProgress.noHint&&model.lumenProgress.noHint[i])?0:1});
    if(e)console.warn("LUMEN import local",e);
  }
- model.levelIndex=Math.min(count,99);
+ model.levelIndex=Math.min(count,campaignQuestCount()-1);
  refreshJourney(); init();
  model.lumenCloudReady=true;
 }

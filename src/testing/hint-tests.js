@@ -1,6 +1,6 @@
 import {CAT} from "../campaign/catalogue.js";
 import {CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATIONS,CONSTELLATION_GRID_COUNTS} from "../campaign/data.js";
-import {chapterForGrid} from "../campaign/progression.js";
+import {chapterForGrid,campaignQuestCount,skyStarsForGrid} from "../campaign/progression.js";
 import {performanceEligibility,performanceAttempt} from "../campaign/performance.js";
 import {createAttemptEngine} from "../game/attempt-engine.js";
 
@@ -28,9 +28,9 @@ async function runHintTests(){
    return keys.every((v,i)=>v===i);
  });
 
- test("Campagne : 100 quêtes réparties sur 12 constellations",()=>CONSTELLATION_GRID_COUNTS.length===12&&CONSTELLATION_GRID_COUNTS.reduce((a,b)=>a+b,0)===100);
- test("Campagne : le ciel contient exactement 150 étoiles",()=>CONSTELLATIONS.reduce((a,c)=>a+c.count,0)===SKY_TARGET&&SKY_TARGET===150);
- test("Campagne : chaque quête appartient à une constellation",()=>Array.from({length:100},(_,i)=>chapterForGrid(i)).every(i=>i>=0&&i<CONSTELLATIONS.length));
+ test("Campagne : les quêtes couvrent toutes les constellations du catalogue",()=>CONSTELLATION_GRID_COUNTS.length===CONSTELLATIONS.length&&CONSTELLATION_GRID_COUNTS.every(count=>Number.isInteger(count)&&count>0)&&Object.keys(CAMPAIGN_SIZE_SCHEDULE).length===campaignQuestCount()&&Object.keys(CAMPAIGN_SIZE_SCHEDULE).every((key,index)=>Number(key)===index));
+ test("Campagne : les récompenses couvrent toutes les étoiles du catalogue",()=>CONSTELLATIONS.reduce((a,c)=>a+c.count,0)===SKY_TARGET&&CONSTELLATION_GRID_COUNTS.every((count,ci)=>{const start=CONSTELLATION_GRID_COUNTS.slice(0,ci).reduce((a,b)=>a+b,0);return Array.from({length:count},(_,i)=>skyStarsForGrid(start+i)).reduce((a,b)=>a+b,0)===CONSTELLATIONS[ci].count}));
+ test("Campagne : chaque quête appartient à une constellation",()=>Array.from({length:campaignQuestCount()},(_,i)=>chapterForGrid(i)).every(i=>i>=0&&i<CONSTELLATIONS.length));
  test("Interaction : le cycle reste exclusion, Gardien, case libre",()=>{const src=render.toString();return src.includes("(state[r][c]+1)%3")});
  test("Apprentissage : poser un Gardien utilise le vrai cycle à deux touchers",()=>{const src=render.toString();return src.includes("state[r][c]===0){next=1")&&src.includes("state[r][c]===1){next=2")&&!src.includes("scriptedAllowsGuardian(r,c)){if(!scriptedAllowsGuardian")});
  test("Apprentissage : les cinq premières quêtes imposent le jeu manuel",()=>{const src=configureLearningMode.toString();return src.includes("levelIndex<=4")&&src.includes("cb.checked=false")&&src.includes("cb.disabled=true")});
