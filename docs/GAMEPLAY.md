@@ -51,3 +51,13 @@ Designed shard economy (when test override is disabled): start with 3, maximum 5
 
 ## Feedback and modals
 Informational overlays should have sensible outside-tap behavior. Corrective overlays (guided conflict and verification correction) deliberately require explicit acknowledgement/action so a correction is not dismissed accidentally.
+
+## Social challenges — first-performance contract
+
+A social challenge is a competition around a **first play**, not a replay leaderboard. A fixed LUMEN grid becomes easier once its solution has been seen or memorized, so a challenge may be created only from the sender's first play on that quest. The recipient gets one challenge attempt. Mistakes do not end that attempt: the player may correct marks and Guardians until the grid is solved or the attempt is explicitly abandoned.
+
+LUMEN guarantees the sender-side condition (the shared snapshot comes from the sender's first play). It deliberately does **not** claim that the recipient has never seen the grid. A recipient may already have passed that quest in campaign; blocking such players would make challenges unusable between players at different progression points. The backend records `previously_played` for analysis, not as a V1 eligibility gate.
+
+The sender's time and badges stay hidden before the recipient finishes, so the reference does not become a target during solving. At the end, comparison is factual across time, Autonomy and Mastery; there is no composite score that pretends an assisted faster run is objectively better than an autonomous slower run.
+
+**Remarkable performance** has one exact social definition: **Mastery earned on the sender's first play of that quest**. Every first play may be challenged, but this case receives stronger celebration and a more prominent “Défier un ami” CTA. Mastery earned on replay is never a remarkable social performance and cannot create a challenge.
