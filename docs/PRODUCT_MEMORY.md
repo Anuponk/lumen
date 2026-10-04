@@ -176,3 +176,10 @@ Real touch tests then exposed two player-facing defects: badge/auto-marking dial
 - Active duration comes exclusively from the attempt engine.
 - Start, completion, abandon, reset, Hint, Verify, guided intervention and Auto marking are measurable with quest, grid size, constellation and current campaign progress.
 - Telemetry stays pseudonymous and avoids unnecessary personal data.
+
+
+## 2026-10-04 — Endgame experience (#46)
+- Completing the final **currently available** quest triggers a dedicated campaign-ending celebration after the final constellation reveal.
+- The recap shows current content count, constellations, stars, Autonomy, Sans erreur and Mastery totals.
+- Post-game direction is replay/completion of missing badges and Mon ciel.
+- Final-quest detection derives from campaign content size, and the seen key includes that size so later content extensions can produce a new ending.

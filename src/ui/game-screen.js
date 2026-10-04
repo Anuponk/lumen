@@ -9,7 +9,7 @@ import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {LUMEN_META,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,badgeDefs} from "../campaign/data.js";
 import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt} from "../campaign/performance.js";
 import {challengeEligibility,challengeSnapshot,compareChallenge,createChallengeClient,normalizeChallengeName,validChallengeName} from "../campaign/social-challenge.js";
-import {createCampaign,sequentialCount,constellationGridRange,chapterForGrid,milestoneFor,skyStarsForGrid,bonusChallengeFor,challengeFor,constellationCheckpoint,constellationStateForEarned,starsAwardedForGrid} from "../campaign/progression.js";
+import {createCampaign,sequentialCount,campaignQuestCount,isCampaignFinalQuest,isCampaignComplete,constellationGridRange,chapterForGrid,milestoneFor,skyStarsForGrid,bonusChallengeFor,challengeFor,constellationCheckpoint,constellationStateForEarned,starsAwardedForGrid} from "../campaign/progression.js";
 import {createGameEngine} from "../game/engine.js";
 import {createAttemptEngine,ATTEMPT_STATES} from "../game/attempt-engine.js";
 import {localDateKey,dateOffsetKey,formatDuration} from "../ui/format.js";
@@ -353,7 +353,7 @@ async function bootstrapSocialChallenge(){
 
 const COLORS=["#efb37e","#91b5ed","#b4a0db","#a9d692","#ff8267","#ddd9d2","#e5ef83","#bdb6a0","#a9d7d3"];
 const TERRITORY_COLORS=["#46c7e8","#6d8fe8","#8b70d7","#49b49b","#d38a54","#b55f86","#67a6bf","#7e9c69","#a8875b"];
-let n=6,puz,state,hist=[],start,timer,last={},hi=null,proofs={},hintStage=0,hintFocus=null,celebrated=false,hintUsesThisGame=0,hintWasGranted=false,mistakesThisGame=0,verifyUsesThisGame=0,verifyPending=null,autoUsedThisGame=false,replayMode=false,levelIndex=Math.min(sequentialSolvedCount,99),learningReplayReturn=null;
+let n=6,puz,state,hist=[],start,timer,last={},hi=null,proofs={},hintStage=0,hintFocus=null,celebrated=false,hintUsesThisGame=0,hintWasGranted=false,mistakesThisGame=0,verifyUsesThisGame=0,verifyPending=null,autoUsedThisGame=false,replayMode=false,levelIndex=Math.min(sequentialSolvedCount,campaignQuestCount()-1),learningReplayReturn=null,endgamePending=false;
 let socialChallenge=null,lastChallengeOffer=null,pendingChallengeUrl="";
 const attemptEngine=createAttemptEngine({onChange:()=>updateAttemptUI()});
 function attemptMode(){return socialChallenge?"challenge":replayMode?"replay":"campaign"}
@@ -699,6 +699,30 @@ function configureSuccessFeedback(questPassed){
  const box=document.getElementById("difficultyBox"),ask=shouldAskDifficulty(levelIndex,questPassed);
  if(box)box.hidden=!ask;
 }
+
+function endgameSeenKey(){return "lumenEndgameSeen:"+campaignQuestCount()}
+function endgameStats(){
+ const performances=lumenProgress.performances||{},stats={autonomy:0,speed:0,noError:0,mastery:0};
+ for(const p of Object.values(performances)){const badges=p?.badges||{};for(const key of Object.keys(stats))if(badges[key])stats[key]++}
+ return {quests:campaignQuestCount(),constellations:CONSTELLATIONS.length,stars:skyStarsEarned(),...stats};
+}
+function showEndgameCelebration(){
+ const overlay=document.getElementById("endgameOverlay");if(!overlay)return;
+ const stats=endgameStats();
+ document.getElementById("endgameSummary").textContent=stats.quests+" quêtes · "+stats.constellations+" constellations · "+stats.stars+" étoiles";
+ document.getElementById("endgameAutonomy").textContent=stats.autonomy;
+ document.getElementById("endgameNoError").textContent=stats.noError;
+ document.getElementById("endgameMastery").textContent=stats.mastery;
+ try{localStorage.setItem(endgameSeenKey(),"1")}catch(_){}
+ overlay.hidden=false;
+ trackLumenEvent("campaign_completed",null,{content_quests:stats.quests,constellations:stats.constellations,stars:stats.stars,autonomy_badges:stats.autonomy,no_error_badges:stats.noError,mastery_badges:stats.mastery});
+ for(let i=0;i<36;i++){const spark=document.createElement("span");spark.className="endgame-spark";spark.textContent=i%4?"✦":"★";spark.style.left=(5+(i*37)%90)+"vw";spark.style.top=(8+(i*29)%82)+"vh";spark.style.animationDelay=((i%9)*.07)+"s";document.body.appendChild(spark);setTimeout(()=>spark.remove(),3600)}
+}
+function closeEndgameToSky(focus=true){
+ const overlay=document.getElementById("endgameOverlay");if(overlay)overlay.hidden=true;
+ openJourneyMap(focus);
+}
+
 function hideSuccess(){
  let o=document.getElementById("successOverlay");
  if(o)o.classList.remove("show");
@@ -731,6 +755,7 @@ function celebrateSuccess(){
  // Progress is tied to the game's real victory event (not overlay visibility).
  const skyEarnedBefore=skyStarsEarned();
  lumenProgress.solved[levelIndex]=1;
+ endgamePending=firstCompletion&&isCampaignFinalQuest(levelIndex)&&isCampaignComplete(lumenProgress.solved);
  if(firstCompletion)lumenProgress.skyScore=Math.min(SKY_TARGET,skyEarnedBefore+skyStarsForGrid(levelIndex));
  if(firstCompletion)lumenProgress.xp=(lumenProgress.xp||0)+10;
  if(firstCompletion&&!usedHintThisGame)lumenProgress.xp+=5;
@@ -1236,7 +1261,7 @@ function showSkyReveal(beforeEarned=null,checkpoint=null){
  let stars=p.pts.map((v,i)=>'<circle class="sky-star '+(i<p.lit?'on ':'')+(i===idx?'new-star':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i===idx?6:i<p.lit?4:3)+'"/>').join("");
  canvas.innerHTML='<svg class="sky-reveal-svg" viewBox="0 0 290 115">'+lines+stars+'</svg><div>'+p.lit+' / '+p.count+' étoiles</div>';o.hidden=false;if(completedIndex>=0)celebrateConstellationReveal();
 }
-document.getElementById("skyRevealContinue").onclick=()=>{const o=document.getElementById("skyReveal");o.hidden=true;o.classList.remove("complete-celebration");o.querySelectorAll(".sky-bravo").forEach(x=>x.remove());document.querySelectorAll(".sky-spark").forEach(x=>x.remove());document.getElementById("successOverlay").classList.add("show")};
+document.getElementById("skyRevealContinue").onclick=()=>{const o=document.getElementById("skyReveal");o.hidden=true;o.classList.remove("complete-celebration");o.querySelectorAll(".sky-bravo").forEach(x=>x.remove());document.querySelectorAll(".sky-spark").forEach(x=>x.remove());if(endgamePending){endgamePending=false;showEndgameCelebration();return}document.getElementById("successOverlay").classList.add("show")};
 function renderXP(){let q=bonusChallengeFor(levelIndex),m=milestoneFor(levelIndex),ch=m||q,box=document.getElementById("challengeBanner");if(!box)return;box.hidden=!ch;if(ch){let done=q&&lumenProgress.stars[q.id];document.getElementById("challengeTitle").textContent=ch.title+(done?" · ★":"");document.getElementById("challengeCopy").textContent=done?"Bonus obtenu":ch.copy}}
 
 function refreshJourney(){awards();let sky=constellationProgress(),earned=skyStarsEarned(),completed=CONSTELLATIONS.slice(0,sky.index).length;
@@ -1285,6 +1310,11 @@ function setupOutsideDefaults(){
  if(tutorial)tutorial.addEventListener("click",e=>{if(e.target!==tutorial)return;let seen=false;try{seen=localStorage.getItem(qaActive?"lumenQaTutorialSeen":"lumenTutorialSeen")==="1"}catch(_){}if(seen)closeTutorial(false)});
 }
 const skyTourNext=document.getElementById("skyTourNext");if(skyTourNext)skyTourNext.onclick=advanceSkyTour;
+const endgameBadges=document.getElementById("endgameBadges"),endgameSky=document.getElementById("endgameSky");
+if(endgameBadges)endgameBadges.onclick=()=>closeEndgameToSky(false);
+if(endgameSky)endgameSky.onclick=()=>closeEndgameToSky(true);
+const endgameOverlay=document.getElementById("endgameOverlay");if(endgameOverlay)endgameOverlay.addEventListener("click",e=>{if(e.target===endgameOverlay)closeEndgameToSky(true)});
+
 
 const openSky=document.getElementById("openSky");if(openSky)openSky.onclick=()=>openJourneyMap(true);
 document.getElementById("closeMap").onclick=closeMapOverlay;document.getElementById("hint").addEventListener("click",()=>{if(!hintWasGranted)return;attemptEngine.markAssistance();hintWasGranted=false;trackAttemptEvent("hint_used",{hint_number:hintUsesThisGame});usedHintThisGame=true;updateHintButton()});

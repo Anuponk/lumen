@@ -1,6 +1,9 @@
 import {CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,SKY_TARGET} from "./data.js";
 import {performanceAttempt,performanceEligibility,localCalendarDay,mergeEarnedBadges} from "./performance.js";
-export function sequentialCount(source){let count=0;while(count<100&&source&&source[count])count++;return count}
+export function campaignQuestCount(){return CONSTELLATION_GRID_COUNTS.reduce((sum,count)=>sum+count,0)}
+export function sequentialCount(source){let count=0,total=campaignQuestCount();while(count<total&&source&&source[count])count++;return count}
+export function isCampaignFinalQuest(index){return Number(index)===campaignQuestCount()-1}
+export function isCampaignComplete(source){return sequentialCount(source||{})>=campaignQuestCount()}
 
 export function constellationGridRange(index){let start=0;for(let j=0;j<index;j++)start+=CONSTELLATION_GRID_COUNTS[j];return {start,end:start+CONSTELLATION_GRID_COUNTS[index]-1,count:CONSTELLATION_GRID_COUNTS[index]}}
 

@@ -106,3 +106,7 @@ Milestone dialogs must respect `hidden` even when their visible layout uses `dis
 Sans erreur must never become an implicit correctness assistant. A wrong Guardian may be tracked internally as pending, but the UI must not change its color, sound, message, haptics or badge-state indicator. If the player removes or immediately undoes that Guardian before another logical board mutation, the pending error disappears. Otherwise it becomes a committed error for that badge run.
 
 Campaign/replay Reset deliberately gives the player a fresh badge run and restarts its timer/assistance/error state. Social challenge Reset is different: the challenge remains the same one-shot attempt and keeps elapsed time, assistance and committed errors.
+
+
+## End-of-campaign celebration
+The final currently available quest is not a normal success. After the last constellation reveal, show a dedicated full-campaign celebration with explicit completion copy, a compact recap (quests, constellations, stars, Autonomy/Sans erreur/Mastery counts) and post-game actions toward Mon ciel / badge completion. Detection derives from the campaign content count, not a hard-coded quest id. The “seen” key is versioned by available quest count so a future content extension can earn its own new ending.

@@ -66,6 +66,20 @@
   </div>
  </div>
 </div>
+<div id="endgameOverlay" class="endgame-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="endgameTitle"><div class="endgame-card">
+ <div class="endgame-crown" aria-hidden="true">✦</div>
+ <div class="endgame-kicker">CIEL ACCOMPLI</div>
+ <h2 id="endgameTitle">Tu as terminé toute l’aventure disponible !</h2>
+ <p>Chaque constellation actuellement accessible est maintenant illuminée. Ton ciel est complet — jusqu’à la prochaine extension.</p>
+ <strong id="endgameSummary" class="endgame-summary"></strong>
+ <div class="endgame-stats">
+  <div><strong id="endgameAutonomy">0</strong><span>Autonomie</span></div>
+  <div><strong id="endgameNoError">0</strong><span>Sans erreur</span></div>
+  <div><strong id="endgameMastery">0</strong><span>Maîtrises</span></div>
+ </div>
+ <p class="endgame-next">Tu peux maintenant revenir sur tes quêtes pour compléter les badges manquants et perfectionner tes meilleures performances.</p>
+ <div class="endgame-actions"><button id="endgameBadges" class="primary" type="button">Améliorer mes badges</button><button id="endgameSky" type="button">✦ Admirer Mon ciel</button></div>
+</div></div>
 <div id="challengeIntro" class="social-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="challengeIntroTitle"><div class="social-card"><div class="social-icon">✦</div><h2 id="challengeIntroTitle">Un défi t’attend</h2><p id="challengeIntroCopy"></p><p class="social-note">La performance du défieur restera cachée jusqu’à la fin. Tu as une tentative, mais tu peux corriger tes choix jusqu’à réussir ou abandonner.</p><button id="challengeStart" class="primary" type="button">Relever le défi</button><button id="challengeLeave" type="button">Retour à Lumen</button></div></div>
 <div id="challengeNameModal" class="social-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="challengeNameTitle"><div class="social-card"><h2 id="challengeNameTitle">Comment doit-on t’appeler ?</h2><p>Un prénom ou pseudo suffit. Il sera visible dans les résultats du défi.</p><input id="challengeNameInput" maxlength="24" autocomplete="nickname" placeholder="Prénom ou pseudo"><div id="challengeNameError" class="social-error"></div><button id="challengeNameSave" class="primary" type="button">Continuer</button><button id="challengeNameCancel" type="button">Annuler</button></div></div>
 <div id="challengeShareModal" class="social-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="challengeShareTitle"><div class="social-card"><h2 id="challengeShareTitle">Défie un ami</h2><p id="challengeShareCopy"></p><canvas id="challengeQr" width="220" height="220" aria-label="QR code du défi"></canvas><div class="social-actions"><button id="challengeNativeShare" class="primary" type="button">Partager</button><button id="challengeCopyLink" type="button">Copier le lien</button><button id="challengeShareClose" type="button">Fermer</button></div></div></div>
