@@ -183,3 +183,9 @@ Real touch tests then exposed two player-facing defects: badge/auto-marking dial
 - The recap shows current content count, constellations, stars, Autonomy, Sans erreur and Mastery totals.
 - Post-game direction is replay/completion of missing badges and Mon ciel.
 - Final-quest detection derives from campaign content size, and the seen key includes that size so later content extensions can produce a new ending.
+
+
+## 2026-10-04 — Daily engagement alignment after Sans erreur (#29/#82)
+- A qualifying replay that newly earns **Sans erreur** can validate the daily activity exactly like the other performance badges.
+- The Shard wallet is explicitly uncapped in player-facing copy; no reward is clipped because of an existing balance.
+- Existing J3/J7 cycle, grace day, server-authoritative account day and idempotent reward ledger remain unchanged.
