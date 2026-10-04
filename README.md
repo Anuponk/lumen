@@ -33,3 +33,4 @@ This repository is the shared project memory for humans, ChatGPT/Codex and other
 At the time this documentation was introduced (2026-10-03), `main` pointed to commit `1683d1a480bccd813677a23b683bfad6919e0129`; the UI constant was `LUMEN_APP_VERSION="beta-2026.10"`. Git tags/marketing versions and this UI constant must not be assumed to be equivalent.
 
 
+
