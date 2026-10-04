@@ -24,6 +24,7 @@ This repository is the source of truth for LUMEN. Read this file and the documen
 - Mobile drag across cells adds exclusions efficiently and must not trigger full-board renders during pointer movement.
 - Guest progress works locally. Authenticated progress syncs to Supabase and local history is merged to cloud.
 - Constellation progression is the canonical campaign representation.
+- Mon ciel uses Ciel → Aventure (technical `pack`) → Constellation, one Adventure detail and six paginated cards at a time. Browsing must never change progression. The first ten real constellations form the included Adventure; retain access to Adventures already started by existing players and keep subsequent unstarted Adventures visibly locked. READY at a boundary is not proof of starting; social play never grants campaign access. Do not add an unlock/acquisition mechanism without a separate product decision. See `docs/PROGRESSION.md` and `docs/UX_AND_VISUAL_DIRECTION.md`.
 
 ## Before changing generated/catalogued grids
 Read `docs/GRID_CATALOG.md` and `docs/TESTING.md`. Do not add a grid solely because it has a mathematical solution: it must pass uniqueness, structural, explainability and replay audits.

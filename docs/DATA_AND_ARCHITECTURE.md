@@ -48,9 +48,14 @@ The service worker remains network-first for scripts and the HTML navigation rem
 | Board/tutorial/UI | `src/ui/{game-screen,tutorial,sound,styles}.js/css` | Browser suite + touch smoke + `scripts/ui-equivalence.mjs` |
 | Analytics/identity/referral | `src/analytics/events.js` | `scripts/analytics-tests.mjs` + browser suite |
 | Regression suite/diagnostics | `src/testing/{hint-tests,diagnostics}.js`, `scripts/{browser-tests,cdp-client}.mjs` | All-size browser suite + `scripts/module-structure-tests.mjs` |
+| Mon ciel / Adventures / access | `src/campaign/content.js`, `src/ui/sky-navigation.js`, UI controller integration | `scripts/sky-navigation-tests.mjs`, `scripts/sky-navigation-browser-tests.mjs`, full learning/browser gates |
 | Shell/module imports/PWA | `index.html`, `src/main.js`, `manifest.webmanifest`, `sw.js` | Module structure + browser PWA asset/registration checks |
 
 `scripts/browser-tests.mjs` runs all 66 original cases plus three UX cases on each of the four board sizes through Chrome DevTools, followed by actual touch cycle/drag/reset and guest reload checks. Use an isolated guest profile, a local static server on port 8000 and Chrome remote debugging on port 9222. Pass a report path as its first argument. Endpoints can be overridden with `LUMEN_TEST_URL` and `LUMEN_CDP_URL`. The runner closes the isolated browser after testing.
+
+`sky-navigation.js` owns only ephemeral browsing selection (Ciel, Adventure, page and overview/detail pane). It reads the content map and current canonical progress through injected getters; it never writes quest progression. The same component serves all viewports, with six cards/page and CSS-owned column layout. The controller retains ownership of quest loading, replay, attempts and celebrations. `content.js` is the only Adventure grouping/access policy. Existing legacy IDs remain stable when its new Adventure membership is assigned.
+
+Browser diagnostics can inject a synthetic map catalogue without editing campaign grids or saves. This tests multiple skies, access changes, dozens of Adventures and hundreds of constellation cards through the real component. Synthetic map coverage does not replace strict audits of every actual playable grid.
 
 ## Stage #22: game engine
 

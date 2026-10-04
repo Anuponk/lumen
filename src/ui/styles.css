@@ -511,6 +511,27 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .learning-coach-next{margin-top:10px;width:100%;font-weight:800}
 
 .sky-tour-focus{position:relative;z-index:3;outline:3px solid rgba(95,220,255,.9);outline-offset:5px;border-radius:14px;box-shadow:0 0 0 9999px rgba(2,8,18,.38),0 0 28px rgba(95,220,255,.32)}
+
+/* Mon ciel: bounded height, one responsive component for every catalogue. */
+#mapModal{display:flex;align-items:center;justify-content:center;padding:12px;overflow:hidden}#mapModal[hidden]{display:none}
+#mapModal .map-sheet{position:relative;width:min(760px,calc(100vw - 24px));height:min(620px,calc(100dvh - 24px));max-height:calc(100dvh - 24px);padding:12px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+#mapModal .map-head{margin:0;flex:0 0 auto}#mapModal .map-head h2{font-size:20px;margin:0}
+.sky-navigation{display:grid;gap:6px;flex:0 0 auto;min-width:0}.sky-picker{display:flex;align-items:center;gap:8px;font-size:12px;color:#a9bfd0}.sky-picker select{min-width:0;flex:1;background:#112439;color:#eafaff;border:1px solid #31506e;border-radius:10px;padding:6px}
+.adventure-rail{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;min-width:0;scrollbar-width:thin;touch-action:pan-x}.adventure-chip{flex:0 0 auto;white-space:nowrap;padding:8px 10px;font-size:12px}.adventure-chip.selected{border-color:#68e7ff;background:#153749;color:#b8f4ff}.adventure-chip.locked{color:#a7b8ca}
+.adventure-summary{font-size:12px;color:#b9d8e8;line-height:1.4}
+#sectorTabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:8px;flex:1;min-height:0;margin:0;overflow:hidden}
+#sectorTabs .constellation-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:0;padding:8px;border-radius:14px;overflow:hidden;background:#0e2133}
+.constellation-card svg{width:100%;height:clamp(30px,7vh,64px);flex:0 1 auto}.constellation-card strong{max-width:100%;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.constellation-card small{font-size:11px;color:#b9d8e8}.constellation-card.locked{opacity:.55}
+.constellation-pages{display:flex;align-items:center;justify-content:center;gap:18px;flex:0 0 auto;font-size:12px}.constellation-pages button{padding:5px 16px}.constellation-pages button:disabled{opacity:.3}
+.map-detail{display:flex;flex-direction:column;gap:8px;min-height:0;flex:1}.constellation-back{align-self:flex-start;padding:6px 10px;font-size:12px;flex:0 0 auto}
+#mapDetail .puzzle-grid{margin:0;grid-template-columns:repeat(auto-fit,minmax(46px,1fr));gap:6px;flex:0 0 auto;max-height:150px;overflow:auto}#mapDetail .puzzle-card{min-height:42px;padding:6px}
+#mapDetail .performance-legend{margin:0;flex:0 0 auto;gap:8px;font-size:11px}#mapDetail .sky-card{margin:0;min-height:0;flex:1;overflow:hidden;padding:10px;display:flex;flex-direction:column}#mapDetail .sky-svg{flex:1;min-height:0;max-height:200px;width:100%}
+#mapModal .my-challenges-entry{flex:0 0 auto;margin:0;padding:8px}#mapModal .sky-tour{margin:0;flex:0 0 auto;padding:8px;gap:4px}
+#mapModal:has(.sky-tour:not([hidden])):not([data-tour-target="skyNavigation"]) .sky-navigation{display:none}
+.adventure-notice{position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;background:rgba(2,8,18,.85);padding:20px;border-radius:20px}.adventure-notice>div{padding:20px;max-width:380px;border:1px solid #31506e;border-radius:18px;background:#102235}.adventure-notice p{font-size:14px;line-height:1.5;color:#bfd1df}
+#mapDetail[hidden],#sectorTabs[hidden],#constellationPages[hidden],#adventureNotice[hidden]{display:none}
+@media(min-width:701px){#sectorTabs{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}.constellation-card strong{font-size:14px}}
+@media(max-width:700px){.journey-top{flex:1;min-width:0;width:auto}.journey-top>div{flex:1;overflow:hidden}.journey-quest-progress{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}#journeyTitle{display:none}}
 .learning-unlock-overlay{position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;background:rgba(3,7,13,.88);padding:24px}
 .learning-unlock-card{width:min(520px,100%);border:1px solid rgba(95,220,255,.28);border-radius:22px;padding:24px;background:#0d1828;box-shadow:0 24px 70px rgba(0,0,0,.45);text-align:center}
 .learning-unlock-card .primary{margin-top:18px;width:100%}
