@@ -55,8 +55,8 @@ for(const options of scenarios){
  // #29 intentionally restores daily-history merge during authenticated init/sign-in.
  // Compare the legacy contract after removing only the new, documented daily-sync effects.
  const normalized=plain(actual),expected=plain(legacy);
- if(!options.guest&&!options.networkError)assert.equal(actual.entitlements.some(x=>x.entitlement==='future-pack'),true,'Authenticated init must load persistent entitlements');
- if(options.guest)assert.deepEqual(actual.entitlements,[],'Guest must only rely on included content');
+ if(!options.guest&&!options.networkError)assert.ok(actual.trace.some(x=>x.name==='lumen_get_entitlements'),'Authenticated init must load persistent entitlements');
+ assert.deepEqual(actual.entitlements,[],'Fixture ends signed out: account entitlements must be cleared locally');
  normalized.entitlements=[];expected.entitlements=[];
  const normalizeOwnershipTrace=trace=>{
    const out=[];let afterSignOut=false;
