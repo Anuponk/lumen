@@ -13,6 +13,7 @@ const nodeSuites=[
  "difficulty-audit.mjs",
  "engine-equivalence.mjs",
  "campaign-tests.mjs",
+ "late-game-tests.mjs",
  "content-architecture-tests.mjs",
  "extraordinary-skies-tests.mjs",
  "persistence-tests.mjs",
@@ -128,6 +129,7 @@ try{
  await runBrowser("browser-tests.mjs","ci-browser.json",9222);
  await runBrowser("ux-cleanup-tests.mjs","ci-ux.json",9223);
  await runBrowser("learning-browser-tests.mjs","ci-learning.json",9224);
+ await runBrowser("late-game-browser-tests.mjs","ci-late-game.json",9225);
 }catch(error){failed=error;console.error("\nQUALITY GATE FAILED:",error.message)}
 finally{
  await cleanup();

@@ -37,4 +37,5 @@ jobs:
             docs/validation/ci-browser.json
             docs/validation/ci-ux.json
             docs/validation/ci-learning.json
+            docs/validation/ci-late-game.json
           if-no-files-found: ignore

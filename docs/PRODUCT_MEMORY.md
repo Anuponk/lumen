@@ -258,3 +258,10 @@ Real touch tests then exposed two player-facing defects: badge/auto-marking dial
 - Silhouettes target 7–14 stars and roughly 120 px mobile readability.
 - Artistic shapes remain strictly decoupled from puzzle generation.
 - Famous-character content defaults to historical, mythological or public-domain figures; modern licensed characters require rights validation.
+
+## 2026-10-04 — Quest 100 continuation after wave 2
+- #94 expanded the schedule to 134 quests and 24 constellations, but quest selection and cloud restoration retained a last-index limit of 99. Continuing after quest 100 reloaded the completed quest and its celebration.
+- Both limits now derive from `campaignQuestCount()`. Victory remains required for continuation, and navigation does not rewrite existing player history or rewards.
+- Dedicated real-browser tests cover the celebration CTA, quest 101 reload and active-attempt restoration on mobile and desktop; cloud mocks cover histories below, at and above quest 100 and the current final boundary.
+- Onboarding impact: quests 1–2, Mon ciel handoff and assistance/badge milestones are unchanged; only loading the already-scheduled extension is repaired.
+- The expansion still conflicts with historical campaign-count, stars, differential-content and difficulty-finale test contracts. Full embedded tests and the strict audit were executed and their failures are recorded rather than waived. No Production validation is implied by this fix.

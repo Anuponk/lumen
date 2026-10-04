@@ -45,6 +45,8 @@ Existing performance data is migrated conservatively: only the current versioned
 ## Progress integrity
 Only victory unlocks the next unsolved quest. Persisted solved history is normalized to a continuous prefix. A player may revisit solved quests but may not jump ahead to locked content.
 
+Quest loading and cloud restoration must clamp to `campaignQuestCount() - 1`, derived from the current content schedule. After the wave 2 expansion (#94), that schedule contains 134 quests across 24 constellations: quest 100 is no longer terminal. Its normal victory CTA loads quest 101; a reload or cloud restoration of 100 completed quests also resumes quest 101. Only the actual final quest stops continuation. Navigation preserves earned rewards, badges and history. The historical 100/12/150 specification above remains pending reconciliation with the expansion's star economy; this continuation fix does not redefine rewards.
+
 When changing progression, test old/local data migration behavior and cloud merge behavior; never silently erase historical progress.
 
 ## Social challenge isolation

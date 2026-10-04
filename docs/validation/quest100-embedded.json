@@ -1,0 +1,69 @@
+{
+  "suites": [
+    {
+      "size": 5,
+      "total": 98,
+      "failures": [
+        {
+          "name": "Campagne : 100 quêtes réparties sur 12 constellations",
+          "ok": false,
+          "error": ""
+        },
+        {
+          "name": "Campagne : le ciel contient exactement 150 étoiles",
+          "ok": false,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "size": 6,
+      "total": 98,
+      "failures": [
+        {
+          "name": "Campagne : 100 quêtes réparties sur 12 constellations",
+          "ok": false,
+          "error": ""
+        },
+        {
+          "name": "Campagne : le ciel contient exactement 150 étoiles",
+          "ok": false,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "size": 7,
+      "total": 98,
+      "failures": [
+        {
+          "name": "Campagne : 100 quêtes réparties sur 12 constellations",
+          "ok": false,
+          "error": ""
+        },
+        {
+          "name": "Campagne : le ciel contient exactement 150 étoiles",
+          "ok": false,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "size": 8,
+      "total": 98,
+      "failures": [
+        {
+          "name": "Campagne : 100 quêtes réparties sur 12 constellations",
+          "ok": false,
+          "error": ""
+        },
+        {
+          "name": "Campagne : le ciel contient exactement 150 étoiles",
+          "ok": false,
+          "error": ""
+        }
+      ]
+    }
+  ],
+  "uncaughtErrors": []
+}

@@ -1,0 +1,70 @@
+[
+    {
+        "suite":  "audit-catalogue",
+        "exit":  1
+    },
+    {
+        "suite":  "difficulty-audit",
+        "exit":  1
+    },
+    {
+        "suite":  "engine-equivalence",
+        "exit":  0
+    },
+    {
+        "suite":  "campaign-tests",
+        "exit":  1
+    },
+    {
+        "suite":  "late-game-tests",
+        "exit":  0
+    },
+    {
+        "suite":  "content-architecture-tests",
+        "exit":  1
+    },
+    {
+        "suite":  "extraordinary-skies-tests",
+        "exit":  0
+    },
+    {
+        "suite":  "persistence-tests",
+        "exit":  0
+    },
+    {
+        "suite":  "analytics-tests",
+        "exit":  0
+    },
+    {
+        "suite":  "module-structure-tests",
+        "exit":  0
+    },
+    {
+        "suite":  "responsive-architecture-tests",
+        "exit":  0
+    },
+    {
+        "suite":  "attempt-engine-tests",
+        "exit":  0
+    },
+    {
+        "suite":  "performance-badge-tests",
+        "exit":  0
+    },
+    {
+        "suite":  "daily-engagement-tests",
+        "exit":  0
+    },
+    {
+        "suite":  "learning-tests",
+        "exit":  0
+    },
+    {
+        "suite":  "social-challenge-tests",
+        "exit":  0
+    },
+    {
+        "suite":  "social-challenge-ui-tests",
+        "exit":  0
+    }
+]
