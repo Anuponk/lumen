@@ -250,3 +250,11 @@ Real touch tests then exposed two player-facing defects: badge/auto-marking dial
 - Capability state is cleared on logout/anonymous mode.
 - Enabling/disabling the tool is a local per-device preference, but localStorage alone cannot grant access.
 - Internal capabilities are separate from commercial content entitlements.
+
+
+## 2026-10-04 — Extraordinary skies creative direction (#67)
+- Six initial creative universes are defined, including two deliberately bolder directions: famous/historical figures and absurd/farfetched constellations.
+- Initial catalogue: 48 constellation concepts, eight per sky.
+- Silhouettes target 7–14 stars and roughly 120 px mobile readability.
+- Artistic shapes remain strictly decoupled from puzzle generation.
+- Famous-character content defaults to historical, mythological or public-domain figures; modern licensed characters require rights validation.

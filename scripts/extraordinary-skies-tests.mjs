@@ -1,0 +1,13 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+const doc=fs.readFileSync(new URL("../docs/EXTRAORDINARY_SKIES.md",import.meta.url),"utf8");
+for(const sky of ["La Ménagerie des Étoiles","Le Grenier des Égarés","Les Songes de Minuit","L’Hiver de Verre","Le Panthéon de Travers","Le Bazar Impossible"])assert.ok(doc.includes(sky),sky+" missing");
+assert.match(doc,/7 à 14 étoiles/);
+assert.match(doc,/120 px/);
+assert.match(doc,/n’impose aucune région/);
+assert.match(doc,/id.*stable/);
+assert.match(doc,/domaine public/);
+assert.match(doc,/validation juridique/);
+const catalogued=(doc.match(/^\d+\. \*\*/gm)||[]).length;
+assert.equal(catalogued,48);
+console.log(JSON.stringify({extraordinarySkies:6,initialConstellations:catalogued,silhouetteContract:true,gameplayDecoupled:true,rightsGuardrail:true}));
