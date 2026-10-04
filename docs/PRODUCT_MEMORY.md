@@ -125,3 +125,28 @@ Sharing without interaction was also rejected as low-value. In the current produ
 The user authorized implementation and requested more guidance through the end of quest 1. The audited existing first grid was retained after proving the exact five forced territory deductions. Replace explanatory Next/Previous/automatic animations with user-made actions on the ordinary board. Guide the singleton, row, column and diagonals separately, explain the second deduction, then introduce the ordinary drag gesture. Keep lighter territory-focused guidance for the remaining Guardians. The user additionally requested partial guidance in quest 2 to learn click-and-drag. Guide its first singleton Guardian, then require a real mouse/touch drag across the other cells in that row before releasing free play with contextual tips and actual Assist/Verify/Hint feedback. Its ordinary success leads through Mon ciel to quest 3; badge eligibility remains unchanged.
 
 Lesson state is derived from the canonical persisted board, preserving reset/pause/reload semantics. Normal replay and social challenges bypass the lesson. Add pure lesson tests and real browser interaction coverage to CI; retain/adapt the original regression contract and run the complete strict grid audit. Shared short-screen sizing keeps both ordinary controls and advice visible.
+
+
+## 2026-10-04 — Onboarding regression guard: SEE -> UNDERSTAND -> ACT
+
+A later interactive-onboarding refactor made quest 1 start too quickly: the player was asked to act before having time to understand the colored territories and the complete rule model. This unintentionally removed an earlier pedagogical layer.
+
+The durable product philosophy is therefore **SEE -> UNDERSTAND -> ACT**. Quest 1 first exposes the real board as an object to observe, with temporary territory numbers 1–5. It then explains the goal and the four constraints (one Guardian per territory, row and column; no touching including diagonals). Only after that does the player touch the board and learn the real two-tap cycle: exclusion first, Guardian second.
+
+“Learning through real gameplay” from issue #57 remains valid after this pre-action phase. It means that once interaction starts, teaching uses the real board and real gestures; it must not be interpreted again as permission to skip perception and rule comprehension. Any future onboarding refactor must preserve this ordering and its regression tests.
+
+
+## 2026-10-04 — Quest 2 handoff teaches Mon ciel
+After quest 2, onboarding must explicitly teach the progression screen. Do not auto-navigate when the player taps an arbitrary part of the success overlay. The success CTA is **Découvrir Mon ciel** and starts a sequential tour of the actual Mon ciel UI: constellation tabs, quest/progression cards, performance badges, then the constellation/stars visualization. The final tour action continues to quest 3. This extends the protected SEE → UNDERSTAND → ACT philosophy beyond the board itself.
+
+
+## 2026-10-04 — Teach assistance when it unlocks
+Do not front-load Marquage auto or Contrôle guidé trade-offs into the initial tutorial. Introduce each at the moment it becomes a real player choice. Quest 6 introduces Marquage auto as an optional comfort/fluidity playstyle and explains that actual use is assistance: Rapidité remains eligible, Autonomie and therefore Maîtrise do not. At the later autonomy milestone (quest 11), explain that Contrôle guidé may be disabled or re-enabled; simply leaving it enabled is not itself a badge penalty, but an actual guided intervention is assistance and removes Autonomie/Maîtrise. Assisted play is a valid playstyle and must not be framed negatively.
+
+
+## 2026-10-04 — Teach badges only when they become earnable
+Badge onboarding is progressive and tied to `performanceEligibility`, not arbitrary quest numbers. Quests 1–2 deliberately have no performance badge. Quest 3 is the first badge milestone and introduces Rapidité, the only eligible badge through quest 5. Quest 6 introduces the full performance system: Autonomie, Rapidité and Maîtrise. Autonomie requires no assistance; Rapidité requires beating the target time; Maîtrise requires both on the same attempt. If badge eligibility changes in code, onboarding timing and tests must change with it.
+
+
+## 2026-10-04 — Onboarding dependency rule
+The tutorial and later learning milestones are dependent product surfaces. They must never drift from gameplay rules. Any future change to rules, unlock timing, badge eligibility, assistance behavior, gestures, progression/navigation concepts or terminology requires an onboarding impact check even if the original request does not mention onboarding. Prefer one source of truth: teaching should derive its timing from gameplay eligibility/unlock rules whenever possible. Example: moving Rapidité eligibility to quest 8 must automatically or explicitly move its teaching milestone to quest 8. PRs changing such concepts are incomplete until onboarding and its regression tests are reviewed.

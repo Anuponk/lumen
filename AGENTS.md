@@ -20,7 +20,7 @@ This repository is the source of truth for LUMEN. Read this file and the documen
 - Victory depends on the Guardian placement satisfying the puzzle, not on whether all remaining cells are manually excluded.
 - Guardians: exactly one per row, column and territory; Guardians cannot touch, including diagonally.
 - Completed quests are replayable to improve performance badges. Badges must describe a single attempt; no farming by combining achievements from different attempts.
-- Learning: quests 1–5 force assistance; 6–10 make it optional; quest 11 introduces autonomous play. Quest 1 constrains real player actions with progressively lighter guidance through all five Guardians; quest 2 guides its first Guardian and requires practicing the real drag gesture before free play with contextual advice.
+- Learning onboarding is a protected **SEE -> UNDERSTAND -> ACT** sequence: quest 1 must show and number the territories, explain the goal and all four Guardian constraints, and only then allow the first board interaction. Do not collapse this into immediate action. Territory numbers are teaching-only.\n- Learning: quests 1–5 force assistance; 6–10 make it optional; quest 11 introduces autonomous play. Quest 1 constrains real player actions with progressively lighter guidance through all five Guardians; quest 2 guides its first Guardian and requires practicing the real drag gesture before free play with contextual advice.
 - Mobile drag across cells adds exclusions efficiently and must not trigger full-board renders during pointer movement.
 - Guest progress works locally. Authenticated progress syncs to Supabase and local history is merged to cloud.
 - Constellation progression is the canonical campaign representation.
@@ -46,3 +46,27 @@ When a product rule, reward, progression rule, data contract, UX invariant, anal
 - Hide the sender's reference performance until the recipient's attempt is terminal.
 - Challenge play must never mutate campaign progression, stars, badges, daily qualification or unlocks.
 - Guests remain supported but require a display name. Never put PII or performance data in challenge URLs.
+
+
+- Learning handoff after quest 2 is protected: the success CTA must explicitly say **Découvrir Mon ciel**; tapping the success backdrop must not silently navigate. The first visit to Mon ciel is a sequential tour of the real UI zones (constellations, quests, performance badges, constellation/stars) before quest 3. Preserve this when changing success or map navigation.
+
+
+- Assistance unlocks are teaching milestones. At quest 6 (index 5), introduce Marquage auto as an optional comfort playstyle and explain badge impact before normal play. At quest 11 (index 10), when Contrôle guidé becomes an autonomy choice, explain that it can be re-enabled; merely being enabled does not invalidate badges, but an actual guided intervention marks assistance. Assistance removes Autonomie and therefore Maîtrise, while Rapidité remains possible. Do not present assisted play as inferior.
+
+
+- Badge onboarding must follow actual `performanceEligibility`: quests 1–2 teach no badge; quest 3 introduces Rapidité (the only eligible badge on quests 3–5); quest 6 introduces Autonomie and Maîtrise when all three become eligible. Explain badge conditions at those exact milestones, not earlier. Keep this synchronized with performance.js if eligibility changes.
+
+
+## Mandatory onboarding impact check
+Onboarding is a dependent product surface, not a one-off tutorial. **Any change to a rule, unlock level, badge eligibility, assistance, interaction gesture, progression concept, navigation destination, or player-facing terminology MUST include an onboarding impact check before delivery.**
+
+For every such change:
+1. Identify whether the concept is introduced, demonstrated, unlocked, or explained anywhere in learning quests, success dialogs, Mon ciel tours, contextual tips, or assistance/badge tutorials.
+2. If the underlying behavior or availability changes, update the corresponding onboarding in the same change/PR.
+3. Prefer deriving tutorial timing from the same source of truth as gameplay. Do not duplicate quest numbers when an eligibility/unlock function can answer the question.
+4. Add/update a regression test that compares onboarding timing/content with the gameplay source of truth.
+5. In the PR description, include an **Onboarding impact** line: list the adapted learning steps, or explicitly state why no onboarding change is required.
+
+Example: if Rapidité moves from quest 3 to quest 8, its introduction must move to the first quest where `performanceEligibility(...).speed` becomes true. A PR that changes eligibility without adapting that teaching milestone is incomplete.
+
+This check is mandatory even when the requested change does not explicitly mention the tutorial.
