@@ -76,8 +76,8 @@ for(const options of scenarios){
    }
    return out;
  };
- normalized.trace=normalizeOwnershipTrace(normalized.trace).filter(x=>x.ui!=='account');
- expected.trace=normalizeOwnershipTrace(expected.trace).filter(x=>x.ui!=='account');
+ normalized.trace=normalizePresentationTrace(normalizeOwnershipTrace(normalized.trace));
+ expected.trace=normalizePresentationTrace(normalizeOwnershipTrace(expected.trace));
  const stripOwnershipWarnings=warnings=>warnings.filter(x=>x?.[0]!=='LUMEN entitlements'&&x?.[0]!=='LUMEN capabilities');
  normalized.warnings=stripOwnershipWarnings(normalized.warnings);
  expected.warnings=stripOwnershipWarnings(expected.warnings);
