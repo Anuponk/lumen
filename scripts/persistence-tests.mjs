@@ -68,7 +68,8 @@ for(const options of scenarios){
        continue;
      }
      if(x.auth==='signOut'){afterSignOut=true;out.push(x);continue}
-     if(afterSignOut&&x.ui==='refreshJourney'){afterSignOut=false;continue}
+     if(afterSignOut&&(x.ui==='refreshJourney'||x.ui==='updateAuthUI'))continue;
+     if(afterSignOut)afterSignOut=false;
      if(x.ui==='refreshJourney'&&out.at(-1)?.ui==='updateAuthUI')continue;
      out.push(x);
    }
