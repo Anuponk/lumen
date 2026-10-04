@@ -32,21 +32,20 @@ async function fixture(options,legacy){
  };
  model.lumenSupabase=client;
  if(options.guest)model.lumenUser=null;
- const environment={document,location:{origin:'http://localhost',pathname:'/'},alert:message=>trace.push({alert:message}),setTimeout:callback=>queue.push(callback),console:{warn:(...args)=>warnings.push(args)}};
+ const environment={setTimeout:callback=>queue.push(callback),console:{warn:(...args)=>warnings.push(args)}};
  let scope=model;
  const hooks={
   activeGameSeconds:()=>42,
   exactSkyScoreForSolvedPrefix(){let score=0;for(let i=0;i<100&&scope.lumenProgress.solved[i];i++)score+=skyStarsForGrid(i);return score},
   saveLumenProgress:()=>trace.push({save:plain(scope.lumenProgress)}),
-  refreshJourney:()=>trace.push({ui:'refreshJourney'}),init:()=>trace.push({ui:'init'}),updateAuthUI:()=>trace.push({ui:'updateAuthUI'}),showRewardToast:copy=>trace.push({toast:copy}),renderDaily:()=>trace.push({ui:'renderDaily'})
+  refreshJourney:()=>trace.push({ui:'refreshJourney'}),init:()=>trace.push({ui:'init'}),onAccountChanged:event=>trace.push({ui:'account',event}),renderDaily:()=>trace.push({ui:'renderDaily'})
  };
  let api;
  if(legacy){scope={...model,...environment,...hooks};vm.createContext(scope);vm.runInContext(names.map(name=>functionSource(source,name)).join('\n'),scope);api=scope}
  else api=createCloudPersistence(model,hooks,environment);
- await api.cloudMergeProgress();await api.cloudSavePuzzle(2);if(!options.guest)await api.cloudMergeDaily();await api.cloudSaveDaily('2026-10-03',2);await api.loadLumenProfile();await api.loadEntitlements();await api.saveLumenNickname();await api.initLumenCloud();
+ await api.cloudMergeProgress();await api.cloudSavePuzzle(2);if(!options.guest)await api.cloudMergeDaily();await api.cloudSaveDaily('2026-10-03',2);await api.loadLumenProfile();await api.loadEntitlements();await api.saveLumenNickname('Tester');await api.initLumenCloud();
  if(authCallback&&!options.guest){authCallback('SIGNED_IN',{user:{id:'another-user'}});for(const callback of queue)await callback();authCallback('SIGNED_OUT',null)}
- if(controls.get('authLogin')?.onclick)await controls.get('authLogin').onclick();
- if(controls.get('authLogout')?.onclick)await controls.get('authLogout').onclick();
+ if(!options.guest){await api.signIn('http://localhost/');await api.signOut();}
  return plain({progress:scope.lumenProgress,user:scope.lumenUser,nickname:scope.lumenNickname,entitlements:scope.lumenEntitlements||[],capabilities:scope.lumenCapabilities||[],ready:scope.lumenCloudReady,sequential:scope.sequentialSolvedCount,level:scope.levelIndex,trace,warnings});
 }
 const scenarios=[{guest:true,cloud:[]},{cloud:[]},{cloud:[{puzzle_id:1},{puzzle_id:2}]},{cloud:[{puzzle_id:1},{puzzle_id:3}]},{cloud:[],networkError:true}];
@@ -68,16 +67,16 @@ for(const options of scenarios){
        continue;
      }
      if(x.auth==='signOut'){afterSignOut=true;out.push(x);continue}
-     if(afterSignOut&&(x.ui==='refreshJourney'||x.ui==='updateAuthUI'))continue;
+     if(afterSignOut&&(x.ui==='refreshJourney'||x.ui==='account'))continue;
      if(afterSignOut)afterSignOut=false;
      if(x.ui==='refreshJourney'&&out.at(-1)?.ui==='updateAuthUI')continue;
-     if(x.ui==='updateAuthUI'&&trace[i+1]?.auth==='signInWithOAuth')continue;
+     if(x.ui==='account'&&trace[i+1]?.auth==='signInWithOAuth')continue;
      out.push(x);
    }
    return out;
  };
- normalized.trace=normalizeOwnershipTrace(normalized.trace).filter(x=>x.ui!=='updateAuthUI');
- expected.trace=normalizeOwnershipTrace(expected.trace).filter(x=>x.ui!=='updateAuthUI');
+ normalized.trace=normalizeOwnershipTrace(normalized.trace).filter(x=>x.ui!=='account');
+ expected.trace=normalizeOwnershipTrace(expected.trace).filter(x=>x.ui!=='account');
  const stripOwnershipWarnings=warnings=>warnings.filter(x=>x?.[0]!=='LUMEN entitlements'&&x?.[0]!=='LUMEN capabilities');
  normalized.warnings=stripOwnershipWarnings(normalized.warnings);
  expected.warnings=stripOwnershipWarnings(expected.warnings);
