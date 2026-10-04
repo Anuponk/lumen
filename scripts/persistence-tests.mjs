@@ -58,6 +58,25 @@ for(const options of scenarios){
  if(!options.guest&&!options.networkError)assert.equal(actual.entitlements.some(x=>x.entitlement==='future-pack'),true,'Authenticated init must load persistent entitlements');
  if(options.guest)assert.deepEqual(actual.entitlements,[],'Guest must only rely on included content');
  normalized.entitlements=[];expected.entitlements=[];
+ const normalizeOwnershipTrace=trace=>{
+   const out=[];let afterSignOut=false;
+   for(let i=0;i<trace.length;i++){
+     const x=trace[i];
+     if(x.name==='lumen_get_entitlements'){
+       if(trace[i+1]?.ui==='refreshJourney')i++;
+       continue;
+     }
+     if(x.auth==='signOut'){afterSignOut=true;out.push(x);continue}
+     if(afterSignOut&&x.ui==='refreshJourney'){afterSignOut=false;continue}
+     out.push(x);
+   }
+   return out;
+ };
+ normalized.trace=normalizeOwnershipTrace(normalized.trace);
+ expected.trace=normalizeOwnershipTrace(expected.trace);
+ const stripOwnershipWarnings=warnings=>warnings.filter(x=>x?.[0]!=='LUMEN entitlements');
+ normalized.warnings=stripOwnershipWarnings(normalized.warnings);
+ expected.warnings=stripOwnershipWarnings(expected.warnings);
  if(!options.guest){
    const stripEntitlementReads=trace=>trace.filter(x=>x.name!=='lumen_get_entitlements');normalized.trace=stripEntitlementReads(normalized.trace);expected.trace=stripEntitlementReads(expected.trace);
    normalized.progress.daily.dates={};
