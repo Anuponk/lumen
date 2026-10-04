@@ -5,6 +5,8 @@ Production does **not generate campaign grids on demand**. The campaign uses the
 
 The schedule starts with two 5x5 onboarding grids, then uses 6x6, 7x7 and 8x8 puzzles. Campaign length derives from the content model (currently 134 quests); the original 100 assignments remain protected by a frozen pre-wave-2 comparison. Do not replace this with runtime random generation without an explicit product decision.
 
+All future development must follow the [evolving catalogue contract](DATA_AND_ARCHITECTURE.md#evolving-catalogue-contract): catalogue totals are data, existing player identities are stable, and every addition must be checked across navigation, rewards, restoration and dependent product surfaces. Adding an audited unused grid does not automatically schedule it or grant access to it.
+
 ## Required puzzle representation
 Each puzzle stores:
 - `reg`: N x N territory identifiers;

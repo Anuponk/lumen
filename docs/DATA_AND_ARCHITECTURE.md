@@ -5,7 +5,31 @@ LUMEN is a static web/PWA application using native ES modules without a build st
 
 The #21–#26 migration starts from main `dcd9f3c872e623541be698edc212b64589d3b164`. Rules, catalogue, badge semantics, progression, tutorial, UX, storage keys and backend contracts are preserved. Issues #30/#31 are explicitly excluded. The stage descriptions below record the incremental extraction; the navigation map describes the final source layout.
 
-## Modular refactor: stage #21
+## Evolving catalogue contract
+
+Catalogue expansion is an expected operation. Features must work with the content described by the loaded catalogue, including future additions, without requiring manual replacement of quest, constellation or star totals. This concerns curated content shipped with the application; it does not introduce runtime random puzzle generation or require a new remote catalogue service.
+
+Use the appropriate source of truth:
+
+| Concept | Owner / calculation |
+|---|---|
+| Audited puzzle inventory, including unused grids | `catalogue.js`: `CAT` |
+| Scheduled quest → grid assignment | `data.js`: `CAMPAIGN_SIZE_SCHEDULE`, `CAMPAIGN6_ORDER` |
+| Campaign/pack quest count, stable IDs, access policy | `content.js`: content registry, `baseCampaignQuestCount()`, pack metadata/access functions |
+| Quest constellation, its range, current endpoint/completion | `progression.js`: `chapterForGrid()`, `constellationGridRange()`, `campaignQuestCount()`, `isCampaignFinalQuest()`, `isCampaignComplete()` |
+| Sky target and exact quest rewards | `data.js`: constellation star counts and derived `SKY_TARGET`; `progression.js`: `skyStarsForGrid()` |
+
+Do not use the number of all catalogue grids as the campaign length, or the campaign length as an entitlement decision. Content helpers belong to their domains; a new feature should use those helpers rather than create another count, state store or magic fallback. Display totals, result cards and analytics must use the same definitions as gameplay.
+
+Preserve existing identities and ordering when appending content. Numeric quest indices remain persisted legacy keys; reordering or removing a quest or changing its grid requires a deliberate migration, not an incidental catalogue edit. Restore old local/cloud saves against the current content boundaries, retain earned badges and history, and resume an existing active attempt. A player who completed the old campaign must reach the first new quest. Completion acknowledgements must be scoped to the relevant content endpoint so an old finale acknowledgement does not suppress a new one.
+
+Before delivering a feature or extension, assess loading/next/replay/reset, final victory, local/cloud restore, guest/authenticated paths, reward allocation and caps, Mon ciel and constellation celebrations, shared results, onboarding milestones, pack access, analytics and backend validation. Change affected consumers and documentation in the same PR. Check cached/reloaded application behavior where applicable; a changed total must not erase a player's progress or farm rewards. Mark surfaces as unchanged only after checking their dependency on the affected content.
+
+Tests must cross-check independent representations: quest counts against contiguous schedule coverage and constellation ranges, unique valid puzzle references, and reward sums against each constellation's displayed stars and the sky target. Simulate appending N+k quests with different constellation sizes/star counts, including a one-quest constellation. Verify an old completed/capped save, the new first quest, the new final boundary, reload and replay without extra rewards. Reject malformed content rather than adjusting assertions to accept it. Keep structural, uniqueness and explainability audits for every actual grid.
+
+Historical fixture sizes and intentional teaching milestones remain explicit product contracts. For example, the protected first-100 schedule and Orion difficulty curve describe historical content, while the current campaign endpoint comes from the registry. Tests must preserve that distinction. Run `node scripts/quality-gate.mjs` after changing content/progression; see [TESTING](TESTING.md) and [GRID_CATALOG](GRID_CATALOG.md). Include a catalogue impact statement and the required onboarding impact statement in the PR.
+
+## Modular refactor: stage #21 (historical implementation)
 
 Native ES modules are served directly by the existing static host; no build tool or framework is required. At stage #21 the two former inline scripts shared one module scope to preserve their initialization order. `src/ui/format.js` contains the existing date/duration formatting functions. The other domains were then extracted in separately validated stages.
 
