@@ -839,8 +839,8 @@ function render(){
   else if(shown===2)d.innerHTML='<span class="lumen-orb" aria-label="Gardien positionné"></span>';
   else d.innerHTML="";
   if(levelIndex===0&&learningIntroActive()&&shown===0){
-   let first=true;for(let rr=0;rr<n&&first;rr++)for(let cc=0;cc<n;cc++)if(puz.reg[rr][cc]===g){first=rr===r&&cc===c;break}
-   if(first)d.innerHTML='<span class="learning-territory-number" aria-label="Territoire '+(g+1)+'">'+(g+1)+'</span>';
+   const flatIndex=r*n+c,firstIndex=puz.reg.flat().findIndex(region=>region===g);
+   if(flatIndex===firstIndex)d.innerHTML='<span class="learning-territory-number" aria-label="Territoire '+(g+1)+'">'+(g+1)+'</span>';
   }
   if(shown===3)d.classList.add("auto-x");
   d.dataset.row=r;d.dataset.col=c;
