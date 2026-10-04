@@ -1,30 +1,30 @@
 import {baseCampaignQuestCount} from "../campaign/content.js";
 export function createCloudPersistence(model,hooks,environment){
-const {activeGameSeconds,exactSkyScoreForSolvedPrefix,saveLumenProgress,refreshJourney,init,updateAuthUI,showRewardToast,renderDaily}=hooks;
+const {activeGameSeconds,exactSkyScoreForSolvedPrefix,saveLumenProgress,refreshJourney,init,onAccountChanged=()=>{},renderDaily}=hooks;
 const campaignQuestCount=()=>Math.max(0,Number(hooks.campaignQuestCount?.()??baseCampaignQuestCount()));
-const {document,location,alert,setTimeout,console}=environment;
+const {setTimeout,console}=environment;
 const cloudWritesDisabled=()=>!!environment.qaMode;
 async function loadLumenProfile(){
  if(!model.lumenSupabase||!model.lumenUser)return;
  const {data,error}=await model.lumenSupabase.rpc("lumen_get_profile");if(error){console.warn("LUMEN profile",error);return}
  model.lumenNickname=(data&&data[0]&&data[0].nickname)||"";
- const input=document.getElementById("nicknameInput");if(input)input.value=model.lumenNickname;
- updateAuthUI();
+ onAccountChanged({type:"profile",nickname:model.lumenNickname});
 }
 
-async function saveLumenNickname(){
- const input=document.getElementById("nicknameInput"),value=(input?.value||"").trim();
- if(value.length<2||value.length>24){showRewardToast("Pseudo : 2 à 24 caractères");return}
+async function saveLumenNickname(value){
+ value=String(value||"").trim();
+ if(value.length<2||value.length>24)return {ok:false,reason:"length"};
+ if(!model.lumenSupabase||!model.lumenUser)return {ok:false,reason:"signed_out"};
  const {data,error}=await model.lumenSupabase.rpc("lumen_set_nickname",{p_nickname:value});
- if(error){showRewardToast("Ce pseudo n’est pas valide");return}
- model.lumenNickname=data||value;updateAuthUI();showRewardToast("Pseudo enregistré ✦");
+ if(error)return {ok:false,reason:"invalid",error};
+ model.lumenNickname=data||value;onAccountChanged({type:"profile",nickname:model.lumenNickname});return {ok:true,nickname:model.lumenNickname};
 }
 
 async function loadInternalCapabilities(){
  if(!model.lumenSupabase||!model.lumenUser){model.lumenCapabilities=[];return []}
  const {data,error}=await model.lumenSupabase.rpc("lumen_get_internal_capabilities");
  if(error){console.warn("LUMEN capabilities",error);model.lumenCapabilities=[];return []}
- model.lumenCapabilities=data||[];updateAuthUI();return model.lumenCapabilities;
+ model.lumenCapabilities=data||[];onAccountChanged({type:"account"});return model.lumenCapabilities;
 }
 
 async function loadEntitlements(){
@@ -67,21 +67,15 @@ async function cloudMergeProgress(){
 }
 
 async function initLumenCloud(){
- if(!model.lumenSupabase){updateAuthUI();return}
+ if(!model.lumenSupabase){onAccountChanged({type:"account"});return}
  const {data}=await model.lumenSupabase.auth.getSession();
- model.lumenUser=data.session?.user||null; updateAuthUI();
+ model.lumenUser=data.session?.user||null; onAccountChanged({type:"account"});
  if(model.lumenUser){await loadLumenProfile();await loadEntitlements();await loadInternalCapabilities();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily();}}else {model.lumenEntitlements=[];model.lumenCapabilities=[];}
  model.lumenSupabase.auth.onAuthStateChange((event,session)=>{
-   const previous=model.lumenUser?.id; model.lumenUser=session?.user||null; updateAuthUI();
+   const previous=model.lumenUser?.id; model.lumenUser=session?.user||null; onAccountChanged({type:"account"});
    if(model.lumenUser&&model.lumenUser.id!==previous)setTimeout(async()=>{await loadEntitlements();await loadInternalCapabilities();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily()}},0);else if(!model.lumenUser){model.lumenEntitlements=[];model.lumenCapabilities=[];refreshJourney();updateAuthUI()}
  });
- const login=document.getElementById("authLogin"),logout=document.getElementById("authLogout");
- if(login)login.onclick=async()=>{
-   const redirectTo=location.origin+location.pathname;
-   const {error}=await model.lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo}});
-   if(error)alert("Connexion impossible : "+error.message);
- };
- if(logout)logout.onclick=async()=>{await model.lumenSupabase.auth.signOut();model.lumenUser=null;model.lumenEntitlements=[];model.lumenCapabilities=[];model.lumenCloudReady=false;updateAuthUI();refreshJourney()};
+
 }
 
 async function cloudSaveDaily(date,index){
@@ -133,5 +127,17 @@ async function cloudMergeDaily(){
  saveLumenProgress();renderDaily();
 }
 
-return {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance};
+async function signIn(redirectTo){
+ if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};
+ const {error}=await model.lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo}});
+ return error?{ok:false,reason:"oauth",error}:{ok:true};
+}
+async function signOut(){
+ if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};
+ const {error}=await model.lumenSupabase.auth.signOut();
+ if(error)return {ok:false,reason:"signout",error};
+ model.lumenUser=null;model.lumenEntitlements=[];model.lumenCapabilities=[];model.lumenCloudReady=false;
+ onAccountChanged({type:"account"});refreshJourney();return {ok:true};
+}
+return {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,signOut};
 }
