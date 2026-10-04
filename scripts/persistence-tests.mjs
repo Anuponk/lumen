@@ -25,9 +25,9 @@ assert.deepEqual(denied.loadLumenProgress(),{solved:{},badges:{}});denied.saveLu
 async function fixture(options,legacy){
  const trace=[],queue=[],warnings=[];let authCallback;
  const controls=new Map();const document={getElementById:id=>{if(!controls.has(id))controls.set(id,{value:'Tester'});return controls.get(id)}};
- const model={lumenSupabase:null,lumenUser:options.guest?null:{id:'test-user'},lumenCloudReady:false,lumenNickname:'',lumenEntitlements:[],lumenProgress:{solved:{0:1,1:1,2:1},historyBackup:{0:1,1:1,2:1},noHint:{0:1},daily:{dates:{},rewards:{}},badges:{},performances:{}},sequentialSolvedCount:3,levelIndex:2,usedHintThisGame:false};
+ const model={lumenSupabase:null,lumenUser:options.guest?null:{id:'test-user'},lumenCloudReady:false,lumenNickname:'',lumenEntitlements:[],lumenCapabilities:[],lumenProgress:{solved:{0:1,1:1,2:1},historyBackup:{0:1,1:1,2:1},noHint:{0:1},daily:{dates:{},rewards:{}},badges:{},performances:{}},sequentialSolvedCount:3,levelIndex:2,usedHintThisGame:false};
  const client={
-  async rpc(name,args){trace.push({name,args});if(options.networkError)return {data:null,error:{message:'fixture offline'}};return {error:null,data:name==='lumen_get_progress'?options.cloud:name==='lumen_get_daily'?[{play_date:'2026-10-01'}]:name==='lumen_get_engagement'?[{server_day:'2026-10-03',shards:4,rewarded_days:{'2026-10-01':1}}]:name==='lumen_claim_daily'?[{server_day:'2026-10-03',credited:true,reward:1,streak:3}]:name==='lumen_get_profile'?[{nickname:'Player'}]:name==='lumen_set_nickname'?'Tester':name==='lumen_get_entitlements'?[{entitlement:'future-pack',source:'manual',expires_at:null}]:null}},
+  async rpc(name,args){trace.push({name,args});if(options.networkError)return {data:null,error:{message:'fixture offline'}};return {error:null,data:name==='lumen_get_progress'?options.cloud:name==='lumen_get_daily'?[{play_date:'2026-10-01'}]:name==='lumen_get_engagement'?[{server_day:'2026-10-03',shards:4,rewarded_days:{'2026-10-01':1}}]:name==='lumen_claim_daily'?[{server_day:'2026-10-03',credited:true,reward:1,streak:3}]:name==='lumen_get_profile'?[{nickname:'Player'}]:name==='lumen_set_nickname'?'Tester':name==='lumen_get_entitlements'?[{entitlement:'future-pack',source:'manual',expires_at:null}]:name==='lumen_get_internal_capabilities'?[{capability:'unlimited_shards',source:'manual'}]:null}},
   auth:{async getSession(){return {data:{session:options.guest?null:{user:{id:'test-user'}}}}},onAuthStateChange(callback){authCallback=callback},async signOut(){trace.push({auth:'signOut'})},async signInWithOAuth(args){trace.push({auth:'signInWithOAuth',args});return {error:null}}}
  };
  model.lumenSupabase=client;
@@ -47,7 +47,7 @@ async function fixture(options,legacy){
  if(authCallback&&!options.guest){authCallback('SIGNED_IN',{user:{id:'another-user'}});for(const callback of queue)await callback();authCallback('SIGNED_OUT',null)}
  if(controls.get('authLogin')?.onclick)await controls.get('authLogin').onclick();
  if(controls.get('authLogout')?.onclick)await controls.get('authLogout').onclick();
- return plain({progress:scope.lumenProgress,user:scope.lumenUser,nickname:scope.lumenNickname,entitlements:scope.lumenEntitlements||[],ready:scope.lumenCloudReady,sequential:scope.sequentialSolvedCount,level:scope.levelIndex,trace,warnings});
+ return plain({progress:scope.lumenProgress,user:scope.lumenUser,nickname:scope.lumenNickname,entitlements:scope.lumenEntitlements||[],capabilities:scope.lumenCapabilities||[],ready:scope.lumenCloudReady,sequential:scope.sequentialSolvedCount,level:scope.levelIndex,trace,warnings});
 }
 const scenarios=[{guest:true,cloud:[]},{cloud:[]},{cloud:[{puzzle_id:1},{puzzle_id:2}]},{cloud:[{puzzle_id:1},{puzzle_id:3}]},{cloud:[],networkError:true}];
 for(const options of scenarios){
@@ -57,12 +57,13 @@ for(const options of scenarios){
  const normalized=plain(actual),expected=plain(legacy);
  if(!options.guest&&!options.networkError)assert.ok(actual.trace.some(x=>x.name==='lumen_get_entitlements'),'Authenticated init must load persistent entitlements');
  assert.deepEqual(actual.entitlements,[],'Fixture ends signed out: account entitlements must be cleared locally');
- normalized.entitlements=[];expected.entitlements=[];
+ assert.deepEqual(actual.capabilities,[],'Fixture ends signed out: internal capabilities must be cleared locally');
+ normalized.entitlements=[];expected.entitlements=[];normalized.capabilities=[];expected.capabilities=[];
  const normalizeOwnershipTrace=trace=>{
    const out=[];let afterSignOut=false;
    for(let i=0;i<trace.length;i++){
      const x=trace[i];
-     if(x.name==='lumen_get_entitlements'){
+     if(x.name==='lumen_get_entitlements'||x.name==='lumen_get_internal_capabilities'){
        if(trace[i+1]?.ui==='refreshJourney')i++;
        continue;
      }
@@ -75,11 +76,11 @@ for(const options of scenarios){
  };
  normalized.trace=normalizeOwnershipTrace(normalized.trace);
  expected.trace=normalizeOwnershipTrace(expected.trace);
- const stripOwnershipWarnings=warnings=>warnings.filter(x=>x?.[0]!=='LUMEN entitlements');
+ const stripOwnershipWarnings=warnings=>warnings.filter(x=>x?.[0]!=='LUMEN entitlements'&&x?.[0]!=='LUMEN capabilities');
  normalized.warnings=stripOwnershipWarnings(normalized.warnings);
  expected.warnings=stripOwnershipWarnings(expected.warnings);
  if(!options.guest){
-   const stripEntitlementReads=trace=>trace.filter(x=>x.name!=='lumen_get_entitlements');normalized.trace=stripEntitlementReads(normalized.trace);expected.trace=stripEntitlementReads(expected.trace);
+   const stripEntitlementReads=trace=>trace.filter(x=>x.name!=='lumen_get_entitlements'&&x.name!=='lumen_get_internal_capabilities');normalized.trace=stripEntitlementReads(normalized.trace);expected.trace=stripEntitlementReads(expected.trace);
    normalized.progress.daily.dates={};
    expected.progress.daily.dates={};
    const normalizeDailySyncTrace=trace=>{

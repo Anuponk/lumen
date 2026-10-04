@@ -19,6 +19,13 @@ async function saveLumenNickname(){
  model.lumenNickname=data||value;updateAuthUI();showRewardToast("Pseudo enregistré ✦");
 }
 
+async function loadInternalCapabilities(){
+ if(!model.lumenSupabase||!model.lumenUser){model.lumenCapabilities=[];return []}
+ const {data,error}=await model.lumenSupabase.rpc("lumen_get_internal_capabilities");
+ if(error){console.warn("LUMEN capabilities",error);model.lumenCapabilities=[];return []}
+ model.lumenCapabilities=data||[];updateAuthUI();return model.lumenCapabilities;
+}
+
 async function loadEntitlements(){
  if(!model.lumenSupabase||!model.lumenUser){model.lumenEntitlements=[];return []}
  const {data,error}=await model.lumenSupabase.rpc("lumen_get_entitlements");
@@ -62,10 +69,10 @@ async function initLumenCloud(){
  if(!model.lumenSupabase){updateAuthUI();return}
  const {data}=await model.lumenSupabase.auth.getSession();
  model.lumenUser=data.session?.user||null; updateAuthUI();
- if(model.lumenUser){await loadLumenProfile();await loadEntitlements();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily();}}else model.lumenEntitlements=[];
+ if(model.lumenUser){await loadLumenProfile();await loadEntitlements();await loadInternalCapabilities();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily();}}else {model.lumenEntitlements=[];model.lumenCapabilities=[];}
  model.lumenSupabase.auth.onAuthStateChange((event,session)=>{
    const previous=model.lumenUser?.id; model.lumenUser=session?.user||null; updateAuthUI();
-   if(model.lumenUser&&model.lumenUser.id!==previous)setTimeout(async()=>{await loadEntitlements();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily()}},0);else if(!model.lumenUser){model.lumenEntitlements=[];refreshJourney()}
+   if(model.lumenUser&&model.lumenUser.id!==previous)setTimeout(async()=>{await loadEntitlements();await loadInternalCapabilities();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily()}},0);else if(!model.lumenUser){model.lumenEntitlements=[];model.lumenCapabilities=[];refreshJourney();updateAuthUI()}
  });
  const login=document.getElementById("authLogin"),logout=document.getElementById("authLogout");
  if(login)login.onclick=async()=>{
@@ -73,7 +80,7 @@ async function initLumenCloud(){
    const {error}=await model.lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo}});
    if(error)alert("Connexion impossible : "+error.message);
  };
- if(logout)logout.onclick=async()=>{await model.lumenSupabase.auth.signOut();model.lumenUser=null;model.lumenEntitlements=[];model.lumenCloudReady=false;updateAuthUI();refreshJourney()};
+ if(logout)logout.onclick=async()=>{await model.lumenSupabase.auth.signOut();model.lumenUser=null;model.lumenEntitlements=[];model.lumenCapabilities=[];model.lumenCloudReady=false;updateAuthUI();refreshJourney()};
 }
 
 async function cloudSaveDaily(date,index){
@@ -125,5 +132,5 @@ async function cloudMergeDaily(){
  saveLumenProgress();renderDaily();
 }
 
-return {loadLumenProfile,saveLumenNickname,loadEntitlements,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance};
+return {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance};
 }

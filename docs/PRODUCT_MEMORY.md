@@ -241,3 +241,12 @@ Real touch tests then exposed two player-facing defects: badge/auto-marking dial
 - The visual countdown appears at 30 seconds remaining instead of 10.
 - Its progress is spread over the full 30-second window to reduce perceived speed and stress.
 - The final 10 seconds receive only a mild emphasis; no flashing or pulse is introduced.
+
+
+## 2026-10-04 — Internal capability model (#33)
+- Removed the globally hard-coded unlimited-shards switch.
+- Tester/admin powers are server-authoritative capabilities from `lumen.internal_capabilities` via `lumen_get_internal_capabilities()`.
+- Initial `unlimited_shards` grant is server-side; the browser contains no privileged email allowlist.
+- Capability state is cleared on logout/anonymous mode.
+- Enabling/disabling the tool is a local per-device preference, but localStorage alone cannot grant access.
+- Internal capabilities are separate from commercial content entitlements.

@@ -33,6 +33,7 @@ const {loadLumenProgress,saveLumenProgress}=createLocalPersistence(localStorage,
 const persistenceModel={
 get lumenSupabase(){return lumenSupabase},set lumenSupabase(value){lumenSupabase=value},
 get lumenEntitlements(){return lumenEntitlements},set lumenEntitlements(value){lumenEntitlements=Array.isArray(value)?value:[]},
+get lumenCapabilities(){return lumenCapabilities},set lumenCapabilities(value){lumenCapabilities=Array.isArray(value)?value:[]},
 get lumenUser(){return lumenUser},set lumenUser(value){lumenUser=value},
 get lumenCloudReady(){return lumenCloudReady},set lumenCloudReady(value){lumenCloudReady=value},
 get lumenNickname(){return lumenNickname},set lumenNickname(value){lumenNickname=value},
@@ -41,7 +42,7 @@ get sequentialSolvedCount(){return sequentialSolvedCount},set sequentialSolvedCo
 get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
-const {loadLumenProfile,saveLumenNickname,loadEntitlements,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>campaignQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),updateAuthUI:(...args)=>updateAuthUI(...args),showRewardToast:(...args)=>showRewardToast(...args),renderDaily:(...args)=>renderDaily(...args)},{document,location,alert,setTimeout,console,qaMode});
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>campaignQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),updateAuthUI:(...args)=>updateAuthUI(...args),showRewardToast:(...args)=>showRewardToast(...args),renderDaily:(...args)=>renderDaily(...args)},{document,location,alert,setTimeout,console,qaMode});
 function tutorialCompletedProof(){
  try{if(localStorage.getItem(qaKey("lumenTutorialCompletedV1"))==="1")return true}catch(_){}
  return !!(lumenProgress?.solved?.[0]&&lumenProgress?.solved?.[1]);
@@ -53,7 +54,7 @@ function skipTutorialReplay(){
  if(learningReplayActive()){finishLearningReplay();return}
 }
 const {renderTutorial,openTutorial,closeTutorial,setupTutorial}=createTutorial(()=>levelIndex<=1,{tutorialSeenKey:qaActive?"lumenQaTutorialSeen":"lumenTutorialSeen",canSkip:()=>tutorialCompletedProof()&&!qaFresh,onSkip:skipTutorialReplay});
-let lumenSupabase=null,lumenUser=null,lumenCloudReady=false,lumenEntitlements=[];
+let lumenSupabase=null,lumenUser=null,lumenCloudReady=false,lumenEntitlements=[],lumenCapabilities=[];
 try{lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY)}catch(e){console.warn("LUMEN cloud unavailable",e)}
 let lumenNickname="";
 
@@ -62,6 +63,14 @@ function syncMobileAuthUI(){
  if(!status||!action||!icon)return;
  if(lumenUser){status.textContent=lumenNickname||"Progression synchronisée";action.textContent="Déconnexion";icon.textContent="●";icon.setAttribute("aria-label","Compte connecté");const box=document.getElementById("nicknameBox");if(box)box.hidden=false}
  else{status.textContent="Progression enregistrée sur cet appareil";action.textContent="Se connecter avec Google";icon.textContent="♙";icon.setAttribute("aria-label","Se connecter");const box=document.getElementById("nicknameBox");if(box)box.hidden=true}
+}
+function hasInternalCapability(name){return lumenCapabilities.some(x=>(typeof x==="string"?x:x?.capability)===name)}
+function unlimitedShardsEnabled(){return hasInternalCapability("unlimited_shards")&&localStorage.getItem("lumenAdminUnlimitedShards")==="1"}
+function updateAdminTools(){
+ const box=document.getElementById("adminTools"),toggle=document.getElementById("adminUnlimitedShards");
+ if(!box||!toggle)return;
+ const allowed=hasInternalCapability("unlimited_shards");
+ box.hidden=!allowed;toggle.checked=allowed&&unlimitedShardsEnabled();
 }
 function updateAuthUI(){
  const u=document.getElementById("authUser"),login=document.getElementById("authLogin"),logout=document.getElementById("authLogout");
@@ -73,7 +82,7 @@ function updateAuthUI(){
    u.textContent="Progression enregistrée sur cet appareil";
    login.hidden=false; logout.hidden=true;
  }
- syncMobileAuthUI();
+ syncMobileAuthUI();updateAdminTools();
 }
 function setupQaMode(){
  if(!qaActive)return;
@@ -113,6 +122,8 @@ function setupMobileAuth(){
    await lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+location.pathname}});
  };
  const qaSwitch=document.getElementById("qaAccountSwitch"),qaReset=document.getElementById("qaAccountReset");
+ const adminUnlimited=document.getElementById("adminUnlimitedShards");
+ if(adminUnlimited)adminUnlimited.onchange=()=>{if(!hasInternalCapability("unlimited_shards")){adminUnlimited.checked=false;return}localStorage.setItem("lumenAdminUnlimitedShards",adminUnlimited.checked?"1":"0");updateHintButton();updateVerifyButton();showRewardToast(adminUnlimited.checked?"Mode test : Éclats illimités":"Mode test : économie normale")};
  if(qaSwitch){
    qaSwitch.textContent=qaActive?"Revenir à mon profil réel":"Tester comme nouveau joueur";
    qaSwitch.onclick=()=>{
@@ -409,13 +420,12 @@ function finishLearningReplay(){
  loadPuzzle();refreshJourney();
 }
 
-const UNLIMITED_SHARDS_TEST=true;
 function hintCost(){if(levelIndex<=4)return 0;if(hintUsesThisGame===0)return 0;if(hintUsesThisGame===1)return 1;return 2}
-function updateShardMeter(){const m=document.getElementById("shardMeter");if(!m)return;if(UNLIMITED_SHARDS_TEST){m.innerHTML='<span class="shard-gem on" aria-hidden="true">✦</span><strong style="margin-left:6px">∞</strong>';m.setAttribute("aria-label","Éclats de lumière illimités pendant les tests.");return}const sh=Math.max(0,Number(lumenProgress.shards)||0);m.innerHTML='<span class="shard-gem on" aria-hidden="true">✦</span><strong style="margin-left:6px">'+sh+'</strong>';m.setAttribute("aria-label",sh+" éclat"+(sh>1?"s":"")+" de lumière disponible"+(sh>1?"s":"")+". Voir les règles.")}function updateHintButton(){const b=document.getElementById("hint");if(!b)return;const q=bonusChallengeFor(levelIndex),cost=hintCost(),sh=lumenProgress.shards||0;b.textContent=cost===0?"Indice · gratuit":"Indice · "+cost+" ✦";b.title="Éclats disponibles : "+sh;updateShardMeter();if(q&&q.type===2&&!lumenProgress.stars[q.id])return}
-function consumeHintCost(){const cost=hintCost(),sh=lumenProgress.shards||0;if(UNLIMITED_SHARDS_TEST){hintWasGranted=true;hintUsesThisGame++;updateHintButton();return true}if(cost>sh){if(sh===0&&activeGameSeconds()>=90){hintWasGranted=true;hintUsesThisGame++;msg.textContent="Après 90 s de recherche, cet indice est offert.";updateHintButton();return true}msg.textContent="Il te manque "+(cost-sh)+" ✦ éclat"+(cost-sh>1?"s":"")+" pour cet indice. Continue à chercher : à 0 éclat, un indice devient gratuit après 90 s.";return false}if(cost>0){lumenProgress.shards=sh-cost;saveLumenProgress()}hintWasGranted=true;hintUsesThisGame++;updateHintButton();return true}
+function updateShardMeter(){const m=document.getElementById("shardMeter");if(!m)return;if(unlimitedShardsEnabled()){m.innerHTML='<span class="shard-gem on" aria-hidden="true">✦</span><strong style="margin-left:6px">∞</strong>';m.setAttribute("aria-label","Éclats de lumière illimités pendant les tests.");return}const sh=Math.max(0,Number(lumenProgress.shards)||0);m.innerHTML='<span class="shard-gem on" aria-hidden="true">✦</span><strong style="margin-left:6px">'+sh+'</strong>';m.setAttribute("aria-label",sh+" éclat"+(sh>1?"s":"")+" de lumière disponible"+(sh>1?"s":"")+". Voir les règles.")}function updateHintButton(){const b=document.getElementById("hint");if(!b)return;const q=bonusChallengeFor(levelIndex),cost=hintCost(),sh=lumenProgress.shards||0;b.textContent=cost===0?"Indice · gratuit":"Indice · "+cost+" ✦";b.title="Éclats disponibles : "+sh;updateShardMeter();if(q&&q.type===2&&!lumenProgress.stars[q.id])return}
+function consumeHintCost(){const cost=hintCost(),sh=lumenProgress.shards||0;if(unlimitedShardsEnabled()){hintWasGranted=true;hintUsesThisGame++;updateHintButton();return true}if(cost>sh){if(sh===0&&activeGameSeconds()>=90){hintWasGranted=true;hintUsesThisGame++;msg.textContent="Après 90 s de recherche, cet indice est offert.";updateHintButton();return true}msg.textContent="Il te manque "+(cost-sh)+" ✦ éclat"+(cost-sh>1?"s":"")+" pour cet indice. Continue à chercher : à 0 éclat, un indice devient gratuit après 90 s.";return false}if(cost>0){lumenProgress.shards=sh-cost;saveLumenProgress()}hintWasGranted=true;hintUsesThisGame++;updateHintButton();return true}
 function verifyCost(){return verifyUsesThisGame===0?0:1}
 function updateVerifyButton(){const b=document.getElementById("verify");if(!b)return;const cost=verifyCost();b.textContent=cost===0?"✓ Vérifier · gratuit":"✓ Vérifier · "+cost+" ✦";b.title="Vérifie uniquement tes choix déjà marqués."}
-function consumeVerifyCost(){const cost=verifyCost(),sh=lumenProgress.shards||0;if(UNLIMITED_SHARDS_TEST){verifyUsesThisGame++;updateVerifyButton();return true}if(cost>sh){msg.textContent="Il te manque "+(cost-sh)+" ✦ éclat"+(cost-sh>1?"s":"")+" pour vérifier.";return false}if(cost){lumenProgress.shards=sh-cost;saveLumenProgress();updateShardMeter()}verifyUsesThisGame++;updateVerifyButton();return true}
+function consumeVerifyCost(){const cost=verifyCost(),sh=lumenProgress.shards||0;if(unlimitedShardsEnabled()){verifyUsesThisGame++;updateVerifyButton();return true}if(cost>sh){msg.textContent="Il te manque "+(cost-sh)+" ✦ éclat"+(cost-sh>1?"s":"")+" pour vérifier.";return false}if(cost){lumenProgress.shards=sh-cost;saveLumenProgress();updateShardMeter()}verifyUsesThisGame++;updateVerifyButton();return true}
 
 function verificationHappyCopy(){
  const q=state.flat().filter(v=>v===2).length;
