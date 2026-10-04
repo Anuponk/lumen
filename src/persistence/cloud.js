@@ -73,7 +73,7 @@ async function initLumenCloud(){
  if(model.lumenUser){await loadLumenProfile();await loadEntitlements();await loadInternalCapabilities();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily();}}else {model.lumenEntitlements=[];model.lumenCapabilities=[];}
  model.lumenSupabase.auth.onAuthStateChange((event,session)=>{
    const previous=model.lumenUser?.id; model.lumenUser=session?.user||null; onAccountChanged({type:"account"});
-   if(model.lumenUser&&model.lumenUser.id!==previous)setTimeout(async()=>{await loadEntitlements();await loadInternalCapabilities();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily()}},0);else if(!model.lumenUser){model.lumenEntitlements=[];model.lumenCapabilities=[];refreshJourney();updateAuthUI()}
+   if(model.lumenUser&&model.lumenUser.id!==previous)setTimeout(async()=>{await loadEntitlements();await loadInternalCapabilities();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily()}},0);else if(!model.lumenUser){model.lumenEntitlements=[];model.lumenCapabilities=[];refreshJourney();onAccountChanged({type:"account"})}
  });
 
 }
