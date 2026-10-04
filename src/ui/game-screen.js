@@ -285,7 +285,12 @@ async function loadMyChallenges(){
   return rows||[];
  }catch(e){console.warn("challenge inbox",e);return []}
 }
-async function openMyChallenges(focusId=null){const rows=await loadMyChallenges();document.getElementById("myChallengesModal").hidden=false;if(focusId){document.querySelector('[data-challenge-id="'+CSS.escape(focusId)+'"]')?.scrollIntoView({block:"center"});await challengeClient.markRead(focusId);loadMyChallenges()}}
+async function openMyChallenges(focusId=null){
+ const rows=await loadMyChallenges();document.getElementById("myChallengesModal").hidden=false;
+ if(focusId)document.querySelector('[data-challenge-id="'+CSS.escape(focusId)+'"]')?.scrollIntoView({block:"center"});
+ const unread=(rows||[]).filter(r=>Number(r.unread_count)>0);for(const row of unread)await challengeClient.markRead(row.challenge_id);
+ if(unread.length)loadMyChallenges();
+}
 async function bootstrapSocialChallenge(){
  const id=new URL(location.href).searchParams.get("challenge");if(!id)return true;
  try{
@@ -642,7 +647,7 @@ function activeGameSeconds(){return Math.max(0,Math.floor(activeGameMs()/1000))}
 function clock(){let ms=activeGameMs(),s=Math.max(0,Math.floor(ms/1000));document.getElementById("time").textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");const cd=document.getElementById("speedCountdown"),fill=document.getElementById("speedCountdownFill"),targetMs=speedTargetSeconds(levelIndex)*1000;if(cd){const remainingMs=targetMs-ms,show=!celebrated&&performanceEligibility(levelIndex).speed&&remainingMs<=10000&&remainingMs>0;cd.hidden=!show;if(show&&fill)fill.style.transform="scaleX("+Math.max(0,Math.min(1,remainingMs/10000))+")";else if(fill)fill.style.transform="scaleX(1)"}let q=bonusChallengeFor(levelIndex);if(q&&questStarted&&!lumenProgress.stars[q.id]){if(q.seconds!==null&&s>q.seconds)questFailed=true;if(q.type===2&&usedHintThisGame)questFailed=true;let b=document.getElementById("challengeCopy");if(b&&questFailed)b.textContent="Défi échoué · termine la quête à ton rythme."}}
 function pauseGameClock(){attemptEngine.pause();clock()}
 function resumeGameClock(){attemptEngine.resume();clock()}
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")pauseGameClock()});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")pauseGameClock();else loadMyChallenges()});
 window.addEventListener("pagehide",pauseGameClock);
 
 function displayedCellState(r,c){
