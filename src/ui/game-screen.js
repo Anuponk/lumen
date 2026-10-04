@@ -1195,8 +1195,6 @@ function setupOutsideDefaults(){
  const tutorial=document.getElementById("tutorialOverlay");
  if(tutorial)tutorial.addEventListener("click",e=>{if(e.target!==tutorial)return;let seen=false;try{seen=localStorage.getItem(qaActive?"lumenQaTutorialSeen":"lumenTutorialSeen")==="1"}catch(_){}if(seen)closeTutorial(false)});
 }
-const skyTourSkip=document.getElementById("skyTourSkip");if(skyTourSkip)skyTourSkip.onclick=()=>{document.getElementById("skyTour").hidden=true;try{localStorage.setItem("lumenSkyTourSeen","1")}catch(_){}closeMapOverlay()};
-
 const skyTourNext=document.getElementById("skyTourNext");if(skyTourNext)skyTourNext.onclick=advanceSkyTour;
 const openSky=document.getElementById("openSky");if(openSky)openSky.onclick=()=>openJourneyMap(true);
 document.getElementById("closeMap").onclick=closeMapOverlay;document.getElementById("hint").addEventListener("click",()=>{if(!hintWasGranted)return;attemptEngine.markAssistance();hintWasGranted=false;trackLumenEvent("hint_used",levelIndex+1);usedHintThisGame=true;updateHintButton()});
