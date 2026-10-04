@@ -20,7 +20,7 @@ This repository is the source of truth for LUMEN. Read this file and the documen
 - Victory depends on the Guardian placement satisfying the puzzle, not on whether all remaining cells are manually excluded.
 - Guardians: exactly one per row, column and territory; Guardians cannot touch, including diagonally.
 - Completed quests are replayable to improve performance badges. Badges must describe a single attempt; no farming by combining achievements from different attempts.
-- Learning: quests 1–5 force assistance; 6–10 make it optional; quest 11 introduces autonomous play. Quest 1 constrains real player actions with progressively lighter guidance through all five Guardians; quest 2 guides its first Guardian and requires practicing the real drag gesture before free play with contextual advice.
+- Learning onboarding is a protected **SEE -> UNDERSTAND -> ACT** sequence: quest 1 must show and number the territories, explain the goal and all four Guardian constraints, and only then allow the first board interaction. Do not collapse this into immediate action. Territory numbers are teaching-only.\n- Learning: quests 1–5 force assistance; 6–10 make it optional; quest 11 introduces autonomous play. Quest 1 constrains real player actions with progressively lighter guidance through all five Guardians; quest 2 guides its first Guardian and requires practicing the real drag gesture before free play with contextual advice.
 - Mobile drag across cells adds exclusions efficiently and must not trigger full-board renders during pointer movement.
 - Guest progress works locally. Authenticated progress syncs to Supabase and local history is merged to cloud.
 - Constellation progression is the canonical campaign representation.
