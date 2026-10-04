@@ -1,0 +1,41 @@
+{
+  "results": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "transition100to101": true,
+      "normalCelebration": true,
+      "noSkip": true,
+      "rewardsPreserved": true,
+      "reload": true,
+      "sameAttempt": true,
+      "mapReturn": true,
+      "lastQuest": true,
+      "cappedSaveRecovery": true,
+      "finalVictory": true,
+      "completeSky": true
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "mobile": false
+      },
+      "transition100to101": true,
+      "normalCelebration": true,
+      "noSkip": true,
+      "rewardsPreserved": true,
+      "reload": true,
+      "sameAttempt": true,
+      "mapReturn": true,
+      "lastQuest": true,
+      "cappedSaveRecovery": true,
+      "finalVictory": true,
+      "completeSky": true
+    }
+  ],
+  "uncaughtErrors": []
+}

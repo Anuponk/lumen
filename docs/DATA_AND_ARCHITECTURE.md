@@ -38,7 +38,7 @@ Victory validation is now called by the renderer through `validateGuardians`; re
 
 `src/campaign/catalogue.js` owns `CAT` and `LEVELS`; `data.js` owns quest metadata, fixed schedule, constellation shapes/counts and existing badge display definitions. `progression.js` exports pure campaign calculations and `createCampaign(getProgress, saveProgress, getAttempt)` for calculations that use the current canonical progress/attempt. It retains the existing performance recording and badge rules verbatim in behavior; #30/#31 remain out of scope. UI navigation, quest loading and celebration orchestration belong to the UI controller.
 
-`scripts/campaign-tests.mjs` compares the entire catalogue and schedule to the starting main commit, verifies calculations for all 100 quests and checks existing progress/performance serialization against four historical fixture shapes. Both the strict audit and generator import catalogue/campaign modules directly; the generator's optional write targets `src/campaign/catalogue.js` instead of HTML.
+`scripts/campaign-tests.mjs` preserves original catalogue and historical data/reward comparisons against the starting main commit, and protects the first 100 schedule assignments against the immutable pre-wave-2 commit. Current boundaries, constellation rewards and registry coverage derive from content data. It checks four historical progress fixtures, capped-save recovery and hypothetical future extensions. Both the strict audit and generator import catalogue/campaign modules directly; the generator's optional write targets `src/campaign/catalogue.js` instead of HTML.
 
 ## Stage #24: persistence
 

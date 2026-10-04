@@ -3,7 +3,7 @@
 ## Current state
 Production does **not generate campaign grids on demand**. The campaign uses the pre-generated `CAT` in `src/campaign/catalogue.js`, with a fixed `CAMPAIGN_SIZE_SCHEDULE` and curated 6x6 order in `src/campaign/data.js`.
 
-The 100-quest schedule starts with two 5x5 onboarding grids, then uses 6x6, 7x7 and 8x8 puzzles. Do not replace this with runtime random generation without an explicit product decision.
+The schedule starts with two 5x5 onboarding grids, then uses 6x6, 7x7 and 8x8 puzzles. Campaign length derives from the content model (currently 134 quests); the original 100 assignments remain protected by a frozen pre-wave-2 comparison. Do not replace this with runtime random generation without an explicit product decision.
 
 ## Required puzzle representation
 Each puzzle stores:
@@ -49,7 +49,7 @@ Generation belongs in an offline/dev script, not the player's runtime path.
 The two onboarding grids were audited with one solution each. With the current proof engine, the central grid replays in 22 structured steps (17 group eliminations, 5 singles); the second replays in 11 (6 group eliminations, 5 singles). Their scripted placement order must also consist of forced territory placements rather than guesses.
 
 ## Mandatory catalogue audit
-After any change touching `CAT`, solver/proof rules, board semantics or campaign schedule, audit **all campaign grids**, not only the currently displayed size. Check validity, unique solution, explainable replay, campaign count=100, constellation mapping and absence of duplicate/broken schedule references.
+After any change touching `CAT`, solver/proof rules, board semantics or campaign schedule, audit **all campaign grids**, not only the currently displayed size. Check validity, unique solution, explainable replay, campaign count matching the content model, contiguous constellation mapping and absence of duplicate/broken schedule references. Audit quest rewards against each constellation's actual stars and their sum against the derived sky target. Adding content must not require replacing fixed totals in these assertions.
 
 Run `node scripts/audit-catalogue.mjs` for a reproducible offline audit using the application's actual catalogue and proof engine. It checks all catalogue entries and campaign references and exits nonzero on failure. Known failures must remain visible; do not treat them as an allowlist or a passing release gate.
 

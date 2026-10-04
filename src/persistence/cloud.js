@@ -1,6 +1,7 @@
+import {baseCampaignQuestCount} from "../campaign/content.js";
 export function createCloudPersistence(model,hooks,environment){
 const {activeGameSeconds,exactSkyScoreForSolvedPrefix,saveLumenProgress,refreshJourney,init,updateAuthUI,showRewardToast,renderDaily}=hooks;
-const campaignQuestCount=()=>Math.max(0,Number(hooks.campaignQuestCount?.()??100));
+const campaignQuestCount=()=>Math.max(0,Number(hooks.campaignQuestCount?.()??baseCampaignQuestCount()));
 const {document,location,alert,setTimeout,console}=environment;
 const cloudWritesDisabled=()=>!!environment.qaMode;
 async function loadLumenProfile(){

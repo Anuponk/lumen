@@ -52,6 +52,8 @@ additionalTests.push(
 assert.equal(originalTests.length,66);
 assert.equal(tests.length,originalTests.length+additionalTests.length);
 const intentionalRenames=new Map([["Tutoriel joué : quêtes 1 et 2 n’enseignent que les Gardiens","Apprentissage : les deux premières quêtes guident les actions réelles"],["Tutoriel joué : le glisser des exclusions est bloqué pendant le scénario","Apprentissage : le glissé utilise le plateau normal dans les étapes autorisées"],["Indice : bouton Revoir la quête présent","Indice : fermeture contextuelle remplace Revoir la quête"],["Tutoriel joué : Marquage auto verrouillée sur les deux premières quêtes","Tutoriel joué : Marquage auto verrouillé pendant les cinq premières quêtes"]]);
+intentionalRenames.set("Campagne : 100 quêtes réparties sur 12 constellations","Campagne : les quêtes couvrent toutes les constellations du catalogue");
+intentionalRenames.set("Campagne : le ciel contient exactement 150 étoiles","Campagne : les récompenses couvrent toutes les étoiles du catalogue");
 const normalizedTests=tests.filter(label=>!additionalTests.includes(label)).map(label=>[...intentionalRenames].find(([,next])=>next===label)?.[0]||label);
 assert.deepEqual(normalizedTests,originalTests,'Regression cases removed or renamed');
 assert.deepEqual(tests.filter(label=>additionalTests.includes(label)).sort(),[...additionalTests].sort(),'UX regression cases missing');

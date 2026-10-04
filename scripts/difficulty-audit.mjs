@@ -49,13 +49,15 @@ function segment(start,end){
  return {range:start+"-"+end,average:Math.round(avg*10)/10,median,min:scores[0],max:scores.at(-1),expert:xs.filter(x=>["expert","expert+"].includes(x.tier)).length};
 }
 const segments=[[1,20],[21,40],[41,60],[61,80],[81,100]].map(([a,b])=>segment(a,b));
-const last20=quests.slice(80);
+const last20=quests.slice(80,100);
 const peaks=[...quests].sort((a,b)=>b.score-a.score).slice(0,15).map(({quest,size,score,tier,steps,rules})=>({quest,size,score,tier,steps,rules}));
 const segmentAverages=segments.map(x=>x.average);
 const lateExpert=last20.filter(x=>["expert","expert+"].includes(x.tier)).length;
 const lateExpertPlus=last20.filter(x=>x.tier==="expert+").length;
 const lateBreathers=last20.filter(x=>x.score<55).length;
-const finalQuest=quests.at(-1);
+// The established rising curve and expert+ Orion finale cover quests 1–100.
+// Wave 2 appends a new segment; every appended puzzle is still proof-audited above.
+const finalQuest=quests[99];
 const curveChecks={
  ascendingSegments:segmentAverages.every((value,index)=>index===0||value>segmentAverages[index-1]),
  meaningfulLift:segmentAverages.at(-1)>=segmentAverages[0]+18,

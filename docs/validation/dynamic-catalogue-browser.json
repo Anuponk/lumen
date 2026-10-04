@@ -1,0 +1,71 @@
+{
+  "suites": [
+    {
+      "size": 5,
+      "total": 98,
+      "failures": []
+    },
+    {
+      "size": 6,
+      "total": 98,
+      "failures": []
+    },
+    {
+      "size": 7,
+      "total": 98,
+      "failures": []
+    },
+    {
+      "size": 8,
+      "total": 98,
+      "failures": []
+    }
+  ],
+  "mobile": {
+    "tapCycle": [
+      1,
+      2,
+      0
+    ],
+    "drag": true,
+    "guardianPreserved": true,
+    "noScroll": true,
+    "reset": true
+  },
+  "guestReload": true,
+  "pwa": {
+    "registered": true,
+    "controlled": true,
+    "display": "standalone",
+    "startURL": "/",
+    "assets": [
+      "/manifest.webmanifest",
+      "/sw.js",
+      "/icon.svg",
+      "/icon-maskable.svg",
+      "/src/ui/styles.css",
+      "/src/main.js",
+      "/src/ui/game-screen.js",
+      "/src/game/learning.js",
+      "/src/analytics/events.js",
+      "/src/testing/hint-tests.js",
+      "/src/testing/diagnostics.js",
+      "/src/persistence/local.js",
+      "/src/persistence/cloud.js",
+      "/src/persistence/config.js",
+      "/src/campaign/catalogue.js",
+      "/src/campaign/content.js",
+      "/src/campaign/data.js",
+      "/src/campaign/performance.js",
+      "/src/campaign/social-challenge.js",
+      "/src/campaign/progression.js",
+      "/src/game/engine.js",
+      "/src/game/attempt-engine.js",
+      "/src/ui/format.js",
+      "/src/campaign/daily-engagement.js",
+      "/src/ui/tutorial.js",
+      "/src/ui/sound.js"
+    ]
+  },
+  "uncaughtErrors": []
+}

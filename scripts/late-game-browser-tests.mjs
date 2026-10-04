@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {connectBrowser} from './cdp-client.mjs';
-import {campaignQuestCount} from '../src/campaign/progression.js';
+import {campaignQuestCount,skyStarsForGrid} from '../src/campaign/progression.js';
 import {CAT} from '../src/campaign/catalogue.js';
-import {CAMPAIGN_SIZE_SCHEDULE,CAMPAIGN6_ORDER} from '../src/campaign/data.js';
+import {CAMPAIGN_SIZE_SCHEDULE,CAMPAIGN6_ORDER,SKY_TARGET} from '../src/campaign/data.js';
 
 const {send,evaluate,errors}=await connectBrowser();
 const url=process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/';
@@ -50,7 +50,17 @@ try{
   assert.equal((await snapshot()).levelIndex,100,'Closing the map preserves the unsolved quest');
   await evaluate(`lumenDiagnostics.setupQuest(${campaignQuestCount()-1})`);
   assert.equal((await snapshot()).levelIndex,campaignQuestCount()-1,'The actual last quest is loadable');
-  results.push({viewport,transition100to101:true,normalCelebration:true,noSkip:true,rewardsPreserved:true,reload:true,sameAttempt:true,mapReturn:true,lastQuest:true});
+  await evaluate(`localStorage.setItem("lumenProgressV1",JSON.stringify({solved:Object.fromEntries(Array.from({length:${campaignQuestCount()-1}},(_,i)=>[i,1])),badges:{historical:1},skyScore:150,skyHistoryVersion:4}));localStorage.removeItem("lumenActiveAttemptV1")`);
+  await send('Page.reload',{ignoreCache:true});await sleep(500);await until('!!window.lumenDiagnostics');
+  current=await snapshot();assert.equal(current.levelIndex,campaignQuestCount()-1);
+  assert.equal(current.progress.skyScore,SKY_TARGET-skyStarsForGrid(campaignQuestCount()-1),'Restore recovers extension stars from an old capped save');
+  await evaluate('(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');
+  await until('!document.getElementById("skyReveal").hidden');await click('skyRevealContinue');
+  await until('!document.getElementById("endgameOverlay").hidden');
+  current=await snapshot();assert.equal(current.levelIndex,campaignQuestCount()-1);assert.equal(current.progress.skyScore,SKY_TARGET);
+  assert.equal(current.progress.badges.historical,1);assert.equal(current.progress.badges.master,1);
+  assert.match(await evaluate('document.getElementById("endgameSummary").textContent'),new RegExp(String(campaignQuestCount())));
+  results.push({viewport,transition100to101:true,normalCelebration:true,noSkip:true,rewardsPreserved:true,reload:true,sameAttempt:true,mapReturn:true,lastQuest:true,cappedSaveRecovery:true,finalVictory:true,completeSky:true});
  }
  assert.deepEqual(errors,[]);
  const report={results,uncaughtErrors:errors};if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));console.log(JSON.stringify(report));

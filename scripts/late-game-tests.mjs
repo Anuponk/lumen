@@ -32,10 +32,22 @@ context.levelIndex=total-1;context.lumenProgress.solved[total-1]=1;
 const loads=context.loads;context.advanceToNextPuzzle();
 assert.equal(context.levelIndex,total-1);assert.equal(context.loads,loads,'Final quest cannot load beyond the catalogue');
 
+const drawn=[];
+context.document.createElement=()=>({getContext:()=>({createLinearGradient:()=>({addColorStop(){}}),fillRect(){},beginPath(){},arc(){},fill(){},strokeRect(){},fillText:text=>drawn.push(text)})});
+context.wrapCanvasText=()=>{};context.formatDuration=()=>"0:00";context.location={host:"fixture"};
+vm.runInContext(functionSource(source,'shareCardCanvas'),context);
+for(const size of [total,total+7]){
+ context.campaignQuestCount=()=>size;context.levelIndex=size-1;drawn.length=0;
+ context.shareCardCanvas({kicker:"Fixture",main:"Win",detail:"",pos:1,total:1,secs:0,run:{noHint:true}});
+ assert(drawn.includes(`Quête ${size} / ${size}`),'Shared results use the dynamic campaign total');
+}
+context.campaignQuestCount=campaignQuestCount;
+
 for(const count of [0,99,100,101,total,total+2]){
  const calls=[],badges={historical:1},rows=Array.from({length:count},(_,i)=>({puzzle_id:i+1}));
  const model={lumenUser:{id:'fixture'},lumenSupabase:{async rpc(name){calls.push(name);return {data:rows,error:null}}},lumenProgress:{solved:{},badges,performances:{},historyBackup:{}},levelIndex:0};
- const hooks={campaignQuestCount,exactSkyScoreForSolvedPrefix:()=>150,saveLumenProgress(){},refreshJourney(){},init(){}};
+ // Deliberately omit the count hook once to exercise the real content fallback.
+ const hooks={...(count===101?{}:{campaignQuestCount}),exactSkyScoreForSolvedPrefix:()=>150,saveLumenProgress(){},refreshJourney(){},init(){}};
  const cloud=createCloudPersistence(model,hooks,{console,document:{}});
  await cloud.cloudMergeProgress();
  const restored=Math.min(count,total);

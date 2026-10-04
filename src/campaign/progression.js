@@ -12,7 +12,14 @@ export function chapterForGrid(i){let start=0;for(let j=0;j<CONSTELLATION_GRID_C
 
 export function milestoneFor(i){const ci=chapterForGrid(i),r=constellationGridRange(ci),pos=i-r.start,mid=Math.floor((r.count-1)/2);if(i===r.end)return {kind:"boss",title:"✹ Défi final · "+CONSTELLATIONS[ci].name.replace(" · Grand Chariot",""),bonus:2,copy:"Dernière quête de la constellation · +2 ★ et constellation complétée."};if(pos===mid)return {kind:"mid",title:"✦ Défi de constellation",bonus:1,copy:"Étape intermédiaire · +1 ★ pour ton ciel."};return null}
 
-export function skyStarsForGrid(i){const ci=chapterForGrid(i),r=constellationGridRange(ci),target=CONSTELLATIONS[ci].count,extra=target-r.count,pos=i-r.start;if(pos===r.count-1)return 1+Math.min(2,extra);const remaining=Math.max(0,extra-2),mid=Math.floor((r.count-1)/2);if(pos===mid)return 1+Math.min(1,remaining);const extraSlots=Math.max(0,remaining-1);if(extraSlots>0&&pos<extraSlots)return 2;return 1}
+export function skyStarsForGrid(i){
+ const ci=chapterForGrid(i),r=constellationGridRange(ci),target=CONSTELLATIONS[ci].count,extra=target-r.count,pos=i-r.start;
+ const legacyAward=p=>{if(p===r.count-1)return 1+Math.min(2,extra);const remaining=Math.max(0,extra-2),mid=Math.floor((r.count-1)/2);if(p===mid)return 1+Math.min(1,remaining);return p<Math.max(0,remaining-1)?2:1};
+ // Preserve historical rewards and distribute any remaining stars of short
+ // extension constellations across their quests, including the final quest.
+ const allocated=Array.from({length:r.count},(_,p)=>legacyAward(p)).reduce((sum,value)=>sum+value,0),remaining=Math.max(0,target-allocated);
+ return legacyAward(pos)+Math.floor(remaining/r.count)+(pos<remaining%r.count?1:0);
+}
 
 export function bonusChallengeFor(i){if((i+1)%6!==0)return null;let num=(i+1)/6,type=((num-1)%3)+1,seconds=type===1?55+Math.floor((num-1)/4)*10:null,noAuto=type===1;return {id:"sky2-"+num,num,type,noAuto,title:type===1?"⚡ Défi Éclair":type===2?"🧠 Défi Esprit clair":"✦ Défi céleste",seconds,copy:type===1?"Accomplis cette quête en moins de "+seconds+" s. · Marquage auto interdite.":type===2?"Accomplis cette quête sans indice.":"Accomplis cette quête et gagne le bonus céleste."}}
 
@@ -51,7 +58,10 @@ function exactSkyScoreForSolvedPrefix(){
  const lumenProgress=getProgress();let total=0;for(let i=0;i<campaignQuestCount()&&lumenProgress.solved&&lumenProgress.solved[i];i++)total+=skyStarsForGrid(i);return Math.min(SKY_TARGET,total)}
 
 function ensureSkyScore(){
- const lumenProgress=getProgress();if(lumenProgress.skyHistoryVersion===4&&Number.isFinite(lumenProgress.skyScore))return;lumenProgress.skyScore=exactSkyScoreForSolvedPrefix();lumenProgress.skyHistoryVersion=4;saveLumenProgress()}
+ const lumenProgress=getProgress(),exact=exactSkyScoreForSolvedPrefix(),stored=Number.isFinite(lumenProgress.skyScore)?lumenProgress.skyScore:0;
+ const score=lumenProgress.skyHistoryVersion===4?Math.min(SKY_TARGET,Math.max(stored,exact)):exact;
+ if(lumenProgress.skyHistoryVersion===4&&lumenProgress.skyScore===score)return;
+ lumenProgress.skyScore=score;lumenProgress.skyHistoryVersion=4;saveLumenProgress()}
 
 function skyStarsEarned(){
  const lumenProgress=getProgress();ensureSkyScore();return Math.max(0,Math.min(SKY_TARGET,lumenProgress.skyScore||0))}

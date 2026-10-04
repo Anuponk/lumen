@@ -1,7 +1,7 @@
 # Campaign, progression and rewards
 
 ## Source of truth
-The campaign is sequential and represented through constellations. There are **100 quests across 12 constellations** and the sky contains **150 stars** exactly.
+The campaign is sequential and represented through constellations. Quest count derives from `CONSTELLATION_GRID_COUNTS` through the content model; the schedule must cover that count without gaps or duplicate grids. The sky target derives from the sum of `CONSTELLATIONS[].count`. Currently the catalogue contains **134 quests across 24 constellations and 298 stars**, including the unchanged historical first 100 quests / 12 constellations / 150 stars. These totals are catalogue data, not permanent limits.
 
 A quest belongs to one constellation. Each constellation has an intermediate milestone and a final/boss quest. First completion awards the quest's sky-star value; replay does not farm additional sky stars.
 
@@ -45,7 +45,9 @@ Existing performance data is migrated conservatively: only the current versioned
 ## Progress integrity
 Only victory unlocks the next unsolved quest. Persisted solved history is normalized to a continuous prefix. A player may revisit solved quests but may not jump ahead to locked content.
 
-Quest loading and cloud restoration must clamp to `campaignQuestCount() - 1`, derived from the current content schedule. After the wave 2 expansion (#94), that schedule contains 134 quests across 24 constellations: quest 100 is no longer terminal. Its normal victory CTA loads quest 101; a reload or cloud restoration of 100 completed quests also resumes quest 101. Only the actual final quest stops continuation. Navigation preserves earned rewards, badges and history. The historical 100/12/150 specification above remains pending reconciliation with the expansion's star economy; this continuation fix does not redefine rewards.
+Quest loading and cloud restoration must clamp to `campaignQuestCount() - 1`, derived from the current content schedule. After the wave 2 expansion (#94), quest 100 is no longer terminal. Its normal victory CTA loads quest 101; a reload or cloud restoration of 100 completed quests also resumes quest 101. Only the actual final quest stops continuation. Navigation preserves earned rewards, badges and history.
+
+Each constellation's quest rewards must sum exactly to its star count. Historical quest awards remain unchanged. Short extension constellations distribute the stars remaining after the historical allocation evenly across their quests, with the remainder assigned to the earliest quests. Reload repairs version-4 saves previously capped at 150 from their continuous solved prefix, preserves existing valid earned stars and does not alter solved history, performance badges or other rewards. Replay grants zero additional sky stars. The UI and shared result cards derive their totals from the same content model.
 
 When changing progression, test old/local data migration behavior and cloud merge behavior; never silently erase historical progress.
 

@@ -14,7 +14,7 @@ This repository is the source of truth for LUMEN. Read this file and the documen
 9. Do not treat a Git push as a production release. Report the Git commit SHA and verify the deployment corresponding to the intended Production commit.
 
 ## Product invariants
-- 100 sequential quests across 12 constellations; exactly 150 sky stars.
+- Campaign size and sky stars derive from the content catalogue, never fixed limits. Currently: 134 sequential quests across 24 constellations / 298 stars, including the preserved historical 100 quests / 12 constellations / 150 stars. Every constellation's quest rewards must sum exactly to its star count.
 - The player cannot skip an unsolved quest. “Réinitialiser” resets the current board; only victory unlocks the next quest.
 - Cell cycle: empty -> exclusion -> Guardian -> empty. The first tap must never be rejected as an invalid Guardian.
 - Victory depends on the Guardian placement satisfying the puzzle, not on whether all remaining cells are manually excluded.
