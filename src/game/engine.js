@@ -86,15 +86,15 @@ function simpleForcedPlacement(){
  const regPlaced=g=>{for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(state[r][c]===2&&puz.reg[r][c]===g)return true;return false};
  for(let g=0;g<n;g++)if(!regPlaced(g)){
   const cells=[];for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(puz.reg[r][c]===g&&candidate(r,c))cells.push([r,c]);
-  if(cells.length===1)return {kind:"place",cell:cells[0],text:"Il ne reste qu’une seule case possible dans ce territoire : place le Gardien ici.",detail:{rule:"single",axis:"region",index:g}};
+  if(cells.length===1)return {kind:"place",cell:cells[0],text:"Il ne reste qu’une seule case possible dans ce territoire : place le Gardien ici.",detail:{rule:"single",axis:"region",index:g,source:cells.slice()}};
  }
  for(let r=0;r<n;r++)if(!state[r].includes(2)){
   const cells=[];for(let c=0;c<n;c++)if(candidate(r,c))cells.push([r,c]);
-  if(cells.length===1)return {kind:"place",cell:cells[0],text:`Il ne reste qu’une seule case possible sur la ligne ${r+1} : place le Gardien ici.`,detail:{rule:"single",axis:"row",index:r}};
+  if(cells.length===1)return {kind:"place",cell:cells[0],text:`Il ne reste qu’une seule case possible sur la ligne ${r+1} : place le Gardien ici.`,detail:{rule:"single",axis:"row",index:r,source:cells.slice()}};
  }
  for(let c=0;c<n;c++)if(!state.some(row=>row[c]===2)){
   const cells=[];for(let r=0;r<n;r++)if(candidate(r,c))cells.push([r,c]);
-  if(cells.length===1)return {kind:"place",cell:cells[0],text:`Il ne reste qu’une seule case possible dans la colonne ${c+1} : place le Gardien ici.`,detail:{rule:"single",axis:"col",index:c}};
+  if(cells.length===1)return {kind:"place",cell:cells[0],text:`Il ne reste qu’une seule case possible dans la colonne ${c+1} : place le Gardien ici.`,detail:{rule:"single",axis:"col",index:c,source:cells.slice()}};
  }
  return null;
 }
