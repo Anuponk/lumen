@@ -18,8 +18,11 @@ import {createTutorial} from "./tutorial.js";
 import {createSound} from "./sound.js";
 
 export function startGameScreen(){
+const qaMode=new URL(location.href).searchParams.get("qa")==="new"?"new":null;
+const qaActive=qaMode==="new";
+const qaKey=suffix=>qaActive?"lumenQa"+suffix:suffix;
 const {normalizeSequentialProgress,solvedCount,exactSkyScoreForSolvedPrefix,ensureSkyScore,skyStarsEarned,challengeRewardKeys,constellationProgress,constellationLitAt,awards,performanceRun,savePerformance}=createCampaign(()=>lumenProgress,()=>saveLumenProgress(),()=>({activeGameSeconds,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,qualifying:!!attemptEngine.snapshot()?.qualifying}));
-const {loadLumenProgress,saveLumenProgress}=createLocalPersistence(localStorage,()=>lumenProgress);
+const {loadLumenProgress,saveLumenProgress}=createLocalPersistence(localStorage,()=>lumenProgress,{progressKey:qaActive?"lumenQaProgressV1":"lumenProgressV1"});
 const persistenceModel={
 get lumenSupabase(){return lumenSupabase},set lumenSupabase(value){lumenSupabase=value},
 get lumenUser(){return lumenUser},set lumenUser(value){lumenUser=value},
@@ -30,8 +33,8 @@ get sequentialSolvedCount(){return sequentialSolvedCount},set sequentialSolvedCo
 get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
-const {loadLumenProfile,saveLumenNickname,loadEntitlements,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),updateAuthUI:(...args)=>updateAuthUI(...args),showRewardToast:(...args)=>showRewardToast(...args),renderDaily:(...args)=>renderDaily(...args)},{document,location,alert,setTimeout,console});
-const {renderTutorial,openTutorial,closeTutorial,setupTutorial}=createTutorial(()=>levelIndex<=1);
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),updateAuthUI:(...args)=>updateAuthUI(...args),showRewardToast:(...args)=>showRewardToast(...args),renderDaily:(...args)=>renderDaily(...args)},{document,location,alert,setTimeout,console,qaMode});
+const {renderTutorial,openTutorial,closeTutorial,setupTutorial}=createTutorial(()=>levelIndex<=1,{tutorialSeenKey:qaActive?"lumenQaTutorialSeen":"lumenTutorialSeen"});
 let lumenSupabase=null,lumenUser=null,lumenCloudReady=false;
 try{lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY)}catch(e){console.warn("LUMEN cloud unavailable",e)}
 let lumenNickname="";
@@ -53,6 +56,15 @@ function updateAuthUI(){
    login.hidden=false; logout.hidden=true;
  }
  syncMobileAuthUI();
+}
+function setupQaMode(){
+ if(!qaActive)return;
+ document.body.classList.add("qa-mode");
+ const banner=document.getElementById("qaBanner"),exit=document.getElementById("qaExit");
+ if(banner)banner.hidden=false;
+ if(exit)exit.onclick=()=>{
+   const url=new URL(location.href);url.searchParams.delete("qa");location.href=url.pathname+url.search+url.hash;
+ };
 }
 function setupRulesHelp(){
  const open=document.getElementById("tutorialHelp"),modal=document.getElementById("rulesModal"),close=document.getElementById("closeRulesModal"),replay=document.getElementById("replayLearning");
@@ -84,7 +96,7 @@ function setupMobileAuth(){
  };
 }
 
-const {lumenAnonymousId,lumenSessionId,trackLumenEvent,captureReferral}=createAnalytics(()=>lumenSupabase,{localStorage,crypto,location,console});
+const {lumenAnonymousId,lumenSessionId,trackLumenEvent,captureReferral}=createAnalytics(()=>lumenSupabase,{localStorage,crypto,location,console,qaMode});
 let lastTrackedPuzzle=null;
 
 trackLumenEvent("session_start",null,{standalone:window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches});
@@ -671,7 +683,7 @@ function celebrateSuccess(){
  const qr=document.getElementById("questResult");if(ch){qr.hidden=false;qr.className="quest-result "+(questPassed||lumenProgress.stars[ch.id]?"success":"fail");qr.textContent=questPassed?"✦ Défi réussi ! +25 XP et un éclat gagné.":lumenProgress.stars[ch.id]?"✦ Défi déjà accompli":"Défi échoué — la quête est tout de même accomplie."}else qr.hidden=true;
  const m=milestoneFor(levelIndex),sub=document.getElementById("successSub");if(sub)sub.textContent=m?(m.kind==="boss"?"Défi final réussi · constellation complétée":"Défi intermédiaire réussi · +1 ★ bonus"):(questPassed?"Quête réussie · +25 XP et +1 ✦":"Ton ciel progresse");
  if(levelIndex===1&&sub)sub.textContent="Ton ciel progresse. Rapidité arrive à la quête 3 ; Autonomie et Maîtrise à la quête 6.";
- if(levelIndex<=1)try{localStorage.setItem("lumenTutorialSeen","1")}catch(_){}
+ if(levelIndex<=1)try{localStorage.setItem(qaActive?"lumenQaTutorialSeen":"lumenTutorialSeen","1")}catch(_){}
  configureSuccessFeedback(questPassed);
  const skyEarnedAfter=skyStarsEarned(),crossedConstellation=firstCompletion&&(()=>{let total=0;for(const cs of CONSTELLATIONS){total+=cs.count;if(skyEarnedBefore<total&&skyEarnedAfter>=total)return true}return false})();
  const checkpoint=firstCompletion&&!crossedConstellation?constellationCheckpoint(skyEarnedBefore,skyEarnedAfter):null;
@@ -1138,7 +1150,7 @@ function setupOutsideDefaults(){
  // badgeRulesModal, shardRulesModal and feedbackModal already close on their backdrop.
  // Guided explanations and verification corrections deliberately require their explicit action.
  const tutorial=document.getElementById("tutorialOverlay");
- if(tutorial)tutorial.addEventListener("click",e=>{if(e.target!==tutorial)return;let seen=false;try{seen=localStorage.getItem("lumenTutorialSeen")==="1"}catch(_){}if(seen)closeTutorial(false)});
+ if(tutorial)tutorial.addEventListener("click",e=>{if(e.target!==tutorial)return;let seen=false;try{seen=localStorage.getItem(qaActive?"lumenQaTutorialSeen":"lumenTutorialSeen")==="1"}catch(_){}if(seen)closeTutorial(false)});
 }
 const skyTourSkip=document.getElementById("skyTourSkip");if(skyTourSkip)skyTourSkip.onclick=()=>{document.getElementById("skyTour").hidden=true;try{localStorage.setItem("lumenSkyTourSeen","1")}catch(_){}closeMapOverlay()};
 
@@ -1159,7 +1171,7 @@ document.getElementById("learningCoachDismiss").onclick=()=>{learningTip=null;up
 document.addEventListener("click",handleLearningTap,true);
 // Start after campaign data are initialized. A deep-linked social challenge resolves its
 // server snapshot before the board is created so campaign progression is never mutated.
-setupMobileAuth();setupTutorial();setupOutsideDefaults();
+setupMobileAuth();setupTutorial();setupOutsideDefaults();setupQaMode();
 async function bootGame(){await bootstrapSocialChallenge();init();refreshJourney();maybeShowReturnWelcome();const focus=new URL(location.href).searchParams.get("myChallenges");if(focus)openMyChallenges(focus);else loadMyChallenges()}
 bootGame();
 
@@ -1177,7 +1189,7 @@ const pushEnable=document.getElementById("pushEnable"),pushLater=document.getEle
 if(pushEnable)pushEnable.onclick=enableLumenPush;
 if(pushLater)pushLater.onclick=dismissPushLater;
 markLumenSeen();
-cloudMergeHistoricalPerformance(lumenAnonymousId);
+if(!qaActive)cloudMergeHistoricalPerformance(lumenAnonymousId);
 initLumenCloud();
 
 if("serviceWorker" in navigator){
