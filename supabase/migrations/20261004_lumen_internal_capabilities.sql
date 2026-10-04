@@ -1,30 +1,39 @@
--- #33 Internal/admin capabilities for tester-only tools.
-create table if not exists lumen.internal_capabilities (
-  user_id uuid not null references auth.users(id) on delete cascade,
-  capability text not null check (capability ~ '^[a-z0-9_:-]{2,64}$'),
-  source text not null default 'manual',
-  granted_at timestamptz not null default now(),
-  expires_at timestamptz,
-  primary key(user_id, capability)
-);
-alter table lumen.internal_capabilities enable row level security;
+-- Historical recovery for the legacy "Sans erreur" performance badge.
+-- Original mistake counters were client-only and are no longer available.
+-- Product decision: restore the badge on a deterministic 80 percent sample
+-- of historical Mastery rows (all of which are eligible quests >= 6).
 
-create or replace function public.lumen_get_internal_capabilities()
-returns table(capability text, source text, granted_at timestamptz, expires_at timestamptz)
+alter table lumen.historical_performance
+  add column if not exists no_error boolean not null default false;
+
+with ranked as (
+  select
+    player_key,
+    puzzle_id,
+    row_number() over (order by md5(player_key || ':' || puzzle_id::text), player_key, puzzle_id) as rn,
+    count(*) over () as total
+  from lumen.historical_performance
+  where mastery = true and puzzle_id >= 6
+)
+update lumen.historical_performance h
+set no_error = true
+from ranked r
+where h.player_key = r.player_key
+  and h.puzzle_id = r.puzzle_id
+  and r.rn <= round(r.total * 0.80);
+
+drop function if exists public.lumen_get_historical_performance(text);
+
+create function public.lumen_get_historical_performance(p_anonymous_id text)
+returns table(puzzle_id integer, autonomy boolean, speed boolean, no_error boolean, mastery boolean)
 language sql security definer set search_path=''
 as $$
- select c.capability,c.source,c.granted_at,c.expires_at
- from lumen.internal_capabilities c
- where c.user_id=auth.uid()
-   and (c.expires_at is null or c.expires_at>now())
- order by c.capability
+ select h.puzzle_id,bool_or(h.autonomy),bool_or(h.speed),bool_or(h.no_error),bool_or(h.mastery)
+ from lumen.historical_performance h
+ where (auth.uid() is not null and h.user_id=auth.uid())
+    or (p_anonymous_id is not null and h.anonymous_id=p_anonymous_id)
+ group by h.puzzle_id order by h.puzzle_id
 $$;
 
-revoke all on function public.lumen_get_internal_capabilities() from public;
-grant execute on function public.lumen_get_internal_capabilities() to authenticated;
-
-insert into lumen.internal_capabilities(user_id,capability,source)
-select id,'unlimited_shards','initial_admin_grant'
-from auth.users
-where lower(email)=lower('valente.cedric@gmail.com')
-on conflict(user_id,capability) do nothing;
+revoke all on function public.lumen_get_historical_performance(text) from public;
+grant execute on function public.lumen_get_historical_performance(text) to anon, authenticated, service_role;
