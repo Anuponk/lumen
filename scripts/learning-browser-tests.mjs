@@ -168,7 +168,18 @@ try {
     await evaluate('document.getElementById("openSky").click();document.querySelector("#puzzleGrid .puzzle-card.done").click()');
     assert.equal((await snapshot()).replayMode,true);
     assert.equal(await evaluate('document.getElementById("scriptedLearn").hidden'),true,'Ordinary replay has no imposed lesson');
-    results.push({viewport,stages,realDrag:true,reload:true,reset:true,guidedQuest2Drag:true,partialQuest2Reload:true,freeQuest2:true,skyTour:true,freeReplay:true});
+
+    assert.equal(await evaluate('document.getElementById("learningSkip").hidden'),true,'First-time learning never exposes skip');
+    await evaluate('localStorage.setItem("lumenTutorialCompletedV1","1");document.getElementById("replayLearning").click()');
+    await sleep(80);
+    const beforeSkip=await evaluate('JSON.stringify({solved:lumenProgress.solved,badges:lumenProgress.badges,shards:lumenProgress.shards})');
+    assert.equal(await evaluate('document.getElementById("learningSkip").hidden'),false,'Completed learner may skip a voluntary learning replay');
+    await evaluate('document.getElementById("learningSkip").click()');
+    await sleep(80);
+    assert.equal(await evaluate('learningReplayReturn===null'),true,'Skip exits learning replay');
+    assert.equal(await evaluate('JSON.stringify({solved:lumenProgress.solved,badges:lumenProgress.badges,shards:lumenProgress.shards})'),beforeSkip,'Skip must not award progress, badges or shards');
+    results.push({viewport,stages,realDrag:true,reload:true,reset:true,guidedQuest2Drag:true,partialQuest2Reload:true,freeQuest2:true,skyTour:true,freeReplay:true,firstTimerNoSkip:true,completedReplaySkip:true});
+
   }
   assert.deepEqual(errors,[]);
   const report={results,uncaughtErrors:errors};if(output)fs.writeFileSync(output,JSON.stringify(report,null,2));console.log(JSON.stringify(report));

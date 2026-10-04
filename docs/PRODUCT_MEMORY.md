@@ -226,3 +226,11 @@ Real touch tests then exposed two player-facing defects: badge/auto-marking dial
 - The client now recognizes the real backend field `entitlement` and loads entitlements on authenticated startup and account changes.
 - Anonymous/sign-out state contains no account entitlements; included/free packs remain accessible through registry policy.
 - Mon ciel constellation navigation is now derived from `contentMapModel()`, with stable constellation/pack IDs attached to UI tabs while legacy numeric indices continue to drive existing progression.
+
+
+## 2026-10-04 — Tutorial skip rule (#80)
+- “Slides seen” and “tutorial completed” are separate facts.
+- Skip eligibility is granted only after successful completion of Q2 (or inferred from restored solved Q1+Q2).
+- First-time players never see a tutorial-skip CTA.
+- Eligible players may skip a voluntary replay of the learning sequence and return to where they were, with no artificial rewards/progression.
+- QA New Player uses isolated completion proof and fresh QA mode clears it, so the real profile cannot leak skip eligibility into first-player testing.
