@@ -43,7 +43,7 @@ get sequentialSolvedCount(){return sequentialSolvedCount},set sequentialSolvedCo
 get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
-const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>campaignQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),updateAuthUI:(...args)=>updateAuthUI(...args),showRewardToast:(...args)=>showRewardToast(...args),renderDaily:(...args)=>renderDaily(...args)},{document,location,alert,setTimeout,console,qaMode});
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>campaignQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI()},renderDaily:(...args)=>renderDaily(...args)},{setTimeout,console,qaMode});
 function tutorialCompletedProof(){
  try{if(localStorage.getItem(qaKey("lumenTutorialCompletedV1"))==="1")return true}catch(_){}
  return !!(lumenProgress?.solved?.[0]&&lumenProgress?.solved?.[1]);
@@ -119,8 +119,8 @@ function setupMobileAuth(){
  action.onclick=async()=>{
    menu.hidden=true;
    if(!lumenSupabase)return;
-   if(lumenUser){await lumenSupabase.auth.signOut();return}
-   await lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+location.pathname}});
+   if(lumenUser){await signOut();return}
+   const result=await signIn(location.origin+location.pathname);if(!result.ok&&result.reason==="oauth")alert("Connexion impossible : "+result.error.message);
  };
  const qaSwitch=document.getElementById("qaAccountSwitch"),qaReset=document.getElementById("qaAccountReset");
  const adminUnlimited=document.getElementById("adminUnlimitedShards");
@@ -1409,7 +1409,7 @@ setupBetaFeedback();
 const manualCrossTipOk=document.getElementById("manualCrossTipOk");if(manualCrossTipOk)manualCrossTipOk.onclick=closeManualCrossTip;
 const guidedAck=document.getElementById("guidedAck");if(guidedAck)guidedAck.onclick=closeGuidedConflict;
 const verifyBtn=document.getElementById("verify");if(verifyBtn)verifyBtn.onclick=runVerification;const verifyFix=document.getElementById("verifyFix");if(verifyFix)verifyFix.onclick=fixVerificationErrors;
-const nicknameSave=document.getElementById("nicknameSave");if(nicknameSave)nicknameSave.onclick=saveLumenNickname;
+const nicknameSave=document.getElementById("nicknameSave");if(nicknameSave)nicknameSave.onclick=async()=>{const input=document.getElementById("nicknameInput"),result=await saveLumenNickname(input?.value);if(result.ok)showRewardToast("Pseudo enregistré ✦");else showRewardToast(result.reason==="length"?"Pseudo : 2 à 24 caractères":"Ce pseudo n’est pas valide")};
 const guidedErrors=document.getElementById("guidedErrors");if(guidedErrors)guidedErrors.onchange=()=>{if(levelIndex<=4&&!replayMode){guidedErrors.checked=true;return}localStorage.setItem("lumenGuidedErrors",guidedErrors.checked?"on":"off")};
 const installEnable=document.getElementById("installEnable"),installLater=document.getElementById("installLater");if(installEnable)installEnable.onclick=installLumen;if(installLater)installLater.onclick=dismissInstallLater;const successShare=document.getElementById("successShare");if(successShare)successShare.onclick=createSocialChallengeFromSuccess;
 const nativeChallengeShare=document.getElementById("challengeNativeShare"),copyChallengeLink=document.getElementById("challengeCopyLink"),closeChallengeShare=document.getElementById("challengeShareClose");if(nativeChallengeShare)nativeChallengeShare.onclick=sharePendingChallenge;if(copyChallengeLink)copyChallengeLink.onclick=copyPendingChallenge;if(closeChallengeShare)closeChallengeShare.onclick=()=>document.getElementById("challengeShareModal").hidden=true;

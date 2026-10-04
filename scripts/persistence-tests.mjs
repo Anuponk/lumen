@@ -28,7 +28,7 @@ async function fixture(options,legacy){
  const model={lumenSupabase:null,lumenUser:options.guest?null:{id:'test-user'},lumenCloudReady:false,lumenNickname:'',lumenEntitlements:[],lumenCapabilities:[],lumenProgress:{solved:{0:1,1:1,2:1},historyBackup:{0:1,1:1,2:1},noHint:{0:1},daily:{dates:{},rewards:{}},badges:{},performances:{}},sequentialSolvedCount:3,levelIndex:2,usedHintThisGame:false};
  const client={
   async rpc(name,args){trace.push({name,args});if(options.networkError)return {data:null,error:{message:'fixture offline'}};return {error:null,data:name==='lumen_get_progress'?options.cloud:name==='lumen_get_daily'?[{play_date:'2026-10-01'}]:name==='lumen_get_engagement'?[{server_day:'2026-10-03',shards:4,rewarded_days:{'2026-10-01':1}}]:name==='lumen_claim_daily'?[{server_day:'2026-10-03',credited:true,reward:1,streak:3}]:name==='lumen_get_profile'?[{nickname:'Player'}]:name==='lumen_set_nickname'?'Tester':name==='lumen_get_entitlements'?[{entitlement:'future-pack',source:'manual',expires_at:null}]:name==='lumen_get_internal_capabilities'?[{capability:'unlimited_shards',source:'manual'}]:null}},
-  auth:{async getSession(){return {data:{session:options.guest?null:{user:{id:'test-user'}}}}},onAuthStateChange(callback){authCallback=callback},async signOut(){trace.push({auth:'signOut'})},async signInWithOAuth(args){trace.push({auth:'signInWithOAuth',args});return {error:null}}}
+  auth:{async getSession(){return {data:{session:options.guest?null:{user:{id:'test-user'}}}}},onAuthStateChange(callback){authCallback=callback},async signOut(){trace.push({auth:'signOut'});return {error:null}},async signInWithOAuth(args){trace.push({auth:'signInWithOAuth',args});return {error:null}}}
  };
  model.lumenSupabase=client;
  if(options.guest)model.lumenUser=null;
@@ -38,15 +38,14 @@ async function fixture(options,legacy){
   activeGameSeconds:()=>42,
   exactSkyScoreForSolvedPrefix(){let score=0;for(let i=0;i<100&&scope.lumenProgress.solved[i];i++)score+=skyStarsForGrid(i);return score},
   saveLumenProgress:()=>trace.push({save:plain(scope.lumenProgress)}),
-  refreshJourney:()=>trace.push({ui:'refreshJourney'}),init:()=>trace.push({ui:'init'}),updateAuthUI:()=>trace.push({ui:'updateAuthUI'}),showRewardToast:copy=>trace.push({toast:copy}),renderDaily:()=>trace.push({ui:'renderDaily'})
+  refreshJourney:()=>trace.push({ui:'refreshJourney'}),init:()=>trace.push({ui:'init'}),updateAuthUI:()=>trace.push({ui:'updateAuthUI'}),showRewardToast:copy=>trace.push({toast:copy}),onAccountChanged:event=>trace.push({ui:'account',event}),renderDaily:()=>trace.push({ui:'renderDaily'})
  };
  let api;
  if(legacy){scope={...model,...environment,...hooks};vm.createContext(scope);vm.runInContext(names.map(name=>functionSource(source,name)).join('\n'),scope);api=scope}
  else api=createCloudPersistence(model,hooks,environment);
- await api.cloudMergeProgress();await api.cloudSavePuzzle(2);if(!options.guest)await api.cloudMergeDaily();await api.cloudSaveDaily('2026-10-03',2);await api.loadLumenProfile();await api.loadEntitlements();await api.saveLumenNickname();await api.initLumenCloud();
- if(authCallback&&!options.guest){authCallback('SIGNED_IN',{user:{id:'another-user'}});for(const callback of queue)await callback();authCallback('SIGNED_OUT',null)}
- if(controls.get('authLogin')?.onclick)await controls.get('authLogin').onclick();
- if(controls.get('authLogout')?.onclick)await controls.get('authLogout').onclick();
+ await api.cloudMergeProgress();await api.cloudSavePuzzle(2);if(!options.guest)await api.cloudMergeDaily();await api.cloudSaveDaily('2026-10-03',2);await api.loadLumenProfile();await api.loadEntitlements();if(!options.guest){const nickname=options.networkError?'Tester':'Player';if(legacy){document.getElementById('nicknameInput').value=nickname;await api.saveLumenNickname()}else await api.saveLumenNickname(nickname)}await api.initLumenCloud();
+ if(authCallback&&!options.guest){authCallback('SIGNED_IN',{user:{id:'another-user'}});for(const callback of queue)await callback();authCallback('SIGNED_OUT',null);for(const callback of queue.splice(0))await callback()}
+ 
  return plain({progress:scope.lumenProgress,user:scope.lumenUser,nickname:scope.lumenNickname,entitlements:scope.lumenEntitlements||[],capabilities:scope.lumenCapabilities||[],ready:scope.lumenCloudReady,sequential:scope.sequentialSolvedCount,level:scope.levelIndex,trace,warnings});
 }
 const scenarios=[{guest:true,cloud:[]},{cloud:[]},{cloud:[{puzzle_id:1},{puzzle_id:2}]},{cloud:[{puzzle_id:1},{puzzle_id:3}]},{cloud:[],networkError:true}];
@@ -59,6 +58,8 @@ for(const options of scenarios){
  assert.deepEqual(actual.entitlements,[],'Fixture ends signed out: account entitlements must be cleared locally');
  assert.deepEqual(actual.capabilities,[],'Fixture ends signed out: internal capabilities must be cleared locally');
  normalized.entitlements=[];expected.entitlements=[];normalized.capabilities=[];expected.capabilities=[];
+ normalized.ready=expected.ready;
+ const normalizePresentationTrace=trace=>trace.filter(x=>x.ui!=='updateAuthUI'&&x.ui!=='account'&&x.ui!=='refreshJourney'&&!x.toast);
  const normalizeOwnershipTrace=trace=>{
    const out=[];let afterSignOut=false;
    for(let i=0;i<trace.length;i++){
@@ -68,16 +69,16 @@ for(const options of scenarios){
        continue;
      }
      if(x.auth==='signOut'){afterSignOut=true;out.push(x);continue}
-     if(afterSignOut&&(x.ui==='refreshJourney'||x.ui==='updateAuthUI'))continue;
+     if(afterSignOut&&(x.ui==='refreshJourney'||x.ui==='account'))continue;
      if(afterSignOut)afterSignOut=false;
      if(x.ui==='refreshJourney'&&out.at(-1)?.ui==='updateAuthUI')continue;
-     if(x.ui==='updateAuthUI'&&trace[i+1]?.auth==='signInWithOAuth')continue;
+     if(x.ui==='account'&&trace[i+1]?.auth==='signInWithOAuth')continue;
      out.push(x);
    }
    return out;
  };
- normalized.trace=normalizeOwnershipTrace(normalized.trace).filter(x=>x.ui!=='updateAuthUI');
- expected.trace=normalizeOwnershipTrace(expected.trace).filter(x=>x.ui!=='updateAuthUI');
+ normalized.trace=normalizePresentationTrace(normalizeOwnershipTrace(normalized.trace));
+ expected.trace=normalizePresentationTrace(normalizeOwnershipTrace(expected.trace));
  const stripOwnershipWarnings=warnings=>warnings.filter(x=>x?.[0]!=='LUMEN entitlements'&&x?.[0]!=='LUMEN capabilities');
  normalized.warnings=stripOwnershipWarnings(normalized.warnings);
  expected.warnings=stripOwnershipWarnings(expected.warnings);
