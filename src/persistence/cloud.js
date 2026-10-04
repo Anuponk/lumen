@@ -1,6 +1,7 @@
 export function createCloudPersistence(model,hooks,environment){
 const {activeGameSeconds,exactSkyScoreForSolvedPrefix,saveLumenProgress,refreshJourney,init,updateAuthUI,showRewardToast,renderDaily}=hooks;
 const {document,location,alert,setTimeout,console}=environment;
+const cloudWritesDisabled=()=>!!environment.qaMode;
 async function loadLumenProfile(){
  if(!model.lumenSupabase||!model.lumenUser)return;
  const {data,error}=await model.lumenSupabase.rpc("lumen_get_profile");if(error){console.warn("LUMEN profile",error);return}
@@ -25,14 +26,14 @@ async function loadEntitlements(){
 }
 
 async function cloudSavePuzzle(index){
- if(!model.lumenSupabase||!model.lumenUser)return;
+ if(cloudWritesDisabled()||!model.lumenSupabase||!model.lumenUser)return;
  const seconds=activeGameSeconds();
  const {error}=await model.lumenSupabase.rpc("lumen_save_progress",{p_puzzle_id:index+1,p_duration_seconds:seconds,p_hints_used:model.usedHintThisGame?1:0});
  if(error)console.warn("LUMEN sync save",error);
 }
 
 async function cloudMergeProgress(){
- if(!model.lumenSupabase||!model.lumenUser)return;
+ if(cloudWritesDisabled()||!model.lumenSupabase||!model.lumenUser)return;
  const {data,error}=await model.lumenSupabase.rpc("lumen_get_progress");
  if(error){console.warn("LUMEN sync load",error);return}
  const cloud=new Set((data||[]).map(x=>Number(x.puzzle_id)-1).filter(x=>x>=0&&x<100));
@@ -60,10 +61,10 @@ async function initLumenCloud(){
  if(!model.lumenSupabase){updateAuthUI();return}
  const {data}=await model.lumenSupabase.auth.getSession();
  model.lumenUser=data.session?.user||null; updateAuthUI();
- if(model.lumenUser){await loadLumenProfile();await cloudMergeProgress();await cloudMergeDaily();}
+ if(model.lumenUser){await loadLumenProfile();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily();}}
  model.lumenSupabase.auth.onAuthStateChange((event,session)=>{
    const previous=model.lumenUser?.id; model.lumenUser=session?.user||null; updateAuthUI();
-   if(model.lumenUser&&model.lumenUser.id!==previous)setTimeout(async()=>{await cloudMergeProgress();await cloudMergeDaily()},0);
+   if(!cloudWritesDisabled()&&model.lumenUser&&model.lumenUser.id!==previous)setTimeout(async()=>{await cloudMergeProgress();await cloudMergeDaily()},0);
  });
  const login=document.getElementById("authLogin"),logout=document.getElementById("authLogout");
  if(login)login.onclick=async()=>{
@@ -75,14 +76,14 @@ async function initLumenCloud(){
 }
 
 async function cloudSaveDaily(date,index){
- if(!model.lumenSupabase||!model.lumenUser)return null;
+ if(cloudWritesDisabled()||!model.lumenSupabase||!model.lumenUser)return null;
  const {data,error}=await model.lumenSupabase.rpc("lumen_claim_daily",{p_puzzle_id:index+1});
  if(error){console.warn("LUMEN daily save",error);return null}
  return data?.[0]||null;
 }
 
 async function cloudMergeHistoricalPerformance(anonymousId){
- if(!model.lumenSupabase)return;
+ if(cloudWritesDisabled()||!model.lumenSupabase)return;
  const {data,error}=await model.lumenSupabase.rpc("lumen_get_historical_performance",{p_anonymous_id:anonymousId||null});
  if(error){console.warn("LUMEN history recovery",error);return}
  model.lumenProgress.performances=model.lumenProgress.performances||{};
@@ -99,7 +100,7 @@ async function cloudMergeHistoricalPerformance(anonymousId){
 }
 
 async function cloudMergeDaily(){
- if(!model.lumenSupabase||!model.lumenUser)return;
+ if(cloudWritesDisabled()||!model.lumenSupabase||!model.lumenUser)return;
  const [{data,error},{data:engagement,error:engagementError}]=await Promise.all([
    model.lumenSupabase.rpc("lumen_get_daily"),
    model.lumenSupabase.rpc("lumen_get_engagement")
