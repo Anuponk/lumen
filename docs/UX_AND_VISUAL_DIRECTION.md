@@ -66,3 +66,9 @@ Keep the challenge loop celestial and performance-led, not leaderboard-heavy. Be
 A remarkable first-play Mastery deserves stronger visual emphasis around “Défier un ami”, while “Quête suivante” remains the primary campaign continuation for an ordinary first completion. Do not turn replay Mastery into a challenge CTA.
 
 “Mes défis” belongs under Mon ciel. New results use a small unread indicator. Push permission must be requested contextually (“Préviens-moi quand quelqu'un relève mes défis”), never as an unexplained first-launch permission prompt.
+
+
+### Quest 2 → Mon ciel learning handoff
+The end of quest 2 is part of onboarding, not ordinary success navigation. The primary CTA explicitly teaches the destination: **Découvrir Mon ciel**. The success backdrop is inert at this point; opening the sky must be an intentional action.
+
+On the first guided visit, teach the real screen progressively rather than with one generic paragraph: highlight and explain (1) constellation navigation, (2) quest/progression cards, (3) performance badges, and (4) the constellation drawing and earned stars. Use **SEE → UNDERSTAND → ACT**: one highlighted real zone and one short explanation at a time. Only the final step offers **Jouer la quête 3**.
