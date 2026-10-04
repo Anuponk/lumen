@@ -39,6 +39,8 @@
       "realDrag": true,
       "reload": true,
       "reset": true,
+      "guidedQuest2Drag": true,
+      "partialQuest2Reload": true,
       "freeQuest2": true,
       "skyTour": true,
       "freeReplay": true
@@ -82,6 +84,8 @@
       "realDrag": true,
       "reload": true,
       "reset": true,
+      "guidedQuest2Drag": true,
+      "partialQuest2Reload": true,
       "freeQuest2": true,
       "skyTour": true,
       "freeReplay": true
@@ -125,6 +129,8 @@
       "realDrag": true,
       "reload": true,
       "reset": true,
+      "guidedQuest2Drag": true,
+      "partialQuest2Reload": true,
       "freeQuest2": true,
       "skyTour": true,
       "freeReplay": true
@@ -168,6 +174,8 @@
       "realDrag": true,
       "reload": true,
       "reset": true,
+      "guidedQuest2Drag": true,
+      "partialQuest2Reload": true,
       "freeQuest2": true,
       "skyTour": true,
       "freeReplay": true

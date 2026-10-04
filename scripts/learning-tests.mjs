@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { CAT } from '../src/campaign/catalogue.js';
-import { learningStep, learningAllows, learningCopy } from '../src/game/learning.js';
+import { learningStep, dragLearningStep, learningAllows, learningCopy } from '../src/game/learning.js';
 import { createGameEngine } from '../src/game/engine.js';
 
 const puzzle = CAT['5'][0];
@@ -52,3 +52,29 @@ assert.deepEqual(learningStep(puzzle,structuredClone(restored)),learningStep(puz
 assert.equal(learningAllows(learningStep(puzzle,restored),0,0),false);
 assert.equal(learningStep(puzzle,Array.from({length:5},()=>Array(5).fill(0))).number,1);
 console.log(JSON.stringify({learning:true,placements,phases,forcedDeductions:true,noAutomaticActions:true,restore:true}));
+
+const second = CAT['5'][1];
+const dragState = Array.from({length:5},()=>Array(5).fill(0));
+assert.equal(second.reg.flat().filter(region=>region===second.reg[0][0]).length,1);
+assert.equal(second.sol[0],0);
+assert.equal(dragLearningStep(second,dragState).phase,'place');
+dragState[0][0]=1;
+assert.equal(dragLearningStep(second,dragState).phase,'place');
+dragState[0][0]=2;
+let lesson=dragLearningStep(second,dragState);
+assert.equal(lesson.phase,'drag');
+assert.equal(learningAllows(lesson,0,0),false);
+assert.equal(learningAllows(lesson,1,1),false);
+assert.match(learningCopy(lesson,dragState).copy,/bouton enfoncé/);
+assert.match(learningCopy(lesson,dragState,true).copy,/doigt/);
+dragState[0][1]=1;dragState[0][2]=1;
+lesson=dragLearningStep(second,dragState);
+assert.equal(lesson.phase,'drag');
+assert.equal(learningAllows(lesson,0,1),true,'A partial drag can resume from an excluded cell');
+assert.deepEqual(dragLearningStep(second,structuredClone(dragState)),lesson);
+const beforeDrag=structuredClone(dragState);
+dragLearningStep(second,dragState);
+assert.deepEqual(dragState,beforeDrag,'The drag coach never marks cells itself');
+for(const [r,c] of lesson.cells){assert.notEqual(second.sol[r],c);dragState[r][c]=1;}
+assert.equal(dragLearningStep(second,dragState).phase,'complete');
+console.log(JSON.stringify({quest2:true,partialDragRestore:true,protectedGuardian:true,freeAfterGesture:true}));

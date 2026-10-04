@@ -1,4 +1,4 @@
-import {learningStep, learningAllows, learningCopy} from "../game/learning.js";
+import {learningStep, dragLearningStep, learningAllows, learningCopy} from "../game/learning.js";
 import {createAnalytics} from "../analytics/events.js";
 import {createHintTestSuite} from "../testing/hint-tests.js";
 import {createDiagnostics} from "../testing/diagnostics.js";
@@ -392,11 +392,12 @@ function fixVerificationErrors(){
  document.getElementById("verifyCard").hidden=true;board.removeAttribute("aria-disabled");msg.textContent="Les choix incorrects ont été effacés.";render();
 }
 let learningStage="place",learningTip=null,learningTipSeen=new Set();
-function learningQuestActive(){return levelIndex===0&&!socialChallenge&&(!replayMode||learningReplayActive())}
-function scriptedLearningActive(){return learningQuestActive()&&!!state&&learningStep(puz,state).phase!=="complete"}
-function learningMarkAllowed(r,c){const step=learningStep(puz,state);return step.phase!=="place"&&learningAllows(step,r,c)}
-function scriptedAllowsGuardian(r,c){const step=learningStep(puz,state);return step.phase==="place"&&learningAllows(step,r,c)}
-function learningDragAllowed(){return !scriptedLearningActive()||["reuse","drag","practice"].includes(learningStep(puz,state).phase)}
+function learningQuestActive(){return levelIndex<=1&&!socialChallenge&&(!replayMode||learningReplayActive())}
+function currentLearningStep(){return levelIndex===1?dragLearningStep(puz,state):learningStep(puz,state)}
+function scriptedLearningActive(){return learningQuestActive()&&!!state&&currentLearningStep().phase!=="complete"}
+function learningMarkAllowed(r,c){const step=currentLearningStep();return step.phase!=="place"&&learningAllows(step,r,c)}
+function scriptedAllowsGuardian(r,c){const step=currentLearningStep();return step.phase==="place"&&learningAllows(step,r,c)}
+function learningDragAllowed(){return !scriptedLearningActive()||["reuse","drag","practice"].includes(currentLearningStep().phase)}
 function positionLearningCoach(){
  const card=document.getElementById("scriptedLearn");
  if(card.hidden)return;
@@ -415,7 +416,7 @@ function showLearningTip(id,title,copy){
 }
 function updateScriptedLearning(){
  const card=document.getElementById("scriptedLearn"),wrap=document.getElementById("learningBoardWrap");if(!card)return;
- const guided=scriptedLearningActive(),step=guided?learningStep(puz,state):null;
+ const guided=scriptedLearningActive(),step=guided?currentLearningStep():null;
  learningStage=step?.phase||"complete";
  board.dataset.learningStage=learningStage;
  board.classList.remove("scripted-board");board.classList.toggle("learning-guided",guided);
@@ -733,7 +734,7 @@ function paintBoardState(){
 }
 function markDragCross(r,c){
  if(!dragCross||dragCross.visited.has(r+","+c)||state[r]?.[c]===2)return;
- if(scriptedLearningActive()&&!learningMarkAllowed(r,c))return;
+ if(dragCross.lesson&&!learningAllows(dragCross.lesson,r,c))return;
  dragCross.visited.add(r+","+c);
  if(state[r][c]!==1){state[r][c]=1;dragCross.changed=true;paintCell(r,c)}
 }
@@ -744,8 +745,8 @@ board.addEventListener("pointerdown",e=>{
  if(scriptedLearningActive()&&!learningMarkAllowed(Number(cell.dataset.row),Number(cell.dataset.col)))return;
  if(e.pointerType==="mouse"&&e.button!==0)return;
  ensureAttemptStarted();
- if(e.pointerType!=="mouse")e.preventDefault();
- dragCross={id:e.pointerId,startX:e.clientX,startY:e.clientY,dragging:false,changed:false,visited:new Set(),snapshot:state.map(x=>x.slice())};
+ // touch-action:none prevents scrolling while preserving the native tap/click cycle.
+ dragCross={id:e.pointerId,startX:e.clientX,startY:e.clientY,dragging:false,changed:false,visited:new Set(),snapshot:state.map(x=>x.slice()),lesson:scriptedLearningActive()?currentLearningStep():null};
 },{passive:false});
 function moveDragCross(e){
  if(!dragCross||dragCross.id!==e.pointerId)return;
@@ -765,7 +766,7 @@ function endDragCross(e){
  if(wasDragging){
    if(changed){hist.push(snapshot);persistAttemptBoard()}
    hi=null;hiCells=[];hintStage=0;hintFocus=null;msg.textContent="";
-   paintBoardState();if(scriptedLearningActive())finishManualLearningMarks();setTimeout(()=>{dragCrossSuppressClick=false},0);
+   paintBoardState();updateScriptedLearning();if(scriptedLearningActive())finishManualLearningMarks();else if(levelIndex===1)showLearningTip("tools","À toi de poursuivre","Glissé acquis ! Poursuis librement. Vérifier examine tes choix ; Indice aide à déduire. Leur premier usage est gratuit.");setTimeout(()=>{dragCrossSuppressClick=false},0);
  }
 }
 board.addEventListener("pointerup",endDragCross);
@@ -796,6 +797,7 @@ function render(){
  let shown=displayedCellState(r,c),next=shown===3?2:(state[r][c]+1)%3,currentGuardians=state.flat().filter(v=>v===2).length;
  if(scriptedLearningActive()){
   if(learningStage==="place"){if(!scriptedAllowsGuardian(r,c))return;if(state[r][c]===0){next=1}else if(state[r][c]===1){next=2}else next=0}
+  else if(currentLearningStep().dragLesson)return;
   else if(learningMarkAllowed(r,c)){next=1}
   else return;
  }
@@ -817,7 +819,7 @@ function render(){
  if(shown===3){state[r][c]=2}else{state[r][c]=next}
  if(next===2&&document.getElementById("autoCross")?.checked)attemptEngine.markAssistance();
  clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";
- paintBoardState();updateScriptedLearning();if(levelIndex===1&&next===2)showLearningTip("tools","Cette quête est à toi","Tu joues librement. Vérifier examine tes choix ; Indice aide à trouver une déduction. Le premier usage de chacun est gratuit. Utilise-les seulement si tu en as besoin.");persistAttemptBoard();
+ paintBoardState();updateScriptedLearning();if(levelIndex===1&&next===2&&!scriptedLearningActive())showLearningTip("tools","Cette quête est à toi","Tu joues librement. Vérifier examine tes choix ; Indice aide à trouver une déduction. Le premier usage de chacun est gratuit. Utilise-les seulement si tu en as besoin.");persistAttemptBoard();
  const q=state.flat().filter(v=>v===2).length;
  if(q===n&&!scriptedLearningActive())render()
 };board.appendChild(d)

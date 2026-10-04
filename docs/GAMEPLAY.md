@@ -17,7 +17,7 @@ There is no separate Validate action. Reaching N Guardians triggers evaluation. 
 
 ## Learning curve
 - Quest 1: play the normal board with a contextual coach. Only the expected cell actions are allowed during guided steps; unrelated taps are ignored without errors or starting the attempt. Help, pause, account and reset remain available.
-- Quest 2: free play with the normal controls. Dismissible advice appears on the first Guardian and first Verify use; the first hint explains its operation in the actual hint card. Assist explains its first real conflict in context.
+- Quest 2: guide the first Guardian in the singleton territory, then require a real held mouse/touch drag across the remaining first-row cells. Taps cannot skip this gesture lesson. Partial drags persist and may be resumed, including from an already excluded cell; the Guardian and cells outside the row remain protected throughout the gesture. Once the row is excluded, release the normal controls for free play. Dismissible advice appears on the first Guardian and first Verify use; the first hint explains its operation in the actual hint card. Assist explains its first real conflict in context.
 - Quests 1–5: manual marking, automatic marking locked off, guided control forced on.
 - Quests 6–10: assistance available but optional; automatic marking defaults off.
 - Quest 11: autonomy choice is presented; playing without guided control is a valid/default dismissal path.

@@ -57,7 +57,30 @@ export function learningAllows(step, row, col) {
   return step.cells.some(([r, c]) => r === row && c === col);
 }
 
+// Quest 2 rehearses the real drag gesture, then releases the normal controls.
+export function dragLearningStep(puzzle, state) {
+  const target = [0, 0];
+  if (state[0][0] !== 2) return {
+    phase: 'place', target, territory: puzzle.reg[0][0], cells: [target], number: 1, dragLesson: true
+  };
+  const cells = state[0].slice(1).map((_, index) => [0, index + 1]);
+  if (cells.some(([r, c]) => state[r][c] !== 1)) return {
+    phase: 'drag', source: target, cells, number: 1, dragLesson: true
+  };
+  return { phase: 'complete', cells: [], number: 1 };
+}
+
 export function learningCopy(step, state, coarse = false) {
+  if (step.dragLesson) {
+    if (step.phase === 'place') return {
+      title: state[0][0] === 1 ? 'Encore une fois…' : 'À toi de commencer',
+      copy: state[0][0] === 1 ? 'Touche encore cette case pour poser son Gardien.' : 'Ce petit territoire n’a qu’une case. Touche-la deux fois pour y poser son Gardien, puis entraînons-nous au glissé.'
+    };
+    return {
+      title: coarse ? 'Essaie le glissé' : 'Essaie le clic-glissé',
+      copy: (coarse ? 'Maintiens ton doigt et glisse' : 'Garde le bouton enfoncé et glisse') + ' sur les cases éclairées, puis relâche. Ces cases sont impossibles : un seul geste les écarte. Ensuite, à toi de poursuivre !'
+    };
+  }
   if (step.phase === 'place') {
     const marked = state[step.target[0]][step.target[1]] === 1;
     if (step.number === 1) return {

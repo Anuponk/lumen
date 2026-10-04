@@ -83,7 +83,7 @@ async function runHintTests(){
  test("Apprentissage guidé : quêtes 6 à 10 le rendent optionnel",()=>configureLearningMode.toString().includes("levelIndex<=9")&&configureLearningMode.toString().includes("guided.disabled=false"));
  test("Autonomie : la quête 11 propose de jouer sans contrôle guidé",()=>maybeShowAutonomy.toString().includes("levelIndex!==10")&&!!document.getElementById("autonomyTry")&&!!document.getElementById("autonomyKeep"));
  test("Autonomie : toucher hors popup choisit sans aide",()=>closeAutonomyOverlay.toString().includes("finishAutonomyChoice(false)"));
- test("Apprentissage : seule la quête 1 contraint les actions réelles",()=>scriptedLearningActive.toString().includes("learningQuestActive")&&render.toString().includes("scriptedAllowsGuardian"));
+ test("Apprentissage : les deux premières quêtes guident les actions réelles",()=>scriptedLearningActive.toString().includes("learningQuestActive")&&render.toString().includes("scriptedAllowsGuardian"));
  test("Tutoriel joué : Marquage auto verrouillé pendant les cinq premières quêtes",()=>{const src=configureLearningMode.toString();return src.includes("levelIndex<=4")&&src.includes("cb.checked=false")&&src.includes("cb.disabled=true")});
  test("Apprentissage : le glissé utilise le plateau normal dans les étapes autorisées",()=>document.querySelector("#board")&&moveDragCross.toString().includes("markDragCross"));
  test("Tip exclusions : apparaît au premier arrêt de le Marquage auto",()=>model.ac.onchange.toString().includes("maybeShowManualCrossTip")&&maybeShowManualCrossTip.toString().includes("lumenManualCrossTipSeen"));

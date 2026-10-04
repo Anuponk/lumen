@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { connectBrowser } from './cdp-client.mjs';
-import { learningStep } from '../src/game/learning.js';
+import { learningStep, dragLearningStep } from '../src/game/learning.js';
 const { send, evaluate, errors } = await connectBrowser();
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const results = [];
@@ -18,9 +18,23 @@ async function ready(){
 }
 const point = (r,c) => evaluate(`(()=>{const x=document.querySelector('.cell[data-row="${r}"][data-col="${c}"]').getBoundingClientRect();return {x:x.left+x.width/2,y:x.top+x.height/2}})()`);
 async function input(p,mobile){
-  if(mobile){await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[p]});await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}
+  if(mobile){await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[p]});await sleep(50);await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}
   else {await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...p});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...p});}
   await sleep(40);
+}
+async function drag(cells,mobile){
+  const points=[];for(const cell of cells)points.push(await point(...cell));
+  if(mobile){
+    await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[points[0]]});
+    for(const p of points.slice(1)){await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[p]});await sleep(30);}
+    await sleep(200);
+    await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  }else{
+    await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...points[0]});
+    for(const p of points.slice(1))await send('Input.dispatchMouseEvent',{type:'mouseMoved',button:'left',buttons:1,...p});
+    await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...points.at(-1)});
+  }
+  await sleep(50);
 }
 async function geometry(){
   return evaluate(`(()=>{const rect=id=>{const r=(id==='actions'?document.querySelector('.actions'):document.getElementById(id)).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}};return {board:rect('board'),coach:rect('scriptedLearn'),actions:rect('actions'),height:innerHeight,scroll:scrollY,hidden:document.getElementById('scriptedLearn').hidden}})()`);
@@ -32,7 +46,7 @@ try {
     await send('Emulation.setTouchEmulationEnabled',{enabled:viewport.mobile,maxTouchPoints:1});
     const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:'localStorage.clear();localStorage.setItem("lumenSound","off");localStorage.setItem("lumenTutorialSeen","1");localStorage.setItem("lumenPushChoice","later");localStorage.setItem("lumenInstallLater",String(Date.now()));'});
     await send('Page.navigate',{url});
-    await ready();
+    await sleep(1500);await ready();
     await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier}).catch(error=>{if(!String(error).includes('Script not found'))throw error});
     await sleep(100);
     let board=await snapshot();
@@ -68,7 +82,7 @@ try {
         await evaluate('window.learningRebuild=false;window.learningObserver=new MutationObserver(r=>{if(r.some(x=>x.target.id==="board"))window.learningRebuild=true});learningObserver.observe(document.getElementById("board"),{childList:true})');
         if(viewport.mobile){
           await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[points[0]]});
-          for(const p of points.slice(1))await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[p]});
+          for(const p of points.slice(1)){await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[p]});await sleep(30);}
           await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
         }else{
           await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...points[0]});
@@ -88,9 +102,34 @@ try {
     assert.equal((await snapshot()).progress.solved[0],1);
     await evaluate('document.getElementById("successNew").click()');await sleep(150);
     assert.equal((await snapshot()).levelIndex,1);
+    assert.equal(await evaluate('document.getElementById("attemptMask").hidden'),true);
+    const quest2Before=JSON.stringify((await snapshot()).state);
+    await input(await point(2,4),viewport.mobile);
+    assert.equal(JSON.stringify((await snapshot()).state),quest2Before,'Quest 2 begins with a guided singleton');
+    await input(await point(0,0),viewport.mobile);await input(await point(0,0),viewport.mobile);
+    assert.equal(dragLearningStep((await snapshot()).puz,(await snapshot()).state).phase,'drag');
+    await input(await point(0,1),viewport.mobile);
+    assert.equal((await snapshot()).state[0][1],0,'A tap cannot skip practicing the real drag gesture');
+    assert.equal(await evaluate('document.getElementById("verify").disabled'),true);
+    await drag([[0,1],[0,2]],viewport.mobile);
+    assert.deepEqual((await snapshot()).state[0],[2,1,1,0,0]);
+    await send('Page.reload',{ignoreCache:true});await sleep(100);await ready();
+    assert.deepEqual((await snapshot()).state[0],[2,1,1,0,0],'Partial gesture survives reload');
     await evaluate('document.getElementById("attemptMask").click()');
+    await sleep(60);
+    const q2Layout=await geometry();
+    assert(q2Layout.coach.top>=0&&q2Layout.coach.bottom<=q2Layout.height+1,'Quest 2 coach fits the viewport');
+    assert(q2Layout.coach.top>=q2Layout.actions.bottom||q2Layout.coach.right<=q2Layout.actions.left||q2Layout.coach.left>=q2Layout.actions.right,'Quest 2 coach leaves controls visible: '+JSON.stringify(q2Layout));
+    // Resume on an existing cross and move outside the lesson after finishing it.
+    await drag([[0,2],[0,3],[0,4],[1,4],[0,0]],viewport.mobile);
+    board=await snapshot();
+    assert.deepEqual(board.state[0],[2,1,1,1,1]);
+    assert.equal(board.state[1][4],0,'Completing the gesture cannot release its action gate mid-drag');
+    assert.equal(dragLearningStep(board.puz,board.state).phase,'complete');
+    assert.equal(await evaluate('document.getElementById("verify").disabled'),false);
+    await sleep(1200);
     await input(await point(2,4),viewport.mobile);await input(await point(2,4),viewport.mobile);
-    assert.equal((await snapshot()).state[2][4],2,'Quest 2 accepts a free legal placement outside the old scripted order');
+    assert.equal((await snapshot()).state[2][4],2,'Quest 2 free placement: '+JSON.stringify({viewport,board:await snapshot(),layout:await geometry()}));
     assert.equal(await evaluate('document.getElementById("verify").disabled'),false);
     await evaluate('document.getElementById("learningCoachDismiss").click();document.getElementById("verify").click()');
     assert.match(await evaluate('document.getElementById("scriptedLearnCopy").textContent'),/première vérification/);
@@ -107,7 +146,7 @@ try {
     await evaluate('document.getElementById("openSky").click();document.querySelector("#puzzleGrid .puzzle-card.done").click()');
     assert.equal((await snapshot()).replayMode,true);
     assert.equal(await evaluate('document.getElementById("scriptedLearn").hidden'),true,'Ordinary replay has no imposed lesson');
-    results.push({viewport,stages,realDrag:true,reload:true,reset:true,freeQuest2:true,skyTour:true,freeReplay:true});
+    results.push({viewport,stages,realDrag:true,reload:true,reset:true,guidedQuest2Drag:true,partialQuest2Reload:true,freeQuest2:true,skyTour:true,freeReplay:true});
   }
   assert.deepEqual(errors,[]);
   const report={results,uncaughtErrors:errors};if(output)fs.writeFileSync(output,JSON.stringify(report,null,2));console.log(JSON.stringify(report));
