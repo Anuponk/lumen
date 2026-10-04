@@ -504,3 +504,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 
 /* QA new-player simulation */
 .qa-banner{position:sticky;top:0;z-index:2000;display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 12px;background:#2b1d06;border-bottom:1px solid #d99b2b;color:#ffe6ad;font-size:12px;letter-spacing:.04em}.qa-banner[hidden]{display:none}.qa-banner span{opacity:.78}.qa-banner button{padding:5px 10px;border:1px solid #d99b2b;background:#171006;color:#ffe6ad;border-radius:9px}.qa-mode .app{padding-top:10px}@media(max-width:600px){.qa-banner{flex-wrap:wrap;gap:6px 10px}.qa-banner span{width:100%;text-align:center;order:3}}
+
+/* Learning sky tour: explain one real zone at a time after quest 2. */
+.sky-tour-focus{position:relative;z-index:3;outline:3px solid rgba(95,220,255,.9);outline-offset:5px;border-radius:14px;box-shadow:0 0 0 9999px rgba(2,8,18,.38),0 0 28px rgba(95,220,255,.32)}
+.sky-tour{position:sticky;top:8px;z-index:5}
