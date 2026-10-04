@@ -75,6 +75,8 @@ try {
     await evaluate('window.confirm=()=>true;document.getElementById("new").click()');
     assert.equal((await snapshot()).state.flat().every(value=>value===0),true,'Reset restores the first lesson step');
     assert.equal(await evaluate('JSON.parse(localStorage.getItem("lumenActiveAttemptV1")).attemptId'),attemptId,'Reset preserves the same attempt');
+    assert.equal(await evaluate('document.querySelectorAll(".learning-territory-number").length'),5,'Reset restores the SEE introduction');
+    for(let intro=0;intro<6;intro++){await evaluate('document.getElementById("learningCoachNext").click()');await sleep(40);}
     await input(await point(2,2),viewport.mobile);
     const stages=[];
     for(let action=0;action<80;action++){
