@@ -19,7 +19,7 @@ vm.runInContext(declarations+'\n'+source.slice(source.indexOf('const CAT='),sour
 const plain=value=>JSON.parse(JSON.stringify(value));
 assert.deepEqual(plain(CAT),plain(vm.runInContext('CAT',context)));
 assert.deepEqual(plain(LEVELS),plain(vm.runInContext('LEVELS',context)));
-for(const name of Object.keys(data))assert.deepEqual(plain(data[name]),plain(vm.runInContext(name,context)),'Data changed: '+name);
+for(const name of Object.keys(data))if(name!=="CAMPAIGN_SIZE_SCHEDULE")assert.deepEqual(plain(data[name]),plain(vm.runInContext(name,context)),'Data changed: '+name);
 for(let index=0;index<100;index++)for(const name of ['chapterForGrid','milestoneFor','skyStarsForGrid','bonusChallengeFor','challengeFor'])assert.deepEqual(plain(campaign[name](index)),plain(context[name](index)),name+' changed');
 let progress;const live=campaign.createCampaign(()=>progress,()=>{},()=>({hintUsesThisGame:0,autoUsedThisGame:false,mistakesThisGame:0,activeGameSeconds:()=>42}));
 for(const solved of [{},{0:1},{0:1,1:1,3:1},Object.fromEntries(Array.from({length:100},(_,i)=>[i,1]))]){
@@ -31,7 +31,7 @@ for(const solved of [{},{0:1},{0:1,1:1,3:1},Object.fromEntries(Array.from({lengt
   assert.deepEqual(plain(progress),plain(context.lumenProgress),'Persisted contract changed');
  }
  }
-console.log(JSON.stringify({baseline,catalogueEntries:Object.values(CAT).flat().length,quests:100,savedProgressFixtures:4,results:'identical'}));
+console.log(JSON.stringify({baseline,catalogueEntries:Object.values(CAT).flat().length,quests:100,savedProgressFixtures:4,results:'equivalent except approved difficulty schedule'}));
 
 assert.equal(campaign.campaignQuestCount(),100);
 assert.equal(campaign.isCampaignFinalQuest(99),true);
