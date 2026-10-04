@@ -71,6 +71,7 @@ for(const options of scenarios){
      if(afterSignOut&&(x.ui==='refreshJourney'||x.ui==='updateAuthUI'))continue;
      if(afterSignOut)afterSignOut=false;
      if(x.ui==='refreshJourney'&&out.at(-1)?.ui==='updateAuthUI')continue;
+     if(x.ui==='updateAuthUI'&&trace[i+1]?.auth==='signInWithOAuth')continue;
      out.push(x);
    }
    return out;
