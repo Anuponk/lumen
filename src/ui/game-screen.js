@@ -1283,7 +1283,8 @@ document.getElementById("new").onclick=()=>{
   if(!confirm(socialChallenge?"Réinitialiser la grille ? Dans un défi, le chrono, les aides et les erreurs restent comptabilisés.":"Réinitialiser la grille ? Tu repars sur un nouvel essai pour les badges : chrono, aides et erreurs sont remis à zéro."))return;
   hideSuccess();
   state=Array.from({length:n},()=>Array(n).fill(0));hist=[];clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";
-  attemptEngine.reset(state);render();refreshJourney();
+  if(!socialChallenge){usedHintThisGame=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;questFailed=false;updateHintButton();updateVerifyButton()}
+  attemptEngine.reset(state);render();clock();refreshJourney();
 };
 document.getElementById("learningCoachDismiss").onclick=()=>{learningTip=null;updateScriptedLearning()};
 document.getElementById("learningCoachNext").onclick=advanceLearningIntro;
