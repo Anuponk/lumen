@@ -211,3 +211,11 @@ Real touch tests then exposed two player-facing defects: badge/auto-marking dial
 - Solver-derived segment averages target a clear lift: approximately 44 → 50 → 51 → 62 → 66 across five 20-quest bands.
 - Q81–100 contains at least seven expert/expert+ quests, at least four expert+ peaks, at least five breathers, and an expert+ Q100.
 - Difficulty scoring was recalibrated so board size no longer dominates classification; group/locked logical work carries most of the score.
+
+
+## 2026-10-04 — Extensible content foundation (#47)
+- Current free content now has stable identifiers: sky `real-sky`, pack `base-real-sky`, constellation IDs and base quest IDs.
+- Existing numeric quest indices remain untouched for backward compatibility.
+- Future packs can be represented as entitlement-gated content without changing the puzzle engine.
+- Base campaign length (currently 100) is a content-model concept rather than a scattered hard-coded constant in progression/UI/cloud merge.
+- This intentionally does not implement payment, pack pricing or premium content; those remain data-driven decisions for later.

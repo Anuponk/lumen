@@ -13,6 +13,7 @@ const nodeSuites=[
  "difficulty-audit.mjs",
  "engine-equivalence.mjs",
  "campaign-tests.mjs",
+ "content-architecture-tests.mjs",
  "persistence-tests.mjs",
  "analytics-tests.mjs",
  "module-structure-tests.mjs",

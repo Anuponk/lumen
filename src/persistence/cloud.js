@@ -1,5 +1,6 @@
 export function createCloudPersistence(model,hooks,environment){
 const {activeGameSeconds,exactSkyScoreForSolvedPrefix,saveLumenProgress,refreshJourney,init,updateAuthUI,showRewardToast,renderDaily}=hooks;
+const campaignQuestCount=()=>Math.max(0,Number(hooks.campaignQuestCount?.()??100));
 const {document,location,alert,setTimeout,console}=environment;
 const cloudWritesDisabled=()=>!!environment.qaMode;
 async function loadLumenProfile(){
@@ -36,9 +37,9 @@ async function cloudMergeProgress(){
  if(cloudWritesDisabled()||!model.lumenSupabase||!model.lumenUser)return;
  const {data,error}=await model.lumenSupabase.rpc("lumen_get_progress");
  if(error){console.warn("LUMEN sync load",error);return}
- const cloud=new Set((data||[]).map(x=>Number(x.puzzle_id)-1).filter(x=>x>=0&&x<100));
- const local=Object.keys(model.lumenProgress.solved||{}).filter(k=>model.lumenProgress.solved[k]).map(Number).filter(x=>x>=0&&x<100);
- const backup=Object.keys(model.lumenProgress.historyBackup||{}).filter(k=>model.lumenProgress.historyBackup[k]).map(Number).filter(x=>x>=0&&x<100);
+ const cloud=new Set((data||[]).map(x=>Number(x.puzzle_id)-1).filter(x=>x>=0&&x<campaignQuestCount()));
+ const local=Object.keys(model.lumenProgress.solved||{}).filter(k=>model.lumenProgress.solved[k]).map(Number).filter(x=>x>=0&&x<campaignQuestCount());
+ const backup=Object.keys(model.lumenProgress.historyBackup||{}).filter(k=>model.lumenProgress.historyBackup[k]).map(Number).filter(x=>x>=0&&x<campaignQuestCount());
  const authoritative=cloud.size?cloud:new Set([...backup,...local]);
  let count=0;while(count<100&&authoritative.has(count))count++;
  const restored={};for(let i=0;i<count;i++)restored[i]=1;

@@ -39,7 +39,7 @@ get sequentialSolvedCount(){return sequentialSolvedCount},set sequentialSolvedCo
 get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
-const {loadLumenProfile,saveLumenNickname,loadEntitlements,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),updateAuthUI:(...args)=>updateAuthUI(...args),showRewardToast:(...args)=>showRewardToast(...args),renderDaily:(...args)=>renderDaily(...args)},{document,location,alert,setTimeout,console,qaMode});
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>campaignQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),updateAuthUI:(...args)=>updateAuthUI(...args),showRewardToast:(...args)=>showRewardToast(...args),renderDaily:(...args)=>renderDaily(...args)},{document,location,alert,setTimeout,console,qaMode});
 const {renderTutorial,openTutorial,closeTutorial,setupTutorial}=createTutorial(()=>levelIndex<=1,{tutorialSeenKey:qaActive?"lumenQaTutorialSeen":"lumenTutorialSeen"});
 let lumenSupabase=null,lumenUser=null,lumenCloudReady=false;
 try{lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY)}catch(e){console.warn("LUMEN cloud unavailable",e)}
@@ -144,7 +144,7 @@ function lumenShareUrl(){const u=new URL(location.origin+location.pathname);u.se
 function showShareToast(t){let e=document.createElement("div");e.className="share-toast";e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),1800)}
 function successAchievement(){
  const ch=CONSTELLATIONS[chapterForGrid(levelIndex)],range=constellationGridRange(chapterForGrid(levelIndex)),pos=Math.min(range.count,levelIndex-range.start+1),run=performanceRun(levelIndex),secs=activeGameSeconds(),solved=Math.max(solvedCount(),levelIndex+1);
- let kicker="QUÊTE "+(levelIndex+1)+" ACCOMPLIE",main=(ch?.name||"Constellation")+" · "+pos+"/"+range.count+" quêtes",detail=solved+"/100 quêtes accomplies";
+ let kicker="QUÊTE "+(levelIndex+1)+" ACCOMPLIE",main=(ch?.name||"Constellation")+" · "+pos+"/"+range.count+" quêtes",detail=solved+"/"+campaignQuestCount()+" quêtes accomplies";
  const milestone=milestoneFor(levelIndex);
  if(milestone?.kind==="boss"){kicker="CONSTELLATION COMPLÉTÉE";main=ch.name;detail=solved+"/100 quêtes accomplies · "+skyStarsEarned()+" étoiles allumées"}
  else if(run.qualifying&&run.mastery){kicker="MAÎTRISE";main="Rapide, autonome et sans erreur";detail=(ch?.name||"Constellation")+" · Quête "+(levelIndex+1)+" · "+formatDuration(secs)}

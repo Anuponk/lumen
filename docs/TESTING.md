@@ -198,3 +198,9 @@ Run `node scripts/difficulty-audit.mjs [optional-report.json]` to measure the ca
 The base campaign intentionally consumes every currently audited 7×7 and 8×8 catalogue entry. The second half alternates easier 6×6 breathing quests with 7×7 hard steps and 8×8 expert peaks instead of using grid size as a monotonic ladder. `scripts/difficulty-audit.mjs` guards the curve itself: all five 20-quest segment averages must rise, the final segment must materially exceed the first, Q81–100 must contain several expert/expert+ peaks and several breathers, and Q100 must be expert+.
 
 The fixed metric is `round((size-5)*6 + max(0,steps-size)*0.45 + group*1.25 + locked*0.6)`. Tiers: accessible <40, intermediate 40–54, hard 55–69, expert 70–89, expert+ ≥90. This is a reproducible solver proxy, not a claim about human solve time; validate it against #65 telemetry as data accumulates.
+
+
+## Extensible content registry (#47)
+`src/campaign/content.js` is the stable content boundary for future skies and packs. The current 100-quest game is pack `base-real-sky` inside `real-sky`. Existing numeric quest indices remain the legacy progression key so current players lose nothing. Future packs receive stable IDs and can be entitlement-gated without changing the puzzle engine.
+
+The base campaign length is intentionally distinct from future catalogue length. Progression/UI/cloud merge paths derive the current base length from the content model instead of duplicating the literal 100. Payment, pack pricing and the final future-catalogue UX remain out of scope until engagement data justifies them.

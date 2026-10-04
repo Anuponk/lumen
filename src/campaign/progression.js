@@ -1,6 +1,7 @@
 import {CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,SKY_TARGET} from "./data.js";
+import {baseCampaignQuestCount} from "./content.js";
 import {performanceAttempt,performanceEligibility,localCalendarDay,mergeEarnedBadges} from "./performance.js";
-export function campaignQuestCount(){return CONSTELLATION_GRID_COUNTS.reduce((sum,count)=>sum+count,0)}
+export function campaignQuestCount(){return baseCampaignQuestCount()}
 export function sequentialCount(source){let count=0,total=campaignQuestCount();while(count<total&&source&&source[count])count++;return count}
 export function isCampaignFinalQuest(index){return Number(index)===campaignQuestCount()-1}
 export function isCampaignComplete(source){return sequentialCount(source||{})>=campaignQuestCount()}
@@ -47,7 +48,7 @@ function solvedCount(){
  const lumenProgress=getProgress();return Object.keys(lumenProgress.solved||{}).filter(k=>lumenProgress.solved[k]).length}
 
 function exactSkyScoreForSolvedPrefix(){
- const lumenProgress=getProgress();let total=0;for(let i=0;i<100&&lumenProgress.solved&&lumenProgress.solved[i];i++)total+=skyStarsForGrid(i);return Math.min(SKY_TARGET,total)}
+ const lumenProgress=getProgress();let total=0;for(let i=0;i<campaignQuestCount()&&lumenProgress.solved&&lumenProgress.solved[i];i++)total+=skyStarsForGrid(i);return Math.min(SKY_TARGET,total)}
 
 function ensureSkyScore(){
  const lumenProgress=getProgress();if(lumenProgress.skyHistoryVersion===4&&Number.isFinite(lumenProgress.skyScore))return;lumenProgress.skyScore=exactSkyScoreForSolvedPrefix();lumenProgress.skyHistoryVersion=4;saveLumenProgress()}
@@ -65,7 +66,7 @@ function constellationLitAt(index){
  const lumenProgress=getProgress();let earned=skyStarsEarned(),before=0;for(let i=0;i<index;i++)before+=CONSTELLATIONS[i].count;return Math.max(0,Math.min(CONSTELLATIONS[index].count,earned-before))}
 
 function awards(){
- const lumenProgress=getProgress();let t=Object.keys(lumenProgress.solved).length;if(t>=1)lumenProgress.badges.first=1;if(t>=20)lumenProgress.badges.explorer=1;if(t>=50)lumenProgress.badges.beacon=1;if(t>=100)lumenProgress.badges.master=1;if(challengeRewardKeys().length>=1)lumenProgress.badges.challenge1=1;if(challengeRewardKeys().length>=16)lumenProgress.badges.challengeAll=1;saveLumenProgress()}
+ const lumenProgress=getProgress();let t=Object.keys(lumenProgress.solved).length;if(t>=1)lumenProgress.badges.first=1;if(t>=20)lumenProgress.badges.explorer=1;if(t>=50)lumenProgress.badges.beacon=1;if(t>=campaignQuestCount())lumenProgress.badges.master=1;if(challengeRewardKeys().length>=1)lumenProgress.badges.challenge1=1;if(challengeRewardKeys().length>=16)lumenProgress.badges.challengeAll=1;saveLumenProgress()}
 
 function performanceRun(i){
  const attempt=getAttempt(),seconds=attempt.activeGameSeconds(),run=performanceAttempt({questIndex:i,seconds,assistanceUsed:!!attempt.assistanceUsed,mistakeCommitted:!!attempt.mistakeCommitted});
