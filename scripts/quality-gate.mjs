@@ -117,8 +117,8 @@ try{
  for(const suite of nodeSuites)await run(process.execPath,[path.join("scripts",suite)],{label:suite});
  await startServer();
  await runBrowser("browser-tests.mjs","ci-browser.json",9222);
- await runBrowser("ux-cleanup-tests.mjs","ci-ux.json",9222);
- await runBrowser("learning-browser-tests.mjs","ci-learning.json",9223);
+ await runBrowser("ux-cleanup-tests.mjs","ci-ux.json",9223);
+ await runBrowser("learning-browser-tests.mjs","ci-learning.json",9224);
 }catch(error){failed=error;console.error("\nQUALITY GATE FAILED:",error.message)}
 finally{
  await cleanup();
