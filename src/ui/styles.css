@@ -530,6 +530,20 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 #mapModal:has(.sky-tour:not([hidden])):not([data-tour-target="skyNavigation"]) .sky-navigation{display:none}
 .adventure-notice{position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;background:rgba(2,8,18,.85);padding:20px;border-radius:20px}.adventure-notice>div{padding:20px;max-width:380px;border:1px solid #31506e;border-radius:18px;background:#102235}.adventure-notice p{font-size:14px;line-height:1.5;color:#bfd1df}
 #mapDetail[hidden],#sectorTabs[hidden],#constellationPages[hidden],#adventureNotice[hidden]{display:none}
+@media(max-width:700px){
+ #mapModal{padding:max(8px,env(safe-area-inset-top)) 8px max(8px,env(safe-area-inset-bottom))}
+ #mapModal .map-sheet{width:100%;height:100%;max-height:none;border-radius:20px;padding:10px;gap:6px}
+ #mapModal .map-head{min-height:44px}
+ #mapModal .sky-navigation{gap:5px}
+ #mapModal .adventure-summary{line-height:1.25}
+ #mapModal #sectorTabs{gap:7px}
+ #mapModal .constellation-pages{min-height:34px}
+ #mapDetail .performance-legend{grid-template-columns:repeat(2,minmax(0,1fr));padding:8px 36px 8px 8px;column-gap:8px;row-gap:6px;width:100%;min-width:0}
+ #mapDetail .performance-legend span{min-width:0;white-space:nowrap;font-size:clamp(9px,2.8vw,11px);gap:4px}
+ #mapDetail .performance-legend .performance-icon{width:14px;height:14px}
+ #mapDetail .sky-card{padding:8px}
+ #mapModal .my-challenges-entry{min-height:44px}
+}
 @media(min-width:701px){#sectorTabs{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}.constellation-card strong{font-size:14px}}
 @media(max-width:700px){.journey-top{flex:1;min-width:0;width:auto}.journey-top>div{flex:1;overflow:hidden}.journey-quest-progress{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}#journeyTitle{display:none}}
 .learning-unlock-overlay{position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;background:rgba(3,7,13,.88);padding:24px}
