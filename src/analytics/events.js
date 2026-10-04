@@ -1,3 +1,29 @@
+export function attemptAnalyticsProperties({
+ attempt=null,questIndex=0,gridSize=null,constellationIndex=null,constellationName=null,
+ solvedCount=0,questAttemptNumber=1,guidedEnabled=false,autoMarkingEnabled=false
+}={},extra={}){
+ const activeMs=Number(attempt?.activeDuration);
+ return {
+  attempt_id:attempt?.attemptId||null,
+  attempt_mode:attempt?.mode||"campaign",
+  run_index:Math.max(1,(Number(attempt?.resetCount)||0)+1),
+  active_seconds:Number.isFinite(activeMs)?Math.round(activeMs/100)/10:null,
+  reset_count:Number(attempt?.resetCount)||0,
+  assistance_used:!!attempt?.assistanceUsed,
+  mistake_committed:!!attempt?.mistakeCommitted,
+  qualifying:!!attempt?.qualifying,
+  quest_index:Number(questIndex)||0,
+  grid_size:Number.isFinite(Number(gridSize))?Number(gridSize):null,
+  constellation_index:Number.isFinite(Number(constellationIndex))?Number(constellationIndex):null,
+  constellation_name:constellationName||null,
+  progress_solved:Number(solvedCount)||0,
+  quest_attempt_number:Math.max(1,Number(questAttemptNumber)||1),
+  guided_enabled:!!guidedEnabled,
+  auto_marking_enabled:!!autoMarkingEnabled,
+  ...extra
+ };
+}
+
 export function createAnalytics(getClient,environment){
 const {localStorage,crypto,location,console}=environment;
 function lumenId(key){

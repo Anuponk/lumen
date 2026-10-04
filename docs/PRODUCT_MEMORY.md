@@ -168,3 +168,11 @@ Real touch tests then exposed two player-facing defects: badge/auto-marking dial
 - Social challenge Reset never grants a fresh one-shot attempt: elapsed time, assistance and committed errors remain.
 - Existing saved Maîtrise badges are grandfathered and are never removed retroactively.
 - Onboarding introduces Sans erreur at quest 6 in the same milestone that introduces the full badge system.
+
+
+## 2026-10-04 — Product analytics contract (#65)
+- Lifetime analytics are attempt/run based, not cell-click based.
+- `attempt_id` remains the technical identity; `run_index = reset_count + 1` distinguishes fresh campaign/replay runs after Reset.
+- Active duration comes exclusively from the attempt engine.
+- Start, completion, abandon, reset, Hint, Verify, guided intervention and Auto marking are measurable with quest, grid size, constellation and current campaign progress.
+- Telemetry stays pseudonymous and avoids unnecessary personal data.

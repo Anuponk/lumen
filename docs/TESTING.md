@@ -170,3 +170,7 @@ The quest 2 drag extension was revalidated on 2026-10-04 with Node 24.19.0 and C
 CI runs the learning interaction suite with its own Chromium profile and debugger port 9223, using `LUMEN_CDP_URL` for both readiness and the test connection. Browser/UX suites use port 9222. This prevents the learning readiness probe from accepting the preceding UX browser while it is shutting down; that race caused `ECONNREFUSED` before any learning assertion ran. The full learning interaction suite remains mandatory after this infrastructure correction.
 
 Local repair validation: all 13 Node gates pass, including the strict 134-grid / 100-quest audit; the full embedded suite passes 90/90 cases at each size, actual mobile tap/drag/reset/reload checks pass, the 12 UX scenarios pass, and the full two-quest learning/tour/replay journey passes on all four viewports without uncaught errors. Reports are docs/validation/ci-repair-{browser,ux,learning}.json. These are local isolated guest-profile results; no Production release is claimed.
+
+
+## Product telemetry gate (#65)
+Attempt analytics must use the attempt engine active duration and stable `attempt_id`; never rebuild duration from page timestamps. A campaign/replay Reset increments `run_index` while retaining `attempt_id`; challenge Reset remains one-shot. Run `node scripts/analytics-tests.mjs` after telemetry changes. Do not add cell-by-cell telemetry without a concrete product decision.
