@@ -841,11 +841,14 @@ function celebrateSuccess(){
  const skyEarnedAfter=skyStarsEarned(),crossedConstellation=firstCompletion&&(()=>{let total=0;for(const cs of CONSTELLATIONS){total+=cs.count;if(skyEarnedBefore<total&&skyEarnedAfter>=total)return true}return false})();
  const checkpoint=firstCompletion&&!crossedConstellation?constellationCheckpoint(skyEarnedBefore,skyEarnedAfter):null;
  const revealDelay=earnedThisRun>0?2250:0;
- if(firstCompletion&&earnedThisRun>0){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>showSkyReveal(skyEarnedBefore,checkpoint),revealDelay)}else if(questPassed||crossedConstellation||checkpoint){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>showSkyReveal(skyEarnedBefore,checkpoint),revealDelay)}else setTimeout(()=>document.getElementById("successOverlay").classList.add("show"),revealDelay);
+ const clearVictoryConfetti=()=>document.getElementById("victoryConfetti")?.remove();
+ if(firstCompletion&&earnedThisRun>0){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint)},revealDelay)}else if(questPassed||crossedConstellation||checkpoint){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint)},revealDelay)}else setTimeout(()=>document.getElementById("successOverlay").classList.add("show"),revealDelay);
 
  // Deliberately varied shapes/positions; purely visual, no game-state effect.
  const palette=["#68e7ff","#5ea7ff","#8b7cff","#67d8c2","#d7f8ff","#87bfff"];
- for(let i=0;i<72;i++){
+ const confettiCount=matchMedia("(max-width: 700px)").matches?28:40;
+ const confettiHost=document.createElement("div");confettiHost.id="victoryConfetti";confettiHost.className="victory-confetti";const confettiFragment=document.createDocumentFragment();
+ for(let i=0;i<confettiCount;i++){
   let x=document.createElement("i");
   x.className="confetti";
   x.style.left=((i*37)%101)+"vw";
@@ -854,9 +857,10 @@ function celebrateSuccess(){
   x.style.setProperty("--rot",((i*47)%360)+"deg");
   x.style.animationDelay=((i%13)*.035)+"s";
   if(i%3===0){x.style.borderRadius="50%";x.style.width="10px";x.style.height="10px"}
-  document.body.appendChild(x);
+  confettiFragment.appendChild(x);
  }
- setTimeout(()=>document.querySelectorAll(".confetti").forEach(x=>x.remove()),4300);
+ confettiHost.appendChild(confettiFragment);document.body.appendChild(confettiHost);
+ setTimeout(clearVictoryConfetti,3600);
 }
 
 const {audioContext,tone,guardianSound,errorSound,halfSound,victorySound,starArrivalSound,constellationSound,updateSoundToggle,setSoundEnabled}=createSound();
