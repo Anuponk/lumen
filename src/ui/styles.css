@@ -512,6 +512,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 
 .sky-tour-focus{position:relative;z-index:3;outline:3px solid rgba(95,220,255,.9);outline-offset:5px;border-radius:14px;box-shadow:0 0 0 9999px rgba(2,8,18,.38),0 0 28px rgba(95,220,255,.32)}
 .learning-unlock-overlay{position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;background:rgba(3,7,13,.88);padding:24px}
+.learning-unlock-overlay[hidden],.badge-unlock-overlay[hidden]{display:none}
 .learning-unlock-card{width:min(520px,100%);border:1px solid rgba(95,220,255,.28);border-radius:22px;padding:24px;background:#0d1828;box-shadow:0 24px 70px rgba(0,0,0,.45);text-align:center}
 .learning-unlock-card .primary{margin-top:18px;width:100%}
 .badge-unlock-overlay{position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;background:rgba(3,7,13,.88);padding:24px}
