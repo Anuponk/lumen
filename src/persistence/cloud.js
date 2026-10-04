@@ -91,9 +91,11 @@ async function cloudMergeHistoricalPerformance(anonymousId){
  for(const row of data||[]){
    const i=Number(row.puzzle_id)-1;if(i<0||i>=100)continue;
    const old=model.lumenProgress.performances[i]||{},badges=old.badges||{};
-   const merged={autonomy:!!badges.autonomy||!!row.autonomy,speed:!!badges.speed||!!row.speed,mastery:!!badges.mastery||!!row.mastery};
+   // Historical cloud recovery predates Sans erreur. Preserve any local Sans erreur
+   // trophy while merging the older autonomy/speed/mastery evidence.
+   const merged={autonomy:!!badges.autonomy||!!row.autonomy,speed:!!badges.speed||!!row.speed,noError:!!badges.noError,mastery:!!badges.mastery||!!row.mastery};
    if(merged.autonomy!==!!badges.autonomy||merged.speed!==!!badges.speed||merged.mastery!==!!badges.mastery){
-     model.lumenProgress.performances[i]={...old,version:2,questIndex:i,badges:merged};changed=true;
+     model.lumenProgress.performances[i]={...old,version:Math.max(Number(old.version)||2,3),questIndex:i,badges:merged};changed=true;
    }
  }
  if(changed){saveLumenProgress();refreshJourney()}
