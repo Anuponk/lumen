@@ -12,7 +12,7 @@ assert.match(ui,/if\(socialChallenge\)\{celebrateSocialChallengeSuccess\(\);retu
 const branch=ui.indexOf("if(socialChallenge){celebrateSocialChallengeSuccess();return}");
 const campaignMutation=ui.indexOf("lumenProgress.solved[levelIndex]=1");
 assert.ok(branch>=0&&campaignMutation>branch,"challenge isolation branch precedes campaign solve mutation");
-assert.match(ui,/source performance stays|performance.*cach/i,"source-performance secrecy should remain documented in controller comments/copy");
+assert.match(html,/performance[^<]*cach/i,"source performance must be described as hidden before play");
 assert.match(ui,/shareBtn\.hidden=!socialEligibility\.canChallenge/,"replay challenge CTA must be gated");
 assert.match(ui,/socialEligibility\.remarkable/,"remarkable first-play mastery must drive CTA");
 assert.match(ui,/p_previously_played/,"recipient prior exposure must be recorded");
