@@ -128,3 +128,23 @@ A gameplay change is not done unless:
 - intended Vercel deployment status is checked.
 
 Never claim “all tests pass” if only static/source inspection was performed.
+
+## Social challenge gate (#18)
+
+Run `node scripts/social-challenge-tests.mjs` for the pure challenge contract. It must remain in the CI static/data gate.
+
+Any change to challenge behavior must additionally verify:
+- first play can challenge; replay cannot;
+- first play + Mastery is the only “remarkable performance” condition;
+- recipient prior campaign exposure does not block participation;
+- source performance is hidden until terminal result;
+- corrections are allowed and only success/explicit abandon terminate the challenge;
+- reload/background reuse the same attempt ID;
+- challenge success cannot mutate campaign progression, rewards or normal qualifying attempts;
+- one challenge can have multiple participants, while each participant identity has one terminal attempt;
+- guest display name validation and no PII in deep links;
+- QR/native/copy share all point to the same opaque challenge;
+- push refusal never blocks gameplay, push result deep-links correctly, and repeated results are grouped;
+- RPC idempotency/concurrency and RLS/direct-write boundaries.
+
+Challenge changes are gameplay-adjacent and therefore still require the complete browser `runHintTests()` suite and strict all-grid catalogue audit before delivery.
