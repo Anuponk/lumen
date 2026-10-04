@@ -420,13 +420,27 @@ function fixVerificationErrors(){
  hist.push(state.map(x=>x.slice()));verifyPending.forEach(e=>state[e.r][e.c]=0);verifyPending=null;
  document.getElementById("verifyCard").hidden=true;board.removeAttribute("aria-disabled");msg.textContent="Les choix incorrects ont été effacés.";render();
 }
-let learningStage="place",learningTip=null,learningTipSeen=new Set();
+let learningStage="place",learningTip=null,learningTipSeen=new Set(),learningIntroStep=0;
+const LEARNING_INTRO=[
+ {title:"Observe le plateau",copy:"La grille est découpée en plusieurs territoires colorés. Les numéros 1 à 5 t’aident à les distinguer : chaque couleur forme un territoire."},
+ {title:"Ton objectif",copy:"Tu vas placer des Gardiens sur la grille. Pour réussir, tous les Gardiens doivent respecter les mêmes quatre règles."},
+ {title:"Un par territoire",copy:"Chaque territoire coloré doit contenir exactement un Gardien."},
+ {title:"Un par ligne et par colonne",copy:"Chaque ligne contient exactement un Gardien, et chaque colonne aussi."},
+ {title:"Ils gardent leurs distances",copy:"Deux Gardiens ne peuvent jamais se toucher, même en diagonale."},
+ {title:"Comment jouer",copy:"Un premier toucher pose une croix pour écarter une case. Un deuxième toucher sur la même case y pose un Gardien. Maintenant, essaie-le toi-même."}
+];
 function learningQuestActive(){return levelIndex<=1&&!socialChallenge&&(!replayMode||learningReplayActive())}
-function currentLearningStep(){return levelIndex===1?dragLearningStep(puz,state):learningStep(puz,state)}
+function learningIntroActive(){return levelIndex===0&&learningQuestActive()&&state&&state.flat().every(v=>v===0)&&learningIntroStep<LEARNING_INTRO.length}
+function currentLearningStep(){if(learningIntroActive())return {phase:"intro",introStep:learningIntroStep,cells:[],number:0};return levelIndex===1?dragLearningStep(puz,state):learningStep(puz,state)}
 function scriptedLearningActive(){return learningQuestActive()&&!!state&&currentLearningStep().phase!=="complete"}
 function learningMarkAllowed(r,c){const step=currentLearningStep();return step.phase!=="place"&&learningAllows(step,r,c)}
 function scriptedAllowsGuardian(r,c){const step=currentLearningStep();return step.phase==="place"&&learningAllows(step,r,c)}
 function learningDragAllowed(){return !scriptedLearningActive()||["reuse","drag","practice"].includes(currentLearningStep().phase)}
+function advanceLearningIntro(){
+ if(!learningIntroActive())return;
+ learningIntroStep++;
+ render();
+}
 function positionLearningCoach(){
  const card=document.getElementById("scriptedLearn");
  if(card.hidden)return;
@@ -451,6 +465,7 @@ function updateScriptedLearning(){
  board.classList.remove("scripted-board");board.classList.toggle("learning-guided",guided);
  board.querySelectorAll(".cell").forEach(cell=>{
   cell.classList.remove("scripted-focus","scripted-territory","scripted-dim","learning-source","learning-zone");
+  cell.classList.toggle("learning-intro-cell",guided&&step?.phase==="intro");
   const r=Number(cell.dataset.row),c=Number(cell.dataset.col),allowed=guided&&learningAllows(step,r,c);
   cell.classList.toggle("coach-dim",guided&&!allowed&&(step.territory===undefined||puz.reg[r][c]!==step.territory));
   cell.classList.toggle("coach-zone",guided&&(allowed||(step.territory!==undefined&&puz.reg[r][c]===step.territory)));
@@ -461,9 +476,11 @@ function updateScriptedLearning(){
  const blocked=celebrated||!!guidedPending||!!verifyPending;
  card.hidden=blocked||(!guided&&!learningTip);
  document.getElementById("learningCoachDismiss").hidden=guided;
+ const next=document.getElementById("learningCoachNext");
+ if(next){next.hidden=!(guided&&step?.phase==="intro");next.textContent=step?.introStep===LEARNING_INTRO.length-1?"À moi de jouer":"Suivant"}
  if(levelIndex<=1&&!socialChallenge)for(const id of ["undo","hint","verify"])document.getElementById(id).disabled=guided;
  if(card.hidden)return;
- const text=step?learningCopy(step,state,matchMedia("(pointer:coarse)").matches):learningTip;
+ const text=step?.phase==="intro"?LEARNING_INTRO[step.introStep]:step?learningCopy(step,state,matchMedia("(pointer:coarse)").matches):learningTip;
  document.getElementById("scriptedLearnTitle").textContent=text.title;
  document.getElementById("scriptedLearnCopy").textContent=text.copy;
  requestAnimationFrame(positionLearningCoach);
@@ -570,13 +587,44 @@ function finishAutonomyChoice(keepGuided){
  const o=document.getElementById("autonomyOverlay");if(o){o.hidden=true;o.style.display="none"}
  trackLumenEvent("guided_autonomy_choice",levelIndex+1,{guided:!!keepGuided});
 }
+function maybeShowAutoCrossUnlock(){
+ if(levelIndex!==5||lumenProgress.autoCrossUnlockSeen)return;
+ const o=document.getElementById("autoCrossUnlockOverlay");if(o){o.hidden=false;o.style.display="flex";pauseGameClock()}
+}
+function closeAutoCrossUnlock(){
+ lumenProgress.autoCrossUnlockSeen=1;saveLumenProgress();
+ const o=document.getElementById("autoCrossUnlockOverlay");if(o){o.hidden=true;o.style.display="none"}
+ resumeGameClock();
+}
+function maybeShowBadgeMilestone(){
+ let kind=null;
+ if(levelIndex===2&&!lumenProgress.speedBadgeIntroSeen)kind="speed";
+ if(levelIndex===5&&!lumenProgress.fullBadgeIntroSeen)kind="full";
+ if(!kind)return;
+ const o=document.getElementById("badgeUnlockOverlay"),title=document.getElementById("badgeUnlockTitle"),copy=document.getElementById("badgeUnlockCopy");
+ if(!o||!title||!copy)return;
+ o.dataset.kind=kind;
+ if(kind==="speed"){
+  title.textContent="Ton premier badge est à gagner";
+  copy.innerHTML="<strong>⚡ Rapidité</strong> est maintenant disponible.<br><br>Réussis la quête avant la fin du temps cible pour l’obtenir. À partir de maintenant, tes performances peuvent donc enrichir chaque quête réussie.";
+ }else{
+  title.textContent="Tous les badges sont maintenant accessibles";
+  copy.innerHTML="<strong>◇ Autonomie</strong> : réussis sans assistance.<br><br><strong>⚡ Rapidité</strong> : termine avant le temps cible.<br><br><strong>✦ Maîtrise</strong> : réunis Autonomie et Rapidité sur la même tentative.<br><br>Les assistances restent une façon parfaitement valable de jouer, mais leur utilisation empêche Autonomie — et donc Maîtrise — sur la tentative.";
+ }
+ o.hidden=false;o.style.display="flex";pauseGameClock();
+}
+function closeBadgeMilestone(){
+ const o=document.getElementById("badgeUnlockOverlay");if(!o)return;
+ if(o.dataset.kind==="speed")lumenProgress.speedBadgeIntroSeen=1;else lumenProgress.fullBadgeIntroSeen=1;
+ saveLumenProgress();o.hidden=true;o.style.display="none";resumeGameClock();
+}
 function maybeShowAutonomy(){
  if(levelIndex!==10||lumenProgress.autonomySeen)return;
  const o=document.getElementById("autonomyOverlay");if(o){o.hidden=false;o.style.display="flex";pauseGameClock()}
 }
 function prepareQuestStart(){let q=bonusChallengeFor(levelIndex),o=document.getElementById("questStart");questFailed=false;if(!q||lumenProgress.stars[q.id]){questStarted=true;o.hidden=true;resumeGameClock();return}questStarted=false;pauseGameClock();document.getElementById("questStartTitle").textContent=q.title;document.getElementById("questStartRule").textContent=q.copy+" Récompense : +25 XP et +1 ✦ éclat.";o.hidden=false}
 document.getElementById("questGo").onclick=()=>{document.getElementById("questStart").hidden=true;questStarted=true;clock();updateAttemptUI()};
-function init(){setLearningReplaySuccessMode(false);document.getElementById("successNew").textContent="Quête suivante";learningTip=null;learningTipSeen=new Set();learningStage="place";choose();configureLearningMode();applyQuestRestrictions();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl)cl.textContent="Quête "+(levelIndex+1);document.getElementById("difficulty").textContent=n===7?"7 × 7 · constellation étendue":n===8?"8 × 8 · constellation étendue":"";state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];const hintCard=document.getElementById("hintCard");if(hintCard)hintCard.hidden=true;celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,100);
+function init(){setLearningReplaySuccessMode(false);document.getElementById("successNew").textContent="Quête suivante";updateLearningSuccessCTA();learningTip=null;learningTipSeen=new Set();learningStage="place";learningIntroStep=0;choose();configureLearningMode();applyQuestRestrictions();maybeShowBadgeMilestone();maybeShowAutoCrossUnlock();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl)cl.textContent="Quête "+(levelIndex+1);document.getElementById("difficulty").textContent=n===7?"7 × 7 · constellation étendue":n===8?"8 × 8 · constellation étendue":"";state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];const hintCard=document.getElementById("hintCard");if(hintCard)hintCard.hidden=true;celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,100);
  const restored=attemptEngine.restore({questId:levelIndex+1,mode:attemptMode()});
  if(restored&&Array.isArray(restored.board)&&restored.board.length===n){state=restored.board.map(row=>row.slice());render()}else {const perf=lumenProgress.performances?.[levelIndex],eligible=performanceEligibility(levelIndex),hasEligible=Object.values(eligible).some(Boolean),qualifying=hasEligible&&perf?.lastQualifiedDay!==localCalendarDay();attemptEngine.create({questId:levelIndex+1,mode:attemptMode(),qualifying:socialChallenge?false:qualifying,challengeId:socialChallenge?.challenge_id||null,board:state});}
  clock();prepareQuestStart();updateAttemptUI();updateScriptedLearning()}
@@ -771,6 +819,7 @@ board.addEventListener("pointerdown",e=>{
  if(celebrated||guidedPending||verifyPending)return;
  if(!learningDragAllowed())return;
  const cell=e.target.closest(".cell");if(!cell)return;
+ if(scriptedLearningActive()&&currentLearningStep().phase==="intro")return;
  if(scriptedLearningActive()&&!learningMarkAllowed(Number(cell.dataset.row),Number(cell.dataset.col)))return;
  if(e.pointerType==="mouse"&&e.button!==0)return;
  ensureAttemptStarted();
@@ -820,11 +869,16 @@ function render(){
   if(shown===1||shown===3)d.innerHTML='<span class="lumen-dim" aria-label="Emplacement assombri"></span>';
   else if(shown===2)d.innerHTML='<span class="lumen-orb" aria-label="Gardien positionné"></span>';
   else d.innerHTML="";
+  if(levelIndex===0&&learningIntroActive()&&shown===0){
+   const flatIndex=r*n+c,firstIndex=puz.reg.flat().findIndex(region=>region===g);
+   if(flatIndex===firstIndex)d.innerHTML='<span class="learning-territory-number" aria-label="Territoire '+(g+1)+'">'+(g+1)+'</span>';
+  }
   if(shown===3)d.classList.add("auto-x");
   d.dataset.row=r;d.dataset.col=c;
   d.onclick=async()=>{if(celebrated||dragCrossSuppressClick||guidedPending||verifyPending||performance.now()<suppressGuidedClickUntil)return;
  let shown=displayedCellState(r,c),next=shown===3?2:(state[r][c]+1)%3,currentGuardians=state.flat().filter(v=>v===2).length;
  if(scriptedLearningActive()){
+  if(learningStage==="intro")return;
   if(learningStage==="place"){if(!scriptedAllowsGuardian(r,c))return;if(state[r][c]===0){next=1}else if(state[r][c]===1){next=2}else next=0}
   else if(currentLearningStep().dragLesson)return;
   else if(learningMarkAllowed(r,c)){next=1}
@@ -1065,13 +1119,33 @@ document.getElementById("successRetry").onclick=()=>{
  loadPuzzle();usedHintThisGame=false;refreshJourney();
 };
 document.getElementById("successSky").onclick=()=>{hideSuccess();let learningTour=false;try{learningTour=levelIndex===1&&localStorage.getItem("lumenSkyTourSeen")!=="1"}catch(_){}openJourneyMap(true,{advanceOnClose:true,learningTour})};
+function learningSkyDiscoveryRequired(){return levelIndex===1&&!replayMode&&!socialChallenge}
+function updateLearningSuccessCTA(){
+ const b=document.getElementById("successNew");if(!b)return;
+ b.textContent=learningSkyDiscoveryRequired()?"✦ Découvrir Mon ciel":"Quête suivante";
+}
+function clearSkyTourFocus(){document.querySelectorAll(".sky-tour-focus").forEach(el=>el.classList.remove("sky-tour-focus"))}
+function renderSkyTourStep(){
+ const tour=document.getElementById("skyTour");if(!tour||tour.hidden)return;
+ const step=SKY_TOUR_STEPS[Math.min(skyTourStep,SKY_TOUR_STEPS.length-1)],target=document.getElementById(step.target);
+ clearSkyTourFocus();if(target){target.classList.add("sky-tour-focus");target.scrollIntoView({behavior:"smooth",block:"center"})}
+ document.getElementById("skyTourTitle").textContent=step.title;
+ document.getElementById("skyTourCopy").textContent=step.copy;
+ const next=document.getElementById("skyTourNext");next.textContent=skyTourStep===SKY_TOUR_STEPS.length-1?"Jouer la quête 3":"Suivant";
+}
+function advanceSkyTour(){
+ if(skyTourStep<SKY_TOUR_STEPS.length-1){skyTourStep++;renderSkyTourStep();return}
+ try{localStorage.setItem("lumenSkyTourSeen","1")}catch(_){}
+ clearSkyTourFocus();closeMapOverlay();
+}
+
 function handleSuccessAdvance(){
  if(learningReplayActive()){
   hideSuccess();
   if(levelIndex===0){levelIndex=1;loadPuzzle()}else finishLearningReplay();
   return;
  }
- if(levelIndex===1&&!replayMode&&!socialChallenge){hideSuccess();openJourneyMap(true,{advanceOnClose:true,learningTour:true});return}
+ if(learningSkyDiscoveryRequired()){hideSuccess();openJourneyMap(true,{advanceOnClose:true,learningTour:true});return}
  advanceToNextPuzzle();
 }
 document.getElementById("successNew").onclick=handleSuccessAdvance;
@@ -1083,8 +1157,13 @@ const attemptAbandon=document.getElementById("attemptAbandon");
 if(attemptAbandon)attemptAbandon.onclick=async()=>{const a=attemptEngine.snapshot();if(!a)return;if(!confirm("Abandonner cette tentative ?"))return;attemptEngine.abandon();if(socialChallenge){trackLumenEvent("challenge_abandoned",levelIndex+1);await finishSocialChallenge("abandoned");return}attemptEngine.clear();init()};
 
 
-let mapConstellation=0;
-
+let mapConstellation=0,skyTourStep=0;
+const SKY_TOUR_STEPS=[
+ {target:"sectorTabs",title:"Tes constellations",copy:"Ton ciel est organisé en constellations. Elles se débloquent au fil de ton aventure."},
+ {target:"puzzleGrid",title:"Tes quêtes",copy:"Chaque constellation regroupe ses quêtes. Ici tu vois celles qui sont réussies, celle à jouer et celles encore verrouillées."},
+ {target:"performanceLegend",title:"Tes performances",copy:"Les badges récompensent ta façon de résoudre une quête : autonomie, rapidité et maîtrise. Tu pourras revenir améliorer une quête réussie."},
+ {target:"skyCard",title:"Ta constellation",copy:"Chaque réussite allume des étoiles. À mesure que tu avances, la constellation se dessine dans ton ciel."}
+];
 function starDisplayName(p,i){return p.stars&&p.stars[i]?p.stars[i]:"Étoile "+(i+1)}
 
 function renderSky(index=mapConstellation){let el=document.getElementById("skyCard");if(!el)return;index=Math.max(0,Math.min(index,CONSTELLATIONS.length-1));let c=CONSTELLATIONS[index],lit=constellationLitAt(index),p={index,...c,lit},active=index===constellationProgress().index,lines=p.edges.map(e=>'<line class="sky-line '+(e[0]<lit&&e[1]<lit?'on':'')+'" x1="'+p.pts[e[0]][0]+'" y1="'+p.pts[e[0]][1]+'" x2="'+p.pts[e[1]][0]+'" y2="'+p.pts[e[1]][1]+'"/>').join(""),stars=p.pts.map((v,i)=>'<g><circle class="sky-star '+(i<lit?'on':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i<lit?4:3)+'"/>'+(i<lit?'<text class="sky-label" x="'+(v[0]+6)+'" y="'+(v[1]-5)+'">'+starDisplayName(p,i)+'</text>':'')+'</g>').join("");el.innerHTML='<div class="sky-head"><span class="sky-name">'+p.name+'</span><span>'+lit+' / '+p.count+' étoiles</span></div><svg class="sky-svg" viewBox="0 0 290 115">'+lines+stars+'</svg><div class="sky-note">'+(active?"Constellation active":lit===p.count?"Constellation complétée":lit===0?"Constellation à découvrir":"Constellation en cours")+'</div>'}
@@ -1142,7 +1221,7 @@ function performanceBadges(i){
 }
 function startReplay(i){if(!lumenProgress.solved[i])return;levelIndex=i;replayMode=true;document.getElementById("mapModal").hidden=true;document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;loadPuzzle();usedHintThisGame=false;refreshJourney()}
 function renderMap(){const tabs=document.getElementById("sectorTabs"),puzzleGrid=document.getElementById("puzzleGrid");tabs.innerHTML="";CONSTELLATIONS.forEach((c,i)=>{let b=document.createElement("button"),unlocked=i<=chapterForGrid(Math.min(sequentialSolvedCount,99));b.className="sector-tab"+(i===mapConstellation?" active":"")+(unlocked?"":" locked");b.textContent="✦ "+c.name.replace(" · Grand Chariot","");b.onclick=()=>{if(unlocked){mapConstellation=i;renderMap();renderSky(i)}};tabs.appendChild(b)});puzzleGrid.innerHTML="";let range=constellationGridRange(mapConstellation),start=range.start,end=range.end+1;for(let i=start;i<end;i++){let solved=!!lumenProgress.solved[i],current=i===Math.min(sequentialSolvedCount,99),b=document.createElement("button"),pos=i-start+1,meta=performanceBadges(i);b.className="puzzle-card"+(solved?" done":"")+(current?" current":"")+(!solved&&!current?" locked":"");b.innerHTML=solved?meta:(current?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+pos+'</span>':"");b.title=solved?"Rejouer la quête "+pos+" pour améliorer ta performance":current?"Nouvelle quête disponible · quête "+pos:"Quête "+pos+" · verrouillée";b.onclick=()=>{if(solved){startReplay(i);return}if(!current)return;levelIndex=i;replayMode=false;document.getElementById("mapModal").hidden=true;loadPuzzle();refreshJourney()};puzzleGrid.appendChild(b)}renderSky(mapConstellation)}
-function openJourneyMap(focusSky=false,{advanceOnClose=false,learningTour=false}={}){mapConstellation=chapterForGrid(levelIndex);renderMap();const modal=document.getElementById("mapModal");modal.hidden=false;const tour=document.getElementById("skyTour");if(tour)tour.hidden=!learningTour;modal.dataset.advanceOnClose=advanceOnClose&&!!lumenProgress.solved[levelIndex]?"1":"";const attemptMask=document.getElementById("attemptMask");if(attemptMask)attemptMask.hidden=true;if(focusSky){requestAnimationFrame(()=>{const sky=document.getElementById("skyCard");if(sky){sky.scrollIntoView({behavior:"smooth",block:"center"});sky.classList.add("sky-focus");setTimeout(()=>sky.classList.remove("sky-focus"),900)}})}}
+function openJourneyMap(focusSky=false,{advanceOnClose=false,learningTour=false}={}){mapConstellation=chapterForGrid(levelIndex);renderMap();const modal=document.getElementById("mapModal");modal.hidden=false;const tour=document.getElementById("skyTour");if(tour)tour.hidden=!learningTour;if(learningTour){skyTourStep=0;requestAnimationFrame(renderSkyTourStep)}else clearSkyTourFocus();modal.dataset.advanceOnClose=advanceOnClose&&!!lumenProgress.solved[levelIndex]?"1":"";const attemptMask=document.getElementById("attemptMask");if(attemptMask)attemptMask.hidden=true;if(focusSky){requestAnimationFrame(()=>{const sky=document.getElementById("skyCard");if(sky){sky.scrollIntoView({behavior:"smooth",block:"center"});sky.classList.add("sky-focus");setTimeout(()=>sky.classList.remove("sky-focus"),900)}})}}
 
 const performanceLegend=document.getElementById("performanceLegend"),badgeRulesModal=document.getElementById("badgeRulesModal"),closeBadgeRules=document.getElementById("closeBadgeRules");function openBadgeRules(){if(badgeRulesModal){badgeRulesModal.hidden=false;closeBadgeRules&&closeBadgeRules.focus()}}function hideBadgeRules(){if(badgeRulesModal){badgeRulesModal.hidden=true;performanceLegend&&performanceLegend.focus()}}if(performanceLegend){performanceLegend.onclick=openBadgeRules;performanceLegend.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openBadgeRules()}}}if(closeBadgeRules)closeBadgeRules.onclick=hideBadgeRules;if(badgeRulesModal)badgeRulesModal.onclick=e=>{if(e.target===badgeRulesModal)hideBadgeRules()};document.addEventListener("keydown",e=>{if(e.key==="Escape"&&badgeRulesModal&&!badgeRulesModal.hidden)hideBadgeRules()});
 const shardMeter=document.getElementById("shardMeter"),shardRulesModal=document.getElementById("shardRulesModal"),closeShardRules=document.getElementById("closeShardRules");function openShardRules(){if(shardRulesModal){shardRulesModal.hidden=false;closeShardRules&&closeShardRules.focus()}}function hideShardRules(){if(shardRulesModal){shardRulesModal.hidden=true;shardMeter&&shardMeter.focus()}}if(shardMeter){shardMeter.onclick=openShardRules;shardMeter.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openShardRules()}}}if(closeShardRules)closeShardRules.onclick=hideShardRules;if(shardRulesModal)shardRulesModal.onclick=e=>{if(e.target===shardRulesModal)hideShardRules()};document.addEventListener("keydown",e=>{if(e.key==="Escape"&&shardRulesModal&&!shardRulesModal.hidden)hideShardRules()});
@@ -1157,7 +1236,8 @@ function startQuestFromOverlay(){document.getElementById("questGo")?.click()}
 function closeAutonomyOverlay(){finishAutonomyChoice(false);resumeGameClock()}
 function closeMapOverlay(){const o=document.getElementById("mapModal");if(!o)return;const advance=o.dataset.advanceOnClose==="1";o.hidden=true;const tour=document.getElementById("skyTour");if(tour)tour.hidden=true;o.dataset.advanceOnClose="";if(advance){advanceToNextPuzzle();return}updateAttemptUI()}
 function setupOutsideDefaults(){
- bindOutsideDefault("successOverlay",handleSuccessAdvance);
+ const successOverlay=document.getElementById("successOverlay");
+ if(successOverlay)successOverlay.addEventListener("click",e=>{if(e.target!==successOverlay)return;e.preventDefault();if(learningSkyDiscoveryRequired())return;handleSuccessAdvance()});
  bindOutsideDefault("skyReveal",continueSkyReveal);
  bindOutsideDefault("questStart",startQuestFromOverlay);
  bindOutsideDefault("autonomyOverlay",closeAutonomyOverlay);
@@ -1169,11 +1249,13 @@ function setupOutsideDefaults(){
  const tutorial=document.getElementById("tutorialOverlay");
  if(tutorial)tutorial.addEventListener("click",e=>{if(e.target!==tutorial)return;let seen=false;try{seen=localStorage.getItem(qaActive?"lumenQaTutorialSeen":"lumenTutorialSeen")==="1"}catch(_){}if(seen)closeTutorial(false)});
 }
-const skyTourSkip=document.getElementById("skyTourSkip");if(skyTourSkip)skyTourSkip.onclick=()=>{document.getElementById("skyTour").hidden=true;try{localStorage.setItem("lumenSkyTourSeen","1")}catch(_){}closeMapOverlay()};
+const skyTourNext=document.getElementById("skyTourNext");if(skyTourNext)skyTourNext.onclick=advanceSkyTour;
 
 const openSky=document.getElementById("openSky");if(openSky)openSky.onclick=()=>openJourneyMap(true);
 document.getElementById("closeMap").onclick=closeMapOverlay;document.getElementById("hint").addEventListener("click",()=>{if(!hintWasGranted)return;attemptEngine.markAssistance();hintWasGranted=false;trackLumenEvent("hint_used",levelIndex+1);usedHintThisGame=true;updateHintButton()});
 
+const autoCrossUnlockOk=document.getElementById("autoCrossUnlockOk");if(autoCrossUnlockOk)autoCrossUnlockOk.onclick=closeAutoCrossUnlock;
+const badgeUnlockOk=document.getElementById("badgeUnlockOk");if(badgeUnlockOk)badgeUnlockOk.onclick=closeBadgeMilestone;
 const autonomyTry=document.getElementById("autonomyTry"),autonomyKeep=document.getElementById("autonomyKeep");
 if(autonomyTry)autonomyTry.onclick=()=>{finishAutonomyChoice(false);resumeGameClock()};
 if(autonomyKeep)autonomyKeep.onclick=()=>{finishAutonomyChoice(true);resumeGameClock()};
@@ -1185,6 +1267,7 @@ document.getElementById("new").onclick=()=>{
   attemptEngine.reset(state);render();refreshJourney();
 };
 document.getElementById("learningCoachDismiss").onclick=()=>{learningTip=null;updateScriptedLearning()};
+document.getElementById("learningCoachNext").onclick=advanceLearningIntro;
 document.addEventListener("click",handleLearningTap,true);
 // Start after campaign data are initialized. A deep-linked social challenge resolves its
 // server snapshot before the board is created so campaign progression is never mutated.
