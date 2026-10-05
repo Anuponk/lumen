@@ -14,12 +14,10 @@ export function performanceEligibility(questIndex,unlockedQuestCount=Number(ques
 }
 
 export function speedTargetSeconds(questIndex){
- const q=Number(questIndex)+1;
- if(q<=20)return 90;
- if(q<=40)return 120;
- if(q<=60)return 150;
- if(q<=80)return 180;
- return 210;
+ // Rapidité is intentionally a single, demanding rule across the whole campaign.
+ // Keep the parameter for the shared API used by the UI and performance engine.
+ void questIndex;
+ return 60;
 }
 
 export function localCalendarDay(now=new Date()){
