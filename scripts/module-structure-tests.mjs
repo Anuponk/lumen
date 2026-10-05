@@ -47,7 +47,8 @@ additionalTests.push(
  "UI badges : Mon ciel et les règles affichent Sans erreur",
  "Sans erreur : l’état d’erreur reste invisible pendant la partie",
  "Indice : une case unique de territoire passe avant les raisonnements complexes",
- "Indice : les formulations générées restent grammaticalement correctes"
+ "Indice : les formulations générées restent grammaticalement correctes",
+ "PWA : l’onboarding installation est isolé en mode nouveau joueur QA"
 );
 assert.equal(originalTests.length,66);
 assert.equal(tests.length,originalTests.length+additionalTests.length);
