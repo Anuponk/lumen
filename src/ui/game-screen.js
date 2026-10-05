@@ -850,7 +850,7 @@ function celebrateLearningReplaySuccess(){
  setLearningReplaySuccessMode(true);document.getElementById("successOverlay").classList.add("show");
 }
 
-function renderSuccessRewards(stars){let el=document.getElementById("successRewards");if(!el)return;let run=performanceRun(levelIndex),rewards=[];if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});if(run.qualifying&&run.autonomy)rewards.push({cls:"autonomy",icon:performanceIcon("autonomy"),label:"Autonomie"});if(run.qualifying&&run.speed)rewards.push({cls:"speed",icon:performanceIcon("speed"),label:"Rapidité"});if(run.qualifying&&run.noError)rewards.push({cls:"no-error",icon:performanceIcon("noError"),label:"Sans erreur"});if(run.qualifying&&run.mastery)rewards.push({cls:"mastery",icon:performanceIcon("mastery"),label:"Maîtrise"});el.innerHTML=rewards.map(r=>'<span class="success-reward '+r.cls+'"><span>'+r.icon+'</span><span>'+r.label+'</span></span>').join("")}
+function renderSuccessRewards(stars){let el=document.getElementById("successRewards");if(!el)return;let run=performanceRun(levelIndex),rewards=[];if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});if(run.qualifying&&run.autonomy)rewards.push({cls:"autonomy",icon:performanceIcon("autonomy"),label:"Autonomie"});if(run.qualifying&&run.speed)rewards.push({cls:"speed",icon:performanceIcon("speed"),label:"Rapidité"});if(run.qualifying&&run.noError)rewards.push({cls:"no-error",icon:performanceIcon("noError"),label:"Sans erreur"});if(run.qualifying&&run.mastery)rewards.push({cls:"mastery",icon:performanceIcon("mastery"),label:"Maîtrise"});el.innerHTML=rewards.map((r,i)=>'<span class="success-reward '+r.cls+'" style="--reward-delay:'+(220+i*210)+'ms"><span>'+r.icon+'</span><span>'+r.label+'</span></span>').join("");el.classList.toggle("mastery-earned",!!run.mastery)}
 function celebrateSuccess(){
  if(celebrated)return;
  if(socialChallenge){celebrateSocialChallengeSuccess();return}
@@ -897,6 +897,8 @@ function celebrateSuccess(){
  clearInterval(timer);
  clock();
  board.classList.add("win");
+ board.querySelectorAll(".cell").forEach((cell,i)=>{cell.style.setProperty("--victory-delay",(i*18)+"ms");cell.classList.add("victory-wave")});
+ setTimeout(()=>board.querySelectorAll(".cell").forEach(cell=>cell.classList.remove("victory-wave")),1500);
  document.getElementById("successTime").textContent=document.getElementById("time").textContent;
  const qr=document.getElementById("questResult");if(ch){qr.hidden=false;qr.className="quest-result "+(questPassed||lumenProgress.stars[ch.id]?"success":"fail");qr.textContent=questPassed?"✦ Défi réussi ! +25 XP et un éclat gagné.":lumenProgress.stars[ch.id]?"✦ Défi déjà accompli":"Défi échoué — la quête est tout de même accomplie."}else qr.hidden=true;
  const m=milestoneFor(levelIndex),sub=document.getElementById("successSub");if(sub)sub.textContent=m?(m.kind==="boss"?"Défi final réussi · constellation complétée":"Défi intermédiaire réussi · +1 ★ bonus"):(questPassed?"Quête réussie · +25 XP et +1 ✦":"Ton ciel progresse");
@@ -943,8 +945,15 @@ function showRewardToast(text){
  const t=document.getElementById("rewardToast");if(!t)return;t.textContent=text;t.classList.add("show");clearTimeout(rewardToastTimer);rewardToastTimer=setTimeout(()=>t.classList.remove("show"),1900);
 }
 function rewardProgressPulse(q){
- if(q>lastPlacedCount){guardianSound(q);requestAnimationFrame(()=>{const cells=[...board.querySelectorAll(".cell")];for(const d of cells){if(d.querySelector(".lumen-orb"))d.classList.add("just-lit")}setTimeout(()=>cells.forEach(d=>d.classList.remove("just-lit")),380)})}
- if(!halfRewardShown&&q>=Math.ceil(n/2)){halfRewardShown=true;halfSound();board.classList.add("board-half");showRewardToast("✦ Mi-chemin");setTimeout(()=>board.classList.remove("board-half"),650)}
+ if(q>lastPlacedCount){
+  guardianSound(q);
+  const momentum=Math.max(1,Math.min(4,q-lastPlacedCount+Math.floor(q/Math.max(1,Math.ceil(n/3)))));
+  board.style.setProperty("--lumen-energy",String(q/Math.max(1,n)));
+  board.classList.remove("energy-pulse");void board.offsetWidth;board.classList.add("energy-pulse");
+  requestAnimationFrame(()=>{const cells=[...board.querySelectorAll(".cell")],lit=cells.filter(d=>d.querySelector(".lumen-orb"));lit.forEach((d,i)=>{d.style.setProperty("--spark-delay",(i*32)+"ms");d.classList.add("just-lit")});setTimeout(()=>cells.forEach(d=>d.classList.remove("just-lit")),520)});
+  if(q>1&&q<n&&momentum>=3)showRewardToast(q>=n-1?"✦ Le ciel s'aligne…":"✦ Belle avancée");
+ }
+ if(!halfRewardShown&&q>=Math.ceil(n/2)){halfRewardShown=true;halfSound();board.classList.add("board-half");showRewardToast("✦ Mi-chemin · le ciel s’éveille");setTimeout(()=>board.classList.remove("board-half"),780)}
  lastPlacedCount=q;updateLiveReward(q);
 }
 function launchWinStar(stars){
