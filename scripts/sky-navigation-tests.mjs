@@ -39,8 +39,8 @@ assert.equal(new Set(BASE_CONSTELLATIONS.map(c=>c.id)).size,BASE_CONSTELLATIONS.
 
 const gemini=BASE_CONSTELLATIONS.find(c=>c.label==="Gémeaux"),taurus=BASE_CONSTELLATIONS.find(c=>c.label==="Taureau");
 assert(gemini&&taurus&&gemini.packId===taurus.packId,"Gémeaux and Taureau must share the first Adventure");
-const firstPackModel=contentMapModel([]).skies[0].packs[0];
 const solvedThroughGemini=Object.fromEntries(Array.from({length:gemini.questStart+gemini.questCount},(_,i)=>[i,1]));
+const firstPackModel=contentMapModel([],{progress:{solved:solvedThroughGemini}}).skies[0].packs[0];
 const solved=id=>!!solvedThroughGemini[id];
 assert.equal(constellationUnlocked(taurus,firstPackModel,solved,()=>gemini.questStart+gemini.questCount-1),true,"Gémeaux complete unlocks Taureau immediately even before current quest advances");
 const missingLast={...solvedThroughGemini,[gemini.questStart+gemini.questCount-1]:0};
