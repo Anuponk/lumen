@@ -57,4 +57,26 @@ for(const count of [0,99,100,101,total,total+2]){
  assert.equal(model.lumenProgress.badges,badges,'Restoring extended history preserves player badges');
  assert.deepEqual(calls,['lumen_get_progress']);
 }
-console.log(JSON.stringify({lateGame:true,quests:total,transition100to101:true,replay:true,finalBoundary:true,cloudRestoreFixtures:6}));
+
+// Regression #128: stale cloud progress at quest 100 must not erase newer
+// local progress in Adventure 2. The union is normalized back to a prefix,
+// then missing cloud rows are uploaded.
+{
+ const calls=[],saved=[],cloudRows=Array.from({length:100},(_,i)=>({puzzle_id:i+1}));
+ const localSolved=Object.fromEntries(Array.from({length:103},(_,i)=>[i,1]));
+ const model={
+  lumenUser:{id:'fixture'},
+  lumenSupabase:{async rpc(name,args){calls.push(name);if(name==='lumen_get_progress')return {data:cloudRows,error:null};if(name==='lumen_save_progress'){saved.push(args.p_puzzle_id);return {data:null,error:null}}return {data:null,error:null}}},
+  lumenProgress:{solved:{...localSolved},historyBackup:{...localSolved},badges:{},performances:{}},
+  levelIndex:100
+ };
+ const hooks={campaignQuestCount,exactSkyScoreForSolvedPrefix:()=>157,saveLumenProgress(){},refreshJourney(){},init(){}};
+ const cloud=createCloudPersistence(model,hooks,{console,document:{}});
+ await cloud.cloudMergeProgress();
+ assert.equal(model.sequentialSolvedCount,103,'Stale cloud cannot roll Adventure 2 back to quest 101');
+ assert.equal(model.levelIndex,103,'Reload resumes after the newest solved quest');
+ assert.equal(Object.keys(model.lumenProgress.solved).length,103,'Local Adventure 2 stars/progress remain represented by solved history');
+ assert.deepEqual(saved,[101,102,103],'Missing Adventure 2 completions are repaired in cloud');
+}
+
+console.log(JSON.stringify({lateGame:true,quests:total,transition100to101:true,replay:true,finalBoundary:true,cloudRestoreFixtures:7,staleCloudMerge:true}));
