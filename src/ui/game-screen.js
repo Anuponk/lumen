@@ -68,10 +68,11 @@ function syncMobileAuthUI(){
 function hasInternalCapability(name){return lumenCapabilities.some(x=>(typeof x==="string"?x:x?.capability)===name)}
 function unlimitedShardsEnabled(){return hasInternalCapability("unlimited_shards")&&localStorage.getItem("lumenAdminUnlimitedShards")==="1"}
 function updateAdminTools(){
- const box=document.getElementById("adminTools"),toggle=document.getElementById("adminUnlimitedShards");
+ const box=document.getElementById("adminTools"),toggle=document.getElementById("adminUnlimitedShards"),cockpit=document.getElementById("adminCockpitOpen");
  if(!box||!toggle)return;
- const allowed=hasInternalCapability("unlimited_shards");
- box.hidden=!allowed;toggle.checked=allowed&&unlimitedShardsEnabled();
+ const shards=hasInternalCapability("unlimited_shards"),analytics=hasInternalCapability("analytics_cockpit");
+ box.hidden=!(shards||analytics);toggle.parentElement.hidden=!shards;toggle.checked=shards&&unlimitedShardsEnabled();
+ if(cockpit)cockpit.hidden=!analytics;
 }
 function updateAuthUI(){
  const u=document.getElementById("authUser"),login=document.getElementById("authLogin"),logout=document.getElementById("authLogout");
@@ -156,7 +157,9 @@ function trackAttemptEvent(name,extra={}){return trackLumenEvent(name,levelIndex
 
 let lastTrackedPuzzle=null;
 
-trackLumenEvent("session_start",null,{standalone:window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches});
+const appVersion=()=>document.querySelector('meta[name="lumen-build"]')?.content||document.getElementById("lumenVersion")?.textContent||"unknown";
+const analyticsContext=()=>({app_version:appVersion(),device:innerWidth<=760?"mobile":"desktop",standalone:!!(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)});
+trackLumenEvent("session_start",null,analyticsContext());
 function lumenIsStandalone(){return !!((window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||navigator.standalone)}
 let lumenInstallPrompt=null;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();lumenInstallPrompt=e});
@@ -711,9 +714,56 @@ function displayedCellState(r,c){
  return isAutoCross(r,c)?3:0;
 }
 
-const LUMEN_APP_VERSION="beta-2026.10";
+const LUMEN_APP_VERSION=appVersion();
 let feedbackKind="bug";
 function openBetaFeedback(){const modal=document.getElementById("feedbackModal"),status=document.getElementById("feedbackStatus");if(!modal)return;modal.hidden=false;if(status)status.textContent="";}
+function adminEsc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function adminNumber(v){return new Intl.NumberFormat("fr-FR").format(Number(v)||0)}
+function adminEventLabel(name){return ({session_start:"Ouverture",attempt_started:"Quête commencée",puzzle_start:"Quête commencée",attempt_completed:"Quête réussie",puzzle_complete:"Quête réussie",attempt_reset:"Réinitialisation",attempt_abandoned:"Abandon",hint_used:"Indice utilisé",verify_used:"Vérification",guided_intervention:"Contrôle guidé"}[name]||name)}
+async function loadAdminTimeline(key){
+ const box=document.getElementById("adminTimeline");box.innerHTML="<p>Chargement…</p>";
+ const {data,error}=await lumenSupabase.rpc("lumen_admin_player_timeline",{p_player_key:key,p_limit:100});
+ if(error){box.innerHTML="<p>Timeline indisponible.</p>";return}
+ box.innerHTML=(data||[]).map(x=>'<div class="admin-event"><span>'+adminEsc(adminEventLabel(x.event_name))+(x.puzzle_id?" · Q"+x.puzzle_id:"")+'</span><small>'+new Date(x.occurred_at).toLocaleString("fr-FR")+'</small></div>').join("")||"<p>Aucun événement.</p>";
+}
+function adminAlerts(rows){
+ const alerts=[];
+ for(const r of rows||[]){const started=Number(r.started)||0,completed=Number(r.completed)||0;if(started<3)continue;const rate=started?completed/started:0;if(rate<.55)alerts.push("Q"+r.puzzle_id+" : seulement "+Math.round(rate*100)+" % des joueurs observés terminent la quête ("+started+" joueurs).");if(Number(r.resets)>=started)alerts.push("Q"+r.puzzle_id+" : resets élevés ("+r.resets+" pour "+started+" joueurs).");if(Number(r.hints)>started*.8)alerts.push("Q"+r.puzzle_id+" : indices très utilisés ("+r.hints+").")}
+ return alerts.slice(0,6);
+}
+async function loadAdminCockpit(){
+ const status=document.getElementById("adminCockpitStatus"),days=Number(document.getElementById("adminCockpitDays")?.value||7);
+ status.textContent="Actualisation…";
+ const [cockpit,players,feedbacks]=await Promise.all([
+   lumenSupabase.rpc("lumen_admin_cockpit",{p_days:days}),
+   lumenSupabase.rpc("lumen_admin_players",{p_days:days}),
+   lumenSupabase.rpc("lumen_admin_feedback",{p_days:days})
+ ]);
+ if(cockpit.error){status.textContent="Cockpit indisponible : "+cockpit.error.message;return}
+ const d=cockpit.data||{},m=d.summary||{};
+ document.getElementById("adminCockpitKpis").innerHTML=[
+  ["Joueurs uniques",m.unique_players],["Nouveaux",m.new_players],["Revenants",m.returning_players],["DAU",m.dau],["WAU",m.wau],["Sessions",m.sessions],["Quêtes commencées",m.quests_started],["Quêtes terminées",m.quests_completed],["Feedbacks",m.feedback_count]
+ ].map(x=>'<div class="admin-kpi"><strong>'+adminNumber(x[1])+'</strong><span>'+x[0]+'</span></div>').join("");
+ const daily=d.daily||[],max=Math.max(1,...daily.map(x=>Number(x.players)||0));
+ document.getElementById("adminDailyChart").innerHTML=daily.map(x=>'<div class="admin-bar" style="height:'+Math.max(4,Math.round(100*(Number(x.players)||0)/max))+'%" data-label="'+adminEsc(x.day+" · "+x.players+" joueurs")+'"></div>').join("");
+ const ret=d.retention||{};document.getElementById("adminRetention").innerHTML=["j1","j3","j7"].map(k=>'<div><strong>'+adminNumber(ret[k])+' %</strong><span>'+k.toUpperCase()+'</span></div>').join("");
+ const funnel=d.funnel||[],first=Number(funnel[0]?.players)||1;document.getElementById("adminFunnel").innerHTML=funnel.map((x,i)=>{const prev=Number(funnel[i-1]?.players)||Number(x.players)||1;return '<div class="admin-funnel-row"><span>'+adminEsc(x.label)+'</span><strong>'+adminNumber(x.players)+' · '+Math.round(100*Number(x.players)/first)+' %'+(i?" · "+Math.round(100*Number(x.players)/prev)+" % étape":"")+'</strong></div>'}).join("");
+ document.getElementById("adminFriction").innerHTML=(d.friction||[]).map(x=>{const rate=Number(x.started)?Math.round(100*Number(x.completed)/Number(x.started)):0;return '<tr><td>Q'+x.puzzle_id+'</td><td>'+adminNumber(x.started)+'</td><td>'+rate+' %</td><td>'+adminNumber(x.resets)+'</td><td>'+adminNumber(x.abandons)+'</td><td>'+adminNumber(x.hints)+'</td><td>'+adminNumber(x.verifies)+'</td><td>'+(x.median_seconds==null?"—":Math.round(x.median_seconds)+" s")+'</td></tr>'}).join("");
+ const alerts=adminAlerts(d.friction);document.getElementById("adminAlerts").innerHTML=alerts.map(x=>'<div class="admin-alert"><strong>⚠</strong><span>'+adminEsc(x)+'</span></div>').join("")||"<p>Pas d’anomalie significative avec le volume actuel.</p>";
+ document.getElementById("adminPlayers").innerHTML=players.error?"<p>Joueurs indisponibles.</p>":(players.data||[]).map(x=>'<div class="admin-player" data-player="'+adminEsc(x.player_key)+'"><span><strong>'+adminEsc(x.display_name)+'</strong><br><small>'+adminEsc(x.player_type)+" · Q"+(x.current_quest||"—")+' · '+x.sessions+' sessions</small></span><small>'+new Date(x.last_seen).toLocaleString("fr-FR")+'</small></div>').join("");
+ document.querySelectorAll("#adminPlayers .admin-player").forEach(x=>x.onclick=()=>loadAdminTimeline(x.dataset.player));
+ document.getElementById("adminFeedbacks").innerHTML=feedbacks.error?"<p>Feedbacks indisponibles.</p>":(feedbacks.data||[]).map(x=>'<div class="admin-feedback"><strong>'+adminEsc(x.kind)+' · '+adminEsc(x.player_label)+(x.puzzle_id?" · Q"+x.puzzle_id:"")+'</strong><p>'+adminEsc(x.message||"Sans commentaire")+'</p><small>'+new Date(x.created_at).toLocaleString("fr-FR")+(x.app_version?" · "+adminEsc(x.app_version):"")+'</small></div>').join("");
+ status.textContent="Mis à jour à "+new Date().toLocaleTimeString("fr-FR");
+}
+function setupAdminCockpit(){
+ const open=document.getElementById("adminCockpitOpen"),modal=document.getElementById("adminCockpit"),close=document.getElementById("adminCockpitClose"),refresh=document.getElementById("adminCockpitRefresh"),days=document.getElementById("adminCockpitDays");
+ if(!open||!modal)return;
+ open.onclick=()=>{if(!hasInternalCapability("analytics_cockpit"))return;modal.hidden=false;loadAdminCockpit()};
+ close.onclick=()=>modal.hidden=true;refresh.onclick=loadAdminCockpit;days.onchange=loadAdminCockpit;
+ modal.onclick=e=>{if(e.target===modal)modal.hidden=true};
+}
+setupAdminCockpit();
+
 function setupBetaFeedback(){
  const modal=document.getElementById("feedbackModal"),status=document.getElementById("feedbackStatus");
  document.getElementById("betaFeedbackBtn").onclick=openBetaFeedback;
@@ -724,9 +774,9 @@ function setupBetaFeedback(){
  document.getElementById("feedbackSend").onclick=async()=>{
   const btn=document.getElementById("feedbackSend");btn.disabled=true;status.textContent="Envoi…";
   if(!lumenSupabase){status.textContent="Connexion indisponible.";btn.disabled=false;return}
-  const {error}=await lumenSupabase.rpc("lumen_send_feedback",{p_anonymous_id:lumenAnonymousId,p_kind:feedbackKind,p_message:document.getElementById("feedbackText").value,p_puzzle_id:levelIndex+1,p_board_state:{state:state,regions:puz.reg},p_elapsed_seconds:activeGameSeconds(),p_hints_used:usedHintThisGame?1:0,p_app_version:LUMEN_APP_VERSION,p_user_agent:navigator.userAgent});
+  const {error}=await lumenSupabase.rpc("lumen_send_feedback",{p_anonymous_id:lumenAnonymousId,p_kind:feedbackKind,p_message:document.getElementById("feedbackText").value,p_puzzle_id:levelIndex+1,p_board_state:null,p_elapsed_seconds:activeGameSeconds(),p_hints_used:usedHintThisGame?1:0,p_app_version:LUMEN_APP_VERSION,p_user_agent:navigator.userAgent});
   if(error){status.textContent="Envoi impossible. Réessaie.";console.warn("LUMEN feedback",error);btn.disabled=false;return}
-  status.textContent="Merci, retour envoyé.";document.getElementById("feedbackText").value="";setTimeout(()=>{modal.hidden=true;btn.disabled=false},800);
+  trackLumenEvent("feedback_submitted",levelIndex+1,{...analyticsContext(),kind:feedbackKind});status.textContent="Merci, retour envoyé.";document.getElementById("feedbackText").value="";setTimeout(()=>{modal.hidden=true;btn.disabled=false},800);
  };
  document.querySelectorAll(".difficulty-choices button").forEach(b=>b.onclick=()=>{
   // Rating is the final action on the completion card: advance immediately.
