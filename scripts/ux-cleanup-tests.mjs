@@ -68,7 +68,7 @@ try{
  check(gameScreenSource.includes('visualWindowMs=30000'),'Rapidité countdown opens at 30 seconds');
  check(gameScreenSource.includes('remainingMs<=10000'),'Only the final 10 seconds use the stronger state');
  check(await evaluate('getComputedStyle(document.getElementById("speedCountdownFill")).animationName==="none"'),'Rapidité countdown does not blink or pulse');
- check(performanceSource.includes('if(q<=20)return 90'),'Badge timing threshold is unchanged');
+ check(performanceSource.includes('return 60'),'Badge timing threshold is not the global 60-second rule');
 
  const beforeLearning=await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress)`);
  await click('#tutorialHelp');await click('#replayLearning');await sleep(120);
