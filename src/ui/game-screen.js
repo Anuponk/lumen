@@ -166,7 +166,23 @@ function trackAttemptEvent(name,extra={}){return trackLumenEvent(name,levelIndex
 
 let lastTrackedPuzzle=null;
 
-const appVersion=()=>document.querySelector('meta[name="lumen-build"]')?.content||document.getElementById("lumenVersion")?.textContent||"unknown";
+const LUMEN_BUILD_URL="/build.json";
+let lumenRuntimeBuild="unknown";
+const appVersion=()=>lumenRuntimeBuild;
+async function fetchLumenBuild(){
+ try{
+  const response=await fetch(LUMEN_BUILD_URL+"?t="+Date.now(),{cache:"no-store"});
+  if(!response.ok)throw Error("build "+response.status);
+  return await response.json();
+ }catch(_){return null}
+}
+function showLumenBuild(build){
+ const value=build?.id||"unknown";
+ lumenRuntimeBuild=value;
+ const meta=document.querySelector('meta[name="lumen-build"]');if(meta)meta.content=value;
+ const node=document.getElementById("lumenVersion");if(node)node.textContent="LUMEN · "+value;
+ return value;
+}
 const analyticsContext=()=>({app_version:appVersion(),device:innerWidth<=760?"mobile":"desktop",standalone:!!(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)});
 trackLumenEvent("session_start",null,analyticsContext());
 function lumenIsStandalone(){return !!((window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||navigator.standalone)}
@@ -1497,6 +1513,8 @@ markLumenSeen();
 if(!qaActive)cloudMergeHistoricalPerformance(lumenAnonymousId);
 initLumenCloud();
 
+fetchLumenBuild().then(build=>{if(build)showLumenBuild(build)});
+
 if("serviceWorker" in navigator){
  let lumenReloadingForSW=false;
  const updateStatus=message=>{const node=document.getElementById("appUpdateStatus");if(node)node.textContent=message};
@@ -1504,10 +1522,15 @@ if("serviceWorker" in navigator){
  const checkLumenUpdate=async({manual=false}={})=>{
   try{
    if(manual)updateStatus("Recherche d’une mise à jour…");
+   const before=appVersion();
+   const available=await fetchLumenBuild();
    const registration=await navigator.serviceWorker.register("/sw.js",{updateViaCache:"none"});
    await registration.update();
    activateWaitingWorker(registration);
-   if(manual&&!registration.waiting&&!registration.installing)updateStatus("LUMEN est à jour · "+appVersion());
+   if(manual&&!registration.waiting&&!registration.installing){
+    const remote=available?.id||"inconnue";
+    updateStatus(before===remote?"LUMEN est à jour · "+remote:"Nouvelle version "+remote+" disponible · rechargement…");
+   }
    return registration;
   }catch(error){
    console.warn("LUMEN service worker",error);
