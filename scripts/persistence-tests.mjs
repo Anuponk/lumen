@@ -94,6 +94,15 @@ for(const options of scenarios){
  };
  normalized.trace=normalizePresentationTrace(normalizeOwnershipTrace(normalized.trace));
  expected.trace=normalizePresentationTrace(normalizeOwnershipTrace(expected.trace));
+ // #128 also repairs cloud rows missing from the monotonic local prefix.
+ // These uploads are the intended side effect, not a legacy-contract drift.
+ if(!options.guest&&!options.networkError&&Array.isArray(options.cloud)&&options.cloud.length){
+   const cloudPuzzleIds=new Set(options.cloud.map(x=>Number(x.puzzle_id)));
+   const repairIds=[];for(let i=1;i<=normalized.sequential;i++)if(!cloudPuzzleIds.has(i))repairIds.push(i);
+   const stripRepairs=trace=>trace.filter(x=>!(x.name==='lumen_save_progress'&&x.args?.p_duration_seconds===null&&repairIds.includes(Number(x.args?.p_puzzle_id))));
+   normalized.trace=stripRepairs(normalized.trace);
+ }
+
  const stripOwnershipWarnings=warnings=>warnings.filter(x=>x?.[0]!=='LUMEN entitlements'&&x?.[0]!=='LUMEN capabilities');
  normalized.warnings=stripOwnershipWarnings(normalized.warnings);
  expected.warnings=stripOwnershipWarnings(expected.warnings);
