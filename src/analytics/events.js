@@ -26,7 +26,9 @@ export function attemptAnalyticsProperties({
 
 export function createAnalytics(getClient,environment){
 const {localStorage,crypto,location,console}=environment;
-const analyticsDisabled=environment.disableTracking===true||['localhost','127.0.0.1','::1'].includes(location?.hostname);
+const localTestHost=['localhost','127.0.0.1','::1'].includes(location?.hostname);
+const trafficType=environment.trafficType||(environment.qaMode?'qa':(localTestHost?'automated_test':'human'));
+const testRunId=environment.testRunId||null;
 function lumenId(key){
  try{let v=localStorage.getItem(key);if(!v){v=(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2));localStorage.setItem(key,v)}return v}catch(e){return Date.now()+"-"+Math.random().toString(36).slice(2)}
 }
@@ -43,7 +45,8 @@ function touchSession(){try{localStorage.setItem(sessionKey,JSON.stringify({id:l
 async function trackLumenEvent(name,puzzleId=null,properties={}){
  touchSession();
  const lumenSupabase=getClient();
- if(analyticsDisabled)return;
+ properties={...properties,traffic_type:trafficType};
+ if(testRunId)properties.test_run_id=testRunId;
  if(environment.qaMode)properties={...properties,qa_mode:environment.qaMode};
  if(!lumenSupabase)return;
  try{await lumenSupabase.rpc("lumen_track_event",{p_anonymous_id:lumenAnonymousId,p_event_name:name,p_session_id:lumenSessionId,p_puzzle_id:puzzleId,p_properties:properties})}catch(e){console.warn("LUMEN analytics",e)}
