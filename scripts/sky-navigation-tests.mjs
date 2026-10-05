@@ -41,10 +41,11 @@ const gemini=BASE_CONSTELLATIONS.find(c=>c.label==="Gémeaux"),taurus=BASE_CONST
 assert(gemini&&taurus&&gemini.packId===taurus.packId,"Gémeaux and Taureau must share the first Adventure");
 const solvedThroughGemini=Object.fromEntries(Array.from({length:gemini.questStart+gemini.questCount},(_,i)=>[i,1]));
 const firstPackModel=contentMapModel([],{progress:{solved:solvedThroughGemini}}).skies[0].packs[0];
+const taurusView=firstPackModel.constellations.find(c=>c.id===taurus.id);
 const solved=id=>!!solvedThroughGemini[id];
-assert.equal(constellationUnlocked(taurus,firstPackModel,solved,()=>gemini.questStart+gemini.questCount-1),true,"Gémeaux complete unlocks Taureau immediately even before current quest advances");
+assert.equal(constellationUnlocked(taurusView,firstPackModel,solved,()=>gemini.questStart+gemini.questCount-1),true,"Gémeaux complete unlocks Taureau immediately even before current quest advances");
 const missingLast={...solvedThroughGemini,[gemini.questStart+gemini.questCount-1]:0};
-assert.equal(constellationUnlocked(taurus,firstPackModel,id=>!!missingLast[id],()=>gemini.questStart+gemini.questCount-1),false,"Taureau stays locked before Gémeaux is complete");
+assert.equal(constellationUnlocked(taurusView,firstPackModel,id=>!!missingLast[id],()=>gemini.questStart+gemini.questCount-1),false,"Taureau stays locked before Gémeaux is complete");
 for(let i=1;i<firstPackModel.constellations.length;i++){
  const previous=firstPackModel.constellations[i-1],entry=firstPackModel.constellations[i];
  const done=Object.fromEntries(Array.from({length:previous.questCount},(_,j)=>[previous.questStart+j,1]));
