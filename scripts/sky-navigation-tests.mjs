@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {CONTENT_PACKS,BASE_PACK_ID,BASE_CONSTELLATIONS,contentMapModel,hasPackAccess,preserveStartedAdventureAccess} from '../src/campaign/content.js';
-import {skySelection} from '../src/ui/sky-navigation.js';
+import {skySelection,constellationUnlocked} from '../src/ui/sky-navigation.js';
 const base=CONTENT_PACKS[0],next=CONTENT_PACKS[1],third=CONTENT_PACKS[2];
 assert.equal(base.id,BASE_PACK_ID);assert.equal(base.constellationIds.length,10);
 const prefix=count=>({solved:Object.fromEntries(Array.from({length:count},(_,i)=>[i,1])),badges:{historical:1}});
@@ -36,4 +36,19 @@ model.skies[0].packs[0].accessible=false;assert.equal(skySelection(model,{packId
 assert.equal(skySelection(model,{skyId:'removed',packId:'removed',page:-3},12).page,0);
 model.skies[1].packs[0].accessible=false;assert.equal(skySelection(model,{skyId:'s2'},12).adventure,null);
 assert.equal(new Set(BASE_CONSTELLATIONS.map(c=>c.id)).size,BASE_CONSTELLATIONS.length);
-console.log(JSON.stringify({skyNavigation:true,accessPreservation:true,noUnlockMechanic:true,pages:[1,6,7,12,103],multipleSkies:true,accessRefresh:true}));
+
+const gemini=BASE_CONSTELLATIONS.find(c=>c.label==="Gémeaux"),taurus=BASE_CONSTELLATIONS.find(c=>c.label==="Taureau");
+assert(gemini&&taurus&&gemini.packId===taurus.packId,"Gémeaux and Taureau must share the first Adventure");
+const firstPackModel=contentMapModel([]).skies[0].packs[0];
+const solvedThroughGemini=Object.fromEntries(Array.from({length:gemini.questStart+gemini.questCount},(_,i)=>[i,1]));
+const solved=id=>!!solvedThroughGemini[id];
+assert.equal(constellationUnlocked(taurus,firstPackModel,solved,()=>gemini.questStart+gemini.questCount-1),true,"Gémeaux complete unlocks Taureau immediately even before current quest advances");
+const missingLast={...solvedThroughGemini,[gemini.questStart+gemini.questCount-1]:0};
+assert.equal(constellationUnlocked(taurus,firstPackModel,id=>!!missingLast[id],()=>gemini.questStart+gemini.questCount-1),false,"Taureau stays locked before Gémeaux is complete");
+for(let i=1;i<firstPackModel.constellations.length;i++){
+ const previous=firstPackModel.constellations[i-1],entry=firstPackModel.constellations[i];
+ const done=Object.fromEntries(Array.from({length:previous.questCount},(_,j)=>[previous.questStart+j,1]));
+ assert.equal(constellationUnlocked(entry,firstPackModel,id=>!!done[id],()=>previous.questStart+previous.questCount-1),true,`${previous.label} completion unlocks ${entry.label}`);
+}
+
+console.log(JSON.stringify({skyNavigation:true,accessPreservation:true,constellationUnlock:true,pages:[1,6,7,12,103],multipleSkies:true,accessRefresh:true}));
