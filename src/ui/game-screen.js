@@ -1499,8 +1499,36 @@ initLumenCloud();
 
 if("serviceWorker" in navigator){
  let lumenReloadingForSW=false;
- navigator.serviceWorker.addEventListener("controllerchange",()=>{if(lumenReloadingForSW)return;lumenReloadingForSW=true;location.reload()});
- window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=8",{updateViaCache:"none"}).then(r=>r.update()).catch(e=>console.warn("LUMEN service worker",e)));
+ const updateStatus=message=>{const node=document.getElementById("appUpdateStatus");if(node)node.textContent=message};
+ const activateWaitingWorker=registration=>{if(registration.waiting)registration.waiting.postMessage({type:"SKIP_WAITING"})};
+ const checkLumenUpdate=async({manual=false}={})=>{
+  try{
+   if(manual)updateStatus("Recherche d’une mise à jour…");
+   const registration=await navigator.serviceWorker.register("/sw.js",{updateViaCache:"none"});
+   await registration.update();
+   activateWaitingWorker(registration);
+   if(manual&&!registration.waiting&&!registration.installing)updateStatus("LUMEN est à jour · "+appVersion());
+   return registration;
+  }catch(error){
+   console.warn("LUMEN service worker",error);
+   if(manual)updateStatus("Impossible de vérifier la mise à jour.");
+   return null;
+  }
+ };
+ navigator.serviceWorker.addEventListener("controllerchange",()=>{
+  if(lumenReloadingForSW)return;
+  lumenReloadingForSW=true;
+  location.reload();
+ });
+ window.addEventListener("load",()=>checkLumenUpdate());
+ const forceUpdate=document.getElementById("forceAppUpdate");
+ if(forceUpdate)forceUpdate.onclick=async()=>{
+  updateStatus("Mise à jour forcée…");
+  if("caches" in window)await caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith("lumen-assets-")).map(key=>caches.delete(key))));
+  const registration=await checkLumenUpdate({manual:true});
+  if(registration?.waiting){activateWaitingWorker(registration);return}
+  location.reload();
+ };
 }
 
 // Preserve the public browser testing entry points.

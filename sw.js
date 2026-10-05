@@ -1,10 +1,12 @@
-const CACHE="lumen-assets-v8";
+const CACHE="lumen-assets-v9";
 const SHELL=["/manifest.webmanifest","/icon.svg","/icon-maskable.svg"];
 
 self.addEventListener("install",e=>{
  self.skipWaiting();
  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)));
 });
+
+self.addEventListener("message",e=>{if(e.data&&e.data.type==="SKIP_WAITING")self.skipWaiting()});
 
 self.addEventListener("activate",e=>{
  e.waitUntil(
