@@ -31,13 +31,25 @@ export function challengeSnapshot({questIndex,seconds,run,assistanceUsed=false})
 
 export function compareChallenge(source,participant){
  if(!source||!participant)return null;
- if(participant.status==="abandoned")return {kind:"abandoned",headline:"Défi terminé",detail:"Tu n’as pas terminé cette quête."};
+ if(participant.status==="abandoned")return {kind:"abandoned",winner:"source",headline:"Défi perdu",detail:"Tu n’as pas terminé cette quête."};
  const delta=Math.round(Number(participant.duration_seconds)-Number(source.duration_seconds));
- let detail=delta===0?"Même temps.":delta<0?Math.abs(delta)+" s plus rapide.":delta+" s plus lent.";
- if(!!source.autonomy!==!!participant.autonomy){
-  detail=participant.autonomy?"Tu as terminé en Autonomie ; le défi d’origine utilisait une aide.":"Tu as terminé plus "+(delta<0?"rapidement":"lentement")+", mais avec une aide.";
- }
- return {kind:"completed",deltaSeconds:delta,headline:"Défi réussi !",detail};
+ const sourceAssisted=source.assistance_used===true||source.autonomy===false;
+ const participantAssisted=participant.assistance_used===true||participant.autonomy===false;
+ let winner="tie",reason="time";
+ if(sourceAssisted!==participantAssisted){
+  winner=participantAssisted?"source":"participant";
+  reason="assistance";
+ }else if(delta<0)winner="participant";
+ else if(delta>0)winner="source";
+ const kind=winner==="participant"?"won":winner==="source"?"lost":"tied";
+ let detail;
+ if(reason==="assistance"){
+  detail=winner==="participant"?"Tu as gagné en restant autonome, contrairement au défi d’origine.":"Ton adversaire est resté autonome ; tu as utilisé une aide.";
+ }else if(winner==="tie")detail="Égalité parfaite : même niveau d’aide et même temps.";
+ else if(winner==="participant")detail=Math.abs(delta)+" s plus rapide à niveau d’aide égal.";
+ else detail=delta+" s plus lent à niveau d’aide égal.";
+ const headline=kind==="won"?"Défi remporté !":kind==="lost"?"Défi perdu":"Égalité !";
+ return {kind,winner,reason,deltaSeconds:delta,headline,detail};
 }
 
 export function challengeParticipantKey({userId,anonymousId}={}){
