@@ -580,3 +580,19 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 
 /* Account onboarding (#114) */
 .account-optin{position:fixed;inset:0;z-index:1420;display:flex;align-items:center;justify-content:center;background:rgba(3,7,13,.88);padding:24px}.account-optin[hidden]{display:none}.account-optin-card{width:min(420px,100%);background:#0d1a29;color:#eefaff;border:1px solid rgba(104,231,255,.35);border-radius:24px;padding:24px;text-align:center;box-shadow:0 18px 70px rgba(0,0,0,.45)}.account-optin-icon{font-size:42px;color:#eaffff;text-shadow:0 0 14px rgba(104,231,255,.9)}.account-optin-card h2{margin:8px 0 10px}.account-optin-card p{color:#bfd0df;line-height:1.45}.account-optin-actions{display:grid;gap:9px;margin-top:18px}.account-optin-actions .primary{background:#68e7ff;color:#07111d;border-color:#68e7ff}.account-saved-toast{position:fixed;z-index:1600;left:50%;bottom:max(28px,env(safe-area-inset-bottom));transform:translateX(-50%);padding:10px 15px;border-radius:999px;background:#102535;color:#dffcff;border:1px solid rgba(104,231,255,.35);font-size:13px;font-weight:850;box-shadow:0 10px 35px rgba(0,0,0,.35)}.account-saved-toast[hidden]{display:none}
+
+
+/* LUMEN — gameplay energy & staged rewards */
+#board{--lumen-energy:0;transition:box-shadow .35s ease,filter .35s ease}
+#board.energy-pulse{animation:lumenEnergyPulse .52s ease-out}
+.cell.just-lit .lumen-orb{animation:guardianArrival .52s cubic-bezier(.2,.9,.3,1) var(--spark-delay,0ms) both}
+.cell.victory-wave{animation:victoryCellWave .72s ease-out var(--victory-delay,0ms) both}
+.success-reward{opacity:0;transform:translateY(10px) scale(.88);animation:rewardReveal .48s cubic-bezier(.2,1.35,.35,1) var(--reward-delay,0ms) forwards}
+#successRewards.mastery-earned{position:relative}
+#successRewards.mastery-earned:after{content:"MAÎTRISE";display:block;margin:12px auto 2px;width:max-content;padding:7px 13px;border:1px solid rgba(104,231,255,.55);border-radius:999px;color:#dffcff;font-size:12px;font-weight:950;letter-spacing:.16em;text-shadow:0 0 12px rgba(104,231,255,.8);box-shadow:0 0 24px rgba(104,231,255,.16);opacity:0;animation:masteryReveal .7s ease 1.05s forwards}
+@keyframes lumenEnergyPulse{0%{filter:brightness(1)}45%{filter:brightness(1.12);box-shadow:0 24px 70px rgba(0,0,0,.45),0 0 calc(16px + 34px * var(--lumen-energy)) rgba(104,231,255,.2),inset 0 0 0 1px rgba(129,179,220,.18)}100%{filter:brightness(1)}}
+@keyframes guardianArrival{0%{transform:scale(.55);filter:brightness(1.8)}55%{transform:scale(1.22);filter:brightness(1.45)}100%{transform:scale(1);filter:brightness(1)}}
+@keyframes victoryCellWave{0%{filter:brightness(1)}45%{filter:brightness(1.55);transform:scale(.97);box-shadow:inset 0 0 0 2px rgba(104,231,255,.55),0 0 20px rgba(104,231,255,.35)}100%{filter:brightness(1);transform:scale(1)}}
+@keyframes rewardReveal{to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes masteryReveal{0%{opacity:0;transform:scale(.72);filter:brightness(2)}70%{opacity:1;transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){#board.energy-pulse,.cell.just-lit .lumen-orb,.cell.victory-wave,.success-reward,#successRewards.mastery-earned:after{animation-duration:.01ms!important;animation-delay:0ms!important}}
