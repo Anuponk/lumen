@@ -538,13 +538,13 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  #mapModal .adventure-summary{line-height:1.25}
  #mapModal #sectorTabs{gap:7px}
  #mapModal .constellation-pages{min-height:34px}
- #mapDetail{gap:10px}
- #mapDetail .puzzle-grid{max-height:none;overflow:hidden;gap:7px}
- #mapDetail .performance-legend{box-sizing:border-box;grid-template-columns:repeat(2,minmax(0,1fr));padding:10px 38px 10px 10px;column-gap:10px;row-gap:8px;width:100%;max-width:100%;min-width:0;overflow:hidden;font-size:12px}
- #mapDetail .performance-legend span{min-width:0;white-space:nowrap;font-size:clamp(10px,3vw,12px);gap:5px}
- #mapDetail .performance-legend .performance-icon{width:15px;height:15px}
- #mapDetail .sky-card{padding:8px;flex:0 1 42%;min-height:180px;max-height:300px}
- #mapDetail .sky-svg{max-height:170px}
+ #mapDetail{gap:10px;flex:0 1 auto}
+ #mapDetail .puzzle-grid{max-height:none;overflow:visible;gap:7px}
+ #mapDetail .performance-legend{box-sizing:border-box;grid-template-columns:repeat(2,minmax(0,1fr));padding:12px 42px 12px 12px;column-gap:16px;row-gap:10px;width:100%;max-width:100%;min-width:0;overflow:visible;font-size:13px}
+ #mapDetail .performance-legend span{min-width:0;white-space:nowrap;font-size:clamp(11px,3.2vw,13px);gap:6px}
+ #mapDetail .performance-legend .performance-icon{width:17px;height:17px}
+ #mapDetail .sky-card{padding:8px;flex:0 0 auto;min-height:0;max-height:none}
+ #mapDetail .sky-svg{height:190px;flex:0 0 190px;max-height:190px}
  #mapModal .my-challenges-entry{min-height:44px}
 }
 @media(min-width:701px){#sectorTabs{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}.constellation-card strong{font-size:14px}}
