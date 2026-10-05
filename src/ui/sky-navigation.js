@@ -1,5 +1,13 @@
 // One responsive component: browsing state never writes campaign progression.
 export const CONSTELLATIONS_PER_PAGE=6;
+export function constellationUnlocked(entry,pack,getSolved,getQuest){
+ if(!entry?.accessible)return false;
+ const entries=pack?.constellations||[],index=entries.findIndex(c=>c.id===entry.id);
+ if(index<=0)return index===0;
+ const previous=entries[index-1];
+ const previousCompleted=Array.from({length:previous.questCount},(_,i)=>getSolved(previous.questStart+i)).every(Boolean);
+ return previousCompleted||!!getSolved(entry.questStart)||entry.questStart<=getQuest();
+}
 export function skySelection(model,selection={},questIndex=0){
  const skies=model.skies||[],activeSky=skies.find(s=>s.packs.some(p=>questIndex>=p.legacyQuestStart&&questIndex<p.legacyQuestStart+p.questCount))||skies[0];
  const sky=skies.find(s=>s.id===selection.skyId)||activeSky;
@@ -47,7 +55,7 @@ export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit
   const pack=current.adventure,done=pack?.constellations.filter(completed).length||0;
   element('adventureSummary').textContent=pack?`${pack.displayName||'Aventure'} · ${done}/${pack.constellations.length} constellations · ${state(pack)}`:'Les Aventures de ce Ciel sont verrouillées';
   tabs.replaceChildren();
-  for(const entry of current.entries){const b=document.createElement('button'),shape=getShape(entry),lit=getLit(entry),unlocked=entry.accessible&&(getSolved(entry.questStart)||entry.questStart<=getQuest()),done=completed(entry);b.className='sector-tab constellation-card'+(entry.id===selectedConstellation?.id?' active':'')+(unlocked?'':' locked');b.dataset.contentId=entry.id;b.dataset.packId=entry.packId;b.setAttribute('aria-label',`${entry.label} · ${lit}/${shape?.count||0} étoiles · ${done?'Terminée':unlocked?'En cours':'Verrouillée'}`);
+  for(const entry of current.entries){const b=document.createElement('button'),shape=getShape(entry),lit=getLit(entry),unlocked=constellationUnlocked(entry,pack,getSolved,getQuest),done=completed(entry);b.className='sector-tab constellation-card'+(entry.id===selectedConstellation?.id?' active':'')+(unlocked?'':' locked');b.dataset.contentId=entry.id;b.dataset.packId=entry.packId;b.setAttribute('aria-label',`${entry.label} · ${lit}/${shape?.count||0} étoiles · ${done?'Terminée':unlocked?'En cours':'Verrouillée'}`);
    if(shape){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 290 115');svg.setAttribute('aria-hidden','true');for(const [a,z] of shape.edges||[]){const line=document.createElementNS(svg.namespaceURI,'line');line.setAttribute('x1',shape.pts[a][0]);line.setAttribute('y1',shape.pts[a][1]);line.setAttribute('x2',shape.pts[z][0]);line.setAttribute('y2',shape.pts[z][1]);line.setAttribute('class','sky-line'+(a<lit&&z<lit?' on':''));svg.appendChild(line)}for(const [i,point] of (shape.pts||[]).entries()){const circle=document.createElementNS(svg.namespaceURI,'circle');circle.setAttribute('cx',point[0]);circle.setAttribute('cy',point[1]);circle.setAttribute('r','4');circle.setAttribute('class','sky-star'+(i<lit?' on':''));svg.appendChild(circle)}b.appendChild(svg)}
    b.setAttribute('aria-disabled',String(!unlocked));const name=document.createElement('strong');name.textContent=entry.label.replace(' · Grand Chariot','');b.appendChild(name);const info=document.createElement('small');info.textContent=`${lit}/${shape?.count||0} ★ · ${done?'Terminée':unlocked?'En cours':'🔒'}${getMastered(entry)?' · ✦':''}`;b.appendChild(info);
    b.onclick=()=>{if(!unlocked)return;selectedConstellation=entry;setView('detail');onConstellation(entry)};tabs.appendChild(b);
