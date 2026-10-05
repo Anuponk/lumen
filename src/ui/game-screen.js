@@ -59,6 +59,13 @@ let lumenSupabase=null,lumenUser=null,lumenCloudReady=false,lumenEntitlements=[]
 try{lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY)}catch(e){console.warn("LUMEN cloud unavailable",e)}
 let lumenNickname="";
 
+let accountOfferSignInPending=false;
+function accountOfferKey(name){return qaKey("lumenAccountOffer"+name)}
+function showAccountSavedConfirmation(){const toast=document.getElementById("accountSavedToast");if(!toast)return;toast.hidden=false;setTimeout(()=>{toast.hidden=true},2200)}
+function accountOfferMilestone(){const solved=solvedCount(),first=CONSTELLATION_GRID_COUNTS[0]||0,three=CONSTELLATION_GRID_COUNTS.slice(0,3).reduce((a,b)=>a+b,0);if(solved>=three)return 3;if(solved>=first)return 1;return 0}
+function maybeOfferAccount(){if(lumenUser||socialChallenge)return;const milestone=accountOfferMilestone();if(!milestone)return;let dismissed=0,shown=0;try{dismissed=Number(localStorage.getItem(accountOfferKey("DismissedMilestone"))||0);shown=Number(localStorage.getItem(accountOfferKey("ShownMilestone"))||0)}catch(_){}if(milestone===1&&dismissed>=1)return;if(milestone===3&&dismissed>=3)return;if(shown>=milestone)return;const install=document.getElementById("installOptin");if(install&&!install.hidden)return;const box=document.getElementById("accountOptin");if(!box)return;box.hidden=false;try{localStorage.setItem(accountOfferKey("ShownMilestone"),String(milestone))}catch(_){}trackLumenEvent("account_offer_shown",null,{milestone,source:"constellation_complete",qa:qaActive})}
+function dismissAccountOffer(){const box=document.getElementById("accountOptin");if(!box||box.hidden)return;const milestone=accountOfferMilestone();box.hidden=true;try{localStorage.setItem(accountOfferKey("DismissedMilestone"),String(milestone))}catch(_){}trackLumenEvent("account_offer_later",null,{milestone,source:"constellation_complete",qa:qaActive})}
+async function acceptAccountOffer(){const box=document.getElementById("accountOptin");if(box)box.hidden=true;const milestone=accountOfferMilestone();trackLumenEvent("account_offer_accept",null,{milestone,source:"constellation_complete",qa:qaActive});if(!lumenSupabase){trackLumenEvent("account_signin_failure",null,{milestone,reason:"cloud_unavailable",qa:qaActive});return}accountOfferSignInPending=true;try{sessionStorage.setItem("lumenAccountOfferSignInPending","1")}catch(_){}const result=await signIn(location.origin+location.pathname);if(!result.ok){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_failure",null,{milestone,reason:result.reason||"oauth",qa:qaActive})}}
 function syncMobileAuthUI(){
  const status=document.getElementById("mobileAuthStatus"),action=document.getElementById("mobileAuthAction"),icon=document.getElementById("mobileAccount");
  if(!status||!action||!icon)return;
@@ -75,6 +82,7 @@ function updateAdminTools(){
  if(cockpit)cockpit.hidden=!analytics;
 }
 function updateAuthUI(){
+ const wasOfferPending=accountOfferSignInPending||(()=>{try{return sessionStorage.getItem("lumenAccountOfferSignInPending")==="1"}catch(_){return false}})();
  const u=document.getElementById("authUser"),login=document.getElementById("authLogin"),logout=document.getElementById("authLogout");
  if(!u||!login||!logout)return;
  if(lumenUser){
@@ -85,6 +93,7 @@ function updateAuthUI(){
    login.hidden=false; logout.hidden=true;
  }
  syncMobileAuthUI();updateAdminTools();
+ if(lumenUser&&wasOfferPending){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_success",null,{source:"account_offer",qa:qaActive});showAccountSavedConfirmation();const box=document.getElementById("accountOptin");if(box)box.hidden=true}
 }
 function setupQaMode(){
  if(!qaActive)return;
@@ -1373,7 +1382,7 @@ function showSkyReveal(beforeEarned=null,checkpoint=null){
  let stars=p.pts.map((v,i)=>'<circle class="sky-star '+(i<p.lit?'on ':'')+(i===idx?'new-star':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i===idx?6:i<p.lit?4:3)+'"/>').join("");
  canvas.innerHTML='<svg class="sky-reveal-svg" viewBox="0 0 290 115">'+lines+stars+'</svg><div>'+p.lit+' / '+p.count+' étoiles</div>';o.hidden=false;if(completedIndex>=0)celebrateConstellationReveal();
 }
-document.getElementById("skyRevealContinue").onclick=()=>{const o=document.getElementById("skyReveal");o.hidden=true;o.classList.remove("complete-celebration");o.querySelectorAll(".sky-bravo").forEach(x=>x.remove());document.querySelectorAll(".sky-spark").forEach(x=>x.remove());if(adventurePending){const completed=adventurePending;adventurePending=null;hideSuccess();openJourneyMap();skyNavigation.showCompletion(completed);return}if(endgamePending){endgamePending=false;showEndgameCelebration();return}document.getElementById("successOverlay").classList.add("show")};
+document.getElementById("skyRevealContinue").onclick=()=>{const o=document.getElementById("skyReveal");const completedReveal=o.classList.contains("complete-celebration");o.hidden=true;o.classList.remove("complete-celebration");o.querySelectorAll(".sky-bravo").forEach(x=>x.remove());document.querySelectorAll(".sky-spark").forEach(x=>x.remove());if(adventurePending){const completed=adventurePending;adventurePending=null;hideSuccess();openJourneyMap();skyNavigation.showCompletion(completed);return}if(endgamePending){endgamePending=false;showEndgameCelebration();return}document.getElementById("successOverlay").classList.add("show");if(completedReveal)setTimeout(maybeOfferAccount,450)};
 function renderXP(){let q=bonusChallengeFor(levelIndex),m=milestoneFor(levelIndex),ch=m||q,box=document.getElementById("challengeBanner");if(!box)return;box.hidden=!ch;if(ch){let done=q&&lumenProgress.stars[q.id];document.getElementById("challengeTitle").textContent=ch.title+(done?" · ★":"");document.getElementById("challengeCopy").textContent=done?"Bonus obtenu":ch.copy}}
 
 function refreshJourney(){awards();let sky=constellationProgress(),earned=skyStarsEarned(),completed=CONSTELLATIONS.slice(0,sky.index).length;
@@ -1418,6 +1427,7 @@ function setupOutsideDefaults(){
  bindOutsideDefault("autonomyOverlay",closeAutonomyOverlay);
  bindOutsideDefault("mapModal",closeMapOverlay);
  bindOutsideDefault("installOptin",dismissInstallLater);
+ bindOutsideDefault("accountOptin",dismissAccountOffer);
  bindOutsideDefault("pushOptin",dismissPushLater);
  // badgeRulesModal, shardRulesModal and feedbackModal already close on their backdrop.
  // Guided explanations and verification corrections deliberately require their explicit action.
@@ -1466,6 +1476,7 @@ const guidedAck=document.getElementById("guidedAck");if(guidedAck)guidedAck.oncl
 const verifyBtn=document.getElementById("verify");if(verifyBtn)verifyBtn.onclick=runVerification;const verifyFix=document.getElementById("verifyFix");if(verifyFix)verifyFix.onclick=fixVerificationErrors;
 const nicknameSave=document.getElementById("nicknameSave");if(nicknameSave)nicknameSave.onclick=async()=>{const input=document.getElementById("nicknameInput"),result=await saveLumenNickname(input?.value);if(result.ok)showRewardToast("Pseudo enregistré ✦");else showRewardToast(result.reason==="length"?"Pseudo : 2 à 24 caractères":"Ce pseudo n’est pas valide")};
 const guidedErrors=document.getElementById("guidedErrors");if(guidedErrors)guidedErrors.onchange=()=>{if(levelIndex<=4&&!replayMode){guidedErrors.checked=true;return}localStorage.setItem("lumenGuidedErrors",guidedErrors.checked?"on":"off")};
+const accountOptinEnable=document.getElementById("accountOptinEnable"),accountOptinLater=document.getElementById("accountOptinLater");if(accountOptinEnable)accountOptinEnable.onclick=acceptAccountOffer;if(accountOptinLater)accountOptinLater.onclick=dismissAccountOffer;
 const installEnable=document.getElementById("installEnable"),installLater=document.getElementById("installLater");if(installEnable)installEnable.onclick=installLumen;if(installLater)installLater.onclick=dismissInstallLater;const successShare=document.getElementById("successShare");if(successShare)successShare.onclick=createSocialChallengeFromSuccess;
 const nativeChallengeShare=document.getElementById("challengeNativeShare"),copyChallengeLink=document.getElementById("challengeCopyLink"),closeChallengeShare=document.getElementById("challengeShareClose");if(nativeChallengeShare)nativeChallengeShare.onclick=sharePendingChallenge;if(copyChallengeLink)copyChallengeLink.onclick=copyPendingChallenge;if(closeChallengeShare)closeChallengeShare.onclick=()=>document.getElementById("challengeShareModal").hidden=true;
 const openChallenges=document.getElementById("openMyChallenges"),closeChallenges=document.getElementById("myChallengesClose");if(openChallenges)openChallenges.onclick=()=>openMyChallenges();if(closeChallenges)closeChallenges.onclick=()=>document.getElementById("myChallengesModal").hidden=true;
