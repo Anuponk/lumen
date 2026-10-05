@@ -48,7 +48,9 @@ async function cloudMergeProgress(){
  const cloud=new Set((data||[]).map(x=>Number(x.puzzle_id)-1).filter(x=>x>=0&&x<campaignQuestCount()));
  const local=Object.keys(model.lumenProgress.solved||{}).filter(k=>model.lumenProgress.solved[k]).map(Number).filter(x=>x>=0&&x<campaignQuestCount());
  const backup=Object.keys(model.lumenProgress.historyBackup||{}).filter(k=>model.lumenProgress.historyBackup[k]).map(Number).filter(x=>x>=0&&x<campaignQuestCount());
- const authoritative=cloud.size?cloud:new Set([...backup,...local]);
+ // Progress is monotonic: a stale cloud snapshot must never erase newer
+ // local/backup completions (notably around Adventure boundaries).
+ const authoritative=new Set([...cloud,...backup,...local]);
  let count=0;while(count<campaignQuestCount()&&authoritative.has(count))count++;
  const restored={};for(let i=0;i<count;i++)restored[i]=1;
  model.lumenProgress.solved=restored;
