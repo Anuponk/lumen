@@ -86,7 +86,7 @@ begin
  ), daily as (
    select occurred_at::date as activity_date,count(distinct player_key) players,
      count(*) filter(where event_name in ('attempt_completed','puzzle_complete')) completions
-   from base group by occurred_at::date order by day
+   from base group by occurred_at::date order by activity_date
  ), summary as (
    select count(*) unique_players,count(*) filter(where is_new) new_players,
      count(*) filter(where not is_new) returning_players from players
