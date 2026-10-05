@@ -59,6 +59,21 @@ for(const options of scenarios){
  assert.deepEqual(actual.capabilities,[],'Fixture ends signed out: internal capabilities must be cleared locally');
  normalized.entitlements=[];expected.entitlements=[];normalized.capabilities=[];expected.capabilities=[];
  normalized.ready=expected.ready;
+ // #128 intentionally makes solved progress monotonic. The legacy baseline
+ // discarded local completions whenever the cloud was non-empty; compare the
+ // remaining persistence contract after normalizing that one documented change.
+ if(!options.guest&&!options.networkError&&Array.isArray(options.cloud)&&options.cloud.length){
+   const cloudIds=new Set(options.cloud.map(x=>Number(x.puzzle_id)-1).filter(x=>x>=0));
+   const mergedIds=new Set([...cloudIds,0,1,2]);
+   let mergedCount=0;while(mergedIds.has(mergedCount))mergedCount++;
+   const solved={};for(let i=0;i<mergedCount;i++)solved[i]=1;
+   const score=(()=>{let value=0;for(let i=0;i<mergedCount;i++)value+=skyStarsForGrid(i);return value})();
+   expected.progress.solved={...solved};expected.progress.historyBackup={...solved};expected.progress.skyScore=score;expected.progress.skyHistoryVersion=4;
+   expected.sequential=mergedCount;expected.level=mergedCount;
+   for(const x of expected.trace)if(x.save?.solved){
+     x.save.solved={...solved};x.save.historyBackup={...solved};x.save.skyScore=score;x.save.skyHistoryVersion=4;
+   }
+ }
  const normalizePresentationTrace=trace=>trace.filter(x=>x.ui!=='updateAuthUI'&&x.ui!=='account'&&x.ui!=='refreshJourney'&&!x.toast);
  const normalizeOwnershipTrace=trace=>{
    const out=[];let afterSignOut=false;
