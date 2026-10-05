@@ -101,15 +101,25 @@ begin
    select count(distinct player_key) wau from base where occurred_at>=now()-interval '7 days'
  ), feedbacks as (
    select count(*) feedback_count from lumen.feedback where created_at>=now()-(p_days||' days')::interval
+ ), funnel_counts as (
+   select
+     count(distinct player_key) filter(where event_name='session_start') app_open,
+     count(distinct player_key) filter(where puzzle_id=1 and event_name in ('attempt_started','puzzle_start')) q1_start,
+     count(distinct player_key) filter(where puzzle_id=1 and event_name in ('attempt_completed','puzzle_complete')) q1_done,
+     count(distinct player_key) filter(where event_name='tutorial_complete') tutorial_done,
+     count(distinct player_key) filter(where puzzle_id>=3 and event_name in ('attempt_started','puzzle_start','attempt_completed','puzzle_complete')) q3_reached,
+     count(distinct player_key) filter(where puzzle_id>=10 and event_name in ('attempt_started','puzzle_start','attempt_completed','puzzle_complete')) q10_reached
+   from base
  ), funnel_steps as (
-   select * from (values
-     (1,'Application lancée',count(distinct player_key) filter(where event_name='session_start')),
-     (2,'Quête 1 commencée',count(distinct player_key) filter(where puzzle_id=1 and event_name in ('attempt_started','puzzle_start'))),
-     (3,'Quête 1 terminée',count(distinct player_key) filter(where puzzle_id=1 and event_name in ('attempt_completed','puzzle_complete'))),
-     (4,'Tutoriel terminé',count(distinct player_key) filter(where event_name='tutorial_complete')),
-     (5,'Quête 3 atteinte',count(distinct player_key) filter(where puzzle_id>=3 and event_name in ('attempt_started','puzzle_start','attempt_completed','puzzle_complete'))),
-     (6,'Quête 10 atteinte',count(distinct player_key) filter(where puzzle_id>=10 and event_name in ('attempt_started','puzzle_start','attempt_completed','puzzle_complete')))
-   ) v(step,label,players) from base
+   select v.step,v.label,v.players from funnel_counts c
+   cross join lateral (values
+     (1,'Application lancée',c.app_open),
+     (2,'Quête 1 commencée',c.q1_start),
+     (3,'Quête 1 terminée',c.q1_done),
+     (4,'Tutoriel terminé',c.tutorial_done),
+     (5,'Quête 3 atteinte',c.q3_reached),
+     (6,'Quête 10 atteinte',c.q10_reached)
+   ) v(step,label,players)
  ), friction as (
    select puzzle_id,
      count(distinct player_key) filter(where event_name in ('attempt_started','puzzle_start')) started,
