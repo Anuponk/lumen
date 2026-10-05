@@ -47,11 +47,12 @@ additionalTests.push(
  "UI badges : Mon ciel et les règles affichent Sans erreur",
  "Sans erreur : l’état d’erreur reste invisible pendant la partie",
  "Indice : une case unique de territoire passe avant les raisonnements complexes",
- "Indice : les formulations générées restent grammaticalement correctes"
+ "Indice : les formulations générées restent grammaticalement correctes",
+ "PWA : l’onboarding installation est isolé en mode nouveau joueur QA"
 );
 assert.equal(originalTests.length,66);
 assert.equal(tests.length,originalTests.length+additionalTests.length);
-const intentionalRenames=new Map([["Tutoriel joué : quêtes 1 et 2 n’enseignent que les Gardiens","Apprentissage : les deux premières quêtes guident les actions réelles"],["Tutoriel joué : le glisser des exclusions est bloqué pendant le scénario","Apprentissage : le glissé utilise le plateau normal dans les étapes autorisées"],["Indice : bouton Revoir la quête présent","Indice : fermeture contextuelle remplace Revoir la quête"],["Tutoriel joué : Marquage auto verrouillée sur les deux premières quêtes","Tutoriel joué : Marquage auto verrouillé pendant les cinq premières quêtes"]]);
+const intentionalRenames=new Map([["PWA : le mode standalone empêche de reproposer l’installation","PWA : le mode standalone empêche de reproposer l’installation hors QA"],["Tutoriel joué : quêtes 1 et 2 n’enseignent que les Gardiens","Apprentissage : les deux premières quêtes guident les actions réelles"],["Tutoriel joué : le glisser des exclusions est bloqué pendant le scénario","Apprentissage : le glissé utilise le plateau normal dans les étapes autorisées"],["Indice : bouton Revoir la quête présent","Indice : fermeture contextuelle remplace Revoir la quête"],["Tutoriel joué : Marquage auto verrouillée sur les deux premières quêtes","Tutoriel joué : Marquage auto verrouillé pendant les cinq premières quêtes"]]);
 intentionalRenames.set("Campagne : 100 quêtes réparties sur 12 constellations","Campagne : les quêtes couvrent toutes les constellations du catalogue");
 intentionalRenames.set("Campagne : le ciel contient exactement 150 étoiles","Campagne : les récompenses couvrent toutes les étoiles du catalogue");
 const normalizedTests=tests.filter(label=>!additionalTests.includes(label)).map(label=>[...intentionalRenames].find(([,next])=>next===label)?.[0]||label);
