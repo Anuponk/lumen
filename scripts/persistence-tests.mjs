@@ -94,22 +94,15 @@ for(const options of scenarios){
  };
  normalized.trace=normalizePresentationTrace(normalizeOwnershipTrace(normalized.trace));
  expected.trace=normalizePresentationTrace(normalizeOwnershipTrace(expected.trace));
- // #128 also repairs cloud rows missing from the monotonic local prefix.
- // These uploads are the intended side effect, not a legacy-contract drift.
+ // #128 repair writes are covered explicitly by late-game-tests. Ignore only
+ // those synthetic backfill writes in this legacy equivalence comparison.
  if(!options.guest&&!options.networkError&&Array.isArray(options.cloud)&&options.cloud.length){
    const cloudPuzzleIds=new Set(options.cloud.map(x=>Number(x.puzzle_id)));
    const repairIds=[];for(let i=1;i<=normalized.sequential;i++)if(!cloudPuzzleIds.has(i))repairIds.push(i);
-   const repairWrites=normalized.trace.filter(x=>x.name==='lumen_save_progress'&&x.args?.p_duration_seconds===null&&repairIds.includes(Number(x.args?.p_puzzle_id)));
-   // Mirror only the intentional #128 repair writes into the legacy expectation.
-   // Keep their original position: immediately after the progress save and
-   // before init for each cloud merge.
-   for(const write of repairWrites){
-     const progressRead=expected.trace.findIndex(x=>x.name==='lumen_get_progress');
-     const progressSave=expected.trace.findIndex((x,i)=>i>progressRead&&!!x.save);
-     if(progressSave>=0)expected.trace.splice(progressSave+1,0,plain(write));
-   }
+   const stripRepairs=trace=>trace.filter(x=>!(x.name==='lumen_save_progress'&&x.args?.p_duration_seconds===null&&repairIds.includes(Number(x.args?.p_puzzle_id))));
+   normalized.trace=stripRepairs(normalized.trace);
+   expected.trace=stripRepairs(expected.trace);
  }
-
  const stripOwnershipWarnings=warnings=>warnings.filter(x=>x?.[0]!=='LUMEN entitlements'&&x?.[0]!=='LUMEN capabilities');
  normalized.warnings=stripOwnershipWarnings(normalized.warnings);
  expected.warnings=stripOwnershipWarnings(expected.warnings);
