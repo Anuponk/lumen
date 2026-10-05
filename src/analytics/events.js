@@ -30,8 +30,17 @@ function lumenId(key){
  try{let v=localStorage.getItem(key);if(!v){v=(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2));localStorage.setItem(key,v)}return v}catch(e){return Date.now()+"-"+Math.random().toString(36).slice(2)}
 }
 const lumenAnonymousId=lumenId("lumenAnonymousIdV1");
-const lumenSessionId=(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2));
+const sessionKey="lumenAnalyticsSessionV2",now=Date.now(),timeoutMs=30*60*1000;
+let lumenSessionId;
+try{
+ const previous=JSON.parse(localStorage.getItem(sessionKey)||"null");
+ lumenSessionId=previous&&previous.id&&now-Number(previous.lastSeen||0)<timeoutMs?previous.id:null;
+ if(!lumenSessionId)lumenSessionId=(crypto.randomUUID?crypto.randomUUID():now+"-"+Math.random().toString(36).slice(2));
+ localStorage.setItem(sessionKey,JSON.stringify({id:lumenSessionId,lastSeen:now}));
+}catch(e){lumenSessionId=(crypto.randomUUID?crypto.randomUUID():now+"-"+Math.random().toString(36).slice(2))}
+function touchSession(){try{localStorage.setItem(sessionKey,JSON.stringify({id:lumenSessionId,lastSeen:Date.now()}))}catch(e){}}
 async function trackLumenEvent(name,puzzleId=null,properties={}){
+ touchSession();
  const lumenSupabase=getClient();
  if(environment.qaMode)properties={...properties,qa_mode:environment.qaMode};
  if(!lumenSupabase)return;

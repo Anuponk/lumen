@@ -75,3 +75,27 @@ group by puzzle_id order by puzzle_id;
 ```
 
 Difficulty work (#81) can later add a deterministic difficulty score to the same property contract without changing event names.
+
+
+## Admin beta cockpit (#115)
+
+The beta cockpit is an authenticated internal surface guarded by the `analytics_cockpit` capability. Browser code never receives a service-role credential. Aggregation and player drill-down use capability-checked RPCs.
+
+### Activity definitions
+- **Active player**: one stable anonymous browser identity with at least one non-QA analytics event in the selected period. When that identity later authenticates, admin aggregation maps it to the authenticated player key to reduce double counting.
+- **New player**: first non-QA event is inside the selected period.
+- **Returning player**: active in the selected period, with first event before it.
+- **Session**: stable analytics session renewed after 30 minutes of inactivity; reloads inside that window remain one session.
+- **Completion**: canonical `attempt_completed` or legacy `puzzle_complete`.
+- **DAU/WAU**: distinct mapped player identities active today / last seven days.
+- **Retention J+N**: browser identity has at least one non-QA event exactly N calendar days after first seen.
+
+QA events are excluded by default.
+
+### Privacy
+The cockpit shows a short deterministic label for anonymous players rather than their raw UUID. It deliberately does not collect cell-by-cell telemetry. From #115 onward feedback no longer stores the board state: the useful diagnostic context is quest, active duration, hint count, app version and device/user-agent. Admin timeline strips sensitive/free-form identity fields from event properties.
+
+### Backend
+`lumen_admin_cockpit(days)` returns summary, daily activity, activation funnel, retention and quest friction as aggregated JSON. `lumen_admin_players(days)`, `lumen_admin_player_timeline(player_key, limit)` and `lumen_admin_feedback(days)` provide bounded drill-downs. All require an authenticated user with `analytics_cockpit`.
+
+The analytics ingestion allow-list accepts canonical attempt/friction events and future campaign puzzle IDs rather than the historical 100-quest ceiling. Event and feedback indexes cover date, identity, event and puzzle filters used by the cockpit.
