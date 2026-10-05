@@ -6,7 +6,7 @@ import {createLocalPersistence} from "../persistence/local.js";
 import {createCloudPersistence} from "../persistence/cloud.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
-import {contentMapModel,packForLegacyQuest,contentAccessForLegacyQuest,preserveStartedAdventureAccess} from "../campaign/content.js";
+import {BASE_CONSTELLATIONS,contentMapModel,packForLegacyQuest,contentAccessForLegacyQuest,preserveStartedAdventureAccess} from "../campaign/content.js";
 import {createSkyNavigation} from "./sky-navigation.js";
 import {LUMEN_META,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,badgeDefs} from "../campaign/data.js";
 import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt} from "../campaign/performance.js";
@@ -901,7 +901,7 @@ function celebrateSuccess(){
  setTimeout(()=>board.querySelectorAll(".cell").forEach(cell=>cell.classList.remove("victory-wave")),1500);
  document.getElementById("successTime").textContent=document.getElementById("time").textContent;
  const qr=document.getElementById("questResult");if(ch){qr.hidden=false;qr.className="quest-result "+(questPassed||lumenProgress.stars[ch.id]?"success":"fail");qr.textContent=questPassed?"✦ Défi réussi ! +25 XP et un éclat gagné.":lumenProgress.stars[ch.id]?"✦ Défi déjà accompli":"Défi échoué — la quête est tout de même accomplie."}else qr.hidden=true;
- const m=milestoneFor(levelIndex),sub=document.getElementById("successSub");if(sub)sub.textContent=m?(m.kind==="boss"?"Défi final réussi · constellation complétée":"Défi intermédiaire réussi · +1 ★ bonus"):(questPassed?"Quête réussie · +25 XP et +1 ✦":"Ton ciel progresse");
+ const m=milestoneFor(levelIndex),sub=document.getElementById("successSub"),constellationEntry=BASE_CONSTELLATIONS[chapterForGrid(levelIndex)],questPosition=constellationEntry?levelIndex-constellationEntry.questStart+1:null,isConstellationFinalQuest=!!constellationEntry&&questPosition===constellationEntry.questCount;if(sub)sub.textContent=m?(isConstellationFinalQuest?"Défi final réussi · constellation complétée":"Défi intermédiaire réussi · +1 ★ bonus"):(questPassed?"Quête réussie · +25 XP et +1 ✦":"Ton ciel progresse");
  if(levelIndex===1&&sub)sub.textContent="Ton ciel progresse. Rapidité arrive à la quête 3 ; Autonomie et Maîtrise à la quête 6.";
  if(levelIndex<=1)try{localStorage.setItem(qaActive?"lumenQaTutorialSeen":"lumenTutorialSeen","1")}catch(_){}
  if(levelIndex===1)markTutorialCompleted();
@@ -1094,7 +1094,8 @@ function render(){
    // Manual/automatic exclusion marks must never make a correct completed board fail.
    const {placed,rows,cols,regs,nonTouching,conflicts}=validateGuardians();
    if(placed.length===n&&rows.size===n&&cols.size===n&&regs.size===n&&nonTouching){
-     msg.textContent="Constellation complète.";
+     const entry=BASE_CONSTELLATIONS[chapterForGrid(levelIndex)],position=entry?levelIndex-entry.questStart+1:null;
+     msg.textContent=entry?entry.label+" · "+position+"/"+entry.questCount+" quêtes":"Quête accomplie.";
      celebrateSuccess();
    }else if(placed.length===n){
      // There is no explicit "Validate" action: reaching n guardians can be a
