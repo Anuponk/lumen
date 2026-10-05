@@ -12,8 +12,13 @@ assert.equal(snap.questId,12);
 assert.equal(snap.mastery,true);
 assert.equal(snap.assistanceUsed,false);
 
-assert.equal(compareChallenge({duration_seconds:102,autonomy:true},{status:"completed",duration_seconds:87,autonomy:true}).detail,"15 s plus rapide.");
-assert.match(compareChallenge({duration_seconds:102,autonomy:true},{status:"completed",duration_seconds:68,autonomy:false}).detail,/avec une aide/);
+assert.equal(compareChallenge({duration_seconds:102,autonomy:true},{status:"completed",duration_seconds:87,autonomy:true}).kind,"won");
+assert.equal(compareChallenge({duration_seconds:102,autonomy:true},{status:"completed",duration_seconds:87,autonomy:true}).headline,"Défi remporté !");
+assert.equal(compareChallenge({duration_seconds:102,autonomy:true},{status:"completed",duration_seconds:118,autonomy:true}).kind,"lost");
+assert.equal(compareChallenge({duration_seconds:102,autonomy:true},{status:"completed",duration_seconds:102,autonomy:true}).kind,"tied");
+assert.equal(compareChallenge({duration_seconds:102,autonomy:true},{status:"completed",duration_seconds:68,autonomy:false}).kind,"lost","assisted participant loses to autonomous source even when faster");
+assert.match(compareChallenge({duration_seconds:102,autonomy:true},{status:"completed",duration_seconds:68,autonomy:false}).detail,/utilisé une aide/);
+assert.equal(compareChallenge({duration_seconds:102,autonomy:false},{status:"completed",duration_seconds:130,autonomy:true}).kind,"won","autonomous participant beats assisted source even when slower");
 assert.equal(compareChallenge({duration_seconds:102,autonomy:true},{status:"abandoned"}).kind,"abandoned");
 
 assert.equal(normalizeChallengeName("  Cédric   V.  "),"Cédric V.");
