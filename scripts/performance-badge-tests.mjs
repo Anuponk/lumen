@@ -14,8 +14,10 @@ test("quest 6+ exposes all four badges",()=>{
  assert.deepEqual(performanceEligibility(5),{autonomy:true,speed:true,noError:true,mastery:true});
  assert.deepEqual(performanceEligibility(99),{autonomy:true,speed:true,noError:true,mastery:true});
 });
-test("speed targets rise by campaign difficulty band",()=>{
- assert.deepEqual([0,20,40,60,80].map(speedTargetSeconds),[90,120,150,180,210]);
+test("speed target is 60 seconds across the whole campaign",()=>{
+ assert.deepEqual([0,20,40,60,80,143].map(speedTargetSeconds),[60,60,60,60,60,60]);
+ assert.equal(performanceAttempt({questIndex:7,seconds:59}).speed,true);
+ assert.equal(performanceAttempt({questIndex:7,seconds:60}).speed,false);
 });
 test("assistance prevents autonomy, Sans erreur and mastery but not speed",()=>{
  const run=performanceAttempt({questIndex:5,seconds:30,assistanceUsed:true});
