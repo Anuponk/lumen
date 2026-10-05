@@ -84,7 +84,7 @@ begin
      bool_or(f.first_seen>=now()-(p_days||' days')::interval) is_new
    from base b join all_first f using(anonymous_id) group by b.player_key
  ), daily as (
-   select occurred_at::date day,count(distinct player_key) players,
+   select occurred_at::date as activity_date,count(distinct player_key) players,
      count(*) filter(where event_name in ('attempt_completed','puzzle_complete')) completions
    from base group by occurred_at::date order by day
  ), summary as (
