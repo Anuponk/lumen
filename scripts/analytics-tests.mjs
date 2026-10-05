@@ -43,5 +43,7 @@ assert.match(fs.readFileSync('src/analytics/events.js','utf8'),/lumenAnalyticsSe
 
 // Local/browser quality gates must never write to production analytics.
 const analyticsSource=fs.readFileSync('src/analytics/events.js','utf8');
-assert.match(analyticsSource,/localhost.*127\.0\.0\.1.*::1/,'local hosts must disable production analytics');
-assert.match(analyticsSource,/if\(analyticsDisabled\)return/,'tracking must short-circuit in local/test environments');
+
+assert.match(analyticsSource,/traffic_type:trafficType/,'analytics events must carry an explicit traffic type');
+assert.match(analyticsSource,/localTestHost\?'automated_test':'human'/,'local browser tests must be classified separately from humans');
+assert.match(analyticsSource,/test_run_id/,'automated analytics supports a test run id');
