@@ -59,6 +59,21 @@ for(const options of scenarios){
  assert.deepEqual(actual.capabilities,[],'Fixture ends signed out: internal capabilities must be cleared locally');
  normalized.entitlements=[];expected.entitlements=[];normalized.capabilities=[];expected.capabilities=[];
  normalized.ready=expected.ready;
+ // #128 intentionally makes solved progress monotonic. The legacy baseline
+ // discarded local completions whenever the cloud was non-empty; compare the
+ // remaining persistence contract after normalizing that one documented change.
+ if(!options.guest&&!options.networkError&&Array.isArray(options.cloud)&&options.cloud.length){
+   const cloudIds=new Set(options.cloud.map(x=>Number(x.puzzle_id)-1).filter(x=>x>=0));
+   const mergedIds=new Set([...cloudIds,0,1,2]);
+   let mergedCount=0;while(mergedIds.has(mergedCount))mergedCount++;
+   const solved={};for(let i=0;i<mergedCount;i++)solved[i]=1;
+   const score=(()=>{let value=0;for(let i=0;i<mergedCount;i++)value+=skyStarsForGrid(i);return value})();
+   expected.progress.solved={...solved};expected.progress.historyBackup={...solved};expected.progress.skyScore=score;expected.progress.skyHistoryVersion=4;
+   expected.sequential=mergedCount;expected.level=mergedCount;
+   for(const x of expected.trace)if(x.save?.solved){
+     x.save.solved={...solved};x.save.historyBackup={...solved};x.save.skyScore=score;x.save.skyHistoryVersion=4;
+   }
+ }
  const normalizePresentationTrace=trace=>trace.filter(x=>x.ui!=='updateAuthUI'&&x.ui!=='account'&&x.ui!=='refreshJourney'&&!x.toast);
  const normalizeOwnershipTrace=trace=>{
    const out=[];let afterSignOut=false;
@@ -79,6 +94,15 @@ for(const options of scenarios){
  };
  normalized.trace=normalizePresentationTrace(normalizeOwnershipTrace(normalized.trace));
  expected.trace=normalizePresentationTrace(normalizeOwnershipTrace(expected.trace));
+ // #128 repair writes are covered explicitly by late-game-tests. Ignore only
+ // those synthetic backfill writes in this legacy equivalence comparison.
+ if(!options.guest&&!options.networkError&&Array.isArray(options.cloud)&&options.cloud.length){
+   const cloudPuzzleIds=new Set(options.cloud.map(x=>Number(x.puzzle_id)));
+   const repairIds=[];for(let i=1;i<=normalized.sequential;i++)if(!cloudPuzzleIds.has(i))repairIds.push(i);
+   const stripRepairs=trace=>trace.filter(x=>!(x.name==='lumen_save_progress'&&x.args?.p_duration_seconds===null&&repairIds.includes(Number(x.args?.p_puzzle_id))));
+   normalized.trace=stripRepairs(normalized.trace);
+   expected.trace=stripRepairs(expected.trace);
+ }
  const stripOwnershipWarnings=warnings=>warnings.filter(x=>x?.[0]!=='LUMEN entitlements'&&x?.[0]!=='LUMEN capabilities');
  normalized.warnings=stripOwnershipWarnings(normalized.warnings);
  expected.warnings=stripOwnershipWarnings(expected.warnings);
