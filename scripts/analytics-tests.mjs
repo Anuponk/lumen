@@ -40,3 +40,8 @@ assert.match(cockpitMigration,/p_puzzle_id between 1 and 10000/,'analytics must 
 assert.match(cockpitMigration,/p_puzzle_id,null,greatest/,'feedback backend must discard board state');
 assert.match(cockpitMigration,/revoke all on function public\.lumen_admin_cockpit\(integer\) from public,anon/,'anonymous users must not read cockpit');
 assert.match(fs.readFileSync('src/analytics/events.js','utf8'),/lumenAnalyticsSessionV2/,'analytics session must survive reload inside inactivity window');
+
+// Local/browser quality gates must never write to production analytics.
+const analyticsSource=fs.readFileSync('src/analytics/events.js','utf8');
+assert.match(analyticsSource,/localhost.*127\.0\.0\.1.*::1/,'local hosts must disable production analytics');
+assert.match(analyticsSource,/if\(analyticsDisabled\)return/,'tracking must short-circuit in local/test environments');
