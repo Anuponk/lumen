@@ -18,7 +18,12 @@ async function fixture(search,legacy,offline){
  await api.trackLumenEvent('session_start',null,{standalone:false});await api.trackLumenEvent('puzzle_start',3,{sector:0});await api.trackLumenEvent('hint_used',3);api.captureReferral();await new Promise(resolve=>setTimeout(resolve,0));
  return {values:[...values].filter(([key])=>key!=="lumenAnalyticsSessionV2"),calls:JSON.parse(JSON.stringify(calls)),warnings:[...warnings]};
 }
-for(const search of ['', '?ref=friend_123','?ref=%3Cbad%3E%20reference','?ref='+('x'.repeat(100))])for(const offline of [false,true])assert.deepEqual(await fixture(search,false,offline),await fixture(search,true,offline));
+for(const search of ['', '?ref=friend_123','?ref=%3Cbad%3E%20reference','?ref='+('x'.repeat(100))])for(const offline of [false,true]){
+ const modern=await fixture(search,false,offline),legacy=await fixture(search,true,offline);
+ for(const call of modern.calls)assert.equal(call.args.p_properties.traffic_type,'human');
+ for(const call of modern.calls)delete call.args.p_properties.traffic_type;
+ assert.deepEqual(modern,legacy);
+}
 console.log(JSON.stringify({baseline,fixtures:8,identityStorage:'identical',eventsAndPayloads:'identical',referralSanitization:'identical',liveWrites:false}));
 
 
