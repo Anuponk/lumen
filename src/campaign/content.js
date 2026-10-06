@@ -57,7 +57,11 @@ export function preserveStartedAdventureAccess(progress,attempt=null,packs=CONTE
 
 export function packForLegacyQuest(index,packs=CONTENT_PACKS){
  const i=Number(index);if(!Number.isInteger(i)||i<0)return null;
- return packs.find(pack=>(pack.questIndices||[]).includes(i))||null;
+ return packs.find(pack=>{
+  if(Array.isArray(pack.questIndices))return pack.questIndices.includes(i);
+  const start=Number(pack.legacyQuestStart),count=Number(pack.questCount);
+  return Number.isInteger(start)&&Number.isInteger(count)&&i>=start&&i<start+count;
+ })||null;
 }
 
 export function contentAccessForLegacyQuest(index,entitlements=[],packs=CONTENT_PACKS,progress={},attempt=null){
