@@ -10,25 +10,29 @@ assert.equal(baseCampaignQuestCount(),total);
 assert.equal(BASE_CONSTELLATION_IDS.length,constellations);
 assert.equal(BASE_CONSTELLATIONS.length,constellations);
 assert.equal(BASE_CONSTELLATIONS[0].questStart,0);
-assert.equal(BASE_CONSTELLATIONS.at(-1).questStart+BASE_CONSTELLATIONS.at(-1).questCount,total);
+assert.equal(BASE_CONSTELLATIONS.reduce((sum,c)=>sum+c.questCount,0),total);
 assert.equal(new Set(BASE_CONSTELLATION_IDS).size,constellations);
 for(let i=0;i<BASE_CONSTELLATIONS.length;i++){
- assert.equal(BASE_CONSTELLATIONS[i].id,`real-${String(i+1).padStart(2,"0")}`);
- assert.equal(BASE_CONSTELLATIONS[i].questStart,i?BASE_CONSTELLATIONS[i-1].questStart+BASE_CONSTELLATIONS[i-1].questCount:0);
+ const constellation=BASE_CONSTELLATIONS[i];
+ assert.equal(constellation.id,`real-${String(i+1).padStart(2,"0")}`);
+ assert.equal(constellation.questCount,constellation.questIndices.length);
+ assert.equal(constellation.questStart,constellation.questIndices[0]);
+ assert.ok(constellation.questIndices.every(q=>Number.isInteger(q)&&q>=0&&q<total));
 }
+assert.equal(new Set(BASE_CONSTELLATIONS.flatMap(c=>c.questIndices)).size,total);
 assert.equal(CONTENT_SKIES.length,1);
 assert.equal(CONTENT_PACKS.length,Math.ceil(constellations/ADVENTURE_SIZE));
 assert.equal(CONTENT_PACKS[0].questCount,BASE_CONSTELLATIONS.slice(0,ADVENTURE_SIZE).reduce((sum,c)=>sum+c.questCount,0));
 assert.equal(CONTENT_PACKS.reduce((sum,p)=>sum+p.questCount,0),total);
 assert.deepEqual(CONTENT_PACKS.flatMap(p=>p.constellationIds),BASE_CONSTELLATION_IDS);
-for(let i=0;i<CONTENT_PACKS.length;i++)assert.equal(CONTENT_PACKS[i].legacyQuestStart,i?CONTENT_PACKS[i-1].legacyQuestStart+CONTENT_PACKS[i-1].questCount:0);
+for(const pack of CONTENT_PACKS){assert.equal(pack.questCount,pack.questIndices.length);assert.equal(pack.legacyQuestStart,pack.questIndices[0]);}
 assert.equal(baseQuestId(0),"base-q001");
 assert.equal(baseQuestId(99),"base-q100");
 assert.equal(baseQuestId(100),"base-q101");
 assert.equal(baseQuestId(total-1),`base-q${String(total).padStart(3,"0")}`);
 assert.equal(baseQuestId(total),null);
 assert.equal(packForLegacyQuest(0)?.id,BASE_PACK_ID);
-assert.equal(packForLegacyQuest(99)?.id,BASE_CONSTELLATIONS.find(c=>99>=c.questStart&&99<c.questStart+c.questCount).packId);
+assert.equal(packForLegacyQuest(99)?.id,BASE_CONSTELLATIONS.find(c=>c.questIndices.includes(99)).packId);
 assert.equal(contentAccessForLegacyQuest(42,[]).accessible,true);
 
 const futurePack={id:"extraordinary-01",skyId:"extraordinary-sky",kind:"addon",access:"entitlement",legacyQuestStart:total,questCount:24,constellationIds:["extra-01","extra-02"]};
