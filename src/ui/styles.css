@@ -596,3 +596,15 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 @keyframes rewardReveal{to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes masteryReveal{0%{opacity:0;transform:scale(.72);filter:brightness(2)}70%{opacity:1;transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){#board.energy-pulse,.cell.just-lit .lumen-orb,.cell.victory-wave,.success-reward,#successRewards.mastery-earned:after{animation-duration:.01ms!important;animation-delay:0ms!important}}
+
+
+/* Gameplay V2 #137 — logical consequences stay visual, fast and non-blocking. */
+.cell.guardian-impact .lumen-orb{animation:guardianImpact .46s cubic-bezier(.2,1.4,.3,1) both}
+.cell.cascade-cross .lumen-dim{animation:cascadeCross .38s ease-out var(--resolve-delay,0ms) both}
+.cell.unit-resolved{animation:unitResolved .58s ease-out var(--resolve-delay,0ms) both}
+.cell.territory-resolved{animation:territoryResolved .68s ease-out var(--resolve-delay,0ms) both}
+@keyframes guardianImpact{0%{transform:scale(.72);filter:brightness(2)}55%{transform:scale(1.28);filter:brightness(1.55);filter:drop-shadow(0 0 12px rgba(104,231,255,.75))}100%{transform:scale(1);filter:brightness(1)}}
+@keyframes cascadeCross{0%{opacity:.15;transform:scale(.55)}60%{opacity:1;transform:scale(1.18);filter:brightness(1.5)}100%{opacity:1;transform:scale(1);filter:brightness(1)}}
+@keyframes unitResolved{0%,100%{box-shadow:none}45%{box-shadow:inset 0 0 0 1px rgba(104,231,255,.42),0 0 12px rgba(104,231,255,.16);filter:brightness(1.1)}}
+@keyframes territoryResolved{0%,100%{filter:brightness(1)}45%{filter:brightness(1.16);box-shadow:inset 0 0 14px color-mix(in srgb,var(--territory) 38%,transparent)}}
+@media (prefers-reduced-motion:reduce){.cell.guardian-impact .lumen-orb,.cell.cascade-cross .lumen-dim,.cell.unit-resolved,.cell.territory-resolved{animation-duration:.01ms!important;animation-delay:0ms!important}}
