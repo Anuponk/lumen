@@ -1,7 +1,7 @@
 import vm from 'node:vm';
 import {createGameEngine} from '../src/game/engine.js';
 import {CAT} from '../src/campaign/catalogue.js';
-import {CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,SKY_TARGET} from '../src/campaign/data.js';
+import {CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,CONSTELLATION_QUESTS,SKY_TARGET} from '../src/campaign/data.js';
 import {skyStarsForGrid,campaignQuestCount} from '../src/campaign/progression.js';
 const context={createGameEngine,CAT,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,CONSTELLATIONS,skyStarsForGrid,campaignQuestCount};vm.createContext(context);
 vm.runInContext('let n=6,puz=CAT["6"][0],state=[];function render(){};const {proofEngine}=createGameEngine(()=>({n,puz,state}),()=>true);',context);
@@ -21,13 +21,13 @@ for(const entry of result.metadata){
 }
 if(result.campaign!==campaignQuestCount()||result.constellations!==CONSTELLATION_GRID_COUNTS.length||result.stars!==SKY_TARGET||SKY_TARGET!==CONSTELLATIONS.reduce((sum,c)=>sum+c.count,0))result.failures.push({kind:'campaign-invariants'});
 
-let start=0;
+const membership=CONSTELLATION_QUESTS.flat();
 for(let ci=0;ci<CONSTELLATIONS.length;ci++){
- if(!Number.isInteger(CONSTELLATION_GRID_COUNTS[ci])||CONSTELLATION_GRID_COUNTS[ci]<1||!Number.isInteger(CONSTELLATIONS[ci].count)||CONSTELLATIONS[ci].count<CONSTELLATION_GRID_COUNTS[ci]||CONSTELLATIONS[ci].pts.length!==CONSTELLATIONS[ci].count){result.failures.push({kind:'constellation-definition',constellation:ci});continue}
- const count=CONSTELLATION_GRID_COUNTS[ci],earned=Array.from({length:count},(_,offset)=>skyStarsForGrid(start+offset)).reduce((sum,value)=>sum+value,0);
+ const quests=CONSTELLATION_QUESTS[ci]||[],count=CONSTELLATION_GRID_COUNTS[ci];
+ if(!Number.isInteger(count)||count<1||quests.length!==count||!Number.isInteger(CONSTELLATIONS[ci].count)||CONSTELLATIONS[ci].count<count||CONSTELLATIONS[ci].pts.length!==CONSTELLATIONS[ci].count){result.failures.push({kind:'constellation-definition',constellation:ci});continue}
+ const earned=quests.reduce((sum,quest)=>sum+skyStarsForGrid(quest),0);
  if(earned!==CONSTELLATIONS[ci].count)result.failures.push({kind:'constellation-stars',constellation:ci,earned,expected:CONSTELLATIONS[ci].count});
- start+=count;
 }
-if(start!==campaignQuestCount()||Object.keys(CAMPAIGN_SIZE_SCHEDULE).some((key,index)=>Number(key)!==index))result.failures.push({kind:'campaign-coverage'});
+if(membership.length!==campaignQuestCount()||new Set(membership).size!==campaignQuestCount()||membership.some((quest)=>!Number.isInteger(quest)||quest<0||quest>=campaignQuestCount())||Object.keys(CAMPAIGN_SIZE_SCHEDULE).some((key,index)=>Number(key)!==index))result.failures.push({kind:'campaign-coverage'});
 process.exitCode=result.failures.length?1:0;
 console.log(JSON.stringify(result,null,2));
