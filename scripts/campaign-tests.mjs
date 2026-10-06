@@ -18,10 +18,14 @@ const context={};vm.createContext(context);
 vm.runInContext(declarations+'\n'+source.slice(source.indexOf('const CAT='),source.indexOf('const COLORS='))+'\n'+legacyNames.map(name=>functionSource(source,name)).join('\n')+'\nvar lumenProgress,hintUsesThisGame=0,autoUsedThisGame=false,mistakesThisGame=0;function activeGameSeconds(){return 42}function saveLumenProgress(){}',context);
 const plain=value=>JSON.parse(JSON.stringify(value));
 const total=Object.keys(data.CAMPAIGN_SIZE_SCHEDULE).length;
-assert.deepEqual(plain(CAT),plain(vm.runInContext('CAT',context)));
+const legacyCAT=plain(vm.runInContext('CAT',context));
+for(const [size,legacyPuzzles] of Object.entries(legacyCAT)){
+ assert.deepEqual(plain(CAT[size].slice(0,legacyPuzzles.length)),legacyPuzzles,'Historical catalogue changed for '+size+'x'+size);
+}
 assert.deepEqual(plain(LEVELS),plain(vm.runInContext('LEVELS',context)));
 for(const name of Object.keys(data)){
  if(name==='CAMPAIGN_SIZE_SCHEDULE'||name==='SKY_TARGET')continue;
+ if(name==='CONSTELLATION_QUESTS')continue;
  const old=plain(vm.runInContext(name,context));
  const next=['CAMPAIGN6_ORDER','CONSTELLATIONS','CONSTELLATION_GRID_COUNTS'].includes(name)?data[name].slice(0,old.length):data[name];
  assert.deepEqual(plain(next),old,'Historical data changed: '+name);
@@ -67,14 +71,16 @@ assert.equal(campaign.isCampaignComplete({...Object.fromEntries(Array.from({leng
 assert.equal(data.SKY_TARGET,data.CONSTELLATIONS.reduce((sum,c)=>sum+c.count,0));
 let earned=0;
 for(let ci=0;ci<data.CONSTELLATIONS.length;ci++){
- const {start,count}=campaign.constellationGridRange(ci);
- const awards=Array.from({length:count},(_,offset)=>campaign.skyStarsForGrid(start+offset));
+ const {start,count,quests}=campaign.constellationGridRange(ci);
+ const awards=quests.map(quest=>campaign.skyStarsForGrid(quest));
  assert(awards.every(value=>Number.isInteger(value)&&value>0));
  assert.equal(awards.reduce((sum,value)=>sum+value,0),data.CONSTELLATIONS[ci].count,'Every constellation earns exactly its displayed stars');
  earned+=data.CONSTELLATIONS[ci].count;
- progress={solved:Object.fromEntries(Array.from({length:start+count},(_,i)=>[i,1])),badges:{master:1},skyScore:150,skyHistoryVersion:4};
- assert.equal(live.exactSkyScoreForSolvedPrefix(),earned);
- if(start>=100){assert.equal(live.skyStarsEarned(),earned,'Previously capped extension saves recover their earned stars');assert.equal(progress.badges.master,1,'Historical Mastery remains earned');}
+ const solvedThroughConstellation=Object.fromEntries(Array.from({length:Math.max(...quests)+1},(_,i)=>[i,1]));
+ progress={solved:solvedThroughConstellation,badges:{master:1},skyScore:150,skyHistoryVersion:4};
+ const exactPrefix=Array.from({length:Math.max(...quests)+1},(_,i)=>campaign.skyStarsForGrid(i)).reduce((sum,value)=>sum+value,0);
+ assert.equal(live.exactSkyScoreForSolvedPrefix(),Math.min(data.SKY_TARGET,exactPrefix));
+ if(start>=100){assert.equal(live.skyStarsEarned(),Math.max(150,Math.min(data.SKY_TARGET,exactPrefix)),'Previously capped extension saves preserve stored stars and recover newly earned stars');assert.equal(progress.badges.master,1,'Historical Mastery remains earned');}
 }
 assert.equal(earned,data.SKY_TARGET);
 for(const count of [0,99,100,101,total-1,total]){
@@ -95,7 +101,7 @@ assert.equal(live.skyStarsEarned(),10,'Valid previously stored rewards are prese
 // constellations, so another expansion cannot reintroduce fixed ceilings.
 const withoutModules=source=>source.replace(/^import .*;\r?$/gm,'').replaceAll('export ','');
 for(const [questCount,starCount] of [[1,4],[2,7],[3,12],[10,14]]){
- const additions=`CONSTELLATIONS.push({name:"Future fixture",count:${starCount}});CONSTELLATION_GRID_COUNTS.push(${questCount});for(let i=0;i<${questCount};i++)CAMPAIGN_SIZE_SCHEDULE[${total}+i]=["6",0];`;
+ const additions=`CONSTELLATIONS.push({name:"Future fixture",count:${starCount}});CONSTELLATION_GRID_COUNTS.push(${questCount});CONSTELLATION_QUESTS.push(Array.from({length:${questCount}},(_,i)=>${total}+i));for(let i=0;i<${questCount};i++)CAMPAIGN_SIZE_SCHEDULE[${total}+i]=["6",0];`;
  const expanded=fs.readFileSync('src/campaign/data.js','utf8').replace('export const SKY_TARGET=',additions+'export const SKY_TARGET=');
  const fixture={};vm.createContext(fixture);
  vm.runInContext([expanded,fs.readFileSync('src/campaign/content.js','utf8'),fs.readFileSync('src/campaign/progression.js','utf8')].map(withoutModules).join('\n'),fixture);

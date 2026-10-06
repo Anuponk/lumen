@@ -1,4 +1,4 @@
-import {CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,SKY_TARGET} from "./data.js";
+import {CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,CONSTELLATION_QUESTS,SKY_TARGET} from "./data.js";
 import {baseCampaignQuestCount} from "./content.js";
 import {performanceAttempt,performanceEligibility,localCalendarDay,mergeEarnedBadges} from "./performance.js";
 export function campaignQuestCount(){return baseCampaignQuestCount()}
@@ -6,14 +6,14 @@ export function sequentialCount(source){let count=0,total=campaignQuestCount();w
 export function isCampaignFinalQuest(index){return Number(index)===campaignQuestCount()-1}
 export function isCampaignComplete(source){return sequentialCount(source||{})>=campaignQuestCount()}
 
-export function constellationGridRange(index){let start=0;for(let j=0;j<index;j++)start+=CONSTELLATION_GRID_COUNTS[j];return {start,end:start+CONSTELLATION_GRID_COUNTS[index]-1,count:CONSTELLATION_GRID_COUNTS[index]}}
+export function constellationQuestIndices(index){return CONSTELLATION_QUESTS[index]||[]}
+export function constellationGridRange(index){const quests=constellationQuestIndices(index);return {start:quests[0]??0,end:quests.at(-1)??-1,count:quests.length,quests}}
+export function chapterForGrid(i){const q=Number(i);const found=CONSTELLATION_QUESTS.findIndex(quests=>quests.includes(q));return found>=0?found:CONSTELLATIONS.length-1}
 
-export function chapterForGrid(i){let start=0;for(let j=0;j<CONSTELLATION_GRID_COUNTS.length;j++){let end=start+CONSTELLATION_GRID_COUNTS[j];if(i<end)return j;start=end}return CONSTELLATIONS.length-1}
-
-export function milestoneFor(i){const ci=chapterForGrid(i),r=constellationGridRange(ci),pos=i-r.start,mid=Math.floor((r.count-1)/2);if(i===r.end)return {kind:"boss",title:"✹ Défi final · "+CONSTELLATIONS[ci].name.replace(" · Grand Chariot",""),bonus:2,copy:"Dernière quête de la constellation · +2 ★ et constellation complétée."};if(pos===mid)return {kind:"mid",title:"✦ Défi de constellation",bonus:1,copy:"Étape intermédiaire · +1 ★ pour ton ciel."};return null}
+export function milestoneFor(i){const ci=chapterForGrid(i),r=constellationGridRange(ci),pos=r.quests.indexOf(Number(i)),mid=Math.floor((r.count-1)/2);if(pos===r.count-1)return {kind:"boss",title:"✹ Défi final · "+CONSTELLATIONS[ci].name.replace(" · Grand Chariot",""),bonus:2,copy:"Dernière quête de la constellation · +2 ★ et constellation complétée."};if(pos===mid)return {kind:"mid",title:"✦ Défi de constellation",bonus:1,copy:"Étape intermédiaire · +1 ★ pour ton ciel."};return null}
 
 export function skyStarsForGrid(i){
- const ci=chapterForGrid(i),r=constellationGridRange(ci),target=CONSTELLATIONS[ci].count,extra=target-r.count,pos=i-r.start;
+ const ci=chapterForGrid(i),r=constellationGridRange(ci),target=CONSTELLATIONS[ci].count,extra=target-r.count,pos=r.quests.indexOf(Number(i));
  const legacyAward=p=>{if(p===r.count-1)return 1+Math.min(2,extra);const remaining=Math.max(0,extra-2),mid=Math.floor((r.count-1)/2);if(p===mid)return 1+Math.min(1,remaining);return p<Math.max(0,remaining-1)?2:1};
  // Preserve historical rewards and distribute any remaining stars of short
  // extension constellations across their quests, including the final quest.
