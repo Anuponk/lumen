@@ -1,6 +1,6 @@
 import {CAT} from "../campaign/catalogue.js";
 import {CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATIONS,CONSTELLATION_GRID_COUNTS} from "../campaign/data.js";
-import {chapterForGrid,campaignQuestCount,skyStarsForGrid} from "../campaign/progression.js";
+import {chapterForGrid,campaignQuestCount,constellationGridRange,skyStarsForGrid} from "../campaign/progression.js";
 import {performanceEligibility,performanceAttempt} from "../campaign/performance.js";
 import {createAttemptEngine} from "../game/attempt-engine.js";
 
