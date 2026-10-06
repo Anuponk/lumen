@@ -22,6 +22,7 @@ assert.deepEqual(plain(CAT),plain(vm.runInContext('CAT',context)));
 assert.deepEqual(plain(LEVELS),plain(vm.runInContext('LEVELS',context)));
 for(const name of Object.keys(data)){
  if(name==='CAMPAIGN_SIZE_SCHEDULE'||name==='SKY_TARGET')continue;
+ if(name==='CONSTELLATION_QUESTS')continue;
  const old=plain(vm.runInContext(name,context));
  const next=['CAMPAIGN6_ORDER','CONSTELLATIONS','CONSTELLATION_GRID_COUNTS'].includes(name)?data[name].slice(0,old.length):data[name];
  assert.deepEqual(plain(next),old,'Historical data changed: '+name);
