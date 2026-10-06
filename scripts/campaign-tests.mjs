@@ -78,8 +78,9 @@ for(let ci=0;ci<data.CONSTELLATIONS.length;ci++){
  earned+=data.CONSTELLATIONS[ci].count;
  const solvedThroughConstellation=Object.fromEntries(Array.from({length:Math.max(...quests)+1},(_,i)=>[i,1]));
  progress={solved:solvedThroughConstellation,badges:{master:1},skyScore:150,skyHistoryVersion:4};
- assert.equal(live.exactSkyScoreForSolvedPrefix(),earned);
- if(start>=100){assert.equal(live.skyStarsEarned(),earned,'Previously capped extension saves recover their earned stars');assert.equal(progress.badges.master,1,'Historical Mastery remains earned');}
+ const exactPrefix=Array.from({length:Math.max(...quests)+1},(_,i)=>campaign.skyStarsForGrid(i)).reduce((sum,value)=>sum+value,0);
+ assert.equal(live.exactSkyScoreForSolvedPrefix(),Math.min(data.SKY_TARGET,exactPrefix));
+ if(start>=100){assert.equal(live.skyStarsEarned(),Math.max(150,Math.min(data.SKY_TARGET,exactPrefix)),'Previously capped extension saves preserve stored stars and recover newly earned stars');assert.equal(progress.badges.master,1,'Historical Mastery remains earned');}
 }
 assert.equal(earned,data.SKY_TARGET);
 for(const count of [0,99,100,101,total-1,total]){
