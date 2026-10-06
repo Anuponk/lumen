@@ -853,6 +853,7 @@ function celebrateLearningReplaySuccess(){
 function renderSuccessRewards(stars){let el=document.getElementById("successRewards");if(!el)return;let run=performanceRun(levelIndex),rewards=[];if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});if(run.qualifying&&run.autonomy)rewards.push({cls:"autonomy",icon:performanceIcon("autonomy"),label:"Autonomie"});if(run.qualifying&&run.speed)rewards.push({cls:"speed",icon:performanceIcon("speed"),label:"Rapidité"});if(run.qualifying&&run.noError)rewards.push({cls:"no-error",icon:performanceIcon("noError"),label:"Sans erreur"});if(run.qualifying&&run.mastery)rewards.push({cls:"mastery",icon:performanceIcon("mastery"),label:"Maîtrise"});el.innerHTML=rewards.map((r,i)=>'<span class="success-reward '+r.cls+'" style="--reward-delay:'+(220+i*210)+'ms"><span>'+r.icon+'</span><span>'+r.label+'</span></span>').join("");el.classList.toggle("mastery-earned",!!run.mastery)}
 function celebrateSuccess(){
  if(celebrated)return;
+ haptic([28,45,38]);
  if(socialChallenge){celebrateSocialChallengeSuccess();return}
  if(learningReplayActive()){celebrateLearningReplaySuccess();return}
  const firstCompletion=!lumenProgress.solved[levelIndex];
@@ -931,6 +932,7 @@ function celebrateSuccess(){
  setTimeout(clearVictoryConfetti,3600);
 }
 
+function haptic(pattern){try{if("vibrate" in navigator)navigator.vibrate(pattern)}catch(_){}}
 const {audioContext,tone,guardianSound,errorSound,halfSound,victorySound,starArrivalSound,constellationSound,updateSoundToggle,setSoundEnabled}=createSound();
 let halfRewardShown=false,lastPlacedCount=0,rewardToastTimer=null;
 function updateLiveReward(q){
@@ -986,6 +988,7 @@ function pulseResolvedCells(cells,cls,delay=0){
  cells.forEach(([r,c],i)=>{const el=guidedCell(r,c);if(!el)return;el.style.setProperty("--resolve-delay",(delay+i*18)+"ms");el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);setTimeout(()=>el.classList.remove(cls),900+delay+i*18)});
 }
 function animateLogicalResolution(r,c,before){
+ haptic(14);
  if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
  const newlyAuto=[];
  for(let y=0;y<n;y++)for(let x=0;x<n;x++){const i=y*n+x;if(before[i]!==3&&displayedCellState(y,x)===3)newlyAuto.push([y,x])}
