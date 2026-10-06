@@ -853,6 +853,7 @@ function celebrateLearningReplaySuccess(){
 function renderSuccessRewards(stars){let el=document.getElementById("successRewards");if(!el)return;let run=performanceRun(levelIndex),rewards=[];if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});if(run.qualifying&&run.autonomy)rewards.push({cls:"autonomy",icon:performanceIcon("autonomy"),label:"Autonomie"});if(run.qualifying&&run.speed)rewards.push({cls:"speed",icon:performanceIcon("speed"),label:"Rapidité"});if(run.qualifying&&run.noError)rewards.push({cls:"no-error",icon:performanceIcon("noError"),label:"Sans erreur"});if(run.qualifying&&run.mastery)rewards.push({cls:"mastery",icon:performanceIcon("mastery"),label:"Maîtrise"});el.innerHTML=rewards.map((r,i)=>'<span class="success-reward '+r.cls+'" style="--reward-delay:'+(220+i*210)+'ms"><span>'+r.icon+'</span><span>'+r.label+'</span></span>').join("");el.classList.toggle("mastery-earned",!!run.mastery)}
 function celebrateSuccess(){
  if(celebrated)return;
+ haptic([28,45,38]);
  if(socialChallenge){celebrateSocialChallengeSuccess();return}
  if(learningReplayActive()){celebrateLearningReplaySuccess();return}
  const firstCompletion=!lumenProgress.solved[levelIndex];
@@ -931,6 +932,7 @@ function celebrateSuccess(){
  setTimeout(clearVictoryConfetti,3600);
 }
 
+function haptic(pattern){try{if("vibrate" in navigator)navigator.vibrate(pattern)}catch(_){}}
 const {audioContext,tone,guardianSound,errorSound,halfSound,victorySound,starArrivalSound,constellationSound,updateSoundToggle,setSoundEnabled}=createSound();
 let halfRewardShown=false,lastPlacedCount=0,rewardToastTimer=null;
 function updateLiveReward(q){
@@ -977,6 +979,28 @@ function paintBoardState(){
  for(let r=0;r<n;r++)for(let c=0;c<n;c++)paintCell(r,c);
  const q=state.flat().filter(v=>v===2).length,countEl=document.getElementById("count");if(countEl)countEl.textContent=q+"/"+n;
  updateLiveReward(q);if(scriptedLearningActive())updateScriptedLearning();
+}
+function resolutionSnapshot(){
+ const shown=[];for(let r=0;r<n;r++)for(let c=0;c<n;c++)shown.push(displayedCellState(r,c));
+ return shown;
+}
+function pulseResolvedCells(cells,cls,delay=0){
+ cells.forEach(([r,c],i)=>{const el=guidedCell(r,c);if(!el)return;el.style.setProperty("--resolve-delay",(delay+i*18)+"ms");el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);setTimeout(()=>el.classList.remove(cls),900+delay+i*18)});
+}
+function animateLogicalResolution(r,c,before){
+ haptic(14);
+ if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+ const newlyAuto=[];
+ for(let y=0;y<n;y++)for(let x=0;x<n;x++){const i=y*n+x;if(before[i]!==3&&displayedCellState(y,x)===3)newlyAuto.push([y,x])}
+ // Show the rule consequence as a fast cascade: nearest cells react first.
+ newlyAuto.sort((a,b)=>(Math.abs(a[0]-r)+Math.abs(a[1]-c))-(Math.abs(b[0]-r)+Math.abs(b[1]-c)));
+ pulseResolvedCells([[r,c]],"guardian-impact");
+ pulseResolvedCells(newlyAuto,"cascade-cross",70);
+ const rowDone=state[r].some(v=>v===2),colDone=state.some(row=>row[c]===2),region=puz.reg[r][c];
+ if(rowDone)pulseResolvedCells(Array.from({length:n},(_,x)=>[r,x]),"unit-resolved",180);
+ if(colDone)pulseResolvedCells(Array.from({length:n},(_,y)=>[y,c]),"unit-resolved",240);
+ const regionCells=[];for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(puz.reg[y][x]===region)regionCells.push([y,x]);
+ if(regionCells.some(([y,x])=>state[y][x]===2))pulseResolvedCells(regionCells,"territory-resolved",300);
 }
 function markDragCross(r,c){
  if(!dragCross||dragCross.visited.has(r+","+c)||state[r]?.[c]===2)return;
@@ -1078,12 +1102,13 @@ function render(){
   if(correctingPending)attemptEngine.clearWrongGuardianPending(actionKey);
   else attemptEngine.commitMistake();
  }
+ const resolutionBefore=next===2?resolutionSnapshot():null;
  hist.push(state.map(x=>x.slice()));
  if(shown===3){state[r][c]=2}else{state[r][c]=next}
  if(next===2&&puz.sol[r]!==c)attemptEngine.setWrongGuardianPending(actionKey);
  if(next===2&&document.getElementById("autoCross")?.checked)attemptEngine.markAssistance();
  clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";
- paintBoardState();updateScriptedLearning();if(levelIndex===1&&next===2&&!scriptedLearningActive())showLearningTip("tools","Cette quête est à toi","Tu joues librement. Essaie Indice pour apprendre une nouvelle déduction : les indices sont offerts jusqu’à la quête 10. Vérifier examine tes choix.");persistAttemptBoard();
+ paintBoardState();if(next===2&&resolutionBefore)animateLogicalResolution(r,c,resolutionBefore);updateScriptedLearning();if(levelIndex===1&&next===2&&!scriptedLearningActive())showLearningTip("tools","Cette quête est à toi","Tu joues librement. Essaie Indice pour apprendre une nouvelle déduction : les indices sont offerts jusqu’à la quête 10. Vérifier examine tes choix.");persistAttemptBoard();
  const q=state.flat().filter(v=>v===2).length;
  if(q===n&&!scriptedLearningActive())render()
 };board.appendChild(d)
