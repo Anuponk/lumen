@@ -1,4 +1,4 @@
-import {CONSTELLATIONS,CONSTELLATION_GRID_COUNTS} from "./data.js";
+import {CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,CONSTELLATION_QUESTS,CAMPAIGN_SIZE_SCHEDULE} from "./data.js";
 
 export const CONTENT_MODEL_VERSION=1;
 export const BASE_SKY_ID="real-sky";
@@ -10,12 +10,12 @@ const adventureId=index=>index===0?BASE_PACK_ID:`real-adventure-${String(index+1
 export const BASE_CONSTELLATION_IDS=Object.freeze(CONSTELLATIONS.map((_,index)=>`real-${String(index+1).padStart(2,"0")}`));
 
 export const BASE_CONSTELLATIONS=Object.freeze(CONSTELLATIONS.map((constellation,index)=>{
- let questStart=0;for(let i=0;i<index;i++)questStart+=CONSTELLATION_GRID_COUNTS[i];
- return Object.freeze({id:BASE_CONSTELLATION_IDS[index],legacyIndex:index,skyId:BASE_SKY_ID,packId:adventureId(Math.floor(index/ADVENTURE_SIZE)),label:constellation.name,questStart,questCount:CONSTELLATION_GRID_COUNTS[index]});
+ const questIndices=Object.freeze([...(CONSTELLATION_QUESTS[index]||[])]),questStart=questIndices[0]??0;
+ return Object.freeze({id:BASE_CONSTELLATION_IDS[index],legacyIndex:index,skyId:BASE_SKY_ID,packId:adventureId(Math.floor(index/ADVENTURE_SIZE)),label:constellation.name,questStart,questCount:questIndices.length,questIndices});
 }));
 
 export function baseCampaignQuestCount(){
- return CONSTELLATION_GRID_COUNTS.reduce((sum,count)=>sum+count,0);
+ return Object.keys(CAMPAIGN_SIZE_SCHEDULE).length;
 }
 export function baseQuestId(index){
  const i=Number(index);
@@ -28,7 +28,8 @@ export const CONTENT_SKIES=Object.freeze([
 
 export const CONTENT_PACKS=Object.freeze(Array.from({length:Math.ceil(BASE_CONSTELLATIONS.length/ADVENTURE_SIZE)},(_,index)=>{
  const entries=BASE_CONSTELLATIONS.slice(index*ADVENTURE_SIZE,(index+1)*ADVENTURE_SIZE);
- return Object.freeze({id:adventureId(index),skyId:BASE_SKY_ID,kind:index===0?"base":"addon",access:index===0?"included":"locked",order:index,displayName:adventureNames[index]||`Aventure ${index+1}`,shortDescription:index===0?"Tes premières constellations":"Une nouvelle aventure dans le vrai ciel",legacyQuestStart:entries[0].questStart,questCount:entries.reduce((sum,c)=>sum+c.questCount,0),constellationIds:Object.freeze(entries.map(c=>c.id))});
+ const questIndices=Object.freeze(entries.flatMap(c=>c.questIndices||[]).sort((a,b)=>a-b));
+ return Object.freeze({id:adventureId(index),skyId:BASE_SKY_ID,kind:index===0?"base":"addon",access:index===0?"included":"locked",order:index,displayName:adventureNames[index]||`Aventure ${index+1}`,shortDescription:index===0?"Tes premières constellations":"Une nouvelle aventure dans le vrai ciel",legacyQuestStart:questIndices[0]??0,questCount:questIndices.length,questIndices,constellationIds:Object.freeze(entries.map(c=>c.id))});
 }));
 
 export function normalizeEntitlements(rows=[]){
@@ -41,9 +42,9 @@ export function normalizeEntitlements(rows=[]){
 export function hasPackAccess(pack,entitlements=[],progress={},attempt=null){
  if(!pack)return false;
  if(pack.access==="included"||pack.kind==="base")return true;
- const start=pack.legacyQuestStart,end=start+pack.questCount;
- const started=Number.isInteger(start)&&Object.keys(progress.solved||{}).some(key=>progress.solved[key]&&Number(key)>=start&&Number(key)<end);
- const active=attempt?.startedAt&&attempt.mode!=="challenge"&&Number(attempt.questId)-1>=start&&Number(attempt.questId)-1<end;
+ const questIndices=pack.questIndices||[];
+ const started=Object.keys(progress.solved||{}).some(key=>progress.solved[key]&&questIndices.includes(Number(key)));
+ const active=attempt?.startedAt&&attempt.mode!=="challenge"&&questIndices.includes(Number(attempt.questId)-1);
  return normalizeEntitlements(entitlements).has(pack.id)||!!started||!!active||(Array.isArray(progress.legacyAdventureAccess)&&progress.legacyAdventureAccess.includes(pack.id));
 }
 
@@ -56,7 +57,7 @@ export function preserveStartedAdventureAccess(progress,attempt=null,packs=CONTE
 
 export function packForLegacyQuest(index,packs=CONTENT_PACKS){
  const i=Number(index);if(!Number.isInteger(i)||i<0)return null;
- return packs.find(pack=>Number.isInteger(pack.legacyQuestStart)&&i>=pack.legacyQuestStart&&i<pack.legacyQuestStart+pack.questCount)||null;
+ return packs.find(pack=>(pack.questIndices||[]).includes(i))||null;
 }
 
 export function contentAccessForLegacyQuest(index,entitlements=[],packs=CONTENT_PACKS,progress={},attempt=null){
