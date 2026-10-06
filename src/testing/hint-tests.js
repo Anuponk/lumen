@@ -30,7 +30,7 @@ async function runHintTests(){
  });
 
  test("Campagne : les quêtes couvrent toutes les constellations du catalogue",()=>CONSTELLATION_GRID_COUNTS.length===CONSTELLATIONS.length&&CONSTELLATION_GRID_COUNTS.every(count=>Number.isInteger(count)&&count>0)&&Object.keys(CAMPAIGN_SIZE_SCHEDULE).length===campaignQuestCount()&&Object.keys(CAMPAIGN_SIZE_SCHEDULE).every((key,index)=>Number(key)===index));
- test("Campagne : les récompenses couvrent toutes les étoiles du catalogue",()=>CONSTELLATIONS.reduce((a,c)=>a+c.count,0)===SKY_TARGET&&CONSTELLATION_GRID_COUNTS.every((count,ci)=>{const start=CONSTELLATION_GRID_COUNTS.slice(0,ci).reduce((a,b)=>a+b,0);return Array.from({length:count},(_,i)=>skyStarsForGrid(start+i)).reduce((a,b)=>a+b,0)===CONSTELLATIONS[ci].count}));
+ test("Campagne : les récompenses couvrent toutes les étoiles du catalogue",()=>CONSTELLATIONS.reduce((a,c)=>a+c.count,0)===SKY_TARGET&&CONSTELLATION_GRID_COUNTS.every((count,ci)=>{const quests=constellationGridRange(ci).quests;return quests.length===count&&quests.reduce((sum,quest)=>sum+skyStarsForGrid(quest),0)===CONSTELLATIONS[ci].count}));
  test("Campagne : chaque quête appartient à une constellation",()=>Array.from({length:campaignQuestCount()},(_,i)=>chapterForGrid(i)).every(i=>i>=0&&i<CONSTELLATIONS.length));
  test("Interaction : le cycle reste exclusion, Gardien, case libre",()=>{const src=render.toString();return src.includes("(state[r][c]+1)%3")});
  test("Apprentissage : poser un Gardien utilise le vrai cycle à deux touchers",()=>{const src=render.toString();return src.includes("state[r][c]===0){next=1")&&src.includes("state[r][c]===1){next=2")&&!src.includes("scriptedAllowsGuardian(r,c)){if(!scriptedAllowsGuardian")});
