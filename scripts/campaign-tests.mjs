@@ -18,7 +18,10 @@ const context={};vm.createContext(context);
 vm.runInContext(declarations+'\n'+source.slice(source.indexOf('const CAT='),source.indexOf('const COLORS='))+'\n'+legacyNames.map(name=>functionSource(source,name)).join('\n')+'\nvar lumenProgress,hintUsesThisGame=0,autoUsedThisGame=false,mistakesThisGame=0;function activeGameSeconds(){return 42}function saveLumenProgress(){}',context);
 const plain=value=>JSON.parse(JSON.stringify(value));
 const total=Object.keys(data.CAMPAIGN_SIZE_SCHEDULE).length;
-assert.deepEqual(plain(CAT),plain(vm.runInContext('CAT',context)));
+const legacyCAT=plain(vm.runInContext('CAT',context));
+for(const [size,legacyPuzzles] of Object.entries(legacyCAT)){
+ assert.deepEqual(plain(CAT[size].slice(0,legacyPuzzles.length)),legacyPuzzles,'Historical catalogue changed for '+size+'x'+size);
+}
 assert.deepEqual(plain(LEVELS),plain(vm.runInContext('LEVELS',context)));
 for(const name of Object.keys(data)){
  if(name==='CAMPAIGN_SIZE_SCHEDULE'||name==='SKY_TARGET')continue;
