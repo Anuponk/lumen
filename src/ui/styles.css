@@ -583,19 +583,21 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 
 
 /* LUMEN — gameplay energy & staged rewards */
-#board{--lumen-energy:0;transition:box-shadow .35s ease,filter .35s ease}
-#board.energy-pulse{animation:lumenEnergyPulse .52s ease-out}
-.cell.just-lit .lumen-orb{animation:guardianArrival .52s cubic-bezier(.2,.9,.3,1) var(--spark-delay,0ms) both}
-.cell.victory-wave{animation:victoryCellWave .72s ease-out var(--victory-delay,0ms) both}
+#board{--lumen-energy:0;transition:box-shadow .35s ease,filter .35s ease;background-image:radial-gradient(circle at 50% 50%,rgba(104,231,255,calc(.025 + var(--lumen-energy) * .075)),transparent 72%)}
+#board.energy-pulse{animation:lumenEnergyPulse .66s cubic-bezier(.18,.8,.3,1)}
+#board.board-half{animation:lumenHalfAwake .82s cubic-bezier(.2,.85,.3,1)}
+.cell.just-lit .lumen-orb{animation:guardianArrival .66s cubic-bezier(.16,1.35,.3,1) var(--spark-delay,0ms) both}
+.cell.victory-wave{animation:victoryCellWave .9s ease-out var(--victory-delay,0ms) both}
 .success-reward{opacity:0;transform:translateY(10px) scale(.88);animation:rewardReveal .48s cubic-bezier(.2,1.35,.35,1) var(--reward-delay,0ms) forwards}
 #successRewards.mastery-earned{position:relative}
 #successRewards.mastery-earned:after{content:"MAÎTRISE";display:block;margin:12px auto 2px;width:max-content;padding:7px 13px;border:1px solid rgba(104,231,255,.55);border-radius:999px;color:#dffcff;font-size:12px;font-weight:950;letter-spacing:.16em;text-shadow:0 0 12px rgba(104,231,255,.8);box-shadow:0 0 24px rgba(104,231,255,.16);opacity:0;animation:masteryReveal .7s ease 1.05s forwards}
-@keyframes lumenEnergyPulse{0%{filter:brightness(1)}45%{filter:brightness(1.12);box-shadow:0 24px 70px rgba(0,0,0,.45),0 0 calc(16px + 34px * var(--lumen-energy)) rgba(104,231,255,.2),inset 0 0 0 1px rgba(129,179,220,.18)}100%{filter:brightness(1)}}
-@keyframes guardianArrival{0%{transform:scale(.55);filter:brightness(1.8)}55%{transform:scale(1.22);filter:brightness(1.45)}100%{transform:scale(1);filter:brightness(1)}}
-@keyframes victoryCellWave{0%{filter:brightness(1)}45%{filter:brightness(1.55);transform:scale(.97);box-shadow:inset 0 0 0 2px rgba(104,231,255,.55),0 0 20px rgba(104,231,255,.35)}100%{filter:brightness(1);transform:scale(1)}}
+@keyframes lumenEnergyPulse{0%{filter:brightness(1)}42%{filter:brightness(1.28) saturate(1.18);box-shadow:0 24px 70px rgba(0,0,0,.45),0 0 calc(28px + 58px * var(--lumen-energy)) rgba(104,231,255,.38),inset 0 0 0 2px rgba(154,238,255,.34)}100%{filter:brightness(1)}}
+@keyframes lumenHalfAwake{0%,100%{filter:brightness(1)}38%{filter:brightness(1.34) saturate(1.22);box-shadow:0 0 52px rgba(104,231,255,.48),inset 0 0 24px rgba(104,231,255,.18)}68%{filter:brightness(1.12)}}
+@keyframes guardianArrival{0%{transform:scale(.42);filter:brightness(2.5) drop-shadow(0 0 3px rgba(223,252,255,.95))}52%{transform:scale(1.38);filter:brightness(1.8) drop-shadow(0 0 15px rgba(104,231,255,.95))}78%{transform:scale(.94)}100%{transform:scale(1);filter:brightness(1) drop-shadow(0 0 5px rgba(104,231,255,.38))}}
+@keyframes victoryCellWave{0%{filter:brightness(1);transform:scale(1)}42%{filter:brightness(2) saturate(1.28);transform:scale(.94);box-shadow:inset 0 0 0 3px rgba(190,248,255,.78),0 0 30px rgba(104,231,255,.62)}72%{transform:scale(1.025)}100%{filter:brightness(1);transform:scale(1)}}
 @keyframes rewardReveal{to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes masteryReveal{0%{opacity:0;transform:scale(.72);filter:brightness(2)}70%{opacity:1;transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
-@media (prefers-reduced-motion:reduce){#board.energy-pulse,.cell.just-lit .lumen-orb,.cell.victory-wave,.success-reward,#successRewards.mastery-earned:after{animation-duration:.01ms!important;animation-delay:0ms!important}}
+@media (prefers-reduced-motion:reduce){#board.energy-pulse,#board.board-half,.cell.just-lit .lumen-orb,.cell.victory-wave,.success-reward,#successRewards.mastery-earned:after{animation-duration:.01ms!important;animation-delay:0ms!important}}
 
 
 /* Gameplay V2 #137 — logical consequences stay visual, fast and non-blocking. */
