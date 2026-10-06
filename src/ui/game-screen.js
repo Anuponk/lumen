@@ -578,7 +578,7 @@ function maybeShowManualCrossTip(){
 }
 function closeManualCrossTip(){const tip=document.getElementById("manualCrossTip");if(tip)tip.hidden=true;try{localStorage.setItem("lumenManualCrossTipSeen","1")}catch(_){}}
 function guidedErrorsEnabled(){const g=document.getElementById("guidedErrors");return !!(g&&g.checked)}
-let guidedPending=null;
+let guidedPending=null,guidedDeferred=null;
 
 function guidedCell(r,c){return board.querySelector('.cell[data-row="'+r+'"][data-col="'+c+'"]')}
 function drawGuidedLink(a,b){
@@ -703,7 +703,7 @@ function hintEconomySeenKey(){return qaKey("lumenHintEconomySeenV1")}
 function maybeShowHintEconomyTransition(){if(levelIndex!==9||socialChallenge||replayMode)return;let seen=false;try{seen=localStorage.getItem(hintEconomySeenKey())==="1"}catch(_){}if(seen)return;try{localStorage.setItem(hintEconomySeenKey(),"1")}catch(_){}const card=document.getElementById("scriptedLearn");if(!card)return;learningTip={title:"Dernière quête avec indices offerts",copy:"Jusqu’à la fin de cette quête 10, tous les indices restent offerts. Dès la quête 11, le premier indice reste gratuit puis les suivants utilisent tes Éclats."};updateScriptedLearning()}
 function prepareQuestStart(){let q=bonusChallengeFor(levelIndex),o=document.getElementById("questStart");questFailed=false;if(!q||lumenProgress.stars[q.id]){questStarted=true;o.hidden=true;resumeGameClock();return}questStarted=false;pauseGameClock();document.getElementById("questStartTitle").textContent=q.title;document.getElementById("questStartRule").textContent=q.copy+" Récompense : +25 XP et +1 ✦ éclat.";o.hidden=false}
 document.getElementById("questGo").onclick=()=>{document.getElementById("questStart").hidden=true;questStarted=true;clock();updateAttemptUI()};
-function init(){setLearningReplaySuccessMode(false);document.getElementById("successNew").textContent="Quête suivante";updateLearningSuccessCTA();learningTip=null;learningTipSeen=new Set();learningStage="place";learningIntroStep=0;choose();configureLearningMode();applyQuestRestrictions();maybeShowBadgeMilestone();maybeShowAutoCrossUnlock();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl){const constellationIndex=chapterForGrid(levelIndex),constellation=CONSTELLATIONS[constellationIndex],range=constellationGridRange(constellationIndex),position=Math.min(range.count,levelIndex-range.start+1);cl.textContent="Quête "+(levelIndex+1)+" - "+(constellation?.name||"Constellation")+" ("+position+"/"+range.count+")";}document.getElementById("difficulty").textContent=n===7?"7 × 7 · constellation étendue":n===8?"8 × 8 · constellation étendue":"";state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];const hintCard=document.getElementById("hintCard");if(hintCard)hintCard.hidden=true;celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,100);
+function init(){setLearningReplaySuccessMode(false);document.getElementById("successNew").textContent="Quête suivante";updateLearningSuccessCTA();learningTip=null;learningTipSeen=new Set();learningStage="place";learningIntroStep=0;choose();configureLearningMode();applyQuestRestrictions();maybeShowBadgeMilestone();maybeShowAutoCrossUnlock();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl){const constellationIndex=chapterForGrid(levelIndex),constellation=CONSTELLATIONS[constellationIndex],range=constellationGridRange(constellationIndex),position=Math.min(range.count,levelIndex-range.start+1);cl.textContent="Quête "+(levelIndex+1)+" - "+(constellation?.name||"Constellation")+" ("+position+"/"+range.count+")";}document.getElementById("difficulty").textContent=n===7?"7 × 7 · constellation étendue":n===8?"8 × 8 · constellation étendue":"";state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];const hintCard=document.getElementById("hintCard");if(hintCard)hintCard.hidden=true;celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;guidedDeferred=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,100);
  const restored=attemptEngine.restore({questId:levelIndex+1,mode:attemptMode()});
  if(restored&&Array.isArray(restored.board)&&restored.board.length===n){state=restored.board.map(row=>row.slice());render()}else {const perf=lumenProgress.performances?.[levelIndex],eligible=currentPerformanceEligibility(levelIndex),hasEligible=Object.values(eligible).some(Boolean),qualifying=hasEligible&&perf?.lastQualifiedDay!==localCalendarDay();attemptEngine.create({questId:levelIndex+1,mode:attemptMode(),qualifying:socialChallenge?false:qualifying,challengeId:socialChallenge?.challenge_id||null,board:state});}
  clock();prepareQuestStart();updateAttemptUI();updateScriptedLearning();maybeShowHintEconomyTransition()}
@@ -1082,21 +1082,25 @@ function render(){
  }
  ensureAttemptStarted();
  if(next===2&&state[r][c]!==2&&currentGuardians>=n)return;
- // The first tap is the intermediate exclusion in the real placement cycle.
- // Validate the Guardian on the second tap so the correct cell stays playable.
- if(guidedErrorsEnabled()&&next===2){
-  const guidedError=guidedConflictForAction(r,c,next);
-  if(guidedError){
+ // Guided mode validates a Guardian only when the player commits to the next
+ // action. This preserves the normal cross -> Guardian -> empty correction cycle.
+ if(guidedDeferred){
+  const correctingDeferred=guidedDeferred.r===r&&guidedDeferred.c===c&&state[r][c]===2&&next===0;
+  if(correctingDeferred)guidedDeferred=null;
+  else{
+   const deferred=guidedDeferred;guidedDeferred=null;
    attemptEngine.markAssistance();
-   trackAttemptEvent("guided_intervention",{action:"guardian"});
+   trackAttemptEvent("guided_intervention",{action:"guardian",deferred:true});
    mistakesThisGame++;
    msg.textContent="";
    errorSound();
-   showGuidedConflict(r,c,guidedError);
+   showGuidedConflict(deferred.r,deferred.c,deferred.info);
    updateLiveReward(state.flat().filter(v=>v===2).length);
    return;
   }
  }
+ let deferredGuidedError=null;
+ if(guidedErrorsEnabled()&&next===2)deferredGuidedError=guidedConflictForAction(r,c,next);
  const actionKey=r+","+c,pending=attemptEngine.snapshot()?.wrongGuardianPending,correctingPending=pending===actionKey&&state[r][c]===2&&next===0;
  if(pending){
   if(correctingPending)attemptEngine.clearWrongGuardianPending(actionKey);
@@ -1106,6 +1110,7 @@ function render(){
  hist.push(state.map(x=>x.slice()));
  if(shown===3){state[r][c]=2}else{state[r][c]=next}
  if(next===2&&puz.sol[r]!==c)attemptEngine.setWrongGuardianPending(actionKey);
+ if(deferredGuidedError)guidedDeferred={r,c,info:deferredGuidedError};
  if(next===2&&document.getElementById("autoCross")?.checked)attemptEngine.markAssistance();
  clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";
  paintBoardState();if(next===2&&resolutionBefore)animateLogicalResolution(r,c,resolutionBefore);updateScriptedLearning();if(levelIndex===1&&next===2&&!scriptedLearningActive())showLearningTip("tools","Cette quête est à toi","Tu joues librement. Essaie Indice pour apprendre une nouvelle déduction : les indices sont offerts jusqu’à la quête 10. Vérifier examine tes choix.");persistAttemptBoard();
