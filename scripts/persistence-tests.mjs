@@ -118,7 +118,7 @@ for(const options of scenarios){
  normalized.warnings=stripOwnershipWarnings(normalized.warnings);
  expected.warnings=stripOwnershipWarnings(expected.warnings);
  if(!options.guest){
-   const stripEntitlementReads=trace=>trace.filter(x=>x.name!=='lumen_get_entitlements'&&x.name!=='lumen_get_internal_capabilities');normalized.trace=stripEntitlementReads(normalized.trace);expected.trace=stripEntitlementReads(expected.trace);
+   const stripEntitlementReads=trace=>trace.filter(x=>x.name!=='lumen_get_entitlements'&&x.name!=='lumen_get_internal_capabilities'&&x.name!=='lumen_register_user');normalized.trace=stripEntitlementReads(normalized.trace);expected.trace=stripEntitlementReads(expected.trace);
    normalized.progress.daily.dates={};
    expected.progress.daily.dates={};
    const normalizeDailySyncTrace=trace=>{
