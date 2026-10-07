@@ -13,8 +13,16 @@ export async function acknowledgeLearningMilestones(evaluate){
 
 export async function connectBrowser(){
  const endpoint=process.env.LUMEN_CDP_URL||'http://127.0.0.1:9222';
- const targets=await(await fetch(endpoint+'/json')).json();
- const ws=new WebSocket(targets.find(t=>t.type==='page').webSocketDebuggerUrl);
+ let page=null;
+ for(let attempt=0;attempt<40&&!page;attempt++){
+  try{
+   const targets=await(await fetch(endpoint+'/json')).json();
+   page=targets.find(t=>t.type==='page'&&t.webSocketDebuggerUrl)||null;
+  }catch(_){}
+  if(!page)await new Promise(resolve=>setTimeout(resolve,250));
+ }
+ if(!page)throw Error("No CDP page target available after 10s at "+endpoint);
+ const ws=new WebSocket(page.webSocketDebuggerUrl);
  await new Promise(resolve=>ws.onopen=resolve);
  let id=0;const pending=new Map(),errors=[];
  ws.onmessage=event=>{
