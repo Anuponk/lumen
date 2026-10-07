@@ -746,9 +746,10 @@ function adminAlerts(rows){
 async function loadAdminCockpit(){
  const status=document.getElementById("adminCockpitStatus"),days=Number(document.getElementById("adminCockpitDays")?.value||7);
  status.textContent="Actualisation…";
- const [cockpit,players,feedbacks]=await Promise.all([
+ const [cockpit,players,accounts,feedbacks]=await Promise.all([
    lumenSupabase.rpc("lumen_admin_cockpit",{p_days:days}),
    lumenSupabase.rpc("lumen_admin_players",{p_days:days}),
+   lumenSupabase.rpc("lumen_admin_accounts",{p_limit:250}),
    lumenSupabase.rpc("lumen_admin_feedback",{p_days:days})
  ]);
  if(cockpit.error){status.textContent="Cockpit indisponible : "+cockpit.error.message;return}
@@ -764,6 +765,8 @@ async function loadAdminCockpit(){
  const alerts=adminAlerts(d.friction);document.getElementById("adminAlerts").innerHTML=alerts.map(x=>'<div class="admin-alert"><strong>⚠</strong><span>'+adminEsc(x)+'</span></div>').join("")||"<p>Pas d’anomalie significative avec le volume actuel.</p>";
  document.getElementById("adminPlayers").innerHTML=players.error?"<p>Joueurs indisponibles.</p>":(players.data||[]).map(x=>'<div class="admin-player" data-player="'+adminEsc(x.player_key)+'"><span><strong>'+adminEsc(x.display_name)+'</strong><br><small>'+adminEsc(x.player_type)+" · Q"+(x.current_quest||"—")+' · '+x.sessions+' sessions</small></span><small>'+new Date(x.last_seen).toLocaleString("fr-FR")+'</small></div>').join("");
  document.querySelectorAll("#adminPlayers .admin-player").forEach(x=>x.onclick=()=>loadAdminTimeline(x.dataset.player));
+ const accountRows=document.getElementById("adminAccounts");
+ if(accountRows)accountRows.innerHTML=accounts.error?'<tr><td colspan="6">Comptes indisponibles.</td></tr>':(accounts.data||[]).map(x=>'<tr><td>'+adminEsc(x.email||"—")+'</td><td>'+adminEsc(x.nickname||"—")+'</td><td>'+new Date(x.created_at).toLocaleString("fr-FR")+'</td><td>'+(x.last_sign_in_at?new Date(x.last_sign_in_at).toLocaleString("fr-FR"):"—")+'</td><td>'+(x.last_activity?new Date(x.last_activity).toLocaleString("fr-FR"):"—")+'</td><td>'+(x.current_quest||"—")+'</td></tr>').join("")||'<tr><td colspan="6">Aucun compte.</td></tr>';
  document.getElementById("adminFeedbacks").innerHTML=feedbacks.error?"<p>Feedbacks indisponibles.</p>":(feedbacks.data||[]).map(x=>'<div class="admin-feedback"><strong>'+adminEsc(x.kind)+' · '+adminEsc(x.player_label)+(x.puzzle_id?" · Q"+x.puzzle_id:"")+'</strong><p>'+adminEsc(x.message||"Sans commentaire")+'</p><small>'+new Date(x.created_at).toLocaleString("fr-FR")+(x.app_version?" · "+adminEsc(x.app_version):"")+'</small></div>').join("");
  status.textContent="Mis à jour à "+new Date().toLocaleTimeString("fr-FR");
 }
