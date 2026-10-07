@@ -4,6 +4,11 @@ const {activeGameSeconds,exactSkyScoreForSolvedPrefix,saveLumenProgress,refreshJ
 const campaignQuestCount=()=>Math.max(0,Number(hooks.campaignQuestCount?.()??baseCampaignQuestCount()));
 const {setTimeout,console}=environment;
 const cloudWritesDisabled=()=>!!environment.qaMode;
+async function registerLumenUser(){
+ if(!model.lumenSupabase||!model.lumenUser||cloudWritesDisabled())return;
+ const {error}=await model.lumenSupabase.rpc("lumen_register_user");
+ if(error)console.warn("LUMEN user registration",error);
+}
 async function loadLumenProfile(){
  if(!model.lumenSupabase||!model.lumenUser)return;
  const {data,error}=await model.lumenSupabase.rpc("lumen_get_profile");if(error){console.warn("LUMEN profile",error);return}
@@ -74,10 +79,10 @@ async function initLumenCloud(){
  if(!model.lumenSupabase){onAccountChanged({type:"account"});return}
  const {data}=await model.lumenSupabase.auth.getSession();
  model.lumenUser=data.session?.user||null; onAccountChanged({type:"account"});
- if(model.lumenUser){await loadLumenProfile();await loadEntitlements();await loadInternalCapabilities();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily();}}else {model.lumenEntitlements=[];model.lumenCapabilities=[];}
+ if(model.lumenUser){await registerLumenUser();await loadLumenProfile();await loadEntitlements();await loadInternalCapabilities();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily();}}else {model.lumenEntitlements=[];model.lumenCapabilities=[];}
  model.lumenSupabase.auth.onAuthStateChange((event,session)=>{
    const previous=model.lumenUser?.id; model.lumenUser=session?.user||null; onAccountChanged({type:"account"});
-   if(model.lumenUser&&model.lumenUser.id!==previous)setTimeout(async()=>{await loadEntitlements();await loadInternalCapabilities();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily()}},0);else if(!model.lumenUser){model.lumenEntitlements=[];model.lumenCapabilities=[];refreshJourney();onAccountChanged({type:"account"})}
+   if(model.lumenUser&&model.lumenUser.id!==previous)setTimeout(async()=>{await registerLumenUser();await loadEntitlements();await loadInternalCapabilities();if(!cloudWritesDisabled()){await cloudMergeProgress();await cloudMergeDaily()}},0);else if(!model.lumenUser){model.lumenEntitlements=[];model.lumenCapabilities=[];refreshJourney();onAccountChanged({type:"account"})}
  });
 
 }
@@ -133,7 +138,10 @@ async function cloudMergeDaily(){
 
 async function signIn(redirectTo){
  if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};
- const {error}=await model.lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo}});
+ const target=String(redirectTo||environment.lumenAuthReturnUrl||"").trim();
+ if(!target)return {ok:false,reason:"redirect"};
+ try{environment.sessionStorage?.setItem("lumenAuthReturnUrl",target)}catch(_){}
+ const {error}=await model.lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:target}});
  return error?{ok:false,reason:"oauth",error}:{ok:true};
 }
 async function signOut(){
@@ -143,5 +151,5 @@ async function signOut(){
  model.lumenUser=null;model.lumenEntitlements=[];model.lumenCapabilities=[];model.lumenCloudReady=false;
  onAccountChanged({type:"account"});refreshJourney();return {ok:true};
 }
-return {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,signOut};
+return {registerLumenUser,loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,signOut};
 }

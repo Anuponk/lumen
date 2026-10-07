@@ -114,11 +114,11 @@ for(const options of scenarios){
    normalized.trace=stripRepairs(normalized.trace);
    expected.trace=stripRepairs(expected.trace);
  }
- const stripOwnershipWarnings=warnings=>warnings.filter(x=>x?.[0]!=='LUMEN entitlements'&&x?.[0]!=='LUMEN capabilities');
+ const stripOwnershipWarnings=warnings=>warnings.filter(x=>x?.[0]!=='LUMEN entitlements'&&x?.[0]!=='LUMEN capabilities'&&x?.[0]!=='LUMEN user registration');
  normalized.warnings=stripOwnershipWarnings(normalized.warnings);
  expected.warnings=stripOwnershipWarnings(expected.warnings);
  if(!options.guest){
-   const stripEntitlementReads=trace=>trace.filter(x=>x.name!=='lumen_get_entitlements'&&x.name!=='lumen_get_internal_capabilities');normalized.trace=stripEntitlementReads(normalized.trace);expected.trace=stripEntitlementReads(expected.trace);
+   const stripEntitlementReads=trace=>trace.filter(x=>x.name!=='lumen_get_entitlements'&&x.name!=='lumen_get_internal_capabilities'&&x.name!=='lumen_register_user');normalized.trace=stripEntitlementReads(normalized.trace);expected.trace=stripEntitlementReads(expected.trace);
    normalized.progress.daily.dates={};
    expected.progress.daily.dates={};
    const normalizeDailySyncTrace=trace=>{
@@ -158,3 +158,13 @@ for(const options of scenarios){
  }
 }
 console.log(JSON.stringify({baseline,localFixtures:4,cloudFixtures:scenarios.length,authCallbacks:true,rpcPayloads:'legacy except intentional daily sync',result:'passing',liveCloudWrites:false}));
+
+{
+ const migration=fs.readFileSync('supabase/migrations/20261007_lumen_user_isolation.sql','utf8');
+ assert.match(migration,/create table if not exists lumen\.users/,'Lumen must own an explicit app-user registry');
+ assert.match(migration,/from lumen\.users lu join auth\.users u/,'admin account list must be scoped to registered Lumen users');
+ assert.match(migration,/lumen_register_user/,'authenticated Lumen users must be registered explicitly');
+ const ui=fs.readFileSync('src/ui/game-screen.js','utf8');
+ assert.equal((ui.match(/signIn\("https:\/\/lumen-xi-seven\.vercel\.app\/"\)/g)||[]).length,2,'Both Google sign-in entry points must return to the canonical Lumen production URL');
+ assert.doesNotMatch(migration,/insert into lumen\.users[\s\S]*from auth\.users\s+u\s*(?:;|$)/i,'SoldeZen-only auth users must never be bulk-registered as Lumen users');
+}
