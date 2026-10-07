@@ -10,7 +10,9 @@ assert.equal(challengeEligibility({priorPerformance:{attempts:9},run:mastery}).r
 const snap=challengeSnapshot({questIndex:11,seconds:87.8,run:mastery,assistanceUsed:false});
 assert.equal(snap.questId,12);
 assert.equal(snap.mastery,true);
-assert.equal(snap.assistanceUsed,false);\nconst expandedCatalogSnap=challengeSnapshot({questIndex:111,seconds:45,run:mastery,assistanceUsed:false});\nassert.equal(expandedCatalogSnap.questId,112,"quest 112 remains challengeable");
+assert.equal(snap.assistanceUsed,false);
+const expandedCatalogSnap=challengeSnapshot({questIndex:111,seconds:45,run:mastery,assistanceUsed:false});
+assert.equal(expandedCatalogSnap.questId,112,"quest 112 remains challengeable");
 
 assert.equal(compareChallenge({duration_seconds:102,autonomy:true},{status:"completed",duration_seconds:87,autonomy:true}).kind,"won");
 assert.equal(compareChallenge({duration_seconds:102,autonomy:true},{status:"completed",duration_seconds:87,autonomy:true}).headline,"Défi remporté !");
