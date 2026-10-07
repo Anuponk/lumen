@@ -746,12 +746,14 @@ function adminAlerts(rows){
 async function loadAdminCockpit(){
  const status=document.getElementById("adminCockpitStatus"),days=Number(document.getElementById("adminCockpitDays")?.value||7);
  status.textContent="Actualisation…";
- const [cockpit,players,accounts,feedbacks]=await Promise.all([
+ const [cockpit,accounts,feedbacks]=await Promise.all([
    lumenSupabase.rpc("lumen_admin_cockpit",{p_days:days}),
-   lumenSupabase.rpc("lumen_admin_players_v2",{p_days:days}),
    lumenSupabase.rpc("lumen_admin_accounts",{p_limit:250}),
    lumenSupabase.rpc("lumen_admin_feedback",{p_days:days})
  ]);
+ const feedbackRows=feedbacks.data||[];
+ const players=feedbackRows.filter(x=>x.kind==="__player__");
+ const realFeedbacks=feedbackRows.filter(x=>x.kind!=="__player__");
  if(cockpit.error){status.textContent="Cockpit indisponible : "+cockpit.error.message;return}
  const d=cockpit.data||{},m=d.summary||{};
  document.getElementById("adminCockpitKpis").innerHTML=[
