@@ -751,7 +751,8 @@ async function loadAdminCockpit(){
    lumenSupabase.rpc("lumen_admin_accounts",{p_limit:250}),
    lumenSupabase.rpc("lumen_admin_feedback",{p_days:days})
  ]);
- const players=[];\n const realFeedbacks=feedbacks.data||[];
+ const players=[];
+ const realFeedbacks=feedbacks.data||[];
  if(cockpit.error){status.textContent="Cockpit indisponible : "+cockpit.error.message;return}
  const d=cockpit.data||{},m=d.summary||{};
  document.getElementById("adminCockpitKpis").innerHTML=[
