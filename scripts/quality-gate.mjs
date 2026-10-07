@@ -89,7 +89,7 @@ async function startChrome(port){
  const executable=chromeCandidates();
  if(!executable)throw Error("Chrome/Chromium not found. Set LUMEN_CHROME_BIN to the browser executable.");
  let lastError="";
- for(let attempt=1;attempt<=2;attempt++){
+ for(let attempt=1;attempt<=3;attempt++){
   const profile=fs.mkdtempSync(path.join(os.tmpdir(),"lumen-quality-"));
   const args=["--headless=new","--remote-debugging-port="+port,"--remote-debugging-address=127.0.0.1","--user-data-dir="+profile,"--no-first-run","--no-default-browser-check","--disable-dev-shm-usage","--disable-background-networking","--disable-component-update","--no-sandbox","about:blank"];
   const child=spawn(executable,args,{cwd:root,stdio:["ignore","ignore","pipe"],shell:false});
@@ -98,7 +98,7 @@ async function startChrome(port){
   const cleanup=async()=>{if(cleaned)return;cleaned=true;await stopProcess(child);fs.rmSync(profile,{recursive:true,force:true})};
   started.push(cleanup);
   let ready=false;
-  for(let i=0;i<300;i++){
+  for(let i=0;i<450;i++){
    if(child.exitCode!==null){lastError="Chrome exited before CDP became ready";break}
    try{const response=await fetch("http://127.0.0.1:"+port+"/json/version");if(response.ok){ready=true;break}}catch(_){}
    await sleep(100);
@@ -106,7 +106,7 @@ async function startChrome(port){
   if(ready)return {child,profile,cleanup};
   lastError=(lastError||"Chrome CDP did not become ready on port "+port)+(chromeStderr?"\nChrome stderr:\n"+chromeStderr:"");
   await cleanup();const index=started.indexOf(cleanup);if(index>=0)started.splice(index,1);
-  if(attempt<2){console.warn("Chrome startup attempt "+attempt+" failed on CDP port "+port+"; retrying with a fresh profile.");await sleep(500)}
+  if(attempt<3){console.warn("Chrome startup attempt "+attempt+" failed on CDP port "+port+"; retrying with a fresh profile.");await sleep(1000)}
  }
  throw Error(lastError);
 }
