@@ -48,6 +48,17 @@ async function fixture(options,legacy){
  
  return plain({progress:scope.lumenProgress,user:scope.lumenUser,nickname:scope.lumenNickname,entitlements:scope.lumenEntitlements||[],capabilities:scope.lumenCapabilities||[],ready:scope.lumenCloudReady,sequential:scope.sequentialSolvedCount,level:scope.levelIndex,trace,warnings});
 }
+// #141: a social challenge must keep its puzzle selected even if cloud sync
+// restores a different current campaign quest (e.g. challenge 64, progress 109).
+{
+ const trace=[],model={lumenSupabase:null,lumenUser:{id:'challenge-user'},lumenCloudReady:false,lumenProgress:{solved:{},historyBackup:{},noHint:{}},sequentialSolvedCount:108,levelIndex:63,navigationLocked:true,usedHintThisGame:false};
+ for(let i=0;i<108;i++){model.lumenProgress.solved[i]=1;model.lumenProgress.historyBackup[i]=1}
+ model.lumenSupabase={rpc:async name=>({error:null,data:name==='lumen_get_progress'?Array.from({length:108},(_,i)=>({puzzle_id:i+1})):null})};
+ const api=createCloudPersistence(model,{activeGameSeconds:()=>0,exactSkyScoreForSolvedPrefix:()=>0,saveLumenProgress:()=>{},refreshJourney:()=>trace.push('refresh'),init:()=>trace.push('init'),onAccountChanged:()=>{},renderDaily:()=>{}},{console:{warn:()=>{}}});
+ await api.cloudMergeProgress();
+ assert.equal(model.levelIndex,63,'Challenge quest 64 must survive cloud progress at quest 109');
+ assert.ok(!trace.includes('init'),'Cloud merge must not reinitialize the board while challenge navigation is locked');
+}
 const scenarios=[{guest:true,cloud:[]},{cloud:[]},{cloud:[{puzzle_id:1},{puzzle_id:2}]},{cloud:[{puzzle_id:1},{puzzle_id:3}]},{cloud:[],networkError:true}];
 for(const options of scenarios){
  const actual=await fixture(options,false),legacy=await fixture(options,true);
