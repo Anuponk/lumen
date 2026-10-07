@@ -99,3 +99,7 @@ The cockpit shows a short deterministic label for anonymous players rather than 
 `lumen_admin_cockpit(days)` returns summary, daily activity, activation funnel, retention and quest friction as aggregated JSON. `lumen_admin_players(days)`, `lumen_admin_player_timeline(player_key, limit)` and `lumen_admin_feedback(days)` provide bounded drill-downs. All require an authenticated user with `analytics_cockpit`.
 
 The analytics ingestion allow-list accepts canonical attempt/friction events and future campaign puzzle IDs rather than the historical 100-quest ceiling. Event and feedback indexes cover date, identity, event and puzzle filters used by the cockpit.
+
+
+### Admin account directory (#112)
+The cockpit can list created authentication accounts through `lumen_admin_accounts(limit)`. The RPC reads email and authentication timestamps directly from `auth.users` only after checking the authenticated caller has the `analytics_cockpit` capability. Email is not copied into `analytics_events`, is not part of player telemetry, and the RPC is revoked from public/anonymous roles.
