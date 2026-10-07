@@ -68,6 +68,16 @@ assert.equal(campaign.isCampaignComplete({...Object.fromEntries(Array.from({leng
  assert.equal(refs.slice(0,100).filter(x=>x.startsWith("8/")).length,12);
 }
 
+// #147: from quest 101 onward, constellations are contiguous in play order.
+for(let ci=12;ci<data.CONSTELLATIONS.length;ci++){
+ const quests=campaign.constellationQuestIndices(ci);
+ assert.equal(quests.length,8,'Wave 2 constellation '+ci+' has 8 quests');
+ assert.deepEqual(quests,Array.from({length:8},(_,offset)=>100+(ci-12)*8+offset),'Wave 2 constellation '+ci+' is contiguous');
+}
+assert.equal(campaign.chapterForGrid(107),12,'Quest 108 is the end of Pégase');
+assert.equal(campaign.chapterForGrid(108),13,'Quest 109 starts Persée');
+assert.equal(campaign.chapterForGrid(163),19,'Quest 164 ends Pack 2');
+assert.equal(campaign.chapterForGrid(164),20,'Quest 165 starts Pack 3');
 assert.equal(data.SKY_TARGET,data.CONSTELLATIONS.reduce((sum,c)=>sum+c.count,0));
 let earned=0;
 for(let ci=0;ci<data.CONSTELLATIONS.length;ci++){
