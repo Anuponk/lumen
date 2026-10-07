@@ -295,7 +295,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .daily-info-popover p{margin:0 0 9px}
  .daily-info-status{color:#e4f5ff;font-weight:800;margin-bottom:8px}
  .daily-info-reward{padding-top:8px;border-top:1px solid #28415b;color:#ffbd59}
- .mobile-auth-popover{display:block;position:absolute;z-index:50;top:55px;right:10px;width:min(290px,calc(100vw - 20px));padding:12px;background:#101d2e;border:1px solid #28415b;border-radius:15px;box-shadow:0 16px 40px rgba(0,0,0,.35);font-size:12px;color:#9fb3c8}
+ .mobile-auth-popover{display:block;position:absolute;z-index:130;top:55px;right:10px;width:min(290px,calc(100vw - 20px));padding:12px;background:#101d2e;border:1px solid #28415b;border-radius:15px;box-shadow:0 16px 40px rgba(0,0,0,.35);font-size:12px;color:#9fb3c8}
  .mobile-auth-popover[hidden]{display:none!important}
  .mobile-auth-popover button{width:100%;margin-top:9px;padding:9px 11px;font-size:12px}
  .game-core{position:relative}
