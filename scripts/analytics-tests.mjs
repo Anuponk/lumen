@@ -52,3 +52,10 @@ const analyticsSource=fs.readFileSync('src/analytics/events.js','utf8');
 assert.match(analyticsSource,/traffic_type:trafficType/,'analytics events must carry an explicit traffic type');
 assert.match(analyticsSource,/localTestHost\?'automated_test':'human'/,'local browser tests must be classified separately from humans');
 assert.match(analyticsSource,/test_run_id/,'automated analytics supports a test run id');
+
+const adminAccountsMigration=fs.readFileSync('supabase/migrations/20261007_lumen_admin_accounts.sql','utf8');
+assert.match(adminAccountsMigration,/from auth\.users u/,'admin account directory must use the authentication source of truth');
+assert.match(adminAccountsMigration,/capability='analytics_cockpit'/,'account emails require the analytics cockpit capability');
+assert.match(adminAccountsMigration,/revoke all on function public\.lumen_admin_accounts\(integer\) from public,anon/,'anonymous users must never list account emails');
+assert.doesNotMatch(fs.readFileSync('src/analytics/events.js','utf8'),/\bemail\b/i,'analytics client must not collect email');
+assert.match(fs.readFileSync('src/ui/game-screen.js','utf8'),/lumen_admin_accounts/,'cockpit must load the protected account directory');
