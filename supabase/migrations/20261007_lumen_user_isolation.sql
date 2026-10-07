@@ -12,7 +12,7 @@ select user_id,min(seen_at),max(seen_at)
 from (
  select user_id,created_at seen_at from lumen.profiles where user_id is not null
  union all select user_id,occurred_at from lumen.analytics_events where user_id is not null
- union all select user_id,updated_at from lumen.progress where user_id is not null
+ union all select user_id,completed_at from lumen.progress where user_id is not null
 ) s group by user_id
 on conflict(user_id) do update set last_seen_at=greatest(lumen.users.last_seen_at,excluded.last_seen_at);
 
