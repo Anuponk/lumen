@@ -1,0 +1,4 @@
+-- Group authenticated player activity by user_id across anonymous browser identities.
+-- Anonymous players remain grouped by anonymous_id.
+-- Applied to production on 2026-10-07.
+-- The canonical function definition is maintained in the production migration history.
