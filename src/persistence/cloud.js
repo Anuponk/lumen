@@ -63,8 +63,10 @@ async function cloudMergeProgress(){
    const {error:e}=await model.lumenSupabase.rpc("lumen_save_progress",{p_puzzle_id:i+1,p_duration_seconds:null,p_hints_used:(model.lumenProgress.noHint&&model.lumenProgress.noHint[i])?0:1});
    if(e)console.warn("LUMEN import local",e);
  }
- model.levelIndex=Math.min(count,campaignQuestCount()-1);
- refreshJourney(); init();
+ if(!model.navigationLocked){
+   model.levelIndex=Math.min(count,campaignQuestCount()-1);
+   refreshJourney(); init();
+ }else refreshJourney();
  model.lumenCloudReady=true;
 }
 
