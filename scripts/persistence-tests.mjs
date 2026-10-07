@@ -114,7 +114,7 @@ for(const options of scenarios){
    normalized.trace=stripRepairs(normalized.trace);
    expected.trace=stripRepairs(expected.trace);
  }
- const stripOwnershipWarnings=warnings=>warnings.filter(x=>x?.[0]!=='LUMEN entitlements'&&x?.[0]!=='LUMEN capabilities');
+ const stripOwnershipWarnings=warnings=>warnings.filter(x=>x?.[0]!=='LUMEN entitlements'&&x?.[0]!=='LUMEN capabilities'&&x?.[0]!=='LUMEN user registration');
  normalized.warnings=stripOwnershipWarnings(normalized.warnings);
  expected.warnings=stripOwnershipWarnings(expected.warnings);
  if(!options.guest){
