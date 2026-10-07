@@ -41,6 +41,7 @@ get lumenNickname(){return lumenNickname},set lumenNickname(value){lumenNickname
 get lumenProgress(){return lumenProgress},set lumenProgress(value){lumenProgress=value},
 get sequentialSolvedCount(){return sequentialSolvedCount},set sequentialSolvedCount(value){sequentialSolvedCount=value},
 get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
+get navigationLocked(){return !!socialChallenge},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
 const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>campaignQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI()},renderDaily:(...args)=>renderDaily(...args)},{setTimeout,console,qaMode});
