@@ -95,7 +95,7 @@ async function startChrome(port){
   const child=spawn(executable,args,{cwd:root,stdio:["ignore","ignore","pipe"],shell:false});
   let chromeStderr="";child.stderr?.on("data",chunk=>{chromeStderr=(chromeStderr+chunk.toString()).slice(-8000)});
   let cleaned=false;
-  const cleanup=async()=>{if(cleaned)return;cleaned=true;await stopProcess(child);fs.rmSync(profile,{recursive:true,force:true})};
+  const cleanup=async()=>{if(cleaned)return;cleaned=true;await stopProcess(child);for(let attempt=0;attempt<5;attempt++){try{fs.rmSync(profile,{recursive:true,force:true,maxRetries:3,retryDelay:100});break}catch(error){if(attempt===4)console.warn("Chrome profile cleanup skipped:",error.message);await sleep(200*(attempt+1))}}};
   started.push(cleanup);
   let ready=false;
   for(let i=0;i<450;i++){
