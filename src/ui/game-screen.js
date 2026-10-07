@@ -126,7 +126,9 @@ function setupDailyInfo(){
 function setupMobileAuth(){
  const menu=document.getElementById("mobileAuthPopover"),account=document.getElementById("mobileAccount"),action=document.getElementById("mobileAuthAction");
  if(!menu||!account||!action)return;
- account.onclick=()=>{const d=document.getElementById("dailyInfoPopover");if(d)d.hidden=true;menu.hidden=!menu.hidden};
+ account.onclick=(e)=>{e.stopPropagation();const d=document.getElementById("dailyInfoPopover");if(d)d.hidden=true;menu.hidden=!menu.hidden};
+ menu.onclick=(e)=>e.stopPropagation();
+ document.addEventListener("click",()=>{if(!menu.hidden)menu.hidden=true});
  action.onclick=async()=>{
    menu.hidden=true;
    if(!lumenSupabase)return;
