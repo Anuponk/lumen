@@ -15,6 +15,7 @@ const nodeSuites=[
  "campaign-tests.mjs",
  "late-game-tests.mjs",
  "content-architecture-tests.mjs",
+ "catalogue-ceiling-tests.mjs",
  "sky-navigation-tests.mjs",
  "extraordinary-skies-tests.mjs",
  "persistence-tests.mjs",
