@@ -144,6 +144,20 @@ async function signIn(redirectTo){
  const {error}=await model.lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:target}});
  return error?{ok:false,reason:"oauth",error}:{ok:true};
 }
+async function sendEmailOtp(email){
+ if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};
+ const normalized=String(email||"").trim().toLowerCase();
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized))return {ok:false,reason:"email"};
+ const {error}=await model.lumenSupabase.auth.signInWithOtp({email:normalized,options:{shouldCreateUser:true}});
+ return error?{ok:false,reason:"otp_send",error}:{ok:true,email:normalized};
+}
+async function verifyEmailOtp(email,token){
+ if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};
+ const normalized=String(email||"").trim().toLowerCase(),code=String(token||"").trim();
+ if(!normalized||!/^\d{6}$/.test(code))return {ok:false,reason:"otp"};
+ const {error}=await model.lumenSupabase.auth.verifyOtp({email:normalized,token:code,type:"email"});
+ return error?{ok:false,reason:"otp_verify",error}:{ok:true};
+}
 async function signOut(){
  if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};
  const {error}=await model.lumenSupabase.auth.signOut();
@@ -151,5 +165,5 @@ async function signOut(){
  model.lumenUser=null;model.lumenEntitlements=[];model.lumenCapabilities=[];model.lumenCloudReady=false;
  onAccountChanged({type:"account"});refreshJourney();return {ok:true};
 }
-return {registerLumenUser,loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,signOut};
+return {registerLumenUser,loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,sendEmailOtp,verifyEmailOtp,signOut};
 }
