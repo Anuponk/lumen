@@ -63,9 +63,9 @@ let lumenNickname="";
 let accountOfferSignInPending=false;
 function accountOfferKey(name){return qaKey("lumenAccountOffer"+name)}
 function showAccountSavedConfirmation(){const toast=document.getElementById("accountSavedToast");if(!toast)return;toast.hidden=false;setTimeout(()=>{toast.hidden=true},2200)}
-function accountOfferMilestone(){const solved=solvedCount(),first=CONSTELLATION_GRID_COUNTS[0]||0,three=CONSTELLATION_GRID_COUNTS.slice(0,3).reduce((a,b)=>a+b,0);if(solved>=three)return 3;if(solved>=first)return 1;return 0}
-function maybeOfferAccount(){if(lumenUser||socialChallenge)return;const milestone=accountOfferMilestone();if(!milestone)return;let dismissed=0,shown=0;try{dismissed=Number(localStorage.getItem(accountOfferKey("DismissedMilestone"))||0);shown=Number(localStorage.getItem(accountOfferKey("ShownMilestone"))||0)}catch(_){}if(milestone===1&&dismissed>=1)return;if(milestone===3&&dismissed>=3)return;if(shown>=milestone)return;const install=document.getElementById("installOptin");if(install&&!install.hidden)return;const box=document.getElementById("accountOptin");if(!box)return;box.hidden=false;try{localStorage.setItem(accountOfferKey("ShownMilestone"),String(milestone))}catch(_){}trackLumenEvent("account_offer_shown",null,{milestone,source:"constellation_complete",qa:qaActive})}
-function dismissAccountOffer(){const box=document.getElementById("accountOptin");if(!box||box.hidden)return;const milestone=accountOfferMilestone();box.hidden=true;try{localStorage.setItem(accountOfferKey("DismissedMilestone"),String(milestone))}catch(_){}trackLumenEvent("account_offer_later",null,{milestone,source:"constellation_complete",qa:qaActive})}
+function accountOfferMilestone(){return solvedCount()>=5?5:0}
+function maybeOfferAccount(){if(lumenUser||socialChallenge||solvedCount()<5)return false;const box=document.getElementById("accountOptin");if(!box)return false;box.hidden=false;trackLumenEvent("account_offer_shown",null,{milestone:5,source:"quest_5_gate",qa:qaActive});return true}
+function dismissAccountOffer(){const box=document.getElementById("accountOptin");if(!box||box.hidden)return;trackLumenEvent("account_offer_required",null,{milestone:5,source:"quest_5_gate",qa:qaActive})}
 async function acceptAccountOffer(){const box=document.getElementById("accountOptin");if(box)box.hidden=true;const milestone=accountOfferMilestone();trackLumenEvent("account_offer_accept",null,{milestone,source:"constellation_complete",qa:qaActive});if(!lumenSupabase){trackLumenEvent("account_signin_failure",null,{milestone,reason:"cloud_unavailable",qa:qaActive});return}accountOfferSignInPending=true;try{sessionStorage.setItem("lumenAccountOfferSignInPending","1")}catch(_){}const result=await signIn("https://lumen-xi-seven.vercel.app/");if(!result.ok){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_failure",null,{milestone,reason:result.reason||"oauth",qa:qaActive})}}
 function syncMobileAuthUI(){
  const status=document.getElementById("mobileAuthStatus"),action=document.getElementById("mobileAuthAction"),icon=document.getElementById("mobileAccount");
@@ -1322,6 +1322,7 @@ const lumenAutoCrossStored=localStorage.getItem("lumenAutoCross");const legacyAu
 ac.onchange=()=>{if(celebrated){ac.checked=!ac.checked;return}if(levelIndex<=4&&!replayMode){ac.checked=false;return}if(ac.checked){autoUsedThisGame=true;attemptEngine.markAssistance();trackAttemptEvent("auto_marking_enabled")}localStorage.setItem("lumenAutoCross",ac.checked?"1":"0");if(!ac.checked)maybeShowManualCrossTip();hi=null;render()};
 function advanceToNextPuzzle(){
  if(!lumenProgress.solved[levelIndex])return;
+ if(levelIndex===4&&!replayMode&&!socialChallenge&&typeof maybeOfferAccount==='function'&&maybeOfferAccount()){hideSuccess();return}
  // "Quête suivante" is relative to the quest just played, including replays.
  // sequentialSolvedCount remains the highest unlocked campaign position.
  const next=levelIndex+1;
@@ -1341,8 +1342,8 @@ document.getElementById("successRetry").onclick=()=>{
  document.getElementById("autoCross").disabled=false;
  loadPuzzle();usedHintThisGame=false;refreshJourney();
 };
-document.getElementById("successSky").onclick=()=>{hideSuccess();let learningTour=false;try{learningTour=levelIndex===1&&localStorage.getItem("lumenSkyTourSeen")!=="1"}catch(_){}openJourneyMap(true,{advanceOnClose:true,learningTour})};
-function learningSkyDiscoveryRequired(){return levelIndex===1&&!replayMode&&!socialChallenge}
+document.getElementById("successSky").onclick=()=>{hideSuccess();let learningTour=false;try{learningTour=levelIndex===7&&localStorage.getItem("lumenSkyTourSeen")!=="1"}catch(_){}openJourneyMap(true,{advanceOnClose:true,learningTour})};
+function learningSkyDiscoveryRequired(){return levelIndex===7&&!replayMode&&!socialChallenge}
 function updateLearningSuccessCTA(){
  const b=document.getElementById("successNew");if(!b)return;
  b.textContent=learningSkyDiscoveryRequired()?"✦ Découvrir Mon ciel":"Quête suivante";
@@ -1357,7 +1358,7 @@ function renderSkyTourStep(){
  clearSkyTourFocus();if(target){target.classList.add("sky-tour-focus");target.scrollIntoView({behavior:"smooth",block:"center"})}
  document.getElementById("skyTourTitle").textContent=step.title;
  document.getElementById("skyTourCopy").textContent=step.copy;
- const next=document.getElementById("skyTourNext");next.textContent=skyTourStep===SKY_TOUR_STEPS.length-1?"Jouer la quête 3":"Suivant";
+ const next=document.getElementById("skyTourNext");next.textContent=skyTourStep===SKY_TOUR_STEPS.length-1?"Jouer la quête 9":"Suivant";
 }
 function advanceSkyTour(){
  if(skyTourStep<SKY_TOUR_STEPS.length-1){skyTourStep++;renderSkyTourStep();return}
