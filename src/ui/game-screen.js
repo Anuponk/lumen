@@ -1322,7 +1322,7 @@ const lumenAutoCrossStored=localStorage.getItem("lumenAutoCross");const legacyAu
 ac.onchange=()=>{if(celebrated){ac.checked=!ac.checked;return}if(levelIndex<=4&&!replayMode){ac.checked=false;return}if(ac.checked){autoUsedThisGame=true;attemptEngine.markAssistance();trackAttemptEvent("auto_marking_enabled")}localStorage.setItem("lumenAutoCross",ac.checked?"1":"0");if(!ac.checked)maybeShowManualCrossTip();hi=null;render()};
 function advanceToNextPuzzle(){
  if(!lumenProgress.solved[levelIndex])return;
- if(levelIndex>=4&&!persistenceModel.lumenUser&&!replayMode&&!socialChallenge){hideSuccess();maybeOfferAccount();return}
+ if(levelIndex>=4&&!replayMode&&!socialChallenge&&typeof maybeOfferAccount==='function'&&maybeOfferAccount()){hideSuccess();return}
  // "Quête suivante" is relative to the quest just played, including replays.
  // sequentialSolvedCount remains the highest unlocked campaign position.
  const next=levelIndex+1;
