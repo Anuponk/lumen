@@ -154,20 +154,9 @@ try {
     board=await snapshot();
     for(let r=0;r<5;r++)if(board.state[r][board.puz.sol[r]]!==2){await input(await point(r,board.puz.sol[r]),viewport.mobile);await input(await point(r,board.puz.sol[r]),viewport.mobile);}
     assert.equal((await snapshot()).celebrated,true,'Quest 2 has normal victory');
-    assert.match(await evaluate('document.getElementById("successNew").textContent'),/Découvrir Mon ciel/);
-    await evaluate('document.getElementById("successOverlay").click()');
-    assert.equal(await evaluate('document.getElementById("mapModal").hidden'),true,'Quest 2 backdrop cannot skip the explicit sky discovery');
+    assert.match(await evaluate('document.getElementById("successNew").textContent'),/Quête suivante/,'Quest 2 now continues directly: Mon ciel is deliberately introduced at quest 8');
     await evaluate('document.getElementById("successNew").click()');await sleep(100);
-    assert.equal(await evaluate('document.getElementById("mapModal").hidden'),false);
-    assert.equal(await evaluate('document.getElementById("skyTour").hidden'),false);
-    await evaluate('document.getElementById("closeMap").click();document.getElementById("mapModal").click()');
-    assert.equal((await snapshot()).levelIndex,1,'Closing or touching the backdrop cannot skip the first sky tour');
-    for(const target of ['skyNavigation','sectorTabs','puzzleGrid','performanceLegend','skyCard']){
-      assert.equal((await snapshot()).levelIndex,1,'The tour cannot advance before its last step');
-      assert.equal(await evaluate(`document.getElementById("${target}").classList.contains("sky-tour-focus")`),true,'The tour explains each real sky zone');
-      await evaluate('document.getElementById("skyTourNext").click()');
-    }
-    assert.equal((await snapshot()).levelIndex,2,'Sky tour leads to quest 3');
+    assert.equal((await snapshot()).levelIndex,2,'Quest 2 leads directly to quest 3 without the sky tour');
     assert.equal(await evaluate('document.getElementById("badgeUnlockOverlay").hidden'),false,'Quest 3 teaches its newly eligible speed badge');
     assert.match(await evaluate('document.getElementById("badgeUnlockCopy").textContent'),/Rapidité/);
     await acknowledgeLearningMilestones(evaluate);
