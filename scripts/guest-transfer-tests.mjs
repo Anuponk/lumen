@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {exportGuestSave,importGuestSave,guestSavePresent} from '../src/persistence/guest-transfer.js';
+const storage=()=>{const map=new Map();return {getItem:k=>map.has(k)?map.get(k):null,setItem:(k,v)=>map.set(k,v)}};
+const old=storage(),next=storage();old.setItem('lumenProgressV1',JSON.stringify({solved:{0:true,1:true},badges:{0:{speed:true}},stars:{0:3},shards:8,daily:{dates:{"2026-10-01":1}}}));
+const data=exportGuestSave(old);assert.equal(importGuestSave(next,data).solved,2);assert.equal(JSON.parse(next.getItem('lumenProgressV1')).shards,8);
+assert.equal(JSON.parse(old.getItem('lumenProgressV1')).shards,8,'Source must remain untouched');
+assert.throws(()=>importGuestSave(next,data),/import bloqué/);
+assert.throws(()=>importGuestSave(storage(),'{}'),/fichier n'est pas/);
+assert.throws(()=>importGuestSave(storage(),JSON.stringify({format:'lumen-guest-backup',version:1,progress:{solved:{}}})),/Badges/);
+assert.equal(guestSavePresent(next),true);
+console.log('Guest rescue export/import verified');

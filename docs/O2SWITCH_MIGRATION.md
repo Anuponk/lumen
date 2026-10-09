@@ -49,3 +49,9 @@ LUMEN_VALIDATED_SHA=$(git -C ~/lumen-staging rev-parse HEAD) bash ~/lumen-stagin
 Lors du premier test, le compte Google lancé sur `lumen.nopuna.fr` renvoyait vers Vercel : deux parcours `signIn(...)` dans `src/ui/game-screen.js` contenaient l'URL Vercel en dur. Correction : destination calculée à partir de `location.origin`, pour conserver le domaine initiateur (Vercel ou o2switch). Test : `node scripts/oauth-return.test.mjs`, inclus dans GitHub CI. Dans Supabase Authentication > URL Configuration, conserver les deux domaines dans Redirect URLs pendant la transition ; ne pas changer la Site URL Vercel avant la bascule.
 
 **Attention aux sauvegardes :** après retour sur une origine différente, la session et le localStorage ne sont pas identiques. La disparition apparente de progression ne prouve pas une suppression cloud. Vérifier le compte réellement connecté et la synchronisation Supabase avant toute mutation ou reset.
+
+## Sauvetage manuel des invités (phase 1, issue #214)
+
+Un parcours export/import est disponible via le menu compte et `/transfer.html` sur les deux domaines. Depuis **Vercel**, télécharger le fichier JSON local; depuis **o2switch**, l'importer via la même page. Aucune création de compte, aucun transfert réseau, aucune suppression de la source. L'import refuse de remplacer une progression déjà présente sur le domaine cible. Le fichier JSON contient des informations de progression personnelle : à conserver localement et ne pas partager publiquement. Test CI : `node scripts/guest-transfer-tests.mjs`. La PWA et les autres appareils doivent être testés manuellement.
+
+**NO-GO pour la bascule** : cette phase 1 est une sauvegarde manuelle de secours, pas encore le transfert transparent postMessage, la fusion avec les sauvegardes préexistantes ou la couverture de toutes les clés locales. Garder l'ancien domaine accessible et poursuivre #214 avant la migration définitive.
