@@ -37,7 +37,21 @@ if(qaFresh){
 }
 const qaKey=suffix=>qaActive?"lumenQa"+suffix:suffix;
 const {normalizeSequentialProgress,solvedCount,exactSkyScoreForSolvedPrefix,ensureSkyScore,skyStarsEarned,challengeRewardKeys,constellationProgress,constellationLitAt,awards,performanceRun,savePerformance}=createCampaign(()=>lumenProgress,()=>saveLumenProgress(),()=>({activeGameSeconds,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted,qualifying:!!attemptEngine.snapshot()?.qualifying}));
-const {loadLumenProgress,saveLumenProgress}=createLocalPersistence(localStorage,()=>lumenProgress,{progressKey:qaActive?"lumenQaProgressV1":"lumenProgressV1"});
+let cloudProfileReady=false,cloudProfileTimer=null,cloudProfileBusy=false,cloudProfileDirty=false;
+async function flushCloudProfile(){
+ if(cloudProfileBusy){cloudProfileDirty=true;return}
+ if(!cloudProfileReady||!lumenUser||!lumenSupabase||qaActive)return;
+ cloudProfileBusy=true;
+ try{await backupAndVerifyProfile(lumenSupabase,lumenProgress)}
+ catch(e){console.warn("Lumen background cloud save failed; retry on next change",e)}
+ finally{cloudProfileBusy=false;if(cloudProfileDirty){cloudProfileDirty=false;scheduleCloudProfile()}}
+}
+function scheduleCloudProfile(){
+ if(!cloudProfileReady||!lumenUser||qaActive)return;
+ if(cloudProfileTimer!==null)clearTimeout(cloudProfileTimer);
+ cloudProfileTimer=setTimeout(()=>{cloudProfileTimer=null;flushCloudProfile()},1800);
+}
+const {loadLumenProgress,saveLumenProgress}=createLocalPersistence(localStorage,()=>lumenProgress,{progressKey:qaActive?"lumenQaProgressV1":"lumenProgressV1",onSave:scheduleCloudProfile});
 const persistenceModel={
 get lumenSupabase(){return lumenSupabase},set lumenSupabase(value){lumenSupabase=value},
 get lumenEntitlements(){return lumenEntitlements},set lumenEntitlements(value){lumenEntitlements=Array.isArray(value)?value:[]},
@@ -56,7 +70,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
  try{
    if(location.origin==="https://lumen-xi-seven.vercel.app"){
      const saved=await backupAndVerifyProfile(lumenSupabase,lumenProgress);
-     console.info("Lumen cloud profile verified",saved.solved);
+     cloudProfileReady=true;console.info("Lumen cloud profile verified",saved.solved);
    }else if(location.origin==="https://lumen.nopuna.fr"){
      const remote=await loadVerifiedProfile(lumenSupabase);
      if(!remote)return;
@@ -67,7 +81,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
        restoreIntoEmptyGuestStorage(localStorage,remote);
        location.reload();
      }else{
-       console.info("Lumen local progress retained; cloud snapshot not overwritten");
+       cloudProfileReady=false;console.info("Lumen local progress retained; cloud snapshot not overwritten");
      }
    }
  }catch(e){console.warn("Lumen full-profile automatic sync failed; local save preserved",e)}
