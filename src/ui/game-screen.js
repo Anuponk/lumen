@@ -964,7 +964,7 @@ function celebrateSuccess(){
  const checkpoint=firstCompletion&&!crossedConstellation?constellationCheckpoint(skyEarnedBefore,skyEarnedAfter):null;
  const revealDelay=!generatedQuest&&earnedThisRun>0?2250:0;
  const clearVictoryConfetti=()=>document.getElementById("victoryConfetti")?.remove();
- if(firstCompletion&&!generatedQuest&&earnedThisRun>0){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint)},revealDelay)}else if(questPassed||crossedConstellation||checkpoint){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint)},revealDelay)}else setTimeout(()=>document.getElementById("successOverlay").classList.add("show"),revealDelay);
+ if(firstCompletion&&earnedThisRun>0&&!generatedQuest){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint)},revealDelay)}else if(questPassed||crossedConstellation||checkpoint){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint)},revealDelay)}else setTimeout(()=>document.getElementById("successOverlay").classList.add("show"),revealDelay);
 
  // Deliberately varied shapes/positions; purely visual, no game-state effect.
  const palette=["#68e7ff","#5ea7ff","#8b7cff","#67d8c2","#d7f8ff","#87bfff"];
