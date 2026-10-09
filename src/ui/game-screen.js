@@ -7,6 +7,7 @@ import {createCloudPersistence} from "../persistence/cloud.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {playableQuest} from "../campaign/playable-quests.js";
+import {adminCatalogueTree} from "../campaign/admin-catalogue.js";
 import {mapConstellationRange,generatedMapSummary} from "../campaign/generated-map.js";
 import {contentMapModel,packForLegacyQuest,contentAccessForLegacyQuest,preserveStartedAdventureAccess} from "../campaign/content.js";
 import {createSkyNavigation} from "./sky-navigation.js";
@@ -748,6 +749,39 @@ function adminAlerts(rows){
  for(const r of rows||[]){const started=Number(r.started)||0,completed=Number(r.completed)||0;if(started<3)continue;const rate=started?completed/started:0;if(rate<.55)alerts.push("Q"+r.puzzle_id+" : seulement "+Math.round(rate*100)+" % des joueurs observés terminent la quête ("+started+" joueurs).");if(Number(r.resets)>=started)alerts.push("Q"+r.puzzle_id+" : resets élevés ("+r.resets+" pour "+started+" joueurs).");if(Number(r.hints)>started*.8)alerts.push("Q"+r.puzzle_id+" : indices très utilisés ("+r.hints+").")}
  return alerts.slice(0,6);
 }
+function renderAdminCatalogue(){
+ const host=document.getElementById("adminCatalogueTree");
+ if(!host)return;
+ host.replaceChildren();
+ for(const adventure of adminCatalogueTree()){
+  const group=document.createElement("details");
+  const heading=document.createElement("summary");
+  heading.textContent=adventure.name+" · "+adventure.constellations.length+" constellations · "+adventure.questCount+" quêtes";
+  group.appendChild(heading);
+  for(const constellation of adventure.constellations){
+   const section=document.createElement("details");
+   const label=document.createElement("summary");
+   label.textContent=constellation.name+" · "+constellation.quests.length+" grilles";
+   section.appendChild(label);
+   const wrap=document.createElement("div");wrap.className="admin-table-wrap";
+   const table=document.createElement("table");
+   const thead=document.createElement("thead");
+   const header=document.createElement("tr");
+   for(const title of ["Quête","Grille","Taille","Difficulté"]){const th=document.createElement("th");th.textContent=title;header.appendChild(th)}
+   thead.appendChild(header);table.appendChild(thead);
+   const tbody=document.createElement("tbody");
+   for(const quest of constellation.quests){
+    const tr=document.createElement("tr");
+    for(const value of [quest.number,quest.id||"—",quest.size?quest.size+"×"+quest.size:"—",quest.difficulty]){
+     const td=document.createElement("td");td.textContent=String(value);tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+   }
+   table.appendChild(tbody);wrap.appendChild(table);section.appendChild(wrap);group.appendChild(section);
+  }
+  host.appendChild(group);
+ }
+}
 async function loadAdminCockpit(){
  const status=document.getElementById("adminCockpitStatus"),days=Number(document.getElementById("adminCockpitDays")?.value||7);
  status.textContent="Actualisation…";
@@ -780,7 +814,7 @@ async function loadAdminCockpit(){
 function setupAdminCockpit(){
  const open=document.getElementById("adminCockpitOpen"),modal=document.getElementById("adminCockpit"),close=document.getElementById("adminCockpitClose"),refresh=document.getElementById("adminCockpitRefresh"),days=document.getElementById("adminCockpitDays");
  if(!open||!modal)return;
- open.onclick=()=>{if(!hasInternalCapability("analytics_cockpit"))return;modal.hidden=false;loadAdminCockpit()};
+ open.onclick=()=>{if(!hasInternalCapability("analytics_cockpit"))return;modal.hidden=false;renderAdminCatalogue();loadAdminCockpit()};
  close.onclick=()=>modal.hidden=true;refresh.onclick=loadAdminCockpit;days.onchange=loadAdminCockpit;
  modal.onclick=e=>{if(e.target===modal)modal.hidden=true};
 }
