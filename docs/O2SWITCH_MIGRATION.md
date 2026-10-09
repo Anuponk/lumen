@@ -43,3 +43,9 @@ LUMEN_VALIDATED_SHA=$(git -C ~/lumen-staging rev-parse HEAD) bash ~/lumen-stagin
 
 - Diagnostic o2switch : `ls -ld ~/lumen.nopuna.fr` → dossier existant, `curl -I https://lumen.nopuna.fr` → HTTP/2 200 le 09/10/2026.
 - Le script `scripts/o2switch-pilot-publish.sh` prépare un premier pilote **manuel**, en refusant les changements locaux non committés et la branche hors `main`.
+
+## OAuth Google : retour vers l'origine de connexion
+
+Lors du premier test, le compte Google lancé sur `lumen.nopuna.fr` renvoyait vers Vercel : deux parcours `signIn(...)` dans `src/ui/game-screen.js` contenaient l'URL Vercel en dur. Correction : destination calculée à partir de `location.origin`, pour conserver le domaine initiateur (Vercel ou o2switch). Test : `node scripts/oauth-return.test.mjs`, inclus dans GitHub CI. Dans Supabase Authentication > URL Configuration, conserver les deux domaines dans Redirect URLs pendant la transition ; ne pas changer la Site URL Vercel avant la bascule.
+
+**Attention aux sauvegardes :** après retour sur une origine différente, la session et le localStorage ne sont pas identiques. La disparition apparente de progression ne prouve pas une suppression cloud. Vérifier le compte réellement connecté et la synchronisation Supabase avant toute mutation ou reset.
