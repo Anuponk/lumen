@@ -24,3 +24,12 @@ assert.throws(()=>restoreIntoEmptyGuestStorage(occupied,source),/Progression dé
 assert.equal(JSON.parse(occupied.getItem('lumenProgressV1')).solved[0],1);
 const corrupt=storage();corrupt.setItem('lumenProgressV1','{not-json');
 assert.throws(()=>restoreIntoEmptyGuestStorage(corrupt,source),/illisible/);
+
+const cloudSrc=(await import('node:fs')).readFileSync(new URL('../src/persistence/cloud.js',import.meta.url),'utf8');
+const uiSrc=(await import('node:fs')).readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+const html=(await import('node:fs')).readFileSync(new URL('../index.html',import.meta.url),'utf8');
+assert.equal((cloudSrc.match(/afterAuthCloudSync\\?\\.\\(\\)/g)||[]).length,2,'Cloud sync must run after both session and sign-in auth flows');
+assert.match(uiSrc,/afterAuthCloudSync:async/);
+assert.match(uiSrc,/backupAndVerifyProfile\\(lumenSupabase,lumenProgress\\)/);
+assert.match(uiSrc,/restoreIntoEmptyGuestStorage\\(localStorage,remote\\)/);
+assert.doesNotMatch(html,/id="migrationCloud(?:Save|Restore)"/);
