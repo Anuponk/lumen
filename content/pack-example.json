@@ -1,0 +1,24 @@
+{
+  "id": "real-adventure-04",
+  "displayName": "Nouveaux horizons",
+  "skyId": "real-sky",
+  "type": "real",
+  "access": "locked",
+  "order": 3,
+  "seed": 42,
+  "questsPerConstellation": 8,
+  "sizes": [
+    7,
+    8
+  ],
+  "constellations": [
+    {
+      "id": "real-31",
+      "name": "Constellation 31"
+    },
+    {
+      "id": "real-32",
+      "name": "Constellation 32"
+    }
+  ]
+}
