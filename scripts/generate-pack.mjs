@@ -2,6 +2,7 @@
 // Issue #98 - read-only adventure planning. No catalogue or save data is modified.
 import fs from "node:fs";
 import {generateAuditedPack} from "./pack-generation-audit.mjs";
+import {buildDifficultyReport,stageAdventure} from "./pack-staging.mjs";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {CONTENT_SKIES,CONTENT_PACKS,BASE_CONSTELLATIONS,baseCampaignQuestCount} from "../src/campaign/content.js";
@@ -67,9 +68,16 @@ else {
   pack:{id:config.id,name:config.displayName,skyId:config.skyId,type:config.type,access:config.access,order:config.order},
   baseline:{publishedQuests:baseCampaignQuestCount(),publishedConstellations:BASE_CONSTELLATIONS.length,publishedPacks:CONTENT_PACKS.length},
   proposed:{constellations:config.constellations.map(c=>({id:c.id,name:c.name})),questCount:count,questNumbers:{first:start,last:start+count-1},sizes:config.sizes},
-  ...(result?{generation:{quests:result.generated.map((p,i)=>({quest:start+i,...p})),rejections:result.rejections}}:{}),
+  ...(result?{generation:{quests:result.generated.map((p,i)=>({quest:start+i,...p})),rejections:result.rejections,difficulty:buildDifficultyReport(result.generated,config.difficulty?.distribution)}}:{}),
   safety:{catalogueChanged:false,publishedQuestIdsPreserved:true},
   pending:generate?["apply and persistence regression tests","catalogue publication"]:["grid generation","unique-solution audit","difficulty scoring","deduplication","apply and persistence regression tests"]
  };
+ if(result){
+  plan.staging=stageAdventure({config,plan,generated:result.generated});
+  if(config.difficulty?.distribution&&!plan.generation.difficulty.targetMatches){
+   plan.ok=false;plan.warnings=["Generated difficulty distribution differs from configured target by more than 15 percentage points. No catalogue modified."];
+  }
+ }
  console.log(JSON.stringify(plan,null,2));
+ if(!plan.ok)process.exitCode=1;
 }
