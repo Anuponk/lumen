@@ -28,6 +28,9 @@ jobs:
       - name: Unified quality gate
         run: node scripts/quality-gate.mjs
 
+      - name: Guest save migration recovery regression
+        run: node scripts/guest-transfer-tests.mjs
+
       - name: OAuth redirect regression
         run: node scripts/oauth-return.test.mjs
 
