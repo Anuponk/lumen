@@ -24,10 +24,10 @@ GIT_SSH_COMMAND="ssh -i ~/.ssh/lumen_github_pull -o IdentitiesOnly=yes -o BatchM
 Le premier déploiement se fait manuellement, pour le SHA choisi, en lançant :
 
 ```bash
-bash ~/lumen-staging/scripts/o2switch-pilot-publish.sh
+LUMEN_VALIDATED_SHA=$(git -C ~/lumen-staging rev-parse HEAD) bash ~/lumen-staging/scripts/o2switch-pilot-publish.sh
 ```
 
-**Précondition :** Node.js disponible sur la machine avec les dépendances système nécessaires aux tests ; le script lance `node scripts/quality-gate.mjs` et refuse la publication s'il échoue. Si Node est indisponible sous cPanel, ne pas court-circuiter le test : déplacer sa vérification vers une preuve de CI GitHub et adapter le script avec garde explicite.
+**Précondition :** sur o2switch, `node` est indisponible. Le contrôle qualité est exécuté par le workflow GitHub `Lumen quality gate` (Node 22). Pour le premier pilote manuel, vérifier que le workflow du SHA exact à déployer est vert puis exécuter `LUMEN_VALIDATED_SHA=$(git rev-parse HEAD) bash scripts/o2switch-pilot-publish.sh` depuis `~/lumen-staging`. Le script refuse le lancement sans le SHA explicitement validé. Ceci n'est pas une preuve automatique du statut CI : avant un déploiement automatique, il faudra vérifier le statut par API ou déployer uniquement des artefacts dont le workflow CI a attesté la réussite.
 
 ## Validation pilote (avant CI/CD automatique)
 

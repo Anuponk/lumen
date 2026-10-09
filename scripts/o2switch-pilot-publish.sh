@@ -29,8 +29,11 @@ for path in src content; do
 done
 
 # Sanity checks; the full quality gate MUST pass before a later production rollout.
-node --version >/dev/null || { echo "Node missing; run quality gate in GitHub CI"; exit 1; }
-node scripts/quality-gate.mjs
+# The exact full commit SHA must have a successful GitHub quality-gate run.
+# This is a manual pilot; an automated pipeline must verify the CI status itself.
+[[ -n "${LUMEN_VALIDATED_SHA:-}" && "$LUMEN_VALIDATED_SHA" == "$(git rev-parse HEAD)" ]] || {
+  echo "Provide LUMEN_VALIDATED_SHA matching the successful GitHub CI commit"; exit 1;
+}
 
 # Publish explicit public assets only; exclude .git, docs, scripts and supabase.
 for dir in src content; do
