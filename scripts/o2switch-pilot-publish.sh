@@ -40,7 +40,7 @@ for dir in src content; do
   mkdir -p "$TARGET/$dir"
   cp -R "$SOURCE/$dir/." "$TARGET/$dir/"
 done
-for path in index.html sw.js manifest.webmanifest icon.svg icon-maskable.svg; do
+for path in index.html transfer.html sw.js manifest.webmanifest icon.svg icon-maskable.svg; do
   install -m 644 "$SOURCE/$path" "$TARGET/$path"
 done
 find "$TARGET/src" "$TARGET/content" -type d -exec chmod 755 {} +
