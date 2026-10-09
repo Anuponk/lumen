@@ -25,7 +25,8 @@ export function auditGeneratedPuzzle(puzzle,{maxSteps=250}={}){
  const tier=score<30?"beginner":score<45?"easy":score<60?"intermediate":score<80?"hard":"expert";
  return {ok:true,steps,rules,score,tier,solutions:1};
 }
-export function generateAuditedPack({sizes,questCount,seed,maxCandidatesPerQuest=40}){
+export function generateAuditedPack({sizes,questCount,seed,maxCandidatesPerQuest=40,targetTiers=null}){
+ if(targetTiers!==null&&(!Array.isArray(targetTiers)||targetTiers.length!==questCount))throw Error("Invalid target tier schedule");
  const generated=[],signatures=new Set(),rejections={};
  for(let index=0;index<questCount;index++){
   let accepted=null;
@@ -40,11 +41,12 @@ export function generateAuditedPack({sizes,questCount,seed,maxCandidatesPerQuest
    if(signatures.has(signature)){rejections.duplicate=(rejections.duplicate||0)+1;continue}
    const audit=auditGeneratedPuzzle(puzzle);
    if(!audit.ok){rejections[audit.reason]=(rejections[audit.reason]||0)+1;continue}
+   if(targetTiers&&audit.tier!==targetTiers[index]){rejections.targetTier=(rejections.targetTier||0)+1;continue}
    signatures.add(signature);
    accepted={size,seed:candidateSeed,reg:puzzle.reg,sol:puzzle.sol,audit};
    break;
   }
-  if(!accepted)throw Error("Unable to generate an explainable unique puzzle at index "+index+"; no catalogue modified. Rejections: "+JSON.stringify(rejections));
+  if(!accepted)throw Error("Unable to generate a unique puzzle for target "+(targetTiers?.[index]??"any")+" at index "+index+"; no catalogue modified. Rejections: "+JSON.stringify(rejections));
   generated.push(accepted);
  }
  return {generated,rejections};
