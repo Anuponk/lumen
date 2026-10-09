@@ -31,3 +31,30 @@ export async function loadVerifiedProfile(supabase){
   if(error)throw Error("Impossible de restaurer le profil : "+error.message);
   return data==null?null:validateCloudProfile(data);
 }
+
+export function mergeCloudProfile(local,remote){
+  const a=validateCloudProfile(local),b=validateCloudProfile(remote);
+  const merged=structuredClone(a);
+  // Monotonic quest markers, stars, badges, and earned rewards.
+  for(const field of ["solved","historyBackup","noHint","stars","badges","performances"]){
+    const left=a[field]&&typeof a[field]==="object"&&!Array.isArray(a[field])?a[field]:{};
+    const right=b[field]&&typeof b[field]==="object"&&!Array.isArray(b[field])?b[field]:{};
+    merged[field]={...right,...left};
+    for(const [key,val] of Object.entries(right)){
+      if(!(key in left)){merged[field][key]=val;continue}
+      if(field==="stars"&&typeof val==="number")merged[field][key]=Math.max(Number(left[key])||0,val);
+      else if(["solved","historyBackup","noHint"].includes(field))merged[field][key]=left[key]||val;
+      else if(field==="badges"&&val&&typeof val==="object"&&left[key]&&typeof left[key]==="object")
+        merged[field][key]={...val,...left[key]};
+      // Performance runs cannot safely be combined: preserve local record, retain remote if absent.
+    }
+  }
+  const ad=a.daily||{},bd=b.daily||{};
+  merged.daily={...bd,...ad,dates:{...(bd.dates||{}),...(ad.dates||{})},rewards:{...(bd.rewards||{}),...(ad.rewards||{})}};
+  for(const field of ["xp","shards","skyScore"]) if(Number.isFinite(a[field])||Number.isFinite(b[field]))
+    merged[field]=Math.max(Number(a[field])||0,Number(b[field])||0);
+  merged.challenges={...(b.challenges||{}),...(a.challenges||{})};
+  // Preserve local-only fields, and remote-only fields that do not exist locally.
+  for(const [key,val] of Object.entries(b))if(!(key in merged))merged[key]=val;
+  return validateCloudProfile(merged);
+}
