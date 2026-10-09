@@ -26,11 +26,21 @@ export const CONTENT_SKIES=Object.freeze([
  Object.freeze({id:BASE_SKY_ID,kind:"real",label:"Le vrai ciel",order:0})
 ]);
 
-export const CONTENT_PACKS=Object.freeze(Array.from({length:Math.ceil(BASE_CONSTELLATIONS.length/ADVENTURE_SIZE)},(_,index)=>{
+const LEGACY_CONTENT_PACKS=Object.freeze(Array.from({length:Math.ceil(BASE_CONSTELLATIONS.length/ADVENTURE_SIZE)},(_,index)=>{
  const entries=BASE_CONSTELLATIONS.slice(index*ADVENTURE_SIZE,(index+1)*ADVENTURE_SIZE);
  const questIndices=Object.freeze(entries.flatMap(c=>c.questIndices||[]).sort((a,b)=>a-b));
  return Object.freeze({id:adventureId(index),skyId:BASE_SKY_ID,kind:index===0?"base":"addon",access:index===0?"included":"locked",order:index,displayName:adventureNames[index]||`Aventure ${index+1}`,shortDescription:index===0?"Tes premières constellations":"Une nouvelle aventure dans le vrai ciel",legacyQuestStart:questIndices[0]??0,questCount:questIndices.length,questIndices,constellationIds:Object.freeze(entries.map(c=>c.id))});
 }));
+
+// Generated content extends the map without changing the historical quest schedule.
+// A lightweight descriptor keeps this module compatible with VM-based legacy regression tests.
+const generatedManifest={pack:{id:"real-adventure-04",skyId:"real-sky",kind:"addon",access:"locked",order:3,displayName:"Horizons inconnus",questCount:100,legacyQuestStart:196,questIndices:Array.from({length:100},(_,i)=>196+i),constellationIds:["iau-ant","iau-aps","iau-ara","iau-ari","iau-aur","iau-cae","iau-cam","iau-cnc","iau-cvn","iau-cmi"]},constellations:["iau-ant","iau-aps","iau-ara","iau-ari","iau-aur","iau-cae","iau-cam","iau-cnc","iau-cvn","iau-cmi"].map((id,i)=>({id,label:["Antlia","Apus","Ara","Aries","Auriga","Caelum","Camelopardalis","Cancer","Canes Venatici","Canis Minor"][i],packId:"real-adventure-04",skyId:"real-sky",questIndices:Array.from({length:10},(_,j)=>196+i*10+j)}))};
+export const GENERATED_CONSTELLATIONS=Object.freeze(generatedManifest.constellations.map((c,index)=>Object.freeze({
+ ...c,legacyIndex:BASE_CONSTELLATIONS.length+index,
+ questStart:c.questIndices[0],questCount:c.questIndices.length
+})));
+export const CONTENT_PACKS=Object.freeze([...LEGACY_CONTENT_PACKS,Object.freeze({...generatedManifest.pack})]);
+export const CONTENT_CONSTELLATIONS=Object.freeze([...BASE_CONSTELLATIONS,...GENERATED_CONSTELLATIONS]);
 
 export function normalizeEntitlements(rows=[]){
  return new Set((rows instanceof Set?[...rows]:Array.isArray(rows)?rows:[])
@@ -81,7 +91,7 @@ export function contentRegistrySnapshot({skies=CONTENT_SKIES,packs=CONTENT_PACKS
 export function contentMapModel(entitlements=[],{
  skies=CONTENT_SKIES,
  packs=CONTENT_PACKS,
- constellations=BASE_CONSTELLATIONS,progress={},attempt=null
+ constellations=CONTENT_CONSTELLATIONS,progress={},attempt=null
 }={}){
  const entitlementSet=normalizeEntitlements(entitlements);
  return {
