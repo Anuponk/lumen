@@ -123,7 +123,7 @@ function updateAuthUI(){
    u.textContent="Progression enregistrée sur cet appareil";
    login.hidden=false; logout.hidden=true;
  }
- syncMobileAuthUI();updateAdminTools();
+ syncMobileAuthUI();document.getElementById("migrationCloudSave")?.toggleAttribute("hidden", !(location.origin==="https://lumen-xi-seven.vercel.app"&&!!lumenUser&&!qaActive));updateAdminTools();
  if(lumenUser&&wasOfferPending){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_success",null,{source:"account_offer",qa:qaActive});showAccountSavedConfirmation();const box=document.getElementById("accountOptin");if(box)box.hidden=true}
 }
 function setupQaMode(){
