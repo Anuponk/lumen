@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import {generateAuditedPack} from "./pack-generation-audit.mjs";
 import {buildDifficultyReport,stageAdventure} from "./pack-staging.mjs";
+import {balanceDifficultyCurve,compareDifficultyCurves} from "./pack-difficulty-curve.mjs";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {CONTENT_SKIES,CONTENT_PACKS,BASE_CONSTELLATIONS,baseCampaignQuestCount} from "../src/campaign/content.js";
@@ -63,17 +64,20 @@ else {
  const start=baseCampaignQuestCount()+1;
  const count=config.constellations.length*config.questsPerConstellation;
  const result=generate?generateAuditedPack({sizes:config.sizes,questCount:count,seed}):null;
+ const originalQuests=result?.generated;
+ const balancedQuests=result?balanceDifficultyCurve(originalQuests,config.questsPerConstellation):null;
+ const curve=result?compareDifficultyCurves(originalQuests,balancedQuests):null;
  const plan={
   ok:true,mode:generate?"generate-preview":"dry-run",seed,
   pack:{id:config.id,name:config.displayName,skyId:config.skyId,type:config.type,access:config.access,order:config.order},
   baseline:{publishedQuests:baseCampaignQuestCount(),publishedConstellations:BASE_CONSTELLATIONS.length,publishedPacks:CONTENT_PACKS.length},
   proposed:{constellations:config.constellations.map(c=>({id:c.id,name:c.name})),questCount:count,questNumbers:{first:start,last:start+count-1},sizes:config.sizes},
-  ...(result?{generation:{quests:result.generated.map((p,i)=>({quest:start+i,...p})),rejections:result.rejections,difficulty:buildDifficultyReport(result.generated,config.difficulty?.distribution)}}:{}),
+  ...(result?{generation:{quests:balancedQuests.map((p,i)=>({quest:start+i,...p})),rejections:result.rejections,difficulty:buildDifficultyReport(balancedQuests,config.difficulty?.distribution),curve}}:{}),
   safety:{catalogueChanged:false,publishedQuestIdsPreserved:true},
   pending:generate?["apply and persistence regression tests","catalogue publication"]:["grid generation","unique-solution audit","difficulty scoring","deduplication","apply and persistence regression tests"]
  };
  if(result){
-  plan.staging=stageAdventure({config,plan,generated:result.generated});
+  plan.staging=stageAdventure({config,plan,generated:balancedQuests});
   if(config.difficulty?.distribution&&!plan.generation.difficulty.targetMatches){
    plan.ok=false;plan.warnings=["Generated difficulty distribution differs from configured target by more than 15 percentage points. No catalogue modified."];
   }
