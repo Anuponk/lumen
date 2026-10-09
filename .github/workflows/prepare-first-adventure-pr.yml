@@ -1,0 +1,40 @@
+name: Prepare first adventure content PR
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/prepare-first-adventure-pr.yml'
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate constellation catalogue
+        run: node --test scripts/constellation-preview.test.mjs scripts/first-adventure-preview.test.mjs
+      - name: Generate and audit first adventure
+        run: node scripts/export-first-adventure.mjs
+      - name: Prepare immutable staging snapshot
+        run: |
+          mkdir -p content/generated
+          cp artifacts/first-adventure-generated.json content/generated/first-adventure.json
+      - name: Create review PR (never publish to runtime)
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: generated/first-adventure-100-quests
+          delete-branch: false
+          commit-message: "content: stage audited first adventure of 100 quests"
+          title: "Issue #98 - review generated first adventure (100 quests)"
+          body: |
+            Deterministic seed 42; 10 IAU constellations; 100 unique-solution puzzles.
+            This PR **only** commits a staging manifest under content/generated/.
+            It does not change the playable catalogue, quest indices or player saves.
+            Review difficulty, silhouettes and data license before a separate publication PR.
+          add-paths: content/generated/first-adventure.json
