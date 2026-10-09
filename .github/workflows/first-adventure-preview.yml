@@ -1,0 +1,28 @@
+name: Generate first adventure preview
+on:
+  push:
+    branches:
+      - ci/98-generate-first-adventure
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify preview catalogue and config
+        run: node --test scripts/constellation-preview.test.mjs scripts/first-adventure-preview.test.mjs
+      - name: Generate and audit 100 quests
+        run: node scripts/export-first-adventure.mjs
+      - name: Upload audited adventure manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: first-adventure-generated
+          path: artifacts/first-adventure-generated.json
+          if-no-files-found: error
+          retention-days: 14
