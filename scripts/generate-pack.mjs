@@ -6,6 +6,7 @@ import {buildDifficultyReport,stageAdventure} from "./pack-staging.mjs";
 import {balanceDifficultyCurve,compareDifficultyCurves} from "./pack-difficulty-curve.mjs";
 import {difficultyTargets} from "./pack-difficulty-targets.mjs";
 import {validateStagedAdventure} from "./pack-publication-validation.mjs";
+import {validatePackConstellations} from "./pack-constellation-selection.mjs";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {CONTENT_SKIES,CONTENT_PACKS,BASE_CONSTELLATIONS,baseCampaignQuestCount} from "../src/campaign/content.js";
@@ -25,11 +26,11 @@ const valueOf=flag=>{
  if(!args[i+1]||args[i+1].startsWith("--"))fail(flag+" requires a value");
  return args[i+1];
 };
-const allowed=new Set(["--dry-run","--generate","--config","--seed"]);
+const allowed=new Set(["--dry-run","--generate","--config","--seed","--verify-astronomy"]);
 for(let i=0;i<args.length;i++){
  if(!args[i].startsWith("--"))continue;
  if(!allowed.has(args[i]))fail("Unknown option: "+args[i]);
- if(!["--dry-run","--generate"].includes(args[i]))i++;
+ if(!["--dry-run","--generate","--verify-astronomy"].includes(args[i]))i++;
 }
 const configPath=path.resolve(root,valueOf("--config")||"content/pack-example.json");
 if(!fs.existsSync(configPath))fail("Configuration not found: "+configPath);
@@ -61,6 +62,7 @@ for(const [i,c] of (Array.isArray(config.constellations)?config.constellations:[
  check(!constellationIds.has(c.id),"duplicate constellation ID: "+c.id);
  constellationIds.add(c.id);
 }
+if(args.includes("--verify-astronomy"))errors.push(...validatePackConstellations(config.constellations).errors);
 if(errors.length){console.error(JSON.stringify({ok:false,errors},null,2));process.exitCode=1}
 else {
  const start=baseCampaignQuestCount()+1;
