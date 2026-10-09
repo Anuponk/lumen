@@ -25,16 +25,11 @@ jobs:
         run: |
           mkdir -p content/generated
           cp artifacts/first-adventure-generated.json content/generated/first-adventure.json
-      - name: Create review PR (never publish to runtime)
-        uses: peter-evans/create-pull-request@v7
-        with:
-          branch: generated/first-adventure-100-quests
-          delete-branch: false
-          commit-message: "content: stage audited first adventure of 100 quests"
-          title: "Issue #98 - review generated first adventure (100 quests)"
-          body: |
-            Deterministic seed 42; 10 IAU constellations; 100 unique-solution puzzles.
-            This PR **only** commits a staging manifest under content/generated/.
-            It does not change the playable catalogue, quest indices or player saves.
-            Review difficulty, silhouettes and data license before a separate publication PR.
-          add-paths: content/generated/first-adventure.json
+      - name: Push staged content to review branch (never publish to runtime)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B generated/first-adventure-100-quests
+          git add content/generated/first-adventure.json
+          git commit -m "content: stage audited first adventure of 100 quests" || exit 0
+          git push --force-with-lease origin generated/first-adventure-100-quests
