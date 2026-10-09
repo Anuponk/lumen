@@ -37,7 +37,21 @@ if(qaFresh){
 }
 const qaKey=suffix=>qaActive?"lumenQa"+suffix:suffix;
 const {normalizeSequentialProgress,solvedCount,exactSkyScoreForSolvedPrefix,ensureSkyScore,skyStarsEarned,challengeRewardKeys,constellationProgress,constellationLitAt,awards,performanceRun,savePerformance}=createCampaign(()=>lumenProgress,()=>saveLumenProgress(),()=>({activeGameSeconds,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted,qualifying:!!attemptEngine.snapshot()?.qualifying}));
-const {loadLumenProgress,saveLumenProgress}=createLocalPersistence(localStorage,()=>lumenProgress,{progressKey:qaActive?"lumenQaProgressV1":"lumenProgressV1"});
+let cloudProfileReady=false,cloudProfileTimer=null,cloudProfileBusy=false,cloudProfileDirty=false;
+async function flushCloudProfile(){
+ if(cloudProfileBusy){cloudProfileDirty=true;return}
+ if(!cloudProfileReady||!lumenUser||!lumenSupabase||qaActive)return;
+ cloudProfileBusy=true;
+ try{await backupAndVerifyProfile(lumenSupabase,lumenProgress)}
+ catch(e){console.warn("Lumen background cloud save failed; retry on next change",e)}
+ finally{cloudProfileBusy=false;if(cloudProfileDirty){cloudProfileDirty=false;scheduleCloudProfile()}}
+}
+function scheduleCloudProfile(){
+ if(!cloudProfileReady||!lumenUser||qaActive)return;
+ if(cloudProfileTimer!==null)clearTimeout(cloudProfileTimer);
+ cloudProfileTimer=setTimeout(()=>{cloudProfileTimer=null;flushCloudProfile()},1800);
+}
+const {loadLumenProgress,saveLumenProgress}=createLocalPersistence(localStorage,()=>lumenProgress,{progressKey:qaActive?"lumenQaProgressV1":"lumenProgressV1",onSave:scheduleCloudProfile});
 const persistenceModel={
 get lumenSupabase(){return lumenSupabase},set lumenSupabase(value){lumenSupabase=value},
 get lumenEntitlements(){return lumenEntitlements},set lumenEntitlements(value){lumenEntitlements=Array.isArray(value)?value:[]},
@@ -51,7 +65,27 @@ get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get navigationLocked(){return !!socialChallenge},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
-const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,sendEmailOtp,verifyEmailOtp,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI()},renderDaily:(...args)=>renderDaily(...args),holdLegacyMergeForFullRestore:async()=>{
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,sendEmailOtp,verifyEmailOtp,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI()},renderDaily:(...args)=>renderDaily(...args),afterAuthCloudSync:async()=>{
+ if(qaActive||!lumenUser||!lumenSupabase)return;
+ try{
+   if(location.origin==="https://lumen-xi-seven.vercel.app"){
+     const saved=await backupAndVerifyProfile(lumenSupabase,lumenProgress);
+     cloudProfileReady=true;console.info("Lumen cloud profile verified",saved.solved);
+   }else if(location.origin==="https://lumen.nopuna.fr"){
+     const remote=await loadVerifiedProfile(lumenSupabase);
+     if(!remote)return;
+     const raw=localStorage.getItem("lumenProgressV1");
+     const local=raw?JSON.parse(raw):null;
+     const hasLocal=local&&(Object.values(local.solved||{}).some(Boolean)||Object.keys(local.badges||{}).length||Object.keys(local.stars||{}).length||Object.keys(local.performances||{}).length||Number(local.shards||3)>3);
+     if(!hasLocal){
+       restoreIntoEmptyGuestStorage(localStorage,remote);
+       location.reload();
+     }else{
+       cloudProfileReady=false;console.info("Lumen local progress retained; cloud snapshot not overwritten");
+     }
+   }
+ }catch(e){console.warn("Lumen full-profile automatic sync failed; local save preserved",e)}
+},holdLegacyMergeForFullRestore:async()=>{
  if(location.origin!=="https://lumen.nopuna.fr"||qaActive)return false;
  try{
    const local=JSON.parse(localStorage.getItem("lumenProgressV1")||"null");
@@ -90,43 +124,6 @@ function syncMobileAuthUI(){
  if(lumenUser){status.textContent=lumenNickname||"Progression synchronisée";action.textContent="Déconnexion";icon.textContent="●";icon.setAttribute("aria-label","Compte connecté");const box=document.getElementById("nicknameBox");if(box)box.hidden=false}
  else{status.textContent="Progression enregistrée sur cet appareil";action.textContent="Se connecter avec Google";icon.textContent="♙";icon.setAttribute("aria-label","Se connecter");const box=document.getElementById("nicknameBox");if(box)box.hidden=true}
 }
-// Migration is opt-in: a verified full-profile write must precede a domain switch.
-function setupMigrationCloudRestore(){
- const button=document.getElementById("migrationCloudRestore"),status=document.getElementById("migrationRestoreStatus");
- if(!button||!status)return;
- button.onclick=async()=>{
-   if(!lumenUser||qaActive||location.origin!=="https://lumen.nopuna.fr")return;
-   button.disabled=true;status.textContent="Recherche de la sauvegarde vérifiée…";
-   try{
-     const cloud=await loadVerifiedProfile(lumenSupabase);
-     if(!cloud)throw Error("Aucune sauvegarde complète disponible. Sauvegarde d'abord ton profil depuis l'ancien Lumen.");
-     if(!confirm("Restaurer la sauvegarde cloud sur cet appareil ? La restauration sera refusée si une progression locale existe déjà."))return;
-     const result=restoreIntoEmptyGuestStorage(localStorage,cloud);
-     status.textContent="✓ "+result.solved+" quêtes restaurées. Rechargement…";
-     location.reload();
-   }catch(e){status.textContent="Restauration impossible : "+e.message}
-   finally{button.disabled=false}
- };
-}
-function setupMigrationCloudBackup(){
- const button=document.getElementById("migrationCloudSave"),status=document.getElementById("migrationCloudStatus");
- if(!button||!status)return;
- const isLegacyOrigin=location.origin==="https://lumen-xi-seven.vercel.app";
- const sync=()=>{button.hidden=!isLegacyOrigin||!lumenUser||qaActive;};
- sync();
- button.addEventListener("click",async()=>{
-   if(!lumenUser||qaActive)return;
-   button.disabled=true;
-   status.textContent="Sauvegarde intégrale en cours…";
-   try {
-     const result=await backupAndVerifyProfile(lumenSupabase,lumenProgress);
-     status.textContent="✓ "+result.solved+" quêtes et profil sauvegardés et vérifiés. Tu pourras continuer sur la nouvelle adresse lorsque la restauration sera activée.";
-   } catch(e){status.textContent="Échec de sauvegarde : "+e.message+". Reste sur cette adresse pour conserver ta progression."}
-   finally{button.disabled=false}
- });
- // Auth UI calls this to show the action after Google OAuth.
- return sync;
-}
 function hasInternalCapability(name){return lumenCapabilities.some(x=>(typeof x==="string"?x:x?.capability)===name)}
 function unlimitedShardsEnabled(){return hasInternalCapability("unlimited_shards")&&localStorage.getItem("lumenAdminUnlimitedShards")==="1"}
 function updateAdminTools(){
@@ -147,7 +144,7 @@ function updateAuthUI(){
    u.textContent="Progression enregistrée sur cet appareil";
    login.hidden=false; logout.hidden=true;
  }
- syncMobileAuthUI();document.getElementById("migrationCloudRestore")?.toggleAttribute("hidden", !(location.origin==="https://lumen.nopuna.fr"&&!!lumenUser&&!qaActive));document.getElementById("migrationCloudSave")?.toggleAttribute("hidden", !(location.origin==="https://lumen-xi-seven.vercel.app"&&!!lumenUser&&!qaActive));updateAdminTools();
+ syncMobileAuthUI();updateAdminTools();
  if(lumenUser&&wasOfferPending){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_success",null,{source:"account_offer",qa:qaActive});showAccountSavedConfirmation();const box=document.getElementById("accountOptin");if(box)box.hidden=true}
 }
 function setupQaMode(){
@@ -1608,8 +1605,6 @@ setupMobileAuth();setupTutorial();setupOutsideDefaults();setupQaMode();
 async function bootGame(){await bootstrapSocialChallenge();init();refreshJourney();maybeShowReturnWelcome();const focus=new URL(location.href).searchParams.get("myChallenges");if(focus)openMyChallenges(focus);else loadMyChallenges()}
 bootGame();
 
-const syncMigrationBackupButton=setupMigrationCloudBackup();
-setupMigrationCloudRestore();
 setupBetaFeedback();
 const manualCrossTipOk=document.getElementById("manualCrossTipOk");if(manualCrossTipOk)manualCrossTipOk.onclick=closeManualCrossTip;
 const guidedAck=document.getElementById("guidedAck");if(guidedAck)guidedAck.onclick=closeGuidedConflict;
