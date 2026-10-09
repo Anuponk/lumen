@@ -28,6 +28,9 @@ jobs:
       - name: Unified quality gate
         run: node scripts/quality-gate.mjs
 
+      - name: OAuth redirect regression
+        run: node scripts/oauth-return.test.mjs
+
       - name: Upload validation reports
         if: always()
         uses: actions/upload-artifact@v4
