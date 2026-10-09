@@ -4,6 +4,7 @@ import fs from "node:fs";
 import {generateAuditedPack} from "./pack-generation-audit.mjs";
 import {buildDifficultyReport,stageAdventure} from "./pack-staging.mjs";
 import {balanceDifficultyCurve,compareDifficultyCurves} from "./pack-difficulty-curve.mjs";
+import {difficultyTargets} from "./pack-difficulty-targets.mjs";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {CONTENT_SKIES,CONTENT_PACKS,BASE_CONSTELLATIONS,baseCampaignQuestCount} from "../src/campaign/content.js";
@@ -63,7 +64,8 @@ if(errors.length){console.error(JSON.stringify({ok:false,errors},null,2));proces
 else {
  const start=baseCampaignQuestCount()+1;
  const count=config.constellations.length*config.questsPerConstellation;
- const result=generate?generateAuditedPack({sizes:config.sizes,questCount:count,seed}):null;
+ const quota=generate?difficultyTargets(config.difficulty?.distribution,count):null;
+ const result=generate?generateAuditedPack({sizes:config.sizes,questCount:count,seed,targetTiers:quota?.targets??null,maxCandidatesPerQuest:config.difficulty?.maxCandidatesPerQuest??40}):null;
  const originalQuests=result?.generated;
  const balancedQuests=result?balanceDifficultyCurve(originalQuests,config.questsPerConstellation):null;
  const curve=result?compareDifficultyCurves(originalQuests,balancedQuests):null;
@@ -72,7 +74,7 @@ else {
   pack:{id:config.id,name:config.displayName,skyId:config.skyId,type:config.type,access:config.access,order:config.order},
   baseline:{publishedQuests:baseCampaignQuestCount(),publishedConstellations:BASE_CONSTELLATIONS.length,publishedPacks:CONTENT_PACKS.length},
   proposed:{constellations:config.constellations.map(c=>({id:c.id,name:c.name})),questCount:count,questNumbers:{first:start,last:start+count-1},sizes:config.sizes},
-  ...(result?{generation:{quests:balancedQuests.map((p,i)=>({quest:start+i,...p})),rejections:result.rejections,difficulty:buildDifficultyReport(balancedQuests,config.difficulty?.distribution),curve}}:{}),
+  ...(result?{generation:{quests:balancedQuests.map((p,i)=>({quest:start+i,...p})),rejections:result.rejections,difficulty:buildDifficultyReport(balancedQuests,config.difficulty?.distribution),targetCounts:quota?.counts??null,curve}}:{}),
   safety:{catalogueChanged:false,publishedQuestIdsPreserved:true},
   pending:generate?["apply and persistence regression tests","catalogue publication"]:["grid generation","unique-solution audit","difficulty scoring","deduplication","apply and persistence regression tests"]
  };
