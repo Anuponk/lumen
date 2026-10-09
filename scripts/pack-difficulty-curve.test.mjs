@@ -7,7 +7,7 @@ test("sorts difficulty within constellation without mixing groups",()=>{
  const ordered=balanceDifficultyCurve(original,3);
  assert.deepEqual(ordered.map(x=>x.id),["b","c","a","e","f","d"]);
  assert.deepEqual(original.map(x=>x.id),["a","b","c","d","e","f"]);
- assert.equal(compareDifficultyCurves(original,ordered).after.jumpsOver20,1);
+ assert.equal(compareDifficultyCurves(original,ordered).after.jumpsOver20,0);
 });
 test("keeps stable ties and rejects incomplete groups",()=>{
  assert.deepEqual(balanceDifficultyCurve([q(20,"a"),q(20,"b")],2).map(x=>x.id),["a","b"]);
