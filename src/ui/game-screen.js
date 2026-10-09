@@ -4,6 +4,7 @@ import {createHintTestSuite} from "../testing/hint-tests.js";
 import {createDiagnostics} from "../testing/diagnostics.js";
 import {createLocalPersistence} from "../persistence/local.js";
 import {createCloudPersistence} from "../persistence/cloud.js";
+import {backupAndVerifyProfile} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
@@ -82,6 +83,26 @@ function syncMobileAuthUI(){
  if(lumenUser){status.textContent=lumenNickname||"Progression synchronisée";action.textContent="Déconnexion";icon.textContent="●";icon.setAttribute("aria-label","Compte connecté");const box=document.getElementById("nicknameBox");if(box)box.hidden=false}
  else{status.textContent="Progression enregistrée sur cet appareil";action.textContent="Se connecter avec Google";icon.textContent="♙";icon.setAttribute("aria-label","Se connecter");const box=document.getElementById("nicknameBox");if(box)box.hidden=true}
 }
+// Migration is opt-in: a verified full-profile write must precede a domain switch.
+function setupMigrationCloudBackup(){
+ const button=document.getElementById("migrationCloudSave"),status=document.getElementById("migrationCloudStatus");
+ if(!button||!status)return;
+ const isLegacyOrigin=location.origin==="https://lumen-xi-seven.vercel.app";
+ const sync=()=>{button.hidden=!isLegacyOrigin||!lumenUser||qaActive;};
+ sync();
+ button.addEventListener("click",async()=>{
+   if(!lumenUser||qaActive)return;
+   button.disabled=true;
+   status.textContent="Sauvegarde intégrale en cours…";
+   try {
+     const result=await backupAndVerifyProfile(lumenSupabase,lumenProgress);
+     status.textContent="✓ "+result.solved+" quêtes et profil sauvegardés et vérifiés. Tu pourras continuer sur la nouvelle adresse lorsque la restauration sera activée.";
+   } catch(e){status.textContent="Échec de sauvegarde : "+e.message+". Reste sur cette adresse pour conserver ta progression."}
+   finally{button.disabled=false}
+ });
+ // Auth UI calls this to show the action after Google OAuth.
+ return sync;
+}
 function hasInternalCapability(name){return lumenCapabilities.some(x=>(typeof x==="string"?x:x?.capability)===name)}
 function unlimitedShardsEnabled(){return hasInternalCapability("unlimited_shards")&&localStorage.getItem("lumenAdminUnlimitedShards")==="1"}
 function updateAdminTools(){
@@ -102,7 +123,7 @@ function updateAuthUI(){
    u.textContent="Progression enregistrée sur cet appareil";
    login.hidden=false; logout.hidden=true;
  }
- syncMobileAuthUI();updateAdminTools();
+ syncMobileAuthUI();document.getElementById("migrationCloudSave")?.toggleAttribute("hidden", !(location.origin==="https://lumen-xi-seven.vercel.app"&&!!lumenUser&&!qaActive));updateAdminTools();
  if(lumenUser&&wasOfferPending){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_success",null,{source:"account_offer",qa:qaActive});showAccountSavedConfirmation();const box=document.getElementById("accountOptin");if(box)box.hidden=true}
 }
 function setupQaMode(){
@@ -1563,6 +1584,7 @@ setupMobileAuth();setupTutorial();setupOutsideDefaults();setupQaMode();
 async function bootGame(){await bootstrapSocialChallenge();init();refreshJourney();maybeShowReturnWelcome();const focus=new URL(location.href).searchParams.get("myChallenges");if(focus)openMyChallenges(focus);else loadMyChallenges()}
 bootGame();
 
+const syncMigrationBackupButton=setupMigrationCloudBackup();
 setupBetaFeedback();
 const manualCrossTipOk=document.getElementById("manualCrossTipOk");if(manualCrossTipOk)manualCrossTipOk.onclick=closeManualCrossTip;
 const guidedAck=document.getElementById("guidedAck");if(guidedAck)guidedAck.onclick=closeGuidedConflict;

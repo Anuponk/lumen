@@ -28,6 +28,9 @@ jobs:
       - name: Unified quality gate
         run: node scripts/quality-gate.mjs
 
+      - name: Complete cloud profile backup regression
+        run: node scripts/cloud-profile-tests.mjs
+
       - name: Guest save migration recovery regression
         run: node scripts/guest-transfer-tests.mjs
 
