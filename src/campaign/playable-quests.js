@@ -1,7 +1,7 @@
 // Bridge from the append-only generated quest manifest to the grid engine.
 // The existing 196 puzzles remain sourced from the historical catalogue.
-import {STAGED_ADVENTURE,stagedQuestByIndex} from "./staged-adventure.js";
-import {CAMPAIGN_SIZE_SCHEDULE} from "./data.js";
+import {STAGED_ADVENTURE} from "./staged-adventure.js";
+import {CAMPAIGN_SIZE_SCHEDULE,CAMPAIGN6_ORDER} from "./data.js";
 import {CAT} from "./catalogue.js";
 
 const legacyCount=Object.keys(CAMPAIGN_SIZE_SCHEDULE).length;
@@ -18,7 +18,7 @@ export function playableQuest(index){
   const entry=CAMPAIGN_SIZE_SCHEDULE[i];
   if(!entry)return null;
   const [size,catalogueIndex]=entry;
-  const grid=CAT[size]?.[catalogueIndex];
+  const grid=CAT[size]?.[size==="6"?CAMPAIGN6_ORDER[catalogueIndex]:catalogueIndex];
   return grid?{id:`base-q${String(i+1).padStart(3,"0")}`,index:i,size:Number(size),reg:grid.reg,sol:grid.sol,source:"legacy"}:null;
  }
  const quest=byIndex.get(i);
