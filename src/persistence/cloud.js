@@ -61,7 +61,7 @@ async function cloudMergeProgress(){
  model.lumenProgress.solved=restored;
  model.lumenProgress.historyBackup={...restored};
  model.sequentialSolvedCount=count;
- model.lumenProgress.skyScore=exactSkyScoreForSolvedPrefix();
+ model.lumenProgress.skyScore=exactSkyScoreForSolvedPrefix(Math.min(count,baseCampaignQuestCount()));
  model.lumenProgress.skyHistoryVersion=4;
  saveLumenProgress();
  for(const i of local)if(!cloud.has(i)){
@@ -69,7 +69,7 @@ async function cloudMergeProgress(){
    if(e)console.warn("LUMEN import local",e);
  }
  if(!model.navigationLocked){
-   model.levelIndex=Math.min(count,campaignQuestCount()-1);
+   model.levelIndex=Math.min(count,baseCampaignQuestCount()-1);
    refreshJourney(); init();
  }else refreshJourney();
  model.lumenCloudReady=true;
