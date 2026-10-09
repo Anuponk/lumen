@@ -4,7 +4,7 @@ import {createHintTestSuite} from "../testing/hint-tests.js";
 import {createDiagnostics} from "../testing/diagnostics.js";
 import {createLocalPersistence} from "../persistence/local.js";
 import {createCloudPersistence} from "../persistence/cloud.js";
-import {backupAndVerifyProfile} from "../persistence/cloud-profile.js";
+import {backupAndVerifyProfile,loadVerifiedProfile,restoreIntoEmptyGuestStorage} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
@@ -51,7 +51,14 @@ get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get navigationLocked(){return !!socialChallenge},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
-const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,sendEmailOtp,verifyEmailOtp,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI()},renderDaily:(...args)=>renderDaily(...args)},{setTimeout,console,qaMode});
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,sendEmailOtp,verifyEmailOtp,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI()},renderDaily:(...args)=>renderDaily(...args),holdLegacyMergeForFullRestore:async()=>{
+ if(location.origin!=="https://lumen.nopuna.fr"||qaActive)return false;
+ try{
+   const local=JSON.parse(localStorage.getItem("lumenProgressV1")||"null");
+   if(local&&(Object.values(local.solved||{}).some(Boolean)||Object.keys(local.badges||{}).length||Object.keys(local.stars||{}).length||Object.keys(local.performances||{}).length||Number(local.shards||3)>3))return false;
+   return !!(await loadVerifiedProfile(lumenSupabase));
+ }catch(e){console.warn("Full profile restore preflight",e);return false}
+}},{setTimeout,console,qaMode});
 function tutorialCompletedProof(){
  try{if(localStorage.getItem(qaKey("lumenTutorialCompletedV1"))==="1")return true}catch(_){}
  return !!(lumenProgress?.solved?.[0]&&lumenProgress?.solved?.[1]);
@@ -84,6 +91,23 @@ function syncMobileAuthUI(){
  else{status.textContent="Progression enregistrée sur cet appareil";action.textContent="Se connecter avec Google";icon.textContent="♙";icon.setAttribute("aria-label","Se connecter");const box=document.getElementById("nicknameBox");if(box)box.hidden=true}
 }
 // Migration is opt-in: a verified full-profile write must precede a domain switch.
+function setupMigrationCloudRestore(){
+ const button=document.getElementById("migrationCloudRestore"),status=document.getElementById("migrationRestoreStatus");
+ if(!button||!status)return;
+ button.onclick=async()=>{
+   if(!lumenUser||qaActive||location.origin!=="https://lumen.nopuna.fr")return;
+   button.disabled=true;status.textContent="Recherche de la sauvegarde vérifiée…";
+   try{
+     const cloud=await loadVerifiedProfile(lumenSupabase);
+     if(!cloud)throw Error("Aucune sauvegarde complète disponible. Sauvegarde d'abord ton profil depuis l'ancien Lumen.");
+     if(!confirm("Restaurer la sauvegarde cloud sur cet appareil ? La restauration sera refusée si une progression locale existe déjà."))return;
+     const result=restoreIntoEmptyGuestStorage(localStorage,cloud);
+     status.textContent="✓ "+result.solved+" quêtes restaurées. Rechargement…";
+     location.reload();
+   }catch(e){status.textContent="Restauration impossible : "+e.message}
+   finally{button.disabled=false}
+ };
+}
 function setupMigrationCloudBackup(){
  const button=document.getElementById("migrationCloudSave"),status=document.getElementById("migrationCloudStatus");
  if(!button||!status)return;
@@ -123,7 +147,7 @@ function updateAuthUI(){
    u.textContent="Progression enregistrée sur cet appareil";
    login.hidden=false; logout.hidden=true;
  }
- syncMobileAuthUI();document.getElementById("migrationCloudSave")?.toggleAttribute("hidden", !(location.origin==="https://lumen-xi-seven.vercel.app"&&!!lumenUser&&!qaActive));updateAdminTools();
+ syncMobileAuthUI();document.getElementById("migrationCloudRestore")?.toggleAttribute("hidden", !(location.origin==="https://lumen.nopuna.fr"&&!!lumenUser&&!qaActive));document.getElementById("migrationCloudSave")?.toggleAttribute("hidden", !(location.origin==="https://lumen-xi-seven.vercel.app"&&!!lumenUser&&!qaActive));updateAdminTools();
  if(lumenUser&&wasOfferPending){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_success",null,{source:"account_offer",qa:qaActive});showAccountSavedConfirmation();const box=document.getElementById("accountOptin");if(box)box.hidden=true}
 }
 function setupQaMode(){
@@ -1585,6 +1609,7 @@ async function bootGame(){await bootstrapSocialChallenge();init();refreshJourney
 bootGame();
 
 const syncMigrationBackupButton=setupMigrationCloudBackup();
+setupMigrationCloudRestore();
 setupBetaFeedback();
 const manualCrossTipOk=document.getElementById("manualCrossTipOk");if(manualCrossTipOk)manualCrossTipOk.onclick=closeManualCrossTip;
 const guidedAck=document.getElementById("guidedAck");if(guidedAck)guidedAck.onclick=closeGuidedConflict;

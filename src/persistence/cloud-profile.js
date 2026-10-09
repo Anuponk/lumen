@@ -31,3 +31,24 @@ export async function loadVerifiedProfile(supabase){
   if(error)throw Error("Impossible de restaurer le profil : "+error.message);
   return data==null?null:validateCloudProfile(data);
 }
+
+export function restoreIntoEmptyGuestStorage(storage,remote){
+  const incoming=validateCloudProfile(remote);
+  const key="lumenProgressV1";
+  const raw=storage.getItem(key);
+  let current=null;
+  if(raw){try{current=JSON.parse(raw)}catch{throw Error("Sauvegarde locale illisible : restauration bloquée")}}
+  if(current && typeof current==="object" && (
+      Object.values(current.solved||{}).some(Boolean) ||
+      Object.keys(current.badges||{}).length>0 ||
+      Object.keys(current.performances||{}).length>0 ||
+      Object.keys(current.stars||{}).length>0 ||
+      Number(current.xp||0)>0 ||
+      Number(current.shards||3)>3
+  ))throw Error("Progression déjà présente sur cet appareil. Restauration refusée pour éviter tout écrasement");
+  const snapshot=JSON.stringify(incoming);
+  if(raw!==null) storage.setItem("lumenBeforeCloudRestore_"+Date.now(),raw);
+  storage.setItem(key,snapshot);
+  if(storage.getItem(key)!==snapshot)throw Error("La vérification de l'enregistrement local a échoué");
+  return {solved:Object.values(incoming.solved).filter(Boolean).length};
+}
