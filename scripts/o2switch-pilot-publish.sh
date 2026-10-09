@@ -21,7 +21,7 @@ cd "$SOURCE"
 [[ -z "$(git status --porcelain)" ]] || {
   echo "Uncommitted changes, publication refused"; exit 1;
 }
-for path in index.html sw.js manifest.webmanifest icon.svg icon-maskable.svg; do
+for path in index.html transfer.html sw.js manifest.webmanifest icon.svg icon-maskable.svg; do
   [[ -s "$path" ]] || { echo "Missing $path"; exit 1; }
 done
 for path in src content; do
