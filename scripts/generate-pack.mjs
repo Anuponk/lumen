@@ -5,6 +5,7 @@ import {generateAuditedPack} from "./pack-generation-audit.mjs";
 import {buildDifficultyReport,stageAdventure} from "./pack-staging.mjs";
 import {balanceDifficultyCurve,compareDifficultyCurves} from "./pack-difficulty-curve.mjs";
 import {difficultyTargets} from "./pack-difficulty-targets.mjs";
+import {validateStagedAdventure} from "./pack-publication-validation.mjs";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {CONTENT_SKIES,CONTENT_PACKS,BASE_CONSTELLATIONS,baseCampaignQuestCount} from "../src/campaign/content.js";
@@ -80,6 +81,8 @@ else {
  };
  if(result){
   plan.staging=stageAdventure({config,plan,generated:balancedQuests});
+  plan.publicationReadiness=validateStagedAdventure(plan.staging,{existingPacks:CONTENT_PACKS,existingConstellations:BASE_CONSTELLATIONS,publishedQuestCount:baseCampaignQuestCount()});
+  if(!plan.publicationReadiness.ok){plan.ok=false;plan.warnings=[...(plan.warnings||[]),...plan.publicationReadiness.errors];}
   if(config.difficulty?.distribution&&!plan.generation.difficulty.targetMatches){
    plan.ok=false;plan.warnings=["Generated difficulty distribution differs from configured target by more than 15 percentage points. No catalogue modified."];
   }
