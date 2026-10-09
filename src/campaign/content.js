@@ -1,4 +1,5 @@
 import {CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,CONSTELLATION_QUESTS,CAMPAIGN_SIZE_SCHEDULE} from "./data.js";
+import generatedAdventure from "../../content/generated/first-adventure.json" with {type:"json"};
 
 export const CONTENT_MODEL_VERSION=1;
 export const BASE_SKY_ID="real-sky";
@@ -26,11 +27,20 @@ export const CONTENT_SKIES=Object.freeze([
  Object.freeze({id:BASE_SKY_ID,kind:"real",label:"Le vrai ciel",order:0})
 ]);
 
-export const CONTENT_PACKS=Object.freeze(Array.from({length:Math.ceil(BASE_CONSTELLATIONS.length/ADVENTURE_SIZE)},(_,index)=>{
+const LEGACY_CONTENT_PACKS=Object.freeze(Array.from({length:Math.ceil(BASE_CONSTELLATIONS.length/ADVENTURE_SIZE)},(_,index)=>{
  const entries=BASE_CONSTELLATIONS.slice(index*ADVENTURE_SIZE,(index+1)*ADVENTURE_SIZE);
  const questIndices=Object.freeze(entries.flatMap(c=>c.questIndices||[]).sort((a,b)=>a-b));
  return Object.freeze({id:adventureId(index),skyId:BASE_SKY_ID,kind:index===0?"base":"addon",access:index===0?"included":"locked",order:index,displayName:adventureNames[index]||`Aventure ${index+1}`,shortDescription:index===0?"Tes premières constellations":"Une nouvelle aventure dans le vrai ciel",legacyQuestStart:questIndices[0]??0,questCount:questIndices.length,questIndices,constellationIds:Object.freeze(entries.map(c=>c.id))});
 }));
+
+// Generated content extends the map without changing the historical quest schedule.
+const generatedManifest=generatedAdventure.manifest;
+export const GENERATED_CONSTELLATIONS=Object.freeze(generatedManifest.constellations.map((c,index)=>Object.freeze({
+ ...c,legacyIndex:BASE_CONSTELLATIONS.length+index,
+ questStart:c.questIndices[0],questCount:c.questIndices.length
+})));
+export const CONTENT_PACKS=Object.freeze([...LEGACY_CONTENT_PACKS,Object.freeze({...generatedManifest.pack})]);
+export const CONTENT_CONSTELLATIONS=Object.freeze([...BASE_CONSTELLATIONS,...GENERATED_CONSTELLATIONS]);
 
 export function normalizeEntitlements(rows=[]){
  return new Set((rows instanceof Set?[...rows]:Array.isArray(rows)?rows:[])
@@ -81,7 +91,7 @@ export function contentRegistrySnapshot({skies=CONTENT_SKIES,packs=CONTENT_PACKS
 export function contentMapModel(entitlements=[],{
  skies=CONTENT_SKIES,
  packs=CONTENT_PACKS,
- constellations=BASE_CONSTELLATIONS,progress={},attempt=null
+ constellations=CONTENT_CONSTELLATIONS,progress={},attempt=null
 }={}){
  const entitlementSet=normalizeEntitlements(entitlements);
  return {
