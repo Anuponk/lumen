@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Issue #98 - read-only adventure planning. No catalogue or save data is modified.
 import fs from "node:fs";
+import {generateAuditedPack} from "./pack-generation-audit.mjs";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {CONTENT_SKIES,CONTENT_PACKS,BASE_CONSTELLATIONS,baseCampaignQuestCount} from "../src/campaign/content.js";
@@ -9,21 +10,22 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const args=process.argv.slice(2);
 const fail=message=>{throw new Error(message)};
 if(args.includes("--help")){
- console.log("Usage: node scripts/generate-pack.mjs --dry-run [--config path/to/pack.json] [--seed integer]");
+ console.log("Usage: node scripts/generate-pack.mjs --dry-run|--generate [--config path/to/pack.json] [--seed integer]");
  process.exit(0);
 }
-if(!args.includes("--dry-run"))fail("Only --dry-run is implemented. Refusing to modify the catalogue.");
+const generate=args.includes("--generate");
+if(generate===args.includes("--dry-run"))fail("Choose exactly one of --dry-run or --generate. No catalogue writes are supported.");
 const valueOf=flag=>{
  const i=args.indexOf(flag);
  if(i<0)return null;
  if(!args[i+1]||args[i+1].startsWith("--"))fail(flag+" requires a value");
  return args[i+1];
 };
-const allowed=new Set(["--dry-run","--config","--seed"]);
+const allowed=new Set(["--dry-run","--generate","--config","--seed"]);
 for(let i=0;i<args.length;i++){
  if(!args[i].startsWith("--"))continue;
  if(!allowed.has(args[i]))fail("Unknown option: "+args[i]);
- if(args[i]!=="--dry-run")i++;
+ if(!["--dry-run","--generate"].includes(args[i]))i++;
 }
 const configPath=path.resolve(root,valueOf("--config")||"content/pack-example.json");
 if(!fs.existsSync(configPath))fail("Configuration not found: "+configPath);
@@ -59,13 +61,15 @@ if(errors.length){console.error(JSON.stringify({ok:false,errors},null,2));proces
 else {
  const start=baseCampaignQuestCount()+1;
  const count=config.constellations.length*config.questsPerConstellation;
+ const result=generate?generateAuditedPack({sizes:config.sizes,questCount:count,seed}):null;
  const plan={
-  ok:true,mode:"dry-run",seed,
+  ok:true,mode:generate?"generate-preview":"dry-run",seed,
   pack:{id:config.id,name:config.displayName,skyId:config.skyId,type:config.type,access:config.access,order:config.order},
   baseline:{publishedQuests:baseCampaignQuestCount(),publishedConstellations:BASE_CONSTELLATIONS.length,publishedPacks:CONTENT_PACKS.length},
   proposed:{constellations:config.constellations.map(c=>({id:c.id,name:c.name})),questCount:count,questNumbers:{first:start,last:start+count-1},sizes:config.sizes},
+  ...(result?{generation:{quests:result.generated.map((p,i)=>({quest:start+i,...p})),rejections:result.rejections}}:{}),
   safety:{catalogueChanged:false,publishedQuestIdsPreserved:true},
-  pending:["grid generation","unique-solution audit","difficulty scoring","deduplication","apply and persistence regression tests"]
+  pending:generate?["apply and persistence regression tests","catalogue publication"]:["grid generation","unique-solution audit","difficulty scoring","deduplication","apply and persistence regression tests"]
  };
  console.log(JSON.stringify(plan,null,2));
 }
