@@ -1,0 +1,23 @@
+{
+ "id":"real-adventure-04",
+ "displayName":"Horizons inconnus",
+ "skyId":"real-sky",
+ "type":"real",
+ "access":"locked",
+ "order":3,
+ "seed":42,
+ "questsPerConstellation":10,
+ "sizes":[7,8],
+ "constellations":[
+  {"id":"iau-ant","name":"Antlia"},
+  {"id":"iau-aps","name":"Apus"},
+  {"id":"iau-ara","name":"Ara"},
+  {"id":"iau-ari","name":"Aries"},
+  {"id":"iau-aur","name":"Auriga"},
+  {"id":"iau-cae","name":"Caelum"},
+  {"id":"iau-cam","name":"Camelopardalis"},
+  {"id":"iau-cnc","name":"Cancer"},
+  {"id":"iau-cvn","name":"Canes Venatici"},
+  {"id":"iau-cmi","name":"Canis Minor"}
+ ]
+}
