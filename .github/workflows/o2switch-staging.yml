@@ -1,0 +1,76 @@
+name: o2switch staging pilot
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type DEPLOY to publish to the isolated staging directory"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lumen-o2switch-staging
+  cancel-in-progress: false
+
+jobs:
+  staging:
+    if: ${{ inputs.confirm == 'DEPLOY' }}
+    runs-on: ubuntu-latest
+    environment: o2switch-staging
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run mandatory quality gate
+        run: node scripts/quality-gate.mjs
+
+      - name: Prepare SSH
+        env:
+          SSH_KEY: ${{ secrets.O2SWITCH_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.O2SWITCH_SSH_KNOWN_HOSTS }}
+        run: |
+          test -n "$SSH_KEY"
+          test -n "$SSH_KNOWN_HOSTS"
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Publish static assets to isolated staging only
+        env:
+          SSH_HOST: ${{ secrets.O2SWITCH_SSH_HOST }}
+          SSH_USER: ${{ secrets.O2SWITCH_SSH_USER }}
+          STAGING_PATH: ${{ secrets.O2SWITCH_STAGING_PATH }}
+        run: |
+          set -euo pipefail
+          test -n "$SSH_HOST" && test -n "$SSH_USER" && test -n "$STAGING_PATH"
+          # Guard against accidental overwrite of the home directory or production root.
+          [[ "$STAGING_PATH" == /*/lumen-test || "$STAGING_PATH" == /*/lumen-test/ ]]
+          SSH_ARGS="-o BatchMode=yes -o StrictHostKeyChecking=yes"
+          ssh $SSH_ARGS "$SSH_USER@$SSH_HOST" "test -d '$STAGING_PATH'"
+          rsync -az --delete \
+            --exclude='/.git/' --exclude='/.github/' \
+            --exclude='/docs/' --exclude='/scripts/' \
+            --exclude='/README.md' --exclude='/AGENTS.md' \
+            --exclude='/.gitignore' --exclude='/.env*' \
+            --exclude='/*.md' --exclude='/node_modules/' \
+            -e "ssh $SSH_ARGS" ./ "$SSH_USER@$SSH_HOST:$STAGING_PATH/"
+          printf '%s\n' "${GITHUB_SHA}" | ssh $SSH_ARGS "$SSH_USER@$SSH_HOST" "cat > '$STAGING_PATH/deploy-sha.txt'"
+
+      - name: Check HTTPS staging endpoint
+        run: |
+          curl --fail --show-error --silent --location --retry 3 \
+            --output /dev/null https://lumen-test.nopuna.fr/
+          curl --fail --show-error --silent --location \
+            --output /dev/null https://lumen-test.nopuna.fr/sw.js
