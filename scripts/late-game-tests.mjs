@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import {functionSource} from './source-tools.mjs';
 import {CAT} from '../src/campaign/catalogue.js';
+import {playableQuest} from '../src/campaign/playable-quests.js';
 import {CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE} from '../src/campaign/data.js';
 import {campaignQuestCount} from '../src/campaign/progression.js';
 import {createCloudPersistence} from '../src/persistence/cloud.js';
@@ -11,7 +12,7 @@ const total=campaignQuestCount();
 assert(total>100,'The extension must have playable quests after quest 100');
 const source=fs.readFileSync('src/ui/game-screen.js','utf8');
 const controls=new Map();
-const context={campaignQuestCount,CAT,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,questIsAccessible:()=>true,socialChallenge:null,levelIndex:99,n:0,puz:null,last:{},replayMode:false,lumenProgress:{solved:{}},loads:0,
+const context={campaignQuestCount,CAT,playableQuest,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,questIsAccessible:()=>true,socialChallenge:null,levelIndex:99,n:0,puz:null,last:{},replayMode:false,lumenProgress:{solved:{}},loads:0,
  document:{getElementById:id=>{if(!controls.has(id))controls.set(id,{});return controls.get(id)}},hideSuccess(){},refreshJourney(){}};
 vm.createContext(context);
 vm.runInContext(functionSource(source,'choose')+'\n'+functionSource(source,'advanceToNextPuzzle')+'\nfunction loadPuzzle(){loads++;choose()}',context);
