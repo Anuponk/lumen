@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,sameCloudProfile,validateCloudProfile,restoreIntoEmptyGuestStorage,cloudSafelyCoversLocal,restoreRicherCloudProfile,reconcileCloudAchievements} from '../src/persistence/cloud-profile.js';
+import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,sameCloudProfile,validateCloudProfile,restoreIntoEmptyGuestStorage,cloudSafelyCoversLocal,restoreRicherCloudProfile,reconcileCloudAchievements,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally} from '../src/persistence/cloud-profile.js';
 const source={solved:{0:1,1:1},historyBackup:{0:1,1:1},badges:{0:{speed:true}},stars:{0:3},shards:7,daily:{dates:{"2026-10-09":1}},performances:{1:{bestTime:44}},xp:13};
 let saved=null;
 const fake={async rpc(method,args){
@@ -70,12 +70,33 @@ const uiSrc=(await import('node:fs')).readFileSync(new URL('../src/ui/game-scree
 const html=(await import('node:fs')).readFileSync(new URL('../index.html',import.meta.url),'utf8');
 assert.equal(cloudSrc.split('hooks.afterAuthCloudSync?.()').length-1,2,'Cloud sync must run after both session and sign-in auth flows');
 assert.ok(uiSrc.includes('afterAuthCloudSync:async'),'Auth hook is wired');
-assert.ok(uiSrc.includes('backupIfUnchanged(lumenSupabase,lumenProgress,cloudProfileBaseline)'),'Guarded background backup wired');
-assert.ok(uiSrc.includes('restoreRicherCloudProfile(localStorage,remote)'),'New-domain guarded rich restore wired');
-assert.ok(uiSrc.includes('if(!sameCloudProfile(remote,lumenProgress))'),'Conflicting local profile must block writes');
+assert.ok(uiSrc.includes('compareAndSwapCloudProfile(lumenSupabase,lumenProgress,cloudProfileBaseline)'),'Atomic background write wired');
+assert.ok(uiSrc.includes('installCloudProfileLocally(localStorage,cloud)'),'Cloud overrides local after login');
+assert.ok(uiSrc.includes('holdLegacyMergeForFullRestore:async()=>true'),'Legacy merges disabled');
 assert.doesNotMatch(html,/id="migrationCloud(?:Save|Restore)"/);
 
 assert.ok(uiSrc.includes('function accountRequired(){return !qaActive&&!socialChallenge&&!lumenUser&&solvedCount()>=5}'),'Five quests are playable as guest, then account required');
 assert.ok(uiSrc.includes('if(accountRequired()){maybeOfferAccount();hideSuccess();return}'),'Cannot advance beyond guest limit');
 assert.ok(uiSrc.includes('if(accountRequired())queueMicrotask(()=>maybeOfferAccount())'),'Reload cannot bypass guest gate');
 assert.ok(uiSrc.includes('if(accountRequired())return;'),'Account offer cannot be dismissed when required');
+
+let server=null;
+const cloudApi={async rpc(name,args){
+ if(name==="lumen_initialize_profile"){server??=structuredClone(args.p_payload);return {data:structuredClone(server),error:null};}
+ if(name==="lumen_restore_profile")return {data:structuredClone(server),error:null};
+ if(name==="lumen_cas_profile"){
+  if(!sameCloudProfile(server,args.p_expected))return {data:false,error:null};
+  server=structuredClone(args.p_payload);return {data:true,error:null};
+ }
+ throw Error(name);
+}};
+const guest={solved:{0:1,1:1,2:1,3:1,4:1},badges:{first:1},shards:6};
+assert.deepEqual(await initializeCloudProfile(cloudApi,guest),guest);
+assert.equal((await initializeCloudProfile(cloudApi,{...guest,shards:100})).shards,6,'Existing cloud always wins');
+const localCloudStorage=storage();
+localCloudStorage.setItem('lumenProgressV1',JSON.stringify({...guest,shards:100}));
+assert.equal(installCloudProfileLocally(localCloudStorage,guest),true);
+assert.equal(JSON.parse(localCloudStorage.getItem('lumenProgressV1')).shards,6);
+await assert.rejects(()=>compareAndSwapCloudProfile(cloudApi,{...guest,shards:7},{...guest,shards:100}),/Conflit/);
+assert.equal((await compareAndSwapCloudProfile(cloudApi,{...guest,shards:7},guest)).shards,7);
+assert.equal((await loadVerifiedProfile(cloudApi)).shards,7);
