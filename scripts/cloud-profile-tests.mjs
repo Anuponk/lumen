@@ -74,3 +74,8 @@ assert.ok(uiSrc.includes('backupIfUnchanged(lumenSupabase,lumenProgress,cloudPro
 assert.ok(uiSrc.includes('restoreRicherCloudProfile(localStorage,remote)'),'New-domain guarded rich restore wired');
 assert.ok(uiSrc.includes('if(!sameCloudProfile(remote,lumenProgress))'),'Conflicting local profile must block writes');
 assert.doesNotMatch(html,/id="migrationCloud(?:Save|Restore)"/);
+
+assert.ok(uiSrc.includes('function accountRequired(){return !qaActive&&!socialChallenge&&!lumenUser&&solvedCount()>=5}'),'Five quests are playable as guest, then account required');
+assert.ok(uiSrc.includes('if(accountRequired()){maybeOfferAccount();hideSuccess();return}'),'Cannot advance beyond guest limit');
+assert.ok(uiSrc.includes('if(accountRequired())queueMicrotask(()=>maybeOfferAccount())'),'Reload cannot bypass guest gate');
+assert.ok(uiSrc.includes('if(accountRequired())return;'),'Account offer cannot be dismissed when required');
