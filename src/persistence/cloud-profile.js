@@ -183,3 +183,34 @@ export function reconcileCloudAchievements(storage,remote){
   }
   return {changed:true,backupKey,currencyConflict:Number(local.shards)!==Number(cloud.shards)};
 }
+
+export async function initializeCloudProfile(supabase,localProfile){
+ const proposed=validateCloudProfile(localProfile);
+ const {data,error}=await supabase.rpc("lumen_initialize_profile",{p_payload:proposed});
+ if(error)throw Error("Initialisation cloud impossible : "+error.message);
+ const saved=validateCloudProfile(data);
+ const verified=await loadVerifiedProfile(supabase);
+ if(!sameCloudProfile(saved,verified))throw Error("Profil cloud initial non vérifié");
+ return saved;
+}
+export async function compareAndSwapCloudProfile(supabase,profile,expected){
+ const next=validateCloudProfile(profile),baseline=validateCloudProfile(expected);
+ const {data,error}=await supabase.rpc("lumen_cas_profile",{p_expected:baseline,p_payload:next});
+ if(error)throw Error("Sauvegarde cloud impossible : "+error.message);
+ if(data!==true)throw Error("Conflit de version cloud : sauvegarde refusée");
+ return next;
+}
+export function installCloudProfileLocally(storage,cloud){
+ const verified=validateCloudProfile(cloud),key="lumenProgressV1";
+ const current=storage.getItem(key);
+ const json=JSON.stringify(verified);
+ if(current===json)return false;
+ if(current!==null){
+  const backup="lumenBeforeCloudAuthority_"+Date.now();
+  storage.setItem(backup,current);
+  if(storage.getItem(backup)!==current)throw Error("Sauvegarde pré-migration impossible");
+ }
+ storage.setItem(key,json);
+ if(storage.getItem(key)!==json)throw Error("Copie locale du profil cloud non vérifiée");
+ return true;
+}
