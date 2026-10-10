@@ -40,6 +40,6 @@ REVOKE ALL ON FUNCTION public.lumen_cas_profile(jsonb,jsonb) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.lumen_initialize_profile(jsonb) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.lumen_cas_profile(jsonb,jsonb) TO authenticated;
 
--- Retire the legacy blind overwrite endpoint when cloud-first goes live.
--- Previous app builds will fail closed instead of clobbering a newer profile.
-REVOKE EXECUTE ON FUNCTION public.lumen_backup_profile(jsonb) FROM authenticated;
+-- Legacy overwrite revocation is deliberately deferred until all deployed clients
+-- are cloud-first compatible. Revoking it in the preparation migration would
+-- disrupt still-running production sessions before the application cutover.
