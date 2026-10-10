@@ -78,3 +78,16 @@ assert.deepEqual(dragState,beforeDrag,'The drag coach never marks cells itself')
 for(const [r,c] of lesson.cells){assert.notEqual(second.sol[r],c);dragState[r][c]=1;}
 assert.equal(dragLearningStep(second,dragState).phase,'complete');
 console.log(JSON.stringify({quest2:true,partialDragRestore:true,protectedGuardian:true,freeAfterGesture:true}));
+
+{
+ const fs=(await import("node:fs")).default;
+ const ui=fs.readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
+ const handler=ui.slice(ui.indexOf("function dismissGuidedOnAnyTap("),ui.indexOf('document.addEventListener("pointerdown",dismissGuidedOnAnyTap,true)'));
+ assert.ok(handler.includes("if(!sameAttempt)"),"Guided lock must reject other cells");
+ assert.ok(handler.includes("if(cell){e.preventDefault();e.stopPropagation()}"),"Other cell pointer is swallowed");
+ assert.ok(handler.includes("state[pending.r][pending.c]=1"),"Only erroneous Guardian may be removed");
+ assert.ok(handler.includes("persistAttemptBoard()"),"Correction must persist");
+ assert.ok(handler.includes("guidedPending=null"),"Unlock only after correcting wrong guardian");
+ const ack=ui.slice(ui.indexOf("function closeGuidedConflict(){"),ui.indexOf("let suppressGuidedClickUntil",ui.indexOf("function closeGuidedConflict(){")));
+ assert.ok(!ack.includes("guidedPending=null"),"Acknowledging must not unlock incorrect Guardian");
+}
