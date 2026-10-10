@@ -18,7 +18,7 @@ for(const [offset,quest] of manifest.quests.entries()){
 if(manifest.mode!=="staging-only")errors.push("Manifest must remain staging-only");
 if(CONTENT_PACKS.some(p=>p.id===manifest.pack.id&&(p.questCount!==manifest.pack.questCount||p.legacyQuestStart!==manifest.pack.questIndices[0])))errors.push("Pack metadata collision");
 if(manifest.constellations.some(c=>BASE_CONSTELLATIONS.some(b=>b.id===c.id)))errors.push("Constellation ID collision");
-if(manifest.quests.length!==100||manifest.constellations.length!==10)errors.push("Unexpected staged adventure size");
+if(manifest.quests.length!==manifest.pack.questCount||manifest.constellations.length!==manifest.pack.constellationIds.length||manifest.constellations.some(c=>!Array.isArray(c.questIndices)||c.questIndices.length===0)||manifest.constellations.reduce((sum,c)=>sum+c.questIndices.length,0)!==manifest.quests.length)errors.push("Staged adventure size inconsistent with metadata");
 if(errors.length)throw new Error("Invalid generated adventure: "+errors.join("; "));
 
 export const STAGED_ADVENTURE=Object.freeze({

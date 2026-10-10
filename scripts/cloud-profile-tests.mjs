@@ -113,3 +113,32 @@ assert.ok(uiSrc.includes('Ta victoire n\'est pas encore confirmée sur le cloud'
 
 assert.ok(uiSrc.includes('if(wasVisible)showAccountSavedConfirmation()'),'Cloud-save confirmation only after verified profile');
 assert.doesNotMatch(uiSrc,/account_signin_success[^\n]*showAccountSavedConfirmation/,'OAuth completion alone must not claim cloud backup succeeded');
+
+{
+ const cloudBase={solved:{0:1,197:1,295:1},badges:{197:{speed:true}},performances:{197:{badges:{speed:true},bestTime:44}},stars:{197:3},xp:160,shards:9};
+ const extended={...cloudBase,solved:{...cloudBase.solved,296:1,320:1},badges:{...cloudBase.badges,320:{mastery:true}},performances:{...cloudBase.performances,320:{badges:{mastery:true},bestTime:55}},stars:{...cloudBase.stars,320:3},xp:180};
+ const fakeStore=new Map();
+ const rpc={async rpc(method,args){
+  if(method==="lumen_initialize_profile"){if(!fakeStore.has("cloud"))fakeStore.set("cloud",structuredClone(args.p_payload));return {data:structuredClone(fakeStore.get("cloud")),error:null}}
+  if(method==="lumen_restore_profile")return {data:structuredClone(fakeStore.get("cloud")),error:null};
+  if(method==="lumen_cas_profile"){if(!sameCloudProfile(fakeStore.get("cloud"),args.p_expected))return {data:false,error:null};fakeStore.set("cloud",structuredClone(args.p_payload));return {data:true,error:null}}
+  throw Error("unexpected RPC "+method)
+ }};
+ const initial=await initializeCloudProfile(rpc,cloudBase);
+ assert.equal(initial.solved[295],1);
+ const applied=await compareAndSwapCloudProfile(rpc,extended,initial);
+ assert.equal(applied.solved[320],1);
+ const after=await initializeCloudProfile(rpc,cloudBase);
+ assert.equal(after.solved[320],1,"existing account must not truncate appended quests");
+ assert.equal(after.performances[320].badges.mastery,true);
+ assert.equal(after.stars[320],3);
+ assert.equal(after.shards,9);
+ const secondDevice=storage();
+ secondDevice.setItem("lumenProgressV1",JSON.stringify(cloudBase));
+ installCloudProfileLocally(secondDevice,after);
+ const restored=JSON.parse(secondDevice.getItem("lumenProgressV1"));
+ assert.equal(restored.solved[320],1);
+ assert.equal(restored.badges[320].mastery,true);
+ assert.equal(restored.performances[320].bestTime,55);
+ await assert.rejects(()=>compareAndSwapCloudProfile(rpc,cloudBase,initial),/conflit|modifi|stale|simultan|refus|sauvegarde/i);
+}

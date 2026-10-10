@@ -1,10 +1,10 @@
-import {CONTENT_CONSTELLATIONS} from "./content.js";
+import {CONTENT_CONSTELLATIONS,GENERATED_CONSTELLATIONS} from "./content.js";
 import {generatedQuestProgress} from "./generated-progression.js";
 
 export function mapConstellationRange(index){
  const entry=CONTENT_CONSTELLATIONS[Number(index)];
  if(!entry)return null;
- return {index:Number(index),id:entry.id,label:entry.label,packId:entry.packId,quests:[...entry.questIndices],count:entry.questCount,generated:entry.packId==="real-adventure-04"};
+ return {index:Number(index),id:entry.id,label:entry.label,packId:entry.packId,quests:[...entry.questIndices],count:entry.questCount,generated:GENERATED_CONSTELLATIONS.some(c=>c.id===entry.id)};
 }
 export function generatedMapSummary(index,solved={}){
  const range=mapConstellationRange(index);
