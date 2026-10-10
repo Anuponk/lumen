@@ -99,7 +99,7 @@ let accountOfferSignInPending=false;
 function accountOfferKey(name){return qaKey("lumenAccountOffer"+name)}
 function showAccountSavedConfirmation(){const toast=document.getElementById("accountSavedToast");if(!toast)return;toast.hidden=false;setTimeout(()=>{toast.hidden=true},2200)}
 function accountOfferMilestone(){return solvedCount()>=5?5:0}
-function accountRequired(){return !qaActive&&!socialChallenge&&(!lumenUser||!cloudProfileReady)&&solvedCount()>=5}
+function accountRequired(){return !qaActive&&!socialChallenge&&((!!lumenUser&&!cloudProfileReady)||(!lumenUser&&solvedCount()>=5))}
 function maybeOfferAccount(){
  if(!accountRequired())return false;
  const box=document.getElementById("accountOptin");
