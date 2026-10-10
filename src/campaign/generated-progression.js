@@ -1,10 +1,8 @@
 // Independent progression model for the fourth adventure.
 // This does not change the legacy sky's star target or existing saves.
-import {CONTENT_CONSTELLATIONS,CONTENT_PACKS} from "./content.js";
-import {playableQuestCount} from "./playable-quests.js";
+import {GENERATED_CONSTELLATIONS} from "./content.js";
 
-const generatedPacks=CONTENT_PACKS.filter(p=>p.questIndices?.length&&p.questIndices.some(i=>CONTENT_CONSTELLATIONS.some(c=>c.packId===p.id&&c.legacyIndex>=0&&c.id.startsWith("iau-"))));
-const generated=Object.freeze(CONTENT_CONSTELLATIONS.filter(c=>generatedPacks.some(p=>p.id===c.packId)));
+const generated=GENERATED_CONSTELLATIONS;
 const lookup=new Map(generated.flatMap(c=>c.questIndices.map((index,position)=>[index,{constellation:c,position}])));
 
 export function generatedCampaignProgress(solved={}){
