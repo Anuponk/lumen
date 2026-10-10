@@ -17,7 +17,8 @@ try{
  for(const viewport of [{width:390,height:844,mobile:true},{width:1440,height:900,mobile:false}]){
   await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});
   const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:'localStorage.clear();localStorage.setItem("lumenQaProgressV1",JSON.stringify({solved:Object.fromEntries(Array.from({length:99},(_,i)=>[i,1])),badges:{historical:1},shards:7,xp:123,skyScore:147,skyHistoryVersion:4}));localStorage.setItem("lumenSound","off");localStorage.setItem("lumenTutorialSeen","1");localStorage.setItem("lumenInstallLater",String(Date.now()));localStorage.setItem("lumenPushChoice","later");'});
-  await send('Page.navigate',{url});await until('!!window.lumenDiagnostics && !!navigator.serviceWorker.controller');await sleep(1500);await until('!!window.lumenDiagnostics');
+  await send('Page.navigate',{url:url.href});await until('!!window.lumenDiagnostics && !!navigator.serviceWorker.controller');await sleep(1500);await until('!!window.lumenDiagnostics');
+  assert.equal(await evaluate('new URL(location.href).searchParams.get("qa")'),"new","Late-game regression runs in QA mode");
   await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});
   assert.equal((await snapshot()).levelIndex,99);
   await evaluate('document.getElementById("successNew").click()');
