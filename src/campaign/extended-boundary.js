@@ -18,6 +18,11 @@ export function nextAdventureBoundary(solved={},entitlements=[],progress={},atte
  return {status:access.status,index:next,packId:access.packId,quest:access.quest};
 }
 export function extendedQuestLimit(entitlements=[],progress={},attempt=null){
- const pack=CONTENT_PACKS.find(p=>p.id==="real-adventure-04");
- return hasPackAccess(pack,entitlements,progress,attempt)?playableQuestCount():baseCampaignQuestCount();
+ const ordered=CONTENT_PACKS.flatMap(pack=>(pack.questIndices||[]).map(index=>({index,pack}))).sort((a,b)=>a.index-b.index);
+ let limit=0;
+ for(const {index,pack} of ordered){
+  if(index!==limit||!hasPackAccess(pack,entitlements,progress,attempt))break;
+  limit++;
+ }
+ return Math.min(limit,playableQuestCount());
 }
