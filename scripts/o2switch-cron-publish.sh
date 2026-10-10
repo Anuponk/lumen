@@ -30,7 +30,10 @@ try:
 except Exception as e: sys.exit("GitHub CI verification failed: "+str(e))
 matches=[r for r in runs if r.get("head_sha")==sha and r.get("event")=="push" and r.get("head_branch")=="main"]
 if not any(r.get("status")=="completed" and r.get("conclusion")=="success" for r in matches):
-    sys.exit("CI is not green for exact main SHA "+sha)
+    if not matches or any(r.get("status")!="completed" for r in matches):
+        print("CI still pending for main SHA "+sha)
+        sys.exit(75)
+    sys.exit("CI failed for exact main SHA "+sha)
 print("CI verified:",sha)
 PY
 if [[ -f "$TARGET/.lumen-release-sha" && "$(cat "$TARGET/.lumen-release-sha")" == "$SHA" ]]; then
