@@ -79,5 +79,12 @@ if [[ "$CURRENT" == "$RELEASES/$SHA" ]]; then
 fi
 ln -s "$RELEASES/$SHA" "$TARGET.next.$$"
 mv -Tf "$TARGET.next.$$" "$TARGET"
+# Lightweight post-activation smoke test. Revert symlink on an HTTP failure.
+if ! curl -fsS --retry 2 --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/?release=$SHA" | grep -q 'src/'; then
+  echo "HTTP smoke test failed. Restoring previous release $CURRENT" >&2
+  ln -s "$CURRENT" "$TARGET.rollback.$"
+  mv -Tf "$TARGET.rollback.$" "$TARGET"
+  exit 1
+fi
 echo "$LOG_PREFIX Activated $SHA (previous: $CURRENT)"
 # Keep previous releases. Rollback: bash script --rollback <known 40-char SHA>
