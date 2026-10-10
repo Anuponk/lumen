@@ -4,7 +4,7 @@ import {createHintTestSuite} from "../testing/hint-tests.js";
 import {createDiagnostics} from "../testing/diagnostics.js";
 import {createLocalPersistence} from "../persistence/local.js";
 import {createCloudPersistence} from "../persistence/cloud.js";
-import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,restoreIntoEmptyGuestStorage,sameCloudProfile} from "../persistence/cloud-profile.js";
+import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,sameCloudProfile} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
@@ -82,10 +82,9 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
      }
      return;
    }
-   if(!hasLocal&&location.origin==="https://lumen.nopuna.fr"){
-     restoreIntoEmptyGuestStorage(localStorage,remote);
-     location.reload();
-     return;
+   if(location.origin==="https://lumen.nopuna.fr"){
+     const result=restoreRicherCloudProfile(localStorage,remote);
+     if(result.changed!==false){location.reload();return}
    }
    if(!sameCloudProfile(remote,lumenProgress)){
      console.warn("Lumen: profil local différent du cloud. Sauvegarde automatique suspendue pour protéger les badges et éclats.");
@@ -96,11 +95,8 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
  }catch(e){console.warn("Lumen full-profile automatic sync failed; local save preserved",e)}
 },holdLegacyMergeForFullRestore:async()=>{
  if(location.origin!=="https://lumen.nopuna.fr"||qaActive)return false;
- try{
-   const local=JSON.parse(localStorage.getItem("lumenProgressV1")||"null");
-   if(local&&(Object.values(local.solved||{}).some(Boolean)||Object.keys(local.badges||{}).length||Object.keys(local.stars||{}).length||Object.keys(local.performances||{}).length||Number(local.shards||3)>3))return false;
-   return !!(await loadVerifiedProfile(lumenSupabase));
- }catch(e){console.warn("Full profile restore preflight",e);return false}
+ try{return !!(await loadVerifiedProfile(lumenSupabase))}
+ catch(e){console.warn("Full profile restore preflight failed; avoid unsafe legacy merge",e);return true}
 }},{setTimeout,console,qaMode});
 function tutorialCompletedProof(){
  try{if(localStorage.getItem(qaKey("lumenTutorialCompletedV1"))==="1")return true}catch(_){}
