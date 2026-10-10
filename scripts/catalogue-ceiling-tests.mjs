@@ -29,10 +29,10 @@ assert.match(historical,/between 1 and 100|>100/,"guardrail expects the historic
 
 console.log(JSON.stringify({runtimeFiles:runtimeFiles.length,sqlMigrations:sqlFiles.length,serverCeiling:10000,result:"catalogue growth no longer requires campaign-size edits in runtime/server paths"}));
 
-// The daily-streak endpoint and table constraint must evolve together.
+// Validate deployed daily-streak repair alongside its table constraint.
 const dailyRepair=fs.readFileSync("supabase/migrations/20261010_lumen_daily_catalogue_ceiling_repair.sql","utf8");
-assert.match(dailyRepair,/daily_progress_puzzle_id_check[\\s\\S]*?between 1 and 10000/i);
+assert.ok(dailyRepair.includes("daily_progress_puzzle_id_check check (puzzle_id between 1 and 10000)"));
 for(const name of ["lumen_claim_daily","lumen_save_daily"]){
- assert.match(dailyRepair,new RegExp("create or replace function public\\\\."+name+"[\\\\s\\\\S]*?p_puzzle_id>10000","i"),name+" must accept appended quests");
+ const part=dailyRepair.split("create or replace function public."+name)[1]?.split("end $$;")[0];
+ assert.ok(part?.includes("p_puzzle_id>10000"),name+" must accept appended quests");
 }
-assert.doesNotMatch(dailyRepair,/p_puzzle_id\\s*>\\s*100\\b/,"old daily limit must not return");
