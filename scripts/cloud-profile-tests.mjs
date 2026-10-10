@@ -75,7 +75,7 @@ assert.ok(uiSrc.includes('installCloudProfileLocally(localStorage,cloud)'),'Clou
 assert.ok(uiSrc.includes('holdLegacyMergeForFullRestore:async()=>true'),'Legacy merges disabled');
 assert.doesNotMatch(html,/id="migrationCloud(?:Save|Restore)"/);
 
-assert.ok(uiSrc.includes('function accountRequired(){return !qaActive&&!socialChallenge&&!lumenUser&&solvedCount()>=5}'),'Five quests are playable as guest, then account required');
+assert.ok(uiSrc.includes('function accountRequired(){return !qaActive&&!socialChallenge&&(!lumenUser||!cloudProfileReady)&&solvedCount()>=5}'),'Five quests are playable as guest, then account required');
 assert.ok(uiSrc.includes('if(accountRequired()){maybeOfferAccount();hideSuccess();return}'),'Cannot advance beyond guest limit');
 assert.ok(uiSrc.includes('if(accountRequired())queueMicrotask(()=>maybeOfferAccount())'),'Reload cannot bypass guest gate');
 assert.ok(uiSrc.includes('if(accountRequired())return;'),'Account offer cannot be dismissed when required');
