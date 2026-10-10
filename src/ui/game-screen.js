@@ -4,7 +4,7 @@ import {createHintTestSuite} from "../testing/hint-tests.js";
 import {createDiagnostics} from "../testing/diagnostics.js";
 import {createLocalPersistence} from "../persistence/local.js";
 import {createCloudPersistence} from "../persistence/cloud.js";
-import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievements,sameCloudProfile} from "../persistence/cloud-profile.js";
+import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievements,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
@@ -42,7 +42,7 @@ async function flushCloudProfile(){
  if(cloudProfileBusy){cloudProfileDirty=true;return}
  if(!cloudProfileReady||!lumenUser||!lumenSupabase||qaActive)return;
  cloudProfileBusy=true;
- try{cloudProfileBaseline=await backupIfUnchanged(lumenSupabase,lumenProgress,cloudProfileBaseline)}
+ try{cloudProfileBaseline=await compareAndSwapCloudProfile(lumenSupabase,lumenProgress,cloudProfileBaseline)}
  catch(e){console.warn("Lumen background cloud save failed; retry on next change",e)}
  finally{cloudProfileBusy=false;if(cloudProfileDirty){cloudProfileDirty=false;scheduleCloudProfile()}}
 }
@@ -67,43 +67,18 @@ get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){used
 };
 const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,sendEmailOtp,verifyEmailOtp,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI()},renderDaily:(...args)=>renderDaily(...args),afterAuthCloudSync:async()=>{
  if(qaActive||!lumenUser||!lumenSupabase)return;
- cloudProfileReady=false;
- cloudProfileBaseline=null;
+ cloudProfileReady=false;cloudProfileBaseline=null;
  try{
-   const remote=await loadVerifiedProfile(lumenSupabase);
-   const raw=localStorage.getItem("lumenProgressV1");
-   const local=raw?JSON.parse(raw):null;
-   const hasLocal=local&&(Object.values(local.solved||{}).some(Boolean)||Object.keys(local.badges||{}).length||Object.keys(local.stars||{}).length||Object.keys(local.performances||{}).length||Number(local.shards||3)>3);
-   if(!remote){
-     if(location.origin==="https://lumen-xi-seven.vercel.app"){
-       await backupAndVerifyProfile(lumenSupabase,lumenProgress);
-       cloudProfileBaseline=JSON.parse(JSON.stringify(lumenProgress));
-       cloudProfileReady=true;
-     }
-     return;
-   }
-   if(location.origin==="https://lumen.nopuna.fr"){
-     let result;
-     try{result=restoreRicherCloudProfile(localStorage,remote)}
-     catch(error){
-       if(!String(error.message||error).includes("Profil local divergent"))throw error;
-       result=reconcileCloudAchievements(localStorage,remote);
-       if(result.currencyConflict)console.warn("Lumen: éclats locaux et cloud divergents. Solde local conservé ; aucune synchronisation de monnaie sans validation.");
-     }
-     if(result.changed){location.reload();return}
-   }
-   if(!sameCloudProfile(remote,lumenProgress)){
-     console.warn("Lumen: profil local différent du cloud. Sauvegarde automatique suspendue pour protéger les badges et éclats.");
-     return;
-   }
-   cloudProfileBaseline=remote;
-   cloudProfileReady=true;
- }catch(e){console.warn("Lumen full-profile automatic sync failed; local save preserved",e)}
-},holdLegacyMergeForFullRestore:async()=>{
- if(location.origin!=="https://lumen.nopuna.fr"||qaActive)return false;
- try{return !!(await loadVerifiedProfile(lumenSupabase))}
- catch(e){console.warn("Full profile restore preflight failed; avoid unsafe legacy merge",e);return true}
-}},{setTimeout,console,qaMode});
+  const original=localStorage.getItem("lumenProgressV1");
+  const incoming=original?JSON.parse(original):lumenProgress;
+  // First login: create the profile exactly once. An existing cloud profile wins.
+  const cloud=await initializeCloudProfile(lumenSupabase,incoming);
+  const changed=installCloudProfileLocally(localStorage,cloud);
+  cloudProfileBaseline=cloud;
+  if(changed){location.reload();return}
+  cloudProfileReady=true;
+ }catch(e){console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
+},holdLegacyMergeForFullRestore:async()=>true}},{setTimeout,console,qaMode});
 function tutorialCompletedProof(){
  try{if(localStorage.getItem(qaKey("lumenTutorialCompletedV1"))==="1")return true}catch(_){}
  return !!(lumenProgress?.solved?.[0]&&lumenProgress?.solved?.[1]);
