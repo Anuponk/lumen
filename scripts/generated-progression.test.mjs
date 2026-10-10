@@ -27,3 +27,27 @@ test("all 100 generated quests complete without touching historical state",()=>{
  assert.equal(nextGeneratedQuest(solved),null);
  assert.equal(generatedQuestProgress(195,solved),null);
 });
+
+test("appending variable-size constellations preserves existing quest indices",()=>{
+ const constellations=[
+  {id:"a",label:"A",questCount:2,questIndices:[196,197]},
+  {id:"b",label:"B",questCount:3,questIndices:[198,199,200]},
+  {id:"c",label:"C",questCount:1,questIndices:[201]}
+ ];
+ const saved={196:1,197:1,198:1};
+ assert.equal(nextGeneratedQuest(saved,constellations),199);
+ const before=generatedCampaignProgress(saved,constellations);
+ assert.equal(before.total,6);
+ assert.equal(before.completed,3);
+ assert.equal(generatedQuestProgress(200,saved,constellations).finalQuest,true);
+ const expanded=[...constellations,{id:"d",label:"D",questCount:4,questIndices:[202,203,204,205]}];
+ const after=generatedCampaignProgress(saved,expanded);
+ assert.equal(after.total,10);
+ assert.equal(after.completed,3);
+ assert.equal(after.start,196);
+ assert.equal(after.end,205);
+ assert.equal(nextGeneratedQuest(saved,expanded),199);
+ const complete=Object.fromEntries(Array.from({length:10},(_,i)=>[196+i,1]));
+ assert.equal(nextGeneratedQuest(complete,expanded),null);
+ assert.equal(generatedCampaignProgress(complete,expanded).complete,true);
+});
