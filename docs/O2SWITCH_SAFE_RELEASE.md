@@ -50,4 +50,4 @@ Note : rollback des **fichiers statiques** uniquement, pas de base Supabase ni s
 
 ## Sécurité
 
-Le script verrouille les exécutions concurrentes avec `flock`, refuse les changements locaux, n'exporte que les assets statiques, refuse de publier sans CI vérifiée, ne touche pas aux données Supabase et ne supprime pas les releases. Avant activation automatique, ajouter une vérification HTTP post-publication et un mécanisme d'alerte/rollback déclenché en cas d'échec ; le script actuel n'implémente pas encore ces deux fonctionnalités.
+Le script verrouille les exécutions concurrentes avec `flock`, refuse les changements locaux, n'exporte que les assets statiques, refuse de publier sans CI vérifiée, ne touche pas aux données Supabase et ne supprime pas les releases. Après activation, le script effectue un contrôle HTTP élémentaire et revient automatiquement au symlink précédent si ce contrôle échoue. Ce contrôle ne prouve pas que les fonctionnalités et la progression fonctionnent. Avant activation automatique, ajouter une alerte opérationnelle en cas d'échec et vérifier les parcours réels.
