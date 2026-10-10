@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {backupAndVerifyProfile,loadVerifiedProfile,validateCloudProfile,restoreIntoEmptyGuestStorage} from '../src/persistence/cloud-profile.js';
+import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,sameCloudProfile,validateCloudProfile,restoreIntoEmptyGuestStorage} from '../src/persistence/cloud-profile.js';
 const source={solved:{0:1,1:1},historyBackup:{0:1,1:1},badges:{0:{speed:true}},stars:{0:3},shards:7,daily:{dates:{"2026-10-09":1}},performances:{1:{bestTime:44}},xp:13};
 let saved=null;
 const fake={async rpc(method,args){
@@ -13,6 +13,13 @@ assert.throws(()=>validateCloudProfile({solved:{}}),/Badges/);
 await assert.rejects(()=>backupAndVerifyProfile({rpc:async()=>({error:{message:'network'}})},source),/refusée/);
 await assert.rejects(()=>backupAndVerifyProfile({rpc:async method=>method==='lumen_backup_profile'?{error:null}:{data:{solved:{},badges:{}},error:null}},source),/non vérifiée/);
 assert.equal(source.shards,7,'Local original untouched');
+assert.ok(sameCloudProfile(source,structuredClone(source)));
+await assert.rejects(()=>backupIfUnchanged(fake,{...source,shards:8},{...source,shards:6}),/modifiée/);
+assert.equal(saved.shards,7,'Conflicting client must not overwrite cloud');
+const guarded=await backupIfUnchanged(fake,{...source,shards:8},source);
+assert.equal(guarded.shards,8,'Matching baseline can save');
+assert.equal(saved.shards,8);
+
 console.log('Cloud profile backup validation and read-back tests passed');
 
 const storage=()=>{const m=new Map();return {getItem:k=>m.has(k)?m.get(k):null,setItem:(k,v)=>m.set(k,String(v))}};
@@ -30,6 +37,7 @@ const uiSrc=(await import('node:fs')).readFileSync(new URL('../src/ui/game-scree
 const html=(await import('node:fs')).readFileSync(new URL('../index.html',import.meta.url),'utf8');
 assert.equal(cloudSrc.split('hooks.afterAuthCloudSync?.()').length-1,2,'Cloud sync must run after both session and sign-in auth flows');
 assert.ok(uiSrc.includes('afterAuthCloudSync:async'),'Auth hook is wired');
-assert.ok(uiSrc.includes('backupAndVerifyProfile(lumenSupabase,lumenProgress)'),'Legacy backup wired');
+assert.ok(uiSrc.includes('backupIfUnchanged(lumenSupabase,lumenProgress,cloudProfileBaseline)'),'Guarded background backup wired');
 assert.ok(uiSrc.includes('restoreIntoEmptyGuestStorage(localStorage,remote)'),'New-domain restore wired');
+assert.ok(uiSrc.includes('if(!sameCloudProfile(remote,lumenProgress))'),'Conflicting local profile must block writes');
 assert.doesNotMatch(html,/id="migrationCloud(?:Save|Restore)"/);
