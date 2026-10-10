@@ -699,20 +699,29 @@ function showGuidedConflict(r,c,info){
  board.setAttribute("aria-disabled","true");
 }
 function closeGuidedConflict(){
- guidedPending=null;document.getElementById("guidedCard").hidden=true;board.removeAttribute("aria-disabled");render();
+ // The acknowledgment hides the explanation, but never releases an incorrect Guardian.
+ document.getElementById("guidedCard").hidden=true;
 }
 let suppressGuidedClickUntil=0;
 function dismissGuidedOnAnyTap(e){
  if(!guidedPending)return;
  const pending=guidedPending,cell=e.target.closest&&e.target.closest(".cell");
  const sameAttempt=cell&&Number(cell.dataset.row)===pending.r&&Number(cell.dataset.col)===pending.c;
- e.preventDefault();e.stopPropagation();
- if(sameAttempt){
-  hist.push(state.map(x=>x.slice()));
-  state[pending.r][pending.c]=1;
+ if(!sameAttempt){
+  // The triggering move was discarded: no other board move or modal dismissal can advance play.
+  if(cell){e.preventDefault();e.stopPropagation()}
+  return;
  }
+ e.preventDefault();e.stopPropagation();
+ hist.push(state.map(x=>x.slice()));
+ state[pending.r][pending.c]=1;
+ attemptEngine.clearWrongGuardianPending(pending.r+","+pending.c);
+ guidedPending=null;guidedDeferred=null;
+ document.getElementById("guidedCard").hidden=true;
+ board.removeAttribute("aria-disabled");
  suppressGuidedClickUntil=performance.now()+700;
- closeGuidedConflict();
+ persistAttemptBoard();
+ render();
 }
 document.addEventListener("pointerdown",dismissGuidedOnAnyTap,true);
 function configureLearningMode(){
