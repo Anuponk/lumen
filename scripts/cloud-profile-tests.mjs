@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,sameCloudProfile,validateCloudProfile,restoreIntoEmptyGuestStorage} from '../src/persistence/cloud-profile.js';
+import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,sameCloudProfile,validateCloudProfile,restoreIntoEmptyGuestStorage,cloudSafelyCoversLocal,restoreRicherCloudProfile} from '../src/persistence/cloud-profile.js';
 const source={solved:{0:1,1:1},historyBackup:{0:1,1:1},badges:{0:{speed:true}},stars:{0:3},shards:7,daily:{dates:{"2026-10-09":1}},performances:{1:{bestTime:44}},xp:13};
 let saved=null;
 const fake={async rpc(method,args){
@@ -32,12 +32,27 @@ assert.equal(JSON.parse(occupied.getItem('lumenProgressV1')).solved[0],1);
 const corrupt=storage();corrupt.setItem('lumenProgressV1','{not-json');
 assert.throws(()=>restoreIntoEmptyGuestStorage(corrupt,source),/illisible/);
 
+const richer=storage();
+richer.setItem('lumenProgressV1',JSON.stringify({...source,shards:3,performances:{}}));
+assert.equal(cloudSafelyCoversLocal({...source,shards:3,performances:{}},source),true);
+const restored=restoreRicherCloudProfile(richer,source);
+assert.equal(restored.changed,true);
+assert.equal(JSON.parse(richer.getItem('lumenProgressV1')).shards,7);
+assert.ok(richer.getItem(restored.backupKey),'original local profile backed up');
+const divergent=storage();
+divergent.setItem('lumenProgressV1',JSON.stringify({...source,shards:100}));
+assert.throws(()=>restoreRicherCloudProfile(divergent,source),/divergent/);
+assert.equal(JSON.parse(divergent.getItem('lumenProgressV1')).shards,100);
+const newerBadge=storage();
+newerBadge.setItem('lumenProgressV1',JSON.stringify({...source,badges:{unique:1}}));
+assert.throws(()=>restoreRicherCloudProfile(newerBadge,source),/divergent/);
+assert.equal(restoreRicherCloudProfile(richer,source).changed,false);
 const cloudSrc=(await import('node:fs')).readFileSync(new URL('../src/persistence/cloud.js',import.meta.url),'utf8');
 const uiSrc=(await import('node:fs')).readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 const html=(await import('node:fs')).readFileSync(new URL('../index.html',import.meta.url),'utf8');
 assert.equal(cloudSrc.split('hooks.afterAuthCloudSync?.()').length-1,2,'Cloud sync must run after both session and sign-in auth flows');
 assert.ok(uiSrc.includes('afterAuthCloudSync:async'),'Auth hook is wired');
 assert.ok(uiSrc.includes('backupIfUnchanged(lumenSupabase,lumenProgress,cloudProfileBaseline)'),'Guarded background backup wired');
-assert.ok(uiSrc.includes('restoreIntoEmptyGuestStorage(localStorage,remote)'),'New-domain restore wired');
+assert.ok(uiSrc.includes('restoreRicherCloudProfile(localStorage,remote)'),'New-domain guarded rich restore wired');
 assert.ok(uiSrc.includes('if(!sameCloudProfile(remote,lumenProgress))'),'Conflicting local profile must block writes');
 assert.doesNotMatch(html,/id="migrationCloud(?:Save|Restore)"/);
