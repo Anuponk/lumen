@@ -419,7 +419,7 @@ async function createSocialChallengeFromSuccess(){
   pendingChallengeUrl=socialChallengeUrl(id);trackLumenEvent("challenge_created",levelIndex+1,{remarkable:!!lastChallengeOffer.eligibility.remarkable});
   const copy=document.getElementById("challengeShareCopy");copy.textContent=lastChallengeOffer.eligibility.remarkable?"✦ Maîtrise du premier coup. À ton ami de relever le défi !":"Ta première performance est figée. À ton ami de faire mieux en une tentative.";
   const modal=document.getElementById("challengeShareModal");modal.hidden=false;
-  if(window.QRCode?.toCanvas)window.QRCode.toCanvas(document.getElementById("challengeQr"),pendingChallengeUrl,{width:220,margin:1}).catch(()=>{});
+  const qr=document.getElementById("challengeQr");if(qr){qr.replaceChildren();if(typeof window.QRCode==="function")new window.QRCode(qr,{text:pendingChallengeUrl,width:220,height:220,correctLevel:window.QRCode.CorrectLevel.M});else qr.textContent="QR code indisponible : utilise Copier le lien.";}
   maybeOfferSocialPush();
  }catch(e){console.warn("challenge create",e);showRewardToast("Impossible de créer le défi pour le moment")}
 }
