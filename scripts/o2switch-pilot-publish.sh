@@ -21,7 +21,7 @@ cd "$SOURCE"
 [[ -z "$(git status --porcelain)" ]] || {
   echo "Uncommitted changes, publication refused"; exit 1;
 }
-for path in index.html transfer.html sw.js manifest.webmanifest icon.svg icon-maskable.svg; do
+for path in index.html sw.js manifest.webmanifest icon.svg icon-maskable.svg; do
   [[ -s "$path" ]] || { echo "Missing $path"; exit 1; }
 done
 for path in src content; do
@@ -43,6 +43,8 @@ done
 for path in index.html sw.js manifest.webmanifest icon.svg icon-maskable.svg; do
   install -m 644 "$SOURCE/$path" "$TARGET/$path"
 done
+# Retire the obsolete manually published transfer page after a validated release.
+rm -f "$TARGET/transfer.html"
 find "$TARGET/src" "$TARGET/content" -type d -exec chmod 755 {} +
 find "$TARGET/src" "$TARGET/content" -type f -exec chmod 644 {} +
 printf 'Lumen pilot published commit %s\n' "$(git rev-parse --short HEAD)"
