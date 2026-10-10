@@ -26,6 +26,20 @@ function sortKeys(value){
   if(value && typeof value==="object")return Object.fromEntries(Object.keys(value).sort().map(k=>[k,sortKeys(value[k])]));
   return value;
 }
+
+// Guard full-profile writes against stale devices. Never upload a profile if the
+// cloud changed since the last verified read. A true atomic compare-and-swap
+// requires a server-side RPC and is tracked separately.
+export function sameCloudProfile(a,b){
+  return JSON.stringify(sortKeys(a))===JSON.stringify(sortKeys(b));
+}
+export async function backupIfUnchanged(supabase,profile,expectedRemote){
+  const actual=await loadVerifiedProfile(supabase);
+  if(!sameCloudProfile(actual,expectedRemote))throw Error("Sauvegarde cloud modifiée sur un autre appareil : écriture bloquée");
+  await backupAndVerifyProfile(supabase,profile);
+  return validateCloudProfile(profile);
+}
+
 export async function loadVerifiedProfile(supabase){
   const {data,error}=await supabase.rpc("lumen_restore_profile");
   if(error)throw Error("Impossible de restaurer le profil : "+error.message);
