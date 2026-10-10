@@ -29,9 +29,9 @@ assert.match(historical,/between 1 and 100|>100/,"guardrail expects the historic
 
 console.log(JSON.stringify({runtimeFiles:runtimeFiles.length,sqlMigrations:sqlFiles.length,serverCeiling:10000,result:"catalogue growth no longer requires campaign-size edits in runtime/server paths"}));
 
-// The analytics RPC and table must accept the same expanded catalog and event types.
+// Regression guard against stale analytics table constraints.
 const analyticsRepair=fs.readFileSync("supabase/migrations/20261010_lumen_analytics_constraint_repair.sql","utf8");
-assert.match(analyticsRepair,/analytics_events_puzzle_id_check[\\s\\S]*?between 1 and 10000/i);
+assert.ok(analyticsRepair.includes("analytics_events_puzzle_id_check check (puzzle_id between 1 and 10000)"));
 for(const name of ["attempt_completed","guided_intervention","app_opened","feedback_submitted"]){
  assert.ok(analyticsRepair.includes("'"+name+"'"),"Analytics constraint must allow "+name);
 }
