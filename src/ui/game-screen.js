@@ -4,7 +4,7 @@ import {createHintTestSuite} from "../testing/hint-tests.js";
 import {createDiagnostics} from "../testing/diagnostics.js";
 import {createLocalPersistence} from "../persistence/local.js";
 import {createCloudPersistence} from "../persistence/cloud.js";
-import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,sameCloudProfile} from "../persistence/cloud-profile.js";
+import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievements,sameCloudProfile} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
@@ -83,8 +83,14 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
      return;
    }
    if(location.origin==="https://lumen.nopuna.fr"){
-     const result=restoreRicherCloudProfile(localStorage,remote);
-     if(result.changed!==false){location.reload();return}
+     let result;
+     try{result=restoreRicherCloudProfile(localStorage,remote)}
+     catch(error){
+       if(!String(error.message||error).includes("Profil local divergent"))throw error;
+       result=reconcileCloudAchievements(localStorage,remote);
+       if(result.currencyConflict)console.warn("Lumen: éclats locaux et cloud divergents. Solde local conservé ; aucune synchronisation de monnaie sans validation.");
+     }
+     if(result.changed){location.reload();return}
    }
    if(!sameCloudProfile(remote,lumenProgress)){
      console.warn("Lumen: profil local différent du cloud. Sauvegarde automatique suspendue pour protéger les badges et éclats.");

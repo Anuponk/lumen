@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,sameCloudProfile,validateCloudProfile,restoreIntoEmptyGuestStorage,cloudSafelyCoversLocal,restoreRicherCloudProfile} from '../src/persistence/cloud-profile.js';
+import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,sameCloudProfile,validateCloudProfile,restoreIntoEmptyGuestStorage,cloudSafelyCoversLocal,restoreRicherCloudProfile,reconcileCloudAchievements} from '../src/persistence/cloud-profile.js';
 const source={solved:{0:1,1:1},historyBackup:{0:1,1:1},badges:{0:{speed:true}},stars:{0:3},shards:7,daily:{dates:{"2026-10-09":1}},performances:{1:{bestTime:44}},xp:13};
 let saved=null;
 const fake={async rpc(method,args){
@@ -47,6 +47,24 @@ const newerBadge=storage();
 newerBadge.setItem('lumenProgressV1',JSON.stringify({...source,badges:{unique:1}}));
 assert.throws(()=>restoreRicherCloudProfile(newerBadge,source),/divergent/);
 assert.equal(restoreRicherCloudProfile(richer,source).changed,false);
+
+const conflictingLocal={solved:{127:1,128:1,130:1},badges:{first:1},shards:4,xp:45,performances:{127:{badges:{speed:false},bestTime:72}}};
+const conflictingRemote={solved:{127:1,128:1},badges:{first:1},shards:13,xp:31,performances:{127:{badges:{speed:true,mastery:true,noError:true,autonomy:true},bestTime:51},128:{badges:{speed:true,mastery:true,noError:true,autonomy:true}}}};
+const localStorageReconcile=storage();
+localStorageReconcile.setItem('lumenProgressV1',JSON.stringify(conflictingLocal));
+const reconcileResult=reconcileCloudAchievements(localStorageReconcile,conflictingRemote);
+const reconciled=JSON.parse(localStorageReconcile.getItem('lumenProgressV1'));
+assert.equal(reconcileResult.changed,true);
+assert.equal(reconcileResult.currencyConflict,true);
+assert.equal(reconciled.shards,4,'Never change mutable shard balance');
+assert.equal(reconciled.xp,45,'Never change XP balance');
+assert.equal(reconciled.solved[130],1,'Never lose locally solved quests');
+assert.equal(reconciled.performances[127].badges.mastery,true,'Restore missing cloud badge');
+assert.equal(reconciled.performances[128].badges.speed,true,'Restore cloud-only performance');
+assert.equal(reconciled.performances[127].bestTime,51,'Preserve better performance');
+assert.equal(JSON.parse(localStorageReconcile.getItem(reconcileResult.backupKey)).shards,4,'Backup created');
+assert.equal(reconcileCloudAchievements(localStorageReconcile,conflictingRemote).changed,false,'Reconcile is idempotent');
+
 const cloudSrc=(await import('node:fs')).readFileSync(new URL('../src/persistence/cloud.js',import.meta.url),'utf8');
 const uiSrc=(await import('node:fs')).readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 const html=(await import('node:fs')).readFileSync(new URL('../index.html',import.meta.url),'utf8');
