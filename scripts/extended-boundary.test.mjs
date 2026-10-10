@@ -30,3 +30,16 @@ test("full 296 quest completion is recognized",()=>{
  const all=Object.fromEntries(Array.from({length:296},(_,i)=>[i,true]));
  assert.equal(nextAdventureBoundary(all).status,"complete");
 });
+
+test("pack boundaries derive from metadata for variable contiguous lengths",()=>{
+ const packs=[
+  {id:"base",access:"included",questIndices:[0,1,2]},
+  {id:"custom-a",access:"locked",questIndices:[3,4]},
+  {id:"custom-b",access:"locked",questIndices:[5,6,7,8]}
+ ];
+ assert.equal(extendedQuestLimit([],{},null,packs),3);
+ assert.equal(extendedQuestLimit(["custom-a"],{},null,packs),5);
+ assert.equal(extendedQuestLimit(["custom-a","custom-b"],{},null,packs),9);
+ assert.equal(extendedQuestLimit([], {solved:{3:1}},null,packs),5);
+ assert.equal(extendedQuestLimit(["custom-b"],{},null,packs),3);
+});
