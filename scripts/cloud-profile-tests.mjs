@@ -106,3 +106,7 @@ await assert.rejects(()=>compareAndSwapCloudProfile(cloudApi,{...guest,shards:9}
 assert.equal((await loadVerifiedProfile(cloudApi)).shards,7,'Stale second device cannot overwrite first device rewards');
 const noCloud={async rpc(name){if(name==='lumen_initialize_profile')return {data:null,error:{message:'offline'}};return {data:null,error:{message:'offline'}}}};
 await assert.rejects(()=>initializeCloudProfile(noCloud,guest),/Initialisation cloud impossible/);
+
+assert.ok(uiSrc.includes('async function celebrateSuccess()'),'Victory completion may await durable cloud acknowledgement');
+assert.ok(uiSrc.includes('if(!(await confirmCloudReward()))return;'),'Authenticated victory waits for committed cloud snapshot');
+assert.ok(uiSrc.includes('Ta victoire n\'est pas encore confirmée sur le cloud'),'Failed cloud write is visible and retryable');
