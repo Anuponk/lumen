@@ -75,7 +75,7 @@ assert.ok(uiSrc.includes('installCloudProfileLocally(localStorage,cloud)'),'Clou
 assert.ok(uiSrc.includes('holdLegacyMergeForFullRestore:async()=>true'),'Legacy merges disabled');
 assert.doesNotMatch(html,/id="migrationCloud(?:Save|Restore)"/);
 
-assert.ok(uiSrc.includes('function accountRequired(){return !qaActive&&!socialChallenge&&(!lumenUser||!cloudProfileReady)&&solvedCount()>=5}'),'Five quests are playable as guest, then account required');
+assert.ok(uiSrc.includes('function accountRequired(){return !qaActive&&!socialChallenge&&((!!lumenUser&&!cloudProfileReady)||(!lumenUser&&solvedCount()>=5))}'),'Five quests are playable as guest, then account required');
 assert.ok(uiSrc.includes('if(accountRequired()){maybeOfferAccount();hideSuccess();return}'),'Cannot advance beyond guest limit');
 assert.ok(uiSrc.includes('if(accountRequired())queueMicrotask(()=>maybeOfferAccount())'),'Reload cannot bypass guest gate');
 assert.ok(uiSrc.includes('if(accountRequired())return;'),'Account offer cannot be dismissed when required');
@@ -100,3 +100,9 @@ assert.equal(JSON.parse(localCloudStorage.getItem('lumenProgressV1')).shards,6);
 await assert.rejects(()=>compareAndSwapCloudProfile(cloudApi,{...guest,shards:7},{...guest,shards:100}),/Conflit/);
 assert.equal((await compareAndSwapCloudProfile(cloudApi,{...guest,shards:7},guest)).shards,7);
 assert.equal((await loadVerifiedProfile(cloudApi)).shards,7);
+
+const staleBaseline=structuredClone(guest);
+await assert.rejects(()=>compareAndSwapCloudProfile(cloudApi,{...guest,shards:9},staleBaseline),/Conflit/);
+assert.equal((await loadVerifiedProfile(cloudApi)).shards,7,'Stale second device cannot overwrite first device rewards');
+const noCloud={async rpc(name){if(name==='lumen_initialize_profile')return {data:null,error:{message:'offline'}};return {data:null,error:{message:'offline'}}}};
+await assert.rejects(()=>initializeCloudProfile(noCloud,guest),/Initialisation cloud impossible/);
