@@ -37,14 +37,53 @@ if(qaFresh){
 }
 const qaKey=suffix=>qaActive?"lumenQa"+suffix:suffix;
 const {normalizeSequentialProgress,solvedCount,exactSkyScoreForSolvedPrefix,ensureSkyScore,skyStarsEarned,challengeRewardKeys,constellationProgress,constellationLitAt,awards,performanceRun,savePerformance}=createCampaign(()=>lumenProgress,()=>saveLumenProgress(),()=>({activeGameSeconds,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted,qualifying:!!attemptEngine.snapshot()?.qualifying}));
-let cloudProfileReady=false,cloudProfileTimer=null,cloudProfileBusy=false,cloudProfileDirty=false,cloudProfileBaseline=null;
+let cloudProfileReady=false,cloudProfileTimer=null,cloudProfileBusy=false,cloudProfileDirty=false,cloudProfileBaseline=null,cloudProfileInFlight=null;
 async function flushCloudProfile(){
- if(cloudProfileBusy){cloudProfileDirty=true;return}
- if(!cloudProfileReady||!lumenUser||!lumenSupabase||qaActive)return;
+ if(cloudProfileBusy){
+  cloudProfileDirty=true;
+  await cloudProfileInFlight;
+  return flushCloudProfile();
+ }
+ if(!cloudProfileReady||!lumenUser||!lumenSupabase||qaActive)return false;
  cloudProfileBusy=true;
- try{cloudProfileBaseline=await compareAndSwapCloudProfile(lumenSupabase,lumenProgress,cloudProfileBaseline)}
- catch(e){console.warn("Lumen background cloud save failed; retry on next change",e)}
- finally{cloudProfileBusy=false;if(cloudProfileDirty){cloudProfileDirty=false;scheduleCloudProfile()}}
+ const current=JSON.parse(JSON.stringify(lumenProgress));
+ cloudProfileInFlight=(async()=>{
+  try{
+   cloudProfileBaseline=await compareAndSwapCloudProfile(lumenSupabase,current,cloudProfileBaseline);
+   return true;
+  }catch(e){
+   console.warn("Lumen cloud save not confirmed; progress must not advance",e);
+   return false;
+  }finally{
+   cloudProfileBusy=false;
+   if(cloudProfileDirty){cloudProfileDirty=false;scheduleCloudProfile()}
+  }
+ })();
+ return cloudProfileInFlight;
+}
+async function confirmCloudReward(){
+ if(qaActive||!lumenUser)return true;
+ if(cloudProfileTimer!==null){clearTimeout(cloudProfileTimer);cloudProfileTimer=null}
+ while(!(await flushCloudProfile())){
+  const retry=await new Promise(resolve=>{
+   const panel=document.createElement("div");
+   panel.id="cloudRewardPending";
+   panel.setAttribute("role","alertdialog");
+   panel.setAttribute("aria-modal","true");
+   panel.style.cssText="position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:rgba(0,0,0,.8);padding:24px";
+   const card=document.createElement("div");
+   card.style.cssText="background:#182238;color:white;padding:24px;max-width:420px;border-radius:14px;text-align:center";
+   const title=document.createElement("h2");title.textContent="Sauvegarde en attente";
+   const copy=document.createElement("p");copy.textContent="Ta victoire n'est pas encore confirmée sur le cloud. Vérifie ta connexion, puis réessaie. Ta progression locale est conservée.";
+   const again=document.createElement("button");again.textContent="Réessayer la sauvegarde";again.className="primary";
+   again.onclick=()=>{panel.remove();resolve(true)};
+   const reload=document.createElement("button");reload.textContent="Recharger mon profil cloud";
+   reload.onclick=()=>{location.reload();resolve(false)};
+   card.append(title,copy,again,reload);panel.append(card);document.body.append(panel);again.focus();
+  });
+  if(!retry)return false;
+ }
+ return true;
 }
 function scheduleCloudProfile(){
  if(!cloudProfileReady||!lumenUser||qaActive)return;
@@ -941,7 +980,7 @@ function celebrateLearningReplaySuccess(){
 }
 
 function renderSuccessRewards(stars){let el=document.getElementById("successRewards");if(!el)return;let run=performanceRun(levelIndex),rewards=[];if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});if(run.qualifying&&run.autonomy)rewards.push({cls:"autonomy",icon:performanceIcon("autonomy"),label:"Autonomie"});if(run.qualifying&&run.speed)rewards.push({cls:"speed",icon:performanceIcon("speed"),label:"Rapidité"});if(run.qualifying&&run.noError)rewards.push({cls:"no-error",icon:performanceIcon("noError"),label:"Sans erreur"});if(run.qualifying&&run.mastery)rewards.push({cls:"mastery",icon:performanceIcon("mastery"),label:"Maîtrise"});el.innerHTML=rewards.map((r,i)=>'<span class="success-reward '+r.cls+'" style="--reward-delay:'+(220+i*210)+'ms"><span>'+r.icon+'</span><span>'+r.label+'</span></span>').join("");el.classList.toggle("mastery-earned",!!run.mastery)}
-function celebrateSuccess(){
+async function celebrateSuccess(){
  if(celebrated)return;
  haptic([28,45,38]);
  if(socialChallenge){celebrateSocialChallengeSuccess();return}
@@ -983,6 +1022,7 @@ function celebrateSuccess(){
    // Autonomy rewards are handled from the shared #30 assistance definition.
  }
  saveLumenProgress();
+ if(!(await confirmCloudReward()))return;
  if(firstCompletion){cloudSavePuzzle(levelIndex);setTimeout(maybeOfferInstall,1600);setTimeout(maybeOfferPush,5200)}
  refreshJourney();
  pauseGameClock();
