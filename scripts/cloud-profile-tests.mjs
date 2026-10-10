@@ -70,7 +70,7 @@ const uiSrc=(await import('node:fs')).readFileSync(new URL('../src/ui/game-scree
 const html=(await import('node:fs')).readFileSync(new URL('../index.html',import.meta.url),'utf8');
 assert.equal(cloudSrc.split('hooks.afterAuthCloudSync?.()').length-1,2,'Cloud sync must run after both session and sign-in auth flows');
 assert.ok(uiSrc.includes('afterAuthCloudSync:async'),'Auth hook is wired');
-assert.ok(uiSrc.includes('compareAndSwapCloudProfile(lumenSupabase,lumenProgress,cloudProfileBaseline)'),'Atomic background write wired');
+assert.ok(uiSrc.includes('compareAndSwapCloudProfile(lumenSupabase,current,cloudProfileBaseline)'),'Atomic background write wired');
 assert.ok(uiSrc.includes('installCloudProfileLocally(localStorage,cloud)'),'Cloud overrides local after login');
 assert.ok(uiSrc.includes('holdLegacyMergeForFullRestore:async()=>true'),'Legacy merges disabled');
 assert.doesNotMatch(html,/id="migrationCloud(?:Save|Restore)"/);
