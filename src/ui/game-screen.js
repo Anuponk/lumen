@@ -116,7 +116,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   cloudProfileBaseline=cloud;
   if(changed){location.reload();return}
   cloudProfileReady=true;
-  const gate=document.getElementById("accountOptin");if(gate)gate.hidden=true;
+  const gate=document.getElementById("accountOptin");if(gate){const wasVisible=!gate.hidden;gate.hidden=true;if(wasVisible)showAccountSavedConfirmation()}
  }catch(e){console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
 },holdLegacyMergeForFullRestore:async()=>true},{setTimeout,console,qaMode});
 function tutorialCompletedProof(){
@@ -180,7 +180,7 @@ function updateAuthUI(){
  }
  syncMobileAuthUI();updateAdminTools();
  if(!lumenUser&&accountRequired())maybeOfferAccount();
- if(lumenUser&&wasOfferPending){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_success",null,{source:"account_offer",qa:qaActive});showAccountSavedConfirmation();const box=document.getElementById("accountOptin");if(box)box.hidden=true}
+ if(lumenUser&&wasOfferPending){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_success",null,{source:"account_offer",qa:qaActive});const box=document.getElementById("accountOptin");if(box)box.hidden=false}
 }
 function setupQaMode(){
  if(!qaActive)return;
