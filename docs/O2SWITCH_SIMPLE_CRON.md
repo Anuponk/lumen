@@ -26,11 +26,23 @@ Vérifier `https://lumen.nopuna.fr/`, les badges authentifiés, la PWA et les er
 
 ## Cron cPanel (après validation de la publication)
 
+Lumen réutilise le transport d'alertes de Nopuna : `~/nopuna-staging/scripts/o2switch-notify.php` et la clé Brevo privée déjà configurée sous `~/nopuna-private/brevo-key`. Il n'envoie **aucun email de succès ni de rétablissement**. À la première erreur réelle il tente un email `[Lumen] Échec de déploiement`; les répétitions restent silencieuses jusqu'à la prochaine publication réussie. Une CI encore en cours (code retour 75) n'est pas considérée comme un échec. Le transport Brevo peut échouer indépendamment ; un moniteur externe serait nécessaire pour surveiller l'arrêt complet du cron.
+
+**Une seule tâche cron Lumen**, toutes les minutes, séparée de celle de Nopuna. Dans cPanel, désactiver toute ancienne tâche Lumen avant de l'ajouter :
+
 ```cron
-*/5 * * * * /bin/bash /home/yuae0754/lumen-staging/scripts/o2switch-cron-publish.sh --deploy >> /home/yuae0754/lumen-cron.log 2>&1
+* * * * * /bin/bash /home/yuae0754/lumen-staging/scripts/o2switch-deploy-monitor.sh >> /home/yuae0754/lumen-deploy.log 2>&1
 ```
 
-Le verrou `flock` empêche les exécutions concurrentes. Une CI non verte ou une panne GitHub empêche le déploiement. Les sauvegardes dans `~/lumen-deploy-backups` s'accumulent et nécessitent une politique de rétention ; ne pas supprimer la dernière archive de reprise. Contrôler périodiquement les logs et le fonctionnement du cron.
+Le verrou `flock` empêche les exécutions concurrentes. Le log doit être redirigé dans un fichier pour éviter que cPanel n'envoie un email chaque minute. Une CI non verte ou une panne GitHub empêche le déploiement. Les sauvegardes dans `~/lumen-deploy-backups` s'accumulent et nécessitent une politique de rétention ; ne pas supprimer la dernière archive de reprise. Contrôler périodiquement les logs et le fonctionnement du cron.
+
+## Tester les notifications (sans incident réel)
+
+```bash
+printf 'Test de notification Lumen (aucun incident réel).\n' | php ~/nopuna-staging/scripts/o2switch-notify.php '[Lumen] Test alerte'
+```
+
+Vérifier la réception de l'email sur la même adresse que les alertes Nopuna. Ne pas afficher la clé Brevo.
 
 ## Restauration manuelle d'urgence
 
