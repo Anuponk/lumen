@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import {connectBrowser,acknowledgeLearningMilestones} from './cdp-client.mjs';
 import {CONTENT_PACKS} from '../src/campaign/content.js';
 const {send,evaluate,errors}=await connectBrowser(),sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const url=process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/';
+const url=new URL(process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/');url.searchParams.set('qa','new');
 const snapshot=()=>evaluate('lumenDiagnostics.snapshot()');
 async function ready(controlled=false){for(let i=0;i<150;i++){if(await evaluate(`!!window.lumenDiagnostics && (!${controlled} || !!navigator.serviceWorker.controller)`))return;await sleep(100)}throw Error('Application did not start: '+JSON.stringify(errors))}
 async function click(selector){const p=await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)}),r=e.getBoundingClientRect();if(!r.width||!r.height)throw Error('Hidden target '+${JSON.stringify(selector)});return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...p});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...p})}
@@ -15,8 +15,8 @@ try{
  for(const viewport of [{width:360,height:640,mobile:true},{width:390,height:844,mobile:true},{width:1440,height:900,mobile:false}]){
   await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});
   await send('Emulation.setTouchEmulationEnabled',{enabled:viewport.mobile,maxTouchPoints:1});
-  const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:'localStorage.clear();localStorage.setItem("lumenProgressV1",JSON.stringify({solved:{0:1,1:1},badges:{historical:1}}));localStorage.setItem("lumenSound","off");localStorage.setItem("lumenTutorialSeen","1");localStorage.setItem("lumenWelcomeDayV1",new Date().toLocaleDateString("en-CA"));localStorage.setItem("lumenInstallLater",String(Date.now()));localStorage.setItem("lumenPushChoice","later");'});
-  await send('Page.navigate',{url});await ready(true);await sleep(1500);await ready();await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});await acknowledgeLearningMilestones(evaluate);
+  const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:'localStorage.clear();localStorage.setItem("lumenQaProgressV1",JSON.stringify({solved:{0:1,1:1},badges:{historical:1}}));localStorage.setItem("lumenSound","off");localStorage.setItem("lumenTutorialSeen","1");localStorage.setItem("lumenQaTutorialSeen","1");localStorage.setItem("lumenQaTutorialCompletedV1","1");localStorage.setItem("lumenWelcomeDayV1",new Date().toLocaleDateString("en-CA"));localStorage.setItem("lumenInstallLater",String(Date.now()));localStorage.setItem("lumenPushChoice","later");'});
+  await send('Page.navigate',{url:url.href});await ready(true);await sleep(1500);await ready();await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});await acknowledgeLearningMilestones(evaluate);
   await click('#openSky');const original=await snapshot(),height=await fit();
   assert.equal(await evaluate('document.querySelectorAll(".sky-navigation").length'),1);assert.equal(await evaluate('document.querySelectorAll("#sectorTabs").length'),1);assert.equal(await evaluate('document.querySelectorAll("#mapDetail").length'),1);
   assert.equal(await evaluate('document.querySelectorAll("#sectorTabs .constellation-card").length'),6,JSON.stringify(await evaluate('({rect:document.getElementById("openSky").getBoundingClientRect().toJSON(),viewport:[innerWidth,innerHeight],mapHidden:document.getElementById("mapModal").hidden,sky:lumenDiagnostics.skySnapshot(),overlays:[...document.querySelectorAll("[id$=Overlay]")].filter(e=>!e.hidden).map(e=>e.id),hit:(()=>{const r=document.getElementById("openSky").getBoundingClientRect();return document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)?.outerHTML})()})')));
@@ -28,7 +28,7 @@ try{
   await click('#puzzleGrid .puzzle-card.done');assert((await snapshot()).replayMode);assert.deepEqual((await snapshot()).progress,original.progress);
   await click('#openSky');await click('#closeMap');assert((await snapshot()).replayMode,'Browsing must preserve replay');
   // Real prior progression beyond Adventure 1 remains accessible after reload.
-  await evaluate(`localStorage.setItem('lumenProgressV1',JSON.stringify({solved:Object.fromEntries(Array.from({length:100},(_,i)=>[i,1])),badges:{historical:1}}));localStorage.removeItem('lumenActiveAttemptV1')`);
+  await evaluate(`localStorage.setItem('lumenQaProgressV1',JSON.stringify({solved:Object.fromEntries(Array.from({length:100},(_,i)=>[i,1])),badges:{historical:1}}));localStorage.removeItem('lumenActiveAttemptV1')`);
   await send('Page.reload',{ignoreCache:true});await sleep(500);await ready();await acknowledgeLearningMilestones(evaluate);await click('#openSky');
   const restored=await snapshot();assert.equal(restored.levelIndex,100);assert.equal(await evaluate('lumenDiagnostics.skySnapshot().activeAdventure'),CONTENT_PACKS[1].id);
   await click('#adventureRail button');assert.equal(await evaluate('lumenDiagnostics.skySnapshot().viewedAdventure'),CONTENT_PACKS[0].id);assert.equal(await evaluate('lumenDiagnostics.skySnapshot().activeAdventure'),CONTENT_PACKS[1].id);assert.deepEqual(await snapshot(),restored);
@@ -55,11 +55,11 @@ try{
   await evaluate('lumenDiagnostics.setSkyCatalogue(null)');await fit();
   const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(`docs/validation/issue96-${viewport.width}.png`,Buffer.from(shot.data,'base64'));
   // New player completes the free Adventure and sees a locked next Adventure.
-  await evaluate(`localStorage.setItem('lumenProgressV1',JSON.stringify({solved:Object.fromEntries(Array.from({length:${CONTENT_PACKS[0].questCount-1}},(_,i)=>[i,1])),badges:{historical:1}}));localStorage.removeItem('lumenActiveAttemptV1')`);
+  await evaluate(`localStorage.setItem('lumenQaProgressV1',JSON.stringify({solved:Object.fromEntries(Array.from({length:${CONTENT_PACKS[0].questCount-1}},(_,i)=>[i,1])),badges:{historical:1}}));localStorage.removeItem('lumenActiveAttemptV1')`);
   await send('Page.reload',{ignoreCache:true});await sleep(500);await ready();await acknowledgeLearningMilestones(evaluate);
   assert.equal((await snapshot()).levelIndex,CONTENT_PACKS[0].questCount-1);
   await evaluate('(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');await until('!document.getElementById("skyReveal").hidden');await click('#skyRevealContinue');
-  assert.match(await evaluate('document.getElementById("adventureNoticeTitle").textContent'),/Aventure terminée/);await click('#adventureNext');assert.match(await evaluate('document.getElementById("adventureNoticeCopy").textContent'),/verrouillée/);await click('#adventureNoticeClose');
+  assert.match(await evaluate('document.getElementById("adventureNoticeTitle").textContent'),/Aventure terminée/);await evaluate('document.getElementById("adventureNext").click()');assert.match(await evaluate('document.getElementById("adventureNoticeCopy").textContent'),/verrouillée/);await click('#adventureNoticeClose');
   const won=await snapshot();assert.equal(won.progress.solved[CONTENT_PACKS[0].questCount],undefined);
   await send('Page.reload',{ignoreCache:true});await sleep(500);await ready();assert.equal((await snapshot()).levelIndex,CONTENT_PACKS[0].questCount-1);assert.deepEqual((await snapshot()).progress,won.progress);
   results.push({viewport,height,pagination:[1,6,7,12,103],adventures:40,multipleSkies:true,accessPreserved:true,browsingIsolated:true,lockedAdventure:true,replay:true,completion:true,noVerticalOverflow:true});

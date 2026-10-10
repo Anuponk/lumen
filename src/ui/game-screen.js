@@ -4,7 +4,7 @@ import {createHintTestSuite} from "../testing/hint-tests.js";
 import {createDiagnostics} from "../testing/diagnostics.js";
 import {createLocalPersistence} from "../persistence/local.js";
 import {createCloudPersistence} from "../persistence/cloud.js";
-import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievements,sameCloudProfile} from "../persistence/cloud-profile.js";
+import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievements,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
@@ -37,14 +37,53 @@ if(qaFresh){
 }
 const qaKey=suffix=>qaActive?"lumenQa"+suffix:suffix;
 const {normalizeSequentialProgress,solvedCount,exactSkyScoreForSolvedPrefix,ensureSkyScore,skyStarsEarned,challengeRewardKeys,constellationProgress,constellationLitAt,awards,performanceRun,savePerformance}=createCampaign(()=>lumenProgress,()=>saveLumenProgress(),()=>({activeGameSeconds,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted,qualifying:!!attemptEngine.snapshot()?.qualifying}));
-let cloudProfileReady=false,cloudProfileTimer=null,cloudProfileBusy=false,cloudProfileDirty=false,cloudProfileBaseline=null;
+let cloudProfileReady=false,cloudProfileTimer=null,cloudProfileBusy=false,cloudProfileDirty=false,cloudProfileBaseline=null,cloudProfileInFlight=null;
 async function flushCloudProfile(){
- if(cloudProfileBusy){cloudProfileDirty=true;return}
- if(!cloudProfileReady||!lumenUser||!lumenSupabase||qaActive)return;
+ if(cloudProfileBusy){
+  cloudProfileDirty=true;
+  await cloudProfileInFlight;
+  return flushCloudProfile();
+ }
+ if(!cloudProfileReady||!lumenUser||!lumenSupabase||qaActive)return false;
  cloudProfileBusy=true;
- try{cloudProfileBaseline=await backupIfUnchanged(lumenSupabase,lumenProgress,cloudProfileBaseline)}
- catch(e){console.warn("Lumen background cloud save failed; retry on next change",e)}
- finally{cloudProfileBusy=false;if(cloudProfileDirty){cloudProfileDirty=false;scheduleCloudProfile()}}
+ const current=JSON.parse(JSON.stringify(lumenProgress));
+ cloudProfileInFlight=(async()=>{
+  try{
+   cloudProfileBaseline=await compareAndSwapCloudProfile(lumenSupabase,current,cloudProfileBaseline);
+   return true;
+  }catch(e){
+   console.warn("Lumen cloud save not confirmed; progress must not advance",e);
+   return false;
+  }finally{
+   cloudProfileBusy=false;
+   if(cloudProfileDirty){cloudProfileDirty=false;scheduleCloudProfile()}
+  }
+ })();
+ return cloudProfileInFlight;
+}
+async function confirmCloudReward(){
+ if(qaActive||!lumenUser)return true;
+ if(cloudProfileTimer!==null){clearTimeout(cloudProfileTimer);cloudProfileTimer=null}
+ while(!(await flushCloudProfile())){
+  const retry=await new Promise(resolve=>{
+   const panel=document.createElement("div");
+   panel.id="cloudRewardPending";
+   panel.setAttribute("role","alertdialog");
+   panel.setAttribute("aria-modal","true");
+   panel.style.cssText="position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:rgba(0,0,0,.8);padding:24px";
+   const card=document.createElement("div");
+   card.style.cssText="background:#182238;color:white;padding:24px;max-width:420px;border-radius:14px;text-align:center";
+   const title=document.createElement("h2");title.textContent="Sauvegarde en attente";
+   const copy=document.createElement("p");copy.textContent="Ta victoire n'est pas encore confirmée sur le cloud. Vérifie ta connexion, puis réessaie. Ta progression locale est conservée.";
+   const again=document.createElement("button");again.textContent="Réessayer la sauvegarde";again.className="primary";
+   again.onclick=()=>{panel.remove();resolve(true)};
+   const reload=document.createElement("button");reload.textContent="Recharger mon profil cloud";
+   reload.onclick=()=>{location.reload();resolve(false)};
+   card.append(title,copy,again,reload);panel.append(card);document.body.append(panel);again.focus();
+  });
+  if(!retry)return false;
+ }
+ return true;
 }
 function scheduleCloudProfile(){
  if(!cloudProfileReady||!lumenUser||qaActive)return;
@@ -67,43 +106,19 @@ get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){used
 };
 const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,sendEmailOtp,verifyEmailOtp,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI()},renderDaily:(...args)=>renderDaily(...args),afterAuthCloudSync:async()=>{
  if(qaActive||!lumenUser||!lumenSupabase)return;
- cloudProfileReady=false;
- cloudProfileBaseline=null;
+ cloudProfileReady=false;cloudProfileBaseline=null;
  try{
-   const remote=await loadVerifiedProfile(lumenSupabase);
-   const raw=localStorage.getItem("lumenProgressV1");
-   const local=raw?JSON.parse(raw):null;
-   const hasLocal=local&&(Object.values(local.solved||{}).some(Boolean)||Object.keys(local.badges||{}).length||Object.keys(local.stars||{}).length||Object.keys(local.performances||{}).length||Number(local.shards||3)>3);
-   if(!remote){
-     if(location.origin==="https://lumen-xi-seven.vercel.app"){
-       await backupAndVerifyProfile(lumenSupabase,lumenProgress);
-       cloudProfileBaseline=JSON.parse(JSON.stringify(lumenProgress));
-       cloudProfileReady=true;
-     }
-     return;
-   }
-   if(location.origin==="https://lumen.nopuna.fr"){
-     let result;
-     try{result=restoreRicherCloudProfile(localStorage,remote)}
-     catch(error){
-       if(!String(error.message||error).includes("Profil local divergent"))throw error;
-       result=reconcileCloudAchievements(localStorage,remote);
-       if(result.currencyConflict)console.warn("Lumen: éclats locaux et cloud divergents. Solde local conservé ; aucune synchronisation de monnaie sans validation.");
-     }
-     if(result.changed){location.reload();return}
-   }
-   if(!sameCloudProfile(remote,lumenProgress)){
-     console.warn("Lumen: profil local différent du cloud. Sauvegarde automatique suspendue pour protéger les badges et éclats.");
-     return;
-   }
-   cloudProfileBaseline=remote;
-   cloudProfileReady=true;
- }catch(e){console.warn("Lumen full-profile automatic sync failed; local save preserved",e)}
-},holdLegacyMergeForFullRestore:async()=>{
- if(location.origin!=="https://lumen.nopuna.fr"||qaActive)return false;
- try{return !!(await loadVerifiedProfile(lumenSupabase))}
- catch(e){console.warn("Full profile restore preflight failed; avoid unsafe legacy merge",e);return true}
-}},{setTimeout,console,qaMode});
+  const original=localStorage.getItem("lumenProgressV1");
+  const incoming=original?JSON.parse(original):lumenProgress;
+  // First login: create the profile exactly once. An existing cloud profile wins.
+  const cloud=await initializeCloudProfile(lumenSupabase,incoming);
+  const changed=installCloudProfileLocally(localStorage,cloud);
+  cloudProfileBaseline=cloud;
+  if(changed){location.reload();return}
+  cloudProfileReady=true;
+  const gate=document.getElementById("accountOptin");if(gate){const wasVisible=!gate.hidden;gate.hidden=true;if(wasVisible)showAccountSavedConfirmation()}
+ }catch(e){console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
+},holdLegacyMergeForFullRestore:async()=>true},{setTimeout,console,qaMode});
 function tutorialCompletedProof(){
  try{if(localStorage.getItem(qaKey("lumenTutorialCompletedV1"))==="1")return true}catch(_){}
  return !!(lumenProgress?.solved?.[0]&&lumenProgress?.solved?.[1]);
@@ -123,8 +138,16 @@ let accountOfferSignInPending=false;
 function accountOfferKey(name){return qaKey("lumenAccountOffer"+name)}
 function showAccountSavedConfirmation(){const toast=document.getElementById("accountSavedToast");if(!toast)return;toast.hidden=false;setTimeout(()=>{toast.hidden=true},2200)}
 function accountOfferMilestone(){return solvedCount()>=5?5:0}
-function maybeOfferAccount(){if(lumenUser||socialChallenge||solvedCount()<5)return false;const box=document.getElementById("accountOptin");if(!box)return false;box.hidden=false;trackLumenEvent("account_offer_shown",null,{milestone:5,source:"quest_5_gate",qa:qaActive});return true}
-function dismissAccountOffer(){const box=document.getElementById("accountOptin");if(!box||box.hidden)return;trackLumenEvent("account_offer_required",null,{milestone:5,source:"quest_5_gate",qa:qaActive})}
+function accountRequired(){return !qaActive&&!socialChallenge&&((!!lumenUser&&!cloudProfileReady)||(!lumenUser&&solvedCount()>=5))}
+function maybeOfferAccount(){
+ if(!accountRequired())return false;
+ const box=document.getElementById("accountOptin");
+ if(!box)return false;
+ box.hidden=false;
+ trackLumenEvent("account_offer_shown",null,{milestone:5,source:"quest_5_gate",qa:qaActive});
+ return true;
+}
+function dismissAccountOffer(){const box=document.getElementById("accountOptin");if(!box||box.hidden)return;if(accountRequired())return;trackLumenEvent("account_offer_required",null,{milestone:5,source:"quest_5_gate",qa:qaActive})}
 async function acceptAccountOffer(){const box=document.getElementById("accountOptin");if(box)box.hidden=true;const milestone=accountOfferMilestone();trackLumenEvent("account_offer_accept",null,{milestone,source:"constellation_complete",qa:qaActive});if(!lumenSupabase){trackLumenEvent("account_signin_failure",null,{milestone,reason:"cloud_unavailable",qa:qaActive});return}accountOfferSignInPending=true;try{sessionStorage.setItem("lumenAccountOfferSignInPending","1")}catch(_){}const result=await signIn(new URL("/", location.origin).toString());if(!result.ok){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_failure",null,{milestone,reason:result.reason||"oauth",qa:qaActive})}}
 function openEmailAccountOffer(){const panel=document.getElementById("accountEmailAuth");if(panel)panel.hidden=false;document.getElementById("accountEmail")?.focus();trackLumenEvent("account_email_selected",null,{milestone:5,source:"quest_5_gate",qa:qaActive})}
 async function requestAccountEmailOtp(){const email=document.getElementById("accountEmail")?.value,status=document.getElementById("accountEmailStatus");if(status)status.textContent="Envoi du code…";const result=await sendEmailOtp(email);if(!result.ok){if(status)status.textContent=result.reason==="email"?"Entre une adresse email valide.":"Impossible d’envoyer le code. Réessaie.";trackLumenEvent("account_signin_failure",null,{milestone:5,method:"email_otp",stage:"send",qa:qaActive});return}accountOfferSignInPending=true;try{sessionStorage.setItem("lumenAccountOfferSignInPending","1");sessionStorage.setItem("lumenAccountOtpEmail",result.email)}catch(_){}const step=document.getElementById("accountOtpStep");if(step)step.hidden=false;if(status)status.textContent="Code envoyé. Vérifie tes emails.";document.getElementById("accountOtp")?.focus();trackLumenEvent("account_otp_sent",null,{milestone:5,qa:qaActive})}
@@ -156,7 +179,8 @@ function updateAuthUI(){
    login.hidden=false; logout.hidden=true;
  }
  syncMobileAuthUI();updateAdminTools();
- if(lumenUser&&wasOfferPending){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_success",null,{source:"account_offer",qa:qaActive});showAccountSavedConfirmation();const box=document.getElementById("accountOptin");if(box)box.hidden=true}
+ if(!lumenUser&&accountRequired())maybeOfferAccount();
+ if(lumenUser&&wasOfferPending){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_success",null,{source:"account_offer",qa:qaActive});const box=document.getElementById("accountOptin");if(box)box.hidden=false}
 }
 function setupQaMode(){
  if(!qaActive)return;
@@ -770,7 +794,7 @@ function hintEconomySeenKey(){return qaKey("lumenHintEconomySeenV1")}
 function maybeShowHintEconomyTransition(){if(levelIndex!==9||socialChallenge||replayMode)return;let seen=false;try{seen=localStorage.getItem(hintEconomySeenKey())==="1"}catch(_){}if(seen)return;try{localStorage.setItem(hintEconomySeenKey(),"1")}catch(_){}const card=document.getElementById("scriptedLearn");if(!card)return;learningTip={title:"Dernière quête avec indices offerts",copy:"Jusqu’à la fin de cette quête 10, tous les indices restent offerts. Dès la quête 11, le premier indice reste gratuit puis les suivants utilisent tes Éclats."};updateScriptedLearning()}
 function prepareQuestStart(){let q=bonusChallengeFor(levelIndex),o=document.getElementById("questStart");questFailed=false;if(!q||lumenProgress.stars[q.id]){questStarted=true;o.hidden=true;resumeGameClock();return}questStarted=false;pauseGameClock();document.getElementById("questStartTitle").textContent=q.title;document.getElementById("questStartRule").textContent=q.copy+" Récompense : +25 XP et +1 ✦ éclat.";o.hidden=false}
 document.getElementById("questGo").onclick=()=>{document.getElementById("questStart").hidden=true;questStarted=true;clock();updateAttemptUI()};
-function init(){setLearningReplaySuccessMode(false);document.getElementById("successNew").textContent="Quête suivante";updateLearningSuccessCTA();learningTip=null;learningTipSeen=new Set();learningStage="place";learningIntroStep=0;choose();configureLearningMode();applyQuestRestrictions();maybeShowBadgeMilestone();maybeShowAutoCrossUnlock();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl){const generated=generatedQuestProgress(levelIndex),constellationIndex=chapterForGrid(levelIndex),constellation=generated?{name:generated.constellationLabel}:CONSTELLATIONS[constellationIndex],range=generated?{quests:mapConstellationRange(24+Math.floor((levelIndex-196)/10)).quests,count:generated.total}:constellationGridRange(constellationIndex),position=Math.max(1,range.quests.indexOf(levelIndex)+1);cl.textContent="Quête "+(levelIndex+1)+" - "+(constellation?.name||"Constellation")+" ("+position+"/"+range.count+")";}document.getElementById("difficulty").textContent=n===7?"7 × 7 · constellation étendue":n===8?"8 × 8 · constellation étendue":"";state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];const hintCard=document.getElementById("hintCard");if(hintCard)hintCard.hidden=true;celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;guidedDeferred=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,100);
+function init(){if(accountRequired())queueMicrotask(()=>maybeOfferAccount());setLearningReplaySuccessMode(false);document.getElementById("successNew").textContent="Quête suivante";updateLearningSuccessCTA();learningTip=null;learningTipSeen=new Set();learningStage="place";learningIntroStep=0;choose();configureLearningMode();applyQuestRestrictions();maybeShowBadgeMilestone();maybeShowAutoCrossUnlock();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl){const generated=generatedQuestProgress(levelIndex),constellationIndex=chapterForGrid(levelIndex),constellation=generated?{name:generated.constellationLabel}:CONSTELLATIONS[constellationIndex],range=generated?{quests:mapConstellationRange(24+Math.floor((levelIndex-196)/10)).quests,count:generated.total}:constellationGridRange(constellationIndex),position=Math.max(1,range.quests.indexOf(levelIndex)+1);cl.textContent="Quête "+(levelIndex+1)+" - "+(constellation?.name||"Constellation")+" ("+position+"/"+range.count+")";}document.getElementById("difficulty").textContent=n===7?"7 × 7 · constellation étendue":n===8?"8 × 8 · constellation étendue":"";state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];const hintCard=document.getElementById("hintCard");if(hintCard)hintCard.hidden=true;celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;guidedDeferred=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,100);
  const restored=attemptEngine.restore({questId:levelIndex+1,mode:attemptMode()});
  if(restored&&Array.isArray(restored.board)&&restored.board.length===n){state=restored.board.map(row=>row.slice());render()}else {const perf=lumenProgress.performances?.[levelIndex],eligible=currentPerformanceEligibility(levelIndex),hasEligible=Object.values(eligible).some(Boolean),qualifying=hasEligible&&perf?.lastQualifiedDay!==localCalendarDay();attemptEngine.create({questId:levelIndex+1,mode:attemptMode(),qualifying:socialChallenge?false:qualifying,challengeId:socialChallenge?.challenge_id||null,board:state});}
  clock();prepareQuestStart();updateAttemptUI();updateScriptedLearning();maybeShowHintEconomyTransition()}
@@ -956,7 +980,7 @@ function celebrateLearningReplaySuccess(){
 }
 
 function renderSuccessRewards(stars){let el=document.getElementById("successRewards");if(!el)return;let run=performanceRun(levelIndex),rewards=[];if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});if(run.qualifying&&run.autonomy)rewards.push({cls:"autonomy",icon:performanceIcon("autonomy"),label:"Autonomie"});if(run.qualifying&&run.speed)rewards.push({cls:"speed",icon:performanceIcon("speed"),label:"Rapidité"});if(run.qualifying&&run.noError)rewards.push({cls:"no-error",icon:performanceIcon("noError"),label:"Sans erreur"});if(run.qualifying&&run.mastery)rewards.push({cls:"mastery",icon:performanceIcon("mastery"),label:"Maîtrise"});el.innerHTML=rewards.map((r,i)=>'<span class="success-reward '+r.cls+'" style="--reward-delay:'+(220+i*210)+'ms"><span>'+r.icon+'</span><span>'+r.label+'</span></span>').join("");el.classList.toggle("mastery-earned",!!run.mastery)}
-function celebrateSuccess(){
+async function celebrateSuccess(){
  if(celebrated)return;
  haptic([28,45,38]);
  if(socialChallenge){celebrateSocialChallengeSuccess();return}
@@ -998,6 +1022,7 @@ function celebrateSuccess(){
    // Autonomy rewards are handled from the shared #30 assistance definition.
  }
  saveLumenProgress();
+ if(!(await confirmCloudReward()))return;
  if(firstCompletion){cloudSavePuzzle(levelIndex);setTimeout(maybeOfferInstall,1600);setTimeout(maybeOfferPush,5200)}
  refreshJourney();
  pauseGameClock();
@@ -1419,6 +1444,7 @@ const ac=document.getElementById("autoCross");
 const lumenAutoCrossStored=localStorage.getItem("lumenAutoCross");const legacyAutoCrossStored=localStorage.getItem("regaliaAutoCross");ac.checked=(lumenAutoCrossStored??legacyAutoCrossStored)!=="0";if(lumenAutoCrossStored===null&&legacyAutoCrossStored!==null){localStorage.setItem("lumenAutoCross",legacyAutoCrossStored);localStorage.removeItem("regaliaAutoCross")};
 ac.onchange=()=>{if(celebrated){ac.checked=!ac.checked;return}if(levelIndex<=4&&!replayMode){ac.checked=false;return}if(ac.checked){autoUsedThisGame=true;attemptEngine.markAssistance();trackAttemptEvent("auto_marking_enabled")}localStorage.setItem("lumenAutoCross",ac.checked?"1":"0");if(!ac.checked)maybeShowManualCrossTip();hi=null;render()};
 function advanceToNextPuzzle(){
+ if(accountRequired()){maybeOfferAccount();hideSuccess();return}
  if(!lumenProgress.solved[levelIndex])return;
  if(levelIndex===4&&!replayMode&&!socialChallenge&&typeof maybeOfferAccount==='function'&&maybeOfferAccount()){hideSuccess();return}
  // "Quête suivante" is relative to the quest just played, including replays.

@@ -16,7 +16,7 @@ async function click(selector){
 const snapshot=()=>evaluate(`JSON.stringify({quest:lumenDiagnostics.snapshot().levelIndex,state:lumenDiagnostics.snapshot().state,progress:lumenDiagnostics.snapshot().progress,stage:document.getElementById('board').dataset.learningStage})`);
 try{
  await send('Page.enable');await send('Runtime.enable');
- await send('Page.addScriptToEvaluateOnNewDocument',{source:'localStorage.setItem("lumenProgressV1",JSON.stringify({solved:Object.fromEntries(Array.from({length:11},(_,i)=>[i,1])),badges:{}}));localStorage.setItem("lumenSound","off");localStorage.setItem("lumenTutorialSeen","1");localStorage.setItem("lumenInstallLater",String(Date.now()));localStorage.setItem("lumenPushChoice","later");'});
+ await send('Page.addScriptToEvaluateOnNewDocument',{source:'localStorage.setItem("lumenProgressV1",JSON.stringify({solved:Object.fromEntries(Array.from({length:4},(_,i)=>[i,1])),badges:{}}));localStorage.setItem("lumenSound","off");localStorage.setItem("lumenTutorialSeen","1");localStorage.setItem("lumenInstallLater",String(Date.now()));localStorage.setItem("lumenPushChoice","later");'});
  await send('Page.navigate',{url:process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/'});
  for(let i=0;i<100&&!await evaluate('!!window.lumenDiagnostics');i++)await sleep(100);
  assert(await evaluate('!!window.lumenDiagnostics'),'Application did not start');await sleep(1200);

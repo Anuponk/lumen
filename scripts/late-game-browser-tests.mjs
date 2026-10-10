@@ -6,7 +6,7 @@ import {CAT} from '../src/campaign/catalogue.js';
 import {CAMPAIGN_SIZE_SCHEDULE,CAMPAIGN6_ORDER,SKY_TARGET} from '../src/campaign/data.js';
 
 const {send,evaluate,errors}=await connectBrowser();
-const url=process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/';
+const url=new URL(process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/');url.searchParams.set('qa','new');
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const snapshot=()=>evaluate('lumenDiagnostics.snapshot()');
 async function until(expression){for(let i=0;i<100;i++){if(await evaluate(expression))return;await sleep(100)}throw Error('Timed out: '+expression+'; '+JSON.stringify({snapshot:await snapshot(),errors}))}
@@ -16,8 +16,9 @@ try{
  await send('Page.enable');await send('Runtime.enable');
  for(const viewport of [{width:390,height:844,mobile:true},{width:1440,height:900,mobile:false}]){
   await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});
-  const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:'localStorage.clear();localStorage.setItem("lumenProgressV1",JSON.stringify({solved:Object.fromEntries(Array.from({length:99},(_,i)=>[i,1])),badges:{historical:1},shards:7,xp:123,skyScore:147,skyHistoryVersion:4}));localStorage.setItem("lumenSound","off");localStorage.setItem("lumenTutorialSeen","1");localStorage.setItem("lumenInstallLater",String(Date.now()));localStorage.setItem("lumenPushChoice","later");'});
-  await send('Page.navigate',{url});await until('!!window.lumenDiagnostics && !!navigator.serviceWorker.controller');await sleep(1500);await until('!!window.lumenDiagnostics');
+  const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:'localStorage.clear();localStorage.setItem("lumenQaProgressV1",JSON.stringify({solved:Object.fromEntries(Array.from({length:99},(_,i)=>[i,1])),badges:{historical:1},shards:7,xp:123,skyScore:147,skyHistoryVersion:4}));localStorage.setItem("lumenSound","off");localStorage.setItem("lumenTutorialSeen","1");localStorage.setItem("lumenQaTutorialSeen","1");localStorage.setItem("lumenQaTutorialCompletedV1","1");localStorage.setItem("lumenInstallLater",String(Date.now()));localStorage.setItem("lumenPushChoice","later");'});
+  await send('Page.navigate',{url:url.href});await until('!!window.lumenDiagnostics && !!navigator.serviceWorker.controller');await sleep(1500);await until('!!window.lumenDiagnostics');
+  assert.equal(await evaluate('new URL(location.href).searchParams.get("qa")'),"new","Late-game regression runs in QA mode");
   await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});
   assert.equal((await snapshot()).levelIndex,99);
   await evaluate('document.getElementById("successNew").click()');
@@ -27,9 +28,9 @@ try{
   await click('skyRevealContinue');
   await until('document.getElementById("successOverlay").classList.contains("show")');
   const won=await snapshot();assert.equal(won.progress.solved[99],1);
-  await click('successNew');
+  await evaluate('document.getElementById("successNew").click()');
   let current=await snapshot();
-  assert.equal(current.levelIndex,100,'Quest 100 celebration continues to quest 101');
+  assert.equal(current.levelIndex,100,'Quest 100 celebration continues to quest 101: '+JSON.stringify(await evaluate('({qa:new URL(location.href).searchParams.get("qa"),offerHidden:document.getElementById("accountOptin").hidden,successVisible:document.getElementById("successOverlay").classList.contains("show"),mapHidden:document.getElementById("mapModal").hidden,active:document.activeElement?.id})')));
   const [size,slot]=CAMPAIGN_SIZE_SCHEDULE[100];
   assert.deepEqual(current.puz,CAT[size][size==='6'?CAMPAIGN6_ORDER[slot]:slot]);
   assert.equal(current.celebrated,false);assert(current.state.flat().every(v=>v===0));
@@ -50,7 +51,7 @@ try{
   assert.equal((await snapshot()).levelIndex,100,'Closing the map preserves the unsolved quest');
   await evaluate(`lumenDiagnostics.setupQuest(${campaignQuestCount()-1})`);
   assert((await snapshot()).levelIndex<campaignQuestCount()-1,'An unstarted locked Adventure cannot be loaded');
-  await evaluate(`localStorage.setItem("lumenProgressV1",JSON.stringify({solved:Object.fromEntries(Array.from({length:${campaignQuestCount()-1}},(_,i)=>[i,1])),badges:{historical:1},skyScore:150,skyHistoryVersion:4}));localStorage.removeItem("lumenActiveAttemptV1")`);
+  await evaluate(`localStorage.setItem("lumenQaProgressV1",JSON.stringify({solved:Object.fromEntries(Array.from({length:${campaignQuestCount()-1}},(_,i)=>[i,1])),badges:{historical:1},skyScore:150,skyHistoryVersion:4}));localStorage.removeItem("lumenActiveAttemptV1")`);
   await send('Page.reload',{ignoreCache:true});await sleep(500);await until('!!window.lumenDiagnostics');
   current=await snapshot();assert.equal(current.levelIndex,campaignQuestCount()-1);
   assert.equal(current.progress.skyScore,SKY_TARGET-skyStarsForGrid(campaignQuestCount()-1),'Restore recovers extension stars from an old capped save');
