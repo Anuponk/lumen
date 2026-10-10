@@ -66,3 +66,57 @@ export function restoreIntoEmptyGuestStorage(storage,remote){
   if(storage.getItem(key)!==snapshot)throw Error("La vérification de l'enregistrement local a échoué");
   return {solved:Object.values(incoming.solved).filter(Boolean).length};
 }
+
+/**
+ * Restore a richer cloud profile only when no local achievement can be lost.
+ * Monetary balances are NOT merged: the full remote snapshot must be at least
+ * as high, and local progress is archived before replacement.
+ */
+export function cloudSafelyCoversLocal(local,remote){
+  if(!local || typeof local!=="object" || Array.isArray(local))return true;
+  const cloud=validateCloudProfile(remote);
+  for(const field of ["shards","xp","skyScore"]){
+    if(Number(local[field]||0)>Number(cloud[field]||0))return false;
+  }
+  for(const field of ["solved","historyBackup","badges","stars","noHint"]){
+    for(const [key,value] of Object.entries(local[field]||{})){
+      if(value && !cloud[field]?.[key])return false;
+    }
+  }
+  for(const [key,perf] of Object.entries(local.performances||{})){
+    const saved=cloud.performances?.[key];
+    if(!saved)return false;
+    for(const [badge,earned] of Object.entries(perf.badges||{}))
+      if(earned && !saved.badges?.[badge])return false;
+    const localBest=Number(perf.bestTime);
+    const remoteBest=Number(saved.bestTime);
+    if(Number.isFinite(localBest)&&localBest>0&&(!Number.isFinite(remoteBest)||remoteBest>localBest))return false;
+  }
+  // Dates and challenges may contain non-repeatable rewards and are not safely
+  // unionable. Require equivalent values to avoid silent drops.
+  for(const field of ["daily","challenges"]){
+    const current=local[field];
+    if(current && Object.keys(current).length && !sameCloudProfile(current,cloud[field]||{}))return false;
+  }
+  return true;
+}
+export function restoreRicherCloudProfile(storage,remote){
+  const incoming=validateCloudProfile(remote);
+  const key="lumenProgressV1";
+  const raw=storage.getItem(key);
+  if(!raw)return restoreIntoEmptyGuestStorage(storage,incoming);
+  let local;
+  try{local=JSON.parse(raw)}catch{throw Error("Sauvegarde locale illisible : restauration bloquée")}
+  if(sameCloudProfile(local,incoming))return {changed:false};
+  if(!cloudSafelyCoversLocal(local,incoming))throw Error("Profil local divergent : restauration automatique suspendue");
+  const backupKey="lumenBeforeCloudRestore_"+Date.now();
+  storage.setItem(backupKey,raw);
+  if(storage.getItem(backupKey)!==raw)throw Error("Impossible de conserver la sauvegarde locale");
+  const snapshot=JSON.stringify(incoming);
+  storage.setItem(key,snapshot);
+  if(storage.getItem(key)!==snapshot){
+    storage.setItem(key,raw);
+    throw Error("Restauration locale non vérifiée");
+  }
+  return {changed:true,backupKey};
+}
