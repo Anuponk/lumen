@@ -120,3 +120,66 @@ export function restoreRicherCloudProfile(storage,remote){
   }
   return {changed:true,backupKey};
 }
+
+/**
+ * Apply only monotonic achievements from the cloud to the local device.
+ * Never guess which mutable currency balance or XP is authoritative.
+ * Never write back to the cloud as part of this reconciliation.
+ */
+export function reconcileCloudAchievements(storage,remote){
+  const cloud=validateCloudProfile(remote);
+  const key="lumenProgressV1";
+  const raw=storage.getItem(key);
+  if(raw===null)return restoreIntoEmptyGuestStorage(storage,cloud);
+  let local;
+  try{local=JSON.parse(raw)}catch{throw Error("Profil local illisible : aucun changement")}
+  if(!local||typeof local!=="object"||Array.isArray(local))throw Error("Profil local invalide");
+  const merged=structuredClone(local);
+  let changed=false;
+  for(const field of ["solved","historyBackup"]){
+    if(!merged[field]||typeof merged[field]!=="object")merged[field]={};
+    for(const [quest,done] of Object.entries(cloud[field]||{})){
+      if(done&&!merged[field][quest]){merged[field][quest]=done;changed=true}
+    }
+  }
+  merged.performances=merged.performances||{};
+  for(const [quest,incoming] of Object.entries(cloud.performances||{})){
+    if(!incoming||typeof incoming!=="object"||Array.isArray(incoming))continue;
+    const current=merged.performances[quest];
+    if(!current){
+      merged.performances[quest]=structuredClone(incoming);
+      changed=true;
+      continue;
+    }
+    const existingBadges=current.badges||{};
+    const nextBadges={...existingBadges};
+    for(const [badge,earned] of Object.entries(incoming.badges||{})){
+      if(earned&&!nextBadges[badge]){nextBadges[badge]=true;changed=true}
+    }
+    const localTime=Number(current.bestTime);
+    const cloudTime=Number(incoming.bestTime);
+    if(Number.isFinite(cloudTime)&&cloudTime>0&&
+       (!Number.isFinite(localTime)||localTime<=0||cloudTime<localTime)){
+      current.bestTime=incoming.bestTime;
+      changed=true;
+    }
+    if(changed&&JSON.stringify(nextBadges)!==JSON.stringify(existingBadges))current.badges=nextBadges;
+  }
+  // Global badges can be scalar flags or structured objects: add only missing
+  // top-level rewards, never overwrite existing local values.
+  merged.badges=merged.badges||{};
+  for(const [name,value] of Object.entries(cloud.badges||{})){
+    if(!Object.hasOwn(merged.badges,name)){merged.badges[name]=structuredClone(value);changed=true}
+  }
+  if(!changed)return {changed:false,currencyConflict:Number(local.shards)!==Number(cloud.shards)};
+  const backupKey="lumenBeforeCloudReconcile_"+Date.now();
+  storage.setItem(backupKey,raw);
+  if(storage.getItem(backupKey)!==raw)throw Error("Sauvegarde locale préalable impossible");
+  const payload=JSON.stringify(merged);
+  storage.setItem(key,payload);
+  if(storage.getItem(key)!==payload){
+    storage.setItem(key,raw);
+    throw Error("Échec de vérification de la réconciliation");
+  }
+  return {changed:true,backupKey,currencyConflict:Number(local.shards)!==Number(cloud.shards)};
+}
