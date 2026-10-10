@@ -26,7 +26,7 @@ jobs:
           node-version: 22
 
       - name: Validate o2switch release script syntax
-        run: bash -n scripts/o2switch-safe-release.sh
+        run: bash -n scripts/o2switch-safe-release.sh && bash -n scripts/o2switch-cron-publish.sh
 
       - name: Unified quality gate
         run: node scripts/quality-gate.mjs
