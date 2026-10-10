@@ -50,11 +50,11 @@ Lors du premier test, le compte Google lancé sur `lumen.nopuna.fr` renvoyait ve
 
 **Attention aux sauvegardes :** après retour sur une origine différente, la session et le localStorage ne sont pas identiques. La disparition apparente de progression ne prouve pas une suppression cloud. Vérifier le compte réellement connecté et la synchronisation Supabase avant toute mutation ou reset.
 
-## Sauvetage manuel des invités (phase 1, issue #214)
+## Ancienne page de transfert manuel (retirée)
 
-Un parcours export/import est disponible via le menu compte et `/transfer.html` sur les deux domaines. Depuis **Vercel**, télécharger le fichier JSON local; depuis **o2switch**, l'importer via la même page. Aucune création de compte, aucun transfert réseau, aucune suppression de la source. L'import refuse de remplacer une progression déjà présente sur le domaine cible. Le fichier JSON contient des informations de progression personnelle : à conserver localement et ne pas partager publiquement. Test CI : `node scripts/guest-transfer-tests.mjs`. La PWA et les autres appareils doivent être testés manuellement.
+La page publique `/transfer.html` a été retirée du dépôt et sera supprimée d'o2switch au prochain déploiement pilote validé. Elle ne doit plus être proposée aux joueurs comme parcours standard. Les scripts/tests de transfert sont conservés temporairement à titre de secours technique, sans supprimer ni modifier les données locales des joueurs.
 
-**NO-GO pour la bascule** : cette phase 1 est une sauvegarde manuelle de secours, pas encore le transfert transparent postMessage, la fusion avec les sauvegardes préexistantes ou la couverture de toutes les clés locales. Garder l'ancien domaine accessible et poursuivre #214 avant la migration définitive.
+**NO-GO migration définitive** : conserver Vercel, et valider le profil cloud complet ainsi que les conflits entre appareils (issues #214, #217 et #223) avant toute bascule.
 
 ## Synchronisation automatique (PR pilote)
 
