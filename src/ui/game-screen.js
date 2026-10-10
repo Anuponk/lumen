@@ -79,7 +79,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   cloudProfileReady=true;
   const gate=document.getElementById("accountOptin");if(gate)gate.hidden=true;
  }catch(e){console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
-},holdLegacyMergeForFullRestore:async()=>true}},{setTimeout,console,qaMode});
+},holdLegacyMergeForFullRestore:async()=>true},{setTimeout,console,qaMode});
 function tutorialCompletedProof(){
  try{if(localStorage.getItem(qaKey("lumenTutorialCompletedV1"))==="1")return true}catch(_){}
  return !!(lumenProgress?.solved?.[0]&&lumenProgress?.solved?.[1]);
