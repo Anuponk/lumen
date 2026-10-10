@@ -77,6 +77,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   cloudProfileBaseline=cloud;
   if(changed){location.reload();return}
   cloudProfileReady=true;
+  const gate=document.getElementById("accountOptin");if(gate)gate.hidden=true;
  }catch(e){console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
 },holdLegacyMergeForFullRestore:async()=>true}},{setTimeout,console,qaMode});
 function tutorialCompletedProof(){
@@ -98,7 +99,7 @@ let accountOfferSignInPending=false;
 function accountOfferKey(name){return qaKey("lumenAccountOffer"+name)}
 function showAccountSavedConfirmation(){const toast=document.getElementById("accountSavedToast");if(!toast)return;toast.hidden=false;setTimeout(()=>{toast.hidden=true},2200)}
 function accountOfferMilestone(){return solvedCount()>=5?5:0}
-function accountRequired(){return !qaActive&&!socialChallenge&&!lumenUser&&solvedCount()>=5}
+function accountRequired(){return !qaActive&&!socialChallenge&&(!lumenUser||!cloudProfileReady)&&solvedCount()>=5}
 function maybeOfferAccount(){
  if(!accountRequired())return false;
  const box=document.getElementById("accountOptin");
