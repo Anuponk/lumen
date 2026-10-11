@@ -19,6 +19,7 @@ const nodeSuites=[
  "astronomical-catalogue-tests.mjs",
  "validate-playable-astronomy-tests.mjs",
  "astronomical-ui-tests.mjs",
+ "astronomical-reference-svg-tests.mjs",
  "hipparcos-units-tests.mjs",
  "astronomical-identity-tests.mjs",
  "astronomical-legacy-bridge-tests.mjs",
