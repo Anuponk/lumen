@@ -57,4 +57,12 @@ assert.match(gameScreen,/await commitCanonicalVictory\(lumenSupabase,q\.id,rewar
 assert.match(gameScreen,/const canonicalFollowing=canonicalPrevious&&canonicalQuestByOrdinal/);
 assert.match(gameScreen,/if\(!current\)return;canonicalActiveQuest=null;levelIndex=i/);
 assert.match(gameScreen,/badges\.autonomy\?15:10/);
+// A legacy quest cannot jump into a newly inserted quest before being solved.
+assert.match(gameScreen,/lumenProgress\.solved\[levelIndex\]&&canonicalFollowing\?\.legacyIndex===null/);
+// Every inserted quest retains the authoritative engine proof and its stable ID.
+for(const q of quests.filter(q=>q.legacyIndex===null)){
+ assert.equal(q.audit.ok,true);
+ assert.equal(q.audit.solutions,1);
+ assert(q.reg.length>=6);
+}
 console.log("Canonical 400-quest registry: stable identity, legacy save keys and pagination verified");

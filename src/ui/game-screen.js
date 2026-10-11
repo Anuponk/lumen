@@ -1575,7 +1575,7 @@ function advanceToNextPuzzle(){
  }
  const canonicalPrevious=canonicalQuestForLegacy(levelIndex);
  const canonicalFollowing=canonicalPrevious&&canonicalQuestByOrdinal(canonicalPrevious.ordinal+1);
- if(canonicalFollowing?.legacyIndex===null&&canonicalQuestAvailable(canonicalFollowing)){
+ if(lumenProgress.solved[levelIndex]&&canonicalFollowing?.legacyIndex===null&&canonicalQuestAvailable(canonicalFollowing)){
   hideSuccess();startCanonicalQuest(canonicalFollowing);return;
  }
  if(accountRequired()){maybeOfferAccount();hideSuccess();return}
