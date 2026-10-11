@@ -70,7 +70,7 @@ Deno.serve(async req=>{
  const parsed=new URL(action);
  const hashedToken=parsed.searchParams.get("token")||"";
  const confirmationType=parsed.searchParams.get("type")||"";
- const brandedLink=/^[a-f0-9]{64}$/i.test(hashedToken)&&
+ const brandedLink=Deno.env.get("LUMEN_BRANDED_LINKS_ENABLED")==="true" && /^[a-f0-9]{64}$/i.test(hashedToken)&&
   ["signup","recovery","magiclink"].includes(confirmationType)
   ? HOST+"/?lumen_confirm="+encodeURIComponent(hashedToken)+"&type="+encodeURIComponent(confirmationType)
   : action;
