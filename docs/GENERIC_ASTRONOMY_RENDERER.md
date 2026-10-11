@@ -36,3 +36,17 @@ Exécution hors ligne après vérification des licences :
 ```bash
 node scripts/build-astronomical-catalogue.mjs western-index.json hip-coordinates.json astronomy-coverage.json
 ```
+
+
+## Phase 2b — récupération des étoiles des lignes via VizieR
+
+L'outil `scripts/fetch-hipparcos-line-stars.py` télécharge (ou réutilise son cache ECSV) le catalogue **Hipparcos New Reduction I/311/hip2**, sélectionne **tous les identifiants HIP des lignes**, et exporte `{HIP: {raDeg,decDeg}}`. Cela élimine l'ancienne limite des 255 étoiles qui n'étaient que des ancres d'illustration. Le fichier résultant garde l'époque source **ICRS J1991.25** ; la projection géométrique est suffisante pour les figures d'affichage, mais aucune prétention à une propagation précise J2000/J2016 n'est faite.
+
+```bash
+uv run scripts/fetch-hipparcos-line-stars.py western-index.json hip-lines.json
+node scripts/build-astronomical-catalogue.mjs western-index.json hip-lines.json astronomy-coverage.json
+```
+
+**Vérification requise avant inclusion dans Lumen :** les permissions de redistribution commerciales pour les données de tracé Stellarium Western et leurs exigences CC BY-SA, attribution et notice. Aucune donnée tierce n'est embarquée dans cette PR.
+
+L'importeur traite `thin` et `bold` comme métadonnées de lignes Stellarium, jamais comme des identifiants stellaires.
