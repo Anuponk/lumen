@@ -12,7 +12,7 @@ Google login and the Supabase user ID used by cloud saves are unchanged.
 ## Production prerequisites — not configured by committing code
 - `LUMEN_AUTH_MAIL_ENABLED=true` **only after staging E2E and explicit production approval**. Default is disabled.
 - `LUMEN_RESEND_API_KEY`: restricted key for verified `nopuna.fr`.
-- `LUMEN_UPSTASH_REDIS_REST_URL`, `LUMEN_UPSTASH_REDIS_REST_TOKEN`: private credentials to a durable Redis limiter.
+- Apply `supabase/migrations/20261011190000_lumen_auth_mail_throttle.sql` before deployment: service-role-only atomic RPC with per-email and global hourly quotas.
 - Supabase-provided `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` server-side only. Never add these secrets to frontend, source, or PR.
 - Deploy only `lumen-auth-mail` with JWT verification disabled so unregistered players can request sign-up email. The function checks `Origin`, but origin is **not** an authorization barrier; server-side per-email and global limits are implemented in a Postgres RPC (migration required). Caller-provided IP forwarding headers must not be trusted.
 - Existing Supabase Auth SMTP/templates/hook must stay untouched.
