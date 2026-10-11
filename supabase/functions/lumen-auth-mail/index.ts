@@ -10,11 +10,11 @@ Deno.serve(async req=>{
  if(req.headers.get("origin")!==HOST)return reply(403);
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers});
  if(req.method!=="POST")return reply(405);
- if(Deno.env.get("LUMEN_AUTH_MAIL_ENABLED")!=="true")return reply(503);
+ if(Deno.env.get("LUMEN_AUTH_MAIL_ENABLED")!=="true")return reply(503,{ok:false,reason:"mail_disabled"});
  const key=Deno.env.get("LUMEN_RESEND_API_KEY")||"";
  const service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
  const base=Deno.env.get("SUPABASE_URL")||"";
- if(!key||!service||!base)return reply(503);
+ if(!key||!service||!base)return reply(503,{ok:false,reason:"server_configuration"});
  const raw=await req.text();if(raw.length>4096)return reply(413);
  let input:Record<string,unknown>;try{input=JSON.parse(raw)}catch{return reply(400,{ok:false,reason:"invalid_json"})}
  const email=typeof input.email==="string"?input.email.trim().toLowerCase():"";
@@ -35,10 +35,10 @@ Deno.serve(async req=>{
    method:"POST",headers:{"apikey":service,"authorization":"Bearer "+service,"content-type":"application/json"},
    body:JSON.stringify({p_email_hash:emailHash})
   });
-  if(!reserved.ok)return reply(503);
+  if(!reserved.ok)return reply(503,{ok:false,reason:"throttle_backend"});
   const permitted=await reserved.json();
-  if(permitted!==true)return reply(429);
- }catch{return reply(503)}
+  if(permitted!==true)return reply(429,{ok:false,reason:"rate_limited"});
+ }catch{return reply(503,{ok:false,reason:"throttle_unavailable"})}
  const typeArg=type==="magiclink"?"magiclink":type;
  const payload:Record<string,string>={type:String(typeArg),email,redirect_to:HOST+"/"};
  if(type==="signup")payload.password=password;
@@ -47,12 +47,12 @@ Deno.serve(async req=>{
   const resp=await fetch(base.replace(/\/$/,"")+"/auth/v1/admin/generate_link",{method:"POST",headers:{"apikey":service,"authorization":"Bearer "+service,"content-type":"application/json"},body:JSON.stringify(payload)});
   if(!resp.ok)return type==="signup"?reply(409,{ok:false,reason:"signup_not_available"}):accepted(); // do not falsely confirm signup; keep recovery/legacy enumeration-resistant
   generated=await resp.json();
- }catch{return reply(503)}
+ }catch{return reply(503,{ok:false,reason:"auth_backend_unavailable"})}
  const props=generated.properties as Record<string,unknown>|undefined;
  const action=typeof props?.action_link==="string"?props.action_link:"";
  const otp=typeof props?.email_otp==="string"?props.email_otp:"";
- if(type==="magiclink"&&!/^\d{6}$/.test(otp))return reply(503);
- if(!action.startsWith(base.replace(/\/$/,"")+"/auth/v1/verify?"))return reply(503);
+ if(type==="magiclink"&&!/^\d{6}$/.test(otp))return reply(503,{ok:false,reason:"otp_not_generated"});
+ if(!action.startsWith(base.replace(/\/$/,"")+"/auth/v1/verify?"))return reply(503,{ok:false,reason:"confirmation_link_unavailable"});
  // Recovery links are preferred for password reset; legacy users receive an OTP.
  const label=type==="signup"?"Confirme ton inscription Lumen":type==="recovery"?"Réinitialise ton mot de passe Lumen":"Ton code de connexion Lumen";
  const text=type==="magiclink"&&/^\d{6}$/.test(otp)
