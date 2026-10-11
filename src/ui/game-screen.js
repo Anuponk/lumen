@@ -11,7 +11,7 @@ import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
 import {extendedSequentialCount,extendedQuestLimit} from "../campaign/extended-boundary.js";
 import {generatedQuestReward,generatedAdventureRewards} from "../campaign/generated-rewards.js";
 import {generatedQuestProgress} from "../campaign/generated-progression.js";
-import {adminCatalogueTree} from "../campaign/admin-catalogue.js";
+import {adminCatalogueTree,adminCanonicalCatalogueTree} from "../campaign/admin-catalogue.js";
 import {mapConstellationRange,generatedMapSummary} from "../campaign/generated-map.js";
 import {CONTENT_CONSTELLATIONS,contentMapModel,packForLegacyQuest,contentAccessForLegacyQuest,preserveStartedAdventureAccess} from "../campaign/content.js";
 import {createSkyNavigation} from "./sky-navigation.js";
@@ -856,7 +856,7 @@ function renderAdminCatalogue(){
  const host=document.getElementById("adminCatalogueTree");
  if(!host)return;
  host.replaceChildren();
- for(const adventure of adminCatalogueTree()){
+ for(const adventure of adminCanonicalCatalogueTree()){
   const group=document.createElement("details");
   const heading=document.createElement("summary");
   heading.textContent=adventure.name+" · "+adventure.constellations.length+" constellations · "+adventure.questCount+" quêtes";
