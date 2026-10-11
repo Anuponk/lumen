@@ -160,11 +160,12 @@ async function acceptAccountOffer(){const box=document.getElementById("accountOp
 function openEmailAccountOffer(){const panel=document.getElementById("accountEmailAuth");if(panel)panel.hidden=false;document.getElementById("accountEmail")?.focus();trackLumenEvent("account_email_selected",null,{milestone:5,source:"quest_5_gate",qa:qaActive})}
 async function requestAccountEmailOtp(){const email=document.getElementById("accountEmail")?.value,status=document.getElementById("accountEmailStatus");if(status)status.textContent="Envoi du code…";const result=await sendEmailOtp(email);if(!result.ok){if(status)status.textContent=result.reason==="email"?"Entre une adresse email valide.":"Impossible d’envoyer le code. Réessaie.";trackLumenEvent("account_signin_failure",null,{milestone:5,method:"email_otp",stage:"send",qa:qaActive});return}accountOfferSignInPending=true;try{sessionStorage.setItem("lumenAccountOfferSignInPending","1");sessionStorage.setItem("lumenAccountOtpEmail",result.email)}catch(_){}const step=document.getElementById("accountOtpStep");if(step)step.hidden=false;if(status)status.textContent="Code envoyé. Vérifie tes emails.";document.getElementById("accountOtp")?.focus();trackLumenEvent("account_otp_sent",null,{milestone:5,qa:qaActive})}
 async function confirmAccountEmailOtp(){const status=document.getElementById("accountEmailStatus"),token=document.getElementById("accountOtp")?.value;let email=document.getElementById("accountEmail")?.value;try{email=sessionStorage.getItem("lumenAccountOtpEmail")||email}catch(_){}if(status)status.textContent="Vérification…";const result=await verifyEmailOtp(email,token);if(!result.ok){if(status)status.textContent=result.reason==="otp"?"Entre le code à 6 chiffres.":"Code incorrect ou expiré. Réessaie.";trackLumenEvent("account_signin_failure",null,{milestone:5,method:"email_otp",stage:"verify",qa:qaActive});return}if(status)status.textContent="Compte connecté ✓";trackLumenEvent("account_otp_verified",null,{milestone:5,qa:qaActive})}
+function openAccountFromMenu(){const menu=document.getElementById("mobileAuthPopover"),offer=document.getElementById("accountOptin");if(menu)menu.hidden=true;if(offer){offer.hidden=false;document.getElementById("accountOptinEnable")?.focus()}} 
 function syncMobileAuthUI(){
  const status=document.getElementById("mobileAuthStatus"),action=document.getElementById("mobileAuthAction"),icon=document.getElementById("mobileAccount");
  if(!status||!action||!icon)return;
- if(lumenUser){status.textContent=lumenNickname||"Progression synchronisée";action.textContent="Déconnexion";icon.textContent="●";icon.setAttribute("aria-label","Compte connecté");const box=document.getElementById("nicknameBox");if(box)box.hidden=false}
- else{status.textContent="Progression enregistrée sur cet appareil";action.textContent="Se connecter avec Google";icon.textContent="♙";icon.setAttribute("aria-label","Se connecter");const box=document.getElementById("nicknameBox");if(box)box.hidden=true}
+ if(lumenUser){status.textContent=lumenNickname||"Progression synchronisée";action.textContent="Déconnexion";const create=document.getElementById("mobileCreateAccount"),explain=document.getElementById("guestSaveExplainer");if(create)create.hidden=true;if(explain)explain.hidden=true;icon.textContent="●";icon.setAttribute("aria-label","Compte connecté");const box=document.getElementById("nicknameBox");if(box)box.hidden=false}
+ else{status.textContent="Progression enregistrée sur cet appareil";action.textContent="Se connecter avec Google";const create=document.getElementById("mobileCreateAccount"),explain=document.getElementById("guestSaveExplainer");if(create)create.hidden=false;if(explain)explain.hidden=false;icon.textContent="♙";icon.setAttribute("aria-label","Se connecter");const box=document.getElementById("nicknameBox");if(box)box.hidden=true}
 }
 function hasInternalCapability(name){return lumenCapabilities.some(x=>(typeof x==="string"?x:x?.capability)===name)}
 function unlimitedShardsEnabled(){return hasInternalCapability("unlimited_shards")&&localStorage.getItem("lumenAdminUnlimitedShards")==="1"}
@@ -222,6 +223,8 @@ function setupMobileAuth(){
  if(!menu||!account||!action)return;
  account.onclick=(e)=>{e.stopPropagation();const d=document.getElementById("dailyInfoPopover");if(d)d.hidden=true;menu.hidden=!menu.hidden};
  menu.onclick=(e)=>e.stopPropagation();
+ const create=document.getElementById("mobileCreateAccount");if(create)create.onclick=openAccountFromMenu;
+ const qaTools=document.getElementById("qaAccountTools");if(qaTools)qaTools.hidden=!qaActive;
  document.addEventListener("click",()=>{if(!menu.hidden)menu.hidden=true});
  action.onclick=async()=>{
    menu.hidden=true;
