@@ -103,3 +103,14 @@ assert.match(onboardingUi,/lumenSkipFirstGridTutorial/);
 assert.match(onboardingUi,/!\(skipFirstGridTutorial&&!learningReplayActive\(\)\)/);
 assert.match(onboardingUi,/skipFirstGridGuidance\(\)\};/);
 assert.match(tutorialUi,/closeTutorial\(true\);if\(onSkip\)onSkip\(\)/);
+
+const installUi=onboardingUi.slice(onboardingUi.indexOf("function lumenIsStandalone()"),onboardingUi.indexOf("function lumenReferralCode()"));
+assert.match(installUi,/getInstalledRelatedApps/,"Future Play Store related-app check");
+assert.match(installUi,/android-app:\/\//,"Android app launch detection");
+assert.match(installUi,/display-mode: /,"Installed PWA display modes");
+assert.match(installUi,/window.LUMEN_NATIVE_APP===true/,"Explicit native wrapper context");
+assert.match(installUi,/solvedCount\(\)<12/,"Installation deferred past onboarding");
+assert.match(installUi,/accountRequired\(\)/,"Do not offer install at account gate");
+assert.match(installUi,/if\(!ios&&!lumenInstallPrompt\)return/,"Do not show unusable Android install CTA");
+assert.match(onboardingUi,/lumenProgress\.autoCrossUnlockSeen=1/,"Quest-six unlock tracked together with badge intro");
+assert.match(onboardingUi,/Marquage auto débloqué/,"Quest-six combined introduction");
