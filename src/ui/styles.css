@@ -725,3 +725,6 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
   overscroll-behavior:contain;
  }
 }
+
+/* #233: unobtrusive release identity in the account menu. */
+#lumenAccountVersion{display:block;margin-top:12px;padding-top:8px;border-top:1px solid rgba(128,128,128,.2);font-size:11px;opacity:.65;text-align:center;overflow-wrap:anywhere}
