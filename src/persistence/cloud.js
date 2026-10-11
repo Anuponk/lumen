@@ -1,3 +1,4 @@
+import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "./config.js";
 import {baseCampaignQuestCount} from "../campaign/content.js";
 export function createCloudPersistence(model,hooks,environment){
 const {activeGameSeconds,exactSkyScoreForSolvedPrefix,saveLumenProgress,refreshJourney,init,onAccountChanged=()=>{},renderDaily}=hooks;
@@ -75,13 +76,32 @@ async function cloudMergeProgress(){
  model.lumenCloudReady=true;
 }
 
+async function confirmBrandedAuthLink(){
+ // Cloud persistence is also executed in Node.js regression fixtures.
+ if(typeof window==="undefined"||!window.location||!window.history)return;
+ const loc=window.location;
+ const url=new URL(loc.href);
+ const hash=url.searchParams.get("lumen_confirm");
+ const type=url.searchParams.get("type");
+ if(!hash)return;
+ // Discard sensitive tokens from URL/history before contacting any service.
+ url.searchParams.delete("lumen_confirm");
+ url.searchParams.delete("type");
+ window.history.replaceState(window.history.state,"",url.pathname+url.search+url.hash);
+ if(!/^[a-f0-9]{64}$/i.test(hash)||!["signup","recovery","magiclink"].includes(type||""))return;
+ const {error}=await model.lumenSupabase.auth.verifyOtp({
+  token_hash:hash,type:type==="magiclink"?"email":type
+ });
+ if(error)console.warn("LUMEN confirmation link could not be validated",error.message);
+}
 async function initLumenCloud(){
+ if(model.lumenSupabase)await confirmBrandedAuthLink();
  if(!model.lumenSupabase){onAccountChanged({type:"account"});return}
  const {data}=await model.lumenSupabase.auth.getSession();
  model.lumenUser=data.session?.user||null; onAccountChanged({type:"account"});
  if(model.lumenUser){await registerLumenUser();await loadLumenProfile();await loadEntitlements();await loadInternalCapabilities();if(!cloudWritesDisabled() && !(await hooks.holdLegacyMergeForFullRestore?.())){await cloudMergeProgress();await cloudMergeDaily();}await hooks.afterAuthCloudSync?.();}else {model.lumenEntitlements=[];model.lumenCapabilities=[];}
  model.lumenSupabase.auth.onAuthStateChange((event,session)=>{
-   const previous=model.lumenUser?.id; model.lumenUser=session?.user||null; onAccountChanged({type:"account"});
+   const previous=model.lumenUser?.id; model.lumenUser=session?.user||null; onAccountChanged({type:event==="PASSWORD_RECOVERY"?"password_recovery":"account"});
    if(model.lumenUser&&model.lumenUser.id!==previous)setTimeout(async()=>{await registerLumenUser();await loadEntitlements();await loadInternalCapabilities();if(!cloudWritesDisabled() && !(await hooks.holdLegacyMergeForFullRestore?.())){await cloudMergeProgress();await cloudMergeDaily()}await hooks.afterAuthCloudSync?.();},0);else if(model.lumenUser&&(event==="SIGNED_IN"||event==="TOKEN_REFRESHED"||event==="USER_UPDATED")){
     // Same-account session renewals must refresh server-authorized cockpit rights.
     // Never grant a capability locally: the RPC remains authoritative.
@@ -148,6 +168,38 @@ async function signIn(redirectTo){
  const {error}=await model.lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:target}});
  return error?{ok:false,reason:"oauth",error}:{ok:true};
 }
+async function requestLumenAuthMail(type,email,password){
+ const response=await fetch(LUMEN_SUPABASE_URL+"/functions/v1/lumen-auth-mail",{
+  method:"POST",headers:{"content-type":"application/json","apikey":LUMEN_SUPABASE_KEY},
+  body:JSON.stringify({type,email,...(type==="signup"?{password}:{})})
+ });
+ return response.ok;
+}
+async function requestPasswordRecovery(email){
+ const normalized=String(email||"").trim().toLowerCase();
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized))return {ok:false,reason:"email"};
+ try{return {ok:await requestLumenAuthMail("recovery",normalized)}}catch{return {ok:false,reason:"unavailable"}}
+}
+async function emailPasswordAuth(email,password,redirectTo,{createUser=false}={}){
+ if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};
+ const normalized=String(email||"").trim().toLowerCase();
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized))return {ok:false,reason:"email"};
+ if(typeof password!=="string"||(createUser?password.length<12:password.length<1))return {ok:false,reason:"password"};
+ const callback=String(redirectTo||environment.lumenAuthReturnUrl||"").trim();
+ if(!callback)return {ok:false,reason:"redirect"};
+ if(createUser){
+  try{const sent=await requestLumenAuthMail("signup",normalized,password);return sent?{ok:true,pendingConfirmation:true}:{ok:false,reason:"signup"}}catch{return {ok:false,reason:"signup"}}
+ }
+ const response=await model.lumenSupabase.auth.signInWithPassword({email:normalized,password});
+ if(response.error)return {ok:false,reason:createUser?"signup":"signin",error:response.error};
+ return {ok:true,pendingConfirmation:createUser&&!response.data?.session};
+}
+async function setAccountPassword(password){
+ if(!model.lumenSupabase||!model.lumenUser)return {ok:false,reason:"signed_out"};
+ if(typeof password!=="string"||password.length<12)return {ok:false,reason:"password"};
+ const {error}=await model.lumenSupabase.auth.updateUser({password});
+ return error?{ok:false,reason:"password_update",error}:{ok:true};
+}
 async function sendEmailOtp(email,redirectTo,{createUser=true}={}){
  if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};
  const normalized=String(email||"").trim().toLowerCase();
@@ -157,8 +209,8 @@ async function sendEmailOtp(email,redirectTo,{createUser=true}={}){
   const options={shouldCreateUser:createUser===true};
   if(!callback)return {ok:false,reason:"redirect"};
   options.emailRedirectTo=callback;
-  const {error}=await model.lumenSupabase.auth.signInWithOtp({email:normalized,options});
- return error?{ok:false,reason:"otp_send",error}:{ok:true,email:normalized};
+  if(createUser)return {ok:false,reason:"legacy_login_only"};
+ try{const ok=await requestLumenAuthMail("magiclink",normalized);return ok?{ok:true,email:normalized}:{ok:false,reason:"otp_send"}}catch{return {ok:false,reason:"otp_send"}}
 }
 async function verifyEmailOtp(email,token){
  if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};
@@ -174,5 +226,5 @@ async function signOut(){
  model.lumenUser=null;model.lumenEntitlements=[];model.lumenCapabilities=[];model.lumenCloudReady=false;
  onAccountChanged({type:"account"});refreshJourney();return {ok:true};
 }
-return {registerLumenUser,loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,sendEmailOtp,verifyEmailOtp,signOut};
+return {registerLumenUser,loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,sendEmailOtp,verifyEmailOtp,signOut};
 }
