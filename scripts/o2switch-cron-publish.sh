@@ -19,6 +19,24 @@ git fetch --quiet origin main
 git merge --ff-only origin/main
 SHA="$(git rev-parse HEAD)"
 [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+# A matching public release has already passed this publish process.
+# Do not poll GitHub every minute when no new deployment is needed.
+if [[ -f "$TARGET/.lumen-release-sha" && "$(cat "$TARGET/.lumen-release-sha")" == "$SHA" ]]; then
+ echo "Already deployed $SHA"; exit 0
+fi
+# The anonymous GitHub API has a small hourly quota. On a new commit,
+# check CI at most every five minutes; a pending result never authorizes release.
+CI_CHECK_DIR="${HOME}/lumen-private"
+CI_CHECK_MARKER="$CI_CHECK_DIR/ci-check-$SHA"
+mkdir -p "$CI_CHECK_DIR"
+if [[ -f "$CI_CHECK_MARKER" ]]; then
+ last_check="$(stat -c %Y "$CI_CHECK_MARKER")"
+ now="$(date +%s)"
+ if (( now - last_check < 300 )); then
+  echo "Waiting before retrying CI verification for $SHA"; exit 75
+ fi
+fi
+touch "$CI_CHECK_MARKER"
 # The merged SHA must have passed the GitHub push/main workflow, not just a PR.
 LUMEN_SHA="$SHA" python3 - <<'PY'
 import json,os,sys,urllib.request
