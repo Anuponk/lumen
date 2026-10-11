@@ -104,5 +104,5 @@ if(errors.length||added.length!==pending.length)throw Error("Generation incomple
 const artifact={schemaVersion:1,status:"staged-only",seed:20261011,plan:migrationLedger(plan),quests:added};
 fs.mkdirSync("content/generated",{recursive:true});
 const filename="content/generated/issue-222-additions.json";
-fs.writeFileSync(filename,JSON.stringify(artifact,null,2)+"\\n");
+fs.writeFileSync(filename,JSON.stringify(artifact,null,2)+"\n");
 console.log("Staged "+added.length+" audited grids in "+filename+". NOT published.");
