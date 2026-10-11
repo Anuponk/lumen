@@ -1,5 +1,14 @@
 # Testing and quality gate
 
+## Dynamic catalogue growth regression contract
+Every change affecting content, progression, shop, sky navigation or saved state must test catalogue growth without source-code boundary edits:
+- Existing catalogue N → N+k quests, with multiple appended Adventures of different sizes.
+- First and final quest of each Adventure, crossing pack boundaries, and visible locked/unlocked packs.
+- New constellations with varying quest counts and calculated stars; navigation/pagination beyond the first page.
+- Previously complete cloud/local player resume into newly appended content without loss of badges, stars, currency or entitlements.
+- Historical fixed quest numbers remain test fixtures only, not current campaign endpoints.
+Tests should assert relationships derived from the content registry rather than a specific future total. Documentation alone is not proof of runtime coverage.
+
 ## Cloud persistence regression matrix
 
 **Release-blocking contract (#248).** For every feature, assess the impact on *all* existing cloud-saved data, not only new fields. Before declaring a change ready, cover the affected cases below with automated tests. Keep a separate isolated test Supabase environment/accounts; never run destructive fixtures against real players. Mark unautomated cases explicitly as outstanding: documenting them does not count as a passing test.
