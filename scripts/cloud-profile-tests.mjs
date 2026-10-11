@@ -77,7 +77,7 @@ assert.doesNotMatch(html,/id="migrationCloud(?:Save|Restore)"/);
 
 assert.ok(uiSrc.includes('function accountRequired(){return !qaActive&&!socialChallenge&&((!!lumenUser&&!cloudProfileReady)||(!lumenUser&&solvedCount()>=5))}'),'Five quests are playable as guest, then account required');
 assert.ok(uiSrc.includes('if(accountRequired()){maybeOfferAccount();hideSuccess();return}'),'Cannot advance beyond guest limit');
-assert.ok(uiSrc.includes('if(accountRequired())queueMicrotask(()=>maybeOfferAccount())'),'Reload cannot bypass guest gate');
+assert.ok(uiSrc.includes('if(!canonicalActiveQuest&&accountRequired())queueMicrotask(()=>maybeOfferAccount())'),'Reload cannot bypass guest gate for historic quests while canonical quests require cloud sync');
 assert.ok(uiSrc.includes('if(accountRequired())return;'),'Account offer cannot be dismissed when required');
 
 let server=null;

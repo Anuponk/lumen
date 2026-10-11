@@ -11,13 +11,16 @@ import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
 import {extendedSequentialCount,extendedQuestLimit} from "../campaign/extended-boundary.js";
 import {generatedQuestReward,generatedAdventureRewards} from "../campaign/generated-rewards.js";
 import {generatedQuestProgress} from "../campaign/generated-progression.js";
-import {adminCatalogueTree} from "../campaign/admin-catalogue.js";
+import {adminCatalogueTree,adminCanonicalCatalogueTree} from "../campaign/admin-catalogue.js";
 import {mapConstellationRange,generatedMapSummary} from "../campaign/generated-map.js";
 import {CONTENT_CONSTELLATIONS,contentMapModel,packForLegacyQuest,contentAccessForLegacyQuest,preserveStartedAdventureAccess} from "../campaign/content.js";
 import {createSkyNavigation} from "./sky-navigation.js";
 import {LUMEN_META,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,badgeDefs} from "../campaign/data.js";
 import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt} from "../campaign/performance.js";
 import {challengeEligibility,challengeSnapshot,compareChallenge,createChallengeClient,normalizeChallengeName,validChallengeName} from "../campaign/social-challenge.js";
+import {resolveChallengeQuest} from "../campaign/canonical-challenges.js";
+import {canonicalDisplayForLegacy,canonicalQuestList,canonicalAdventureSummary,canonicalQuestByOrdinal,canonicalQuestForLegacy,canonicalNextUnsolved} from "../campaign/canonical-quests.js";
+import {acknowledgeCanonicalVictory,commitCanonicalVictory,questIsCompleted} from "../persistence/canonical-progress.js";
 import {createCampaign,sequentialCount,campaignQuestCount,isCampaignFinalQuest,isCampaignComplete,constellationQuestIndices,constellationGridRange,chapterForGrid,milestoneFor,skyStarsForGrid,bonusChallengeFor,challengeFor,constellationCheckpoint,constellationStateForEarned,starsAwardedForGrid} from "../campaign/progression.js";
 import {createGameEngine} from "../game/engine.js";
 import {createAttemptEngine,ATTEMPT_STATES} from "../game/attempt-engine.js";
@@ -281,15 +284,16 @@ function lumenReferralCode(){return lumenUser?.id?("u"+lumenUser.id.replace(/-/g
 function lumenShareUrl(){const u=new URL(location.origin+location.pathname);u.searchParams.set("ref",lumenReferralCode());return u.toString()}
 function showShareToast(t){let e=document.createElement("div");e.className="share-toast";e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),1800)}
 function successAchievement(){
+ const canonicalNumber=canonicalDisplayForLegacy(levelIndex)?.number??levelIndex+1;
  const generated=generatedQuestProgress(levelIndex),ch=generated?{name:generated.constellationLabel}:CONSTELLATIONS[chapterForGrid(levelIndex)],range=generated?{quests:mapConstellationRange(24+Math.floor((levelIndex-196)/10)).quests,count:generated.total}:constellationGridRange(chapterForGrid(levelIndex)),pos=Math.max(1,range.quests.indexOf(levelIndex)+1),run=performanceRun(levelIndex),secs=activeGameSeconds(),solved=Math.max(solvedCount(),levelIndex+1);
- let kicker="QUÊTE "+(levelIndex+1)+" ACCOMPLIE",main=(ch?.name||"Constellation")+" · "+pos+"/"+range.count+" quêtes",detail=solved+"/"+campaignQuestCount()+" quêtes accomplies";
+ let kicker="QUÊTE "+canonicalNumber+" ACCOMPLIE",main=(ch?.name||"Constellation")+" · "+pos+"/"+range.count+" quêtes",detail=solved+"/"+campaignQuestCount()+" quêtes accomplies";
  const milestone=generated?null:milestoneFor(levelIndex);
  if(milestone?.kind==="boss"){kicker="CONSTELLATION COMPLÉTÉE";main=ch.name;detail=solved+"/"+campaignQuestCount()+" quêtes accomplies · "+skyStarsEarned()+" étoiles allumées"}
- else if(run.qualifying&&run.mastery){kicker="MAÎTRISE";main="Rapide, autonome et sans erreur";detail=(ch?.name||"Constellation")+" · Quête "+(levelIndex+1)+" · "+formatDuration(secs)}
- else if(run.qualifying&&run.noError){kicker="SANS ERREUR";main=(ch?.name||"Constellation")+" · Quête "+(levelIndex+1);detail=formatDuration(secs)+" · résolution propre"}
- else if(run.qualifying&&run.speed){kicker="RAPIDITÉ";main="Quête "+(levelIndex+1)+" en "+formatDuration(secs);detail=(ch?.name||"Constellation")}
- else if(run.qualifying&&run.autonomy){kicker="AUTONOMIE";main=(ch?.name||"Constellation")+" · Quête "+(levelIndex+1);detail=formatDuration(secs)+" · sans aide"}
- return {kicker,main,detail,ch,pos,total:range.count,solved,run,secs};
+ else if(run.qualifying&&run.mastery){kicker="MAÎTRISE";main="Rapide, autonome et sans erreur";detail=(ch?.name||"Constellation")+" · Quête "+canonicalNumber+" · "+formatDuration(secs)}
+ else if(run.qualifying&&run.noError){kicker="SANS ERREUR";main=(ch?.name||"Constellation")+" · Quête "+canonicalNumber;detail=formatDuration(secs)+" · résolution propre"}
+ else if(run.qualifying&&run.speed){kicker="RAPIDITÉ";main="Quête "+canonicalNumber+" en "+formatDuration(secs);detail=(ch?.name||"Constellation")}
+ else if(run.qualifying&&run.autonomy){kicker="AUTONOMIE";main=(ch?.name||"Constellation")+" · Quête "+canonicalNumber;detail=formatDuration(secs)+" · sans aide"}
+ return {kicker,main,detail,ch,pos,total:range.count,solved,run,secs,canonicalNumber};
 }
 function renderSuccessAchievement(){
  const a=successAchievement(),k=document.getElementById("successAchievementKicker"),m=document.getElementById("successAchievementMain"),d=document.getElementById("successAchievementDetail");
@@ -307,7 +311,7 @@ function shareCardCanvas(a){
  x.fillStyle="#f2fbff";x.font="900 58px Arial";wrapCanvasText(x,a.main,cx,495,900,70);
  x.fillStyle="#a9bfd0";x.font="700 30px Arial";wrapCanvasText(x,a.detail,cx,660,900,42);
  x.strokeStyle="rgba(104,231,255,.35)";x.lineWidth=2;x.strokeRect(105,790,870,210);
- x.fillStyle="#f2fbff";x.font="900 44px Arial";x.fillText("Quête "+(levelIndex+1)+" / "+campaignQuestCount(),cx,860);
+ x.fillStyle="#f2fbff";x.font="900 44px Arial";x.fillText("Quête "+(a.canonicalNumber??levelIndex+1)+" / "+campaignQuestCount(),cx,860);
  x.fillStyle="#68e7ff";x.font="800 32px Arial";x.fillText((a.ch?.name||"Constellation")+" · "+a.pos+"/"+a.total,cx,920);
  x.fillStyle="#a9bfd0";x.font="700 28px Arial";x.fillText("◷ "+formatDuration(a.secs)+(a.run.noHint?"   ·   Sans indice":""),cx,970);
  x.fillStyle="#eefaff";x.font="800 32px Arial";x.fillText("Peux-tu rallumer le ciel ?",cx,1120);
@@ -328,7 +332,9 @@ async function shareLumenResult(){
 }
 captureReferral();
 
-let lumenProgress=loadLumenProgress(),usedHintThisGame=false,questStarted=true,questFailed=false;if(!lumenProgress.xp)lumenProgress.xp=0;if(!lumenProgress.challenges)lumenProgress.challenges={};if(!lumenProgress.stars)lumenProgress.stars={};if(!Number.isFinite(lumenProgress.shards))lumenProgress.shards=3;if(!lumenProgress.performances)lumenProgress.performances={};
+let lumenProgress=loadLumenProgress(),usedHintThisGame=false,questStarted=true,questFailed=false;
+// A canonical-only quest is never mapped to an old numeric save index.
+let canonicalActiveQuest=null;if(!lumenProgress.xp)lumenProgress.xp=0;if(!lumenProgress.challenges)lumenProgress.challenges={};if(!lumenProgress.stars)lumenProgress.stars={};if(!Number.isFinite(lumenProgress.shards))lumenProgress.shards=3;if(!lumenProgress.performances)lumenProgress.performances={};
 if(!lumenProgress.daily)lumenProgress.daily={dates:{},rewards:{}};if(!Number.isFinite(lumenProgress.skyScore))lumenProgress.skyScore=null;
 
 function dailyStreak(){return streakFromDates(lumenProgress.daily.dates,localDateKey())}
@@ -484,7 +490,7 @@ async function openMyChallenges(focusId=null){
 async function bootstrapSocialChallenge(){
  const id=new URL(location.href).searchParams.get("challenge");if(!id)return true;
  try{
-  socialChallenge=await challengeClient.get(id);if(!socialChallenge)throw new Error("not_found");levelIndex=Number(socialChallenge.puzzle_id)-1;replayMode=false;
+  socialChallenge=await challengeClient.get(id);if(!socialChallenge)throw new Error("not_found");levelIndex=legacyIndexForActiveChallenge(socialChallenge);replayMode=false;
   if(["completed","abandoned"].includes(socialChallenge.participant_status)){init();showSocialChallengeResult(socialChallenge);return false}
   const intro=document.getElementById("challengeIntro"),copy=document.getElementById("challengeIntroCopy");copy.textContent=socialChallenge.sender_display_name+" te défie sur la quête "+socialChallenge.puzzle_id+". Sa performance sera révélée après ta tentative.";intro.hidden=false;
   return await new Promise(resolve=>{document.getElementById("challengeStart").onclick=async()=>{const name=await askChallengeName();if(!name)return;try{await challengeClient.start(id,!!lumenProgress.solved[levelIndex]);intro.hidden=true;trackLumenEvent("challenge_started",levelIndex+1,{previously_played:!!lumenProgress.solved[levelIndex]});resolve(true)}catch(e){console.warn("challenge start",e);showRewardToast("Impossible de démarrer le défi")}};document.getElementById("challengeLeave").onclick=()=>{location.href=location.pathname}});
@@ -525,8 +531,26 @@ let hiCells=[];
 const {validateGuardians,key,solutions,isAutoCross,verificationErrors,guardianConflicts,conflictMessage,simpleForcedPlacement,proofEngine,directMissingCross,playerError,guardianOnlyState,guidedConflictForAction}=createGameEngine(()=>({n,puz,state}),()=>!!document.getElementById("autoCross")?.checked);
 function currentQuestLimit(){return extendedQuestLimit(lumenEntitlements,lumenProgress,attemptEngine.snapshot())}
 function currentQuestPosition(){return Math.min(extendedSequentialCount(lumenProgress.solved),currentQuestLimit()-1)}
-function questIsAccessible(index){return contentAccessForLegacyQuest(index,lumenEntitlements,undefined,lumenProgress,attemptEngine.snapshot()).accessible}
-function choose(){levelIndex=Math.max(0,Math.min(levelIndex,currentQuestLimit()-1));if(!socialChallenge&&!questIsAccessible(levelIndex)){while(levelIndex>0&&!questIsAccessible(levelIndex))levelIndex--;replayMode=!!lumenProgress.solved[levelIndex]}const resolved=playableQuest(levelIndex);if(!resolved)throw new Error("Missing campaign quest "+levelIndex);puz=resolved.source==="generated"?{reg:resolved.reg,sol:resolved.sol,audit:resolved.audit}:resolved.size===6?CAT["6"][CAMPAIGN6_ORDER[CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]]]:CAT[String(resolved.size)][CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]];n=puz.reg.length;last[n]=levelIndex}
+function legacyIndexForActiveChallenge(challenge){const quest=resolveChallengeQuest(challenge);if(quest.legacyIndex===null)throw new Error("Ce défi utilise une nouvelle quête : active la migration du catalogue avant de le lancer.");return quest.legacyIndex}
+// Existing players who passed an inserted slot before the migration may
+// continue at their next historical quest. Their earlier missing grids stay
+// available in Mon ciel, without marking them completed or awarding XP.
+function historicalContinuationAllowed(index){
+ if(!Number.isInteger(index)||index<1||lumenProgress.solved?.[index])return false;
+ const previous=canonicalQuestForLegacy(index-1);
+ const first=canonicalNextUnsolved(lumenProgress.solved,lumenProgress.canonicalQuestState||{});
+ return !!previous&&!!first&&previous.ordinal>first.ordinal&&
+  !!lumenProgress.solved?.[index-1]&&index===extendedSequentialCount(lumenProgress.solved);
+}
+function questIsAccessible(index){
+ const accessible=contentAccessForLegacyQuest(index,lumenEntitlements,undefined,lumenProgress,attemptEngine.snapshot()).accessible;
+ if(!accessible)return false;
+ if(lumenProgress.solved?.[index])return true;
+ // Canonical order is authoritative for *new* quest unlocks. Historical
+ // indexes remain keys in existing saves but cannot bypass inserted grids.
+ return canonicalNextUnsolved(lumenProgress.solved,lumenProgress.canonicalQuestState||{})?.legacyIndex===index||historicalContinuationAllowed(index);
+}
+function choose(){if(canonicalActiveQuest){puz={reg:canonicalActiveQuest.reg,sol:canonicalActiveQuest.sol,audit:canonicalActiveQuest.audit};n=puz.reg.length;return}levelIndex=Math.max(0,Math.min(levelIndex,currentQuestLimit()-1));if(!socialChallenge&&!questIsAccessible(levelIndex)){while(levelIndex>0&&!questIsAccessible(levelIndex))levelIndex--;replayMode=!!lumenProgress.solved[levelIndex]}const resolved=playableQuest(levelIndex);if(!resolved)throw new Error("Missing campaign quest "+levelIndex);puz=resolved.source==="generated"?{reg:resolved.reg,sol:resolved.sol,audit:resolved.audit}:resolved.size===6?CAT["6"][CAMPAIGN6_ORDER[CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]]]:CAT[String(resolved.size)][CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]];n=puz.reg.length;last[n]=levelIndex}
 function loadPuzzle(){init();}
 function startLearningReplay(){
  if(learningReplayReturn===null)learningReplayReturn={levelIndex,replayMode};
@@ -814,11 +838,11 @@ function maybeShowAutonomy(){
 }
 function hintEconomySeenKey(){return qaKey("lumenHintEconomySeenV1")}
 function maybeShowHintEconomyTransition(){if(levelIndex!==9||socialChallenge||replayMode)return;let seen=false;try{seen=localStorage.getItem(hintEconomySeenKey())==="1"}catch(_){}if(seen)return;try{localStorage.setItem(hintEconomySeenKey(),"1")}catch(_){}const card=document.getElementById("scriptedLearn");if(!card)return;learningTip={title:"Dernière quête avec indices offerts",copy:"Jusqu’à la fin de cette quête 10, tous les indices restent offerts. Dès la quête 11, le premier indice reste gratuit puis les suivants utilisent tes Éclats."};updateScriptedLearning()}
-function prepareQuestStart(){let q=bonusChallengeFor(levelIndex),o=document.getElementById("questStart");questFailed=false;if(!q||lumenProgress.stars[q.id]){questStarted=true;o.hidden=true;resumeGameClock();return}questStarted=false;pauseGameClock();document.getElementById("questStartTitle").textContent=q.title;document.getElementById("questStartRule").textContent=q.copy+" Récompense : +25 XP et +1 ✦ éclat.";o.hidden=false}
+function prepareQuestStart(){let q=canonicalActiveQuest?null:bonusChallengeFor(levelIndex),o=document.getElementById("questStart");questFailed=false;if(!q||lumenProgress.stars[q.id]){questStarted=true;o.hidden=true;resumeGameClock();return}questStarted=false;pauseGameClock();document.getElementById("questStartTitle").textContent=q.title;document.getElementById("questStartRule").textContent=q.copy+" Récompense : +25 XP et +1 ✦ éclat.";o.hidden=false}
 document.getElementById("questGo").onclick=()=>{document.getElementById("questStart").hidden=true;questStarted=true;clock();updateAttemptUI()};
-function init(){if(accountRequired())queueMicrotask(()=>maybeOfferAccount());setLearningReplaySuccessMode(false);document.getElementById("successNew").textContent="Quête suivante";updateLearningSuccessCTA();learningTip=null;learningTipSeen=new Set();learningStage="place";learningIntroStep=0;choose();configureLearningMode();applyQuestRestrictions();maybeShowBadgeMilestone();maybeShowAutoCrossUnlock();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl){const generated=generatedQuestProgress(levelIndex),constellationIndex=chapterForGrid(levelIndex),constellation=generated?{name:generated.constellationLabel}:CONSTELLATIONS[constellationIndex],range=generated?{quests:mapConstellationRange(24+Math.floor((levelIndex-196)/10)).quests,count:generated.total}:constellationGridRange(constellationIndex),position=Math.max(1,range.quests.indexOf(levelIndex)+1);cl.textContent="Quête "+(levelIndex+1)+" - "+(constellation?.name||"Constellation")+" ("+position+"/"+range.count+")";}document.getElementById("difficulty").textContent=n===7?"7 × 7 · constellation étendue":n===8?"8 × 8 · constellation étendue":"";state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];const hintCard=document.getElementById("hintCard");if(hintCard)hintCard.hidden=true;celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;guidedDeferred=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,100);
- const restored=attemptEngine.restore({questId:levelIndex+1,mode:attemptMode()});
- if(restored&&Array.isArray(restored.board)&&restored.board.length===n){state=restored.board.map(row=>row.slice());render()}else {const perf=lumenProgress.performances?.[levelIndex],eligible=currentPerformanceEligibility(levelIndex),hasEligible=Object.values(eligible).some(Boolean),qualifying=hasEligible&&perf?.lastQualifiedDay!==localCalendarDay();attemptEngine.create({questId:levelIndex+1,mode:attemptMode(),qualifying:socialChallenge?false:qualifying,challengeId:socialChallenge?.challenge_id||null,board:state});}
+function init(){if(!canonicalActiveQuest&&accountRequired())queueMicrotask(()=>maybeOfferAccount());setLearningReplaySuccessMode(false);document.getElementById("successNew").textContent="Quête suivante";updateLearningSuccessCTA();learningTip=null;learningTipSeen=new Set();learningStage="place";learningIntroStep=0;choose();configureLearningMode();applyQuestRestrictions();maybeShowBadgeMilestone();maybeShowAutoCrossUnlock();maybeShowAutonomy();if(lastTrackedPuzzle!==levelIndex){lastTrackedPuzzle=levelIndex;trackLumenEvent("puzzle_start",levelIndex+1,{sector:Math.floor(levelIndex/20)});}let cl=document.getElementById("campaignMapLabel");if(cl){const generated=generatedQuestProgress(levelIndex),constellationIndex=chapterForGrid(levelIndex),constellation=generated?{name:generated.constellationLabel}:CONSTELLATIONS[constellationIndex],range=generated?{quests:mapConstellationRange(24+Math.floor((levelIndex-196)/10)).quests,count:generated.total}:constellationGridRange(constellationIndex),position=Math.max(1,range.quests.indexOf(levelIndex)+1);cl.textContent=canonicalActiveQuest?"Quête "+canonicalActiveQuest.ordinal+" - "+(CONTENT_CONSTELLATIONS.find(x=>x.id===canonicalActiveQuest.constellationId)?.label||"Constellation")+" ("+canonicalActiveQuest.position+"/"+canonicalQuestList().filter(q=>q.constellationId===canonicalActiveQuest.constellationId).length+")":"Quête "+(levelIndex+1)+" - "+(constellation?.name||"Constellation")+" ("+position+"/"+range.count+")";}document.getElementById("difficulty").textContent=n===7?"7 × 7 · constellation étendue":n===8?"8 × 8 · constellation étendue":"";state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];const hintCard=document.getElementById("hintCard");if(hintCard)hintCard.hidden=true;celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;guidedDeferred=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,100);
+ const restored=attemptEngine.restore({questId:canonicalActiveQuest?.id??levelIndex+1,mode:attemptMode()});
+ if(restored&&Array.isArray(restored.board)&&restored.board.length===n){state=restored.board.map(row=>row.slice());render()}else {const perf=lumenProgress.performances?.[levelIndex],eligible=currentPerformanceEligibility(levelIndex),hasEligible=Object.values(eligible).some(Boolean),qualifying=hasEligible&&perf?.lastQualifiedDay!==localCalendarDay();attemptEngine.create({questId:canonicalActiveQuest?.id??levelIndex+1,mode:attemptMode(),qualifying:canonicalActiveQuest?true:socialChallenge?false:qualifying,challengeId:socialChallenge?.challenge_id||null,board:state});}
  clock();prepareQuestStart();updateAttemptUI();updateScriptedLearning();maybeShowHintEconomyTransition()}
 function drawLevels(){let e=document.getElementById("levels");e.innerHTML="";LEVELS.forEach(([name,x])=>{let b=document.createElement("button");b.className="level"+(x===n?" active":"");b.innerHTML=name+"<small>"+x+" × "+x+"</small>";b.onclick=()=>{n=x;init()};e.appendChild(b)})}
 function activeGameMs(){return attemptEngine.activeMs()}
@@ -853,11 +877,61 @@ function adminAlerts(rows){
  for(const r of rows||[]){const started=Number(r.started)||0,completed=Number(r.completed)||0;if(started<3)continue;const rate=started?completed/started:0;if(rate<.55)alerts.push("Q"+r.puzzle_id+" : seulement "+Math.round(rate*100)+" % des joueurs observés terminent la quête ("+started+" joueurs).");if(Number(r.resets)>=started)alerts.push("Q"+r.puzzle_id+" : resets élevés ("+r.resets+" pour "+started+" joueurs).");if(Number(r.hints)>started*.8)alerts.push("Q"+r.puzzle_id+" : indices très utilisés ("+r.hints+").")}
  return alerts.slice(0,6);
 }
+// Canonical map preview: all quests, including unpublished ones, are visible
+// while gameplay remains on the legacy save engine. No new quest may be
+// launched until transactional progression and reward writes are integrated.
+// Only the first incomplete quest in canonical order may start.
+function canonicalQuestAvailable(quest){
+ return !!quest&&quest.legacyIndex===null&&!!(qaActive||(lumenUser&&cloudProfileReady))&&
+  canonicalNextUnsolved(lumenProgress.solved,lumenProgress.canonicalQuestState||{})?.id===quest.id;
+}
+function startCanonicalQuest(quest){
+ if(!canonicalQuestAvailable(quest))return false;
+ canonicalActiveQuest=quest;
+ levelIndex=Math.max(0,Math.min(currentQuestPosition(),currentQuestLimit()-1));
+ replayMode=false;socialChallenge=null;
+ document.getElementById("mapModal").hidden=true;
+ for(const id of ["undo","hint","autoCross"])document.getElementById(id).disabled=false;
+ loadPuzzle();usedHintThisGame=false;refreshJourney();return true;
+}
+
+function renderCanonicalJourneyPreview(){
+ const modal=document.getElementById("mapModal");if(!modal)return;
+ let section=modal.querySelector("#canonicalJourneyPreview");
+ if(!section){section=document.createElement("section");section.id="canonicalJourneyPreview";section.setAttribute("aria-label","Catalogue des Aventures");
+  const sheet=modal.querySelector(".map-sheet");if(!sheet)return;sheet.appendChild(section)}
+ section.replaceChildren();
+ const title=document.createElement("h3");title.textContent="Toutes les Aventures";section.appendChild(title);
+ const warning=document.createElement("p");warning.textContent="Les quêtes sont présentées dans leur ordre réel. La prochaine nouvelle grille se débloque dès que les quêtes précédentes sont réussies et que le compte est synchronisé.";
+ section.appendChild(warning);
+ for(const adventure of canonicalAdventureSummary(lumenProgress)){
+  const group=document.createElement("details"),heading=document.createElement("summary");
+  heading.textContent=adventure.title+" · "+adventure.completed+"/"+adventure.quests+" quêtes";group.appendChild(heading);
+  const constellationIds=[...new Set(canonicalQuestList().filter(q=>q.packId===adventure.id).map(q=>q.constellationId))];
+  for(const id of constellationIds){
+   const quests=canonicalQuestList().filter(q=>q.constellationId===id),c=document.createElement("details"),label=document.createElement("summary");
+   label.textContent=(CONTENT_CONSTELLATIONS.find(x=>x.id===id)?.label||id)+" · "+quests.length+" quêtes";c.appendChild(label);
+   const list=document.createElement("div");list.className="canonical-quest-list";
+   for(const quest of quests){
+    const legacy=quest.legacyIndex,solved=legacy!==null?!!lumenProgress.solved?.[legacy]:!!lumenProgress.canonicalQuestState?.[quest.id]?.solved;
+    const available=legacy===null?canonicalQuestAvailable(quest):questIsAccessible(legacy);
+    const button=document.createElement("button");button.type="button";button.className="puzzle-card"+(solved?" done":"")+(available?"":" locked");
+    button.textContent="Quête "+quest.ordinal+(solved?" ✓":!available?" · verrouillée":"");
+    button.title=available?"Jouer la quête":"Quête verrouillée jusqu’à la précédente ou à la synchronisation du compte";
+    button.disabled=!available;button.dataset.questId=quest.id;
+    if(available)button.onclick=()=>{if(legacy===null){startCanonicalQuest(quest);return}if(solved){startReplay(legacy);return}canonicalActiveQuest=null;levelIndex=legacy;replayMode=false;modal.hidden=true;loadPuzzle();refreshJourney()};
+    list.appendChild(button);
+   }
+   c.appendChild(list);group.appendChild(c);
+  }
+  section.appendChild(group);
+ }
+}
 function renderAdminCatalogue(){
  const host=document.getElementById("adminCatalogueTree");
  if(!host)return;
  host.replaceChildren();
- for(const adventure of adminCatalogueTree()){
+ for(const adventure of adminCanonicalCatalogueTree()){
   const group=document.createElement("details");
   const heading=document.createElement("summary");
   heading.textContent=adventure.name+" · "+adventure.constellations.length+" constellations · "+adventure.questCount+" quêtes";
@@ -1002,10 +1076,53 @@ function celebrateLearningReplaySuccess(){
 }
 
 function renderSuccessRewards(stars){let el=document.getElementById("successRewards");if(!el)return;let run=performanceRun(levelIndex),rewards=[];if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});if(run.qualifying&&run.autonomy)rewards.push({cls:"autonomy",icon:performanceIcon("autonomy"),label:"Autonomie"});if(run.qualifying&&run.speed)rewards.push({cls:"speed",icon:performanceIcon("speed"),label:"Rapidité"});if(run.qualifying&&run.noError)rewards.push({cls:"no-error",icon:performanceIcon("noError"),label:"Sans erreur"});if(run.qualifying&&run.mastery)rewards.push({cls:"mastery",icon:performanceIcon("mastery"),label:"Maîtrise"});el.innerHTML=rewards.map((r,i)=>'<span class="success-reward '+r.cls+'" style="--reward-delay:'+(220+i*210)+'ms"><span>'+r.icon+'</span><span>'+r.label+'</span></span>').join("");el.classList.toggle("mastery-earned",!!run.mastery)}
+// Canonical achievements use stable-ID cloud CAS, never the historical
+// puzzle_id RPC or the old `solved[levelIndex]` reward calculation.
+async function celebrateCanonicalSuccess(){
+ const q=canonicalActiveQuest;if(!q||celebrated)return;
+ const seconds=activeGameSeconds(),attempt=attemptEngine.snapshot();
+ const assisted=!!attempt?.assistanceUsed||!!usedHintThisGame;
+ const badges={speed:seconds<=60,autonomy:!assisted,noError:!attempt?.mistakeCommitted};
+ badges.mastery=badges.speed&&badges.autonomy&&badges.noError;
+ const reward={badges,performance:{bestTime:seconds,assisted,seconds},stars:1};
+ let committed;
+ try{
+  if(qaActive){committed=acknowledgeCanonicalVictory(lumenProgress,q.id,reward)}
+  else{
+   if(!lumenUser||!cloudProfileReady)throw Error("Compte synchronisé requis");
+   if(!(await confirmCloudReward()))return;
+   committed=await commitCanonicalVictory(lumenSupabase,q.id,reward);
+  }
+ }catch(error){
+  console.error("Canonical victory not saved",error);
+  msg.textContent="Sauvegarde de la quête impossible. Ta grille reste disponible, réessaie sans la perdre.";
+  return;
+ }
+ // Install only the acknowledged profile; never optimistically mutate a
+ // legacy quest or attempt to upload new IDs as numeric puzzle IDs.
+ lumenProgress=committed.profile;
+ if(!qaActive){cloudProfileBaseline=structuredClone(committed.profile)}
+ const previousCloudReady=cloudProfileReady;
+ cloudProfileReady=false;try{saveLumenProgress()}finally{cloudProfileReady=previousCloudReady}
+ trackAttemptEvent("attempt_completed",{outcome:"success",canonical_id:q.id,first_completion:committed.newlyCompleted});
+ celebrated=true;attemptEngine.complete();clearInterval(timer);pauseGameClock();clock();
+ board.classList.add("win");
+ document.getElementById("successTitle").textContent="Quête "+q.ordinal+" accomplie !";
+ document.getElementById("successSub").textContent=committed.newlyCompleted?"+ "+(badges.autonomy?15:10)+" XP · +1 étoile · sauvegarde confirmée":"Quête déjà réussie · sauvegarde confirmée";
+ document.getElementById("successTime").textContent=document.getElementById("time").textContent;
+ const share=document.getElementById("successShare");if(share)share.hidden=true;
+ const achievements=document.getElementById("successAchievement");if(achievements)achievements.hidden=true;
+ const rewards=document.getElementById("successRewards");if(rewards)rewards.hidden=true;
+ const challenge=document.getElementById("questResult");if(challenge)challenge.hidden=true;
+ document.getElementById("successNew").textContent="Quête suivante";
+ document.getElementById("successOverlay").classList.add("show");refreshJourney();
+}
+
 async function celebrateSuccess(){
  if(celebrated)return;
  haptic([28,45,38]);
  if(socialChallenge){celebrateSocialChallengeSuccess();return}
+ if(canonicalActiveQuest){await celebrateCanonicalSuccess();return}
  if(learningReplayActive()){celebrateLearningReplaySuccess();return}
  const firstCompletion=!lumenProgress.solved[levelIndex];
  trackAttemptEvent("attempt_completed",{outcome:"success",first_completion:firstCompletion,hint_uses:hintUsesThisGame,verify_uses:verifyUsesThisGame,auto_marking_used:!!autoUsedThisGame});
@@ -1466,8 +1583,29 @@ const ac=document.getElementById("autoCross");
 const lumenAutoCrossStored=localStorage.getItem("lumenAutoCross");const legacyAutoCrossStored=localStorage.getItem("regaliaAutoCross");ac.checked=(lumenAutoCrossStored??legacyAutoCrossStored)!=="0";if(lumenAutoCrossStored===null&&legacyAutoCrossStored!==null){localStorage.setItem("lumenAutoCross",legacyAutoCrossStored);localStorage.removeItem("regaliaAutoCross")};
 ac.onchange=()=>{if(celebrated){ac.checked=!ac.checked;return}if(levelIndex<=4&&!replayMode){ac.checked=false;return}if(ac.checked){autoUsedThisGame=true;attemptEngine.markAssistance();trackAttemptEvent("auto_marking_enabled")}localStorage.setItem("lumenAutoCross",ac.checked?"1":"0");if(!ac.checked)maybeShowManualCrossTip();hi=null;render()};
 function advanceToNextPuzzle(){
+ if(canonicalActiveQuest){
+  if(!questIsCompleted(lumenProgress,canonicalActiveQuest.id))return;
+  const next=canonicalQuestByOrdinal(canonicalActiveQuest.ordinal+1);
+  if(next?.legacyIndex===null&&canonicalQuestAvailable(next)){hideSuccess();startCanonicalQuest(next);return}
+  canonicalActiveQuest=null;hideSuccess();
+  if(next&&next.legacyIndex!==null&&questIsAccessible(next.legacyIndex)){
+   levelIndex=next.legacyIndex;replayMode=!!lumenProgress.solved[levelIndex];
+   for(const id of ["undo","hint","autoCross"])document.getElementById(id).disabled=false;
+   loadPuzzle();refreshJourney();return;
+  }
+  openJourneyMap();return;
+ }
+ const canonicalPrevious=canonicalQuestForLegacy(levelIndex);
+ const canonicalFollowing=canonicalPrevious&&canonicalQuestByOrdinal(canonicalPrevious.ordinal+1);
+ if(lumenProgress.solved[levelIndex]&&canonicalFollowing?.legacyIndex===null&&!historicalContinuationAllowed(levelIndex+1)){
+  if(canonicalQuestAvailable(canonicalFollowing)){hideSuccess();startCanonicalQuest(canonicalFollowing);return}
+  // Do not skip an inserted quest just because the legacy numeric index continues.
+  hideSuccess();openJourneyMap();return;
+ }
  if(accountRequired()){maybeOfferAccount();hideSuccess();return}
  if(!lumenProgress.solved[levelIndex])return;
+ // Canonical order, not consecutive legacy storage IDs, controls unlocking.
+ if(canonicalFollowing&&canonicalFollowing.legacyIndex!==null&&canonicalFollowing.legacyIndex!==levelIndex+1){hideSuccess();openJourneyMap();return}
  if(levelIndex===4&&!replayMode&&!socialChallenge&&typeof maybeOfferAccount==='function'&&maybeOfferAccount()){hideSuccess();return}
  // "Quête suivante" is relative to the quest just played, including replays.
  // sequentialSolvedCount remains the highest unlocked campaign position.
@@ -1489,7 +1627,7 @@ document.getElementById("successRetry").onclick=()=>{
  loadPuzzle();usedHintThisGame=false;refreshJourney();
 };
 document.getElementById("successSky").onclick=()=>{hideSuccess();let learningTour=false;try{learningTour=levelIndex===7&&localStorage.getItem("lumenSkyTourSeen")!=="1"}catch(_){}openJourneyMap(true,{advanceOnClose:true,learningTour})};
-function learningSkyDiscoveryRequired(){return levelIndex===7&&!replayMode&&!socialChallenge}
+function learningSkyDiscoveryRequired(){return !canonicalActiveQuest&&levelIndex===7&&!replayMode&&!socialChallenge}
 function updateLearningSuccessCTA(){
  const b=document.getElementById("successNew");if(!b)return;
  b.textContent=learningSkyDiscoveryRequired()?"✦ Découvrir Mon ciel":"Quête suivante";
@@ -1594,10 +1732,10 @@ function performanceBadges(i){
  const badges=[{cls:"autonomy",key:"autonomy",label:"Autonomie"},{cls:"speed",key:"speed",label:"Rapidité"},{cls:"no-error",key:"noError",label:"Sans erreur"},{cls:"mastery",key:"mastery",label:"Maîtrise"}];
  return '<span class="performance-grid" aria-label="Performance">'+badges.map(x=>{const locked=!eligibility[x.key],got=!!earned[x.key],state=locked?" verrouillé":got?" obtenu":" disponible";return '<span class="performance-slot '+x.cls+(got?' earned':'')+(locked?' locked':'')+'" title="'+x.label+state+'" aria-label="'+x.label+state+'">'+(locked?'🔒':got?performanceIcon(x.key):'')+'</span>'}).join("")+'</span>'
 }
-function startReplay(i){if(!lumenProgress.solved[i])return;levelIndex=i;replayMode=true;document.getElementById("mapModal").hidden=true;document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;loadPuzzle();usedHintThisGame=false;refreshJourney()}
+function startReplay(i){if(!lumenProgress.solved[i])return;canonicalActiveQuest=null;levelIndex=i;replayMode=true;document.getElementById("mapModal").hidden=true;document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;loadPuzzle();usedHintThisGame=false;refreshJourney()}
 function renderMap(){
- skyNavigation.render();const puzzleGrid=document.getElementById("puzzleGrid");
- puzzleGrid.innerHTML="";let range=mapConstellationRange(mapConstellation)||constellationGridRange(mapConstellation);for(const [offset,i] of range.quests.entries()){let solved=!!lumenProgress.solved[i],current=i===currentQuestPosition()&&questIsAccessible(i),b=document.createElement("button"),pos=offset+1,meta=performanceBadges(i);b.className="puzzle-card"+(solved?" done":"")+(current?" current":"")+(!solved&&!current?" locked":"");b.innerHTML=solved?meta:(current?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+pos+'</span>':"");b.title=solved?"Rejouer la quête "+pos+" pour améliorer ta performance":current?"Nouvelle quête disponible · quête "+pos:"Quête "+pos+" · verrouillée";b.onclick=()=>{if(solved&&questIsAccessible(i)){startReplay(i);return}if(!current)return;levelIndex=i;replayMode=false;document.getElementById("mapModal").hidden=true;loadPuzzle();refreshJourney()};puzzleGrid.appendChild(b)}if(range.generated){const summary=generatedMapSummary(mapConstellation,lumenProgress.solved);const skyCard=document.getElementById("skyCard");if(skyCard&&summary)skyCard.textContent=summary.name+" · "+summary.completed+"/"+summary.total+" quêtes · "+generatedAdventureRewards(lumenProgress.solved).stars+" ★";}else renderSky(mapConstellation)
+ skyNavigation.render();renderCanonicalJourneyPreview();const puzzleGrid=document.getElementById("puzzleGrid");
+ puzzleGrid.innerHTML="";let range=mapConstellationRange(mapConstellation)||constellationGridRange(mapConstellation);for(const [offset,i] of range.quests.entries()){let solved=!!lumenProgress.solved[i],current=i===currentQuestPosition()&&questIsAccessible(i),b=document.createElement("button"),pos=offset+1,meta=performanceBadges(i);b.className="puzzle-card"+(solved?" done":"")+(current?" current":"")+(!solved&&!current?" locked":"");b.innerHTML=solved?meta:(current?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+pos+'</span>':"");b.title=solved?"Rejouer la quête "+pos+" pour améliorer ta performance":current?"Nouvelle quête disponible · quête "+pos:"Quête "+pos+" · verrouillée";b.onclick=()=>{if(solved&&questIsAccessible(i)){startReplay(i);return}if(!current)return;canonicalActiveQuest=null;levelIndex=i;replayMode=false;document.getElementById("mapModal").hidden=true;loadPuzzle();refreshJourney()};puzzleGrid.appendChild(b)}if(range.generated){const summary=generatedMapSummary(mapConstellation,lumenProgress.solved);const skyCard=document.getElementById("skyCard");if(skyCard&&summary)skyCard.textContent=summary.name+" · "+summary.completed+"/"+summary.total+" quêtes · "+generatedAdventureRewards(lumenProgress.solved).stars+" ★";}else renderSky(mapConstellation)
 }
 function openJourneyMap(focusSky=false,{advanceOnClose=false,learningTour=false}={}){mapConstellation=CONTENT_CONSTELLATIONS.findIndex(c=>c.questIndices.includes(levelIndex));if(mapConstellation<0)mapConstellation=chapterForGrid(levelIndex);const modal=document.getElementById("mapModal");modal.hidden=false;skyNavigation.open();renderMap();const tour=document.getElementById("skyTour");document.getElementById("closeMap").disabled=learningTour;if(tour)tour.hidden=!learningTour;if(learningTour){skyTourStep=0;requestAnimationFrame(renderSkyTourStep)}else clearSkyTourFocus();modal.dataset.advanceOnClose=advanceOnClose&&!!lumenProgress.solved[levelIndex]?"1":"";const attemptMask=document.getElementById("attemptMask");if(attemptMask)attemptMask.hidden=true;document.getElementById(learningTour?"skyTourNext":"closeMap").focus();}
 
