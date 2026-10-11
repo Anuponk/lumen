@@ -148,6 +148,25 @@ async function signIn(redirectTo){
  const {error}=await model.lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:target}});
  return error?{ok:false,reason:"oauth",error}:{ok:true};
 }
+async function emailPasswordAuth(email,password,redirectTo,{createUser=false}={}){
+ if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};
+ const normalized=String(email||"").trim().toLowerCase();
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized))return {ok:false,reason:"email"};
+ if(typeof password!=="string"||password.length<12)return {ok:false,reason:"password"};
+ const callback=String(redirectTo||environment.lumenAuthReturnUrl||"").trim();
+ if(!callback)return {ok:false,reason:"redirect"};
+ const response=createUser
+  ? await model.lumenSupabase.auth.signUp({email:normalized,password,options:{emailRedirectTo:callback}})
+  : await model.lumenSupabase.auth.signInWithPassword({email:normalized,password});
+ if(response.error)return {ok:false,reason:createUser?"signup":"signin",error:response.error};
+ return {ok:true,pendingConfirmation:createUser&&!response.data?.session};
+}
+async function setAccountPassword(password){
+ if(!model.lumenSupabase||!model.lumenUser)return {ok:false,reason:"signed_out"};
+ if(typeof password!=="string"||password.length<12)return {ok:false,reason:"password"};
+ const {error}=await model.lumenSupabase.auth.updateUser({password});
+ return error?{ok:false,reason:"password_update",error}:{ok:true};
+}
 async function sendEmailOtp(email,redirectTo,{createUser=true}={}){
  if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};
  const normalized=String(email||"").trim().toLowerCase();
@@ -174,5 +193,5 @@ async function signOut(){
  model.lumenUser=null;model.lumenEntitlements=[];model.lumenCapabilities=[];model.lumenCloudReady=false;
  onAccountChanged({type:"account"});refreshJourney();return {ok:true};
 }
-return {registerLumenUser,loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,sendEmailOtp,verifyEmailOtp,signOut};
+return {registerLumenUser,loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,sendEmailOtp,verifyEmailOtp,signOut};
 }
