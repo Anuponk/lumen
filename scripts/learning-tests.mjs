@@ -1,3 +1,4 @@
+import {readFileSync} from "node:fs";
 import assert from 'node:assert/strict';
 import { CAT } from '../src/campaign/catalogue.js';
 import { learningStep, dragLearningStep, learningAllows, learningCopy } from '../src/game/learning.js';
@@ -91,3 +92,14 @@ console.log(JSON.stringify({quest2:true,partialDragRestore:true,protectedGuardia
  const ack=ui.slice(ui.indexOf("function closeGuidedConflict(){"),ui.indexOf("let suppressGuidedClickUntil",ui.indexOf("function closeGuidedConflict(){")));
  assert.ok(!ack.includes("guidedPending=null"),"Acknowledging must not unlock incorrect Guardian");
 }
+
+// #240: quest 1's introduction and scripted coach are both dismissible.
+const onboardingUi=readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
+const tutorialUi=readFileSync(new URL("../src/ui/tutorial.js",import.meta.url),"utf8");
+assert.match(onboardingUi,/canSkip:\(\)=>levelIndex===0\|\|tutorialCompletedProof\(\)/);
+assert.match(onboardingUi,/function skipFirstGridGuidance\(\)/);
+assert.match(onboardingUi,/skipFirstGridTutorial=true/);
+assert.match(onboardingUi,/lumenSkipFirstGridTutorial/);
+assert.match(onboardingUi,/!\(skipFirstGridTutorial&&!learningReplayActive\(\)\)/);
+assert.match(onboardingUi,/skipFirstGridGuidance\(\)\};/);
+assert.match(tutorialUi,/closeTutorial\(true\);if\(onSkip\)onSkip\(\)/);

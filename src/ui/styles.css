@@ -643,3 +643,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .account-optin #accountLegacyOtp strong{display:block;margin-top:5px;color:#63d8ff}
 .account-optin #accountEmailStatus{display:block;min-height:19px;margin:12px 0 0;text-align:center;color:#9be8ff;font-size:13px;line-height:1.4}
 @media(max-width:380px){.account-optin .account-optin-card{padding:18px!important}.account-optin-art{height:68px}.account-optin-art span{font-size:47px}}
+
+/* #240: opt-out must not add another row to the quest-one coach on short screens. */
+.learning-board-wrap .scripted-learn:has(.learning-skip:not([hidden])) strong{padding-right:124px}
+.learning-board-wrap .scripted-learn .learning-skip:not([hidden]){position:absolute;top:5px;right:6px;width:auto;margin:0;padding:4px 6px;font-size:10px;line-height:1.2;z-index:2;background:transparent;color:#ffe1a0;border:1px solid rgba(255,225,160,.65);border-radius:8px}

@@ -141,6 +141,18 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   const gate=document.getElementById("accountOptin");if(gate){const wasVisible=!gate.hidden;gate.hidden=true;if(wasVisible)showAccountSavedConfirmation()}
  }catch(e){console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
 },holdLegacyMergeForFullRestore:async()=>true},{setTimeout,console,qaMode});
+let skipFirstGridTutorial=false;
+try{skipFirstGridTutorial=localStorage.getItem(qaKey('lumenSkipFirstGridTutorial'))==='1'}catch(_){}
+function skipFirstGridGuidance(){
+ if(levelIndex!==0||socialChallenge)return;
+ skipFirstGridTutorial=true;
+ try{localStorage.setItem(qaKey('lumenSkipFirstGridTutorial'),'1')}catch(_){}
+ learningTip=null;
+ learningIntroStep=LEARNING_INTRO.length;
+ updateScriptedLearning();
+ configureLearningMode();
+ render();
+}
 function tutorialCompletedProof(){
  try{if(localStorage.getItem(qaKey("lumenTutorialCompletedV1"))==="1")return true}catch(_){}
  return !!(lumenProgress?.solved?.[0]&&lumenProgress?.solved?.[1]);
@@ -149,9 +161,10 @@ function markTutorialCompleted(){
  try{localStorage.setItem(qaKey("lumenTutorialCompletedV1"),"1")}catch(_){}
 }
 function skipTutorialReplay(){
- if(learningReplayActive()){finishLearningReplay();return}
+ if(learningReplayActive()&&tutorialCompletedProof()){finishLearningReplay();return}
+ skipFirstGridGuidance();
 }
-const {renderTutorial,openTutorial,closeTutorial,setupTutorial}=createTutorial(()=>levelIndex<=1,{tutorialSeenKey:qaActive?"lumenQaTutorialSeen":"lumenTutorialSeen",canSkip:()=>tutorialCompletedProof()&&!qaFresh,onSkip:skipTutorialReplay});
+const {renderTutorial,openTutorial,closeTutorial,setupTutorial}=createTutorial(()=>levelIndex<=1,{tutorialSeenKey:qaActive?"lumenQaTutorialSeen":"lumenTutorialSeen",canSkip:()=>levelIndex===0||tutorialCompletedProof()&&!qaFresh,onSkip:skipTutorialReplay});
 let lumenSupabase=null,lumenUser=null,lumenCloudReady=false,lumenEntitlements=[],lumenCapabilities=[];
 try{lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY)}catch(e){console.warn("LUMEN cloud unavailable",e)}
 let lumenNickname="";
@@ -695,7 +708,7 @@ function currentPerformanceEligibility(i){
 function learningQuestActive(){return levelIndex<=1&&!socialChallenge&&(!replayMode||learningReplayActive())}
 function learningIntroActive(){return levelIndex===0&&learningQuestActive()&&state&&state.flat().every(v=>v===0)&&learningIntroStep<LEARNING_INTRO.length}
 function currentLearningStep(){if(learningIntroActive())return {phase:"intro",introStep:learningIntroStep,cells:[],number:0};return levelIndex===1?dragLearningStep(puz,state):learningStep(puz,state)}
-function scriptedLearningActive(){return learningQuestActive()&&!!state&&currentLearningStep().phase!=="complete"}
+function scriptedLearningActive(){return !(skipFirstGridTutorial&&!learningReplayActive())&&learningQuestActive()&&!!state&&currentLearningStep().phase!=="complete"}
 function learningMarkAllowed(r,c){const step=currentLearningStep();return step.phase!=="place"&&learningAllows(step,r,c)}
 function scriptedAllowsGuardian(r,c){const step=currentLearningStep();return step.phase==="place"&&learningAllows(step,r,c)}
 function learningDragAllowed(){return !scriptedLearningActive()||["reuse","drag","practice"].includes(currentLearningStep().phase)}
@@ -749,7 +762,7 @@ function updateScriptedLearning(){
  document.getElementById("learningCoachDismiss").hidden=guided;
  const next=document.getElementById("learningCoachNext");
  if(next){next.hidden=!(guided&&step?.phase==="intro");next.textContent=step?.introStep===LEARNING_INTRO.length-1?"À moi de jouer":"Suivant"}
- if(skip)skip.hidden=!(learningReplayActive()&&tutorialCompletedProof());
+ if(skip){skip.hidden=!((levelIndex===0&&!skipFirstGridTutorial&&!socialChallenge)||(learningReplayActive()&&tutorialCompletedProof()));skip.textContent=levelIndex===0&&!skipFirstGridTutorial?"Passer le tutoriel":"Quitter le tutoriel";}
  if(levelIndex<=1&&!socialChallenge)for(const id of ["undo","hint","verify"])document.getElementById(id).disabled=guided;
  if(levelIndex===1&&!guided&&!replayMode&&!learningTip&&hintUsesThisGame===0)learningTip={title:"Découvre les indices",copy:"Essaie maintenant Indice : il t’explique une logique de résolution sans jouer à ta place. Les indices sont offerts jusqu’à la quête 10."};
  if(card.hidden)return;
@@ -888,10 +901,10 @@ function maybeShowBadgeMilestone(){
  o.dataset.kind=kind;
  if(kind==="speed"){
   title.textContent="Ton premier badge est à gagner";
-  copy.innerHTML="<strong>⚡ Rapidité</strong> est maintenant disponible.<br><br>Réussis la quête avant la fin du temps cible pour l’obtenir. À partir de maintenant, tes performances peuvent donc enrichir chaque quête réussie.";
+  copy.innerHTML="<strong>⚡ Rapidité</strong> : termine cette quête avant le temps cible pour gagner le badge.<br><br>Les règles détaillées restent consultables dans Badges.";
  }else{
   title.textContent="Tous les badges sont maintenant accessibles";
-  copy.innerHTML="<strong>🧠 Autonomie</strong> : réussis sans assistance.<br><br><strong>⚡ Rapidité</strong> : termine avant le temps cible.<br><br><strong>✓ Sans erreur</strong> : réussis sans assistance et sans poursuivre après un mauvais Gardien.<br><br><strong>✦ Maîtrise</strong> : réunis Autonomie, Rapidité et Sans erreur sur le même essai.<br><br>Les assistances restent une façon parfaitement valable de jouer, mais leur utilisation empêche Autonomie, Sans erreur — et donc Maîtrise — sur cet essai.";
+  copy.innerHTML="<strong>🧠 Autonomie</strong> : sans assistance.<br><strong>✓ Sans erreur</strong> : sans erreur conservée et sans assistance.<br><strong>✦ Maîtrise</strong> : réunis les trois badges sur un essai.<br><br>Détails disponibles dans Badges.";
  }
  o.hidden=false;o.style.display="flex";pauseGameClock();
 }
@@ -1899,7 +1912,7 @@ document.getElementById("new").onclick=()=>{
 };
 document.getElementById("learningCoachDismiss").onclick=()=>{learningTip=null;updateScriptedLearning()};
 document.getElementById("learningCoachNext").onclick=advanceLearningIntro;
- const learningSkip=document.getElementById("learningSkip");if(learningSkip)learningSkip.onclick=()=>{if(learningReplayActive()&&tutorialCompletedProof())finishLearningReplay()};
+ const learningSkip=document.getElementById("learningSkip");if(learningSkip)learningSkip.onclick=()=>{if(learningReplayActive()&&tutorialCompletedProof())finishLearningReplay();else skipFirstGridGuidance()};
 document.addEventListener("click",handleLearningTap,true);
 // Start after campaign data are initialized. A deep-linked social challenge resolves its
 // server snapshot before the board is created so campaign progression is never mutated.
