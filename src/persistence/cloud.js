@@ -144,11 +144,16 @@ async function signIn(redirectTo){
  const {error}=await model.lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:target}});
  return error?{ok:false,reason:"oauth",error}:{ok:true};
 }
-async function sendEmailOtp(email){
+async function sendEmailOtp(email,redirectTo){
  if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};
  const normalized=String(email||"").trim().toLowerCase();
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized))return {ok:false,reason:"email"};
- const {error}=await model.lumenSupabase.auth.signInWithOtp({email:normalized,options:{shouldCreateUser:true}});
+ const callback=String(redirectTo||environment.lumenAuthReturnUrl||"").trim();
+  // Supabase Auth templates are project-global; explicitly bind the OTP return to Lumen.
+  const options={shouldCreateUser:true};
+  if(!callback)return {ok:false,reason:"redirect"};
+  options.emailRedirectTo=callback;
+  const {error}=await model.lumenSupabase.auth.signInWithOtp({email:normalized,options});
  return error?{ok:false,reason:"otp_send",error}:{ok:true,email:normalized};
 }
 async function verifyEmailOtp(email,token){
