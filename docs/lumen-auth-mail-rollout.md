@@ -10,7 +10,7 @@ This implementation does NOT use the project-wide Send Email Hook or change the 
 Google login and the Supabase user ID used by cloud saves are unchanged.
 
 ## Production prerequisites — not configured by committing code
-- `LUMEN_AUTH_MAIL_ENABLED=true` **only after staging E2E and explicit production approval**. Default is disabled.
+- Set `LUMEN_AUTH_TEST_EMAIL` to a **single test mailbox** (e.g. Gmail +alias) before test. Until test acceptance, all other addresses are rejected with HTTP 403. Do not publish the mailbox secret in Git.\n- Set `LUMEN_AUTH_MAIL_ENABLED=true` **only for controlled allowlisted testing**. Default is disabled. Do not remove the allowlist before E2E acceptance.
 - `LUMEN_RESEND_API_KEY`: restricted key for verified `nopuna.fr`.
 - Apply `supabase/migrations/20261011190000_lumen_auth_mail_throttle.sql` before deployment: service-role-only atomic RPC with per-email and global hourly quotas.
 - Supabase-provided `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` server-side only. Never add these secrets to frontend, source, or PR.
