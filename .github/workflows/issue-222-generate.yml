@@ -1,0 +1,41 @@
+name: Generate issue 222 staged grids
+on:
+  pull_request:
+    paths:
+      - 'scripts/issue-222-*.mjs'
+      - '.github/workflows/issue-222-generate.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  generate:
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.draft)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate and audit all 104 unpublished grids
+        run: node scripts/issue-222-generate-grids.mjs
+      - name: Check generated content
+        run: |
+          node --input-type=module -e "import fs from 'node:fs';const s=JSON.parse(fs.readFileSync('content/generated/issue-222-additions.json')); if(s.status!=='staged-only'||s.quests.length!==104||new Set(s.quests.map(q=>q.id)).size!==104||s.quests.some(q=>!q.audit.ok||q.audit.solutions!==1))process.exit(1);console.log('104 validated staged quests');"
+      - name: Commit staged catalogue to PR branch
+        if: github.event_name == 'pull_request'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add content/generated/issue-222-additions.json
+          if ! git diff --cached --quiet; then
+            git commit -m "content(#222): stage 104 audited quest grids [skip ci]"
+            git push origin HEAD:"${{ github.event.pull_request.head.ref }}"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue-222-audited-staged-grids
+          path: content/generated/issue-222-additions.json
