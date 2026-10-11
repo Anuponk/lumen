@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
 import {webcrypto} from "node:crypto";
+import {planAuthEmails} from "../src/auth/email-delivery-plan.js";
 
 const edgeSource=fs.readFileSync("supabase/functions/lumen-soldezen-auth-email/index.ts","utf8")
   .replace(/^import .*;\n/gm,"");
@@ -15,13 +16,7 @@ async function runScenario({mode="ok",event=payload(),signed=true,repeat=false}=
  const sandbox={
   Deno:{env:{get:(key)=>env[key]},serve:(fn)=>{handler=fn}},
   Webhook:class{verify(raw,headers){if(headers["webhook-signature"]!=="valid")throw Error("bad signature");return JSON.parse(raw)}},
-  planAuthEmails:(value)=>{
-   const url=value?.email_data?.redirect_to;
-   if(!/^https:\/\/(lumen\.nopuna\.fr|soldezen\.fr)\//.test(url||""))return {ok:false,reason:"unrecognized_origin"};
-   const brand=url.includes("lumen.nopuna.fr")?"lumen":"soldezen",action=value.email_data.email_action_type;
-   const deliveries=action==="email_change"?[{email:value.user.email,token:value.email_data.token,role:"current"},{email:value.user.new_email,token:value.email_data.token_new,role:"new"}]:[{email:value.user.email,token:value.email_data.token,role:"primary"}];
-   return {ok:true,brand,action,deliveries};
-  },
+  planAuthEmails,
   fetch:async(url,options)=>{
    if(url.includes("/rest/v1/rpc/")){
     const name=url.split("/").at(-1),v=JSON.parse(options.body),key=v.p_key;
