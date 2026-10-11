@@ -115,7 +115,7 @@ get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get navigationLocked(){return !!socialChallenge},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
-const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,sendEmailOtp,verifyEmailOtp,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI()},renderDaily:(...args)=>renderDaily(...args),afterAuthCloudSync:async()=>{
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,sendEmailOtp,verifyEmailOtp,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI()},renderDaily:(...args)=>renderDaily(...args),afterAuthCloudSync:async()=>{
  if(qaActive||!lumenUser||!lumenSupabase)return;
  cloudProfileReady=false;cloudProfileBaseline=null;
  try{
@@ -166,6 +166,7 @@ function openEmailAccountOffer(mode="signup"){accountEmailMode=mode==="login"?"l
  if(password)password.autocomplete=accountEmailMode==="login"?"current-password":"new-password";
  if(submit)submit.textContent=accountEmailMode==="login"?"Se connecter":"Créer mon compte";
  const legacy=document.getElementById("accountLegacyOtp");if(legacy)legacy.hidden=accountEmailMode!=="login";
+ const recover=document.getElementById("accountRecovery");if(recover)recover.hidden=accountEmailMode!=="login";
  document.getElementById("accountEmailSend").hidden=true;
  document.getElementById("accountOtpStep").hidden=true;
  document.getElementById("accountEmail")?.focus();trackLumenEvent("account_email_selected",null,{milestone:5,source:"quest_5_gate",qa:qaActive})}
@@ -186,6 +187,12 @@ async function submitAccountPassword(){
   try{sessionStorage.setItem("lumenAccountOfferSignInPending","1")}catch(_){}
   if(status)status.textContent="Compte connecté ✓";
  }
+}
+async function recoverAccountPassword(){
+ const email=document.getElementById("accountEmail")?.value;
+ const status=document.getElementById("accountEmailStatus");
+ const result=await requestPasswordRecovery(email);
+ if(status)status.textContent=result.ok?"Si cette adresse est enregistrée, un lien de récupération a été envoyé.":result.reason==="email"?"Entre une adresse email valide.":"Récupération indisponible pour le moment.";
 }
 function showLegacyOtp(){
  const sender=document.getElementById("accountEmailSend"),step=document.getElementById("accountOtpStep");
@@ -1851,6 +1858,7 @@ const accountOptinEnable=document.getElementById("accountOptinEnable"),accountOp
 if(passwordSubmit)passwordSubmit.onclick=submitAccountPassword;
 const setPasswordSave=document.getElementById("setPasswordSave");if(setPasswordSave)setPasswordSave.onclick=saveExistingAccountPassword;
 if(legacyOtp)legacyOtp.onclick=showLegacyOtp;
+const recovery=document.getElementById("accountRecovery");if(recovery)recovery.onclick=recoverAccountPassword;
 if(accountEmailSend)accountEmailSend.onclick=requestAccountEmailOtp;if(accountOtpVerify)accountOtpVerify.onclick=confirmAccountEmailOtp;
 const installEnable=document.getElementById("installEnable"),installLater=document.getElementById("installLater");if(installEnable)installEnable.onclick=installLumen;if(installLater)installLater.onclick=dismissInstallLater;const successShare=document.getElementById("successShare");if(successShare)successShare.onclick=createSocialChallengeFromSuccess;
 const nativeChallengeShare=document.getElementById("challengeNativeShare"),copyChallengeLink=document.getElementById("challengeCopyLink"),closeChallengeShare=document.getElementById("challengeShareClose");if(nativeChallengeShare)nativeChallengeShare.onclick=sharePendingChallenge;if(copyChallengeLink)copyChallengeLink.onclick=copyPendingChallenge;if(closeChallengeShare)closeChallengeShare.onclick=()=>document.getElementById("challengeShareModal").hidden=true;
