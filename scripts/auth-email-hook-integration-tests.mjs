@@ -30,6 +30,7 @@ async function runScenario({mode="ok",event=payload(),signed=true,repeat=false}=
    calls.push(message);
    if(mode==="fail_first"&&calls.length===1)return new Response("unavailable",{status:500});
    if(mode==="fail_second"&&calls.length===2)return new Response("unavailable",{status:500});
+   if(mode==="missing_provider_id")return new Response(JSON.stringify({}),{status:200});
    sent.push(message);
    return new Response(JSON.stringify({id:"provider-"+sent.length}),{status:200});
   },
@@ -44,6 +45,7 @@ let x=await runScenario({repeat:true});assert.deepEqual(x.statuses,[200,200]);as
 x=await runScenario({signed:false});assert.deepEqual(x.statuses,[401,undefined]);assert.equal(x.calls.length,0);
 x=await runScenario({event:payload("signup","https://evil.invalid/")});assert.equal(x.statuses[0],422);assert.equal(x.calls.length,0);
 x=await runScenario({mode:"fail_first",repeat:true});assert.deepEqual(x.statuses,[502,503]);assert.equal(x.calls.length,1);
+x=await runScenario({mode:"missing_provider_id",repeat:true});assert.deepEqual(x.statuses,[502,503]);assert.equal(x.calls.length,1);assert.equal([...x.ledger.values()][0].state,"pending");
 x=await runScenario({mode:"fail_second",event:payload("email_change"),repeat:true});assert.deepEqual(x.statuses,[502,503]);assert.equal(x.sent.length,1);assert.equal(x.calls.length,2);
 x=await runScenario({event:payload("signup","https://soldezen.fr/")});assert.equal(x.statuses[0],200);assert.equal(x.sent[0].from,"auth@soldezen.fr");
 assert.match(x.sent[0].subject,/SoldeZen/);

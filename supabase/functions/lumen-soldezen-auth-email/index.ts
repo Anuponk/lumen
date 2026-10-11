@@ -55,7 +55,9 @@ Deno.serve(async(req)=>{
   try{
    const result=await fetch("https://api.resend.com/emails",{method:"POST",headers:{"authorization":"Bearer "+apiKey,"content-type":"application/json","Idempotency-Key":key},body:JSON.stringify({from:sender,to:[delivery.email],...content})});
    if(!result.ok)return json(502); // pending claim retained for investigation
-   const response=await result.json();providerId=typeof response.id==="string"?response.id:"";
+   const response=await result.json();providerId=typeof response.id==="string"?response.id.trim():"";
+   // A 2xx response without a message ID is ambiguous; never mark as sent.
+   if(!providerId)return json(502);
   }catch{return json(502)}
   try{
    const recorded=await ledgerCall("lumen_auth_mail_mark_sent",{p_key:key,p_fingerprint:hash,p_provider_id:providerId});
