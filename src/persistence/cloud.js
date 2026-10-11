@@ -152,7 +152,7 @@ async function emailPasswordAuth(email,password,redirectTo,{createUser=false}={}
  if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};
  const normalized=String(email||"").trim().toLowerCase();
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized))return {ok:false,reason:"email"};
- if(typeof password!=="string"||password.length<12)return {ok:false,reason:"password"};
+ if(typeof password!=="string"||(createUser?password.length<12:password.length<1))return {ok:false,reason:"password"};
  const callback=String(redirectTo||environment.lumenAuthReturnUrl||"").trim();
  if(!callback)return {ok:false,reason:"redirect"};
  const response=createUser
