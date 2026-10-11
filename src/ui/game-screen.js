@@ -751,7 +751,12 @@ function positionLearningCoach(){
  const width=Math.min(mobile?innerWidth-20:330,innerWidth-20);
  card.style.width=width+"px";
  const actions=document.querySelector(".actions").getBoundingClientRect();
- const top=mobile?Math.min(innerHeight-card.offsetHeight-8,Math.max(rect.bottom,actions.bottom)+10):Math.max(12,Math.min(rect.top,innerHeight-card.offsetHeight-12));
+ const compactLesson=mobile&&levelIndex<=1;
+ const belowActions=actions.bottom+8;
+ card.style.maxHeight=compactLesson?Math.max(32,innerHeight-belowActions-8)+"px":"";
+ card.style.overflowY=compactLesson?"auto":"";
+ const aboveBoard=rect.top-card.offsetHeight-8;
+ const top=mobile?(compactLesson?Math.min(belowActions,innerHeight-40):aboveBoard>=48?aboveBoard:Math.max(48,Math.min(innerHeight-card.offsetHeight-8,belowActions))):Math.max(12,Math.min(rect.top,innerHeight-card.offsetHeight-12));
  const left=mobile?Math.max(10,(innerWidth-width)/2):rect.right+14+width<=innerWidth?rect.right+14:Math.max(10,rect.left-width-14);
  card.style.left=left+"px";card.style.top=top+"px";
 }

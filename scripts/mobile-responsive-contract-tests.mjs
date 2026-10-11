@@ -1,0 +1,16 @@
+import fs from "node:fs";
+import assert from "node:assert/strict";
+const css=fs.readFileSync(new URL("../src/ui/styles.css",import.meta.url),"utf8");
+const html=fs.readFileSync(new URL("../index.html",import.meta.url),"utf8");
+assert.match(html,/name="viewport"[^>]*viewport-fit=cover/);
+assert.match(css,/\/\* #228 — Mobile viewport contract/);
+const section=css.split("/* #228 — Mobile viewport contract")[1];
+assert.match(section,/100svh/);
+assert.match(section,/100dvh/);
+assert.match(section,/safe-area-inset-bottom/);
+assert.match(section,/overflow-y:auto/);
+assert.match(section,/orientation:landscape/);
+assert.match(section,/max-width:380px/);
+assert.match(section,/\.actions button\{min-height:40px\}/);
+assert.match(section,/\.tutorial-card,\.account-optin \.account-optin-card\{max-height:/);
+console.log("PASS: #228 mobile responsive CSS contract");
