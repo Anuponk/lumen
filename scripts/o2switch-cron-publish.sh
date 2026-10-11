@@ -46,7 +46,7 @@ request=urllib.request.Request(url,headers={"Accept":"application/vnd.github+jso
 try:
     with urllib.request.urlopen(request,timeout=20) as r: runs=json.load(r)["workflow_runs"]
 except Exception as e: sys.exit("GitHub CI verification failed: "+str(e))
-matches=[r for r in runs if r.get("head_sha")==sha and r.get("event") in ("push","workflow_dispatch") and r.get("head_branch")=="main"]
+matches=[r for r in runs if r.get("head_sha")==sha and r.get("event") in ("push","workflow_dispatch","schedule") and r.get("head_branch")=="main"]
 if not any(r.get("status")=="completed" and r.get("conclusion")=="success" for r in matches):
     if not matches or any(r.get("status")!="completed" for r in matches):
         print("CI still pending for main SHA "+sha)
