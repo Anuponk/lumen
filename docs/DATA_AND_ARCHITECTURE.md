@@ -1,5 +1,22 @@
 # Data and architecture
 
+## Cloud persistence contract
+
+**Protected product invariant (#248):** anything earned or purchased by an authenticated player must be durably retrievable after another-device sign-in, PWA reinstall, local cache loss, reconnect or migration. Never replace a nonempty cloud record with an empty or stale local snapshot.
+
+### Data ownership and invariants
+| Data | Canonical source | Restore / merge rule |
+|---|---|---|
+| Quest completion, constellation unlocks, stars and badges | Authenticated cloud player record | Preserve earned achievements; deduplicate by stable quest/attempt identity; merge by documented progression semantics, never blind whole-profile replacement |
+| Performance history and active attempts | Cloud after confirmed sync; offline changes pending | Stable identities, explicit conflict and retry policy; preserve existing history |
+| Earned/spent Éclats and purchased consumables | Server-side auditable ledger / transactions for paid or spendable balances | Atomic, idempotent grants and spends; never take numeric max, which could undo a valid purchase/spend |
+| Purchased skills, cosmetics, Adventure packs | Server-side immutable transaction history and current entitlements | Verify purchase server-side, grant exactly once, recover on every authenticated device; refunds/revocations as auditable state changes |
+| Guest progress | Local until safely claimed by authenticated account | Explicit non-destructive account-link/merge; warn about device-local risk before paid purchase |
+
+These are **target contracts**, not a claim that all implementations already exist. Adding paid commerce must not ship before server-side entitlements and tested restoration exist. An offline write is pending until server acknowledgement; do not label it cloud-saved prematurely. Use idempotency keys, stable IDs and authorization/RLS; separate Lumen data and SoldeZen data even when sharing a Supabase project. Test old schema/profile upgrades and delayed/out-of-order updates.
+
+Any added player field MUST have a documented owner, cloud write/read, reconciliation policy, migration/default for old saves, and a regression test. Follow the [cloud persistence regression matrix](TESTING.md#cloud-persistence-regression-matrix) and PR impact checklist. Do not silently suppress or delete tests.
+
 ## Client
 LUMEN is a static web/PWA application using native ES modules without a build step. `index.html` is a markup shell: the existing document markup, stylesheet link, Supabase CDN script and module entry point. It has no inline JavaScript or CSS. `src/main.js` starts the UI controller; domain modules contain the application logic. `manifest.webmanifest` and `sw.js` are unchanged.
 
