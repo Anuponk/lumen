@@ -5,8 +5,6 @@ const {activeGameSeconds,exactSkyScoreForSolvedPrefix,saveLumenProgress,refreshJ
 const campaignQuestCount=()=>Math.max(0,Number(hooks.campaignQuestCount?.()??baseCampaignQuestCount()));
 const {setTimeout,console}=environment;
 const cloudWritesDisabled=()=>!!environment.qaMode;
-// Prevent legacy browser saves from being imported into a different Supabase account.
-const allowLegacyCloudImport=false;
 async function registerLumenUser(){
  if(!model.lumenSupabase||!model.lumenUser||cloudWritesDisabled())return;
  const {error}=await model.lumenSupabase.rpc("lumen_register_user");
@@ -58,7 +56,7 @@ async function cloudMergeProgress(){
  const backup=Object.keys(model.lumenProgress.historyBackup||{}).filter(k=>model.lumenProgress.historyBackup[k]).map(Number).filter(x=>x>=0&&x<campaignQuestCount());
  // Progress is monotonic: a stale cloud snapshot must never erase newer
  // local/backup completions (notably around Adventure boundaries).
- const authoritative=new Set([...cloud,...(allowLegacyCloudImport?backup:[]),...(allowLegacyCloudImport?local:[])]);
+ const authoritative=new Set([...cloud,...backup,...local]);
  let count=0;while(count<campaignQuestCount()&&authoritative.has(count))count++;
  const restored={};for(let i=0;i<count;i++)restored[i]=1;
  model.lumenProgress.solved=restored;
@@ -67,7 +65,7 @@ async function cloudMergeProgress(){
  model.lumenProgress.skyScore=exactSkyScoreForSolvedPrefix(Math.min(count,baseCampaignQuestCount()));
  model.lumenProgress.skyHistoryVersion=4;
  saveLumenProgress();
- for(const i of (allowLegacyCloudImport?local:[]))if(!cloud.has(i)){
+ for(const i of local)if(!cloud.has(i)){
    const {error:e}=await model.lumenSupabase.rpc("lumen_save_progress",{p_puzzle_id:i+1,p_duration_seconds:null,p_hints_used:(model.lumenProgress.noHint&&model.lumenProgress.noHint[i])?0:1});
    if(e)console.warn("LUMEN import local",e);
  }
