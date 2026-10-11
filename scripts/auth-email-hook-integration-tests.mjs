@@ -46,4 +46,8 @@ x=await runScenario({event:payload("signup","https://evil.invalid/")});assert.eq
 x=await runScenario({mode:"fail_first",repeat:true});assert.deepEqual(x.statuses,[502,503]);assert.equal(x.calls.length,1);
 x=await runScenario({mode:"fail_second",event:payload("email_change"),repeat:true});assert.deepEqual(x.statuses,[502,503]);assert.equal(x.sent.length,1);assert.equal(x.calls.length,2);
 x=await runScenario({event:payload("signup","https://soldezen.fr/")});assert.equal(x.statuses[0],200);assert.equal(x.sent[0].from,"auth@soldezen.fr");
+assert.match(x.sent[0].subject,/SoldeZen/);
+x=await runScenario({event:payload("recovery")});assert.equal(x.statuses[0],200);assert.match(x.sent[0].subject,/Lumen/);
+x=await runScenario({event:payload("signup","https://lumen.nopuna.fr.evil.invalid/")});assert.equal(x.statuses[0],422);assert.equal(x.calls.length,0);
+x=await runScenario({event:payload("email_change"),repeat:true});assert.deepEqual(x.statuses,[200,200]);assert.equal(x.sent.length,2);assert.equal(x.calls.length,2);
 console.log("Auth hook mocked integration: signature rejection, brand isolation, duplicate replay, provider failure, partial dual-send all passed");
