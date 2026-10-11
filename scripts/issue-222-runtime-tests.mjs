@@ -55,4 +55,6 @@ assert.match(gameScreen,/canonicalQuestAvailable\(quest\)/);
 assert.match(gameScreen,/startCanonicalQuest\(quest\)/);
 assert.match(gameScreen,/await commitCanonicalVictory\(lumenSupabase,q\.id,reward\)/);
 assert.match(gameScreen,/const canonicalFollowing=canonicalPrevious&&canonicalQuestByOrdinal/);
+assert.match(gameScreen,/if\(!current\)return;canonicalActiveQuest=null;levelIndex=i/);
+assert.match(gameScreen,/badges\.autonomy\?15:10/);
 console.log("Canonical 400-quest registry: stable identity, legacy save keys and pagination verified");
