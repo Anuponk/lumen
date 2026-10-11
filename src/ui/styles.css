@@ -728,3 +728,13 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 
 /* #233: unobtrusive release identity in the account menu. */
 #lumenAccountVersion{display:block;margin-top:12px;padding-top:8px;border-top:1px solid rgba(128,128,128,.2);font-size:11px;opacity:.65;text-align:center;overflow-wrap:anywhere}
+
+/* Mon ciel: celebrate earned astronomical stars without changing progress. */
+#sectorTabs .constellation-card.completed{border-color:rgba(103,231,255,.48);background:radial-gradient(ellipse at 50% 38%,rgba(40,113,147,.18),transparent 72%),#0e2133}
+#sectorTabs .constellation-card.completed .sky-star.on{fill:#eaffff;filter:drop-shadow(0 0 5px #72e9ff) drop-shadow(0 0 3px #b5f6ff)}
+#sectorTabs .constellation-card.completed .sky-line.on{stroke:#79dff5;filter:drop-shadow(0 0 3px #57cfee)}
+#sectorTabs .constellation-badge-progress{font-size:11px;color:#8fdbe8;font-variant-numeric:tabular-nums}
+@media(prefers-reduced-motion:reduce){#sectorTabs .constellation-card.completed *{animation:none!important}}
+
+/* More readable constellation silhouettes on compact mobile cards. */
+#sectorTabs .constellation-card svg{height:clamp(54px,10vh,92px);max-width:96%;overflow:visible}
