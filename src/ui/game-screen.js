@@ -327,7 +327,7 @@ function setupMobileAuth(){
    menu.hidden=true;
    if(!lumenSupabase)return;
    if(lumenUser){await signOut();return}
-   openEmailAccountOffer("login");
+   const result=await signIn(new URL("/", location.origin).toString());if(!result.ok&&result.reason==="oauth")alert("Connexion impossible : "+result.error.message);
  };
  const qaSwitch=document.getElementById("qaAccountSwitch"),qaReset=document.getElementById("qaAccountReset");
  const adminUnlimited=document.getElementById("adminUnlimitedShards");
