@@ -65,13 +65,28 @@ Deno.serve(async req=>{
    && Boolean(link.searchParams.get("type"));
  }catch{}
  if(!validAction)return reply(503,{ok:false,reason:"confirmation_link_unavailable"});
+ // Use Lumen's own HTTPS origin for verification, retaining Supabase as the verifier.
+ // Only a hashed token is accepted; never put the email OTP in the URL.
+ const parsed=new URL(action);
+ const hashedToken=parsed.searchParams.get("token")||"";
+ const confirmationType=parsed.searchParams.get("type")||"";
+ const brandedLink=/^[a-f0-9]{64}$/i.test(hashedToken)&&
+  ["signup","recovery","magiclink"].includes(confirmationType)
+  ? HOST+"/?lumen_confirm="+encodeURIComponent(hashedToken)+"&type="+encodeURIComponent(confirmationType)
+  : action;
+ const escapeHtml=(value:string)=>value.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]||c));
+ const title=type==="signup"?"Confirme ton adresse email ✨":type==="recovery"?"Retrouve ton accès à Lumen":"Ton code Lumen";
+ const instruction=type==="signup"?"Confirme ton email pour sauvegarder tes étoiles et retrouver ta progression.":
+  "Pour retrouver ton accès, utilise le bouton ci-dessous.";
+ const button=type==="signup"?"Confirmer mon email":type==="recovery"?"Réinitialiser mon mot de passe":"Continuer sur Lumen";
+ const html=type==="magiclink"?undefined:`<!doctype html><html lang="fr"><head><meta charset="utf-8"></head><body style="margin:0;padding:32px 16px;background:#07111d;font-family:Arial,Helvetica,sans-serif;color:#eef8ff"><table role="presentation" cellspacing="0" cellpadding="0" style="max-width:520px;margin:auto;background:#102237;border-radius:16px;padding:32px;width:100%"><tr><td><p style="font-size:14px;letter-spacing:3px;color:#92dfff">✦ LUMEN</p><h1 style="font-size:25px;line-height:1.3;color:#ffffff">${escapeHtml(title)}</h1><p style="line-height:1.7;color:#daeaf7">${escapeHtml(instruction)}</p><p style="padding:20px 0"><a href="${escapeHtml(brandedLink)}" style="display:inline-block;padding:14px 24px;background:#f6d67a;color:#142236;font-weight:bold;text-decoration:none;border-radius:8px">${escapeHtml(button)}</a></p><p style="font-size:13px;color:#a8becd">Si tu n'as rien demandé, ignore cet email.</p><p style="font-size:12px;color:#8da9bc">Lumen • lumen.nopuna.fr</p></td></tr></table></body></html>`;
  // Recovery links are preferred for password reset; legacy users receive an OTP.
  const label=type==="signup"?"Confirme ton inscription Lumen":type==="recovery"?"Réinitialise ton mot de passe Lumen":"Ton code de connexion Lumen";
  const text=type==="magiclink"&&/^\d{6}$/.test(otp)
   ?"Ton code de connexion Lumen : "+otp+"\n\nSi tu n'as rien demandé, ignore cet email."
-  :"Pour continuer sur Lumen, ouvre ce lien : "+action+"\n\nSi tu n'as rien demandé, ignore cet email.";
+  :"Pour continuer sur Lumen, ouvre ce lien : "+brandedLink+"\n\nSi tu n'as rien demandé, ignore cet email.";
  try{
-  const sent=await fetch("https://api.resend.com/emails",{method:"POST",headers:{"authorization":"Bearer "+key,"content-type":"application/json"},body:JSON.stringify({from:"Lumen <auth@nopuna.fr>",to:[email],subject:label,text})});
+  const sent=await fetch("https://api.resend.com/emails",{method:"POST",headers:{"authorization":"Bearer "+key,"content-type":"application/json"},body:JSON.stringify({from:"Lumen <auth@nopuna.fr>",to:[email],subject:label,text,...(html?{html}:{})})});
   if(!sent.ok)return reply(502);
   const result=await sent.json();if(typeof result.id!=="string")return reply(502);
  }catch{return reply(502)}
