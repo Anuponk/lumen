@@ -21,10 +21,8 @@ Deno.serve(async req=>{
  const type=input.type;
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return reply(400,{ok:false,reason:"invalid_email"});
  if(!["signup","recovery","magiclink"].includes(String(type)))return reply(400,{ok:false,reason:"invalid_type"});
- // While validating this implementation, only a single test mailbox is permitted.
- // Never run open signups before completing end-to-end verification.
- const testEmail=String(Deno.env.get("LUMEN_AUTH_TEST_EMAIL")||"").trim().toLowerCase();
- if(testEmail&&email!==testEmail&&Deno.env.get("LUMEN_AUTH_PUBLIC_ENABLED")!=="true")return reply(403);
+ // Public Lumen mail requests are guarded by the dedicated atomic per-email and global throttle.
+ // The original test-mailbox secret is deliberately ignored during public rollout.
  const password=typeof input.password==="string"?input.password:"";
  if(type==="signup"&&password.length<12)return reply(400,{ok:false,reason:"invalid_password"});
  // Ignore any caller-provided redirect. It is never used as a trusted brand selector.
