@@ -1,5 +1,8 @@
 # Moteur astronomique générique — issue #241
 
+## Règle fondatrice de génération — obligatoire
+**Toute nouvelle Aventure et toute nouvelle constellation se basent sur le même référentiel astronomique validé.** Identité IAU, IDs HIP, coordonnées réelles RA/Dec, tracés d'un atlas documenté et licence compatible doivent être disponibles avant de générer une figure. Pas de points ni de segments inventés « pour dépanner », pas de dessin manuel différent par quête, et pas de génération partielle présentée comme fidèle. Le générateur échoue explicitement si les données ne couvrent pas entièrement la figure. Les anciennes sauvegardes et les indices d'étoiles révélées doivent rester récupérables par correspondance testée. Toute extension du catalogue et tout agent intervenant sur le générateur sont soumis à ce contrat, et pas seulement la migration actuelle.
+
 ## Dimensions du catalogue
 Le catalogue de lancement comprend 400 **quêtes** dans quatre Aventures, chacune regroupant 10 **constellations** : 40 figures distinctes. Le moteur vise les 88 figures IAU, puis tout futur contenu sans géométrie dessinée par quête.
 
