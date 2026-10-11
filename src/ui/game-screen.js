@@ -1575,11 +1575,15 @@ function advanceToNextPuzzle(){
  }
  const canonicalPrevious=canonicalQuestForLegacy(levelIndex);
  const canonicalFollowing=canonicalPrevious&&canonicalQuestByOrdinal(canonicalPrevious.ordinal+1);
- if(lumenProgress.solved[levelIndex]&&canonicalFollowing?.legacyIndex===null&&canonicalQuestAvailable(canonicalFollowing)){
-  hideSuccess();startCanonicalQuest(canonicalFollowing);return;
+ if(lumenProgress.solved[levelIndex]&&canonicalFollowing?.legacyIndex===null){
+  if(canonicalQuestAvailable(canonicalFollowing)){hideSuccess();startCanonicalQuest(canonicalFollowing);return}
+  // Do not skip an inserted quest just because the legacy numeric index continues.
+  hideSuccess();openJourneyMap();return;
  }
  if(accountRequired()){maybeOfferAccount();hideSuccess();return}
  if(!lumenProgress.solved[levelIndex])return;
+ // Canonical order, not consecutive legacy storage IDs, controls unlocking.
+ if(canonicalFollowing&&canonicalFollowing.legacyIndex!==null&&canonicalFollowing.legacyIndex!==levelIndex+1){hideSuccess();openJourneyMap();return}
  if(levelIndex===4&&!replayMode&&!socialChallenge&&typeof maybeOfferAccount==='function'&&maybeOfferAccount()){hideSuccess();return}
  // "Quête suivante" is relative to the quest just played, including replays.
  // sequentialSolvedCount remains the highest unlocked campaign position.
