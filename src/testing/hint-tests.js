@@ -10,9 +10,10 @@ const {saveLumenNickname,maybeOfferInstall,lumenShareUrl,successAchievement,shar
 async function runHintTests(){
  let results=[],cases=[];
  test("Campagne : toutes les quêtes ont une grille dans le catalogue",()=>Object.values(CAMPAIGN_SIZE_SCHEDULE).every(([size,slot])=>!!CAT[size]?.[size==="6"?CAMPAIGN6_ORDER[slot]:slot]));
- test("PWA : installation proposée seulement après 3 quêtes",()=>maybeOfferInstall.toString().includes("solvedCount()<3")&&document.getElementById("installEnable"));
- test("PWA : le mode standalone empêche de reproposer l’installation hors QA",()=>{const src=maybeOfferInstall.toString();return src.includes("!qaActive&&lumenIsStandalone()")});
- test("PWA : l’onboarding installation est isolé en mode nouveau joueur QA",()=>{const src=maybeOfferInstall.toString();return src.includes('qaKey("lumenInstalled")')&&src.includes('qaKey("lumenInstallLater")')});
+ test("PWA : proposition différée après le parcours d'accueil",()=>maybeOfferInstall.toString().includes("solvedCount()<12")&&document.getElementById("installEnable"));
+ test("PWA : une installation existante bloque la proposition",()=>{const src=maybeOfferInstall.toString();return src.includes("lumenAlreadyInstalled()")&&!src.includes("!qaActive&&lumenIsStandalone()")});
+ test("PWA : compte et préférences QA préservés",()=>{const src=maybeOfferInstall.toString();return src.includes("accountRequired()")&&src.includes('qaKey("lumenInstallLater")')});
+ test("PWA : ne propose pas un bouton inutilisable",()=>maybeOfferInstall.toString().includes("!ios&&!lumenInstallPrompt"));
  test("Partage : le résultat contient un lien de parrainage traçable",()=>lumenShareUrl().includes("ref=")&&shareLumenResult.toString().includes("result_shared"));
  test("Partage : la réussite met en avant quête et constellation",()=>typeof successAchievement==="function"&&document.getElementById("successAchievement")&&successAchievement.toString().includes("Quête "));
  test("Partage : une carte image est générée quand le téléphone le permet",()=>shareLumenResult.toString().includes("shareCardCanvas")&&shareLumenResult.toString().includes("canShare"));
