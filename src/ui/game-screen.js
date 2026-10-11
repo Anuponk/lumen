@@ -751,12 +751,12 @@ function positionLearningCoach(){
  const width=Math.min(mobile?innerWidth-20:330,innerWidth-20);
  card.style.width=width+"px";
  const actions=document.querySelector(".actions").getBoundingClientRect();
- const compactQuestTwo=mobile&&innerHeight<=700&&levelIndex===1;
- card.style.maxHeight=compactQuestTwo?Math.max(32,innerHeight-actions.bottom-16)+"px":"";
- card.style.overflowY=compactQuestTwo?"auto":"";
- const aboveBoard=rect.top-card.offsetHeight-8;
+ const compactLesson=mobile&&innerHeight<=700&&levelIndex<=1;
  const belowActions=actions.bottom+8;
- const top=mobile?(compactQuestTwo?belowActions:aboveBoard>=8?aboveBoard:Math.max(8,Math.min(innerHeight-card.offsetHeight-8,belowActions))):Math.max(12,Math.min(rect.top,innerHeight-card.offsetHeight-12));
+ card.style.maxHeight=compactLesson?Math.max(32,innerHeight-belowActions-8)+"px":"";
+ card.style.overflowY=compactLesson?"auto":"";
+ const aboveBoard=rect.top-card.offsetHeight-8;
+ const top=mobile?(compactLesson?belowActions:aboveBoard>=48?aboveBoard:Math.max(48,Math.min(innerHeight-card.offsetHeight-8,belowActions))):Math.max(12,Math.min(rect.top,innerHeight-card.offsetHeight-12));
  const left=mobile?Math.max(10,(innerWidth-width)/2):rect.right+14+width<=innerWidth?rect.right+14:Math.max(10,rect.left-width-14);
  card.style.left=left+"px";card.style.top=top+"px";
 }
