@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import assert from "node:assert/strict";
 import {canonicalQuestById,canonicalQuestForLegacy,canonicalQuestList} from "../src/campaign/canonical-quests.js";
 import {resolveChallengeQuest,challengeIdentityForQuest,canonicalOrdinalForChallenge} from "../src/campaign/canonical-challenges.js";
@@ -15,4 +16,8 @@ assert.deepEqual(challengeIdentityForQuest(added.id),{stable_quest_id:added.id})
 assert.equal(resolveChallengeQuest({stable_quest_id:added.id}).id,added.id);
 assert.throws(()=>resolveChallengeQuest({puzzle_id:added.ordinal,stable_quest_id:added.id}),/mismatch/);
 assert.equal(canonicalQuestForLegacy(38).id,"base-q039");
+const liveScreen=fs.readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
+assert.match(liveScreen,/levelIndex=legacyIndexForActiveChallenge\(socialChallenge\)/);
+assert.match(liveScreen,/function legacyIndexForActiveChallenge\(challenge\)\{const quest=resolveChallengeQuest\(challenge\)/);
+assert.doesNotMatch(liveScreen,/levelIndex=Number\(socialChallenge\.puzzle_id\)-1/);
 console.log("Historic challenge URLs remain bound to the original grid; new links use stable IDs");
