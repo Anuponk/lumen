@@ -276,6 +276,7 @@ function updateAdminTools(){
 }
 function updateAuthUI(){
  authSessionPending=false;
+ const initialControls=document.getElementById("authSessionControls");if(initialControls)initialControls.hidden=false;
  const wasOfferPending=accountOfferSignInPending||(()=>{try{return sessionStorage.getItem("lumenAccountOfferSignInPending")==="1"}catch(_){return false}})();
  const u=document.getElementById("authUser"),login=document.getElementById("authLogin"),logout=document.getElementById("authLogout");
  if(!u||!login||!logout)return;
