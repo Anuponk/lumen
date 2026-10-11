@@ -94,6 +94,14 @@ jobs:
         if: steps.scheduled_check.outputs.need_tests == 'true'
         run: node scripts/oauth-return.test.mjs
 
+      - name: Verify cloud persistence policy on main
+        if: steps.scheduled_check.outputs.need_tests == 'true' && github.event_name != 'pull_request'
+        run: node scripts/cloud-contract-check.mjs
+
+      - name: Isolated cloud persistence regression on main
+        if: steps.scheduled_check.outputs.need_tests == 'true' && github.event_name != 'pull_request'
+        run: node scripts/cloud-persistence-regression-tests.mjs
+
       - name: Upload validation reports
         if: always() && steps.scheduled_check.outputs.need_tests == 'true'
         uses: actions/upload-artifact@v4
