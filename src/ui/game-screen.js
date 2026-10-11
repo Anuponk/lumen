@@ -253,7 +253,7 @@ function syncMobileAuthUI(){
  show("setPasswordPanel",signedIn);
  show("nicknameBox",signedIn);
  show("mobileCreateAccount",!signedIn);
- show("mobileEmailLogin",!signedIn);
+ show("mobileEmailLogin",false);
  show("guestSaveExplainer",!signedIn);
  status.textContent=signedIn?(lumenNickname||"Progression synchronisée"):"Progression enregistrée sur cet appareil";
  action.textContent=signedIn?"Déconnexion":"Se connecter";
