@@ -37,7 +37,7 @@ if(qaFresh){
 }
 const qaKey=suffix=>qaActive?"lumenQa"+suffix:suffix;
 const {normalizeSequentialProgress,solvedCount,exactSkyScoreForSolvedPrefix,ensureSkyScore,skyStarsEarned,challengeRewardKeys,constellationProgress,constellationLitAt,awards,performanceRun,savePerformance}=createCampaign(()=>lumenProgress,()=>saveLumenProgress(),()=>({activeGameSeconds,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted,qualifying:!!attemptEngine.snapshot()?.qualifying}));
-let cloudProfileReady=false,cloudProfileTimer=null,cloudProfileBusy=false,cloudProfileDirty=false,cloudProfileBaseline=null,cloudProfileInFlight=null;
+let cloudProfileReady=false,cloudProfileTimer=null,cloudProfileBusy=false,cloudProfileDirty=false,cloudProfileBaseline=null,cloudProfileInFlight=null,cloudProfileFailure=null;
 async function flushCloudProfile(){
  if(cloudProfileBusy){
   cloudProfileDirty=true;
@@ -50,8 +50,15 @@ async function flushCloudProfile(){
  cloudProfileInFlight=(async()=>{
   try{
    cloudProfileBaseline=await compareAndSwapCloudProfile(lumenSupabase,current,cloudProfileBaseline);
+   cloudProfileFailure=null;
    return true;
   }catch(e){
+   cloudProfileFailure={reason:"network"};
+   try{
+    const remote=await loadVerifiedProfile(lumenSupabase);
+    if(remote && sameCloudProfile(remote,current)){cloudProfileBaseline=remote;cloudProfileFailure=null;return true}
+    if(remote && cloudProfileBaseline && !sameCloudProfile(remote,cloudProfileBaseline))cloudProfileFailure={reason:"conflict"};
+   }catch(readError){console.warn("Lumen cloud verification unavailable",readError)}
    console.warn("Lumen cloud save not confirmed; progress must not advance",e);
    return false;
   }finally{
@@ -74,8 +81,9 @@ async function confirmCloudReward(){
    const card=document.createElement("div");
    card.style.cssText="background:#182238;color:white;padding:24px;max-width:420px;border-radius:14px;text-align:center";
    const title=document.createElement("h2");title.textContent="Sauvegarde en attente";
-   const copy=document.createElement("p");copy.textContent="Ta victoire n'est pas encore confirmée sur le cloud. Vérifie ta connexion, puis réessaie. Ta progression locale est conservée.";
+   const copy=document.createElement("p");copy.textContent=cloudProfileFailure?.reason==="conflict"?"Le profil cloud a changé. Ta progression locale est conservée. Recharge ton profil cloud pour repartir sur la version de référence.":cloudProfileFailure?.reason==="network"?"La sauvegarde n’a pas pu être confirmée. Vérifie ta connexion puis réessaie. Ta progression locale est conservée.":"Synchronisation cloud en cours. Ta progression locale est conservée.";
    const again=document.createElement("button");again.textContent="Réessayer la sauvegarde";again.className="primary";
+   if(cloudProfileFailure?.reason==="conflict"||!cloudProfileReady){again.disabled=true;again.title="Un nouvel essai ne résoudra pas le conflit."}
    again.onclick=()=>{panel.remove();resolve(true)};
    const reload=document.createElement("button");reload.textContent="Recharger mon profil cloud";
    reload.onclick=()=>{location.reload();resolve(false)};
@@ -180,7 +188,7 @@ function updateAuthUI(){
  }
  syncMobileAuthUI();updateAdminTools();
  if(!lumenUser&&accountRequired())maybeOfferAccount();
- if(lumenUser&&wasOfferPending){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_success",null,{source:"account_offer",qa:qaActive});const box=document.getElementById("accountOptin");if(box)box.hidden=false}
+ if(lumenUser&&wasOfferPending){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_success",null,{source:"account_offer",qa:qaActive});const box=document.getElementById("accountOptin");if(box)box.hidden=true}
 }
 function setupQaMode(){
  if(!qaActive)return;
@@ -1690,6 +1698,7 @@ if("serviceWorker" in navigator){
  navigator.serviceWorker.addEventListener("controllerchange",()=>{
   if(lumenReloadingForSW)return;
   lumenReloadingForSW=true;
+  if(new URLSearchParams(location.search).has("code")||location.hash.includes("access_token=")){lumenReloadingForSW=false;return}
   location.reload();
  });
  window.addEventListener("load",()=>checkLumenUpdate());
