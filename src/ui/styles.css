@@ -610,3 +610,36 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 @keyframes unitResolved{0%,100%{box-shadow:none}45%{box-shadow:inset 0 0 0 1px rgba(104,231,255,.42),0 0 12px rgba(104,231,255,.16);filter:brightness(1.1)}}
 @keyframes territoryResolved{0%,100%{filter:brightness(1)}45%{filter:brightness(1.16);box-shadow:inset 0 0 14px color-mix(in srgb,var(--territory) 38%,transparent)}}
 @media (prefers-reduced-motion:reduce){.cell.guardian-impact .lumen-orb,.cell.cascade-cross .lumen-dim,.cell.unit-resolved,.cell.territory-resolved{animation-duration:.01ms!important;animation-delay:0ms!important}}
+
+
+/* Cosmic account dialog — scoped to the authentication overlay. */
+.account-optin{padding:16px!important;align-items:center!important;justify-content:center!important;background:rgba(3,9,24,.84)!important;backdrop-filter:blur(8px)}
+.account-optin .account-optin-card{position:relative;width:min(100%,430px)!important;max-height:92dvh!important;overflow-y:auto;box-sizing:border-box;padding:23px 24px 26px!important;border:1px solid #4284bd!important;border-radius:27px!important;background:radial-gradient(ellipse at 50% 0%,rgba(35,103,201,.32),transparent 43%),linear-gradient(160deg,#10203a,#071225 88%)!important;box-shadow:0 22px 75px #000b,inset 0 1px #ffffff19!important;text-align:center;color:#eaf5ff}
+.account-optin .account-optin-card #accountOptinClose{position:absolute;right:14px;top:13px;min-width:39px;width:39px;height:39px;display:grid;place-items:center;border:1px solid #385476;background:#112442;color:#fff;border-radius:50%;font-size:27px;padding:0;z-index:2}
+.account-optin-art{height:95px;position:relative;overflow:hidden;margin:0 0 7px}
+.account-optin-art span{position:relative;z-index:1;font-size:61px;color:#e2fbff;text-shadow:0 0 22px #54cfff}
+.account-orbit{position:absolute;bottom:-57px;left:50%;transform:translateX(-50%);width:205px;height:97px;border-radius:50%;border-top:2px solid #43bbff;box-shadow:0 -15px 33px #2879e877}
+.account-optin #accountOptinTitle{font-size:clamp(24px,6vw,31px)!important;line-height:1.15;margin:10px 0 12px!important;color:#f5faff}
+.account-optin #accountOptinDescription{font-size:14px;line-height:1.55;color:#b2c3dd;max-width:315px;margin:0 auto 20px}
+.account-auth-tabs{display:flex;padding:3px;gap:3px;border:1px solid #375478;border-radius:28px;margin:0 0 19px}
+.account-optin .account-auth-tabs button{flex:1;min-width:0;font-size:13px;font-weight:700;line-height:1.25;border:0;border-radius:25px;padding:12px 5px;background:transparent;color:#c4d2ec}
+.account-optin .account-auth-tabs button[aria-pressed="true"]{background:linear-gradient(110deg,#1264a8,#2355ad);color:#fff;box-shadow:inset 0 0 0 1px #61d7ff,0 0 13px #167ffb66}
+.account-optin .account-optin-actions{display:block!important;margin:0!important}
+.account-optin #accountOptinEnable{display:flex;align-items:center;justify-content:center;gap:13px;width:100%;min-height:51px;background:#f6f9ff!important;color:#172449!important;border:0!important;border-radius:16px;font-size:15px;font-weight:750}
+.account-google-g{font-size:23px;font-weight:900;color:#4285f4;letter-spacing:-2px}
+.account-auth-divider{display:flex;align-items:center;gap:14px;margin:18px 0 14px;color:#93a6c6;font-size:14px}
+.account-auth-divider:before,.account-auth-divider:after{content:"";flex:1;border-top:1px solid #344969}
+.account-optin #accountEmailAuth{display:block!important;text-align:left;margin:0!important}
+.account-optin #accountEmailAuth label{display:block;color:#c7d5ec;font-size:13px;font-weight:600;margin:14px 0 7px}
+.account-optin #accountEmailAuth input{box-sizing:border-box;width:100%;min-height:49px;padding:12px 14px;border:1px solid #3a577c;border-radius:13px;background:#0b1a30;color:white;font-size:15px}
+.account-optin #accountEmailAuth input:focus{outline:2px solid #62d9fc;outline-offset:1px}
+.account-password-wrap{position:relative}
+.account-password-wrap #accountPassword{padding-right:52px}
+.account-optin #accountPasswordVisibility{position:absolute;top:0;right:0;height:49px;width:49px;border:0;background:transparent;color:#d0e2f9;font-size:20px}
+.account-optin #accountPasswordSubmit{display:block;width:100%;min-height:52px;margin-top:21px;padding:12px;border:1px solid #7af2ff!important;border-radius:16px;background:linear-gradient(115deg,#23b9f6,#2858df)!important;color:white;font-size:16px;font-weight:750;box-shadow:0 5px 20px #208ffb66}
+.account-optin #accountRecovery{display:block;margin:16px auto 0;padding:6px;background:transparent;border:0;color:#5ed5fb;font-size:13px;text-decoration:underline}
+.account-optin #accountRecovery[hidden],.account-optin #accountLegacyOtp[hidden],.account-optin #accountEmailSend[hidden],.account-optin #accountOtpStep[hidden],.account-optin #accountOptinEmail[hidden]{display:none!important}
+.account-optin #accountLegacyOtp{width:100%;margin-top:16px;padding:16px;text-align:left;border:1px solid #385176;border-radius:16px;background:#0e1c33;color:#d0def2;font-size:13px}
+.account-optin #accountLegacyOtp strong{display:block;margin-top:5px;color:#63d8ff}
+.account-optin #accountEmailStatus{display:block;min-height:19px;margin:12px 0 0;text-align:center;color:#9be8ff;font-size:13px;line-height:1.4}
+@media(max-width:380px){.account-optin .account-optin-card{padding:18px!important}.account-optin-art{height:68px}.account-optin-art span{font-size:47px}}
