@@ -77,6 +77,8 @@ export function migrateLegacySolved(solved,plan){
  const byLegacy=new Map(plan.records.filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,q]));
  return Object.entries(solved||{}).flatMap(([key,value])=>{
   const record=byLegacy.get(Number(key));
-  return record&&value?[{id:record.stableQuestId,ordinal:record.ordinal,legacyIndex:record.legacyIndex}]:[];
+  if(!value)return [];
+  if(!record)throw Error("Unmapped persisted quest key: "+key);
+  return [{id:record.stableQuestId,ordinal:record.ordinal,legacyIndex:record.legacyIndex}];
  });
 }
