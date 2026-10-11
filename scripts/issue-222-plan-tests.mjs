@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {buildMigrationPlan,migrateLegacySolved} from "./issue-222-migration-plan.mjs";
+import {buildMigrationPlan,migrateLegacySolved,migrationLedger,assertPublicationReady} from "./issue-222-migration-plan.mjs";
 
 const plan=buildMigrationPlan();
 assert.equal(plan.total,400);
@@ -17,4 +17,11 @@ assert.deepEqual(mapped.map(x=>x.legacyIndex).sort((a,b)=>a-b),[0,78,100,195,196
 assert(mapped.every(r=>r.id&&r.ordinal>=1&&r.ordinal<=400));
 assert.throws(()=>migrateLegacySolved({"999999":true},plan),/Unmapped persisted quest key/,"Unknown cloud progression must not silently disappear");
 assert.deepEqual(migrateLegacySolved({"999999":false},plan),[]);
+const ledger=migrationLedger(plan);
+assert.equal(ledger.oldToNew.length,296);
+assert.equal(ledger.pending.length,104);
+assert.deepEqual(ledger.oldToNew.map(x=>x.legacyIndex),Array.from({length:296},(_,i)=>i));
+assert.equal(new Set(ledger.pending.map(x=>x.plannedQuestId)).size,104);
+assert.throws(()=>assertPublicationReady(plan),/publication blocked/i);
+assert.deepEqual(migrationLedger(buildMigrationPlan()),ledger,"Migration ledger must be deterministic");
 console.log(JSON.stringify({total:plan.total,missing:plan.missing,adventures:plan.adventures}));
