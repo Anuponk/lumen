@@ -17,6 +17,15 @@ for(const [a,b] of [[2,3],[3,4],[0,2],[1,4],[2,5],[4,6],[3,15],[15,16],[16,10]])
  assert(orionSegments.has([a,b].sort((x,y)=>x-y).join("-")), `Missing Orion sky figure edge ${a}-${b}`);
 for(const [a,b] of orion.edges)assert(a>=0&&b>=0&&a<orion.count&&b<orion.count);
 
+import fs from "node:fs";
+const astronomicalAgentContract=fs.readFileSync(new URL("../AGENTS.md",import.meta.url),"utf8");
+const astronomicalArchitecture=fs.readFileSync(new URL("../docs/DATA_AND_ARCHITECTURE.md",import.meta.url),"utf8");
+const astronomicalGeneratorContract=fs.readFileSync(new URL("../docs/GENERIC_ASTRONOMY_RENDERER.md",import.meta.url),"utf8");
+assert.match(astronomicalAgentContract,/Astronomical source of truth — mandatory for all new content/);
+assert.match(astronomicalAgentContract,/Never invent or hand-draw star coordinates/);
+assert.match(astronomicalArchitecture,/Astronomical generation contract \(non-negotiable\)/);
+assert.match(astronomicalGeneratorContract,/Règle fondatrice de génération — obligatoire/);
+
 assert.equal(CONTENT_MODEL_VERSION,1);
 assert.equal(BASE_SKY_ID,"real-sky");
 assert.equal(BASE_PACK_ID,"base-real-sky");

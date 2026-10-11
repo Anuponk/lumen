@@ -22,6 +22,9 @@ LUMEN is a static web/PWA application using native ES modules without a build st
 
 The #21–#26 migration starts from main `dcd9f3c872e623541be698edc212b64589d3b164`. Rules, catalogue, badge semantics, progression, tutorial, UX, storage keys and backend contracts are preserved. Issues #30/#31 are explicitly excluded. The stage descriptions below record the incremental extraction; the navigation map describes the final source layout.
 
+## Astronomical generation contract (non-negotiable)
+The canonical source of a constellation's visual geometry is a versioned, legally reusable stellar catalogue and documented atlas line convention, **not** manually sketched SVG points. New Adventures use IAU identities and stable HIP identifiers, extract complete RA/Dec coordinates, then derive geometry with the shared projection function. One reference constellation may back many quests; do not regenerate its sky geometry for each quest. Generation MUST reject missing reference stars/segments, invalid mapping, licensing uncertainty, and unsupported figures rather than silently substitute arbitrary shapes. Keep the legacy constellation data and player-earned star indices unchanged unless a lossless, tested compatibility/migration path is proven. A new cataloguing or rendering feature ships with completeness, visual, licensing/attribution and cloud-persistence tests. This requirement applies to all future automated generation, not only the current 40-constellation migration.
+
 ## Evolving catalogue contract
 
 Catalogue expansion is an expected operation. Features must work with the content described by the loaded catalogue, including future additions, without requiring manual replacement of quest, constellation or star totals. This concerns curated content shipped with the application; it does not introduce runtime random puzzle generation or require a new remote catalogue service.
