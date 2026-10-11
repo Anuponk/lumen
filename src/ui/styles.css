@@ -691,3 +691,14 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .journey-quest-progress{font-size:12px}
  .mobile-journey{min-width:0}
 }
+
+/* #228: the quest-one coach must not overlap the normal action buttons.
+   Keep its own text scrollable on compact screens instead of clipping controls. */
+@media (max-width:700px) and (max-height:700px){
+ .learning-board-wrap.is-learning .scripted-learn{
+  bottom:0;
+  max-height:56px;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+ }
+}
