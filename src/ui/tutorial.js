@@ -23,7 +23,7 @@ function setupTutorial(){
  const next=document.getElementById("tutorialNext"),prev=document.getElementById("tutorialPrev"),skip=document.getElementById("tutorialSkip");
  next.onclick=()=>{if(tutorialStep<TUTORIAL_STEPS.length-1){tutorialStep++;renderTutorial()}else closeTutorial()};
  prev.onclick=()=>{if(tutorialStep){tutorialStep--;renderTutorial()}};
- skip.onclick=()=>{if(!canSkip())return;closeTutorial(false);if(onSkip)onSkip()};
+ skip.onclick=()=>{if(!canSkip())return;closeTutorial(true);if(onSkip)onSkip()};
  let seen=false;try{seen=localStorage.getItem(tutorialSeenKey)==="1"}catch(e){}
  if(!seen&&!scriptedLearningActive())openTutorial();
 }
