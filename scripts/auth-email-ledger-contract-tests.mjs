@@ -13,7 +13,7 @@ assert.match(edge,/if\(claim==="pending"\)return json\(503\)/);
 assert.match(edge,/lumen_auth_mail_mark_sent/);
 assert.match(edge,/if\(claim!=="claimed"\)return json\(409\)/);
 assert.match(edge,/Idempotency-Key/);
-assert.match(edge,/if\(!webhookId\|\|!\/\^\[A-Za-z0-9_-\]/);
+assert.ok(edge.includes("if(!webhookId||!/^[A-Za-z0-9_-]{8,128}$/.test(webhookId))"));
 assert.doesNotMatch(edge,/console\.log\(payload\)|console\.log\(delivery\)/);
 assert.ok(edge.indexOf("lumen_auth_mail_claim")<edge.indexOf('fetch("https://api.resend.com/emails"'));
 console.log("Auth mail ledger structural contract passed — isolated integration test remains required");
