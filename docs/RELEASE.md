@@ -35,3 +35,6 @@ For every PR, complete the cloud-impact section of the PR template even if not a
 - GitHub commit SHA captured;
 - Vercel deployment for that exact SHA checked;
 - production smoke check after main merge.
+
+## GitHub CI orchestration
+The `Cloud persistence contract` workflow runs on pull requests and PR description edits to validate the cloud-policy declaration and isolated regression. On `main`, the `Lumen quality gate` runs these same two checks as part of its existing push/manual/scheduled verification, without launching a second cloud workflow. Scheduled quality runs still skip full tests for a SHA previously validated on `main`. o2switch continues to require a successful quality workflow for the exact deployed SHA.
