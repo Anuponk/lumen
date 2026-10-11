@@ -21,4 +21,10 @@ assert.equal(styled.figures.Ori.hipIds.includes("thin"),false);
 assert.deepEqual({source,positions},before,"Input catalogue is immutable");
 assert.throws(()=>buildAstronomicalCatalogue({constellations:[source.constellations[0],source.constellations[0]]},positions),/duplicate IAU/);
 assert.equal(buildAstronomicalCatalogue({constellations:[{iau:"Ori",lines:[[1,99]]}]},positions).summary.incomplete,1);
+const mixedCase=buildAstronomicalCatalogue({constellations:[
+ {iau:"UMa",lines:[[1,2]]},{iau:"CVn",lines:[[2,3]]},{iau:"CMi",lines:[[3,4]]},{iau:"CrB",lines:[[1,4]]}
+]},positions);
+assert.deepEqual(mixedCase.summary,{total:4,complete:4,incomplete:0},"Valid official mixed-case IAU codes accepted");
+assert.deepEqual(Object.keys(mixedCase.figures).sort(),["CMi","CVn","CrB","UMa"].sort());
+assert.throws(()=>buildAstronomicalCatalogue({constellations:[{iau:"uma",lines:[[1,2]]}]},positions),/Invalid or duplicate IAU/);
 console.log("Astronomical source ingestion and completeness OK");

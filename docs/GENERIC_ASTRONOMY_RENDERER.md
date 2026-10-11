@@ -60,3 +60,10 @@ L'importeur traite `thin` et `bold` comme métadonnées de lignes Stellarium, ja
 Le module `src/ui/astronomical-legacy-bridge.js` propose un branchement **non destructif** d'une figure astronomique vérifiée : le registre devra fournir la liste ordonnée des identifiants HIP correspondant **aux indices historiques** des étoiles déjà gagnées. Un tableau de correspondance absent, de mauvaise taille ou contenant des doublons est rejeté ; le composant garde alors le dessin existant. Seuls les segments réellement présents dans l'atlas et reliant deux étoiles correspondantes sont réutilisés. **Aucune connexion artificielle n'est inventée.** Le nombre d'étoiles et leurs index de révélation ne changent jamais.
 
 Ce module constitue une **interface de migration**, pas une validation des mappings : actuellement, les associations historiques index -> HIP restent à établir et à approuver pour les 24 figures historiques, et la donnée HIP complète doit être obtenue puis validée avec sa licence. Les 40 dessins ne sont donc **pas encore remplacés**. Dans un prochain changement, brancher exclusivement les figures intégralement validées au composant de navigation et au détail de Mon ciel ; vérifier Orion et chaque vue en environnement de recette avant production.
+
+
+## Verrou de publication du catalogue (PR #291)
+
+L'importeur accepte les abréviations IAU à casse mixte (`UMa`, `CVn`, `CMi`, `CrB`), et non seulement les noms de type `Ori`. Pour un rapport issu de `scripts/build-astronomical-catalogue.mjs`, exécuter `node scripts/validate-playable-astronomy.mjs <rapport.json>`. La commande quitte avec le code 2 si l'une des **40 constellations canoniques** manque, est incomplète ou possède des structures HIP incompatibles. Tant que cette commande échoue, aucun nouveau tracé ne doit être activé dans l'interface.
+
+La validation 40/40 est **distincte** du mapping entre indices de sauvegarde et identifiants HIP. Le téléchargement des données VizieR, les obligations d'attribution CC BY-SA et la correspondance historique restent des prérequis séparés. Aucun nombre de figures réellement couvertes n'est présumé avant l'exécution vérifiée sur les sources complètes.

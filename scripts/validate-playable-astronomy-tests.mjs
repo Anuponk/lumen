@@ -1,0 +1,16 @@
+import assert from "node:assert/strict";
+import {astronomicalIdentityAudit} from "./astronomical-identity-audit.mjs";
+import {validatePlayableAstronomy} from "./validate-playable-astronomy.mjs";
+const ids=astronomicalIdentityAudit().mapped;
+assert.equal(ids.length,40);
+const coverage=ids.map(c=>({iau:c.iau,complete:true,requiredStars:2,availableStars:2,missingHip:[]}));
+const figures=Object.fromEntries(ids.map(c=>[c.iau,{iau:c.iau,count:2,hipIds:["1","2"],pts:[[1,2],[3,4]],edges:[[0,1]]}]));
+const ok=validatePlayableAstronomy({coverage,figures});
+assert.equal(ok.ready,true);assert.equal(ok.coveredCount,40);
+const short=validatePlayableAstronomy({coverage:coverage.filter(c=>c.iau!=="Ori"),figures});
+assert.equal(short.ready,false);assert.deepEqual(short.absent.map(c=>c.iau),["Ori"]);
+const incomplete=validatePlayableAstronomy({coverage:coverage.map(c=>c.iau==="UMa"?{...c,complete:false,missingHip:["123"]}:c),figures});
+assert.equal(incomplete.ready,false);assert.deepEqual(incomplete.incomplete[0].missingHip,["123"]);
+const malformed=validatePlayableAstronomy({coverage,figures:{...figures,Ori:{...figures.Ori,count:3}}});
+assert.deepEqual(malformed.mismatched.map(c=>c.iau),["Ori"]);
+console.log("Playable astronomy 40/40 release gate OK");
