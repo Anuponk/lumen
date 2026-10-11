@@ -17,6 +17,7 @@ const nodeSuites=[
  "content-architecture-tests.mjs",
  "issue-222-plan-tests.mjs",
  "issue-222-stage-verify.mjs",
+ "issue-222-runtime-tests.mjs",
  "catalogue-ceiling-tests.mjs",
  "sky-navigation-tests.mjs",
  "extraordinary-skies-tests.mjs",
