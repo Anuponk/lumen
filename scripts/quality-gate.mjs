@@ -17,6 +17,7 @@ const nodeSuites=[
  "content-architecture-tests.mjs",
  "astronomical-projection-tests.mjs",
  "astronomical-catalogue-tests.mjs",
+ "hipparcos-units-tests.mjs",
  "astronomical-identity-tests.mjs",
  "astronomical-legacy-bridge-tests.mjs",
  "issue-222-plan-tests.mjs",
