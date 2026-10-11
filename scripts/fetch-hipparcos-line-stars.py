@@ -10,6 +10,8 @@ Usage (after checking source licenses):
 
 No client credentials, no changes to cloud storage, no browser runtime networking.
 Coordinates are ICRS from Hipparcos New Reduction, epoch J1991.25.
+VizieR I/311/hip2 fields RArad and DErad are ALREADY IN DEGREES, despite
+misleading column names. NEVER apply math.degrees to these values.
 """
 import argparse
 import json
@@ -57,8 +59,10 @@ def main():
             continue
         ra = float(row["RArad"])
         dec = float(row["DErad"])
-        if math.isfinite(ra) and math.isfinite(dec):
-            coords[str(hip)] = {"raDeg": math.degrees(ra) % 360, "decDeg": math.degrees(dec)}
+        if math.isfinite(ra) and math.isfinite(dec) and 0 <= ra < 360 and -90 <= dec <= 90:
+            coords[str(hip)] = {"raDeg": ra, "decDeg": dec}
+        else:
+            raise ValueError(f"Invalid Hipparcos degree coordinates for HIP {hip}: RA={ra} Dec={dec}")
     missing = sorted(needed - set(map(int, coords)))
     args.output_json.parent.mkdir(parents=True, exist_ok=True)
     args.output_json.write_text(json.dumps(coords, indent=2, sort_keys=True) + "\n")
