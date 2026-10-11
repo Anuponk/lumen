@@ -1,0 +1,14 @@
+import assert from "node:assert/strict";
+import {astronomicalIdentityAudit} from "./astronomical-identity-audit.mjs";
+const audit=astronomicalIdentityAudit();
+assert.equal(audit.quests,400);
+assert.equal(audit.adventures,4);
+assert.equal(audit.canonicalConstellations,40);
+assert.equal(audit.registeredConstellations,34);
+assert.equal(audit.unregistered.length,6);
+assert.deepEqual(audit.unknown,[]);
+assert.deepEqual(audit.repeated,[]);
+assert.equal(audit.mapped.find(x=>x.label==="Orion")?.iau,"Ori");
+assert.equal(audit.mapped.find(x=>x.id==="iau-cmi")?.iau,"CMi");
+assert.equal(audit.mapped.find(x=>x.id==="iau-cvn")?.iau,"CVn");
+console.log("Astronomical identity audit:",JSON.stringify({registered:audit.registeredConstellations,planned:audit.canonicalConstellations,unregistered:audit.unregistered}));
