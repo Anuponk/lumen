@@ -33,11 +33,12 @@ Deno.serve(async req=>{
  const password=typeof input.password==="string"?input.password:"";
  if(type==="signup"&&password.length<12)return reply(400);
  // Ignore any caller-provided redirect. It is never used as a trusted brand selector.
- const peer=req.headers.get("cf-connecting-ip")||req.headers.get("x-real-ip")||"unknown";
+ // A caller can forge IP headers. Throttle per recipient plus a conservative global
+ // bucket until a verified platform-provided client IP is available.
  try{
-  const emailHash=await digest(email),ipHash=await digest(peer);
+  const emailHash=await digest(email);
   await limited(redis,redisToken,"lumen:mail:email:"+emailHash,5,3600);
-  await limited(redis,redisToken,"lumen:mail:ip:"+ipHash,20,3600);
+  await limited(redis,redisToken,"lumen:mail:global",100,3600);
  }catch{return reply(429)}
  const typeArg=type==="magiclink"?"magiclink":type;
  const payload:Record<string,string>={type:String(typeArg),email,redirect_to:HOST+"/"};
