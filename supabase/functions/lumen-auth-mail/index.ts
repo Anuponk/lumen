@@ -6,14 +6,6 @@ const headers={"content-type":"application/json","cache-control":"no-store","acc
 const reply=(status:number,body:Record<string,unknown>={ok:false})=>new Response(JSON.stringify(body),{status,headers});
 const accepted=()=>reply(200,{ok:true});
 async function digest(s:string){const d=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(d)].map(n=>n.toString(16).padStart(2,"0")).join("")}
-async function limited(redisUrl:string,token:string,key:string,max:number,ttl:number){
- // All limits are checked server-side; unavailable Redis fails closed.
- const url=redisUrl.replace(/\/$/,"")+"/pipeline";
- const r=await fetch(url,{method:"POST",headers:{"authorization":"Bearer "+token,"content-type":"application/json"},body:JSON.stringify([["INCR",key],["EXPIRE",key,ttl,"NX"]])});
- if(!r.ok)throw Error("limiter_unavailable");
- const v=await r.json();const n=Number(v?.[0]?.result);
- if(!Number.isFinite(n)||n>max)throw Error("rate_limited");
-}
 Deno.serve(async req=>{
  if(req.headers.get("origin")!==HOST)return reply(403);
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers});
@@ -22,9 +14,7 @@ Deno.serve(async req=>{
  const key=Deno.env.get("LUMEN_RESEND_API_KEY")||"";
  const service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
  const base=Deno.env.get("SUPABASE_URL")||"";
- const redis=Deno.env.get("LUMEN_UPSTASH_REDIS_REST_URL")||"";
- const redisToken=Deno.env.get("LUMEN_UPSTASH_REDIS_REST_TOKEN")||"";
- if(!key||!service||!base||!redis||!redisToken)return reply(503);
+ if(!key||!service||!base)return reply(503);
  const raw=await req.text();if(raw.length>4096)return reply(413);
  let input:Record<string,unknown>;try{input=JSON.parse(raw)}catch{return reply(400)}
  const email=typeof input.email==="string"?input.email.trim().toLowerCase():"";
@@ -33,13 +23,17 @@ Deno.serve(async req=>{
  const password=typeof input.password==="string"?input.password:"";
  if(type==="signup"&&password.length<12)return reply(400);
  // Ignore any caller-provided redirect. It is never used as a trusted brand selector.
- // A caller can forge IP headers. Throttle per recipient plus a conservative global
- // bucket until a verified platform-provided client IP is available.
+ // Atomic server-only RPC: reserved on every attempt, failure always blocks delivery.
  try{
   const emailHash=await digest(email);
-  await limited(redis,redisToken,"lumen:mail:email:"+emailHash,5,3600);
-  await limited(redis,redisToken,"lumen:mail:global",100,3600);
- }catch{return reply(429)}
+  const reserved=await fetch(base.replace(/\/$/,"")+"/rest/v1/rpc/lumen_auth_mail_reserve",{
+   method:"POST",headers:{"apikey":service,"authorization":"Bearer "+service,"content-type":"application/json"},
+   body:JSON.stringify({p_email_hash:emailHash})
+  });
+  if(!reserved.ok)return reply(503);
+  const permitted=await reserved.json();
+  if(permitted!==true)return reply(429);
+ }catch{return reply(503)}
  const typeArg=type==="magiclink"?"magiclink":type;
  const payload:Record<string,string>={type:String(typeArg),email,redirect_to:HOST+"/"};
  if(type==="signup")payload.password=password;
