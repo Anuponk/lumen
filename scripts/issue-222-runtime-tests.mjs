@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import assert from "node:assert/strict";
 import {canonicalQuestCount,canonicalQuestByOrdinal,canonicalQuestById,canonicalQuestForLegacy,canonicalQuestList,canonicalNextUnsolved,canonicalDisplayForLegacy,canonicalAdventureSummary} from "../src/campaign/canonical-quests.js";
 import {playableQuest} from "../src/campaign/playable-quests.js";
@@ -33,4 +34,8 @@ assert.deepEqual(sums.map(x=>[x.firstQuest,x.lastQuest]),[[1,100],[101,200],[201
 assert.equal(canonicalDisplayForLegacy(0).number,1);
 assert.equal(canonicalDisplayForLegacy(295).number,400);
 assert.equal(canonicalDisplayForLegacy(9999),null);
+const gameScreen=fs.readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
+assert.match(gameScreen,/const canonicalNumber=canonicalDisplayForLegacy\(levelIndex\)/);
+assert.match(gameScreen,/x\.fillText\("Quête "\+a\.canonicalNumber/);
+assert.match(gameScreen,/return \{kicker,main,detail,ch,pos,total:range\.count,solved,run,secs,canonicalNumber\}/);
 console.log("Canonical 400-quest registry: stable identity, legacy save keys and pagination verified");
