@@ -28,6 +28,9 @@ jobs:
       - name: Validate o2switch release script syntax
         run: bash -n scripts/o2switch-safe-release.sh && bash -n scripts/o2switch-cron-publish.sh && bash -n scripts/o2switch-deploy-monitor.sh
 
+      - name: Validate offline issue 222 generator syntax
+        run: node --check scripts/issue-222-generate-grids.mjs && node --check scripts/issue-222-migration-plan.mjs
+
       - name: Unified quality gate
         run: node scripts/quality-gate.mjs
 
