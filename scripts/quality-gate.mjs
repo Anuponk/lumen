@@ -20,6 +20,7 @@ const nodeSuites=[
  "issue-222-runtime-tests.mjs",
  "issue-222-profile-tests.mjs",
  "issue-222-progress-bridge-tests.mjs",
+ "issue-222-challenge-tests.mjs",
  "catalogue-ceiling-tests.mjs",
  "sky-navigation-tests.mjs",
  "extraordinary-skies-tests.mjs",
