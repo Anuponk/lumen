@@ -1,3 +1,4 @@
+import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "./config.js";
 import {baseCampaignQuestCount} from "../campaign/content.js";
 export function createCloudPersistence(model,hooks,environment){
 const {activeGameSeconds,exactSkyScoreForSolvedPrefix,saveLumenProgress,refreshJourney,init,onAccountChanged=()=>{},renderDaily}=hooks;
@@ -148,6 +149,18 @@ async function signIn(redirectTo){
  const {error}=await model.lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:target}});
  return error?{ok:false,reason:"oauth",error}:{ok:true};
 }
+async function requestLumenAuthMail(type,email,password){
+ const response=await fetch(LUMEN_SUPABASE_URL+"/functions/v1/lumen-auth-mail",{
+  method:"POST",headers:{"content-type":"application/json","apikey":LUMEN_SUPABASE_KEY},
+  body:JSON.stringify({type,email,...(type==="signup"?{password}:{})})
+ });
+ return response.ok;
+}
+async function requestPasswordRecovery(email){
+ const normalized=String(email||"").trim().toLowerCase();
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized))return {ok:false,reason:"email"};
+ try{return {ok:await requestLumenAuthMail("recovery",normalized)}}catch{return {ok:false,reason:"unavailable"}}
+}
 async function emailPasswordAuth(email,password,redirectTo,{createUser=false}={}){
  if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};
  const normalized=String(email||"").trim().toLowerCase();
@@ -155,9 +168,10 @@ async function emailPasswordAuth(email,password,redirectTo,{createUser=false}={}
  if(typeof password!=="string"||(createUser?password.length<12:password.length<1))return {ok:false,reason:"password"};
  const callback=String(redirectTo||environment.lumenAuthReturnUrl||"").trim();
  if(!callback)return {ok:false,reason:"redirect"};
- const response=createUser
-  ? await model.lumenSupabase.auth.signUp({email:normalized,password,options:{emailRedirectTo:callback}})
-  : await model.lumenSupabase.auth.signInWithPassword({email:normalized,password});
+ if(createUser){
+  try{return {ok:await requestLumenAuthMail("signup",normalized,password),pendingConfirmation:true}}catch{return {ok:false,reason:"signup"}}
+ }
+ const response=await model.lumenSupabase.auth.signInWithPassword({email:normalized,password});
  if(response.error)return {ok:false,reason:createUser?"signup":"signin",error:response.error};
  return {ok:true,pendingConfirmation:createUser&&!response.data?.session};
 }
@@ -176,8 +190,8 @@ async function sendEmailOtp(email,redirectTo,{createUser=true}={}){
   const options={shouldCreateUser:createUser===true};
   if(!callback)return {ok:false,reason:"redirect"};
   options.emailRedirectTo=callback;
-  const {error}=await model.lumenSupabase.auth.signInWithOtp({email:normalized,options});
- return error?{ok:false,reason:"otp_send",error}:{ok:true,email:normalized};
+  if(createUser)return {ok:false,reason:"legacy_login_only"};
+ try{const ok=await requestLumenAuthMail("magiclink",normalized);return ok?{ok:true,email:normalized}:{ok:false,reason:"otp_send"}}catch{return {ok:false,reason:"otp_send"}}
 }
 async function verifyEmailOtp(email,token){
  if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};
@@ -193,5 +207,5 @@ async function signOut(){
  model.lumenUser=null;model.lumenEntitlements=[];model.lumenCapabilities=[];model.lumenCloudReady=false;
  onAccountChanged({type:"account"});refreshJourney();return {ok:true};
 }
-return {registerLumenUser,loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,sendEmailOtp,verifyEmailOtp,signOut};
+return {registerLumenUser,loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,sendEmailOtp,verifyEmailOtp,signOut};
 }
