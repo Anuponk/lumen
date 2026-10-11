@@ -858,30 +858,31 @@ function adminAlerts(rows){
 function renderCanonicalJourneyPreview(){
  const modal=document.getElementById("mapModal");if(!modal)return;
  let section=modal.querySelector("#canonicalJourneyPreview");
- if(!section){section=document.createElement("section");section.id="canonicalJourneyPreview";
-  section.setAttribute("aria-label","Catalogue des Aventures à venir");
+ if(!section){section=document.createElement("section");section.id="canonicalJourneyPreview";section.setAttribute("aria-label","Catalogue des Aventures");
   const sheet=modal.querySelector(".map-sheet");if(!sheet)return;sheet.appendChild(section)}
  section.replaceChildren();
- const title=document.createElement("h3");title.textContent="Catalogue des Aventures · aperçu";section.appendChild(title);
- const warning=document.createElement("p");warning.textContent="Les nouvelles quêtes sont en préparation et ne sont pas encore jouables. Tes acquis restent conservés.";
+ const title=document.createElement("h3");title.textContent="Toutes les Aventures";section.appendChild(title);
+ const warning=document.createElement("p");warning.textContent="Les nouvelles quêtes restent verrouillées pendant la sécurisation des sauvegardes. Les quêtes actuelles sont accessibles.";
  section.appendChild(warning);
- const summary=canonicalAdventureSummary(lumenProgress),quests=canonicalQuestList();
- for(const adventure of summary){
+ for(const adventure of canonicalAdventureSummary(lumenProgress)){
   const group=document.createElement("details"),heading=document.createElement("summary");
-  heading.textContent=adventure.title+" · "+adventure.completed+"/"+adventure.quests+" quêtes · "+adventure.constellations+" constellations";
-  group.appendChild(heading);
-  const constellations=new Map();
-  for(const quest of quests.filter(q=>q.packId===adventure.id)){
-   if(!constellations.has(quest.constellationId))constellations.set(quest.constellationId,[]);
-   constellations.get(quest.constellationId).push(quest);
-  }
-  for(const [id,items] of constellations){
-   const c=document.createElement("details"),label=document.createElement("summary");
-   label.textContent=(CONTENT_CONSTELLATIONS.find(x=>x.id===id)?.label||id)+" · "+items.length+" quêtes";
-   c.appendChild(label);
-   const rows=document.createElement("p");
-   rows.textContent=items.map(q=>"#"+q.ordinal+(q.legacyIndex===null?" (à venir)":lumenProgress.solved?.[q.legacyIndex]?" ✓":"")).join(" · ");
-   c.appendChild(rows);group.appendChild(c);
+  heading.textContent=adventure.title+" · "+adventure.completed+"/"+adventure.quests+" quêtes";group.appendChild(heading);
+  const constellationIds=[...new Set(canonicalQuestList().filter(q=>q.packId===adventure.id).map(q=>q.constellationId))];
+  for(const id of constellationIds){
+   const quests=canonicalQuestList().filter(q=>q.constellationId===id),c=document.createElement("details"),label=document.createElement("summary");
+   label.textContent=(CONTENT_CONSTELLATIONS.find(x=>x.id===id)?.label||id)+" · "+quests.length+" quêtes";c.appendChild(label);
+   const list=document.createElement("div");list.className="canonical-quest-list";
+   for(const quest of quests){
+    const legacy=quest.legacyIndex,solved=legacy!==null&&!!lumenProgress.solved?.[legacy];
+    const available=legacy!==null&&questIsAccessible(legacy)&&(solved||legacy===currentQuestPosition());
+    const button=document.createElement("button");button.type="button";button.className="puzzle-card"+(solved?" done":"")+(available?"":" locked");
+    button.textContent="Quête "+quest.ordinal+(solved?" ✓":legacy===null?" · à venir":"");
+    button.title=legacy===null?"Nouvelle grille en attente d’activation":available?"Jouer la quête":"Quête verrouillée";
+    button.disabled=!available;button.dataset.questId=quest.id;
+    if(available)button.onclick=()=>{if(solved){startReplay(legacy);return}levelIndex=legacy;replayMode=false;modal.hidden=true;loadPuzzle();refreshJourney()};
+    list.appendChild(button);
+   }
+   c.appendChild(list);group.appendChild(c);
   }
   section.appendChild(group);
  }

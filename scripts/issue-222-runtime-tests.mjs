@@ -47,4 +47,7 @@ assert.deepEqual(admin.map(x=>x.constellations.length),[10,10,10,10]);
 assert.equal(admin.flatMap(p=>p.constellations.flatMap(c=>c.quests)).length,400);
 assert.equal(admin.flatMap(p=>p.constellations.flatMap(c=>c.quests)).filter(q=>q.source==="generated").length,104);
 assert.deepEqual(admin.map(x=>[x.startNumber,x.endNumber]),[[1,100],[101,200],[201,300],[301,400]]);
+assert.match(gameScreen,/button\.disabled=!available/);
+assert.match(gameScreen,/button\.dataset\.questId=quest\.id/);
+assert.match(gameScreen,/if\(solved\)\{startReplay\(legacy\);return\}/);
 console.log("Canonical 400-quest registry: stable identity, legacy save keys and pagination verified");
