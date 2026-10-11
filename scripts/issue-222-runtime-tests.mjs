@@ -49,6 +49,9 @@ assert.equal(admin.flatMap(p=>p.constellations.flatMap(c=>c.quests)).filter(q=>q
 assert.deepEqual(admin.map(x=>[x.startNumber,x.endNumber]),[[1,100],[101,200],[201,300],[301,400]]);
 assert.match(gameScreen,/button\.disabled=!available/);
 assert.match(gameScreen,/button\.dataset\.questId=quest\.id/);
+assert.match(gameScreen,/function canonicalPerformanceBadges\(questId\)/);
+assert.match(gameScreen,/solved\?canonicalPerformanceBadges\(quest\.id\)/);
+assert.match(gameScreen,/\[\["speed","Rapidité"\]/);
 assert.match(gameScreen,/const canonicalCards=canonicalQuestList\(\)\.filter\(q=>q\.constellationId===mappedConstellation\.id\)/);
 assert.match(gameScreen,/puzzleGrid\.replaceChildren\(\)/);
 assert.match(gameScreen,/button\.disabled=!available/);
