@@ -92,7 +92,12 @@ async function confirmBrandedAuthLink(){
  const {error}=await model.lumenSupabase.auth.verifyOtp({
   token_hash:hash,type:type==="magiclink"?"email":type
  });
- if(error)console.warn("LUMEN confirmation link could not be validated",error.message);
+ if(error){
+  console.warn("LUMEN confirmation link could not be validated",error.message);
+  await model.lumenSupabase.auth.signOut();
+  onAccountChanged({type:"confirmation_failed"});
+  return;
+ }
 }
 async function initLumenCloud(){
  if(model.lumenSupabase)await confirmBrandedAuthLink();

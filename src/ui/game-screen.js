@@ -124,7 +124,16 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   const original=localStorage.getItem("lumenProgressV1");
   const incoming=original?JSON.parse(original):lumenProgress;
   // First login: create the profile exactly once. An existing cloud profile wins.
-  const cloud=await initializeCloudProfile(lumenSupabase,incoming);
+  const ownerKey='lumenCloudOwnerId';
+  const currentOwner=localStorage.getItem(ownerKey);
+  const accountId=lumenUser.id;
+  const existing=await loadVerifiedProfile(lumenSupabase);
+  const fresh={...incoming,solved:{},historyBackup:{},badges:{},stars:{},performances:{},noHint:{},xp:0,skyScore:0,shards:3};
+  const cloud=existing||await initializeCloudProfile(lumenSupabase,currentOwner===accountId?incoming:fresh);
+  if(currentOwner!==accountId){
+   if(original)localStorage.setItem('lumenBeforeAccountSwitch_'+Date.now(),original);
+   localStorage.setItem(ownerKey,accountId);
+  }
   const changed=installCloudProfileLocally(localStorage,cloud);
   cloudProfileBaseline=cloud;
   if(changed){location.reload();return}
