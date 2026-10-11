@@ -142,9 +142,11 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
  }catch(e){console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
 },holdLegacyMergeForFullRestore:async()=>true},{setTimeout,console,qaMode});
 let skipFirstGridTutorial=false;
+try{skipFirstGridTutorial=localStorage.getItem(qaKey('lumenSkipFirstGridTutorial'))==='1'}catch(_){}
 function skipFirstGridGuidance(){
  if(levelIndex!==0||socialChallenge)return;
  skipFirstGridTutorial=true;
+ try{localStorage.setItem(qaKey('lumenSkipFirstGridTutorial'),'1')}catch(_){}
  learningTip=null;
  learningIntroStep=LEARNING_INTRO.length;
  updateScriptedLearning();
@@ -706,7 +708,7 @@ function currentPerformanceEligibility(i){
 function learningQuestActive(){return levelIndex<=1&&!socialChallenge&&(!replayMode||learningReplayActive())}
 function learningIntroActive(){return levelIndex===0&&learningQuestActive()&&state&&state.flat().every(v=>v===0)&&learningIntroStep<LEARNING_INTRO.length}
 function currentLearningStep(){if(learningIntroActive())return {phase:"intro",introStep:learningIntroStep,cells:[],number:0};return levelIndex===1?dragLearningStep(puz,state):learningStep(puz,state)}
-function scriptedLearningActive(){return !skipFirstGridTutorial&&learningQuestActive()&&!!state&&currentLearningStep().phase!=="complete"}
+function scriptedLearningActive(){return !(skipFirstGridTutorial&&!learningReplayActive())&&learningQuestActive()&&!!state&&currentLearningStep().phase!=="complete"}
 function learningMarkAllowed(r,c){const step=currentLearningStep();return step.phase!=="place"&&learningAllows(step,r,c)}
 function scriptedAllowsGuardian(r,c){const step=currentLearningStep();return step.phase==="place"&&learningAllows(step,r,c)}
 function learningDragAllowed(){return !scriptedLearningActive()||["reuse","drag","practice"].includes(currentLearningStep().phase)}
