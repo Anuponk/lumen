@@ -250,8 +250,9 @@ function syncMobileAuthUI(){
  if(!status||!action||!icon)return;
  const signedIn=Boolean(lumenUser);
  const show=(id,visible)=>{const el=document.getElementById(id);if(el)el.hidden=!visible};
- show("setPasswordPanel",signedIn);
- show("nicknameBox",signedIn);
+ if(!signedIn){const editor=document.getElementById("accountProfileEditor");if(editor)editor.dataset.open="false"}
+ show("editAccountProfile",signedIn);
+ show("accountProfileEditor",signedIn&&document.getElementById("accountProfileEditor")?.dataset.open==="true");
  show("mobileCreateAccount",!signedIn);
  show("mobileEmailLogin",false);
  show("guestSaveExplainer",!signedIn);
@@ -319,6 +320,9 @@ function setupMobileAuth(){
  if(!menu||!account||!action)return;
  account.onclick=(e)=>{e.stopPropagation();const d=document.getElementById("dailyInfoPopover");if(d)d.hidden=true;menu.hidden=!menu.hidden};
  menu.onclick=(e)=>e.stopPropagation();
+ const editor=document.getElementById("accountProfileEditor");
+ const edit=document.getElementById("editAccountProfile");if(edit)edit.onclick=()=>{if(!lumenUser||!editor)return;editor.dataset.open="true";syncMobileAuthUI();document.getElementById("nicknameInput")?.focus()};
+ const closeProfile=document.getElementById("closeAccountProfile");if(closeProfile)closeProfile.onclick=()=>{if(!editor)return;editor.dataset.open="false";syncMobileAuthUI()};
  const create=document.getElementById("mobileCreateAccount");if(create)create.onclick=openAccountFromMenu;
  const emailLogin=document.getElementById("mobileEmailLogin");if(emailLogin)emailLogin.onclick=()=>{menu.hidden=true;const offer=document.getElementById("accountOptin");if(offer)offer.hidden=false;openEmailAccountOffer("login")};
  const qaTools=document.getElementById("qaAccountTools");if(qaTools)qaTools.hidden=!qaActive;
