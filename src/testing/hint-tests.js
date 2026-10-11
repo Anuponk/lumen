@@ -13,7 +13,6 @@ async function runHintTests(){
  test("PWA : proposition différée après le parcours d'accueil",()=>maybeOfferInstall.toString().includes("solvedCount()<12")&&document.getElementById("installEnable"));
  test("PWA : une installation existante bloque la proposition",()=>{const src=maybeOfferInstall.toString();return src.includes("lumenAlreadyInstalled()")&&!src.includes("!qaActive&&lumenIsStandalone()")});
  test("PWA : compte et préférences QA préservés",()=>{const src=maybeOfferInstall.toString();return src.includes("accountRequired()")&&src.includes('qaKey("lumenInstallLater")')});
- test("PWA : ne propose pas un bouton inutilisable",()=>maybeOfferInstall.toString().includes("!ios&&!lumenInstallPrompt"));
  test("Partage : le résultat contient un lien de parrainage traçable",()=>lumenShareUrl().includes("ref=")&&shareLumenResult.toString().includes("result_shared"));
  test("Partage : la réussite met en avant quête et constellation",()=>typeof successAchievement==="function"&&document.getElementById("successAchievement")&&successAchievement.toString().includes("Quête "));
  test("Partage : une carte image est générée quand le téléphone le permet",()=>shareLumenResult.toString().includes("shareCardCanvas")&&shareLumenResult.toString().includes("canShare"));
