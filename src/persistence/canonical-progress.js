@@ -2,6 +2,7 @@
 // Historic achievements keep their original numeric keys; new quests use
 // a stable-ID dictionary. Never shift legacy indices to visible ordinals.
 import {canonicalQuestById,canonicalQuestByOrdinal,canonicalQuestList} from "../campaign/canonical-quests.js";
+import {loadVerifiedProfile,compareAndSwapCloudProfile} from "./cloud-profile.js";
 
 export const CANONICAL_PROGRESS_VERSION=1;
 function copy(profile){
@@ -48,4 +49,28 @@ export function acknowledgeCanonicalVictory(profile,id,{badges={},performance=nu
 export function canonicalQuestForDisplay(ordinal){
  const q=canonicalQuestByOrdinal(ordinal);
  return q?{questId:q.id,ordinal:q.ordinal,legacyIndex:q.legacyIndex,packId:q.packId}:null;
+}
+
+// Atomic, cross-device acknowledgement. Rewards are written only in the full
+// cloud snapshot and only after comparing it to the last read version.
+// A conflicting device may race; retry by re-reading once, never re-award.
+export async function commitCanonicalVictory(supabase,questId,reward,{maxAttempts=3}={}){
+ if(!supabase||typeof supabase.rpc!=="function")throw Error("Cloud unavailable: canonical victory not committed");
+ const quest=canonicalQuestById(questId);
+ if(!quest||quest.legacyIndex!==null)throw Error("Canonical cloud commit requires a new quest ID");
+ for(let attempt=0;attempt<maxAttempts;attempt++){
+  const current=await loadVerifiedProfile(supabase);
+  if(!current)throw Error("No verified cloud baseline");
+  const result=acknowledgeCanonicalVictory(current,questId,reward);
+  if(!result.newlyCompleted)return {...result,alreadySaved:true};
+  try{
+   await compareAndSwapCloudProfile(supabase,result.profile,current);
+   const verified=await loadVerifiedProfile(supabase);
+   if(!verified?.canonicalQuestState?.[questId]?.solved)throw Error("Canonical victory cloud read-back failed");
+   return {...result,profile:verified,alreadySaved:false};
+  }catch(error){
+   if(!/Conflit de version cloud/.test(error.message)||attempt===maxAttempts-1)throw error;
+  }
+ }
+ throw Error("Canonical victory cannot be committed");
 }

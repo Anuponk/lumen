@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {canonicalQuestList,canonicalQuestById} from "../src/campaign/canonical-quests.js";
 import {cloudSafelyCoversLocal,reconcileCloudAchievements} from "../src/persistence/cloud-profile.js";
-import {CANONICAL_PROGRESS_VERSION,questIsCompleted,canonicalCompletionCount,firstIncompleteCanonicalQuest,acknowledgeCanonicalVictory,canonicalQuestForDisplay} from "../src/persistence/canonical-progress.js";
+import {CANONICAL_PROGRESS_VERSION,questIsCompleted,canonicalCompletionCount,firstIncompleteCanonicalQuest,acknowledgeCanonicalVictory,canonicalQuestForDisplay,commitCanonicalVictory} from "../src/persistence/canonical-progress.js";
 
 assert.equal(CANONICAL_PROGRESS_VERSION,1);
 const all=canonicalQuestList(),newQuest=all.find(q=>q.legacyIndex===null);
@@ -48,3 +48,27 @@ assert.deepEqual(JSON.parse(store.get("lumenProgressV1")).canonicalQuestState,do
 assert.equal(reconcileCloudAchievements(storage,remoteProfile).changed,false,"Same cloud victory must not award twice");
 assert.throws(()=>reconcileCloudAchievements(storage,{...remoteProfile,canonicalQuestState:{[newQuest.id]:{solved:true,stars:999}}}),/Conflit de récompense/);
 assert.equal(JSON.parse(store.get("lumenProgressV1")).canonicalQuestState[newQuest.id].stars,3,"Conflicting remote payload must not overwrite local rewards");
+
+// Real RPC contract simulation: CAS, read-back and idempotent cross-device retry.
+{
+ let persisted=structuredClone(original),casCalls=0;
+ const cloud={rpc:async(name,args)=>{
+  if(name==="lumen_restore_profile")return {data:structuredClone(persisted),error:null};
+  if(name==="lumen_cas_profile"){
+   casCalls++;
+   if(JSON.stringify(args.p_expected)!==JSON.stringify(persisted))return {data:false,error:null};
+   persisted=structuredClone(args.p_payload);return {data:true,error:null};
+  }
+  throw Error("Unexpected RPC "+name);
+ }};
+ const first=await commitCanonicalVictory(cloud,newQuest.id,{stars:3,badges:{mastery:true}});
+ assert.equal(first.newlyCompleted,true);
+ assert.equal(!!persisted.canonicalQuestState[newQuest.id]?.solved,true);
+ assert.equal(casCalls,1);
+ const second=await commitCanonicalVictory(cloud,newQuest.id,{stars:300});
+ assert.equal(second.newlyCompleted,false);
+ assert.equal(second.alreadySaved,true);
+ assert.equal(casCalls,1,"No second CAS when already completed");
+ assert.equal(persisted.canonicalQuestState[newQuest.id].stars,3);
+ assert.deepEqual(persisted.solved,original.solved);
+}
