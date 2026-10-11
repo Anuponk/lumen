@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import {CONTENT_PACKS,BASE_PACK_ID,BASE_CONSTELLATIONS,contentMapModel,hasPackAccess,preserveStartedAdventureAccess} from '../src/campaign/content.js';
-import {skySelection,constellationUnlocked} from '../src/ui/sky-navigation.js';
+import {skySelection,constellationUnlocked,skyPickerVisible} from '../src/ui/sky-navigation.js';
+assert.equal(skyPickerVisible(contentMapModel()),false);
+assert.equal(skyPickerVisible({skies:[{id:'only'}]}),false);
+assert.equal(skyPickerVisible({skies:[{id:'a'},{id:'b'}]}),true);
 const base=CONTENT_PACKS[0],next=CONTENT_PACKS[1],third=CONTENT_PACKS[2];
 assert.equal(base.id,BASE_PACK_ID);assert.equal(base.constellationIds.length,10);
 const prefix=count=>({solved:Object.fromEntries(Array.from({length:count},(_,i)=>[i,1])),badges:{historical:1}});
