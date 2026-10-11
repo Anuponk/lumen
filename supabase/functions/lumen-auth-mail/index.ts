@@ -1,5 +1,5 @@
 // Lumen-only auth email endpoint. Never configure the project-wide Send Email Hook.
-// Requires RESEND, UPSTASH and SUPABASE secrets. Deploy with JWT verification disabled
+// Requires Resend and Supabase service-role secrets; throttle uses private Postgres RPC. Deploy with JWT verification disabled
 // only after the dedicated server-side rate limits and end-to-end flows are validated.
 const HOST="https://lumen.nopuna.fr";
 const headers={"content-type":"application/json","cache-control":"no-store","access-control-allow-origin":HOST,"access-control-allow-headers":"content-type,apikey,authorization","access-control-allow-methods":"POST,OPTIONS","vary":"Origin"};
