@@ -36,3 +36,10 @@ for(const name of ["lumen_claim_daily","lumen_save_daily"]){
  const part=dailyRepair.split("create or replace function public."+name)[1]?.split("end $$;")[0];
  assert.ok(part?.includes("p_puzzle_id>10000"),name+" must accept appended quests");
 }
+
+// Regression guard against stale analytics table constraints.
+const analyticsRepair=fs.readFileSync("supabase/migrations/20261010_lumen_analytics_constraint_repair.sql","utf8");
+assert.ok(analyticsRepair.includes("analytics_events_puzzle_id_check check (puzzle_id between 1 and 10000)"));
+for(const name of ["attempt_completed","guided_intervention","app_opened","feedback_submitted"]){
+ assert.ok(analyticsRepair.includes("'"+name+"'"),"Analytics constraint must allow "+name);
+}
