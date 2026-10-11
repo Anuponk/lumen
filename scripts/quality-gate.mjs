@@ -16,6 +16,7 @@ const nodeSuites=[
  "late-game-tests.mjs",
  "content-architecture-tests.mjs",
  "astronomical-projection-tests.mjs",
+ "astronomical-catalogue-tests.mjs",
  "issue-222-plan-tests.mjs",
  "issue-222-stage-verify.mjs",
  "issue-222-runtime-tests.mjs",
