@@ -1,5 +1,6 @@
 // One responsive component: browsing state never writes campaign progression.
 export const CONSTELLATIONS_PER_PAGE=6;
+export const skyPickerVisible=model=>(model?.skies?.length||0)>1;
 export function constellationUnlocked(entry,pack,getSolved,getQuest){
  if(!entry?.accessible)return false;
  const entries=pack?.constellations||[],index=entries.findIndex(c=>c.id===entry.id);
@@ -50,7 +51,7 @@ export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit
  function render(){
   const model=getModel();current=skySelection(model,selection,getQuest());selection={skyId:current.sky?.id,packId:current.adventure?.id,page:current.page};
   const skyPickerContainer=context.querySelector('.sky-picker');
-  skyPickerContainer.hidden=(model.skies?.length||0)<=1;
+  skyPickerContainer.hidden=!skyPickerVisible(model);
   const picker=element('skyPicker');picker.replaceChildren();for(const sky of model.skies){const option=document.createElement('option');option.value=sky.id;option.textContent=sky.label;picker.appendChild(option)}picker.value=current.sky?.id||'';
   const rail=element('adventureRail'),scroll=rail.scrollLeft;rail.replaceChildren();
   for(const pack of current.sky?.packs||[]){const b=document.createElement('button');b.className='adventure-chip'+(pack.id===current.adventure?.id?' selected':'')+(!pack.accessible?' locked':'');b.dataset.packId=pack.id;b.setAttribute('aria-pressed',String(pack.id===current.adventure?.id));b.textContent=(!pack.accessible?'🔒 ':state(pack)==='Terminée'?'✓ ':'')+(pack.displayName||'Aventure '+(pack.order+1));b.title=state(pack);b.onclick=()=>{if(!pack.accessible){showLocked(pack,b);return}selection={skyId:current.sky.id,packId:pack.id,page:0};selectedConstellation=null;view='overview';render()};rail.appendChild(b)}rail.scrollLeft=scroll;
