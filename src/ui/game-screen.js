@@ -168,6 +168,8 @@ function openEmailAccountOffer(mode="signup"){accountEmailMode=mode==="login"?"l
  if(submit)submit.textContent=accountEmailMode==="login"?"Se connecter":"Créer mon compte";
  const legacy=document.getElementById("accountLegacyOtp");if(legacy)legacy.hidden=accountEmailMode!=="login";
  const recover=document.getElementById("accountRecovery");if(recover)recover.hidden=accountEmailMode!=="login";
+ const switcher=document.getElementById("accountAuthSwitch");if(switcher)switcher.textContent=accountEmailMode==="login"?"Créer un compte à la place":"J’ai déjà un compte";
+ const status=document.getElementById("accountEmailStatus");if(status)status.textContent="";
  document.getElementById("accountEmailSend").hidden=true;
  document.getElementById("accountOtpStep").hidden=true;
  document.getElementById("accountEmail")?.focus();trackLumenEvent("account_email_selected",null,{milestone:5,source:"quest_5_gate",qa:qaActive})}
@@ -178,7 +180,7 @@ async function submitAccountPassword(){
  if(status)status.textContent="Connexion en cours…";
  const result=await emailPasswordAuth(email,password,new URL("/",location.origin).toString(),{createUser:accountEmailMode==="signup"});
  if(!result.ok){
-  if(status)status.textContent=result.reason==="email"?"Entre une adresse email valide.":result.reason==="password"?"Utilise un mot de passe d'au moins 12 caractères.":"Impossible de terminer. Vérifie tes informations ou utilise ton ancien code email.";
+  if(status)status.textContent=result.reason==="email"?"Entre une adresse email valide.":result.reason==="password"?"Utilise un mot de passe d'au moins 12 caractères.":accountEmailMode==="login"?"Connexion impossible. Vérifie le mot de passe, ou crée un compte si cette adresse est nouvelle.":"Inscription impossible. Vérifie cette adresse ou essaie de te connecter.";
   return;
  }
  if(result.pendingConfirmation){
@@ -1894,6 +1896,8 @@ const nicknameSave=document.getElementById("nicknameSave");if(nicknameSave)nickn
 const guidedErrors=document.getElementById("guidedErrors");if(guidedErrors)guidedErrors.onchange=()=>{if(levelIndex<=4&&!replayMode){guidedErrors.checked=true;return}localStorage.setItem("lumenGuidedErrors",guidedErrors.checked?"on":"off")};
 const accountOptinEnable=document.getElementById("accountOptinEnable"),accountOptinLater=document.getElementById("accountOptinLater"),accountOptinEmail=document.getElementById("accountOptinEmail"),accountEmailSend=document.getElementById("accountEmailSend"),accountOtpVerify=document.getElementById("accountOtpVerify");if(accountOptinEnable)accountOptinEnable.onclick=acceptAccountOffer;if(accountOptinLater)accountOptinLater.onclick=dismissAccountOffer;if(accountOptinEmail)accountOptinEmail.onclick=()=>openEmailAccountOffer("signup");const passwordSubmit=document.getElementById("accountPasswordSubmit"),legacyOtp=document.getElementById("accountLegacyOtp");
 if(passwordSubmit)passwordSubmit.onclick=submitAccountPassword;
+const switcher=document.getElementById("accountAuthSwitch");if(switcher)switcher.onclick=()=>openEmailAccountOffer(accountEmailMode==="login"?"signup":"login");
+const closeAccount=document.getElementById("accountOptinClose");if(closeAccount)closeAccount.onclick=()=>{if(!accountRequired())document.getElementById("accountOptin").hidden=true;};
 const setPasswordSave=document.getElementById("setPasswordSave");if(setPasswordSave)setPasswordSave.onclick=saveExistingAccountPassword;
 if(legacyOtp)legacyOtp.onclick=showLegacyOtp;
 const recovery=document.getElementById("accountRecovery");if(recovery)recovery.onclick=recoverAccountPassword;
