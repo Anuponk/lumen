@@ -1,0 +1,13 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+const cloud=fs.readFileSync("src/persistence/cloud.js","utf8");
+const game=fs.readFileSync("src/ui/game-screen.js","utf8");
+const html=fs.readFileSync("index.html","utf8");
+assert.match(cloud,/async function sendEmailOtp\(email,redirectTo,\{createUser=true\}=\{\}\)/);
+assert.match(cloud,/shouldCreateUser:createUser===true/);
+assert.match(game,/sendEmailOtp\(email,new URL\("\/",location.origin\)\.toString\(\),\{createUser:accountEmailMode==="signup"\}\)/);
+assert.match(game,/openEmailAccountOffer\("login"\)/);
+assert.match(game,/accountEmailMode="signup"/);
+assert.match(html,/id="mobileEmailLogin"/);
+assert.match(game,/if\(emailLogin\)emailLogin\.onclick/);
+console.log("Account email signup/login contract passed");
