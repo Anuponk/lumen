@@ -82,6 +82,10 @@ jobs:
         if: steps.scheduled_check.outputs.need_tests == 'true'
         run: node scripts/cloud-profile-tests.mjs
 
+      - name: Cross-device cloud persistence regression matrix
+        if: steps.scheduled_check.outputs.need_tests == 'true'
+        run: node scripts/cloud-regression-matrix-tests.mjs
+
       - name: Guest save migration recovery regression
         if: steps.scheduled_check.outputs.need_tests == 'true'
         run: node scripts/guest-transfer-tests.mjs
