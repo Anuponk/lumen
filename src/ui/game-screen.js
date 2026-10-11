@@ -901,10 +901,10 @@ function maybeShowBadgeMilestone(){
  o.dataset.kind=kind;
  if(kind==="speed"){
   title.textContent="Ton premier badge est à gagner";
-  copy.innerHTML="<strong>⚡ Rapidité</strong> est maintenant disponible.<br><br>Réussis la quête avant la fin du temps cible pour l’obtenir. À partir de maintenant, tes performances peuvent donc enrichir chaque quête réussie.";
+  copy.innerHTML="<strong>⚡ Rapidité</strong> : termine cette quête avant le temps cible pour gagner le badge.<br><br>Les règles détaillées restent consultables dans Badges.";
  }else{
   title.textContent="Tous les badges sont maintenant accessibles";
-  copy.innerHTML="<strong>🧠 Autonomie</strong> : réussis sans assistance.<br><br><strong>⚡ Rapidité</strong> : termine avant le temps cible.<br><br><strong>✓ Sans erreur</strong> : réussis sans assistance et sans poursuivre après un mauvais Gardien.<br><br><strong>✦ Maîtrise</strong> : réunis Autonomie, Rapidité et Sans erreur sur le même essai.<br><br>Les assistances restent une façon parfaitement valable de jouer, mais leur utilisation empêche Autonomie, Sans erreur — et donc Maîtrise — sur cet essai.";
+  copy.innerHTML="<strong>🧠 Autonomie</strong> : sans assistance.<br><strong>✓ Sans erreur</strong> : sans erreur conservée et sans assistance.<br><strong>✦ Maîtrise</strong> : réunis les trois badges sur un essai.<br><br>Détails disponibles dans Badges.";
  }
  o.hidden=false;o.style.display="flex";pauseGameClock();
 }
