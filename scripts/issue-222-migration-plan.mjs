@@ -48,6 +48,7 @@ export function buildMigrationPlan({packs=CONTENT_PACKS,constellations=CONTENT_C
     const quest=originalIndex===null?null:getQuest(originalIndex);
     if(originalIndex!==null&&(!quest||quest.index!==originalIndex))throw Error("Missing playable quest "+originalIndex);
     const stableId=quest?.id??null;
+    const proposedQuestId=stableId??`planned-${c.id}-q${String(position+1).padStart(2,"0")}`;
     if(stableId){
      if(currentIds.has(stableId))throw Error("Duplicate stable quest identity "+stableId);
      currentIds.add(stableId);
@@ -58,6 +59,7 @@ export function buildMigrationPlan({packs=CONTENT_PACKS,constellations=CONTENT_C
      constellationId:c.id,
      constellationPosition:position+1,
      stableQuestId:stableId,
+     proposedQuestId,
      legacyIndex:originalIndex,
      requiresGeneration:originalIndex===null
     });
@@ -68,6 +70,7 @@ export function buildMigrationPlan({packs=CONTENT_PACKS,constellations=CONTENT_C
  const historical=records.filter(q=>!q.requiresGeneration);
  if(historical.length!==questCount||new Set(historical.map(q=>q.legacyIndex)).size!==questCount)throw Error("Existing quests not preserved one-to-one");
  if(adventures.some(a=>a.lastQuest-a.firstQuest+1!==TARGET_QUESTS_PER_ADVENTURE))throw Error("Adventure has incorrect size");
+ if(new Set(records.map(q=>q.proposedQuestId)).size!==records.length)throw Error("Duplicate planned quest identity");
  return {schemaVersion:1,publicationReady:records.every(q=>!q.requiresGeneration),total:records.length,missing:records.filter(q=>q.requiresGeneration).length,adventures,records};
 }
 
@@ -81,4 +84,21 @@ export function migrateLegacySolved(solved,plan){
   if(!record)throw Error("Unmapped persisted quest key: "+key);
   return [{id:record.stableQuestId,ordinal:record.ordinal,legacyIndex:record.legacyIndex}];
  });
+}
+
+// Consumers may display the planned ordinals only after every placeholder is
+// replaced by a verified, uniquely solved puzzle and the cloud migration passes.
+export function assertPublicationReady(plan){
+ if(!plan||plan.publicationReady!==true||plan.records.some(q=>q.requiresGeneration||!q.stableQuestId))throw Error("Catalogue publication blocked: unaudited quest slots remain");
+ if(new Set(plan.records.map(q=>q.stableQuestId)).size!==plan.records.length)throw Error("Catalogue publication blocked: duplicate stable IDs");
+ return true;
+}
+
+// A deterministic migration ledger for review, challenge-link translation and rollback.
+// Do not mutate the original player profile; persistent migration is a separate operation.
+export function migrationLedger(plan){
+ const current=plan.records.filter(q=>q.legacyIndex!==null);
+ return Object.freeze({schemaVersion:plan.schemaVersion,publicationReady:plan.publicationReady,
+  oldToNew:current.map(q=>({legacyIndex:q.legacyIndex,stableQuestId:q.stableQuestId,newOrdinal:q.ordinal})).sort((a,b)=>a.legacyIndex-b.legacyIndex),
+  pending:plan.records.filter(q=>q.requiresGeneration).map(q=>({plannedQuestId:q.proposedQuestId,ordinal:q.ordinal,constellationId:q.constellationId,adventureId:q.adventureId}))});
 }
