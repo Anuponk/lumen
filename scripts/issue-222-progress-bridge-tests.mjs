@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {canonicalQuestList,canonicalQuestById} from "../src/campaign/canonical-quests.js";
+import {cloudSafelyCoversLocal,reconcileCloudAchievements} from "../src/persistence/cloud-profile.js";
 import {CANONICAL_PROGRESS_VERSION,questIsCompleted,canonicalCompletionCount,firstIncompleteCanonicalQuest,acknowledgeCanonicalVictory,canonicalQuestForDisplay} from "../src/persistence/canonical-progress.js";
 
 assert.equal(CANONICAL_PROGRESS_VERSION,1);
@@ -34,3 +35,16 @@ const completedAllLegacy=Object.fromEntries(all.filter(q=>q.legacyIndex!==null).
 const firstNew=firstIncompleteCanonicalQuest({solved:completedAllLegacy});
 assert.equal(firstNew.id,all.find(q=>q.legacyIndex===null).id);
 console.log("Canonical progress bridge preserved old cloud keys, stable-ID writes and idempotent victories");
+
+// Cloud restore / reconciliation tests: do not drop or double-credit new quests.
+const remoteProfile={...structuredClone(original),canonicalQuestState:structuredClone(done.profile.canonicalQuestState)};
+assert.equal(cloudSafelyCoversLocal(remoteProfile,original),false,"Stale cloud snapshots cannot replace canonical victories");
+assert.equal(cloudSafelyCoversLocal(original,remoteProfile),true,"Richer remote profiles may be restored");
+const store=new Map([["lumenProgressV1",JSON.stringify(original)]]);
+const storage={getItem:key=>store.get(key)??null,setItem:(key,val)=>store.set(key,val)};
+const reconciled=reconcileCloudAchievements(storage,remoteProfile);
+assert.equal(reconciled.changed,true);
+assert.deepEqual(JSON.parse(store.get("lumenProgressV1")).canonicalQuestState,done.profile.canonicalQuestState);
+assert.equal(reconcileCloudAchievements(storage,remoteProfile).changed,false,"Same cloud victory must not award twice");
+assert.throws(()=>reconcileCloudAchievements(storage,{...remoteProfile,canonicalQuestState:{[newQuest.id]:{solved:true,stars:999}}}),/Conflit de récompense/);
+assert.equal(JSON.parse(store.get("lumenProgressV1")).canonicalQuestState[newQuest.id].stars,3,"Conflicting remote payload must not overwrite local rewards");

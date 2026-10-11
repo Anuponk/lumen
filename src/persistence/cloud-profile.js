@@ -83,6 +83,14 @@ export function cloudSafelyCoversLocal(local,remote){
       if(value && !cloud[field]?.[key])return false;
     }
   }
+  // Canonical quest rewards must never be dropped during a cloud restore.
+  // A remote state must include each completed stable quest and its exact
+  // reward snapshot before it may replace the local device profile.
+  for(const [id,entry] of Object.entries(local.canonicalQuestState||{})){
+    if(!entry?.solved)continue;
+    const saved=cloud.canonicalQuestState?.[id];
+    if(!saved?.solved||!sameCloudProfile(entry,saved))return false;
+  }
   for(const [key,perf] of Object.entries(local.performances||{})){
     const saved=cloud.performances?.[key];
     if(!saved)return false;
@@ -171,6 +179,19 @@ export function reconcileCloudAchievements(storage,remote){
   for(const [name,value] of Object.entries(cloud.badges||{})){
     if(!Object.hasOwn(merged.badges,name)){merged.badges[name]=structuredClone(value);changed=true}
   }
+  // New-quest achievements are immutable rewards keyed by stable IDs.
+  // Never replace an existing local reward with a different cloud snapshot:
+  // fail closed so neither device loses an achievement or currency record.
+  const localCanonical=merged.canonicalQuestState||{},remoteCanonical=cloud.canonicalQuestState||{};
+  for(const [id,entry] of Object.entries(remoteCanonical)){
+    if(!entry?.solved)continue;
+    if(localCanonical[id]?.solved){
+      if(!sameCloudProfile(localCanonical[id],entry))throw Error("Conflit de récompense de quête canonique : "+id);
+    }else{
+      localCanonical[id]=structuredClone(entry);changed=true;
+    }
+  }
+  if(Object.keys(localCanonical).length)merged.canonicalQuestState=localCanonical;
   if(!changed)return {changed:false,currencyConflict:Number(local.shards)!==Number(cloud.shards)};
   const backupKey="lumenBeforeCloudReconcile_"+Date.now();
   storage.setItem(backupKey,raw);
