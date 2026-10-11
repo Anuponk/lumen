@@ -40,7 +40,7 @@ Deno.serve(async req=>{
  let generated:Record<string,unknown>;
  try{
   const resp=await fetch(base.replace(/\/$/,"")+"/auth/v1/admin/generate_link",{method:"POST",headers:{"apikey":service,"authorization":"Bearer "+service,"content-type":"application/json"},body:JSON.stringify(payload)});
-  if(!resp.ok)return accepted(); // indistinguishable response; never leak whether user exists
+  if(!resp.ok)return type==="signup"?reply(409,{ok:false,reason:"signup_not_available"}):accepted(); // do not falsely confirm signup; keep recovery/legacy enumeration-resistant
   generated=await resp.json();
  }catch{return reply(503)}
  const props=generated.properties as Record<string,unknown>|undefined;
