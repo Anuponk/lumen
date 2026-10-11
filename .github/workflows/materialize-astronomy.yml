@@ -1,0 +1,37 @@
+name: Materialize verified astronomy assets
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/materialize-astronomy.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  materialize:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          persist-credentials: true
+      - name: Download successful 40/40 atlas import
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p .cache/astronomy
+          gh run download 38136873670 --repo "${{ github.repository }}" --name lumen-astronomical-import-audit --dir .cache/astronomy
+      - name: Verify imported atlas is complete and copy into runtime assets
+        run: |
+          node scripts/validate-playable-astronomy.mjs .cache/astronomy/report.json
+          mkdir -p src/data/astronomy
+          cp .cache/astronomy/report.json src/data/astronomy/stellarium-western-figures.json
+      - name: Commit verified, versioned atlas into PR branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/astronomy/stellarium-western-figures.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "data(astronomy): version verified 88 Western astronomical figures"
+          git push origin HEAD:"${{ github.head_ref }}"
