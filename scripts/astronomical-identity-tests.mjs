@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {astronomicalIdentityAudit} from "./astronomical-identity-audit.mjs";
+import {astronomicalIdentityAudit,IAU_BY_RESERVED_CONSTELLATION} from "./astronomical-identity-audit.mjs";
 const audit=astronomicalIdentityAudit();
 assert.equal(audit.quests,400);
 assert.equal(audit.adventures,4);
@@ -8,6 +8,11 @@ assert.equal(audit.registeredConstellations,34);
 assert.equal(audit.unregistered.length,6);
 assert.deepEqual(audit.unknown,[]);
 assert.deepEqual(audit.repeated,[]);
+assert.equal(audit.mapped.length,40);
+assert.equal(audit.reserved.length,6);
+assert.deepEqual(audit.unregistered.sort(),Object.keys(IAU_BY_RESERVED_CONSTELLATION).sort());
+assert.deepEqual(audit.reserved.map(c=>c.iau).sort(),["Del","Equ","Her","Lep","Mon","Oph"]);
+assert(audit.reserved.every(c=>c.questCount>0 && c.packId==="real-adventure-03"));
 assert.equal(audit.mapped.find(x=>x.label==="Orion")?.iau,"Ori");
 assert.equal(audit.mapped.find(x=>x.id==="iau-cmi")?.iau,"CMi");
 assert.equal(audit.mapped.find(x=>x.id==="iau-cvn")?.iau,"CVn");

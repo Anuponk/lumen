@@ -8,6 +8,17 @@ export const IAU_BY_LEGACY_INDEX=Object.freeze([
  "Aqr","Psc","Vir","CMa"
 ]);
 const IAU_GENERATED=Object.freeze({ant:"Ant",aps:"Aps",ara:"Ara",ari:"Ari",aur:"Aur",cae:"Cae",cam:"Cam",cnc:"Cnc",cvn:"CVn",cmi:"CMi"});
+// Stable IDs emitted by the existing 400-quest planner. Do not rename these IDs:
+// canonical quest identities (and existing cloud progress) depend on them.
+// Assign astronomical identities without changing quest ordering or catalogue IDs.
+export const IAU_BY_RESERVED_CONSTELLATION=Object.freeze({
+ "real-adventure-03-new-01":"Del", // Delphinus
+ "real-adventure-03-new-02":"Equ", // Equuleus
+ "real-adventure-03-new-03":"Her", // Hercules
+ "real-adventure-03-new-04":"Lep", // Lepus
+ "real-adventure-03-new-05":"Mon", // Monoceros
+ "real-adventure-03-new-06":"Oph"  // Ophiuchus
+});
 export function astronomicalIdentityAudit({constellations=CONTENT_CONSTELLATIONS,packs=CONTENT_PACKS,quests=canonicalQuestList()}={}){
  const mapped=constellations.map(c=>{
   const iau=c.id.startsWith("iau-")?IAU_GENERATED[c.id.slice(4)]??null:IAU_BY_LEGACY_INDEX[c.legacyIndex]||null;
@@ -15,9 +26,11 @@ export function astronomicalIdentityAudit({constellations=CONTENT_CONSTELLATIONS
  });
  const knownIds=new Set(mapped.map(c=>c.id));
  const unregistered=[...new Set(quests.filter(q=>!knownIds.has(q.constellationId)).map(q=>q.constellationId))];
- const unknown=mapped.filter(c=>!c.iau);
- const repeated=mapped.filter((c,i)=>mapped.findIndex(other=>other.iau===c.iau)!==i);
+ const reserved=unregistered.map(id=>({id,label:id,iau:IAU_BY_RESERVED_CONSTELLATION[id]||null,packId:quests.find(q=>q.constellationId===id)?.packId,questCount:quests.filter(q=>q.constellationId===id).length,reserved:true}));
+ const allMapped=[...mapped,...reserved];
+ const unknown=allMapped.filter(c=>!c.iau);
+ const repeated=allMapped.filter((c,i)=>allMapped.findIndex(other=>other.iau===c.iau)!==i);
  return {adventures:packs.length,quests:quests.length,registeredConstellations:mapped.length,
   canonicalConstellations:new Set(quests.map(q=>q.constellationId)).size,
-  mapped,unregistered,unknown,repeated};
+  mapped:allMapped,unregistered,unknown,repeated,reserved};
 }
