@@ -9,7 +9,7 @@ export function buildAstronomicalCatalogue(skyCulture,hipCoordinates){
  const seen=new Set();
  for(const constellation of skyCulture.constellations){
   const id=String(constellation.iau||"");
-  if(!/^[A-Z][a-z]{2}$/.test(id)||seen.has(id))throw Error("Invalid or duplicate IAU code "+id);
+  if(!/^[A-Z][A-Za-z]{2}$/.test(id)||seen.has(id))throw Error("Invalid or duplicate IAU code "+id);
   seen.add(id);
   const lines=constellation.lines||[];
   const normalizedLines=lines.map(line=>{if(!Array.isArray(line))throw Error("Invalid line for "+id);const ids=line.filter((v,i)=>!(i===0&&(v==="thin"||v==="bold")));if(ids.some(v=>!Number.isInteger(v)||v<=0))throw Error("Non-HIP star reference in "+id);return ids;});
