@@ -713,3 +713,15 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
   overflow-y:auto!important;
  }
 }
+
+/* #228: keep the tutorial coach below the action row on 360x640.
+   Its content scrolls inside the coach rather than intercepting header controls. */
+@media (max-width:700px) and (min-height:600px) and (max-height:700px){
+ .learning-board-wrap.is-learning .scripted-learn{
+  top:auto!important;
+  bottom:8px!important;
+  max-height:52px!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+ }
+}
