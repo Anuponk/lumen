@@ -20,6 +20,7 @@ const nodeSuites=[
  "extraordinary-skies-tests.mjs",
  "persistence-tests.mjs",
  "cloud-persistence-regression-tests.mjs",
+ "auth-email-brand-routing-tests.mjs",
  "analytics-tests.mjs",
  "module-structure-tests.mjs",
  "responsive-architecture-tests.mjs",
