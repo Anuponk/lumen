@@ -15,4 +15,6 @@ const mapped=migrateLegacySolved(oldProgress,plan);
 assert.equal(mapped.length,6);
 assert.deepEqual(mapped.map(x=>x.legacyIndex).sort((a,b)=>a-b),[0,78,100,195,196,295]);
 assert(mapped.every(r=>r.id&&r.ordinal>=1&&r.ordinal<=400));
+assert.throws(()=>migrateLegacySolved({"999999":true},plan),/Unmapped persisted quest key/,"Unknown cloud progression must not silently disappear");
+assert.deepEqual(migrateLegacySolved({"999999":false},plan),[]);
 console.log(JSON.stringify({total:plan.total,missing:plan.missing,adventures:plan.adventures}));
