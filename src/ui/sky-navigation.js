@@ -21,6 +21,19 @@ export function skySelection(model,selection={},questIndex=0){
  return {sky,adventure,active,page,pages,entries:adventure?.constellations.slice(page*CONSTELLATIONS_PER_PAGE,(page+1)*CONSTELLATIONS_PER_PAGE)||[]};
 }
 
+
+export function swipeAdventureTarget(current,delta){
+ if(delta!==1&&delta!==-1)return null;
+ const nextPage=current.page+delta;
+ if(nextPage>=0&&nextPage<current.pages)return {pack:current.adventure,page:nextPage,changedAdventure:false};
+ const packs=current.sky?.packs||[];
+ const index=packs.findIndex(pack=>pack.id===current.adventure?.id);
+ const next=packs[index+delta];
+ if(index<0||!next)return null; // Do not wrap around the catalogue.
+ const pages=Math.max(1,Math.ceil((next.constellations?.length||0)/CONSTELLATIONS_PER_PAGE));
+ return {pack:next,page:delta>0?0:pages-1,changedAdventure:true,locked:!next.accessible};
+}
+
 export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit,getShape,getMastered,getBadgeCounts=()=>({}),onConstellation}){
  const sheet=document.querySelector('#mapModal .map-sheet'),tabs=document.getElementById('sectorTabs');
  sheet.querySelector('h2').textContent='Mon ciel';sheet.querySelector('h2').id='monCielTitle';
@@ -75,7 +88,7 @@ export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit
  element('skyPicker').onchange=e=>{selection={skyId:e.target.value,page:0};selectedConstellation=null;view='overview';render()};
  element('constellationPrevious').onclick=()=>turn(-1);element('constellationNext').onclick=()=>turn(1);element('constellationBack').onclick=()=>setView('overview');element('adventureNoticeClose').onclick=closeNotice;
  notice.onclick=e=>{if(e.target===notice)closeNotice()};notice.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();closeNotice()}if(e.key==='Tab'){const buttons=[element('adventureNext'),element('adventureNoticeClose')].filter(b=>!b.hidden);const index=buttons.indexOf(document.activeElement);e.preventDefault();buttons[(index+(e.shiftKey?-1:1)+buttons.length)%buttons.length].focus()}});
- let pointer=null,swiped=false;tabs.style.touchAction='pan-y';tabs.addEventListener('pointerdown',e=>{swiped=false;pointer={x:e.clientX,y:e.clientY,id:e.pointerId}});tabs.addEventListener('pointerup',e=>{if(!pointer||e.pointerId!==pointer.id)return;const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;pointer=null;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.5){swiped=true;const delta=dx<0?1:-1;if(current.page+delta>=0&&current.page+delta<current.pages)turn(delta)}});tabs.addEventListener('pointercancel',()=>pointer=null);tabs.addEventListener('click',e=>{if(swiped){e.preventDefault();e.stopImmediatePropagation();swiped=false}},true);
+ let pointer=null,swiped=false;tabs.style.touchAction='pan-y';tabs.addEventListener('pointerdown',e=>{swiped=false;pointer={x:e.clientX,y:e.clientY,id:e.pointerId}});tabs.addEventListener('pointerup',e=>{if(!pointer||e.pointerId!==pointer.id)return;const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;pointer=null;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.5){swiped=true;const delta=dx<0?1:-1;const target=swipeAdventureTarget(current,delta);if(target?.locked){showLocked(target.pack,tabs);return}if(target?.changedAdventure){selection={skyId:current.sky.id,packId:target.pack.id,page:target.page};selectedConstellation=null;view='overview';render();element('adventureRail').querySelector('.selected')?.scrollIntoView({block:'nearest',inline:'center'})}else if(target)turn(delta)}});tabs.addEventListener('pointercancel',()=>pointer=null);tabs.addEventListener('click',e=>{if(swiped){e.preventDefault();e.stopImmediatePropagation();swiped=false}},true);
  tabs.addEventListener('keydown',()=>swiped=false);
  return {render,setView,showLocked,showCompletion,open({detail:showDetail=false,questIndex=null,constellationId=null}={}){selection={};const index=Number.isInteger(questIndex)?questIndex:getQuest();current=skySelection(getModel(),{},index);const entry=(constellationId?current.adventure?.constellations.find(c=>c.id===constellationId):null)||current.adventure?.constellations.find(c=>index>=c.questStart&&index<c.questStart+c.questCount)||current.adventure?.constellations[0];if(entry){selection.page=Math.floor(current.adventure.constellations.indexOf(entry)/CONSTELLATIONS_PER_PAGE);selectedConstellation=entry;onConstellation(entry)}view=showDetail?'detail':'overview';notice.hidden=true;render();element('adventureRail').querySelector('.selected')?.scrollIntoView({block:'nearest',inline:'center'})},snapshot:()=>({view,selection:{...selection},activeAdventure:current.active?.id,viewedAdventure:current.adventure?.id,page:current.page,pages:current.pages})};
 }

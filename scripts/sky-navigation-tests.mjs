@@ -1,7 +1,7 @@
 import {readFileSync} from "node:fs";
 import assert from 'node:assert/strict';
 import {CONTENT_PACKS,BASE_PACK_ID,BASE_CONSTELLATIONS,contentMapModel,hasPackAccess,preserveStartedAdventureAccess} from '../src/campaign/content.js';
-import {skySelection,constellationUnlocked,skyPickerVisible} from '../src/ui/sky-navigation.js';
+import {skySelection,constellationUnlocked,skyPickerVisible,swipeAdventureTarget} from '../src/ui/sky-navigation.js';
 assert.equal(skyPickerVisible(contentMapModel()),false);
 assert.equal(skyPickerVisible({skies:[{id:'only'}]}),false);
 assert.equal(skyPickerVisible({skies:[{id:'a'},{id:'b'}]}),true);
@@ -55,6 +55,21 @@ for(let i=1;i<firstPackModel.constellations.length;i++){
  const done=Object.fromEntries(Array.from({length:previous.questCount},(_,j)=>[previous.questStart+j,1]));
  assert.equal(constellationUnlocked(entry,firstPackModel,id=>!!done[id],()=>previous.questStart+previous.questCount-1),true,`${previous.label} completion unlocks ${entry.label}`);
 }
+
+
+const swipeSky={id:"real-sky",packs:[
+ {id:"first",accessible:true,constellations:Array.from({length:10},(_,i)=>({id:"f"+i}))},
+ {id:"second",accessible:true,constellations:Array.from({length:10},(_,i)=>({id:"s"+i}))},
+ {id:"locked",accessible:false,constellations:Array.from({length:10},(_,i)=>({id:"l"+i}))}
+]};
+const swipeCurrent={sky:swipeSky,adventure:swipeSky.packs[0],page:1,pages:2};
+assert.deepEqual(swipeAdventureTarget({...swipeCurrent,page:0},1),{pack:swipeSky.packs[0],page:1,changedAdventure:false});
+assert.deepEqual(swipeAdventureTarget(swipeCurrent,1),{pack:swipeSky.packs[1],page:0,changedAdventure:true,locked:false});
+assert.equal(swipeAdventureTarget({...swipeCurrent,page:0},-1),null,"First adventure has no wrap backwards");
+assert.deepEqual(swipeAdventureTarget({...swipeCurrent,adventure:swipeSky.packs[1],page:0},-1),{pack:swipeSky.packs[0],page:1,changedAdventure:true,locked:false});
+assert.deepEqual(swipeAdventureTarget({...swipeCurrent,adventure:swipeSky.packs[1],page:1},1),{pack:swipeSky.packs[2],page:0,changedAdventure:true,locked:true});
+assert.equal(swipeAdventureTarget({...swipeCurrent,adventure:swipeSky.packs[2],page:1},1),null,"Last adventure has no wrap forwards");
+assert.equal(swipeAdventureTarget(swipeCurrent,0),null);
 
 console.log(JSON.stringify({skyNavigation:true,accessPreservation:true,constellationUnlock:true,pages:[1,6,7,12,103],multipleSkies:true,accessRefresh:true}));
 
