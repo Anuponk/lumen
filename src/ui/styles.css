@@ -702,3 +702,14 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
   overscroll-behavior:contain;
  }
 }
+
+/* #228 regression: on 360x640 the bottom coach covered the action row.
+   Place it in the reserved gap above the board, not over interactive controls. */
+@media (max-width:700px) and (min-height:600px) and (max-height:700px){
+ .learning-board-wrap.is-learning .scripted-learn{
+  top:110px!important;
+  bottom:auto!important;
+  max-height:90px!important;
+  overflow-y:auto!important;
+ }
+}
