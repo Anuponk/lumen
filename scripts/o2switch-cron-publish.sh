@@ -70,6 +70,19 @@ if [[ ! -d "$RELEASE" ]]; then
    [[ -d "$dir" ]] || { echo "Missing $dir"; exit 1; }
    cp -R "$dir" "$TMP/$dir"
  done
+ # Stamp the immutable release version in the staged HTML only.
+ LUMEN_SHA="$SHA" LUMEN_TARGET="$TMP" python3 - <<'PY'
+import json,os,re,subprocess,pathlib
+sha=os.environ["LUMEN_SHA"]
+target=pathlib.Path(os.environ["LUMEN_TARGET"])
+count=int(subprocess.check_output(["git","rev-list","--first-parent","--count",sha],text=True).strip())
+version=f"1.11.1+{count}"
+html=target.joinpath("index.html").read_text()
+html,n=re.subn(r'(<meta name="lumen-build" content=")[^"]*(")',lambda m:m.group(1)+version+" · "+sha[:7]+m.group(2),html,count=1)
+if n!=1: raise SystemExit("Missing build meta")
+target.joinpath("index.html").write_text(html)
+target.joinpath("build-info.json").write_text(json.dumps({"version":version,"sha":sha})+"\\n")
+PY
  printf '%s\n' "$SHA" > "$TMP/.lumen-release-sha"
  find "$TMP" -type d -exec chmod 755 {} +
  find "$TMP" -type f -exec chmod 644 {} +
@@ -101,7 +114,7 @@ for dir in src content; do
  rm -rf -- "$TARGET/$dir"
  cp -R "$RELEASE/$dir" "$TARGET/$dir"
 done
-for file in index.html sw.js manifest.webmanifest icon.svg icon-maskable.svg; do
+for file in index.html build-info.json sw.js manifest.webmanifest icon.svg icon-maskable.svg; do
  cp -p "$RELEASE/$file" "$TARGET/$file"
 done
 rm -f -- "$TARGET/transfer.html"
