@@ -67,3 +67,10 @@ Ce module constitue une **interface de migration**, pas une validation des mappi
 L'importeur accepte les abréviations IAU à casse mixte (`UMa`, `CVn`, `CMi`, `CrB`), et non seulement les noms de type `Ori`. Pour un rapport issu de `scripts/build-astronomical-catalogue.mjs`, exécuter `node scripts/validate-playable-astronomy.mjs <rapport.json>`. La commande quitte avec le code 2 si l'une des **40 constellations canoniques** manque, est incomplète ou possède des structures HIP incompatibles. Tant que cette commande échoue, aucun nouveau tracé ne doit être activé dans l'interface.
 
 La validation 40/40 est **distincte** du mapping entre indices de sauvegarde et identifiants HIP. Le téléchargement des données VizieR, les obligations d'attribution CC BY-SA et la correspondance historique restent des prérequis séparés. Aucun nombre de figures réellement couvertes n'est présumé avant l'exécution vérifiée sur les sources complètes.
+
+
+## Exécution réelle automatisée de l'import (workflow GitHub Actions)
+
+Le workflow `.github/workflows/astronomical-catalogue.yml` télécharge un `western/index.json` Stellarium depuis la branche `master` (à figer à un commit une fois l'import fonctionnel), récupère les étoiles Hipparcos II nécessaires auprès de VizieR, construit les 88 tracés de la source puis valide explicitement la couverture des 40 identités utilisées par Lumen. Les fichiers temporaires (`report.json` et `hip-lines.json`) sont conservés comme artefacts CI pendant 14 jours pour analyse. Ce workflow ne publie **aucun** asset vers le jeu.
+
+**Attribution source :** Stellarium skycultures — Western, Stellarium team, texte et données CC BY-SA (voir `western/description.md` du dépôt Stellarium, branche `master` vérifiée) ; coordonnées stellaires tirées de VizieR `I/311/hip2`, Hipparcos New Reduction (van Leeuwen 2007), CDS Strasbourg. Avant distribution d'un catalogue dérivé, préciser l'attribution, les conditions de partage et les licences dans le produit. Si la source distante n'est pas disponible ou si une figure manque, le workflow doit échouer ; aucun faux succès ni téléchargement de données partielles ne doit permettre de déployer un tracé.
