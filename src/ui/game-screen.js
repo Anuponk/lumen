@@ -19,7 +19,7 @@ import {LUMEN_META,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATI
 import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt} from "../campaign/performance.js";
 import {challengeEligibility,challengeSnapshot,compareChallenge,createChallengeClient,normalizeChallengeName,validChallengeName} from "../campaign/social-challenge.js";
 import {resolveChallengeQuest} from "../campaign/canonical-challenges.js";
-import {canonicalDisplayForLegacy} from "../campaign/canonical-quests.js";
+import {canonicalDisplayForLegacy,canonicalQuestList,canonicalAdventureSummary} from "../campaign/canonical-quests.js";
 import {createCampaign,sequentialCount,campaignQuestCount,isCampaignFinalQuest,isCampaignComplete,constellationQuestIndices,constellationGridRange,chapterForGrid,milestoneFor,skyStarsForGrid,bonusChallengeFor,challengeFor,constellationCheckpoint,constellationStateForEarned,starsAwardedForGrid} from "../campaign/progression.js";
 import {createGameEngine} from "../game/engine.js";
 import {createAttemptEngine,ATTEMPT_STATES} from "../game/attempt-engine.js";
@@ -852,6 +852,40 @@ function adminAlerts(rows){
  for(const r of rows||[]){const started=Number(r.started)||0,completed=Number(r.completed)||0;if(started<3)continue;const rate=started?completed/started:0;if(rate<.55)alerts.push("Q"+r.puzzle_id+" : seulement "+Math.round(rate*100)+" % des joueurs observés terminent la quête ("+started+" joueurs).");if(Number(r.resets)>=started)alerts.push("Q"+r.puzzle_id+" : resets élevés ("+r.resets+" pour "+started+" joueurs).");if(Number(r.hints)>started*.8)alerts.push("Q"+r.puzzle_id+" : indices très utilisés ("+r.hints+").")}
  return alerts.slice(0,6);
 }
+// Canonical map preview: all quests, including unpublished ones, are visible
+// while gameplay remains on the legacy save engine. No new quest may be
+// launched until transactional progression and reward writes are integrated.
+function renderCanonicalJourneyPreview(){
+ const modal=document.getElementById("mapModal");if(!modal)return;
+ let section=modal.querySelector("#canonicalJourneyPreview");
+ if(!section){section=document.createElement("section");section.id="canonicalJourneyPreview";
+  section.setAttribute("aria-label","Catalogue des Aventures à venir");
+  const sheet=modal.querySelector(".map-sheet");if(!sheet)return;sheet.appendChild(section)}
+ section.replaceChildren();
+ const title=document.createElement("h3");title.textContent="Catalogue des Aventures · aperçu";section.appendChild(title);
+ const warning=document.createElement("p");warning.textContent="Les nouvelles quêtes sont en préparation et ne sont pas encore jouables. Tes acquis restent conservés.";
+ section.appendChild(warning);
+ const summary=canonicalAdventureSummary(lumenProgress),quests=canonicalQuestList();
+ for(const adventure of summary){
+  const group=document.createElement("details"),heading=document.createElement("summary");
+  heading.textContent=adventure.title+" · "+adventure.completed+"/"+adventure.quests+" quêtes · "+adventure.constellations+" constellations";
+  group.appendChild(heading);
+  const constellations=new Map();
+  for(const quest of quests.filter(q=>q.packId===adventure.id)){
+   if(!constellations.has(quest.constellationId))constellations.set(quest.constellationId,[]);
+   constellations.get(quest.constellationId).push(quest);
+  }
+  for(const [id,items] of constellations){
+   const c=document.createElement("details"),label=document.createElement("summary");
+   label.textContent=(CONTENT_CONSTELLATIONS.find(x=>x.id===id)?.label||id)+" · "+items.length+" quêtes";
+   c.appendChild(label);
+   const rows=document.createElement("p");
+   rows.textContent=items.map(q=>"#"+q.ordinal+(q.legacyIndex===null?" (à venir)":lumenProgress.solved?.[q.legacyIndex]?" ✓":"")).join(" · ");
+   c.appendChild(rows);group.appendChild(c);
+  }
+  section.appendChild(group);
+ }
+}
 function renderAdminCatalogue(){
  const host=document.getElementById("adminCatalogueTree");
  if(!host)return;
@@ -1595,7 +1629,7 @@ function performanceBadges(i){
 }
 function startReplay(i){if(!lumenProgress.solved[i])return;levelIndex=i;replayMode=true;document.getElementById("mapModal").hidden=true;document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;loadPuzzle();usedHintThisGame=false;refreshJourney()}
 function renderMap(){
- skyNavigation.render();const puzzleGrid=document.getElementById("puzzleGrid");
+ skyNavigation.render();renderCanonicalJourneyPreview();const puzzleGrid=document.getElementById("puzzleGrid");
  puzzleGrid.innerHTML="";let range=mapConstellationRange(mapConstellation)||constellationGridRange(mapConstellation);for(const [offset,i] of range.quests.entries()){let solved=!!lumenProgress.solved[i],current=i===currentQuestPosition()&&questIsAccessible(i),b=document.createElement("button"),pos=offset+1,meta=performanceBadges(i);b.className="puzzle-card"+(solved?" done":"")+(current?" current":"")+(!solved&&!current?" locked":"");b.innerHTML=solved?meta:(current?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+pos+'</span>':"");b.title=solved?"Rejouer la quête "+pos+" pour améliorer ta performance":current?"Nouvelle quête disponible · quête "+pos:"Quête "+pos+" · verrouillée";b.onclick=()=>{if(solved&&questIsAccessible(i)){startReplay(i);return}if(!current)return;levelIndex=i;replayMode=false;document.getElementById("mapModal").hidden=true;loadPuzzle();refreshJourney()};puzzleGrid.appendChild(b)}if(range.generated){const summary=generatedMapSummary(mapConstellation,lumenProgress.solved);const skyCard=document.getElementById("skyCard");if(skyCard&&summary)skyCard.textContent=summary.name+" · "+summary.completed+"/"+summary.total+" quêtes · "+generatedAdventureRewards(lumenProgress.solved).stars+" ★";}else renderSky(mapConstellation)
 }
 function openJourneyMap(focusSky=false,{advanceOnClose=false,learningTour=false}={}){mapConstellation=CONTENT_CONSTELLATIONS.findIndex(c=>c.questIndices.includes(levelIndex));if(mapConstellation<0)mapConstellation=chapterForGrid(levelIndex);const modal=document.getElementById("mapModal");modal.hidden=false;skyNavigation.open();renderMap();const tour=document.getElementById("skyTour");document.getElementById("closeMap").disabled=learningTour;if(tour)tour.hidden=!learningTour;if(learningTour){skyTourStep=0;requestAnimationFrame(renderSkyTourStep)}else clearSkyTourFocus();modal.dataset.advanceOnClose=advanceOnClose&&!!lumenProgress.solved[levelIndex]?"1":"";const attemptMask=document.getElementById("attemptMask");if(attemptMask)attemptMask.hidden=true;document.getElementById(learningTour?"skyTourNext":"closeMap").focus();}
