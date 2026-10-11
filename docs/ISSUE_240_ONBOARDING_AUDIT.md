@@ -30,3 +30,10 @@
 - **Documentation obsolète :** certaines descriptions anciennes placent Mon ciel après la quête 2 ; l'implémentation utilise index 7 (fin quête 8). Harmonisation des documents généraux à prévoir, sans changer silencieusement le produit.
 
 La #240 reste ouverte tant que ces éléments ne sont pas tous vérifiés.
+
+## Complément — PR de fluidification #240 (11 octobre 2026)
+- Le jalon quête 6 présente badges et déblocage du marquage automatique dans **une seule fenêtre** ; son acquittement conserve les deux marqueurs de découverte. Un joueur ayant déjà vu les badges mais pas le marquage auto garde la fenêtre dédiée.
+- La proposition PWA est reportée après 12 quêtes résolues, hors blocage de compte et hors superposition avec les modales du parcours. Si aucune invite native d'installation n'est disponible hors iOS, aucun bouton inopérant n'est montré.
+- Les lancements en `display-mode: standalone`, `fullscreen` ou `minimal-ui`, les PWA iOS (`navigator.standalone`), les lancements Android depuis une application (`android-app://`) et les wrappers exposant `window.LUMEN_NATIVE_APP=true` sont considérés comme **déjà installés**.
+- L'API facultative `navigator.getInstalledRelatedApps()` est interrogée en amont pour les applications associées déclarées dans le manifeste ; l'association Android / package Play Store réel **reste à configurer au moment de la publication (#170)**. Une page Web ouverte dans un onglet classique ne peut pas garantir la détection d'une autre PWA installée si le navigateur ne l'expose pas.
+- La reprise après compte et les observations de nouveaux joueurs demeurent des critères ouverts de #240.

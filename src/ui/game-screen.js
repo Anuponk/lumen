@@ -355,11 +355,38 @@ let lastTrackedPuzzle=null;
 const appVersion=()=>document.querySelector('meta[name="lumen-build"]')?.content||document.getElementById("lumenVersion")?.textContent||"unknown";
 const analyticsContext=()=>({app_version:appVersion(),device:innerWidth<=760?"mobile":"desktop",standalone:!!(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)});
 trackLumenEvent("session_start",null,analyticsContext());
-function lumenIsStandalone(){return !!((window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||navigator.standalone)}
+function lumenIsStandalone(){
+ const display=window.matchMedia&&["standalone","fullscreen","minimal-ui"].some(mode=>window.matchMedia("(display-mode: "+mode+")").matches);
+ return !!(display||navigator.standalone||document.referrer.startsWith("android-app://")||window.LUMEN_NATIVE_APP===true);
+}
+async function lumenAlreadyInstalled(){
+ if(lumenIsStandalone()||localStorage.getItem(qaKey("lumenInstalled"))==="1")return true;
+ // Android Chrome can report installed related apps once a future Play package
+ // is declared in manifest.related_applications. No package ID is guessed here.
+ if(typeof navigator.getInstalledRelatedApps==="function"){
+  try{const related=await navigator.getInstalledRelatedApps();if(related.some(app=>app.platform==="play"||app.platform==="webapp"))return true}catch(e){console.info("Related apps lookup unavailable",e)}
+ }
+ return false;
+}
 let lumenInstallPrompt=null;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();lumenInstallPrompt=e});
 window.addEventListener("appinstalled",()=>{localStorage.setItem(qaKey("lumenInstalled"),"1");localStorage.removeItem(qaKey("lumenInstallLater"));document.getElementById("installOptin")?.setAttribute("hidden","");trackLumenEvent("pwa_installed")});
-function maybeOfferInstall(){if((!qaActive&&lumenIsStandalone())||localStorage.getItem(qaKey("lumenInstalled"))==="1"||solvedCount()<3)return;const last=Number(localStorage.getItem(qaKey("lumenInstallLater"))||0);if(last&&Date.now()-last<7*86400000)return;const box=document.getElementById("installOptin"),copy=document.getElementById("installOptinCopy"),btn=document.getElementById("installEnable");if(!box||!copy||!btn)return;const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);if(ios&&!lumenInstallPrompt){copy.textContent="Pour retrouver LUMEN facilement : touche Partager puis « Sur l’écran d’accueil ».";btn.textContent="J’ai compris"}else{copy.textContent="Ajoute LUMEN à ton écran d’accueil pour retrouver ton ciel en un geste.";btn.textContent="Installer LUMEN"}box.hidden=false;trackLumenEvent("pwa_install_offer",null,{ios,qa:qaActive})}
+async function maybeOfferInstall(){
+ // Do not disrupt the 1-11 onboarding, the account gate, or other modals.
+ if(solvedCount()<12||accountRequired()||await lumenAlreadyInstalled())return;
+ if(["accountOptin","badgeUnlockOverlay","autoCrossUnlockOverlay","autonomyOverlay","tutorialOverlay","skyReveal","successOverlay","pushOptin"].some(id=>{const el=document.getElementById(id);return el&&!el.hidden&&getComputedStyle(el).display!=="none"}))return;
+ const last=Number(localStorage.getItem(qaKey("lumenInstallLater"))||0);
+ if(last&&Date.now()-last<7*86400000)return;
+ const box=document.getElementById("installOptin"),copy=document.getElementById("installOptinCopy"),btn=document.getElementById("installEnable");
+ if(!box||!copy||!btn)return;
+ const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+ // Chromium browsers without an install prompt should not display a dead CTA.
+ if(!ios&&!lumenInstallPrompt)return;
+ if(ios&&!lumenInstallPrompt){copy.textContent="Pour retrouver LUMEN facilement : touche Partager puis « Sur l’écran d’accueil ».";btn.textContent="J’ai compris"}
+ else{copy.textContent="Ajoute LUMEN à ton écran d’accueil pour retrouver ton ciel en un geste.";btn.textContent="Installer LUMEN"}
+ box.hidden=false;trackLumenEvent("pwa_install_offer",null,{ios,qa:qaActive});
+}
+
 async function installLumen(){const box=document.getElementById("installOptin"),ios=/iphone|ipad|ipod/i.test(navigator.userAgent);if(ios&&!lumenInstallPrompt){box.hidden=true;localStorage.setItem(qaKey("lumenInstallLater"),String(Date.now()));return}if(!lumenInstallPrompt){box.hidden=true;return}const p=lumenInstallPrompt;lumenInstallPrompt=null;await p.prompt();const choice=await p.userChoice;trackLumenEvent("pwa_install_choice",null,{outcome:choice.outcome,qa:qaActive});box.hidden=true;if(choice.outcome==="dismissed")localStorage.setItem(qaKey("lumenInstallLater"),String(Date.now()))}
 function lumenReferralCode(){return lumenUser?.id?("u"+lumenUser.id.replace(/-/g,"").slice(0,12)):("a"+lumenAnonymousId.replace(/-/g,"").slice(0,12))}
 function lumenShareUrl(){const u=new URL(location.origin+location.pathname);u.searchParams.set("ref",lumenReferralCode());return u.toString()}
@@ -883,7 +910,7 @@ function finishAutonomyChoice(keepGuided){
  trackLumenEvent("guided_autonomy_choice",levelIndex+1,{guided:!!keepGuided});
 }
 function maybeShowAutoCrossUnlock(){
- if(levelIndex!==5||lumenProgress.autoCrossUnlockSeen)return;
+ if(levelIndex!==5||lumenProgress.autoCrossUnlockSeen||!lumenProgress.fullBadgeIntroSeen)return;
  const o=document.getElementById("autoCrossUnlockOverlay");if(o){o.hidden=false;o.style.display="flex";pauseGameClock()}
 }
 function closeAutoCrossUnlock(){
@@ -904,13 +931,13 @@ function maybeShowBadgeMilestone(){
   copy.innerHTML="<strong>⚡ Rapidité</strong> : termine cette quête avant le temps cible pour gagner le badge.<br><br>Les règles détaillées restent consultables dans Badges.";
  }else{
   title.textContent="Tous les badges sont maintenant accessibles";
-  copy.innerHTML="<strong>🧠 Autonomie</strong> : sans assistance.<br><strong>✓ Sans erreur</strong> : sans erreur conservée et sans assistance.<br><strong>✦ Maîtrise</strong> : réunis les trois badges sur un essai.<br><br>Détails disponibles dans Badges.";
+  copy.innerHTML="<strong>◐ Marquage auto débloqué</strong> (désactivé par défaut).<br><strong>🧠 Autonomie</strong> : sans assistance.<br><strong>✓ Sans erreur</strong> : sans erreur conservée et sans assistance.<br><strong>✦ Maîtrise</strong> : réunis les trois badges sur un essai.<br><br>Détails dans Aides et Badges.";
  }
  o.hidden=false;o.style.display="flex";pauseGameClock();
 }
 function closeBadgeMilestone(){
  const o=document.getElementById("badgeUnlockOverlay");if(!o)return;
- if(o.dataset.kind==="speed")lumenProgress.speedBadgeIntroSeen=1;else lumenProgress.fullBadgeIntroSeen=1;
+ if(o.dataset.kind==="speed")lumenProgress.speedBadgeIntroSeen=1;else {lumenProgress.fullBadgeIntroSeen=1;lumenProgress.autoCrossUnlockSeen=1;}
  saveLumenProgress();o.hidden=true;o.style.display="none";resumeGameClock();
 }
 function maybeShowAutonomy(){
