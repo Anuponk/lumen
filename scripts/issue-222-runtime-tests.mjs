@@ -67,4 +67,6 @@ for(const q of quests.filter(q=>q.legacyIndex===null)){
  assert.equal(q.audit.solutions,1);
  assert(q.reg.length>=6);
 }
+assert.match(gameScreen,/canonicalNextUnsolved\(lumenProgress\.solved,lumenProgress\.canonicalQuestState\|\|\{\}\)\?\.legacyIndex===index/);
+assert.match(gameScreen,/const legacy=quest\.legacyIndex,solved=legacy!==null\?!!lumenProgress\.solved/);
 console.log("Canonical 400-quest registry: stable identity, legacy save keys and pagination verified");

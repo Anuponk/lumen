@@ -527,7 +527,14 @@ const {validateGuardians,key,solutions,isAutoCross,verificationErrors,guardianCo
 function currentQuestLimit(){return extendedQuestLimit(lumenEntitlements,lumenProgress,attemptEngine.snapshot())}
 function currentQuestPosition(){return Math.min(extendedSequentialCount(lumenProgress.solved),currentQuestLimit()-1)}
 function legacyIndexForActiveChallenge(challenge){const quest=resolveChallengeQuest(challenge);if(quest.legacyIndex===null)throw new Error("Ce défi utilise une nouvelle quête : active la migration du catalogue avant de le lancer.");return quest.legacyIndex}
-function questIsAccessible(index){return contentAccessForLegacyQuest(index,lumenEntitlements,undefined,lumenProgress,attemptEngine.snapshot()).accessible}
+function questIsAccessible(index){
+ const accessible=contentAccessForLegacyQuest(index,lumenEntitlements,undefined,lumenProgress,attemptEngine.snapshot()).accessible;
+ if(!accessible)return false;
+ if(lumenProgress.solved?.[index])return true;
+ // Canonical order is authoritative for *new* quest unlocks. Historical
+ // indexes remain keys in existing saves but cannot bypass inserted grids.
+ return canonicalNextUnsolved(lumenProgress.solved,lumenProgress.canonicalQuestState||{})?.legacyIndex===index;
+}
 function choose(){if(canonicalActiveQuest){puz={reg:canonicalActiveQuest.reg,sol:canonicalActiveQuest.sol,audit:canonicalActiveQuest.audit};n=puz.reg.length;return}levelIndex=Math.max(0,Math.min(levelIndex,currentQuestLimit()-1));if(!socialChallenge&&!questIsAccessible(levelIndex)){while(levelIndex>0&&!questIsAccessible(levelIndex))levelIndex--;replayMode=!!lumenProgress.solved[levelIndex]}const resolved=playableQuest(levelIndex);if(!resolved)throw new Error("Missing campaign quest "+levelIndex);puz=resolved.source==="generated"?{reg:resolved.reg,sol:resolved.sol,audit:resolved.audit}:resolved.size===6?CAT["6"][CAMPAIGN6_ORDER[CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]]]:CAT[String(resolved.size)][CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]];n=puz.reg.length;last[n]=levelIndex}
 function loadPuzzle(){init();}
 function startLearningReplay(){
@@ -891,11 +898,11 @@ function renderCanonicalJourneyPreview(){
    label.textContent=(CONTENT_CONSTELLATIONS.find(x=>x.id===id)?.label||id)+" · "+quests.length+" quêtes";c.appendChild(label);
    const list=document.createElement("div");list.className="canonical-quest-list";
    for(const quest of quests){
-    const legacy=quest.legacyIndex,solved=legacy!==null&&!!lumenProgress.solved?.[legacy];
-    const available=legacy===null?canonicalQuestAvailable(quest):questIsAccessible(legacy)&&(solved||legacy===currentQuestPosition());
+    const legacy=quest.legacyIndex,solved=legacy!==null?!!lumenProgress.solved?.[legacy]:!!lumenProgress.canonicalQuestState?.[quest.id]?.solved;
+    const available=legacy===null?canonicalQuestAvailable(quest):questIsAccessible(legacy);
     const button=document.createElement("button");button.type="button";button.className="puzzle-card"+(solved?" done":"")+(available?"":" locked");
-    button.textContent="Quête "+quest.ordinal+(solved?" ✓":legacy===null?" · à venir":"");
-    button.title=legacy===null?"Nouvelle grille en attente d’activation":available?"Jouer la quête":"Quête verrouillée";
+    button.textContent="Quête "+quest.ordinal+(solved?" ✓":!available?" · verrouillée":"");
+    button.title=available?"Jouer la quête":"Quête verrouillée jusqu’à la précédente ou à la synchronisation du compte";
     button.disabled=!available;button.dataset.questId=quest.id;
     if(available)button.onclick=()=>{if(legacy===null){startCanonicalQuest(quest);return}if(solved){startReplay(legacy);return}canonicalActiveQuest=null;levelIndex=legacy;replayMode=false;modal.hidden=true;loadPuzzle();refreshJourney()};
     list.appendChild(button);
@@ -1566,7 +1573,7 @@ function advanceToNextPuzzle(){
   const next=canonicalQuestByOrdinal(canonicalActiveQuest.ordinal+1);
   if(next?.legacyIndex===null&&canonicalQuestAvailable(next)){hideSuccess();startCanonicalQuest(next);return}
   canonicalActiveQuest=null;hideSuccess();
-  if(next?.legacyIndex!==null&&next&&questIsAccessible(next.legacyIndex)){
+  if(next&&next.legacyIndex!==null&&questIsAccessible(next.legacyIndex)){
    levelIndex=next.legacyIndex;replayMode=!!lumenProgress.solved[levelIndex];
    for(const id of ["undo","hint","autoCross"])document.getElementById(id).disabled=false;
    loadPuzzle();refreshJourney();return;
