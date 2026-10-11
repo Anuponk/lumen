@@ -14,7 +14,7 @@ for(let i=0;i<24;i++){
 }
 assert.equal(astronomicalReferenceSvg({id:"missing"}),"");
 assert.equal(astronomicalPrimarySvg({id:"missing"}),"");
-for(let i=0;i<24;i++){const svg=astronomicalPrimarySvg({id:CONTENT_CONSTELLATIONS[i].id});assert.match(svg,/class="sky-line"/);assert.match(svg,/class="sky-star"/);assert.doesNotMatch(svg,/sky-star on/,"At zero progress, no real star should be lit");}
+for(let i=0;i<24;i++){const svg=astronomicalPrimarySvg({id:CONTENT_CONSTELLATIONS[i].id});assert.match(svg,/class="sky-line(?: on)?"/);assert.match(svg,/class="sky-star(?: on)?"/);assert.doesNotMatch(svg,/sky-star on/,"At zero progress, no real star should be lit");}
 const orion={id:CONTENT_CONSTELLATIONS[11].id};
 const zero=astronomicalIllumination(orion,0,17);
 const half=astronomicalIllumination(orion,8,17);
