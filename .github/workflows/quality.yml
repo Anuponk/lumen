@@ -6,9 +6,14 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Some bot-mediated squash merges do not generate a new push workflow run.
+  # A scheduled verification on main makes the publisher fully unattended.
+  schedule:
+    - cron: '*/10 * * * *'
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   quality:
@@ -25,26 +30,68 @@ jobs:
         with:
           node-version: 22
 
+      - name: Skip redundant scheduled quality runs for an already validated SHA
+        id: scheduled_check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          echo "need_tests=true" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_EVENT_NAME" != "schedule" ]]; then exit 0; fi
+          python3 - <<'PY'
+          import json,os,urllib.request
+          sha=os.environ["GITHUB_SHA"]
+          repo=os.environ["GITHUB_REPOSITORY"]
+          url=f"https://api.github.com/repos/{repo}/actions/workflows/quality.yml/runs?branch=main&per_page=50"
+          request=urllib.request.Request(url,headers={
+            "Accept":"application/vnd.github+json",
+            "Authorization":"Bearer "+os.environ["GH_TOKEN"],
+            "User-Agent":"lumen-quality-schedule"
+          })
+          try:
+            with urllib.request.urlopen(request,timeout=20) as response:
+              runs=json.load(response)["workflow_runs"]
+          except Exception as exc:
+            print("Prior CI lookup unavailable; run full quality:",exc)
+            raise SystemExit(0)
+          validated=any(r.get("head_sha")==sha and r.get("status")=="completed"
+                        and r.get("conclusion")=="success" and
+                        r.get("event") in ("push","workflow_dispatch","schedule")
+                        for r in runs)
+          if validated:
+            with open(os.environ["GITHUB_OUTPUT"],"a") as output:
+              output.write("need_tests=false\n")
+            print("This main SHA already passed quality; no duplicate tests required")
+          else:
+            print("No completed green main CI for this SHA; running full quality")
+          PY
+
       - name: Validate o2switch release script syntax
+        if: steps.scheduled_check.outputs.need_tests == 'true'
         run: bash -n scripts/o2switch-safe-release.sh && bash -n scripts/o2switch-cron-publish.sh && bash -n scripts/o2switch-deploy-monitor.sh
 
       - name: Validate offline issue 222 generator syntax
+        if: steps.scheduled_check.outputs.need_tests == 'true'
         run: node --check scripts/issue-222-generate-grids.mjs && node --check scripts/issue-222-migration-plan.mjs
 
       - name: Unified quality gate
+        if: steps.scheduled_check.outputs.need_tests == 'true'
         run: node scripts/quality-gate.mjs
 
       - name: Complete cloud profile backup regression
+        if: steps.scheduled_check.outputs.need_tests == 'true'
         run: node scripts/cloud-profile-tests.mjs
 
       - name: Guest save migration recovery regression
+        if: steps.scheduled_check.outputs.need_tests == 'true'
         run: node scripts/guest-transfer-tests.mjs
 
       - name: OAuth redirect regression
+        if: steps.scheduled_check.outputs.need_tests == 'true'
         run: node scripts/oauth-return.test.mjs
 
       - name: Upload validation reports
-        if: always()
+        if: always() && steps.scheduled_check.outputs.need_tests == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: lumen-validation-reports
