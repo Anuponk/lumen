@@ -16,16 +16,17 @@ Deno.serve(async req=>{
  const base=Deno.env.get("SUPABASE_URL")||"";
  if(!key||!service||!base)return reply(503);
  const raw=await req.text();if(raw.length>4096)return reply(413);
- let input:Record<string,unknown>;try{input=JSON.parse(raw)}catch{return reply(400)}
+ let input:Record<string,unknown>;try{input=JSON.parse(raw)}catch{return reply(400,{ok:false,reason:"invalid_json"})}
  const email=typeof input.email==="string"?input.email.trim().toLowerCase():"";
  const type=input.type;
- if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!["signup","recovery","magiclink"].includes(String(type)))return reply(400);
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return reply(400,{ok:false,reason:"invalid_email"});
+ if(!["signup","recovery","magiclink"].includes(String(type)))return reply(400,{ok:false,reason:"invalid_type"});
  // While validating this implementation, only a single test mailbox is permitted.
  // Never run open signups before completing end-to-end verification.
  const testEmail=String(Deno.env.get("LUMEN_AUTH_TEST_EMAIL")||"").trim().toLowerCase();
  if(!testEmail||email!==testEmail)return reply(403);
  const password=typeof input.password==="string"?input.password:"";
- if(type==="signup"&&password.length<12)return reply(400);
+ if(type==="signup"&&password.length<12)return reply(400,{ok:false,reason:"invalid_password"});
  // Ignore any caller-provided redirect. It is never used as a trusted brand selector.
  // Atomic server-only RPC: reserved on every attempt, failure always blocks delivery.
  try{
