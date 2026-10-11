@@ -51,6 +51,7 @@ Deno.serve(async req=>{
  const props=generated.properties as Record<string,unknown>|undefined;
  const action=typeof props?.action_link==="string"?props.action_link:"";
  const otp=typeof props?.email_otp==="string"?props.email_otp:"";
+ if(type==="magiclink"&&!/^\d{6}$/.test(otp))return reply(503);
  if(!action.startsWith(base.replace(/\/$/,"")+"/auth/v1/verify?"))return reply(503);
  // Recovery links are preferred for password reset; legacy users receive an OTP.
  const label=type==="signup"?"Confirme ton inscription Lumen":type==="recovery"?"Réinitialise ton mot de passe Lumen":"Ton code de connexion Lumen";
