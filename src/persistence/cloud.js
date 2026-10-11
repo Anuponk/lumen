@@ -76,7 +76,24 @@ async function cloudMergeProgress(){
  model.lumenCloudReady=true;
 }
 
+async function confirmBrandedAuthLink(){
+ const loc=window.location;
+ const url=new URL(loc.href);
+ const hash=url.searchParams.get("lumen_confirm");
+ const type=url.searchParams.get("type");
+ if(!hash)return;
+ // Discard sensitive tokens from URL/history before contacting any service.
+ url.searchParams.delete("lumen_confirm");
+ url.searchParams.delete("type");
+ window.history.replaceState(window.history.state,"",url.pathname+url.search+url.hash);
+ if(!/^[a-f0-9]{64}$/i.test(hash)||!["signup","recovery","magiclink"].includes(type||""))return;
+ const {error}=await model.lumenSupabase.auth.verifyOtp({
+  token_hash:hash,type:type==="magiclink"?"email":type
+ });
+ if(error)console.warn("LUMEN confirmation link could not be validated",error.message);
+}
 async function initLumenCloud(){
+ if(model.lumenSupabase)await confirmBrandedAuthLink();
  if(!model.lumenSupabase){onAccountChanged({type:"account"});return}
  const {data}=await model.lumenSupabase.auth.getSession();
  model.lumenUser=data.session?.user||null; onAccountChanged({type:"account"});
