@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import {astronomicalDisplayShape} from "../src/ui/astronomical-shapes.js";
 import {CAMPAIGN_SIZE_SCHEDULE,CONSTELLATIONS} from "../src/campaign/data.js";
 import {ADVENTURE_SIZE,CONTENT_MODEL_VERSION,BASE_SKY_ID,BASE_PACK_ID,BASE_CONSTELLATION_IDS,BASE_CONSTELLATIONS,CONTENT_SKIES,CONTENT_PACKS,baseCampaignQuestCount,baseQuestId,normalizeEntitlements,hasPackAccess,packForLegacyQuest,contentAccessForLegacyQuest,contentRegistrySnapshot,contentMapModel} from "../src/campaign/content.js";
 
@@ -6,9 +7,10 @@ import {ADVENTURE_SIZE,CONTENT_MODEL_VERSION,BASE_SKY_ID,BASE_PACK_ID,BASE_CONST
 // Astronomical drawing invariant: Orion keeps the same 17 star slots so that
 // historic star-reveal state remains compatible, while its recognisable belt,
 // shoulders, feet and sword use explicit, stable connections.
-const orion=CONSTELLATIONS.find(c=>c.name==="Orion");
+const orion=astronomicalDisplayShape(CONSTELLATIONS.find(c=>c.name==="Orion"));
 assert(orion);
 assert.equal(orion.count,17);
+assert.notEqual(orion,CONSTELLATIONS.find(c=>c.name==="Orion"));
 assert.equal(orion.pts.length,17);
 const orionSegments=new Set(orion.edges.map(([a,b])=>[a,b].sort((x,y)=>x-y).join("-")));
 for(const [a,b] of [[2,3],[3,4],[0,2],[1,4],[2,5],[4,6],[3,15],[15,16],[16,10]])
