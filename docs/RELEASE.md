@@ -22,6 +22,9 @@ The repository is connected to Vercel and deploys **only `main`**, as confirmed 
 
 A GitHub push being accepted does **not** prove Vercel Production is running that commit.
 
+## Cloud persistence release blocker (#248)
+For every PR, complete the cloud-impact section of the PR template even if not applicable (with reason). For any player-data, authentication or shop change, inspect the persistence matrix in [TESTING.md](TESTING.md#cloud-persistence-regression-matrix) and run all relevant automation plus isolated multi-device/manual verification. Do not deploy purchases before server-ledger, entitlements and recovery are implemented. Branch protection should require cloud regression CI checks before merging; a template/checklist alone does not enforce that requirement.
+
 ## Release checklist
 - expected branch/ref confirmed;
 - complete tests pass;
