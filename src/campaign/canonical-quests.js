@@ -12,7 +12,7 @@ function planSlots(packs,constellations){
    if(!constellation)throw Error("Unknown constellation: "+id);
    return {id,indices:[...constellation.questIndices]};
   });
-  while(list.length<10)list.push({id:pack.id+"-new-"+String(list.length-9).padStart(2,"0"),indices:[]});
+  while(list.length<10)list.push({id:pack.id+"-new-"+String(list.length-pack.constellationIds.length+1).padStart(2,"0"),indices:[]});
   if(list.length!==10)throw Error("Adventure constellation count differs from 10: "+pack.id);
   const sizes=list.map(x=>x.indices.length);
   let remaining=100-sizes.reduce((a,b)=>a+b,0);
