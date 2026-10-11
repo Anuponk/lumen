@@ -1108,7 +1108,7 @@ async function celebrateCanonicalSuccess(){
  celebrated=true;attemptEngine.complete();clearInterval(timer);pauseGameClock();clock();
  board.classList.add("win");
  document.getElementById("successTitle").textContent="Quête "+q.ordinal+" accomplie !";
- document.getElementById("successSub").textContent=committed.newlyCompleted?"+ "+(badges.autonomy?15:10)+" XP · +1 étoile · sauvegarde confirmée":"Quête déjà réussie · sauvegarde confirmée";
+ document.getElementById("successSub").textContent=committed.newlyCompleted?"+ "+(badges.autonomy?15:10)+" XP · +1 étoile · "+[["speed","Rapidité"],["autonomy","Autonomie"],["noError","Sans erreur"],["mastery","Maîtrise"]].filter(([key])=>badges[key]).map(([,label])=>label).join(" · ")+" · sauvegarde confirmée":"Quête déjà réussie · sauvegarde confirmée";
  document.getElementById("successTime").textContent=document.getElementById("time").textContent;
  const share=document.getElementById("successShare");if(share)share.hidden=true;
  const achievements=document.getElementById("successAchievement");if(achievements)achievements.hidden=true;
@@ -1732,6 +1732,14 @@ function performanceBadges(i){
  const badges=[{cls:"autonomy",key:"autonomy",label:"Autonomie"},{cls:"speed",key:"speed",label:"Rapidité"},{cls:"no-error",key:"noError",label:"Sans erreur"},{cls:"mastery",key:"mastery",label:"Maîtrise"}];
  return '<span class="performance-grid" aria-label="Performance">'+badges.map(x=>{const locked=!eligibility[x.key],got=!!earned[x.key],state=locked?" verrouillé":got?" obtenu":" disponible";return '<span class="performance-slot '+x.cls+(got?' earned':'')+(locked?' locked':'')+'" title="'+x.label+state+'" aria-label="'+x.label+state+'">'+(locked?'🔒':got?performanceIcon(x.key):'')+'</span>'}).join("")+'</span>'
 }
+function canonicalPerformanceBadges(questId){
+ const earned=lumenProgress.canonicalQuestState?.[questId]?.badges||{};
+ const entries=[{cls:"autonomy",key:"autonomy",label:"Autonomie"},{cls:"speed",key:"speed",label:"Rapidité"},{cls:"no-error",key:"noError",label:"Sans erreur"},{cls:"mastery",key:"mastery",label:"Maîtrise"}];
+ return '<span class="performance-grid" aria-label="Performance">'+entries.map(x=>{
+  const got=!!earned[x.key],state=got?" obtenu":" disponible";
+  return '<span class="performance-slot '+x.cls+(got?' earned':'')+'" title="'+x.label+state+'" aria-label="'+x.label+state+'">'+(got?performanceIcon(x.key):'')+'</span>';
+ }).join("")+'</span>';
+}
 function startReplay(i){if(!lumenProgress.solved[i])return;canonicalActiveQuest=null;levelIndex=i;replayMode=true;document.getElementById("mapModal").hidden=true;document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;loadPuzzle();usedHintThisGame=false;refreshJourney()}
 function renderMap(){
  skyNavigation.render();const puzzleGrid=document.getElementById("puzzleGrid");
@@ -1752,7 +1760,7 @@ function renderMap(){
     button.className="puzzle-card"+(solved?" done":"")+(available&&!solved?" current":"")+(!available&&!solved?" locked":"");
     button.dataset.questId=quest.id;
     button.title="Quête "+quest.ordinal+(solved?" · terminée":available?" · disponible":" · verrouillée");
-    button.innerHTML=legacy!==null&&solved?performanceBadges(legacy):solved?'<span class="puzzle-new-icon">✓</span>':available?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+quest.ordinal+'</span>':'<span class="puzzle-new-number">Quête '+quest.ordinal+'</span>';
+    button.innerHTML=legacy!==null&&solved?performanceBadges(legacy):solved?canonicalPerformanceBadges(quest.id):available?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+quest.ordinal+'</span>':'<span class="puzzle-new-number">Quête '+quest.ordinal+'</span>';
     button.disabled=!available;
     if(available)button.onclick=()=>{
      if(legacy===null){startCanonicalQuest(quest);return}
