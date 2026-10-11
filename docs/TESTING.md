@@ -1,5 +1,24 @@
 # Testing and quality gate
 
+## Cloud persistence regression matrix
+
+**Release-blocking contract (#248).** For every feature, assess the impact on *all* existing cloud-saved data, not only new fields. Before declaring a change ready, cover the affected cases below with automated tests. Keep a separate isolated test Supabase environment/accounts; never run destructive fixtures against real players. Mark unautomated cases explicitly as outstanding: documenting them does not count as a passing test.
+
+| Scenario | Required assertion |
+|---|---|
+| Account A on device 1 → device 2 | Same completed quests, constellation progress, stars, badges, Éclats, skills and Adventure entitlements |
+| Cache cleared / PWA reinstalled | Every acknowledged cloud achievement and purchased right is restored |
+| Old local snapshot reintroduced | Cloud progress is never rolled back by stale local state |
+| Network interrupted, retry and duplicate request | Pending state is distinguishable; idempotent writes cause no lost or duplicate grants |
+| Concurrent tabs/devices | Deterministic reconciliation with no duplicate rewards, no lost progress |
+| Guest account registration / linking | Existing cloud and local achievements are preserved without duplicates |
+| Paid skill or pack purchase + webhook replay | Server confirms purchase exactly once and restores right after sign-in on other device |
+| Spend, refund or entitlement revoke | Valid changes propagate and remain auditable; no naive max merge |
+| Old save format / new schema | Backward-compatible restore/migration without losing existing fields |
+| Lumen and SoldeZen shared Supabase | Authorization/RLS and ownership keep accounts and application records isolated |
+
+All new saved fields require round-trip, reload, restore, migration and conflict tests. Run the existing persistence/regression tests too. A PR failing these required checks cannot merge. See `AGENTS.md` and [DATA_AND_ARCHITECTURE](DATA_AND_ARCHITECTURE.md#cloud-persistence-contract).
+
 ## Mandatory rule
 After **every modification affecting LUMEN code, gameplay or a product feature**, update the automated test contract in the same change and run the complete applicable test battery before delivery. This has two inseparable goals:
 - **non-regression**: existing behavior that must remain stable stays covered; when an intentional product change invalidates an old assertion, adapt that assertion explicitly rather than simply deleting or bypassing it;
