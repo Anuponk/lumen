@@ -48,11 +48,23 @@ Deno.serve(async req=>{
   if(!resp.ok)return type==="signup"?reply(409,{ok:false,reason:"signup_not_available"}):accepted(); // do not falsely confirm signup; keep recovery/legacy enumeration-resistant
   generated=await resp.json();
  }catch{return reply(503,{ok:false,reason:"auth_backend_unavailable"})}
- const props=generated.properties as Record<string,unknown>|undefined;
- const action=typeof props?.action_link==="string"?props.action_link:"";
- const otp=typeof props?.email_otp==="string"?props.email_otp:"";
+ // GoTrue's REST generate_link response exposes these fields at the top level.
+ // The supabase-js admin wrapper instead nests them inside "properties".
+ const nested=generated.properties && typeof generated.properties==="object"
+  ? generated.properties as Record<string,unknown> : {};
+ const action=typeof generated.action_link==="string"?generated.action_link:
+  typeof nested.action_link==="string"?nested.action_link:"";
+ const otp=typeof generated.email_otp==="string"?generated.email_otp:
+  typeof nested.email_otp==="string"?nested.email_otp:"";
  if(type==="magiclink"&&!/^\d{6}$/.test(otp))return reply(503,{ok:false,reason:"otp_not_generated"});
- if(!action.startsWith(base.replace(/\/$/,"")+"/auth/v1/verify?"))return reply(503,{ok:false,reason:"confirmation_link_unavailable"});
+ let validAction=false;
+ try{
+  const link=new URL(action),project=new URL(base);
+  validAction=link.protocol==="https:" && link.origin===project.origin
+   && link.pathname==="/auth/v1/verify" && Boolean(link.searchParams.get("token"))
+   && Boolean(link.searchParams.get("type"));
+ }catch{}
+ if(!validAction)return reply(503,{ok:false,reason:"confirmation_link_unavailable"});
  // Recovery links are preferred for password reset; legacy users receive an OTP.
  const label=type==="signup"?"Confirme ton inscription Lumen":type==="recovery"?"Réinitialise ton mot de passe Lumen":"Ton code de connexion Lumen";
  const text=type==="magiclink"&&/^\d{6}$/.test(otp)
