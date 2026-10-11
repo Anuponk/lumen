@@ -27,7 +27,10 @@ if (eventPath && fs.existsSync(eventPath)) {
       }
     }
     for (const label of ['Impact / justification:', 'Tests executed / results:', 'Migration / rollback / cloud restore:']) {
-      const line = body.split(label)[1]?.split('\n').find((s) => s.trim() && !s.trim().startsWith('<!--'))?.trim();
+      const section = body.split(label)[1]?.split('\n') || [];
+      const inline = section[0]?.replace(/<!--.*?-->/g, '').replace(/\*\*/g, '').trim();
+      const next = section.slice(1).find(s => s.trim() && !s.trim().startsWith('<!--'))?.trim();
+      const line = inline || next;
       if (!line || line.startsWith('**') || line.startsWith('##')) {
         console.error('PR section needs explicit content: ' + label);
         failed = true;
