@@ -1735,7 +1735,36 @@ function performanceBadges(i){
 function startReplay(i){if(!lumenProgress.solved[i])return;canonicalActiveQuest=null;levelIndex=i;replayMode=true;document.getElementById("mapModal").hidden=true;document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;loadPuzzle();usedHintThisGame=false;refreshJourney()}
 function renderMap(){
  skyNavigation.render();renderCanonicalJourneyPreview();const puzzleGrid=document.getElementById("puzzleGrid");
- puzzleGrid.innerHTML="";let range=mapConstellationRange(mapConstellation)||constellationGridRange(mapConstellation);for(const [offset,i] of range.quests.entries()){let solved=!!lumenProgress.solved[i],current=i===currentQuestPosition()&&questIsAccessible(i),b=document.createElement("button"),pos=offset+1,meta=performanceBadges(i);b.className="puzzle-card"+(solved?" done":"")+(current?" current":"")+(!solved&&!current?" locked":"");b.innerHTML=solved?meta:(current?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+pos+'</span>':"");b.title=solved?"Rejouer la quête "+pos+" pour améliorer ta performance":current?"Nouvelle quête disponible · quête "+pos:"Quête "+pos+" · verrouillée";b.onclick=()=>{if(solved&&questIsAccessible(i)){startReplay(i);return}if(!current)return;canonicalActiveQuest=null;levelIndex=i;replayMode=false;document.getElementById("mapModal").hidden=true;loadPuzzle();refreshJourney()};puzzleGrid.appendChild(b)}if(range.generated){const summary=generatedMapSummary(mapConstellation,lumenProgress.solved);const skyCard=document.getElementById("skyCard");if(skyCard&&summary)skyCard.textContent=summary.name+" · "+summary.completed+"/"+summary.total+" quêtes · "+generatedAdventureRewards(lumenProgress.solved).stars+" ★";}else renderSky(mapConstellation)
+ puzzleGrid.innerHTML="";let range=mapConstellationRange(mapConstellation)||constellationGridRange(mapConstellation);for(const [offset,i] of range.quests.entries()){let solved=!!lumenProgress.solved[i],current=i===currentQuestPosition()&&questIsAccessible(i),b=document.createElement("button"),pos=offset+1,meta=performanceBadges(i);b.className="puzzle-card"+(solved?" done":"")+(current?" current":"")+(!solved&&!current?" locked":"");b.innerHTML=solved?meta:(current?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+pos+'</span>':"");b.title=solved?"Rejouer la quête "+pos+" pour améliorer ta performance":current?"Nouvelle quête disponible · quête "+pos:"Quête "+pos+" · verrouillée";b.onclick=()=>{if(solved&&questIsAccessible(i)){startReplay(i);return}if(!current)return;canonicalActiveQuest=null;levelIndex=i;replayMode=false;document.getElementById("mapModal").hidden=true;loadPuzzle();refreshJourney()};puzzleGrid.appendChild(b)}
+ // Use the same canonical quest collection as the cockpit. Historic range.quests
+ // omits inserted grids, which previously left Grande Ourse at only six cards.
+ const mappedConstellation=CONTENT_CONSTELLATIONS[mapConstellation];
+ if(mappedConstellation){
+  const canonicalCards=canonicalQuestList().filter(q=>q.constellationId===mappedConstellation.id);
+  if(canonicalCards.length){
+   puzzleGrid.replaceChildren();
+   for(const [offset,quest] of canonicalCards.entries()){
+    const legacy=quest.legacyIndex;
+    const solved=legacy!==null?!!lumenProgress.solved?.[legacy]:!!lumenProgress.canonicalQuestState?.[quest.id]?.solved;
+    const available=legacy===null?canonicalQuestAvailable(quest):questIsAccessible(legacy);
+    const button=document.createElement("button");
+    button.type="button";
+    button.className="puzzle-card"+(solved?" done":"")+(available&&!solved?" current":"")+(!available&&!solved?" locked":"");
+    button.dataset.questId=quest.id;
+    button.title="Quête "+quest.ordinal+(solved?" · terminée":available?" · disponible":" · verrouillée");
+    button.innerHTML=legacy!==null&&solved?performanceBadges(legacy):solved?'<span class="puzzle-new-icon">✓</span>':available?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+quest.ordinal+'</span>':'<span class="puzzle-new-number">Quête '+quest.ordinal+'</span>';
+    button.disabled=!available;
+    if(available)button.onclick=()=>{
+     if(legacy===null){startCanonicalQuest(quest);return}
+     if(solved){startReplay(legacy);return}
+     canonicalActiveQuest=null;levelIndex=legacy;replayMode=false;
+     document.getElementById("mapModal").hidden=true;loadPuzzle();refreshJourney();
+    };
+    puzzleGrid.appendChild(button);
+   }
+  }
+ }
+ if(range.generated){const summary=generatedMapSummary(mapConstellation,lumenProgress.solved);const skyCard=document.getElementById("skyCard");if(skyCard&&summary)skyCard.textContent=summary.name+" · "+summary.completed+"/"+summary.total+" quêtes · "+generatedAdventureRewards(lumenProgress.solved).stars+" ★";}else renderSky(mapConstellation)
 }
 function openJourneyMap(focusSky=false,{advanceOnClose=false,learningTour=false}={}){mapConstellation=CONTENT_CONSTELLATIONS.findIndex(c=>c.questIndices.includes(levelIndex));if(mapConstellation<0)mapConstellation=chapterForGrid(levelIndex);const modal=document.getElementById("mapModal");modal.hidden=false;skyNavigation.open();renderMap();const tour=document.getElementById("skyTour");document.getElementById("closeMap").disabled=learningTour;if(tour)tour.hidden=!learningTour;if(learningTour){skyTourStep=0;requestAnimationFrame(renderSkyTourStep)}else clearSkyTourFocus();modal.dataset.advanceOnClose=advanceOnClose&&!!lumenProgress.solved[levelIndex]?"1":"";const attemptMask=document.getElementById("attemptMask");if(attemptMask)attemptMask.hidden=true;document.getElementById(learningTour?"skyTourNext":"closeMap").focus();}
 
