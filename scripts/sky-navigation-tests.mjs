@@ -1,3 +1,4 @@
+import {readFileSync} from "node:fs";
 import assert from 'node:assert/strict';
 import {CONTENT_PACKS,BASE_PACK_ID,BASE_CONSTELLATIONS,contentMapModel,hasPackAccess,preserveStartedAdventureAccess} from '../src/campaign/content.js';
 import {skySelection,constellationUnlocked,skyPickerVisible} from '../src/ui/sky-navigation.js';
@@ -56,3 +57,8 @@ for(let i=1;i<firstPackModel.constellations.length;i++){
 }
 
 console.log(JSON.stringify({skyNavigation:true,accessPreservation:true,constellationUnlock:true,pages:[1,6,7,12,103],multipleSkies:true,accessRefresh:true}));
+
+const skyUi=readFileSync(new URL("../src/ui/sky-navigation.js",import.meta.url),"utf8");
+assert.match(skyUi,/skyPickerContainer\.style\.display=showSkyPicker\?\x27\x27:\x27none\x27/,"A sole sky must be hidden even if CSS overrides [hidden]");
+const deployScript=readFileSync(new URL("./o2switch-cron-publish.sh",import.meta.url),"utf8");
+assert.match(deployScript,/\("push","workflow_dispatch","schedule"\)/,"Publisher must recognize scheduled green CI");
