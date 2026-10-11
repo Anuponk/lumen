@@ -26,12 +26,12 @@ jobs:
           python-version: '3.11'
       - name: Install astronomy preparation dependencies
         run: python -m pip install 'astropy==7.2.0' 'astroquery==0.4.10'
-      - name: Fetch pinned Stellarium Western data (CC BY-SA)
+      - name: Fetch Stellarium Western data (CC BY-SA)
         run: |
           mkdir -p .cache/astronomy
           curl --fail --location --retry 3 --retry-delay 4 --max-time 90 \
             -o .cache/astronomy/western-index.json \
-            'https://raw.githubusercontent.com/Stellarium/stellarium-skycultures/70471c1a3f4da066751e33eb4cd8f168aefeba00/western/index.json'
+            'https://raw.githubusercontent.com/Stellarium/stellarium-skycultures/master/western/index.json'
       - name: Fetch Hipparcos II line stars from VizieR
         run: python scripts/fetch-hipparcos-line-stars.py .cache/astronomy/western-index.json .cache/astronomy/hip-lines.json --cache .cache/astronomy/hipparcos2.ecsv
       - name: Build full astronomical catalogue
