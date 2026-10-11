@@ -527,13 +527,23 @@ const {validateGuardians,key,solutions,isAutoCross,verificationErrors,guardianCo
 function currentQuestLimit(){return extendedQuestLimit(lumenEntitlements,lumenProgress,attemptEngine.snapshot())}
 function currentQuestPosition(){return Math.min(extendedSequentialCount(lumenProgress.solved),currentQuestLimit()-1)}
 function legacyIndexForActiveChallenge(challenge){const quest=resolveChallengeQuest(challenge);if(quest.legacyIndex===null)throw new Error("Ce défi utilise une nouvelle quête : active la migration du catalogue avant de le lancer.");return quest.legacyIndex}
+// Existing players who passed an inserted slot before the migration may
+// continue at their next historical quest. Their earlier missing grids stay
+// available in Mon ciel, without marking them completed or awarding XP.
+function historicalContinuationAllowed(index){
+ if(!Number.isInteger(index)||index<1||lumenProgress.solved?.[index])return false;
+ const previous=canonicalQuestForLegacy(index-1);
+ const first=canonicalNextUnsolved(lumenProgress.solved,lumenProgress.canonicalQuestState||{});
+ return !!previous&&!!first&&previous.ordinal>first.ordinal&&
+  !!lumenProgress.solved?.[index-1]&&index===extendedSequentialCount(lumenProgress.solved);
+}
 function questIsAccessible(index){
  const accessible=contentAccessForLegacyQuest(index,lumenEntitlements,undefined,lumenProgress,attemptEngine.snapshot()).accessible;
  if(!accessible)return false;
  if(lumenProgress.solved?.[index])return true;
  // Canonical order is authoritative for *new* quest unlocks. Historical
  // indexes remain keys in existing saves but cannot bypass inserted grids.
- return canonicalNextUnsolved(lumenProgress.solved,lumenProgress.canonicalQuestState||{})?.legacyIndex===index;
+ return canonicalNextUnsolved(lumenProgress.solved,lumenProgress.canonicalQuestState||{})?.legacyIndex===index||historicalContinuationAllowed(index);
 }
 function choose(){if(canonicalActiveQuest){puz={reg:canonicalActiveQuest.reg,sol:canonicalActiveQuest.sol,audit:canonicalActiveQuest.audit};n=puz.reg.length;return}levelIndex=Math.max(0,Math.min(levelIndex,currentQuestLimit()-1));if(!socialChallenge&&!questIsAccessible(levelIndex)){while(levelIndex>0&&!questIsAccessible(levelIndex))levelIndex--;replayMode=!!lumenProgress.solved[levelIndex]}const resolved=playableQuest(levelIndex);if(!resolved)throw new Error("Missing campaign quest "+levelIndex);puz=resolved.source==="generated"?{reg:resolved.reg,sol:resolved.sol,audit:resolved.audit}:resolved.size===6?CAT["6"][CAMPAIGN6_ORDER[CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]]]:CAT[String(resolved.size)][CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]];n=puz.reg.length;last[n]=levelIndex}
 function loadPuzzle(){init();}
@@ -1582,7 +1592,7 @@ function advanceToNextPuzzle(){
  }
  const canonicalPrevious=canonicalQuestForLegacy(levelIndex);
  const canonicalFollowing=canonicalPrevious&&canonicalQuestByOrdinal(canonicalPrevious.ordinal+1);
- if(lumenProgress.solved[levelIndex]&&canonicalFollowing?.legacyIndex===null){
+ if(lumenProgress.solved[levelIndex]&&canonicalFollowing?.legacyIndex===null&&!historicalContinuationAllowed(levelIndex+1)){
   if(canonicalQuestAvailable(canonicalFollowing)){hideSuccess();startCanonicalQuest(canonicalFollowing);return}
   // Do not skip an inserted quest just because the legacy numeric index continues.
   hideSuccess();openJourneyMap();return;

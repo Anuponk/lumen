@@ -69,4 +69,8 @@ for(const q of quests.filter(q=>q.legacyIndex===null)){
 }
 assert.match(gameScreen,/canonicalNextUnsolved\(lumenProgress\.solved,lumenProgress\.canonicalQuestState\|\|\{\}\)\?\.legacyIndex===index/);
 assert.match(gameScreen,/const legacy=quest\.legacyIndex,solved=legacy!==null\?!!lumenProgress\.solved/);
+assert.match(gameScreen,/function historicalContinuationAllowed\(index\)/);
+assert.match(gameScreen,/previous\.ordinal>first\.ordinal/);
+assert.match(gameScreen,/index===extendedSequentialCount\(lumenProgress\.solved\)/);
+assert.match(gameScreen,/canonicalFollowing\?\.legacyIndex===null&&!historicalContinuationAllowed\(levelIndex\+1\)/);
 console.log("Canonical 400-quest registry: stable identity, legacy save keys and pagination verified");
