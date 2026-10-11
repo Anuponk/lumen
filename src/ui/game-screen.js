@@ -172,17 +172,26 @@ function maybeOfferAccount(){
 }
 function dismissAccountOffer(){const box=document.getElementById("accountOptin");if(!box||box.hidden)return;if(accountRequired())return;trackLumenEvent("account_offer_required",null,{milestone:5,source:"quest_5_gate",qa:qaActive})}
 async function acceptAccountOffer(){const box=document.getElementById("accountOptin");if(box)box.hidden=true;const milestone=accountOfferMilestone();trackLumenEvent("account_offer_accept",null,{milestone,source:"constellation_complete",qa:qaActive});if(!lumenSupabase){trackLumenEvent("account_signin_failure",null,{milestone,reason:"cloud_unavailable",qa:qaActive});return}accountOfferSignInPending=true;try{sessionStorage.setItem("lumenAccountOfferSignInPending","1")}catch(_){}const result=await signIn(new URL("/", location.origin).toString());if(!result.ok){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_failure",null,{milestone,reason:result.reason||"oauth",qa:qaActive})}}
-function openEmailAccountOffer(mode="signup"){accountEmailMode=mode==="login"?"login":"signup";const title=document.getElementById("accountOptinTitle");if(title)title.textContent=accountEmailMode==="login"?"Retrouve ton aventure":"Sauvegarde ton aventure ✨";const panel=document.getElementById("accountEmailAuth");if(panel)panel.hidden=false;
+function openEmailAccountOffer(mode="signup"){
+ accountEmailMode=mode==="login"?"login":"signup";
+ const login=accountEmailMode==="login";
+ const offer=document.getElementById("accountOptin");if(offer)offer.hidden=false;
+ const title=document.getElementById("accountOptinTitle");if(title)title.textContent=login?"Retrouve ton aventure":"Sauvegarde ton aventure";
+ const description=document.getElementById("accountOptinDescription");if(description)description.textContent=login?"Connecte-toi pour retrouver ta progression, tes étoiles et tes constellations.":"Crée un compte pour conserver ta progression et la retrouver sur tous tes appareils.";
  const password=document.getElementById("accountPassword"),submit=document.getElementById("accountPasswordSubmit");
- if(password)password.autocomplete=accountEmailMode==="login"?"current-password":"new-password";
- if(submit)submit.textContent=accountEmailMode==="login"?"Se connecter":"Créer mon compte";
- const legacy=document.getElementById("accountLegacyOtp");if(legacy)legacy.hidden=accountEmailMode!=="login";
- const recover=document.getElementById("accountRecovery");if(recover)recover.hidden=accountEmailMode!=="login";
- const switcher=document.getElementById("accountAuthSwitch");if(switcher)switcher.textContent=accountEmailMode==="login"?"Créer un compte à la place":"J’ai déjà un compte";
+ if(password){password.autocomplete=login?"current-password":"new-password";password.minLength=login?1:12;}
+ if(submit)submit.textContent=login?"Me connecter →":"Créer mon compte →";
+ const legacy=document.getElementById("accountLegacyOtp");if(legacy)legacy.hidden=!login;
+ const recover=document.getElementById("accountRecovery");if(recover)recover.hidden=!login;
+ const signup=document.getElementById("accountSignupTab"),switcher=document.getElementById("accountAuthSwitch");
+ if(signup)signup.setAttribute("aria-pressed",String(!login));
+ if(switcher)switcher.setAttribute("aria-pressed",String(login));
  const status=document.getElementById("accountEmailStatus");if(status)status.textContent="";
- document.getElementById("accountEmailSend").hidden=true;
- document.getElementById("accountOtpStep").hidden=true;
- document.getElementById("accountEmail")?.focus();trackLumenEvent("account_email_selected",null,{milestone:5,source:"quest_5_gate",qa:qaActive})}
+ const send=document.getElementById("accountEmailSend");if(send)send.hidden=true;
+ const otp=document.getElementById("accountOtpStep");if(otp)otp.hidden=true;
+ document.getElementById("accountEmail")?.focus();
+ trackLumenEvent("account_email_selected",null,{milestone:5,source:"quest_5_gate",qa:qaActive});
+}
 async function submitAccountPassword(){
  const email=document.getElementById("accountEmail")?.value;
  const password=document.getElementById("accountPassword")?.value;
@@ -215,7 +224,7 @@ function showLegacyOtp(){
 }
 async function requestAccountEmailOtp(){const email=document.getElementById("accountEmail")?.value,status=document.getElementById("accountEmailStatus");if(status)status.textContent="Envoi du code…";const result=await sendEmailOtp(email,new URL("/",location.origin).toString(),{createUser:accountEmailMode==="signup"});if(!result.ok){if(status)status.textContent=result.reason==="email"?"Entre une adresse email valide.":"Impossible d’envoyer le code. Réessaie.";trackLumenEvent("account_signin_failure",null,{milestone:5,method:"email_otp",stage:"send",qa:qaActive});return}accountOfferSignInPending=true;try{sessionStorage.setItem("lumenAccountOfferSignInPending","1");sessionStorage.setItem("lumenAccountOtpEmail",result.email)}catch(_){}const step=document.getElementById("accountOtpStep");if(step)step.hidden=false;if(status)status.textContent="Code envoyé. Vérifie tes emails.";document.getElementById("accountOtp")?.focus();trackLumenEvent("account_otp_sent",null,{milestone:5,qa:qaActive})}
 async function confirmAccountEmailOtp(){const status=document.getElementById("accountEmailStatus"),token=document.getElementById("accountOtp")?.value;let email=document.getElementById("accountEmail")?.value;try{email=sessionStorage.getItem("lumenAccountOtpEmail")||email}catch(_){}if(status)status.textContent="Vérification…";const result=await verifyEmailOtp(email,token);if(!result.ok){if(status)status.textContent=result.reason==="otp"?"Entre le code à 6 chiffres.":"Code incorrect ou expiré. Réessaie.";trackLumenEvent("account_signin_failure",null,{milestone:5,method:"email_otp",stage:"verify",qa:qaActive});return}if(status)status.textContent="Compte connecté ✓";trackLumenEvent("account_otp_verified",null,{milestone:5,qa:qaActive})}
-function openAccountFromMenu(){accountEmailMode="signup";const menu=document.getElementById("mobileAuthPopover"),offer=document.getElementById("accountOptin");if(menu)menu.hidden=true;if(offer){offer.hidden=false;document.getElementById("accountOptinEnable")?.focus()}} 
+function openAccountFromMenu(){const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=true;openEmailAccountOffer("signup")} 
 async function saveExistingAccountPassword(){
  const password=document.getElementById("setPasswordValue")?.value;
  const status=document.getElementById("setPasswordStatus");
@@ -1906,7 +1915,7 @@ const nicknameSave=document.getElementById("nicknameSave");if(nicknameSave)nickn
 const guidedErrors=document.getElementById("guidedErrors");if(guidedErrors)guidedErrors.onchange=()=>{if(levelIndex<=4&&!replayMode){guidedErrors.checked=true;return}localStorage.setItem("lumenGuidedErrors",guidedErrors.checked?"on":"off")};
 const accountOptinEnable=document.getElementById("accountOptinEnable"),accountOptinLater=document.getElementById("accountOptinLater"),accountOptinEmail=document.getElementById("accountOptinEmail"),accountEmailSend=document.getElementById("accountEmailSend"),accountOtpVerify=document.getElementById("accountOtpVerify");if(accountOptinEnable)accountOptinEnable.onclick=acceptAccountOffer;if(accountOptinLater)accountOptinLater.onclick=dismissAccountOffer;if(accountOptinEmail)accountOptinEmail.onclick=()=>openEmailAccountOffer("signup");const passwordSubmit=document.getElementById("accountPasswordSubmit"),legacyOtp=document.getElementById("accountLegacyOtp");
 if(passwordSubmit)passwordSubmit.onclick=submitAccountPassword;
-const switcher=document.getElementById("accountAuthSwitch");if(switcher)switcher.onclick=()=>openEmailAccountOffer(accountEmailMode==="login"?"signup":"login");
+const switcher=document.getElementById("accountAuthSwitch");if(switcher)switcher.onclick=()=>openEmailAccountOffer("login");const signupTab=document.getElementById("accountSignupTab");if(signupTab)signupTab.onclick=()=>openEmailAccountOffer("signup");const visibility=document.getElementById("accountPasswordVisibility");if(visibility)visibility.onclick=()=>{const input=document.getElementById("accountPassword");if(!input)return;input.type=input.type==="password"?"text":"password";visibility.setAttribute("aria-label",input.type==="password"?"Afficher le mot de passe":"Masquer le mot de passe");};
 const closeAccount=document.getElementById("accountOptinClose");if(closeAccount)closeAccount.onclick=()=>{if(!accountRequired())document.getElementById("accountOptin").hidden=true;};
 const setPasswordSave=document.getElementById("setPasswordSave");if(setPasswordSave)setPasswordSave.onclick=saveExistingAccountPassword;
 if(legacyOtp)legacyOtp.onclick=showLegacyOtp;
