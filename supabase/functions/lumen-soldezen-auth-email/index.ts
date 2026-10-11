@@ -40,7 +40,7 @@ Deno.serve(async(req)=>{
  if(!plan.ok)return json(422); // Fail closed: never route to a guessed brand.
  const sender=senders[plan.brand];
  const webhookId=req.headers.get("webhook-id");
- if(!webhookId||!/^[a-zA-Z0-9_\\-]{8,128}$/.test(webhookId))return json(401);
+ if(!webhookId||!/^[A-Za-z0-9_-]{8,128}$/.test(webhookId))return json(401);
  for(const delivery of plan.deliveries){
   const key=webhookId+"-"+delivery.role;
   const hash=await fingerprint(delivery,plan);
