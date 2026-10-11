@@ -21,3 +21,18 @@ L'IAU normalise les frontières de 88 constellations, pas une liste universelle 
 
 ## Règles de livraison
 Ne pas confondre « projection disponible » avec « migration des 40 constellations terminée ». Aucun changement des sauvegardes, quêtes, gains, succès et entitlements dans cette phase.
+
+
+## Phase 2a — audit réel des sources (11 octobre 2026)
+
+- Tracés : `Stellarium/stellarium-skycultures/western/index.json`, 88 figures IAU, lignes référencées par IDs Hipparcos (HIP), version source SHA `70471c1a3f4da066751e33eb4cd8f168aefeba00`.
+- Coordonnées pilotes : `Found-in-Space/stellarium-skycultures/packages/stellarium-skycultures-western/source/constellation-anchors.json`, 255 étoiles HIP (source SHA `4a6256419b72578cf5bdf730e387aad57c410aa7`). **Ce fichier décrit les ancres d'illustration, non toutes les étoiles des lignes.**
+- Couverture vérifiée en croisant réellement les 88 lignes et les 255 ancres : **19 constellations complètes sur 88** ; **Orion n'a que 3 étoiles documentées sur les 19 nécessaires**. Ces coordonnées sont donc insuffisantes pour publier toutes les figures.
+- Les licences doivent être validées à la granularité des fichiers et de la culture avant inclusion des données dans le jeu ; le packaging tiers (code MIT) ne change pas la licence du contenu Stellarium (indiqué CC BY-SA pour les données de la culture Western).
+- Le générateur `scripts/build-astronomical-catalogue.mjs` accepte **deux fichiers locaux légalement réutilisables** (index Stellarium-compatible et dictionnaire `HIP: {raDeg,decDeg}`), produit un rapport détaillé et termine avec un code d'échec tant que la couverture n'est pas complète. Il **n'embarque pas** ces sources dans le produit.
+- Prochaine dépendance : trouver/fournir un export complet et utilisable des coordonnées HIP avec epoch cohérente, puis résoudre explicitement le mapping entre les figures IAU et les 40 figures de Lumen. Ne remplacer aucun dessin existant tant que ce travail n'est pas complet.
+
+Exécution hors ligne après vérification des licences :
+```bash
+node scripts/build-astronomical-catalogue.mjs western-index.json hip-coordinates.json astronomy-coverage.json
+```
