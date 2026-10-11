@@ -53,3 +53,10 @@ node scripts/build-astronomical-catalogue.mjs western-index.json hip-lines.json 
 **Vérification requise avant inclusion dans Lumen :** les permissions de redistribution commerciales pour les données de tracé Stellarium Western et leurs exigences CC BY-SA, attribution et notice. Aucune donnée tierce n'est embarquée dans cette PR.
 
 L'importeur traite `thin` et `bold` comme métadonnées de lignes Stellarium, jamais comme des identifiants stellaires.
+
+
+## Phase 3 — pont de compatibilité visuelle (PR #289)
+
+Le module `src/ui/astronomical-legacy-bridge.js` propose un branchement **non destructif** d'une figure astronomique vérifiée : le registre devra fournir la liste ordonnée des identifiants HIP correspondant **aux indices historiques** des étoiles déjà gagnées. Un tableau de correspondance absent, de mauvaise taille ou contenant des doublons est rejeté ; le composant garde alors le dessin existant. Seuls les segments réellement présents dans l'atlas et reliant deux étoiles correspondantes sont réutilisés. **Aucune connexion artificielle n'est inventée.** Le nombre d'étoiles et leurs index de révélation ne changent jamais.
+
+Ce module constitue une **interface de migration**, pas une validation des mappings : actuellement, les associations historiques index -> HIP restent à établir et à approuver pour les 24 figures historiques, et la donnée HIP complète doit être obtenue puis validée avec sa licence. Les 40 dessins ne sont donc **pas encore remplacés**. Dans un prochain changement, brancher exclusivement les figures intégralement validées au composant de navigation et au détail de Mon ciel ; vérifier Orion et chaque vue en environnement de recette avant production.
