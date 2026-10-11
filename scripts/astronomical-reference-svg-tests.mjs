@@ -17,5 +17,6 @@ assert.equal(astronomicalPrimarySvg({id:"missing"}),"");
 for(let i=0;i<24;i++){const svg=astronomicalPrimarySvg({id:CONTENT_CONSTELLATIONS[i].id});assert.match(svg,/class="sky-line"/);assert.match(svg,/class="sky-star"/);assert.doesNotMatch(svg,/sky-star on/,"No false star progress may be assigned to HIP IDs");}
 assert.equal(JSON.stringify(CONSTELLATIONS),original,"Historical catalogue not mutated");
 const source=readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
-assert.equal((source.match(/astronomicalReferenceSvg\(\{id:CONTENT_CONSTELLATIONS\[/g)||[]).length,2,"Detail and reveal both use real atlas");
+assert.equal((source.match(/astronomicalPrimarySvg\(\{id:CONTENT_CONSTELLATIONS\[/g)||[]).length,2,"Detail and reveal use the genuine shape");
+assert.equal((source.match(/astronomicalReferenceSvg\(\{id:CONTENT_CONSTELLATIONS\[/g)||[]).length,0,"Old overlay does not compete with genuine shape");
 console.log("Astronomical overlays verified on historical detail and celebrations");
