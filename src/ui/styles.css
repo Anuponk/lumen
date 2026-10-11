@@ -735,3 +735,6 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 #sectorTabs .constellation-card.completed .sky-line.on{stroke:#79dff5;filter:drop-shadow(0 0 3px #57cfee)}
 #sectorTabs .constellation-badge-progress{font-size:11px;color:#8fdbe8;font-variant-numeric:tabular-nums}
 @media(prefers-reduced-motion:reduce){#sectorTabs .constellation-card.completed *{animation:none!important}}
+
+/* More readable constellation silhouettes on compact mobile cards. */
+#sectorTabs .constellation-card svg{height:clamp(54px,10vh,92px);max-width:96%;overflow:visible}
