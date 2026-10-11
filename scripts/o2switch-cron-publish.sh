@@ -75,7 +75,7 @@ if [[ ! -d "$RELEASE" ]]; then
 import json,os,re,subprocess,pathlib
 sha=os.environ["LUMEN_SHA"]
 target=pathlib.Path(os.environ["LUMEN_TARGET"])
-count=int(subprocess.check_output(["git","rev-list","--first-parent","--count",sha],text=True).strip())
+count=int(subprocess.check_output(["git","rev-list","--first-parent","--count",sha],universal_newlines=True).strip())
 version=f"1.11.1+{count}"
 html=target.joinpath("index.html").read_text()
 html,n=re.subn(r'(<meta name="lumen-build" content=")[^"]*(")',lambda m:m.group(1)+version+" · "+sha[:7]+m.group(2),html,count=1)
