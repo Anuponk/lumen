@@ -50,4 +50,9 @@ assert.deepEqual(admin.map(x=>[x.startNumber,x.endNumber]),[[1,100],[101,200],[2
 assert.match(gameScreen,/button\.disabled=!available/);
 assert.match(gameScreen,/button\.dataset\.questId=quest\.id/);
 assert.match(gameScreen,/if\(solved\)\{startReplay\(legacy\);return\}/);
+assert.match(gameScreen,/if\(canonicalActiveQuest\)\{await celebrateCanonicalSuccess\(\);return\}/);
+assert.match(gameScreen,/canonicalQuestAvailable\(quest\)/);
+assert.match(gameScreen,/startCanonicalQuest\(quest\)/);
+assert.match(gameScreen,/await commitCanonicalVictory\(lumenSupabase,q\.id,reward\)/);
+assert.match(gameScreen,/const canonicalFollowing=canonicalPrevious&&canonicalQuestByOrdinal/);
 console.log("Canonical 400-quest registry: stable identity, legacy save keys and pagination verified");

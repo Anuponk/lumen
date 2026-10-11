@@ -72,3 +72,7 @@ assert.equal(JSON.parse(store.get("lumenProgressV1")).canonicalQuestState[newQue
  assert.equal(persisted.canonicalQuestState[newQuest.id].stars,3);
  assert.deepEqual(persisted.solved,original.solved);
 }
+
+const progressWithReward=acknowledgeCanonicalVictory(original,newQuest.id,{stars:1,badges:{autonomy:true}});
+assert.equal(progressWithReward.profile.xp,original.xp+15,"Canonical quest first-win XP recorded once");
+assert.equal(acknowledgeCanonicalVictory(progressWithReward.profile,newQuest.id,{stars:8}).profile.xp,original.xp+15,"XP cannot be duplicated");

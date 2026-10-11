@@ -44,6 +44,7 @@ export function acknowledgeCanonicalVictory(profile,id,{badges={},performance=nu
  if(!Number.isSafeInteger(stars)||stars<0)throw Error("Invalid stars");
  if(performance!==null&&(typeof performance!=="object"||Array.isArray(performance)))throw Error("Invalid performance");
  current.canonicalQuestState={...state,[id]:{solved:true,badges:structuredClone(badges),performance:performance===null?null:structuredClone(performance),stars}};
+ current.xp=(Number(current.xp)||0)+10+(badges.autonomy?5:0);
  return {profile:current,newlyCompleted:true,quest};
 }
 export function canonicalQuestForDisplay(ordinal){
