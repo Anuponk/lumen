@@ -82,7 +82,7 @@ async function initLumenCloud(){
  model.lumenUser=data.session?.user||null; onAccountChanged({type:"account"});
  if(model.lumenUser){await registerLumenUser();await loadLumenProfile();await loadEntitlements();await loadInternalCapabilities();if(!cloudWritesDisabled() && !(await hooks.holdLegacyMergeForFullRestore?.())){await cloudMergeProgress();await cloudMergeDaily();}await hooks.afterAuthCloudSync?.();}else {model.lumenEntitlements=[];model.lumenCapabilities=[];}
  model.lumenSupabase.auth.onAuthStateChange((event,session)=>{
-   const previous=model.lumenUser?.id; model.lumenUser=session?.user||null; onAccountChanged({type:"account"});
+   const previous=model.lumenUser?.id; model.lumenUser=session?.user||null; onAccountChanged({type:event==="PASSWORD_RECOVERY"?"password_recovery":"account"});
    if(model.lumenUser&&model.lumenUser.id!==previous)setTimeout(async()=>{await registerLumenUser();await loadEntitlements();await loadInternalCapabilities();if(!cloudWritesDisabled() && !(await hooks.holdLegacyMergeForFullRestore?.())){await cloudMergeProgress();await cloudMergeDaily()}await hooks.afterAuthCloudSync?.();},0);else if(model.lumenUser&&(event==="SIGNED_IN"||event==="TOKEN_REFRESHED"||event==="USER_UPDATED")){
     // Same-account session renewals must refresh server-authorized cockpit rights.
     // Never grant a capability locally: the RPC remains authoritative.
