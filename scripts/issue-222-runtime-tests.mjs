@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {canonicalQuestCount,canonicalQuestByOrdinal,canonicalQuestById,canonicalQuestForLegacy,canonicalQuestList,canonicalNextUnsolved} from "../src/campaign/canonical-quests.js";
 import {playableQuest} from "../src/campaign/playable-quests.js";
+import {resolveCanonicalQuest,nextCanonicalQuest} from "../src/campaign/playable-navigation.js";
 const quests=canonicalQuestList();
 assert.equal(canonicalQuestCount(),400);
 assert.equal(new Set(quests.map(q=>q.id)).size,400);
@@ -18,4 +19,9 @@ for(let i=0;i<4;i++)assert.equal(quests.slice(i*100,(i+1)*100).filter(q=>q.packI
 assert.equal(canonicalNextUnsolved({},{}).ordinal,1);
 assert.equal(canonicalNextUnsolved(Object.fromEntries(quests.filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,true])),Object.fromEntries(quests.filter(q=>q.legacyIndex===null).map(q=>[q.id,true]))),null);
 assert.equal(canonicalNextUnsolved({"0":true},{}).ordinal,2);
+assert.equal(resolveCanonicalQuest(1).status,"ready");
+assert.equal(resolveCanonicalQuest(101).status,"locked");
+assert.equal(resolveCanonicalQuest(101,["real-adventure-02"]).status,"ready");
+assert.equal(resolveCanonicalQuest(100,[],{legacyAdventureAccess:["base-real-sky"]}).status,"ready");
+assert.equal(nextCanonicalQuest({},{}).ordinal,1);
 console.log("Canonical 400-quest registry: stable identity, legacy save keys and pagination verified");
