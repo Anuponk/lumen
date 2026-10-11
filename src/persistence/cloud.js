@@ -169,7 +169,7 @@ async function emailPasswordAuth(email,password,redirectTo,{createUser=false}={}
  const callback=String(redirectTo||environment.lumenAuthReturnUrl||"").trim();
  if(!callback)return {ok:false,reason:"redirect"};
  if(createUser){
-  try{return {ok:await requestLumenAuthMail("signup",normalized,password),pendingConfirmation:true}}catch{return {ok:false,reason:"signup"}}
+  try{const sent=await requestLumenAuthMail("signup",normalized,password);return sent?{ok:true,pendingConfirmation:true}:{ok:false,reason:"signup"}}catch{return {ok:false,reason:"signup"}}
  }
  const response=await model.lumenSupabase.auth.signInWithPassword({email:normalized,password});
  if(response.error)return {ok:false,reason:createUser?"signup":"signin",error:response.error};
