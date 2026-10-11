@@ -51,3 +51,21 @@ export function canonicalQuestList(){return [...all]}
 export function canonicalNextUnsolved(solvedLegacy={},solvedIds={}){
  return all.find(q=>!(q.legacyIndex!==null?solvedLegacy[q.legacyIndex]:solvedIds[q.id]))??null;
 }
+
+// User-facing catalogue numbering is deliberately separate from legacy save keys.
+// This view is safe for preview/admin surfaces before a gameplay cutover.
+export function canonicalDisplayForLegacy(index){
+ const quest=canonicalQuestForLegacy(index);
+ return quest?Object.freeze({number:quest.ordinal,total:all.length,id:quest.id,
+  constellationId:quest.constellationId,adventureId:quest.packId,legacyNumber:quest.legacyIndex+1}):null;
+}
+export function canonicalAdventureSummary(progress={}){
+ const solved=progress.solved||{},newState=progress.canonicalQuestState||{};
+ return CONTENT_PACKS.map(pack=>{
+  const quests=all.filter(q=>q.packId===pack.id);
+  const completed=quests.filter(q=>q.legacyIndex!==null?!!solved[q.legacyIndex]:!!newState[q.id]?.solved).length;
+  return Object.freeze({id:pack.id,title:pack.displayName,firstQuest:quests[0]?.ordinal??null,
+   lastQuest:quests.at(-1)?.ordinal??null,quests:quests.length,completed,
+   constellations:new Set(quests.map(q=>q.constellationId)).size});
+ });
+}
