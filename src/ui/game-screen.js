@@ -248,10 +248,21 @@ async function saveExistingAccountPassword(){
 function syncMobileAuthUI(){
  const status=document.getElementById("mobileAuthStatus"),action=document.getElementById("mobileAuthAction"),icon=document.getElementById("mobileAccount");
  if(!status||!action||!icon)return;
- const passwordPanel=document.getElementById("setPasswordPanel");if(passwordPanel)passwordPanel.hidden=!lumenUser;
- if(lumenUser){status.textContent=lumenNickname||"Progression synchronisée";action.textContent="Déconnexion";const create=document.getElementById("mobileCreateAccount"),explain=document.getElementById("guestSaveExplainer");if(create)create.hidden=true;if(explain)explain.hidden=true;icon.textContent="●";icon.setAttribute("aria-label","Compte connecté");const box=document.getElementById("nicknameBox");if(box)box.hidden=false}
- else{status.textContent="Progression enregistrée sur cet appareil";action.textContent="Se connecter avec Google";const create=document.getElementById("mobileCreateAccount"),explain=document.getElementById("guestSaveExplainer");if(create)create.hidden=false;if(explain)explain.hidden=false;icon.textContent="♙";icon.setAttribute("aria-label","Se connecter");const box=document.getElementById("nicknameBox");if(box)box.hidden=true}
+ const signedIn=Boolean(lumenUser);
+ const show=(id,visible)=>{const el=document.getElementById(id);if(el)el.hidden=!visible};
+ show("setPasswordPanel",signedIn);
+ show("nicknameBox",signedIn);
+ show("mobileCreateAccount",!signedIn);
+ show("mobileEmailLogin",false);
+ show("guestSaveExplainer",!signedIn);
+ status.textContent=signedIn?(lumenNickname||"Progression synchronisée"):"Progression enregistrée sur cet appareil";
+ action.textContent=signedIn?"Déconnexion":"Se connecter";
+ icon.textContent=signedIn?"●":"♙";
+ icon.setAttribute("aria-label",signedIn?"Compte connecté":"Compte invité");
+ action.disabled=!signedIn&&!lumenSupabase;
+ action.title=action.disabled?"Connexion momentanément indisponible":"";
 }
+
 function hasInternalCapability(name){return lumenCapabilities.some(x=>(typeof x==="string"?x:x?.capability)===name)}
 function unlimitedShardsEnabled(){return hasInternalCapability("unlimited_shards")&&localStorage.getItem("lumenAdminUnlimitedShards")==="1"}
 function updateAdminTools(){
