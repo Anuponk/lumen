@@ -21,6 +21,7 @@ const nodeSuites=[
  "persistence-tests.mjs",
  "cloud-persistence-regression-tests.mjs",
  "auth-email-brand-routing-tests.mjs",
+ "account-email-login-tests.mjs",
  "auth-email-delivery-plan-tests.mjs",
  "auth-email-ledger-contract-tests.mjs",
  "auth-email-hook-integration-tests.mjs",
