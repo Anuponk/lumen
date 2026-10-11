@@ -77,6 +77,8 @@ async function cloudMergeProgress(){
 }
 
 async function confirmBrandedAuthLink(){
+ // Cloud persistence is also executed in Node.js regression fixtures.
+ if(typeof window==="undefined"||!window.location||!window.history)return;
  const loc=window.location;
  const url=new URL(loc.href);
  const hash=url.searchParams.get("lumen_confirm");
