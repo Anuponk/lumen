@@ -738,3 +738,58 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 
 /* More readable constellation silhouettes on compact mobile cards. */
 #sectorTabs .constellation-card svg{height:clamp(54px,10vh,92px);max-width:96%;overflow:visible}
+
+
+/* #315: play screen contract — no scrolling/clipped controls, including PWA safe areas.
+   Reserve vertical space for headers, status, assists, actions and messages
+   before sizing the square grid. Decorative margins shrink before text does. */
+@media (max-width:700px){
+ html,body{height:100%!important;overflow:hidden!important;overscroll-behavior:none}
+ body{min-height:0!important}
+ .app{height:100dvh!important;min-height:0!important;overflow:hidden!important;
+   padding-top:max(5px,env(safe-area-inset-top))!important;
+   padding-bottom:max(6px,env(safe-area-inset-bottom))!important}
+ .game-core{min-width:0;min-height:0}
+ .head{display:flex;min-width:0;gap:4px}
+ .head>div:first-child{flex:1 1 auto;min-width:0}
+ .head-actions{flex:0 0 auto;gap:3px!important}
+ .head-actions button{box-sizing:border-box;flex:0 0 36px;min-width:36px!important;
+   width:36px!important;height:36px!important;min-height:36px!important;padding:0!important}
+ .head #new{overflow:visible;position:relative}
+ .head #new::after{display:block;line-height:36px}
+ .lumen-brand{font-size:clamp(22px,6vw,27px)!important}
+ .journey{padding:3px 6px!important;margin-bottom:3px!important}
+ .status,.auto-cross,.learning-note,.hint-wallet,.reward-live{margin-block:2px!important}
+ .auto-cross,.rules,.msg{font-size:max(13px,1rem)}
+ .learning-note{font-size:12px!important;line-height:1.25}
+ .actions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));
+   gap:4px!important;margin-top:4px!important}
+ .actions button{min-width:0;min-height:40px!important;padding:7px 3px!important;
+   font-size:clamp(12px,3.2vw,14px)!important;line-height:1.15}
+ .msg{padding:4px 2px!important;margin:1px 0!important;line-height:1.25}
+ #board,.game-core:has(#board) .actions{
+   box-sizing:border-box;width:min(100%,calc(100dvh - 300px - env(safe-area-inset-top) - env(safe-area-inset-bottom)))!important;
+   max-width:100%!important;margin-inline:auto!important}
+ #board{height:auto!important;max-height:none!important;aspect-ratio:1!important}
+}
+@media(max-width:700px) and (max-height:620px){
+ .lumen-brand{font-size:22px!important}
+ .journey{padding-block:2px!important}
+ .actions{margin-top:2px!important}
+ #board,.game-core:has(#board) .actions{
+   width:min(100%,calc(100dvh - 278px - env(safe-area-inset-top) - env(safe-area-inset-bottom)))!important}
+}
+@media(max-width:700px) and (orientation:landscape){
+ .app{overflow:hidden!important}
+ #board,.game-core:has(#board) .actions{
+  width:min(100%,calc(100dvh - 200px - env(safe-area-inset-top) - env(safe-area-inset-bottom)))!important}
+}
+@media(min-width:701px){
+ html,body{height:100%!important;overflow:hidden!important}
+ .app{height:100dvh!important;min-height:0!important;overflow:hidden!important}
+ #board,.game-core:has(#board) .actions{width:min(100%,calc(100dvh - 315px))!important;max-width:100%}
+}
+@media(min-width:701px) and (max-height:650px){
+ .app{padding-block:5px!important}
+ #board,.game-core:has(#board) .actions{width:min(100%,calc(100dvh - 260px))!important}
+}
