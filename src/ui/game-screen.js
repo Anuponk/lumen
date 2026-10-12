@@ -419,7 +419,7 @@ function showShareToast(t){let e=document.createElement("div");e.className="shar
 function successAchievement(){
  const canonicalQuest=canonicalActiveQuest??canonicalQuestForLegacy(levelIndex);
  const canonicalNumber=canonicalQuest?.ordinal??levelIndex+1;
- const generated=generatedQuestProgress(levelIndex),ch=generated?{name:generated.constellationLabel}:CONSTELLATIONS[chapterForGrid(levelIndex)],legacyRange=generated?{quests:mapConstellationRange(24+Math.floor((levelIndex-196)/10)).quests,count:generated.total}:constellationGridRange(chapterForGrid(levelIndex));
+ const generated=generatedQuestProgress(levelIndex);let ch=generated?{name:generated.constellationLabel}:CONSTELLATIONS[chapterForGrid(levelIndex)],legacyRange=generated?{quests:mapConstellationRange(24+Math.floor((levelIndex-196)/10)).quests,count:generated.total}:constellationGridRange(chapterForGrid(levelIndex));
  const constellationQuests=canonicalQuest?canonicalQuestList().filter(q=>q.constellationId===canonicalQuest.constellationId):null;
  const range=constellationQuests?{count:constellationQuests.length}:legacyRange;
  const pos=canonicalQuest?.position??Math.max(1,legacyRange.quests.indexOf(levelIndex)+1);
