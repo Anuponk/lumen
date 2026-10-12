@@ -36,8 +36,8 @@ export const BADGE_COOLDOWN_MS=15*60*1000;
 export function badgeCooldownRemaining(performance,now=Date.now()){
  const last=Date.parse(performance?.lastQualifiedAt||'');
  if(Number.isFinite(last))return Math.max(0,BADGE_COOLDOWN_MS-(now-last));
- // Old daily marker has no reliable timestamp: preserve safety until the next local day.
- return performance?.lastQualifiedDay===localCalendarDay(new Date(now))?BADGE_COOLDOWN_MS:0;
+ // Legacy day-only records cannot establish a 15-minute window; do not lock them all day.
+ return 0;
 }
 export function badgeCooldownLabel(ms){return ms>0?`Réessaie dans ${Math.ceil(ms/60000)} min`:''}
 
