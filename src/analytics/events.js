@@ -53,7 +53,7 @@ function shouldTrackSessionStart(){
 async function trackLumenEvent(name,puzzleId=null,properties={}){
  touchSession();
  const lumenSupabase=getClient();
- if(!lumenSupabase)return;
+ if(!lumenSupabase||trafficType==="automated_test")return;
  if(name==="session_start"&&!shouldTrackSessionStart())return;
  properties={...properties,traffic_type:trafficType};
  if(testRunId)properties.test_run_id=testRunId;
