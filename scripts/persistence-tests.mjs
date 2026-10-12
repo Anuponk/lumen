@@ -165,6 +165,6 @@ console.log(JSON.stringify({baseline,localFixtures:4,cloudFixtures:scenarios.len
  assert.match(migration,/from lumen\.users lu join auth\.users u/,'admin account list must be scoped to registered Lumen users');
  assert.match(migration,/lumen_register_user/,'authenticated Lumen users must be registered explicitly');
  const ui=fs.readFileSync('src/ui/game-screen.js','utf8');
- assert.equal((ui.match(/signIn\(new URL\("\/", location\.origin\)\.toString\(\)\)/g)||[]).length,2,'Both Google sign-in entry points must return to the current origin (Vercel or o2switch)');
+ assert.equal((ui.match(/signIn\(new URL\("\/", location\.origin\)\.toString\(\)\)/g)||[]).length,1,'The single Google sign-in entry point must return to the current origin');
  assert.doesNotMatch(migration,/insert into lumen\.users[\s\S]*from auth\.users\s+u\s*(?:;|$)/i,'SoldeZen-only auth users must never be bulk-registered as Lumen users');
 }

@@ -254,11 +254,9 @@ function syncMobileAuthUI(){
  if(!signedIn){const editor=document.getElementById("accountProfileEditor");if(editor)editor.dataset.open="false"}
  show("editAccountProfile",signedIn);
  show("accountProfileEditor",signedIn&&document.getElementById("accountProfileEditor")?.dataset.open==="true");
- show("mobileCreateAccount",!signedIn);
- show("mobileEmailLogin",false);
  show("guestSaveExplainer",!signedIn);
  status.textContent=signedIn?(lumenNickname||"Progression synchronisée"):"Progression enregistrée sur cet appareil";
- action.textContent=signedIn?"Déconnexion":"Se connecter";
+ action.textContent=signedIn?"Déconnexion":"Se connecter / Créer un compte";
  icon.textContent=signedIn?"●":"♙";
  icon.setAttribute("aria-label",signedIn?"Compte connecté":"Compte invité");
  action.disabled=!signedIn&&!lumenSupabase;
@@ -326,15 +324,13 @@ function setupMobileAuth(){
  const editor=document.getElementById("accountProfileEditor");
  const edit=document.getElementById("editAccountProfile");if(edit)edit.onclick=()=>{if(!lumenUser||!editor)return;editor.dataset.open="true";syncMobileAuthUI();document.getElementById("nicknameInput")?.focus()};
  const closeProfile=document.getElementById("closeAccountProfile");if(closeProfile)closeProfile.onclick=()=>{if(!editor)return;editor.dataset.open="false";syncMobileAuthUI()};
- const create=document.getElementById("mobileCreateAccount");if(create)create.onclick=openAccountFromMenu;
- const emailLogin=document.getElementById("mobileEmailLogin");if(emailLogin)emailLogin.onclick=()=>{menu.hidden=true;const offer=document.getElementById("accountOptin");if(offer)offer.hidden=false;openEmailAccountOffer("login")};
  const qaTools=document.getElementById("qaAccountTools");if(qaTools)qaTools.hidden=!qaActive;
  document.addEventListener("click",()=>{if(!menu.hidden)menu.hidden=true});
  action.onclick=async()=>{
    menu.hidden=true;
    if(!lumenSupabase)return;
    if(lumenUser){await signOut();return}
-   const result=await signIn(new URL("/", location.origin).toString());if(!result.ok&&result.reason==="oauth")alert("Connexion impossible : "+result.error.message);
+   openEmailAccountOffer("signup");
  };
  const qaSwitch=document.getElementById("qaAccountSwitch"),qaReset=document.getElementById("qaAccountReset");
  const adminUnlimited=document.getElementById("adminUnlimitedShards");
