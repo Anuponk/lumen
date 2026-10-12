@@ -1210,7 +1210,7 @@ function celebrateLearningReplaySuccess(){
  setLearningReplaySuccessMode(true);document.getElementById("successOverlay").classList.add("show");
 }
 
-function renderSuccessRewards(stars){let el=document.getElementById("successRewards");if(!el)return;let run=performanceRun(levelIndex),rewards=[];if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});if(run.qualifying&&run.autonomy)rewards.push({cls:"autonomy",icon:performanceIcon("autonomy"),label:"Autonomie"});if(run.qualifying&&run.speed)rewards.push({cls:"speed",icon:performanceIcon("speed"),label:"Rapidité"});if(run.qualifying&&run.noError)rewards.push({cls:"no-error",icon:performanceIcon("noError"),label:"Sans erreur"});if(run.qualifying&&run.mastery)rewards.push({cls:"mastery",icon:performanceIcon("mastery"),label:"Maîtrise"});el.innerHTML=rewards.map((r,i)=>'<span class="success-reward '+r.cls+'" style="--reward-delay:'+(220+i*210)+'ms"><span>'+r.icon+'</span><span>'+r.label+'</span></span>').join("");el.classList.toggle("mastery-earned",!!run.mastery)}
+function renderSuccessRewards(stars,savedPerformance,priorBadges={}){let el=document.getElementById("successRewards");if(!el)return;const run=savedPerformance?.run||performanceRun(levelIndex),earned=savedPerformance?.badges||{},qualifying=!!savedPerformance?.qualifying,rewards=[];if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});if(qualifying&&earned.autonomy&&!priorBadges.autonomy)rewards.push({cls:"autonomy",icon:performanceIcon("autonomy"),label:"Autonomie"});if(qualifying&&earned.speed&&!priorBadges.speed)rewards.push({cls:"speed",icon:performanceIcon("speed"),label:"Rapidité"});if(qualifying&&earned.noError&&!priorBadges.noError)rewards.push({cls:"no-error",icon:performanceIcon("noError"),label:"Sans erreur"});if(qualifying&&earned.mastery&&!priorBadges.mastery)rewards.push({cls:"mastery",icon:performanceIcon("mastery"),label:"Maîtrise"});el.innerHTML=rewards.map((r,i)=>'<span class="success-reward '+r.cls+'" style="--reward-delay:'+(220+i*210)+'ms"><span>'+r.icon+'</span><span>'+r.label+'</span></span>').join("");el.classList.toggle("mastery-earned",!!qualifying&&!!earned.mastery&&!priorBadges.mastery)}
 // Canonical achievements use stable-ID cloud CAS, never the historical
 // puzzle_id RPC or the old `solved[levelIndex]` reward calculation.
 async function celebrateCanonicalSuccess(){
@@ -1289,7 +1289,7 @@ async function celebrateSuccess(){
  const autonomyShard=grantAutonomyMilestone(lumenProgress,{firstCompletion,autonomy:!!savedPerformance.run.autonomy});
  const dailyQualified=qualifiesDailyActivity({firstCompletion,performanceQualifying:savedPerformance.qualifying,priorBadges,earnedBadges:savedPerformance.badges});
  if(dailyQualified)completeDaily();
- renderSuccessRewards(earnedThisRun);renderSuccessAchievement();
+ renderSuccessRewards(earnedThisRun,savedPerformance,priorBadges);renderSuccessAchievement();
  if(!usedHintThisGame){
    if(!lumenProgress.noHint)lumenProgress.noHint={};
    lumenProgress.noHint[levelIndex]=1;
