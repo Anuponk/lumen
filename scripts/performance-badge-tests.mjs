@@ -47,4 +47,17 @@ test("calendar qualification key changes at local midnight",()=>{
  assert.equal(localCalendarDay(new Date(2026,9,4,0,1)),"2026-10-04");
 });
 
+
+test("early quests unlock badge families from global progression for NEW attempts",()=>{
+ for(const i of [0,1,2,3,4]){
+  const run=performanceAttempt({questIndex:i,unlockedQuestCount:6,seconds:40});
+  assert.deepEqual(run.eligibility,{autonomy:true,speed:true,noError:true,mastery:true});
+  assert.equal(run.mastery,true);
+  assert.equal(performanceAttempt({questIndex:i,unlockedQuestCount:6,seconds:60}).speed,false);
+ }
+ assert.equal(performanceAttempt({questIndex:0,unlockedQuestCount:2,seconds:30}).speed,false);
+ assert.equal(performanceAttempt({questIndex:0,unlockedQuestCount:3,seconds:30}).speed,true);
+ assert.equal(performanceAttempt({questIndex:0,unlockedQuestCount:5,seconds:30}).mastery,false);
+});
+
 console.log(JSON.stringify({performanceBadgeTests:cases.length,cases},null,2));
