@@ -811,3 +811,15 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
   width:min(100%,calc(100dvh - 315px))!important;
  }
 }
+
+
+/* #315: the onboarding coach cannot occupy the bottom action row.
+   At 360x640 the buttons extend to y=609 while the old fixed coach
+   started at y=600. Reserve the gap ABOVE the square board instead. */
+@media(max-width:700px) and (max-height:700px){
+ .learning-board-wrap.is-learning .scripted-learn{
+  position:fixed!important;top:110px!important;bottom:auto!important;
+  max-height:70px!important;overflow-y:auto!important;
+  overscroll-behavior:contain;
+ }
+}
