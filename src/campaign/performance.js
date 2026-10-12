@@ -25,8 +25,8 @@ export function localCalendarDay(now=new Date()){
  return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");
 }
 
-export function performanceAttempt({questIndex,seconds,assistanceUsed=false,mistakeCommitted=false}){
- const eligibility=performanceEligibility(questIndex),speed=eligibility.speed&&seconds<speedTargetSeconds(questIndex);
+export function performanceAttempt({questIndex,seconds,assistanceUsed=false,mistakeCommitted=false,unlockedQuestCount=Number(questIndex)+1}){
+ const eligibility=performanceEligibility(questIndex,unlockedQuestCount),speed=eligibility.speed&&seconds<speedTargetSeconds(questIndex);
  const autonomy=eligibility.autonomy&&!assistanceUsed;
  const noError=eligibility.noError&&!assistanceUsed&&!mistakeCommitted;
  return {eligibility,autonomy,speed,noError,mastery:eligibility.mastery&&autonomy&&speed&&noError,targetSeconds:speedTargetSeconds(questIndex)};
