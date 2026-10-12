@@ -1,7 +1,7 @@
 import {readFileSync} from "node:fs";
 import assert from 'node:assert/strict';
 import {CONTENT_PACKS,BASE_PACK_ID,BASE_CONSTELLATIONS,contentMapModel,hasPackAccess,preserveStartedAdventureAccess} from '../src/campaign/content.js';
-import {skySelection,constellationUnlocked,skyPickerVisible,swipeAdventureTarget} from '../src/ui/sky-navigation.js';
+import {skySelection,constellationUnlocked,skyPickerVisible,swipeAdventureTarget,swipeConstellationTarget} from '../src/ui/sky-navigation.js';
 assert.equal(skyPickerVisible(contentMapModel()),false);
 assert.equal(skyPickerVisible({skies:[{id:'only'}]}),false);
 assert.equal(skyPickerVisible({skies:[{id:'a'},{id:'b'}]}),true);
@@ -70,6 +70,20 @@ assert.deepEqual(swipeAdventureTarget({...swipeCurrent,adventure:swipeSky.packs[
 assert.deepEqual(swipeAdventureTarget({...swipeCurrent,adventure:swipeSky.packs[1],page:1},1),{pack:swipeSky.packs[2],page:0,changedAdventure:true,locked:true});
 assert.equal(swipeAdventureTarget({...swipeCurrent,adventure:swipeSky.packs[2],page:1},1),null,"Last adventure has no wrap forwards");
 assert.equal(swipeAdventureTarget(swipeCurrent,0),null);
+
+
+const detailSky={id:'sky',packs:[
+ {id:'one',accessible:true,constellations:[{id:'a',accessible:true},{id:'b',accessible:true}]},
+ {id:'two',accessible:true,constellations:[{id:'c',accessible:true},{id:'d',accessible:true}]},
+ {id:'locked',accessible:false,constellations:[{id:'e',accessible:false}]}
+]};
+const detailState={sky:detailSky,adventure:detailSky.packs[0]};
+assert.equal(swipeConstellationTarget(detailState,detailSky.packs[0].constellations[0],-1),null);
+assert.equal(swipeConstellationTarget(detailState,detailSky.packs[0].constellations[0],1).entry.id,'b');
+assert.equal(swipeConstellationTarget(detailState,detailSky.packs[0].constellations[1],1).entry.id,'c');
+assert.equal(swipeConstellationTarget({...detailState,adventure:detailSky.packs[1]},detailSky.packs[1].constellations[0],-1).entry.id,'b');
+assert.equal(swipeConstellationTarget({...detailState,adventure:detailSky.packs[1]},detailSky.packs[1].constellations[1],1).locked,true);
+assert.equal(swipeConstellationTarget({...detailState,adventure:detailSky.packs[2]},detailSky.packs[2].constellations[0],1),null);
 
 console.log(JSON.stringify({skyNavigation:true,accessPreservation:true,constellationUnlock:true,pages:[1,6,7,12,103],multipleSkies:true,accessRefresh:true}));
 
