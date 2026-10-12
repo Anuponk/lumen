@@ -3,7 +3,9 @@
 import fs from "node:fs";
 import assert from "node:assert/strict";
 import {buildMigrationPlan,migrateLegacySolved} from "./issue-222-migration-plan.mjs";
-import {playableQuest} from "../src/campaign/playable-quests.js";
+import {playableQuest,playableQuestCount} from "../src/campaign/playable-quests.js";
+import {canonicalQuestList,canonicalQuestForLegacy,canonicalQuestByOrdinal,canonicalDisplayForLegacy} from "../src/campaign/canonical-quests.js";
+import {adminCanonicalCatalogueTree} from "../src/campaign/admin-catalogue.js";
 const staged=JSON.parse(fs.readFileSync(new URL("../content/generated/issue-222-additions.json",import.meta.url),"utf8"));
 const plan=buildMigrationPlan();
 const additions=new Map(staged.quests.map(q=>[q.id,q]));
@@ -32,6 +34,33 @@ for(const adventure of plan.adventures){
  assert.equal(quests.at(-1).ordinal,adventure.lastQuest);
  assert.equal(new Set(quests.map(q=>q.constellationId)).size,10);
 }
+// #341: production, staging migration and admin cockpit must share one catalogue.
+const live=canonicalQuestList(),admin=adminCanonicalCatalogueTree();
+assert.equal(live.length,400);
+assert.deepEqual(live.map(q=>q.ordinal),Array.from({length:400},(_,i)=>i+1));
+assert.deepEqual(live.map(q=>q.id),canonical.map(q=>q.id),"Runtime and migration quest identities diverge");
+assert.deepEqual(live.map(q=>q.constellationId),canonical.map(q=>q.constellationId),"Runtime and migration constellation assignments diverge");
+assert.equal(admin.length,4);
+for(const adventure of admin){
+ assert.equal(adventure.questCount,100,adventure.id+" must contain 100 quests");
+ assert.equal(adventure.constellations.length,10,adventure.id+" must contain 10 constellations");
+ for(const constellation of adventure.constellations){
+  assert.equal(constellation.questCount,10,constellation.id+" must contain 10 quests");
+  assert.equal(constellation.quests.length,10,constellation.id+" must expose 10 cockpit quests");
+  assert.deepEqual(constellation.quests.map(q=>q.number),live.filter(q=>q.constellationId===constellation.id).map(q=>q.ordinal));
+ }
+}
+const legacy=live.filter(q=>q.legacyIndex!==null);
+assert.equal(legacy.length,playableQuestCount());
+assert.equal(new Set(legacy.map(q=>q.legacyIndex)).size,playableQuestCount());
+for(const q of legacy){
+ assert.equal(canonicalQuestForLegacy(q.legacyIndex)?.id,q.id);
+ assert.equal(canonicalQuestByOrdinal(q.ordinal)?.id,q.id);
+ assert.equal(canonicalDisplayForLegacy(q.legacyIndex)?.number,q.ordinal);
+ assert.equal(playableQuest(q.legacyIndex)?.id,q.id,"Legacy save identity changed");
+}
+assert.equal(live.find(q=>q.legacyIndex===99)?.constellationId,"real-13","Legacy 11th quest must be rebalanced without changing save key");
+assert.equal(live.find(q=>q.id==="planned-real-13-q10")?.constellationId,"real-20","Generated quest must remain present after rebalance");
 const legacyProgress={solved:{"0":true,"78":true,"100":true,"195":true,"196":true,"295":true},badges:{"295":{speed:true}},stars:{"295":3},shards:8,entitlements:["real-adventure-04"]};
 const prior=structuredClone(legacyProgress),mapped=migrateLegacySolved(prior.solved,plan);
 assert.equal(mapped.length,6);
