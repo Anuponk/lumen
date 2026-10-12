@@ -121,7 +121,8 @@ export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit
  tabs.addEventListener('keydown',()=>swiped=false);
  let detailPointer=null,detailSwiped=false;detail.style.touchAction='pan-y';
  detail.addEventListener('pointerdown',e=>{
-  if(e.target.closest('button,input,select,a,[role="button"]'))return;
+  // Quest cards are buttons: allow the gesture to begin on them, but keep text-entry controls excluded.
+   if(e.target.closest('input,select,textarea,[contenteditable="true"]'))return;
   detailSwiped=false;detailPointer={x:e.clientX,y:e.clientY,id:e.pointerId};
  });
  detail.addEventListener('pointerup',e=>{
