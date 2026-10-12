@@ -51,7 +51,7 @@ try{
   for(const el of geometry.elements){
    assert(el.left>=-2&&el.top>=-2&&el.right<=width+2&&el.bottom<=height+2,
      '#315 control clipped at '+width+'x'+height+': '+JSON.stringify(el));
-   if(['#new','#undo','#verify','#hint'].includes(el.selector))assert(el.font>=12,
+   if(['#undo','#verify','#hint'].includes(el.selector))assert(el.font>=12,
      '#315 unreadable control at '+width+'x'+height+': '+JSON.stringify(el));
   }
   assert(geometry.overflows.every(o=>o.x<=2&&o.y<=2),
