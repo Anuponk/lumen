@@ -27,3 +27,13 @@ console.log(JSON.stringify({
   pointerCapability:true,
   responsiveCss:true
 }));
+
+
+/* #315: hard policy for the PLAY surface, not modal/dialog content. */
+assert.match(css,/play screen contract — no scrolling\/clipped controls/);
+assert.match(css,/html,body\{height:100%!important;overflow:hidden!important/);
+assert.match(css,/\.app\{overflow:hidden!important\}/);
+assert.match(css,/safe-area-inset-bottom/);
+assert.match(css,/#board,\.game-core:has\(#board\) \.actions/);
+assert.match(css,/\.actions button\{min-width:0;min-height:40px!important/);
+assert.match(css,/\.head #new\{overflow:visible;position:relative\}/);
