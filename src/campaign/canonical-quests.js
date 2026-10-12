@@ -14,17 +14,17 @@ function planSlots(packs,constellations){
   });
   while(list.length<10)list.push({id:pack.id+"-new-"+String(list.length-pack.constellationIds.length+1).padStart(2,"0"),indices:[]});
   if(list.length!==10)throw Error("Adventure constellation count differs from 10: "+pack.id);
-  const sizes=list.map(x=>x.indices.length);
-  let remaining=100-sizes.reduce((a,b)=>a+b,0);
-  if(remaining<0)throw Error("Adventure over capacity: "+pack.id);
-  while(remaining-->0){
-   let smallest=0;
-   for(let i=1;i<sizes.length;i++)if(sizes[i]<sizes[smallest])smallest=i;
-   sizes[smallest]++;
+  // The historical 11th quest of real-12 moves to real-13 without changing its save key.
+  // Its former generated counterpart keeps its stable ID when moved to real-12.
+  if(pack.id==="real-adventure-02"){
+   const from=list.find(c=>c.id==="real-12"),to=list.find(c=>c.id==="real-13");
+   if(from?.indices.length===11&&to?.indices.length===8)to.indices.push(from.indices.pop());
   }
+  const sizes=list.map(()=>10);
+  if(list.some(c=>c.indices.length>10))throw Error("Constellation exceeds ten historical quests");
   for(const [i,c] of list.entries())for(let j=0;j<sizes[i];j++){
    const legacyIndex=c.indices[j]??null;
-   const id=legacyIndex===null?`planned-${c.id}-q${String(j+1).padStart(2,"0")}`:playableQuest(legacyIndex)?.id;
+   const id=legacyIndex===null?(c.id==="real-12"&&j===9?"planned-real-13-q10":`planned-${c.id}-q${String(j+1).padStart(2,"0")}`):playableQuest(legacyIndex)?.id;
    if(!id)throw Error("Missing legacy quest index "+legacyIndex);
    records.push({id,ordinal:records.length+1,legacyIndex,packId:pack.id,constellationId:c.id,position:j+1});
   }
