@@ -165,6 +165,7 @@ function skipTutorialReplay(){
  skipFirstGridGuidance();
 }
 const {renderTutorial,openTutorial,closeTutorial,setupTutorial}=createTutorial(()=>levelIndex<=1,{tutorialSeenKey:qaActive?"lumenQaTutorialSeen":"lumenTutorialSeen",canSkip:()=>levelIndex===0||tutorialCompletedProof()&&!qaFresh,onSkip:skipTutorialReplay});
+let authSessionPending=true;
 let lumenSupabase=null,lumenUser=null,lumenCloudReady=false,lumenEntitlements=[],lumenCapabilities=[];
 try{lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY)}catch(e){console.warn("LUMEN cloud unavailable",e)}
 let lumenNickname="";
@@ -174,7 +175,7 @@ let accountEmailMode="signup";
 function accountOfferKey(name){return qaKey("lumenAccountOffer"+name)}
 function showAccountSavedConfirmation(){const toast=document.getElementById("accountSavedToast");if(!toast)return;toast.hidden=false;setTimeout(()=>{toast.hidden=true},2200)}
 function accountOfferMilestone(){return solvedCount()>=5?5:0}
-function accountRequired(){return !qaActive&&!socialChallenge&&((!!lumenUser&&!cloudProfileReady)||(!lumenUser&&solvedCount()>=5))}
+function accountRequired(){return !authSessionPending&&!qaActive&&!socialChallenge&&((!!lumenUser&&!cloudProfileReady)||(!lumenUser&&solvedCount()>=5))}
 function maybeOfferAccount(){
  if(!accountRequired())return false;
  const box=document.getElementById("accountOptin");
@@ -274,6 +275,8 @@ function updateAdminTools(){
  if(cockpit)cockpit.hidden=!analytics;
 }
 function updateAuthUI(){
+ authSessionPending=false;
+ const initialControls=document.getElementById("authSessionControls");if(initialControls)initialControls.hidden=false;
  const wasOfferPending=accountOfferSignInPending||(()=>{try{return sessionStorage.getItem("lumenAccountOfferSignInPending")==="1"}catch(_){return false}})();
  const u=document.getElementById("authUser"),login=document.getElementById("authLogin"),logout=document.getElementById("authLogout");
  if(!u||!login||!logout)return;
