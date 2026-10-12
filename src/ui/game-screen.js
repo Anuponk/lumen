@@ -1895,7 +1895,10 @@ function renderMap(){
     button.className="puzzle-card"+(solved?" done":"")+(available&&!solved?" current":"")+(!available&&!solved?" locked":"");
     button.dataset.questId=quest.id;
     button.title="Quête "+quest.ordinal+(solved?(available?" · terminée, rejouable":" · terminée, compte à synchroniser"):available?" · disponible":(!qaActive&&(!lumenUser||!cloudProfileReady)?" · connexion et synchronisation requises":" · termine d’abord les quêtes précédentes"));
-    button.innerHTML=legacy!==null&&solved?performanceBadges(legacy):solved?canonicalPerformanceBadges(quest.id):available?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+quest.ordinal+'</span>':'<span class="puzzle-new-number">Quête '+quest.ordinal+'</span>';
+    const lockReason=!qaActive&&(!lumenUser||!cloudProfileReady)?"Connecte-toi pour synchroniser ta progression":"Termine les quêtes précédentes";
+     button.innerHTML=legacy!==null&&solved?performanceBadges(legacy):solved?canonicalPerformanceBadges(quest.id):available?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+quest.ordinal+'</span>':'<span class="puzzle-new-icon" aria-hidden="true">🔒</span><span class="puzzle-new-number">Quête '+quest.ordinal+'</span><span class="puzzle-new-label"></span>';
+     if(!available&&!solved)button.querySelector(".puzzle-new-label").textContent=lockReason;
+     button.setAttribute("aria-label",`Quête ${quest.ordinal} · ${available?(solved?"terminée, rejouable":"disponible"):lockReason}`);
     button.disabled=!available;
     if(available)button.onclick=()=>{
      if(legacy===null){startCanonicalQuest(quest);return}

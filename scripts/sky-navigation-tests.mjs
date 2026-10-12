@@ -87,6 +87,9 @@ assert.equal(swipeConstellationTarget({...detailState,adventure:detailSky.packs[
 
 console.log(JSON.stringify({skyNavigation:true,accessPreservation:true,constellationUnlock:true,pages:[1,6,7,12,103],multipleSkies:true,accessRefresh:true}));
 
+const gameUi=readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
+assert.match(gameUi,/const lockReason=!qaActive/, "Unavailable canonical quests must show a real lock reason");
+assert.match(gameUi,/aria-hidden="true">🔒/, "Unavailable canonical quests must show a visible lock");
 const skyUi=readFileSync(new URL("../src/ui/sky-navigation.js",import.meta.url),"utf8");
 assert.match(skyUi,/skyPickerContainer\.style\.display=showSkyPicker\?\x27\x27:\x27none\x27/,"A sole sky must be hidden even if CSS overrides [hidden]");
 assert.match(skyUi,/detail\.addEventListener\(\x27pointerdown\x27/,"Detail view must handle touch-pointer swipes");
