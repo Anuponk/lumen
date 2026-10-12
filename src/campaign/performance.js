@@ -32,8 +32,17 @@ export function performanceAttempt({questIndex,seconds,assistanceUsed=false,mist
  return {eligibility,autonomy,speed,noError,mastery:eligibility.mastery&&autonomy&&speed&&noError,targetSeconds:speedTargetSeconds(questIndex)};
 }
 
+export const BADGE_COOLDOWN_MS=15*60*1000;
+export function badgeCooldownRemaining(performance,now=Date.now()){
+ const last=Date.parse(performance?.lastQualifiedAt||'');
+ if(Number.isFinite(last))return Math.max(0,BADGE_COOLDOWN_MS-(now-last));
+ // Old daily marker has no reliable timestamp: preserve safety until the next local day.
+ return performance?.lastQualifiedDay===localCalendarDay(new Date(now))?BADGE_COOLDOWN_MS:0;
+}
+export function badgeCooldownLabel(ms){return ms>0?`Réessaie dans ${Math.ceil(ms/60000)} min`:''}
+
 export function isQualifyingDay(performance,day=localCalendarDay()){
- return !!Object.values(performanceEligibility(performance?.questIndex??0)).some(Boolean)&&performance?.lastQualifiedDay!==day;
+ return !!Object.values(performanceEligibility(performance?.questIndex??0)).some(Boolean)&&badgeCooldownRemaining(performance)===0;
 }
 
 export function mergeEarnedBadges(prior={},run={},eligibility={}){
