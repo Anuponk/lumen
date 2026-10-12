@@ -821,3 +821,13 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
   overscroll-behavior:contain;
  }
 }
+
+/* #315: ultra-short portrait screens need to reserve the actual bottom action row.
+   The previous 278px budget let controls fall below 320x568 after browser chrome.
+   Keep text and controls at readable sizes rather than scaling the app. */
+@media (max-width:700px) and (max-height:600px) and (orientation:portrait){
+ #board,.game-core:has(#board) .actions,
+ #board[data-size="5"],.game-core:has(#board[data-size="5"]) .actions{
+  width:min(100%,calc(100dvh - 328px - env(safe-area-inset-top) - env(safe-area-inset-bottom)))!important;
+ }
+}
