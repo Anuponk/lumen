@@ -24,7 +24,7 @@ function planSlots(packs,constellations){
   if(list.some(c=>c.indices.length>10))throw Error("Constellation exceeds ten historical quests");
   for(const [i,c] of list.entries())for(let j=0;j<sizes[i];j++){
    const legacyIndex=c.indices[j]??null;
-   const id=legacyIndex===null?(c.id==="real-20"&&j===9?"planned-real-13-q10":`planned-${c.id}-q${String(j+1).padStart(2,"0")}`):playableQuest(legacyIndex)?.id;
+   const id=legacyIndex===null?(c.id==="real-13"&&j===9?"planned-real-13-q09":c.id==="real-20"&&j===9?"planned-real-13-q10":`planned-${c.id}-q${String(j+1).padStart(2,"0")}`):playableQuest(legacyIndex)?.id;
    if(!id)throw Error("Missing legacy quest index "+legacyIndex);
    records.push({id,ordinal:records.length+1,legacyIndex,packId:pack.id,constellationId:c.id,position:j+1});
   }
