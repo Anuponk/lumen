@@ -49,7 +49,7 @@ export function buildMigrationPlan({packs=CONTENT_PACKS,constellations=CONTENT_C
     const quest=originalIndex===null?null:getQuest(originalIndex);
     if(originalIndex!==null&&(!quest||quest.index!==originalIndex))throw Error("Missing playable quest "+originalIndex);
     const stableId=quest?.id??null;
-    const proposedQuestId=stableId??(c.id==="real-20"&&position===9?"planned-real-13-q10":`planned-${c.id}-q${String(position+1).padStart(2,"0")}`);
+    const proposedQuestId=stableId??(c.id==="real-13"&&position===9?"planned-real-13-q09":c.id==="real-20"&&position===9?"planned-real-13-q10":`planned-${c.id}-q${String(position+1).padStart(2,"0")}`);
     if(stableId){
      if(currentIds.has(stableId))throw Error("Duplicate stable quest identity "+stableId);
      currentIds.add(stableId);
