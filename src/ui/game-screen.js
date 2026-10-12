@@ -417,8 +417,13 @@ function lumenReferralCode(){return lumenUser?.id?("u"+lumenUser.id.replace(/-/g
 function lumenShareUrl(){const u=new URL(location.origin+location.pathname);u.searchParams.set("ref",lumenReferralCode());return u.toString()}
 function showShareToast(t){let e=document.createElement("div");e.className="share-toast";e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),1800)}
 function successAchievement(){
- const canonicalNumber=canonicalDisplayForLegacy(levelIndex)?.number??levelIndex+1;
- const generated=generatedQuestProgress(levelIndex),ch=generated?{name:generated.constellationLabel}:CONSTELLATIONS[chapterForGrid(levelIndex)],range=generated?{quests:mapConstellationRange(24+Math.floor((levelIndex-196)/10)).quests,count:generated.total}:constellationGridRange(chapterForGrid(levelIndex)),pos=Math.max(1,range.quests.indexOf(levelIndex)+1),run=performanceRun(levelIndex),secs=activeGameSeconds(),solved=Math.max(solvedCount(),levelIndex+1);
+ const canonicalQuest=canonicalActiveQuest??canonicalQuestForLegacy(levelIndex);
+ const canonicalNumber=canonicalQuest?.ordinal??levelIndex+1;
+ const generated=generatedQuestProgress(levelIndex),ch=generated?{name:generated.constellationLabel}:CONSTELLATIONS[chapterForGrid(levelIndex)],legacyRange=generated?{quests:mapConstellationRange(24+Math.floor((levelIndex-196)/10)).quests,count:generated.total}:constellationGridRange(chapterForGrid(levelIndex));
+ const constellationQuests=canonicalQuest?canonicalQuestList().filter(q=>q.constellationId===canonicalQuest.constellationId):null;
+ const range=constellationQuests?{count:constellationQuests.length}:legacyRange;
+ const pos=canonicalQuest?.position??Math.max(1,legacyRange.quests.indexOf(levelIndex)+1);
+ const run=performanceRun(levelIndex),secs=activeGameSeconds(),solved=Math.max(solvedCount(),levelIndex+1);
  let kicker="QUÊTE "+canonicalNumber+" ACCOMPLIE",main=(ch?.name||"Constellation")+" · "+pos+"/"+range.count+" quêtes",detail=solved+"/"+campaignQuestCount()+" quêtes accomplies";
  const milestone=generated?null:milestoneFor(levelIndex);
  if(milestone?.kind==="boss"){kicker="CONSTELLATION COMPLÉTÉE";main=ch.name;detail=solved+"/"+campaignQuestCount()+" quêtes accomplies · "+skyStarsEarned()+" étoiles allumées"}
