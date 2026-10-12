@@ -131,7 +131,8 @@ try {
     await sleep(60);
     const q2Layout=await geometry();
     assert(q2Layout.coach.top>=0&&q2Layout.coach.bottom<=q2Layout.height+1,'Quest 2 coach fits the viewport');
-    assert(q2Layout.coach.top>=q2Layout.actions.bottom||q2Layout.coach.right<=q2Layout.actions.left||q2Layout.coach.left>=q2Layout.actions.right,'Quest 2 coach leaves controls visible: '+JSON.stringify(q2Layout));
+    assert(q2Layout.coach.bottom<=q2Layout.actions.top||q2Layout.coach.top>=q2Layout.actions.bottom||q2Layout.coach.right<=q2Layout.actions.left||q2Layout.coach.left>=q2Layout.actions.right,'Quest 2 coach leaves controls visible: '+JSON.stringify(q2Layout));
+    assert(q2Layout.coach.bottom<=q2Layout.board.top||q2Layout.coach.top>=q2Layout.board.bottom||q2Layout.coach.right<=q2Layout.board.left||q2Layout.coach.left>=q2Layout.board.right,'Quest 2 coach leaves the puzzle visible: '+JSON.stringify(q2Layout));
     // Resume on an existing cross and move outside the lesson after finishing it.
     await drag([[0,2],[0,3],[0,4],[1,4],[0,0]],viewport.mobile);
     board=await snapshot();
