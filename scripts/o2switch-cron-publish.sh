@@ -37,23 +37,48 @@ if [[ -f "$CI_CHECK_MARKER" ]]; then
  fi
 fi
 touch "$CI_CHECK_MARKER"
-# The merged SHA must have passed the GitHub push/main workflow, not just a PR.
-LUMEN_SHA="$SHA" python3 - <<'PY'
-import json,os,sys,urllib.request
-sha=os.environ["LUMEN_SHA"]
+# Publish only a successful main-workflow revision that is an ancestor of the
+# fetched main HEAD. If the newest commits have not been validated yet, publish
+# the newest verified ancestor; never publish a failed or unverified commit.
+# This prevents rapid successive merges from indefinitely blocking releases.
+VALIDATED_CANDIDATES="$(python3 - <<'PY'
+import json,sys,urllib.request
 url="https://api.github.com/repos/Anuponk/lumen/actions/workflows/quality.yml/runs?branch=main&per_page=100"
 request=urllib.request.Request(url,headers={"Accept":"application/vnd.github+json","User-Agent":"lumen-o2switch-publisher"})
 try:
-    with urllib.request.urlopen(request,timeout=20) as r: runs=json.load(r)["workflow_runs"]
-except Exception as e: sys.exit("GitHub CI verification failed: "+str(e))
-matches=[r for r in runs if r.get("head_sha")==sha and r.get("event") in ("push","workflow_dispatch","schedule") and r.get("head_branch")=="main"]
-if not any(r.get("status")=="completed" and r.get("conclusion")=="success" for r in matches):
-    if not matches or any(r.get("status")!="completed" for r in matches):
-        print("CI still pending for main SHA "+sha)
-        sys.exit(75)
-    sys.exit("CI failed for exact main SHA "+sha)
-print("CI verified:",sha)
+    with urllib.request.urlopen(request,timeout=20) as response:
+        runs=json.load(response)["workflow_runs"]
+except Exception as e:
+    sys.exit("GitHub CI verification failed: "+str(e))
+for run in runs:
+    sha=run.get("head_sha","")
+    if (len(sha)==40 and all(c in "0123456789abcdef" for c in sha.lower())
+        and run.get("status")=="completed" and run.get("conclusion")=="success"
+        and run.get("event") in ("push","workflow_dispatch","schedule")
+        and run.get("head_branch")=="main"):
+        print(sha)
 PY
+)"
+MAIN_SHA="$SHA"
+DEPLOYED_SHA="$(cat "$TARGET/.lumen-release-sha" 2>/dev/null || true)"
+SHA=""
+while IFS= read -r candidate; do
+ [[ -n "$candidate" ]] || continue
+ git cat-file -e "$candidate^{commit}" 2>/dev/null || continue
+ git merge-base --is-ancestor "$candidate" "$MAIN_SHA" || continue
+ if [[ "$DEPLOYED_SHA" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "$DEPLOYED_SHA^{commit}" 2>/dev/null; then
+   if [[ "$candidate" == "$DEPLOYED_SHA" ]] || git merge-base --is-ancestor "$candidate" "$DEPLOYED_SHA"; then
+     continue
+   fi
+ fi
+ if [[ -z "$SHA" ]] || git merge-base --is-ancestor "$SHA" "$candidate"; then SHA="$candidate"; fi
+done <<< "$VALIDATED_CANDIDATES"
+if [[ -z "$SHA" ]]; then
+ if [[ "$DEPLOYED_SHA" == "$MAIN_SHA" ]]; then echo "Already deployed $MAIN_SHA"; exit 0; fi
+ echo "No newer verified main commit available yet; latest main $MAIN_SHA" 
+ exit 75
+fi
+echo "CI verified revision $SHA (latest main $MAIN_SHA)"
 if [[ -f "$TARGET/.lumen-release-sha" && "$(cat "$TARGET/.lumen-release-sha")" == "$SHA" ]]; then
  echo "Already deployed $SHA"; exit 0
 fi
@@ -63,12 +88,12 @@ if [[ ! -d "$RELEASE" ]]; then
  TMP="$(mktemp -d "$RELEASES/.staging.XXXXXXXX")"
  trap 'rm -rf "$TMP"' EXIT
  for asset in index.html sw.js manifest.webmanifest icon.svg icon-maskable.svg; do
-   [[ -s "$asset" ]] || { echo "Missing asset $asset"; exit 1; }
-   cp -p "$asset" "$TMP/$asset"
+   git cat-file -e "$SHA:$asset" || { echo "Missing verified asset $asset"; exit 1; }
+   git show "$SHA:$asset" > "$TMP/$asset"
  done
  for dir in src content; do
-   [[ -d "$dir" ]] || { echo "Missing $dir"; exit 1; }
-   cp -R "$dir" "$TMP/$dir"
+   git cat-file -e "$SHA:$dir" || { echo "Missing verified directory $dir"; exit 1; }
+   git archive "$SHA" "$dir" | tar -xf - -C "$TMP"
  done
  # Stamp the immutable release version in the staged HTML only.
  LUMEN_SHA="$SHA" LUMEN_TARGET="$TMP" python3 - <<'PY'
