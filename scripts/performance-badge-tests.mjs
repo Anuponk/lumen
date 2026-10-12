@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt,mergeEarnedBadges} from "../src/campaign/performance.js";
+import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt,mergeEarnedBadges,performanceCooldownRemainingMs,performanceCooldownMessage,PERFORMANCE_QUALIFICATION_COOLDOWN_MS} from "../src/campaign/performance.js";
 
 const cases=[];
 function test(name,fn){fn();cases.push(name)}
@@ -58,6 +58,30 @@ test("early quests unlock badge families from global progression for NEW attempt
  assert.equal(performanceAttempt({questIndex:0,unlockedQuestCount:2,seconds:30}).speed,false);
  assert.equal(performanceAttempt({questIndex:0,unlockedQuestCount:3,seconds:30}).speed,true);
  assert.equal(performanceAttempt({questIndex:0,unlockedQuestCount:5,seconds:30}).mastery,false);
+});
+
+test("15-minute eligibility boundaries and explanatory messages",()=>{
+ const t=Date.parse("2026-10-12T22:00:00.000Z"),p={lastQualifiedAt:new Date(t).toISOString()};
+ assert.equal(PERFORMANCE_QUALIFICATION_COOLDOWN_MS,900000);
+ assert.equal(performanceCooldownRemainingMs(p,t),900000);
+ assert.equal(performanceCooldownRemainingMs(p,t+60000),840000);
+ assert.equal(performanceCooldownRemainingMs(p,t+899000),1000);
+ assert.equal(performanceCooldownRemainingMs(p,t+900000),0);
+ assert.equal(performanceCooldownRemainingMs(p,t+3600000),0);
+ assert.equal(performanceCooldownMessage(900000),"Tu pourras retenter de gagner des badges dans 15 minutes.");
+ assert.equal(performanceCooldownMessage(8*60000),"Réessaie dans 8 min");
+ assert.equal(performanceCooldownMessage(0),"");
+});
+test("per-quest independence, midnight and old save compatibility",()=>{
+ const t=Date.parse("2026-10-12T23:59:00.000Z");
+ const quest1={lastQualifiedAt:new Date(t).toISOString()};
+ const quest2={lastQualifiedAt:new Date(t-900000).toISOString()};
+ assert.equal(performanceCooldownRemainingMs(quest1,t+2*60000),780000);
+ assert.equal(performanceCooldownRemainingMs(quest2,t+2*60000),0);
+ const day=localCalendarDay(new Date(t));
+ assert.equal(performanceCooldownRemainingMs({lastQualifiedDay:day},t),900000);
+ assert.equal(performanceCooldownRemainingMs({},t),0);
+ assert.equal(performanceCooldownRemainingMs({lastQualifiedAt:new Date(t).toISOString()},t-1000),900000);
 });
 
 console.log(JSON.stringify({performanceBadgeTests:cases.length,cases},null,2));
