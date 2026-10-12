@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {createCampaign} from "../src/campaign/progression.js";
-import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt,mergeEarnedBadges} from "../src/campaign/performance.js";
+import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt,mergeEarnedBadges,badgeCooldownRemaining,BADGE_COOLDOWN_MS} from "../src/campaign/performance.js";
 
 const cases=[];
 function test(name,fn){fn();cases.push(name)}
@@ -65,8 +65,8 @@ test("campaign save grants unlocked early badges only on a new qualifying replay
  const solved=Object.fromEntries(Array.from({length:6},(_,i)=>[i,1]));
  for(const i of [0,1,2,3,4]){
   const progress={solved,performances:{},stars:{},badges:{}};
-  let seconds=40,assistanceUsed=false;
-  const campaign=createCampaign(()=>progress,()=>{},()=>({activeGameSeconds:()=>seconds,assistanceUsed,mistakeCommitted:false,qualifying:true}));
+  let seconds=40,assistanceUsed=false,qualifying=true;
+  const campaign=createCampaign(()=>progress,()=>{},()=>({activeGameSeconds:()=>seconds,assistanceUsed,mistakeCommitted:false,qualifying}));
   const before=JSON.stringify(progress.performances);
   const preview=campaign.performanceRun(i);
   assert.equal(JSON.stringify(progress.performances),before,"Preview must not award historical badges");
@@ -77,6 +77,7 @@ test("campaign save grants unlocked early badges only on a new qualifying replay
   assert.equal(progress.performances[i].version,3);
   // A second same-day attempt must not award new badges, even if performance improves.
   progress.performances[i].badges={autonomy:false,speed:false,noError:false,mastery:false};
+   qualifying=false;
   const second=campaign.savePerformance(i,1);
   assert.equal(second.qualifying,false);
   assert.deepEqual(second.badges,{autonomy:false,speed:false,noError:false,mastery:false});
@@ -87,6 +88,17 @@ test("first-time tutorial players remain restricted until the global unlock",()=
  const campaign=createCampaign(()=>progress,()=>{},()=>({activeGameSeconds:()=>30,assistanceUsed:false,mistakeCommitted:false,qualifying:true}));
  assert.deepEqual(campaign.performanceRun(0).eligibility,{autonomy:false,speed:false,noError:false,mastery:false});
  assert.deepEqual(campaign.savePerformance(0,1).badges,{autonomy:false,speed:false,noError:false,mastery:false});
+});
+
+test("15 minute badge cooldown boundaries and midnight",()=>{
+ const base=Date.parse("2026-10-12T23:59:00Z"),p={lastQualifiedAt:new Date(base).toISOString(),lastQualifiedDay:"2026-10-12"};
+ assert.equal(BADGE_COOLDOWN_MS,900000);
+ assert.equal(badgeCooldownRemaining(p,base),900000);
+ assert.equal(badgeCooldownRemaining(p,base+14*60000+59000),1000);
+ assert.equal(badgeCooldownRemaining(p,base+900000),0);
+ assert.equal(badgeCooldownRemaining(p,base+960000),0);
+ assert.equal(badgeCooldownRemaining({lastQualifiedAt:new Date(base).toISOString()},base+120000),780000);
+ assert.equal(badgeCooldownRemaining(null,base),0);
 });
 
 console.log(JSON.stringify({performanceBadgeTests:cases.length,cases},null,2));
