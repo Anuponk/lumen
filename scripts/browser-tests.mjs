@@ -25,6 +25,44 @@ try{
  await evaluate('lumenDiagnostics.setupQuest(2)');
  await acknowledgeLearningMilestones(evaluate);
  console.log('browser-test: setup-quest:done');
+ // #315: detect clipped game controls and accidental document/game scrolling.
+ const responsiveViewports=[
+  [320,568,true],[375,667,true],[390,844,true],[412,732,true],
+  [768,1024,false],[1366,768,false],[1366,600,false]
+ ];
+ const responsiveResults=[],responsiveFailures=[];
+ for(const [width,height,mobile] of responsiveViewports){
+  await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});
+  await sleep(120);
+  const geometry=await evaluate(`(()=>{
+   const selectors=['#new','#undo','#verify','#hint','#board','#autoCrossWrap'];
+   const visible=node=>{const style=getComputedStyle(node);return style.display!=='none'&&style.visibility!=='hidden'&&!node.closest('[hidden]')};
+   const elements=selectors.map(selector=>{
+    const node=document.querySelector(selector);if(!node||!visible(node))return null;
+    const r=node.getBoundingClientRect(),font=parseFloat(getComputedStyle(node).fontSize);
+    return {selector,left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,font};
+   }).filter(Boolean);
+   const root=document.documentElement,app=document.querySelector('.app'),core=document.querySelector('.game-core');
+   const overflows=[['document',root],['app',app],['game-core',core]].filter(([,el])=>el).map(([name,el])=>({name,x:el.scrollWidth-el.clientWidth,y:el.scrollHeight-el.clientHeight}));
+   const cell=document.querySelector('#board .cell'),r=cell?.getBoundingClientRect();
+   return {viewport:[innerWidth,innerHeight],elements,overflows,cell:r?{w:r.width,h:r.height}:null};
+  })()`,true);
+  if(geometry.elements.length<5)responsiveFailures.push('Missing controls '+width+'x'+height+': '+JSON.stringify(geometry));
+  for(const el of geometry.elements){
+   if(!(el.left>=-2&&el.top>=-2&&el.right<=width+2&&el.bottom<=height+2))
+    responsiveFailures.push('Clipped '+width+'x'+height+': '+JSON.stringify(el));
+   if(['#undo','#verify','#hint'].includes(el.selector)&&el.font<12)
+    responsiveFailures.push('Unreadable '+width+'x'+height+': '+JSON.stringify(el));
+  }
+  if(!geometry.overflows.every(o=>o.x<=2&&o.y<=2))
+   responsiveFailures.push('Overflow '+width+'x'+height+': '+JSON.stringify(geometry.overflows));
+  if(!geometry.cell||Math.abs(geometry.cell.w-geometry.cell.h)>2)
+   responsiveFailures.push('Non-square grid '+width+'x'+height+': '+JSON.stringify(geometry.cell));
+  responsiveResults.push(geometry);
+ }
+ await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+ await sleep(150);
+ assert(responsiveFailures.length===0,'#315 viewport matrix failed:\n'+responsiveFailures.join('\n'));
  const snapshot=()=>evaluate('lumenDiagnostics.snapshot()');
  const point=async(r,c)=>evaluate(`(()=>{const rect=document.querySelector('.cell[data-row="${r}"][data-col="${c}"]').getBoundingClientRect();return {x:rect.left+rect.width/2,y:rect.top+rect.height/2}})()`);
  const tap=async p=>{await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[p]});await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await sleep(50)};

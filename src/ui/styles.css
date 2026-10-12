@@ -821,3 +821,56 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
   overscroll-behavior:contain;
  }
 }
+
+/* #315: ultra-short portrait screens need to reserve the actual bottom action row.
+   The previous 278px budget let controls fall below 320x568 after browser chrome.
+   Keep text and controls at readable sizes rather than scaling the app. */
+@media (max-width:700px) and (max-height:600px) and (orientation:portrait){
+ #board,.game-core:has(#board) .actions,
+ #board[data-size="5"],.game-core:has(#board[data-size="5"]) .actions{
+  width:min(100%,calc(100dvh - 328px - env(safe-area-inset-top) - env(safe-area-inset-bottom)))!important;
+ }
+}
+
+/* #315: iPhone SE portrait 375x667 also needs a safety margin for bottom controls.
+   Keep action labels >=12px while reserving space above the board. */
+@media (max-width:700px) and (min-height:601px) and (max-height:700px) and (orientation:portrait){
+ #board,.game-core:has(#board) .actions,
+ #board[data-size="5"],.game-core:has(#board[data-size="5"]) .actions{
+  width:min(100%,calc(100dvh - 326px - env(safe-area-inset-top) - env(safe-area-inset-bottom)))!important;
+ }
+}
+
+/* #315: tablet portrait needs more room for stacked journey/status/actions.
+   A nearly 710px board on 768x1024 pushed the action row below the screen. */
+@media (min-width:701px) and (max-width:1100px){
+ #board,.game-core:has(#board) .actions,
+ #board[data-size="5"],.game-core:has(#board[data-size="5"]) .actions{
+  width:min(100%,calc(100dvh - 470px))!important;
+ }
+}
+
+/* #315: larger screens also need an explicit compact action row.
+   The inherited 2-column action layout wraps Indice onto a second row,
+   pushing the board and controls below the play viewport. */
+@media (min-width:701px){
+ .game-core:has(#board) .actions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;margin-top:4px!important}
+ .game-core:has(#board) .actions button{min-width:0!important;width:auto!important;min-height:40px!important;padding:6px 4px!important;font-size:14px!important;line-height:1.2!important}
+ #board{height:auto!important;aspect-ratio:1!important;max-height:none!important}
+}
+@media (min-width:701px) and (max-width:1100px){
+ #board,.game-core:has(#board) .actions,
+ #board[data-size="5"],.game-core:has(#board[data-size="5"]) .actions{
+  width:min(100%,calc(100dvh - 570px))!important;
+ }
+}
+@media (min-width:1101px){
+ #board,.game-core:has(#board) .actions{
+  width:min(100%,calc(100dvh - 420px))!important;
+ }
+}
+@media (min-width:1101px) and (max-height:650px){
+ #board,.game-core:has(#board) .actions{
+  width:min(100%,calc(100dvh - 425px))!important;
+ }
+}
