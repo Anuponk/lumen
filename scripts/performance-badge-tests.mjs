@@ -89,4 +89,13 @@ test("first-time tutorial players remain restricted until the global unlock",()=
  assert.deepEqual(campaign.savePerformance(0,1).badges,{autonomy:false,speed:false,noError:false,mastery:false});
 });
 
+test("nonqualifying replay cannot manufacture visible earned badges",()=>{
+ const prior={autonomy:false,speed:false,noError:false,mastery:false};
+ const run=performanceAttempt({questIndex:0,unlockedQuestCount:6,seconds:30});
+ assert.equal(run.mastery,true);
+ const saved=mergeEarnedBadges(prior,{},{});
+ assert.deepEqual(saved,prior);
+ assert.deepEqual(Object.keys(saved).filter(key=>saved[key]&&!prior[key]),[]);
+});
+
 console.log(JSON.stringify({performanceBadgeTests:cases.length,cases},null,2));
