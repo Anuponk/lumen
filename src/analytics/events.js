@@ -42,13 +42,22 @@ try{
  localStorage.setItem(sessionKey,JSON.stringify({id:lumenSessionId,lastSeen:now}));
 }catch(e){lumenSessionId=(crypto.randomUUID?crypto.randomUUID():now+"-"+Math.random().toString(36).slice(2))}
 function touchSession(){try{localStorage.setItem(sessionKey,JSON.stringify({id:lumenSessionId,lastSeen:Date.now()}))}catch(e){}}
+const sessionStartMarker="lumenAnalyticsSessionStartV1";
+function shouldTrackSessionStart(){
+ try{
+  if(localStorage.getItem(sessionStartMarker)===lumenSessionId)return false;
+  localStorage.setItem(sessionStartMarker,lumenSessionId);
+ }catch(e){}
+ return true;
+}
 async function trackLumenEvent(name,puzzleId=null,properties={}){
  touchSession();
  const lumenSupabase=getClient();
+ if(!lumenSupabase||trafficType==="automated_test")return;
+ if(name==="session_start"&&!shouldTrackSessionStart())return;
  properties={...properties,traffic_type:trafficType};
  if(testRunId)properties.test_run_id=testRunId;
  if(environment.qaMode)properties={...properties,qa_mode:environment.qaMode};
- if(!lumenSupabase)return;
  try{await lumenSupabase.rpc("lumen_track_event",{p_anonymous_id:lumenAnonymousId,p_event_name:name,p_session_id:lumenSessionId,p_puzzle_id:puzzleId,p_properties:properties})}catch(e){console.warn("LUMEN analytics",e)}
 }
 function captureReferral(){const ref=new URLSearchParams(location.search).get("ref");if(!ref)return;const clean=ref.replace(/[^a-zA-Z0-9_-]/g,"").slice(0,64);if(!clean)return;try{localStorage.setItem("lumenReferral",clean)}catch(e){}trackLumenEvent("referral_visit",null,{ref:clean})}

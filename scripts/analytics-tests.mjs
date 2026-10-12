@@ -16,7 +16,7 @@ async function fixture(search,legacy,offline){
  client={async rpc(name,args){calls.push({name,args});if(offline)throw Error('fixture offline');return {error:null}}};
  if(legacy)context.lumenSupabase=client;
  await api.trackLumenEvent('session_start',null,{standalone:false});await api.trackLumenEvent('puzzle_start',3,{sector:0});await api.trackLumenEvent('hint_used',3);api.captureReferral();await new Promise(resolve=>setTimeout(resolve,0));
- return {values:[...values].filter(([key])=>key!=="lumenAnalyticsSessionV2"),calls:JSON.parse(JSON.stringify(calls)),warnings:[...warnings]};
+ return {values:[...values].filter(([key])=>!['lumenAnalyticsSessionV2','lumenAnalyticsSessionStartV1'].includes(key)),calls:JSON.parse(JSON.stringify(calls)),warnings:[...warnings]};
 }
 for(const search of ['', '?ref=friend_123','?ref=%3Cbad%3E%20reference','?ref='+('x'.repeat(100))])for(const offline of [false,true]){
  const modern=await fixture(search,false,offline),legacy=await fixture(search,true,offline);
@@ -59,3 +59,22 @@ assert.match(adminAccountsMigration,/capability='analytics_cockpit'/,'account em
 assert.match(adminAccountsMigration,/revoke all on function public\.lumen_admin_accounts\(integer\) from public,anon/,'anonymous users must never list account emails');
 assert.doesNotMatch(fs.readFileSync('src/analytics/events.js','utf8'),/\bemail\b/i,'analytics client must not collect email');
 assert.match(fs.readFileSync('src/ui/game-screen.js','utf8'),/lumen_admin_accounts/,'cockpit must load the protected account directory');
+
+// Production isolation: localhost automation never sends events to the live RPC.
+{
+ const calls=[];const values=new Map();let id=0;
+ const env={localStorage:{getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)},crypto:{randomUUID:()=>String(++id)},location:{hostname:'localhost',search:''},console:{warn:()=>{}}};
+ const api=createAnalytics(()=>({rpc:async (...args)=>{calls.push(args)}}),env);
+ await api.trackLumenEvent('puzzle_start',1);
+ await api.trackLumenEvent('session_start');
+ assert.equal(calls.length,0,'automated browser tests must not write analytics to production');
+}
+// Reloading within a session must not count as a new session.
+{
+ const calls=[];const values=new Map();let id=0;
+ const env={localStorage:{getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)},crypto:{randomUUID:()=>String(++id)},location:{hostname:'lumen.nopuna.fr',search:''},console:{warn:()=>{}}};
+ const client={rpc:async (...args)=>{calls.push(args)}};
+ await createAnalytics(()=>client,env).trackLumenEvent('session_start');
+ await createAnalytics(()=>client,env).trackLumenEvent('session_start');
+ assert.equal(calls.length,1,'reloading within an analytics session must not emit a second session_start');
+}
