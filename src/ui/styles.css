@@ -874,3 +874,9 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
   width:min(100%,calc(100dvh - 425px))!important;
  }
 }
+
+/* #315: tablet viewport matrix: remove surplus 12px bottom inset that makes
+   the app scrollHeight exceed its fixed 100dvh box at 768x1024. */
+@media (min-width:701px) and (max-width:1100px){
+ .app{padding-bottom:0!important}
+}
