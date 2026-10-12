@@ -65,8 +65,8 @@ test("campaign save grants unlocked early badges only on a new qualifying replay
  const solved=Object.fromEntries(Array.from({length:6},(_,i)=>[i,1]));
  for(const i of [0,1,2,3,4]){
   const progress={solved,performances:{},stars:{},badges:{}};
-  let seconds=40,assistanceUsed=false;
-  const campaign=createCampaign(()=>progress,()=>{},()=>({activeGameSeconds:()=>seconds,assistanceUsed,mistakeCommitted:false,qualifying:true}));
+  let seconds=40,assistanceUsed=false,qualifying=true;
+  const campaign=createCampaign(()=>progress,()=>{},()=>({activeGameSeconds:()=>seconds,assistanceUsed,mistakeCommitted:false,qualifying}));
   const before=JSON.stringify(progress.performances);
   const preview=campaign.performanceRun(i);
   assert.equal(JSON.stringify(progress.performances),before,"Preview must not award historical badges");
@@ -77,6 +77,7 @@ test("campaign save grants unlocked early badges only on a new qualifying replay
   assert.equal(progress.performances[i].version,3);
   // A second same-day attempt must not award new badges, even if performance improves.
   progress.performances[i].badges={autonomy:false,speed:false,noError:false,mastery:false};
+   qualifying=false;
   const second=campaign.savePerformance(i,1);
   assert.equal(second.qualifying,false);
   assert.deepEqual(second.badges,{autonomy:false,speed:false,noError:false,mastery:false});
