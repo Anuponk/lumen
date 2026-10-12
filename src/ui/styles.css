@@ -840,3 +840,12 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
   width:min(100%,calc(100dvh - 326px - env(safe-area-inset-top) - env(safe-area-inset-bottom)))!important;
  }
 }
+
+/* #315: tablet portrait needs more room for stacked journey/status/actions.
+   A nearly 710px board on 768x1024 pushed the action row below the screen. */
+@media (min-width:701px) and (max-width:1100px){
+ #board,.game-core:has(#board) .actions,
+ #board[data-size="5"],.game-core:has(#board[data-size="5"]) .actions{
+  width:min(100%,calc(100dvh - 470px))!important;
+ }
+}
