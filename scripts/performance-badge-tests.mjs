@@ -99,6 +99,8 @@ test("15 minute badge cooldown boundaries and midnight",()=>{
  assert.equal(badgeCooldownRemaining(p,base+960000),0);
  assert.equal(badgeCooldownRemaining({lastQualifiedAt:new Date(base).toISOString()},base+120000),780000);
  assert.equal(badgeCooldownRemaining(null,base),0);
+ assert.equal(badgeCooldownRemaining({lastQualifiedDay:"2026-10-12"},base),0);
+ assert.equal(badgeCooldownRemaining({lastQualifiedAt:"invalid",lastQualifiedDay:"2026-10-12"},base),0);
 });
 
 console.log(JSON.stringify({performanceBadgeTests:cases.length,cases},null,2));
