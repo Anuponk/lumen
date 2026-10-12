@@ -75,10 +75,13 @@ assert.ok(uiSrc.includes('installCloudProfileLocally(localStorage,cloud)'),'Clou
 assert.ok(uiSrc.includes('holdLegacyMergeForFullRestore:async()=>true'),'Legacy merges disabled');
 assert.doesNotMatch(html,/id="migrationCloud(?:Save|Restore)"/);
 
-assert.ok(uiSrc.includes('function accountRequired(){return !authSessionPending&&!qaActive&&!socialChallenge&&((!!lumenUser&&!cloudProfileReady)||(!lumenUser&&solvedCount()>=5))}'),'Five quests are playable as guest after auth session resolution, then account required');
-assert.ok(uiSrc.includes('if(accountRequired()){maybeOfferAccount();hideSuccess();return}'),'Cannot advance beyond guest limit');
-assert.ok(uiSrc.includes('if(!canonicalActiveQuest&&accountRequired())queueMicrotask(()=>maybeOfferAccount())'),'Reload cannot bypass guest gate for historic quests while canonical quests require cloud sync');
-assert.ok(uiSrc.includes('if(accountRequired())return;'),'Account offer cannot be dismissed when required');
+assert.match(uiSrc,/function accountRequired\(\)\s*\{[\s\S]*?authSessionPending\|\|qaActive\|\|socialChallenge\|\|lumenUser/,'Guest invitation is optional and waits for auth resolution');
+assert.ok(uiSrc.includes('accountOfferKey("NextMilestone")'),'Account invitation can be deferred without changing progression');
+assert.ok(uiSrc.includes('if(accountRequired()&&maybeOfferAccount()){accountOfferResumeNext=true;hideSuccess();return}'),'Account prompt interrupts once but allows guest continuation');
+assert.ok(uiSrc.includes('if(!canonicalActiveQuest&&accountRequired())queueMicrotask(()=>maybeOfferAccount())'),'Milestone invitation survives reload without mandatory account gate');
+assert.ok(uiSrc.includes('const accountLater=document.getElementById("accountOptinLater")'),'Continue without account is wired');
+assert.ok(uiSrc.includes('if(closeAccount)closeAccount.onclick=dismissAccountOffer'),'Close button dismisses the account invitation');
+assert.ok(html.includes('id="accountOptinLater"'),'Guest has an explicit continue option');
 
 let server=null;
 const cloudApi={async rpc(name,args){
