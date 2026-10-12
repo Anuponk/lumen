@@ -8,17 +8,8 @@ const TARGET_CONSTELLATIONS_PER_ADVENTURE=10;
 const CONTENT_SLOTS_PER_CONSTELLATION=10;
 
 function allocation(existing){
- const counts=existing.map(c=>c.questIndices.length);
- const slots=[...counts];
- let remaining=TARGET_QUESTS_PER_ADVENTURE-slots.reduce((a,b)=>a+b,0);
- if(remaining<0)throw Error("Historical adventure has more than 100 quests");
- // Make the distribution as even as possible. Never discard an existing quest.
- while(remaining>0){
-  let best=0;
-  for(let i=1;i<slots.length;i++)if(slots[i]<slots[best])best=i;
-  slots[best]++;remaining--;
- }
- return slots;
+ if(existing.some(c=>c.questIndices.length>10))throw Error("Constellation exceeds ten historical quests");
+ return existing.map(()=>10);
 }
 
 export function buildMigrationPlan({packs=CONTENT_PACKS,constellations=CONTENT_CONSTELLATIONS,getQuest=playableQuest,questCount=playableQuestCount()}={}){
@@ -31,6 +22,16 @@ export function buildMigrationPlan({packs=CONTENT_PACKS,constellations=CONTENT_C
    return match;
   });
   if(existing.length>TARGET_CONSTELLATIONS_PER_ADVENTURE)throw Error("Too many constellations in "+pack.id);
+  if(pack.id==="real-adventure-02"){
+   const from=existing.find(c=>c.id==="real-12"),to=existing.find(c=>c.id==="real-13");
+   if(from?.questIndices.length===11&&to?.questIndices.length===8){
+    const moved=from.questIndices.at(-1);
+    const copy=existing.map(c=>({...c,questIndices:[...c.questIndices]}));
+    copy.find(c=>c.id==="real-12").questIndices.pop();
+    copy.find(c=>c.id==="real-13").questIndices.push(moved);
+    existing.splice(0,existing.length,...copy);
+   }
+  }
   const slots=allocation([
    ...existing,
    ...Array.from({length:TARGET_CONSTELLATIONS_PER_ADVENTURE-existing.length},(_,i)=>({
@@ -48,7 +49,7 @@ export function buildMigrationPlan({packs=CONTENT_PACKS,constellations=CONTENT_C
     const quest=originalIndex===null?null:getQuest(originalIndex);
     if(originalIndex!==null&&(!quest||quest.index!==originalIndex))throw Error("Missing playable quest "+originalIndex);
     const stableId=quest?.id??null;
-    const proposedQuestId=stableId??`planned-${c.id}-q${String(position+1).padStart(2,"0")}`;
+    const proposedQuestId=stableId??(c.id==="real-13"&&position===9?"planned-real-13-q09":c.id==="real-20"&&position===9?"planned-real-13-q10":`planned-${c.id}-q${String(position+1).padStart(2,"0")}`);
     if(stableId){
      if(currentIds.has(stableId))throw Error("Duplicate stable quest identity "+stableId);
      currentIds.add(stableId);
