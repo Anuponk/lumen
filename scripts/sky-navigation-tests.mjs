@@ -89,5 +89,8 @@ console.log(JSON.stringify({skyNavigation:true,accessPreservation:true,constella
 
 const skyUi=readFileSync(new URL("../src/ui/sky-navigation.js",import.meta.url),"utf8");
 assert.match(skyUi,/skyPickerContainer\.style\.display=showSkyPicker\?\x27\x27:\x27none\x27/,"A sole sky must be hidden even if CSS overrides [hidden]");
+assert.match(skyUi,/detail\.addEventListener\(\x27pointerdown\x27/,"Detail view must handle touch-pointer swipes");
+assert.doesNotMatch(skyUi,/if\(e\.target\.closest\(\x27button,input,select,a/,"Swipe on quest buttons must not be discarded");
+assert.match(skyUi,/if\(e\.target\.closest\(\x27input,select,textarea/,"Text-entry controls should stay excluded from swipe");
 const deployScript=readFileSync(new URL("./o2switch-cron-publish.sh",import.meta.url),"utf8");
 assert.match(deployScript,/\("push","workflow_dispatch","schedule"\)/,"Publisher must recognize scheduled green CI");
