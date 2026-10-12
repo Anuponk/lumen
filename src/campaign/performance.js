@@ -32,6 +32,28 @@ export function performanceAttempt({questIndex,seconds,assistanceUsed=false,mist
  return {eligibility,autonomy,speed,noError,mastery:eligibility.mastery&&autonomy&&speed&&noError,targetSeconds:speedTargetSeconds(questIndex)};
 }
 
+export const PERFORMANCE_QUALIFICATION_COOLDOWN_MS=15*60*1000;
+
+// Pure, testable duration calculation. Do not switch production awarding to this
+// rule until an authoritative server-side per-user, per-quest claim is available.
+// Legacy saves with a day-only marker keep the previous same-day lock; badges
+// cannot be manufactured from historical attempts or clock migration.
+export function performanceCooldownRemainingMs(performance={},now=Date.now()){
+ const current=now instanceof Date?now.getTime():Number(now);
+ if(!Number.isFinite(current))return PERFORMANCE_QUALIFICATION_COOLDOWN_MS;
+ const stamp=Date.parse(String(performance?.lastQualifiedAt||""));
+ if(Number.isFinite(stamp))return Math.min(PERFORMANCE_QUALIFICATION_COOLDOWN_MS,Math.max(0,PERFORMANCE_QUALIFICATION_COOLDOWN_MS-(current-stamp)));
+ const oldDay=performance?.lastQualifiedDay;
+ if(oldDay===localCalendarDay(new Date(current)))return PERFORMANCE_QUALIFICATION_COOLDOWN_MS;
+ return 0;
+}
+
+export function performanceCooldownMessage(remainingMs){
+ if(!(remainingMs>0))return "";
+ const minutes=Math.ceil(remainingMs/60000);
+ return minutes===15?"Tu pourras retenter de gagner des badges dans 15 minutes.":`Réessaie dans ${minutes} min`;
+}
+
 export function isQualifyingDay(performance,day=localCalendarDay()){
  return !!Object.values(performanceEligibility(performance?.questIndex??0)).some(Boolean)&&performance?.lastQualifiedDay!==day;
 }
