@@ -85,3 +85,12 @@ assert.match(gameScreen,/previous\.ordinal>first\.ordinal/);
 assert.match(gameScreen,/index===extendedSequentialCount\(lumenProgress\.solved\)/);
 assert.match(gameScreen,/canonicalFollowing\?\.legacyIndex===null&&!historicalContinuationAllowed\(levelIndex\+1\)/);
 console.log("Canonical 400-quest registry: stable identity, legacy save keys and pagination verified");
+
+// #322: the last (often stable-ID) quest of a constellation must remain
+// playable after completion; locked states must explain the prerequisite.
+assert.match(gameScreen,/if\(lumenProgress\.canonicalQuestState\?\.\[quest\.id\]\?\.solved\)return true/);
+assert.match(gameScreen,/terminée, rejouable/);
+assert.match(gameScreen,/termine d’abord les quêtes précédentes/);
+const constellationEnds=quests.filter((q,i)=>i===quests.length-1||quests[i+1].constellationId!==q.constellationId);
+assert.equal(constellationEnds.length,40);
+assert.equal(new Set(constellationEnds.map(q=>q.id)).size,40);
