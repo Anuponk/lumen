@@ -1894,7 +1894,7 @@ function performanceBadges(i){
  const p=lumenProgress.performances?.[i],earned=p?.version>=2?p.badges||{}:{},eligibility=currentPerformanceEligibility(i);
  const badges=[{cls:"autonomy",key:"autonomy",label:"Autonomie"},{cls:"speed",key:"speed",label:"Rapidité"},{cls:"no-error",key:"noError",label:"Sans erreur"},{cls:"mastery",key:"mastery",label:"Maîtrise"}];
  const remaining=badgeCooldownRemaining(p);const statusLabel=remaining?`Badges en pause : ${badgeCooldownLabel(remaining)}`:"Badges disponibles";
- const status=`<span class="badge-cooldown-label" title="${statusLabel}" aria-label="${statusLabel}">${remaining?"⏳":"●"}</span>`;
+ const status=remaining?`<span class="badge-cooldown-label" title="${statusLabel}" aria-label="${statusLabel}">◷</span>`:"";
   return '<span class="performance-grid" aria-label="Performance">'+badges.map(x=>{const locked=!eligibility[x.key],got=!!earned[x.key],state=locked?" verrouillé":got?" obtenu":" disponible";return '<span class="performance-slot '+x.cls+(got?' earned':'')+(locked?' locked':'')+'" title="'+x.label+state+'" aria-label="'+x.label+state+'">'+(locked?'🔒':got?performanceIcon(x.key):'')+'</span>'}).join("")+'</span>'+status
 }
 function canonicalPerformanceBadges(questId){
