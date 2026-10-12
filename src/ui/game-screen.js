@@ -1009,8 +1009,11 @@ function adminAlerts(rows){
 // launched until transactional progression and reward writes are integrated.
 // Only the first incomplete quest in canonical order may start.
 function canonicalQuestAvailable(quest){
- return !!quest&&quest.legacyIndex===null&&!!(qaActive||(lumenUser&&cloudProfileReady))&&
-  canonicalNextUnsolved(lumenProgress.solved,lumenProgress.canonicalQuestState||{})?.id===quest.id;
+ if(!quest||quest.legacyIndex!==null)return false;
+ if(!qaActive&&(!lumenUser||!cloudProfileReady))return false;
+ // Completed stable-ID quests remain replayable, just like legacy quests.
+ if(lumenProgress.canonicalQuestState?.[quest.id]?.solved)return true;
+ return canonicalNextUnsolved(lumenProgress.solved,lumenProgress.canonicalQuestState||{})?.id===quest.id;
 }
 function startCanonicalQuest(quest){
  if(!canonicalQuestAvailable(quest))return false;
@@ -1044,7 +1047,7 @@ function renderCanonicalJourneyPreview(){
     const available=legacy===null?canonicalQuestAvailable(quest):questIsAccessible(legacy);
     const button=document.createElement("button");button.type="button";button.className="puzzle-card"+(solved?" done":"")+(available?"":" locked");
     button.textContent="Quête "+quest.ordinal+(solved?" ✓":!available?" · verrouillée":"");
-    button.title=available?"Jouer la quête":"Quête verrouillée jusqu’à la précédente ou à la synchronisation du compte";
+    button.title=available?(solved?"Rejouer la quête":"Jouer la quête"):(!qaActive&&(!lumenUser||!cloudProfileReady)?"Connexion et synchronisation requises":"Termine d’abord les quêtes précédentes");
     button.disabled=!available;button.dataset.questId=quest.id;
     if(available)button.onclick=()=>{if(legacy===null){startCanonicalQuest(quest);return}if(solved){startReplay(legacy);return}canonicalActiveQuest=null;levelIndex=legacy;replayMode=false;modal.hidden=true;loadPuzzle();refreshJourney()};
     list.appendChild(button);
@@ -1886,7 +1889,7 @@ function renderMap(){
     button.type="button";
     button.className="puzzle-card"+(solved?" done":"")+(available&&!solved?" current":"")+(!available&&!solved?" locked":"");
     button.dataset.questId=quest.id;
-    button.title="Quête "+quest.ordinal+(solved?" · terminée":available?" · disponible":" · verrouillée");
+    button.title="Quête "+quest.ordinal+(solved?(available?" · terminée, rejouable":" · terminée, compte à synchroniser"):available?" · disponible":(!qaActive&&(!lumenUser||!cloudProfileReady)?" · connexion et synchronisation requises":" · termine d’abord les quêtes précédentes"));
     button.innerHTML=legacy!==null&&solved?performanceBadges(legacy):solved?canonicalPerformanceBadges(quest.id):available?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+quest.ordinal+'</span>':'<span class="puzzle-new-number">Quête '+quest.ordinal+'</span>';
     button.disabled=!available;
     if(available)button.onclick=()=>{
