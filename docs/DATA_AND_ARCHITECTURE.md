@@ -27,6 +27,12 @@ The canonical source of a constellation's visual geometry is a versioned, legall
 
 ## Evolving catalogue contract
 
+### Adventure addition is data-driven, not code-driven
+Adding Adventures/packs, constellations and quests is a routine **catalogue-content update**. No fixed maximum (100/200/300 quests, fixed pack count or fixed constellation count) may be encoded into any consumer. All identifiers, campaign boundaries, page counts, completion states, unlock requirements, purchase entitlement mappings, cloud/local restoration and analytics must derive from a validated content registry. A fixed **page size** is allowed for presentation, but must never impose a fixed catalogue total. Stable identities and ordinal continuity must survive growth; adding content must not renumber previously saved quests or invalidate badges and entitlements. Availability and purchases are access policies, **not** catalogue-size constraints. A data-only addition should not require modifications to game-screen logic, authentication, persistence or UI flow. If an adapter needs editing for each new pack, correct the architecture rather than adding another hard-coded case.
+
+Validation must include synthetic multiple-Adventures growth with unequal constellation sizes, empty/newly locked packs, a previously completed last quest, cloud and local legacy save restore, dynamic UI paging, purchase-right lookup, and a next-quest transition crossing an Adventure boundary. Never use historical fixture counts as production limits.
+
+
 Catalogue expansion is an expected operation. Features must work with the content described by the loaded catalogue, including future additions, without requiring manual replacement of quest, constellation or star totals. This concerns curated content shipped with the application; it does not introduce runtime random puzzle generation or require a new remote catalogue service.
 
 Use the appropriate source of truth:
