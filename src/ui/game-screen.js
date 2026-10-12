@@ -1905,7 +1905,23 @@ function canonicalPerformanceBadges(questId){
   return '<span class="performance-slot '+x.cls+(got?' earned':'')+'" title="'+x.label+state+'" aria-label="'+x.label+state+'">'+(got?performanceIcon(x.key):'')+'</span>';
  }).join("")+'</span>';
 }
-function startReplay(i){if(!lumenProgress.solved[i])return;const remaining=badgeCooldownRemaining(lumenProgress.performances?.[i]);if(remaining&&!window.confirm(`Tentative non qualifiante : aucun nouveau badge. ${badgeCooldownLabel(remaining)}. Jouer quand même ?`))return;canonicalActiveQuest=null;levelIndex=i;replayMode=true;document.getElementById("mapModal").hidden=true;document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;loadPuzzle();usedHintThisGame=false;refreshJourney()}
+function launchReplay(i){canonicalActiveQuest=null;levelIndex=i;replayMode=true;document.getElementById("mapModal").hidden=true;document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;loadPuzzle();usedHintThisGame=false;refreshJourney()}
+function startReplay(i){
+ if(!lumenProgress.solved[i])return;
+ const remaining=badgeCooldownRemaining(lumenProgress.performances?.[i]);
+ if(!remaining){launchReplay(i);return}
+ const modal=document.getElementById("replayCooldownModal");
+ if(!modal)return;
+ const cancel=document.getElementById("replayCooldownCancel"),play=document.getElementById("replayCooldownPlay");
+ const delay=document.getElementById("replayCooldownDelay");
+ delay.textContent=badgeCooldownLabel(remaining)+". Tu pourras alors tenter de gagner de nouveaux badges.";
+ const close=()=>{modal.hidden=true;document.removeEventListener("keydown",onKey);cancel.onclick=null;play.onclick=null};
+ const onKey=e=>{if(e.key==="Escape"){e.preventDefault();close()}else if(e.key==="Tab"){const target=e.shiftKey?cancel:play;if(document.activeElement===(e.shiftKey?cancel:play)){e.preventDefault();(e.shiftKey?play:cancel).focus()}}};
+ cancel.onclick=()=>{close();document.getElementById("closeMap")?.focus()};
+ play.onclick=()=>{close();launchReplay(i)};
+ document.addEventListener("keydown",onKey);
+ modal.hidden=false;cancel.focus();
+}
 function renderMap(){
  skyNavigation.render();const puzzleGrid=document.getElementById("puzzleGrid");
  puzzleGrid.innerHTML="";let range=mapConstellationRange(mapConstellation)||constellationGridRange(mapConstellation);for(const [offset,i] of range.quests.entries()){let solved=!!lumenProgress.solved[i],current=i===currentQuestPosition()&&questIsAccessible(i),b=document.createElement("button"),pos=offset+1,meta=performanceBadges(i);b.className="puzzle-card"+(solved?" done":"")+(current?" current":"")+(!solved&&!current?" locked":"");b.innerHTML=solved?meta:(current?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+pos+'</span>':"");b.title=solved?"Rejouer la quête "+pos+" pour améliorer ta performance":current?"Nouvelle quête disponible · quête "+pos:"Quête "+pos+" · verrouillée";b.onclick=()=>{if(solved&&questIsAccessible(i)){startReplay(i);return}if(!current)return;canonicalActiveQuest=null;levelIndex=i;replayMode=false;document.getElementById("mapModal").hidden=true;loadPuzzle();refreshJourney()};puzzleGrid.appendChild(b)}
