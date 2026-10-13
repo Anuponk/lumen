@@ -318,7 +318,12 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   hydrationStage="local_install";
   const changed=installCloudProfileLocally(localStorage,cloud);
   cloudProfileBaseline=cloud;
-  if(changed){recordCloudDiagnostic("hydration_reload",{stage:"local_install"});location.reload();return}
+  if(changed==="memory_only"){
+   // Cloud is verified; a full localStorage must not deadlock signed-in play.
+   // The authoritative cloud snapshot is installed in memory without reload.
+   lumenProgress=structuredClone(cloud);
+   recordCloudDiagnostic("hydration_local_quota_bypass",{cloudVerified:true});
+  }else if(changed){recordCloudDiagnostic("hydration_reload",{stage:"local_install"});location.reload();return}
   cloudProfileReady=true;
   recordCloudDiagnostic("hydration_ready",{profileReady:true});
   renderDaily();
