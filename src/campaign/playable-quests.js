@@ -1,6 +1,8 @@
 // Bridge from the append-only generated quest manifest to the grid engine.
 // The existing 196 puzzles remain sourced from the historical catalogue.
 import {STAGED_ADVENTURE} from "./staged-adventure.js";
+import diverse from "../../content/generated/diverse-adventures-3-4.json" with {type:"json"};
+const diverseById=new Map(diverse.puzzles.map(q=>[q.id,q]));
 import {CAMPAIGN_SIZE_SCHEDULE,CAMPAIGN6_ORDER} from "./data.js";
 import {CONTENT_PACKS,baseCampaignQuestCount} from "./content.js";
 import {CAT} from "./catalogue.js";
@@ -23,7 +25,14 @@ export function playableQuest(index){
   return grid?{id:`base-q${String(i+1).padStart(3,"0")}`,index:i,size:Number(size),reg:grid.reg,sol:grid.sol,source:"legacy"}:null;
  }
  const quest=byIndex.get(i);
- return quest?{id:quest.id,index:i,size:quest.size,reg:quest.reg,sol:quest.sol,audit:quest.audit,source:"generated"}:null;
+ if(!quest)return null;
+ const override=diverseById.get(quest.id);
+ if(override&&(override.ordinal!==i+1||override.originalSource!=="generated")){
+  // The canonical ordinal differs from the legacy index: check its stable identity instead.
+  if(override.originalSource!=="generated"||override.packId!=="real-adventure-04")throw Error("Invalid generated diversity override "+quest.id);
+ }
+ const grid=override||quest;
+ return {id:quest.id,index:i,size:grid.size??grid.reg.length,reg:grid.reg,sol:grid.sol,audit:grid.audit,difficulty:grid.difficulty??null,source:"generated"};
 }
 export function playableQuestById(id){
  const generated=byId.get(String(id));

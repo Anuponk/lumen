@@ -11,6 +11,7 @@ fs.mkdirSync(validationDir,{recursive:true});
 const nodeSuites=[
  "audit-catalogue.mjs",
  "generate-diverse-grids-tests.mjs",
+ "diverse-adventure-integration-tests.mjs",
  "difficulty-audit.mjs",
  "engine-equivalence.mjs",
  "campaign-tests.mjs",
