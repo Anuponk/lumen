@@ -306,10 +306,8 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  }
  // Daily engagement and challenge ledgers can grant rewards: never sum them
  // or claim to reconstruct their history.
- for(const field of ["daily","challenges"]){
-  if(!sameCloudProfile(local[field]??{},cloud[field]??{}))
-   return {status:"blocked",reason:"mutable_ledger",fields:[field]};
- }
+ const differingLedgers=["daily","challenges"].filter(field=>!sameCloudProfile(local[field]??{},cloud[field]??{}));
+ if(differingLedgers.length)return {status:"blocked",reason:"mutable_ledger",fields:differingLedgers};
  const safeFields=new Set(["solved","historyBackup","noHint","badges","stars","performances","canonicalQuestState"]);
  for(const field of new Set([...Object.keys(cloud),...Object.keys(local)])){
   if(safeFields.has(field)||["shards","xp","skyScore","daily","challenges"].includes(field))continue;
