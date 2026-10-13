@@ -33,6 +33,7 @@ const nodeSuites=[
  "issue-222-challenge-tests.mjs",
  "catalogue-ceiling-tests.mjs",
  "sky-navigation-tests.mjs",
+ "played-constellation-return-tests.mjs",
  "extraordinary-skies-tests.mjs",
  "persistence-tests.mjs",
  "cloud-persistence-regression-tests.mjs",
