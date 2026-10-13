@@ -542,13 +542,12 @@ function setupStreakLoss(){
   qaPreview.hidden=!qaActive;
   qaPreview.addEventListener("click",()=>{
    if(!qaActive)return;
-   const menu=document.getElementById("accountMenu");if(menu)menu.hidden=true;
+   const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=true;
    const count=document.getElementById("streakLossCount");if(count)count.textContent="4 jours de lumière · aperçu QA";
    const modal=document.getElementById("streakLossModal");if(!modal)return;
-   modal.hidden=true;
-   // Restart the visual animation on each explicit QA preview.
-   void modal.offsetWidth;
    modal.hidden=false;
+   const shard=modal.querySelector(".streak-loss-stars .shatter");
+   if(shard){shard.style.animation="none";void shard.offsetWidth;shard.style.animation=""}
   });
  }
  document.getElementById("streakLossContinue")?.addEventListener("click",closeStreakLoss);
