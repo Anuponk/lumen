@@ -934,3 +934,11 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 /* Locked quest tiles: icon-only, same dimensions as other quest tiles. */
 .puzzle-card.locked{display:flex;align-items:center;justify-content:center}
 .puzzle-card.locked .puzzle-lock-only{display:block;font-size:clamp(22px,5.5vw,34px);line-height:1;opacity:1;pointer-events:none}
+
+/* #29: persist the seven-light progress in Mon ciel after validation. */
+#mapModal .daily-card{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+#mapModal .daily-card-copy{flex:1 1 190px;min-width:0}
+#mapModal .daily-stars{display:flex;flex:0 0 auto;gap:clamp(3px,1vw,8px);align-items:center}
+#mapModal .daily-star{font-size:clamp(13px,3.4vw,20px)}
+#mapModal .daily-card .daily-help{margin-left:auto}
+@media(max-width:390px){#mapModal .daily-card{padding:9px 10px}#mapModal .daily-card-copy{flex-basis:170px}}
