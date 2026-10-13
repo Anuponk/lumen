@@ -250,3 +250,38 @@ export function installCloudProfileLocally(storage,cloud){
  }
  return true;
 }
+
+/**
+ * Reconcile only when the local snapshot contains every remote achievement and
+ * immutable/mutable ledgers are identical. Never infer shard/XP transactions.
+ * Preserve verified copies of BOTH sides before any server write.
+ */
+export async function reconcileDominantLocalProfile(supabase,storage,remote){
+ const cloud=validateCloudProfile(remote),raw=storage.getItem("lumenProgressV1");
+ if(!raw)return {status:"blocked",reason:"missing_local"};
+ let local;
+ try{local=validateCloudProfile(JSON.parse(raw))}catch{return {status:"blocked",reason:"invalid_local"}}
+ if(!cloudSafelyCoversLocal(cloud,local))return {status:"blocked",reason:"missing_cloud_achievements"};
+ for(const field of ["shards","xp","skyScore"]){
+  if(Number(local[field]||0)!==Number(cloud[field]||0))return {status:"blocked",reason:"mutable_balance"};
+ }
+ for(const field of ["daily","challenges"]){
+  if(!sameCloudProfile(local[field]||{},cloud[field]||{}))return {status:"blocked",reason:"mutable_ledger"};
+ }
+ // Unknown fields can contain non-repeatable transactions. Require equality
+ // instead of silently selecting one profile's value.
+ const monotonic=new Set(["solved","historyBackup","badges","stars","noHint","performances","canonicalQuestState"]);
+ for(const key of new Set([...Object.keys(local),...Object.keys(cloud)])){
+  if(monotonic.has(key)||["shards","xp","skyScore","daily","challenges"].includes(key))continue;
+  if(!sameCloudProfile(local[key]??null,cloud[key]??null))return {status:"blocked",reason:"unclassified_field"};
+ }
+ if(sameCloudProfile(local,cloud))return {status:"identical"};
+ const stamp=Date.now();
+ const keys=[["lumenBeforeCloudReconcileLocal_"+stamp,raw],["lumenBeforeCloudReconcileRemote_"+stamp,JSON.stringify(cloud)]];
+ for(const [key,value] of keys){storage.setItem(key,value);if(storage.getItem(key)!==value)throw Error("Copies de reconciliation non verifiees")}
+ // CAS refuses overwrite when another device changed cloud after our read.
+ const written=await compareAndSwapCloudProfile(supabase,local,cloud);
+ const verified=await loadVerifiedProfile(supabase);
+ if(!sameCloudProfile(verified,written))throw Error("Reconciliation cloud non verifiee");
+ return {status:"reconciled",profile:verified};
+}
