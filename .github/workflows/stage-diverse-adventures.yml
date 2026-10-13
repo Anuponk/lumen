@@ -1,0 +1,28 @@
+name: Stage diverse Adventures 3 and 4
+on:
+  pull_request:
+    paths:
+      - 'scripts/stage-diverse-adventures.mjs'
+      - '.github/workflows/stage-diverse-adventures.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate 100 validated diverse candidates
+        run: node scripts/build-diverse-100.mjs
+      - name: Assign to eligible Adventures 3 and 4 slots
+        run: node scripts/stage-diverse-adventures.mjs
+      - name: Upload replacement review manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: lumen-adventure-3-4-replacements
+          path: content/generated/diverse-adventures-3-4.json
+          retention-days: 30
