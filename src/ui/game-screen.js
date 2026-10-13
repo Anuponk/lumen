@@ -607,14 +607,25 @@ function setupStreakLoss(){
   });
  }
  const restart=document.getElementById("streakLossRestart");
- if(restart)restart.onclick=event=>{
-  event.preventDefault();
-  event.stopPropagation();
+ const returnToPlay=()=>{
   closeStreakLoss();
   const map=document.getElementById("mapModal");
   if(map)map.hidden=true;
-  // No automatic streak credit: only a qualified completed quest starts a new series.
+  // QA preview only closes; a qualified quest is still required to earn a new streak.
  };
+ if(restart){
+  restart.onclick=event=>{event.preventDefault();event.stopPropagation();returnToPlay()};
+  // A mobile overlay can intercept the synthesized click before it reaches the
+  // button. Capture the real tap by coordinates, regardless of its event target.
+  document.addEventListener("pointerup",event=>{
+   if(lossModal?.hidden||event.pointerType==="mouse")return;
+   const rect=restart.getBoundingClientRect();
+   if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)return;
+   event.preventDefault();
+   event.stopImmediatePropagation();
+   returnToPlay();
+  },true);
+ }
 }
 function renderDaily(){
  const stars=document.getElementById("dailyStars");if(!stars)return;stars.innerHTML="";
