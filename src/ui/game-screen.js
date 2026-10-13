@@ -537,6 +537,20 @@ function closeStreakLoss(){
  const modal=document.getElementById("streakLossModal");if(modal)modal.hidden=true;
 }
 function setupStreakLoss(){
+ const qaPreview=document.getElementById("qaPreviewStreakLoss");
+ if(qaPreview){
+  qaPreview.hidden=!qaActive;
+  qaPreview.addEventListener("click",()=>{
+   if(!qaActive)return;
+   const menu=document.getElementById("accountMenu");if(menu)menu.hidden=true;
+   const count=document.getElementById("streakLossCount");if(count)count.textContent="4 jours de lumière · aperçu QA";
+   const modal=document.getElementById("streakLossModal");if(!modal)return;
+   modal.hidden=true;
+   // Restart the visual animation on each explicit QA preview.
+   void modal.offsetWidth;
+   modal.hidden=false;
+  });
+ }
  document.getElementById("streakLossContinue")?.addEventListener("click",closeStreakLoss);
  document.getElementById("streakLossRestart")?.addEventListener("click",()=>{closeStreakLoss();document.getElementById("mapModal").hidden=true});
 }
