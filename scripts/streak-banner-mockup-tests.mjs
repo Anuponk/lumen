@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const css=fs.readFileSync(new URL('../src/ui/styles.css',import.meta.url),'utf8');
+const js=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+const card=html.slice(html.indexOf('id="dailyCard"'),html.indexOf('id="dailyCompactHelp"'));
+assert.ok(card.indexOf('daily-card-heading')<card.indexOf('daily-card-middle'));
+assert.ok(card.indexOf('id="dailyMeta"')<card.indexOf('id="dailyStars"'));
+assert.ok(card.indexOf('id="dailyStars"')<card.indexOf('id="dailyReward"'));
+assert.match(css,/#dailyCard \.daily-card-middle\{display:flex;flex-direction:row/);
+assert.match(css,/#dailyCard \.daily-star\.lit\.today\{color:#ffe0a0/);
+assert.match(js,/status\.done\?visual\.slots\.findLastIndex\(slot=>slot\.kind==="lit"\):visual\.focus/);
+assert.match(css,/#dailyCard \.daily-card-heading \.daily-help/);
+console.log('Daily banner mockup alignment and gold completed-current star verified');

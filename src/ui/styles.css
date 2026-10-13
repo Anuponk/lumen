@@ -969,3 +969,18 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .streak-loss-content .streak-loss-primary{border:2px solid #46eaff;box-shadow:0 0 24px #29c5eb55;color:white;background:#07384b}
 @keyframes lumen-light-loss{0%{color:#ffe4a2;text-shadow:0 0 26px #ffc45d;transform:scale(1.25);opacity:1}40%{transform:scale(1.6) rotate(30deg);opacity:1}100%{color:#46566e;text-shadow:none;transform:scale(.8) rotate(120deg);opacity:.55}}
 @media(prefers-reduced-motion:reduce){.streak-loss-stars .shatter{animation:none;color:#46566e;text-shadow:none}}
+
+/* #29 mockup alignment: title + small help, inline series and 7/8 lights. */
+#dailyCard{display:flex!important;flex-direction:column;align-items:stretch;justify-content:center;gap:5px;padding:11px 13px}
+#dailyCard .daily-card-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-width:0}
+#dailyCard .daily-card-heading strong{font-size:clamp(12px,2.8vw,15px);font-weight:800;line-height:1.2}
+#dailyCard .daily-card-middle{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;width:100%;min-width:0}
+#dailyCard #dailyMeta{color:#afc7db;font-size:clamp(10px,2.4vw,13px);line-height:1.25;min-width:0}
+#dailyCard #dailyReward{display:block;color:#a9c1d4;font-size:clamp(10px,2.4vw,12px);font-weight:500;white-space:normal}
+#dailyCard .daily-stars{display:flex;flex:0 0 auto;align-items:center;gap:clamp(1px,.5vw,5px);min-width:0}
+#dailyCard .daily-star{display:inline-grid;place-items:center;flex:0 0 auto;width:clamp(14px,2.8vw,25px);height:clamp(18px,3.2vw,28px);font-size:clamp(13px,2.6vw,21px)}
+#dailyCard .daily-star.today{outline:1.5px solid #61eaff;border-radius:50%;padding:0}
+#dailyCard .daily-star.lit.today{color:#ffe0a0;text-shadow:0 0 10px #eeb75d99}
+#dailyCard .daily-card-heading .daily-help{position:static;flex:0 0 22px;display:grid;place-items:center;width:22px;height:22px;min-width:22px;border:1px solid #587a91;border-radius:50%;background:transparent;color:#c7dce9;font-family:inherit;font-size:13px;font-weight:700;line-height:1;padding:0;box-shadow:none}
+#dailyCard .daily-protected{font-size:10px;padding:2px 7px;align-self:flex-start}
+@media(max-width:390px){#dailyCard{padding:9px 10px}#dailyCard .daily-card-middle{gap:5px}#dailyCard .daily-stars{gap:1px}#dailyCard .daily-star{width:14px;height:18px;font-size:13px}#dailyCard #dailyMeta{font-size:10px}}
