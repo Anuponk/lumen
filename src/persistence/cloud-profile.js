@@ -285,3 +285,51 @@ export async function reconcileDominantLocalProfile(supabase,storage,remote){
  if(!sameCloudProfile(verified,written))throw Error("Reconciliation cloud non verifiee");
  return {status:"reconciled",profile:verified};
 }
+
+/** Conservative two-way reconciliation. Uncertain rewards are never inferred. */
+export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
+ const cloud=validateCloudProfile(remote),raw=storage.getItem("lumenProgressV1");
+ if(!raw)return {status:"blocked",reason:"missing_local"};
+ let local;
+ try{local=validateCloudProfile(JSON.parse(raw))}catch{return {status:"blocked",reason:"invalid_local"}}
+ const merged=structuredClone(cloud);
+ for(const field of ["shards","xp","skyScore","daily","challenges"]){
+  const left=local[field]??(field==="daily"||field==="challenges"?{}:0);
+  const right=cloud[field]??(field==="daily"||field==="challenges"?{}:0);
+  if(!sameCloudProfile(left,right))return {status:"blocked",reason:field==="daily"||field==="challenges"?"mutable_ledger":"mutable_balance"};
+ }
+ const safeFields=new Set(["solved","historyBackup","noHint","badges","stars","performances","canonicalQuestState"]);
+ for(const field of new Set([...Object.keys(cloud),...Object.keys(local)])){
+  if(safeFields.has(field)||["shards","xp","skyScore","daily","challenges"].includes(field))continue;
+  if(!sameCloudProfile(local[field]??null,cloud[field]??null))return {status:"blocked",reason:"unclassified_field"};
+ }
+ // Completed quests and monotonic boolean awards may be unioned; conflicting
+ // non-boolean payloads cannot be resolved without a transaction ledger.
+ for(const field of ["solved","historyBackup","noHint"]){
+  merged[field]=structuredClone(cloud[field]||{});
+  for(const [id,value] of Object.entries(local[field]||{})){
+   if(!value)continue;
+   if(merged[field][id]&& !sameCloudProfile(merged[field][id],value))return {status:"blocked",reason:"achievement_conflict"};
+   merged[field][id]=structuredClone(value);
+  }
+ }
+ for(const field of ["badges","stars","performances","canonicalQuestState"]){
+  merged[field]=structuredClone(cloud[field]||{});
+  for(const [id,value] of Object.entries(local[field]||{})){
+   if(!Object.hasOwn(merged[field],id)){merged[field][id]=structuredClone(value);continue}
+   if(!sameCloudProfile(merged[field][id],value))return {status:"blocked",reason:"reward_conflict"};
+  }
+ }
+ if(sameCloudProfile(merged,cloud)){
+  return {status:"cloud_dominant",profile:cloud};
+ }
+ const stamp=Date.now();
+ for(const [key,value] of [["lumenBeforeCloudReconcileLocal_"+stamp,raw],["lumenBeforeCloudReconcileRemote_"+stamp,JSON.stringify(cloud)]]){
+  storage.setItem(key,value);
+  if(storage.getItem(key)!==value)throw Error("Copies de reconciliation non verifiees");
+ }
+ const updated=await compareAndSwapCloudProfile(supabase,validateCloudProfile(merged),cloud);
+ const verified=await loadVerifiedProfile(supabase);
+ if(!sameCloudProfile(updated,verified))throw Error("Reconciliation cloud non verifiee");
+ return {status:"reconciled",profile:verified};
+}
