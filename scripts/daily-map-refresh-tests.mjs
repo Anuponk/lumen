@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {dailyState} from '../src/campaign/daily-engagement.js';
+const source=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+const renderMap=source.match(/function renderMap\(\)\{([\s\S]*?)\n skyNavigation\.render\(\);/);
+assert.ok(renderMap,'Map render entry point missing');
+assert.match(renderMap[1],/renderDaily\(\)/,'Map must refresh streak before drawing');
+const help=source.match(/const help=document\.getElementById\("dailyHelpModal"\)[\s\S]*?dailyHelpCurrent"\)\.textContent/);
+assert.ok(help,'Help dialog must read live daily state');
+const dates={'2026-10-09':1,'2026-10-10':1,'2026-10-11':1,'2026-10-13':1};
+assert.equal(dailyState(dates,'2026-10-13').streak,4);
+assert.equal(dailyState(dates,'2026-10-13').done,true);
+console.log('Mon ciel renders live daily streak and retains 4-day grace example');
