@@ -51,7 +51,7 @@ async function flushCloudProfile(){
   await cloudProfileInFlight;
   return flushCloudProfile();
  }
- if(!cloudProfileReady||!lumenUser||!lumenSupabase||qaActive)return false;
+ if(!cloudProfileReady||!lumenUser||!lumenSupabase||qaActive){if(lumenUser&&!qaActive)preserveUnsyncedCloudProgress("cloud-not-ready");return false}
  cloudProfileBusy=true;
  const current=JSON.parse(JSON.stringify(lumenProgress));
  cloudProfileInFlight=(async()=>{
@@ -61,10 +61,11 @@ async function flushCloudProfile(){
    return true;
   }catch(e){
    cloudProfileFailure={reason:"network"};
+   preserveUnsyncedCloudProgress("save-failed");
    try{
     const remote=await loadVerifiedProfile(lumenSupabase);
     if(remote && sameCloudProfile(remote,current)){cloudProfileBaseline=remote;cloudProfileFailure=null;return true}
-    if(remote && cloudProfileBaseline && !sameCloudProfile(remote,cloudProfileBaseline))cloudProfileFailure={reason:"conflict"};
+    if(remote && cloudProfileBaseline && !sameCloudProfile(remote,cloudProfileBaseline)){cloudProfileFailure={reason:"conflict"};preserveUnsyncedCloudProgress("version-conflict")}
    }catch(readError){console.warn("Lumen cloud verification unavailable",readError)}
    console.warn("Lumen cloud save not confirmed; progress must not advance",e);
    return false;
@@ -74,6 +75,26 @@ async function flushCloudProfile(){
   }
  })();
  return cloudProfileInFlight;
+}
+// Preserve unsynced changes independently of the normal cloud authority slot.
+// The backup is intentionally never consumed automatically; recovery needs a review.
+function preserveUnsyncedCloudProgress(reason){
+ try{
+  const key="lumenUnsyncedCloudBackupV1:"+lumenUser?.id;
+  const snapshot=JSON.stringify({savedAt:new Date().toISOString(),reason,progress:lumenProgress});
+  const previous=localStorage.getItem(key);
+  // Keep a newer/richer prior backup, rather than silently overwriting it.
+  if(previous){
+   try{
+    const old=JSON.parse(previous);
+    const oldSolved=Object.values(old.progress?.solved||{}).filter(Boolean).length;
+    const newSolved=Object.values(lumenProgress.solved||{}).filter(Boolean).length;
+    if(oldSolved>newSolved)return true;
+   }catch(_){}
+  }
+  localStorage.setItem(key,snapshot);
+  return localStorage.getItem(key)===snapshot;
+ }catch(error){console.warn("LUMEN unsynced backup could not be verified",error);return false}
 }
 async function confirmCloudReward(){
  if(qaActive||!lumenUser)return true;
@@ -88,13 +109,13 @@ async function confirmCloudReward(){
    const card=document.createElement("div");
    card.style.cssText="background:#182238;color:white;padding:24px;max-width:420px;border-radius:14px;text-align:center";
    const title=document.createElement("h2");title.textContent="Sauvegarde en attente";
-   const copy=document.createElement("p");copy.textContent=cloudProfileFailure?.reason==="conflict"?"Le profil cloud a changé. Ta progression locale est conservée. Recharge ton profil cloud pour repartir sur la version de référence.":cloudProfileFailure?.reason==="network"?"La sauvegarde n’a pas pu être confirmée. Vérifie ta connexion puis réessaie. Ta progression locale est conservée.":"Synchronisation cloud en cours. Ta progression locale est conservée.";
+   const copy=document.createElement("p");copy.textContent=cloudProfileFailure?.reason==="conflict"?"Le profil cloud a changé sur le serveur. Tes changements sont conservés sur cet appareil dans une copie de secours. Ne recharge pas : la réconciliation doit être vérifiée.":cloudProfileFailure?.reason==="network"?"La sauvegarde cloud n’a pas pu être confirmée. Une copie locale de secours est conservée. Réessaie quand la connexion revient.":"Le cloud n’est pas encore prêt. La progression reste conservée sur cet appareil.";
    const again=document.createElement("button");again.textContent="Réessayer la sauvegarde";again.className="primary";
    if(cloudProfileFailure?.reason==="conflict"||!cloudProfileReady){again.disabled=true;again.title="Un nouvel essai ne résoudra pas le conflit."}
    again.onclick=()=>{panel.remove();resolve(true)};
-   const reload=document.createElement("button");reload.textContent="Recharger mon profil cloud";
-   reload.onclick=()=>{location.reload();resolve(false)};
-   card.append(title,copy,again,reload);panel.append(card);document.body.append(panel);again.focus();
+   const close=document.createElement("button");close.textContent="Conserver ma progression locale";
+   close.onclick=()=>{preserveUnsyncedCloudProgress("user-deferred");panel.remove();resolve(false)};
+   card.append(title,copy,again,close);panel.append(card);document.body.append(panel);again.focus();
   });
   if(!retry)return false;
  }
