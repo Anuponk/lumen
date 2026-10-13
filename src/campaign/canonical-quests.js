@@ -1,7 +1,7 @@
 // Canonical campaign view for #222. Stable quest IDs are authoritative here;
 // the legacy numeric index remains the key in existing cloud saves.
 import staged from "../../content/generated/issue-222-additions.json" with {type:"json"};
-import {CONTENT_PACKS,CONTENT_CONSTELLATIONS} from "./content.js";
+import {CONTENT_PACKS,CONTENT_CONSTELLATIONS,hasPackAccess} from "./content.js";
 import {playableQuest,playableQuestCount} from "./playable-quests.js";
 
 function planSlots(packs,constellations){
@@ -68,4 +68,12 @@ export function canonicalAdventureSummary(progress={}){
    lastQuest:quests.at(-1)?.ordinal??null,quests:quests.length,completed,
    constellations:new Set(quests.map(q=>q.constellationId)).size});
  });
+}
+
+/** Visible campaign progress: count distinct completed canonical quests only in accessible adventures. */
+export function unlockedAdventureProgress(progress={},entitlements=[],attempt=null,packs=CONTENT_PACKS,quests=all){
+ const unlocked=new Set(packs.filter(pack=>hasPackAccess(pack,entitlements,progress,attempt)).map(pack=>pack.id));
+ const solved=progress.solved||{},canonical=progress.canonicalQuestState||{};
+ const accessible=quests.filter(quest=>unlocked.has(quest.packId));
+ return Object.freeze({completed:accessible.filter(quest=>quest.legacyIndex!==null?!!solved[quest.legacyIndex]:!!canonical[quest.id]?.solved).length,total:accessible.length});
 }
