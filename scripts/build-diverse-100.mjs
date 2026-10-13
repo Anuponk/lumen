@@ -7,7 +7,7 @@ import {CAT} from '../src/campaign/catalogue.js';
 
 const PLAN=[
   {size:7,family:'classic',want:15},
-  {size:7,family:'balanced',want:15},
+  {size:7,family:'classic',want:15},
   {size:7,family:'serpentine',want:10},
   {size:8,family:'mosaic',want:20},
   {size:8,family:'hybrid',want:20},
@@ -17,9 +17,9 @@ const existing=new Set(Object.values(CAT).flat().map(p=>signature(p.reg)));
 const chosen=[],seen=new Set(existing),attemptReports=[];
 for(let i=0;i<PLAN.length;i++){
   const config=PLAN[i],candidates=[];
-  for(let round=0;round<5&&candidates.length<config.want;round++){
-    const result=selectCandidates({size:config.size,family:config.family,count:100,seed:340000+i*101+round,attempts:12000});
-    attemptReports.push({family:config.family,size:config.size,round,attempts:12000,valid:result.validCandidates});
+  for(let round=0;round<10&&candidates.length<config.want;round++){
+    const result=selectCandidates({size:config.size,family:config.family,count:100,seed:340000+i*101+round,attempts:16000});
+    attemptReports.push({family:config.family,size:config.size,round,attempts:16000,valid:result.validCandidates});
     for(const p of result.selected){
       const sig=signature(p.reg);
       if(seen.has(sig))continue;
