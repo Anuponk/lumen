@@ -112,7 +112,7 @@ await assert.rejects(()=>initializeCloudProfile(noCloud,guest),/Initialisation c
 
 assert.ok(uiSrc.includes('async function celebrateSuccess()'),'Victory completion may await durable cloud acknowledgement');
 assert.ok(uiSrc.includes('if(!(await confirmCloudReward()))return;'),'Authenticated victory waits for committed cloud snapshot');
-assert.ok(uiSrc.includes('La sauvegarde n’a pas pu être confirmée'),'Transient cloud failure must remain visible and retryable');
+assert.ok(uiSrc.includes('La sauvegarde cloud n’a pas pu être confirmée'),'Transient cloud failure must remain visible and retryable');
 assert.ok(uiSrc.includes('cloudProfileFailure?.reason==="conflict"'),'A cloud conflict must be distinguished from a transient failure');
 assert.ok(uiSrc.includes('again.disabled=true'),'Do not offer a retry that cannot resolve a cloud version conflict');
 assert.ok(uiSrc.includes('if(box)box.hidden=true'),'Successful Google login must not reopen the account offer');
