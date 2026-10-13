@@ -913,3 +913,12 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 
 /* #353: cooldown is indicated by the quest border, never by a badge overlay. */
 .puzzle-card.badge-on-cooldown,.puzzle-card.badge-on-cooldown.done{border-color:#ff9b36!important;box-shadow:inset 0 0 0 1px #ff9b36}
+
+/* #29: daily streak encourages a return, then yields space after a qualifying day. */
+#dailyCard[hidden],#dailyCompactHelp[hidden],#dailyHelpModal[hidden],#dailyCelebration[hidden]{display:none!important}
+.daily-help{flex:0 0 auto;border:1px solid #48627d;border-radius:50%;width:30px;height:30px;background:#15283c;color:#dcefff;font-size:17px}
+.daily-compact-help{display:block;margin:5px 0 10px auto;border:1px solid #30475d;border-radius:12px;padding:6px 12px;background:#101d2e;color:#c4d6e8;font-size:12px}
+.daily-celebration{position:fixed;inset:0;z-index:1900;display:grid;place-items:center;padding:16px;background:rgba(3,9,19,.85);backdrop-filter:blur(7px)}
+.daily-celebration-card{width:min(420px,100%);box-sizing:border-box;border:1px solid #4a6681;border-radius:24px;padding:26px 20px;background:linear-gradient(160deg,#1a2c46,#0c1629);color:#edf7ff;text-align:center;box-shadow:0 24px 90px #000a}
+.daily-celebration-card h2{font-size:clamp(22px,6vw,30px);margin:10px 0}.daily-celebration-card p{line-height:1.5}.daily-celebration-kicker{letter-spacing:.2em;font-size:11px;color:#c6d7ee}.daily-celebration-glow{font-size:60px;color:#ffe6a2;text-shadow:0 0 35px #ffd36b;animation:daily-light-in .7s ease-out both}.daily-celebration-stars{display:flex;justify-content:center;gap:clamp(7px,3vw,17px);margin:20px 0;font-size:25px}.daily-celebration-stars span{color:#41536b}.daily-celebration-stars span.on{color:#ffe5a1;text-shadow:0 0 12px #ffe5a199}.daily-celebration-card button{margin-top:12px;padding:12px 18px;border-radius:13px;background:#bceef3;color:#071825;font-weight:700}
+@keyframes daily-light-in{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}@media(prefers-reduced-motion:reduce){.daily-celebration-glow{animation:none}}
