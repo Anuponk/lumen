@@ -59,6 +59,39 @@ function cloudDiagnosticReport(){
  try{return JSON.stringify({app:"Lumen",version:document.getElementById("lumenAccountVersion")?.textContent||"unknown",events:JSON.parse(localStorage.getItem(cloudDiagKey)||"[]")},null,2)}
  catch(_){return "Diagnostics indisponibles"}
 }
+// Explicit player-controlled export: never uploads or mutates any backup.
+async function exportLumenRecoveryBundle(){
+ const prefixList=["lumenProgressV1","lumenUnsyncedCloudBackupV1:","lumenUnsyncedCloudBackupV2:","lumenBeforeCloud","lumenBeforeAccountSwitch_"];
+ const local={};
+ for(let i=0;i<localStorage.length;i++){
+  const key=localStorage.key(i);
+  if(prefixList.some(prefix=>key.startsWith(prefix)))local[key]=localStorage.getItem(key);
+ }
+ const indexed={};
+ if(typeof indexedDB!=="undefined"){
+  await new Promise((resolve,reject)=>{
+   const request=indexedDB.open("lumen-unsynced-checkpoints",1);
+   request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains("snapshots"))db.createObjectStore("snapshots")};
+   request.onerror=()=>reject(request.error||Error("IndexedDB unavailable"));
+   request.onsuccess=()=>{
+    const db=request.result;
+    const tx=db.transaction("snapshots","readonly");
+    const store=tx.objectStore("snapshots");
+    const cursor=store.openCursor();
+    cursor.onsuccess=()=>{const item=cursor.result;if(item){indexed[item.key]=item.value;item.continue()}};
+    cursor.onerror=()=>{db.close();reject(cursor.error||Error("IndexedDB read failed"))};
+    tx.oncomplete=()=>{db.close();resolve()};
+    tx.onerror=()=>{db.close();reject(tx.error||Error("IndexedDB transaction failed"))};
+   };
+  });
+ }
+ const bundle={app:"Lumen",format:"recovery-export-v1",exportedAt:new Date().toISOString(),localStorage:local,indexedDB:indexed};
+ const url=URL.createObjectURL(new Blob([JSON.stringify(bundle,null,2)],{type:"application/json"}));
+ try{
+  const a=document.createElement("a");a.href=url;a.download="lumen-sauvegarde-"+new Date().toISOString().slice(0,10)+".json";
+  document.body.append(a);a.click();a.remove();
+ }finally{setTimeout(()=>URL.revokeObjectURL(url),60000)}
+}
 async function flushCloudProfile(){
  if(cloudProfileBusy){
   cloudProfileDirty=true;
@@ -197,8 +230,15 @@ async function confirmCloudReward(){
     try{await navigator.clipboard.writeText(report);diagnostics.textContent="Diagnostic copié ✓"}
     catch(_){const pre=document.createElement("textarea");pre.readOnly=true;pre.value=report;pre.style.cssText="width:100%;min-height:100px";card.append(pre);pre.select();diagnostics.textContent="Sélectionner puis copier"}
    };
+   const exportButton=document.createElement("button");
+   exportButton.type="button";exportButton.textContent="Exporter ma sauvegarde";
+   exportButton.onclick=async()=>{
+    exportButton.disabled=true;
+    try{await exportLumenRecoveryBundle();exportButton.textContent="Export demandé — vérifier Téléchargements"}
+    catch(error){exportButton.textContent="Export impossible — réessayer";exportButton.disabled=false;console.warn("Lumen recovery export failed",error)}
+   };
    recordCloudDiagnostic("victory_dialog",{reason:cloudProfileFailure?.reason||"not_ready",profileReady:cloudProfileReady,retryAllowed:!again.disabled});
-   card.append(title,copy,again,close,diagnostics);panel.append(card);document.body.append(panel);again.focus();
+   card.append(title,copy,again,close,diagnostics,exportButton);panel.append(card);document.body.append(panel);again.focus();
   });
   if(!retry)return false;
  }
