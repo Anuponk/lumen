@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const src=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+const block=src.slice(src.indexOf('function setupStreakLoss(){'),src.indexOf('function renderDaily(){'));
+assert.match(block,/restart\.onclick=event=>/);
+assert.match(block,/document\.addEventListener\("pointerup",event=>/);
+assert.match(block,/event\.stopImmediatePropagation\(\)/);
+assert.match(block,/returnToPlay\(\)/);
+assert.match(block,/if\(lossModal\?\.hidden\|\|event\.pointerType==="mouse"\)return/);
+assert.match(block,/const rect=restart\.getBoundingClientRect\(\)/);
+assert.doesNotMatch(block,/grantDaily\(|saveLumenProgress\(/);
+console.log('Streak loss CTA supports captured touch taps without awarding streak');
