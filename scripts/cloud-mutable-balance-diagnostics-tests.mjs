@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {reconcileCompatibleCloudProfiles} from '../src/persistence/cloud-profile.js';
+import {readFileSync} from 'node:fs';
+const base={solved:{0:1},badges:{},shards:4,xp:10,skyScore:2,daily:{},challenges:{}};
+let writes=0;
+const storage={getItem:()=>JSON.stringify({...base,shards:8,xp:11}),setItem:()=>{throw Error('Should not write backup for blocked conflict')}};
+const supabase={rpc:async()=>{writes++;throw Error('Should not call cloud')}};
+const result=await reconcileCompatibleCloudProfiles(supabase,storage,base);
+assert.deepEqual(result,{status:'blocked',reason:'mutable_balance',fields:['shards','xp']});
+assert.equal(writes,0);
+const game=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+assert.match(game,/fields:Array\.isArray\(resolution\.fields\)\?resolution\.fields:\[\]/);
+assert.doesNotMatch(game,/recordCloudDiagnostic\("hydration_reconciliation",\{[^\n]*(?:local\.shards|cloud\.xp)/);
+console.log('Mutable-balance diagnostics exposes field names only, never values or writes');
