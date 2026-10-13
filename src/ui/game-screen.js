@@ -6,7 +6,7 @@ import {createDiagnostics} from "../testing/diagnostics.js";
 import {createLocalPersistence} from "../persistence/local.js";
 import {createCloudPersistence} from "../persistence/cloud.js";
 import {reconcileDailyIntoCloudProfile} from "../persistence/daily-hydration.js";
-import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievements,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile} from "../persistence/cloud-profile.js";
+import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievements,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
@@ -211,9 +211,13 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    let conflict=false;
    try{conflict=!cloudSafelyCoversLocal(JSON.parse(currentLocal),cloud)}catch{conflict=true}
    if(conflict){
-    const resolution=await reconcileDominantLocalProfile(lumenSupabase,localStorage,cloud);
+    let resolution=await reconcileDominantLocalProfile(lumenSupabase,localStorage,cloud);
+    if(resolution.status==="blocked"&&resolution.reason==="missing_cloud_achievements"){
+     hydrationStage="bidirectional_reconciliation";
+     resolution=await reconcileCompatibleCloudProfiles(lumenSupabase,localStorage,cloud);
+    }
     recordCloudDiagnostic("hydration_reconciliation",{result:resolution.status,reason:resolution.reason||"none"});
-    if(resolution.status==="reconciled")cloud=resolution.profile;
+    if(resolution.status==="reconciled"||resolution.status==="cloud_dominant")cloud=resolution.profile;
    }
   }
   hydrationStage="local_install";
