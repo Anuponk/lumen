@@ -80,7 +80,7 @@ assert.match(gameScreen,/canonicalNextUnsolved\(lumenProgress\.solved,lumenProgr
 assert.match(gameScreen,/const legacy=quest\.legacyIndex,solved=legacy!==null\?!!lumenProgress\.solved/);
 assert.match(gameScreen,/function historicalContinuationAllowed\(index\)/);
 assert.match(gameScreen,/const played=canonicalActiveQuest\|\|canonicalQuestForLegacy\(levelIndex\)/);
-assert.match(gameScreen,/openJourneyMap\(true,\{advanceOnClose:true,learningTour,questIndex:targetLegacyIndex,constellationId:targetConstellationId\}\)/);
+assert.match(gameScreen,/openJourneyMap\(true,\{detail:true,advanceOnClose:true,learningTour,questIndex:targetLegacyIndex,constellationId:targetConstellationId\}\)/);
 const skyNavigationSource=fs.readFileSync(new URL("../src/ui/sky-navigation.js",import.meta.url),"utf8");
 assert.match(skyNavigationSource,/open\(\{detail:showDetail=false,questIndex=null,constellationId=null\}/);
 assert.match(skyNavigationSource,/Number\.isInteger\(questIndex\)\?questIndex:getQuest\(\)/);
