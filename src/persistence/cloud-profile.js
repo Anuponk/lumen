@@ -231,6 +231,10 @@ export function installCloudProfileLocally(storage,cloud){
   try{previous=JSON.parse(current)}catch{throw Error("Profil local illisible : aucune restauration automatique")}
   if(!cloudSafelyCoversLocal(previous,verified))throw Error("Profil local divergent : copie cloud suspendue pour préserver les acquis");
  }
+ // A semantically identical cloud profile needs no migration backup or rewrite.
+ if(current!==null){
+  try{if(sameCloudProfile(JSON.parse(current),verified))return false}catch(_){}
+ }
  const backup=current!==null?"lumenBeforeCloudAuthority_"+Date.now():null;
  try{
   if(backup){
@@ -240,8 +244,11 @@ export function installCloudProfileLocally(storage,cloud){
   storage.setItem(key,json);
   if(storage.getItem(key)!==json)throw Error("Copie locale du profil cloud non vérifiée");
  }catch(error){
-  // Do not prune backups on quota errors: any one may be the sole recoverable copy.
+  // When cloud fully covers the local state, a full localStorage quota must not
+  // prevent authentication. Keep all backups untouched and run cloud-first in memory.
+  // On the next login we retry local installation without losing cloud authority.
   if(error?.name==="QuotaExceededError"||error?.code===22||error?.code===1014){
+   if(current===null||cloudSafelyCoversLocal(JSON.parse(current),verified))return "memory_only";
    const quota=new Error("Stockage local saturé : sauvegardes intactes, libérer de l'espace avant restauration");
    quota.code="LOCAL_STORAGE_QUOTA";quota.stage=backup?"cloud_local_backup":"cloud_local_install";
    throw quota;
