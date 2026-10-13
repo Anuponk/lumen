@@ -54,6 +54,7 @@ const nodeSuites=[
  "daily-celebration-visibility-tests.mjs",
  "cloud-unsynced-recovery-tests.mjs",
  "cloud-local-quota-tests.mjs",
+ "cloud-hydration-stage-tests.mjs",
  "cloud-diagnostics-tests.mjs",
  "streak-visual-tests.mjs",
  "streak-loss-single-cta-tests.mjs",
