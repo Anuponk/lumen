@@ -514,7 +514,7 @@ function renderDaily(){
  document.getElementById("dailyTitle").textContent=status.done?"Lumière du jour entretenue":status.grace?"Ta Série de lumière est protégée aujourd’hui":"Joue aujourd’hui pour continuer ta Série";
  document.getElementById("dailyMeta").textContent="Série · "+streak+" jour"+(streak>1?"s":"")+" · Cycle "+cycle+"/7";
  document.getElementById("dailyReward").textContent="Prochaine récompense : +"+next.amount+" ✦ à J"+next.cycleDay;
- const card=document.getElementById("dailyCard"),compact=document.getElementById("dailyCompactHelp");if(card)card.hidden=!!status.done;if(compact)compact.hidden=!status.done;
+ const card=document.getElementById("dailyCard"),compact=document.getElementById("dailyCompactHelp");if(card)card.hidden=false;if(compact)compact.hidden=true;
  const ms=document.getElementById("mobileStreak");if(ms)ms.textContent="🔥 "+streak;
  const infoStars=document.getElementById("dailyInfoStars");if(infoStars){infoStars.innerHTML="";for(let i=1;i<=7;i++){let e=document.createElement("span");e.className=i<=cycle?"on":"";e.textContent="✦";infoStars.appendChild(e)}}
  const infoStatus=document.getElementById("dailyInfoStatus");if(infoStatus)infoStatus.textContent=status.done?"✓ Aujourd’hui validé · série de "+streak+" jour"+(streak>1?"s":""):status.grace?"Ta Série de lumière est protégée aujourd’hui. Joue pour la continuer.":"Aujourd’hui : réussis une nouvelle quête ou améliore un badge éligible.";
@@ -529,6 +529,13 @@ function maybeShowReturnWelcome(){
  if(status.done)copy.textContent+=" · Prochaine récompense : +"+next.amount+" ✦ à J"+next.cycleDay+".";
  stars.textContent="✦".repeat(cycle)+"·".repeat(7-cycle);toast.hidden=false;
  const close=()=>{toast.classList.add("hide");setTimeout(()=>toast.hidden=true,260)};toast.onclick=close;setTimeout(close,5200);
+}
+// A single celebration per validated calendar day, even across reloads.
+function scheduleDailyCelebration(claim){
+ if(!claim?.credited)return;
+ const day=localDateKey(),key="lumenDailyCelebratedV1:"+day;
+ try{if(localStorage.getItem(key)==="1")return;localStorage.setItem(key,"1")}catch(_){}
+ setTimeout(()=>{if(localDateKey()===day)showDailyCelebration(claim)},1600);
 }
 function showDailyCelebration(claim){
  if(!claim)return;
@@ -549,12 +556,12 @@ async function completeDaily(){
    const claim=await cloudSaveDaily(localDateKey(),levelIndex);
    if(!claim)return null;
    await cloudMergeDaily();
-   if(!wasValidated&&lumenProgress.daily?.dates?.[localDateKey()]){renderDaily();setTimeout(()=>showDailyCelebration({...claim,credited:true}),3500)}
+   if(!wasValidated&&lumenProgress.daily?.dates?.[localDateKey()]&&claim.credited!==false){renderDaily();scheduleDailyCelebration({...claim,credited:true})}
    return claim;
  }
  const today=localDateKey(),result=grantDaily(lumenProgress,today);if(!result.credited)return result;
  saveLumenProgress();renderDaily();
- setTimeout(()=>showDailyCelebration(result),3500);
+ scheduleDailyCelebration(result);
  return result;
 }
 

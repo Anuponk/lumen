@@ -50,6 +50,7 @@ const nodeSuites=[
  "daily-engagement-tests.mjs",
  "daily-hydration-tests.mjs",
  "daily-map-refresh-tests.mjs",
+ "daily-celebration-visibility-tests.mjs",
  "learning-tests.mjs",
  "social-challenge-tests.mjs",
  "social-challenge-ui-tests.mjs"
