@@ -22,3 +22,10 @@ assert.match(src,/format:"recovery-export-v1"/);
 assert.match(src,/Exporter ma sauvegarde/);
 assert.match(src,/indexedDB:indexed/);
 console.log('Cloud save failure keeps a recoverable local backup; no unsafe reload CTA');
+
+// Quota regression: a verified cloud profile may be installed in memory.
+assert.match(src,/hydration_local_quota_bypass/);
+assert.match(src,/changed==="memory_only"/);
+const profileSource=readFileSync(new URL("../src/persistence/cloud-profile.js",import.meta.url),"utf8");
+assert.match(profileSource,/cloudSafelyCoversLocal\(JSON.parse\(current\),verified\)/);
+assert.match(profileSource,/return "memory_only"/);
