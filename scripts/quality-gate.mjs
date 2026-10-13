@@ -56,6 +56,7 @@ const nodeSuites=[
  "cloud-local-quota-tests.mjs",
  "cloud-hydration-stage-tests.mjs",
  "cloud-safe-reconciliation-tests.mjs",
+ "cloud-bidirectional-reconcile-tests.mjs",
  "cloud-diagnostics-tests.mjs",
  "streak-visual-tests.mjs",
  "streak-loss-single-cta-tests.mjs",
