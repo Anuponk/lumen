@@ -17,4 +17,8 @@ assert.match(src,/indexedDB\.open\("lumen-unsynced-checkpoints",1\)/);
 assert.match(src,/tx\.oncomplete=/);
 assert.match(src,/read\.result===payload/);
 assert.match(src,/store:"indexeddb"/);
+assert.match(src,/async function exportLumenRecoveryBundle\(\)/);
+assert.match(src,/format:"recovery-export-v1"/);
+assert.match(src,/Exporter ma sauvegarde/);
+assert.match(src,/indexedDB:indexed/);
 console.log('Cloud save failure keeps a recoverable local backup; no unsafe reload CTA');
