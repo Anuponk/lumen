@@ -1894,7 +1894,7 @@ function performanceBadges(i){
  const p=lumenProgress.performances?.[i],earned=p?.version>=2?p.badges||{}:{},eligibility=currentPerformanceEligibility(i);
  const badges=[{cls:"autonomy",key:"autonomy",label:"Autonomie"},{cls:"speed",key:"speed",label:"Rapidité"},{cls:"no-error",key:"noError",label:"Sans erreur"},{cls:"mastery",key:"mastery",label:"Maîtrise"}];
  const remaining=badgeCooldownRemaining(p);const statusLabel=remaining?`Badges en pause : ${badgeCooldownLabel(remaining)}`:"Badges disponibles";
- const status=remaining?`<span class="badge-cooldown-label" title="${statusLabel}" aria-label="${statusLabel}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg></span>`:"";
+ const status="";
   return '<span class="performance-grid" aria-label="Performance">'+badges.map(x=>{const locked=!eligibility[x.key],got=!!earned[x.key],state=locked?" verrouillé":got?" obtenu":" disponible";return '<span class="performance-slot '+x.cls+(got?' earned':'')+(locked?' locked':'')+'" title="'+x.label+state+'" aria-label="'+x.label+state+'">'+(locked?'🔒':got?performanceIcon(x.key):'')+'</span>'}).join("")+'</span>'+status
 }
 function canonicalPerformanceBadges(questId){
@@ -1924,7 +1924,7 @@ function startReplay(i){
 }
 function renderMap(){
  skyNavigation.render();const puzzleGrid=document.getElementById("puzzleGrid");
- puzzleGrid.innerHTML="";let range=mapConstellationRange(mapConstellation)||constellationGridRange(mapConstellation);for(const [offset,i] of range.quests.entries()){let solved=!!lumenProgress.solved[i],current=i===currentQuestPosition()&&questIsAccessible(i),b=document.createElement("button"),pos=offset+1,meta=performanceBadges(i);b.className="puzzle-card"+(solved?" done":"")+(current?" current":"")+(!solved&&!current?" locked":"");b.innerHTML=solved?meta:(current?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+pos+'</span>':"");b.title=solved?"Rejouer la quête "+pos+" pour améliorer ta performance":current?"Nouvelle quête disponible · quête "+pos:"Quête "+pos+" · verrouillée";b.onclick=()=>{if(solved&&questIsAccessible(i)){startReplay(i);return}if(!current)return;canonicalActiveQuest=null;levelIndex=i;replayMode=false;document.getElementById("mapModal").hidden=true;loadPuzzle();refreshJourney()};puzzleGrid.appendChild(b)}
+ puzzleGrid.innerHTML="";let range=mapConstellationRange(mapConstellation)||constellationGridRange(mapConstellation);for(const [offset,i] of range.quests.entries()){let solved=!!lumenProgress.solved[i],current=i===currentQuestPosition()&&questIsAccessible(i),b=document.createElement("button"),pos=offset+1,meta=performanceBadges(i);b.className="puzzle-card"+(solved?" done":"")+(current?" current":"")+(!solved&&!current?" locked":"")+(solved&&badgeCooldownRemaining(lumenProgress.performances?.[i])?" badge-on-cooldown":"");b.innerHTML=solved?meta:(current?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+pos+'</span>':"");b.title=solved?"Rejouer la quête "+pos+" pour améliorer ta performance":current?"Nouvelle quête disponible · quête "+pos:"Quête "+pos+" · verrouillée";b.onclick=()=>{if(solved&&questIsAccessible(i)){startReplay(i);return}if(!current)return;canonicalActiveQuest=null;levelIndex=i;replayMode=false;document.getElementById("mapModal").hidden=true;loadPuzzle();refreshJourney()};puzzleGrid.appendChild(b)}
  // Use the same canonical quest collection as the cockpit. Historic range.quests
  // omits inserted grids, which previously left Grande Ourse at only six cards.
  const mappedConstellation=CONTENT_CONSTELLATIONS[mapConstellation];
@@ -1938,7 +1938,7 @@ function renderMap(){
     const available=legacy===null?canonicalQuestAvailable(quest):questIsAccessible(legacy);
     const button=document.createElement("button");
     button.type="button";
-    button.className="puzzle-card"+(solved?" done":"")+(available&&!solved?" current":"")+(!available&&!solved?" locked":"");
+    button.className="puzzle-card"+(solved?" done":"")+(available&&!solved?" current":"")+(!available&&!solved?" locked":"")+(solved&&legacy!==null&&badgeCooldownRemaining(lumenProgress.performances?.[legacy])?" badge-on-cooldown":"");
     button.dataset.questId=quest.id;
     button.title="Quête "+quest.ordinal+(solved?(available?" · terminée, rejouable":" · terminée, compte à synchroniser"):available?" · disponible":(!qaActive&&(!lumenUser||!cloudProfileReady)?" · connexion et synchronisation requises":" · termine d’abord les quêtes précédentes"));
     const lockReason=!qaActive&&(!lumenUser||!cloudProfileReady)?"Connecte-toi pour synchroniser ta progression":"Termine les quêtes précédentes";
