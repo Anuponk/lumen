@@ -171,41 +171,50 @@ get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){used
 const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,sendEmailOtp,verifyEmailOtp,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI();if(event?.type==="password_recovery"){const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=false;const password=document.getElementById("setPasswordPanel");if(password)password.hidden=false;document.getElementById("setPasswordValue")?.focus()}},renderDaily:(...args)=>renderDaily(...args),afterAuthCloudSync:async()=>{
  if(qaActive||!lumenUser||!lumenSupabase)return;
  cloudProfileReady=false;cloudProfileBaseline=null;
+ let hydrationStage="start";
  try{
+  hydrationStage="local_read";
   const original=localStorage.getItem("lumenProgressV1");
   const incoming=original?JSON.parse(original):lumenProgress;
   // First login: create the profile exactly once. An existing cloud profile wins.
   const ownerKey='lumenCloudOwnerId';
   const currentOwner=localStorage.getItem(ownerKey);
   const accountId=lumenUser.id;
+  hydrationStage="cloud_restore";
   const existing=await loadVerifiedProfile(lumenSupabase);
   const fresh={...incoming,solved:{},historyBackup:{},badges:{},stars:{},performances:{},noHint:{},xp:0,skyScore:0,shards:3};
+  hydrationStage="cloud_initialize";
   let cloud=existing||await initializeCloudProfile(lumenSupabase,currentOwner===accountId?incoming:fresh);
   // Daily RPC is authoritative. Restore it BEFORE installing the full cloud snapshot,
   // otherwise a stale daily.dates snapshot erases days fetched during login.
+  hydrationStage="daily_rpc";
   const [{data:dailyRows,error:dailyError},{data:engagementRows,error:engagementError}]=await Promise.all([
    lumenSupabase.rpc("lumen_get_daily"),
    lumenSupabase.rpc("lumen_get_engagement")
   ]);
   if(dailyError)throw Error("Daily history unavailable: "+dailyError.message);
   if(engagementError)throw Error("Daily rewards unavailable: "+engagementError.message);
+  hydrationStage="daily_reconcile";
   const reconciled=reconcileDailyIntoCloudProfile(cloud,dailyRows,engagementRows);
   if(reconciled.changed){
+   hydrationStage="daily_cloud_commit";
    cloud=await compareAndSwapCloudProfile(lumenSupabase,reconciled.profile,cloud);
   }
+  hydrationStage="owner_backup";
   if(currentOwner!==accountId){
    if(original)localStorage.setItem('lumenBeforeAccountSwitch_'+Date.now(),original);
    localStorage.setItem(ownerKey,accountId);
   }
+  hydrationStage="local_install";
   const changed=installCloudProfileLocally(localStorage,cloud);
   cloudProfileBaseline=cloud;
-  if(changed){location.reload();return}
+  if(changed){recordCloudDiagnostic("hydration_reload",{stage:"local_install"});location.reload();return}
   cloudProfileReady=true;
   recordCloudDiagnostic("hydration_ready",{profileReady:true});
   renderDaily();
   maybeShowStreakLoss();
   const gate=document.getElementById("accountOptin");if(gate){const wasVisible=!gate.hidden;gate.hidden=true;if(wasVisible)showAccountSavedConfirmation()}
- }catch(e){recordCloudDiagnostic("hydration_failed",{errorCode:String(e?.code||e?.status||"unknown").slice(0,48),errorName:String(e?.name||"unknown").slice(0,48),stage:String(e?.stage||"unknown").slice(0,48),kind:e?.code==="LOCAL_STORAGE_QUOTA"||e?.name==="QuotaExceededError"||e?.code===22?"local_quota":"other"});console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
+ }catch(e){recordCloudDiagnostic("hydration_failed",{errorCode:String(e?.code||e?.status||"unknown").slice(0,48),errorName:String(e?.name||"unknown").slice(0,48),stage:String(e?.stage||hydrationStage).slice(0,48),reason:e?.message?.startsWith("Profil local divergent")?"local_divergence":e?.message?.startsWith("Daily history unavailable")?"daily_history":e?.message?.startsWith("Daily rewards unavailable")?"daily_rewards":e?.message?.startsWith("Impossible de restaurer le profil")?"cloud_restore":e?.message?.startsWith("Sauvegarde cloud impossible")?"cloud_cas":"other",kind:e?.code==="LOCAL_STORAGE_QUOTA"||e?.name==="QuotaExceededError"||e?.code===22?"local_quota":"other"});console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
 },holdLegacyMergeForFullRestore:async()=>true},{setTimeout,console,qaMode});
 let skipFirstGridTutorial=false;
 try{skipFirstGridTutorial=localStorage.getItem(qaKey('lumenSkipFirstGridTutorial'))==='1'}catch(_){}
