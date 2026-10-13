@@ -537,6 +537,10 @@ function closeStreakLoss(){
  const modal=document.getElementById("streakLossModal");if(modal)modal.hidden=true;
 }
 function setupStreakLoss(){
+ // The modal is declared inside #mapModal in HTML. Move it to the body so
+ // a closed sky dialog cannot hide the preview or the normal startup animation.
+ const lossModal=document.getElementById("streakLossModal");
+ if(lossModal&&lossModal.parentElement!==document.body)document.body.appendChild(lossModal);
  const qaPreview=document.getElementById("qaPreviewStreakLoss");
  if(qaPreview){
   qaPreview.hidden=!qaActive;
