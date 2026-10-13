@@ -301,6 +301,7 @@ async function saveExistingAccountPassword(){
  if(result.ok){const input=document.getElementById("setPasswordValue");if(input)input.value="";}
 }
 function syncMobileAuthUI(){
+ const qaTools=document.getElementById("qaAccountTools");if(qaTools)qaTools.hidden=!(qaActive||hasInternalCapability("unlimited_shards")||hasInternalCapability("analytics_cockpit"));
  const status=document.getElementById("mobileAuthStatus"),action=document.getElementById("mobileAuthAction"),icon=document.getElementById("mobileAccount");
  if(!status||!action||!icon)return;
  const signedIn=Boolean(lumenUser);
@@ -378,7 +379,7 @@ function setupMobileAuth(){
  const editor=document.getElementById("accountProfileEditor");
  const edit=document.getElementById("editAccountProfile");if(edit)edit.onclick=()=>{if(!lumenUser||!editor)return;editor.dataset.open="true";syncMobileAuthUI();document.getElementById("nicknameInput")?.focus()};
  const closeProfile=document.getElementById("closeAccountProfile");if(closeProfile)closeProfile.onclick=()=>{if(!editor)return;editor.dataset.open="false";syncMobileAuthUI()};
- const qaTools=document.getElementById("qaAccountTools");if(qaTools)qaTools.hidden=!qaActive;
+ const qaTools=document.getElementById("qaAccountTools");if(qaTools)qaTools.hidden=!(qaActive||hasInternalCapability("unlimited_shards")||hasInternalCapability("analytics_cockpit"));
  document.addEventListener("click",()=>{if(!menu.hidden)menu.hidden=true});
  action.onclick=async()=>{
    menu.hidden=true;
