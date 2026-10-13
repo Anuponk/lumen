@@ -4,6 +4,7 @@ import {createHintTestSuite} from "../testing/hint-tests.js";
 import {createDiagnostics} from "../testing/diagnostics.js";
 import {createLocalPersistence} from "../persistence/local.js";
 import {createCloudPersistence} from "../persistence/cloud.js";
+import {reconcileDailyIntoCloudProfile} from "../persistence/daily-hydration.js";
 import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievements,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
@@ -129,7 +130,19 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   const accountId=lumenUser.id;
   const existing=await loadVerifiedProfile(lumenSupabase);
   const fresh={...incoming,solved:{},historyBackup:{},badges:{},stars:{},performances:{},noHint:{},xp:0,skyScore:0,shards:3};
-  const cloud=existing||await initializeCloudProfile(lumenSupabase,currentOwner===accountId?incoming:fresh);
+  let cloud=existing||await initializeCloudProfile(lumenSupabase,currentOwner===accountId?incoming:fresh);
+  // Daily RPC is authoritative. Restore it BEFORE installing the full cloud snapshot,
+  // otherwise a stale daily.dates snapshot erases days fetched during login.
+  const [{data:dailyRows,error:dailyError},{data:engagementRows,error:engagementError}]=await Promise.all([
+   lumenSupabase.rpc("lumen_get_daily"),
+   lumenSupabase.rpc("lumen_get_engagement")
+  ]);
+  if(dailyError)throw Error("Daily history unavailable: "+dailyError.message);
+  if(engagementError)throw Error("Daily rewards unavailable: "+engagementError.message);
+  const reconciled=reconcileDailyIntoCloudProfile(cloud,dailyRows,engagementRows);
+  if(reconciled.changed){
+   cloud=await compareAndSwapCloudProfile(lumenSupabase,reconciled.profile,cloud);
+  }
   if(currentOwner!==accountId){
    if(original)localStorage.setItem('lumenBeforeAccountSwitch_'+Date.now(),original);
    localStorage.setItem(ownerKey,accountId);
