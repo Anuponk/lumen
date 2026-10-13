@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const source=readFileSync(new URL('../src/ui/sky-navigation.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+const opening=source.slice(source.indexOf('open({detail:showDetail='),source.indexOf('snapshot:()=>'));
+assert.match(opening,/model\.skies\.flatMap\(/,'Search all skies and packs, not only progress-selected adventure');
+assert.match(opening,/c\.id===constellationId/,'Prefer exact played constellation identity');
+assert.match(opening,/c\.questIndices\?\.includes\(index\)/,'Handle inserted canonical quests');
+assert.match(opening,/selection=target\?\{skyId:target\.sky\.id,packId:target\.pack\.id\}/,'Choose played adventure before rendering');
+assert.match(game,/openJourneyMap\(true,\{advanceOnClose:true,learningTour,questIndex:targetLegacyIndex,constellationId:targetConstellationId\}\)/);
+console.log('Played-constellation return navigation contract passed');
