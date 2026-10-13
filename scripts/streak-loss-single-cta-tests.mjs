@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const js=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+const css=readFileSync(new URL('../src/ui/styles.css',import.meta.url),'utf8');
+const markup=html.slice(html.indexOf('id="streakLossModal"'),html.indexOf('id="dailyCelebration"'));
+assert.match(markup,/id="streakLossRestart"[^>]*>Commencer une nouvelle série<\/button>/);
+assert.doesNotMatch(markup,/streakLossContinue|>Continuer<|Recommencer une nouvelle série/);
+const setup=js.slice(js.indexOf('function setupStreakLoss(){'),js.indexOf('function renderDaily(){'));
+assert.match(setup,/restart\.onclick=event=>/);
+assert.match(setup,/event\.preventDefault\(\)/);
+assert.match(setup,/closeStreakLoss\(\)/);
+assert.doesNotMatch(setup,/grantDaily\(|cloudSaveDaily\(|saveLumenProgress\(/);
+assert.match(css,/#streakLossRestart\{[^}]*pointer-events:auto/);
+console.log('Lost series single clickable CTA without automatic credit passed');
