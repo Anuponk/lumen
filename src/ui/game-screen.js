@@ -151,6 +151,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   cloudProfileBaseline=cloud;
   if(changed){location.reload();return}
   cloudProfileReady=true;
+  renderDaily();
   const gate=document.getElementById("accountOptin");if(gate){const wasVisible=!gate.hidden;gate.hidden=true;if(wasVisible)showAccountSavedConfirmation()}
  }catch(e){console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
 },holdLegacyMergeForFullRestore:async()=>true},{setTimeout,console,qaMode});
@@ -500,6 +501,14 @@ if(!lumenProgress.daily)lumenProgress.daily={dates:{},rewards:{}};if(!Number.isF
 function dailyStreak(){return streakFromDates(lumenProgress.daily.dates,localDateKey())}
 function renderDaily(){
  const stars=document.getElementById("dailyStars");if(!stars)return;stars.innerHTML="";
+ // Never present a transient zero while authenticated daily history is hydrating.
+ if(authSessionPending||(lumenUser&&!cloudProfileReady)){
+  const meta=document.getElementById("dailyMeta"),title=document.getElementById("dailyTitle"),reward=document.getElementById("dailyReward");
+  if(title)title.textContent="Synchronisation de ta Série de lumière…";
+  if(meta)meta.textContent="Historique en cours de chargement";
+  if(reward)reward.textContent="";
+  return;
+ }
  const today=localDateKey(),status=dailyState(lumenProgress.daily.dates,today),streak=status.streak,cycle=cycleDay(streak),next=nextReward(streak);
  for(let i=1;i<=7;i++){let e=document.createElement("span");e.className="daily-star"+(i<=cycle?" on":"")+(i===cycle?" today":"");e.textContent="✦";stars.appendChild(e)}
  document.getElementById("dailyTitle").textContent=status.done?"Lumière du jour entretenue":status.grace?"Ta Série de lumière est protégée aujourd’hui":"Joue aujourd’hui pour continuer ta Série";
