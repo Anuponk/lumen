@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const src=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+const gate='qaActive||hasInternalCapability("unlimited_shards")||hasInternalCapability("analytics_cockpit")';
+assert.equal(src.split(gate).length-1,2,'QA switch must be visible on setup and refreshed after async auth');
+assert.match(src,/if\(qaActive\)\{url\.searchParams\.delete\("qa"\)/,'Return to real profile');
+assert.match(src,/url\.searchParams\.set\("qa","new"\)/,'Enable QA mode from PWA');
+assert.match(src,/qaReset\.hidden=!qaActive/,'QA reset remains hidden in normal mode');
+assert.match(src,/qaPreview\.hidden=!qaActive/,'Preview remains hidden in normal mode');
+console.log('QA tester switch is available for authorized accounts in normal mode');
