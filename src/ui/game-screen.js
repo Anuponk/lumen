@@ -45,27 +45,46 @@ if(qaFresh){
 const qaKey=suffix=>qaActive?"lumenQa"+suffix:suffix;
 const {normalizeSequentialProgress,solvedCount,exactSkyScoreForSolvedPrefix,ensureSkyScore,skyStarsEarned,challengeRewardKeys,constellationProgress,constellationLitAt,awards,performanceRun,savePerformance}=createCampaign(()=>lumenProgress,()=>saveLumenProgress(),()=>({activeGameSeconds,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted,qualifying:!!attemptEngine.snapshot()?.qualifying}));
 let cloudProfileReady=false,cloudProfileTimer=null,cloudProfileBusy=false,cloudProfileDirty=false,cloudProfileBaseline=null,cloudProfileInFlight=null,cloudProfileFailure=null;
+// Local-only, privacy-safe cloud diagnostics. Never log IDs, emails, tokens or save payloads.
+const cloudDiagKey="lumenCloudDiagnosticsV1";
+function recordCloudDiagnostic(event,details={}){
+ try{
+  const previous=JSON.parse(localStorage.getItem(cloudDiagKey)||"[]");
+  const entry={at:new Date().toISOString(),event,...details};
+  localStorage.setItem(cloudDiagKey,JSON.stringify([...previous.slice(-39),entry]));
+  console.info("[Lumen cloud diagnostic]",entry);
+ }catch(_){}
+}
+function cloudDiagnosticReport(){
+ try{return JSON.stringify({app:"Lumen",version:document.getElementById("lumenAccountVersion")?.textContent||"unknown",events:JSON.parse(localStorage.getItem(cloudDiagKey)||"[]")},null,2)}
+ catch(_){return "Diagnostics indisponibles"}
+}
 async function flushCloudProfile(){
  if(cloudProfileBusy){
   cloudProfileDirty=true;
   await cloudProfileInFlight;
   return flushCloudProfile();
  }
- if(!cloudProfileReady||!lumenUser||!lumenSupabase||qaActive){if(lumenUser&&!qaActive)preserveUnsyncedCloudProgress("cloud-not-ready");return false}
+ if(!cloudProfileReady||!lumenUser||!lumenSupabase||qaActive){
+  recordCloudDiagnostic("flush_blocked",{profileReady:cloudProfileReady,signedIn:!!lumenUser,clientReady:!!lumenSupabase,qa:qaActive,sessionPending:authSessionPending});
+  if(lumenUser&&!qaActive)preserveUnsyncedCloudProgress("cloud-not-ready");return false
+ }
  cloudProfileBusy=true;
  const current=JSON.parse(JSON.stringify(lumenProgress));
  cloudProfileInFlight=(async()=>{
   try{
    cloudProfileBaseline=await compareAndSwapCloudProfile(lumenSupabase,current,cloudProfileBaseline);
    cloudProfileFailure=null;
+   recordCloudDiagnostic("flush_success",{profileReady:cloudProfileReady});
    return true;
   }catch(e){
    cloudProfileFailure={reason:"network"};
+   recordCloudDiagnostic("flush_failed",{kind:"write",errorCode:String(e?.code||e?.status||"unknown").slice(0,48),profileReady:cloudProfileReady});
    preserveUnsyncedCloudProgress("save-failed");
    try{
     const remote=await loadVerifiedProfile(lumenSupabase);
     if(remote && sameCloudProfile(remote,current)){cloudProfileBaseline=remote;cloudProfileFailure=null;return true}
-    if(remote && cloudProfileBaseline && !sameCloudProfile(remote,cloudProfileBaseline)){cloudProfileFailure={reason:"conflict"};preserveUnsyncedCloudProgress("version-conflict")}
+    if(remote && cloudProfileBaseline && !sameCloudProfile(remote,cloudProfileBaseline)){cloudProfileFailure={reason:"conflict"};recordCloudDiagnostic("flush_conflict",{kind:"version"});preserveUnsyncedCloudProgress("version-conflict")}
    }catch(readError){console.warn("Lumen cloud verification unavailable",readError)}
    console.warn("Lumen cloud save not confirmed; progress must not advance",e);
    return false;
@@ -97,6 +116,7 @@ function preserveUnsyncedCloudProgress(reason){
  }catch(error){console.warn("LUMEN unsynced backup could not be verified",error);return false}
 }
 async function confirmCloudReward(){
+ recordCloudDiagnostic("victory_preflight",{profileReady:cloudProfileReady,signedIn:!!lumenUser,clientReady:!!lumenSupabase,qa:qaActive,sessionPending:authSessionPending});
  if(qaActive||!lumenUser)return true;
  if(cloudProfileTimer!==null){clearTimeout(cloudProfileTimer);cloudProfileTimer=null}
  while(!(await flushCloudProfile())){
@@ -173,10 +193,11 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   cloudProfileBaseline=cloud;
   if(changed){location.reload();return}
   cloudProfileReady=true;
+  recordCloudDiagnostic("hydration_ready",{profileReady:true});
   renderDaily();
   maybeShowStreakLoss();
   const gate=document.getElementById("accountOptin");if(gate){const wasVisible=!gate.hidden;gate.hidden=true;if(wasVisible)showAccountSavedConfirmation()}
- }catch(e){console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
+ }catch(e){recordCloudDiagnostic("hydration_failed",{errorCode:String(e?.code||e?.status||"unknown").slice(0,48)});console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
 },holdLegacyMergeForFullRestore:async()=>true},{setTimeout,console,qaMode});
 let skipFirstGridTutorial=false;
 try{skipFirstGridTutorial=localStorage.getItem(qaKey('lumenSkipFirstGridTutorial'))==='1'}catch(_){}
