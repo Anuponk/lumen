@@ -53,6 +53,7 @@ const nodeSuites=[
  "daily-map-refresh-tests.mjs",
  "daily-celebration-visibility-tests.mjs",
  "cloud-unsynced-recovery-tests.mjs",
+ "cloud-diagnostics-tests.mjs",
  "streak-visual-tests.mjs",
  "qa-streak-loss-preview-tests.mjs",
  "qa-streak-loss-overlay-tests.mjs",
