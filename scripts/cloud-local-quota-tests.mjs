@@ -13,7 +13,7 @@ const quota=new Map([[key,JSON.stringify(remote)]]);
 const full={getItem:k=>quota.get(k)??null,setItem:(k,v)=>{if(k.startsWith('lumenBeforeCloudAuthority_')){const e=new Error('Quota exceeded');e.name='QuotaExceededError';e.code=22;throw e}quota.set(k,String(v))}};
 assert.equal(installCloudProfileLocally(full,remote),false,'Equal payload needs no write even with full storage');
 const improved={...remote,xp:2};
-assert.throws(()=>installCloudProfileLocally(full,improved),e=>e.code==='LOCAL_STORAGE_QUOTA'&&e.stage==='cloud_local_backup');
+assert.equal(installCloudProfileLocally(full,improved),'memory_only','Verified cloud dominance must not deadlock hydration on quota');
 assert.deepEqual(JSON.parse(quota.get(key)),remote,'Original remains intact on failed backup');
 const diagnostics=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 assert.match(diagnostics,/errorName:String\(e\?\.name/);
