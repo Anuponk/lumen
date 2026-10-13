@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const screen=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+const styles=fs.readFileSync(new URL('../src/ui/styles.css',import.meta.url),'utf8');
+assert.match(screen,/puzzle-lock-only.*aria-hidden/);
+assert.doesNotMatch(screen,/button\.querySelector\("\.puzzle-new-label"\)\.textContent=lockReason/);
+assert.match(styles,/\.puzzle-card\.locked\{display:flex;align-items:center;justify-content:center\}/);
+assert.match(screen,/button\.setAttribute\("aria-label",`Quête /);
+assert.match(screen,/button\.disabled=!available/);
+console.log('Locked tiles display icon only and retain accessibility/locking contract');
