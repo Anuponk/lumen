@@ -283,7 +283,7 @@ export async function reconcileDominantLocalProfile(supabase,storage,remote){
  const written=await compareAndSwapCloudProfile(supabase,local,cloud);
  const verified=await loadVerifiedProfile(supabase);
  if(!sameCloudProfile(verified,written))throw Error("Reconciliation cloud non verifiee");
- return {status:"reconciled",profile:verified,playerFavouredBalances:differingBalances};
+ return {status:"reconciled",profile:verified};
 }
 
 /** Conservative two-way reconciliation. Uncertain rewards are never inferred. */
@@ -343,5 +343,5 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  const updated=await compareAndSwapCloudProfile(supabase,validateCloudProfile(merged),cloud);
  const verified=await loadVerifiedProfile(supabase);
  if(!sameCloudProfile(updated,verified))throw Error("Reconciliation cloud non verifiee");
- return {status:"reconciled",profile:verified};
+ return {status:"reconciled",profile:verified,playerFavouredBalances:differingBalances};
 }
