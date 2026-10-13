@@ -223,15 +223,30 @@ export async function compareAndSwapCloudProfile(supabase,profile,expected){
 }
 export function installCloudProfileLocally(storage,cloud){
  const verified=validateCloudProfile(cloud),key="lumenProgressV1";
- const current=storage.getItem(key);
- const json=JSON.stringify(verified);
+ const current=storage.getItem(key),json=JSON.stringify(verified);
  if(current===json)return false;
+ // Never replace an unsynced local victory with a stale cloud snapshot.
  if(current!==null){
-  const backup="lumenBeforeCloudAuthority_"+Date.now();
-  storage.setItem(backup,current);
-  if(storage.getItem(backup)!==current)throw Error("Sauvegarde pré-migration impossible");
+  let previous;
+  try{previous=JSON.parse(current)}catch{throw Error("Profil local illisible : aucune restauration automatique")}
+  if(!cloudSafelyCoversLocal(previous,verified))throw Error("Profil local divergent : copie cloud suspendue pour préserver les acquis");
  }
- storage.setItem(key,json);
- if(storage.getItem(key)!==json)throw Error("Copie locale du profil cloud non vérifiée");
+ const backup=current!==null?"lumenBeforeCloudAuthority_"+Date.now():null;
+ try{
+  if(backup){
+   storage.setItem(backup,current);
+   if(storage.getItem(backup)!==current)throw Error("Sauvegarde pré-migration impossible");
+  }
+  storage.setItem(key,json);
+  if(storage.getItem(key)!==json)throw Error("Copie locale du profil cloud non vérifiée");
+ }catch(error){
+  // Do not prune backups on quota errors: any one may be the sole recoverable copy.
+  if(error?.name==="QuotaExceededError"||error?.code===22||error?.code===1014){
+   const quota=new Error("Stockage local saturé : sauvegardes intactes, libérer de l'espace avant restauration");
+   quota.code="LOCAL_STORAGE_QUOTA";quota.stage=backup?"cloud_local_backup":"cloud_local_install";
+   throw quota;
+  }
+  throw error;
+ }
  return true;
 }
