@@ -1,0 +1,11090 @@
+{
+  "schema": "lumen-grid-overrides-v1",
+  "status": "review-required",
+  "totals": {
+    "real-adventure-03": 68,
+    "real-adventure-04": 32
+  },
+  "puzzles": [
+    {
+      "id": "planned-real-21-q09",
+      "ordinal": 209,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-014",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          1,
+          3,
+          2,
+          2,
+          4,
+          0,
+          0
+        ],
+        [
+          3,
+          3,
+          3,
+          2,
+          4,
+          0,
+          0
+        ],
+        [
+          3,
+          3,
+          2,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          3,
+          5,
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          5,
+          6,
+          6,
+          6,
+          6,
+          0
+        ]
+      ],
+      "sol": [
+        6,
+        2,
+        4,
+        0,
+        3,
+        1,
+        5
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 114,
+        "rank": 1,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 19,
+          "group": 23,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-21-q10",
+      "ordinal": 210,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-015",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2
+        ],
+        [
+          0,
+          3,
+          3,
+          3,
+          3,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          4,
+          4,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          5,
+          6,
+          6,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          5,
+          5,
+          6,
+          6,
+          6,
+          2,
+          2
+        ]
+      ],
+      "sol": [
+        1,
+        5,
+        3,
+        6,
+        2,
+        0,
+        4
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 114,
+        "rank": 2,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 19,
+          "group": 23,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-22-q09",
+      "ordinal": 219,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-012",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          2,
+          2,
+          3,
+          3
+        ],
+        [
+          0,
+          0,
+          1,
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          0,
+          0,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          4,
+          4
+        ],
+        [
+          5,
+          5,
+          3,
+          3,
+          3,
+          4,
+          6
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          6
+        ]
+      ],
+      "sol": [
+        4,
+        2,
+        0,
+        3,
+        5,
+        1,
+        6
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 115,
+        "rank": 3,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 18,
+          "group": 24,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-22-q10",
+      "ordinal": 220,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-013",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          1,
+          2,
+          2
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          2,
+          2,
+          2
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          2,
+          2
+        ],
+        [
+          4,
+          3,
+          5,
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          4,
+          5,
+          5,
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          4,
+          5,
+          5,
+          3,
+          3,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        1,
+        4,
+        6,
+        3,
+        0,
+        2,
+        5
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 115,
+        "rank": 4,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 18,
+          "group": 24,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-23-q09",
+      "ordinal": 229,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-008",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          3,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          5
+        ],
+        [
+          3,
+          6,
+          3,
+          3,
+          3,
+          3,
+          5
+        ],
+        [
+          6,
+          6,
+          3,
+          3,
+          3,
+          3,
+          3
+        ]
+      ],
+      "sol": [
+        4,
+        1,
+        3,
+        5,
+        2,
+        6,
+        0
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 116,
+        "rank": 5,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 17,
+          "group": 25,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-23-q10",
+      "ordinal": 230,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-009",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          1,
+          1,
+          1,
+          3,
+          3,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          1,
+          3,
+          3,
+          0
+        ],
+        [
+          0,
+          4,
+          1,
+          1,
+          3,
+          3,
+          0
+        ],
+        [
+          0,
+          4,
+          1,
+          5,
+          5,
+          6,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          0,
+          6,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "sol": [
+        6,
+        2,
+        4,
+        1,
+        3,
+        5,
+        0
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 116,
+        "rank": 6,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 17,
+          "group": 25,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-24-q09",
+      "ordinal": 239,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-010",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          2,
+          2,
+          3,
+          0
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          3,
+          4
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          4,
+          4
+        ],
+        [
+          5,
+          2,
+          2,
+          2,
+          2,
+          2,
+          4
+        ],
+        [
+          5,
+          2,
+          6,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          6,
+          2,
+          2,
+          2,
+          2
+        ]
+      ],
+      "sol": [
+        4,
+        1,
+        5,
+        3,
+        6,
+        0,
+        2
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 116,
+        "rank": 7,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 17,
+          "group": 25,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-24-q10",
+      "ordinal": 240,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-011",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          2,
+          0,
+          0,
+          0,
+          1,
+          1
+        ],
+        [
+          3,
+          2,
+          0,
+          0,
+          0,
+          1,
+          1
+        ],
+        [
+          3,
+          3,
+          0,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          3,
+          3,
+          1,
+          1,
+          4,
+          1,
+          1
+        ],
+        [
+          3,
+          5,
+          5,
+          5,
+          4,
+          1,
+          6
+        ],
+        [
+          3,
+          3,
+          3,
+          1,
+          1,
+          1,
+          6
+        ]
+      ],
+      "sol": [
+        3,
+        1,
+        5,
+        0,
+        4,
+        2,
+        6
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 116,
+        "rank": 8,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 17,
+          "group": 25,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-01-q01",
+      "ordinal": 241,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-006",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          3,
+          3,
+          3,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          3,
+          3,
+          3,
+          4,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          4,
+          4,
+          4,
+          2
+        ],
+        [
+          0,
+          0,
+          5,
+          5,
+          4,
+          4,
+          2
+        ],
+        [
+          0,
+          5,
+          5,
+          5,
+          4,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        0,
+        3,
+        1,
+        6,
+        4,
+        2,
+        5
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 117,
+        "rank": 10,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 16,
+          "group": 26,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-01-q02",
+      "ordinal": 242,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-007",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          3,
+          4,
+          4,
+          2,
+          1,
+          2,
+          2
+        ],
+        [
+          3,
+          4,
+          4,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          4,
+          4,
+          4,
+          2,
+          2,
+          5,
+          2
+        ],
+        [
+          4,
+          4,
+          4,
+          2,
+          2,
+          5,
+          5
+        ],
+        [
+          4,
+          2,
+          2,
+          2,
+          2,
+          2,
+          5
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          6,
+          6,
+          5
+        ]
+      ],
+      "sol": [
+        1,
+        4,
+        0,
+        2,
+        6,
+        3,
+        5
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 117,
+        "rank": 13,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 16,
+          "group": 26,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-01-q03",
+      "ordinal": 243,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-030",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          2,
+          3
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          2,
+          3
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          4,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          5,
+          5,
+          4,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        2,
+        6,
+        0,
+        5,
+        3,
+        1,
+        4
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 117,
+        "rank": 9,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 16,
+          "group": 26,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-01-q04",
+      "ordinal": 244,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-039",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          1,
+          0,
+          0,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        [
+          0,
+          3,
+          3,
+          4,
+          5,
+          4,
+          4
+        ],
+        [
+          0,
+          0,
+          3,
+          4,
+          5,
+          4,
+          4
+        ],
+        [
+          0,
+          0,
+          3,
+          3,
+          3,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        5,
+        2,
+        0,
+        3,
+        1,
+        4,
+        6
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 117,
+        "rank": 11,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 47,
+        "rules": {
+          "locked": 10,
+          "group": 30,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-01-q05",
+      "ordinal": 245,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-040",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          2,
+          2,
+          0,
+          3,
+          0
+        ],
+        [
+          1,
+          0,
+          1,
+          2,
+          0,
+          3,
+          3
+        ],
+        [
+          1,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          4,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          4,
+          4,
+          0,
+          0,
+          5
+        ],
+        [
+          1,
+          6,
+          6,
+          0,
+          0,
+          5,
+          5
+        ]
+      ],
+      "sol": [
+        4,
+        2,
+        5,
+        0,
+        3,
+        6,
+        1
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 117,
+        "rank": 12,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 16,
+          "group": 26,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-01-q06",
+      "ordinal": 246,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-005",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          2
+        ],
+        [
+          0,
+          0,
+          3,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          3,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          4
+        ],
+        [
+          5,
+          0,
+          0,
+          1,
+          1,
+          1,
+          4
+        ],
+        [
+          5,
+          5,
+          0,
+          0,
+          6,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        1,
+        3,
+        5,
+        2,
+        6,
+        0,
+        4
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 118,
+        "rank": 17,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 15,
+          "group": 27,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-01-q07",
+      "ordinal": 247,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-026",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1
+        ],
+        [
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          2,
+          2,
+          0,
+          0,
+          0,
+          1,
+          1
+        ],
+        [
+          3,
+          2,
+          2,
+          4,
+          5,
+          5,
+          1
+        ],
+        [
+          3,
+          2,
+          2,
+          4,
+          6,
+          6,
+          6
+        ],
+        [
+          6,
+          6,
+          2,
+          4,
+          6,
+          6,
+          6
+        ],
+        [
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        2,
+        6,
+        1,
+        4,
+        0,
+        3,
+        5
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 118,
+        "rank": 15,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 15,
+          "group": 27,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-01-q08",
+      "ordinal": 248,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-027",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          1,
+          2,
+          2,
+          2,
+          3,
+          3
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          0,
+          2,
+          2,
+          4,
+          3,
+          3,
+          5
+        ],
+        [
+          0,
+          2,
+          2,
+          4,
+          4,
+          3,
+          5
+        ],
+        [
+          0,
+          2,
+          2,
+          2,
+          2,
+          6,
+          6
+        ],
+        [
+          0,
+          2,
+          2,
+          2,
+          2,
+          2,
+          6
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ]
+      ],
+      "sol": [
+        1,
+        4,
+        6,
+        3,
+        5,
+        0,
+        2
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 118,
+        "rank": 16,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 15,
+          "group": 27,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-01-q09",
+      "ordinal": 249,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-028",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          1,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2
+        ],
+        [
+          3,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          3,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          4,
+          4,
+          4,
+          4,
+          2,
+          2,
+          5
+        ],
+        [
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          5
+        ],
+        [
+          4,
+          4,
+          4,
+          4,
+          4,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        1,
+        3,
+        0,
+        4,
+        6,
+        2,
+        5
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 118,
+        "rank": 18,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 15,
+          "group": 27,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-01-q10",
+      "ordinal": 250,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-029",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          2,
+          1,
+          1
+        ],
+        [
+          3,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1
+        ],
+        [
+          3,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          3,
+          1,
+          1,
+          1,
+          1,
+          1,
+          4
+        ],
+        [
+          3,
+          3,
+          1,
+          1,
+          1,
+          1,
+          4
+        ],
+        [
+          3,
+          5,
+          5,
+          1,
+          1,
+          1,
+          6
+        ],
+        [
+          5,
+          5,
+          6,
+          6,
+          6,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        1,
+        4,
+        0,
+        3,
+        6,
+        2,
+        5
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 118,
+        "rank": 19,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 15,
+          "group": 27,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-02-q01",
+      "ordinal": 251,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-037",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          3,
+          1,
+          1,
+          2
+        ],
+        [
+          4,
+          4,
+          0,
+          3,
+          5,
+          1,
+          1
+        ],
+        [
+          6,
+          4,
+          0,
+          5,
+          5,
+          5,
+          1
+        ],
+        [
+          6,
+          4,
+          0,
+          0,
+          0,
+          5,
+          5
+        ],
+        [
+          6,
+          6,
+          0,
+          0,
+          0,
+          0,
+          5
+        ]
+      ],
+      "sol": [
+        2,
+        4,
+        6,
+        3,
+        1,
+        5,
+        0
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 118,
+        "rank": 14,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 48,
+        "rules": {
+          "locked": 12,
+          "group": 29,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-02-q02",
+      "ordinal": 252,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-038",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          1,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          3,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          3,
+          3,
+          3,
+          1,
+          1,
+          1,
+          2
+        ],
+        [
+          4,
+          3,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          4,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          4,
+          4,
+          1,
+          1,
+          5,
+          1,
+          1
+        ],
+        [
+          4,
+          4,
+          1,
+          1,
+          5,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        2,
+        5,
+        1,
+        3,
+        0,
+        4,
+        6
+      ],
+      "difficulty": {
+        "label": "facile",
+        "score": 118,
+        "rank": 20,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 15,
+          "group": 27,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-02-q03",
+      "ordinal": 253,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-003",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          3,
+          3
+        ],
+        [
+          4,
+          4,
+          5,
+          5,
+          2,
+          5,
+          5
+        ],
+        [
+          4,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5
+        ],
+        [
+          5,
+          5,
+          5,
+          5,
+          5,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        0,
+        2,
+        4,
+        6,
+        1,
+        3,
+        5
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 119,
+        "rank": 23,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 14,
+          "group": 28,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-02-q04",
+      "ordinal": 254,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-004",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          1,
+          1,
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          0,
+          1,
+          2,
+          2,
+          2,
+          3,
+          4
+        ],
+        [
+          0,
+          1,
+          4,
+          4,
+          2,
+          4,
+          4
+        ],
+        [
+          5,
+          1,
+          1,
+          4,
+          4,
+          4,
+          4
+        ],
+        [
+          5,
+          1,
+          1,
+          4,
+          4,
+          4,
+          4
+        ],
+        [
+          5,
+          5,
+          1,
+          4,
+          6,
+          6,
+          6
+        ],
+        [
+          5,
+          1,
+          1,
+          4,
+          4,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        5,
+        3,
+        0,
+        2,
+        4,
+        1,
+        6
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 119,
+        "rank": 24,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 14,
+          "group": 28,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-02-q05",
+      "ordinal": 255,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-024",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          3,
+          3,
+          2,
+          2,
+          4
+        ],
+        [
+          0,
+          0,
+          5,
+          2,
+          2,
+          4,
+          4
+        ],
+        [
+          0,
+          0,
+          5,
+          2,
+          2,
+          6,
+          6
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          2,
+          2,
+          6
+        ]
+      ],
+      "sol": [
+        1,
+        4,
+        0,
+        3,
+        5,
+        2,
+        6
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 119,
+        "rank": 21,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 14,
+          "group": 28,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-02-q06",
+      "ordinal": 256,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-025",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          2
+        ],
+        [
+          3,
+          3,
+          0,
+          1,
+          3,
+          1,
+          2
+        ],
+        [
+          3,
+          3,
+          0,
+          0,
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          4,
+          4
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          4
+        ],
+        [
+          5,
+          3,
+          3,
+          3,
+          6,
+          6,
+          6
+        ],
+        [
+          5,
+          3,
+          6,
+          6,
+          6,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        3,
+        6,
+        2,
+        5,
+        1,
+        4,
+        0
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 119,
+        "rank": 25,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 14,
+          "group": 28,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-02-q07",
+      "ordinal": 257,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-036",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          2,
+          0,
+          2,
+          3,
+          1
+        ],
+        [
+          0,
+          2,
+          2,
+          2,
+          2,
+          3,
+          1
+        ],
+        [
+          2,
+          2,
+          4,
+          4,
+          2,
+          2,
+          1
+        ],
+        [
+          2,
+          5,
+          5,
+          4,
+          2,
+          6,
+          6
+        ],
+        [
+          2,
+          2,
+          5,
+          5,
+          2,
+          2,
+          2
+        ]
+      ],
+      "sol": [
+        4,
+        0,
+        5,
+        1,
+        3,
+        6,
+        2
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 119,
+        "rank": 22,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 14,
+          "group": 28,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-02-q08",
+      "ordinal": 258,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-002",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          2
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          2
+        ],
+        [
+          0,
+          3,
+          3,
+          1,
+          4,
+          5,
+          5
+        ],
+        [
+          0,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4
+        ],
+        [
+          0,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4
+        ],
+        [
+          3,
+          3,
+          3,
+          6,
+          6,
+          4,
+          4
+        ]
+      ],
+      "sol": [
+        6,
+        2,
+        5,
+        0,
+        4,
+        1,
+        3
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 120,
+        "rank": 28,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 13,
+          "group": 29,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-02-q09",
+      "ordinal": 259,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-023",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          3,
+          3,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          3,
+          3,
+          4,
+          1,
+          4
+        ],
+        [
+          0,
+          0,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        [
+          0,
+          5,
+          5,
+          4,
+          4,
+          4,
+          4
+        ],
+        [
+          5,
+          5,
+          5,
+          4,
+          4,
+          4,
+          6
+        ],
+        [
+          5,
+          5,
+          5,
+          4,
+          4,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        6,
+        4,
+        2,
+        0,
+        3,
+        1,
+        5
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 120,
+        "rank": 27,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 13,
+          "group": 29,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-02-q10",
+      "ordinal": 260,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-035",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          3,
+          2,
+          2
+        ],
+        [
+          4,
+          4,
+          0,
+          5,
+          3,
+          3,
+          3
+        ],
+        [
+          6,
+          5,
+          5,
+          5,
+          5,
+          3,
+          5
+        ],
+        [
+          6,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5
+        ]
+      ],
+      "sol": [
+        5,
+        2,
+        6,
+        4,
+        1,
+        3,
+        0
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 120,
+        "rank": 26,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 13,
+          "group": 29,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-03-q01",
+      "ordinal": 261,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-034",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          2
+        ],
+        [
+          0,
+          1,
+          1,
+          0,
+          0,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          3,
+          3,
+          0,
+          4,
+          4,
+          0
+        ],
+        [
+          0,
+          3,
+          5,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          3,
+          3,
+          5,
+          5,
+          0,
+          6,
+          6
+        ],
+        [
+          3,
+          3,
+          5,
+          0,
+          0,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        6,
+        2,
+        0,
+        4,
+        1,
+        3,
+        5
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 121,
+        "rank": 29,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 12,
+          "group": 30,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-03-q02",
+      "ordinal": 262,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-022",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          2,
+          2,
+          2
+        ],
+        [
+          3,
+          0,
+          0,
+          0,
+          2,
+          4,
+          4
+        ],
+        [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          4
+        ],
+        [
+          5,
+          5,
+          0,
+          6,
+          6,
+          0,
+          4
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          6,
+          6,
+          4
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          6,
+          4
+        ]
+      ],
+      "sol": [
+        3,
+        5,
+        0,
+        6,
+        1,
+        4,
+        2
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 122,
+        "rank": 31,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 11,
+          "group": 31,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-03-q03",
+      "ordinal": 263,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-033",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          2,
+          3,
+          3,
+          3
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          3,
+          3,
+          4
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          2,
+          4,
+          4
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          5,
+          4,
+          5
+        ],
+        [
+          0,
+          0,
+          0,
+          5,
+          5,
+          5,
+          5
+        ],
+        [
+          0,
+          0,
+          5,
+          5,
+          5,
+          6,
+          5
+        ],
+        [
+          0,
+          0,
+          0,
+          5,
+          6,
+          6,
+          5
+        ]
+      ],
+      "sol": [
+        6,
+        1,
+        3,
+        5,
+        0,
+        2,
+        4
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 122,
+        "rank": 30,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "group": 31,
+          "locked": 11,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-03-q04",
+      "ordinal": 264,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-021",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          2,
+          1,
+          1
+        ],
+        [
+          3,
+          4,
+          4,
+          0,
+          2,
+          0,
+          0
+        ],
+        [
+          3,
+          3,
+          4,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          5,
+          5,
+          0,
+          0,
+          6,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          6,
+          0
+        ]
+      ],
+      "sol": [
+        6,
+        4,
+        2,
+        0,
+        3,
+        1,
+        5
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 123,
+        "rank": 33,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 10,
+          "group": 32,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-03-q05",
+      "ordinal": 265,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-032",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          3,
+          0,
+          0,
+          1,
+          2,
+          0
+        ],
+        [
+          3,
+          3,
+          3,
+          1,
+          1,
+          2,
+          0
+        ],
+        [
+          4,
+          5,
+          5,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          4,
+          4,
+          5,
+          6,
+          2,
+          6,
+          2
+        ],
+        [
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          2
+        ]
+      ],
+      "sol": [
+        6,
+        4,
+        1,
+        5,
+        2,
+        0,
+        3
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 123,
+        "rank": 32,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 47,
+        "rules": {
+          "group": 36,
+          "locked": 4,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-03-q06",
+      "ordinal": 266,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-020",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          2,
+          3,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          4,
+          3,
+          3,
+          4,
+          4,
+          4,
+          5
+        ],
+        [
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          5
+        ],
+        [
+          4,
+          4,
+          4,
+          4,
+          4,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        1,
+        4,
+        0,
+        2,
+        6,
+        3,
+        5
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 124,
+        "rank": 34,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 9,
+          "group": 33,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-03-q07",
+      "ordinal": 267,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-018",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          1,
+          1,
+          2,
+          3,
+          3,
+          3
+        ],
+        [
+          0,
+          0,
+          1,
+          2,
+          2,
+          3,
+          3
+        ],
+        [
+          0,
+          0,
+          1,
+          2,
+          4,
+          4,
+          4
+        ],
+        [
+          0,
+          0,
+          5,
+          4,
+          4,
+          4,
+          4
+        ],
+        [
+          0,
+          5,
+          5,
+          6,
+          4,
+          4,
+          4
+        ],
+        [
+          0,
+          0,
+          0,
+          6,
+          4,
+          4,
+          4
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          4,
+          4,
+          4
+        ]
+      ],
+      "sol": [
+        6,
+        4,
+        2,
+        5,
+        1,
+        3,
+        0
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 125,
+        "rank": 35,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 8,
+          "group": 34,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-03-q08",
+      "ordinal": 268,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-019",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          1,
+          1,
+          1,
+          2,
+          2,
+          1
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          2,
+          1,
+          1
+        ],
+        [
+          3,
+          3,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          3,
+          3,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          3,
+          4,
+          4,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          4,
+          4,
+          1,
+          1,
+          5,
+          6,
+          1
+        ],
+        [
+          4,
+          4,
+          1,
+          1,
+          5,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        5,
+        1,
+        3,
+        0,
+        2,
+        4,
+        6
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 125,
+        "rank": 36,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 8,
+          "group": 34,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-03-q09",
+      "ordinal": 269,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-031",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          2,
+          2,
+          3,
+          3
+        ],
+        [
+          1,
+          1,
+          1,
+          2,
+          3,
+          3,
+          3
+        ],
+        [
+          1,
+          1,
+          2,
+          2,
+          1,
+          3,
+          4
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          4
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          4
+        ],
+        [
+          1,
+          5,
+          1,
+          1,
+          1,
+          1,
+          4
+        ],
+        [
+          1,
+          5,
+          5,
+          1,
+          1,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        0,
+        4,
+        2,
+        6,
+        3,
+        1,
+        5
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 125,
+        "rank": 37,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 8,
+          "group": 34,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-03-q10",
+      "ordinal": 270,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-017",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          1,
+          3,
+          1
+        ],
+        [
+          4,
+          4,
+          1,
+          1,
+          1,
+          3,
+          1
+        ],
+        [
+          1,
+          4,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          5,
+          6,
+          6,
+          1
+        ],
+        [
+          1,
+          1,
+          5,
+          5,
+          5,
+          5,
+          5
+        ]
+      ],
+      "sol": [
+        0,
+        2,
+        5,
+        3,
+        1,
+        4,
+        6
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 126,
+        "rank": 38,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 7,
+          "group": 35,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-04-q01",
+      "ordinal": 271,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-001",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          3,
+          3,
+          2,
+          2,
+          2,
+          4,
+          4
+        ],
+        [
+          3,
+          5,
+          5,
+          2,
+          2,
+          4,
+          6
+        ],
+        [
+          3,
+          5,
+          5,
+          2,
+          2,
+          6,
+          6
+        ],
+        [
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          6
+        ]
+      ],
+      "sol": [
+        3,
+        0,
+        4,
+        1,
+        5,
+        2,
+        6
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 127,
+        "rank": 40,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 6,
+          "group": 36,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-04-q02",
+      "ordinal": 272,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-016",
+      "size": 7,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          2,
+          0,
+          2,
+          3,
+          3,
+          3
+        ],
+        [
+          0,
+          2,
+          2,
+          2,
+          2,
+          4,
+          4
+        ],
+        [
+          0,
+          5,
+          5,
+          2,
+          2,
+          4,
+          4
+        ],
+        [
+          0,
+          5,
+          2,
+          2,
+          2,
+          6,
+          6
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          2,
+          2,
+          6
+        ]
+      ],
+      "sol": [
+        3,
+        0,
+        4,
+        2,
+        5,
+        1,
+        6
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 127,
+        "rank": 39,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "classic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 49,
+        "rules": {
+          "locked": 6,
+          "group": 36,
+          "single": 7
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-04-q03",
+      "ordinal": 273,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-072",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          2,
+          0
+        ],
+        [
+          3,
+          0,
+          0,
+          0,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          3,
+          0,
+          0,
+          0,
+          0,
+          4,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          4,
+          5,
+          5
+        ],
+        [
+          6,
+          6,
+          6,
+          6,
+          0,
+          4,
+          5,
+          5
+        ],
+        [
+          6,
+          6,
+          6,
+          7,
+          7,
+          7,
+          7,
+          5
+        ]
+      ],
+      "sol": [
+        3,
+        1,
+        6,
+        0,
+        5,
+        7,
+        2,
+        4
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 142,
+        "rank": 41,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 62,
+        "rules": {
+          "locked": 28,
+          "group": 26,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-04-q04",
+      "ordinal": 274,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-073",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          3
+        ],
+        [
+          0,
+          4,
+          4,
+          4,
+          0,
+          0,
+          3,
+          0
+        ],
+        [
+          5,
+          4,
+          4,
+          5,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          5,
+          5,
+          5,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          5,
+          5,
+          6,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          7,
+          7,
+          7,
+          6,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "sol": [
+        5,
+        7,
+        4,
+        6,
+        2,
+        0,
+        3,
+        1
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 142,
+        "rank": 42,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 60,
+        "rules": {
+          "locked": 22,
+          "group": 30,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-04-q05",
+      "ordinal": 275,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-071",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1
+        ],
+        [
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1
+        ],
+        [
+          0,
+          2,
+          0,
+          0,
+          0,
+          3,
+          3,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          4,
+          4,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          4,
+          0,
+          5,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          5,
+          0,
+          6,
+          7,
+          7,
+          6
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          6,
+          6,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        7,
+        1,
+        5,
+        3,
+        0,
+        2,
+        6,
+        4
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 143,
+        "rank": 45,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 62,
+        "rules": {
+          "locked": 27,
+          "group": 27,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-04-q06",
+      "ordinal": 276,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-090",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          0,
+          0,
+          2
+        ],
+        [
+          0,
+          1,
+          1,
+          0,
+          1,
+          0,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2
+        ],
+        [
+          0,
+          3,
+          0,
+          4,
+          0,
+          5,
+          0,
+          0
+        ],
+        [
+          0,
+          3,
+          0,
+          4,
+          5,
+          5,
+          5,
+          6
+        ],
+        [
+          0,
+          7,
+          7,
+          4,
+          4,
+          6,
+          5,
+          6
+        ],
+        [
+          0,
+          7,
+          6,
+          4,
+          4,
+          6,
+          5,
+          6
+        ],
+        [
+          0,
+          0,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        3,
+        0,
+        7,
+        1,
+        5,
+        2,
+        4,
+        6
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 143,
+        "rank": 44,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 58,
+        "rules": {
+          "locked": 15,
+          "group": 35,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-04-q07",
+      "ordinal": 277,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-092",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          2,
+          3,
+          2,
+          3
+        ],
+        [
+          4,
+          1,
+          4,
+          4,
+          2,
+          3,
+          2,
+          3
+        ],
+        [
+          4,
+          4,
+          4,
+          4,
+          5,
+          3,
+          3,
+          3
+        ],
+        [
+          6,
+          4,
+          4,
+          4,
+          5,
+          5,
+          5,
+          5
+        ],
+        [
+          6,
+          6,
+          7,
+          7,
+          7,
+          7,
+          5,
+          7
+        ],
+        [
+          7,
+          6,
+          7,
+          7,
+          7,
+          7,
+          5,
+          7
+        ],
+        [
+          7,
+          7,
+          7,
+          7,
+          7,
+          7,
+          7,
+          7
+        ]
+      ],
+      "sol": [
+        0,
+        2,
+        4,
+        7,
+        3,
+        6,
+        1,
+        5
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 143,
+        "rank": 43,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 62,
+        "rules": {
+          "locked": 27,
+          "group": 27,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-04-q08",
+      "ordinal": 278,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-070",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          2,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          3,
+          2,
+          1
+        ],
+        [
+          0,
+          1,
+          1,
+          1,
+          3,
+          3,
+          1,
+          1
+        ],
+        [
+          4,
+          4,
+          1,
+          1,
+          3,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          5,
+          1,
+          6,
+          6
+        ],
+        [
+          1,
+          7,
+          1,
+          1,
+          5,
+          1,
+          1,
+          6
+        ],
+        [
+          1,
+          7,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      ],
+      "sol": [
+        6,
+        2,
+        5,
+        0,
+        3,
+        7,
+        4,
+        1
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 144,
+        "rank": 46,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 32,
+          "group": 24,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-04-q09",
+      "ordinal": 279,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-080",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          2,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          3,
+          2,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          3,
+          3,
+          3,
+          4,
+          4,
+          1,
+          1,
+          1
+        ],
+        [
+          5,
+          3,
+          3,
+          4,
+          1,
+          1,
+          6,
+          7
+        ],
+        [
+          5,
+          3,
+          3,
+          3,
+          3,
+          6,
+          6,
+          7
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        3,
+        1,
+        5,
+        2,
+        4,
+        7,
+        0,
+        6
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 144,
+        "rank": 48,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 62,
+        "rules": {
+          "locked": 26,
+          "group": 28,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-04-q10",
+      "ordinal": 280,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-087",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          3,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2
+        ],
+        [
+          3,
+          3,
+          4,
+          2,
+          2,
+          2,
+          5,
+          5
+        ],
+        [
+          3,
+          3,
+          4,
+          3,
+          2,
+          5,
+          5,
+          5
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          5,
+          5,
+          5,
+          5
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          5,
+          5,
+          6,
+          5
+        ],
+        [
+          3,
+          3,
+          3,
+          7,
+          6,
+          6,
+          6,
+          5
+        ],
+        [
+          3,
+          3,
+          3,
+          7,
+          6,
+          5,
+          5,
+          5
+        ]
+      ],
+      "sol": [
+        4,
+        0,
+        5,
+        2,
+        7,
+        1,
+        6,
+        3
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 144,
+        "rank": 47,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 63,
+        "rules": {
+          "locked": 29,
+          "group": 26,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-05-q01",
+      "ordinal": 281,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-069",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          0,
+          2,
+          2,
+          2,
+          1,
+          1,
+          3
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          4,
+          3,
+          3
+        ],
+        [
+          2,
+          5,
+          5,
+          5,
+          2,
+          4,
+          3,
+          3
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3
+        ],
+        [
+          6,
+          2,
+          2,
+          2,
+          2,
+          3,
+          3,
+          7
+        ],
+        [
+          6,
+          2,
+          2,
+          2,
+          2,
+          3,
+          3,
+          7
+        ]
+      ],
+      "sol": [
+        4,
+        1,
+        3,
+        5,
+        2,
+        6,
+        0,
+        7
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 145,
+        "rank": 49,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 62,
+        "rules": {
+          "locked": 25,
+          "group": 29,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-05-q02",
+      "ordinal": 282,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-082",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          3
+        ],
+        [
+          4,
+          4,
+          4,
+          0,
+          0,
+          5,
+          3,
+          5
+        ],
+        [
+          6,
+          4,
+          7,
+          0,
+          5,
+          5,
+          5,
+          5
+        ],
+        [
+          6,
+          7,
+          7,
+          0,
+          0,
+          0,
+          5,
+          0
+        ],
+        [
+          6,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "sol": [
+        7,
+        5,
+        3,
+        6,
+        1,
+        4,
+        2,
+        0
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 146,
+        "rank": 50,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 62,
+        "rules": {
+          "locked": 24,
+          "group": 30,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-05-q03",
+      "ordinal": 283,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-083",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          1,
+          1,
+          1,
+          2,
+          3,
+          3,
+          3
+        ],
+        [
+          0,
+          1,
+          1,
+          1,
+          2,
+          3,
+          3,
+          3
+        ],
+        [
+          4,
+          1,
+          5,
+          1,
+          3,
+          3,
+          6,
+          6
+        ],
+        [
+          4,
+          4,
+          5,
+          1,
+          3,
+          1,
+          6,
+          6
+        ],
+        [
+          5,
+          5,
+          5,
+          1,
+          1,
+          1,
+          6,
+          6
+        ],
+        [
+          5,
+          5,
+          5,
+          5,
+          1,
+          6,
+          6,
+          6
+        ],
+        [
+          5,
+          5,
+          5,
+          5,
+          5,
+          6,
+          6,
+          7
+        ],
+        [
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          6,
+          7
+        ]
+      ],
+      "sol": [
+        4,
+        0,
+        5,
+        1,
+        3,
+        6,
+        2,
+        7
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 146,
+        "rank": 51,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 61,
+        "rules": {
+          "locked": 21,
+          "group": 32,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-05-q04",
+      "ordinal": 284,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-079",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          3,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          4,
+          3,
+          3,
+          2,
+          2,
+          2,
+          5
+        ],
+        [
+          4,
+          4,
+          5,
+          5,
+          5,
+          6,
+          6,
+          5
+        ],
+        [
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5
+        ],
+        [
+          5,
+          5,
+          5,
+          5,
+          5,
+          7,
+          7,
+          7
+        ]
+      ],
+      "sol": [
+        0,
+        2,
+        5,
+        3,
+        1,
+        6,
+        4,
+        7
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 147,
+        "rank": 52,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 29,
+          "group": 27,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-05-q05",
+      "ordinal": 285,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-068",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          3,
+          3,
+          3,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          3,
+          4,
+          4,
+          2
+        ],
+        [
+          0,
+          0,
+          5,
+          5,
+          5,
+          6,
+          6,
+          2
+        ],
+        [
+          0,
+          7,
+          0,
+          5,
+          6,
+          6,
+          2,
+          2
+        ],
+        [
+          0,
+          7,
+          0,
+          0,
+          0,
+          6,
+          6,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "sol": [
+        7,
+        2,
+        4,
+        6,
+        3,
+        1,
+        5,
+        0
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 150,
+        "rank": 53,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 26,
+          "group": 30,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-05-q06",
+      "ordinal": 286,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-078",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          2
+        ],
+        [
+          0,
+          0,
+          3,
+          0,
+          1,
+          1,
+          1,
+          4
+        ],
+        [
+          0,
+          0,
+          3,
+          3,
+          0,
+          0,
+          4,
+          4
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          4,
+          4
+        ],
+        [
+          5,
+          0,
+          0,
+          0,
+          0,
+          6,
+          6,
+          4
+        ],
+        [
+          5,
+          0,
+          0,
+          0,
+          0,
+          7,
+          6,
+          6
+        ],
+        [
+          5,
+          0,
+          0,
+          0,
+          7,
+          7,
+          7,
+          6
+        ]
+      ],
+      "sol": [
+        3,
+        7,
+        2,
+        6,
+        1,
+        5,
+        0,
+        4
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 150,
+        "rank": 54,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 26,
+          "group": 30,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-05-q07",
+      "ordinal": 287,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-067",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          2,
+          0,
+          0,
+          0,
+          3,
+          0
+        ],
+        [
+          1,
+          2,
+          2,
+          2,
+          0,
+          0,
+          3,
+          0
+        ],
+        [
+          1,
+          2,
+          2,
+          2,
+          0,
+          0,
+          3,
+          4
+        ],
+        [
+          5,
+          6,
+          6,
+          2,
+          2,
+          0,
+          0,
+          4
+        ],
+        [
+          5,
+          5,
+          2,
+          2,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          2,
+          2,
+          7,
+          7,
+          0,
+          0,
+          0
+        ]
+      ],
+      "sol": [
+        5,
+        1,
+        6,
+        3,
+        7,
+        2,
+        0,
+        4
+      ],
+      "difficulty": {
+        "label": "intermediaire",
+        "score": 151,
+        "rank": 55,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 25,
+          "group": 31,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-05-q08",
+      "ordinal": 288,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-076",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          2,
+          2,
+          2,
+          3
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          2,
+          2,
+          4,
+          3
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          4,
+          3
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          3,
+          3
+        ],
+        [
+          5,
+          0,
+          0,
+          0,
+          0,
+          3,
+          3,
+          3
+        ],
+        [
+          5,
+          0,
+          0,
+          0,
+          0,
+          3,
+          3,
+          3
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          6,
+          6,
+          3
+        ],
+        [
+          0,
+          0,
+          0,
+          7,
+          7,
+          6,
+          6,
+          3
+        ]
+      ],
+      "sol": [
+        2,
+        4,
+        6,
+        1,
+        7,
+        0,
+        5,
+        3
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 151,
+        "rank": 56,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 25,
+          "group": 31,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-05-q09",
+      "ordinal": 289,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-077",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          2,
+          0,
+          0,
+          0,
+          0,
+          3,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          0
+        ],
+        [
+          0,
+          0,
+          4,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          4,
+          5,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          5,
+          5,
+          5,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          5,
+          6,
+          6,
+          7,
+          7,
+          0,
+          0
+        ],
+        [
+          5,
+          5,
+          5,
+          5,
+          7,
+          7,
+          0,
+          0
+        ]
+      ],
+      "sol": [
+        7,
+        0,
+        6,
+        2,
+        4,
+        1,
+        3,
+        5
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 151,
+        "rank": 57,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 25,
+          "group": 31,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-05-q10",
+      "ordinal": 290,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-066",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          2,
+          3,
+          3,
+          3,
+          1,
+          1,
+          4
+        ],
+        [
+          2,
+          2,
+          5,
+          3,
+          6,
+          6,
+          6,
+          4
+        ],
+        [
+          2,
+          2,
+          5,
+          6,
+          6,
+          6,
+          6,
+          7
+        ],
+        [
+          2,
+          2,
+          6,
+          6,
+          6,
+          6,
+          6,
+          7
+        ],
+        [
+          2,
+          6,
+          6,
+          6,
+          6,
+          6,
+          7,
+          7
+        ]
+      ],
+      "sol": [
+        0,
+        5,
+        1,
+        3,
+        7,
+        2,
+        4,
+        6
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 152,
+        "rank": 61,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 62,
+        "rules": {
+          "locked": 18,
+          "group": 36,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-06-q01",
+      "ordinal": 291,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-075",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          3,
+          3,
+          1,
+          1,
+          4
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          4
+        ],
+        [
+          1,
+          5,
+          1,
+          6,
+          1,
+          1,
+          1,
+          7
+        ],
+        [
+          1,
+          5,
+          5,
+          6,
+          6,
+          1,
+          7,
+          7
+        ],
+        [
+          5,
+          5,
+          5,
+          5,
+          5,
+          1,
+          1,
+          1
+        ]
+      ],
+      "sol": [
+        1,
+        5,
+        0,
+        4,
+        7,
+        3,
+        6,
+        2
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 152,
+        "rank": 59,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 24,
+          "group": 32,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-06-q02",
+      "ordinal": 292,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-089",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          0,
+          2,
+          3,
+          3
+        ],
+        [
+          0,
+          0,
+          4,
+          0,
+          0,
+          2,
+          2,
+          3
+        ],
+        [
+          0,
+          0,
+          4,
+          4,
+          0,
+          2,
+          5,
+          3
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          5,
+          3
+        ],
+        [
+          6,
+          6,
+          0,
+          0,
+          3,
+          0,
+          5,
+          3
+        ],
+        [
+          6,
+          3,
+          3,
+          3,
+          3,
+          0,
+          0,
+          3
+        ],
+        [
+          6,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          7,
+          7,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ]
+      ],
+      "sol": [
+        3,
+        5,
+        2,
+        4,
+        6,
+        0,
+        7,
+        1
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 152,
+        "rank": 58,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 24,
+          "group": 32,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-06-q03",
+      "ordinal": 293,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-099",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          2,
+          2,
+          2
+        ],
+        [
+          3,
+          0,
+          4,
+          4,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          3,
+          3,
+          4,
+          4,
+          2,
+          2,
+          2,
+          5
+        ],
+        [
+          3,
+          4,
+          4,
+          2,
+          2,
+          4,
+          2,
+          5
+        ],
+        [
+          4,
+          4,
+          4,
+          2,
+          4,
+          4,
+          2,
+          2
+        ],
+        [
+          6,
+          6,
+          4,
+          4,
+          4,
+          2,
+          2,
+          2
+        ],
+        [
+          7,
+          7,
+          7,
+          7,
+          4,
+          4,
+          2,
+          2
+        ],
+        [
+          7,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          2
+        ]
+      ],
+      "sol": [
+        2,
+        4,
+        7,
+        0,
+        6,
+        1,
+        3,
+        5
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 152,
+        "rank": 60,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 62,
+        "rules": {
+          "locked": 18,
+          "group": 36,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-06-q04",
+      "ordinal": 294,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-074",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          2,
+          2,
+          2
+        ],
+        [
+          3,
+          3,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          3,
+          3,
+          2,
+          4,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          5,
+          4,
+          4,
+          4,
+          2,
+          2,
+          6,
+          6
+        ],
+        [
+          5,
+          5,
+          5,
+          2,
+          2,
+          2,
+          6,
+          7
+        ],
+        [
+          5,
+          5,
+          2,
+          2,
+          2,
+          2,
+          2,
+          7
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ]
+      ],
+      "sol": [
+        0,
+        4,
+        1,
+        3,
+        6,
+        2,
+        7,
+        5
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 153,
+        "rank": 62,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 23,
+          "group": 33,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-06-q05",
+      "ordinal": 295,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-094",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          1,
+          2,
+          2,
+          3,
+          3
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          4,
+          3,
+          3,
+          3
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          4,
+          3,
+          3,
+          3
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          5,
+          1,
+          1,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          5,
+          5,
+          1,
+          1,
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          5,
+          1,
+          1,
+          6,
+          3,
+          6,
+          3,
+          6
+        ],
+        [
+          7,
+          7,
+          7,
+          6,
+          6,
+          6,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        5,
+        1,
+        4,
+        6,
+        0,
+        3,
+        7,
+        2
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 153,
+        "rank": 63,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 23,
+          "group": 33,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-06-q06",
+      "ordinal": 296,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-064",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          2,
+          3,
+          3,
+          3
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          3
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          3,
+          2,
+          3
+        ],
+        [
+          1,
+          1,
+          1,
+          4,
+          1,
+          3,
+          3,
+          3
+        ],
+        [
+          5,
+          1,
+          4,
+          4,
+          3,
+          3,
+          6,
+          3
+        ],
+        [
+          5,
+          1,
+          4,
+          4,
+          7,
+          6,
+          6,
+          3
+        ],
+        [
+          4,
+          4,
+          4,
+          4,
+          7,
+          4,
+          4,
+          4
+        ],
+        [
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ]
+      ],
+      "sol": [
+        1,
+        5,
+        3,
+        7,
+        0,
+        6,
+        4,
+        2
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 154,
+        "rank": 64,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 22,
+          "group": 34,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-06-q07",
+      "ordinal": 297,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-065",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          2,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          3
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          3,
+          3
+        ],
+        [
+          4,
+          4,
+          0,
+          0,
+          0,
+          3,
+          3,
+          3
+        ],
+        [
+          4,
+          5,
+          5,
+          6,
+          0,
+          0,
+          3,
+          3
+        ],
+        [
+          5,
+          5,
+          6,
+          6,
+          0,
+          7,
+          7,
+          7
+        ],
+        [
+          6,
+          6,
+          6,
+          6,
+          6,
+          7,
+          7,
+          7
+        ]
+      ],
+      "sol": [
+        1,
+        3,
+        5,
+        7,
+        0,
+        2,
+        6,
+        4
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 154,
+        "rank": 65,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 22,
+          "group": 34,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-06-q08",
+      "ordinal": 298,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-063",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          3
+        ],
+        [
+          2,
+          2,
+          4,
+          4,
+          0,
+          0,
+          0,
+          3
+        ],
+        [
+          2,
+          2,
+          2,
+          0,
+          0,
+          5,
+          5,
+          6
+        ],
+        [
+          2,
+          2,
+          0,
+          0,
+          0,
+          5,
+          6,
+          6
+        ],
+        [
+          2,
+          7,
+          7,
+          0,
+          0,
+          6,
+          6,
+          6
+        ],
+        [
+          2,
+          2,
+          7,
+          0,
+          0,
+          0,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        2,
+        4,
+        7,
+        3,
+        0,
+        5,
+        1,
+        6
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 155,
+        "rank": 67,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 21,
+          "group": 35,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-06-q09",
+      "ordinal": 299,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-085",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          2,
+          2,
+          1,
+          0
+        ],
+        [
+          3,
+          3,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          3,
+          4,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          4,
+          4,
+          0,
+          0,
+          0,
+          5,
+          5,
+          0
+        ],
+        [
+          4,
+          4,
+          4,
+          4,
+          5,
+          5,
+          0,
+          0
+        ],
+        [
+          6,
+          6,
+          7,
+          7,
+          7,
+          5,
+          0,
+          0
+        ],
+        [
+          7,
+          7,
+          7,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "sol": [
+        6,
+        4,
+        1,
+        7,
+        5,
+        3,
+        0,
+        2
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 155,
+        "rank": 66,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 21,
+          "group": 35,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "planned-real-adventure-03-new-06-q10",
+      "ordinal": 300,
+      "packId": "real-adventure-03",
+      "originalSource": "staged",
+      "candidateId": "lumen-diverse-088",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          3,
+          3,
+          3
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          0,
+          1,
+          1,
+          1,
+          1,
+          3,
+          3,
+          3
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          3,
+          3,
+          4,
+          4
+        ],
+        [
+          5,
+          5,
+          1,
+          6,
+          6,
+          6,
+          6,
+          6
+        ],
+        [
+          1,
+          5,
+          1,
+          6,
+          6,
+          1,
+          1,
+          6
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          7,
+          7,
+          1,
+          1,
+          1
+        ]
+      ],
+      "sol": [
+        3,
+        5,
+        0,
+        6,
+        1,
+        7,
+        2,
+        4
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 155,
+        "rank": 68,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 21,
+          "group": 35,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q001",
+      "ordinal": 301,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-060",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          2,
+          2,
+          3,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          3,
+          4,
+          0,
+          5,
+          5
+        ],
+        [
+          0,
+          0,
+          4,
+          4,
+          4,
+          4,
+          5,
+          5
+        ],
+        [
+          0,
+          0,
+          0,
+          4,
+          4,
+          5,
+          5,
+          5
+        ],
+        [
+          0,
+          0,
+          6,
+          6,
+          4,
+          7,
+          5,
+          5
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          7,
+          5,
+          5
+        ]
+      ],
+      "sol": [
+        0,
+        7,
+        1,
+        3,
+        6,
+        4,
+        2,
+        5
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 156,
+        "rank": 69,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 20,
+          "group": 36,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q002",
+      "ordinal": 302,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-061",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          2
+        ],
+        [
+          0,
+          3,
+          3,
+          3,
+          1,
+          1,
+          1,
+          2
+        ],
+        [
+          0,
+          4,
+          4,
+          1,
+          1,
+          1,
+          5,
+          5
+        ],
+        [
+          0,
+          4,
+          1,
+          1,
+          6,
+          6,
+          6,
+          6
+        ],
+        [
+          0,
+          1,
+          1,
+          1,
+          6,
+          6,
+          6,
+          6
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          7,
+          6,
+          6
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          7,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        0,
+        7,
+        3,
+        6,
+        1,
+        4,
+        2,
+        5
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 156,
+        "rank": 70,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 20,
+          "group": 36,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q003",
+      "ordinal": 303,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-062",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          1,
+          1,
+          3,
+          3,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          4,
+          1,
+          3,
+          3,
+          5,
+          5,
+          2
+        ],
+        [
+          0,
+          4,
+          1,
+          1,
+          6,
+          6,
+          5,
+          6
+        ],
+        [
+          0,
+          1,
+          1,
+          7,
+          6,
+          6,
+          6,
+          6
+        ],
+        [
+          0,
+          7,
+          7,
+          7,
+          6,
+          6,
+          6,
+          6
+        ],
+        [
+          7,
+          7,
+          7,
+          7,
+          6,
+          6,
+          6,
+          6
+        ],
+        [
+          7,
+          7,
+          7,
+          6,
+          6,
+          6,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        7,
+        4,
+        1,
+        6,
+        2,
+        0,
+        3,
+        5
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 156,
+        "rank": 71,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 20,
+          "group": 36,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q004",
+      "ordinal": 304,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-084",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2
+        ],
+        [
+          1,
+          0,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2
+        ],
+        [
+          1,
+          1,
+          1,
+          3,
+          1,
+          3,
+          2,
+          2
+        ],
+        [
+          4,
+          4,
+          3,
+          3,
+          3,
+          3,
+          2,
+          5
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          6,
+          5
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          6,
+          5
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          7,
+          7,
+          6,
+          5
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          7,
+          7,
+          5
+        ]
+      ],
+      "sol": [
+        1,
+        5,
+        2,
+        0,
+        3,
+        6,
+        4,
+        7
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 156,
+        "rank": 72,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 20,
+          "group": 36,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q005",
+      "ordinal": 305,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-091",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          2,
+          2,
+          1
+        ],
+        [
+          3,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          3,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          4,
+          1,
+          5,
+          5,
+          1,
+          6
+        ],
+        [
+          1,
+          4,
+          4,
+          1,
+          1,
+          5,
+          6,
+          6
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          7,
+          7,
+          7,
+          6
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          7,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        6,
+        2,
+        0,
+        3,
+        5,
+        1,
+        4,
+        7
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 156,
+        "rank": 73,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 20,
+          "group": 36,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q006",
+      "ordinal": 306,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-053",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          2,
+          2,
+          2,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          4,
+          1
+        ],
+        [
+          3,
+          3,
+          5,
+          5,
+          3,
+          3,
+          4,
+          1
+        ],
+        [
+          3,
+          6,
+          5,
+          3,
+          3,
+          3,
+          7,
+          7
+        ],
+        [
+          3,
+          6,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ]
+      ],
+      "sol": [
+        5,
+        0,
+        4,
+        6,
+        2,
+        7,
+        1,
+        3
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 157,
+        "rank": 74,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 19,
+          "group": 37,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q007",
+      "ordinal": 307,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-054",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          2,
+          2,
+          3
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          3
+        ],
+        [
+          0,
+          4,
+          4,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          1,
+          5,
+          5,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          6,
+          6,
+          5,
+          1,
+          7,
+          7
+        ],
+        [
+          0,
+          0,
+          0,
+          6,
+          1,
+          1,
+          7,
+          7
+        ]
+      ],
+      "sol": [
+        5,
+        7,
+        1,
+        3,
+        0,
+        4,
+        2,
+        6
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 157,
+        "rank": 75,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 19,
+          "group": 37,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q008",
+      "ordinal": 308,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-055",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          2
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          1,
+          3,
+          3,
+          1,
+          4,
+          4
+        ],
+        [
+          0,
+          5,
+          0,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          0,
+          5,
+          0,
+          0,
+          3,
+          6,
+          6,
+          6
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          6,
+          6,
+          6
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          6,
+          6,
+          6,
+          6
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          7,
+          7,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        7,
+        2,
+        6,
+        3,
+        1,
+        5,
+        0,
+        4
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 157,
+        "rank": 76,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 19,
+          "group": 37,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q009",
+      "ordinal": 309,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-056",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          2,
+          2,
+          2,
+          3,
+          2
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          3,
+          2
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2
+        ],
+        [
+          4,
+          4,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2
+        ],
+        [
+          5,
+          4,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          5,
+          4,
+          1,
+          6,
+          5,
+          5,
+          5,
+          5
+        ],
+        [
+          5,
+          4,
+          1,
+          6,
+          5,
+          5,
+          7,
+          7
+        ],
+        [
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5
+        ]
+      ],
+      "sol": [
+        0,
+        6,
+        2,
+        5,
+        1,
+        3,
+        7,
+        4
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 157,
+        "rank": 78,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 19,
+          "group": 37,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q010",
+      "ordinal": 310,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-057",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          2,
+          2,
+          1,
+          3,
+          3,
+          4
+        ],
+        [
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          4
+        ],
+        [
+          0,
+          5,
+          0,
+          0,
+          0,
+          0,
+          0,
+          4
+        ],
+        [
+          0,
+          5,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          6,
+          0,
+          0
+        ],
+        [
+          7,
+          7,
+          0,
+          0,
+          0,
+          6,
+          6,
+          0
+        ]
+      ],
+      "sol": [
+        4,
+        6,
+        2,
+        7,
+        1,
+        3,
+        5,
+        0
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 157,
+        "rank": 79,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 19,
+          "group": 37,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q011",
+      "ordinal": 311,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-058",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          1,
+          1,
+          1,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          3,
+          3,
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          4,
+          4,
+          4,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          4,
+          5,
+          0,
+          6,
+          6,
+          0
+        ],
+        [
+          0,
+          0,
+          4,
+          5,
+          0,
+          6,
+          6,
+          0
+        ],
+        [
+          0,
+          0,
+          4,
+          7,
+          7,
+          6,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        5,
+        0,
+        2,
+        7,
+        1,
+        3,
+        6,
+        4
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 157,
+        "rank": 80,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 19,
+          "group": 37,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q012",
+      "ordinal": 312,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-059",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          2,
+          2,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          3,
+          3,
+          0,
+          4
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          4
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          0,
+          0,
+          6,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          0,
+          0,
+          6,
+          6,
+          0,
+          0,
+          0
+        ],
+        [
+          7,
+          7,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "sol": [
+        6,
+        3,
+        5,
+        7,
+        2,
+        0,
+        4,
+        1
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 157,
+        "rank": 83,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 19,
+          "group": 37,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q013",
+      "ordinal": 313,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-081",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          1,
+          1,
+          1,
+          3,
+          1,
+          4,
+          4,
+          2
+        ],
+        [
+          1,
+          1,
+          3,
+          3,
+          1,
+          1,
+          4,
+          5
+        ],
+        [
+          1,
+          1,
+          1,
+          3,
+          1,
+          1,
+          4,
+          5
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          5,
+          5
+        ],
+        [
+          6,
+          1,
+          1,
+          1,
+          1,
+          5,
+          5,
+          5
+        ],
+        [
+          6,
+          6,
+          1,
+          1,
+          5,
+          5,
+          5,
+          5
+        ],
+        [
+          6,
+          7,
+          7,
+          5,
+          5,
+          5,
+          5,
+          5
+        ]
+      ],
+      "sol": [
+        1,
+        7,
+        3,
+        6,
+        4,
+        0,
+        5,
+        2
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 157,
+        "rank": 82,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 19,
+          "group": 37,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q014",
+      "ordinal": 314,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-086",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          1,
+          2,
+          2,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          3,
+          3,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          3,
+          4,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          4,
+          4,
+          4,
+          4,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          4,
+          1,
+          1,
+          5,
+          1
+        ],
+        [
+          6,
+          1,
+          1,
+          1,
+          1,
+          5,
+          5,
+          7
+        ],
+        [
+          6,
+          6,
+          1,
+          1,
+          1,
+          1,
+          5,
+          7
+        ]
+      ],
+      "sol": [
+        1,
+        4,
+        2,
+        5,
+        3,
+        6,
+        0,
+        7
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 157,
+        "rank": 81,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 19,
+          "group": 37,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q015",
+      "ordinal": 315,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-097",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          0,
+          1,
+          3,
+          4,
+          1,
+          5,
+          1
+        ],
+        [
+          2,
+          0,
+          1,
+          3,
+          4,
+          5,
+          5,
+          5
+        ],
+        [
+          2,
+          0,
+          0,
+          4,
+          4,
+          4,
+          5,
+          5
+        ],
+        [
+          0,
+          0,
+          4,
+          4,
+          4,
+          4,
+          5,
+          5
+        ],
+        [
+          0,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          6
+        ],
+        [
+          7,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          6
+        ],
+        [
+          7,
+          7,
+          4,
+          4,
+          4,
+          4,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        5,
+        3,
+        0,
+        2,
+        6,
+        4,
+        7,
+        1
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 157,
+        "rank": 84,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 19,
+          "group": 37,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q016",
+      "ordinal": 316,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-098",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          3,
+          1,
+          1,
+          1,
+          2
+        ],
+        [
+          4,
+          4,
+          3,
+          3,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          4,
+          2,
+          3,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          5,
+          5,
+          5,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          6,
+          2,
+          7,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          6,
+          7,
+          7,
+          2
+        ]
+      ],
+      "sol": [
+        1,
+        5,
+        2,
+        0,
+        3,
+        7,
+        4,
+        6
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 157,
+        "rank": 77,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 62,
+        "rules": {
+          "locked": 13,
+          "group": 41,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q017",
+      "ordinal": 317,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-044",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          2,
+          2,
+          1
+        ],
+        [
+          3,
+          0,
+          0,
+          1,
+          1,
+          2,
+          1,
+          1
+        ],
+        [
+          3,
+          3,
+          1,
+          1,
+          1,
+          4,
+          1,
+          1
+        ],
+        [
+          5,
+          1,
+          1,
+          1,
+          1,
+          4,
+          1,
+          1
+        ],
+        [
+          5,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          5,
+          5,
+          1,
+          6,
+          6,
+          1,
+          1,
+          1
+        ],
+        [
+          5,
+          5,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          5,
+          5,
+          1,
+          1,
+          7,
+          7,
+          1,
+          1
+        ]
+      ],
+      "sol": [
+        6,
+        2,
+        0,
+        5,
+        7,
+        3,
+        1,
+        4
+      ],
+      "difficulty": {
+        "label": "difficile",
+        "score": 158,
+        "rank": 85,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 18,
+          "group": 38,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q018",
+      "ordinal": 318,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-045",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          3,
+          2
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          3,
+          3,
+          3
+        ],
+        [
+          0,
+          0,
+          4,
+          5,
+          1,
+          3,
+          3,
+          3
+        ],
+        [
+          0,
+          6,
+          4,
+          5,
+          5,
+          5,
+          6,
+          7
+        ],
+        [
+          0,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          7
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          6,
+          6,
+          7
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "sol": [
+        6,
+        3,
+        5,
+        2,
+        4,
+        1,
+        7,
+        0
+      ],
+      "difficulty": {
+        "label": "expert",
+        "score": 158,
+        "rank": 86,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 18,
+          "group": 38,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q021",
+      "ordinal": 321,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-046",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          4,
+          3,
+          3,
+          5,
+          5,
+          0,
+          0
+        ],
+        [
+          0,
+          4,
+          3,
+          6,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          4,
+          6,
+          6,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          6,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          7,
+          7,
+          7
+        ]
+      ],
+      "sol": [
+        7,
+        4,
+        2,
+        5,
+        1,
+        3,
+        0,
+        6
+      ],
+      "difficulty": {
+        "label": "expert",
+        "score": 158,
+        "rank": 88,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 18,
+          "group": 38,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q022",
+      "ordinal": 322,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-047",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          2,
+          2,
+          3,
+          1
+        ],
+        [
+          4,
+          1,
+          0,
+          0,
+          1,
+          1,
+          3,
+          1
+        ],
+        [
+          4,
+          1,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          4,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          5,
+          5,
+          6,
+          6,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          6,
+          6,
+          6,
+          6,
+          6,
+          1,
+          1,
+          1
+        ],
+        [
+          6,
+          6,
+          6,
+          6,
+          6,
+          7,
+          7,
+          1
+        ]
+      ],
+      "sol": [
+        2,
+        4,
+        6,
+        0,
+        7,
+        1,
+        3,
+        5
+      ],
+      "difficulty": {
+        "label": "expert",
+        "score": 158,
+        "rank": 89,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 18,
+          "group": 38,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q023",
+      "ordinal": 323,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-048",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          2,
+          2
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          3,
+          0,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          3,
+          0,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          4,
+          0,
+          0,
+          5,
+          5,
+          2
+        ],
+        [
+          6,
+          4,
+          4,
+          0,
+          7,
+          2,
+          2,
+          2
+        ],
+        [
+          6,
+          4,
+          4,
+          0,
+          7,
+          7,
+          2,
+          2
+        ],
+        [
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          2
+        ]
+      ],
+      "sol": [
+        3,
+        1,
+        7,
+        4,
+        6,
+        0,
+        5,
+        2
+      ],
+      "difficulty": {
+        "label": "expert",
+        "score": 158,
+        "rank": 90,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 18,
+          "group": 38,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q031",
+      "ordinal": 331,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-049",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          2,
+          2,
+          1,
+          3,
+          3
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          3,
+          4
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          5,
+          5,
+          5,
+          4
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          6,
+          6,
+          4
+        ],
+        [
+          7,
+          7,
+          1,
+          6,
+          6,
+          6,
+          6,
+          4
+        ],
+        [
+          1,
+          1,
+          1,
+          6,
+          6,
+          6,
+          6,
+          4
+        ]
+      ],
+      "sol": [
+        2,
+        0,
+        3,
+        6,
+        4,
+        7,
+        1,
+        5
+      ],
+      "difficulty": {
+        "label": "expert",
+        "score": 158,
+        "rank": 91,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 18,
+          "group": 38,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q036",
+      "ordinal": 336,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-050",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          3,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          4,
+          4,
+          3,
+          0
+        ],
+        [
+          5,
+          0,
+          0,
+          0,
+          4,
+          4,
+          0,
+          0
+        ],
+        [
+          5,
+          5,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          5,
+          6,
+          6,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          7,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          7,
+          7,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "sol": [
+        7,
+        3,
+        6,
+        4,
+        0,
+        2,
+        5,
+        1
+      ],
+      "difficulty": {
+        "label": "expert",
+        "score": 158,
+        "rank": 92,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 18,
+          "group": 38,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q037",
+      "ordinal": 337,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-051",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          2,
+          2,
+          3,
+          3
+        ],
+        [
+          1,
+          0,
+          1,
+          1,
+          2,
+          4,
+          3,
+          3
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          4,
+          3,
+          3
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          4,
+          4,
+          3
+        ],
+        [
+          1,
+          5,
+          5,
+          1,
+          1,
+          3,
+          3,
+          3
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          3,
+          3
+        ],
+        [
+          6,
+          6,
+          1,
+          1,
+          1,
+          3,
+          3,
+          7
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          3,
+          3,
+          7
+        ]
+      ],
+      "sol": [
+        4,
+        1,
+        3,
+        5,
+        2,
+        6,
+        0,
+        7
+      ],
+      "difficulty": {
+        "label": "expert",
+        "score": 158,
+        "rank": 93,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 18,
+          "group": 38,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q038",
+      "ordinal": 338,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-052",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          2,
+          2,
+          3,
+          3,
+          3
+        ],
+        [
+          4,
+          4,
+          1,
+          1,
+          2,
+          3,
+          3,
+          3
+        ],
+        [
+          4,
+          1,
+          1,
+          1,
+          1,
+          3,
+          3,
+          3
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          3,
+          5,
+          5
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          3,
+          6,
+          6
+        ],
+        [
+          7,
+          1,
+          1,
+          6,
+          6,
+          6,
+          6,
+          6
+        ],
+        [
+          7,
+          7,
+          1,
+          6,
+          6,
+          6,
+          6,
+          6
+        ],
+        [
+          7,
+          7,
+          7,
+          7,
+          6,
+          6,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        1,
+        4,
+        0,
+        7,
+        5,
+        2,
+        6,
+        3
+      ],
+      "difficulty": {
+        "label": "expert",
+        "score": 158,
+        "rank": 94,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 18,
+          "group": 38,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q056",
+      "ordinal": 356,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-096",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          3,
+          1,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          0,
+          3,
+          3,
+          2,
+          2,
+          4,
+          4
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          4
+        ],
+        [
+          2,
+          2,
+          5,
+          2,
+          2,
+          2,
+          2,
+          6
+        ],
+        [
+          2,
+          2,
+          5,
+          2,
+          6,
+          2,
+          2,
+          6
+        ],
+        [
+          5,
+          5,
+          5,
+          2,
+          6,
+          2,
+          6,
+          6
+        ],
+        [
+          5,
+          7,
+          7,
+          2,
+          6,
+          6,
+          6,
+          6
+        ]
+      ],
+      "sol": [
+        4,
+        0,
+        3,
+        7,
+        5,
+        2,
+        6,
+        1
+      ],
+      "difficulty": {
+        "label": "expert",
+        "score": 158,
+        "rank": 95,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 18,
+          "group": 38,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q062",
+      "ordinal": 362,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-100",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          3,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          3,
+          3,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          2,
+          4,
+          4,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          5,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          6,
+          5,
+          5,
+          7,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          6,
+          6,
+          6,
+          7,
+          2,
+          2,
+          2,
+          2
+        ]
+      ],
+      "sol": [
+        6,
+        4,
+        1,
+        5,
+        7,
+        2,
+        0,
+        3
+      ],
+      "difficulty": {
+        "label": "expert",
+        "score": 158,
+        "rank": 87,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "hybrid",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 18,
+          "group": 38,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q072",
+      "ordinal": 372,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-095",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          2
+        ],
+        [
+          0,
+          4,
+          0,
+          5,
+          0,
+          3,
+          3,
+          2
+        ],
+        [
+          4,
+          4,
+          5,
+          5,
+          5,
+          5,
+          6,
+          2
+        ],
+        [
+          4,
+          4,
+          5,
+          7,
+          7,
+          6,
+          6,
+          2
+        ],
+        [
+          4,
+          4,
+          5,
+          7,
+          5,
+          5,
+          6,
+          6
+        ],
+        [
+          4,
+          4,
+          5,
+          5,
+          5,
+          5,
+          5,
+          6
+        ],
+        [
+          4,
+          4,
+          4,
+          5,
+          5,
+          5,
+          5,
+          6
+        ]
+      ],
+      "sol": [
+        4,
+        1,
+        5,
+        7,
+        3,
+        6,
+        2,
+        0
+      ],
+      "difficulty": {
+        "label": "expert",
+        "score": 159,
+        "rank": 96,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 17,
+          "group": 39,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q076",
+      "ordinal": 376,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-043",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          2
+        ],
+        [
+          3,
+          4,
+          4,
+          0,
+          0,
+          0,
+          0,
+          2
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          5,
+          5
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          6,
+          6,
+          3,
+          3,
+          7,
+          3,
+          3,
+          3
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          7,
+          3,
+          3,
+          3
+        ]
+      ],
+      "sol": [
+        5,
+        2,
+        7,
+        1,
+        6,
+        3,
+        0,
+        4
+      ],
+      "difficulty": {
+        "label": "expert",
+        "score": 160,
+        "rank": 97,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 16,
+          "group": 40,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q077",
+      "ordinal": 377,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-042",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          3,
+          3
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          3,
+          3
+        ],
+        [
+          4,
+          0,
+          0,
+          0,
+          5,
+          5,
+          3,
+          3
+        ],
+        [
+          4,
+          0,
+          0,
+          0,
+          5,
+          3,
+          3,
+          3
+        ],
+        [
+          6,
+          6,
+          0,
+          7,
+          7,
+          7,
+          7,
+          3
+        ],
+        [
+          7,
+          7,
+          7,
+          7,
+          7,
+          7,
+          3,
+          3
+        ]
+      ],
+      "sol": [
+        5,
+        7,
+        2,
+        6,
+        0,
+        4,
+        1,
+        3
+      ],
+      "difficulty": {
+        "label": "expert",
+        "score": 161,
+        "rank": 98,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 15,
+          "group": 41,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q086",
+      "ordinal": 386,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-041",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          2,
+          2,
+          1,
+          3
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          4,
+          2,
+          3,
+          3
+        ],
+        [
+          0,
+          0,
+          3,
+          4,
+          4,
+          3,
+          3,
+          3
+        ],
+        [
+          5,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          5,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          6,
+          6,
+          7
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          6,
+          7
+        ]
+      ],
+      "sol": [
+        6,
+        4,
+        1,
+        3,
+        0,
+        2,
+        5,
+        7
+      ],
+      "difficulty": {
+        "label": "expert",
+        "score": 162,
+        "rank": 99,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "mosaic",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 14,
+          "group": 42,
+          "single": 8
+        }
+      }
+    },
+    {
+      "id": "pack-real-adventure-04-q095",
+      "ordinal": 395,
+      "packId": "real-adventure-04",
+      "originalSource": "generated",
+      "candidateId": "lumen-diverse-093",
+      "size": 8,
+      "reg": [
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          2,
+          3,
+          3
+        ],
+        [
+          2,
+          0,
+          2,
+          2,
+          1,
+          2,
+          2,
+          3
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          3
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          4,
+          4,
+          4,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          5,
+          6,
+          6,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          5,
+          5,
+          7,
+          6,
+          2,
+          7,
+          2
+        ],
+        [
+          2,
+          2,
+          5,
+          7,
+          7,
+          7,
+          7,
+          2
+        ]
+      ],
+      "sol": [
+        0,
+        4,
+        7,
+        5,
+        1,
+        3,
+        6,
+        2
+      ],
+      "difficulty": {
+        "label": "expert",
+        "score": 164,
+        "rank": 100,
+        "version": "heuristic-v1",
+        "calibrated": false
+      },
+      "family": "serpentine",
+      "audit": {
+        "ok": true,
+        "solutions": 1,
+        "proofSteps": 64,
+        "rules": {
+          "locked": 12,
+          "group": 44,
+          "single": 8
+        }
+      }
+    }
+  ]
+}
