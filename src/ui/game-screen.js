@@ -301,6 +301,7 @@ async function saveExistingAccountPassword(){
  if(result.ok){const input=document.getElementById("setPasswordValue");if(input)input.value="";}
 }
 function syncMobileAuthUI(){
+ syncAdministrationMenu();
  const status=document.getElementById("mobileAuthStatus"),action=document.getElementById("mobileAuthAction"),icon=document.getElementById("mobileAccount");
  if(!status||!action||!icon)return;
  const signedIn=Boolean(lumenUser);
@@ -319,7 +320,21 @@ function syncMobileAuthUI(){
 
 function hasInternalCapability(name){return lumenCapabilities.some(x=>(typeof x==="string"?x:x?.capability)===name)}
 function unlimitedShardsEnabled(){return hasInternalCapability("unlimited_shards")&&localStorage.getItem("lumenAdminUnlimitedShards")==="1"}
+function syncAdministrationMenu(){
+ const entry=document.getElementById("administrationEntry");
+ const panel=document.getElementById("administrationPanel");
+ const toggle=document.getElementById("administrationToggle");
+ const qaTools=document.getElementById("qaAccountTools");
+ const authorized=hasInternalCapability("unlimited_shards")||hasInternalCapability("analytics_cockpit");
+ // QA always offers an escape to the genuine profile, even before auth hydration.
+ const visible=qaActive||authorized;
+ if(entry)entry.hidden=!visible;
+ if(qaTools)qaTools.hidden=!visible;
+ if(!visible&&panel)panel.hidden=true;
+ if(toggle)toggle.setAttribute("aria-expanded",String(visible&&!!panel&&!panel.hidden));
+}
 function updateAdminTools(){
+ syncAdministrationMenu();
  const box=document.getElementById("adminTools"),toggle=document.getElementById("adminUnlimitedShards"),cockpit=document.getElementById("adminCockpitOpen");
  if(!box||!toggle)return;
  const shards=hasInternalCapability("unlimited_shards"),analytics=hasInternalCapability("analytics_cockpit");
@@ -378,7 +393,15 @@ function setupMobileAuth(){
  const editor=document.getElementById("accountProfileEditor");
  const edit=document.getElementById("editAccountProfile");if(edit)edit.onclick=()=>{if(!lumenUser||!editor)return;editor.dataset.open="true";syncMobileAuthUI();document.getElementById("nicknameInput")?.focus()};
  const closeProfile=document.getElementById("closeAccountProfile");if(closeProfile)closeProfile.onclick=()=>{if(!editor)return;editor.dataset.open="false";syncMobileAuthUI()};
- const qaTools=document.getElementById("qaAccountTools");if(qaTools)qaTools.hidden=!qaActive;
+ syncAdministrationMenu();
+ const adminToggle=document.getElementById("administrationToggle");
+ if(adminToggle)adminToggle.onclick=()=>{
+  syncAdministrationMenu();
+  const entry=document.getElementById("administrationEntry"),panel=document.getElementById("administrationPanel");
+  if(!entry||entry.hidden||!panel)return;
+  panel.hidden=!panel.hidden;
+  adminToggle.setAttribute("aria-expanded",String(!panel.hidden));
+ };
  document.addEventListener("click",()=>{if(!menu.hidden)menu.hidden=true});
  action.onclick=async()=>{
    menu.hidden=true;

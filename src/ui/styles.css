@@ -984,3 +984,14 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 #dailyCard .daily-card-heading .daily-help{position:static;flex:0 0 22px;display:grid;place-items:center;width:22px;height:22px;min-width:22px;border:1px solid #587a91;border-radius:50%;background:transparent;color:#c7dce9;font-family:inherit;font-size:13px;font-weight:700;line-height:1;padding:0;box-shadow:none}
 #dailyCard .daily-protected{font-size:10px;padding:2px 7px;align-self:flex-start}
 @media(max-width:390px){#dailyCard{padding:9px 10px}#dailyCard .daily-card-middle{gap:5px}#dailyCard .daily-stars{gap:1px}#dailyCard .daily-star{width:14px;height:18px;font-size:13px}#dailyCard #dailyMeta{font-size:10px}}
+
+/* Administration: a single compact entry in the profile popover. */
+#administrationEntry[hidden],#administrationPanel[hidden],#qaAccountTools[hidden],#adminTools[hidden]{display:none!important}
+#administrationEntry{display:grid;gap:8px;min-width:0}
+#administrationToggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid #315975;border-radius:15px;padding:11px 14px;background:#112c41;color:#c2f3ff;font-weight:750}
+#administrationToggle[aria-expanded="true"] span{transform:rotate(180deg)}
+#administrationPanel{display:grid;gap:9px;padding:12px;border:1px solid #2b4e67;border-radius:15px;background:#081a2b;max-height:min(48vh,380px);overflow-y:auto}
+#administrationPanel .qa-account-tools,#administrationPanel #adminTools{display:grid;gap:8px;min-width:0}
+#administrationPanel button{width:100%;min-height:40px;white-space:normal}
+#administrationPanel label{display:flex;align-items:center;gap:9px;color:#cbdbea}
+#administrationPanel .qa-account-tools strong{font-size:12px;color:#86cfe5;text-align:left}
