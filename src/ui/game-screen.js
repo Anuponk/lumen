@@ -98,22 +98,43 @@ async function flushCloudProfile(){
 // Preserve unsynced changes independently of the normal cloud authority slot.
 // The backup is intentionally never consumed automatically; recovery needs a review.
 function preserveUnsyncedCloudProgress(reason){
+ // Immutable checkpoints: a previous unsynced victory must not be overwritten
+ // just because a later snapshot has the same (or smaller) solved count.
  try{
-  const key="lumenUnsyncedCloudBackupV1:"+lumenUser?.id;
-  const snapshot=JSON.stringify({savedAt:new Date().toISOString(),reason,progress:lumenProgress});
-  const previous=localStorage.getItem(key);
-  // Keep a newer/richer prior backup, rather than silently overwriting it.
-  if(previous){
+  const uid=lumenUser?.id;
+  if(!uid||qaActive)return false;
+  const prefix="lumenUnsyncedCloudBackupV2:"+uid+":";
+  const progress=JSON.parse(JSON.stringify(lumenProgress));
+  const payload=JSON.stringify({savedAt:new Date().toISOString(),reason,progress});
+  const latestKey=prefix+"latest";
+  const latest=localStorage.getItem(latestKey);
+  if(latest){
    try{
-    const old=JSON.parse(previous);
-    const oldSolved=Object.values(old.progress?.solved||{}).filter(Boolean).length;
-    const newSolved=Object.values(lumenProgress.solved||{}).filter(Boolean).length;
-    if(oldSolved>newSolved)return true;
+    const prev=JSON.parse(latest);
+    if(sameCloudProfile(prev.progress,progress))return true;
    }catch(_){}
   }
-  localStorage.setItem(key,snapshot);
-  return localStorage.getItem(key)===snapshot;
- }catch(error){console.warn("LUMEN unsynced backup could not be verified",error);return false}
+  const key=prefix+Date.now()+":"+Math.random().toString(36).slice(2);
+  // Write immutable checkpoint first, then update the convenient latest pointer.
+  localStorage.setItem(key,payload);
+  if(localStorage.getItem(key)!==payload)throw Error("Unsynced checkpoint not verified");
+  try{localStorage.setItem(latestKey,payload)}catch(_){}
+  recordCloudDiagnostic("outbox_preserved",{verified:true});
+  return true;
+ }catch(error){
+  // Fallback to legacy slot; NEVER prune immutable checkpoints to save space.
+  try{
+   const key="lumenUnsyncedCloudBackupV1:"+lumenUser?.id;
+   if(!localStorage.getItem(key)){
+    const value=JSON.stringify({savedAt:new Date().toISOString(),reason,progress:lumenProgress});
+    localStorage.setItem(key,value);
+    return localStorage.getItem(key)===value;
+   }
+  }catch(_){}
+  recordCloudDiagnostic("outbox_preservation_failed",{kind:error?.name==="QuotaExceededError"?"quota":"other"});
+  console.warn("LUMEN unsynced backup could not be verified",error);
+  return false;
+ }
 }
 async function confirmCloudReward(){
  recordCloudDiagnostic("victory_preflight",{profileReady:cloudProfileReady,signedIn:!!lumenUser,clientReady:!!lumenSupabase,qa:qaActive,sessionPending:authSessionPending});
