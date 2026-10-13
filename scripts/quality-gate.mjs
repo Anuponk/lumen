@@ -55,6 +55,7 @@ const nodeSuites=[
  "cloud-unsynced-recovery-tests.mjs",
  "streak-visual-tests.mjs",
  "qa-streak-loss-preview-tests.mjs",
+ "qa-streak-loss-overlay-tests.mjs",
  "streak-banner-mockup-tests.mjs",
  "learning-tests.mjs",
  "social-challenge-tests.mjs",
