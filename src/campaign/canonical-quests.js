@@ -1,6 +1,9 @@
 // Canonical campaign view for #222. Stable quest IDs are authoritative here;
 // the legacy numeric index remains the key in existing cloud saves.
 import staged from "../../content/generated/issue-222-additions.json" with {type:"json"};
+import diverse from "../../content/generated/diverse-adventures-3-4.json" with {type:"json"};
+const diverseById=new Map(diverse.puzzles.map(q=>[q.id,q]));
+if(diverse.schema!=="lumen-grid-overrides-v1"||diverseById.size!==100)throw Error("Invalid diversity override manifest");
 import {CONTENT_PACKS,CONTENT_CONSTELLATIONS,hasPackAccess} from "./content.js";
 import {playableQuest,playableQuestCount} from "./playable-quests.js";
 
@@ -38,7 +41,10 @@ const all=Object.freeze(slots.map(slot=>{
  const original=slot.legacyIndex===null?added.get(slot.id):playableQuest(slot.legacyIndex);
  if(!original||original.id!==slot.id)throw Error("Missing canonical grid "+slot.id);
  if(slot.legacyIndex===null&&(!original.audit?.ok||original.audit.solutions!==1))throw Error("Unaudited grid "+slot.id);
- return Object.freeze({...slot,size:original.size??original.reg.length,reg:original.reg,sol:original.sol,audit:original.audit??null});
+ const replacement=diverseById.get(slot.id);
+ if(replacement&&(replacement.packId!==slot.packId||replacement.ordinal!==slot.ordinal||!["real-adventure-03","real-adventure-04"].includes(slot.packId)))throw Error("Invalid diversity override target "+slot.id);
+ const grid=replacement||original;
+ return Object.freeze({...slot,size:grid.size??grid.reg.length,reg:grid.reg,sol:grid.sol,audit:grid.audit??null,difficulty:grid.difficulty??null,family:grid.family??null});
 }));
 if(all.length!==CONTENT_PACKS.length*100||new Set(all.map(q=>q.id)).size!==all.length||all.filter(q=>q.legacyIndex!==null).length!==playableQuestCount())throw Error("Inconsistent canonical catalogue");
 const byId=new Map(all.map(q=>[q.id,q]));
