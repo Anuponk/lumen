@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const setup=source.slice(source.indexOf('function setupStreakLoss(){'),source.indexOf('function renderDaily(){'));
+assert.match(setup,/document\.body\.appendChild\(lossModal\)/,'Overlay must be outside hidden sky modal');
+assert.ok(setup.indexOf('document.body.appendChild(lossModal)')<setup.indexOf('qaPreview.addEventListener'),'Move the overlay before a QA click');
+assert.match(setup,/modal\.hidden=false/,'QA click opens the overlay');
+assert.match(source,/setupStreakLoss\(\);/,'Overlay is installed at startup');
+assert.match(html,/id="streakLossModal"/,'Real overlay markup exists');
+assert.doesNotMatch(setup,/saveLumenProgress\(|localStorage\.setItem\(|cloudSaveDaily\(/,'QA preview cannot change saved progress');
+console.log('QA streak loss overlay visibility test passed');
