@@ -95,6 +95,32 @@ async function flushCloudProfile(){
  })();
  return cloudProfileInFlight;
 }
+// Secondary durable store when localStorage quota is exhausted. Never deletes older snapshots.
+function preserveUnsyncedInIndexedDB(uid,payload){
+ return new Promise((resolve,reject)=>{
+  if(typeof indexedDB==="undefined"){reject(Error("IndexedDB unavailable"));return}
+  const request=indexedDB.open("lumen-unsynced-checkpoints",1);
+  request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains("snapshots"))db.createObjectStore("snapshots")};
+  request.onerror=()=>reject(request.error||Error("IndexedDB open failed"));
+  request.onsuccess=()=>{
+   const db=request.result;
+   const key=uid+":"+Date.now()+":"+Math.random().toString(36).slice(2);
+   let tx;
+   try{tx=db.transaction("snapshots","readwrite");tx.objectStore("snapshots").put(payload,key)}
+   catch(error){db.close();reject(error);return}
+   tx.onerror=()=>{db.close();reject(tx.error||Error("IndexedDB write failed"))};
+   tx.onabort=()=>{db.close();reject(tx.error||Error("IndexedDB write aborted"))};
+   tx.oncomplete=()=>{
+    // Verify the committed record in a separate transaction.
+    try{
+     const read=db.transaction("snapshots","readonly").objectStore("snapshots").get(key);
+     read.onsuccess=()=>{db.close();read.result===payload?resolve(true):reject(Error("IndexedDB verification failed"))};
+     read.onerror=()=>{db.close();reject(read.error||Error("IndexedDB verification failed"))};
+    }catch(error){db.close();reject(error)}
+   };
+  };
+ })
+}
 // Preserve unsynced changes independently of the normal cloud authority slot.
 // The backup is intentionally never consumed automatically; recovery needs a review.
 function preserveUnsyncedCloudProgress(reason){
@@ -131,6 +157,14 @@ function preserveUnsyncedCloudProgress(reason){
     return localStorage.getItem(key)===value;
    }
   }catch(_){}
+  // localStorage may be full; keep an independent durable copy in IndexedDB.
+  if(error?.name==="QuotaExceededError"&&lumenUser?.id){
+   const payload=JSON.stringify({savedAt:new Date().toISOString(),reason,progress:lumenProgress});
+   preserveUnsyncedInIndexedDB(lumenUser.id,payload)
+    .then(()=>recordCloudDiagnostic("outbox_preserved",{verified:true,store:"indexeddb"}))
+    .catch(()=>recordCloudDiagnostic("outbox_preservation_failed",{kind:"quota",store:"indexeddb"}));
+   return false; // Async fallback: do not claim success before verification.
+  }
   recordCloudDiagnostic("outbox_preservation_failed",{kind:error?.name==="QuotaExceededError"?"quota":"other"});
   console.warn("LUMEN unsynced backup could not be verified",error);
   return false;
@@ -150,7 +184,7 @@ async function confirmCloudReward(){
    const card=document.createElement("div");
    card.style.cssText="background:#182238;color:white;padding:24px;max-width:420px;border-radius:14px;text-align:center";
    const title=document.createElement("h2");title.textContent="Sauvegarde en attente";
-   const copy=document.createElement("p");copy.textContent=cloudProfileFailure?.reason==="conflict"?"Le profil cloud a changé sur le serveur. Tes changements sont conservés sur cet appareil dans une copie de secours. Ne recharge pas : la réconciliation doit être vérifiée.":cloudProfileFailure?.reason==="network"?"La sauvegarde cloud n’a pas pu être confirmée. Une copie locale de secours est conservée. Réessaie quand la connexion revient.":"Le cloud n’est pas encore prêt. La progression reste conservée sur cet appareil.";
+   const copy=document.createElement("p");copy.textContent=cloudProfileFailure?.reason==="conflict"?"Le profil cloud a changé sur le serveur. Tes changements sont conservés sur cet appareil dans une copie de secours. Ne recharge pas : la réconciliation doit être vérifiée.":cloudProfileFailure?.reason==="network"?"La sauvegarde cloud n’a pas pu être confirmée. Une copie locale de secours est conservée. Réessaie quand la connexion revient.":"Le cloud n’est pas encore prêt. La synchronisation est bloquée : ne vide pas les données du navigateur et ne réinstalle pas Lumen avant récupération.";
    const again=document.createElement("button");again.textContent="Réessayer la sauvegarde";again.className="primary";
    if(cloudProfileFailure?.reason==="conflict"||!cloudProfileReady){again.disabled=true;again.title="Un nouvel essai ne résoudra pas le conflit."}
    again.onclick=()=>{panel.remove();resolve(true)};
