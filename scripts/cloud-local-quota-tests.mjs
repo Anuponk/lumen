@@ -14,7 +14,7 @@ const full={getItem:k=>quota.get(k)??null,setItem:(k,v)=>{if(k.startsWith('lumen
 assert.equal(installCloudProfileLocally(full,remote),false,'Equal payload needs no write even with full storage');
 const improved={...remote,xp:2};
 assert.equal(installCloudProfileLocally(full,improved),'memory_only','Verified cloud dominance must not deadlock hydration on quota');
-assert.deepEqual(JSON.parse(quota.get(key)),remote,'Original remains intact on failed backup');
+assert.deepEqual(JSON.parse(quota.get(key)),remote,'Original remains intact when memory-only fallback is used');
 const diagnostics=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 assert.match(diagnostics,/errorName:String\(e\?\.name/);
 assert.match(diagnostics,/stage:String\(e\?\.stage/);
