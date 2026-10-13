@@ -606,8 +606,15 @@ function setupStreakLoss(){
    if(shard){shard.style.animation="none";void shard.offsetWidth;shard.style.animation=""}
   });
  }
- document.getElementById("streakLossContinue")?.addEventListener("click",closeStreakLoss);
- document.getElementById("streakLossRestart")?.addEventListener("click",()=>{closeStreakLoss();document.getElementById("mapModal").hidden=true});
+ const restart=document.getElementById("streakLossRestart");
+ if(restart)restart.onclick=event=>{
+  event.preventDefault();
+  event.stopPropagation();
+  closeStreakLoss();
+  const map=document.getElementById("mapModal");
+  if(map)map.hidden=true;
+  // No automatic streak credit: only a qualified completed quest starts a new series.
+ };
 }
 function renderDaily(){
  const stars=document.getElementById("dailyStars");if(!stars)return;stars.innerHTML="";
