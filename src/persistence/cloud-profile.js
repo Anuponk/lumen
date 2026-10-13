@@ -293,10 +293,22 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  let local;
  try{local=validateCloudProfile(JSON.parse(raw))}catch{return {status:"blocked",reason:"invalid_local"}}
  const merged=structuredClone(cloud);
- for(const field of ["shards","xp","skyScore","daily","challenges"]){
-  const left=local[field]??(field==="daily"||field==="challenges"?{}:0);
-  const right=cloud[field]??(field==="daily"||field==="challenges"?{}:0);
-  if(!sameCloudProfile(left,right))return {status:"blocked",reason:field==="daily"||field==="challenges"?"mutable_ledger":"mutable_balance"};
+ // Player-first recovery: preserve the higher observed balances and XP.
+ // This is intentionally a conservative player-favourable approximation, NOT
+ // a reconstructed transaction history. Keep both originals for an audit.
+ const differingBalances=[];
+ for(const field of ["shards","xp","skyScore"]){
+  const left=Number(local[field]??0),right=Number(cloud[field]??0);
+  if(!Number.isFinite(left)||!Number.isFinite(right)||left<0||right<0)
+   return {status:"blocked",reason:"invalid_balance",fields:[field]};
+  if(left!==right)differingBalances.push(field);
+  merged[field]=Math.max(left,right);
+ }
+ // Daily engagement and challenge ledgers can grant rewards: never sum them
+ // or claim to reconstruct their history.
+ for(const field of ["daily","challenges"]){
+  if(!sameCloudProfile(local[field]??{},cloud[field]??{}))
+   return {status:"blocked",reason:"mutable_ledger",fields:[field]};
  }
  const safeFields=new Set(["solved","historyBackup","noHint","badges","stars","performances","canonicalQuestState"]);
  for(const field of new Set([...Object.keys(cloud),...Object.keys(local)])){
@@ -331,5 +343,5 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  const updated=await compareAndSwapCloudProfile(supabase,validateCloudProfile(merged),cloud);
  const verified=await loadVerifiedProfile(supabase);
  if(!sameCloudProfile(updated,verified))throw Error("Reconciliation cloud non verifiee");
- return {status:"reconciled",profile:verified};
+ return {status:"reconciled",profile:verified,playerFavouredBalances:differingBalances};
 }

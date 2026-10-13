@@ -12,7 +12,12 @@ assert([...map.keys()].some(k=>k.startsWith('lumenBeforeCloudReconcileLocal_')))
 assert([...map.keys()].some(k=>k.startsWith('lumenBeforeCloudReconcileRemote_')));
 assert.equal(map.get('lumenProgressV1'),JSON.stringify(local),'Local progress unchanged before verified reload');
 map.set('lumenProgressV1',JSON.stringify({...local,shards:8}));const before=writes;
-assert.equal((await reconcileCompatibleCloudProfiles(api,storage,remote)).reason,'mutable_balance');assert.equal(writes,before);
+const currencyResolution=await reconcileCompatibleCloudProfiles(api,storage,remote);
+assert.equal(currencyResolution.status,'reconciled');
+assert.deepEqual(currencyResolution.playerFavouredBalances,['shards']);
+assert.equal(remote.shards,8);assert.equal(writes,before+1);
+assert.equal(remote.solved[2],1);
+const afterCurrency=writes;
 map.set('lumenProgressV1',JSON.stringify({...local,stars:{0:4}}));remote.stars={0:3};
-assert.equal((await reconcileCompatibleCloudProfiles(api,storage,remote)).reason,'reward_conflict');assert.equal(writes,before);
-console.log('Bidirectional cloud reconciliation preserves both sides and blocks reward/balance conflicts');
+assert.equal((await reconcileCompatibleCloudProfiles(api,storage,remote)).reason,'reward_conflict');assert.equal(writes,afterCurrency);
+console.log('Bidirectional cloud reconciliation preserves both sides and recovers player-favourable balances and blocks reward conflicts');
