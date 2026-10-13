@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {reconcileCompatibleCloudProfiles,sameCloudProfile} from '../src/persistence/cloud-profile.js';
+const base={solved:{0:1},historyBackup:{0:1},badges:{},stars:{},performances:{},canonicalQuestState:{},shards:5,xp:7,skyScore:2,daily:{},challenges:{}};
+const local={...structuredClone(base),solved:{0:1,1:1},historyBackup:{0:1,1:1}};
+let remote={...structuredClone(base),solved:{0:1,2:1},historyBackup:{0:1,2:1}},writes=0;
+const map=new Map([['lumenProgressV1',JSON.stringify(local)]]);
+const storage={getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,String(v))};
+const api={async rpc(name,args){if(name==='lumen_cas_profile'){if(!sameCloudProfile(remote,args.p_expected))return {data:false,error:null};remote=structuredClone(args.p_payload);writes++;return {data:true,error:null}}if(name==='lumen_restore_profile')return {data:structuredClone(remote),error:null};throw Error(name)}};
+const result=await reconcileCompatibleCloudProfiles(api,storage,remote);
+assert.equal(result.status,'reconciled');assert.equal(writes,1);assert.deepEqual(Object.keys(remote.solved).sort(),['0','1','2']);
+assert([...map.keys()].some(k=>k.startsWith('lumenBeforeCloudReconcileLocal_')));
+assert([...map.keys()].some(k=>k.startsWith('lumenBeforeCloudReconcileRemote_')));
+assert.equal(map.get('lumenProgressV1'),JSON.stringify(local),'Local progress unchanged before verified reload');
+map.set('lumenProgressV1',JSON.stringify({...local,shards:8}));const before=writes;
+assert.equal((await reconcileCompatibleCloudProfiles(api,storage,remote)).reason,'mutable_balance');assert.equal(writes,before);
+map.set('lumenProgressV1',JSON.stringify({...local,stars:{0:4}}));remote.stars={0:3};
+assert.equal((await reconcileCompatibleCloudProfiles(api,storage,remote)).reason,'reward_conflict');assert.equal(writes,before);
+console.log('Bidirectional cloud reconciliation preserves both sides and blocks reward/balance conflicts');
