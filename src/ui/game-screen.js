@@ -6,7 +6,7 @@ import {createDiagnostics} from "../testing/diagnostics.js";
 import {createLocalPersistence} from "../persistence/local.js";
 import {createCloudPersistence} from "../persistence/cloud.js";
 import {reconcileDailyIntoCloudProfile} from "../persistence/daily-hydration.js";
-import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievements,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally} from "../persistence/cloud-profile.js";
+import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievements,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
@@ -204,6 +204,17 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   if(currentOwner!==accountId){
    if(original)localStorage.setItem('lumenBeforeAccountSwitch_'+Date.now(),original);
    localStorage.setItem(ownerKey,accountId);
+  }
+  hydrationStage="local_reconciliation";
+  const currentLocal=localStorage.getItem("lumenProgressV1");
+  if(currentLocal&&existing){
+   let conflict=false;
+   try{conflict=!cloudSafelyCoversLocal(JSON.parse(currentLocal),cloud)}catch{conflict=true}
+   if(conflict){
+    const resolution=await reconcileDominantLocalProfile(lumenSupabase,localStorage,cloud);
+    recordCloudDiagnostic("hydration_reconciliation",{result:resolution.status,reason:resolution.reason||"none"});
+    if(resolution.status==="reconciled")cloud=resolution.profile;
+   }
   }
   hydrationStage="local_install";
   const changed=installCloudProfileLocally(localStorage,cloud);
