@@ -552,7 +552,8 @@ function renderDaily(){
  }
  const today=localDateKey(),status=dailyState(lumenProgress.daily.dates,today),streak=status.streak,cycle=cycleDay(streak),next=nextReward(streak);
  const visual=streakVisual(lumenProgress.daily.dates,today);
- for(const [i,slot] of visual.slots.entries()){const e=document.createElement("span");e.className="daily-star "+slot.kind+(i===visual.focus?" today":"");e.textContent="✦";stars.appendChild(e)}
+ const highlightedIndex=status.done?visual.slots.findLastIndex(slot=>slot.kind==="lit"):visual.focus;
+ for(const [i,slot] of visual.slots.entries()){const e=document.createElement("span");e.className="daily-star "+slot.kind+(i===highlightedIndex?" today":"");e.textContent="✦";stars.appendChild(e)}
  const protectedLabel=document.getElementById("dailyProtection");if(protectedLabel)protectedLabel.hidden=!visual.missed;
  document.getElementById("dailyTitle").textContent=visual.protectedDay?"Lumière du jour protégée":status.done?"Lumière du jour entretenue":"Joue aujourd’hui pour continuer ta Série";
  document.getElementById("dailyMeta").textContent="Série · "+streak+" jour"+(streak>1?"s":"")+(visual.missed?" · 1 jour manqué":" · Cycle "+cycle+"/7");
