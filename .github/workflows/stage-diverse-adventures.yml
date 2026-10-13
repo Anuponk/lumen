@@ -6,13 +6,15 @@ on:
       - '.github/workflows/stage-diverse-adventures.yml'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   stage:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -20,6 +22,16 @@ jobs:
         run: node scripts/build-diverse-100.mjs
       - name: Assign to eligible Adventures 3 and 4 slots
         run: node scripts/stage-diverse-adventures.mjs
+      - name: Save audited replacement data to PR branch
+        if: github.event_name == 'pull_request'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add content/generated/diverse-adventures-3-4.json
+          if ! git diff --cached --quiet; then
+            git commit -m "data(#340): stage validated Adventure 3-4 replacements"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi
       - name: Upload replacement review manifest
         uses: actions/upload-artifact@v4
         with:
