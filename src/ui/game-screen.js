@@ -491,6 +491,7 @@ function renderDaily(){
  document.getElementById("dailyTitle").textContent=status.done?"Lumière du jour entretenue":status.grace?"Ta Série de lumière est protégée aujourd’hui":"Joue aujourd’hui pour continuer ta Série";
  document.getElementById("dailyMeta").textContent="Série · "+streak+" jour"+(streak>1?"s":"")+" · Cycle "+cycle+"/7";
  document.getElementById("dailyReward").textContent="Prochaine récompense : +"+next.amount+" ✦ à J"+next.cycleDay;
+ const card=document.getElementById("dailyCard"),compact=document.getElementById("dailyCompactHelp");if(card)card.hidden=!!status.done;if(compact)compact.hidden=!status.done;
  const ms=document.getElementById("mobileStreak");if(ms)ms.textContent="🔥 "+streak;
  const infoStars=document.getElementById("dailyInfoStars");if(infoStars){infoStars.innerHTML="";for(let i=1;i<=7;i++){let e=document.createElement("span");e.className=i<=cycle?"on":"";e.textContent="✦";infoStars.appendChild(e)}}
  const infoStatus=document.getElementById("dailyInfoStatus");if(infoStatus)infoStatus.textContent=status.done?"✓ Aujourd’hui validé · série de "+streak+" jour"+(streak>1?"s":""):status.grace?"Ta Série de lumière est protégée aujourd’hui. Joue pour la continuer.":"Aujourd’hui : réussis une nouvelle quête ou améliore un badge éligible.";
@@ -506,17 +507,30 @@ function maybeShowReturnWelcome(){
  stars.textContent="✦".repeat(cycle)+"·".repeat(7-cycle);toast.hidden=false;
  const close=()=>{toast.classList.add("hide");setTimeout(()=>toast.hidden=true,260)};toast.onclick=close;setTimeout(close,5200);
 }
+function showDailyCelebration(claim){
+ if(!claim||!claim.credited)return;
+ const state=dailyState(lumenProgress.daily.dates,localDateKey()),streak=state.streak,cycle=cycleDay(streak),modal=document.getElementById("dailyCelebration");if(!modal)return;
+ const stars=document.getElementById("dailyCelebrationStars");stars.replaceChildren();for(let i=1;i<=7;i++){const star=document.createElement("span");star.textContent="✦";star.className=i<=cycle?"on":"";stars.appendChild(star)}
+ document.getElementById("dailyCelebrationCount").textContent=streak+" jour"+(streak>1?"s":"")+" de lumière · Jour "+cycle+"/7";
+ document.getElementById("dailyCelebrationReward").textContent=Number(claim.reward)>0?"Récompense : +"+Number(claim.reward)+" ✦":"Ta série continue ! Prochaine récompense : +"+nextReward(streak).amount+" ✦ à J"+nextReward(streak).cycleDay;
+ modal.hidden=false;document.getElementById("dailyCelebrationContinue")?.focus();
+}
+function setupDailyCelebration(){
+ const modal=document.getElementById("dailyCelebration"),close=document.getElementById("dailyCelebrationContinue");if(close)close.onclick=()=>{modal.hidden=true};if(modal)modal.onclick=e=>{if(e.target===modal)modal.hidden=true};
+ const help=document.getElementById("dailyHelpModal"),hide=()=>{help.hidden=true};for(const id of ["dailyHelp","dailyCompactHelp"]){const btn=document.getElementById(id);if(btn)btn.onclick=()=>{const s=dailyState(lumenProgress.daily.dates,localDateKey());document.getElementById("dailyHelpCurrent").textContent="Série actuelle : "+s.streak+" jour(s). "+(s.done?"Aujourd’hui validé.":s.grace?"Jour de grâce.":"Joue aujourd’hui pour continuer.");help.hidden=false;document.getElementById("dailyHelpClose")?.focus()}}document.getElementById("dailyHelpClose")?.addEventListener("click",hide);if(help)help.onclick=e=>{if(e.target===help)hide()};document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(modal&&!modal.hidden)modal.hidden=true;if(help&&!help.hidden)hide()}});
+}
+setupDailyCelebration();
 async function completeDaily(){
  if(persistenceModel.lumenUser){
    const claim=await cloudSaveDaily(localDateKey(),levelIndex);
    if(!claim)return null;
    await cloudMergeDaily();
-   if(Number(claim.reward)>0)showRewardToast("Série de lumière · +"+Number(claim.reward)+" ✦");
+   if(claim.credited){renderDaily();setTimeout(()=>showDailyCelebration(claim),3500)}
    return claim;
  }
  const today=localDateKey(),result=grantDaily(lumenProgress,today);if(!result.credited)return result;
  saveLumenProgress();renderDaily();
- if(result.reward)showRewardToast("Série de lumière · +"+result.reward+" ✦");
+ setTimeout(()=>showDailyCelebration(result),3500);
  return result;
 }
 
