@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {reconcileDailyIntoCloudProfile} from '../src/persistence/daily-hydration.js';
+import {dailyState} from '../src/campaign/daily-engagement.js';
+const old={solved:{0:1},badges:{},daily:{dates:{},rewards:{}},shards:17};
+const rows=['2026-10-09','2026-10-10','2026-10-11','2026-10-13'].map(play_date=>({play_date}));
+const first=reconcileDailyIntoCloudProfile(old,rows,[{rewarded_days:{'2026-10-11':1}}]);
+assert.equal(first.changed,true);
+assert.equal(dailyState(first.profile.daily.dates,'2026-10-13').streak,4);
+assert.equal(first.profile.shards,17,'Hydration cannot credit currency');
+assert.equal(first.profile.daily.rewards['streak:2026-10-11'],1);
+assert.deepEqual(old.daily.dates,{},'Cloud profile is not mutated before CAS');
+const twice=reconcileDailyIntoCloudProfile(first.profile,rows,[{rewarded_days:{'2026-10-11':1}}]);
+assert.equal(twice.changed,false,'Second hydration idempotent');
+assert.deepEqual(twice.profile,first.profile);
+const stale=reconcileDailyIntoCloudProfile(first.profile,[{play_date:'2026-10-12'}],[]);
+assert.equal(dailyState(stale.profile.daily.dates,'2026-10-13').streak,5);
+assert.equal(stale.profile.daily.dates['2026-10-09'],1,'Never erase known history');
+console.log('Daily cloud hydration / no fake zero regression passed');
