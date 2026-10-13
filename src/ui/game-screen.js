@@ -190,7 +190,7 @@ function maybeOfferAccount(){
  return true;
 }
 function dismissAccountOffer(){
- const box=document.getElementById("accountOptin");if(!box||box.hidden)return;
+ const box=document.getElementById("accountOptin");if(!box)return;
  box.hidden=true;
  localStorage.setItem(accountOfferKey("NextMilestone"),String(solvedCount()<12?12:999999));
  trackLumenEvent("account_offer_dismissed",null,{milestone:solvedCount(),source:"quest_milestone",qa:qaActive});
@@ -249,6 +249,12 @@ function showLegacyOtp(){
 }
 async function requestAccountEmailOtp(){const email=document.getElementById("accountEmail")?.value,status=document.getElementById("accountEmailStatus");if(status)status.textContent="Envoi du code…";const result=await sendEmailOtp(email,new URL("/",location.origin).toString(),{createUser:accountEmailMode==="signup"});if(!result.ok){if(status)status.textContent=result.reason==="email"?"Entre une adresse email valide.":"Impossible d’envoyer le code. Réessaie.";trackLumenEvent("account_signin_failure",null,{milestone:5,method:"email_otp",stage:"send",qa:qaActive});return}accountOfferSignInPending=true;try{sessionStorage.setItem("lumenAccountOfferSignInPending","1");sessionStorage.setItem("lumenAccountOtpEmail",result.email)}catch(_){}const step=document.getElementById("accountOtpStep");if(step)step.hidden=false;if(status)status.textContent="Code envoyé. Vérifie tes emails.";document.getElementById("accountOtp")?.focus();trackLumenEvent("account_otp_sent",null,{milestone:5,qa:qaActive})}
 async function confirmAccountEmailOtp(){const status=document.getElementById("accountEmailStatus"),token=document.getElementById("accountOtp")?.value;let email=document.getElementById("accountEmail")?.value;try{email=sessionStorage.getItem("lumenAccountOtpEmail")||email}catch(_){}if(status)status.textContent="Vérification…";const result=await verifyEmailOtp(email,token);if(!result.ok){if(status)status.textContent=result.reason==="otp"?"Entre le code à 6 chiffres.":"Code incorrect ou expiré. Réessaie.";trackLumenEvent("account_signin_failure",null,{milestone:5,method:"email_otp",stage:"verify",qa:qaActive});return}if(status)status.textContent="Compte connecté ✓";trackLumenEvent("account_otp_verified",null,{milestone:5,qa:qaActive})}
+// Bind the two exit actions before asynchronous game startup; both must always close the dialog.
+function setupAccountOfferDismiss(){
+ const close=document.getElementById("accountOptinClose"),later=document.getElementById("accountOptinLater");
+ for(const button of [close,later])if(button)button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();dismissAccountOffer()},{capture:true});
+}
+setupAccountOfferDismiss();
 function openAccountFromMenu(){const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=true;openEmailAccountOffer("signup")} 
 async function saveExistingAccountPassword(){
  const password=document.getElementById("setPasswordValue")?.value;
