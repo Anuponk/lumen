@@ -293,11 +293,13 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  let local;
  try{local=validateCloudProfile(JSON.parse(raw))}catch{return {status:"blocked",reason:"invalid_local"}}
  const merged=structuredClone(cloud);
- for(const field of ["shards","xp","skyScore","daily","challenges"]){
-  const left=local[field]??(field==="daily"||field==="challenges"?{}:0);
-  const right=cloud[field]??(field==="daily"||field==="challenges"?{}:0);
-  if(!sameCloudProfile(left,right))return {status:"blocked",reason:field==="daily"||field==="challenges"?"mutable_ledger":"mutable_balance"};
- }
+ // Report the exact category without exposing amounts or player data.
+ // Balances are not additive: neither a higher nor a lower number proves a
+ // legitimate spend, reward or missing transaction.
+ const differingBalances=["shards","xp","skyScore"].filter(field=>!sameCloudProfile(local[field]??0,cloud[field]??0));
+ if(differingBalances.length)return {status:"blocked",reason:"mutable_balance",fields:differingBalances};
+ const differingLedgers=["daily","challenges"].filter(field=>!sameCloudProfile(local[field]??{},cloud[field]??{}));
+ if(differingLedgers.length)return {status:"blocked",reason:"mutable_ledger",fields:differingLedgers};
  const safeFields=new Set(["solved","historyBackup","noHint","badges","stars","performances","canonicalQuestState"]);
  for(const field of new Set([...Object.keys(cloud),...Object.keys(local)])){
   if(safeFields.has(field)||["shards","xp","skyScore","daily","challenges"].includes(field))continue;
