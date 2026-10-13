@@ -66,3 +66,9 @@ The 22 replacements (11 per size) were selected from 1,970 candidates. The 7x7 r
 ## Pedagogical topology validation (#57)
 
 The opening catalogue data is unchanged. Its existing center singleton and connected territories already produce the requested lesson: forced placements (2,2), (4,3), (3,0), (0,1), (1,4), after real row/column/adjacency/territory eliminations. `scripts/learning-tests.mjs` verifies each placement has exactly one remaining candidate in its territory, and the full catalogue audit still checks mathematical uniqueness and explainable proof replay. The second Guardian reserves adjacent cells (4,0) and (4,1) to introduce the real drag gesture.
+
+## Diverse offline candidates (#340)
+
+`node scripts/generate-diverse-grids.mjs --size 8 --family serpentine --count 5 --seed 340 --attempts 10000 --out /tmp/lumen-candidates.json` proposes **new** candidates without touching `CAT` or saved progress. Supported experimental profiles: `classic`, `serpentine`, `mosaic`, `balanced`, `hybrid`. Use `--minimum-score` to filter by explainable proof score. The output contains reproducible source seed, unique puzzles, proof-derived metadata, geometry metrics and a shortfall field. Nonzero exit on shortfall. These are **candidates, not automatically published quests**; reviewers must still visually inspect them and schedule them through the catalogue contract. Scores are heuristics, not calibrated human difficulty or measured chain depth. Avoid making a claim about Expert difficulty from score alone.
+
+Run `node scripts/generate-diverse-grids-tests.mjs` as a dedicated check and then the full quality gate before integrating content. Generated JSON never overwrites campaign grids. A later enhancement should model dependency chains, catalogue-level similarity and empirical player calibration.
