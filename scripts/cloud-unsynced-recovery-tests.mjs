@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const src=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+assert.match(src,/function preserveUnsyncedCloudProgress\(reason\)/);
+assert.match(src,/lumenUnsyncedCloudBackupV1:/);
+assert.match(src,/localStorage\.getItem\(key\)===snapshot/);
+assert.match(src,/preserveUnsyncedCloudProgress\("save-failed"\)/);
+assert.match(src,/preserveUnsyncedCloudProgress\("version-conflict"\)/);
+assert.match(src,/Conserver ma progression locale/);
+assert.doesNotMatch(src,/reload\.onclick=\(\)=>\{location\.reload\(\);resolve\(false\)\}/);
+assert.match(src,/if\(oldSolved>newSolved\)return true/);
+console.log('Cloud save failure keeps a recoverable local backup; no unsafe reload CTA');
