@@ -28,8 +28,27 @@ for(let i=0;i<PLAN.length;i++){
       if(candidates.length===config.want)break;
     }
   }
-  if(candidates.length!==config.want)throw Error('Insufficient '+config.family+' '+config.size+'x'+config.size+': '+candidates.length+'/'+config.want);
-  for(const p of candidates)chosen.push({...p,family:config.family});
+  // Fill any shortfall with other validated families at the same board size.
+  // Do not weaken uniqueness, replay or connectivity constraints.
+  if(candidates.length<config.want){
+    for(const fallback of ['hybrid','mosaic','classic','serpentine']){
+      if(fallback===config.family)continue;
+      for(let round=0;round<10&&candidates.length<config.want;round++){
+        const result=selectCandidates({size:config.size,family:fallback,count:100,seed:940000+i*503+round*17+fallback.length,attempts:16000});
+        attemptReports.push({family:fallback,requestedFamily:config.family,size:config.size,round,attempts:16000,valid:result.validCandidates,fallback:true});
+        for(const p of result.selected){
+          const sig=signature(p.reg);
+          if(seen.has(sig))continue;
+          if(!connected(p.reg)||countSolutions(p)!==1||!replay(p))throw Error('Rejected fallback puzzle passed verification');
+          seen.add(sig);candidates.push({...p,actualFamily:fallback});
+          if(candidates.length===config.want)break;
+        }
+      }
+      if(candidates.length===config.want)break;
+    }
+  }
+  if(candidates.length!==config.want)throw Error('Insufficient validated candidates for '+config.family+': '+candidates.length+'/'+config.want);
+  for(const p of candidates)chosen.push({...p,family:p.actualFamily||config.family});
 }
 if(chosen.length!==100||new Set(chosen.map(p=>signature(p.reg))).size!==100)throw Error('Batch size/uniqueness failure');
 const byScore=[...chosen].sort((a,b)=>a.audit.score-b.audit.score||a.features.signature.localeCompare(b.features.signature));
