@@ -995,3 +995,8 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 #administrationPanel button{width:100%;min-height:40px;white-space:normal}
 #administrationPanel label{display:flex;align-items:center;gap:9px;color:#cbdbea}
 #administrationPanel .qa-account-tools strong{font-size:12px;color:#86cfe5;text-align:left}
+
+/* Lost streak CTA must remain touchable above game/sky overlays. */
+#streakLossModal{pointer-events:auto;isolation:isolate}
+#streakLossModal .streak-loss-content{pointer-events:auto;overflow:visible}
+#streakLossRestart{position:relative;z-index:1;pointer-events:auto;touch-action:manipulation;cursor:pointer;min-height:52px}
