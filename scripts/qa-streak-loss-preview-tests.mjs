@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const src=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+const tools=html.slice(html.indexOf('id="qaAccountTools"'),html.indexOf('id="adminTools"'));
+assert.match(tools,/id="qaPreviewStreakLoss"/);
+const setup=src.slice(src.indexOf('function setupStreakLoss(){'),src.indexOf('function renderDaily(){'));
+assert.match(setup,/qaPreview.hidden=!qaActive/);
+assert.match(setup,/if\(!qaActive\)return/);
+assert.match(setup,/streakLossModal/);
+assert.match(setup,/modal.hidden=false/);
+assert.match(setup,/streakLossCount/);
+assert.doesNotMatch(setup,/lumenProgress\s*=|saveLumenProgress\(|cloudSaveDaily\(|localStorage\.setItem\(/);
+console.log('QA preview is isolated and never mutates progress or rewards');
