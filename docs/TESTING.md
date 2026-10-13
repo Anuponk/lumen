@@ -260,3 +260,7 @@ The Rapidité badge threshold itself is unchanged. The visual countdown window i
 
 ## Internal tester capabilities (#33)
 Never authorize admin/tester tools from a browser email comparison or localStorage alone. The client must first receive the capability from `lumen_get_internal_capabilities()`. Local device preferences may only toggle a capability already granted by the server. Commercial ownership remains in `lumen.entitlements`; internal tester capabilities live separately in `lumen.internal_capabilities`.
+
+## Issue #340 — diverse generator regression
+
+Run `node scripts/generate-diverse-grids-tests.mjs` to cover seeded determinism, all five geometry profiles, connected regions, Guardian constraints, symmetry signatures, exhaustive uniqueness (for accepted candidates) and replay. New grids remain offline and unscheduled until reviewed; no player-save mutation. This focused contract supplements, and does not replace, `node scripts/quality-gate.mjs` and `node scripts/audit-catalogue.mjs`. A full quality gate is required before merge. Do not label the heuristic score as a validated human-difficulty metric.
