@@ -508,7 +508,7 @@ function maybeShowReturnWelcome(){
  const close=()=>{toast.classList.add("hide");setTimeout(()=>toast.hidden=true,260)};toast.onclick=close;setTimeout(close,5200);
 }
 function showDailyCelebration(claim){
- if(!claim||!claim.credited)return;
+ if(!claim)return;
  const state=dailyState(lumenProgress.daily.dates,localDateKey()),streak=state.streak,cycle=cycleDay(streak),modal=document.getElementById("dailyCelebration");if(!modal)return;
  const stars=document.getElementById("dailyCelebrationStars");stars.replaceChildren();for(let i=1;i<=7;i++){const star=document.createElement("span");star.textContent="✦";star.className=i<=cycle?"on":"";stars.appendChild(star)}
  document.getElementById("dailyCelebrationCount").textContent=streak+" jour"+(streak>1?"s":"")+" de lumière · Jour "+cycle+"/7";
@@ -522,10 +522,11 @@ function setupDailyCelebration(){
 setupDailyCelebration();
 async function completeDaily(){
  if(persistenceModel.lumenUser){
+   const wasValidated=!!lumenProgress.daily?.dates?.[localDateKey()];
    const claim=await cloudSaveDaily(localDateKey(),levelIndex);
    if(!claim)return null;
    await cloudMergeDaily();
-   if(claim.credited){renderDaily();setTimeout(()=>showDailyCelebration(claim),3500)}
+   if(!wasValidated&&lumenProgress.daily?.dates?.[localDateKey()]){renderDaily();setTimeout(()=>showDailyCelebration({...claim,credited:true}),3500)}
    return claim;
  }
  const today=localDateKey(),result=grantDaily(lumenProgress,today);if(!result.credited)return result;
