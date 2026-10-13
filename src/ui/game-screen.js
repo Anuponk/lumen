@@ -135,7 +135,15 @@ async function confirmCloudReward(){
    again.onclick=()=>{panel.remove();resolve(true)};
    const close=document.createElement("button");close.textContent="Conserver ma progression locale";
    close.onclick=()=>{preserveUnsyncedCloudProgress("user-deferred");panel.remove();resolve(false)};
-   card.append(title,copy,again,close);panel.append(card);document.body.append(panel);again.focus();
+   const diagnostics=document.createElement("button");
+   diagnostics.type="button";diagnostics.textContent="Copier le diagnostic";
+   diagnostics.onclick=async()=>{
+    const report=cloudDiagnosticReport();
+    try{await navigator.clipboard.writeText(report);diagnostics.textContent="Diagnostic copié ✓"}
+    catch(_){const pre=document.createElement("textarea");pre.readOnly=true;pre.value=report;pre.style.cssText="width:100%;min-height:100px";card.append(pre);pre.select();diagnostics.textContent="Sélectionner puis copier"}
+   };
+   recordCloudDiagnostic("victory_dialog",{reason:cloudProfileFailure?.reason||"not_ready",profileReady:cloudProfileReady,retryAllowed:!again.disabled});
+   card.append(title,copy,again,close,diagnostics);panel.append(card);document.body.append(panel);again.focus();
   });
   if(!retry)return false;
  }
