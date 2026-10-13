@@ -1,0 +1,27 @@
+name: Generate 100 diverse Lumen grids
+on:
+  pull_request:
+    paths:
+      - 'scripts/build-diverse-100.mjs'
+      - 'scripts/generate-diverse-grids.mjs'
+      - '.github/workflows/diverse-100.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  generate-candidates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate validated candidate pack
+        run: node scripts/build-diverse-100.mjs
+      - name: Upload candidate pack
+        uses: actions/upload-artifact@v4
+        with:
+          name: lumen-diverse-100
+          path: scripts/generated/diverse-100-candidates.json
+          retention-days: 30
