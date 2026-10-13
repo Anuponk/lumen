@@ -1,3 +1,4 @@
+import {streakVisual,lostStreak} from "../campaign/streak-visual.js";
 import {learningStep, dragLearningStep, learningAllows, learningCopy} from "../game/learning.js";
 import {createAnalytics,attemptAnalyticsProperties} from "../analytics/events.js";
 import {createHintTestSuite} from "../testing/hint-tests.js";
@@ -152,6 +153,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   if(changed){location.reload();return}
   cloudProfileReady=true;
   renderDaily();
+  maybeShowStreakLoss();
   const gate=document.getElementById("accountOptin");if(gate){const wasVisible=!gate.hidden;gate.hidden=true;if(wasVisible)showAccountSavedConfirmation()}
  }catch(e){console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
 },holdLegacyMergeForFullRestore:async()=>true},{setTimeout,console,qaMode});
@@ -499,6 +501,24 @@ let canonicalActiveQuest=null;if(!lumenProgress.xp)lumenProgress.xp=0;if(!lumenP
 if(!lumenProgress.daily)lumenProgress.daily={dates:{},rewards:{}};if(!Number.isFinite(lumenProgress.skyScore))lumenProgress.skyScore=null;
 
 function dailyStreak(){return streakFromDates(lumenProgress.daily.dates,localDateKey())}
+// Show the loss transition only when the account history is ready, once per lost series.
+function maybeShowStreakLoss(){
+ if(authSessionPending||(lumenUser&&!cloudProfileReady))return;
+ const loss=lostStreak(lumenProgress.daily?.dates,localDateKey());
+ if(!loss)return;
+ const key="lumenStreakLossShownV1:"+(lumenUser?.id||"guest")+":"+loss.last;
+ try{if(localStorage.getItem(key)==="1")return;localStorage.setItem(key,"1")}catch(_){}
+ const modal=document.getElementById("streakLossModal");if(!modal)return;
+ const count=document.getElementById("streakLossCount");if(count)count.textContent=loss.prior+" jours de lumière";
+ modal.hidden=false;
+}
+function closeStreakLoss(){
+ const modal=document.getElementById("streakLossModal");if(modal)modal.hidden=true;
+}
+function setupStreakLoss(){
+ document.getElementById("streakLossContinue")?.addEventListener("click",closeStreakLoss);
+ document.getElementById("streakLossRestart")?.addEventListener("click",()=>{closeStreakLoss();document.getElementById("mapModal").hidden=true});
+}
 function renderDaily(){
  const stars=document.getElementById("dailyStars");if(!stars)return;stars.innerHTML="";
  // Never present a transient zero while authenticated daily history is hydrating.
@@ -510,10 +530,12 @@ function renderDaily(){
   return;
  }
  const today=localDateKey(),status=dailyState(lumenProgress.daily.dates,today),streak=status.streak,cycle=cycleDay(streak),next=nextReward(streak);
- for(let i=1;i<=7;i++){let e=document.createElement("span");e.className="daily-star"+(i<=cycle?" on":"")+(i===cycle?" today":"");e.textContent="✦";stars.appendChild(e)}
- document.getElementById("dailyTitle").textContent=status.done?"Lumière du jour entretenue":status.grace?"Ta Série de lumière est protégée aujourd’hui":"Joue aujourd’hui pour continuer ta Série";
- document.getElementById("dailyMeta").textContent="Série · "+streak+" jour"+(streak>1?"s":"")+" · Cycle "+cycle+"/7";
- document.getElementById("dailyReward").textContent="Prochaine récompense : +"+next.amount+" ✦ à J"+next.cycleDay;
+ const visual=streakVisual(lumenProgress.daily.dates,today);
+ for(const [i,slot] of visual.slots.entries()){const e=document.createElement("span");e.className="daily-star "+slot.kind+(i===visual.focus?" today":"");e.textContent="✦";stars.appendChild(e)}
+ const protectedLabel=document.getElementById("dailyProtection");if(protectedLabel)protectedLabel.hidden=!visual.missed;
+ document.getElementById("dailyTitle").textContent=visual.protectedDay?"Lumière du jour protégée":status.done?"Lumière du jour entretenue":"Joue aujourd’hui pour continuer ta Série";
+ document.getElementById("dailyMeta").textContent="Série · "+streak+" jour"+(streak>1?"s":"")+(visual.missed?" · 1 jour manqué":" · Cycle "+cycle+"/7");
+ document.getElementById("dailyReward").textContent="Prochaine récompense : +"+next.amount+" ✦ à J"+(next.cycleDay+(visual.missed?1:0));
  const card=document.getElementById("dailyCard"),compact=document.getElementById("dailyCompactHelp");if(card)card.hidden=false;if(compact)compact.hidden=true;
  const ms=document.getElementById("mobileStreak");if(ms)ms.textContent="🔥 "+streak;
  const infoStars=document.getElementById("dailyInfoStars");if(infoStars){infoStars.innerHTML="";for(let i=1;i<=7;i++){let e=document.createElement("span");e.className=i<=cycle?"on":"";e.textContent="✦";infoStars.appendChild(e)}}
@@ -550,6 +572,7 @@ function setupDailyCelebration(){
  const help=document.getElementById("dailyHelpModal"),hide=()=>{help.hidden=true};for(const id of ["dailyHelp","dailyCompactHelp"]){const btn=document.getElementById(id);if(btn)btn.onclick=()=>{const s=dailyState(lumenProgress.daily.dates,localDateKey());document.getElementById("dailyHelpCurrent").textContent="Série actuelle : "+s.streak+" jour(s). "+(s.done?"Aujourd’hui validé.":s.grace?"Jour de grâce.":"Joue aujourd’hui pour continuer.");help.hidden=false;document.getElementById("dailyHelpClose")?.focus()}}document.getElementById("dailyHelpClose")?.addEventListener("click",hide);if(help)help.onclick=e=>{if(e.target===help)hide()};document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(modal&&!modal.hidden)modal.hidden=true;if(help&&!help.hidden)hide()}});
 }
 setupDailyCelebration();
+setupStreakLoss();
 async function completeDaily(){
  if(persistenceModel.lumenUser){
    const wasValidated=!!lumenProgress.daily?.dates?.[localDateKey()];
@@ -1974,6 +1997,7 @@ function startReplay(i){
  modal.hidden=false;cancel.focus();
 }
 function renderMap(){
+ maybeShowStreakLoss();
  // Refresh the streak from the same live daily state used by its help dialog.
  // Previously this card retained the initial 0 until another daily event fired.
  renderDaily();
