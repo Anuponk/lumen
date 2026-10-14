@@ -71,7 +71,7 @@ body{background:radial-gradient(circle at 50% -8%,rgba(63,118,173,.22),transpare
 .lumen-brand{font-size:34px;font-weight:900;letter-spacing:.28em;color:#eafaff;text-shadow:0 0 18px rgba(104,231,255,.38)}
 button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:14px;box-shadow:inset 0 1px rgba(255,255,255,.04)}
 .levels{display:none}.auto-cross{color:#8fa0b8;font-weight:600}.auto-cross input{accent-color:#67dff8}
-.status{color:#b8c9dd;font-size:17px}#difficulty{display:none!important}
+.status{color:#b8c9dd;font-size:17px}#difficulty{display:block!important;color:#a9e8f7!important;font-size:12px!important;font-weight:750!important;text-align:center!important;margin:0 0 5px!important;line-height:1.2!important}
 #board{position:relative;display:grid;width:100%;aspect-ratio:1;border:0!important;border-radius:30px;overflow:hidden;
  padding:12px;gap:3px;background:radial-gradient(circle at 50% 48%,rgba(37,62,92,.72),rgba(11,17,29,.97) 66%),#0d1422!important;
  box-shadow:0 24px 70px rgba(0,0,0,.45),inset 0 0 0 1px rgba(129,179,220,.11)!important}
@@ -325,9 +325,9 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .learning-board-wrap .scripted-learn button{padding:5px 8px;margin-top:5px;font-size:11px}
  .learning-coach-nav{gap:5px;margin-top:5px}
  .learning-coach-hint{margin-top:4px;font-size:10px;line-height:1.15}
- #difficulty{display:none}
+ #difficulty{display:block!important;margin:0 0 3px!important;font-size:11px!important;line-height:1.15!important}
  .status{font-size:13px;margin:0 3px 4px}
- .campaign-map-label{display:none}
+ .campaign-map-label{display:block!important;font-size:11px!important;line-height:1.15!important;white-space:normal!important}
  #board{width:100%!important;height:auto!important;max-height:none!important;padding:6px!important;border-radius:18px!important}
  .actions{margin-top:7px;gap:7px}
  .actions button{padding:8px 10px;font-size:13px}
