@@ -15,6 +15,10 @@ Keep the existing `base-real-sky`, `real-NN`, `base-qNNN` IDs and numeric saved 
 
 Browsing another Adventure never changes gameplay state. Loading/continuation must respect pack access in addition to sequential progression. When the next Adventure is locked, continuation shows its notice; reload offers the last accessible quest for replay while preserving the solved prefix, stars and badges. Finishing an Adventure does not automatically unlock another. Existing entitled packs still use the real entitlement model; no acquisition flow is added.
 
+## Administrative catalogue access
+
+Authenticated internal administrators with the server-provided `analytics_cockpit` or `all_adventures_access` capability may browse and enter every catalogued Adventure, including locked packs, without creating a purchase entitlement or persisting access into player progress. QA guest sessions never receive this override. Ordinary players retain the existing access policy. This exception affects pack access only: sequential quest progression and rewards remain governed by their existing rules.
+
 ## Bonus quests
 Every sixth quest is a bonus challenge, rotating challenge types. Current challenge rewards are **+25 XP and +1 shard**. Challenge rewards do not replace the campaign's sky-star accounting.
 

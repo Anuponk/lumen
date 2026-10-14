@@ -2183,7 +2183,7 @@ if(attemptAbandon)attemptAbandon.onclick=async()=>{const a=attemptEngine.snapsho
 
 
 let mapConstellation=0,skyTourStep=0,mapCatalogueOverride=null;
-const skyNavigation=createSkyNavigation({document,getModel:()=>mapCatalogueOverride||contentMapModel(lumenEntitlements,{progress:lumenProgress,attempt:attemptEngine.snapshot()}),getQuest:()=>currentQuestPosition(),
+const skyNavigation=createSkyNavigation({document,getModel:()=>mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot()}),getQuest:()=>currentQuestPosition(),
  getSolved:i=>!!lumenProgress.solved[i],
  getCanonicalQuests:id=>canonicalQuestList().filter(q=>q.constellationId===id),
  getCanonicalSolved:q=>questIsCompleted(lumenProgress,q.id),

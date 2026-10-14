@@ -264,3 +264,12 @@ Never authorize admin/tester tools from a browser email comparison or localStora
 ## Issue #340 — diverse generator regression
 
 Run `node scripts/generate-diverse-grids-tests.mjs` to cover seeded determinism, all five geometry profiles, connected regions, Guardian constraints, symmetry signatures, exhaustive uniqueness (for accepted candidates) and replay. New grids remain offline and unscheduled until reviewed; no player-save mutation. This focused contract supplements, and does not replace, `node scripts/quality-gate.mjs` and `node scripts/audit-catalogue.mjs`. A full quality gate is required before merge. Do not label the heuristic score as a validated human-difficulty metric.
+
+## Administrative Adventure access regression contract
+
+- Signed-in account with trusted `analytics_cockpit` capability: all catalogued Adventures appear accessible, and entering a normally locked Adventure is permitted.
+- Signed-in account with `all_adventures_access` capability: same result; the list is derived dynamically from `CONTENT_PACKS`.
+- Ordinary signed-in account, signed-out guest, and QA new-player session: locked Adventures remain locked unless already owned or legitimately started.
+- Signing out immediately removes the administrative override; it is never written to entitlements, `legacyAdventureAccess`, or cloud/local progression.
+- Administrative navigation must not mark an unsolved quest as solved, award stars, or bypass the ordinary sequential quest completion rules.
+- Repeat after cloud restoration, page reload, and switching accounts; confirm normal players do not inherit administrative access.
