@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const src=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+const start=src.indexOf('async function loadAdminCockpit(){');
+const end=src.indexOf('function setupAdminCockpit(){',start);
+assert.ok(start>=0&&end>start);
+const body=src.slice(start,end);
+assert.match(body,/rpc\("lumen_admin_recent_players",\{p_limit:250\}\)/);
+assert.doesNotMatch(body,/from\("lumen_admin_player_snapshot"\)/);
+assert.match(body,/order|players\.map/);
+assert.match(body,/playerSnapshot\.error/);
+assert.match(body,/adminPlayers/);
+console.log('Admin recent players use live activity RPC and expose failures');
