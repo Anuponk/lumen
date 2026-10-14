@@ -330,7 +330,20 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
    for(const [key,value] of Object.entries(left)){
     if(!Object.hasOwn(result,key)){result[key]=structuredClone(value);continue}
     const nested=join(value,result[key]);
-    if(!nested.ok)return {ok:false};
+    if(!nested.ok){
+     // Known monotonic states: true means achieved/claimed, never replay a grant.
+     if(typeof value==="boolean"&&typeof result[key]==="boolean"){
+       result[key]=value||result[key];continue;
+     }
+     // Completion and progress counters can only increase. Do not apply this
+     // to currencies, spending, or timestamps.
+     if(/^(count|streak|progress|completed|wins|bestScore|totalDays)$/i.test(key)&&
+        typeof value==="number"&&typeof result[key]==="number"&&
+        Number.isFinite(value)&&Number.isFinite(result[key])){
+       result[key]=Math.max(value,result[key]);continue;
+     }
+     return {ok:false};
+    }
     result[key]=nested.value;
    }
    return {ok:true,value:result};
