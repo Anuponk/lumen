@@ -190,7 +190,7 @@ assert.doesNotMatch(uiSrc,/account_signin_success[^\n]*showAccountSavedConfirmat
  const rpc={rpc:async(method,args)=>{
   if(method==='lumen_restore_profile')return {data:structuredClone(cloud),error:null};
   if(method==='lumen_cas_profile'){
-   if(!sameCloudProfile(cloud,args.p_expected))return {data:false,error:null};
+   if(!sameCloudProfile(cloud,args.p_expected))throw Error('Fixture CAS baseline differs');
    cloud=structuredClone(args.p_payload);return {data:true,error:null};
   }
   throw Error('Unexpected reward reconciliation RPC '+method);
