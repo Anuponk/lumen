@@ -12,7 +12,7 @@ export function constellationUnlocked(entry,pack,getSolved,getQuest){
  return previousCompleted||!!getSolved(entry.questStart)||entry.questStart<=getQuest();
 }
 export function skySelection(model,selection={},questIndex=0){
- const skies=model.skies||[],activeSky=skies.find(s=>s.packs.some(p=>questIndex>=p.legacyQuestStart&&questIndex<p.legacyQuestStart+p.questCount))||skies[0];
+ const skies=Array.isArray(model?.skies)?model.skies:[],activeSky=skies.find(s=>s.packs.some(p=>questIndex>=p.legacyQuestStart&&questIndex<p.legacyQuestStart+p.questCount))||skies[0];
  const sky=skies.find(s=>s.id===selection.skyId)||activeSky;
  const candidate=activeSky?.packs.find(p=>questIndex>=p.legacyQuestStart&&questIndex<p.legacyQuestStart+p.questCount);
  const active=candidate?.accessible?candidate:activeSky?.packs.filter(p=>p.accessible&&p.legacyQuestStart<=questIndex).at(-1);
@@ -109,6 +109,14 @@ export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit
  function closeNotice(){notice.hidden=true;const origin=noticeOrigin?.isConnected&&!noticeOrigin.hidden&&noticeOrigin.getClientRects().length?noticeOrigin:element('adventureRail').querySelector('.selected');origin?.focus?.()}
  function render(){
   const model=getModel();current=skySelection(model,selection,getQuest());selection={skyId:current.sky?.id,packId:current.adventure?.id,page:current.page};
+  // Never leave an empty picker and blank constellation area without an explanation.
+  if(!current.sky||!current.adventure){
+   const rail=element('adventureRail');rail.replaceChildren();
+   const summary=element('adventureSummary');summary.textContent='Impossible de charger les aventures. Ferme puis rouvre Mon ciel.';
+   tabs.replaceChildren();element('constellationPage').textContent='';
+   element('constellationPrevious').disabled=true;element('constellationNext').disabled=true;
+   return;
+  }
   const skyPickerContainer=context.querySelector('.sky-picker');
   const showSkyPicker=skyPickerVisible(model);
   skyPickerContainer.hidden=!showSkyPicker;
