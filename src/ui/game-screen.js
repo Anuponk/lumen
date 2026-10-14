@@ -307,7 +307,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    try{conflict=!cloudSafelyCoversLocal(JSON.parse(currentLocal),cloud)}catch{conflict=true}
    if(conflict){
     let resolution=await reconcileDominantLocalProfile(lumenSupabase,localStorage,cloud);
-    if(resolution.status==="blocked"&&resolution.reason==="missing_cloud_achievements"){
+    if(resolution.status==="blocked"&&["missing_cloud_achievements","mutable_balance","mutable_ledger"].includes(resolution.reason)){
      hydrationStage="bidirectional_reconciliation";
      resolution=await reconcileCompatibleCloudProfiles(lumenSupabase,localStorage,cloud);
     }
