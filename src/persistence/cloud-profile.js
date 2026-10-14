@@ -221,6 +221,27 @@ export async function compareAndSwapCloudProfile(supabase,profile,expected){
  if(data!==true)throw Error("Conflit de version cloud : sauvegarde refusée");
  return next;
 }
+// Reuse an existing verified backup instead of multiplying full snapshots on retries.
+function preserveVerifiedSnapshot(storage,prefix,value){
+ const existing=[];
+ for(let i=0;i<(storage.length||0);i++){
+  const key=storage.key(i);
+  if(key?.startsWith(prefix))existing.push(key);
+ }
+ for(const key of existing){if(storage.getItem(key)===value)return key}
+ const key=prefix+Date.now();
+ try{
+  storage.setItem(key,value);
+  if(storage.getItem(key)!==value)throw Error("Recovery snapshot verification failed");
+ }catch(error){
+  if(error?.name==="QuotaExceededError"||error?.code===22||error?.code===1014){
+   const quota=new Error("Recovery snapshot storage quota exceeded; originals preserved");
+   quota.code="LOCAL_STORAGE_QUOTA";quota.stage="cloud_local_backup";throw quota;
+  }
+  throw error;
+ }
+ return key;
+}
 export function installCloudProfileLocally(storage,cloud){
  const verified=validateCloudProfile(cloud),key="lumenProgressV1";
  const current=storage.getItem(key),json=JSON.stringify(verified);
@@ -235,11 +256,10 @@ export function installCloudProfileLocally(storage,cloud){
  if(current!==null){
   try{if(sameCloudProfile(JSON.parse(current),verified))return false}catch(_){}
  }
- const backup=current!==null?"lumenBeforeCloudAuthority_"+Date.now():null;
+ const backup=current!==null?"lumenBeforeCloudAuthority_":null;
  try{
   if(backup){
-   storage.setItem(backup,current);
-   if(storage.getItem(backup)!==current)throw Error("Sauvegarde pré-migration impossible");
+   preserveVerifiedSnapshot(storage,backup,current);
   }
   storage.setItem(key,json);
   if(storage.getItem(key)!==json)throw Error("Copie locale du profil cloud non vérifiée");
@@ -380,11 +400,8 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  if(sameCloudProfile(merged,cloud)){
   return {status:"cloud_dominant",profile:cloud};
  }
- const stamp=Date.now();
- for(const [key,value] of [["lumenBeforeCloudReconcileLocal_"+stamp,raw],["lumenBeforeCloudReconcileRemote_"+stamp,JSON.stringify(cloud)]]){
-  storage.setItem(key,value);
-  if(storage.getItem(key)!==value)throw Error("Copies de reconciliation non verifiees");
- }
+ preserveVerifiedSnapshot(storage,"lumenBeforeCloudReconcileLocal_",raw);
+ preserveVerifiedSnapshot(storage,"lumenBeforeCloudReconcileRemote_",JSON.stringify(cloud));
  const updated=await compareAndSwapCloudProfile(supabase,validateCloudProfile(merged),cloud);
  const verified=await loadVerifiedProfile(supabase);
  if(!sameCloudProfile(updated,verified))throw Error("Reconciliation cloud non verifiee");
