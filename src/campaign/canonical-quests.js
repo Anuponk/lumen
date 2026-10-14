@@ -6,6 +6,7 @@ const diverseById=new Map(diverse.puzzles.map(q=>[q.id,q]));
 if(diverse.schema!=="lumen-grid-overrides-v1"||diverseById.size!==100)throw Error("Invalid diversity override manifest");
 import {CONTENT_PACKS,CONTENT_CONSTELLATIONS,hasPackAccess} from "./content.js";
 import {playableQuest,playableQuestCount} from "./playable-quests.js";
+import {qualifyDifficulty} from "./difficulty.js";
 
 function planSlots(packs,constellations){
  const records=[],ordered=[...packs].sort((a,b)=>a.order-b.order);
@@ -44,7 +45,7 @@ const all=Object.freeze(slots.map(slot=>{
  const replacement=diverseById.get(slot.id);
  if(replacement&&(replacement.packId!==slot.packId||replacement.ordinal!==slot.ordinal||!["real-adventure-03","real-adventure-04"].includes(slot.packId)))throw Error("Invalid diversity override target "+slot.id);
  const grid=replacement||original;
- return Object.freeze({...slot,size:grid.size??grid.reg.length,reg:grid.reg,sol:grid.sol,audit:grid.audit??null,difficulty:grid.difficulty??null,family:grid.family??null});
+ return Object.freeze({...slot,size:grid.size??grid.reg.length,reg:grid.reg,sol:grid.sol,audit:grid.audit??null,difficulty:qualifyDifficulty(grid),family:grid.family??null});
 }));
 if(all.length!==CONTENT_PACKS.length*100||new Set(all.map(q=>q.id)).size!==all.length||all.filter(q=>q.legacyIndex!==null).length!==playableQuestCount())throw Error("Inconsistent canonical catalogue");
 const byId=new Map(all.map(q=>[q.id,q]));
