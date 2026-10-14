@@ -15,7 +15,7 @@ import {generatedQuestReward,generatedAdventureRewards} from "../campaign/genera
 import {generatedQuestProgress} from "../campaign/generated-progression.js";
 import {adminCatalogueTree,adminCanonicalCatalogueTree} from "../campaign/admin-catalogue.js";
 import {mapConstellationRange,generatedMapSummary} from "../campaign/generated-map.js";
-import {CONTENT_CONSTELLATIONS,contentMapModel,packForLegacyQuest,contentAccessForLegacyQuest,preserveStartedAdventureAccess} from "../campaign/content.js";
+import {CONTENT_CONSTELLATIONS,CONTENT_PACKS,contentMapModel,packForLegacyQuest,contentAccessForLegacyQuest,preserveStartedAdventureAccess} from "../campaign/content.js";
 import {createSkyNavigation} from "./sky-navigation.js";
 import {astronomicalDisplayShape} from "./astronomical-shapes.js";
 import {astronomicalReferenceSvg,astronomicalPrimarySvg} from "./astronomical-reference-svg.js";
@@ -505,6 +505,11 @@ function syncMobileAuthUI(){
 }
 
 function hasInternalCapability(name){return lumenCapabilities.some(x=>(typeof x==="string"?x:x?.capability)===name)}
+// Administrative catalogue access is transient: never persist it as a purchase or player entitlement.
+function adventureAccessEntitlements(){
+ if(!lumenUser||qaActive||!(hasInternalCapability("analytics_cockpit")||hasInternalCapability("all_adventures_access")))return lumenEntitlements;
+ return [...new Set([...lumenEntitlements,...CONTENT_PACKS.map(pack=>pack.id)])];
+}
 function unlimitedShardsEnabled(){return hasInternalCapability("unlimited_shards")&&localStorage.getItem("lumenAdminUnlimitedShards")==="1"}
 function syncAdministrationMenu(){
  const entry=document.getElementById("administrationEntry");
@@ -1023,7 +1028,7 @@ function historicalContinuationAllowed(index){
   !!lumenProgress.solved?.[index-1]&&index===extendedSequentialCount(lumenProgress.solved);
 }
 function questIsAccessible(index){
- const accessible=contentAccessForLegacyQuest(index,lumenEntitlements,undefined,lumenProgress,attemptEngine.snapshot()).accessible;
+ const accessible=contentAccessForLegacyQuest(index,adventureAccessEntitlements(),undefined,lumenProgress,attemptEngine.snapshot()).accessible;
  if(!accessible)return false;
  if(lumenProgress.solved?.[index])return true;
  // Canonical order is authoritative for *new* quest unlocks. Historical
@@ -2183,7 +2188,7 @@ if(attemptAbandon)attemptAbandon.onclick=async()=>{const a=attemptEngine.snapsho
 
 
 let mapConstellation=0,skyTourStep=0,mapCatalogueOverride=null;
-const skyNavigation=createSkyNavigation({document,getModel:()=>mapCatalogueOverride||contentMapModel(lumenEntitlements,{progress:lumenProgress,attempt:attemptEngine.snapshot()}),getQuest:()=>currentQuestPosition(),getSolved:i=>!!lumenProgress.solved[i],getLit:entry=>CONSTELLATIONS[entry.legacyIndex]?constellationLitAt(entry.legacyIndex):0,getShape:entry=>astronomicalDisplayShape(entry.shape||CONSTELLATIONS[entry.legacyIndex]),getMastered:entry=>{const eligible=Array.from({length:entry.questCount},(_,offset)=>entry.questStart+offset).filter(i=>currentPerformanceEligibility(i).mastery);return eligible.length>0&&eligible.every(i=>lumenProgress.performances?.[i]?.badges?.mastery)},getBadgeCounts:pack=>{const badges={autonomy:0,speed:0,noError:0,mastery:0};for(let i=pack.legacyQuestStart;i<pack.legacyQuestStart+pack.questCount;i++)for(const key of Object.keys(badges))if(lumenProgress.performances?.[i]?.badges?.[key])badges[key]++;return badges},onConstellation:entry=>{if(mapConstellationRange(entry.legacyIndex)){mapConstellation=entry.legacyIndex;renderMap()}}});
+const skyNavigation=createSkyNavigation({document,getModel:()=>mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot()}),getQuest:()=>currentQuestPosition(),getSolved:i=>!!lumenProgress.solved[i],getLit:entry=>CONSTELLATIONS[entry.legacyIndex]?constellationLitAt(entry.legacyIndex):0,getShape:entry=>astronomicalDisplayShape(entry.shape||CONSTELLATIONS[entry.legacyIndex]),getMastered:entry=>{const eligible=Array.from({length:entry.questCount},(_,offset)=>entry.questStart+offset).filter(i=>currentPerformanceEligibility(i).mastery);return eligible.length>0&&eligible.every(i=>lumenProgress.performances?.[i]?.badges?.mastery)},getBadgeCounts:pack=>{const badges={autonomy:0,speed:0,noError:0,mastery:0};for(let i=pack.legacyQuestStart;i<pack.legacyQuestStart+pack.questCount;i++)for(const key of Object.keys(badges))if(lumenProgress.performances?.[i]?.badges?.[key])badges[key]++;return badges},onConstellation:entry=>{if(mapConstellationRange(entry.legacyIndex)){mapConstellation=entry.legacyIndex;renderMap()}}});
 const SKY_TOUR_STEPS=[
  {target:"skyNavigation",title:"Ciels et Aventures",copy:"Choisis un Ciel, puis une Aventure. Les autres restent compactes ; un cadenas indique un contenu verrouillé. Consulter une autre Aventure ne change pas ta progression."},
  {target:"sectorTabs",title:"Tes constellations",copy:"Ton ciel est organisé en constellations. Elles se débloquent au fil de ton aventure."},
