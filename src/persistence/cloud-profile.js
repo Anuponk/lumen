@@ -314,8 +314,43 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  // Daily engagement and challenge ledgers can grant rewards: never sum them
  // or claim to reconstruct their history.
  for(const field of ["daily","challenges"]){
-  if(!sameCloudProfile(local[field]??{},cloud[field]??{}))
-   return {status:"blocked",reason:"mutable_ledger",fields:[field]};
+  // Merge independent entries by stable keys, without summing currency or
+  // replaying rewards. A conflicting value for the same key is not guessed.
+  const join=(left,right)=>{
+   if(sameCloudProfile(left,right))return {ok:true,value:structuredClone(left)};
+   if(!left||!right||typeof left!=="object"||typeof right!=="object"||Array.isArray(left)!==Array.isArray(right))return {ok:false};
+   if(Array.isArray(left)){
+    // Arrays lack a stable event ID. Union only when one is fully contained.
+    const includes=(all,part)=>part.every(x=>all.some(y=>sameCloudProfile(x,y)));
+    if(includes(left,right))return {ok:true,value:structuredClone(left)};
+    if(includes(right,left))return {ok:true,value:structuredClone(right)};
+    return {ok:false};
+   }
+   const result=structuredClone(right);
+   for(const [key,value] of Object.entries(left)){
+    if(!Object.hasOwn(result,key)){result[key]=structuredClone(value);continue}
+    const nested=join(value,result[key]);
+    if(!nested.ok){
+     // Known monotonic states: true means achieved/claimed, never replay a grant.
+     if(typeof value==="boolean"&&typeof result[key]==="boolean"){
+       result[key]=value||result[key];continue;
+     }
+     // Completion and progress counters can only increase. Do not apply this
+     // to currencies, spending, or timestamps.
+     if(/^(count|streak|progress|completed|wins|bestScore|totalDays)$/i.test(key)&&
+        typeof value==="number"&&typeof result[key]==="number"&&
+        Number.isFinite(value)&&Number.isFinite(result[key])){
+       result[key]=Math.max(value,result[key]);continue;
+     }
+     return {ok:false};
+    }
+    result[key]=nested.value;
+   }
+   return {ok:true,value:result};
+  };
+  const result=join(local[field]??{},cloud[field]??{});
+  if(!result.ok)return {status:"blocked",reason:"mutable_ledger",fields:[field]};
+  merged[field]=result.value;
  }
  const safeFields=new Set(["solved","historyBackup","noHint","badges","stars","performances","canonicalQuestState"]);
  for(const field of new Set([...Object.keys(cloud),...Object.keys(local)])){

@@ -52,7 +52,40 @@ function recordCloudDiagnostic(event,details={}){
   const previous=JSON.parse(localStorage.getItem(cloudDiagKey)||"[]");
   const entry={at:new Date().toISOString(),event,...details};
   localStorage.setItem(cloudDiagKey,JSON.stringify([...previous.slice(-39),entry]));
+  recordCloudHealth(event,details);
+  // Best-effort, bounded telemetry: never transmit account IDs, profile
+  // contents, diagnostic details, or tokens. The server derives identity from JWT.
+  if(["hydration_failed","hydration_ready","hydration_reconciliation"].includes(event)&&
+     lumenSupabase&&lumenUser&&!qaActive){
+   const reason=typeof details.reason==="string"?details.reason.slice(0,64):null;
+   const outcome=typeof details.result==="string"?details.result.slice(0,32):null;
+   Promise.resolve(lumenSupabase.rpc("lumen_record_sync_health",{
+    p_event:event,p_reason:reason,p_outcome:outcome,
+    p_version:String(document.getElementById("lumenAccountVersion")?.textContent||"unknown").slice(0,80)
+   })).catch(()=>{});
+  }
   console.info("[Lumen cloud diagnostic]",entry);
+ }catch(_){}
+}
+// Health counters are deliberately aggregate-only: no player identifiers or profile data.
+const cloudHealthKey="lumenCloudHealthV1";
+function cloudHealthSnapshot(){
+ try{return JSON.parse(localStorage.getItem(cloudHealthKey)||"{}")}catch{return {}}
+}
+function recordCloudHealth(event,details={}){
+ try{
+  const state=cloudHealthSnapshot();
+  const now=Date.now();
+  const next={...state,updatedAt:new Date(now).toISOString(),lastEvent:event,
+   failures:Number(state.failures||0)+(event==="hydration_failed"?1:0),
+   blocked:Number(state.blocked||0)+(event==="hydration_reconciliation"&&details.result==="blocked"?1:0)};
+  if(event==="hydration_ready"){next.lastReadyAt=new Date(now).toISOString();next.blockedSince=null;next.failuresSinceReady=0}
+  if(event==="hydration_failed"||(event==="hydration_reconciliation"&&details.result==="blocked")){
+   next.blockedSince=state.blockedSince||new Date(now).toISOString();
+   next.failuresSinceReady=Number(state.failuresSinceReady||0)+1;
+  }
+  next.stalled=!!next.blockedSince&&now-Date.parse(next.blockedSince)>15*60*1000;
+  localStorage.setItem(cloudHealthKey,JSON.stringify(next));
  }catch(_){}
 }
 function cloudDiagnosticReport(){
@@ -307,7 +340,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    try{conflict=!cloudSafelyCoversLocal(JSON.parse(currentLocal),cloud)}catch{conflict=true}
    if(conflict){
     let resolution=await reconcileDominantLocalProfile(lumenSupabase,localStorage,cloud);
-    if(resolution.status==="blocked"&&resolution.reason==="missing_cloud_achievements"){
+    if(resolution.status==="blocked"&&["missing_cloud_achievements","mutable_balance","mutable_ledger"].includes(resolution.reason)){
      hydrationStage="bidirectional_reconciliation";
      resolution=await reconcileCompatibleCloudProfiles(lumenSupabase,localStorage,cloud);
     }
@@ -1433,11 +1466,12 @@ function renderAdminCatalogue(){
 async function loadAdminCockpit(){
  const status=document.getElementById("adminCockpitStatus"),days=Number(document.getElementById("adminCockpitDays")?.value||7);
  status.textContent="Actualisation…";
- const [cockpit,accounts,feedbacks,playerSnapshot]=await Promise.all([
+ const [cockpit,accounts,feedbacks,playerSnapshot,syncHealth]=await Promise.all([
    lumenSupabase.rpc("lumen_admin_cockpit",{p_days:days}),
    lumenSupabase.rpc("lumen_admin_accounts",{p_limit:250}),
    lumenSupabase.rpc("lumen_admin_feedback",{p_days:days}),
-   lumenSupabase.from("lumen_admin_player_snapshot").select("*").order("last_seen",{ascending:false}).limit(250)
+   lumenSupabase.from("lumen_admin_player_snapshot").select("*").order("last_seen",{ascending:false}).limit(250),
+   lumenSupabase.rpc("lumen_admin_sync_health",{p_days:days})
  ]);
  const players=playerSnapshot.data||[];
  const realFeedbacks=feedbacks.data||[];
@@ -1446,12 +1480,22 @@ async function loadAdminCockpit(){
  document.getElementById("adminCockpitKpis").innerHTML=[
   ["Joueurs uniques",m.unique_players],["Nouveaux",m.new_players],["Revenants",m.returning_players],["DAU",m.dau],["WAU",m.wau],["Sessions",m.sessions],["Quêtes commencées",m.quests_started],["Quêtes terminées",m.quests_completed],["Feedbacks",m.feedback_count]
  ].map(x=>'<div class="admin-kpi"><strong>'+adminNumber(x[1])+'</strong><span>'+x[0]+'</span></div>').join("");
+ const health=syncHealth.error?null:syncHealth.data;
+ if(health){
+  document.getElementById("adminCockpitKpis").insertAdjacentHTML("beforeend",[
+   ["Échecs de sauvegarde",health.failures],
+   ["Joueurs touchés",health.affected_players],
+   ["Joueurs bloqués +15 min",health.stalled_players],
+   ["Conflits cloud",health.blocked]
+  ].map(x=>'<div class="admin-kpi"><strong>'+adminNumber(x[1])+'</strong><span>'+adminEsc(x[0])+'</span></div>').join(""));
+ }
  const daily=d.daily||[],max=Math.max(1,...daily.map(x=>Number(x.players)||0));
  document.getElementById("adminDailyChart").innerHTML=daily.map(x=>'<div class="admin-bar" style="height:'+Math.max(4,Math.round(100*(Number(x.players)||0)/max))+'%" data-label="'+adminEsc(x.activity_date+" · "+x.players+" joueurs")+'"></div>').join("");
  const ret=d.retention||{};document.getElementById("adminRetention").innerHTML=["j1","j3","j7"].map(k=>'<div><strong>'+adminNumber(ret[k])+' %</strong><span>'+k.toUpperCase()+'</span></div>').join("");
  const funnel=d.funnel||[],first=Number(funnel[0]?.players)||1;document.getElementById("adminFunnel").innerHTML=funnel.map((x,i)=>{const prev=Number(funnel[i-1]?.players)||Number(x.players)||1;return '<div class="admin-funnel-row"><span>'+adminEsc(x.label)+'</span><strong>'+adminNumber(x.players)+' · '+Math.round(100*Number(x.players)/first)+' %'+(i?" · "+Math.round(100*Number(x.players)/prev)+" % étape":"")+'</strong></div>'}).join("");
  document.getElementById("adminFriction").innerHTML=(d.friction||[]).map(x=>{const rate=Number(x.started)?Math.round(100*Number(x.completed)/Number(x.started)):0;return '<tr><td>Q'+x.puzzle_id+'</td><td>'+adminNumber(x.started)+'</td><td>'+rate+' %</td><td>'+adminNumber(x.resets)+'</td><td>'+adminNumber(x.abandons)+'</td><td>'+adminNumber(x.hints)+'</td><td>'+adminNumber(x.verifies)+'</td><td>'+(x.median_seconds==null?"—":Math.round(x.median_seconds)+" s")+'</td></tr>'}).join("");
- const alerts=adminAlerts(d.friction);document.getElementById("adminAlerts").innerHTML=alerts.map(x=>'<div class="admin-alert"><strong>⚠</strong><span>'+adminEsc(x)+'</span></div>').join("")||"<p>Pas d’anomalie significative avec le volume actuel.</p>";
+ const syncAlerts=health&&Number(health.stalled_players)>0?["Sauvegardes : "+health.stalled_players+" joueur(s) bloqué(s) depuis plus de 15 minutes"]:[];
+ const alerts=[...syncAlerts,...adminAlerts(d.friction)];document.getElementById("adminAlerts").innerHTML=alerts.map(x=>'<div class="admin-alert"><strong>⚠</strong><span>'+adminEsc(x)+'</span></div>').join("")||"<p>Pas d’anomalie significative avec le volume actuel.</p>";
  document.getElementById("adminPlayers").innerHTML=players.map(x=>'<div class="admin-player" data-player="'+adminEsc(x.player_key)+'"><span><strong>'+adminEsc(x.display_name||x.player_label||x.player_type)+'</strong><br><small>'+adminEsc(x.player_type)+" · Q"+(x.current_quest||"—")+' · '+x.sessions+' sessions</small></span><small>'+new Date(x.last_seen).toLocaleString("fr-FR")+'</small></div>').join("");
  document.querySelectorAll("#adminPlayers .admin-player").forEach(x=>x.onclick=()=>loadAdminTimeline(x.dataset.player));
  const accountRows=document.getElementById("adminAccounts");
