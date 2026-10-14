@@ -1,16 +1,10 @@
+import {qualifyDifficulty} from "./difficulty.js";
 import {CONTENT_PACKS,CONTENT_CONSTELLATIONS} from "./content.js";
 import {playableQuest} from "./playable-quests.js";
 import {canonicalQuestList} from "./canonical-quests.js";
 
 export function catalogueDifficulty(quest){
- const tier=quest?.audit?.tier;
- if(tier)return tier;
- const steps=quest?.audit?.proofSteps;
- if(!Number.isFinite(steps))return "non évaluée";
- if(steps<15)return "facile";
- if(steps<30)return "moyenne";
- if(steps<50)return "difficile";
- return "experte";
+ return quest?.difficulty?.label??qualifyDifficulty(quest).label;
 }
 
 export function adminCatalogueTree(){
