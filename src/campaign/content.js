@@ -39,8 +39,27 @@ export const GENERATED_CONSTELLATIONS=Object.freeze(generatedManifest.constellat
  ...c,legacyIndex:BASE_CONSTELLATIONS.length+index,
  questStart:c.questIndices[0],questCount:c.questIndices.length
 })));
-export const CONTENT_PACKS=Object.freeze([...LEGACY_CONTENT_PACKS,Object.freeze({...generatedManifest.pack})]);
-export const CONTENT_CONSTELLATIONS=Object.freeze([...BASE_CONSTELLATIONS,...GENERATED_CONSTELLATIONS]);
+// Reserved canonical identities for the six remaining constellations of adventure 3.
+// These slots have audited canonical puzzles, but are not yet exposed by the legacy
+// numeric gameplay engine. Keep historical quest indices and cloud save keys intact.
+export const RESERVED_ADVENTURE_03_CONSTELLATIONS=Object.freeze([
+ ["real-adventure-03-new-01","Dauphin","Del"],
+ ["real-adventure-03-new-02","Petit Cheval","Equ"],
+ ["real-adventure-03-new-03","Hercule","Her"],
+ ["real-adventure-03-new-04","Lièvre","Lep"],
+ ["real-adventure-03-new-05","Licorne","Mon"],
+ ["real-adventure-03-new-06","Ophiuchus","Oph"]
+].map(([id,label,iau],index)=>Object.freeze({
+ id,label,iau,skyId:BASE_SKY_ID,packId:"real-adventure-03",
+ legacyIndex:BASE_CONSTELLATIONS.length+GENERATED_CONSTELLATIONS.length+index,
+ questStart:null,questCount:10,questIndices:Object.freeze([]),
+ canonicalOnly:true
+})));
+
+export const CONTENT_PACKS=Object.freeze([...LEGACY_CONTENT_PACKS.map(pack=>pack.id==="real-adventure-03"
+ ?Object.freeze({...pack,constellationIds:Object.freeze([...pack.constellationIds,...RESERVED_ADVENTURE_03_CONSTELLATIONS.map(c=>c.id)])})
+ :pack),Object.freeze({...generatedManifest.pack})]);
+export const CONTENT_CONSTELLATIONS=Object.freeze([...BASE_CONSTELLATIONS,...GENERATED_CONSTELLATIONS,...RESERVED_ADVENTURE_03_CONSTELLATIONS]);
 
 export function normalizeEntitlements(rows=[]){
  return new Set((rows instanceof Set?[...rows]:Array.isArray(rows)?rows:[])
