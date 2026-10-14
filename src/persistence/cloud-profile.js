@@ -314,8 +314,18 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  // Daily engagement and challenge ledgers can grant rewards: never sum them
  // or claim to reconstruct their history.
  for(const field of ["daily","challenges"]){
-  if(!sameCloudProfile(local[field]??{},cloud[field]??{}))
-   return {status:"blocked",reason:"mutable_ledger",fields:[field]};
+  const a=local[field]??{},b=cloud[field]??{};
+  if(sameCloudProfile(a,b))continue;
+  // Only choose a complete superset. Never add independent reward ledgers.
+  const covers=(candidate,other)=>{
+   if(sameCloudProfile(candidate,other))return true;
+   if(!candidate||!other||typeof candidate!=="object"||typeof other!=="object"||Array.isArray(candidate)!==Array.isArray(other))return false;
+   if(Array.isArray(candidate))return other.every(v=>candidate.some(x=>sameCloudProfile(x,v)));
+   return Object.entries(other).every(([k,v])=>Object.hasOwn(candidate,k)&&covers(candidate[k],v));
+  };
+  if(covers(a,b))merged[field]=structuredClone(a);
+  else if(covers(b,a))merged[field]=structuredClone(b);
+  else return {status:"blocked",reason:"mutable_ledger",fields:[field]};
  }
  const safeFields=new Set(["solved","historyBackup","noHint","badges","stars","performances","canonicalQuestState"]);
  for(const field of new Set([...Object.keys(cloud),...Object.keys(local)])){
