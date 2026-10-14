@@ -103,6 +103,19 @@ for(const options of scenarios){
    }
    return out;
  };
+ // The new secondary-write integrity contract adds one server readback after
+ // cloudSavePuzzle. Legacy equivalence must ignore this intentional verification
+ // RPC; the dedicated cloud-profile tests assert its success/failure semantics.
+ const stripVerifiedSaveReadback=trace=>{
+  const result=[];
+  for(let i=0;i<trace.length;i++){
+   const item=trace[i];
+   if(item.name==='lumen_get_progress'&&result.at(-1)?.name==='lumen_save_progress'&&result.at(-1)?.args?.p_duration_seconds===42)continue;
+   result.push(item);
+  }
+  return result;
+ };
+ normalized.trace=stripVerifiedSaveReadback(normalized.trace);
  normalized.trace=normalizePresentationTrace(normalizeOwnershipTrace(normalized.trace));
  expected.trace=normalizePresentationTrace(normalizeOwnershipTrace(expected.trace));
  // #128 repair writes are covered explicitly by late-game-tests. Ignore only

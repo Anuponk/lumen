@@ -110,6 +110,11 @@ assert.equal((await loadVerifiedProfile(cloudApi)).shards,7,'Stale second device
 const noCloud={async rpc(name){if(name==='lumen_initialize_profile')return {data:null,error:{message:'offline'}};return {data:null,error:{message:'offline'}}}};
 await assert.rejects(()=>initializeCloudProfile(noCloud,guest),/Initialisation cloud impossible/);
 
+// Secondary progress mirror must be acknowledged, not silently ignored.
+assert.ok(uiSrc.includes('legacy_mirror_failed'),'Mirror divergence must be observable');
+assert.ok(uiSrc.includes('legacyMirrorVerified:mirror.ok'),'Hydration diagnostics must report mirror verification');
+assert.ok(uiSrc.includes('await verifyLegacyProgressMirror()'),'Cloud save must verify the secondary progress table');
+assert.ok(uiSrc.includes('preserveUnsyncedCloudProgress("legacy-mirror-failed")'),'Failed mirror must retain local recovery data');
 assert.ok(uiSrc.includes('async function celebrateSuccess()'),'Victory completion may await durable cloud acknowledgement');
 assert.ok(uiSrc.includes('if(!(await confirmCloudReward()))return;'),'Authenticated victory waits for committed cloud snapshot');
 assert.ok(uiSrc.includes('La sauvegarde cloud n’a pas pu être confirmée'),'Transient cloud failure must remain visible and retryable');
@@ -147,4 +152,28 @@ assert.doesNotMatch(uiSrc,/account_signin_success[^\n]*showAccountSavedConfirmat
  assert.equal(restored.badges[320].mastery,true);
  assert.equal(restored.performances[320].bestTime,55);
  await assert.rejects(()=>compareAndSwapCloudProfile(rpc,cloudBase,initial),/conflit|modifi|stale|simultan|refus|sauvegarde/i);
+}
+
+// Regression: secondary progress mirror must repair missing quests and verify readback.
+{
+ const {createCloudPersistence}=await import('../src/persistence/cloud.js');
+ const solved={0:1,1:1,2:1};let server=new Set([1]);let failWrite=false;
+ const api={rpc:async(method,args)=>{
+  if(method==='lumen_get_progress')return {data:[...server].map(puzzle_id=>({puzzle_id})),error:null};
+  if(method==='lumen_save_progress'){
+   if(failWrite)return {data:null,error:{message:'offline'}};
+   server.add(args.p_puzzle_id);return {data:null,error:null};
+  }
+  throw Error('Unexpected mirror RPC '+method);
+ }};
+ const model={lumenSupabase:api,lumenUser:{id:'test'},lumenProgress:{solved,noHint:{}},usedHintThisGame:false};
+ const hooks={activeGameSeconds:()=>12,campaignQuestCount:()=>10,saveLumenProgress:()=>{},refreshJourney:()=>{},init:()=>{}};
+ const persistence=createCloudPersistence(model,hooks,{setTimeout,console,qaMode:false});
+ assert.deepEqual(await persistence.verifyLegacyProgressMirror(),{ok:true,count:3});
+ assert.deepEqual([...server].sort((a,b)=>a-b),[1,2,3]);
+ server=new Set([1]);failWrite=true;
+ assert.equal((await persistence.verifyLegacyProgressMirror()).ok,false,'Failed mirror write must not be treated as success');
+ assert.equal((await persistence.cloudSavePuzzle(2)).ok,false,'Individual quest save failure must be reported');
+ failWrite=false;
+ assert.equal((await persistence.cloudSavePuzzle(2)).ok,true,'Individual quest save must be read-back verified');
 }

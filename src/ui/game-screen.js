@@ -140,8 +140,17 @@ async function flushCloudProfile(){
  cloudProfileInFlight=(async()=>{
   try{
    cloudProfileBaseline=await compareAndSwapCloudProfile(lumenSupabase,current,cloudProfileBaseline);
+   // Verify the secondary legacy progress table as well as the full profile.
+   // Failure must remain observable, not masquerade as successful sync.
+   const mirror=await verifyLegacyProgressMirror();
+   if(!mirror.ok){
+    cloudProfileFailure={reason:"legacy_mirror",detail:mirror.reason};
+    recordCloudDiagnostic("legacy_mirror_failed",{kind:mirror.reason,pending:Number(mirror.pending||0)});
+    preserveUnsyncedCloudProgress("legacy-mirror-failed");
+    return false;
+   }
    cloudProfileFailure=null;
-   recordCloudDiagnostic("flush_success",{profileReady:cloudProfileReady});
+   recordCloudDiagnostic("flush_success",{profileReady:cloudProfileReady,legacyMirrorVerified:true});
    return true;
   }catch(e){
    cloudProfileFailure={reason:"network"};
@@ -296,7 +305,7 @@ get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get navigationLocked(){return !!socialChallenge},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
-const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,sendEmailOtp,verifyEmailOtp,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI();if(event?.type==="password_recovery"){const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=false;const password=document.getElementById("setPasswordPanel");if(password)password.hidden=false;document.getElementById("setPasswordValue")?.focus()}},renderDaily:(...args)=>renderDaily(...args),afterAuthCloudSync:async()=>{
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,sendEmailOtp,verifyEmailOtp,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI();if(event?.type==="password_recovery"){const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=false;const password=document.getElementById("setPasswordPanel");if(password)password.hidden=false;document.getElementById("setPasswordValue")?.focus()}},renderDaily:(...args)=>renderDaily(...args),afterAuthCloudSync:async()=>{
  if(qaActive||!lumenUser||!lumenSupabase)return;
  cloudProfileReady=false;cloudProfileBaseline=null;
  let hydrationStage="start";
@@ -358,7 +367,15 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    recordCloudDiagnostic("hydration_local_quota_bypass",{cloudVerified:true});
   }else if(changed){recordCloudDiagnostic("hydration_reload",{stage:"local_install"});location.reload();return}
   cloudProfileReady=true;
-  recordCloudDiagnostic("hydration_ready",{profileReady:true});
+  // Do not claim hydration is fully synchronized until the quest mirror is
+  // repaired and read back. Preserve the full profile on partial failure.
+  const mirror=await verifyLegacyProgressMirror();
+  if(!mirror.ok){
+   recordCloudDiagnostic("legacy_mirror_failed",{kind:mirror.reason,pending:Number(mirror.pending||0)});
+   preserveUnsyncedCloudProgress("legacy-mirror-failed");
+   cloudProfileFailure={reason:"legacy_mirror",detail:mirror.reason};
+  }else recordCloudDiagnostic("legacy_mirror_verified",{count:mirror.count});
+  recordCloudDiagnostic("hydration_ready",{profileReady:true,legacyMirrorVerified:mirror.ok});
   renderDaily();
   maybeShowStreakLoss();
   const gate=document.getElementById("accountOptin");if(gate){const wasVisible=!gate.hidden;gate.hidden=true;if(wasVisible)showAccountSavedConfirmation()}
@@ -1681,7 +1698,7 @@ async function celebrateSuccess(){
  }
  saveLumenProgress();
  if(!(await confirmCloudReward()))return;
- if(firstCompletion){cloudSavePuzzle(levelIndex);setTimeout(maybeOfferInstall,1600);setTimeout(maybeOfferPush,5200)}
+ if(firstCompletion){void cloudSavePuzzle(levelIndex).then(result=>{if(!result?.ok&&lumenUser&&!qaActive){recordCloudDiagnostic("legacy_mirror_failed",{kind:result?.reason||"unknown",pending:1});preserveUnsyncedCloudProgress("legacy-mirror-failed");}});setTimeout(maybeOfferInstall,1600);setTimeout(maybeOfferPush,5200)}
  refreshJourney();
  pauseGameClock();
  clearInterval(timer);
