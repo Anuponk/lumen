@@ -72,9 +72,35 @@ export function restoreIntoEmptyGuestStorage(storage,remote){
  * Monetary balances are NOT merged: the full remote snapshot must be at least
  * as high, and local progress is archived before replacement.
  */
+// Legacy autonomous victory progress is monotonic: a win already earned must
+// never be discarded. Accept only counters or per-quest boolean/counter maps.
+// Unknown shapes remain blocked rather than guessing at reward transactions.
+export function mergeAutonomousWins(local,cloud){
+ if(local==null)return {ok:true,value:structuredClone(cloud??{})};
+ if(cloud==null)return {ok:true,value:structuredClone(local)};
+ if(sameCloudProfile(local,cloud))return {ok:true,value:structuredClone(cloud)};
+ const counter=x=>typeof x==="number"&&Number.isSafeInteger(x)&&x>=0;
+ if(counter(local)&&counter(cloud))return {ok:true,value:Math.max(local,cloud)};
+ const map=x=>x&&typeof x==="object"&&!Array.isArray(x);
+ if(map(local)&&map(cloud)){
+  const result={...structuredClone(cloud)};
+  for(const [key,value] of Object.entries(local)){
+   if(!Object.hasOwn(result,key)){if(typeof value==="boolean"||counter(value))result[key]=value;else return {ok:false};continue}
+   const other=result[key];
+   if(typeof value==="boolean"&&typeof other==="boolean")result[key]=value||other;
+   else if(counter(value)&&counter(other))result[key]=Math.max(value,other);
+   else return {ok:false};
+  }
+  for(const value of Object.values(result))if(typeof value!=="boolean"&&!counter(value))return {ok:false};
+  return {ok:true,value:result};
+ }
+ return {ok:false};
+}
 export function cloudSafelyCoversLocal(local,remote){
   if(!local || typeof local!=="object" || Array.isArray(local))return true;
   const cloud=validateCloudProfile(remote);
+  const autonomy=mergeAutonomousWins(local.autonomousWins,cloud.autonomousWins);
+  if(!autonomy.ok||!sameCloudProfile(autonomy.value,cloud.autonomousWins??{}))return false;
   for(const field of ["shards","xp","skyScore"]){
     if(Number(local[field]||0)>Number(cloud[field]||0))return false;
   }
@@ -299,11 +325,13 @@ export async function reconcileDominantLocalProfile(supabase,storage,remote){
  }
  // Unknown fields can contain non-repeatable transactions. Require equality
  // instead of silently selecting one profile's value.
- const monotonic=new Set(["solved","historyBackup","badges","stars","noHint","performances","canonicalQuestState"]);
+ const monotonic=new Set(["solved","historyBackup","badges","stars","noHint","performances","canonicalQuestState","autonomousWins"]);
  for(const key of new Set([...Object.keys(local),...Object.keys(cloud)])){
   if(monotonic.has(key)||["shards","xp","skyScore","daily","challenges"].includes(key))continue;
-  if(!sameCloudProfile(local[key]??null,cloud[key]??null))return {status:"blocked",reason:"unclassified_field"};
+  if(!sameCloudProfile(local[key]??null,cloud[key]??null))return {status:"blocked",reason:"unclassified_field",fields:[key]};
  }
+ const autonomy=mergeAutonomousWins(local.autonomousWins,cloud.autonomousWins);
+ if(!autonomy.ok||!sameCloudProfile(autonomy.value,local.autonomousWins??{}))return {status:"blocked",reason:"autonomous_wins_conflict",fields:["autonomousWins"]};
  if(sameCloudProfile(local,cloud))return {status:"identical"};
  preserveVerifiedSnapshot(storage,"lumenBeforeCloudReconcileLocal_",raw);
  preserveVerifiedSnapshot(storage,"lumenBeforeCloudReconcileRemote_",JSON.stringify(cloud));
@@ -373,7 +401,10 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
   if(!result.ok)return {status:"blocked",reason:"mutable_ledger",fields:[field]};
   merged[field]=result.value;
  }
- const safeFields=new Set(["solved","historyBackup","noHint","badges","stars","performances","canonicalQuestState"]);
+ const safeFields=new Set(["solved","historyBackup","noHint","badges","stars","performances","canonicalQuestState","autonomousWins"]);
+ const autonomy=mergeAutonomousWins(local.autonomousWins,cloud.autonomousWins);
+ if(!autonomy.ok)return {status:"blocked",reason:"autonomous_wins_conflict",fields:["autonomousWins"]};
+ merged.autonomousWins=autonomy.value;
  const unknownDifferences=[];
  for(const field of new Set([...Object.keys(cloud),...Object.keys(local)])){
   if(safeFields.has(field)||["shards","xp","skyScore","daily","challenges"].includes(field))continue;
@@ -397,6 +428,7 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
    if(!sameCloudProfile(merged[field][id],value))return {status:"blocked",reason:"reward_conflict"};
   }
  }
+ if(local.autonomousWins==null&&cloud.autonomousWins==null)delete merged.autonomousWins;
  if(sameCloudProfile(merged,cloud)){
   return {status:"cloud_dominant",profile:cloud};
  }
