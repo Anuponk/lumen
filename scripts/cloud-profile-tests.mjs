@@ -110,6 +110,11 @@ assert.equal((await loadVerifiedProfile(cloudApi)).shards,7,'Stale second device
 const noCloud={async rpc(name){if(name==='lumen_initialize_profile')return {data:null,error:{message:'offline'}};return {data:null,error:{message:'offline'}}}};
 await assert.rejects(()=>initializeCloudProfile(noCloud,guest),/Initialisation cloud impossible/);
 
+// Secondary progress mirror must be acknowledged, not silently ignored.
+assert.ok(uiSrc.includes('legacy_mirror_failed'),'Mirror divergence must be observable');
+assert.ok(uiSrc.includes('legacyMirrorVerified:mirror.ok'),'Hydration diagnostics must report mirror verification');
+assert.ok(uiSrc.includes('await verifyLegacyProgressMirror()'),'Cloud save must verify the secondary progress table');
+assert.ok(uiSrc.includes('preserveUnsyncedCloudProgress("legacy-mirror-failed")'),'Failed mirror must retain local recovery data');
 assert.ok(uiSrc.includes('async function celebrateSuccess()'),'Victory completion may await durable cloud acknowledgement');
 assert.ok(uiSrc.includes('if(!(await confirmCloudReward()))return;'),'Authenticated victory waits for committed cloud snapshot');
 assert.ok(uiSrc.includes('La sauvegarde cloud n’a pas pu être confirmée'),'Transient cloud failure must remain visible and retryable');
