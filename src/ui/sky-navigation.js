@@ -12,7 +12,7 @@ export function constellationUnlocked(entry,pack,getSolved,getQuest){
  return previousCompleted||!!getSolved(entry.questStart)||entry.questStart<=getQuest();
 }
 export function skySelection(model,selection={},questIndex=0){
- const skies=model.skies||[],activeSky=skies.find(s=>s.packs.some(p=>questIndex>=p.legacyQuestStart&&questIndex<p.legacyQuestStart+p.questCount))||skies[0];
+ const skies=Array.isArray(model?.skies)?model.skies:[],activeSky=skies.find(s=>s.packs.some(p=>questIndex>=p.legacyQuestStart&&questIndex<p.legacyQuestStart+p.questCount))||skies[0];
  const sky=skies.find(s=>s.id===selection.skyId)||activeSky;
  const candidate=activeSky?.packs.find(p=>questIndex>=p.legacyQuestStart&&questIndex<p.legacyQuestStart+p.questCount);
  const active=candidate?.accessible?candidate:activeSky?.packs.filter(p=>p.accessible&&p.legacyQuestStart<=questIndex).at(-1);
@@ -54,7 +54,7 @@ export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit
  const modal=document.getElementById('mapModal');modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-labelledby','monCielTitle');
  modal.addEventListener('keydown',e=>{if(e.defaultPrevented)return;if(e.key==='Escape'){e.preventDefault();element('closeMap').click()}if(e.key==='Tab'){const controls=[...modal.querySelectorAll('button,select,[tabindex]')].filter(c=>!c.disabled&&c.tabIndex>=0&&c.getClientRects().length);if(!controls.length)return;const first=controls[0],last=controls.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
  const context=document.createElement('div');context.id='skyNavigation';context.className='sky-navigation';
- context.innerHTML='<label class="sky-picker">Ciel <select id="skyPicker" aria-label="Choisir un Ciel"></select></label><div id="adventureRail" class="adventure-rail" role="group" aria-label="Aventures"></div><div id="adventureSummary" class="adventure-summary"></div>';
+ context.innerHTML='<div id="adventureRail" class="adventure-rail" role="group" aria-label="Aventures"></div><div id="adventureSummary" class="adventure-summary"></div>';
  tabs.before(context);
  const pages=document.createElement('div');pages.id='constellationPages';pages.className='constellation-pages';
  pages.innerHTML='<button id="constellationPrevious" aria-label="Constellations précédentes">‹</button><span id="constellationPage" aria-live="polite"></span><button id="constellationNext" aria-label="Constellations suivantes">›</button>';
@@ -101,7 +101,7 @@ export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit
  const unlocked=(entry,pack)=>entry.canonicalOnly
   ?!!entry.accessible&&getCanonicalQuests(entry.id).some(q=>getCanonicalAvailable(q)||getCanonicalSolved(q))
   :constellationUnlocked(entry,pack,getSolved,getQuest);
- function state(pack){const done=pack.constellations.filter(completed).length;return !pack.accessible?'Verrouillée':done===pack.constellations.length?'Terminée':pack.id===current.active?.id?'En cours':'À découvrir'}
+ function state(pack){const done=pack.constellations.filter(completed).length;return !pack.accessible?'Verrouillée':done===pack.constellations.length?'Terminée':pack.id===current?.active?.id?'En cours':'À découvrir'}
  let current=skySelection(getModel(),selection,getQuest());
  function setView(next){view=next;tabs.hidden=next==='detail';pages.hidden=next==='detail'||current.pages<=1;detail.hidden=next!=='detail';renderCanonicalDetail()}
  function showLocked(pack,origin){noticeOrigin=origin||document.activeElement;element('adventureNext').hidden=true;element('adventureNoticeClose').textContent='Compris';element('adventureNoticeTitle').textContent=pack.displayName||'Aventure';element('adventureNoticeCopy').textContent=pack.lockReason||'Cette Aventure est verrouillée. Son mode de déverrouillage sera annoncé plus tard.';notice.hidden=false;element('adventureNoticeClose').focus()}
@@ -109,11 +109,14 @@ export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit
  function closeNotice(){notice.hidden=true;const origin=noticeOrigin?.isConnected&&!noticeOrigin.hidden&&noticeOrigin.getClientRects().length?noticeOrigin:element('adventureRail').querySelector('.selected');origin?.focus?.()}
  function render(){
   const model=getModel();current=skySelection(model,selection,getQuest());selection={skyId:current.sky?.id,packId:current.adventure?.id,page:current.page};
-  const skyPickerContainer=context.querySelector('.sky-picker');
-  const showSkyPicker=skyPickerVisible(model);
-  skyPickerContainer.hidden=!showSkyPicker;
-  skyPickerContainer.style.display=showSkyPicker?'':'none';
-  const picker=element('skyPicker');picker.replaceChildren();for(const sky of model.skies){const option=document.createElement('option');option.value=sky.id;option.textContent=sky.label;picker.appendChild(option)}picker.value=current.sky?.id||'';
+  // Never leave an empty picker and blank constellation area without an explanation.
+  if(!current.sky||!current.adventure){
+   const rail=element('adventureRail');rail.replaceChildren();
+   const summary=element('adventureSummary');summary.textContent='Impossible de charger les aventures. Ferme puis rouvre Mon ciel.';
+   tabs.replaceChildren();element('constellationPage').textContent='';
+   element('constellationPrevious').disabled=true;element('constellationNext').disabled=true;
+   return;
+  }
   const rail=element('adventureRail'),scroll=rail.scrollLeft;rail.replaceChildren();
   for(const pack of current.sky?.packs||[]){const b=document.createElement('button');b.className='adventure-chip'+(pack.id===current.adventure?.id?' selected':'')+(!pack.accessible?' locked':'');b.dataset.packId=pack.id;b.setAttribute('aria-pressed',String(pack.id===current.adventure?.id));b.textContent=(!pack.accessible?'🔒 ':state(pack)==='Terminée'?'✓ ':'')+(pack.displayName||'Aventure '+(pack.order+1));b.title=state(pack);b.onclick=()=>{if(!pack.accessible){showLocked(pack,b);return}selection={skyId:current.sky.id,packId:pack.id,page:0};selectedConstellation=null;view='overview';render()};rail.appendChild(b)}rail.scrollLeft=scroll;
   const pack=current.adventure,done=pack?.constellations.filter(completed).length||0;
@@ -145,7 +148,6 @@ export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit
   render();onConstellation(target.entry);
   return true;
  }
- element('skyPicker').onchange=e=>{selection={skyId:e.target.value,page:0};selectedConstellation=null;view='overview';render()};
  element('constellationPrevious').onclick=()=>turn(-1);element('constellationNext').onclick=()=>turn(1);element('constellationBack').onclick=()=>setView('overview');element('adventureNoticeClose').onclick=closeNotice;
  notice.onclick=e=>{if(e.target===notice)closeNotice()};notice.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();closeNotice()}if(e.key==='Tab'){const buttons=[element('adventureNext'),element('adventureNoticeClose')].filter(b=>!b.hidden);const index=buttons.indexOf(document.activeElement);e.preventDefault();buttons[(index+(e.shiftKey?-1:1)+buttons.length)%buttons.length].focus()}});
  let pointer=null,swiped=false;tabs.style.touchAction='pan-y';tabs.addEventListener('pointerdown',e=>{swiped=false;pointer={x:e.clientX,y:e.clientY,id:e.pointerId}});tabs.addEventListener('pointerup',e=>{if(!pointer||e.pointerId!==pointer.id)return;const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;pointer=null;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.5){swiped=true;const delta=dx<0?1:-1;const target=swipeAdventureTarget(current,delta);if(target?.locked){showLocked(target.pack,tabs);return}if(target?.changedAdventure){selection={skyId:current.sky.id,packId:target.pack.id,page:target.page};selectedConstellation=null;view='overview';render();element('adventureRail').querySelector('.selected')?.scrollIntoView({block:'nearest',inline:'center'})}else if(target)turn(delta)}});tabs.addEventListener('pointercancel',()=>pointer=null);tabs.addEventListener('click',e=>{if(swiped){e.preventDefault();e.stopImmediatePropagation();swiped=false}},true);
