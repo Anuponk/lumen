@@ -269,7 +269,7 @@ export function installCloudProfileLocally(storage,cloud){
   // When cloud fully covers the local state, a full localStorage quota must not
   // prevent authentication. Keep all backups untouched and run cloud-first in memory.
   // On the next login we retry local installation without losing cloud authority.
-  if(error?.name==="QuotaExceededError"||error?.code===22||error?.code===1014){
+  if(error?.name==="QuotaExceededError"||error?.code===22||error?.code===1014||error?.code==="LOCAL_STORAGE_QUOTA"){
    if(current===null||cloudSafelyCoversLocal(JSON.parse(current),verified))return "memory_only";
    const quota=new Error("Stockage local saturé : sauvegardes intactes, libérer de l'espace avant restauration");
    quota.code="LOCAL_STORAGE_QUOTA";quota.stage=backup?"cloud_local_backup":"cloud_local_install";
