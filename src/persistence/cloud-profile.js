@@ -353,10 +353,12 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
   merged[field]=result.value;
  }
  const safeFields=new Set(["solved","historyBackup","noHint","badges","stars","performances","canonicalQuestState"]);
+ const unknownDifferences=[];
  for(const field of new Set([...Object.keys(cloud),...Object.keys(local)])){
   if(safeFields.has(field)||["shards","xp","skyScore","daily","challenges"].includes(field))continue;
-  if(!sameCloudProfile(local[field]??null,cloud[field]??null))return {status:"blocked",reason:"unclassified_field"};
+  if(!sameCloudProfile(local[field]??null,cloud[field]??null))return {status:"blocked",reason:"unclassified_field",fields:[field]};
  }
+ if(unknownDifferences.length)return {status:"blocked",reason:"unclassified_field",fields:unknownDifferences};
  // Completed quests and monotonic boolean awards may be unioned; conflicting
  // non-boolean payloads cannot be resolved without a transaction ledger.
  for(const field of ["solved","historyBackup","noHint"]){
