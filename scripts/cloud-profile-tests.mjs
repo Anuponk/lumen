@@ -203,8 +203,9 @@ assert.doesNotMatch(uiSrc,/account_signin_success[^\n]*showAccountSavedConfirmat
  assert.ok([...records.keys()].some(key=>key.startsWith('lumenBeforeCloudReconcileLocal_')));
  assert.ok([...records.keys()].some(key=>key.startsWith('lumenBeforeCloudReconcileRemote_')));
  const contradictory=structuredClone(local);contradictory.performances[0].run={duration:42};
+ cloud.performances[0].run={duration:55};
  records.set('lumenProgressV1',JSON.stringify(contradictory));
- const refused=await reconcileCompatibleCloudProfiles(rpc,store,remote);
+ const refused=await reconcileCompatibleCloudProfiles(rpc,store,structuredClone(cloud));
  assert.equal(refused.status,'blocked');
  assert.equal(refused.reason,'reward_conflict');
 }
