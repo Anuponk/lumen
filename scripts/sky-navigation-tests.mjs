@@ -91,7 +91,7 @@ const gameUi=readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"u
 assert.match(gameUi,/const lockReason=!qaActive/, "Unavailable canonical quests must show a real lock reason");
 assert.match(gameUi,/aria-hidden="true">🔒/, "Unavailable canonical quests must show a visible lock");
 const skyUi=readFileSync(new URL("../src/ui/sky-navigation.js",import.meta.url),"utf8");
-assert.match(skyUi,/skyPickerContainer\.style\.display=showSkyPicker\?\x27\x27:\x27none\x27/,"A sole sky must be hidden even if CSS overrides [hidden]");
+assert.doesNotMatch(skyUi,/<select id="skyPicker"/,"Obsolete sky selector must not be rendered");
 assert.match(skyUi,/detail\.addEventListener\(\x27pointerdown\x27/,"Detail view must handle touch-pointer swipes");
 assert.doesNotMatch(skyUi,/if\(e\.target\.closest\(\x27button,input,select,a/,"Swipe on quest buttons must not be discarded");
 assert.match(skyUi,/if\(e\.target\.closest\(\x27input,select,textarea/,"Text-entry controls should stay excluded from swipe");
