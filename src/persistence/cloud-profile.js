@@ -328,8 +328,10 @@ export async function reconcileDominantLocalProfile(supabase,storage,remote){
  const monotonic=new Set(["solved","historyBackup","badges","stars","noHint","performances","canonicalQuestState","autonomousWins"]);
  for(const key of new Set([...Object.keys(local),...Object.keys(cloud)])){
   if(monotonic.has(key)||["shards","xp","skyScore","daily","challenges"].includes(key))continue;
-  if(!sameCloudProfile(local[key]??null,cloud[key]??null))return {status:"blocked",reason:"unclassified_field"};
+  if(!sameCloudProfile(local[key]??null,cloud[key]??null))return {status:"blocked",reason:"unclassified_field",fields:[key]};
  }
+ const autonomy=mergeAutonomousWins(local.autonomousWins,cloud.autonomousWins);
+ if(!autonomy.ok||!sameCloudProfile(autonomy.value,local.autonomousWins??{}))return {status:"blocked",reason:"autonomous_wins_conflict",fields:["autonomousWins"]};
  if(sameCloudProfile(local,cloud))return {status:"identical"};
  preserveVerifiedSnapshot(storage,"lumenBeforeCloudReconcileLocal_",raw);
  preserveVerifiedSnapshot(storage,"lumenBeforeCloudReconcileRemote_",JSON.stringify(cloud));
