@@ -224,9 +224,11 @@ export async function compareAndSwapCloudProfile(supabase,profile,expected){
 // Reuse an existing verified backup instead of multiplying full snapshots on retries.
 function preserveVerifiedSnapshot(storage,prefix,value){
  const existing=[];
- for(let i=0;i<(storage.length||0);i++){
-  const key=storage.key(i);
-  if(key?.startsWith(prefix))existing.push(key);
+ if(typeof storage.key==="function"&&Number.isFinite(storage.length)){
+  for(let i=0;i<storage.length;i++){
+   const key=storage.key(i);
+   if(key?.startsWith(prefix))existing.push(key);
+  }
  }
  for(const key of existing){if(storage.getItem(key)===value)return key}
  const key=prefix+Date.now();
