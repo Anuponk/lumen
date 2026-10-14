@@ -270,6 +270,43 @@ function preserveVerifiedSnapshot(storage,prefix,value){
  }
  return key;
 }
+// IndexedDB is a separate quota pool from localStorage. Never proceed with a
+// cloud write unless BOTH recovery snapshots were read back successfully.
+async function preserveRecoverySnapshot(storage,prefix,value){
+ try{return preserveVerifiedSnapshot(storage,prefix,value)}
+ catch(error){if(error?.code!=="LOCAL_STORAGE_QUOTA")throw error}
+ if(typeof indexedDB==="object"&&indexedDB&&typeof indexedDB.open==="function"){
+  const database=await new Promise((resolve,reject)=>{
+   const request=indexedDB.open("lumenCloudRecoveryV1",1);
+   request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains("snapshots"))request.result.createObjectStore("snapshots")};
+   request.onsuccess=()=>resolve(request.result);
+   request.onerror=()=>reject(request.error||Error("IndexedDB recovery open failed"));
+  });
+  try{
+   // Content-addressed keys avoid accumulating identical full backups on retries.
+   let hash=2166136261;
+   for(let i=0;i<value.length;i++){hash^=value.charCodeAt(i);hash=Math.imul(hash,16777619)}
+   const key=prefix+(hash>>>0).toString(16)+"_"+value.length;
+   await new Promise((resolve,reject)=>{
+    const tx=database.transaction("snapshots","readwrite");
+    tx.objectStore("snapshots").put(value,key);
+    tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error||Error("Recovery write failed"));
+    tx.onabort=()=>reject(tx.error||Error("Recovery write aborted"));
+   });
+   const saved=await new Promise((resolve,reject)=>{
+    const tx=database.transaction("snapshots","readonly");
+    const request=tx.objectStore("snapshots").get(key);
+    request.onsuccess=()=>resolve(request.result);
+    request.onerror=()=>reject(request.error||Error("Recovery verification failed"));
+   });
+   if(saved!==value)throw Error("IndexedDB recovery verification mismatch");
+   return "indexeddb:"+key;
+  }finally{database.close()}
+ }
+ const error=Error("No verified recovery storage available; cloud write blocked");
+ error.code="RECOVERY_STORAGE_UNAVAILABLE";throw error;
+}
+
 export function installCloudProfileLocally(storage,cloud){
  const verified=validateCloudProfile(cloud),key="lumenProgressV1";
  const current=storage.getItem(key),json=JSON.stringify(verified);
@@ -333,8 +370,8 @@ export async function reconcileDominantLocalProfile(supabase,storage,remote){
  const autonomy=mergeAutonomousWins(local.autonomousWins,cloud.autonomousWins);
  if(!autonomy.ok||!sameCloudProfile(autonomy.value,local.autonomousWins??{}))return {status:"blocked",reason:"autonomous_wins_conflict",fields:["autonomousWins"]};
  if(sameCloudProfile(local,cloud))return {status:"identical"};
- preserveVerifiedSnapshot(storage,"lumenBeforeCloudReconcileLocal_",raw);
- preserveVerifiedSnapshot(storage,"lumenBeforeCloudReconcileRemote_",JSON.stringify(cloud));
+ await preserveRecoverySnapshot(storage,"lumenBeforeCloudReconcileLocal_",raw);
+ await preserveRecoverySnapshot(storage,"lumenBeforeCloudReconcileRemote_",JSON.stringify(cloud));
  // CAS refuses overwrite when another device changed cloud after our read.
  const written=await compareAndSwapCloudProfile(supabase,local,cloud);
  const verified=await loadVerifiedProfile(supabase);
@@ -432,8 +469,8 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  if(sameCloudProfile(merged,cloud)){
   return {status:"cloud_dominant",profile:cloud};
  }
- preserveVerifiedSnapshot(storage,"lumenBeforeCloudReconcileLocal_",raw);
- preserveVerifiedSnapshot(storage,"lumenBeforeCloudReconcileRemote_",JSON.stringify(cloud));
+ await preserveRecoverySnapshot(storage,"lumenBeforeCloudReconcileLocal_",raw);
+ await preserveRecoverySnapshot(storage,"lumenBeforeCloudReconcileRemote_",JSON.stringify(cloud));
  const updated=await compareAndSwapCloudProfile(supabase,validateCloudProfile(merged),cloud);
  const verified=await loadVerifiedProfile(supabase);
  if(!sameCloudProfile(updated,verified))throw Error("Reconciliation cloud non verifiee");
