@@ -373,7 +373,6 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  }
  const safeFields=new Set(["solved","historyBackup","noHint","badges","stars","performances","canonicalQuestState"]);
  const unknownDifferences=[];
- const unknownDifferences=[];
  for(const field of new Set([...Object.keys(cloud),...Object.keys(local)])){
   if(safeFields.has(field)||["shards","xp","skyScore","daily","challenges"].includes(field))continue;
   if(!sameCloudProfile(local[field]??null,cloud[field]??null))unknownDifferences.push(field);
