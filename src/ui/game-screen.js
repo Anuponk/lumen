@@ -52,7 +52,29 @@ function recordCloudDiagnostic(event,details={}){
   const previous=JSON.parse(localStorage.getItem(cloudDiagKey)||"[]");
   const entry={at:new Date().toISOString(),event,...details};
   localStorage.setItem(cloudDiagKey,JSON.stringify([...previous.slice(-39),entry]));
+  recordCloudHealth(event,details);
   console.info("[Lumen cloud diagnostic]",entry);
+ }catch(_){}
+}
+// Health counters are deliberately aggregate-only: no player identifiers or profile data.
+const cloudHealthKey="lumenCloudHealthV1";
+function cloudHealthSnapshot(){
+ try{return JSON.parse(localStorage.getItem(cloudHealthKey)||"{}")}catch{return {}}
+}
+function recordCloudHealth(event,details={}){
+ try{
+  const state=cloudHealthSnapshot();
+  const now=Date.now();
+  const next={...state,updatedAt:new Date(now).toISOString(),lastEvent:event,
+   failures:Number(state.failures||0)+(event==="hydration_failed"?1:0),
+   blocked:Number(state.blocked||0)+(event==="hydration_reconciliation"&&details.result==="blocked"?1:0)};
+  if(event==="hydration_ready"){next.lastReadyAt=new Date(now).toISOString();next.blockedSince=null;next.failuresSinceReady=0}
+  if(event==="hydration_failed"||(event==="hydration_reconciliation"&&details.result==="blocked")){
+   next.blockedSince=state.blockedSince||new Date(now).toISOString();
+   next.failuresSinceReady=Number(state.failuresSinceReady||0)+1;
+  }
+  next.stalled=!!next.blockedSince&&now-Date.parse(next.blockedSince)>15*60*1000;
+  localStorage.setItem(cloudHealthKey,JSON.stringify(next));
  }catch(_){}
 }
 function cloudDiagnosticReport(){
