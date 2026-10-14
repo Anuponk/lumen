@@ -505,6 +505,11 @@ function syncMobileAuthUI(){
 }
 
 function hasInternalCapability(name){return lumenCapabilities.some(x=>(typeof x==="string"?x:x?.capability)===name)}
+// Administrative catalogue access is transient: never persist it as a purchase or player entitlement.
+function adventureAccessEntitlements(){
+ if(!lumenUser||qaActive||!(hasInternalCapability("analytics_cockpit")||hasInternalCapability("all_adventures_access")))return lumenEntitlements;
+ return [...new Set([...lumenEntitlements,...CONTENT_PACKS.map(pack=>pack.id)])];
+}
 function unlimitedShardsEnabled(){return hasInternalCapability("unlimited_shards")&&localStorage.getItem("lumenAdminUnlimitedShards")==="1"}
 function syncAdministrationMenu(){
  const entry=document.getElementById("administrationEntry");
