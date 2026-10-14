@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {astronomicalDisplayShape} from "../src/ui/astronomical-shapes.js";
 import {CAMPAIGN_SIZE_SCHEDULE,CONSTELLATIONS} from "../src/campaign/data.js";
-import {ADVENTURE_SIZE,CONTENT_MODEL_VERSION,BASE_SKY_ID,BASE_PACK_ID,BASE_CONSTELLATION_IDS,BASE_CONSTELLATIONS,CONTENT_SKIES,CONTENT_PACKS,baseCampaignQuestCount,baseQuestId,normalizeEntitlements,hasPackAccess,packForLegacyQuest,contentAccessForLegacyQuest,contentRegistrySnapshot,contentMapModel} from "../src/campaign/content.js";
+import {ADVENTURE_SIZE,CONTENT_MODEL_VERSION,BASE_SKY_ID,BASE_PACK_ID,BASE_CONSTELLATION_IDS,BASE_CONSTELLATIONS,CONTENT_SKIES,CONTENT_PACKS,CONTENT_CONSTELLATIONS,RESERVED_ADVENTURE_03_CONSTELLATIONS,baseCampaignQuestCount,baseQuestId,normalizeEntitlements,hasPackAccess,packForLegacyQuest,contentAccessForLegacyQuest,contentRegistrySnapshot,contentMapModel} from "../src/campaign/content.js";
 
 
 // Astronomical drawing invariant: Orion keeps the same 17 star slots so that
@@ -48,7 +48,17 @@ assert.equal(CONTENT_SKIES.length,1);
 assert.equal(CONTENT_PACKS.length,Math.ceil(constellations/ADVENTURE_SIZE)+1);
 assert.equal(CONTENT_PACKS[0].questCount,BASE_CONSTELLATIONS.slice(0,ADVENTURE_SIZE).reduce((sum,c)=>sum+c.questCount,0));
 assert.equal(CONTENT_PACKS.reduce((sum,p)=>sum+p.questCount,0),total+100);
-assert.deepEqual(CONTENT_PACKS.slice(0,-1).flatMap(p=>p.constellationIds),BASE_CONSTELLATION_IDS);
+assert.deepEqual(CONTENT_PACKS.slice(0,-1).flatMap(p=>p.constellationIds).filter(id=>id.startsWith("real-")&&!id.includes("-new-")),BASE_CONSTELLATION_IDS);
+assert.equal(RESERVED_ADVENTURE_03_CONSTELLATIONS.length,6);
+assert.equal(CONTENT_PACKS[2].constellationIds.length,10);
+assert.equal(new Set(CONTENT_PACKS[2].constellationIds).size,10);
+assert.equal(CONTENT_CONSTELLATIONS.length,40);
+for(const c of RESERVED_ADVENTURE_03_CONSTELLATIONS){
+ assert.equal(c.questCount,10);
+ assert.equal(c.questIndices.length,0);
+ assert.equal(c.canonicalOnly,true);
+ assert.equal(c.packId,"real-adventure-03");
+}
 for(const pack of CONTENT_PACKS){assert.equal(pack.questCount,pack.questIndices.length);assert.equal(pack.legacyQuestStart,pack.questIndices[0]);}
 assert.equal(baseQuestId(0),"base-q001");
 assert.equal(baseQuestId(99),"base-q100");
@@ -69,14 +79,14 @@ assert.equal(packForLegacyQuest(total+10,[...CONTENT_PACKS,futurePack])?.id,"rea
 assert.equal(contentAccessForLegacyQuest(total+10,[{pack_id:"real-adventure-04"}],[...CONTENT_PACKS,futurePack]).accessible,true);
 assert.equal(baseCampaignQuestCount(),total);
 const snapshot=contentRegistrySnapshot();
-assert.deepEqual(snapshot.packs.slice(0,-1).flatMap(p=>p.constellationIds),BASE_CONSTELLATION_IDS);
+assert.deepEqual(snapshot.packs.slice(0,-1).flatMap(p=>p.constellationIds).filter(id=>id.startsWith("real-")&&!id.includes("-new-")),BASE_CONSTELLATION_IDS);
 console.log(JSON.stringify({contentArchitecture:true,baseQuests:baseCampaignQuestCount(),baseConstellations:BASE_CONSTELLATION_IDS.length,futurePackRepresentable:true}));
 
 {
  const anonymous=contentMapModel([]);
  assert.equal(anonymous.skies[0].id,BASE_SKY_ID);
  assert.equal(anonymous.skies[0].packs[0].accessible,true);
- assert.equal(anonymous.skies[0].constellations.length,constellations+10);
+ assert.equal(anonymous.skies[0].constellations.length,constellations+16);
  assert.ok(anonymous.skies[0].packs[0].constellations.every(c=>c.accessible));
  assert.ok(anonymous.skies[0].packs.slice(1).every(p=>!p.accessible));
 }

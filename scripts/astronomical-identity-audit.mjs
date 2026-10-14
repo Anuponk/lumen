@@ -21,7 +21,7 @@ export const IAU_BY_RESERVED_CONSTELLATION=Object.freeze({
 });
 export function astronomicalIdentityAudit({constellations=CONTENT_CONSTELLATIONS,packs=CONTENT_PACKS,quests=canonicalQuestList()}={}){
  const mapped=constellations.map(c=>{
-  const iau=c.id.startsWith("iau-")?IAU_GENERATED[c.id.slice(4)]??null:IAU_BY_LEGACY_INDEX[c.legacyIndex]||null;
+  const iau=c.iau??(c.id.startsWith("iau-")?IAU_GENERATED[c.id.slice(4)]??null:IAU_BY_LEGACY_INDEX[c.legacyIndex]||null);
   return {id:c.id,label:c.label,iau,packId:c.packId,questCount:quests.filter(q=>q.constellationId===c.id).length};
  });
  const knownIds=new Set(mapped.map(c=>c.id));
