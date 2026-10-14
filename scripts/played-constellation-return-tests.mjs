@@ -7,5 +7,5 @@ assert.match(opening,/model\.skies\.flatMap\(/,'Search all skies and packs, not 
 assert.match(opening,/c\.id===constellationId/,'Prefer exact played constellation identity');
 assert.match(opening,/c\.questIndices\?\.includes\(index\)/,'Handle inserted canonical quests');
 assert.match(opening,/selection=target\?\{skyId:target\.sky\.id,packId:target\.pack\.id\}/,'Choose played adventure before rendering');
-assert.match(game,/openJourneyMap\(true,\{advanceOnClose:true,learningTour,questIndex:targetLegacyIndex,constellationId:targetConstellationId\}\)/);
+assert.match(game,/openJourneyMap\(true,\{detail:true,advanceOnClose:true,learningTour,questIndex:targetLegacyIndex,constellationId:targetConstellationId\}\)/);
 console.log('Played-constellation return navigation contract passed');
