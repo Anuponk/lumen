@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import manifest from '../content/generated/diverse-adventures-3-4.json' with {type:'json'};
 import {canonicalQuestById,canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {playableQuest} from '../src/campaign/playable-quests.js';
+import {qualifyDifficulty} from '../src/campaign/difficulty.js';
 import {connected,countSolutions,replay,signature} from './generate-diverse-grids.mjs';
 assert.equal(manifest.puzzles.length,100);
 assert.equal(manifest.totals['real-adventure-03'],68);
@@ -14,7 +15,7 @@ for(const replacement of manifest.puzzles){
  assert.equal(q.packId,replacement.packId);
  assert.deepEqual(q.reg,replacement.reg);
  assert.deepEqual(q.sol,replacement.sol);
- assert.equal(q.difficulty.label,replacement.difficulty.label);
+ assert.deepEqual(q.difficulty,qualifyDifficulty(replacement));
  assert.equal(connected(q.reg),true);
  assert.equal(countSolutions(q),1);
  assert.ok(replay(q),'Explanation failed '+q.id);
@@ -23,7 +24,7 @@ for(const replacement of manifest.puzzles){
    const game=playableQuest(q.legacyIndex);
    assert.deepEqual(game.reg,q.reg);
    assert.deepEqual(game.sol,q.sol);
-   assert.equal(game.difficulty.label,q.difficulty.label);
+   assert.deepEqual(q.difficulty,qualifyDifficulty(game));
  }
 }
 for(const q of all.filter(q=>q.legacyIndex!==null&&q.legacyIndex<196)){
