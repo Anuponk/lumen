@@ -534,19 +534,22 @@ function syncAdministrationMenu(){
  const toggle=document.getElementById("administrationToggle");
  const qaTools=document.getElementById("qaAccountTools");
  const authorized=hasInternalCapability("unlimited_shards")||hasInternalCapability("analytics_cockpit");
- // QA always offers an escape to the genuine profile, even before auth hydration.
+ // The standard account menu is identical for all players; only authorized
+ // accounts get the Administration submenu. QA retains its exit controls.
  const visible=qaActive||authorized;
  if(entry)entry.hidden=!visible;
- if(qaTools)qaTools.hidden=!visible;
+ if(qaTools)qaTools.hidden=!(qaActive||authorized);
  if(!visible&&panel)panel.hidden=true;
  if(toggle)toggle.setAttribute("aria-expanded",String(visible&&!!panel&&!panel.hidden));
 }
 function updateAdminTools(){
  syncAdministrationMenu();
- const box=document.getElementById("adminTools"),toggle=document.getElementById("adminUnlimitedShards"),cockpit=document.getElementById("adminCockpitOpen");
+ const box=document.getElementById("adminTools"),toggle=document.getElementById("adminUnlimitedShards"),cockpit=document.getElementById("adminCockpitOpen"),qaTools=document.getElementById("qaAccountTools");
  if(!box||!toggle)return;
  const shards=hasInternalCapability("unlimited_shards"),analytics=hasInternalCapability("analytics_cockpit");
- box.hidden=!(shards||analytics);toggle.parentElement.hidden=!shards;toggle.checked=shards&&unlimitedShardsEnabled();
+ box.hidden=!(shards||analytics||qaActive);
+ if(qaTools)qaTools.hidden=!(shards||analytics||qaActive);
+ toggle.parentElement.hidden=!shards;toggle.checked=shards&&unlimitedShardsEnabled();
  if(cockpit)cockpit.hidden=!analytics;
 }
 function updateAuthUI(){
