@@ -53,6 +53,17 @@ function recordCloudDiagnostic(event,details={}){
   const entry={at:new Date().toISOString(),event,...details};
   localStorage.setItem(cloudDiagKey,JSON.stringify([...previous.slice(-39),entry]));
   recordCloudHealth(event,details);
+  // Best-effort, bounded telemetry: never transmit account IDs, profile
+  // contents, diagnostic details, or tokens. The server derives identity from JWT.
+  if(["hydration_failed","hydration_ready","hydration_reconciliation"].includes(event)&&
+     lumenSupabase&&lumenUser&&!qaActive){
+   const reason=typeof details.reason==="string"?details.reason.slice(0,64):null;
+   const outcome=typeof details.result==="string"?details.result.slice(0,32):null;
+   Promise.resolve(lumenSupabase.rpc("lumen_record_sync_health",{
+    p_event:event,p_reason:reason,p_outcome:outcome,
+    p_version:String(document.getElementById("lumenAccountVersion")?.textContent||"unknown").slice(0,80)
+   })).catch(()=>{});
+  }
   console.info("[Lumen cloud diagnostic]",entry);
  }catch(_){}
 }
