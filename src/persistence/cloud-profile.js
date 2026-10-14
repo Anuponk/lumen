@@ -303,9 +303,8 @@ export async function reconcileDominantLocalProfile(supabase,storage,remote){
   if(!sameCloudProfile(local[key]??null,cloud[key]??null))return {status:"blocked",reason:"unclassified_field"};
  }
  if(sameCloudProfile(local,cloud))return {status:"identical"};
- const stamp=Date.now();
- const keys=[["lumenBeforeCloudReconcileLocal_"+stamp,raw],["lumenBeforeCloudReconcileRemote_"+stamp,JSON.stringify(cloud)]];
- for(const [key,value] of keys){storage.setItem(key,value);if(storage.getItem(key)!==value)throw Error("Copies de reconciliation non verifiees")}
+ preserveVerifiedSnapshot(storage,"lumenBeforeCloudReconcileLocal_",raw);
+ preserveVerifiedSnapshot(storage,"lumenBeforeCloudReconcileRemote_",JSON.stringify(cloud));
  // CAS refuses overwrite when another device changed cloud after our read.
  const written=await compareAndSwapCloudProfile(supabase,local,cloud);
  const verified=await loadVerifiedProfile(supabase);
