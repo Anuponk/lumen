@@ -1207,7 +1207,8 @@ function handleLearningTap(event){
  if(!scriptedLearningActive())return;
  const target=event.target instanceof Element?event.target:null;if(!target)return;
  if(document.querySelector('#mapModal:not([hidden]),#rulesModal:not([hidden]),#feedbackModal:not([hidden]),#tutorialOverlay:not([hidden]),#shardRulesModal:not([hidden]),#badgeRulesModal:not([hidden])'))return;
- if(target.closest("#new,#tutorialHelp,#attemptPause,#attemptMask,#mobileAccount,#mobileAuthPopover,#feedbackBtn,#learningCoachNext,#learningSkip"))return;
+ // Learning restrictions apply to gameplay, never to account dialogs or other controls.
+ if(target.closest("#accountOptin,#mobileAuthPopover,#mobileAccount,#new,#tutorialHelp,#attemptPause,#attemptMask,#feedbackBtn,#learningCoachNext,#learningSkip"))return;
  if(target.closest("#board .cell"))return;
  event.preventDefault();event.stopImmediatePropagation();
 }
