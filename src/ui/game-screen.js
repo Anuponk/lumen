@@ -1044,13 +1044,20 @@ function historicalContinuationAllowed(index){
  return !!previous&&!!first&&previous.ordinal>first.ordinal&&
   !!lumenProgress.solved?.[index-1]&&index===extendedSequentialCount(lumenProgress.solved);
 }
+// A player who completed a later quest may revisit earlier inserted quests.
+// Keep pack entitlement and cloud readiness checks in the callers.
+function historicallyPassedCanonicalQuest(quest){
+ if(!quest)return false;
+ return canonicalQuestList().some(later=>later.packId===quest.packId&&later.ordinal>quest.ordinal&&
+  (later.legacyIndex!==null?!!lumenProgress.solved?.[later.legacyIndex]:!!lumenProgress.canonicalQuestState?.[later.id]?.solved));
+}
 function questIsAccessible(index){
  const accessible=contentAccessForLegacyQuest(index,lumenEntitlements,undefined,lumenProgress,attemptEngine.snapshot()).accessible;
  if(!accessible)return false;
  if(lumenProgress.solved?.[index])return true;
  // Canonical order is authoritative for *new* quest unlocks. Historical
  // indexes remain keys in existing saves but cannot bypass inserted grids.
- return canonicalNextUnsolved(lumenProgress.solved,lumenProgress.canonicalQuestState||{})?.legacyIndex===index||historicalContinuationAllowed(index);
+ return canonicalNextUnsolved(lumenProgress.solved,lumenProgress.canonicalQuestState||{})?.legacyIndex===index||historicalContinuationAllowed(index)||historicallyPassedCanonicalQuest(canonicalQuestForLegacy(index));
 }
 function choose(){if(canonicalActiveQuest){puz={reg:canonicalActiveQuest.reg,sol:canonicalActiveQuest.sol,audit:canonicalActiveQuest.audit,difficulty:canonicalActiveQuest.difficulty};n=puz.reg.length;return}levelIndex=Math.max(0,Math.min(levelIndex,currentQuestLimit()-1));if(!socialChallenge&&!questIsAccessible(levelIndex)){while(levelIndex>0&&!questIsAccessible(levelIndex))levelIndex--;replayMode=!!lumenProgress.solved[levelIndex]}const resolved=playableQuest(levelIndex);if(!resolved)throw new Error("Missing campaign quest "+levelIndex);puz=resolved.source==="generated"?{reg:resolved.reg,sol:resolved.sol,audit:resolved.audit,difficulty:resolved.difficulty}:resolved.size===6?CAT["6"][CAMPAIGN6_ORDER[CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]]]:CAT[String(resolved.size)][CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]];n=puz.reg.length;last[n]=levelIndex}
 function loadPuzzle(){init();}
@@ -1409,7 +1416,7 @@ function canonicalQuestAvailable(quest){
  if(!qaActive&&(!lumenUser||!cloudProfileReady))return false;
  // Completed stable-ID quests remain replayable, just like legacy quests.
  if(lumenProgress.canonicalQuestState?.[quest.id]?.solved)return true;
- return canonicalNextUnsolved(lumenProgress.solved,lumenProgress.canonicalQuestState||{})?.id===quest.id;
+ return canonicalNextUnsolved(lumenProgress.solved,lumenProgress.canonicalQuestState||{})?.id===quest.id||historicallyPassedCanonicalQuest(quest);
 }
 function startCanonicalQuest(quest){
  if(!canonicalQuestAvailable(quest))return false;
