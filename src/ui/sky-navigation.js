@@ -64,6 +64,32 @@ export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit
  pages.after(detail);
  for(const id of ['puzzleGrid','performanceLegend','skyCard'])detail.appendChild(document.getElementById(id));
  detail.after(document.getElementById('openMyChallenges'));
+ const canonicalPanel=document.createElement('section');
+ canonicalPanel.id='canonicalConstellationQuests';
+ canonicalPanel.className='canonical-quest-list';
+ canonicalPanel.hidden=true;
+ detail.appendChild(canonicalPanel);
+ function renderCanonicalDetail(){
+  const reserved=!!selectedConstellation?.canonicalOnly&&view==='detail';
+  canonicalPanel.hidden=!reserved;
+  for(const id of ['puzzleGrid','performanceLegend','skyCard']){
+   const el=element(id);if(el)el.hidden=reserved;
+  }
+  if(!reserved)return;
+  canonicalPanel.replaceChildren();
+  const heading=document.createElement('h3');
+  heading.textContent=selectedConstellation.label+' · 10 quêtes';
+  canonicalPanel.appendChild(heading);
+  for(const quest of getCanonicalQuests(selectedConstellation.id)){
+   const solved=getCanonicalSolved(quest),available=getCanonicalAvailable(quest);
+   const button=document.createElement('button');button.type='button';
+   button.className='puzzle-card'+(solved?' done':'')+(available?'':' locked');
+   button.textContent='Quête '+quest.ordinal+(solved?' ✓':available?'':' · verrouillée');
+   button.disabled=!available;button.dataset.questId=quest.id;
+   if(available)button.onclick=()=>onCanonicalQuest(quest);
+   canonicalPanel.appendChild(button);
+  }
+ }
  const oldHeading=sheet.querySelector('h3');if(oldHeading)oldHeading.remove();
  const notice=document.createElement('div');notice.id='adventureNotice';notice.className='adventure-notice';notice.hidden=true;notice.setAttribute('role','dialog');notice.setAttribute('aria-modal','true');notice.setAttribute('aria-label','Aventure verrouillée');
  notice.innerHTML='<div><strong id="adventureNoticeTitle"></strong><p id="adventureNoticeCopy"></p><button id="adventureNext" hidden>Découvrir l’Aventure suivante</button><button id="adventureNoticeClose">Compris</button></div>';sheet.appendChild(notice);
@@ -77,7 +103,7 @@ export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit
   :constellationUnlocked(entry,pack,getSolved,getQuest);
  function state(pack){const done=pack.constellations.filter(completed).length;return !pack.accessible?'Verrouillée':done===pack.constellations.length?'Terminée':pack.id===current.active?.id?'En cours':'À découvrir'}
  let current=skySelection(getModel(),selection,getQuest());
- function setView(next){view=next;tabs.hidden=next==='detail';pages.hidden=next==='detail'||current.pages<=1;detail.hidden=next!=='detail'}
+ function setView(next){view=next;tabs.hidden=next==='detail';pages.hidden=next==='detail'||current.pages<=1;detail.hidden=next!=='detail';renderCanonicalDetail()}
  function showLocked(pack,origin){noticeOrigin=origin||document.activeElement;element('adventureNext').hidden=true;element('adventureNoticeClose').textContent='Compris';element('adventureNoticeTitle').textContent=pack.displayName||'Aventure';element('adventureNoticeCopy').textContent=pack.lockReason||'Cette Aventure est verrouillée. Son mode de déverrouillage sera annoncé plus tard.';notice.hidden=false;element('adventureNoticeClose').focus()}
  function showCompletion(pack){const badges=getBadgeCounts(pack);const sky=getModel().skies.find(s=>s.id===pack.skyId),entry=sky?.packs.find(p=>p.id===pack.id);if(!entry)return;const next=sky.packs[sky.packs.indexOf(entry)+1];element('adventureNoticeTitle').textContent='✦ Aventure terminée !';element('adventureNoticeCopy').textContent=`${entry.displayName} · ${entry.constellations.length} constellations · ${entry.constellations.reduce((sum,c)=>sum+(getShape(c)?.count||0),0)} étoiles · ${badges.autonomy||0} Autonomie · ${badges.speed||0} Rapidité · ${badges.noError||0} Sans erreur · ${badges.mastery||0} Maîtrises`;element('adventureNoticeClose').textContent='Retour à Mon ciel';const button=element('adventureNext');button.hidden=!next;button.onclick=()=>{closeNotice();if(!next.accessible){showLocked(next,button);return}selection={skyId:sky.id,packId:next.id,page:0};selectedConstellation=null;view='overview';render()};noticeOrigin=document.activeElement;notice.hidden=false;(next?button:element('adventureNoticeClose')).focus()}
  function closeNotice(){notice.hidden=true;const origin=noticeOrigin?.isConnected&&!noticeOrigin.hidden&&noticeOrigin.getClientRects().length?noticeOrigin:element('adventureRail').querySelector('.selected');origin?.focus?.()}
@@ -96,7 +122,7 @@ export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit
   for(const entry of current.entries){const b=document.createElement('button'),shape=getShape(entry),reference=verifiedAstronomicalFigure(entry),lit=getLit(entry),unlocked=unlocked(entry,pack),done=completed(entry);b.className='sector-tab constellation-card'+(entry.id===selectedConstellation?.id?' active':'')+(unlocked?'':' locked')+(done?' completed':'');b.dataset.contentId=entry.id;b.dataset.packId=entry.packId;b.setAttribute('aria-label',`${entry.label} · ${lit}/${shape?.count||0} étoiles · ${done?'Terminée':unlocked?'En cours':'Verrouillée'}`);
    if(shape||reference){const drawing=reference||shape;const illumination=reference?astronomicalIllumination(entry,lit,shape?.count??reference.count):null;const litIndices=illumination?.litIndices;const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');const xs=drawing.pts.map(p=>p[0]),ys=drawing.pts.map(p=>p[1]);const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);const padX=Math.max(12,(maxX-minX)*.12),padY=Math.max(12,(maxY-minY)*.12);svg.setAttribute('viewBox',`${minX-padX} ${minY-padY} ${Math.max(1,maxX-minX)+2*padX} ${Math.max(1,maxY-minY)+2*padY}`);svg.setAttribute('aria-hidden','true');for(const [a,z] of drawing.edges||[]){const line=document.createElementNS(svg.namespaceURI,'line');line.setAttribute('x1',drawing.pts[a][0]);line.setAttribute('y1',drawing.pts[a][1]);line.setAttribute('x2',drawing.pts[z][0]);line.setAttribute('y2',drawing.pts[z][1]);line.setAttribute('class','sky-line'+(reference?(litIndices?.has(a)&&litIndices?.has(z)?' on':''):(a<lit&&z<lit?' on':'')));svg.appendChild(line)}for(const [i,point] of (drawing.pts||[]).entries()){const circle=document.createElementNS(svg.namespaceURI,'circle');circle.setAttribute('cx',point[0]);circle.setAttribute('cy',point[1]);circle.setAttribute('r','4');circle.setAttribute('class','sky-star'+(reference?(litIndices?.has(i)?' on':''):(i<lit?' on':'')));svg.appendChild(circle)}if(reference){svg.dataset.astronomy='verified';svg.setAttribute('aria-label','Tracé astronomique Stellarium');}b.appendChild(svg)}
    b.setAttribute('aria-disabled',String(!unlocked));const name=document.createElement('strong');name.textContent=entry.label.replace(' · Grand Chariot','');b.appendChild(name);const info=document.createElement('small');info.textContent=`${lit}/${shape?.count||0} ★ · ${done?'Terminée':unlocked?'En cours':'🔒'}${getMastered(entry)?' · ✦':''}`;b.appendChild(info);
-   const badges=getBadgeCounts({legacyQuestStart:entry.questStart,questCount:entry.questCount});const earned=Object.values(badges).reduce((a,n)=>a+n,0);const possible=entry.questCount*4;const percentage=possible?Math.round(100*earned/possible):0;const badgeInfo=document.createElement('small');badgeInfo.className='constellation-badge-progress';badgeInfo.textContent=`Badges ${percentage}%`;badgeInfo.title=`${earned} badges obtenus sur ${possible} possibles`;b.appendChild(badgeInfo);
+   const badges=entry.canonicalOnly?{}:getBadgeCounts({legacyQuestStart:entry.questStart,questCount:entry.questCount});const earned=Object.values(badges).reduce((a,n)=>a+n,0);const possible=entry.questCount*4;const percentage=possible?Math.round(100*earned/possible):0;const badgeInfo=document.createElement('small');badgeInfo.className='constellation-badge-progress';badgeInfo.textContent=`Badges ${percentage}%`;badgeInfo.title=`${earned} badges obtenus sur ${possible} possibles`;b.appendChild(badgeInfo);
    b.onclick=()=>{if(!unlocked)return;selectedConstellation=entry;setView('detail');onConstellation(entry)};tabs.appendChild(b);
   }
   element('constellationPage').textContent=`${current.page+1} / ${current.pages}`;element('constellationPrevious').disabled=current.page===0;element('constellationNext').disabled=current.page===current.pages-1;
