@@ -97,3 +97,19 @@ assert.doesNotMatch(skyUi,/if\(e\.target\.closest\(\x27button,input,select,a/,"S
 assert.match(skyUi,/if\(e\.target\.closest\(\x27input,select,textarea/,"Text-entry controls should stay excluded from swipe");
 const deployScript=readFileSync(new URL("./o2switch-cron-publish.sh",import.meta.url),"utf8");
 assert.match(deployScript,/\("push","workflow_dispatch","schedule"\)/,"Publisher must recognize scheduled green CI");
+
+// Admin access must not erase the current adventure or produce an empty sky.
+const adminEntitlements=CONTENT_PACKS.map(pack=>pack.id);
+const adminModel=contentMapModel(adminEntitlements,{progress:{solved:{},badges:{}}});
+assert.equal(adminModel.skies.length,1);
+assert.equal(adminModel.skies[0].packs.length,CONTENT_PACKS.length);
+assert(adminModel.skies[0].packs.every(pack=>pack.accessible));
+for(const pack of adminModel.skies[0].packs){
+ const chosen=skySelection(adminModel,{skyId:pack.skyId,packId:pack.id},pack.legacyQuestStart);
+ assert.equal(chosen.adventure.id,pack.id);
+ assert(chosen.entries.length>0,'Admin adventure must show constellations');
+}
+const normalModel=contentMapModel([],{progress:{solved:{},badges:{}}});
+assert.equal(skySelection(normalModel,{},0).adventure.id,BASE_PACK_ID);
+assert(skySelection(normalModel,{},0).entries.length>0);
+assert.equal(skySelection({skies:[]},{},0).adventure,null);
