@@ -47,7 +47,7 @@ async function cloudSavePuzzle(index){
  if(error){console.warn("LUMEN sync save",error);return {ok:false,reason:"write_failed"}}
  const {data,error:readError}=await model.lumenSupabase.rpc("lumen_get_progress");
  if(readError||!Array.isArray(data)||!data.some(row=>Number(row.puzzle_id)===index+1)){
-  console.warn("LUMEN sync verification failed",readError);
+  if(readError)console.warn("LUMEN sync verification failed",readError);
   return {ok:false,reason:"verification_failed"};
  }
  return {ok:true};
