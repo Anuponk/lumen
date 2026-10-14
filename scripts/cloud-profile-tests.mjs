@@ -177,3 +177,35 @@ assert.doesNotMatch(uiSrc,/account_signin_success[^\n]*showAccountSavedConfirmat
  failWrite=false;
  assert.equal((await persistence.cloudSavePuzzle(2)).ok,true,'Individual quest save must be read-back verified');
 }
+
+// Multi-device reward conflict: merge monotonic awards and best times,
+// preserve original snapshots, reject contradictory immutable run evidence.
+{
+ const {reconcileCompatibleCloudProfiles}=await import('../src/persistence/cloud-profile.js');
+ const remote={solved:{0:1},historyBackup:{0:1},noHint:{},badges:{0:{speed:true,mastery:false}},stars:{0:1},performances:{0:{bestTime:60,badges:{speed:true}}},canonicalQuestState:{},daily:{},challenges:{},shards:3,xp:10,skyScore:2};
+ const local=structuredClone(remote);local.badges[0]={speed:true,mastery:true};local.performances[0]={bestTime:42,badges:{speed:true,mastery:true}};
+ const records=new Map([['lumenProgressV1',JSON.stringify(local)]]);
+ const store={getItem:key=>records.get(key)??null,setItem:(key,value)=>records.set(key,String(value))};
+ let cloud=structuredClone(remote);
+ const rpc={rpc:async(method,args)=>{
+  if(method==='lumen_restore_profile')return {data:structuredClone(cloud),error:null};
+  if(method==='lumen_cas_profile'){
+   if(!sameCloudProfile(cloud,args.p_expected))throw Error('Fixture CAS baseline differs');
+   cloud=structuredClone(args.p_payload);return {data:true,error:null};
+  }
+  throw Error('Unexpected reward reconciliation RPC '+method);
+ }};
+ const result=await reconcileCompatibleCloudProfiles(rpc,store,remote);
+ assert.equal(result.status,'reconciled');
+ assert.equal(cloud.badges[0].mastery,true);
+ assert.equal(cloud.performances[0].bestTime,42);
+ assert.equal(cloud.performances[0].badges.mastery,true);
+ assert.ok([...records.keys()].some(key=>key.startsWith('lumenBeforeCloudReconcileLocal_')));
+ assert.ok([...records.keys()].some(key=>key.startsWith('lumenBeforeCloudReconcileRemote_')));
+ const contradictory=structuredClone(local);contradictory.performances[0].run={duration:42};
+ cloud.performances[0].run={duration:55};
+ records.set('lumenProgressV1',JSON.stringify(contradictory));
+ const refused=await reconcileCompatibleCloudProfiles(rpc,store,structuredClone(cloud));
+ assert.equal(refused.status,'blocked');
+ assert.equal(refused.reason,'reward_conflict');
+}

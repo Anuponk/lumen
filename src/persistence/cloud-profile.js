@@ -458,11 +458,40 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
    merged[field][id]=structuredClone(value);
   }
  }
+ // Preserve earned awards, while retaining immutable per-attempt evidence.
+ // Only explicitly monotonic fields can be merged. Unknown or contradictory
+ // reward payloads still block rather than manufacturing achievements.
+ const rewardMerge=(field,left,right)=>{
+  if(sameCloudProfile(left,right))return {ok:true,value:structuredClone(right)};
+  if(field==="badges"||field==="stars"){
+   if((left===true||left===1)&&(right===false||right===0||right==null))return {ok:true,value:structuredClone(left)};
+   if((right===true||right===1)&&(left===false||left===0||left==null))return {ok:true,value:structuredClone(right)};
+  }
+  if(!left||!right||typeof left!=="object"||typeof right!=="object"||Array.isArray(left)||Array.isArray(right))return {ok:false};
+  const out=structuredClone(right);
+  for(const [key,value] of Object.entries(left)){
+   if(!Object.hasOwn(out,key)){out[key]=structuredClone(value);continue}
+   if(sameCloudProfile(value,out[key]))continue;
+   if((key==="badges"||key==="awards")&&value&&out[key]&&typeof value==="object"&&typeof out[key]==="object"){
+    const nested=rewardMerge("badges",value,out[key]);if(!nested.ok)return {ok:false};out[key]=nested.value;continue;
+   }
+   if(field==="badges"||field==="stars"){
+    const nested=rewardMerge(field,value,out[key]);if(nested.ok){out[key]=nested.value;continue}
+   }
+   if((key==="bestTime"||key==="bestSeconds")&&typeof value==="number"&&typeof out[key]==="number"&&value>0&&out[key]>0){out[key]=Math.min(value,out[key]);continue}
+   // Conflicting run records, canonical rewards, and timestamps are not
+   // equivalent to monotonic achievements: preserve both backups and block.
+   return {ok:false};
+  }
+  return {ok:true,value:out};
+ };
  for(const field of ["badges","stars","performances","canonicalQuestState"]){
   merged[field]=structuredClone(cloud[field]||{});
   for(const [id,value] of Object.entries(local[field]||{})){
    if(!Object.hasOwn(merged[field],id)){merged[field][id]=structuredClone(value);continue}
-   if(!sameCloudProfile(merged[field][id],value))return {status:"blocked",reason:"reward_conflict"};
+   const result=rewardMerge(field,value,merged[field][id]);
+   if(!result.ok)return {status:"blocked",reason:"reward_conflict",fields:[field],conflictId:id};
+   merged[field][id]=result.value;
   }
  }
  if(local.autonomousWins==null&&cloud.autonomousWins==null)delete merged.autonomousWins;
