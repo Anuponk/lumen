@@ -41,10 +41,35 @@ async function loadEntitlements(){
 }
 
 async function cloudSavePuzzle(index){
- if(cloudWritesDisabled()||!model.lumenSupabase||!model.lumenUser)return;
+ if(cloudWritesDisabled()||!model.lumenSupabase||!model.lumenUser)return {ok:false,reason:"not_authenticated"};
  const seconds=activeGameSeconds();
  const {error}=await model.lumenSupabase.rpc("lumen_save_progress",{p_puzzle_id:index+1,p_duration_seconds:seconds,p_hints_used:model.usedHintThisGame?1:0});
- if(error)console.warn("LUMEN sync save",error);
+ if(error){console.warn("LUMEN sync save",error);return {ok:false,reason:"write_failed"}}
+ const {data,error:readError}=await model.lumenSupabase.rpc("lumen_get_progress");
+ if(readError||!Array.isArray(data)||!data.some(row=>Number(row.puzzle_id)===index+1)){
+  console.warn("LUMEN sync verification failed",readError);
+  return {ok:false,reason:"verification_failed"};
+ }
+ return {ok:true};
+}
+// The legacy progress table is a secondary read model. It must never be
+// considered synchronized merely because the full-profile CAS succeeded.
+async function verifyLegacyProgressMirror(){
+ if(cloudWritesDisabled()||!model.lumenSupabase||!model.lumenUser)return {ok:false,reason:"not_authenticated"};
+ const expected=Object.keys(model.lumenProgress.solved||{}).filter(key=>model.lumenProgress.solved[key]).map(Number).filter(Number.isSafeInteger).filter(i=>i>=0&&i<campaignQuestCount());
+ const read=()=>model.lumenSupabase.rpc("lumen_get_progress");
+ let {data,error}=await read();
+ if(error||!Array.isArray(data))return {ok:false,reason:"read_failed"};
+ const present=new Set(data.map(row=>Number(row.puzzle_id)-1));
+ const missing=expected.filter(i=>!present.has(i));
+ for(const index of missing){
+  const {error:writeError}=await model.lumenSupabase.rpc("lumen_save_progress",{p_puzzle_id:index+1,p_duration_seconds:null,p_hints_used:model.lumenProgress.noHint?.[index]?0:1});
+  if(writeError){console.warn("LUMEN legacy mirror write failed",writeError);return {ok:false,reason:"write_failed",pending:missing.length}}
+ }
+ if(missing.length){({data,error}=await read());if(error||!Array.isArray(data))return {ok:false,reason:"verification_failed"}}
+ const confirmed=new Set(data.map(row=>Number(row.puzzle_id)-1));
+ const remaining=expected.filter(i=>!confirmed.has(i));
+ return remaining.length?{ok:false,reason:"verification_failed",pending:remaining.length}:{ok:true,count:expected.length};
 }
 
 async function cloudMergeProgress(){
@@ -231,5 +256,5 @@ async function signOut(){
  model.lumenUser=null;model.lumenEntitlements=[];model.lumenCapabilities=[];model.lumenCloudReady=false;
  onAccountChanged({type:"account"});refreshJourney();return {ok:true};
 }
-return {registerLumenUser,loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,sendEmailOtp,verifyEmailOtp,signOut};
+return {registerLumenUser,loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,sendEmailOtp,verifyEmailOtp,signOut};
 }
