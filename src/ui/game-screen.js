@@ -1504,10 +1504,11 @@ async function loadAdminCockpit(){
    lumenSupabase.rpc("lumen_admin_cockpit",{p_days:days}),
    lumenSupabase.rpc("lumen_admin_accounts",{p_limit:250}),
    lumenSupabase.rpc("lumen_admin_feedback",{p_days:days}),
-   lumenSupabase.from("lumen_admin_player_snapshot").select("*").order("last_seen",{ascending:false}).limit(250),
+   lumenSupabase.rpc("lumen_admin_recent_players",{p_limit:250}),
    lumenSupabase.rpc("lumen_admin_sync_health",{p_days:days})
  ]);
  const players=playerSnapshot.data||[];
+ const playerError=playerSnapshot.error;
  const realFeedbacks=feedbacks.data||[];
  if(cockpit.error){status.textContent="Cockpit indisponible : "+cockpit.error.message;return}
  const d=cockpit.data||{},m=d.summary||{};
@@ -1530,7 +1531,7 @@ async function loadAdminCockpit(){
  document.getElementById("adminFriction").innerHTML=(d.friction||[]).map(x=>{const rate=Number(x.started)?Math.round(100*Number(x.completed)/Number(x.started)):0;return '<tr><td>Q'+x.puzzle_id+'</td><td>'+adminNumber(x.started)+'</td><td>'+rate+' %</td><td>'+adminNumber(x.resets)+'</td><td>'+adminNumber(x.abandons)+'</td><td>'+adminNumber(x.hints)+'</td><td>'+adminNumber(x.verifies)+'</td><td>'+(x.median_seconds==null?"—":Math.round(x.median_seconds)+" s")+'</td></tr>'}).join("");
  const syncAlerts=health&&Number(health.stalled_players)>0?["Sauvegardes : "+health.stalled_players+" joueur(s) bloqué(s) depuis plus de 15 minutes"]:[];
  const alerts=[...syncAlerts,...adminAlerts(d.friction)];document.getElementById("adminAlerts").innerHTML=alerts.map(x=>'<div class="admin-alert"><strong>⚠</strong><span>'+adminEsc(x)+'</span></div>').join("")||"<p>Pas d’anomalie significative avec le volume actuel.</p>";
- document.getElementById("adminPlayers").innerHTML=players.map(x=>'<div class="admin-player" data-player="'+adminEsc(x.player_key)+'"><span><strong>'+adminEsc(x.display_name||x.player_label||x.player_type)+'</strong><br><small>'+adminEsc(x.player_type)+" · Q"+(x.current_quest||"—")+' · '+x.sessions+' sessions</small></span><small>'+new Date(x.last_seen).toLocaleString("fr-FR")+'</small></div>').join("");
+ document.getElementById("adminPlayers").innerHTML=playerError?'<p>Activité récente indisponible : '+adminEsc(playerError.message)+'</p>':players.map(x=>'<div class="admin-player" data-player="'+adminEsc(x.player_key)+'"><span><strong>'+adminEsc(x.display_name||x.player_label||x.player_type)+'</strong><br><small>'+adminEsc(x.player_type)+" · Q"+(x.current_quest||"—")+' · '+x.sessions+' sessions</small></span><small>'+new Date(x.last_seen).toLocaleString("fr-FR")+'</small></div>').join("");
  document.querySelectorAll("#adminPlayers .admin-player").forEach(x=>x.onclick=()=>loadAdminTimeline(x.dataset.player));
  const accountRows=document.getElementById("adminAccounts");
  if(accountRows)accountRows.innerHTML=accounts.error?'<tr><td colspan="6">Comptes indisponibles.</td></tr>':(accounts.data||[]).map(x=>'<tr><td>'+adminEsc(x.email||"—")+'</td><td>'+adminEsc(x.nickname||"—")+'</td><td>'+new Date(x.created_at).toLocaleString("fr-FR")+'</td><td>'+(x.last_sign_in_at?new Date(x.last_sign_in_at).toLocaleString("fr-FR"):"—")+'</td><td>'+(x.last_activity?new Date(x.last_activity).toLocaleString("fr-FR"):"—")+'</td><td>'+(x.current_quest||"—")+'</td></tr>').join("")||'<tr><td colspan="6">Aucun compte.</td></tr>';
