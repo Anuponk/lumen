@@ -221,6 +221,29 @@ export async function compareAndSwapCloudProfile(supabase,profile,expected){
  if(data!==true)throw Error("Conflit de version cloud : sauvegarde refusée");
  return next;
 }
+// Reuse an existing verified backup instead of multiplying full snapshots on retries.
+function preserveVerifiedSnapshot(storage,prefix,value){
+ const existing=[];
+ if(typeof storage.key==="function"&&Number.isFinite(storage.length)){
+  for(let i=0;i<storage.length;i++){
+   const key=storage.key(i);
+   if(key?.startsWith(prefix))existing.push(key);
+  }
+ }
+ for(const key of existing){if(storage.getItem(key)===value)return key}
+ const key=prefix+Date.now();
+ try{
+  storage.setItem(key,value);
+  if(storage.getItem(key)!==value)throw Error("Recovery snapshot verification failed");
+ }catch(error){
+  if(error?.name==="QuotaExceededError"||error?.code===22||error?.code===1014){
+   const quota=new Error("Recovery snapshot storage quota exceeded; originals preserved");
+   quota.code="LOCAL_STORAGE_QUOTA";quota.stage="cloud_local_backup";throw quota;
+  }
+  throw error;
+ }
+ return key;
+}
 export function installCloudProfileLocally(storage,cloud){
  const verified=validateCloudProfile(cloud),key="lumenProgressV1";
  const current=storage.getItem(key),json=JSON.stringify(verified);
@@ -235,11 +258,10 @@ export function installCloudProfileLocally(storage,cloud){
  if(current!==null){
   try{if(sameCloudProfile(JSON.parse(current),verified))return false}catch(_){}
  }
- const backup=current!==null?"lumenBeforeCloudAuthority_"+Date.now():null;
+ const backup=current!==null?"lumenBeforeCloudAuthority_":null;
  try{
   if(backup){
-   storage.setItem(backup,current);
-   if(storage.getItem(backup)!==current)throw Error("Sauvegarde pré-migration impossible");
+   preserveVerifiedSnapshot(storage,backup,current);
   }
   storage.setItem(key,json);
   if(storage.getItem(key)!==json)throw Error("Copie locale du profil cloud non vérifiée");
@@ -247,7 +269,7 @@ export function installCloudProfileLocally(storage,cloud){
   // When cloud fully covers the local state, a full localStorage quota must not
   // prevent authentication. Keep all backups untouched and run cloud-first in memory.
   // On the next login we retry local installation without losing cloud authority.
-  if(error?.name==="QuotaExceededError"||error?.code===22||error?.code===1014){
+  if(error?.name==="QuotaExceededError"||error?.code===22||error?.code===1014||error?.code==="LOCAL_STORAGE_QUOTA"){
    if(current===null||cloudSafelyCoversLocal(JSON.parse(current),verified))return "memory_only";
    const quota=new Error("Stockage local saturé : sauvegardes intactes, libérer de l'espace avant restauration");
    quota.code="LOCAL_STORAGE_QUOTA";quota.stage=backup?"cloud_local_backup":"cloud_local_install";
@@ -283,9 +305,8 @@ export async function reconcileDominantLocalProfile(supabase,storage,remote){
   if(!sameCloudProfile(local[key]??null,cloud[key]??null))return {status:"blocked",reason:"unclassified_field"};
  }
  if(sameCloudProfile(local,cloud))return {status:"identical"};
- const stamp=Date.now();
- const keys=[["lumenBeforeCloudReconcileLocal_"+stamp,raw],["lumenBeforeCloudReconcileRemote_"+stamp,JSON.stringify(cloud)]];
- for(const [key,value] of keys){storage.setItem(key,value);if(storage.getItem(key)!==value)throw Error("Copies de reconciliation non verifiees")}
+ preserveVerifiedSnapshot(storage,"lumenBeforeCloudReconcileLocal_",raw);
+ preserveVerifiedSnapshot(storage,"lumenBeforeCloudReconcileRemote_",JSON.stringify(cloud));
  // CAS refuses overwrite when another device changed cloud after our read.
  const written=await compareAndSwapCloudProfile(supabase,local,cloud);
  const verified=await loadVerifiedProfile(supabase);
@@ -353,10 +374,12 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
   merged[field]=result.value;
  }
  const safeFields=new Set(["solved","historyBackup","noHint","badges","stars","performances","canonicalQuestState"]);
+ const unknownDifferences=[];
  for(const field of new Set([...Object.keys(cloud),...Object.keys(local)])){
   if(safeFields.has(field)||["shards","xp","skyScore","daily","challenges"].includes(field))continue;
-  if(!sameCloudProfile(local[field]??null,cloud[field]??null))return {status:"blocked",reason:"unclassified_field"};
+  if(!sameCloudProfile(local[field]??null,cloud[field]??null))unknownDifferences.push(field);
  }
+ if(unknownDifferences.length)return {status:"blocked",reason:"unclassified_field",fields:unknownDifferences};
  // Completed quests and monotonic boolean awards may be unioned; conflicting
  // non-boolean payloads cannot be resolved without a transaction ledger.
  for(const field of ["solved","historyBackup","noHint"]){
@@ -377,11 +400,8 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  if(sameCloudProfile(merged,cloud)){
   return {status:"cloud_dominant",profile:cloud};
  }
- const stamp=Date.now();
- for(const [key,value] of [["lumenBeforeCloudReconcileLocal_"+stamp,raw],["lumenBeforeCloudReconcileRemote_"+stamp,JSON.stringify(cloud)]]){
-  storage.setItem(key,value);
-  if(storage.getItem(key)!==value)throw Error("Copies de reconciliation non verifiees");
- }
+ preserveVerifiedSnapshot(storage,"lumenBeforeCloudReconcileLocal_",raw);
+ preserveVerifiedSnapshot(storage,"lumenBeforeCloudReconcileRemote_",JSON.stringify(cloud));
  const updated=await compareAndSwapCloudProfile(supabase,validateCloudProfile(merged),cloud);
  const verified=await loadVerifiedProfile(supabase);
  if(!sameCloudProfile(updated,verified))throw Error("Reconciliation cloud non verifiee");
