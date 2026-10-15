@@ -26,7 +26,7 @@ import {challengeEligibility,challengeSnapshot,compareChallenge,createChallengeC
 import {resolveChallengeQuest} from "../campaign/canonical-challenges.js";
 import {canonicalDisplayForLegacy,canonicalQuestList,canonicalAdventureSummary,canonicalQuestByOrdinal,canonicalQuestForLegacy,canonicalNextUnsolved,canonicalConstellationCatchupAvailable,unlockedAdventureProgress} from "../campaign/canonical-quests.js";
 import {acknowledgeCanonicalVictory,commitCanonicalVictory,questIsCompleted} from "../persistence/canonical-progress.js";
-import {createCanonicalVictoryOutbox} from "../persistence/canonical-outbox.js";
+import {createCanonicalVictoryOutbox,replayCanonicalVictoryOutbox} from "../persistence/canonical-outbox.js";
 import {createCampaign,sequentialCount,campaignQuestCount,isCampaignFinalQuest,isCampaignComplete,constellationQuestIndices,constellationGridRange,chapterForGrid,milestoneFor,skyStarsForGrid,bonusChallengeFor,challengeFor,constellationCheckpoint,constellationStateForEarned,starsAwardedForGrid} from "../campaign/progression.js";
 import {createGameEngine} from "../game/engine.js";
 import {createAttemptEngine,ATTEMPT_STATES} from "../game/attempt-engine.js";
@@ -364,6 +364,21 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   const fresh={...incoming,solved:{},historyBackup:{},badges:{},stars:{},performances:{},noHint:{},xp:0,skyScore:0,shards:3};
   hydrationStage="cloud_initialize";
   let cloud=existing||await initializeCloudProfile(lumenSupabase,currentOwner===accountId?incoming:fresh);
+  // Resume verified canonical victory intents before installing the cloud profile.
+  // Keep unacknowledged entries on read/write failure; do not replay any other
+  // legacy rewards or unknown account's snapshots.
+  const hydrationClient=lumenSupabase;
+  const sessionValid=()=>lumenUser?.id===accountId&&lumenSupabase===hydrationClient&&!qaActive;
+  const recovered=await replayCanonicalVictoryOutbox(canonicalVictoryOutbox,accountId,
+   (questId,reward)=>commitCanonicalVictory(hydrationClient,questId,reward),{sessionValid});
+  if(!sessionValid())throw Error("Session changée pendant la reprise");
+  if(recovered.length){
+   cloud=await loadVerifiedProfile(hydrationClient);
+   if(!sessionValid()||!cloud)throw Error("Restauration cloud non vérifiée");
+   recordCloudDiagnostic("canonical_outbox_replayed",{count:recovered.length});
+  }
+  const outstanding=canonicalVictoryOutbox.pending(accountId).length;
+  if(outstanding)recordCloudDiagnostic("canonical_outbox_pending",{count:outstanding});
   // Daily RPC is authoritative. Restore it BEFORE installing the full cloud snapshot,
   // otherwise a stale daily.dates snapshot erases days fetched during login.
   hydrationStage="daily_rpc";
