@@ -70,7 +70,19 @@ export async function commitCanonicalVictory(supabase,questId,reward,{maxAttempt
    if(!verified?.canonicalQuestState?.[questId]?.solved)throw Error("Canonical victory cloud read-back failed");
    return {...result,profile:verified,alreadySaved:false};
   }catch(error){
-   if(!/Conflit de version cloud/.test(error.message)||attempt===maxAttempts-1)throw error;
+   // A timed-out CAS may have committed before its response was lost.
+   // Read the authoritative profile before retrying, so a completed quest
+   // is acknowledged exactly once and a transient error is not mistaken
+   // for an unsaved victory.
+   let refreshed=null;
+   try{refreshed=await loadVerifiedProfile(supabase)}catch{}
+   if(refreshed?.canonicalQuestState?.[questId]?.solved){
+    return {profile:refreshed,newlyCompleted:false,quest,alreadySaved:true};
+   }
+   if(attempt===maxAttempts-1)throw error;
+   // Only retry against a freshly verified baseline on the next iteration;
+   // never replay the previous snapshot or credit the reward blindly.
+   if(!refreshed)throw error;
   }
  }
  throw Error("Canonical victory cannot be committed");
