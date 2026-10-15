@@ -63,6 +63,7 @@ const nodeSuites=[
  "cloud-mirror-retry-proof-tests.mjs",
  "cloud-online-retry-tests.mjs",
  "cloud-resume-retry-tests.mjs",
+ "cloud-session-guard-tests.mjs",
  "cloud-autonomous-wins-tests.mjs",
  "cloud-diagnostics-tests.mjs",
  "streak-visual-tests.mjs",

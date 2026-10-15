@@ -137,13 +137,18 @@ async function flushCloudProfile(){
   if(lumenUser&&!qaActive)preserveUnsyncedCloudProgress("cloud-not-ready");return false
  }
  cloudProfileBusy=true;
+ const savingUserId=lumenUser.id;
+ const sameSavingSession=()=>lumenUser?.id===savingUserId&&!qaActive&&cloudProfileReady;
  const current=JSON.parse(JSON.stringify(lumenProgress));
  cloudProfileInFlight=(async()=>{
   try{
-   cloudProfileBaseline=await compareAndSwapCloudProfile(lumenSupabase,current,cloudProfileBaseline);
+   const savedBaseline=await compareAndSwapCloudProfile(lumenSupabase,current,cloudProfileBaseline);
+   if(!sameSavingSession())return false;
+   cloudProfileBaseline=savedBaseline;
    // Verify the secondary legacy progress table as well as the full profile.
    // Failure must remain observable, not masquerade as successful sync.
    const mirror=await verifyLegacyProgressMirror();
+   if(!sameSavingSession())return false;
    if(!mirror.ok){
     cloudProfileFailure={reason:"legacy_mirror",detail:mirror.reason};
     recordCloudDiagnostic("legacy_mirror_failed",{kind:mirror.reason,pending:Number(mirror.pending||0)});
@@ -154,16 +159,19 @@ async function flushCloudProfile(){
    recordCloudDiagnostic("flush_success",{profileReady:cloudProfileReady,legacyMirrorVerified:true});
    return true;
   }catch(e){
+   if(!sameSavingSession())return false;
    cloudProfileFailure={reason:"network"};
    recordCloudDiagnostic("flush_failed",{kind:"write",errorCode:String(e?.code||e?.status||"unknown").slice(0,48),profileReady:cloudProfileReady});
    preserveUnsyncedCloudProgress("save-failed");
    try{
     const remote=await loadVerifiedProfile(lumenSupabase);
+    if(!sameSavingSession())return false;
     if(remote && sameCloudProfile(remote,current)){
      // A matching snapshot does not prove that the secondary progress mirror
      // was saved. Apply the same verification as the normal successful path.
      cloudProfileBaseline=remote;
      const mirror=await verifyLegacyProgressMirror();
+     if(!sameSavingSession())return false;
      if(!mirror.ok){
       cloudProfileFailure={reason:"legacy_mirror",detail:mirror.reason};
       recordCloudDiagnostic("legacy_mirror_failed",{kind:mirror.reason,pending:Number(mirror.pending||0)});
