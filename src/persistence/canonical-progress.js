@@ -87,3 +87,30 @@ export async function commitCanonicalVictory(supabase,questId,reward,{maxAttempt
  }
  throw Error("Canonical victory cannot be committed");
 }
+
+// Opt-in transport for the transactional server reward ledger. Do not enable
+// until the migration, allowlist and authenticated grants are verified.
+// Never fall back to legacy snapshot CAS after an ambiguous RPC error:
+// the RPC may have committed before its response was lost.
+export async function commitCanonicalVictoryViaLedger(supabase,questId,reward){
+ if(!supabase||typeof supabase.rpc!=="function")throw Error("Cloud unavailable");
+ const quest=canonicalQuestById(questId);
+ if(!quest||quest.legacyIndex!==null)throw Error("Invalid ledger quest");
+ const {data,error}=await supabase.rpc("lumen_commit_canonical_victory",{
+  p_quest_id:questId,p_badges:reward?.badges??{},p_performance:reward?.performance??null
+ });
+ if(error){
+  // A timed-out request may already be committed. Re-read and acknowledge
+  // only an actual server-side solved flag, without issuing another credit.
+  let verified;
+  try{verified=await loadVerifiedProfile(supabase)}catch{}
+  if(verified?.canonicalQuestState?.[questId]?.solved)
+   return {profile:verified,newlyCompleted:false,alreadySaved:true,quest};
+  throw Error("Canonical ledger commit unconfirmed: "+String(error.message??"unknown"));
+ }
+ const verified=await loadVerifiedProfile(supabase);
+ if(!verified?.canonicalQuestState?.[questId]?.solved)throw Error("Canonical ledger verification failed");
+ if(!data||!data.profile||typeof data.newlyCompleted!=="boolean")
+  throw Error("Invalid canonical ledger acknowledgement");
+ return {profile:verified,newlyCompleted:data.newlyCompleted,alreadySaved:!data.newlyCompleted,quest};
+}
