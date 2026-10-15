@@ -49,6 +49,7 @@ const nodeSuites=[
  "locked-quest-icon-tests.mjs",
  "canonical-constellation-catchup-tests.mjs",
  "canonical-ambiguous-ack-tests.mjs",
+ "canonical-outbox-tests.mjs",
  "attempt-engine-tests.mjs",
  "performance-badge-tests.mjs",
  "daily-engagement-tests.mjs",

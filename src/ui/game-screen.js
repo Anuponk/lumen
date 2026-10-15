@@ -26,6 +26,7 @@ import {challengeEligibility,challengeSnapshot,compareChallenge,createChallengeC
 import {resolveChallengeQuest} from "../campaign/canonical-challenges.js";
 import {canonicalDisplayForLegacy,canonicalQuestList,canonicalAdventureSummary,canonicalQuestByOrdinal,canonicalQuestForLegacy,canonicalNextUnsolved,canonicalConstellationCatchupAvailable,unlockedAdventureProgress} from "../campaign/canonical-quests.js";
 import {acknowledgeCanonicalVictory,commitCanonicalVictory,questIsCompleted} from "../persistence/canonical-progress.js";
+import {createCanonicalVictoryOutbox,replayCanonicalVictoryOutbox} from "../persistence/canonical-outbox.js";
 import {createCampaign,sequentialCount,campaignQuestCount,isCampaignFinalQuest,isCampaignComplete,constellationQuestIndices,constellationGridRange,chapterForGrid,milestoneFor,skyStarsForGrid,bonusChallengeFor,challengeFor,constellationCheckpoint,constellationStateForEarned,starsAwardedForGrid} from "../campaign/progression.js";
 import {createGameEngine} from "../game/engine.js";
 import {createAttemptEngine,ATTEMPT_STATES} from "../game/attempt-engine.js";
@@ -363,6 +364,21 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   const fresh={...incoming,solved:{},historyBackup:{},badges:{},stars:{},performances:{},noHint:{},xp:0,skyScore:0,shards:3};
   hydrationStage="cloud_initialize";
   let cloud=existing||await initializeCloudProfile(lumenSupabase,currentOwner===accountId?incoming:fresh);
+  // Resume verified canonical victory intents before installing the cloud profile.
+  // Keep unacknowledged entries on read/write failure; do not replay any other
+  // legacy rewards or unknown account's snapshots.
+  const hydrationClient=lumenSupabase;
+  const sessionValid=()=>lumenUser?.id===accountId&&lumenSupabase===hydrationClient&&!qaActive;
+  const recovered=await replayCanonicalVictoryOutbox(canonicalVictoryOutbox,accountId,
+   (questId,reward)=>commitCanonicalVictory(hydrationClient,questId,reward),{sessionValid});
+  if(!sessionValid())throw Error("Session changée pendant la reprise");
+  if(recovered.length){
+   cloud=await loadVerifiedProfile(hydrationClient);
+   if(!sessionValid()||!cloud)throw Error("Restauration cloud non vérifiée");
+   recordCloudDiagnostic("canonical_outbox_replayed",{count:recovered.length});
+  }
+  const outstanding=canonicalVictoryOutbox.pending(accountId).length;
+  if(outstanding)recordCloudDiagnostic("canonical_outbox_pending",{count:outstanding});
   // Daily RPC is authoritative. Restore it BEFORE installing the full cloud snapshot,
   // otherwise a stale daily.dates snapshot erases days fetched during login.
   hydrationStage="daily_rpc";
@@ -1667,6 +1683,7 @@ function celebrateLearningReplaySuccess(){
 function renderSuccessRewards(stars,savedPerformance,priorBadges={}){let el=document.getElementById("successRewards");if(!el)return;const run=savedPerformance.run,earned=savedPerformance.badges,qualifying=savedPerformance.qualifying,rewards=[];if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});if(qualifying&&earned.autonomy&&!priorBadges.autonomy)rewards.push({cls:"autonomy",icon:performanceIcon("autonomy"),label:"Autonomie"});if(qualifying&&earned.speed&&!priorBadges.speed)rewards.push({cls:"speed",icon:performanceIcon("speed"),label:"Rapidité"});if(qualifying&&earned.noError&&!priorBadges.noError)rewards.push({cls:"no-error",icon:performanceIcon("noError"),label:"Sans erreur"});if(qualifying&&earned.mastery&&!priorBadges.mastery)rewards.push({cls:"mastery",icon:performanceIcon("mastery"),label:"Maîtrise"});el.innerHTML=rewards.map((r,i)=>'<span class="success-reward '+r.cls+'" style="--reward-delay:'+(220+i*210)+'ms"><span>'+r.icon+'</span><span>'+r.label+'</span></span>').join("");el.classList.toggle("mastery-earned",!!qualifying&&!!earned.mastery&&!priorBadges.mastery)}
 // Canonical achievements use stable-ID cloud CAS, never the historical
 // puzzle_id RPC or the old `solved[levelIndex]` reward calculation.
+const canonicalVictoryOutbox=createCanonicalVictoryOutbox(localStorage);
 async function celebrateCanonicalSuccess(){
  const q=canonicalActiveQuest;if(!q||celebrated)return;
  const seconds=activeGameSeconds(),attempt=attemptEngine.snapshot();
@@ -1678,9 +1695,18 @@ async function celebrateCanonicalSuccess(){
  try{
   if(qaActive){committed=acknowledgeCanonicalVictory(lumenProgress,q.id,reward)}
   else{
-   if(!lumenUser||!cloudProfileReady)throw Error("Compte synchronisé requis");
+   if(!lumenUser)throw Error("Compte requis pour sauvegarder la victoire");
+   // Even when cloud hydration is unavailable, capture the victory BEFORE
+   // awaiting readiness. Closing an offline PWA must not lose its sole intent.
+   const ownerId=lumenUser.id;
+   const pending=canonicalVictoryOutbox.enqueue(ownerId,q.id,reward);
+   if(!cloudProfileReady)throw Error("Victoire conservée localement, cloud non prêt");
    if(!(await confirmCloudReward()))return;
-   committed=await commitCanonicalVictory(lumenSupabase,q.id,reward);
+   if(lumenUser?.id!==ownerId)throw Error("Compte modifié pendant la sauvegarde");
+   committed=await commitCanonicalVictory(lumenSupabase,q.id,pending.reward);
+   if(lumenUser?.id!==ownerId)throw Error("Compte modifié pendant la sauvegarde");
+   if(!committed.profile?.canonicalQuestState?.[q.id]?.solved)throw Error("Victoire non confirmée par le cloud");
+   canonicalVictoryOutbox.acknowledge(ownerId,q.id);
   }
  }catch(error){
   console.error("Canonical victory not saved",error);

@@ -1,0 +1,36 @@
+import assert from "node:assert/strict";
+import {createCanonicalVictoryOutbox,replayCanonicalVictoryOutbox} from "../src/persistence/canonical-outbox.js";
+const values=new Map();
+const storage={get length(){return values.size},key:i=>[...values.keys()][i]??null,getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)};
+const outbox=createCanonicalVictoryOutbox(storage);
+const reward={badges:{autonomy:true},stars:1};
+const first=outbox.enqueue("player-a","quest-001",reward);
+assert.deepEqual(outbox.enqueue("player-a","quest-001",{stars:100}),first,"replay cannot mutate reward");
+assert.equal(outbox.pending("player-b").length,0,"no cross-user outbox leakage");
+assert.equal(outbox.pending("player-a").length,1);
+let tries=0;
+await replayCanonicalVictoryOutbox(outbox,"player-a",async()=>{tries++;throw Error("offline")});
+assert.equal(tries,1);
+assert.equal(outbox.pending("player-a").length,1,"failed network preserves intent");
+let confirmed=false;
+await replayCanonicalVictoryOutbox(outbox,"player-a",async(q)=>{confirmed=true;return {profile:{canonicalQuestState:{[q]:{solved:true}}}}});
+assert.equal(confirmed,true);
+assert.equal(outbox.pending("player-a").length,0,"verified server victory removes intent");
+outbox.enqueue("player-a","quest-002",reward);
+let calls=0;
+await replayCanonicalVictoryOutbox(outbox,"player-a",async()=>{calls++;return {profile:{canonicalQuestState:{}}}});
+assert.equal(calls,1);
+assert.equal(outbox.pending("player-a").length,1,"unverified server result must retain intent");
+outbox.enqueue("player-b","quest-002",reward);
+await replayCanonicalVictoryOutbox(outbox,"player-a",async()=>{calls++;return {profile:{canonicalQuestState:{'quest-002':{solved:true}}}}},{sessionValid:()=>false});
+assert.equal(outbox.pending("player-a").length,1,"session switch prevents replay");
+assert.equal(outbox.pending("player-b").length,1);
+
+const ui=(await import("node:fs")).readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
+assert.ok(ui.includes("const recovered=await replayCanonicalVictoryOutbox(canonicalVictoryOutbox,accountId,"),"hydration replays only current player's outbox");
+assert.ok(ui.includes("cloud=await loadVerifiedProfile(hydrationClient);"),"hydration refreshes verified cloud before installing");
+assert.ok(ui.includes("const pending=canonicalVictoryOutbox.enqueue(ownerId,q.id,reward);"),"victory intent persists before network");
+assert.ok(ui.indexOf("const pending=canonicalVictoryOutbox.enqueue(ownerId,q.id,reward);") < ui.indexOf("if(!(await confirmCloudReward()))return;",ui.indexOf("async function celebrateCanonicalSuccess()")),"persist before async cloud readiness");
+assert.ok(ui.includes("canonicalVictoryOutbox.acknowledge(ownerId,q.id);"),"victory ack clears only confirmed intent");
+
+console.log("Canonical victory outbox retains failure and isolates player identities");
