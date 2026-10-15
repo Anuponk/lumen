@@ -2288,7 +2288,7 @@ function showSkyReveal(beforeEarned=null,checkpoint=null){
    for(const [target,sourceId] of [["skyRevealNext","successNew"],["skyRevealSky","successSky"],["skyRevealShare","successShare"],["skyRevealRetry","successRetry"]]){
     const button=document.getElementById(target),original=document.getElementById(sourceId);
     button.hidden=!!original?.hidden;
-    button.onclick=()=>{if(closeUnifiedSkyReveal())return;original?.click()};
+    button.onclick=()=>{if(target==="skyRevealNext"&&adventurePending){const completed=adventurePending;adventurePending=null;closeUnifiedSkyReveal();original?.click();openJourneyMap();skyNavigation.showCompletion(completed);return}if(closeUnifiedSkyReveal())return;original?.click()};
    }
   }
  }
