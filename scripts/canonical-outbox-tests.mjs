@@ -38,6 +38,18 @@ assert.throws(()=>outbox.pending("player-a"),/Outbox integrity check failed/);
 assert.ok(values.has(invalidKey),"cross-account mismatch remains available for investigation");
 values.delete(invalidKey);
 
+// Browser restart: a new outbox instance must recover unchanged durable data.
+const restarted=createCanonicalVictoryOutbox(storage);
+restarted.enqueue("player-a","quest-restarted",reward);
+assert.deepEqual(createCanonicalVictoryOutbox(storage).pending("player-a").find(x=>x.questId==="quest-restarted")?.reward,reward);
+await replayCanonicalVictoryOutbox(createCanonicalVictoryOutbox(storage),"player-a",async()=>{throw Error("still offline")});
+assert.ok(createCanonicalVictoryOutbox(storage).pending("player-a").some(x=>x.questId==="quest-restarted"),"reload + offline retains intent");
+// Storage quota failure must prevent a false claim of durability.
+const quotaStorage={...storage,setItem(){const error=new Error("Storage full");error.name="QuotaExceededError";throw error}};
+const quotaOutbox=createCanonicalVictoryOutbox(quotaStorage);
+assert.throws(()=>quotaOutbox.enqueue("player-a","quest-quota",reward),/Storage full/);
+assert.equal(quotaOutbox.pending("player-a").some(x=>x.questId==="quest-quota"),false,"failed local write is never acknowledged");
+
 const ui=(await import("node:fs")).readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
 assert.ok(ui.includes("const recovered=await replayCanonicalVictoryOutbox(canonicalVictoryOutbox,accountId,"),"hydration replays only current player's outbox");
 assert.ok(ui.includes("cloud=await loadVerifiedProfile(hydrationClient);"),"hydration refreshes verified cloud before installing");
