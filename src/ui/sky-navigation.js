@@ -48,7 +48,7 @@ export function swipeConstellationTarget(current,selected,delta){
  return {pack:next,entry,changedAdventure:true,locked:!next.accessible||!entry.accessible};
 }
 
-export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit,getShape,getMastered,getBadgeCounts=()=>({}),getCanonicalQuests=()=>[],getCanonicalSolved=()=>false,getCanonicalAvailable=()=>false,onCanonicalQuest=()=>{},onConstellation}){
+export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit,getShape,getMastered,getBadgeCounts=()=>({}),getCanonicalQuests=()=>[],getCanonicalPackQuests=()=>[],getCanonicalSolved=()=>false,getCanonicalAvailable=()=>false,onCanonicalQuest=()=>{},onConstellation}){
  const sheet=document.querySelector('#mapModal .map-sheet'),tabs=document.getElementById('sectorTabs');
  sheet.querySelector('h2').textContent='Mon ciel';sheet.querySelector('h2').id='monCielTitle';
  const modal=document.getElementById('mapModal');modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-labelledby','monCielTitle');
@@ -95,17 +95,13 @@ export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit
  notice.innerHTML='<div><strong id="adventureNoticeTitle"></strong><p id="adventureNoticeCopy"></p><button id="adventureNext" hidden>Découvrir l’Aventure suivante</button><button id="adventureNoticeClose">Compris</button></div>';sheet.appendChild(notice);
  let selection={},view='overview',selectedConstellation=null,noticeOrigin=null;
  const element=id=>document.getElementById(id);
- const completed=c=>c.canonicalOnly
- ?getCanonicalQuests(c.id).length===10&&getCanonicalQuests(c.id).every(getCanonicalSolved)
- :Array.from({length:c.questCount},(_,i)=>getSolved(c.questStart+i)).every(Boolean);
- const unlocked=(entry,pack)=>entry.canonicalOnly
-  ?!!entry.accessible&&getCanonicalQuests(entry.id).some(q=>getCanonicalAvailable(q)||getCanonicalSolved(q))
-  :constellationUnlocked(entry,pack,getSolved,getQuest);
- function state(pack){const done=pack.constellations.filter(completed).length;return !pack.accessible?'Verrouillée':done===pack.constellations.length?'Terminée':pack.id===current?.active?.id?'En cours':'À découvrir'}
+ const completed=c=>{const quests=getCanonicalQuests(c.id);return quests.length>0&&quests.every(getCanonicalSolved)};
+ const unlocked=(entry,pack)=>!!entry.accessible&&getCanonicalQuests(entry.id).some(q=>getCanonicalAvailable(q)||getCanonicalSolved(q));
+ function state(pack){const done=pack.constellations.filter(completed).length;const quests=getCanonicalPackQuests(pack.id);return !pack.accessible?'Verrouillée':quests.length>0&&quests.every(getCanonicalSolved)?'Terminée':pack.id===current?.active?.id?'En cours':'À découvrir'}
  let current=skySelection(getModel(),selection,getQuest());
  function setView(next){view=next;tabs.hidden=next==='detail';pages.hidden=next==='detail'||current.pages<=1;detail.hidden=next!=='detail';renderCanonicalDetail()}
  function showLocked(pack,origin){noticeOrigin=origin||document.activeElement;element('adventureNext').hidden=true;element('adventureNoticeClose').textContent='Compris';element('adventureNoticeTitle').textContent=pack.displayName||'Aventure';element('adventureNoticeCopy').textContent=pack.lockReason||'Cette Aventure est verrouillée. Son mode de déverrouillage sera annoncé plus tard.';notice.hidden=false;element('adventureNoticeClose').focus()}
- function showCompletion(pack){const badges=getBadgeCounts(pack);const sky=getModel().skies.find(s=>s.id===pack.skyId),entry=sky?.packs.find(p=>p.id===pack.id);if(!entry)return;const next=sky.packs[sky.packs.indexOf(entry)+1];element('adventureNoticeTitle').textContent='✦ Aventure terminée !';element('adventureNoticeCopy').textContent=`${entry.displayName} · ${entry.constellations.length} constellations · ${entry.constellations.reduce((sum,c)=>sum+(getShape(c)?.count||0),0)} étoiles · ${badges.autonomy||0} Autonomie · ${badges.speed||0} Rapidité · ${badges.noError||0} Sans erreur · ${badges.mastery||0} Maîtrises`;element('adventureNoticeClose').textContent='Retour à Mon ciel';const button=element('adventureNext');button.hidden=!next;button.onclick=()=>{closeNotice();if(!next.accessible){showLocked(next,button);return}selection={skyId:sky.id,packId:next.id,page:0};selectedConstellation=null;view='overview';render()};noticeOrigin=document.activeElement;notice.hidden=false;(next?button:element('adventureNoticeClose')).focus()}
+ function showCompletion(pack){const quests=getCanonicalPackQuests(pack.id);if(quests.length===0||!quests.every(getCanonicalSolved))return;const badges=getBadgeCounts(pack);const sky=getModel().skies.find(s=>s.id===pack.skyId),entry=sky?.packs.find(p=>p.id===pack.id);if(!entry)return;const next=sky.packs[sky.packs.indexOf(entry)+1];element('adventureNoticeTitle').textContent='✦ Aventure terminée !';element('adventureNoticeCopy').textContent=`${entry.displayName} · ${entry.constellations.length} constellations · ${entry.constellations.reduce((sum,c)=>sum+(getShape(c)?.count||0),0)} étoiles · ${badges.autonomy||0} Autonomie · ${badges.speed||0} Rapidité · ${badges.noError||0} Sans erreur · ${badges.mastery||0} Maîtrises`;element('adventureNoticeClose').textContent='Retour à Mon ciel';const button=element('adventureNext');button.hidden=!next;button.onclick=()=>{closeNotice();if(!next.accessible){showLocked(next,button);return}selection={skyId:sky.id,packId:next.id,page:0};selectedConstellation=null;view='overview';render()};noticeOrigin=document.activeElement;notice.hidden=false;(next?button:element('adventureNoticeClose')).focus()}
  function closeNotice(){notice.hidden=true;const origin=noticeOrigin?.isConnected&&!noticeOrigin.hidden&&noticeOrigin.getClientRects().length?noticeOrigin:element('adventureRail').querySelector('.selected');origin?.focus?.()}
  function render(){
   const model=getModel();current=skySelection(model,selection,getQuest());selection={skyId:current.sky?.id,packId:current.adventure?.id,page:current.page};
