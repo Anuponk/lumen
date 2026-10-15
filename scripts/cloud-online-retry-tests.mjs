@@ -1,0 +1,13 @@
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const screen=readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
+const start=screen.indexOf("function retryPendingCloudWriteOnReconnect()");
+const end=screen.indexOf('window.addEventListener("online",retryPendingCloudWriteOnReconnect)',start);
+assert(start>=0&&end>start,"reconnect listener must be registered");
+const block=screen.slice(start,end);
+assert.match(block,/!cloudProfileReady/,"never flush an unhydrated profile");
+assert.match(block,/\["network","legacy_mirror"\]/,"retry only failures safe for existing CAS logic");
+assert.match(block,/cloudProfileBusy\|\|cloudProfileTimer!==null/,"avoid competing writes");
+assert.match(block,/scheduleCloudProfile\(\)/,"respect existing debounce and CAS path");
+assert.doesNotMatch(block,/lumenUnsyncedCloudBackup|preserveUnsyncedInIndexedDB/,"do not replay unreviewed checkpoints");
+console.log("Online retry respects cloud readiness and avoids unsafe checkpoint replay");

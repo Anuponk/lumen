@@ -60,6 +60,7 @@ const nodeSuites=[
  "cloud-safe-reconciliation-tests.mjs",
  "cloud-bidirectional-reconcile-tests.mjs",
  "cloud-mirror-retry-proof-tests.mjs",
+ "cloud-online-retry-tests.mjs",
  "cloud-autonomous-wins-tests.mjs",
  "cloud-diagnostics-tests.mjs",
  "streak-visual-tests.mjs",
