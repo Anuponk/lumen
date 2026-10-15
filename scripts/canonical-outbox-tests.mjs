@@ -57,7 +57,7 @@ assert.ok(outbox.pending("player-a").some(x=>x.questId==="quest-race"),"old ackn
 
 // A cloud-confirmed victory must remain acknowledged even if local cleanup
 // fails; a retained intent is safe to replay because server CAS is idempotent.
-const failingRemove={...storage,removeItem(){throw Error("remove blocked")}};
+const failingRemove={get length(){return storage.length},key:i=>storage.key(i),getItem:k=>storage.getItem(k),setItem:(k,v)=>storage.setItem(k,v),removeItem(){throw Error("remove blocked")}};
 const blocked=createCanonicalVictoryOutbox(failingRemove);
 blocked.enqueue("player-a","quest-confirmed",reward);
 assert.throws(()=>blocked.acknowledge("player-a","quest-confirmed"),/remove blocked/);
