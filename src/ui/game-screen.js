@@ -138,11 +138,12 @@ async function flushCloudProfile(){
  }
  cloudProfileBusy=true;
  const savingUserId=lumenUser.id;
- const sameSavingSession=()=>lumenUser?.id===savingUserId&&!qaActive&&cloudProfileReady;
+ const savingCloudClient=lumenSupabase;
+ const sameSavingSession=()=>lumenUser?.id===savingUserId&&lumenSupabase===savingCloudClient&&!authSessionPending&&!qaActive&&cloudProfileReady;
  const current=JSON.parse(JSON.stringify(lumenProgress));
  cloudProfileInFlight=(async()=>{
   try{
-   const savedBaseline=await compareAndSwapCloudProfile(lumenSupabase,current,cloudProfileBaseline);
+   const savedBaseline=await compareAndSwapCloudProfile(savingCloudClient,current,cloudProfileBaseline);
    if(!sameSavingSession())return false;
    cloudProfileBaseline=savedBaseline;
    // Verify the secondary legacy progress table as well as the full profile.
@@ -164,7 +165,7 @@ async function flushCloudProfile(){
    recordCloudDiagnostic("flush_failed",{kind:"write",errorCode:String(e?.code||e?.status||"unknown").slice(0,48),profileReady:cloudProfileReady});
    preserveUnsyncedCloudProgress("save-failed");
    try{
-    const remote=await loadVerifiedProfile(lumenSupabase);
+    const remote=await loadVerifiedProfile(savingCloudClient);
     if(!sameSavingSession())return false;
     if(remote && sameCloudProfile(remote,current)){
      // A matching snapshot does not prove that the secondary progress mirror

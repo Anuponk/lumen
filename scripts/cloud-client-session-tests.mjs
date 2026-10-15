@@ -1,0 +1,11 @@
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const s=readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
+const flush=s.slice(s.indexOf("async function flushCloudProfile(){"),s.indexOf("// Secondary durable store"));
+assert.match(flush,/const savingCloudClient=lumenSupabase/);
+assert.match(flush,/lumenSupabase===savingCloudClient&&\!authSessionPending/);
+assert.match(flush,/compareAndSwapCloudProfile\(savingCloudClient,current,cloudProfileBaseline\)/);
+assert.match(flush,/loadVerifiedProfile\(savingCloudClient\)/);
+assert.doesNotMatch(flush,/loadVerifiedProfile\(lumenSupabase\)/);
+assert.equal((flush.match(/if\(!sameSavingSession\(\)\)return false/g)||[]).length>=5,true);
+console.log("Cloud write and read-back are bound to one client and stable authentication session");

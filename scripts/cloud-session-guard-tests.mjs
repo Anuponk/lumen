@@ -5,7 +5,7 @@ const flush=source.slice(source.indexOf("async function flushCloudProfile(){"),s
 assert.match(flush,/const savingUserId=lumenUser\.id/);
 assert.match(flush,/const sameSavingSession=\(\)=>lumenUser\?\.id===savingUserId/);
 assert.match(flush,/const savedBaseline=await compareAndSwapCloudProfile\([^\n]+\);\s*if\(!sameSavingSession\(\)\)return false;\s*cloudProfileBaseline=savedBaseline/);
-assert.match(flush,/const remote=await loadVerifiedProfile\(lumenSupabase\);\s*if\(!sameSavingSession\(\)\)return false/);
+assert.match(flush,/const remote=await loadVerifiedProfile\(savingCloudClient\);\s*if\(!sameSavingSession\(\)\)return false/);
 assert.equal((flush.match(/const mirror=await verifyLegacyProgressMirror\(\);\s*if\(!sameSavingSession\(\)\)return false/g)||[]).length,2);
 assert.match(flush,/catch\(e\)\{\s*if\(!sameSavingSession\(\)\)return false/);
 console.log("Cloud flush rejects stale asynchronous completion after account switches");
