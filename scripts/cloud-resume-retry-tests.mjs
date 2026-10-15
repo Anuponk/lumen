@@ -1,0 +1,11 @@
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const s=readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
+const fn=s.slice(s.indexOf("function retryPendingCloudWriteOnReconnect()"),s.indexOf("const {loadLumenProgress,saveLumenProgress}="));
+assert.match(fn,/window\.addEventListener\("online",retryPendingCloudWriteOnReconnect\)/);
+assert.match(fn,/document\.addEventListener\("visibilitychange"/);
+assert.match(fn,/document\.visibilityState==="visible"&&navigator\.onLine!==false/);
+assert.match(fn,/\["network","legacy_mirror"\]/);
+assert.match(fn,/!cloudProfileReady/);
+assert.match(fn,/cloudProfileBusy\|\|cloudProfileTimer!==null/);
+console.log("PWA resume only retries safe pending cloud writes when online and hydrated");
