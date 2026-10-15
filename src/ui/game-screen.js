@@ -1706,7 +1706,13 @@ async function celebrateCanonicalSuccess(){
    committed=await commitCanonicalVictory(lumenSupabase,q.id,pending.reward);
    if(lumenUser?.id!==ownerId)throw Error("Compte modifié pendant la sauvegarde");
    if(!committed.profile?.canonicalQuestState?.[q.id]?.solved)throw Error("Victoire non confirmée par le cloud");
-   canonicalVictoryOutbox.acknowledge(ownerId,q.id);
+   // Remote victory was read back successfully. A local quota/storage error
+   // when clearing the outbox must not make the player replay a saved win.
+   // The retained intent is harmless: CAS replay sees solved and won't re-award.
+   try{canonicalVictoryOutbox.acknowledge(ownerId,q.id)}catch(error){
+    console.warn("Canonical outbox cleanup deferred",error);
+    recordCloudDiagnostic("canonical_outbox_cleanup_pending",{reason:"storage"});
+   }
   }
  }catch(error){
   console.error("Canonical victory not saved",error);

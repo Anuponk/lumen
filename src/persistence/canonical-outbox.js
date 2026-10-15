@@ -40,13 +40,14 @@ export function createCanonicalVictoryOutbox(storage){
  function acknowledge(userId,questId,expectedReward){
   const k=key(userId,questId);
   const original=storage.getItem(k);
-  if(original===null)return;
+  if(original===null)return true;
   const entry=JSON.parse(original);
   if(entry?.userId!==userId||entry?.questId!==questId)throw Error("Outbox acknowledgement identity mismatch");
   if(expectedReward!==undefined&&JSON.stringify(entry.reward)!==JSON.stringify(expectedReward))throw Error("Outbox reward changed before acknowledgement");
   if(storage.getItem(k)!==original)throw Error("Outbox changed before acknowledgement");
   storage.removeItem(k);
   if(storage.getItem(k)!==null)throw Error("Outbox acknowledgement not removed");
+  return true;
  }
  return {enqueue,pending,acknowledge};
 }
