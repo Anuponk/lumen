@@ -1681,7 +1681,7 @@ async function celebrateSuccess(){
  const generatedQuest=levelIndex>=campaignQuestCount();
  const skyEarnedBefore=skyStarsEarned();
  lumenProgress.solved[levelIndex]=1;
- const playedPack=packForLegacyQuest(levelIndex);adventurePending=firstCompletion&&playedPack&&levelIndex===playedPack.legacyQuestStart+playedPack.questCount-1&&!isCampaignFinalQuest(levelIndex)?playedPack:null;
+ const playedPack=packForLegacyQuest(levelIndex);adventurePending=firstCompletion&&playedPack&&!isCampaignFinalQuest(levelIndex)&&canonicalQuestList().filter(q=>q.packId===playedPack.id).every(q=>questIsCompleted(lumenProgress,q.id))?playedPack:null;
  endgamePending=firstCompletion&&isCampaignFinalQuest(levelIndex)&&isCampaignComplete(lumenProgress.solved);
  if(firstCompletion&&!generatedQuest)lumenProgress.skyScore=Math.min(SKY_TARGET,skyEarnedBefore+skyStarsForGrid(levelIndex));
  if(firstCompletion)lumenProgress.xp=(lumenProgress.xp||0)+10;
@@ -2222,7 +2222,7 @@ const skyNavigation=createSkyNavigation({document,getModel:()=>mapCatalogueOverr
  getSolved:i=>!!lumenProgress.solved[i],
  getCanonicalQuests:id=>canonicalQuestList().filter(q=>q.constellationId===id),
  getCanonicalSolved:q=>questIsCompleted(lumenProgress,q.id),
- getCanonicalAvailable:q=>canonicalQuestAvailable(q),
+ getCanonicalAvailable:q=>canonicalQuestAvailable(q),getCanonicalPackQuests:id=>canonicalQuestList().filter(q=>q.packId===id),
  onCanonicalQuest:q=>startCanonicalQuest(q),getLit:entry=>CONSTELLATIONS[entry.legacyIndex]?constellationLitAt(entry.legacyIndex):0,getShape:entry=>astronomicalDisplayShape(entry.shape||CONSTELLATIONS[entry.legacyIndex]),getMastered:entry=>{const eligible=Array.from({length:entry.questCount},(_,offset)=>entry.questStart+offset).filter(i=>currentPerformanceEligibility(i).mastery);return eligible.length>0&&eligible.every(i=>lumenProgress.performances?.[i]?.badges?.mastery)},getBadgeCounts:pack=>{const badges={autonomy:0,speed:0,noError:0,mastery:0};for(let i=pack.legacyQuestStart;i<pack.legacyQuestStart+pack.questCount;i++)for(const key of Object.keys(badges))if(lumenProgress.performances?.[i]?.badges?.[key])badges[key]++;return badges},onConstellation:entry=>{if(entry.canonicalOnly)return;if(mapConstellationRange(entry.legacyIndex)){mapConstellation=entry.legacyIndex;renderMap()}}});
 const SKY_TOUR_STEPS=[
  {target:"skyNavigation",title:"Ciels et Aventures",copy:"Choisis un Ciel, puis une Aventure. Les autres restent compactes ; un cadenas indique un contenu verrouillé. Consulter une autre Aventure ne change pas ta progression."},
