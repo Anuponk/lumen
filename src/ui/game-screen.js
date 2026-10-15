@@ -26,6 +26,7 @@ import {challengeEligibility,challengeSnapshot,compareChallenge,createChallengeC
 import {resolveChallengeQuest} from "../campaign/canonical-challenges.js";
 import {canonicalDisplayForLegacy,canonicalQuestList,canonicalAdventureSummary,canonicalQuestByOrdinal,canonicalQuestForLegacy,canonicalNextUnsolved,canonicalConstellationCatchupAvailable,unlockedAdventureProgress} from "../campaign/canonical-quests.js";
 import {acknowledgeCanonicalVictory,commitCanonicalVictory,questIsCompleted} from "../persistence/canonical-progress.js";
+import {createCanonicalVictoryOutbox} from "../persistence/canonical-outbox.js";
 import {createCampaign,sequentialCount,campaignQuestCount,isCampaignFinalQuest,isCampaignComplete,constellationQuestIndices,constellationGridRange,chapterForGrid,milestoneFor,skyStarsForGrid,bonusChallengeFor,challengeFor,constellationCheckpoint,constellationStateForEarned,starsAwardedForGrid} from "../campaign/progression.js";
 import {createGameEngine} from "../game/engine.js";
 import {createAttemptEngine,ATTEMPT_STATES} from "../game/attempt-engine.js";
@@ -1667,6 +1668,7 @@ function celebrateLearningReplaySuccess(){
 function renderSuccessRewards(stars,savedPerformance,priorBadges={}){let el=document.getElementById("successRewards");if(!el)return;const run=savedPerformance.run,earned=savedPerformance.badges,qualifying=savedPerformance.qualifying,rewards=[];if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});if(qualifying&&earned.autonomy&&!priorBadges.autonomy)rewards.push({cls:"autonomy",icon:performanceIcon("autonomy"),label:"Autonomie"});if(qualifying&&earned.speed&&!priorBadges.speed)rewards.push({cls:"speed",icon:performanceIcon("speed"),label:"Rapidité"});if(qualifying&&earned.noError&&!priorBadges.noError)rewards.push({cls:"no-error",icon:performanceIcon("noError"),label:"Sans erreur"});if(qualifying&&earned.mastery&&!priorBadges.mastery)rewards.push({cls:"mastery",icon:performanceIcon("mastery"),label:"Maîtrise"});el.innerHTML=rewards.map((r,i)=>'<span class="success-reward '+r.cls+'" style="--reward-delay:'+(220+i*210)+'ms"><span>'+r.icon+'</span><span>'+r.label+'</span></span>').join("");el.classList.toggle("mastery-earned",!!qualifying&&!!earned.mastery&&!priorBadges.mastery)}
 // Canonical achievements use stable-ID cloud CAS, never the historical
 // puzzle_id RPC or the old `solved[levelIndex]` reward calculation.
+const canonicalVictoryOutbox=createCanonicalVictoryOutbox(localStorage);
 async function celebrateCanonicalSuccess(){
  const q=canonicalActiveQuest;if(!q||celebrated)return;
  const seconds=activeGameSeconds(),attempt=attemptEngine.snapshot();
@@ -1680,7 +1682,15 @@ async function celebrateCanonicalSuccess(){
   else{
    if(!lumenUser||!cloudProfileReady)throw Error("Compte synchronisé requis");
    if(!(await confirmCloudReward()))return;
-   committed=await commitCanonicalVictory(lumenSupabase,q.id,reward);
+   // Persist a verified intent before the first network request. A lost CAS
+   // acknowledgement leaves the same reward safely queued for another try.
+   const ownerId=lumenUser.id;
+   const pending=canonicalVictoryOutbox.enqueue(ownerId,q.id,reward);
+   if(lumenUser?.id!==ownerId)throw Error("Compte modifié pendant la sauvegarde");
+   committed=await commitCanonicalVictory(lumenSupabase,q.id,pending.reward);
+   if(lumenUser?.id!==ownerId)throw Error("Compte modifié pendant la sauvegarde");
+   if(!committed.profile?.canonicalQuestState?.[q.id]?.solved)throw Error("Victoire non confirmée par le cloud");
+   canonicalVictoryOutbox.acknowledge(ownerId,q.id);
   }
  }catch(error){
   console.error("Canonical victory not saved",error);
