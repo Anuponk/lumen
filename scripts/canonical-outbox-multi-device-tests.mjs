@@ -53,4 +53,34 @@ assert.equal(remote.xp,30,"two different canonical victories credited exactly on
 assert.equal(deviceA.pending(user).length,0);
 assert.equal(deviceB.pending(user).length,0);
 
+
+// Ambiguous cloud acknowledgement: the server committed, but the response was
+// lost. A second device must preserve both distinct wins after reconnect.
+remote=structuredClone(baseline);writes=0;
+const interruptedA=createCanonicalVictoryOutbox(storage());
+const interruptedB=createCanonicalVictoryOutbox(storage());
+interruptedA.enqueue(user,quest.id,reward);
+interruptedB.enqueue(user,otherQuest.id,reward);
+let dropOneAcknowledgement=true;
+const flakySupabase={async rpc(name,args){
+ if(name==="lumen_restore_profile")return {data:structuredClone(remote),error:null};
+ if(name==="lumen_cas_profile"){
+  if(!sameCloudProfile(remote,args.p_expected))return {data:false,error:null};
+  remote=structuredClone(args.p_payload);writes++;
+  if(dropOneAcknowledgement){dropOneAcknowledgement=false;return {data:null,error:{message:"response lost"}}}
+  return {data:true,error:null};
+ }
+ throw Error(name);
+}};
+const flakyCommit=(id,r)=>commitCanonicalVictory(flakySupabase,id,r);
+await replayCanonicalVictoryOutbox(interruptedA,user,flakyCommit);
+await replayCanonicalVictoryOutbox(interruptedB,user,flakyCommit);
+await replayCanonicalVictoryOutbox(interruptedA,user,flakyCommit);
+assert.equal(remote.canonicalQuestState[quest.id]?.solved,true);
+assert.equal(remote.canonicalQuestState[otherQuest.id]?.solved,true);
+assert.equal(remote.xp,30,"response loss and retry cannot duplicate rewards");
+assert.equal(writes,2,"exactly one write per distinct quest");
+assert.equal(interruptedA.pending(user).length,0);
+assert.equal(interruptedB.pending(user).length,0);
+
 console.log("Multi-device offline outbox recovery credits canonical victory exactly once");
