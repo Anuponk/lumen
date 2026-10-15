@@ -318,8 +318,33 @@ function scheduleCloudProfile(){
 }
 // Reconnect only retries a previously failed write. Never replay arbitrary
 // unsynced checkpoints: those require reconciliation against verified cloud.
+// A victory saved while offline must be retried even when the full profile
+// had no pending dirty snapshot. Only the signed-in session may replay it.
+let canonicalOutboxRetryInFlight=false;
+async function retryPendingCanonicalOutboxOnReconnect(){
+ if(canonicalOutboxRetryInFlight||qaActive||!lumenUser||!lumenSupabase||!cloudProfileReady||cloudProfileBusy||cloudProfileDirty)return;
+ const userId=lumenUser.id,client=lumenSupabase;
+ const sessionValid=()=>lumenUser?.id===userId&&lumenSupabase===client&&!qaActive&&cloudProfileReady;
+ let remaining;
+ try{remaining=canonicalVictoryOutbox.pending(userId)}catch(error){recordCloudDiagnostic("canonical_outbox_read_failed",{reason:"integrity"});return}
+ if(!remaining.length)return;
+ canonicalOutboxRetryInFlight=true;
+ try{
+  const confirmed=await replayCanonicalVictoryOutbox(canonicalVictoryOutbox,userId,
+   (questId,reward)=>commitCanonicalVictory(client,questId,reward),{sessionValid});
+  if(!sessionValid())return;
+  if(confirmed.length){
+   recordCloudDiagnostic("canonical_outbox_reconnect_replayed",{count:confirmed.length});
+   // Do not overwrite in-memory local progress that could include an unsynced
+   // play. Re-run the normal non-destructive hydration on next navigation.
+   if(!cloudProfileDirty&&!cloudProfileBusy)location.reload();
+  }
+ }catch(error){recordCloudDiagnostic("canonical_outbox_reconnect_failed",{reason:"retry"})}
+ finally{canonicalOutboxRetryInFlight=false}
+}
 function retryPendingCloudWriteOnReconnect(){
  if(qaActive||!lumenUser||!lumenSupabase||!cloudProfileReady)return;
+ void retryPendingCanonicalOutboxOnReconnect();
  if(!["network","legacy_mirror"].includes(cloudProfileFailure?.reason))return;
  if(cloudProfileBusy||cloudProfileTimer!==null)return;
  recordCloudDiagnostic("flush_retry_online",{reason:cloudProfileFailure.reason});
