@@ -57,10 +57,10 @@ try{
   await send('Page.reload',{ignoreCache:true});await sleep(500);await ready();await acknowledgeLearningMilestones(evaluate);
   assert.equal((await snapshot()).levelIndex,CONTENT_PACKS[0].questCount-1);
   await evaluate('(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');await until('!document.getElementById("skyReveal").hidden');await click('#skyRevealContinue');
-  assert.match(await evaluate('document.getElementById("adventureNoticeTitle").textContent'),/Aventure terminée/);await evaluate('document.getElementById("adventureNext").click()');assert.match(await evaluate('document.getElementById("adventureNoticeCopy").textContent'),/verrouillée/);await click('#adventureNoticeClose');
+  assert.doesNotMatch(await evaluate('document.getElementById("adventureNoticeTitle").textContent'),/Aventure terminée/,'Legacy last quest must not complete an adventure with unsolved canonical quests');assert.equal(await evaluate('document.getElementById("adventureNotice").hidden'),true,'No premature adventure celebration');
   const won=await snapshot();assert.equal(won.progress.solved[CONTENT_PACKS[0].questCount],undefined);
   await send('Page.reload',{ignoreCache:true});await sleep(500);await ready();assert.equal((await snapshot()).levelIndex,CONTENT_PACKS[0].questCount-1);assert.deepEqual((await snapshot()).progress,won.progress);
-  results.push({viewport,height,pagination:[1,6,7,12,103],adventures:40,multipleSkies:true,accessPreserved:true,browsingIsolated:true,lockedAdventure:true,replay:true,completion:true,noVerticalOverflow:true});
+  results.push({viewport,height,pagination:[1,6,7,12,103],adventures:40,multipleSkies:true,accessPreserved:true,browsingIsolated:true,lockedAdventure:true,replay:true,noPrematureCompletion:true,noVerticalOverflow:true});
  }
  assert.deepEqual(errors,[]);const report={results,uncaughtErrors:errors};if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }finally{await send('Browser.close')}
