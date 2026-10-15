@@ -73,4 +73,8 @@ assert.ok(ui.includes("try{canonicalVictoryOutbox.acknowledge(ownerId,q.id)}catc
 assert.ok(ui.includes("locallySaved=!!lumenUser&&canonicalVictoryOutbox.pending(lumenUser.id).some(entry=>entry.questId===q.id)"),"pending message checks durable local intent");
 assert.ok(ui.includes("Victoire conservée sur cet appareil, en attente de synchronisation."),"saved intent has honest pending copy");
 assert.ok(ui.includes("la conservation locale n'est pas confirmée"),"failed storage write never falsely claims durability");
+assert.ok(ui.includes("async function retryPendingCanonicalOutboxOnReconnect()"),"recover pending wins on reconnection");
+assert.ok(ui.includes("void retryPendingCanonicalOutboxOnReconnect();"),"online and PWA resume initiate retry");
+assert.ok(ui.includes("canonicalOutboxRetryInFlight=true"),"replay has concurrent retry guard");
+assert.ok(ui.includes("if(!cloudProfileDirty&&!cloudProfileBusy)location.reload();"),"reload avoids overwriting dirty local profile");
 console.log("Canonical victory outbox retains failure and isolates player identities");
