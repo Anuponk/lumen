@@ -25,4 +25,11 @@ outbox.enqueue("player-b","quest-002",reward);
 await replayCanonicalVictoryOutbox(outbox,"player-a",async()=>{calls++;return {profile:{canonicalQuestState:{'quest-002':{solved:true}}}}},{sessionValid:()=>false});
 assert.equal(outbox.pending("player-a").length,1,"session switch prevents replay");
 assert.equal(outbox.pending("player-b").length,1);
+
+const ui=(await import("node:fs")).readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
+assert.ok(ui.includes("const recovered=await replayCanonicalVictoryOutbox(canonicalVictoryOutbox,accountId,"),"hydration replays only current player's outbox");
+assert.ok(ui.includes("cloud=await loadVerifiedProfile(hydrationClient);"),"hydration refreshes verified cloud before installing");
+assert.ok(ui.includes("const pending=canonicalVictoryOutbox.enqueue(ownerId,q.id,reward);"),"victory intent persists before network");
+assert.ok(ui.includes("canonicalVictoryOutbox.acknowledge(ownerId,q.id);"),"victory ack clears only confirmed intent");
+
 console.log("Canonical victory outbox retains failure and isolates player identities");
