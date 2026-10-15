@@ -316,6 +316,13 @@ function retryPendingCloudWriteOnReconnect(){
  scheduleCloudProfile();
 }
 window.addEventListener("online",retryPendingCloudWriteOnReconnect);
+// Returning to an installed PWA does not necessarily dispatch an online event.
+// Retry only the same recoverable errors, once the document is visible and
+// the browser reports connectivity. Never attempt a divergent snapshot.
+document.addEventListener("visibilitychange",()=>{
+ if(document.visibilityState==="visible"&&navigator.onLine!==false)
+  retryPendingCloudWriteOnReconnect();
+});
 const {loadLumenProgress,saveLumenProgress}=createLocalPersistence(localStorage,()=>lumenProgress,{progressKey:qaActive?"lumenQaProgressV1":"lumenProgressV1",onSave:scheduleCloudProfile});
 const persistenceModel={
 get lumenSupabase(){return lumenSupabase},set lumenSupabase(value){lumenSupabase=value},
