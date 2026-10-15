@@ -95,12 +95,8 @@ export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit
  notice.innerHTML='<div><strong id="adventureNoticeTitle"></strong><p id="adventureNoticeCopy"></p><button id="adventureNext" hidden>Découvrir l’Aventure suivante</button><button id="adventureNoticeClose">Compris</button></div>';sheet.appendChild(notice);
  let selection={},view='overview',selectedConstellation=null,noticeOrigin=null;
  const element=id=>document.getElementById(id);
- const completed=c=>c.canonicalOnly
- ?getCanonicalQuests(c.id).length===10&&getCanonicalQuests(c.id).every(getCanonicalSolved)
- :Array.from({length:c.questCount},(_,i)=>getSolved(c.questStart+i)).every(Boolean);
- const unlocked=(entry,pack)=>entry.canonicalOnly
-  ?!!entry.accessible&&getCanonicalQuests(entry.id).some(q=>getCanonicalAvailable(q)||getCanonicalSolved(q))
-  :constellationUnlocked(entry,pack,getSolved,getQuest);
+ const completed=c=>{const quests=getCanonicalQuests(c.id);return quests.length===10&&quests.every(getCanonicalSolved)};
+ const unlocked=(entry,pack)=>!!entry.accessible&&getCanonicalQuests(entry.id).some(q=>getCanonicalAvailable(q)||getCanonicalSolved(q));
  function state(pack){const done=pack.constellations.filter(completed).length;const quests=getCanonicalPackQuests(pack.id);return !pack.accessible?'Verrouillée':quests.length===100&&quests.every(getCanonicalSolved)?'Terminée':pack.id===current?.active?.id?'En cours':'À découvrir'}
  let current=skySelection(getModel(),selection,getQuest());
  function setView(next){view=next;tabs.hidden=next==='detail';pages.hidden=next==='detail'||current.pages<=1;detail.hidden=next!=='detail';renderCanonicalDetail()}
