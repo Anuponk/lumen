@@ -306,6 +306,16 @@ function scheduleCloudProfile(){
  if(cloudProfileTimer!==null)clearTimeout(cloudProfileTimer);
  cloudProfileTimer=setTimeout(()=>{cloudProfileTimer=null;flushCloudProfile()},1800);
 }
+// Reconnect only retries a previously failed write. Never replay arbitrary
+// unsynced checkpoints: those require reconciliation against verified cloud.
+function retryPendingCloudWriteOnReconnect(){
+ if(qaActive||!lumenUser||!lumenSupabase||!cloudProfileReady)return;
+ if(!["network","legacy_mirror"].includes(cloudProfileFailure?.reason))return;
+ if(cloudProfileBusy||cloudProfileTimer!==null)return;
+ recordCloudDiagnostic("flush_retry_online",{reason:cloudProfileFailure.reason});
+ scheduleCloudProfile();
+}
+window.addEventListener("online",retryPendingCloudWriteOnReconnect);
 const {loadLumenProgress,saveLumenProgress}=createLocalPersistence(localStorage,()=>lumenProgress,{progressKey:qaActive?"lumenQaProgressV1":"lumenProgressV1",onSave:scheduleCloudProfile});
 const persistenceModel={
 get lumenSupabase(){return lumenSupabase},set lumenSupabase(value){lumenSupabase=value},
