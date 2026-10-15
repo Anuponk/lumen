@@ -1681,7 +1681,8 @@ async function celebrateSuccess(){
  const generatedQuest=levelIndex>=campaignQuestCount();
  const skyEarnedBefore=skyStarsEarned();
  lumenProgress.solved[levelIndex]=1;
- const playedPack=packForLegacyQuest(levelIndex);adventurePending=firstCompletion&&playedPack&&!isCampaignFinalQuest(levelIndex)&&canonicalQuestList().filter(q=>q.packId===playedPack.id).every(q=>questIsCompleted(lumenProgress,q.id))?playedPack:null;
+ const playedPack=packForLegacyQuest(levelIndex);const adventureQuests=playedPack?canonicalQuestList().filter(q=>q.packId===playedPack.id):[];
+ adventurePending=firstCompletion&&playedPack&&!isCampaignFinalQuest(levelIndex)&&adventureQuests.length>0&&adventureQuests.every(q=>questIsCompleted(lumenProgress,q.id))?playedPack:null;
  endgamePending=firstCompletion&&isCampaignFinalQuest(levelIndex)&&isCampaignComplete(lumenProgress.solved);
  if(firstCompletion&&!generatedQuest)lumenProgress.skyScore=Math.min(SKY_TARGET,skyEarnedBefore+skyStarsForGrid(levelIndex));
  if(firstCompletion)lumenProgress.xp=(lumenProgress.xp||0)+10;
