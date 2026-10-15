@@ -57,7 +57,10 @@ try{
   current=await snapshot();assert.equal(current.levelIndex,campaignQuestCount()-1);
   assert.equal(current.progress.skyScore,SKY_TARGET-skyStarsForGrid(campaignQuestCount()-1),'Restore recovers extension stars from an old capped save');
   await evaluate('(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');
-  await until('!document.getElementById("skyReveal").hidden');await click('skyRevealContinue');
+  await until('!document.getElementById("skyReveal").hidden');
+  await until('!document.getElementById("skyRevealResults").hidden');
+  await evaluate('document.getElementById("skyRevealNext").scrollIntoView({block:"center",behavior:"instant"})');
+  await click('skyRevealNext');
   await until('!document.getElementById("endgameOverlay").hidden');
   current=await snapshot();assert.equal(current.levelIndex,campaignQuestCount()-1);assert.equal(current.progress.skyScore,SKY_TARGET);
   assert.equal(current.progress.badges.historical,1);assert.equal(current.progress.badges.master,1);
