@@ -27,7 +27,9 @@ try{
   await until('!document.getElementById("skyReveal").hidden');
   await until('!document.getElementById("skyRevealResults").hidden');
   const won=await snapshot();assert.equal(won.progress.solved[99],1);
+  await evaluate('document.getElementById("skyRevealNext").scrollIntoView({block:"center",behavior:"instant"})');
   await click('skyRevealNext');
+  await until('(lumenDiagnostics.snapshot().levelIndex!==99)||!document.getElementById("skyReveal").hidden');
   let current=await snapshot();
   assert.equal(current.levelIndex,100,'Quest 100 celebration continues to quest 101: '+JSON.stringify(await evaluate('({qa:new URL(location.href).searchParams.get("qa"),offerHidden:document.getElementById("accountOptin").hidden,successVisible:document.getElementById("successOverlay").classList.contains("show"),mapHidden:document.getElementById("mapModal").hidden,active:document.activeElement?.id})')));
   const [size,slot]=CAMPAIGN_SIZE_SCHEDULE[100];
