@@ -322,7 +322,7 @@ function scheduleCloudProfile(){
 // had no pending dirty snapshot. Only the signed-in session may replay it.
 let canonicalOutboxRetryInFlight=false;
 async function retryPendingCanonicalOutboxOnReconnect(){
- if(canonicalOutboxRetryInFlight||qaActive||!lumenUser||!lumenSupabase||!cloudProfileReady||cloudProfileBusy||cloudProfileDirty)return;
+ if(canonicalOutboxRetryInFlight||qaActive||!lumenUser||!lumenSupabase||!cloudProfileReady||cloudProfileBusy||cloudProfileDirty||canonicalActiveQuest)return;
  const userId=lumenUser.id,client=lumenSupabase;
  const sessionValid=()=>lumenUser?.id===userId&&lumenSupabase===client&&!qaActive&&cloudProfileReady;
  let remaining;
