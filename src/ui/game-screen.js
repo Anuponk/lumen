@@ -159,7 +159,21 @@ async function flushCloudProfile(){
    preserveUnsyncedCloudProgress("save-failed");
    try{
     const remote=await loadVerifiedProfile(lumenSupabase);
-    if(remote && sameCloudProfile(remote,current)){cloudProfileBaseline=remote;cloudProfileFailure=null;return true}
+    if(remote && sameCloudProfile(remote,current)){
+     // A matching snapshot does not prove that the secondary progress mirror
+     // was saved. Apply the same verification as the normal successful path.
+     cloudProfileBaseline=remote;
+     const mirror=await verifyLegacyProgressMirror();
+     if(!mirror.ok){
+      cloudProfileFailure={reason:"legacy_mirror",detail:mirror.reason};
+      recordCloudDiagnostic("legacy_mirror_failed",{kind:mirror.reason,pending:Number(mirror.pending||0)});
+      preserveUnsyncedCloudProgress("legacy-mirror-failed");
+      return false;
+     }
+     cloudProfileFailure=null;
+     recordCloudDiagnostic("flush_success",{profileReady:cloudProfileReady,legacyMirrorVerified:true,recoveredAfterError:true});
+     return true;
+    }
     if(remote && cloudProfileBaseline && !sameCloudProfile(remote,cloudProfileBaseline)){cloudProfileFailure={reason:"conflict"};recordCloudDiagnostic("flush_conflict",{kind:"version"});preserveUnsyncedCloudProgress("version-conflict")}
    }catch(readError){console.warn("Lumen cloud verification unavailable",readError)}
    console.warn("Lumen cloud save not confirmed; progress must not advance",e);

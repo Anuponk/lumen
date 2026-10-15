@@ -1,0 +1,11 @@
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const code=readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
+const recovered=code.match(/if\(remote && sameCloudProfile\(remote,current\)\)\{([\s\S]*?)\n    \}/)?.[1];
+assert.ok(recovered,"ambiguous cloud CAS success is handled");
+assert.match(recovered,/await verifyLegacyProgressMirror\(\)/,"legacy mirror must be checked before success");
+assert.match(recovered,/if\(!mirror\.ok\)\{/,"mirror failure must be explicit");
+assert.match(recovered,/preserveUnsyncedCloudProgress\("legacy-mirror-failed"\)/,"backup preserved on failed mirror");
+assert.match(recovered,/return false;/,"failed mirror must not report success");
+assert.match(recovered,/legacyMirrorVerified:true/,"success has proof of mirror");
+console.log("Cloud CAS retry requires legacy mirror verification before success");
