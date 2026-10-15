@@ -70,4 +70,7 @@ assert.ok(ui.includes("const pending=canonicalVictoryOutbox.enqueue(ownerId,q.id
 assert.ok(ui.indexOf("const pending=canonicalVictoryOutbox.enqueue(ownerId,q.id,reward);") < ui.indexOf("if(!(await confirmCloudReward()))return;",ui.indexOf("async function celebrateCanonicalSuccess()")),"persist before async cloud readiness");
 assert.ok(ui.includes("try{canonicalVictoryOutbox.acknowledge(ownerId,q.id)}catch(error)"),"failed local cleanup does not mask confirmed cloud victory");
 
+assert.ok(ui.includes("locallySaved=!!lumenUser&&canonicalVictoryOutbox.pending(lumenUser.id).some(entry=>entry.questId===q.id)"),"pending message checks durable local intent");
+assert.ok(ui.includes("Victoire conservée sur cet appareil, en attente de synchronisation."),"saved intent has honest pending copy");
+assert.ok(ui.includes("la conservation locale n'est pas confirmée"),"failed storage write never falsely claims durability");
 console.log("Canonical victory outbox retains failure and isolates player identities");

@@ -1716,7 +1716,13 @@ async function celebrateCanonicalSuccess(){
   }
  }catch(error){
   console.error("Canonical victory not saved",error);
-  msg.textContent="Sauvegarde de la quête impossible. Ta grille reste disponible, réessaie sans la perdre.";
+  let locallySaved=false;
+  try{locallySaved=!!lumenUser&&canonicalVictoryOutbox.pending(lumenUser.id).some(entry=>entry.questId===q.id)}catch(readError){
+   recordCloudDiagnostic("canonical_outbox_read_failed",{reason:"integrity"});
+  }
+  msg.textContent=locallySaved
+   ?"Victoire conservée sur cet appareil, en attente de synchronisation. Reconnecte-toi sur cet appareil pour la récupérer."
+   :"Sauvegarde de la quête impossible : la conservation locale n'est pas confirmée. Ne quitte pas cette grille et réessaie.";
   return;
  }
  // Install only the acknowledged profile; never optimistically mutate a
