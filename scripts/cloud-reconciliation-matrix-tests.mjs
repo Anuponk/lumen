@@ -29,6 +29,11 @@ for(const [name,local,cloud,expected] of [
  ['disjoint daily dates',{...base,daily:{dates:{a:true}}},{...base,daily:{dates:{b:true}}},'reconciled'],
  ['claimed reward',{...base,daily:{claimed:true}},{...base,daily:{claimed:false}},'reconciled'],
  ['ambiguous spending',{...base,daily:{shardsSpent:2}},{...base,daily:{shardsSpent:3}},'blocked'],
+ ['legacy grants local only',{...base,legacyAdventureAccess:['real-adventure-02']},base,'reconciled'],
+ ['legacy grants cloud only',base,{...base,legacyAdventureAccess:['real-adventure-03']},'cloud_dominant'],
+ ['legacy grants disjoint',{...base,legacyAdventureAccess:['real-adventure-02']},{...base,legacyAdventureAccess:['real-adventure-03']},'reconciled'],
+ ['legacy grants duplicate',{...base,legacyAdventureAccess:['real-adventure-02','real-adventure-02']},{...base,legacyAdventureAccess:['real-adventure-02']},'cloud_dominant'],
+ ['legacy grants malformed',{...base,legacyAdventureAccess:'real-adventure-02'},base,'blocked'],
  ['unclassified field',{...base,unknown:1},{...base,unknown:2},'blocked'],
  ['conflicting canonical reward',{...base,canonicalQuestState:{q:{solved:true,xp:2}}},{...base,canonicalQuestState:{q:{solved:true,xp:3}}},'blocked']
  ]){
@@ -36,6 +41,7 @@ for(const [name,local,cloud,expected] of [
   assert.equal(result.status,expected,name);
   if(expected==='blocked')assert.equal(writes,0,name+' must not overwrite cloud');
   if(expected==='reconciled')assert.ok(server.shards>=Math.max(local.shards,cloud.shards),name);
+  if(name==='legacy grants disjoint')assert.deepEqual(new Set(server.legacyAdventureAccess),new Set(['real-adventure-02','real-adventure-03']));
 }
 const failed=await scenario({...base,xp:20},base,{failCAS:true});
 assert.equal(failed.result.status,'error');
@@ -43,4 +49,4 @@ assert.deepEqual(failed.server,base,'CAS failure must not overwrite cloud');
 const map=new Map([['lumenProgressV1',JSON.stringify({...base,solved:{1:true,2:true}})]]);
 const storage={getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,String(v))};
 assert.throws(()=>installCloudProfileLocally(storage,base),/divergent/);
-console.log('Cloud reconciliation matrix: 11 data preservation and fault scenarios passed');
+console.log('Cloud reconciliation matrix: 16 data preservation and fault scenarios passed');
