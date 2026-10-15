@@ -13,7 +13,7 @@ export function createCanonicalVictoryOutbox(storage){
   if(existing){
    const saved=JSON.parse(existing);
    if(saved.userId!==userId||saved.questId!==questId)throw Error("Outbox identity mismatch");
-   if(JSON.stringify(saved.reward)!==JSON.stringify(reward)&&!saved.reward)throw Error("Outbox reward missing");
+   if(!saved.reward||typeof saved.reward!=="object")throw Error("Outbox reward missing");
    if(storage.getItem(k)!==existing)throw Error("Outbox changed while reading");
    return saved; // never change a stored attempt or reward in flight
   }
