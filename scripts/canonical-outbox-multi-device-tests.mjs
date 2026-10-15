@@ -34,4 +34,23 @@ assert.equal(remote.xp,15,"multi-device outbox replay credits only once");
 assert.equal(writes,1,"only one server CAS write");
 assert.equal(a.pending(user).length,0);
 assert.equal(b.pending(user).length,0);
+
+// Distinct offline victories from two devices must converge without either
+// snapshot overwriting the other, even if their commits race.
+const otherQuest=canonicalQuestList().find(q=>q.legacyIndex===null&&q.id!==quest.id);
+assert.ok(otherQuest,"second canonical quest exists");
+remote=structuredClone(baseline);writes=0;
+const deviceA=createCanonicalVictoryOutbox(storage()),deviceB=createCanonicalVictoryOutbox(storage());
+deviceA.enqueue(user,quest.id,reward);
+deviceB.enqueue(user,otherQuest.id,reward);
+await Promise.all([
+ replayCanonicalVictoryOutbox(deviceA,user,commit),
+ replayCanonicalVictoryOutbox(deviceB,user,commit)
+]);
+assert.equal(remote.canonicalQuestState[quest.id]?.solved,true,"first offline victory retained");
+assert.equal(remote.canonicalQuestState[otherQuest.id]?.solved,true,"second offline victory retained");
+assert.equal(remote.xp,30,"two different canonical victories credited exactly once");
+assert.equal(deviceA.pending(user).length,0);
+assert.equal(deviceB.pending(user).length,0);
+
 console.log("Multi-device offline outbox recovery credits canonical victory exactly once");
