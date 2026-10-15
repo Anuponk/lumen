@@ -96,9 +96,19 @@ export function mergeAutonomousWins(local,cloud){
  }
  return {ok:false};
 }
+// Legacy Adventure grants are monotonic identifiers, never a numeric campaign limit.
+// Malformed or contradictory representations must block rather than lose access.
+function mergeLegacyAdventureAccess(local,cloud){
+ const valid=value=>value==null||(Array.isArray(value)&&value.every(id=>typeof id==="string"&&id.length>0));
+ if(!valid(local)||!valid(cloud))return {ok:false};
+ if(local==null&&cloud==null)return {ok:true,value:undefined};
+ return {ok:true,value:[...new Set([...(cloud||[]),...(local||[])])]};
+}
 export function cloudSafelyCoversLocal(local,remote){
   if(!local || typeof local!=="object" || Array.isArray(local))return true;
   const cloud=validateCloudProfile(remote);
+  const grants=mergeLegacyAdventureAccess(local.legacyAdventureAccess,cloud.legacyAdventureAccess);
+  if(!grants.ok||grants.value?.some(id=>!cloud.legacyAdventureAccess?.includes(id)))return false;
   const autonomy=mergeAutonomousWins(local.autonomousWins,cloud.autonomousWins);
   if(!autonomy.ok||!sameCloudProfile(autonomy.value,cloud.autonomousWins??{}))return false;
   for(const field of ["shards","xp","skyScore"]){
@@ -362,11 +372,13 @@ export async function reconcileDominantLocalProfile(supabase,storage,remote){
  }
  // Unknown fields can contain non-repeatable transactions. Require equality
  // instead of silently selecting one profile's value.
- const monotonic=new Set(["solved","historyBackup","badges","stars","noHint","performances","canonicalQuestState","autonomousWins"]);
+ const monotonic=new Set(["solved","historyBackup","badges","stars","noHint","performances","canonicalQuestState","autonomousWins","legacyAdventureAccess"]);
  for(const key of new Set([...Object.keys(local),...Object.keys(cloud)])){
   if(monotonic.has(key)||["shards","xp","skyScore","daily","challenges"].includes(key))continue;
   if(!sameCloudProfile(local[key]??null,cloud[key]??null))return {status:"blocked",reason:"unclassified_field",fields:[key]};
  }
+ const grants=mergeLegacyAdventureAccess(local.legacyAdventureAccess,cloud.legacyAdventureAccess);
+ if(!grants.ok||!sameCloudProfile(grants.value??null,local.legacyAdventureAccess??null))return {status:"blocked",reason:"legacy_adventure_access_conflict",fields:["legacyAdventureAccess"]};
  const autonomy=mergeAutonomousWins(local.autonomousWins,cloud.autonomousWins);
  if(!autonomy.ok||!sameCloudProfile(autonomy.value,local.autonomousWins??{}))return {status:"blocked",reason:"autonomous_wins_conflict",fields:["autonomousWins"]};
  if(sameCloudProfile(local,cloud))return {status:"identical"};
@@ -438,10 +450,13 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
   if(!result.ok)return {status:"blocked",reason:"mutable_ledger",fields:[field]};
   merged[field]=result.value;
  }
- const safeFields=new Set(["solved","historyBackup","noHint","badges","stars","performances","canonicalQuestState","autonomousWins"]);
+ const safeFields=new Set(["solved","historyBackup","noHint","badges","stars","performances","canonicalQuestState","autonomousWins","legacyAdventureAccess"]);
  const autonomy=mergeAutonomousWins(local.autonomousWins,cloud.autonomousWins);
  if(!autonomy.ok)return {status:"blocked",reason:"autonomous_wins_conflict",fields:["autonomousWins"]};
  merged.autonomousWins=autonomy.value;
+ const grants=mergeLegacyAdventureAccess(local.legacyAdventureAccess,cloud.legacyAdventureAccess);
+ if(!grants.ok)return {status:"blocked",reason:"legacy_adventure_access_conflict",fields:["legacyAdventureAccess"]};
+ if(grants.value!==undefined)merged.legacyAdventureAccess=grants.value;
  const unknownDifferences=[];
  for(const field of new Set([...Object.keys(cloud),...Object.keys(local)])){
   if(safeFields.has(field)||["shards","xp","skyScore","daily","challenges"].includes(field))continue;
