@@ -50,6 +50,7 @@ const nodeSuites=[
  "canonical-constellation-catchup-tests.mjs",
  "canonical-ambiguous-ack-tests.mjs",
  "canonical-outbox-tests.mjs",
+ "canonical-outbox-multi-device-tests.mjs",
  "attempt-engine-tests.mjs",
  "performance-badge-tests.mjs",
  "daily-engagement-tests.mjs",
