@@ -37,12 +37,13 @@ export function createCanonicalVictoryOutbox(storage){
   }
   return entries.sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
  }
- function acknowledge(userId,questId){
+ function acknowledge(userId,questId,expectedReward){
   const k=key(userId,questId);
   const original=storage.getItem(k);
   if(original===null)return;
   const entry=JSON.parse(original);
   if(entry?.userId!==userId||entry?.questId!==questId)throw Error("Outbox acknowledgement identity mismatch");
+  if(expectedReward!==undefined&&JSON.stringify(entry.reward)!==JSON.stringify(expectedReward))throw Error("Outbox reward changed before acknowledgement");
   if(storage.getItem(k)!==original)throw Error("Outbox changed before acknowledgement");
   storage.removeItem(k);
   if(storage.getItem(k)!==null)throw Error("Outbox acknowledgement not removed");
@@ -57,7 +58,7 @@ export async function replayCanonicalVictoryOutbox(outbox,userId,commit,{session
    const result=await commit(entry.questId,entry.reward);
    if(!sessionValid())break;
    if(!result?.profile?.canonicalQuestState?.[entry.questId]?.solved)break;
-   outbox.acknowledge(userId,entry.questId);
+   outbox.acknowledge(userId,entry.questId,entry.reward);
    confirmed.push(result);
   }catch{break} // keep unacknowledged entries intact for next reconnect
  }

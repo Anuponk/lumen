@@ -50,6 +50,11 @@ const quotaOutbox=createCanonicalVictoryOutbox(quotaStorage);
 assert.throws(()=>quotaOutbox.enqueue("player-a","quest-quota",reward),/Storage full/);
 assert.equal(quotaOutbox.pending("player-a").some(x=>x.questId==="quest-quota"),false,"failed local write is never acknowledged");
 
+// A competing tab must not cause an acknowledgement to discard a different intent.
+outbox.enqueue("player-a","quest-race",reward);
+assert.throws(()=>outbox.acknowledge("player-a","quest-race",{stars:99}),/Outbox reward changed/);
+assert.ok(outbox.pending("player-a").some(x=>x.questId==="quest-race"),"old acknowledgement never deletes a replaced reward");
+
 const ui=(await import("node:fs")).readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
 assert.ok(ui.includes("const recovered=await replayCanonicalVictoryOutbox(canonicalVictoryOutbox,accountId,"),"hydration replays only current player's outbox");
 assert.ok(ui.includes("cloud=await loadVerifiedProfile(hydrationClient);"),"hydration refreshes verified cloud before installing");
