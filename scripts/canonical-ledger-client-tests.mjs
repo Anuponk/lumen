@@ -34,4 +34,6 @@ const unavailable={async rpc(name){
  throw Error(name);
 }};
 await assert.rejects(commitCanonicalVictoryViaLedger(unavailable,quest.id,reward),/unconfirmed/);
+const ui=await import("node:fs/promises").then(fs=>fs.readFile(new URL("../src/ui/game-screen.js",import.meta.url),"utf8"));
+assert.match(ui,/commitCanonicalVictoryViaLedger as commitCanonicalVictory/,"gameplay and outbox use transactional RPC");
 console.log("Ledger client confirms server results and never blind-retries ambiguous commits");
