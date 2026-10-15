@@ -2266,9 +2266,44 @@ function showSkyReveal(beforeEarned=null,checkpoint=null){
  }
  let lines=p.edges.map(e=>{let on=e[0]<p.lit&&e[1]<p.lit,newLine=on&&(e[0]===idx||e[1]===idx);return '<line class="sky-line '+(on?'on ':'')+(newLine?'new-line':'')+'" x1="'+p.pts[e[0]][0]+'" y1="'+p.pts[e[0]][1]+'" x2="'+p.pts[e[1]][0]+'" y2="'+p.pts[e[1]][1]+'"/>'}).join("");
  let stars=p.pts.map((v,i)=>'<circle class="sky-star '+(i<p.lit?'on ':'')+(i===idx?'new-star':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i===idx?6:i<p.lit?4:3)+'"/>').join("");
- canvas.innerHTML='<svg class="sky-reveal-svg" viewBox="0 0 290 115">'+(astronomicalPrimarySvg({id:CONTENT_CONSTELLATIONS[p.index]?.id},p.lit,p.count)||lines+stars)+'</svg><div>'+p.lit+' / '+p.count+' étoiles</div>';o.hidden=false;if(completedIndex>=0)celebrateConstellationReveal();
+ canvas.innerHTML='<svg class="sky-reveal-svg" viewBox="0 0 290 115">'+(astronomicalPrimarySvg({id:CONTENT_CONSTELLATIONS[p.index]?.id},p.lit,p.count)||lines+stars)+'</svg><div>'+p.lit+' / '+p.count+' étoiles</div>';o.hidden=false;
+ const result=document.getElementById("skyRevealResults"),continueButton=document.getElementById("skyRevealContinue");
+ const victory=document.getElementById("successOverlay");
+ const isNormalVictory=!!victory&&!document.getElementById("successNew")?.hidden&&!document.getElementById("successRetry")?.hidden;
+ if(result&&continueButton){
+  result.hidden=!isNormalVictory;
+  continueButton.hidden=isNormalVictory;
+  if(isNormalVictory){
+   document.getElementById("skyRevealTime").textContent=document.getElementById("successTime")?.textContent||"";
+   document.getElementById("skyRevealRewards").innerHTML=document.getElementById("successRewards")?.innerHTML||"";
+   document.getElementById("skyRevealRewards").className="sky-reveal-rewards "+(document.getElementById("successRewards")?.className||"");
+   const feedback=document.getElementById("skyRevealFeedback");
+   feedback.replaceChildren();
+   const source=document.getElementById("difficultyBox");
+   if(source&&!source.hidden){
+    const copy=source.cloneNode(true);copy.removeAttribute("id");
+    copy.querySelectorAll("button[data-rating]").forEach(b=>b.onclick=()=>source.querySelector('button[data-rating="'+b.dataset.rating+'"]')?.click());
+    feedback.appendChild(copy);
+   }
+   for(const [target,sourceId] of [["skyRevealNext","successNew"],["skyRevealSky","successSky"],["skyRevealShare","successShare"],["skyRevealRetry","successRetry"]]){
+    const button=document.getElementById(target),original=document.getElementById(sourceId);
+    button.hidden=!!original?.hidden;
+    button.onclick=()=>{closeUnifiedSkyReveal();original?.click()};
+   }
+  }
+ }
+ if(completedIndex>=0)celebrateConstellationReveal();
 }
-document.getElementById("skyRevealContinue").onclick=()=>{const o=document.getElementById("skyReveal");const completedReveal=o.classList.contains("complete-celebration");o.hidden=true;o.classList.remove("complete-celebration");o.querySelectorAll(".sky-bravo").forEach(x=>x.remove());document.querySelectorAll(".sky-spark").forEach(x=>x.remove());if(adventurePending){const completed=adventurePending;adventurePending=null;hideSuccess();openJourneyMap();skyNavigation.showCompletion(completed);return}if(endgamePending){endgamePending=false;showEndgameCelebration();return}document.getElementById("successOverlay").classList.add("show");if(completedReveal)setTimeout(maybeOfferAccount,450)};
+function closeUnifiedSkyReveal(){
+ const o=document.getElementById("skyReveal");
+ o.hidden=true;o.classList.remove("complete-celebration");
+ o.querySelectorAll(".sky-bravo").forEach(x=>x.remove());
+ document.querySelectorAll(".sky-spark").forEach(x=>x.remove());
+ if(adventurePending){const completed=adventurePending;adventurePending=null;hideSuccess();openJourneyMap();skyNavigation.showCompletion(completed);return true}
+ if(endgamePending){endgamePending=false;showEndgameCelebration();return true}
+ return false;
+}
+document.getElementById("skyRevealContinue").onclick=()=>{const completedReveal=document.getElementById("skyReveal").classList.contains("complete-celebration");if(closeUnifiedSkyReveal())return;document.getElementById("successOverlay").classList.add("show");if(completedReveal)setTimeout(maybeOfferAccount,450)};
 function renderXP(){let q=bonusChallengeFor(levelIndex),m=milestoneFor(levelIndex),ch=m||q,box=document.getElementById("challengeBanner");if(!box)return;box.hidden=!ch;if(ch){let done=q&&lumenProgress.stars[q.id];document.getElementById("challengeTitle").textContent=ch.title+(done?" · ★":"");document.getElementById("challengeCopy").textContent=done?"Bonus obtenu":ch.copy}}
 
 function refreshJourney(){awards();let sky=constellationProgress(),earned=skyStarsEarned(),completed=CONSTELLATIONS.slice(0,sky.index).length;
