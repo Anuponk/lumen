@@ -25,10 +25,9 @@ try{
   assert.equal((await snapshot()).levelIndex,99,'Unsolved quest 100 cannot be skipped');
   await evaluate('(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');
   await until('!document.getElementById("skyReveal").hidden');
-  await click('skyRevealContinue');
-  await until('document.getElementById("successOverlay").classList.contains("show")');
+  await until('!document.getElementById("skyRevealResults").hidden');
   const won=await snapshot();assert.equal(won.progress.solved[99],1);
-  await evaluate('document.getElementById("successNew").click()');
+  await click('skyRevealNext');
   let current=await snapshot();
   assert.equal(current.levelIndex,100,'Quest 100 celebration continues to quest 101: '+JSON.stringify(await evaluate('({qa:new URL(location.href).searchParams.get("qa"),offerHidden:document.getElementById("accountOptin").hidden,successVisible:document.getElementById("successOverlay").classList.contains("show"),mapHidden:document.getElementById("mapModal").hidden,active:document.activeElement?.id})')));
   const [size,slot]=CAMPAIGN_SIZE_SCHEDULE[100];
