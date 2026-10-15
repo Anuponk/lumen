@@ -47,6 +47,7 @@ const nodeSuites=[
  "module-structure-tests.mjs",
  "responsive-architecture-tests.mjs",
  "locked-quest-icon-tests.mjs",
+ "canonical-constellation-catchup-tests.mjs",
  "attempt-engine-tests.mjs",
  "performance-badge-tests.mjs",
  "daily-engagement-tests.mjs",

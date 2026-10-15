@@ -1,0 +1,24 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import {canonicalQuestList,canonicalConstellationCatchupAvailable} from "../src/campaign/canonical-quests.js";
+
+const quests=canonicalQuestList();
+const verseau=quests.filter(q=>q.constellationId==="real-21");
+assert.equal(verseau.length,10);
+const legacy=verseau.filter(q=>q.legacyIndex!==null);
+const added=verseau.filter(q=>q.legacyIndex===null);
+assert.equal(legacy.length,8);
+assert.equal(added.length,2);
+const solved=Object.fromEntries(legacy.map(q=>[q.legacyIndex,1]));
+const progress={solved,canonicalQuestState:{}};
+assert.equal(canonicalConstellationCatchupAvailable(added[0],progress),true,"Verseau 9 playable after historical completion");
+assert.equal(canonicalConstellationCatchupAvailable(added[1],progress),false,"Verseau 10 waits for Verseau 9");
+progress.canonicalQuestState[added[0].id]={solved:true};
+assert.equal(canonicalConstellationCatchupAvailable(added[1],progress),true,"Verseau 10 unlocked after Verseau 9");
+assert.equal(canonicalConstellationCatchupAvailable(legacy[0],progress),false,"Historical quest is not an inserted catch-up");
+const incomplete={solved:{...solved},canonicalQuestState:{}};
+delete incomplete.solved[legacy[0].legacyIndex];
+assert.equal(canonicalConstellationCatchupAvailable(added[0],incomplete),false,"No premature unlock when original quests unfinished");
+const screen=fs.readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
+assert.match(screen,/canonicalConstellationCatchupAvailable\(quest,lumenProgress\)/,"The UI must use catch-up eligibility");
+console.log("Canonical constellation catch-up rules passed, including Verseau");
