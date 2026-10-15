@@ -1695,12 +1695,13 @@ async function celebrateCanonicalSuccess(){
  try{
   if(qaActive){committed=acknowledgeCanonicalVictory(lumenProgress,q.id,reward)}
   else{
-   if(!lumenUser||!cloudProfileReady)throw Error("Compte synchronisé requis");
-   if(!(await confirmCloudReward()))return;
-   // Persist a verified intent before the first network request. A lost CAS
-   // acknowledgement leaves the same reward safely queued for another try.
+   if(!lumenUser)throw Error("Compte requis pour sauvegarder la victoire");
+   // Even when cloud hydration is unavailable, capture the victory BEFORE
+   // awaiting readiness. Closing an offline PWA must not lose its sole intent.
    const ownerId=lumenUser.id;
    const pending=canonicalVictoryOutbox.enqueue(ownerId,q.id,reward);
+   if(!cloudProfileReady)throw Error("Victoire conservée localement, cloud non prêt");
+   if(!(await confirmCloudReward()))return;
    if(lumenUser?.id!==ownerId)throw Error("Compte modifié pendant la sauvegarde");
    committed=await commitCanonicalVictory(lumenSupabase,q.id,pending.reward);
    if(lumenUser?.id!==ownerId)throw Error("Compte modifié pendant la sauvegarde");
