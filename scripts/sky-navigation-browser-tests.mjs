@@ -56,7 +56,7 @@ try{
   await evaluate(`localStorage.setItem('lumenQaProgressV1',JSON.stringify({solved:Object.fromEntries(Array.from({length:${CONTENT_PACKS[0].questCount-1}},(_,i)=>[i,1])),badges:{historical:1}}));localStorage.removeItem('lumenActiveAttemptV1')`);
   await send('Page.reload',{ignoreCache:true});await sleep(500);await ready();await acknowledgeLearningMilestones(evaluate);
   assert.equal((await snapshot()).levelIndex,CONTENT_PACKS[0].questCount-1);
-  await evaluate('(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');await until('!document.getElementById("skyReveal").hidden');await click('#skyRevealContinue');
+  await evaluate('(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');await until('!document.getElementById("skyReveal").hidden');await until('!document.getElementById("skyRevealResults").hidden');await evaluate('document.getElementById("skyRevealNext").scrollIntoView({block:"center",behavior:"instant"})');await click('#skyRevealNext');
   assert.match(await evaluate('document.getElementById("adventureNoticeTitle").textContent'),/Aventure terminée/);await evaluate('document.getElementById("adventureNext").click()');assert.match(await evaluate('document.getElementById("adventureNoticeCopy").textContent'),/verrouillée/);await click('#adventureNoticeClose');
   const won=await snapshot();assert.equal(won.progress.solved[CONTENT_PACKS[0].questCount],undefined);
   await send('Page.reload',{ignoreCache:true});await sleep(500);await ready();assert.equal((await snapshot()).levelIndex,CONTENT_PACKS[0].questCount-1);assert.deepEqual((await snapshot()).progress,won.progress);
