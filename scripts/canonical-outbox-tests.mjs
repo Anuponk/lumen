@@ -26,6 +26,18 @@ await replayCanonicalVictoryOutbox(outbox,"player-a",async()=>{calls++;return {p
 assert.equal(outbox.pending("player-a").length,1,"session switch prevents replay");
 assert.equal(outbox.pending("player-b").length,1);
 
+// A corrupt checkpoint is a recoverable incident, never proof that no win exists.
+const corruptKey="lumenCanonicalVictoryOutboxV1:player-a:quest-corrupt";
+values.set(corruptKey,"{invalid json");
+assert.throws(()=>outbox.pending("player-a"),/Outbox integrity check failed/);
+assert.equal(values.get(corruptKey),"{invalid json","corrupt checkpoint is never destroyed");
+values.delete(corruptKey);
+const invalidKey="lumenCanonicalVictoryOutboxV1:player-a:quest-invalid";
+values.set(invalidKey,JSON.stringify({userId:"player-b",questId:"quest-invalid",reward}));
+assert.throws(()=>outbox.pending("player-a"),/Outbox integrity check failed/);
+assert.ok(values.has(invalidKey),"cross-account mismatch remains available for investigation");
+values.delete(invalidKey);
+
 const ui=(await import("node:fs")).readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
 assert.ok(ui.includes("const recovered=await replayCanonicalVictoryOutbox(canonicalVictoryOutbox,accountId,"),"hydration replays only current player's outbox");
 assert.ok(ui.includes("cloud=await loadVerifiedProfile(hydrationClient);"),"hydration refreshes verified cloud before installing");
