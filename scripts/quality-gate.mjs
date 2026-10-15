@@ -51,6 +51,7 @@ const nodeSuites=[
  "canonical-ambiguous-ack-tests.mjs",
  "canonical-outbox-tests.mjs",
  "canonical-outbox-multi-device-tests.mjs",
+ "canonical-ledger-contract-tests.mjs",
  "attempt-engine-tests.mjs",
  "performance-badge-tests.mjs",
  "daily-engagement-tests.mjs",

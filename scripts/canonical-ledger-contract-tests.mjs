@@ -1,0 +1,15 @@
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const sql=readFileSync(new URL("../supabase/migrations/20261015_canonical_reward_ledger.sql",import.meta.url),"utf8");
+const seed=readFileSync(new URL("./generate-canonical-ledger-seed.mjs",import.meta.url),"utf8");
+assert.match(sql,/primary key \(user_id,quest_id\)/,"event deduplicated by player and quest");
+assert.match(sql,/where user_id=v_uid for update/,"serialized player transactions");
+assert.match(sql,/references lumen\.canonical_quest_allowlist/,"quest allowlist is server authority");
+assert.match(sql,/if exists\(select 1 from lumen\.canonical_reward_events/,"no double credit on divergent ledger");
+assert.match(sql,/if coalesce\(v_payload->'canonicalQuestState'->p_quest_id->>'solved','false'\)='true'/,"legacy committed quest not retrocredited");
+assert.match(sql,/revoke all on lumen\.canonical_reward_events from public, anon, authenticated/);
+assert.match(sql,/grant execute on function public\.lumen_commit_canonical_victory\(text,jsonb,jsonb\) to authenticated/);
+assert.match(seed,/legacyIndex===null/,"server cannot credit legacy quest via this endpoint");
+assert.match(seed,/new Set\(ids\)\.size!==ids\.length/);
+assert.match(sql,/insert into lumen\.canonical_reward_events[\s\S]*update lumen\.profile_snapshots/,"ledger and XP must update atomically");
+console.log("Canonical server ledger SQL contract and allowlist guardrails passed");
