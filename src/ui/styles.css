@@ -1000,3 +1000,19 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 #streakLossModal{pointer-events:auto;isolation:isolate}
 #streakLossModal .streak-loss-content{pointer-events:auto;overflow:visible}
 #streakLossRestart{position:relative;z-index:1;pointer-events:auto;touch-action:manipulation;cursor:pointer;min-height:52px}
+
+/* Unified victory: preserve the immersive sky animation while showing rewards and actions. */
+.sky-reveal-card{max-height:calc(100dvh - 30px);overflow-y:auto;scrollbar-width:none}
+.sky-reveal-card::-webkit-scrollbar{display:none}
+.sky-reveal-results{display:grid;gap:10px;margin:8px auto 0;max-width:420px}
+.sky-reveal-results[hidden],.sky-reveal #skyRevealContinue[hidden]{display:none!important}
+.sky-reveal-time{font-size:23px;font-weight:900;color:#effaff}
+.sky-reveal-rewards{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.sky-reveal-rewards .success-reward{background:#152b3d;color:#d8f7ff;border:1px solid #37627b;border-radius:12px;padding:8px;display:grid;gap:3px;min-width:80px;font-size:12px}
+.sky-reveal-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sky-reveal-actions button{font-size:12px;min-width:0;padding:10px 4px;border:1px solid #36526b;border-radius:13px;background:#14253b;color:#e8f6ff}
+.sky-reveal-actions .sky-reveal-primary{grid-column:1/-1;background:linear-gradient(100deg,#61d9f6,#9985ff);color:#07182a;font-size:16px;font-weight:900}
+.sky-reveal-results .difficulty-box{margin:0;background:transparent;color:#cfe9f5}
+.sky-reveal-results .difficulty-choices{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+.sky-reveal-results .difficulty-choices button{font-size:11px}
+@media(max-height:700px){.sky-reveal-svg{height:150px;margin:5px 0}.sky-reveal-title{font-size:22px}.sky-reveal-name{font-size:15px}.sky-reveal-results{gap:5px}.sky-reveal-actions button{padding:7px 3px}}
