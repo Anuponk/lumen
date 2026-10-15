@@ -337,7 +337,7 @@ async function retryPendingCanonicalOutboxOnReconnect(){
    recordCloudDiagnostic("canonical_outbox_reconnect_replayed",{count:confirmed.length});
    // Do not overwrite in-memory local progress that could include an unsynced
    // play. Re-run the normal non-destructive hydration on next navigation.
-   if(!cloudProfileDirty&&!cloudProfileBusy)location.reload();
+   if(!cloudProfileDirty&&!cloudProfileBusy&&!canonicalActiveQuest)location.reload();
   }
  }catch(error){recordCloudDiagnostic("canonical_outbox_reconnect_failed",{reason:"retry"})}
  finally{canonicalOutboxRetryInFlight=false}
