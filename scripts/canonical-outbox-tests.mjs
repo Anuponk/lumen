@@ -55,11 +55,19 @@ outbox.enqueue("player-a","quest-race",reward);
 assert.throws(()=>outbox.acknowledge("player-a","quest-race",{stars:99}),/Outbox reward changed/);
 assert.ok(outbox.pending("player-a").some(x=>x.questId==="quest-race"),"old acknowledgement never deletes a replaced reward");
 
+// A cloud-confirmed victory must remain acknowledged even if local cleanup
+// fails; a retained intent is safe to replay because server CAS is idempotent.
+const failingRemove={...storage,removeItem(){throw Error("remove blocked")}};
+const blocked=createCanonicalVictoryOutbox(failingRemove);
+blocked.enqueue("player-a","quest-confirmed",reward);
+assert.throws(()=>blocked.acknowledge("player-a","quest-confirmed"),/remove blocked/);
+assert.ok(blocked.pending("player-a").some(x=>x.questId==="quest-confirmed"));
+
 const ui=(await import("node:fs")).readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
 assert.ok(ui.includes("const recovered=await replayCanonicalVictoryOutbox(canonicalVictoryOutbox,accountId,"),"hydration replays only current player's outbox");
 assert.ok(ui.includes("cloud=await loadVerifiedProfile(hydrationClient);"),"hydration refreshes verified cloud before installing");
 assert.ok(ui.includes("const pending=canonicalVictoryOutbox.enqueue(ownerId,q.id,reward);"),"victory intent persists before network");
 assert.ok(ui.indexOf("const pending=canonicalVictoryOutbox.enqueue(ownerId,q.id,reward);") < ui.indexOf("if(!(await confirmCloudReward()))return;",ui.indexOf("async function celebrateCanonicalSuccess()")),"persist before async cloud readiness");
-assert.ok(ui.includes("canonicalVictoryOutbox.acknowledge(ownerId,q.id);"),"victory ack clears only confirmed intent");
+assert.ok(ui.includes("try{canonicalVictoryOutbox.acknowledge(ownerId,q.id)}catch(error)"),"failed local cleanup does not mask confirmed cloud victory");
 
 console.log("Canonical victory outbox retains failure and isolates player identities");
