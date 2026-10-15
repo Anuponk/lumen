@@ -31,7 +31,8 @@ export function createCanonicalVictoryOutbox(storage){
    if(!k?.startsWith(prefixForUser))continue;
    try{
     const value=JSON.parse(storage.getItem(k));
-    if(value?.userId===userId&&k===key(userId,value.questId))entries.push(value);
+    if(value?.userId!==userId||!value.questId||k!==key(userId,value.questId)||!value.reward)throw Error("Outbox identity or reward mismatch");
+    entries.push(value);
    }catch(error){throw Error("Outbox integrity check failed: "+String(error?.message||"invalid entry"))} // Never silently skip a saved victory
   }
   return entries.sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
