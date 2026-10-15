@@ -59,6 +59,19 @@ export function canonicalNextUnsolved(solvedLegacy={},solvedIds={}){
  return all.find(q=>!(q.legacyIndex!==null?solvedLegacy[q.legacyIndex]:solvedIds[q.id]))??null;
 }
 
+// A player who already finished a constellation's original quests may catch up
+// on newly inserted quests there without being held behind additions elsewhere.
+// Never grant a completion: each inserted quest still requires earlier quests
+// within its own constellation, including earlier inserted ones.
+export function canonicalConstellationCatchupAvailable(quest,progress={},quests=all){
+ if(!quest||quest.legacyIndex!==null)return false;
+ const group=quests.filter(q=>q.constellationId===quest.constellationId&&q.packId===quest.packId);
+ const historical=group.filter(q=>q.legacyIndex!==null);
+ if(!historical.length||!historical.every(q=>!!progress.solved?.[q.legacyIndex]))return false;
+ return group.filter(q=>q.ordinal<quest.ordinal).every(q=>
+  q.legacyIndex!==null?!!progress.solved?.[q.legacyIndex]:!!progress.canonicalQuestState?.[q.id]?.solved);
+}
+
 // User-facing catalogue numbering is deliberately separate from legacy save keys.
 // This view is safe for preview/admin surfaces before a gameplay cutover.
 export function canonicalDisplayForLegacy(index){
