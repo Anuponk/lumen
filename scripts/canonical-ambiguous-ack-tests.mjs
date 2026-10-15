@@ -44,4 +44,32 @@ function harness({commitThenDrop=false,alwaysReject=false}={}){
  assert.equal(h.writes,0);
  assert.equal(h.cloud.xp,0,"failed writes cannot claim reward");
 }
-console.log("Canonical victory ambiguous acknowledgements are verified without duplicate rewards");
+
+// Two devices start from the same cloud baseline. Only one CAS may succeed;
+// both clients must eventually acknowledge the identical persisted reward.
+{
+ let remote=structuredClone(baseline),writes=0;
+ let queued=0;
+ const arrivals=[];
+ const barrier=()=>new Promise(resolve=>{arrivals.push(resolve);if(++queued===2)arrivals.forEach(done=>done())});
+ const supabase={async rpc(name,args){
+  if(name==="lumen_restore_profile")return {data:structuredClone(remote),error:null};
+  if(name==="lumen_cas_profile"){
+   await barrier();
+   if(!sameCloudProfile(remote,args.p_expected))return {data:false,error:null};
+   remote=structuredClone(args.p_payload);writes++;
+   return {data:true,error:null};
+  }
+  throw Error(name);
+ }};
+ const results=await Promise.all([
+  commitCanonicalVictory(supabase,quest.id,reward),
+  commitCanonicalVictory(supabase,quest.id,reward)
+ ]);
+ assert.equal(writes,1,"only one CAS wins across two devices");
+ assert.equal(remote.xp,15,"one canonical reward across concurrent devices");
+ assert.equal(results.filter(x=>x.newlyCompleted).length,1);
+ assert.equal(results.filter(x=>x.alreadySaved).length,1);
+}
+
+console.log("Canonical victories survive lost acknowledgements and competing devices without duplicate rewards");
