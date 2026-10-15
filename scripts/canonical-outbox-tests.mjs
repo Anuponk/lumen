@@ -30,6 +30,7 @@ const ui=(await import("node:fs")).readFileSync(new URL("../src/ui/game-screen.j
 assert.ok(ui.includes("const recovered=await replayCanonicalVictoryOutbox(canonicalVictoryOutbox,accountId,"),"hydration replays only current player's outbox");
 assert.ok(ui.includes("cloud=await loadVerifiedProfile(hydrationClient);"),"hydration refreshes verified cloud before installing");
 assert.ok(ui.includes("const pending=canonicalVictoryOutbox.enqueue(ownerId,q.id,reward);"),"victory intent persists before network");
+assert.ok(ui.indexOf("const pending=canonicalVictoryOutbox.enqueue(ownerId,q.id,reward);") < ui.indexOf("if(!(await confirmCloudReward()))return;",ui.indexOf("async function celebrateCanonicalSuccess()")),"persist before async cloud readiness");
 assert.ok(ui.includes("canonicalVictoryOutbox.acknowledge(ownerId,q.id);"),"victory ack clears only confirmed intent");
 
 console.log("Canonical victory outbox retains failure and isolates player identities");
