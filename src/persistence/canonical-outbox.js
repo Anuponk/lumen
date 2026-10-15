@@ -13,6 +13,8 @@ export function createCanonicalVictoryOutbox(storage){
   if(existing){
    const saved=JSON.parse(existing);
    if(saved.userId!==userId||saved.questId!==questId)throw Error("Outbox identity mismatch");
+   if(!saved.reward||typeof saved.reward!=="object")throw Error("Outbox reward missing");
+   if(storage.getItem(k)!==existing)throw Error("Outbox changed while reading");
    return saved; // never change a stored attempt or reward in flight
   }
   const value=JSON.stringify({userId,questId,reward,createdAt:new Date().toISOString()});
@@ -29,13 +31,19 @@ export function createCanonicalVictoryOutbox(storage){
    if(!k?.startsWith(prefixForUser))continue;
    try{
     const value=JSON.parse(storage.getItem(k));
-    if(value?.userId===userId&&k===key(userId,value.questId))entries.push(value);
-   }catch{} // retain malformed entries for explicit recovery
+    if(value?.userId!==userId||!value.questId||k!==key(userId,value.questId)||!value.reward)throw Error("Outbox identity or reward mismatch");
+    entries.push(value);
+   }catch(error){throw Error("Outbox integrity check failed: "+String(error?.message||"invalid entry"))} // Never silently skip a saved victory
   }
   return entries.sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
  }
  function acknowledge(userId,questId){
   const k=key(userId,questId);
+  const original=storage.getItem(k);
+  if(original===null)return;
+  const entry=JSON.parse(original);
+  if(entry?.userId!==userId||entry?.questId!==questId)throw Error("Outbox acknowledgement identity mismatch");
+  if(storage.getItem(k)!==original)throw Error("Outbox changed before acknowledgement");
   storage.removeItem(k);
   if(storage.getItem(k)!==null)throw Error("Outbox acknowledgement not removed");
  }
