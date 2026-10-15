@@ -1,0 +1,11 @@
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const source=readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
+const flush=source.slice(source.indexOf("async function flushCloudProfile(){"),source.indexOf("// Secondary durable store"));
+assert.match(flush,/const savingUserId=lumenUser\.id/);
+assert.match(flush,/const sameSavingSession=\(\)=>lumenUser\?\.id===savingUserId/);
+assert.match(flush,/const savedBaseline=await compareAndSwapCloudProfile\([^\n]+\);\s*if\(!sameSavingSession\(\)\)return false;\s*cloudProfileBaseline=savedBaseline/);
+assert.match(flush,/const remote=await loadVerifiedProfile\(lumenSupabase\);\s*if\(!sameSavingSession\(\)\)return false/);
+assert.equal((flush.match(/const mirror=await verifyLegacyProgressMirror\(\);\s*if\(!sameSavingSession\(\)\)return false/g)||[]).length,2);
+assert.match(flush,/catch\(e\)\{\s*if\(!sameSavingSession\(\)\)return false/);
+console.log("Cloud flush rejects stale asynchronous completion after account switches");
