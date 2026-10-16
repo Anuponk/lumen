@@ -420,13 +420,18 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    cloud=await compareAndSwapCloudProfile(lumenSupabase,reconciled.profile,cloud);
   }
   hydrationStage="owner_backup";
-  if(currentOwner!==accountId){
-   if(original)localStorage.setItem('lumenBeforeAccountSwitch_'+Date.now(),original);
-   localStorage.setItem(ownerKey,accountId);
+  // A brand-new browser or an account switch has no authoritative local
+  // progress for this account. Preserve its guest/previous-account snapshot,
+  // then install the authenticated cloud without comparing different owners.
+  const switchingOwner=currentOwner!==accountId;
+  if(switchingOwner&&original){
+   const backupKey="lumenBeforeAccountSwitch_"+Date.now();
+   localStorage.setItem(backupKey,original);
+   if(localStorage.getItem(backupKey)!==original)throw Error("Sauvegarde du profil invité non vérifiée");
   }
   hydrationStage="local_reconciliation";
   const currentLocal=localStorage.getItem("lumenProgressV1");
-  if(currentLocal&&existing){
+  if(currentLocal&&existing&&!switchingOwner){
    let conflict=false;
    try{conflict=!cloudSafelyCoversLocal(JSON.parse(currentLocal),cloud)}catch{conflict=true}
    if(conflict){
@@ -440,7 +445,21 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    }
   }
   hydrationStage="local_install";
-  const changed=installCloudProfileLocally(localStorage,cloud);
+  let changed;
+  if(switchingOwner){
+   // The previous local state has been backed up and verified above.
+   // Do not let a different owner (or anonymous starter state) block login.
+   if(currentLocal!==null)localStorage.removeItem("lumenProgressV1");
+   try{
+    changed=installCloudProfileLocally(localStorage,cloud);
+    localStorage.setItem(ownerKey,accountId);
+    if(localStorage.getItem(ownerKey)!==accountId)throw Error("Propriétaire cloud local non vérifié");
+   }catch(error){
+    if(currentLocal!==null&&localStorage.getItem("lumenProgressV1")===null)
+     localStorage.setItem("lumenProgressV1",currentLocal);
+    throw error;
+   }
+  }else changed=installCloudProfileLocally(localStorage,cloud);
   cloudProfileBaseline=cloud;
   if(changed==="memory_only"){
    // Cloud is verified; a full localStorage must not deadlock signed-in play.
