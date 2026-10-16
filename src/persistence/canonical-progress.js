@@ -33,13 +33,24 @@ export function firstIncompleteCanonicalQuest(profile){
  savedEntries(profile??{});
  return canonicalQuestList().find(q=>!questIsCompleted(profile??{},q.id))??null;
 }
+const BADGE_KEYS=["autonomy","speed","noError","mastery"];
+function hasAllEarnedBadges(state,badges){
+ return BADGE_KEYS.every(key=>!badges?.[key]||!!state?.badges?.[key]);
+}
 export function acknowledgeCanonicalVictory(profile,id,{badges={},performance=null,stars=0}={}){
  const quest=canonicalQuestById(id);
  if(!quest)throw Error("Unknown quest "+id);
  if(quest.legacyIndex!==null)throw Error("Historic quests must use the existing reward pipeline");
  const current=copy(profile);
  const state=savedEntries(current);
- if(state[id]?.solved)return {profile:current,newlyCompleted:false,quest};
+ if(state[id]?.solved){
+  // Replays may improve badges, but must never award XP or stars again.
+  if(hasAllEarnedBadges(state[id],badges))return {profile:current,newlyCompleted:false,quest,unchanged:true};
+  const merged={...state[id].badges};
+  for(const key of BADGE_KEYS)if(badges[key])merged[key]=true;
+  current.canonicalQuestState={...state,[id]:{...state[id],badges:merged}};
+  return {profile:current,newlyCompleted:false,quest,unchanged:false};
+ }
  if(!badges||typeof badges!=="object"||Array.isArray(badges))throw Error("Invalid badges");
  if(!Number.isSafeInteger(stars)||stars<0)throw Error("Invalid stars");
  if(performance!==null&&(typeof performance!=="object"||Array.isArray(performance)))throw Error("Invalid performance");
@@ -63,11 +74,11 @@ export async function commitCanonicalVictory(supabase,questId,reward,{maxAttempt
   const current=await loadVerifiedProfile(supabase);
   if(!current)throw Error("No verified cloud baseline");
   const result=acknowledgeCanonicalVictory(current,questId,reward);
-  if(!result.newlyCompleted)return {...result,alreadySaved:true};
+  if(result.unchanged)return {...result,alreadySaved:true};
   try{
    await compareAndSwapCloudProfile(supabase,result.profile,current);
    const verified=await loadVerifiedProfile(supabase);
-   if(!verified?.canonicalQuestState?.[questId]?.solved)throw Error("Canonical victory cloud read-back failed");
+   if(!verified?.canonicalQuestState?.[questId]?.solved||!hasAllEarnedBadges(verified.canonicalQuestState[questId],reward?.badges))throw Error("Canonical victory cloud read-back failed");
    return {...result,profile:verified,alreadySaved:false};
   }catch(error){
    // A timed-out CAS may have committed before its response was lost.
@@ -76,7 +87,7 @@ export async function commitCanonicalVictory(supabase,questId,reward,{maxAttempt
    // for an unsaved victory.
    let refreshed=null;
    try{refreshed=await loadVerifiedProfile(supabase)}catch{}
-   if(refreshed?.canonicalQuestState?.[questId]?.solved){
+   if(refreshed?.canonicalQuestState?.[questId]?.solved&&hasAllEarnedBadges(refreshed.canonicalQuestState[questId],reward?.badges)){
     return {profile:refreshed,newlyCompleted:false,quest,alreadySaved:true};
    }
    if(attempt===maxAttempts-1)throw error;
