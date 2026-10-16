@@ -1,0 +1,12 @@
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const ui=readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
+const marker=ui.indexOf("hydration_partial_reconciliation_pending");
+const install=ui.indexOf('hydrationStage="local_install"',marker);
+assert.ok(marker>0&&install>marker,"partial hydration decision precedes unsafe full install");
+const segment=ui.slice(marker-450,install);
+assert.match(segment,/cloudSafelyCoversLocal/);
+assert.match(segment,/cloudProfileFailure=\{reason:"partial_reconciliation"/);
+assert.match(segment,/profileReady:false/);
+assert.match(segment,/return;/);
+console.log("Unresolved local/cloud rewards are reported as partial reconciliation without unsafe install");
