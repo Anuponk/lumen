@@ -3,7 +3,7 @@ import {readFileSync} from "node:fs";
 const ui=readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
 assert.match(ui,/const switchingOwner=currentOwner!==accountId/);
 assert.match(ui,/if\(currentLocal&&existing&&!switchingOwner\)/,"only same-account snapshots are reconciled");
-assert.match(ui,/if\(localStorage.getItem\(backupKey\)!==original\)throw/,"guest snapshot backup checked before removal");
+assert.match(ui,/if\(localStorage.getItem\(backupKey\)!==currentLocal\)throw/,"guest snapshot backup checked before removal");
 assert.match(ui,/if\(currentLocal!==null\)localStorage.removeItem\("lumenProgressV1"\)/);
 assert.match(ui,/changed=installCloudProfileLocally\(localStorage,cloud\)/);
 assert.match(ui,/localStorage.setItem\(ownerKey,accountId\)/);
