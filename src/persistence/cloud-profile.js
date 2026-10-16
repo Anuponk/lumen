@@ -496,7 +496,7 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
    if((key==="bestTime"||key==="bestSeconds")&&typeof value==="number"&&typeof out[key]==="number"&&value>0&&out[key]>0){out[key]=Math.min(value,out[key]);continue}
    // Conflicting run records, canonical rewards, and timestamps are not
    // equivalent to monotonic achievements: preserve both backups and block.
-   return {ok:false};
+   return {ok:false,conflictKeys:[key]};
   }
   return {ok:true,value:out};
  };
@@ -505,7 +505,7 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
   for(const [id,value] of Object.entries(local[field]||{})){
    if(!Object.hasOwn(merged[field],id)){merged[field][id]=structuredClone(value);continue}
    const result=rewardMerge(field,value,merged[field][id]);
-   if(!result.ok)return {status:"blocked",reason:"reward_conflict",fields:[field],conflictId:id};
+   if(!result.ok)return {status:"blocked",reason:"reward_conflict",fields:[field],conflictId:id,conflictKeys:Array.isArray(result.conflictKeys)?result.conflictKeys.slice(0,8):[]};
    merged[field][id]=result.value;
   }
  }

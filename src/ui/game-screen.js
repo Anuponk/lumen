@@ -440,7 +440,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
      hydrationStage="bidirectional_reconciliation";
      resolution=await reconcileCompatibleCloudProfiles(lumenSupabase,localStorage,cloud);
     }
-    recordCloudDiagnostic("hydration_reconciliation",{result:resolution.status,reason:resolution.reason||"none",fields:Array.isArray(resolution.fields)?resolution.fields:[],conflictId:typeof resolution.conflictId==="string"?resolution.conflictId.slice(0,96):null});
+    recordCloudDiagnostic("hydration_reconciliation",{result:resolution.status,reason:resolution.reason||"none",fields:Array.isArray(resolution.fields)?resolution.fields:[],conflictId:typeof resolution.conflictId==="string"?resolution.conflictId.slice(0,96):null,conflictKeys:Array.isArray(resolution.conflictKeys)?resolution.conflictKeys.filter(k=>typeof k==="string").slice(0,8):[]});
     if(resolution.status==="reconciled"||resolution.status==="cloud_dominant")cloud=resolution.profile;
    }
   }
