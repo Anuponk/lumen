@@ -464,6 +464,19 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
     }
    }
   }
+  // Achievements may be recovered while balances or immutable reward
+  // histories still disagree. Never attempt the unsafe full replacement,
+  // and do not report this expected protection as an auth failure.
+  if(currentLocal&&existing&&!switchingOwner){
+   let fullyCovered=false;
+   try{fullyCovered=cloudSafelyCoversLocal(JSON.parse(localStorage.getItem("lumenProgressV1")),cloud)}catch{}
+   if(!fullyCovered){
+    cloudProfileFailure={reason:"partial_reconciliation",detail:"cloud_local_divergence"};
+    recordCloudDiagnostic("hydration_partial_reconciliation_pending",{profileReady:false});
+    renderDaily();
+    return;
+   }
+  }
   hydrationStage="local_install";
   let changed;
   if(switchingOwner){
