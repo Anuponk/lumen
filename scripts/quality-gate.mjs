@@ -44,6 +44,7 @@ const nodeSuites=[
  "reward-conflict-diagnostics-tests.mjs",
  "performance-conflict-details-tests.mjs",
  "performance-time-merge-tests.mjs",
+ "intro-flags-reconciliation-tests.mjs",
  "auth-email-brand-routing-tests.mjs",
  "account-email-login-tests.mjs",
  "auth-email-delivery-plan-tests.mjs",

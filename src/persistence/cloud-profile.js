@@ -457,9 +457,20 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  const grants=mergeLegacyAdventureAccess(local.legacyAdventureAccess,cloud.legacyAdventureAccess);
  if(!grants.ok)return {status:"blocked",reason:"legacy_adventure_access_conflict",fields:["legacyAdventureAccess"]};
  if(grants.value!==undefined)merged.legacyAdventureAccess=grants.value;
+ // One-way UI tutorial acknowledgements: seeing an introduction cannot be
+ // undone by restoring another device. They never award currency or badges.
+ const introFlags=["autonomySeen","fullBadgeIntroSeen","autoCrossUnlockSeen","speedBadgeIntroSeen"];
+ for(const flag of introFlags){
+  const left=local[flag],right=cloud[flag];
+  if(![undefined,null,0,1,false,true].includes(left)||![undefined,null,0,1,false,true].includes(right))
+   return {status:"blocked",reason:"invalid_intro_flag",fields:[flag]};
+  if(Boolean(left)||Boolean(right))merged[flag]=1;
+  else if(Object.hasOwn(cloud,flag))merged[flag]=cloud[flag];
+  else if(Object.hasOwn(local,flag))merged[flag]=local[flag];
+ }
  const unknownDifferences=[];
  for(const field of new Set([...Object.keys(cloud),...Object.keys(local)])){
-  if(safeFields.has(field)||["shards","xp","skyScore","daily","challenges"].includes(field))continue;
+  if(safeFields.has(field)||introFlags.includes(field)||["shards","xp","skyScore","daily","challenges"].includes(field))continue;
   if(!sameCloudProfile(local[field]??null,cloud[field]??null))unknownDifferences.push(field);
  }
  if(unknownDifferences.length)return {status:"blocked",reason:"unclassified_field",fields:unknownDifferences};
