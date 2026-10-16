@@ -41,6 +41,7 @@ const nodeSuites=[
  "first-login-cloud-restore-tests.mjs",
  "cloud-achievements-local-recovery-tests.mjs",
  "partial-hydration-status-tests.mjs",
+ "reward-conflict-diagnostics-tests.mjs",
  "auth-email-brand-routing-tests.mjs",
  "account-email-login-tests.mjs",
  "auth-email-delivery-plan-tests.mjs",
