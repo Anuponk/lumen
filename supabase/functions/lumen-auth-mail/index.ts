@@ -3,7 +3,7 @@
 // only after the dedicated server-side rate limits and end-to-end flows are validated.
 const HOST="https://lumen.nopuna.fr";
 const headers={"content-type":"application/json","cache-control":"no-store","access-control-allow-origin":HOST,"access-control-allow-headers":"content-type,apikey,authorization","access-control-allow-methods":"POST,OPTIONS","vary":"Origin"};
-const reply=(status:number,body:Record<string,unknown>={ok:false})=>new Response(JSON.stringify(body),{status,headers});
+const reply=(status:number,body:Record<string,unknown>={ok:false})=>{if(status>=500)console.error("[lumen-auth-mail] failure",{status,reason:typeof body.reason==="string"?body.reason:"upstream_mail_failure"});return new Response(JSON.stringify(body),{status,headers})};
 const accepted=()=>reply(200,{ok:true});
 async function digest(s:string){const d=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(d)].map(n=>n.toString(16).padStart(2,"0")).join("")}
 Deno.serve(async req=>{
@@ -85,8 +85,8 @@ Deno.serve(async req=>{
   :"Pour continuer sur Lumen, ouvre ce lien : "+brandedLink+"\n\nSi tu n'as rien demandé, ignore cet email.";
  try{
   const sent=await fetch("https://api.resend.com/emails",{method:"POST",headers:{"authorization":"Bearer "+key,"content-type":"application/json"},body:JSON.stringify({from:"Lumen <auth@nopuna.fr>",to:[email],subject:label,text,...(html?{html}:{})})});
-  if(!sent.ok)return reply(502);
-  const result=await sent.json();if(typeof result.id!=="string")return reply(502);
- }catch{return reply(502)}
+  if(!sent.ok)return reply(502,{ok:false,reason:"mail_provider_rejected"});
+  const result=await sent.json();if(typeof result.id!=="string")return reply(502,{ok:false,reason:"mail_provider_invalid_response"});
+ }catch{return reply(502,{ok:false,reason:"mail_provider_unavailable"})}
  return accepted();
 });
