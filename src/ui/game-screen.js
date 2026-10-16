@@ -444,6 +444,26 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
     if(resolution.status==="reconciled"||resolution.status==="cloud_dominant")cloud=resolution.profile;
    }
   }
+  // When full reconciliation is blocked, recover only server-verified
+  // achievements. The routine backs up the old local snapshot and never
+  // overwrites local currencies, daily ledger, or conflicting rewards.
+  // This is a partial display recovery, NOT a completed cloud sync.
+  if(currentLocal&&existing&&!switchingOwner){
+   let covered=false;
+   try{covered=cloudSafelyCoversLocal(JSON.parse(localStorage.getItem("lumenProgressV1")),cloud)}catch{}
+   if(!covered){
+    try{
+     const partial=reconcileCloudAchievements(localStorage,cloud);
+     if(partial.changed){
+      recordCloudDiagnostic("cloud_achievements_locally_recovered",{fullSync:false});
+      location.reload();
+      return;
+     }
+    }catch(error){
+     recordCloudDiagnostic("cloud_achievements_recovery_blocked",{reason:"conflicting_rewards_or_storage"});
+    }
+   }
+  }
   hydrationStage="local_install";
   let changed;
   if(switchingOwner){
