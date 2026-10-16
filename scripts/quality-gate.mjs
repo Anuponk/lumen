@@ -42,6 +42,7 @@ const nodeSuites=[
  "cloud-achievements-local-recovery-tests.mjs",
  "partial-hydration-status-tests.mjs",
  "reward-conflict-diagnostics-tests.mjs",
+ "performance-conflict-details-tests.mjs",
  "auth-email-brand-routing-tests.mjs",
  "account-email-login-tests.mjs",
  "auth-email-delivery-plan-tests.mjs",
