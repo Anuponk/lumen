@@ -54,7 +54,8 @@ Deno.serve(async req=>{
   typeof nested.action_link==="string"?nested.action_link:"";
  const otp=typeof generated.email_otp==="string"?generated.email_otp:
   typeof nested.email_otp==="string"?nested.email_otp:"";
- if(type==="magiclink"&&!/^\d{6}$/.test(otp))return reply(503,{ok:false,reason:"otp_not_generated"});
+ // OTP length is configured by Supabase Auth; retain legacy six-digit codes too.
+ if(type==="magiclink"&&!/^\d{6,10}$/.test(otp))return reply(503,{ok:false,reason:"otp_not_generated"});
  let validAction=false;
  try{
   const link=new URL(action),project=new URL(base);
@@ -80,7 +81,7 @@ Deno.serve(async req=>{
  const html=type==="magiclink"?undefined:`<!doctype html><html lang="fr"><head><meta charset="utf-8"></head><body style="margin:0;padding:32px 16px;background:#07111d;font-family:Arial,Helvetica,sans-serif;color:#eef8ff"><table role="presentation" cellspacing="0" cellpadding="0" style="max-width:520px;margin:auto;background:#102237;border-radius:16px;padding:32px;width:100%"><tr><td><p style="font-size:14px;letter-spacing:3px;color:#92dfff">✦ LUMEN</p><h1 style="font-size:25px;line-height:1.3;color:#ffffff">${escapeHtml(title)}</h1><p style="line-height:1.7;color:#daeaf7">${escapeHtml(instruction)}</p><p style="padding:20px 0"><a href="${escapeHtml(brandedLink)}" style="display:inline-block;padding:14px 24px;background:#f6d67a;color:#142236;font-weight:bold;text-decoration:none;border-radius:8px">${escapeHtml(button)}</a></p><p style="font-size:13px;color:#a8becd">Si tu n'as rien demandé, ignore cet email.</p><p style="font-size:12px;color:#8da9bc">Lumen • lumen.nopuna.fr</p></td></tr></table></body></html>`;
  // Recovery links are preferred for password reset; legacy users receive an OTP.
  const label=type==="signup"?"Confirme ton inscription Lumen":type==="recovery"?"Réinitialise ton mot de passe Lumen":"Ton code de connexion Lumen";
- const text=type==="magiclink"&&/^\d{6}$/.test(otp)
+ const text=type==="magiclink"&&/^\d{6,10}$/.test(otp)
   ?"Ton code de connexion Lumen : "+otp+"\n\nSi tu n'as rien demandé, ignore cet email."
   :"Pour continuer sur Lumen, ouvre ce lien : "+brandedLink+"\n\nSi tu n'as rien demandé, ignore cet email.";
  try{

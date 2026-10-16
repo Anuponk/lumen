@@ -245,7 +245,7 @@ async function sendEmailOtp(email,redirectTo,{createUser=true}={}){
 async function verifyEmailOtp(email,token){
  if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};
  const normalized=String(email||"").trim().toLowerCase(),code=String(token||"").trim();
- if(!normalized||!/^\d{6}$/.test(code))return {ok:false,reason:"otp"};
+ if(!normalized||!/^\d{6,10}$/.test(code))return {ok:false,reason:"otp"};
  const {error}=await model.lumenSupabase.auth.verifyOtp({email:normalized,token:code,type:"email"});
  return error?{ok:false,reason:"otp_verify",error}:{ok:true};
 }

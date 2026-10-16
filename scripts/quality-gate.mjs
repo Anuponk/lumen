@@ -48,6 +48,7 @@ const nodeSuites=[
  "intro-flags-reconciliation-tests.mjs",
  "auth-email-brand-routing-tests.mjs",
  "account-email-login-tests.mjs",
+ "auth-mail-otp-tests.mjs",
  "auth-email-delivery-plan-tests.mjs",
  "auth-email-ledger-contract-tests.mjs",
  "auth-email-hook-integration-tests.mjs",
