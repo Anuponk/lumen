@@ -9,6 +9,9 @@ This implementation does NOT use the project-wide Send Email Hook or change the 
 
 Google login and the Supabase user ID used by cloud saves are unchanged.
 
+## OTP compatibility
+Legacy email login accepts numeric codes of 6–10 digits, matching Supabase Auth's configurable length. The Lumen mail endpoint, account input and client verification must accept the same range, preserve leading zeroes and pass the complete code to Supabase. Do not change the shared project's Auth settings to accommodate a frontend limit. No code or secret may be logged. Run `node scripts/auth-mail-otp-tests.mjs` for isolated send/input/verify regressions, including flat and nested Admin responses and provider failures; these tests never send real mail or modify live users.
+
 ## Production prerequisites — not configured by committing code
 - Set `LUMEN_AUTH_TEST_EMAIL` to a **single test mailbox** (e.g. Gmail +alias) before test. Until test acceptance, all other addresses are rejected with HTTP 403. Do not publish the mailbox secret in Git.\n- Set `LUMEN_AUTH_MAIL_ENABLED=true` **only for controlled allowlisted testing**. Default is disabled. Do not remove the allowlist before E2E acceptance.
 - `LUMEN_RESEND_API_KEY`: restricted key for verified `nopuna.fr`.
