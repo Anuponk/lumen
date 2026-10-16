@@ -424,13 +424,13 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   // progress for this account. Preserve its guest/previous-account snapshot,
   // then install the authenticated cloud without comparing different owners.
   const switchingOwner=currentOwner!==accountId;
-  if(switchingOwner&&original){
+  const currentLocal=localStorage.getItem("lumenProgressV1");
+  if(switchingOwner&&currentLocal){
    const backupKey="lumenBeforeAccountSwitch_"+Date.now();
-   localStorage.setItem(backupKey,original);
-   if(localStorage.getItem(backupKey)!==original)throw Error("Sauvegarde du profil invité non vérifiée");
+   localStorage.setItem(backupKey,currentLocal);
+   if(localStorage.getItem(backupKey)!==currentLocal)throw Error("Sauvegarde du profil invité non vérifiée");
   }
   hydrationStage="local_reconciliation";
-  const currentLocal=localStorage.getItem("lumenProgressV1");
   if(currentLocal&&existing&&!switchingOwner){
    let conflict=false;
    try{conflict=!cloudSafelyCoversLocal(JSON.parse(currentLocal),cloud)}catch{conflict=true}
