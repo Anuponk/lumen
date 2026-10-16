@@ -493,7 +493,7 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
    if(field==="badges"||field==="stars"){
     const nested=rewardMerge(field,value,out[key]);if(nested.ok){out[key]=nested.value;continue}
    }
-   if((key==="bestTime"||key==="bestSeconds")&&typeof value==="number"&&typeof out[key]==="number"&&value>0&&out[key]>0){out[key]=Math.min(value,out[key]);continue}
+   if((key==="bestTime"||key==="bestSeconds"||(field==="performances"&&key==="time"))&&typeof value==="number"&&typeof out[key]==="number"&&Number.isFinite(value)&&Number.isFinite(out[key])&&value>0&&out[key]>0){out[key]=Math.min(value,out[key]);continue}
    // Conflicting run records, canonical rewards, and timestamps are not
    // equivalent to monotonic achievements: preserve both backups and block.
    return {ok:false,conflictKeys:[key]};
