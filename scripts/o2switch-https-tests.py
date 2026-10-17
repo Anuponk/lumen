@@ -187,6 +187,28 @@ class InstallerTests(unittest.TestCase):
 
 
 class ClientTests(unittest.TestCase):
+    def test_frontend_503_retries_identical_signed_request_with_curl(self):
+        error = urllib.error.HTTPError(client.HOOK, 503, 'unavailable', {}, None)
+        with patch.object(client.urllib.request, 'build_opener') as opener, \
+             patch.object(client.subprocess, 'run') as curl:
+            opener.return_value.open.side_effect = error
+            curl.return_value = subprocess.CompletedProcess([], 0, json.dumps({'sha': SHA, 'state': 'accepted'})+'\n202', '')
+            self.assertEqual(client.request('deploy', SHA, SECRET)['state'], 'accepted')
+            original = opener.return_value.open.call_args.args[0]
+            config = curl.call_args.kwargs['input']
+            for name, value in original.header_items():
+                self.assertIn(json.dumps(name+': '+value), config)
+            self.assertIn(json.dumps(original.data.decode()), config)
+
+    def test_auth_failure_never_uses_alternate_transport(self):
+        error = urllib.error.HTTPError(client.HOOK, 401, 'unauthorized', {}, None)
+        with patch.object(client.urllib.request, 'build_opener') as opener, \
+             patch.object(client.subprocess, 'run') as curl:
+            opener.return_value.open.side_effect = error
+            with self.assertRaises(urllib.error.HTTPError):
+                client.request('deploy', SHA, SECRET)
+            curl.assert_not_called()
+
     def test_curl_rejects_redirect_and_keeps_signed_headers_out_of_arguments(self):
         with patch.object(client.urllib.request, 'build_opener') as opener, \
              patch.object(client.subprocess, 'run') as curl:
