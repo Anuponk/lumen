@@ -68,7 +68,9 @@ jobs:
 
       - name: Validate o2switch release script syntax
         if: steps.scheduled_check.outputs.need_tests == 'true'
-        run: bash -n scripts/o2switch-safe-release.sh && bash -n scripts/o2switch-cron-publish.sh && bash -n scripts/o2switch-deploy-monitor.sh
+        run: |
+          for script in scripts/o2switch-{safe-release,cron-publish,deploy-monitor,ssh-deploy,runner-firewall}.sh; do bash -n "$script"; done
+          python3 scripts/o2switch-deploy-tests.py
 
       - name: Validate offline issue 222 generator syntax
         if: steps.scheduled_check.outputs.need_tests == 'true'

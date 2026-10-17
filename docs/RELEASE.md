@@ -6,6 +6,15 @@ As observed on 2026-10-03, `main` and `dev` had diverged. Do not assume a dev->m
 Prefer batching coherent work instead of pushing every micro-edit, especially when hosting/deployment quotas are constrained.
 
 ## Intended workflow
+
+For o2switch, `Deploy Lumen to o2switch` publishes the exact successful `main`
+revision after all three release gates pass, when `O2SWITCH_DEPLOY_ENABLED=true`.
+The server independently checks the gates and the published HTTP SHA, using
+the existing backup/restore and shared publish lock. GitHub deploy credentials
+and the restricted server dispatcher require one-time setup documented in
+`O2SWITCH_SIMPLE_CRON.md`. Until the first real deployment succeeds, activation
+is pending. The ten-minute cron remains a fallback; event-driven publication
+does not wait for its five-minute CI-poll cooldown.
 1. Work on a non-production branch.
 2. Run tests + strict grid audit.
 3. Push and record GitHub commit SHA.
