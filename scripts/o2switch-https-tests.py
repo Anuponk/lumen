@@ -36,11 +36,13 @@ class ReceiverTests(unittest.TestCase):
         (self.private / 'deploy-webhook-secret').write_text(SECRET)
         public = self.root / 'public'
         public.mkdir()
-        (public / 'index.php').write_text("<?php require " + json.dumps(str(self.private / 'hook.php').replace('\\', '/')) + ';')
+        route = public / 'lumen-release'
+        route.mkdir()
+        (route / 'index.php').write_text("<?php require " + json.dumps(str(self.private / 'hook.php').replace('\\', '/')) + ';')
         with socket.socket() as sock:
             sock.bind(('127.0.0.1', 0))
             port = sock.getsockname()[1]
-        self.url = f'http://127.0.0.1:{port}/index.php'
+        self.url = f'http://127.0.0.1:{port}/lumen-release/'
         self.server = subprocess.Popen([PHP, '-S', f'127.0.0.1:{port}', '-t', str(public)],
                                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         self.addCleanup(self.stop_server)
@@ -132,6 +134,56 @@ class ReceiverTests(unittest.TestCase):
 spec = importlib.util.spec_from_file_location('https_client', SCRIPTS / 'o2switch-https-deploy.py')
 client = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(client)
+
+
+@unittest.skipIf(os.name == 'nt' or not PHP, 'Linux installer with PHP')
+class InstallerTests(unittest.TestCase):
+    def test_installer_preserves_secret_and_exposes_directory_route(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / 'lumen-staging'
+            (source / '.git').mkdir(parents=True)
+            scripts = source / 'scripts'
+            scripts.mkdir()
+            for name in ['o2switch-install-webhook.sh', 'o2switch-deploy-hook.php', 'o2switch-webhook-worker.sh']:
+                shutil.copyfile(SCRIPTS / name, scripts / name)
+            target = root / 'lumen.nopuna.fr'
+            target.mkdir()
+            private = root / 'lumen-private'
+            private.mkdir()
+            secret = private / 'deploy-webhook-secret'
+            secret.write_text(SECRET + '\n')
+            env = dict(os.environ, HOME=str(root))
+            command = ['bash', str(scripts / 'o2switch-install-webhook.sh')]
+            for _ in range(2):
+                result = subprocess.run(command, env=env, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertNotIn(SECRET, result.stdout + result.stderr)
+                self.assertEqual(secret.read_text(), SECRET + '\n')
+            self.assertEqual(secret.stat().st_mode & 0o777, 0o600)
+            self.assertEqual(private.stat().st_mode & 0o777, 0o700)
+            route = target / 'lumen-release'
+            self.assertEqual((route / '.htaccess').read_text(), 'DirectoryIndex index.php\n')
+            self.assertIn(str(private / 'lumen-deploy-hook.php'), (route / 'index.php').read_text())
+            self.assertNotIn(SECRET, (route / 'index.php').read_text())
+            (private / 'deploy-jobs' / (SHA+'.json')).write_text(json.dumps({'sha': SHA, 'state': 'success'}))
+            with socket.socket() as sock:
+                sock.bind(('127.0.0.1', 0))
+                port = sock.getsockname()[1]
+            server = subprocess.Popen([PHP, '-S', f'127.0.0.1:{port}', '-t', str(target)],
+                                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            try:
+                for _ in range(100):
+                    try:
+                        with socket.create_connection(('127.0.0.1', port), timeout=.1):
+                            break
+                    except OSError:
+                        time.sleep(.03)
+                with patch.object(client, 'HOOK', f'http://127.0.0.1:{port}/lumen-release/'):
+                    self.assertEqual(client.request('status', SHA, SECRET), {'sha': SHA, 'state': 'success'})
+            finally:
+                server.terminate()
+                server.wait(timeout=5)
 
 
 class ClientTests(unittest.TestCase):

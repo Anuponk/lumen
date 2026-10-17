@@ -18,8 +18,15 @@ python3 - "$PRIVATE/deploy-webhook-secret" <<'PY'
 import pathlib,re,sys
 assert re.fullmatch(r'[0-9a-f]{64}\n?', pathlib.Path(sys.argv[1]).read_text()), 'Invalid existing webhook secret'
 PY
-# This is the only public file. No secret or diagnostics are served here.
+# Retain the old wrapper during migration; both routes use the private handler.
 printf '<?php require %s;\n' "\"$PRIVATE/lumen-deploy-hook.php\"" > "$TARGET/lumen-deploy.php"
 chmod 644 "$TARGET/lumen-deploy.php"
+# Use DirectoryIndex so runners do not request a .php path directly. The
+# hosting frontend resets direct PHP requests from GitHub before PHP sees them.
+[[ ! -L "$TARGET/lumen-release" ]] || { echo 'Invalid webhook directory'; exit 1; }
+install -d -m 755 "$TARGET/lumen-release"
+printf '<?php require %s;\n' "\"$PRIVATE/lumen-deploy-hook.php\"" > "$TARGET/lumen-release/index.php"
+printf 'DirectoryIndex index.php\n' > "$TARGET/lumen-release/.htaccess"
+chmod 644 "$TARGET/lumen-release/index.php" "$TARGET/lumen-release/.htaccess"
 echo 'HTTPS receiver installed. Copy the private secret to GitHub using cPanel File Manager; do not paste it in chat.'
 echo "Private secret file: $PRIVATE/deploy-webhook-secret"
