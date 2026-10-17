@@ -17,6 +17,24 @@ These are **target contracts**, not a claim that all implementations already exi
 
 Any added player field MUST have a documented owner, cloud write/read, reconciliation policy, migration/default for old saves, and a regression test. Follow the [cloud persistence regression matrix](TESTING.md#cloud-persistence-regression-matrix) and PR impact checklist. Do not silently suppress or delete tests.
 
+Canonical snapshot protection (#391): `protect_canonical_snapshot` checks every
+update of `lumen.profile_snapshots.payload`, including legacy backup and CAS
+RPCs. A completed canonical quest, its first-completion metadata and earned
+badges cannot disappear from a replacement snapshot. Missing/null state is
+compatible with historical-only profiles; malformed state is refused. Badge
+upgrades remain possible, and no numeric maximum is imposed on spendable
+balances or revocable entitlements. This guard does not authorize automatic
+repair of existing divergent data, protect deletion/account removal, or make
+all legacy rewards server-authoritative. Its migration preflight refuses an
+existing ledger/snapshot mismatch without rewriting player rows.
+
+Cloud diagnostics (#398): local diagnostic history, local health counters and
+the existing authenticated `lumen_record_sync_health` RPC are independent
+best-effort channels. Quota, denied storage, corrupt local history or a logging
+failure must not suppress the server incident signal or alter player state.
+Remote payloads retain only event/reason/outcome/version, with identity derived
+from the authenticated server session; no profile or token is transmitted.
+
 ## Client
 LUMEN is a static web/PWA application using native ES modules without a build step. `index.html` is a markup shell: the existing document markup, stylesheet link, Supabase CDN script and module entry point. It has no inline JavaScript or CSS. `src/main.js` starts the UI controller; domain modules contain the application logic. `manifest.webmanifest` and `sw.js` are unchanged.
 
@@ -227,3 +245,21 @@ Supabase reports the two social tables as `rls_enabled_no_policy` and the anonym
 `src/game/learning.js` is a pure, read-only lesson planner over the canonical board. It produces the expected cell actions and context-specific copy, using the audited opening grid and its `learnOrder`. `game-screen.js` enforces the interaction gate and presents the coach. It does not keep a second teaching board or persist a parallel lesson cursor; refresh resumes by deriving the step from the restored attempt board. Later placements spotlight the territory instead of the solution cell. Quest 2 derives a short placement/drag lesson from the same persisted board using `dragLearningStep`, then releases free gameplay and normal assistance controls. The transient pointer gesture freezes its permitted cells until release so completing the row mid-drag cannot mark unrelated cells. The older stage #25 descriptions above record the historical extraction, not the current learning behavior.
 
 Validation: `scripts/learning-tests.mjs` proves the five forced deductions and requested exclusions; `scripts/learning-browser-tests.mjs` exercises real touch/mouse actions, ignored taps, reload, drag, complete quest 1, free quest 2 and Mon ciel navigation on 360x640, 390x844, 768x1024 and 1440x900 viewports. Both are part of the CI gate.
+### Server incident age and alert scope (#398)
+
+`20261017181513_sync_health_incident_tracking.sql` versions the existing bounded
+telemetry table and RPCs. A failure is either `hydration_failed` or
+`hydration_reconciliation` with outcome `blocked`. Its age starts with the first
+failure after the last `hydration_ready`, using `(recorded_at,id)` to break ties.
+Repeated failures must not reset this age; a reconciliation result alone is not
+proof that hydration finished. The admin cockpit's existing `stalled_players`
+alert includes every unresolved incident at least fifteen minutes old, even if
+it started outside the selected report window. Reason/version and affected
+player aggregates include blocked reconciliations within that window.
+
+Raw telemetry remains insert-only for authenticated players, with RLS ownership
+derived from JWT. Only `analytics_cockpit` capability holders can read the
+aggregate RPC. `oldest_unresolved_at` is an aggregate timestamp, not an identity.
+No profile snapshots are sent. This correction does not add email/push alerts,
+outbox backlog telemetry, retention jobs or session/platform correlation; those
+remain acceptance work under #398.
