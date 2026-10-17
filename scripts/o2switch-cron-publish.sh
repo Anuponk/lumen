@@ -92,6 +92,8 @@ while IFS= read -r candidate; do
      continue
    fi
  fi
+ # The fallback cron must enforce the same gates as the event-driven path.
+ if ! python3 "$SOURCE/scripts/o2switch-ci-status.py" "$candidate"; then continue; fi
  if [[ -z "$SHA" ]] || git merge-base --is-ancestor "$SHA" "$candidate"; then SHA="$candidate"; fi
 done <<< "$VALIDATED_CANDIDATES"
 if [[ -z "$SHA" ]]; then

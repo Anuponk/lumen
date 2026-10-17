@@ -133,6 +133,13 @@ class Publisher(unittest.TestCase):
         self.assertEqual(self.publish(mode="--dry-run").returncode, 0)
         self.assertEqual((self.target / "index.html").read_text(), "original site")
 
+    def test_fallback_cron_retains_its_cooldown(self):
+        result = subprocess.run(["bash", str(ROOT / "scripts/o2switch-cron-publish.sh"), "--deploy"],
+                                env=self.env, text=True, capture_output=True, timeout=30)
+        self.assertEqual(result.returncode, 75)
+        self.assertIn("Waiting before retrying", result.stdout)
+        self.assertEqual((self.target / "index.html").read_text(), "original site")
+
 
 @unittest.skipUnless(os.name == "posix", "Firewall shell fixtures run on Linux CI")
 class Firewall(unittest.TestCase):
