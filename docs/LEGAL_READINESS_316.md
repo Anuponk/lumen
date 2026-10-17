@@ -44,3 +44,11 @@ Status: **NOT APPROVED FOR GOOGLE PLAY SUBMISSION**. This is an evidence checkli
 3. Implement and test account deletion including server-side authorization, related data, local cleanup, and external web request route; coordinate #170.
 4. Verify SDK/consent behavior, Android permissions, Google Play declarations, IP licenses and screenshots.
 5. Close only after acceptance criteria and professional review of unresolved legal/accounting questions.
+
+## Additional verified privacy findings
+- `src/analytics/events.js` stores persistent anonymous and session identifiers in localStorage and transmits event properties through Supabase RPC `lumen_track_event`. These identifiers may be personal data despite the name anonymous.
+- `src/ui/game-screen.js` sends authenticated cloud synchronization health events through `lumen_record_sync_health` and retains local diagnostics.
+- `sw.js` implements push notifications. Verify subscription lifecycle, permission and retention separately.
+- `src/persistence/config.js` exposes a Supabase publishable client key; audit RLS and RPC permissions, rather than treating it as a server secret.
+- Audit whether optional analytics requires consent or qualifies for an exemption before enabling it at launch.
+- Do not expose an account deletion control until backend cascades, authentication removal, challenge references and tests are complete.
