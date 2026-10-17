@@ -70,9 +70,11 @@ class ReceiverTests(unittest.TestCase):
             return exc.code, json.load(exc)
 
     def test_authentication_and_expiry_never_start_job(self):
-        for params in [dict(secret='c'*64), dict(timestamp=int(time.time())-301),
-                       dict(timestamp=int(time.time())+301), dict(method='GET')]:
-            self.assertIn(self.call(action='deploy', **params)[0], [401, 405])
+        # Leave margin for crossing a wall-clock second during HTTP execution.
+        for params in [dict(secret='c'*64), dict(timestamp=int(time.time())-600),
+                       dict(timestamp=int(time.time())+600), dict(method='GET')]:
+            with self.subTest(params=params):
+                self.assertIn(self.call(action='deploy', **params)[0], [401, 405])
         self.assertEqual(list(self.jobs.iterdir()), [])
 
     def test_payload_validation_and_missing_secret(self):
