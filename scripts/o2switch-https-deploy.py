@@ -26,28 +26,30 @@ def fetch_json(req):
     try:
         with urllib.request.build_opener(NoRedirect).open(req, timeout=20) as response:
             return json.load(response)
-    except urllib.error.HTTPError:
-        raise
+    except urllib.error.HTTPError as exc:
+        if exc.code != 503:
+            raise
+        print('Python HTTPS returned HTTP 503; trying curl transport')
     except NETWORK_ERRORS:
         # Resend the identical signed request. Server replay receipts prevent a
         # duplicate job if Python lost the response after acceptance. curl uses
         # a different TLS/HTTP stack and never follows redirects here.
         print('Python HTTP connection interrupted; trying curl transport')
-        config = ['url = ' + json.dumps(req.full_url)]
-        for name, value in req.header_items():
-            config.append('header = ' + json.dumps(name + ': ' + value))
-        if req.data is not None:
-            config.append('data-binary = ' + json.dumps(req.data.decode()))
-        result = subprocess.run(['curl', '--disable', '--config', '-', '--silent', '--show-error',
-                                 '--connect-timeout', '5', '--max-time', '20', '--write-out', '\n%{http_code}'],
-                                input='\n'.join(config) + '\n', text=True, capture_output=True, timeout=25)
-        if result.returncode:
-            raise ConnectionError('curl connection failed')
-        body, _, status = result.stdout.rpartition('\n')
-        if not status.isdigit() or not 200 <= int(status) < 300:
-            raise urllib.error.HTTPError(req.full_url, int(status) if status.isdigit() else 502,
-                                         'HTTPS request rejected', {}, None)
-        return json.loads(body)
+    config = ['url = ' + json.dumps(req.full_url)]
+    for name, value in req.header_items():
+        config.append('header = ' + json.dumps(name + ': ' + value))
+    if req.data is not None:
+        config.append('data-binary = ' + json.dumps(req.data.decode()))
+    result = subprocess.run(['curl', '--disable', '--config', '-', '--silent', '--show-error',
+                             '--connect-timeout', '5', '--max-time', '20', '--write-out', '\n%{http_code}'],
+                            input='\n'.join(config) + '\n', text=True, capture_output=True, timeout=25)
+    if result.returncode:
+        raise ConnectionError('curl connection failed')
+    body, _, status = result.stdout.rpartition('\n')
+    if not status.isdigit() or not 200 <= int(status) < 300:
+        raise urllib.error.HTTPError(req.full_url, int(status) if status.isdigit() else 502,
+                                     'HTTPS request rejected', {}, None)
+    return json.loads(body)
 
 
 def request(action, sha, secret):

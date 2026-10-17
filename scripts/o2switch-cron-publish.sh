@@ -10,7 +10,7 @@ MODE="${1:---deploy}"
 REQUESTED_SHA="${2:-}"
 [[ $# -le 2 && ( "$MODE" == "--deploy" || "$MODE" == "--dry-run" ) ]] || { echo "Usage: $0 [--deploy|--dry-run] [SHA]"; exit 2; }
 [[ -z "$REQUESTED_SHA" || "$REQUESTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid requested SHA" >&2; exit 2; }
-for cmd in git python3 flock cp tar mktemp curl; do command -v "$cmd" >/dev/null || { echo "Missing $cmd" >&2; exit 1; }; done
+for cmd in git python3 flock cp tar mktemp curl cmp; do command -v "$cmd" >/dev/null || { echo "Missing $cmd" >&2; exit 1; }; done
 exec 9>"$LOCK"
 if [[ -n "$REQUESTED_SHA" ]]; then
  flock -w 120 9 || { echo "Publish lock timed out" >&2; exit 1; }
@@ -153,7 +153,7 @@ restore() {
  trap - ERR
  echo "Publish failed ($rc), restoring previous static files" >&2
  find "$TARGET" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
- tar -xzf "$BACKUP" -C "$TARGET"
+ tar --same-permissions -xzf "$BACKUP" -C "$TARGET"
  exit "$rc"
 }
 trap restore ERR
@@ -161,7 +161,9 @@ trap restore ERR
 # Do not delete files outside Lumen's managed static assets.
 for dir in src content; do
  rm -rf -- "$TARGET/$dir"
- cp -R "$RELEASE/$dir" "$TARGET/$dir"
+ # The HTTPS worker has umask 077 for private receipts and logs. Preserve the
+ # explicitly public 755/644 release modes rather than inheriting that mask.
+ cp -Rp "$RELEASE/$dir" "$TARGET/$dir"
 done
 for file in index.html build-info.json sw.js manifest.webmanifest icon.svg icon-maskable.svg; do
  cp -p "$RELEASE/$file" "$TARGET/$file"
@@ -173,5 +175,10 @@ RESPONSE="$(curl -fsS --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr
 [[ "$RESPONSE" == *'src/'* ]] || { echo "HTTP smoke check failed" >&2; false; }
 BUILD_INFO="$(curl -fsS --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/build-info.json?release=$SHA")"
 printf '%s' "$BUILD_INFO" | python3 -c 'import json,sys; assert json.load(sys.stdin)["sha"] == sys.argv[1], "Published SHA mismatch"' "$SHA"
+# HTML and the marker can be readable while every module is forbidden (403).
+# Verify the actual public entry points before declaring the job successful.
+for asset in src/main.js src/ui/game-screen.js src/ui/styles.css; do
+ curl -fsS --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/$asset?release=$SHA" | cmp -s - "$RELEASE/$asset"
+done
 trap - ERR
 echo "Lumen deployed $SHA; backup $BACKUP"

@@ -171,3 +171,11 @@ ls -lt ~/lumen-deploy-backups/
 ```
 
 Inspecter l'archive et restaurer sous supervision avec `tar -xzf` dans le docroot en vérifiant que les fichiers de cette archive correspondent à une version connue. **Ne pas automatiser cette restauration à partir d'un nom d'archive non validé.**
+The HTTPS worker uses a private `umask 077`. The publisher must preserve the
+release's public directory/file modes (755/644) when copying `src` and `content`;
+private secrets and logs must retain their restrictive modes. Publication
+verifies the public JavaScript entry modules and stylesheet byte-for-byte, in
+addition to HTML and `build-info.json`. A forbidden or different asset triggers
+rollback, restoring the backup's original permissions as well as its contents.
+Linux deployment fixtures cover both the private-mask publication and a static
+403 with an otherwise correct SHA marker.

@@ -73,9 +73,9 @@ class Publisher(unittest.TestCase):
         self.git("init", "-b", "main")
         self.git("config", "user.name", "Isolated fixture")
         self.git("config", "user.email", "fixture@example.invalid")
-        for folder in ("scripts", "src", "content"):
+        for folder in ("scripts", "src", "src/ui", "content"):
             (self.source / folder).mkdir()
-        for name in ("index.html", "sw.js", "manifest.webmanifest", "icon.svg", "icon-maskable.svg", "src/main.js", "content/data.json"):
+        for name in ("index.html", "sw.js", "manifest.webmanifest", "icon.svg", "icon-maskable.svg", "src/main.js", "src/ui/game-screen.js", "src/ui/styles.css", "content/data.json"):
             (self.source / name).write_text('<meta name="lumen-build" content="fixture"><script src="src/main.js"></script>')
         # The gate selector is tested above; stub only its network boundary here.
         (self.source / "scripts/o2switch-ci-status.py").write_text('import os,sys;sys.exit(int(os.environ.get("TEST_GATE_STATUS","0")))')
@@ -91,7 +91,18 @@ class Publisher(unittest.TestCase):
         bin_dir = self.home / "bin"
         bin_dir.mkdir()
         curl = bin_dir / "curl"
-        curl.write_text('#!/bin/bash\nif [[ "$*" == *build-info.json* ]]; then printf \'{"sha":"%s"}\\n\' "$TEST_HTTP_SHA"; else echo \'<script src="src/main.js"></script>\'; fi\n')
+        curl.write_text('''#!/bin/bash
+endpoint="${@: -1}"
+if [[ "$endpoint" == *build-info.json* ]]; then
+ printf '{"sha":"%s"}\\n' "$TEST_HTTP_SHA"
+elif [[ "$endpoint" == *'/src/'* ]]; then
+ [[ "${TEST_STATIC_FORBIDDEN:-0}" != 1 ]] || exit 22
+ asset="${endpoint#https://lumen.nopuna.fr/}"
+ cat "$HOME/lumen.nopuna.fr/${asset%%\\?*}"
+else
+ echo '<script src="src/main.js"></script>'
+fi
+''')
         curl.chmod(0o755)
         self.env.update(PATH=str(bin_dir) + os.pathsep + self.env["PATH"], TEST_HTTP_SHA=self.sha)
         (self.home / "lumen-private").mkdir()
@@ -100,9 +111,29 @@ class Publisher(unittest.TestCase):
     def git(self, *args):
         return subprocess.check_output(["git", *args], cwd=self.source, env=self.env, text=True, stderr=subprocess.DEVNULL)
 
-    def publish(self, sha=None, mode="--deploy"):
+    def publish(self, sha=None, mode="--deploy", mask=-1):
         return subprocess.run(["bash", str(ROOT / "scripts/o2switch-cron-publish.sh"), mode, sha or self.sha],
-                              env=self.env, text=True, capture_output=True, timeout=30)
+                              env=self.env, text=True, capture_output=True, timeout=30, umask=mask)
+
+    def test_https_private_umask_keeps_static_assets_public(self):
+        secret = self.home / "lumen-private" / "deploy-webhook-secret"
+        secret.write_text("synthetic-private-secret")
+        secret.chmod(0o600)
+        result = self.publish(mask=0o077)
+        self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+        for directory in (self.target / "src", self.target / "content"):
+            self.assertEqual(directory.stat().st_mode & 0o777, 0o755)
+            for path in directory.rglob("*"):
+                self.assertEqual(path.stat().st_mode & 0o777, 0o755 if path.is_dir() else 0o644)
+        self.assertEqual(secret.stat().st_mode & 0o777, 0o600)
+
+    def test_forbidden_static_module_rolls_back_even_with_correct_marker(self):
+        self.env["TEST_STATIC_FORBIDDEN"] = "1"
+        result = self.publish(mask=0o077)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual((self.target / "index.html").read_text(), "original site")
+        self.assertEqual((self.target / ".lumen-release-sha").read_text().strip(), self.old)
+        self.assertEqual((self.target / "index.html").stat().st_mode & 0o777, 0o644)
 
     def test_exact_sha_bypasses_cooldown_and_publishes_valid_json(self):
         result = self.publish()
