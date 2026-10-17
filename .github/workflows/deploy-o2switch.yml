@@ -54,7 +54,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for name in CPANEL_SERVER CPANEL_USERNAME CPANEL_API_TOKEN SSH_PRIVATE_KEY SSH_KNOWN_HOSTS; do
+          for name in CPANEL_SERVER CPANEL_USERNAME SSH_PRIVATE_KEY SSH_KNOWN_HOSTS; do
             [[ -n "${!name}" ]] || { echo "::error::Missing $name"; exit 1; }
           done
           [[ "$CPANEL_SERVER" =~ ^[a-zA-Z0-9.-]+$ && "$CPANEL_USERNAME" =~ ^[a-zA-Z0-9_]+$ ]]
@@ -78,6 +78,7 @@ jobs:
             ServerAliveCountMax 3
           EOF
       - name: Temporarily authorize this runner in the o2switch firewall
+        if: env.CPANEL_API_TOKEN != ''
         shell: bash
         run: bash scripts/o2switch-runner-firewall.sh add
       - name: Publish the exact validated commit
@@ -91,6 +92,7 @@ jobs:
             if [[ "$result" != 255 ]]; then exit "$result"; fi
             sleep 5
           done
+          echo '::error::SSH connection failed. Check o2switch SSH IP authorization and the dedicated public key; the cPanel API is optional.'
           exit 1
       - name: Verify the public version
         shell: bash

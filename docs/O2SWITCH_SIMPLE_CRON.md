@@ -4,8 +4,7 @@
 
 `.github/workflows/deploy-o2switch.yml` démarre après la réussite de **Lumen
 quality gate** sur `main`, puis attend également **Cloud reconciliation matrix**
-et **Canonical ledger SQL regression** pour le SHA exact. Il autorise
-temporairement l'IP du runner via l'API cPanel, se connecte avec une clé dédiée,
+et **Canonical ledger SQL regression** pour le SHA exact. Il se connecte avec une clé dédiée,
 publie le SHA validé et vérifie `build-info.json`. Les PR ne déploient jamais.
 La variable `O2SWITCH_DEPLOY_ENABLED=true` active ce workflow une fois les
 secrets installés. Un bouton **Run workflow** permet de relancer la publication
@@ -46,12 +45,11 @@ L'API de pare-feu utilise HTTPS sur le port `2083`.
    Cette clé accepte uniquement `deploy SHA`, sans shell interactif ni transfert
    arbitraire. La clé GitHub read-only déjà présente sur o2switch reste distincte.
 
-3. Dans cPanel, créer un **jeton d'API** dédié à l'autorisation SSH. Dans
-   GitHub → dépôt Lumen → Settings → Secrets and variables → Actions, ajouter :
+3. Dans GitHub → dépôt Lumen → Settings → Secrets and variables → Actions, ajouter :
 
    | Type | Nom | Valeur |
    |---|---|---|
-   | Secret | `CPANEL_API_TOKEN` | Jeton cPanel |
+   | Secret facultatif | `CPANEL_API_TOKEN` | Jeton cPanel, seulement si l'API est disponible |
    | Secret | `O2SWITCH_SSH_PRIVATE_KEY` | Contenu de la clé privée dédiée |
    | Secret | `O2SWITCH_SSH_KNOWN_HOSTS` | Clé publique du serveur, vérifiée |
    | Variable | `CPANEL_SERVER` | `distil.o2switch.net` (valeur par défaut) |
@@ -70,7 +68,15 @@ L'API de pare-feu utilise HTTPS sur le port `2083`.
    Tant que cette vérification réelle n'est pas passée, considérer l'activation
    comme en attente. Le cron toutes les dix minutes peut rester en secours.
 
-L'autorisation temporaire préserve les exceptions SSH existantes. Le nettoyage
+L'API cPanel peut être désactivée par o2switch. Elle n'est pas requise pour
+publier : sans `CPANEL_API_TOKEN`, le workflow tente directement SSH. L'accès
+entrant du runner GitHub doit alors être autorisé dans le pare-feu o2switch
+(autorisation déjà en place ou intervention du support). Un échec SSH n'est
+jamais présenté comme un déploiement réussi. Ne pas activer d'autorisation API
+avec le mot de passe du compte comme solution de contournement.
+
+Quand le jeton facultatif est configuré, l'autorisation temporaire préserve
+les exceptions SSH existantes. Le nettoyage
 ne retire que les directions ajoutées par ce runner ; il ne vide jamais la
 liste blanche du compte. Un échec de nettoyage est signalé dans GitHub.
 Documentation API : https://faq.o2switch.fr/cpanel/outils/exception-parefeu/
