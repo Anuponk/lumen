@@ -16,7 +16,7 @@ jobs:
           set -u
           getent ahostsv4 lumen.nopuna.fr
           for protocol in --http1.1 --http2; do
-            for path in build-info.json lumen-deploy.php; do
+            for path in build-info.json lumen-deploy.php index.php lumen-release/; do
               echo "GET $path $protocol"
               curl --disable --ipv4 "$protocol" --silent --show-error --connect-timeout 5 --max-time 15 \
                 --output /dev/null --write-out 'http=%{http_code} remote=%{remote_ip} tls_verify=%{ssl_verify_result}\n' \
