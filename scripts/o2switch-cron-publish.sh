@@ -7,10 +7,16 @@ RELEASES="${HOME}/lumen-releases"
 BACKUPS="${HOME}/lumen-deploy-backups"
 LOCK="${HOME}/.lumen-cron-publish.lock"
 MODE="${1:---deploy}"
-[[ "$MODE" == "--deploy" || "$MODE" == "--dry-run" ]] || { echo "Usage: $0 [--deploy|--dry-run]"; exit 2; }
+REQUESTED_SHA="${2:-}"
+[[ $# -le 2 && ( "$MODE" == "--deploy" || "$MODE" == "--dry-run" ) ]] || { echo "Usage: $0 [--deploy|--dry-run] [SHA]"; exit 2; }
+[[ -z "$REQUESTED_SHA" || "$REQUESTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid requested SHA" >&2; exit 2; }
 for cmd in git python3 flock cp tar mktemp curl; do command -v "$cmd" >/dev/null || { echo "Missing $cmd" >&2; exit 1; }; done
 exec 9>"$LOCK"
-flock -n 9 || { echo "Another Lumen publish is running"; exit 0; }
+if [[ -n "$REQUESTED_SHA" ]]; then
+ flock -w 120 9 || { echo "Publish lock timed out" >&2; exit 1; }
+else
+ flock -n 9 || { echo "Another Lumen publish is running"; exit 0; }
+fi
 [[ -d "$TARGET" && ! -L "$TARGET" && -d "$SOURCE/.git" ]] || { echo "Invalid checkout or public directory"; exit 1; }
 cd "$SOURCE"
 [[ "$(git branch --show-current)" == "main" && -z "$(git status --porcelain)" ]] || { echo "Checkout must be a clean main"; exit 1; }
@@ -19,6 +25,16 @@ git fetch --quiet origin main
 git merge --ff-only origin/main
 SHA="$(git rev-parse HEAD)"
 [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+if [[ -n "$REQUESTED_SHA" ]]; then
+ git merge-base --is-ancestor "$REQUESTED_SHA" "$SHA" || { echo "Requested commit is not on main" >&2; exit 1; }
+ SHA="$REQUESTED_SHA"
+ if [[ -f "$TARGET/.lumen-release-sha" ]]; then
+  deployed="$(cat "$TARGET/.lumen-release-sha")"
+  if [[ "$deployed" != "$SHA" && "$deployed" =~ ^[0-9a-f]{40}$ ]]; then
+   git merge-base --is-ancestor "$deployed" "$SHA" || { echo "Refusing to replace a newer or divergent deployment" >&2; exit 1; }
+  fi
+ fi
+fi
 # A matching public release has already passed this publish process.
 # Do not poll GitHub every minute when no new deployment is needed.
 if [[ -f "$TARGET/.lumen-release-sha" && "$(cat "$TARGET/.lumen-release-sha")" == "$SHA" ]]; then
@@ -26,6 +42,11 @@ if [[ -f "$TARGET/.lumen-release-sha" && "$(cat "$TARGET/.lumen-release-sha")" =
 fi
 # The anonymous GitHub API has a small hourly quota. On a new commit,
 # check CI at most every five minutes; a pending result never authorizes release.
+if [[ -n "$REQUESTED_SHA" ]]; then
+ # Event-driven deployment: independently verify the exact target, with no
+ # polling cooldown or fallback to an older successful revision.
+ python3 "$SOURCE/scripts/o2switch-ci-status.py" "$SHA"
+else
 CI_CHECK_DIR="${HOME}/lumen-private"
 CI_CHECK_MARKER="$CI_CHECK_DIR/ci-check-$SHA"
 mkdir -p "$CI_CHECK_DIR"
@@ -71,6 +92,8 @@ while IFS= read -r candidate; do
      continue
    fi
  fi
+ # The fallback cron must enforce the same gates as the event-driven path.
+ if ! python3 "$SOURCE/scripts/o2switch-ci-status.py" "$candidate"; then continue; fi
  if [[ -z "$SHA" ]] || git merge-base --is-ancestor "$SHA" "$candidate"; then SHA="$candidate"; fi
 done <<< "$VALIDATED_CANDIDATES"
 if [[ -z "$SHA" ]]; then
@@ -79,6 +102,7 @@ if [[ -z "$SHA" ]]; then
  exit 75
 fi
 echo "CI verified revision $SHA (latest main $MAIN_SHA)"
+fi
 if [[ -f "$TARGET/.lumen-release-sha" && "$(cat "$TARGET/.lumen-release-sha")" == "$SHA" ]]; then
  echo "Already deployed $SHA"; exit 0
 fi
@@ -106,7 +130,7 @@ html=target.joinpath("index.html").read_text()
 html,n=re.subn(r'(<meta name="lumen-build" content=")[^"]*(")',lambda m:m.group(1)+version+" · "+sha[:7]+m.group(2),html,count=1)
 if n!=1: raise SystemExit("Missing build meta")
 target.joinpath("index.html").write_text(html)
-target.joinpath("build-info.json").write_text(json.dumps({"version":version,"sha":sha})+"\\n")
+target.joinpath("build-info.json").write_text(json.dumps({"version":version,"sha":sha})+"\n")
 PY
  printf '%s\n' "$SHA" > "$TMP/.lumen-release-sha"
  find "$TMP" -type d -exec chmod 755 {} +
@@ -147,5 +171,7 @@ printf '%s\n' "$SHA" > "$TARGET/.lumen-release-sha"
 # Verify the server answers with the expected application HTML.
 RESPONSE="$(curl -fsS --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/?release=$SHA")"
 [[ "$RESPONSE" == *'src/'* ]] || { echo "HTTP smoke check failed" >&2; false; }
+BUILD_INFO="$(curl -fsS --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/build-info.json?release=$SHA")"
+printf '%s' "$BUILD_INFO" | python3 -c 'import json,sys; assert json.load(sys.stdin)["sha"] == sys.argv[1], "Published SHA mismatch"' "$SHA"
 trap - ERR
 echo "Lumen deployed $SHA; backup $BACKUP"
