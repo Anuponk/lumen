@@ -72,4 +72,27 @@ function harness({commitThenDrop=false,alwaysReject=false}={}){
  assert.equal(results.filter(x=>x.alreadySaved).length,1);
 }
 
+// Replaying a completed inserted quest can improve badges without re-awarding XP/stars.
+{
+ const h=harness();
+ await commitCanonicalVictory(h.supabase,quest.id,reward);
+ const replay=await commitCanonicalVictory(h.supabase,quest.id,{stars:1,badges:{speed:true,mastery:true}});
+ assert.equal(replay.newlyCompleted,false);
+ assert.equal(h.cloud.xp,15,"replay does not award XP twice");
+ assert.equal(h.cloud.canonicalQuestState[quest.id].stars,1,"replay does not award extra stars");
+ assert.equal(h.cloud.canonicalQuestState[quest.id].badges.autonomy,true,"previous badges remain earned");
+ assert.equal(h.cloud.canonicalQuestState[quest.id].badges.speed,true,"new speed badge is saved");
+ assert.equal(h.cloud.canonicalQuestState[quest.id].badges.mastery,true,"new mastery badge is saved");
+ assert.equal(h.writes,2,"only a real badge improvement triggers an additional write");
+ await commitCanonicalVictory(h.supabase,quest.id,{stars:1,badges:{speed:true}});
+ assert.equal(h.writes,2,"replaying without improvement is idempotent");
+}
+{
+ const h=harness({commitThenDrop:true});
+ await commitCanonicalVictory(h.supabase,quest.id,reward);
+ const improved=await commitCanonicalVictory(h.supabase,quest.id,{badges:{noError:true}});
+ assert.equal(improved.newlyCompleted,false);
+ assert.equal(h.cloud.canonicalQuestState[quest.id].badges.noError,true);
+ assert.equal(h.cloud.xp,15);
+}
 console.log("Canonical victories survive lost acknowledgements and competing devices without duplicate rewards");
