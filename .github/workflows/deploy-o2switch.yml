@@ -26,11 +26,7 @@ jobs:
       url: https://lumen.nopuna.fr
     env:
       DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
-      CPANEL_SERVER: ${{ vars.CPANEL_SERVER || 'distil.o2switch.net' }}
-      CPANEL_USERNAME: ${{ vars.CPANEL_USERNAME || 'yuae0754' }}
-      CPANEL_API_TOKEN: ${{ secrets.CPANEL_API_TOKEN }}
-      SSH_PRIVATE_KEY: ${{ secrets.O2SWITCH_SSH_PRIVATE_KEY }}
-      SSH_KNOWN_HOSTS: ${{ secrets.O2SWITCH_SSH_KNOWN_HOSTS }}
+      O2SWITCH_DEPLOY_WEBHOOK_SECRET: ${{ secrets.O2SWITCH_DEPLOY_WEBHOOK_SECRET }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
@@ -50,63 +46,8 @@ jobs:
           done
           echo '::error::Release gates still pending'
           exit 1
-      - name: Prepare dedicated SSH identity
+      - name: Publish and verify the exact commit over authenticated HTTPS
+        run: python3 scripts/o2switch-https-deploy.py
+      - name: Record verified publication
         shell: bash
-        run: |
-          set -euo pipefail
-          for name in CPANEL_SERVER CPANEL_USERNAME SSH_PRIVATE_KEY SSH_KNOWN_HOSTS; do
-            [[ -n "${!name}" ]] || { echo "::error::Missing $name"; exit 1; }
-          done
-          [[ "$CPANEL_SERVER" =~ ^[a-zA-Z0-9.-]+$ && "$CPANEL_USERNAME" =~ ^[a-zA-Z0-9_]+$ ]]
-          [[ "$DEPLOY_SHA" =~ ^[0-9a-f]{40}$ ]]
-          install -d -m 700 "$RUNNER_TEMP/lumen-ssh"
-          printf '%s\n' "$SSH_PRIVATE_KEY" > "$RUNNER_TEMP/lumen-ssh/key"
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/lumen-ssh/known_hosts"
-          chmod 600 "$RUNNER_TEMP/lumen-ssh/"*
-          cat > "$RUNNER_TEMP/lumen-ssh/config" <<EOF
-          Host lumen-deploy
-            HostName $CPANEL_SERVER
-            User $CPANEL_USERNAME
-            Port 22
-            IdentityFile $RUNNER_TEMP/lumen-ssh/key
-            IdentitiesOnly yes
-            UserKnownHostsFile $RUNNER_TEMP/lumen-ssh/known_hosts
-            StrictHostKeyChecking yes
-            BatchMode yes
-            ConnectTimeout 15
-            ServerAliveInterval 15
-            ServerAliveCountMax 3
-          EOF
-      - name: Temporarily authorize this runner in the o2switch firewall
-        if: env.CPANEL_API_TOKEN != ''
-        shell: bash
-        run: bash scripts/o2switch-runner-firewall.sh add
-      - name: Publish the exact validated commit
-        shell: bash
-        run: |
-          set -euo pipefail
-          for attempt in {1..3}; do
-            result=0
-            ssh -F "$RUNNER_TEMP/lumen-ssh/config" lumen-deploy "deploy $DEPLOY_SHA" || result=$?
-            if [[ "$result" == 0 ]]; then exit 0; fi
-            if [[ "$result" != 255 ]]; then exit "$result"; fi
-            sleep 5
-          done
-          echo '::error::SSH connection failed. Check o2switch SSH IP authorization and the dedicated public key; the cPanel API is optional.'
-          exit 1
-      - name: Verify the public version
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl -fsS --retry 3 --retry-delay 3 --connect-timeout 5 --max-time 20 \
-            "https://lumen.nopuna.fr/build-info.json?release=$DEPLOY_SHA" \
-            | python3 -c 'import json,os,sys; assert json.load(sys.stdin)["sha"] == os.environ["DEPLOY_SHA"], "Published SHA mismatch"'
-          printf 'Published Lumen commit `%s` to https://lumen.nopuna.fr\n' "$DEPLOY_SHA" >> "$GITHUB_STEP_SUMMARY"
-      - name: Remove temporary authorization and private key
-        if: always()
-        shell: bash
-        run: |
-          result=0
-          bash scripts/o2switch-runner-firewall.sh remove || result=$?
-          rm -f "$RUNNER_TEMP/lumen-ssh/key"
-          exit "$result"
+        run: printf 'Published Lumen commit `%s` to https://lumen.nopuna.fr\n' "$DEPLOY_SHA" >> "$GITHUB_STEP_SUMMARY"

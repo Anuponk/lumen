@@ -2,93 +2,97 @@
 
 ## Publication après fusion
 
-`.github/workflows/deploy-o2switch.yml` démarre après la réussite de **Lumen
-quality gate** sur `main`, puis attend également **Cloud reconciliation matrix**
-et **Canonical ledger SQL regression** pour le SHA exact. Il se connecte avec une clé dédiée,
-publie le SHA validé et vérifie `build-info.json`. Les PR ne déploient jamais.
-La variable `O2SWITCH_DEPLOY_ENABLED=true` active ce workflow une fois les
-secrets installés. Un bouton **Run workflow** permet de relancer la publication
-de `main` après configuration ou après un échec réseau.
+Le workflow `deploy-o2switch.yml` attend **Lumen quality gate**, **Cloud
+reconciliation matrix** et **Canonical ledger SQL regression** sur le SHA exact
+de `main`. Les PR ne déploient jamais. Il appelle ensuite le récepteur HTTPS
+signé, attend le résultat du worker et vérifie le SHA public de `build-info.json`.
+Le serveur revérifie indépendamment les trois contrôles GitHub, l'appartenance
+à main et le refus des retours en arrière. La publication conserve le verrou
+partagé avec le cron, les sauvegardes et la restauration sur erreur.
+La copie des assets reste non atomique.
 
-La publication explicite `--deploy SHA` ne passe pas par le délai de cinq
-minutes du cron et ne choisit jamais un ancien commit de remplacement. Le
-serveur vérifie indépendamment les trois contrôles GitHub, le rattachement à
-`main`, l'absence de retour en arrière et le verrou partagé avec le cron.
-Les sauvegardes/restaurations existantes restent actives. Comme auparavant,
-la copie du site n'est pas atomique.
+L'accès SSH entrant des runners GitHub a expiré avant authentification sur
+`distil.o2switch.net:22`, et les jetons API cPanel sont désactivés sur ce compte.
+HTTPS remplace donc SSH dans le workflow. La clé read-only utilisée **depuis le
+serveur vers GitHub** reste nécessaire pour récupérer le dépôt.
+Les anciens secrets SSH/API ne sont plus utilisés par GitHub Actions.
 
-## Configuration initiale
+## Installation du récepteur HTTPS
 
-Connexion retrouvée dans le mail de bienvenue o2switch :
-`distil.o2switch.net`, utilisateur `yuae0754`, port SSH `22`.
-L'API de pare-feu utilise HTTPS sur le port `2083`.
-
-1. Après fusion de cette modification, ouvrir le **Terminal cPanel** et mettre
-   à jour le checkout propre, puis installer le dispatcher privé :
+1. Après fusion et CI verte, ouvrir le Terminal cPanel puis exécuter :
 
    ```bash
-   cd ~/lumen-staging
-   GIT_SSH_COMMAND="ssh -i ~/.ssh/lumen_github_pull -o IdentitiesOnly=yes -o BatchMode=yes" git pull --ff-only origin main
-   install -d -m 700 ~/lumen-private ~/.ssh
-   install -m 700 scripts/o2switch-ssh-deploy.sh ~/lumen-private/lumen-ssh-deploy.sh
+   (
+     set -e
+     exec 9>"$HOME/.lumen-cron-publish.lock"
+     flock -w 120 9
+     cd "$HOME/lumen-staging"
+     GIT_SSH_COMMAND="ssh -i $HOME/.ssh/lumen_github_pull -o IdentitiesOnly=yes -o BatchMode=yes" git pull --ff-only origin main
+     bash scripts/o2switch-install-webhook.sh
+   )
    ```
 
-2. Créer une clé **dédiée à Lumen**, par exemple sur son ordinateur avec
-   `ssh-keygen -t ed25519 -f lumen-actions -N ''`. Ajouter la clé publique
-   (`lumen-actions.pub`) à `~/.ssh/authorized_keys` sur o2switch, précédée de :
+   Le sous-shell libère le verrou à la fin. L'installateur est réexécutable et
+   conserve le secret existant. Il installe le code PHP et le worker dans
+   `~/lumen-private`, droits 700/600, et un simple wrapper public sans secret
+   `~/lumen.nopuna.fr/lumen-deploy.php`. PHP 8.1+ avec `exec`, Bash, nohup,
+   timeout, Python et les outils du publisher sont nécessaires. Le contexte
+   PHP web doit aussi autoriser exec ; le premier appel authentifié le vérifie.
 
-   ```text
-   restrict,command="/bin/bash /home/yuae0754/lumen-private/lumen-ssh-deploy.sh" ssh-ed25519 CLE_PUBLIQUE commentaire
-   ```
+2. Dans le **Gestionnaire de fichiers cPanel**, ouvrir
+   `/home/yuae0754/lumen-private/deploy-webhook-secret` et copier les 64 caractères
+   dans GitHub → dépôt Lumen → **Settings → Secrets and variables → Actions →
+   New repository secret** : `O2SWITCH_DEPLOY_WEBHOOK_SECRET`.
+   Ne jamais coller cette valeur dans le chat, les logs ou Git.
+   Conserver la variable `O2SWITCH_DEPLOY_ENABLED=true`. Aucune clé API cPanel
+   et aucune connexion SSH entrante ne sont nécessaires.
 
-   Conserver les autres clés ; appliquer `chmod 600 ~/.ssh/authorized_keys`.
-   Cette clé accepte uniquement `deploy SHA`, sans shell interactif ni transfert
-   arbitraire. La clé GitHub read-only déjà présente sur o2switch reste distincte.
+3. Ouvrir **Actions → Deploy Lumen to o2switch → Run workflow → main**.
+   Contrôler le succès et le SHA exact de
+   https://lumen.nopuna.fr/build-info.json. Tant que ce test réel n'est pas passé,
+   l'activation reste en attente. Un simple HTTP 202 signifie « accepté »,
+   jamais « déployé ». Le cron toutes les dix minutes reste un secours.
 
-3. Dans GitHub → dépôt Lumen → Settings → Secrets and variables → Actions, ajouter :
+Les modifications ultérieures du récepteur/worker nécessitent de relancer
+l'installateur après mise à jour du checkout validé ; les merges ordinaires
+de l'application se publient automatiquement sans cette intervention.
+Pour désactiver le déclencheur, retirer le wrapper public et passer la variable
+GitHub à false. Pour renouveler le secret, remplacer le fichier privé par un
+nouveau secret aléatoire hexadécimal de 32 octets et actualiser le secret GitHub.
 
-   | Type | Nom | Valeur |
-   |---|---|---|
-   | Secret facultatif | `CPANEL_API_TOKEN` | Jeton cPanel, seulement si l'API est disponible |
-   | Secret | `O2SWITCH_SSH_PRIVATE_KEY` | Contenu de la clé privée dédiée |
-   | Secret | `O2SWITCH_SSH_KNOWN_HOSTS` | Clé publique du serveur, vérifiée |
-   | Variable | `CPANEL_SERVER` | `distil.o2switch.net` (valeur par défaut) |
-   | Variable | `CPANEL_USERNAME` | `yuae0754` (valeur par défaut) |
-   | Variable | `O2SWITCH_DEPLOY_ENABLED` | `true` après configuration |
+## Contrat de sécurité et diagnostic
 
-   `known_hosts` doit contenir `distil.o2switch.net ssh-ed25519 CLE_DU_SERVEUR`
-   (ou le type de clé réellement fourni). Récupérer et vérifier cette clé
-   auprès du serveur/support o2switch ; ne pas désactiver le contrôle SSH.
-   Ne jamais transmettre les secrets dans une issue, un chat ou Git.
-   Si un environnement GitHub `production` existe déjà, vérifier qu'il autorise
-   `main` et qu'aucune approbation manuelle n'y retarde le déploiement voulu.
+Chaque POST contient uniquement action (deploy/status) et SHA complet. L'en-tête
+X-Lumen-Signature contient `sha256=HMAC(secret, timestamp + "\n" + corps brut)` ;
+X-Lumen-Timestamp expire après cinq minutes. La comparaison est constante,
+les requêtes dépassant 1 Ko et toute commande arbitraire sont rejetées.
+Les signatures de déclenchement déjà acceptées ne relancent pas de worker.
+Un job en cours pour le même SHA n'est pas lancé une seconde fois.
+Le worker a une limite de huit minutes. Ses états et logs restent privés dans
+`~/lumen-private/deploy-jobs/SHA.{json,log}`, sans secret ; le statut HTTP
+signé ne fournit jamais le contenu des logs. Les reçus anti-rejeu expirés
+sont nettoyés à la prochaine demande de publication. Les logs de jobs et
+sauvegardes nécessitent une rétention manuelle.
 
-4. Lancer **Deploy Lumen to o2switch → Run workflow → main**. Vérifier le succès
-   de la publication et le SHA exact dans `https://lumen.nopuna.fr/build-info.json`.
-   Tant que cette vérification réelle n'est pas passée, considérer l'activation
-   comme en attente. Le cron toutes les dix minutes peut rester en secours.
-
-L'API cPanel peut être désactivée par o2switch. Elle n'est pas requise pour
-publier : sans `CPANEL_API_TOKEN`, le workflow tente directement SSH. L'accès
-entrant du runner GitHub doit alors être autorisé dans le pare-feu o2switch
-(autorisation déjà en place ou intervention du support). Un échec SSH n'est
-jamais présenté comme un déploiement réussi. Ne pas activer d'autorisation API
-avec le mot de passe du compte comme solution de contournement.
-
-Quand le jeton facultatif est configuré, l'autorisation temporaire préserve
-les exceptions SSH existantes. Le nettoyage
-ne retire que les directions ajoutées par ce runner ; il ne vide jamais la
-liste blanche du compte. Un échec de nettoyage est signalé dans GitHub.
-Documentation API : https://faq.o2switch.fr/cpanel/outils/exception-parefeu/
+GitHub ne suit aucune redirection du récepteur et ne journalise pas les
+signatures. Une requête non authentifiée ne lance aucun processus. Le script
+public ne reçoit jamais de chemin, d'option shell ou de clé privée.
+Le publisher explicite `--deploy SHA` ignore le cooldown de cinq minutes du
+cron et ne choisit jamais un ancien commit de remplacement. Un échec CI,
+serveur ou version publique fait échouer le workflow.
 
 ## Tests du déploiement
 
-`python3 scripts/o2switch-deploy-tests.py` couvre la sélection des contrôles
-du SHA exact, les réponses manquantes/échouées, PR/forks/branches exclus, les
-commandes SSH rejetées et, sur Linux, la publication dans un dossier jetable,
-le contournement du délai du cron, le refus des retours en arrière, la répétition,
-le dry-run et la restauration après une mauvaise version HTTP. Ces tests
-n'utilisent ni secrets ni serveur o2switch. Ils sont exécutés dans la quality gate.
+`python3 scripts/o2switch-deploy-tests.py` couvre les trois contrôles du
+SHA exact, les PR/forks/branches exclus, le publisher jetable, les retours
+en arrière, le dry-run, le cooldown, l'idempotence et le rollback HTTP.
+`python3 scripts/o2switch-https-tests.py` lance un vrai serveur PHP jetable :
+signature invalide/expirée/future, corps invalide/trop grand, injection shell,
+secret absent, statut protégé, lancement du vrai worker sur Linux,
+répétition sans double exécution et remontée des échecs. Le client vérifie
+les refus HTTP, les redirections interdites et le SHA public discordant.
+Ces tests ne touchent ni o2switch, ni secrets réels, ni données joueurs.
+Ils sont exécutés dans la quality gate.
 
 ## Fonctionnement du cron de secours
 

@@ -10,8 +10,9 @@ Prefer batching coherent work instead of pushing every micro-edit, especially wh
 For o2switch, `Deploy Lumen to o2switch` publishes the exact successful `main`
 revision after all three release gates pass, when `O2SWITCH_DEPLOY_ENABLED=true`.
 The server independently checks the gates and the published HTTP SHA, using
-the existing backup/restore and shared publish lock. GitHub deploy credentials
-and the restricted server dispatcher require one-time setup documented in
+the existing backup/restore and shared publish lock. An authenticated HTTPS
+receiver (HMAC-SHA256, five-minute expiry) avoids incoming SSH firewall rules.
+The private receiver and GitHub secret require one-time setup documented in
 `O2SWITCH_SIMPLE_CRON.md`. Until the first real deployment succeeds, activation
 is pending. The ten-minute cron remains a fallback; event-driven publication
 does not wait for its five-minute CI-poll cooldown.
