@@ -91,6 +91,14 @@ class ReceiverTests(unittest.TestCase):
         (self.jobs / (SHA+'.json')).write_text(json.dumps(state))
         self.assertEqual(self.call(), (200, state))
 
+    @unittest.skipUnless(shutil.which('curl'), 'curl required')
+    def test_real_curl_fallback_sends_valid_signature(self):
+        with patch.object(client, 'HOOK', self.url), \
+             patch.object(client.urllib.request, 'build_opener') as opener:
+            opener.return_value.open.side_effect = client.http.client.RemoteDisconnected()
+            self.assertEqual(client.request('status', SHA, SECRET), {'sha': SHA, 'state': 'unknown'})
+        self.assertEqual(list(self.jobs.iterdir()), [])
+
     @unittest.skipIf(os.name == 'nt', 'Linux background worker')
     def test_real_background_worker_success_failure_and_replay(self):
         shutil.copyfile(SCRIPTS / 'o2switch-webhook-worker.sh', self.private / 'lumen-webhook-worker.sh')
@@ -127,6 +135,18 @@ spec.loader.exec_module(client)
 
 
 class ClientTests(unittest.TestCase):
+    def test_curl_rejects_redirect_and_keeps_signed_headers_out_of_arguments(self):
+        with patch.object(client.urllib.request, 'build_opener') as opener, \
+             patch.object(client.subprocess, 'run') as curl:
+            opener.return_value.open.side_effect = client.http.client.RemoteDisconnected()
+            curl.return_value = subprocess.CompletedProcess([], 0, '{}\n302', '')
+            with self.assertRaises(urllib.error.HTTPError):
+                client.request('deploy', SHA, SECRET)
+            args = curl.call_args.args[0]
+            self.assertNotIn('--location', args)
+            self.assertFalse(any('X-Lumen' in value or SECRET in value for value in args))
+            self.assertNotIn(SECRET, curl.call_args.kwargs['input'])
+
     def test_interrupted_trigger_response_polls_without_relaunching(self):
         from io import BytesIO
         lost = client.http.client.RemoteDisconnected('connection interrupted')

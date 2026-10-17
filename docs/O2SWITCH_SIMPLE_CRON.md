@@ -76,7 +76,12 @@ sont nettoyés à la prochaine demande de publication. Les logs de jobs et
 sauvegardes nécessitent une rétention manuelle.
 
 GitHub ne suit aucune redirection du récepteur et ne journalise pas les
-signatures. Une requête non authentifiée ne lance aucun processus. Le script
+signatures. Si la connexion Python est coupée, curl réémet exactement la même
+requête signée (en-têtes transmis sur stdin, jamais dans les arguments du
+processus). Les reçus du serveur empêchent un second lancement si la première
+requête avait été acceptée. Les coupures ambiguës sont suivies par consultation
+du statut ; seule la réussite du worker et le SHA public confirment la publication.
+Une requête non authentifiée ne lance aucun processus. Le script
 public ne reçoit jamais de chemin, d'option shell ou de clé privée.
 Le publisher explicite `--deploy SHA` ignore le cooldown de cinq minutes du
 cron et ne choisit jamais un ancien commit de remplacement. Un échec CI,
