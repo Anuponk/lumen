@@ -31,3 +31,9 @@ jobs:
           -f supabase/migrations/20261015_canonical_reward_ledger.sql
           -f supabase/migrations/20261017033619_canonical_replay_badges.sql
           -f scripts/fixtures/canonical-ledger-replay.sql
+          -f supabase/migrations/20261009_lumen_profile_snapshots.sql
+          -f supabase/migrations/20261010_lumen_cloud_first_cas.sql
+          -f supabase/migrations/20261017180841_protect_canonical_snapshot.sql
+          -f scripts/fixtures/canonical-snapshot-guard.sql
+          -f supabase/migrations/20261017181513_sync_health_incident_tracking.sql
+          -f scripts/fixtures/sync-health-incidents.sql

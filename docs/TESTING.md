@@ -20,6 +20,18 @@ PostgreSQL; it verifies badge-only updates, imported pre-ledger completions,
 idempotence, account isolation and no mastery assembled across different runs.
 Never execute these bootstrap/fixture scripts against a player database.
 
+Snapshot replacement (#391): the SQL workflow also executes the actual legacy
+backup/CAS RPC migrations, `20261017180841_protect_canonical_snapshot.sql` and
+`scripts/fixtures/canonical-snapshot-guard.sql`. It tests stale CAS, destructive
+matching CAS, legacy overwrite, badge removal, altered first rewards, malformed
+state, valid spends/revocations, badge upgrades, no double reward and account
+isolation. Without the guard, the fixture fails with `destructive CAS accepted`.
+
+Diagnostic channel independence (#398): `scripts/cloud-diagnostics-tests.mjs`
+executes the production recorder with quota, denied storage, corrupt diagnostic
+history, health-counter and console failures. Each fault must still send the
+privacy-limited authenticated health event. Guest/QA/event guards remain tested.
+
 **Release-blocking contract (#248).** For every feature, assess the impact on *all* existing cloud-saved data, not only new fields. Before declaring a change ready, cover the affected cases below with automated tests. Keep a separate isolated test Supabase environment/accounts; never run destructive fixtures against real players. Mark unautomated cases explicitly as outstanding: documenting them does not count as a passing test.
 
 | Scenario | Required assertion |
@@ -282,3 +294,9 @@ Run `node scripts/generate-diverse-grids-tests.mjs` to cover seeded determinism,
 - Signing out immediately removes the administrative override; it is never written to entitlements, `legacyAdventureAccess`, or cloud/local progression.
 - Administrative navigation must not mark an unsolved quest as solved, award stars, or bypass the ordinary sequential quest completion rules.
 - Repeat after cloud restoration, page reload, and switching accounts; confirm normal players do not inherit administrative access.
+The disposable SQL job also runs `scripts/fixtures/sync-health-incidents.sql`
+against the real sync-health migration: blocked reconciliation, repeated recent
+failures, recovered players, equal timestamps in both orders, incidents older
+than the report window, and authorization/RLS boundaries. The simulated
+incidents exercise the same `stalled_players` count consumed by the cockpit
+alert; they never insert into production telemetry.
