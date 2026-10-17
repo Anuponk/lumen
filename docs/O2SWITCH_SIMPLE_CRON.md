@@ -13,8 +13,8 @@ La copie des assets reste non atomique.
 
 L'accès SSH entrant des runners GitHub a expiré avant authentification sur
 `distil.o2switch.net:22`, et les jetons API cPanel sont désactivés sur ce compte.
-HTTPS remplace donc SSH dans le workflow. La clé read-only utilisée **depuis le
-serveur vers GitHub** reste nécessaire pour récupérer le dépôt.
+HTTPS remplace donc SSH dans le workflow. Le dépôt Lumen est public : son remote utilise aussi HTTPS, sans clé SSH
+ni jeton pour la récupération. Le refus sortant du port 22 est ainsi évité.
 Les anciens secrets SSH/API ne sont plus utilisés par GitHub Actions.
 
 ## Installation du récepteur HTTPS
@@ -27,7 +27,8 @@ Les anciens secrets SSH/API ne sont plus utilisés par GitHub Actions.
      exec 9>"$HOME/.lumen-cron-publish.lock"
      flock -w 120 9
      cd "$HOME/lumen-staging"
-     GIT_SSH_COMMAND="ssh -i $HOME/.ssh/lumen_github_pull -o IdentitiesOnly=yes -o BatchMode=yes" git pull --ff-only origin main
+     git remote set-url origin https://github.com/Anuponk/lumen.git
+     git pull --ff-only origin main
      bash scripts/o2switch-install-webhook.sh
    )
    ```
@@ -75,7 +76,12 @@ sont nettoyés à la prochaine demande de publication. Les logs de jobs et
 sauvegardes nécessitent une rétention manuelle.
 
 GitHub ne suit aucune redirection du récepteur et ne journalise pas les
-signatures. Une requête non authentifiée ne lance aucun processus. Le script
+signatures. Si la connexion Python est coupée, curl réémet exactement la même
+requête signée (en-têtes transmis sur stdin, jamais dans les arguments du
+processus). Les reçus du serveur empêchent un second lancement si la première
+requête avait été acceptée. Les coupures ambiguës sont suivies par consultation
+du statut ; seule la réussite du worker et le SHA public confirment la publication.
+Une requête non authentifiée ne lance aucun processus. Le script
 public ne reçoit jamais de chemin, d'option shell ou de clé privée.
 Le publisher explicite `--deploy SHA` ignore le cooldown de cinq minutes du
 cron et ne choisit jamais un ancien commit de remplacement. Un échec CI,
@@ -98,7 +104,7 @@ Ils sont exécutés dans la quality gate.
 
 Le document root `~/lumen.nopuna.fr` reste un **dossier réel** (pas de lien symbolique à configurer).
 
-Le script `scripts/o2switch-cron-publish.sh` utilise la clé SSH GitHub read-only, attend un workflow **push sur main** terminé en succès pour le SHA exact, et ne publie que lorsqu'une nouvelle version est disponible. Il prépare les fichiers en dehors du document root, archive le site public dans `~/lumen-deploy-backups`, copie les assets et restaure l'archive si copie ou vérification HTTP échoue. Il ne modifie jamais Supabase ni les données locales des joueurs. **Il ne s'agit pas d'une publication atomique : un visiteur peut voir des ressources mélangées pendant la copie.** Le script ne garantit pas le rollback d'une panne brutale du serveur ou d'un SIGKILL.
+Le script `scripts/o2switch-cron-publish.sh` récupère le dépôt depuis son remote GitHub HTTPS public, attend un workflow **push sur main** terminé en succès pour le SHA exact, et ne publie que lorsqu'une nouvelle version est disponible. Il prépare les fichiers en dehors du document root, archive le site public dans `~/lumen-deploy-backups`, copie les assets et restaure l'archive si copie ou vérification HTTP échoue. Il ne modifie jamais Supabase ni les données locales des joueurs. **Il ne s'agit pas d'une publication atomique : un visiteur peut voir des ressources mélangées pendant la copie.** Le script ne garantit pas le rollback d'une panne brutale du serveur ou d'un SIGKILL.
 
 ## Test sans publication
 
@@ -106,7 +112,8 @@ Depuis SSH, après merge et réussite du workflow push/main :
 
 ```bash
 cd ~/lumen-staging
-GIT_SSH_COMMAND="ssh -i ~/.ssh/lumen_github_pull -o IdentitiesOnly=yes -o BatchMode=yes" git pull --ff-only origin main
+git remote set-url origin https://github.com/Anuponk/lumen.git
+git pull --ff-only origin main
 bash scripts/o2switch-cron-publish.sh --dry-run
 ```
 
