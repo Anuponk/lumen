@@ -1,0 +1,39 @@
+name: Diagnose o2switch HTTPS
+on:
+  push:
+    branches: ['diagnose/o2switch-https']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  connectivity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Read-only HTTPS probes without deployment credentials
+        shell: bash
+        run: |
+          set -u
+          getent ahostsv4 lumen.nopuna.fr
+          for protocol in --http1.1 --http2; do
+            for path in build-info.json lumen-deploy.php; do
+              echo "GET $path $protocol"
+              curl --disable --ipv4 "$protocol" --silent --show-error --connect-timeout 5 --max-time 15 \
+                --output /dev/null --write-out 'http=%{http_code} remote=%{remote_ip} tls_verify=%{ssl_verify_result}\n' \
+                "https://lumen.nopuna.fr/$path" || echo "curl_exit=$?"
+            done
+            echo "Unsigned POST $protocol (expected 401; cannot launch a job)"
+            curl --disable --ipv4 "$protocol" --silent --show-error --connect-timeout 5 --max-time 15 \
+              --header 'Content-Type: application/json' --data '{"action":"status","sha":"9fbf9c79be91b437aa314cf40357e8ef983848c6"}' \
+              --output /dev/null --write-out 'http=%{http_code} remote=%{remote_ip} tls_verify=%{ssl_verify_result}\n' \
+              https://lumen.nopuna.fr/lumen-deploy.php || echo "curl_exit=$?"
+          done
+          python3 - <<'PY'
+          import urllib.request, urllib.error
+          for path,body in [('build-info.json',None),('lumen-deploy.php',None),('lumen-deploy.php',b'{}')]:
+              req=urllib.request.Request('https://lumen.nopuna.fr/'+path,data=body,headers={'User-Agent':'lumen-release'})
+              try:
+                  with urllib.request.urlopen(req,timeout=15) as r: print('Python',path,'POST' if body is not None else 'GET',r.status,flush=True)
+              except urllib.error.HTTPError as e: print('Python',path,'HTTP',e.code,flush=True)
+              except Exception as e: print('Python',path,type(e).__name__,flush=True)
+          PY
