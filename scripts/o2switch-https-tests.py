@@ -127,6 +127,16 @@ spec.loader.exec_module(client)
 
 
 class ClientTests(unittest.TestCase):
+    def test_interrupted_trigger_response_polls_without_relaunching(self):
+        from io import BytesIO
+        lost = client.http.client.RemoteDisconnected('connection interrupted')
+        with patch.object(client, 'request', side_effect=[lost, lost, {'sha': SHA, 'state': 'success'}]) as request, \
+             patch.object(client.time, 'sleep'), \
+             patch.object(client.urllib.request, 'build_opener') as opener:
+            opener.return_value.open.return_value = BytesIO(json.dumps({'sha': SHA}).encode())
+            client.deploy(SHA, SECRET)
+            self.assertEqual([call.args[0] for call in request.call_args_list], ['deploy', 'status', 'status'])
+
     def test_server_failure_and_invalid_secret_fail_closed(self):
         with patch.object(client, 'request', return_value={'sha': SHA, 'state': 'failed'}):
             with self.assertRaisesRegex(RuntimeError, 'Server publication failed'):

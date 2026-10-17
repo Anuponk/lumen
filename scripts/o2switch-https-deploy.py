@@ -2,6 +2,7 @@
 """Authenticated HTTPS deployment, with completion + exact public SHA checks."""
 import hashlib
 import hmac
+import http.client
 import json
 import os
 import re
@@ -12,6 +13,7 @@ import urllib.request
 
 HOOK = 'https://lumen.nopuna.fr/lumen-deploy.php'
 PUBLIC = 'https://lumen.nopuna.fr/build-info.json'
+NETWORK_ERRORS = (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException)
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -41,14 +43,14 @@ def deploy(sha, secret):
         request('deploy', sha, secret)
     except urllib.error.HTTPError as exc:
         raise RuntimeError('HTTPS trigger rejected request (HTTP ' + str(exc.code) + ')') from None
-    except (urllib.error.URLError, TimeoutError):
+    except NETWORK_ERRORS:
         print('Trigger response unavailable; checking job status')
     for _ in range(108):
         try:
             state = request('status', sha, secret).get('state')
         except urllib.error.HTTPError as exc:
             raise RuntimeError('HTTPS status rejected request (HTTP ' + str(exc.code) + ')') from None
-        except (urllib.error.URLError, TimeoutError):
+        except NETWORK_ERRORS:
             time.sleep(5)
             continue
         if state == 'failed':
