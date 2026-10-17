@@ -1758,15 +1758,16 @@ function celebrateLearningReplaySuccess(){
 }
 
 function renderSuccessRewards(stars,savedPerformance,priorBadges={}){let el=document.getElementById("successRewards");if(!el)return;const run=savedPerformance.run,earned=savedPerformance.badges,qualifying=savedPerformance.qualifying,rewards=[];if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});if(qualifying&&earned.autonomy&&!priorBadges.autonomy)rewards.push({cls:"autonomy",icon:performanceIcon("autonomy"),label:"Autonomie"});if(qualifying&&earned.speed&&!priorBadges.speed)rewards.push({cls:"speed",icon:performanceIcon("speed"),label:"Rapidité"});if(qualifying&&earned.noError&&!priorBadges.noError)rewards.push({cls:"no-error",icon:performanceIcon("noError"),label:"Sans erreur"});if(qualifying&&earned.mastery&&!priorBadges.mastery)rewards.push({cls:"mastery",icon:performanceIcon("mastery"),label:"Maîtrise"});el.innerHTML=rewards.map((r,i)=>'<span class="success-reward '+r.cls+'" style="--reward-delay:'+(220+i*210)+'ms"><span>'+r.icon+'</span><span>'+r.label+'</span></span>').join("");el.classList.toggle("mastery-earned",!!qualifying&&!!earned.mastery&&!priorBadges.mastery)}
-// Canonical achievements use stable-ID cloud CAS, never the historical
+// Canonical achievements use the stable-ID server ledger, never the historical
 // puzzle_id RPC or the old `solved[levelIndex]` reward calculation.
 const canonicalVictoryOutbox=createCanonicalVictoryOutbox(localStorage);
 async function celebrateCanonicalSuccess(){
  const q=canonicalActiveQuest;if(!q||celebrated)return;
  const seconds=activeGameSeconds(),attempt=attemptEngine.snapshot();
  const assisted=!!attempt?.assistanceUsed||!!usedHintThisGame;
- const badges={speed:seconds<=60,autonomy:!assisted,noError:!attempt?.mistakeCommitted};
- badges.mastery=badges.speed&&badges.autonomy&&badges.noError;
+ const run=performanceAttempt({questIndex:q.ordinal-1,seconds,assistanceUsed:assisted,mistakeCommitted:!!attempt?.mistakeCommitted});
+ const badges={speed:run.speed,autonomy:run.autonomy,noError:run.noError,mastery:run.mastery};
+ const priorBadges=lumenProgress.canonicalQuestState?.[q.id]?.badges||{};
  const reward={badges,performance:{bestTime:seconds,assisted,seconds},stars:1};
  let committed;
  try{
@@ -1812,7 +1813,8 @@ async function celebrateCanonicalSuccess(){
  celebrated=true;attemptEngine.complete();clearInterval(timer);pauseGameClock();clock();
  board.classList.add("win");
  document.getElementById("successTitle").textContent="Quête "+q.ordinal+" accomplie !";
- document.getElementById("successSub").textContent=committed.newlyCompleted?"+ "+(badges.autonomy?15:10)+" XP · +1 étoile · "+[["speed","Rapidité"],["autonomy","Autonomie"],["noError","Sans erreur"],["mastery","Maîtrise"]].filter(([key])=>badges[key]).map(([,label])=>label).join(" · ")+" · sauvegarde confirmée":"Quête déjà réussie · sauvegarde confirmée";
+ const earnedLabels=[["speed","Rapidité"],["autonomy","Autonomie"],["noError","Sans erreur"],["mastery","Maîtrise"]].filter(([key])=>badges[key]&&!priorBadges[key]&&committed.profile.canonicalQuestState[q.id].badges?.[key]).map(([,label])=>label);
+ document.getElementById("successSub").textContent=[committed.newlyCompleted?"+ "+(badges.autonomy?15:10)+" XP · +1 étoile":"Quête déjà réussie",...earnedLabels,"sauvegarde confirmée"].join(" · ");
  document.getElementById("successTime").textContent=document.getElementById("time").textContent;
  const share=document.getElementById("successShare");if(share)share.hidden=true;
  const achievements=document.getElementById("successAchievement");if(achievements)achievements.hidden=true;

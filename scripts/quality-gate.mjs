@@ -194,6 +194,7 @@ try{
  await runBrowser("learning-browser-tests.mjs","ci-learning.json",9224);
  await runBrowser("late-game-browser-tests.mjs","ci-late-game.json",9225);
  await runBrowser("sky-navigation-browser-tests.mjs","ci-sky-navigation.json",9226);
+ await runBrowser("canonical-replay-browser-tests.mjs","ci-canonical-replay.json",9227);
 }catch(error){failed=error;console.error("\nQUALITY GATE FAILED:",error.message)}
 finally{
  await cleanup();

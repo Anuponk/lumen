@@ -178,6 +178,15 @@ Do not equate the number of authenticated Supabase users with the total player p
 When a guest later authenticates, progression merge must preserve the strongest valid continuous progress. Analytics identity linking should avoid double-counting where practical while keeping authentication data and gameplay analytics responsibilities distinct.
 
 ## Data ownership principles
+
+Canonical stable-ID quest replays use `lumen_commit_canonical_victory`, the same
+transactional server ledger as first completion. Under the player row lock,
+replays merge explicitly earned badges monotonically without changing XP,
+stars, first-completion performance, currency or entitlements, and without a
+second reward event. Maîtrise must be explicitly earned on one run, never
+inferred from accumulated badge flags. The client confirms every requested
+badge by reading the cloud profile before acknowledging its durable outbox
+entry; an existing solved flag alone does not confirm a replay upgrade (#453).
 Campaign truth (catalogue, quest order, constellation mapping and rules) belongs to version-controlled application data/code. Player-specific mutable state belongs to local persistence and/or Supabase.
 
 Derived UI counters should be recomputed from canonical state rather than becoming independent sources of truth. This is especially important for solved-quest totals, constellation progress, stars and unlock state: duplicated counters can drift and previously caused visible inconsistencies.

@@ -11,6 +11,15 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Canonical replay (#453): `node scripts/canonical-ledger-client-tests.mjs` covers
+both final Grande Ourse quests through the gameplay ledger transport, including
+lost acknowledgements, stale solved-only replies, durable outbox retention and
+unchanged first-completion rewards. The `Canonical ledger SQL regression`
+workflow executes both real migrations and the replay fixtures in disposable
+PostgreSQL; it verifies badge-only updates, imported pre-ledger completions,
+idempotence, account isolation and no mastery assembled across different runs.
+Never execute these bootstrap/fixture scripts against a player database.
+
 **Release-blocking contract (#248).** For every feature, assess the impact on *all* existing cloud-saved data, not only new fields. Before declaring a change ready, cover the affected cases below with automated tests. Keep a separate isolated test Supabase environment/accounts; never run destructive fixtures against real players. Mark unautomated cases explicitly as outstanding: documenting them does not count as a passing test.
 
 | Scenario | Required assertion |

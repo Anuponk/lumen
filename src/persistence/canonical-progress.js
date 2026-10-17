@@ -115,12 +115,12 @@ export async function commitCanonicalVictoryViaLedger(supabase,questId,reward){
   // only an actual server-side solved flag, without issuing another credit.
   let verified;
   try{verified=await loadVerifiedProfile(supabase)}catch{}
-  if(verified?.canonicalQuestState?.[questId]?.solved)
+  if(verified?.canonicalQuestState?.[questId]?.solved&&hasAllEarnedBadges(verified.canonicalQuestState[questId],reward?.badges))
    return {profile:verified,newlyCompleted:false,alreadySaved:true,quest};
   throw Error("Canonical ledger commit unconfirmed: "+String(error.message??"unknown"));
  }
  const verified=await loadVerifiedProfile(supabase);
- if(!verified?.canonicalQuestState?.[questId]?.solved)throw Error("Canonical ledger verification failed");
+ if(!verified?.canonicalQuestState?.[questId]?.solved||!hasAllEarnedBadges(verified.canonicalQuestState[questId],reward?.badges))throw Error("Canonical ledger verification failed");
  if(!data||!data.profile||typeof data.newlyCompleted!=="boolean")
   throw Error("Invalid canonical ledger acknowledgement");
  return {profile:verified,newlyCompleted:data.newlyCompleted,alreadySaved:!data.newlyCompleted,quest};
