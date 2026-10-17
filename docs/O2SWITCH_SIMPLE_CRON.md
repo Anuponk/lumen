@@ -36,7 +36,9 @@ Les anciens secrets SSH/API ne sont plus utilisés par GitHub Actions.
    Le sous-shell libère le verrou à la fin. L'installateur est réexécutable et
    conserve le secret existant. Il installe le code PHP et le worker dans
    `~/lumen-private`, droits 700/600, et un simple wrapper public sans secret
-   `~/lumen.nopuna.fr/lumen-deploy.php`. PHP 8.1+ avec `exec`, Bash, nohup,
+   `~/lumen.nopuna.fr/lumen-release/index.php`, accessible via
+   `https://lumen.nopuna.fr/lumen-release/` grâce à un DirectoryIndex local.
+   Le wrapper historique `lumen-deploy.php` reste présent pendant la migration. PHP 8.1+ avec `exec`, Bash, nohup,
    timeout, Python et les outils du publisher sont nécessaires. Le contexte
    PHP web doit aussi autoriser exec ; le premier appel authentifié le vérifie.
 
@@ -57,9 +59,22 @@ Les anciens secrets SSH/API ne sont plus utilisés par GitHub Actions.
 Les modifications ultérieures du récepteur/worker nécessitent de relancer
 l'installateur après mise à jour du checkout validé ; les merges ordinaires
 de l'application se publient automatiquement sans cette intervention.
-Pour désactiver le déclencheur, retirer le wrapper public et passer la variable
+Pour désactiver le déclencheur, retirer le dossier public `lumen-release` et
+le wrapper historique `lumen-deploy.php`, puis passer la variable
 GitHub à false. Pour renouveler le secret, remplacer le fichier privé par un
 nouveau secret aléatoire hexadécimal de 32 octets et actualiser le secret GitHub.
+
+## Diagnostic des accès PHP directs
+
+Les sondes GitHub du 17 octobre 2026 donnent HTTP 200 sur `build-info.json`,
+mais une réinitialisation de connexion sur `lumen-deploy.php` et même sur un
+`index.php` inexistant : curl 56 en HTTP/1.1, curl 92 en HTTP/2, certificat TLS
+valide. Une URL de dossier inexistante donne bien HTTP 404 depuis le même
+runner. Le client utilise donc `/lumen-release/` ; le serveur résout son
+`index.php` via DirectoryIndex, sans modifier les règles globales de sécurité.
+Cela reste le même handler privé et la même signature HMAC. La réussite de
+la route sur le serveur et depuis GitHub doit être vérifiée après installation ;
+un test local ne suffit pas à déclarer le déploiement opérationnel.
 
 ## Contrat de sécurité et diagnostic
 

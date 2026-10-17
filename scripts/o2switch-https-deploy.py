@@ -12,7 +12,7 @@ import time
 import urllib.error
 import urllib.request
 
-HOOK = 'https://lumen.nopuna.fr/lumen-deploy.php'
+HOOK = 'https://lumen.nopuna.fr/lumen-release/'
 PUBLIC = 'https://lumen.nopuna.fr/build-info.json'
 NETWORK_ERRORS = (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException)
 
