@@ -4,9 +4,11 @@ const ui=readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8"
 const marker=ui.indexOf("hydration_partial_reconciliation_pending");
 const install=ui.indexOf('hydrationStage="local_install"',marker);
 assert.ok(marker>0&&install>marker,"partial hydration decision precedes unsafe full install");
-const segment=ui.slice(marker-450,install);
+const segment=ui.slice(ui.lastIndexOf('// Achievements may',marker),install);
 assert.match(segment,/cloudSafelyCoversLocal/);
 assert.match(segment,/cloudProfileFailure=\{reason:"partial_reconciliation"/);
 assert.match(segment,/profileReady:false/);
 assert.match(segment,/return;/);
+assert.match(segment,/if\(!sessionValid\(\)\)return;\s*cloudProfileFailure=[^\n]+\s*canonicalRecoveryContext=\{userId:accountId,client:hydrationClient\}/);
+assert.ok(segment.indexOf('updateAuthUI()')<segment.indexOf('canonicalRecovery.schedule()'),'Retry is scheduled after the UI clears startup auth pending');
 console.log("Unresolved local/cloud rewards are reported as partial reconciliation without unsafe install");

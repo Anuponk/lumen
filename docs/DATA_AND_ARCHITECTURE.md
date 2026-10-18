@@ -15,6 +15,8 @@ cutover still required for #391 are documented in [Cloud recovery](CLOUD_RECOVER
 
 Canonical outbox inspection distinguishes an empty readable queue from an incomplete read of its stores. A temporarily inaccessible backend retains a visible pending check and bounded retry; readable independent intentions may still recover. The replay guard is acquired before asynchronous enumeration, and cancelled scheduled work rechecks its generation before starting. Neither an unreadable record nor a missing badge is an acknowledgement.
 
+Isolated ledger recovery: after verified cloud hydration reaches a same-owner local `partial_reconciliation`, an ephemeral permission bound to the authenticated user and exact client permits queued canonical ledger commands while full-profile readiness remains false. No local profile, in-memory progress, balance, baseline or legacy snapshot is installed or uploaded by this replay; only the verified intention is acknowledged. A full-hydration reload is forbidden in this state, and the global sync failure remains visible. Account/client changes and a new hydration invalidate the permission. Auth/password recovery, hidden/offline state, in-flight profile writes and active canonical play still hold replay; unverified restoration failures do not grant permission. This does not unlock new gameplay or authorize legacy rewards/daily/spending while reconciliation remains blocked.
+
 **Protected product invariant (#248):** anything earned or purchased by an authenticated player must be durably retrievable after another-device sign-in, PWA reinstall, local cache loss, reconnect or migration. Never replace a nonempty cloud record with an empty or stale local snapshot.
 
 ### Data ownership and invariants

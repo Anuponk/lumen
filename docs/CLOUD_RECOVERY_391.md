@@ -4,6 +4,10 @@ This is a staged implementation record, not a declaration that #391 is closed.
 Updated baseline: `b1c272eb46c958d04adfb1fd8b06fbb49214951f` (2026-10-18),
 including the deployed performance-summary compatibility fix #473.
 
+The durable outbox step #472 is deployed as `ba9bf44` (version 460).
+This follow-up isolates background ledger replay after verified legacy conflict;
+it does not declare the remaining writer cutover complete.
+
 ## Reproduced incidents
 
 The mobile diagnostic supplied on 2026-10-18 reports build `1.11.1+452`,
@@ -87,11 +91,25 @@ No missing/unreadable record is treated as acknowledged or deleted. A permanentl
 denied backend may therefore retain this status; readable valid entries can still
 recover, while retries remain subject to the normal visibility/auth/profile holds.
 
-Automatic replay remains held while the document is hidden/offline, auth is
-pending, an active canonical quest exists, the profile is dirty/busy or hydration
-is incomplete. Those guards protect unsynced legacy state. Removing the global
-hydration dependency requires the writer/authority cutover below; this delivery
-does not bypass a real profile conflict or overwrite it to make the UI progress.
+Automatic replay remains held while the document is hidden/offline, auth or
+password recovery is pending, an active canonical quest exists or a profile
+write is busy. A normally ready but dirty profile still holds replay.
+
+After same-owner hydration has verified the remote profile but cannot reconcile
+local legacy data, it records an ephemeral permission bound to that user and
+exact cloud client. This permits queued canonical ledger replay despite full
+profile readiness remaining false or local legacy changes remaining dirty.
+The ledger RPC locks and changes its server snapshot transactionally; snapshot
+CAS remains guarded against stale writes. No local snapshot, in-memory progress,
+currency, baseline or legacy writer is changed by this isolated recovery.
+Read-back must confirm the requested badges before the intention is removed.
+There is no reload on isolated success, and the global partial-sync status stays
+visible. The permission is cleared on account/client replacement and new
+hydration; a restore error alone cannot authorize it.
+
+This is background intention recovery, not an unlock for new canonical gameplay,
+legacy wins, daily rewards or spending while a legacy conflict remains. Their
+remaining global hydration dependency still requires the writer/authority cutover.
 Invalid/server-refused operations are preserved; persisted per-operation error
 states and permanent-vs-transient classification remain a later step.
 
@@ -121,6 +139,15 @@ Existing V1/multi-device/ledger regressions remain enabled. The canonical replay
 browser runner additionally exercises real IndexedDB with denied localStorage,
 a new document, an independent victory after refusal and a corrupt V1 record.
 The browser transport is simulated; production accounts and RPCs are not mutated.
+
+Isolated recovery regressions execute the actual UI policy/replay functions:
+verified legacy divergence, unchanged local bytes/in-memory progress, no reload,
+account/client/active-play/auth/offline/visibility holds, network refusal and
+online scheduling without a legacy write. The account-session browser runner
+also runs the full hydration-to-recovery flow with simulated Auth/RPC and real
+IndexedDB on mobile/desktop, checking one grant, no snapshot write, unchanged
+local data and continued global partial-sync status. These are not live-account
+or live-database validation.
 
 Run `node scripts/test-affected.mjs --full` before the PR. Preserve the actual
 results and distinguish Node fixtures, browser storage, isolated SQL, and live

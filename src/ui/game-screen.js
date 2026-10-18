@@ -50,6 +50,9 @@ const qaKey=suffix=>qaActive?"lumenQa"+suffix:suffix;
 const {normalizeSequentialProgress,solvedCount,exactSkyScoreForSolvedPrefix,ensureSkyScore,skyStarsEarned,challengeRewardKeys,constellationProgress,constellationLitAt,awards,performanceRun,savePerformance}=createCampaign(()=>lumenProgress,()=>saveLumenProgress(),()=>({activeGameSeconds,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted,qualifying:!!attemptEngine.snapshot()?.qualifying}));
 let cloudProfileReady=false,cloudProfileTimer=null,cloudProfileBusy=false,cloudProfileDirty=false,cloudProfileBaseline=null,cloudProfileInFlight=null,cloudProfileFailure=null;
 let canonicalOutboxNotice=null;
+// Session-scoped permission to replay ledger commands after verified hydration
+// found only a local legacy divergence. Never a second profile or reward cache.
+let canonicalRecoveryContext=null;
 // Local-only, privacy-safe cloud diagnostics. Never log IDs, emails, tokens or save payloads.
 const cloudDiagKey="lumenCloudDiagnosticsV1";
 function recordCloudDiagnostic(event,details={}){
@@ -328,10 +331,16 @@ function scheduleCloudProfile(){
 // A victory saved while offline must be retried even when the full profile
 // had no pending dirty snapshot. Only the signed-in session may replay it.
 let canonicalOutboxRetryInFlight=false;
+function canReplayCanonicalOutbox(){
+ if(qaActive||!lumenUser||!lumenSupabase||authSessionPending||cloudProfileBusy||canonicalActiveQuest||document.visibilityState==="hidden"||navigator.onLine===false)return false;
+ try{if(sessionStorage.getItem("lumenPasswordRecoveryPending")==="1")return false}catch{return false}
+ if(cloudProfileReady)return !cloudProfileDirty;
+ return cloudProfileFailure?.reason==="partial_reconciliation"&&canonicalRecoveryContext?.userId===lumenUser.id&&canonicalRecoveryContext?.client===lumenSupabase;
+}
 async function retryPendingCanonicalOutboxOnReconnect(){
- if(canonicalOutboxRetryInFlight||qaActive||!lumenUser||!lumenSupabase||!cloudProfileReady||cloudProfileBusy||cloudProfileDirty||canonicalActiveQuest)return;
+ if(canonicalOutboxRetryInFlight||!canReplayCanonicalOutbox())return;
  const userId=lumenUser.id,client=lumenSupabase;
- const sessionValid=()=>lumenUser?.id===userId&&lumenSupabase===client&&!qaActive&&cloudProfileReady;
+ const sessionValid=()=>lumenUser?.id===userId&&lumenSupabase===client&&canReplayCanonicalOutbox();
  // Acquire before the first async read: online/resume can race the timer.
  canonicalOutboxRetryInFlight=true;
  try{
@@ -345,15 +354,17 @@ async function retryPendingCanonicalOutboxOnReconnect(){
    recordCloudDiagnostic("canonical_outbox_reconnect_replayed",{count:confirmed.length});
    // Do not overwrite in-memory local progress that could include an unsynced
    // play. Re-run the normal non-destructive hydration on next navigation.
-   if(!cloudProfileDirty&&!cloudProfileBusy&&!canonicalActiveQuest)location.reload();
+   if(cloudProfileReady&&!cloudProfileDirty&&!cloudProfileBusy&&!canonicalActiveQuest)location.reload();
+   else recordCloudDiagnostic("canonical_outbox_isolated_recovered",{count:confirmed.length,fullSync:false});
   }
  }catch(error){recordCloudDiagnostic("canonical_outbox_reconnect_failed",{reason:"retry"})}
  finally{canonicalOutboxRetryInFlight=false}
 }
 function retryPendingCloudWriteOnReconnect(){
- if(qaActive||!lumenUser||!lumenSupabase||!cloudProfileReady)return;
+ if(qaActive||!lumenUser||!lumenSupabase)return;
  void retryPendingCanonicalOutboxOnReconnect();
  canonicalRecovery.schedule();
+ if(!cloudProfileReady)return;
  if(!["network","legacy_mirror"].includes(cloudProfileFailure?.reason))return;
  if(cloudProfileBusy||cloudProfileTimer!==null)return;
  recordCloudDiagnostic("flush_retry_online",{reason:cloudProfileFailure.reason});
@@ -370,10 +381,10 @@ document.addEventListener("visibilitychange",()=>{
 });
 const {loadLumenProgress,saveLumenProgress}=createLocalPersistence(localStorage,()=>lumenProgress,{progressKey:qaActive?"lumenQaProgressV1":"lumenProgressV1",onSave:scheduleCloudProfile});
 const persistenceModel={
-get lumenSupabase(){return lumenSupabase},set lumenSupabase(value){lumenSupabase=value},
+get lumenSupabase(){return lumenSupabase},set lumenSupabase(value){if(lumenSupabase!==value){canonicalRecoveryContext=null;canonicalRecovery.cancel()}lumenSupabase=value},
 get lumenEntitlements(){return lumenEntitlements},set lumenEntitlements(value){lumenEntitlements=Array.isArray(value)?value:[]},
 get lumenCapabilities(){return lumenCapabilities},set lumenCapabilities(value){lumenCapabilities=Array.isArray(value)?value:[]},
-get lumenUser(){return lumenUser},set lumenUser(value){if(lumenUser?.id!==value?.id){canonicalRecovery.cancel();canonicalOutboxNotice=null;cloudProfileReady=false;cloudProfileBaseline=null;cloudProfileFailure=null;lumenNickname=""}lumenUser=value},
+get lumenUser(){return lumenUser},set lumenUser(value){if(lumenUser?.id!==value?.id){canonicalRecovery.cancel();canonicalRecoveryContext=null;canonicalOutboxNotice=null;cloudProfileReady=false;cloudProfileBaseline=null;cloudProfileFailure=null;lumenNickname=""}lumenUser=value},
 get lumenCloudReady(){return lumenCloudReady},set lumenCloudReady(value){lumenCloudReady=value},
 get lumenNickname(){return lumenNickname},set lumenNickname(value){lumenNickname=value},
 get lumenProgress(){return lumenProgress},set lumenProgress(value){lumenProgress=value},
@@ -384,6 +395,7 @@ get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){used
 };
 const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(event?.type==="restore_failed")cloudProfileFailure={reason:"restore_failed"};if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI();if(event?.type==="password_recovery"){sessionStorage.setItem("lumenPasswordRecoveryPending","1");const editor=document.getElementById("accountProfileEditor");if(editor){editor.dataset.open="true";editor.hidden=false}const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=false;const password=document.getElementById("setPasswordPanel");if(password)password.hidden=false;document.getElementById("setPasswordValue")?.focus()}},renderDaily:(...args)=>renderDaily(...args),afterAuthCloudSync:async()=>{
  if(qaActive||!lumenUser||!lumenSupabase)return;
+ canonicalRecoveryContext=null;canonicalRecovery.cancel();
  if(sessionStorage.getItem("lumenPasswordRecoveryPending")==="1")return;
  cloudProfileReady=false;cloudProfileBaseline=null;
  let hydrationStage="start";
@@ -484,9 +496,12 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    let fullyCovered=false;
    try{fullyCovered=cloudSafelyCoversLocal(JSON.parse(localStorage.getItem("lumenProgressV1")),cloud)}catch{}
    if(!fullyCovered){
+    if(!sessionValid())return;
     cloudProfileFailure={reason:"partial_reconciliation",detail:"cloud_local_divergence"};
+    canonicalRecoveryContext={userId:accountId,client:hydrationClient};
     recordCloudDiagnostic("hydration_partial_reconciliation_pending",{profileReady:false});
     renderDaily();updateAuthUI();
+    canonicalRecovery.schedule();
     return;
    }
   }
@@ -1788,7 +1803,7 @@ async function refreshCanonicalOutboxNotice(ownerId){
  }catch{if(lumenUser?.id===ownerId){canonicalOutboxNotice="storage";updateAuthUI()}return 1}
 }
 const canonicalRecovery=createCloudRetryScheduler({
- ready:()=>!qaActive&&!!lumenUser&&!!lumenSupabase&&cloudProfileReady&&!authSessionPending&&!cloudProfileBusy&&!cloudProfileDirty&&!canonicalActiveQuest&&document.visibilityState!=="hidden"&&navigator.onLine!==false,
+ ready:canReplayCanonicalOutbox,
  run:async()=>{
   const ownerId=lumenUser.id,client=lumenSupabase;
   await retryPendingCanonicalOutboxOnReconnect();

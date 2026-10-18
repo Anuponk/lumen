@@ -76,6 +76,6 @@ assert.ok(ui.includes("la conservation locale n'est pas confirmée"),"failed sto
 assert.ok(ui.includes("async function retryPendingCanonicalOutboxOnReconnect()"),"recover pending wins on reconnection");
 assert.ok(ui.includes("void retryPendingCanonicalOutboxOnReconnect();"),"online and PWA resume initiate retry");
 assert.ok(ui.includes("canonicalOutboxRetryInFlight=true"),"replay has concurrent retry guard");
-assert.ok(ui.includes("if(!cloudProfileDirty&&!cloudProfileBusy&&!canonicalActiveQuest)location.reload();"),"replay never reloads an active canonical quest or dirty profile");
-assert.ok(ui.includes("cloudProfileBusy||cloudProfileDirty||canonicalActiveQuest)return;"),"never race an active quest with remote replay");
+assert.ok(ui.includes("if(cloudProfileReady&&!cloudProfileDirty&&!cloudProfileBusy&&!canonicalActiveQuest)location.reload();"),"replay never reloads a divergent, active or dirty profile");
+assert.ok(ui.includes("canonicalOutboxRetryInFlight||!canReplayCanonicalOutbox()"),"all replay entry points use the guarded recovery policy");
 console.log("Canonical victory outbox retains failure and isolates player identities");
