@@ -34,7 +34,7 @@ Designed economy:
 - successful bonus challenges grant +1 shard;
 - every 3 new quests completed in Autonomy grant +1 shard, using the same assistance definition as performance badges.
 
-The current code contains `UNLIMITED_SHARDS_TEST=true`, which overrides spending for testing. It does not change the stored product balance.
+An internal, capability-gated `unlimited_shards` toggle is implemented in `src/ui/game-screen.js`; it bypasses spending for authorized testing only, without changing the stored product balance.
 
 ## Série de lumière
 A meaningful activity validates at most one calendar day: either a first campaign completion, or a qualifying replay that actually improves an eligible performance badge. Merely opening or starting a quest does not count.
@@ -44,17 +44,17 @@ The streak is continuous and is not reset every seven days. One missed calendar 
 Guest state is persisted locally. Authenticated daily dates synchronize through the existing `lumen_save_daily` / `lumen_get_daily` RPCs. A future compatible Supabase RPC evolution is still required for server-authoritative calendar time and atomic reward credit across simultaneous devices.
 
 ## Performance badges
-Per-quest performance has exactly three badges:
-- 🧠 **Autonomie**: solve without effective assistance. A granted hint, Verify use, automatic marking that intervenes, or an effective guided-control intervention permanently marks the attempt as assisted. Merely enabling guided control without an intervention does not.
-- ⚡ **Rapidité**: solve under the quest difficulty target. Assistance does not prevent this badge.
-- ✦ **Maîtrise**: earn Autonomie and Rapidité in the **same qualifying attempt**. Never combine achievements from separate attempts.
+Per-quest performance has exactly four badges, as implemented in `src/campaign/performance.js`:
+- 🧠 **Autonomie**: solve without effective assistance.
+- ⚡ **Rapidité**: solve in strictly less than **60 seconds**. Assistance does not prevent this badge.
+- ✓ **Sans erreur**: solve without effective assistance and without a confirmed wrong Guardian.
+- ✦ **Maîtrise**: earn Autonomie, Rapidité and Sans erreur in the **same qualifying attempt**. Never combine achievements from separate attempts.
 
-Eligibility is progressive: quests 1–2 lock all performance badges; quests 3–5 allow Rapidité only; quest 6 onward allows all three.
+Eligibility follows unlocked global progression: Rapidité unlocks at quest 3; the other three badges unlock at quest 6. Previously played tutorial quests can become eligible for the unlocked badge families when replayed, as defined by `performanceEligibility(questIndex, unlockedQuestCount)`.
 
-A quest gets at most one **qualifying attempt per local calendar day**. READY does not consume it. The first intentional grid start consumes that day's qualification; reset keeps the same attempt and qualification, while abandoning after start does not restore it. Further same-day replays remain playable but cannot change badges. Refresh restores the same active attempt through the attempt engine.
+A quest has a **15-minute qualification cooldown** based on `lastQualifiedAt`; replay during cooldown remains possible but cannot improve qualifying badges. Reset/restore must preserve attempt identity and qualification metadata. See `badgeCooldownRemaining` and `mergeEarnedBadges` in `src/campaign/performance.js`.
 
-Existing performance data is migrated conservatively: only the current versioned three-badge records are trusted as earned badges; old badge shapes are not reinterpreted into new achievements.
-
+Existing performance data must be migrated conservatively; never infer newly earned badges from an incompatible legacy record.
 
 ## Progress integrity
 Only victory unlocks the next unsolved quest. Persisted solved history is normalized to a continuous prefix. A player may revisit solved quests but may not jump ahead to locked content.
