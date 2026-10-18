@@ -7,6 +7,7 @@ on:
       - 'scripts/fetch-hipparcos-line-stars.py'
       - 'scripts/build-astronomical-catalogue.mjs'
       - 'scripts/validate-playable-astronomy.mjs'
+      - 'scripts/astronomy-requirements.txt'
   workflow_dispatch:
 
 permissions:
@@ -24,8 +25,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scripts/astronomy-requirements.txt
       - name: Install astronomy preparation dependencies
-        run: python -m pip install 'astropy==7.2.0' 'astroquery==0.4.10'
+        run: python -m pip install -r scripts/astronomy-requirements.txt
       - name: Fetch Stellarium Western data (CC BY-SA)
         run: |
           mkdir -p .cache/astronomy

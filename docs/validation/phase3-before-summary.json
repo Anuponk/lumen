@@ -1,0 +1,228 @@
+{
+  "schema": 1,
+  "collectedAt": "2026-10-18T08:53:53.759Z",
+  "scope": {
+    "repository": "Anuponk/lumen",
+    "pages": 1,
+    "truncated": true,
+    "jobAttempts": "latest only",
+    "oldest": "2026-10-17T04:37:31Z",
+    "newest": "2026-10-18T04:52:17Z",
+    "note": "100 latest runs before phase 3; job timing sample: all 26 completed quality runs plus 3 cloud/SQL gates and 3 failed deploys. Non-random window; incomplete PR lifetimes."
+  },
+  "runsObserved": 100,
+  "completedRuns": 99,
+  "groups": {
+    "cloud-reconciliation-matrix.yml/push/executed/success": {
+      "runs": 8,
+      "rerunAttempts": 0,
+      "executionSeconds": {
+        "n": 0,
+        "mean": null,
+        "median": null
+      },
+      "jobSeconds": {
+        "n": 0,
+        "mean": null,
+        "median": null
+      }
+    },
+    "canonical-ledger.yml/push/executed/success": {
+      "runs": 8,
+      "rerunAttempts": 0,
+      "executionSeconds": {
+        "n": 0,
+        "mean": null,
+        "median": null
+      },
+      "jobSeconds": {
+        "n": 0,
+        "mean": null,
+        "median": null
+      }
+    },
+    "cloud-persistence-contract.yml/pull_request/executed/success": {
+      "runs": 19,
+      "rerunAttempts": 0,
+      "executionSeconds": {
+        "n": 1,
+        "mean": 6,
+        "median": 6
+      },
+      "jobSeconds": {
+        "n": 1,
+        "mean": 6,
+        "median": 6
+      }
+    },
+    "canonical-ledger.yml/pull_request/executed/success": {
+      "runs": 10,
+      "rerunAttempts": 0,
+      "executionSeconds": {
+        "n": 1,
+        "mean": 21,
+        "median": 21
+      },
+      "jobSeconds": {
+        "n": 1,
+        "mean": 21,
+        "median": 21
+      }
+    },
+    "cloud-reconciliation-matrix.yml/pull_request/executed/success": {
+      "runs": 11,
+      "rerunAttempts": 0,
+      "executionSeconds": {
+        "n": 1,
+        "mean": 7,
+        "median": 7
+      },
+      "jobSeconds": {
+        "n": 1,
+        "mean": 7,
+        "median": 7
+      }
+    },
+    "quality.yml/pull_request/executed/success": {
+      "runs": 11,
+      "rerunAttempts": 0,
+      "executionSeconds": {
+        "n": 11,
+        "mean": 163.45454545454547,
+        "median": 166
+      },
+      "jobSeconds": {
+        "n": 11,
+        "mean": 163.45454545454547,
+        "median": 166
+      }
+    },
+    "deploy-o2switch.yml/workflow_run/executed/failure": {
+      "runs": 9,
+      "rerunAttempts": 1,
+      "executionSeconds": {
+        "n": 3,
+        "mean": 7,
+        "median": 7
+      },
+      "jobSeconds": {
+        "n": 3,
+        "mean": 7,
+        "median": 7
+      }
+    },
+    "quality.yml/push/executed/success": {
+      "runs": 7,
+      "rerunAttempts": 0,
+      "executionSeconds": {
+        "n": 7,
+        "mean": 165.42857142857142,
+        "median": 168
+      },
+      "jobSeconds": {
+        "n": 7,
+        "mean": 165.42857142857142,
+        "median": 168
+      }
+    },
+    "deploy-o2switch.yml/workflow_run/executed/success": {
+      "runs": 6,
+      "rerunAttempts": 1,
+      "executionSeconds": {
+        "n": 0,
+        "mean": null,
+        "median": null
+      },
+      "jobSeconds": {
+        "n": 0,
+        "mean": null,
+        "median": null
+      }
+    },
+    "quality.yml/schedule/reused/success": {
+      "runs": 8,
+      "rerunAttempts": 0,
+      "executionSeconds": {
+        "n": 8,
+        "mean": 8.625,
+        "median": 8
+      },
+      "jobSeconds": {
+        "n": 8,
+        "mean": 8.625,
+        "median": 8
+      }
+    },
+    "o2switch-connectivity.yml/push/executed/success": {
+      "runs": 2,
+      "rerunAttempts": 0,
+      "executionSeconds": {
+        "n": 0,
+        "mean": null,
+        "median": null
+      },
+      "jobSeconds": {
+        "n": 0,
+        "mean": null,
+        "median": null
+      }
+    }
+  },
+  "perPR": {
+    "460": {
+      "runs": 4,
+      "rerunAttempts": 0,
+      "distinctHeads": 1,
+      "note": "Distinct heads are revisions, not bug correction cycles. Counts cover this window only."
+    },
+    "461": {
+      "runs": 6,
+      "rerunAttempts": 0,
+      "distinctHeads": 1,
+      "note": "Distinct heads are revisions, not bug correction cycles. Counts cover this window only."
+    },
+    "462": {
+      "runs": 5,
+      "rerunAttempts": 0,
+      "distinctHeads": 1,
+      "note": "Distinct heads are revisions, not bug correction cycles. Counts cover this window only."
+    },
+    "463": {
+      "runs": 6,
+      "rerunAttempts": 0,
+      "distinctHeads": 1,
+      "note": "Distinct heads are revisions, not bug correction cycles. Counts cover this window only."
+    },
+    "464": {
+      "runs": 4,
+      "rerunAttempts": 0,
+      "distinctHeads": 1,
+      "note": "Distinct heads are revisions, not bug correction cycles. Counts cover this window only."
+    },
+    "465": {
+      "runs": 4,
+      "rerunAttempts": 0,
+      "distinctHeads": 1,
+      "note": "Distinct heads are revisions, not bug correction cycles. Counts cover this window only."
+    },
+    "466": {
+      "runs": 4,
+      "rerunAttempts": 0,
+      "distinctHeads": 1,
+      "note": "Distinct heads are revisions, not bug correction cycles. Counts cover this window only."
+    },
+    "467": {
+      "runs": 18,
+      "rerunAttempts": 0,
+      "distinctHeads": 4,
+      "note": "Distinct heads are revisions, not bug correction cycles. Counts cover this window only."
+    }
+  },
+  "unavailable": {
+    "avoidableFailures": "Requires manual root-cause classification; failures are not automatically avoidable.",
+    "bugCorrectionCycles": "Requires a bug ID and a manually linked sequence of corrective attempts.",
+    "codexTokens": "GitHub has no Codex token counters. Import attributable session usage separately; never add cached input twice.",
+    "previousAttempts": "Job timings are latest-attempt only; rerun counts use run_attempt.",
+    "localBefore": "No comparable historical local timing series."
+  }
+}

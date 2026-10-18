@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "codeSha": "ebbfa6d8fb24b8a139ab73056163ff36effc7fcf",
+  "comparison": "observational, one successful Linux run after versus latest phase 2 and bounded historical sample; not a controlled causal experiment",
+  "before": {
+    "run": 39098315955,
+    "jobSeconds": 165,
+    "gateSeconds": 154.2,
+    "prSample": {
+      "n": 11,
+      "meanJobSeconds": 163.45454545454547,
+      "medianJobSeconds": 166
+    }
+  },
+  "after": {
+    "run": 39113311332,
+    "jobSeconds": 118,
+    "gateSeconds": 106.9,
+    "conclusion": "success",
+    "nodeSuites": 91,
+    "browserSuites": 7
+  },
+  "difference": {
+    "jobSecondsVsLatest": -47,
+    "jobPercentVsLatest": -28.484848484848484,
+    "gateSecondsVsLatest": -47.3,
+    "gatePercentVsLatest": -30.674448767833983
+  },
+  "otherChecks": {
+    "cloudContract": {
+      "run": 39113311338,
+      "seconds": 5,
+      "conclusion": "success"
+    },
+    "reconciliation": {
+      "run": 39113311305,
+      "seconds": 7,
+      "conclusion": "success"
+    },
+    "ledgerSQL": {
+      "run": 39113311323,
+      "seconds": 25,
+      "conclusion": "success"
+    },
+    "astronomy": {
+      "run": 39113311299,
+      "seconds": 58,
+      "installSeconds": 8,
+      "conclusion": "success",
+      "cache": "miss; saved after successful run"
+    }
+  },
+  "local": {
+    "targeted": {
+      "seconds": 4.932,
+      "suites": 63,
+      "conclusion": "success",
+      "scope": "isolated QA worktree; badge suite whitespace edit; instrumented phase 2 base"
+    },
+    "full": {
+      "gateSeconds": 92.485,
+      "wrapperSeconds": 94.781,
+      "conclusion": "failure",
+      "cause": "pre-existing Edge 375x667 app vertical overflow of 3px",
+      "nodeSuitesPassed": 91,
+      "complementarySuitesPassed": 29,
+      "browserSuitesPassed": 6
+    }
+  },
+  "unavailable": [
+    "causal fraction of speedup",
+    "attributable Codex tokens/cache",
+    "measured reduction in correction cycles or avoidable failures"
+  ]
+}

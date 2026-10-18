@@ -1,3 +1,18 @@
+// CDP acknowledges navigation before the old document is necessarily replaced.
+export async function navigateAndWait({send,evaluate},method,params={}) {
+ const previous=await evaluate('performance.timeOrigin');
+ await send(method,params);
+ for(let i=0;i<100;i++) {
+  try{
+   if(await evaluate(`performance.timeOrigin !== ${JSON.stringify(previous)} && document.readyState === 'complete' && !!window.lumenDiagnostics`))return;
+  }catch(error){
+   if(!/Cannot find context|Execution context was destroyed|Inspected target navigated/.test(error.message))throw error;
+  }
+  await new Promise(resolve=>setTimeout(resolve,100));
+ }
+ throw Error('Navigation timed out: '+method);
+}
+
 // Test fixtures enter quests directly. Acknowledge teaching milestones through
 // their real buttons before exercising the board or opening another modal.
 export async function acknowledgeLearningMilestones(evaluate){

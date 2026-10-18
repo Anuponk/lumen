@@ -66,6 +66,7 @@ export function main(args=process.argv.slice(2)) {
  if(list||!plan.suites.length)return 0;
  const logDir=mkdtempSync(path.join(tmpdir(),'lumen-tests-'));
  console.log('Detailed logs: '+logDir);
+ const startedAt=Date.now(),timings=[];
  let failures=0;
  for(const suite of plan.suites) {
   const started=Date.now();
@@ -73,10 +74,14 @@ export function main(args=process.argv.slice(2)) {
   const output=(result.stdout||'')+(result.stderr||'')+(result.error?.message||'');
   writeFileSync(path.join(logDir,suite+'.log'),output);
   const ok=result.status===0;
+  timings.push({suite,seconds:(Date.now()-started)/1000,ok});
   console.log(`${ok?'PASS':'FAIL'} ${suite} ${((Date.now()-started)/1000).toFixed(2)}s`);
   if(!ok){failures++;console.error(output.slice(-12000))}
  }
  console.log(`${plan.suites.length} suites; ${failures} failed`);
+ writeFileSync(path.join(logDir,'timings.json'),JSON.stringify({schema:1,kind:'affected',
+  at:new Date().toISOString(),mode:plan.mode,base,platform:process.platform,node:process.version,
+  seconds:(Date.now()-startedAt)/1000,ok:failures===0,suites:timings},null,2)+'\n');
  return failures?1:0;
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {

@@ -8,7 +8,11 @@ import {fileURLToPath} from "node:url";
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const validationDir=path.join(root,"docs","validation");
 fs.mkdirSync(validationDir,{recursive:true});
+// A failed suite must not upload JSON left in the checkout by a previous run.
+for(const name of ['browser','ux','learning','late-game','sky-navigation','account-session','canonical-replay','quality-summary'])
+ fs.rmSync(path.join(validationDir,`ci-${name}.json`),{force:true});
 import {nodeSuites} from "./quality-gate-suites.mjs";
+import {runPool} from "./quality-gate-pool.mjs";
 
 const started=[];
 const summary=[];
@@ -105,21 +109,33 @@ async function cleanup(){
 }
 let failed=null;
 try{
+ const workers=Number(process.env.LUMEN_BROWSER_WORKERS||1);
+ if(![1,2].includes(workers))throw Error("LUMEN_BROWSER_WORKERS must be 1 or 2");
  console.log("LUMEN quality gate — Node "+process.version+" — "+process.platform);
  for(const suite of nodeSuites)await run(process.execPath,[path.join("scripts",suite)],{label:suite});
  await startServer();
- await runBrowser("account-session-browser-tests.mjs","ci-account-session.json",9230);
- await runBrowser("browser-tests.mjs","ci-browser.json",9222);
- await runBrowser("ux-cleanup-tests.mjs","ci-ux.json",9223);
- await runBrowser("learning-browser-tests.mjs","ci-learning.json",9224);
- await runBrowser("late-game-browser-tests.mjs","ci-late-game.json",9225);
- await runBrowser("sky-navigation-browser-tests.mjs","ci-sky-navigation.json",9226);
- await runBrowser("canonical-replay-browser-tests.mjs","ci-canonical-replay.json",9227);
+ // Start the longest historical suite first; all seven checks remain mandatory.
+ await runPool([
+  ()=>runBrowser("learning-browser-tests.mjs","ci-learning.json",9224),
+  ()=>runBrowser("account-session-browser-tests.mjs","ci-account-session.json",9230),
+  ()=>runBrowser("browser-tests.mjs","ci-browser.json",9222),
+  ()=>runBrowser("ux-cleanup-tests.mjs","ci-ux.json",9223),
+  ()=>runBrowser("late-game-browser-tests.mjs","ci-late-game.json",9225),
+  ()=>runBrowser("sky-navigation-browser-tests.mjs","ci-sky-navigation.json",9226),
+  ()=>runBrowser("canonical-replay-browser-tests.mjs","ci-canonical-replay.json",9227)
+ ],workers);
 }catch(error){failed=error;console.error("\nQUALITY GATE FAILED:",error.message)}
 finally{
  await cleanup();
  console.log("\nQuality summary");
  for(const item of summary)console.log((item.ok?"✓":"✗"),item.label,item.seconds+"s");
  console.log("Total",Math.round((Date.now()-startedAt)/100)/10+"s");
+ const report={schema:1,kind:"quality",at:new Date().toISOString(),sha:process.env.GITHUB_SHA||null,
+  platform:process.platform,node:process.version,browserWorkers:Number(process.env.LUMEN_BROWSER_WORKERS||1),
+  seconds:(Date.now()-startedAt)/1000,ok:!failed,error:failed?.message||null,suites:summary};
+ fs.writeFileSync(path.join(validationDir,"ci-quality-summary.json"),JSON.stringify(report,null,2)+'\n');
+ if(process.env.GITHUB_STEP_SUMMARY)fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+  `Quality: ${report.ok?'PASS':'FAIL'}; ${report.seconds.toFixed(1)}s; ${summary.length} suites attempted.\n`+
+  summary.filter(item=>!item.ok).map(item=>`- Failed: ${item.label}\n`).join(''));
 }
 if(failed)process.exitCode=1;

@@ -1,9 +1,10 @@
 // Isolated browser + simulated Auth/RPC. No real accounts or mail requests.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {connectBrowser} from './cdp-client.mjs';
+import {connectBrowser,navigateAndWait} from './cdp-client.mjs';
 const {send,evaluate,errors}=await connectBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const navigate=(method,params)=>navigateAndWait({send,evaluate},method,params);
 async function until(expression){for(let i=0;i<100;i++){if(await evaluate(expression))return;await sleep(100)}throw Error('Timed out: '+expression+' '+JSON.stringify(await evaluate(`({calls:window.__authCalls,status:document.getElementById('mobileAuthStatus')?.textContent,emailStatus:document.getElementById('accountEmailStatus')?.textContent,diagnostics:localStorage.getItem('lumenCloudDiagnosticsV1')})`)))}
 const url=new URL(process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/');
 const fixture=`
@@ -29,9 +30,9 @@ try{
  await send('Page.addScriptToEvaluateOnNewDocument',{source:fixture});
  for(const viewport of [{width:390,height:844,mobile:true},{width:1440,height:900,mobile:false}]){
   await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});
-  await send('Page.navigate',{url:url.href});await until('!!window.lumenDiagnostics');
+  await navigate('Page.navigate',{url:url.href});
   await evaluate(`sessionStorage.removeItem('fixtureAuthSession');sessionStorage.removeItem('lumenPasswordRecoveryPending');`);
-  await send('Page.reload');await until('!!window.lumenDiagnostics');
+  await navigate('Page.reload');
   await evaluate(`document.getElementById('mobileAuthAction').click()`);
   assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),false);
   assert.equal(await evaluate(`!!document.getElementById('accountOtp')`),false);
@@ -41,14 +42,14 @@ try{
   await until(`document.getElementById('mobileAuthStatus').textContent.includes('sauvegarde à resynchroniser')`);
   assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),true);
   assert.equal(await evaluate(`document.getElementById('retryAccountSync').hidden`),false);
-  await send('Page.reload');await until('!!window.lumenDiagnostics');
+  await navigate('Page.reload');
   await until(`document.getElementById('mobileAuthAction').textContent==='Déconnexion'`);
   const recovery=new URL(url);recovery.searchParams.set('lumen_confirm','a'.repeat(64));recovery.searchParams.set('type','recovery');
-  await send('Page.navigate',{url:recovery.href});await until(`window.__authCalls?.includes('recovery')`);
+  await navigate('Page.navigate',{url:recovery.href});await until(`window.__authCalls?.includes('recovery')`);
   await until(`document.getElementById('accountProfileEditor').hidden===false`);
   await until(`document.getElementById('setPasswordValue').getClientRects().length>0`);
   assert.equal(await evaluate(`location.search.includes('lumen_confirm')`),false);
-  await send('Page.reload');await until('!!window.lumenDiagnostics');
+  await navigate('Page.reload');
   assert.equal(await evaluate(`document.getElementById('setPasswordValue').getClientRects().length>0`),true);
   await evaluate(`document.getElementById('setPasswordValue').value='new-test-password';document.getElementById('setPasswordSave').click()`);
   await until(`sessionStorage.getItem('lumenPasswordRecoveryPending')===null`);
