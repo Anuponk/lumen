@@ -115,6 +115,14 @@ benchmarks. Cloud matrices overlap policy/source assertions with behavior tests;
 retain them for distinct failure paths. Avoid duplicate gate/supplemental Node
 runs, without removing browser/SQL coverage. General Actions work remains phase 3.
 
+The actual CLI was also exercised with a temporary whitespace-only change in
+`src/persistence/cloud-profile.js`: `node scripts/test-affected.mjs --base HEAD`
+selected 59 critical checks, all passed, then the file was restored byte for byte.
+Plan checks verified clean HEAD → no runtime checks, absent reference → full
+fallback, and the PR branch → full mode for tooling/setup changes. Generated
+untracked validation reports also widen conservatively; archive/clean those
+reports before the next iteration to avoid an unnecessary full rerun.
+
 ## Account modes and session transitions
 
 `node scripts/account-session-modes-tests.mjs` covers startup read/login races, stale deferred work after sign-out, recovery subscription before verification, failed confirmation preserving a session, local-scope logout, and removal of OTP entry points. `account-email-login-tests.mjs` now checks password/Google/guest and recovery; `auth-mail-otp-tests.mjs` retains the mail failure/throttle/branding cases and intentionally replaces retired OTP-length cases with rejection of magic-link login. These run in the quality gate with existing cloud regression suites.
