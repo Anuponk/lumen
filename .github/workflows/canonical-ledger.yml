@@ -61,7 +61,7 @@ jobs:
             -f scripts/fixtures/legacy-command-bootstrap.sql \
             -f supabase/migrations/20261003_lumen_daily_server_authority.sql \
             -f supabase/migrations/20261010_lumen_daily_catalogue_ceiling_repair.sql \
-            -f supabase/migrations/20261018190418_legacy_victory_commands.sql \
+            -f supabase/migrations/20261018193133_legacy_victory_commands.sql \
             -f /tmp/lumen-legacy-parity.sql \
             -f scripts/fixtures/legacy-command-receipts.sql
           python3 scripts/legacy-command-concurrency.py

@@ -10,8 +10,8 @@ No player-data schema or reward reconciliation policy changes with these account
 
 ## Cloud persistence contract
 
-Historical command cutover (#391, staged migration
-`20261018190418_legacy_victory_commands.sql`): immutable per-account
+Historical command cutover (#391, production migration approved/applied on 2026-10-18
+`20261018193133_legacy_victory_commands.sql`): immutable per-account
 `attemptId-reset-resetCount` facts use `lumen_commit_legacy_command` and
 `lumen_get_legacy_command`. A locked server profile, catalogue-derived private
 rules and receipt apply completion, XP, sky stars, challenge/autonomy rewards,
