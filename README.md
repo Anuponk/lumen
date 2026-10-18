@@ -8,7 +8,7 @@ Place exactly one Guardian in every row, every column and every colored territor
 A cell cycles: **empty -> exclusion -> Guardian -> empty**.
 
 ## Campaign
-The current campaign contains 100 sequential quests grouped into 12 constellations and awards exactly 150 sky stars. Players cannot skip the current unsolved quest; solved quests can be replayed to improve performance badges.
+The historical launch campaign contained 100 sequential quests across 12 constellations and awarded 150 sky stars. The campaign has since expanded; current quest, constellation and star totals are catalogue-derived. See `docs/PROGRESSION.md` and the runtime content catalogue for the latest figures. Players cannot skip the current unsolved quest; solved quests can be replayed to improve performance badges.
 
 ## Architecture
 LUMEN is a static application using native ES modules, with no framework or build step. `index.html` contains markup and loads `src/main.js`. Modules under `src/` separate game rules/proofs, campaign/catalogue, persistence, UI, analytics and browser tests. `manifest.webmanifest` and `sw.js` retain PWA support.
