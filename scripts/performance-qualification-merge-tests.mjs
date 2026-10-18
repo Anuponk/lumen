@@ -87,4 +87,26 @@ for(const options of [{race:true},{failRead:true}]){
  assert.equal(f.map.get('lumenProgressV1'),raw);
  assert([...f.map.values()].includes(raw),'Recovery copies survive a failed CAS/read-back');
 }
-console.log('Qualification reconciliation: quest 183, latest cooldown, both device orders, legacy restore, idempotency, backups, CAS and conflict protection passed');
+// Restart after a successful CAS whose read-back was lost: recover through a
+// fresh storage adapter, without replaying the write or minting any reward.
+{
+ const f=fixture(recent,old,{failRead:true});
+ const original=f.map.get('lumenProgressV1');
+ await assert.rejects(reconcileCompatibleCloudProfiles(f.api,f.storage,f.original));
+ assert.equal(f.writes,1,'CAS committed before the read-back failed');
+ assert.equal(f.map.get('lumenProgressV1'),original);
+ const restartedMap=new Map(JSON.parse(JSON.stringify([...f.map])));
+ const storage={getItem:key=>restartedMap.get(key)??null,setItem:(key,value)=>restartedMap.set(key,String(value))};
+ let retries=0;
+ const api={async rpc(name){
+  if(name==='lumen_restore_profile')return {data:structuredClone(f.remote),error:null};
+  retries++;throw Error('An already committed profile must not be written again');
+ }};
+ const restored=await reconcileCompatibleCloudProfiles(api,storage,structuredClone(f.remote));
+ assert.equal(restored.status,'cloud_dominant');
+ assert.deepEqual(restored.profile,profile(recent));
+ assert.equal(retries,0);
+ assert.equal(restartedMap.get('lumenProgressV1'),original,'Only verified hydration may install local state');
+ assert([...restartedMap.values()].includes(original),'Restart retains recovery evidence');
+}
+console.log('Qualification reconciliation: quest 183, latest cooldown, both device orders, legacy restore, idempotency, backups, CAS, restart after lost read-back and conflict protection passed');

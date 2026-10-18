@@ -1,5 +1,120 @@
 # Testing and quality gate
 
+## Local affected tests (phase 2)
+
+Requires Node 22+ and Git on PATH. No npm install or third-party test dependency:
+`npm run test:affected` aliases `node scripts/test-affected.mjs`.
+The application remains static native ES modules, without a build step.
+
+| Command, from repository root | Purpose |
+|---|---|
+| `npm run test:affected` | Run checks for branch and local changes |
+| `npm run test:affected -- --list` | Print paths, selected suites and widening reasons without execution |
+| `npm run test:affected -- --base origin/main` | Explicit comparison reference; fetch before starting work |
+| `npm run test:full` | Existing quality gate, standalone Node tests absent from that gate, cloud policy check |
+| `node scripts/test-affected-tests.mjs` | Native Node tests of selection and real Git change detection |
+
+All options also work with the direct Node command. Detection includes committed
+changes since the merge base, staged/unstaged changes and untracked files.
+NUL-delimited paths and disabled rename detection retain both rename paths,
+including spaces/Unicode. Missing Git/reference/history widens to the full client
+suite, never an empty successful selection. It does not fetch refs automatically.
+
+Known persistence, performance, progression/access, attempt and challenge edits
+select a broad critical tier: cloud reconciliation/hydration, offline outbox,
+badges/assistance, auth, challenges, navigation, progression and cloud policy.
+Modified standalone tests run themselves and that tier. The allowlist and filename
+families live in `scripts/test-affected.mjs`. New/unknown modules, deleted tests,
+UI/shared engine/content, SQL, configuration and tooling widen to the full client
+suite. The phase 2 PR itself widens because it changes the selector/package setup.
+Clean trees and Markdown-only changes skip runtime checks; still validate
+links/contracts and `git diff --check`.
+
+Existing checks mix native `node:test`, standalone `node:assert/strict`, VM/source
+contracts, seven CDP browser runners, Python checks and SQL fixtures. Node has no
+native affected-import selection for these scripts. Introducing Jest/Vitest would
+add dependencies and still miss dynamic source reads and UI/SQL relationships.
+The selector reuses existing entry points; `scripts/quality-gate-suites.mjs` shares
+the gate's existing Node list to avoid duplicate execution in full mode. The gate
+gains the selector and previously un-orchestrated Adventure regression. Actions
+workflow files are unchanged.
+
+During corrections, group related fixes and run affected checks. The console shows
+suite status/time and at most the final 12,000 error characters on failure; full
+output stays in an OS temporary directory. Failed suites do not prevent later
+suites from running; any failure yields nonzero exit. Browser reports retain
+their existing validation directory. Run full checks before PR and when impact is
+uncertain. A targeted pass never waives applicable browser, catalogue, SQL or
+isolated-device requirements. Full mode is the **client** battery: it does not
+provision PostgreSQL, execute Python/PHP deployment checks or prove live Auth/RLS.
+
+### Audit and regression evidence (2026-10-18)
+
+Reference verified: `main` at `449c7bd` contains phase 1 AGENTS.md and maps. The
+[verification map](architecture/test-map.md) remains the domain index. Coverage
+means behavior, not measured line/branch percentages. No reliable global coverage
+percentage or token/cache measurements were available; none are claimed.
+
+Existing high-risk coverage includes stale snapshots, conflicts/CAS, read-back,
+quota, offline retries, account isolation, assistance, same-run badges, challenge
+isolation and catalogue growth. Remaining gaps: real provider/session retention,
+multi-device network races, installed-PWA storage eviction, cold offline start,
+paid entitlement lifecycle and actual SQL authorization. Retain the SQL workflow
+and isolated-account matrix; client simulations/source assertions cannot prove
+these behaviors. The added regressions call production modules.
+
+| Scenario / command | Added behavior and edge cases |
+|---|---|
+| `node scripts/performance-qualification-merge-tests.mjs` | CAS succeeds but read-back fails; serialized storage restart recovers verified remote state without another write, changing rewards/balances or discarding recovery evidence |
+| `node scripts/performance-badge-tests.mjs` | Award same-run badges, serialize/restore, replay with assistance/errors without qualification: preserve badges, best time/stars, qualification timestamp and balances; now 15 cases |
+| `node scripts/unlocked-adventure-progress.test.mjs` | Truly locked versus previously started access; READY/social versus campaign attempt, no browsing mutation, reload, appended canonical quest, reordered metadata, differing pack sizes and empty catalogue |
+
+The Adventure suite failed on untouched `449c7bd`: its "locked" fixture already
+contained a solved quest granting started access under `hasPackAccess` and the
+preserved contract. The old locked exclusion expectations remain on a truly
+unstarted fixture; an explicit started-access assertion covers the original save.
+No application source or business rule changed.
+
+All three commands exit 0 on Node 22.22.0 / Windows. Red/green proof used an isolated
+temporary copy: each defect below made its suite exit 1, while correct-code
+controls exit 0. These are mutation checks, not three new production bugs.
+
+| Temporary defect, never delivered | Observed failure |
+|---|---|
+| Final compatible-reconciliation write path: replace `const verified=await loadVerifiedProfile(supabase)` with `const verified=updated` | Missing expected rejection on failed read-back |
+| `savePerformance`: replace retained `priorBadges` with an empty object | Earned badges become false on nonqualifying replay |
+| `hasPackAccess`: remove the `started` contribution | Started-access progress falls from 3/4 to 1/2 |
+
+To repeat: `git worktree add --detach ../lumen-phase2-proof HEAD`, run the three
+controls there, introduce one listed defect, run its command and verify nonzero
+exit, restore the file, then rerun to green. Never mutate player data or loosen
+assertions to make this proof pass.
+
+Initial full-client run: all 85 orchestrated Node suites passed, including strict
+catalogue audit and the two newly wired suites. Account-session browser and the
+complete embedded hint suite passed before the generic browser runner stopped on
+its viewport assertion (375×667, app vertical overflow 3 px). Among 32 supplemental
+standalone suites, four failed: `admin-catalogue.test.mjs` and
+`generated-adventure-map.test.mjs` expect 34 constellations rather than 40;
+`extended-boundary.test.mjs` expects all historical/generated content accessible;
+`staged-adventure.test.mjs` expects staging-only access. All four failures and the
+identical viewport error were reproduced in an untouched `449c7bd` worktree.
+They remain visible failures, without relaxed assertions. The gate stops at the
+browser failure; later runners require separate execution.
+
+Those five remaining runners were then executed through the existing server/CDP
+orchestration on dedicated ports: UX cleanup, learning (including real drag and
+reload), late-game progression/recovery, sky navigation/access and canonical
+badge replay all passed. Together with account-session browser, six of seven
+runners pass locally; the generic runner retains its baseline viewport failure.
+
+Timing observations: initial gate 57.8 s, including historical engine equivalence
+25.3 s, account-session browser 9.0 s and generic browser 7.8 s before failure.
+Most critical Node suites took roughly 0.1–0.3 s. These single observations are not
+benchmarks. Cloud matrices overlap policy/source assertions with behavior tests;
+retain them for distinct failure paths. Avoid duplicate gate/supplemental Node
+runs, without removing browser/SQL coverage. General Actions work remains phase 3.
+
 ## Account modes and session transitions
 
 `node scripts/account-session-modes-tests.mjs` covers startup read/login races, stale deferred work after sign-out, recovery subscription before verification, failed confirmation preserving a session, local-scope logout, and removal of OTP entry points. `account-email-login-tests.mjs` now checks password/Google/guest and recovery; `auth-mail-otp-tests.mjs` retains the mail failure/throttle/branding cases and intentionally replaces retired OTP-length cases with rejection of magic-link login. These run in the quality gate with existing cloud regression suites.

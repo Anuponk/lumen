@@ -1,0 +1,10 @@
+{
+  "name": "lumen",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test:affected": "node scripts/test-affected.mjs",
+    "test:full": "node scripts/test-affected.mjs --full"
+  }
+}

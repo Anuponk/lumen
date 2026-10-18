@@ -103,4 +103,22 @@ test("15 minute badge cooldown boundaries and midnight",()=>{
  assert.equal(badgeCooldownRemaining({lastQualifiedAt:"invalid",lastQualifiedDay:"2026-10-12"},base),0);
 });
 
+test("earned badges survive serialization and a nonqualifying assisted replay",()=>{
+ let progress={solved:{},performances:{},stars:{},badges:{},shards:7,xp:20};
+ let attempt={activeGameSeconds:()=>30,assistanceUsed:false,mistakeCommitted:false,qualifying:true};
+ const campaign=createCampaign(()=>progress,()=>{},()=>attempt);
+ const earned=campaign.savePerformance(5,1);
+ assert.deepEqual(earned.badges,{autonomy:true,speed:true,noError:true,mastery:true});
+ progress=JSON.parse(JSON.stringify(progress)); // Same live adapter, newly restored object.
+ const before=structuredClone(progress);
+ attempt={activeGameSeconds:()=>90,assistanceUsed:true,mistakeCommitted:true,qualifying:false};
+ assert.deepEqual(campaign.savePerformance(5,0).badges,earned.badges);
+ assert.deepEqual(progress.performances[5].badges,before.performances[5].badges);
+ assert.equal(progress.performances[5].bestTime,30);
+ assert.equal(progress.performances[5].stars,1);
+ assert.equal(progress.performances[5].attempts,before.performances[5].attempts+1);
+ assert.equal(progress.performances[5].lastQualifiedAt,before.performances[5].lastQualifiedAt);
+ assert.equal(progress.shards,7);assert.equal(progress.xp,20);
+});
+
 console.log(JSON.stringify({performanceBadgeTests:cases.length,cases},null,2));
