@@ -162,6 +162,15 @@ for V2 intentions. No server schema or reward authority changes in this phase.
 
 ### Command-receipt foundation under review
 
+Production DDL was separately approved and applied on 2026-10-18 as migration
+`20261018153436_canonical_command_receipts.sql`. Supabase assigned this applied
+version; the earlier review filename was renamed to match it with identical SQL.
+Production migration history was retained unchanged. Post-application metadata
+checks confirmed function signatures, invoker/definer boundaries, empty search
+paths, RLS and denied direct client table access; advisors added no notices.
+No player profile was rewritten. Client merge/deployment verification remains
+a distinct release step.
+
 The inventory confirms that legacy victory orchestration still combines local
 completion, performance, daily activity and currency before full-profile CAS.
 Replacing only its transport would not establish a trustworthy transaction or

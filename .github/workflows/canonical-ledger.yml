@@ -40,7 +40,7 @@ jobs:
           -f scripts/fixtures/canonical-snapshot-guard.sql
           -f supabase/migrations/20261017181513_sync_health_incident_tracking.sql
           -f scripts/fixtures/sync-health-incidents.sql
-          -f supabase/migrations/20261018151235_canonical_command_receipts.sql
+          -f supabase/migrations/20261018153436_canonical_command_receipts.sql
           -f scripts/fixtures/canonical-command-receipts.sql
       - name: Verify concurrent immutable commands in disposable PostgreSQL
         env:
