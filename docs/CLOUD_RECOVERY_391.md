@@ -6,8 +6,9 @@ including the deployed performance-summary compatibility fix #473.
 
 The durable outbox step #472 is deployed as `ba9bf44` (version 460).
 Isolated background replay #477 is deployed as `88b2c61` (version 461).
-The current follow-up adds persistent retry holds; the remaining writer cutover
-is still open. These are separate delivery and production-verification steps.
+Persistent retry holds #478 are deployed as `30a07e8` (version 462), with owner
+mobile confirmation. The current follow-up prepares server command receipts;
+the production migration and remaining writer cutover are still separate steps.
 
 ## Reproduced incidents
 
@@ -158,6 +159,35 @@ old retry behavior after rollback. Recovery still requires a compatible client
 for V2 intentions. No server schema or reward authority changes in this phase.
 
 ## Writer inventory and cutover still required
+
+### Command-receipt foundation under review
+
+The inventory confirms that legacy victory orchestration still combines local
+completion, performance, daily activity and currency before full-profile CAS.
+Replacing only its transport would not establish a trustworthy transaction or
+reconstruct historical spend/grant identities. Before that cutover, the existing
+canonical ledger gains protocol-1 command receipts through an additive migration.
+This is not a legacy authority cutover and does not relax hydration/gameplay holds.
+
+The V2 immutable operation identity is forwarded by active play and outbox replay.
+Capability detection is authenticated/read-only; a missing old-server endpoint
+allows the old ledger, but an ambiguous error or a command attempt never does.
+Account/client/attempt guards run again after the capability await and before
+mutation, preventing a queued operation from being sent under a switched session.
+Private receipts bind account, operation, quest and exact JSON evidence; receipt
+and reward commit or roll back together. An independent receipt lookup plus the
+current verified profile is required for acknowledgement. JSON object key order
+does not change evidence. Replaying an accepted command returns its original
+outcome with the latest profile, so later progress is not restored backwards.
+Missing/mismatched proof retains the intention; old V1 entries remain supported.
+
+The [data contract](DATA_AND_ARCHITECTURE.md#cloud-persistence-contract) owns the
+new fields, access, deployment/rollback policy and limits. No production migration
+is implied by preparing or merging this client. Keep receipts indefinitely until
+a reviewed retention policy preserves command identity; do not drop them during
+rollback. Separate review/application and real-device validation are still needed.
+Existing old clients can still invoke their old ledger; the wider legacy/daily/
+spending writer retirement and general command authority remain open.
 
 | Writer / boundary | Current responsibility | Required before final closure |
 |---|---|---|

@@ -4,6 +4,7 @@
 import {canonicalQuestById,canonicalQuestByOrdinal,canonicalQuestList} from "../campaign/canonical-quests.js";
 import {loadVerifiedProfile,compareAndSwapCloudProfile} from "./cloud-profile.js";
 import {canonicalRecoveryFailure} from "./canonical-recovery-errors.js";
+import {canonicalCommandsSupported,commitCanonicalCommand} from "./canonical-command.js";
 
 export const CANONICAL_PROGRESS_VERSION=1;
 function copy(profile){
@@ -104,10 +105,17 @@ export async function commitCanonicalVictory(supabase,questId,reward,{maxAttempt
 // until the migration, allowlist and authenticated grants are verified.
 // Never fall back to legacy snapshot CAS after an ambiguous RPC error:
 // the RPC may have committed before its response was lost.
-export async function commitCanonicalVictoryViaLedger(supabase,questId,reward){
+export async function commitCanonicalVictoryViaLedger(supabase,questId,reward,{operationId,sessionValid=()=>true}={}){
  if(!supabase||typeof supabase.rpc!=="function")throw Error("Cloud unavailable");
  const quest=canonicalQuestById(questId);
  if(!quest||quest.legacyIndex!==null)throw canonicalRecoveryFailure({code:'LUMEN_QUEST_UNAVAILABLE'});
+ if(!sessionValid())throw Error('Canonical session changed');
+ if(operationId!==undefined){
+  if(typeof operationId!=='string'||!/^[A-Za-z0-9._-]{1,120}$/.test(operationId))throw canonicalRecoveryFailure({code:'22023'});
+  const supported=await canonicalCommandsSupported(supabase);
+  if(!sessionValid())throw Error('Canonical session changed');
+  if(supported)return commitCanonicalCommand(supabase,quest,reward,operationId,{sessionValid});
+ }
  let response;
  try{response=await supabase.rpc("lumen_commit_canonical_victory",{
   p_quest_id:questId,p_badges:reward?.badges??{},p_performance:reward?.performance??null

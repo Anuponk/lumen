@@ -8,6 +8,7 @@ create table auth.users(id uuid primary key);
 create function auth.uid() returns uuid language sql stable as $$
  select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid;
 $$;
+grant usage on schema auth to authenticated;
 create table lumen.profile_snapshots(
  user_id uuid primary key references auth.users(id),
  payload jsonb not null,

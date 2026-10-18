@@ -13,6 +13,7 @@ localStorage.setItem('lumenSound','off');
 window.__authCalls=[];
 window.__fixtureLedgerWrites=0;window.__fixtureSnapshotWrites=0;
 window.__fixtureLedgerAttempts=0;
+window.__fixtureCommandReceipts=new Map();
 const isolatedRecovery=sessionStorage.getItem('fixtureIsolatedRecovery')==='1';
 window.__fixtureProfile={solved:{},historyBackup:{},badges:{},stars:{},noHint:{},performances:{},canonicalQuestState:{},daily:{},challenges:{},shards:3,xp:0,skyScore:0,skyHistoryVersion:4,legacyReceipt:'cloud'};
 if(isolatedRecovery){
@@ -27,8 +28,10 @@ window.supabase={createClient(){
  return {rpc:async(name,args)=>{
   if(!isolatedRecovery)return name==='lumen_restore_profile'?{data:null,error:{message:'simulated restore outage'}}:{data:[],error:null};
   if(name==='lumen_restore_profile')return {data:structuredClone(window.__fixtureProfile),error:null};
+  if(name==='lumen_canonical_command_version')return {data:1,error:null};
+  if(name==='lumen_get_canonical_command')return {data:window.__fixtureCommandReceipts.get(args.p_operation_id)??null,error:null};
   if(name==='lumen_cas_profile'){window.__fixtureSnapshotWrites++;window.__fixtureProfile=structuredClone(args.p_payload);return {data:true,error:null};}
-  if(name==='lumen_commit_canonical_victory'){
+  if(name==='lumen_commit_canonical_victory'||name==='lumen_commit_canonical_command'){
    window.__fixtureLedgerAttempts++;
    if(window.__fixtureLedgerError)return {data:null,error:{code:window.__fixtureLedgerError,message:'simulated rejection'},status:401};
    window.__fixtureLedgerWrites++;
@@ -36,6 +39,7 @@ window.supabase={createClient(){
    const prior=window.__fixtureProfile.canonicalQuestState[args.p_quest_id];
    window.__fixtureProfile.canonicalQuestState[args.p_quest_id]={...prior,solved:true,stars:1,badges:{...prior?.badges,...args.p_badges},performance:prior?.performance??args.p_performance};
    if(fresh)window.__fixtureProfile.xp+=15;
+   if(name==='lumen_commit_canonical_command')window.__fixtureCommandReceipts.set(args.p_operation_id,{version:1,operationId:args.p_operation_id,questId:args.p_quest_id,badges:args.p_badges,performance:args.p_performance,newlyCompleted:fresh,recordedAt:new Date().toISOString()});
    return {data:{profile:structuredClone(window.__fixtureProfile),newlyCompleted:fresh},error:null};
   }
   return {data:[],error:null};
@@ -66,6 +70,8 @@ async function verifyIsolatedRecovery(){
  assert.equal(after.loads,before.loads,'No full-hydration reload loop');
  assert.equal(after.snapshots,before.snapshots,'No full-profile write during isolated recovery');
  assert.equal(after.commits,1);assert.equal(after.pending,0);assert.equal(after.serverXp,15);assert.equal(after.serverReceipt,'cloud');
+ assert.equal(await evaluate('window.__fixtureCommandReceipts.size'),1,'V2 recovery uses the receipt protocol');
+ assert.ok(await evaluate("[...window.__fixtureCommandReceipts.keys()][0].startsWith('isolated-browser-')"),'Preserve queued operation identity through the UI adapter');
  assert.ok(after.status.includes('sauvegarde à resynchroniser'),'Do not label a partial recovery fully synced');
  // An expired session pauses the persisted badge replay; a verified token
  // refresh must release only auth holds, without a full-profile replacement.

@@ -64,7 +64,7 @@ export async function replayCanonicalVictoryOutbox(outbox,userId,commit,{session
   if(paused.has(JSON.stringify([entry.questId,entry.operationId??null]))){blockedQuests.add(entry.questId);continue}
   if(blockedQuests.has(entry.questId))continue;
   try{
-   const result=await commit(entry.questId,entry.reward);
+   const result=await commit(entry.questId,entry.reward,{operationId:entry.operationId,sessionValid});
    if(!sessionValid())break;
    const saved=result?.profile?.canonicalQuestState?.[entry.questId];
    const badges=['autonomy','speed','noError','mastery'];

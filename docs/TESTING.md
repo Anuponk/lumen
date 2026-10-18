@@ -172,6 +172,24 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Canonical command receipts: `canonical-command-client-tests.mjs` is a mandatory
+Node gate. It reproduces the previously missing operation identity and covers
+exact receipt verification, lost responses, solved-without-receipt rejection,
+changed evidence, V1 compatibility, old-server capability detection, no downgrade
+after ambiguous errors, requested badges and account switches across async reads.
+The account-session browser scenario uses simulated protocol-1 RPCs with real
+IndexedDB on mobile/desktop; the operation ID must reach the receipt.
+The `Canonical ledger SQL regression` workflow applies the real additive migration
+and `fixtures/canonical-command-receipts.sql` in disposable PostgreSQL 17, then
+`canonical-command-concurrency.py`: original receipt/current profile, modified
+evidence refusal, auth isolation/privileges, transaction rollback on receipt-write
+failure, duplicate/different/conflicting concurrent commands and one quest grant.
+The concurrency runner requires explicit fixture mode and a fixed localhost
+`lumen_test` database without Supabase `auth.sessions`. Never run these fixtures
+against player data. Local client tests do not establish actual SQL behavior;
+require the PostgreSQL CI result before approval. Production migration application,
+advisors and post-application verification are separate from simulated transport.
+
 Durable recovery (#391): `canonical-outbox-recovery-tests.mjs`,
 `canonical-durable-outbox-tests.mjs`, `canonical-retry-state-tests.mjs` and `cloud-retry-scheduler-tests.mjs` are
 mandatory Node gates. They cover independent recovery after refusal, requested
