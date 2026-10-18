@@ -37,7 +37,9 @@ intentions. It does not grant ownership, write balances or confirm a victory.
 The transactional server ledger and verified read-back remain authoritative.
 
 V2 records have `version`, `operationId`, `userId`, `questId`, `reward` and
-`createdAt`. Reward evidence is immutable for an operation ID. These operation
+`createdAt`. Gameplay derives the operation ID from the persisted attempt ID
+and reset counter; retries reuse its frozen reward evidence rather than sampling
+a later clock value. Reward evidence is immutable for an operation ID. These operation
 IDs currently identify client outbox records; the existing RPC still deduplicates
 first-completion rewards by player/quest. This is not yet a general server command
 receipt protocol for legacy rewards, spending or daily operations.

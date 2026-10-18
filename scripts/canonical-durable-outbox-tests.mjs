@@ -55,6 +55,7 @@ test('old V1 records survive upgrade and account isolation, including a lost res
 test('separate runs for one quest retain separate immutable operation identities and evidence',async()=>{
  const storage=local(),fallback=indexed(),box=createDurableCanonicalVictoryOutbox(storage,{fallback});
  const first=await box.enqueue('a','q',reward,{operationId:'run-a'});
+ assert.deepEqual(await box.enqueue('a','q',reward,{operationId:'run-a'}),first,'retry reuses the same immutable operation');
  const nextReward={badges:{speed:true},stars:1};
  await box.enqueue('a','q',nextReward,{operationId:'run-b'});
  assert.equal((await box.pending('a')).length,2);

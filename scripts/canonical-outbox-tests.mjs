@@ -66,8 +66,8 @@ assert.ok(blocked.pending("player-a").some(x=>x.questId==="quest-confirmed"));
 const ui=(await import("node:fs")).readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
 assert.ok(ui.includes("const recovered=await replayCanonicalVictoryOutbox(canonicalVictoryOutbox,accountId,"),"hydration replays only current player's outbox");
 assert.ok(ui.includes("cloud=await loadVerifiedProfile(hydrationClient);"),"hydration refreshes verified cloud before installing");
-assert.ok(ui.includes("const pending=await canonicalVictoryOutbox.enqueue(ownerId,q.id,reward);"),"victory intent persists before network");
-assert.ok(ui.indexOf("const pending=await canonicalVictoryOutbox.enqueue(ownerId,q.id,reward);") < ui.indexOf("if(!(await confirmCloudReward()))return;",ui.indexOf("async function celebrateCanonicalSuccess()")),"persist before async cloud readiness");
+assert.ok(ui.includes("const pending=await canonicalVictoryOutbox.enqueue(ownerId,q.id,queuedReward,{operationId});"),"victory intent persists before network with stable run identity");
+assert.ok(ui.indexOf("const pending=await canonicalVictoryOutbox.enqueue(ownerId,q.id,queuedReward,{operationId});") < ui.indexOf("if(!(await confirmCloudReward()))return;",ui.indexOf("async function celebrateCanonicalSuccess()")),"persist before async cloud readiness");
 assert.ok(ui.includes("try{await canonicalVictoryOutbox.acknowledge(ownerId,q.id,pending.reward,pending.operationId)}catch(error)"),"failed local cleanup does not mask confirmed cloud victory or discard another run");
 
 assert.ok(ui.includes("locallySaved=!!lumenUser&&!!durableIntent&&(await canonicalVictoryOutbox.pending(lumenUser.id)).some(entry=>entry.operationId===durableIntent.operationId&&entry.questId===q.id)"),"pending message checks this run's durable intent, not another pending victory");

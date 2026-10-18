@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createCanonicalVictoryOutbox,replayCanonicalVictoryOutbox} from '../src/persistence/canonical-outbox.js';
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+import {functionSource} from './source-tools.mjs';
 
 const storage=()=>{const values=new Map();return {get length(){return values.size},key:i=>[...values.keys()][i]??null,getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,String(v)),removeItem:k=>values.delete(k)};};
 const reward={badges:{autonomy:true},stars:1};
@@ -37,4 +40,28 @@ test('asynchronous durable adapters are awaited before removing a victory',async
  const box={pending:async()=>[{userId:'player',questId:'quest',reward}],acknowledge:async()=>{await Promise.resolve();removed=true;}};
  const confirmed=await replayCanonicalVictoryOutbox(box,'player',async id=>saved(id));
  assert.equal(removed,true);assert.equal(confirmed.length,1);
+});
+
+test('an old victory cannot update the UI after account, quest or attempt-reset changes during persistence',async()=>{
+ const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+ for(const change of ['account','quest','reset']){
+  let finish,persisting=false,uiUpdates=0;
+  const attempt={attemptId:'persisted-attempt',resetCount:0};
+  const context={canonicalActiveQuest:{id:'q',ordinal:10},celebrated:false,activeGameSeconds:()=>10,
+   attemptEngine:{snapshot:()=>({...attempt})},lumenUser:{id:'old'},lumenSupabase:{},
+   performanceAttempt:()=>({autonomy:true,speed:true,noError:true,mastery:true}),usedHintThisGame:false,
+   lumenProgress:{canonicalQuestState:{}},qaActive:false,canonicalOutboxNotice:null,
+   canonicalVictoryOutbox:{pending:async()=>[],enqueue:async()=>{persisting=true;return new Promise(resolve=>{finish=resolve})}},
+   updateAuthUI:()=>{uiUpdates++},console:{error:()=>{throw Error('Stale victory should return silently')}}};
+  vm.createContext(context);vm.runInContext(functionSource(source,'celebrateCanonicalSuccess'),context);
+  const running=vm.runInContext('celebrateCanonicalSuccess()',context);
+  for(let i=0;i<10&&!persisting;i++)await Promise.resolve();
+  assert.equal(persisting,true);
+  if(change==='account')context.lumenUser={id:'new'};
+  if(change==='quest')context.canonicalActiveQuest={id:'other',ordinal:11};
+  if(change==='reset')attempt.resetCount++;
+  finish({operationId:'persisted-attempt-reset-0',reward});await running;
+  assert.equal(uiUpdates,0,change);assert.equal(context.celebrated,false,change);
+  assert.equal(context.canonicalOutboxNotice,null,change);
+ }
 });

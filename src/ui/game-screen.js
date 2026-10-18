@@ -1798,12 +1798,14 @@ const canonicalRecovery=createCloudRetryScheduler({
 async function celebrateCanonicalSuccess(){
  const q=canonicalActiveQuest;if(!q||celebrated)return;
  const seconds=activeGameSeconds(),attempt=attemptEngine.snapshot();
+ const victoryOwner=lumenUser?.id,victoryClient=lumenSupabase;
+ const sameVictoryContext=()=>lumenUser?.id===victoryOwner&&lumenSupabase===victoryClient&&canonicalActiveQuest?.id===q.id&&attemptEngine.snapshot()?.attemptId===attempt?.attemptId&&(attemptEngine.snapshot()?.resetCount||0)===(attempt?.resetCount||0);
  const assisted=!!attempt?.assistanceUsed||!!usedHintThisGame;
  const run=performanceAttempt({questIndex:q.ordinal-1,seconds,assistanceUsed:assisted,mistakeCommitted:!!attempt?.mistakeCommitted});
  const badges={speed:run.speed,autonomy:run.autonomy,noError:run.noError,mastery:run.mastery};
  const priorBadges=lumenProgress.canonicalQuestState?.[q.id]?.badges||{};
  const reward={badges,performance:{bestTime:seconds,assisted,seconds},stars:1};
- let committed,durableIntent=null;
+ let committed,durableIntent=null,confirmedBadges=badges;
  try{
   if(qaActive){committed=acknowledgeCanonicalVictory(lumenProgress,q.id,reward)}
   else{
@@ -1812,16 +1814,22 @@ async function celebrateCanonicalSuccess(){
    // awaiting readiness. Closing an offline PWA must not lose its sole intent.
    const ownerId=lumenUser.id;
    const ownerClient=lumenSupabase;
-   const pending=await canonicalVictoryOutbox.enqueue(ownerId,q.id,reward);
+   const operationId=attempt?.attemptId?attempt.attemptId+"-reset-"+(attempt.resetCount||0):undefined;
+   const existing=operationId?(await canonicalVictoryOutbox.pending(ownerId)).find(entry=>entry.operationId===operationId&&entry.questId===q.id):null;
+   if(!sameVictoryContext())return;
+   const queuedReward=existing?.reward||reward;
+   const pending=await canonicalVictoryOutbox.enqueue(ownerId,q.id,queuedReward,{operationId});
    durableIntent=pending;
-   if(lumenUser?.id!==ownerId||lumenSupabase!==ownerClient)throw Error("Compte modifié pendant la sauvegarde");
+   confirmedBadges=pending.reward.badges||{};
+   if(!sameVictoryContext())return;
    canonicalOutboxNotice="pending";
+   updateAuthUI();
    canonicalRecovery.schedule();
    if(!cloudProfileReady)throw Error("Victoire conservée localement, cloud non prêt");
    if(!(await confirmCloudReward()))return;
-   if(lumenUser?.id!==ownerId||lumenSupabase!==ownerClient)throw Error("Compte modifié pendant la sauvegarde");
+   if(!sameVictoryContext())return;
    committed=await commitCanonicalVictory(ownerClient,q.id,pending.reward);
-   if(lumenUser?.id!==ownerId||lumenSupabase!==ownerClient)throw Error("Compte modifié pendant la sauvegarde");
+   if(!sameVictoryContext())return;
    if(!committed.profile?.canonicalQuestState?.[q.id]?.solved)throw Error("Victoire non confirmée par le cloud");
    // Remote victory was read back successfully. A local quota/storage error
    // when clearing the outbox must not make the player replay a saved win.
@@ -1830,9 +1838,10 @@ async function celebrateCanonicalSuccess(){
     console.warn("Canonical outbox cleanup deferred",error);
     recordCloudDiagnostic("canonical_outbox_cleanup_pending",{reason:"storage"});
    }
-   if(lumenUser?.id!==ownerId||lumenSupabase!==ownerClient)throw Error("Compte modifié pendant la sauvegarde");
+   if(!sameVictoryContext())return;
   }
  }catch(error){
+  if(!sameVictoryContext())return;
   console.error("Canonical victory not saved",error);
   let locallySaved=false;
   try{locallySaved=!!lumenUser&&!!durableIntent&&(await canonicalVictoryOutbox.pending(lumenUser.id)).some(entry=>entry.operationId===durableIntent.operationId&&entry.questId===q.id)}catch(readError){
@@ -1856,8 +1865,8 @@ async function celebrateCanonicalSuccess(){
  celebrated=true;attemptEngine.complete();clearInterval(timer);pauseGameClock();clock();
  board.classList.add("win");
  document.getElementById("successTitle").textContent="Quête "+q.ordinal+" accomplie !";
- const earnedLabels=[["speed","Rapidité"],["autonomy","Autonomie"],["noError","Sans erreur"],["mastery","Maîtrise"]].filter(([key])=>badges[key]&&!priorBadges[key]&&committed.profile.canonicalQuestState[q.id].badges?.[key]).map(([,label])=>label);
- document.getElementById("successSub").textContent=[committed.newlyCompleted?"+ "+(badges.autonomy?15:10)+" XP · +1 étoile":"Quête déjà réussie",...earnedLabels,"sauvegarde confirmée"].join(" · ");
+ const earnedLabels=[["speed","Rapidité"],["autonomy","Autonomie"],["noError","Sans erreur"],["mastery","Maîtrise"]].filter(([key])=>confirmedBadges[key]&&!priorBadges[key]&&committed.profile.canonicalQuestState[q.id].badges?.[key]).map(([,label])=>label);
+ document.getElementById("successSub").textContent=[committed.newlyCompleted?"+ "+(confirmedBadges.autonomy?15:10)+" XP · +1 étoile":"Quête déjà réussie",...earnedLabels,"sauvegarde confirmée"].join(" · ");
  document.getElementById("successTime").textContent=document.getElementById("time").textContent;
  const share=document.getElementById("successShare");if(share)share.hidden=true;
  const achievements=document.getElementById("successAchievement");if(achievements)achievements.hidden=true;
