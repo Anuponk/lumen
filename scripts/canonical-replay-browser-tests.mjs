@@ -43,6 +43,38 @@ async function verifyDurableOutbox(){
  assert.deepEqual(result,{restored:2,independent:1,remaining:['first'],complete:true,corruptPreserved:true,reported:true,recovered:1});
  results.push({test:'durable IndexedDB recovery after document restart',ok:true});
 }
+async function verifyLegacyDurability(){
+ const owner='browser-legacy-'+Date.now();
+ await evaluate(`(async()=>{
+  const {createDurableCanonicalVictoryOutbox}=await import('/src/persistence/durable-canonical-outbox.js');
+  const {legacyVictoryRules}=await import('/src/campaign/legacy-victory.js');
+  const box=createDurableCanonicalVictoryOutbox(localStorage,{namespace:'Legacy'});
+  await box.enqueue(${JSON.stringify(owner)},legacyVictoryRules()[0].questId,{facts:{seconds:45,assistanceUsed:false,mistakeCommitted:false,qualifying:true,hintUsed:false,challengeFailed:false,qualifiedDay:'2026-10-18',qualifiedAt:'2026-10-18T10:00:00Z'}},{operationId:'browser-attempt-reset-0'});
+ })()`,true);
+ await navigateAndWait({send,evaluate},'Page.reload');
+ const result=await evaluate(`(async()=>{
+  const {createDurableCanonicalVictoryOutbox}=await import('/src/persistence/durable-canonical-outbox.js');
+  const {commitLegacyVictoryCommand,replayLegacyVictoryOutbox}=await import('/src/persistence/legacy-command.js');
+  const {applyLegacyVictory,legacyVictoryRules}=await import('/src/campaign/legacy-victory.js');
+  const legacy=createDurableCanonicalVictoryOutbox(localStorage,{namespace:'Legacy'}),canonical=createDurableCanonicalVictoryOutbox(localStorage);
+  let profile={solved:{},badges:{},stars:{},challenges:{},performances:{},noHint:{},xp:0,shards:3,skyScore:0,skyHistoryVersion:4},receipt=null,calls=0;
+  const client={rpc:async(name,args)=>{
+   if(name==='lumen_commit_legacy_command'){
+    if(args.p_expected_user_id!==${JSON.stringify(owner)})throw Error('wrong owner');calls++;
+    if(!receipt)receipt={request:{version:1,operationId:args.p_operation_id,questId:args.p_quest_id,facts:args.p_facts},outcome:applyLegacyVictory(profile,0,args.p_facts),recordedAt:new Date().toISOString()};
+    throw Error('simulated lost response after commit');
+   }
+   if(name==='lumen_get_legacy_command')return {data:receipt};
+   if(name==='lumen_restore_profile')return {data:structuredClone(profile)};
+   throw Error('wrong writer');
+  }};
+  const pending=await legacy.pending(${JSON.stringify(owner)}),canonicalCount=(await canonical.pending(${JSON.stringify(owner)})).length;
+  const confirmed=await replayLegacyVictoryOutbox(legacy,${JSON.stringify(owner)},(id,facts,operationId,opts)=>commitLegacyVictoryCommand(client,id,facts,operationId,opts));
+  return {before:pending.length,canonicalCount,after:(await legacy.pending(${JSON.stringify(owner)})).length,confirmed:confirmed.length,calls,xp:profile.xp,attempts:profile.performances[0]?.attempts};
+ })()`,true);
+ assert.deepEqual(result,{before:1,canonicalCount:0,after:0,confirmed:1,calls:1,xp:15,attempts:1});
+ results.push({test:'Legacy IndexedDB intent after document restart, exact receipt after lost response and domain isolation',ok:true});
+}
 async function openDetail(){
  await evaluate(`lumenDiagnostics.setupQuest(${quests.filter(q=>q.legacyIndex!==null).at(-1).legacyIndex})`);await acknowledgeLearningMilestones(evaluate);
  await evaluate('document.getElementById("openSky").click()');
@@ -88,6 +120,7 @@ try{
   await send('Page.navigate',{url:url.href});await until('!!window.lumenDiagnostics');await sleep(1000);
   await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});
   await verifyDurableOutbox();
+  await verifyLegacyDurability();
   await verifyPersistedRetryHold();
   for(const q of targets){
    await openDetail();

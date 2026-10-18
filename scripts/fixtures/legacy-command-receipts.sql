@@ -40,6 +40,7 @@ begin
  select payload into latest from lumen.profile_snapshots where user_id=u;
  begin perform public.lumen_cas_profile(latest,jsonb_set(latest,'{solved,1}','1'));raise exception 'snapshot win accepted';exception when invalid_parameter_value then null;end;
  begin perform public.lumen_backup_profile(original);raise exception 'stale backup accepted';exception when invalid_parameter_value then null;end;
+ begin perform public.lumen_backup_profile(jsonb_set(latest,'{xp}','0'));raise exception 'earned XP lost';exception when invalid_parameter_value then null;end;
  assert (select payload from lumen.profile_snapshots where user_id=u)=latest;
  -- Cooldown metadata, preferences and a valid spend remain mutable.
  assert public.lumen_cas_profile(latest,jsonb_set(jsonb_set(latest,'{performances,0,lastQualifiedAt}',to_jsonb(now())),'{shards}','5'));

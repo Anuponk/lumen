@@ -7,6 +7,7 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {functionSource} from './source-tools.mjs';
 import {cloudSafelyCoversLocal} from '../src/persistence/cloud-profile.js';
+import {createCloudPersistence} from '../src/persistence/cloud.js';
 const userId='00000000-0000-0000-0000-000000000001';
 const facts={seconds:45,assistanceUsed:false,mistakeCommitted:false,qualifying:true,hintUsed:false,challengeFailed:false,qualifiedDay:'2026-10-18',qualifiedAt:'2026-10-18T10:00:00.000Z'};
 const base=()=>({solved:{},badges:{},stars:{},challenges:{},performances:{},noHint:{},xp:0,shards:3,skyHistoryVersion:4,skyScore:0});
@@ -121,4 +122,28 @@ test('verified command profile covers earlier daily/challenge receipts but never
  assert.equal(cloudSafelyCoversLocal(p,cloud),true);
  cloud.daily.rewards['streak:2026-10-17']=2;assert.equal(cloudSafelyCoversLocal(p,cloud),false);
  cloud.daily.rewards['streak:2026-10-17']=1;p.legacyVictoryRevision=2;assert.equal(cloudSafelyCoversLocal(p,cloud),false);
+});
+test('legacy auth pause resumes only after verified same-account profile read',async()=>{
+ const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+ for(const mode of ['valid','read-fails','account-switch']){
+  let resumed=0,scheduled=0;
+  const ctx={lumenUser:{id:userId},lumenSupabase:{},qaActive:false,authSessionPending:false,sessionStorage:{getItem:()=>null},
+   legacyVictoryOutbox:{inspect:async()=>({authRequired:true}),resume:async(uid,opts)=>{assert.equal(uid,userId);assert.equal(opts.kind,'auth');resumed++}},
+   loadVerifiedProfile:async()=>{if(mode==='read-fails')throw Error('offline');if(mode==='account-switch')ctx.lumenUser={id:'other'};return base()},
+   refreshCanonicalOutboxNotice:async()=>{},canonicalRecovery:{schedule:()=>{scheduled++}},recordCloudDiagnostic:()=>{}};
+  vm.createContext(ctx);vm.runInContext(functionSource(source,'resumeLegacyAfterAuthRefresh'),ctx);
+  await vm.runInContext(`resumeLegacyAfterAuthRefresh('${userId}',lumenSupabase)`,ctx);
+  assert.equal(resumed,mode==='valid'?1:0);assert.equal(scheduled,resumed);
+ }
+});
+test('historical discovery cannot mutate command-owned rewards, including activation/account changes during its read',async()=>{
+ for(const mode of ['legacy','activated','activation-during-read','account-switch']){
+  const progress=base(),model={lumenUser:{id:userId},lumenProgress:progress};let reads=0,saves=0;
+  if(mode==='activated')progress.legacyVictoryRevision=1;
+  model.lumenSupabase={rpc:async()=>{reads++;if(mode==='activation-during-read')progress.legacyVictoryRevision=1;if(mode==='account-switch')model.lumenUser={id:'other'};return {data:[{puzzle_id:1,autonomy:true,speed:true,no_error:true,mastery:true}]}}};
+  const cloud=createCloudPersistence(model,{saveLumenProgress:()=>{saves++},refreshJourney:()=>{}},{console,setTimeout});
+  await cloud.cloudMergeHistoricalPerformance('isolated-anonymous-fixture');
+  assert.equal(reads,mode==='activated'?0:1);assert.equal(saves,mode==='legacy'?1:0);
+  assert.equal(!!progress.performances[0],mode==='legacy');
+ }
 });

@@ -184,7 +184,10 @@ parity comparison and has dedicated real-SQL server-day/streak assertions.
 daily reward, reset identity, altered evidence, user scope, privileges, retired
 backup/CAS and legitimate spends. `legacy-command-concurrency.py` covers concurrent
 duplicates, distinct runs, altered facts and racing stale backup. These fixtures
-require disposable PostgreSQL only, never player data. Local mock results do not
+also cover refusal of cumulative-XP loss while legitimate shard spending remains
+allowed. Catalogue seed checks combine migration seeds chronologically: generate
+future catalogue changes in a new CLI-created migration, never edit applied SQL.
+These fixtures require disposable PostgreSQL only, never player data. Local mock results do not
 establish SQL behavior or production deployment; require the real SQL CI result.
 
 Canonical command receipts: `canonical-command-client-tests.mjs` is a mandatory

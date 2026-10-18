@@ -23,7 +23,9 @@ No backfill, balance maximum or entitlement change is introduced.
 The first successful command activates private `lumen_commands.legacy_authority`
 and server-owned `legacyVictoryRevision` for that account. Old backup/CAS writers
 must retain its exact legacy reward projection and current revision. Cooldown
-timestamps, preferences, canonical rewards and existing daily/spending writers
+metadata is excluded from that projection. Existing cumulative XP cannot decrease;
+canonical rewards may still increase it. This is a refusal, never balance merging.
+Preferences, canonical rewards and existing daily/spending writers
 remain mutable. Old-client wins/imports changing that projection are refused:
 preserve their pending local data for explicit recovery, never erase or invent
 transactions. Any command failure rolls back activation, daily, mirror, rewards

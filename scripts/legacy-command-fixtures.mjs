@@ -3,13 +3,29 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {legacyVictoryRules,applyLegacyVictory} from '../src/campaign/legacy-victory.js';
-const migration='supabase/migrations/20261018190418_legacy_victory_commands.sql';
 const rows=legacyVictoryRules(),quote=v=>"'"+JSON.stringify(v).replaceAll("'","''")+"'::jsonb";
-const seed=rows.map(row=>`insert into lumen_commands.legacy_rules values ('${row.questId.replaceAll("'","''")}',${row.index},${quote(row)});`).join('\n');
-const source=fs.readFileSync(migration,'utf8'),start='-- BEGIN CATALOGUE SEED (scripts/legacy-command-fixtures.mjs --write-seed)',end='-- END CATALOGUE SEED';
-const expected=source.slice(0,source.indexOf(start)+start.length)+'\n'+seed+'\n'+source.slice(source.indexOf(end));
-if(process.argv.includes('--write-seed')){fs.writeFileSync(migration,expected);console.log(`Seeded ${rows.length} catalogue-derived historical rules`);}
-else if(process.argv.includes('--check')){assert.equal(source,expected,'Server catalogue rules drifted; generate and review a new migration before adding playable quests');console.log(`${rows.length} historical rules match the current catalogue`);}
+const seed=rows.map(row=>`insert into lumen_commands.legacy_rules values ('${row.questId.replaceAll("'","''")}',${row.index},${quote(row)}) on conflict(quest_id) do update set legacy_index=excluded.legacy_index,rules=excluded.rules;`).join('\n');
+const start='-- BEGIN CATALOGUE SEED (scripts/legacy-command-fixtures.mjs --write-seed)',end='-- END CATALOGUE SEED';
+if(process.argv.includes('--write-seed')){
+ const migration=process.argv[process.argv.indexOf('--write-seed')+1];
+ assert.match(migration||'',/^supabase\/migrations\/\d+_[a-z0-9_]+\.sql$/,'Pass the NEW migration path created by the Supabase CLI; never rewrite an applied migration');
+ const source=fs.readFileSync(migration,'utf8')||start+'\n'+end+'\n';
+ assert.ok(source.includes(start)&&source.includes(end),'Migration needs catalogue seed markers');
+ fs.writeFileSync(migration,source.slice(0,source.indexOf(start)+start.length)+'\n'+seed+'\n'+source.slice(source.indexOf(end)));
+ console.log(`Seeded ${rows.length} catalogue-derived historical rules`);
+}
+else if(process.argv.includes('--check')){
+ const accumulated=new Map();
+ for(const file of fs.readdirSync('supabase/migrations').filter(p=>p.endsWith('.sql')).sort()){
+  const source=fs.readFileSync('supabase/migrations/'+file,'utf8');if(!source.includes(start))continue;
+  for(const match of source.slice(source.indexOf(start),source.indexOf(end)).matchAll(/insert into lumen_commands\.legacy_rules values \('([^']+)',(\d+),'(.*)'::jsonb\)/g)){
+   const rule=JSON.parse(match[3].replaceAll("''","'"));assert.equal(rule.questId,match[1]);assert.equal(rule.index,Number(match[2]));accumulated.set(rule.questId,rule);
+  }
+ }
+ const ordered=values=>[...values].sort((a,b)=>a.questId.localeCompare(b.questId));
+ assert.deepEqual(ordered(accumulated.values()),ordered(rows),'Server rules drifted: create a new CLI migration and generate its seed; retain applied migrations');
+ console.log(`${rows.length} historical rules match cumulative migration seeds`);
+}
 else{
  const base=()=>({solved:{},badges:{},stars:{},challenges:{},performances:{},noHint:{},xp:42,shards:7,skyHistoryVersion:4,skyScore:0,future:{keep:true}});
  const facts={seconds:45,assistanceUsed:false,mistakeCommitted:false,qualifying:true,hintUsed:false,challengeFailed:false,qualifiedDay:'2026-10-18',qualifiedAt:'2026-10-18T10:00:00.000Z'};

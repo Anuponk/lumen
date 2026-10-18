@@ -337,6 +337,12 @@ begin
  if found and ((new.payload->'legacyVictoryRevision') is distinct from to_jsonb(v.revision)
   or lumen_commands.legacy_projection(new.payload) is distinct from v.projection)
  then raise exception using errcode='22023',message='legacy victory command required; preserve pending data and update client'; end if;
+ -- XP is cumulative in the existing product (unlike spendable shards).
+ -- The independent canonical ledger may add XP; snapshots cannot remove it.
+ if found and tg_op='UPDATE' and (jsonb_typeof(new.payload->'xp') is distinct from 'number'
+  or (new.payload->>'xp') !~ '^[0-9]{1,15}$'
+  or (new.payload->>'xp')::bigint<coalesce((old.payload->>'xp')::bigint,0))
+ then raise exception using errcode='22023',message='earned XP cannot decrease';end if;
  return new;
 end $$;
 create trigger protect_legacy_authority before insert or update of payload on lumen.profile_snapshots
