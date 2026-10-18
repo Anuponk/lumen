@@ -92,6 +92,9 @@ records 92.485 s and the full wrapper 94.781 s, both **failed** runs. These are
 not comparable gains against successful Linux runs. Pool tests verify concurrency
 limits, execution once, and draining/reporting multiple failures before cleanup.
 Metric tests verify reruns, reused schedules, missing data and overlapping jobs.
+A real targeted selection in a disposable worktree (instrumented phase 2 base,
+whitespace-only edit to the badge test) passed **63 suites in 4.932 s**. This is
+a tooling smoke measurement, not a fix benchmark or an estimated token saving.
 
 `actionlint` passes on modified workflows (shellcheck/pyflakes unavailable).
 Whole-repository lint finds three existing untrusted-branch interpolation warnings
@@ -104,8 +107,18 @@ No settings were changed. A maintainer must confirm all four existing contexts
 remain required and that merge queue behavior, if configured, matches repository
 policy. No merge/deployment is part of this phase.
 
-Live CI results and cold/warm cache observations are recorded in the dedicated
-PR after execution. Savings are unconfirmed until those measurements exist.
+First successful Linux observation: [quality run 39113311332](https://github.com/Anuponk/lumen/actions/runs/39113311332)
+on `ebbfa6d`: job **118 s**, gate **106.9 s**, all 91 Node + seven browser suites
+pass. Versus the latest phase 2 job (**165 s** / **154.2 s** gate), the observed
+differences are **−47 s (−28.5%)** / **−47.3 s (−30.7%)**. One after sample is
+insufficient to establish a durable or entirely causal gain. The longer historical
+PR mean is 163.45 s (n=11); test additions and runner variation remain confounders.
+
+All five workflows pass. Astronomy: **58 s**, pip install **8 s**, cold cache miss
+then successful save. The final commit also normalizes Windows line endings for a
+readable diff; its required CI rerun verifies the warm cache. Final-SHA status and
+warm observations are recorded in [PR #469](https://github.com/Anuponk/lumen/pull/469)
+without another documentation-only CI cycle. [Machine-readable first results](validation/phase3-first-results.json).
 
 References: [GitHub concurrency / workflow semantics](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax),
 [setup-python dependency caching](https://github.com/actions/setup-python#caching-packages).
