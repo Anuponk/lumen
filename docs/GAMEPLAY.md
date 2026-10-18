@@ -47,7 +47,7 @@ The main reset action is **Réinitialiser**, not “Nouvelle grille”. It reset
 ## Hints and verification
 Hints are pedagogical: first draw attention, then explain the rule, then reveal the forced action as last resort. A placement hint must have a structured explainable proof; an opaque brute-force answer is not acceptable.
 
-Designed shard economy (when test override is disabled): start with 3, maximum 5; first hint free, second costs 1 shard, later hints cost 2; a player at zero shards can receive a free hint after 90 seconds. No automatic timed shard regeneration.
+Shard economy: start with 3, **no wallet cap** (see `PROGRESSION.md`); hints are free during quests 1–10. Otherwise the first hint in an attempt is free, the second costs 1 shard, and later hints cost 2; a player at zero shards can receive a free hint after 90 seconds. First Verify use is free; subsequent uses cost 1 shard. No automatic timed shard regeneration. An authorized admin-only unlimited-shards test toggle bypasses spending.
 
 ## Feedback and modals
 Informational overlays should have sensible outside-tap behavior. Corrective overlays (guided conflict and verification correction) deliberately require explicit acknowledgement/action so a correction is not dismissed accidentally.
