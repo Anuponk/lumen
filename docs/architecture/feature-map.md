@@ -1,10 +1,10 @@
 # Feature map
 
-Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This lookup index complements contracts in `docs/AGENT_CONTRACTS.md`, `docs/PROGRESSION.md` and `docs/DATA_AND_ARCHITECTURE.md`. Recheck symbols after relevant changes; historical counts in README/validation reports are not current catalogue totals.
+Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This lookup index complements contracts in `docs/AGENT_CONTRACTS.md`, `docs/PROGRESSION.md` and `docs/DATA_AND_ARCHITECTURE.md`. Recheck symbols after relevant changes; historical counts in validation reports are not current catalogue totals.
 
 ## Entry points and shape
 
-`index.html` loads the Supabase CDN client and `src/main.js` → `startGameScreen()` in `src/ui/game-screen.js`. Native ES modules, no root package manifest or lockfile. `src/ui/styles.css` owns styling; `manifest.webmanifest` and `sw.js` own PWA metadata/network behavior. `scripts/build-static.mjs` is a packaging utility, not a required application bundler. The large UI controller wires factories, mutable live state, rendering and async hooks; search symbols before reading excerpts.
+`index.html` loads the Supabase CDN client and `src/main.js` → `startGameScreen()` in `src/ui/game-screen.js`. Native ES modules without a required application bundler. A root `package.json` provides `test:affected` and `test:full` scripts; do not confuse the absence of a build step with the absence of a package manifest. `src/ui/styles.css` owns styling; `manifest.webmanifest` and `sw.js` own PWA metadata/network behavior. `scripts/build-static.mjs` is a packaging utility, not a required application bundler. The large UI controller wires factories, mutable live state, rendering and async hooks; search symbols before reading excerpts.
 
 | Feature | Responsible files / principal symbols | Entry / source of truth |
 |---|---|---|
