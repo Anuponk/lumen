@@ -1,5 +1,13 @@
 # Data and architecture
 
+## Account modes (2026-10-18)
+
+Lumen has two public modes: local guest discovery without an Auth account, and an authenticated account using Google or email with a password. Email OTP/magic-link login is retired in the Lumen UI and its dedicated mail endpoint. Existing accounts retain their identity, progress and entitlements; use Google or **Créer ou réinitialiser mon mot de passe** to establish a password on the same email address. Recovery/confirmation emails remain supported. Do not disable email Auth globally: the Supabase project is shared with SoldeZen.
+
+Subscribe to Auth events before startup session/confirmation I/O. A late startup read cannot replace a newer login/sign-out event; deferred restoration must check the account identity. An expired confirmation must never sign out an existing session. Explicit logout uses the local session scope, preserving sessions on other devices. Recovery opens the parent profile editor and waits for password creation before cloud hydration/reload. Cloud restore failures remain authenticated and visible as synchronization failures; keep divergent saves protected and provide a safe reload/retry. Refresh an open sky after successful hydration so quest availability reflects the verified account.
+
+No player-data schema or reward reconciliation policy changes with these account modes. Live device validation remains necessary when diagnosing storage loss between login and reload; passing simulated sessions alone does not prove that an affected PWA retains its session.
+
 ## Cloud persistence contract
 
 **Protected product invariant (#248):** anything earned or purchased by an authenticated player must be durably retrievable after another-device sign-in, PWA reinstall, local cache loss, reconnect or migration. Never replace a nonempty cloud record with an empty or stale local snapshot.

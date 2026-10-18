@@ -5,7 +5,7 @@ import {webcrypto} from "node:crypto";
 import {planAuthEmails} from "../src/auth/email-delivery-plan.js";
 
 const edgeSource=fs.readFileSync("supabase/functions/lumen-soldezen-auth-email/index.ts","utf8")
-  .replace(/^import .*;\n/gm,"");
+  .replace(/^import .*;\r?\n/gm,"");
 function payload(action="signup",redirect_to="https://lumen.nopuna.fr/"){
  return {user:{email:"old@example.com",new_email:"new@example.com"},email_data:{email_action_type:action,redirect_to,token:"123456",token_new:"654321",token_hash:"hash",token_hash_new:action==="email_change"?"hash2":""}};
 }

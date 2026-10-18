@@ -1,5 +1,9 @@
 # UX and visual direction
 
+## Account access (2026-10-18)
+
+Offer **Continuer avec Google**, email plus password (create account / existing account), and **Continuer sans compte**. Remove code-email login. Former passwordless players use **Créer ou réinitialiser mon mot de passe** with the same email, preserving their existing account. Recovery opens a visible password editor. Distinguish an authenticated account still restoring its save from a guest; a restore failure offers **Réessayer la synchronisation**, never a destructive reset. The early guest discovery and learning sequence remain unchanged.
+
 ## Visual identity
 LUMEN should feel like a celestial/energy-map puzzle rather than a reskinned Queens board:
 - dark space/energy-map atmosphere;

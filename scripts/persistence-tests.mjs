@@ -65,6 +65,14 @@ for(const options of scenarios){
  // #29 intentionally restores daily-history merge during authenticated init/sign-in.
  // Compare the legacy contract after removing only the new, documented daily-sync effects.
  const normalized=plain(actual),expected=plain(legacy);
+ // Account-mode migration intentionally restores the nickname on a fresh
+ // in-page sign-in too. Preserve the remaining legacy RPC equivalence.
+ if(!options.guest){
+  const reads=normalized.trace.filter(x=>x.name==='lumen_get_profile').length;
+  assert.equal(reads,expected.trace.filter(x=>x.name==='lumen_get_profile').length+1);
+  normalized.trace.splice(normalized.trace.findLastIndex(x=>x.name==='lumen_get_profile'),1);
+  if(options.networkError)normalized.warnings.splice(normalized.warnings.findLastIndex(x=>x?.[0]==='LUMEN profile'),1);
+ }
  if(!options.guest&&!options.networkError){assert.ok(actual.trace.some(x=>x.name==='lumen_get_entitlements'),'Authenticated init must load persistent entitlements');assert.ok(actual.trace.some(x=>x.name==='lumen_get_internal_capabilities'),'Authenticated init must load internal capabilities')}
  assert.deepEqual(actual.entitlements,[],'Fixture ends signed out: account entitlements must be cleared locally');
  assert.deepEqual(actual.capabilities,[],'Fixture ends signed out: internal capabilities must be cleared locally');
