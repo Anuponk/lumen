@@ -15,7 +15,7 @@ alter table lumen_commands.canonical_receipts enable row level security;
 revoke all on lumen_commands.canonical_receipts from public, anon, authenticated;
 
 create function lumen_commands.commit_canonical(
- p_operation_id text, p_quest_id text, p_badges jsonb, p_performance jsonb
+ p_operation_id text, p_expected_user_id uuid, p_quest_id text, p_badges jsonb, p_performance jsonb
 ) returns jsonb language plpgsql security definer set search_path = '' as $$
 declare
  v_uid uuid := auth.uid();
@@ -25,6 +25,7 @@ declare
  v_receipt lumen_commands.canonical_receipts%rowtype;
 begin
  if v_uid is null then raise exception using errcode='42501', message='authentication required'; end if;
+ if p_expected_user_id is distinct from v_uid then raise exception using errcode='42501', message='command account changed'; end if;
  if p_operation_id is null or p_operation_id !~ '^[A-Za-z0-9._-]{1,120}$'
  then raise exception using errcode='22023', message='invalid operation identity'; end if;
  if p_quest_id is null or length(p_quest_id)>120
@@ -56,11 +57,12 @@ begin
   jsonb_build_object('recordedAt',v_receipt.recorded_at));
 end $$;
 
-create function lumen_commands.get_canonical(p_operation_id text)
+create function lumen_commands.get_canonical(p_operation_id text, p_expected_user_id uuid)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
 declare v_uid uuid := auth.uid(); v_receipt lumen_commands.canonical_receipts%rowtype;
 begin
  if v_uid is null then raise exception using errcode='42501', message='authentication required'; end if;
+ if p_expected_user_id is distinct from v_uid then raise exception using errcode='42501', message='command account changed'; end if;
  if p_operation_id is null or p_operation_id !~ '^[A-Za-z0-9._-]{1,120}$'
  then raise exception using errcode='22023', message='invalid operation identity'; end if;
  select * into v_receipt from lumen_commands.canonical_receipts where user_id=v_uid and operation_id=p_operation_id;
@@ -69,13 +71,13 @@ begin
 end $$;
 
 create function public.lumen_commit_canonical_command(
- p_operation_id text, p_quest_id text, p_badges jsonb, p_performance jsonb default null
+ p_operation_id text, p_expected_user_id uuid, p_quest_id text, p_badges jsonb, p_performance jsonb default null
 ) returns jsonb language sql security invoker set search_path = '' as $$
- select lumen_commands.commit_canonical(p_operation_id,p_quest_id,p_badges,p_performance);
+ select lumen_commands.commit_canonical(p_operation_id,p_expected_user_id,p_quest_id,p_badges,p_performance);
 $$;
-create function public.lumen_get_canonical_command(p_operation_id text)
+create function public.lumen_get_canonical_command(p_operation_id text, p_expected_user_id uuid)
 returns jsonb language sql stable security invoker set search_path = '' as $$
- select lumen_commands.get_canonical(p_operation_id);
+ select lumen_commands.get_canonical(p_operation_id,p_expected_user_id);
 $$;
 create function public.lumen_canonical_command_version()
 returns integer language plpgsql stable security invoker set search_path = '' as $$
@@ -83,7 +85,7 @@ begin
  if auth.uid() is null then raise exception using errcode='42501', message='authentication required'; end if;
  return 1;
 end $$;
-revoke all on function lumen_commands.commit_canonical(text,text,jsonb,jsonb), lumen_commands.get_canonical(text) from public, anon;
-grant execute on function lumen_commands.commit_canonical(text,text,jsonb,jsonb), lumen_commands.get_canonical(text) to authenticated;
-revoke all on function public.lumen_commit_canonical_command(text,text,jsonb,jsonb), public.lumen_get_canonical_command(text), public.lumen_canonical_command_version() from public, anon;
-grant execute on function public.lumen_commit_canonical_command(text,text,jsonb,jsonb), public.lumen_get_canonical_command(text), public.lumen_canonical_command_version() to authenticated;
+revoke all on function lumen_commands.commit_canonical(text,uuid,text,jsonb,jsonb), lumen_commands.get_canonical(text,uuid) from public, anon;
+grant execute on function lumen_commands.commit_canonical(text,uuid,text,jsonb,jsonb), lumen_commands.get_canonical(text,uuid) to authenticated;
+revoke all on function public.lumen_commit_canonical_command(text,uuid,text,jsonb,jsonb), public.lumen_get_canonical_command(text,uuid), public.lumen_canonical_command_version() from public, anon;
+grant execute on function public.lumen_commit_canonical_command(text,uuid,text,jsonb,jsonb), public.lumen_get_canonical_command(text,uuid), public.lumen_canonical_command_version() to authenticated;

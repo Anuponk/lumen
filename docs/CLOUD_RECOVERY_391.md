@@ -174,6 +174,8 @@ Capability detection is authenticated/read-only; a missing old-server endpoint
 allows the old ledger, but an ambiguous error or a command attempt never does.
 Account/client/attempt guards run again after the capability await and before
 mutation, preventing a queued operation from being sent under a switched session.
+The mutation and receipt RPCs also assert the captured expected user against
+`auth.uid()` server-side, covering a late SDK token switch before UI notification.
 Private receipts bind account, operation, quest and exact JSON evidence; receipt
 and reward commit or roll back together. An independent receipt lookup plus the
 current verified profile is required for acknowledgement. JSON object key order

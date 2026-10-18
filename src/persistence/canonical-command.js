@@ -24,18 +24,18 @@ function receiptMatches(receipt,id,questId,reward){
   &&JSON.stringify(stable(receipt.badges))===JSON.stringify(stable(reward?.badges??{}))
   &&JSON.stringify(stable(receipt.performance))===JSON.stringify(stable(reward?.performance??null));
 }
-export async function commitCanonicalCommand(client,quest,reward,operationId,{sessionValid=()=>true}={}){
+export async function commitCanonicalCommand(client,quest,reward,operationId,{userId,sessionValid=()=>true}={}){
  if(typeof operationId!=='string'||!/^[A-Za-z0-9._-]{1,120}$/.test(operationId))throw canonicalRecoveryFailure({code:'22023'});
  let error,status;
  if(!sessionValid())throw Error('Canonical command session changed');
  try{({error,status}=await client.rpc('lumen_commit_canonical_command',{
-  p_operation_id:operationId,p_quest_id:quest.id,p_badges:reward?.badges??{},p_performance:reward?.performance??null
+  p_operation_id:operationId,p_expected_user_id:userId,p_quest_id:quest.id,p_badges:reward?.badges??{},p_performance:reward?.performance??null
  }))}catch(failure){error=failure}
  if(!sessionValid())throw Error('Canonical command session changed');
  // Independent receipt lookup even when the write returned success or threw.
  let receipt;
  try{
-  const read=await client.rpc('lumen_get_canonical_command',{p_operation_id:operationId});
+  const read=await client.rpc('lumen_get_canonical_command',{p_operation_id:operationId,p_expected_user_id:userId});
   if(read.error)throw canonicalRecoveryFailure(read.error,read.status);
   receipt=read.data;
  }catch(failure){throw error?canonicalRecoveryFailure(error,status):canonicalRecoveryFailure(failure)}

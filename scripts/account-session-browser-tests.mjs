@@ -28,6 +28,7 @@ window.supabase={createClient(){
  return {rpc:async(name,args)=>{
   if(!isolatedRecovery)return name==='lumen_restore_profile'?{data:null,error:{message:'simulated restore outage'}}:{data:[],error:null};
   if(name==='lumen_restore_profile')return {data:structuredClone(window.__fixtureProfile),error:null};
+  if(['lumen_commit_canonical_command','lumen_get_canonical_command'].includes(name)&&args.p_expected_user_id!=='fixture-player')return {data:null,error:{code:'42501'},status:403};
   if(name==='lumen_canonical_command_version')return {data:1,error:null};
   if(name==='lumen_get_canonical_command')return {data:window.__fixtureCommandReceipts.get(args.p_operation_id)??null,error:null};
   if(name==='lumen_cas_profile'){window.__fixtureSnapshotWrites++;window.__fixtureProfile=structuredClone(args.p_payload);return {data:true,error:null};}

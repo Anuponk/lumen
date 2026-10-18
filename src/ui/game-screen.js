@@ -1869,7 +1869,7 @@ async function celebrateCanonicalSuccess(){
    if(!cloudProfileReady)throw Error("Victoire conservée localement, cloud non prêt");
    if(!(await confirmCloudReward()))return;
    if(!sameVictoryContext())return;
-   committed=await commitCanonicalVictory(ownerClient,q.id,pending.reward,{operationId:pending.operationId,sessionValid:sameVictoryContext});
+   committed=await commitCanonicalVictory(ownerClient,q.id,pending.reward,{operationId:pending.operationId,userId:ownerId,sessionValid:sameVictoryContext});
    if(!sameVictoryContext())return;
    if(!committed.profile?.canonicalQuestState?.[q.id]?.solved)throw Error("Victoire non confirmée par le cloud");
    // Remote victory was read back successfully. A local quota/storage error

@@ -177,6 +177,9 @@ Node gate. It reproduces the previously missing operation identity and covers
 exact receipt verification, lost responses, solved-without-receipt rejection,
 changed evidence, V1 compatibility, old-server capability detection, no downgrade
 after ambiguous errors, requested badges and account switches across async reads.
+The client and real SQL fixtures also require the expected account to match the
+server's authenticated ID, rejecting a late SDK token switch and null/mismatched
+receipt owners before any mutation or lookup.
 The account-session browser scenario uses simulated protocol-1 RPCs with real
 IndexedDB on mobile/desktop; the operation ID must reach the receipt.
 The `Canonical ledger SQL regression` workflow applies the real additive migration

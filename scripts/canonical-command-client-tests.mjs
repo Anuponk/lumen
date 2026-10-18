@@ -1,13 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
-import {commitCanonicalVictoryViaLedger} from '../src/persistence/canonical-progress.js';
+import {commitCanonicalVictoryViaLedger as transport} from '../src/persistence/canonical-progress.js';
+const ownerId='00000000-0000-0000-0000-000000000001';
+const commitCanonicalVictoryViaLedger=(client,id,reward,options={})=>transport(client,id,reward,{userId:ownerId,...options});
 const quest=canonicalQuestList().find(q=>q.legacyIndex===null),reward={badges:{autonomy:true},performance:{seconds:20},stars:1};
 const base=()=>({solved:{},badges:{},canonicalQuestState:{},xp:0});
 function fixture(){
- const state={profile:base(),receipts:new Map(),calls:[],missing:false,lost:false,readLost:false,versionError:null};
+ const state={profile:base(),receipts:new Map(),calls:[],missing:false,lost:false,readLost:false,versionError:null,userId:ownerId};
  const client={rpc:async(name,args)=>{
   state.calls.push([name,args]);
+  if(['lumen_commit_canonical_command','lumen_get_canonical_command'].includes(name)&&args.p_expected_user_id!==state.userId)return {data:null,error:{code:'42501'},status:403};
   if(name==='lumen_canonical_command_version')return state.versionError||{data:state.missing?null:1,error:state.missing?{code:'PGRST202'}:null,status:state.missing?404:200};
   if(name==='lumen_get_canonical_command')return {data:state.readLost?null:state.receipts.get(args.p_operation_id)??null,error:null};
   if(name==='lumen_restore_profile')return {data:structuredClone(state.profile),error:null};
@@ -28,6 +31,7 @@ test('immutable operation identity reaches the server and is verified independen
  const {client,state}=fixture();
  const saved=await commitCanonicalVictoryViaLedger(client,quest.id,reward,{operationId:'run-1'});
  assert.ok(state.calls.some(([name,args])=>name==='lumen_commit_canonical_command'&&args.p_operation_id==='run-1'));
+ assert.equal(state.calls.find(([name])=>name==='lumen_commit_canonical_command')[1].p_expected_user_id,ownerId,'Server must bind the intended account even if the SDK token switches late');
  assert.ok(state.calls.some(([name])=>name==='lumen_get_canonical_command'));
  assert.equal(saved.receipt.operationId,'run-1');assert.equal(saved.profile.xp,15);
 });
@@ -109,4 +113,10 @@ test('thrown provider errors cannot enter persisted retry errors or player diagn
   await assert.rejects(commitCanonicalVictoryViaLedger(client,quest.id,reward,{operationId:'run-1'}),e=>!e.message.includes('private-provider-detail'));
   assert.equal(state.calls.some(([name])=>name==='lumen_commit_canonical_victory'),false);
  }
+});
+test('a late SDK token switch is refused by the server expected-account assertion',async()=>{
+ const {client,state}=fixture(),rpc=client.rpc;
+ client.rpc=async(name,args)=>{if(name==='lumen_commit_canonical_command')state.userId='00000000-0000-0000-0000-000000000002';return rpc(name,args)};
+ await assert.rejects(commitCanonicalVictoryViaLedger(client,quest.id,reward,{operationId:'run-1'}));
+ assert.equal(state.profile.xp,0);assert.equal(state.receipts.size,0);
 });

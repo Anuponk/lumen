@@ -20,7 +20,7 @@ quest = 'command-concurrent-' + uuid.uuid4().hex
 query(f"insert into auth.users values ('{uid}'); insert into lumen.profile_snapshots(user_id,payload) values ('{uid}','{{\"xp\":0,\"canonicalQuestState\":{{}}}}'); insert into lumen.canonical_quest_allowlist values ('{quest}');")
 
 def commit(operation, badges='{}', allow_failure=False):
-    return query(f"begin; select set_config('request.jwt.claim.sub','{uid}',true); select public.lumen_commit_canonical_command('{operation}','{quest}','{badges}'); select pg_sleep(0.15); commit;", allow_failure)
+    return query(f"begin; select set_config('request.jwt.claim.sub','{uid}',true); select public.lumen_commit_canonical_command('{operation}','{uid}','{quest}','{badges}'); select pg_sleep(0.15); commit;", allow_failure)
 
 with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
     list(pool.map(lambda _: commit('same'), range(4)))
