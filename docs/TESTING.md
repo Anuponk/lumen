@@ -182,6 +182,9 @@ save keys and puzzle hashes, and have a matching additive server revision.
 `fixtures/catalogue-origin.sql` runs after the existing real ledger fixtures in
 disposable PostgreSQL 17: empty/new versus historical cohorts, old backup/CAS
 refusal, immutable markers, unknown origins and unaffected preferences/spending.
+`catalogue-origin-fixtures.mjs` additionally generates SQL from the published
+metadata to verify the actual server default and acceptance of every archived
+cohort, so a future revision cannot pass with a stale server default.
 Never run these fixtures against player data. Synthetic fixtures are not proof
 of deployment or resolution on an affected mobile account.
 

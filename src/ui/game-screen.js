@@ -1224,7 +1224,7 @@ function historicalContinuationAllowed(index){
 }
 function questIsAccessible(index){
  return canonicalCampaignQuestDecision(canonicalQuestForLegacy(index),lumenProgress,{
-  entitlements:lumenEntitlements,attempt:attemptEngine.snapshot()
+  entitlements:adventureAccessEntitlements(),attempt:attemptEngine.snapshot()
  }).status==='ready';
 }
 function choose(){if(canonicalActiveQuest){puz={reg:canonicalActiveQuest.reg,sol:canonicalActiveQuest.sol,audit:canonicalActiveQuest.audit,difficulty:canonicalActiveQuest.difficulty};n=puz.reg.length;return}levelIndex=Math.max(0,Math.min(levelIndex,currentQuestLimit()-1));if(!socialChallenge&&!questIsAccessible(levelIndex)){while(levelIndex>0&&!questIsAccessible(levelIndex))levelIndex--;replayMode=!!lumenProgress.solved[levelIndex]}const resolved=playableQuest(levelIndex);if(!resolved)throw new Error("Missing campaign quest "+levelIndex);puz=resolved.source==="generated"?{reg:resolved.reg,sol:resolved.sol,audit:resolved.audit,difficulty:resolved.difficulty}:resolved.size===6?CAT["6"][CAMPAIGN6_ORDER[CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]]]:CAT[String(resolved.size)][CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]];n=puz.reg.length;last[n]=levelIndex}
@@ -1577,7 +1577,7 @@ function adminAlerts(rows){
 }
 function canonicalQuestAccess(quest){
  return canonicalInsertedQuestDecision(quest,lumenProgress,{
-  entitlements:lumenEntitlements,attempt:attemptEngine.snapshot(),
+  entitlements:adventureAccessEntitlements(),attempt:attemptEngine.snapshot(),
   signedIn:qaActive||!!lumenUser,cloudReady:qaActive||cloudProfileReady
  });
 }

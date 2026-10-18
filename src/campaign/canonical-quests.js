@@ -8,7 +8,7 @@ import {CONTENT_PACKS,CONTENT_CONSTELLATIONS,hasPackAccess} from "./content.js";
 import {playableQuest,playableQuestCount} from "./playable-quests.js";
 import {qualifyDifficulty} from "./difficulty.js";
 import {constellationCatchupAvailable,catalogueQuestDecision} from "./catalogue-access.js";
-import {originQuests} from './catalogue-origin.js';
+import {originQuests,pastCatalogues} from './catalogue-origin.js';
 
 function planSlots(packs,constellations){
  const records=[],ordered=[...packs].sort((a,b)=>a.order-b.order);
@@ -77,7 +77,7 @@ export function canonicalCampaignQuestDecision(quest,progress={},context={}){
  const packAllowed=!!pack&&hasPackAccess(pack,context.entitlements??[],progress,context.attempt??null);
  let origin;
  try{origin=originQuests(progress)}catch{return {status:'catalogue-incompatible'}}
- return catalogueQuestDecision(quest,progress,all,{...context,packAllowed,originQuests:origin});
+ return catalogueQuestDecision(quest,progress,all,{...context,packAllowed,originQuests:origin,pastCatalogues:pastCatalogues(progress)});
 }
 
 // User-facing catalogue numbering is deliberately separate from legacy save keys.

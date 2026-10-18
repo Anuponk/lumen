@@ -41,6 +41,13 @@ export function catalogueQuestDecision(quest,progress={},quests=[],context={}){
  if(frontier?.id===quest.id)return {status:'ready',reason:'preserved-frontier'};
  const original=origin.find(q=>q.id===quest.id);
  if(original&&origin.some(q=>q.packId===original.packId&&q.ordinal>original.ordinal&&questCompleted(q,progress)))return {status:'ready',reason:'preserved-access'};
+ // Preserve an unfinished frontier acquired in ANY intermediate publication,
+ // not just the campaign's origin. Each old view is evaluated directly against
+ // the same completion evidence; no recursive migration or player write.
+ for(const past of context.pastCatalogues??[]){
+  const previous=past.find(q=>q.id===quest.id);
+  if(previous&&catalogueQuestDecision(previous,progress,past,{...context,pastCatalogues:[]}).status==='ready')return {status:'ready',reason:'preserved-access'};
+ }
  if(!original&&constellationCatchupAvailable(quest,progress,quests,origin))return {status:'ready',reason:'historical-access'};
  const preceding=quests.filter(q=>q.packId===quest.packId&&q.constellationId===quest.constellationId&&q.ordinal<quest.ordinal);
  const prerequisite=preceding.find(q=>!questCompleted(q,progress))??first;

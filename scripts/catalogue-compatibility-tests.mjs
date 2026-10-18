@@ -12,7 +12,10 @@ const active=canonicalQuestList().map(({id,legacyIndex,packId,constellationId,or
 assert.equal(history.current,history.catalogues.at(-1).revision);
 assert.deepEqual(history.catalogues.at(-1).quests,active,'Catalogue changes require a new immutable revision before publishing');
 let previous=[];
+let previousRevision=0;
 for(const revision of history.catalogues){
+ assert.ok(Number.isSafeInteger(revision.revision)&&revision.revision>previousRevision,'Published revisions are unique and strictly increasing');
+ previousRevision=revision.revision;
  assert.equal(new Set(revision.quests.map(q=>q.id)).size,revision.quests.length);
  assert.equal(revision.digest,createHash('sha256').update(JSON.stringify(revision.quests)).digest('hex'),'Historical metadata must retain its recorded digest');
  for(const quest of previous){

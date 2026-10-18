@@ -13,6 +13,10 @@ export function catalogueOrigin(profile={}){
  return played?history.catalogues[0].revision:currentCatalogueOrigin;
 }
 export function originQuests(profile){return versions.get(catalogueOrigin(profile))}
+export function pastCatalogues(profile){
+ const origin=catalogueOrigin(profile);
+ return history.catalogues.filter(entry=>entry.revision>=origin&&entry.revision<currentCatalogueOrigin).map(entry=>entry.quests);
+}
 // An older origin preserves at least as much historical access. This metadata
 // never proves pack ownership and never grants completion or economic rewards.
 export function mergeCatalogueOrigin(local,cloud){

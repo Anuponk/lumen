@@ -41,6 +41,16 @@ test('successive additive catalogues preserve catch-up, variable group sizes and
  }
  assert.equal(JSON.stringify(historic),before,'Repeated evaluation neither migrates nor mutates player data');
 });
+test('a later insertion cannot relock an unfinished quest acquired in an intermediate catalogue',()=>{
+ const old=[q('old',0,'b','old-c',1)];
+ const second=[...old,q('added-frontier',null,'b','new-c',2),q('added-later',null,'b','new-c',3)];
+ const third=[old[0],q('new-before-frontier',null,'b','new-c',2),{...second[1],ordinal:3},{...second[2],ordinal:4}];
+ const progress={solved:{0:1}};
+ assert.equal(insertedQuestDecision(second[1],progress,second,{originQuests:old}).status,'ready');
+ assert.equal(insertedQuestDecision(third[2],progress,third,{originQuests:old,pastCatalogues:[old,second]}).status,'ready','The previously acquired unfinished stable ID remains playable');
+ assert.equal(insertedQuestDecision(third[3],progress,third,{originQuests:old,pastCatalogues:[old,second]}).status,'prerequisite','An old locked successor stays locked');
+ assert.equal(insertedQuestDecision(third[1],progress,third,{originQuests:old,pastCatalogues:[old,second]}).status,'ready','The new insertion is available independently');
+});
 test('catch-up advances only its own sequence and solved quests remain replayable',()=>{
  const progress=structuredClone(historic);
  progress.canonicalQuestState['b-new-1']={solved:true};
@@ -152,7 +162,7 @@ test('the actual UI adapter and start guard share readiness without bypassing pr
  const quests=canonicalQuestList(),pack=CONTENT_PACKS.find(p=>p.id==='real-adventure-03');
  const group=quests.filter(q=>q.packId===pack.id&&q.constellationId===pack.id+'-new-01');
  const progress={solved:Object.fromEntries(quests.filter(q=>q.packId===pack.id&&q.legacyIndex!==null).map(q=>[q.legacyIndex,1]))};
- const context={canonicalInsertedQuestDecision,canonicalQuestList,lumenProgress:progress,lumenEntitlements:[],attemptEngine:{snapshot:()=>null},qaActive:false,lumenUser:{id:'synthetic'},cloudProfileReady:true};
+ const context={canonicalInsertedQuestDecision,canonicalQuestList,lumenProgress:progress,lumenEntitlements:[],adventureAccessEntitlements:()=>[],attemptEngine:{snapshot:()=>null},qaActive:false,lumenUser:{id:'synthetic'},cloudProfileReady:true};
  vm.createContext(context);
  vm.runInContext(['canonicalQuestAccess','canonicalQuestAvailable','canonicalQuestLockReason','startCanonicalQuest'].map(name=>functionSource(source,name)).join('\n'),context);
  assert.equal(context.canonicalQuestAvailable(group[0]),true);

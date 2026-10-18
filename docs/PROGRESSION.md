@@ -79,7 +79,10 @@ cohort rule, not an inferred date for individual victories.
 
 `catalogue-access.js` owns campaign availability. Completed quests remain
 replayable. The first unfinished quest in the origin catalogue remains available
-after insertions, independently of newly added earlier prerequisites. New quests
+after insertions, independently of newly added earlier prerequisites. Each prior
+published catalogue since that origin is also checked: an unfinished frontier
+acquired in an intermediate release remains playable after another insertion.
+This reconstruction reads completion evidence without writing inferred wins. New quests
 in an acquired constellation follow that constellation's current local order.
 An adventure completed in the origin catalogue also opens the first unfinished
 quest of each newly added constellation. Merely starting an adventure does not
