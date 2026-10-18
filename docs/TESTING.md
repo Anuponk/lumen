@@ -463,3 +463,9 @@ failures, recovered players, equal timestamps in both orders, incidents older
 than the report window, and authorization/RLS boundaries. The simulated
 incidents exercise the same `stalled_players` count consumed by the cockpit
 alert; they never insert into production telemetry.
+
+## Documentation consistency gate
+
+The `Documentation consistency` GitHub Actions workflow runs `node scripts/docs-consistency-check.mjs` on pull requests and pushes to main. It checks selected source-of-truth invariants (badge names/count, speed target, shard policy, test scripts, agent map links). On pull requests it also checks that changes to mapped modules include a review/update of at least one owning document. See `scripts/docs-consistency-check.mjs` for mappings.
+
+This is a **drift detector, not a proof of complete documentation correctness**: it does not execute gameplay, validate all prose or inspect browser behavior. If a rule is intentionally changed, update its source code, owning documentation and regression tests together; update the checker only to reflect the new verified contract. Avoid no-op documentation changes solely to satisfy the gate. Review documentation and source diffs during PR review.
