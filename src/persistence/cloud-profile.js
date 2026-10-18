@@ -104,6 +104,35 @@ function mergeLegacyAdventureAccess(local,cloud){
  if(local==null&&cloud==null)return {ok:true,value:undefined};
  return {ok:true,value:[...new Set([...(cloud||[]),...(local||[])])]};
 }
+const qualificationFields=["lastQualifiedAt","lastQualifiedDay"];
+function qualificationMetadata(performance){
+ return Object.fromEntries(qualificationFields.filter(key=>Object.hasOwn(performance,key)).map(key=>[key,performance[key]]));
+}
+function validQualificationDay(day){
+ return typeof day==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(day)&&Number.isFinite(Date.parse(day))&&new Date(day).toISOString().slice(0,10)===day;
+}
+// Cooldown metadata is not an immutable reward receipt. Keep the latest known
+// qualification and its local calendar day, without replaying any reward.
+function mergeQualificationMetadata(left,right){
+ const times=[];
+ for(const record of [left,right]){
+  const at=record.lastQualifiedAt,day=record.lastQualifiedDay;
+  if(at!=null&&(typeof at!=="string"||!/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(at)||!validQualificationDay(at.slice(0,10))||!Number.isFinite(Date.parse(at))))
+   return {ok:false,conflictKeys:["lastQualifiedAt"]};
+  if(day!=null&&!validQualificationDay(day))
+   return {ok:false,conflictKeys:["lastQualifiedDay"]};
+  times.push(at==null?-Infinity:Date.parse(at));
+ }
+ // For equal instants (or legacy day-only records), use a stable day/string
+ // tie-breaker so swapping devices cannot produce a different reconciliation.
+ const rank=record=>(record.lastQualifiedDay??"")+" "+(record.lastQualifiedAt??"");
+ const winner=times[0]>times[1]?left:times[1]>times[0]?right:rank(left)>rank(right)?left:right;
+ const value={};
+ for(const key of qualificationFields){
+  if(Object.hasOwn(left,key)||Object.hasOwn(right,key))value[key]=winner[key]??null;
+ }
+ return {ok:true,value};
+}
 export function cloudSafelyCoversLocal(local,remote){
   if(!local || typeof local!=="object" || Array.isArray(local))return true;
   const cloud=validateCloudProfile(remote);
@@ -130,6 +159,8 @@ export function cloudSafelyCoversLocal(local,remote){
   for(const [key,perf] of Object.entries(local.performances||{})){
     const saved=cloud.performances?.[key];
     if(!saved)return false;
+    const qualification=mergeQualificationMetadata(perf,saved);
+    if(!qualification.ok||!sameCloudProfile(qualification.value,qualificationMetadata(saved)))return false;
     for(const [badge,earned] of Object.entries(perf.badges||{}))
       if(earned && !saved.badges?.[badge])return false;
     const localBest=Number(perf.bestTime);
@@ -495,7 +526,13 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
   }
   if(!left||!right||typeof left!=="object"||typeof right!=="object"||Array.isArray(left)||Array.isArray(right))return {ok:false};
   const out=structuredClone(right);
+  if(field==="performances"){
+   const qualification=mergeQualificationMetadata(left,right);
+   if(!qualification.ok)return qualification;
+   Object.assign(out,qualification.value);
+  }
   for(const [key,value] of Object.entries(left)){
+   if(field==="performances"&&qualificationFields.includes(key))continue;
    if(!Object.hasOwn(out,key)){out[key]=structuredClone(value);continue}
    if(sameCloudProfile(value,out[key]))continue;
    if((key==="badges"||key==="awards")&&value&&out[key]&&typeof value==="object"&&typeof out[key]==="object"){
@@ -505,7 +542,7 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
     const nested=rewardMerge(field,value,out[key]);if(nested.ok){out[key]=nested.value;continue}
    }
    if((key==="bestTime"||key==="bestSeconds"||(field==="performances"&&key==="time"))&&typeof value==="number"&&typeof out[key]==="number"&&Number.isFinite(value)&&Number.isFinite(out[key])&&value>0&&out[key]>0){out[key]=Math.min(value,out[key]);continue}
-   // Conflicting run records, canonical rewards, and timestamps are not
+   // Conflicting run records, canonical rewards, and other timestamps are not
    // equivalent to monotonic achievements: preserve both backups and block.
    return {ok:false,conflictKeys:[key]};
   }

@@ -25,6 +25,8 @@ These are **target contracts**, not a claim that all implementations already exi
 
 Any added player field MUST have a documented owner, cloud write/read, reconciliation policy, migration/default for old saves, and a regression test. Follow the [cloud persistence regression matrix](TESTING.md#cloud-persistence-regression-matrix) and PR impact checklist. Do not silently suppress or delete tests.
 
+Performance qualification metadata (`performances[quest].lastQualifiedAt` and `lastQualifiedDay`) records cooldown state, not an immutable reward receipt. Reconciliation retains the latest valid timestamp and its associated local calendar day; equal instants use a deterministic day/string tie-breaker. Legacy day-only records retain the latest valid calendar day when neither snapshot has a timestamp. An absent day on the latest timestamp remains null rather than borrowing an older qualification's day. Invalid metadata or contradictory run/reward evidence still blocks reconciliation. Cloud coverage checks must preserve this metadata so a stale restore cannot shorten the 15-minute cooldown. This merge never grants rewards, increments attempts, or changes balances/entitlements. Existing verified recovery backups, compare-and-swap and read-back verification remain required; no schema migration is needed.
+
 Canonical snapshot protection (#391): `protect_canonical_snapshot` checks every
 update of `lumen.profile_snapshots.payload`, including legacy backup and CAS
 RPCs. A completed canonical quest, its first-completion metadata and earned

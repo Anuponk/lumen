@@ -55,6 +55,8 @@ privacy-limited authenticated health event. Guest/QA/event guards remain tested.
 
 All new saved fields require round-trip, reload, restore, migration and conflict tests. Run the existing persistence/regression tests too. A PR failing these required checks cannot merge. See `AGENTS.md` and [DATA_AND_ARCHITECTURE](DATA_AND_ARCHITECTURE.md#cloud-persistence-contract).
 
+Run `node scripts/performance-qualification-merge-tests.mjs` for qualification cooldown reconciliation. It reproduces the quest 183 `lastQualifiedAt` conflict in both device orders, checks midnight/legacy/null/offset metadata, unchanged achievements and balances, stale-cloud coverage, idempotent retry, verified recovery snapshots, concurrent CAS refusal and read-back failure. Invalid dates and contradictory run/reward evidence must remain blocked. This suite is included in the unified quality gate.
+
 ## Mandatory rule
 After **every modification affecting LUMEN code, gameplay or a product feature**, update the automated test contract in the same change and run the complete applicable test battery before delivery. This has two inseparable goals:
 - **non-regression**: existing behavior that must remain stable stays covered; when an intentional product change invalidates an old assertion, adapt that assertion explicitly rather than simply deleting or bypassing it;
