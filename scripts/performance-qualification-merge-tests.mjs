@@ -27,6 +27,52 @@ function fixture(left,right,{race=false,failRead=false}={}){
 const old={lastQualifiedAt:oldAt,lastQualifiedDay:'2026-10-18'};
 const recent={lastQualifiedAt:newAt,lastQualifiedDay:'2026-10-18'};
 
+// savePerformance writes cumulative summaries, not immutable run receipts.
+// V2 badges remain earned under V3; a replay also updates attempts and stars.
+for(const reverse of [false,true]){
+ const v2={version:2,attempts:2,stars:1,bestTime:65,time:65,badges:{autonomy:true,mastery:true},lastQualifiedDay:'2026-10-17'};
+ const v3={version:3,attempts:4,stars:2,bestTime:40,time:40,badges:{speed:true,noError:true},...recent};
+ const f=fixture(...(reverse?[v3,v2]:[v2,v3]));
+ const raw=f.map.get('lumenProgressV1'),result=await reconcileCompatibleCloudProfiles(f.api,f.storage,f.original);
+ assert(['reconciled','cloud_dominant'].includes(result.status),'Known performance summary versions must reconcile');
+ const saved=result.profile.performances[183];
+ assert.equal(saved.version,3);assert.equal(saved.attempts,4);assert.equal(saved.stars,2);
+ assert.equal(saved.bestTime,40);assert.equal(saved.time,40);
+ assert.deepEqual(saved.badges,{autonomy:true,mastery:true,speed:true,noError:true});
+ assert.equal(saved.lastQualifiedAt,newAt);
+ assert.equal(result.profile.shards,5);assert.equal(result.profile.xp,7);assert.equal(result.profile.skyScore,3);
+ assert.equal(f.map.get('lumenProgressV1'),raw);
+ assert.equal(cloudSafelyCoversLocal(f.local,result.profile),true);
+ assert.equal((await reconcileCompatibleCloudProfiles(f.api,f.storage,result.profile)).status,'cloud_dominant');
+}
+for(const version of [2,3]){
+ for(const reverse of [false,true]){
+  const f=fixture(...(reverse?[{version,attempts:8,stars:2},{version,attempts:3,stars:1}]:[{version,attempts:3,stars:1},{version,attempts:8,stars:2}]));
+  const result=await reconcileCompatibleCloudProfiles(f.api,f.storage,f.original);
+  assert(['reconciled','cloud_dominant'].includes(result.status));
+  assert.equal(result.profile.performances[183].attempts,8,'Do not sum snapshots of overlapping attempts');
+  assert.equal(result.profile.performances[183].stars,2);
+ }
+}
+for(const [newer,older] of [[{version:3},{version:2}],[{attempts:3},{attempts:2}],[{stars:2},{stars:1}]]){
+ assert.equal(cloudSafelyCoversLocal(profile(newer),profile(older)),false,'A stale restore must not downgrade summary metadata');
+ assert.equal(cloudSafelyCoversLocal(profile(older),profile(newer)),true);
+}
+// Upgrading a schema cannot invent same-run mastery from separate badges.
+{
+ const f=fixture({version:2,badges:{autonomy:true}}, {version:3,badges:{speed:true,noError:true}});
+ const result=await reconcileCompatibleCloudProfiles(f.api,f.storage,f.original);
+ assert(['reconciled','cloud_dominant'].includes(result.status));
+ assert.equal(!!result.profile.performances[183].badges.mastery,false);
+}
+for(const metadata of [{version:1},{version:4},{version:'3'},{version:null},{attempts:-1},{attempts:1.5},{stars:-1},{stars:'2'}]){
+ for(const reverse of [false,true]){
+  const f=fixture(...(reverse?[{version:3,attempts:2,stars:1},{version:2,attempts:2,stars:1,...metadata}]:[{version:2,attempts:2,stars:1,...metadata},{version:3,attempts:2,stars:1}]));
+  const result=await reconcileCompatibleCloudProfiles(f.api,f.storage,f.original);
+  assert.equal(result.status,'blocked');assert.equal(f.writes,0);
+ }
+}
+
 // Reproduce the reported quest 183 conflict; merging either device order is safe.
 for(const [left,right] of [[recent,old],[old,recent]]){
  const f=fixture(left,right),raw=f.map.get('lumenProgressV1');
@@ -72,7 +118,7 @@ for(const [a,b,expected] of cases){
 for(const bad of [{lastQualifiedAt:'invalid'},{lastQualifiedAt:123},{lastQualifiedAt:'2026-10-18'},
  {lastQualifiedAt:'2026-02-30T03:33:00.000Z'},
  {lastQualifiedDay:'2026-02-30'},{lastQualifiedDay:123},
- {run:{duration:42}},{rewardReceipt:'local-receipt'},{attempts:3}]){
+ {run:{duration:42}},{rewardReceipt:'local-receipt'},{attempts:-1}]){
  for(const reverse of [false,true]){
   const left={...old,...bad},right={...recent,run:{duration:55},rewardReceipt:'cloud-receipt'};
   const f=fixture(...(reverse?[right,left]:[left,right]));
@@ -109,4 +155,4 @@ for(const options of [{race:true},{failRead:true}]){
  assert.equal(restartedMap.get('lumenProgressV1'),original,'Only verified hydration may install local state');
  assert([...restartedMap.values()].includes(original),'Restart retains recovery evidence');
 }
-console.log('Qualification reconciliation: quest 183, latest cooldown, both device orders, legacy restore, idempotency, backups, CAS, restart after lost read-back and conflict protection passed');
+console.log('Performance reconciliation: V2/V3 summaries, conservative counters, no invented mastery/rewards, stale restore protection, latest cooldown, both device orders, legacy restore, idempotency, backups, CAS and restart after lost read-back passed');
