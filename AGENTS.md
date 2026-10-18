@@ -22,3 +22,8 @@
 - Documentation-only changes require path/link checks, contract-preservation review and `git diff --check`; do not claim unexecuted runtime validation. Maintain maps when ownership/entry points/commands change, without duplicating product contracts.
 - Complete the PR template's cloud-impact section; include Onboarding impact, actual validation and outstanding limits. Keep summaries short and evidence-based.
 - Never merge without explicit user authorization. A push is not proof of production release; follow [RELEASE](docs/RELEASE.md), report the SHA and verify the intended deployment when releasing.
+
+## Documentation maintenance for future changes
+- Treat code and the owning documentation as one change. When modifying badges, shards, progression, onboarding, cloud persistence, catalogue or test commands, review and update the relevant existing document in the same PR; state explicitly when no text change is needed.
+- The documentation consistency CI is a narrow drift detector, not a substitute for reading current code and running tests. Never change product behavior solely to make a documentation check green.
+- When a check detects a discrepancy, verify source, tests and intended product rule before editing the document. Avoid duplicated rules across new documents.
