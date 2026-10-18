@@ -144,6 +144,10 @@ This checks that updating obsolete expectations retained meaningful regressions.
 
 The four suites are now in `quality-gate-suites.mjs`, so existing GitHub CI executes
 them before browser checks; full mode no longer repeats them as standalone tests.
+They also belong to the affected critical tier (now 63 checks). A selector
+regression first failed because known content/persistence edits omitted these
+neighbors; after extending the filename families, all four native selector tests
+pass and a content edit selects all 63 checks.
 `node scripts/test-affected.mjs --full` was rerun: all 89 gate Node suites and all
 28 supplemental Node suites pass, as does the cloud policy check. Local full mode
 still exits 1 solely on the previously reproduced Edge viewport overflow (3 px at

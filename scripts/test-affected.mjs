@@ -9,7 +9,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const testFile=name=>/(?:-tests?|\.test)\.mjs$/.test(name);
 // The UI reads sources dynamically and orchestrates several persistence domains.
 // A static import graph alone would miss these contracts. Keep this tier broad.
-const critical=name=>/^(?:cloud-|canonical-|performance-|hint-assistance-|attempt-engine-|account-|auth-|oauth-return|persistence-|guest-transfer|campaign-|late-game-|content-architecture-|unlocked-adventure-progress|playable-navigation|generated-progression|generated-rewards|daily-|social-challenge-|issue-222-challenge-|sky-navigation-|intro-flags-|reward-conflict-|test-affected-tests)/.test(name)
+const critical=name=>/^(?:cloud-|canonical-|performance-|hint-assistance-|attempt-engine-|account-|auth-|oauth-return|persistence-|guest-transfer|campaign-|late-game-|content-architecture-|unlocked-adventure-progress|playable-navigation|generated-progression|generated-rewards|daily-|social-challenge-|issue-222-challenge-|sky-navigation-|intro-flags-|reward-conflict-|test-affected-tests|admin-catalogue|generated-adventure-map|extended-boundary|staged-adventure)/.test(name)
  && !/(?:browser|ux-cleanup)/.test(name);
 
 export function changedFiles(cwd=root, base='origin/main') {

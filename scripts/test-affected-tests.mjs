@@ -6,12 +6,12 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {changedFiles,selectTests} from './test-affected.mjs';
 
-const available=['cloud-profile-tests.mjs','performance-badge-tests.mjs','unlocked-adventure-progress.test.mjs','test-affected-tests.mjs','pack-publication-validation.test.mjs'];
+const available=['cloud-profile-tests.mjs','performance-badge-tests.mjs','unlocked-adventure-progress.test.mjs','test-affected-tests.mjs','admin-catalogue.test.mjs','generated-adventure-map.test.mjs','extended-boundary.test.mjs','staged-adventure.test.mjs','pack-publication-validation.test.mjs'];
 test('critical edits include persistence, badge and progression neighbors',()=>{
  for(const file of ['src/persistence/cloud-profile.js','src/campaign/performance.js','src/campaign/content.js','scripts/performance-badge-tests.mjs']){
   const plan=selectTests([file],available);
   assert.equal(plan.mode,'critical');
-  for(const suite of available.slice(0,4))assert.ok(plan.suites.includes(suite));
+  for(const suite of available.slice(0,-1))assert.ok(plan.suites.includes(suite),file+' must select '+suite);
  }
 });
 test('uncertain impact widens, never silently skips',()=>{
