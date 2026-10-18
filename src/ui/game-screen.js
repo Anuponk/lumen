@@ -26,7 +26,9 @@ import {challengeEligibility,challengeSnapshot,compareChallenge,createChallengeC
 import {resolveChallengeQuest} from "../campaign/canonical-challenges.js";
 import {canonicalDisplayForLegacy,canonicalQuestList,canonicalAdventureSummary,canonicalQuestByOrdinal,canonicalQuestForLegacy,canonicalNextUnsolved,canonicalConstellationCatchupAvailable,unlockedAdventureProgress} from "../campaign/canonical-quests.js";
 import {acknowledgeCanonicalVictory,commitCanonicalVictoryViaLedger as commitCanonicalVictory,questIsCompleted} from "../persistence/canonical-progress.js";
-import {createCanonicalVictoryOutbox,replayCanonicalVictoryOutbox} from "../persistence/canonical-outbox.js";
+import {replayCanonicalVictoryOutbox} from "../persistence/canonical-outbox.js";
+import {createDurableCanonicalVictoryOutbox} from "../persistence/durable-canonical-outbox.js";
+import {createCloudRetryScheduler} from "../persistence/cloud-retry-scheduler.js";
 import {createCampaign,sequentialCount,campaignQuestCount,isCampaignFinalQuest,isCampaignComplete,constellationQuestIndices,constellationGridRange,chapterForGrid,milestoneFor,skyStarsForGrid,bonusChallengeFor,challengeFor,constellationCheckpoint,constellationStateForEarned,starsAwardedForGrid} from "../campaign/progression.js";
 import {createGameEngine} from "../game/engine.js";
 import {createAttemptEngine,ATTEMPT_STATES} from "../game/attempt-engine.js";
@@ -47,6 +49,7 @@ if(qaFresh){
 const qaKey=suffix=>qaActive?"lumenQa"+suffix:suffix;
 const {normalizeSequentialProgress,solvedCount,exactSkyScoreForSolvedPrefix,ensureSkyScore,skyStarsEarned,challengeRewardKeys,constellationProgress,constellationLitAt,awards,performanceRun,savePerformance}=createCampaign(()=>lumenProgress,()=>saveLumenProgress(),()=>({activeGameSeconds,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted,qualifying:!!attemptEngine.snapshot()?.qualifying}));
 let cloudProfileReady=false,cloudProfileTimer=null,cloudProfileBusy=false,cloudProfileDirty=false,cloudProfileBaseline=null,cloudProfileInFlight=null,cloudProfileFailure=null;
+let canonicalOutboxNotice=null;
 // Local-only, privacy-safe cloud diagnostics. Never log IDs, emails, tokens or save payloads.
 const cloudDiagKey="lumenCloudDiagnosticsV1";
 function recordCloudDiagnostic(event,details={}){
@@ -330,12 +333,12 @@ async function retryPendingCanonicalOutboxOnReconnect(){
  const userId=lumenUser.id,client=lumenSupabase;
  const sessionValid=()=>lumenUser?.id===userId&&lumenSupabase===client&&!qaActive&&cloudProfileReady;
  let remaining;
- try{remaining=canonicalVictoryOutbox.pending(userId)}catch(error){recordCloudDiagnostic("canonical_outbox_read_failed",{reason:"integrity"});return}
+ try{remaining=await canonicalVictoryOutbox.pending(userId)}catch(error){recordCloudDiagnostic("canonical_outbox_read_failed",{reason:"integrity"});return}
  if(!remaining.length)return;
  canonicalOutboxRetryInFlight=true;
  try{
   const confirmed=await replayCanonicalVictoryOutbox(canonicalVictoryOutbox,userId,
-   (questId,reward)=>commitCanonicalVictory(client,questId,reward),{sessionValid});
+   (questId,reward)=>commitCanonicalVictory(client,questId,reward),{sessionValid,onIssue:issue=>recordCloudDiagnostic("canonical_outbox_recovery_pending",{reason:issue.kind})});
   if(!sessionValid())return;
   if(confirmed.length){
    recordCloudDiagnostic("canonical_outbox_reconnect_replayed",{count:confirmed.length});
@@ -349,6 +352,7 @@ async function retryPendingCanonicalOutboxOnReconnect(){
 function retryPendingCloudWriteOnReconnect(){
  if(qaActive||!lumenUser||!lumenSupabase||!cloudProfileReady)return;
  void retryPendingCanonicalOutboxOnReconnect();
+ canonicalRecovery.schedule();
  if(!["network","legacy_mirror"].includes(cloudProfileFailure?.reason))return;
  if(cloudProfileBusy||cloudProfileTimer!==null)return;
  recordCloudDiagnostic("flush_retry_online",{reason:cloudProfileFailure.reason});
@@ -359,15 +363,16 @@ window.addEventListener("online",retryPendingCloudWriteOnReconnect);
 // Retry only the same recoverable errors, once the document is visible and
 // the browser reports connectivity. Never attempt a divergent snapshot.
 document.addEventListener("visibilitychange",()=>{
- if(document.visibilityState==="visible"&&navigator.onLine!==false)
+ if(document.visibilityState==="visible"&&navigator.onLine!==false){
   retryPendingCloudWriteOnReconnect();
+ }else canonicalRecovery.cancel();
 });
 const {loadLumenProgress,saveLumenProgress}=createLocalPersistence(localStorage,()=>lumenProgress,{progressKey:qaActive?"lumenQaProgressV1":"lumenProgressV1",onSave:scheduleCloudProfile});
 const persistenceModel={
 get lumenSupabase(){return lumenSupabase},set lumenSupabase(value){lumenSupabase=value},
 get lumenEntitlements(){return lumenEntitlements},set lumenEntitlements(value){lumenEntitlements=Array.isArray(value)?value:[]},
 get lumenCapabilities(){return lumenCapabilities},set lumenCapabilities(value){lumenCapabilities=Array.isArray(value)?value:[]},
-get lumenUser(){return lumenUser},set lumenUser(value){if(lumenUser?.id!==value?.id){cloudProfileReady=false;cloudProfileBaseline=null;cloudProfileFailure=null;lumenNickname=""}lumenUser=value},
+get lumenUser(){return lumenUser},set lumenUser(value){if(lumenUser?.id!==value?.id){canonicalRecovery.cancel();canonicalOutboxNotice=null;cloudProfileReady=false;cloudProfileBaseline=null;cloudProfileFailure=null;lumenNickname=""}lumenUser=value},
 get lumenCloudReady(){return lumenCloudReady},set lumenCloudReady(value){lumenCloudReady=value},
 get lumenNickname(){return lumenNickname},set lumenNickname(value){lumenNickname=value},
 get lumenProgress(){return lumenProgress},set lumenProgress(value){lumenProgress=value},
@@ -407,7 +412,9 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    if(!sessionValid()||!cloud)throw Error("Restauration cloud non vérifiée");
    recordCloudDiagnostic("canonical_outbox_replayed",{count:recovered.length});
   }
-  const outstanding=canonicalVictoryOutbox.pending(accountId).length;
+   const outstanding=(await canonicalVictoryOutbox.pending(accountId)).length;
+   await refreshCanonicalOutboxNotice(accountId);
+   if(!sessionValid())return;
   if(outstanding)recordCloudDiagnostic("canonical_outbox_pending",{count:outstanding});
   // Daily RPC is authoritative. Restore it BEFORE installing the full cloud snapshot,
   // otherwise a stale daily.dates snapshot erases days fetched during login.
@@ -506,6 +513,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    recordCloudDiagnostic("hydration_local_quota_bypass",{cloudVerified:true});
   }else if(changed){recordCloudDiagnostic("hydration_reload",{stage:"local_install"});location.reload();return}
   cloudProfileReady=true;
+   canonicalRecovery.schedule();
   // Do not claim hydration is fully synchronized until the quest mirror is
   // repaired and read back. Preserve the full profile on partial failure.
   const mirror=await verifyLegacyProgressMirror();
@@ -649,8 +657,9 @@ function syncMobileAuthUI(){
  show("editAccountProfile",signedIn);
  show("accountProfileEditor",signedIn&&document.getElementById("accountProfileEditor")?.dataset.open==="true");
  show("guestSaveExplainer",!signedIn);
- status.textContent=recovering?"Choisis ton nouveau mot de passe":signedIn?(cloudProfileReady?(lumenNickname||"Progression synchronisée"):cloudProfileFailure?"Compte connecté · sauvegarde à resynchroniser":"Compte connecté · synchronisation en cours…"):"Progression enregistrée sur cet appareil";
- show("retryAccountSync",signedIn&&!cloudProfileReady&&!!cloudProfileFailure);
+ const pendingNotice=canonicalOutboxNotice==="attention"?"Sauvegarde à vérifier · données locales conservées":canonicalOutboxNotice==="pending"?"Victoire en attente de synchronisation":canonicalOutboxNotice==="storage"?"Enregistrement local indisponible":null;
+ status.textContent=recovering?"Choisis ton nouveau mot de passe":signedIn?(pendingNotice|| (cloudProfileReady?(lumenNickname||"Progression synchronisée"):cloudProfileFailure?"Compte connecté · sauvegarde à resynchroniser":"Compte connecté · synchronisation en cours…")):"Progression enregistrée sur cet appareil";
+ show("retryAccountSync",signedIn&&((!cloudProfileReady&&!!cloudProfileFailure)||!!pendingNotice));
  action.textContent=signedIn?"Déconnexion":"Se connecter / Créer un compte";
  icon.textContent=signedIn?"●":"♙";
  icon.setAttribute("aria-label",signedIn?"Compte connecté":"Compte invité");
@@ -1763,7 +1772,29 @@ function celebrateLearningReplaySuccess(){
 function renderSuccessRewards(stars,savedPerformance,priorBadges={}){let el=document.getElementById("successRewards");if(!el)return;const run=savedPerformance.run,earned=savedPerformance.badges,qualifying=savedPerformance.qualifying,rewards=[];if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});if(qualifying&&earned.autonomy&&!priorBadges.autonomy)rewards.push({cls:"autonomy",icon:performanceIcon("autonomy"),label:"Autonomie"});if(qualifying&&earned.speed&&!priorBadges.speed)rewards.push({cls:"speed",icon:performanceIcon("speed"),label:"Rapidité"});if(qualifying&&earned.noError&&!priorBadges.noError)rewards.push({cls:"no-error",icon:performanceIcon("noError"),label:"Sans erreur"});if(qualifying&&earned.mastery&&!priorBadges.mastery)rewards.push({cls:"mastery",icon:performanceIcon("mastery"),label:"Maîtrise"});el.innerHTML=rewards.map((r,i)=>'<span class="success-reward '+r.cls+'" style="--reward-delay:'+(220+i*210)+'ms"><span>'+r.icon+'</span><span>'+r.label+'</span></span>').join("");el.classList.toggle("mastery-earned",!!qualifying&&!!earned.mastery&&!priorBadges.mastery)}
 // Canonical achievements use the stable-ID server ledger, never the historical
 // puzzle_id RPC or the old `solved[levelIndex]` reward calculation.
-const canonicalVictoryOutbox=createCanonicalVictoryOutbox(localStorage);
+const canonicalVictoryOutbox=createDurableCanonicalVictoryOutbox(localStorage,{
+ onIssue:issue=>{
+  recordCloudDiagnostic("canonical_outbox_storage",{reason:issue.kind});
+ }
+});
+async function refreshCanonicalOutboxNotice(ownerId){
+ try{
+  const state=await canonicalVictoryOutbox.inspect(ownerId);
+  if(lumenUser?.id!==ownerId)return 0;
+  canonicalOutboxNotice=state.issues.some(kind=>["invalid_entry","conflicting_copies"].includes(kind))?"attention":state.pending.length?"pending":null;
+  updateAuthUI();return state.pending.length;
+ }catch{if(lumenUser?.id===ownerId){canonicalOutboxNotice="storage";updateAuthUI()}return 1}
+}
+const canonicalRecovery=createCloudRetryScheduler({
+ ready:()=>!qaActive&&!!lumenUser&&!!lumenSupabase&&cloudProfileReady&&!authSessionPending&&!cloudProfileBusy&&!cloudProfileDirty&&!canonicalActiveQuest&&document.visibilityState!=="hidden"&&navigator.onLine!==false,
+ run:async()=>{
+  const ownerId=lumenUser.id,client=lumenSupabase;
+  await retryPendingCanonicalOutboxOnReconnect();
+  if(lumenUser?.id!==ownerId||lumenSupabase!==client)return false;
+  return (await refreshCanonicalOutboxNotice(ownerId))>0;
+ },
+ onError:()=>recordCloudDiagnostic("canonical_outbox_reconnect_failed",{reason:"retry"})
+});
 async function celebrateCanonicalSuccess(){
  const q=canonicalActiveQuest;if(!q||celebrated)return;
  const seconds=activeGameSeconds(),attempt=attemptEngine.snapshot();
@@ -1772,7 +1803,7 @@ async function celebrateCanonicalSuccess(){
  const badges={speed:run.speed,autonomy:run.autonomy,noError:run.noError,mastery:run.mastery};
  const priorBadges=lumenProgress.canonicalQuestState?.[q.id]?.badges||{};
  const reward={badges,performance:{bestTime:seconds,assisted,seconds},stars:1};
- let committed;
+ let committed,durableIntent=null;
  try{
   if(qaActive){committed=acknowledgeCanonicalVictory(lumenProgress,q.id,reward)}
   else{
@@ -1780,38 +1811,47 @@ async function celebrateCanonicalSuccess(){
    // Even when cloud hydration is unavailable, capture the victory BEFORE
    // awaiting readiness. Closing an offline PWA must not lose its sole intent.
    const ownerId=lumenUser.id;
-   const pending=canonicalVictoryOutbox.enqueue(ownerId,q.id,reward);
+   const ownerClient=lumenSupabase;
+   const pending=await canonicalVictoryOutbox.enqueue(ownerId,q.id,reward);
+   durableIntent=pending;
+   if(lumenUser?.id!==ownerId||lumenSupabase!==ownerClient)throw Error("Compte modifié pendant la sauvegarde");
+   canonicalOutboxNotice="pending";
+   canonicalRecovery.schedule();
    if(!cloudProfileReady)throw Error("Victoire conservée localement, cloud non prêt");
    if(!(await confirmCloudReward()))return;
-   if(lumenUser?.id!==ownerId)throw Error("Compte modifié pendant la sauvegarde");
-   committed=await commitCanonicalVictory(lumenSupabase,q.id,pending.reward);
-   if(lumenUser?.id!==ownerId)throw Error("Compte modifié pendant la sauvegarde");
+   if(lumenUser?.id!==ownerId||lumenSupabase!==ownerClient)throw Error("Compte modifié pendant la sauvegarde");
+   committed=await commitCanonicalVictory(ownerClient,q.id,pending.reward);
+   if(lumenUser?.id!==ownerId||lumenSupabase!==ownerClient)throw Error("Compte modifié pendant la sauvegarde");
    if(!committed.profile?.canonicalQuestState?.[q.id]?.solved)throw Error("Victoire non confirmée par le cloud");
    // Remote victory was read back successfully. A local quota/storage error
    // when clearing the outbox must not make the player replay a saved win.
    // The retained intent is harmless: CAS replay sees solved and won't re-award.
-   try{canonicalVictoryOutbox.acknowledge(ownerId,q.id)}catch(error){
+   try{await canonicalVictoryOutbox.acknowledge(ownerId,q.id,pending.reward,pending.operationId)}catch(error){
     console.warn("Canonical outbox cleanup deferred",error);
     recordCloudDiagnostic("canonical_outbox_cleanup_pending",{reason:"storage"});
    }
+   if(lumenUser?.id!==ownerId||lumenSupabase!==ownerClient)throw Error("Compte modifié pendant la sauvegarde");
   }
  }catch(error){
   console.error("Canonical victory not saved",error);
   let locallySaved=false;
-  try{locallySaved=!!lumenUser&&canonicalVictoryOutbox.pending(lumenUser.id).some(entry=>entry.questId===q.id)}catch(readError){
+  try{locallySaved=!!lumenUser&&!!durableIntent&&(await canonicalVictoryOutbox.pending(lumenUser.id)).some(entry=>entry.operationId===durableIntent.operationId&&entry.questId===q.id)}catch(readError){
    recordCloudDiagnostic("canonical_outbox_read_failed",{reason:"integrity"});
   }
   msg.textContent=locallySaved
    ?"Victoire conservée sur cet appareil, en attente de synchronisation. Reconnecte-toi sur cet appareil pour la récupérer."
    :"Sauvegarde de la quête impossible : la conservation locale n'est pas confirmée. Ne quitte pas cette grille et réessaie.";
+  if(!qaActive&&lumenUser)await refreshCanonicalOutboxNotice(lumenUser.id);
+  updateAuthUI();
   return;
  }
  // Install only the acknowledged profile; never optimistically mutate a
  // legacy quest or attempt to upload new IDs as numeric puzzle IDs.
  lumenProgress=committed.profile;
+ if(!qaActive&&lumenUser)void refreshCanonicalOutboxNotice(lumenUser.id);
  if(!qaActive){cloudProfileBaseline=structuredClone(committed.profile)}
  const previousCloudReady=cloudProfileReady;
- cloudProfileReady=false;try{saveLumenProgress()}finally{cloudProfileReady=previousCloudReady}
+ cloudProfileReady=false;try{saveLumenProgress()}catch(error){recordCloudDiagnostic("canonical_local_cache_pending",{reason:"storage"})}finally{cloudProfileReady=previousCloudReady}
  trackAttemptEvent("attempt_completed",{outcome:"success",canonical_id:q.id,first_completion:committed.newlyCompleted});
  celebrated=true;attemptEngine.complete();clearInterval(timer);pauseGameClock();clock();
  board.classList.add("win");

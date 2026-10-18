@@ -10,6 +10,9 @@ No player-data schema or reward reconciliation policy changes with these account
 
 ## Cloud persistence contract
 
+Delivery boundaries, durable intent ownership, V1/V2 compatibility and the writer
+cutover still required for #391 are documented in [Cloud recovery](CLOUD_RECOVERY_391.md).
+
 **Protected product invariant (#248):** anything earned or purchased by an authenticated player must be durably retrievable after another-device sign-in, PWA reinstall, local cache loss, reconnect or migration. Never replace a nonempty cloud record with an empty or stale local snapshot.
 
 ### Data ownership and invariants
