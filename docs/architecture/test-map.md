@@ -1,0 +1,49 @@
+# Existing verification map
+
+Baseline: `bef5f32`. All paths are repository-relative. This phase indexes existing checks without changing tests or GitHub Actions. `docs/TESTING.md` retains execution contracts and detailed scenarios. Presence of a suite does not mean it ran or proves live production behavior.
+
+## Select a check
+
+From repository root, run a Node suite with `node scripts/<filename>.mjs` using the exact filenames below. Node 22+ is required; no npm install. Imports of JSON use import attributes. Each table row names executable files, not new proposed checks.
+
+The table prioritizes the requested domains. For the complete current filename inventory without reading test bodies, use `rg --files scripts supabase/tests -g '*test*.mjs' -g '*equivalence.mjs' -g '*audit*.mjs' -g '*.sql' -g '*tests.py'`. The aggregate membership remains defined by `scripts/quality-gate.mjs`; not every standalone test is orchestrated there.
+
+| Domain / covered modules | Existing scripts under `scripts/` | Nature / scope |
+|---|---|---|
+| Divergence / profile reconciliation (`src/persistence/cloud-profile.js`) | `cloud-reconciliation-matrix-tests.mjs`, `cloud-bidirectional-reconcile-tests.mjs`, `cloud-safe-reconciliation-tests.mjs`, `performance-qualification-merge-tests.mjs`, `performance-conflict-details-tests.mjs`, `cloud-balance-reconciliation-tests.mjs` | Simulated storage/RPC, conflict, CAS and read-back assertions; qualification regression does not grant rewards |
+| Hydration / guest recovery (`src/ui/game-screen.js`, persistence modules) | `first-login-cloud-restore-tests.mjs`, `cloud-hydration-stage-tests.mjs`, `partial-hydration-status-tests.mjs`, `cloud-achievements-local-recovery-tests.mjs`, `cloud-unsynced-recovery-tests.mjs`, `cloud-local-quota-tests.mjs`, `guest-transfer-tests.mjs` | Mix of executable helpers, VM-extracted UI functions and source contracts; not a real cache-loss/device test |
+| Canonical ledger / badges (`src/persistence/canonical-progress.js`, outbox, UI) | `canonical-ledger-client-tests.mjs`, `canonical-ledger-contract-tests.mjs`, `canonical-ambiguous-ack-tests.mjs`, `canonical-outbox-tests.mjs`, `canonical-outbox-multi-device-tests.mjs` | Requested badges versus solved-only reply; ambiguous acknowledgement, account isolation and durable retry. Client RPC simulations are separate from real SQL fixtures |
+| Resume / cloud health (UI orchestration) | `cloud-online-retry-tests.mjs`, `cloud-resume-retry-tests.mjs`, `cloud-mirror-retry-proof-tests.mjs`, `cloud-diagnostics-tests.mjs`, `cloud-regression-matrix-tests.mjs`, `cloud-contract-check.mjs` | Reconnect/resume hooks, legacy mirror and independent diagnostic channels. Some assertions inspect/extract source; not blanket E2E |
+| Performance / attempts (`src/campaign/performance.js`, progression, attempt engine) | `performance-badge-tests.mjs`, `performance-time-merge-tests.mjs`, `hint-assistance-badge-regression-tests.mjs`, `attempt-engine-tests.mjs` | Eligibility, same-run mastery, timing, assistance/error/reset evidence |
+| Adventure access / navigation (content, canonical/playable navigation, sky) | `content-architecture-tests.mjs`, `unlocked-adventure-progress.test.mjs`, `playable-navigation.test.mjs`, `canonical-constellation-catchup-tests.mjs`, `sky-navigation-tests.mjs`, `locked-quest-icon-tests.mjs` | Pack access, preserved started access, accessible totals, catch-up, locks. Icon test inspects source/CSS; it is not visual browser proof |
+| Auth / sessions (`src/persistence/cloud.js`, UI) | `account-email-login-tests.mjs`, `account-session-modes-tests.mjs`, `cloud-client-session-tests.mjs`, `cloud-session-guard-tests.mjs`, `oauth-return.test.mjs`, `persistence-tests.mjs` | Google/password/guest/recovery contracts, startup/event ordering and session guards; isolated simulations/source assertions |
+| Auth mail (`src/auth/`, dedicated mail functions) | `auth-mail-otp-tests.mjs`, `auth-email-brand-routing-tests.mjs`, `auth-email-delivery-plan-tests.mjs`, `auth-email-hook-integration-tests.mjs`, `auth-email-ledger-contract-tests.mjs` | Historical filename `auth-mail-otp-tests.mjs` now includes rejection of retired OTP/magic-link login; recovery/confirmation and routing remain relevant |
+| Social challenges (social/canonical challenge modules, UI, attempts) | `social-challenge-tests.mjs`, `social-challenge-ui-tests.mjs`, `issue-222-challenge-tests.mjs` | First-play eligibility, quest identity, terminal comparison and campaign isolation |
+| Progression/daily (campaign modules, daily hydration) | `campaign-tests.mjs`, `late-game-tests.mjs`, `generated-progression.test.mjs`, `generated-rewards.test.mjs`, `daily-engagement-tests.mjs`, `daily-hydration-tests.mjs` | Legacy compatibility, catalogue boundaries, generated rewards and daily projection |
+| Grids / astronomy | `audit-catalogue.mjs`, `difficulty-audit.mjs`, `validate-playable-astronomy-tests.mjs`, `astronomical-projection-tests.mjs`, `astronomical-catalogue-tests.mjs`, `content-architecture-tests.mjs` | Strict grid validity/uniqueness/proof replay; reference geometry/content contracts. See `docs/GRID_CATALOG.md` for full audits |
+
+## Browser / aggregate commands
+
+- `node scripts/quality-gate.mjs`: authoritative list of currently orchestrated Node suites plus seven browser runners. Starts its own server/browser and writes reports under `docs/validation/`. Needs Chrome/Chromium/Edge; set `LUMEN_CHROME_BIN` if needed. Some differential suites need Git and their historical baseline. Do not infer total case counts from old reports.
+- Browser runners: `scripts/account-session-browser-tests.mjs`, `scripts/browser-tests.mjs`, `scripts/ux-cleanup-tests.mjs`, `scripts/learning-browser-tests.mjs`, `scripts/late-game-browser-tests.mjs`, `scripts/sky-navigation-browser-tests.mjs`, `scripts/canonical-replay-browser-tests.mjs`. Prefer aggregate orchestration; standalone setup/server/CDP/report arguments are documented in `docs/TESTING.md` and runner headers. Use isolated temporary profiles.
+- `await window.runHintTests()` and `await window.lumenDiagnostics.runAllHintTests()` execute `src/testing/hint-tests.js`; these exercise real local state. Never use a player's authenticated profile. `scripts/engine-equivalence.mjs` and `scripts/ui-equivalence.mjs` compare a historical baseline; check setup in `docs/TESTING.md` first.
+
+## SQL and other checks
+
+`scripts/fixtures/canonical-ledger-bootstrap.sql`, `scripts/fixtures/canonical-ledger-replay.sql`, `scripts/fixtures/canonical-snapshot-guard.sql` and `scripts/fixtures/sync-health-incidents.sql` exercise real migration behavior in disposable PostgreSQL. They cover replay/idempotence, snapshot protection and incident signals. Bootstrap deliberately creates `auth`/`lumen` schemas; never run these against a player database. See `docs/TESTING.md` for the existing SQL regression procedure. `supabase/tests/391_isolated_reward_ledger.sql` and `supabase/tests/391_profile_preflight.sql` are additional existing SQL checks; inspect their prerequisites before execution.
+
+Deployment checks also exist as `scripts/o2switch-deploy-tests.py` and `scripts/o2switch-https-tests.py`. They are indexed only; deployment/Actions optimization belongs to phase 3.
+
+## Gaps and limits, without corrections
+
+- Simulated RPC/session tests cannot prove live provider configuration, grants/RLS, installed-PWA storage retention or cross-device restoration. Affected-device login/reload and isolated live-account recovery remain separate manual checks described in `docs/TESTING.md`.
+- Source/VM contract assertions can miss browser wiring/timing problems; a suite name alone does not establish E2E coverage. Canonical replay and account-session browser runners reduce this gap but do not prove real network/device behavior.
+- `sw.js` has network-only navigation; a warm open board/offline pending victory is distinct from cold offline launch. No complete cold-offline support is claimed.
+- Legacy balance reconciliation is an approximation, not a reconstructed spend/refund ledger; see `docs/architecture/dependency-map.md`. Do not declare all cloud contract scenarios implemented from passing client simulations.
+- This is an index, not line/branch coverage measurement. Existing historical reports are evidence of their recorded revision only. Phase 1 checks and exact results are reported in the PR; full gameplay/browser/SQL suites are not required by a documentation-only change and are not implicitly claimed.
+
+## Phase 1 checks (2026-10-18)
+
+- Passed: `performance-qualification-merge-tests.mjs`, `canonical-ledger-client-tests.mjs`, `performance-badge-tests.mjs` (14 cases), `sky-navigation-tests.mjs`, `content-architecture-tests.mjs`, `cloud-contract-check.mjs` (commands prefixed with `node scripts/`). The content/policy checks pass with mandatory root contract phrases retained; no test changes were needed.
+- Existing failure: `node scripts/unlocked-adventure-progress.test.mjs` fails at line 15, expected `{completed:1,total:2}`, actual `{completed:3,total:4}`. Reproduced independently on untouched `bef5f32`. Its fixture contains a solved quest in the nominally locked extra pack; current `hasPackAccess` recognizes that as started access. This is a fixture/expectation mismatch with the implemented access rule, not evidence that current players should lose access. Left unchanged for a separate phase.
+- All documented concrete paths/links and the three symptom routes were checked; moved contracts were compared with the original, allowing only introduction and relative-link edits. `git diff --check` passes. Full quality gate, browser, SQL and live-device checks were not run in this documentation phase.
