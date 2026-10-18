@@ -5,12 +5,14 @@ const PREFIX='lumenCanonicalVictoryOutboxV2:',LEGACY_PREFIX='lumenCanonicalVicto
 function browserStore(){let database;try{database=globalThis.indexedDB}catch{}return createIndexedOutboxStore(database)}
 // Keep V1 identities/rewards readable by previous clients. Corrupt entries are
 // retained in place and reported, never treated as an empty or completed queue.
-export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserStore(),onIssue=()=>{},now=()=>new Date().toISOString(),newId=()=>globalThis.crypto.randomUUID()}={}){
+export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserStore(),onIssue=()=>{},now=()=>new Date().toISOString(),newId=()=>globalThis.crypto.randomUUID(),namespace='Canonical'}={}){
+ if(!['Canonical','Legacy'].includes(namespace))throw Error('Unknown victory domain');
+ const domainPrefix=value=>value.replace('Canonical',namespace);
  const report=kind=>{try{onIssue({kind})}catch{}};
  const volatilePauses=new Map(); // Failed metadata writes hold this session only.
  const prefix=userId=>{
   if(!userId||String(userId).includes(':'))throw Error('Invalid outbox identity');
-  return [PREFIX+userId+':',LEGACY_PREFIX+userId+':',RETRY_PREFIX+userId+':'];
+  return [domainPrefix(PREFIX)+userId+':',domainPrefix(LEGACY_PREFIX)+userId+':',domainPrefix(RETRY_PREFIX)+userId+':'];
  };
  const retryKey=(userId,entry)=>prefix(userId)[2]+(entry.operationId===undefined?'v1-'+encodeURIComponent(entry.questId):'v2-'+entry.operationId);
  function parsePause(raw,userId,entry){
@@ -33,7 +35,7 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
    for(const key of keys){const raw=storage.getItem(key);if(raw!==null)records.push({key,raw,store:'local'})}
    readable++;
   }catch{issues.push('local_unavailable')}
-  try{for(const [key,raw] of await fallback.entries('lumenCanonicalVictory'))if(belongs(key))records.push({key,raw,store:'indexed'});readable++}catch{issues.push('indexed_unavailable')}
+  try{for(const [key,raw] of await fallback.entries(domainPrefix('lumenCanonicalVictory')))if(belongs(key))records.push({key,raw,store:'indexed'});readable++}catch{issues.push('indexed_unavailable')}
   if(!readable){report('storage_unavailable');throw Error('No readable durable outbox store')}
   const groups=new Map(),invalid=new Set(),retryCopies=new Map();
   for(const record of records){

@@ -20,6 +20,11 @@ Browsing another Adventure never changes gameplay state. Loading/continuation mu
 Authenticated internal administrators with the server-provided `analytics_cockpit` or `all_adventures_access` capability may browse and enter every catalogued Adventure, including locked packs, without creating a purchase entitlement or persisting access into player progress. QA guest sessions never receive this override. Ordinary players retain the existing access policy. This exception affects pack access only: sequential quest progression and rewards remain governed by their existing rules.
 
 ## Bonus quests
+After the reviewed historical-command migration, authenticated victories apply
+the existing `legacy-victory.js` rules on the server. Guests and explicitly older
+servers retain local rules. No-hint XP remains distinct from effective assistance;
+same-run mastery, qualification cooldown, one-time challenges and first-win
+rewards are preserved. Pending victories keep immutable attempt/reset facts.
 Every sixth quest is a bonus challenge, rotating challenge types. Current challenge rewards are **+25 XP and +1 shard**. Challenge rewards do not replace the campaign's sky-star accounting.
 
 ## Shards
@@ -41,7 +46,12 @@ A meaningful activity validates at most one calendar day: either a first campaig
 
 The streak is continuous and is not reset every seven days. One missed calendar day is tolerated as a grace day and does not increment the streak. A second missed day breaks it. Rewards repeat independently of the global streak count: +1 shard on day 3 of each seven-day cycle and +2 on day 7. Reward records are keyed by calendar day so a reload cannot credit the same local daily reward twice.
 
-Guest state is persisted locally. Authenticated daily dates synchronize through the existing `lumen_save_daily` / `lumen_get_daily` RPCs. A future compatible Supabase RPC evolution is still required for server-authoritative calendar time and atomic reward credit across simultaneous devices.
+Guest state is persisted locally. Authenticated daily claims already use
+`lumen_claim_daily` with the server Europe/Paris calendar and idempotent daily
+rewards, read through `lumen_get_daily` / `lumen_get_engagement`. Historical command
+victories include that existing claim in their reward/receipt transaction and
+project each unprojected daily reward once. Standalone daily and spending writers
+are not retired by this step; their authority cutover remains in #391.
 
 ## Performance badges
 Per-quest performance has exactly four badges, as implemented in `src/campaign/performance.js`:

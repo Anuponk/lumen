@@ -4,6 +4,13 @@ Baseline: `bef5f32`. All paths are repository-relative. This phase indexes exist
 
 ## Select a check
 
+Historical command cutover: `legacy-command-client-tests.mjs`, catalogue seed
+check `legacy-command-fixtures.mjs --check`, generated SQL parity cases,
+`fixtures/legacy-command-receipts.sql` and `legacy-command-concurrency.py`.
+The SQL workflow uses disposable PostgreSQL; client simulations do not prove
+transaction/privilege/concurrency behavior or live deployment. Details remain in
+[the cloud matrix](../TESTING.md#cloud-persistence-regression-matrix).
+
 From repository root, run a Node suite with `node scripts/<filename>.mjs` using the exact filenames below. Node 22+ is required; no npm install. Imports of JSON use import attributes. Each table row names executable files, not new proposed checks.
 
 The table prioritizes the requested domains. For the complete current filename inventory without reading test bodies, use `rg --files scripts supabase/tests -g '*test*.mjs' -g '*equivalence.mjs' -g '*audit*.mjs' -g '*.sql' -g '*tests.py'`. Node membership is shared in `scripts/quality-gate-suites.mjs`; `scripts/quality-gate.mjs` orchestrates Node/browser checks. Not every standalone test is orchestrated there. CI scheduling, timing reports and comparison methodology: [CI efficiency](../CI_EFFICIENCY.md).

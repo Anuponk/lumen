@@ -82,7 +82,7 @@ test('transient failures are not paused and can recover normally',async()=>{
 
 test('a paused queue remains visible but does not request another automatic retry',async()=>{
  const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
- const context={lumenUser:{id:'a'},canonicalOutboxNotice:null,updateAuthUI:()=>{},canonicalVictoryOutbox:{inspect:async()=>({pending:[{questId:'q'}],retryable:[],paused:[{kind:'review'}],issues:[],complete:true,authRequired:false})}};
+ const context={lumenUser:{id:'a'},canonicalOutboxNotice:null,updateAuthUI:()=>{},legacyVictoryOutbox:{inspect:async()=>({pending:[],retryable:[],paused:[],issues:[],complete:true})},canonicalVictoryOutbox:{inspect:async()=>({pending:[{questId:'q'}],retryable:[],paused:[{kind:'review'}],issues:[],complete:true,authRequired:false})}};
  vm.createContext(context);vm.runInContext(functionSource(source,'refreshCanonicalOutboxNotice'),context);
  assert.equal(await vm.runInContext("refreshCanonicalOutboxNotice('a')",context),0);assert.equal(context.canonicalOutboxNotice,'attention');
 });

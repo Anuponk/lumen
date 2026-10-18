@@ -1,6 +1,15 @@
 # Cloud recovery delivery and remaining cutover (#391)
 
 This is a staged implementation record, not a declaration that #391 is closed.
+
+Historical cutover follows deployed #479 (`1.11.1+463 · b97154b`). Proposed
+migration `20261018190418_legacy_victory_commands.sql` is not applied to production.
+It adds immutable historical receipts, catalogue-derived rules, atomic daily/mirror
+effects and per-account authority guarding old snapshot reward writes. See
+[ownership and rollback](DATA_AND_ARCHITECTURE.md#cloud-persistence-contract) and
+[client/SQL validation](TESTING.md#cloud-persistence-regression-matrix).
+Standalone daily/spending writers, global hydration decoupling, audited recovery
+of ambiguous pre-cutover data and production observation remain open in #391.
 Updated baseline: `b1c272eb46c958d04adfb1fd8b06fbb49214951f` (2026-10-18),
 including the deployed performance-summary compatibility fix #473.
 

@@ -161,6 +161,9 @@ async function cloudSaveDaily(date,index){
 }
 
 async function cloudMergeHistoricalPerformance(anonymousId){
+ // Once opted in, reward summaries are command-owned. Historical discovery
+ // remains available before activation; never mutate a migrated projection.
+ if(model.lumenProgress?.legacyVictoryRevision)return;
  if(cloudWritesDisabled()||!model.lumenSupabase)return;
  const {data,error}=await model.lumenSupabase.rpc("lumen_get_historical_performance",{p_anonymous_id:anonymousId||null});
  if(error){console.warn("LUMEN history recovery",error);return}

@@ -86,7 +86,8 @@ test('a temporarily unreadable queue keeps a visible pending check and retry dem
  const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
  let complete=false;
  const context={lumenUser:{id:'a'},canonicalOutboxNotice:null,updateAuthUI:()=>{},
-  canonicalVictoryOutbox:{inspect:async()=>({pending:[],issues:complete?[]:['indexed_unavailable'],complete})}};
+  legacyVictoryOutbox:{inspect:async()=>({pending:[],retryable:[],paused:[],issues:[],complete:true})},
+  canonicalVictoryOutbox:{inspect:async()=>({pending:[],retryable:[],paused:[],issues:complete?[]:['indexed_unavailable'],complete})}};
  vm.createContext(context);vm.runInContext(functionSource(source,'refreshCanonicalOutboxNotice'),context);
  assert.equal(await vm.runInContext("refreshCanonicalOutboxNotice('a')",context),1);
  assert.equal(context.canonicalOutboxNotice,'checking');
@@ -99,7 +100,7 @@ function isolatedContext(){
  const client={},user={id:'a'},values=new Map([['lumenProgressV1','{"shards":9,"performances":{"fixture":{"receipt":"local-only"}}}']]);
  const progress={shards:9,performances:{fixture:{receipt:'local-only'}}};
  let commits=0,acks=0,reloads=0;
- const context={canonicalOutboxRetryInFlight:false,qaActive:false,lumenUser:user,lumenSupabase:client,
+ const context={canonicalOutboxRetryInFlight:false,legacyVictoryBusy:false,qaActive:false,lumenUser:user,lumenSupabase:client,
   authSessionPending:false,cloudProfileReady:false,cloudProfileBusy:false,cloudProfileDirty:true,
   cloudProfileFailure:{reason:'partial_reconciliation'},canonicalRecoveryContext:{userId:'a',client},canonicalActiveQuest:null,
   document:{visibilityState:'visible'},navigator:{onLine:true},sessionStorage:{getItem:()=>null},
