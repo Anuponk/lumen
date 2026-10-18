@@ -12,6 +12,7 @@ const fixture=`
 localStorage.setItem('lumenSound','off');
 window.__authCalls=[];
 window.__fixtureLedgerWrites=0;window.__fixtureSnapshotWrites=0;
+window.__fixtureLedgerAttempts=0;
 const isolatedRecovery=sessionStorage.getItem('fixtureIsolatedRecovery')==='1';
 window.__fixtureProfile={solved:{},historyBackup:{},badges:{},stars:{},noHint:{},performances:{},canonicalQuestState:{},daily:{},challenges:{},shards:3,xp:0,skyScore:0,skyHistoryVersion:4,legacyReceipt:'cloud'};
 if(isolatedRecovery){
@@ -22,14 +23,18 @@ if(isolatedRecovery){
 window.supabase={createClient(){
  let session=JSON.parse(sessionStorage.getItem('fixtureAuthSession')||'null'),callback=()=>{};
  const set=(event,value)=>{session=value;sessionStorage.setItem('fixtureAuthSession',JSON.stringify(value));callback(event,value)};
+ window.__emitAuthEvent=event=>set(event,session);
  return {rpc:async(name,args)=>{
   if(!isolatedRecovery)return name==='lumen_restore_profile'?{data:null,error:{message:'simulated restore outage'}}:{data:[],error:null};
   if(name==='lumen_restore_profile')return {data:structuredClone(window.__fixtureProfile),error:null};
   if(name==='lumen_cas_profile'){window.__fixtureSnapshotWrites++;window.__fixtureProfile=structuredClone(args.p_payload);return {data:true,error:null};}
   if(name==='lumen_commit_canonical_victory'){
+   window.__fixtureLedgerAttempts++;
+   if(window.__fixtureLedgerError)return {data:null,error:{code:window.__fixtureLedgerError,message:'simulated rejection'},status:401};
    window.__fixtureLedgerWrites++;
    const fresh=!window.__fixtureProfile.canonicalQuestState[args.p_quest_id]?.solved;
-   window.__fixtureProfile.canonicalQuestState[args.p_quest_id]={solved:true,stars:1,badges:args.p_badges,performance:args.p_performance};
+   const prior=window.__fixtureProfile.canonicalQuestState[args.p_quest_id];
+   window.__fixtureProfile.canonicalQuestState[args.p_quest_id]={...prior,solved:true,stars:1,badges:{...prior?.badges,...args.p_badges},performance:prior?.performance??args.p_performance};
    if(fresh)window.__fixtureProfile.xp+=15;
    return {data:{profile:structuredClone(window.__fixtureProfile),newlyCompleted:fresh},error:null};
   }
@@ -62,6 +67,25 @@ async function verifyIsolatedRecovery(){
  assert.equal(after.snapshots,before.snapshots,'No full-profile write during isolated recovery');
  assert.equal(after.commits,1);assert.equal(after.pending,0);assert.equal(after.serverXp,15);assert.equal(after.serverReceipt,'cloud');
  assert.ok(after.status.includes('sauvegarde à resynchroniser'),'Do not label a partial recovery fully synced');
+ // An expired session pauses the persisted badge replay; a verified token
+ // refresh must release only auth holds, without a full-profile replacement.
+ await evaluate(`(async()=>{
+  window.__fixtureLedgerError='PGRST301';
+  const {createDurableCanonicalVictoryOutbox}=await import('/src/persistence/durable-canonical-outbox.js');
+  await createDurableCanonicalVictoryOutbox(localStorage).enqueue('fixture-player',${JSON.stringify(quest.id)},{badges:{speed:true},performance:{seconds:15}},{operationId:'auth-browser-'+Date.now()});
+  window.dispatchEvent(new Event('online'));
+ })()`,true);
+ await until(`document.getElementById('mobileAuthStatus').textContent.includes('Session à renouveler')`);
+ const attempts=await evaluate('window.__fixtureLedgerAttempts');
+ await evaluate(`window.dispatchEvent(new Event('online'));window.dispatchEvent(new Event('online'))`);await sleep(200);
+ assert.equal(await evaluate('window.__fixtureLedgerAttempts'),attempts,'No automatic RPC loop while auth is paused');
+ await evaluate(`window.__fixtureLedgerError=null;window.__emitAuthEvent('TOKEN_REFRESHED')`);
+ await until('window.__fixtureLedgerWrites===2');
+ await until(`document.getElementById('mobileAuthStatus').textContent.includes('sauvegarde à resynchroniser')`);
+ assert.equal(await evaluate('window.__fixtureProfile.xp'),15,'Badge replay cannot award XP again');
+ assert.equal(await evaluate(`localStorage.getItem('lumenProgressV1')`),before.local);
+ assert.equal(await evaluate('window.__fixtureSnapshotWrites'),before.snapshots);
+ assert.equal(await evaluate(`sessionStorage.getItem('fixtureIsolatedLoads')`),before.loads);
  await evaluate(`sessionStorage.removeItem('fixtureIsolatedRecovery');sessionStorage.removeItem('fixtureAuthSession');`);
  return true;
 }

@@ -173,7 +173,7 @@ Tests should assert relationships derived from the content registry rather than 
 ## Cloud persistence regression matrix
 
 Durable recovery (#391): `canonical-outbox-recovery-tests.mjs`,
-`canonical-durable-outbox-tests.mjs` and `cloud-retry-scheduler-tests.mjs` are
+`canonical-durable-outbox-tests.mjs`, `canonical-retry-state-tests.mjs` and `cloud-retry-scheduler-tests.mjs` are
 mandatory Node gates. They cover independent recovery after refusal, requested
 badge verification, async adapters, immutable per-run records, old V1 records,
 storage failure, account isolation and retry cancellation/backoff. The existing
@@ -181,6 +181,17 @@ canonical replay browser runner also tests real IndexedDB after a new document,
 denied localStorage and a preserved corrupt V1 entry. See
 [delivery scope and remaining cutover](CLOUD_RECOVERY_391.md); these checks do
 not establish legacy transaction authority or actual player recovery.
+
+`canonical-retry-state-tests.mjs` covers structured status/code classification,
+verified read-back after returned errors and thrown lost responses, persistent
+auth/review holds after restart, V1 compatibility, unchanged evidence, account
+isolation, same-quest order, independent recovery, transient retries, corrupt
+metadata and failure to persist a pause. Auth refresh requires a verified read
+and matching user/client after asynchronous work; an auth event or a failed
+read cannot release the hold. Explicit retry resets policy metadata only.
+The canonical replay browser runner also verifies a refusal hold across a real
+IndexedDB/new-document restart with localStorage denied, zero automatic ledger
+calls while held, and successful explicit retry without changing evidence.
 
 Additional recovery regressions cover simultaneous online/timer signals during
 asynchronous enumeration, releasing the guard after a read error, incomplete
@@ -195,6 +206,10 @@ and desktop sizes. Assert byte-for-byte local preservation, no legacy snapshot
 upload, no reload loop, retained global sync failure, and one server grant.
 Account/client changes, password recovery, unverified restore, active play,
 offline/hidden state and in-flight profile writes must still hold recovery.
+Its auth-refusal scenario additionally checks the visible session-renewal status,
+no retry on repeated online events, then verified read and replay after a simulated
+`TOKEN_REFRESHED`, with one first-completion grant, unchanged local progress and
+the global legacy conflict still visible.
 
 Canonical replay (#453): `node scripts/canonical-ledger-client-tests.mjs` covers
 both final Grande Ourse quests through the gameplay ledger transport, including

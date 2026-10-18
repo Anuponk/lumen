@@ -48,6 +48,37 @@ async function openDetail(){
  await evaluate('document.getElementById("openSky").click()');
  await evaluate('document.querySelector(\'#sectorTabs [data-content-id="real-01"]\').click()');
 }
+async function verifyPersistedRetryHold(){
+ const user='isolated-retry-'+Date.now();
+ const before=await evaluate(`(async()=>{
+  const {createDurableCanonicalVictoryOutbox}=await import('/src/persistence/durable-canonical-outbox.js');
+  const {replayCanonicalVictoryOutbox}=await import('/src/persistence/canonical-outbox.js');
+  const denied={get length(){throw Error('denied')}};
+  const box=createDurableCanonicalVictoryOutbox(denied),user=${JSON.stringify(user)};let calls=0;
+  await box.enqueue(user,'paused',{badges:{autonomy:true}},{operationId:'held-run'});
+  await box.enqueue(user,'independent',{badges:{autonomy:true}},{operationId:'other-run'});
+  await replayCanonicalVictoryOutbox(box,user,async id=>{calls++;if(id==='paused')throw Object.assign(Error('simulated refusal'),{code:'P0001',status:400});return {profile:{canonicalQuestState:{[id]:{solved:true,badges:{autonomy:true}}}}}});
+  return {calls,pending:(await box.pending(user)).length,paused:(await box.inspect(user)).paused.length};
+ })()`,true);
+ assert.deepEqual(before,{calls:2,pending:1,paused:1});
+ await navigateAndWait({send,evaluate},'Page.reload');
+ const after=await evaluate(`(async()=>{
+  const {createDurableCanonicalVictoryOutbox}=await import('/src/persistence/durable-canonical-outbox.js');
+  const {replayCanonicalVictoryOutbox}=await import('/src/persistence/canonical-outbox.js');
+  const box=createDurableCanonicalVictoryOutbox({get length(){throw Error('denied')}}),user=${JSON.stringify(user)};let calls=0;
+  const commit=async id=>{calls++;return {profile:{canonicalQuestState:{[id]:{solved:true,badges:{autonomy:true}}}}}};
+  const original=JSON.stringify(await box.pending(user));
+  await replayCanonicalVictoryOutbox(box,user,commit);
+  const heldCalls=calls,state=await box.inspect(user);
+  await box.resume(user,{kind:'auth'});const stillHeld=(await box.inspect(user)).paused.length;
+  await box.resume(user,{kind:'all'});const evidenceUnchanged=JSON.stringify(await box.pending(user))===original;
+  await replayCanonicalVictoryOutbox(box,user,commit);
+  return {heldCalls,paused:state.paused.length,retryable:state.retryable.length,stillHeld,evidenceUnchanged,calls,remaining:(await box.pending(user)).length};
+ })()`,true);
+ assert.deepEqual(after,{heldCalls:0,paused:1,retryable:0,stillHeld:1,evidenceUnchanged:true,calls:1,remaining:0});
+ await until('!!window.lumenDiagnostics');
+ results.push({test:'persisted refusal pause after document restart, explicit retry and unchanged evidence',ok:true});
+}
 try{
  await send('Page.enable');await send('Runtime.enable');
  for(const viewport of [{width:390,height:844,mobile:true},{width:1440,height:900,mobile:false}]){
@@ -57,6 +88,7 @@ try{
   await send('Page.navigate',{url:url.href});await until('!!window.lumenDiagnostics');await sleep(1000);
   await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});
   await verifyDurableOutbox();
+  await verifyPersistedRetryHold();
   for(const q of targets){
    await openDetail();
    const selector=`#puzzleGrid [data-quest-id="${q.id}"]`;

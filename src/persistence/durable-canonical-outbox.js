@@ -1,15 +1,24 @@
 import {createIndexedOutboxStore} from './indexed-outbox-store.js';
+import {classifyCanonicalRecoveryError} from './canonical-recovery-errors.js';
 
-const PREFIX='lumenCanonicalVictoryOutboxV2:',LEGACY_PREFIX='lumenCanonicalVictoryOutboxV1:';
+const PREFIX='lumenCanonicalVictoryOutboxV2:',LEGACY_PREFIX='lumenCanonicalVictoryOutboxV1:',RETRY_PREFIX='lumenCanonicalVictoryRetryV1:';
 function browserStore(){let database;try{database=globalThis.indexedDB}catch{}return createIndexedOutboxStore(database)}
 // Keep V1 identities/rewards readable by previous clients. Corrupt entries are
 // retained in place and reported, never treated as an empty or completed queue.
 export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserStore(),onIssue=()=>{},now=()=>new Date().toISOString(),newId=()=>globalThis.crypto.randomUUID()}={}){
  const report=kind=>{try{onIssue({kind})}catch{}};
+ const volatilePauses=new Map(); // Failed metadata writes hold this session only.
  const prefix=userId=>{
   if(!userId||String(userId).includes(':'))throw Error('Invalid outbox identity');
-  return [PREFIX+userId+':',LEGACY_PREFIX+userId+':'];
+  return [PREFIX+userId+':',LEGACY_PREFIX+userId+':',RETRY_PREFIX+userId+':'];
  };
+ const retryKey=(userId,entry)=>prefix(userId)[2]+(entry.operationId===undefined?'v1-'+encodeURIComponent(entry.questId):'v2-'+entry.operationId);
+ function parsePause(raw,userId,entry){
+  const state=JSON.parse(raw);
+  if(state?.version!==1||state.userId!==userId||state.questId!==entry.questId||state.operationId!==(entry.operationId??null)||typeof state.intentCreatedAt!=='string'||!Number.isFinite(Date.parse(state.intentCreatedAt))||!['auth','review'].includes(state.kind)||state.code!==classifyCanonicalRecoveryError({code:state.code}).code)throw Error('Invalid retry state');
+  // A leftover pause for an acknowledged, re-enqueued operation is not current.
+  return state.intentCreatedAt===entry.createdAt?state:null;
+ }
  function parse(key,raw,userId){
   const entry=JSON.parse(raw);
   const [current,legacy]=prefix(userId);
@@ -24,10 +33,11 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
    for(const key of keys){const raw=storage.getItem(key);if(raw!==null)records.push({key,raw,store:'local'})}
    readable++;
   }catch{issues.push('local_unavailable')}
-  try{for(const [key,raw] of await fallback.entries('lumenCanonicalVictoryOutbox'))if(belongs(key))records.push({key,raw,store:'indexed'});readable++}catch{issues.push('indexed_unavailable')}
+  try{for(const [key,raw] of await fallback.entries('lumenCanonicalVictory'))if(belongs(key))records.push({key,raw,store:'indexed'});readable++}catch{issues.push('indexed_unavailable')}
   if(!readable){report('storage_unavailable');throw Error('No readable durable outbox store')}
-  const groups=new Map(),invalid=new Set();
+  const groups=new Map(),invalid=new Set(),retryCopies=new Map();
   for(const record of records){
+   if(record.key.startsWith(prefix(userId)[2])){retryCopies.set(record.key,[...(retryCopies.get(record.key)||[]),record]);continue}
    try{
     record.entry=parse(record.key,record.raw,userId);
     const prior=groups.get(record.key);
@@ -35,10 +45,25 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
     groups.set(record.key,[...(prior||[]),record]);
    }catch{invalid.add(record.key);issues.push('invalid_entry')}
   }
-  for(const kind of new Set(issues))report(kind);
   const valid=[...groups.entries()].filter(([key])=>!invalid.has(key)).map(([,copies])=>copies);
   valid.sort((a,b)=>a[0].entry.createdAt.localeCompare(b[0].entry.createdAt)||a[0].key.localeCompare(b[0].key));
-  return {groups:valid,issues:[...new Set(issues)],invalid,complete:readable===2};
+  const paused=new Map();
+  for(const copies of valid){
+   const entry=copies[0].entry,key=retryKey(userId,entry),states=[];
+   for(const copy of retryCopies.get(key)||[]){
+    try{const state=parsePause(copy.raw,userId,entry);if(state)states.push(state)}
+    catch{states.push({kind:'review',code:'UNKNOWN'});issues.push('retry_state_invalid')}
+   }
+   const memory=volatilePauses.get(key);
+   if(memory?.intentCreatedAt===entry.createdAt){states.push(memory);issues.push('retry_state_unpersisted')}
+   if(states.length){
+    const state=states.find(s=>s.kind==='review')||states[0];
+    if(states.some(s=>s.kind!==state.kind))issues.push('retry_state_conflict');
+    paused.set(copies[0].key,{questId:entry.questId,operationId:entry.operationId,kind:state.kind,code:state.code});
+   }
+  }
+  for(const kind of new Set(issues))report(kind);
+  return {groups:valid,issues:[...new Set(issues)],invalid,complete:readable===2,paused,retryCopies};
  }
  async function enqueue(userId,questId,reward,{operationId=newId()}={}){
   if(!questId||!reward||typeof reward!=='object'||Array.isArray(reward))throw Error('Invalid outbox reward');
@@ -75,6 +100,12 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
   }
   const copies=target,key=copies[0].key;
   if(expectedReward!==undefined&&copies.some(copy=>JSON.stringify(copy.entry.reward)!==JSON.stringify(expectedReward)))throw Error('Outbox reward changed before acknowledgement');
+  await removeCopies(copies,key);
+  const stateKey=retryKey(userId,copies[0].entry);
+  volatilePauses.delete(stateKey);
+  await removeCopies(inspection.retryCopies.get(stateKey)||[],stateKey);
+ }
+ async function removeCopies(copies,key){
   for(const copy of copies){
    if(copy.store==='indexed')await fallback.remove(key,copy.raw);
    else{
@@ -83,5 +114,47 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
    }
   }
  }
- return {enqueue,acknowledge,pending:async userId=>(await scan(userId)).groups.map(copies=>copies[0].entry),inspect:async userId=>{const result=await scan(userId);return {pending:result.groups.map(copies=>copies[0].entry),issues:result.issues,complete:result.complete}}};
+ async function pause(userId,entry,error){
+  const classification=classifyCanonicalRecoveryError(error);
+  if(classification.kind==='retry')return;
+  const inspection=await scan(userId);
+  const copies=inspection.groups.find(group=>group[0].entry.questId===entry.questId&&group[0].entry.operationId===entry.operationId);
+  if(!copies)return;
+  if(copies[0].entry.createdAt!==entry.createdAt||JSON.stringify(copies[0].entry.reward)!==JSON.stringify(entry.reward))throw Error('Intent changed before pause');
+  if(inspection.paused.has(copies[0].key))return;
+  const key=retryKey(userId,entry),state={version:1,userId,questId:entry.questId,operationId:entry.operationId??null,intentCreatedAt:entry.createdAt,kind:classification.kind,code:classification.code},raw=JSON.stringify(state);
+  volatilePauses.set(key,state);
+  try{
+   try{await fallback.put(key,raw);if(await fallback.get(key)!==raw)throw Error('Retry state not verified')}
+   catch{
+    const existing=storage.getItem(key);
+    if(existing!==null&&existing!==raw)throw Error('Retry state changed');
+    storage.setItem(key,raw);if(storage.getItem(key)!==raw)throw Error('Retry state not verified');
+   }
+   volatilePauses.delete(key);
+  }catch{report('retry_state_unpersisted');throw Error('Retry pause only held in this session')}
+ }
+ async function resume(userId,{kind='all'}={}){
+  if(!['all','auth'].includes(kind))throw Error('Invalid retry resume');
+  const inspection=await scan(userId);
+  for(const copies of inspection.groups){
+   const held=inspection.paused.get(copies[0].key);
+   if(!held||(kind!=='all'&&held.kind!==kind))continue;
+   const key=retryKey(userId,copies[0].entry);
+   // Explicit retry may reset malformed policy metadata, never the intention.
+   if(kind!=='all')for(const copy of inspection.retryCopies.get(key)||[])parsePause(copy.raw,userId,copies[0].entry);
+   await removeCopies(inspection.retryCopies.get(key)||[],key);volatilePauses.delete(key);
+  }
+ }
+ async function inspect(userId){
+  const result=await scan(userId),pending=result.groups.map(copies=>copies[0].entry),paused=[...result.paused.values()];
+  const authRequired=paused.some(state=>state.kind==='auth'),blocked=new Set(),retryable=[];
+  for(const copies of result.groups){
+   const entry=copies[0].entry;
+   if(result.paused.has(copies[0].key))blocked.add(entry.questId);
+   if(!authRequired&&!blocked.has(entry.questId))retryable.push(entry);
+  }
+  return {pending,paused,retryable,authRequired,issues:result.issues,complete:result.complete};
+ }
+ return {enqueue,acknowledge,pause,resume,pending:async userId=>(await scan(userId)).groups.map(copies=>copies[0].entry),inspect};
 }
