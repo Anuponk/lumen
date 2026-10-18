@@ -10,6 +10,45 @@ No player-data schema or reward reconciliation policy changes with these account
 
 ## Cloud persistence contract
 
+Historical command cutover (#391, production migration approved/applied on 2026-10-18
+`20261018193133_legacy_victory_commands.sql`): immutable per-account
+`attemptId-reset-resetCount` facts use `lumen_commit_legacy_command` and
+`lumen_get_legacy_command`. A locked server profile, catalogue-derived private
+rules and receipt apply completion, XP, sky stars, challenge/autonomy rewards,
+performance, existing numeric mirror and existing Paris-calendar daily claim in
+one transaction. Duration, assistance, error and frozen qualification remain
+client attempt-engine evidence; this is not server puzzle/anti-cheat validation.
+No backfill, balance maximum or entitlement change is introduced.
+
+The first successful command activates private `lumen_commands.legacy_authority`
+and server-owned `legacyVictoryRevision` for that account. Old backup/CAS writers
+must retain its exact legacy reward projection and current revision. Cooldown
+metadata is excluded from that projection. Existing cumulative XP cannot decrease;
+canonical rewards may still increase it. This is a refusal, never balance merging.
+Preferences, canonical rewards and existing daily/spending writers
+remain mutable. Old-client wins/imports changing that projection are refused:
+preserve their pending local data for explicit recovery, never erase or invent
+transactions. Any command failure rolls back activation, daily, mirror, rewards
+and receipt together. Private tables have RLS and no client table privileges;
+public invoker RPCs call private definers with empty search paths and auth checks.
+
+Legacy intents use disjoint `lumenLegacyVictoryOutboxV2:` and
+`lumenLegacyVictoryRetryV1:` keys in the existing IndexedDB/localStorage adapter.
+Canonical clients cannot replay/acknowledge them. Exact same-account receipt and
+current completion, requested badges and attempt counter precede acknowledgement.
+Duplicates retain the initial outcome and return current state. Startup replays
+before installation; background replay avoids active legacy attempts, while a
+pending current win retries frozen evidence. Concurrent local edits prevent UI
+installation. Verified hydration and preflush of unrelated changes are still
+required; removing that global gate remains a later phase.
+
+Only an explicitly missing read-only capability endpoint permits older-server
+compatibility on an unmigrated account without an existing command intent.
+Never downgrade after an attempted command or ambiguous response. Production
+application requires separate approval; rollback retains RPCs, authority trigger,
+receipts and intentions. Older clients can read, but cannot overwrite migrated
+reward facts. Standalone daily/spending cutover and audited repair remain open.
+
 Delivery boundaries, durable intent ownership, V1/V2 compatibility and the writer
 cutover still required for #391 are documented in [Cloud recovery](CLOUD_RECOVERY_391.md).
 

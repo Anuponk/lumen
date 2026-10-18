@@ -1,4 +1,5 @@
 export const nodeSuites=[
+ 'legacy-command-client-tests.mjs',
  'canonical-command-client-tests.mjs',
  "canonical-retry-state-tests.mjs",
  "canonical-outbox-recovery-tests.mjs",

@@ -4,6 +4,7 @@ Baseline: `bef5f32`. Paths are repository-relative. Consult relevant rows only. 
 
 | Boundary | Dependencies / flow | Effects / caution |
 |---|---|---|
+| Historical command | UI `captureLegacyCommandVictory` → Legacy durable outbox → `legacy-command.js` → locked profile, private rules/receipt/authority and existing daily/mirror RPCs | First accepted command protects legacy reward projection/revision against old snapshots. Guests/explicitly older unmigrated servers use `legacy-victory.js`; no ambiguous fallback |
 | Bootstrap | `index.html` → `src/main.js` → `src/ui/game-screen.js` → injected factories | UI owns live progress/board; async callbacks must read current account/model |
 | Auth | `src/persistence/cloud.js` → `src/persistence/config.js` + CDN Supabase client; `initLumenCloud` subscribes before confirmation / `getSession` | User, entitlements and capabilities change; deferred restore checks identity. Logout uses local scope. Mail functions are separate from progression RPCs |
 | Catalogue | `src/campaign/data.js` / `src/campaign/catalogue.js` + generated JSON → `src/campaign/playable-quests.js` → `src/campaign/canonical-quests.js`; `src/campaign/content.js` supplies packs/access | Distinguish zero-based legacy index, one-based ordinal/RPC puzzle ID and stable canonical ID. `legacyIndex === null` identifies new canonical content |

@@ -160,6 +160,7 @@ function mergeQualificationMetadata(left,right){
 export function cloudSafelyCoversLocal(local,remote){
   if(!local || typeof local!=="object" || Array.isArray(local))return true;
   const cloud=validateCloudProfile(remote);
+  if(local.legacyVictoryRevision!==undefined&&(!Number.isSafeInteger(local.legacyVictoryRevision)||!Number.isSafeInteger(cloud.legacyVictoryRevision)||cloud.legacyVictoryRevision<local.legacyVictoryRevision))return false;
   const grants=mergeLegacyAdventureAccess(local.legacyAdventureAccess,cloud.legacyAdventureAccess);
   if(!grants.ok||grants.value?.some(id=>!cloud.legacyAdventureAccess?.includes(id)))return false;
   const autonomy=mergeAutonomousWins(local.autonomousWins,cloud.autonomousWins);
@@ -197,7 +198,10 @@ export function cloudSafelyCoversLocal(local,remote){
   // unionable. Require equivalent values to avoid silent drops.
   for(const field of ["daily","challenges"]){
     const current=local[field];
-    if(current && Object.keys(current).length && !sameCloudProfile(current,cloud[field]||{}))return false;
+    // Verified command profiles may add server-owned daily/challenge receipts.
+    // A superset covers old facts; conflicting/missing amounts still refuse.
+    const covers=(a,b)=>a&&typeof a==='object'&&!Array.isArray(a)?b&&typeof b==='object'&&!Array.isArray(b)&&Object.entries(a).every(([k,v])=>Object.hasOwn(b,k)&&covers(v,b[k])):sameCloudProfile(a,b);
+    if(current && Object.keys(current).length && !(Number.isSafeInteger(cloud.legacyVictoryRevision)&&cloud.legacyVictoryRevision>0?covers(current,cloud[field]||{}):sameCloudProfile(current,cloud[field]||{})))return false;
   }
   return true;
 }

@@ -172,6 +172,24 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Historical migration: `legacy-command-client-tests.mjs` is a mandatory Node gate
+for exact receipt/current projection, lost replies, account changes, no duplicate
+reward, namespace isolation and existing hint/badge/challenge rules.
+`legacy-command-fixtures.mjs --check` verifies the SQL rule seed against catalogue
+modules. The SQL workflow generates first-win cases for every historical quest
+and replay/assistance/cooldown variants, comparing actual PostgreSQL outcomes and
+profiles with JavaScript rule application. Daily metadata is excluded from that
+parity comparison and has dedicated real-SQL server-day/streak assertions.
+`fixtures/legacy-command-receipts.sql` covers atomic receipt/daily/mirror rollback,
+daily reward, reset identity, altered evidence, user scope, privileges, retired
+backup/CAS and legitimate spends. `legacy-command-concurrency.py` covers concurrent
+duplicates, distinct runs, altered facts and racing stale backup. These fixtures
+also cover refusal of cumulative-XP loss while legitimate shard spending remains
+allowed. Catalogue seed checks combine migration seeds chronologically: generate
+future catalogue changes in a new CLI-created migration, never edit applied SQL.
+These fixtures require disposable PostgreSQL only, never player data. Local mock results do not
+establish SQL behavior or production deployment; require the real SQL CI result.
+
 Canonical command receipts: `canonical-command-client-tests.mjs` is a mandatory
 Node gate. It reproduces the previously missing operation identity and covers
 exact receipt verification, lost responses, solved-without-receipt rejection,

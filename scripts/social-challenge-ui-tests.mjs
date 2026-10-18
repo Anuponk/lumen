@@ -11,7 +11,7 @@ for(const id of ["challengeIntro","challengeNameModal","challengeShareModal","ch
 }
 assert.match(ui,/if\(socialChallenge\)\{celebrateSocialChallengeSuccess\(\);return\}/,"challenge victory must branch before campaign mutation");
 const branch=ui.indexOf("if(socialChallenge){celebrateSocialChallengeSuccess();return}");
-const campaignMutation=ui.indexOf("lumenProgress.solved[levelIndex]=1");
+const campaignMutation=ui.indexOf("applyLegacyVictory(lumenProgress,levelIndex,facts)");
 assert.ok(branch>=0&&campaignMutation>branch,"challenge isolation branch precedes campaign solve mutation");
 assert.match(html,/performance[^<]*cach/i,"source performance must be described as hidden before play");
 assert.match(ui,/shareBtn\.hidden=!socialEligibility\.canChallenge/,"replay challenge CTA must be gated");

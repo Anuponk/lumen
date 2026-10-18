@@ -47,3 +47,21 @@ jobs:
           PGPASSWORD: isolated-test-only
           LUMEN_SQL_FIXTURE: '1'
         run: python3 scripts/canonical-command-concurrency.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify historical rules, transactions and old-writer retirement
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          node scripts/legacy-command-fixtures.mjs --check
+          node scripts/legacy-command-fixtures.mjs > /tmp/lumen-legacy-parity.sql
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f scripts/fixtures/legacy-command-bootstrap.sql \
+            -f supabase/migrations/20261003_lumen_daily_server_authority.sql \
+            -f supabase/migrations/20261010_lumen_daily_catalogue_ceiling_repair.sql \
+            -f supabase/migrations/20261018193133_legacy_victory_commands.sql \
+            -f /tmp/lumen-legacy-parity.sql \
+            -f scripts/fixtures/legacy-command-receipts.sql
+          python3 scripts/legacy-command-concurrency.py
