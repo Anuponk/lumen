@@ -1,6 +1,7 @@
 export const nodeSuites=[
  "quality-gate-pool-tests.mjs",
  "ci-metrics-tests.mjs",
+ "browser-navigation-tests.mjs",
  "audit-catalogue.mjs",
  "generate-diverse-grids-tests.mjs",
  "diverse-adventure-integration-tests.mjs",

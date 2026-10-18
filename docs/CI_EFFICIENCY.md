@@ -120,5 +120,20 @@ readable diff; its required CI rerun verifies the warm cache. Final-SHA status a
 warm observations are recorded in [PR #469](https://github.com/Anuponk/lumen/pull/469)
 without another documentation-only CI cycle. [Machine-readable first results](validation/phase3-first-results.json).
 
+The first final-SHA check [39113522519](https://github.com/Anuponk/lumen/actions/runs/39113522519)
+failed in account browser assertions after reload; six other browser suites passed.
+The warm pip cache restored successfully (48 MB), with install **9 s** versus
+**8 s** cold: no installation-time gain established. This failure is retained.
+CDP acknowledges reload before replacing the old document, so its existing ready
+diagnostics can prematurely satisfy the old wait. A deterministic regression
+reproduces that acceptance (red), then passes when navigation must change
+`performance.timeOrigin` and the new document must finish loading with diagnostics.
+Account UI assertions are unchanged; no automatic retry or ignored failure is
+added. The bounded navigation wait retries only recognized destroyed-context
+transitions; unexpected errors still fail. The new regression runs in full CI.
+Final verification is linked in the PR; passing timings and failure timings stay
+separate. This diagnosed test synchronization defect is one identified avoidable
+failure, not evidence of a measured reduction in future failure rates.
+
 References: [GitHub concurrency / workflow semantics](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax),
 [setup-python dependency caching](https://github.com/actions/setup-python#caching-packages).
