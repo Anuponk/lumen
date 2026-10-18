@@ -12,6 +12,12 @@ begin
  assert before_profile->'catalogueOrigin'='2';
  -- Old writers may read the cohort but cannot remove it with a full snapshot.
  perform set_config('request.jwt.claim.sub',fresh::text,true);
+ -- UPSERT runs BEFORE INSERT first: an empty old snapshot is stamped current
+ -- again and is safe to accept. Assert preservation, not an invented refusal.
+ perform public.lumen_backup_profile(before_profile-'catalogueOrigin');
+ assert (select payload from lumen.profile_snapshots where user_id=fresh)=before_profile;
+ update lumen.profile_snapshots set payload=jsonb_set(payload,'{solved}','{"0":1}') where user_id=fresh;
+ select payload into before_profile from lumen.profile_snapshots where user_id=fresh;
  begin
   perform public.lumen_backup_profile(before_profile-'catalogueOrigin');
   raise exception 'Old backup erased cohort';
@@ -28,7 +34,7 @@ begin
  -- Same-cohort preference/spend updates remain legitimate; metadata grants no reward.
  assert public.lumen_cas_profile(before_profile,before_profile||'{"shards":2,"sound":false}');
  select payload into after_profile from lumen.profile_snapshots where user_id=fresh;
- assert after_profile->'shards'='2' and after_profile->'xp'='0' and after_profile->'solved'='{}';
+ assert after_profile->'shards'='2' and after_profile->'xp'='0' and after_profile->'solved'=before_profile->'solved';
  assert after_profile->'catalogueOrigin'='2';
  -- An old nonempty import remains an old cohort, with its exact reward facts.
  insert into lumen.profile_snapshots(user_id,payload) values(historical,'{"solved":{"0":1},"badges":{"kept":1},"xp":10,"shards":5}');
