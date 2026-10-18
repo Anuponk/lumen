@@ -1,6 +1,7 @@
 // Isolated browser + simulated Auth/RPC. No real accounts or mail requests.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {connectBrowser,navigateAndWait} from './cdp-client.mjs';
 const {send,evaluate,errors}=await connectBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -10,10 +11,30 @@ const url=new URL(process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/');
 const fixture=`
 localStorage.setItem('lumenSound','off');
 window.__authCalls=[];
+window.__fixtureLedgerWrites=0;window.__fixtureSnapshotWrites=0;
+const isolatedRecovery=sessionStorage.getItem('fixtureIsolatedRecovery')==='1';
+window.__fixtureProfile={solved:{},historyBackup:{},badges:{},stars:{},noHint:{},performances:{},canonicalQuestState:{},daily:{},challenges:{},shards:3,xp:0,skyScore:0,skyHistoryVersion:4,legacyReceipt:'cloud'};
+if(isolatedRecovery){
+ sessionStorage.setItem('fixtureIsolatedLoads',String(Number(sessionStorage.getItem('fixtureIsolatedLoads')||0)+1));
+ localStorage.setItem('lumenCloudOwnerId','fixture-player');
+ localStorage.setItem('lumenProgressV1',JSON.stringify({...window.__fixtureProfile,shards:9,legacyReceipt:'local'}));
+}
 window.supabase={createClient(){
  let session=JSON.parse(sessionStorage.getItem('fixtureAuthSession')||'null'),callback=()=>{};
  const set=(event,value)=>{session=value;sessionStorage.setItem('fixtureAuthSession',JSON.stringify(value));callback(event,value)};
- return {rpc:async(name)=>name==='lumen_restore_profile'?{data:null,error:{message:'simulated restore outage'}}:{data:[],error:null},auth:{
+ return {rpc:async(name,args)=>{
+  if(!isolatedRecovery)return name==='lumen_restore_profile'?{data:null,error:{message:'simulated restore outage'}}:{data:[],error:null};
+  if(name==='lumen_restore_profile')return {data:structuredClone(window.__fixtureProfile),error:null};
+  if(name==='lumen_cas_profile'){window.__fixtureSnapshotWrites++;window.__fixtureProfile=structuredClone(args.p_payload);return {data:true,error:null};}
+  if(name==='lumen_commit_canonical_victory'){
+   window.__fixtureLedgerWrites++;
+   const fresh=!window.__fixtureProfile.canonicalQuestState[args.p_quest_id]?.solved;
+   window.__fixtureProfile.canonicalQuestState[args.p_quest_id]={solved:true,stars:1,badges:args.p_badges,performance:args.p_performance};
+   if(fresh)window.__fixtureProfile.xp+=15;
+   return {data:{profile:structuredClone(window.__fixtureProfile),newlyCompleted:fresh},error:null};
+  }
+  return {data:[],error:null};
+ },auth:{
  getSession:async()=>({data:{session}}),onAuthStateChange(fn){callback=fn},
  signInWithPassword:async()=>{window.__authCalls.push('password');set('SIGNED_IN',{user:{id:'fixture-player'}});return {data:{session},error:null}},
  verifyOtp:async()=>{window.__authCalls.push('recovery');set('PASSWORD_RECOVERY',{user:{id:'fixture-player'}});return {error:null}},
@@ -23,6 +44,27 @@ window.supabase={createClient(){
 }};
 `;
 const results=[];
+async function verifyIsolatedRecovery(){
+ const quest=canonicalQuestList().find(q=>q.legacyIndex===null);assert.ok(quest);
+ await evaluate(`sessionStorage.setItem('fixtureIsolatedRecovery','1');sessionStorage.setItem('fixtureAuthSession',JSON.stringify({user:{id:'fixture-player'}}));localStorage.removeItem('lumenCloudDiagnosticsV1')`);
+ await navigate('Page.reload');
+ await until(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='hydration_partial_reconciliation_pending')`);
+ const before=await evaluate(`({local:localStorage.getItem('lumenProgressV1'),loads:sessionStorage.getItem('fixtureIsolatedLoads'),snapshots:window.__fixtureSnapshotWrites})`);
+ await evaluate(`(async()=>{
+  const {createDurableCanonicalVictoryOutbox}=await import('/src/persistence/durable-canonical-outbox.js');
+  await createDurableCanonicalVictoryOutbox(localStorage).enqueue('fixture-player',${JSON.stringify(quest.id)},{badges:{autonomy:true},performance:{seconds:20,assisted:false}},{operationId:'isolated-browser-'+Date.now()});
+  window.dispatchEvent(new Event('online'));
+ })()`,true);
+ await until(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='canonical_outbox_isolated_recovered')`);
+ const after=await evaluate(`(async()=>({local:localStorage.getItem('lumenProgressV1'),loads:sessionStorage.getItem('fixtureIsolatedLoads'),snapshots:window.__fixtureSnapshotWrites,commits:window.__fixtureLedgerWrites,serverXp:window.__fixtureProfile.xp,serverReceipt:window.__fixtureProfile.legacyReceipt,status:document.getElementById('mobileAuthStatus').textContent,pending:(await (await import('/src/persistence/durable-canonical-outbox.js')).createDurableCanonicalVictoryOutbox(localStorage).pending('fixture-player')).length}))()`,true);
+ assert.equal(after.local,before.local,'Preserve the divergent local save byte for byte');
+ assert.equal(after.loads,before.loads,'No full-hydration reload loop');
+ assert.equal(after.snapshots,before.snapshots,'No full-profile write during isolated recovery');
+ assert.equal(after.commits,1);assert.equal(after.pending,0);assert.equal(after.serverXp,15);assert.equal(after.serverReceipt,'cloud');
+ assert.ok(after.status.includes('sauvegarde à resynchroniser'),'Do not label a partial recovery fully synced');
+ await evaluate(`sessionStorage.removeItem('fixtureIsolatedRecovery');sessionStorage.removeItem('fixtureAuthSession');`);
+ return true;
+}
 try{
  await send('Page.enable');await send('Runtime.enable');await send('Network.enable');
  // Keep both the real SDK and project APIs out of the isolated fixture.
@@ -56,7 +98,8 @@ try{
   await until(`document.getElementById('mobileAuthAction').textContent==='Déconnexion'`);
   await evaluate(`document.getElementById('mobileAuthAction').click()`);
   await until(`document.getElementById('mobileAuthAction').textContent.includes('Se connecter')`);
-  results.push({viewport,guestDismiss:true,passwordLogin:true,reload:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,restoreFailureVisible:true});
+  const isolatedCanonicalRecovery=await verifyIsolatedRecovery();
+  results.push({viewport,guestDismiss:true,passwordLogin:true,reload:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,restoreFailureVisible:true,isolatedCanonicalRecovery});
  }
  assert.equal(errors.length,0,JSON.stringify(errors));
  const report={simulatedAuth:true,liveCloudWrites:false,results,exceptions:errors};

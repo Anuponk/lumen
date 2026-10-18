@@ -187,6 +187,15 @@ asynchronous enumeration, releasing the guard after a read error, incomplete
 storage inspection followed by restored access, and account cancellation before
 the queued microtask starts. Each regression was observed failing before its fix.
 
+Isolated ledger replay uses `canonical-outbox-recovery-tests.mjs` for the actual
+UI policy and replay functions, and `account-session-browser-tests.mjs` for
+hydration through verified legacy conflict to an acknowledged queued victory.
+The browser uses simulated Auth/RPC and real localStorage/IndexedDB at mobile
+and desktop sizes. Assert byte-for-byte local preservation, no legacy snapshot
+upload, no reload loop, retained global sync failure, and one server grant.
+Account/client changes, password recovery, unverified restore, active play,
+offline/hidden state and in-flight profile writes must still hold recovery.
+
 Canonical replay (#453): `node scripts/canonical-ledger-client-tests.mjs` covers
 both final Grande Ourse quests through the gameplay ledger transport, including
 lost acknowledgements, stale solved-only replies, durable outbox retention and

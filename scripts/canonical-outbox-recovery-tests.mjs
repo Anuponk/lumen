@@ -71,7 +71,7 @@ test('online and scheduled recovery cannot both start while the durable queue is
  let finish,reads=0;const pending=new Promise(resolve=>{finish=resolve});
  const context={canonicalOutboxRetryInFlight:false,qaActive:false,lumenUser:{id:'a'},lumenSupabase:{},
   cloudProfileReady:true,cloudProfileBusy:false,cloudProfileDirty:false,canonicalActiveQuest:null,
-  canonicalVictoryOutbox:{pending:async()=>{reads++;return pending}},recordCloudDiagnostic:()=>{}};
+  canonicalVictoryOutbox:{pending:async()=>{reads++;return pending}},recordCloudDiagnostic:()=>{},canReplayCanonicalOutbox:()=>true};
  vm.createContext(context);vm.runInContext(functionSource(source,'retryPendingCanonicalOutboxOnReconnect'),context);
  const a=vm.runInContext('retryPendingCanonicalOutboxOnReconnect()',context);
  const b=vm.runInContext('retryPendingCanonicalOutboxOnReconnect()',context);
@@ -93,4 +93,101 @@ test('a temporarily unreadable queue keeps a visible pending check and retry dem
  complete=true;
  assert.equal(await vm.runInContext("refreshCanonicalOutboxNotice('a')",context),0);
  assert.equal(context.canonicalOutboxNotice,null);
+});
+
+function isolatedContext(){
+ const client={},user={id:'a'},values=new Map([['lumenProgressV1','{"shards":9,"performances":{"fixture":{"receipt":"local-only"}}}']]);
+ const progress={shards:9,performances:{fixture:{receipt:'local-only'}}};
+ let commits=0,acks=0,reloads=0;
+ const context={canonicalOutboxRetryInFlight:false,qaActive:false,lumenUser:user,lumenSupabase:client,
+  authSessionPending:false,cloudProfileReady:false,cloudProfileBusy:false,cloudProfileDirty:true,
+  cloudProfileFailure:{reason:'partial_reconciliation'},canonicalRecoveryContext:{userId:'a',client},canonicalActiveQuest:null,
+  document:{visibilityState:'visible'},navigator:{onLine:true},sessionStorage:{getItem:()=>null},
+  localStorage:{getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,v)},lumenProgress:progress,
+  canonicalVictoryOutbox:{pending:async()=>[{questId:'q',reward}],acknowledge:async()=>{acks++}},
+  commitCanonicalVictory:async()=>{commits++;return saved('q')},replayCanonicalVictoryOutbox,
+  recordCloudDiagnostic:()=>{},location:{reload:()=>{reloads++}}};
+ const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+ vm.createContext(context);
+ vm.runInContext(functionSource(source,'canReplayCanonicalOutbox'),context);
+ vm.runInContext(functionSource(source,'retryPendingCanonicalOutboxOnReconnect'),context);
+ return {context,progress,values,get commits(){return commits},get acks(){return acks},get reloads(){return reloads}};
+}
+
+test('a verified legacy conflict does not block a queued server-ledger victory or replace local progress',async()=>{
+ const f=isolatedContext(),raw=f.values.get('lumenProgressV1'),before=structuredClone(f.progress);
+ await vm.runInContext('retryPendingCanonicalOutboxOnReconnect()',f.context);
+ assert.equal(f.commits,1);assert.equal(f.acks,1);
+ assert.equal(f.values.get('lumenProgressV1'),raw);assert.deepEqual(f.context.lumenProgress,before);
+ assert.equal(f.context.lumenProgress,f.progress);assert.equal(f.context.cloudProfileReady,false);
+ assert.equal(f.reloads,0,'Do not loop through full hydration or install the remote snapshot');
+});
+
+test('isolated recovery still holds unverified accounts, different clients, active play and unsafe session states',async()=>{
+ for(const change of [
+  c=>c.canonicalRecoveryContext=null,
+  c=>c.canonicalRecoveryContext.userId='other',
+  c=>c.canonicalRecoveryContext.client={},
+  c=>c.cloudProfileFailure={reason:'restore_failed'},
+  c=>c.canonicalActiveQuest={id:'active'},
+  c=>c.authSessionPending=true,
+  c=>c.cloudProfileBusy=true,
+  c=>c.document.visibilityState='hidden',
+  c=>c.navigator.onLine=false,
+  c=>c.qaActive=true,
+  c=>c.lumenUser=null,
+  c=>c.lumenSupabase=null,
+  c=>c.sessionStorage.getItem=()=> '1',
+  c=>c.sessionStorage.getItem=()=>{throw Error('storage denied')},
+  c=>c.cloudProfileReady=true
+ ]){
+  const f=isolatedContext();change(f.context);
+  await vm.runInContext('retryPendingCanonicalOutboxOnReconnect()',f.context);
+  assert.equal(f.commits,0);assert.equal(f.acks,0);
+ }
+});
+
+test('normal fully hydrated recovery remains available without an isolated permission',async()=>{
+ const f=isolatedContext();
+ f.context.cloudProfileReady=true;f.context.cloudProfileDirty=false;f.context.canonicalRecoveryContext=null;
+ await vm.runInContext('retryPendingCanonicalOutboxOnReconnect()',f.context);
+ assert.equal(f.commits,1);assert.equal(f.acks,1);assert.equal(f.reloads,1);
+});
+
+test('account switch during isolated commit keeps the old account intent and local state untouched',async()=>{
+ const f=isolatedContext();let attempted=false;
+ f.context.commitCanonicalVictory=async()=>{attempted=true;f.context.lumenUser={id:'other'};return saved('q')};
+ const raw=f.values.get('lumenProgressV1');
+ await vm.runInContext('retryPendingCanonicalOutboxOnReconnect()',f.context);
+ assert.equal(attempted,true);assert.equal(f.acks,0);assert.equal(f.reloads,0);assert.equal(f.values.get('lumenProgressV1'),raw);
+});
+
+test('isolated network failure preserves the unacknowledged intent and local divergence',async()=>{
+ const f=isolatedContext();let attempted=false;
+ f.context.commitCanonicalVictory=async()=>{attempted=true;throw Error('offline')};
+ const raw=f.values.get('lumenProgressV1');
+ await vm.runInContext('retryPendingCanonicalOutboxOnReconnect()',f.context);
+ assert.equal(attempted,true);assert.equal(f.acks,0);assert.equal(f.values.get('lumenProgressV1'),raw);
+});
+
+test('online wakes isolated recovery without starting legacy full-profile writes',()=>{
+ const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+ let replay=0,retry=0,writes=0;
+ const context={qaActive:false,lumenUser:{id:'a'},lumenSupabase:{},cloudProfileReady:false,
+  retryPendingCanonicalOutboxOnReconnect:()=>{replay++},canonicalRecovery:{schedule:()=>{retry++}},
+  scheduleCloudProfile:()=>{writes++}};
+ vm.createContext(context);vm.runInContext(functionSource(source,'retryPendingCloudWriteOnReconnect'),context);
+ vm.runInContext('retryPendingCloudWriteOnReconnect()',context);
+ assert.equal(replay,1);assert.equal(retry,1);assert.equal(writes,0);
+});
+
+test('replacing the cloud client invalidates the isolated permission and cancels its schedule',()=>{
+ const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+ const start=source.indexOf('const persistenceModel=')+'const persistenceModel='.length;
+ const end=source.indexOf(';\nconst {loadLumenProfile',start);
+ assert.ok(end>start);
+ let cancelled=0;
+ const context={lumenSupabase:{},canonicalRecoveryContext:{userId:'a'},canonicalRecovery:{cancel:()=>{cancelled++}}};
+ vm.createContext(context);const model=vm.runInContext('('+source.slice(start,end)+')',context);
+ model.lumenSupabase={};assert.equal(context.canonicalRecoveryContext,null);assert.equal(cancelled,1);
 });
