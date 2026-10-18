@@ -5,8 +5,9 @@ Updated baseline: `b1c272eb46c958d04adfb1fd8b06fbb49214951f` (2026-10-18),
 including the deployed performance-summary compatibility fix #473.
 
 The durable outbox step #472 is deployed as `ba9bf44` (version 460).
-This follow-up isolates background ledger replay after verified legacy conflict;
-it does not declare the remaining writer cutover complete.
+Isolated background replay #477 is deployed as `88b2c61` (version 461).
+The current follow-up adds persistent retry holds; the remaining writer cutover
+is still open. These are separate delivery and production-verification steps.
 
 ## Reproduced incidents
 
@@ -110,8 +111,51 @@ hydration; a restore error alone cannot authorize it.
 This is background intention recovery, not an unlock for new canonical gameplay,
 legacy wins, daily rewards or spending while a legacy conflict remains. Their
 remaining global hydration dependency still requires the writer/authority cutover.
-Invalid/server-refused operations are preserved; persisted per-operation error
-states and permanent-vs-transient classification remain a later step.
+Invalid/server-refused operations are preserved. The following retry policy
+adds explicit holds without declaring a server refusal permanently invalid.
+
+### Persistent retry holds
+
+`canonical-recovery-errors.js` classifies structured error codes and HTTP status
+after a verified read-back attempt. A thrown RPC error follows the same read-back
+path as a returned error, because a lost response may follow a committed reward.
+Confirmed completion and all requested badges still acknowledge the intention.
+Provider messages, details, payloads and tokens are not retained in retry metadata.
+
+| Unconfirmed result | Recovery policy |
+|---|---|
+| Network/unknown failure, HTTP 408/429 or 5xx | Existing bounded retry; never infer permanent invalidity |
+| HTTP 401 or `PGRST301`/`302`/`303` | Persist an account auth hold; verified authenticated read required before release |
+| Explicit HTTP 400/403/404/413/422, validation/permission codes, unavailable quest | Persist a review hold for that quest; independent quests continue |
+
+Status 5xx/408/429 takes priority over a structured refusal code. `P0001` is a
+generic server exception, not proof of bad player data; the UI requests review
+and retains the intention. The code/status mappings follow the
+[PostgREST error reference](https://docs.postgrest.org/en/stable/references/errors.html).
+Unknown errors remain retryable rather than being silently classified as invalid.
+
+Retry metadata has its own `lumenCanonicalVictoryRetryV1:` prefix in the existing
+IndexedDB `intents` store or verified localStorage fallback. Keys bind the user
+and V2 operation (or V1 quest); `intentCreatedAt` also binds the exact intention.
+Fields and restore/rollback policy are owned by the
+[cloud persistence contract](DATA_AND_ARCHITECTURE.md#cloud-persistence-contract).
+Every held intention remains returned by `pending`; inspection separately exposes
+`paused`, `retryable` and `authRequired`. The scheduler stops network replay for
+known held work; incomplete storage reads can still retain bounded storage checks.
+Later intentions for the same quest retain their order. Auth holds cover the
+account queue because its credentials are shared.
+
+A new verified hydration or a deferred `SIGNED_IN`/`TOKEN_REFRESHED` handler may
+clear only auth holds after a successful profile read with the same user/client.
+The latter does not install a profile, clear the global legacy failure or reload.
+The **Réessayer** action explicitly clears the current account's policy metadata,
+then rehydrates; it does not acknowledge or rewrite pending rewards. Review holds
+survive token refresh. Corrupt metadata remains held/reported until explicit retry.
+If both stores reject the pause write, a session-only hold prevents immediate
+loops but cannot promise the hold survives restart; durable victory evidence
+remains unchanged. Earlier clients ignore these new sidecars and can resume their
+old retry behavior after rollback. Recovery still requires a compatible client
+for V2 intentions. No server schema or reward authority changes in this phase.
 
 ## Writer inventory and cutover still required
 
@@ -134,10 +178,15 @@ existing max-balance reconciliation is not a transaction reconstruction.
 ## Validation and release
 
 New mandatory Node suites: `canonical-outbox-recovery-tests.mjs`,
-`canonical-durable-outbox-tests.mjs`, `cloud-retry-scheduler-tests.mjs`.
+`canonical-durable-outbox-tests.mjs`, `canonical-retry-state-tests.mjs`,
+`cloud-retry-scheduler-tests.mjs`.
 Existing V1/multi-device/ledger regressions remain enabled. The canonical replay
 browser runner additionally exercises real IndexedDB with denied localStorage,
 a new document, an independent victory after refusal and a corrupt V1 record.
+It now also checks persistent review holds, no automatic RPC after a new document,
+and explicit retry retaining evidence. Node regressions cover auth/review/transient
+classification, V1/V2 holds, failed pause persistence, corrupt policy metadata,
+verified lost-response acknowledgement and account/client guards during auth resume.
 The browser transport is simulated; production accounts and RPCs are not mutated.
 
 Isolated recovery regressions execute the actual UI policy/replay functions:
@@ -148,6 +197,8 @@ also runs the full hydration-to-recovery flow with simulated Auth/RPC and real
 IndexedDB on mobile/desktop, checking one grant, no snapshot write, unchanged
 local data and continued global partial-sync status. These are not live-account
 or live-database validation.
+The same browser flow includes an auth refusal, repeated online events without
+another ledger call, and successful replay after verified token-refresh read-back.
 
 Run `node scripts/test-affected.mjs --full` before the PR. Preserve the actual
 results and distinguish Node fixtures, browser storage, isolated SQL, and live
@@ -155,7 +206,7 @@ account verification. No database migration is part of this client delivery.
 
 The next phases of #391/#398 remain open: broader real-device recovery validation,
 legacy authoritative commands, safe old-client retirement, non-global hydration,
-audited repair of ambiguous profiles, permanent error handling and production
+audited repair of ambiguous profiles, server-side command refusal/repair policy and production
 observation. A CI pass is not proof of those phases. The proposed 14-day
 observation starts only after the agreed architecture cutover is generally
 deployed and its recovery objectives are defined.

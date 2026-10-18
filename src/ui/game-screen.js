@@ -393,7 +393,7 @@ get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get navigationLocked(){return !!socialChallenge},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
-const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(event?.type==="restore_failed")cloudProfileFailure={reason:"restore_failed"};if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI();if(event?.type==="password_recovery"){sessionStorage.setItem("lumenPasswordRecoveryPending","1");const editor=document.getElementById("accountProfileEditor");if(editor){editor.dataset.open="true";editor.hidden=false}const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=false;const password=document.getElementById("setPasswordPanel");if(password)password.hidden=false;document.getElementById("setPasswordValue")?.focus()}},renderDaily:(...args)=>renderDaily(...args),afterAuthCloudSync:async()=>{
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(["SIGNED_IN","TOKEN_REFRESHED"].includes(event?.authEvent)){const ownerId=lumenUser?.id,client=lumenSupabase;setTimeout(()=>{void resumeCanonicalAfterAuthRefresh(ownerId,client)},0)}if(event?.type==="restore_failed")cloudProfileFailure={reason:"restore_failed"};if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI();if(event?.type==="password_recovery"){sessionStorage.setItem("lumenPasswordRecoveryPending","1");const editor=document.getElementById("accountProfileEditor");if(editor){editor.dataset.open="true";editor.hidden=false}const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=false;const password=document.getElementById("setPasswordPanel");if(password)password.hidden=false;document.getElementById("setPasswordValue")?.focus()}},renderDaily:(...args)=>renderDaily(...args),afterAuthCloudSync:async()=>{
  if(qaActive||!lumenUser||!lumenSupabase)return;
  canonicalRecoveryContext=null;canonicalRecovery.cancel();
  if(sessionStorage.getItem("lumenPasswordRecoveryPending")==="1")return;
@@ -417,6 +417,10 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   // legacy rewards or unknown account's snapshots.
   const hydrationClient=lumenSupabase;
   const sessionValid=()=>lumenUser?.id===accountId&&lumenSupabase===hydrationClient&&!qaActive;
+  if(!sessionValid())return;
+  // Only an actually verified authenticated read may release an auth pause.
+  try{await canonicalVictoryOutbox.resume(accountId,{kind:'auth'})}catch{recordCloudDiagnostic("canonical_outbox_resume_pending",{reason:"storage"})}
+  if(!sessionValid())return;
   const recovered=await replayCanonicalVictoryOutbox(canonicalVictoryOutbox,accountId,
    (questId,reward)=>commitCanonicalVictory(hydrationClient,questId,reward),{sessionValid});
   if(!sessionValid())throw Error("Session changée pendant la reprise");
@@ -673,7 +677,7 @@ function syncMobileAuthUI(){
  show("editAccountProfile",signedIn);
  show("accountProfileEditor",signedIn&&document.getElementById("accountProfileEditor")?.dataset.open==="true");
  show("guestSaveExplainer",!signedIn);
- const pendingNotice=canonicalOutboxNotice==="attention"?"Sauvegarde à vérifier · données locales conservées":canonicalOutboxNotice==="pending"?"Victoire en attente de synchronisation":canonicalOutboxNotice==="checking"?"Vérification des sauvegardes en attente":canonicalOutboxNotice==="storage"?"Enregistrement local indisponible":null;
+ const pendingNotice=canonicalOutboxNotice==="attention"?"Sauvegarde à vérifier · données locales conservées":canonicalOutboxNotice==="auth"?"Session à renouveler · victoire conservée":canonicalOutboxNotice==="pending"?"Victoire en attente de synchronisation":canonicalOutboxNotice==="checking"?"Vérification des sauvegardes en attente":canonicalOutboxNotice==="storage"?"Enregistrement local indisponible":null;
  status.textContent=recovering?"Choisis ton nouveau mot de passe":signedIn?(pendingNotice|| (cloudProfileReady?(lumenNickname||"Progression synchronisée"):cloudProfileFailure?"Compte connecté · sauvegarde à resynchroniser":"Compte connecté · synchronisation en cours…")):"Progression enregistrée sur cet appareil";
  show("retryAccountSync",signedIn&&((!cloudProfileReady&&!!cloudProfileFailure)||!!pendingNotice));
  action.textContent=signedIn?"Déconnexion":"Se connecter / Créer un compte";
@@ -1797,9 +1801,9 @@ async function refreshCanonicalOutboxNotice(ownerId){
  try{
   const state=await canonicalVictoryOutbox.inspect(ownerId);
   if(lumenUser?.id!==ownerId)return 0;
-  canonicalOutboxNotice=state.issues.some(kind=>["invalid_entry","conflicting_copies"].includes(kind))?"attention":state.pending.length?"pending":state.complete===false?"checking":null;
+  canonicalOutboxNotice=state.issues.some(kind=>["invalid_entry","conflicting_copies","retry_state_invalid","retry_state_conflict","retry_state_unpersisted"].includes(kind))||state.paused?.some(entry=>entry.kind==='review')?"attention":state.authRequired?"auth":state.pending.length?"pending":state.complete===false?"checking":null;
   // An unreadable backend may contain older intents even if the other is empty.
-  updateAuthUI();return state.pending.length||(state.complete===false?1:0);
+  updateAuthUI();return (state.retryable??state.pending).length||(state.complete===false?1:0);
  }catch{if(lumenUser?.id===ownerId){canonicalOutboxNotice="storage";updateAuthUI()}return 1}
 }
 const canonicalRecovery=createCloudRetryScheduler({
@@ -1812,6 +1816,26 @@ const canonicalRecovery=createCloudRetryScheduler({
  },
  onError:()=>recordCloudDiagnostic("canonical_outbox_reconnect_failed",{reason:"retry"})
 });
+async function retryAccountCloudSync(){
+ const ownerId=lumenUser?.id,client=lumenSupabase;
+ if(!ownerId){location.reload();return}
+ try{await canonicalVictoryOutbox.resume(ownerId,{kind:'all'})}
+ catch{recordCloudDiagnostic("canonical_outbox_resume_pending",{reason:"storage"});canonicalOutboxNotice="attention";updateAuthUI();return}
+ if(lumenUser?.id!==ownerId||lumenSupabase!==client)return;
+ canonicalRecovery.cancel();location.reload();
+}
+async function resumeCanonicalAfterAuthRefresh(ownerId,client){
+ if(qaActive||!ownerId||lumenUser?.id!==ownerId||lumenSupabase!==client||authSessionPending)return;
+ const sameSession=()=>lumenUser?.id===ownerId&&lumenSupabase===client&&!qaActive&&!authSessionPending&&sessionStorage.getItem("lumenPasswordRecoveryPending")!=="1";
+ try{
+  if(sessionStorage.getItem("lumenPasswordRecoveryPending")==="1")return;
+  if(!(await canonicalVictoryOutbox.inspect(ownerId)).authRequired||!sameSession())return;
+  if(!(await loadVerifiedProfile(client))||!sameSession())return;
+  await canonicalVictoryOutbox.resume(ownerId,{kind:'auth'});
+  if(!sameSession())return;
+  await refreshCanonicalOutboxNotice(ownerId);canonicalRecovery.schedule();
+ }catch{if(sameSession())recordCloudDiagnostic("canonical_outbox_resume_pending",{reason:"auth_or_storage"})}
+}
 async function celebrateCanonicalSuccess(){
  const q=canonicalActiveQuest;if(!q||celebrated)return;
  const seconds=activeGameSeconds(),attempt=attemptEngine.snapshot();
@@ -2705,7 +2729,7 @@ if(passwordSubmit)passwordSubmit.onclick=submitAccountPassword;
 const switcher=document.getElementById("accountAuthSwitch");if(switcher)switcher.onclick=()=>openEmailAccountOffer("login");const signupTab=document.getElementById("accountSignupTab");if(signupTab)signupTab.onclick=()=>openEmailAccountOffer("signup");const visibility=document.getElementById("accountPasswordVisibility");if(visibility)visibility.onclick=()=>{const input=document.getElementById("accountPassword");if(!input)return;input.type=input.type==="password"?"text":"password";visibility.setAttribute("aria-label",input.type==="password"?"Afficher le mot de passe":"Masquer le mot de passe");};
 const closeAccount=document.getElementById("accountOptinClose");if(closeAccount)closeAccount.onclick=dismissAccountOffer;
 const accountLater=document.getElementById("accountOptinLater");if(accountLater)accountLater.onclick=dismissAccountOffer;
-const retryAccountSync=document.getElementById("retryAccountSync");if(retryAccountSync)retryAccountSync.onclick=()=>location.reload();
+const retryAccountSync=document.getElementById("retryAccountSync");if(retryAccountSync)retryAccountSync.onclick=retryAccountCloudSync;
 const setPasswordSave=document.getElementById("setPasswordSave");if(setPasswordSave)setPasswordSave.onclick=saveExistingAccountPassword;
 
 const recovery=document.getElementById("accountRecovery");if(recovery)recovery.onclick=recoverAccountPassword;

@@ -1,4 +1,5 @@
 export const nodeSuites=[
+ "canonical-retry-state-tests.mjs",
  "canonical-outbox-recovery-tests.mjs",
  "canonical-durable-outbox-tests.mjs",
  "cloud-retry-scheduler-tests.mjs",

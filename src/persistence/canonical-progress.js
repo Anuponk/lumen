@@ -3,6 +3,7 @@
 // a stable-ID dictionary. Never shift legacy indices to visible ordinals.
 import {canonicalQuestById,canonicalQuestByOrdinal,canonicalQuestList} from "../campaign/canonical-quests.js";
 import {loadVerifiedProfile,compareAndSwapCloudProfile} from "./cloud-profile.js";
+import {canonicalRecoveryFailure} from "./canonical-recovery-errors.js";
 
 export const CANONICAL_PROGRESS_VERSION=1;
 function copy(profile){
@@ -106,10 +107,12 @@ export async function commitCanonicalVictory(supabase,questId,reward,{maxAttempt
 export async function commitCanonicalVictoryViaLedger(supabase,questId,reward){
  if(!supabase||typeof supabase.rpc!=="function")throw Error("Cloud unavailable");
  const quest=canonicalQuestById(questId);
- if(!quest||quest.legacyIndex!==null)throw Error("Invalid ledger quest");
- const {data,error}=await supabase.rpc("lumen_commit_canonical_victory",{
+ if(!quest||quest.legacyIndex!==null)throw canonicalRecoveryFailure({code:'LUMEN_QUEST_UNAVAILABLE'});
+ let response;
+ try{response=await supabase.rpc("lumen_commit_canonical_victory",{
   p_quest_id:questId,p_badges:reward?.badges??{},p_performance:reward?.performance??null
- });
+ })}catch(error){response={error}}
+ const {data,error,status}=response;
  if(error){
   // A timed-out request may already be committed. Re-read and acknowledge
   // only an actual server-side solved flag, without issuing another credit.
@@ -117,7 +120,7 @@ export async function commitCanonicalVictoryViaLedger(supabase,questId,reward){
   try{verified=await loadVerifiedProfile(supabase)}catch{}
   if(verified?.canonicalQuestState?.[questId]?.solved&&hasAllEarnedBadges(verified.canonicalQuestState[questId],reward?.badges))
    return {profile:verified,newlyCompleted:false,alreadySaved:true,quest};
-  throw Error("Canonical ledger commit unconfirmed: "+String(error.message??"unknown"));
+  throw canonicalRecoveryFailure(error,status);
  }
  const verified=await loadVerifiedProfile(supabase);
  if(!verified?.canonicalQuestState?.[questId]?.solved||!hasAllEarnedBadges(verified.canonicalQuestState[questId],reward?.badges))throw Error("Canonical ledger verification failed");

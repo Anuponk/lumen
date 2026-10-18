@@ -1,3 +1,4 @@
+import {classifyCanonicalRecoveryError} from './canonical-recovery-errors.js';
 // Durable, per-account canonical victory intents. A verified local write comes
 // before any network attempt; server CAS remains the authority for rewards.
 // Entries never expire or get removed on network failure.
@@ -55,8 +56,12 @@ export async function replayCanonicalVictoryOutbox(outbox,userId,commit,{session
  const confirmed=[];
  const blockedQuests=new Set();
  const report=kind=>{try{onIssue({kind})}catch{}};
- for(const entry of await outbox.pending(userId)){
+ const state=outbox.inspect?await outbox.inspect(userId):{pending:await outbox.pending(userId)};
+ if(state.authRequired){report('auth');return confirmed}
+ const paused=new Set((state.paused||[]).map(entry=>JSON.stringify([entry.questId,entry.operationId??null])));
+ for(const entry of state.pending){
   if(!sessionValid())break;
+  if(paused.has(JSON.stringify([entry.questId,entry.operationId??null]))){blockedQuests.add(entry.questId);continue}
   if(blockedQuests.has(entry.questId))continue;
   try{
    const result=await commit(entry.questId,entry.reward);
@@ -71,8 +76,11 @@ export async function replayCanonicalVictoryOutbox(outbox,userId,commit,{session
    // Its retained intent is safe to retry through the idempotent ledger.
    try{await outbox.acknowledge(userId,entry.questId,entry.reward,entry.operationId)}catch{report('cleanup')}
   }catch(error){
-   blockedQuests.add(entry.questId);report('commit');
-   if(error?.retryScope==='session')break;
+   if(!sessionValid())break;
+   const classification=classifyCanonicalRecoveryError(error);
+   blockedQuests.add(entry.questId);report(classification.kind==='retry'?'commit':classification.kind);
+   if(classification.kind!=='retry'&&outbox.pause){try{await outbox.pause(userId,entry,error)}catch{report('pause_storage')}}
+   if(classification.kind==='auth'||error?.retryScope==='session')break;
    // Preserve this quest's order while allowing independent victories to recover.
   }
  }
