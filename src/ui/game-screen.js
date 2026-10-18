@@ -348,7 +348,7 @@ async function retryPendingCanonicalOutboxOnReconnect(){
   try{remaining=await canonicalVictoryOutbox.pending(userId)}catch(error){recordCloudDiagnostic("canonical_outbox_read_failed",{reason:"integrity"});return}
   if(!sessionValid()||!remaining.length)return;
   const confirmed=await replayCanonicalVictoryOutbox(canonicalVictoryOutbox,userId,
-   (questId,reward)=>commitCanonicalVictory(client,questId,reward),{sessionValid,onIssue:issue=>recordCloudDiagnostic("canonical_outbox_recovery_pending",{reason:issue.kind})});
+   (questId,reward,options)=>commitCanonicalVictory(client,questId,reward,options),{sessionValid,onIssue:issue=>recordCloudDiagnostic("canonical_outbox_recovery_pending",{reason:issue.kind})});
   if(!sessionValid())return;
   if(confirmed.length){
    recordCloudDiagnostic("canonical_outbox_reconnect_replayed",{count:confirmed.length});
@@ -422,7 +422,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   try{await canonicalVictoryOutbox.resume(accountId,{kind:'auth'})}catch{recordCloudDiagnostic("canonical_outbox_resume_pending",{reason:"storage"})}
   if(!sessionValid())return;
   const recovered=await replayCanonicalVictoryOutbox(canonicalVictoryOutbox,accountId,
-   (questId,reward)=>commitCanonicalVictory(hydrationClient,questId,reward),{sessionValid});
+   (questId,reward,options)=>commitCanonicalVictory(hydrationClient,questId,reward,options),{sessionValid});
   if(!sessionValid())throw Error("Session changée pendant la reprise");
   if(recovered.length){
    cloud=await loadVerifiedProfile(hydrationClient);
@@ -1869,7 +1869,7 @@ async function celebrateCanonicalSuccess(){
    if(!cloudProfileReady)throw Error("Victoire conservée localement, cloud non prêt");
    if(!(await confirmCloudReward()))return;
    if(!sameVictoryContext())return;
-   committed=await commitCanonicalVictory(ownerClient,q.id,pending.reward);
+   committed=await commitCanonicalVictory(ownerClient,q.id,pending.reward,{operationId:pending.operationId,userId:ownerId,sessionValid:sameVictoryContext});
    if(!sameVictoryContext())return;
    if(!committed.profile?.canonicalQuestState?.[q.id]?.solved)throw Error("Victoire non confirmée par le cloud");
    // Remote victory was read back successfully. A local quota/storage error
