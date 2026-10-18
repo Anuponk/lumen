@@ -26,6 +26,8 @@ Phase 2: `npm run test:affected` / `node scripts/test-affected.mjs` selects the 
 
 ## Browser / aggregate commands
 
+Phase 2 follow-up: `admin-catalogue.test.mjs`, `generated-adventure-map.test.mjs`, `staged-adventure.test.mjs` and `extended-boundary.test.mjs` now run inside the gate. Their obsolete catalogue/access expectations are corrected with retained identity, locked-access and historical-save assertions; [causes and red/green evidence](../TESTING.md#follow-up-four-obsolete-standalone-suites-corrected).
+
 - `node scripts/quality-gate.mjs`: authoritative list of currently orchestrated Node suites plus seven browser runners. Starts its own server/browser and writes reports under `docs/validation/`. Needs Chrome/Chromium/Edge; set `LUMEN_CHROME_BIN` if needed. Some differential suites need Git and their historical baseline. Do not infer total case counts from old reports.
 - Browser runners: `scripts/account-session-browser-tests.mjs`, `scripts/browser-tests.mjs`, `scripts/ux-cleanup-tests.mjs`, `scripts/learning-browser-tests.mjs`, `scripts/late-game-browser-tests.mjs`, `scripts/sky-navigation-browser-tests.mjs`, `scripts/canonical-replay-browser-tests.mjs`. Prefer aggregate orchestration; standalone setup/server/CDP/report arguments are documented in `docs/TESTING.md` and runner headers. Use isolated temporary profiles.
 - `await window.runHintTests()` and `await window.lumenDiagnostics.runAllHintTests()` execute `src/testing/hint-tests.js`; these exercise real local state. Never use a player's authenticated profile. `scripts/engine-equivalence.mjs` and `scripts/ui-equivalence.mjs` compare a historical baseline; check setup in `docs/TESTING.md` first.

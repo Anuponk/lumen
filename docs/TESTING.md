@@ -99,8 +99,8 @@ standalone suites, four failed: `admin-catalogue.test.mjs` and
 `extended-boundary.test.mjs` expects all historical/generated content accessible;
 `staged-adventure.test.mjs` expects staging-only access. All four failures and the
 identical viewport error were reproduced in an untouched `449c7bd` worktree.
-They remain visible failures, without relaxed assertions. The gate stops at the
-browser failure; later runners require separate execution.
+These were the initial failures; their corrections are recorded below. The gate
+stops at the browser failure; later runners require separate execution.
 
 Those five remaining runners were then executed through the existing server/CDP
 orchestration on dedicated ports: UX cleanup, learning (including real drag and
@@ -122,6 +122,34 @@ Plan checks verified clean HEAD → no runtime checks, absent reference → full
 fallback, and the PR branch → full mode for tooling/setup changes. Generated
 untracked validation reports also widen conservatively; archive/clean those
 reports before the next iteration to avoid an unnecessary full rerun.
+
+### Follow-up: four obsolete standalone suites corrected
+
+All four suites were rerun on `7434c5d` and exited 1 before edits. The causes were
+confirmed against the product access contract and Git history, without changing
+application code, content, save keys or entitlement rules:
+
+| Suite | Correction and retained protection |
+|---|---|
+| `admin-catalogue.test.mjs` | Compare complete pack/constellation identities and numeric quest coverage with the owning registry/manifest. Include canonical reservations without fabricating numeric save keys; retain generated quest identities and difficulty checks. Reserved constellations were registered in `f1abdfe` (#399). |
+| `generated-adventure-map.test.mjs` | Include base, generated and reserved constellations; check map membership, historical pack/index anchors, locked default, ownership and retained started access. No replacement of 34 with another fixed total. |
+| `extended-boundary.test.mjs` | Separate the catalogue boundary from fresh-player access. Test restored started history, generated entitlement, locked gaps and all-pack ownership. Preserve the frozen historical completion cases and variable-size metadata fixture; see `PROGRESSION.md`, Adventures and access. |
+| `staged-adventure.test.mjs` | Distinguish immutable snapshot provenance (`staging-only`) from current map registration (`e7bbc93`, #199) and playable bridge (#203). Retain historical indices and audit checks; verify every generated playable ID, audited solution and locked default. |
+
+Run each with `node scripts/<suite>`: all four now exit 0 (nine native test cases).
+Each corrected suite was also run against one deliberate defect in an isolated
+copy: omitted admin reservation, omitted map reservations, bypassed locked access,
+or changed generated save ID. Controls exit 0; all four defects yield exit 1.
+This checks that updating obsolete expectations retained meaningful regressions.
+
+The four suites are now in `quality-gate-suites.mjs`, so existing GitHub CI executes
+them before browser checks; full mode no longer repeats them as standalone tests.
+`node scripts/test-affected.mjs --full` was rerun: all 89 gate Node suites and all
+28 supplemental Node suites pass, as does the cloud policy check. Local full mode
+still exits 1 solely on the previously reproduced Edge viewport overflow (3 px at
+375×667); account-session browser and embedded hint checks pass before that
+failure. The other five browser runners passed earlier on unchanged application
+code and were not repeated. The final PR records CI results for the new commit.
 
 ## Account modes and session transitions
 

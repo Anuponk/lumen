@@ -2,23 +2,34 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {extendedSequentialCount,nextAdventureBoundary,extendedQuestLimit} from "../src/campaign/extended-boundary.js";
 import {campaignQuestCount,sequentialCount} from "../src/campaign/progression.js";
-const legacy=Object.fromEntries(Array.from({length:196},(_,i)=>[i,true]));
+import {CONTENT_PACKS,baseCampaignQuestCount} from "../src/campaign/content.js";
+import {STAGED_ADVENTURE} from "../src/campaign/staged-adventure.js";
+import {playableQuestCount} from "../src/campaign/playable-quests.js";
+const legacyEnd=baseCampaignQuestCount();
+const generated=CONTENT_PACKS.find(p=>p.id===STAGED_ADVENTURE.pack.id);
+const included=CONTENT_PACKS.find(p=>p.access==="included");
+const legacy=Object.fromEntries(Array.from({length:legacyEnd},(_,i)=>[i,true]));
 test("historical progress stays capped at 196",()=>{
  assert.equal(campaignQuestCount(),196);
  assert.equal(sequentialCount({...legacy,196:true}),196);
  assert.equal(extendedSequentialCount(legacy),196);
 });
 test("new adventure stays locked without entitlement",()=>{
- assert.equal(extendedQuestLimit(),196);
+ assert.equal(extendedQuestLimit(),included.questIndices.at(-1)+1,'fresh players only access the included Adventure');
+ assert.equal(extendedQuestLimit([],{solved:legacy}),legacyEnd,'restored history retains started Adventures only');
  const boundary=nextAdventureBoundary(legacy);
  assert.equal(boundary.status,"locked");
- assert.equal(boundary.index,196);
+ assert.equal(boundary.index,legacyEnd);
+ assert.equal(boundary.packId,generated.id);
 });
-test("entitlement enables 100 generated quests",()=>{
- assert.equal(extendedQuestLimit(["real-adventure-04"]),296);
- const boundary=nextAdventureBoundary(legacy,["real-adventure-04"]);
+test("generated entitlement respects earlier locked packs and restored history",()=>{
+ assert.equal(extendedQuestLimit([generated.id]),included.questIndices.at(-1)+1,'ownership cannot bypass a locked gap');
+ assert.equal(extendedQuestLimit([generated.id],{solved:legacy}),playableQuestCount());
+ assert.equal(extendedQuestLimit(CONTENT_PACKS.map(p=>p.id)),playableQuestCount());
+ const boundary=nextAdventureBoundary(legacy,[generated.id]);
  assert.equal(boundary.status,"ready");
- assert.equal(boundary.quest.index,196);
+ assert.equal(boundary.quest.index,legacyEnd);
+ assert.equal(boundary.quest.id,STAGED_ADVENTURE.quests[0].id);
 });
 test("new progress does not alter legacy completion",()=>{
  const solved={...legacy,196:true,197:true};
