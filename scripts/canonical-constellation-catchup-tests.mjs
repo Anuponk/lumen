@@ -20,5 +20,5 @@ const incomplete={solved:{...solved},canonicalQuestState:{}};
 delete incomplete.solved[legacy[0].legacyIndex];
 assert.equal(canonicalConstellationCatchupAvailable(added[0],incomplete),false,"No premature unlock when original quests unfinished");
 const screen=fs.readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
-assert.match(screen,/canonicalConstellationCatchupAvailable\(quest,lumenProgress\)/,"The UI must use catch-up eligibility");
+assert.match(screen,/canonicalInsertedQuestDecision\(quest,lumenProgress,/,"The UI must use the shared inserted-quest decision");
 console.log("Canonical constellation catch-up rules passed, including Verseau");

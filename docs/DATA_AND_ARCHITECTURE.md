@@ -10,6 +10,29 @@ No player-data schema or reward reconciliation policy changes with these account
 
 ## Cloud persistence contract
 
+Catalogue access (#470): `catalogueOrigin` is a positive published catalogue
+revision in the existing profile JSON. New local campaigns carry the current
+revision; unversioned nonempty profiles retain the frozen legacy cohort. Empty
+profiles are classified as current before their first victory. An explicit
+server origin is immutable: migration
+`20261018200805_catalogue_origin_access.sql` validates revisions and rejects old
+full snapshots deleting/changing it. The trigger inserts no player progress,
+entitlements or rewards and performs no backfill. It is a private invoker trigger
+with an empty search path and no client execution grant.
+
+Cloud coverage/reconciliation recognizes the field explicitly. The verified
+server cohort dominates an unversioned old-client cache; contradictory explicit
+cohorts are held for review. No balance maximum or reward reapplication is added.
+Local fresh/corrupt-storage fallbacks stamp the current revision, while old
+nonempty saves remain unchanged. Canonical direct lookup also applies the shared
+progression policy, separately from entitlement checks. Unknown origins require
+an updated client; keep all saves and pending intents.
+
+Apply the additive migration only with separate production approval, before
+the client release. Rollback retains the guard, origin archive and profile field;
+an old client dropping the field is refused, with its pending data preserved.
+No Auth configuration or shared SoldeZen namespace is changed.
+
 Historical command cutover (#391, production migration approved/applied on 2026-10-18
 `20261018193133_legacy_victory_commands.sql`): immutable per-account
 `attemptId-reset-resetCount` facts use `lumen_commit_legacy_command` and

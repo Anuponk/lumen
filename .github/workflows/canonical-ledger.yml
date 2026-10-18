@@ -65,3 +65,7 @@ jobs:
             -f /tmp/lumen-legacy-parity.sql \
             -f scripts/fixtures/legacy-command-receipts.sql
           python3 scripts/legacy-command-concurrency.py
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f scripts/fixtures/catalogue-origin-before.sql \
+            -f supabase/migrations/20261018200805_catalogue_origin_access.sql \
+            -f scripts/fixtures/catalogue-origin.sql

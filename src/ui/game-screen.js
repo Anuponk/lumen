@@ -5,6 +5,7 @@ import {createAnalytics,attemptAnalyticsProperties} from "../analytics/events.js
 import {createHintTestSuite} from "../testing/hint-tests.js";
 import {createDiagnostics} from "../testing/diagnostics.js";
 import {createLocalPersistence} from "../persistence/local.js";
+import {currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
 import {createCloudPersistence} from "../persistence/cloud.js";
 import {reconcileDailyIntoCloudProfile} from "../persistence/daily-hydration.js";
 import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievements,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles} from "../persistence/cloud-profile.js";
@@ -24,7 +25,7 @@ import {LUMEN_META,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATI
 import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt,badgeCooldownRemaining,badgeCooldownLabel} from "../campaign/performance.js";
 import {challengeEligibility,challengeSnapshot,compareChallenge,createChallengeClient,normalizeChallengeName,validChallengeName} from "../campaign/social-challenge.js";
 import {resolveChallengeQuest} from "../campaign/canonical-challenges.js";
-import {canonicalDisplayForLegacy,canonicalQuestList,canonicalAdventureSummary,canonicalQuestByOrdinal,canonicalQuestForLegacy,canonicalNextUnsolved,canonicalConstellationCatchupAvailable,unlockedAdventureProgress} from "../campaign/canonical-quests.js";
+import {canonicalDisplayForLegacy,canonicalQuestList,canonicalAdventureSummary,canonicalQuestByOrdinal,canonicalQuestForLegacy,canonicalNextUnsolved,canonicalCampaignQuestDecision,canonicalInsertedQuestDecision,unlockedAdventureProgress} from "../campaign/canonical-quests.js";
 import {acknowledgeCanonicalVictory,commitCanonicalVictoryViaLedger as commitCanonicalVictory,questIsCompleted} from "../persistence/canonical-progress.js";
 import {replayCanonicalVictoryOutbox} from "../persistence/canonical-outbox.js";
 import {createDurableCanonicalVictoryOutbox} from "../persistence/durable-canonical-outbox.js";
@@ -416,7 +417,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   const accountId=lumenUser.id;
   hydrationStage="cloud_restore";
   const existing=await loadVerifiedProfile(lumenSupabase);
-  const fresh={...incoming,solved:{},historyBackup:{},badges:{},stars:{},performances:{},noHint:{},xp:0,skyScore:0,shards:3};
+  const fresh={...incoming,solved:{},historyBackup:{},badges:{},stars:{},performances:{},noHint:{},xp:0,skyScore:0,shards:3,catalogueOrigin:currentCatalogueOrigin};
   hydrationStage="cloud_initialize";
   let cloud=existing||await initializeCloudProfile(lumenSupabase,currentOwner===accountId?incoming:fresh);
   // Resume verified canonical victory intents before installing the cloud profile.
@@ -1215,30 +1216,16 @@ const {validateGuardians,key,solutions,isAutoCross,verificationErrors,guardianCo
 function currentQuestLimit(){return extendedQuestLimit(lumenEntitlements,lumenProgress,attemptEngine.snapshot())}
 function currentQuestPosition(){return Math.min(extendedSequentialCount(lumenProgress.solved),currentQuestLimit()-1)}
 function legacyIndexForActiveChallenge(challenge){const quest=resolveChallengeQuest(challenge);if(quest.legacyIndex===null)throw new Error("Ce défi utilise une nouvelle quête : active la migration du catalogue avant de le lancer.");return quest.legacyIndex}
-// Existing players who passed an inserted slot before the migration may
-// continue at their next historical quest. Their earlier missing grids stay
-// available in Mon ciel, without marking them completed or awarding XP.
+// The same catalogue policy protects historical continuation and map access.
 function historicalContinuationAllowed(index){
- if(!Number.isInteger(index)||index<1||lumenProgress.solved?.[index])return false;
- const previous=canonicalQuestForLegacy(index-1);
+ const quest=canonicalQuestForLegacy(index);
  const first=canonicalNextUnsolved(lumenProgress.solved,lumenProgress.canonicalQuestState||{});
- return !!previous&&!!first&&previous.ordinal>first.ordinal&&
-  !!lumenProgress.solved?.[index-1]&&index===extendedSequentialCount(lumenProgress.solved);
-}
-// A player who completed a later quest may revisit earlier inserted quests.
-// Keep pack entitlement and cloud readiness checks in the callers.
-function historicallyPassedCanonicalQuest(quest){
- if(!quest)return false;
- return canonicalQuestList().some(later=>later.packId===quest.packId&&later.ordinal>quest.ordinal&&
-  (later.legacyIndex!==null?!!lumenProgress.solved?.[later.legacyIndex]:!!lumenProgress.canonicalQuestState?.[later.id]?.solved));
+ return !!quest&&!lumenProgress.solved?.[index]&&!!first&&quest.ordinal>first.ordinal&&questIsAccessible(index);
 }
 function questIsAccessible(index){
- const accessible=contentAccessForLegacyQuest(index,lumenEntitlements,undefined,lumenProgress,attemptEngine.snapshot()).accessible;
- if(!accessible)return false;
- if(lumenProgress.solved?.[index])return true;
- // Canonical order is authoritative for *new* quest unlocks. Historical
- // indexes remain keys in existing saves but cannot bypass inserted grids.
- return canonicalNextUnsolved(lumenProgress.solved,lumenProgress.canonicalQuestState||{})?.legacyIndex===index||historicalContinuationAllowed(index)||historicallyPassedCanonicalQuest(canonicalQuestForLegacy(index));
+ return canonicalCampaignQuestDecision(canonicalQuestForLegacy(index),lumenProgress,{
+  entitlements:lumenEntitlements,attempt:attemptEngine.snapshot()
+ }).status==='ready';
 }
 function choose(){if(canonicalActiveQuest){puz={reg:canonicalActiveQuest.reg,sol:canonicalActiveQuest.sol,audit:canonicalActiveQuest.audit,difficulty:canonicalActiveQuest.difficulty};n=puz.reg.length;return}levelIndex=Math.max(0,Math.min(levelIndex,currentQuestLimit()-1));if(!socialChallenge&&!questIsAccessible(levelIndex)){while(levelIndex>0&&!questIsAccessible(levelIndex))levelIndex--;replayMode=!!lumenProgress.solved[levelIndex]}const resolved=playableQuest(levelIndex);if(!resolved)throw new Error("Missing campaign quest "+levelIndex);puz=resolved.source==="generated"?{reg:resolved.reg,sol:resolved.sol,audit:resolved.audit,difficulty:resolved.difficulty}:resolved.size===6?CAT["6"][CAMPAIGN6_ORDER[CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]]]:CAT[String(resolved.size)][CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]];n=puz.reg.length;last[n]=levelIndex}
 function loadPuzzle(){init();}
@@ -1588,16 +1575,22 @@ function adminAlerts(rows){
  for(const r of rows||[]){const started=Number(r.started)||0,completed=Number(r.completed)||0;if(started<3)continue;const rate=started?completed/started:0;if(rate<.55)alerts.push("Q"+r.puzzle_id+" : seulement "+Math.round(rate*100)+" % des joueurs observés terminent la quête ("+started+" joueurs).");if(Number(r.resets)>=started)alerts.push("Q"+r.puzzle_id+" : resets élevés ("+r.resets+" pour "+started+" joueurs).");if(Number(r.hints)>started*.8)alerts.push("Q"+r.puzzle_id+" : indices très utilisés ("+r.hints+").")}
  return alerts.slice(0,6);
 }
-// Canonical map preview: all quests, including unpublished ones, are visible
-// while gameplay remains on the legacy save engine. No new quest may be
-// launched until transactional progression and reward writes are integrated.
-// Only the first incomplete quest in canonical order may start.
-function canonicalQuestAvailable(quest){
- if(!quest||quest.legacyIndex!==null)return false;
- if(!qaActive&&(!lumenUser||!cloudProfileReady))return false;
- // Completed stable-ID quests remain replayable, just like legacy quests.
- if(lumenProgress.canonicalQuestState?.[quest.id]?.solved)return true;
- return canonicalNextUnsolved(lumenProgress.solved,lumenProgress.canonicalQuestState||{})?.id===quest.id||historicallyPassedCanonicalQuest(quest)||canonicalConstellationCatchupAvailable(quest,lumenProgress);
+function canonicalQuestAccess(quest){
+ return canonicalInsertedQuestDecision(quest,lumenProgress,{
+  entitlements:lumenEntitlements,attempt:attemptEngine.snapshot(),
+  signedIn:qaActive||!!lumenUser,cloudReady:qaActive||cloudProfileReady
+ });
+}
+function canonicalQuestAvailable(quest){return canonicalQuestAccess(quest).status==='ready'}
+function canonicalQuestLockReason(quest){
+ const decision=canonicalQuestAccess(quest);
+ if(decision.status==='pack-locked')return 'Cette Aventure n’est pas débloquée';
+ if(decision.status==='auth-required')return 'Connecte-toi pour jouer cette quête';
+ if(decision.status==='sync-required')return 'Synchronisation du compte requise';
+ if(decision.status==='missing-content')return 'Contenu indisponible dans cette version';
+ if(decision.status==='catalogue-incompatible')return 'Mets Lumen à jour pour ce catalogue';
+ const prerequisite=canonicalQuestList().find(q=>q.id===decision.questId);
+ return prerequisite?'Termine d’abord la quête '+prerequisite.ordinal:'Termine les quêtes précédentes';
 }
 function startCanonicalQuest(quest){
  if(!canonicalQuestAvailable(quest))return false;
@@ -1616,7 +1609,7 @@ function renderCanonicalJourneyPreview(){
   const sheet=modal.querySelector(".map-sheet");if(!sheet)return;sheet.appendChild(section)}
  section.replaceChildren();
  const title=document.createElement("h3");title.textContent="Toutes les Aventures";section.appendChild(title);
- const warning=document.createElement("p");warning.textContent="Les quêtes sont présentées dans leur ordre réel. La prochaine nouvelle grille se débloque dès que les quêtes précédentes sont réussies et que le compte est synchronisé.";
+ const warning=document.createElement("p");warning.textContent="Les quêtes suivent leur ordre de progression. Les étapes déjà débloquées restent accessibles quand le catalogue s’agrandit. Les nouvelles grilles restent à réussir, avec un compte synchronisé.";
  section.appendChild(warning);
  for(const adventure of canonicalAdventureSummary(lumenProgress)){
   const group=document.createElement("details"),heading=document.createElement("summary");
@@ -1631,7 +1624,7 @@ function renderCanonicalJourneyPreview(){
     const available=legacy===null?canonicalQuestAvailable(quest):questIsAccessible(legacy);
     const button=document.createElement("button");button.type="button";button.className="puzzle-card"+(solved?" done":"")+(available?"":" locked");
     button.textContent="Quête "+quest.ordinal+" · "+quest.difficulty.label+(solved?" ✓":!available?" · verrouillée":"");
-    button.title=available?(solved?"Rejouer la quête":"Jouer la quête"):(!qaActive&&(!lumenUser||!cloudProfileReady)?"Connexion et synchronisation requises":"Termine d’abord les quêtes précédentes");
+    button.title=available?(solved?"Rejouer la quête":"Jouer la quête"):legacy===null?canonicalQuestLockReason(quest):'Termine d’abord les quêtes précédentes';
     button.disabled=!available;button.dataset.questId=quest.id;
     if(available)button.onclick=()=>{if(legacy===null){startCanonicalQuest(quest);return}if(solved){startReplay(legacy);return}canonicalActiveQuest=null;levelIndex=legacy;replayMode=false;modal.hidden=true;loadPuzzle();refreshJourney()};
     list.appendChild(button);
@@ -2537,7 +2530,7 @@ const skyNavigation=createSkyNavigation({document,getModel:()=>mapCatalogueOverr
  getSolved:i=>!!lumenProgress.solved[i],
  getCanonicalQuests:id=>canonicalQuestList().filter(q=>q.constellationId===id),
  getCanonicalSolved:q=>questIsCompleted(lumenProgress,q.id),
- getCanonicalAvailable:q=>canonicalQuestAvailable(q),getCanonicalPackQuests:id=>canonicalQuestList().filter(q=>q.packId===id),
+ getCanonicalAvailable:q=>q.legacyIndex!==null?questIsAccessible(q.legacyIndex):canonicalQuestAvailable(q),getCanonicalLockReason:quest=>canonicalQuestLockReason(quest),getCanonicalPackQuests:id=>canonicalQuestList().filter(q=>q.packId===id),
  onCanonicalQuest:q=>startCanonicalQuest(q),getLit:entry=>CONSTELLATIONS[entry.legacyIndex]?constellationLitAt(entry.legacyIndex):0,getShape:entry=>astronomicalDisplayShape(entry.shape||CONSTELLATIONS[entry.legacyIndex]),getMastered:entry=>{const eligible=Array.from({length:entry.questCount},(_,offset)=>entry.questStart+offset).filter(i=>currentPerformanceEligibility(i).mastery);return eligible.length>0&&eligible.every(i=>lumenProgress.performances?.[i]?.badges?.mastery)},getBadgeCounts:entry=>{const badges={autonomy:0,speed:0,noError:0,mastery:0};const quests=entry.constellations?canonicalQuestList().filter(q=>q.packId===entry.id):canonicalQuestList().filter(q=>q.constellationId===entry.id);for(const quest of quests){const earned=quest.legacyIndex!==null?lumenProgress.performances?.[quest.legacyIndex]?.badges:lumenProgress.canonicalQuestState?.[quest.id]?.badges;for(const key of Object.keys(badges))if(earned?.[key])badges[key]++}return badges},onConstellation:entry=>{if(entry.canonicalOnly)return;if(mapConstellationRange(entry.legacyIndex)){mapConstellation=entry.legacyIndex;renderMap()}}});
 const SKY_TOUR_STEPS=[
  {target:"skyNavigation",title:"Ciels et Aventures",copy:"Choisis un Ciel, puis une Aventure. Les autres restent compactes ; un cadenas indique un contenu verrouillé. Consulter une autre Aventure ne change pas ta progression."},
@@ -2686,7 +2679,8 @@ function renderMap(){
     button.className="puzzle-card"+(solved?" done":"")+(available&&!solved?" current":"")+(!available&&!solved?" locked":"")+(solved&&legacy!==null&&badgeCooldownRemaining(lumenProgress.performances?.[legacy])?" badge-on-cooldown":"");
     button.dataset.questId=quest.id;
     button.title="Quête "+quest.ordinal+(solved?(available?" · terminée, rejouable":" · terminée, compte à synchroniser"):available?" · disponible":(!qaActive&&(!lumenUser||!cloudProfileReady)?" · connexion et synchronisation requises":" · termine d’abord les quêtes précédentes"));
-    const lockReason=!qaActive&&(!lumenUser||!cloudProfileReady)?"Connecte-toi pour synchroniser ta progression":"Termine les quêtes précédentes";
+    const lockReason=legacy===null?canonicalQuestLockReason(quest):!qaActive&&(!lumenUser||!cloudProfileReady)?"Connecte-toi pour synchroniser ta progression":"Termine les quêtes précédentes";
+    if(!available&&legacy===null)button.title='Quête '+quest.ordinal+' · '+lockReason;
      button.innerHTML=legacy!==null&&solved?performanceBadges(legacy):solved?canonicalPerformanceBadges(quest.id):available?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+quest.ordinal+'</span>' :'<span class="puzzle-lock-only" aria-hidden="true">🔒</span>';
      button.setAttribute("aria-label",`Quête ${quest.ordinal} · ${available?(solved?"terminée, rejouable":"disponible"):lockReason}`);
     button.disabled=!available;

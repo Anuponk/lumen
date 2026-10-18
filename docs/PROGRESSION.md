@@ -67,7 +67,44 @@ A quest has a **15-minute qualification cooldown** based on `lastQualifiedAt`; r
 Existing performance data must be migrated conservatively; never infer newly earned badges from an incompatible legacy record.
 
 ## Progress integrity
-Only victory unlocks the next unsolved quest. Persisted solved history is normalized to a continuous prefix. A player may revisit solved quests but may not jump ahead to locked content.
+
+### Catalogue additions and acquired access (#470)
+
+`catalogueOrigin` identifies the immutable catalogue at the start of a player's
+campaign, not the currently displayed numbering. Revision 1 freezes the numeric
+legacy campaign; revision 2 freezes the expanded canonical catalogue. New local
+campaigns and empty server profiles start at the current revision. A nonempty
+unversioned save uses revision 1 for compatibility; this is an explicit legacy
+cohort rule, not an inferred date for individual victories.
+
+`catalogue-access.js` owns campaign availability. Completed quests remain
+replayable. The first unfinished quest in the origin catalogue remains available
+after insertions, independently of newly added earlier prerequisites. New quests
+in an acquired constellation follow that constellation's current local order.
+An adventure completed in the origin catalogue also opens the first unfinished
+quest of each newly added constellation. Merely starting an adventure does not
+open all its future constellations. New players follow their current catalogue
+sequence. Pack ownership remains a separate prerequisite; inserted quests also
+require authentication and verified cloud hydration.
+
+Map cards, the catalogue list, sky callbacks, direct starts and canonical
+navigation use the same policy. Historical numeric continuation delegates to it.
+Reasons distinguish missing rights, authentication, hydration, prerequisites and
+unsupported catalogue metadata. Access does not solve quests or award XP, stars,
+badges, currency or adventure-completion rewards. Current completion counters
+still count actual victories in the expanded catalogue.
+
+Publish additions by appending an immutable revision to
+`content/catalogue/access-origins.json` and an additive server-cohort migration.
+Retain all prior revisions, stable IDs and numeric save keys. The mandatory
+compatibility gate rejects missing metadata, changed puzzle hashes, removed IDs
+and future constellation/adventure moves. The already deployed legacy-to-current
+constellation move remains represented in revisions 1–2. Other incompatible changes require a separately
+specified migration; they are not silently supported by renumbering.
+The origin is retained across cloud restore and old writers cannot erase or
+rewrite an explicit server origin. Conflicting explicit cohorts require review.
+No player backfill, storage purge or active-attempt rewrite is part of this fix.
+Only victory unlocks the next unsolved quest. Historical numeric solved history is normalized to a continuous prefix. New campaigns cannot skip prerequisites; the acquired-access compatibility policy above preserves older frontiers without fabricating completions.
 
 Quest loading and cloud restoration must clamp to `campaignQuestCount() - 1`, derived from the current content schedule. After the wave 2 expansion (#94), quest 100 is no longer terminal. Its normal victory CTA loads quest 101; a reload or cloud restoration of 100 completed quests also resumes quest 101. Only the actual final quest stops continuation. Navigation preserves earned rewards, badges and history.
 

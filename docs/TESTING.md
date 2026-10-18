@@ -172,6 +172,19 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Catalogue access (#470): mandatory Node gates `catalogue-access-tests.mjs`,
+`catalogue-origin-cloud-tests.mjs` and `catalogue-compatibility-tests.mjs` cover the failing A/B regression, existing and
+wholly new constellations, incomplete adventures, local ordering, repeated
+additive waves, renumbering, replay, pack/auth/cloud refusals, the actual UI start
+adapter, and all current quests with a new-player save/reload after each victory.
+The frozen origin manifest must match published content, retain prior identities,
+save keys and puzzle hashes, and have a matching additive server revision.
+`fixtures/catalogue-origin.sql` runs after the existing real ledger fixtures in
+disposable PostgreSQL 17: empty/new versus historical cohorts, old backup/CAS
+refusal, immutable markers, unknown origins and unaffected preferences/spending.
+Never run these fixtures against player data. Synthetic fixtures are not proof
+of deployment or resolution on an affected mobile account.
+
 Historical migration: `legacy-command-client-tests.mjs` is a mandatory Node gate
 for exact receipt/current projection, lost replies, account changes, no duplicate
 reward, namespace isolation and existing hint/badge/challenge rules.

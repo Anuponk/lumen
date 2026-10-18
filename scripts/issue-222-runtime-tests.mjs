@@ -23,8 +23,10 @@ assert.equal(canonicalNextUnsolved(Object.fromEntries(quests.filter(q=>q.legacyI
 assert.equal(canonicalNextUnsolved({"0":true},{}).ordinal,2);
 assert.equal(resolveCanonicalQuest(1).status,"ready");
 assert.equal(resolveCanonicalQuest(101).status,"locked");
-assert.equal(resolveCanonicalQuest(101,["real-adventure-02"]).status,"ready");
-assert.equal(resolveCanonicalQuest(100,[],{legacyAdventureAccess:["base-real-sky"]}).status,"ready");
+assert.equal(resolveCanonicalQuest(101,["real-adventure-02"]).status,"prerequisite","Ownership alone cannot skip campaign prerequisites");
+assert.equal(resolveCanonicalQuest(100,[],{legacyAdventureAccess:["base-real-sky"]}).status,"prerequisite");
+const completedFirst={catalogueOrigin:2,solved:Object.fromEntries(quests.slice(0,100).filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1])),canonicalQuestState:Object.fromEntries(quests.slice(0,100).filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true}]))};
+assert.equal(resolveCanonicalQuest(101,["real-adventure-02"],completedFirst).status,"ready");
 assert.equal(nextCanonicalQuest({},{}).ordinal,1);
 const sums=canonicalAdventureSummary({solved:{"0":true,"195":true,"295":true}});
 assert.equal(sums.length,4);
@@ -80,7 +82,7 @@ for(const q of quests.filter(q=>q.legacyIndex===null)){
  assert.equal(q.audit.solutions,1);
  assert(q.reg.length>=6);
 }
-assert.match(gameScreen,/canonicalNextUnsolved\(lumenProgress\.solved,lumenProgress\.canonicalQuestState\|\|\{\}\)\?\.legacyIndex===index/);
+assert.match(gameScreen,/canonicalCampaignQuestDecision\(canonicalQuestForLegacy\(index\),lumenProgress,/);
 assert.match(gameScreen,/const legacy=quest\.legacyIndex,solved=legacy!==null\?!!lumenProgress\.solved/);
 assert.match(gameScreen,/function historicalContinuationAllowed\(index\)/);
 assert.match(gameScreen,/const played=canonicalActiveQuest\|\|canonicalQuestForLegacy\(levelIndex\)/);
@@ -88,14 +90,13 @@ assert.match(gameScreen,/openJourneyMap\(true,\{detail:true,advanceOnClose:true,
 const skyNavigationSource=fs.readFileSync(new URL("../src/ui/sky-navigation.js",import.meta.url),"utf8");
 assert.match(skyNavigationSource,/open\(\{detail:showDetail=false,questIndex=null,constellationId=null\}/);
 assert.match(skyNavigationSource,/Number\.isInteger\(questIndex\)\?questIndex:getQuest\(\)/);
-assert.match(gameScreen,/previous\.ordinal>first\.ordinal/);
-assert.match(gameScreen,/index===extendedSequentialCount\(lumenProgress\.solved\)/);
+assert.match(gameScreen,/quest\.ordinal>first\.ordinal&&questIsAccessible\(index\)/);
 assert.match(gameScreen,/canonicalFollowing\?\.legacyIndex===null&&!historicalContinuationAllowed\(levelIndex\+1\)/);
 console.log("Canonical 400-quest registry: stable identity, legacy save keys and pagination verified");
 
 // #322: the last (often stable-ID) quest of a constellation must remain
 // playable after completion; locked states must explain the prerequisite.
-assert.match(gameScreen,/if\(lumenProgress\.canonicalQuestState\?\.\[quest\.id\]\?\.solved\)return true/);
+assert.match(gameScreen,/function canonicalQuestAvailable\(quest\)\{return canonicalQuestAccess\(quest\).status==='ready'\}/);
 assert.match(gameScreen,/terminée, rejouable/);
 assert.match(gameScreen,/termine d’abord les quêtes précédentes/);
 const constellationEnds=quests.filter((q,i)=>i===quests.length-1||quests[i+1].constellationId!==q.constellationId);

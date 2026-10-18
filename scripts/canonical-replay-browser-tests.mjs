@@ -80,6 +80,39 @@ async function openDetail(){
  await evaluate('document.getElementById("openSky").click()');
  await evaluate('document.querySelector(\'#sectorTabs [data-content-id="real-01"]\').click()');
 }
+async function verifyHistoricalCatalogue(viewport){
+ const all=canonicalQuestList(),packId='real-adventure-03';
+ const old=all.filter(q=>q.legacyIndex!==null&&q.packId!== 'real-adventure-04');
+ const groups=[...new Set(all.filter(q=>q.packId===packId).map(q=>q.constellationId))]
+  .map(id=>all.filter(q=>q.constellationId===id)).filter(group=>group.every(q=>q.legacyIndex===null));
+ assert.ok(groups.length>0);
+ const progress={solved:Object.fromEntries(old.map(q=>[q.legacyIndex,1])),badges:{historical:1},xp:123,shards:7,canonicalQuestState:{}};
+ await evaluate(`localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(progress))});localStorage.removeItem('lumenQaActiveAttemptV1');localStorage.removeItem('lumenActiveAttemptV1')`);
+ await navigateAndWait({send,evaluate},'Page.reload');await acknowledgeLearningMilestones(evaluate);
+ const before=await evaluate('JSON.stringify(lumenDiagnostics.snapshot().progress)');
+ await evaluate('document.getElementById("openSky").click()');
+ await evaluate(`document.querySelector('#adventureRail [data-pack-id="${packId}"]').click()`);
+ for(const group of groups){
+  const id=group[0].constellationId;
+  let visible=await evaluate(`!!document.querySelector('#sectorTabs [data-content-id="${id}"]')`);
+  if(!visible){await evaluate('document.getElementById("constellationNext").click()');visible=await evaluate(`!!document.querySelector('#sectorTabs [data-content-id="${id}"]')`)}
+  assert.ok(visible);
+  assert.equal(await evaluate(`document.querySelector('#sectorTabs [data-content-id="${id}"]').classList.contains('locked')`),false,'New constellation is acquired through the completed historical adventure');
+  await evaluate(`document.querySelector('#sectorTabs [data-content-id="${id}"]').click()`);
+  assert.equal(await evaluate(`document.querySelector('#canonicalConstellationQuests [data-quest-id="${group[0].id}"]').disabled`),false);
+  for(const quest of group.slice(1))assert.equal(await evaluate(`document.querySelector('#canonicalConstellationQuests [data-quest-id="${quest.id}"]').disabled`),true,'Only the first new quest is initially available');
+  const decision=await evaluate(`(async()=>{const {canonicalInsertedQuestDecision}=await import('/src/campaign/canonical-quests.js');return canonicalInsertedQuestDecision(${JSON.stringify(group[0])},lumenDiagnostics.snapshot().progress).status})()`,true);
+  assert.equal(decision,'ready','The rendered detail and shared runtime policy agree');
+  await evaluate('document.getElementById("constellationBack").click()');
+ }
+ assert.equal(await evaluate('JSON.stringify(lumenDiagnostics.snapshot().progress)'),before,'Browsing grants neither completion nor rewards');
+ const first=groups.at(-1)[0];
+ await evaluate(`document.querySelector('#sectorTabs [data-content-id="${first.constellationId}"]').click();document.querySelector('#canonicalConstellationQuests [data-quest-id="${first.id}"]').click()`);
+ await acknowledgeLearningMilestones(evaluate);
+ assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().puz.reg'),first.reg,'The enabled card launches the actual stable-ID puzzle');
+ assert.equal(await evaluate('JSON.stringify(lumenDiagnostics.snapshot().progress)'),before,'Starting the added quest grants no rewards');
+ results.push({test:'historical adventure with entirely new constellations',viewport,constellations:groups.length,localSequence:true,noAutomaticRewards:true});
+}
 async function verifyPersistedRetryHold(){
  const user='isolated-retry-'+Date.now();
  const before=await evaluate(`(async()=>{
@@ -145,6 +178,7 @@ try{
    assert.equal(await evaluate(`document.querySelectorAll(${JSON.stringify(selector+' .performance-slot.earned')}).length`),4,'Mon ciel shows all four badges');
    results.push({viewport,questId:q.id,replayBadges:true,reload:true,noDuplicateRewards:true});
   }
+  await verifyHistoricalCatalogue(viewport);
  }
  assert.deepEqual(errors,[]);
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify({results,uncaughtErrors:errors},null,2));
