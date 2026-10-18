@@ -212,6 +212,8 @@ All new saved fields require round-trip, reload, restore, migration and conflict
 
 Run `node scripts/performance-qualification-merge-tests.mjs` for qualification cooldown reconciliation. It reproduces the quest 183 `lastQualifiedAt` conflict in both device orders, checks midnight/legacy/null/offset metadata, unchanged achievements and balances, stale-cloud coverage, idempotent retry, verified recovery snapshots, concurrent CAS refusal and read-back failure. Invalid dates and contradictory run/reward evidence must remain blocked. This suite is included in the unified quality gate.
 
+The same performance reconciliation suite also covers known V2/V3 format compatibility, repeated same-version replays, both device orders, conservative attempt/star summaries, stale restore prevention, retained historical mastery, no mastery assembled from separate badge flags, unsupported versions and invalid counters. The previous expectation that a different valid cumulative `attempts` count must block is intentionally replaced: `savePerformance` increments that aggregate on replay. Conflicting per-run/receipt evidence still blocks. A passing synthetic regression does not establish recovery of a real player account.
+
 ## Mandatory rule
 After **every modification affecting LUMEN code, gameplay or a product feature**, update the automated test contract in the same change and run the complete applicable test battery before delivery. This has two inseparable goals:
 - **non-regression**: existing behavior that must remain stable stays covered; when an intentional product change invalidates an old assertion, adapt that assertion explicitly rather than simply deleting or bypassing it;
