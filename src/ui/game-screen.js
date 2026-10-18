@@ -1982,7 +1982,7 @@ async function captureLegacyCommandVictory(){
   const ready=cloudProfileReady;cloudProfileReady=false;try{saveLumenProgress()}finally{cloudProfileReady=ready}
   try{await legacyVictoryOutbox.acknowledge(ownerId,quest.id,intent.reward,intent.operationId)}catch{recordCloudDiagnostic('legacy_outbox_cleanup_pending',{reason:'storage'})}
   if(!sameContext())return {handled:true};
-  return {handled:true,saved:true,outcome:committed.receipt.outcome};
+  return {handled:true,saved:true,outcome:committed.receipt.outcome,facts:intent.reward.facts};
  }catch(error){
   if(!sameContext())return {handled:true};
   if(intent){try{await legacyVictoryOutbox.pause(ownerId,intent,error)}catch{recordCloudDiagnostic('legacy_outbox_pause_pending',{reason:'storage'})}}
@@ -2000,9 +2000,9 @@ async function celebrateSuccess(){
  if(socialChallenge){celebrateSocialChallengeSuccess();return}
  if(canonicalActiveQuest){await celebrateCanonicalSuccess();return}
  if(learningReplayActive()){celebrateLearningReplaySuccess();return}
- let commanded=null;
- if(lumenUser&&!qaActive){const result=await captureLegacyCommandVictory();if(result.handled&&!result.saved)return;if(result.saved)commanded=result.outcome}
- const facts={seconds:activeGameSeconds(),assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted,qualifying:!!attemptEngine.snapshot()?.qualifying,hintUsed:!!usedHintThisGame,challengeFailed:!!questFailed,qualifiedDay:localCalendarDay(),qualifiedAt:new Date().toISOString()};
+ let commanded=null,confirmedFacts=null;
+ if(lumenUser&&!qaActive){const result=await captureLegacyCommandVictory();if(result.handled&&!result.saved)return;if(result.saved){commanded=result.outcome;confirmedFacts=result.facts}}
+ const facts=confirmedFacts||{seconds:activeGameSeconds(),assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted,qualifying:!!attemptEngine.snapshot()?.qualifying,hintUsed:!!usedHintThisGame,challengeFailed:!!questFailed,qualifiedDay:localCalendarDay(),qualifiedAt:new Date().toISOString()};
  const outcome=commanded||applyLegacyVictory(lumenProgress,levelIndex,facts);
  const {firstCompletion,questPassed,skyEarnedBefore,priorPerformance,priorBadges,savedPerformance,autonomyShard,dailyQualified}=outcome;
  const earnedThisRun=outcome.stars,generatedQuest=levelIndex>=campaignQuestCount(),ch=generatedQuest?null:bonusChallengeFor(levelIndex);
@@ -2034,7 +2034,7 @@ async function celebrateSuccess(){
  board.classList.add("win");
  board.querySelectorAll(".cell").forEach((cell,i)=>{cell.style.setProperty("--victory-delay",(i*18)+"ms");cell.classList.add("victory-wave")});
  setTimeout(()=>board.querySelectorAll(".cell").forEach(cell=>cell.classList.remove("victory-wave")),1500);
- document.getElementById("successTime").textContent=document.getElementById("time").textContent;
+ document.getElementById("successTime").textContent=commanded?formatDuration(facts.seconds):document.getElementById("time").textContent;
  const qr=document.getElementById("questResult");if(ch){qr.hidden=false;qr.className="quest-result "+(questPassed||lumenProgress.stars[ch.id]?"success":"fail");qr.textContent=questPassed?"✦ Défi réussi ! +25 XP et un éclat gagné.":lumenProgress.stars[ch.id]?"✦ Défi déjà accompli":"Défi échoué — la quête est tout de même accomplie."}else qr.hidden=true;
  const m=generatedQuest?null:milestoneFor(levelIndex),sub=document.getElementById("successSub");if(sub)sub.textContent=m?(m.kind==="boss"?"Défi final réussi · constellation complétée":"Défi intermédiaire réussi · +1 ★ bonus"):(questPassed?"Quête réussie · +25 XP et +1 ✦":"Ton ciel progresse");
  if(levelIndex===1&&sub)sub.textContent="Ton ciel progresse. Rapidité arrive à la quête 3 ; Autonomie et Maîtrise à la quête 6.";

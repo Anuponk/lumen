@@ -108,6 +108,7 @@ test('real UI retry freezes time after lost receipt read and installs only verif
  await run();assert.equal(ctx.lumenProgress.xp,0);assert.equal(state.profile.xp,15);assert.equal((await box.pending(userId)).length,1);
  state.missingReceipt=false;ctx.activeGameSeconds=()=>90;
  const result=await run();assert.equal(result.saved,true);assert.equal(ctx.lumenProgress.xp,15);assert.equal(ctx.lumenProgress.performances[0].attempts,1);
+ assert.equal(result.facts.seconds,45,'Success/share/analytics use original run time, excluding cloud latency');
  assert.equal((await box.pending(userId)).length,0);assert.equal([...state.receipts.values()][0].request.facts.seconds,45);
 });
 test('concurrent local spend during command I/O cannot be overwritten or acknowledged',async()=>{
