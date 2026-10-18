@@ -1,5 +1,11 @@
 # Testing and quality gate
 
+## Account modes and session transitions
+
+`node scripts/account-session-modes-tests.mjs` covers startup read/login races, stale deferred work after sign-out, recovery subscription before verification, failed confirmation preserving a session, local-scope logout, and removal of OTP entry points. `account-email-login-tests.mjs` now checks password/Google/guest and recovery; `auth-mail-otp-tests.mjs` retains the mail failure/throttle/branding cases and intentionally replaces retired OTP-length cases with rejection of magic-link login. These run in the quality gate with existing cloud regression suites.
+
+Before release, validate Google/password login and reload on an isolated account, recovery through password creation, guest discovery, and an existing account with cloud history. Never impersonate a real player's session or clear their local cache to test restoration. Affected-device session persistence is an outstanding manual check unless explicitly verified; production reads and mocked tests do not establish that result.
+
 ## Dynamic catalogue growth regression contract
 Every change affecting content, progression, shop, sky navigation or saved state must test catalogue growth without source-code boundary edits:
 - Existing catalogue N → N+k quests, with multiple appended Adventures of different sizes.

@@ -367,7 +367,7 @@ const persistenceModel={
 get lumenSupabase(){return lumenSupabase},set lumenSupabase(value){lumenSupabase=value},
 get lumenEntitlements(){return lumenEntitlements},set lumenEntitlements(value){lumenEntitlements=Array.isArray(value)?value:[]},
 get lumenCapabilities(){return lumenCapabilities},set lumenCapabilities(value){lumenCapabilities=Array.isArray(value)?value:[]},
-get lumenUser(){return lumenUser},set lumenUser(value){lumenUser=value},
+get lumenUser(){return lumenUser},set lumenUser(value){if(lumenUser?.id!==value?.id){cloudProfileReady=false;cloudProfileBaseline=null;cloudProfileFailure=null;lumenNickname=""}lumenUser=value},
 get lumenCloudReady(){return lumenCloudReady},set lumenCloudReady(value){lumenCloudReady=value},
 get lumenNickname(){return lumenNickname},set lumenNickname(value){lumenNickname=value},
 get lumenProgress(){return lumenProgress},set lumenProgress(value){lumenProgress=value},
@@ -376,8 +376,9 @@ get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get navigationLocked(){return !!socialChallenge},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
-const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,sendEmailOtp,verifyEmailOtp,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI();if(event?.type==="password_recovery"){const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=false;const password=document.getElementById("setPasswordPanel");if(password)password.hidden=false;document.getElementById("setPasswordValue")?.focus()}},renderDaily:(...args)=>renderDaily(...args),afterAuthCloudSync:async()=>{
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(event?.type==="restore_failed")cloudProfileFailure={reason:"restore_failed"};if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI();if(event?.type==="password_recovery"){sessionStorage.setItem("lumenPasswordRecoveryPending","1");const editor=document.getElementById("accountProfileEditor");if(editor){editor.dataset.open="true";editor.hidden=false}const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=false;const password=document.getElementById("setPasswordPanel");if(password)password.hidden=false;document.getElementById("setPasswordValue")?.focus()}},renderDaily:(...args)=>renderDaily(...args),afterAuthCloudSync:async()=>{
  if(qaActive||!lumenUser||!lumenSupabase)return;
+ if(sessionStorage.getItem("lumenPasswordRecoveryPending")==="1")return;
  cloudProfileReady=false;cloudProfileBaseline=null;
  let hydrationStage="start";
  try{
@@ -477,7 +478,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    if(!fullyCovered){
     cloudProfileFailure={reason:"partial_reconciliation",detail:"cloud_local_divergence"};
     recordCloudDiagnostic("hydration_partial_reconciliation_pending",{profileReady:false});
-    renderDaily();
+    renderDaily();updateAuthUI();
     return;
    }
   }
@@ -515,9 +516,10 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   }else recordCloudDiagnostic("legacy_mirror_verified",{count:mirror.count});
   recordCloudDiagnostic("hydration_ready",{profileReady:true,legacyMirrorVerified:mirror.ok});
   renderDaily();
+  refreshJourney();updateAuthUI();
   maybeShowStreakLoss();
   const gate=document.getElementById("accountOptin");if(gate){const wasVisible=!gate.hidden;gate.hidden=true;if(wasVisible)showAccountSavedConfirmation()}
- }catch(e){recordCloudDiagnostic("hydration_failed",{errorCode:String(e?.code||e?.status||"unknown").slice(0,48),errorName:String(e?.name||"unknown").slice(0,48),stage:String(e?.stage||hydrationStage).slice(0,48),reason:e?.message?.startsWith("Profil local divergent")?"local_divergence":e?.message?.startsWith("Daily history unavailable")?"daily_history":e?.message?.startsWith("Daily rewards unavailable")?"daily_rewards":e?.message?.startsWith("Impossible de restaurer le profil")?"cloud_restore":e?.message?.startsWith("Sauvegarde cloud impossible")?"cloud_cas":"other",kind:e?.code==="LOCAL_STORAGE_QUOTA"||e?.name==="QuotaExceededError"||e?.code===22?"local_quota":"other"});console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
+ }catch(e){recordCloudDiagnostic("hydration_failed",{errorCode:String(e?.code||e?.status||"unknown").slice(0,48),errorName:String(e?.name||"unknown").slice(0,48),stage:String(e?.stage||hydrationStage).slice(0,48),reason:e?.message?.startsWith("Profil local divergent")?"local_divergence":e?.message?.startsWith("Daily history unavailable")?"daily_history":e?.message?.startsWith("Daily rewards unavailable")?"daily_rewards":e?.message?.startsWith("Impossible de restaurer le profil")?"cloud_restore":e?.message?.startsWith("Sauvegarde cloud impossible")?"cloud_cas":"other",kind:e?.code==="LOCAL_STORAGE_QUOTA"||e?.name==="QuotaExceededError"||e?.code===22?"local_quota":"other"});cloudProfileFailure={reason:"restore_failed"};updateAuthUI();console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
 },holdLegacyMergeForFullRestore:async()=>true},{setTimeout,console,qaMode});
 let skipFirstGridTutorial=false;
 try{skipFirstGridTutorial=localStorage.getItem(qaKey('lumenSkipFirstGridTutorial'))==='1'}catch(_){}
@@ -584,7 +586,6 @@ function openEmailAccountOffer(mode="signup"){
  const password=document.getElementById("accountPassword"),submit=document.getElementById("accountPasswordSubmit");
  if(password){password.autocomplete=login?"current-password":"new-password";password.minLength=login?1:12;}
  if(submit)submit.textContent=login?"Me connecter →":"Créer mon compte →";
- const legacy=document.getElementById("accountLegacyOtp");if(legacy)legacy.hidden=!login;
  const recover=document.getElementById("accountRecovery");if(recover)recover.hidden=!login;
  const signup=document.getElementById("accountSignupTab"),switcher=document.getElementById("accountAuthSwitch");
  if(signup)signup.setAttribute("aria-pressed",String(!login));
@@ -600,16 +601,17 @@ async function submitAccountPassword(){
  const password=document.getElementById("accountPassword")?.value;
  const status=document.getElementById("accountEmailStatus");
  if(status)status.textContent="Connexion en cours…";
+ accountOfferSignInPending=accountEmailMode==="login";
+ try{if(accountOfferSignInPending)sessionStorage.setItem("lumenAccountOfferSignInPending","1")}catch(_){}
  const result=await emailPasswordAuth(email,password,new URL("/",location.origin).toString(),{createUser:accountEmailMode==="signup"});
  if(!result.ok){
+  accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}
   if(status)status.textContent=result.reason==="email"?"Entre une adresse email valide.":result.reason==="password"?"Utilise un mot de passe d'au moins 12 caractères.":accountEmailMode==="login"?"Connexion impossible. Vérifie le mot de passe, ou crée un compte si cette adresse est nouvelle.":"Inscription impossible. Vérifie cette adresse ou essaie de te connecter.";
   return;
  }
  if(result.pendingConfirmation){
   if(status)status.textContent="Vérifie ton email pour confirmer ton inscription.";
  }else{
-  accountOfferSignInPending=true;
-  try{sessionStorage.setItem("lumenAccountOfferSignInPending","1")}catch(_){}
   if(status)status.textContent="Compte connecté ✓";
  }
 }
@@ -619,14 +621,6 @@ async function recoverAccountPassword(){
  const result=await requestPasswordRecovery(email);
  if(status)status.textContent=result.ok?"Si cette adresse est enregistrée, un lien de récupération a été envoyé.":result.reason==="email"?"Entre une adresse email valide.":"Récupération indisponible pour le moment.";
 }
-function showLegacyOtp(){
- const sender=document.getElementById("accountEmailSend"),step=document.getElementById("accountOtpStep");
- if(sender)sender.hidden=false;if(step)step.hidden=true;
- const status=document.getElementById("accountEmailStatus");
- if(status)status.textContent="Pour ton ancien compte OTP, reçois un code puis définis ton mot de passe une fois connecté.";
-}
-async function requestAccountEmailOtp(){const email=document.getElementById("accountEmail")?.value,status=document.getElementById("accountEmailStatus");if(status)status.textContent="Envoi du code…";const result=await sendEmailOtp(email,new URL("/",location.origin).toString(),{createUser:accountEmailMode==="signup"});if(!result.ok){if(status)status.textContent=result.reason==="email"?"Entre une adresse email valide.":"Impossible d’envoyer le code. Réessaie.";trackLumenEvent("account_signin_failure",null,{milestone:5,method:"email_otp",stage:"send",qa:qaActive});return}accountOfferSignInPending=true;try{sessionStorage.setItem("lumenAccountOfferSignInPending","1");sessionStorage.setItem("lumenAccountOtpEmail",result.email)}catch(_){}const step=document.getElementById("accountOtpStep");if(step)step.hidden=false;if(status)status.textContent="Code envoyé. Vérifie tes emails.";document.getElementById("accountOtp")?.focus();trackLumenEvent("account_otp_sent",null,{milestone:5,qa:qaActive})}
-async function confirmAccountEmailOtp(){const status=document.getElementById("accountEmailStatus"),token=document.getElementById("accountOtp")?.value;let email=document.getElementById("accountEmail")?.value;try{email=sessionStorage.getItem("lumenAccountOtpEmail")||email}catch(_){}if(status)status.textContent="Vérification…";const result=await verifyEmailOtp(email,token);if(!result.ok){if(status)status.textContent=result.reason==="otp"?"Entre le code reçu par email (6 à 10 chiffres).":"Code incorrect ou expiré. Réessaie.";trackLumenEvent("account_signin_failure",null,{milestone:5,method:"email_otp",stage:"verify",qa:qaActive});return}if(status)status.textContent="Compte connecté ✓";trackLumenEvent("account_otp_verified",null,{milestone:5,qa:qaActive})}
 // Bind the two exit actions before asynchronous game startup; both must always close the dialog.
 function setupAccountOfferDismiss(){
  const close=document.getElementById("accountOptinClose"),later=document.getElementById("accountOptinLater");
@@ -639,19 +633,24 @@ async function saveExistingAccountPassword(){
  const status=document.getElementById("setPasswordStatus");
  const result=await setAccountPassword(password);
  if(status)status.textContent=result.ok?"Mot de passe défini ✓":result.reason==="password"?"Utilise au moins 12 caractères.":"Impossible de modifier le mot de passe. Une réauthentification peut être nécessaire.";
- if(result.ok){const input=document.getElementById("setPasswordValue");if(input)input.value="";}
+ if(result.ok){const input=document.getElementById("setPasswordValue");if(input)input.value="";sessionStorage.removeItem("lumenPasswordRecoveryPending");location.reload();}
 }
 function syncMobileAuthUI(){
  syncAdministrationMenu();
  const status=document.getElementById("mobileAuthStatus"),action=document.getElementById("mobileAuthAction"),icon=document.getElementById("mobileAccount");
  if(!status||!action||!icon)return;
  const signedIn=Boolean(lumenUser);
+ const recovering=signedIn&&sessionStorage.getItem("lumenPasswordRecoveryPending")==="1";
+ document.getElementById("mobileAuthPopover")?.classList.toggle("password-recovery",recovering);
+ if(recovering){const editor=document.getElementById("accountProfileEditor");if(editor)editor.dataset.open="true";const password=document.getElementById("setPasswordPanel");if(password)password.hidden=false;const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=false}
+ if(!signedIn)sessionStorage.removeItem("lumenPasswordRecoveryPending");
  const show=(id,visible)=>{const el=document.getElementById(id);if(el)el.hidden=!visible};
  if(!signedIn){const editor=document.getElementById("accountProfileEditor");if(editor)editor.dataset.open="false"}
  show("editAccountProfile",signedIn);
  show("accountProfileEditor",signedIn&&document.getElementById("accountProfileEditor")?.dataset.open==="true");
  show("guestSaveExplainer",!signedIn);
- status.textContent=signedIn?(lumenNickname||"Progression synchronisée"):"Progression enregistrée sur cet appareil";
+ status.textContent=recovering?"Choisis ton nouveau mot de passe":signedIn?(cloudProfileReady?(lumenNickname||"Progression synchronisée"):cloudProfileFailure?"Compte connecté · sauvegarde à resynchroniser":"Compte connecté · synchronisation en cours…"):"Progression enregistrée sur cet appareil";
+ show("retryAccountSync",signedIn&&!cloudProfileReady&&!!cloudProfileFailure);
  action.textContent=signedIn?"Déconnexion":"Se connecter / Créer un compte";
  icon.textContent=signedIn?"●":"♙";
  icon.setAttribute("aria-label",signedIn?"Compte connecté":"Compte invité");
@@ -751,7 +750,7 @@ function setupMobileAuth(){
   panel.hidden=!panel.hidden;
   adminToggle.setAttribute("aria-expanded",String(!panel.hidden));
  };
- document.addEventListener("click",()=>{if(!menu.hidden)menu.hidden=true});
+ document.addEventListener("click",()=>{if(!menu.hidden&&!menu.classList.contains("password-recovery"))menu.hidden=true});
  action.onclick=async()=>{
    menu.hidden=true;
    if(!lumenSupabase)return;
@@ -2635,15 +2634,16 @@ const guidedAck=document.getElementById("guidedAck");if(guidedAck)guidedAck.oncl
 const verifyBtn=document.getElementById("verify");if(verifyBtn)verifyBtn.onclick=runVerification;const verifyFix=document.getElementById("verifyFix");if(verifyFix)verifyFix.onclick=fixVerificationErrors;
 const nicknameSave=document.getElementById("nicknameSave");if(nicknameSave)nicknameSave.onclick=async()=>{const input=document.getElementById("nicknameInput"),result=await saveLumenNickname(input?.value);if(result.ok)showRewardToast("Pseudo enregistré ✦");else showRewardToast(result.reason==="length"?"Pseudo : 2 à 24 caractères":"Ce pseudo n’est pas valide")};
 const guidedErrors=document.getElementById("guidedErrors");if(guidedErrors)guidedErrors.onchange=()=>{if(levelIndex<=4&&!replayMode){guidedErrors.checked=true;return}localStorage.setItem("lumenGuidedErrors",guidedErrors.checked?"on":"off")};
-const accountOptinEnable=document.getElementById("accountOptinEnable"),accountOptinLater=document.getElementById("accountOptinLater"),accountOptinEmail=document.getElementById("accountOptinEmail"),accountEmailSend=document.getElementById("accountEmailSend"),accountOtpVerify=document.getElementById("accountOtpVerify");if(accountOptinEnable)accountOptinEnable.onclick=acceptAccountOffer;if(accountOptinLater)accountOptinLater.onclick=dismissAccountOffer;if(accountOptinEmail)accountOptinEmail.onclick=()=>openEmailAccountOffer("signup");const passwordSubmit=document.getElementById("accountPasswordSubmit"),legacyOtp=document.getElementById("accountLegacyOtp");
+const accountOptinEnable=document.getElementById("accountOptinEnable"),accountOptinLater=document.getElementById("accountOptinLater");if(accountOptinEnable)accountOptinEnable.onclick=acceptAccountOffer;if(accountOptinLater)accountOptinLater.onclick=dismissAccountOffer;const passwordSubmit=document.getElementById("accountPasswordSubmit");
 if(passwordSubmit)passwordSubmit.onclick=submitAccountPassword;
 const switcher=document.getElementById("accountAuthSwitch");if(switcher)switcher.onclick=()=>openEmailAccountOffer("login");const signupTab=document.getElementById("accountSignupTab");if(signupTab)signupTab.onclick=()=>openEmailAccountOffer("signup");const visibility=document.getElementById("accountPasswordVisibility");if(visibility)visibility.onclick=()=>{const input=document.getElementById("accountPassword");if(!input)return;input.type=input.type==="password"?"text":"password";visibility.setAttribute("aria-label",input.type==="password"?"Afficher le mot de passe":"Masquer le mot de passe");};
 const closeAccount=document.getElementById("accountOptinClose");if(closeAccount)closeAccount.onclick=dismissAccountOffer;
 const accountLater=document.getElementById("accountOptinLater");if(accountLater)accountLater.onclick=dismissAccountOffer;
+const retryAccountSync=document.getElementById("retryAccountSync");if(retryAccountSync)retryAccountSync.onclick=()=>location.reload();
 const setPasswordSave=document.getElementById("setPasswordSave");if(setPasswordSave)setPasswordSave.onclick=saveExistingAccountPassword;
-if(legacyOtp)legacyOtp.onclick=showLegacyOtp;
+
 const recovery=document.getElementById("accountRecovery");if(recovery)recovery.onclick=recoverAccountPassword;
-if(accountEmailSend)accountEmailSend.onclick=requestAccountEmailOtp;if(accountOtpVerify)accountOtpVerify.onclick=confirmAccountEmailOtp;
+
 const installEnable=document.getElementById("installEnable"),installLater=document.getElementById("installLater");if(installEnable)installEnable.onclick=installLumen;if(installLater)installLater.onclick=dismissInstallLater;const successShare=document.getElementById("successShare");if(successShare)successShare.onclick=createSocialChallengeFromSuccess;
 const nativeChallengeShare=document.getElementById("challengeNativeShare"),copyChallengeLink=document.getElementById("challengeCopyLink"),closeChallengeShare=document.getElementById("challengeShareClose");if(nativeChallengeShare)nativeChallengeShare.onclick=sharePendingChallenge;if(copyChallengeLink)copyChallengeLink.onclick=copyPendingChallenge;if(closeChallengeShare)closeChallengeShare.onclick=()=>document.getElementById("challengeShareModal").hidden=true;
 const openChallenges=document.getElementById("openMyChallenges"),closeChallenges=document.getElementById("myChallengesClose");if(openChallenges)openChallenges.onclick=()=>openMyChallenges();if(closeChallenges)closeChallenges.onclick=()=>document.getElementById("myChallengesModal").hidden=true;
@@ -2653,7 +2653,7 @@ if(pushEnable)pushEnable.onclick=enableLumenPush;
 if(pushLater)pushLater.onclick=dismissPushLater;
 markLumenSeen();
 if(!qaActive)cloudMergeHistoricalPerformance(lumenAnonymousId);
-initLumenCloud();
+initLumenCloud().catch(error=>{recordCloudDiagnostic("auth_initialization_failed",{errorCode:String(error?.code||"unknown").slice(0,48)});cloudProfileFailure={reason:"restore_failed"};updateAuthUI();console.warn("Lumen session initialization failed",error)});
 
 if("serviceWorker" in navigator){
  let lumenReloadingForSW=false;

@@ -1,0 +1,25 @@
+{
+  "suites": [
+    {
+      "size": 5,
+      "total": 99,
+      "failures": []
+    },
+    {
+      "size": 6,
+      "total": 99,
+      "failures": []
+    },
+    {
+      "size": 7,
+      "total": 99,
+      "failures": []
+    },
+    {
+      "size": 8,
+      "total": 99,
+      "failures": []
+    }
+  ],
+  "exceptions": []
+}

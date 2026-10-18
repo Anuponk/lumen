@@ -37,6 +37,7 @@ const nodeSuites=[
  "success-sky-detail-tests.mjs",
  "extraordinary-skies-tests.mjs",
  "persistence-tests.mjs",
+ "account-session-modes-tests.mjs",
  "cloud-persistence-regression-tests.mjs",
  "first-login-cloud-restore-tests.mjs",
  "cloud-achievements-local-recovery-tests.mjs",
@@ -190,6 +191,7 @@ try{
  console.log("LUMEN quality gate — Node "+process.version+" — "+process.platform);
  for(const suite of nodeSuites)await run(process.execPath,[path.join("scripts",suite)],{label:suite});
  await startServer();
+ await runBrowser("account-session-browser-tests.mjs","ci-account-session.json",9230);
  await runBrowser("browser-tests.mjs","ci-browser.json",9222);
  await runBrowser("ux-cleanup-tests.mjs","ci-ux.json",9223);
  await runBrowser("learning-browser-tests.mjs","ci-learning.json",9224);
