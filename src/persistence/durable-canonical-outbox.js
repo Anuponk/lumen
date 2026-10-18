@@ -38,7 +38,7 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
   for(const kind of new Set(issues))report(kind);
   const valid=[...groups.entries()].filter(([key])=>!invalid.has(key)).map(([,copies])=>copies);
   valid.sort((a,b)=>a[0].entry.createdAt.localeCompare(b[0].entry.createdAt)||a[0].key.localeCompare(b[0].key));
-  return {groups:valid,issues:[...new Set(issues)],invalid};
+  return {groups:valid,issues:[...new Set(issues)],invalid,complete:readable===2};
  }
  async function enqueue(userId,questId,reward,{operationId=newId()}={}){
   if(!questId||!reward||typeof reward!=='object'||Array.isArray(reward))throw Error('Invalid outbox reward');
@@ -83,5 +83,5 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
    }
   }
  }
- return {enqueue,acknowledge,pending:async userId=>(await scan(userId)).groups.map(copies=>copies[0].entry),inspect:async userId=>{const result=await scan(userId);return {pending:result.groups.map(copies=>copies[0].entry),issues:result.issues}}};
+ return {enqueue,acknowledge,pending:async userId=>(await scan(userId)).groups.map(copies=>copies[0].entry),inspect:async userId=>{const result=await scan(userId);return {pending:result.groups.map(copies=>copies[0].entry),issues:result.issues,complete:result.complete}}};
 }

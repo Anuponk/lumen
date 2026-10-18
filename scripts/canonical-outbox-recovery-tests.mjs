@@ -65,3 +65,32 @@ test('an old victory cannot update the UI after account, quest or attempt-reset 
   assert.equal(context.canonicalOutboxNotice,null,change);
  }
 });
+
+test('online and scheduled recovery cannot both start while the durable queue is being read',async()=>{
+ const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+ let finish,reads=0;const pending=new Promise(resolve=>{finish=resolve});
+ const context={canonicalOutboxRetryInFlight:false,qaActive:false,lumenUser:{id:'a'},lumenSupabase:{},
+  cloudProfileReady:true,cloudProfileBusy:false,cloudProfileDirty:false,canonicalActiveQuest:null,
+  canonicalVictoryOutbox:{pending:async()=>{reads++;return pending}},recordCloudDiagnostic:()=>{}};
+ vm.createContext(context);vm.runInContext(functionSource(source,'retryPendingCanonicalOutboxOnReconnect'),context);
+ const a=vm.runInContext('retryPendingCanonicalOutboxOnReconnect()',context);
+ const b=vm.runInContext('retryPendingCanonicalOutboxOnReconnect()',context);
+ finish([]);await Promise.all([a,b]);
+ assert.equal(reads,1);assert.equal(context.canonicalOutboxRetryInFlight,false);
+ context.canonicalVictoryOutbox.pending=async()=>{throw Error('read failed')};
+ await vm.runInContext('retryPendingCanonicalOutboxOnReconnect()',context);
+ assert.equal(context.canonicalOutboxRetryInFlight,false,'A read failure must release the guard');
+});
+
+test('a temporarily unreadable queue keeps a visible pending check and retry demand',async()=>{
+ const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+ let complete=false;
+ const context={lumenUser:{id:'a'},canonicalOutboxNotice:null,updateAuthUI:()=>{},
+  canonicalVictoryOutbox:{inspect:async()=>({pending:[],issues:complete?[]:['indexed_unavailable'],complete})}};
+ vm.createContext(context);vm.runInContext(functionSource(source,'refreshCanonicalOutboxNotice'),context);
+ assert.equal(await vm.runInContext("refreshCanonicalOutboxNotice('a')",context),1);
+ assert.equal(context.canonicalOutboxNotice,'checking');
+ complete=true;
+ assert.equal(await vm.runInContext("refreshCanonicalOutboxNotice('a')",context),0);
+ assert.equal(context.canonicalOutboxNotice,null);
+});

@@ -332,11 +332,12 @@ async function retryPendingCanonicalOutboxOnReconnect(){
  if(canonicalOutboxRetryInFlight||qaActive||!lumenUser||!lumenSupabase||!cloudProfileReady||cloudProfileBusy||cloudProfileDirty||canonicalActiveQuest)return;
  const userId=lumenUser.id,client=lumenSupabase;
  const sessionValid=()=>lumenUser?.id===userId&&lumenSupabase===client&&!qaActive&&cloudProfileReady;
- let remaining;
- try{remaining=await canonicalVictoryOutbox.pending(userId)}catch(error){recordCloudDiagnostic("canonical_outbox_read_failed",{reason:"integrity"});return}
- if(!remaining.length)return;
+ // Acquire before the first async read: online/resume can race the timer.
  canonicalOutboxRetryInFlight=true;
  try{
+  let remaining;
+  try{remaining=await canonicalVictoryOutbox.pending(userId)}catch(error){recordCloudDiagnostic("canonical_outbox_read_failed",{reason:"integrity"});return}
+  if(!sessionValid()||!remaining.length)return;
   const confirmed=await replayCanonicalVictoryOutbox(canonicalVictoryOutbox,userId,
    (questId,reward)=>commitCanonicalVictory(client,questId,reward),{sessionValid,onIssue:issue=>recordCloudDiagnostic("canonical_outbox_recovery_pending",{reason:issue.kind})});
   if(!sessionValid())return;
@@ -657,7 +658,7 @@ function syncMobileAuthUI(){
  show("editAccountProfile",signedIn);
  show("accountProfileEditor",signedIn&&document.getElementById("accountProfileEditor")?.dataset.open==="true");
  show("guestSaveExplainer",!signedIn);
- const pendingNotice=canonicalOutboxNotice==="attention"?"Sauvegarde à vérifier · données locales conservées":canonicalOutboxNotice==="pending"?"Victoire en attente de synchronisation":canonicalOutboxNotice==="storage"?"Enregistrement local indisponible":null;
+ const pendingNotice=canonicalOutboxNotice==="attention"?"Sauvegarde à vérifier · données locales conservées":canonicalOutboxNotice==="pending"?"Victoire en attente de synchronisation":canonicalOutboxNotice==="checking"?"Vérification des sauvegardes en attente":canonicalOutboxNotice==="storage"?"Enregistrement local indisponible":null;
  status.textContent=recovering?"Choisis ton nouveau mot de passe":signedIn?(pendingNotice|| (cloudProfileReady?(lumenNickname||"Progression synchronisée"):cloudProfileFailure?"Compte connecté · sauvegarde à resynchroniser":"Compte connecté · synchronisation en cours…")):"Progression enregistrée sur cet appareil";
  show("retryAccountSync",signedIn&&((!cloudProfileReady&&!!cloudProfileFailure)||!!pendingNotice));
  action.textContent=signedIn?"Déconnexion":"Se connecter / Créer un compte";
@@ -1781,8 +1782,9 @@ async function refreshCanonicalOutboxNotice(ownerId){
  try{
   const state=await canonicalVictoryOutbox.inspect(ownerId);
   if(lumenUser?.id!==ownerId)return 0;
-  canonicalOutboxNotice=state.issues.some(kind=>["invalid_entry","conflicting_copies"].includes(kind))?"attention":state.pending.length?"pending":null;
-  updateAuthUI();return state.pending.length;
+  canonicalOutboxNotice=state.issues.some(kind=>["invalid_entry","conflicting_copies"].includes(kind))?"attention":state.pending.length?"pending":state.complete===false?"checking":null;
+  // An unreadable backend may contain older intents even if the other is empty.
+  updateAuthUI();return state.pending.length||(state.complete===false?1:0);
  }catch{if(lumenUser?.id===ownerId){canonicalOutboxNotice="storage";updateAuthUI()}return 1}
 }
 const canonicalRecovery=createCloudRetryScheduler({

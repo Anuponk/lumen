@@ -105,6 +105,30 @@ function mergeLegacyAdventureAccess(local,cloud){
  return {ok:true,value:[...new Set([...(cloud||[]),...(local||[])])]};
 }
 const qualificationFields=["lastQualifiedAt","lastQualifiedDay"];
+const performanceSummaryFields=["version","attempts","stars"];
+function performanceSummaryMetadata(performance){
+ return Object.fromEntries(performanceSummaryFields.filter(key=>Object.hasOwn(performance,key)).map(key=>[key,performance[key]]));
+}
+// savePerformance stores cumulative summaries. V2 badges are grandfathered by
+// V3; upgrading this format does not re-evaluate eligibility or award anything.
+// Without run IDs, max(attempts) is only a lower bound, never an exact union.
+function mergePerformanceSummaryMetadata(left,right){
+ const out={};
+ for(const key of performanceSummaryFields){
+  const values=[left,right].filter(record=>Object.hasOwn(record,key)).map(record=>record[key]);
+  if(!values.length)continue;
+  if(key==="version"){
+   if(values.length===2&&!sameCloudProfile(values[0],values[1])){
+    if(!values.every(value=>value===2||value===3))return {ok:false,conflictKeys:[key]};
+    out[key]=3;
+   }else out[key]=values[0];
+  }else{
+   if(!values.every(value=>Number.isSafeInteger(value)&&value>=0))return {ok:false,conflictKeys:[key]};
+   out[key]=Math.max(...values);
+  }
+ }
+ return {ok:true,value:out};
+}
 function qualificationMetadata(performance){
  return Object.fromEntries(qualificationFields.filter(key=>Object.hasOwn(performance,key)).map(key=>[key,performance[key]]));
 }
@@ -159,6 +183,8 @@ export function cloudSafelyCoversLocal(local,remote){
   for(const [key,perf] of Object.entries(local.performances||{})){
     const saved=cloud.performances?.[key];
     if(!saved)return false;
+    const summary=mergePerformanceSummaryMetadata(perf,saved);
+    if(!summary.ok||!sameCloudProfile(summary.value,performanceSummaryMetadata(saved)))return false;
     const qualification=mergeQualificationMetadata(perf,saved);
     if(!qualification.ok||!sameCloudProfile(qualification.value,qualificationMetadata(saved)))return false;
     for(const [badge,earned] of Object.entries(perf.badges||{}))
@@ -527,12 +553,15 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
   if(!left||!right||typeof left!=="object"||typeof right!=="object"||Array.isArray(left)||Array.isArray(right))return {ok:false};
   const out=structuredClone(right);
   if(field==="performances"){
+   const summary=mergePerformanceSummaryMetadata(left,right);
+   if(!summary.ok)return summary;
+   Object.assign(out,summary.value);
    const qualification=mergeQualificationMetadata(left,right);
    if(!qualification.ok)return qualification;
    Object.assign(out,qualification.value);
   }
   for(const [key,value] of Object.entries(left)){
-   if(field==="performances"&&qualificationFields.includes(key))continue;
+   if(field==="performances"&&(qualificationFields.includes(key)||performanceSummaryFields.includes(key)))continue;
    if(!Object.hasOwn(out,key)){out[key]=structuredClone(value);continue}
    if(sameCloudProfile(value,out[key]))continue;
    if((key==="badges"||key==="awards")&&value&&out[key]&&typeof value==="object"&&typeof out[key]==="object"){

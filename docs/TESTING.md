@@ -182,6 +182,11 @@ denied localStorage and a preserved corrupt V1 entry. See
 [delivery scope and remaining cutover](CLOUD_RECOVERY_391.md); these checks do
 not establish legacy transaction authority or actual player recovery.
 
+Additional recovery regressions cover simultaneous online/timer signals during
+asynchronous enumeration, releasing the guard after a read error, incomplete
+storage inspection followed by restored access, and account cancellation before
+the queued microtask starts. Each regression was observed failing before its fix.
+
 Canonical replay (#453): `node scripts/canonical-ledger-client-tests.mjs` covers
 both final Grande Ourse quests through the gameplay ledger transport, including
 lost acknowledgements, stale solved-only replies, durable outbox retention and
@@ -221,6 +226,8 @@ privacy-limited authenticated health event. Guest/QA/event guards remain tested.
 All new saved fields require round-trip, reload, restore, migration and conflict tests. Run the existing persistence/regression tests too. A PR failing these required checks cannot merge. See `AGENTS.md` and [DATA_AND_ARCHITECTURE](DATA_AND_ARCHITECTURE.md#cloud-persistence-contract).
 
 Run `node scripts/performance-qualification-merge-tests.mjs` for qualification cooldown reconciliation. It reproduces the quest 183 `lastQualifiedAt` conflict in both device orders, checks midnight/legacy/null/offset metadata, unchanged achievements and balances, stale-cloud coverage, idempotent retry, verified recovery snapshots, concurrent CAS refusal and read-back failure. Invalid dates and contradictory run/reward evidence must remain blocked. This suite is included in the unified quality gate.
+
+The same performance reconciliation suite also covers known V2/V3 format compatibility, repeated same-version replays, both device orders, conservative attempt/star summaries, stale restore prevention, retained historical mastery, no mastery assembled from separate badge flags, unsupported versions and invalid counters. The previous expectation that a different valid cumulative `attempts` count must block is intentionally replaced: `savePerformance` increments that aggregate on replay. Conflicting per-run/receipt evidence still blocks. A passing synthetic regression does not establish recovery of a real player account.
 
 ## Mandatory rule
 After **every modification affecting LUMEN code, gameplay or a product feature**, update the automated test contract in the same change and run the complete applicable test battery before delivery. This has two inseparable goals:

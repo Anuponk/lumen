@@ -35,3 +35,11 @@ test('offline, hidden or unsafe application state holds recovery until explicitl
  allowed=true;await retry.wake();assert.equal(calls,1);assert.equal(time.tasks.size,1);
  allowed=false;await time.fire();assert.equal(calls,1);assert.equal(time.tasks.size,0);
 });
+
+test('cancellation before the scheduled microtask starts cannot run for a new account',async()=>{
+ const time=timers();let calls=0;
+ const retry=createCloudRetryScheduler({...time,run:async()=>{calls++;return true}});
+ const stale=retry.wake();retry.cancel();await stale;
+ assert.equal(calls,0);assert.equal(time.tasks.size,0);
+ await retry.wake();assert.equal(calls,1);assert.equal(time.tasks.size,1);
+});

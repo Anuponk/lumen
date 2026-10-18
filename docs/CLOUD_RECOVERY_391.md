@@ -1,7 +1,8 @@
 # Cloud recovery delivery and remaining cutover (#391)
 
 This is a staged implementation record, not a declaration that #391 is closed.
-Baseline: `c8bf33334822f8cff1122e6c647863533ced3626` (2026-10-18).
+Updated baseline: `b1c272eb46c958d04adfb1fd8b06fbb49214951f` (2026-10-18),
+including the deployed performance-summary compatibility fix #473.
 
 ## Reproduced incidents
 
@@ -14,9 +15,13 @@ That build precedes #465 (`bef5f32`), which merges valid qualification metadata
 without treating its timestamp as an immutable reward receipt. The existing
 `performance-qualification-merge-tests.mjs` protects both device orders,
 cooldown preservation, old records, conflicting evidence, CAS and failed read-back.
-It passes locally. This does not prove recovery of the actual mobile account:
-verify the loaded client revision and a new successful hydration first. Preserve
-local progress and pending wins; never ask the player to clear application data.
+It passes locally. A later incompatible comparison of cumulative performance
+schema metadata was corrected by #473: known V2/V3 formats and cumulative
+attempt/star summaries now reconcile without awarding anything. Recovery of
+the reported mobile incident was confirmed after deployment of
+`1.11.1+458 · b1c272e`. This is one live recovery confirmation, not validation
+of every cloud path. Preserve local progress and pending wins; never ask the
+player to clear application data.
 
 The following additional failure boundaries were reproduced before correction:
 
@@ -29,6 +34,9 @@ The following additional failure boundaries were reproduced before correction:
 | Local storage denied/full | No alternative durable intent store | Verify an IndexedDB transaction; fall back to verified localStorage |
 | Separate runs of one quest | A single per-quest slot could retain only one run | Separate immutable V2 operation IDs; acknowledge only the matching operation |
 | Connectivity returns once | Another transient failure waited for a new online/resume event | Bounded exponential backoff with jitter while safe replay remains possible |
+| Online and timer race during durable read | Both could enter replay before its guard was set | Acquire the guard before the first await, release it on all exits |
+| One store temporarily unreadable | An empty other store could stop recovery | Expose incomplete inspection, keep a pending check and bounded retry |
+| Account change before queued work starts | A cancelled microtask could still run | Recheck generation and readiness before invoking recovery |
 
 ## Intent ownership and compatibility
 
@@ -69,6 +77,15 @@ An unacknowledged local intention cannot survive deletion of all local storage.
 starting at 1–2 seconds and capped at 60 seconds. An empty queue stops retrying.
 Account changes cancel the old schedule; replay checks the captured account and
 client after each asynchronous commit before removing data.
+The replay guard covers asynchronous queue reads too. Cancellation before the
+first microtask prevents the old scheduled run from starting for another account.
+
+An empty readable store is not proof that an unreadable store has no intentions.
+Inspection exposes whether both stores were read; incomplete reads retain a
+visible pending check and bounded retry even when no valid entry was enumerated.
+No missing/unreadable record is treated as acknowledged or deleted. A permanently
+denied backend may therefore retain this status; readable valid entries can still
+recover, while retries remain subject to the normal visibility/auth/profile holds.
 
 Automatic replay remains held while the document is hidden/offline, auth is
 pending, an active canonical quest exists, the profile is dirty/busy or hydration
@@ -109,7 +126,7 @@ Run `node scripts/test-affected.mjs --full` before the PR. Preserve the actual
 results and distinguish Node fixtures, browser storage, isolated SQL, and live
 account verification. No database migration is part of this client delivery.
 
-The next phases of #391/#398 remain open: actual incident recovery confirmation,
+The next phases of #391/#398 remain open: broader real-device recovery validation,
 legacy authoritative commands, safe old-client retirement, non-global hydration,
 audited repair of ambiguous profiles, permanent error handling and production
 observation. A CI pass is not proof of those phases. The proposed 14-day

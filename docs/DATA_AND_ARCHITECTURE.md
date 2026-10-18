@@ -13,6 +13,8 @@ No player-data schema or reward reconciliation policy changes with these account
 Delivery boundaries, durable intent ownership, V1/V2 compatibility and the writer
 cutover still required for #391 are documented in [Cloud recovery](CLOUD_RECOVERY_391.md).
 
+Canonical outbox inspection distinguishes an empty readable queue from an incomplete read of its stores. A temporarily inaccessible backend retains a visible pending check and bounded retry; readable independent intentions may still recover. The replay guard is acquired before asynchronous enumeration, and cancelled scheduled work rechecks its generation before starting. Neither an unreadable record nor a missing badge is an acknowledgement.
+
 **Protected product invariant (#248):** anything earned or purchased by an authenticated player must be durably retrievable after another-device sign-in, PWA reinstall, local cache loss, reconnect or migration. Never replace a nonempty cloud record with an empty or stale local snapshot.
 
 ### Data ownership and invariants
@@ -29,6 +31,8 @@ These are **target contracts**, not a claim that all implementations already exi
 Any added player field MUST have a documented owner, cloud write/read, reconciliation policy, migration/default for old saves, and a regression test. Follow the [cloud persistence regression matrix](TESTING.md#cloud-persistence-regression-matrix) and PR impact checklist. Do not silently suppress or delete tests.
 
 Performance qualification metadata (`performances[quest].lastQualifiedAt` and `lastQualifiedDay`) records cooldown state, not an immutable reward receipt. Reconciliation retains the latest valid timestamp and its associated local calendar day; equal instants use a deterministic day/string tie-breaker. Legacy day-only records retain the latest valid calendar day when neither snapshot has a timestamp. An absent day on the latest timestamp remains null rather than borrowing an older qualification's day. Invalid metadata or contradictory run/reward evidence still blocks reconciliation. Cloud coverage checks must preserve this metadata so a stale restore cannot shorten the 15-minute cooldown. This merge never grants rewards, increments attempts, or changes balances/entitlements. Existing verified recovery backups, compare-and-swap and read-back verification remain required; no schema migration is needed.
+
+Performance summaries are cumulative records, not per-run reward receipts. Known numeric schema versions 2 and 3 reconcile to version 3 without recomputing badge eligibility; earned V2 mastery remains grandfathered, and merging separate badge flags never manufactures mastery. `attempts` and the summary's `stars` retain the largest observed nonnegative safe integer; attempts are only a conservative lower bound because snapshots have no run IDs, and are never summed. Best times and qualification cooldowns keep their existing merge rules. Differences involving unknown schema versions, invalid counters, conflicting run/receipt evidence and other unclassified fields remain blocked. Coverage checks reject restoring an older version or smaller summary counters. No reward, currency, entitlement or completion is granted by this summary merge; both recovery snapshots, CAS and verified read-back remain required.
 
 Canonical snapshot protection (#391): `protect_canonical_snapshot` checks every
 update of `lumen.profile_snapshots.payload`, including legacy backup and CAS

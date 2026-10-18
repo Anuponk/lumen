@@ -89,3 +89,20 @@ test('cleanup failure reports a verified win but preserves the immutable intent 
  const results=await replayCanonicalVictoryOutbox(box,'a',async id=>saved(id),{onIssue:issue=>issues.push(issue.kind)});
  assert.equal(results.length,1);assert.equal((await box.pending('a')).length,1);assert.deepEqual(issues,['cleanup']);
 });
+
+test('an unreadable store is not proof of an empty queue; its intents recover when access returns',async()=>{
+ const storage=local(),fallback=indexed();let readable=true;
+ const entries=fallback.entries;fallback.entries=async prefix=>{if(!readable)throw Error('temporarily blocked');return entries(prefix)};
+ const box=createDurableCanonicalVictoryOutbox(storage,{fallback});
+ const entry=await box.enqueue('a','q',reward,{operationId:'persisted'});
+ readable=false;
+ const uncertain=await box.inspect('a');
+ assert.equal(uncertain.pending.length,0);assert.equal(uncertain.complete,false);
+ assert.ok(uncertain.issues.includes('indexed_unavailable'));
+ assert.equal(fallback.data.size,1,'Unreadable does not mean missing or acknowledged');
+ readable=true;
+ const recovered=await box.inspect('a');
+ assert.equal(recovered.complete,true);assert.deepEqual(recovered.pending,[entry]);
+ await replayCanonicalVictoryOutbox(box,'a',async id=>saved(id));
+ assert.equal((await box.inspect('a')).pending.length,0);
+});

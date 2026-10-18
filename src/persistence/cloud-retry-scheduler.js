@@ -14,7 +14,7 @@ export function createCloudRetryScheduler({run,ready=()=>true,setTimer=setTimeou
   if(inFlight)return inFlight;
   if(timer!==null){clearTimer(timer);timer=null}
   const current=generation;
-  const pending=Promise.resolve().then(run).catch(()=>{try{onError()}catch{}return true});
+  const pending=Promise.resolve().then(()=>current===generation&&ready()?run():false).catch(()=>{try{onError()}catch{}return true});
   inFlight=pending;
   return pending.finally(()=>{
    if(current!==generation||inFlight!==pending)return;
