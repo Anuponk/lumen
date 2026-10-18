@@ -172,6 +172,21 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Durable recovery (#391): `canonical-outbox-recovery-tests.mjs`,
+`canonical-durable-outbox-tests.mjs` and `cloud-retry-scheduler-tests.mjs` are
+mandatory Node gates. They cover independent recovery after refusal, requested
+badge verification, async adapters, immutable per-run records, old V1 records,
+storage failure, account isolation and retry cancellation/backoff. The existing
+canonical replay browser runner also tests real IndexedDB after a new document,
+denied localStorage and a preserved corrupt V1 entry. See
+[delivery scope and remaining cutover](CLOUD_RECOVERY_391.md); these checks do
+not establish legacy transaction authority or actual player recovery.
+
+Additional recovery regressions cover simultaneous online/timer signals during
+asynchronous enumeration, releasing the guard after a read error, incomplete
+storage inspection followed by restored access, and account cancellation before
+the queued microtask starts. Each regression was observed failing before its fix.
+
 Canonical replay (#453): `node scripts/canonical-ledger-client-tests.mjs` covers
 both final Grande Ourse quests through the gameplay ledger transport, including
 lost acknowledgements, stale solved-only replies, durable outbox retention and

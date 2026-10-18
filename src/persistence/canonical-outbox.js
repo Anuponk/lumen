@@ -51,17 +51,30 @@ export function createCanonicalVictoryOutbox(storage){
  }
  return {enqueue,pending,acknowledge};
 }
-export async function replayCanonicalVictoryOutbox(outbox,userId,commit,{sessionValid=()=>true}={}){
+export async function replayCanonicalVictoryOutbox(outbox,userId,commit,{sessionValid=()=>true,onIssue=()=>{}}={}){
  const confirmed=[];
- for(const entry of outbox.pending(userId)){
+ const blockedQuests=new Set();
+ const report=kind=>{try{onIssue({kind})}catch{}};
+ for(const entry of await outbox.pending(userId)){
   if(!sessionValid())break;
+  if(blockedQuests.has(entry.questId))continue;
   try{
    const result=await commit(entry.questId,entry.reward);
    if(!sessionValid())break;
-   if(!result?.profile?.canonicalQuestState?.[entry.questId]?.solved)break;
-   outbox.acknowledge(userId,entry.questId,entry.reward);
+   const saved=result?.profile?.canonicalQuestState?.[entry.questId];
+   const badges=['autonomy','speed','noError','mastery'];
+   if(!saved?.solved||!badges.every(key=>!entry.reward?.badges?.[key]||saved.badges?.[key]===true||saved.badges?.[key]===1)){
+    blockedQuests.add(entry.questId);report('unverified');continue;
+   }
    confirmed.push(result);
-  }catch{break} // keep unacknowledged entries intact for next reconnect
+   // A failed local cleanup cannot undo a verified server acknowledgement.
+   // Its retained intent is safe to retry through the idempotent ledger.
+   try{await outbox.acknowledge(userId,entry.questId,entry.reward,entry.operationId)}catch{report('cleanup')}
+  }catch(error){
+   blockedQuests.add(entry.questId);report('commit');
+   if(error?.retryScope==='session')break;
+   // Preserve this quest's order while allowing independent victories to recover.
+  }
  }
  return confirmed;
 }

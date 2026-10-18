@@ -10,6 +10,11 @@ No player-data schema or reward reconciliation policy changes with these account
 
 ## Cloud persistence contract
 
+Delivery boundaries, durable intent ownership, V1/V2 compatibility and the writer
+cutover still required for #391 are documented in [Cloud recovery](CLOUD_RECOVERY_391.md).
+
+Canonical outbox inspection distinguishes an empty readable queue from an incomplete read of its stores. A temporarily inaccessible backend retains a visible pending check and bounded retry; readable independent intentions may still recover. The replay guard is acquired before asynchronous enumeration, and cancelled scheduled work rechecks its generation before starting. Neither an unreadable record nor a missing badge is an acknowledgement.
+
 **Protected product invariant (#248):** anything earned or purchased by an authenticated player must be durably retrievable after another-device sign-in, PWA reinstall, local cache loss, reconnect or migration. Never replace a nonempty cloud record with an empty or stale local snapshot.
 
 ### Data ownership and invariants

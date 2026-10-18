@@ -62,11 +62,14 @@ assert.match(gameScreen,/if\(solved\)\{startReplay\(legacy\);return\}/);
 assert.match(gameScreen,/if\(canonicalActiveQuest\)\{await celebrateCanonicalSuccess\(\);return\}/);
 assert.match(gameScreen,/canonicalQuestAvailable\(quest\)/);
 assert.match(gameScreen,/startCanonicalQuest\(quest\)/);
-assert.match(gameScreen,/await commitCanonicalVictory\(lumenSupabase,q\.id,pending\.reward\)/);
-assert.match(gameScreen,/canonicalVictoryOutbox\.enqueue\(ownerId,q\.id,reward\)/);
+assert.match(gameScreen,/const ownerClient=lumenSupabase/);
+assert.match(gameScreen,/await commitCanonicalVictory\(ownerClient,q\.id,pending\.reward\)/);
+assert.match(gameScreen,/const sameVictoryContext=\(\)=>lumenUser\?\.id===victoryOwner&&lumenSupabase===victoryClient/);
+assert.match(gameScreen,/if\(!sameVictoryContext\(\)\)return/);
+assert.match(gameScreen,/canonicalVictoryOutbox\.enqueue\(ownerId,q\.id,queuedReward,\{operationId\}\)/);
 assert.match(gameScreen,/const canonicalFollowing=canonicalPrevious&&canonicalQuestByOrdinal/);
 assert.match(gameScreen,/if\(!current\)return;canonicalActiveQuest=null;levelIndex=i/);
-assert.match(gameScreen,/badges\.autonomy\?15:10/);
+assert.match(gameScreen,/confirmedBadges\.autonomy\?15:10/);
 // A legacy quest cannot jump into a newly inserted quest before being solved.
 assert.match(gameScreen,/lumenProgress\.solved\[levelIndex\]&&canonicalFollowing\?\.legacyIndex===null/);
 assert.match(gameScreen,/hideSuccess\(\);openJourneyMap\(\);return;/);

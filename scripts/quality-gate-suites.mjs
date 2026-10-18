@@ -1,4 +1,7 @@
 export const nodeSuites=[
+ "canonical-outbox-recovery-tests.mjs",
+ "canonical-durable-outbox-tests.mjs",
+ "cloud-retry-scheduler-tests.mjs",
  "quality-gate-pool-tests.mjs",
  "ci-metrics-tests.mjs",
  "browser-navigation-tests.mjs",

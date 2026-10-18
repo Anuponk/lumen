@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {connectBrowser,acknowledgeLearningMilestones} from './cdp-client.mjs';
+import {connectBrowser,acknowledgeLearningMilestones,navigateAndWait} from './cdp-client.mjs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 const {send,evaluate,errors}=await connectBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -8,6 +8,41 @@ async function until(expression){for(let i=0;i<150;i++){if(await evaluate(expres
 const quests=canonicalQuestList().filter(q=>q.constellationId==='real-01');
 const targets=quests.slice(-2),results=[];
 const url=new URL(process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/');url.searchParams.set('qa','new');
+async function verifyDurableOutbox(){
+ const user='isolated-outbox-'+Date.now();
+ await evaluate(`(async()=>{
+  const {createDurableCanonicalVictoryOutbox}=await import('/src/persistence/durable-canonical-outbox.js');
+  const denied={get length(){throw Error('denied')},getItem(){throw Error('denied')},setItem(){throw Error('quota')}};
+  const box=createDurableCanonicalVictoryOutbox(denied);
+  await box.enqueue(${JSON.stringify(user)},'first',{badges:{autonomy:true}},{operationId:'first-run'});
+  await box.enqueue(${JSON.stringify(user)},'second',{badges:{speed:true}},{operationId:'second-run'});
+  return true;
+ })()`,true);
+ // Navigate to a new document: recover only persisted IndexedDB, not JS memory.
+ await navigateAndWait({send,evaluate},'Page.reload');
+ const result=await evaluate(`(async()=>{
+  const {createDurableCanonicalVictoryOutbox}=await import('/src/persistence/durable-canonical-outbox.js');
+  const {replayCanonicalVictoryOutbox}=await import('/src/persistence/canonical-outbox.js');
+  const denied={get length(){throw Error('denied')},getItem(){throw Error('denied')},setItem(){throw Error('quota')}};
+  const box=createDurableCanonicalVictoryOutbox(denied),user=${JSON.stringify(user)};
+  const restored=await box.pending(user);
+  const commit=async id=>({profile:{canonicalQuestState:{[id]:{solved:true,badges:{autonomy:true,speed:true}}}}});
+  const independent=await replayCanonicalVictoryOutbox(box,user,async id=>{if(id==='first')throw Error('refused');return commit(id)});
+  const remaining=await box.pending(user);
+  await replayCanonicalVictoryOutbox(box,user,commit);
+  const complete=(await box.pending(user)).length===0;
+  const key='lumenCanonicalVictoryOutboxV1:'+user+':corrupt';localStorage.setItem(key,'{broken');
+  const native=createDurableCanonicalVictoryOutbox(localStorage);
+  await native.enqueue(user,'valid',{badges:{autonomy:true}},{operationId:'valid-run'});
+  const inspected=await native.inspect(user);
+  const recovered=await replayCanonicalVictoryOutbox(native,user,commit);
+  const corruptPreserved=localStorage.getItem(key)==='{broken';
+  localStorage.removeItem(key); // This isolated test fixture only.
+  return {restored:restored.length,independent:independent.length,remaining:remaining.map(e=>e.questId),complete,corruptPreserved,reported:inspected.issues.includes('invalid_entry'),recovered:recovered.length};
+ })()`,true);
+ assert.deepEqual(result,{restored:2,independent:1,remaining:['first'],complete:true,corruptPreserved:true,reported:true,recovered:1});
+ results.push({test:'durable IndexedDB recovery after document restart',ok:true});
+}
 async function openDetail(){
  await evaluate(`lumenDiagnostics.setupQuest(${quests.filter(q=>q.legacyIndex!==null).at(-1).legacyIndex})`);await acknowledgeLearningMilestones(evaluate);
  await evaluate('document.getElementById("openSky").click()');
@@ -21,6 +56,7 @@ try{
   const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:`localStorage.clear();localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(progress))});for(const key of ['lumenTutorialSeen','lumenQaTutorialSeen','lumenQaTutorialCompletedV1','lumenSkyTourSeen'])localStorage.setItem(key,'1');localStorage.setItem('lumenSound','off');`});
   await send('Page.navigate',{url:url.href});await until('!!window.lumenDiagnostics');await sleep(1000);
   await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});
+  await verifyDurableOutbox();
   for(const q of targets){
    await openDetail();
    const selector=`#puzzleGrid [data-quest-id="${q.id}"]`;
