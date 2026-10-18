@@ -1,9 +1,10 @@
 export const nodeSuites=[
+ "quality-gate-pool-tests.mjs",
+ "ci-metrics-tests.mjs",
  "audit-catalogue.mjs",
  "generate-diverse-grids-tests.mjs",
  "diverse-adventure-integration-tests.mjs",
  "difficulty-audit.mjs",
- "engine-equivalence.mjs",
  "campaign-tests.mjs",
  "late-game-tests.mjs",
  "content-architecture-tests.mjs",
@@ -87,5 +88,7 @@ export const nodeSuites=[
  "streak-banner-mockup-tests.mjs",
  "learning-tests.mjs",
  "social-challenge-tests.mjs",
- "social-challenge-ui-tests.mjs"
+ "social-challenge-ui-tests.mjs",
+ // Solver equivalence is the slowest Node suite; reject cheap regressions first.
+ "engine-equivalence.mjs"
 ];
