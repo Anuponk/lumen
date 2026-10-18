@@ -26,7 +26,7 @@ Completion means a **nonempty** set of all quests belonging to the current catal
 
 ## Product invariants
 - Campaign size and sky stars derive from the content catalogue, never fixed limits. Currently: 134 sequential quests across 24 constellations / 298 stars, including the preserved historical 100 quests / 12 constellations / 150 stars. Every constellation's quest rewards must sum exactly to its star count.
-- The player cannot skip an unsolved quest. “Réinitialiser” resets the current board; only victory unlocks the next quest.
+- A new campaign cannot skip an unsolved prerequisite. Catalogue additions preserve acquired access using the immutable origin policy in `PROGRESSION.md` (#470), without awarding completion. “Réinitialiser” resets the current board; only victory advances its sequence.
 - Cell cycle: empty -> exclusion -> Guardian -> empty. The first tap must never be rejected as an invalid Guardian.
 - Victory depends on the Guardian placement satisfying the puzzle, not on whether all remaining cells are manually excluded.
 - Guardians: exactly one per row, column and territory; Guardians cannot touch, including diagonally.

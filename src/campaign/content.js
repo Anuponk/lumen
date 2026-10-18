@@ -1,4 +1,5 @@
 import {CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,CONSTELLATION_QUESTS,CAMPAIGN_SIZE_SCHEDULE} from "./data.js";
+import {cataloguePackForQuestId} from './catalogue-origin.js';
 
 export const CONTENT_MODEL_VERSION=1;
 export const BASE_SKY_ID="real-sky";
@@ -73,8 +74,9 @@ export function hasPackAccess(pack,entitlements=[],progress={},attempt=null){
  if(pack.access==="included"||pack.kind==="base")return true;
  const questIndices=pack.questIndices||[];
  const started=Object.keys(progress.solved||{}).some(key=>progress.solved[key]&&questIndices.includes(Number(key)));
- const active=attempt?.startedAt&&attempt.mode!=="challenge"&&questIndices.includes(Number(attempt.questId)-1);
- return normalizeEntitlements(entitlements).has(pack.id)||!!started||!!active||(Array.isArray(progress.legacyAdventureAccess)&&progress.legacyAdventureAccess.includes(pack.id));
+ const canonicalStarted=Object.entries(progress.canonicalQuestState??{}).some(([id,value])=>value?.solved&&cataloguePackForQuestId(id)===pack.id);
+ const active=attempt?.startedAt&&attempt.mode!=="challenge"&&(questIndices.includes(Number(attempt.questId)-1)||cataloguePackForQuestId(attempt.questId)===pack.id);
+ return normalizeEntitlements(entitlements).has(pack.id)||!!started||canonicalStarted||!!active||(Array.isArray(progress.legacyAdventureAccess)&&progress.legacyAdventureAccess.includes(pack.id));
 }
 
 export function preserveStartedAdventureAccess(progress,attempt=null,packs=CONTENT_PACKS){

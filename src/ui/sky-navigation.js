@@ -48,7 +48,7 @@ export function swipeConstellationTarget(current,selected,delta){
  return {pack:next,entry,changedAdventure:true,locked:!next.accessible||!entry.accessible};
 }
 
-export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit,getShape,getMastered,getBadgeCounts=()=>({}),getCanonicalQuests=()=>[],getCanonicalPackQuests=()=>[],getCanonicalSolved=()=>false,getCanonicalAvailable=()=>false,onCanonicalQuest=()=>{},onConstellation}){
+export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit,getShape,getMastered,getBadgeCounts=()=>({}),getCanonicalQuests=()=>[],getCanonicalPackQuests=()=>[],getCanonicalSolved=()=>false,getCanonicalAvailable=()=>false,getCanonicalLockReason=()=>'Termine les quêtes précédentes',onCanonicalQuest=()=>{},onConstellation}){
  const sheet=document.querySelector('#mapModal .map-sheet'),tabs=document.getElementById('sectorTabs');
  sheet.querySelector('h2').textContent='Mon ciel';sheet.querySelector('h2').id='monCielTitle';
  const modal=document.getElementById('mapModal');modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-labelledby','monCielTitle');
@@ -78,14 +78,14 @@ export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit
   if(!reserved)return;
   canonicalPanel.replaceChildren();
   const heading=document.createElement('h3');
-  heading.textContent=selectedConstellation.label+' · 10 quêtes';
+  heading.textContent=selectedConstellation.label+' · '+getCanonicalQuests(selectedConstellation.id).length+' quêtes';
   canonicalPanel.appendChild(heading);
   for(const quest of getCanonicalQuests(selectedConstellation.id)){
    const solved=getCanonicalSolved(quest),available=getCanonicalAvailable(quest);
    const button=document.createElement('button');button.type='button';
    button.className='puzzle-card'+(solved?' done':'')+(available?'':' locked');
    button.textContent='Quête '+quest.ordinal+(solved?' ✓':available?'':' · verrouillée');
-   button.disabled=!available;button.dataset.questId=quest.id;
+   button.disabled=!available;button.dataset.questId=quest.id;button.title=available?(solved?'Rejouer la quête':'Jouer la quête'):getCanonicalLockReason(quest);
    if(available)button.onclick=()=>onCanonicalQuest(quest);
    canonicalPanel.appendChild(button);
   }

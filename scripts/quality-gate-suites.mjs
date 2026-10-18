@@ -1,4 +1,7 @@
 export const nodeSuites=[
+ 'catalogue-access-tests.mjs',
+ 'catalogue-compatibility-tests.mjs',
+ 'catalogue-origin-cloud-tests.mjs',
  'legacy-command-client-tests.mjs',
  'canonical-command-client-tests.mjs',
  "canonical-retry-state-tests.mjs",

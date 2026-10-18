@@ -7,6 +7,8 @@ if(diverse.schema!=="lumen-grid-overrides-v1"||diverseById.size!==100)throw Erro
 import {CONTENT_PACKS,CONTENT_CONSTELLATIONS,hasPackAccess} from "./content.js";
 import {playableQuest,playableQuestCount} from "./playable-quests.js";
 import {qualifyDifficulty} from "./difficulty.js";
+import {constellationCatchupAvailable,catalogueQuestDecision} from "./catalogue-access.js";
+import {originQuests,pastCatalogues} from './catalogue-origin.js';
 
 function planSlots(packs,constellations){
  const records=[],ordered=[...packs].sort((a,b)=>a.order-b.order);
@@ -64,12 +66,18 @@ export function canonicalNextUnsolved(solvedLegacy={},solvedIds={}){
 // Never grant a completion: each inserted quest still requires earlier quests
 // within its own constellation, including earlier inserted ones.
 export function canonicalConstellationCatchupAvailable(quest,progress={},quests=all){
- if(!quest||quest.legacyIndex!==null)return false;
- const group=quests.filter(q=>q.constellationId===quest.constellationId&&q.packId===quest.packId);
- const historical=group.filter(q=>q.legacyIndex!==null);
- if(!historical.length||!historical.every(q=>!!progress.solved?.[q.legacyIndex]))return false;
- return group.filter(q=>q.ordinal<quest.ordinal).every(q=>
-  q.legacyIndex!==null?!!progress.solved?.[q.legacyIndex]:!!progress.canonicalQuestState?.[q.id]?.solved);
+ return constellationCatchupAvailable(quest,progress,quests,quests===all?originQuests(progress):undefined);
+}
+
+export function canonicalInsertedQuestDecision(quest,progress={},context={}){
+ return quest?.legacyIndex===null?canonicalCampaignQuestDecision(quest,progress,context):{status:'missing-content'};
+}
+export function canonicalCampaignQuestDecision(quest,progress={},context={}){
+ const pack=CONTENT_PACKS.find(p=>p.id===quest?.packId);
+ const packAllowed=!!pack&&hasPackAccess(pack,context.entitlements??[],progress,context.attempt??null);
+ let origin;
+ try{origin=originQuests(progress)}catch{return {status:'catalogue-incompatible'}}
+ return catalogueQuestDecision(quest,progress,all,{...context,packAllowed,originQuests:origin,pastCatalogues:pastCatalogues(progress)});
 }
 
 // User-facing catalogue numbering is deliberately separate from legacy save keys.

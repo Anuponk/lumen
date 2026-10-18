@@ -6,6 +6,7 @@ import {functionSource} from './source-tools.mjs';
 import {createLocalPersistence} from '../src/persistence/local.js';
 import {createCloudPersistence} from '../src/persistence/cloud.js';
 import {skyStarsForGrid} from '../src/campaign/progression.js';
+import {currentCatalogueOrigin} from '../src/campaign/catalogue-origin.js';
 
 const baseline='dcd9f3c872e623541be698edc212b64589d3b164';
 const source=(process.argv[2]?fs.readFileSync(process.argv[2],'utf8'):execFileSync('git',['show',baseline+':index.html'],{encoding:'utf8'})).replace(/\r/g,'');
@@ -16,11 +17,14 @@ for(const stored of [null,'bad JSON',JSON.stringify({solved:{0:1,1:1},badges:{}}
  const local=createLocalPersistence(storage,()=>progress);
  const legacy={localStorage:storage};vm.createContext(legacy);
  vm.runInContext(functionSource(source,'loadLumenProgress')+'\n'+functionSource(source,'saveLumenProgress'),legacy);
- progress=local.loadLumenProgress();assert.deepEqual(plain(progress),plain(legacy.loadLumenProgress()));
+ progress=local.loadLumenProgress();
+ const expected=plain(legacy.loadLumenProgress());
+ if(!Object.keys(expected.solved).length)expected.catalogueOrigin=currentCatalogueOrigin;
+ assert.deepEqual(plain(progress),expected);
  local.saveLumenProgress();const actual=written;legacy.lumenProgress=progress;legacy.saveLumenProgress();assert.deepEqual(actual,written);
 }
 const denied=createLocalPersistence({getItem(){throw Error('denied')},setItem(){throw Error('denied')}},()=>({solved:{}}));
-assert.deepEqual(denied.loadLumenProgress(),{solved:{},badges:{}});denied.saveLumenProgress();
+assert.deepEqual(denied.loadLumenProgress(),{solved:{},badges:{},catalogueOrigin:currentCatalogueOrigin});denied.saveLumenProgress();
 
 async function fixture(options,legacy){
  const trace=[],queue=[],warnings=[];let authCallback;

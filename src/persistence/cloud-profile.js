@@ -1,4 +1,5 @@
 // Explicit migration backup. Never automatically overwrites a cloud snapshot.
+import {catalogueOrigin,mergeCatalogueOrigin,currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
 const MAX_CHARS=524288;
 export function validateCloudProfile(profile){
   if(!profile || typeof profile!=="object" || Array.isArray(profile)) throw Error("Profil invalide");
@@ -160,6 +161,7 @@ function mergeQualificationMetadata(left,right){
 export function cloudSafelyCoversLocal(local,remote){
   if(!local || typeof local!=="object" || Array.isArray(local))return true;
   const cloud=validateCloudProfile(remote);
+  if(!mergeCatalogueOrigin(local,cloud).ok)return false;
   if(local.legacyVictoryRevision!==undefined&&(!Number.isSafeInteger(local.legacyVictoryRevision)||!Number.isSafeInteger(cloud.legacyVictoryRevision)||cloud.legacyVictoryRevision<local.legacyVictoryRevision))return false;
   const grants=mergeLegacyAdventureAccess(local.legacyAdventureAccess,cloud.legacyAdventureAccess);
   if(!grants.ok||grants.value?.some(id=>!cloud.legacyAdventureAccess?.includes(id)))return false;
@@ -313,6 +315,7 @@ export async function initializeCloudProfile(supabase,localProfile){
 }
 export async function compareAndSwapCloudProfile(supabase,profile,expected){
  const next=validateCloudProfile(profile),baseline=validateCloudProfile(expected);
+ if(next.catalogueOrigin===undefined&&baseline.catalogueOrigin===undefined&&catalogueOrigin(baseline)===currentCatalogueOrigin)next.catalogueOrigin=currentCatalogueOrigin;
  const {data,error}=await supabase.rpc("lumen_cas_profile",{p_expected:baseline,p_payload:next});
  if(error)throw Error("Sauvegarde cloud impossible : "+error.message);
  if(data!==true)throw Error("Conflit de version cloud : sauvegarde refusée");
@@ -424,6 +427,9 @@ export async function reconcileDominantLocalProfile(supabase,storage,remote){
  if(!raw)return {status:"blocked",reason:"missing_local"};
  let local;
  try{local=validateCloudProfile(JSON.parse(raw))}catch{return {status:"blocked",reason:"invalid_local"}}
+ const origin=mergeCatalogueOrigin(local,cloud);
+ if(!origin.ok)return {status:'blocked',reason:'catalogue_origin_conflict',fields:['catalogueOrigin']};
+ if(origin.value!==undefined)local.catalogueOrigin=origin.value;
  if(!cloudSafelyCoversLocal(cloud,local))return {status:"blocked",reason:"missing_cloud_achievements"};
  for(const field of ["shards","xp","skyScore"]){
   if(Number(local[field]||0)!==Number(cloud[field]||0))return {status:"blocked",reason:"mutable_balance"};
@@ -433,7 +439,7 @@ export async function reconcileDominantLocalProfile(supabase,storage,remote){
  }
  // Unknown fields can contain non-repeatable transactions. Require equality
  // instead of silently selecting one profile's value.
- const monotonic=new Set(["solved","historyBackup","badges","stars","noHint","performances","canonicalQuestState","autonomousWins","legacyAdventureAccess"]);
+ const monotonic=new Set(["solved","historyBackup","badges","stars","noHint","performances","canonicalQuestState","autonomousWins","legacyAdventureAccess","catalogueOrigin"]);
  for(const key of new Set([...Object.keys(local),...Object.keys(cloud)])){
   if(monotonic.has(key)||["shards","xp","skyScore","daily","challenges"].includes(key))continue;
   if(!sameCloudProfile(local[key]??null,cloud[key]??null))return {status:"blocked",reason:"unclassified_field",fields:[key]};
@@ -511,7 +517,10 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
   if(!result.ok)return {status:"blocked",reason:"mutable_ledger",fields:[field]};
   merged[field]=result.value;
  }
- const safeFields=new Set(["solved","historyBackup","noHint","badges","stars","performances","canonicalQuestState","autonomousWins","legacyAdventureAccess"]);
+ const origin=mergeCatalogueOrigin(local,cloud);
+ if(!origin.ok)return {status:'blocked',reason:'catalogue_origin_conflict',fields:['catalogueOrigin']};
+ if(origin.value!==undefined)merged.catalogueOrigin=origin.value;
+ const safeFields=new Set(["solved","historyBackup","noHint","badges","stars","performances","canonicalQuestState","autonomousWins","legacyAdventureAccess","catalogueOrigin"]);
  const autonomy=mergeAutonomousWins(local.autonomousWins,cloud.autonomousWins);
  if(!autonomy.ok)return {status:"blocked",reason:"autonomous_wins_conflict",fields:["autonomousWins"]};
  merged.autonomousWins=autonomy.value;
