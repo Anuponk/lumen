@@ -6,7 +6,9 @@ Baseline: `bef5f32`. All paths are repository-relative. This phase indexes exist
 
 From repository root, run a Node suite with `node scripts/<filename>.mjs` using the exact filenames below. Node 22+ is required; no npm install. Imports of JSON use import attributes. Each table row names executable files, not new proposed checks.
 
-The table prioritizes the requested domains. For the complete current filename inventory without reading test bodies, use `rg --files scripts supabase/tests -g '*test*.mjs' -g '*equivalence.mjs' -g '*audit*.mjs' -g '*.sql' -g '*tests.py'`. The aggregate membership remains defined by `scripts/quality-gate.mjs`; not every standalone test is orchestrated there.
+The table prioritizes the requested domains. For the complete current filename inventory without reading test bodies, use `rg --files scripts supabase/tests -g '*test*.mjs' -g '*equivalence.mjs' -g '*audit*.mjs' -g '*.sql' -g '*tests.py'`. Node membership is shared in `scripts/quality-gate-suites.mjs`; `scripts/quality-gate.mjs` orchestrates Node/browser checks. Not every standalone test is orchestrated there.
+
+Phase 2: `npm run test:affected` / `node scripts/test-affected.mjs` selects the critical tier for known boundary edits and widens to the full client battery for uncertain impact. `--list` previews; `npm run test:full` runs the broad battery. [Commands, audit, regression proof and limits](../TESTING.md#local-affected-tests-phase-2). The gate now includes `unlocked-adventure-progress.test.mjs` and `test-affected-tests.mjs`; cloud restart and badge reload cases extend their existing suites. The phase 1 Adventure fixture failure below is corrected with separate locked/started coverage, preserving product rules.
 
 | Domain / covered modules | Existing scripts under `scripts/` | Nature / scope |
 |---|---|---|
@@ -23,6 +25,8 @@ The table prioritizes the requested domains. For the complete current filename i
 | Grids / astronomy | `audit-catalogue.mjs`, `difficulty-audit.mjs`, `validate-playable-astronomy-tests.mjs`, `astronomical-projection-tests.mjs`, `astronomical-catalogue-tests.mjs`, `content-architecture-tests.mjs` | Strict grid validity/uniqueness/proof replay; reference geometry/content contracts. See `docs/GRID_CATALOG.md` for full audits |
 
 ## Browser / aggregate commands
+
+Phase 2 follow-up: `admin-catalogue.test.mjs`, `generated-adventure-map.test.mjs`, `staged-adventure.test.mjs` and `extended-boundary.test.mjs` now run inside the gate. Their obsolete catalogue/access expectations are corrected with retained identity, locked-access and historical-save assertions; [causes and red/green evidence](../TESTING.md#follow-up-four-obsolete-standalone-suites-corrected).
 
 - `node scripts/quality-gate.mjs`: authoritative list of currently orchestrated Node suites plus seven browser runners. Starts its own server/browser and writes reports under `docs/validation/`. Needs Chrome/Chromium/Edge; set `LUMEN_CHROME_BIN` if needed. Some differential suites need Git and their historical baseline. Do not infer total case counts from old reports.
 - Browser runners: `scripts/account-session-browser-tests.mjs`, `scripts/browser-tests.mjs`, `scripts/ux-cleanup-tests.mjs`, `scripts/learning-browser-tests.mjs`, `scripts/late-game-browser-tests.mjs`, `scripts/sky-navigation-browser-tests.mjs`, `scripts/canonical-replay-browser-tests.mjs`. Prefer aggregate orchestration; standalone setup/server/CDP/report arguments are documented in `docs/TESTING.md` and runner headers. Use isolated temporary profiles.
