@@ -213,6 +213,18 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Session-readable/quota regression: `account-session-browser-tests.mjs` now uses
+actual browser localStorage for its synthetic Auth session and models the SDK's
+default writable-probe failure. With a readable existing session, the real UI
+must remain signed in after reload, including mobile. This failed before the
+explicit SDK storage option; recovery, explicit logout, account changes and
+isolated command recovery remain covered. The transport is simulated; this
+mandatory test does not exercise a production Auth service or prove a particular
+phone is repaired. A separate isolated local check with the real public SDK
+2.118.0 reproduced default-versus-explicit storage behavior with synthetic
+sessions and all provider requests blocked. It is not a required network fetch
+in CI. No token/credential fixture is copied from a real user.
+
 `cloud-profile-tests.mjs` also reproduces lost server codes during CAS wrapping.
 Known legacy/canonical/catalogue guard messages become fixed diagnostic codes;
 other SQLSTATE/PostgREST codes remain bounded, unknown shapes become
