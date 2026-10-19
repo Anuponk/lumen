@@ -358,8 +358,28 @@ export async function compareAndSwapCloudProfile(supabase,profile,expected){
  const next=validateCloudProfile(profile),baseline=validateCloudProfile(expected);
  if(next.catalogueOrigin===undefined&&baseline.catalogueOrigin===undefined&&catalogueOrigin(baseline)===currentCatalogueOrigin)next.catalogueOrigin=currentCatalogueOrigin;
  const {data,error}=await supabase.rpc("lumen_cas_profile",{p_expected:baseline,p_payload:next});
- if(error)throw Error("Sauvegarde cloud impossible : "+error.message);
- if(data!==true)throw Error("Conflit de version cloud : sauvegarde refusée");
+ if(error){
+  // Only fixed guard categories and bounded provider codes reach diagnostics.
+  // Do not retain provider messages, details, hints or an unsanitized cause.
+  const reasons=new Map([
+   ["legacy victory command required; preserve pending data and update client","LEGACY_COMMAND_REQUIRED"],
+   ["earned XP cannot decrease","LEGACY_XP_REGRESSION"],
+   ["canonical acquisition removal rejected","CANONICAL_ACQUISITION_REMOVAL"],
+   ["canonical badge removal rejected","CANONICAL_BADGE_REMOVAL"],
+   ["invalid canonical snapshot","INVALID_CANONICAL_SNAPSHOT"],
+   ["Catalogue origin cannot be erased or rewritten","CATALOGUE_ORIGIN_REWRITE"],
+   ["Catalogue origin disagrees with existing cohort","CATALOGUE_ORIGIN_CONFLICT"],
+   ["Unsupported catalogue origin","UNSUPPORTED_CATALOGUE_ORIGIN"]
+  ]);
+  const failure=Error("Sauvegarde cloud impossible : refus du serveur");
+  const providerCode=typeof error.code==="string"&&/^(?:[0-9A-Z]{5}|PGRST[0-9]{3})$/.test(error.code)?error.code:"CLOUD_WRITE_REFUSED";
+  failure.code=reasons.get(error.message)||providerCode;
+  throw failure;
+ }
+ if(data!==true){
+  const conflict=Error("Conflit de version cloud : sauvegarde refusée");
+  conflict.code="CLOUD_CAS_CONFLICT";throw conflict;
+ }
  return next;
 }
 // Reuse an existing verified backup instead of multiplying full snapshots on retries.

@@ -172,6 +172,15 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+`cloud-profile-tests.mjs` also reproduces lost server codes during CAS wrapping.
+Known legacy/canonical/catalogue guard messages become fixed diagnostic codes;
+other SQLSTATE/PostgREST codes remain bounded, unknown shapes become
+`CLOUD_WRITE_REFUSED`, and a false CAS result becomes `CLOUD_CAS_CONFLICT`.
+Fixtures assert one refused RPC, no fallback/retry and no provider message,
+details, hint or cause leaking into the diagnostic error. These tests verify
+observability only, not the cause or recovery of a particular player refusal.
+
+
 `node scripts/cloud-profile-transitions-tests.mjs` runs 56 synthetic transition
 and producer-classification checks. Eight new hydration assertions fail before
 the tutorial coverage/routing fix: seen flags must survive a covering-cloud

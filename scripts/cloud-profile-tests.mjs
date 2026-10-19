@@ -209,3 +209,30 @@ assert.doesNotMatch(uiSrc,/account_signin_success[^\n]*showAccountSavedConfirmat
  assert.equal(refused.status,'blocked');
  assert.equal(refused.reason,'reward_conflict');
 }
+
+// A server refusal must remain diagnosable without exposing provider text or a save.
+for(const [message,code,expected] of [
+ ['legacy victory command required; preserve pending data and update client','22023','LEGACY_COMMAND_REQUIRED'],
+ ['earned XP cannot decrease','22023','LEGACY_XP_REGRESSION'],
+ ['canonical acquisition removal rejected','23514','CANONICAL_ACQUISITION_REMOVAL'],
+ ['canonical badge removal rejected','23514','CANONICAL_BADGE_REMOVAL'],
+ ['invalid canonical snapshot','23514','INVALID_CANONICAL_SNAPSHOT'],
+ ['Catalogue origin cannot be erased or rewritten','23514','CATALOGUE_ORIGIN_REWRITE'],
+ ['Catalogue origin disagrees with existing cohort','23514','CATALOGUE_ORIGIN_CONFLICT'],
+ ['Unsupported catalogue origin','22023','UNSUPPORTED_CATALOGUE_ORIGIN'],
+ ['provider message containing fixture-private-data','42501','42501'],
+ ['provider message containing fixture-private-data','PGRST202','PGRST202'],
+ ['provider message containing fixture-private-data','token-fixture-private-data','CLOUD_WRITE_REFUSED']
+]){
+ let calls=0;
+ const rejected={rpc:async()=>{calls++;return {data:null,error:{message,code,details:'fixture-private-data',hint:'fixture-private-data'}}}};
+ await assert.rejects(compareAndSwapCloudProfile(rejected,guest,guest),error=>{
+  assert.equal(error.code,expected);assert.match(error.message,/^Sauvegarde cloud impossible/);
+  assert(!JSON.stringify({message:error.message,...error}).includes('fixture-private-data'));
+  assert.equal(error.details,undefined);assert.equal(error.hint,undefined);assert.equal(error.cause,undefined);
+  return true;
+ });
+ assert.equal(calls,1,'No retry or fallback write after a refused snapshot');
+}
+await assert.rejects(compareAndSwapCloudProfile({rpc:async()=>({data:false})},guest,guest),error=>error.code==='CLOUD_CAS_CONFLICT');
+console.log('Safe cloud write diagnostics distinguish authority refusals, provider codes and stale CAS without raw error details');
