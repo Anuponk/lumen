@@ -36,7 +36,13 @@ missing a locally acknowledged introduction; with local-only achievements, the
 local-dominant path could stop on the same compatible flag before reaching the
 existing two-way merge. Coverage now refuses the loss and metadata differences
 route to compatible reconciliation. Invalid flags still hold. Tutorial timing,
-wording, badge eligibility, and server reward projections do not change.
+wording, badge eligibility, and server reward projections do not change. Initial
+coverage also requires equality for local unknown fields and explicitly stored
+score-schema markers, so it cannot bypass the reconciler's refusal by replacing
+the local copy first. Cloud-only extra fields may be adopted; a local unknown
+value absent/different in cloud is retained for review, not deleted. Old caches
+with such data or a conflicting explicit sky schema can therefore remain held;
+this is a preservation limit, not automatic migration of those formats.
 
 The transition suite inspects literal JavaScript profile assignments, executes
 catalogue-derived guest victories, and scans outer keys of the audited SQL

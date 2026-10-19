@@ -201,3 +201,15 @@ test('each declared profile field has an executable reconciliation policy fixtur
   assert.deepEqual(result.profile[field],expected,field);
  }
 });
+test('coverage cannot discard a local unknown field before reconciliation is considered',async()=>{
+ const local={...base(),futureReceipt:{operation:'pending'}},f=fixture(local,base());
+ assert.equal(cloudSafelyCoversLocal(local,f.server),false);
+ const result=await f.hydrate();assert.equal(result.status,'blocked');assert.equal(f.calls.length,0);
+ assert.equal(f.storage.getItem('lumenProgressV1'),f.raw);
+});
+test('coverage respects the declared equal-only score-schema marker',async()=>{
+ const f=fixture({...base(),skyHistoryVersion:3},base());
+ assert.equal(cloudSafelyCoversLocal(JSON.parse(f.raw),f.server),false);
+ const result=await f.hydrate();assert.equal(result.status,'blocked');assert.equal(f.calls.length,0);
+ assert.equal(f.storage.getItem('lumenProgressV1'),f.raw);
+});

@@ -194,6 +194,12 @@ export function cloudSafelyCoversLocal(local,remote){
   const cloud=validateCloudProfile(remote);
   if(!mergeCatalogueOrigin(local,cloud).ok)return false;
   if(legacyRevisionConflict(local,cloud))return false;
+  // Coverage is an installation boundary too: it must not silently drop local
+  // fields that the reconciler would hold for explicit review.
+  for(const field of Object.keys(local)){
+    const policy=Object.hasOwn(CLOUD_PROFILE_FIELDS,field)?CLOUD_PROFILE_FIELDS[field].reconcile:null;
+    if((policy===null||policy==="equal")&&!sameCloudProfile(local[field]??null,cloud[field]??null))return false;
+  }
   for(const flag of introFlags){
     if(!validIntroFlag(local[flag])||!validIntroFlag(cloud[flag]))return false;
     if(Boolean(local[flag])&&!Boolean(cloud[flag]))return false;

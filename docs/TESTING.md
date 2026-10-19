@@ -172,10 +172,12 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
-`node scripts/cloud-profile-transitions-tests.mjs` runs 54 synthetic transition
+`node scripts/cloud-profile-transitions-tests.mjs` runs 56 synthetic transition
 and producer-classification checks. Eight new hydration assertions fail before
 the tutorial coverage/routing fix: seen flags must survive a covering-cloud
 restore and local-dominant achievements must reach the compatible policy.
+Two additional failing assertions require initial coverage to retain unknown local
+fields and hold explicit score-schema differences before installation.
 The matrix combines four flags, absent/zero/older/current command revisions,
 both device directions, second-device installation, V2/V3 summaries, retries,
 CAS/read-back failures, invalid shapes and protected command refusal with an
