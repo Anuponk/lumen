@@ -4,6 +4,12 @@ Baseline: `bef5f32`. All paths are repository-relative. This phase indexes exist
 
 ## Select a check
 
+PWA update freshness: `service-worker-cache-tests.mjs` exercises actual worker
+handlers; `service-worker-update-browser-tests.mjs` reproduces warm v9-to-v10
+upgrade, stale HTTP module imports, a subsequent release with unchanged worker,
+offline fallback and retained local/IndexedDB player data. Synthetic app, real
+browser/service-worker/cache; no cloud writes or real-account recovery claim.
+
 Historical command cutover and isolated recovery: `legacy-command-client-tests.mjs`
 (actual scheduler/authority refusal/guards), `account-session-browser-tests.mjs`
 (simulated mobile/desktop lost response and Auth resume), catalogue seed

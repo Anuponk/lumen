@@ -1,4 +1,5 @@
 export const nodeSuites=[
+ 'service-worker-cache-tests.mjs',
  'campaign-resume-tests.mjs',
  'catalogue-access-tests.mjs',
  'catalogue-compatibility-tests.mjs',

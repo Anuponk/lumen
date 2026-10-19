@@ -10,6 +10,25 @@ No player-data schema or reward reconciliation policy changes with these account
 
 ## Cloud persistence contract
 
+PWA asset freshness (2026-10-19): the HTML build label identifies the document,
+not proof that every imported native module is from that release. A real-browser
+fixture reproduces fresh HTML with an old `cloud-profile.js` even after reload,
+under the v9 worker and a fresh HTTP cache entry. The v10 worker bypasses HTTP
+cache for same-origin public `/src/`, `/content/` and shell assets and returns
+successful asset responses with `Cache-Control: no-store` so the document's
+resource cache cannot retain them for the next release. The Cache API keeps an
+explicit successful-response copy for network-failure fallback. HTTP refusals
+are returned, never cached or disguised as offline success. Cache-write failure
+does not block a valid network response. Provider/private requests are excluded.
+
+Worker activation retires only old `lumen-assets-*` caches and claims the client;
+the existing controller-change reload installs the new modules. It never clears
+localStorage, IndexedDB, attempts, receipts or pending operations. This addresses
+online update freshness, not atomic versioning of an entire graph under partial
+network failure or cold-offline startup. The reported phone still requires a
+fresh diagnostic after publication; cache reproduction is not account recovery.
+There is no SQL/Auth or profile reconciliation change in this delivery.
+
 CAS error observability: `compareAndSwapCloudProfile` preserves a bounded
 SQLSTATE/PostgREST code or a fixed category for exact known server guard
 messages. A false CAS response has a separate conflict code. Raw provider
