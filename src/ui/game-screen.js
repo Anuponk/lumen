@@ -6,6 +6,7 @@ import {createHintTestSuite} from "../testing/hint-tests.js";
 import {createDiagnostics} from "../testing/diagnostics.js";
 import {createLocalPersistence} from "../persistence/local.js";
 import {currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
+import {canonicalAttemptToResume,nextCanonicalAtLegacyBoundary,preserveAttemptSnapshot} from '../campaign/campaign-resume.js';
 import {createCloudPersistence} from "../persistence/cloud.js";
 import {reconcileDailyIntoCloudProfile} from "../persistence/daily-hydration.js";
 import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievements,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles} from "../persistence/cloud-profile.js";
@@ -472,6 +473,10 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    localStorage.setItem(backupKey,currentLocal);
    if(localStorage.getItem(backupKey)!==currentLocal)throw Error("Sauvegarde du profil invité non vérifiée");
   }
+  if(switchingOwner&&canonicalResumeOwner&&canonicalResumeOwner!==accountId){
+   preserveAttemptSnapshot(localStorage,attemptEngine.storageKey);
+   attemptEngine.clear();canonicalActiveQuest=null;canonicalResumeOwner=null;replayMode=false;
+  }
   hydrationStage="local_reconciliation";
   if(currentLocal&&existing&&!switchingOwner){
    let conflict=false;
@@ -546,6 +551,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    recordCloudDiagnostic("hydration_local_quota_bypass",{cloudVerified:true});
   }else if(changed){recordCloudDiagnostic("hydration_reload",{stage:"local_install"});location.reload();return}
   cloudProfileReady=true;
+  resumeCanonicalCampaignBoundary();
    canonicalRecovery.schedule();
   // Do not claim hydration is fully synchronized until the quest mirror is
   // repaired and read back. Preserve the full profile on partial failure.
@@ -931,7 +937,7 @@ captureReferral();
 
 let lumenProgress=loadLumenProgress(),usedHintThisGame=false,questStarted=true,questFailed=false;
 // A canonical-only quest is never mapped to an old numeric save index.
-let canonicalActiveQuest=null;if(!lumenProgress.xp)lumenProgress.xp=0;if(!lumenProgress.challenges)lumenProgress.challenges={};if(!lumenProgress.stars)lumenProgress.stars={};if(!Number.isFinite(lumenProgress.shards))lumenProgress.shards=3;if(!lumenProgress.performances)lumenProgress.performances={};
+let canonicalActiveQuest=null,canonicalResumeOwner=null;if(!lumenProgress.xp)lumenProgress.xp=0;if(!lumenProgress.challenges)lumenProgress.challenges={};if(!lumenProgress.stars)lumenProgress.stars={};if(!Number.isFinite(lumenProgress.shards))lumenProgress.shards=3;if(!lumenProgress.performances)lumenProgress.performances={};
 if(!lumenProgress.daily)lumenProgress.daily={dates:{},rewards:{}};if(!Number.isFinite(lumenProgress.skyScore))lumenProgress.skyScore=null;
 
 function dailyStreak(){return streakFromDates(lumenProgress.daily.dates,localDateKey())}
@@ -1582,6 +1588,27 @@ function canonicalQuestAccess(quest){
  });
 }
 function canonicalQuestAvailable(quest){return canonicalQuestAccess(quest).status==='ready'}
+function restoreCanonicalCampaignAttempt(){
+ if(socialChallenge||qaActive)return;
+ let saved;
+ try{saved=JSON.parse(localStorage.getItem(attemptEngine.storageKey)||'null')}catch{return}
+ const ownerId=localStorage.getItem('lumenCloudOwnerId');
+ const quest=canonicalAttemptToResume(saved,canonicalQuestList(),{ownerId});
+ if(!quest){
+  if(saved?.attemptId&&typeof saved.questId==='string'&&Number.isNaN(Number(saved.questId))&&['campaign','replay'].includes(saved.mode)&&['READY','RUNNING','PAUSED'].includes(saved.state))preserveAttemptSnapshot(localStorage,attemptEngine.storageKey);
+  return;
+ }
+ if(lumenUser&&lumenUser.id!==ownerId){preserveAttemptSnapshot(localStorage,attemptEngine.storageKey);return}
+ canonicalActiveQuest=quest;canonicalResumeOwner=ownerId;replayMode=saved.mode==='replay';
+}
+function resumeCanonicalCampaignBoundary(){
+ if(qaActive||!cloudProfileReady||!lumenUser||socialChallenge||canonicalActiveQuest||replayMode||learningReplayActive())return false;
+ const quest=nextCanonicalAtLegacyBoundary(canonicalQuestList(),lumenProgress,{
+  atBoundary:!!lumenProgress.solved?.[levelIndex],afterOrdinal:canonicalQuestForLegacy(levelIndex)?.ordinal??0,
+  attempt:attemptEngine.snapshot(),available:canonicalQuestAvailable
+ });
+ return quest?startCanonicalQuest(quest):false;
+}
 function canonicalQuestLockReason(quest){
  const decision=canonicalQuestAccess(quest);
  if(decision.status==='pack-locked')return 'Cette Aventure n’est pas débloquée';
@@ -1595,6 +1622,7 @@ function canonicalQuestLockReason(quest){
 function startCanonicalQuest(quest){
  if(!canonicalQuestAvailable(quest))return false;
  canonicalActiveQuest=quest;
+ canonicalResumeOwner=lumenUser?.id??null;
  levelIndex=Math.max(0,Math.min(currentQuestPosition(),currentQuestLimit()-1));
  replayMode=false;socialChallenge=null;
  document.getElementById("mapModal").hidden=true;
@@ -2773,7 +2801,7 @@ document.addEventListener("click",handleLearningTap,true);
 // Start after campaign data are initialized. A deep-linked social challenge resolves its
 // server snapshot before the board is created so campaign progression is never mutated.
 setupMobileAuth();setupTutorial();setupOutsideDefaults();setupQaMode();
-async function bootGame(){await bootstrapSocialChallenge();init();refreshJourney();maybeShowReturnWelcome();const focus=new URL(location.href).searchParams.get("myChallenges");if(focus)openMyChallenges(focus);else loadMyChallenges()}
+async function bootGame(){await bootstrapSocialChallenge();restoreCanonicalCampaignAttempt();init();refreshJourney();maybeShowReturnWelcome();const focus=new URL(location.href).searchParams.get("myChallenges");if(focus)openMyChallenges(focus);else loadMyChallenges()}
 bootGame();
 
 setupBetaFeedback();
