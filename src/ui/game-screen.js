@@ -109,6 +109,19 @@ function cloudDiagnosticReport(){
  try{return JSON.stringify({app:"Lumen",version:document.getElementById("lumenAccountVersion")?.textContent||"unknown",events:JSON.parse(localStorage.getItem(cloudDiagKey)||"[]")},null,2)}
  catch(_){return "Diagnostics indisponibles"}
 }
+function showAccountCloudDiagnostic(){
+ const panel=document.getElementById("accountSyncDiagnosticPanel"),text=document.getElementById("accountSyncDiagnosticText"),copy=document.getElementById("copyAccountSyncDiagnostic");
+ if(!panel||!text)return;
+ text.value=cloudDiagnosticReport();panel.hidden=false;
+ if(copy)copy.textContent="Copier le diagnostic";
+}
+async function copyAccountCloudDiagnostic(){
+ showAccountCloudDiagnostic();
+ const text=document.getElementById("accountSyncDiagnosticText"),copy=document.getElementById("copyAccountSyncDiagnostic");
+ if(!text)return;
+ try{await navigator.clipboard.writeText(text.value);if(copy)copy.textContent="Diagnostic copié ✓"}
+ catch(_){text.focus();text.select();if(copy)copy.textContent="Sélectionner puis copier"}
+}
 // Explicit player-controlled export: never uploads or mutates any backup.
 async function exportLumenRecoveryBundle(){
  const prefixList=["lumenProgressV1","lumenUnsyncedCloudBackupV1:","lumenUnsyncedCloudBackupV2:","lumenBeforeCloud","lumenBeforeAccountSwitch_"];
@@ -2816,6 +2829,9 @@ const switcher=document.getElementById("accountAuthSwitch");if(switcher)switcher
 const closeAccount=document.getElementById("accountOptinClose");if(closeAccount)closeAccount.onclick=dismissAccountOffer;
 const accountLater=document.getElementById("accountOptinLater");if(accountLater)accountLater.onclick=dismissAccountOffer;
 const retryAccountSync=document.getElementById("retryAccountSync");if(retryAccountSync)retryAccountSync.onclick=retryAccountCloudSync;
+const showAccountSyncDiagnostic=document.getElementById("showAccountSyncDiagnostic");if(showAccountSyncDiagnostic)showAccountSyncDiagnostic.onclick=showAccountCloudDiagnostic;
+const copyAccountSyncDiagnostic=document.getElementById("copyAccountSyncDiagnostic");if(copyAccountSyncDiagnostic)copyAccountSyncDiagnostic.onclick=copyAccountCloudDiagnostic;
+const closeAccountSyncDiagnostic=document.getElementById("closeAccountSyncDiagnostic");if(closeAccountSyncDiagnostic)closeAccountSyncDiagnostic.onclick=()=>{document.getElementById("accountSyncDiagnosticPanel").hidden=true};
 const setPasswordSave=document.getElementById("setPasswordSave");if(setPasswordSave)setPasswordSave.onclick=saveExistingAccountPassword;
 
 const recovery=document.getElementById("accountRecovery");if(recovery)recovery.onclick=recoverAccountPassword;

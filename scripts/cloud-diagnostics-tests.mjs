@@ -32,3 +32,23 @@ for(const fault of ['get','set','corrupt','health','console','none']){
  assert.equal(calls.length,1,'remote telemetry retains authenticated/QA/event guards');
 }
 console.log('Privacy-safe cloud diagnostics contract passed');
+
+// Account diagnostics must stay reachable without triggering a victory or an admin capability.
+const markup=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+assert(markup.includes('id="showAccountSyncDiagnostic"'),'Account menu must expose cloud diagnostics on mobile');
+assert(markup.includes('id="accountSyncDiagnosticText"'),'Readable fallback is required without clipboard access');
+assert(src.includes('showAccountSyncDiagnostic.onclick=showAccountCloudDiagnostic'),'Account menu must wire the diagnostic action');
+const helpers=src.slice(src.indexOf('function showAccountCloudDiagnostic'),src.indexOf('// Explicit player-controlled export'));
+for(const clipboard of ['ok','denied','missing']){
+ const nodes=Object.fromEntries(['accountSyncDiagnosticPanel','accountSyncDiagnosticText','copyAccountSyncDiagnostic'].map(id=>[id,{hidden:true,value:'',textContent:'',focus(){this.focused=true},select(){this.selected=true}}]));
+ let copied;
+ const context=vm.createContext({document:{getElementById:id=>nodes[id]},navigator:clipboard==='missing'?{}:{clipboard:{writeText:async value=>{if(clipboard==='denied')throw Error('denied');copied=value}}},cloudDiagnosticReport:()=>'{"events":[{"event":"hydration_reconciliation","reason":"unclassified_field","fields":["exampleField"]}]}'});
+ vm.runInContext(helpers,context);
+ vm.runInContext('showAccountCloudDiagnostic()',context);
+ assert.equal(nodes.accountSyncDiagnosticPanel.hidden,false);
+ assert(nodes.accountSyncDiagnosticText.value.includes('exampleField'));
+ await vm.runInContext('copyAccountCloudDiagnostic()',context);
+ if(clipboard==='ok')assert.equal(copied,nodes.accountSyncDiagnosticText.value);
+ else assert.equal(nodes.accountSyncDiagnosticText.selected,true,'Manual copy stays available on installed mobile apps');
+}
+console.log('Mobile account diagnostics and clipboard fallback passed');
