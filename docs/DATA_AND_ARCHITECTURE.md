@@ -10,6 +10,16 @@ No player-data schema or reward reconciliation policy changes with these account
 
 ## Cloud persistence contract
 
+CAS error observability: `compareAndSwapCloudProfile` preserves a bounded
+SQLSTATE/PostgREST code or a fixed category for exact known server guard
+messages. A false CAS response has a separate conflict code. Raw provider
+messages/details/hints are not attached to the thrown error. The existing
+hydration recorder can therefore identify authority, permission or RPC refusals
+without copying save contents. Codes do not establish that any specific player
+hit a particular guard and do not change write acceptance, retries or recovery.
+No migration or Auth change is required.
+
+
 ### Profile field classification and transition audit (2026-10-19)
 
 `CLOUD_PROFILE_FIELDS` in `src/persistence/cloud-profile.js` declares ownership
