@@ -4,6 +4,12 @@ Baseline: `bef5f32`. All paths are repository-relative. This phase indexes exist
 
 ## Select a check
 
+Readable existing Auth session with failed write probe: account-session browser
+runner, mobile/desktop reload with synthetic session in localStorage and SDK
+probe behavior simulated. Explicit logout/password recovery/account switching
+remain covered. Real SDK 2.118.0 was additionally checked locally with blocked
+provider requests; that check is distinct from the required fixture transport.
+
 PWA update freshness: `service-worker-cache-tests.mjs` exercises actual worker
 handlers; `service-worker-update-browser-tests.mjs` reproduces warm v9-to-v10
 upgrade, stale HTTP module imports, a subsequent release with unchanged worker,

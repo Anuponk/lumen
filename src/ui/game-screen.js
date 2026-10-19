@@ -607,7 +607,10 @@ function skipTutorialReplay(){
 const {renderTutorial,openTutorial,closeTutorial,setupTutorial}=createTutorial(()=>levelIndex<=1,{tutorialSeenKey:qaActive?"lumenQaTutorialSeen":"lumenTutorialSeen",canSkip:()=>levelIndex===0||tutorialCompletedProof()&&!qaFresh,onSkip:skipTutorialReplay});
 let authSessionPending=true;
 let lumenSupabase=null,lumenUser=null,lumenCloudReady=false,lumenEntitlements=[],lumenCapabilities=[];
-try{lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY)}catch(e){console.warn("LUMEN cloud unavailable",e)}
+// Use the SDK's existing persistent store directly: its default write probe can
+// reject a full but readable store and silently hide a valid saved session.
+// Token refresh/rotation, validation and the canonical storage key stay SDK-owned.
+try{lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,storage:localStorage}})}catch(e){console.warn("LUMEN cloud unavailable",e)}
 let lumenNickname="";
 
 let accountOfferSignInPending=false;

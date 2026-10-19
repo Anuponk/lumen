@@ -8,6 +8,29 @@ Subscribe to Auth events before startup session/confirmation I/O. A late startup
 
 No player-data schema or reward reconciliation policy changes with these account modes. Live device validation remains necessary when diagnosing storage loss between login and reload; passing simulated sessions alone does not prove that an affected PWA retains its session.
 
+### Persistent browser sessions (2026-10-19)
+
+The browser client explicitly enables `persistSession` and `autoRefreshToken`
+and passes its existing `localStorage` to the SDK. The default SDK writable-store
+probe can otherwise select memory when writes fail even though an earlier saved
+session remains readable. This was reproduced with SDK 2.118.0 in a real browser:
+normal storage restores the synthetic session; a quota refusal before SDK loading
+hides it with default storage; explicit storage restores it without any network
+call or modification of the saved session. Token values are not logged.
+
+The SDK retains its original storage key and owns refresh, rotation, expiration,
+revocation and explicit local-scope logout. There is no independent credential
+copy, migration, artificial user identity or extended JWT lifetime. A full store
+may still prevent saving a new/refreshed session; this read-path fix is not a
+durable-write fallback. Browser storage deletion, privacy policies and revoked
+sessions cannot be bypassed. Keep existing cloud/session/account-switch guards.
+
+The [Supabase session contract](https://supabase.com/docs/guides/auth/sessions)
+supports long-lived renewable sessions; shared project Auth settings are not
+changed. An affected player's device, storage context and fresh diagnostic must
+still confirm which cause applies. Server session presence alone does not prove
+the session is usable on that particular browser/PWA.
+
 ## Cloud persistence contract
 
 PWA asset freshness (2026-10-19): the HTML build label identifies the document,
