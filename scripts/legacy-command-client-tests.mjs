@@ -6,7 +6,7 @@ import {createDurableCanonicalVictoryOutbox} from '../src/persistence/durable-ca
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {functionSource} from './source-tools.mjs';
-import {cloudSafelyCoversLocal} from '../src/persistence/cloud-profile.js';
+import {cloudSafelyCoversLocal,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles,restoreRicherCloudProfile,sameCloudProfile} from '../src/persistence/cloud-profile.js';
 import {createCloudPersistence} from '../src/persistence/cloud.js';
 const userId='00000000-0000-0000-0000-000000000001';
 const facts={seconds:45,assistanceUsed:false,mistakeCommitted:false,qualifying:true,hintUsed:false,challengeFailed:false,qualifiedDay:'2026-10-18',qualifiedAt:'2026-10-18T10:00:00.000Z'};
@@ -146,5 +146,74 @@ test('historical discovery cannot mutate command-owned rewards, including activa
   await cloud.cloudMergeHistoricalPerformance('isolated-anonymous-fixture');
   assert.equal(reads,mode==='activated'?0:1);assert.equal(saves,mode==='legacy'?1:0);
   assert.equal(!!progress.performances[0],mode==='legacy');
+ }
+});
+
+const revisionBase=()=>({...base(),daily:{},historyBackup:{},canonicalQuestState:{}});
+function revisionFixture(local,cloud,{race=false,readFailure=false}={}){
+ const raw=JSON.stringify(local),data=new Map([['lumenProgressV1',raw]]),calls=[];
+ let remote=structuredClone(cloud);
+ const storage={getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,String(v))};
+ const client={rpc:async(name,args)=>{
+  calls.push(name);
+  if(name==='lumen_cas_profile'){
+   assert.equal([...data.keys()].filter(k=>k.startsWith('lumenBeforeCloudReconcile')).length,2);
+   assert.equal(args.p_payload.legacyVictoryRevision,cloud.legacyVictoryRevision);
+   assert(sameCloudProfile(args.p_expected,cloud));
+   if(race)return {data:false};
+   remote=structuredClone(args.p_payload);return {data:true};
+  }
+  if(name==='lumen_restore_profile')return readFailure?{error:{message:'offline'}}:{data:structuredClone(remote)};
+  throw Error('unexpected '+name);
+ }};
+ return {raw,data,storage,client,calls};
+}
+test('hydration reconciles older revisions and local tutorial flags without losing server rewards',async()=>{
+ for(const revision of [undefined,0,1]){
+  const cloud={...revisionBase(),legacyVictoryRevision:2};cloud.solved[0]=1;cloud.xp=15;
+  cloud.performances[0]={version:3,badges:{speed:true},attempts:1};
+  const local={...structuredClone(cloud),speedBadgeIntroSeen:1};
+  if(revision===undefined)delete local.legacyVictoryRevision;else local.legacyVictoryRevision=revision;
+  const f=revisionFixture(local,cloud);
+  assert.equal((await reconcileDominantLocalProfile(f.client,f.storage,cloud)).reason,'missing_cloud_achievements');
+  const result=await reconcileCompatibleCloudProfiles(f.client,f.storage,cloud);
+  assert.equal(result.status,'reconciled');assert.deepEqual(result.profile,{...cloud,speedBadgeIntroSeen:1});
+  assert.deepEqual(f.calls,['lumen_cas_profile','lumen_restore_profile']);assert.equal(f.storage.getItem('lumenProgressV1'),f.raw);
+  const backups=[...f.data].filter(([k])=>k.startsWith('lumenBeforeCloudReconcile'));
+  assert(backups.some(([,v])=>v===f.raw));assert(backups.some(([,v])=>sameCloudProfile(JSON.parse(v),cloud)));
+  assert.equal(cloudSafelyCoversLocal(local,result.profile),true);
+  restoreRicherCloudProfile(f.storage,result.profile);
+  assert.deepEqual(JSON.parse(f.storage.getItem('lumenProgressV1')),result.profile);
+  assert.equal((await reconcileCompatibleCloudProfiles(f.client,f.storage,result.profile)).status,'cloud_dominant');
+  assert.equal(f.calls.length,2,'No duplicate write or reward');
+ }
+});
+test('server revision alone is retained without a write',async()=>{
+ const cloud={...revisionBase(),legacyVictoryRevision:3},f=revisionFixture(revisionBase(),cloud);
+ assert.equal((await reconcileCompatibleCloudProfiles(f.client,f.storage,cloud)).status,'cloud_dominant');assert.equal(f.calls.length,0);
+});
+test('newer local and malformed revisions block stale authority in both reconciliation paths',async()=>{
+ for(const [left,right] of [[3,2],[1,undefined],[-1,1],[1,-1],[1.5,2],[1,1.5],['2',2],[1,'2'],[null,2],[1,null],[Number.MAX_SAFE_INTEGER+1,2],[1,Number.MAX_SAFE_INTEGER+1]]){
+  const local={...revisionBase(),legacyVictoryRevision:left},cloud={...revisionBase()};if(right!==undefined)cloud.legacyVictoryRevision=right;
+  assert.equal(cloudSafelyCoversLocal(local,cloud),false);
+  for(const reconcile of [reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles]){
+   const f=revisionFixture(local,cloud),result=await reconcile(f.client,f.storage,cloud);
+   assert.equal(result.status,'blocked');assert(['stale_legacy_revision','invalid_legacy_revision'].includes(result.reason),result.reason);
+   assert.deepEqual(result.fields,['legacyVictoryRevision']);assert.equal(f.calls.length,0);assert.equal(f.data.size,1);
+  }
+ }
+});
+test('revision classification retains unknown-field refusal and unmigrated compatibility',async()=>{
+ const cloud={...revisionBase(),legacyVictoryRevision:1},f=revisionFixture({...revisionBase(),unknownReceipt:'pending'},cloud);
+ const result=await reconcileCompatibleCloudProfiles(f.client,f.storage,cloud);
+ assert.equal(result.reason,'unclassified_field');assert.deepEqual(result.fields,['unknownReceipt']);assert.equal(f.calls.length,0);
+ const old=revisionFixture({...revisionBase(),speedBadgeIntroSeen:1},revisionBase()),recovered=await reconcileCompatibleCloudProfiles(old.client,old.storage,revisionBase());
+ assert.equal(recovered.status,'reconciled');assert(!Object.hasOwn(recovered.profile,'legacyVictoryRevision'));
+});
+test('revision handling preserves CAS refusal, independent read-back and both recovery snapshots',async()=>{
+ for(const failure of [{race:true},{readFailure:true}]){
+  const cloud={...revisionBase(),legacyVictoryRevision:1},f=revisionFixture({...revisionBase(),speedBadgeIntroSeen:1},cloud,failure);
+  await assert.rejects(reconcileCompatibleCloudProfiles(f.client,f.storage,cloud));
+  assert.equal(f.storage.getItem('lumenProgressV1'),f.raw);assert.equal([...f.data.keys()].filter(k=>k.startsWith('lumenBeforeCloudReconcile')).length,2);
  }
 });

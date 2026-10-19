@@ -58,6 +58,14 @@ and server-owned `legacyVictoryRevision` for that account. Old backup/CAS writer
 must retain its exact legacy reward projection and current revision. Cooldown
 metadata is excluded from that projection. Existing cumulative XP cannot decrease;
 canonical rewards may still increase it. This is a refusal, never balance merging.
+Client hydration classifies `legacyVictoryRevision` as a server-owned cursor.
+A verified server revision may replace an absent/older local cursor during
+compatible reconciliation; it is retained exactly, never incremented or merged
+by maximum. Invalid markers or a newer local revision block without writes.
+Both recovery snapshots, CAS and independent read-back remain mandatory, and
+server projection guards still refuse conflicting legacy reward changes.
+Unknown fields retain their refusal policy. This client fix needs no SQL migration.
+
 Preferences, canonical rewards and existing daily/spending writers
 remain mutable. Old-client wins/imports changing that projection are refused:
 preserve their pending local data for explicit recovery, never erase or invent

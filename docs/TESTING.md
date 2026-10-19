@@ -201,6 +201,12 @@ of deployment or resolution on an affected mobile account.
 Historical migration: `legacy-command-client-tests.mjs` is a mandatory Node gate
 for exact receipt/current projection, lost replies, account changes, no duplicate
 reward, namespace isolation and existing hint/badge/challenge rules.
+The same client suite reproduces hydration blocked on `legacyVictoryRevision`
+with an absent/older local cursor and a local tutorial acknowledgement. It checks
+exact server revision and rewards, preserved local/remote backups, verified
+installation and idempotence; newer/invalid cursors and unknown fields stay
+blocked. Concurrent CAS refusal and failed read-back retain local data. These
+storage/RPC simulations do not establish recovery on an affected phone.
 `legacy-command-fixtures.mjs --check` verifies the SQL rule seed against catalogue
 modules. The SQL workflow generates first-win cases for every historical quest
 and replay/assistance/cooldown variants, comparing actual PostgreSQL outcomes and
