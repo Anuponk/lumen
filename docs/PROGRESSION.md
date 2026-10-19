@@ -107,6 +107,23 @@ specified migration; they are not silently supported by renumbering.
 The origin is retained across cloud restore and old writers cannot erase or
 rewrite an explicit server origin. Conflicting explicit cohorts require review.
 No player backfill, storage purge or active-attempt rewrite is part of this fix.
+
+### Resuming after the numeric boundary (#470)
+
+When the selected numeric quest is complete, verified account hydration selects
+the next unfinished canonical quest after it if the shared policy permits it.
+Earlier optional catch-up does not force a return to previous constellations.
+For example, completing Grand Chien must offer Dauphin rather than repeatedly
+loading the completed last numeric board. Running/paused attempts, explicit
+replays, learning replays and social challenges are not redirected.
+
+Startup restores an active registered canonical attempt by its stable quest ID
+before board initialization can replace it with a numeric attempt. Its board,
+attempt ID, reset count, assistance, mistakes and elapsed-time evidence remain
+with the existing attempt engine. Loading a cached board does not acknowledge a
+cloud write or grant a win. If authentication switches accounts, the prior
+attempt is backed up and read back before replacement; it cannot become the new
+account's attempt. QA and social challenge entry keep their existing behavior.
 Only victory unlocks the next unsolved quest. Historical numeric solved history is normalized to a continuous prefix. New campaigns cannot skip prerequisites; the acquired-access compatibility policy above preserves older frontiers without fabricating completions.
 
 Quest loading and cloud restoration must clamp to `campaignQuestCount() - 1`, derived from the current content schedule. After the wave 2 expansion (#94), quest 100 is no longer terminal. Its normal victory CTA loads quest 101; a reload or cloud restoration of 100 completed quests also resumes quest 101. Only the actual final quest stops continuation. Navigation preserves earned rewards, badges and history.

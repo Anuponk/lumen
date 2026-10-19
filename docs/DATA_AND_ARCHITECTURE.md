@@ -10,6 +10,16 @@ No player-data schema or reward reconciliation policy changes with these account
 
 ## Cloud persistence contract
 
+Campaign resume (#470 follow-up): restoring a canonical board uses the existing
+`lumenActiveAttemptV1` record and `lumenCloudOwnerId`; no server/profile field or
+RPC is added. Before a verified account switch replaces a restored run, its exact
+raw local record is stored in `lumenBeforeAccountSwitchAttempt_<time>` and read
+back. A collision or failed verification blocks replacement. These local recovery
+copies award nothing and are never uploaded as another account's progress.
+Automatic numeric-to-canonical continuation waits for verified hydration and
+the existing access decision. Reward intents, receipts and cloud guards remain
+unchanged; the follow-up requires no production SQL migration.
+
 Catalogue access (#470): `catalogueOrigin` is a positive published catalogue
 revision in the existing profile JSON. New local campaigns carry the current
 revision; unversioned nonempty profiles retain the frozen legacy cohort. Empty
