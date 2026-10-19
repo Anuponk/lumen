@@ -1853,16 +1853,36 @@ async function refreshCanonicalOutboxNotice(ownerId){
   updateAuthUI();return (state.retryable??state.pending).length||(state.complete===false?1:0);
  }catch{if(lumenUser?.id===ownerId){canonicalOutboxNotice="storage";updateAuthUI()}return 1}
 }
+function canReplayLegacyOutbox(){
+ return canReplayCanonicalOutbox()&&!legacyCommandInFlight&&!legacyVictoryRetry&&
+  ![ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(attemptEngine.snapshot()?.state);
+}
+async function retryPendingLegacyOutboxOnReconnect(){
+ if(canonicalOutboxRetryInFlight||!canReplayLegacyOutbox())return false;
+ const ownerId=lumenUser.id,client=lumenSupabase;
+ const sameSession=()=>lumenUser?.id===ownerId&&lumenSupabase===client&&canReplayLegacyOutbox();
+ // Share the canonical replay lock before any asynchronous durable read.
+ canonicalOutboxRetryInFlight=true;
+ try{
+  const recovered=await replayLegacyVictoryOutbox(legacyVictoryOutbox,ownerId,
+   (id,facts,op,options)=>commitLegacyVictoryCommand(client,id,facts,op,options),
+   {sessionValid:sameSession,onIssue:issue=>recordCloudDiagnostic('legacy_outbox_recovery_pending',{reason:issue.kind})});
+  if(!sameSession()||!recovered.length)return false;
+  if(cloudProfileReady){location.reload();return true}
+  // The receipt confirms only this operation. Divergent local state and the
+  // global hydration failure remain untouched until audited reconciliation.
+  recordCloudDiagnostic('legacy_outbox_isolated_recovered',{count:recovered.length,fullSync:false});
+ }catch{recordCloudDiagnostic('legacy_outbox_reconnect_failed',{reason:'retry'})}
+ finally{canonicalOutboxRetryInFlight=false}
+ return false;
+}
 const canonicalRecovery=createCloudRetryScheduler({
  ready:canReplayCanonicalOutbox,
  run:async()=>{
   const ownerId=lumenUser.id,client=lumenSupabase;
   if(legacyVictoryRetry){await legacyVictoryRetry();return (await refreshCanonicalOutboxNotice(ownerId))>0}
-  if(cloudProfileReady&&!cloudProfileDirty&&!cloudProfileBusy&&![ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(attemptEngine.snapshot()?.state)){
-   const sameSession=()=>lumenUser?.id===ownerId&&lumenSupabase===client&&canReplayCanonicalOutbox();
-   const recovered=await replayLegacyVictoryOutbox(legacyVictoryOutbox,ownerId,(id,facts,op,options)=>commitLegacyVictoryCommand(client,id,facts,op,options),{sessionValid:sameSession});
-   if(recovered.length&&sameSession()){location.reload();return false}
-  }
+  if(await retryPendingLegacyOutboxOnReconnect())return false;
+  if(lumenUser?.id!==ownerId||lumenSupabase!==client)return false;
   await retryPendingCanonicalOutboxOnReconnect();
   if(lumenUser?.id!==ownerId||lumenSupabase!==client)return false;
   return (await refreshCanonicalOutboxNotice(ownerId))>0;

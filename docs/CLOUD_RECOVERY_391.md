@@ -2,6 +2,33 @@
 
 This is a staged implementation record, not a declaration that #391 is closed.
 
+## Follow-up after field-transition fixes (2026-10-19)
+
+Baseline `fd31a22` includes #483 (account-menu diagnostics), #484 (exact server
+revision classification), #485 (shared field policies/transition tests) and #486
+(safe CAS refusal codes). The latest mobile report identifies
+`LEGACY_COMMAND_REQUIRED` during bidirectional reconciliation; it does not
+identify which local reward facts differ, nor prove they can be reconstructed.
+
+Reproduced two remaining boundaries before correction: the exact historical
+authority refusal escaped as a generic restore failure, and queued historical
+commands were held behind full hydration even when canonical commands could
+recover independently. Both reconciliation paths now preserve their existing
+two recovery copies and return a partial hold for this exact refusal only.
+Independent queued historical commands use their existing transaction/receipt
+protocol under the same account/client-bound verified recovery permission,
+with a shared replay lock and all active-play/Auth/visibility holds retained.
+Partial recovery neither replaces local data nor reloads or declares full sync.
+Other write errors retain their failure semantics; there is no fallback writer.
+
+This is not automatic repair of ambiguous pre-command wins/imports. No player
+save is rewritten, no reward facts are invented and new gameplay remains gated
+while its baseline is unresolved. Audited recovery, standalone daily/spending
+authority and production observation remain open. No SQL/Auth change is needed.
+See DATA_AND_ARCHITECTURE for the current authority contract and TESTING for
+the executable Node and simulated mobile/desktop regression coverage. Historical
+delivery notes below describe the state at each earlier stage.
+
 Historical cutover follows deployed #479 (`1.11.1+463 · b97154b`). Production
 migration `20261018193133_legacy_victory_commands.sql` was approved, applied and
 verified on 2026-10-18. Its SQL is identical to the reviewed migration; the file
@@ -122,7 +149,7 @@ visible. The permission is cleared on account/client replacement and new
 hydration; a restore error alone cannot authorize it.
 
 This is background intention recovery, not an unlock for new canonical gameplay,
-legacy wins, daily rewards or spending while a legacy conflict remains. Their
+new legacy wins, daily rewards or spending while a legacy conflict remains. Their
 remaining global hydration dependency still requires the writer/authority cutover.
 Invalid/server-refused operations are preserved. The following retry policy
 adds explicit holds without declaring a server refusal permanently invalid.

@@ -4,7 +4,9 @@ Baseline: `bef5f32`. All paths are repository-relative. This phase indexes exist
 
 ## Select a check
 
-Historical command cutover: `legacy-command-client-tests.mjs`, catalogue seed
+Historical command cutover and isolated recovery: `legacy-command-client-tests.mjs`
+(actual scheduler/authority refusal/guards), `account-session-browser-tests.mjs`
+(simulated mobile/desktop lost response and Auth resume), catalogue seed
 check `legacy-command-fixtures.mjs --check`, generated SQL parity cases,
 `fixtures/legacy-command-receipts.sql` and `legacy-command-concurrency.py`.
 The SQL workflow uses disposable PostgreSQL; client simulations do not prove

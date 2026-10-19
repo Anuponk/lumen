@@ -14,12 +14,14 @@ window.__authCalls=[];
 window.__fixtureLedgerWrites=0;window.__fixtureSnapshotWrites=0;
 window.__fixtureLedgerAttempts=0;
 window.__fixtureCommandReceipts=new Map();
+window.__fixtureLegacyReceipts=new Map();window.__fixtureLegacyWrites=0;window.__fixtureLegacyAttempts=0;
 const isolatedRecovery=sessionStorage.getItem('fixtureIsolatedRecovery')==='1';
 window.__fixtureProfile={solved:{},historyBackup:{},badges:{},stars:{},noHint:{},performances:{},canonicalQuestState:{},daily:{},challenges:{},shards:3,xp:0,skyScore:0,skyHistoryVersion:4,legacyReceipt:'cloud'};
 if(isolatedRecovery){
+ window.__fixtureProfile.legacyVictoryRevision=1;
  sessionStorage.setItem('fixtureIsolatedLoads',String(Number(sessionStorage.getItem('fixtureIsolatedLoads')||0)+1));
  localStorage.setItem('lumenCloudOwnerId','fixture-player');
- localStorage.setItem('lumenProgressV1',JSON.stringify({...window.__fixtureProfile,shards:9,legacyReceipt:'local'}));
+ localStorage.setItem('lumenProgressV1',JSON.stringify({...window.__fixtureProfile,solved:{1:1},shards:9}));
 }
 window.supabase={createClient(){
  let session=JSON.parse(sessionStorage.getItem('fixtureAuthSession')||'null'),callback=()=>{};
@@ -28,10 +30,30 @@ window.supabase={createClient(){
  return {rpc:async(name,args)=>{
   if(!isolatedRecovery)return name==='lumen_restore_profile'?{data:null,error:{message:'simulated restore outage'}}:{data:[],error:null};
   if(name==='lumen_restore_profile')return {data:structuredClone(window.__fixtureProfile),error:null};
+  if(['lumen_commit_legacy_command','lumen_get_legacy_command'].includes(name)&&args.p_expected_user_id!=='fixture-player')return {data:null,error:{code:'42501'},status:403};
+  if(name==='lumen_legacy_command_version')return {data:1,error:null};
+  if(name==='lumen_get_legacy_command')return {data:window.__fixtureLegacyReceipts.get(args.p_operation_id)??null,error:null};
+  if(name==='lumen_commit_legacy_command'){
+   window.__fixtureLegacyAttempts++;
+   if(window.__fixtureLegacyError)return {data:null,error:{code:window.__fixtureLegacyError},status:401};
+   const request={version:1,operationId:args.p_operation_id,questId:args.p_quest_id,facts:args.p_facts};
+   const prior=window.__fixtureLegacyReceipts.get(args.p_operation_id);
+   if(prior&&JSON.stringify(prior.request)!==JSON.stringify(request))return {data:null,error:{code:'22023'},status:400};
+   if(!prior){
+    const {applyLegacyVictory,legacyVictoryRules}=await import('/src/campaign/legacy-victory.js');
+    const index=legacyVictoryRules().find(q=>q.questId===args.p_quest_id).index;
+    const outcome=applyLegacyVictory(window.__fixtureProfile,index,args.p_facts);
+    window.__fixtureProfile.legacyVictoryRevision=(window.__fixtureProfile.legacyVictoryRevision||0)+1;
+    window.__fixtureLegacyReceipts.set(args.p_operation_id,{request,outcome,recordedAt:new Date().toISOString()});
+    window.__fixtureLegacyWrites++;
+   }
+   if(window.__fixtureLegacyLost)throw Error('simulated lost response after commit');
+   return {data:window.__fixtureLegacyReceipts.get(args.p_operation_id),error:null};
+  }
   if(['lumen_commit_canonical_command','lumen_get_canonical_command'].includes(name)&&args.p_expected_user_id!=='fixture-player')return {data:null,error:{code:'42501'},status:403};
   if(name==='lumen_canonical_command_version')return {data:1,error:null};
   if(name==='lumen_get_canonical_command')return {data:window.__fixtureCommandReceipts.get(args.p_operation_id)??null,error:null};
-  if(name==='lumen_cas_profile'){window.__fixtureSnapshotWrites++;window.__fixtureProfile=structuredClone(args.p_payload);return {data:true,error:null};}
+  if(name==='lumen_cas_profile'){window.__fixtureSnapshotWrites++;return {data:null,error:{code:'22023',message:'legacy victory command required; preserve pending data and update client'}};}
   if(name==='lumen_commit_canonical_victory'||name==='lumen_commit_canonical_command'){
    window.__fixtureLedgerAttempts++;
    if(window.__fixtureLedgerError)return {data:null,error:{code:window.__fixtureLedgerError,message:'simulated rejection'},status:401};
@@ -60,6 +82,8 @@ async function verifyIsolatedRecovery(){
  await navigate('Page.reload');
  await until(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='hydration_partial_reconciliation_pending')`);
  const before=await evaluate(`({local:localStorage.getItem('lumenProgressV1'),loads:sessionStorage.getItem('fixtureIsolatedLoads'),snapshots:window.__fixtureSnapshotWrites})`);
+ assert.equal(before.snapshots,1,'The protected CAS is refused once without a fallback write');
+ assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='hydration_reconciliation'&&e.reason==='legacy_command_required')`),true);
  await evaluate(`(async()=>{
   const {createDurableCanonicalVictoryOutbox}=await import('/src/persistence/durable-canonical-outbox.js');
   await createDurableCanonicalVictoryOutbox(localStorage).enqueue('fixture-player',${JSON.stringify(quest.id)},{badges:{autonomy:true},performance:{seconds:20,assisted:false}},{operationId:'isolated-browser-'+Date.now()});
@@ -90,6 +114,43 @@ async function verifyIsolatedRecovery(){
  await until('window.__fixtureLedgerWrites===2');
  await until(`document.getElementById('mobileAuthStatus').textContent.includes('sauvegarde à resynchroniser')`);
  assert.equal(await evaluate('window.__fixtureProfile.xp'),15,'Badge replay cannot award XP again');
+ assert.equal(await evaluate(`localStorage.getItem('lumenProgressV1')`),before.local);
+ assert.equal(await evaluate('window.__fixtureSnapshotWrites'),before.snapshots);
+ assert.equal(await evaluate(`sessionStorage.getItem('fixtureIsolatedLoads')`),before.loads);
+ // Historical commands now share the same isolated recovery boundary. This is
+ // a simulated transaction transport; SQL behavior has its own real-PG gate.
+ const legacy=canonicalQuestList().find(q=>q.legacyIndex===0);assert.ok(legacy);
+ await evaluate(`(async()=>{
+  window.__fixtureLegacyLost=true;
+  const {createDurableCanonicalVictoryOutbox}=await import('/src/persistence/durable-canonical-outbox.js');
+  const facts={seconds:45,assistanceUsed:false,mistakeCommitted:false,qualifying:true,hintUsed:false,challengeFailed:false,qualifiedDay:'2026-10-19',qualifiedAt:'2026-10-19T10:00:00.000Z'};
+  await createDurableCanonicalVictoryOutbox(localStorage,{namespace:'Legacy'}).enqueue('fixture-player',${JSON.stringify(legacy.id)},{facts},{operationId:'isolated-legacy-browser-reset-0'});
+  window.dispatchEvent(new Event('online'));
+ })()`,true);
+ await until(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='legacy_outbox_isolated_recovered')`);
+ await until(`document.getElementById('mobileAuthStatus').textContent.includes('sauvegarde à resynchroniser')`);
+ assert.equal(await evaluate('window.__fixtureLegacyWrites'),1);
+ assert.equal(await evaluate('window.__fixtureLegacyReceipts.size'),1);
+ assert.equal(await evaluate('window.__fixtureProfile.performances[0].attempts'),1);
+ assert.equal(await evaluate('window.__fixtureProfile.xp'),30);
+ assert.equal(await evaluate(`(async()=> (await (await import('/src/persistence/durable-canonical-outbox.js')).createDurableCanonicalVictoryOutbox(localStorage,{namespace:'Legacy'}).pending('fixture-player')).length)()`,true),0);
+ await evaluate(`(async()=>{
+  window.__fixtureLegacyLost=false;window.__fixtureLegacyError='PGRST301';
+  const {createDurableCanonicalVictoryOutbox}=await import('/src/persistence/durable-canonical-outbox.js');
+  const facts={seconds:65,assistanceUsed:true,mistakeCommitted:false,qualifying:false,hintUsed:true,challengeFailed:false,qualifiedDay:'2026-10-19',qualifiedAt:'2026-10-19T10:00:00.000Z'};
+  await createDurableCanonicalVictoryOutbox(localStorage,{namespace:'Legacy'}).enqueue('fixture-player',${JSON.stringify(legacy.id)},{facts},{operationId:'isolated-legacy-browser-reset-1'});
+  window.dispatchEvent(new Event('online'));
+ })()`,true);
+ await until(`document.getElementById('mobileAuthStatus').textContent.includes('Session à renouveler')`);
+ const legacyAttempts=await evaluate('window.__fixtureLegacyAttempts');
+ await evaluate(`window.dispatchEvent(new Event('online'));window.dispatchEvent(new Event('online'))`);await sleep(200);
+ assert.equal(await evaluate('window.__fixtureLegacyAttempts'),legacyAttempts);
+ await evaluate(`window.__fixtureLegacyError=null;window.__emitAuthEvent('TOKEN_REFRESHED')`);
+ await until('window.__fixtureLegacyWrites===2');
+ await until(`document.getElementById('mobileAuthStatus').textContent.includes('sauvegarde à resynchroniser')`);
+ assert.equal(await evaluate('window.__fixtureLegacyReceipts.size'),2);
+ assert.equal(await evaluate('window.__fixtureProfile.performances[0].attempts'),2);
+ assert.equal(await evaluate('window.__fixtureProfile.xp'),30);
  assert.equal(await evaluate(`localStorage.getItem('lumenProgressV1')`),before.local);
  assert.equal(await evaluate('window.__fixtureSnapshotWrites'),before.snapshots);
  assert.equal(await evaluate(`sessionStorage.getItem('fixtureIsolatedLoads')`),before.loads);
@@ -140,7 +201,7 @@ try{
   await evaluate(`document.getElementById('mobileAuthAction').click()`);
   await until(`document.getElementById('mobileAuthAction').textContent.includes('Se connecter')`);
   const isolatedCanonicalRecovery=await verifyIsolatedRecovery();
-  results.push({viewport,guestDismiss:true,passwordLogin:true,reload:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,restoreFailureVisible:true,isolatedCanonicalRecovery});
+  results.push({viewport,guestDismiss:true,passwordLogin:true,reload:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,restoreFailureVisible:true,isolatedCanonicalRecovery,isolatedLegacyRecovery:true});
  }
  assert.equal(errors.length,0,JSON.stringify(errors));
  const report={simulatedAuth:true,liveCloudWrites:false,results,exceptions:errors};
