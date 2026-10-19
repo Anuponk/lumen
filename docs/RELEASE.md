@@ -33,6 +33,16 @@ The repository is connected to Vercel and deploys **only `main`**, as confirmed 
 
 A GitHub push being accepted does **not** prove Vercel Production is running that commit.
 
+PWA freshness: a current HTML build label alone does not prove its imported
+modules are current. The v9 service-worker/browser cache mismatch is reproduced
+by `service-worker-update-browser-tests.mjs`; v10 bypasses HTTP/resource caching
+for managed public assets while retaining explicit offline copies. A changed
+worker upgrades already controlled clients through the existing reload hook.
+Release verification still requires the exact server SHA, applicable browser
+upgrade test and affected-device confirmation. Do not clear player storage as
+an update procedure. Interrupted network loads are not an atomic module-graph
+deployment guarantee; keep diagnostics and pending saves until verified recovery.
+
 ## Cloud persistence release blocker (#248)
 For every PR, complete the cloud-impact section of the PR template even if not applicable (with reason). For any player-data, authentication or shop change, inspect the persistence matrix in [TESTING.md](TESTING.md#cloud-persistence-regression-matrix) and run all relevant automation plus isolated multi-device/manual verification. Do not deploy purchases before server-ledger, entitlements and recovery are implemented. Branch protection should require cloud regression CI checks before merging; a template/checklist alone does not enforce that requirement.
 

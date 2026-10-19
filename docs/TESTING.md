@@ -1,5 +1,21 @@
 # Testing and quality gate
 
+## PWA update and imported-module cache regression
+
+`service-worker-cache-tests.mjs` is mandatory in the Node gate: both HTTP and
+resource-cache prevention, explicit offline copies, non-OK response retention,
+private/provider request exclusion, cache failure and scoped activation cleanup.
+`service-worker-update-browser-tests.mjs` is the ninth mandatory browser suite
+(CDP 9232, report `ci-pwa-update.json`). It serves a synthetic module graph with
+one-hour HTTP freshness, first installs the actual shipped v9 worker from
+`df340a64930254c6697b0f066d35873df0debdcc`, then serves fresh HTML and observes
+the stale transitive module. A real warm worker update must install the new
+module; a subsequent release with unchanged worker bytes must also load fresh
+code. Offline module fallback and unchanged local profile, attempt and IndexedDB
+intention are checked. The test fails before the worker fix; no production
+account or RPC is involved. This does not establish real-phone recovery or a
+fully atomic offline application release. Existing eight browser suites remain.
+
 ## Local affected tests (phase 2)
 
 Requires Node 22+ and Git on PATH. No npm install or third-party test dependency:
@@ -206,7 +222,8 @@ verified account-switch backups. The additional mandatory
 `campaign-resume-browser-tests.mjs` exercises authenticated mobile startup at the
 completed numeric boundary, the actual Next handler, reload of the started
 canonical attempt and a second account. Profiles/RPCs are synthetic; no player
-save or production write is used. The quality gate now runs eight browser suites.
+save or production write is used. That delivery added the eighth browser suite;
+the PWA update suite above brings the current quality gate to nine.
 Learning navigation/reload uses the shared `navigateAndWait` document-epoch
 check; readiness of the previous page cannot satisfy the next viewport's setup.
 
