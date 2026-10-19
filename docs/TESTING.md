@@ -179,6 +179,8 @@ verified account-switch backups. The additional mandatory
 completed numeric boundary, the actual Next handler, reload of the started
 canonical attempt and a second account. Profiles/RPCs are synthetic; no player
 save or production write is used. The quality gate now runs eight browser suites.
+Learning navigation/reload uses the shared `navigateAndWait` document-epoch
+check; readiness of the previous page cannot satisfy the next viewport's setup.
 
 Catalogue access (#470): mandatory Node gates `catalogue-access-tests.mjs`,
 `catalogue-origin-cloud-tests.mjs` and `catalogue-compatibility-tests.mjs` cover the failing A/B regression, existing and

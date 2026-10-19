@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { connectBrowser, acknowledgeLearningMilestones } from './cdp-client.mjs';
+import { connectBrowser, acknowledgeLearningMilestones, navigateAndWait } from './cdp-client.mjs';
 import { learningStep, dragLearningStep } from '../src/game/learning.js';
 const { send, evaluate, errors } = await connectBrowser();
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -45,7 +45,7 @@ try {
     await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});
     await send('Emulation.setTouchEmulationEnabled',{enabled:viewport.mobile,maxTouchPoints:1});
     const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:'localStorage.clear();localStorage.setItem("lumenSound","off");localStorage.setItem("lumenTutorialSeen","1");localStorage.setItem("lumenPushChoice","later");localStorage.setItem("lumenInstallLater",String(Date.now()));'});
-    await send('Page.navigate',{url});
+    await navigateAndWait({send,evaluate},'Page.navigate',{url});
     await sleep(1500);await ready();
     await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier}).catch(error=>{if(!String(error).includes('Script not found'))throw error});
     await sleep(100);
@@ -68,7 +68,7 @@ try {
     assert.equal(await evaluate('document.querySelectorAll(".learning-territory-number").length'),0,'Teaching numbers disappear before ACT');
     await input(await point(2,2),viewport.mobile);
     assert.equal((await snapshot()).state[2][2],1,'ACT begins only after the intro');
-    await send('Page.reload',{ignoreCache:true});await sleep(100);await ready();
+    await navigateAndWait({send,evaluate},'Page.reload',{ignoreCache:true});await sleep(100);await ready();
     assert.equal((await snapshot()).state[2][2],1,'Half of the real cell cycle survives reload');
     await evaluate('document.getElementById("attemptMask").click()');
     const attemptId=await evaluate('JSON.parse(localStorage.getItem("lumenActiveAttemptV1")).attemptId');
@@ -125,7 +125,7 @@ try {
     assert.equal(await evaluate('document.getElementById("verify").disabled'),true);
     await drag([[0,1],[0,2]],viewport.mobile);
     assert.deepEqual((await snapshot()).state[0],[2,1,1,0,0]);
-    await send('Page.reload',{ignoreCache:true});await sleep(100);await ready();
+    await navigateAndWait({send,evaluate},'Page.reload',{ignoreCache:true});await sleep(100);await ready();
     assert.deepEqual((await snapshot()).state[0],[2,1,1,0,0],'Partial gesture survives reload');
     await evaluate('document.getElementById("attemptMask").click()');
     await sleep(60);
