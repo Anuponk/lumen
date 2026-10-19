@@ -62,7 +62,7 @@ parser: renamed aliases, arbitrary dynamic writes, nested formats, older
 uncollected saves and future SQL expression shapes require explicit review and
 fixtures. Existing dedicated nested-performance and real-SQL suites remain required.
 
-Remaining boundaries: global hydration still gates historical victories;
+Remaining boundaries: global hydration still gates new historical victories;
 ambiguous pre-command rewards and conflicting protected projections need audited
 recovery; standalone daily/spending cutover remains open. Unknown fields and
 unsupported score-schema differences are not made automatically mergeable.
@@ -140,8 +140,26 @@ current completion, requested badges and attempt counter precede acknowledgement
 Duplicates retain the initial outcome and return current state. Startup replays
 before installation; background replay avoids active legacy attempts, while a
 pending current win retries frozen evidence. Concurrent local edits prevent UI
-installation. Verified hydration and preflush of unrelated changes are still
-required; removing that global gate remains a later phase.
+installation. New victories still require verified hydration and preflush of
+unrelated changes; removing that gameplay gate remains a later phase.
+
+Queued historical command recovery may also run after a same-account verified
+partial reconciliation, under the existing account/client-bound permission.
+The replay shares the canonical in-flight lock, retains running/paused attempt,
+current-victory, command-write, Auth, offline and visibility holds, and requires
+the exact command receipt and current projection before acknowledgement. It
+does not install any profile, modify divergent local bytes/balances, reload, or
+report full sync. A clean fully hydrated profile retains normal reload behavior.
+
+Both snapshot reconciliation paths treat the exact structured
+`LEGACY_COMMAND_REQUIRED` refusal as `blocked / legacy_command_required` after
+preserving both originals. This lets normal hydration establish partial recovery
+instead of falling into a generic restore failure. No alternate snapshot write,
+automatic reward conversion or suppression of the server guard occurs. Other
+errors, failed CAS and failed read-back keep their existing failure behavior.
+Pre-command achievements without immutable operations still require audited
+recovery: acknowledging a queued command does not resolve those divergent facts.
+No new persisted field, RPC, SQL migration or Auth change is required.
 
 Only an explicitly missing read-only capability endpoint permits older-server
 compatibility on an unmigrated account without an existing command intent.

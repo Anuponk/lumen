@@ -229,6 +229,18 @@ of deployment or resolution on an affected mobile account.
 Historical migration: `legacy-command-client-tests.mjs` is a mandatory Node gate
 for exact receipt/current projection, lost replies, account changes, no duplicate
 reward, namespace isolation and existing hint/badge/challenge rules.
+It also executes the actual background scheduler with a durable historical
+intention during verified partial hydration: one receipt, unchanged local bytes
+and in-memory profile, no snapshot writer/reload, account/client/active-attempt
+holds, shared replay lock, lost response, auth pause and clean-ready recovery.
+Both reconciliation paths reproduce the actual structured server authority
+refusal and retain the two recovery snapshots without a fallback write.
+The account-session browser suite covers this refusal-to-partial-recovery flow
+on mobile and desktop, followed by canonical and historical command recovery,
+lost historical response, persistent auth hold and verified token-refresh resume.
+Its transaction transport is simulated; PostgreSQL guards remain covered by the
+existing real-SQL suite. These tests do not prove an affected phone is repaired
+or reconstruct ambiguous pre-command achievements.
 The same client suite reproduces hydration blocked on `legacyVictoryRevision`
 with an absent/older local cursor and a local tutorial acknowledgement. It checks
 exact server revision and rewards, preserved local/remote backups, verified

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {legacyCommandsSupported,commitLegacyVictoryCommand} from '../src/persistence/legacy-command.js';
+import {legacyCommandsSupported,commitLegacyVictoryCommand,replayLegacyVictoryOutbox} from '../src/persistence/legacy-command.js';
 import {applyLegacyVictory,legacyVictoryRules} from '../src/campaign/legacy-victory.js';
 import {createDurableCanonicalVictoryOutbox} from '../src/persistence/durable-canonical-outbox.js';
 import {readFileSync} from 'node:fs';
@@ -11,6 +11,124 @@ import {createCloudPersistence} from '../src/persistence/cloud.js';
 const userId='00000000-0000-0000-0000-000000000001';
 const facts={seconds:45,assistanceUsed:false,mistakeCommitted:false,qualifying:true,hintUsed:false,challengeFailed:false,qualifiedDay:'2026-10-18',qualifiedAt:'2026-10-18T10:00:00.000Z'};
 const base=()=>({solved:{},badges:{},stars:{},challenges:{},performances:{},noHint:{},xp:0,shards:3,skyHistoryVersion:4,skyScore:0});
+async function isolatedLegacyFixture(){
+ const {ctx,box,state}=uiFixture();
+ const original=JSON.stringify(ctx.lumenProgress),raw=new Map([['lumenProgressV1',original]]);
+ Object.assign(ctx,{cloudProfileReady:false,cloudProfileDirty:true,cloudProfileBusy:false,
+  cloudProfileFailure:{reason:'partial_reconciliation'},canonicalRecoveryContext:{userId,client:ctx.lumenSupabase},
+  canonicalActiveQuest:null,ATTEMPT_STATES:{RUNNING:'running',PAUSED:'paused'},
+  attemptEngine:{snapshot:()=>({state:'ready'})},sessionStorage:{getItem:()=>null},
+  document:{visibilityState:'visible'},navigator:{onLine:true},replayLegacyVictoryOutbox,
+  localStorage:{getItem:k=>raw.get(k)??null},reloads:0,events:[],
+  location:{reload:()=>ctx.reloads++},recordCloudDiagnostic:(event)=>ctx.events.push(event),
+  createCloudRetryScheduler:options=>options,retryPendingCanonicalOutboxOnReconnect:async()=>{},
+  refreshCanonicalOutboxNotice:async()=> (await box.pending(userId)).length});
+ const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+ for(const name of ['canReplayCanonicalOutbox','canReplayLegacyOutbox','retryPendingLegacyOutboxOnReconnect']){
+  if(source.includes('function '+name+'('))vm.runInContext(functionSource(source,name),ctx);
+ }
+ const start=source.indexOf('const canonicalRecovery=createCloudRetryScheduler('),end=source.indexOf('\nasync function retryAccountCloudSync',start);
+ vm.runInContext(source.slice(start,end),ctx);
+ await box.enqueue(userId,legacyVictoryRules()[0].questId,{facts},{operationId:'isolated-legacy-reset-0'});
+ return {ctx,box,state,original,raw,run:()=>vm.runInContext('canonicalRecovery.run()',ctx)};
+}
+
+test('verified partial hydration recovers a queued historical command without replacing divergent local data',async()=>{
+ const f=await isolatedLegacyFixture();
+ await f.run();
+ assert.equal(f.state.receipts.size,1,'A verified conflict must not prevent an independent command receipt');
+ assert.equal((await f.box.pending(userId)).length,0);
+ assert.equal(f.state.profile.xp,15);
+ assert.equal(JSON.stringify(f.ctx.lumenProgress),f.original);
+ assert.equal(f.raw.get('lumenProgressV1'),f.original);
+ assert.equal(f.ctx.cloudProfileReady,false);assert.equal(f.ctx.reloads,0);
+ assert.ok(f.ctx.events.includes('legacy_outbox_isolated_recovered'));
+ assert.ok(f.state.calls.every(([name])=>!['lumen_cas_profile','lumen_backup_profile'].includes(name)));
+});
+
+test('historical isolated recovery retains account, client, active-attempt and readiness guards',async()=>{
+ const changes={
+  unverified:c=>c.canonicalRecoveryContext=null,
+  otherOwner:c=>c.canonicalRecoveryContext.userId='other',
+  otherClient:c=>c.canonicalRecoveryContext.client={},
+  restoreError:c=>c.cloudProfileFailure={reason:'restore_failed'},
+  running:c=>c.attemptEngine.snapshot=()=>({state:'running'}),
+  paused:c=>c.attemptEngine.snapshot=()=>({state:'paused'}),
+  activeCanonical:c=>c.canonicalActiveQuest={id:'active'},
+  authPending:c=>c.authSessionPending=true,
+  passwordRecovery:c=>c.sessionStorage.getItem=()=> '1',
+  storageDenied:c=>c.sessionStorage.getItem=()=>{throw Error('denied')},
+  profileBusy:c=>c.cloudProfileBusy=true,
+  commandBusy:c=>c.legacyCommandInFlight=true,
+  victoryBusy:c=>c.legacyVictoryBusy=true,
+  currentWinRetry:c=>c.legacyVictoryRetry=async()=>{},
+  hidden:c=>c.document.visibilityState='hidden',
+  offline:c=>c.navigator.onLine=false,
+  qa:c=>c.qaActive=true,
+  dirtyReadyProfile:c=>c.cloudProfileReady=true,
+  replayBusy:c=>c.canonicalOutboxRetryInFlight=true
+ };
+ for(const [name,change] of Object.entries(changes)){
+  const f=await isolatedLegacyFixture();change(f.ctx);
+  await vm.runInContext('retryPendingLegacyOutboxOnReconnect()',f.ctx);
+  assert.equal(f.state.calls.length,0,name);
+  assert.equal((await f.box.pending(userId)).length,1,name);
+  assert.equal(JSON.stringify(f.ctx.lumenProgress),f.original,name);
+ }
+});
+
+test('historical recovery verifies a lost response and reloads only a fully ready clean profile',async()=>{
+ const f=await isolatedLegacyFixture();f.state.lost=true;
+ await f.run();await f.run();
+ assert.equal(f.state.receipts.size,1);assert.equal(f.state.profile.performances[0].attempts,1);
+ assert.equal(f.ctx.reloads,0);assert.equal((await f.box.pending(userId)).length,0);
+ const ready=await isolatedLegacyFixture();
+ ready.ctx.cloudProfileReady=true;ready.ctx.cloudProfileDirty=false;ready.ctx.canonicalRecoveryContext=null;
+ await ready.run();assert.equal(ready.ctx.reloads,1);
+});
+
+test('a session change during historical receipt verification preserves its intent',async()=>{
+ for(const change of ['owner','client','attempt']){
+  const f=await isolatedLegacyFixture(),rpc=f.ctx.lumenSupabase.rpc;
+  f.ctx.lumenSupabase.rpc=async(name,args)=>{
+   const response=await rpc(name,args);
+   if(name==='lumen_commit_legacy_command'){
+    if(change==='owner')f.ctx.lumenUser={id:'other'};
+    if(change==='client')f.ctx.lumenSupabase={};
+    if(change==='attempt')f.ctx.attemptEngine.snapshot=()=>({state:'running'});
+   }
+   return response;
+  };
+  await f.run();
+  assert.equal((await f.box.pending(userId)).length,1,change);
+  assert.equal(f.ctx.reloads,0,change);assert.equal(JSON.stringify(f.ctx.lumenProgress),f.original,change);
+  assert.equal(f.ctx.canonicalOutboxRetryInFlight,false,change);
+ }
+});
+
+test('historical and canonical recovery share a lock throughout asynchronous queue inspection',async()=>{
+ const f=await isolatedLegacyFixture(),inspect=f.box.inspect;
+ let release,reads=0;const wait=new Promise(resolve=>{release=resolve});
+ f.box.inspect=async(...args)=>{reads++;await wait;return inspect(...args)};
+ const first=vm.runInContext('retryPendingLegacyOutboxOnReconnect()',f.ctx);
+ assert.equal(f.ctx.canonicalOutboxRetryInFlight,true);
+ await vm.runInContext('retryPendingLegacyOutboxOnReconnect()',f.ctx);
+ assert.equal(reads,1);release();await first;
+ assert.equal(f.state.receipts.size,1);assert.equal(f.ctx.canonicalOutboxRetryInFlight,false);
+});
+
+test('an auth refusal holds the historical queue without stopping canonical scheduler work',async()=>{
+ const f=await isolatedLegacyFixture(),rpc=f.ctx.lumenSupabase.rpc;let attempts=0,canonical=0;
+ f.ctx.lumenSupabase.rpc=async(name,args)=>{
+  if(name==='lumen_commit_legacy_command'){attempts++;return {error:{code:'PGRST301'},status:401}}
+  return rpc(name,args);
+ };
+ f.ctx.retryPendingCanonicalOutboxOnReconnect=async()=>canonical++;
+ await f.run();await f.run();
+ assert.equal(attempts,1);assert.equal(canonical,2);
+ assert.equal((await f.box.inspect(userId)).authRequired,true);
+ assert.equal((await f.box.pending(userId)).length,1);assert.equal(f.ctx.reloads,0);
+});
 function fixture(){
  const state={profile:base(),calls:[],receipts:new Map(),lost:false,missingReceipt:false,owner:userId};
  const client={rpc:async(name,args)=>{
@@ -215,5 +333,21 @@ test('revision handling preserves CAS refusal, independent read-back and both re
   const cloud={...revisionBase(),legacyVictoryRevision:1},f=revisionFixture({...revisionBase(),speedBadgeIntroSeen:1},cloud,failure);
   await assert.rejects(reconcileCompatibleCloudProfiles(f.client,f.storage,cloud));
   assert.equal(f.storage.getItem('lumenProgressV1'),f.raw);assert.equal([...f.data.keys()].filter(k=>k.startsWith('lumenBeforeCloudReconcile')).length,2);
+ }
+});
+
+test('a protected historical projection refusal becomes recoverable partial hydration, without fallback or data loss',async()=>{
+ for(const reconcile of [reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles]){
+  const cloud={...revisionBase(),legacyVictoryRevision:1};
+  const local={...structuredClone(cloud),solved:{0:1}};
+  const f=revisionFixture(local,cloud);let writes=0;
+  f.client.rpc=async name=>{
+   assert.equal(name,'lumen_cas_profile');writes++;
+   return {error:{code:'22023',message:'legacy victory command required; preserve pending data and update client'}};
+  };
+  const result=await reconcile(f.client,f.storage,cloud);
+  assert.equal(result.status,'blocked');assert.equal(result.reason,'legacy_command_required');
+  assert.equal(writes,1);assert.equal(f.storage.getItem('lumenProgressV1'),f.raw);
+  assert.equal([...f.data.keys()].filter(k=>k.startsWith('lumenBeforeCloudReconcile')).length,2);
  }
 });

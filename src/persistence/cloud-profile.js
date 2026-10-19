@@ -517,7 +517,13 @@ export async function reconcileDominantLocalProfile(supabase,storage,remote){
  await preserveRecoverySnapshot(storage,"lumenBeforeCloudReconcileLocal_",raw);
  await preserveRecoverySnapshot(storage,"lumenBeforeCloudReconcileRemote_",JSON.stringify(cloud));
  // CAS refuses overwrite when another device changed cloud after our read.
- const written=await compareAndSwapCloudProfile(supabase,local,cloud);
+ let written;
+ try{written=await compareAndSwapCloudProfile(supabase,local,cloud)}catch(error){
+  // A verified snapshot exists and both originals have been preserved. This
+  // authority refusal holds reconciliation, not independent command recovery.
+  if(error.code==='LEGACY_COMMAND_REQUIRED')return {status:'blocked',reason:'legacy_command_required'};
+  throw error;
+ }
  const verified=await loadVerifiedProfile(supabase);
  if(!sameCloudProfile(verified,written))throw Error("Reconciliation cloud non verifiee");
  return {status:"reconciled",profile:verified};
@@ -673,7 +679,11 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  }
  await preserveRecoverySnapshot(storage,"lumenBeforeCloudReconcileLocal_",raw);
  await preserveRecoverySnapshot(storage,"lumenBeforeCloudReconcileRemote_",JSON.stringify(cloud));
- const updated=await compareAndSwapCloudProfile(supabase,validateCloudProfile(merged),cloud);
+ let updated;
+ try{updated=await compareAndSwapCloudProfile(supabase,validateCloudProfile(merged),cloud)}catch(error){
+  if(error.code==='LEGACY_COMMAND_REQUIRED')return {status:'blocked',reason:'legacy_command_required'};
+  throw error;
+ }
  const verified=await loadVerifiedProfile(supabase);
  if(!sameCloudProfile(updated,verified))throw Error("Reconciliation cloud non verifiee");
  return {status:"reconciled",profile:verified,playerFavouredBalances:differingBalances};
