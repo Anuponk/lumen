@@ -158,11 +158,24 @@ function mergeQualificationMetadata(left,right){
  }
  return {ok:true,value};
 }
+// Revision is a server-owned command cursor, never a reward to union or max.
+// An older cache may adopt the verified server cursor; a newer/invalid local
+// cursor must hold recovery rather than manufacture authority on the server.
+function legacyRevisionConflict(local,cloud){
+ for(const profile of [local,cloud]){
+  const revision=profile.legacyVictoryRevision;
+  if(revision!==undefined&&(!Number.isSafeInteger(revision)||revision<0))
+   return {status:"blocked",reason:"invalid_legacy_revision",fields:["legacyVictoryRevision"]};
+ }
+ if((local.legacyVictoryRevision??0)>(cloud.legacyVictoryRevision??0))
+  return {status:"blocked",reason:"stale_legacy_revision",fields:["legacyVictoryRevision"]};
+ return null;
+}
 export function cloudSafelyCoversLocal(local,remote){
   if(!local || typeof local!=="object" || Array.isArray(local))return true;
   const cloud=validateCloudProfile(remote);
   if(!mergeCatalogueOrigin(local,cloud).ok)return false;
-  if(local.legacyVictoryRevision!==undefined&&(!Number.isSafeInteger(local.legacyVictoryRevision)||!Number.isSafeInteger(cloud.legacyVictoryRevision)||cloud.legacyVictoryRevision<local.legacyVictoryRevision))return false;
+  if(legacyRevisionConflict(local,cloud))return false;
   const grants=mergeLegacyAdventureAccess(local.legacyAdventureAccess,cloud.legacyAdventureAccess);
   if(!grants.ok||grants.value?.some(id=>!cloud.legacyAdventureAccess?.includes(id)))return false;
   const autonomy=mergeAutonomousWins(local.autonomousWins,cloud.autonomousWins);
@@ -427,10 +440,12 @@ export async function reconcileDominantLocalProfile(supabase,storage,remote){
  if(!raw)return {status:"blocked",reason:"missing_local"};
  let local;
  try{local=validateCloudProfile(JSON.parse(raw))}catch{return {status:"blocked",reason:"invalid_local"}}
+ const revisionConflict=legacyRevisionConflict(local,cloud);
+ if(revisionConflict)return revisionConflict;
  const origin=mergeCatalogueOrigin(local,cloud);
  if(!origin.ok)return {status:'blocked',reason:'catalogue_origin_conflict',fields:['catalogueOrigin']};
  if(origin.value!==undefined)local.catalogueOrigin=origin.value;
- if(!cloudSafelyCoversLocal(cloud,local))return {status:"blocked",reason:"missing_cloud_achievements"};
+ if(!sameCloudProfile(local.legacyVictoryRevision,cloud.legacyVictoryRevision)||!cloudSafelyCoversLocal(cloud,local))return {status:"blocked",reason:"missing_cloud_achievements"};
  for(const field of ["shards","xp","skyScore"]){
   if(Number(local[field]||0)!==Number(cloud[field]||0))return {status:"blocked",reason:"mutable_balance"};
  }
@@ -464,6 +479,8 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  if(!raw)return {status:"blocked",reason:"missing_local"};
  let local;
  try{local=validateCloudProfile(JSON.parse(raw))}catch{return {status:"blocked",reason:"invalid_local"}}
+ const revisionConflict=legacyRevisionConflict(local,cloud);
+ if(revisionConflict)return revisionConflict;
  const merged=structuredClone(cloud);
  // Player-first recovery: preserve the higher observed balances and XP.
  // This is intentionally a conservative player-favourable approximation, NOT
@@ -540,7 +557,8 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  }
  const unknownDifferences=[];
  for(const field of new Set([...Object.keys(cloud),...Object.keys(local)])){
-  if(safeFields.has(field)||introFlags.includes(field)||["shards","xp","skyScore","daily","challenges"].includes(field))continue;
+  // merged starts from cloud: keep its exact verified cursor, including absence.
+  if(field==="legacyVictoryRevision"||safeFields.has(field)||introFlags.includes(field)||["shards","xp","skyScore","daily","challenges"].includes(field))continue;
   if(!sameCloudProfile(local[field]??null,cloud[field]??null))unknownDifferences.push(field);
  }
  if(unknownDifferences.length)return {status:"blocked",reason:"unclassified_field",fields:unknownDifferences};
