@@ -292,6 +292,12 @@ matching CAS, legacy overwrite, badge removal, altered first rewards, malformed
 state, valid spends/revocations, badge upgrades, no double reward and account
 isolation. Without the guard, the fixture fails with `destructive CAS accepted`.
 
+Mobile account diagnostics: scripts/cloud-diagnostics-tests.mjs also verifies
+that the account menu exposes the report without a victory/admin gate, and runs
+the actual display/copy helpers for successful, denied and missing clipboards.
+The report remains readable for manual copy. These VM checks do not replace the
+installed-phone check or diagnose a particular player's reconciliation failure.
+
 Diagnostic channel independence (#398): `scripts/cloud-diagnostics-tests.mjs`
 executes the production recorder with quota, denied storage, corrupt diagnostic
 history, health-counter and console failures. Each fault must still send the

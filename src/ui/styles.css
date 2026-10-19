@@ -1018,3 +1018,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .sky-reveal-results .difficulty-choices{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
 .sky-reveal-results .difficulty-choices button{font-size:11px}
 @media(max-height:700px){.sky-reveal-svg{height:150px;margin:5px 0}.sky-reveal-title{font-size:22px}.sky-reveal-name{font-size:15px}.sky-reveal-results{gap:5px}.sky-reveal-actions button{padding:7px 3px}}
+
+#accountSyncDiagnosticPanel{margin-top:10px}
+#accountSyncDiagnosticPanel label{display:block;font-size:12px;line-height:1.4}
+#accountSyncDiagnosticText{box-sizing:border-box;width:100%;max-width:100%;margin-top:8px;padding:8px;background:#0b1525;color:#dce8f5;border:1px solid #28415b;border-radius:8px;font-size:12px;resize:vertical}

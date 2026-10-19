@@ -4,6 +4,14 @@
 
 Offer **Continuer avec Google**, email plus password (create account / existing account), and **Continuer sans compte**. Remove code-email login. Former passwordless players use **Créer ou réinitialiser mon mot de passe** with the same email, preserving their existing account. Recovery opens a visible password editor. Distinguish an authenticated account still restoring its save from a guest; a restore failure offers **Réessayer la synchronisation**, never a destructive reset. The early guest discovery and learning sequence remain unchanged.
 
+The account menu always exposes **Diagnostic de synchronisation**, independently
+of administration permissions and victory dialogs. The existing bounded local
+cloud diagnostic report is readable in a read-only field and can be copied;
+when the clipboard is unavailable or denied, manual selection remains possible.
+Opening/copying the report changes no save, retry state or server data and uploads
+nothing. It includes no account identity, token or whole player profile. This
+support action does not alter gameplay onboarding.
+
 ## Visual identity
 LUMEN should feel like a celestial/energy-map puzzle rather than a reskinned Queens board:
 - dark space/energy-map atmosphere;

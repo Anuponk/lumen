@@ -115,6 +115,16 @@ try{
   await until(`document.getElementById('mobileAuthStatus').textContent.includes('sauvegarde à resynchroniser')`);
   assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),true);
   assert.equal(await evaluate(`document.getElementById('retryAccountSync').hidden`),false);
+  const progressBeforeDiagnostic=await evaluate("localStorage.getItem('lumenProgressV1')");
+  if(viewport.mobile)await evaluate("if(document.getElementById('mobileAuthPopover').hidden)document.getElementById('mobileAccount').click()");
+  await evaluate("document.getElementById('showAccountSyncDiagnostic').click()");
+  assert.equal(await evaluate("document.getElementById('accountSyncDiagnosticPanel').hidden"),false);
+  assert.equal(await evaluate("document.getElementById('accountSyncDiagnosticText').readOnly"),true);
+  assert.equal(await evaluate("JSON.parse(document.getElementById('accountSyncDiagnosticText').value).app"),'Lumen');
+  if(viewport.mobile)assert.equal(await evaluate("document.getElementById('accountSyncDiagnosticText').getClientRects().length>0"),true);
+  assert.equal(await evaluate("localStorage.getItem('lumenProgressV1')"),progressBeforeDiagnostic,'Diagnostic viewing preserves the local save');
+  await evaluate("document.getElementById('closeAccountSyncDiagnostic').click()");
+  assert.equal(await evaluate("document.getElementById('accountSyncDiagnosticPanel').hidden"),true);
   await navigate('Page.reload');
   await until(`document.getElementById('mobileAuthAction').textContent==='Déconnexion'`);
   const recovery=new URL(url);recovery.searchParams.set('lumen_confirm','a'.repeat(64));recovery.searchParams.set('type','recovery');
