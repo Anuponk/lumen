@@ -222,7 +222,8 @@ verified account-switch backups. The additional mandatory
 `campaign-resume-browser-tests.mjs` exercises authenticated mobile startup at the
 completed numeric boundary, the actual Next handler, reload of the started
 canonical attempt and a second account. Profiles/RPCs are synthetic; no player
-save or production write is used. The quality gate now runs eight browser suites.
+save or production write is used. That delivery added the eighth browser suite;
+the PWA update suite above brings the current quality gate to nine.
 Learning navigation/reload uses the shared `navigateAndWait` document-epoch
 check; readiness of the previous page cannot satisfy the next viewport's setup.
 
