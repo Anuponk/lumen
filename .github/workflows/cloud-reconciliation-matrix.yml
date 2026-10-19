@@ -18,6 +18,7 @@ jobs:
           node-version: '22'
       - name: Reconciliation and fault matrix
         run: |
+          node scripts/cloud-profile-transitions-tests.mjs
           node scripts/cloud-reconciliation-matrix-tests.mjs
           node scripts/cloud-balance-reconciliation-tests.mjs
           node scripts/cloud-local-quota-tests.mjs

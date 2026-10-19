@@ -1,6 +1,24 @@
 // Explicit migration backup. Never automatically overwrites a cloud snapshot.
 import {catalogueOrigin,mergeCatalogueOrigin,currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
 const MAX_CHARS=524288;
+// Top-level profile contract. Policies describe existing recovery rules, not
+// permission to award a reward or bypass a transactional server projection.
+export const CLOUD_PROFILE_FIELDS=Object.freeze(Object.fromEntries(Object.entries({
+ solved:["command","achievement"],historyBackup:["cache","achievement"],
+ badges:["legacy","achievement"],stars:["command","achievement"],noHint:["command","achievement"],
+ performances:["command","achievement"],canonicalQuestState:["ledger","achievement"],
+ autonomousWins:["command","achievement"],legacyAdventureAccess:["compatibility","achievement"],
+ catalogueOrigin:["server","catalogue"],legacyVictoryRevision:["server","revision"],
+ shards:["transaction","legacy_balance"],xp:["transaction","legacy_balance"],skyScore:["derived","legacy_balance"],
+ daily:["server","ledger"],challenges:["command","ledger"],
+ autonomySeen:["device","intro"],fullBadgeIntroSeen:["device","intro"],
+ autoCrossUnlockSeen:["device","intro"],speedBadgeIntroSeen:["device","intro"],
+ skyHistoryVersion:["migration","equal"]
+}).map(([field,[owner,reconcile]])=>[field,Object.freeze({owner,reconcile})])));
+const fieldsWithPolicy=(...policies)=>Object.keys(CLOUD_PROFILE_FIELDS).filter(field=>policies.includes(CLOUD_PROFILE_FIELDS[field].reconcile));
+const introFlags=fieldsWithPolicy("intro");
+const validIntroFlag=value=>[undefined,null,0,1,false,true].includes(value);
+
 export function validateCloudProfile(profile){
   if(!profile || typeof profile!=="object" || Array.isArray(profile)) throw Error("Profil invalide");
   if(!profile.solved || typeof profile.solved!=="object" || Array.isArray(profile.solved)) throw Error("Quêtes invalides");
@@ -176,6 +194,16 @@ export function cloudSafelyCoversLocal(local,remote){
   const cloud=validateCloudProfile(remote);
   if(!mergeCatalogueOrigin(local,cloud).ok)return false;
   if(legacyRevisionConflict(local,cloud))return false;
+  // Coverage is an installation boundary too: it must not silently drop local
+  // fields that the reconciler would hold for explicit review.
+  for(const field of Object.keys(local)){
+    const policy=Object.hasOwn(CLOUD_PROFILE_FIELDS,field)?CLOUD_PROFILE_FIELDS[field].reconcile:null;
+    if((policy===null||policy==="equal")&&!sameCloudProfile(local[field]??null,cloud[field]??null))return false;
+  }
+  for(const flag of introFlags){
+    if(!validIntroFlag(local[flag])||!validIntroFlag(cloud[flag]))return false;
+    if(Boolean(local[flag])&&!Boolean(cloud[flag]))return false;
+  }
   const grants=mergeLegacyAdventureAccess(local.legacyAdventureAccess,cloud.legacyAdventureAccess);
   if(!grants.ok||grants.value?.some(id=>!cloud.legacyAdventureAccess?.includes(id)))return false;
   const autonomy=mergeAutonomousWins(local.autonomousWins,cloud.autonomousWins);
@@ -445,7 +473,9 @@ export async function reconcileDominantLocalProfile(supabase,storage,remote){
  const origin=mergeCatalogueOrigin(local,cloud);
  if(!origin.ok)return {status:'blocked',reason:'catalogue_origin_conflict',fields:['catalogueOrigin']};
  if(origin.value!==undefined)local.catalogueOrigin=origin.value;
- if(!sameCloudProfile(local.legacyVictoryRevision,cloud.legacyVictoryRevision)||!cloudSafelyCoversLocal(cloud,local))return {status:"blocked",reason:"missing_cloud_achievements"};
+ // Metadata differences need the same compatible policy as achievements.
+ // Route before unknown-field checks; never upload a lower tutorial state.
+ if(introFlags.some(flag=>!sameCloudProfile(local[flag]??null,cloud[flag]??null))||!sameCloudProfile(local.legacyVictoryRevision,cloud.legacyVictoryRevision)||!cloudSafelyCoversLocal(cloud,local))return {status:"blocked",reason:"missing_cloud_achievements"};
  for(const field of ["shards","xp","skyScore"]){
   if(Number(local[field]||0)!==Number(cloud[field]||0))return {status:"blocked",reason:"mutable_balance"};
  }
@@ -454,7 +484,7 @@ export async function reconcileDominantLocalProfile(supabase,storage,remote){
  }
  // Unknown fields can contain non-repeatable transactions. Require equality
  // instead of silently selecting one profile's value.
- const monotonic=new Set(["solved","historyBackup","badges","stars","noHint","performances","canonicalQuestState","autonomousWins","legacyAdventureAccess","catalogueOrigin"]);
+ const monotonic=new Set(fieldsWithPolicy("achievement","catalogue"));
  for(const key of new Set([...Object.keys(local),...Object.keys(cloud)])){
   if(monotonic.has(key)||["shards","xp","skyScore","daily","challenges"].includes(key))continue;
   if(!sameCloudProfile(local[key]??null,cloud[key]??null))return {status:"blocked",reason:"unclassified_field",fields:[key]};
@@ -537,7 +567,7 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  const origin=mergeCatalogueOrigin(local,cloud);
  if(!origin.ok)return {status:'blocked',reason:'catalogue_origin_conflict',fields:['catalogueOrigin']};
  if(origin.value!==undefined)merged.catalogueOrigin=origin.value;
- const safeFields=new Set(["solved","historyBackup","noHint","badges","stars","performances","canonicalQuestState","autonomousWins","legacyAdventureAccess","catalogueOrigin"]);
+ const safeFields=new Set(fieldsWithPolicy("achievement","catalogue"));
  const autonomy=mergeAutonomousWins(local.autonomousWins,cloud.autonomousWins);
  if(!autonomy.ok)return {status:"blocked",reason:"autonomous_wins_conflict",fields:["autonomousWins"]};
  merged.autonomousWins=autonomy.value;
@@ -546,10 +576,10 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  if(grants.value!==undefined)merged.legacyAdventureAccess=grants.value;
  // One-way UI tutorial acknowledgements: seeing an introduction cannot be
  // undone by restoring another device. They never award currency or badges.
- const introFlags=["autonomySeen","fullBadgeIntroSeen","autoCrossUnlockSeen","speedBadgeIntroSeen"];
+ // introFlags comes from the shared top-level contract.
  for(const flag of introFlags){
   const left=local[flag],right=cloud[flag];
-  if(![undefined,null,0,1,false,true].includes(left)||![undefined,null,0,1,false,true].includes(right))
+  if(!validIntroFlag(left)||!validIntroFlag(right))
    return {status:"blocked",reason:"invalid_intro_flag",fields:[flag]};
   if(Boolean(left)||Boolean(right))merged[flag]=1;
   else if(Object.hasOwn(cloud,flag))merged[flag]=cloud[flag];

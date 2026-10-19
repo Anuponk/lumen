@@ -172,6 +172,25 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+`node scripts/cloud-profile-transitions-tests.mjs` runs 56 synthetic transition
+and producer-classification checks. Eight new hydration assertions fail before
+the tutorial coverage/routing fix: seen flags must survive a covering-cloud
+restore and local-dominant achievements must reach the compatible policy.
+Two additional failing assertions require initial coverage to retain unknown local
+fields and hold explicit score-schema differences before installation.
+The matrix combines four flags, absent/zero/older/current command revisions,
+both device directions, second-device installation, V2/V3 summaries, retries,
+CAS/read-back failures, invalid shapes and protected command refusal with an
+unchanged pending intent. It checks detected JS/SQL fields against the shared
+contract and runs guest victory output across the actual catalogue.
+
+This gate runs in both the unified quality gate and Cloud reconciliation matrix.
+Its RPC/storage fixtures and bounded source scanners do not replace real SQL,
+real Auth/account-switch/PWA coverage or production-device confirmation. The
+mock projection guard tests client refusal handling, not PostgreSQL equivalence.
+Existing reward, outbox, account and SQL regressions remain required.
+
+
 Grand Chien/Dauphin resume: `campaign-resume-tests.mjs` verifies boundary selection,
 no redirect of running/paused attempts, stable-ID restoration, exclusions and
 verified account-switch backups. The additional mandatory
