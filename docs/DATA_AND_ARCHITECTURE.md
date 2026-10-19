@@ -10,6 +10,50 @@ No player-data schema or reward reconciliation policy changes with these account
 
 ## Cloud persistence contract
 
+### Profile field classification and transition audit (2026-10-19)
+
+`CLOUD_PROFILE_FIELDS` in `src/persistence/cloud-profile.js` declares ownership
+and reconciliation categories for the 21 currently inventoried top-level fields.
+Both reconciliation paths derive their achievement/catalogue classifications
+from it; coverage and compatible reconciliation share the tutorial-flag list
+and validation. It is a classification contract, not a complete profile schema
+validator, transaction ledger or permission to bypass a server guard.
+
+| Fields | Ownership / reconciliation |
+|---|---|
+| `solved`, `stars`, `noHint`, `performances`, `autonomousWins` | Historical command projection after activation; existing achievement policies and SQL guards |
+| `canonicalQuestState` | Canonical ledger; stable-quest reward evidence remains protected |
+| `historyBackup`, `badges`, `legacyAdventureAccess` | Historical cache/awards/access compatibility; existing specific merge policies |
+| `catalogueOrigin` | Server cohort; explicit contradictory origins hold |
+| `legacyVictoryRevision` | Exact verified server cursor; never client-incremented or max-merged |
+| `shards`, `xp`, `skyScore` | Transactions/derived score; existing legacy max recovery remains an approximation, not an audited economy |
+| `daily`, `challenges` | Existing server/command ledgers; contradictory receipts hold |
+| `autonomySeen`, `fullBadgeIntroSeen`, `autoCrossUnlockSeen`, `speedBadgeIntroSeen` | Device acknowledgements; valid seen state is monotonic and grants no reward |
+| `skyHistoryVersion` | Coupled score-migration marker; equal-only during reconciliation, no generic version maximum |
+
+The audit reproduced two tutorial failures: coverage could accept a cloud copy
+missing a locally acknowledged introduction; with local-only achievements, the
+local-dominant path could stop on the same compatible flag before reaching the
+existing two-way merge. Coverage now refuses the loss and metadata differences
+route to compatible reconciliation. Invalid flags still hold. Tutorial timing,
+wording, badge eligibility, and server reward projections do not change.
+
+The transition suite inspects literal JavaScript profile assignments, executes
+catalogue-derived guest victories, and scans outer keys of the audited SQL
+`v_profile := v_profile || jsonb_build_object(...)` assignment shape. New detected
+fields require classification before CI passes. This is not a complete JS/SQL
+parser: renamed aliases, arbitrary dynamic writes, nested formats, older
+uncollected saves and future SQL expression shapes require explicit review and
+fixtures. Existing dedicated nested-performance and real-SQL suites remain required.
+
+Remaining boundaries: global hydration still gates historical victories;
+ambiguous pre-command rewards and conflicting protected projections need audited
+recovery; standalone daily/spending cutover remains open. Unknown fields and
+unsupported score-schema differences are not made automatically mergeable.
+No player save was imported or repaired during this audit, and an affected-phone
+confirmation remains necessary after release. No SQL/Auth change is required.
+
+
 Campaign resume (#470 follow-up): restoring a canonical board uses the existing
 `lumenActiveAttemptV1` record and `lumenCloudOwnerId`; no server/profile field or
 RPC is added. Before a verified account switch replaces a restored run, its exact
