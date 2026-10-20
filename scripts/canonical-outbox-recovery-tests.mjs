@@ -256,3 +256,32 @@ test('verified hydration rechecks the same restored board, never a switched acco
  const hydration=source.slice(source.indexOf('afterAuthCloudSync:async()=>{'),source.indexOf('holdLegacyMergeForFullRestore'));
  assert(hydration.indexOf('resumeCanonicalVictoryAfterHydration(accountId,hydrationClient)')>hydration.indexOf('recordCloudDiagnostic("hydration_ready"'),'Resume follows verified hydration');
 });
+
+
+test('a paused earlier quest can recover its exact receipt after the active quest has advanced',async()=>{
+ const entry={version:2,userId:'a',questId:'previous',operationId:'old-reset-0',reward,createdAt:'2026-10-20T15:00:00Z'};
+ let recovered=0,writes=0,acks=0;
+ const box={inspect:async()=>({pending:[entry],paused:[{questId:'previous',operationId:entry.operationId,kind:'review',code:'22023'}]}),acknowledge:async()=>{acks++}};
+ const result=await replayCanonicalVictoryOutbox(box,'a',async()=>{writes++;throw Error('Must not submit changed evidence')},{recoverCommitted:async value=>{assert.equal(value,entry);recovered++;return saved('previous')}});
+ assert.equal(recovered,1);assert.equal(result.length,1);assert.equal(writes,0);assert.equal(acks,0,'Recovery archives the entry; replay must not falsely acknowledge changed evidence');
+});
+
+test('receipt recovery cannot release unrelated review holds or auth holds',async()=>{
+ for(const pause of [{kind:'review',code:'42501'},{kind:'review',code:'UNKNOWN'},{kind:'auth',code:'PGRST301'}]){
+  let reads=0;const entry={questId:'q',operationId:'r',reward};
+  const box={inspect:async()=>({pending:[entry],paused:[{questId:'q',operationId:'r',...pause}],authRequired:pause.kind==='auth'})};
+  const result=await replayCanonicalVictoryOutbox(box,'a',async()=>{throw Error('paused')},{recoverCommitted:async()=>{reads++;return saved('q')}});
+  assert.equal(reads,0);assert.equal(result.length,0);
+ }
+});
+
+
+test('a review hold remains without a receipt and session changes cannot acknowledge recovery',async()=>{
+ for(const change of ['missing','session']){
+  let valid=true,writes=0,acks=0;
+  const entry={userId:'a',questId:'q',operationId:'old-reset-0',reward};
+  const box={inspect:async()=>({pending:[entry],paused:[{questId:'q',operationId:entry.operationId,kind:'review',code:'22023'}]}),acknowledge:async()=>{acks++}};
+  const result=await replayCanonicalVictoryOutbox(box,'a',async()=>{writes++},{sessionValid:()=>valid,recoverCommitted:async()=>{if(change==='session'){valid=false;return saved('q')}return null}});
+  assert.equal(result.length,0);assert.equal(writes,0);assert.equal(acks,0);
+ }
+});

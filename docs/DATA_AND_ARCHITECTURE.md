@@ -561,3 +561,13 @@ use `lumenCanonicalRecreatedCaptureArchiveV1:` in IndexedDB or localStorage,
 scoped by owner, operation and capture creation time, outside active outbox scans.
 No original receipt, server projection, reward, grant or local evidence is
 rewritten; no SQL/Auth migration or production player write is needed.
+
+Queued receipt recovery (`6b765bd` follow-up) also runs during verified startup
+and existing outbox reconnect replay, independently of the currently displayed
+quest. A canonical V2 record held for `review`/`22023` may undergo the same
+read-only exact-receipt/current-projection check and narrow verified archival;
+it does not resume a changed-evidence write. Other review/auth holds stay held.
+Missing receipts, uncovered evidence, unreadable storage and session changes
+retain the entry; unchanged-evidence ordinary replay still uses its normal path.
+Already archived recovery is never acknowledged again as matching changed
+evidence. Recovery cannot mutate the running board, current attempt or reset.

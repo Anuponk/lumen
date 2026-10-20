@@ -52,19 +52,23 @@ export function createCanonicalVictoryOutbox(storage){
  }
  return {enqueue,pending,acknowledge};
 }
-export async function replayCanonicalVictoryOutbox(outbox,userId,commit,{sessionValid=()=>true,onIssue=()=>{}}={}){
+export async function replayCanonicalVictoryOutbox(outbox,userId,commit,{sessionValid=()=>true,onIssue=()=>{},recoverCommitted}={}){
  const confirmed=[];
  const blockedQuests=new Set();
  const report=kind=>{try{onIssue({kind})}catch{}};
  const state=outbox.inspect?await outbox.inspect(userId):{pending:await outbox.pending(userId)};
  if(state.authRequired){report('auth');return confirmed}
- const paused=new Set((state.paused||[]).map(entry=>JSON.stringify([entry.questId,entry.operationId??null])));
+ const paused=new Map((state.paused||[]).map(entry=>[JSON.stringify([entry.questId,entry.operationId??null]),entry]));
  for(const entry of state.pending){
   if(!sessionValid())break;
-  if(paused.has(JSON.stringify([entry.questId,entry.operationId??null]))){blockedQuests.add(entry.questId);continue}
+  const hold=paused.get(JSON.stringify([entry.questId,entry.operationId??null]));
+  if(hold&&!(recoverCommitted&&entry.operationId&&hold.kind==='review'&&hold.code==='22023')){blockedQuests.add(entry.questId);continue}
   if(blockedQuests.has(entry.questId))continue;
   try{
-   const result=await commit(entry.questId,entry.reward,{operationId:entry.operationId,userId,sessionValid});
+   const recovered=entry.operationId&&recoverCommitted?await recoverCommitted(entry):null;
+   if(!sessionValid())break;
+   if(hold&&!recovered){blockedQuests.add(entry.questId);continue}
+   const result=recovered||await commit(entry.questId,entry.reward,{operationId:entry.operationId,userId,sessionValid});
    if(!sessionValid())break;
    const saved=result?.profile?.canonicalQuestState?.[entry.questId];
    const badges=['autonomy','speed','noError','mastery'];
@@ -74,7 +78,7 @@ export async function replayCanonicalVictoryOutbox(outbox,userId,commit,{session
    confirmed.push(result);
    // A failed local cleanup cannot undo a verified server acknowledgement.
    // Its retained intent is safe to retry through the idempotent ledger.
-   try{await outbox.acknowledge(userId,entry.questId,entry.reward,entry.operationId)}catch{report('cleanup')}
+   if(!recovered)try{await outbox.acknowledge(userId,entry.questId,entry.reward,entry.operationId)}catch{report('cleanup')}
   }catch(error){
    if(!sessionValid())break;
    const classification=classifyCanonicalRecoveryError(error);
