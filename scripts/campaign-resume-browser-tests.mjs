@@ -40,6 +40,10 @@ try{
  await new Promise(r=>setTimeout(r,700));
  await until(`!!window.lumenDiagnostics&&JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='hydration_ready')`);
  await acknowledgeLearningMilestones(evaluate);
+ await until(`document.getElementById('mobileAuthStatus').textContent.includes('Progression synchronis')`);
+ await evaluate(`document.getElementById('mobileAccount').click();document.getElementById('showAccountSyncDiagnostic').click()`);
+ assert.equal(await evaluate(`document.getElementById('accountSyncDiagnosticSummary').textContent===document.getElementById('mobileAuthStatus').textContent&&document.getElementById('accountSyncDiagnosticSummary').getClientRects().length>0`),true,'Diagnostic displays the current verdict above the historical journal');
+ await evaluate(`document.getElementById('closeAccountSyncDiagnostic').click();document.getElementById('mobileAccount').click()`);
  assert.equal(await evaluate(`(async()=>{const client=window.supabase.createClient();const expected=structuredClone(window.__profile);expected.xp++;return (await client.rpc('lumen_cas_profile',{p_expected:expected,p_payload:structuredClone(window.__profile)})).data;})()`,true),false,'Fixture CAS must reject a stale baseline exactly as PostgreSQL does');
  assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().puz.reg'),next.reg,'Verified startup resumes Dauphin directly');
  await evaluate(`document.getElementById('openSky').click()`);
@@ -74,6 +78,10 @@ try{
  assert.notEqual(switched.attempt.attemptId,attemptBefore.attemptId,'The second account cannot inherit the old run');
 
  await until(`document.getElementById('mobileAuthAction').textContent==='D'+String.fromCharCode(233)+'connexion'&&document.getElementById('retryAccountSync').hidden===true`);
+ // Account switching must isolate the old attempt; explicitly enter the target
+ // canonical quest through the new owner's sky before testing victory/resume.
+ await evaluate(`document.getElementById('openSky').click();document.querySelector('#adventureRail [data-pack-id="${next.packId}"]').click();while(!document.querySelector('#sectorTabs [data-content-id="${next.constellationId}"]')){const nextPage=document.getElementById('constellationNext');if(nextPage.disabled)throw Error('Canonical fixture constellation not found');nextPage.click()}document.querySelector('#sectorTabs [data-content-id="${next.constellationId}"]').click();document.querySelector('#canonicalConstellationQuests [data-quest-id="${next.id}"]').click()`);
+ await acknowledgeLearningMilestones(evaluate);
  await evaluate(`document.getElementById('attemptMask').click()`);
  const beforeWin=await evaluate(`({xp:window.__profile.xp,legacy:JSON.stringify(window.__profile.solved),performances:JSON.stringify(window.__profile.performances),attempt:JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).attemptId,questId:JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).questId})`);
  assert.equal(beforeWin.questId,next.id,'The second account must enter the canonical fixture before solving');

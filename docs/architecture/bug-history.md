@@ -59,3 +59,12 @@ mutation. Other holds and unproven evidence remain. Independently, canonical
 celebration explicitly hid `successRewards`; its browser visibility regression
 fails before the fix. Reuse the animated reward renderer with confirmed badges
 and the pre-operation owned badges. No eligibility, reward rule or SQL change.
+
+## Healthy sync hidden by nickname (`9efabe0` follow-up)
+
+The phone showed only the nickname above a permanently available diagnostic
+with historical events. The healthy branch used nickname OR sync verdict.
+A regression on the real menu renderer fails for a healthy named account.
+Keep the nickname plus an explicit success verdict, guard busy/dirty/offline/
+failure/pending states, and mirror current status into an accessible diagnostic
+summary with historical-log explanation. No auth/persistence/reward rule changes.

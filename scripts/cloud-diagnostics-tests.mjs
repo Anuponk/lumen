@@ -42,7 +42,7 @@ const helpers=src.slice(src.indexOf('function showAccountCloudDiagnostic'),src.i
 for(const clipboard of ['ok','denied','missing']){
  const nodes=Object.fromEntries(['accountSyncDiagnosticPanel','accountSyncDiagnosticText','copyAccountSyncDiagnostic'].map(id=>[id,{hidden:true,value:'',textContent:'',focus(){this.focused=true},select(){this.selected=true}}]));
  let copied;
- const context=vm.createContext({document:{getElementById:id=>nodes[id]},navigator:clipboard==='missing'?{}:{clipboard:{writeText:async value=>{if(clipboard==='denied')throw Error('denied');copied=value}}},cloudDiagnosticReport:()=>'{"events":[{"event":"hydration_reconciliation","reason":"unclassified_field","fields":["exampleField"]}]}'});
+ const context=vm.createContext({document:{getElementById:id=>nodes[id]},navigator:clipboard==='missing'?{}:{clipboard:{writeText:async value=>{if(clipboard==='denied')throw Error('denied');copied=value}}},syncMobileAuthUI(){},cloudDiagnosticReport:()=>'{"events":[{"event":"hydration_reconciliation","reason":"unclassified_field","fields":["exampleField"]}]}'});
  vm.runInContext(helpers,context);
  vm.runInContext('showAccountCloudDiagnostic()',context);
  assert.equal(nodes.accountSyncDiagnosticPanel.hidden,false);
@@ -52,3 +52,6 @@ for(const clipboard of ['ok','denied','missing']){
  else assert.equal(nodes.accountSyncDiagnosticText.selected,true,'Manual copy stays available on installed mobile apps');
 }
 console.log('Mobile account diagnostics and clipboard fallback passed');
+
+assert(markup.includes('id="accountSyncDiagnosticSummary"'),'The technical journal needs a readable current-state summary');
+assert(markup.includes('role="status" aria-live="polite"'),'Sync summary remains accessible when its state changes');

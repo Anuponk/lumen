@@ -112,6 +112,7 @@ function cloudDiagnosticReport(){
  catch(_){return "Diagnostics indisponibles"}
 }
 function showAccountCloudDiagnostic(){
+ syncMobileAuthUI();
  const panel=document.getElementById("accountSyncDiagnosticPanel"),text=document.getElementById("accountSyncDiagnosticText"),copy=document.getElementById("copyAccountSyncDiagnostic");
  if(!panel||!text)return;
  text.value=cloudDiagnosticReport();panel.hidden=false;
@@ -222,6 +223,7 @@ async function flushCloudProfile(){
   }finally{
    cloudProfileBusy=false;
    if(cloudProfileDirty){cloudProfileDirty=false;scheduleCloudProfile()}
+   try{syncMobileAuthUI()}catch{}
   }
  })();
  return cloudProfileInFlight;
@@ -724,6 +726,7 @@ function syncMobileAuthUI(){
  // Do not offer a second sign-in or erase recovery state before it resolves.
  if(authSessionPending&&lumenSupabase&&!lumenUser){
   status.textContent="Vérification de la connexion…";
+  const summary=document.getElementById("accountSyncDiagnosticSummary");if(summary)summary.textContent=status.textContent;
   action.textContent="Vérification en cours…";action.disabled=true;action.title="";
   icon.textContent="…";icon.setAttribute("aria-label","Vérification de la connexion");
   const guest=document.getElementById("guestSaveExplainer");if(guest)guest.hidden=true;
@@ -740,8 +743,10 @@ function syncMobileAuthUI(){
  show("accountProfileEditor",signedIn&&document.getElementById("accountProfileEditor")?.dataset.open==="true");
  show("guestSaveExplainer",!signedIn);
  const pendingNotice=canonicalOutboxNotice==="attention"?"Sauvegarde à vérifier · données locales conservées":canonicalOutboxNotice==="auth"?"Session à renouveler · victoire conservée":canonicalOutboxNotice==="pending"?"Victoire en attente de synchronisation":canonicalOutboxNotice==="checking"?"Vérification des sauvegardes en attente":canonicalOutboxNotice==="storage"?"Enregistrement local indisponible":null;
- status.textContent=recovering?"Choisis ton nouveau mot de passe":signedIn?(pendingNotice|| (cloudProfileReady?(lumenNickname||"Progression synchronisée"):cloudProfileFailure?"Compte connecté · sauvegarde à resynchroniser":"Compte connecté · synchronisation en cours…")):"Progression enregistrée sur cet appareil";
- show("retryAccountSync",signedIn&&((!cloudProfileReady&&!!cloudProfileFailure)||!!pendingNotice));
+ const syncMessage=pendingNotice||(cloudProfileFailure?"Compte connect\u00e9 \u00b7 sauvegarde \u00e0 resynchroniser":navigator.onLine===false?"Compte connect\u00e9 \u00b7 hors connexion":!cloudProfileReady?"Compte connect\u00e9 \u00b7 synchronisation en cours\u2026":cloudProfileBusy||cloudProfileDirty?"Enregistrement en cours\u2026":(lumenNickname?lumenNickname+" \u00b7 ":"")+"Progression synchronis\u00e9e");
+ status.textContent=recovering?"Choisis ton nouveau mot de passe":signedIn?syncMessage:"Progression enregistr\u00e9e sur cet appareil";
+ const summary=document.getElementById("accountSyncDiagnosticSummary");if(summary)summary.textContent=status.textContent;
+ show("retryAccountSync",signedIn&&(!!cloudProfileFailure||!!pendingNotice));
  action.textContent=signedIn?"Déconnexion":"Se connecter / Créer un compte";
  icon.textContent=signedIn?"●":"♙";
  icon.setAttribute("aria-label",signedIn?"Compte connecté":"Compte invité");
