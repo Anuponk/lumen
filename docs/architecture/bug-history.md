@@ -21,3 +21,16 @@ async victory capture with differing elapsed time. `campaign-resume-tests.mjs`,
 `canonical-outbox-recovery-tests.mjs` and the authenticated Dauphin browser flow
 cover prevention, conservative local recovery and one acknowledged grant. This
 is not blanket repair of unknown reward conflicts or proof of live-phone recovery.
+
+## Solved canonical board renders before Auth (`63939b8` follow-up)
+
+Phone build 476 showed `canonical_start_metadata_archived`, `hydration_ready`
+and `flush_success`, but a restored solved board produced
+`canonical_victory_failed` at `context` before every INITIAL_SESSION.
+The renderer tried to capture while `lumenUser` was still null; verified
+hydration never retriggered the board validator. VM regression reproduces the
+false capture failure; the mobile browser fixture covers a solved board cold
+reload with delayed Auth and a single acknowledged grant. Defer the premature
+capture, then wake the ordinary validator after full hydration with exact
+owner/client/quest/attempt/reset guards. Preserve the board, attempt, outbox
+and all reward authority. Live phone confirmation remains outstanding.

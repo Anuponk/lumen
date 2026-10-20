@@ -145,3 +145,9 @@ claim an old quest's qualification. Victory success remains gated by a durable
 intention and verified server acknowledgement; repeated renders cannot create
 parallel captures with different evidence. Existing learning milestones, badge
 eligibility and rewards are unchanged.
+
+A solved canonical board restored before the account is ready shows account
+restoration pending rather than claiming local storage failed. After verified
+restoration, validation resumes for that same attempt without requiring another
+board gesture. Success still requires a confirmed cloud save. No onboarding,
+controls, eligibility or reward rules change.

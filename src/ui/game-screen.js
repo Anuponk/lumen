@@ -584,6 +584,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   recordCloudDiagnostic("hydration_ready",{profileReady:true,legacyMirrorVerified:mirror.ok});
   renderDaily();
   refreshJourney();updateAuthUI();
+  resumeCanonicalVictoryAfterHydration(accountId,hydrationClient);
   maybeShowStreakLoss();
   const gate=document.getElementById("accountOptin");if(gate){const wasVisible=!gate.hidden;gate.hidden=true;if(wasVisible)showAccountSavedConfirmation()}
  }catch(e){recordCloudDiagnostic("hydration_failed",{errorCode:String(e?.code||e?.status||"unknown").slice(0,48),errorName:String(e?.name||"unknown").slice(0,48),stage:String(e?.stage||hydrationStage).slice(0,48),reason:e?.message?.startsWith("Profil local divergent")?"local_divergence":e?.message?.startsWith("Daily history unavailable")?"daily_history":e?.message?.startsWith("Daily rewards unavailable")?"daily_rewards":e?.message?.startsWith("Impossible de restaurer le profil")?"cloud_restore":e?.message?.startsWith("Sauvegarde cloud impossible")?"cloud_cas":"other",kind:e?.code==="LOCAL_STORAGE_QUOTA"||e?.name==="QuotaExceededError"||e?.code===22?"local_quota":"other"});cloudProfileFailure={reason:"restore_failed"};updateAuthUI();console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
@@ -1936,8 +1937,25 @@ async function resumeLegacyAfterAuthRefresh(ownerId,client){
   await refreshCanonicalOutboxNotice(ownerId);canonicalRecovery.schedule();
  }catch{if(sameSession())recordCloudDiagnostic('legacy_outbox_resume_pending',{reason:'auth_or_storage'})}
 }
+function resumeCanonicalVictoryAfterHydration(ownerId,client){
+ const questId=canonicalActiveQuest?.id,attempt=attemptEngine.snapshot();
+ if(!questId||!attempt?.attemptId)return;
+ setTimeout(()=>{
+  if(qaActive||celebrated||!cloudProfileReady||authSessionPending||
+   lumenUser?.id!==ownerId||lumenSupabase!==client||canonicalResumeOwner!==ownerId||
+   canonicalActiveQuest?.id!==questId||attemptEngine.snapshot()?.attemptId!==attempt.attemptId||
+   (attemptEngine.snapshot()?.resetCount||0)!==(attempt.resetCount||0))return;
+  try{if(sessionStorage.getItem('lumenPasswordRecoveryPending')==='1')return}catch{return}
+  // The ordinary renderer validates the live Guardians before capturing a win.
+  render();
+ },0);
+}
 async function celebrateCanonicalSuccess(){
  const q=canonicalActiveQuest;if(!q||celebrated)return;
+ if(!qaActive&&!lumenUser){
+  msg.textContent=authSessionPending?"Restauration du compte en cours. Ta grille est conserv\u00e9e.":"Connecte-toi pour sauvegarder cette victoire. Ta grille est conserv\u00e9e.";
+  return;
+ }
  const seconds=activeGameSeconds(),attempt=attemptEngine.snapshot();
  const victoryOwner=lumenUser?.id,victoryClient=lumenSupabase;
  const capture={userId:victoryOwner,client:victoryClient,questId:q.id,attemptId:attempt?.attemptId,resetCount:attempt?.resetCount||0};

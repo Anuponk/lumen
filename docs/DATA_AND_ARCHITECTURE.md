@@ -530,3 +530,12 @@ capture. Retries reuse frozen persisted evidence and become available after the
 current capture exits. A local diagnostic records a fixed capture stage/category
 without provider text or progress values. Server acknowledgement/read-back still
 precedes success and reward presentation. No SQL/Auth change is required.
+
+Canonical solved-board startup (follow-up to `63939b8`): rendering a restored
+canonical board before startup Auth resolves must leave the board and attempt
+untouched, with a neutral account-restoration message rather than a storage
+failure. After verified full hydration, schedule the ordinary live-board
+validator for the same owner, cloud client, quest, attempt and reset count.
+Account/client/attempt changes, incomplete hydration and password recovery cancel
+that wake-up. Only the existing durable outbox and server acknowledgement can
+complete the attempt or award rewards. No SQL or Auth configuration change.
