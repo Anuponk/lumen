@@ -698,3 +698,12 @@ storage: no stale banner or numeric performance, recognized old-state recovery
 with the same attempt, account isolation, and a real solved-board render twice
 leading to one command receipt/grant and verified success. These simulations do
 not establish recovery of a player's live phone or arbitrary storage failures.
+
+Canonical solved-board Auth resume: `canonical-outbox-recovery-tests.mjs`
+reproduces the false startup capture error before `lumenUser` is restored and
+checks hydration wake-up isolation across account, client, quest, attempt,
+reset, owner, readiness and password recovery changes. The campaign-resume
+browser fixture persists a solved RUNNING board, reloads with delayed Auth,
+and requires the success dialog, original attempt identity, one reward grant
+and unchanged legacy progress. This is simulated Auth/RPC browser coverage;
+confirmation on the affected phone remains necessary after publication.

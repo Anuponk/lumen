@@ -215,3 +215,43 @@ test('two victory renders cannot capture different evidence for the same operati
  assert(ctx.msg.textContent.includes('Victoire'));assert(!ctx.msg.textContent.includes('impossible'));
  assert.equal(ctx.canonicalVictoryInFlight,null,'Release the capture after failure so an explicit retry is possible');
 });
+
+
+test('a restored solved canonical board waits for startup Auth without claiming storage failure',async()=>{
+ const source=readFileSync('src/ui/game-screen.js','utf8');const events=[];
+ const ctx={canonicalActiveQuest:{id:'q',ordinal:241},canonicalVictoryInFlight:null,celebrated:false,
+  activeGameSeconds:()=>10,attemptEngine:{snapshot:()=>({attemptId:'restored',resetCount:0})},
+  lumenUser:null,lumenSupabase:{},authSessionPending:true,qaActive:false,
+  performanceAttempt:()=>({}),usedHintThisGame:false,lumenProgress:{canonicalQuestState:{}},
+  recordCloudDiagnostic:(...e)=>events.push(e),msg:{textContent:''},console:{error(){}},updateAuthUI(){}};
+ vm.createContext(ctx);vm.runInContext(functionSource(source,'celebrateCanonicalSuccess'),ctx);
+ await ctx.celebrateCanonicalSuccess();
+ assert.equal(events.some(e=>e[0]==='canonical_victory_failed'),false,'Pending Auth is not a failed durable capture');
+ assert.equal(ctx.canonicalVictoryInFlight,null);
+});
+
+test('verified hydration rechecks the same restored board, never a switched account or run',()=>{
+ const source=readFileSync('src/ui/game-screen.js','utf8');
+ for(const change of ['none','account','client','quest','attempt','reset','owner','not-ready','pending','recovery','celebrated']){
+  let scheduled,rendered=0;const attempt={attemptId:'restored',resetCount:0};
+  const client={};const ctx={qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,
+   canonicalResumeOwner:'a',canonicalActiveQuest:{id:'q'},celebrated:false,cloudProfileReady:true,
+   authSessionPending:false,sessionStorage:{getItem:()=>null},attemptEngine:{snapshot:()=>({...attempt})},
+   setTimeout:fn=>{scheduled=fn},render:()=>{rendered++}};
+  vm.createContext(ctx);vm.runInContext(functionSource(source,'resumeCanonicalVictoryAfterHydration'),ctx);
+  ctx.resumeCanonicalVictoryAfterHydration('a',client);assert.equal(typeof scheduled,'function');
+  if(change==='account')ctx.lumenUser={id:'b'};
+  if(change==='client')ctx.lumenSupabase={};
+  if(change==='quest')ctx.canonicalActiveQuest={id:'other'};
+  if(change==='attempt')attempt.attemptId='other';
+  if(change==='reset')attempt.resetCount++;
+  if(change==='owner')ctx.canonicalResumeOwner='b';
+  if(change==='not-ready')ctx.cloudProfileReady=false;
+  if(change==='pending')ctx.authSessionPending=true;
+  if(change==='recovery')ctx.sessionStorage.getItem=()=> '1';
+  if(change==='celebrated')ctx.celebrated=true;
+  scheduled();assert.equal(rendered,change==='none'?1:0,change);
+ }
+ const hydration=source.slice(source.indexOf('afterAuthCloudSync:async()=>{'),source.indexOf('holdLegacyMergeForFullRestore'));
+ assert(hydration.indexOf('resumeCanonicalVictoryAfterHydration(accountId,hydrationClient)')>hydration.indexOf('recordCloudDiagnostic("hydration_ready"'),'Resume follows verified hydration');
+});
