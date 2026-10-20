@@ -34,3 +34,16 @@ reload with delayed Auth and a single acknowledged grant. Defer the premature
 capture, then wake the ordinary validator after full hydration with exact
 owner/client/quest/attempt/reset guards. Preserve the board, attempt, outbox
 and all reward authority. Live phone confirmation remains outstanding.
+
+## Already committed canonical attempt recreated (`a007a70` follow-up)
+
+Build 477 resumed the solved board after hydration but failed at `command`.
+Read-only production checks found the original Dauphin receipt and one reward
+event, saved completion and all requested badges. Bounded PostgreSQL logs for
+the reported interval contained `operation evidence changed`. The completed
+board had outlived local acknowledgement and recreated that operation with a
+later elapsed time. Preserve immutable server rejection; recover the exact
+receipt plus current projection before another command, and archive only the
+strictly recognized later capture before retiring it. Node/browser regressions
+retain refusal of better timing/new badges/unknown evidence and verify one grant.
+No production player data was modified during investigation or correction.

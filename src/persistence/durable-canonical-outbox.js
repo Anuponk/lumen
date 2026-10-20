@@ -93,7 +93,41 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
    return entry;
   }catch{report('local_write_failed');throw Error('Victory could not be durably recorded')}
  }
- async function acknowledge(userId,questId,expectedReward,operationId){
+ // This is not acknowledgement of changed evidence. Preserve the entire later
+ // capture with the exact server receipt before retiring the redundant record.
+ async function archiveRecreatedCapture(userId,entry,committed,{sessionValid=()=>true}={}){
+  const receipt=committed?.receipt,saved=committed?.profile?.canonicalQuestState?.[entry?.questId];
+  const keys=(value,allowed)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).every(key=>allowed.includes(key));
+  const validReward=value=>keys(value,['badges','performance','stars'])&&value.stars===1&&
+   keys(value.badges,['autonomy','speed','noError','mastery'])&&Object.values(value.badges).every(v=>typeof v==='boolean')&&
+   keys(value.performance,['seconds','bestTime','assisted'])&&typeof value.performance.assisted==='boolean'&&
+   Number.isFinite(value.performance.seconds)&&value.performance.seconds>=0&&value.performance.seconds===value.performance.bestTime;
+  const accepted={badges:receipt?.badges,performance:receipt?.performance,stars:1};
+  if(namespace!=='Canonical'||!keys(entry,['version','operationId','userId','questId','reward','createdAt'])||entry.version!==2||entry.userId!==userId||committed?.userId!==userId||!sessionValid()||!entry?.operationId||receipt?.version!==1||
+   receipt.operationId!==entry.operationId||receipt.questId!==entry.questId||typeof receipt.newlyCompleted!=='boolean'||
+   !Number.isFinite(Date.parse(receipt.recordedAt))||!saved?.solved||!validReward(entry.reward)||!validReward(accepted)||
+   !Object.keys(accepted.badges).every(key=>!accepted.badges[key]||saved.badges?.[key]===true||saved.badges?.[key]===1)||
+   !Object.keys(entry.reward.badges).every(key=>!entry.reward.badges[key]||(receipt.badges[key]===true&&(saved.badges?.[key]===true||saved.badges?.[key]===1)))||
+   entry.reward.performance.seconds<accepted.performance.seconds||
+   (accepted.performance.assisted&&!entry.reward.performance.assisted))throw Error('Recreated capture proof unconfirmed');
+  const normalize=value=>value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,normalize(value[key])])):value;
+  const exact=JSON.stringify(normalize(entry.reward))===JSON.stringify(normalize(accepted));
+  if(!exact&&Date.parse(entry.createdAt)<Date.parse(receipt.recordedAt))throw Error('Capture predates committed receipt');
+  const inspection=await scan(userId),target=inspection.groups.find(copies=>copies[0].entry.operationId===entry.operationId&&copies[0].entry.questId===entry.questId);
+  if(!inspection.complete||inspection.issues.length||!target||JSON.stringify(target[0].entry)!==JSON.stringify(entry))throw Error('Recreated capture storage unconfirmed');
+  const key='lumenCanonicalRecreatedCaptureArchiveV1:'+userId+':'+entry.operationId+':'+encodeURIComponent(entry.createdAt);
+  const raw=JSON.stringify({version:1,userId,entry,receipt,copies:target.map(copy=>({store:copy.store,raw:copy.raw}))});
+  let archived=false;
+  try{await fallback.put(key,raw);archived=await fallback.get(key)===raw}catch{}
+  if(!archived){
+   const prior=storage.getItem(key);if(prior!==null&&prior!==raw)throw Error('Capture archive changed');
+   storage.setItem(key,raw);if(storage.getItem(key)!==raw)throw Error('Capture archive unconfirmed');
+  }
+  if(!sessionValid())throw Error('Canonical archive session changed');
+  await acknowledge(userId,entry.questId,entry.reward,entry.operationId,{expectedEntry:entry,sessionValid});
+  report('recreated_capture_archived');
+ }
+ async function acknowledge(userId,questId,expectedReward,operationId,{expectedEntry,sessionValid=()=>true}={}){
   const inspection=await scan(userId);
   const target=inspection.groups.find(group=>group[0].entry.questId===questId&&(operationId===undefined?group[0].entry.operationId===undefined:group[0].entry.operationId===operationId));
   if(!target){
@@ -101,6 +135,7 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
    return;
   }
   const copies=target,key=copies[0].key;
+  if(!sessionValid()||(expectedEntry&&JSON.stringify(copies[0].entry)!==JSON.stringify(expectedEntry)))throw Error('Outbox changed before archival cleanup');
   if(expectedReward!==undefined&&copies.some(copy=>JSON.stringify(copy.entry.reward)!==JSON.stringify(expectedReward)))throw Error('Outbox reward changed before acknowledgement');
   await removeCopies(copies,key);
   const stateKey=retryKey(userId,copies[0].entry);
@@ -158,5 +193,5 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
   }
   return {pending,paused,retryable,authRequired,issues:result.issues,complete:result.complete};
  }
- return {enqueue,acknowledge,pause,resume,pending:async userId=>(await scan(userId)).groups.map(copies=>copies[0].entry),inspect};
+ return {enqueue,acknowledge,archiveRecreatedCapture,pause,resume,pending:async userId=>(await scan(userId)).groups.map(copies=>copies[0].entry),inspect};
 }

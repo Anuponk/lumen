@@ -151,3 +151,9 @@ restoration pending rather than claiming local storage failed. After verified
 restoration, validation resumes for that same attempt without requiring another
 board gesture. Success still requires a confirmed cloud save. No onboarding,
 controls, eligibility or reward rules change.
+
+Resuming an already committed canonical attempt restores its confirmed result
+from the exact server receipt and current profile. It must not display another
+XP/star grant. A recognized later duplicate capture is retained in a verified
+archive before active-pending status clears; unrecognized evidence stays pending.
+No rule, badge eligibility, control or onboarding milestone changes.

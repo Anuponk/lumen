@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createCanonicalVictoryOutbox,replayCanonicalVictoryOutbox} from '../src/persistence/canonical-outbox.js';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import {classifyCanonicalRecoveryError} from '../src/persistence/canonical-recovery-errors.js';
 import {functionSource} from './source-tools.mjs';
 
 const storage=()=>{const values=new Map();return {get length(){return values.size},key:i=>[...values.keys()][i]??null,getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,String(v)),removeItem:k=>values.delete(k)};};
@@ -53,7 +54,7 @@ test('an old victory cannot update the UI after account, quest or attempt-reset 
    lumenProgress:{canonicalQuestState:{}},qaActive:false,canonicalOutboxNotice:null,
    canonicalVictoryOutbox:{pending:async()=>[],enqueue:async()=>{persisting=true;return new Promise(resolve=>{finish=resolve})}},
    updateAuthUI:()=>{uiUpdates++},console:{error:()=>{throw Error('Stale victory should return silently')}}};
-  vm.createContext(context);vm.runInContext(functionSource(source,'celebrateCanonicalSuccess'),context);
+  context.cloudProfileReady=false;context.classifyCanonicalRecoveryError=classifyCanonicalRecoveryError;vm.createContext(context);vm.runInContext(functionSource(source,'celebrateCanonicalSuccess'),context);
   const running=vm.runInContext('celebrateCanonicalSuccess()',context);
   for(let i=0;i<10&&!persisting;i++)await Promise.resolve();
   assert.equal(persisting,true);
@@ -207,7 +208,7 @@ test('two victory renders cannot capture different evidence for the same operati
    enqueues++;if(enqueues>1)throw Error('Operation identity reused with different evidence');
    return new Promise(resolve=>{finish=()=>{ready=true;resolve(entry)}});
   }}};
- vm.createContext(ctx);vm.runInContext(functionSource(source,'celebrateCanonicalSuccess'),ctx);
+ ctx.classifyCanonicalRecoveryError=classifyCanonicalRecoveryError;vm.createContext(ctx);vm.runInContext(functionSource(source,'celebrateCanonicalSuccess'),ctx);
  const first=ctx.celebrateCanonicalSuccess();for(let i=0;i<10&&!finish;i++)await Promise.resolve();
  const second=ctx.celebrateCanonicalSuccess();for(let i=0;i<10;i++)await Promise.resolve();
  assert.equal(enqueues,1,'One immutable capture for one attempt/reset while persistence is pending');
@@ -224,7 +225,7 @@ test('a restored solved canonical board waits for startup Auth without claiming 
   lumenUser:null,lumenSupabase:{},authSessionPending:true,qaActive:false,
   performanceAttempt:()=>({}),usedHintThisGame:false,lumenProgress:{canonicalQuestState:{}},
   recordCloudDiagnostic:(...e)=>events.push(e),msg:{textContent:''},console:{error(){}},updateAuthUI(){}};
- vm.createContext(ctx);vm.runInContext(functionSource(source,'celebrateCanonicalSuccess'),ctx);
+ ctx.classifyCanonicalRecoveryError=classifyCanonicalRecoveryError;vm.createContext(ctx);vm.runInContext(functionSource(source,'celebrateCanonicalSuccess'),ctx);
  await ctx.celebrateCanonicalSuccess();
  assert.equal(events.some(e=>e[0]==='canonical_victory_failed'),false,'Pending Auth is not a failed durable capture');
  assert.equal(ctx.canonicalVictoryInFlight,null);

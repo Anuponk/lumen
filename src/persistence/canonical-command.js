@@ -49,3 +49,23 @@ export async function commitCanonicalCommand(client,quest,reward,operationId,{us
  if(!saved?.solved||!['autonomy','speed','noError','mastery'].every(key=>!reward?.badges?.[key]||saved.badges?.[key]===true||saved.badges?.[key]===1))throw Error('Canonical command projection unconfirmed');
  return {profile,quest,receipt,newlyCompleted:receipt.newlyCompleted,alreadySaved:!!error};
 }
+
+
+// A restored solved board may outlive its already acknowledged local intention.
+// Recover that immutable server result before generating any replacement evidence.
+export async function loadCommittedCanonicalAttempt(client,quest,operationId,{userId,sessionValid=()=>true}={}){
+ if(!userId||typeof operationId!=='string'||!/^[A-Za-z0-9._-]{1,120}$/.test(operationId)||!quest?.id)throw canonicalRecoveryFailure({code:'22023'});
+ if(!sessionValid())throw Error('Canonical command session changed');
+ if(!(await canonicalCommandsSupported(client)))return null;
+ if(!sessionValid())throw Error('Canonical command session changed');
+ const {data:receipt,error,status}=await client.rpc('lumen_get_canonical_command',{p_operation_id:operationId,p_expected_user_id:userId});
+ if(error)throw canonicalRecoveryFailure(error,status);
+ if(!sessionValid())throw Error('Canonical command session changed');
+ if(receipt===null)return null;
+ if(!receipt?.badges||typeof receipt.badges!=='object'||Array.isArray(receipt.badges)||
+  !receiptMatches(receipt,operationId,quest.id,{badges:receipt.badges,performance:receipt.performance}))throw canonicalRecoveryFailure({code:'22023'});
+ const profile=await loadVerifiedProfile(client),saved=profile?.canonicalQuestState?.[quest.id];
+ if(!sessionValid())throw Error('Canonical command session changed');
+ if(!saved?.solved||!['autonomy','speed','noError','mastery'].every(key=>!receipt.badges[key]||saved.badges?.[key]===true||saved.badges?.[key]===1))throw Error('Canonical command projection unconfirmed');
+ return {userId,profile,quest,receipt,newlyCompleted:false,alreadySaved:true,reward:{badges:receipt.badges,performance:receipt.performance,stars:1}};
+}

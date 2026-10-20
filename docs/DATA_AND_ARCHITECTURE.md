@@ -539,3 +539,25 @@ validator for the same owner, cloud client, quest, attempt and reset count.
 Account/client/attempt changes, incomplete hydration and password recovery cancel
 that wake-up. Only the existing durable outbox and server acknowledgement can
 complete the attempt or award rewards. No SQL or Auth configuration change.
+
+Committed canonical attempt recovery (`a007a70` follow-up): a restored solved
+board can survive removal of its acknowledged local intent. Capture durably
+before network I/O as usual, then read the exact owner/operation/quest receipt
+and current verified projection before sending a command. A known receipt
+restores its original reward evidence and reports an already saved victory,
+never a new grant. Missing receipts retain normal command handling; unreadable,
+mismatched or incomplete proof never becomes a solved-only acknowledgement.
+
+A regenerated local V2 capture may have a later elapsed time under that same
+operation ID. It is NOT acknowledged as matching changed evidence. The narrow
+`archiveRecreatedCapture` path verifies the receipt and saved badges, a known
+reward/entry shape, equal or worse timing/assistance, no additional earned badge,
+and (unless evidence is exactly equal) creation after the receipt. It read-backs
+an immutable archive containing the full local entry and accepted receipt before
+retiring the unchanged active entry and retry sidecar. Unknown fields, better
+times, uncovered badges, wrong owner/run, conflicting/incomplete store scans,
+archive failure and changed session/record retain the pending entry. Archives
+use `lumenCanonicalRecreatedCaptureArchiveV1:` in IndexedDB or localStorage,
+scoped by owner, operation and capture creation time, outside active outbox scans.
+No original receipt, server projection, reward, grant or local evidence is
+rewritten; no SQL/Auth migration or production player write is needed.
