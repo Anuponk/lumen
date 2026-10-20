@@ -112,6 +112,8 @@ try{
  assert.notEqual(switched.attempt.attemptId,attemptBefore.attemptId,'The second account cannot inherit the old run');
 
  await until(`document.getElementById('mobileAuthAction').textContent==='D'+String.fromCharCode(233)+'connexion'&&document.getElementById('retryAccountSync').hidden===true`);
+ // Signed-in controls appear before verified hydration; canonical access waits for it.
+ await until(`document.getElementById('mobileAuthStatus').textContent.includes('Progression synchronis')`);
  // Account switching must isolate the old attempt; explicitly enter the target
  // canonical quest through the new owner's sky before testing victory/resume.
  await evaluate(`document.getElementById('openSky').click();document.querySelector('#adventureRail [data-pack-id="${next.packId}"]').click();while(!document.querySelector('#sectorTabs [data-content-id="${next.constellationId}"]')){const nextPage=document.getElementById('constellationNext');if(nextPage.disabled)throw Error('Canonical fixture constellation not found');nextPage.click()}document.querySelector('#sectorTabs [data-content-id="${next.constellationId}"]').click();document.querySelector('#puzzleGrid [data-quest-id="${next.id}"]').click()`);

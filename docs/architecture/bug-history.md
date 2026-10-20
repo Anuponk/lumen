@@ -98,3 +98,7 @@ is capped because visual inspection also found the shared layout clipped the sta
 card. Screenshots are inspected locally; no production player save is used.
 Onboarding impact: the same quest, badge and sky panels remain the tutorial's
 existing targets. No rule, unlock, reward or gesture changes.
+
+CI also exposed a fixture race after account switch: signed-in controls can appear
+before profile readiness. The scenario now awaits the explicit synchronized
+verdict before selecting a canonical quest, retaining the access checks.
