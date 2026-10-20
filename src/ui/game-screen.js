@@ -699,6 +699,15 @@ function syncMobileAuthUI(){
  syncAdministrationMenu();
  const status=document.getElementById("mobileAuthStatus"),action=document.getElementById("mobileAuthAction"),icon=document.getElementById("mobileAccount");
  if(!status||!action||!icon)return;
+ // The SDK may still be restoring or refreshing the saved session on launch.
+ // Do not offer a second sign-in or erase recovery state before it resolves.
+ if(authSessionPending&&lumenSupabase&&!lumenUser){
+  status.textContent="Vérification de la connexion…";
+  action.textContent="Vérification en cours…";action.disabled=true;action.title="";
+  icon.textContent="…";icon.setAttribute("aria-label","Vérification de la connexion");
+  const guest=document.getElementById("guestSaveExplainer");if(guest)guest.hidden=true;
+  return;
+ }
  const signedIn=Boolean(lumenUser);
  const recovering=signedIn&&sessionStorage.getItem("lumenPasswordRecoveryPending")==="1";
  document.getElementById("mobileAuthPopover")?.classList.toggle("password-recovery",recovering);
@@ -814,7 +823,7 @@ function setupMobileAuth(){
  document.addEventListener("click",()=>{if(!menu.hidden&&!menu.classList.contains("password-recovery"))menu.hidden=true});
  action.onclick=async()=>{
    menu.hidden=true;
-   if(!lumenSupabase)return;
+   if(authSessionPending||!lumenSupabase)return;
    if(lumenUser){await signOut();return}
    openEmailAccountOffer("signup");
  };

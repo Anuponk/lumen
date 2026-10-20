@@ -67,7 +67,13 @@ window.supabase={createClient(){
   }
   return {data:[],error:null};
  },auth:{
- getSession:async()=>({data:{session}}),onAuthStateChange(fn){callback=fn},
+ getSession:async()=>{
+  if(sessionStorage.getItem('fixtureDelaySessionRestore')==='1'){
+   window.__sessionRestoreWaiting=true;
+   await new Promise(resolve=>{window.__completeSessionRestore=resolve});
+  }
+  return {data:{session}};
+ },onAuthStateChange(fn){callback=fn},
  signInWithPassword:async()=>{window.__authCalls.push('password');set('SIGNED_IN',{user:{id:'fixture-player'}});return {data:{session},error:null}},
  verifyOtp:async()=>{window.__authCalls.push('recovery');set('PASSWORD_RECOVERY',{user:{id:'fixture-player'}});return {error:null}},
  updateUser:async(value)=>{window.__authCalls.push('password_update');return {error:null}},
@@ -165,6 +171,17 @@ try{
  for(const viewport of [{width:390,height:844,mobile:true},{width:1440,height:900,mobile:false}]){
   await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});
   await navigate('Page.navigate',{url:url.href});
+  await evaluate(`sessionStorage.setItem('fixtureAuthSession',JSON.stringify({user:{id:'fixture-player'}}));sessionStorage.setItem('fixtureDelaySessionRestore','1');`);
+  await navigate('Page.reload');
+  await until('window.__sessionRestoreWaiting===true');
+  assert.equal(await evaluate(`document.getElementById('mobileAuthAction').disabled`),true,'No second login while the saved session is restoring');
+  assert.equal(await evaluate(`document.getElementById('mobileAuthAction').textContent.includes('Se connecter')`),false);
+  await evaluate(`document.getElementById('mobileAuthAction').click()`);
+  assert.deepEqual(await evaluate('window.__authCalls',true),[],'Restoration requires neither password nor logout');
+  await evaluate(`sessionStorage.removeItem('fixtureDelaySessionRestore');window.__completeSessionRestore()`);
+  await until(`!document.getElementById('mobileAuthAction').disabled && !document.getElementById('mobileAuthAction').textContent.includes('Se connecter')`);
+  assert.deepEqual(await evaluate('window.__authCalls',true),[],'Saved account returns without another login');
+
   await evaluate(`sessionStorage.removeItem('fixtureAuthSession');sessionStorage.removeItem('lumenPasswordRecoveryPending');`);
   await navigate('Page.reload');
   await evaluate(`document.getElementById('mobileAuthAction').click()`);

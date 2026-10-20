@@ -43,3 +43,22 @@ assert.match(cloud,/signInWithPassword/);assert.match(ui,/requestPasswordRecover
 assert.match(ui,/editor\.dataset\.open="true";editor\.hidden=false/);
 assert.match(ui,/renderDaily\(\);\s*refreshJourney\(\);updateAuthUI\(\)/);
 console.log('Account session regressions passed: startup race, sign-out before deferred restore, recovery, failed-link preservation, local-only logout and two public modes.');
+
+// Exercise the real menu renderer while the SDK has not finished restoration.
+const {default:vm}=await import('node:vm');
+const {functionSource}=await import('./source-tools.mjs');
+const authNodes=new Map();
+for(const id of ['mobileAuthStatus','mobileAuthAction','mobileAccount','mobileAuthPopover','guestSaveExplainer','accountProfileEditor','editAccountProfile','retryAccountSync'])authNodes.set(id,{textContent:'',disabled:false,hidden:false,dataset:{},classList:{toggle(){}},setAttribute(){}});
+const recoveryState=new Map([['lumenPasswordRecoveryPending','1']]);
+const menuContext=vm.createContext({document:{getElementById:id=>authNodes.get(id)},sessionStorage:{getItem:k=>recoveryState.get(k)??null,removeItem:k=>recoveryState.delete(k)},
+ syncAdministrationMenu(){},lumenUser:null,lumenSupabase:{},authSessionPending:true,canonicalOutboxNotice:null,cloudProfileReady:false,cloudProfileFailure:null,lumenNickname:''});
+vm.runInContext(functionSource(ui,'syncMobileAuthUI'),menuContext);menuContext.syncMobileAuthUI();
+assert.equal(authNodes.get('mobileAuthAction').disabled,true,'No sign-in prompt while an existing session is still loading');
+assert(!authNodes.get('mobileAuthAction').textContent.includes('Se connecter'));
+assert.equal(authNodes.get('guestSaveExplainer').hidden,true);
+assert.equal(recoveryState.get('lumenPasswordRecoveryPending'),'1','Pending restore must not clear password-recovery state');
+menuContext.authSessionPending=false;menuContext.lumenUser={id:'restored-player'};menuContext.syncMobileAuthUI();
+assert.equal(authNodes.get('mobileAuthAction').disabled,false);assert(!authNodes.get('mobileAuthAction').textContent.includes('Se connecter'));
+menuContext.lumenUser=null;menuContext.syncMobileAuthUI();
+assert.equal(authNodes.get('mobileAuthAction').disabled,false);assert(authNodes.get('mobileAuthAction').textContent.includes('Se connecter'));
+console.log('The mobile account menu distinguishes pending restoration, a restored account and a confirmed guest');
