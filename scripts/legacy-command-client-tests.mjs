@@ -347,7 +347,26 @@ test('a protected historical projection refusal becomes recoverable partial hydr
   };
   const result=await reconcile(f.client,f.storage,cloud);
   assert.equal(result.status,'blocked');assert.equal(result.reason,'legacy_command_required');
+  assert.deepEqual(result.fields,['solved'],'Authority refusal identifies differing protected fields without payloads');
   assert.equal(writes,1);assert.equal(f.storage.getItem('lumenProgressV1'),f.raw);
   assert.equal([...f.data.keys()].filter(k=>k.startsWith('lumenBeforeCloudReconcile')).length,2);
+ }
+});
+
+
+test('authority refusal reports bounded performance metadata without exposing values or arbitrary keys',async()=>{
+ for(const reconcile of [reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles]){
+  const cloud={...revisionBase(),legacyVictoryRevision:7,performances:{0:{version:3,attempts:1,badges:{speed:true}}}};
+  const local={...structuredClone(cloud),performances:{0:{version:3,attempts:2,badges:{speed:true},lastQualifiedAt:'2026-10-20T07:00:00Z',lastQualifiedDay:'2026-10-20',privateNote:'must-not-leak'}}};
+  const f=revisionFixture(local,cloud);let writes=0;
+  f.client.rpc=async name=>{assert.equal(name,'lumen_cas_profile');writes++;return {error:{code:'22023',message:'legacy victory command required; preserve pending data and update client'}}};
+  const before=JSON.stringify({local,cloud});
+  const result=await reconcile(f.client,f.storage,cloud);
+  assert.deepEqual(result.fields,['performances']);assert.equal(result.conflictId,'0');
+  assert.deepEqual(result.conflictKeys,['attempts','other']);
+  assert(!JSON.stringify(result).includes('privateNote'));assert(!JSON.stringify(result).includes('must-not-leak'));
+  assert(!JSON.stringify(result).includes('lastQualified'));assert(!JSON.stringify(result).includes('2026-10-20'));
+  assert.equal(writes,1);assert.equal(f.storage.getItem('lumenProgressV1'),f.raw);
+  assert.equal(JSON.stringify({local,cloud}),before);
  }
 });

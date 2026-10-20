@@ -176,6 +176,36 @@ function mergeQualificationMetadata(left,right){
  }
  return {ok:true,value};
 }
+// Diagnostic witness only, after an actual server authority refusal. These
+// names never authorize a write or infer which side earned a reward. Match the
+// protected projection's cooldown exclusions; return no profile values.
+function legacyAuthorityConflictDetails(proposed,cloud){
+ const protectedFields=['legacyVictoryRevision','solved','stars','challenges','noHint','autonomousWins','performances'];
+ const value=(profile,field)=>{
+  if(!Object.hasOwn(profile,field))return field==='autonomousWins'?0:field==='solved'||field==='legacyVictoryRevision'?null:{};
+  const raw=profile[field];
+  if(field!=='performances'||!raw||typeof raw!=='object'||Array.isArray(raw))return raw;
+  return Object.fromEntries(Object.entries(raw).map(([id,record])=>[id,
+   record&&typeof record==='object'&&!Array.isArray(record)?Object.fromEntries(Object.entries(record).filter(([key])=>!qualificationFields.includes(key))):record]));
+ };
+ const fields=protectedFields.filter(field=>!sameCloudProfile(value(proposed,field),value(cloud,field)));
+ const result={fields};
+ if(fields.includes('performances')){
+  const left=value(proposed,'performances'),right=value(cloud,'performances');
+  if(left&&right&&typeof left==='object'&&typeof right==='object'&&!Array.isArray(left)&&!Array.isArray(right)){
+   const id=[...new Set([...Object.keys(left),...Object.keys(right)])].find(key=>!sameCloudProfile(left[key],right[key]));
+   // Historical numeric quest IDs are safe; never echo arbitrary property names.
+   if(id!==undefined&&/^(0|[1-9][0-9]{0,15})$/.test(id)){
+    result.conflictId=id;
+    const known=['version','badges',...performanceSummaryFields];
+    const keys=new Set([...Object.keys(left[id]||{}),...Object.keys(right[id]||{})]);
+    const changed=[...keys].filter(key=>!sameCloudProfile(left[id]?.[key],right[id]?.[key]));
+    result.conflictKeys=[...new Set(changed.map(key=>known.includes(key)?key:'other'))].slice(0,8);
+   }
+  }
+ }
+ return result;
+}
 // Revision is a server-owned command cursor, never a reward to union or max.
 // An older cache may adopt the verified server cursor; a newer/invalid local
 // cursor must hold recovery rather than manufacture authority on the server.
@@ -521,7 +551,7 @@ export async function reconcileDominantLocalProfile(supabase,storage,remote){
  try{written=await compareAndSwapCloudProfile(supabase,local,cloud)}catch(error){
   // A verified snapshot exists and both originals have been preserved. This
   // authority refusal holds reconciliation, not independent command recovery.
-  if(error.code==='LEGACY_COMMAND_REQUIRED')return {status:'blocked',reason:'legacy_command_required'};
+  if(error.code==='LEGACY_COMMAND_REQUIRED')return {status:'blocked',reason:'legacy_command_required',...legacyAuthorityConflictDetails(local,cloud)};
   throw error;
  }
  const verified=await loadVerifiedProfile(supabase);
@@ -681,7 +711,7 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  await preserveRecoverySnapshot(storage,"lumenBeforeCloudReconcileRemote_",JSON.stringify(cloud));
  let updated;
  try{updated=await compareAndSwapCloudProfile(supabase,validateCloudProfile(merged),cloud)}catch(error){
-  if(error.code==='LEGACY_COMMAND_REQUIRED')return {status:'blocked',reason:'legacy_command_required'};
+  if(error.code==='LEGACY_COMMAND_REQUIRED')return {status:'blocked',reason:'legacy_command_required',...legacyAuthorityConflictDetails(merged,cloud)};
   throw error;
  }
  const verified=await loadVerifiedProfile(supabase);

@@ -21,6 +21,13 @@ with a shared replay lock and all active-play/Auth/visibility holds retained.
 Partial recovery neither replaces local data nor reloads or declares full sync.
 Other write errors retain their failure semantics; there is no fallback writer.
 
+Authority-refusal diagnostics now identify differing protected field names and,
+for the first numeric performance entry, known key names. Unknown keys are
+redacted and values/cooldown timestamps are omitted. This comparison describes
+the attempted snapshot versus the verified cloud read; it does not prove the
+origin or validity of a local reward, or grant an alternate write path. A new
+report is still needed to localize the affected device's divergence.
+
 This is not automatic repair of ambiguous pre-command wins/imports. No player
 save is rewritten, no reward facts are invented and new gameplay remains gated
 while its baseline is unresolved. Audited recovery, standalone daily/spending
