@@ -8,7 +8,8 @@ const done=all.filter(q=>q.ordinal<=boundary.ordinal),solved=Object.fromEntries(
 const profile={solved,historyBackup:solved,badges:{},stars:{},performances:{},noHint:{},canonicalQuestState:Object.fromEntries(done.filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true,stars:1,badges:{}}])),daily:{dates:{},rewards:{}},challenges:{},xp:1000,shards:3,skyScore:298,skyHistoryVersion:4};
 const fixture=`localStorage.setItem('lumenSound','off');if(!sessionStorage.getItem('grandChienFixture')){localStorage.setItem('lumenCloudOwnerId','synthetic-frontier');localStorage.setItem('lumenProgressV1',JSON.stringify(${JSON.stringify(profile)}));sessionStorage.setItem('grandChienFixture',JSON.stringify(${JSON.stringify(profile)}));}
 if(sessionStorage.getItem('solvedBoardOnLoad')){const a=JSON.parse(localStorage.getItem('lumenActiveAttemptV1'));a.board=JSON.parse(sessionStorage.getItem('solvedBoardOnLoad'));localStorage.setItem('lumenActiveAttemptV1',JSON.stringify(a));sessionStorage.removeItem('solvedBoardOnLoad');}
-window.__profile=JSON.parse(sessionStorage.getItem('grandChienFixture'));window.__canonicalReceipts=new Map();window.__canonicalGrants=0;
+window.__profile=JSON.parse(sessionStorage.getItem('grandChienFixture'));window.__canonicalReceipts=new Map(JSON.parse(sessionStorage.getItem('canonicalReceipts')||'[]'));window.__canonicalGrants=Number(sessionStorage.getItem('canonicalGrants')||0);
+if(sessionStorage.getItem('recreatedCaptureOnLoad')){const fixture=JSON.parse(sessionStorage.getItem('recreatedCaptureOnLoad'));localStorage.setItem('lumenActiveAttemptV1',JSON.stringify(fixture.attempt));localStorage.setItem('lumenCanonicalVictoryOutboxV2:'+fixture.entry.userId+':'+fixture.entry.operationId,JSON.stringify(fixture.entry));sessionStorage.removeItem('recreatedCaptureOnLoad');}
 window.supabase={createClient(){return {auth:{getSession:async()=>{await new Promise(resolve=>setTimeout(resolve,300));return {data:{session:{user:{id:sessionStorage.getItem('grandChienOwner')||'synthetic-frontier'}}}}},onAuthStateChange(){}},rpc:async(name,args)=>{
  if(name==='lumen_restore_profile')return {data:structuredClone(window.__profile)};
  if(name==='lumen_cas_profile'){if(JSON.stringify(args.p_payload.performances||{})!==JSON.stringify(window.__profile.performances||{}))return {data:null,error:{code:'22023',message:'legacy victory command required; preserve pending data and update client'}};window.__profile=structuredClone(args.p_payload);sessionStorage.setItem('grandChienFixture',JSON.stringify(window.__profile));return {data:true}};
@@ -16,6 +17,7 @@ window.supabase={createClient(){return {auth:{getSession:async()=>{await new Pro
  if(name==='lumen_get_canonical_command')return {data:window.__canonicalReceipts.get(args.p_operation_id)??null,error:null};
  if(name==='lumen_commit_canonical_command'){
   const prior=window.__canonicalReceipts.get(args.p_operation_id);
+  if(prior&&(prior.questId!==args.p_quest_id||JSON.stringify(prior.badges)!==JSON.stringify(args.p_badges)||JSON.stringify(prior.performance)!==JSON.stringify(args.p_performance)))return {data:null,error:{code:'22023',message:'operation evidence changed'},status:400};
   if(!prior){
    const {acknowledgeCanonicalVictory}=await import('/src/persistence/canonical-progress.js');
    const result=acknowledgeCanonicalVictory(window.__profile,args.p_quest_id,{badges:args.p_badges,performance:args.p_performance,stars:1});
@@ -23,6 +25,7 @@ window.supabase={createClient(){return {auth:{getSession:async()=>{await new Pro
    sessionStorage.setItem('grandChienFixture',JSON.stringify(window.__profile));
    window.__canonicalReceipts.set(args.p_operation_id,{version:1,operationId:args.p_operation_id,questId:args.p_quest_id,badges:args.p_badges,performance:args.p_performance,newlyCompleted:result.newlyCompleted,recordedAt:new Date().toISOString()});
   }
+  sessionStorage.setItem('canonicalReceipts',JSON.stringify([...window.__canonicalReceipts]));sessionStorage.setItem('canonicalGrants',String(window.__canonicalGrants));
   return {data:{profile:structuredClone(window.__profile),newlyCompleted:!prior},error:null};
  }
  if(name==='lumen_get_progress')return {data:Object.keys(window.__profile.solved).map(k=>({puzzle_id:Number(k)+1}))};
@@ -82,8 +85,19 @@ try{
  assert.equal(afterWin.saved,true);assert.equal(afterWin.grants,1,'Concurrent render notifications grant once');
  assert.equal(afterWin.legacy,beforeWin.legacy);assert.equal(afterWin.performances,beforeWin.performances);assert.equal(afterWin.attempt,beforeWin.attempt);
  assert(afterWin.xp>beforeWin.xp);
+ // Reproduce the old client's later capture under the same already committed ID.
+ const regenerated=await evaluate(`(()=>{const attempt=JSON.parse(localStorage.getItem('lumenActiveAttemptV1'));attempt.state='RUNNING';attempt.activeDuration+=60000;const [receipt]=window.__canonicalReceipts.values();const reward={badges:receipt.badges,performance:{...receipt.performance,seconds:receipt.performance.seconds+60,bestTime:receipt.performance.bestTime+60},stars:1};const entry={version:2,userId:localStorage.getItem('lumenCloudOwnerId'),operationId:receipt.operationId,questId:receipt.questId,reward,createdAt:new Date().toISOString()};sessionStorage.setItem('recreatedCaptureOnLoad',JSON.stringify({attempt,entry}));return entry;})()`);
+ await navigateAndWait({send,evaluate},'Page.reload');
+ await until(`document.getElementById('successOverlay').classList.contains('show')`);
+ assert.equal(await evaluate('window.__canonicalGrants'),1,'Restoring the original receipt never grants twice');
+ assert.equal(await evaluate('window.__profile.xp'),afterWin.xp);
+ const archive=await evaluate(`(async()=>{const {createIndexedOutboxStore}=await import('/src/persistence/indexed-outbox-store.js');const rows=await createIndexedOutboxStore(indexedDB).entries('lumenCanonicalRecreatedCaptureArchiveV1:');return rows.map(([,raw])=>JSON.parse(raw));})()`,true);
+ assert(archive.some(record=>JSON.stringify(record.entry)===JSON.stringify(regenerated)),'Keep exact later capture bytes with the accepted receipt');
+ assert.equal(await evaluate(`Object.keys(localStorage).some(key=>key.startsWith('lumenCanonicalVictoryOutboxV2:'))`),false);
+ assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).attemptId`),beforeWin.attempt);
+ assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')).some(e=>e.event==='canonical_attempt_receipt_recovered')`),true);
  assert.deepEqual(errors,[]);
- const report={authenticatedMobile:true,grandChienToDauphin:true,canonicalReload:true,attemptIdentityPreserved:true,accountSwitchIsolated:true,canonicalBannerIsolated:true,canonicalStartMetadataArchived:true,canonicalVictoryConfirmed:true,oneGrant:true,quest:next.ordinal,solvedBoardResumedAfterAuth:true};
+ const report={authenticatedMobile:true,grandChienToDauphin:true,canonicalReload:true,attemptIdentityPreserved:true,accountSwitchIsolated:true,canonicalBannerIsolated:true,canonicalStartMetadataArchived:true,canonicalVictoryConfirmed:true,oneGrant:true,quest:next.ordinal,solvedBoardResumedAfterAuth:true,committedReceiptResumed:true,recreatedCaptureArchived:true};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));
  console.log(JSON.stringify(report));
 }finally{await send('Browser.close').catch(()=>{})}

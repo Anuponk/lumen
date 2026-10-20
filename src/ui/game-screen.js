@@ -28,6 +28,8 @@ import {challengeEligibility,challengeSnapshot,compareChallenge,createChallengeC
 import {resolveChallengeQuest} from "../campaign/canonical-challenges.js";
 import {canonicalDisplayForLegacy,canonicalQuestList,canonicalAdventureSummary,canonicalQuestByOrdinal,canonicalQuestForLegacy,canonicalNextUnsolved,canonicalCampaignQuestDecision,canonicalInsertedQuestDecision,unlockedAdventureProgress} from "../campaign/canonical-quests.js";
 import {acknowledgeCanonicalVictory,commitCanonicalVictoryViaLedger as commitCanonicalVictory,questIsCompleted} from "../persistence/canonical-progress.js";
+import {loadCommittedCanonicalAttempt} from '../persistence/canonical-command.js';
+import {classifyCanonicalRecoveryError} from '../persistence/canonical-recovery-errors.js';
 import {replayCanonicalVictoryOutbox} from "../persistence/canonical-outbox.js";
 import {createDurableCanonicalVictoryOutbox} from "../persistence/durable-canonical-outbox.js";
 import {createCloudRetryScheduler} from "../persistence/cloud-retry-scheduler.js";
@@ -1995,6 +1997,16 @@ async function celebrateCanonicalSuccess(){
    if(!cloudProfileReady)throw Error("Victoire conservée localement, cloud non prêt");
    if(!(await confirmCloudReward()))return;
    if(!sameVictoryContext())return;
+   victoryStage='receipt_read';
+   const recovered=operationId?await loadCommittedCanonicalAttempt(ownerClient,q,operationId,{userId:ownerId,sessionValid:sameVictoryContext}):null;
+   if(!sameVictoryContext())return;
+   if(recovered){
+    victoryStage='receipt_archive';
+    await canonicalVictoryOutbox.archiveRecreatedCapture(ownerId,pending,recovered,{sessionValid:sameVictoryContext});
+    if(!sameVictoryContext())return;
+    committed=recovered;confirmedBadges=recovered.reward.badges;
+    recordCloudDiagnostic('canonical_attempt_receipt_recovered',{archivedCapture:true});
+   }else{
    victoryStage='command';
    committed=await commitCanonicalVictory(ownerClient,q.id,pending.reward,{operationId:pending.operationId,userId:ownerId,sessionValid:sameVictoryContext});
    if(!sameVictoryContext())return;
@@ -2007,11 +2019,12 @@ async function celebrateCanonicalSuccess(){
     recordCloudDiagnostic("canonical_outbox_cleanup_pending",{reason:"storage"});
    }
    if(!sameVictoryContext())return;
+   }
   }
  }catch(error){
   if(!sameVictoryContext())return;
   console.error("Canonical victory not saved",error);
-  recordCloudDiagnostic('canonical_victory_failed',{stage:victoryStage,reason:error?.code==='OUTBOX_CONFLICT'||error?.message==='Operation identity reused with different evidence'?'operation_conflict':durableIntent?'intent_recorded':'capture_unconfirmed'});
+  recordCloudDiagnostic('canonical_victory_failed',{stage:victoryStage,errorCode:classifyCanonicalRecoveryError(error).code,reason:error?.code==='OUTBOX_CONFLICT'||error?.message==='Operation identity reused with different evidence'?'operation_conflict':durableIntent?'intent_recorded':'capture_unconfirmed'});
   let locallySaved=false;
   try{locallySaved=!!lumenUser&&!!durableIntent&&(await canonicalVictoryOutbox.pending(lumenUser.id)).some(entry=>entry.operationId===durableIntent.operationId&&entry.questId===q.id)}catch(readError){
    recordCloudDiagnostic("canonical_outbox_read_failed",{reason:"integrity"});

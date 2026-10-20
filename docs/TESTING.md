@@ -707,3 +707,16 @@ browser fixture persists a solved RUNNING board, reloads with delayed Auth,
 and requires the success dialog, original attempt identity, one reward grant
 and unchanged legacy progress. This is simulated Auth/RPC browser coverage;
 confirmation on the affected phone remains necessary after publication.
+
+Committed attempt regression: `canonical-command-client-tests.mjs` verifies
+read-only recovery of a receipt after local acknowledgement, no new write,
+missing receipt and incomplete reward projection. Durable outbox tests require
+verified original-entry/receipt archival before cleanup; better times, uncovered
+badges, unknown evidence, changed identity/session and failed archive preserve
+the local intent. Existing changed-evidence server rejection tests remain.
+The campaign mobile browser fixture persists RPC receipts across reloads and
+rejects changed evidence as the real command does; it then recreates a later
+capture under an already committed attempt, requires verified success, identical
+attempt/XP, one grant and a byte-equivalent archived entry. This uses simulated
+RPCs and real browser storage, not a production account session. Live affected
+phone confirmation is still required after publication.

@@ -28,3 +28,5 @@ Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This loo
 | Analytics/diagnostics | `src/analytics/events.js`: `createAnalytics`; `src/testing/diagnostics.js`: `createDiagnostics`; UI: `recordCloudDiagnostic`, `cloudDiagnosticReport`, `recordCloudHealth`, `showAccountCloudDiagnostic` (account-menu read-only report) | Observations are not authoritative achievements/transactions |
 
 Continue with the matching symptom in `docs/architecture/debugging-guide.md`, then select checks from `docs/architecture/test-map.md`.
+
+Canonical committed-attempt recovery: `src/persistence/canonical-command.js` (`loadCommittedCanonicalAttempt`), `durable-canonical-outbox.js` (`archiveRecreatedCapture`) and UI `celebrateCanonicalSuccess` preserve/recover an exact owner/operation receipt without a second grant; see DATA_AND_ARCHITECTURE.

@@ -106,3 +106,33 @@ test('an unreadable store is not proof of an empty queue; its intents recover wh
  await replayCanonicalVictoryOutbox(box,'a',async id=>saved(id));
  assert.equal((await box.inspect('a')).pending.length,0);
 });
+
+
+test('a later regenerated capture is archived only with exact operation receipt and covered reward proof',async()=>{
+ for(const variant of ['valid','better-time','new-badge','other-operation','other-quest','unknown-field','missing-solved','account-changed','account-during-archive','archive-denied']){
+  const storage=local(),fallback=indexed();
+  const box=createDurableCanonicalVictoryOutbox(storage,{fallback,now:()=> '2026-10-20T15:00:00Z'});
+  const original={badges:{autonomy:true,speed:true,noError:true,mastery:true},performance:{seconds:20,bestTime:20,assisted:false},stars:1};
+  const later=structuredClone(original);later.performance.seconds=later.performance.bestTime=100;
+  if(variant==='better-time')later.performance.seconds=later.performance.bestTime=19;
+  if(variant==='new-badge')original.badges.mastery=false;
+  if(variant==='unknown-field')later.newEvidence=true;
+  const entry=await box.enqueue('a','q',later,{operationId:'attempt-reset-0'});
+  const receipt={version:1,operationId:entry.operationId,questId:'q',badges:original.badges,performance:original.performance,newlyCompleted:true,recordedAt:'2026-10-20T08:46:00Z'};
+  const committed={userId:'a',receipt,profile:{canonicalQuestState:{q:{solved:true,badges:original.badges}}}};
+  if(variant==='other-operation')receipt.operationId='another-reset-0';
+  if(variant==='other-quest')receipt.questId='other';
+  if(variant==='missing-solved')committed.profile.canonicalQuestState.q.solved=false;
+  let session=true;const put=fallback.put;if(variant==='account-during-archive')fallback.put=async(key,raw)=>{await put(key,raw);session=false};
+  if(variant==='archive-denied'){fallback.put=async()=>{throw Error('quota')};storage.setItem=()=>{throw Error('quota')}}
+  if(variant==='valid'){
+   await box.archiveRecreatedCapture('a',entry,committed,{sessionValid:()=>true});
+   assert.equal((await box.pending('a')).length,0);
+   const raw=[...fallback.data].find(([key])=>key.startsWith('lumenCanonicalRecreatedCaptureArchiveV1:'))?.[1];
+   assert(raw);assert.deepEqual(JSON.parse(raw).entry,entry);assert.deepEqual(JSON.parse(raw).receipt,receipt);assert.equal(JSON.parse(raw).copies[0].raw,JSON.stringify(entry));
+  }else{
+   await assert.rejects(box.archiveRecreatedCapture('a',entry,committed,{sessionValid:()=>session&&variant!=='account-changed'}),variant);
+   assert.deepEqual(await box.pending('a'),[entry],variant);
+  }
+ }
+});

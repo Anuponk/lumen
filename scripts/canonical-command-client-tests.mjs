@@ -120,3 +120,18 @@ test('a late SDK token switch is refused by the server expected-account assertio
  await assert.rejects(commitCanonicalVictoryViaLedger(client,quest.id,reward,{operationId:'run-1'}));
  assert.equal(state.profile.xp,0);assert.equal(state.receipts.size,0);
 });
+
+
+test('cold resume reads an existing attempt receipt without submitting regenerated elapsed evidence',async()=>{
+ const {loadCommittedCanonicalAttempt}=await import('../src/persistence/canonical-command.js');
+ const {client,state}=fixture();await commitCanonicalVictoryViaLedger(client,quest.id,reward,{operationId:'restored-reset-0'});
+ state.calls=[];
+ const result=await loadCommittedCanonicalAttempt(client,quest,'restored-reset-0',{userId:ownerId});
+ assert.equal(result.newlyCompleted,false);assert.equal(result.receipt.operationId,'restored-reset-0');
+ assert.deepEqual(result.reward.performance,reward.performance);
+ assert.equal(state.calls.some(([name])=>name.startsWith('lumen_commit_')),false);
+ assert.equal(state.profile.xp,15);
+ state.readLost=true;assert.equal(await loadCommittedCanonicalAttempt(client,quest,'restored-reset-0',{userId:ownerId}),null);
+ state.readLost=false;state.profile.canonicalQuestState[quest.id].badges={};
+ await assert.rejects(loadCommittedCanonicalAttempt(client,quest,'restored-reset-0',{userId:ownerId}));
+});
