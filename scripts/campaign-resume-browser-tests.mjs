@@ -47,7 +47,19 @@ try{
  assert.equal(await evaluate(`(async()=>{const client=window.supabase.createClient();const expected=structuredClone(window.__profile);expected.xp++;return (await client.rpc('lumen_cas_profile',{p_expected:expected,p_payload:structuredClone(window.__profile)})).data;})()`,true),false,'Fixture CAS must reject a stale baseline exactly as PostgreSQL does');
  assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().puz.reg'),next.reg,'Verified startup resumes Dauphin directly');
  await evaluate(`document.getElementById('openSky').click()`);
+ const browsingBefore=await evaluate(`({snapshot:lumenDiagnostics.snapshot(),attempt:localStorage.getItem('lumenActiveAttemptV1')})`);
+ await evaluate(`document.querySelector('#adventureRail [data-pack-id="${next.packId}"]').click();while(!document.querySelector('#sectorTabs [data-content-id="${next.constellationId}"]'))document.getElementById('constellationNext').click();document.querySelector('#sectorTabs [data-content-id="${next.constellationId}"]').click()`);
+ const detailVisibility=()=>evaluate(`Object.fromEntries(['puzzleGrid','performanceLegend','skyCard','canonicalConstellationQuests'].map(id=>[id,document.getElementById(id).getClientRects().length>0]))`);
+ assert.deepEqual(await detailVisibility(),{puzzleGrid:false,performanceLegend:false,skyCard:false,canonicalConstellationQuests:true},'Dauphin detail must visibly exclude the dormant Grand Chien grid and its stars');
+ assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#canonicalConstellationQuests [data-quest-id]'),b=>b.dataset.questId)`),all.filter(q=>q.constellationId===next.constellationId).map(q=>q.id),'Dauphin shows exactly its catalogue quests');
+ await evaluate('lumenDiagnostics.refreshSky()');
+ assert.equal((await detailVisibility()).puzzleGrid,false,'Refreshing the sky keeps the selected canonical detail isolated');
+ assert.deepEqual(await evaluate(`({snapshot:lumenDiagnostics.snapshot(),attempt:localStorage.getItem('lumenActiveAttemptV1')})`),browsingBefore,'Browsing Dauphin must preserve the live board, progression and attempt');
+ await evaluate(`document.getElementById('constellationBack').click()`);
+ assert.equal(await evaluate(`document.getElementById('mapDetail').getClientRects().length`),0,'Overview hides both quest detail panels');
+
  await evaluate(`document.querySelector('#adventureRail [data-pack-id="real-adventure-03"]').click();document.querySelector('#sectorTabs [data-content-id="real-24"]').click()`);
+ assert.deepEqual(await detailVisibility(),{puzzleGrid:true,performanceLegend:true,skyCard:true,canonicalConstellationQuests:false},'Returning to Grand Chien restores only its legacy detail');
  await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="${boundary.id}"]').click()`);
  await acknowledgeLearningMilestones(evaluate);
  await evaluate(`document.getElementById('successNew').click()`);

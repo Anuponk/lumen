@@ -68,3 +68,16 @@ A regression on the real menu renderer fails for a healthy named account.
 Keep the nickname plus an explicit success verdict, guard busy/dirty/offline/
 failure/pending states, and mirror current status into an accessible diagnostic
 summary with historical-log explanation. No auth/persistence/reward rule changes.
+
+
+## Dauphin detail also displays Grand Chien (`7541836` follow-up)
+
+The authenticated mobile browser regression reproduces Mon ciel -> Dauphin:
+all three legacy detail panels still have rendered rectangles despite `hidden`.
+Their author-level grid/flex CSS overrides the browser hidden default, so the
+old Grand Chien cards and stars appear alongside the canonical quest list.
+Enforce hidden direct children within map detail. The regression checks actual
+visibility, exact canonical membership, refresh, overview, return to Grand Chien,
+and unchanged board/progression/attempt. No quest identity, reward or save changes.
+Onboarding impact: no new destination or gesture; the existing Mon ciel tour
+and legacy badge/star panels remain visible for their intended constellation.
