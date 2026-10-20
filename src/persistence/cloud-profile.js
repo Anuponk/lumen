@@ -508,6 +508,29 @@ export function installCloudProfileLocally(storage,cloud){
  return true;
 }
 
+// Quarantine only the exact cooldown-only record produced by older canonical
+// starts under the dormant numeric index. Never discard rewards/unknown data.
+export async function archiveCanonicalStartMetadata(storage,remote,{quest,attempt,legacyIndex,ownerId,accountId,sessionValid=()=>true}={}){
+ if(!sessionValid()||!ownerId||ownerId!==accountId||!quest||quest.legacyIndex!==null||quest.id!==attempt?.questId||!attempt.attemptId||
+  !['campaign','replay'].includes(attempt.mode)||!['RUNNING','PAUSED'].includes(attempt.state)||!Number.isFinite(attempt.startedAt)||attempt.startedAt<=0||
+  !Array.isArray(attempt.board)||attempt.board.length!==quest.reg?.length||
+  !attempt.board.every(row=>Array.isArray(row)&&row.length===quest.reg.length&&row.every(cell=>[0,1,2].includes(cell)))||
+  !Number.isSafeInteger(legacyIndex)||legacyIndex<0)return {changed:false};
+ const cloud=validateCloudProfile(remote),raw=storage.getItem('lumenProgressV1');
+ if(!raw)return {changed:false};
+ const local=validateCloudProfile(JSON.parse(raw)),key=String(legacyIndex),record=local.performances?.[key];
+ if(!record||typeof record!=='object'||Array.isArray(record)||record.questIndex!==legacyIndex||
+  Object.keys(record).some(k=>!['questIndex',...qualificationFields].includes(k))||
+  typeof record.lastQualifiedAt!=='string'||typeof record.lastQualifiedDay!=='string'||!mergeQualificationMetadata(record,record).ok||
+  Object.hasOwn(cloud.performances||{},key))return {changed:false};
+ await preserveRecoverySnapshot(storage,'lumenBeforeCanonicalStartMetadataLocal_',raw);
+ await preserveRecoverySnapshot(storage,'lumenBeforeCanonicalStartMetadataRemote_',JSON.stringify(cloud));
+ if(!sessionValid()||storage.getItem('lumenProgressV1')!==raw)return {changed:false};
+ delete local.performances[key];
+ const clean=JSON.stringify(local);storage.setItem('lumenProgressV1',clean);
+ if(storage.getItem('lumenProgressV1')!==clean)throw Error('Canonical start metadata recovery not verified');
+ return {changed:true};
+}
 /**
  * Reconcile only when the local snapshot contains every remote achievement and
  * immutable/mutable ledgers are identical. Never infer shard/XP transactions.

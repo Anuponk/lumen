@@ -665,7 +665,7 @@ This is diagnostic coverage, not repair of an affected account's divergent save.
 maximum cumulative summary, exact server reward/cursor preservation, independent
 read-back, original local bytes and both recovery copies. The isolated
 `fixtures/legacy-attempt-counter.sql` fails under the original authority trigger
-and passes with `20261020081735_legacy_attempt_counter_metadata.sql`. It exercises
+and passes with `20261020084328_legacy_attempt_counter_metadata.sql`. It exercises
 counter-only CAS and backup, stale expected state, idempotence, invalid/deleted/
 decreasing/overflowing counters, reward/evidence/version/revision/XP smuggling,
 transaction rollback, immutable receipts, other-account isolation, exact private
@@ -676,3 +676,25 @@ all receipts and a monotonic count. Local embedded PostgreSQL is additional
 validation, not a substitute for CI PostgreSQL 17 or affected-device verification.
 No fixture may run against production. Applying the migration requires separate
 approval; passing tests do not establish repair of any existing phone save.
+
+
+## Canonical start isolation and victory capture
+
+`campaign-resume-tests.mjs` executes the real start/menu renderer to reproduce
+numeric performance pollution and the stale legacy finale banner. It verifies
+canonical start leaves numeric performance untouched. Its recovery matrix checks
+both original snapshots, unchanged rewards/unknown profile fields/run/intent,
+idempotence, wrong owner/quest/mode/state, preservation of completed legacy
+boundaries, refusal of cloud-present performance records, invalid
+metadata, reward-bearing or unknown entries, quota, account switch and concurrent
+edits. Unrecognized data remains held for review.
+
+`canonical-outbox-recovery-tests.mjs` reproduces two victory renders racing before
+durable enqueue completes with different elapsed time, then requires one immutable
+capture and a released guard after failure; retained account/quest/reset tests
+still reject stale async UI effects. `campaign-resume-browser-tests.mjs` exercises
+Dauphin after Grand Chien with simulated protected snapshot RPCs and real browser
+storage: no stale banner or numeric performance, recognized old-state recovery
+with the same attempt, account isolation, and a real solved-board render twice
+leading to one command receipt/grant and verified success. These simulations do
+not establish recovery of a player's live phone or arbitrary storage failures.

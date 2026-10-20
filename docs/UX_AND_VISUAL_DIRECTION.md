@@ -136,3 +136,12 @@ Campaign/replay Reset deliberately gives the player a fresh badge run and restar
 
 ## End-of-campaign celebration
 The final currently available quest is not a normal success. After the last constellation reveal, show a dedicated full-campaign celebration with explicit completion copy, a compact recap (quests, constellations, stars, Autonomy/Sans erreur/Mastery counts) and post-game actions toward Mon ciel / badge completion. Detection derives from the campaign content count, not a hard-coded quest id. The “seen” key is versioned by available quest count so a future content extension can earn its own new ending.
+
+
+Canonical board identity: the header and any challenge/finale presentation must
+refer to the active stable quest. A new canonical constellation never displays
+a bonus or finale from the dormant numeric legacy index. Starting it does not
+claim an old quest's qualification. Victory success remains gated by a durable
+intention and verified server acknowledgement; repeated renders cannot create
+parallel captures with different evidence. Existing learning milestones, badge
+eligibility and rewards are unchanged.

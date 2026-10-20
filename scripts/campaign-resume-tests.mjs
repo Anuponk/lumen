@@ -36,3 +36,79 @@ test('account-switch backup is verified before the old active attempt can be rep
  assert.throws(()=>preserveAttemptSnapshot({...storage,setItem(){}},'active',{now:()=>124}),/verification/);
  assert.equal(storage.getItem('active'),raw);
 });
+
+
+test('starting Dauphin must not create a performance under the dormant legacy index',async()=>{
+ const vm=await import('node:vm'),{readFileSync}=await import('node:fs'),{functionSource}=await import('./source-tools.mjs');
+ const source=readFileSync('src/ui/game-screen.js','utf8');let starts=0,saves=0;
+ const ctx={canonicalActiveQuest:next,levelIndex:198,lumenProgress:{performances:{}},
+  ATTEMPT_STATES:{READY:'READY'},attemptEngine:{snapshot:()=>({state:'READY',qualifying:true}),start(){starts++}},
+  saveLumenProgress(){saves++},trackAttemptEvent(){},attemptMode:()=> 'campaign',localCalendarDay:()=> '2026-10-20'};
+ vm.createContext(ctx);vm.runInContext(functionSource(source,'ensureAttemptStarted'),ctx);ctx.ensureAttemptStarted();
+ assert.deepEqual(ctx.lumenProgress.performances,{});assert.equal(saves,0);assert.equal(starts,1);
+ ctx.canonicalActiveQuest=null;ctx.ensureAttemptStarted();
+ assert.equal(saves,1);assert.equal(starts,2);assert.equal(ctx.lumenProgress.performances[198].questIndex,198,'Legacy qualification remains unchanged');
+});
+
+test('a canonical board never renders the dormant legacy challenge banner',async()=>{
+ const vm=await import('node:vm'),{readFileSync}=await import('node:fs'),{functionSource}=await import('./source-tools.mjs');
+ const source=readFileSync('src/ui/game-screen.js','utf8');
+ const nodes={challengeBanner:{hidden:false},challengeTitle:{textContent:''},challengeCopy:{textContent:''}};
+ const ctx={canonicalActiveQuest:next,levelIndex:198,lumenProgress:{stars:{}},document:{getElementById:id=>nodes[id]},
+  bonusChallengeFor:()=>null,milestoneFor:()=>({title:'Grand Chien',copy:'legacy final'})};
+ vm.createContext(ctx);vm.runInContext(functionSource(source,'renderXP'),ctx);ctx.renderXP();
+ assert.equal(nodes.challengeBanner.hidden,true);assert.equal(nodes.challengeTitle.textContent,'');
+ ctx.canonicalActiveQuest=null;ctx.renderXP();assert.equal(nodes.challengeBanner.hidden,false);assert.equal(nodes.challengeTitle.textContent,'Grand Chien');
+});
+
+
+test('archive only recognized canonical-start metadata after verified backup, preserving all earned data and the run',async()=>{
+ const {archiveCanonicalStartMetadata}=await import('../src/persistence/cloud-profile.js');
+ const cloud={solved:{0:1},badges:{earned:true},performances:{0:{badges:{speed:true},attempts:2}},shards:7,xp:40};
+ const record={questIndex:198,lastQualifiedAt:'2026-10-20T08:45:02.000Z',lastQualifiedDay:'2026-10-20'};
+ const local={...structuredClone(cloud),performances:{...structuredClone(cloud.performances),198:record},future:{keep:true}};
+ const attempt={questId:next.id,attemptId:'keep-run',mode:'campaign',state:'PAUSED',startedAt:1,board:next.reg.map(row=>row.map(()=>0))};
+ const options={quest:next,attempt,legacyIndex:198,ownerId:'owner',accountId:'owner'};
+ const fixture=(value=local)=>{
+  const raw=JSON.stringify(value),map=new Map([['lumenProgressV1',raw],['lumenActiveAttemptV1',JSON.stringify(attempt)],['pending-victory','immutable']]);
+  return {raw,map,storage:{getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,v)}};
+ };
+ const f=fixture();assert.equal((await archiveCanonicalStartMetadata(f.storage,cloud,options)).changed,true);
+ const expected=structuredClone(local);delete expected.performances[198];
+ assert.deepEqual(JSON.parse(f.map.get('lumenProgressV1')),expected);
+ assert.equal(f.map.get('lumenActiveAttemptV1'),JSON.stringify(attempt));assert.equal(f.map.get('pending-victory'),'immutable');
+ assert([...f.map].some(([k,v])=>k.startsWith('lumenBeforeCanonicalStartMetadataLocal_')&&v===f.raw));
+ assert([...f.map].some(([k,v])=>k.startsWith('lumenBeforeCanonicalStartMetadataRemote_')&&v===JSON.stringify(cloud)));
+ assert.equal((await archiveCanonicalStartMetadata(f.storage,cloud,options)).changed,false,'No recovery/reload loop');
+ for(const patch of [{badges:{}},{attempts:1},{time:9},{future:'keep'},{questIndex:197},{lastQualifiedAt:'invalid'}]){
+  const value=structuredClone(local);Object.assign(value.performances[198],patch);const g=fixture(value);
+  assert.equal((await archiveCanonicalStartMetadata(g.storage,cloud,options)).changed,false);
+  assert.equal(g.map.get('lumenProgressV1'),g.raw);assert.equal(g.map.size,3);
+ }
+ for(const patch of [{ownerId:'other'},{accountId:null},{quest:{...next,legacyIndex:198}},{attempt:{...attempt,mode:'challenge'}},{attempt:{...attempt,state:'READY'}},{attempt:{...attempt,questId:'other'}}]){
+  const g=fixture();assert.equal((await archiveCanonicalStartMetadata(g.storage,cloud,{...options,...patch})).changed,false);assert.equal(g.map.get('lumenProgressV1'),g.raw);
+ }
+ for(const remote of [{...cloud,performances:{...cloud.performances,198:{}}}]){
+  const g=fixture();assert.equal((await archiveCanonicalStartMetadata(g.storage,remote,options)).changed,false);assert.equal(g.map.get('lumenProgressV1'),g.raw);
+ }
+ const earned=structuredClone(local);earned.solved[198]=1;const held=fixture(earned);
+ assert.equal((await archiveCanonicalStartMetadata(held.storage,cloud,options)).changed,true);
+ assert.equal(JSON.parse(held.map.get('lumenProgressV1')).solved[198],1,'A completed legacy quest remains completed');
+ const completedRemote={...structuredClone(cloud),solved:{...cloud.solved,198:1}},completed=fixture({...local,solved:completedRemote.solved});
+ assert.equal((await archiveCanonicalStartMetadata(completed.storage,completedRemote,options)).changed,true);
+ assert.deepEqual(JSON.parse(completed.map.get('lumenProgressV1')).solved,completedRemote.solved);
+ for(const fault of ['backup','account','concurrent']){
+  const g=fixture();let valid=true;const put=g.storage.setItem;
+  g.storage.setItem=(k,v)=>{
+   if(k.startsWith('lumenBeforeCanonicalStartMetadataRemote_')){
+    if(fault==='backup')throw Error('quota');
+    if(fault==='account')valid=false;
+    if(fault==='concurrent')g.map.set('lumenProgressV1','newer local save');
+   }
+   put(k,v);
+  };
+  const call=()=>archiveCanonicalStartMetadata(g.storage,cloud,{...options,sessionValid:()=>valid});
+  if(fault==='backup')await assert.rejects(call);else assert.equal((await call()).changed,false);
+  assert.equal(g.map.get('lumenProgressV1'),fault==='concurrent'?'newer local save':g.raw);
+ }
+});
