@@ -31,3 +31,12 @@ and private authority trigger; `20261020084328_legacy_attempt_counter_metadata.s
 allows monotonic attempts while retaining exact command-owned reward evidence.
 The owning compatibility/rollback contract is DATA_AND_ARCHITECTURE, with
 client/SQL/concurrency coverage in TESTING. No new public RPC or writer exists.
+
+
+Canonical start-state isolation: the UI passes the registered same-owner active
+canonical attempt and verified cloud profile to `archiveCanonicalStartMetadata`
+in cloud-profile.js. Exact cooldown-only numeric pollution is archived in the
+existing recovery stores before a single reload; uncertain/earned data is never
+removed. The real start renderer and victory capture share the active stable
+quest; the dormant numeric index must not supply canonical start-performance
+or finale identity.

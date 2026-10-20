@@ -499,3 +499,34 @@ aggregate RPC. `oldest_unresolved_at` is an aggregate timestamp, not an identity
 No profile snapshots are sent. This correction does not add email/push alerts,
 outbox backlog telemetry, retention jobs or session/platform correlation; those
 remain acceptance work under #398.
+
+
+### Canonical start-state isolation and recovery
+
+A new canonical quest uses its stable ID for its board, attempt and victory.
+Starting it does not stamp a numeric `performances[levelIndex]` entry; the dormant
+legacy index is not a second active quest. Legacy qualification stamping retains
+its existing behavior. Canonical presentation suppresses the legacy bonus/finale
+banner instead of promising a reward from an unrelated constellation.
+
+`archiveCanonicalStartMetadata` repairs only the recognized old producer's
+cooldown-only record on a dormant numeric slot absent from a verified cloud
+profile, while a valid started RUNNING/PAUSED canonical attempt belongs to the
+same verified account. The record must contain exactly its matching questIndex
+and valid qualification timestamps, with no counters, badges, time, unknown
+fields or other evidence. Existing completion/reward fields elsewhere in the
+profile remain unchanged, including an already-completed legacy boundary. Both full originals are preserved and read back via
+the existing recovery snapshot stores before changing local bytes. Account or
+concurrent local changes abort; storage failure preserves the hold. The active
+board/attempt, durable victory intentions and all earned profile fields remain
+untouched. A successful archive reloads once to install coherent memory; the
+recognized record no longer exists on the next pass. This is not generic
+reconciliation or deletion of uncertain achievements, and never writes cloud.
+
+Canonical victory capture is serialized for the exact account/client, stable
+quest, attempt and reset while its asynchronous write/read-back is in flight.
+Different contexts remain independent; an old completion cannot clear a newer
+capture. Retries reuse frozen persisted evidence and become available after the
+current capture exits. A local diagnostic records a fixed capture stage/category
+without provider text or progress values. Server acknowledgement/read-back still
+precedes success and reward presentation. No SQL/Auth change is required.

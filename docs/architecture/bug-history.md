@@ -10,3 +10,14 @@ Small, evidence-based register, verified from Git diffs at `bef5f32`. These are 
 | Victory progress denominator included inaccessible adventures | Prior campaign view lacked a filtered accessible-progress projection. Diff adds `unlockedAdventureProgress`, filtering packs via `hasPackAccess` and counting distinct solved legacy/canonical quests within them | `src/campaign/canonical-quests.js`: `unlockedAdventureProgress` | [PR #362](https://github.com/Anuponk/lumen/pull/362), [causal diff d2b70d3](https://github.com/Anuponk/lumen/commit/d2b70d31fcfd9821917abf6356fb7f30ddbbba7e) | `scripts/unlocked-adventure-progress.test.mjs` (current baseline failure detailed in `docs/architecture/test-map.md`) |
 
 For a different locked-content symptom, use the access route in `docs/architecture/debugging-guide.md` and confirm evidence before applying the same diagnosis.
+
+
+Canonical start isolation, reproduced against `d10d410`: `ensureAttemptStarted`
+stamped a cooldown-only numeric performance while a new stable-ID board was
+active, and `renderXP` rendered the dormant legacy finale. Exact metadata-only
+archival preserves both originals and the current attempt; new canonical starts
+and banners stay isolated. A separate real-render regression reproduces duplicate
+async victory capture with differing elapsed time. `campaign-resume-tests.mjs`,
+`canonical-outbox-recovery-tests.mjs` and the authenticated Dauphin browser flow
+cover prevention, conservative local recovery and one acknowledged grant. This
+is not blanket repair of unknown reward conflicts or proof of live-phone recovery.

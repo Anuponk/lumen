@@ -9,7 +9,7 @@ import {currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
 import {canonicalAttemptToResume,nextCanonicalAtLegacyBoundary,preserveAttemptSnapshot} from '../campaign/campaign-resume.js';
 import {createCloudPersistence} from "../persistence/cloud.js";
 import {reconcileDailyIntoCloudProfile} from "../persistence/daily-hydration.js";
-import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievements,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles} from "../persistence/cloud-profile.js";
+import {backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievements,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
@@ -440,6 +440,13 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   const hydrationClient=lumenSupabase;
   const sessionValid=()=>lumenUser?.id===accountId&&lumenSupabase===hydrationClient&&!qaActive;
   if(!sessionValid())return;
+  const canonicalAttempt=attemptEngine.snapshot();
+  const canonicalQuest=canonicalAttemptToResume(canonicalAttempt,canonicalQuestList(),{ownerId:currentOwner,accountId});
+  if(existing&&currentOwner===accountId&&canonicalQuest){
+   const repaired=await archiveCanonicalStartMetadata(localStorage,cloud,{quest:canonicalQuest,attempt:canonicalAttempt,legacyIndex:currentQuestPosition(),ownerId:currentOwner,accountId,sessionValid});
+   if(!sessionValid())return;
+   if(repaired.changed){recordCloudDiagnostic('canonical_start_metadata_archived',{fullSync:false});location.reload();return;}
+  }
   // Only an actually verified authenticated read may release an auth pause.
   try{await canonicalVictoryOutbox.resume(accountId,{kind:'auth'})}catch{recordCloudDiagnostic("canonical_outbox_resume_pending",{reason:"storage"})}
   if(!sessionValid())return;
@@ -959,6 +966,7 @@ captureReferral();
 
 let lumenProgress=loadLumenProgress(),usedHintThisGame=false,questStarted=true,questFailed=false;
 // A canonical-only quest is never mapped to an old numeric save index.
+let canonicalVictoryInFlight=null;
 let canonicalActiveQuest=null,canonicalResumeOwner=null;if(!lumenProgress.xp)lumenProgress.xp=0;if(!lumenProgress.challenges)lumenProgress.challenges={};if(!lumenProgress.stars)lumenProgress.stars={};if(!Number.isFinite(lumenProgress.shards))lumenProgress.shards=3;if(!lumenProgress.performances)lumenProgress.performances={};
 if(!lumenProgress.daily)lumenProgress.daily={dates:{},rewards:{}};if(!Number.isFinite(lumenProgress.skyScore))lumenProgress.skyScore=null;
 
@@ -1227,7 +1235,7 @@ function updateAttemptUI(){
 }
 function ensureAttemptStarted(){
  const a=attemptEngine.snapshot();if(a?.state!==ATTEMPT_STATES.READY)return;
- if(a.qualifying){
+ if(a.qualifying&&!canonicalActiveQuest){
   lumenProgress.performances=lumenProgress.performances||{};
   const old=lumenProgress.performances[levelIndex]||{};
   lumenProgress.performances[levelIndex]={...old,questIndex:levelIndex,lastQualifiedDay:localCalendarDay(),lastQualifiedAt:new Date().toISOString()};
@@ -1932,6 +1940,11 @@ async function celebrateCanonicalSuccess(){
  const q=canonicalActiveQuest;if(!q||celebrated)return;
  const seconds=activeGameSeconds(),attempt=attemptEngine.snapshot();
  const victoryOwner=lumenUser?.id,victoryClient=lumenSupabase;
+ const capture={userId:victoryOwner,client:victoryClient,questId:q.id,attemptId:attempt?.attemptId,resetCount:attempt?.resetCount||0};
+ if(canonicalVictoryInFlight&&Object.keys(capture).every(key=>canonicalVictoryInFlight[key]===capture[key]))return;
+ canonicalVictoryInFlight=capture;
+ let victoryStage='context';
+ try{
  const sameVictoryContext=()=>lumenUser?.id===victoryOwner&&lumenSupabase===victoryClient&&canonicalActiveQuest?.id===q.id&&attemptEngine.snapshot()?.attemptId===attempt?.attemptId&&(attemptEngine.snapshot()?.resetCount||0)===(attempt?.resetCount||0);
  const assisted=!!attempt?.assistanceUsed||!!usedHintThisGame;
  const run=performanceAttempt({questIndex:q.ordinal-1,seconds,assistanceUsed:assisted,mistakeCommitted:!!attempt?.mistakeCommitted});
@@ -1948,9 +1961,11 @@ async function celebrateCanonicalSuccess(){
    const ownerId=lumenUser.id;
    const ownerClient=lumenSupabase;
    const operationId=attempt?.attemptId?attempt.attemptId+"-reset-"+(attempt.resetCount||0):undefined;
+   victoryStage='pending_read';
    const existing=operationId?(await canonicalVictoryOutbox.pending(ownerId)).find(entry=>entry.operationId===operationId&&entry.questId===q.id):null;
    if(!sameVictoryContext())return;
    const queuedReward=existing?.reward||reward;
+   victoryStage='enqueue';
    const pending=await canonicalVictoryOutbox.enqueue(ownerId,q.id,queuedReward,{operationId});
    durableIntent=pending;
    confirmedBadges=pending.reward.badges||{};
@@ -1958,9 +1973,11 @@ async function celebrateCanonicalSuccess(){
    canonicalOutboxNotice="pending";
    updateAuthUI();
    canonicalRecovery.schedule();
+   victoryStage='readiness';
    if(!cloudProfileReady)throw Error("Victoire conservée localement, cloud non prêt");
    if(!(await confirmCloudReward()))return;
    if(!sameVictoryContext())return;
+   victoryStage='command';
    committed=await commitCanonicalVictory(ownerClient,q.id,pending.reward,{operationId:pending.operationId,userId:ownerId,sessionValid:sameVictoryContext});
    if(!sameVictoryContext())return;
    if(!committed.profile?.canonicalQuestState?.[q.id]?.solved)throw Error("Victoire non confirmée par le cloud");
@@ -1976,6 +1993,7 @@ async function celebrateCanonicalSuccess(){
  }catch(error){
   if(!sameVictoryContext())return;
   console.error("Canonical victory not saved",error);
+  recordCloudDiagnostic('canonical_victory_failed',{stage:victoryStage,reason:error?.code==='OUTBOX_CONFLICT'||error?.message==='Operation identity reused with different evidence'?'operation_conflict':durableIntent?'intent_recorded':'capture_unconfirmed'});
   let locallySaved=false;
   try{locallySaved=!!lumenUser&&!!durableIntent&&(await canonicalVictoryOutbox.pending(lumenUser.id)).some(entry=>entry.operationId===durableIntent.operationId&&entry.questId===q.id)}catch(readError){
    recordCloudDiagnostic("canonical_outbox_read_failed",{reason:"integrity"});
@@ -2007,6 +2025,7 @@ async function celebrateCanonicalSuccess(){
  const challenge=document.getElementById("questResult");if(challenge)challenge.hidden=true;
  document.getElementById("successNew").textContent="Quête suivante";
  document.getElementById("successOverlay").classList.add("show");refreshJourney();
+ }finally{if(canonicalVictoryInFlight===capture)canonicalVictoryInFlight=null;}
 }
 
 const legacyVictoryOutbox=createDurableCanonicalVictoryOutbox(localStorage,{namespace:'Legacy',onIssue:issue=>recordCloudDiagnostic('legacy_outbox_storage',{reason:issue.kind})});
@@ -2682,7 +2701,7 @@ function closeUnifiedSkyReveal(){
  return false;
 }
 document.getElementById("skyRevealContinue").onclick=()=>{const completedReveal=document.getElementById("skyReveal").classList.contains("complete-celebration");if(closeUnifiedSkyReveal())return;document.getElementById("successOverlay").classList.add("show");if(completedReveal)setTimeout(maybeOfferAccount,450)};
-function renderXP(){let q=bonusChallengeFor(levelIndex),m=milestoneFor(levelIndex),ch=m||q,box=document.getElementById("challengeBanner");if(!box)return;box.hidden=!ch;if(ch){let done=q&&lumenProgress.stars[q.id];document.getElementById("challengeTitle").textContent=ch.title+(done?" · ★":"");document.getElementById("challengeCopy").textContent=done?"Bonus obtenu":ch.copy}}
+function renderXP(){if(canonicalActiveQuest){const box=document.getElementById("challengeBanner");if(box)box.hidden=true;return}let q=bonusChallengeFor(levelIndex),m=milestoneFor(levelIndex),ch=m||q,box=document.getElementById("challengeBanner");if(!box)return;box.hidden=!ch;if(ch){let done=q&&lumenProgress.stars[q.id];document.getElementById("challengeTitle").textContent=ch.title+(done?" · ★":"");document.getElementById("challengeCopy").textContent=done?"Bonus obtenu":ch.copy}}
 
 function refreshJourney(){awards();let sky=constellationProgress(),earned=skyStarsEarned(),completed=CONSTELLATIONS.slice(0,sky.index).length;
 document.getElementById("progressFill").style.width=(sky.count?Math.round(sky.lit/sky.count*100):0)+"%";

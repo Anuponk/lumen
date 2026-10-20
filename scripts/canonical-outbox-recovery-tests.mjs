@@ -47,7 +47,7 @@ test('an old victory cannot update the UI after account, quest or attempt-reset 
  for(const change of ['account','quest','reset']){
   let finish,persisting=false,uiUpdates=0;
   const attempt={attemptId:'persisted-attempt',resetCount:0};
-  const context={canonicalActiveQuest:{id:'q',ordinal:10},celebrated:false,activeGameSeconds:()=>10,
+  const context={canonicalActiveQuest:{id:'q',ordinal:10},canonicalVictoryInFlight:null,celebrated:false,activeGameSeconds:()=>10,
    attemptEngine:{snapshot:()=>({...attempt})},lumenUser:{id:'old'},lumenSupabase:{},
    performanceAttempt:()=>({autonomy:true,speed:true,noError:true,mastery:true}),usedHintThisGame:false,
    lumenProgress:{canonicalQuestState:{}},qaActive:false,canonicalOutboxNotice:null,
@@ -191,4 +191,27 @@ test('replacing the cloud client invalidates the isolated permission and cancels
  const context={lumenSupabase:{},canonicalRecoveryContext:{userId:'a'},canonicalRecovery:{cancel:()=>{cancelled++}}};
  vm.createContext(context);const model=vm.runInContext('('+source.slice(start,end)+')',context);
  model.lumenSupabase={};assert.equal(context.canonicalRecoveryContext,null);assert.equal(cancelled,1);
+});
+
+
+test('two victory renders cannot capture different evidence for the same operation',async()=>{
+ const source=readFileSync('src/ui/game-screen.js','utf8');let finish,enqueues=0,ready=false;
+ const attempt={attemptId:'same-attempt',resetCount:0};
+ const entry={operationId:'same-attempt-reset-0',questId:'q',reward};
+ const ctx={canonicalActiveQuest:{id:'q',ordinal:241},canonicalVictoryInFlight:null,celebrated:false,
+  activeGameSeconds:()=>10+enqueues,attemptEngine:{snapshot:()=>({...attempt})},lumenUser:{id:'a'},lumenSupabase:{},
+  performanceAttempt:()=>({speed:true}),usedHintThisGame:false,lumenProgress:{canonicalQuestState:{}},qaActive:false,
+  canonicalOutboxNotice:null,cloudProfileReady:false,canonicalRecovery:{schedule(){}},updateAuthUI(){},
+  recordCloudDiagnostic(){},refreshCanonicalOutboxNotice:async()=>{},msg:{textContent:''},console:{error(){}},
+  canonicalVictoryOutbox:{pending:async()=>ready?[entry]:[],enqueue:async()=>{
+   enqueues++;if(enqueues>1)throw Error('Operation identity reused with different evidence');
+   return new Promise(resolve=>{finish=()=>{ready=true;resolve(entry)}});
+  }}};
+ vm.createContext(ctx);vm.runInContext(functionSource(source,'celebrateCanonicalSuccess'),ctx);
+ const first=ctx.celebrateCanonicalSuccess();for(let i=0;i<10&&!finish;i++)await Promise.resolve();
+ const second=ctx.celebrateCanonicalSuccess();for(let i=0;i<10;i++)await Promise.resolve();
+ assert.equal(enqueues,1,'One immutable capture for one attempt/reset while persistence is pending');
+ finish();await Promise.all([first,second]);
+ assert(ctx.msg.textContent.includes('Victoire'));assert(!ctx.msg.textContent.includes('impossible'));
+ assert.equal(ctx.canonicalVictoryInFlight,null,'Release the capture after failure so an explicit retry is possible');
 });
