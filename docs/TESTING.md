@@ -665,7 +665,7 @@ This is diagnostic coverage, not repair of an affected account's divergent save.
 maximum cumulative summary, exact server reward/cursor preservation, independent
 read-back, original local bytes and both recovery copies. The isolated
 `fixtures/legacy-attempt-counter.sql` fails under the original authority trigger
-and passes with `20261020081735_legacy_attempt_counter_metadata.sql`. It exercises
+and passes with `20261020084328_legacy_attempt_counter_metadata.sql`. It exercises
 counter-only CAS and backup, stale expected state, idempotence, invalid/deleted/
 decreasing/overflowing counters, reward/evidence/version/revision/XP smuggling,
 transaction rollback, immutable receipts, other-account isolation, exact private

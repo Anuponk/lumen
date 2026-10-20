@@ -8,12 +8,17 @@ The post-#492 report localizes the refusal to a cumulative performance attempt
 count. Reproduced the same counter-only CAS refusal in disposable PostgreSQL.
 The client already merges cumulative attempt summaries by maximum without
 reapplying rewards, while the authority trigger required exact counter equality.
-Migration `20261020081735_legacy_attempt_counter_metadata.sql` permits only a
+Migration `20261020084328_legacy_attempt_counter_metadata.sql` permits only a
 valid monotonic counter update with all other reward/evidence fields exact,
 retaining CAS, private authority consistency and immutable receipts. No profile
-backfill or reward conversion occurs. Production application is pending separate
-approval and real PostgreSQL CI; the client release alone cannot activate this
-server correction. Unknown/contradictory reward facts remain held for review.
+backfill or reward conversion occurs. Production application was explicitly approved and completed on 2026-10-20
+after PostgreSQL 17 and all other PR #493 checks passed. Supabase assigned
+version `20261020084328`; only the source filename/references were aligned,
+without SQL or production-history edits. Read-only postchecks confirmed private
+function permissions, fixed search paths and consistent authority projections.
+No player fixture, profile backfill or Auth change was performed. The existing
+client can retry against the active server correction; affected-device sync
+confirmation remains outstanding. Unknown/contradictory reward facts remain held for review.
 
 ## Follow-up after field-transition fixes (2026-10-19)
 

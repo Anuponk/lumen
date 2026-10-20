@@ -154,7 +154,7 @@ server projection guards still refuse conflicting legacy reward changes.
 Unknown fields retain their refusal policy. This client fix needs no SQL migration.
 
 Attempt-counter compatibility (migration
-`20261020081735_legacy_attempt_counter_metadata.sql`, not yet applied in production):
+`20261020084328_legacy_attempt_counter_metadata.sql`, approved/applied in production on 2026-10-20):
 `performances[index].attempts` is a cumulative summary, not an immutable operation
 receipt. Existing authenticated CAS/backup may increase this counter only while
 all other historical reward/evidence fields and the victory revision remain
@@ -165,6 +165,9 @@ The trigger updates the private projection in the same transaction without
 minting a revision, receipt or reward; later commands increment the reconciled
 count. No existing profile or receipt is backfilled. CAS still detects concurrent
 writes and independent read-back/local recovery copies remain mandatory.
+Supabase assigned version `20261020084328`; the source file was renamed without
+changing its reviewed SQL. Post-application read-only checks confirm the exact
+helpers/trigger permissions, fixed search paths and no authority mismatch.
 This corrects the mismatch with the existing client `max(attempts)` summary
 policy, not a transaction union or proof of an unrecorded run. Other protected
 performance differences still require command/audited recovery. Production
