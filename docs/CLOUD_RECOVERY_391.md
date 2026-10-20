@@ -2,6 +2,19 @@
 
 This is a staged implementation record, not a declaration that #391 is closed.
 
+## Attempt-counter refusal (2026-10-20)
+
+The post-#492 report localizes the refusal to a cumulative performance attempt
+count. Reproduced the same counter-only CAS refusal in disposable PostgreSQL.
+The client already merges cumulative attempt summaries by maximum without
+reapplying rewards, while the authority trigger required exact counter equality.
+Migration `20261020081735_legacy_attempt_counter_metadata.sql` permits only a
+valid monotonic counter update with all other reward/evidence fields exact,
+retaining CAS, private authority consistency and immutable receipts. No profile
+backfill or reward conversion occurs. Production application is pending separate
+approval and real PostgreSQL CI; the client release alone cannot activate this
+server correction. Unknown/contradictory reward facts remain held for review.
+
 ## Follow-up after field-transition fixes (2026-10-19)
 
 Baseline `fd31a22` includes #483 (account-menu diagnostics), #484 (exact server
