@@ -1024,3 +1024,9 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 #accountSyncDiagnosticPanel{margin-top:10px}
 #accountSyncDiagnosticPanel label{display:block;font-size:12px;line-height:1.4}
 #accountSyncDiagnosticText{box-sizing:border-box;width:100%;max-width:100%;margin-top:8px;padding:8px;background:#0b1525;color:#dce8f5;border:1px solid #28415b;border-radius:8px;font-size:12px;resize:vertical}
+
+/* Keep two rows of quest cards compact enough for the star card on desktop. */
+@media(min-width:701px){
+ #mapModal .map-sheet:has(#mapDetail:not([hidden])){height:min(820px,calc(100dvh - 32px))}
+ #mapDetail .puzzle-grid{max-width:320px;align-self:center}
+}

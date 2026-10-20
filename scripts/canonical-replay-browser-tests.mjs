@@ -99,15 +99,15 @@ async function verifyHistoricalCatalogue(viewport){
   assert.ok(visible);
   assert.equal(await evaluate(`document.querySelector('#sectorTabs [data-content-id="${id}"]').classList.contains('locked')`),false,'New constellation is acquired through the completed historical adventure');
   await evaluate(`document.querySelector('#sectorTabs [data-content-id="${id}"]').click()`);
-  assert.equal(await evaluate(`document.querySelector('#canonicalConstellationQuests [data-quest-id="${group[0].id}"]').disabled`),false);
-  for(const quest of group.slice(1))assert.equal(await evaluate(`document.querySelector('#canonicalConstellationQuests [data-quest-id="${quest.id}"]').disabled`),true,'Only the first new quest is initially available');
+  assert.equal(await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="${group[0].id}"]').disabled`),false);
+  for(const quest of group.slice(1))assert.equal(await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="${quest.id}"]').disabled`),true,'Only the first new quest is initially available');
   const decision=await evaluate(`(async()=>{const {canonicalInsertedQuestDecision}=await import('/src/campaign/canonical-quests.js');return canonicalInsertedQuestDecision(${JSON.stringify(group[0])},lumenDiagnostics.snapshot().progress).status})()`,true);
   assert.equal(decision,'ready','The rendered detail and shared runtime policy agree');
   await evaluate('document.getElementById("constellationBack").click()');
  }
  assert.equal(await evaluate('JSON.stringify(lumenDiagnostics.snapshot().progress)'),before,'Browsing grants neither completion nor rewards');
  const first=groups.at(-1)[0];
- await evaluate(`document.querySelector('#sectorTabs [data-content-id="${first.constellationId}"]').click();document.querySelector('#canonicalConstellationQuests [data-quest-id="${first.id}"]').click()`);
+ await evaluate(`document.querySelector('#sectorTabs [data-content-id="${first.constellationId}"]').click();document.querySelector('#puzzleGrid [data-quest-id="${first.id}"]').click()`);
  await acknowledgeLearningMilestones(evaluate);
  assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().puz.reg'),first.reg,'The enabled card launches the actual stable-ID puzzle');
  assert.equal(await evaluate('JSON.stringify(lumenDiagnostics.snapshot().progress)'),before,'Starting the added quest grants no rewards');

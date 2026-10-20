@@ -221,7 +221,7 @@ Existing reward, outbox, account and SQL regressions remain required.
 Grand Chien/Dauphin resume: `campaign-resume-tests.mjs` verifies boundary selection,
 no redirect of running/paused attempts, stable-ID restoration, exclusions and
 verified account-switch backups. The additional mandatory
-The same browser suite checks rendered panel visibility when browsing Dauphin, refreshing its detail, returning to the overview and switching back to Grand Chien; browsing preserves the live board, progress and attempt.
+The same browser suite checks Dauphin in the shared quest grid: exact stable-ID membership, standard card dimensions against Grand Chien on mobile/desktop, current/locked states, four earned badge slots, matching constellation drawing/count, and all detail panels contained in the sheet. It checks refresh, overview, return to Grand Chien, and the periodic cooldown refresh without overwriting canonical badges; browsing preserves the live board, progress and attempt. Canonical replay browser tests use the same quest grid for the six added constellations.
 
 `campaign-resume-browser-tests.mjs` exercises authenticated mobile startup at the
 completed numeric boundary, the actual Next handler, reload of the started

@@ -2668,8 +2668,8 @@ const skyNavigation=createSkyNavigation({document,getModel:()=>mapCatalogueOverr
  getSolved:i=>!!lumenProgress.solved[i],
  getCanonicalQuests:id=>canonicalQuestList().filter(q=>q.constellationId===id),
  getCanonicalSolved:q=>questIsCompleted(lumenProgress,q.id),
- getCanonicalAvailable:q=>q.legacyIndex!==null?questIsAccessible(q.legacyIndex):canonicalQuestAvailable(q),getCanonicalLockReason:quest=>canonicalQuestLockReason(quest),getCanonicalPackQuests:id=>canonicalQuestList().filter(q=>q.packId===id),
- onCanonicalQuest:q=>startCanonicalQuest(q),getLit:entry=>CONSTELLATIONS[entry.legacyIndex]?constellationLitAt(entry.legacyIndex):0,getShape:entry=>astronomicalDisplayShape(entry.shape||CONSTELLATIONS[entry.legacyIndex]),getMastered:entry=>{const eligible=Array.from({length:entry.questCount},(_,offset)=>entry.questStart+offset).filter(i=>currentPerformanceEligibility(i).mastery);return eligible.length>0&&eligible.every(i=>lumenProgress.performances?.[i]?.badges?.mastery)},getBadgeCounts:entry=>{const badges={autonomy:0,speed:0,noError:0,mastery:0};const quests=entry.constellations?canonicalQuestList().filter(q=>q.packId===entry.id):canonicalQuestList().filter(q=>q.constellationId===entry.id);for(const quest of quests){const earned=quest.legacyIndex!==null?lumenProgress.performances?.[quest.legacyIndex]?.badges:lumenProgress.canonicalQuestState?.[quest.id]?.badges;for(const key of Object.keys(badges))if(earned?.[key])badges[key]++}return badges},onConstellation:entry=>{if(entry.canonicalOnly)return;if(mapConstellationRange(entry.legacyIndex)){mapConstellation=entry.legacyIndex;renderMap()}}});
+ getCanonicalAvailable:q=>q.legacyIndex!==null?questIsAccessible(q.legacyIndex):canonicalQuestAvailable(q),getCanonicalPackQuests:id=>canonicalQuestList().filter(q=>q.packId===id),
+ getLit:entry=>CONSTELLATIONS[entry.legacyIndex]?constellationLitAt(entry.legacyIndex):0,getShape:entry=>astronomicalDisplayShape(entry.shape||CONSTELLATIONS[entry.legacyIndex]),getMastered:entry=>{const eligible=Array.from({length:entry.questCount},(_,offset)=>entry.questStart+offset).filter(i=>currentPerformanceEligibility(i).mastery);return eligible.length>0&&eligible.every(i=>lumenProgress.performances?.[i]?.badges?.mastery)},getBadgeCounts:entry=>{const badges={autonomy:0,speed:0,noError:0,mastery:0};const quests=entry.constellations?canonicalQuestList().filter(q=>q.packId===entry.id):canonicalQuestList().filter(q=>q.constellationId===entry.id);for(const quest of quests){const earned=quest.legacyIndex!==null?lumenProgress.performances?.[quest.legacyIndex]?.badges:lumenProgress.canonicalQuestState?.[quest.id]?.badges;for(const key of Object.keys(badges))if(earned?.[key])badges[key]++}return badges},onConstellation:entry=>{if(entry.canonicalOnly){renderMap();return}if(mapConstellationRange(entry.legacyIndex)){mapConstellation=entry.legacyIndex;renderMap()}}});
 const SKY_TOUR_STEPS=[
  {target:"skyNavigation",title:"Ciels et Aventures",copy:"Choisis un Ciel, puis une Aventure. Les autres restent compactes ; un cadenas indique un contenu verrouillé. Consulter une autre Aventure ne change pas ta progression."},
  {target:"sectorTabs",title:"Tes constellations",copy:"Ton ciel est organisé en constellations. Elles se débloquent au fil de ton aventure."},
@@ -2678,6 +2678,24 @@ const SKY_TOUR_STEPS=[
  {target:"skyCard",title:"Ta constellation",copy:"Chaque réussite allume des étoiles. À mesure que tu avances, la constellation se dessine dans ton ciel."}
 ];
 function starDisplayName(p,i){return p.stars&&p.stars[i]?p.stars[i]:"Étoile "+(i+1)}
+
+// Canonical-only constellations use the same detail card and licensed atlas.
+// Each completed canonical quest awards one star; this is display-only progress.
+function renderCanonicalSky(entry){
+ const el=document.getElementById("skyCard");if(!el)return;
+ const quests=canonicalQuestList().filter(q=>q.constellationId===entry.id);
+ const lit=quests.filter(q=>questIsCompleted(lumenProgress,q.id)).length,total=quests.length;
+ el.replaceChildren();
+ const head=document.createElement("div");head.className="sky-head";
+ const name=document.createElement("span");name.className="sky-name";name.textContent=entry.label;
+ const count=document.createElement("span");count.textContent=lit+" / "+total+" \u00e9toiles";
+ head.append(name,count);el.appendChild(head);
+ const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+ svg.classList.add("sky-svg");svg.setAttribute("viewBox","0 0 290 115");
+ svg.innerHTML=astronomicalPrimarySvg(entry,lit,total);el.appendChild(svg);
+ const note=document.createElement("div");note.className="sky-note";
+ note.textContent=lit===total?"Constellation compl\u00e9t\u00e9e":lit?"Constellation en cours":"Constellation \u00e0 d\u00e9couvrir";el.appendChild(note);
+}
 
 function renderSky(index=mapConstellation){let el=document.getElementById("skyCard");if(!el)return;index=Math.max(0,Math.min(index,CONSTELLATIONS.length-1));let c=astronomicalDisplayShape(CONSTELLATIONS[index]),lit=constellationLitAt(index),p={index,...c,lit},active=index===constellationProgress().index,lines=p.edges.map(e=>'<line class="sky-line '+(e[0]<lit&&e[1]<lit?'on':'')+'" x1="'+p.pts[e[0]][0]+'" y1="'+p.pts[e[0]][1]+'" x2="'+p.pts[e[1]][0]+'" y2="'+p.pts[e[1]][1]+'"/>').join(""),stars=p.pts.map((v,i)=>'<g><circle class="sky-star '+(i<lit?'on':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i<lit?4:3)+'"/>'+(i<lit?'<text class="sky-label" x="'+(v[0]+6)+'" y="'+(v[1]-5)+'">'+starDisplayName(p,i)+'</text>':'')+'</g>').join("");el.innerHTML='<div class="sky-head"><span class="sky-name">'+p.name+'</span><span>'+lit+' / '+p.count+' étoiles</span></div><svg class="sky-svg" viewBox="0 0 290 115">'+(astronomicalPrimarySvg({id:CONTENT_CONSTELLATIONS[index]?.id},lit,p.count)||lines+stars)+'</svg><div class="sky-note">'+(active?"Constellation active":lit===p.count?"Constellation complétée":lit===0?"Constellation à découvrir":"Constellation en cours")+'</div>'}
 
@@ -2803,7 +2821,7 @@ function renderMap(){
  puzzleGrid.innerHTML="";let range=mapConstellationRange(mapConstellation)||constellationGridRange(mapConstellation);for(const [offset,i] of range.quests.entries()){let solved=!!lumenProgress.solved[i],current=i===currentQuestPosition()&&questIsAccessible(i),b=document.createElement("button"),pos=offset+1,meta=performanceBadges(i);b.className="puzzle-card"+(solved?" done":"")+(current?" current":"")+(!solved&&!current?" locked":"")+(solved&&badgeCooldownRemaining(lumenProgress.performances?.[i])?" badge-on-cooldown":"");b.innerHTML=solved?meta:(current?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+pos+'</span>':'<span class="puzzle-lock-only" aria-hidden="true">🔒</span>');b.title=solved?"Rejouer la quête "+pos+" pour améliorer ta performance":current?"Nouvelle quête disponible · quête "+pos:"Quête "+pos+" · verrouillée";b.onclick=()=>{if(solved&&questIsAccessible(i)){startReplay(i);return}if(!current)return;canonicalActiveQuest=null;levelIndex=i;replayMode=false;document.getElementById("mapModal").hidden=true;loadPuzzle();refreshJourney()};puzzleGrid.appendChild(b)}
  // Use the same canonical quest collection as the cockpit. Historic range.quests
  // omits inserted grids, which previously left Grande Ourse at only six cards.
- const mappedConstellation=CONTENT_CONSTELLATIONS[mapConstellation];
+ const mappedConstellation=skyNavigation.selectedConstellation()||CONTENT_CONSTELLATIONS[mapConstellation];
  if(mappedConstellation){
   const canonicalCards=canonicalQuestList().filter(q=>q.constellationId===mappedConstellation.id);
   if(canonicalCards.length){
@@ -2832,6 +2850,7 @@ function renderMap(){
    }
   }
  }
+ if(mappedConstellation?.canonicalOnly){renderCanonicalSky(mappedConstellation);return}
  if(range.generated){const summary=generatedMapSummary(mapConstellation,lumenProgress.solved);const skyCard=document.getElementById("skyCard");if(skyCard&&summary)skyCard.textContent=summary.name+" · "+summary.completed+"/"+summary.total+" quêtes · "+generatedAdventureRewards(lumenProgress.solved).stars+" ★";}else renderSky(mapConstellation)
 }
 // Refresh cooldown icons while Mon ciel is visible; no additional gameplay scroll.
@@ -2840,6 +2859,7 @@ function startBadgeCooldownRefresh(){
  if(badgeCooldownRefreshTimer)clearInterval(badgeCooldownRefreshTimer);
  badgeCooldownRefreshTimer=setInterval(()=>{
   if(document.getElementById("mapModal")?.hidden){clearInterval(badgeCooldownRefreshTimer);badgeCooldownRefreshTimer=null;return}
+  if(skyNavigation.selectedConstellation()?.canonicalOnly)return;
   document.querySelectorAll("#puzzleGrid .puzzle-card").forEach((card,offset)=>{
    const range=mapConstellationRange(mapConstellation)||constellationGridRange(mapConstellation);
    const index=range?.quests?.[offset];

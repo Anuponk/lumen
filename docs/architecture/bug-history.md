@@ -81,3 +81,20 @@ visibility, exact canonical membership, refresh, overview, return to Grand Chien
 and unchanged board/progression/attempt. No quest identity, reward or save changes.
 Onboarding impact: no new destination or gesture; the existing Mon ciel tour
 and legacy badge/star panels remain visible for their intended constellation.
+
+
+## Canonical constellation detail bypasses normal formatting (`bca5ef3` follow-up)
+
+Hiding the dormant Grand Chien panels exposed the separate unstyled canonical
+list. It lacked the normal two-row quest grid, earned badge slots, badge legend
+and constellation card. A browser regression fails against that release.
+Remove the parallel list renderer: the game screen resolves the selected stable
+constellation ID into the existing card renderer, preserving availability,
+replay and launch behavior. Canonical-only star cards use the licensed atlas and
+completed canonical quests; the legacy cooldown timer must skip those cards.
+Mobile/desktop tests compare geometry against Grand Chien and verify live earned
+badges after a timer tick without changing the active attempt. Desktop card width
+is capped because visual inspection also found the shared layout clipped the star
+card. Screenshots are inspected locally; no production player save is used.
+Onboarding impact: the same quest, badge and sky panels remain the tutorial's
+existing targets. No rule, unlock, reward or gesture changes.

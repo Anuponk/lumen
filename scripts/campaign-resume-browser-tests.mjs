@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
 import {connectBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 const {send,evaluate,errors}=await connectBrowser();
 const all=canonicalQuestList(),boundary=all.find(q=>q.id==='planned-real-24-q10'),next=all.find(q=>q.ordinal===boundary.ordinal+1);
 const done=all.filter(q=>q.ordinal<=boundary.ordinal),solved=Object.fromEntries(done.filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1]));
 const profile={solved,historyBackup:solved,badges:{},stars:{},performances:{},noHint:{},canonicalQuestState:Object.fromEntries(done.filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true,stars:1,badges:{}}])),daily:{dates:{},rewards:{}},challenges:{},xp:1000,shards:3,skyScore:298,skyHistoryVersion:4};
-const fixture=`localStorage.setItem('lumenSound','off');if(!sessionStorage.getItem('grandChienFixture')){localStorage.setItem('lumenCloudOwnerId','synthetic-frontier');localStorage.setItem('lumenProgressV1',JSON.stringify(${JSON.stringify(profile)}));sessionStorage.setItem('grandChienFixture',JSON.stringify(${JSON.stringify(profile)}));}
+const fixture=`localStorage.setItem('lumenTutorialSeen','1');localStorage.setItem('lumenTutorialCompletedV1','1');localStorage.setItem('lumenSound','off');if(!sessionStorage.getItem('grandChienFixture')){localStorage.setItem('lumenCloudOwnerId','synthetic-frontier');localStorage.setItem('lumenProgressV1',JSON.stringify(${JSON.stringify(profile)}));sessionStorage.setItem('grandChienFixture',JSON.stringify(${JSON.stringify(profile)}));}
 if(sessionStorage.getItem('solvedBoardOnLoad')){const a=JSON.parse(localStorage.getItem('lumenActiveAttemptV1'));a.board=JSON.parse(sessionStorage.getItem('solvedBoardOnLoad'));localStorage.setItem('lumenActiveAttemptV1',JSON.stringify(a));sessionStorage.removeItem('solvedBoardOnLoad');}
 window.__profile=JSON.parse(sessionStorage.getItem('grandChienFixture'));window.__canonicalReceipts=new Map(JSON.parse(sessionStorage.getItem('canonicalReceipts')||'[]'));window.__canonicalGrants=Number(sessionStorage.getItem('canonicalGrants')||0);
 if(sessionStorage.getItem('recreatedCaptureOnLoad')){const fixture=JSON.parse(sessionStorage.getItem('recreatedCaptureOnLoad'));localStorage.setItem('lumenActiveAttemptV1',JSON.stringify(fixture.attempt));localStorage.setItem('lumenCanonicalVictoryOutboxV2:'+fixture.entry.userId+':'+fixture.entry.operationId,JSON.stringify(fixture.entry));if(fixture.paused)localStorage.setItem('lumenCanonicalVictoryRetryV1:'+fixture.entry.userId+':v2-'+fixture.entry.operationId,JSON.stringify({version:1,userId:fixture.entry.userId,questId:fixture.entry.questId,operationId:fixture.entry.operationId,intentCreatedAt:fixture.entry.createdAt,kind:'review',code:'22023'}));sessionStorage.removeItem('recreatedCaptureOnLoad');}
@@ -49,17 +51,37 @@ try{
  await evaluate(`document.getElementById('openSky').click()`);
  const browsingBefore=await evaluate(`({snapshot:lumenDiagnostics.snapshot(),attempt:localStorage.getItem('lumenActiveAttemptV1')})`);
  await evaluate(`document.querySelector('#adventureRail [data-pack-id="${next.packId}"]').click();while(!document.querySelector('#sectorTabs [data-content-id="${next.constellationId}"]'))document.getElementById('constellationNext').click();document.querySelector('#sectorTabs [data-content-id="${next.constellationId}"]').click()`);
- const detailVisibility=()=>evaluate(`Object.fromEntries(['puzzleGrid','performanceLegend','skyCard','canonicalConstellationQuests'].map(id=>[id,document.getElementById(id).getClientRects().length>0]))`);
- assert.deepEqual(await detailVisibility(),{puzzleGrid:false,performanceLegend:false,skyCard:false,canonicalConstellationQuests:true},'Dauphin detail must visibly exclude the dormant Grand Chien grid and its stars');
- assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#canonicalConstellationQuests [data-quest-id]'),b=>b.dataset.questId)`),all.filter(q=>q.constellationId===next.constellationId).map(q=>q.id),'Dauphin shows exactly its catalogue quests');
+ const detailVisibility=()=>evaluate(`Object.fromEntries(['puzzleGrid','performanceLegend','skyCard'].map(id=>[id,document.getElementById(id).getClientRects().length>0]))`);
+ assert.deepEqual(await detailVisibility(),{puzzleGrid:true,performanceLegend:true,skyCard:true},'Dauphin uses the standard quest grid, badge legend and constellation card');
+ assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#puzzleGrid [data-quest-id]'),b=>b.dataset.questId)`),all.filter(q=>q.constellationId===next.constellationId).map(q=>q.id),'Dauphin shows exactly its catalogue quests');
  await evaluate('lumenDiagnostics.refreshSky()');
- assert.equal((await detailVisibility()).puzzleGrid,false,'Refreshing the sky keeps the selected canonical detail isolated');
+ assert.deepEqual(await detailVisibility(),{puzzleGrid:true,performanceLegend:true,skyCard:true},'Refresh retains the standard detail');
+ assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#puzzleGrid [data-quest-id]'),b=>b.dataset.questId)`),all.filter(q=>q.constellationId===next.constellationId).map(q=>q.id),'Refresh cannot substitute Grand Chien quests');
+ const dauphinLayouts=[];
+ for(const viewport of [{width:390,height:844},{width:1440,height:900}]){
+  await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1,mobile:viewport.width<700});
+  const layout=await evaluate(`(()=>{const grid=document.getElementById('puzzleGrid'),cards=[...grid.querySelectorAll('.puzzle-card')];return {display:getComputedStyle(grid).display,cards:cards.map(b=>{const r=b.getBoundingClientRect();return {aspect:getComputedStyle(b).aspectRatio,width:r.width,height:r.height,inside:r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight}}),stars:document.querySelector('#skyCard .sky-name').textContent,diagram:document.querySelectorAll('#skyCard .sky-star').length,diagramHeight:document.querySelector('#skyCard .sky-svg').getBoundingClientRect().height,locked:cards.slice(1).every(b=>b.disabled&&!!b.querySelector('.puzzle-lock-only')),current:!!cards[0].querySelector('.puzzle-new-icon'),panels:['performanceLegend','skyCard','openMyChallenges'].map(id=>{const r=document.getElementById(id).getBoundingClientRect(),sheet=document.querySelector('#mapModal .map-sheet').getBoundingClientRect();return {id,height:r.height,inside:r.top>=sheet.top&&r.bottom<=sheet.bottom&&r.bottom<=innerHeight}})}})()`);
+  assert.equal(layout.display,'grid');assert(layout.cards.every(c=>c.inside),'Quest cards retain the standard layout inside the viewport: '+JSON.stringify(layout));
+  dauphinLayouts.push({viewport,layout});
+  assert(layout.panels.every(p=>p.inside&&p.height>20),'Standard detail panels fit inside the sheet: '+JSON.stringify(layout.panels));
+  assert.equal(layout.stars,'Dauphin');assert(layout.diagram>0);assert(layout.diagramHeight>=80,'The constellation drawing stays legible');assert(layout.locked);assert(layout.current);
+  const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(tmpdir(),'lumen-dauphin-detail-'+viewport.width+'.png'),Buffer.from(shot.data,'base64'));
+ }
+ await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
  assert.deepEqual(await evaluate(`({snapshot:lumenDiagnostics.snapshot(),attempt:localStorage.getItem('lumenActiveAttemptV1')})`),browsingBefore,'Browsing Dauphin must preserve the live board, progression and attempt');
  await evaluate(`document.getElementById('constellationBack').click()`);
  assert.equal(await evaluate(`document.getElementById('mapDetail').getClientRects().length`),0,'Overview hides both quest detail panels');
 
  await evaluate(`document.querySelector('#adventureRail [data-pack-id="real-adventure-03"]').click();document.querySelector('#sectorTabs [data-content-id="real-24"]').click()`);
- assert.deepEqual(await detailVisibility(),{puzzleGrid:true,performanceLegend:true,skyCard:true,canonicalConstellationQuests:false},'Returning to Grand Chien restores only its legacy detail');
+ assert.deepEqual(await detailVisibility(),{puzzleGrid:true,performanceLegend:true,skyCard:true},'Returning to Grand Chien restores only its legacy detail');
+ for(const {viewport,layout} of dauphinLayouts){
+  await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1,mobile:viewport.width<700});
+  const reference=await evaluate(`(()=>{const r=document.querySelector('#puzzleGrid .puzzle-card').getBoundingClientRect();return {width:r.width,height:r.height,aspect:getComputedStyle(document.querySelector('#puzzleGrid .puzzle-card')).aspectRatio}})()`);
+  assert.equal(reference.aspect,layout.cards[0].aspect);
+  assert(Math.abs(reference.width-layout.cards[0].width)<2&&Math.abs(reference.height-layout.cards[0].height)<2,'Dauphin card dimensions match Grand Chien: '+JSON.stringify({viewport,reference,card:layout.cards[0]}));
+ }
+ await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+
  await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="${boundary.id}"]').click()`);
  await acknowledgeLearningMilestones(evaluate);
  await evaluate(`document.getElementById('successNew').click()`);
@@ -92,7 +114,7 @@ try{
  await until(`document.getElementById('mobileAuthAction').textContent==='D'+String.fromCharCode(233)+'connexion'&&document.getElementById('retryAccountSync').hidden===true`);
  // Account switching must isolate the old attempt; explicitly enter the target
  // canonical quest through the new owner's sky before testing victory/resume.
- await evaluate(`document.getElementById('openSky').click();document.querySelector('#adventureRail [data-pack-id="${next.packId}"]').click();while(!document.querySelector('#sectorTabs [data-content-id="${next.constellationId}"]')){const nextPage=document.getElementById('constellationNext');if(nextPage.disabled)throw Error('Canonical fixture constellation not found');nextPage.click()}document.querySelector('#sectorTabs [data-content-id="${next.constellationId}"]').click();document.querySelector('#canonicalConstellationQuests [data-quest-id="${next.id}"]').click()`);
+ await evaluate(`document.getElementById('openSky').click();document.querySelector('#adventureRail [data-pack-id="${next.packId}"]').click();while(!document.querySelector('#sectorTabs [data-content-id="${next.constellationId}"]')){const nextPage=document.getElementById('constellationNext');if(nextPage.disabled)throw Error('Canonical fixture constellation not found');nextPage.click()}document.querySelector('#sectorTabs [data-content-id="${next.constellationId}"]').click();document.querySelector('#puzzleGrid [data-quest-id="${next.id}"]').click()`);
  await acknowledgeLearningMilestones(evaluate);
  await evaluate(`document.getElementById('attemptMask').click()`);
  const beforeWin=await evaluate(`({xp:window.__profile.xp,legacy:JSON.stringify(window.__profile.solved),performances:JSON.stringify(window.__profile.performances),attempt:JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).attemptId,questId:JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).questId})`);
@@ -135,6 +157,18 @@ try{
  assert.equal(resumed.attemptId,active.attemptId);assert.equal(resumed.questId,following.id);assert.deepEqual(resumed.board,active.board);
  assert.equal(await evaluate('window.__canonicalGrants'),1);assert.equal(await evaluate('window.__profile.xp'),afterWin.xp);
  assert.equal(await evaluate(`!!window.__profile.canonicalQuestState[${JSON.stringify(following.id)}]?.solved`),false);
+ // Earned canonical badges use the same four-slot cards; periodic legacy
+ // cooldown refresh must never replace them with a dormant numeric quest.
+ await evaluate(`document.getElementById('openSky').click();document.querySelector('#adventureRail [data-pack-id="${next.packId}"]').click();document.querySelector('#sectorTabs [data-content-id="${next.constellationId}"]').click()`);
+ const expectedBadges=await evaluate(`Object.values(window.__profile.canonicalQuestState[${JSON.stringify(next.id)}].badges).filter(Boolean).length`);
+ const earnedCount=()=>evaluate(`document.querySelectorAll('#puzzleGrid [data-quest-id="${next.id}"] .performance-slot.earned').length`);
+ assert.equal(await earnedCount(),expectedBadges);assert(expectedBadges>0);
+ assert.equal(await evaluate(`document.querySelectorAll('#puzzleGrid [data-quest-id="${next.id}"] .performance-slot').length`),4);
+ assert.equal(await evaluate(`document.querySelector('#skyCard .sky-head').textContent.includes('1 / 10')`),true);
+ await new Promise(resolve=>setTimeout(resolve,16000));
+ assert.equal(await earnedCount(),expectedBadges,'Cooldown refresh preserves canonical badges');
+ assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).attemptId`),active.attemptId);
+ const earnedShot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(tmpdir(),'lumen-dauphin-detail-earned.png'),Buffer.from(earnedShot.data,'base64'));
  assert.deepEqual(errors,[]);
  const report={authenticatedMobile:true,grandChienToDauphin:true,canonicalReload:true,attemptIdentityPreserved:true,accountSwitchIsolated:true,canonicalBannerIsolated:true,canonicalStartMetadataArchived:true,canonicalVictoryConfirmed:true,oneGrant:true,quest:next.ordinal,solvedBoardResumedAfterAuth:true,committedReceiptResumed:true,recreatedCaptureArchived:true,oldQuestRecoveryPreservesActiveBoard:true,canonicalRewardCelebration:true};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));
