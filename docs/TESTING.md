@@ -720,3 +720,9 @@ capture under an already committed attempt, requires verified success, identical
 attempt/XP, one grant and a byte-equivalent archived entry. This uses simulated
 RPCs and real browser storage, not a production account session. Live affected
 phone confirmation is still required after publication.
+
+The campaign-resume RPC fixture also enforces exact JSONB-style CAS baseline
+equality before snapshot replacement, with a deliberately stale-baseline probe.
+A permissive mock previously accepted stale snapshots and could overwrite a
+just-confirmed synthetic canonical reward; this does not reflect PostgreSQL CAS.
+The success assertion retains exact quest, grant, XP and attempt checks.

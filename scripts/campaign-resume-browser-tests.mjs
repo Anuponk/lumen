@@ -12,7 +12,7 @@ window.__profile=JSON.parse(sessionStorage.getItem('grandChienFixture'));window.
 if(sessionStorage.getItem('recreatedCaptureOnLoad')){const fixture=JSON.parse(sessionStorage.getItem('recreatedCaptureOnLoad'));localStorage.setItem('lumenActiveAttemptV1',JSON.stringify(fixture.attempt));localStorage.setItem('lumenCanonicalVictoryOutboxV2:'+fixture.entry.userId+':'+fixture.entry.operationId,JSON.stringify(fixture.entry));sessionStorage.removeItem('recreatedCaptureOnLoad');}
 window.supabase={createClient(){return {auth:{getSession:async()=>{await new Promise(resolve=>setTimeout(resolve,300));return {data:{session:{user:{id:sessionStorage.getItem('grandChienOwner')||'synthetic-frontier'}}}}},onAuthStateChange(){}},rpc:async(name,args)=>{
  if(name==='lumen_restore_profile')return {data:structuredClone(window.__profile)};
- if(name==='lumen_cas_profile'){if(JSON.stringify(args.p_payload.performances||{})!==JSON.stringify(window.__profile.performances||{}))return {data:null,error:{code:'22023',message:'legacy victory command required; preserve pending data and update client'}};window.__profile=structuredClone(args.p_payload);sessionStorage.setItem('grandChienFixture',JSON.stringify(window.__profile));return {data:true}};
+ if(name==='lumen_cas_profile'){const stable=value=>value&&typeof value==='object'&&!Array.isArray(value)?Object.fromEntries(Object.keys(value).sort().map(key=>[key,stable(value[key])])):Array.isArray(value)?value.map(stable):value;if(JSON.stringify(stable(args.p_expected))!==JSON.stringify(stable(window.__profile)))return {data:false,error:null};if(JSON.stringify(args.p_payload.performances||{})!==JSON.stringify(window.__profile.performances||{}))return {data:null,error:{code:'22023',message:'legacy victory command required; preserve pending data and update client'}};window.__profile=structuredClone(args.p_payload);sessionStorage.setItem('grandChienFixture',JSON.stringify(window.__profile));return {data:true}};
  if(name==='lumen_canonical_command_version')return {data:1,error:null};
  if(name==='lumen_get_canonical_command')return {data:window.__canonicalReceipts.get(args.p_operation_id)??null,error:null};
  if(name==='lumen_commit_canonical_command'){
@@ -40,6 +40,7 @@ try{
  await new Promise(r=>setTimeout(r,700));
  await until(`!!window.lumenDiagnostics&&JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='hydration_ready')`);
  await acknowledgeLearningMilestones(evaluate);
+ assert.equal(await evaluate(`(async()=>{const client=window.supabase.createClient();const expected=structuredClone(window.__profile);expected.xp++;return (await client.rpc('lumen_cas_profile',{p_expected:expected,p_payload:structuredClone(window.__profile)})).data;})()`,true),false,'Fixture CAS must reject a stale baseline exactly as PostgreSQL does');
  assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().puz.reg'),next.reg,'Verified startup resumes Dauphin directly');
  await evaluate(`document.getElementById('openSky').click()`);
  await evaluate(`document.querySelector('#adventureRail [data-pack-id="real-adventure-03"]').click();document.querySelector('#sectorTabs [data-content-id="real-24"]').click()`);
@@ -74,7 +75,8 @@ try{
 
  await until(`document.getElementById('mobileAuthAction').textContent==='D'+String.fromCharCode(233)+'connexion'&&document.getElementById('retryAccountSync').hidden===true`);
  await evaluate(`document.getElementById('attemptMask').click()`);
- const beforeWin=await evaluate(`({xp:window.__profile.xp,legacy:JSON.stringify(window.__profile.solved),performances:JSON.stringify(window.__profile.performances),attempt:JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).attemptId})`);
+ const beforeWin=await evaluate(`({xp:window.__profile.xp,legacy:JSON.stringify(window.__profile.solved),performances:JSON.stringify(window.__profile.performances),attempt:JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).attemptId,questId:JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).questId})`);
+ assert.equal(beforeWin.questId,next.id,'The second account must enter the canonical fixture before solving');
  // Persist a solved running board without rendering a victory, then cold-reload.
  // Auth is deliberately slower than board restoration (the reported phone sequence).
  await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();const solved=s.puz.reg.map(row=>row.map(()=>0));s.puz.sol.forEach((col,row)=>solved[row][col]=2);sessionStorage.setItem('solvedBoardOnLoad',JSON.stringify(solved));})()`);
@@ -82,7 +84,7 @@ try{
  await until(`document.getElementById('successOverlay').classList.contains('show')`);
  const afterWin=await evaluate(`({grants:window.__canonicalGrants,xp:window.__profile.xp,legacy:JSON.stringify(window.__profile.solved),performances:JSON.stringify(window.__profile.performances),saved:!!window.__profile.canonicalQuestState[${JSON.stringify(next.id)}]?.solved,attempt:JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).attemptId})`);
  assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='canonical_victory_failed'&&e.stage==='context')`),false,'Startup session restoration is not a storage failure');
- assert.equal(afterWin.saved,true);assert.equal(afterWin.grants,1,'Concurrent render notifications grant once');
+ assert.equal(afterWin.saved,true,JSON.stringify({beforeWin,afterWin}));assert.equal(afterWin.grants,1,'Concurrent render notifications grant once');
  assert.equal(afterWin.legacy,beforeWin.legacy);assert.equal(afterWin.performances,beforeWin.performances);assert.equal(afterWin.attempt,beforeWin.attempt);
  assert(afterWin.xp>beforeWin.xp);
  // Reproduce the old client's later capture under the same already committed ID.
