@@ -2,7 +2,7 @@
 
 ## Account access (2026-10-18)
 
-Offer **Continuer avec Google**, email plus password (create account / existing account), and **Continuer sans compte**. Remove code-email login. Former passwordless players use **Créer ou réinitialiser mon mot de passe** with the same email, preserving their existing account. Recovery opens a visible password editor. Distinguish an authenticated account still restoring its save from a guest; a restore failure offers **Réessayer la synchronisation**, never a destructive reset. The early guest discovery and learning sequence remain unchanged.
+Offer **Continuer avec Google**, email plus password (create account / existing account), and **Continuer sans compte**. Remove code-email login. Former passwordless players use **Créer ou réinitialiser mon mot de passe** with the same email, preserving their existing account. Recovery opens a visible password editor. Distinguish an authenticated account still restoring its save from a guest; a restore failure offers **Réessayer la synchronisation**, never a destructive reset. During initial session restoration, show a connection check with the account action disabled; offer sign-in only after the SDK confirms a guest session. The early guest discovery and learning sequence remain unchanged.
 
 The account menu always exposes **Diagnostic de synchronisation**, independently
 of administration permissions and victory dialogs. The existing bounded local
