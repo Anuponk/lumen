@@ -24,3 +24,10 @@ Baseline: `bef5f32`. Paths are repository-relative. Consult relevant rows only. 
 | Observability | UI `recordCloudDiagnostic` → bounded history, health counters, `lumen_record_sync_health`; `src/analytics/events.js` is separate | Independent best-effort channels, not acknowledgement. Server incidents: `supabase/migrations/20261017181513_sync_health_incident_tracking.sql` |
 
 Legacy/canonical coexistence and conservative recovery do not mean every reward already has server transaction authority. Read the cloud contract before changing either path.
+
+
+Historical counter-only snapshot updates use the existing profile/CAS boundary
+and private authority trigger; `20261020081735_legacy_attempt_counter_metadata.sql`
+allows monotonic attempts while retaining exact command-owned reward evidence.
+The owning compatibility/rollback contract is DATA_AND_ARCHITECTURE, with
+client/SQL/concurrency coverage in TESTING. No new public RPC or writer exists.

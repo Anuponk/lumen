@@ -657,3 +657,22 @@ unchanged inputs/local bytes, both recovery copies and one refused write without
 fallback. The account-session browser regression verifies that the field names
 reach the actual local diagnostic on mobile/desktop under simulated Auth/RPC.
 This is diagnostic coverage, not repair of an affected account's divergent save.
+
+
+## Historical attempt-count compatibility
+
+`legacy-command-client-tests.mjs` verifies both counter-only reconciliation paths:
+maximum cumulative summary, exact server reward/cursor preservation, independent
+read-back, original local bytes and both recovery copies. The isolated
+`fixtures/legacy-attempt-counter.sql` fails under the original authority trigger
+and passes with `20261020081735_legacy_attempt_counter_metadata.sql`. It exercises
+counter-only CAS and backup, stale expected state, idempotence, invalid/deleted/
+decreasing/overflowing counters, reward/evidence/version/revision/XP smuggling,
+transaction rollback, immutable receipts, other-account isolation, exact private
+projection and the next legitimate command. Private helpers remain inaccessible
+to anon/authenticated. PostgreSQL CI also races counter-only CAS against a real
+command in `legacy-command-concurrency.py`; either order preserves one grant,
+all receipts and a monotonic count. Local embedded PostgreSQL is additional
+validation, not a substitute for CI PostgreSQL 17 or affected-device verification.
+No fixture may run against production. Applying the migration requires separate
+approval; passing tests do not establish repair of any existing phone save.

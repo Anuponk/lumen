@@ -47,3 +47,24 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
     assert stale.result().returncode != 0
 assert query(f"select payload->>'xp',payload->'performances'->'5'->>'attempts' from lumen.profile_snapshots where user_id='{uid}'").stdout.strip() == '40|5'
 print('Historical concurrent duplicates, separate runs, conflicting evidence and stale backup: no double reward or lost projection')
+
+
+# Counter-only CAS racing a real command: CAS wins before the command or refuses
+# its stale expected snapshot. Neither order loses a command or grants twice.
+before = json.loads(query(f"select payload from lumen.profile_snapshots where user_id='{uid}'").stdout.strip())
+stat = json.loads(json.dumps(before))
+stat['performances']['5']['attempts'] += 5
+with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+    command = pool.submit(commit, 'metadata-race-reset-0')
+    counter = pool.submit(query, f"begin; select set_config('request.jwt.claim.sub','{uid}',true); select public.lumen_cas_profile('{json.dumps(before)}','{json.dumps(stat)}'); commit;")
+    command.result()
+    result = counter.result()
+assert result.returncode == 0, result.stderr
+counter_won = 't' in result.stdout.splitlines()
+after = json.loads(query(f"select payload from lumen.profile_snapshots where user_id='{uid}'").stdout.strip())
+expected = stat['performances']['5']['attempts'] + 1 if counter_won else before['performances']['5']['attempts'] + 1
+assert after['performances']['5']['attempts'] == expected, (counter_won, after)
+assert after['xp'] == before['xp'] and after['shards'] == before['shards']
+assert query(f"select count(*) from lumen_commands.legacy_receipts where user_id='{uid}'").stdout.strip() == '6'
+assert query(f"select a.projection=lumen_commands.legacy_projection(p.payload) from lumen_commands.legacy_authority a join lumen.profile_snapshots p using(user_id) where a.user_id='{uid}'").stdout.strip() == 't'
+print('Counter metadata CAS/command race preserves exact receipt, cumulative count, reward projection and one grant')

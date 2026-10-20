@@ -370,3 +370,18 @@ test('authority refusal reports bounded performance metadata without exposing va
   assert.equal(JSON.stringify({local,cloud}),before);
  }
 });
+
+
+test('counter-only reconciliation preserves server rewards, receipts cursor and local recovery copies',async()=>{
+ for(const reconcile of [reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles]){
+  const cloud={...revisionBase(),catalogueOrigin:2,legacyVictoryRevision:7,performances:{195:{version:3,attempts:1,badges:{speed:true}}}};
+  const local=structuredClone(cloud);local.performances[195].attempts=4;
+  const f=revisionFixture(local,cloud),result=await reconcile(f.client,f.storage,cloud);
+  assert.equal(result.status,'reconciled');assert.equal(result.profile.performances[195].attempts,4);
+  const withoutCount=structuredClone(result.profile);withoutCount.performances[195].attempts=1;
+  assert.deepEqual(withoutCount,cloud,'No completion, badge, reward or server cursor is manufactured');
+  assert.deepEqual(f.calls,['lumen_cas_profile','lumen_restore_profile']);
+  assert.equal(f.storage.getItem('lumenProgressV1'),f.raw);
+  assert.equal([...f.data.keys()].filter(k=>k.startsWith('lumenBeforeCloudReconcile')).length,2);
+ }
+});
