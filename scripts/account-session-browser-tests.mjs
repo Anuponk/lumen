@@ -90,6 +90,7 @@ async function verifyIsolatedRecovery(){
  const before=await evaluate(`({local:localStorage.getItem('lumenProgressV1'),loads:sessionStorage.getItem('fixtureIsolatedLoads'),snapshots:window.__fixtureSnapshotWrites})`);
  assert.equal(before.snapshots,1,'The protected CAS is refused once without a fallback write');
  assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='hydration_reconciliation'&&e.reason==='legacy_command_required')`),true);
+ assert.deepEqual(await evaluate(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')).find(e=>e.event==='hydration_reconciliation'&&e.reason==='legacy_command_required').fields`,true),['solved'],'Mobile diagnostic identifies the protected difference without including progress values');
  await evaluate(`(async()=>{
   const {createDurableCanonicalVictoryOutbox}=await import('/src/persistence/durable-canonical-outbox.js');
   await createDurableCanonicalVictoryOutbox(localStorage).enqueue('fixture-player',${JSON.stringify(quest.id)},{badges:{autonomy:true},performance:{seconds:20,assisted:false}},{operationId:'isolated-browser-'+Date.now()});

@@ -36,7 +36,15 @@ messages/details/hints are not attached to the thrown error. The existing
 hydration recorder can therefore identify authority, permission or RPC refusals
 without copying save contents. Codes do not establish that any specific player
 hit a particular guard and do not change write acceptance, retries or recovery.
-No migration or Auth change is required.
+No migration or Auth change is required. After an exact historical authority refusal,
+reconciliation also returns the names of protected fields that differ between
+the attempted snapshot and the last verified cloud read. The first numeric
+performance entry may include its quest index and bounded known key names;
+unknown keys become `other`. Cooldown timestamps are excluded as in the server
+projection. No values, arbitrary property names or full profiles enter this
+diagnostic. These differences are evidence for investigation, not permission to
+merge rewards, discard local progress or retry through a different writer.
+
 
 
 ### Profile field classification and transition audit (2026-10-19)
