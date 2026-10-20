@@ -51,7 +51,7 @@ const authNodes=new Map();
 for(const id of ['mobileAuthStatus','mobileAuthAction','mobileAccount','mobileAuthPopover','guestSaveExplainer','accountProfileEditor','editAccountProfile','retryAccountSync'])authNodes.set(id,{textContent:'',disabled:false,hidden:false,dataset:{},classList:{toggle(){}},setAttribute(){}});
 const recoveryState=new Map([['lumenPasswordRecoveryPending','1']]);
 const menuContext=vm.createContext({document:{getElementById:id=>authNodes.get(id)},sessionStorage:{getItem:k=>recoveryState.get(k)??null,removeItem:k=>recoveryState.delete(k)},
- syncAdministrationMenu(){},lumenUser:null,lumenSupabase:{},authSessionPending:true,canonicalOutboxNotice:null,cloudProfileReady:false,cloudProfileFailure:null,lumenNickname:''});
+ syncAdministrationMenu(){},lumenUser:null,lumenSupabase:{},authSessionPending:true,canonicalOutboxNotice:null,cloudProfileReady:false,cloudProfileFailure:null,lumenNickname:'',cloudProfileBusy:false,cloudProfileDirty:false,navigator:{onLine:true}});
 vm.runInContext(functionSource(ui,'syncMobileAuthUI'),menuContext);menuContext.syncMobileAuthUI();
 assert.equal(authNodes.get('mobileAuthAction').disabled,true,'No sign-in prompt while an existing session is still loading');
 assert(!authNodes.get('mobileAuthAction').textContent.includes('Se connecter'));
@@ -62,3 +62,23 @@ assert.equal(authNodes.get('mobileAuthAction').disabled,false);assert(!authNodes
 menuContext.lumenUser=null;menuContext.syncMobileAuthUI();
 assert.equal(authNodes.get('mobileAuthAction').disabled,false);assert(authNodes.get('mobileAuthAction').textContent.includes('Se connecter'));
 console.log('The mobile account menu distinguishes pending restoration, a restored account and a confirmed guest');
+
+// A nickname must never replace the actual sync verdict.
+recoveryState.clear();menuContext.lumenUser={id:'restored-player'};menuContext.lumenNickname='Anupon';menuContext.cloudProfileReady=true;
+menuContext.cloudProfileBusy=false;menuContext.cloudProfileDirty=false;menuContext.navigator={onLine:true};
+menuContext.syncMobileAuthUI();
+assert.match(authNodes.get('mobileAuthStatus').textContent,/Progression synchronis/,'Healthy named accounts need an explicit success verdict');
+for(const change of ['busy','dirty','offline','failure','pending']){
+ menuContext.cloudProfileBusy=change==='busy';menuContext.cloudProfileDirty=change==='dirty';menuContext.navigator.onLine=change!=='offline';
+ menuContext.cloudProfileFailure=change==='failure'?{reason:'legacy_mirror'}:null;menuContext.canonicalOutboxNotice=change==='pending'?'pending':null;
+ menuContext.syncMobileAuthUI();assert.doesNotMatch(authNodes.get('mobileAuthStatus').textContent,/Progression synchronis/,change+' must not announce successful synchronization');
+}
+
+// Finishing a flush refreshes a diagnostic already open, after clearing busy.
+const verdicts=[];
+const flushContext=vm.createContext({legacyCommandInFlight:false,cloudProfileBusy:false,cloudProfileDirty:false,cloudProfileReady:true,
+ lumenUser:{id:'a'},lumenSupabase:{},qaActive:false,authSessionPending:false,lumenProgress:{solved:{},badges:{}},cloudProfileBaseline:{solved:{},badges:{}},cloudProfileInFlight:null,cloudProfileFailure:null,
+ compareAndSwapCloudProfile:async()=>({solved:{},badges:{}}),verifyLegacyProgressMirror:async()=>({ok:true}),recordCloudDiagnostic(){},
+ syncMobileAuthUI(){verdicts.push(flushContext.cloudProfileBusy)}});
+vm.runInContext(functionSource(ui,'flushCloudProfile'),flushContext);
+assert.equal(await flushContext.flushCloudProfile(),true);assert.deepEqual(verdicts,[false],'Refresh the visible verdict after releasing the busy state');

@@ -164,3 +164,13 @@ and present on the verified profile. First completion shows its one star;
 replay shows only newly gained badges, without another star. Previously owned
 badges are not announced again. Legacy achievement copy remains separate from
 canonical identity. Eligibility, controls and learning milestones are unchanged.
+
+The account menu must state **Progression synchronisée** explicitly for a
+verified, ready account without pending work or failure; a nickname supplements
+that verdict instead of replacing it. Pending local writes, offline mode,
+restoration, recovery, failure and pending victories must not show success.
+The diagnostic remains accessible in healthy states: show a readable **État
+actuel** above the technical journal and explain that historical incidents may
+already be resolved. This summary follows current state, never the mere presence
+of older error events. Opening the panel refreshes the summary without a server
+request. The copied report remains privacy-safe and excludes nickname/identity.

@@ -734,3 +734,15 @@ The mobile campaign fixture checks the visible animated canonical reward panel,
 then advances to the following quest, places a Guardian and reloads with an old
 quest's paused duplicate. It requires archival/recovery, no pending-sync notice,
 one grant/unchanged XP, and the exact active quest/attempt/board retained.
+
+Explicit sync verdict: account-session Node tests require a healthy named account
+to show a success verdict, and forbid it for busy/dirty/offline/failed/pending
+states. Existing Auth/recovery guards remain covered. Diagnostics keep their
+privacy/copy-fallback assertions and require an accessible current-state summary.
+The campaign browser fixture opens the account menu and diagnostic and checks
+that the visible summary matches the current verdict above the technical log.
+
+The account-switch browser setup explicitly opens its target canonical quest
+through the new account’s sky and canonical quest panel, including catalogue-driven
+pagination. A switched account need not inherit the previous account’s active
+quest. Exact quest, attempt, grant, XP and archive assertions remain mandatory.
