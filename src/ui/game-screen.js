@@ -360,6 +360,17 @@ function canReplayCanonicalOutbox(){
  if(cloudProfileReady)return !cloudProfileDirty;
  return cloudProfileFailure?.reason==="partial_reconciliation"&&canonicalRecoveryContext?.userId===lumenUser.id&&canonicalRecoveryContext?.client===lumenSupabase;
 }
+async function recoverQueuedCanonicalReceipt(ownerId,client,entry,sessionValid){
+ if(!sessionValid()||entry.userId!==ownerId||!entry.operationId)return null;
+ const quest=canonicalQuestList().find(q=>q.id===entry.questId&&q.legacyIndex===null);
+ if(!quest)return null;
+ const committed=await loadCommittedCanonicalAttempt(client,quest,entry.operationId,{userId:ownerId,sessionValid});
+ if(!sessionValid()||!committed)return null;
+ await canonicalVictoryOutbox.archiveRecreatedCapture(ownerId,entry,committed,{sessionValid});
+ if(!sessionValid())return null;
+ recordCloudDiagnostic('canonical_queued_receipt_recovered',{count:1});
+ return committed;
+}
 async function retryPendingCanonicalOutboxOnReconnect(){
  if(canonicalOutboxRetryInFlight||!canReplayCanonicalOutbox())return;
  const userId=lumenUser.id,client=lumenSupabase;
@@ -372,7 +383,7 @@ async function retryPendingCanonicalOutboxOnReconnect(){
   if(!sessionValid())return;
   if(!remaining.length)return;
   const confirmed=await replayCanonicalVictoryOutbox(canonicalVictoryOutbox,userId,
-   (questId,reward,options)=>commitCanonicalVictory(client,questId,reward,options),{sessionValid,onIssue:issue=>recordCloudDiagnostic("canonical_outbox_recovery_pending",{reason:issue.kind})});
+   (questId,reward,options)=>commitCanonicalVictory(client,questId,reward,options),{sessionValid,recoverCommitted:entry=>recoverQueuedCanonicalReceipt(userId,client,entry,sessionValid),onIssue:issue=>recordCloudDiagnostic("canonical_outbox_recovery_pending",{reason:issue.kind})});
   if(!sessionValid())return;
   if(confirmed.length){
    recordCloudDiagnostic("canonical_outbox_reconnect_replayed",{count:confirmed.length});
@@ -453,7 +464,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   try{await canonicalVictoryOutbox.resume(accountId,{kind:'auth'})}catch{recordCloudDiagnostic("canonical_outbox_resume_pending",{reason:"storage"})}
   if(!sessionValid())return;
   const recovered=await replayCanonicalVictoryOutbox(canonicalVictoryOutbox,accountId,
-   (questId,reward,options)=>commitCanonicalVictory(hydrationClient,questId,reward,options),{sessionValid});
+   (questId,reward,options)=>commitCanonicalVictory(hydrationClient,questId,reward,options),{sessionValid,recoverCommitted:entry=>recoverQueuedCanonicalReceipt(accountId,hydrationClient,entry,sessionValid)});
   if(!sessionValid())throw Error("Session changée pendant la reprise");
   try{await legacyVictoryOutbox.resume(accountId,{kind:'auth'})}catch{recordCloudDiagnostic('legacy_outbox_resume_pending',{reason:'storage'})}
   if(!sessionValid())return;
@@ -2052,7 +2063,9 @@ async function celebrateCanonicalSuccess(){
  document.getElementById("successTime").textContent=document.getElementById("time").textContent;
  const share=document.getElementById("successShare");if(share)share.hidden=true;
  const achievements=document.getElementById("successAchievement");if(achievements)achievements.hidden=true;
- const rewards=document.getElementById("successRewards");if(rewards)rewards.hidden=true;
+ const verifiedBadges=Object.fromEntries(['autonomy','speed','noError','mastery'].map(key=>[key,!!confirmedBadges[key]&&!!committed.profile.canonicalQuestState[q.id].badges?.[key]]));
+ renderSuccessRewards(committed.newlyCompleted?1:0,{run,badges:verifiedBadges,qualifying:true},priorBadges);
+ const rewards=document.getElementById("successRewards");if(rewards)rewards.hidden=false;
  const challenge=document.getElementById("questResult");if(challenge)challenge.hidden=true;
  document.getElementById("successNew").textContent="Quête suivante";
  document.getElementById("successOverlay").classList.add("show");refreshJourney();

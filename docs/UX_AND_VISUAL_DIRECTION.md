@@ -157,3 +157,10 @@ from the exact server receipt and current profile. It must not display another
 XP/star grant. A recognized later duplicate capture is retained in a verified
 archive before active-pending status clears; unrecognized evidence stays pending.
 No rule, badge eligibility, control or onboarding milestone changes.
+
+Canonical victory celebrations display the shared animated reward panel after
+server acknowledgement, using only badges earned by the confirmed operation
+and present on the verified profile. First completion shows its one star;
+replay shows only newly gained badges, without another star. Previously owned
+badges are not announced again. Legacy achievement copy remains separate from
+canonical identity. Eligibility, controls and learning milestones are unchanged.

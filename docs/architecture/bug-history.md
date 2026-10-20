@@ -47,3 +47,15 @@ receipt plus current projection before another command, and archive only the
 strictly recognized later capture before retiring it. Node/browser regressions
 retain refusal of better timing/new badges/unknown evidence and verify one grant.
 No production player data was modified during investigation or correction.
+
+## Previous-quest pending notice and hidden canonical rewards (`6b765bd`)
+
+Build 479 diagnostic showed healthy profile flushes but one persistent canonical
+outbox entry; the player had advanced into Dauphin. Exact-receipt recovery was
+only wired to celebration of the active quest; queued replay skipped every
+review hold. Regression reproduces a previous-quest `22023` hold and adds the
+existing proof/archive path to startup/replay without another command or board
+mutation. Other holds and unproven evidence remain. Independently, canonical
+celebration explicitly hid `successRewards`; its browser visibility regression
+fails before the fix. Reuse the animated reward renderer with confirmed badges
+and the pre-operation owned badges. No eligibility, reward rule or SQL change.

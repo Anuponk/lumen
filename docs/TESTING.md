@@ -726,3 +726,11 @@ equality before snapshot replacement, with a deliberately stale-baseline probe.
 A permissive mock previously accepted stale snapshots and could overwrite a
 just-confirmed synthetic canonical reward; this does not reflect PostgreSQL CAS.
 The success assertion retains exact quest, grant, XP and attempt checks.
+
+Queued receipt/canonical celebration regression: the outbox recovery suite
+reproduces a prior quest paused with `22023`, allows only receipt recovery, and
+retains auth/unrelated review holds, missing receipts and stale-session cases.
+The mobile campaign fixture checks the visible animated canonical reward panel,
+then advances to the following quest, places a Guardian and reloads with an old
+quest's paused duplicate. It requires archival/recovery, no pending-sync notice,
+one grant/unchanged XP, and the exact active quest/attempt/board retained.

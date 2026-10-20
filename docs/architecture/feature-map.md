@@ -30,3 +30,5 @@ Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This loo
 Continue with the matching symptom in `docs/architecture/debugging-guide.md`, then select checks from `docs/architecture/test-map.md`.
 
 Canonical committed-attempt recovery: `src/persistence/canonical-command.js` (`loadCommittedCanonicalAttempt`), `durable-canonical-outbox.js` (`archiveRecreatedCapture`) and UI `celebrateCanonicalSuccess` preserve/recover an exact owner/operation receipt without a second grant; see DATA_AND_ARCHITECTURE.
+
+Queued canonical receipt recovery: UI `recoverQueuedCanonicalReceipt` connects the exact-receipt archive path to hydration/replay for earlier quests; canonical celebration uses `renderSuccessRewards` only after verified completion.
