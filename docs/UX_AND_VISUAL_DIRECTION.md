@@ -63,6 +63,8 @@ Use **Aventure** in player-facing text; `pack` remains the content-model term. M
 
 Show at most six constellation cards per page: 2×3 on mobile and 3×2 on desktop, using the same DOM/component and pagination. Cards show silhouette, name, earned/total stars, progression lock/completion and an optional mastery indicator for all mastery-eligible quests in that constellation. Previous/Next and horizontal touch swipe change the page without changing progression. The final partial page contains only actual cards. The main modal height remains bounded even with dozens of Adventures and hundreds of constellations; use horizontal navigation rather than vertical stacking.
 
+The detail shows only the selected constellation: canonical-only quests replace the legacy quest grid, badge legend and star card; hidden panels must stay visually hidden after refresh.
+
 Selecting an unlocked constellation opens its detail in the same sheet: quests, performance badges and stars, with a **Toutes les constellations** back button. Completed quests keep their replay behavior. Mes défis stays reachable from the main sheet. Keyboard navigation is contained in the modal, Escape closes the appropriate notice/sheet, and notices restore focus. Long current-quest labels truncate on mobile so Mon ciel remains reachable.
 
 Browsing and progression are separate: opening Mon ciel defaults to the Adventure of the player's real accessible progress; consulting a previous Adventure does not change the board, current attempt, unlocked quest or rewards. A refreshed access model must invalidate an inaccessible viewed Adventure and return to an accessible view. Browsing preference is intentionally not persisted across reloads.

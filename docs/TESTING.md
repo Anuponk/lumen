@@ -221,6 +221,8 @@ Existing reward, outbox, account and SQL regressions remain required.
 Grand Chien/Dauphin resume: `campaign-resume-tests.mjs` verifies boundary selection,
 no redirect of running/paused attempts, stable-ID restoration, exclusions and
 verified account-switch backups. The additional mandatory
+The same browser suite checks rendered panel visibility when browsing Dauphin, refreshing its detail, returning to the overview and switching back to Grand Chien; browsing preserves the live board, progress and attempt.
+
 `campaign-resume-browser-tests.mjs` exercises authenticated mobile startup at the
 completed numeric boundary, the actual Next handler, reload of the started
 canonical attempt and a second account. Profiles/RPCs are synthetic; no player
