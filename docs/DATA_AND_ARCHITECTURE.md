@@ -10,6 +10,17 @@ No player-data schema or reward reconciliation policy changes with these account
 
 ## Cloud persistence contract
 
+Historical victory retry: once an exact victory intention is durably captured,
+the end-of-grid retry resumes the account-scoped canonical and historical queues
+and requests fresh hydration through the same path as the account menu. It does
+not resend a victory against a known blocked profile baseline. The callback
+checks account, Supabase client, attempt ID and captured reset counter before
+and after asynchronous resumption. An unconfirmed local capture instead keeps
+the current board and retries capture. Neither path grants optimistic rewards,
+discards intentions or changes profile/RPC schemas. The bounded pending-victory
+diagnostic identifies the failed stage without copying player facts. Existing
+unmergeable profile conflicts remain held; reloading is not proof of full sync.
+
 PWA asset freshness (2026-10-19): the HTML build label identifies the document,
 not proof that every imported native module is from that release. A real-browser
 fixture reproduces fresh HTML with an old `cloud-profile.js` even after reload,

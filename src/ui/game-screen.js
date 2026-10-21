@@ -1925,12 +1925,13 @@ const canonicalRecovery=createCloudRetryScheduler({
  },
  onError:()=>recordCloudDiagnostic("canonical_outbox_reconnect_failed",{reason:"retry"})
 });
-async function retryAccountCloudSync(){
+async function retryAccountCloudSync({sessionValid=()=>true}={}){
+ if(!sessionValid())return;
  const ownerId=lumenUser?.id,client=lumenSupabase;
  if(!ownerId){location.reload();return}
- try{await canonicalVictoryOutbox.resume(ownerId,{kind:'all'});if(lumenUser?.id!==ownerId||lumenSupabase!==client)return;await legacyVictoryOutbox.resume(ownerId,{kind:'all'})}
+ try{await canonicalVictoryOutbox.resume(ownerId,{kind:'all'});if(!sessionValid()||lumenUser?.id!==ownerId||lumenSupabase!==client)return;await legacyVictoryOutbox.resume(ownerId,{kind:'all'})}
  catch{recordCloudDiagnostic("canonical_outbox_resume_pending",{reason:"storage"});canonicalOutboxNotice="attention";updateAuthUI();return}
- if(lumenUser?.id!==ownerId||lumenSupabase!==client)return;
+ if(!sessionValid()||lumenUser?.id!==ownerId||lumenSupabase!==client)return;
  canonicalRecovery.cancel();location.reload();
 }
 async function resumeCanonicalAfterAuthRefresh(ownerId,client){
@@ -2081,33 +2082,38 @@ const legacyVictoryOutbox=createDurableCanonicalVictoryOutbox(localStorage,{name
 async function captureLegacyCommandVictory(){
  if(legacyVictoryBusy)return {handled:true};
  const ownerId=lumenUser?.id,client=lumenSupabase,index=levelIndex,attempt=attemptEngine.snapshot();
- const quest=canonicalQuestForLegacy(index);
- const sameContext=()=>lumenUser?.id===ownerId&&lumenSupabase===client&&!authSessionPending&&!qaActive&&levelIndex===index&&attemptEngine.snapshot()?.attemptId===attempt?.attemptId&&(attemptEngine.snapshot()?.resetCount||0)===(attempt?.resetCount||0);
- let intent=null;
+ const quest=canonicalQuestForLegacy(index),attemptId=attempt?.attemptId,resetCount=attempt?.resetCount||0;
+ const sameContext=()=>lumenUser?.id===ownerId&&lumenSupabase===client&&!authSessionPending&&!qaActive&&levelIndex===index&&attemptEngine.snapshot()?.attemptId===attemptId&&(attemptEngine.snapshot()?.resetCount||0)===resetCount;
+ let intent=null,victoryStage='context';
  legacyVictoryBusy=true;
  legacyVictoryRetry=null;
  try{
   if(!quest||!attempt?.attemptId||!client)throw Error('Victory context unavailable');
-  const operationId=attempt.attemptId+'-reset-'+(attempt.resetCount||0);
+  const operationId=attemptId+'-reset-'+resetCount;
   const prior=(await legacyVictoryOutbox.pending(ownerId)).find(e=>e.operationId===operationId);
   if(!sameContext())return {handled:true};
   const facts=prior?.reward.facts||{seconds:activeGameSeconds(),assistanceUsed:!!attempt.assistanceUsed,mistakeCommitted:!!attempt.mistakeCommitted,qualifying:!!attempt.qualifying,hintUsed:!!usedHintThisGame,challengeFailed:!!questFailed,qualifiedDay:localCalendarDay(),qualifiedAt:new Date(attempt.startedAt||Date.now()).toISOString()};
+  victoryStage='capability';
   let capabilityFailure;
   try{if(!(await legacyCommandsSupported(client))){if(!sameContext())return {handled:true};if(prior||lumenProgress.legacyVictoryRevision)throw Error('Command server unavailable; intent preserved');return {handled:false}}}catch(error){capabilityFailure=error}
   if(!sameContext())return {handled:true};
   // Before rewards, network mutation, completed attempt or victory animation.
+  victoryStage='durable_capture';
   intent=await legacyVictoryOutbox.enqueue(ownerId,quest.id,{facts},{operationId});
   if(!sameContext())return {handled:true};
   if(capabilityFailure)throw capabilityFailure;
+  victoryStage='baseline';
   if(!cloudProfileReady||canonicalOutboxRetryInFlight||!(await flushCloudProfile()))throw Error('Verified baseline pending');
   if(!sameContext())return {handled:true};
   const before=structuredClone(lumenProgress);
   if(cloudProfileTimer!==null){clearTimeout(cloudProfileTimer);cloudProfileTimer=null}
   legacyCommandInFlight=true;
+  victoryStage='command';
   const committed=await commitLegacyVictoryCommand(client,quest.id,intent.reward.facts,intent.operationId,{userId:ownerId,sessionValid:sameContext});
   if(!sameContext())return {handled:true};
   // An asynchronous hint/spend/preference edit must never be lost by installing
   // an older in-memory copy. Keep both the receipt and local evidence for review.
+  victoryStage='projection';
   if(!sameCloudProfile(before,lumenProgress))throw Error('Local changes during command; reconciliation required');
   lumenProgress=committed.profile;cloudProfileBaseline=structuredClone(committed.profile);cloudProfileFailure=null;cloudProfileDirty=false;
   const ready=cloudProfileReady;cloudProfileReady=false;try{saveLumenProgress()}finally{cloudProfileReady=ready}
@@ -2118,8 +2124,18 @@ async function captureLegacyCommandVictory(){
   if(!sameContext())return {handled:true};
   if(intent){try{await legacyVictoryOutbox.pause(ownerId,intent,error)}catch{recordCloudDiagnostic('legacy_outbox_pause_pending',{reason:'storage'})}}
   msg.textContent=intent?'Victoire conservée sur cet appareil, en attente de synchronisation. Ne supprime pas les données de Lumen.':'Conservation locale non confirmée. Garde cette grille ouverte et réessaie.';
-  const retry=document.createElement('button');retry.textContent='Réessayer la sauvegarde';retry.onclick=()=>{retry.remove();void celebrateSuccess()};msg.append(' ',retry);
-  recordCloudDiagnostic('legacy_victory_pending',{durable:!!intent});
+  const retry=document.createElement('button');retry.textContent='Réessayer la sauvegarde';
+  retry.onclick=async()=>{
+   if(!sameContext()||retry.disabled)return;
+   retry.disabled=true;
+   try{
+    // A durable victory can safely use the same fresh hydration as the menu.
+    // Resending with a blocked baseline cannot repair readiness or a conflict.
+    if(intent)await retryAccountCloudSync({sessionValid:sameContext});
+    else{retry.remove();await celebrateSuccess()}
+   }finally{retry.disabled=false}
+  };msg.append(' ',retry);
+  recordCloudDiagnostic('legacy_victory_pending',{durable:!!intent,stage:victoryStage});
   if(intent)legacyVictoryRetry=async()=>{if(!sameContext()){legacyVictoryRetry=null;return}const state=await legacyVictoryOutbox.inspect(ownerId);if(state.retryable.some(e=>e.operationId===intent.operationId))await celebrateSuccess()};
   return {handled:true};
  }finally{legacyCommandInFlight=false;legacyVictoryBusy=false;if(cloudProfileDirty)scheduleCloudProfile();void refreshCanonicalOutboxNotice(ownerId);canonicalRecovery.schedule()}

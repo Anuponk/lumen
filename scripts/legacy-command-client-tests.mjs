@@ -385,3 +385,52 @@ test('counter-only reconciliation preserves server rewards, receipts cursor and 
   assert.equal([...f.data.keys()].filter(k=>k.startsWith('lumenBeforeCloudReconcile')).length,2);
  }
 });
+
+
+test('durable victory retry rehydrates like the account menu instead of resending a stale baseline',async()=>{
+ for(const failure of ['not-ready','stale-baseline']){
+  const {ctx,box,state,run}=uiFixture();let button,flushes=0,resumes=0;
+  ctx.msg.append=(_space,element)=>{button=element};
+  ctx.document.createElement=()=>({remove(){}});
+  ctx.cloudProfileReady=failure!=='not-ready';
+  ctx.flushCloudProfile=async()=>{flushes++;return false};
+  ctx.celebrateSuccess=()=>run();
+  ctx.location={reload:()=>ctx.reloads++};ctx.reloads=0;
+  ctx.canonicalVictoryOutbox={resume:async()=>resumes++};
+  ctx.canonicalRecovery.cancel=()=>{};ctx.updateAuthUI=()=>{};
+  const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+  vm.runInContext(functionSource(source,'retryAccountCloudSync'),ctx);
+  await run();assert(button,'A failed victory offers an explicit retry');
+  const entry=JSON.stringify(await box.pending(userId)),attempt=JSON.stringify(ctx.attemptEngine.snapshot()),beforeFlushes=flushes;
+  await button.onclick();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(ctx.reloads,1,'End-of-grid retry must request fresh verified hydration, just like the menu');
+  assert.equal(resumes,1);assert.equal(flushes,beforeFlushes,'Never retry the same blocked baseline');
+  assert.equal(JSON.stringify(await box.pending(userId)),entry,'Keep exact operation identity and facts until confirmation');
+  assert.equal(JSON.stringify(ctx.attemptEngine.snapshot()),attempt);assert.equal(ctx.lumenProgress.xp,0);
+  const confirmed=await replayLegacyVictoryOutbox(box,userId,(id,f,op,options)=>commitLegacyVictoryCommand(ctx.lumenSupabase,id,f,op,options));
+  assert.equal(confirmed.length,1);assert.equal(state.receipts.size,1);assert.equal(state.profile.performances[0].attempts,1);
+  assert.equal(state.profile.xp,15);assert.equal((await box.pending(userId)).length,0);
+  assert.equal((await replayLegacyVictoryOutbox(box,userId,()=>{throw Error('No second grant')})).length,0);
+ }
+});
+
+test('a victory retry cannot resume queues or reload after its account, client or attempt changes',async()=>{
+ for(const change of ['owner','client','reset']){
+  const {ctx,run}=uiFixture();let button,release,legacyResumes=0,reloads=0;
+  ctx.cloudProfileReady=false;ctx.msg.append=(_space,element)=>{button=element};
+  ctx.document.createElement=()=>({remove(){}});ctx.celebrateSuccess=()=>run();
+  ctx.canonicalVictoryOutbox={resume:()=>new Promise(resolve=>{release=resolve})};
+  ctx.legacyVictoryOutbox.resume=async()=>legacyResumes++;
+  ctx.location={reload:()=>reloads++};ctx.canonicalRecovery.cancel=()=>{};
+  const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+  vm.runInContext(functionSource(source,'retryAccountCloudSync'),ctx);
+  await run();const retry=button.onclick();
+  for(let i=0;i<20&&!release;i++)await Promise.resolve();
+  assert(release,'Retry enters the shared recovery path');
+  if(change==='owner')ctx.lumenUser={id:'different'};
+  if(change==='client')ctx.lumenSupabase={};
+  if(change==='reset')ctx.attemptEngine.snapshot().resetCount++;
+  release();await retry;
+  assert.equal(legacyResumes,0,change);assert.equal(reloads,0,change);
+ }
+});

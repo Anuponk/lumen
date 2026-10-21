@@ -55,7 +55,7 @@ try{
     responsiveFailures.push('Unreadable '+width+'x'+height+': '+JSON.stringify(el));
   }
   if(!geometry.overflows.every(o=>o.x<=2&&o.y<=2))
-   responsiveFailures.push('Overflow '+width+'x'+height+': '+JSON.stringify(geometry.overflows));
+   responsiveFailures.push('Overflow '+width+'x'+height+': '+JSON.stringify({overflows:geometry.overflows,elements:geometry.elements}));
   if(!geometry.cell||Math.abs(geometry.cell.w-geometry.cell.h)>2)
    responsiveFailures.push('Non-square grid '+width+'x'+height+': '+JSON.stringify(geometry.cell));
   responsiveResults.push(geometry);
