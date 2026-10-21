@@ -57,9 +57,9 @@ try{
   await evaluate(`(()=>{lumenDiagnostics.setupQuest(2);document.getElementById('questStart').hidden=true;const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
   await acknowledgeLearningMilestones(evaluate);
   await sleep(500);
-  const cta=await evaluate(`(()=>{const next=document.getElementById('successNew'),share=document.getElementById('successShare');return {visible:document.getElementById('successOverlay').classList.contains('show'),text:next.textContent.trim(),next:getComputedStyle(next).backgroundImage,share:getComputedStyle(share).backgroundImage}})()`);
-  check(cta.visible&&cta.text==='Quête suivante'&&cta.next.includes('linear-gradient')&&cta.share==='none',viewport.width+' primary CTA: '+JSON.stringify(cta));
-  await click('#successNew');
+  const cta=await evaluate(`(()=>{const next=document.getElementById('skyRevealNext'),share=document.getElementById('skyRevealShare');return {visible:!document.getElementById('skyReveal').hidden,text:next.textContent.trim(),next:getComputedStyle(next).backgroundImage,share:getComputedStyle(share).backgroundImage}})()`);
+  check(cta.visible&&cta.text==='Quête suivante →'&&cta.next.includes('linear-gradient')&&!cta.share.includes('linear-gradient'),viewport.width+' primary CTA: '+JSON.stringify(cta));
+  await click('#skyRevealNext');
   const nextState=await evaluate(`(()=>{const r=document.getElementById('successNew').getBoundingClientRect();return {quest:lumenDiagnostics.snapshot().levelIndex,rect:[r.x,r.y,r.width,r.height],viewport:[innerWidth,innerHeight],hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.id}})()`);
   check(nextState.quest===3,viewport.width+' next quest action: '+JSON.stringify(nextState));
  }

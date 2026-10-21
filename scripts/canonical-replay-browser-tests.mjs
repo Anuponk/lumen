@@ -163,13 +163,16 @@ try{
    await acknowledgeLearningMilestones(evaluate);
    await evaluate('document.getElementById("attemptMask").click()');
    await evaluate('(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');
-   await until('document.getElementById("successOverlay").classList.contains("show")');
+   await until('!document.getElementById("skyReveal").hidden');
+   assert.equal(await evaluate('document.getElementById("skyRevealFeedback").children.length'),0);
+   assert.equal(await evaluate('document.querySelectorAll("#skyRevealCanvas .new-star").length'),0,'Replay adds no star');
+   assert.equal(await evaluate('document.getElementById("skyRevealRewards").querySelectorAll(".success-reward").length>0'),true,'Confirmed badges remain visible');
    const saved=await evaluate(`lumenDiagnostics.snapshot().progress.canonicalQuestState[${JSON.stringify(q.id)}]`);
    for(const key of ['autonomy','speed','noError','mastery'])assert.equal(saved.badges[key],true,q.id+' earns '+key);
    const text=await evaluate('document.getElementById("successSub").textContent');
    assert.match(text,/Rapidité/);assert.match(text,/Sans erreur/);assert.match(text,/Maîtrise/);
    assert.doesNotMatch(text,/XP|étoile/,'replay never announces new completion rewards');
-   await evaluate('document.getElementById("successSky").click()');
+   await evaluate('document.getElementById("skyRevealSky").click()');
    await send('Page.reload',{ignoreCache:true});await until('!!window.lumenDiagnostics');await sleep(500);
    const restored=await evaluate('lumenDiagnostics.snapshot().progress');
    assert.deepEqual(restored.canonicalQuestState[q.id],saved,'reload preserves upgraded badges');
@@ -178,6 +181,22 @@ try{
    assert.equal(await evaluate(`document.querySelectorAll(${JSON.stringify(selector+' .performance-slot.earned')}).length`),4,'Mon ciel shows all four badges');
    results.push({viewport,questId:q.id,replayBadges:true,reload:true,noDuplicateRewards:true});
   }
+  // First completion must reveal its actual constellation and one confirmed star.
+  const first=targets[0];
+  await evaluate(`(()=>{const progress=JSON.parse(localStorage.getItem('lumenQaProgressV1'));delete progress.canonicalQuestState[${JSON.stringify(first.id)}];localStorage.setItem('lumenQaProgressV1',JSON.stringify(progress))})()`);
+  await navigateAndWait({send,evaluate},'Page.reload');await until('!!window.lumenDiagnostics');await sleep(500);
+  await openDetail();
+  await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="${first.id}"]').click()`);
+  await acknowledgeLearningMilestones(evaluate);
+  await evaluate('document.getElementById("attemptMask").click()');
+  await evaluate('(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');
+  await until('!document.getElementById("skyReveal").hidden');
+  assert.equal(await evaluate('document.querySelectorAll("#skyRevealRewards .success-reward.star").length'),1);
+  assert.equal(await evaluate('document.querySelectorAll("#skyRevealCanvas .new-star").length>0'),true);
+  assert.equal(await evaluate('document.getElementById("skyRevealFeedback").children.length'),0);
+  assert.equal(await evaluate('document.getElementById("difficultyBox").hidden'),true);
+  assert.equal(await evaluate('document.getElementById("skyRevealNext").getBoundingClientRect().bottom<=innerHeight'),true,'Next quest is reachable');
+  results.push({viewport,firstCompletionReveal:true,confirmedStar:true,noFeedback:true});
   await verifyHistoricalCatalogue(viewport);
  }
  assert.deepEqual(errors,[]);

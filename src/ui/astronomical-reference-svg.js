@@ -29,11 +29,13 @@ export function astronomicalIllumination(entry,earned,total){
  const litIndices=new Set(ordered.slice(0,Math.floor(lit*ordered.length/Math.max(slots,1))));
  return {figure,litIndices,displayCount:lit,slotCount:slots};
 }
-export function astronomicalPrimarySvg(entry,earned=0,total=0){
+export function astronomicalPrimarySvg(entry,earned=0,total=0,beforeEarned=null){
  const data=astronomicalIllumination(entry,earned,total);
  if(!data)return "";
  const {figure,litIndices}=data;
- const lines=figure.edges.map(([a,b])=>'<line class="sky-line '+(litIndices.has(a)&&litIndices.has(b)?'on':'')+'" x1="'+figure.pts[a][0]+'" y1="'+figure.pts[a][1]+'" x2="'+figure.pts[b][0]+'" y2="'+figure.pts[b][1]+'"/>').join("");
- const stars=figure.pts.map(([x,y],i)=>'<circle class="sky-star '+(litIndices.has(i)?'on':'')+'" cx="'+x+'" cy="'+y+'" r="'+(litIndices.has(i)?4:3)+'"/>').join("");
+ const before=beforeEarned===null?litIndices:astronomicalIllumination(entry,beforeEarned,total).litIndices;
+ const arrived=i=>litIndices.has(i)&&!before.has(i);
+ const lines=figure.edges.map(([a,b])=>'<line class="sky-line '+(litIndices.has(a)&&litIndices.has(b)?'on'+(arrived(a)||arrived(b)?' new-line':''):'')+'" x1="'+figure.pts[a][0]+'" y1="'+figure.pts[a][1]+'" x2="'+figure.pts[b][0]+'" y2="'+figure.pts[b][1]+'"/>').join("");
+ const stars=figure.pts.map(([x,y],i)=>'<circle class="sky-star '+(litIndices.has(i)?'on'+(arrived(i)?' new-star':''):'')+'" cx="'+x+'" cy="'+y+'" r="'+(litIndices.has(i)?4:3)+'"/>').join("");
  return lines+stars;
 }
