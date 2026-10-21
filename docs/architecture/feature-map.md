@@ -4,6 +4,13 @@ Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This loo
 
 ## Entry points and shape
 
+Quest reward marks: `questRewardOrbitSvg` in
+`src/ui/astronomical-reference-svg.js`, consumed by overview navigation and
+detail/victory primary SVGs. Canonical quest metadata owns every displayed total;
+the gold orbit is decorative and never changes the atlas or persisted awards.
+Finale viewport fitting: `fitFinaleBoard` in `game-screen.js`, observed banner/app
+content size plus CSS square-board budgets in `styles.css`.
+
 `index.html` loads the Supabase CDN client and `src/main.js` → `startGameScreen()` in `src/ui/game-screen.js`. Native ES modules without a required application bundler. A root `package.json` provides `test:affected` and `test:full` scripts; do not confuse the absence of a build step with the absence of a package manifest. `src/ui/styles.css` owns styling; `manifest.webmanifest` and `sw.js` own PWA metadata/network behavior. `scripts/build-static.mjs` is a packaging utility, not a required application bundler. The large UI controller wires factories, mutable live state, rendering and async hooks; search symbols before reading excerpts.
 
 | Feature | Responsible files / principal symbols | Entry / source of truth |

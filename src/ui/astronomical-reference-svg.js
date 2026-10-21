@@ -37,5 +37,23 @@ export function astronomicalPrimarySvg(entry,earned=0,total=0,beforeEarned=null)
  const arrived=i=>litIndices.has(i)&&!before.has(i);
  const lines=figure.edges.map(([a,b])=>'<line class="sky-line '+(litIndices.has(a)&&litIndices.has(b)?'on'+(arrived(a)||arrived(b)?' new-line':''):'')+'" x1="'+figure.pts[a][0]+'" y1="'+figure.pts[a][1]+'" x2="'+figure.pts[b][0]+'" y2="'+figure.pts[b][1]+'"/>').join("");
  const stars=figure.pts.map(([x,y],i)=>'<circle class="sky-star '+(litIndices.has(i)?'on'+(arrived(i)?' new-star':''):'')+'" cx="'+x+'" cy="'+y+'" r="'+(litIndices.has(i)?4:3)+'"/>').join("");
- return lines+stars;
+ return lines+stars+questRewardOrbitSvg(entry,earned,total,beforeEarned);
+}
+
+// A decorative reward counter, not astronomical stars or additional HIP data.
+// Keep the source figure untouched; every quest has its own visible gold mark.
+export function questRewardOrbitSvg(entry,earned,total,beforeEarned=null){
+ const data=astronomicalIllumination(entry,earned,total);
+ if(!data||!data.slotCount)return '';
+ const {figure,slotCount,displayCount}=data;
+ const xs=figure.pts.map(p=>p[0]),ys=figure.pts.map(p=>p[1]);
+ const cx=(Math.min(...xs)+Math.max(...xs))/2,cy=(Math.min(...ys)+Math.max(...ys))/2;
+ const rx=(Math.max(...xs)-Math.min(...xs))/2+6,ry=(Math.max(...ys)-Math.min(...ys))/2+6;
+ const before=beforeEarned===null?displayCount:Math.max(0,Math.min(slotCount,Math.floor(Number(beforeEarned)||0)));
+ const radius=Math.min(2.8,Math.PI*Math.min(rx,ry)/slotCount*.65);
+ const marks=Array.from({length:slotCount},(_,i)=>{
+  const angle=-Math.PI/2+2*Math.PI*i/slotCount,on=i<displayCount,arrived=on&&i>=before;
+  return '<circle class="quest-reward'+(on?' on':'')+(arrived?' new-reward':'')+'" data-reward-index="'+i+'" cx="'+(cx+rx*Math.cos(angle)).toFixed(3)+'" cy="'+(cy+ry*Math.sin(angle)).toFixed(3)+'" r="'+radius.toFixed(3)+'"/>';
+ }).join('');
+ return '<g class="quest-reward-orbit" aria-label="Étoiles de quêtes : '+displayCount+' sur '+slotCount+'">'+marks+'</g>';
 }

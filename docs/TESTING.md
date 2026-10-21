@@ -1,5 +1,27 @@
 # Testing and quality gate
 
+## Cards, finale, quest rewards and guest dismissal (#475/#315/#504/#356)
+
+- `sky-navigation-browser-tests.mjs` measures actual text ranges inside every
+  card, including 320x568 and enlarged 14/16px labels at 360/390px. It also checks
+  exact reward counts in overview/detail and one new reward in victory reveal.
+- `quest-reward-orbit-tests.mjs` is a required Node suite: totals 1/4/10/17/31,
+  every earned value, immutable atlas geometry, each increment animated, no
+  replay duplication, and no substitute for missing source data.
+- `browser-tests.mjs` retains teaching-grid tap/drag/PWA tests and invokes
+  `finale-responsive-browser.mjs` on the canonical Bouvier finale. Seven actual
+  viewport sizes check square cells, no scroll, contained controls and readable
+  touch targets. Where CDP supports `setSafeAreaInsetsOverride`, mobile cases
+  also exercise actual CSS env top/bottom insets of 18px. The report states
+  support explicitly. Emulation does not certify a physical installed PWA.
+- `account-session-browser-tests.mjs` repeatedly closes signup/login with both
+  dismissal controls and completes a real fixture guest victory to trigger the
+  automatic offer. Dismissal preserves achievements and resumes the next quest,
+  without Auth calls. All accounts/provider transports are simulated.
+
+Physical affected-phone confirmation remains necessary for #489 and the
+installed-PWA recipe in #315; fixture success must not be presented as that proof.
+
 ## PWA update and imported-module cache regression
 
 `service-worker-cache-tests.mjs` is mandatory in the Node gate: both HTTP and

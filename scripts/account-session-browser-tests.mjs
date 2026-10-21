@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
-import {connectBrowser,navigateAndWait} from './cdp-client.mjs';
+import {connectBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
 const {send,evaluate,errors}=await connectBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const navigate=(method,params)=>navigateAndWait({send,evaluate},method,params);
@@ -224,6 +224,39 @@ try{
 
   await evaluate(`localStorage.removeItem('fixtureAuthSession');sessionStorage.removeItem('fixtureAuthQuota');sessionStorage.removeItem('lumenPasswordRecoveryPending');`);
   await navigate('Page.reload');
+  // Exercise the automatic quest milestone through a real guest victory, too.
+  const originalGuest=await evaluate("localStorage.getItem('lumenProgressV1')");
+  for(const dismiss of ['accountOptinClose','accountOptinLater']){
+   await evaluate(`localStorage.setItem('lumenProgressV1',JSON.stringify({solved:{0:1,1:1,2:1,3:1},badges:{historical:1}}));localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenAccountOfferNextMilestone');localStorage.setItem('lumenTutorialSeen','1');localStorage.setItem('lumenTutorialCompletedV1','1')`);
+   await navigate('Page.reload');
+   await acknowledgeLearningMilestones(evaluate);
+   assert.equal(await evaluate('lumenDiagnostics.snapshot().levelIndex'),4);
+   await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
+   await until(`!document.getElementById('skyReveal').hidden && !document.getElementById('skyRevealResults').hidden`);
+   await evaluate(`document.getElementById('skyRevealNext').click()`);
+   await until(`!document.getElementById('accountOptin').hidden`);
+   const before=await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress.solved)`);
+   await evaluate(`document.getElementById('${dismiss}').click()`);
+   assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),true);
+   await until('lumenDiagnostics.snapshot().levelIndex===5');
+   assert.equal(await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress.solved)`),before,'Automatic offer dismissal preserves earned victories');
+   assert.deepEqual(await evaluate('window.__authCalls'),[],'Continuing as guest must not authenticate');
+  }
+  await evaluate(`localStorage.setItem('lumenProgressV1',${JSON.stringify(originalGuest)});localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenAccountOfferNextMilestone')`);
+  await navigate('Page.reload');
+  // #356: both dismissal actions work repeatedly from signup and login,
+  // preserving guest achievements and avoiding any Auth call.
+  const guestProgress=()=>evaluate(`JSON.stringify((()=>{const p=lumenDiagnostics.snapshot().progress;return {solved:p.solved,canonicalQuestState:p.canonicalQuestState,performances:p.performances,xp:p.xp,shards:p.shards,badges:p.badges}})())`);
+  for(const mode of ['signup','login'])for(const dismiss of ['accountOptinClose','accountOptinLater']){
+   const before=await guestProgress();
+   await evaluate(`document.getElementById('mobileAuthAction').click();${mode==='login'?"document.getElementById('accountAuthSwitch').click();":''}`);
+   assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),false);
+   await evaluate(`document.getElementById('${dismiss}').click()`);
+   assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),true);
+   assert.equal(await guestProgress(),before,'Dismissing account UI preserves all guest achievements');
+   assert.deepEqual(await evaluate('window.__authCalls'),[]);
+   assert.equal(await evaluate(`document.getElementById('mobileAuthAction').textContent.includes('Se connecter')`),true);
+  }
   await evaluate(`document.getElementById('mobileAuthAction').click()`);
   assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),false);
   assert.equal(await evaluate(`!!document.getElementById('accountOtp')`),false);
@@ -262,7 +295,7 @@ try{
   await evaluate(`document.getElementById('mobileAuthAction').click()`);
   await until(`document.getElementById('mobileAuthAction').textContent.includes('Se connecter')`);
   const isolatedCanonicalRecovery=await verifyIsolatedRecovery();
-  results.push({viewport,guestDismiss:true,passwordLogin:true,reload:true,readableSessionWithQuota:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,restoreFailureVisible:true,isolatedCanonicalRecovery,isolatedLegacyRecovery:true});
+  results.push({viewport,guestDismiss:true,automaticOfferDismiss:true,repeatedSignupLoginDismiss:true,passwordLogin:true,reload:true,readableSessionWithQuota:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,restoreFailureVisible:true,isolatedCanonicalRecovery,isolatedLegacyRecovery:true});
  }
  assert.equal(errors.length,0,JSON.stringify(errors));
  const report={simulatedAuth:true,liveCloudWrites:false,results,exceptions:errors};
