@@ -7,7 +7,7 @@ if(diverse.schema!=="lumen-grid-overrides-v1"||diverseById.size!==100)throw Erro
 import {CONTENT_PACKS,CONTENT_CONSTELLATIONS,hasPackAccess} from "./content.js";
 import {playableQuest,playableQuestCount} from "./playable-quests.js";
 import {qualifyDifficulty} from "./difficulty.js";
-import {constellationCatchupAvailable,catalogueQuestDecision} from "./catalogue-access.js";
+import {constellationCatchupAvailable,catalogueQuestDecision,questCompleted} from "./catalogue-access.js";
 import {originQuests,pastCatalogues} from './catalogue-origin.js';
 
 function planSlots(packs,constellations){
@@ -57,6 +57,31 @@ export function canonicalQuestByOrdinal(number){return all[number-1]??null}
 export function canonicalQuestById(id){return byId.get(String(id))??null}
 export function canonicalQuestForLegacy(index){return byLegacy.get(Number(index))??null}
 export function canonicalQuestList(){return [...all]}
+// Presentation reads the same stable identities as access/completion. It never
+// derives counts from historical drawing slots or changes persisted rewards.
+export function canonicalScopeProgress(progress={},scope={},quests=all){
+ const members=quests.filter(q=>(!scope.constellationId||q.constellationId===scope.constellationId)&&(!scope.packId||q.packId===scope.packId));
+ const badges={autonomy:0,speed:0,noError:0,mastery:0};
+ for(const quest of members){
+  const record=quest.legacyIndex!==null?progress.performances?.[quest.legacyIndex]:progress.canonicalQuestState?.[quest.id];
+  const earned=quest.legacyIndex!==null&&!(record?.version>=2)?{}:record?.badges||{};
+  for(const key of Object.keys(badges))if(earned[key])badges[key]++;
+ }
+ const completed=members.filter(q=>questCompleted(q,progress)).length,total=members.length;
+ return {total,completed,complete:total>0&&completed===total,badges,mastered:total>0&&badges.mastery===total};
+}
+export function canonicalCampaignComplete(progress={},quests=all){
+ return canonicalScopeProgress(progress,{},quests).complete;
+}
+export function canonicalQuestMilestone(quest,quests=all){
+ if(!quest)return null;
+ const members=quests.filter(q=>q.constellationId===quest.constellationId),position=members.findIndex(q=>q.id===quest.id);
+ if(position<0)return null;
+ const label=CONTENT_CONSTELLATIONS.find(c=>c.id===quest.constellationId)?.label||quest.constellationId;
+ if(position===members.length-1)return {kind:'boss',title:'✹ Défi final · '+label.replace(' · Grand Chariot',''),copy:'Dernière quête de la constellation.'};
+ if(position===Math.floor((members.length-1)/2))return {kind:'mid',title:'✦ Défi de constellation',copy:'Étape intermédiaire de la constellation.'};
+ return null;
+}
 export function canonicalNextUnsolved(solvedLegacy={},solvedIds={}){
  return all.find(q=>!(q.legacyIndex!==null?solvedLegacy[q.legacyIndex]:solvedIds[q.id]))??null;
 }

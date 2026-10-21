@@ -180,6 +180,29 @@ The session modes suite also executes the real mobile menu renderer for pending,
 Before release, validate Google/password login and reload on an isolated account, recovery through password creation, guest discovery, and an existing account with cloud history. Never impersonate a real player's session or clear their local cache to test restoration. Affected-device session persistence is an outstanding manual check unless explicitly verified; production reads and mocked tests do not establish that result.
 
 ## Dynamic catalogue growth regression contract
+
+`campaign-presentation-tests.mjs` reproduces four presentation failures against
+the pre-fix UI: canonical-only cards reading zero historical stars, a prior
+Rapidité missing from victory rewards, Grand Chien 8/10 labelled final, and the
+numeric endpoint ending an incomplete canonical campaign. The actual adapter and
+renderers are exercised, plus empty/variable-size/growing catalogue fixtures.
+`catalogue-access-tests.mjs` distinguishes historical Antlia access from a
+current-cohort prerequisite refusal and checks repeated serialization without
+reward mutation. These are synthetic tests, not affected-account evidence.
+
+`campaign-resume-browser-tests.mjs` checks zero/nonzero totals, partial versus
+completed Dauphin/Petit Cheval cards, full illumination, mobile/desktop refresh
+and unchanged progress/attempt bytes. `canonical-replay-browser-tests.mjs` checks
+a previously held Rapidité remains visible with « déjà obtenu » and no duplicate
+star. `late-game-browser-tests.mjs` rejects the old numeric endgame and plays the
+actual catalogue's final board through its victory CTA and endgame summary on
+mobile/desktop. This replaces the obsolete numeric-finale expectation while
+retaining capped-save, 100→101, reload and reward regressions. Browser Auth/RPC
+fixtures remain simulated; they do not prove a reported phone is repaired.
+
+Onboarding impact: quest 2 retains its explicit Mon ciel handoff; the eligibility
+milestones, assistance and badge teaching rules do not change. Finale terminology
+now follows canonical membership without changing reward rules or saved data.
 Every change affecting content, progression, shop, sky navigation or saved state must test catalogue growth without source-code boundary edits:
 - Existing catalogue N → N+k quests, with multiple appended Adventures of different sizes.
 - First and final quest of each Adventure, crossing pack boundaries, and visible locked/unlocked packs.

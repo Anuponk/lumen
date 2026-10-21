@@ -128,3 +128,23 @@ reservation by 8px without reducing action fonts or touch controls; retain the
 same seven-viewport, square-grid, tap/drag and overflow assertions. Overflow
 failures now include control bounds for diagnosis. UX contract reviewed: no
 onboarding, gesture, eligibility or navigation change.
+
+## Canonical cards, finale and prior badges (`7a9220e` follow-up)
+
+Four UI regressions reproduce against the parent: canonical-only sky cards read
+zero historical lit slots and no drawing count; Grand Chien's old numeric final
+is only 8/10 in its expanded constellation; the numeric endpoint can announce
+global completion while canonical quests remain unplayed; the victory panel
+omits an acknowledged Rapidité when it was already held before the attempt.
+`campaign-presentation-tests.mjs` runs those actual adapters/renderers red before
+the correction. Canonical stable membership now owns presentation totals,
+milestone position and nonempty completion. Prior awards remain visible with an
+explicit label, without changing same-run qualification or reward persistence.
+
+Antlia being playable with unfinished preceding additions is not itself a bug:
+the acquired-access contract preserves a historical frontier. The real-catalogue
+access regression checks that case and the distinct current-cohort refusal,
+including serialization and unchanged rewards. Device-specific recovery remains
+separate from these synthetic/browser proofs. The prepared cohort migration
+`20261018200805_catalogue_origin_access.sql` is a separate server release step;
+its presence in Git is not deployment evidence.

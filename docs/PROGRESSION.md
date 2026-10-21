@@ -5,6 +5,32 @@ The campaign is sequential and represented through constellations. Quest count d
 
 A quest belongs to one constellation. Each constellation has an intermediate milestone and a final/boss quest. First completion awards the quest's sky-star value; replay does not farm additional sky stars.
 
+### Current catalogue presentation
+
+Mon ciel cards count individually completed quests in the current canonical
+constellation, including inserted quests and constellations without numeric
+history. Each completed quest fills one displayed slot, as in the constellation
+detail. This display does not rewrite historical star balances or rewards.
+Drawing point counts are astronomical geometry, never quest totals. A completed
+nonempty constellation illuminates its full reference figure; partial progress
+does not announce completion. Empty groups are never complete.
+
+Final-quest banners follow the played quest's position in its current canonical
+constellation. Completion announcements additionally require every current quest
+of that constellation, Adventure or campaign to be solved. Finishing the last
+historical numeric quest cannot finish the expanded campaign. Existing reward
+calculations and stored historical milestones remain unchanged.
+
+Victory recaps retain acknowledged badges already owned, labelled « déjà obtenu »
+separately from new awards. Such a label does not assert that the current attempt
+qualified for that badge and never awards another star on replay. Badge eligibility,
+same-run conditions and cooldown rules are unchanged.
+
+Antlia access is subject to the same acquired-access rule below: an older player
+may keep its historical frontier while new quests in the preceding Adventure
+remain unfinished. This is not permission for a current-cohort player to skip
+prerequisites, and pack ownership/authentication/hydration still apply.
+
 ## Adventures and access (#96)
 
 The real-sky catalogue is grouped into Adventures of at most ten constellations, configured in `content.js`. The current groups are 1–10, 11–20 and 21–24. The first Adventure is included; subsequent Adventures remain visible but locked unless already owned or already started by an existing player. Their unlock mechanism is deferred. The grouping size is a product rule, not a campaign-size ceiling: new Adventures are derived as the catalogue grows.
@@ -107,6 +133,18 @@ specified migration; they are not silently supported by renumbering.
 The origin is retained across cloud restore and old writers cannot erase or
 rewrite an explicit server origin. Conflicting explicit cohorts require review.
 No player backfill, storage purge or active-attempt rewrite is part of this fix.
+
+Server rollout verified on 21 October 2026: the reviewed
+`20261018200805_catalogue_origin_access.sql` was applied to the shared production
+project as migration `20261021174237_catalogue_origin_access`. Before application,
+the trigger was absent and no profiles had an explicit origin. After application,
+`protect_catalogue_origin` is enabled on `lumen.profile_snapshots`, is security
+invoker, and has no direct execute grant to anon/authenticated. No existing
+profile was backfilled and no test fixture was run against player data.
+The SQL regression passed in disposable PostgreSQL in CI on `5b50684` before
+this unchanged migration was applied. Browser/client fixtures remain distinct
+from confirmation on the originally affected phone. A schema rollback removes
+only this trigger/function; never erase an origin already stored by a later write.
 
 ### Resuming after the numeric boundary (#470)
 

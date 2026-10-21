@@ -182,6 +182,11 @@ request. The copied report remains privacy-safe and excludes nickname/identity.
 Historical and canonical campaign quests share the constellation reveal and
 confirmed star/badge panel. Only first completion announces a new star; replays
 show the constellation and newly earned badges without awarding another star.
+Previously owned acknowledged badges remain visible with « déjà obtenu »;
+this does not claim they qualified on the current run. Overview cards and reveal
+completion use the actual canonical quest membership, including constellations
+without historical numeric slots. Finishing the numeric catalogue alone never
+announces completion of all Adventures.
 The reveal uses the played quest's constellation and the licensed astronomical
 figure. Newly illuminated atlas points and links animate. The difficulty survey
 is hidden from victory cards to keep rewards and the next-quest action visible.
