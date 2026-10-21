@@ -1824,7 +1824,7 @@ function shouldAskDifficulty(i,questPassed){
  return card===3||card===10||card===20||(card>20&&card%10===0);
 }
 function configureSuccessFeedback(questPassed){
- const box=document.getElementById("difficultyBox"),ask=shouldAskDifficulty(levelIndex,questPassed);
+ const box=document.getElementById("difficultyBox"),ask=false;
  if(box)box.hidden=!ask;
 }
 
@@ -2074,7 +2074,11 @@ async function celebrateCanonicalSuccess(){
  const rewards=document.getElementById("successRewards");if(rewards)rewards.hidden=false;
  const challenge=document.getElementById("questResult");if(challenge)challenge.hidden=true;
  document.getElementById("successNew").textContent="Quête suivante";
- document.getElementById("successOverlay").classList.add("show");refreshJourney();
+ configureSuccessFeedback(false);
+ refreshJourney();
+ launchWinStar(committed.newlyCompleted?1:0);
+ const reveal=()=>{if(canonicalActiveQuest?.id===q.id&&celebrated)showSkyReveal(null,null,{quest:q,newlyCompleted:committed.newlyCompleted})};
+ if(committed.newlyCompleted)setTimeout(reveal,2250);else reveal();
  }finally{if(canonicalVictoryInFlight===capture)canonicalVictoryInFlight=null;}
 }
 
@@ -2192,7 +2196,7 @@ async function celebrateSuccess(){
  const checkpoint=firstCompletion&&!crossedConstellation?constellationCheckpoint(skyEarnedBefore,skyEarnedAfter):null;
  const revealDelay=!generatedQuest&&earnedThisRun>0?2250:0;
  const clearVictoryConfetti=()=>document.getElementById("victoryConfetti")?.remove();
- if(firstCompletion&&earnedThisRun>0&&!generatedQuest){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint)},revealDelay)}else if(questPassed||crossedConstellation||checkpoint){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint)},revealDelay)}else setTimeout(()=>document.getElementById("successOverlay").classList.add("show"),revealDelay);
+ if(firstCompletion&&earnedThisRun>0&&!generatedQuest){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint)},revealDelay)}else if(questPassed||crossedConstellation||checkpoint){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint)},revealDelay)}else setTimeout(()=>showSkyReveal(skyEarnedBefore),revealDelay);
 
  // Deliberately varied shapes/positions; purely visual, no game-state effect.
  const palette=["#68e7ff","#5ea7ff","#8b7cff","#67d8c2","#d7f8ff","#87bfff"];
@@ -2722,14 +2726,19 @@ function celebrateConstellationReveal(){
  for(let i=0;i<28;i++){const s=document.createElement("span");s.className="sky-spark";s.textContent=i%3?"✦":"★";s.style.left=(8+(i*31)%84)+"vw";s.style.top=(28+(i*17)%55)+"vh";s.style.animationDelay=((i%8)*.08)+"s";document.body.appendChild(s);setTimeout(()=>s.remove(),2500)}
  setTimeout(()=>o.classList.remove("complete-celebration"),3800);
 }
-function showSkyReveal(beforeEarned=null,checkpoint=null){
+function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
  const after=skyStarsEarned(),crossed=beforeEarned!==null&&after>beforeEarned;
  const completed=[];
  if(crossed){let total=0;for(let i=0;i<CONSTELLATIONS.length;i++){total+=CONSTELLATIONS[i].count;if(beforeEarned<total&&after>=total)completed.push(i)}}
  const completedIndex=completed.length?completed[completed.length-1]:-1;
- const p=completedIndex>=0?{index:completedIndex,...CONSTELLATIONS[completedIndex],lit:CONSTELLATIONS[completedIndex].count}:checkpoint?{index:checkpoint.index,...CONSTELLATIONS[checkpoint.index],lit:checkpoint.lit}:constellationProgress();
+ const canonicalEntry=canonical?CONTENT_CONSTELLATIONS.find(entry=>entry.id===canonical.quest.constellationId):null;
+ const canonicalQuests=canonical?canonicalQuestList().filter(quest=>quest.constellationId===canonical.quest.constellationId):[];
+ const canonicalLit=canonicalQuests.filter(quest=>questIsCompleted(lumenProgress,quest.id)).length;
+ const p=canonical?{name:canonicalEntry?.label||canonical.quest.constellationId,lit:canonicalLit,count:canonicalQuests.length,edges:[],pts:[]}:completedIndex>=0?{index:completedIndex,...CONSTELLATIONS[completedIndex],lit:CONSTELLATIONS[completedIndex].count}:checkpoint?{index:checkpoint.index,...CONSTELLATIONS[checkpoint.index],lit:checkpoint.lit}:constellationProgress();
  const idx=Math.max(0,p.lit-1),canvas=document.getElementById("skyRevealCanvas"),o=document.getElementById("skyReveal"),k=document.getElementById("skyRevealKicker"),t=document.getElementById("skyRevealTitle");
- if(completedIndex>=0){
+ const newlyCompleted=canonical?canonical.newlyCompleted:crossed;
+ const constellationCompleted=canonical?newlyCompleted&&p.lit===p.count:completedIndex>=0;
+ if(constellationCompleted){
    constellationSound();
    k.textContent="CONSTELLATION COMPLÉTÉE";
    t.textContent="✦ "+p.name.replace(" · Grand Chariot","");
@@ -2739,14 +2748,18 @@ function showSkyReveal(beforeEarned=null,checkpoint=null){
    t.textContent="✦ "+p.name.replace(" · Grand Chariot","");
    const remaining=p.count-p.lit;
    document.getElementById("skyRevealName").textContent=checkpoint.stage===1?"La constellation prend forme. Continue à l’illuminer.":remaining===1?"Plus qu’une étoile avant de la révéler.":"Plus que "+remaining+" étoiles avant de la révéler.";
+ }else if(!newlyCompleted){
+   k.textContent="QU\u00caTE ACCOMPLIE";
+   t.textContent=p.name;
+   document.getElementById("skyRevealName").textContent="Ta constellation et tes badges";
  }else{
    k.textContent="NOUVELLE ÉTOILE";
    t.textContent="Une nouvelle étoile s’allume";
    document.getElementById("skyRevealName").textContent=starDisplayName(p,idx)+" · "+p.name;
  }
  let lines=p.edges.map(e=>{let on=e[0]<p.lit&&e[1]<p.lit,newLine=on&&(e[0]===idx||e[1]===idx);return '<line class="sky-line '+(on?'on ':'')+(newLine?'new-line':'')+'" x1="'+p.pts[e[0]][0]+'" y1="'+p.pts[e[0]][1]+'" x2="'+p.pts[e[1]][0]+'" y2="'+p.pts[e[1]][1]+'"/>'}).join("");
- let stars=p.pts.map((v,i)=>'<circle class="sky-star '+(i<p.lit?'on ':'')+(i===idx?'new-star':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i===idx?6:i<p.lit?4:3)+'"/>').join("");
- canvas.innerHTML='<svg class="sky-reveal-svg" viewBox="0 0 290 115">'+(astronomicalPrimarySvg({id:CONTENT_CONSTELLATIONS[p.index]?.id},p.lit,p.count)||lines+stars)+'</svg><div>'+p.lit+' / '+p.count+' étoiles</div>';o.hidden=false;
+ let stars=p.pts.map((v,i)=>'<circle class="sky-star '+(i<p.lit?'on ':'')+(i===idx&&newlyCompleted?'new-star':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i===idx?6:i<p.lit?4:3)+'"/>').join("");
+ canvas.innerHTML='<svg class="sky-reveal-svg" viewBox="0 0 290 115">'+(astronomicalPrimarySvg({id:canonical?.quest.constellationId||CONTENT_CONSTELLATIONS[p.index]?.id},p.lit,p.count,newlyCompleted?Math.max(0,p.lit-(canonical?1:after-beforeEarned)):p.lit)||lines+stars)+'</svg><div>'+p.lit+' / '+p.count+' étoiles</div>';o.hidden=false;
  const result=document.getElementById("skyRevealResults"),continueButton=document.getElementById("skyRevealContinue");
  const victory=document.getElementById("successOverlay");
  const isNormalVictory=!!victory&&!document.getElementById("successNew")?.hidden&&!document.getElementById("successRetry")?.hidden;
@@ -2759,7 +2772,7 @@ function showSkyReveal(beforeEarned=null,checkpoint=null){
    document.getElementById("skyRevealRewards").className="sky-reveal-rewards "+(document.getElementById("successRewards")?.className||"");
    const feedback=document.getElementById("skyRevealFeedback");
    feedback.replaceChildren();
-   const source=document.getElementById("difficultyBox");
+   const source=null; // Keep the shared celebration compact; no difficulty survey.
    if(source&&!source.hidden){
     const copy=source.cloneNode(true);copy.removeAttribute("id");
     copy.querySelectorAll("button[data-rating]").forEach(b=>b.onclick=()=>source.querySelector('button[data-rating="'+b.dataset.rating+'"]')?.click());
@@ -2772,7 +2785,7 @@ function showSkyReveal(beforeEarned=null,checkpoint=null){
    }
   }
  }
- if(completedIndex>=0)celebrateConstellationReveal();
+ if(constellationCompleted)celebrateConstellationReveal();
 }
 function closeUnifiedSkyReveal(){
  const o=document.getElementById("skyReveal");

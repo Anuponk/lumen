@@ -27,6 +27,11 @@ assert.match(astronomicalPrimarySvg(orion,8,17),/sky-star on/,"Earned stars visi
 assert.match(astronomicalPrimarySvg(orion,17,17),/sky-line on/,"Completed real atlas lines illuminate");
 assert.equal(JSON.stringify(CONSTELLATIONS),original,"Historical catalogue not mutated");
 const source=readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
-assert.equal((source.match(/astronomicalPrimarySvg\(\{id:CONTENT_CONSTELLATIONS\[/g)||[]).length,2,"Detail and reveal use the genuine shape");
+assert.equal((source.match(/astronomicalPrimarySvg\(\{id:CONTENT_CONSTELLATIONS\[/g)||[]).length,1,"Historical detail uses the genuine shape");
 assert.equal((source.match(/astronomicalReferenceSvg\(\{id:CONTENT_CONSTELLATIONS\[/g)||[]).length,0,"Old overlay does not compete with genuine shape");
 console.log("Astronomical overlays verified on historical detail and celebrations");
+
+const arrived=astronomicalPrimarySvg(orion,17,17,8);
+assert.match(arrived,/new-star/,"Newly illuminated real stars animate after a win");
+assert.match(arrived,/new-line/,"Newly illuminated links animate after a win");
+assert.doesNotMatch(astronomicalPrimarySvg(orion,17,17,17),/new-star|new-line/,"Replays never animate a new star");

@@ -176,3 +176,15 @@ actuel** above the technical journal and explain that historical incidents may
 already be resolved. This summary follows current state, never the mere presence
 of older error events. Opening the panel refreshes the summary without a server
 request. The copied report remains privacy-safe and excludes nickname/identity.
+
+
+### Shared quest celebration
+Historical and canonical campaign quests share the constellation reveal and
+confirmed star/badge panel. Only first completion announces a new star; replays
+show the constellation and newly earned badges without awarding another star.
+The reveal uses the played quest's constellation and the licensed astronomical
+figure. Newly illuminated atlas points and links animate. The difficulty survey
+is hidden from victory cards to keep rewards and the next-quest action visible.
+Learning quest 2 retains its intentional Mon ciel CTA, and badge introduction
+milestones and reward eligibility remain unchanged. Challenge and learning-only
+replays retain their isolated reward rules.

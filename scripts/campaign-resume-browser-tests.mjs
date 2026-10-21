@@ -84,7 +84,7 @@ try{
 
  await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="${boundary.id}"]').click()`);
  await acknowledgeLearningMilestones(evaluate);
- await evaluate(`document.getElementById('successNew').click()`);
+ await evaluate(`(document.getElementById('skyReveal').hidden?document.getElementById('successNew'):document.getElementById('skyRevealNext')).click()`);
  const actual=await evaluate(`({board:lumenDiagnostics.snapshot().puz.reg,status:document.getElementById('mobileAuthStatus').textContent,completed:!!lumenDiagnostics.snapshot().progress.canonicalQuestState[${JSON.stringify(next.id)}]?.solved})`);
  assert.deepEqual(actual.board,next.reg,'Actual authenticated next action must load Dauphin quest 241');assert.equal(actual.completed,false);
  await evaluate(`document.getElementById('attemptMask').click()`);
@@ -125,18 +125,18 @@ try{
  // Auth is deliberately slower than board restoration (the reported phone sequence).
  await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();const solved=s.puz.reg.map(row=>row.map(()=>0));s.puz.sol.forEach((col,row)=>solved[row][col]=2);sessionStorage.setItem('solvedBoardOnLoad',JSON.stringify(solved));})()`);
  await navigateAndWait({send,evaluate},'Page.reload');
- await until(`document.getElementById('successOverlay').classList.contains('show')`);
+ await until(`!document.getElementById('skyReveal').hidden`);
  const afterWin=await evaluate(`({grants:window.__canonicalGrants,xp:window.__profile.xp,legacy:JSON.stringify(window.__profile.solved),performances:JSON.stringify(window.__profile.performances),saved:!!window.__profile.canonicalQuestState[${JSON.stringify(next.id)}]?.solved,attempt:JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).attemptId})`);
  assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='canonical_victory_failed'&&e.stage==='context')`),false,'Startup session restoration is not a storage failure');
  assert.equal(afterWin.saved,true,JSON.stringify({beforeWin,afterWin}));assert.equal(afterWin.grants,1,'Concurrent render notifications grant once');
  assert.equal(afterWin.legacy,beforeWin.legacy);assert.equal(afterWin.performances,beforeWin.performances);assert.equal(afterWin.attempt,beforeWin.attempt);
  assert(afterWin.xp>beforeWin.xp);
- assert.equal(await evaluate(`document.getElementById('successRewards').hidden`),false,'Confirmed canonical rewards must be visible during celebration');
- assert.equal(await evaluate(`document.querySelectorAll('#successRewards .success-reward').length>1`),true,'First canonical success celebrates its confirmed badges as well as its star');
+ assert.equal(await evaluate(`document.getElementById('skyRevealResults').hidden`),false,'Confirmed canonical rewards must be visible during celebration');
+ assert.equal(await evaluate(`document.querySelectorAll('#skyRevealRewards .success-reward').length>1`),true,'First canonical success celebrates its confirmed badges as well as its star');
  // Reproduce the old client's later capture under the same already committed ID.
  const regenerated=await evaluate(`(()=>{const attempt=JSON.parse(localStorage.getItem('lumenActiveAttemptV1'));attempt.state='RUNNING';attempt.activeDuration+=60000;const [receipt]=window.__canonicalReceipts.values();const reward={badges:receipt.badges,performance:{...receipt.performance,seconds:receipt.performance.seconds+60,bestTime:receipt.performance.bestTime+60},stars:1};const entry={version:2,userId:localStorage.getItem('lumenCloudOwnerId'),operationId:receipt.operationId,questId:receipt.questId,reward,createdAt:new Date().toISOString()};sessionStorage.setItem('recreatedCaptureOnLoad',JSON.stringify({attempt,entry}));return entry;})()`);
  await navigateAndWait({send,evaluate},'Page.reload');
- await until(`document.getElementById('successOverlay').classList.contains('show')`);
+ await until(`!document.getElementById('skyReveal').hidden`);
  assert.equal(await evaluate('window.__canonicalGrants'),1,'Restoring the original receipt never grants twice');
  assert.equal(await evaluate('window.__profile.xp'),afterWin.xp);
  const archive=await evaluate(`(async()=>{const {createIndexedOutboxStore}=await import('/src/persistence/indexed-outbox-store.js');const rows=await createIndexedOutboxStore(indexedDB).entries('lumenCanonicalRecreatedCaptureArchiveV1:');return rows.map(([,raw])=>JSON.parse(raw));})()`,true);
@@ -146,7 +146,7 @@ try{
  assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')).some(e=>e.event==='canonical_attempt_receipt_recovered')`),true);
  // Leave the old committed quest behind while its recognized duplicate is paused.
  const following=all.find(q=>q.ordinal===next.ordinal+1);
- await evaluate(`document.getElementById('successNew').click()`);
+ await evaluate(`(document.getElementById('skyReveal').hidden?document.getElementById('successNew'):document.getElementById('skyRevealNext')).click()`);
  await until(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).questId===${JSON.stringify(following.id)}`);
  await evaluate(`document.getElementById('attemptMask').click();const d=lumenDiagnostics.snapshot();const cell=document.querySelectorAll('#board .cell')[d.puz.sol[0]];cell.click();cell.click()`);
  const active=await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1'))`);

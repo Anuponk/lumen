@@ -756,3 +756,11 @@ The account-switch browser setup explicitly opens its target canonical quest
 through the new account’s sky and canonical quest panel, including catalogue-driven
 pagination. A switched account need not inherit the previous account’s active
 quest. Exact quest, attempt, grant, XP and archive assertions remain mandatory.
+
+
+Shared quest celebration regression: `canonical-replay-browser-tests.mjs`
+checks mobile/desktop first completion and replay in an isolated QA profile:
+constellation reveal, confirmed star, newly earned badges, no duplicate replay
+star, no difficulty survey, reachable next action and reload-safe badge state.
+`astronomical-reference-svg-tests.mjs` checks arrived real points/links and
+absence of arrival animation when no star was gained. No live account writes.
