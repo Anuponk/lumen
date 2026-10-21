@@ -630,7 +630,10 @@ function skipTutorialReplay(){
 const {renderTutorial,openTutorial,closeTutorial,setupTutorial}=createTutorial(()=>levelIndex<=1,{tutorialSeenKey:qaActive?"lumenQaTutorialSeen":"lumenTutorialSeen",canSkip:()=>levelIndex===0||tutorialCompletedProof()&&!qaFresh,onSkip:skipTutorialReplay});
 let authSessionPending=true;
 let lumenSupabase=null,lumenUser=null,lumenCloudReady=false,lumenEntitlements=[],lumenCapabilities=[];
-try{lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY)}catch(e){console.warn("LUMEN cloud unavailable",e)}
+// Use the SDK's existing persistent store directly: its default write probe can
+// reject a full but readable store and silently hide a valid saved session.
+// Token refresh/rotation, validation and the canonical storage key stay SDK-owned.
+try{lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,storage:localStorage}})}catch(e){console.warn("LUMEN cloud unavailable",e)}
 let lumenNickname="";
 
 let accountOfferSignInPending=false;
@@ -1390,6 +1393,25 @@ function positionLearningCoach(){
  card.style.left=left+"px";card.style.top=top+"px";
 }
 window.addEventListener("resize",()=>requestAnimationFrame(positionLearningCoach));
+// Measure finale copy and the complete game stack, including wrapped action labels.
+// The ordinary quest budget remains the upper bound for the square board.
+const challengeBanner=document.getElementById("challengeBanner");
+function fitFinaleBoard(){
+ const app=document.querySelector(".app"),grid=document.getElementById("board");
+ app.style.removeProperty("--finale-board-size");
+ const style=getComputedStyle(challengeBanner);
+ const space=challengeBanner.hidden?0:challengeBanner.getBoundingClientRect().height+parseFloat(style.marginTop)+parseFloat(style.marginBottom);
+ app.style.setProperty("--challenge-banner-space",`${space}px`);
+ if(challengeBanner.hidden)return;
+ const available=Math.min(innerHeight,app.getBoundingClientRect().bottom)-parseFloat(getComputedStyle(app).paddingBottom);
+ const bottom=Math.max(document.querySelector(".game-core").getBoundingClientRect().bottom,document.querySelector(".actions").getBoundingClientRect().bottom);
+ const size=Math.floor(grid.getBoundingClientRect().width-Math.max(0,bottom-available));
+ app.style.setProperty("--finale-board-size",`${Math.max(1,size)}px`);
+}
+const finaleLayoutObserver=new ResizeObserver(()=>requestAnimationFrame(fitFinaleBoard));
+finaleLayoutObserver.observe(challengeBanner);
+finaleLayoutObserver.observe(document.querySelector(".app"));
+window.addEventListener("resize",()=>requestAnimationFrame(fitFinaleBoard));
 function showLearningTip(id,title,copy){
  if(socialChallenge||!((levelIndex===0&&learningQuestActive())||(levelIndex===1&&!replayMode))||learningTipSeen.has(id))return;
  learningTipSeen.add(id);learningTip={title,copy};updateScriptedLearning();
@@ -2714,11 +2736,11 @@ const SKY_TOUR_STEPS=[
  {target:"sectorTabs",title:"Tes constellations",copy:"Ton ciel est organisé en constellations. Elles se débloquent au fil de ton aventure."},
  {target:"puzzleGrid",title:"Tes quêtes",copy:"Chaque constellation regroupe ses quêtes. Ici tu vois celles qui sont réussies, celle à jouer et celles encore verrouillées."},
  {target:"performanceLegend",title:"Tes performances",copy:"Les badges récompensent ta façon de résoudre une quête : autonomie, rapidité, sans erreur et maîtrise. Tu pourras revenir améliorer une quête réussie."},
- {target:"skyCard",title:"Ta constellation",copy:"Chaque réussite allume des étoiles. À mesure que tu avances, la constellation se dessine dans ton ciel."}
+ {target:"skyCard",title:"Ta constellation",copy:"Chaque réussite allume un repère doré autour du tracé astronomique. Ces repères comptent tes étoiles de quêtes ; la constellation se dessine aussi dans ton ciel."}
 ];
 function starDisplayName(p,i){return p.stars&&p.stars[i]?p.stars[i]:"Étoile "+(i+1)}
 
-// Canonical-only constellations use the same detail card and licensed atlas.
+// All catalogue constellations use canonical reward totals and the licensed atlas.
 // Each completed canonical quest awards one star; this is display-only progress.
 function renderCanonicalSky(entry){
  const el=document.getElementById("skyCard");if(!el)return;
@@ -2736,7 +2758,7 @@ function renderCanonicalSky(entry){
  note.textContent=lit===total?"Constellation compl\u00e9t\u00e9e":lit?"Constellation en cours":"Constellation \u00e0 d\u00e9couvrir";el.appendChild(note);
 }
 
-function renderSky(index=mapConstellation){let el=document.getElementById("skyCard");if(!el)return;index=Math.max(0,Math.min(index,CONSTELLATIONS.length-1));let c=astronomicalDisplayShape(CONSTELLATIONS[index]),lit=constellationLitAt(index),p={index,...c,lit},active=index===constellationProgress().index,lines=p.edges.map(e=>'<line class="sky-line '+(e[0]<lit&&e[1]<lit?'on':'')+'" x1="'+p.pts[e[0]][0]+'" y1="'+p.pts[e[0]][1]+'" x2="'+p.pts[e[1]][0]+'" y2="'+p.pts[e[1]][1]+'"/>').join(""),stars=p.pts.map((v,i)=>'<g><circle class="sky-star '+(i<lit?'on':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i<lit?4:3)+'"/>'+(i<lit?'<text class="sky-label" x="'+(v[0]+6)+'" y="'+(v[1]-5)+'">'+starDisplayName(p,i)+'</text>':'')+'</g>').join("");el.innerHTML='<div class="sky-head"><span class="sky-name">'+p.name+'</span><span>'+lit+' / '+p.count+' étoiles</span></div><svg class="sky-svg" viewBox="0 0 290 115">'+(astronomicalPrimarySvg({id:CONTENT_CONSTELLATIONS[index]?.id},lit,p.count)||lines+stars)+'</svg><div class="sky-note">'+(active?"Constellation active":lit===p.count?"Constellation complétée":lit===0?"Constellation à découvrir":"Constellation en cours")+'</div>'}
+function renderSky(index=mapConstellation){const entry=CONTENT_CONSTELLATIONS[index];if(entry)return renderCanonicalSky(entry);let el=document.getElementById("skyCard");if(!el)return;index=Math.max(0,Math.min(index,CONSTELLATIONS.length-1));let c=astronomicalDisplayShape(CONSTELLATIONS[index]),lit=constellationLitAt(index),p={index,...c,lit},active=index===constellationProgress().index,lines=p.edges.map(e=>'<line class="sky-line '+(e[0]<lit&&e[1]<lit?'on':'')+'" x1="'+p.pts[e[0]][0]+'" y1="'+p.pts[e[0]][1]+'" x2="'+p.pts[e[1]][0]+'" y2="'+p.pts[e[1]][1]+'"/>').join(""),stars=p.pts.map((v,i)=>'<g><circle class="sky-star '+(i<lit?'on':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i<lit?4:3)+'"/>'+(i<lit?'<text class="sky-label" x="'+(v[0]+6)+'" y="'+(v[1]-5)+'">'+starDisplayName(p,i)+'</text>':'')+'</g>').join("");el.innerHTML='<div class="sky-head"><span class="sky-name">'+p.name+'</span><span>'+lit+' / '+p.count+' étoiles</span></div><svg class="sky-svg" viewBox="0 0 290 115">'+(astronomicalPrimarySvg({id:CONTENT_CONSTELLATIONS[index]?.id},lit,p.count)||lines+stars)+'</svg><div class="sky-note">'+(active?"Constellation active":lit===p.count?"Constellation complétée":lit===0?"Constellation à découvrir":"Constellation en cours")+'</div>'}
 
 function celebrateConstellationReveal(){
  const o=document.getElementById("skyReveal"),card=o?.querySelector(".sky-reveal-card");if(!o||!card)return;

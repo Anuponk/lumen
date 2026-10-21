@@ -13,6 +13,20 @@ nothing. It includes no account identity, token or whole player profile. This
 support action does not alter gameplay onboarding.
 
 ## Visual identity
+
+Mon ciel reserves a separate row for each constellation name, progress and badge
+percentage. The drawing shrinks before these labels; short screens retain all
+six cards and readable text. Finale layout reserves the measured banner height
+and fits the square board against the complete game stack, including wrapped
+action labels and CSS safe-area insets. Buttons keep their readable/touch sizes.
+
+Each earned quest lights one gold decorative mark around the astronomical
+figure, in overview, detail and victory reveal. The orbit has the actual reward
+total, independent of the number of atlas stars; a new victory animates one new
+mark, a replay adds none. These are quest counters, never additional astronomical
+stars. The Mon ciel tour explains this distinction. Source stars/lines, rewards,
+progression, badge eligibility and saved data are unchanged.
+
 LUMEN should feel like a celestial/energy-map puzzle rather than a reskinned Queens board:
 - dark space/energy-map atmosphere;
 - luminous Guardians/orbs;

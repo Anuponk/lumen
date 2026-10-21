@@ -4,6 +4,20 @@ Baseline: `bef5f32`. All paths are repository-relative. This phase indexes exist
 
 ## Select a check
 
+Card text/reward counters: `sky-navigation-browser-tests.mjs` measures text
+ranges and exact counter totals in overview/detail/victory. Decorative geometry
+and every increment/replay: `quest-reward-orbit-tests.mjs` (required Node gate).
+Canonical Bouvier finale: `finale-responsive-browser.mjs`, imported by the
+existing browser runner, seven viewports plus supported CDP safe-area overrides.
+Guest account dismissal: account-session runner, repeated signup/login and
+automatic post-victory offer; synthetic Auth only. See `docs/TESTING.md` for limits.
+
+Readable existing Auth session with failed write probe: account-session browser
+runner, mobile/desktop reload with synthetic session in localStorage and SDK
+probe behavior simulated. Explicit logout/password recovery/account switching
+remain covered. Real SDK 2.118.0 was additionally checked locally with blocked
+provider requests; that check is distinct from the required fixture transport.
+
 PWA update freshness: `service-worker-cache-tests.mjs` exercises actual worker
 handlers; `service-worker-update-browser-tests.mjs` reproduces warm v9-to-v10
 upgrade, stale HTTP module imports, a subsequent release with unchanged worker,

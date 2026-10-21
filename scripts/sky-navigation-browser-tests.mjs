@@ -9,6 +9,10 @@ async function ready(controlled=false){for(let i=0;i<150;i++){if(await evaluate(
 async function click(selector){const p=await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)}),r=e.getBoundingClientRect();if(!r.width||!r.height)throw Error('Hidden target '+${JSON.stringify(selector)});return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...p});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...p})}
 async function fit(){const result=await evaluate(`(()=>{const sheet=document.querySelector('#mapModal .map-sheet'),modal=document.getElementById('mapModal'),r=sheet.getBoundingClientRect(),selectors=['#closeMap','#adventureRail','#sectorTabs','#constellationPages','#openMyChallenges'];return {height:r.height,overflow:Math.max(sheet.scrollHeight-sheet.clientHeight,modal.scrollHeight-modal.clientHeight),targets:selectors.map(s=>{const e=document.querySelector(s),q=e.getBoundingClientRect();return {s,visible:!e.hidden&&!!q.height,inside:q.top>=0&&q.bottom<=innerHeight&&q.left>=0&&q.right<=innerWidth}})}})()`);assert(result.overflow<=2,'Vertical overflow: '+JSON.stringify(result));assert(result.targets.every(t=>!t.visible||t.inside),'Controls outside viewport: '+JSON.stringify(result));return result.height}
 async function until(expression){for(let i=0;i<100;i++){if(await evaluate(expression))return;await sleep(100)}throw Error('Timed out: '+expression)}
+async function cardTextFits(){
+ const clipped=await evaluate(`(()=>{const failures=[];for(const card of document.querySelectorAll('#sectorTabs .constellation-card')){const bounds=card.getBoundingClientRect();for(const text of card.querySelectorAll('strong,small')){const range=document.createRange();range.selectNodeContents(text);const r=range.getBoundingClientRect();if(r.top<bounds.top+1||r.bottom>bounds.bottom-1||r.left<bounds.left+1||r.right>bounds.right-1)failures.push({label:text.textContent,card:bounds.toJSON(),text:r.toJSON(),rows:getComputedStyle(card).gridTemplateRows,padding:getComputedStyle(card).padding,children:[...card.children].map(e=>({tag:e.tagName,height:e.getBoundingClientRect().height,line:getComputedStyle(e).lineHeight,font:getComputedStyle(e).fontSize}))})}}return failures})()`);
+ assert.deepEqual(clipped,[],'Every constellation label, status and badge percentage must fit completely inside its card');
+}
 const results=[];
 try{
  await send('Page.enable');await send('Runtime.enable');
@@ -18,6 +22,18 @@ try{
   const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:'localStorage.clear();localStorage.setItem("lumenQaProgressV1",JSON.stringify({solved:{0:1,1:1},badges:{historical:1}}));localStorage.setItem("lumenSound","off");localStorage.setItem("lumenTutorialSeen","1");localStorage.setItem("lumenQaTutorialSeen","1");localStorage.setItem("lumenQaTutorialCompletedV1","1");localStorage.setItem("lumenWelcomeDayV1",new Date().toLocaleDateString("en-CA"));localStorage.setItem("lumenInstallLater",String(Date.now()));localStorage.setItem("lumenPushChoice","later");'});
   await send('Page.navigate',{url:url.href});await ready(true);await sleep(1500);await ready();await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});await acknowledgeLearningMilestones(evaluate);
   await click('#openSky');const original=await snapshot(),height=await fit();
+  await cardTextFits();
+  const orbitCounts=await evaluate(`Array.from(document.querySelectorAll('#sectorTabs .constellation-card')).map(card=>({counts:card.getAttribute('aria-label').match(new RegExp('([0-9]+)[/]([0-9]+)')).slice(1).map(Number),total:card.querySelectorAll('.quest-reward').length,earned:card.querySelectorAll('.quest-reward.on').length}))`);
+  for(const card of orbitCounts){assert.equal(card.total,card.counts[1]);assert.equal(card.earned,card.counts[0]);}
+  if(viewport.width===360){
+   for(const [width,height,font] of [[320,568,11],[360,640,14],[390,844,16]]){
+    await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:true});
+    await evaluate(`(()=>{const style=document.createElement('style');style.id='fixtureCardFont';style.textContent='#sectorTabs .constellation-card strong,#sectorTabs .constellation-card small{font-size:${font}px!important}';document.head.appendChild(style)})()`);
+    await cardTextFits();
+    await evaluate(`document.getElementById('fixtureCardFont').remove()`);
+   }
+   await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});
+  }
   assert.equal(await evaluate('document.querySelectorAll(".sky-navigation").length'),1);assert.equal(await evaluate('document.querySelectorAll("#sectorTabs").length'),1);assert.equal(await evaluate('document.querySelectorAll("#mapDetail").length'),1);
   assert.equal(await evaluate('document.querySelectorAll("#sectorTabs .constellation-card").length'),6,JSON.stringify(await evaluate('({rect:document.getElementById("openSky").getBoundingClientRect().toJSON(),viewport:[innerWidth,innerHeight],mapHidden:document.getElementById("mapModal").hidden,sky:lumenDiagnostics.skySnapshot(),overlays:[...document.querySelectorAll("[id$=Overlay]")].filter(e=>!e.hidden).map(e=>e.id),hit:(()=>{const r=document.getElementById("openSky").getBoundingClientRect();return document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)?.outerHTML})()})')));
   assert.equal(await evaluate('lumenDiagnostics.skySnapshot().pages'),2);
@@ -25,6 +41,10 @@ try{
   await click('#adventureRail .locked');assert.equal(await evaluate('document.getElementById("adventureNotice").hidden'),false);assert.equal(await evaluate('lumenDiagnostics.skySnapshot().viewedAdventure'),CONTENT_PACKS[0].id);await click('#adventureNoticeClose');
   await click('#adventureRail .locked');await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape'});await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape'});assert.equal(await evaluate('document.getElementById("adventureNotice").hidden'),true);assert.equal(await evaluate('document.getElementById("mapModal").hidden'),false);assert.equal(await evaluate('document.activeElement.dataset.packId'),CONTENT_PACKS[1].id,'Locked notice restores focus without closing Mon ciel');
   await click('#constellationPrevious');await click('#sectorTabs .constellation-card');assert.equal(await evaluate('lumenDiagnostics.skySnapshot().view'),'detail');
+  const overviewRewardCount=orbitCounts[0];
+  assert.equal(await evaluate('document.querySelectorAll("#skyCard .quest-reward").length'),overviewRewardCount.total,'Detail and overview share actual reward totals');
+  assert.equal(await evaluate('document.querySelectorAll("#skyCard .quest-reward.on").length'),overviewRewardCount.earned);
+
   await click('#puzzleGrid .puzzle-card.done');assert((await snapshot()).replayMode);assert.deepEqual((await snapshot()).progress,original.progress);
   await click('#openSky');await click('#closeMap');assert((await snapshot()).replayMode,'Browsing must preserve replay');
   // Real prior progression beyond Adventure 1 remains accessible after reload.
@@ -56,11 +76,11 @@ try{
   await evaluate(`localStorage.setItem('lumenQaProgressV1',JSON.stringify({solved:Object.fromEntries(Array.from({length:${CONTENT_PACKS[0].questCount-1}},(_,i)=>[i,1])),badges:{historical:1}}));localStorage.removeItem('lumenActiveAttemptV1')`);
   await send('Page.reload',{ignoreCache:true});await sleep(500);await ready();await acknowledgeLearningMilestones(evaluate);
   assert.equal((await snapshot()).levelIndex,CONTENT_PACKS[0].questCount-1);
-  await evaluate('(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');await until('!document.getElementById("skyReveal").hidden');await until('!document.getElementById("skyRevealResults").hidden');await evaluate('document.getElementById("skyRevealNext").scrollIntoView({block:"center",behavior:"instant"})');await click('#skyRevealNext');
+  await evaluate('(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');await until('!document.getElementById("skyReveal").hidden');await until('!document.getElementById("skyRevealResults").hidden');assert.equal(await evaluate('document.querySelectorAll("#skyReveal .quest-reward.new-reward").length'),1,'A victory visibly adds its own reward even when the atlas has fewer stars');await evaluate('document.getElementById("skyRevealNext").scrollIntoView({block:"center",behavior:"instant"})');await click('#skyRevealNext');
   assert.doesNotMatch(await evaluate('document.getElementById("adventureNoticeTitle").textContent'),/Aventure terminée/,'An Adventure with unplayed canonical quests must not celebrate completion');
   const won=await snapshot();assert.equal(won.progress.solved[CONTENT_PACKS[0].questCount],undefined);
   await send('Page.reload',{ignoreCache:true});await sleep(500);await ready();assert.equal((await snapshot()).levelIndex,CONTENT_PACKS[0].questCount-1);assert.deepEqual((await snapshot()).progress,won.progress);
-  results.push({viewport,height,pagination:[1,6,7,12,103],adventures:40,multipleSkies:true,accessPreserved:true,browsingIsolated:true,lockedAdventure:true,replay:true,completion:true,noVerticalOverflow:true});
+  results.push({viewport,height,pagination:[1,6,7,12,103],adventures:40,multipleSkies:true,accessPreserved:true,browsingIsolated:true,lockedAdventure:true,replay:true,completion:true,noVerticalOverflow:true,cardTextFits:true,distinctRewardMarks:true});
  }
  assert.deepEqual(errors,[]);const report={results,uncaughtErrors:errors};if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }finally{await send('Browser.close')}

@@ -2,6 +2,7 @@ export const nodeSuites=[
  'service-worker-cache-tests.mjs',
  'campaign-resume-tests.mjs',
  'campaign-presentation-tests.mjs',
+ 'quest-reward-orbit-tests.mjs',
  'catalogue-access-tests.mjs',
  'catalogue-compatibility-tests.mjs',
  'catalogue-origin-cloud-tests.mjs',

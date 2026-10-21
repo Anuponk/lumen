@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
-import {connectBrowser,navigateAndWait} from './cdp-client.mjs';
+import {connectBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
 const {send,evaluate,errors}=await connectBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const navigate=(method,params)=>navigateAndWait({send,evaluate},method,params);
@@ -37,9 +37,12 @@ if(isolatedRecovery){
  localStorage.setItem('lumenCloudOwnerId','fixture-player');
  if(!savedRetryServer)localStorage.setItem('lumenProgressV1',JSON.stringify({...window.__fixtureProfile,solved:{1:1},shards:9}));
 }
-window.supabase={createClient(){
- let session=JSON.parse(sessionStorage.getItem('fixtureAuthSession')||'null'),callback=()=>{};
- const set=(event,value)=>{session=value;sessionStorage.setItem('fixtureAuthSession',JSON.stringify(value));callback(event,value)};
+window.supabase={createClient(url,key,options){
+ // Model the SDK's default writable-storage probe: a full but readable store
+ // otherwise falls back to memory and hides an existing persisted session.
+ const memory=new Map(),storage=options?.auth?.storage||(sessionStorage.getItem('fixtureAuthQuota')==='1'?{getItem:k=>memory.get(k)??null,setItem:(k,v)=>memory.set(k,v)}:localStorage);
+ let session=JSON.parse(storage.getItem('fixtureAuthSession')||'null'),callback=()=>{};
+ const set=(event,value)=>{session=value;storage.setItem('fixtureAuthSession',JSON.stringify(value));callback(event,value)};
  window.__emitAuthEvent=event=>set(event,session);
  return {rpc:async(name,args)=>{
   if(!isolatedRecovery)return name==='lumen_restore_profile'?{data:null,error:{message:'simulated restore outage'}}:{data:[],error:null};
@@ -98,7 +101,7 @@ window.supabase={createClient(){
 const results=[];
 async function verifyIsolatedRecovery(){
  const quest=canonicalQuestList().find(q=>q.legacyIndex===null);assert.ok(quest);
- await evaluate(`sessionStorage.setItem('fixtureIsolatedRecovery','1');sessionStorage.setItem('fixtureAuthSession',JSON.stringify({user:{id:'fixture-player'}}));localStorage.removeItem('lumenCloudDiagnosticsV1')`);
+ await evaluate(`sessionStorage.setItem('fixtureIsolatedRecovery','1');localStorage.setItem('fixtureAuthSession',JSON.stringify({user:{id:'fixture-player'}}));localStorage.removeItem('lumenCloudDiagnosticsV1')`);
  await navigate('Page.reload');
  await until(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='hydration_partial_reconciliation_pending')`);
  const before=await evaluate(`({local:localStorage.getItem('lumenProgressV1'),loads:sessionStorage.getItem('fixtureIsolatedLoads'),snapshots:window.__fixtureSnapshotWrites})`);
@@ -197,7 +200,7 @@ async function verifyIsolatedRecovery(){
  assert.deepEqual(confirmedWin.request.facts,pendingWin.reward.facts);
  assert.equal(confirmedWin.request.operationId,pendingWin.operationId);
  assert.equal(restoredWin.performance.attempts,1,'End-of-grid retry grants and counts the saved run once');
- await evaluate(`sessionStorage.removeItem('fixtureIsolatedRecovery');sessionStorage.removeItem('fixtureAuthSession');sessionStorage.removeItem('fixtureRetryPersist');sessionStorage.removeItem('fixtureRetryServer');`);
+ await evaluate(`sessionStorage.removeItem('fixtureIsolatedRecovery');localStorage.removeItem('fixtureAuthSession');sessionStorage.removeItem('fixtureRetryPersist');sessionStorage.removeItem('fixtureRetryServer');`);
  return true;
 }
 try{
@@ -208,7 +211,7 @@ try{
  for(const viewport of [{width:390,height:844,mobile:true},{width:1440,height:900,mobile:false}]){
   await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});
   await navigate('Page.navigate',{url:url.href});
-  await evaluate(`sessionStorage.setItem('fixtureAuthSession',JSON.stringify({user:{id:'fixture-player'}}));sessionStorage.setItem('fixtureDelaySessionRestore','1');`);
+  await evaluate(`localStorage.setItem('fixtureAuthSession',JSON.stringify({user:{id:'fixture-player'}}));sessionStorage.setItem('fixtureDelaySessionRestore','1');`);
   await navigate('Page.reload');
   await until('window.__sessionRestoreWaiting===true');
   assert.equal(await evaluate(`document.getElementById('mobileAuthAction').disabled`),true,'No second login while the saved session is restoring');
@@ -219,8 +222,41 @@ try{
   await until(`!document.getElementById('mobileAuthAction').disabled && !document.getElementById('mobileAuthAction').textContent.includes('Se connecter')`);
   assert.deepEqual(await evaluate('window.__authCalls',true),[],'Saved account returns without another login');
 
-  await evaluate(`sessionStorage.removeItem('fixtureAuthSession');sessionStorage.removeItem('lumenPasswordRecoveryPending');`);
+  await evaluate(`localStorage.removeItem('fixtureAuthSession');sessionStorage.removeItem('fixtureAuthQuota');sessionStorage.removeItem('lumenPasswordRecoveryPending');`);
   await navigate('Page.reload');
+  // Exercise the automatic quest milestone through a real guest victory, too.
+  const originalGuest=await evaluate("localStorage.getItem('lumenProgressV1')");
+  for(const dismiss of ['accountOptinClose','accountOptinLater']){
+   await evaluate(`localStorage.setItem('lumenProgressV1',JSON.stringify({solved:{0:1,1:1,2:1,3:1},badges:{historical:1}}));localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenAccountOfferNextMilestone');localStorage.setItem('lumenTutorialSeen','1');localStorage.setItem('lumenTutorialCompletedV1','1')`);
+   await navigate('Page.reload');
+   await acknowledgeLearningMilestones(evaluate);
+   assert.equal(await evaluate('lumenDiagnostics.snapshot().levelIndex'),4);
+   await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
+   await until(`!document.getElementById('skyReveal').hidden && !document.getElementById('skyRevealResults').hidden`);
+   await evaluate(`document.getElementById('skyRevealNext').click()`);
+   await until(`!document.getElementById('accountOptin').hidden`);
+   const before=await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress.solved)`);
+   await evaluate(`document.getElementById('${dismiss}').click()`);
+   assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),true);
+   await until('lumenDiagnostics.snapshot().levelIndex===5');
+   assert.equal(await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress.solved)`),before,'Automatic offer dismissal preserves earned victories');
+   assert.deepEqual(await evaluate('window.__authCalls'),[],'Continuing as guest must not authenticate');
+  }
+  await evaluate(`localStorage.setItem('lumenProgressV1',${JSON.stringify(originalGuest)});localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenAccountOfferNextMilestone')`);
+  await navigate('Page.reload');
+  // #356: both dismissal actions work repeatedly from signup and login,
+  // preserving guest achievements and avoiding any Auth call.
+  const guestProgress=()=>evaluate(`JSON.stringify((()=>{const p=lumenDiagnostics.snapshot().progress;return {solved:p.solved,canonicalQuestState:p.canonicalQuestState,performances:p.performances,xp:p.xp,shards:p.shards,badges:p.badges}})())`);
+  for(const mode of ['signup','login'])for(const dismiss of ['accountOptinClose','accountOptinLater']){
+   const before=await guestProgress();
+   await evaluate(`document.getElementById('mobileAuthAction').click();${mode==='login'?"document.getElementById('accountAuthSwitch').click();":''}`);
+   assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),false);
+   await evaluate(`document.getElementById('${dismiss}').click()`);
+   assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),true);
+   assert.equal(await guestProgress(),before,'Dismissing account UI preserves all guest achievements');
+   assert.deepEqual(await evaluate('window.__authCalls'),[]);
+   assert.equal(await evaluate(`document.getElementById('mobileAuthAction').textContent.includes('Se connecter')`),true);
+  }
   await evaluate(`document.getElementById('mobileAuthAction').click()`);
   assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),false);
   assert.equal(await evaluate(`!!document.getElementById('accountOtp')`),false);
@@ -242,6 +278,10 @@ try{
   assert.equal(await evaluate("document.getElementById('accountSyncDiagnosticPanel').hidden"),true);
   await navigate('Page.reload');
   await until(`document.getElementById('mobileAuthAction').textContent==='Déconnexion'`);
+  await evaluate(`sessionStorage.setItem('fixtureAuthQuota','1')`);
+  await navigate('Page.reload');
+  assert.equal(await evaluate(`document.getElementById('mobileAuthAction').textContent`),'Déconnexion','A readable persisted session must survive a failed SDK write probe');
+  await evaluate(`sessionStorage.removeItem('fixtureAuthQuota')`);
   const recovery=new URL(url);recovery.searchParams.set('lumen_confirm','a'.repeat(64));recovery.searchParams.set('type','recovery');
   await navigate('Page.navigate',{url:recovery.href});await until(`window.__authCalls?.includes('recovery')`);
   await until(`document.getElementById('accountProfileEditor').hidden===false`);
@@ -255,7 +295,7 @@ try{
   await evaluate(`document.getElementById('mobileAuthAction').click()`);
   await until(`document.getElementById('mobileAuthAction').textContent.includes('Se connecter')`);
   const isolatedCanonicalRecovery=await verifyIsolatedRecovery();
-  results.push({viewport,guestDismiss:true,passwordLogin:true,reload:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,restoreFailureVisible:true,isolatedCanonicalRecovery,isolatedLegacyRecovery:true});
+  results.push({viewport,guestDismiss:true,automaticOfferDismiss:true,repeatedSignupLoginDismiss:true,passwordLogin:true,reload:true,readableSessionWithQuota:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,restoreFailureVisible:true,isolatedCanonicalRecovery,isolatedLegacyRecovery:true});
  }
  assert.equal(errors.length,0,JSON.stringify(errors));
  const report={simulatedAuth:true,liveCloudWrites:false,results,exceptions:errors};
