@@ -55,7 +55,7 @@ test('a canonical board never renders the dormant legacy challenge banner',async
  const source=readFileSync('src/ui/game-screen.js','utf8');
  const nodes={challengeBanner:{hidden:false},challengeTitle:{textContent:''},challengeCopy:{textContent:''}};
  const ctx={canonicalActiveQuest:next,levelIndex:198,lumenProgress:{stars:{}},document:{getElementById:id=>nodes[id]},
-  bonusChallengeFor:()=>null,milestoneFor:()=>({title:'Grand Chien',copy:'legacy final'})};
+  bonusChallengeFor:()=>null,canonicalQuestForLegacy:()=>({id:'historical-final'}),canonicalQuestMilestone:quest=>quest===next?null:({title:'Grand Chien',copy:'catalogue final'})};
  vm.createContext(ctx);vm.runInContext(functionSource(source,'renderXP'),ctx);ctx.renderXP();
  assert.equal(nodes.challengeBanner.hidden,true);assert.equal(nodes.challengeTitle.textContent,'');
  ctx.canonicalActiveQuest=null;ctx.renderXP();assert.equal(nodes.challengeBanner.hidden,false);assert.equal(nodes.challengeTitle.textContent,'Grand Chien');

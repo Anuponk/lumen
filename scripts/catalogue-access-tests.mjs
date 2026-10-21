@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {canonicalConstellationCatchupAvailable,canonicalQuestList,canonicalInsertedQuestDecision} from '../src/campaign/canonical-quests.js';
+import {canonicalConstellationCatchupAvailable,canonicalQuestList,canonicalInsertedQuestDecision,canonicalCampaignQuestDecision} from '../src/campaign/canonical-quests.js';
+import {currentCatalogueOrigin} from '../src/campaign/catalogue-origin.js';
 import {insertedQuestDecision} from '../src/campaign/catalogue-access.js';
 import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {hasPackAccess} from '../src/campaign/content.js';
@@ -10,6 +11,22 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {functionSource} from './source-tools.mjs';
 const q=(id,index,pack,constellation,ordinal)=>({id,legacyIndex:index,packId:pack,constellationId:constellation,ordinal});
+
+test('Antlia: historical frontier stays acquired while a current-cohort player cannot skip new prerequisites',()=>{
+ const quests=canonicalQuestList(),antlia=quests.find(q=>q.constellationId==='iau-ant');
+ const preceding=quests.filter(q=>q.ordinal<antlia.ordinal);
+ const historical={solved:Object.fromEntries(preceding.filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1])),canonicalQuestState:{},xp:321,shards:7};
+ const context={entitlements:[antlia.packId],signedIn:true,cloudReady:true};
+ const original=JSON.stringify(historical);
+ assert.equal(canonicalCampaignQuestDecision(antlia,historical,context).status,'ready','Existing players retain their frontier after the insertion of Dauphin and other new constellations');
+ const current={...structuredClone(historical),catalogueOrigin:currentCatalogueOrigin};
+ assert.equal(canonicalCampaignQuestDecision(antlia,current,context).status,'prerequisite','Ownership does not allow a new player to skip unplayed quests');
+ for(const quest of preceding.filter(q=>q.legacyIndex===null))current.canonicalQuestState[quest.id]={solved:true};
+ assert.equal(canonicalCampaignQuestDecision(antlia,current,context).status,'ready');
+ for(let restore=0;restore<3;restore++)assert.equal(canonicalCampaignQuestDecision(antlia,JSON.parse(JSON.stringify(historical)),context).status,'ready');
+ assert.equal(JSON.stringify(historical),original,'No completion, badge or reward is backfilled');
+ assert.equal(canonicalCampaignQuestDecision(antlia,{catalogueOrigin:currentCatalogueOrigin},{}).status,'pack-locked');
+});
 test('past completed adventure: a new constellation is independent from additions in earlier adventures',()=>{
  const quests=[q('a-old',0,'a','a-1',1),q('a-added',null,'a','a-1',2),q('b-old',1,'b','b-1',3),q('b-new-1',null,'b','b-new',4),q('b-new-2',null,'b','b-new',5)];
  const progress={solved:{0:1,1:1},canonicalQuestState:{}};

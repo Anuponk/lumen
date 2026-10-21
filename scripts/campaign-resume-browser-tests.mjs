@@ -51,6 +51,9 @@ try{
  await evaluate(`document.getElementById('openSky').click()`);
  const browsingBefore=await evaluate(`({snapshot:lumenDiagnostics.snapshot(),attempt:localStorage.getItem('lumenActiveAttemptV1')})`);
  await evaluate(`document.querySelector('#adventureRail [data-pack-id="${next.packId}"]').click();while(!document.querySelector('#sectorTabs [data-content-id="${next.constellationId}"]'))document.getElementById('constellationNext').click();document.querySelector('#sectorTabs [data-content-id="${next.constellationId}"]').click()`);
+ await evaluate(`document.getElementById('constellationBack').click()`);
+ assert.match(await evaluate(`document.querySelector('#sectorTabs [data-content-id="${next.constellationId}"]').getAttribute('aria-label')`),new RegExp('0/'+all.filter(q=>q.constellationId===next.constellationId).length+' étoiles'),'An unstarted canonical constellation has actual nonzero total');
+ await evaluate(`document.querySelector('#sectorTabs [data-content-id="${next.constellationId}"]').click()`);
  const detailVisibility=()=>evaluate(`Object.fromEntries(['puzzleGrid','performanceLegend','skyCard'].map(id=>[id,document.getElementById(id).getClientRects().length>0]))`);
  assert.deepEqual(await detailVisibility(),{puzzleGrid:true,performanceLegend:true,skyCard:true},'Dauphin uses the standard quest grid, badge legend and constellation card');
  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#puzzleGrid [data-quest-id]'),b=>b.dataset.questId)`),all.filter(q=>q.constellationId===next.constellationId).map(q=>q.id),'Dauphin shows exactly its catalogue quests');
@@ -171,6 +174,26 @@ try{
  assert.equal(await earnedCount(),expectedBadges,'Cooldown refresh preserves canonical badges');
  assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).attemptId`),active.attemptId);
  const earnedShot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(tmpdir(),'lumen-dauphin-detail-earned.png'),Buffer.from(earnedShot.data,'base64'));
+ // Completed/partial canonical-only constellations use actual quest membership,
+ // even when a historical numeric slot/drawing is absent. Read-only browsing
+ // and refresh must preserve the running attempt and all reward balances.
+ const completeGroup=all.filter(q=>q.constellationId===next.constellationId);
+ const partialGroup=all.filter(q=>q.packId===next.packId&&q.constellationId!==next.constellationId&&q.legacyIndex===null).filter(q=>q.constellationId===all.find(q=>q.ordinal>completeGroup.at(-1).ordinal)?.constellationId);
+ await evaluate(`(()=>{const p=JSON.parse(sessionStorage.getItem('grandChienFixture'));for(const q of ${JSON.stringify(completeGroup)})p.canonicalQuestState[q.id]={solved:true,stars:1,badges:{speed:true}};for(const q of ${JSON.stringify(partialGroup.slice(0,2))})p.canonicalQuestState[q.id]={solved:true,stars:1,badges:{speed:true}};sessionStorage.setItem('grandChienFixture',JSON.stringify(p));localStorage.setItem('lumenProgressV1',JSON.stringify(p))})()`);
+ await navigateAndWait({send,evaluate},'Page.reload');
+ await until(`document.getElementById('retryAccountSync').hidden`);
+ const preserved=await evaluate(`JSON.stringify({progress:lumenDiagnostics.snapshot().progress,attempt:localStorage.getItem('lumenActiveAttemptV1')})`);
+ for(const viewport of [{width:390,height:844},{width:1440,height:900}]){
+  await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1,mobile:viewport.width<700});
+  await evaluate(`document.getElementById('openSky').click();document.querySelector('#adventureRail [data-pack-id="${next.packId}"]').click();while(!document.querySelector('#sectorTabs [data-content-id="${next.constellationId}"]'))document.getElementById('constellationNext').click()`);
+  const card=await evaluate(`(()=>{const c=document.querySelector('#sectorTabs [data-content-id="${next.constellationId}"]');return {label:c.getAttribute('aria-label'),complete:c.classList.contains('completed'),stars:c.querySelectorAll('.sky-star').length,lit:c.querySelectorAll('.sky-star.on').length,lines:c.querySelectorAll('.sky-line').length,litLines:c.querySelectorAll('.sky-line.on').length}})()`);
+  assert.match(card.label,new RegExp(completeGroup.length+'/'+completeGroup.length+' étoiles.*Terminée'));
+  assert.equal(card.complete,true);assert(card.stars>0);assert.equal(card.lit,card.stars);assert.equal(card.litLines,card.lines);
+  const partial=await evaluate(`document.querySelector('#sectorTabs [data-content-id="${partialGroup[0].constellationId}"]').getAttribute('aria-label')`);
+  assert.match(partial,new RegExp('2/'+partialGroup.length+' étoiles'));assert.doesNotMatch(partial,/Terminée/);
+  await evaluate(`lumenDiagnostics.refreshSky();document.getElementById('closeMap').click()`);
+ }
+ assert.equal(await evaluate(`JSON.stringify({progress:lumenDiagnostics.snapshot().progress,attempt:localStorage.getItem('lumenActiveAttemptV1')})`),preserved,'Rendering cannot rewrite rewards or attempt data');
  assert.deepEqual(errors,[]);
  const report={authenticatedMobile:true,grandChienToDauphin:true,canonicalReload:true,attemptIdentityPreserved:true,accountSwitchIsolated:true,canonicalBannerIsolated:true,canonicalStartMetadataArchived:true,canonicalVictoryConfirmed:true,oneGrant:true,quest:next.ordinal,solvedBoardResumedAfterAuth:true,committedReceiptResumed:true,recreatedCaptureArchived:true,oldQuestRecoveryPreservesActiveBoard:true,canonicalRewardCelebration:true};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));

@@ -179,6 +179,14 @@ try{
    assert.equal(restored.xp,progress.xp);assert.equal(restored.shards,progress.shards);
    await openDetail();
    assert.equal(await evaluate(`document.querySelectorAll(${JSON.stringify(selector+' .performance-slot.earned')}).length`),4,'Mon ciel shows all four badges');
+   await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
+   await acknowledgeLearningMilestones(evaluate);
+   await evaluate('document.getElementById("attemptMask").click();(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');
+   await until('!document.getElementById("skyReveal").hidden');
+   assert.equal(await evaluate('document.querySelectorAll("#skyRevealRewards .speed.previously-earned").length'),1,'A previously held Rapidité remains visible on the victory recap');
+   assert.match(await evaluate('document.querySelector("#skyRevealRewards .speed").textContent'),/déjà obtenu/);
+   assert.equal(await evaluate('document.querySelectorAll("#skyRevealRewards .star").length'),0,'Repeated replay cannot award another star');
+   assert.equal((await evaluate('lumenDiagnostics.snapshot().progress')).xp,progress.xp);
    results.push({viewport,questId:q.id,replayBadges:true,reload:true,noDuplicateRewards:true});
   }
   // First completion must reveal its actual constellation and one confirmed star.

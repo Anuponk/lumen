@@ -26,7 +26,7 @@ import {LUMEN_META,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATI
 import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt,badgeCooldownRemaining,badgeCooldownLabel} from "../campaign/performance.js";
 import {challengeEligibility,challengeSnapshot,compareChallenge,createChallengeClient,normalizeChallengeName,validChallengeName} from "../campaign/social-challenge.js";
 import {resolveChallengeQuest} from "../campaign/canonical-challenges.js";
-import {canonicalDisplayForLegacy,canonicalQuestList,canonicalAdventureSummary,canonicalQuestByOrdinal,canonicalQuestForLegacy,canonicalNextUnsolved,canonicalCampaignQuestDecision,canonicalInsertedQuestDecision,unlockedAdventureProgress} from "../campaign/canonical-quests.js";
+import {canonicalDisplayForLegacy,canonicalScopeProgress,canonicalCampaignComplete,canonicalQuestMilestone,canonicalQuestList,canonicalAdventureSummary,canonicalQuestByOrdinal,canonicalQuestForLegacy,canonicalNextUnsolved,canonicalCampaignQuestDecision,canonicalInsertedQuestDecision,unlockedAdventureProgress} from "../campaign/canonical-quests.js";
 import {acknowledgeCanonicalVictory,commitCanonicalVictoryViaLedger as commitCanonicalVictory,questIsCompleted} from "../persistence/canonical-progress.js";
 import {loadCommittedCanonicalAttempt} from '../persistence/canonical-command.js';
 import {classifyCanonicalRecoveryError} from '../persistence/canonical-recovery-errors.js';
@@ -938,8 +938,8 @@ function successAchievement(){
  const canonicalLabel=canonicalQuest?CONTENT_CONSTELLATIONS.find(x=>x.id===canonicalQuest.constellationId)?.label:null;
   if(canonicalLabel)ch={name:canonicalLabel};
   let kicker="QUÊTE "+canonicalNumber+" ACCOMPLIE",main=(ch?.name||"Constellation")+" · "+pos+"/"+range.count+" quêtes",detail=solved+"/"+availableQuests+" quêtes accomplies";
- const milestone=generated?null:milestoneFor(levelIndex);
- if(milestone?.kind==="boss"){kicker="CONSTELLATION COMPLÉTÉE";main=ch.name;detail=solved+"/"+campaignQuestCount()+" quêtes accomplies · "+skyStarsEarned()+" étoiles allumées"}
+ const milestone=canonicalQuestMilestone(canonicalQuest);
+ if(milestone?.kind==="boss"&&canonicalScopeProgress(lumenProgress,{constellationId:canonicalQuest.constellationId}).complete){kicker="CONSTELLATION COMPLÉTÉE";main=ch.name;detail=solved+"/"+availableQuests+" quêtes accomplies"}
  else if(run.qualifying&&run.mastery){kicker="MAÎTRISE";main="Rapide, autonome et sans erreur";detail=(ch?.name||"Constellation")+" · Quête "+canonicalNumber+" · "+formatDuration(secs)}
  else if(run.qualifying&&run.noError){kicker="SANS ERREUR";main=(ch?.name||"Constellation")+" · Quête "+canonicalNumber;detail=formatDuration(secs)+" · résolution propre"}
  else if(run.qualifying&&run.speed){kicker="RAPIDITÉ";main="Quête "+canonicalNumber+" en "+formatDuration(secs);detail=(ch?.name||"Constellation")}
@@ -1828,13 +1828,13 @@ function configureSuccessFeedback(questPassed){
  if(box)box.hidden=!ask;
 }
 
-function endgameSeenKey(){return "lumenEndgameSeen:"+campaignQuestCount()}
+function endgameSeenKey(){return "lumenEndgameSeen:"+canonicalQuestList().length}
 function endgameStats(){
- const performances=lumenProgress.performances||{},stats={autonomy:0,speed:0,noError:0,mastery:0};
- for(const p of Object.values(performances)){const badges=p?.badges||{};for(const key of Object.keys(stats))if(badges[key])stats[key]++}
- return {quests:campaignQuestCount(),constellations:CONSTELLATIONS.length,stars:skyStarsEarned(),...stats};
+ const quests=canonicalQuestList(),summary=canonicalScopeProgress(lumenProgress);
+ return {quests:summary.total,constellations:new Set(quests.map(q=>q.constellationId)).size,stars:summary.completed,...summary.badges};
 }
 function showEndgameCelebration(){
+ if(!canonicalCampaignComplete(lumenProgress))return;
  const overlay=document.getElementById("endgameOverlay");if(!overlay)return;
  const stats=endgameStats();
  document.getElementById("endgameSummary").textContent=stats.quests+" quêtes · "+stats.constellations+" constellations · "+stats.stars+" étoiles";
@@ -1871,7 +1871,19 @@ function celebrateLearningReplaySuccess(){
  setLearningReplaySuccessMode(true);document.getElementById("successOverlay").classList.add("show");
 }
 
-function renderSuccessRewards(stars,savedPerformance,priorBadges={}){let el=document.getElementById("successRewards");if(!el)return;const run=savedPerformance.run,earned=savedPerformance.badges,qualifying=savedPerformance.qualifying,rewards=[];if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});if(qualifying&&earned.autonomy&&!priorBadges.autonomy)rewards.push({cls:"autonomy",icon:performanceIcon("autonomy"),label:"Autonomie"});if(qualifying&&earned.speed&&!priorBadges.speed)rewards.push({cls:"speed",icon:performanceIcon("speed"),label:"Rapidité"});if(qualifying&&earned.noError&&!priorBadges.noError)rewards.push({cls:"no-error",icon:performanceIcon("noError"),label:"Sans erreur"});if(qualifying&&earned.mastery&&!priorBadges.mastery)rewards.push({cls:"mastery",icon:performanceIcon("mastery"),label:"Maîtrise"});el.innerHTML=rewards.map((r,i)=>'<span class="success-reward '+r.cls+'" style="--reward-delay:'+(220+i*210)+'ms"><span>'+r.icon+'</span><span>'+r.label+'</span></span>').join("");el.classList.toggle("mastery-earned",!!qualifying&&!!earned.mastery&&!priorBadges.mastery)}
+function renderSuccessRewards(stars,savedPerformance,priorBadges={}){
+ const el=document.getElementById("successRewards");if(!el)return;
+ const earned=savedPerformance.badges||{},qualifying=savedPerformance.qualifying,rewards=[];
+ if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});
+ for(const [key,cls,label] of [["autonomy","autonomy","Autonomie"],["speed","speed","Rapidité"],["noError","no-error","Sans erreur"],["mastery","mastery","Maîtrise"]]){
+  if(!earned[key])continue;
+  const previous=!!priorBadges[key],newAward=qualifying&&!previous;
+  if(!previous&&!newAward)continue;
+  rewards.push({cls,icon:performanceIcon(key),label:label+(previous?" · déjà obtenu":""),previous});
+ }
+ el.innerHTML=rewards.map((r,i)=>'<span class="success-reward '+r.cls+(r.previous?' previously-earned':'')+'" style="--reward-delay:'+(220+i*210)+'ms"><span>'+r.icon+'</span><span>'+r.label+'</span></span>').join("");
+ el.classList.toggle("mastery-earned",!!qualifying&&!!earned.mastery&&!priorBadges.mastery);
+}
 // Canonical achievements use the stable-ID server ledger, never the historical
 // puzzle_id RPC or the old `solved[levelIndex]` reward calculation.
 const canonicalVictoryOutbox=createDurableCanonicalVictoryOutbox(localStorage,{
@@ -2062,6 +2074,9 @@ async function celebrateCanonicalSuccess(){
  cloudProfileReady=false;try{saveLumenProgress()}catch(error){recordCloudDiagnostic("canonical_local_cache_pending",{reason:"storage"})}finally{cloudProfileReady=previousCloudReady}
  trackAttemptEvent("attempt_completed",{outcome:"success",canonical_id:q.id,first_completion:committed.newlyCompleted});
  celebrated=true;attemptEngine.complete();clearInterval(timer);pauseGameClock();clock();
+ endgamePending=committed.newlyCompleted&&canonicalCampaignComplete(lumenProgress);
+ const completedPack=contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot()}).skies.flatMap(s=>s.packs).find(pack=>pack.id===q.packId);
+ adventurePending=committed.newlyCompleted&&!endgamePending&&canonicalScopeProgress(lumenProgress,{packId:q.packId}).complete?completedPack:null;
  board.classList.add("win");
  document.getElementById("successTitle").textContent="Quête "+q.ordinal+" accomplie !";
  const earnedLabels=[["speed","Rapidité"],["autonomy","Autonomie"],["noError","Sans erreur"],["mastery","Maîtrise"]].filter(([key])=>confirmedBadges[key]&&!priorBadges[key]&&committed.profile.canonicalQuestState[q.id].badges?.[key]).map(([,label])=>label);
@@ -2069,7 +2084,7 @@ async function celebrateCanonicalSuccess(){
  document.getElementById("successTime").textContent=document.getElementById("time").textContent;
  const share=document.getElementById("successShare");if(share)share.hidden=true;
  const achievements=document.getElementById("successAchievement");if(achievements)achievements.hidden=true;
- const verifiedBadges=Object.fromEntries(['autonomy','speed','noError','mastery'].map(key=>[key,!!confirmedBadges[key]&&!!committed.profile.canonicalQuestState[q.id].badges?.[key]]));
+ const verifiedBadges=Object.fromEntries(['autonomy','speed','noError','mastery'].map(key=>[key,!!committed.profile.canonicalQuestState[q.id].badges?.[key]]));
  renderSuccessRewards(committed.newlyCompleted?1:0,{run,badges:verifiedBadges,qualifying:true},priorBadges);
  const rewards=document.getElementById("successRewards");if(rewards)rewards.hidden=false;
  const challenge=document.getElementById("questResult");if(challenge)challenge.hidden=true;
@@ -2161,8 +2176,8 @@ async function celebrateSuccess(){
  trackLumenEvent('puzzle_complete',levelIndex+1,currentAttemptAnalytics({duration_seconds:facts.seconds,hint_used:!!usedHintThisGame,first_completion:firstCompletion}));
  celebrated=true;attemptEngine.complete();
  const playedPack=packForLegacyQuest(levelIndex),adventureQuests=playedPack?canonicalQuestList().filter(q=>q.packId===playedPack.id):[];
- adventurePending=firstCompletion&&playedPack&&!isCampaignFinalQuest(levelIndex)&&adventureQuests.length>0&&adventureQuests.every(q=>questIsCompleted(lumenProgress,q.id))?playedPack:null;
- endgamePending=firstCompletion&&isCampaignFinalQuest(levelIndex)&&isCampaignComplete(lumenProgress.solved);
+ adventurePending=firstCompletion&&playedPack&&!canonicalCampaignComplete(lumenProgress)&&adventureQuests.length>0&&adventureQuests.every(q=>questIsCompleted(lumenProgress,q.id))?playedPack:null;
+ endgamePending=firstCompletion&&canonicalCampaignComplete(lumenProgress);
  launchWinStar(earnedThisRun);
  const socialEligibility=challengeEligibility({priorPerformance,run:savedPerformance.run});
  lastChallengeOffer={eligibility:socialEligibility,snapshot:challengeSnapshot({questIndex:levelIndex,seconds:facts.seconds,run:savedPerformance.run,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed})};
@@ -2187,7 +2202,7 @@ async function celebrateSuccess(){
  setTimeout(()=>board.querySelectorAll(".cell").forEach(cell=>cell.classList.remove("victory-wave")),1500);
  document.getElementById("successTime").textContent=commanded?formatDuration(facts.seconds):document.getElementById("time").textContent;
  const qr=document.getElementById("questResult");if(ch){qr.hidden=false;qr.className="quest-result "+(questPassed||lumenProgress.stars[ch.id]?"success":"fail");qr.textContent=questPassed?"✦ Défi réussi ! +25 XP et un éclat gagné.":lumenProgress.stars[ch.id]?"✦ Défi déjà accompli":"Défi échoué — la quête est tout de même accomplie."}else qr.hidden=true;
- const m=generatedQuest?null:milestoneFor(levelIndex),sub=document.getElementById("successSub");if(sub)sub.textContent=m?(m.kind==="boss"?"Défi final réussi · constellation complétée":"Défi intermédiaire réussi · +1 ★ bonus"):(questPassed?"Quête réussie · +25 XP et +1 ✦":"Ton ciel progresse");
+ const m=canonicalQuestMilestone(canonicalQuestForLegacy(levelIndex)),sub=document.getElementById("successSub");if(sub)sub.textContent=m?(m.kind==="boss"?(canonicalScopeProgress(lumenProgress,{constellationId:canonicalQuestForLegacy(levelIndex).constellationId}).complete?"Défi final réussi · constellation complétée":"Dernière quête réussie · des quêtes restent à accomplir"):"Étape intermédiaire réussie"):(questPassed?"Quête réussie · +25 XP et +1 ✦":"Ton ciel progresse");
  if(levelIndex===1&&sub)sub.textContent="Ton ciel progresse. Rapidité arrive à la quête 3 ; Autonomie et Maîtrise à la quête 6.";
  if(levelIndex<=1)try{localStorage.setItem(qaActive?"lumenQaTutorialSeen":"lumenTutorialSeen","1")}catch(_){}
  if(levelIndex===1)markTutorialCompleted();
@@ -2195,8 +2210,9 @@ async function celebrateSuccess(){
  const skyEarnedAfter=skyStarsEarned(),crossedConstellation=firstCompletion&&(()=>{let total=0;for(const cs of CONSTELLATIONS){total+=cs.count;if(skyEarnedBefore<total&&skyEarnedAfter>=total)return true}return false})();
  const checkpoint=firstCompletion&&!crossedConstellation?constellationCheckpoint(skyEarnedBefore,skyEarnedAfter):null;
  const revealDelay=!generatedQuest&&earnedThisRun>0?2250:0;
+ const revealQuest=canonicalQuestForLegacy(levelIndex),revealCampaign=revealQuest?{quest:revealQuest,newlyCompleted:firstCompletion}:null;
  const clearVictoryConfetti=()=>document.getElementById("victoryConfetti")?.remove();
- if(firstCompletion&&earnedThisRun>0&&!generatedQuest){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint)},revealDelay)}else if(questPassed||crossedConstellation||checkpoint){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint)},revealDelay)}else setTimeout(()=>showSkyReveal(skyEarnedBefore),revealDelay);
+ if(firstCompletion&&earnedThisRun>0&&!generatedQuest){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint,revealCampaign)},revealDelay)}else if(questPassed||crossedConstellation||checkpoint){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint,revealCampaign)},revealDelay)}else setTimeout(()=>showSkyReveal(skyEarnedBefore,null,revealCampaign),revealDelay);
 
  // Deliberately varied shapes/positions; purely visual, no game-state effect.
  const palette=["#68e7ff","#5ea7ff","#8b7cff","#67d8c2","#d7f8ff","#87bfff"];
@@ -2689,7 +2705,10 @@ const skyNavigation=createSkyNavigation({document,getModel:()=>mapCatalogueOverr
  getCanonicalQuests:id=>canonicalQuestList().filter(q=>q.constellationId===id),
  getCanonicalSolved:q=>questIsCompleted(lumenProgress,q.id),
  getCanonicalAvailable:q=>q.legacyIndex!==null?questIsAccessible(q.legacyIndex):canonicalQuestAvailable(q),getCanonicalPackQuests:id=>canonicalQuestList().filter(q=>q.packId===id),
- getLit:entry=>CONSTELLATIONS[entry.legacyIndex]?constellationLitAt(entry.legacyIndex):0,getShape:entry=>astronomicalDisplayShape(entry.shape||CONSTELLATIONS[entry.legacyIndex]),getMastered:entry=>{const eligible=Array.from({length:entry.questCount},(_,offset)=>entry.questStart+offset).filter(i=>currentPerformanceEligibility(i).mastery);return eligible.length>0&&eligible.every(i=>lumenProgress.performances?.[i]?.badges?.mastery)},getBadgeCounts:entry=>{const badges={autonomy:0,speed:0,noError:0,mastery:0};const quests=entry.constellations?canonicalQuestList().filter(q=>q.packId===entry.id):canonicalQuestList().filter(q=>q.constellationId===entry.id);for(const quest of quests){const earned=quest.legacyIndex!==null?lumenProgress.performances?.[quest.legacyIndex]?.badges:lumenProgress.canonicalQuestState?.[quest.id]?.badges;for(const key of Object.keys(badges))if(earned?.[key])badges[key]++}return badges},onConstellation:entry=>{if(entry.canonicalOnly){renderMap();return}if(mapConstellationRange(entry.legacyIndex)){mapConstellation=entry.legacyIndex;renderMap()}}});
+ getLit:entry=>canonicalScopeProgress(lumenProgress,{constellationId:entry.id}).completed,
+ getShape:entry=>({...astronomicalDisplayShape(entry.shape||CONSTELLATIONS[entry.legacyIndex]),count:canonicalScopeProgress(lumenProgress,{constellationId:entry.id}).total}),
+ getMastered:entry=>canonicalScopeProgress(lumenProgress,{constellationId:entry.id}).mastered,
+ getBadgeCounts:entry=>canonicalScopeProgress(lumenProgress,entry.constellations?{packId:entry.id}:{constellationId:entry.id}).badges,onConstellation:entry=>{if(entry.canonicalOnly){renderMap();return}if(mapConstellationRange(entry.legacyIndex)){mapConstellation=entry.legacyIndex;renderMap()}}});
 const SKY_TOUR_STEPS=[
  {target:"skyNavigation",title:"Ciels et Aventures",copy:"Choisis un Ciel, puis une Aventure. Les autres restent compactes ; un cadenas indique un contenu verrouillé. Consulter une autre Aventure ne change pas ta progression."},
  {target:"sectorTabs",title:"Tes constellations",copy:"Ton ciel est organisé en constellations. Elles se débloquent au fil de ton aventure."},
@@ -2728,6 +2747,8 @@ function celebrateConstellationReveal(){
 }
 function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
  const after=skyStarsEarned(),crossed=beforeEarned!==null&&after>beforeEarned;
+ const playedQuest=canonicalActiveQuest??canonicalQuestForLegacy(levelIndex);
+ if(!canonical&&playedQuest)canonical={quest:playedQuest,newlyCompleted:crossed};
  const completed=[];
  if(crossed){let total=0;for(let i=0;i<CONSTELLATIONS.length;i++){total+=CONSTELLATIONS[i].count;if(beforeEarned<total&&after>=total)completed.push(i)}}
  const completedIndex=completed.length?completed[completed.length-1]:-1;
@@ -2797,7 +2818,13 @@ function closeUnifiedSkyReveal(){
  return false;
 }
 document.getElementById("skyRevealContinue").onclick=()=>{const completedReveal=document.getElementById("skyReveal").classList.contains("complete-celebration");if(closeUnifiedSkyReveal())return;document.getElementById("successOverlay").classList.add("show");if(completedReveal)setTimeout(maybeOfferAccount,450)};
-function renderXP(){if(canonicalActiveQuest){const box=document.getElementById("challengeBanner");if(box)box.hidden=true;return}let q=bonusChallengeFor(levelIndex),m=milestoneFor(levelIndex),ch=m||q,box=document.getElementById("challengeBanner");if(!box)return;box.hidden=!ch;if(ch){let done=q&&lumenProgress.stars[q.id];document.getElementById("challengeTitle").textContent=ch.title+(done?" · ★":"");document.getElementById("challengeCopy").textContent=done?"Bonus obtenu":ch.copy}}
+function renderXP(){
+ const quest=canonicalActiveQuest??canonicalQuestForLegacy(levelIndex);
+ const bonus=canonicalActiveQuest?null:bonusChallengeFor(levelIndex),milestone=canonicalQuestMilestone(quest),challenge=milestone||bonus;
+ const box=document.getElementById("challengeBanner");if(!box)return;
+ box.hidden=!challenge;
+ if(challenge){const done=bonus&&lumenProgress.stars[bonus.id];document.getElementById("challengeTitle").textContent=challenge.title+(done?" · ★":"");document.getElementById("challengeCopy").textContent=done?"Bonus obtenu":challenge.copy}
+}
 
 function refreshJourney(){awards();let sky=constellationProgress(),earned=skyStarsEarned(),completed=CONSTELLATIONS.slice(0,sky.index).length;
 document.getElementById("progressFill").style.width=(sky.count?Math.round(sky.lit/sky.count*100):0)+"%";

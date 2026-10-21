@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {connectBrowser} from './cdp-client.mjs';
+import {connectBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
+import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {campaignQuestCount,skyStarsForGrid} from '../src/campaign/progression.js';
 import {CAT} from '../src/campaign/catalogue.js';
 import {CAMPAIGN_SIZE_SCHEDULE,CAMPAIGN6_ORDER,SKY_TARGET} from '../src/campaign/data.js';
@@ -61,10 +62,25 @@ try{
   await until('!document.getElementById("skyRevealResults").hidden');
   await evaluate('document.getElementById("skyRevealNext").scrollIntoView({block:"center",behavior:"instant"})');
   await click('skyRevealNext');
-  await until('!document.getElementById("endgameOverlay").hidden');
-  current=await snapshot();assert.equal(current.levelIndex,campaignQuestCount()-1);assert.equal(current.progress.skyScore,SKY_TARGET);
+  assert.equal(await evaluate('document.getElementById("endgameOverlay").hidden'),true,'The numeric endpoint cannot finish an expanded catalogue');
+  current=await snapshot();assert.equal(current.progress.skyScore,SKY_TARGET);
   assert.equal(current.progress.badges.historical,1);assert.equal(current.progress.badges.master,1);
-  assert.match(await evaluate('document.getElementById("endgameSummary").textContent'),new RegExp(String(campaignQuestCount())));
+  // Replace the obsolete numeric-finale expectation with the actual catalogue
+  // endpoint, retaining real click/solve/CTA coverage on mobile and desktop.
+  const all=canonicalQuestList(),final=all.at(-1),done=all.slice(0,-1);
+  const completed={solved:Object.fromEntries(done.filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1])),canonicalQuestState:Object.fromEntries(done.filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true,stars:1,badges:{}}])),badges:{historical:1},performances:{},xp:123,shards:7};
+  await evaluate(`localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(completed))});localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQaActiveAttemptV1')`);
+  await navigateAndWait({send,evaluate},'Page.reload');await acknowledgeLearningMilestones(evaluate);
+  await evaluate(`document.getElementById('openSky').click();document.querySelector('#adventureRail [data-pack-id="${final.packId}"]').click();while(!document.querySelector('#sectorTabs [data-content-id="${final.constellationId}"]'))document.getElementById('constellationNext').click();document.querySelector('#sectorTabs [data-content-id="${final.constellationId}"]').click();document.querySelector('#puzzleGrid [data-quest-id="${final.id}"]').click()`);
+  await acknowledgeLearningMilestones(evaluate);
+  assert.deepEqual((await snapshot()).puz.reg,final.reg,'The final actual catalogue board must be played');
+  await evaluate('document.getElementById("attemptMask").click();(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');
+  await until('!document.getElementById("skyReveal").hidden');
+  assert.match(await evaluate('document.getElementById("skyRevealKicker").textContent'),/CONSTELLATION COMPLÉTÉE/,'The true final victory celebrates the completed current constellation');
+  await evaluate('document.getElementById("skyRevealNext").click()');
+  await until('!document.getElementById("endgameOverlay").hidden');
+  assert.match(await evaluate('document.getElementById("endgameSummary").textContent'),new RegExp(String(all.length)+' quêtes'));
+  assert.equal((await snapshot()).progress.badges.historical,1);
   results.push({viewport,transition100to101:true,normalCelebration:true,noSkip:true,rewardsPreserved:true,reload:true,sameAttempt:true,mapReturn:true,lastQuest:true,cappedSaveRecovery:true,finalVictory:true,completeSky:true});
  }
  assert.deepEqual(errors,[]);

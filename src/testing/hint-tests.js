@@ -57,7 +57,7 @@ async function runHintTests(){
    return typeof celebrateConstellationReveal==="function"&&showSkyReveal.toString().includes("celebrateConstellationReveal()");
  });
  test("Récompense : chaque première étoile gagnée ouvre le ciel",()=>{
-   return celebrateSuccess.toString().includes("firstCompletion&&earnedThisRun>0")&&celebrateSuccess.toString().includes("showSkyReveal(skyEarnedBefore,checkpoint)");
+   return celebrateSuccess.toString().includes("firstCompletion&&earnedThisRun>0")&&celebrateSuccess.toString().includes("showSkyReveal(skyEarnedBefore,checkpoint,revealCampaign)")&&celebrateSuccess.toString().includes("newlyCompleted:firstCompletion");
  });
  test("Récompense : deux respirations célestes existent dans chaque constellation",()=>{
    return CONSTELLATIONS.every(c=>Math.ceil(c.count/3)<Math.ceil(c.count*2/3)&&Math.ceil(c.count*2/3)<c.count);
