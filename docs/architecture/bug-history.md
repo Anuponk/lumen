@@ -102,3 +102,29 @@ existing targets. No rule, unlock, reward or gesture changes.
 CI also exposed a fixture race after account switch: signed-in controls can appear
 before profile readiness. The scenario now awaits the explicit synchronized
 verdict before selecting a canonical quest, retaining the access checks.
+
+
+## End-of-grid save retry reuses a blocked baseline (`0a8076e` follow-up)
+
+The pending historical-victory button called the victory coordinator again,
+whereas the account menu resumed durable queues and requested fresh hydration.
+A not-ready or stale baseline therefore remained blocked through the board
+button. Two new client regressions fail against the pre-fix coordinator. Route
+only a confirmed durable capture through the account retry path, with owner,
+client and frozen attempt/reset guards; retain local-capture retry otherwise.
+The browser regression checks exact operation facts and one additional receipt
+across reload on mobile and desktop. Its fixture must preserve simulated server
+receipts across reload and use the actually accessible quest, keeping existing
+partial-recovery and access assertions. No SQL/profile schema or reward rule
+changes; unknown/divergent progress remains protected.
+Onboarding impact: no new terminology, gesture, destination or badge rule; the
+existing save-retry action now uses the account menu's recovery mechanism.
+
+
+Validation also reproduced a pre-existing 3px app overflow at 375x667 against
+both `0a8076e` and the retry change. The existing small-portrait board reservation
+left insufficient space for the full stack and bottom inset. Increase that
+reservation by 8px without reducing action fonts or touch controls; retain the
+same seven-viewport, square-grid, tap/drag and overflow assertions. Overflow
+failures now include control bounds for diagnosis. UX contract reviewed: no
+onboarding, gesture, eligibility or navigation change.

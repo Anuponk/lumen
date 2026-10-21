@@ -17,11 +17,25 @@ window.__fixtureCommandReceipts=new Map();
 window.__fixtureLegacyReceipts=new Map();window.__fixtureLegacyWrites=0;window.__fixtureLegacyAttempts=0;
 const isolatedRecovery=sessionStorage.getItem('fixtureIsolatedRecovery')==='1';
 window.__fixtureProfile={solved:{},historyBackup:{},badges:{},stars:{},noHint:{},performances:{},canonicalQuestState:{},daily:{},challenges:{},shards:3,xp:0,skyScore:0,skyHistoryVersion:4,legacyReceipt:'cloud'};
+const savedRetryServer=JSON.parse(sessionStorage.getItem('fixtureRetryServer')||'null');
+if(savedRetryServer){
+ window.__fixtureProfile=savedRetryServer.profile;
+ window.__fixtureLegacyReceipts=new Map(savedRetryServer.legacyReceipts);
+ window.__fixtureCommandReceipts=new Map(savedRetryServer.canonicalReceipts);
+ window.__fixtureLegacyWrites=savedRetryServer.legacyWrites;
+ window.__fixtureLedgerWrites=savedRetryServer.canonicalWrites;
+}
+window.__persistFixtureServer=()=>{
+ if(sessionStorage.getItem('fixtureRetryPersist')==='1')sessionStorage.setItem('fixtureRetryServer',JSON.stringify({
+  profile:window.__fixtureProfile,legacyReceipts:[...window.__fixtureLegacyReceipts],canonicalReceipts:[...window.__fixtureCommandReceipts],
+  legacyWrites:window.__fixtureLegacyWrites,canonicalWrites:window.__fixtureLedgerWrites
+ }));
+};
 if(isolatedRecovery){
- window.__fixtureProfile.legacyVictoryRevision=1;
+ if(!savedRetryServer)window.__fixtureProfile.legacyVictoryRevision=1;
  sessionStorage.setItem('fixtureIsolatedLoads',String(Number(sessionStorage.getItem('fixtureIsolatedLoads')||0)+1));
  localStorage.setItem('lumenCloudOwnerId','fixture-player');
- localStorage.setItem('lumenProgressV1',JSON.stringify({...window.__fixtureProfile,solved:{1:1},shards:9}));
+ if(!savedRetryServer)localStorage.setItem('lumenProgressV1',JSON.stringify({...window.__fixtureProfile,solved:{1:1},shards:9}));
 }
 window.supabase={createClient(){
  let session=JSON.parse(sessionStorage.getItem('fixtureAuthSession')||'null'),callback=()=>{};
@@ -45,7 +59,7 @@ window.supabase={createClient(){
     const outcome=applyLegacyVictory(window.__fixtureProfile,index,args.p_facts);
     window.__fixtureProfile.legacyVictoryRevision=(window.__fixtureProfile.legacyVictoryRevision||0)+1;
     window.__fixtureLegacyReceipts.set(args.p_operation_id,{request,outcome,recordedAt:new Date().toISOString()});
-    window.__fixtureLegacyWrites++;
+    window.__fixtureLegacyWrites++;window.__persistFixtureServer();
    }
    if(window.__fixtureLegacyLost)throw Error('simulated lost response after commit');
    return {data:window.__fixtureLegacyReceipts.get(args.p_operation_id),error:null};
@@ -161,7 +175,29 @@ async function verifyIsolatedRecovery(){
  assert.equal(await evaluate(`localStorage.getItem('lumenProgressV1')`),before.local);
  assert.equal(await evaluate('window.__fixtureSnapshotWrites'),before.snapshots);
  assert.equal(await evaluate(`sessionStorage.getItem('fixtureIsolatedLoads')`),before.loads);
- await evaluate(`sessionStorage.removeItem('fixtureIsolatedRecovery');sessionStorage.removeItem('fixtureAuthSession');`);
+ // The end-of-grid button must recover a blocked baseline through the same
+ // durable, fresh-hydration path as the account menu.
+ // This scenario crosses reloads: its simulated server must keep receipts, just like the real database.
+ const writesBeforeRetry=await evaluate(`sessionStorage.setItem('fixtureRetryPersist','1');window.__persistFixtureServer();window.__fixtureLegacyWrites`);
+ const receiptsBeforeRetry=await evaluate('window.__fixtureLegacyReceipts.size');
+ const retryIndex=await evaluate(`lumenDiagnostics.setupQuest(5);document.getElementById('attemptMask').click();lumenDiagnostics.snapshot().levelIndex`);
+ const retryQuest=canonicalQuestList().find(q=>q.legacyIndex===retryIndex);assert(retryQuest);
+ // Respect the catalogue/access gate: setupQuest may redirect a locked quest.
+ await evaluate(`const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.reg.map((row,r)=>row.map((_,c)=>s.puz.sol[r]===c?2:0)))`);
+ await until(`!!document.querySelector('#msg button')`);
+ const pendingWin=await evaluate(`(async()=>{const {createDurableCanonicalVictoryOutbox}=await import('/src/persistence/durable-canonical-outbox.js');return (await createDurableCanonicalVictoryOutbox(localStorage,{namespace:'Legacy'}).pending('fixture-player')).find(e=>e.questId===${JSON.stringify(retryQuest.id)})})()`,true);
+ assert(pendingWin,'The solved board is durable before retry');
+ const epoch=await evaluate('performance.timeOrigin');
+ await evaluate(`document.querySelector('#msg button').click()`);
+ await until(`performance.timeOrigin!==${epoch}&&!!window.lumenDiagnostics`);
+ await until(`window.__fixtureLegacyReceipts?.has(${JSON.stringify(pendingWin.operationId)})`);
+ const restoredWin=await evaluate(`({receipts:[...window.__fixtureLegacyReceipts.values()],writes:window.__fixtureLegacyWrites,performance:window.__fixtureProfile.performances[${retryIndex}]})`);
+ assert.equal(restoredWin.writes,writesBeforeRetry+1);assert.equal(restoredWin.receipts.length,receiptsBeforeRetry+1);
+ const confirmedWin=restoredWin.receipts.find(receipt=>receipt.request.operationId===pendingWin.operationId);assert(confirmedWin);
+ assert.deepEqual(confirmedWin.request.facts,pendingWin.reward.facts);
+ assert.equal(confirmedWin.request.operationId,pendingWin.operationId);
+ assert.equal(restoredWin.performance.attempts,1,'End-of-grid retry grants and counts the saved run once');
+ await evaluate(`sessionStorage.removeItem('fixtureIsolatedRecovery');sessionStorage.removeItem('fixtureAuthSession');sessionStorage.removeItem('fixtureRetryPersist');sessionStorage.removeItem('fixtureRetryServer');`);
  return true;
 }
 try{

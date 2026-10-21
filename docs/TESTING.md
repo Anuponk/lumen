@@ -259,6 +259,14 @@ refusal and retain the two recovery snapshots without a fallback write.
 The account-session browser suite covers this refusal-to-partial-recovery flow
 on mobile and desktop, followed by canonical and historical command recovery,
 lost historical response, persistent auth hold and verified token-refresh resume.
+It also solves an accessible historical board with a blocked baseline, clicks
+its actual save-retry button and follows fresh authenticated hydration. The
+simulated server retains profile and exact receipts across reloads; assertions
+require one additional command, identical facts/operation identity and one
+counted attempt on both mobile and desktop. Quest identity comes from the live
+accessible board, not an assumed diagnostic jump past campaign prerequisites.
+The client suite covers not-ready/stale-baseline retries and account, client or
+attempt-reset changes during asynchronous resumption.
 Its transaction transport is simulated; PostgreSQL guards remain covered by the
 existing real-SQL suite. These tests do not prove an affected phone is repaired
 or reconstruct ambiguous pre-command achievements.
