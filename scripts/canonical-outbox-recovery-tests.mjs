@@ -190,7 +190,8 @@ test('online wakes isolated recovery without starting legacy full-profile writes
 });
 
 test('replacing the cloud client invalidates the isolated permission and cancels its schedule',()=>{
- const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+ // Git checkouts may use CRLF on Windows; extraction must retain the same contract.
+ const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
  const start=source.indexOf('const persistenceModel=')+'const persistenceModel='.length;
  const end=source.indexOf(';\nconst {loadLumenProfile',start);
  assert.ok(end>start);

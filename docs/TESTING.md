@@ -9,6 +9,44 @@ procedure. It links a dated source/evidence archive and identifies future work.
 Real browser storage and physical Android UI do not establish live Supabase
 Auth/RPC, cross-device cloud or player recovery; retain independent SQL/CI proofs.
 
+## Quest parity and board feedback (#522/#516/#521/#515)
+
+Mandatory Node gates: `board-feedback-tests.mjs` (mutation-only halfway,
+restore, terminal state, undo and reset for every size), `group-hint-tests.mjs`
+(real visible quest 91, both auto-marking modes, row/column groups of 2/3,
+certain action and protected lesson gate), and `quest-definition-tests.mjs`
+(published identities/order/membership, variable sizes and N→N+k recovery).
+`quest-view-tests.mjs` additionally executes the actual telemetry adapters with
+the same stable quest at two numeric frontiers, verifies start-event identity,
+nullable unavailable counters, legacy badge compatibility and read-only totals.
+It executes the actual Mon ciel refresh callback with mixed stable/numeric
+cards, reordered cards, an unknown ID, replaced live progress and a closed map.
+
+`browser-tests.mjs` imports `board-feedback-browser.mjs` to check actual click
+handlers and group hints on desktop/mobile, exact preservation of territory
+border widths/colors, source/target roles, closing and reduced motion.
+Playing the indicated exclusion also clears all hint roles/card while retaining
+the same cell DOM nodes.
+`board-feedback-tests.mjs` also executes drag release through the same clearing
+path, preserving the single undo snapshot and prohibiting a full render.
+Screenshots are saved in the system temporary directory. Mobile emulation
+does not establish real Android validation. Full in-app tests and strict audits
+remain mandatory.
+The browser runner additionally opens the real Mon ciel, renders distinct earned
+badges for inserted/numeric quests, reorders the cards and invokes its installed
+refresh callback. Both viewport runs assert unchanged per-quest badge markup
+and unchanged progress.
+
+Onboarding impact: no milestone, cost, badge eligibility or forced lesson
+changes in this lot. Group hints teach the same rule with an actionable first
+explanation; lesson gating and preserved quest identities are covered. The
+wider timing disagreement remains explicit in the audit for contract convergence.
+
+Local combined validation on the branch incorporating main `6dc1a09` is recorded
+in [the chantier report](validation/chantier-522-516-521-515.json). It includes
+the normalized JavaScript source fingerprint and explicitly separates local
+simulations/mobile emulation from real Android, live cloud and Production.
+
 ## Source-to-render astronomy fidelity (#508, #504 follow-up)
 
 `node scripts/audit-astronomical-figures.mjs [report.json]` rebuilds every shipped

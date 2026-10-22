@@ -2,6 +2,7 @@ import history from '../../content/catalogue/access-origins.json' with {type:'js
 
 export const currentCatalogueOrigin=history.current;
 const versions=new Map(history.catalogues.map(entry=>[entry.revision,entry.quests]));
+export function publishedCatalogueQuests(){return versions.get(currentCatalogueOrigin)}
 const currentPacks=new Map(versions.get(currentCatalogueOrigin).map(q=>[q.id,q.packId]));
 export function cataloguePackForQuestId(id){return currentPacks.get(String(id))??null}
 export function catalogueOrigin(profile={}){
