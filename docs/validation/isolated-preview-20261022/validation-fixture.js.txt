@@ -54,7 +54,7 @@
    if(name==='lumen_canonical_command_version')return {error:{code:'PGRST202'},status:404};
    return {data:[]};
   }})};
- 
+
 document.addEventListener('DOMContentLoaded',()=>{
  const panel=document.createElement('aside');panel.id='validationControls';
  panel.style.cssText='background:#17253a;color:#fff;padding:8px 12px;font:12px system-ui;position:relative;z-index:1100';
