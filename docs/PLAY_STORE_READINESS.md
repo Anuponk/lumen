@@ -137,6 +137,21 @@ complet suivant est vert ; les contrôles existants restent inchangés.
 
 ## Décision de clôture
 
+La CI du complément a ensuite reproduit à 360x640 un panneau d'apprentissage
+interceptant le bouton d'aide. La fonction de placement comptait la barre
+interactive dans l'espace disponible. Un test géométrique rouge puis vert
+valide la réservation du bouton et de sa marge de focus ; les interactions
+du modal et étapes pédagogiques restent couvertes par les tests existants.
+Voir la [cause vérifiée](architecture/bug-history.md). Le choix ultérieur de
+maintenir l'activation enfant bloquée est couvert indépendamment par les tests
+du rapport, sans modifier Auth en production.
+
+Après intégration de `main` (`d5d7484`) et du correctif, `npm run test:full`
+sur le candidat `0325695` : **30 suites, aucun échec**, quality gate compris.
+Le rapport UX navigateur ne contient ni échec ni exception ; les tests existants
+de clic/focus du modal d'aide sont conservés. La vérification ciblée du rapport
+confirme aussi le blocage enfant, indépendamment des autres preuves renseignées.
+
 Complément du 22 octobre : scripts SDK/QR embarqués, inventaire de versions,
 hashes et copies MIT, suppression des chargements CDN dans la page d'entrée.
 `npm run test:full` repassé : 30 suites, aucun échec. Le navigateur charge les
