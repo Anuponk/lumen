@@ -29,11 +29,14 @@ export async function verifyBoardFeedback({send,evaluate}){
    for(const id of ['manualCrossTip','questStart','autonomyOverlay','badgeUnlockOverlay','autoCrossUnlockOverlay'])document.getElementById(id).hidden=true;
    const ac=document.getElementById('autoCross');ac.checked=false;ac.dispatchEvent(new Event('change'));
    document.getElementById('manualCrossTipOk').click();
+   // A restored/reset paused attempt resumes only through its real mask action.
+   const mask=document.getElementById('attemptMask');if(!mask.hidden)mask.click();
    window.halfwayMessages=[];
    window.halfwayObserver=new MutationObserver(records=>{for(const r of records)if(r.type==='childList'&&r.target.textContent.includes('Mi-chemin'))halfwayMessages.push(r.target.textContent)});
    halfwayObserver.observe(document.getElementById('rewardToast'),{childList:true});
   })()`);
   assert.equal(await evaluate('lumenDiagnostics.snapshot().n'),6,'The actual quest 91 grid must be selected, not the preceding canonical board');
+  assert.equal(await evaluate('document.getElementById("attemptMask").hidden'),true,'The real attempt is resumed before testing visible hint targets');
   // Click through the real handlers; this detects the missing paint-path wiring.
   for(let r=0;r<3;r++){
    await evaluate(`(()=>{const s=lumenDiagnostics.snapshot(),cell=document.querySelector('.cell[data-row="${r}"][data-col="'+s.puz.sol[${r} ]+'"]');cell.click();cell.click()})()`);

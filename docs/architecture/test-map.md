@@ -1,5 +1,14 @@
 # Existing verification map
 
+Quest convergence (#522): `quest-policy-tests`, `quest-victory-parity-tests`,
+`quest-command-tests` and `admin-recent-players-tests` cover visible rules,
+same-run rewards, receipt/current-profile/account guards and stable analytics.
+`quest-policy-browser` joins the standard browser runner; learning/account/
+canonical-replay/campaign-resume runners cover actual handoff and persistence.
+`quest-command-fixtures`, receipt/social/analytics SQL fixtures and
+`quest-command-concurrency.py` extend the disposable PostgreSQL ledger workflow.
+See `docs/TESTING.md` for commands and distinction from production/device proof.
+
 Baseline: `bef5f32`. All paths are repository-relative. This phase indexes existing checks without changing tests or GitHub Actions. `docs/TESTING.md` retains execution contracts and detailed scenarios. Presence of a suite does not mean it ran or proves live production behavior.
 
 ## Select a check

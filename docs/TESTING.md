@@ -1,5 +1,39 @@
 # Testing and quality gate
 
+## Quest convergence candidate (#522)
+
+`quest-policy-tests.mjs` checks discovery access, preservation of acquired/started
+attempts, live assistance controls and milestone timing independently of dormant
+numeric state. `quest-policy-browser.mjs` runs twelve real UI cases (390/1440,
+visible quests 3/5/6/7/10/11) inside the standard browser suite. Learning tests
+exercise quest 2's explicit sky handoff and complete sequential tour before 3.
+Account browser cases retain numeric and stable guest solved boards beyond
+discovery, with unchanged rewards, the same attempt ID and a paused clock after
+reload. Resuming an ordinary restored board requires the real attempt-mask gesture.
+`quest-victory-parity-tests.mjs` covers no-hint XP, third autonomous win,
+same-run Maîtrise, cooldown, grandfathered rewards and variable future groups.
+`quest-command-tests.mjs` checks exact V2 receipts, ambiguous/lost responses,
+current wallet decreases, account switching and explicit V1 compatibility.
+Admin recent-player tests execute the actual metrics/timeline renderers.
+
+The `canonical-ledger` PostgreSQL workflow installs the pending convergence,
+social and analytics migrations after the existing wallet migration. Run
+`node scripts/quest-command-fixtures.mjs --check` to compare all current server
+contracts with the catalogue; its default SQL output exercises every stable-only
+quest's first win and grandfathered replay. Receipt fixtures cover atomic
+rollback, forged summaries, lost responses, cross-account reads and V1 recovery.
+`quest-command-concurrency.py` requires `LUMEN_SQL_FIXTURE=1`, local `lumen_test`
+and synthetic auth fixtures. It races duplicates, conflicting facts, historical
+and canonical victories and spending. Social fixtures preserve hidden reference,
+one attempt, guest names, ownership and campaign isolation; analytics fixtures
+exclude QA/automation and enforce current admin capabilities.
+
+Embedded disposable PostgreSQL is useful for actual SQL assertions but does not
+prove concurrent server sessions. The PostgreSQL CI remains required. None of
+these fixtures may run against player data. Schema application and live release
+remain separately authorized and verified; Android emulation does not replace
+physical Android readability validation for #521.
+
 ## Private Android validation preview
 
 The [isolated validation preview runbook](ISOLATED_VALIDATION_PREVIEW.md) records

@@ -73,6 +73,53 @@ the session is usable on that particular browser/PWA.
 
 ## Cloud persistence contract
 
+### Quest convergence candidate (#522, 22 October 2026)
+
+The dedicated convergence branch introduces `quest-rules.js`, `quest-rewards.js`
+and `quest-victory.js`. Visible ordinal owns teaching/eligibility; the numeric
+compatibility adapter preserves historical reward IDs and allocations.
+`quest-victory.js` is a pure fixture/QA projection, never authenticated authority.
+
+Pending migration `20261022130000_quest_contract_convergence.sql` adds V2
+`lumen_commit_quest_command` / `lumen_get_quest_command`. Immutable facts,
+operation ID, account and stable quest ID identify a command. For stable-only
+quests the transaction locks the profile, computes rewards, records first-win
+ledger evidence, updates daily/wallet authority and writes the profile and receipt
+atomically. Numeric commands delegate to the existing historical transaction.
+There is no bulk player rewrite or retrospective reward grant. Existing first
+completion `performance`, stars, unknown fields and acquired badges survive;
+mutable replay statistics live in `canonicalQuestState[id].runPerformance`.
+Its attempts, best time and last qualified timestamp are server protected.
+
+The client persists facts before I/O, independently reads the exact receipt and
+the current verified profile, and checks owner/client/attempt throughout. A
+solved flag alone cannot acknowledge a command. Current wallet cursors and
+legitimate decreases win over an earlier receipt balance. Ambiguous errors
+never select an older writer. V1 pending commands remain recoverable in their
+existing namespace; a V1 badge replay cannot rewrite V2 run statistics.
+An explicit missing V2 read endpoint permits V1 read recovery only.
+
+A recreated V2 capture may be retired only after archiving its exact bytes and
+original receipt, with matching operation/account/quest, unchanged immutable
+facts and no improved elapsed time or uncovered badge. Readiness or a solved
+flag cannot serve as this proof. Numeric cold resume restores both quest and
+campaign/replay mode before the attempt engine's strict identity comparison;
+a READY board does not establish preserved campaign access.
+
+Migration `20261022131000_quest_social_identity.sql` adds stable quest identity
+to challenges and privacy-filtered create/get/list RPCs. Numeric URLs and
+existing participation/terminal protocols retain their identity. No challenge
+operation writes campaign progress, daily credit, unlocks or wallet rewards.
+Migration `20261022132000_quest_analytics_identity.sql` adds capability-checked,
+read-only ordinal metrics/timeline; it does not rewrite events or players.
+
+These three migrations are candidates, **not applied in production**. Their
+disposable PostgreSQL fixtures and concurrency checks must pass before review.
+Production schema application needs separate owner authorization, then schema
+verification before the client is released. Shared authentication settings and
+SoldeZen data are outside this change. Roll back the client while retaining the
+additive schema and receipts; never delete player projections to roll back.
+
 ### Wallet command cutover (#248/#391, 22 October 2026)
 
 Migrations `20261022082153_wallet_command_authority.sql` and

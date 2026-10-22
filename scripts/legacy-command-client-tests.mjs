@@ -207,7 +207,7 @@ function uiFixture(){
  const attempt={attemptId:'ui-attempt',resetCount:0,startedAt:Date.parse(facts.qualifiedAt),qualifying:true};
  const ctx={lumenUser:{id:userId},lumenSupabase:client,levelIndex:0,attemptEngine:{snapshot:()=>attempt},canonicalQuestForLegacy:()=>({id:legacyVictoryRules()[0].questId}),
   authSessionPending:false,qaActive:false,legacyVictoryBusy:false,legacyCommandInFlight:false,legacyVictoryRetry:null,legacyVictoryOutbox:box,
-  activeGameSeconds:()=>45,localCalendarDay:()=>facts.qualifiedDay,usedHintThisGame:false,questFailed:false,cloudProfileReady:true,cloudProfileDirty:false,cloudProfileTimer:null,
+  activeGameSeconds:()=>45,localCalendarDay:()=>facts.qualifiedDay,hintUsedInAttempt:()=>false,usedHintThisGame:false,questFailed:false,cloudProfileReady:true,cloudProfileDirty:false,cloudProfileTimer:null,
   canonicalOutboxRetryInFlight:false,lumenProgress:base(),legacyCommandsSupported,commitLegacyVictoryCommand,loadCommittedLegacyAttempt,structuredClone,
   flushCloudProfile:async()=>true,sameCloudProfile:(a,b)=>JSON.stringify(a)===JSON.stringify(b),saveLumenProgress:()=>{},recordCloudDiagnostic:()=>{},
   refreshCanonicalOutboxNotice:async()=>{},canonicalRecovery:{schedule:()=>{}},scheduleCloudProfile:()=>{},msg:{textContent:'',append:()=>{}},document:{createElement:()=>({})},

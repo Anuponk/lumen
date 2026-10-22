@@ -1,4 +1,5 @@
 import {questCompleted} from './catalogue-access.js';
+import {questPerformanceRecord} from './quest-rules.js';
 
 // Ephemeral read projection over the existing save formats; never a new store.
 export function readQuestView(quest,progress,quests,constellations){
@@ -11,7 +12,8 @@ export function readQuestView(quest,progress,quests,constellations){
  const numeric=quest.legacyIndex!==null;
  const record=numeric?progress.performances?.[quest.legacyIndex]:progress.canonicalQuestState?.[quest.id];
  const badges=numeric&&!(record?.version>=2)?{}:record?.badges??{};
- const attemptNumber=numeric?(Number(record?.attempts)||0)+1:null;
+ const performance=questPerformanceRecord(quest,progress);
+ const attemptNumber=numeric?(Number(record?.attempts)||0)+1:Number.isSafeInteger(performance.attempts)?performance.attempts+1:null;
  return Object.freeze({id:quest.id,ordinal:quest.ordinal,legacyIndex:quest.legacyIndex,
   constellationId:quest.constellationId,packId:quest.packId,constellationIndex,
   constellationName:constellation.label,position,total:members.length,

@@ -10,6 +10,10 @@ function prepareContext(ctx){
  ctx.pendingVictoryView??=null;
  ctx.syncPresentation??={failed(){},acknowledged(){},celebration(){},snapshot:()=>({status:'confirmed',failures:0})};
  ctx.presentPendingVictory??=()=>{};
+ ctx.questRewardDefinition??=()=>({stars:1,bonus:null});
+ ctx.localCalendarDay??=()=> '2026-10-22';
+ ctx.questFailed??=false;
+ ctx.hintUsedInAttempt??=()=>!!ctx.usedHintThisGame||(ctx.attemptEngine?.snapshot()?.helpUses?.hint||0)>0;
  return vm.createContext(ctx);
 }
 const storage=()=>{const values=new Map();return {get length(){return values.size},key:i=>[...values.keys()][i]??null,getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,String(v)),removeItem:k=>values.delete(k)};};

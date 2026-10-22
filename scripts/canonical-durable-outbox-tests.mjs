@@ -136,3 +136,23 @@ test('a later regenerated capture is archived only with exact operation receipt 
   }
  }
 });
+
+test('V2 recreated captures preserve the original receipt and reject changed facts or unseen awards',async()=>{
+ for(const variant of ['valid','better-time','changed-hint','wrong-id','unknown-field','unconfirmed-summary']){
+  const storage=local(),fallback=indexed(),box=createDurableCanonicalVictoryOutbox(storage,{fallback,now:()=> '2026-10-22T15:00:00Z'});
+  const facts={seconds:20,assistanceUsed:false,mistakeCommitted:false,qualifying:true,hintUsed:false,challengeFailed:false,qualifiedDay:'2026-10-22',qualifiedAt:'2026-10-22T14:00:00Z'};
+  const later={facts:{...facts,seconds:80}};
+  if(variant==='better-time')later.facts.seconds=19;
+  if(variant==='changed-hint')later.facts.hintUsed=true;
+  if(variant==='unknown-field')later.facts.future=true;
+  const entry=await box.enqueue('a','q',later,{operationId:'run-reset-0'});
+  const receipt={request:{version:2,operationId:variant==='wrong-id'?'other':entry.operationId,questId:'q',facts},outcome:{firstCompletion:true,attempts:1,savedPerformance:{badges:{speed:true}}},recordedAt:'2026-10-22T14:01:00Z'};
+  const committed={userId:'a',receipt,profile:{canonicalQuestState:{q:{solved:true,badges:{speed:true},runPerformance:{attempts:variant==='unconfirmed-summary'?0:1}}}}};
+  if(variant==='valid'){
+   await box.archiveRecreatedCapture('a',entry,committed);
+   assert.equal((await box.pending('a')).length,0);
+   const archive=[...fallback.data].find(([key])=>key.startsWith('lumenCanonicalRecreatedCaptureArchiveV1:'));
+   assert.deepEqual(JSON.parse(archive[1]).receipt,receipt);assert.deepEqual(JSON.parse(archive[1]).entry,entry);
+  }else{await assert.rejects(box.archiveRecreatedCapture('a',entry,committed),variant);assert.equal((await box.pending('a')).length,1);}
+ }
+});

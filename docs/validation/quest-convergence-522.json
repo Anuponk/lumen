@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "date": "2026-10-22T17:19:26.238Z",
+  "branch": "chantier/522-convergence",
+  "integratedMain": "d5d748433838c87d9d4671681eb3a32b28e30d6d",
+  "jsSourceFiles": 73,
+  "jsSourceDigest": "88615c94ea3025c4fd496d7b0570ad17b67b3ddab3f92bca20962276c525b1a3",
+  "command": "node scripts/test-affected.mjs --full",
+  "ok": true,
+  "quality": {
+    "nodeSuites": 121,
+    "browserRunners": 9,
+    "seconds": 337.05
+  },
+  "supplementarySuites": 29,
+  "embedded": [
+    {
+      "size": 5,
+      "total": 99,
+      "failures": []
+    },
+    {
+      "size": 6,
+      "total": 99,
+      "failures": []
+    },
+    {
+      "size": 7,
+      "total": 99,
+      "failures": []
+    },
+    {
+      "size": 8,
+      "total": 99,
+      "failures": []
+    }
+  ],
+  "questPolicyBrowserCases": 12,
+  "uncaughtBrowserErrors": [],
+  "catalogue": {
+    "grids": 196,
+    "legacyCampaign": 196,
+    "constellations": 24,
+    "legacyStars": 298,
+    "failures": [],
+    "canonicalIdentities": 400
+  },
+  "sql": {
+    "engine": "Disposable embedded PostgreSQL (PGlite 0.5.11); no provider connection",
+    "parityScenarios": 210,
+    "receiptsRollbackOwnership": true,
+    "oldV1Recovery": true,
+    "socialPrivacyIsolation": true,
+    "adminCapabilityAndTrafficFilters": true,
+    "serverConcurrency": "Pending GitHub PostgreSQL 17 workflow; embedded runtime does not prove concurrent sessions",
+    "productionWrites": false
+  },
+  "migrations": [
+    {
+      "path": "supabase/migrations/20261022130000_quest_contract_convergence.sql",
+      "sha256LF": "3b5462181625bd15c607415b61827674c2e96945c66185bc0fdfec8896546c88",
+      "productionApplied": false
+    },
+    {
+      "path": "supabase/migrations/20261022131000_quest_social_identity.sql",
+      "sha256LF": "53f0e6bf7e351908c09419fff584de00e12a9d2b0edb213eba95b0384839e08b",
+      "productionApplied": false
+    },
+    {
+      "path": "supabase/migrations/20261022132000_quest_analytics_identity.sql",
+      "sha256LF": "aa7bde5935753391f9a0c74f547a0f9bb4d297c892b8396cd29644a9764bb0b6",
+      "productionApplied": false
+    }
+  ],
+  "coverage": [
+    "Six visible discovery quests and preserved acquired/started access",
+    "Guest solved boards retained with identical attempt ID and paused clock until account confirmation",
+    "Visible assistance/badge milestones and quest-2 sky tour",
+    "No-hint XP, third autonomous win, one-time bonuses and daily parity",
+    "Fifteen-minute qualification and same-run Mastery",
+    "Cold numeric replay mode, stable recovery and V1/V2 exact capture archive",
+    "Stable first-play challenge on 390/1440 with no campaign mutation",
+    "Catalogue-derived current finale and exported sharing total",
+    "Stable admin metrics and timeline with capability expiry"
+  ],
+  "limitations": [
+    "Production schema requires separate owner approval and verification before client release",
+    "Physical Android readability check for issue 521 remains pending",
+    "Browser Auth/RPC scenarios are simulated; no real account or mail writes"
+  ]
+}

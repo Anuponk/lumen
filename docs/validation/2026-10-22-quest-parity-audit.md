@@ -1,5 +1,23 @@
 # Chantier #522 / #516 / #521 / #515 — audit et plan
 
+**État courant du lot de convergence :** branche `chantier/522-convergence`,
+après le premier lot fusionné dans #525 (`d5d7484`). Le contrat a été arrêté à
+six quêtes visibles de découverte puis compte obligatoire, avec mêmes règles
+de badges/récompenses/daily/social pour toutes les quêtes et conservation des
+acquis. Les mentions « proposé » et « à définir » ci-dessous décrivent l'audit
+initial ; la section de convergence et les documents propriétaires consignent
+les décisions ultérieures. Trois migrations candidates sont préparées et testées
+en PostgreSQL jetable ; elles ne sont pas appliquées en production. La recette
+Android physique de #521 reste distincte des validations navigateur simulées.
+
+La validation locale finale est conservée dans
+[`quest-convergence-522.json`](quest-convergence-522.json), avec empreinte des
+sources et des trois migrations : 121 suites Node, neuf parcours navigateur,
+29 suites complémentaires, 396 tests intégrés et audit strict réussis. Les
+210 scénarios SQL embarqués ne remplacent pas la concurrence PostgreSQL 17
+de la PR. Les captures 390 px et desktop ont été revues ; Android physique
+et application du schéma en production restent non exécutés à ce stade.
+
 État initial : **étape 1, avant corrections métier**, conformément à #522. L'audit
 initial ne vaut ni correction des quatre issues, ni validation navigateur, ni recette
 sur le téléphone du signalement. Aucune sauvegarde réelle n'a été utilisée.
@@ -185,6 +203,43 @@ Tests à écrire : avant/seuil/après, victoire valide et invalide, undo/repose,
 reload avant/après seuil, reset/rejeu, aide, et tailles paires/impaires.
 
 ## Modèle cible proposé et compatibilité
+
+### Contrat validé pour la convergence après #525
+
+L'utilisateur a confirmé la découverte jusqu'à la quête affichée 6, puis un
+compte obligatoire, avec conservation des quêtes terminées et des tentatives
+réellement commencées. Il a aussi validé l'extension des règles numériques :
+cooldown de 15 minutes, récompenses, activité quotidienne et défi social de
+première partie identiques. Aucun crédit rétroactif ni retrait d'acquis.
+
+Le travail suit `chantier/522-convergence` depuis `d5d7484`. Les jalons
+d'apprentissage doivent lire la quête affichée active (3/6/11, indices offerts
+jusqu'à 10) ; le passage protégé après quête 2 doit annoncer Mon ciel puis
+présenter son vrai parcours avant quête 3. Un index numérique dormant ne peut
+piloter ni ces règles ni les coûts.
+
+Pour les récompenses, préparer une transaction versionnée recevant l'identité
+stable et les faits immuables de l'essai, indépendamment du format de stockage.
+Elle doit conserver les namespaces/reçus antérieurs, vérifier le compte et
+verrouiller le profil avant de consulter le reçu. Même opération rejouée : même
+résultat, profil courant et aucun double crédit ; faits différents : refus.
+La qualification, le bonus, le compteur d'autonomie, le daily et les projections
+Wallet/Legacy doivent être mis à jour dans la même transaction. Préserver la
+performance du premier accomplissement et ses champs inconnus ; les résumés de
+rejeu exigent un champ distinct et un garde serveur adapté. Aucune mise à jour
+en masse des joueurs. Un client ne doit pas simuler ces crédits authentifiés
+ni revenir à un writer ancien après une réponse ambiguë.
+
+`quest-victory-parity-tests.mjs` a d'abord reproduit deux écarts rouges du writer :
+XP sans indice malgré une autre assistance, et troisième victoire autonome.
+Après le refus initial du contrôle automatique, l'utilisateur a explicitement
+autorisé l'implémentation et les migrations sur la branche dédiée, avec tests
+PostgreSQL jetables. La projection pure, le client à reçus V2 et les migrations
+sont désormais implémentés ; ces régressions passent en conservant les acquis.
+Les assertions SQL locales passent dans PostgreSQL embarqué jetable ; ce résultat
+ne remplace pas les sessions concurrentes du workflow PostgreSQL 17. Le gate
+complet et la CI restent requis avant livraison. Aucune de ces migrations n'est
+appliquée en production ; cette application demande toujours un accord distinct.
 
 ### Suite du lot 3 : rafraîchissement des badges de Mon ciel
 

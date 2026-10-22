@@ -182,6 +182,8 @@ try{
    assert.equal(await evaluate(`document.querySelectorAll(${JSON.stringify(selector+' .performance-slot.earned')}).length`),4,'Mon ciel shows all four badges');
    await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
    await acknowledgeLearningMilestones(evaluate);
+     assert.equal(await evaluate('document.getElementById("replayCooldownModal").hidden'),false,'Canonical replay shares the fifteen-minute qualification warning');
+     await evaluate('document.getElementById("replayCooldownPlay").click()');
    await evaluate('document.getElementById("attemptMask").click();(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');
    await until('!document.getElementById("skyReveal").hidden');
    assert.equal(await evaluate('document.querySelectorAll("#skyRevealRewards .speed.previously-earned").length'),1,'A previously held Rapidité remains visible on the victory recap');
@@ -205,10 +207,8 @@ try{
   assert.equal(await evaluate('document.getElementById("skyRevealFeedback").children.length'),0);
   assert.equal(await evaluate('document.getElementById("difficultyBox").hidden'),true);
   assert.equal(await evaluate('document.getElementById("skyRevealNext").getBoundingClientRect().bottom<=innerHeight'),true,'Next quest is reachable');
-  assert.equal(await evaluate('document.getElementById("skyRevealShare").hidden'),false,'First canonical victory explains the existing challenge limitation');
-  assert.equal(await evaluate('document.getElementById("skyRevealShare").disabled'),true,'Unsupported stable-ID challenges cannot create a wrong legacy link');
-  assert.match(await evaluate('document.getElementById("skyRevealChallengeReason").textContent'),/quêtes historiques/);
-  if(viewport.mobile){const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync('docs/validation/issue511-challenge-limit-390.png',Buffer.from(shot.data,'base64'));}
+  assert.equal(await evaluate('document.getElementById("skyRevealShare").hidden'),false,'First canonical victory offers the same social challenge');
+  assert.equal(await evaluate('document.getElementById("skyRevealShare").disabled'),false,'Stable-ID challenges have their own validated RPC');
   results.push({viewport,firstCompletionReveal:true,confirmedStar:true,noFeedback:true});
   await verifyHistoricalCatalogue(viewport);
  }

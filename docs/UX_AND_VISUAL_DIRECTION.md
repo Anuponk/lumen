@@ -1,5 +1,31 @@
 # UX and visual direction
 
+## Quest convergence onboarding (#522, candidate)
+
+Discovery covers the first six visible quests. Continuing beyond them requires
+an account and verified cloud readiness; dismissing that offer opens Mon ciel.
+It does not unlock quest 7. Completed quests and genuinely started campaign/
+replay attempts retain their acquired access. READY or social play does not
+prove campaign acquisition. The account copy states the discovery boundary.
+
+For an acquired guest attempt beyond discovery, keep the resolved board and
+paused attempt while requesting the account to confirm rewards. The message
+states that the board is retained; it must never erase a win or silently credit
+an unconfirmed authenticated reward.
+
+Quest 2 success explicitly says **Découvrir Mon ciel**. The success backdrop
+does not navigate. The first visit tours the real constellation list, quest
+cards, performance area and constellation/stars in sequence before quest 3;
+earlier manual browsing returns to the current quest without granting progress.
+Quest launch and early tour close cannot bypass these steps. The tour mentions
+future badges without introducing their conditions ahead of their milestones.
+
+Rapidité introduction follows eligibility at quest 3, the full badge system and
+optional Marquage auto at quest 6, and the reversible guided-control choice at
+quest 11. Controls and hint pricing use the active quest's visible ordinal,
+including stable-only quests, rather than the dormant numeric frontier. Both
+replay formats display the same cooldown warning and acquired badge labels.
+
 ## Account access (2026-10-18)
 
 Offer **Continuer avec Google**, email plus password (create account / existing account), and **Continuer sans compte**. Remove code-email login. Former passwordless players use **Créer ou réinitialiser mon mot de passe** with the same email, preserving their existing account. Recovery opens a visible password editor. Distinguish an authenticated account still restoring its save from a guest; a restore failure offers **Réessayer la synchronisation**, never a destructive reset. During initial session restoration, show a connection check with the account action disabled; offer sign-in only after the SDK confirms a guest session. The early guest discovery and learning sequence remain unchanged.

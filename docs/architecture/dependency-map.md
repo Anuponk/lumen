@@ -1,5 +1,14 @@
 # Dependencies and data flow
 
+Quest convergence (#522): catalogue definition → `quest-rules` / `quest-rewards`
+→ active UI/onboarding/read view. Numeric reward adapters preserve old IDs.
+Victory facts → existing durable canonical outbox → `quest-command` V2 → locked
+server ledger/daily/wallet transaction → exact receipt + current profile read →
+acknowledgement. Mutable `runPerformance` is separate from immutable first-win
+evidence. Cloud restore adopts a covering server V2 summary, never creates one.
+Social stable identity uses its own RPC; participation still bypasses campaign
+writers. Admin metrics/timeline read stable identity under existing capability.
+
 Baseline: `bef5f32`. Paths are repository-relative. Consult relevant rows only. `docs/DATA_AND_ARCHITECTURE.md` owns contracts; this file identifies implemented boundaries and effects.
 
 Published schedule (#522): current `access-origins.json` revision →

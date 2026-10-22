@@ -64,7 +64,7 @@ try{
   await click('skyRevealNext');
   assert.equal(await evaluate('document.getElementById("endgameOverlay").hidden'),true,'The numeric endpoint cannot finish an expanded catalogue');
   current=await snapshot();assert.equal(current.progress.skyScore,SKY_TARGET);
-  assert.equal(current.progress.badges.historical,1);assert.equal(current.progress.badges.master,1);
+  assert.equal(current.progress.badges.historical,1);assert.equal(current.progress.badges.master,undefined,'Completing numeric history cannot mint the expanded campaign finale');
   // Replace the obsolete numeric-finale expectation with the actual catalogue
   // endpoint, retaining real click/solve/CTA coverage on mobile and desktop.
   const all=canonicalQuestList(),final=all.at(-1),done=all.slice(0,-1);

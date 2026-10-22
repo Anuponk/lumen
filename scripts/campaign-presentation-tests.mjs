@@ -5,13 +5,28 @@ import vm from 'node:vm';
 import * as canonical from '../src/campaign/canonical-quests.js';
 import {CONTENT_CONSTELLATIONS} from '../src/campaign/content.js';
 import {CONSTELLATIONS} from '../src/campaign/data.js';
-import {milestoneFor,isCampaignFinalQuest,isCampaignComplete,campaignQuestCount} from '../src/campaign/progression.js';
+import {createCampaign,milestoneFor,isCampaignFinalQuest,isCampaignComplete,campaignQuestCount} from '../src/campaign/progression.js';
 import {questIsCompleted} from '../src/persistence/canonical-progress.js';
 import {functionSource} from './source-tools.mjs';
 
 const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 const all=canonical.canonicalQuestList();
 const complete=quests=>({solved:Object.fromEntries(quests.filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1])),canonicalQuestState:Object.fromEntries(quests.filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true,badges:{speed:true}}]))});
+test('actual campaign UI awards count canonical quests and bonuses, with grandfathering and N+k growth',()=>{
+ let quests=[...all];const progress={...complete(all.filter(q=>q.legacyIndex!==null)),badges:{},stars:Object.fromEntries(all.filter(q=>q.legacyIndex!==null&&q.rewards.bonus).map(q=>[q.rewards.bonus.id,1]))};
+ const context={lumenProgress:progress,createCampaign,saveLumenProgress(){},canonicalQuestList:()=>quests,
+  attemptEngine:{snapshot:()=>null},activeGameSeconds:()=>0};
+ const start=source.indexOf('const {normalizeSequentialProgress'),end=source.indexOf(';',start)+1;
+ vm.createContext(context);vm.runInContext(source.slice(start,end)+'\nglobalThis.award=awards;',context);context.award();
+ assert.equal(progress.badges.master,undefined,'Numeric completion cannot award the current campaign finale');
+ assert.equal(progress.badges.challengeAll,undefined,'Old bonus keys are not all current bonuses');
+ Object.assign(progress,complete(all));for(const q of all)if(q.rewards.bonus)progress.stars[q.rewards.bonus.id]=1;
+ context.award();assert.equal(progress.badges.master,1);assert.equal(progress.badges.challengeAll,1);
+ quests.push({...all.at(-1),id:'future-quest',legacyIndex:null,rewards:{stars:1,bonus:null}});
+ context.award();assert.equal(progress.badges.master,1,'An old earned finale is never revoked');
+ progress.badges={};context.award();assert.equal(progress.badges.master,undefined,'New qualification covers the expanded catalogue');
+ progress.canonicalQuestState['future-quest']={solved:true};context.award();assert.equal(progress.badges.master,1);
+});
 
 test('actual sky adapter counts completed canonical-only quests instead of absent legacy shape slots',()=>{
  const entry=CONTENT_CONSTELLATIONS.find(c=>c.canonicalOnly);
@@ -44,7 +59,7 @@ test('Grand Chien 8/10 cannot advertise a final constellation quest',()=>{
  assert.notEqual(quest.legacyIndex,null,'Reported historical grid must remain covered');
  const elements=new Map(['challengeBanner','challengeTitle','challengeCopy'].map(id=>[id,{}]));
  const context={...canonical,canonicalActiveQuest:null,levelIndex:quest.legacyIndex,lumenProgress:{stars:{}},
-  milestoneFor,bonusChallengeFor:()=>null,document:{getElementById:id=>elements.get(id)}};
+  milestoneFor,activeBonusChallenge:()=>null,bonusChallengeFor:()=>null,document:{getElementById:id=>elements.get(id)}};
  vm.createContext(context);vm.runInContext(functionSource(source,'renderXP'),context);context.renderXP();
  assert.doesNotMatch(elements.get('challengeTitle').textContent||'',/Défi final/);
  context.canonicalActiveQuest=group.at(-1);context.renderXP();

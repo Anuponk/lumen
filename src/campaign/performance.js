@@ -1,15 +1,16 @@
 export const PERFORMANCE_BADGES=Object.freeze(["autonomy","speed","noError","mastery"]);
+export const PERFORMANCE_UNLOCKS=Object.freeze({speed:3,full:6});
 
 export function performanceEligibility(questIndex,unlockedQuestCount=Number(questIndex)+1){
  const q=Number(questIndex)+1,unlocked=Math.max(0,Number(unlockedQuestCount)||0);
  // Eligibility follows the player's global progression. Early tutorial quests become
  // normal performance quests once the corresponding badge family has been unlocked.
- const speedUnlocked=unlocked>=3,fullUnlocked=unlocked>=6;
+ const speedUnlocked=unlocked>=PERFORMANCE_UNLOCKS.speed,fullUnlocked=unlocked>=PERFORMANCE_UNLOCKS.full;
  return {
-  autonomy:q>=6||fullUnlocked,
-  speed:q>=3||speedUnlocked,
-  noError:q>=6||fullUnlocked,
-  mastery:q>=6||fullUnlocked
+  autonomy:q>=PERFORMANCE_UNLOCKS.full||fullUnlocked,
+  speed:q>=PERFORMANCE_UNLOCKS.speed||speedUnlocked,
+  noError:q>=PERFORMANCE_UNLOCKS.full||fullUnlocked,
+  mastery:q>=PERFORMANCE_UNLOCKS.full||fullUnlocked
  };
 }
 

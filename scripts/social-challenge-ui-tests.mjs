@@ -44,6 +44,6 @@ for(const scenario of [
  assert.equal(elements.successShare.classList.remarkable,scenario.remarkable,scenario.name);
  if(scenario.visible&&scenario.supported)assert.equal(context.lastChallengeOffer.snapshot,snapshot);
  else assert.equal(context.lastChallengeOffer,null,'No stale or ineligible offer: '+scenario.name);
- if(!scenario.supported)assert.match(elements.successChallengeReason.textContent,/quêtes historiques/);
+ if(!scenario.supported)assert.match(elements.successChallengeReason.textContent,/cette version/);
 }
 console.log('victory challenge decision matrix: 6 real renderer scenarios passed');

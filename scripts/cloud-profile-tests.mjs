@@ -90,9 +90,16 @@ assert.ok(uiSrc.includes('holdLegacyMergeForFullRestore:async()=>true'),'Legacy 
 assert.doesNotMatch(html,/id="migrationCloud(?:Save|Restore)"/);
 
 assert.match(uiSrc,/function accountRequired\(\)\s*\{[\s\S]*?authSessionPending\|\|qaActive\|\|socialChallenge\|\|lumenUser/,'Guest invitation is optional and waits for auth resolution');
-assert.ok(uiSrc.includes('accountOfferKey("NextMilestone")'),'Account invitation can be deferred without changing progression');
-assert.ok(uiSrc.includes('if(accountRequired()&&maybeOfferAccount()){accountOfferResumeNext=true;hideSuccess();return}'),'Account prompt interrupts once but allows guest continuation');
-assert.ok(uiSrc.includes('if(!canonicalActiveQuest&&accountRequired())queueMicrotask(()=>maybeOfferAccount())'),'Milestone invitation survives reload without mandatory account gate');
+// #522 intentional product change: six visible discovery quests, then account.
+// Dismissal still preserves every acquired reward; it opens the sky, not quest 7.
+const {functionSource}=await import('./source-tools.mjs');
+const vm=await import('node:vm');
+const copy=JSON.stringify(source),box={hidden:false};
+const ctx={accountOfferResumeNext:true,lumenProgress:source,document:{getElementById:()=>box},trackLumenEvent(){},solvedCount:()=>6,qaActive:false,openJourneyMap(){ctx.opened=true}};
+vm.createContext(ctx);vm.runInContext(functionSource(uiSrc,'dismissAccountOffer'),ctx);ctx.dismissAccountOffer();
+assert.equal(JSON.stringify(source),copy,'Dismissal preserves progression');assert.equal(ctx.opened,true);assert.equal(box.hidden,true);assert.equal(ctx.accountOfferResumeNext,false);
+assert.ok(uiSrc.includes('following?.ordinal>QUEST_MILESTONES.discovery&&accountRequired()&&maybeOfferAccount()'),'Only continuation beyond discovery triggers the account gate');
+assert.ok(uiSrc.includes('if(!canonicalActiveQuest&&accountRequired())queueMicrotask(()=>maybeOfferAccount())'),'Account gate survives reload');
 assert.ok(uiSrc.includes('const accountLater=document.getElementById("accountOptinLater")'),'Continue without account is wired');
 assert.ok(uiSrc.includes('if(closeAccount)closeAccount.onclick=dismissAccountOffer'),'Close button dismisses the account invitation');
 assert.ok(html.includes('id="accountOptinLater"'),'Guest has an explicit continue option');

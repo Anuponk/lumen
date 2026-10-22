@@ -6,6 +6,7 @@ import {functionSource} from './source-tools.mjs';
 import {CAT,LEVELS} from '../src/campaign/catalogue.js';
 import * as data from '../src/campaign/data.js';
 import * as campaign from '../src/campaign/progression.js';
+import {publishedCatalogueQuests} from '../src/campaign/catalogue-origin.js';
 
 const baseline='dcd9f3c872e623541be698edc212b64589d3b164';
 const source=(process.argv[2]?fs.readFileSync(process.argv[2],'utf8'):execFileSync('git',['show',baseline+':index.html'],{encoding:'utf8'})).replace(/\r/g,'');
@@ -113,7 +114,7 @@ const withoutModules=source=>source.replace(/^import .*;\r?$/gm,'').replaceAll('
 for(const [questCount,starCount] of [[1,4],[2,7],[3,12],[10,14]]){
  const additions=`CONSTELLATIONS.push({name:"Future fixture",count:${starCount}});CONSTELLATION_GRID_COUNTS.push(${questCount});CONSTELLATION_QUESTS.push(Array.from({length:${questCount}},(_,i)=>${total}+i));for(let i=0;i<${questCount};i++)CAMPAIGN_SIZE_SCHEDULE[${total}+i]=["6",0];`;
  const expanded=fs.readFileSync('src/campaign/data.js','utf8').replace('export const SKY_TARGET=',additions+'export const SKY_TARGET=');
- const fixture={};vm.createContext(fixture);
+ const fixture={publishedCatalogueQuests,generatedContentSnapshot:JSON.parse(fs.readFileSync('content/generated/first-adventure.json','utf8'))};vm.createContext(fixture);
  vm.runInContext([expanded,fs.readFileSync('src/campaign/content.js','utf8'),fs.readFileSync('src/campaign/progression.js','utf8')].map(withoutModules).join('\n'),fixture);
  assert.equal(fixture.campaignQuestCount(),total+questCount);
  assert.equal(fixture.isCampaignFinalQuest(total+questCount-1),true);

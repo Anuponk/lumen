@@ -1,5 +1,34 @@
 # Gameplay and UX specification
 
+## Uniform quest contract (#522, convergence candidate)
+
+Every quest uses its visible catalogue ordinal for teaching, assistance and badge
+eligibility, independently of its saved numeric key. `PERFORMANCE_UNLOCKS` owns
+Rapidité at quest 3 and the four-badge system at quest 6; `questLearningRules`
+drives their UI introductions. Assistance stays forced through 5, optional through
+10; autonomous play is introduced at 11. Hints remain free through 10.
+
+Qualified badge runs share a fifteen-minute cooldown. Replays preserve acquired
+badges and first-win stars; Maîtrise is earned on one run, never accumulated.
+First victories earn 10 XP plus 5 XP without a hint, even if another assistance
+was used. Every third autonomous first victory earns one Éclat. Bonus quests
+retain their 25 XP / one Éclat one-time award; a previously unclaimed bonus may
+be earned by an actual successful replay. Stable-only bonus identities derive
+from the quest ID, with cadence based on visible order. Historical bonus IDs
+and star allocations stay frozen. New constellation allocations derive from
+their real positions/count, including intermediate and final rewards.
+
+At quest 6, the timed bonus permits the newly introduced optional Marquage auto;
+it must not contradict that comfort introduction. Effective assistance still
+removes Autonomie and therefore Maîtrise. No-hint XP and badge autonomy are
+different conditions. Reload retains a hint already used in the same attempt.
+
+Daily qualification and first-play social eligibility apply to both saved quest
+formats. An unqualified run cannot become a remarkable social performance.
+Previously acquired rewards are preserved, with no loading/migration backfill.
+Authenticated awards require the server receipt described in
+[DATA_AND_ARCHITECTURE](DATA_AND_ARCHITECTURE.md#quest-convergence-candidate-522-22-october-2026).
+
 ## Core rules
 For an N x N puzzle:
 - exactly N Guardians;

@@ -98,12 +98,13 @@ test('a started canonical-only constellation survives another earlier addition',
  assert.equal(insertedQuestDecision(v3.find(q=>q.id==='b-new-2'),progress,v3).status,'ready');
  assert.equal(insertedQuestDecision(v3.find(q=>q.id==='b-second-1'),progress,v3).status,'prerequisite');
 });
-test('historical access never creates ownership, authentication or hydration',()=>{
- const quest=v3.find(q=>q.id==='b-new-1');
+test('historical access never creates ownership or bypasses account requirements beyond discovery; acquired replays remain accessible',()=>{
+ // #522 intentionally replaces the storage-key account gate with visible quest 7.
+ const later=v3.map(q=>({...q,ordinal:q.ordinal+6})),quest=later.find(q=>q.id==='b-new-1');
  for(const [context,status] of [[{packAllowed:false},'pack-locked'],[{signedIn:false},'auth-required'],[{cloudReady:false},'sync-required']]){
-  assert.equal(insertedQuestDecision(quest,historic,v3,context).status,status);
+  assert.equal(insertedQuestDecision(quest,historic,later,context).status,status);
   const replay={...historic,canonicalQuestState:{[quest.id]:{solved:true}}};
-  assert.equal(insertedQuestDecision(quest,replay,v3,context).status,status,'Replay retains the same guards');
+  assert.equal(insertedQuestDecision(quest,replay,later,context).status,context.packAllowed===false?'pack-locked':'ready','Replay preserves acquired access but never creates pack ownership');
  }
 });
 test('no-history adventure and absent content cannot receive fabricated historical access',()=>{
