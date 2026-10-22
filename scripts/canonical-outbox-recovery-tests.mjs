@@ -6,6 +6,12 @@ import vm from 'node:vm';
 import {classifyCanonicalRecoveryError} from '../src/persistence/canonical-recovery-errors.js';
 import {functionSource} from './source-tools.mjs';
 
+function prepareContext(ctx){
+ ctx.pendingVictoryView??=null;
+ ctx.syncPresentation??={failed(){},acknowledged(){},celebration(){},snapshot:()=>({status:'confirmed',failures:0})};
+ ctx.presentPendingVictory??=()=>{};
+ return vm.createContext(ctx);
+}
 const storage=()=>{const values=new Map();return {get length(){return values.size},key:i=>[...values.keys()][i]??null,getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,String(v)),removeItem:k=>values.delete(k)};};
 const reward={badges:{autonomy:true},stars:1};
 const saved=id=>({profile:{canonicalQuestState:{[id]:{solved:true,badges:{autonomy:true}}}}});
@@ -54,7 +60,7 @@ test('an old victory cannot update the UI after account, quest or attempt-reset 
    lumenProgress:{canonicalQuestState:{}},qaActive:false,canonicalOutboxNotice:null,
    canonicalVictoryOutbox:{pending:async()=>[],enqueue:async()=>{persisting=true;return new Promise(resolve=>{finish=resolve})}},
    updateAuthUI:()=>{uiUpdates++},console:{error:()=>{throw Error('Stale victory should return silently')}}};
-  context.cloudProfileReady=false;context.classifyCanonicalRecoveryError=classifyCanonicalRecoveryError;vm.createContext(context);vm.runInContext(functionSource(source,'celebrateCanonicalSuccess'),context);
+  context.cloudProfileReady=false;context.classifyCanonicalRecoveryError=classifyCanonicalRecoveryError;prepareContext(context);vm.runInContext(functionSource(source,'celebrateCanonicalSuccess'),context);
   const running=vm.runInContext('celebrateCanonicalSuccess()',context);
   for(let i=0;i<10&&!persisting;i++)await Promise.resolve();
   assert.equal(persisting,true);
@@ -73,7 +79,7 @@ test('online and scheduled recovery cannot both start while the durable queue is
  const context={canonicalOutboxRetryInFlight:false,qaActive:false,lumenUser:{id:'a'},lumenSupabase:{},
   cloudProfileReady:true,cloudProfileBusy:false,cloudProfileDirty:false,canonicalActiveQuest:null,
   canonicalVictoryOutbox:{pending:async()=>{reads++;return pending}},recordCloudDiagnostic:()=>{},canReplayCanonicalOutbox:()=>true};
- vm.createContext(context);vm.runInContext(functionSource(source,'retryPendingCanonicalOutboxOnReconnect'),context);
+ prepareContext(context);vm.runInContext(functionSource(source,'retryPendingCanonicalOutboxOnReconnect'),context);
  const a=vm.runInContext('retryPendingCanonicalOutboxOnReconnect()',context);
  const b=vm.runInContext('retryPendingCanonicalOutboxOnReconnect()',context);
  finish([]);await Promise.all([a,b]);
@@ -89,7 +95,7 @@ test('a temporarily unreadable queue keeps a visible pending check and retry dem
  const context={lumenUser:{id:'a'},canonicalOutboxNotice:null,updateAuthUI:()=>{},
   legacyVictoryOutbox:{inspect:async()=>({pending:[],retryable:[],paused:[],issues:[],complete:true})},
   canonicalVictoryOutbox:{inspect:async()=>({pending:[],retryable:[],paused:[],issues:complete?[]:['indexed_unavailable'],complete})}};
- vm.createContext(context);vm.runInContext(functionSource(source,'refreshCanonicalOutboxNotice'),context);
+ prepareContext(context);vm.runInContext(functionSource(source,'refreshCanonicalOutboxNotice'),context);
  assert.equal(await vm.runInContext("refreshCanonicalOutboxNotice('a')",context),1);
  assert.equal(context.canonicalOutboxNotice,'checking');
  complete=true;
@@ -110,7 +116,7 @@ function isolatedContext(){
   commitCanonicalVictory:async()=>{commits++;return saved('q')},replayCanonicalVictoryOutbox,
   recordCloudDiagnostic:()=>{},location:{reload:()=>{reloads++}}};
  const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
- vm.createContext(context);
+ prepareContext(context);
  vm.runInContext(functionSource(source,'canReplayCanonicalOutbox'),context);
  vm.runInContext(functionSource(source,'retryPendingCanonicalOutboxOnReconnect'),context);
  return {context,progress,values,get commits(){return commits},get acks(){return acks},get reloads(){return reloads}};
@@ -178,7 +184,7 @@ test('online wakes isolated recovery without starting legacy full-profile writes
  const context={qaActive:false,lumenUser:{id:'a'},lumenSupabase:{},cloudProfileReady:false,
   retryPendingCanonicalOutboxOnReconnect:()=>{replay++},canonicalRecovery:{schedule:()=>{retry++}},
   scheduleCloudProfile:()=>{writes++}};
- vm.createContext(context);vm.runInContext(functionSource(source,'retryPendingCloudWriteOnReconnect'),context);
+ prepareContext(context);vm.runInContext(functionSource(source,'retryPendingCloudWriteOnReconnect'),context);
  vm.runInContext('retryPendingCloudWriteOnReconnect()',context);
  assert.equal(replay,1);assert.equal(retry,1);assert.equal(writes,0);
 });
@@ -190,7 +196,7 @@ test('replacing the cloud client invalidates the isolated permission and cancels
  assert.ok(end>start);
  let cancelled=0;
  const context={lumenSupabase:{},canonicalRecoveryContext:{userId:'a'},canonicalRecovery:{cancel:()=>{cancelled++}}};
- vm.createContext(context);const model=vm.runInContext('('+source.slice(start,end)+')',context);
+ prepareContext(context);const model=vm.runInContext('('+source.slice(start,end)+')',context);
  model.lumenSupabase={};assert.equal(context.canonicalRecoveryContext,null);assert.equal(cancelled,1);
 });
 
@@ -208,7 +214,7 @@ test('two victory renders cannot capture different evidence for the same operati
    enqueues++;if(enqueues>1)throw Error('Operation identity reused with different evidence');
    return new Promise(resolve=>{finish=()=>{ready=true;resolve(entry)}});
   }}};
- ctx.classifyCanonicalRecoveryError=classifyCanonicalRecoveryError;vm.createContext(ctx);vm.runInContext(functionSource(source,'celebrateCanonicalSuccess'),ctx);
+ ctx.classifyCanonicalRecoveryError=classifyCanonicalRecoveryError;prepareContext(ctx);vm.runInContext(functionSource(source,'celebrateCanonicalSuccess'),ctx);
  const first=ctx.celebrateCanonicalSuccess();for(let i=0;i<10&&!finish;i++)await Promise.resolve();
  const second=ctx.celebrateCanonicalSuccess();for(let i=0;i<10;i++)await Promise.resolve();
  assert.equal(enqueues,1,'One immutable capture for one attempt/reset while persistence is pending');
@@ -225,7 +231,7 @@ test('a restored solved canonical board waits for startup Auth without claiming 
   lumenUser:null,lumenSupabase:{},authSessionPending:true,qaActive:false,
   performanceAttempt:()=>({}),usedHintThisGame:false,lumenProgress:{canonicalQuestState:{}},
   recordCloudDiagnostic:(...e)=>events.push(e),msg:{textContent:''},console:{error(){}},updateAuthUI(){}};
- ctx.classifyCanonicalRecoveryError=classifyCanonicalRecoveryError;vm.createContext(ctx);vm.runInContext(functionSource(source,'celebrateCanonicalSuccess'),ctx);
+ ctx.classifyCanonicalRecoveryError=classifyCanonicalRecoveryError;prepareContext(ctx);vm.runInContext(functionSource(source,'celebrateCanonicalSuccess'),ctx);
  await ctx.celebrateCanonicalSuccess();
  assert.equal(events.some(e=>e[0]==='canonical_victory_failed'),false,'Pending Auth is not a failed durable capture');
  assert.equal(ctx.canonicalVictoryInFlight,null);
@@ -233,17 +239,18 @@ test('a restored solved canonical board waits for startup Auth without claiming 
 
 test('verified hydration rechecks the same restored board, never a switched account or run',()=>{
  const source=readFileSync('src/ui/game-screen.js','utf8');
- for(const change of ['none','account','client','quest','attempt','reset','owner','not-ready','pending','recovery','celebrated']){
+ for(const change of ['none','account','client','quest','index','attempt','reset','owner','not-ready','pending','recovery','celebrated']){
   let scheduled,rendered=0;const attempt={attemptId:'restored',resetCount:0};
   const client={};const ctx={qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,
-   canonicalResumeOwner:'a',canonicalActiveQuest:{id:'q'},celebrated:false,cloudProfileReady:true,
+   canonicalResumeOwner:'a',canonicalActiveQuest:{id:'q'},levelIndex:20,celebrated:false,cloudProfileReady:true,
    authSessionPending:false,sessionStorage:{getItem:()=>null},attemptEngine:{snapshot:()=>({...attempt})},
    setTimeout:fn=>{scheduled=fn},render:()=>{rendered++}};
-  vm.createContext(ctx);vm.runInContext(functionSource(source,'resumeCanonicalVictoryAfterHydration'),ctx);
+  prepareContext(ctx);vm.runInContext(functionSource(source,'resumeCanonicalVictoryAfterHydration'),ctx);
   ctx.resumeCanonicalVictoryAfterHydration('a',client);assert.equal(typeof scheduled,'function');
   if(change==='account')ctx.lumenUser={id:'b'};
   if(change==='client')ctx.lumenSupabase={};
   if(change==='quest')ctx.canonicalActiveQuest={id:'other'};
+  if(change==='index')ctx.levelIndex++;
   if(change==='attempt')attempt.attemptId='other';
   if(change==='reset')attempt.resetCount++;
   if(change==='owner')ctx.canonicalResumeOwner='b';

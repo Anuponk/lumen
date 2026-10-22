@@ -10,6 +10,22 @@ export async function legacyCommandsSupported(client){
  if(response.data!==1)throw Error('Legacy command capability unverified');
  supported.set(client,true);return true;
 }
+function verifyLegacyProjection(profile,receipt,quest){
+ const saved=profile?.performances?.[quest.legacyIndex],badges=receipt.outcome.savedPerformance?.badges;
+ if(!profile?.solved?.[quest.legacyIndex]||!saved||!badges||!['speed','autonomy','noError','mastery'].every(k=>!badges[k]||!!saved.badges?.[k])||!Number.isSafeInteger(receipt.outcome.attempts)||!Number.isSafeInteger(saved.attempts)||saved.attempts<receipt.outcome.attempts)throw Error('Legacy command projection unconfirmed');
+}
+export async function loadCommittedLegacyAttempt(client,questId,operationId,{userId,sessionValid=()=>true}={}){
+ const quest=canonicalQuestList().find(q=>q.id===questId&&q.legacyIndex!==null);
+ if(!quest||!userId||typeof operationId!=='string'||!/^[A-Za-z0-9._-]{1,120}$/.test(operationId))throw canonicalRecoveryFailure({code:'22023'});
+ const scope=()=>{if(!sessionValid())throw Error('Legacy command session changed')};
+ scope();const read=await client.rpc('lumen_get_legacy_command',{p_expected_user_id:userId,p_operation_id:operationId});scope();
+ if(read.error)throw canonicalRecoveryFailure(read.error,read.status);
+ const receipt=read.data;if(receipt===null)return null;
+ if(!receipt?.request?.facts||!sameCloudProfile(receipt.request,{version:1,operationId,questId,facts:receipt.request.facts})||typeof receipt.outcome?.firstCompletion!=='boolean'||!Number.isFinite(Date.parse(receipt.recordedAt)))throw canonicalRecoveryFailure({code:'22023'});
+ const profile=await loadVerifiedProfile(client,{userId});scope();
+ verifyLegacyProjection(profile,receipt,quest);
+ return {profile,receipt,quest};
+}
 export async function commitLegacyVictoryCommand(client,questId,facts,operationId,{userId,sessionValid=()=>true}={}){
  const quest=canonicalQuestList().find(q=>q.id===questId&&q.legacyIndex!==null);
  if(!quest||!userId||typeof operationId!=='string'||!/^[A-Za-z0-9._-]{1,120}$/.test(operationId))throw canonicalRecoveryFailure({code:'22023'});
@@ -25,9 +41,8 @@ export async function commitLegacyVictoryCommand(client,questId,facts,operationI
  scope();
  if(!receipt)throw failure?canonicalRecoveryFailure(failure,status):Error('Legacy command receipt unconfirmed');
  if(!sameCloudProfile(receipt.request,{version:1,operationId,questId,facts})||typeof receipt.outcome?.firstCompletion!=='boolean'||!Number.isFinite(Date.parse(receipt.recordedAt)))throw canonicalRecoveryFailure({code:'22023'});
- const profile=await loadVerifiedProfile(client);scope();
- const saved=profile?.performances?.[quest.legacyIndex],badges=receipt.outcome.savedPerformance?.badges;
- if(!profile?.solved?.[quest.legacyIndex]||!saved||!badges||!['speed','autonomy','noError','mastery'].every(k=>!badges[k]||!!saved.badges?.[k])||!Number.isSafeInteger(receipt.outcome.attempts)||!Number.isSafeInteger(saved.attempts)||saved.attempts<receipt.outcome.attempts)throw Error('Legacy command projection unconfirmed');
+ const profile=await loadVerifiedProfile(client,{userId});scope();
+ verifyLegacyProjection(profile,receipt,quest);
  return {profile,receipt,quest};
 }
 // Recovery keeps immutable evidence and pauses refusals independently. Legacy

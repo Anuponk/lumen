@@ -82,7 +82,7 @@ for(const q of quests.filter(q=>q.legacyIndex===null)){
  assert.equal(q.audit.solutions,1);
  assert(q.reg.length>=6);
 }
-assert.match(gameScreen,/canonicalCampaignQuestDecision\(canonicalQuestForLegacy\(index\),lumenProgress,/);
+assert.match(gameScreen,/canonicalCampaignQuestDecision\(canonicalQuestForLegacy\(index\),navigationProgress\(\),/);
 assert.match(gameScreen,/const legacy=quest\.legacyIndex,solved=legacy!==null\?!!lumenProgress\.solved/);
 assert.match(gameScreen,/function historicalContinuationAllowed\(index\)/);
 assert.match(gameScreen,/const played=canonicalActiveQuest\|\|canonicalQuestForLegacy\(levelIndex\)/);

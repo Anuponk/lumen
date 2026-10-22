@@ -184,8 +184,8 @@ test('each declared profile field has an executable reconciliation policy fixtur
   performances:[{0:{version:3,attempts:1,badges:{speed:true}}},{},{0:{version:3,attempts:1,badges:{speed:true}}}],
   canonicalQuestState:[{q:{solved:true,badges:{speed:true},stars:2}},{},{q:{solved:true,badges:{speed:true},stars:2}}],
   autonomousWins:[1,0,1],legacyAdventureAccess:[['earned-adventure'],[],['earned-adventure']],
-  catalogueOrigin:[undefined,currentCatalogueOrigin,currentCatalogueOrigin],legacyVictoryRevision:[undefined,2,2],
-  shards:[9,3,9],xp:[20,15,20],skyScore:[2,1,2],
+  catalogueOrigin:[undefined,currentCatalogueOrigin,currentCatalogueOrigin],legacyVictoryRevision:[undefined,2,2],walletRevision:[undefined,2,2],
+  shards:[9,3,'blocked'],xp:[20,15,20],skyScore:[2,1,2],
   daily:[{dates:{'2026-10-19':1}},{},{dates:{'2026-10-19':1}}],challenges:[{'sky2-1':1},{},{'sky2-1':1}],
   autonomySeen:[1,undefined,1],fullBadgeIntroSeen:[1,0,1],autoCrossUnlockSeen:[true,false,1],speedBadgeIntroSeen:[false,true,1],
   skyHistoryVersion:[3,4,'blocked']

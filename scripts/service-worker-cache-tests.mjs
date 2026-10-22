@@ -46,9 +46,21 @@ test('an unavailable asset cache cannot hide a successful network response',asyn
  const f=fixture();f.caches.open=async()=>{throw Error('quota')};
  assert.equal(await (await f.fetchAsset('/src/main.js')).text(),'fresh');
 });
-test('navigation stays network-only and activation only retires old Lumen asset caches',async()=>{
- const f=fixture();await f.fetchAsset('/',{mode:'navigate'});assert.equal(f.calls[0][1].cache,'no-store');assert.equal(f.stores.size,0);
+test('public navigation bypasses HTTP cache and activation only retires old Lumen asset caches',async()=>{
+ const f=fixture();await f.fetchAsset('/',{mode:'navigate'});assert.equal(f.calls[0][1].cache,'no-store');assert.equal(f.stores.size,1);
+ assert(f.stores.get('lumen-assets-v10').has('https://lumen.test/'));
  for(const key of ['lumen-assets-v9','lumen-assets-v10','another-feature'])f.stores.set(key,new Map());
  let activation;f.handlers.activate({waitUntil:p=>activation=p});await activation;
  assert.deepEqual([...f.stores.keys()],['lumen-assets-v10','another-feature']);
+});
+
+test('a cold offline public navigation restores the shell without caching auth or private URLs',async()=>{
+ const f=fixture();await f.fetchAsset('/',{mode:'navigate'});
+ f.setNetwork(()=>{throw Error('offline')});
+ assert.equal(await (await f.fetchAsset('/',{mode:'navigate'})).text(),'fresh');
+ await assert.rejects(f.fetchAsset('/?code=sensitive',{mode:'navigate'}),/offline/);
+ await assert.rejects(f.fetchAsset('/private/',{mode:'navigate'}),/offline/);
+ f.setNetwork(()=>new Response('refused',{status:503}));
+ assert.equal((await f.fetchAsset('/',{mode:'navigate'})).status,503,'HTTP refusals are not disguised as offline success');
+ assert.equal(f.stores.get('lumen-assets-v10').size,1);
 });

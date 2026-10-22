@@ -46,6 +46,7 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
   // Campaign/replay reset starts a fresh badge run without changing attemptId.
   // Social challenge remains one-shot: elapsed time, assistance and mistakes persist.
   if(attempt.mode!=="challenge"){
+   attempt.helpUses={};
    attempt.assistanceUsed=false;attempt.mistakeCommitted=false;attempt.activeDuration=0;attempt.startedAt=attempt.state===ATTEMPT_STATES.READY?null:now();attempt.lastActiveAt=attempt.state===ATTEMPT_STATES.READY?null:now();
    activeSince=attempt.state===ATTEMPT_STATES.RUNNING?perfNow():null;
   }
@@ -53,9 +54,13 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
  }
  function updateBoard(board){if(!attempt)return;attempt.board=cloneBoard(board);emit()}
  function markAssistance(){if(!attempt||attempt.assistanceUsed)return;attempt.assistanceUsed=true;emit()}
+ function recordAssistanceUse(kind,count){
+  if(!attempt||!['hint','verify'].includes(kind)||!Number.isSafeInteger(count)||count<0)return;
+  attempt.helpUses={...(attempt.helpUses||{}),[kind]:Math.max(count,attempt.helpUses?.[kind]||0)};emit();
+ }
  function setWrongGuardianPending(cellKey){if(!attempt||attempt.mistakeCommitted)return;attempt.wrongGuardianPending=cellKey||null;emit()}
  function clearWrongGuardianPending(cellKey=null){if(!attempt||!attempt.wrongGuardianPending)return;if(cellKey&&attempt.wrongGuardianPending!==cellKey)return;attempt.wrongGuardianPending=null;emit()}
  function commitMistake(){if(!attempt)return;if(attempt.mistakeCommitted&&attempt.wrongGuardianPending===null)return;attempt.mistakeCommitted=true;attempt.wrongGuardianPending=null;emit()}
  function clear(){attempt=null;activeSince=null;storage?.removeItem?.(STORAGE_KEY);onChange(null)}
- return {create,restore,start,pause,resume,complete,abandon,reset,updateBoard,markAssistance,setWrongGuardianPending,clearWrongGuardianPending,commitMistake,clear,snapshot,activeMs,states:ATTEMPT_STATES,storageKey:STORAGE_KEY};
+ return {create,restore,start,pause,resume,complete,abandon,reset,updateBoard,markAssistance,recordAssistanceUse,setWrongGuardianPending,clearWrongGuardianPending,commitMistake,clear,snapshot,activeMs,states:ATTEMPT_STATES,storageKey:STORAGE_KEY};
 }

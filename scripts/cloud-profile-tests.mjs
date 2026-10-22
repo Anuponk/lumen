@@ -9,6 +9,19 @@ const fake={async rpc(method,args){
 }};
 assert.equal((await backupAndVerifyProfile(fake,source)).solved,2);
 assert.deepEqual(await loadVerifiedProfile(fake),source);
+// A deferred UI auth event must not authorize profile work under a new token.
+for(const action of [
+ client=>loadVerifiedProfile(client,{userId:'expected-account'}),
+ client=>initializeCloudProfile(client,source,{userId:'expected-account'}),
+ client=>compareAndSwapCloudProfile(client,source,source,{userId:'expected-account'})
+]){
+ let guardedCalls=0;
+ await assert.rejects(()=>action({rpc:async(method,args)=>{
+  assert.equal(args.p_expected_user_id,'expected-account');guardedCalls++;
+  return {error:{code:'42501',message:'private account detail'}};
+ }}),error=>error.code==='42501'&&!error.message.includes('private account detail'));
+ assert.equal(guardedCalls,1,'Account refusal cannot fall back to an unbound request');
+}
 assert.throws(()=>validateCloudProfile({solved:{}}),/Badges/);
 await assert.rejects(()=>backupAndVerifyProfile({rpc:async()=>({error:{message:'network'}})},source),/refusée/);
 await assert.rejects(()=>backupAndVerifyProfile({rpc:async method=>method==='lumen_backup_profile'?{error:null}:{data:{solved:{},badges:{}},error:null}},source),/non vérifiée/);
@@ -33,9 +46,10 @@ const corrupt=storage();corrupt.setItem('lumenProgressV1','{not-json');
 assert.throws(()=>restoreIntoEmptyGuestStorage(corrupt,source),/illisible/);
 
 const richer=storage();
-richer.setItem('lumenProgressV1',JSON.stringify({...source,shards:3,performances:{}}));
-assert.equal(cloudSafelyCoversLocal({...source,shards:3,performances:{}},source),true);
-const restored=restoreRicherCloudProfile(richer,source);
+const walletSource={...source,walletRevision:2};
+richer.setItem('lumenProgressV1',JSON.stringify({...source,shards:3,walletRevision:1,performances:{}}));
+assert.equal(cloudSafelyCoversLocal({...source,shards:3,walletRevision:1,performances:{}},walletSource),true);
+const restored=restoreRicherCloudProfile(richer,walletSource);
 assert.equal(restored.changed,true);
 assert.equal(JSON.parse(richer.getItem('lumenProgressV1')).shards,7);
 assert.ok(richer.getItem(restored.backupKey),'original local profile backed up');
@@ -46,7 +60,7 @@ assert.equal(JSON.parse(divergent.getItem('lumenProgressV1')).shards,100);
 const newerBadge=storage();
 newerBadge.setItem('lumenProgressV1',JSON.stringify({...source,badges:{unique:1}}));
 assert.throws(()=>restoreRicherCloudProfile(newerBadge,source),/divergent/);
-assert.equal(restoreRicherCloudProfile(richer,source).changed,false);
+assert.throws(()=>restoreRicherCloudProfile(richer,source),/divergent/,'An old profile cannot drop the authoritative wallet cursor');
 
 const conflictingLocal={solved:{127:1,128:1,130:1},badges:{first:1},shards:4,xp:45,performances:{127:{badges:{speed:false},bestTime:72}}};
 const conflictingRemote={solved:{127:1,128:1},badges:{first:1},shards:13,xp:31,performances:{127:{badges:{speed:true,mastery:true,noError:true,autonomy:true},bestTime:51},128:{badges:{speed:true,mastery:true,noError:true,autonomy:true}}}};
@@ -70,7 +84,7 @@ const uiSrc=(await import('node:fs')).readFileSync(new URL('../src/ui/game-scree
 const html=(await import('node:fs')).readFileSync(new URL('../index.html',import.meta.url),'utf8');
 assert.equal(cloudSrc.split('hooks.afterAuthCloudSync?.()').length-1,2,'Cloud sync must run after both session and sign-in auth flows');
 assert.ok(uiSrc.includes('afterAuthCloudSync:async'),'Auth hook is wired');
-assert.ok(uiSrc.includes('compareAndSwapCloudProfile(savingCloudClient,current,cloudProfileBaseline)'),'Atomic background write wired');
+assert.ok(uiSrc.includes('compareAndSwapCloudProfile(savingCloudClient,current,cloudProfileBaseline,{userId:savingUserId})'),'Atomic background write binds the expected account');
 assert.ok(uiSrc.includes('installCloudProfileLocally(localStorage,cloud)'),'Cloud overrides local after login');
 assert.ok(uiSrc.includes('holdLegacyMergeForFullRestore:async()=>true'),'Legacy merges disabled');
 assert.doesNotMatch(html,/id="migrationCloud(?:Save|Restore)"/);
@@ -117,9 +131,9 @@ assert.ok(uiSrc.includes('await verifyLegacyProgressMirror()'),'Cloud save must 
 assert.ok(uiSrc.includes('preserveUnsyncedCloudProgress("legacy-mirror-failed")'),'Failed mirror must retain local recovery data');
 assert.ok(uiSrc.includes('async function celebrateSuccess()'),'Victory completion may await durable cloud acknowledgement');
 assert.ok(uiSrc.includes('if(!(await confirmCloudReward()))return;'),'Authenticated victory waits for committed cloud snapshot');
-assert.ok(uiSrc.includes('La sauvegarde cloud n’a pas pu être confirmée'),'Transient cloud failure must remain visible and retryable');
-assert.ok(uiSrc.includes('cloudProfileFailure?.reason==="conflict"'),'A cloud conflict must be distinguished from a transient failure');
-assert.ok(uiSrc.includes('again.disabled=true'),'Do not offer a retry that cannot resolve a cloud version conflict');
+assert.ok(uiSrc.includes("textContent='Réessayer'"),'Persistent cloud failure retains an actionable retry');
+assert.ok(uiSrc.includes("retryable:cloudProfileFailure?.reason!=='conflict'"),'A cloud conflict must be distinguished from a transient failure');
+assert.ok(uiSrc.includes('const syncPresentation=createSyncPresentation'),'Transient and critical presentation follow explicit state');
 assert.ok(uiSrc.includes('if(box)box.hidden=true'),'Successful Google login must not reopen the account offer');
 
 assert.ok(uiSrc.includes('if(wasVisible)showAccountSavedConfirmation()'),'Cloud-save confirmation only after verified profile');

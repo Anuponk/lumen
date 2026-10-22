@@ -20,6 +20,7 @@ const server=http.createServer((req,res)=>{
   res.end(path==='/src/main.js'?"import '/src/persistence/cloud-profile.js';":`window.codeRevision=${revision};`);return;
  }
  if(path==='/'){
+  if(offline){req.socket.destroy();return}
   res.writeHead(200,{'Content-Type':'text/html','Cache-Control':'no-store'});
   res.end(`<meta name="lumen-build" content="${revision}"><script type="module" src="/src/main.js"></script><script>
    const controlled=!!navigator.serviceWorker.controller;
@@ -59,6 +60,10 @@ try{
  // Subsequent releases need no worker-version bump to refresh transitive imports.
  revision=3;await send('Page.reload');await until(`document.querySelector('meta')?.content==='3'&&window.codeRevision===3`);
  await until(`(async()=>{const c=await caches.open('lumen-assets-v10');const r=await c.match('/src/persistence/cloud-profile.js');return r&&(await r.text()).includes('=3')})()`);
+ // Warm the public query-free document too, then remove ALL network access to
+ // the document/modules. A retained intent must survive this cold navigation.
+ await send('Page.navigate',{url:origin+'/'});await until(`document.querySelector('meta')?.content==='3'&&window.codeRevision===3`);
+ await until(`(async()=>{const c=await caches.open('lumen-assets-v10');const r=await c.match('/');return r&&(await r.text()).includes('content="3"')})()`);
  const epoch=await evaluate('performance.timeOrigin');
  offline=true;await send('Page.reload');await until(`performance.timeOrigin!==${epoch}&&window.codeRevision===3`);
  const after=await evaluate(`(async()=>{
@@ -67,7 +72,7 @@ try{
   return {progress:localStorage.getItem('lumenProgressV1'),attempt:localStorage.getItem('lumenActiveAttemptV1'),intent};
  })()`,true);
  assert.deepEqual(after,{progress,attempt,intent});
- const report={realServiceWorker:true,simulatedApp:true,liveCloudWrites:false,staleImportsReproduced:true,warmUpgrade:true,nextRelease:true,offlineAssets:true,playerStoragePreserved:true};
+ const report={realServiceWorker:true,simulatedApp:true,liveCloudWrites:false,staleImportsReproduced:true,warmUpgrade:true,nextRelease:true,offlineAssets:true,offlineNavigation:true,playerStoragePreserved:true};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2)+'\n');
  console.log(JSON.stringify(report));
 }catch(error){console.error(JSON.stringify({requests,controller:await evaluate(`navigator.serviceWorker.controller?.scriptURL`)}));throw error}

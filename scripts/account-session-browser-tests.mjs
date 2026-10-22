@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
+import {verifyWalletAndOfflineFlow} from './wallet-flow-browser.mjs';
 import {connectBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
 const {send,evaluate,errors}=await connectBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -35,7 +36,9 @@ if(isolatedRecovery){
  if(!savedRetryServer)window.__fixtureProfile.legacyVictoryRevision=1;
  sessionStorage.setItem('fixtureIsolatedLoads',String(Number(sessionStorage.getItem('fixtureIsolatedLoads')||0)+1));
  localStorage.setItem('lumenCloudOwnerId','fixture-player');
- if(!savedRetryServer)localStorage.setItem('lumenProgressV1',JSON.stringify({...window.__fixtureProfile,solved:{1:1},shards:9}));
+ // Isolate the historical authority refusal. Unreceipted currency differences
+ // have an earlier protected hold and their own wallet regression coverage.
+ if(!savedRetryServer)localStorage.setItem('lumenProgressV1',JSON.stringify({...window.__fixtureProfile,solved:{1:1}}));
 }
 window.supabase={createClient(url,key,options){
  // Model the SDK's default writable-storage probe: a full but readable store
@@ -45,6 +48,7 @@ window.supabase={createClient(url,key,options){
  const set=(event,value)=>{session=value;storage.setItem('fixtureAuthSession',JSON.stringify(value));callback(event,value)};
  window.__emitAuthEvent=event=>set(event,session);
  return {rpc:async(name,args)=>{
+  if(name==='lumen_wallet_command_version')return {error:{code:'PGRST202'},status:404};
   if(!isolatedRecovery)return name==='lumen_restore_profile'?{data:null,error:{message:'simulated restore outage'}}:{data:[],error:null};
   if(name==='lumen_restore_profile')return {data:structuredClone(window.__fixtureProfile),error:null};
   if(['lumen_commit_legacy_command','lumen_get_legacy_command'].includes(name)&&args.p_expected_user_id!=='fixture-player')return {data:null,error:{code:'42501'},status:403};
@@ -207,7 +211,7 @@ try{
  await send('Page.enable');await send('Runtime.enable');await send('Network.enable');
  // Keep both the real SDK and project APIs out of the isolated fixture.
  await send('Network.setBlockedURLs',{urls:['*supabase*']});
- await send('Page.addScriptToEvaluateOnNewDocument',{source:fixture});
+ const {identifier:authFixtureId}=await send('Page.addScriptToEvaluateOnNewDocument',{source:fixture});
  for(const viewport of [{width:390,height:844,mobile:true},{width:1440,height:900,mobile:false}]){
   await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});
   await navigate('Page.navigate',{url:url.href});
@@ -297,8 +301,10 @@ try{
   const isolatedCanonicalRecovery=await verifyIsolatedRecovery();
   results.push({viewport,guestDismiss:true,automaticOfferDismiss:true,repeatedSignupLoginDismiss:true,passwordLogin:true,reload:true,readableSessionWithQuota:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,restoreFailureVisible:true,isolatedCanonicalRecovery,isolatedLegacyRecovery:true});
  }
+ await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:authFixtureId});
+ const walletFlow=await verifyWalletAndOfflineFlow({send,evaluate,navigate,url});
  assert.equal(errors.length,0,JSON.stringify(errors));
- const report={simulatedAuth:true,liveCloudWrites:false,results,exceptions:errors};
+ const report={simulatedAuth:true,liveCloudWrites:false,results,walletFlow,exceptions:errors};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));
  console.log(JSON.stringify(report));
 }finally{await send('Browser.close').catch(()=>{})}

@@ -76,8 +76,12 @@ Guest state is persisted locally. Authenticated daily claims already use
 `lumen_claim_daily` with the server Europe/Paris calendar and idempotent daily
 rewards, read through `lumen_get_daily` / `lumen_get_engagement`. Historical command
 victories include that existing claim in their reward/receipt transaction and
-project each unprojected daily reward once. Standalone daily and spending writers
-are not retired by this step; their authority cutover remains in #391.
+project each unprojected daily reward once. The P0 wallet cutover adds durable
+hint/verify debit commands and an atomic standalone daily projection. After
+activation, legacy daily and snapshot wallet mutations are refused; existing
+claim locks and day reward keys remain authoritative. Prices and badge rules
+are unchanged. Authenticated paid help needs a verifiable server command; free
+learning hints and the existing zero-shard safety hint remain available.
 
 ## Performance badges
 Per-quest performance has exactly four badges, as implemented in `src/campaign/performance.js`:

@@ -73,3 +73,9 @@ jobs:
             -f supabase/migrations/20261018200805_catalogue_origin_access.sql \
             -f scripts/fixtures/catalogue-origin.sql \
             -f /tmp/lumen-catalogue-origin.sql
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261022042307_wallet_command_authority.sql \
+            -f scripts/fixtures/wallet-command-receipts.sql \
+            -f supabase/migrations/20261022043628_outbox_health_observations.sql \
+            -f scripts/fixtures/outbox-health-observations.sql
+          python3 scripts/wallet-command-concurrency.py
