@@ -1,0 +1,2 @@
+# Preserve the reviewed upstream browser bundles byte-for-byte on every OS.
+src/vendor/*.js -text whitespace=-blank-at-eol,-blank-at-eof

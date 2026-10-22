@@ -1,8 +1,41 @@
 # Existing verification map
 
+Technical retention: `scripts/fixtures/technical-retention*.sql` and
+`scripts/technical-retention-concurrency.py` in disposable PostgreSQL 17 CI.
+See `docs/TESTING.md` for preview, dates, held/open data, rollback, role denial,
+concurrent reenabling and DDL checks; no production purge is tested.
+
+Private rights export: `scripts/fixtures/account-rights*.sql` after both privacy
+migrations, in `canonical-ledger.yml` PostgreSQL 17. Covers bounds, stable
+read-only requirement, role denial, guest/account scope, Auth/other-app/push
+secret exclusion and access after erasure. Local PGlite is separate evidence.
+
 Baseline: `bef5f32`. All paths are repository-relative. This phase indexes existing checks without changing tests or GitHub Actions. `docs/TESTING.md` retains execution contracts and detailed scenarios. Presence of a suite does not mean it ran or proves live production behavior.
 
 ## Select a check
+
+Lumen-only erasure: `scripts/fixtures/account-erasure-bootstrap.sql`,
+`scripts/fixtures/account-erasure.sql`, `scripts/account-erasure-concurrency.py`
+and the real private migration run after wallet regressions in
+`canonical-ledger.yml` on disposable PostgreSQL 17. See `docs/TESTING.md` for
+scope/denial/race assertions; this does not certify production/native deletion.
+
+Compact tutorial coach: `learning-coach-placement-tests.mjs` reproduces the
+short-screen header overlap using the real placement function; existing
+`ux-cleanup-tests.mjs` checks browser help click, modal focus and preservation.
+
+Play/privacy preparation: `privacy-readiness-tests.mjs` plus `analytics-tests.mjs`;
+account-session browser runner invokes `privacy-browser.mjs` for mobile/desktop
+request preparation without live mail/Auth. `play-readiness.mjs --enforce`
+deliberately blocks missing real evidence; it is not a passing CI certification.
+See `docs/PLAY_STORE_READINESS.md` and the account-deletion runbook.
+The same browser runner reads the two HTML legal candidates at mobile/desktop
+sizes, without scripts/Auth, preserving saves and retaining access to requests.
+
+Browser libraries: `browser-dependency-tests.mjs` checks exact local assets,
+hashes/licenses and absence of CDN script tags. `privacy-browser.mjs` loads the
+real local exports and renders a fixture QR without Auth; worker cache tests
+cover both bundles offline. Family-account design is not implementation evidence.
 
 Private physical-device preview: see
 [`ISOLATED_VALIDATION_PREVIEW.md`](../ISOLATED_VALIDATION_PREVIEW.md) for the

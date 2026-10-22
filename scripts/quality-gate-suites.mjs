@@ -1,4 +1,7 @@
 export const nodeSuites=[
+ 'learning-coach-placement-tests.mjs',
+ 'browser-dependency-tests.mjs',
+ 'privacy-readiness-tests.mjs',
  'cloud-daily-session-tests.mjs',
  'cloud-wallet-command-tests.mjs',
  'cloud-wallet-reconciliation-tests.mjs',

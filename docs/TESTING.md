@@ -1,5 +1,61 @@
 # Testing and quality gate
 
+`node scripts/learning-coach-placement-tests.mjs` executes the actual coach
+placement function against the 360x640 header/board geometry for quests 1–2.
+It retains clear space for help/focus, board cells and actions. The existing
+UX browser checks validate actual pointer clicks and modal focus restoration.
+The regression also moves the board/header by the measured 54px scroll without
+running another frame, verifying that the compact coach follows before a click.
+
+Browser dependency preparation: `node scripts/browser-dependency-tests.mjs`
+rejects third-party executable script URLs and checks pinned bundle hashes and
+license copies. The account-session browser runner also loads the actual local
+SDK and renders a synthetic QR, without live Auth. Worker cache fixtures cover
+both vendor assets online/offline. This is not native or Families certification.
+
+## Play preparation and privacy (#170/#316)
+
+Technical retention: `technical-retention-bootstrap.sql` adds catalog-shaped
+columns to the disposable fixture; the real migration runs before
+`technical-retention.sql` / `technical-retention-readonly.sql`. The initial test
+failed for the missing function; local SQL then passed. Tests cover default
+read-only preview, confirmation and bounds, API denial, atomic rollback, clock
+backdating, reopen/reenable, support holds, disabled clock guards and preserved
+progress/receipts/historical evidence/unknown events. Synthetic age setup
+temporarily disables only the new date triggers, never erasure guards.
+`technical-retention-concurrency.py` is restricted to disposable localhost CI:
+it tests concurrent reenabling with SKIP LOCKED and DDL serialization. Native
+PostgreSQL 17 results are distinct from local PGlite and production evidence.
+
+The prepared private rights-export migration is exercised by
+`scripts/fixtures/account-rights.sql`, `account-rights-readonly.sql`,
+`account-rights-erasure.sql` and `account-rights-after-erasure.sql`, after the
+erasure migration and its concurrency tests in native PostgreSQL 17 CI.
+The export test first failed for the missing function, then passed locally.
+Assertions cover read-only stable snapshots, row/source-byte bounds without
+truncation, missing actors, actual denial under all API roles, own receipts and
+challenges, exclusion of other participants/apps/Auth and push keys, unchanged
+source data, and remaining private barriers after erasure. This is disposable
+fixture evidence, not a real user request or production deployment.
+
+The preparation report also blocks `children.activationReview` while child
+activation is deferred, even with synthetic complete evidence for other fields.
+The positive fixture uses an explicitly enabled synthetic parental-process
+state; it does not claim any production child account or consent is verified.
+
+`privacy-readiness-tests.mjs` checks the intentionally blocked preparation
+manifest, request-mail encoding/injection refusal and no destructive client path.
+The account-session browser suite runs `privacy-browser.mjs` at mobile/desktop
+sizes: confirmation, prepared mail only, no SDK/mail transport and unchanged
+save/attempt. These tests do not execute or certify account deletion.
+`analytics-tests.mjs` retains granted-payload parity and adds default-deny,
+per-event revocation, permission failure and no optional session/referral storage.
+
+`node scripts/play-readiness.mjs --enforce` is expected to fail until all real
+publisher, family, deletion, native-device and Console evidence is supplied.
+It is a future publishing prerequisite, not a test to weaken for green CI or a
+remote Play Console lock. See [readiness](PLAY_STORE_READINESS.md).
+
 ## Private Android validation preview
 
 The [isolated validation preview runbook](ISOLATED_VALIDATION_PREVIEW.md) records
@@ -304,6 +360,40 @@ Every change affecting content, progression, shop, sky navigation or saved state
 Tests should assert relationships derived from the content registry rather than a specific future total. Documentation alone is not proof of runtime coverage.
 
 ## Cloud persistence regression matrix
+
+### Lumen-only erasure (#316, prepared migration)
+
+Legal-page candidates: `privacy-browser.mjs` loads the actual HTML pages at
+390/1440 px, opening `mentions-legales.html` / `confidentialite.html` independently
+without SDK/login/scripts, verifies viewport fit, visible candidate status,
+the rights-request link and unchanged save/attempt. The existing mailto checks
+and real local-library checks remain. Rendering does not certify legal content
+or production publication; the preparation evidence fields remain unverified.
+
+`canonical-ledger.yml` adds `account-erasure-bootstrap.sql`, real migration
+`20261022160212_lumen_account_erasure.sql`, `account-erasure.sql` and
+`account-erasure-concurrency.py` after the actual snapshot/ledger/wallet
+regressions on disposable PostgreSQL **17**. No provider connection, real
+identity or paid database. The extra fixture schema fails if reused.
+
+All 26 owned data tables are seeded. Assertions cover erasure, social sender
+anonymization, other participants, shared Auth/other-app preservation, rule
+retention, explicit confirmation, missing/shared actors, contradictory keys,
+schema/guard drift, mid-deletion rollback, retry, anonymous/cache resurrection,
+an incoming cross-application cascade rejected before any deletion,
+old JWTs on every guarded table and the real backup RPC. Anon/player/service
+roles have no private access. Repeatable-read writes fail closed. Separate
+Python connections cover both lock orders: erasure commits before a blocked
+old writer, and an in-flight write commits before the locked erasure review.
+The existing canonical/legacy/wallet concurrency suites run again with new
+synthetic accounts after guard installation, preserving normal players' command
+receipts, exact balances and restore behavior.
+
+The initial pre-migration assertion failed on the missing Lumen-only function.
+Local PGlite 0.5.11 / PostgreSQL 18.6 checks synthetic SQL and the actual migration
+chain; it does not replace PostgreSQL 17 concurrency CI, provider retention,
+parental verification or future native-device erasure. Production application
+and `accountDeletionEndToEnd` remain separate gates. See the deletion runbook.
 
 ### P0 integration: wallet, pending victories and observations (22 October 2026)
 

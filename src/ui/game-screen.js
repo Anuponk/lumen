@@ -1464,18 +1464,27 @@ function positionLearningCoach(){
  card.style.width=width+"px";
  const actions=document.querySelector(".actions").getBoundingClientRect();
  const compactLesson=mobile&&levelIndex<=1;
+ const anchor=compactLesson?card.parentElement:null;
+ card.style.position=anchor?"absolute":"fixed";
  const belowActions=actions.bottom+8;
  // A compact lesson must never cover the normal actions or puzzle cells.
  // The old fallback positioned the coach below actions even when the bottom
  // of the viewport had no space (e.g. 360x640: actions end at y=609).
- const aboveBoardSpace=Math.max(0,rect.top-16);
+ // The space above the board starts below the interactive header, not at
+ // the viewport edge: otherwise the compact coach can cover the help button.
+ const safeTop=Math.max(8,(document.getElementById("tutorialHelp")?.getBoundingClientRect().bottom||0)+8);
+ const aboveBoardSpace=Math.max(0,rect.top-safeTop-8);
  const compactAboveBoard=compactLesson&&aboveBoardSpace>=48;
  card.style.maxHeight=compactLesson?(compactAboveBoard?Math.min(96,aboveBoardSpace)+"px":Math.max(32,innerHeight-belowActions-8)+"px"):"";
  card.style.overflowY=compactLesson?"auto":"";
  const aboveBoard=rect.top-card.offsetHeight-8;
- const top=mobile?(compactAboveBoard?Math.max(8,aboveBoard):compactLesson?Math.min(belowActions,innerHeight-card.offsetHeight-8):aboveBoard>=48?aboveBoard:Math.max(48,Math.min(innerHeight-card.offsetHeight-8,belowActions))):Math.max(12,Math.min(rect.top,innerHeight-card.offsetHeight-12));
+ const top=mobile?(compactAboveBoard?Math.max(safeTop,aboveBoard):compactLesson?Math.min(belowActions,innerHeight-card.offsetHeight-8):aboveBoard>=48?aboveBoard:Math.max(48,Math.min(innerHeight-card.offsetHeight-8,belowActions))):Math.max(12,Math.min(rect.top,innerHeight-card.offsetHeight-12));
  const left=mobile?Math.max(10,(innerWidth-width)/2):rect.right+14+width<=innerWidth?rect.right+14:Math.max(10,rect.left-width-14);
- card.style.left=left+"px";card.style.top=top+"px";
+ // A fixed coach would stay over the header when focus/scrollIntoView moves
+ // the page. Compact lessons use the board wrapper's coordinate space instead.
+ const origin=anchor?.getBoundingClientRect();
+ card.style.left=(left-(origin?.left||0)+(anchor?.scrollLeft||0))+"px";
+ card.style.top=(top-(origin?.top||0)+(anchor?.scrollTop||0))+"px";
 }
 window.addEventListener("resize",()=>requestAnimationFrame(positionLearningCoach));
 // Measure finale copy and the complete game stack, including wrapped action labels.

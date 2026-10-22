@@ -7,6 +7,11 @@ Prefer batching coherent work instead of pushing every micro-edit, especially wh
 
 ## Intended workflow
 
+PR #526: the owner's current decision is to keep the privacy preparation in
+draft until complete validation. Follow the [remaining-work checklist](PRIVACY_RELEASE_CHECKLIST.md)
+before proposing its release. This documentation does not authorize its three
+SQL migrations, merge or deployment; merging into `main` may trigger publication.
+
 For o2switch, `Deploy Lumen to o2switch` publishes the exact successful `main`
 revision after all three release gates pass, when `O2SWITCH_DEPLOY_ENABLED=true`.
 The server independently checks the gates and the published HTTP SHA, using
