@@ -1,5 +1,10 @@
 # Existing verification map
 
+Technical retention: `scripts/fixtures/technical-retention*.sql` and
+`scripts/technical-retention-concurrency.py` in disposable PostgreSQL 17 CI.
+See `docs/TESTING.md` for preview, dates, held/open data, rollback, role denial,
+concurrent reenabling and DDL checks; no production purge is tested.
+
 Private rights export: `scripts/fixtures/account-rights*.sql` after both privacy
 migrations, in `canonical-ledger.yml` PostgreSQL 17. Covers bounds, stable
 read-only requirement, role denial, guest/account scope, Auth/other-app/push

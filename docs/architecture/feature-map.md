@@ -4,6 +4,11 @@ Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This loo
 
 ## Entry points and shape
 
+Technical retention: prepared private `lumen_privacy.retain_technical_data` and
+server date triggers, no scheduled production job. Scope and holds:
+`docs/TECHNICAL_RETENTION_RUNBOOK.md`; operational recommendations:
+`docs/PRIVACY_LOGS_AND_BACKUPS.md`.
+
 Operator access/portability: private `lumen_privacy.export_account`, prepared
 migration `20261022184145_lumen_account_rights_export.sql`; stable read-only
 snapshot, bounded scope, manual review before sharing. Procedure:

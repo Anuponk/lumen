@@ -50,6 +50,12 @@ puis vérifiés par une exécution verte sans affaiblir le contrôle.
 
 ## État vérifié et prochaines preuves
 
+Complément conservation : mécanisme opérateur technique préparé, non activé,
+avec dates serveur et protection des preuves historiques. Procédure dans
+[TECHNICAL_RETENTION_RUNBOOK](TECHNICAL_RETENTION_RUNBOOK.md). L'éditeur confirme
+Resend Free et une offre o2switch payante de base ; le nom exact et les réglages
+de cette dernière restent non vérifiés. [Recommandations logs et copies](PRIVACY_LOGS_AND_BACKUPS.md).
+
 Finalisation PWA du 22 octobre : export opérateur d'accès/portabilité préparé
 dans une seconde migration privée, avec [procédure](ACCOUNT_RIGHTS_RUNBOOK.md).
 La [proposition de conservation](PRIVACY_RETENTION_PROPOSAL.md) distingue les

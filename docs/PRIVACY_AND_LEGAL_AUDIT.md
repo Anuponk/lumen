@@ -8,6 +8,14 @@ l'éditeur avant publication. Cette préparation ne vaut pas certification jurid
 
 ## Registre proportionné des traitements
 
+La [conservation technique](TECHNICAL_RETENTION_RUNBOOK.md) dispose désormais
+d'un mécanisme privé préparé avec aperçu, dates serveur, exceptions et lots
+bornés. Les preuves historiques de jeu restent exclues ; aucune activation de
+production ou purge générale n'est revendiquée. Resend Free et l'offre payante
+de base o2switch sont déclarés par l'éditeur, sans confirmation du nom exact
+de cette dernière. Les [recommandations logs/backups](PRIVACY_LOGS_AND_BACKUPS.md)
+distinguent dépannage à 14 jours, sécurité à 6 mois et copies à 14 générations.
+
 Complément : [procédure d'accès/portabilité](ACCOUNT_RIGHTS_RUNBOOK.md) et
 export privé borné préparés avec tests sur données fictives, avant et après
 effacement. [Proposition de conservation](PRIVACY_RETENTION_PROPOSAL.md) :

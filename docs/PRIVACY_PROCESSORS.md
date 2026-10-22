@@ -7,6 +7,13 @@ publication de la politique finale. Aucun nouveau fournisseur activé ici.
 
 ## Resend — messagerie transactionnelle
 
+L'éditeur confirme le 22 octobre 2026 utiliser **l'offre gratuite**. Cette
+déclaration est enregistrée dans le manifeste ; elle ne vaut pas contrôle des
+options du domaine ou du compte. Les durées publiées pour Free sont donc les
+références contractuelles à retenir : 30 jours pour emails/logs et 7 jours pour
+sauvegardes. Ces valeurs proviennent du fournisseur, et non d'une rotation
+configurée par cette PR. [Politique sécurité](https://resend.com/security).
+
 Preuve technique : `supabase/functions/lumen-auth-mail/index.ts` appelle
 `https://api.resend.com/emails`. L'inventaire distant relève `lumen-auth-mail`
 ACTIVE, version 14 ; la lecture du code déployé confirme cet endpoint.
@@ -17,10 +24,10 @@ applicable aux comptes, un stockage des données de messages aux États-Unis et
 des clauses contractuelles types. Le choix d'une région d'envoi européenne
 ne déplace pas ce stockage. Elle annonce 30 jours pour emails/logs en Free,
 Pro et Scale et 7 jours de backups ; Enterprise peut différer. Ne pas promettre
-ces durées pour le compte Lumen sans vérifier son offre. Une demande portant
+une purge anticipée ou un réglage spécifique non contrôlé. Une demande portant
 sur un joueur n'est pas une clôture du compte fournisseur.
 
-À contrôler : offre, rétention, suivi d'ouverture/clics du domaine, demandes
+À contrôler : paramètres de suivi d'ouverture/clics du domaine, demandes
 d'effacement spécifiques, copie contractuelle et sous-traitants. Ne pas déduire
 de l'absence d'analytics client que le fournisseur ne traite aucun diagnostic.
 Références : [DPA](https://resend.com/legal/dpa),
@@ -52,6 +59,15 @@ et emplacement des fonctions utilisées. Références :
 [sous-traitants](https://supabase.com/legal/customer-resources/subprocessor-list).
 
 ## o2switch — pages et exploitation web
+
+L'éditeur déclare une **offre payante de base**, sans confirmer son nom exact.
+L'offre d'entrée actuelle [Grow](https://www.o2switch.fr/hebergement-debutant/)
+annonce des sauvegardes quotidiennes sur 30 jours. Il s'agit d'une référence
+d'offre, pas d'une preuve que le contrat historique est Grow. La documentation
+[Accès brut](https://faq.o2switch.fr/cpanel/mesures/log-acces-brut/) explique
+les options d'archivage des logs ; elle ne prouve pas leur état sur ce compte.
+Les objectifs de logs et de copies maîtrisées par l'éditeur sont décrits dans
+le [plan d'exploitation](PRIVACY_LOGS_AND_BACKUPS.md).
 
 Hébergeur déclaré par l'éditeur. L'
 [accord public de septembre 2026](https://www.o2switch.fr/du-rgpd.pdf)

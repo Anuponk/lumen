@@ -1,5 +1,10 @@
 # Dependencies and data flow
 
+Retention preview → explicit owner confirmation → bounded technical-only DELETE
+under schema/trigger checks and DDL locks. Existing erasure guards remain;
+server closure/disable clocks live on the same exported/erasable rows. No
+game-state rewrite or scheduled job. `docs/TECHNICAL_RETENTION_RUNBOOK.md`.
+
 Access/portability request → verified operator scope → private SECURITY INVOKER
 `lumen_privacy.export_account` → existing policy/review → stable read-only JSON
 → manual third-party review and secure delivery. No public API or Auth export.

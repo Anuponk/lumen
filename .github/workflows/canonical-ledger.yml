@@ -103,3 +103,14 @@ jobs:
           -f scripts/fixtures/account-rights-readonly.sql
           -f scripts/fixtures/account-rights-erasure.sql
           -f scripts/fixtures/account-rights-after-erasure.sql
+      - name: Verify bounded technical retention and concurrent reenabling
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f scripts/fixtures/technical-retention-bootstrap.sql \
+            -f supabase/migrations/20261022192259_lumen_technical_retention.sql \
+            -f scripts/fixtures/technical-retention.sql \
+            -f scripts/fixtures/technical-retention-readonly.sql
+          python3 scripts/technical-retention-concurrency.py

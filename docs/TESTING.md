@@ -15,6 +15,18 @@ both vendor assets online/offline. This is not native or Families certification.
 
 ## Play preparation and privacy (#170/#316)
 
+Technical retention: `technical-retention-bootstrap.sql` adds catalog-shaped
+columns to the disposable fixture; the real migration runs before
+`technical-retention.sql` / `technical-retention-readonly.sql`. The initial test
+failed for the missing function; local SQL then passed. Tests cover default
+read-only preview, confirmation and bounds, API denial, atomic rollback, clock
+backdating, reopen/reenable, support holds, disabled clock guards and preserved
+progress/receipts/historical evidence/unknown events. Synthetic age setup
+temporarily disables only the new date triggers, never erasure guards.
+`technical-retention-concurrency.py` is restricted to disposable localhost CI:
+it tests concurrent reenabling with SKIP LOCKED and DDL serialization. Native
+PostgreSQL 17 results are distinct from local PGlite and production evidence.
+
 The prepared private rights-export migration is exercised by
 `scripts/fixtures/account-rights.sql`, `account-rights-readonly.sql`,
 `account-rights-erasure.sql` and `account-rights-after-erasure.sql`, after the

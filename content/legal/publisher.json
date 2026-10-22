@@ -28,9 +28,21 @@
   "monetization": "free-no-ads-no-purchases",
   "hosting": {
     "provider": "o2switch",
+    "offerOwnerDeclaration": {
+      "description": "Offre payante de base, nom commercial exact non confirmé",
+      "confirmedOn": "2026-10-22",
+      "source": "owner-confirmation"
+    },
     "address": "Chemin des Pardiaux, 63000 Clermont-Ferrand, France",
     "telephone": "04 44 44 60 40",
     "source": "https://blog.o2switch.fr/que-renseigner-dans-la-page-mentions-legales/"
+  },
+  "emailProvider": {
+    "provider": "Resend",
+    "plan": "Free",
+    "confirmedOn": "2026-10-22",
+    "source": "owner-confirmation",
+    "accountSettingsVerified": false
   },
   "native": {
     "strategy": "capacitor-candidate-not-adopted",

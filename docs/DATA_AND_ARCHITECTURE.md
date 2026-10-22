@@ -1,5 +1,17 @@
 # Data and architecture
 
+## Prepared technical retention (#316)
+
+`20261022192259_lumen_technical_retention.sql` adds operator-only bounded
+retention of an explicit non-gameplay event allowlist (90 days), feedback closed
+for 180 days without a hold, and subscriptions disabled for 90 days. Server
+transition timestamps reject backdating; unknown historical transitions start
+at migration. New metadata lives on existing rows, is covered by rights export
+and erasure, and never enters game snapshots or reward restoration. Preserve
+functional historical analytics, accounts, receipts, recovery and unresolved
+incidents. No production migration, cron or cleanup is enabled. Procedure and
+rollback limits: [runbook](TECHNICAL_RETENTION_RUNBOOK.md).
+
 ## Prepared operator access and portability (#316)
 
 `20261022184145_lumen_account_rights_export.sql` adds only a private SECURITY
