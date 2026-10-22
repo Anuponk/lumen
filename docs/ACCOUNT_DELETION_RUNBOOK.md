@@ -46,6 +46,29 @@ Le schéma évolue : rapprocher cette liste des tables, clés étrangères, trig
 fonctions et données dérivées réelles avant toute exécution. Les sélections sur
 un `anonymous_id` seulement déclaré par le demandeur sont insuffisantes.
 
+### Vérification du catalogue — 22 octobre 2026
+
+La requête [d'inventaire](../supabase/tests/privacy_catalog_inventory.sql) a été
+exécutée en lecture seule sur les métadonnées du schéma, sans lire de lignes de
+joueurs ni d'identités Auth. Elle inventorie tables/vues, colonnes, droits directs
+et clés étrangères ; elle ne supprime rien et ne prouve pas l'effacement.
+
+Les références Auth de `analytics_events`, `difficulty_ratings`, `feedback`,
+`historical_performance`, `social_challenges` et des participations utilisent
+`ON DELETE SET NULL` : effacer une identité Auth laisserait donc notamment des
+identifiants anonymes, pseudos, textes et propriétés. Les cascades des profils
+et reçus ne couvrent pas ces données. Les sauvegardes de récupération et les
+copies de cockpit exigent également un traitement explicite.
+
+Une participation référence son défi avec `ON DELETE CASCADE` : supprimer
+simplement le défi d'un demandeur peut affecter les autres participants.
+La politique d'anonymisation sociale doit être décidée et testée avant exécution.
+
+`recovery_backups` et la vue `player_analytics` n'ont pas RLS ; le contrôle de
+privilèges ne donne aucun accès direct SELECT à `anon` ou `authenticated`
+(ni DELETE à ce dernier) sur ces deux objets. Ce constat ciblé ne remplace
+pas l'audit des RPC privilégiés ou des permissions d'un futur schéma familial.
+
 ## Risque de recréation après effacement
 
 Le client actuel enregistre/retrouve son profil à la connexion et conserve des

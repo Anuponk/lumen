@@ -10,6 +10,11 @@ request preparation without live mail/Auth. `play-readiness.mjs --enforce`
 deliberately blocks missing real evidence; it is not a passing CI certification.
 See `docs/PLAY_STORE_READINESS.md` and the account-deletion runbook.
 
+Browser libraries: `browser-dependency-tests.mjs` checks exact local assets,
+hashes/licenses and absence of CDN script tags. `privacy-browser.mjs` loads the
+real local exports and renders a fixture QR without Auth; worker cache tests
+cover both bundles offline. Family-account design is not implementation evidence.
+
 Private physical-device preview: see
 [`ISOLATED_VALIDATION_PREVIEW.md`](../ISOLATED_VALIDATION_PREVIEW.md) for the
 existing Site identity, controls, offline/reconnect recipes, isolation check,

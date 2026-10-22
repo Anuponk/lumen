@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {verifyWalletAndOfflineFlow} from './wallet-flow-browser.mjs';
-import {verifyPrivacyRequests} from './privacy-browser.mjs';
+import {verifyPrivacyRequests,verifyBundledLibraries} from './privacy-browser.mjs';
 import {connectBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
 const {send,evaluate,errors}=await connectBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -305,8 +305,9 @@ try{
  await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:authFixtureId});
  const walletFlow=await verifyWalletAndOfflineFlow({send,evaluate,navigate,url});
  const deletionRequests=await verifyPrivacyRequests({send,evaluate},url);
+ const bundledLibraries=await verifyBundledLibraries({evaluate});
  assert.equal(errors.length,0,JSON.stringify(errors));
- const report={simulatedAuth:true,liveCloudWrites:false,results,walletFlow,deletionRequests,exceptions:errors};
+ const report={simulatedAuth:true,liveCloudWrites:false,results,walletFlow,deletionRequests,bundledLibraries,exceptions:errors};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));
  console.log(JSON.stringify(report));
 }finally{await send('Browser.close').catch(()=>{})}

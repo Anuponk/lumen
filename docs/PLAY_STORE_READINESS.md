@@ -9,6 +9,14 @@ Les modifications de cette branche ne sont pas encore déployées.
 - Éditeur : Nopuna, nom commercial de Cédric Valente EI.
 - Première publication gratuite, sans publicité, achats ni abonnement.
 - Public mixte comprenant des enfants : examiner les exigences Families.
+- Compte enfant supervisé avec fonctions en ligne adaptées : voir la
+  [préparation des comptes familiaux](FAMILY_ACCOUNTS_DESIGN.md), non implémentée.
+- Première distribution Google Play limitée à la France, confirmée par le
+  propriétaire. Cette décision devra être reportée dans Play Console ; le
+  manifeste local ne restreint pas à lui seul une distribution externe.
+- Activité secondaire de développement ou d'édition de jeux déjà déclarée,
+  selon confirmation du propriétaire ; justificatifs et détails d'immatriculation
+  restent à rapprocher des mentions finales.
 - Hébergement web : o2switch ; identité et progression : Supabase existant.
 - Préparer le produit avant le packaging ; aucune conversion Android lancée.
 
@@ -29,6 +37,7 @@ déduites d'une autre source.
 | Enfants | Aucun SDK publicitaire/achat ajouté ; collecte optionnelle bloquée | Évaluation des SDK/Auth, accompagnement parental, défis/pseudos/feedback/notifications, tranches d'âge effectivement adaptées |
 | Monétisation | Modèle gratuit arrêté pour cette première version | Réexaminer avant tout futur achat/publicité ; aucune intégration Billing ni CGV de vente inventée ici |
 | Notifications | Web Push et consentement existants dans la PWA | Choisir adaptateur natif/FCM si nécessaire, permission Android, opt-out, réception et deep links dans tous les états |
+| Scripts navigateur | Supabase JS 2.118.0 et QRCode JS 1.0.0 embarqués localement, versions/hashes/licences inventoriés | Validation SDK/enfants et inventaire réseau du paquet final ; les flux fonctionnels Supabase restent présents |
 | Distribution | Aucun projet Android, AAB, signature ni Play Console créé | ID stable validé, AAB signé, clés protégées, tests internes/fermés et déclarations Console |
 
 ## Stratégie de conteneur à valider
@@ -123,6 +132,19 @@ attend maintenant le chargement et le formulaire de cette page. Le passage
 complet suivant est vert ; les contrôles existants restent inchangés.
 
 ## Décision de clôture
+
+Complément du 22 octobre : scripts SDK/QR embarqués, inventaire de versions,
+hashes et copies MIT, suppression des chargements CDN dans la page d'entrée.
+`npm run test:full` repassé : 30 suites, aucun échec. Le navigateur charge les
+vrais bundles locaux et génère un QR fictif ; aucun appel Auth réel n'est réalisé
+par cette vérification. Les tests du worker couvrent leur copie hors ligne.
+
+Le premier passage de ce complément avait échoué dans le nouveau pilote
+asynchrone (promesse non attendue) ainsi que sur la visibilité du focus clavier
+du rail dans un contrôle existant. Le pilote attend maintenant explicitement
+la promesse ; le contrôle clavier est inchangé et le passage complet suivant
+est vert. L'inventaire SQL de suppression a aussi été exécuté sur les seules
+métadonnées : 29 relations, 24 clés étrangères. Il ne réalise aucun effacement.
 
 #170 et #316 restent ouvertes : une page de demande, un rapport de préparation
 ou une CI verte ne prouvent ni une suppression complète ni la conformité de la

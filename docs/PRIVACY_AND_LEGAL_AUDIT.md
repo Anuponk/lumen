@@ -31,11 +31,17 @@ de cockpit, exports de récupération, sauvegardes et leurs éventuels délais d
 
 | Composant | Source / preuve | État |
 |---|---|---|
-| Supabase JS | `index.html`, URL jsDelivr `@supabase/supabase-js@2` | Version majeure flottante ; figer et qualifier une version avant packaging. Auth/DB, pas un SDK publicitaire |
-| QRCode JS | `index.html`, cdnjs `qrcodejs/1.0.0` | QR du partage ; vérifier licence et embarquement local au packaging |
+| Supabase JS | `index.html`, bundle local `src/vendor/supabase-2.118.0.js` | Version exacte résolue depuis l'ancienne URL flottante puis embarquée ; hash et copie MIT inventoriés. Auth/DB ; aptitude Families encore à qualifier |
+| QRCode JS | `index.html`, bundle local `src/vendor/qrcode-1.0.0.js` | QR du partage ; hash et copie MIT inventoriés, chargement local |
 | Web Push / service worker | UI, `sw.js` et endpoint de push existant | Permissions/opt-in distincts des analytics ; aucune installation FCM native |
 | Fonts et ressources externes | CSS/HTML et manifeste à recontrôler sur paquet final | Inventaire réseau de l'AAB nécessaire, notamment requêtes CDN et logs d'accès |
 | Publicité / paiement | Aucun SDK AdMob, publicitaire ou Play Billing identifié dans les surfaces examinées | Première version gratuite sans pub/achats confirmée ; ne pas déclarer un futur SDK comme déjà audité |
+
+L'inventaire des scripts est dans `content/legal/browser-dependencies.json` et
+leur procédure de mise à jour dans `src/vendor/README.md`. La page d'entrée ne
+charge plus de script jsDelivr/cdnjs. Les empreintes vérifient les bytes locaux,
+pas une attestation de provenance ni toutes les licences transitives. La
+validation du SDK pour les enfants et l'inventaire des autres flux restent ouverts.
 
 Le projet Supabase partage des ressources avec d'autres applications. La région
 de la base ne décrit pas à elle seule les lieux de traitement des emails,
@@ -72,6 +78,11 @@ Informations fournies par le propriétaire : Nopuna ; Cédric Valente EI ; SIREN
 897 865 747 ; SIRET 897 865 747 00025 ; contact dans `content/legal/publisher.json`.
 Les numéros passent le contrôle de format/cohérence ; cela ne constitue pas une
 vérification de l'activité déclarée ou de ses obligations fiscales/sociales.
+
+Le propriétaire a ensuite confirmé que l'activité secondaire couvrant le
+développement ou l'édition de jeux est déjà déclarée. Cette confirmation est
+consignée dans le manifeste, distinctement d'un justificatif de registre ou
+d'une validation fiscale/sociale ; ne pas la transformer en attestation officielle.
 
 L'adresse et le téléphone ont ensuite été communiqués directement par le
 propriétaire et intégrés aux brouillons et au manifeste éditeur. Ils seront

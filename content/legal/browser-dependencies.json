@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "reviewedOn": "2026-10-22",
+  "scope": "Browser scripts only; not proof of Families or complete asset license compliance",
+  "libraries": [
+    {
+      "name": "@supabase/supabase-js",
+      "version": "2.118.0",
+      "source": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js",
+      "path": "src/vendor/supabase-2.118.0.js",
+      "licenseSource": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/LICENSE",
+      "licensePath": "src/vendor/supabase-LICENSE.txt",
+      "license": "MIT",
+      "bytes": 218252,
+      "sha256": "ee3be8de192b97cb1d73d1e95d6b82bb1f6b658c0f97c4ef757fc331996ed3d3"
+    },
+    {
+      "name": "qrcodejs",
+      "version": "1.0.0",
+      "source": "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js",
+      "path": "src/vendor/qrcode-1.0.0.js",
+      "licenseSource": "https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/LICENSE",
+      "licensePath": "src/vendor/qrcode-LICENSE.txt",
+      "license": "MIT",
+      "bytes": 19927,
+      "sha256": "c541ef06327885a8415bca8df6071e14189b4855336def4f36db54bde8484f36"
+    }
+  ]
+}

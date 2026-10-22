@@ -10,6 +10,14 @@
   "telephone": "06 95 11 68 37",
   "registrationDetails": null,
   "audience": "mixed-including-children",
+  "childrenAccountModel": "supervised-online",
+  "initialPlayCountries": ["FR"],
+  "businessActivityOwnerDeclaration": {
+    "activity": "Développement ou édition de jeux, activité secondaire",
+    "declared": true,
+    "confirmedOn": "2026-10-22",
+    "source": "owner-confirmation"
+  },
   "monetization": "free-no-ads-no-purchases",
   "hosting": {
     "provider": "o2switch",

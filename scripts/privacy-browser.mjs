@@ -18,7 +18,7 @@ export async function verifyPrivacyRequests({send,evaluate},baseUrl){
   }
   // This independent public page intentionally has no game diagnostics/SDK.
   assert(ready,'external deletion request page must load without the game');
-  await evaluate(`(async()=>{const {wireAccountDeletionForm}=await import('/src/privacy/account-deletion.js');window.__preparedDeletionMail=[];wireAccountDeletionForm(document,href=>window.__preparedDeletionMail.push(href))})()`);
+  await evaluate(`(async()=>{const {wireAccountDeletionForm}=await import('/src/privacy/account-deletion.js');window.__preparedDeletionMail=[];wireAccountDeletionForm(document,href=>window.__preparedDeletionMail.push(href))})()`,true);
   assert.equal(await evaluate(`document.documentElement.scrollWidth<=innerWidth`),true,'deletion page fits mobile and desktop');
   await evaluate(`document.getElementById('deletionAccountAddress').value='parent+fixture@example.test';document.querySelector('button[type=submit]').click()`);
   assert.equal(await evaluate('__preparedDeletionMail.length'),0,'confirmation is required before preparing the request');
@@ -32,4 +32,23 @@ export async function verifyPrivacyRequests({send,evaluate},baseUrl){
   results.push({width,confirmationRequired:true,mailPreparedOnly:true,savePreserved:true,liveDeletion:false});
  }
  return results;
+}
+
+// Run after the independent request-page checks, which must remain SDK-free.
+export async function verifyBundledLibraries({evaluate}){
+ const result=await evaluate(`(async()=>{
+  const inventory=await fetch('/content/legal/browser-dependencies.json').then(response=>response.json());
+  const loaded=[];
+  for(const library of inventory.libraries){
+   const script=document.createElement('script');script.src='/'+library.path;
+   await new Promise((resolve,reject)=>{script.onload=resolve;script.onerror=()=>reject(Error('Bundled library failed to load'));document.head.append(script)});
+   loaded.push(new URL(script.src).origin===location.origin);
+  }
+  const target=document.createElement('div');document.body.append(target);
+  new QRCode(target,{text:'https://example.test/challenge?code=fixture',width:128,height:128});
+  const rendered=!!target.querySelector('canvas,img,table');target.remove();
+  return {localOnly:loaded.every(Boolean),sdkAvailable:typeof supabase?.createClient==='function',qrRendered:rendered};
+ })()`,true);
+ assert.deepEqual(result,{localOnly:true,sdkAvailable:true,qrRendered:true});
+ return {...result,liveAuth:false};
 }

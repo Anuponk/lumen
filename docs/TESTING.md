@@ -1,5 +1,11 @@
 # Testing and quality gate
 
+Browser dependency preparation: `node scripts/browser-dependency-tests.mjs`
+rejects third-party executable script URLs and checks pinned bundle hashes and
+license copies. The account-session browser runner also loads the actual local
+SDK and renders a synthetic QR, without live Auth. Worker cache fixtures cover
+both vendor assets online/offline. This is not native or Families certification.
+
 ## Play preparation and privacy (#170/#316)
 
 `privacy-readiness-tests.mjs` checks the intentionally blocked preparation
