@@ -1,4 +1,5 @@
 import {verifiedAstronomicalFigure} from "./astronomical-catalogue.js";
+import {secondaryStarsSvg} from "./quest-secondary-stars.js";
 // Draw source-backed astronomical geometry as a subdued reference, never
 // pretending historical earned stars map to HIP ids until certified.
 export function astronomicalReferenceSvg(entry){
@@ -12,9 +13,8 @@ export function astronomicalReferenceSvg(entry){
 // Standalone real-sky rendering for details and reveal: unlike a subdued overlay,
 // this is the sole constellation silhouette. Player progress remains numerical;
 // no historical index is falsely assigned to a HIP star.
-// Deterministic display mapping: each existing earned-star slot illuminates
-// one distinct real HIP star, ordered by reference line traversal. This keeps
-// cloud progress untouched, and ensures stable results across sessions.
+// Real stars illuminate first. Only a reward surplus gets secondary sky lights;
+// no historical saved index is assigned to a HIP identity.
 export function astronomicalIllumination(entry,earned,total){
  const figure=verifiedAstronomicalFigure(entry);
  if(!figure)return null;
@@ -26,7 +26,8 @@ export function astronomicalIllumination(entry,earned,total){
  }
  for(let i=0;i<figure.pts.length;i++)if(!seen.has(i))ordered.push(i);
  // If historical reward slots outnumber atlas stars, do not generate fake HIP.
- const litIndices=new Set(ordered.slice(0,Math.floor(lit*ordered.length/Math.max(slots,1))));
+ const primaryLit=ordered.length>=slots?Math.floor(lit*ordered.length/Math.max(slots,1)):Math.min(lit,ordered.length);
+ const litIndices=new Set(ordered.slice(0,primaryLit));
  return {figure,litIndices,displayCount:lit,slotCount:slots};
 }
 export function astronomicalPrimarySvg(entry,earned=0,total=0,beforeEarned=null){
@@ -37,23 +38,14 @@ export function astronomicalPrimarySvg(entry,earned=0,total=0,beforeEarned=null)
  const arrived=i=>litIndices.has(i)&&!before.has(i);
  const lines=figure.edges.map(([a,b])=>'<line class="sky-line '+(litIndices.has(a)&&litIndices.has(b)?'on'+(arrived(a)||arrived(b)?' new-line':''):'')+'" x1="'+figure.pts[a][0]+'" y1="'+figure.pts[a][1]+'" x2="'+figure.pts[b][0]+'" y2="'+figure.pts[b][1]+'"/>').join("");
  const stars=figure.pts.map(([x,y],i)=>'<circle class="sky-star '+(litIndices.has(i)?'on'+(arrived(i)?' new-star':''):'')+'" cx="'+x+'" cy="'+y+'" r="'+(litIndices.has(i)?4:3)+'"/>').join("");
- return lines+stars+questRewardOrbitSvg(entry,earned,total,beforeEarned);
+ return lines+stars+questSecondaryStarsSvg(entry,earned,total,beforeEarned);
 }
 
-// A decorative reward counter, not astronomical stars or additional HIP data.
-// Keep the source figure untouched; every quest has its own visible gold mark.
-export function questRewardOrbitSvg(entry,earned,total,beforeEarned=null){
+// Decorative lights are distinct from HIP points, unlinked, and only fill a
+// shortfall. Source geometry and saved rewards are never modified.
+export function questSecondaryStarsSvg(entry,earned,total,beforeEarned=null){
  const data=astronomicalIllumination(entry,earned,total);
- if(!data||!data.slotCount)return '';
- const {figure,slotCount,displayCount}=data;
- const xs=figure.pts.map(p=>p[0]),ys=figure.pts.map(p=>p[1]);
- const cx=(Math.min(...xs)+Math.max(...xs))/2,cy=(Math.min(...ys)+Math.max(...ys))/2;
- const rx=(Math.max(...xs)-Math.min(...xs))/2+6,ry=(Math.max(...ys)-Math.min(...ys))/2+6;
- const before=beforeEarned===null?displayCount:Math.max(0,Math.min(slotCount,Math.floor(Number(beforeEarned)||0)));
- const radius=Math.min(2.8,Math.PI*Math.min(rx,ry)/slotCount*.65);
- const marks=Array.from({length:slotCount},(_,i)=>{
-  const angle=-Math.PI/2+2*Math.PI*i/slotCount,on=i<displayCount,arrived=on&&i>=before;
-  return '<circle class="quest-reward'+(on?' on':'')+(arrived?' new-reward':'')+'" data-reward-index="'+i+'" cx="'+(cx+rx*Math.cos(angle)).toFixed(3)+'" cy="'+(cy+ry*Math.sin(angle)).toFixed(3)+'" r="'+radius.toFixed(3)+'"/>';
- }).join('');
- return '<g class="quest-reward-orbit" aria-label="Étoiles de quêtes : '+displayCount+' sur '+slotCount+'">'+marks+'</g>';
+ if(!data)return '';
+ const before=beforeEarned===null?data.displayCount:Math.max(0,Math.min(data.slotCount,Math.floor(Number(beforeEarned)||0)));
+ return secondaryStarsSvg(data.figure,data.slotCount,data.displayCount,before);
 }

@@ -1,18 +1,41 @@
 # Moteur astronomique générique — issue #241
 
+## Audit de fidélité #508 — état vérifié le 21 octobre 2026
+
+Les **88 figures / 691 HIP** du fichier livré se reconstruisent exactement avec
+les lignes Western figées et les coordonnées de l'artefact d'import d'origine.
+Antlia (2 points/1 segment), Apus (3/2), Caelum (3/2) et Aries (4/3) sont des
+figures complètes de cette convention Stellarium, pas des réductions faites par
+Lumen. Aucun point ou segment astronomique n'est ajouté pour les embellir.
+Voir [sources, résultats et limites de l'audit](ASTRONOMY_DATA_ATTRIBUTION.md).
+
+Le contrôle hors ligne `node scripts/audit-astronomical-figures.mjs` compare
+identités HIP, coordonnées reprojetées, tous les segments et la couverture.
+Ses fixtures conservent la provenance ; les tests obligatoires injectent des
+pertes et corruptions pour vérifier leur détection. La recette navigateur
+compare les vrais SVG des cartes et détails de toutes les constellations du
+catalogue, leur échelle uniforme, leurs limites visibles et les récompenses.
+
+Deux défauts d'affichage distincts ont été reproduits : hauteur de détail mobile
+fixée à 190px qui fait sortir le dessin de la fenêtre, et détail des dix figures
+générées réduit à du texte malgré un atlas disponible. Le détail utilise désormais
+le rendu astronomique partagé et dimensionne le SVG dans l'espace restant.
+Les données astronomiques, quêtes, gains et sauvegardes restent inchangés.
+
 ## Règle fondatrice de génération — obligatoire
 **Toute nouvelle Aventure et toute nouvelle constellation se basent sur le même référentiel astronomique validé.** Identité IAU, IDs HIP, coordonnées réelles RA/Dec, tracés d'un atlas documenté et licence compatible doivent être disponibles avant de générer une figure. Pas de points ni de segments inventés « pour dépanner », pas de dessin manuel différent par quête, et pas de génération partielle présentée comme fidèle. Le générateur échoue explicitement si les données ne couvrent pas entièrement la figure. Les anciennes sauvegardes et les indices d'étoiles révélées doivent rester récupérables par correspondance testée. Toute extension du catalogue et tout agent intervenant sur le générateur sont soumis à ce contrat, et pas seulement la migration actuelle.
 
 ## Dimensions du catalogue
 
-Quest reward presentation (#504) uses `questRewardOrbitSvg` in
-`src/ui/astronomical-reference-svg.js`: one gold decorative counter per actual
-quest reward slot, outside the unchanged source figure. The ring is presentation
-geometry, has no HIP identity and is not persisted. It makes every reward visible
-when quests outnumber real atlas stars, without fabricating stars or editing the
-reference dataset. Overview, detail and victory share the same renderer; the
-tour identifies these as quest counters. Tests cover variable totals, each
-increment, replay and immutable source geometry.
+Quest reward presentation (#504) uses `questSecondaryStarsSvg` in
+`src/ui/astronomical-reference-svg.js` and `quest-secondary-stars.js`. The rejected
+gold crowns are removed. No decoration exists when real points cover all quest
+victories. For a shortfall, real stars illuminate first, followed by precisely
+the missing number of unlinked secondary lights in free sky. These decorative
+positions are separate from HIP geometry and are never persisted. Overview,
+detail and victory share the same deterministic layout. The tour explains this
+distinction. Tests cover variable totals, every increment, zero surplus on large
+figures, replay, motion preferences and immutable astronomical geometry.
 
 Le catalogue de lancement comprend 400 **quêtes** dans quatre Aventures, chacune regroupant 10 **constellations** : 40 figures distinctes. Le moteur vise les 88 figures IAU, puis tout futur contenu sans géométrie dessinée par quête.
 
@@ -38,7 +61,7 @@ Ne pas confondre « projection disponible » avec « migration des 40 constellat
 
 ## Phase 2a — audit réel des sources (11 octobre 2026)
 
-- Tracés : `Stellarium/stellarium-skycultures/western/index.json`, 88 figures IAU, lignes référencées par IDs Hipparcos (HIP), version source SHA `70471c1a3f4da066751e33eb4cd8f168aefeba00`.
+- Tracés : `Stellarium/stellarium-skycultures/western/index.json`, 88 figures IAU, lignes référencées par IDs Hipparcos (HIP). La référence précédemment notée `70471c1a3f4da066751e33eb4cd8f168aefeba00` est introuvable auprès de GitHub ; l'audit #508 utilise la révision vérifiée `92df9e4c48c7a3b21d4b0cfc6ce088dd8ce2f2df`, dont les lignes reproduisent intégralement le catalogue livré. Cela identifie la référence de comparaison, pas un commit prétendument figé par le téléchargement historique sur `master`.
 - Coordonnées pilotes : `Found-in-Space/stellarium-skycultures/packages/stellarium-skycultures-western/source/constellation-anchors.json`, 255 étoiles HIP (source SHA `4a6256419b72578cf5bdf730e387aad57c410aa7`). **Ce fichier décrit les ancres d'illustration, non toutes les étoiles des lignes.**
 - Couverture vérifiée en croisant réellement les 88 lignes et les 255 ancres : **19 constellations complètes sur 88** ; **Orion n'a que 3 étoiles documentées sur les 19 nécessaires**. Ces coordonnées sont donc insuffisantes pour publier toutes les figures.
 - Les licences doivent être validées à la granularité des fichiers et de la culture avant inclusion des données dans le jeu ; le packaging tiers (code MIT) ne change pas la licence du contenu Stellarium (indiqué CC BY-SA pour les données de la culture Western).

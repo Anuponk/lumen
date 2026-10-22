@@ -4,9 +4,15 @@ Baseline: `bef5f32`. All paths are repository-relative. This phase indexes exist
 
 ## Select a check
 
+Astronomy source fidelity: `astronomical-fidelity-tests.mjs` (mandatory Node)
+and CLI `audit-astronomical-figures.mjs`. Real overview/detail SVG fidelity and
+clipping: `astronomical-rendering-browser.mjs`, invoked by the existing sky
+navigation suite, all catalogue entries on three viewport sizes. Source fixtures
+and their provenance are documented in `docs/ASTRONOMY_DATA_ATTRIBUTION.md`.
+
 Card text/reward counters: `sky-navigation-browser-tests.mjs` measures text
 ranges and exact counter totals in overview/detail/victory. Decorative geometry
-and every increment/replay: `quest-reward-orbit-tests.mjs` (required Node gate).
+and every increment/replay: `quest-secondary-stars-tests.mjs` (required Node gate).
 Canonical Bouvier finale: `finale-responsive-browser.mjs`, imported by the
 existing browser runner, seven viewports plus supported CDP safe-area overrides.
 Guest account dismissal: account-session runner, repeated signup/login and

@@ -542,13 +542,14 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  #mapModal .adventure-summary{line-height:1.25}
  #mapModal #sectorTabs{gap:7px}
  #mapModal .constellation-pages{min-height:34px}
- #mapDetail{gap:10px;flex:0 1 auto}
+ #mapDetail{gap:10px;flex:1;min-height:0}
  #mapDetail .puzzle-grid{max-height:none;overflow:visible;gap:7px}
  #mapDetail .performance-legend{box-sizing:border-box;grid-template-columns:repeat(2,minmax(0,1fr));padding:12px 42px 12px 12px;column-gap:16px;row-gap:10px;width:100%;max-width:100%;min-width:0;overflow:visible;font-size:13px}
  #mapDetail .performance-legend span{min-width:0;white-space:nowrap;font-size:clamp(11px,3.2vw,13px);gap:6px}
  #mapDetail .performance-legend .performance-icon{width:17px;height:17px}
- #mapDetail .sky-card{padding:8px;flex:0 0 auto;min-height:0;max-height:none}
- #mapDetail .sky-svg{height:190px;flex:0 0 190px;max-height:190px}
+ #mapDetail .sky-card{padding:8px;flex:1;min-height:0;max-height:none;display:grid;grid-template-rows:max-content minmax(0,1fr) max-content;gap:4px}
+ #mapDetail .sky-svg{height:100%;min-height:0;max-height:190px;margin:0}
+ #mapDetail .sky-note{margin:0}
  #mapModal .my-challenges-entry{min-height:44px}
 }
 @media(min-width:701px){#sectorTabs{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}.constellation-card strong{font-size:14px}}
@@ -743,12 +744,13 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 /* More readable constellation silhouettes on compact mobile cards. */
 #sectorTabs .constellation-card svg{height:100%;min-height:0;max-width:96%;overflow:visible}
 #sectorTabs .constellation-card strong{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.15;text-align:center;overflow-wrap:anywhere}
-.quest-reward-orbit{pointer-events:none}
-.quest-reward{fill:#182334;stroke:#806d44;stroke-width:.8;opacity:.65}
-.quest-reward.on{fill:#ffda88;stroke:#fff0bd;opacity:1;filter:drop-shadow(0 0 2px #ffc96d)}
-.quest-reward.new-reward{animation:quest-reward-arrive .9s ease-out}
-@keyframes quest-reward-arrive{from{opacity:.2}45%{opacity:1;filter:drop-shadow(0 0 6px #ffe5a8)}to{opacity:1}}
-@media(prefers-reduced-motion:reduce){.quest-reward.new-reward{animation:none}}
+.quest-secondary-sky{pointer-events:none}
+.quest-secondary-star{opacity:0;fill:#d6d0ff;stroke:#c0c1f7;stroke-width:.6;vector-effect:non-scaling-stroke}
+.quest-secondary-star.on{opacity:1;filter:drop-shadow(0 0 2px #b1a9f4)}
+.quest-secondary-star.new-secondary{animation:secondary-star-arrive .9s ease-out}
+@keyframes secondary-star-arrive{from{opacity:0}45%{opacity:1;filter:drop-shadow(0 0 6px #d6d0ff)}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.quest-secondary-star.new-secondary{animation:none}}
+
 
 
 /* #315: play screen contract — no scrolling/clipped controls, including PWA safe areas.
@@ -1001,7 +1003,17 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 @media(max-width:700px) and (max-height:680px){
  #mapModal .map-sheet{gap:4px}
  #mapModal #dailyCard{padding:5px 8px;gap:2px;margin-bottom:0}
- #mapModal #sectorTabs .constellation-card{gap:2px}
+ /* Share the top row between drawing and name instead of squeezing the
+    drawing underneath a wrapped alias. Progress and badges keep full rows. */
+ #mapModal #sectorTabs .constellation-card{grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr);grid-template-rows:minmax(0,1fr) repeat(2,max-content);gap:2px 4px}
+ #mapModal #sectorTabs .constellation-card svg{grid-area:1/1}
+ #mapModal #sectorTabs .constellation-card strong{grid-area:1/2;align-self:center}
+ #mapModal #sectorTabs .constellation-card small{grid-column:1/-1}
+ #mapDetail{gap:4px}
+ #mapDetail .puzzle-grid{max-width:240px;align-self:center}
+ #mapDetail .performance-legend{padding:6px 32px 6px 8px;gap:4px}
+ #mapDetail .performance-legend span{font-size:11px}
+ #mapDetail .sky-card{padding:6px}
 }
 
 /* Administration: a single compact entry in the profile popover. */

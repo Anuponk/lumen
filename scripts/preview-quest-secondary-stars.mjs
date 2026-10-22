@@ -1,0 +1,27 @@
+// Standalone, offline comparison before selecting the #504 presentation.
+import fs from 'node:fs';
+import {verifiedAstronomicalFigure} from '../src/ui/astronomical-catalogue.js';
+import {CONTENT_CONSTELLATIONS} from '../src/campaign/content.js';
+import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
+import {secondaryStarPositions,secondaryStarsSvg} from '../src/ui/quest-secondary-stars.js';
+const entries=[{id:'real-adventure-03-new-01',label:'Dauphin'},CONTENT_CONSTELLATIONS.find(c=>verifiedAstronomicalFigure(c)?.iau==='Ori')];
+const variants=['Étoiles secondaires','Poussière d’étoiles','Nébuleuse subtile'];
+const figures=entries.map(entry=>{
+ const figure=verifiedAstronomicalFigure(entry),total=canonicalQuestList().filter(q=>q.constellationId===entry.id).length;
+ const frames=Array.from({length:total+1},(_,earned)=>{
+  const lit=figure.count>=total?Math.floor(earned*figure.count/total):Math.min(earned,figure.count);
+  const source=figure.edges.map(([a,b])=>`<line x1="${figure.pts[a][0]}" y1="${figure.pts[a][1]}" x2="${figure.pts[b][0]}" y2="${figure.pts[b][1]}" class="sky-line ${a<lit&&b<lit?'on':''}"/>`).join('')+figure.pts.map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="${i<lit?4:3}" class="sky-star ${i<lit?'on':''}"/>`).join('');
+  const positions=secondaryStarPositions(figure,Math.max(0,total-figure.count)).slice(0,Math.max(0,earned-figure.count));
+  const dust=positions.map(([x,y])=>`<g fill="#c9d2ff" filter="url(#glow)"><circle cx="${x}" cy="${y}" r="1.4"/><circle cx="${x+3}" cy="${y-3}" r=".7"/><circle cx="${x-3}" cy="${y+2}" r=".5"/></g>`).join('');
+  const nebula=positions.map(([x,y])=>`<ellipse cx="${x}" cy="${y}" rx="12" ry="7" fill="#9b93e4" opacity=".18" filter="url(#cloud)"/>`).join('');
+  return [source+secondaryStarsSvg(figure,total,earned),source+dust,nebula+source];
+ });
+ return {label:entry.label||figure.iau,real:figure.count,total,frames};
+});
+const html=`<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lumen — comparaison étoiles secondaires #504</title><style>
+*{box-sizing:border-box}body{margin:0;background:#07111f;color:#dfefff;font:15px system-ui,sans-serif}main{max-width:1100px;margin:auto;padding:28px}h1{font-size:25px}p{line-height:1.5;color:#b7c8dd}fieldset{border:0;padding:0;display:flex;flex-wrap:wrap;gap:18px;align-items:center}select,input{accent-color:#a4c9ff}select{background:#142537;color:#fff;padding:8px;border:1px solid #45617a;border-radius:9px}.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:24px 0}article{padding:18px;background:#0c1c2c;border:1px solid #28475f;border-radius:18px}article:first-child{border-color:#a9bfff}h2{font-size:16px}svg{width:100%;height:200px}.sky-line{stroke:#34516c;stroke-width:1.6}.sky-line.on{stroke:#76dff4}.sky-star{fill:#30465a}.sky-star.on{fill:#e6fcff;filter:drop-shadow(0 0 3px #78dcff)}.quest-secondary-star{opacity:0;fill:#d6d0ff;stroke:#c0c1f7;stroke-width:.6;vector-effect:non-scaling-stroke}.quest-secondary-star.on{opacity:1;filter:drop-shadow(0 0 2px #b1a9f4)}small{color:#9cb2ca}a{color:#a9d6ff}@media(max-width:700px){main{padding:16px}.cards{grid-template-columns:1fr}svg{height:180px}}
+</style><main><h1>Une victoire, une lumière dans le ciel</h1><p>Comparaison demandée dans #504. Le tracé astronomique reste inchangé. Les petites constellations reçoivent uniquement les lumières manquantes ; les grandes n’ont aucun complément.</p><fieldset><label>Constellation <select id="figure"></select></label><label>Victoires <input id="earned" type="range" min="0" value="7"><output id="count"></output></label></fieldset><div class="cards">${variants.map((name,i)=>`<article><h2>${name}${i===0?' · option préférée':''}</h2><svg viewBox="0 0 290 115" id="view${i}"></svg><p>${['Une lumière distincte par victoire restante ; petits losanges lavande, sans liaison.','Groupes discrets de particules ; plus diffus en petit format.','Halo irrégulier local ; moins facile à dénombrer.'][i]}</p></article>`).join('')}</div><p id="summary"></p><small>Attribution : données Western © équipe Stellarium, CC BY-SA ; coordonnées Hipparcos II via CDS VizieR. Les compléments sont décoratifs et ne représentent pas des étoiles HIP. <a href="https://github.com/Stellarium/stellarium-skycultures/blob/92df9e4c48c7a3b21d4b0cfc6ce088dd8ce2f2df/western/index.json">Source astronomique</a>.</small></main><script>
+const figures=${JSON.stringify(figures)};const select=document.getElementById('figure'),slider=document.getElementById('earned');figures.forEach((f,i)=>select.add(new Option(f.label,i)));function render(){const f=figures[select.value];slider.max=f.total;const n=Math.min(Number(slider.value),f.total);document.getElementById('count').textContent=n+' / '+f.total;for(let i=0;i<3;i++)document.getElementById('view'+i).innerHTML='<defs><filter id="glow"><feGaussianBlur stdDeviation=".3"/></filter><filter id="cloud"><feGaussianBlur stdDeviation="5"/></filter></defs>'+f.frames[n][i];document.getElementById('summary').textContent=f.real+' étoiles astronomiques, '+f.total+' victoires : '+Math.max(0,f.total-f.real)+' compléments seulement.';}select.onchange=slider.oninput=render;render();
+</script></html>`;
+fs.writeFileSync('docs/validation/issue504-comparison.html',html,'utf8');
+console.log('Created offline comparison: docs/validation/issue504-comparison.html');

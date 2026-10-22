@@ -14,18 +14,45 @@ support action does not alter gameplay onboarding.
 
 ## Visual identity
 
-Mon ciel reserves a separate row for each constellation name, progress and badge
-percentage. The drawing shrinks before these labels; short screens retain all
+Constellation detail uses the same verified drawing and canonical reward total
+for historical, inserted and generated catalogue entries. On small phones the
+SVG takes the remaining detail space after text and controls; it has no fixed
+190px height that can push real or secondary stars outside the window.
+Short screens compact gaps, badge-legend padding and quest tiles first. Source
+geometry and uniform scaling remain intact. This layout correction adds no new
+interaction or reward rule. The #504 tour wording below covers the new lights.
+On short overview screens, drawing and name share the top card row, with full
+rows for progress and badges. Wrapped aliases no longer reduce the drawing to
+a thin strip; text remains complete and uses its existing font sizes.
+
+Mon ciel reserves space for each constellation name, progress and badge
+percentage. The drawing and name can share a row; short screens retain all
 six cards and readable text. Finale layout reserves the measured banner height
 and fits the square board against the complete game stack, including wrapped
 action labels and CSS safe-area insets. Buttons keep their readable/touch sizes.
 
-Each earned quest lights one gold decorative mark around the astronomical
-figure, in overview, detail and victory reveal. The orbit has the actual reward
-total, independent of the number of atlas stars; a new victory animates one new
-mark, a replay adds none. These are quest counters, never additional astronomical
-stars. The Mon ciel tour explains this distinction. Source stars/lines, rewards,
-progression, badge eligibility and saved data are unchanged.
+## Accepted sky reward presentation (#504, 2026-10-22)
+
+The gold crowns from #512 were rejected by user feedback. They are removed from
+overview, detail and victory reveal. If the reference has enough real stars for
+all victories, only those stars illuminate progressively. If it has fewer,
+illuminate its real stars first, then one small lavender four-point light per
+remaining victory. Only the actual shortfall is added: five real stars and five
+secondary lights for ten victories in Delphinus, no secondary lights in Orion
+when its real points suffice. All counts derive from catalogue/reference data.
+
+Secondary lights are scattered through free sky, smaller than source circles,
+unlinked, and separate from source points/segments. They remain invisible before
+being earned. Their layout is deterministic and identical across views; a replay
+adds no light or arrival animation. The tour explains real stars first and then
+"étoiles de lumière" for small constellations. Reduced motion disables arrival
+animation. Rewards, badge eligibility and saved data remain unchanged.
+
+Before choosing the preferred secondary-star option, compare it against dust
+and a subtle nebula with `node scripts/preview-quest-secondary-stars.mjs`. The
+self-contained [comparison](validation/issue504-comparison.html) supports both
+Delphinus and Orion at every earned state. Separate stars are easy to count;
+dust is more diffuse on small views and a nebula makes individual gains less clear.
 
 LUMEN should feel like a celestial/energy-map puzzle rather than a reskinned Queens board:
 - dark space/energy-map atmosphere;

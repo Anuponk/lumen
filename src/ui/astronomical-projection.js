@@ -1,5 +1,6 @@
 // Generic projection for sky figures. No puzzle IDs, reward indexes or saves are touched.
-// Coordinates are ICRS/J2000 right ascension and declination in degrees.
+// Caller supplies a consistent frame/epoch and RA/Dec in degrees. The shipped
+// Hipparcos II input is ICRS/J1991.25; this function performs no epoch propagation.
 // The caller owns reference catalogue selection, license and star-ID mapping.
 const rad=Math.PI/180;
 const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
