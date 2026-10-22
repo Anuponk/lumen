@@ -223,6 +223,41 @@ function legacyRevisionConflict(local,cloud){
   return {status:"blocked",reason:"stale_legacy_revision",fields:["legacyVictoryRevision"]};
  return null;
 }
+// Replays may add badges to the same server-committed victory. Its stars and
+// original performance remain immutable; this is coverage, never a new grant.
+function canonicalAchievementCovered(local,cloud){
+ if(sameCloudProfile(local,cloud))return true;
+ if(!local?.solved||!cloud?.solved)return false;
+ const {badges:left={},...leftReward}=local,{badges:right={},...rightReward}=cloud;
+ if(!sameCloudProfile(leftReward,rightReward)||!left||!right||
+  typeof left!=='object'||typeof right!=='object'||Array.isArray(left)||Array.isArray(right))return false;
+ const badgeKeys=['autonomy','speed','noError','mastery'];
+ for(const key of new Set([...Object.keys(left),...Object.keys(right)])){
+  if(!badgeKeys.includes(key)){
+   if(!sameCloudProfile(left[key],right[key]))return false;
+   continue;
+  }
+  if(![undefined,null,false,0,true,1].includes(left[key])||
+   ![undefined,null,false,0,true,1].includes(right[key])||Boolean(left[key])&&!Boolean(right[key]))return false;
+ }
+ return true;
+}
+function achievementRecoveryError(code,details={}){
+ return Object.assign(Error(code==='CANONICAL_REWARD_CONFLICT'?'Conflit de récompense de quête canonique':'Récupération locale non vérifiée'),{code,...details});
+}
+export function achievementRecoveryDiagnostic(error){
+ if(error?.code==='CANONICAL_REWARD_CONFLICT')return {
+  reason:'canonical_reward_conflict',fields:['canonicalQuestState'],
+  conflictKeys:Array.isArray(error.conflictKeys)?[...new Set(error.conflictKeys.map(key=>
+   ['solved','stars','performance','badges'].includes(key)?key:'unknown_field'))].slice(0,4):[]
+ };
+ if(error?.name==='QuotaExceededError'||[22,1014,'LOCAL_STORAGE_QUOTA'].includes(error?.code))return {reason:'storage_quota'};
+ if(error?.name==='SecurityError')return {reason:'storage_unavailable'};
+ if(error?.code==='ACHIEVEMENT_BACKUP_UNVERIFIED')return {reason:'backup_unverified'};
+ if(error?.code==='ACHIEVEMENT_INSTALL_UNVERIFIED')return {reason:'local_install_unverified'};
+ if(error?.code==='ACHIEVEMENT_LOCAL_INVALID')return {reason:'invalid_local_profile'};
+ return {reason:'achievement_recovery_failed'};
+}
 function walletConflict(local,cloud){
  for(const profile of [local,cloud]){
   const revision=profile.walletRevision;
@@ -275,7 +310,7 @@ export function cloudSafelyCoversLocal(local,remote){
   for(const [id,entry] of Object.entries(local.canonicalQuestState||{})){
     if(!entry?.solved)continue;
     const saved=cloud.canonicalQuestState?.[id];
-    if(!saved?.solved||!sameCloudProfile(entry,saved))return false;
+    if(!saved?.solved||!canonicalAchievementCovered(entry,saved))return false;
   }
   for(const [key,perf] of Object.entries(local.performances||{})){
     const saved=cloud.performances?.[key];
@@ -333,8 +368,8 @@ export function reconcileCloudAchievements(storage,remote){
   const raw=storage.getItem(key);
   if(raw===null)return restoreIntoEmptyGuestStorage(storage,cloud);
   let local;
-  try{local=JSON.parse(raw)}catch{throw Error("Profil local illisible : aucun changement")}
-  if(!local||typeof local!=="object"||Array.isArray(local))throw Error("Profil local invalide");
+  try{local=JSON.parse(raw)}catch{throw achievementRecoveryError('ACHIEVEMENT_LOCAL_INVALID')}
+  if(!local||typeof local!=="object"||Array.isArray(local))throw achievementRecoveryError('ACHIEVEMENT_LOCAL_INVALID');
   const merged=structuredClone(local);
   let changed=false;
   for(const field of ["solved","historyBackup"]){
@@ -379,7 +414,11 @@ export function reconcileCloudAchievements(storage,remote){
   for(const [id,entry] of Object.entries(remoteCanonical)){
     if(!entry?.solved)continue;
     if(localCanonical[id]?.solved){
-      if(!sameCloudProfile(localCanonical[id],entry))throw Error("Conflit de récompense de quête canonique : "+id);
+      if(!canonicalAchievementCovered(localCanonical[id],entry))throw achievementRecoveryError('CANONICAL_REWARD_CONFLICT',{
+       conflictId:id,conflictKeys:[...new Set([...Object.keys(localCanonical[id]),...Object.keys(entry)])]
+        .filter(key=>!sameCloudProfile(localCanonical[id][key],entry[key]))
+      });
+      if(!sameCloudProfile(localCanonical[id],entry)){localCanonical[id]=structuredClone(entry);changed=true;}
     }else{
       localCanonical[id]=structuredClone(entry);changed=true;
     }
@@ -388,12 +427,12 @@ export function reconcileCloudAchievements(storage,remote){
   if(!changed)return {changed:false,currencyConflict:Number(local.shards)!==Number(cloud.shards)};
   const backupKey="lumenBeforeCloudReconcile_"+Date.now();
   storage.setItem(backupKey,raw);
-  if(storage.getItem(backupKey)!==raw)throw Error("Sauvegarde locale préalable impossible");
+  if(storage.getItem(backupKey)!==raw)throw achievementRecoveryError('ACHIEVEMENT_BACKUP_UNVERIFIED');
   const payload=JSON.stringify(merged);
   storage.setItem(key,payload);
   if(storage.getItem(key)!==payload){
     storage.setItem(key,raw);
-    throw Error("Échec de vérification de la réconciliation");
+    throw achievementRecoveryError('ACHIEVEMENT_INSTALL_UNVERIFIED');
   }
   return {changed:true,backupKey,currencyConflict:Number(local.shards)!==Number(cloud.shards)};
 }

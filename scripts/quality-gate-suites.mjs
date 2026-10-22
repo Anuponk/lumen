@@ -64,6 +64,7 @@ export const nodeSuites=[
  "cloud-persistence-regression-tests.mjs",
  "first-login-cloud-restore-tests.mjs",
  "cloud-achievements-local-recovery-tests.mjs",
+ "cloud-achievements-session-recovery-tests.mjs",
  "partial-hydration-status-tests.mjs",
  "reward-conflict-diagnostics-tests.mjs",
  "performance-conflict-details-tests.mjs",

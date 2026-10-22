@@ -25,11 +25,16 @@ for(const fault of ['get','set','corrupt','health','console','none']){
   p_event:'hydration_failed',p_reason:'local_quota',p_outcome:null,p_version:'1.11.1+test'}});
  assert(!JSON.stringify(calls).includes('not-to-send'));
  assert(!JSON.stringify(calls).includes('must-never-be-sent'));
+ vm.runInContext('recordCloudDiagnostic("cloud_achievements_recovery_blocked", {reason:"storage_quota",conflictId:"private-fixture",profile:{private:"not-to-send"}})',context);
+ assert.equal(calls.length,2,'Specific recovery cause reaches telemetry even if local diagnostics cannot be stored');
+ assert.deepEqual(JSON.parse(JSON.stringify(calls[1])),{name:'lumen_record_sync_health',payload:{
+  p_event:'hydration_reconciliation',p_reason:'storage_quota',p_outcome:'blocked',p_version:'1.11.1+test'}});
+ assert(!JSON.stringify(calls).includes('private-fixture'));
  // No remote event for guests, QA or unrelated local-only diagnostics.
  vm.runInContext('recordCloudDiagnostic("victory_dialog")',context);
  vm.runInContext('qaActive=true; recordCloudDiagnostic("hydration_failed")',context);
  vm.runInContext('qaActive=false; lumenUser=null; recordCloudDiagnostic("hydration_failed")',context);
- assert.equal(calls.length,1,'remote telemetry retains authenticated/QA/event guards');
+ assert.equal(calls.length,2,'remote telemetry retains authenticated/QA/event guards');
 }
 console.log('Privacy-safe cloud diagnostics contract passed');
 

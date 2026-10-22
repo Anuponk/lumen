@@ -1,5 +1,25 @@
 # Testing and quality gate
 
+## Session achievement recovery — #530
+
+`node scripts/cloud-achievements-session-recovery-tests.mjs` is a mandatory
+quality-gate suite. Two business assertions failed on `d5d7484` before the fix:
+coverage of a verified canonical badge upgrade, and partial recovery while a
+wallet remains unconfirmed. It tests retries/restart, immutable-field and badge
+loss refusals, quota/unverified backup, safe diagnostic fields, status text and
+the actual UI hydration hook with both SIGNED_IN/INITIAL_SESSION orders. The
+canonical capture is archived with the real durable outbox; wallet fallback
+uses its asynchronous in-memory adapter, not a real browser IndexedDB database.
+No command is resubmitted or intention acknowledged without proof. Readiness
+and failure reset require subsequent coherent server state and verified install.
+Existing account-session/browser/cloud/wallet/guest-transfer suites remain
+required. An additional red/green regression covers account switches during
+daily and both reconciliation awaits: an equal game profile cannot authorize
+another account's baseline or readiness. The real menu test loads the new status
+helper and retains its existing assertions, with additional held-state checks.
+Detailed evidence and live-phone limits:
+[reproduction report](validation/2026-10-22-achievement-recovery-530.md).
+
 ## Private Android validation preview
 
 The [isolated validation preview runbook](ISOLATED_VALIDATION_PREVIEW.md) records
