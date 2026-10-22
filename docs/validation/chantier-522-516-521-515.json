@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "date": "2026-10-22",
+  "branch": "chantier/522-516-521-515",
+  "integratedMain": "6dc1a098cefc2e20e7fe085f0da175f00c185a68",
+  "jsSourceDigest": "311708c902efbed0e78e89143483b3bff193ef46d29aa88c5400d99b347e61da",
+  "command": "node scripts/test-affected.mjs --full",
+  "ok": true,
+  "quality": {
+    "nodeSuites": 118,
+    "browserRunners": 9,
+    "seconds": 264.485
+  },
+  "supplementarySuites": 29,
+  "embedded": [
+    {
+      "size": 5,
+      "total": 99,
+      "failures": 0
+    },
+    {
+      "size": 6,
+      "total": 99,
+      "failures": 0
+    },
+    {
+      "size": 7,
+      "total": 99,
+      "failures": 0
+    },
+    {
+      "size": 8,
+      "total": 99,
+      "failures": 0
+    }
+  ],
+  "strictAudit": {
+    "ok": true,
+    "catalogueGrids": 196,
+    "canonicalQuests": 400
+  },
+  "mobile": {
+    "tapCycle": [
+      1,
+      2,
+      0
+    ],
+    "drag": true,
+    "guardianPreserved": true,
+    "noScroll": true,
+    "reset": true
+  },
+  "boardFeedback": [
+    {
+      "width": 390,
+      "height": 844,
+      "mobile": true,
+      "halfway": true,
+      "firstHintAction": true,
+      "bordersUnchanged": true,
+      "reducedMotion": true
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "mobile": false,
+      "halfway": true,
+      "firstHintAction": true,
+      "bordersUnchanged": true,
+      "reducedMotion": true
+    }
+  ],
+  "uncaughtBrowserErrors": 0,
+  "limits": {
+    "physicalAndroidForThisLot": false,
+    "liveCloudValidation": false,
+    "productionDeployment": false,
+    "sqlChangesInThisLot": false
+  },
+  "remaining522": [
+    "Discovery threshold and transition, followed by mandatory account",
+    "Qualification/cooldown contract convergence",
+    "Reward/daily and social protocol convergence"
+  ]
+}

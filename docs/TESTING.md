@@ -23,6 +23,10 @@ nullable unavailable counters, legacy badge compatibility and read-only totals.
 `browser-tests.mjs` imports `board-feedback-browser.mjs` to check actual click
 handlers and group hints on desktop/mobile, exact preservation of territory
 border widths/colors, source/target roles, closing and reduced motion.
+Playing the indicated exclusion also clears all hint roles/card while retaining
+the same cell DOM nodes.
+`board-feedback-tests.mjs` also executes drag release through the same clearing
+path, preserving the single undo snapshot and prohibiting a full render.
 Screenshots are saved in the system temporary directory. Mobile emulation
 does not establish real Android validation. Full in-app tests and strict audits
 remain mandatory.
@@ -31,6 +35,11 @@ Onboarding impact: no milestone, cost, badge eligibility or forced lesson
 changes in this lot. Group hints teach the same rule with an actionable first
 explanation; lesson gating and preserved quest identities are covered. The
 wider timing disagreement remains explicit in the audit for contract convergence.
+
+Local combined validation on the branch incorporating main `6dc1a09` is recorded
+in [the chantier report](validation/chantier-522-516-521-515.json). It includes
+the normalized JavaScript source fingerprint and explicitly separates local
+simulations/mobile emulation from real Android, live cloud and Production.
 
 ## Source-to-render astronomy fidelity (#508, #504 follow-up)
 

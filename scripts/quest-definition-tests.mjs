@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
-import {originQuests,publishedCatalogueQuests} from '../src/campaign/catalogue-origin.js';
+import {publishedCatalogueQuests} from '../src/campaign/catalogue-origin.js';
 import {buildQuestDefinitions} from '../src/campaign/quest-definition.js';
 import {catalogueQuestDecision,questCompleted} from '../src/campaign/catalogue-access.js';
 
@@ -26,7 +26,7 @@ test('published catalogue is the schedule, including variable constellation size
  assert(Object.isFrozen(actual)&&actual.every(Object.isFrozen));
 });
 test('all published IDs, numeric keys, memberships and orders stay byte-for-byte compatible',()=>{
- const all=canonicalQuestList(),published=originQuests({catalogueOrigin:2});
+ const all=canonicalQuestList(),published=publishedCatalogueQuests();
  assert.deepEqual(all.map(({id,ordinal,legacyIndex,packId,constellationId})=>({id,ordinal,legacyIndex,packId,constellationId})),published.map(({id,ordinal,legacyIndex,packId,constellationId})=>({id,ordinal,legacyIndex,packId,constellationId})));
  assert.equal(all.length,publishedCatalogueQuests().length,'Current catalogue has no fixed total');
 });

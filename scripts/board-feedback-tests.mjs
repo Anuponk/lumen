@@ -44,3 +44,15 @@ for(const size of [5,6,7,8]){
   assert.equal(f.half().length,2,'Actual reset handler starts a fresh halfway crossing');
  });
 }
+
+test('drag release clears hint roles/card through the same path without a full render',()=>{
+ const card={hidden:false},removed=[],ctx={dragCross:{id:1,dragging:true,changed:true,snapshot:[[0]]},
+  hist:[],hi:[0,0],hiCells:[[0,0]],hintStage:1,hintFocus:'old',msg:{},levelIndex:70,
+  board:{querySelectorAll:()=>[{classList:{remove:(...roles)=>removed.push(...roles)}}]},
+  document:{getElementById:()=>card},persistAttemptBoard(){},paintBoardState(){},updateScriptedLearning(){},
+  scriptedLearningActive:()=>false,setTimeout:fn=>fn(),render(){throw Error('Drag rebuilt the board')}};
+ vm.createContext(ctx);vm.runInContext(functionSource(source,'clearHintDisplay')+'\n'+functionSource(source,'endDragCross'),ctx);
+ ctx.endDragCross({pointerId:1});
+ assert(card.hidden,'A used hint card cannot remain on a dragged board');
+ assert.deepEqual(removed,['hi','hint-source','hint-target']);assert.equal(ctx.hist.length,1);
+});

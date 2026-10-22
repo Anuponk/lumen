@@ -70,6 +70,8 @@ symbols and territory borders. Preserve all border widths/colors and territory
 backgrounds. Group proofs use a brighter target and name its coordinate. The
 fill is static, including with reduced motion. Halfway feedback belongs to
 actual placements, never a redraw, restore or victory render (#515/#516/#521).
+The next real board mutation removes the hint's emphasis and card, without a
+full board render or stale gold cells after the explained action is played.
 Mobile play is primary. Marking many impossible cells one-by-one was identified as unnecessary friction, which led to drag-to-exclude. Pointer interaction must remain responsive and incremental.
 
 Board rows/cells must not visually jump when exclusion markers appear. Exclusion appearance should remain consistent between manual and automatic marking.

@@ -7,7 +7,8 @@ records the `650a39b` inventory, remaining numeric/stable-ID behavioral
 differences, synthetic reproductions for #516/#515, the #521 rendering review,
 and the implementation lots approved before corrective edits. The original
 audit is not a replacement product contract or a completed persistence migration.
-Coordinate subsequent business changes with the persistence work in PR #523.
+The branch incorporates the persistence work merged in PR #523; preserve its
+wallet, receipt, pending-navigation and account guards in subsequent lots.
 
 The first implementation lot replaces the ten-by-ten `planSlots` reconstruction
 with `buildQuestDefinitions` (`src/campaign/quest-definition.js`), reading the

@@ -67,6 +67,10 @@ export async function verifyBoardFeedback({send,evaluate}){
   await evaluate('document.getElementById("hint").click()');
   assert(await evaluate(`getComputedStyle(document.querySelector('.hint-target')).animationName==='none'`),'Highlight remains static with reduced motion');
   await send('Emulation.setEmulatedMedia',{features:[]});
+  await evaluate('window.hintBoardNodes=[...document.querySelectorAll("#board .cell")];document.querySelector(".hint-target").click()');
+  assert.equal(await evaluate('document.querySelectorAll(".cell.hi").length'),0,'A real board mutation clears all stale hint roles without rebuilding the grid');
+  assert(await evaluate('document.getElementById("hintCard").hidden'),'The used hint closes after the action');
+  assert(await evaluate('[...document.querySelectorAll("#board .cell")].every((cell,i)=>cell===hintBoardNodes[i])'),'Clearing hint emphasis must not rebuild the board');
   assert.equal(await evaluate('halfwayMessages.length'),1,'Hints and redraws cannot replay halfway');
   await evaluate('halfwayObserver.disconnect()');
   results.push({width,height,mobile,halfway:true,firstHintAction:true,bordersUnchanged:true,reducedMotion:true,screenshot:imagePath});

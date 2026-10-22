@@ -1,7 +1,7 @@
 # Chantier #522 / #516 / #521 / #515 — audit et plan
 
-État initial : **étape 1, avant corrections métier**, conformément à #522. Ce dossier
-ne vaut ni correction des quatre issues, ni validation navigateur, ni recette
+État initial : **étape 1, avant corrections métier**, conformément à #522. L'audit
+initial ne vaut ni correction des quatre issues, ni validation navigateur, ni recette
 sur le téléphone du signalement. Aucune sauvegarde réelle n'a été utilisée.
 
 Le découpage a été validé par l'utilisateur le 22 octobre 2026. La suite traite
@@ -15,7 +15,25 @@ découverte à définir séparément**. Le seuil et le parcours de transition ne
 pas définis par ce chantier ; conserver les accès actuels jusqu'à ce contrat,
 puis appliquer la règle à toutes les quêtes sans dépendre de leur clé historique.
 
+Intégration : branche rebasée sur `6dc1a098cefc2e20e7fe085f0da175f00c185a68`,
+qui inclut les PR #523 (persistance) et #524 (documentation d'aperçu isolé).
+Les conflits d'initialisation ont conservé le rétablissement des compteurs
+d'aides et le bouton de réessai cloud ; les suites Wallet et les cartes de tests
+des deux chantiers sont maintenues. Aucune nouvelle migration SQL ni modification
+de l'aperçu privé n'est incluse. Les validations de cet aperçu sur Android ne
+constituent pas une recette du présent lot de surbrillance.
+
 ## Référence et périmètre
+
+Premier lot validé localement après intégration de `6dc1a09` : #515 (placement,
+restore/reset), #516 (premier indice exploitable), #521 (surbrillance, frontières,
+effacement après tap/glissé), définition publiée et lectures/télémétrie de #522.
+Le [rapport du lot](chantier-522-516-521-515.json) donne les résultats et
+l'empreinte des sources testées : 118 suites Node obligatoires, neuf parcours
+navigateur, 29 suites complémentaires, 396 cas in-app et audit strict sans échec.
+Les captures mobile/desktop ont été inspectées ; ce n'est pas une recette Android
+physique ni une validation du cloud réel. #522 reste ouvert pour les contrats
+métier listés ci-dessous. Aucune fusion du chantier ni publication Production.
 
 - Branche : `chantier/522-516-521-515`, créée depuis `origin/main`
   [`650a39b904970221a4a42c28073dade92d9f5617`](https://github.com/Anuponk/lumen/commit/650a39b904970221a4a42c28073dade92d9f5617).
