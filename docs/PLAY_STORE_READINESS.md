@@ -1,5 +1,9 @@
 # Préparation Google Play — #170 et #316
 
+**Suivi opérationnel : [reste à faire et conditions de livraison](PRIVACY_RELEASE_CHECKLIST.md).**
+Cette checklist distingue les validations PWA, l'autorisation de fusion/déploiement
+et les étapes enfants/Android/Play volontairement différées.
+
 Audit du 22 octobre 2026, base `6dc1a09`. Ce dossier prépare la publication ;
 il ne constitue ni une soumission Play Console ni une attestation de conformité.
 Les modifications de cette branche ne sont pas encore déployées.

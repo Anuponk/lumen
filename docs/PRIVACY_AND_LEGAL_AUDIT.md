@@ -1,5 +1,9 @@
 # Audit de confidentialité et juridique — #316
 
+**Travaux restants : [checklist de validation et de livraison](PRIVACY_RELEASE_CHECKLIST.md)**,
+avec responsables, preuves attendues, décisions conservées et étapes futures
+distinctes. La PR reste en brouillon ; aucune autorisation de production n'est donnée.
+
 État du 22 octobre 2026, base `6dc1a09`, complété par les changements de cette
 branche. Les constats de code et les métadonnées de schéma ont été examinés ;
 aucun contenu de profil joueur, compte réel ou secret n'a été extrait. Les bases
