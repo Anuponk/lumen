@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {connectBrowser,acknowledgeLearningMilestones} from './cdp-client.mjs';
 import {CONTENT_PACKS} from '../src/campaign/content.js';
+import {verifyAstronomicalRendering} from './astronomical-rendering-browser.mjs';
 const {send,evaluate,errors}=await connectBrowser(),sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const url=new URL(process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/');url.searchParams.set('qa','new');
 const snapshot=()=>evaluate('lumenDiagnostics.snapshot()');
@@ -10,9 +11,19 @@ async function click(selector){const p=await evaluate(`(()=>{const e=document.qu
 async function fit(){const result=await evaluate(`(()=>{const sheet=document.querySelector('#mapModal .map-sheet'),modal=document.getElementById('mapModal'),r=sheet.getBoundingClientRect(),selectors=['#closeMap','#adventureRail','#sectorTabs','#constellationPages','#openMyChallenges'];return {height:r.height,overflow:Math.max(sheet.scrollHeight-sheet.clientHeight,modal.scrollHeight-modal.clientHeight),targets:selectors.map(s=>{const e=document.querySelector(s),q=e.getBoundingClientRect();return {s,visible:!e.hidden&&!!q.height,inside:q.top>=0&&q.bottom<=innerHeight&&q.left>=0&&q.right<=innerWidth}})}})()`);assert(result.overflow<=2,'Vertical overflow: '+JSON.stringify(result));assert(result.targets.every(t=>!t.visible||t.inside),'Controls outside viewport: '+JSON.stringify(result));return result.height}
 async function until(expression){for(let i=0;i<100;i++){if(await evaluate(expression))return;await sleep(100)}throw Error('Timed out: '+expression)}
 async function cardTextFits(){
- const clipped=await evaluate(`(()=>{const failures=[];for(const card of document.querySelectorAll('#sectorTabs .constellation-card')){const bounds=card.getBoundingClientRect();for(const text of card.querySelectorAll('strong,small')){const range=document.createRange();range.selectNodeContents(text);const r=range.getBoundingClientRect();if(r.top<bounds.top+1||r.bottom>bounds.bottom-1||r.left<bounds.left+1||r.right>bounds.right-1)failures.push({label:text.textContent,card:bounds.toJSON(),text:r.toJSON(),rows:getComputedStyle(card).gridTemplateRows,padding:getComputedStyle(card).padding,children:[...card.children].map(e=>({tag:e.tagName,height:e.getBoundingClientRect().height,line:getComputedStyle(e).lineHeight,font:getComputedStyle(e).fontSize}))})}}return failures})()`);
- assert.deepEqual(clipped,[],'Every constellation label, status and badge percentage must fit completely inside its card');
+ const failures=await evaluate(`(()=>{
+  const failures=[];
+  for(const card of document.querySelectorAll('#sectorTabs .constellation-card')){
+   const bounds=card.getBoundingClientRect();
+   const texts=[...card.querySelectorAll('strong,small')].map(text=>{const range=document.createRange();range.selectNodeContents(text);return {label:text.textContent,r:range.getBoundingClientRect()}});
+   for(const {label,r} of texts)if(r.top<bounds.top+1||r.bottom>bounds.bottom-1||r.left<bounds.left+1||r.right>bounds.right-1)failures.push({label,card:bounds.toJSON(),text:r.toJSON()});
+   for(let i=0;i<texts.length;i++)for(let j=i+1;j<texts.length;j++){const a=texts[i],b=texts[j];if(Math.min(a.r.bottom,b.r.bottom)-Math.max(a.r.top,b.r.top)>1&&Math.min(a.r.right,b.r.right)-Math.max(a.r.left,b.r.left)>1)failures.push({overlap:[a.label,b.label]});}
+  }
+  return failures;
+ })()`);
+ assert.deepEqual(failures,[],'Every constellation label, status and badge percentage must fit completely without overlapping');
 }
+
 const results=[];
 try{
  await send('Page.enable');await send('Runtime.enable');
@@ -23,8 +34,8 @@ try{
   await send('Page.navigate',{url:url.href});await ready(true);await sleep(1500);await ready();await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});await acknowledgeLearningMilestones(evaluate);
   await click('#openSky');const original=await snapshot(),height=await fit();
   await cardTextFits();
-  const orbitCounts=await evaluate(`Array.from(document.querySelectorAll('#sectorTabs .constellation-card')).map(card=>({counts:card.getAttribute('aria-label').match(new RegExp('([0-9]+)[/]([0-9]+)')).slice(1).map(Number),total:card.querySelectorAll('.quest-reward').length,earned:card.querySelectorAll('.quest-reward.on').length}))`);
-  for(const card of orbitCounts){assert.equal(card.total,card.counts[1]);assert.equal(card.earned,card.counts[0]);}
+  const rewardCounts=await evaluate(`Array.from(document.querySelectorAll('#sectorTabs .constellation-card')).map(card=>({counts:card.getAttribute('aria-label').match(new RegExp('([0-9]+)[/]([0-9]+)')).slice(1).map(Number),primary:card.querySelectorAll('.sky-star').length,total:card.querySelectorAll('.quest-secondary-star').length,earned:card.querySelectorAll('.quest-secondary-star.on').length,crowns:card.querySelectorAll('.quest-reward-orbit').length}))`);
+  for(const card of rewardCounts){assert.equal(card.total,Math.max(0,card.counts[1]-card.primary));assert.equal(card.earned,Math.max(0,card.counts[0]-card.primary));assert.equal(card.crowns,0);}
   if(viewport.width===360){
    for(const [width,height,font] of [[320,568,11],[360,640,14],[390,844,16]]){
     await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:true});
@@ -41,9 +52,9 @@ try{
   await click('#adventureRail .locked');assert.equal(await evaluate('document.getElementById("adventureNotice").hidden'),false);assert.equal(await evaluate('lumenDiagnostics.skySnapshot().viewedAdventure'),CONTENT_PACKS[0].id);await click('#adventureNoticeClose');
   await click('#adventureRail .locked');await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape'});await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape'});assert.equal(await evaluate('document.getElementById("adventureNotice").hidden'),true);assert.equal(await evaluate('document.getElementById("mapModal").hidden'),false);assert.equal(await evaluate('document.activeElement.dataset.packId'),CONTENT_PACKS[1].id,'Locked notice restores focus without closing Mon ciel');
   await click('#constellationPrevious');await click('#sectorTabs .constellation-card');assert.equal(await evaluate('lumenDiagnostics.skySnapshot().view'),'detail');
-  const overviewRewardCount=orbitCounts[0];
-  assert.equal(await evaluate('document.querySelectorAll("#skyCard .quest-reward").length'),overviewRewardCount.total,'Detail and overview share actual reward totals');
-  assert.equal(await evaluate('document.querySelectorAll("#skyCard .quest-reward.on").length'),overviewRewardCount.earned);
+  const overviewRewardCount=rewardCounts[0];
+  assert.equal(await evaluate('document.querySelectorAll("#skyCard .quest-secondary-star").length'),overviewRewardCount.total,'Detail and overview share actual reward totals');
+  assert.equal(await evaluate('document.querySelectorAll("#skyCard .quest-secondary-star.on").length'),overviewRewardCount.earned);
 
   await click('#puzzleGrid .puzzle-card.done');assert((await snapshot()).replayMode);assert.deepEqual((await snapshot()).progress,original.progress);
   await click('#openSky');await click('#closeMap');assert((await snapshot()).replayMode,'Browsing must preserve replay');
@@ -76,11 +87,12 @@ try{
   await evaluate(`localStorage.setItem('lumenQaProgressV1',JSON.stringify({solved:Object.fromEntries(Array.from({length:${CONTENT_PACKS[0].questCount-1}},(_,i)=>[i,1])),badges:{historical:1}}));localStorage.removeItem('lumenActiveAttemptV1')`);
   await send('Page.reload',{ignoreCache:true});await sleep(500);await ready();await acknowledgeLearningMilestones(evaluate);
   assert.equal((await snapshot()).levelIndex,CONTENT_PACKS[0].questCount-1);
-  await evaluate('(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');await until('!document.getElementById("skyReveal").hidden');await until('!document.getElementById("skyRevealResults").hidden');assert.equal(await evaluate('document.querySelectorAll("#skyReveal .quest-reward.new-reward").length'),1,'A victory visibly adds its own reward even when the atlas has fewer stars');await evaluate('document.getElementById("skyRevealNext").scrollIntoView({block:"center",behavior:"instant"})');await click('#skyRevealNext');
+  await evaluate('(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');await until('!document.getElementById("skyReveal").hidden');await until('!document.getElementById("skyRevealResults").hidden');assert(await evaluate('document.querySelectorAll("#skyReveal .new-star,#skyReveal .new-secondary").length')>0,'Every victory visibly changes the sky');assert.equal(await evaluate('document.querySelectorAll("#skyReveal .quest-reward-orbit").length'),0);await evaluate('document.getElementById("skyRevealNext").scrollIntoView({block:"center",behavior:"instant"})');await click('#skyRevealNext');
   assert.doesNotMatch(await evaluate('document.getElementById("adventureNoticeTitle").textContent'),/Aventure terminée/,'An Adventure with unplayed canonical quests must not celebrate completion');
   const won=await snapshot();assert.equal(won.progress.solved[CONTENT_PACKS[0].questCount],undefined);
   await send('Page.reload',{ignoreCache:true});await sleep(500);await ready();assert.equal((await snapshot()).levelIndex,CONTENT_PACKS[0].questCount-1);assert.deepEqual((await snapshot()).progress,won.progress);
-  results.push({viewport,height,pagination:[1,6,7,12,103],adventures:40,multipleSkies:true,accessPreserved:true,browsingIsolated:true,lockedAdventure:true,replay:true,completion:true,noVerticalOverflow:true,cardTextFits:true,distinctRewardMarks:true});
+  results.push({viewport,height,pagination:[1,6,7,12,103],adventures:40,multipleSkies:true,accessPreserved:true,browsingIsolated:true,lockedAdventure:true,replay:true,completion:true,noVerticalOverflow:true,cardTextFits:true,secondaryStarsForShortfalls:true,noCrowns:true});
  }
- assert.deepEqual(errors,[]);const report={results,uncaughtErrors:errors};if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+ const astronomy=await verifyAstronomicalRendering({send,evaluate},url);
+ assert.deepEqual(errors,[]);const report={results,astronomy,uncaughtErrors:errors};if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }finally{await send('Browser.close')}

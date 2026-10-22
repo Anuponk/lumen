@@ -21,6 +21,7 @@ import {mapConstellationRange,generatedMapSummary} from "../campaign/generated-m
 import {CONTENT_CONSTELLATIONS,contentMapModel,packForLegacyQuest,contentAccessForLegacyQuest,preserveStartedAdventureAccess} from "../campaign/content.js";
 import {createSkyNavigation} from "./sky-navigation.js";
 import {astronomicalDisplayShape} from "./astronomical-shapes.js";
+import {verifiedAstronomicalFigure} from "./astronomical-catalogue.js";
 import {astronomicalReferenceSvg,astronomicalPrimarySvg} from "./astronomical-reference-svg.js";
 import {LUMEN_META,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,badgeDefs} from "../campaign/data.js";
 import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt,badgeCooldownRemaining,badgeCooldownLabel} from "../campaign/performance.js";
@@ -2736,7 +2737,7 @@ const SKY_TOUR_STEPS=[
  {target:"sectorTabs",title:"Tes constellations",copy:"Ton ciel est organisé en constellations. Elles se débloquent au fil de ton aventure."},
  {target:"puzzleGrid",title:"Tes quêtes",copy:"Chaque constellation regroupe ses quêtes. Ici tu vois celles qui sont réussies, celle à jouer et celles encore verrouillées."},
  {target:"performanceLegend",title:"Tes performances",copy:"Les badges récompensent ta façon de résoudre une quête : autonomie, rapidité, sans erreur et maîtrise. Tu pourras revenir améliorer une quête réussie."},
- {target:"skyCard",title:"Ta constellation",copy:"Chaque réussite allume un repère doré autour du tracé astronomique. Ces repères comptent tes étoiles de quêtes ; la constellation se dessine aussi dans ton ciel."}
+ {target:"skyCard",title:"Ta constellation",copy:"Chaque réussite allume ton ciel. Les étoiles réelles se révèlent d’abord ; une petite constellation reçoit ensuite de discrètes étoiles de lumière, sans modifier son tracé."}
 ];
 function starDisplayName(p,i){return p.stars&&p.stars[i]?p.stars[i]:"Étoile "+(i+1)}
 
@@ -2928,7 +2929,7 @@ function renderMap(){
    }
   }
  }
- if(mappedConstellation?.canonicalOnly){renderCanonicalSky(mappedConstellation);return}
+ if(mappedConstellation&&verifiedAstronomicalFigure(mappedConstellation)){renderCanonicalSky(mappedConstellation);return}
  if(range.generated){const summary=generatedMapSummary(mapConstellation,lumenProgress.solved);const skyCard=document.getElementById("skyCard");if(skyCard&&summary)skyCard.textContent=summary.name+" · "+summary.completed+"/"+summary.total+" quêtes · "+generatedAdventureRewards(lumenProgress.solved).stars+" ★";}else renderSky(mapConstellation)
 }
 // Refresh cooldown icons while Mon ciel is visible; no additional gameplay scroll.

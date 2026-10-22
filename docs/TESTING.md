@@ -1,13 +1,36 @@
 # Testing and quality gate
 
+## Source-to-render astronomy fidelity (#508, #504 follow-up)
+
+`node scripts/audit-astronomical-figures.mjs [report.json]` rebuilds every shipped
+figure from pinned Western lines and the original import's Hipparcos II inputs,
+offline. `astronomical-fidelity-tests.mjs` is mandatory in the Node gate: full
+source comparison, corrupt/truncated figures and coverage, invalid coordinates,
+and all playable SVG star/segment counts at zero/partial/complete reward states.
+These checks do not certify a different atlas convention or a new measurement
+of the original Hipparcos input.
+
+The existing sky-navigation browser suite additionally invokes
+`astronomical-rendering-browser.mjs`: every real catalogue card and detail at
+320x568, 390x844 and 1440x900, all points/segments at exact projected positions,
+uniform scale, visible bounds and separate reward totals. A completed synthetic
+QA profile makes every constellation accessible; browsing must preserve it.
+No real account, remote write, changed quest ID or source geometry is involved.
+Mobile screenshots are captured for the Horizons overview and Antlia detail.
+
 ## Cards, finale, quest rewards and guest dismissal (#475/#315/#504/#356)
 
 - `sky-navigation-browser-tests.mjs` measures actual text ranges inside every
   card, including 320x568 and enlarged 14/16px labels at 360/390px. It also checks
-  exact reward counts in overview/detail and one new reward in victory reveal.
-- `quest-reward-orbit-tests.mjs` is a required Node suite: totals 1/4/10/17/31,
-  every earned value, immutable atlas geometry, each increment animated, no
-  replay duplication, and no substitute for missing source data.
+  actual surplus counts in overview/detail, no crowns and a new light in victory reveal.
+- `quest-secondary-stars-tests.mjs` replaces the rejected orbit contract for
+  #504: totals 1/4/10/17/31, every earned value, real stars first, secondary lights
+  only for a shortfall, no large-figure decoration, immutable atlas geometry,
+  each increment visible, no replay duplication, no missing-source substitute,
+  deterministic separated positions up to 103 surplus lights, tour/motion checks.
+  `node scripts/preview-quest-secondary-stars.mjs` builds the offline interactive
+  comparison of secondary stars, dust and nebula before selecting the preferred
+  stars. The browser audit blocks provider networking, including QA analytics.
 - `browser-tests.mjs` retains teaching-grid tap/drag/PWA tests and invokes
   `finale-responsive-browser.mjs` on the canonical Bouvier finale. Seven actual
   viewport sizes check square cells, no scroll, contained controls and readable

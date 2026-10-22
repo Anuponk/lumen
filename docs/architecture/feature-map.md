@@ -4,10 +4,15 @@ Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This loo
 
 ## Entry points and shape
 
-Quest reward marks: `questRewardOrbitSvg` in
+Astronomy fidelity: `scripts/audit-astronomical-figures.mjs` rebuilds all shipped
+figures from versioned source fixtures under `scripts/fixtures/astronomy/`.
+`renderMap` selects `renderCanonicalSky` for every verified catalogue figure,
+including generated entries; mobile detail CSS reserves drawing space.
+
+Quest reward marks: `questSecondaryStarsSvg` in
 `src/ui/astronomical-reference-svg.js`, consumed by overview navigation and
 detail/victory primary SVGs. Canonical quest metadata owns every displayed total;
-the gold orbit is decorative and never changes the atlas or persisted awards.
+only a real-star shortfall adds decorative lights through `quest-secondary-stars.js`. Large figures have no decoration; source geometry and awards are unchanged.
 Finale viewport fitting: `fitFinaleBoard` in `game-screen.js`, observed banner/app
 content size plus CSS square-board budgets in `styles.css`.
 
