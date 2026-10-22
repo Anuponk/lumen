@@ -144,6 +144,24 @@ Keep the challenge loop celestial and performance-led, not leaderboard-heavy. Be
 
 A remarkable first-play Mastery deserves stronger visual emphasis around “Défier un ami”, while “Quête suivante” remains the primary campaign continuation for an ordinary first completion. Do not turn replay Mastery into a challenge CTA.
 
+The current social RPC protocol supports historical numeric quest identities.
+For a first victory on a canonical-only quest, show the challenge action disabled
+with “Les défis sont disponibles uniquement sur les quêtes historiques.” This
+existing limit is explicit, not a Mastery requirement. Do not substitute the new
+visible ordinal for a historical grid identity. Replays hide the action and explain
+the first-success rule, including old saves without performance metadata.
+Repeated activation while creating a link sends one request; reopening that
+victory's sharing flow reuses its link and never awards campaign rewards again.
+Sharing leaves the victory behind the dialog, including at an Adventure boundary;
+the pending completion remains available through the normal Next action.
+
+The Adventure rail scrolls independently of the page and the constellation swipe
+area. Selecting a partly visible chip reveals its entire label and retains keyboard
+focus across rendering. Arrow keys, Home and End move focus (including RTL);
+Enter/Space retain native button activation. Long future labels wrap inside the
+rail rather than requiring smaller fonts. Opening Mon ciel keeps its existing
+destination based on the active quest.
+
 “Mes défis” belongs under Mon ciel. New results use a small unread indicator. Push permission must be requested contextually (“Préviens-moi quand quelqu'un relève mes défis”), never as an unexplained first-launch permission prompt.
 
 

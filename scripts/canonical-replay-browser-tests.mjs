@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {connectBrowser,acknowledgeLearningMilestones,navigateAndWait} from './cdp-client.mjs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
+import {verifyVictoryChallenge} from './victory-challenge-browser.mjs';
 const {send,evaluate,errors}=await connectBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function until(expression){for(let i=0;i<150;i++){if(await evaluate(expression))return;await sleep(100)}throw Error('Timed out: '+expression)}
@@ -204,9 +205,14 @@ try{
   assert.equal(await evaluate('document.getElementById("skyRevealFeedback").children.length'),0);
   assert.equal(await evaluate('document.getElementById("difficultyBox").hidden'),true);
   assert.equal(await evaluate('document.getElementById("skyRevealNext").getBoundingClientRect().bottom<=innerHeight'),true,'Next quest is reachable');
+  assert.equal(await evaluate('document.getElementById("skyRevealShare").hidden'),false,'First canonical victory explains the existing challenge limitation');
+  assert.equal(await evaluate('document.getElementById("skyRevealShare").disabled'),true,'Unsupported stable-ID challenges cannot create a wrong legacy link');
+  assert.match(await evaluate('document.getElementById("skyRevealChallengeReason").textContent'),/quêtes historiques/);
+  if(viewport.mobile){const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync('docs/validation/issue511-challenge-limit-390.png',Buffer.from(shot.data,'base64'));}
   results.push({viewport,firstCompletionReveal:true,confirmedStar:true,noFeedback:true});
   await verifyHistoricalCatalogue(viewport);
  }
+ results.push({victoryChallenges:await verifyVictoryChallenge({send,evaluate},url)});
  assert.deepEqual(errors,[]);
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify({results,uncaughtErrors:errors},null,2));
  console.log(JSON.stringify(results));

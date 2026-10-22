@@ -521,6 +521,9 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .sky-navigation{display:grid;gap:6px;flex:0 0 auto;min-width:0}.sky-picker{display:flex;align-items:center;gap:8px;font-size:12px;color:#a9bfd0}.sky-picker select{min-width:0;flex:1;background:#112439;color:#eafaff;border:1px solid #31506e;border-radius:10px;padding:6px}
 .adventure-rail{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;min-width:0;scrollbar-width:thin;touch-action:pan-x}.adventure-chip{flex:0 0 auto;white-space:nowrap;padding:8px 10px;font-size:12px}.adventure-chip.selected{border-color:#68e7ff;background:#153749;color:#b8f4ff}.adventure-chip.locked{color:#a7b8ca}
 .adventure-summary{font-size:12px;color:#b9d8e8;line-height:1.4}
+.adventure-rail{justify-content:flex-start;scroll-padding-inline:2px;padding-inline:2px;overscroll-behavior-x:contain}
+.adventure-chip{max-width:100%;white-space:normal;overflow-wrap:anywhere;min-width:0}
+.adventure-chip:focus-visible{outline:2px solid #b8f4ff;outline-offset:-3px}
 #sectorTabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:8px;flex:1;min-height:0;margin:0;overflow:hidden}
 #sectorTabs .constellation-card{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) repeat(3,max-content);justify-content:stretch;justify-items:center;align-content:stretch;gap:3px;min-width:0;min-height:0;padding:4px 6px!important;border-radius:14px;overflow:hidden;background:#0e2133}
 .constellation-card svg{width:100%;height:clamp(30px,7vh,64px);flex:0 1 auto}.constellation-card strong{max-width:100%;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.constellation-card small{font-size:11px;color:#b9d8e8}.constellation-card.locked{opacity:.55}
@@ -1062,3 +1065,5 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .app:has(#challengeBanner:not([hidden])) .game-core .actions{width:min(100%,max(240px,calc(100dvh - 420px)))!important}
 
 .app:has(#challengeBanner:not([hidden])) #board{width:var(--finale-board-size)!important}
+
+.challenge-unavailable{font-size:12px;line-height:1.35;color:#b9d8e8;margin:4px 0}

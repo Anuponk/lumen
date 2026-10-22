@@ -258,6 +258,25 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Victory challenges (#511): the existing social UI Node suite executes the real
+renderer's first-win/replay/Mastery/support matrix. The canonical replay browser
+suite imports `victory-challenge-browser.mjs`: mobile/desktop first victories
+with/without Mastery, old solved saves without performance metadata, actual
+pointer activation, one simulated RPC for repeated activation, exact historical
+grid identity and unchanged confirmed rewards. Canonical-only first victories
+show the agreed disabled action and explanation; no server migration is involved.
+
+Mon ciel (#513/#514): `sky-issue-513-514-browser.mjs`, invoked by the existing
+sky suite, measures selected chips and complete labels at 320/360/390/430/1440px,
+focus retention, keyboard navigation, native touch scrolling, RTL, long labels,
+page overflow and the existing reopen destination. Antlia, Delphinus and Orion
+are checked empty/partial/complete at mobile/desktop sizes, with genuine points
+and segments, earned lights and unchanged progress. Antlia at seven completions
+is captured in `validation/issue513-antlia-partial-390.png`; tabs are captured in
+`validation/issue514-tabs-390.png`. All profiles are synthetic; provider traffic is
+blocked. The affected phone's #470 recipe was separately confirmed by the user
+on 22 October 2026; no device version was supplied with that confirmation.
+
 Session-readable/quota regression: `account-session-browser-tests.mjs` now uses
 actual browser localStorage for its synthetic Auth session and models the SDK's
 default writable-probe failure. With a readable existing session, the real UI

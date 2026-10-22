@@ -6,6 +6,7 @@ assert.deepEqual(challengeEligibility({priorPerformance:{attempts:0},run:mastery
 assert.deepEqual(challengeEligibility({priorPerformance:{attempts:0},run:{autonomy:true,speed:false,mastery:false}}),{firstPlay:true,remarkable:false,canChallenge:true},"ordinary first play can challenge");
 assert.equal(challengeEligibility({priorPerformance:{attempts:1},run:mastery}).canChallenge,false,"replay cannot create challenge");
 assert.equal(challengeEligibility({priorPerformance:{attempts:9},run:mastery}).remarkable,false,"replay mastery is not remarkable");
+assert.equal(challengeEligibility({priorPerformance:{},run:mastery,firstCompletion:false}).canChallenge,false,"A historical solved quest without performance metadata is still a replay");
 
 const snap=challengeSnapshot({questIndex:11,seconds:87.8,run:mastery,assistanceUsed:false});
 assert.equal(snap.questId,12);

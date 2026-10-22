@@ -9,9 +9,9 @@ export function validChallengeName(value){
  return name.length>=2 && /^[\p{L}\p{N} ._'’-]+$/u.test(name);
 }
 
-export function challengeEligibility({priorPerformance,run}={}){
+export function challengeEligibility({priorPerformance,run,firstCompletion}={}){
  const attempts=Math.max(0,Number(priorPerformance?.attempts)||0);
- const firstPlay=attempts===0;
+ const firstPlay=firstCompletion!==false&&attempts===0;
  const remarkable=firstPlay&&!!run?.mastery;
  return {firstPlay,remarkable,canChallenge:firstPlay};
 }
