@@ -1173,17 +1173,33 @@ function askChallengeName(){
  });
 }
 function socialChallengeUrl(id){const u=new URL(location.origin+location.pathname);u.searchParams.set("challenge",id);return u.toString()}
+function configureVictoryChallenge({priorPerformance,run,snapshot,firstCompletion,supported=true}){
+ const socialEligibility=challengeEligibility({priorPerformance,run,firstCompletion});
+ lastChallengeOffer=supported&&socialEligibility.canChallenge?{eligibility:socialEligibility,snapshot}:null;
+ const shareBtn=document.getElementById('successShare'),remarkable=document.getElementById('remarkableChallenge'),reason=document.getElementById('successChallengeReason');
+ const explanation=!supported?'Les défis sont disponibles uniquement sur les quêtes historiques.':!socialEligibility.canChallenge?'Un défi se crée uniquement après une première réussite, sans rejeu.':'';
+ if(shareBtn){shareBtn.hidden=!socialEligibility.canChallenge;shareBtn.disabled=!supported;shareBtn.classList.toggle('remarkable',supported&&socialEligibility.remarkable);shareBtn.title=explanation}
+ if(remarkable)remarkable.hidden=!supported||!socialEligibility.remarkable;
+ if(reason){reason.hidden=!explanation;reason.textContent=explanation}
+}
+let challengeCreationPending=false;
 async function createSocialChallengeFromSuccess(){
- if(!lastChallengeOffer?.eligibility?.canChallenge)return;
- const name=await askChallengeName();if(!name)return;
+ if(challengeCreationPending||!lastChallengeOffer?.eligibility?.canChallenge)return;
+ const offer=lastChallengeOffer;challengeCreationPending=true;
  try{
-  const created=await challengeClient.create(lastChallengeOffer.snapshot),id=created?.challenge_id;if(!id)throw new Error("missing_challenge_id");
-  pendingChallengeUrl=socialChallengeUrl(id);trackLumenEvent("challenge_created",levelIndex+1,{remarkable:!!lastChallengeOffer.eligibility.remarkable});
-  const copy=document.getElementById("challengeShareCopy");copy.textContent=lastChallengeOffer.eligibility.remarkable?"✦ Maîtrise du premier coup. À ton ami de relever le défi !":"Ta première performance est figée. À ton ami de faire mieux en une tentative.";
+  const name=await askChallengeName();if(!name||lastChallengeOffer!==offer)return;
+  if(!offer.url){
+   const created=await challengeClient.create(offer.snapshot),id=created?.challenge_id;if(!id)throw new Error("missing_challenge_id");
+   offer.url=socialChallengeUrl(id);trackLumenEvent("challenge_created",offer.snapshot.questId,{remarkable:!!offer.eligibility.remarkable});
+  }
+  if(lastChallengeOffer!==offer)return;
+  pendingChallengeUrl=offer.url;
+  const copy=document.getElementById("challengeShareCopy");copy.textContent=offer.eligibility.remarkable?"✦ Maîtrise du premier coup. À ton ami de relever le défi !":"Ta première performance est figée. À ton ami de faire mieux en une tentative.";
   const modal=document.getElementById("challengeShareModal");modal.hidden=false;
   const qr=document.getElementById("challengeQr");if(qr){qr.replaceChildren();if(typeof window.QRCode==="function")new window.QRCode(qr,{text:pendingChallengeUrl,width:220,height:220,correctLevel:window.QRCode.CorrectLevel.M});else qr.textContent="QR code indisponible : utilise Copier le lien.";}
   maybeOfferSocialPush();
  }catch(e){console.warn("challenge create",e);showRewardToast("Impossible de créer le défi pour le moment")}
+ finally{challengeCreationPending=false}
 }
 async function sharePendingChallenge(){
  if(!pendingChallengeUrl)return;const text="Je te défie sur LUMEN. Tu as une tentative pour faire mieux !";
@@ -2105,7 +2121,7 @@ async function celebrateCanonicalSuccess(){
  const earnedLabels=[["speed","Rapidité"],["autonomy","Autonomie"],["noError","Sans erreur"],["mastery","Maîtrise"]].filter(([key])=>confirmedBadges[key]&&!priorBadges[key]&&committed.profile.canonicalQuestState[q.id].badges?.[key]).map(([,label])=>label);
  document.getElementById("successSub").textContent=[committed.newlyCompleted?"+ "+(confirmedBadges.autonomy?15:10)+" XP · +1 étoile":"Quête déjà réussie",...earnedLabels,"sauvegarde confirmée"].join(" · ");
  document.getElementById("successTime").textContent=document.getElementById("time").textContent;
- const share=document.getElementById("successShare");if(share)share.hidden=true;
+ configureVictoryChallenge({run,firstCompletion:committed.newlyCompleted,supported:false});
  const achievements=document.getElementById("successAchievement");if(achievements)achievements.hidden=true;
  const verifiedBadges=Object.fromEntries(['autonomy','speed','noError','mastery'].map(key=>[key,!!committed.profile.canonicalQuestState[q.id].badges?.[key]]));
  renderSuccessRewards(committed.newlyCompleted?1:0,{run,badges:verifiedBadges,qualifying:true},priorBadges);
@@ -2202,11 +2218,7 @@ async function celebrateSuccess(){
  adventurePending=firstCompletion&&playedPack&&!canonicalCampaignComplete(lumenProgress)&&adventureQuests.length>0&&adventureQuests.every(q=>questIsCompleted(lumenProgress,q.id))?playedPack:null;
  endgamePending=firstCompletion&&canonicalCampaignComplete(lumenProgress);
  launchWinStar(earnedThisRun);
- const socialEligibility=challengeEligibility({priorPerformance,run:savedPerformance.run});
- lastChallengeOffer={eligibility:socialEligibility,snapshot:challengeSnapshot({questIndex:levelIndex,seconds:facts.seconds,run:savedPerformance.run,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed})};
- const shareBtn=document.getElementById('successShare'),remarkable=document.getElementById('remarkableChallenge');
- if(shareBtn){shareBtn.hidden=!socialEligibility.canChallenge;shareBtn.classList.toggle('remarkable',socialEligibility.remarkable)}
- if(remarkable)remarkable.hidden=!socialEligibility.remarkable;
+ configureVictoryChallenge({priorPerformance,run:savedPerformance.run,firstCompletion,snapshot:challengeSnapshot({questIndex:levelIndex,seconds:facts.seconds,run:savedPerformance.run,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed})});
  if(dailyQualified&&!commanded)completeDaily();
  renderSuccessRewards(earnedThisRun,savedPerformance,priorBadges);renderSuccessAchievement();
  if(commanded){renderDaily()}
@@ -2814,6 +2826,8 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
    document.getElementById("skyRevealTime").textContent=document.getElementById("successTime")?.textContent||"";
    document.getElementById("skyRevealRewards").innerHTML=document.getElementById("successRewards")?.innerHTML||"";
    document.getElementById("skyRevealRewards").className="sky-reveal-rewards "+(document.getElementById("successRewards")?.className||"");
+   const reason=document.getElementById('successChallengeReason'),revealReason=document.getElementById('skyRevealChallengeReason');
+   revealReason.textContent=reason.textContent;revealReason.hidden=reason.hidden;
    const feedback=document.getElementById("skyRevealFeedback");
    feedback.replaceChildren();
    const source=null; // Keep the shared celebration compact; no difficulty survey.
@@ -2825,7 +2839,9 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
    for(const [target,sourceId] of [["skyRevealNext","successNew"],["skyRevealSky","successSky"],["skyRevealShare","successShare"],["skyRevealRetry","successRetry"]]){
     const button=document.getElementById(target),original=document.getElementById(sourceId);
     button.hidden=!!original?.hidden;
-    button.onclick=()=>{if(target==="skyRevealNext"&&adventurePending){const completed=adventurePending;adventurePending=null;closeUnifiedSkyReveal();original?.click();openJourneyMap();skyNavigation.showCompletion(completed);return}if(closeUnifiedSkyReveal())return;original?.click()};
+    button.disabled=!!original?.disabled;button.title=original?.title||'';
+    button.classList.toggle('remarkable',!!original?.classList.contains('remarkable'));
+    button.onclick=()=>{if(target==="skyRevealShare"){original?.click();return}if(target==="skyRevealNext"&&adventurePending){const completed=adventurePending;adventurePending=null;closeUnifiedSkyReveal();original?.click();openJourneyMap();skyNavigation.showCompletion(completed);return}if(closeUnifiedSkyReveal())return;original?.click()};
    }
   }
  }

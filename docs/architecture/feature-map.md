@@ -4,6 +4,11 @@ Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This loo
 
 ## Entry points and shape
 
+Victory challenge visibility: UI `configureVictoryChallenge` applies the existing
+first-play rule and the historical-quest protocol limit to both victory surfaces.
+`createSocialChallengeFromSuccess` guards pending creation and reuses that
+offer's URL. Adventure focus/scroll lives in `sky-navigation.js` (`revealAdventure`).
+
 Astronomy fidelity: `scripts/audit-astronomical-figures.mjs` rebuilds all shipped
 figures from versioned source fixtures under `scripts/fixtures/astronomy/`.
 `renderMap` selects `renderCanonicalSky` for every verified catalogue figure,

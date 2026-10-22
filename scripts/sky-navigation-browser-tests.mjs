@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import {connectBrowser,acknowledgeLearningMilestones} from './cdp-client.mjs';
 import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {verifyAstronomicalRendering} from './astronomical-rendering-browser.mjs';
+import {verifySkyIssueRegressions} from './sky-issue-513-514-browser.mjs';
 const {send,evaluate,errors}=await connectBrowser(),sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const url=new URL(process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/');url.searchParams.set('qa','new');
 const snapshot=()=>evaluate('lumenDiagnostics.snapshot()');
@@ -94,5 +95,6 @@ try{
   results.push({viewport,height,pagination:[1,6,7,12,103],adventures:40,multipleSkies:true,accessPreserved:true,browsingIsolated:true,lockedAdventure:true,replay:true,completion:true,noVerticalOverflow:true,cardTextFits:true,secondaryStarsForShortfalls:true,noCrowns:true});
  }
  const astronomy=await verifyAstronomicalRendering({send,evaluate},url);
- assert.deepEqual(errors,[]);const report={results,astronomy,uncaughtErrors:errors};if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+ const issueRegressions=await verifySkyIssueRegressions({send,evaluate},url);
+ assert.deepEqual(errors,[]);const report={results,astronomy,issueRegressions,uncaughtErrors:errors};if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }finally{await send('Browser.close')}

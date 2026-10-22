@@ -152,3 +152,40 @@ including serialization and unchanged rewards. Device-specific recovery remains
 separate from these synthetic/browser proofs. The prepared cohort migration
 `20261018200805_catalogue_origin_access.sql` is a separate server release step;
 its presence in Git is not deployment evidence.
+
+
+## Victory challenges and mobile Adventure rail (#511/#514, baseline `af596de`)
+
+Canonical-only victories explicitly hid sharing while the existing social RPC
+only supports historical numeric identities. The agreed scope preserves that
+limit and displays a disabled action plus its reason. A real browser assertion
+failed before the explanation was added. Historical first victories remain
+eligible with or without Mastery; Mastery only changes emphasis. A solved old
+quest with no performance metadata reproduced a false first-play classification:
+completion evidence now excludes that replay. The six-case real-renderer matrix
+and mobile/desktop challenge flow protect eligibility, exact grid identity,
+single pending creation, URL reuse and unchanged confirmed rewards.
+A further mobile/desktop reproduction showed that the unified Share handler
+consumed a pending Adventure completion before opening sharing. Sharing now
+opens above the victory without routing away; Next still presents the pending
+Adventure celebration after the sharing dialog is closed.
+
+The Adventure renderer replaced its buttons on each selection, losing keyboard
+focus; preserving only scrollLeft also left a selected partial chip clipped. The
+new browser regression failed on focus retention before correction. Rendering
+now restores focus and reveals the selected chip within the rail. Focus movement
+also reveals chips; Arrow/Home/End handling follows direction and long labels
+wrap. Rail gestures remain separate from constellation pagination and page scroll.
+
+Antlia (#513) is already drawn by #517: `renderMap` delegates every verified
+figure, including generated entries, to the common astronomical SVG. Its two
+HIP points and one segment are authentic. Empty, partial (seven) and complete
+fixtures for Antlia, Delphinus and Orion preserve source geometry and all earned
+lights; no extra astronomical points or save repair is needed. The partial
+Antlia screenshot is distinct from the prior all-complete atlas audit.
+
+The user confirmed the affected-phone Grand Chien/Dauphin start/reload recipe
+for #470 on 22 October 2026. That is user-reported physical validation; the
+phone's version was not supplied. Automated access/resume fixtures remain
+separate evidence. No player save, entitlement, migration or storage purge is
+part of this follow-up.

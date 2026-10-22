@@ -70,6 +70,22 @@ export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit
  notice.innerHTML='<div><strong id="adventureNoticeTitle"></strong><p id="adventureNoticeCopy"></p><button id="adventureNext" hidden>Découvrir l’Aventure suivante</button><button id="adventureNoticeClose">Compris</button></div>';sheet.appendChild(notice);
  let selection={},view='overview',selectedConstellation=null,noticeOrigin=null;
  const element=id=>document.getElementById(id);
+ function revealAdventure(button){
+  if(!button)return;
+  const rail=element('adventureRail'),bounds=rail.getBoundingClientRect(),r=button.getBoundingClientRect();
+  const delta=r.left<bounds.left?r.left-bounds.left:r.right>bounds.right?r.right-bounds.right:0;
+  if(delta)rail.scrollBy({left:delta,behavior:'instant'});
+ }
+ const adventureRail=element('adventureRail');
+ adventureRail.addEventListener('focusin',event=>revealAdventure(event.target.closest('.adventure-chip')));
+ adventureRail.addEventListener('keydown',event=>{
+  if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+  const buttons=[...adventureRail.querySelectorAll('button')],index=buttons.indexOf(document.activeElement);
+  if(index<0)return;
+  const direction=getComputedStyle(adventureRail).direction==='rtl'?-1:1;
+  const next=event.key==='Home'?0:event.key==='End'?buttons.length-1:Math.max(0,Math.min(buttons.length-1,index+(event.key==='ArrowRight'?direction:-direction)));
+  event.preventDefault();buttons[next].focus({preventScroll:true});revealAdventure(buttons[next]);
+ });
  const completed=c=>{const quests=getCanonicalQuests(c.id);return quests.length>0&&quests.every(getCanonicalSolved)};
  const unlocked=(entry,pack)=>!!entry.accessible&&getCanonicalQuests(entry.id).some(q=>getCanonicalAvailable(q)||getCanonicalSolved(q));
  function state(pack){const done=pack.constellations.filter(completed).length;const quests=getCanonicalPackQuests(pack.id);return !pack.accessible?'Verrouillée':quests.length>0&&quests.every(getCanonicalSolved)?'Terminée':pack.id===current?.active?.id?'En cours':'À découvrir'}
@@ -88,8 +104,10 @@ export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit
    element('constellationPrevious').disabled=true;element('constellationNext').disabled=true;
    return;
   }
-  const rail=element('adventureRail'),scroll=rail.scrollLeft;rail.replaceChildren();
+  const rail=element('adventureRail'),scroll=rail.scrollLeft,focused=rail.contains(document.activeElement)?document.activeElement.dataset.packId:null;rail.replaceChildren();
   for(const pack of current.sky?.packs||[]){const b=document.createElement('button');b.className='adventure-chip'+(pack.id===current.adventure?.id?' selected':'')+(!pack.accessible?' locked':'');b.dataset.packId=pack.id;b.setAttribute('aria-pressed',String(pack.id===current.adventure?.id));b.textContent=(!pack.accessible?'🔒 ':state(pack)==='Terminée'?'✓ ':'')+(pack.displayName||'Aventure '+(pack.order+1));b.title=state(pack);b.onclick=()=>{if(!pack.accessible){showLocked(pack,b);return}selection={skyId:current.sky.id,packId:pack.id,page:0};selectedConstellation=null;view='overview';render()};rail.appendChild(b)}rail.scrollLeft=scroll;
+  if(focused)rail.querySelector(`[data-pack-id="${focused}"]`)?.focus({preventScroll:true});
+  revealAdventure(rail.querySelector('.selected'));
   const pack=current.adventure,done=pack?.constellations.filter(completed).length||0;
   element('adventureSummary').textContent=pack?`${pack.displayName||'Aventure'} · ${done}/${pack.constellations.length} constellations · ${state(pack)}`:'Les Aventures de ce Ciel sont verrouillées';
   tabs.replaceChildren();

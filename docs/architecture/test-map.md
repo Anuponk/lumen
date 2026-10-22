@@ -4,6 +4,12 @@ Baseline: `bef5f32`. All paths are repository-relative. This phase indexes exist
 
 ## Select a check
 
+Issues #511/#513/#514: `social-challenge-ui-tests.mjs` executes the victory decision
+matrix; `victory-challenge-browser.mjs` is imported by canonical replay tests.
+`sky-issue-513-514-browser.mjs` extends the existing sky browser runner with rail
+geometry/focus/touch and empty/partial/complete astronomical drawing checks.
+See TESTING for synthetic transport and affected-device limits.
+
 Astronomy source fidelity: `astronomical-fidelity-tests.mjs` (mandatory Node)
 and CLI `audit-astronomical-figures.mjs`. Real overview/detail SVG fidelity and
 clipping: `astronomical-rendering-browser.mjs`, invoked by the existing sky
