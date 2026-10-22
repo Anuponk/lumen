@@ -87,6 +87,17 @@ begin
   if sqlerrm<>'LUMEN_ERASURE_SCHEMA_REVIEW_REQUIRED' then raise; end if;
  end;
  drop table lumen.fixture_unreviewed;
+ -- A future foreign key must not cascade deletion into another application.
+ create table fixture_other_app.cascade_rows(user_id uuid references lumen.profiles(user_id) on delete cascade);
+ insert into fixture_other_app.cascade_rows values(uid);
+ begin
+  perform lumen_privacy.erase_account(uid,array[actor],'ERASE LUMEN '||uid);
+  raise exception 'Cross-application cascade was accepted';
+ exception when raise_exception then
+  if sqlerrm<>'LUMEN_ERASURE_DEPENDENCY_REVIEW_REQUIRED' then raise; end if;
+ end;
+ assert exists(select 1 from fixture_other_app.cascade_rows where user_id=uid);
+ drop table fixture_other_app.cascade_rows;
  alter table lumen.social_challenges add column fixture_sender_email text;
  begin
   perform lumen_privacy.review_erasure(uid,array[actor]);

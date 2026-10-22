@@ -66,6 +66,13 @@ simplement le défi d'un demandeur peut affecter les autres participants.
 La procédure préparée anonymise le créateur et préserve les autres participants ;
 ses tests isolés doivent passer avant toute exécution réelle.
 
+Le contrôle complémentaire des FK **entrantes**, tous schémas sources compris,
+ne relève que la référence aux règles canoniques (NO ACTION) et celle des
+participations vers les défis (CASCADE). Aucune autre FK vers une table Lumen
+n'est présente dans ce catalogue au 22 octobre. Une fixture ajoute exprès une
+cascade depuis une autre application : rouge avant le garde-fou de dépendances,
+verte après, sans toucher à la base réelle.
+
 `recovery_backups` et la vue `player_analytics` n'ont pas RLS ; le contrôle de
 privilèges ne donne aucun accès direct SELECT à `anon` ou `authenticated`
 (ni DELETE à ce dernier) sur ces deux objets. Ce constat ciblé ne remplace
@@ -171,7 +178,9 @@ des délais bornés. Ne jamais contourner un lock ou désactiver les triggers.
 ### Maintenance et limites de preuve
 
 Une nouvelle table Lumen, une garde désactivée ou une nouvelle colonne sociale
-non couverte bloque l'opération. Toute évolution (notamment famille) doit mettre
+non couverte bloque l'opération. Une nouvelle FK entrante, même depuis une autre
+application, exige une revue : seule la référence connue au défi est permise,
+car son ID ne change pas lors de l'anonymisation. Toute évolution (notamment famille) doit mettre
 à jour politique, triggers et tests **avant activation**, pour les comptes déjà
 effacés aussi. Ne pas retirer les gardes lors d'un retour à l'ancien code.
 

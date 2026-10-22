@@ -94,6 +94,20 @@ begin
    and c.relkind in ('r','p','v','m','f') and not exists (
     select 1 from lumen_privacy.policy() p where p.ns=s.nspname and p.rel=c.relname)
  ) then raise exception 'LUMEN_ERASURE_SCHEMA_REVIEW_REQUIRED'; end if;
+ -- New incoming FKs could cascade into another player's/app's data, even if
+ -- its table is outside our namespace inventory. Only the known challenge-ID
+ -- reference is allowed; challenges are anonymized without changing that ID.
+ if exists (
+  select 1 from pg_constraint c join lumen_privacy.policy() p
+   on c.confrelid=to_regclass(format('%I.%I',p.ns,p.rel))
+  where c.contype='f' and p.action in ('delete','anonymize') and not (
+   p.ns='lumen' and p.rel='social_challenges'
+   and c.conrelid=to_regclass('lumen.social_challenge_participations')
+   and cardinality(c.conkey)=1 and cardinality(c.confkey)=1
+   and (select a.attname from pg_attribute a where a.attrelid=c.conrelid and a.attnum=c.conkey[1])='challenge_id'
+   and (select a.attname from pg_attribute a where a.attrelid=c.confrelid and a.attnum=c.confkey[1])='id'
+  )
+ ) then raise exception 'LUMEN_ERASURE_DEPENDENCY_REVIEW_REQUIRED'; end if;
  keys := array['u:'||p_user_id::text] || array(select 'a:'||a from unnest(actors) a);
  for r in select * from lumen_privacy.policy() order by ns,rel loop
   if to_regclass(format('%I.%I',r.ns,r.rel)) is null then

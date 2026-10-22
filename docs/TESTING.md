@@ -350,6 +350,7 @@ All 26 owned data tables are seeded. Assertions cover erasure, social sender
 anonymization, other participants, shared Auth/other-app preservation, rule
 retention, explicit confirmation, missing/shared actors, contradictory keys,
 schema/guard drift, mid-deletion rollback, retry, anonymous/cache resurrection,
+an incoming cross-application cascade rejected before any deletion,
 old JWTs on every guarded table and the real backup RPC. Anon/player/service
 roles have no private access. Repeatable-read writes fail closed. Separate
 Python connections cover both lock orders: erasure commits before a blocked
