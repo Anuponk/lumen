@@ -36,10 +36,17 @@ métadonnées hors région. Elle identifie Supabase Pte. Ltd. (Singapour) comme
 sous-traitant principal hors cas Marketplace, avec support/opérations possibles
 par l'affiliée américaine ; des clauses contractuelles types sont décrites.
 
+L'offre de l'organisation du projet est **Free**, confirmée par lecture des
+métadonnées le 22 octobre, sans changement d'abonnement. La
+[documentation des backups](https://supabase.com/docs/guides/platform/backups)
+ne permet pas de promettre à ce projet les sauvegardes quotidiennes accessibles
+des offres payantes. Les exports privés et copies de récupération restent
+à inventorier ; ne pas conclure à l'absence de toute copie fournisseur.
+
 La rétention des backups dépend de l'offre. Ne pas appliquer au joueur les
 délais de suppression d'un projet entier : aucun projet partagé ne doit être
 supprimé pour exécuter une demande Lumen. À vérifier : contrat réellement
-applicable, offre/rétention, restauration après effacement, accès de support
+applicable, copies/rétention, restauration après effacement, accès de support
 et emplacement des fonctions utilisées. Références :
 [DPA](https://supabase.com/legal/customer-resources/data-processing-addendum),
 [sous-traitants](https://supabase.com/legal/customer-resources/subprocessor-list).
