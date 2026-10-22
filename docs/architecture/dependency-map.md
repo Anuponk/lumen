@@ -1,5 +1,11 @@
 # Dependencies and data flow
 
+Session recovery #530: verified server profile → canonical badge coverage →
+safe local install or protected partial recovery. Unconfirmed wallet/canonical
+operations stay in their durable stores. Classified local failure → account
+status and existing `hydration_reconciliation` telemetry (fixed reason only).
+No new RPC, Auth configuration or persisted profile field.
+
 Baseline: `bef5f32`. Paths are repository-relative. Consult relevant rows only. `docs/DATA_AND_ARCHITECTURE.md` owns contracts; this file identifies implemented boundaries and effects.
 
 Published schedule (#522): current `access-origins.json` revision →

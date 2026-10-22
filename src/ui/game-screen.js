@@ -10,7 +10,7 @@ import {currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
 import {canonicalAttemptToResume,nextCanonicalAtLegacyBoundary,preserveAttemptSnapshot} from '../campaign/campaign-resume.js';
 import {createCloudPersistence} from "../persistence/cloud.js";
 import {reconcileDailyIntoCloudProfile} from "../persistence/daily-hydration.js";
-import {backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievements,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles} from "../persistence/cloud-profile.js";
+import {CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievements,achievementRecoveryDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
@@ -136,12 +136,13 @@ function recordCloudDiagnostic(event,details={}){
  try{
   // Best-effort, bounded telemetry: never transmit account IDs, profile
   // contents, diagnostic details, or tokens. The server derives identity from JWT.
-  if(["hydration_failed","hydration_ready","hydration_reconciliation"].includes(event)&&
+  const achievementBlocked=event==="cloud_achievements_recovery_blocked";
+  if((["hydration_failed","hydration_ready","hydration_reconciliation"].includes(event)||achievementBlocked)&&
      lumenSupabase&&lumenUser&&!qaActive){
    const reason=typeof details.reason==="string"?details.reason.slice(0,64):null;
-   const outcome=typeof details.result==="string"?details.result.slice(0,32):null;
+   const outcome=achievementBlocked?"blocked":typeof details.result==="string"?details.result.slice(0,32):null;
    Promise.resolve(lumenSupabase.rpc("lumen_record_sync_health",{
-    p_event:event,p_reason:reason,p_outcome:outcome,
+    p_event:achievementBlocked?"hydration_reconciliation":event,p_reason:reason,p_outcome:outcome,
     p_version:String(document.getElementById("lumenAccountVersion")?.textContent||"unknown").slice(0,80)
    })).catch(()=>{});
   }
@@ -547,6 +548,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    lumenSupabase.rpc("lumen_get_daily"),
    lumenSupabase.rpc("lumen_get_engagement")
   ]);
+  if(!sessionValid())return;
   if(dailyError)throw Error("Daily history unavailable: "+dailyError.message);
   if(engagementError)throw Error("Daily rewards unavailable: "+engagementError.message);
   hydrationStage="daily_reconcile";
@@ -554,6 +556,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   if(reconciled.changed){
    hydrationStage="daily_cloud_commit";
    cloud=await compareAndSwapCloudProfile(hydrationClient,reconciled.profile,cloud,{userId:accountId});
+   if(!sessionValid())return;
   }
   hydrationStage="owner_backup";
   // A brand-new browser or an account switch has no authoritative local
@@ -576,14 +579,21 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    try{conflict=!cloudSafelyCoversLocal(JSON.parse(currentLocal),cloud)}catch{conflict=true}
    if(conflict){
     let resolution=await reconcileDominantLocalProfile(hydrationClient,localStorage,cloud,{userId:accountId});
+    if(!sessionValid())return;
     if(resolution.status==="blocked"&&["missing_cloud_achievements","mutable_balance","mutable_ledger"].includes(resolution.reason)){
      hydrationStage="bidirectional_reconciliation";
      resolution=await reconcileCompatibleCloudProfiles(hydrationClient,localStorage,cloud,{userId:accountId});
+     if(!sessionValid())return;
     }
-    recordCloudDiagnostic("hydration_reconciliation",{result:resolution.status,reason:resolution.reason||"none",fields:Array.isArray(resolution.fields)?resolution.fields:[],conflictId:typeof resolution.conflictId==="string"?resolution.conflictId.slice(0,96):null,conflictKeys:Array.isArray(resolution.conflictKeys)?resolution.conflictKeys.filter(k=>typeof k==="string").slice(0,8):[]});
+    const fields=Array.isArray(resolution.fields)?[...new Set(resolution.fields.map(key=>Object.hasOwn(CLOUD_PROFILE_FIELDS,key)?key:'unknown_field'))].slice(0,8):[];
+    const knownConflictQuest=typeof resolution.conflictId==='string'?canonicalQuestList().find(quest=>quest.id===resolution.conflictId||Number.isSafeInteger(quest.legacyIndex)&&String(quest.legacyIndex)===resolution.conflictId):null;
+    const conflictKeys=Array.isArray(resolution.conflictKeys)?[...new Set(resolution.conflictKeys.map(key=>
+     ['solved','stars','performance','performances','badges','awards','run','version','attempts','lastQualifiedAt','lastQualifiedDay','bestTime','bestSeconds','time'].includes(key)?key:'unknown_field'))].slice(0,8):[];
+    recordCloudDiagnostic("hydration_reconciliation",{result:resolution.status,reason:resolution.reason||"none",fields,conflictId:knownConflictQuest?resolution.conflictId.slice(0,96):null,conflictKeys});
     if(resolution.status==="reconciled"||resolution.status==="cloud_dominant")cloud=resolution.profile;
    }
   }
+  let achievementRecoveryFailure=null;
   // When full reconciliation is blocked, recover only server-verified
   // achievements. The routine backs up the old local snapshot and never
   // overwrites local currencies, daily ledger, or conflicting rewards.
@@ -600,7 +610,13 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
       return;
      }
     }catch(error){
-     recordCloudDiagnostic("cloud_achievements_recovery_blocked",{reason:"conflicting_rewards_or_storage"});
+     const details=achievementRecoveryDiagnostic(error);
+     // Only a public catalogue identity can enter local diagnostics; never echo
+     // a profile's arbitrary keys, provider message, values or storage payload.
+     const knownQuest=canonicalQuestList().find(quest=>quest.id===error?.conflictId);
+     if(knownQuest)details.conflictId=knownQuest.id;
+     achievementRecoveryFailure=details.reason;
+     recordCloudDiagnostic("cloud_achievements_recovery_blocked",details);
     }
    }
   }
@@ -612,7 +628,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    try{fullyCovered=cloudSafelyCoversLocal(JSON.parse(localStorage.getItem("lumenProgressV1")),cloud)}catch{}
    if(!fullyCovered){
     if(!sessionValid())return;
-    cloudProfileFailure={reason:"partial_reconciliation",detail:"cloud_local_divergence"};
+    cloudProfileFailure={reason:"partial_reconciliation",detail:achievementRecoveryFailure||"cloud_local_divergence"};
     canonicalRecoveryContext={userId:accountId,client:hydrationClient};
     recordCloudDiagnostic("hydration_partial_reconciliation_pending",{profileReady:false});
     renderDaily();updateAuthUI();
@@ -643,6 +659,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    lumenProgress=structuredClone(cloud);
    recordCloudDiagnostic("hydration_local_quota_bypass",{cloudVerified:true});
   }else if(changed){recordCloudDiagnostic("hydration_reload",{stage:"local_install"});location.reload();return}
+  cloudProfileFailure=null;
   cloudProfileReady=true;
   resumeCanonicalCampaignBoundary();
    canonicalRecovery.schedule();
@@ -804,7 +821,7 @@ function syncMobileAuthUI(){
  show("accountProfileEditor",signedIn&&document.getElementById("accountProfileEditor")?.dataset.open==="true");
  show("guestSaveExplainer",!signedIn);
  const pendingNotice=canonicalOutboxNotice==="attention"?"Sauvegarde à vérifier · données locales conservées":canonicalOutboxNotice==="auth"?"Session à renouveler · victoire conservée":canonicalOutboxNotice==="pending"?"Victoire en attente de synchronisation":canonicalOutboxNotice==="checking"?"Vérification des sauvegardes en attente":canonicalOutboxNotice==="storage"?"Enregistrement local indisponible":null;
- const syncMessage=pendingNotice||(cloudProfileFailure?"Compte connect\u00e9 \u00b7 sauvegarde \u00e0 resynchroniser":navigator.onLine===false?"Compte connect\u00e9 \u00b7 hors connexion":!cloudProfileReady?"Compte connect\u00e9 \u00b7 synchronisation en cours\u2026":cloudProfileBusy||cloudProfileDirty?"Enregistrement en cours\u2026":(lumenNickname?lumenNickname+" \u00b7 ":"")+"Progression synchronis\u00e9e");
+ const syncMessage=pendingNotice||(cloudProfileFailure?cloudReconciliationMessage(cloudProfileFailure):navigator.onLine===false?"Compte connect\u00e9 \u00b7 hors connexion":!cloudProfileReady?"Compte connect\u00e9 \u00b7 synchronisation en cours\u2026":cloudProfileBusy||cloudProfileDirty?"Enregistrement en cours\u2026":(lumenNickname?lumenNickname+" \u00b7 ":"")+"Progression synchronis\u00e9e");
  status.textContent=recovering?"Choisis ton nouveau mot de passe":signedIn?syncMessage:"Progression enregistr\u00e9e sur cet appareil";
  const summary=document.getElementById("accountSyncDiagnosticSummary");if(summary)summary.textContent=status.textContent;
  show("retryAccountSync",signedIn&&(!!cloudProfileFailure||!!pendingNotice));
@@ -845,6 +862,15 @@ function updateAdminTools(){
  if(qaTools)qaTools.hidden=!(shards||analytics||qaActive);
  toggle.parentElement.hidden=!shards;toggle.checked=shards&&unlimitedShardsEnabled();
  if(cockpit)cockpit.hidden=!analytics;
+}
+function cloudReconciliationMessage(failure){
+ if(failure?.reason==='partial_reconciliation'){
+  if(failure.detail==='storage_quota')return 'Stockage de cet appareil saturé · données en attente conservées';
+  if(['storage_unavailable','backup_unverified','local_install_unverified'].includes(failure.detail))return 'Sauvegarde locale à vérifier · données en attente conservées';
+  if(failure.detail==='canonical_reward_conflict')return 'Récompenses à vérifier · données locales conservées';
+  return 'Compte connecté · sauvegarde à resynchroniser · données locales conservées';
+ }
+ return 'Compte connecté · sauvegarde à resynchroniser';
 }
 function updateAuthUI(){
  if(syncPresentationOwner!==(lumenUser?.id??null)){

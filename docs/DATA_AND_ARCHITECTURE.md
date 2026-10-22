@@ -1,5 +1,19 @@
 # Data and architecture
 
+## Session achievement recovery — #530
+
+The [reproduced case and release limits](validation/2026-10-22-achievement-recovery-530.md)
+cover a server badge replay being rejected as an immutable canonical reward.
+Coverage and partial local recovery now accept only recognized badge additions
+when every non-badge field is identical. Stars, initial performance, unknown
+fields and badge removal still hold; no reward or balance is recomputed.
+Partial recovery retains local currency/cursors and cannot authorize hydration.
+Session identity/client is rechecked after daily reads/CAS and each reconciliation
+await, before applying the result to local data or readiness of another account.
+Only a verified coherent installation clears the previous failure. Specific
+storage/reward diagnostics use fixed fields, catalogue-validated local quest IDs
+and the existing server health event without profile values or new SQL.
+
 ## Quest parity audit — #522, 2026-10-22
 
 The [dedicated chantier audit](validation/2026-10-22-quest-parity-audit.md)

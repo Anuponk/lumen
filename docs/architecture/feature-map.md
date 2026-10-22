@@ -4,6 +4,12 @@ Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This loo
 
 ## Entry points and shape
 
+Session recovery #530: `cloud-profile.js` canonical achievement coverage accepts
+only server badge additions on identical immutable victory evidence.
+`achievementRecoveryDiagnostic` supplies fixed failure categories;
+UI `cloudReconciliationMessage` explains held local data. See the dedicated
+report in `docs/validation/2026-10-22-achievement-recovery-530.md`.
+
 Published definitions: `quest-definition.js` validates the current revision
 exposed by `catalogue-origin.js` and consumed by `canonical-quests.js`, with
 variable sizes and unchanged saved identities/grids. Board feedback lives in

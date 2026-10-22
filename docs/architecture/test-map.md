@@ -4,6 +4,12 @@ Baseline: `bef5f32`. All paths are repository-relative. This phase indexes exist
 
 ## Select a check
 
+Session achievement recovery: `cloud-achievements-session-recovery-tests.mjs`
+executes coverage, partial installation and the production hydration hook with
+Auth event permutations, durable archive and simulated wallet fallback/restart.
+`cloud-diagnostics-tests.mjs` verifies bounded server signals despite local
+diagnostic failure. Device/real IndexedDB proof is separate; see #530 report.
+
 Private physical-device preview: see
 [`ISOLATED_VALIDATION_PREVIEW.md`](../ISOLATED_VALIDATION_PREVIEW.md) for the
 existing Site identity, controls, offline/reconnect recipes, isolation check,
