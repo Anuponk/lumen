@@ -340,6 +340,13 @@ Tests should assert relationships derived from the content registry rather than 
 
 ### Lumen-only erasure (#316, prepared migration)
 
+Legal-page candidates: `privacy-browser.mjs` loads the actual HTML pages at
+390/1440 px, opening `mentions-legales.html` / `confidentialite.html` independently
+without SDK/login/scripts, verifies viewport fit, visible candidate status,
+the rights-request link and unchanged save/attempt. The existing mailto checks
+and real local-library checks remain. Rendering does not certify legal content
+or production publication; the preparation evidence fields remain unverified.
+
 `canonical-ledger.yml` adds `account-erasure-bootstrap.sql`, real migration
 `20261022160212_lumen_account_erasure.sql`, `account-erasure.sql` and
 `account-erasure-concurrency.py` after the actual snapshot/ledger/wallet

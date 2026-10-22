@@ -1,0 +1,68 @@
+# Fournisseurs et transferts — preuves de préparation
+
+Vérification du 22 octobre 2026. Aucun email, secret ou contenu de joueur lu.
+Les documents publics ne prouvent pas les paramètres ou l'offre propres au
+compte : archiver les documents applicables et vérifier les options avant
+publication de la politique finale. Aucun nouveau fournisseur activé ici.
+
+## Resend — messagerie transactionnelle
+
+Preuve technique : `supabase/functions/lumen-auth-mail/index.ts` appelle
+`https://api.resend.com/emails`. L'inventaire distant relève `lumen-auth-mail`
+ACTIVE, version 14 ; la lecture du code déployé confirme cet endpoint.
+L'état ACTIVE ne prouve pas chaque paramètre d'activation du compte.
+
+La [documentation RGPD Resend](https://resend.com/security/gdpr) annonce un DPA
+applicable aux comptes, un stockage des données de messages aux États-Unis et
+des clauses contractuelles types. Le choix d'une région d'envoi européenne
+ne déplace pas ce stockage. Elle annonce 30 jours pour emails/logs en Free,
+Pro et Scale et 7 jours de backups ; Enterprise peut différer. Ne pas promettre
+ces durées pour le compte Lumen sans vérifier son offre. Une demande portant
+sur un joueur n'est pas une clôture du compte fournisseur.
+
+À contrôler : offre, rétention, suivi d'ouverture/clics du domaine, demandes
+d'effacement spécifiques, copie contractuelle et sous-traitants. Ne pas déduire
+de l'absence d'analytics client que le fournisseur ne traite aucun diagnostic.
+Références : [DPA](https://resend.com/legal/dpa),
+[sous-traitants](https://resend.com/legal/subprocessors).
+
+## Supabase — Auth, base, fonctions
+
+La région `eu-central-1` et le partage d'identité avec SoldeZen sont confirmés
+par l'audit de métadonnées. La
+[FAQ officielle du 6 octobre 2026](https://supabase.com/legal/privacy-resources/data-residency-and-transfers-faq)
+distingue base/backups régionaux et traitements de support, exploitation et
+métadonnées hors région. Elle identifie Supabase Pte. Ltd. (Singapour) comme
+sous-traitant principal hors cas Marketplace, avec support/opérations possibles
+par l'affiliée américaine ; des clauses contractuelles types sont décrites.
+
+La rétention des backups dépend de l'offre. Ne pas appliquer au joueur les
+délais de suppression d'un projet entier : aucun projet partagé ne doit être
+supprimé pour exécuter une demande Lumen. À vérifier : contrat réellement
+applicable, offre/rétention, restauration après effacement, accès de support
+et emplacement des fonctions utilisées. Références :
+[DPA](https://supabase.com/legal/customer-resources/data-processing-addendum),
+[sous-traitants](https://supabase.com/legal/customer-resources/subprocessor-list).
+
+## o2switch — pages et exploitation web
+
+Hébergeur déclaré par l'éditeur. L'
+[accord public de septembre 2026](https://www.o2switch.fr/du-rgpd.pdf)
+décrit le rôle de sous-traitant et une localisation en France, sous réserve de
+la documentation des offres souscrites. Il ne permet pas de déduire toutes les
+durées de logs/backups du compte. Vérifier l'offre, la rotation et les copies
+opérateur ; ne pas confondre effacement logique d'une ligne et disparition
+de toutes les sauvegardes. [CGV publiques](https://www.o2switch.fr/cgv/).
+
+## Autres destinataires à rapprocher du parcours
+
+Google pour la connexion choisie, messagerie utilisée par le joueur pour une
+demande, services push de son navigateur et éventuels outils de support.
+L'inventaire navigateur constate deux icônes SVG locales et aucun fichier
+police/audio distribué ni URL HTTP externe dans l'entrée/CSS examinées ; cela
+ne remplace pas une capture de tous les flux, API/SDK et versions actives.
+
+Un inventaire de sous-traitants n'affirme pas que chaque société listée reçoit
+chaque donnée Lumen. Le futur paquet et les options du compte doivent être
+rapprochés des définitions de collecte/partage de la feuille Data Safety.
+Le dossier n'active ni compte enfant, ni publication Play, ni migration.

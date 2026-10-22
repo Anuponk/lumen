@@ -38,6 +38,13 @@ de cockpit, exports de récupération, sauvegardes et leurs éventuels délais d
 
 ## SDK et flux observés
 
+Complément fournisseurs : [preuves et références](PRIVACY_PROCESSORS.md).
+La fonction déployée `lumen-auth-mail` v14 utilise Resend ; son code a été lu
+sans secrets ou envoi. Les transferts annoncés par Resend/Supabase, les durées
+publiques conditionnelles et les paramètres restant à vérifier sont distingués.
+Ne plus traiter le fournisseur d'email comme inconnu, ni supposer une absence
+de transfert du seul fait de la région de base.
+
 | Composant | Source / preuve | État |
 |---|---|---|
 | Supabase JS | `index.html`, bundle local `src/vendor/supabase-2.118.0.js` | Version exacte résolue depuis l'ancienne URL flottante puis embarquée ; hash et copie MIT inventoriés. Auth/DB ; aptitude Families encore à qualifier |

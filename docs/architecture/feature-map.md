@@ -4,6 +4,12 @@ Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This loo
 
 ## Entry points and shape
 
+Privacy entry points: `supprimer-compte.html` prepares a request only;
+`mentions-legales.html` and `confidentialite.html` are explicitly unapproved
+HTML candidates, linked from `index.html`, using `src/privacy/pages.css` without
+SDK/login. Owning legal text: `docs/legal/`; vendor evidence:
+`docs/PRIVACY_PROCESSORS.md`. HTML presence does not clear Play readiness.
+
 Published definitions: `quest-definition.js` validates the current revision
 exposed by `catalogue-origin.js` and consumed by `canonical-quests.js`, with
 variable sizes and unchanged saved identities/grids. Board feedback lives in

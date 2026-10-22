@@ -4,6 +4,13 @@ Version de travail du 22 octobre 2026. Les rubriques « à valider » sont des
 blocages de publication, pas des règles déjà exécutées. Rapprocher le texte de
 `docs/PRIVACY_AND_LEGAL_AUDIT.md` et du paquet réellement distribué.
 
+La version HTML candidate `/confidentialite.html` est accessible depuis la PWA,
+les mentions et la demande de suppression dans cette branche, sans SDK/login.
+Elle signale les informations restant à valider et n'est pas déployée. Aucun
+statut `evidence.privacyPolicy` ou `evidence.legalPages` n'est validé par sa seule
+présence. Le contenu distingue désidentification sociale et anonymisation
+irréversible, barrière pseudonymisée et effacement physique des backups.
+
 ## Qui est responsable ?
 
 Lumen est édité par **Nopuna — Cédric Valente EI**. Contact pour les données
@@ -40,7 +47,10 @@ universelle ou déduire un accord statistique de la connexion.
 ## Destinataires et lieux de traitement
 
 Les services existants incluent o2switch, Supabase, les fournisseurs de connexion,
-les services mail/push et les CDN chargés par la version web. L'accès
+Resend pour les emails transactionnels, les services push du navigateur et les
+autres flux de la version web à inventorier. Le code déployé de `lumen-auth-mail`
+v14 confirme l'endpoint Resend. Voir `docs/PRIVACY_PROCESSORS.md` pour les sources
+primaires, transferts annoncés et paramètres d'offre à vérifier. L'accès
 d'administration est limité par capacités ; les secrets d'administration ne
 doivent pas être présents dans le client.
 
@@ -83,8 +93,10 @@ d'option de réactivation dans cette préparation familiale.
 Les demandes d'accès, rectification, effacement, opposition ou portabilité
 applicables peuvent être adressées au contact ci-dessus. L'éditeur peut vérifier
 de façon proportionnée la demande et le droit à agir, notamment pour un parent.
-Les informations sur la réclamation auprès de la CNIL et les délais applicables
-doivent figurer dans la version finale validée.
+La page candidate informe de la réclamation auprès de la CNIL et du délai
+de réponse d'un mois, prolongeable de deux mois en fonction de la complexité
+ou du nombre des demandes, avec information motivée durant le premier mois.
+Référence : [CNIL — droit d'accès](https://www.cnil.fr/fr/repondre-une-demande-de-droit-dacces).
 
 La page prévue `/supprimer-compte.html` prépare une demande par email sans
 réinstallation. Il faut envoyer le message pour le transmettre. La suppression

@@ -1,7 +1,9 @@
 # Mentions légales Lumen — projet à compléter avant publication
 
-Ce document est un projet de texte pour la future page HTML publique. Il n'est
-pas publié dans l'application. Les rubriques à confirmer empêchent sa finalisation.
+Ce document accompagne la page candidate `/mentions-legales.html`, consultable
+dans la branche depuis la PWA et la demande de suppression. Elle est signalée
+comme non validée et n'est pas déployée. Les rubriques à confirmer empêchent
+sa publication finale ; `noindex` ne constitue pas un contrôle d'accès.
 
 ## Éditeur
 

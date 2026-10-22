@@ -29,7 +29,23 @@ export async function verifyPrivacyRequests({send,evaluate},baseUrl){
   assert(result.status.includes('aucune suppression'));
   assert.equal(result.hasSdk,false);
   assert.equal(await evaluate(`JSON.stringify(['lumenProgressV1','lumenActiveAttemptV1'].map(k=>[k,localStorage.getItem(k)]))`),before,'preparing deletion does not clear or alter the save/attempt');
-  results.push({width,confirmationRequired:true,mailPreparedOnly:true,savePreserved:true,liveDeletion:false});
+  for(const [path,title] of [['/mentions-legales.html','Mentions légales'],['/confidentialite.html','Confidentialité']]){
+   const origin=await evaluate('performance.timeOrigin');
+   await send('Page.navigate',{url:new URL(path,baseUrl).href});
+   let loaded=false;
+   for(let i=0;i<100;i++){
+    try{if(await evaluate(`performance.timeOrigin!==${JSON.stringify(origin)}&&document.readyState==='complete'&&document.querySelector('h1')?.textContent===${JSON.stringify(title)}`)){loaded=true;break}}
+    catch(error){if(!/Cannot find context|Execution context was destroyed|Inspected target navigated/.test(error.message))throw error}
+    await new Promise(resolve=>setTimeout(resolve,100));
+   }
+   assert(loaded,'legal candidate page loads independently without Auth');
+   assert.equal(await evaluate(`document.documentElement.scrollWidth<=innerWidth`),true,'legal copy fits mobile and desktop');
+   assert.equal(await evaluate(`document.querySelectorAll('script').length`),0,'legal pages need no SDK or script');
+   assert.equal(await evaluate(`!!document.querySelector('nav a[href="/supprimer-compte.html"]')`),true,'rights request remains directly accessible');
+   assert.equal(await evaluate(`document.querySelector('aside')?.textContent.includes('Version candidate')`),true,'unapproved legal policy is not presented as published compliance');
+   assert.equal(await evaluate(`JSON.stringify(['lumenProgressV1','lumenActiveAttemptV1'].map(k=>[k,localStorage.getItem(k)]))`),before,'reading legal pages preserves save and attempt');
+  }
+  results.push({width,confirmationRequired:true,mailPreparedOnly:true,savePreserved:true,liveDeletion:false,legalCandidatePages:2});
  }
  return results;
 }

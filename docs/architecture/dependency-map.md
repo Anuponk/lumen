@@ -4,6 +4,9 @@ Account erasure: standalone request page → operator-verified scope → private
 `lumen_privacy.review_erasure` / `erase_account` → explicit Lumen relation
 policy and write guards. Shared Auth is preserved. Procedure and limits:
 `docs/ACCOUNT_DELETION_RUNBOOK.md`; SQL/concurrency coverage: `docs/TESTING.md`.
+The HTML legal candidates and request page share only CSS/navigation; they
+load no Auth/analytics SDK, mutate no game storage and do not approve legal
+evidence. Vendor metadata/source review is in `docs/PRIVACY_PROCESSORS.md`.
 
 Baseline: `bef5f32`. Paths are repository-relative. Consult relevant rows only. `docs/DATA_AND_ARCHITECTURE.md` owns contracts; this file identifies implemented boundaries and effects.
 

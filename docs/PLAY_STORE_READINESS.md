@@ -31,6 +31,23 @@ le téléphone ont été communiqués directement par le propriétaire ; le dét
 d'immatriculation reste à vérifier. Ne pas leur substituer des coordonnées
 déduites d'une autre source.
 
+Pages candidates désormais consultables dans la branche : `/mentions-legales.html`
+et `/confidentialite.html`, liées depuis la PWA et `/supprimer-compte.html`.
+Elles se chargent sans Auth/SDK et signalent explicitement leur état non validé.
+Les informations de conservation/fournisseurs et d'immatriculation restent
+à finaliser ; leur présence HTML ne valide ni les preuves légales ni Play.
+Le [dossier fournisseurs](PRIVACY_PROCESSORS.md) identifie la messagerie Resend
+déployée et les garanties/durées publiques, sans inventer les paramètres du compte.
+
+Validation du complément HTML : `npm run test:full`, **30 suites, aucun échec**,
+quality gate 130 contrôles / 340,95 s. Le navigateur lit les deux pages à 390 et
+1440 px sans scripts/login, vérifie leur statut candidat, les liens de demande,
+l'absence de débordement et une sauvegarde/tentative inchangée. Ce succès de
+rendu ne finalise pas les rubriques juridiques encore signalées. La tête SQL
+précédente `c9d4b34` a passé les cinq contrôles requis ; le contrôle de contrat
+cloud avait échoué sur les intitulés traduits de la description PR, corrigés
+puis vérifiés par une exécution verte sans affaiblir le contrôle.
+
 ## État vérifié et prochaines preuves
 
 | Domaine | Existant / réalisé dans cette branche | Critère encore ouvert |

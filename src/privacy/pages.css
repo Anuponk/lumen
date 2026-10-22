@@ -5,3 +5,4 @@ label{display:block;margin-top:1rem}input[type=email]{display:block;box-sizing:b
 .confirmation{display:flex;gap:.7rem;align-items:flex-start}.confirmation input{margin-top:.45rem;flex-shrink:0}
 button{margin-top:1rem;padding:.8rem 1rem;font:inherit;font-weight:600;border:1px solid #8ee8ff;border-radius:.5rem;background:#13334a;color:#fff;cursor:pointer}
 :focus-visible{outline:3px solid #ffdb83;outline-offset:3px}
+nav{display:block;line-height:1.8}aside{border-left:3px solid #ffdb83;padding:.1rem 1rem;background:#162334}dd{margin:0 0 .7rem}dt{font-weight:700}main{overflow-wrap:anywhere}
