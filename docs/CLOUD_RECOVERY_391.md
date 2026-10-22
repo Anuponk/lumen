@@ -75,9 +75,21 @@ update after wallet activation; the server guard must remain active.
 Rollback retains authority, receipts and durable intentions. Returning to a client
 that debits local currency is not a safe rollback for an activated account.
 
-Outstanding release evidence: final local/CI results, required-check enforcement,
-installed Android airplane-mode/restart/update scenarios, and Loutre verification.
+Outstanding release evidence: exact-candidate GitHub CI results, installed Android
+airplane-mode/restart/update scenarios, and Loutre verification.
 These must be recorded as actual results, not inferred from browser emulation.
+
+Local validation completed on 22 October: `npm run test:full`, 30 outer suites
+with zero failures; its quality gate contains 114 Node suites and nine browser
+paths (379.8 seconds), plus 29 complementary outer suites. The catalogue audit
+and embedded hint regressions passed. Targeted historical-command tests pass
+31 cases, including acknowledged-run restart and offline receipt lookup.
+PGlite exercised the prepared SQL with existing catalogue-origin guards: wallet
+receipts/rollback/daily/baseline refusal/account isolation and outbox alert/retention
+fixtures passed. PGlite is distinct from PostgreSQL 17 concurrent CI and live
+Supabase. No Android, Loutre, production SQL or deployment result is implied.
+`main` required checks and administrator enforcement were applied and verified
+by a separate GitHub settings read; see `docs/RELEASE.md`.
 
 ### Remaining risks and issue decisions
 
