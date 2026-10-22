@@ -4,6 +4,15 @@ Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This loo
 
 ## Entry points and shape
 
+Published definitions: `quest-definition.js` validates the current revision
+exposed by `catalogue-origin.js` and consumed by `canonical-quests.js`, with
+variable sizes and unchanged saved identities/grids. Board feedback lives in
+UI `rewardProgressPulse` (real mutations versus render/restore) and the group
+hint handler (source/target roles).
+`quest-view.js` owns the ephemeral saved-record/label projection consumed by
+`init`, `currentAttemptAnalytics` and `trackCurrentPuzzleStart`; telemetry keeps
+historical keys separate from active stable quest identity.
+
 Victory challenge visibility: UI `configureVictoryChallenge` applies the existing
 first-play rule and the historical-quest protocol limit to both victory surfaces.
 `createSocialChallengeFromSuccess` guards pending creation and reuses that

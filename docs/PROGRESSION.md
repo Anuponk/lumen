@@ -33,6 +33,12 @@ prerequisites, and pack ownership/authentication/hydration still apply.
 
 ## Adventures and access (#96)
 
+Target decision recorded on 22 October 2026 for #522: an account will be required
+after a discovery phase whose boundary and transition UX must be specified
+separately. Apply that future policy uniformly through explicit discovery/access
+metadata, never through presence of a historical numeric quest key. This decision
+does not yet change the shipped guest/access behavior or grant any Adventure.
+
 The real-sky catalogue is grouped into Adventures of at most ten constellations, configured in `content.js`. The current groups are 1–10, 11–20 and 21–24. The first Adventure is included; subsequent Adventures remain visible but locked unless already owned or already started by an existing player. Their unlock mechanism is deferred. The grouping size is a product rule, not a campaign-size ceiling: new Adventures are derived as the catalogue grows.
 
 The user's migration decision is to **retain access to Adventures already started and lock subsequent unstarted Adventures**. A solved quest in an Adventure proves it was started; a locally restored campaign/replay attempt with `startedAt` also proves it, including an unsolved first quest. Merely reaching a READY quest at the next Adventure boundary does not grant access. Social attempts do not grant campaign access. `legacyAdventureAccess` retains proven Adventure IDs in the existing local progress object, idempotently; solved history restored from cloud can reconstruct access without a new entitlement or backend RPC. An unsolved local attempt has the same device-local persistence scope as before.

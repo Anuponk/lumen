@@ -5,9 +5,32 @@
 The [dedicated chantier audit](validation/2026-10-22-quest-parity-audit.md)
 records the `650a39b` inventory, remaining numeric/stable-ID behavioral
 differences, synthetic reproductions for #516/#515, the #521 rendering review,
-and the proposed implementation lots. It is an audit and plan awaiting review,
-not a replacement product contract or a completed quest/persistence migration.
+and the implementation lots approved before corrective edits. The original
+audit is not a replacement product contract or a completed persistence migration.
 Coordinate subsequent business changes with the persistence work in PR #523.
+
+The first implementation lot replaces the ten-by-ten `planSlots` reconstruction
+with `buildQuestDefinitions` (`src/campaign/quest-definition.js`), reading the
+current published revision of `content/catalogue/access-origins.json` through
+`publishedCatalogueQuests`. That content owns IDs, numeric compatibility keys,
+current order and membership. The builder validates unique references,
+contiguous order and membership, deriving local positions without size limits
+or constellation-specific remapping. Grid adapters/overrides still resolve by
+stable ID. Old keys, grid hashes, origin revisions, rewards, command protocols
+and active attempts are preserved; there is no player-data migration.
+
+Future publication appends a compatible catalogue revision and audited assets,
+as already required by the compatibility contract. `quest-definition-tests.mjs`
+covers variable sizes, N→N+k and recovery of a formerly complete synthetic save.
+Guest/cloud, qualification, reward/daily and social differences remain separate
+contract-convergence work coordinated with #523.
+
+`quest-view.js` provides an ephemeral common read projection over numeric and
+stable saved records. The active board label and attempt telemetry read its
+published quest/membership, never the dormant numeric frontier. It preserves
+legacy badge-version compatibility and does not add a store or mutate a save.
+Stable identity telemetry and nullable historical counters are documented in
+PRODUCT_ANALYTICS. `puzzle_start` now follows attempt creation/restoration.
 
 ## Account modes (2026-10-18)
 

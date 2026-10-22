@@ -9,6 +9,29 @@ procedure. It links a dated source/evidence archive and identifies future work.
 Real browser storage and physical Android UI do not establish live Supabase
 Auth/RPC, cross-device cloud or player recovery; retain independent SQL/CI proofs.
 
+## Quest parity and board feedback (#522/#516/#521/#515)
+
+Mandatory Node gates: `board-feedback-tests.mjs` (mutation-only halfway,
+restore, terminal state, undo and reset for every size), `group-hint-tests.mjs`
+(real visible quest 91, both auto-marking modes, row/column groups of 2/3,
+certain action and protected lesson gate), and `quest-definition-tests.mjs`
+(published identities/order/membership, variable sizes and N→N+k recovery).
+`quest-view-tests.mjs` additionally executes the actual telemetry adapters with
+the same stable quest at two numeric frontiers, verifies start-event identity,
+nullable unavailable counters, legacy badge compatibility and read-only totals.
+
+`browser-tests.mjs` imports `board-feedback-browser.mjs` to check actual click
+handlers and group hints on desktop/mobile, exact preservation of territory
+border widths/colors, source/target roles, closing and reduced motion.
+Screenshots are saved in the system temporary directory. Mobile emulation
+does not establish real Android validation. Full in-app tests and strict audits
+remain mandatory.
+
+Onboarding impact: no milestone, cost, badge eligibility or forced lesson
+changes in this lot. Group hints teach the same rule with an actionable first
+explanation; lesson gating and preserved quest identities are covered. The
+wider timing disagreement remains explicit in the audit for contract convergence.
+
 ## Source-to-render astronomy fidelity (#508, #504 follow-up)
 
 `node scripts/audit-astronomical-figures.mjs [report.json]` rebuilds every shipped

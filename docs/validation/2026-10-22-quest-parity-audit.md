@@ -1,8 +1,19 @@
 # Chantier #522 / #516 / #521 / #515 — audit et plan
 
-État : **étape 1, avant corrections métier**, conformément à #522. Ce dossier
+État initial : **étape 1, avant corrections métier**, conformément à #522. Ce dossier
 ne vaut ni correction des quatre issues, ni validation navigateur, ni recette
 sur le téléphone du signalement. Aucune sauvegarde réelle n'a été utilisée.
+
+Le découpage a été validé par l'utilisateur le 22 octobre 2026. La suite traite
+#515, #516/#521 et la définition du planning publié de #522. Le tableau conserve
+les constats sur `650a39b` ; GAMEPLAY/UX/DATA_AND_ARCHITECTURE/TESTING décrivent
+les corrections en cours. Les écarts métier nécessitant un contrat de
+convergence et la coordination avec #523 restent ouverts.
+
+Décision produit du 22 octobre : **compte obligatoire après une phase de
+découverte à définir séparément**. Le seuil et le parcours de transition ne sont
+pas définis par ce chantier ; conserver les accès actuels jusqu'à ce contrat,
+puis appliquer la règle à toutes les quêtes sans dépendre de leur clé historique.
 
 ## Référence et périmètre
 
@@ -97,6 +108,22 @@ Dans le handler Indice, `group` étape 1 ne cite ni les colonnes ni l'exclusion 
 `detail.source` (candidats restants), sans distinguer cible et prémisses.
 La preuve est exploitable ; son premier exposé laisse le joueur reconstituer
 l'action. Ce replay synthétique n'établit pas l'état exact du signalement.
+
+Complément de recette UI : le handler préfère `simpleForcedPlacement` au moteur
+général. La fixture ci-dessus vérifie donc une preuve du moteur, pas la sélection
+effective de l'interface. La régression livrée utilise cet autre état valide de
+la même quête, après une pose correcte et ses exclusions :
+
+```json
+[[1,1,0,0,1,1],[2,1,1,1,1,1],[1,1,0,0,1,1],
+ [1,1,1,0,0,0],[1,0,1,0,0,0],[1,0,0,0,1,0]]
+```
+
+Il n'existe alors ni erreur, ni marquage direct manquant, ni placement simple.
+Le handler choisit le groupe de territoires internes 1/3, sources L1C3/L1C4/
+L3C3/L3C4, colonnes **3 et 4**, cible **L6C3**, avec ou sans marquage auto.
+Une solution subsiste avant l'exclusion et aucune en imposant un Gardien sur la
+cible. Le test ne force pas le saut de la priorité des placements simples.
 
 Proposition à valider : garder une aide progressive mais rendre la première
 demande exploitable, avec colonnes identifiées et conséquence explicite ; les
