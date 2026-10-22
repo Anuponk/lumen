@@ -19,6 +19,8 @@ certain action and protected lesson gate), and `quest-definition-tests.mjs`
 `quest-view-tests.mjs` additionally executes the actual telemetry adapters with
 the same stable quest at two numeric frontiers, verifies start-event identity,
 nullable unavailable counters, legacy badge compatibility and read-only totals.
+It executes the actual Mon ciel refresh callback with mixed stable/numeric
+cards, reordered cards, an unknown ID, replaced live progress and a closed map.
 
 `browser-tests.mjs` imports `board-feedback-browser.mjs` to check actual click
 handlers and group hints on desktop/mobile, exact preservation of territory
@@ -30,6 +32,10 @@ path, preserving the single undo snapshot and prohibiting a full render.
 Screenshots are saved in the system temporary directory. Mobile emulation
 does not establish real Android validation. Full in-app tests and strict audits
 remain mandatory.
+The browser runner additionally opens the real Mon ciel, renders distinct earned
+badges for inserted/numeric quests, reorders the cards and invokes its installed
+refresh callback. Both viewport runs assert unchanged per-quest badge markup
+and unchanged progress.
 
 Onboarding impact: no milestone, cost, badge eligibility or forced lesson
 changes in this lot. Group hints teach the same rule with an actionable first

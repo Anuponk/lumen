@@ -10,8 +10,9 @@ variable sizes and unchanged saved identities/grids. Board feedback lives in
 UI `rewardProgressPulse` (real mutations versus render/restore) and the group
 hint handler (source/target roles).
 `quest-view.js` owns the ephemeral saved-record/label projection consumed by
-`init`, `currentAttemptAnalytics` and `trackCurrentPuzzleStart`; telemetry keeps
-historical keys separate from active stable quest identity.
+`init`, `currentAttemptAnalytics`, `trackCurrentPuzzleStart` and
+`startBadgeCooldownRefresh`; telemetry and periodic card updates keep historical
+keys separate from active stable quest identity.
 
 Victory challenge visibility: UI `configureVictoryChallenge` applies the existing
 first-play rule and the historical-quest protocol limit to both victory surfaces.

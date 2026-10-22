@@ -3128,12 +3128,13 @@ function startBadgeCooldownRefresh(){
  if(badgeCooldownRefreshTimer)clearInterval(badgeCooldownRefreshTimer);
  badgeCooldownRefreshTimer=setInterval(()=>{
   if(document.getElementById("mapModal")?.hidden){clearInterval(badgeCooldownRefreshTimer);badgeCooldownRefreshTimer=null;return}
-  if(skyNavigation.selectedConstellation()?.canonicalOnly)return;
-  document.querySelectorAll("#puzzleGrid .puzzle-card").forEach((card,offset)=>{
-   const range=mapConstellationRange(mapConstellation)||constellationGridRange(mapConstellation);
-   const index=range?.quests?.[offset];
-   if(index===undefined||!lumenProgress.solved[index])return;
-   const html=performanceBadges(index);
+  const quests=canonicalQuestList();
+  document.querySelectorAll("#puzzleGrid .puzzle-card").forEach(card=>{
+   const quest=quests.find(q=>q.id===card.dataset.questId);
+   if(!quest)return;
+   const view=readQuestView(quest,lumenProgress,quests,CONTENT_CONSTELLATIONS);
+   if(!view.solved)return;
+   const html=view.legacyIndex===null?canonicalPerformanceBadges(view.id):performanceBadges(view.legacyIndex);
    if(card.innerHTML!==html)card.innerHTML=html;
   });
  },15000);

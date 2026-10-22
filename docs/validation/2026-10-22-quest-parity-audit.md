@@ -186,6 +186,25 @@ reload avant/après seuil, reset/rejeu, aide, et tailles paires/impaires.
 
 ## Modèle cible proposé et compatibilité
 
+### Suite du lot 3 : rafraîchissement des badges de Mon ciel
+
+Sur `a989b59`, `startBadgeCooldownRefresh` associait les cartes à
+`range.quests[offset]`, alors que `renderMap` affiche le catalogue canonique
+avec les quêtes insérées. Une régression exécutant le vrai callback a reproduit
+le remplacement du contenu de `planned-real-01-q07` par celui de la clé
+numérique 0. La correction résout `data-quest-id` et lit `readQuestView` depuis
+la progression vivante avant d'appeler le renderer correspondant au format
+existant. Aucun acquis, cooldown, critère de badge ou accès ne change.
+
+Le test couvre aussi l'ordre des cartes, un ID inconnu, le remplacement de la
+progression après installation du timer et sa fermeture. Le scénario navigateur
+exécute le callback réellement installé dans Mon ciel avec des badges distincts
+pour les deux formats, sur les deux tailles d'écran du chantier.
+
+**Onboarding impact :** pas de changement de concept, de règle, de jalon,
+de texte ou de destination ; seule l'identité de l'acquis affiché est corrigée.
+Les leçons et la qualification restent sous leurs sources existantes.
+
 Une vue immuable `QuestDefinition` issue du catalogue : `id`, ordre affiché,
 pack/constellation, grille auditée/difficulté, propriétés explicites de leçon,
 assistance, qualification, récompense et prise en charge sociale. Ce sont des

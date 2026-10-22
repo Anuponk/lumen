@@ -33,6 +33,13 @@ legacy badge-version compatibility and does not add a store or mutate a save.
 Stable identity telemetry and nullable historical counters are documented in
 PRODUCT_ANALYTICS. `puzzle_start` now follows attempt creation/restoration.
 
+Mon ciel's periodic badge refresh also resolves each card's `data-quest-id`
+through this projection, reading the current progress object on each tick.
+It must never associate a canonical card with an old numeric range by DOM
+offset: inserted or reordered cards otherwise display another quest's badges.
+Unknown cards and unsolved quests are ignored; badge eligibility and the two
+existing saved-record formats remain unchanged.
+
 ## Account modes (2026-10-18)
 
 Lumen has two public modes: local guest discovery without an Auth account, and an authenticated account using Google or email with a password. Email OTP/magic-link login is retired in the Lumen UI and its dedicated mail endpoint. Existing accounts retain their identity, progress and entitlements; use Google or **Créer ou réinitialiser mon mot de passe** to establish a password on the same email address. Recovery/confirmation emails remain supported. Do not disable email Auth globally: the Supabase project is shared with SoldeZen.

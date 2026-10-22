@@ -23,7 +23,8 @@ The PWA runner checks offline public navigation with retained local/IndexedDB da
 
 Quest definitions / board feedback: `quest-definition-tests.mjs`,
 `board-feedback-tests.mjs`, `group-hint-tests.mjs` are mandatory Node gates.
-`quest-view-tests.mjs` guards stable-identity telemetry and both saved formats.
+`quest-view-tests.mjs` guards stable-identity telemetry, both saved formats and
+the live map refresh's stable card identity after insertion/reordering.
 `board-feedback-browser.mjs` extends the existing browser runner with actual
 placement, group hints and border-preservation checks. See TESTING for limits.
 

@@ -5,7 +5,7 @@ Baseline: `bef5f32`. Paths are repository-relative. Consult relevant rows only. 
 Published schedule (#522): current `access-origins.json` revision →
 `catalogue-origin.publishedCatalogueQuests` → `quest-definition.buildQuestDefinitions`
 → canonical grid adapter. Active quest + existing progress →
-`quest-view.readQuestView` → board label / attempt telemetry. These reads neither
+`quest-view.readQuestView` → board label / attempt telemetry / stable-ID map badge refresh. These reads neither
 grant access nor migrate saved rewards; old writers remain in their own domains.
 
 | Boundary | Dependencies / flow | Effects / caution |

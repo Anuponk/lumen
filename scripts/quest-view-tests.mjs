@@ -11,6 +11,33 @@ import {attemptAnalyticsProperties} from '../src/analytics/events.js';
 import {readQuestView} from '../src/campaign/quest-view.js';
 
 const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+test('live sky badge refresh follows stable card IDs after insertion, reorder and progress replacement',()=>{
+ const quests=canonical.canonicalQuestList(),inserted=quests.find(q=>q.legacyIndex===null);
+ const legacy=quests.find(q=>q.constellationId===inserted.constellationId&&q.legacyIndex!==null);
+ const cards=[inserted,legacy].map(q=>({dataset:{questId:q.id},innerHTML:'initial'}));
+ cards.push({dataset:{questId:'removed-content'},innerHTML:'untouched'});
+ let refresh,stopped=false;
+ const ctx={...canonical,CONTENT_CONSTELLATIONS,readQuestView,lumenProgress:{},
+  badgeCooldownRefreshTimer:null,setInterval:fn=>(refresh=fn,1),clearInterval:()=>{stopped=true},
+  document:{getElementById:()=>({hidden:false}),querySelectorAll:()=>cards},
+  skyNavigation:{selectedConstellation:()=>({canonicalOnly:false})},mapConstellation:0,
+  mapConstellationRange:()=>({quests:[legacy.legacyIndex]}),
+  performanceBadges:i=>'numeric:'+i,canonicalPerformanceBadges:id=>'stable:'+id};
+ vm.createContext(ctx);vm.runInContext(functionSource(source,'startBadgeCooldownRefresh'),ctx);
+ ctx.startBadgeCooldownRefresh();
+ refresh();assert(cards.every(c=>c.innerHTML==='initial'||c.innerHTML==='untouched'),'Unsolved cards keep their existing availability UI');
+ ctx.lumenProgress={solved:{[legacy.legacyIndex]:1},canonicalQuestState:{[inserted.id]:{solved:true}}};
+ const before=JSON.stringify(ctx.lumenProgress);refresh();
+ assert.equal(cards[0].innerHTML,'stable:'+inserted.id,'Inserted card must never borrow the numeric card at its offset');
+ assert.equal(cards[1].innerHTML,'numeric:'+legacy.legacyIndex);
+ assert.equal(cards[2].innerHTML,'untouched');
+ cards.reverse();refresh();assert.equal(cards[1].innerHTML,'numeric:'+legacy.legacyIndex);
+ ctx.skyNavigation.selectedConstellation=()=>({canonicalOnly:true});
+ cards[2].innerHTML='stale';refresh();assert.equal(cards[2].innerHTML,'stable:'+inserted.id,'Canonical-only views use the same stable lookup');
+ assert.equal(JSON.stringify(ctx.lumenProgress),before,'Refresh must not write progress');
+ ctx.document.getElementById=()=>({hidden:true});refresh();assert(stopped);
+});
+
 test('inserted quest telemetry belongs to its stable identity, independently of the dormant numeric frontier',()=>{
  const quest=canonical.canonicalQuestList().find(q=>q.legacyIndex===null);
  const progress={solved:{0:1},performances:{0:{attempts:3},70:{attempts:9}},canonicalQuestState:{[quest.id]:{solved:true,badges:{speed:true}}}};

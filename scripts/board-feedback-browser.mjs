@@ -73,7 +73,36 @@ export async function verifyBoardFeedback({send,evaluate}){
   assert(await evaluate('[...document.querySelectorAll("#board .cell")].every((cell,i)=>cell===hintBoardNodes[i])'),'Clearing hint emphasis must not rebuild the board');
   assert.equal(await evaluate('halfwayMessages.length'),1,'Hints and redraws cannot replay halfway');
   await evaluate('halfwayObserver.disconnect()');
-  results.push({width,height,mobile,halfway:true,firstHintAction:true,bordersUnchanged:true,reducedMotion:true,screenshot:imagePath});
+  const badgeRefresh=await evaluate(`(async()=>{
+   const {canonicalQuestList}=await import('/src/campaign/canonical-quests.js');
+   const quests=canonicalQuestList().filter(q=>q.constellationId==='real-01');
+   const p=lumenDiagnostics.snapshot().progress;
+   for(const q of quests){
+    if(q.legacyIndex!==null){p.solved[q.legacyIndex]=1;p.performances[q.legacyIndex]={version:3,badges:{speed:true}}}
+    else {p.canonicalQuestState??={};p.canonicalQuestState[q.id]={solved:true,badges:{autonomy:true}}}
+   }
+   const originalInterval=window.setInterval;let refresh;
+   window.setInterval=(fn,ms,...args)=>{if(ms===15000)refresh=fn;return originalInterval(fn,ms,...args)};
+   try{document.getElementById('openSky').click()}finally{window.setInterval=originalInterval}
+   document.querySelector('#adventureRail [data-pack-id="base-real-sky"]').click();
+   for(let page=0;!document.querySelector('#sectorTabs [data-content-id="real-01"]');page++){
+    if(page>10)throw Error('First constellation not found in actual navigation');
+    document.getElementById('constellationPrevious').click();
+   }
+   document.querySelector('#sectorTabs [data-content-id="real-01"]').click();
+   if(!refresh)throw Error('Actual map refresh timer not installed');
+   const cards=[...document.querySelectorAll('#puzzleGrid .puzzle-card')];
+   const before=cards.map(c=>c.innerHTML),saved=JSON.stringify(p);
+   for(const card of [...cards].reverse())card.parentNode.appendChild(card);
+   refresh();
+   const unchanged=cards.every((card,i)=>card.innerHTML===before[i]);
+   const inserted=cards.filter(c=>quests.find(q=>q.id===c.dataset.questId)?.legacyIndex===null);
+   const correct=inserted.length>0&&inserted.every(c=>c.querySelector('.autonomy.earned')&&!c.querySelector('.speed.earned'));
+   document.getElementById('closeMap').click();
+   return {unchanged,correct,saveUnchanged:JSON.stringify(p)===saved};
+  })()`,true);
+  assert.deepEqual(badgeRefresh,{unchanged:true,correct:true,saveUnchanged:true},'Actual refresh must preserve each quest badge after card reordering');
+  results.push({width,height,mobile,halfway:true,firstHintAction:true,bordersUnchanged:true,reducedMotion:true,stableBadgeRefresh:true,screenshot:imagePath});
  }
  return results;
 }
