@@ -1,0 +1,82 @@
+(function(){
+
+ const owner="00000000-0000-0000-0000-000000008188";
+ const saved=JSON.parse(localStorage.getItem('lumenValidationServerV1')||'null');
+ const solved=Object.fromEntries(Array.from({length:20},(_,i)=>[i,1]));
+ window.__walletServer=saved||{profile:{solved,historyBackup:{...solved},badges:{},stars:{},performances:{},noHint:{},canonicalQuestState:{},
+  xp:100,shards:10,skyScore:20,skyHistoryVersion:4,daily:{dates:{},rewards:{}},challenges:{},walletRevision:1},receipts:[],legacy:[],debits:0};
+ const persist=()=>localStorage.setItem('lumenValidationServerV1',JSON.stringify(window.__walletServer));
+ if(!saved){localStorage.setItem('lumenCloudOwnerId',owner);localStorage.setItem('lumenProgressV1',JSON.stringify(window.__walletServer.profile));localStorage.removeItem('lumenActiveAttemptV1');persist()}
+ for(const key of ['lumenTutorialSeen','lumenTutorialCompletedV1','lumenSound'])localStorage.setItem(key,key==='lumenSound'?'off':'1');
+ window.__walletLoseReply=localStorage.getItem('lumenValidationLostReply')==='1';window.__walletHideReceipt=false;window.__offlineVictory=localStorage.getItem('lumenValidationVictoryFailure')==='1';
+ window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:{user:{id:owner}}}}),
+  getUser:async()=>({data:{user:{id:owner}}}),onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})},
+  rpc:async(name,args={})=>{
+   // Verify transport too: navigator.onLine can stay true without Internet.
+   // This root-level endpoint is outside the service worker asset cache.
+   try{
+    if(navigator.onLine===false)throw TypeError('Browser offline');
+    const response=await fetch('/validation-info.json',{cache:'no-store',signal:AbortSignal.timeout(3000)});
+    if(!response.ok||(await response.json()).environment!=='isolated-validation')throw TypeError('Validation endpoint unavailable');
+    window.__validationNetwork='online';
+   }catch(error){window.__validationNetwork='offline';throw TypeError('Simulated cloud offline',{cause:error})}
+   const server=window.__walletServer,p=server.profile;
+   if(name==='lumen_restore_profile')return {data:structuredClone(p)};
+   if(name==='lumen_wallet_command_version'||name==='lumen_legacy_command_version')return {data:1};
+   if(name==='lumen_get_progress')return {data:Object.keys(p.solved).filter(k=>p.solved[k]).map(k=>({puzzle_id:Number(k)+1}))};
+   if(name==='lumen_get_daily')return {data:Object.keys(p.daily.dates||{}).map(play_date=>({play_date}))};
+   if(name==='lumen_get_engagement')return {data:[{rewarded_days:{}}]};
+   if(name==='lumen_cas_profile'){
+    if(JSON.stringify(args.p_expected)!==JSON.stringify(p)||args.p_payload.shards!==p.shards||args.p_payload.walletRevision!==p.walletRevision)return {data:false};
+    server.profile=structuredClone(args.p_payload);persist();return {data:true};
+   }
+   if(name==='lumen_get_wallet_command')return {data:window.__walletHideReceipt?null:server.receipts.find(r=>r.operationId===args.p_operation_id)||null};
+   if(name==='lumen_commit_wallet_command'){
+    if(args.p_expected_user_id!==owner)return {error:{code:'42501'}};
+    let r=server.receipts.find(r=>r.operationId===args.p_operation_id);
+    if(!r){const cost=args.p_request.kind==='hint'&&args.p_request.sequence>1?2:1;
+     if(p.shards<cost)return {error:{code:'P0001'}};
+     p.shards-=cost;p.walletRevision++;server.debits++;
+     r={version:1,operationId:args.p_operation_id,request:args.p_request,cost,revision:p.walletRevision,balance:p.shards,balanceDelta:-cost};server.receipts.push(r);persist();
+    }
+    if(window.__walletLoseReply)throw Error('simulated lost wallet response');return {data:r};
+   }
+   if(name==='lumen_get_legacy_command')return {data:server.legacy.find(r=>r.request.operationId===args.p_operation_id)||null};
+   if(name==='lumen_commit_legacy_command'){
+    if(window.__offlineVictory)return {error:{code:'08006'},status:503};
+    let r=server.legacy.find(r=>r.request.operationId===args.p_operation_id);
+    if(!r){const {legacyVictoryRules,applyLegacyVictory}=await import('/src/campaign/legacy-victory.js');
+     const q=legacyVictoryRules().find(q=>q.questId===args.p_quest_id);const outcome=applyLegacyVictory(p,q.index,args.p_facts);
+     outcome.attempts=p.performances[q.index].attempts;p.legacyVictoryRevision=(p.legacyVictoryRevision||0)+1;p.walletRevision++;
+     r={request:{version:1,operationId:args.p_operation_id,questId:args.p_quest_id,facts:args.p_facts},outcome,recordedAt:new Date().toISOString()};server.legacy.push(r);persist();
+    }return {data:{profile:structuredClone(p),...r}};
+   }
+   if(name==='lumen_canonical_command_version')return {error:{code:'PGRST202'},status:404};
+   return {data:[]};
+  }})};
+
+document.addEventListener('DOMContentLoaded',()=>{
+ const panel=document.createElement('aside');panel.id='validationControls';
+ panel.style.cssText='background:#17253a;color:#fff;padding:8px 12px;font:12px system-ui;position:relative;z-index:1100';
+ panel.innerHTML='<strong>Recette v2 · TEST GRATUIT · compte fictif · cloud simulé</strong><p id="validationNetwork" role="status"></p><details><summary>Commandes de recette</summary><p>Cette simulation reste sur ce téléphone. Elle ne contacte pas Supabase et ne valide pas le compte Loutre.</p><button id="validationFailWin">Panne victoire</button> <button id="validationLostReply">Réponse perdue</button> <button id="validationSolve">Résoudre pour la recette</button> <button id="validationReload">Recharger</button><p id="validationCounters" role="status"></p></details>';
+ document.body.prepend(panel);
+ const labels=()=>{
+  document.getElementById('validationFailWin').textContent='Panne victoire : '+(window.__offlineVictory?'active':'inactive');
+  document.getElementById('validationLostReply').textContent='Réponse perdue : '+(window.__walletLoseReply?'active':'inactive');
+ };
+ document.getElementById('validationFailWin').onclick=()=>{window.__offlineVictory=!window.__offlineVictory;localStorage.setItem('lumenValidationVictoryFailure',window.__offlineVictory?'1':'0');labels()};
+ document.getElementById('validationLostReply').onclick=()=>{window.__walletLoseReply=!window.__walletLoseReply;localStorage.setItem('lumenValidationLostReply',window.__walletLoseReply?'1':'0');labels()};
+ document.getElementById('validationReload').onclick=()=>location.reload();
+ document.getElementById('validationSolve').onclick=()=>{
+  if(!window.lumenDiagnostics)return;
+  const mask=document.getElementById('attemptMask');if(mask?.getClientRects().length)mask.click();
+  const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)));
+ };
+ labels();setInterval(()=>{
+  const s=window.__walletServer,p=window.lumenDiagnostics?.snapshot().progress;
+  document.getElementById('validationNetwork').textContent='Cloud simulé : '+(window.__validationNetwork==='offline'?'injoignable':window.__validationNetwork==='online'?'joignable':'vérification en cours')+' · '+(document.getElementById('authUser')?.textContent||'');
+  document.getElementById('validationCounters').textContent='Éclats affichés : '+(p?.shards??'…')+' · simulés : '+s.profile.shards+' · débits : '+s.debits+' · victoires confirmées : '+s.legacy.length;
+ },500);
+});
+
+})();

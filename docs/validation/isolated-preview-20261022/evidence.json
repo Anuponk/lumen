@@ -1,0 +1,48 @@
+{
+  "recordedOn": "2026-10-22",
+  "recipeVersion": 2,
+  "applicationCandidate": "65770fab037e611ad6d76f4503e15bc8dc1a5416",
+  "siteSourceCommit": "3e07114cb951657e3449381594e9a17168a1bebe",
+  "followupProductionCommit": "c78c4daeef791deec77d2d7bd39e5497253e862b",
+  "backend": "browser-fixture",
+  "liveDatabase": false,
+  "productionData": false,
+  "automaticBrowserResults": {
+    "lostSpendReplyOneDebit": true,
+    "twoPendingVictories": true,
+    "offlinePwaReopen": true,
+    "newOfflineWinRemainsPending": true,
+    "normalOfflineIndicator": true,
+    "staleOnlineIndicatorWhileHttpBlocked": true,
+    "offlineRestartKeepsPending": true,
+    "reconnectConfirmsOnce": true,
+    "anotherReloadDoesNotDuplicateReceiptOrDebit": true
+  },
+  "beforeFixReproduction": {
+    "networkHttpOffline": true,
+    "navigatorOnline": true,
+    "confirmedReceiptsExpected": 2,
+    "confirmedReceiptsActual": 3
+  },
+  "physicalAndroidUserReport": "Two victories pending in airplane mode with Wi-Fi disabled; confirmed after leaving airplane mode and reloading.",
+  "notEstablished": [
+    "Live Supabase Auth/RPC",
+    "Shared cloud across devices",
+    "Installed-PWA update recipe",
+    "Loutre recovery by this fixture"
+  ],
+  "loutre": "Owner separately reported resolved; no player data loaded or repaired by this preview.",
+  "originalSourceFilesSha256": {
+    "validation-fixture.js.txt": "35a0a185aab5f164566f1fbd03988dc8dac1e24b3fab0d386ade95c7c982064a",
+    "verify-isolation.mjs.txt": "97785c512ce89aaf3603cb36ca48d2f6222003ac5dcbbd06ab2df3fee08a21bc",
+    "prepare-free-validation.mjs.txt": "39d0fa736ae7f3e69884655ca0cf807ab6e7a73bacf0fb7fc4a28d159f6f32eb",
+    "verify-free-validation.mjs.txt": "1ec1128e5ba3165a4015e844e3fed61ea28fab5394180d67e17e9b6909b8188f"
+  },
+  "archiveFilesSha256": {
+    "validation-fixture.js.txt": "a294da49a599ae744af9f370cfb65b62576eab768b9fe31b40aab5036112f2d3",
+    "verify-isolation.mjs.txt": "97785c512ce89aaf3603cb36ca48d2f6222003ac5dcbbd06ab2df3fee08a21bc",
+    "prepare-free-validation.mjs.txt": "9ac78634380fb31291880ee46c5a982a95319dd292b726a8c108a847bfe18afb",
+    "verify-free-validation.mjs.txt": "ac356b4ad1af97632ab9f2193c1cec2c215290f901b2da79c1e4f6dc1e318bd5"
+  },
+  "archiveTextNormalization": "LF newlines and trailing whitespace removed; original and archived fingerprints recorded separately."
+}

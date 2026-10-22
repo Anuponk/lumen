@@ -1,5 +1,14 @@
 # Testing and quality gate
 
+## Private Android validation preview
+
+The [isolated validation preview runbook](ISOLATED_VALIDATION_PREVIEW.md) records
+the reusable free private Site, synthetic backend, recipe controls, v1 offline
+false-positive and v2 transport guard, actual device results and maintenance
+procedure. It links a dated source/evidence archive and identifies future work.
+Real browser storage and physical Android UI do not establish live Supabase
+Auth/RPC, cross-device cloud or player recovery; retain independent SQL/CI proofs.
+
 ## Source-to-render astronomy fidelity (#508, #504 follow-up)
 
 `node scripts/audit-astronomical-figures.mjs [report.json]` rebuilds every shipped
