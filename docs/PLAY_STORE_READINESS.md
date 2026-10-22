@@ -22,6 +22,8 @@ Les modifications de cette branche ne sont pas encore déployées.
   selon confirmation du propriétaire ; justificatifs et détails d'immatriculation
   restent à rapprocher des mentions finales.
 - Hébergement web : o2switch ; identité et progression : Supabase existant.
+- TVA non facturée, selon déclaration du propriétaire ; aucun fondement fiscal
+  précis ni numéro de TVA n'est déduit de cette réponse.
 - Préparer le produit avant le packaging ; aucune conversion Android lancée.
 
 Les coordonnées se trouvent dans `content/legal/publisher.json`. L'adresse et
@@ -151,7 +153,10 @@ chaîne réelle de migrations et la RPC de sauvegarde. Le dernier
 490,58 s). Une première tentative avait été empêchée par le bac à sable Windows
 (`spawn EPERM`) ; le passage autorisé complet est vert, sans modification des
 tests pour contourner ce problème. Les contrôles PostgreSQL 17/concurrence sont
-ajoutés au job SQL ; leur résultat distant reste à vérifier sur la tête publiée.
+ajoutés au job SQL : l'étape d'effacement et les concurrences canonical/legacy/
+wallet passent dans le [run PostgreSQL 17](https://github.com/Anuponk/lumen/actions/runs/39814327058)
+sur `1ed94d1`. Le complément TVA est une déclaration de configuration/documentation,
+vérifiée par les tests de préparation ; la CI de sa tête finale reste à suivre.
 Ni application de migration ni effacement réel n'a été exécuté en production.
 Textes de fiche et matrice Data Safety sont préparés, sans déclaration Console.
 

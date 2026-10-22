@@ -13,8 +13,9 @@ Lumen est édité sous le nom commercial **Nopuna**, par **Cédric Valente EI**.
 - Téléphone communiqué par l'éditeur : **06 95 11 68 37**.
 - Contact : **valente.cedric@gmail.com**.
 - Détail d'immatriculation RNE/RCS applicable : **à confirmer**.
-- Identification TVA, si applicable : **à confirmer** ; ne pas recopier une
-  mention fiscale d'un autre site sans validation pour cette activité.
+- TVA : l'éditeur confirme **ne pas facturer de TVA** pour cette activité.
+  Le fondement du régime reste à confirmer : ne pas déduire automatiquement
+  une franchise ou recopier une référence fiscale d'un autre site.
 
 Directeur de publication envisagé : Cédric Valente, à confirmer à la validation.
 Le nom commercial complète l'identité juridique ; il ne la remplace pas.

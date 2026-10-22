@@ -9,6 +9,12 @@
   "address": "1 boulevard Achille Marcel, 13010 Marseille, France",
   "telephone": "06 95 11 68 37",
   "registrationDetails": null,
+  "vatOwnerDeclaration": {
+    "chargesVat": false,
+    "confirmedOn": "2026-10-22",
+    "source": "owner-confirmation",
+    "legalBasis": null
+  },
   "audience": "mixed-including-children",
   "childrenAccountModel": "supervised-online",
   "childrenActivation": "blocked-pending-verification-method",
