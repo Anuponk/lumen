@@ -113,6 +113,13 @@ vérifié ni conformité Families n'est revendiqué par ce projet de texte.
 
 ## Évolutions
 
+La procédure préparée d'accès et de portabilité est décrite dans
+[ACCOUNT_RIGHTS_RUNBOOK](../ACCOUNT_RIGHTS_RUNBOOK.md). Elle nécessite une
+vérification du demandeur, une revue des données de tiers et une transmission
+privée sécurisée. L'export technique n'est ni une copie Auth ni une restauration.
+Les [durées proposées](../PRIVACY_RETENTION_PROPOSAL.md) ne sont pas encore
+appliquées ; ne pas les présenter comme une rétention en production.
+
 La première version prévue est gratuite, sans publicité ni achats. Ajouter un
 SDK, des annonces, un paiement ou un traitement nécessite une nouvelle revue
 du texte, des choix utilisateurs et des déclarations de la fiche Store.

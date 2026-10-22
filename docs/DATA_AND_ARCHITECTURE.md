@@ -1,5 +1,16 @@
 # Data and architecture
 
+## Prepared operator access and portability (#316)
+
+`20261022184145_lumen_account_rights_export.sql` adds only a private SECURITY
+INVOKER export, never a public RPC. It reuses the erasure ownership policy and
+ambiguity guards, requires a stable read-only owner transaction, caps rows and
+source JSON bytes, excludes Auth/other applications and strips push keys.
+No writes, restore path, new persistence or gameplay effects. Manual review and
+secure delivery are mandatory; see [procedure](ACCOUNT_RIGHTS_RUNBOOK.md).
+Production migration remains unauthorized; PR stays draft. Proposed retention
+criteria are [separate from implemented behavior](PRIVACY_RETENTION_PROPOSAL.md).
+
 ## Quest parity audit — #522, 2026-10-22
 
 The [dedicated chantier audit](validation/2026-10-22-quest-parity-audit.md)

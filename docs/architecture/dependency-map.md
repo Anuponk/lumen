@@ -1,5 +1,10 @@
 # Dependencies and data flow
 
+Access/portability request → verified operator scope → private SECURITY INVOKER
+`lumen_privacy.export_account` → existing policy/review → stable read-only JSON
+→ manual third-party review and secure delivery. No public API or Auth export.
+Prepared only; see `docs/ACCOUNT_RIGHTS_RUNBOOK.md`.
+
 Account erasure: standalone request page → operator-verified scope → private
 `lumen_privacy.review_erasure` / `erase_account` → explicit Lumen relation
 policy and write guards. Shared Auth is preserved. Procedure and limits:

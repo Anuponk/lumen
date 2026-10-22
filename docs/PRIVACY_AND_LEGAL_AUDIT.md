@@ -8,6 +8,12 @@ l'éditeur avant publication. Cette préparation ne vaut pas certification jurid
 
 ## Registre proportionné des traitements
 
+Complément : [procédure d'accès/portabilité](ACCOUNT_RIGHTS_RUNBOOK.md) et
+export privé borné préparés avec tests sur données fictives, avant et après
+effacement. [Proposition de conservation](PRIVACY_RETENTION_PROPOSAL.md) :
+délais et déclencheurs précis à adopter puis mettre en œuvre, sans nouvelle
+purge activée ni garantie fournisseur inventée. Les pages restent candidates.
+
 Effacement demandé : la migration préparée
 `20261022160212_lumen_account_erasure.sql` couvre les données Lumen, reçus et
 copies de récupération, conserve Auth partagée et désidentifie les défis utiles

@@ -4,6 +4,12 @@ Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This loo
 
 ## Entry points and shape
 
+Operator access/portability: private `lumen_privacy.export_account`, prepared
+migration `20261022184145_lumen_account_rights_export.sql`; stable read-only
+snapshot, bounded scope, manual review before sharing. Procedure:
+`docs/ACCOUNT_RIGHTS_RUNBOOK.md`. Retention decisions proposed separately in
+`docs/PRIVACY_RETENTION_PROPOSAL.md`; no new production cleanup enabled.
+
 Privacy entry points: `supprimer-compte.html` prepares a request only;
 `mentions-legales.html` and `confidentialite.html` are explicitly unapproved
 HTML candidates, linked from `index.html`, using `src/privacy/pages.css` without

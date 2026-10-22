@@ -50,6 +50,22 @@ puis vérifiés par une exécution verte sans affaiblir le contrôle.
 
 ## État vérifié et prochaines preuves
 
+Finalisation PWA du 22 octobre : export opérateur d'accès/portabilité préparé
+dans une seconde migration privée, avec [procédure](ACCOUNT_RIGHTS_RUNBOOK.md).
+La [proposition de conservation](PRIVACY_RETENTION_PROPOSAL.md) distingue les
+délais envisagés de la seule rétention outbox déjà livrée. Aucun de ces ajouts
+ne vaut autorisation de migration ou publication. La PR reste en brouillon
+selon la décision de l'éditeur. Les comptes enfants, la conversion Android et
+la publication Play restent exclus de cette livraison.
+
+Restent avant validation finale des pages PWA : adoption et mise en œuvre des
+critères de conservation ; vérification des offres/réglages/contrats réellement
+applicables aux fournisseurs ; mention d'immatriculation et traitement fiscal
+exactement applicables à cette activité ; recette opérateur après autorisation
+de migration. « Pas de TVA » est enregistré comme déclaration de l'éditeur,
+sans inventer un article fiscal. Les preuves natives/Families/Console restent
+des étapes futures, distinctes de ces points PWA.
+
 | Domaine | Existant / réalisé dans cette branche | Critère encore ouvert |
 |---|---|---|
 | Identité | Google et email/mot de passe avec récupération ; même identité Supabase et mêmes contrats de progression | Credentials Android, retour OAuth/deep link, renouvellement et même compte sur PWA/appareil Android |

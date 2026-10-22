@@ -1,5 +1,10 @@
 # Existing verification map
 
+Private rights export: `scripts/fixtures/account-rights*.sql` after both privacy
+migrations, in `canonical-ledger.yml` PostgreSQL 17. Covers bounds, stable
+read-only requirement, role denial, guest/account scope, Auth/other-app/push
+secret exclusion and access after erasure. Local PGlite is separate evidence.
+
 Baseline: `bef5f32`. All paths are repository-relative. This phase indexes existing checks without changing tests or GitHub Actions. `docs/TESTING.md` retains execution contracts and detailed scenarios. Presence of a suite does not mean it ran or proves live production behavior.
 
 ## Select a check

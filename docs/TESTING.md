@@ -15,6 +15,17 @@ both vendor assets online/offline. This is not native or Families certification.
 
 ## Play preparation and privacy (#170/#316)
 
+The prepared private rights-export migration is exercised by
+`scripts/fixtures/account-rights.sql`, `account-rights-readonly.sql`,
+`account-rights-erasure.sql` and `account-rights-after-erasure.sql`, after the
+erasure migration and its concurrency tests in native PostgreSQL 17 CI.
+The export test first failed for the missing function, then passed locally.
+Assertions cover read-only stable snapshots, row/source-byte bounds without
+truncation, missing actors, actual denial under all API roles, own receipts and
+challenges, exclusion of other participants/apps/Auth and push keys, unchanged
+source data, and remaining private barriers after erasure. This is disposable
+fixture evidence, not a real user request or production deployment.
+
 The preparation report also blocks `children.activationReview` while child
 activation is deferred, even with synthetic complete evidence for other fields.
 The positive fixture uses an explicitly enabled synthetic parental-process
