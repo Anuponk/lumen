@@ -73,6 +73,21 @@ the session is usable on that particular browser/PWA.
 
 ## Cloud persistence contract
 
+### Requested account erasure (prepared, not deployed)
+
+`20261022160212_lumen_account_erasure.sql` is the operator-verified exception
+to durable Lumen restoration: requested erasure removes that player's Lumen
+data, receipts and recovery copies atomically, preserving shared Auth and other
+applications. Private scope review rejects ambiguous actors/schema changes.
+Social challenges lose sender identity while other participants survive.
+Private pseudonymous fingerprints and INSERT/UPDATE guards prevent old clients
+and JWTs from recreating erased data; READ COMMITTED is required. No browser
+request automatically executes erasure or clears local stores. Other players'
+restoration, rewards and pending intentions keep their existing contracts.
+See `ACCOUNT_DELETION_RUNBOOK.md` for access, locking, reenrollment, proposed
+barrier retention and provider/backups limits. Separate production authorization
+and verified SQL CI are required before applying this migration.
+
 ### Wallet command cutover (#248/#391, 22 October 2026)
 
 Migrations `20261022082153_wallet_command_authority.sql` and

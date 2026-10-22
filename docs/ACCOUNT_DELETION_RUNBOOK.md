@@ -1,4 +1,4 @@
-# Demandes de suppression Lumen — préparation opérateur
+# Demandes de suppression Lumen — procédure opérateur
 
 ## Canal livré dans cette branche
 
@@ -28,16 +28,17 @@ processus opérateur ci-dessous a été exécuté ou validé.
    Lumen ne doit pas supprimer SoldeZen. `auth.admin.deleteUser` global ne constitue
    pas une implémentation sûre de ce processus.
 5. Faire approuver l'opération et sa portée, puis employer un opérateur autorisé.
-   Aucun script de cette branche ne supprime des comptes réels.
+   La migration préparée n'est pas appliquée en production. Ne jamais exécuter
+   les fixtures sur des comptes réels ; l'opération exige une demande vérifiée.
 
-## Matrice de suppression à qualifier en environnement isolé
+## Matrice du mécanisme préparé, à qualifier avant production
 
 | Domaine | Données à couvrir / dépendance |
 |---|---|
 | Compte et progression Lumen | `users`, `profiles`, `progress`, `profile_snapshots`, `historical_performance`, `engagement_state`, `daily_progress`, `entitlements` |
-| Transactions | `canonical_reward_events`, autorités et reçus `lumen_commands` : définir les besoins légitimes de conservation et la suppression/anonymisation correspondante, sans généraliser la rétention des logs |
+| Transactions | `canonical_reward_events`, autorités et reçus `lumen_commands` : effacement Lumen demandé, sans exception financière inventée ; barrière distincte contre la résurrection |
 | Support et activité | `analytics_events`, `analytics_excluded_actors`, `feedback`, `difficulty_ratings`, copies/export de support |
-| Social | `social_challenges`, `social_challenge_participations` : préserver les autres participants sans conserver inutilement l'identité du demandeur |
+| Social | `social_challenges` : créateur désidentifié ; `social_challenge_participations` : participations du demandeur supprimées, autres joueurs préservés |
 | Notifications et exploitation | `lumen_push_subscriptions`, `lumen_sync_health`, `outbox_health`, `internal_capabilities`, `recovery_backups`, `lumen_admin_player_snapshot` et caches dérivés |
 | Fournisseurs et sauvegardes | Email, logs, sauvegardes et tiers : connaître les destinataires, délais et exceptions avant de confirmer la clôture |
 | Auth commune et autres applications | Déterminer la portée autorisée et la conservation nécessaire pour les autres services ; ne pas appliquer de cascade globale |
@@ -62,7 +63,8 @@ copies de cockpit exigent également un traitement explicite.
 
 Une participation référence son défi avec `ON DELETE CASCADE` : supprimer
 simplement le défi d'un demandeur peut affecter les autres participants.
-La politique d'anonymisation sociale doit être décidée et testée avant exécution.
+La procédure préparée anonymise le créateur et préserve les autres participants ;
+ses tests isolés doivent passer avant toute exécution réelle.
 
 `recovery_backups` et la vue `player_analytics` n'ont pas RLS ; le contrôle de
 privilèges ne donne aucun accès direct SELECT à `anon` ou `authenticated`
@@ -74,9 +76,10 @@ pas l'audit des RPC privilégiés ou des permissions d'un futur schéma familial
 Le client actuel enregistre/retrouve son profil à la connexion et conserve des
 copies locales/outbox. Une simple suppression de lignes ne suffit pas : une
 ancienne session ou PWA pourrait recréer un profil ou retransmettre sa sauvegarde.
-Avant d'offrir une suppression automatisée, définir et tester une révocation ou
-barrière **propre à Lumen**, sa durée et la politique de réinscription explicite.
-Ne pas rendre ce mécanisme global au projet Auth partagé par commodité.
+La migration ci-dessous prépare une barrière **propre à Lumen**, sans révocation
+des sessions Auth communes ni suppression automatique côté navigateur.
+Sa conservation et ses limites doivent figurer dans l'information au demandeur
+et la politique validée avant activation.
 
 Ne pas effacer localement les intentions d'un autre compte pour afficher une
 fausse réussite. Le nettoyage de l'appareil du demandeur doit être explicite,
@@ -99,3 +102,86 @@ Consigner version, contexte, catégories traitées et résultat, sans reproduire
 de sauvegarde complète ou jeton dans le ticket. Répondre au demandeur avec les
 résultats et éventuelles limites fondées. Le test de préparation d'un email ne
 remplace aucune de ces étapes : `accountDeletionEndToEnd` reste non vérifié.
+
+## Mécanisme livré pour revue — non appliqué en production
+
+Migration : `20261022160212_lumen_account_erasure.sql`. Le schéma privé
+`lumen_privacy` ne comporte aucun RPC public. Seul le propriétaire de la base
+peut appeler `review_erasure(uuid,text[])` et `erase_account(uuid,text[],text)`.
+`anon`, `authenticated` et `service_role` n'ont ni usage du schéma, ni droit de
+lecture ou d'exécution. Une session ayant un `auth.uid()` est refusée.
+
+Le tableau d'acteurs contient des identifiants anonymes **déjà vérifiés par
+l'opérateur**, jamais déduits automatiquement du formulaire, d'un pseudo ou
+d'un événement analytics déclaratif. La revue refuse un acteur lié au compte
+mais omis, ou un acteur/player key lié à un autre compte. Résoudre toute
+ambiguïté avant l'effacement ; aucun parcours parental n'est activé.
+
+La politique couvre les 29 relations inventoriées : suppression dans 25 tables,
+anonymisation du créateur de `social_challenges`, conservation des deux tables
+de règles et de la vue dérivée. Reçus, autorités, sauvegardes de récupération,
+feedback, notifications et caches Lumen sont inclus. Aucune exception financière
+n'est inventée pour cette version gratuite. Le créateur du défi devient
+NULL/« Compte supprimé » ; son résultat de référence sans identité et les autres
+participants restent, tandis que ses propres participations sont supprimées.
+
+### Barrière et conservation proposée
+
+Les seules métadonnées conservées dans la barrière sont le type, l'empreinte
+SHA-256 des UID/acteurs/player keys et la date d'effacement. Elles sont
+**pseudonymisées**, pas anonymes : aucun email, profil, message ou reçu recopié.
+Conservation proposée : tant que l'identité partagée ou d'anciennes copies
+peuvent réécrire dans Lumen. Aucune purge automatique ou réinscription implicite
+n'est prévue. Retirer une barrière exige une décision de réinscription et une
+revue des anciennes copies. Ce n'est pas le délai de 30 jours des observations.
+
+Les 26 tables de données ont une garde INSERT/UPDATE. Ancien UID, acteur ou
+player key, même via RPC privilégiée ou JWT encore valide : refus
+`42501 / LUMEN_ACCOUNT_ERASED`. READ COMMITTED est exigé ; les écritures en
+REPEATABLE READ/SERIALIZABLE sont refusées pour empêcher une ancienne vue des
+données de contourner la barrière. Ne pas présenter ce refus comme une victoire
+confirmée, vider une outbox ou changer d'acteur pour le contourner.
+
+L'opération prend des locks SHARE ROW EXCLUSIVE dans un ordre stable sur les
+tables de données puis refait la revue. Elle attend les écritures en cours et
+bloque les nouvelles pendant cette opération manuelle. Toute erreur annule
+effacement et barrière ; le retry est idempotent. Prévoir une fenêtre calme et
+des délais bornés. Ne jamais contourner un lock ou désactiver les triggers.
+
+### Exécution après autorisation de production
+
+1. Vérifier l'autorisation explicite et l'application de la migration, la CI
+   PostgreSQL 17, la demande, les acteurs et le périmètre. Aucun test synthétique
+   en production ; ne jamais appeler `auth.admin.deleteUser` pour cette demande.
+2. Dans une session propriétaire dédiée (`auth.uid()` NULL), appeler seulement
+   `lumen_privacy.review_erasure(uid, acteurs_verifies)` pour examiner les
+   comptages par catégorie. Cette revue ne modifie pas les données. Inventorier
+   séparément les fournisseurs, exports, copies de support et backups physiques.
+3. Après contrôle, ouvrir une transaction READ COMMITTED ; fixer
+   `SET LOCAL lock_timeout='5s'` et `SET LOCAL statement_timeout='60s'` ; appeler
+   `lumen_privacy.erase_account(uid, acteurs_verifies, 'ERASE LUMEN ' || uid)`.
+   COMMIT uniquement si le résultat correspond à la demande, sinon ROLLBACK.
+4. Refaire les contrôles appropriés. Consigner seulement version, catégories et
+   résultat dans le ticket privé, sans profils, jetons ou identifiants publics.
+5. Confirmer l'effacement logique Lumen et les limites réelles : identité commune,
+   défi désidentifié, barrière, copies locales, sauvegardes physiques/fournisseurs.
+   Ne pas promettre leur purge sans preuve. Le nettoyage d'appareil reste
+   explicite et ne doit pas effacer un autre compte.
+
+### Maintenance et limites de preuve
+
+Une nouvelle table Lumen, une garde désactivée ou une nouvelle colonne sociale
+non couverte bloque l'opération. Toute évolution (notamment famille) doit mettre
+à jour politique, triggers et tests **avant activation**, pour les comptes déjà
+effacés aussi. Ne pas retirer les gardes lors d'un retour à l'ancien code.
+
+Les fixtures `account-erasure-bootstrap.sql` / `account-erasure.sql` et
+`account-erasure-concurrency.py` sont réservées aux bases jetables. Elles
+couvrent toutes les tables, portée ambiguë, accès, rollback, retry, anciens
+clients, autres participants et autre application. PGlite 0.5.11 / PostgreSQL
+18.6 vérifie localement le SQL ; seule la CI PostgreSQL 17 vérifie les vraies
+connexions concurrentes. Cela ne prouve ni purge fournisseur, ni recette native,
+ni autorité parentale. `accountDeletionEndToEnd` reste une validation séparée.
+
+Références techniques : [locks PostgreSQL 17](https://www.postgresql.org/docs/17/explicit-locking.html)
+et [visibilité des fonctions VOLATILE](https://www.postgresql.org/docs/17/xfunc-volatility.html).

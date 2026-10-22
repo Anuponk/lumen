@@ -8,6 +8,15 @@ l'éditeur avant publication. Cette préparation ne vaut pas certification jurid
 
 ## Registre proportionné des traitements
 
+Effacement demandé : la migration préparée
+`20261022160212_lumen_account_erasure.sql` couvre les données Lumen, reçus et
+copies de récupération, conserve Auth partagée et désidentifie les défis utiles
+aux autres participants. Barrière pseudonymisée et guards anti-résurrection,
+procédure propriétaire et limites : `ACCOUNT_DELETION_RUNBOOK.md`.
+Ce code n'est pas appliqué en production et ne prouve pas la purge des copies
+physiques/fournisseurs ni un parcours enfant/parent ; aucune donnée réelle
+n'a été effacée pour ces tests.
+
 | Traitement / données observées | Finalité et base à examiner | Stockage / conservation constatée et action |
 |---|---|---|
 | Supabase Auth : identité email/fournisseur, sessions | Connexion et récupération, service demandé ; spécificités parent/enfant à valider | Projet partagé avec SoldeZen, région `eu-central-1` confirmée. Ne pas supprimer l'identité globale pour une simple demande Lumen |

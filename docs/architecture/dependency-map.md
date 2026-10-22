@@ -1,5 +1,10 @@
 # Dependencies and data flow
 
+Account erasure: standalone request page → operator-verified scope → private
+`lumen_privacy.review_erasure` / `erase_account` → explicit Lumen relation
+policy and write guards. Shared Auth is preserved. Procedure and limits:
+`docs/ACCOUNT_DELETION_RUNBOOK.md`; SQL/concurrency coverage: `docs/TESTING.md`.
+
 Baseline: `bef5f32`. Paths are repository-relative. Consult relevant rows only. `docs/DATA_AND_ARCHITECTURE.md` owns contracts; this file identifies implemented boundaries and effects.
 
 Published schedule (#522): current `access-origins.json` revision →

@@ -53,6 +53,17 @@ des définitions Data Safety et des prestataires.
 
 ## Durées
 
+La procédure d'effacement Lumen préparée prévoit la suppression des données
+fonctionnelles, reçus et copies de récupération du demandeur, avec conservation
+de l'identité partagée pour les autres services et des défis sans identité utiles
+aux autres participants. Une barrière privée ne contient que type, empreintes
+SHA-256 d'identifiants et date. Ces métadonnées restent pseudonymisées ; leur
+conservation proposée dure tant que l'identité partagée ou les anciennes copies
+peuvent réécrire. Retrait uniquement après revue explicite de réinscription.
+**À valider et appliquer avant publication** : cette proposition, ses bases,
+l'information au demandeur et les délais des sauvegardes physiques/fournisseurs.
+La migration n'est pas encore appliquée ; voir le runbook opérateur.
+
 La suppression automatique actuellement livrée concerne uniquement les
 observations techniques d'outbox confirmées depuis plus de 30 jours. Elle ne
 supprime ni progression, ni reçus, ni incidents non résolus.

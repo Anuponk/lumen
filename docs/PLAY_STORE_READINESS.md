@@ -36,7 +36,7 @@ déduites d'une autre source.
 | Identité | Google et email/mot de passe avec récupération ; même identité Supabase et mêmes contrats de progression | Credentials Android, retour OAuth/deep link, renouvellement et même compte sur PWA/appareil Android |
 | Ancien texte de #170 | L'OTP de connexion a été retiré avant ce chantier | Actualiser le périmètre, conserver confirmation/récupération ; ne pas réintroduire l'OTP pour suivre un ancien libellé |
 | Compte invité | Progression locale et mécanismes existants de transfert conservés | Recette sur futur conteneur et compte existant, sans doublon ni perte |
-| Suppression | Page externe et lien dans l'app pour préparer une demande au contact, sans SDK ni suppression automatique | Vérification et exécution réelle de bout en bout, séparation des autres services, traitement des anciennes copies locales ; voir runbook |
+| Suppression | Page externe et lien dans l'app ; migration privée d'effacement Lumen, conservation Auth partagée, anonymisation sociale et barrière contre les anciennes copies | Autorisation/application production, fournisseurs/backups, traitement des appareils et recette complète ; voir runbook |
 | Vie privée | Audit des données et blocage par défaut des analytics optionnels ; aucune autorisation analytics fournie en production | Pages juridiques finalisées, durées et transferts documentés, traitement des anciennes données |
 | Enfants | Aucun SDK publicitaire/achat ajouté ; collecte optionnelle bloquée | Évaluation des SDK/Auth, accompagnement parental, défis/pseudos/feedback/notifications, tranches d'âge effectivement adaptées |
 | Monétisation | Modèle gratuit arrêté pour cette première version | Réexaminer avant tout futur achat/publicité ; aucune intégration Billing ni CGV de vente inventée ici |
@@ -103,6 +103,11 @@ UI/PWA et stockage avec RPC simulés. Il ne remplace pas cette recette native.
 
 ## Déclarations et fiche Store
 
+Les [textes de fiche](PLAY_STORE_LISTING_DRAFT.md) et la
+[feuille Sécurité des données](PLAY_DATA_SAFETY_WORKSHEET.md) sont préparés
+pour reprise lors du packaging. Aucun champ Console n'est déclaré validé par
+ces documents ; les preuves du paquet, fournisseurs et parcours restent requises.
+
 Préparer nom Lumen et éditeur Nopuna, descriptions, captures réellement produites,
 icône/splash adaptés, catégorie et questionnaire IARC. Ne pas attribuer une
 classification d'âge sans questionnaire ; « enfants compris » n'implique pas
@@ -136,6 +141,19 @@ attend maintenant le chargement et le formulaire de cette page. Le passage
 complet suivant est vert ; les contrôles existants restent inchangés.
 
 ## Décision de clôture
+
+Complément effacement du 22 octobre : migration opérateur Lumen privée,
+barrière contre les anciennes copies, traitement social et procédure de
+maintenance préparés. Le test échoue avant la migration ; les fixtures SQL
+isolées passent ensuite sur PGlite 0.5.11 / PostgreSQL 18.6, y compris avec la
+chaîne réelle de migrations et la RPC de sauvegarde. Le dernier
+`npm run test:full` passe : **30 suites, 0 échec** (quality gate : 130 contrôles,
+490,58 s). Une première tentative avait été empêchée par le bac à sable Windows
+(`spawn EPERM`) ; le passage autorisé complet est vert, sans modification des
+tests pour contourner ce problème. Les contrôles PostgreSQL 17/concurrence sont
+ajoutés au job SQL ; leur résultat distant reste à vérifier sur la tête publiée.
+Ni application de migration ni effacement réel n'a été exécuté en production.
+Textes de fiche et matrice Data Safety sont préparés, sans déclaration Console.
 
 La CI du complément a ensuite reproduit à 360x640 un panneau d'apprentissage
 interceptant le bouton d'aide. La réservation géométrique du bouton ne suffisait

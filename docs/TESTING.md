@@ -338,6 +338,32 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+### Lumen-only erasure (#316, prepared migration)
+
+`canonical-ledger.yml` adds `account-erasure-bootstrap.sql`, real migration
+`20261022160212_lumen_account_erasure.sql`, `account-erasure.sql` and
+`account-erasure-concurrency.py` after the actual snapshot/ledger/wallet
+regressions on disposable PostgreSQL **17**. No provider connection, real
+identity or paid database. The extra fixture schema fails if reused.
+
+All 26 owned data tables are seeded. Assertions cover erasure, social sender
+anonymization, other participants, shared Auth/other-app preservation, rule
+retention, explicit confirmation, missing/shared actors, contradictory keys,
+schema/guard drift, mid-deletion rollback, retry, anonymous/cache resurrection,
+old JWTs on every guarded table and the real backup RPC. Anon/player/service
+roles have no private access. Repeatable-read writes fail closed. Separate
+Python connections cover both lock orders: erasure commits before a blocked
+old writer, and an in-flight write commits before the locked erasure review.
+The existing canonical/legacy/wallet concurrency suites run again with new
+synthetic accounts after guard installation, preserving normal players' command
+receipts, exact balances and restore behavior.
+
+The initial pre-migration assertion failed on the missing Lumen-only function.
+Local PGlite 0.5.11 / PostgreSQL 18.6 checks synthetic SQL and the actual migration
+chain; it does not replace PostgreSQL 17 concurrency CI, provider retention,
+parental verification or future native-device erasure. Production application
+and `accountDeletionEndToEnd` remain separate gates. See the deletion runbook.
+
 ### P0 integration: wallet, pending victories and observations (22 October 2026)
 
 PR CI must not mutate the catalogue it verifies. The issue-222 generator retains

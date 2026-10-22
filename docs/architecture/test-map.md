@@ -4,6 +4,12 @@ Baseline: `bef5f32`. All paths are repository-relative. This phase indexes exist
 
 ## Select a check
 
+Lumen-only erasure: `scripts/fixtures/account-erasure-bootstrap.sql`,
+`scripts/fixtures/account-erasure.sql`, `scripts/account-erasure-concurrency.py`
+and the real private migration run after wallet regressions in
+`canonical-ledger.yml` on disposable PostgreSQL 17. See `docs/TESTING.md` for
+scope/denial/race assertions; this does not certify production/native deletion.
+
 Compact tutorial coach: `learning-coach-placement-tests.mjs` reproduces the
 short-screen header overlap using the real placement function; existing
 `ux-cleanup-tests.mjs` checks browser help click, modal focus and preservation.
