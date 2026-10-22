@@ -1,5 +1,14 @@
 # Data and architecture
 
+## Quest parity audit — #522, 2026-10-22
+
+The [dedicated chantier audit](validation/2026-10-22-quest-parity-audit.md)
+records the `650a39b` inventory, remaining numeric/stable-ID behavioral
+differences, synthetic reproductions for #516/#515, the #521 rendering review,
+and the proposed implementation lots. It is an audit and plan awaiting review,
+not a replacement product contract or a completed quest/persistence migration.
+Coordinate subsequent business changes with the persistence work in PR #523.
+
 ## Account modes (2026-10-18)
 
 Lumen has two public modes: local guest discovery without an Auth account, and an authenticated account using Google or email with a password. Email OTP/magic-link login is retired in the Lumen UI and its dedicated mail endpoint. Existing accounts retain their identity, progress and entitlements; use Google or **Créer ou réinitialiser mon mot de passe** to establish a password on the same email address. Recovery/confirmation emails remain supported. Do not disable email Auth globally: the Supabase project is shared with SoldeZen.
