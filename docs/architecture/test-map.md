@@ -4,6 +4,13 @@ Baseline: `bef5f32`. All paths are repository-relative. This phase indexes exist
 
 ## Select a check
 
+Private physical-device preview: see
+[`ISOLATED_VALIDATION_PREVIEW.md`](../ISOLATED_VALIDATION_PREVIEW.md) for the
+existing Site identity, controls, offline/reconnect recipes, isolation check,
+source archive and limitations. Its backend is simulated; PostgreSQL concurrency
+and live account recovery require separate evidence. Historical local drivers
+in the archive are reference text, not additional CI suites.
+
 P0 integration (#248/#391/#398/#518): `cloud-wallet-command-tests.mjs` covers
 lost replies, real durable outbox restart, cursor recovery and late-token account
 changes; `cloud-wallet-reconciliation-tests.mjs` rejects unexplained balances.

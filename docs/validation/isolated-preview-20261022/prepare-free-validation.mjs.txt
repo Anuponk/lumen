@@ -1,0 +1,49 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {verifyWalletAndOfflineFlow} from './lumen-p0/scripts/wallet-flow-browser.mjs';
+const site=path.resolve('.test-tmp/lumen-p0-validation-site');
+const dist=path.join(site,'dist');
+const stop=Error('capture-fixture');let fixture;
+try{await verifyWalletAndOfflineFlow({send:async(method,args)=>{if(method==='Page.addScriptToEvaluateOnNewDocument')fixture=args.source;throw stop}})}catch(error){if(error!==stop)throw error}
+if(!fixture)throw Error('Existing browser fixture unavailable');
+fixture=fixture.replaceAll("sessionStorage.getItem('walletFixtureServer')","localStorage.getItem('lumenValidationServerV1')")
+ .replaceAll("sessionStorage.setItem('walletFixtureServer'","localStorage.setItem('lumenValidationServerV1'")
+ .replace('window.__walletLoseReply=false;window.__walletHideReceipt=false;window.__offlineVictory=false;',
+  "window.__walletLoseReply=localStorage.getItem('lumenValidationLostReply')==='1';window.__walletHideReceipt=false;window.__offlineVictory=localStorage.getItem('lumenValidationVictoryFailure')==='1';")
+ .replace('const server=window.__walletServer,p=server.profile;',"// Verify transport too: navigator.onLine can stay true without Internet.\n   // This root-level endpoint is outside the service worker asset cache.\n   try{\n    if(navigator.onLine===false)throw TypeError('Browser offline');\n    const response=await fetch('/validation-info.json',{cache:'no-store',signal:AbortSignal.timeout(3000)});\n    if(!response.ok||(await response.json()).environment!=='isolated-validation')throw TypeError('Validation endpoint unavailable');\n    window.__validationNetwork='online';\n   }catch(error){window.__validationNetwork='offline';throw TypeError('Simulated cloud offline',{cause:error})}\nconst server=window.__walletServer,p=server.profile;");
+const controls=`
+document.addEventListener('DOMContentLoaded',()=>{
+ const panel=document.createElement('aside');panel.id='validationControls';
+ panel.style.cssText='background:#17253a;color:#fff;padding:8px 12px;font:12px system-ui;position:relative;z-index:1100';
+ panel.innerHTML='<strong>Recette v2 · TEST GRATUIT · compte fictif · cloud simulé</strong><p id="validationNetwork" role="status"></p><details><summary>Commandes de recette</summary><p>Cette simulation reste sur ce téléphone. Elle ne contacte pas Supabase et ne valide pas le compte Loutre.</p><button id="validationFailWin">Panne victoire</button> <button id="validationLostReply">Réponse perdue</button> <button id="validationSolve">Résoudre pour la recette</button> <button id="validationReload">Recharger</button><p id="validationCounters" role="status"></p></details>';
+ document.body.prepend(panel);
+ const labels=()=>{
+  document.getElementById('validationFailWin').textContent='Panne victoire : '+(window.__offlineVictory?'active':'inactive');
+  document.getElementById('validationLostReply').textContent='Réponse perdue : '+(window.__walletLoseReply?'active':'inactive');
+ };
+ document.getElementById('validationFailWin').onclick=()=>{window.__offlineVictory=!window.__offlineVictory;localStorage.setItem('lumenValidationVictoryFailure',window.__offlineVictory?'1':'0');labels()};
+ document.getElementById('validationLostReply').onclick=()=>{window.__walletLoseReply=!window.__walletLoseReply;localStorage.setItem('lumenValidationLostReply',window.__walletLoseReply?'1':'0');labels()};
+ document.getElementById('validationReload').onclick=()=>location.reload();
+ document.getElementById('validationSolve').onclick=()=>{
+  if(!window.lumenDiagnostics)return;
+  const mask=document.getElementById('attemptMask');if(mask?.getClientRects().length)mask.click();
+  const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)));
+ };
+ labels();setInterval(()=>{
+  const s=window.__walletServer,p=window.lumenDiagnostics?.snapshot().progress;
+  document.getElementById('validationNetwork').textContent='Cloud simulé : '+(window.__validationNetwork==='offline'?'injoignable':window.__validationNetwork==='online'?'joignable':'vérification en cours')+' · '+(document.getElementById('authUser')?.textContent||'');
+  document.getElementById('validationCounters').textContent='Éclats affichés : '+(p?.shards??'…')+' · simulés : '+s.profile.shards+' · débits : '+s.debits+' · victoires confirmées : '+s.legacy.length;
+ },500);
+});
+`;
+fs.writeFileSync(path.join(dist,'src/testing/validation-fixture.js'),'(function(){\n'+fixture+controls+'\n})();\n');
+const htmlPath=path.join(dist,'index.html');let html=fs.readFileSync(htmlPath,'utf8');
+const sdk=/<script\b[^>]*src=["'][^"']*(?:@supabase|supabase-js)[^"']*["'][^>]*>\s*<\/script>/g;
+if(!sdk.test(html))throw Error('SDK script not found; refuse to publish without isolation');
+sdk.lastIndex=0;html=html.replace(sdk,'<script src="/src/testing/validation-fixture.js"></script>');
+fs.writeFileSync(htmlPath,html);
+fs.writeFileSync(path.join(dist,'src/persistence/config.js'),'export const LUMEN_SUPABASE_URL="https://simulated-cloud.invalid";\nexport const LUMEN_SUPABASE_KEY="simulated-client-no-network";\n');
+const info={candidateSha:'65770fab037e611ad6d76f4503e15bc8dc1a5416',environment:'isolated-validation',backend:'browser-fixture',productionData:false,limitations:['No live Supabase validation','Simulated server state is stored on this device','No production Loutre verification','No cross-device shared cloud']};
+fs.writeFileSync(path.join(dist,'validation-info.json'),JSON.stringify(info,null,2)+'\n');
+fs.writeFileSync(path.join(site,'README.md'),'# Private, free Android validation\n\nCandidate: '+info.candidateSha+'\n\nRuntime assets are from the reviewed candidate. Backend configuration, build metadata and a visible test harness differ.\nThe harness reuses the existing browser CI fixture, with persistent synthetic state and physical offline detection. No live Supabase endpoint or production data is used.\nThis validates real Android UI/PWA/storage with simulated RPC. It does not establish live Auth/DB, cross-device cloud or Loutre recovery. Real PostgreSQL transactions/concurrency remain independently tested by GitHub CI.\n');
+console.log('Free private validation prepared from the existing CI fixture; no paid database.');
