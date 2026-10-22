@@ -32,10 +32,14 @@ const testRunId=environment.testRunId||null;
 function lumenId(key){
  try{let v=localStorage.getItem(key);if(!v){v=(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2));localStorage.setItem(key,v)}return v}catch(e){return Date.now()+"-"+Math.random().toString(36).slice(2)}
 }
-const lumenAnonymousId=lumenId("lumenAnonymousIdV1");
+// Optional product analytics are disabled unless the player explicitly opts in.
+// Do not create persistent analytics identifiers before that choice.
+const analyticsEnabled=()=>{try{return localStorage.getItem("lumenAnalyticsConsentV1")==="yes"}catch(e){return false}};
+const lumenAnonymousId=analyticsEnabled()?lumenId("lumenAnonymousIdV1"):null;
 const sessionKey="lumenAnalyticsSessionV2",now=Date.now(),timeoutMs=30*60*1000;
 let lumenSessionId;
 try{
+ if(!analyticsEnabled())throw new Error("analytics_disabled");
  const previous=JSON.parse(localStorage.getItem(sessionKey)||"null");
  lumenSessionId=previous&&previous.id&&now-Number(previous.lastSeen||0)<timeoutMs?previous.id:null;
  if(!lumenSessionId)lumenSessionId=(crypto.randomUUID?crypto.randomUUID():now+"-"+Math.random().toString(36).slice(2));
@@ -51,6 +55,7 @@ function shouldTrackSessionStart(){
  return true;
 }
 async function trackLumenEvent(name,puzzleId=null,properties={}){
+ if(!analyticsEnabled())return;
  touchSession();
  const lumenSupabase=getClient();
  if(!lumenSupabase||trafficType==="automated_test")return;
