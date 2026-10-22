@@ -49,6 +49,20 @@ Hints are pedagogical: first draw attention, then explain the rule, then reveal 
 
 Shard economy: start with 3, **no wallet cap** (see `PROGRESSION.md`); hints are free during quests 1–10. Otherwise the first hint in an attempt is free, the second costs 1 shard, and later hints cost 2; a player at zero shards can receive a free hint after 90 seconds. First Verify use is free; subsequent uses cost 1 shard. No automatic timed shard regeneration. An authorized admin-only unlimited-shards test toggle bypasses spending.
 
+Hint and Verify use counts are retained in the active attempt across restart, so
+reopening a board neither resets its paid-help sequence nor spends twice for an
+interrupted action. The operation identity includes the attempt, reset, action
+and sequence. Authenticated paid help waits for the exact server receipt and
+current wallet projection before being granted; free and guest rules above stay
+the same. Pending or refused spending never confirms a local scalar debit.
+
+A restored solved board waits for account restoration before awarding anything.
+An acknowledged historical run reuses its original receipt and elapsed time.
+Durably pending victories can show a celebration and pending star and continue
+to an accessible quest; that navigation view never grants confirmed currency,
+badges or Adventure rights. See `CLOUD_RECOVERY_391.md` for recovery and release
+validation boundaries.
+
 ## Feedback and modals
 Informational overlays should have sensible outside-tap behavior. Corrective overlays (guided conflict and verification correction) deliberately require explicit acknowledgement/action so a correction is not dismissed accidentally.
 
