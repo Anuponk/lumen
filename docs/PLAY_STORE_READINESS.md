@@ -12,9 +12,10 @@ Les modifications de cette branche ne sont pas encore déployées.
 - Hébergement web : o2switch ; identité et progression : Supabase existant.
 - Préparer le produit avant le packaging ; aucune conversion Android lancée.
 
-Les coordonnées se trouvent dans `content/legal/publisher.json`. Adresse,
-téléphone et détail d'immatriculation restent à valider. Ne pas publier une
-adresse personnelle ou un téléphone déduit d'une autre source.
+Les coordonnées se trouvent dans `content/legal/publisher.json`. L'adresse et
+le téléphone ont été communiqués directement par le propriétaire ; le détail
+d'immatriculation reste à vérifier. Ne pas leur substituer des coordonnées
+déduites d'une autre source.
 
 ## État vérifié et prochaines preuves
 

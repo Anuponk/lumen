@@ -7,8 +7,9 @@ blocages de publication, pas des règles déjà exécutées. Rapprocher le texte
 ## Qui est responsable ?
 
 Lumen est édité par **Nopuna — Cédric Valente EI**. Contact pour les données
-personnelles : **valente.cedric@gmail.com**. Les coordonnées légales complètes
-restent à valider avant publication des mentions de l'éditeur.
+personnelles : **valente.cedric@gmail.com**. L'adresse et le téléphone communiqués
+figurent dans le projet de mentions légales ; les détails d'immatriculation et
+les autres rubriques restent à valider avant publication des pages.
 
 ## Données utilisées et raison de leur utilisation
 

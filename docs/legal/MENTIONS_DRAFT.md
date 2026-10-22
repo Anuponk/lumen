@@ -9,8 +9,8 @@ Lumen est édité sous le nom commercial **Nopuna**, par **Cédric Valente EI**.
 
 - SIREN : **897 865 747**.
 - SIRET communiqué : **897 865 747 00025**.
-- Adresse professionnelle officielle : **à valider par l'éditeur pour publication**.
-- Téléphone professionnel : **à valider par l'éditeur pour publication**.
+- Adresse communiquée par l'éditeur : **1 boulevard Achille Marcel, 13010 Marseille, France**.
+- Téléphone communiqué par l'éditeur : **06 95 11 68 37**.
 - Contact : **valente.cedric@gmail.com**.
 - Détail d'immatriculation RNE/RCS applicable : **à confirmer**.
 - Identification TVA, si applicable : **à confirmer** ; ne pas recopier une

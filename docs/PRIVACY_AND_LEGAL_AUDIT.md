@@ -73,9 +73,10 @@ Informations fournies par le propriétaire : Nopuna ; Cédric Valente EI ; SIREN
 Les numéros passent le contrôle de format/cohérence ; cela ne constitue pas une
 vérification de l'activité déclarée ou de ses obligations fiscales/sociales.
 
-L'adresse et le téléphone de publication ne sont pas choisis. Ils sont publics
-dans les mentions ; utiliser des coordonnées professionnelles officielles
-validées par le propriétaire. Le nom commercial ne remplace pas l'identité EI.
+L'adresse et le téléphone ont ensuite été communiqués directement par le
+propriétaire et intégrés aux brouillons et au manifeste éditeur. Ils seront
+publics dans les mentions. Leur réception ne vaut pas vérification du registre
+professionnel. Le nom commercial ne remplace pas l'identité EI.
 La relecture actuelle de `nopuna.fr` et du dépôt `nopuna-studio` n'a pas permis
 d'y retrouver les mentions/SIREN ; les numéros ci-dessus viennent de l'utilisateur.
 Ne pas recopier une adresse privée trouvée ailleurs.
