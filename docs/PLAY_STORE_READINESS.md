@@ -138,10 +138,11 @@ complet suivant est vert ; les contrôles existants restent inchangés.
 ## Décision de clôture
 
 La CI du complément a ensuite reproduit à 360x640 un panneau d'apprentissage
-interceptant le bouton d'aide. La fonction de placement comptait la barre
-interactive dans l'espace disponible. Un test géométrique rouge puis vert
-valide la réservation du bouton et de sa marge de focus ; les interactions
-du modal et étapes pédagogiques restent couvertes par les tests existants.
+interceptant le bouton d'aide. La réservation géométrique du bouton ne suffisait
+pas : sa remise en vue déplaçait l'en-tête et la grille de 54px, sans déplacer
+le coach fixé au viewport. La trace locale reproduit ce cas ; l'ancrage compact
+au conteneur de grille suit maintenant le défilement immédiatement. Un test rouge
+puis vert couvre ce déplacement, sans modifier les contrôles de clic/focus.
 Voir la [cause vérifiée](architecture/bug-history.md). Le choix ultérieur de
 maintenir l'activation enfant bloquée est couvert indépendamment par les tests
 du rapport, sans modifier Auth en production.
@@ -151,6 +152,13 @@ sur le candidat `0325695` : **30 suites, aucun échec**, quality gate compris.
 Le rapport UX navigateur ne contient ni échec ni exception ; les tests existants
 de clic/focus du modal d'aide sont conservés. La vérification ciblée du rapport
 confirme aussi le blocage enfant, indépendamment des autres preuves renseignées.
+
+Validation finale de l'ancrage du coach après reproduction du défilement :
+trois passages ciblés réussis sur des navigateurs neufs, puis
+`npm run test:full` : **30 suites, aucun échec**, quality gate complet compris.
+Les tests UX sont revenus exactement à leur version d'origine, sans traces
+temporaires ni changement des assertions. Le test géométrique protège aussi
+la remise en vue de l'en-tête sans attendre un nouveau frame.
 
 Complément du 22 octobre : scripts SDK/QR embarqués, inventaire de versions,
 hashes et copies MIT, suppression des chargements CDN dans la page d'entrée.

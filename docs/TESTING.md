@@ -4,6 +4,8 @@
 placement function against the 360x640 header/board geometry for quests 1–2.
 It retains clear space for help/focus, board cells and actions. The existing
 UX browser checks validate actual pointer clicks and modal focus restoration.
+The regression also moves the board/header by the measured 54px scroll without
+running another frame, verifying that the compact coach follows before a click.
 
 Browser dependency preparation: `node scripts/browser-dependency-tests.mjs`
 rejects third-party executable script URLs and checks pinned bundle hashes and

@@ -84,6 +84,9 @@ height may shrink and scroll internally; it must not intercept the help button,
 its focus ring, puzzle cells or normal actions. Teaching steps and eligibility
 remain unchanged. The placement regression reproduces the 360x640 geometry;
 the UX browser suite retains real help open/close/focus checks.
+The compact coach is anchored to the board wrapper, so restoring an off-screen
+help control into view moves both in the same coordinate space immediately.
+It must not remain fixed over the header until a later animation frame.
 The onboarding has a protected **SEE -> UNDERSTAND -> ACT** order. “Learn by playing” does not mean “act immediately”: before the first board interaction, quest 1 gives the player a short visual model of what the board is and what success means.
 
 **SEE:** show the real quest-1 board without accepting board input. Temporarily number the five colored territories 1–5 so a new player can perceive that color/shape defines distinct territories. These numbers are teaching scaffolding only and must disappear from ordinary play.
