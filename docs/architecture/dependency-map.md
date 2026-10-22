@@ -2,6 +2,12 @@
 
 Baseline: `bef5f32`. Paths are repository-relative. Consult relevant rows only. `docs/DATA_AND_ARCHITECTURE.md` owns contracts; this file identifies implemented boundaries and effects.
 
+Published schedule (#522): current `access-origins.json` revision →
+`catalogue-origin.publishedCatalogueQuests` → `quest-definition.buildQuestDefinitions`
+→ canonical grid adapter. Active quest + existing progress →
+`quest-view.readQuestView` → board label / attempt telemetry / stable-ID map badge refresh. These reads neither
+grant access nor migrate saved rewards; old writers remain in their own domains.
+
 | Boundary | Dependencies / flow | Effects / caution |
 |---|---|---|
 | Browser dependencies | HTML → local SDK/QR bundles → existing app APIs; inventory → integrity checks; worker → offline public asset copies | Pinned bytes replace CDN execution. Provider APIs and existing Auth/progress storage remain unchanged; SDK/family qualification is separate |

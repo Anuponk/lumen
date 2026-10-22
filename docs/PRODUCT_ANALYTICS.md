@@ -25,6 +25,23 @@ A Reset creates a new **run** for product analysis. `run_index = reset_count + 1
 ## Canonical attempt properties
 Lifecycle events carry `attempt_id`, `attempt_mode`, `run_index`, `reset_count`, `active_seconds`, `quest_index`, `grid_size`, `constellation_index`, `constellation_name`, `progress_solved`, `quest_attempt_number`, `assistance_used`, `mistake_committed`, `qualifying`, `guided_enabled` and `auto_marking_enabled`.
 
+Quest identity (#522): lifecycle events and `puzzle_start` additionally carry
+`stable_quest_id`, `quest_ordinal`, `pack_id`, `constellation_id` from the active
+published quest. Numeric `puzzle_id` and zero-based `quest_index` retain their
+historical storage meaning; both are null for quests without a numeric key,
+never borrowed from the dormant numeric frontier. `quest_attempt_number` is null
+for these quests because the current stable store has no authoritative counter.
+Do not infer one from unrelated historical performance. `progress_solved` counts
+actual canonical completions, and constellation metadata follows the active
+stable identity. `puzzle_start` is emitted after attempt creation/restoration,
+deduplicated by stable quest ID; its old fixed twenty-quest `sector` grouping is
+replaced by the catalogue's explicit pack/constellation identities. Historical
+rows and the generic transport API are not rewritten.
+Reports grouped only by historical `puzzle_id` cannot distinguish stable-only
+quests; use `stable_quest_id`/`quest_ordinal` when extending those reports. This
+client correction does not claim that every existing SQL cockpit aggregate has
+already migrated to the new grouping.
+
 Active duration comes from the attempt engine, not wall-clock tab time.
 
 ## Events

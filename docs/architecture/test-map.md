@@ -36,6 +36,13 @@ RPC; it does not prove real Android behavior. SQL fixtures run in PostgreSQL CI;
 `wallet-command-concurrency.py` races duplicate and distinct competing spends.
 The PWA runner checks offline public navigation with retained local/IndexedDB data.
 
+Quest definitions / board feedback: `quest-definition-tests.mjs`,
+`board-feedback-tests.mjs`, `group-hint-tests.mjs` are mandatory Node gates.
+`quest-view-tests.mjs` guards stable-identity telemetry, both saved formats and
+the live map refresh's stable card identity after insertion/reordering.
+`board-feedback-browser.mjs` extends the existing browser runner with actual
+placement, group hints and border-preservation checks. See TESTING for limits.
+
 Issues #511/#513/#514: `social-challenge-ui-tests.mjs` executes the victory decision
 matrix; `victory-challenge-browser.mjs` is imported by canonical replay tests.
 `sky-issue-513-514-browser.mjs` extends the existing sky browser runner with rail

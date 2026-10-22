@@ -59,6 +59,12 @@ Generation belongs in an offline/dev script, not the player's runtime path.
 The two onboarding grids were audited with one solution each. With the current proof engine, the central grid replays in 22 structured steps (17 group eliminations, 5 singles); the second replays in 11 (6 group eliminations, 5 singles). Their scripted placement order must also consist of forced territory placements rather than guesses.
 
 ## Mandatory catalogue audit
+
+The canonical schedule reads the current published catalogue revision, validated
+by `quest-definition.js`, instead of synthesizing fixed-size slots.
+`catalogue-compatibility-tests.mjs` still checks every published hash/reference
+against its immutable revision. This identity check and the separate `CAT`
+audit do not replace uniqueness/explainable replay of generated manifests.
 After any change touching `CAT`, solver/proof rules, board semantics or campaign schedule, audit **all campaign grids**, not only the currently displayed size. Check validity, unique solution, explainable replay, campaign count matching the content model, contiguous constellation mapping and absence of duplicate/broken schedule references. Audit quest rewards against each constellation's actual stars and their sum against the derived sky target. Adding content must not require replacing fixed totals in these assertions.
 
 Run `node scripts/audit-catalogue.mjs` for a reproducible offline audit using the application's actual catalogue and proof engine. It checks all catalogue entries and campaign references and exits nonzero on failure. Known failures must remain visible; do not treat them as an allowlist or a passing release gate.

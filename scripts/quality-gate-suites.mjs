@@ -9,6 +9,11 @@ export const nodeSuites=[
  'cloud-victory-notification-tests.mjs',
  'cloud-outbox-health-tests.mjs',
  'cloud-pending-navigation-tests.mjs',
+
+ 'board-feedback-tests.mjs',
+ 'group-hint-tests.mjs',
+ 'quest-definition-tests.mjs',
+ 'quest-view-tests.mjs',
  'service-worker-cache-tests.mjs',
  'campaign-resume-tests.mjs',
  'campaign-presentation-tests.mjs',

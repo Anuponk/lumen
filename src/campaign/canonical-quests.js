@@ -3,41 +3,15 @@
 import staged from "../../content/generated/issue-222-additions.json" with {type:"json"};
 import diverse from "../../content/generated/diverse-adventures-3-4.json" with {type:"json"};
 const diverseById=new Map(diverse.puzzles.map(q=>[q.id,q]));
-if(diverse.schema!=="lumen-grid-overrides-v1"||diverseById.size!==100)throw Error("Invalid diversity override manifest");
+if(diverse.schema!=="lumen-grid-overrides-v1"||diverseById.size!==diverse.puzzles.length)throw Error("Invalid diversity override manifest");
 import {CONTENT_PACKS,CONTENT_CONSTELLATIONS,hasPackAccess} from "./content.js";
 import {playableQuest,playableQuestCount} from "./playable-quests.js";
 import {qualifyDifficulty} from "./difficulty.js";
 import {constellationCatchupAvailable,catalogueQuestDecision,questCompleted} from "./catalogue-access.js";
-import {originQuests,pastCatalogues} from './catalogue-origin.js';
+import {originQuests,pastCatalogues,publishedCatalogueQuests} from './catalogue-origin.js';
+import {buildQuestDefinitions} from './quest-definition.js';
 
-function planSlots(packs,constellations){
- const records=[],ordered=[...packs].sort((a,b)=>a.order-b.order);
- for(const pack of ordered){
-  const list=pack.constellationIds.map(id=>{
-   const constellation=constellations.find(c=>c.id===id);
-   if(!constellation)throw Error("Unknown constellation: "+id);
-   return {id,indices:[...constellation.questIndices]};
-  });
-  while(list.length<10)list.push({id:pack.id+"-new-"+String(list.length-pack.constellationIds.length+1).padStart(2,"0"),indices:[]});
-  if(list.length!==10)throw Error("Adventure constellation count differs from 10: "+pack.id);
-  // The historical 11th quest of real-12 moves to real-13 without changing its save key.
-  // Its former generated counterpart keeps its stable ID when moved to real-12.
-  if(pack.id==="real-adventure-02"){
-   const from=list.find(c=>c.id==="real-12"),to=list.find(c=>c.id==="real-13");
-   if(from?.indices.length===11&&to?.indices.length===8)to.indices.push(from.indices.pop());
-  }
-  const sizes=list.map(()=>10);
-  if(list.some(c=>c.indices.length>10))throw Error("Constellation exceeds ten historical quests");
-  for(const [i,c] of list.entries())for(let j=0;j<sizes[i];j++){
-   const legacyIndex=c.indices[j]??null;
-   const id=legacyIndex===null?(c.id==="real-13"&&j===9?"planned-real-13-q09":c.id==="real-20"&&j===9?"planned-real-13-q10":`planned-${c.id}-q${String(j+1).padStart(2,"0")}`):playableQuest(legacyIndex)?.id;
-   if(!id)throw Error("Missing legacy quest index "+legacyIndex);
-   records.push({id,ordinal:records.length+1,legacyIndex,packId:pack.id,constellationId:c.id,position:j+1});
-  }
- }
- return records;
-}
-const slots=planSlots(CONTENT_PACKS,CONTENT_CONSTELLATIONS);
+const slots=buildQuestDefinitions(publishedCatalogueQuests(),CONTENT_PACKS,CONTENT_CONSTELLATIONS);
 const added=new Map(staged.quests.map(q=>[q.id,q]));
 if(staged.status!=="staged-only"||added.size!==staged.quests.length)throw Error("Invalid staged content");
 const all=Object.freeze(slots.map(slot=>{
@@ -45,11 +19,11 @@ const all=Object.freeze(slots.map(slot=>{
  if(!original||original.id!==slot.id)throw Error("Missing canonical grid "+slot.id);
  if(slot.legacyIndex===null&&(!original.audit?.ok||original.audit.solutions!==1))throw Error("Unaudited grid "+slot.id);
  const replacement=diverseById.get(slot.id);
- if(replacement&&(replacement.packId!==slot.packId||replacement.ordinal!==slot.ordinal||!["real-adventure-03","real-adventure-04"].includes(slot.packId)))throw Error("Invalid diversity override target "+slot.id);
+ if(replacement&&(replacement.packId!==slot.packId||replacement.ordinal!==slot.ordinal))throw Error("Invalid diversity override target "+slot.id);
  const grid=replacement||original;
  return Object.freeze({...slot,size:grid.size??grid.reg.length,reg:grid.reg,sol:grid.sol,audit:grid.audit??null,difficulty:qualifyDifficulty(grid),family:grid.family??null});
 }));
-if(all.length!==CONTENT_PACKS.length*100||new Set(all.map(q=>q.id)).size!==all.length||all.filter(q=>q.legacyIndex!==null).length!==playableQuestCount())throw Error("Inconsistent canonical catalogue");
+if(new Set(all.map(q=>q.id)).size!==all.length||all.filter(q=>q.legacyIndex!==null).length!==playableQuestCount()||[...added.keys()].some(id=>!all.some(q=>q.id===id))||[...diverseById.keys()].some(id=>!all.some(q=>q.id===id)))throw Error("Inconsistent canonical catalogue");
 const byId=new Map(all.map(q=>[q.id,q]));
 const byLegacy=new Map(all.filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,q]));
 export function canonicalQuestCount(){return all.length}
