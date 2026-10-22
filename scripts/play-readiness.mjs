@@ -8,6 +8,7 @@ export function evaluatePlayReadiness(config){
  if(!/^\d{14}$/.test(config?.siret||'')||!config.siret.startsWith(config.siren))blockers.push('publisher.siret.format');
  if(config?.monetization!=='free-no-ads-no-purchases')blockers.push('monetization.review');
  if(config?.audience!=='mixed-including-children')blockers.push('audience.review');
+ if(config?.childrenAccountModel!=='supervised-online'||config?.childrenActivation!=='enabled-after-verified-parental-process')blockers.push('children.activationReview');
  if(!config?.native?.applicationId)blockers.push('native.applicationId');
  if(!Number.isInteger(config?.native?.targetApiReviewed)||!config?.native?.targetApiReviewedOn)blockers.push('native.targetApiReview');
  for(const key of ['privacyPolicy','legalPages','accountDeletionEndToEnd','childSafety','nativeDevice','dataSafety','storeListing','identityIsolation','assetLicenses','businessActivity']){

@@ -11,6 +11,10 @@ Les modifications de cette branche ne sont pas encore déployées.
 - Public mixte comprenant des enfants : examiner les exigences Families.
 - Compte enfant supervisé avec fonctions en ligne adaptées : voir la
   [préparation des comptes familiaux](FAMILY_ACCOUNTS_DESIGN.md), non implémentée.
+- Activation des comptes enfants maintenue bloquée par décision du propriétaire,
+  jusqu'au choix et à la validation de la méthode de vérification parentale.
+  Le rapport expose explicitement `children.activationReview` ; cela ne modifie
+  pas les inscriptions PWA en production et ne configure pas Play Console.
 - Première distribution Google Play limitée à la France, confirmée par le
   propriétaire. Cette décision devra être reportée dans Play Console ; le
   manifeste local ne restreint pas à lui seul une distribution externe.

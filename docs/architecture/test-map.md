@@ -4,6 +4,10 @@ Baseline: `bef5f32`. All paths are repository-relative. This phase indexes exist
 
 ## Select a check
 
+Compact tutorial coach: `learning-coach-placement-tests.mjs` reproduces the
+short-screen header overlap using the real placement function; existing
+`ux-cleanup-tests.mjs` checks browser help click, modal focus and preservation.
+
 Play/privacy preparation: `privacy-readiness-tests.mjs` plus `analytics-tests.mjs`;
 account-session browser runner invokes `privacy-browser.mjs` for mobile/desktop
 request preparation without live mail/Auth. `play-readiness.mjs --enforce`

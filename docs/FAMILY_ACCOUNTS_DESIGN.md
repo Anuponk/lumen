@@ -11,6 +11,16 @@ propriétaire. Le réglage territorial doit être effectué et vérifié dans Pl
 Console ; aucune restriction du site PWA ni configuration Console n'a été appliquée.
 Toute extension territoriale exige une nouvelle revue des règles et parcours.
 
+Le propriétaire a choisi de **garder l'activation des comptes enfants bloquée**
+jusqu'au choix d'une autre méthode de vérification, plutôt qu'une validation
+manuelle opérée par lui au lancement. Aucun prestataire payant n'est retenu.
+Le manifeste consigne `blocked-pending-verification-method` ; le rapport de
+préparation ajoute `children.activationReview`, même si d'autres preuves sont
+complétées. Seul un futur changement revu, accompagné des preuves enfant et
+des contrôles serveur, pourra lever ce préalable. Ce rapport est local : il
+ne constitue pas une restriction d'âge des anciennes inscriptions PWA, dont
+le mécanisme d'authentification reste inchangé.
+
 ## Contraintes observées dans le produit
 
 Les RPC et les autorités de récompenses sont rattachés à `auth.uid()` ; les

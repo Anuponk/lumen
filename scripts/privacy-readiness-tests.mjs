@@ -13,6 +13,7 @@ assert(missingCoordinates.blockers.includes('publisher.address'));
 assert(missingCoordinates.blockers.includes('publisher.telephone'));
 assert(pending.blockers.includes('evidence.childSafety'));
 assert(pending.blockers.includes('evidence.accountDeletionEndToEnd'));
+assert(pending.blockers.includes('children.activationReview'),'child activation must remain blocked until a verified parental process exists');
 assert.equal(publisher.monetization,'free-no-ads-no-purchases');
 assert.equal(publisher.audience,'mixed-including-children');
 
@@ -37,9 +38,11 @@ assert.equal(evaluatePlayReadiness({...publisher,monetization:'advertising'}).re
 // Synthetic complete evidence only verifies report behavior, not the real app.
 const complete=structuredClone(publisher);
 Object.assign(complete,{address:'Fixture professional address',telephone:'Fixture telephone',registrationDetails:'Fixture registration'});
+complete.childrenActivation='enabled-after-verified-parental-process';
 complete.native.applicationId='fr.example.fixture';
 for(const key of Object.keys(complete.evidence))complete.evidence[key]={status:'verified',reference:'fixture-only:'+key,verifiedAt:'2026-10-22'};
 assert.equal(evaluatePlayReadiness(complete).ready,true,'complete synthetic evidence may clear preparation fields');
+assert(evaluatePlayReadiness({...complete,childrenActivation:'blocked-pending-verification-method'}).blockers.includes('children.activationReview'),'other completed evidence must not override the owner decision to keep child activation blocked');
 complete.evidence.accountDeletionEndToEnd=null;
 assert(evaluatePlayReadiness(complete).blockers.includes('evidence.accountDeletionEndToEnd'),'a request page is not deletion evidence');
 console.log('Privacy preparation: deletion request encoding/confirmation and explicit Play blockers verified; no player writes.');

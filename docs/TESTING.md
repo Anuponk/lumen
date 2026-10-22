@@ -1,5 +1,10 @@
 # Testing and quality gate
 
+`node scripts/learning-coach-placement-tests.mjs` executes the actual coach
+placement function against the 360x640 header/board geometry for quests 1–2.
+It retains clear space for help/focus, board cells and actions. The existing
+UX browser checks validate actual pointer clicks and modal focus restoration.
+
 Browser dependency preparation: `node scripts/browser-dependency-tests.mjs`
 rejects third-party executable script URLs and checks pinned bundle hashes and
 license copies. The account-session browser runner also loads the actual local
@@ -7,6 +12,11 @@ SDK and renders a synthetic QR, without live Auth. Worker cache fixtures cover
 both vendor assets online/offline. This is not native or Families certification.
 
 ## Play preparation and privacy (#170/#316)
+
+The preparation report also blocks `children.activationReview` while child
+activation is deferred, even with synthetic complete evidence for other fields.
+The positive fixture uses an explicitly enabled synthetic parental-process
+state; it does not claim any production child account or consent is verified.
 
 `privacy-readiness-tests.mjs` checks the intentionally blocked preparation
 manifest, request-mail encoding/injection refusal and no destructive client path.

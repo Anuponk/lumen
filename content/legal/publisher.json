@@ -11,6 +11,7 @@
   "registrationDetails": null,
   "audience": "mixed-including-children",
   "childrenAccountModel": "supervised-online",
+  "childrenActivation": "blocked-pending-verification-method",
   "initialPlayCountries": ["FR"],
   "businessActivityOwnerDeclaration": {
     "activity": "Développement ou édition de jeux, activité secondaire",

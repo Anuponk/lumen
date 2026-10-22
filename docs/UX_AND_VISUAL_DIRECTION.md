@@ -69,6 +69,13 @@ Mobile play is primary. Marking many impossible cells one-by-one was identified 
 Board rows/cells must not visually jump when exclusion markers appear. Exclusion appearance should remain consistent between manual and automatic marking.
 
 ## Learning UX
+
+On short screens, the compact coach for learning quests 1–2 reserves the
+interactive header before measuring available space above the board. Its
+height may shrink and scroll internally; it must not intercept the help button,
+its focus ring, puzzle cells or normal actions. Teaching steps and eligibility
+remain unchanged. The placement regression reproduces the 360x640 geometry;
+the UX browser suite retains real help open/close/focus checks.
 The onboarding has a protected **SEE -> UNDERSTAND -> ACT** order. “Learn by playing” does not mean “act immediately”: before the first board interaction, quest 1 gives the player a short visual model of what the board is and what success means.
 
 **SEE:** show the real quest-1 board without accepting board input. Temporarily number the five colored territories 1–5 so a new player can perceive that color/shape defines distinct territories. These numbers are teaching scaffolding only and must disappear from ordinary play.
