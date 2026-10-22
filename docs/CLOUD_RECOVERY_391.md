@@ -2,6 +2,35 @@
 
 This is a staged implementation record, not a declaration that #391 is closed.
 
+## Final delivery evidence (22 October 2026)
+
+The owner explicitly authorized both production SQL migrations, the final merge
+and deployment. Production applied `20261022082153_wallet_command_authority`
+and `20261022082203_outbox_health_observations`. Supabase assigned these versions;
+the reviewed SQL from candidate `65770fa` is unchanged. Repository migration
+filenames and the isolated PostgreSQL workflow match that history. No backfill,
+player repair, fixture or additional paid resource was created in production.
+
+Post-migration checks confirm the three tables have RLS and deny direct reads to
+both client roles, historical commands adopt the wallet projection and the
+capability-gated cockpit includes outbox health. Required candidate CI passed
+quality, cloud-contract, reconciliation, ledger-sql and docs-consistency; the
+metadata-only delivery commit requires those same gates before the single merge.
+
+The owner's Android recipe on the free isolated preview v2 confirms two pending
+victories in airplane mode with Wi-Fi disabled, followed by confirmation after
+reconnection and reload. That preview uses simulated Auth/RPC; it does not prove
+live Supabase transport or the installed-PWA update scenario. The v1 fixture's
+false acknowledgements under a stale navigator.onLine were reproduced and fixed
+in the preview only; uncached HTTP reachability gates every synthetic RPC. Browser
+checks cover normal and stale connectivity indicators, offline restart and
+one-time replay without duplicated rewards or debits. The owner separately
+reports Loutre resolved; do not attribute that recovery to this unreleased code.
+
+Production publication, operational retention scheduling and live observation
+must be recorded after their actual verification. Keep the issues requiring
+those results open; schema application and merge alone do not prove completion.
+
 ## P0 integration and recovery runbook (22 October 2026)
 
 Baseline: `650a39b904970221a4a42c28073dade92d9f5617`. Work is integrated on one
@@ -69,15 +98,16 @@ or proves recovery. Diagnose stale observations rather than clearing unknown wor
 ### Delivery and rollback boundaries
 
 Do not merge before the complete lot's applicable gates and Android exit recipe.
-The migrations are prepared, not applied. Rollout must coordinate the wallet-aware
+The migrations were applied with explicit owner authorization, as recorded above.
+Rollout must coordinate the wallet-aware
 client, additive SQL and old-PWA update path. Existing old clients can require an
 update after wallet activation; the server guard must remain active.
 Rollback retains authority, receipts and durable intentions. Returning to a client
 that debits local currency is not a safe rollback for an activated account.
 
-Outstanding release evidence: exact-candidate GitHub CI results, installed Android
-airplane-mode/restart/update scenarios, and Loutre verification.
-These must be recorded as actual results, not inferred from browser emulation.
+Candidate CI, the device offline/reconnection recipe and the owner's Loutre
+confirmation are recorded above. Installed-PWA update and actual production
+publication/observation remain distinct evidence, never inferred from emulation.
 
 Local validation completed on 22 October: `npm run test:full`, 30 outer suites
 with zero failures; its quality gate contains 114 Node suites and nine browser
@@ -96,7 +126,7 @@ by a separate GitHub settings read; see `docs/RELEASE.md`.
 | Priority | Remaining condition | Required evidence / response |
 |---|---|---|
 | P0 release | Wallet activation changes the authoritative writer; old clients can hold after activation | Coordinate approved additive SQL, candidate client and PWA update. Keep server guards and receipts during rollback |
-| P0 exit | Android installed-PWA and the historical Loutre divergence have no result for this candidate | Run the device recipe below; preserve/export evidence. Do not repair real profiles without a separate approved proposal |
+| P0 exit | Android preview offline/reconnect passes; owner reports Loutre resolved; installed-PWA update and live candidate transport remain distinct | Preserve recorded evidence and verify actual publication/device update. No real profile repair is authorized |
 | P1 recovery | Unknown fields or unreceipted historical currency/daily credits cannot be safely inferred | Keep both originals and a visible review hold; reconcile by audited evidence, never max/reset/backfill |
 | P1 operations | Server observations and retention need approved rollout and operator scheduling | Verify capability-gated alerts and resolved-only pruning after application. Offline clients cannot report until transport returns |
 | P2 update | Interrupted loads do not provide atomic replacement of the complete module graph | Verify actual module/build versions and retained stores on device; do not purge player data |
@@ -108,7 +138,7 @@ by a separate GitHub settings read; see `docs/RELEASE.md`.
 | #398 | Cross-cutting regression gates, isolated SQL/chaos/browser coverage, private aggregate cockpit alerts and retention function | Keep open until PostgreSQL CI, real Android/Loutre, operational retention and live observations are demonstrated |
 | #518 | Four sync states, pending celebration and star, deferred persistent warnings, immediate preservation-risk notice | Keep open until candidate CI and actual Android celebration/recovery recipe are validated |
 
-### Android candidate exit recipe (not yet executed)
+### Android candidate exit recipe (partial device evidence recorded above)
 
 Use an isolated test account and record exact server/document/module SHA,
 Android version, browser/PWA version and installed mode. Do not clear a real

@@ -35,9 +35,11 @@ the session is usable on that particular browser/PWA.
 
 ### Wallet command cutover (#248/#391, 22 October 2026)
 
-Prepared migrations `20261022042307_wallet_command_authority.sql` and
-`20261022043628_outbox_health_observations.sql` are **not applied to production by
-this change**. Application and release require separate authorization.
+Migrations `20261022082153_wallet_command_authority.sql` and
+`20261022082203_outbox_health_observations.sql` were applied in production on
+22 October after explicit owner authorization. Their SQL is unchanged from the
+reviewed candidate; filenames use the versions assigned by Supabase. Release
+verification and operational observation remain separate from schema application.
 
 `walletRevision` is a positive safe-integer server cursor, distinct from
 `legacyVictoryRevision`. `shards` follows the current verified wallet projection,
