@@ -1,0 +1,42 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {accountDeletionMailto} from '../src/privacy/account-deletion.js';
+import {evaluatePlayReadiness} from './play-readiness.mjs';
+
+const publisher=JSON.parse(fs.readFileSync('content/legal/publisher.json','utf8'));
+const pending=evaluatePlayReadiness(publisher);
+assert.equal(pending.ready,false,'missing publisher/device/family evidence must block Play submission');
+assert(pending.blockers.includes('publisher.address'));
+assert(pending.blockers.includes('publisher.telephone'));
+assert(pending.blockers.includes('evidence.childSafety'));
+assert(pending.blockers.includes('evidence.accountDeletionEndToEnd'));
+assert.equal(publisher.monetization,'free-no-ads-no-purchases');
+assert.equal(publisher.audience,'mixed-including-children');
+
+const href=accountDeletionMailto('parent+account@example.test');
+const url=new URL(href);
+assert.equal(url.protocol,'mailto:');
+assert.equal(url.pathname,'valente.cedric@gmail.com');
+assert.equal(url.pathname,publisher.contactEmail,'request contact must match publisher configuration');
+assert.match(url.searchParams.get('subject'),/Lumen/);
+assert.match(url.searchParams.get('body'),/parent\+account@example\.test/);
+assert(!url.searchParams.get('body').includes('access_token'));
+for(const input of ['', 'not-an-address','a@example.test\r\nBcc:someone@example.test','a@example.test?subject=other'])assert.throws(()=>accountDeletionMailto(input));
+const page=fs.readFileSync('supprimer-compte.html','utf8');
+assert.match(page,/sans.*réinstaller/i);
+assert.match(page,/SoldeZen/);
+assert.match(page,/aucune demande.*envoyée automatiquement/i);
+assert.match(page,/type="email"/);
+assert.match(page,/type="checkbox"[^>]*required/);
+assert.doesNotMatch(page,/supabase-js|service_role|analytics\/events|lumen_track_event/);
+assert.match(fs.readFileSync('index.html','utf8'),/href="\/supprimer-compte\.html"/,'deletion request must be discoverable in the app');
+assert.equal(evaluatePlayReadiness({...publisher,monetization:'advertising'}).ready,false);
+// Synthetic complete evidence only verifies report behavior, not the real app.
+const complete=structuredClone(publisher);
+Object.assign(complete,{address:'Fixture professional address',telephone:'Fixture telephone',registrationDetails:'Fixture registration'});
+complete.native.applicationId='fr.example.fixture';
+for(const key of Object.keys(complete.evidence))complete.evidence[key]={status:'verified',reference:'fixture-only:'+key,verifiedAt:'2026-10-22'};
+assert.equal(evaluatePlayReadiness(complete).ready,true,'complete synthetic evidence may clear preparation fields');
+complete.evidence.accountDeletionEndToEnd=null;
+assert(evaluatePlayReadiness(complete).blockers.includes('evidence.accountDeletionEndToEnd'),'a request page is not deletion evidence');
+console.log('Privacy preparation: deletion request encoding/confirmation and explicit Play blockers verified; no player writes.');

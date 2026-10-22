@@ -4,6 +4,12 @@ Baseline: `bef5f32`. All paths are repository-relative. This phase indexes exist
 
 ## Select a check
 
+Play/privacy preparation: `privacy-readiness-tests.mjs` plus `analytics-tests.mjs`;
+account-session browser runner invokes `privacy-browser.mjs` for mobile/desktop
+request preparation without live mail/Auth. `play-readiness.mjs --enforce`
+deliberately blocks missing real evidence; it is not a passing CI certification.
+See `docs/PLAY_STORE_READINESS.md` and the account-deletion runbook.
+
 Private physical-device preview: see
 [`ISOLATED_VALIDATION_PREVIEW.md`](../ISOLATED_VALIDATION_PREVIEW.md) for the
 existing Site identity, controls, offline/reconnect recipes, isolation check,

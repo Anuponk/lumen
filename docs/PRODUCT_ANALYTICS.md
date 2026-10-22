@@ -3,6 +3,15 @@
 Issue #65 measures campaign lifetime and friction without logging cell-by-cell play.
 
 ## Identity and privacy
+- #316/#170 preparation: optional product analytics defaults to disabled. Every
+  event/referral requires `environment.analyticsAllowed() === true`; a missing,
+  denied or failing provider creates no analytics session/referral storage and
+  sends no product event. The current UI supplies no provider. Historical data
+  remains untouched, and required sync-health telemetry stays separate.
+- `lumenAnonymousIdV1` still serves existing functional challenge, feedback,
+  notification and recovery paths. It is not consent. The mixed child/adult
+  launch still requires its minimization and parental-flow review; see
+  [privacy audit](PRIVACY_AND_LEGAL_AUDIT.md).
 - `anonymous_id` is the existing stable random browser identifier used by `lumen_track_event`.
 - Authenticated identity is resolved server-side where available.
 - Product-attempt telemetry must not send email, name, nickname, free-form board content or other unnecessary personal data.

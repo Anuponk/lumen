@@ -1,0 +1,38 @@
+{
+  "status": "preparation",
+  "application": "Lumen",
+  "commercialName": "Nopuna",
+  "legalName": "Cédric Valente EI",
+  "siren": "897865747",
+  "siret": "89786574700025",
+  "contactEmail": "valente.cedric@gmail.com",
+  "address": null,
+  "telephone": null,
+  "registrationDetails": null,
+  "audience": "mixed-including-children",
+  "monetization": "free-no-ads-no-purchases",
+  "hosting": {
+    "provider": "o2switch",
+    "address": "Chemin des Pardiaux, 63000 Clermont-Ferrand, France",
+    "telephone": "04 44 44 60 40",
+    "source": "https://blog.o2switch.fr/que-renseigner-dans-la-page-mentions-legales/"
+  },
+  "native": {
+    "strategy": "capacitor-candidate-not-adopted",
+    "applicationId": null,
+    "targetApiReviewed": 36,
+    "targetApiReviewedOn": "2026-10-22"
+  },
+  "evidence": {
+    "privacyPolicy": null,
+    "legalPages": null,
+    "accountDeletionEndToEnd": null,
+    "childSafety": null,
+    "nativeDevice": null,
+    "dataSafety": null,
+    "storeListing": null,
+    "identityIsolation": null,
+    "assetLicenses": null,
+    "businessActivity": null
+  }
+}

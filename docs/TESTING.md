@@ -1,5 +1,20 @@
 # Testing and quality gate
 
+## Play preparation and privacy (#170/#316)
+
+`privacy-readiness-tests.mjs` checks the intentionally blocked preparation
+manifest, request-mail encoding/injection refusal and no destructive client path.
+The account-session browser suite runs `privacy-browser.mjs` at mobile/desktop
+sizes: confirmation, prepared mail only, no SDK/mail transport and unchanged
+save/attempt. These tests do not execute or certify account deletion.
+`analytics-tests.mjs` retains granted-payload parity and adds default-deny,
+per-event revocation, permission failure and no optional session/referral storage.
+
+`node scripts/play-readiness.mjs --enforce` is expected to fail until all real
+publisher, family, deletion, native-device and Console evidence is supplied.
+It is a future publishing prerequisite, not a test to weaken for green CI or a
+remote Play Console lock. See [readiness](PLAY_STORE_READINESS.md).
+
 ## Private Android validation preview
 
 The [isolated validation preview runbook](ISOLATED_VALIDATION_PREVIEW.md) records

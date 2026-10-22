@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="fr">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1">
+ <meta name="referrer" content="no-referrer">
+ <title>Supprimer mon compte Lumen — Nopuna</title>
+ <link rel="stylesheet" href="/src/privacy/pages.css">
+</head>
+<body><main>
+ <p><a href="/">Retour à Lumen</a></p>
+ <h1>Supprimer mon compte Lumen</h1>
+ <p>Tu peux demander la suppression de ton compte et des données Lumen associées ici, sans réinstaller l’application ni te reconnecter.</p>
+ <p>La demande est traitée par Nopuna — Cédric Valente EI. Une vérification de ton droit à agir sera nécessaire avant toute suppression. N’envoie jamais de mot de passe, de code de connexion ou de sauvegarde complète.</p>
+ <h2>Ce que cette demande concerne</h2>
+ <p>Le profil Lumen, la progression, les données de jeu, les défis, les notifications et les données associées au compte seront examinés dans le traitement de la demande. Nous préciserons les éventuelles données devant être conservées et le motif applicable.</p>
+ <p>Lumen partage un service d’authentification avec SoldeZen. Cette demande vise Lumen : elle ne doit pas supprimer tes données ou ton compte SoldeZen.</p>
+ <p>Pour un enfant, son représentant légal peut nous contacter pour exercer ses droits. Il n’est pas nécessaire de communiquer sa date de naissance dans ce formulaire.</p>
+ <form id="accountDeletionRequest">
+  <label for="deletionAccountAddress">Adresse email du compte Lumen</label>
+  <input id="deletionAccountAddress" name="accountAddress" type="email" autocomplete="email" maxlength="254" required>
+  <label class="confirmation"><input id="deletionConfirmation" type="checkbox" required> Je demande la suppression de ce compte Lumen et comprends que sa progression sera perdue après vérification et traitement.</label>
+  <button type="submit">Préparer ma demande par email</button>
+ </form>
+ <p id="deletionRequestStatus" role="status" aria-live="polite">La messagerie s’ouvrira avec un message à envoyer. Aucune demande n’est envoyée automatiquement et cette page ne supprime aucune donnée.</p>
+ <p>Tu peux aussi écrire directement à <a href="mailto:valente.cedric@gmail.com?subject=Demande%20de%20suppression%20du%20compte%20Lumen">valente.cedric@gmail.com</a>, notamment si tu n’as plus accès à l’adresse du compte.</p>
+ <noscript><p>Le formulaire nécessite JavaScript. Le lien email ci-dessus permet de transmettre la même demande sans JavaScript.</p></noscript>
+ <h2>Et ensuite ?</h2>
+ <p>Nous te répondrons pour vérifier la demande et confirmer son traitement. Préparer un message ne signifie pas qu’il a été envoyé ou que le compte a été supprimé.</p>
+</main><script type="module" src="/src/privacy/account-deletion.js"></script></body>
+</html>

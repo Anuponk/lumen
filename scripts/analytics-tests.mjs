@@ -8,7 +8,7 @@ const baseline='dcd9f3c872e623541be698edc212b64589d3b164';
 const source=(process.argv[2]?fs.readFileSync(process.argv[2],'utf8'):execFileSync('git',['show',baseline+':index.html'],{encoding:'utf8'})).replace(/\r/g,'');
 async function fixture(search,legacy,offline){
  const values=new Map(),calls=[],warnings=[];let sequence=0,client=null;
- const environment={localStorage:{getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,value)},crypto:{randomUUID:()=>++sequence===1?'anonymous-id':'session-id'},location:{search},console:{warn:(...args)=>warnings.push(String(args[0]))}};
+ const environment={localStorage:{getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,value)},crypto:{randomUUID:()=>++sequence===1?'anonymous-id':'session-id'},location:{search},console:{warn:(...args)=>warnings.push(String(args[0]))},analyticsAllowed:()=>true};
  let api,context;
  if(legacy){context={...environment,URLSearchParams,lumenSupabase:null};vm.createContext(context);vm.runInContext(functionSource(source,'lumenId')+'\nconst lumenAnonymousId=lumenId("lumenAnonymousIdV1");const lumenSessionId=crypto.randomUUID();\n'+functionSource(source,'trackLumenEvent')+'\n'+functionSource(source,'captureReferral'),context);api=context}
  else api=createAnalytics(()=>client,environment);
@@ -17,6 +17,30 @@ async function fixture(search,legacy,offline){
  if(legacy)context.lumenSupabase=client;
  await api.trackLumenEvent('session_start',null,{standalone:false});await api.trackLumenEvent('puzzle_start',3,{sector:0});await api.trackLumenEvent('hint_used',3);api.captureReferral();await new Promise(resolve=>setTimeout(resolve,0));
  return {values:[...values].filter(([key])=>!['lumenAnalyticsSessionV2','lumenAnalyticsSessionStartV1'].includes(key)),calls:JSON.parse(JSON.stringify(calls)),warnings:[...warnings]};
+}
+// #316/#170: optional analytics is opt-in, never inferred from a login or a
+// functional guest identifier. The family launch has no opt-in provider yet.
+{
+ const values=new Map(),calls=[];let allowed=false,id=0;
+ const env={localStorage:{getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)},crypto:{randomUUID:()=>String(++id)},location:{hostname:'lumen.nopuna.fr',search:'?ref=friend'},console:{warn:()=>{}}};
+ const client={rpc:async (...args)=>calls.push(args)};
+ const api=createAnalytics(()=>client,env);
+ await api.trackLumenEvent('session_start');api.captureReferral();
+ assert.equal(calls.length,0,'no optional analytics without an explicit permission provider');
+ for(const key of ['lumenAnalyticsSessionV2','lumenAnalyticsSessionStartV1','lumenReferral'])assert.equal(values.has(key),false,'no optional tracking storage before permission: '+key);
+ assert.ok(values.has('lumenAnonymousIdV1'),'functional guest identity is retained for challenges/feedback/migration');
+ env.analyticsAllowed=()=>allowed;
+ await api.trackLumenEvent('puzzle_start',1);assert.equal(calls.length,0);
+ allowed=true;
+ await api.trackLumenEvent('session_start');await api.trackLumenEvent('session_start');
+ assert.equal(calls.length,1,'explicit permission retains session deduplication');
+ allowed=false;
+ const before=JSON.stringify([...values]);
+ await api.trackLumenEvent('puzzle_complete',1);api.captureReferral();
+ assert.equal(calls.length,1,'revocation is checked for every event');
+ assert.equal(JSON.stringify([...values]),before,'no optional storage touched after revocation');
+ env.analyticsAllowed=()=>{throw Error('permission unavailable')};
+ await api.trackLumenEvent('session_start');assert.equal(calls.length,1,'permission failures must fail closed');
 }
 for(const search of ['', '?ref=friend_123','?ref=%3Cbad%3E%20reference','?ref='+('x'.repeat(100))])for(const offline of [false,true]){
  const modern=await fixture(search,false,offline),legacy=await fixture(search,true,offline);
@@ -72,7 +96,7 @@ assert.match(fs.readFileSync('src/ui/game-screen.js','utf8'),/lumen_admin_accoun
 // Reloading within a session must not count as a new session.
 {
  const calls=[];const values=new Map();let id=0;
- const env={localStorage:{getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)},crypto:{randomUUID:()=>String(++id)},location:{hostname:'lumen.nopuna.fr',search:''},console:{warn:()=>{}}};
+ const env={localStorage:{getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)},crypto:{randomUUID:()=>String(++id)},location:{hostname:'lumen.nopuna.fr',search:''},console:{warn:()=>{}},analyticsAllowed:()=>true};
  const client={rpc:async (...args)=>{calls.push(args)}};
  await createAnalytics(()=>client,env).trackLumenEvent('session_start');
  await createAnalytics(()=>client,env).trackLumenEvent('session_start');
