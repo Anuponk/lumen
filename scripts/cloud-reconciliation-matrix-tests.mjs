@@ -23,7 +23,7 @@ async function scenario(local,cloud,{failCAS=false}={}){
 }
 for(const [name,local,cloud,expected] of [
  ['identical',base,base,'cloud_dominant'],
- ['higher local currency',{...base,shards:9},base,'reconciled'],
+ ['higher local currency without receipt',{...base,shards:9},base,'blocked'],
  ['higher remote xp',base,{...base,xp:99},'cloud_dominant'],
  ['disjoint quest achievements',{...base,solved:{1:true,2:true}},base,'reconciled'],
  ['disjoint daily dates',{...base,daily:{dates:{a:true}}},{...base,daily:{dates:{b:true}}},'reconciled'],

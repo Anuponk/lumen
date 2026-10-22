@@ -46,6 +46,13 @@ deployment guarantee; keep diagnostics and pending saves until verified recovery
 ## Cloud persistence release blocker (#248)
 For every PR, complete the cloud-impact section of the PR template even if not applicable (with reason). For any player-data, authentication or shop change, inspect the persistence matrix in [TESTING.md](TESTING.md#cloud-persistence-regression-matrix) and run all relevant automation plus isolated multi-device/manual verification. Do not deploy purchases before server-ledger, entitlements and recovery are implemented. Branch protection should require cloud regression CI checks before merging; a template/checklist alone does not enforce that requirement.
 
+Repository setting verified on 22 October 2026: `main` requires GitHub Actions
+checks `quality`, `cloud-contract`, `reconciliation`, `ledger-sql` and
+`docs-consistency`, with an up-to-date base and enforcement for administrators.
+Force pushes and deletion are disabled. This is live GitHub configuration,
+separate from workflow source; recheck it before relying on merge protection.
+Deployment remains a separately authorized action for the P0 persistence lot.
+
 ## Release checklist
 - expected branch/ref confirmed;
 - complete tests pass;

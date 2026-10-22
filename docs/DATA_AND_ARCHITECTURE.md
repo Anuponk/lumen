@@ -33,6 +33,53 @@ the session is usable on that particular browser/PWA.
 
 ## Cloud persistence contract
 
+### Wallet command cutover (#248/#391, 22 October 2026)
+
+Migrations `20261022082153_wallet_command_authority.sql` and
+`20261022082203_outbox_health_observations.sql` were applied in production on
+22 October after explicit owner authorization. Their SQL is unchanged from the
+reviewed candidate; filenames use the versions assigned by Supabase. Release
+verification and operational observation remain separate from schema application.
+
+`walletRevision` is a positive safe-integer server cursor, distinct from
+`legacyVictoryRevision`. `shards` follows the current verified wallet projection,
+including legitimate decreases. `wallet_authority` and immutable
+`wallet_receipts` are private, RLS-enabled and not directly client-accessible.
+Snapshot/CAS/backup writes cannot change wallet currency, daily projection or
+cursor after activation. Trusted historical commands advance the same projection
+before their existing snapshot write, under the same row lock. Canonical commands
+retain their independent ledger and do not change the wallet balance.
+
+An authenticated, verified hydration establishes the wallet with one zero-delta
+`wallet-establish-v1` command. Paid hint/verify identities bind the actual attempt,
+reset, action and use sequence; prices follow existing rules. Requests are durably
+captured in the existing outbox under `Wallet` before mutation. Local/free/guest
+rules and the zero-shard 90-second safety hint remain unchanged. If the wallet
+protocol is unavailable, paid authenticated actions hold rather than debit an
+unreceipted local scalar. A missing endpoint and an ambiguous failure are distinct.
+
+Every debit/daily effect and its immutable receipt commit or roll back together.
+Receipt lookup and current-profile read-back precede acknowledgement. A lost
+response reuses exactly the same operation. Per-attempt hint/verify use counters
+survive reload/reset through the attempt store, preventing reuse of a paid sequence.
+Standalone daily claims share the existing day lock and reward keys; old daily
+writers are rejected after activation, not converted into a second credit path.
+
+No `max(local.shards,remote.shards)` recovery remains. An unexplained difference
+preserves both originals and holds for review. A newer verified wallet cursor may
+carry a lower balance; an equal cursor with another balance is inconsistent.
+First-activation recovery requires an exact receipt delta and an otherwise
+compatible local copy; unknown local data and conflicting daily evidence hold.
+Backup verification must succeed before a receipt-based cache replacement.
+
+`pending-navigation.js` creates only an ephemeral view from validated,
+account-scoped durable victory intentions. It can enable the next quest under
+the existing catalogue/Adventure rights policy. It never mutates or serializes
+currency, badges, purchased rights or the confirmed profile. Presentation labels
+the star as pending until server proof, and critical capture failure remains
+visible without a modal covering the celebration. Confirmed reward eligibility,
+replay and challenge isolation remain unchanged.
+
 Historical victory retry: once an exact victory intention is durably captured,
 the end-of-grid retry resumes the account-scoped canonical and historical queues
 and requests fresh hydration through the same path as the account menu. It does
@@ -59,7 +106,9 @@ Worker activation retires only old `lumen-assets-*` caches and claims the client
 the existing controller-change reload installs the new modules. It never clears
 localStorage, IndexedDB, attempts, receipts or pending operations. This addresses
 online update freshness, not atomic versioning of an entire graph under partial
-network failure or cold-offline startup. The reported phone still requires a
+network failure. The P0 extension caches only query-free public `/` and
+`/index.html` navigation for offline restart; auth return URLs and private routes
+never enter that cache. HTTP refusals remain visible. The reported phone still requires a
 fresh diagnostic after publication; cache reproduction is not account recovery.
 There is no SQL/Auth or profile reconciliation change in this delivery.
 
@@ -84,7 +133,7 @@ merge rewards, discard local progress or retry through a different writer.
 ### Profile field classification and transition audit (2026-10-19)
 
 `CLOUD_PROFILE_FIELDS` in `src/persistence/cloud-profile.js` declares ownership
-and reconciliation categories for the 21 currently inventoried top-level fields.
+and reconciliation categories for the 22 currently inventoried top-level fields.
 Both reconciliation paths derive their achievement/catalogue classifications
 from it; coverage and compatible reconciliation share the tutorial-flag list
 and validation. It is a classification contract, not a complete profile schema
@@ -97,7 +146,9 @@ validator, transaction ledger or permission to bypass a server guard.
 | `historyBackup`, `badges`, `legacyAdventureAccess` | Historical cache/awards/access compatibility; existing specific merge policies |
 | `catalogueOrigin` | Server cohort; explicit contradictory origins hold |
 | `legacyVictoryRevision` | Exact verified server cursor; never client-incremented or max-merged |
-| `shards`, `xp`, `skyScore` | Transactions/derived score; existing legacy max recovery remains an approximation, not an audited economy |
+| `walletRevision` | Exact verified server wallet cursor; permits acknowledged currency decreases, never client-incremented |
+| `shards` | Verified wallet projection; unexplained scalar differences preserve both originals and hold |
+| `xp`, `skyScore` | Cumulative/derived compatibility policy; never evidence of a reconstructed spending history |
 | `daily`, `challenges` | Existing server/command ledgers; contradictory receipts hold |
 | `autonomySeen`, `fullBadgeIntroSeen`, `autoCrossUnlockSeen`, `speedBadgeIntroSeen` | Device acknowledgements; valid seen state is monotonic and grants no reward |
 | `skyHistoryVersion` | Coupled score-migration marker; equal-only during reconciliation, no generic version maximum |

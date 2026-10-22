@@ -6,6 +6,7 @@ import {createAttemptEngine} from "../game/attempt-engine.js";
 
 export function createHintTestSuite(model,api){
 const {handleSuccessAdvance,getSkyTourSteps,maybeShowAutoCrossUnlock,maybeShowBadgeMilestone}=api;
+const hintImplementation=()=>api.getHintImplementation?.()??document.getElementById("hint").onclick;
 const {saveLumenNickname,maybeOfferInstall,lumenShareUrl,successAchievement,shareLumenResult,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,simpleForcedPlacement,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,updateLiveReward,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults,openJourneyMap,closeMapOverlay,renderMap,advanceToNextPuzzle,startReplay}=api;
 async function runHintTests(){
  let results=[],cases=[];
@@ -74,7 +75,7 @@ async function runHintTests(){
  test("Navigation : Quête suivante après rejeu reste relative à la quête jouée",()=>advanceToNextPuzzle.toString().includes("const next=levelIndex+1")&&!advanceToNextPuzzle.toString().includes("replayMode?Math.min(sequentialSolvedCount"));
  test("Navigation : le rejeu conserve séparément la progression maximale",()=>startReplay.toString().includes("launchReplay(i)")&&startReplay.toString().includes("badgeCooldownRemaining")&&!startReplay.toString().includes("sequentialSolvedCount="));
  test("UX : les règles sont accessibles à la demande",()=>!!document.getElementById("tutorialHelp")&&!!document.getElementById("rulesModal")&&!!document.getElementById("replayLearning"));
- test("Vocabulaire : les indices n'utilisent plus l'ancien thème de l'eau",()=>!/Eau manquante|éteindre/.test(document.getElementById("hint").onclick.toString()));
+ test("Vocabulaire : les indices n'utilisent plus l'ancien thème de l'eau",()=>!/Eau manquante|éteindre/.test(hintImplementation().toString()));
  test("Campagne : progression strictement séquentielle",()=>{
    return document.getElementById("successNew").textContent.trim()==="Quête suivante";
  });
@@ -207,11 +208,11 @@ async function runHintTests(){
   return !!playerError();
  });
  test("Indice : une case unique de territoire passe avant les raisonnements complexes",()=>{
-   const hintSrc=document.getElementById("hint").onclick.toString(),simpleSrc=simpleForcedPlacement.toString();
+   const hintSrc=hintImplementation().toString(),simpleSrc=simpleForcedPlacement.toString();
    return hintSrc.includes("simpleForcedPlacement()||proofEngine()")&&simpleSrc.includes('axis:"region"')&&simpleSrc.includes("Il ne reste qu’une seule case possible dans ce territoire");
  });
  test("Indice : les formulations générées restent grammaticalement correctes",()=>{
-   const src=proofEngine.toString()+document.getElementById("hint").onclick.toString();
+   const src=proofEngine.toString()+hintImplementation().toString();
    return !src.includes("cette territoire")&&!src.includes("territoires surlignées")&&src.includes("ce territoire");
  });
  test("Aucun indice 'place' sans preuve structurée",()=>{

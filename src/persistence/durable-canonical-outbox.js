@@ -6,7 +6,7 @@ function browserStore(){let database;try{database=globalThis.indexedDB}catch{}re
 // Keep V1 identities/rewards readable by previous clients. Corrupt entries are
 // retained in place and reported, never treated as an empty or completed queue.
 export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserStore(),onIssue=()=>{},now=()=>new Date().toISOString(),newId=()=>globalThis.crypto.randomUUID(),namespace='Canonical'}={}){
- if(!['Canonical','Legacy'].includes(namespace))throw Error('Unknown victory domain');
+ if(!['Canonical','Legacy','Wallet'].includes(namespace))throw Error('Unknown operation domain');
  const domainPrefix=value=>value.replace('Canonical',namespace);
  const report=kind=>{try{onIssue({kind})}catch{}};
  const volatilePauses=new Map(); // Failed metadata writes hold this session only.
@@ -193,5 +193,5 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
   }
   return {pending,paused,retryable,authRequired,issues:result.issues,complete:result.complete};
  }
- return {enqueue,acknowledge,archiveRecreatedCapture,pause,resume,pending:async userId=>(await scan(userId)).groups.map(copies=>copies[0].entry),inspect};
+ return {domain:namespace,enqueue,acknowledge,archiveRecreatedCapture,pause,resume,pending:async userId=>(await scan(userId)).groups.map(copies=>copies[0].entry),inspect};
 }

@@ -43,7 +43,7 @@ export async function commitCanonicalCommand(client,quest,reward,operationId,{us
  if(!receipt)throw error?canonicalRecoveryFailure(error,status):Error('Canonical command receipt unconfirmed');
  if(!receiptMatches(receipt,operationId,quest.id,reward))throw canonicalRecoveryFailure({code:'22023'});
  let profile;
- try{profile=await loadVerifiedProfile(client)}catch(failure){throw canonicalRecoveryFailure(failure)}
+ try{profile=await loadVerifiedProfile(client,{userId})}catch(failure){throw canonicalRecoveryFailure(failure)}
  const saved=profile?.canonicalQuestState?.[quest.id];
  if(!sessionValid())throw Error('Canonical command session changed');
  if(!saved?.solved||!['autonomy','speed','noError','mastery'].every(key=>!reward?.badges?.[key]||saved.badges?.[key]===true||saved.badges?.[key]===1))throw Error('Canonical command projection unconfirmed');
@@ -64,7 +64,7 @@ export async function loadCommittedCanonicalAttempt(client,quest,operationId,{us
  if(receipt===null)return null;
  if(!receipt?.badges||typeof receipt.badges!=='object'||Array.isArray(receipt.badges)||
   !receiptMatches(receipt,operationId,quest.id,{badges:receipt.badges,performance:receipt.performance}))throw canonicalRecoveryFailure({code:'22023'});
- const profile=await loadVerifiedProfile(client),saved=profile?.canonicalQuestState?.[quest.id];
+ const profile=await loadVerifiedProfile(client,{userId}),saved=profile?.canonicalQuestState?.[quest.id];
  if(!sessionValid())throw Error('Canonical command session changed');
  if(!saved?.solved||!['autonomy','speed','noError','mastery'].every(key=>!receipt.badges[key]||saved.badges?.[key]===true||saved.badges?.[key]===1))throw Error('Canonical command projection unconfirmed');
  return {userId,profile,quest,receipt,newlyCompleted:false,alreadySaved:true,reward:{badges:receipt.badges,performance:receipt.performance,stars:1}};

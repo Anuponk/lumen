@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {legacyCommandsSupported,commitLegacyVictoryCommand,replayLegacyVictoryOutbox} from '../src/persistence/legacy-command.js';
+import {legacyCommandsSupported,commitLegacyVictoryCommand,loadCommittedLegacyAttempt,replayLegacyVictoryOutbox} from '../src/persistence/legacy-command.js';
 import {applyLegacyVictory,legacyVictoryRules} from '../src/campaign/legacy-victory.js';
 import {createDurableCanonicalVictoryOutbox} from '../src/persistence/durable-canonical-outbox.js';
 import {readFileSync} from 'node:fs';
@@ -208,9 +208,10 @@ function uiFixture(){
  const ctx={lumenUser:{id:userId},lumenSupabase:client,levelIndex:0,attemptEngine:{snapshot:()=>attempt},canonicalQuestForLegacy:()=>({id:legacyVictoryRules()[0].questId}),
   authSessionPending:false,qaActive:false,legacyVictoryBusy:false,legacyCommandInFlight:false,legacyVictoryRetry:null,legacyVictoryOutbox:box,
   activeGameSeconds:()=>45,localCalendarDay:()=>facts.qualifiedDay,usedHintThisGame:false,questFailed:false,cloudProfileReady:true,cloudProfileDirty:false,cloudProfileTimer:null,
-  canonicalOutboxRetryInFlight:false,lumenProgress:base(),legacyCommandsSupported,commitLegacyVictoryCommand,structuredClone,
+  canonicalOutboxRetryInFlight:false,lumenProgress:base(),legacyCommandsSupported,commitLegacyVictoryCommand,loadCommittedLegacyAttempt,structuredClone,
   flushCloudProfile:async()=>true,sameCloudProfile:(a,b)=>JSON.stringify(a)===JSON.stringify(b),saveLumenProgress:()=>{},recordCloudDiagnostic:()=>{},
-  refreshCanonicalOutboxNotice:async()=>{},canonicalRecovery:{schedule:()=>{}},scheduleCloudProfile:()=>{},msg:{textContent:'',append:()=>{}},document:{createElement:()=>({})}};
+  refreshCanonicalOutboxNotice:async()=>{},canonicalRecovery:{schedule:()=>{}},scheduleCloudProfile:()=>{},msg:{textContent:'',append:()=>{}},document:{createElement:()=>({})},
+  pendingVictoryView:null,presented:[],presentPendingVictory:(...args)=>ctx.presented.push(args),syncPresentation:{failed(){},acknowledged(){},celebration(){}}};
  const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');vm.createContext(ctx);vm.runInContext(functionSource(source,'captureLegacyCommandVictory'),ctx);
  return {ctx,box,state,run:()=>vm.runInContext('captureLegacyCommandVictory()',ctx)};
 }
@@ -219,7 +220,29 @@ test('real UI coordinator persists pending victory before readiness without opti
  const before=JSON.stringify(ctx.lumenProgress),result=await run();
  assert.equal(result.handled,true);assert.equal(result.saved,undefined);assert.equal(JSON.stringify(ctx.lumenProgress),before);
  assert.equal((await box.pending(userId)).length,1);assert.equal(state.receipts.size,0);
+ assert.equal(ctx.presented.length,1,'A durably captured win receives its pending celebration');
  assert.match(ctx.msg.textContent,/conservée sur cet appareil/);
+});
+
+test('a restored board reuses the acknowledged run receipt without recapturing later elapsed time',async()=>{
+ const {ctx,box,state,run}=uiFixture();
+ assert.equal((await run()).saved,true);
+ assert.equal((await box.pending(userId)).length,0);
+ ctx.activeGameSeconds=()=>99;
+ const restored=await run();
+ assert.equal(restored.saved,true);assert.equal(restored.facts.seconds,45);
+ assert.equal(state.profile.performances[0].attempts,1);assert.equal(state.receipts.size,1);
+ assert.equal(state.calls.filter(([name])=>name==='lumen_commit_legacy_command').length,1,'Restart recovery only reads the existing receipt and current profile');
+ assert.equal((await box.pending(userId)).length,0,'No changed intention is created for an acknowledged operation');
+});
+
+test('offline receipt lookup still captures a durable new victory before holding',async()=>{
+ const {ctx,box,state,run}=uiFixture();
+ ctx.loadCommittedLegacyAttempt=async()=>{throw TypeError('Failed to fetch')};
+ await run();
+ assert.equal((await box.pending(userId)).length,1);
+ assert.equal(state.receipts.size,0);assert.equal(ctx.lumenProgress.xp,0);
+ assert.equal(ctx.presented.length,1);
 });
 test('real UI retry freezes time after lost receipt read and installs only verified current state',async()=>{
  const {ctx,box,state,run}=uiFixture();state.missingReceipt=true;
@@ -393,6 +416,7 @@ test('durable victory retry rehydrates like the account menu instead of resendin
   ctx.msg.append=(_space,element)=>{button=element};
   ctx.document.createElement=()=>({remove(){}});
   ctx.cloudProfileReady=failure!=='not-ready';
+  ctx.cloudProfileDirty=failure==='stale-baseline';
   ctx.flushCloudProfile=async()=>{flushes++;return false};
   ctx.celebrateSuccess=()=>run();
   ctx.location={reload:()=>ctx.reloads++};ctx.reloads=0;

@@ -238,6 +238,15 @@ request. The copied report remains privacy-safe and excludes nickname/identity.
 
 
 ### Shared quest celebration
+P0 synchronization presentation distinguishes confirmed, transient/durably pending,
+persistent/protected and unconfirmed local preservation. A recoverable failure
+does not open a technical modal. A durably captured solved grid may celebrate
+with an explicitly pending star; newly owned badges, balances and rights still
+require server confirmation. Persistent status becomes actionable after the
+actual celebration ends; failed local preservation is explicit immediately.
+The next known quest can use the durable navigation view under existing access
+rules, without crediting the pending reward locally. Existing hint prices,
+assistance teaching and badge qualification milestones remain unchanged.
 Historical and canonical campaign quests share the constellation reveal and
 confirmed star/badge panel. Only first completion announces a new star; replays
 show the constellation and newly earned badges without awarding another star.

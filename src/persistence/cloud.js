@@ -155,6 +155,10 @@ async function initLumenCloud(){
 
 async function cloudSaveDaily(date,index){
  if(cloudWritesDisabled()||!model.lumenSupabase||!model.lumenUser)return null;
+ if(hooks.claimWalletDaily){
+  const result=await hooks.claimWalletDaily(date,index);
+  if(result!==undefined)return result;
+ }
  const {data,error}=await model.lumenSupabase.rpc("lumen_claim_daily",{p_puzzle_id:index+1});
  if(error){console.warn("LUMEN daily save",error);return null}
  return data?.[0]||null;
@@ -186,10 +190,12 @@ async function cloudMergeHistoricalPerformance(anonymousId){
 
 async function cloudMergeDaily(){
  if(cloudWritesDisabled()||!model.lumenSupabase||!model.lumenUser)return;
+ const owner=model.lumenUser.id,client=model.lumenSupabase,profile=model.lumenProgress;
  const [{data,error},{data:engagement,error:engagementError}]=await Promise.all([
-   model.lumenSupabase.rpc("lumen_get_daily"),
-   model.lumenSupabase.rpc("lumen_get_engagement")
+    client.rpc("lumen_get_daily"),
+    client.rpc("lumen_get_engagement")
  ]);
+ if(model.lumenUser?.id!==owner||model.lumenSupabase!==client||model.lumenProgress!==profile)return;
  if(error){console.warn("LUMEN daily load",error);return}
  if(engagementError)console.warn("LUMEN engagement load",engagementError);
  model.lumenProgress.daily=model.lumenProgress.daily||{dates:{},rewards:{}};
@@ -199,7 +205,7 @@ async function cloudMergeDaily(){
  const rewards=engagement?.[0]?.rewarded_days||{};
  for(const [day,amountRaw] of Object.entries(rewards)){
    const key="streak:"+day,amount=Math.max(0,Number(amountRaw)||0);
-   if(amount&&!model.lumenProgress.daily.rewards[key]){
+    if(amount&&!model.lumenProgress.daily.rewards[key]&&!model.lumenProgress.walletRevision){
      model.lumenProgress.daily.rewards[key]=amount;
      model.lumenProgress.shards=Math.max(0,Number(model.lumenProgress.shards)||0)+amount;
    }

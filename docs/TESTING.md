@@ -258,6 +258,51 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+### P0 integration: wallet, pending victories and observations (22 October 2026)
+
+PR CI must not mutate the catalogue it verifies. The issue-222 generator retains
+its audit and downloadable artifact, with read-only repository permission and
+no automatic branch commit/push. `issue-222-runtime-tests.mjs` guards that
+boundary; `catalogue-compatibility-tests.mjs` still verifies all immutable quest
+identities and ordinals. A generator-triggered ordinal rewrite was caught during
+this lot and reverted to the already validated catalogue, without a new revision.
+
+The mandatory Node gate includes `cloud-daily-session-tests.mjs`,
+`cloud-wallet-command-tests.mjs`, `cloud-wallet-reconciliation-tests.mjs`,
+`cloud-pending-navigation-tests.mjs`, `cloud-sync-presentation-tests.mjs`,
+`cloud-victory-notification-tests.mjs` and `cloud-outbox-health-tests.mjs`.
+They cover account/client/logout races, exact receipts after lost responses,
+first-activation cache recovery, refusal of unrelated/unknown local data,
+currency decreases, preserved originals, all four presentation states,
+non-modal transient failures and bounded private telemetry under quota.
+
+`wallet-flow-browser.mjs` extends the existing account browser suite with actual
+pointer actions, native modules and real IndexedDB/localStorage: lost debit reply,
+missing receipt then restart, same paid hint sequence, two offline wins,
+pending-star presentation, next-quest navigation and recovery. Its Auth/RPC
+transport is synthetic; this does not replace PostgreSQL or Android validation.
+
+The SQL gate adds the two prepared migrations and
+`wallet-command-receipts.sql` / `outbox-health-observations.sql`. Assertions cover
+exactly one debit, altered evidence, expected account, stale snapshots/cursor
+removal, atomic rollback, daily deduplication, historical-command compatibility,
+private access, incident age, late packets, stable alert keys and retention.
+`wallet-command-concurrency.py` uses the explicitly guarded disposable localhost
+  database; duplicate requests, distinct competing spends and insufficient funds
+  cannot overdraw the wallet.
+
+Legacy tests that expected a maximum shard balance now assert a protected hold,
+unchanged cloud and retained local evidence. Independent achievement, XP, daily
+and performance merge cases remain covered. Hint grant tests execute all grant
+branches, including server-confirmed spending, rather than counting source text.
+
+Release gates are `quality`, `ledger-sql`, `reconciliation`, `docs-consistency`
+and `cloud-contract` on the reviewed PR SHA. They must be required by branch
+protection; running workflows alone does not enforce that. Android installed-PWA,
+multi-device field validation and the specific Loutre recipe remain separate
+manual exit evidence. No production fixtures or real-player repair are authorized
+by a green test run.
+
 Victory challenges (#511): the existing social UI Node suite executes the real
 renderer's first-win/replay/Mastery/support matrix. The canonical replay browser
 suite imports `victory-challenge-browser.mjs`: mobile/desktop first victories

@@ -1067,3 +1067,8 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .app:has(#challengeBanner:not([hidden])) #board{width:var(--finale-board-size)!important}
 
 .challenge-unavailable{font-size:12px;line-height:1.35;color:#b9d8e8;margin:4px 0}
+
+/* Sync status stays in normal flow and never covers a celebration. */
+.cloud-sync-status{font-size:.8rem;line-height:1.4;max-width:32rem;padding:.4rem .6rem;color:var(--muted,#b6c2d9)}
+.cloud-sync-status[role="alert"]{color:#ffd6b0}
+.cloud-sync-status button{font:inherit;margin:.2rem}

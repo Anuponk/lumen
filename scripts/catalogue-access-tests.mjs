@@ -180,6 +180,7 @@ test('the actual UI adapter and start guard share readiness without bypassing pr
  const group=quests.filter(q=>q.packId===pack.id&&q.constellationId===pack.id+'-new-01');
  const progress={solved:Object.fromEntries(quests.filter(q=>q.packId===pack.id&&q.legacyIndex!==null).map(q=>[q.legacyIndex,1]))};
  const context={canonicalInsertedQuestDecision,canonicalQuestList,lumenProgress:progress,lumenEntitlements:[],adventureAccessEntitlements:()=>[],attemptEngine:{snapshot:()=>null},qaActive:false,lumenUser:{id:'synthetic'},cloudProfileReady:true};
+ context.navigationProgress=()=>context.lumenProgress;
  vm.createContext(context);
  vm.runInContext(['canonicalQuestAccess','canonicalQuestAvailable','canonicalQuestLockReason','startCanonicalQuest'].map(name=>functionSource(source,name)).join('\n'),context);
  assert.equal(context.canonicalQuestAvailable(group[0]),true);

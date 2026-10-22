@@ -4,6 +4,12 @@ import {canonicalQuestCount,canonicalQuestByOrdinal,canonicalQuestById,canonical
 import {playableQuest} from "../src/campaign/playable-quests.js";
 import {adminCanonicalCatalogueTree} from "../src/campaign/admin-catalogue.js";
 import {resolveCanonicalQuest,nextCanonicalQuest} from "../src/campaign/playable-navigation.js";
+// A PR verification must not rewrite the registry behind the immutable
+// catalogue contract. Generation remains an audited, downloadable artifact.
+const generationWorkflow=fs.readFileSync(new URL('../.github/workflows/issue-222-generate.yml',import.meta.url),'utf8');
+assert.match(generationWorkflow,/permissions:\s+contents: read/);
+assert.doesNotMatch(generationWorkflow,/git (?:commit|push)\b/);
+assert.match(generationWorkflow,/uses: actions\/upload-artifact@v4/);
 const quests=canonicalQuestList();
 assert.equal(canonicalQuestCount(),400);
 assert.equal(new Set(quests.map(q=>q.id)).size,400);
@@ -82,7 +88,7 @@ for(const q of quests.filter(q=>q.legacyIndex===null)){
  assert.equal(q.audit.solutions,1);
  assert(q.reg.length>=6);
 }
-assert.match(gameScreen,/canonicalCampaignQuestDecision\(canonicalQuestForLegacy\(index\),lumenProgress,/);
+assert.match(gameScreen,/canonicalCampaignQuestDecision\(canonicalQuestForLegacy\(index\),navigationProgress\(\),/);
 assert.match(gameScreen,/const legacy=quest\.legacyIndex,solved=legacy!==null\?!!lumenProgress\.solved/);
 assert.match(gameScreen,/function historicalContinuationAllowed\(index\)/);
 assert.match(gameScreen,/const played=canonicalActiveQuest\|\|canonicalQuestForLegacy\(levelIndex\)/);

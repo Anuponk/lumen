@@ -1,5 +1,5 @@
 const CACHE="lumen-assets-v10";
-const SHELL=["/manifest.webmanifest","/icon.svg","/icon-maskable.svg"];
+const SHELL=["/manifest.webmanifest","/icon.svg","/icon-maskable.svg","/"];
 
 self.addEventListener("install",e=>{
  self.skipWaiting();
@@ -23,7 +23,22 @@ self.addEventListener("fetch",e=>{
  const isNavigation=e.request.mode==="navigate"||url.pathname==="/"||url.pathname.endsWith("/index.html");
 
  if(isNavigation){
-  e.respondWith(fetch(e.request,{cache:"no-store"}));
+  // Only a public, query-free document is eligible. Auth return URLs and
+  // private routes must never enter the shell cache or fall back to it.
+  const publicShell=['/','/index.html'].includes(url.pathname)&&url.search==='';
+  e.respondWith((async()=>{
+   try{
+    const response=await fetch(e.request,{cache:'no-store'});
+    if(publicShell&&response.ok){
+     const copy=response.clone();
+     e.waitUntil(caches.open(CACHE).then(cache=>cache.put(e.request,copy)).catch(()=>{}));
+    }
+    return response;
+   }catch(error){
+    if(publicShell){const cached=await caches.open(CACHE).then(cache=>cache.match(e.request)).catch(()=>undefined);if(cached)return cached}
+    throw error;
+   }
+  })());
   return;
  }
 

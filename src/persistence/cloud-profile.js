@@ -8,7 +8,7 @@ export const CLOUD_PROFILE_FIELDS=Object.freeze(Object.fromEntries(Object.entrie
  badges:["legacy","achievement"],stars:["command","achievement"],noHint:["command","achievement"],
  performances:["command","achievement"],canonicalQuestState:["ledger","achievement"],
  autonomousWins:["command","achievement"],legacyAdventureAccess:["compatibility","achievement"],
- catalogueOrigin:["server","catalogue"],legacyVictoryRevision:["server","revision"],
+ catalogueOrigin:["server","catalogue"],legacyVictoryRevision:["server","revision"],walletRevision:["server","revision"],
  shards:["transaction","legacy_balance"],xp:["transaction","legacy_balance"],skyScore:["derived","legacy_balance"],
  daily:["server","ledger"],challenges:["command","ledger"],
  autonomySeen:["device","intro"],fullBadgeIntroSeen:["device","intro"],
@@ -59,9 +59,13 @@ export async function backupIfUnchanged(supabase,profile,expectedRemote){
   return validateCloudProfile(profile);
 }
 
-export async function loadVerifiedProfile(supabase){
-  const {data,error}=await supabase.rpc("lumen_restore_profile");
-  if(error)throw Error("Impossible de restaurer le profil : "+error.message);
+export async function loadVerifiedProfile(supabase,{userId}={}){
+  const {data,error}=await supabase.rpc("lumen_restore_profile",userId?{p_expected_user_id:userId}:undefined);
+  if(error){
+    const failure=Error("Impossible de restaurer le profil");
+    if(typeof error.code==='string'&&/^[A-Z0-9]{5,12}$/.test(error.code))failure.code=error.code;
+    throw failure;
+  }
   return data==null?null:validateCloudProfile(data);
 }
 
@@ -219,11 +223,29 @@ function legacyRevisionConflict(local,cloud){
   return {status:"blocked",reason:"stale_legacy_revision",fields:["legacyVictoryRevision"]};
  return null;
 }
+function walletConflict(local,cloud){
+ for(const profile of [local,cloud]){
+  const revision=profile.walletRevision;
+  if(revision!==undefined&&(!Number.isSafeInteger(revision)||revision<1))
+   return {status:'blocked',reason:'invalid_wallet_revision',fields:['walletRevision']};
+ }
+ if((local.walletRevision??0)>(cloud.walletRevision??0))
+  return {status:'blocked',reason:'stale_wallet_revision',fields:['walletRevision']};
+ const left=Number(local.shards??0),right=Number(cloud.shards??0);
+ if(!Number.isSafeInteger(left)||!Number.isSafeInteger(right)||left<0||right<0)
+  return {status:'blocked',reason:'invalid_balance',fields:['shards']};
+ if(!Object.hasOwn(local,'shards'))return null;
+ // A lower balance is legitimate after a receipted debit. Without a cursor on
+ // both copies, neither a grant nor a spend can be reconstructed from scalars.
+ if(left!==right&&!(local.walletRevision&&cloud.walletRevision>local.walletRevision))
+  return {status:'blocked',reason:'mutable_balance',fields:['shards']};
+ return null;
+}
 export function cloudSafelyCoversLocal(local,remote){
   if(!local || typeof local!=="object" || Array.isArray(local))return true;
   const cloud=validateCloudProfile(remote);
   if(!mergeCatalogueOrigin(local,cloud).ok)return false;
-  if(legacyRevisionConflict(local,cloud))return false;
+  if(legacyRevisionConflict(local,cloud)||walletConflict(local,cloud))return false;
   // Coverage is an installation boundary too: it must not silently drop local
   // fields that the reconciler would hold for explicit review.
   for(const field of Object.keys(local)){
@@ -239,6 +261,7 @@ export function cloudSafelyCoversLocal(local,remote){
   const autonomy=mergeAutonomousWins(local.autonomousWins,cloud.autonomousWins);
   if(!autonomy.ok||!sameCloudProfile(autonomy.value,cloud.autonomousWins??{}))return false;
   for(const field of ["shards","xp","skyScore"]){
+    if(field==='shards')continue;
     if(Number(local[field]||0)>Number(cloud[field]||0))return false;
   }
   for(const field of ["solved","historyBackup","badges","stars","noHint"]){
@@ -274,7 +297,7 @@ export function cloudSafelyCoversLocal(local,remote){
     // Verified command profiles may add server-owned daily/challenge receipts.
     // A superset covers old facts; conflicting/missing amounts still refuse.
     const covers=(a,b)=>a&&typeof a==='object'&&!Array.isArray(a)?b&&typeof b==='object'&&!Array.isArray(b)&&Object.entries(a).every(([k,v])=>Object.hasOwn(b,k)&&covers(v,b[k])):sameCloudProfile(a,b);
-    if(current && Object.keys(current).length && !(Number.isSafeInteger(cloud.legacyVictoryRevision)&&cloud.legacyVictoryRevision>0?covers(current,cloud[field]||{}):sameCloudProfile(current,cloud[field]||{})))return false;
+    if(current && Object.keys(current).length && !((cloud.legacyVictoryRevision>0||cloud.walletRevision>0)?covers(current,cloud[field]||{}):sameCloudProfile(current,cloud[field]||{})))return false;
   }
   return true;
 }
@@ -375,19 +398,23 @@ export function reconcileCloudAchievements(storage,remote){
   return {changed:true,backupKey,currencyConflict:Number(local.shards)!==Number(cloud.shards)};
 }
 
-export async function initializeCloudProfile(supabase,localProfile){
+export async function initializeCloudProfile(supabase,localProfile,{userId}={}){
  const proposed=validateCloudProfile(localProfile);
- const {data,error}=await supabase.rpc("lumen_initialize_profile",{p_payload:proposed});
- if(error)throw Error("Initialisation cloud impossible : "+error.message);
+ const {data,error}=await supabase.rpc("lumen_initialize_profile",{p_payload:proposed,...(userId?{p_expected_user_id:userId}:{})});
+ if(error){
+  const failure=Error("Initialisation cloud impossible : refus du serveur");
+  if(typeof error.code==='string'&&/^[A-Z0-9]{5,12}$/.test(error.code))failure.code=error.code;
+  throw failure;
+ }
  const saved=validateCloudProfile(data);
- const verified=await loadVerifiedProfile(supabase);
+ const verified=await loadVerifiedProfile(supabase,{userId});
  if(!sameCloudProfile(saved,verified))throw Error("Profil cloud initial non vérifié");
  return saved;
 }
-export async function compareAndSwapCloudProfile(supabase,profile,expected){
+export async function compareAndSwapCloudProfile(supabase,profile,expected,{userId}={}){
  const next=validateCloudProfile(profile),baseline=validateCloudProfile(expected);
  if(next.catalogueOrigin===undefined&&baseline.catalogueOrigin===undefined&&catalogueOrigin(baseline)===currentCatalogueOrigin)next.catalogueOrigin=currentCatalogueOrigin;
- const {data,error}=await supabase.rpc("lumen_cas_profile",{p_expected:baseline,p_payload:next});
+ const {data,error}=await supabase.rpc("lumen_cas_profile",{p_expected:baseline,p_payload:next,...(userId?{p_expected_user_id:userId}:{})});
  if(error){
   // Only fixed guard categories and bounded provider codes reach diagnostics.
   // Do not retain provider messages, details, hints or an unsanitized cause.
@@ -536,13 +563,14 @@ export async function archiveCanonicalStartMetadata(storage,remote,{quest,attemp
  * immutable/mutable ledgers are identical. Never infer shard/XP transactions.
  * Preserve verified copies of BOTH sides before any server write.
  */
-export async function reconcileDominantLocalProfile(supabase,storage,remote){
+export async function reconcileDominantLocalProfile(supabase,storage,remote,{userId}={}){
  const cloud=validateCloudProfile(remote),raw=storage.getItem("lumenProgressV1");
  if(!raw)return {status:"blocked",reason:"missing_local"};
  let local;
  try{local=validateCloudProfile(JSON.parse(raw))}catch{return {status:"blocked",reason:"invalid_local"}}
  const revisionConflict=legacyRevisionConflict(local,cloud);
  if(revisionConflict)return revisionConflict;
+ if(Number(local.shards??0)!==Number(cloud.shards??0))return {status:'blocked',reason:'mutable_balance'};
  const origin=mergeCatalogueOrigin(local,cloud);
  if(!origin.ok)return {status:'blocked',reason:'catalogue_origin_conflict',fields:['catalogueOrigin']};
  if(origin.value!==undefined)local.catalogueOrigin=origin.value;
@@ -571,36 +599,41 @@ export async function reconcileDominantLocalProfile(supabase,storage,remote){
  await preserveRecoverySnapshot(storage,"lumenBeforeCloudReconcileRemote_",JSON.stringify(cloud));
  // CAS refuses overwrite when another device changed cloud after our read.
  let written;
- try{written=await compareAndSwapCloudProfile(supabase,local,cloud)}catch(error){
+ try{written=await compareAndSwapCloudProfile(supabase,local,cloud,{userId})}catch(error){
   // A verified snapshot exists and both originals have been preserved. This
   // authority refusal holds reconciliation, not independent command recovery.
   if(error.code==='LEGACY_COMMAND_REQUIRED')return {status:'blocked',reason:'legacy_command_required',...legacyAuthorityConflictDetails(local,cloud)};
   throw error;
  }
- const verified=await loadVerifiedProfile(supabase);
+ const verified=await loadVerifiedProfile(supabase,{userId});
  if(!sameCloudProfile(verified,written))throw Error("Reconciliation cloud non verifiee");
  return {status:"reconciled",profile:verified};
 }
 
 /** Conservative two-way reconciliation. Uncertain rewards are never inferred. */
-export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
+export async function reconcileCompatibleCloudProfiles(supabase,storage,remote,{userId}={}){
  const cloud=validateCloudProfile(remote),raw=storage.getItem("lumenProgressV1");
  if(!raw)return {status:"blocked",reason:"missing_local"};
  let local;
  try{local=validateCloudProfile(JSON.parse(raw))}catch{return {status:"blocked",reason:"invalid_local"}}
  const revisionConflict=legacyRevisionConflict(local,cloud);
  if(revisionConflict)return revisionConflict;
+ const walletHold=walletConflict(local,cloud);
+ if(walletHold){
+  await preserveRecoverySnapshot(storage,"lumenBeforeCloudReconcileLocal_",raw);
+  await preserveRecoverySnapshot(storage,"lumenBeforeCloudReconcileRemote_",JSON.stringify(cloud));
+  return walletHold;
+ }
  const merged=structuredClone(cloud);
- // Player-first recovery: preserve the higher observed balances and XP.
- // This is intentionally a conservative player-favourable approximation, NOT
- // a reconstructed transaction history. Keep both originals for an audit.
+ // Spendable currency follows the verified wallet cursor, never numeric max.
+ // XP and derived score keep their existing cumulative compatibility policy.
  const differingBalances=[];
  for(const field of ["shards","xp","skyScore"]){
   const left=Number(local[field]??0),right=Number(cloud[field]??0);
   if(!Number.isFinite(left)||!Number.isFinite(right)||left<0||right<0)
    return {status:"blocked",reason:"invalid_balance",fields:[field]};
   if(left!==right)differingBalances.push(field);
-  merged[field]=Math.max(left,right);
+   merged[field]=field==='shards'?right:Math.max(left,right);
  }
  // Daily engagement and challenge ledgers can grant rewards: never sum them
  // or claim to reconstruct their history.
@@ -667,7 +700,7 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  const unknownDifferences=[];
  for(const field of new Set([...Object.keys(cloud),...Object.keys(local)])){
   // merged starts from cloud: keep its exact verified cursor, including absence.
-  if(field==="legacyVictoryRevision"||safeFields.has(field)||introFlags.includes(field)||["shards","xp","skyScore","daily","challenges"].includes(field))continue;
+   if(field==="legacyVictoryRevision"||field==="walletRevision"||safeFields.has(field)||introFlags.includes(field)||["shards","xp","skyScore","daily","challenges"].includes(field))continue;
   if(!sameCloudProfile(local[field]??null,cloud[field]??null))unknownDifferences.push(field);
  }
  if(unknownDifferences.length)return {status:"blocked",reason:"unclassified_field",fields:unknownDifferences};
@@ -733,11 +766,11 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote){
  await preserveRecoverySnapshot(storage,"lumenBeforeCloudReconcileLocal_",raw);
  await preserveRecoverySnapshot(storage,"lumenBeforeCloudReconcileRemote_",JSON.stringify(cloud));
  let updated;
- try{updated=await compareAndSwapCloudProfile(supabase,validateCloudProfile(merged),cloud)}catch(error){
+ try{updated=await compareAndSwapCloudProfile(supabase,validateCloudProfile(merged),cloud,{userId})}catch(error){
   if(error.code==='LEGACY_COMMAND_REQUIRED')return {status:'blocked',reason:'legacy_command_required',...legacyAuthorityConflictDetails(merged,cloud)};
   throw error;
  }
- const verified=await loadVerifiedProfile(supabase);
+ const verified=await loadVerifiedProfile(supabase,{userId});
  if(!sameCloudProfile(updated,verified))throw Error("Reconciliation cloud non verifiee");
  return {status:"reconciled",profile:verified,playerFavouredBalances:differingBalances};
 }

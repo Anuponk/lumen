@@ -13,6 +13,10 @@ Describe the change and linked issue.
 
 **Migration / rollback / cloud restore:** <!-- Required: explain old saves and rollback, or N/A with reason. -->
 
+**Command / UI boundary:** <!-- For transactions: operation identity, durable capture, exact receipt/current-profile verification, concurrency/account guards. For pending victories: celebration versus confirmed rewards; navigation projection never saved. -->
+
+**Release evidence:** <!-- Exact SHA/checks; Android real versus simulated; SQL application and deployment require their own authorization. A successful merge is not release verification. -->
+
 ## Other validation
 - [ ] Applicable non-regression tests run
 - [ ] Relevant UI/mobile smoke tests run or N/A

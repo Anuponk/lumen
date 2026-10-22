@@ -4,6 +4,16 @@ Baseline: `bef5f32`. All paths are repository-relative. This phase indexes exist
 
 ## Select a check
 
+P0 integration (#248/#391/#398/#518): `cloud-wallet-command-tests.mjs` covers
+lost replies, real durable outbox restart, cursor recovery and late-token account
+changes; `cloud-wallet-reconciliation-tests.mjs` rejects unexplained balances.
+Daily session, pending navigation, sync presentation, victory notification and
+outbox health suites are required Node checks. `wallet-flow-browser.mjs` extends
+the account runner with native button clicks, real browser storage and simulated
+RPC; it does not prove real Android behavior. SQL fixtures run in PostgreSQL CI;
+`wallet-command-concurrency.py` races duplicate and distinct competing spends.
+The PWA runner checks offline public navigation with retained local/IndexedDB data.
+
 Issues #511/#513/#514: `social-challenge-ui-tests.mjs` executes the victory decision
 matrix; `victory-challenge-browser.mjs` is imported by canonical replay tests.
 `sky-issue-513-514-browser.mjs` extends the existing sky browser runner with rail

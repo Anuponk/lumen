@@ -2,6 +2,166 @@
 
 This is a staged implementation record, not a declaration that #391 is closed.
 
+## Final delivery evidence (22 October 2026)
+
+The owner explicitly authorized both production SQL migrations, the final merge
+and deployment. Production applied `20261022082153_wallet_command_authority`
+and `20261022082203_outbox_health_observations`. Supabase assigned these versions;
+the reviewed SQL from candidate `65770fa` is unchanged. Repository migration
+filenames and the isolated PostgreSQL workflow match that history. No backfill,
+player repair, fixture or additional paid resource was created in production.
+
+Post-migration checks confirm the three tables have RLS and deny direct reads to
+both client roles, historical commands adopt the wallet projection and the
+capability-gated cockpit includes outbox health. Required candidate CI passed
+quality, cloud-contract, reconciliation, ledger-sql and docs-consistency; the
+metadata-only delivery commit requires those same gates before the single merge.
+
+The owner's Android recipe on the free isolated preview v2 confirms two pending
+victories in airplane mode with Wi-Fi disabled, followed by confirmation after
+reconnection and reload. That preview uses simulated Auth/RPC; it does not prove
+live Supabase transport or the installed-PWA update scenario. The v1 fixture's
+false acknowledgements under a stale navigator.onLine were reproduced and fixed
+in the preview only; uncached HTTP reachability gates every synthetic RPC. Browser
+checks cover normal and stale connectivity indicators, offline restart and
+one-time replay without duplicated rewards or debits. The owner separately
+reports Loutre resolved; do not attribute that recovery to this unreleased code.
+
+Production publication, operational retention scheduling and live observation
+must be recorded after their actual verification. Keep the issues requiring
+those results open; schema application and merge alone do not prove completion.
+
+## P0 integration and recovery runbook (22 October 2026)
+
+Baseline: `650a39b904970221a4a42c28073dade92d9f5617`. Work is integrated on one
+topic branch; no intermediate merge or publication. #470 stays outside the lot
+and its completed phone recipe is retained; #468 retains general refactoring.
+
+Prepared work covers daily session isolation, wallet commands/receipts and
+snapshot guards, exact-cursor reconciliation, pending-only navigation,
+non-blocking celebrations and outbox health observations. It does not authorize
+production SQL, deployment, player repair or closure of the four tracking issues.
+
+Profile restore, initialization and CAS have additive expected-account overloads.
+The P0 client captures its owner/client before hydration awaits and binds these
+requests on the server; delayed SDK token changes cannot install a foreign
+profile before the UI auth callback. An unresolved startup session cannot award
+a guest victory from a restored solved board. Legacy zero-argument readers and
+existing writers remain available to old clients under their existing guards.
+After acknowledgement, a restored solved historical board reads its existing
+operation receipt and current profile before celebrating. It does not recapture
+elapsed time or create a changed intention for the same immutable identity.
+An offline receipt lookup still retains a durable victory before holding.
+
+### Diagnose without changing player data
+
+1. Record document/module build, PWA/browser mode, account context and the bounded
+   diagnostic event/stage/code. Never copy tokens, email or complete saves into logs.
+2. Distinguish capture failure, retained durable intention, receipt read failure,
+   stale cursor, protected-field conflict and failed cache installation. A health
+   observation or solved flag alone is not a command acknowledgement.
+3. Preserve the local/remote originals and existing outbox/attempt stores. The
+   export action is available without purging or resetting player state.
+4. Verify the same expected account and exact operation request, independently
+   read its receipt, then read the current profile. Replay the same identity after
+   a lost reply. Never reinstall the old profile from a receipt.
+5. A verified wallet receipt may restore only its exact delta/cursor with all
+   unrelated local fields preserved. Corruption, quota, unknown fields, contradictory
+   evidence or missing authority remain an actionable hold. Do not infer old debits
+   or grants from their maximum or convert pre-command wins automatically.
+6. For an ambiguous historical divergence, prepare a separate evidence-backed
+   recovery proposal. No real-player write/backfill is part of this lot.
+
+### Observation and alerts
+
+The existing capability-gated sync-health cockpit adds private per-client outbox
+observations: pending count, oldest pending timestamp, failures, state, release
+and bounded platform. Device/session IDs are random UUIDs, never Auth tokens or
+emails; operation IDs, requests, profiles and reward facts are excluded. A server
+expected-account assertion prevents late-token changes from attributing an old
+observation to another account. Sequence/session-start ordering rejects old packets.
+
+Alerts cover critical preservation immediately, unresolved operations at fifteen
+minutes, three failures and twenty pending operations. Their keys stay stable
+for an unresolved incident; retries do not reset its age. The cockpit displays
+them once per row rather than creating repeated player toasts. This is a cockpit
+alert, not a claim that email/push delivery has been installed.
+
+`lumen_commands.prune_sync_observations()` removes only resolved metadata older
+than thirty days, with no player access. Production scheduling requires a reviewed
+operator/cron step after migration approval. Unresolved incidents and all command
+receipts remain retained; dropping receipts during rollback would break idempotence.
+Denied browser storage may force a new random client ID on reload; a badly skewed
+device clock may delay observation acceptance. Neither condition changes gameplay
+or proves recovery. Diagnose stale observations rather than clearing unknown work.
+
+### Delivery and rollback boundaries
+
+Do not merge before the complete lot's applicable gates and Android exit recipe.
+The migrations were applied with explicit owner authorization, as recorded above.
+Rollout must coordinate the wallet-aware
+client, additive SQL and old-PWA update path. Existing old clients can require an
+update after wallet activation; the server guard must remain active.
+Rollback retains authority, receipts and durable intentions. Returning to a client
+that debits local currency is not a safe rollback for an activated account.
+
+Candidate CI, the device offline/reconnection recipe and the owner's Loutre
+confirmation are recorded above. Installed-PWA update and actual production
+publication/observation remain distinct evidence, never inferred from emulation.
+
+Local validation completed on 22 October: `npm run test:full`, 30 outer suites
+with zero failures; its quality gate contains 114 Node suites and nine browser
+paths (379.8 seconds), plus 29 complementary outer suites. The catalogue audit
+and embedded hint regressions passed. Targeted historical-command tests pass
+31 cases, including acknowledged-run restart and offline receipt lookup.
+PGlite exercised the prepared SQL with existing catalogue-origin guards: wallet
+receipts/rollback/daily/baseline refusal/account isolation and outbox alert/retention
+fixtures passed. PGlite is distinct from PostgreSQL 17 concurrent CI and live
+Supabase. No Android, Loutre, production SQL or deployment result is implied.
+`main` required checks and administrator enforcement were applied and verified
+by a separate GitHub settings read; see `docs/RELEASE.md`.
+
+### Remaining risks and issue decisions
+
+| Priority | Remaining condition | Required evidence / response |
+|---|---|---|
+| P0 release | Wallet activation changes the authoritative writer; old clients can hold after activation | Coordinate approved additive SQL, candidate client and PWA update. Keep server guards and receipts during rollback |
+| P0 exit | Android preview offline/reconnect passes; owner reports Loutre resolved; installed-PWA update and live candidate transport remain distinct | Preserve recorded evidence and verify actual publication/device update. No real profile repair is authorized |
+| P1 recovery | Unknown fields or unreceipted historical currency/daily credits cannot be safely inferred | Keep both originals and a visible review hold; reconcile by audited evidence, never max/reset/backfill |
+| P1 operations | Server observations and retention need approved rollout and operator scheduling | Verify capability-gated alerts and resolved-only pruning after application. Offline clients cannot report until transport returns |
+| P2 update | Interrupted loads do not provide atomic replacement of the complete module graph | Verify actual module/build versions and retained stores on device; do not purge player data |
+
+| Issue | Candidate contribution | Closure recommendation |
+|---|---|---|
+| #248 | Permanent ownership contract, field inventory, PR declaration and five enforced checks on `main` | Contract scope is ready for review once exact-SHA CI passes; do not infer #391/#398 completion |
+| #391 | Wallet/daily commands, immutable receipts, guarded reconciliation, durable pending navigation and restart recovery | Keep open until approved rollout and Android/Loutre recovery evidence; ambiguous profiles stay explicitly tracked |
+| #398 | Cross-cutting regression gates, isolated SQL/chaos/browser coverage, private aggregate cockpit alerts and retention function | Keep open until PostgreSQL CI, real Android/Loutre, operational retention and live observations are demonstrated |
+| #518 | Four sync states, pending celebration and star, deferred persistent warnings, immediate preservation-risk notice | Keep open until candidate CI and actual Android celebration/recovery recipe are validated |
+
+### Android candidate exit recipe (partial device evidence recorded above)
+
+Use an isolated test account and record exact server/document/module SHA,
+Android version, browser/PWA version and installed mode. Do not clear a real
+player's storage. Capture before/after confirmed currency, rewards, attempt and
+outbox counts without publishing the save payload.
+
+1. Confirm a normal victory and paid help; reconnect from a second device and
+   verify the same confirmed acquisitions and lower balance after the spend.
+2. In airplane mode, finish two accessible quests. Both celebrations and pending
+   stars stay visible; navigation continues without granting confirmed rewards.
+3. Close and reopen the installed PWA offline. Restore the board/intents; return
+   online, replay each original identity and confirm exactly one reward/debit.
+4. Interrupt a response after server commit, restart and retry. Verify the exact
+   receipt/current profile, original elapsed time and no recreated intention.
+5. Update the worker during pending work, then reopen. Verify actual imported
+   module versions, retained localStorage/IndexedDB and recovery without reset.
+6. Exercise persistent failure and local-preservation failure in an isolated
+   fixture: deferred actionable status for protected work, immediate explicit
+   warning for real preservation risk, export available, no false synchronized state.
+7. Separately validate the Loutre divergence under its approved diagnostic
+   procedure. The general test account and the completed #470 phone recipe do
+   not establish recovery of that historical account.
+
 ## Attempt-counter refusal (2026-10-20)
 
 The post-#492 report localizes the refusal to a cumulative performance attempt
@@ -74,7 +234,13 @@ Persistent retry holds #478 are deployed as `30a07e8` (version 462), with owner
 mobile confirmation. The current follow-up prepares server command receipts;
 the production migration and remaining writer cutover are still separate steps.
 
-## Reproduced incidents
+## Prior delivery record (before the P0 integration above)
+
+The following inventory and validation describe earlier delivered stages. The
+P0 section above supersedes their planned cutover and migration status; neither
+section declares production rollout or issue closure.
+
+### Reproduced incidents
 
 The mobile diagnostic supplied on 2026-10-18 reports build `1.11.1+452`,
 `9533f82`, `reward_conflict` on `performances[183].lastQualifiedAt`, followed

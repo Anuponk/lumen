@@ -13,9 +13,10 @@ assert([...map.keys()].some(k=>k.startsWith('lumenBeforeCloudReconcileRemote_'))
 assert.equal(map.get('lumenProgressV1'),JSON.stringify(local),'Local progress unchanged before verified reload');
 map.set('lumenProgressV1',JSON.stringify({...local,shards:8}));const before=writes;
 const currencyResolution=await reconcileCompatibleCloudProfiles(api,storage,remote);
-assert.equal(currencyResolution.status,'reconciled');
-assert.deepEqual(currencyResolution.playerFavouredBalances,['shards']);
-assert.equal(remote.shards,8);assert.equal(writes,before+1);
+assert.equal(currencyResolution.status,'blocked');
+assert.equal(currencyResolution.reason,'mutable_balance');
+assert.equal(remote.shards,5);assert.equal(writes,before);
+assert.equal(JSON.parse(map.get('lumenProgressV1')).shards,8,'Unreceipted local facts remain available for audited recovery');
 assert.equal(remote.solved[2],1);
 const afterCurrency=writes;
 map.set('lumenProgressV1',JSON.stringify({...local,stars:{0:4}}));remote.stars={0:3};
