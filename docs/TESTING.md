@@ -260,6 +260,13 @@ Tests should assert relationships derived from the content registry rather than 
 
 ### P0 integration: wallet, pending victories and observations (22 October 2026)
 
+PR CI must not mutate the catalogue it verifies. The issue-222 generator retains
+its audit and downloadable artifact, with read-only repository permission and
+no automatic branch commit/push. `issue-222-runtime-tests.mjs` guards that
+boundary; `catalogue-compatibility-tests.mjs` still verifies all immutable quest
+identities and ordinals. A generator-triggered ordinal rewrite was caught during
+this lot and reverted to the already validated catalogue, without a new revision.
+
 The mandatory Node gate includes `cloud-daily-session-tests.mjs`,
 `cloud-wallet-command-tests.mjs`, `cloud-wallet-reconciliation-tests.mjs`,
 `cloud-pending-navigation-tests.mjs`, `cloud-sync-presentation-tests.mjs`,

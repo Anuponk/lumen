@@ -7,6 +7,14 @@ The schedule starts with two 5x5 onboarding grids, then uses 6x6, 7x7 and 8x8 pu
 
 All future development must follow the [evolving catalogue contract](DATA_AND_ARCHITECTURE.md#evolving-catalogue-contract): catalogue totals are data, existing player identities are stable, and every addition must be checked across navigation, rewards, restoration and dependent product surfaces. Adding an audited unused grid does not automatically schedule it or grant access to it.
 
+The issue-222 PR generator produces an audited downloadable artifact with
+read-only repository permission; it must not commit or push generated content
+onto the PR branch. Despite its historical `staged-only` label, the committed
+`content/generated/issue-222-additions.json` contributes to the canonical
+registry. Replacing its plan can reorder published identities and violate the
+immutable catalogue revision. Review any promotion separately against access
+origins and stable quest keys; a passing generation audit is not that review.
+
 ## Required puzzle representation
 Each puzzle stores:
 - `reg`: N x N territory identifiers;
