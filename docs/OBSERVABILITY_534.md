@@ -187,3 +187,27 @@ passes 390/1440, including offline reload/reconnect and erasure, with unchanged
 save bytes and zero browser exceptions. Real PostgreSQL concurrency, final full
 CI, deployment SHA and advisors comparison are to be recorded in #534 after
 completion; these initial results do not claim production incident recovery.
+
+### Verified rollout checkpoint — 23 October
+
+The five required checks passed on `db02e8e`, including real PostgreSQL 17
+parallel identity, daily quota and withdrawal tests (run `39939126275`). The
+exact tested SQL was applied with Supabase-assigned version `20261023103114`;
+its normalised SHA-256 matches migration history:
+`7c6890dc684e00e710fc5653ba47f90523b7376a76056e8a5eea53fd4b82e022`.
+The filename/workflow reference is aligned to this assigned version; no SQL or
+client behavior changes in that alignment. Final-head CI remains required.
+
+Production metadata: RLS enabled and anon/authenticated raw SELECT/INSERT/DELETE
+denied on all three new private tables; public wrappers are invokers with empty
+search paths; anon cannot execute them or the cockpit; players cannot invoke
+budget/prune helpers. Legacy direct INSERT is denied. The existing postgres-owned
+03:17 UTC cron calls the extended prune function. Its last pre-upgrade execution
+succeeded; the first execution of the upgraded body is still pending.
+
+Advisors comparison adds only three INFO `rls_enabled_no_policy` findings for
+the private RPC-only tables. This is intentional deny-by-default combined with
+revoked table grants, not a reason to create permissive policies. No new WARN;
+existing shared-project warnings remain. See [Supabase's explanation](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy).
+No production diagnostic fixture, user creation/deletion, profile query or
+player-data repair was performed. Client publication is verified separately.

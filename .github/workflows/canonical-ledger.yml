@@ -82,6 +82,6 @@ jobs:
             -f scripts/fixtures/outbox-health-observations.sql
           python3 scripts/wallet-command-concurrency.py
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
-            -f supabase/migrations/20261023095621_diagnostic_incident_mvp.sql \
+            -f supabase/migrations/20261023103114_diagnostic_incident_mvp.sql \
             -f scripts/fixtures/diagnostic-incidents.sql
           python3 scripts/diagnostic-concurrency.py
