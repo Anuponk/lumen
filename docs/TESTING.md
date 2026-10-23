@@ -49,12 +49,21 @@ the old `suppressGuidedClickUntil = now + 700` rejected every cell action for
 700 ms. Native CDP touch in `guided-undo-browser.mjs` first failed (next valid
 cell stayed 0 instead of 1), then passed with gesture-scoped click suppression.
 The original correction still occurs once; a fresh pointerdown immediately
-releases suppression. Undo and the guided lock remain covered at quests 7/11.
+releases suppression. Undo and the guided lock remain covered at numeric fixture
+indices 6/10.
 The shared `gesture-click-suppression.js` also handles the hold's release.
 
 `touch-input-browser.mjs` exercises consecutive native short taps across every
 cell, through empty/exclusion/Guardian, at centers and inside borders, including
-small movement. These checks do not establish the cause of every failure on
+small movement. It also toggles the actual countdown in both directions and
+requires identical board geometry at 320/360/390/768/1440 px. On `3fd1efb`,
+showing it moved the board by 16.125 px at 390 px; a native border tap could
+then reach the adjacent row. Reserving its space fixes that reproducible path.
+Bounded passive event traces exist only in these synthetic browser fixtures.
+The general browser uses the shared navigation-generation/complete/diagnostics
+guard at startup, matching the learning runner. An early diagnostics object on a
+document being replaced cannot satisfy startup; no business assertion is retried.
+These checks do not establish the cause of every failure on
 Rachel's Android. Concurrent hydration/render loss and device-specific behavior
 remain unconfirmed; confirmation on the affected Android/PWA after release is
 required. No affected profile/storage is inspected, changed or cleared, and no

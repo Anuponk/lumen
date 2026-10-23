@@ -22,7 +22,8 @@ through the existing account suite. Device/account confirmation remains separate
 
 Missed taps (#548): `guided-undo-browser.mjs` reproduces immediate input after
 touch correction (RED/GREEN); `touch-input-browser.mjs` covers whole-board
-consecutive center/border taps with small movement. Both run in the general
+consecutive center/border taps with small movement and stable board geometry
+when the countdown appears/disappears at five viewport widths. Both run in the general
 isolated browser. Affected physical Android/PWA confirmation remains pending.
 
 Touch hold: `long-press-guardian-tests.mjs` covers timers, cancellation, input
