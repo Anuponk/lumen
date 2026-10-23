@@ -63,6 +63,7 @@ jobs:
             -f supabase/migrations/20261010_lumen_daily_catalogue_ceiling_repair.sql \
             -f supabase/migrations/20261018193133_legacy_victory_commands.sql \
             -f supabase/migrations/20261020084328_legacy_attempt_counter_metadata.sql \
+            -f supabase/migrations/20261023045558_guest_progress_and_badge_eligibility.sql \
             -f /tmp/lumen-legacy-parity.sql \
             -f scripts/fixtures/legacy-command-receipts.sql \
             -f scripts/fixtures/legacy-attempt-counter.sql
@@ -76,6 +77,7 @@ jobs:
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
             -f supabase/migrations/20261022082153_wallet_command_authority.sql \
             -f scripts/fixtures/wallet-command-receipts.sql \
+            -f scripts/fixtures/first-quest-badges.sql \
             -f supabase/migrations/20261022082203_outbox_health_observations.sql \
             -f scripts/fixtures/outbox-health-observations.sql
           python3 scripts/wallet-command-concurrency.py

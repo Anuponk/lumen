@@ -1,0 +1,33 @@
+import {validateCloudProfile,cloudSafelyCoversLocal} from './cloud-profile.js';
+
+// A missing owner denotes a real guest. A signed-out account cache is still
+// owned and must never be imported into the next account (#528).
+export function guestAccountSeed(incoming,currentOwner,accountId,fresh){
+ if(currentOwner===accountId)return incoming;
+ if(currentOwner)return fresh;
+ const guest=validateCloudProfile(incoming);
+ if(guest.walletRevision||guest.legacyVictoryRevision)throw Error('Profil invité lié à une autorité de compte');
+ if(guest.shards===undefined)guest.shards=3;
+ if(!Number.isSafeInteger(guest.shards)||guest.shards<0)throw Error('Solde invité invalide');
+ return guest;
+}
+
+export function preserveGuestBeforeHydration(storage,{accountId,currentOwner,sessionValid=()=>true}={}){
+ if(currentOwner||!sessionValid())return null;
+ const raw=storage.getItem('lumenProgressV1');
+ if(raw===null)return null;
+ validateCloudProfile(JSON.parse(raw));
+ // Fixed account-scoped copy: retries must not replace the original evidence.
+ const prefix='lumenGuestBeforeAccount_'+accountId;
+ let key=prefix,sequence=0;
+ // A guest may continue offline after a failed login. Retain the earlier copy
+ // and preserve the newer one too; retries of identical bytes reuse their copy.
+ while(storage.getItem(key)!==null&&storage.getItem(key)!==raw)key=prefix+'_'+(++sequence);
+ if(storage.getItem(key)===null)storage.setItem(key,raw);
+ if(storage.getItem(key)!==raw)throw Error('Sauvegarde invitée non vérifiée');
+ return raw;
+}
+
+export function guestNeedsReconciliation(guest,cloud){
+ return !cloudSafelyCoversLocal(guest,cloud);
+}
