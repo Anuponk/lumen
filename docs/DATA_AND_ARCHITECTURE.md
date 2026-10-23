@@ -85,6 +85,10 @@ changed. An affected player's device, storage context and fresh diagnostic must
 still confirm which cause applies. Server session presence alone does not prove
 the session is usable on that particular browser/PWA.
 
+## Guest registration preservation (#528)
+
+`guest-account.js` distinguishes an unowned guest from a signed-out account cache. Before first authenticated I/O, preserve and read back the exact guest snapshot under `lumenGuestBeforeAccount_<accountId>` (additional versions retain subsequent offline play). Initialize a missing cloud profile from the whole validated guest snapshot, including net currency, earned badges and compatibility access; use a fresh seed only for another account’s cache. Existing cloud achievements must cover the guest, or the existing conservative reconciler must succeed before installation. Recheck the latest local bytes immediately before installation: achievements earned during initialization/daily I/O must also be covered, or remain pending with the live attempt preserved. Conflicting receipts/balances stay pending with both originals preserved; never infer money, copy another account, or erase guest achievements. Initial creation remains atomic and read-back verified; no duplicate victory commands are emitted. Failed backup, offline initialization, read-back or account switch cannot install an empty profile.
+
 ## Cloud persistence contract
 
 ### Wallet command cutover (#248/#391, 22 October 2026)

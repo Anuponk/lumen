@@ -158,11 +158,14 @@ try {
     assert.match(await evaluate('document.getElementById("successNew").textContent'),/Quête suivante/,'Quest 2 now continues directly: Mon ciel is deliberately introduced at quest 8');
     await evaluate('document.getElementById("successNew").click()');await sleep(100);
     assert.equal((await snapshot()).levelIndex,2,'Quest 2 leads directly to quest 3 without the sky tour');
-    assert.equal(await evaluate('document.getElementById("badgeUnlockOverlay").hidden'),false,'Quest 3 teaches its newly eligible speed badge');
+    assert.equal(await evaluate('document.getElementById("badgeUnlockOverlay").hidden'),false,'Quest 3 explains badges already available since quest 1');
     assert.match(await evaluate('document.getElementById("badgeUnlockCopy").textContent'),/Rapidité/);
     await acknowledgeLearningMilestones(evaluate);
     assert.equal(await evaluate('document.getElementById("scriptedLearn").hidden'),true);
     await evaluate('document.getElementById("openSky").click();document.querySelector("#sectorTabs .constellation-card").click();document.querySelector("#puzzleGrid .puzzle-card.done").click()');
+    assert.equal(await evaluate('document.querySelectorAll("#puzzleGrid .performance-slot.locked").length'),0,'Earned and missing early badges have no locks');
+    assert.equal(await evaluate('document.getElementById("replayCooldownModal").hidden'),false,'First-quest badges preserve the qualification cooldown');
+    await evaluate('document.getElementById("replayCooldownPlay").click()');
     assert.equal((await snapshot()).replayMode,true);
     assert.equal(await evaluate('document.getElementById("scriptedLearn").hidden'),true,'Ordinary replay has no imposed lesson');
 
