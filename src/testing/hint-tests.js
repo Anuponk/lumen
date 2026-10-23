@@ -283,7 +283,7 @@ async function runHintTests(){
  test("Sans erreur : l’état d’erreur reste invisible pendant la partie",()=>!updateLiveReward.toString().includes("mistakeCommitted")&&!updateLiveReward.toString().includes("noError"));
  // Performance regressions: keep ordinary play incremental and cheap.
  test("Performance : un clic ordinaire ne reconstruit pas toute la grille",()=>{
-   const src=render.toString(),clickStart=src.search(/d\.onclick=(?:async)?\(\)=>/),clickEnd=src.indexOf("};board.appendChild(d)",clickStart);
+   const src=render.toString(),clickStart=src.search(/d\.onclick=(?:async)?\([^)]*\)=>/),clickEnd=src.indexOf("};board.appendChild(d)",clickStart);
    const clickBody=src.slice(clickStart,clickEnd);
    return clickStart>=0&&clickEnd>clickStart&&clickBody.includes("paintBoardState()")&&!clickBody.includes("board.innerHTML")&&!clickBody.includes("render()};");
  });

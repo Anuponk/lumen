@@ -4,6 +4,8 @@ import {connectBrowser,acknowledgeLearningMilestones} from './cdp-client.mjs';
 import {verifyFinaleResponsive} from './finale-responsive-browser.mjs';
 import {verifyBoardFeedback} from './board-feedback-browser.mjs';
 import {verifyGuidedUndo} from './guided-undo-browser.mjs';
+import {verifyLongPressGuardian} from './long-press-guardian-browser.mjs';
+import {verifyTouchInput} from './touch-input-browser.mjs';
 const {send,evaluate,errors}=await connectBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function assert(value,message){if(!value)throw Error(message)}
@@ -106,8 +108,10 @@ try{
  const finaleResponsive=await verifyFinaleResponsive({send,evaluate},url);
  const boardFeedback=await verifyBoardFeedback({send,evaluate});
  const guidedUndo=await verifyGuidedUndo({send,evaluate});
+ const longPressGuardian=await verifyLongPressGuardian({send,evaluate});
+ const touchInput=await verifyTouchInput({send,evaluate});
  assert(errors.length===0,'Uncaught browser errors: '+JSON.stringify(errors));
- const report={suites,mobile:{tapCycle:[1,2,0],drag:true,guardianPreserved:true,noScroll:true,reset:true},guestReload:true,pwa,finaleResponsive,boardFeedback,guidedUndo,uncaughtErrors:errors};
+ const report={suites,mobile:{tapCycle:[1,2,0],drag:true,guardianPreserved:true,noScroll:true,reset:true},guestReload:true,pwa,finaleResponsive,boardFeedback,guidedUndo,longPressGuardian,touchInput,uncaughtErrors:errors};
  if(output)fs.writeFileSync(output,JSON.stringify(report,null,2)+'\n');
  console.log(JSON.stringify(report));
 }finally{await send('Browser.close')}

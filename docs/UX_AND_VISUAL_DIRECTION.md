@@ -1,5 +1,18 @@
 # UX and visual direction
 
+Guided correction (#548) filters only the handled gesture's release click.
+There is no 700 ms cooldown across the board: a fresh tap works immediately.
+
+Touch shortcut (#531): a stationary 500 ms hold directly places/removes one
+Guardian through the normal action rules, with a brief outline and optional
+haptic feedback. Release never also short-clicks. Moving over 8 px cancels the
+hold in favor of the existing drag; cancelled/multiple pointers and background
+states cannot commit a pending hold. Short clicks and mouse/keyboard remain
+unchanged. Constrained first-quest learning keeps its two-touch and drag lessons;
+the help panel explains that the shortcut is available after that learning.
+On short screens its card scrolls within the viewport, with a sticky close
+header and the learning-replay action reachable at the bottom.
+
 The diagnostic cockpit (#534 phase 2) groups the optional bounded timeline into
 episodes, with filters for the last observed guided transition. Every view is
 labelled partial; released input never means restored saves. Reports contain

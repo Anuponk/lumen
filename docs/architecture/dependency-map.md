@@ -1,5 +1,14 @@
 # Dependencies and data flow
 
+Guided correction: pointerdown on incorrect Guardian → existing correction and
+save → suppress that gesture's compatibility click → next pointerdown releases
+suppression immediately. Shared helper also owns long-hold click suppression.
+
+Guardian hold: touch pointer → 500 ms recogniser / movement cancellation → live
+cell/attempt/learning guards → normal cell action → existing history, mistake,
+assistance and persistence. Pointer identity suppresses a release retargeted to
+the pause mask. Moving hands off to exclusion drag; mouse/keyboard keep clicks.
+
 Phase-2 investigation: existing admin capability/RPC → closed timeline projection
 → session/trace episodes → observed transitions, bounded detail alerts, reviewed
 report/GitHub composer. Account/client/capability guard rejects stale results and

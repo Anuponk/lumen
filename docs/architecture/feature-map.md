@@ -1,5 +1,13 @@
 # Feature map
 
+Guided correction (#548): `ui/gesture-click-suppression.js` scopes suppression
+to the handled pointer's release, shared with Guardian hold. `game-screen.js`
+clears it on each new gesture; no global post-correction input cooldown.
+
+Touch hold (#531): `ui/long-press-guardian.js` recognises one 500 ms touch and
+suppresses its own release click. `game-screen.js` owns live guards and dispatches
+the dedicated gesture into the existing cell handler; no alternate game writer.
+
 Incident investigation (#534 phase 2): `ui/incident-investigation.js` owns
 bounded episode grouping, observed-state filters, fixed hypotheses and sanitised
 report/GitHub drafts. `game-screen.js` feeds only authorised diagnostic data and
