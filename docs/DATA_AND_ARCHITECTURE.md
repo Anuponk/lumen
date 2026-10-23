@@ -1,5 +1,51 @@
 # Data and architecture
 
+## Optional incident details — #534
+
+[Audit and architecture](OBSERVABILITY_534.md). Preserve #398's live health,
+outbox state, fifteen-minute alert and capability; add a private companion
+detail stream, not another backlog/repair engine. `diagnostic-reporter.js` maps
+fixed cloud/outbox/runtime codes and #533 blocked/Undo/released transitions.
+`lumen_record_diagnostics` derives Auth identity and checks the expected account;
+the same `lumen_admin_sync_health` response adds a bounded diagnostic sample,
+without profile/account joins. Public RPC wrappers are invokers; privileged
+writers live in the existing private schema, verify Auth and fix search_path.
+RLS and revoked direct grants deny raw access. The old health INSERT/sequence
+bypass closes and its compatible RPC normalises legacy text and applies quotas.
+
+Optional details default off. Separate `diagnostic_preferences` records purpose
+`534-v1`, choice and timestamp; no player profile field changes. Withdrawal
+stops capture/clears the local queue, deletes own optional server details, and
+persists a pending withdrawal for reconnect on failure. Consent-row locks prevent
+post-withdrawal insertions. A fresh opt-in cannot replay earlier events. Auth
+deletion cascades to the new preference/details, tested only in disposable SQL.
+The existing #398 operational data is distinct. Pseudonyms remain personal data;
+#316 publisher/legal/rights work is not declared complete.
+
+Closed context: stable codes/severity, stage/category, timestamps, random session/
+episode UUIDs, sequence/retry, normalised version, platform/browser families and
+blocked/ready state. No message, stack, URL, user agent string, email, board,
+balance, receipt, whole profile/save or arbitrary JSON. UUID delivery is immutable
+and idempotent; signature grouping uses only these technical fields.
+
+Queue: 30 events / 16 KiB, TTL 24 h, ten events / 8 KiB per batch, one request in
+flight and five attempts with bounded exponential backoff/timeout. Capture never
+awaits transport; storage denial/quota/corruption falls back to memory. Only
+diagnostics can be dropped, never business intentions. Offline reload/reconnect
+and obsolete account/client responses are guarded. Budgets: ten requests/minute,
+120/day/account, 200 new events/day/account; global 5,000 details/day and separate
+20,000 legacy health/day. A coalesced hydration-ready after a failure can bypass
+the health cap so quotas cannot leave a recovered account falsely stalled; another
+exception requires another accepted failure. SQL locks telemetry, never profiles.
+Preference read/withdrawal remains available when ingestion quota is full.
+
+The existing daily operator-only prune adds seven-day details, two UTC-day
+budget buckets and resolved legacy health older than 30 days only if a later
+hydration-ready anchor exists. Deletes cap at 20,000 rows/table/run. Never erase
+unresolved health, outboxes or receipts. Physical deletion normally lags expiry
+by at most the daily schedule; job failures/backlogs can extend that lag. The
+cockpit shows only seven days and labels the sample opt-in/incomplete.
+
 ## Storage inventory and recovery retention
 
 `storage-maintenance.js` measures localStorage by fixed categories and estimates

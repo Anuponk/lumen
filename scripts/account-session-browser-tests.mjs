@@ -16,6 +16,7 @@ localStorage.setItem('lumenSound','off');
 window.__authCalls=[];
 window.__fixtureLedgerWrites=0;window.__fixtureSnapshotWrites=0;
 window.__fixtureLedgerAttempts=0;
+window.__diagnosticRows=JSON.parse(sessionStorage.getItem('fixtureDiagnosticRows')||'[]');
 window.__fixtureCommandReceipts=new Map();
 window.__fixtureLegacyReceipts=new Map();window.__fixtureLegacyWrites=0;window.__fixtureLegacyAttempts=0;
 const isolatedRecovery=sessionStorage.getItem('fixtureIsolatedRecovery')==='1';
@@ -50,6 +51,18 @@ window.supabase={createClient(url,key,options){
  const set=(event,value)=>{session=value;storage.setItem('fixtureAuthSession',JSON.stringify(value));callback(event,value)};
  window.__emitAuthEvent=event=>set(event,session);
  return {rpc:async(name,args)=>{
+  if(name==='lumen_diagnostic_preference'){
+   if(typeof args?.p_enabled==='boolean')sessionStorage.setItem('fixtureDiagnosticConsent',String(args.p_enabled));
+   const enabled=sessionStorage.getItem('fixtureDiagnosticConsent')==='true';
+   if(!enabled){window.__diagnosticRows=[];sessionStorage.removeItem('fixtureDiagnosticRows')}
+   return {data:{enabled,since:new Date().toISOString(),purpose:'534-v1'},error:null};
+  }
+  if(name==='lumen_record_diagnostics'){
+   const allowed=sessionStorage.getItem('fixtureDiagnosticConsent')==='true';
+   if(allowed)for(const event of args.p_events)if(!window.__diagnosticRows.some(row=>row.id===event.id))window.__diagnosticRows.push(structuredClone(event));
+   sessionStorage.setItem('fixtureDiagnosticRows',JSON.stringify(window.__diagnosticRows));
+   return {data:{disabled:!allowed,accepted:allowed?args.p_events.map(e=>e.id):[]},error:null};
+  }
   if(name==='lumen_wallet_command_version')return {error:{code:'PGRST202'},status:404};
   if(!isolatedRecovery)return name==='lumen_restore_profile'?{data:null,error:{message:'simulated restore outage'}}:{data:[],error:null};
   if(name==='lumen_restore_profile')return {data:structuredClone(window.__fixtureProfile),error:null};
@@ -280,6 +293,27 @@ try{
   assert.equal(await evaluate("JSON.parse(document.getElementById('accountSyncDiagnosticText').value).app"),'Lumen');
   if(viewport.mobile)assert.equal(await evaluate("document.getElementById('accountSyncDiagnosticText').getClientRects().length>0"),true);
   assert.equal(await evaluate("localStorage.getItem('lumenProgressV1')"),progressBeforeDiagnostic,'Diagnostic viewing preserves the local save');
+  await until(`!document.getElementById('diagnosticConsent').disabled`);
+  assert.equal(await evaluate(`document.getElementById('diagnosticConsent').checked`),false,'Optional diagnostics start disabled');
+  await evaluate(`document.getElementById('diagnosticConsent').click()`);
+  await until(`document.getElementById('diagnosticConsentStatus').textContent.includes('Partage activé')`);
+  await evaluate(`window.dispatchEvent(new ErrorEvent('error',{message:'forbidden@example.invalid',filename:'https://private/?token=secret',error:{stack:'Bearer secret'}}))`);
+  await until(`window.__diagnosticRows.some(e=>e.code==='runtime_exception')`);
+  assert.equal(await evaluate(`JSON.stringify(window.__diagnosticRows).includes('secret')||JSON.stringify(window.__diagnosticRows).includes('@')`),false);
+  await send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
+  await evaluate(`const resource=document.createElement('script');document.body.append(resource);resource.dispatchEvent(new Event('error',{bubbles:true}));resource.remove()`);
+  await until(`JSON.parse(localStorage.getItem('lumenDiagnosticQueueV1')||'{}').events?.some(e=>e.code==='resource_failed')`);
+  await navigate('Page.reload');
+  await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
+  await evaluate(`window.dispatchEvent(new Event('online'))`);
+  await until(`window.__diagnosticRows.some(e=>e.code==='resource_failed')`);
+  if(viewport.mobile)await evaluate(`if(document.getElementById('mobileAuthPopover').hidden)document.getElementById('mobileAccount').click()`);
+  await evaluate(`document.getElementById('showAccountSyncDiagnostic').click()`);
+  await until(`document.getElementById('diagnosticConsent').checked&&!document.getElementById('diagnosticConsent').disabled`);
+  await evaluate(`document.getElementById('diagnosticConsent').click()`);
+  await until(`document.getElementById('diagnosticConsentStatus').textContent.includes('effacés')`);
+  assert.equal(await evaluate(`window.__diagnosticRows.length`),0);
+  assert.equal(await evaluate("localStorage.getItem('lumenProgressV1')"),progressBeforeDiagnostic,'Optional telemetry/offline/restart/withdrawal preserve the live save');
   await until(`!!JSON.parse(document.getElementById('accountSyncDiagnosticText').value).storage?.local?.available`);
   assert.equal(await evaluate(`document.getElementById('accountStorageSummary').textContent.includes('ne permettent pas de connaître')`),true);
   await evaluate(`for(const stamp of [100,200,300])localStorage.setItem('lumenBeforeCloudRestore_'+stamp,'storage-fixture-'+stamp)`);
@@ -321,7 +355,7 @@ try{
   await evaluate(`document.getElementById('mobileAuthAction').click()`);
   await until(`document.getElementById('mobileAuthAction').textContent.includes('Se connecter')`);
   const isolatedCanonicalRecovery=await verifyIsolatedRecovery();
-  results.push({viewport,guestDismiss:true,automaticOfferDismiss:true,repeatedSignupLoginDismiss:true,passwordLogin:true,reload:true,readableSessionWithQuota:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,restoreFailureVisible:true,isolatedCanonicalRecovery,isolatedLegacyRecovery:true});
+  results.push({viewport,guestDismiss:true,automaticOfferDismiss:true,repeatedSignupLoginDismiss:true,passwordLogin:true,reload:true,readableSessionWithQuota:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,restoreFailureVisible:true,isolatedCanonicalRecovery,isolatedLegacyRecovery:true,optionalDiagnostics:{defaultOff:true,sanitised:true,offlineRestartReconnect:true,withdrawalErases:true,profilePreserved:true}});
  }
  await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:authFixtureId});
  const walletFlow=await verifyWalletAndOfflineFlow({send,evaluate,navigate,url});

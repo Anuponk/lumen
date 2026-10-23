@@ -1,5 +1,14 @@
 # UX and visual direction
 
+Optional diagnostics (#534) live in the existing account diagnostic panel.
+Default off, explain purpose, pseudonymous account linkage, permitted technical
+fields, seven-day detail period and withdrawal/erasure. A refusal never changes
+gameplay or saves. Withdrawal stops locally immediately; say explicitly when
+server deletion is pending offline. Existing minimal operational sync indicators
+are separate. The same admin cockpit shows a bounded opt-in/incomplete sample,
+using text rendering and no profile/email joins or repair action. No teaching,
+assistance, eligibility or gameplay milestone changes.
+
 ## Account access (2026-10-18)
 
 Offer **Continuer avec Google**, email plus password (create account / existing account), and **Continuer sans compte**. Remove code-email login. Former passwordless players use **Créer ou réinitialiser mon mot de passe** with the same email, preserving their existing account. Recovery opens a visible password editor. Distinguish an authenticated account still restoring its save from a guest; a restore failure offers **Réessayer la synchronisation**, never a destructive reset. During initial session restoration, show a connection check with the account action disabled; offer sign-in only after the SDK confirms a guest session. The early guest discovery and learning sequence remain unchanged.

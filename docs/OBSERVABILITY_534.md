@@ -130,3 +130,60 @@ complete offline history, full crash stacks or every network request. Missing
 consent, quota, TTL, offline closure and storage failures can lose diagnostics.
 The cockpit must label the sample as opt-in and incomplete, not a failure rate
 for all players. No profile repair, new reward writer or automated issue opening.
+
+## Phase 1 implementation and runbook
+
+The companion detail stream lives in the existing private `lumen_commands`
+schema. Preserve #398's live projections; do not count optional detail rows as
+another operational failure rate. Extend `lumen_admin_sync_health` with signature
+groups and at most 100 recent timeline records (same analytics capability).
+`diagnostic-reporter.js` covers cloud write/hydration/outbox failures, explicit
+retry/ack markers, runtime/resource exceptions and guided Undo episodes. The
+actual Undo handler emits fixed states without cells or complete board state.
+
+Exact budgets: ten ingestion calls/minute, 120/day/account and 200 new detailed
+events/day/account, 5,000 detailed events/day globally. Legacy health has its own
+20,000-event/day lane, sharing the validated budget helper but not the optional
+choice. A coalesced real hydration-ready may pass after an accepted failure even
+at the health cap, preserving #398 resolution rather than a false stalled alert;
+another exception requires another accepted failure. This can add one resolution
+per accepted failure to legacy volume. Withdrawal/preference remains available
+even if ingestion is quota-limited.
+New queue/choice keys are separate from all save/outbox keys; cached optional
+choices are account/client guarded. An offline withdrawal stops collection here,
+persists a pending withdrawal and reports server erasure as unconfirmed until
+reconnect. The consent row is locked across ingestion, so deletion cannot race
+an in-flight insert. A re-opt-in acknowledges/discards pre-consent queue records.
+
+The server stores no extensible raw context. The legacy public health INSERT
+and sequence grant are revoked; its original four-argument RPC remains compatible
+and delegates to a private authenticated enum/version normaliser. No historical
+payload cleanup is triggered by applying the migration. The existing cron gains
+bounded (20,000/table/run) pruning of expired optional details/budgets and only
+resolved old legacy history with a later hydration-ready anchor. Never purge
+unresolved health or receipts. Seven-day detail visibility and daily physical
+purge can differ by up to a day normally, longer if the job fails/backlogs.
+Minimal quota counters survive withdrawal only for their two UTC-day buckets;
+otherwise repeated opt-out/in would bypass rate limits. Choice records remain
+to honour the current preference and cascade on Auth account deletion.
+
+Release order: protected CI on the reviewed PR → apply the exact telemetry-only
+migration → verify private grants, RPC signatures, RLS, definitions, indexes and
+advisors → reconcile the generated migration filename/history if needed → verify
+the final reviewed head and merge → wait for exact-main publication gates →
+verify public build-info and changed assets. A schema-only rollout is backward
+compatible; a client on an older schema remains usable and reports preference
+unavailability. Never run fixtures, create test users, invoke erasure for a real
+account or query profiles in production. Rollback can disable the optional
+client feature; retain schema/cron and private boundaries, never restore unsafe
+direct INSERT merely to roll back UI code.
+
+RED evidence: the old SQL grant accepts direct health INSERT; the new assertion
+fails on the baseline. Client cases fail without the reporter. Initial GREEN:
+16 Node cases and embedded PostgreSQL assertions pass, including secret-like
+input rejection, #533 timeline, identity, quotas, opt-out/stale queue, retention,
+guest/non-admin rejection and synthetic Auth cascade. The native account suite
+passes 390/1440, including offline reload/reconnect and erasure, with unchanged
+save bytes and zero browser exceptions. Real PostgreSQL concurrency, final full
+CI, deployment SHA and advisors comparison are to be recorded in #534 after
+completion; these initial results do not claim production incident recovery.

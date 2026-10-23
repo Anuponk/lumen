@@ -1,5 +1,10 @@
 # Dependencies and data flow
 
+Optional diagnostics (#534): guarded capture → separate bounded queue → Auth and
+closed-schema batch → consent-locked private details → existing cockpit guard.
+The existing operator cron prunes bounded details/budgets/resolved old health.
+No save/receipt/profile dependency or competing live incident/alert algorithm.
+
 Storage maintenance: account diagnostic → aggregate local/IndexedDB/browser
 inventory; explicit maintenance → retain recent copies → exact original in
 existing IndexedDB recovery store → committed read-back + session/source recheck
