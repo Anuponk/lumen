@@ -12,6 +12,7 @@ test('a browser quota refusal does not claim the whole phone is full',()=>{
 });
 
 const load=()=>import('../src/persistence/storage-maintenance.js');
+import {reconcileCloudAchievementsDurably} from '../src/persistence/cloud-profile.js';
 function fixture({fault,onRead=()=>{}}={}){
  const values=new Map([['lumenCloudOwnerId','private-owner'],['lumenProgressV1','private-current'],
   ['lumenBeforeCloudRestore_100','old-original'],['lumenBeforeCloudRestore_200','recent'],['lumenBeforeCloudRestore_300','newest'],
@@ -34,6 +35,41 @@ function fixture({fault,onRead=()=>{}}={}){
  }};
  return {storage,values,archives,indexedDB};
 }
+
+for(const fault of [undefined,'commit'])test(`achievement installation quota archives old originals before one retry (${fault||'success'})`,async()=>{
+ const f=fixture({fault});
+ const local={solved:{0:true},badges:{},shards:9,xp:10},remote={...local,solved:{0:true,1:true},shards:8};
+ const raw=JSON.stringify(local);f.values.set('lumenProgressV1',raw);
+ const write=f.storage.setItem;
+ f.storage.setItem=(k,v)=>{if(k==='lumenProgressV1'&&v!==raw&&f.values.has('lumenBeforeCloudRestore_100'))throw Object.assign(Error('full'),{name:'QuotaExceededError'});write(k,v)};
+ const previous=globalThis.indexedDB;globalThis.indexedDB=f.indexedDB;
+ try{
+  if(fault){await assert.rejects(()=>reconcileCloudAchievementsDurably(f.storage,remote));assert.equal(f.values.get('lumenProgressV1'),raw)}
+  else{
+   assert.equal((await reconcileCloudAchievementsDurably(f.storage,remote)).changed,true);
+   assert.equal(JSON.parse(f.values.get('lumenProgressV1')).solved[1],true);
+   assert.equal(JSON.parse(f.values.get('lumenProgressV1')).shards,9,'wallet difference stays unconfirmed');
+   assert.equal(f.archives.get('localStorage:lumenBeforeCloudRestore_100'),'old-original');
+   assert.equal(f.values.get('lumenBeforeCloudRestore_200'),'recent');
+   assert.ok([...f.values.values()].includes(raw),'pre-install original is retained');
+  }
+  assert.equal(f.values.get('lumenCanonicalOutboxV2:private'),'pending-intent');
+ }finally{if(previous===undefined)delete globalThis.indexedDB;else globalThis.indexedDB=previous}
+});
+for(const change of ['owner','profile','session'])test(`achievement quota retry stops on ${change} change during archival`,async()=>{
+ let valid=true;
+ const f=fixture({onRead(){if(change==='session')valid=false;else f.values.set(change==='owner'?'lumenCloudOwnerId':'lumenProgressV1','replacement')}});
+ const local={solved:{0:true},badges:{},shards:9,xp:10},remote={...local,solved:{0:true,1:true}};
+ const raw=JSON.stringify(local);f.values.set('lumenProgressV1',raw);const write=f.storage.setItem;
+ f.storage.setItem=(k,v)=>{if(k==='lumenProgressV1'&&v!==raw)throw Object.assign(Error('full'),{name:'QuotaExceededError'});write(k,v)};
+ const previous=globalThis.indexedDB;globalThis.indexedDB=f.indexedDB;
+ try{
+  const result=await reconcileCloudAchievementsDurably(f.storage,remote,{sessionValid:()=>valid});
+  assert.equal(result.changed,false);assert.equal(result.interrupted,true);
+  assert.equal(f.values.get('lumenProgressV1'),change==='profile'?'replacement':raw);
+  assert.equal(f.values.get('lumenBeforeCloudRestore_100'),'old-original');
+ }finally{if(previous===undefined)delete globalThis.indexedDB;else globalThis.indexedDB=previous}
+});
 test('measurement reports category sizes without keys, values or account identities',async()=>{
  const {measureLocalStorage}=await load();const f=fixture();const before=[...f.values];
  const report=measureLocalStorage(f.storage),json=JSON.stringify(report);

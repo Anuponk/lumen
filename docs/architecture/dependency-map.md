@@ -1,5 +1,11 @@
 # Dependencies and data flow
 
+Installation quota: achievement plan → verified original → failed cache install
+→ bounded verified archival → unchanged owner/session/local bytes → one retry.
+Wallet receipt recovery → exact coverage predicate → two verified originals
+(localStorage/IndexedDB) → unchanged owner/session/local bytes → cache install
+→ guarded outbox acknowledgement. Full synchronization still needs server proof.
+
 Guided correction: pointerdown on incorrect Guardian → existing correction and
 save → suppress that gesture's compatibility click → next pointerdown releases
 suppression immediately. Shared helper also owns long-hold click suppression.

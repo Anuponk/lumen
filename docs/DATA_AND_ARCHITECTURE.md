@@ -196,6 +196,25 @@ the session is usable on that particular browser/PWA.
 
 ## Cloud persistence contract
 
+Achievement installation quota (#536/#537): after a verified original backup,
+an `achievement_install` quota refusal may archive one bounded batch of eligible
+old originals through `archiveRecoveryBackups`, then retry installation once.
+Each original is committed and read back in the existing exportable IndexedDB
+store before its local copy is removed; two recent copies per family, unknown
+keys, active progress and pending operations remain untouched. Owner, session
+and exact local bytes must still match after archival. Any unverified archive,
+remaining quota or conflicting reward keeps the hold. This automatic path is
+limited to the installation quota refusal; explicit account maintenance remains
+available. It does not confirm wallet balances or full synchronization.
+
+Receipt-based wallet cache recovery uses the same verified snapshot fallback
+when backup copies cannot fit in localStorage. Both local and remote originals
+must be preserved before installing the exact receipt-covered projection;
+session/owner/local-byte guards follow every wait. No command is replayed by
+this helper, and the unchanged receipt predicate refuses unrelated acquisitions,
+unknown facts and unproven currency differences. Recovery export includes local
+wallet originals and both existing IndexedDB stores. No schema or reward changes.
+
 Diagnostic investigation (#534 phase 2) is a read-only projection of the existing
 capability-guarded cockpit timeline, owned by `ui/incident-investigation.js`.
 It adds no persisted fields, RPC, grant, profile join or save writer. Closed

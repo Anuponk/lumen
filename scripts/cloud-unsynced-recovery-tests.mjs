@@ -39,7 +39,7 @@ const exportSource=src.slice(src.indexOf('async function exportLumenRecoveryBund
 for(const abort of [false,true]){
  const stores={'lumen-unsynced-checkpoints':{pending:'original-pending'},lumenCloudRecoveryV1:{archive:'original-before-quota'}},modes=[];
  let exported=null,downloads=0;
- const locals=new Map([['lumenProgressV1','original-local'],['lumenGuestBeforeAccount_fixture','original-guest'],['lumenBeforeCanonicalStartMetadataLocal_123','original-metadata']]);
+ const locals=new Map([['lumenProgressV1','original-local'],['lumenGuestBeforeAccount_fixture','original-guest'],['lumenBeforeCanonicalStartMetadataLocal_123','original-metadata'],['lumenBeforeWalletRecoveryLocal_fixture','original-wallet']]);
  const context=vm.createContext({Blob,Date,JSON,setTimeout:()=>{},
   localStorage:{length:locals.size,key:i=>[...locals.keys()][i],getItem:key=>locals.get(key)??null},
   URL:{createObjectURL(blob){exported=blob;return 'blob:test'},revokeObjectURL(){}},
@@ -67,6 +67,7 @@ for(const abort of [false,true]){
   assert.equal(bundle.localStorage.lumenProgressV1,'original-local');
   assert.equal(bundle.localStorage.lumenGuestBeforeAccount_fixture,'original-guest');
   assert.equal(bundle.localStorage.lumenBeforeCanonicalStartMetadataLocal_123,'original-metadata');
+  assert.equal(bundle.localStorage.lumenBeforeWalletRecoveryLocal_fixture,'original-wallet');
   assert.deepEqual(bundle.indexedDB,stores['lumen-unsynced-checkpoints']);
   assert.deepEqual(bundle.cloudRecoveryIndexedDB,stores.lumenCloudRecoveryV1);assert.equal(downloads,1);
  }

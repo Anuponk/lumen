@@ -45,7 +45,7 @@ import {pendingNavigationProfile} from "../persistence/pending-navigation.js";
 import {createOutboxHealthReporter} from "../persistence/outbox-health.js";
 import {createDiagnosticReporter,mapCloudDiagnostic,installDiagnosticListeners} from '../persistence/diagnostic-reporter.js';
 import {createSyncPresentation} from "../persistence/sync-presentation.js";
-import {walletCommandsSupported,walletSpendIdentity,submitWalletCommand,recoverWalletCache} from "../persistence/wallet-command.js";
+import {walletCommandsSupported,walletSpendIdentity,submitWalletCommand,recoverWalletCacheDurably} from "../persistence/wallet-command.js";
 import {applyLegacyVictory} from "../campaign/legacy-victory.js";
 import {createCampaign,sequentialCount,campaignQuestCount,isCampaignFinalQuest,isCampaignComplete,constellationQuestIndices,constellationGridRange,chapterForGrid,milestoneFor,skyStarsForGrid,bonusChallengeFor,challengeFor,constellationCheckpoint,constellationStateForEarned,starsAwardedForGrid} from "../campaign/progression.js";
 import {createGameEngine} from "../game/engine.js";
@@ -300,7 +300,7 @@ async function copyAccountCloudDiagnostic(){
 }
 // Explicit player-controlled export: never uploads or mutates any backup.
 async function exportLumenRecoveryBundle(){
- const prefixList=["lumenProgressV1","lumenUnsyncedCloudBackupV1:","lumenUnsyncedCloudBackupV2:","lumenBeforeCloud","lumenBeforeAccountSwitch_","lumenBeforeCanonicalStartMetadata","lumenGuestBeforeAccount_"];
+ const prefixList=["lumenProgressV1","lumenUnsyncedCloudBackupV1:","lumenUnsyncedCloudBackupV2:","lumenBeforeCloud","lumenBeforeWalletRecovery","lumenBeforeAccountSwitch_","lumenBeforeCanonicalStartMetadata","lumenGuestBeforeAccount_"];
  const local={};
  for(let i=0;i<localStorage.length;i++){
   const key=localStorage.key(i);
@@ -636,9 +636,13 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
     let cacheMatches=false;
     try{cacheMatches=read.data.version===1&&Number.isSafeInteger(read.data.revision)&&latest.walletRevision>=read.data.revision&&sameCloudProfile(JSON.parse(localStorage.getItem('lumenProgressV1')),latest)}catch{}
     hydrationStage="wallet_cache_restore";
-    if(cacheMatches||recoverWalletCache(localStorage,latest,read.data,{userId:accountId,sessionValid})){
+    const cacheRecovered=cacheMatches||await recoverWalletCacheDurably(localStorage,latest,read.data,{userId:accountId,sessionValid});
+    if(!sessionValid())return;
+    if(cacheRecovered){
      hydrationStage="wallet_acknowledge";
-     await walletOutbox.acknowledge(accountId,'wallet',entry.reward,entry.operationId,{sessionValid});cloud=latest;
+     await walletOutbox.acknowledge(accountId,'wallet',entry.reward,entry.operationId,{sessionValid});
+     if(!sessionValid())return;
+     cloud=latest;
      recordCloudDiagnostic('wallet_cache_recovered',{verified:true});
      // The UI may have been constructed from the old cache before hydration.
      // Re-enter through the verified copy rather than leave stale cash in memory.

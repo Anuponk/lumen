@@ -22,6 +22,7 @@ jobs:
           node scripts/storage-maintenance-tests.mjs
           node scripts/cloud-achievements-session-recovery-tests.mjs
           node scripts/cloud-achievements-quota-recovery-tests.mjs
+          node scripts/cloud-wallet-quota-recovery-tests.mjs
           node scripts/cloud-hydration-mirror-session-tests.mjs
           node scripts/cloud-profile-transitions-tests.mjs
           node scripts/cloud-reconciliation-matrix-tests.mjs

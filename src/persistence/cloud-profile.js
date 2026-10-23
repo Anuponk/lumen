@@ -1,5 +1,6 @@
 // Explicit migration backup. Never automatically overwrites a cloud snapshot.
 import {catalogueOrigin,mergeCatalogueOrigin,currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
+import {archiveRecoveryBackups} from './storage-maintenance.js';
 const MAX_CHARS=524288;
 // Top-level profile contract. Policies describe existing recovery rules, not
 // permission to award a reward or bypass a transactional server projection.
@@ -497,7 +498,19 @@ export async function reconcileCloudAchievementsDurably(storage,remote,{sessionV
     throw achievementRecoveryError('ACHIEVEMENT_STORAGE_FAILED',{stage:'achievement_backup',recoveryReason:['storage_quota','storage_unavailable'].includes(reason)?reason:'storage_failed'});
   }
   if(!unchangedOwner()||achievementStorageStep('achievement_local_read',()=>storage.getItem("lumenProgressV1"))!==plan.raw)return {changed:false,interrupted:true};
-  return installCloudAchievements(storage,plan,backupKey);
+  try{return installCloudAchievements(storage,plan,backupKey)}
+  catch(error){
+    if(achievementRecoveryDiagnostic(error).reason!=='storage_quota')throw error;
+    // A larger recovered cache can fail even after its original was preserved.
+    // Move only eligible old copies, with the same committed/read-back archival
+    // policy as account maintenance. Never purge evidence or touch the outbox.
+    const unchanged=()=>unchangedOwner()&&storage.getItem('lumenProgressV1')===plan.raw;
+    if(!unchanged())return {changed:false,interrupted:true};
+    const archived=await archiveRecoveryBackups(storage,{sessionValid:unchanged});
+    if(!unchanged()||archived.interrupted)return {changed:false,interrupted:true};
+    if(!archived.archived||archived.failed)throw error;
+    return installCloudAchievements(storage,plan,backupKey);
+  }
 }
 
 export async function initializeCloudProfile(supabase,localProfile,{userId}={}){
@@ -566,7 +579,7 @@ function preserveVerifiedSnapshot(storage,prefix,value){
 }
 // IndexedDB is a separate quota pool from localStorage. Never proceed with a
 // cloud write unless BOTH recovery snapshots were read back successfully.
-async function preserveRecoverySnapshot(storage,prefix,value){
+export async function preserveRecoverySnapshot(storage,prefix,value){
  try{return preserveVerifiedSnapshot(storage,prefix,value)}
  catch(error){if(error?.code!=="LOCAL_STORAGE_QUOTA")throw error}
  if(typeof indexedDB==="object"&&indexedDB&&typeof indexedDB.open==="function"){
