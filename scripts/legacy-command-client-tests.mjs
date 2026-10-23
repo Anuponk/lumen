@@ -229,6 +229,13 @@ test('a Wallet hold with an old server cannot fall through to local authenticate
  assert.equal(result.handled,true);assert.equal(result.saved,undefined);assert.equal(JSON.stringify(ctx.lumenProgress),before);
  assert.equal((await box.pending(userId)).length,1);assert.equal(state.receipts.size,0);
 });
+test('a held replay is captured without waiting for a capability network response',async()=>{
+ const {ctx,box,run}=uiFixture();ctx.cloudProfileReady=false;let release;
+ const gate=new Promise(resolve=>release=resolve);ctx.legacyCommandsSupported=()=>gate;
+ const running=run();await new Promise(resolve=>setTimeout(resolve,0));
+ try{assert.equal((await box.pending(userId)).length,1,'The only intent must already be durable while the network is pending')}
+ finally{release(true);await running}
+});
 test('a held victory retries the original attempt/reset facts exactly once after readiness returns',async()=>{
  const {ctx,box,state,run}=uiFixture();ctx.cloudProfileReady=false;
  await run();const captured=(await box.pending(userId))[0];ctx.activeGameSeconds=()=>99;

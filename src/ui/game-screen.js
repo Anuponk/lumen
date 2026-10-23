@@ -2602,6 +2602,14 @@ async function captureLegacyCommandVictory(){
   const prior=(await legacyVictoryOutbox.pending(ownerId)).find(e=>e.operationId===operationId);
   if(!sameContext())return {handled:true};
   const facts=prior?.reward.facts||{seconds:activeGameSeconds(),assistanceUsed:!!attempt.assistanceUsed,mistakeCommitted:!!attempt.mistakeCommitted,qualifying:!!attempt.qualifying,hintUsed:hintUsedInAttempt(),challengeFailed:!!questFailed,qualifiedDay:localCalendarDay(),qualifiedAt:new Date(attempt.startedAt||Date.now()).toISOString()};
+  if(!cloudProfileReady){
+   // A held replay needs only local durability. A capability read can hang
+   // offline and must never delay the sole immutable capture of this run.
+   victoryStage='durable_capture';
+   intent=await legacyVictoryOutbox.enqueue(ownerId,quest.id,{facts},{operationId});
+   if(!sameContext())return {handled:true};
+   victoryStage='baseline';throw Error('Verified baseline pending');
+  }
   victoryStage='capability';
   let capabilityFailure;
   try{if(!(await legacyCommandsSupported(client))){if(!sameContext())return {handled:true};if(prior||lumenProgress.legacyVictoryRevision||!cloudProfileReady)throw Error('Command server unavailable; intent preserved');return {handled:false}}}catch(error){capabilityFailure=error}

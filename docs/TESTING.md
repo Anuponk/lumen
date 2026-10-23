@@ -510,6 +510,7 @@ account/client/generation/password scope, unknown/reward/storage refusals, free
 versus paid help, pending replay presentation without a new star or confirmed
 badge, and confirmed-cache read-back/races. Legacy UI regressions also check an
 unsupported command server during a hold, immutable facts across readiness retry,
+and durable capture even while a capability network response would remain pending,
 and a generation change after commit without local installation or a second
 reward. The native account browser suite runs `domain-replay-browser.mjs`:
 verified Wallet conflict, actual map starts for stable/historical acquired replay,

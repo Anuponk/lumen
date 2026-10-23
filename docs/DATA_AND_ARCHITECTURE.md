@@ -212,7 +212,8 @@ historical replay entry now checks access before clearing the preceding attempt.
 
 This permission enables play, not reconciliation of the ambiguous Wallet.
 Free help retains its ordinary rules; paid help remains refused before mutation.
-A replay solved during this hold captures the same immutable attempt/reset
+A replay solved during this hold captures locally before any capability network
+read; closing offline must not depend on that read. It keeps the same attempt/reset
 operation in its existing outbox and shows pending performance, without a new
 star animation or confirmed badge. Rewards, daily credits and full-profile
 installation still await their existing proof/readiness contracts. An older
