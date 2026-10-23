@@ -325,7 +325,7 @@ async function copyAccountCloudDiagnostic(){
 }
 // Explicit player-controlled export: never uploads or mutates any backup.
 async function exportLumenRecoveryBundle(){
- const prefixList=["lumenProgressV1","lumenLocalQuarantineV1:","lumenUnsyncedCloudBackupV1:","lumenUnsyncedCloudBackupV2:","lumenBeforeCloud","lumenBeforeWalletRecovery","lumenBeforeAccountSwitch_","lumenBeforeCanonicalStartMetadata","lumenGuestBeforeAccount_"];
+ const prefixList=["lumenProgressV1","lumenCloudOwnerId","lumenActiveAttemptV1","lumenCanonicalVictoryOutbox","lumenLegacyVictoryOutbox","lumenWalletVictoryOutbox","lumenGuestClaimV1:","lumenLocalQuarantineV1:","lumenUnsyncedCloudBackupV1:","lumenUnsyncedCloudBackupV2:","lumenBeforeCloud","lumenBeforeWalletRecovery","lumenBeforeAccountSwitch_","lumenBeforeCanonicalStartMetadata","lumenGuestBeforeAccount_"];
  const local={};
  for(let i=0;i<localStorage.length;i++){
   const key=localStorage.key(i);
@@ -634,7 +634,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   if(!sessionValid())return;
   const fresh={solved:{},historyBackup:{},badges:{},stars:{},performances:{},noHint:{},xp:0,skyScore:0,shards:3,catalogueOrigin:currentCatalogueOrigin};
   hydrationStage="cloud_initialize";
-  let cloud=existing||await initializeCloudProfile(hydrationClient,currentOwner===accountId?incoming:!currentOwner?guestAccountSeed(incoming,currentOwner,accountId,fresh):fresh,{userId:accountId});
+  let cloud=existing||await initializeCloudProfile(hydrationClient,currentOwner===accountId?incoming:!currentOwner?guestAccountSeed(incoming,currentOwner,accountId,fresh):fresh,{userId:accountId,sessionValid,...(!currentOwner&&original!==null?{guestSource:{storage:localStorage,original}}:{})});
   if(!sessionValid())return;
   // An existing account must cover the guest before its cache can be replaced.
   // Preserve both copies and use the existing conservative merge contract. An

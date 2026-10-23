@@ -502,6 +502,26 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Historical/rollout preparation: `historical-rollout-tests.mjs` covers byte-level
+inventory and unknown fields, foreign owners, ambiguous balances, immutable
+account-bound guest manifests, denied storage, lost replies and receipt reads,
+independent receipt/profile verification, session changes and strictly scoped
+old-server fallback. It also refuses mocked/stale/shared-production rollout
+proofs and premature retirement. The account browser suite adds
+`historical-claim-browser.mjs` with native localStorage and Web Crypto; Auth/RPC
+remain synthetic. It preserves its originals and exercises a restarted adapter,
+lost reply/read, exactly one effect and the read-only inventory.
+
+`historical-claim-rollout.sql` exercises the actual additive migration in the
+disposable CI PostgreSQL database: expected account, private tables, anonymous
+refusal, exact immutable receipts, no merge into an existing account, rollback
+on receipt failure, durable administrative activation and forbidden downgrade.
+`guest-claim-concurrency.py` checks simultaneous identical retries and competing
+owners in localhost-only fixture mode. These are not live Supabase or Android
+tests. Run `node scripts/test-affected.mjs --full` before delivery; retain all
+prior guest, Wallet, badge, quota and recovery regressions.
+
+
 Lot 3: `gameplay-domain-tests.mjs` covers both quest identities, the direct
 historical start guard (both reproduced failing before correction),
 navigation from a pending success to another replay without dropping the old

@@ -1,5 +1,12 @@
 # Existing verification map
 
+Historical provenance/rollout: historical-rollout-tests.mjs (mandatory Node),
+historical-claim-browser.mjs (account browser suite; native storage/mock RPC),
+fixtures/historical-claim-rollout.sql and guest-claim-concurrency.py (isolated
+PostgreSQL CI). Preserve guest-account-hydration-tests.mjs and the prior cloud,
+Wallet, quota, badge and recovery suites. Real Android/live-project evidence is
+separate and required by persistence-release-check.mjs before rollout/retirement.
+
 Persistence lot 3: gameplay-sync.js derives ephemeral domain readiness from a
 current verified account/client/generation completion list. catalogue-access.js
 and both UI access adapters isolate acquired replay from Wallet-only holds;

@@ -1,5 +1,13 @@
 # Dependencies and data flow
 
+Historical initialization: game-screen.js supplies original guest bytes and
+session guard → cloud-profile.js → guest-claim.js (capture/discovery/receipt) →
+private SQL guest_claim_receipts. Existing initialize is used only after an
+explicit missing-capability discovery, never after ambiguous command emission.
+historical-inventory.js reads cloud field/coverage contracts without mutating them.
+rollout-gates.js and its CLI only evaluate operator evidence; sync_cohorts has
+no browser writer. No SQL retirement/deletion dependency is introduced.
+
 Persistence lot 3: gameplay-sync.js derives ephemeral domain readiness from a
 current verified account/client/generation completion list. catalogue-access.js
 and both UI access adapters isolate acquired replay from Wallet-only holds;

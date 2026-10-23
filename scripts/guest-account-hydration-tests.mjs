@@ -17,6 +17,7 @@ function fixture({cloud=null,owner=null,offline=false,failVerification=false,swi
  const calls=[],events=[],noop=()=>{};
  const client={rpc:async(name,args)=>{
   calls.push(name);
+  if(name==='lumen_guest_claim_version')return {error:{code:'PGRST202'},status:404};
   if(offline)return {error:{code:'503'}};
   if(name==='lumen_restore_profile'){
    reads++;if(switchDuringRead)ctx.lumenUser={id:'b'};

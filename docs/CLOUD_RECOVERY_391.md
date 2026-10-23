@@ -448,6 +448,51 @@ existing max-balance reconciliation is not a transaction reconstruction.
 
 ## Validation and release
 
+### Audit trajectory: remaining lot gates (23 October 2026)
+
+The historical inventory and new-account guest claim are additive preparation.
+No private player profile is available in this checkout. Rachel/Loutre/Chloé
+recovery remains unverified; no baseline may be selected on their behalf.
+Keep their original ownership, unknown fields and pending operation identities.
+For existing-account contradictions, use the independently reviewed #558 path
+only after comparing the actual private copies and current server receipts.
+
+The following operational gates remain mandatory, even when automated tests pass:
+
+1. Supply an isolated Lumen project and accounts. Never run bootstrap fixtures
+   against the shared SoldeZen project. Apply additive migrations to recipe first,
+   verify advisors/RLS and restore an export there; record the actual version.
+2. Run the existing coordinator in read-only shadow inspection, without a second
+   dispatcher/emission. Record exact client/server Git revision, parity and all
+   failures. Administrative cohort records are attestation preparation; they do
+   not enable a second writer and have no client activation endpoint.
+3. Execute `RECETTE_SCENARIOS` from `rollout-gates.js` on real transports and two
+   physical Android devices. Keep private evidence references, exact revision,
+   transport (`real` or `mock`) and pass/failure for every scenario. The visible
+   guest quest 6 → account → stable quest 7 must use catalogue identities, not
+   `solved[6]`. Confirm affected player recovery separately before closing issues.
+4. Create an evidence file with format `persistence-release-evidence-v1`, app
+   `Lumen`, `revision`, isolated `projectRef`/`productionProjectRef`, protocol 1,
+   `serverRevision`/`clientRevision`, `ci:{revision,success}`, per-scenario
+   `{revision,passed,transport,reference}`, `physicalAndroid:{revision,passed,devices}`,
+   `shadow:{revision,parity,secondEmissions}`, and zero `losses`, `doubleRewards`,
+   `unreviewedBaselines`. Run `node scripts/persistence-release-check.mjs FILE activate`.
+   An operator must review referenced evidence; self-reported JSON is not proof.
+5. After authorized release, verify the exact production SHA per RELEASE.md.
+   Start with QA/internal cohorts and stop new activations at the first
+   conservation failure; keep already active authorities, receipts and archives.
+6. Before retirement, additionally require `observation:{revision,startedAt,endedAt,
+   broadCohort}` spanning at least 14 days, `legacyWriters:0`, `migrationParity:true`,
+   `originalsRestorable:true`, `mirrorServerDerived:true`. Run the checker with
+   `retire`. Verify old-client rejection, a dormant intent, export restoration and
+   rollback to a compatible client before a separate writer-removal change.
+
+Current preparation does not remove CAS, mirror repair, compatibility RPCs,
+historical readers or backups. No blanket production migration, cohort activation
+or cleanup is justified by the presence of these tools. The physical recipe,
+observation and gated writer removal cannot be declared completed by CI.
+
+
 New mandatory Node suites: `canonical-outbox-recovery-tests.mjs`,
 `canonical-durable-outbox-tests.mjs`, `canonical-retry-state-tests.mjs`,
 `cloud-retry-scheduler-tests.mjs`.

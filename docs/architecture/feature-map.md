@@ -1,5 +1,12 @@
 # Feature map
 
+Historical/rollout preparation: historical-inventory.js → private dry-run CLI;
+guest-claim.js → cloud-profile initialize → expected-account guest claim RPC,
+private immutable receipt and current covered projection. The original guest
+copy/manifest and unknown fields survive. rollout-gates.js owns evidence checks,
+not activation or cleanup. See CLOUD_RECOVERY_391.md for the unfulfilled real
+device, rollout and retirement gates; old writers stay enabled until parity.
+
 Persistence lot 3: gameplay-sync.js derives ephemeral domain readiness from a
 current verified account/client/generation completion list. catalogue-access.js
 and both UI access adapters isolate acquired replay from Wallet-only holds;

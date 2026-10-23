@@ -2,6 +2,7 @@
 import {catalogueOrigin,mergeCatalogueOrigin,currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
 import {archiveRecoveryBackups} from './storage-maintenance.js';
 import {MAX_PROFILE_BYTES,profileStorageBytes} from './profile-size.js';
+import {captureGuestClaim,claimGuestProfile} from './guest-claim.js';
 // Top-level profile contract. Policies describe existing recovery rules, not
 // permission to award a reward or bypass a transactional server projection.
 export const CLOUD_PROFILE_FIELDS=Object.freeze(Object.fromEntries(Object.entries({
@@ -538,9 +539,23 @@ export async function reconcileCloudAchievementsDurably(storage,remote,{sessionV
   }
 }
 
-export async function initializeCloudProfile(supabase,localProfile,{userId}={}){
+export async function initializeCloudProfile(supabase,localProfile,{userId,guestSource,sessionValid=()=>true}={}){
  const proposed=validateCloudProfile(localProfile);
+ if(!sessionValid())throw Error('Initialisation suspendue : session modifiée');
+ if(guestSource){
+  const manifest=await captureGuestClaim(guestSource.storage,{userId,profile:proposed,original:guestSource.original,sessionValid});
+  if(!sessionValid())throw Error('Initialisation suspendue : session modifiée');
+  const version=await supabase.rpc('lumen_guest_claim_version');
+  if(!sessionValid())throw Error('Initialisation suspendue : session modifiée');
+  if(!version.error&&version.data===1){
+   return (await claimGuestProfile(supabase,manifest,{sessionValid,covers:cloudSafelyCoversLocal,loadProfile:id=>loadVerifiedProfile(supabase,{userId:id})})).profile;
+  }
+  // Missing capability is known before emission. Never fall back after an
+  // ambiguous claim result, timeout, permission error or unknown protocol.
+  if(version.error?.code!=='PGRST202'||version.status!==404)throw Error('Protocole de revendication indisponible');
+ }
  const {data,error}=await supabase.rpc("lumen_initialize_profile",{p_payload:proposed,...(userId?{p_expected_user_id:userId}:{})});
+ if(!sessionValid())throw Error('Initialisation suspendue : session modifiée');
  if(error){
   const failure=Error("Initialisation cloud impossible : refus du serveur");
   if(typeof error.code==='string'&&/^[A-Z0-9]{5,12}$/.test(error.code))failure.code=error.code;
@@ -548,6 +563,7 @@ export async function initializeCloudProfile(supabase,localProfile,{userId}={}){
  }
  const saved=validateCloudProfile(data);
  const verified=await loadVerifiedProfile(supabase,{userId});
+ if(!sessionValid())throw Error('Initialisation suspendue : session modifiée');
  if(!sameCloudProfile(saved,verified))throw Error("Profil cloud initial non vérifié");
  return saved;
 }

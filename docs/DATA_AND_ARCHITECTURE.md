@@ -196,6 +196,72 @@ the session is usable on that particular browser/PWA.
 
 ## Cloud persistence contract
 
+### Historical inventory and guest claims — lot 4
+
+`historical-inventory.js` produces a private, mutation-free manifest. Each source
+retains its original string, SHA-256, owner, origin and unknown fields. States are
+`identical`, `covered_projection`, `incomplete` and `contradictory`. A covered
+projection is **not** a transaction receipt. Exported receipts alone cannot
+authorize a baseline: verification still uses the existing expected-account RPC
+adapters. Invalid/foreign sources and ambiguous balances remain under review.
+`node scripts/historical-inventory.mjs private-input.json private-output.json`
+requires an explicit destination, refuses overwrite and prints only counts.
+Input shape: `{userId,sources:[{id,owner,origin,raw}],remoteOwner,remoteRaw}`.
+The result contains private save contents and must never enter Git or an issue.
+
+An actual unowned guest's initialization now captures `lumenGuestClaimV1:<digest>`
+before I/O. The immutable manifest contains the target owner, random claim ID,
+original/seed strings and SHA-256 digests. A preserved source remains bound to
+that target even when sign-in was interrupted. Native Web Locks serialize new
+claim captures across updated same-origin tabs; without them the verified
+localStorage write remains document-scoped, not a cross-tab transaction.
+Manifests and the prior guest backups are retained and privately exportable.
+The export also retains the local owner, active attempt and fallback outboxes.
+
+The additive `historical_claim_rollout` migration introduces private, RLS-enabled
+guest receipts, no new authenticated table grants, expected-account RPCs and
+an invoker public facade. A claim atomically creates **only a missing profile**
+and its receipt. Existing profiles receive `review_required`, without addition,
+maximum or replacement. The seed must equal the original JSON except for the
+existing default reserve when `shards` was absent. Unknown fields survive.
+Account-authority fields are refused. The original new-account net-balance policy
+is preserved as `new-profile-net-balance-v1`; this is an explicit historical
+baseline, not a reconstruction or proof of earlier spending. Guest bytes remain
+client-originated evidence, not proof of purchase or an anti-cheat attestation.
+
+Retry retains the exact manifest. An independent claim receipt and a current
+expected-account projection covering the seed are required, including after a
+lost mutation reply. No response failure switches writers. Only an explicit
+404/PGRST202 from capability discovery, before any claim emission, uses the
+old initialization path; all other discovery failures or versions hold.
+Originals are never deleted on success or rollback. Existing-account divergent
+guest merges remain under the earlier conservative reconciliation contract;
+this release does not claim to resolve their missing transaction history.
+
+### Rollout and retirement evidence — lots 5–7
+
+`rollout-gates.js` and `persistence-release-check.mjs` evaluate an explicit private
+evidence file; they do not deploy, migrate players, authorize money, or activate
+accounts. CI, client and server attestations must name the same exact Git SHA.
+The gate requires isolated real transports, all named failure scenarios, two
+distinct Android devices and shadow parity with zero second emissions. Mock
+successes are deliberately insufficient. The retirement decision additionally
+requires 14 elapsed calendar days of broad-cohort observation for that revision,
+zero old writers, migration parity, restorable originals and a server-derived
+mirror. Missing/contradictory proofs fail closed. See CLOUD_RECOVERY_391.md.
+
+The migration prepares private `sync_cohorts` administrative rows (shadow/active,
+protocol, revision, evidence digest) and an owner-bound read-only contract RPC.
+It inserts **no** cohort. Browsers cannot create, activate, downgrade or delete
+cohorts; active state survives a client rollback. Auth-user deletion retains its
+normal FK cascade. These rows are preparation/attestation only: they do not
+switch an application dispatcher or retire any RPC. No unsupported future
+protocol may be activated by this schema. Existing command authorities remain.
+There is intentionally no retirement stage before server projection parity.
+No old snapshot/mirror writer or dormant-client reader is removed in this lot.
+Such removal remains blocked until the actual release/restore evidence exists.
+
+
 ### Gameplay and domain readiness — lot 3
 
 `gameplay-sync.js` derives profile, achievement, wallet and reward states from
