@@ -218,3 +218,11 @@ A telemetry-only follow-up rejects duplicate batch identities (including UUID
 case aliases) before budget/data writes. Separate-delivery retry idempotence
 remains unchanged. Its SQL is validated and released through the same gates;
 no player profile or business command is involved.
+
+The five required checks also passed on `c433411`, including the new RED/GREEN
+batch identity regression and real PostgreSQL concurrency. The follow-up was
+applied as `20261023104105`; its normalised SQL SHA-256 matches migration history:
+`d5ee2737668c5c0c158758015f66cdb21237701479c70f539be77ce9e4b26087`.
+Production function metadata confirms the guard is installed. The final filename
+alignment changes no SQL; final-head checks and exact client publication remain
+separate release gates.
