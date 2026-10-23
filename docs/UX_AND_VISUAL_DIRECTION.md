@@ -1,5 +1,11 @@
 # UX and visual direction
 
+The incident cockpit compares observed versions within its bounded optional
+sample and filters episodes by version and last observed state. Counts are not
+error rates and do not prove regressions. Mixed-version episodes retain context.
+Each filter change revokes report review and its draft URL; a newly displayed
+report must be reviewed again. No game, teaching or saved-player behavior changes.
+
 Guided correction (#548) filters only the handled gesture's release click.
 There is no 700 ms cooldown across the board: a fresh tap works immediately.
 

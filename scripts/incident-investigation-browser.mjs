@@ -20,7 +20,7 @@ export async function verifyIncidentInvestigation({send,evaluate,url}){
   let allowed=true;
   const id=n=>'00000000-0000-0000-0000-'+String(n).padStart(12,'0');
   const row=(code,sequence,trace=2)=>({session_id:id(1),trace_id:id(trace),sequence,code,stage:'guided',kind:'unknown',app_version:'1.11.1+500',platform:'desktop',browser:'chromium',before_state:'unknown',after_state:code.endsWith('blocked')?'blocked':'unknown',message:'Bearer SECRET',email:'secret@example.invalid'});
-  const data={signatures:[{code:'guided_error',stage:'guided',occurrences:2,sessions:1}],timeline:[row('guided_error',1),row('guided_undo',2),row('guided_input_blocked',3),row('guided_input_released',1,3)]};
+  const data={signatures:[{code:'guided_error',stage:'guided',app_version:'1.11.1+500',occurrences:2,sessions:1}],timeline:[row('guided_error',1),row('guided_undo',2),row('guided_input_blocked',3),{...row('guided_input_released',1,3),app_version:'1.11.1+499'}]};
   renderIncidentInvestigation(host,data,{authorized:()=>allowed});
   const cards=host.lastElementChild.querySelectorAll('details'),preview=host.querySelector('textarea'),checkbox=host.querySelector('input'),draft=cards[0].querySelectorAll('a')[1];
   const report=preview.value,initialHidden=draft.hidden&&!draft.hasAttribute('href');
@@ -51,15 +51,27 @@ export async function verifyIncidentInvestigation({send,evaluate,url}){
   const revoked=f.draft.hidden&&!f.draft.hasAttribute('href');
   const filter=host.querySelector('select');filter.value='blocked';filter.dispatchEvent(new Event('change'));
   const blockedOnly=host.lastElementChild.querySelectorAll('details').length===1;
+  const previous=host.lastElementChild.querySelector('details'),previousReview=previous.querySelector('input'),previousDraft=previous.querySelectorAll('a')[1];
+  previousReview.click();const reviewedBeforeFilter=!previousDraft.hidden&&previousDraft.hasAttribute('href');
+  const versions=host.querySelectorAll('select')[1];versions.value='1.11.1+499';versions.dispatchEvent(new Event('change'));
+  const combinedFilters=host.lastElementChild.querySelectorAll('details').length===0;
+  const versionReviewRevoked=reviewedBeforeFilter&&!previousReview.checked&&previousDraft.hidden&&!previousDraft.hasAttribute('href');
+  const obsolete=new MouseEvent('click',{bubbles:true,cancelable:true});previousDraft.dispatchEvent(obsolete);
+  filter.value='all';filter.dispatchEvent(new Event('change'));
+  const olderVersion=host.lastElementChild.querySelectorAll('details').length===1&&host.lastElementChild.textContent.includes('1.11.1+499');
+  versions.value='1.11.1+500';versions.dispatchEvent(new Event('change'));
+  const freshReview=host.lastElementChild.querySelectorAll('details').length===1&&!host.lastElementChild.querySelector('input').checked;
+  const comparisonWarning=host.textContent.includes('ne mesurent pas un taux d’erreur')&&host.textContent.includes('ne prouvent pas une régression');
   f.deny();const staleDraft=host.lastElementChild.querySelector('details a:nth-of-type(2)');
   const click=new MouseEvent('click',{bubbles:true,cancelable:true});staleDraft.dispatchEvent(click);
   // Re-run the same actual renderer with the now-revoked predicate.
   host.reviewFixture.renderDenied();const denied=host.children.length===0;host.remove();
-  return {episodes,report,url,initialHidden,reviewEnabled,revoked,blockedOnly,denied,staleClickPrevented:click.defaultPrevented};
+  return {episodes,report,url,initialHidden,reviewEnabled,revoked,blockedOnly,denied,staleClickPrevented:click.defaultPrevented,
+   combinedFilters,versionReviewRevoked,olderVersion,freshReview,comparisonWarning,obsoletePrevented:obsolete.defaultPrevented};
  })()`,true);
  assert.equal(result.episodes,2);
- for(const key of ['initialHidden','reviewEnabled','revoked','blockedOnly','denied','staleClickPrevented'])assert.equal(result[key],true,key);
+ for(const key of ['initialHidden','reviewEnabled','revoked','blockedOnly','denied','staleClickPrevented','combinedFilters','versionReviewRevoked','olderVersion','freshReview','comparisonWarning','obsoletePrevented'])assert.equal(result[key],true,key);
  assert.equal(new URL(result.url).pathname,'/Anuponk/lumen/issues/new');
  for(const value of [result.report,decodeURIComponent(result.url)])for(const forbidden of ['SECRET','secret@','00000000-0000-0000'])assert(!value.includes(forbidden));
- return {nativeDOM:true,reviewBeforeGitHub:true,noIssueCreated:true,closedExport:true,filter:true,revocation:true};
+ return {nativeDOM:true,reviewBeforeGitHub:true,noIssueCreated:true,closedExport:true,filter:true,revocation:true,versionComparison:true,combinedFilters:true,freshReviewAfterFilter:true};
 }

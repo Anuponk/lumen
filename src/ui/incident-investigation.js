@@ -17,6 +17,18 @@ function observedState(events){
  if(!guided.length)return 'unknown';
  return guided.at(-1).code==='guided_input_released'?'released':'blocked';
 }
+function observedVersions(episodes,signatures){
+ const rows=new Map(),row=value=>{if(!rows.has(value))rows.set(value,{version:value,occurrences:0,signatures:0,episodes:0});return rows.get(value)};
+ for(const signature of signatures){const current=row(signature.app_version);current.occurrences+=signature.occurrences;current.signatures++}
+ for(const episode of episodes)for(const value of new Set(episode.events.map(e=>e.app_version)))row(value).episodes++;
+ return [...rows.values()].sort((a,b)=>{
+  if(a.version==='unknown')return b.version==='unknown'?0:1;
+  if(b.version==='unknown')return -1;
+  const left=a.version.split(/[.+]/).map(Number),right=b.version.split(/[.+]/).map(Number);
+  for(let i=0;i<4;i++)if(left[i]!==right[i])return right[i]-left[i];
+  return 0;
+ });
+}
 export function buildIncidentInvestigation(data){
  const groups=new Map(),seen=new Set();
  for(const raw of (Array.isArray(data?.timeline)?data.timeline:[]).slice(-100)){
@@ -34,7 +46,7 @@ export function buildIncidentInvestigation(data){
   code:row.code,stage:pick(DIAGNOSTIC_STAGES,row.stage),app_version:version(row.app_version),
   platform:pick(DIAGNOSTIC_PLATFORMS,row.platform,'other'),browser:pick(DIAGNOSTIC_BROWSERS,row.browser,'other'),occurrences:count(row.occurrences),sessions:count(row.sessions)
  }));
- return {episodes,signatures,sample:'opt-in, incomplete'};
+ return {episodes,signatures,versions:observedVersions(episodes,signatures),sample:'opt-in, incomplete'};
 }
 function guidance(events){
  if(events.some(e=>e.code.startsWith('guided_')))return ['Transition guidée à vérifier ; cause non établie.','Sur un compte de test : provoquer une erreur guidée, annuler plusieurs fois et vérifier le retour des interactions. Comparer les transitions observées à #533.'];
@@ -84,6 +96,15 @@ export function renderIncidentInvestigation(host,data,{authorized=()=>false}={})
  const doc=host.ownerDocument,model=buildIncidentInvestigation(data);
  const element=(tag,text)=>{const node=doc.createElement(tag);if(text!==undefined)node.textContent=text;return node};
  host.append(element('p','Échantillon facultatif et partiel · au plus 100 événements récents. Une transition libérée ne prouve pas une sauvegarde.'));
+ if(model.versions.length){
+  const comparison=element('details'),table=element('table'),head=element('thead'),header=element('tr'),body=element('tbody');
+  comparison.append(element('summary','Observations par version'));
+  comparison.append(element('p','Volumes de cet échantillon facultatif et partiel. Sans population exposée ni durée comparable, ces nombres ne mesurent pas un taux d’erreur et ne prouvent pas une régression. Un épisode contenant plusieurs versions figure pour chacune.'));
+  for(const label of ['Version','Occurrences agrégées','Groupes agrégés','Épisodes contenant cette version'])header.append(element('th',label));
+  head.append(header);table.append(head,body);
+  for(const row of model.versions){const tr=element('tr');for(const value of [row.version,row.occurrences,row.signatures,row.episodes])tr.append(element('td',String(value)));body.append(tr)}
+  const wrap=element('div');wrap.className='admin-table-wrap';wrap.append(table);comparison.append(wrap);host.append(comparison);
+ }
  if(model.signatures.length){
   const signatures=element('details');signatures.append(element('summary','Signatures agrégées · fenêtre choisie, sept jours maximum'));
   for(const row of model.signatures)signatures.append(element('p',`${row.code} · ${row.stage} · ${row.app_version} · ${row.platform}/${row.browser} · ${row.occurrences} occurrence(s) · ${row.sessions} session(s)`));
@@ -92,29 +113,39 @@ export function renderIncidentInvestigation(host,data,{authorized=()=>false}={})
  if(!model.episodes.length){host.append(element('p',data?'Aucun épisode dans cette fenêtre.':'Diagnostics détaillés indisponibles.'));return}
  const filter=element('select');filter.setAttribute('aria-label','Filtrer les épisodes techniques');
  for(const [value,label] of [['all','Tous les épisodes'],['blocked','Dernière transition bloquée'],['released','Dernière transition libérée'],['unknown','État indéterminé']]){const option=element('option',label);option.value=value;filter.append(option)}
- const list=element('div');host.append(filter,list);
+ const versionFilter=element('select');versionFilter.setAttribute('aria-label','Filtrer les épisodes contenant une version de LUMEN');
+ for(const [value,label] of [['all','Toutes les versions observées'],...model.versions.map(row=>[row.version,row.version==='unknown'?'Version indéterminée':row.version])]){const option=element('option',label);option.value=value;versionFilter.append(option)}
+ const list=element('div');host.append(filter,versionFilter,list);
+ let revision=0,reviews=[];
  function render(){
+  const current=++revision;
+  for(const {confirm,draft} of reviews){confirm.checked=false;draft.hidden=true;draft.removeAttribute('href')}
+  reviews=[];
   list.replaceChildren();if(!authorized())return;
   for(const [index,episode] of model.episodes.entries()){
    if(filter.value!=='all'&&filter.value!==episode.state)continue;
-   const card=element('details'),summary=element('summary',`Épisode ${index+1} · ${episode.events[0].app_version} · ${episode.events.length} événement(s) · ${stateLabel(episode.state)}`);
+   if(versionFilter.value!=='all'&&!episode.events.some(e=>e.app_version===versionFilter.value))continue;
+   const versions=[...new Set(episode.events.map(e=>e.app_version))].join(', ');
+   const card=element('details'),summary=element('summary',`Épisode ${index+1} · ${versions} · ${episode.events.length} événement(s) · ${stateLabel(episode.state)}`);
+   const valid=()=>authorized()&&revision===current&&host.contains(card);
    const report=incidentReport(episode),preview=element('textarea');preview.readOnly=true;preview.rows=9;preview.value=report;preview.setAttribute('aria-label','Rapport technique assaini');
    const label=element('label'),confirm=element('input');confirm.type='checkbox';
    label.append(confirm,doc.createTextNode(' J’ai relu ce rapport et vérifié les issues existantes.'));
    const search=element('a','Chercher une issue existante');search.href='https://github.com/Anuponk/lumen/issues?q='+encodeURIComponent('is:issue '+episode.events[0].code);search.target='_blank';search.rel='noopener noreferrer';
    const draft=element('a','Préparer une issue sur GitHub');draft.hidden=true;draft.target='_blank';draft.rel='noopener noreferrer';
    const download=element('button','Exporter ce rapport');download.type='button';
-   confirm.onchange=()=>{draft.hidden=!authorized()||!confirm.checked;if(!draft.hidden)draft.href=githubIssueDraft(episode);else draft.removeAttribute('href')};
-   draft.onclick=e=>{if(!authorized()||!confirm.checked)e.preventDefault()};
-   search.onclick=e=>{if(!authorized())e.preventDefault()};
+   confirm.onchange=()=>{draft.hidden=!valid()||!confirm.checked;if(!draft.hidden)draft.href=githubIssueDraft(episode);else draft.removeAttribute('href')};
+   draft.onclick=e=>{if(!valid()||!confirm.checked)e.preventDefault()};
+   search.onclick=e=>{if(!valid())e.preventDefault()};
    download.onclick=()=>{
-    if(!authorized())return;
+    if(!valid())return;
     const url=URL.createObjectURL(new Blob([report],{type:'text/plain;charset=utf-8'}));
     const a=element('a');a.href=url;a.download='lumen-diagnostic.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
    };
    card.append(summary,preview,search,label,draft,download,element('p','GitHub ouvrira un brouillon. Relis-le puis valide sa publication sur GitHub.'));
+   reviews.push({confirm,draft});
    list.append(card);
   }
  }
- filter.onchange=render;render();
+ filter.onchange=render;versionFilter.onchange=render;render();
 }
