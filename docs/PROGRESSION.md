@@ -51,8 +51,9 @@ all quests: fifteen-minute badge qualification cooldown, the same first-win,
 autonomy/bonus and daily activity rules, and first-play social challenges.
 Existing acquired rewards and Mastery remain preserved without retroactive
 credits. Persistence formats and historical URLs remain compatibility adapters.
-These are the target rules of the continuation; rollout requires the matching
-client, tested server transactions and separate production schema authorization.
+The owner authorised the server migrations on 23 October 2026; their schema and
+permissions were verified after application. Rollout still requires the matching
+client and an exact-SHA publication check, preserving the acquired-access policy.
 
 The real-sky catalogue is grouped into Adventures of at most ten constellations, configured in `content.js`. The current groups are 1–10, 11–20 and 21–24. The first Adventure is included; subsequent Adventures remain visible but locked unless already owned or already started by an existing player. Their unlock mechanism is deferred. The grouping size is a product rule, not a campaign-size ceiling: new Adventures are derived as the catalogue grows.
 

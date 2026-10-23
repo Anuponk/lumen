@@ -84,7 +84,7 @@ jobs:
           node scripts/quest-command-fixtures.mjs --check
           node scripts/quest-command-fixtures.mjs > /tmp/lumen-quest-parity.sql
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
-            -f supabase/migrations/20261022130000_quest_contract_convergence.sql \
+            -f supabase/migrations/20261023181850_quest_contract_convergence.sql \
             -f /tmp/lumen-quest-parity.sql \
             -f scripts/fixtures/quest-first-badges.sql \
             -f scripts/fixtures/quest-command-receipts.sql
@@ -92,11 +92,11 @@ jobs:
           node scripts/social-fixture-bootstrap.mjs > /tmp/lumen-social-bootstrap.sql
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
             -f /tmp/lumen-social-bootstrap.sql \
-            -f supabase/migrations/20261022131000_quest_social_identity.sql \
+            -f supabase/migrations/20261023181900_quest_social_identity.sql \
             -f scripts/fixtures/quest-social-identity.sql
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
             -f scripts/fixtures/quest-analytics-bootstrap.sql \
-            -f supabase/migrations/20261022132000_quest_analytics_identity.sql \
+            -f supabase/migrations/20261023181918_quest_analytics_identity.sql \
             -f scripts/fixtures/quest-analytics-identity.sql
 
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \

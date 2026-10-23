@@ -5,7 +5,7 @@ import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {questRewardDefinition} from '../src/campaign/quest-rewards.js';
 import {applyQuestVictory} from '../src/campaign/quest-victory.js';
 import {currentCatalogueOrigin} from '../src/campaign/catalogue-origin.js';
-const migration='supabase/migrations/20261022130000_quest_contract_convergence.sql';
+const migration='supabase/migrations/20261023181850_quest_contract_convergence.sql';
 const quests=canonicalQuestList(),quote=value=>"'"+JSON.stringify(value).replaceAll("'","''")+"'::jsonb";
 const rules=quests.map(q=>({questId:q.id,ordinal:q.ordinal,legacyIndex:q.legacyIndex,...questRewardDefinition(q)}));
 const seed=rules.map(q=>`insert into lumen_commands.quest_rules values ('${q.questId.replaceAll("'","''")}',${q.legacyIndex??'null'},${quote(q)});`+

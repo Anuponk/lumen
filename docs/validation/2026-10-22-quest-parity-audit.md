@@ -6,8 +6,10 @@ six quêtes visibles de découverte puis compte obligatoire, avec mêmes règles
 de badges/récompenses/daily/social pour toutes les quêtes et conservation des
 acquis. Les mentions « proposé » et « à définir » ci-dessous décrivent l'audit
 initial ; la section de convergence et les documents propriétaires consignent
-les décisions ultérieures. Trois migrations candidates sont préparées et testées
-en PostgreSQL jetable ; elles ne sont pas appliquées en production. La recette
+les décisions ultérieures. Les trois migrations ont passé PostgreSQL jetable et
+la CI concurrente, puis ont été autorisées et appliquées en production le 23 octobre.
+Le [rapport d'intégration](quest-convergence-522-integration.json) enregistre leurs
+versions réelles et la vérification du schéma et des permissions. La recette
 Android physique de #521 reste distincte des validations navigateur simulées.
 
 ## Intégration du 23 octobre
@@ -35,8 +37,10 @@ assertion métier échouée. La confirmation sur téléphone physique reste sép
 
 Les trois migrations ont passé les assertions de parité, reçus, social privé et
 capability analytics dans PostgreSQL embarqué jetable le 23 octobre. La
-concurrence PostgreSQL 17 et la production restent des résultats distincts.
-Aucun schéma de production n'a été appliqué.
+concurrence PostgreSQL 17 et la vérification de production sont des preuves
+distinctes. Les migrations ont ensuite été appliquées avec accord du propriétaire,
+sans réécriture de profils ni crédit rétroactif ; 400 règles et les permissions
+attendues ont été vérifiées. Le client reste soumis à sa publication du SHA exact.
 
 La validation complète actualisée passe : 133 suites Node, dix parcours
 navigateur, 29 suites complémentaires, 396 cas intégrés et audit strict.

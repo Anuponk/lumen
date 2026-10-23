@@ -204,7 +204,7 @@ badges remain eligible from quest 1. The numeric
 compatibility adapter preserves historical reward IDs and allocations.
 `quest-victory.js` is a pure fixture/QA projection, never authenticated authority.
 
-Pending migration `20261022130000_quest_contract_convergence.sql` adds V2
+Migration `20261023181850_quest_contract_convergence.sql` adds V2
 `lumen_commit_quest_command` / `lumen_get_quest_command`. Immutable facts,
 operation ID, account and stable quest ID identify a command. For stable-only
 quests the transaction locks the profile, computes rewards, records first-win
@@ -230,19 +230,33 @@ flag cannot serve as this proof. Numeric cold resume restores both quest and
 campaign/replay mode before the attempt engine's strict identity comparison;
 a READY board does not establish preserved campaign access.
 
-Migration `20261022131000_quest_social_identity.sql` adds stable quest identity
+Migration `20261023181900_quest_social_identity.sql` adds stable quest identity
 to challenges and privacy-filtered create/get/list RPCs. Numeric URLs and
 existing participation/terminal protocols retain their identity. No challenge
 operation writes campaign progress, daily credit, unlocks or wallet rewards.
-Migration `20261022132000_quest_analytics_identity.sql` adds capability-checked,
+Migration `20261023181918_quest_analytics_identity.sql` adds capability-checked,
 read-only ordinal metrics/timeline; it does not rewrite events or players.
 
-These three migrations are candidates, **not applied in production**. Their
-disposable PostgreSQL fixtures and concurrency checks must pass before review.
-Production schema application needs separate owner authorization, then schema
-verification before the client is released. Shared authentication settings and
+The owner authorised these three migrations on 23 October 2026 after the
+disposable PostgreSQL fixtures and concurrency CI passed. They are applied in
+production under the versions above; 400 rules, RLS, grants and both identity
+constraints were verified before client release. The SQL bodies retain their
+tested fingerprints; filenames match the actual provider migration history.
+Any subsequent production schema application needs separate owner authorization,
+then schema verification before the client is released. Shared authentication settings and
 SoldeZen data are outside this change. Roll back the client while retaining the
 additive schema and receipts; never delete player projections to roll back.
+
+Post-application advisor review retains the intended boundaries: private tables
+have RLS and no player grants/policies; guest social RPCs reuse the existing
+privacy-filtered protocol, while admin RPCs enforce a live capability (both
+unauthenticated admin calls were rejected in production). These expected
+[private RLS](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy)
+and [definer RPC](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable)
+notices are documented rather than opening direct access. The two new
+[unindexed FK notices](https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys)
+point to the immutable catalogue-key parent; rollout neither updates nor deletes
+those keys. Existing shared-project advisor findings are outside this release.
 
 Achievement installation quota (#536/#537): after a verified original backup,
 an `achievement_install` quota refusal may archive one bounded batch of eligible

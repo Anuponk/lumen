@@ -22,7 +22,7 @@ quest 1 and a fifteen-minute qualification cooldown, without obsolete daily lock
 current wallet decreases, account switching and explicit V1 compatibility.
 Admin recent-player tests execute the actual metrics/timeline renderers.
 
-The `canonical-ledger` PostgreSQL workflow installs the pending convergence,
+The `canonical-ledger` PostgreSQL workflow installs the convergence,
 social and analytics migrations after the existing wallet migration. Run
 `node scripts/quest-command-fixtures.mjs --check` to compare all current server
 contracts with the catalogue; its default SQL output exercises every stable-only

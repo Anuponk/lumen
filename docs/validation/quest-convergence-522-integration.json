@@ -68,24 +68,48 @@
   },
   "migrations": [
     {
-      "path": "supabase/migrations/20261022130000_quest_contract_convergence.sql",
+      "path": "supabase/migrations/20261023181850_quest_contract_convergence.sql",
       "sha256LF": "2667f9cc3eb5fa54ee72b141f39ea74442060deb5512e266d23e2cf87b21c89b",
-      "productionApplied": false
+      "productionApplied": true,
+      "productionVersion": "20261023181850"
     },
     {
-      "path": "supabase/migrations/20261022131000_quest_social_identity.sql",
+      "path": "supabase/migrations/20261023181900_quest_social_identity.sql",
       "sha256LF": "53f0e6bf7e351908c09419fff584de00e12a9d2b0edb213eba95b0384839e08b",
-      "productionApplied": false
+      "productionApplied": true,
+      "productionVersion": "20261023181900"
     },
     {
-      "path": "supabase/migrations/20261022132000_quest_analytics_identity.sql",
+      "path": "supabase/migrations/20261023181918_quest_analytics_identity.sql",
       "sha256LF": "aa7bde5935753391f9a0c74f547a0f9bb4d297c892b8396cd29644a9764bb0b6",
-      "productionApplied": false
+      "productionApplied": true,
+      "productionVersion": "20261023181918"
     }
   ],
   "limitations": [
-    "Production schema requires separate owner authorization and verification before client release",
     "Physical Android confirmation remains pending",
     "Auth/RPC browser checks are simulated"
-  ]
+  ],
+  "production": {
+    "ownerAuthorized": true,
+    "verifiedAt": "2026-10-23T18:25:11.581Z",
+    "catalogue": {
+      "rules": 400,
+      "numeric": 296,
+      "stableOnly": 104,
+      "ordinals": 400
+    },
+    "privateTablesRls": true,
+    "privateTablesDirectAccessDenied": true,
+    "commandRpcAuthenticatedOnly": true,
+    "internalHelpersExecuteDenied": true,
+    "identityConstraintsValidated": true,
+    "unauthenticatedAdminCallsDenied": true,
+    "advisorsReviewed": true,
+    "playerBackfill": false,
+    "operationalGuards": {
+      "lockTimeout": "5s",
+      "statementTimeout": "60s"
+    }
+  }
 }
