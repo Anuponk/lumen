@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
+import fs from 'node:fs';
 import {applyApprovedDeviceRecovery,recoveryProfileDigest} from '../src/persistence/approved-device-recovery.js';
 import {restoreRicherCloudProfile} from '../src/persistence/cloud-profile.js';
 const local={solved:{0:1},badges:{first:1},stars:{},performances:{},shards:4,xp:1,skyScore:0};
 const remote={...local,shards:3,walletRevision:2,legacyVictoryRevision:1};
+const uiSource=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+const exportedPrefixes=JSON.parse(uiSource.match(/const prefixList=(\[[^;]+\]);/)[1]);
 async function fixture(){
  const map=new Map([['lumenProgressV1',JSON.stringify(local)],['lumenCloudOwnerId','owner'],['unrelated-pending','retained']]);
  const storage={getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,v)};
@@ -18,8 +21,10 @@ test('reviewed currency choice restores exact server profile with backups and pe
  assert.deepEqual(await applyApprovedDeviceRecovery(f.plan,f.options),{changed:true});
  assert.deepEqual(JSON.parse(f.map.get('lumenProgressV1')),remote);
  assert.equal(f.map.get('unrelated-pending'),'retained');assert.equal(f.reads(),2);
- assert.equal(f.map.get('lumenBeforeApprovedRecoveryLocal_'),JSON.stringify(local));
- assert.equal(f.map.get('lumenBeforeApprovedRecoveryRemote_'),JSON.stringify(remote));
+ const exportedOriginals=[...f.map].filter(([key])=>exportedPrefixes.some(prefix=>key.startsWith(prefix))).map(([,value])=>value);
+ assert.ok(exportedOriginals.includes(JSON.stringify(local))&&exportedOriginals.includes(JSON.stringify(remote)),'Both reviewed recovery originals must be included by the real export prefix selection');
+ assert.equal(f.map.get('lumenBeforeCloudApprovedRecoveryLocal_'),JSON.stringify(local));
+ assert.equal(f.map.get('lumenBeforeCloudApprovedRecoveryRemote_'),JSON.stringify(remote));
 });
 test('missing, expired or modified review and a different owner never install',async()=>{
  for(const change of [p=>({...p,format:'unknown'}),p=>({...p,userId:'other'}),p=>({...p,expiresAt:'2000-01-01'}),p=>({...p,localDigest:'a'.repeat(64)}),p=>({...p,cloudDigest:'a'.repeat(64)})]){
