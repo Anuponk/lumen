@@ -7,7 +7,7 @@ import {CONTENT_PACKS} from '../src/campaign/content.js';
 export async function verifyVictoryChallenge({send,evaluate},url){
  const results=[];
  await send('Network.enable');await send('Network.setBlockedURLs',{urls:['*supabase*']});
- for(const width of [390,1440])for(const mode of ['mastery','assisted','replay-without-performance','adventure-final']){
+ for(const width of [390,1440])for(const mode of ['mastery','assisted','replay-without-performance','adventure-final','stable']){
   await send('Emulation.setDeviceMetricsOverride',{width,height:900,mobile:width<700,deviceScaleFactor:1});
   const packQuests=canonicalQuestList().filter(q=>q.packId===CONTENT_PACKS[0].id);
   const questIndex=mode==='adventure-final'?packQuests.filter(q=>q.legacyIndex!==null).at(-1).legacyIndex:38;
@@ -16,6 +16,8 @@ export async function verifyVictoryChallenge({send,evaluate},url){
    progress.solved=Object.fromEntries(packQuests.filter(q=>q.legacyIndex!==null&&q.legacyIndex!==questIndex).map(q=>[q.legacyIndex,1]));
    progress.canonicalQuestState=Object.fromEntries(packQuests.filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true,badges:{}}]));
   }
+  const stable=mode==='stable'?canonicalQuestList().find(q=>q.legacyIndex===null):null;
+  if(stable){progress.solved=Object.fromEntries(canonicalQuestList().filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1]));progress.canonicalQuestState={}}
   const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:`
    localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(progress))});
    localStorage.removeItem('lumenQaActiveAttemptV1');localStorage.removeItem('lumenActiveAttemptV1');
@@ -23,11 +25,11 @@ export async function verifyVictoryChallenge({send,evaluate},url){
    for(const k of ['lumenQaTutorialSeen','lumenQaTutorialCompletedV1','lumenSkyTourSeen'])localStorage.setItem(k,'1');
    window.__challengeCalls=[];
    window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:null}}),onAuthStateChange(){}},rpc:async(name,args)=>{
-    if(name==='lumen_create_social_challenge'){window.__challengeCalls.push(args);await new Promise(r=>setTimeout(r,150));return {data:[{challenge_id:'00000000-0000-4000-8000-000000000511'}],error:null}}
+    if(name==='lumen_create_social_challenge'||name==='lumen_create_quest_challenge'){window.__challengeCalls.push(args);await new Promise(r=>setTimeout(r,150));return {data:[{challenge_id:'00000000-0000-4000-8000-000000000511'}],error:null}}
     return {data:[],error:null};
    }})};`});
   await navigateAndWait({send,evaluate},'Page.navigate',{url:String(url)});await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});
-  await evaluate(`lumenDiagnostics.setupQuest(${questIndex})`);await acknowledgeLearningMilestones(evaluate);
+  if(stable){await evaluate(`document.getElementById('openSky').click();document.querySelector('#adventureRail [data-pack-id="${stable.packId}"]').click()`);await evaluate(`document.querySelector('#sectorTabs [data-content-id="${stable.constellationId}"]').click()`);await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="${stable.id}"]').click()`)}else await evaluate(`lumenDiagnostics.setupQuest(${questIndex})`);await acknowledgeLearningMilestones(evaluate);
   await evaluate(`document.getElementById('attemptMask').click()`);
   if(mode==='assisted')await evaluate(`document.getElementById('hint').click()`);
   await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
@@ -45,7 +47,7 @@ export async function verifyVictoryChallenge({send,evaluate},url){
    for(let i=0;i<2;i++){await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...point});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...point});}
    for(let i=0;i<100;i++){if(await evaluate(`!document.getElementById('challengeShareModal').hidden`))break;await new Promise(r=>setTimeout(r,50));}
    assert.equal(await evaluate(`document.getElementById('challengeShareModal').hidden`),false,'Click opens the challenge share flow');
-   const calls=await evaluate('window.__challengeCalls');assert.equal(calls.length,1,'One RPC despite repeated activation');assert.equal(calls[0].p_puzzle_id,questIndex+1,'Stable historical identity, never the renumbered ordinal');
+   const calls=await evaluate('window.__challengeCalls');assert.equal(calls.length,1,'One RPC despite repeated activation');assert.equal(stable?calls[0].p_quest_id:calls[0].p_puzzle_id,stable?stable.id:questIndex+1,'Stable historical identity, never the renumbered ordinal');
    assert.equal(calls[0].p_mastery,mode!=='assisted');assert.equal(calls[0].p_first_play,true);
    await evaluate(`document.getElementById('challengeShareModal').hidden=true;document.getElementById('successShare').click()`);
    await new Promise(r=>setTimeout(r,100));

@@ -38,7 +38,7 @@ await recovery.api.signOut();assert.deepEqual(recovery.calls.at(-1),['signOut',{
 const cloud=fs.readFileSync('src/persistence/cloud.js','utf8'),ui=fs.readFileSync('src/ui/game-screen.js','utf8'),html=fs.readFileSync('index.html','utf8');
 assert.doesNotMatch(cloud,/sendEmailOtp|verifyEmailOtp|requestLumenAuthMail\("magiclink"/);
 assert.doesNotMatch(html,/id="account(?:LegacyOtp|Otp|EmailSend)/);
-assert.match(html,/Continuer sans compte/);assert.match(html,/Continuer avec Google/);
+assert.match(html,/id="accountOptinLater"[^>]*>Retour au jeu/);assert.match(html,/Continuer avec Google/);
 assert.match(cloud,/signInWithPassword/);assert.match(ui,/requestPasswordRecovery\(email\)/);
 assert.match(ui,/editor\.dataset\.open="true";editor\.hidden=false/);
 assert.match(ui,/renderDaily\(\);\s*refreshJourney\(\);updateAuthUI\(\)/);

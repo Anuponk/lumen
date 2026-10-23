@@ -96,7 +96,7 @@ console.log(JSON.stringify({quest2:true,partialDragRestore:true,protectedGuardia
 // #240: quest 1's introduction and scripted coach are both dismissible.
 const onboardingUi=readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
 const tutorialUi=readFileSync(new URL("../src/ui/tutorial.js",import.meta.url),"utf8");
-assert.match(onboardingUi,/canSkip:\(\)=>levelIndex===0\|\|tutorialCompletedProof\(\)/);
+assert.match(onboardingUi,/canSkip:\(\)=>activeQuestOrdinal\(\)===1\|\|tutorialCompletedProof\(\)/);
 assert.match(onboardingUi,/function skipFirstGridGuidance\(\)/);
 assert.match(onboardingUi,/skipFirstGridTutorial=true/);
 assert.match(onboardingUi,/lumenSkipFirstGridTutorial/);

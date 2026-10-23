@@ -69,7 +69,7 @@ test('cockpit refuses non-admin requests and ignores an in-flight result after a
   document:{getElementById:()=>({textContent:'',value:'7'})}});
  vm.runInContext(functionSource(source,'loadAdminCockpit')+';globalThis.load=loadAdminCockpit',context);
  await context.load();assert.equal(calls,0);
- context.hasInternalCapability=()=>true;const pending=context.load();assert.equal(calls,5);
+ context.hasInternalCapability=()=>true;const pending=context.load();assert.equal(calls,6,'The quest metrics RPC shares the existing guarded cockpit load');
  context.lumenUser={id:'different-account'};context.document.getElementById=()=>{throw Error('stale result reached DOM')};
  release({data:{},error:null});await pending;
 });

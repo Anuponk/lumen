@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import vm from 'node:vm';
+import {functionSource} from './source-tools.mjs';
+import {buildIncidentInvestigation,incidentAlerts} from '../src/ui/incident-investigation.js';
 const src=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 const start=src.indexOf('async function loadAdminCockpit(){');
 const end=src.indexOf('function setupAdminCockpit(){',start);
@@ -11,3 +14,18 @@ assert.match(body,/order|players\.map/);
 assert.match(body,/playerSnapshot\.error/);
 assert.match(body,/adminPlayers/);
 console.log('Admin recent players use live activity RPC and expose failures');
+
+const nodes=new Map(),calls=[];
+const document={getElementById(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',value:7,insertAdjacentHTML(){}});return nodes.get(id)},querySelectorAll(){return []}};
+const context={document,Date,Intl,Math,Number,String,adminEsc:String,adminNumber:String,
+ lumenUser:{id:'fixture-admin'},hasInternalCapability:()=>true,buildIncidentInvestigation,incidentAlerts,renderIncidentInvestigation:()=>{},
+ lumenSupabase:{async rpc(name){calls.push(name);if(name==='lumen_admin_quest_metrics')return {data:{friction:[{stable_quest_id:'new-grid',quest_ordinal:91,started:4,completed:1}],funnel:[],current_players:{'u:actor':91}}};if(name==='lumen_admin_accounts')return {data:[{user_id:'actor',current_quest:1}]};if(name==='lumen_admin_recent_players')return {data:[{player_key:'u:actor',current_quest:1}]};if(name==='lumen_admin_quest_timeline')return {data:[{event_name:'attempt_started',quest_ordinal:91,puzzle_id:null}]};return {data:name==='lumen_admin_cockpit'?{}:[]}}}};
+vm.createContext(context);
+for(const fn of ['adminEventLabel','adminAlerts','loadAdminTimeline','loadAdminCockpit'])vm.runInContext(functionSource(src,fn),context);
+await context.loadAdminCockpit();
+assert.match(nodes.get('adminFriction').innerHTML,/Q91/,'Stable quests appear by their visible ordinal');
+assert.match(nodes.get('adminPlayers').innerHTML,/Q91/,'Latest stable play replaces dormant numeric position');
+assert.match(nodes.get('adminAlerts').innerHTML,/Q91/);assert.match(nodes.get('adminAccounts').innerHTML,/>91<\/td>/);
+await context.loadAdminTimeline('u:actor');
+assert.match(nodes.get('adminTimeline').innerHTML,/Q91/);
+assert(calls.includes('lumen_admin_quest_metrics')&&calls.includes('lumen_admin_quest_timeline'));

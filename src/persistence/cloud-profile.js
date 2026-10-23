@@ -308,6 +308,31 @@ function walletConflict(local,cloud){
   return {status:'blocked',reason:'mutable_balance',fields:['shards']};
  return null;
 }
+// Read-only coverage of server-protected V2 quest summaries. Never synthesize a
+// run or merge first-completion/unknown evidence; only adopt a newer verified
+// server projection which already contains every locally acknowledged fact.
+function canonicalQuestCovered(local,remote){
+ if(sameCloudProfile(local,remote))return true;
+ const run=remote?.runPerformance;
+ if(!local?.solved||!remote?.solved||run?.version!==3)return false;
+ const immutable=entry=>Object.fromEntries(Object.entries(entry).filter(([key])=>!['badges','runPerformance'].includes(key)));
+ if(!sameCloudProfile(immutable(local),immutable(remote)))return false;
+ const badgesCovered=(left,right)=>canonicalAchievementCovered({solved:true,badges:left},{solved:true,badges:right});
+ if(!badgesCovered(local.badges||{},remote.badges||{})||!badgesCovered(run.badges||{},remote.badges||{}))return false;
+ const old=local.runPerformance;
+ if(!old)return true;
+ if(old.version!==3)return false;
+ const summary=mergePerformanceSummaryMetadata(old,run),qualification=mergeQualificationMetadata(old,run);
+ if(!summary.ok||!sameCloudProfile(summary.value,performanceSummaryMetadata(run))||!qualification.ok||!sameCloudProfile(qualification.value,qualificationMetadata(run)))return false;
+ if(!badgesCovered(old.badges||{},run.badges||{}))return false;
+ for(const [key,value] of Object.entries(old)){
+  if(['badges',...performanceSummaryFields,...qualificationFields].includes(key))continue;
+  if(key==='bestTime'||key==='time'){
+   if(!Number.isFinite(value)||value<0||!Number.isFinite(run[key])||run[key]<0||run[key]>value)return false;
+  }else if(!sameCloudProfile(value,run[key]))return false;
+ }
+ return true;
+}
 export function cloudSafelyCoversLocal(local,remote){
   if(!local || typeof local!=="object" || Array.isArray(local))return true;
   const cloud=validateCloudProfile(remote);
@@ -342,7 +367,7 @@ export function cloudSafelyCoversLocal(local,remote){
   for(const [id,entry] of Object.entries(local.canonicalQuestState||{})){
     if(!entry?.solved)continue;
     const saved=cloud.canonicalQuestState?.[id];
-    if(!saved?.solved||!canonicalAchievementCovered(entry,saved))return false;
+    if(!saved?.solved||!(canonicalAchievementCovered(entry,saved)||cloud.legacyVictoryRevision>0&&canonicalQuestCovered(entry,saved)))return false;
   }
   for(const [key,perf] of Object.entries(local.performances||{})){
     const saved=cloud.performances?.[key];
@@ -446,7 +471,7 @@ function cloudAchievementRecoveryPlan(storage,remote){
   for(const [id,entry] of Object.entries(remoteCanonical)){
     if(!entry?.solved)continue;
     if(localCanonical[id]?.solved){
-      if(!canonicalAchievementCovered(localCanonical[id],entry))throw achievementRecoveryError('CANONICAL_REWARD_CONFLICT',{
+      if(!(canonicalAchievementCovered(localCanonical[id],entry)||cloud.legacyVictoryRevision>0&&canonicalQuestCovered(localCanonical[id],entry)))throw achievementRecoveryError('CANONICAL_REWARD_CONFLICT',{
        conflictId:id,conflictKeys:[...new Set([...Object.keys(localCanonical[id]),...Object.keys(entry)])]
         .filter(key=>!sameCloudProfile(localCanonical[id][key],entry[key]))
       });
@@ -869,6 +894,7 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote,{
   merged[field]=structuredClone(cloud[field]||{});
   for(const [id,value] of Object.entries(local[field]||{})){
    if(!Object.hasOwn(merged[field],id)){merged[field][id]=structuredClone(value);continue}
+   if(field==='canonicalQuestState'&&cloud.legacyVictoryRevision>0&&canonicalQuestCovered(value,merged[field][id]))continue;
    const result=rewardMerge(field,value,merged[field][id]);
    if(!result.ok)return {status:"blocked",reason:"reward_conflict",fields:[field],conflictId:id,conflictKeys:Array.isArray(result.conflictKeys)?result.conflictKeys.slice(0,8):[]};
    merged[field][id]=result.value;

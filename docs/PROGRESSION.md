@@ -33,11 +33,27 @@ prerequisites, and pack ownership/authentication/hydration still apply.
 
 ## Adventures and access (#96)
 
-Target decision recorded on 22 October 2026 for #522: an account will be required
-after a discovery phase whose boundary and transition UX must be specified
-separately. Apply that future policy uniformly through explicit discovery/access
-metadata, never through presence of a historical numeric quest key. This decision
-does not yet change the shipped guest/access behavior or grant any Adventure.
+Target decisions confirmed on 22 October 2026 for the continuation of #522:
+guest discovery covers the first six **visible** quests; an account is required
+to start a later quest, independently of its persistence key. Already completed
+quests remain replayable and a real started campaign/replay attempt remains
+resumable; a READY boundary or social attempt is not acquired campaign access.
+Pack ownership remains an independent guard. Account dismissal opens browsing;
+it never postpones or bypasses the discovery boundary.
+
+An acquired guest board remains playable. Beyond discovery, solving pauses and
+persists that same attempt; confirming its victory/rewards requires the account,
+for either saved quest format. No provisional reward is written and no prior
+achievement is removed. Authenticated recovery resumes the retained solved board.
+
+The approved convergence contract extends the existing numeric-quest rules to
+all quests: fifteen-minute badge qualification cooldown, the same first-win,
+autonomy/bonus and daily activity rules, and first-play social challenges.
+Existing acquired rewards and Mastery remain preserved without retroactive
+credits. Persistence formats and historical URLs remain compatibility adapters.
+The owner authorised the server migrations on 23 October 2026; their schema and
+permissions were verified after application. Rollout still requires the matching
+client and an exact-SHA publication check, preserving the acquired-access policy.
 
 The real-sky catalogue is grouped into Adventures of at most ten constellations, configured in `content.js`. The current groups are 1–10, 11–20 and 21–24. The first Adventure is included; subsequent Adventures remain visible but locked unless already owned or already started by an existing player. Their unlock mechanism is deferred. The grouping size is a product rule, not a campaign-size ceiling: new Adventures are derived as the catalogue grows.
 

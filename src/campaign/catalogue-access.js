@@ -1,6 +1,7 @@
 // Access is derived from existing completion evidence, never written as a win.
 // Catalogue identities and memberships, rather than displayed quest numbers,
 // define the historical scope. No currency, reward or entitlement is inferred.
+import {QUEST_MILESTONES} from './quest-rules.js';
 export function questCompleted(quest,progress={}){
  return quest.legacyIndex!==null?!!progress.solved?.[quest.legacyIndex]:!!progress.canonicalQuestState?.[quest.id]?.solved;
 }
@@ -28,12 +29,16 @@ export function constellationCatchupAvailable(quest,progress={},quests,origin=qu
 export function catalogueQuestDecision(quest,progress={},quests=[],context={}){
  if(!quest||!quests.some(q=>q.id===quest.id))return {status:'missing-content'};
  if(context.packAllowed===false)return {status:'pack-locked'};
- if(quest.legacyIndex===null&&context.signedIn===false)return {status:'auth-required'};
- if(quest.legacyIndex===null&&context.cloudReady===false)return {status:'sync-required'};
+ // Preserved guest access does not release a signed-in account's restore hold.
+ if(quest.ordinal>QUEST_MILESTONES.discovery&&context.signedIn!==false&&context.cloudReady===false)return {status:'sync-required'};
  if(questCompleted(quest,progress))return {status:'ready',reason:'replay'};
  const attempt=context.attempt;
  if(attempt?.startedAt&&attempt.mode!=='challenge'&&
   (String(attempt.questId)===quest.id||(quest.legacyIndex!==null&&Number(attempt.questId)===quest.legacyIndex+1)))return {status:'ready',reason:'preserved-attempt'};
+ if(quest.ordinal>QUEST_MILESTONES.discovery){
+  if(context.signedIn===false)return {status:'auth-required'};
+  if(context.cloudReady===false)return {status:'sync-required'};
+ }
  const first=quests.find(q=>!questCompleted(q,progress));
  if(first?.id===quest.id)return {status:'ready',reason:'sequential'};
  const origin=context.originQuests??quests.filter(q=>q.legacyIndex!==null);

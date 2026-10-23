@@ -72,9 +72,17 @@ hint handler (source/target roles).
 keys separate from active stable quest identity.
 
 Victory challenge visibility: UI `configureVictoryChallenge` applies the existing
-first-play rule and the historical-quest protocol limit to both victory surfaces.
+first-play rule to both victory surfaces. The stable quest social migration adds
+a stable-ID RPC while preserving the historical numeric protocol.
 `createSocialChallengeFromSuccess` guards pending creation and reuses that
 offer's URL. Adventure focus/scroll lives in `sky-navigation.js` (`revealAdventure`).
+
+Quest convergence (#522): `quest-rules.js` owns visible teaching/access milestones
+and shared qualification; `quest-rewards.js` owns compatibility reward definitions;
+`quest-victory.js` is the pure QA/fixture projection. `quest-command.js` validates
+V2 receipt/current-profile authority. See the cloud candidate contract in
+`DATA_AND_ARCHITECTURE.md`; the three pending 20261022 quest migrations require
+separate production authorization. Admin quest reads use stable metrics/timeline.
 
 Astronomy fidelity: `scripts/audit-astronomical-figures.mjs` rebuilds all shipped
 figures from versioned source fixtures under `scripts/fixtures/astronomy/`.

@@ -36,7 +36,8 @@ export async function verifyCompletedQuestHold({send,evaluate,navigate,url}){
  const {identifier}=await send('Page.addScriptToEvaluateOnNewDocument',{source:fixture});
  const until=async expression=>{
   for(let i=0;i<150;i++){if(await evaluate(expression))return;await new Promise(r=>setTimeout(r,100))}
-  throw Error('Quest hold browser timeout: '+expression);
+  const blocked=await evaluate(`(()=>{const e=document.getElementById('openSky'),r=e.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {hit:hit?.id,parent:hit?.parentElement?.id,dialogs:[...document.querySelectorAll('[role="dialog"]')].filter(e=>!e.hidden&&getComputedStyle(e).display!=='none').map(e=>e.id)}})()`);
+  throw Error('Quest hold browser timeout: '+expression+' '+JSON.stringify(blocked));
  };
  async function touch(selector){
   await evaluate(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'center',behavior:'instant'})`);
@@ -49,6 +50,7 @@ export async function verifyCompletedQuestHold({send,evaluate,navigate,url}){
  const cardSelector='#puzzleGrid [data-quest-id="'+quest.id+'"]';
  async function openDetail(){
   await acknowledgeLearningMilestones(evaluate);
+  await evaluate(`if(!document.getElementById('questStart').hidden)document.getElementById('questGo').click()`);
   await touch('#openSky');await until('!document.getElementById("mapModal").hidden');
   await touch('#adventureRail [data-pack-id="'+quest.packId+'"]');
   await touch('#sectorTabs [data-content-id="'+quest.constellationId+'"]');

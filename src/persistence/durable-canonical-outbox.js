@@ -96,8 +96,24 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
  // This is not acknowledgement of changed evidence. Preserve the entire later
  // capture with the exact server receipt before retiring the redundant record.
  async function archiveRecreatedCapture(userId,entry,committed,{sessionValid=()=>true}={}){
-  const receipt=committed?.receipt,saved=committed?.profile?.canonicalQuestState?.[entry?.questId];
+  const originalReceipt=committed?.receipt,saved=committed?.profile?.canonicalQuestState?.[entry?.questId];
+  let receipt=originalReceipt,reward=entry?.reward;
   const keys=(value,allowed)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).every(key=>allowed.includes(key));
+  if(receipt?.request?.version===2){
+   const request=receipt.request,facts=request.facts,later=reward?.facts;
+   const factKeys=['seconds','assistanceUsed','mistakeCommitted','qualifying','hintUsed','challengeFailed','qualifiedDay','qualifiedAt'];
+   const validFacts=value=>keys(value,factKeys)&&Object.keys(value).length===factKeys.length&&Number.isSafeInteger(value.seconds)&&value.seconds>=0&&
+    factKeys.slice(1,6).every(key=>typeof value[key]==='boolean')&&typeof value.qualifiedDay==='string'&&Number.isFinite(Date.parse(value.qualifiedAt));
+   if(!keys(reward,['facts','badges','performance','stars'])||!validFacts(facts)||!validFacts(later)||later.seconds<facts.seconds||
+    !factKeys.filter(key=>key!=='seconds').every(key=>later[key]===facts[key])||
+    !Number.isSafeInteger(receipt.outcome?.attempts)||receipt.outcome.attempts<1||!(saved?.runPerformance?.attempts>=receipt.outcome.attempts)||
+    (reward.stars!==undefined&&(!Number.isSafeInteger(reward.stars)||reward.stars<1)))throw Error('Recreated V2 capture proof unconfirmed');
+   const performance={seconds:facts.seconds,bestTime:facts.seconds,assisted:facts.assistanceUsed};
+   receipt={version:1,operationId:request.operationId,questId:request.questId,newlyCompleted:receipt.outcome.firstCompletion,
+    recordedAt:receipt.recordedAt,badges:receipt.outcome.savedPerformance?.badges,performance};
+   reward={badges:reward.badges||{},performance:reward.performance||{seconds:later.seconds,bestTime:later.seconds,assisted:later.assistanceUsed},stars:1};
+   if(reward.performance.seconds!==later.seconds||reward.performance.assisted!==later.assistanceUsed)throw Error('Recreated V2 performance mismatch');
+  }
   const validReward=value=>keys(value,['badges','performance','stars'])&&value.stars===1&&
    keys(value.badges,['autonomy','speed','noError','mastery'])&&Object.values(value.badges).every(v=>typeof v==='boolean')&&
    keys(value.performance,['seconds','bestTime','assisted'])&&typeof value.performance.assisted==='boolean'&&
@@ -105,18 +121,18 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
   const accepted={badges:receipt?.badges,performance:receipt?.performance,stars:1};
   if(namespace!=='Canonical'||!keys(entry,['version','operationId','userId','questId','reward','createdAt'])||entry.version!==2||entry.userId!==userId||committed?.userId!==userId||!sessionValid()||!entry?.operationId||receipt?.version!==1||
    receipt.operationId!==entry.operationId||receipt.questId!==entry.questId||typeof receipt.newlyCompleted!=='boolean'||
-   !Number.isFinite(Date.parse(receipt.recordedAt))||!saved?.solved||!validReward(entry.reward)||!validReward(accepted)||
+   !Number.isFinite(Date.parse(receipt.recordedAt))||!saved?.solved||!validReward(reward)||!validReward(accepted)||
    !Object.keys(accepted.badges).every(key=>!accepted.badges[key]||saved.badges?.[key]===true||saved.badges?.[key]===1)||
-   !Object.keys(entry.reward.badges).every(key=>!entry.reward.badges[key]||(receipt.badges[key]===true&&(saved.badges?.[key]===true||saved.badges?.[key]===1)))||
-   entry.reward.performance.seconds<accepted.performance.seconds||
-   (accepted.performance.assisted&&!entry.reward.performance.assisted))throw Error('Recreated capture proof unconfirmed');
+   !Object.keys(reward.badges).every(key=>!reward.badges[key]||(receipt.badges[key]===true&&(saved.badges?.[key]===true||saved.badges?.[key]===1)))||
+   reward.performance.seconds<accepted.performance.seconds||
+   (accepted.performance.assisted&&!reward.performance.assisted))throw Error('Recreated capture proof unconfirmed');
   const normalize=value=>value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,normalize(value[key])])):value;
-  const exact=JSON.stringify(normalize(entry.reward))===JSON.stringify(normalize(accepted));
+  const exact=JSON.stringify(normalize(reward))===JSON.stringify(normalize(accepted));
   if(!exact&&Date.parse(entry.createdAt)<Date.parse(receipt.recordedAt))throw Error('Capture predates committed receipt');
   const inspection=await scan(userId),target=inspection.groups.find(copies=>copies[0].entry.operationId===entry.operationId&&copies[0].entry.questId===entry.questId);
   if(!inspection.complete||inspection.issues.length||!target||JSON.stringify(target[0].entry)!==JSON.stringify(entry))throw Error('Recreated capture storage unconfirmed');
   const key='lumenCanonicalRecreatedCaptureArchiveV1:'+userId+':'+entry.operationId+':'+encodeURIComponent(entry.createdAt);
-  const raw=JSON.stringify({version:1,userId,entry,receipt,copies:target.map(copy=>({store:copy.store,raw:copy.raw}))});
+  const raw=JSON.stringify({version:1,userId,entry,receipt:originalReceipt,copies:target.map(copy=>({store:copy.store,raw:copy.raw}))});
   let archived=false;
   try{await fallback.put(key,raw);archived=await fallback.get(key)===raw}catch{}
   if(!archived){

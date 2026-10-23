@@ -1,5 +1,32 @@
 # UX and visual direction
 
+## Quest convergence onboarding (#522, candidate)
+
+Discovery covers the first six visible quests. Continuing beyond them requires
+an account and verified cloud readiness; dismissing that offer opens Mon ciel.
+It does not unlock quest 7. Completed quests and genuinely started campaign/
+replay attempts retain their acquired access. READY or social play does not
+prove campaign acquisition. The account copy states the discovery boundary.
+
+For an acquired guest attempt beyond discovery, keep the resolved board and
+paused attempt while requesting the account to confirm rewards. The message
+states that the board is retained; it must never erase a win or silently credit
+an unconfirmed authenticated reward.
+
+Quest 2 success explicitly says **Découvrir Mon ciel**. The success backdrop
+does not navigate. The first visit tours the real constellation list, quest
+cards, performance area and constellation/stars in sequence before quest 3;
+earlier manual browsing returns to the current quest without granting progress.
+Quest launch and early tour close cannot bypass these steps. The tour mentions
+future badges without introducing their conditions ahead of their milestones.
+
+All four badges remain eligible from quest 1 (#529). Quest 3 explains their
+conditions, quest 6 recalls assistance and introduces optional Marquage auto,
+and the reversible guided-control choice remains at
+quest 11. Controls and hint pricing use the active quest's visible ordinal,
+including stable-only quests, rather than the dormant numeric frontier. Both
+replay formats display the same cooldown warning and acquired badge labels.
+
 The incident cockpit compares observed versions within its bounded optional
 sample and filters episodes by version and last observed state. Counts are not
 error rates and do not prove regressions. Mixed-version episodes retain context.

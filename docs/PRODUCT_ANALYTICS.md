@@ -1,5 +1,21 @@
 # Product analytics contract
 
+## Stable quest reads (#522, candidate)
+
+Lifecycle events carry `stable_quest_id` and `quest_ordinal`; their historical
+`puzzle_id` remains the original numeric key plus one, or null for stable-only
+quests. The admin quest metrics/timeline resolve current ordinals through the
+server quest rules. Contradictory stable/numeric identities are not attributed
+to a quest. The funnel uses visible teaching milestones, and current position
+uses the latest known quest event rather than a maximum numeric key.
+
+These read-only RPCs require a current `analytics_cockpit` capability, exclude
+QA/non-human/unspecified traffic and cannot mutate campaign or reward data.
+Guest-to-user linking requires one unambiguous authenticated owner for the
+anonymous identity; an explicit event user always owns that event. Operational
+day/row limits do not limit catalogue size. Feedback captures stable identity
+in metadata and never substitutes a dormant quest's numeric ID.
+
 Issue #65 measures campaign lifetime and friction without logging cell-by-cell play.
 
 ## Identity and privacy
