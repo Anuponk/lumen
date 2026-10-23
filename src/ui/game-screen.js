@@ -8,6 +8,7 @@ import {learningStep, dragLearningStep, learningAllows, learningCopy} from "../g
 import {createAnalytics,attemptAnalyticsProperties} from "../analytics/events.js";
 import {createHintTestSuite} from "../testing/hint-tests.js";
 import {createDiagnostics} from "../testing/diagnostics.js";
+import {applyApprovedDeviceRecovery} from "../persistence/approved-device-recovery.js";
 import {createLongPressGuardian} from './long-press-guardian.js';
 import {createGestureClickSuppression} from './gesture-click-suppression.js';
 import {buildIncidentInvestigation,incidentAlerts,renderIncidentInvestigation} from './incident-investigation.js';
@@ -3558,6 +3559,28 @@ const showAccountSyncDiagnostic=document.getElementById("showAccountSyncDiagnost
 const diagnosticConsent=document.getElementById('diagnosticConsent');if(diagnosticConsent)diagnosticConsent.onchange=changeDiagnosticPreference;
 const archiveAccountStorage=document.getElementById('archiveAccountStorage');if(archiveAccountStorage)archiveAccountStorage.onclick=compactAccountStorage;
 const exportAccountStorage=document.getElementById('exportAccountStorage');if(exportAccountStorage)exportAccountStorage.onclick=()=>exportLumenRecoveryBundle().catch(()=>{document.getElementById('accountStorageStatus').textContent='Export incomplet : les sauvegardes restent conservées.'});
+if(exportAccountStorage){
+ const recoveryButton=document.createElement('button'),recoveryFile=document.createElement('input');
+ recoveryButton.id='applyReviewedRecovery';recoveryButton.type='button';recoveryButton.textContent='Appliquer une récupération validée';
+ recoveryFile.type='file';recoveryFile.accept='.json,application/json';recoveryFile.hidden=true;
+ recoveryFile.id='reviewedRecoveryFile';recoveryFile.setAttribute('aria-label','Fichier de récupération validée');
+ exportAccountStorage.after(recoveryButton,recoveryFile);
+ recoveryButton.onclick=()=>recoveryFile.click();
+ recoveryFile.onchange=async()=>{
+  const file=recoveryFile.files?.[0],accountId=lumenUser?.id,client=lumenSupabase,status=document.getElementById('accountStorageStatus');
+  const sessionValid=()=>!!accountId&&lumenUser?.id===accountId&&lumenSupabase===client&&!qaActive;
+  recoveryFile.value='';if(!file)return;
+  if(!sessionValid()||!client||file.size>4096){status.textContent='Récupération non appliquée : vérifie le compte et le fichier reçu.';return}
+  recoveryButton.disabled=true;status.textContent='Vérification de la récupération et conservation des sauvegardes…';
+  try{
+   const plan=JSON.parse(await file.text());
+   if(!sessionValid())throw Error('Compte changé');
+   await applyApprovedDeviceRecovery(plan,{storage:localStorage,client,userId:accountId,sessionValid});
+   if(sessionValid())location.reload();
+  }catch{status.textContent='Récupération non appliquée. Le fichier doit correspondre à ce compte et à sa sauvegarde actuelle ; les copies et opérations en attente restent conservées.'}
+  finally{recoveryButton.disabled=false}
+ };
+}
 const copyAccountSyncDiagnostic=document.getElementById("copyAccountSyncDiagnostic");if(copyAccountSyncDiagnostic)copyAccountSyncDiagnostic.onclick=copyAccountCloudDiagnostic;
 const closeAccountSyncDiagnostic=document.getElementById("closeAccountSyncDiagnostic");if(closeAccountSyncDiagnostic)closeAccountSyncDiagnostic.onclick=()=>{document.getElementById("accountSyncDiagnosticPanel").hidden=true};
 const setPasswordSave=document.getElementById("setPasswordSave");if(setPasswordSave)setPasswordSave.onclick=saveExistingAccountPassword;

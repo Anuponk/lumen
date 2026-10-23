@@ -196,6 +196,31 @@ the session is usable on that particular browser/PWA.
 
 ## Cloud persistence contract
 
+### Explicit reviewed device recovery (#536/#537, 23 October 2026)
+
+`approved-device-recovery.js` provides a manual installation boundary for a
+historical wallet divergence after individual owner review. It does not alter
+automatic reconciliation or grant clients authority over server balances.
+The private `approved-device-recovery-v1` file records the explicit choice of
+the verified cloud wallet, expected account, exact canonical JSON SHA-256 local
+and cloud fingerprints and expiry. It is a reviewed handoff, not a signed
+capability or permission to change server data. It contains no token or profile.
+An operator must independently review originals and monetary discrepancies;
+never automatically generate a file to release an ambiguous wallet hold.
+
+The account diagnostic chooser checks size (4 KiB), captured owner/client and
+QA exclusion. Expected-account restore and fingerprints must match. Existing
+local acquisition coverage still applies after the explicit monetary choice.
+Both originals are preserved in the existing exportable backup store, including
+its IndexedDB quota fallback. Owner, session and exact local bytes are rechecked
+after awaits; a second cloud read must equal the first. Only the local progress
+cache is installed, verified and followed by reload. No outbox, attempt, reward,
+entitlement or acknowledgement is edited. Changed snapshots need another review.
+
+No server schema, persisted profile field or recovery grant is added. Individual
+repair approval is distinct from release approval. Server metadata repair and
+device installation remain separate evidence; physical confirmation is required.
+
 ### Quest convergence candidate (#522, 22 October 2026)
 
 The dedicated convergence branch introduces `quest-rules.js`, `quest-rewards.js`

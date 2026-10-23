@@ -1,4 +1,5 @@
 export const nodeSuites=[
+ 'approved-device-recovery-tests.mjs',
  'long-press-guardian-tests.mjs',
  'incident-investigation-tests.mjs',
  'diagnostic-reporter-tests.mjs',

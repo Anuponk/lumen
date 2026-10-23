@@ -1,5 +1,10 @@
 # Dependencies and data flow
 
+Reviewed recovery: account file choice → captured owner/client →
+`approved-device-recovery.js` exact snapshot digests → expected-account restore →
+acquisition coverage → verified exportable originals → second cloud read →
+local installation and reload. No cloud, attempt, reward or outbox writer.
+
 Quest convergence (#522): catalogue definition → `quest-rules` / `quest-rewards`
 → active UI/onboarding/read view. Numeric reward adapters preserve old IDs.
 Victory facts → existing durable canonical outbox → `quest-command` V2 → locked
