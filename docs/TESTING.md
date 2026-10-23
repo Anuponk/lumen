@@ -16,6 +16,8 @@ It also covers durable partial recovery of a protected V2 replay summary while
 preserving first-win performance and rejecting unknown badge-field changes.
 Authenticated acquired/started replay access remains held beyond discovery
 while cloud restoration is incomplete; guests retain their acquired access.
+The badge UI regression also reads the actual rules dialog: four badges from
+quest 1 and a fifteen-minute qualification cooldown, without obsolete daily locks.
 `quest-command-tests.mjs` checks exact V2 receipts, ambiguous/lost responses,
 current wallet decreases, account switching and explicit V1 compatibility.
 Admin recent-player tests execute the actual metrics/timeline renderers.

@@ -12,11 +12,14 @@ Android physique de #521 reste distincte des validations navigateur simulées.
 
 ## Intégration du 23 octobre
 
-La PR #527 intègre désormais `main` jusqu'à `a0fc695` (#553). Le contrat livré
+La PR #527 intègre désormais `main` jusqu'à `3fd1efb` (#553 puis #554). Le contrat livré
 sur main prévaut : quatre badges disponibles dès la quête 1, avec explications
 aux quêtes 3 et 6. La migration candidate et une régression SQL sur les ordres
 1 à 6 suivent cette règle. Les corrections de quota, session, gestes et diagnostics
 de main sont conservées.
+Une régression lit aussi le vrai texte de la modale de règles : il annonçait
+encore des verrous 3/6 et une qualification par jour. Le texte suit désormais
+les quatre badges dès 1 et le cooldown de quinze minutes, sans changer la règle.
 
 Les nouvelles régressions couvrent le blocage du rejeu authentifié pendant une
 restauration incomplète, la récupération partielle d'un résumé de rejeu V2 sans
