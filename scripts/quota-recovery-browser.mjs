@@ -8,6 +8,21 @@ export async function verifyQuotaRecovery({evaluate,navigate,url}){
   const {reconcileCloudAchievementsDurably,reconcileCloudAchievements,achievementRecoveryDiagnostic}=await import('/src/persistence/cloud-profile.js');
   const {archiveRecoveryBackups}=await import('/src/persistence/storage-maintenance.js');
   localStorage.clear();
+  const {applyApprovedDeviceRecovery,recoveryProfileDigest}=await import('/src/persistence/approved-device-recovery.js');
+  const approvedLocal={solved:{0:1},badges:{first:1},shards:8,xp:10};
+  const approvedCloud={...approvedLocal,shards:7,walletRevision:2,legacyVictoryRevision:1};
+  const approvedRaw=JSON.stringify(approvedLocal);
+  localStorage.setItem('lumenProgressV1',approvedRaw);localStorage.setItem('lumenCloudOwnerId','reviewed-fixture');
+  localStorage.setItem('fixture-pending','retained');
+  const plan={app:'Lumen',format:'approved-device-recovery-v1',choice:'verified-cloud-wallet',userId:'reviewed-fixture',localDigest:await recoveryProfileDigest(approvedLocal),cloudDigest:await recoveryProfileDigest(approvedCloud),expiresAt:'2099-01-01T00:00:00Z'};
+  let reads=0;
+  await applyApprovedDeviceRecovery(plan,{storage:localStorage,userId:'reviewed-fixture',client:{rpc:async(name,args)=>{
+   if(name!=='lumen_restore_profile'||args.p_expected_user_id!=='reviewed-fixture')throw Error('Unexpected recovery write');
+   reads++;return {data:approvedCloud};
+  }}});
+  if(reads!==2||localStorage.getItem('lumenProgressV1')!==JSON.stringify(approvedCloud)||localStorage.getItem('fixture-pending')!=='retained')throw Error('Reviewed recovery native installation failed');
+  if(!Object.keys(localStorage).some(key=>key.startsWith('lumenBeforeApprovedRecoveryLocal_')&&localStorage.getItem(key)===approvedRaw))throw Error('Reviewed original backup missing');
+  localStorage.clear();
   const local={solved:{0:true},badges:{},shards:9,xp:10,daily:{dates:[]},fixturePadding:'x'.repeat(6000)};
   const raw=JSON.stringify(local);localStorage.setItem('lumenProgressV1',raw);
   for(const stamp of [9001,9002,9003])localStorage.setItem('lumenBeforeCloudRestore_'+stamp,'retained-original'.repeat(256));

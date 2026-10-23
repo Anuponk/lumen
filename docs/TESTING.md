@@ -1,5 +1,13 @@
 # Testing and quality gate
 
+Reviewed recovery: `node scripts/approved-device-recovery-tests.mjs` checks
+owner/fingerprint/expiry guards, preserved acquisitions, archived originals,
+unchanged pending work and safe holds on session/storage/cloud changes. The
+account browser runner's `quota-recovery-browser.mjs` executes native storage
+and SHA-256 installation with simulated RPC. Physical file selection and real
+account recovery need separate confirmation. Never put real exports in CI,
+repository sources, public issues or browser fixtures.
+
 ## Quest convergence candidate (#522)
 
 `quest-policy-tests.mjs` checks discovery access, preservation of acquired/started

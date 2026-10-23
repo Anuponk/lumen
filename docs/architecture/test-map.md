@@ -1,5 +1,11 @@
 # Existing verification map
 
+Reviewed device recovery: `approved-device-recovery-tests.mjs` covers explicit
+wallet choice, exact owner/digests, expiry, lost acquisitions, changed cloud,
+changed local bytes, account/session switch and failed archival. The existing
+`quota-recovery-browser.mjs` also executes native storage/Web Crypto/backup
+installation with simulated RPC. Physical-device confirmation remains separate.
+
 Quest convergence (#522): `quest-policy-tests`, `quest-victory-parity-tests`,
 `quest-command-tests` and `admin-recent-players-tests` cover visible rules,
 same-run rewards, receipt/current-profile/account guards and stable analytics.

@@ -1,5 +1,10 @@
 # Feature map
 
+Reviewed device recovery (#536/#537): `persistence/approved-device-recovery.js`
+installs a re-read cloud snapshot after an explicit reviewed file matches the
+authenticated owner and exact local/cloud SHA-256 digests. `game-screen.js`
+exposes the account diagnostic chooser; no file/profile upload or pending purge.
+
 Incident versions (#534): `ui/incident-investigation.js` derives ordered version
 observations from the existing bounded cockpit response, combines episode filters
 and revokes review/draft actions whenever the view changes. No new persistence.
