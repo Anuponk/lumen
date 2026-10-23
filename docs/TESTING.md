@@ -406,6 +406,18 @@ capability/account race guard. `incident-investigation-browser.mjs` extends the
 review/revocation and stale-action refusal. It creates no GitHub issue and reads
 no real accounts. Existing collection/privacy/SQL tests remain mandatory.
 
+The report-review browser fixture opens the episode, checks that its checkbox
+is visible/unchecked, then uses real CDP mouse press/release and bounded state
+waits. A second click must revoke the URL. It retains hidden-before-review,
+privacy/filter/capability assertions; it never assigns a passing checked state.
+This replaces a synchronous scripted click inside a closed details element
+that failed `reviewEnabled` in main CI after a green PR. A real-pointer run then
+observed the host disappear during a preceding recovery reload. The helper now
+navigates to `scripts/fixtures/incident-investigation.html`, waits for its ready
+marker and imports the actual renderer with the real CSS, without starting
+Auth/cloud/game code. Earlier recovery tests remain unchanged. The publication
+gate correctly blocked the failed main run.
+
 Completed quest presentation (#537): `campaign-presentation-tests.mjs` executes
 the actual detail/catalogue renderers with a minimal DOM. It distinguishes
 completed history from a replay action hold across Auth, hydration, unsupported

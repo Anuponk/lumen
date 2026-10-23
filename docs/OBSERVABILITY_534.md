@@ -285,3 +285,33 @@ and consultation audit remain future work. Phase 3 repairs remain excluded.
 The upgraded purge's first scheduled execution is still pending: the latest
 observed run on 23 October at 03:17 UTC preceded the migration. No manual purge
 or real-player operation was performed.
+
+### Publication guard and visible review regression
+
+PR #547 passed all five protected PR checks and merged as `627e655`. Two main
+quality runs then disagreed: scheduled `39946690063` passed, push `39946692433`
+failed at the new browser fixture's `reviewEnabled` assertion. The publisher
+correctly refused release (`39947122142`); this is not a production success.
+The fixture had clicked a checkbox inside a still-closed episode with `.click()`
+and inspected its change handler synchronously. Eighty isolated repetitions did
+not reproduce the CI failure. A subsequent real-pointer run reproduced document
+replacement: the mounted host disappeared between interaction and assertion.
+The preceding cloud-recovery scenario intentionally reloads the application;
+the independent report test must not share its still-settling document.
+
+The regression now follows the real contract: assert the draft is hidden, open
+the episode, assert an unchecked visible review control, send actual CDP mouse
+press/release, and wait for checked/enabled state. A second actual click must
+revoke the draft. Initial hiding, URL privacy, filters, revoked capabilities and
+stale-action assertions are retained. A timeout reports only connected/checked/
+hidden flags. No fixture assigns a successful checkbox value or weakens the
+review assertion; no product, permission or player-state change is introduced.
+`scripts/fixtures/incident-investigation.html` loads the real stylesheet without
+starting game/Auth/cloud code. The browser helper navigates to that independent
+document and waits for its ready marker before importing the actual renderer.
+Earlier cloud-recovery assertions remain intact. This isolates the observed
+navigation interference rather than suppressing errors or retrying a failed
+business assertion.
+The isolated 390/1440 account suite and then the complete affected runner both
+passed after this correction: 30 groups, zero failures, with all earlier cloud
+recovery checks retained. Final protected CI/publication remains a separate gate.
