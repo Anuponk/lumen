@@ -26,6 +26,9 @@ Base: `5109b299695315a538148402c639350067125746`. Issues #528, #533, #529.
 - Guest ownership/backup fixtures and actual UI hydration-hook fixtures pass:
   registration, second-storage restore, duplicate auth, offline initialization,
   interrupted read-back, account change and existing-cloud preservation.
+  An additional red/green regression confirms that a victory added during
+  hydration I/O remains locally preserved instead of being replaced by the
+  earlier guest capture; installation waits for matching server coverage.
 - Badge UI fixtures pass for earned/missing badges on quests 1–4, serialized
   reload and educational dialogs. The performance suite retains assistance,
   immutable earned badges and cooldown regressions.

@@ -582,6 +582,12 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    localStorage.setItem(backupKey,currentLocal);
    if(localStorage.getItem(backupKey)!==currentLocal)throw Error("Sauvegarde du profil invité non vérifiée");
   }
+  // Local play may advance while initialization/daily reads are in flight.
+  // Recheck the latest bytes, not just the guest captured before those awaits.
+  if(switchingOwner&&!currentOwner&&currentLocal&&guestNeedsReconciliation(JSON.parse(currentLocal),cloud)){
+   hydrationStage='guest_changed_during_hydration';
+   throw Error('Progression invitée conservée : nouveaux acquis à synchroniser');
+  }
   if(switchingOwner&&canonicalResumeOwner&&canonicalResumeOwner!==accountId){
    preserveAttemptSnapshot(localStorage,attemptEngine.storageKey);
    attemptEngine.clear();canonicalActiveQuest=null;canonicalResumeOwner=null;replayMode=false;

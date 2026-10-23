@@ -9,7 +9,7 @@ import {currentCatalogueOrigin} from '../src/campaign/catalogue-origin.js';
 const source=process.argv.includes('--baseline')?execFileSync('../.tools/mingit/cmd/git.exe',['show','HEAD:src/ui/game-screen.js'],{encoding:'utf8'}):readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 const start=source.indexOf('afterAuthCloudSync:async()=>{')+'afterAuthCloudSync:async()=>{'.length,end=source.indexOf('},holdLegacyMergeForFullRestore',start);
 const guest={solved:{0:1,1:1},historyBackup:{0:1,1:1},badges:{first:1},stars:{},performances:{0:{version:3,badges:{speed:true},bestTime:45}},noHint:{0:1},daily:{dates:{},rewards:{}},challenges:{},shards:2,xp:30,skyScore:2,skyHistoryVersion:4,catalogueOrigin:currentCatalogueOrigin};
-function fixture({cloud=null,owner=null,offline=false,failVerification=false,switchDuringRead=false}={}){
+function fixture({cloud=null,owner=null,offline=false,failVerification=false,switchDuringRead=false,advanceDuringHydration=false}={}){
  const data=new Map([['lumenProgressV1',JSON.stringify(guest)]]);
  if(owner)data.set('lumenCloudOwnerId',owner);
  const storage={getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k),key:i=>[...data.keys()][i]??null,get length(){return data.size}};
@@ -25,7 +25,10 @@ function fixture({cloud=null,owner=null,offline=false,failVerification=false,swi
   }
   if(name==='lumen_initialize_profile'){initialized++;remote??=structuredClone(args.p_payload);return {data:structuredClone(remote)}}
   if(name==='lumen_cas_profile'){assert.deepEqual(args.p_expected,remote);remote=structuredClone(args.p_payload);return {data:true}}
-  if(name==='lumen_get_daily'||name==='lumen_get_engagement')return {data:[]};
+  if(name==='lumen_get_daily'||name==='lumen_get_engagement'){
+   if(advanceDuringHydration){const next=structuredClone(guest);next.solved[2]=1;next.historyBackup[2]=1;next.xp=45;storage.setItem('lumenProgressV1',JSON.stringify(next));}
+   return {data:[]};
+  }
   throw Error('Unexpected RPC '+name);
  }};
  const ctx=vm.createContext({...profiles,...guestAccount,structuredClone,currentCatalogueOrigin,
@@ -69,3 +72,8 @@ for(const options of [{offline:true},{failVerification:true},{switchDuringRead:t
  assert.equal(f.storage.getItem('lumenCloudOwnerId'),null);
 }
 console.log('Actual hydration: guest registration, second device, retry, offline, interrupted readback, account switch and existing cloud passed');
+{
+ const f=fixture({advanceDuringHydration:true});await f.hook();
+ assert.equal(JSON.parse(f.storage.getItem('lumenProgressV1')).solved[2],1,'An achievement earned during hydration is not replaced by the earlier guest capture');
+ assert.equal(f.storage.getItem('lumenCloudOwnerId'),null,'A later guest achievement remains pending until covered by the server');
+}
