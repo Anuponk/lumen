@@ -1,5 +1,9 @@
 # Feature map
 
+Completed quest holds (#537): `game-screen.js` preserves completed card labels
+and displays the replay hold in constellation detail. `catalogue-access.js` and
+the canonical adapter still own action authorization; no persistence policy changes.
+
 Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This lookup index complements contracts in `docs/AGENT_CONTRACTS.md`, `docs/PROGRESSION.md` and `docs/DATA_AND_ARCHITECTURE.md`. Recheck symbols after relevant changes; historical counts in validation reports are not current catalogue totals.
 
 ## Entry points and shape

@@ -12,6 +12,18 @@ import vm from 'node:vm';
 import {functionSource} from './source-tools.mjs';
 const q=(id,index,pack,constellation,ordinal)=>({id,legacyIndex:index,packId:pack,constellationId:constellation,ordinal});
 
+test('each completed published quest preserves pack access and replay independently of inserted prerequisites',()=>{
+ const quests=canonicalQuestList();
+ for(const quest of quests){
+  const progress=quest.legacyIndex!==null?{solved:{[quest.legacyIndex]:1}}:{solved:{},canonicalQuestState:{[quest.id]:{solved:true,badges:{speed:true}}}};
+  const before=JSON.stringify(progress),pack=CONTENT_PACKS.find(p=>p.id===quest.packId);
+  assert.equal(hasPackAccess(pack,[],progress),true,quest.id+' completion proves started access');
+  assert.deepEqual(canonicalCampaignQuestDecision(quest,progress,{signedIn:true,cloudReady:true}),{status:'ready',reason:'replay'},quest.id);
+  if(quest.legacyIndex===null)assert.equal(canonicalCampaignQuestDecision(quest,progress,{signedIn:true,cloudReady:false}).status,'sync-required');
+  assert.equal(JSON.stringify(progress),before,'A read cannot materialize acquisitions');
+ }
+});
+
 test('Antlia: historical frontier stays acquired while a current-cohort player cannot skip new prerequisites',()=>{
  const quests=canonicalQuestList(),antlia=quests.find(q=>q.constellationId==='iau-ant');
  const preceding=quests.filter(q=>q.ordinal<antlia.ordinal);

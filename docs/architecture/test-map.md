@@ -1,5 +1,10 @@
 # Existing verification map
 
+Completed replay holds (#537): `campaign-presentation-tests.mjs` runs actual
+detail/history renderers; `catalogue-access-tests.mjs` checks every published
+completed ID. Account browser suite includes `completed-quest-hold-browser.mjs`
+for native mobile touch and delayed/verified hydration with synthetic Auth/RPC.
+
 Baseline: `bef5f32`. All paths are repository-relative. This phase indexes existing checks without changing tests or GitHub Actions. `docs/TESTING.md` retains execution contracts and detailed scenarios. Presence of a suite does not mean it ran or proves live production behavior.
 
 ## Select a check

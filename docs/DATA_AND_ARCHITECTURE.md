@@ -113,6 +113,12 @@ the session is usable on that particular browser/PWA.
 
 ## Cloud persistence contract
 
+Completed-quest presentation (#537) reads confirmed completion separately from
+the existing action decision. A replay held for authentication/hydration keeps
+its historical label and badges; this UI projection never writes progress,
+changes ownership or releases a wallet/reward/storage conflict. Catalogue/pack
+and direct-start guards are unchanged. See PROGRESSION and the #537 report.
+
 ### Wallet command cutover (#248/#391, 22 October 2026)
 
 Migrations `20261022082153_wallet_command_authority.sql` and

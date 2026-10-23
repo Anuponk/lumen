@@ -1883,9 +1883,12 @@ function renderCanonicalJourneyPreview(){
    for(const quest of quests){
     const legacy=quest.legacyIndex,solved=legacy!==null?!!lumenProgress.solved?.[legacy]:!!lumenProgress.canonicalQuestState?.[quest.id]?.solved;
     const available=legacy===null?canonicalQuestAvailable(quest):questIsAccessible(legacy);
-    const button=document.createElement("button");button.type="button";button.className="puzzle-card"+(solved?" done":"")+(available?"":" locked");
-    button.textContent="Quête "+quest.ordinal+" · "+quest.difficulty.label+(solved?" ✓":!available?" · verrouillée":"");
-    button.title=available?(solved?"Rejouer la quête":"Jouer la quête"):legacy===null?canonicalQuestLockReason(quest):'Termine d’abord les quêtes précédentes';
+    const lockReason=legacy===null?canonicalQuestLockReason(quest):'termine d’abord les quêtes précédentes';
+    const status=solved?(available?'terminée, rejouable':'terminée · '+lockReason):available?'disponible':lockReason;
+    const button=document.createElement("button");button.type="button";button.className="puzzle-card"+(solved?" done":"")+(!available&&!solved?" locked":"");
+    button.textContent="Quête "+quest.ordinal+" · "+quest.difficulty.label+(solved?" · terminée ✓":!available?" · "+lockReason:"");
+    button.title='Quête '+quest.ordinal+' · '+status;
+    button.setAttribute('aria-label',button.title);
     button.disabled=!available;button.dataset.questId=quest.id;
     if(available)button.onclick=()=>{if(legacy===null){startCanonicalQuest(quest);return}if(solved){startReplay(legacy);return}canonicalActiveQuest=null;levelIndex=legacy;replayMode=false;modal.hidden=true;loadPuzzle();refreshJourney()};
     list.appendChild(button);
@@ -3017,7 +3020,10 @@ function renderCanonicalSky(entry){
  svg.classList.add("sky-svg");svg.setAttribute("viewBox","0 0 290 115");
  svg.innerHTML=astronomicalPrimarySvg(entry,lit,total);el.appendChild(svg);
  const note=document.createElement("div");note.className="sky-note";
- note.textContent=lit===total?"Constellation compl\u00e9t\u00e9e":lit?"Constellation en cours":"Constellation \u00e0 d\u00e9couvrir";el.appendChild(note);
+ note.textContent=lit===total?"Constellation compl\u00e9t\u00e9e":lit?"Constellation en cours":"Constellation \u00e0 d\u00e9couvrir";
+ const heldReplay=quests.find(q=>q.legacyIndex===null&&questIsCompleted(lumenProgress,q.id)&&!canonicalQuestAvailable(q));
+ if(heldReplay)note.textContent+=' · Quêtes terminées conservées. '+canonicalQuestLockReason(heldReplay)+'.';
+ el.appendChild(note);
 }
 
 function renderSky(index=mapConstellation){const entry=CONTENT_CONSTELLATIONS[index];if(entry)return renderCanonicalSky(entry);let el=document.getElementById("skyCard");if(!el)return;index=Math.max(0,Math.min(index,CONSTELLATIONS.length-1));let c=astronomicalDisplayShape(CONSTELLATIONS[index]),lit=constellationLitAt(index),p={index,...c,lit},active=index===constellationProgress().index,lines=p.edges.map(e=>'<line class="sky-line '+(e[0]<lit&&e[1]<lit?'on':'')+'" x1="'+p.pts[e[0]][0]+'" y1="'+p.pts[e[0]][1]+'" x2="'+p.pts[e[1]][0]+'" y2="'+p.pts[e[1]][1]+'"/>').join(""),stars=p.pts.map((v,i)=>'<g><circle class="sky-star '+(i<lit?'on':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i<lit?4:3)+'"/>'+(i<lit?'<text class="sky-label" x="'+(v[0]+6)+'" y="'+(v[1]-5)+'">'+starDisplayName(p,i)+'</text>':'')+'</g>').join("");el.innerHTML='<div class="sky-head"><span class="sky-name">'+p.name+'</span><span>'+lit+' / '+p.count+' étoiles</span></div><svg class="sky-svg" viewBox="0 0 290 115">'+(astronomicalPrimarySvg({id:CONTENT_CONSTELLATIONS[index]?.id},lit,p.count)||lines+stars)+'</svg><div class="sky-note">'+(active?"Constellation active":lit===p.count?"Constellation complétée":lit===0?"Constellation à découvrir":"Constellation en cours")+'</div>'}
@@ -3179,11 +3185,12 @@ function renderMap(){
     button.type="button";
     button.className="puzzle-card"+(solved?" done":"")+(available&&!solved?" current":"")+(!available&&!solved?" locked":"")+(solved&&legacy!==null&&badgeCooldownRemaining(lumenProgress.performances?.[legacy])?" badge-on-cooldown":"");
     button.dataset.questId=quest.id;
-    button.title="Quête "+quest.ordinal+(solved?(available?" · terminée, rejouable":" · terminée, compte à synchroniser"):available?" · disponible":(!qaActive&&(!lumenUser||!cloudProfileReady)?" · connexion et synchronisation requises":" · termine d’abord les quêtes précédentes"));
     const lockReason=legacy===null?canonicalQuestLockReason(quest):!qaActive&&(!lumenUser||!cloudProfileReady)?"Connecte-toi pour synchroniser ta progression":"Termine les quêtes précédentes";
-    if(!available&&legacy===null)button.title='Quête '+quest.ordinal+' · '+lockReason;
+    // Completion is preserved evidence; a temporary action hold is not a lost win.
+    const status=solved?(available?'terminée, rejouable':'terminée · '+lockReason):available?'disponible':lockReason;
+    button.title='Quête '+quest.ordinal+' · '+status;
      button.innerHTML=legacy!==null&&solved?performanceBadges(legacy):solved?canonicalPerformanceBadges(quest.id):available?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+quest.ordinal+'</span>' :'<span class="puzzle-lock-only" aria-hidden="true">🔒</span>';
-     button.setAttribute("aria-label",`Quête ${quest.ordinal} · ${available?(solved?"terminée, rejouable":"disponible"):lockReason}`);
+     button.setAttribute("aria-label",`Quête ${quest.ordinal} · ${status}`);
     button.disabled=!available;
     if(available)button.onclick=()=>{
      if(legacy===null){startCanonicalQuest(quest);return}

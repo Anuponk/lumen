@@ -1,5 +1,9 @@
 # Dependencies and data flow
 
+Completed quest presentation (#537): confirmed progress + existing availability
+decision → completed card/history + explicit replay hold. Renderers never write
+the profile or change catalogue, pack, Auth or hydration guards.
+
 Hydration #536: selected verified snapshot → existing reconciliation refusal →
 classified wallet/reward/storage diagnostic and safe hold. Final mirror result →
 account/client recheck → current-session presentation only. Diagnostic formatting
