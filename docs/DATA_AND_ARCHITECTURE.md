@@ -218,7 +218,7 @@ star animation or confirmed badge. Rewards, daily credits and full-profile
 installation still await their existing proof/readiness contracts. An older
 server without Legacy commands cannot fall through to local authenticated
 rewards during a hold. Retry retains the captured time, assistance, facts and
-operation ID; session generation is checked on both victory paths. Existing
+operation ID; session generation is checked on both victory paths.
 Starting another accessible replay retires only the prior pending presentation
 and completes its already solved attempt; its outbox entry stays intact. Failed
 access/cooldown checks leave that presentation and attempt unchanged. Both map

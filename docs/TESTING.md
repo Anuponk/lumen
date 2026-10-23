@@ -503,7 +503,7 @@ Tests should assert relationships derived from the content registry rather than 
 ## Cloud persistence regression matrix
 
 Lot 3: `gameplay-domain-tests.mjs` covers both quest identities, the direct
-historical start guard (both reproduced failing before correction), expected
+historical start guard (both reproduced failing before correction),
 navigation from a pending success to another replay without dropping the old
 intention (also reproduced failing before correction), expected
 account/client/generation/password scope, unknown/reward/storage refusals, free
