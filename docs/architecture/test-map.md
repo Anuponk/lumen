@@ -2,13 +2,15 @@
 
 Incident investigation: `incident-investigation-tests.mjs` checks correlation,
 partial state, privacy, grouped signals and actual loader account/capability
-races. `incident-investigation-browser.mjs`, called in the 390/1440 account suite,
+races. `incident-investigation-browser-tests.mjs` runs its shared review helper
+in a dedicated browser at 390/1440,
 checks native review/filter/revocation UI without creating issues or live RPC.
 
 Report review uses real pointer clicks on visible controls in the independent
 `scripts/fixtures/incident-investigation.html` document, avoiding the preceding
 cloud-recovery scenario's expected reloads. Hidden/review/revoke/privacy and
-capability assertions remain mandatory.
+capability assertions remain mandatory. It is the tenth quality browser suite,
+using CDP 9235 and `ci-incident-investigation.json`; previous nine suites remain.
 
 Optional diagnostics (#534): `diagnostic-reporter-tests.mjs` covers privacy,
 transport/account races and actual Undo markers under historical fault injection.
