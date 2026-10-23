@@ -1,16 +1,19 @@
 import assert from 'node:assert/strict';
 // Native module / DOM in the existing isolated account browser, no live RPC.
 export async function verifyIncidentInvestigation({send,evaluate,url}){
- // The preceding recovery scenario intentionally reloads the game. Do not
- // attach a review fixture to that document while recovery is still settling.
- await send('Page.navigate',{url:new URL('/scripts/fixtures/incident-investigation.html',url).href});
+ // This helper runs in its own browser, with no game recovery or service worker.
+ const navigation=await send('Page.navigate',{url:new URL('/scripts/fixtures/incident-investigation.html',url).href});
+ assert(!navigation.errorText,'Review fixture navigation: '+navigation.errorText);
  let ready=false;
  for(let i=0;i<100;i++){
   try{ready=await evaluate(`document.readyState==='complete'&&!!document.getElementById('incidentFixtureReady')`)}
   catch(error){if(!/Cannot find context|Execution context was destroyed|Inspected target navigated/.test(error.message))throw error}
   if(ready)break;await new Promise(resolve=>setTimeout(resolve,50));
  }
- assert.equal(ready,true,'The independent review document must be ready');
+ if(!ready){
+  const state=await evaluate(`({path:new URL(location.href).pathname,state:document.readyState,game:!!window.lumenDiagnostics,marker:!!document.getElementById('incidentFixtureReady')})`);
+  assert.fail('Independent review document not ready: '+JSON.stringify(state));
+ }
  const point=await evaluate(`(async()=>{
   const {renderIncidentInvestigation}=await import('/src/ui/incident-investigation.js');
   const host=document.createElement('div');host.id='fixtureIncidentReview';host.className='diagnostic-incidents';host.style.cssText='position:fixed;inset:0;background:white;z-index:99999;overflow:auto;color:black';document.body.append(host);

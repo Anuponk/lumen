@@ -401,8 +401,9 @@ Tests should assert relationships derived from the content registry rather than 
 Phase-2 diagnostic investigation (#534): `incident-investigation-tests.mjs`
 checks ordered #533 episodes, session isolation, partial-window semantics,
 closed report export/GitHub drafts, grouped alerts and the actual cockpit loader's
-capability/account race guard. `incident-investigation-browser.mjs` extends the
-390/1440 isolated account suite with native rendering, state filters, explicit
+capability/account race guard. `incident-investigation-browser-tests.mjs` runs
+`incident-investigation-browser.mjs` in a dedicated Chrome process at 390/1440,
+with native rendering, state filters, explicit
 review/revocation and stale-action refusal. It creates no GitHub issue and reads
 no real accounts. Existing collection/privacy/SQL tests remain mandatory.
 
@@ -417,6 +418,15 @@ navigates to `scripts/fixtures/incident-investigation.html`, waits for its ready
 marker and imports the actual renderer with the real CSS, without starting
 Auth/cloud/game code. Earlier recovery tests remain unchanged. The publication
 gate correctly blocked the failed main run.
+
+The same-tab isolation in #549 still failed fixture readiness on main
+`39950073600`. The report now has its own mandatory tenth browser suite (CDP
+9235, `ci-incident-investigation.json`), with a fresh browser/profile and blocked
+Supabase/GitHub traffic. It never starts the game, Auth or a service worker;
+its ready-marker failure includes only pathname/state/game/marker flags.
+The nine prior suites and all their recovery assertions stay mandatory. The
+quality runner clears the tenth report before execution too. Validate with
+`LUMEN_BROWSER_WORKERS=2` as used by CI, not only the serial default.
 
 Completed quest presentation (#537): `campaign-presentation-tests.mjs` executes
 the actual detail/catalogue renderers with a minimal DOM. It distinguishes
@@ -542,7 +552,8 @@ The same browser suite checks Dauphin in the shared quest grid: exact stable-ID 
 completed numeric boundary, the actual Next handler, reload of the started
 canonical attempt and a second account. Profiles/RPCs are synthetic; no player
 save or production write is used. That delivery added the eighth browser suite;
-the PWA update suite above brings the current quality gate to nine.
+the PWA update suite above brought it to nine; independent incident review now
+brings the current quality gate to ten.
 Learning navigation/reload uses the shared `navigateAndWait` document-epoch
 check; readiness of the previous page cannot satisfy the next viewport's setup.
 

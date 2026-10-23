@@ -5,7 +5,6 @@ import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {verifyWalletAndOfflineFlow} from './wallet-flow-browser.mjs';
 import {verifyCompletedQuestHold} from './completed-quest-hold-browser.mjs';
 import {verifyQuotaRecovery} from './quota-recovery-browser.mjs';
-import {verifyIncidentInvestigation} from './incident-investigation-browser.mjs';
 import {connectBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
 const {send,evaluate,errors}=await connectBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -356,7 +355,6 @@ try{
   await evaluate(`document.getElementById('mobileAuthAction').click()`);
   await until(`document.getElementById('mobileAuthAction').textContent.includes('Se connecter')`);
   const isolatedCanonicalRecovery=await verifyIsolatedRecovery();
-  await verifyIncidentInvestigation({send,evaluate,url});
   results.push({viewport,guestDismiss:true,automaticOfferDismiss:true,repeatedSignupLoginDismiss:true,passwordLogin:true,reload:true,readableSessionWithQuota:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,restoreFailureVisible:true,isolatedCanonicalRecovery,isolatedLegacyRecovery:true,optionalDiagnostics:{defaultOff:true,sanitised:true,offlineRestartReconnect:true,withdrawalErases:true,profilePreserved:true}});
  }
  await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:authFixtureId});

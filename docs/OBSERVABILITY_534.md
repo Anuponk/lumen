@@ -315,3 +315,20 @@ business assertion.
 The isolated 390/1440 account suite and then the complete affected runner both
 passed after this correction: 30 groups, zero failures, with all earlier cloud
 recovery checks retained. Final protected CI/publication remains a separate gate.
+
+The #549 PR checks also passed, but exact-main run `39950073600` then failed
+before review: the independent document did not reach its ready marker. Moving
+pages inside the same game browser was insufficient; it still shared the prior
+recovery/service-worker lifecycle. Publication remained blocked. The next
+correction moves the unchanged review assertions into their own Chrome/profile
+(`incident-investigation-browser-tests.mjs`), with no game/Auth/service-worker
+startup and blocked Supabase/GitHub traffic. The original account test no longer
+invokes the unrelated report test; all its pre-existing checks are retained.
+The quality gate now requires ten browser suites, clears the extra report, and
+is validated locally with the same two-browser-worker setting as CI. Ready
+failures include only safe page metadata; no blanket retry, skipped assertion
+or disabled protection is introduced. The isolated runner passes both viewports.
+The full affected runner then passed all 30 groups with
+`LUMEN_BROWSER_WORKERS=2`, including all ten mandatory browser suites. This
+matches the CI concurrency setting; exact final-main verification is still
+required before declaring a release.
