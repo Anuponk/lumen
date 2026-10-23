@@ -1,5 +1,10 @@
 # Existing verification map
 
+Storage inventory/retention: `storage-maintenance-tests.mjs` owns privacy,
+read-only measurement, archival/retention and failure/race coverage. The account
+browser suite adds mobile touch and desktop/native IndexedDB checks, and the
+quota fixture verifies space release without replacing the active profile.
+
 Achievement backup quota (#536): `cloud-achievements-quota-recovery-tests.mjs`
 covers alternate verified storage, interrupted sessions/local copies and closed
 failure paths. `quota-recovery-browser.mjs` in the account suite fills native

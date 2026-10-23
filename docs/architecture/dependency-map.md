@@ -1,5 +1,10 @@
 # Dependencies and data flow
 
+Storage maintenance: account diagnostic → aggregate local/IndexedDB/browser
+inventory; explicit maintenance → retain recent copies → exact original in
+existing IndexedDB recovery store → committed read-back + session/source recheck
+→ local removal. Export includes the archive. No profile/RPC/reward mutation.
+
 Achievement backup quota (#536): verified server achievements + unchanged local
 profile → shared recovery planner → verified localStorage or IndexedDB original
 → session/owner/local-byte recheck → achievement-only cache installation.

@@ -280,6 +280,26 @@ try{
   assert.equal(await evaluate("JSON.parse(document.getElementById('accountSyncDiagnosticText').value).app"),'Lumen');
   if(viewport.mobile)assert.equal(await evaluate("document.getElementById('accountSyncDiagnosticText').getClientRects().length>0"),true);
   assert.equal(await evaluate("localStorage.getItem('lumenProgressV1')"),progressBeforeDiagnostic,'Diagnostic viewing preserves the local save');
+  await until(`!!JSON.parse(document.getElementById('accountSyncDiagnosticText').value).storage?.local?.available`);
+  assert.equal(await evaluate(`document.getElementById('accountStorageSummary').textContent.includes('ne permettent pas de connaître')`),true);
+  await evaluate(`for(const stamp of [100,200,300])localStorage.setItem('lumenBeforeCloudRestore_'+stamp,'storage-fixture-'+stamp)`);
+  if(viewport.mobile){
+   const point=await evaluate(`(()=>{const b=document.getElementById('archiveAccountStorage');b.scrollIntoView({block:'center'});const r=b.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
+   assert(point.y>0&&point.y<viewport.height,'Storage maintenance stays reachable on mobile');
+   await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});
+   await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  }else await evaluate(`document.getElementById('archiveAccountStorage').click()`);
+  await until(`!document.getElementById('archiveAccountStorage').disabled`);
+  assert.equal(await evaluate(`localStorage.getItem('lumenBeforeCloudRestore_100')`),null);
+  assert.equal(await evaluate(`localStorage.getItem('lumenBeforeCloudRestore_300')`),'storage-fixture-300');
+  assert.equal(await evaluate(`document.getElementById('accountStorageStatus').textContent.includes('exportables')`),true);
+  assert.equal(await evaluate(`new Promise((resolve,reject)=>{const r=indexedDB.open('lumenCloudRecoveryV1',1);r.onerror=()=>reject(r.error);r.onsuccess=()=>{const db=r.result,q=db.transaction('snapshots','readonly').objectStore('snapshots').get('localStorage:lumenBeforeCloudRestore_100');q.onsuccess=()=>{db.close();resolve(q.result)}}})`,true),'storage-fixture-100');
+  assert.equal(await evaluate("localStorage.getItem('lumenProgressV1')"),progressBeforeDiagnostic,'Archival never replaces the live profile');
+  await until(`JSON.parse(document.getElementById('accountSyncDiagnosticText').value).storage?.indexed?.available`);
+  await evaluate(`document.getElementById('accountStorageSummary').scrollIntoView({block:'center'})`);
+  const storageScreenshot=await send('Page.captureScreenshot',{format:'png'});
+  fs.writeFileSync((process.env.TEMP||'/tmp')+'/lumen-storage-'+viewport.width+'.png',Buffer.from(storageScreenshot.data,'base64'));
+  await evaluate(`localStorage.removeItem('lumenBeforeCloudRestore_200');localStorage.removeItem('lumenBeforeCloudRestore_300')`);
   await evaluate("document.getElementById('closeAccountSyncDiagnostic').click()");
   assert.equal(await evaluate("document.getElementById('accountSyncDiagnosticPanel').hidden"),true);
   await navigate('Page.reload');

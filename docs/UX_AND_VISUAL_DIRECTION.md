@@ -12,6 +12,16 @@ Opening/copying the report changes no save, retry state or server data and uploa
 nothing. It includes no account identity, token or whole player profile. This
 support action does not alter gameplay onboarding.
 
+The same panel shows LUMEN's storage by category, with approximate sizes and no
+account identities, keys or save contents. Browser quota is not presented as
+free phone capacity; a quota refusal says LUMEN lacks storage space. An explicit
+**Libérer l’espace des anciennes copies** action archives older backups after
+verified read-back, keeps two recent copies per eligible family and preserves
+the live profile and pending operations. **Exporter mes sauvegardes** includes
+archives. Show success, partial failure or interruption without claiming sync
+is repaired. The mobile panel scrolls so maintenance/export remain reachable.
+These support actions change no gameplay or learning milestones.
+
 ## Visual identity
 
 Mon ciel distinguishes a completed quest from a temporarily unavailable replay.

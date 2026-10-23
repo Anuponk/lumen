@@ -1,5 +1,30 @@
 # Data and architecture
 
+## Storage inventory and recovery retention
+
+`storage-maintenance.js` measures localStorage by fixed categories and estimates
+UTF-16 key/value bytes. The browser's `storage.estimate()` budget is separate
+from localStorage's limit and never proves free device space. Where supported,
+IndexedDB inventory reads only existing recovery/checkpoint/outbox databases;
+measurement creates no database, changes no save and reveals no keys or values.
+
+The account diagnostic offers explicit local-space maintenance. Retain two
+recent immutable copies per recognized backup family (per owner for V2 unsynced
+checkpoints), and archive up to 50 older copies per invocation in the existing
+`lumenCloudRecoveryV1` snapshots store. Each `localStorage:<original key>` entry
+preserves the exact original string. A different pre-existing archive aborts;
+write/read-back and transaction completion precede local removal. Recheck the
+captured session, owner, live profile bytes and source bytes after the await.
+Failure or a changed session/source leaves the unverified source in place.
+
+This is relocation, not age-based destruction of evidence. IndexedDB originals
+remain exportable and do not expire. Live profiles, attempts, Auth, guest-before-
+account originals, unknown keys, V1 backups, V2 latest pointers and pending
+commands are excluded. No cloud acknowledgement, wallet authority or readiness
+is inferred. Existing outbox acknowledgement and 40-entry diagnostic rotation
+remain unchanged. UI-triggered export also includes guest and canonical metadata
+originals that were previously omitted from its local prefix selection.
+
 ## Hydration refusal boundaries — #536
 
 Hydration retains a known wallet refusal (`mutable_balance`, invalid/stale wallet

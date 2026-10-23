@@ -1,4 +1,5 @@
 export const nodeSuites=[
+ 'storage-maintenance-tests.mjs',
  'cloud-achievements-quota-recovery-tests.mjs',
  'cloud-hydration-mirror-session-tests.mjs',
 

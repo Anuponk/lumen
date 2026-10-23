@@ -10,6 +10,7 @@ import {currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
 import {canonicalAttemptToResume,nextCanonicalAtLegacyBoundary,preserveAttemptSnapshot} from '../campaign/campaign-resume.js';
 import {createCloudPersistence} from "../persistence/cloud.js";
 import {guestAccountSeed,preserveGuestBeforeHydration,guestNeedsReconciliation} from '../persistence/guest-account.js';
+import {storageReport,archiveRecoveryBackups} from '../persistence/storage-maintenance.js';
 import {reconcileDailyIntoCloudProfile} from "../persistence/daily-hydration.js";
 import {CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievementsDurably,achievementRecoveryDiagnostic,reconciliationFailureDiagnostic,hydrationFailureDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
@@ -180,9 +181,43 @@ function showAccountCloudDiagnostic(){
  if(!panel||!text)return;
  text.value=cloudDiagnosticReport();panel.hidden=false;
  if(copy)copy.textContent="Copier le diagnostic";
+ void refreshAccountStorage();
+}
+let storageRefreshVersion=0;
+function storageSize(bytes){
+ const power=bytes>=1024**3?3:bytes>=1024**2?2:1;
+ return (bytes/1024**power).toLocaleString('fr-FR',{maximumFractionDigits:1})+' '+['','Kio','Mio','Gio'][power];
+}
+async function refreshAccountStorage(){
+ const version=++storageRefreshVersion;
+ const report=await storageReport(localStorage);
+ if(version!==storageRefreshVersion)return;
+ const summary=document.getElementById('accountStorageSummary');
+ if(summary){
+  const labels={progress:'Progression et partie',backups:'Copies de sauvegarde',pending:'Opérations en attente',logs:'Journaux',auth:'Connexion',settings:'Préférences',other:'Autres données du site'};
+  summary.textContent=report.local.available?
+   'Espace local de LUMEN : '+storageSize(report.local.bytes)+' estimés\n'+Object.entries(report.local.categories).filter(([,group])=>group.entries>0).map(([name,group])=>labels[name]+' : '+storageSize(group.bytes)).join('\n'):'Espace local de LUMEN : mesure indisponible.';
+  if(report.indexed?.available)summary.textContent+='\n'+Object.entries(report.indexed.categories).map(([name,group])=>({archives:'Archives protégées',checkpoints:'Points de reprise',pending:'File protégée'})[name]+' : '+storageSize(group.bytes)).join('\n');
+  if(report.browser.available)summary.textContent+='\nDonnées du site (estimation navigateur) : '+storageSize(report.browser.usage)+'. Le budget navigateur de '+storageSize(report.browser.quota)+' est distinct du plafond de localStorage.';
+  summary.textContent+='\nCes mesures ne permettent pas de connaître l’espace libre du téléphone.';
+ }
+ const text=document.getElementById('accountSyncDiagnosticText');
+ if(text){try{const diagnostic=JSON.parse(cloudDiagnosticReport());text.value=JSON.stringify({...diagnostic,storage:report},null,2)}catch{}}
+}
+async function compactAccountStorage(){
+ const button=document.getElementById('archiveAccountStorage'),status=document.getElementById('accountStorageStatus');
+ if(!button||button.disabled)return;
+ button.disabled=true;if(status)status.textContent='Archivage des anciennes copies…';
+ const user=lumenUser,client=lumenSupabase;
+ try{
+  const result=await archiveRecoveryBackups(localStorage,{sessionValid:()=>lumenUser===user&&lumenSupabase===client});
+  if(status)status.textContent=result.interrupted?'Archivage interrompu : les données locales ont changé.':result.failed?'Archivage incomplet : les copies non vérifiées restent en place.':result.archived?storageSize(result.bytes)+' libérés · '+result.archived+' copies archivées et exportables.':'Aucune ancienne copie à archiver.';
+  await refreshAccountStorage();
+ }finally{button.disabled=false}
 }
 async function copyAccountCloudDiagnostic(){
  showAccountCloudDiagnostic();
+ await refreshAccountStorage();
  const text=document.getElementById("accountSyncDiagnosticText"),copy=document.getElementById("copyAccountSyncDiagnostic");
  if(!text)return;
  try{await navigator.clipboard.writeText(text.value);if(copy)copy.textContent="Diagnostic copié ✓"}
@@ -190,7 +225,7 @@ async function copyAccountCloudDiagnostic(){
 }
 // Explicit player-controlled export: never uploads or mutates any backup.
 async function exportLumenRecoveryBundle(){
- const prefixList=["lumenProgressV1","lumenUnsyncedCloudBackupV1:","lumenUnsyncedCloudBackupV2:","lumenBeforeCloud","lumenBeforeAccountSwitch_"];
+ const prefixList=["lumenProgressV1","lumenUnsyncedCloudBackupV1:","lumenUnsyncedCloudBackupV2:","lumenBeforeCloud","lumenBeforeAccountSwitch_","lumenBeforeCanonicalStartMetadata","lumenGuestBeforeAccount_"];
  const local={};
  for(let i=0;i<localStorage.length;i++){
   const key=localStorage.key(i);
@@ -914,7 +949,7 @@ function updateAdminTools(){
 }
 function cloudReconciliationMessage(failure){
  if(failure?.reason==='partial_reconciliation'){
-  if(failure.detail==='storage_quota')return 'Stockage de cet appareil saturé · données en attente conservées';
+  if(failure.detail==='storage_quota')return 'Espace de stockage de LUMEN insuffisant · données en attente conservées';
   if(['storage_unavailable','storage_failed','backup_unverified','local_install_unverified'].includes(failure.detail))return 'Sauvegarde locale à vérifier · données en attente conservées';
   if(failure.domain!=='reward'&&['mutable_balance','invalid_balance','invalid_wallet_revision','stale_wallet_revision'].includes(failure.detail))return 'Portefeuille à vérifier · données en attente conservées';
   if(failure.detail==='canonical_reward_conflict')return 'Récompenses à vérifier · données locales conservées';
@@ -3311,6 +3346,8 @@ const closeAccount=document.getElementById("accountOptinClose");if(closeAccount)
 const accountLater=document.getElementById("accountOptinLater");if(accountLater)accountLater.onclick=dismissAccountOffer;
 const retryAccountSync=document.getElementById("retryAccountSync");if(retryAccountSync)retryAccountSync.onclick=retryAccountCloudSync;
 const showAccountSyncDiagnostic=document.getElementById("showAccountSyncDiagnostic");if(showAccountSyncDiagnostic)showAccountSyncDiagnostic.onclick=showAccountCloudDiagnostic;
+const archiveAccountStorage=document.getElementById('archiveAccountStorage');if(archiveAccountStorage)archiveAccountStorage.onclick=compactAccountStorage;
+const exportAccountStorage=document.getElementById('exportAccountStorage');if(exportAccountStorage)exportAccountStorage.onclick=()=>exportLumenRecoveryBundle().catch(()=>{document.getElementById('accountStorageStatus').textContent='Export incomplet : les sauvegardes restent conservées.'});
 const copyAccountSyncDiagnostic=document.getElementById("copyAccountSyncDiagnostic");if(copyAccountSyncDiagnostic)copyAccountSyncDiagnostic.onclick=copyAccountCloudDiagnostic;
 const closeAccountSyncDiagnostic=document.getElementById("closeAccountSyncDiagnostic");if(closeAccountSyncDiagnostic)closeAccountSyncDiagnostic.onclick=()=>{document.getElementById("accountSyncDiagnosticPanel").hidden=true};
 const setPasswordSave=document.getElementById("setPasswordSave");if(setPasswordSave)setPasswordSave.onclick=saveExistingAccountPassword;
