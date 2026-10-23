@@ -12,7 +12,7 @@ Android physique de #521 reste distincte des validations navigateur simulées.
 
 ## Intégration du 23 octobre
 
-La PR #527 intègre désormais `main` jusqu'à `3fd1efb` (#553 puis #554). Le contrat livré
+La PR #527 intègre désormais `main` jusqu'à `a76939e` (#553, #554 puis #556). Le contrat livré
 sur main prévaut : quatre badges disponibles dès la quête 1, avec explications
 aux quêtes 3 et 6. La migration candidate et une régression SQL sur les ordres
 1 à 6 suivent cette règle. Les corrections de quota, session, gestes et diagnostics
@@ -27,11 +27,25 @@ modifier la première victoire, et le rejet des faits de badge inconnus modifié
 Le point d'entrée QA numérique oublie l'ancienne quête stable sans effacer les
 acquis. Les parcours navigateur utilisent les vrais boutons de briefing/reset ;
 les assertions d'annulation et d'appui immédiatement suivant restent obligatoires.
+Le parcours complet a aussi reproduit un décalage tactile distinct : afficher
+le compte à rebours déplaçait le plateau de 16,125 px à 390 px. Le correctif
+dédié #556 réserve une ligne indépendante ; l'assertion géométrique sur cinq
+largeurs et les 216 appuis restent dans le parcours général, sans réessai d'une
+assertion métier échouée. La confirmation sur téléphone physique reste séparée.
 
 Les trois migrations ont passé les assertions de parité, reçus, social privé et
 capability analytics dans PostgreSQL embarqué jetable le 23 octobre. La
-concurrence PostgreSQL 17, la validation complète actualisée et la production
-restent des résultats distincts. Aucun schéma de production n'a été appliqué.
+concurrence PostgreSQL 17 et la production restent des résultats distincts.
+Aucun schéma de production n'a été appliqué.
+
+La validation complète actualisée passe : 133 suites Node, dix parcours
+navigateur, 29 suites complémentaires, 396 cas intégrés et audit strict.
+Le gate de qualité dure 229,3 s avec deux workers navigateur ; le
+[rapport d'intégration](quest-convergence-522-integration.json) donne les
+empreintes actuelles et les limites. Une exécution antérieure s'était arrêtée
+sur un défaut d'attachement CDP à 1,6 s, avant les assertions du compte ; la
+relance complète inchangée passe. L'intégration du squash main conserve les
+mêmes sources et scripts que cette exécution validée.
 
 ## Validation historique du 22 octobre
 
