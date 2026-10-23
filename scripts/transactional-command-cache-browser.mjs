@@ -44,6 +44,8 @@ export async function verifyTransactionalCommandCache({evaluate,navigate,url}){
   if(!aborted||await store.get(key+'-aborted')!==null||await store.get(stateKey+'-aborted')!==null)throw Error('Aborted capture leaked a partial record');
   let retireAborted=false;try{await createIndexedOutboxStore(aborting).retire(key,raw,stateKey,stateRaw)}catch{retireAborted=true}
   if(!retireAborted||await store.get(key)!==raw||await store.get(stateKey)!==stateRaw)throw Error('Aborted acknowledgement lost pending evidence');
+  let invalidated=false;try{await store.retire(key,raw,stateKey,stateRaw,()=>false)}catch{invalidated=true}
+  if(!invalidated||await store.get(key)!==raw||await store.get(stateKey)!==stateRaw)throw Error('Invalidated transaction acknowledged an intent');
   await restarted.acknowledge(userId,'q',entry.reward,'op');
   if(await store.get(key)!==null||await store.get(stateKey)!==null)throw Error('Acknowledgement did not retire both records');
   if((await createDurableCanonicalVictoryOutbox(localStorage,{fallback:createTransactionalCommandCache(createIndexedOutboxStore(indexedDB))}).pending(userId)).length)throw Error('Acknowledged operation reappeared after restart');

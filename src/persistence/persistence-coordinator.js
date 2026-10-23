@@ -25,6 +25,14 @@ export function createPersistenceCoordinator({session,locks=globalThis.navigator
   domains.set(box.domain,box);
   const facade={...box,enqueue:(...args)=>submit(box.domain,...args)};
   for(const name of ['acknowledge','pause','resume','archiveRecreatedCapture'])if(box[name])facade[name]=(...args)=>{active();return box[name](...args)};
+  if(box.acknowledge)facade.acknowledge=(userId,questId,reward,operationId,options={})=>{
+   active();const valid=capture(userId),original=options.sessionValid??(()=>true);
+   return box.acknowledge(userId,questId,reward,operationId,{...options,sessionValid:()=>valid()&&original()});
+  };
+  if(box.archiveRecreatedCapture)facade.archiveRecreatedCapture=(userId,entry,committed,options={})=>{
+   active();const valid=capture(userId),original=options.sessionValid??(()=>true);
+   return box.archiveRecreatedCapture(userId,entry,committed,{...options,sessionValid:()=>valid()&&original()});
+  };
   return facade;
  }
  async function inspect(userId){

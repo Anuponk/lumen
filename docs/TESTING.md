@@ -506,6 +506,8 @@ Lot 2: `persistence-coordinator-tests.mjs` is required by the quality gate.
 It covers one-account serialization, rejected responses, queued work after
 account/client/generation/logout changes, immutable capture, mutation-free shadow
 inspection, shared lock naming and owner-bound cache installation. The account
+generation is also rechecked after asynchronous acknowledgement inspection;
+its regression fails before the facade injects the guard. The account
 browser suite also runs `transactional-command-cache-browser.mjs`: native
 IndexedDB paired capture, an actual aborted write transaction, conflict rollback,
 restart before/after acknowledgement, unknown-field preservation, owner isolation,

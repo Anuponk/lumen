@@ -153,14 +153,15 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
   const copies=target,key=copies[0].key;
   if(!sessionValid()||(expectedEntry&&JSON.stringify(copies[0].entry)!==JSON.stringify(expectedEntry)))throw Error('Outbox changed before archival cleanup');
   if(expectedReward!==undefined&&copies.some(copy=>JSON.stringify(copy.entry.reward)!==JSON.stringify(expectedReward)))throw Error('Outbox reward changed before acknowledgement');
-  await removeCopies(copies,key);
+  await removeCopies(copies,key,sessionValid);
   const stateKey=retryKey(userId,copies[0].entry);
   volatilePauses.delete(stateKey);
   await removeCopies(inspection.retryCopies.get(stateKey)||[],stateKey);
  }
- async function removeCopies(copies,key){
+ async function removeCopies(copies,key,sessionValid=()=>true){
   for(const copy of copies){
-   if(copy.store==='indexed')await fallback.remove(key,copy.raw);
+   if(!sessionValid())throw Error('Outbox session changed before acknowledgement');
+   if(copy.store==='indexed')await fallback.remove(key,copy.raw,{sessionValid});
    else{
     if(storage.getItem(key)!==copy.raw)throw Error('Outbox changed before acknowledgement');
     storage.removeItem(key);if(storage.getItem(key)!==null)throw Error('Outbox acknowledgement not removed');

@@ -21,9 +21,9 @@ export function createTransactionalCommandCache(store){
    if(!store.capture)throw Error('Transactional command storage unavailable');
    await store.capture(key,raw,state.key,state.raw);
   },
-  remove:async(key,expected)=>{
+  remove:async(key,expected,{sessionValid=()=>true}={})=>{
    const state=companion(key,expected);
-   return state&&store.retire?store.retire(key,expected,state.key,state.raw):store.remove(key,expected);
+   return state&&store.retire?store.retire(key,expected,state.key,state.raw,sessionValid):store.remove(key,expected,{sessionValid});
   },
   pendingState:async userId=>{
    const states=await store.entries(COMMAND_CACHE_PREFIX);

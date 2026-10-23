@@ -28,13 +28,14 @@ export function createIndexedOutboxStore(indexedDB,{timeoutMs=5000,setTimer=setT
    };
   });
  }
- function paired(key,raw,stateKey,stateRaw,remove=false){
+ function paired(key,raw,stateKey,stateRaw,remove=false,valid=()=>true){
   return transact('readwrite',(store,result,fail)=>{
    const intent=store.get(key);
    intent.onsuccess=()=>{
     if(intent.result!==undefined&&intent.result!==raw){const error=Error('Outbox intent changed');error.code='OUTBOX_CONFLICT';fail(error);return}
     const state=store.get(stateKey);
     state.onsuccess=()=>{
+     if(!valid()){fail(Error('Outbox session changed before transaction'));return}
      if(state.result!==undefined&&state.result!==stateRaw){const error=Error('Command cache changed');error.code='OUTBOX_CONFLICT';fail(error);return}
      if(remove){store.delete(key);store.delete(stateKey)}
      else{store.put(raw,key);store.put(stateRaw,stateKey)}
@@ -44,7 +45,7 @@ export function createIndexedOutboxStore(indexedDB,{timeoutMs=5000,setTimer=setT
  }
  return {
   capture:(key,raw,stateKey,stateRaw)=>paired(key,raw,stateKey,stateRaw),
-  retire:(key,raw,stateKey,stateRaw)=>paired(key,raw,stateKey,stateRaw,true),
+  retire:(key,raw,stateKey,stateRaw,valid)=>paired(key,raw,stateKey,stateRaw,true,valid),
   compareAndSwap:(key,expected,raw,valid=()=>true)=>transact('readwrite',(store,result,fail)=>{
    const request=store.get(key);
    request.onsuccess=()=>{
@@ -61,9 +62,9 @@ export function createIndexedOutboxStore(indexedDB,{timeoutMs=5000,setTimer=setT
    const request=store.get(key);
    request.onsuccess=()=>{if(request.result!==undefined&&request.result!==raw){const error=Error('Outbox intent changed');error.code='OUTBOX_CONFLICT';fail(error);return}store.put(raw,key)};
   }),
-  remove:(key,expected)=>transact('readwrite',(store,result,fail)=>{
+  remove:(key,expected,{sessionValid=()=>true}={})=>transact('readwrite',(store,result,fail)=>{
    const request=store.get(key);
-   request.onsuccess=()=>{if(request.result===undefined)return;if(request.result!==expected){fail(Error('Outbox intent changed before acknowledgement'));return}store.delete(key)};
+   request.onsuccess=()=>{if(!sessionValid()){fail(Error('Outbox session changed before acknowledgement'));return}if(request.result===undefined)return;if(request.result!==expected){fail(Error('Outbox intent changed before acknowledgement'));return}store.delete(key)};
   })
  };
 }

@@ -25,6 +25,14 @@ test('late rejection is classified as stale and cannot publish a new-session res
  const work=c.dispatch('a',s.session().client,()=>gate.promise);await tick();s.change({generation:2});gate.reject(Error('old server error'));
  await assert.rejects(work,{code:'SESSION_CHANGED'});
 });
+test('generation change during acknowledgement inspection retains the pending intent',async()=>{
+ const s=setup(),c=createPersistenceCoordinator(s),gate=deferred();let removed=false;
+ const box=c.register({domain:'Canonical',acknowledge:async(userId,questId,reward,operationId,{sessionValid=()=>true}={})=>{
+  await gate.promise;if(!sessionValid())throw Error('Acknowledgement session changed');removed=true;
+ }});
+ const work=box.acknowledge('a','q',{},'original-id');s.change({generation:2});gate.resolve();
+ await assert.rejects(work,/session changed/);assert.equal(removed,false);
+});
 test('submit freezes evidence before asynchronous storage and retains original owner on invalidation',async()=>{
  const s=setup(),c=createPersistenceCoordinator(s),gate=deferred();let captured;
  c.register({domain:'Wallet',enqueue:async(userId,questId,reward,options)=>{await gate.promise;captured={userId,questId,reward,options};return captured}});
@@ -50,7 +58,7 @@ test('transactional cache delegates both immutable intent and pending state to o
  const calls=[],store=createTransactionalCommandCache({capture:async(...args)=>calls.push(args),retire:async(...args)=>calls.push(args)});
  const entry={version:2,userId:'a',operationId:'op',questId:'q',createdAt:'now',reward:{shards:123}},key='lumenCanonicalVictoryOutboxV2:a:op',raw=JSON.stringify(entry);
  await store.put(key,raw);await store.remove(key,raw);
- assert.equal(calls.length,2);assert.deepEqual(calls[0],calls[1]);assert.equal(calls[0][0],key);assert.equal(calls[0][1],raw);
+ assert.equal(calls.length,2);assert.deepEqual(calls[0],calls[1].slice(0,4));assert.equal(typeof calls[1][4],'function');assert.equal(calls[0][0],key);assert.equal(calls[0][1],raw);
  assert.deepEqual(JSON.parse(calls[0][3]),{version:1,userId:'a',domain:'Canonical',operationId:'op',questId:'q',createdAt:'now',status:'pending'});
  await assert.rejects(store.put(key,JSON.stringify({...entry,userId:'b'})),/owner/);
 });
