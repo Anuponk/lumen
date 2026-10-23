@@ -507,8 +507,9 @@ inventory and unknown fields, foreign owners, ambiguous balances, immutable
 account-bound guest manifests, denied storage, lost replies and receipt reads,
 independent receipt/profile verification, session changes and strictly scoped
 old-server fallback. It also refuses mocked/stale/shared-production rollout
-proofs and premature retirement. The account browser suite adds
-`historical-claim-browser.mjs` with native localStorage and Web Crypto; Auth/RPC
+proofs and premature retirement. The read-only RPC inventory also checks exact Wallet receipt/request coverage,
+expected owner and stable before/after projection, without mutation or ack.
+The account browser suite adds `historical-claim-browser.mjs` with native localStorage and Web Crypto; Auth/RPC
 remain synthetic. It preserves its originals and exercises a restarted adapter,
 lost reply/read, exactly one effect and the read-only inventory.
 

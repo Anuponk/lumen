@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 export async function verifyHistoricalClaim({evaluate,navigate,url}){
- await navigate('Page.navigate',{url:new URL('/scripts/fixtures/storage-quota.html',url).href});
+ // The quota suite intentionally leaves its origin full. Use a separate fresh
+ // disposable localhost origin rather than rewriting any of its originals.
+ const isolated=new URL('/scripts/fixtures/storage-quota.html',url);
+ isolated.hostname=url.hostname==='localhost'?'127.0.0.1':'localhost';
+ await navigate('Page.navigate',{url:isolated.href});
  const result=await evaluate(`(async()=>{
   const {captureGuestClaim,claimGuestProfile}=await import('/src/persistence/guest-claim.js');
   const {cloudSafelyCoversLocal}=await import('/src/persistence/cloud-profile.js');

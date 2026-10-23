@@ -204,6 +204,12 @@ retains its original string, SHA-256, owner, origin and unknown fields. States a
 projection is **not** a transaction receipt. Exported receipts alone cannot
 authorize a baseline: verification still uses the existing expected-account RPC
 adapters. Invalid/foreign sources and ambiguous balances remain under review.
+The optional `inventoryHistoricalAccount` reads the expected-account profile,
+independently reads exact Wallet operation receipts, then re-reads the profile.
+Only an immutable request and the existing exact Wallet coverage predicate may
+classify a source as `receipt_covered`. A moving projection, foreign owner,
+unknown-field mismatch or missing receipt cannot receive that classification.
+This API neither installs the result nor acknowledges an outbox entry.
 `node scripts/historical-inventory.mjs private-input.json private-output.json`
 requires an explicit destination, refuses overwrite and prints only counts.
 Input shape: `{userId,sources:[{id,owner,origin,raw}],remoteOwner,remoteRaw}`.

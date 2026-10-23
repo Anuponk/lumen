@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {inventoryHistoricalProfiles,bytesDigest} from '../src/persistence/historical-inventory.js';
+import {inventoryHistoricalProfiles,inventoryHistoricalAccount,bytesDigest} from '../src/persistence/historical-inventory.js';
 import {captureGuestClaim,claimGuestProfile,GUEST_CLAIM_PREFIX} from '../src/persistence/guest-claim.js';
 import {initializeCloudProfile,cloudSafelyCoversLocal} from '../src/persistence/cloud-profile.js';
 import {evaluatePersistenceRollout,RECETTE_SCENARIOS} from '../src/persistence/rollout-gates.js';
@@ -20,6 +20,20 @@ test('inventory keeps original bytes, provenance, unknown fields and distinguish
 test('coverage is never represented as a receipt or an automatic baseline',async()=>{
  const report=await inventoryHistoricalProfiles({userId:'a',sources:[{id:'old',owner:'a',raw}],remoteRaw:JSON.stringify({...guest,solved:{0:1,1:1}}),remoteOwner:'a'});
  assert.equal(report.sources[0].status,'covered_projection');assert.ok(report.sources[0].reasons.includes('independent_receipt_review_required'));
+});
+test('receipt-covered classification requires independent exact Wallet RPC and stable current projection',async()=>{
+ const request={kind:'hint',attemptId:'attempt',resetCount:0,sequence:1};
+ const remote={...guest,shards:1,walletRevision:1},receipt={version:1,operationId:'op',request,revision:1,balance:1,balanceDelta:-1};
+ const sources=[{id:'original',owner:'a',raw}],calls=[];
+ const client={rpc:async(name,args)=>{calls.push([name,args]);return {data:name==='lumen_restore_profile'?remote:receipt}}};
+ const report=await inventoryHistoricalAccount(client,{userId:'a',sources,operations:[{operationId:'op',request}]});
+ assert.equal(report.sources[0].status,'receipt_covered');assert.equal(report.mutations,0);assert.equal(report.sources[0].raw,raw);
+ assert.deepEqual(calls.map(row=>row[0]),['lumen_restore_profile','lumen_get_wallet_command','lumen_restore_profile']);
+ assert.ok(calls.every(row=>row[1].p_expected_user_id==='a'));
+ const forged=await inventoryHistoricalAccount(client,{userId:'a',sources,operations:[{operationId:'op',request:{...request,kind:'verify'}}]});
+ assert.notEqual(forged.sources[0].status,'receipt_covered');
+ let reads=0;
+ await assert.rejects(inventoryHistoricalAccount({rpc:async()=>({data:++reads===1?remote:{...remote,shards:0,walletRevision:2}})},{userId:'a',sources}));
 });
 test('claim captures before await, reuses identity and never replaces original evidence',async()=>{
  const s=storage(),profile=structuredClone(guest),pending=captureGuestClaim(s,{userId:'a',profile,original:raw});profile.xp=999;
