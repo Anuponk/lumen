@@ -9,6 +9,11 @@ canonical-replay/campaign-resume runners cover actual handoff and persistence.
 `quest-command-concurrency.py` extend the disposable PostgreSQL ledger workflow.
 See `docs/TESTING.md` for commands and distinction from production/device proof.
 
+Incident version comparison (#534): `incident-investigation-tests.mjs` checks
+numeric version ordering, unknown labels, separate aggregate/episode counts and
+unchanged inputs. Its dedicated native browser suite checks combined filters,
+stale draft revocation, renewed review and existing capability/privacy guards.
+
 Quota continuation (#536/#537): `storage-maintenance-tests.mjs` owns the
 installation-quota archival retry; `cloud-wallet-quota-recovery-tests.mjs` owns
 receipt-covered wallet backup fallback and interrupted/failed storage. Native
