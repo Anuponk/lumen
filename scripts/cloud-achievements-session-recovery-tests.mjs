@@ -9,6 +9,7 @@ import {createDurableCanonicalVictoryOutbox} from '../src/persistence/durable-ca
 import {replayCanonicalVictoryOutbox} from '../src/persistence/canonical-outbox.js';
 import {reconcileDailyIntoCloudProfile} from '../src/persistence/daily-hydration.js';
 import {currentCatalogueOrigin} from '../src/campaign/catalogue-origin.js';
+import {walletCommandsSupported} from '../src/persistence/wallet-command.js';
 const {cloudSafelyCoversLocal,reconcileCloudAchievements,installCloudProfileLocally,achievementRecoveryDiagnostic}=profiles;
 
 const profile=()=>({solved:{},historyBackup:{},badges:{},stars:{},performances:{},canonicalQuestState:{
@@ -132,7 +133,7 @@ test('account status explains a held reconciliation while preserving a generic r
  assert.match(ctx.cloudReconciliationMessage({reason:'network'}),/resynchroniser/);
 });
 
-async function sessionFixture({conflict=false,quota=false}={}){
+async function sessionFixture({conflict=false,quota=false,deferWallet=false}={}){
  const local=profile(),storage=storeFor(local),indexed=new Map(),events=[],calls=[],timers=[];
  storage.setItem('lumenCloudOwnerId','a');
  const fallback={
@@ -150,20 +151,30 @@ async function sessionFixture({conflict=false,quota=false}={}){
   newlyCompleted:true,recordedAt:'2026-10-22T18:53:12Z'}});
  const archived=[...indexed].filter(([key])=>key.startsWith('lumenCanonicalRecreatedCaptureArchiveV1:'));
  assert.equal(archived.length,1);
+ events.push({event:'canonical_attempt_receipt_recovered',archivedCapture:true});
  const walletStorage={...storage,get length(){return storage.length},setItem:(key,value)=>{
   if(key.startsWith('lumenWallet'))throw Object.assign(Error('full'),{name:'QuotaExceededError'});
   storage.setItem(key,value);
  }};
- const wallet=createDurableCanonicalVictoryOutbox(walletStorage,{namespace:'Wallet',fallback});
- const walletEntry=await wallet.enqueue('a','wallet',{request:{kind:'spend'}},{operationId:'wallet-pending'});
- const walletBefore=JSON.stringify(await wallet.pending('a'));
+ const wallet=createDurableCanonicalVictoryOutbox(walletStorage,{namespace:'Wallet',fallback,
+  onIssue:issue=>events.push({event:'wallet_outbox_storage',kind:issue.kind})});
+ let walletEntry,walletBefore;
+ const checkpointWallet=async()=>{
+  walletEntry=await wallet.enqueue('a','wallet',{request:{kind:'spend'}},{operationId:'wallet-pending'});
+  walletBefore=JSON.stringify(await wallet.pending('a'));
+ };
+ if(!deferWallet)await checkpointWallet();
  let remote=structuredClone(local);remote.shards=3;
  remote.canonicalQuestState['fixture-quest'].badges.speed=true;
  if(conflict)remote.canonicalQuestState['fixture-quest'].performance.seconds=12;
  let authCallback,resolveSession;
  const client={auth:{onAuthStateChange:fn=>{authCallback=fn},getSession:()=>new Promise(resolve=>{resolveSession=resolve})},rpc:async(name,args)=>{
   calls.push(name);
-  if(name==='lumen_restore_profile')return {data:structuredClone(remote),error:null};
+  if(name==='lumen_wallet_command_version')return {error:{code:'PGRST202'},status:404};
+  if(name==='lumen_restore_profile'){
+   if(!walletEntry)await checkpointWallet();
+   return {data:structuredClone(remote),error:null};
+  }
   if(name==='lumen_get_wallet_command'){
    assert.equal(args.p_operation_id,walletEntry.operationId);return {data:null,error:null};
   }
@@ -178,7 +189,7 @@ async function sessionFixture({conflict=false,quota=false}={}){
  const ctx=vm.createContext({...profiles,structuredClone,currentCatalogueOrigin,qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,
   canonicalRecoveryContext:null,canonicalRecovery:scheduler,sessionStorage:{getItem:()=>null},localStorage:storage,
   cloudProfileReady:false,cloudProfileBaseline:null,cloudProfileFailure:null,lumenProgress:local,
-  walletOutbox:wallet,canonicalVictoryOutbox:canonical,legacyVictoryOutbox:{resume:async()=>{}},
+  walletCommandsSupported,walletOutbox:wallet,canonicalVictoryOutbox:canonical,legacyVictoryOutbox:{resume:async()=>{}},
   replayCanonicalVictoryOutbox,replayLegacyVictoryOutbox:async()=>[],
   commitCanonicalVictory:()=>assert.fail('An archived capture is not a new command'),
   recoverQueuedCanonicalReceipt:()=>assert.fail('Archive is already durable'),
@@ -201,6 +212,10 @@ async function sessionFixture({conflict=false,quota=false}={}){
   set(key,value);
  }}
  return {ctx,api,hook,storage,events,calls,archived,indexed,canonical,wallet,walletBefore,
+  restart:()=>{
+   ctx.walletOutbox=createDurableCanonicalVictoryOutbox(walletStorage,{namespace:'Wallet',fallback});
+   ctx.canonicalVictoryOutbox=createDurableCanonicalVictoryOutbox(storage,{fallback});
+  },
   get remote(){return remote},set remote(value){remote=value},
   fire:(...args)=>authCallback(...args),session:()=>resolveSession,
   assertEvidence:async()=>{
@@ -232,6 +247,105 @@ test('SIGNED_IN plus INITIAL_SESSION preserves the indexed wallet and archived c
   assert.equal(JSON.parse(f.storage.getItem('lumenProgressV1')).shards,3);
   await f.assertEvidence();
  }
+});
+
+test('#536 exact event order retains the wallet hold instead of an unexplained divergence',async()=>{
+ for(const order of [['SIGNED_IN','INITIAL_SESSION'],['INITIAL_SESSION','SIGNED_IN']]){
+  for(const [revision,reason] of [[1,'mutable_balance'],[0,'invalid_wallet_revision']]){
+   const f=await sessionFixture({deferWallet:true});
+   f.remote.canonicalQuestState=JSON.parse(f.storage.getItem('lumenProgressV1')).canonicalQuestState;
+   f.remote.walletRevision=revision;
+   const before=f.storage.getItem('lumenProgressV1'),loading=f.api.initLumenCloud();
+   while(!f.session())await Promise.resolve();
+   for(const event of order)f.fire(event,{user:{id:'a'}});
+   f.session()({data:{session:{user:{id:'a'}}}});await loading;
+   const sequence=f.events.filter(e=>['canonical_attempt_receipt_recovered','auth','wallet_outbox_storage'].includes(e.event));
+   assert.deepEqual(sequence.map(e=>e.event==='auth'?e.type:e.kind||e.event),
+    ['canonical_attempt_receipt_recovered',...order,'indexed_checkpoint']);
+   assert.equal(f.ctx.cloudProfileReady,false);
+   assert.equal(f.ctx.cloudProfileFailure.detail,reason,'A proven wallet hold must not become generic cloud_local_divergence');
+   assert.equal(f.storage.getItem('lumenProgressV1'),before);await f.assertEvidence();
+   f.restart();await f.hook();assert.equal(f.ctx.cloudProfileFailure.detail,reason);await f.assertEvidence();
+  }
+ }
+});
+
+test('#536 overlapping wallet and reward refusals remain separately classified',async()=>{
+ const f=await sessionFixture({conflict:true,deferWallet:true});
+ const before=f.storage.getItem('lumenProgressV1');await f.hook();
+ const reconciliation=f.events.find(e=>e.event==='hydration_reconciliation');
+ const achievement=f.events.find(e=>e.event==='cloud_achievements_recovery_blocked');
+ assert.equal(reconciliation.reason,'mutable_balance');
+ assert.equal(reconciliation.domain,'wallet');
+ assert.equal(reconciliation.stage,'bidirectional_reconciliation');
+ assert.equal(achievement.reason,'canonical_reward_conflict');
+ assert.equal(achievement.domain,'reward');
+ assert.equal(achievement.stage,'achievement_recovery');
+ assert.equal(f.ctx.cloudProfileFailure.detail,'canonical_reward_conflict');
+ assert.equal(f.storage.getItem('lumenProgressV1'),before);await f.assertEvidence();
+});
+
+test('#536 an invalid XP projection is a reward refusal, not a wallet refusal',async()=>{
+ const f=await sessionFixture();
+ const local=JSON.parse(f.storage.getItem('lumenProgressV1'));
+ f.remote.canonicalQuestState=local.canonicalQuestState;f.remote.shards=local.shards;f.remote.xp=-1;
+ const before=f.storage.getItem('lumenProgressV1');await f.hook();
+ const result=f.events.find(e=>e.event==='hydration_reconciliation');
+ assert.equal(result.reason,'invalid_balance');assert.deepEqual(result.fields,['xp']);
+ assert.equal(result.domain,'reward');assert.equal(f.ctx.cloudProfileFailure.domain,'reward');
+ assert.equal(f.storage.getItem('lumenProgressV1'),before);await f.assertEvidence();
+});
+
+test('#536 storage refusal at wallet receipt read-back is not a reward or Auth conflict',async()=>{
+ const f=await sessionFixture({deferWallet:true}),rpc=f.ctx.lumenSupabase.rpc;
+ f.ctx.console.warn=()=>{};
+ f.ctx.lumenSupabase.rpc=async(name,args)=>{
+  if(name==='lumen_get_wallet_command')throw Object.assign(Error('private-provider-message'),{name:'SecurityError'});
+  return rpc(name,args);
+ };
+ const before=f.storage.getItem('lumenProgressV1');await f.hook();
+ const failure=f.events.find(e=>e.event==='hydration_failed');
+ assert.equal(failure.stage,'wallet_receipt_read');assert.equal(failure.domain,'storage');
+ assert.equal(failure.detail,'storage_unavailable');
+ assert(!JSON.stringify(f.events).includes('private-provider-message'));
+ assert.equal(f.storage.getItem('lumenProgressV1'),before);await f.assertEvidence();
+});
+
+test('#536 offline interruption preserves every intent and retry retains the known wallet refusal',async()=>{
+ const f=await sessionFixture(),rpc=f.ctx.lumenSupabase.rpc;
+ f.remote.canonicalQuestState=JSON.parse(f.storage.getItem('lumenProgressV1')).canonicalQuestState;
+ const before=f.storage.getItem('lumenProgressV1');f.ctx.console.warn=()=>{};
+ f.ctx.lumenSupabase.rpc=async()=>{throw TypeError('private-network-details')};
+ await f.hook();assert.equal(f.ctx.cloudProfileReady,false);
+ assert.equal(f.events.find(e=>e.event==='hydration_failed').stage,'cloud_restore');
+ assert.equal(f.storage.getItem('lumenProgressV1'),before);await f.assertEvidence();
+ f.ctx.lumenSupabase.rpc=rpc;f.restart();await f.hook();
+ assert.equal(f.ctx.cloudProfileFailure.detail,'mutable_balance');
+ assert.equal(f.storage.getItem('lumenProgressV1'),before);await f.assertEvidence();
+ assert(!JSON.stringify(f.events).includes('private-network-details'));
+});
+
+test('#536 backup and installation failures report their exact storage boundary without reward values',()=>{
+ for(const fault of ['backup-quota','backup-denied','install-silent']){
+  const local=profile(),cloud=structuredClone(local),storage=storeFor(local),write=storage.setItem;
+  const before=storage.getItem('lumenProgressV1');cloud.canonicalQuestState['fixture-quest'].badges.speed=true;
+  storage.setItem=(key,value)=>{
+   if(key.startsWith('lumenBeforeCloudReconcile_')&&fault!=='install-silent')
+    throw Object.assign(Error('private-storage-details'),{name:fault==='backup-quota'?'QuotaExceededError':'SecurityError'});
+   if(fault==='install-silent'&&key==='lumenProgressV1'&&value!==before)return;
+   write(key,value);
+  };
+  assert.throws(()=>reconcileCloudAchievements(storage,cloud),error=>{
+   const diagnostic=profiles.hydrationFailureDiagnostic(error,'achievement_recovery');
+   assert.equal(diagnostic.stage,fault==='install-silent'?'achievement_install':'achievement_backup');
+   assert.equal(diagnostic.domain,'storage');
+   assert(!JSON.stringify(diagnostic).includes('private-storage-details'));return true;
+  });
+  assert.equal(storage.getItem('lumenProgressV1'),before);
+ }
+ const diagnostic=profiles.hydrationFailureDiagnostic({name:'private-name',code:'private-code',stage:'private-stage'},'cloud_restore');
+ assert.equal(diagnostic.errorCode,'unknown');assert.equal(diagnostic.errorName,'Error');
+ assert.equal(diagnostic.stage,'cloud_restore');assert(!JSON.stringify(diagnostic).includes('private-'));
 });
 
 test('the same hydration sequence reports a safe specific hold on true conflicts or quota and can retry',async()=>{

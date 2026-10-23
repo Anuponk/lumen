@@ -1,4 +1,5 @@
 export const nodeSuites=[
+ 'cloud-hydration-mirror-session-tests.mjs',
  'cloud-daily-session-tests.mjs',
  'cloud-wallet-command-tests.mjs',
  'cloud-wallet-reconciliation-tests.mjs',

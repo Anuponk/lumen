@@ -1,5 +1,27 @@
 # Data and architecture
 
+## Hydration refusal boundaries — #536
+
+Hydration retains a known wallet refusal (`mutable_balance`, invalid/stale wallet
+revision or invalid balance) when achievement-only recovery makes no change.
+A simultaneous canonical reward refusal is reported separately; neither reason
+authorizes a new merge or marks the profile ready. The wallet's IndexedDB
+checkpoint proves only durable staging, not a confirmed debit or storage loss.
+`reconciliationFailureDiagnostic` classifies fixed reason codes by domain;
+`hydrationFailureDiagnostic` identifies the wallet receipt, profile read-back,
+cache restore, acknowledgement, achievement backup/install and mirror boundary.
+Only fixed stages, known error categories and allowlisted field names are used;
+no revision numbers, amounts, profiles, operation/account identities or provider
+messages are added to telemetry. Full snapshots and all pending intents retain
+their existing preservation and acknowledgement rules.
+
+The final asynchronous legacy-mirror verification must check the captured account
+and client again before emitting readiness/failure or updating presentation.
+An account/client change aborts that obsolete continuation without touching the
+new session. This guard closes a reproduced race; it is not proof that Rachel's
+reported acquisition conflict was caused by session switching.
+See [evidence and remaining limits](validation/2026-10-23-hydration-536.md).
+
 ## Session achievement recovery — #530
 
 The [reproduced case and release limits](validation/2026-10-22-achievement-recovery-530.md)

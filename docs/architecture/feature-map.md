@@ -4,6 +4,11 @@ Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This loo
 
 ## Entry points and shape
 
+Hydration #536: `cloud-profile.js` fixed-domain/stage diagnostic helpers retain
+wallet refusals separately from partial reward recovery. The game-screen hook
+checks its account/client after the final mirror await. No new reward policy,
+writer or profile field; see `docs/validation/2026-10-23-hydration-536.md`.
+
 Session recovery #530: `cloud-profile.js` canonical achievement coverage accepts
 only server badge additions on identical immutable victory evidence.
 `achievementRecoveryDiagnostic` supplies fixed failure categories;
