@@ -120,6 +120,11 @@ Phase 2 follow-up: `admin-catalogue.test.mjs`, `generated-adventure-map.test.mjs
 
 Deployment checks also exist as `scripts/o2switch-deploy-tests.py` and `scripts/o2switch-https-tests.py`. They are indexed only; deployment/Actions optimization belongs to phase 3.
 
+HTTPS deployment regressions also cover TigerProtect 429/503 classification,
+bounded/private error bodies, validated support IDs and no retry after an
+identified hosting refusal. `.github/workflows/diagnose-http.yml` is a manual,
+credential-free production probe; it records status codes, not release success.
+
 ## Gaps and limits, without corrections
 
 - Simulated RPC/session tests cannot prove live provider configuration, grants/RLS, installed-PWA storage retention or cross-device restoration. Affected-device login/reload and isolated live-account recovery remain separate manual checks described in `docs/TESTING.md`.

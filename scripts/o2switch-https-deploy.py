@@ -22,11 +22,27 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None  # Never forward authentication to another URL/host.
 
 
+def reject_hosting_filter(status, body):
+    # Hosting errors arrive before PHP. Inspect a bounded response, but expose
+    # only a fixed diagnosis and a validated support correlation ID.
+    if status not in (429, 503):
+        return
+    sample = body[:16384]
+    if not re.search(r'https://faq\.o2switch\.fr/[^\s"<>]*tiger-protect', sample):
+        return
+    request_id = re.search(r'Request_ID\s*=\s*"([0-9a-f]{32})"', sample)
+    detail = '; request ID ' + request_id[1] if request_id else ''
+    raise RuntimeError('TigerProtect hosting firewall rejected HTTPS (HTTP ' + str(status) + detail
+                       + '); inspect domain rules in cPanel before retrying')
+
+
 def fetch_json(req):
     try:
         with urllib.request.build_opener(NoRedirect).open(req, timeout=20) as response:
             return json.load(response)
     except urllib.error.HTTPError as exc:
+        if exc.code in (429, 503):
+            reject_hosting_filter(exc.code, exc.read(16384).decode('utf-8', errors='replace'))
         if exc.code != 503:
             raise
         print('Python HTTPS returned HTTP 503; trying curl transport')
@@ -47,6 +63,8 @@ def fetch_json(req):
         raise ConnectionError('curl connection failed')
     body, _, status = result.stdout.rpartition('\n')
     if not status.isdigit() or not 200 <= int(status) < 300:
+        if status.isdigit():
+            reject_hosting_filter(int(status), body)
         raise urllib.error.HTTPError(req.full_url, int(status) if status.isdigit() else 502,
                                      'HTTPS request rejected', {}, None)
     return json.loads(body)
@@ -98,6 +116,6 @@ if __name__ == '__main__':
     try:
         deploy(os.environ.get('DEPLOY_SHA', ''), os.environ.get('O2SWITCH_DEPLOY_WEBHOOK_SECRET', ''))
     except Exception as exc:
-        # Never log headers, secret, signed requests, or server response bodies.
+        # Never log headers, secret, signed requests, or raw server response bodies.
         print('Deployment failed: ' + (str(exc) if isinstance(exc, RuntimeError) else type(exc).__name__), file=sys.stderr)
         sys.exit(1)
