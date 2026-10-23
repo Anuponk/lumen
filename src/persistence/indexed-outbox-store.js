@@ -1,4 +1,4 @@
-// Only pending intents, never an authoritative profile or entitlement store.
+// Pending intents and their local pending views, never authoritative rewards.
 // A transaction must complete before callers may claim a durable local write.
 export function createIndexedOutboxStore(indexedDB,{timeoutMs=5000,setTimer=setTimeout,clearTimer=clearTimeout}={}){
  function transact(mode,action){
@@ -28,7 +28,30 @@ export function createIndexedOutboxStore(indexedDB,{timeoutMs=5000,setTimer=setT
    };
   });
  }
+ function paired(key,raw,stateKey,stateRaw,remove=false){
+  return transact('readwrite',(store,result,fail)=>{
+   const intent=store.get(key);
+   intent.onsuccess=()=>{
+    if(intent.result!==undefined&&intent.result!==raw){const error=Error('Outbox intent changed');error.code='OUTBOX_CONFLICT';fail(error);return}
+    const state=store.get(stateKey);
+    state.onsuccess=()=>{
+     if(state.result!==undefined&&state.result!==stateRaw){const error=Error('Command cache changed');error.code='OUTBOX_CONFLICT';fail(error);return}
+     if(remove){store.delete(key);store.delete(stateKey)}
+     else{store.put(raw,key);store.put(stateRaw,stateKey)}
+    };
+   };
+  });
+ }
  return {
+  capture:(key,raw,stateKey,stateRaw)=>paired(key,raw,stateKey,stateRaw),
+  retire:(key,raw,stateKey,stateRaw)=>paired(key,raw,stateKey,stateRaw,true),
+  compareAndSwap:(key,expected,raw,valid=()=>true)=>transact('readwrite',(store,result,fail)=>{
+   const request=store.get(key);
+   request.onsuccess=()=>{
+    if(!valid()||(request.result??null)!==expected){fail(Error('Cache installation changed'));return}
+    store.put(raw,key);
+   };
+  }),
   entries:prefix=>transact('readonly',(store,result)=>{
    const values=[],request=store.openCursor();
    request.onsuccess=()=>{const cursor=request.result;if(!cursor){result(values);return}if(String(cursor.key).startsWith(prefix))values.push([String(cursor.key),cursor.value]);cursor.continue()};

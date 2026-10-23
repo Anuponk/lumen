@@ -99,6 +99,7 @@ test('a temporarily unreadable queue keeps a visible pending check and retry dem
  const context={lumenUser:{id:'a'},canonicalOutboxNotice:null,updateAuthUI:()=>{},
   legacyVictoryOutbox:{inspect:async()=>({pending:[],retryable:[],paused:[],issues:[],complete:true})},
   canonicalVictoryOutbox:{inspect:async()=>({pending:[],retryable:[],paused:[],issues:complete?[]:['indexed_unavailable'],complete})}};
+ context.inspectCommandOutboxes=async()=>({Canonical:await context.canonicalVictoryOutbox.inspect(),Legacy:await context.legacyVictoryOutbox.inspect(),Wallet:{pending:[],retryable:[],paused:[],issues:[],complete:true}});
  prepareContext(context);vm.runInContext(functionSource(source,'refreshCanonicalOutboxNotice'),context);
  assert.equal(await vm.runInContext("refreshCanonicalOutboxNotice('a')",context),1);
  assert.equal(context.canonicalOutboxNotice,'checking');

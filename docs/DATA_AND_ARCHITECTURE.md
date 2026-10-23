@@ -1,6 +1,6 @@
 # Data and architecture
 
-## Optional incident details — #534
+## Optional incident details â€” #534
 
 [Audit and architecture](OBSERVABILITY_534.md). Preserve #398's live health,
 outbox state, fifteen-minute alert and capability; add a private companion
@@ -71,7 +71,7 @@ is inferred. Existing outbox acknowledgement and 40-entry diagnostic rotation
 remain unchanged. UI-triggered export also includes guest and canonical metadata
 originals that were previously omitted from its local prefix selection.
 
-## Hydration refusal boundaries — #536
+## Hydration refusal boundaries â€” #536
 
 Hydration retains a known wallet refusal (`mutable_balance`, invalid/stale wallet
 revision or invalid balance) when achievement-only recovery makes no change.
@@ -93,7 +93,7 @@ new session. This guard closes a reproduced race; it is not proof that Rachel's
 reported acquisition conflict was caused by session switching.
 See [evidence and remaining limits](validation/2026-10-23-hydration-536.md).
 
-## Session achievement recovery — #530
+## Session achievement recovery â€” #530
 
 Local quota follow-up (#536/#537, 23 October 2026): hydration uses
 `reconcileCloudAchievementsDurably`, sharing the synchronous recovery planner
@@ -119,7 +119,7 @@ Only a verified coherent installation clears the previous failure. Specific
 storage/reward diagnostics use fixed fields, catalogue-validated local quest IDs
 and the existing server health event without profile values or new SQL.
 
-## Quest parity audit — #522, 2026-10-22
+## Quest parity audit â€” #522, 2026-10-22
 
 The [dedicated chantier audit](validation/2026-10-22-quest-parity-audit.md)
 records the `650a39b` inventory, remaining numeric/stable-ID behavioral
@@ -141,7 +141,7 @@ and active attempts are preserved; there is no player-data migration.
 
 Future publication appends a compatible catalogue revision and audited assets,
 as already required by the compatibility contract. `quest-definition-tests.mjs`
-covers variable sizes, N→N+k and recovery of a formerly complete synthetic save.
+covers variable sizes, Nâ†’N+k and recovery of a formerly complete synthetic save.
 Guest/cloud, qualification, reward/daily and social differences remain separate
 contract-convergence work coordinated with #523.
 
@@ -161,7 +161,7 @@ existing saved-record formats remain unchanged.
 
 ## Account modes (2026-10-18)
 
-Lumen has two public modes: local guest discovery without an Auth account, and an authenticated account using Google or email with a password. Email OTP/magic-link login is retired in the Lumen UI and its dedicated mail endpoint. Existing accounts retain their identity, progress and entitlements; use Google or **Créer ou réinitialiser mon mot de passe** to establish a password on the same email address. Recovery/confirmation emails remain supported. Do not disable email Auth globally: the Supabase project is shared with SoldeZen.
+Lumen has two public modes: local guest discovery without an Auth account, and an authenticated account using Google or email with a password. Email OTP/magic-link login is retired in the Lumen UI and its dedicated mail endpoint. Existing accounts retain their identity, progress and entitlements; use Google or **CrÃ©er ou rÃ©initialiser mon mot de passe** to establish a password on the same email address. Recovery/confirmation emails remain supported. Do not disable email Auth globally: the Supabase project is shared with SoldeZen.
 
 While the SDK restores its startup session, the mobile account menu shows a neutral pending state and disables the sign-in action. Only a resolved unauthenticated session may offer sign-in; pending rendering must preserve password-recovery state. SDK session persistence and refresh defaults remain unchanged. Subscribe to Auth events before startup session/confirmation I/O. A late startup read cannot replace a newer login/sign-out event; deferred restoration must check the account identity. An expired confirmation must never sign out an existing session. Explicit logout uses the local session scope, preserving sessions on other devices. Recovery opens the parent profile editor and waits for password creation before cloud hydration/reload. Cloud restore failures remain authenticated and visible as synchronization failures; keep divergent saves protected and provide a safe reload/retry. Refresh an open sky after successful hydration so quest availability reflects the verified account.
 
@@ -192,11 +192,71 @@ the session is usable on that particular browser/PWA.
 
 ## Guest registration preservation (#528)
 
-`guest-account.js` distinguishes an unowned guest from a signed-out account cache. Before first authenticated I/O, preserve and read back the exact guest snapshot under `lumenGuestBeforeAccount_<accountId>` (additional versions retain subsequent offline play). Initialize a missing cloud profile from the whole validated guest snapshot, including net currency, earned badges and compatibility access; use a fresh seed only for another account’s cache. Existing cloud achievements must cover the guest, or the existing conservative reconciler must succeed before installation. Recheck the latest local bytes immediately before installation: achievements earned during initialization/daily I/O must also be covered, or remain pending with the live attempt preserved. Conflicting receipts/balances stay pending with both originals preserved; never infer money, copy another account, or erase guest achievements. Initial creation remains atomic and read-back verified; no duplicate victory commands are emitted. Failed backup, offline initialization, read-back or account switch cannot install an empty profile.
+`guest-account.js` distinguishes an unowned guest from a signed-out account cache. Before first authenticated I/O, preserve and read back the exact guest snapshot under `lumenGuestBeforeAccount_<accountId>` (additional versions retain subsequent offline play). Initialize a missing cloud profile from the whole validated guest snapshot, including net currency, earned badges and compatibility access; use a fresh seed only for another accountâ€™s cache. Existing cloud achievements must cover the guest, or the existing conservative reconciler must succeed before installation. Recheck the latest local bytes immediately before installation: achievements earned during initialization/daily I/O must also be covered, or remain pending with the live attempt preserved. Conflicting receipts/balances stay pending with both originals preserved; never infer money, copy another account, or erase guest achievements. Initial creation remains atomic and read-back verified; no duplicate victory commands are emitted. Failed backup, offline initialization, read-back or account switch cannot install an empty profile.
 
 ## Cloud persistence contract
 
-### Persistence foundations — lot 1 (23 October 2026)
+### Persistence coordinator and transactional cache â€” lot 2
+
+The UI's Canonical, Legacy and Wallet adapters now share
+`persistence-coordinator.js`. `submit(domain, owner, quest, evidence, identity)`
+captures immutable evidence before asynchronous I/O. Its outbox facades retain
+the existing namespaces, V1/V2 readers, paused states, receipts and operation IDs.
+`coordinated-command-adapters.js` wraps the existing verified transports; it
+does not introduce a second command emitter. Immediate actions, hydration and
+reconnect replays use the same per-account queue. Account, client and hydration
+generation are captured before waiting; stale work cannot start or acknowledge
+through the supplied session guard. An in-flight request retains its queue slot
+until settlement, including after a session change or rejected response.
+
+Native Web Locks serialize updated clients across same-origin browsing contexts
+using `lumen-command-dispatch:<owner>`. Without Web Locks, serialization is
+limited to the current document; SQL locks, exact receipts and operation IDs
+remain mandatory across old clients/devices. This is an explicit compatibility
+limit, not a cross-device client lock. No lock release creates a new operation ID.
+
+`transactional-command-cache.js` stores `lumenCommandCacheV1:<domain>:<owner>:<op>`
+in the existing version-1 `lumen-canonical-outbox/intents` store. One read-write
+transaction checks immutable bytes and commits both the original V2 intention
+and its pending metadata (owner, domain, operation/quest IDs, creation time).
+Acknowledgement retires the indexed intention and its pending row in one
+transaction after the existing adapter proves the result. Pending metadata
+contains no balance, badges, entitlements or speculative projection. A conflict
+or abort leaves the original bytes intact. No database version upgrade, store
+rename, key migration or old-intent enumeration change occurs. V1 and legacy
+localStorage entries remain readable in place and are not silently migrated.
+If IndexedDB is refused, the existing verified localStorage compatibility path
+remains available; that path provides durable intent capture, not a paired
+IndexedDB cache transaction. Its existing fixed storage issue reports remain.
+
+The confirmed read model is `lumenConfirmedCacheV1:<owner>` in that same store:
+one JSON record contains schema version 1, owner, local installation revision
+and the entire verified profile, including unknown fields. Compare-and-swap
+and a session guard prevent racing installations. The local revision is not a
+server wallet cursor. Only results already verified by the existing receipt/
+current-profile adapters reach its writer; no merging or numeric maximum occurs.
+Cache refusal is reported as `confirmed_cache_unavailable` without retrying a
+verified server effect. During this lot it is a mirror: existing verified
+localStorage installation remains the UI read source. Switching that source,
+domain-specific gameplay holds, guest claims and historical migration belong to
+later lots. The guest profile and active attempt still use their original paths.
+
+A coordinator constructed in `shadow` mode can inspect registered domains;
+submit, dispatch, acknowledgement, pause, resume and capture archival all refuse
+mutation. It is a separate read-only instance, never a second live dispatcher.
+Rollback uses the original adapters and preserves both cache prefixes and every
+original intention. Older clients ignore these extra keys and can still open
+database version 1; pending cache rows are advisory, never replay authority.
+Snapshots/CAS and the historical mirror are deliberately not retired in lot 2.
+
+The explicit private recovery download adds `commandIndexedDB`, containing raw
+intents and both cache prefixes. It performs read-only enumeration; no upload,
+TTL or cleanup is introduced. Incomplete reads refuse the download. A pending
+view orphaned by an older client's acknowledgement remains preserved but is
+excluded from `pendingState`; actual intentions remain the replay source.
+
+
+### Persistence foundations â€” lot 1 (23 October 2026)
 
 Local saves return {ok:true,durable:true} only after exact read-back, otherwise
 {ok:false,durable:false,code} with a fixed privacy-safe code. onSave runs only
@@ -628,7 +688,7 @@ Canonical outbox inspection distinguishes an empty readable queue from an incomp
 
 Canonical retry policy is local metadata, separate from immutable victory evidence. `lumenCanonicalVictoryRetryV1:<user>:v2-<operation>` (or `v1-<encoded quest>` for old intentions) records only `version`, `userId`, `questId`, `operationId`, `intentCreatedAt`, `kind` and a sanitized error `code` in the existing IndexedDB store or localStorage fallback. It grants nothing and is not uploaded to the cloud profile. Unknown/transient failures retain bounded retry; an unconfirmed authentication failure pauses the account queue until a successful authenticated profile read, and an explicit request/permission/validation refusal pauses that quest for review while independent quests continue. A refusal is not proof that the reward is invalid: nothing is discarded. Verified server evidence takes precedence over either a returned error or a thrown/lost response. Classification uses status and structured codes, not provider message text; see [PostgREST error contracts](https://docs.postgrest.org/en/stable/references/errors.html).
 
-Auth events alone cannot release a pause: the captured user/client must still match after the read and password/auth recovery must remain clear. Explicit **Réessayer** clears only that account's retry metadata before rehydrating; original intentions remain until server proof. A malformed retry record holds its quest for review and survives enumeration; explicit retry may reset this policy metadata without changing victory evidence. Failed metadata writes keep a session-only hold and report that it was not persisted. Older saves default to no pause; earlier clients ignore these sidecars, so a rollback can resume their previous retry behavior and must preserve all intentions. No SQL migration, balance, reward, entitlement or guest-save field changes.
+Auth events alone cannot release a pause: the captured user/client must still match after the read and password/auth recovery must remain clear. Explicit **RÃ©essayer** clears only that account's retry metadata before rehydrating; original intentions remain until server proof. A malformed retry record holds its quest for review and survives enumeration; explicit retry may reset this policy metadata without changing victory evidence. Failed metadata writes keep a session-only hold and report that it was not persisted. Older saves default to no pause; earlier clients ignore these sidecars, so a rollback can resume their previous retry behavior and must preserve all intentions. No SQL migration, balance, reward, entitlement or guest-save field changes.
 
 Isolated ledger recovery: after verified cloud hydration reaches a same-owner local `partial_reconciliation`, an ephemeral permission bound to the authenticated user and exact client permits queued canonical ledger commands while full-profile readiness remains false. No local profile, in-memory progress, balance, baseline or legacy snapshot is installed or uploaded by this replay; only the verified intention is acknowledged. A full-hydration reload is forbidden in this state, and the global sync failure remains visible. Account/client changes and a new hydration invalidate the permission. Auth/password recovery, hidden/offline state, in-flight profile writes and active canonical play still hold replay; unverified restoration failures do not grant permission. This does not unlock new gameplay or authorize legacy rewards/daily/spending while reconciliation remains blocked.
 
@@ -645,7 +705,7 @@ Deployment compatibility: an explicit `PGRST202` + HTTP 404 from the read-only v
 |---|---|---|
 | Quest completion, constellation unlocks, stars and badges | Authenticated cloud player record | Preserve earned achievements; deduplicate by stable quest/attempt identity; merge by documented progression semantics, never blind whole-profile replacement |
 | Performance history and active attempts | Cloud after confirmed sync; offline changes pending | Stable identities, explicit conflict and retry policy; preserve existing history |
-| Earned/spent Éclats and purchased consumables | Server-side auditable ledger / transactions for paid or spendable balances | Atomic, idempotent grants and spends; never take numeric max, which could undo a valid purchase/spend |
+| Earned/spent Ã‰clats and purchased consumables | Server-side auditable ledger / transactions for paid or spendable balances | Atomic, idempotent grants and spends; never take numeric max, which could undo a valid purchase/spend |
 | Purchased skills, cosmetics, Adventure packs | Server-side immutable transaction history and current entitlements | Verify purchase server-side, grant exactly once, recover on every authenticated device; refunds/revocations as auditable state changes |
 | Guest progress | Local until safely claimed by authenticated account | Explicit non-destructive account-link/merge; warn about device-local risk before paid purchase |
 
@@ -678,7 +738,7 @@ from the authenticated server session; no profile or token is transmitted.
 ## Client
 LUMEN is a static web/PWA application using native ES modules without a build step. `index.html` is a markup shell: the existing document markup, stylesheet link, Supabase CDN script and module entry point. It has no inline JavaScript or CSS. `src/main.js` starts the UI controller; domain modules contain the application logic. `manifest.webmanifest` and `sw.js` are unchanged.
 
-The #21–#26 migration starts from main `dcd9f3c872e623541be698edc212b64589d3b164`. Rules, catalogue, badge semantics, progression, tutorial, UX, storage keys and backend contracts are preserved. Issues #30/#31 are explicitly excluded. The stage descriptions below record the incremental extraction; the navigation map describes the final source layout.
+The #21â€“#26 migration starts from main `dcd9f3c872e623541be698edc212b64589d3b164`. Rules, catalogue, badge semantics, progression, tutorial, UX, storage keys and backend contracts are preserved. Issues #30/#31 are explicitly excluded. The stage descriptions below record the incremental extraction; the navigation map describes the final source layout.
 
 ## Astronomical generation contract (non-negotiable)
 The canonical source of a constellation's visual geometry is a versioned, legally reusable stellar catalogue and documented atlas line convention, **not** manually sketched SVG points. New Adventures use IAU identities and stable HIP identifiers, extract complete RA/Dec coordinates, then derive geometry with the shared projection function. One reference constellation may back many quests; do not regenerate its sky geometry for each quest. Generation MUST reject missing reference stars/segments, invalid mapping, licensing uncertainty, and unsupported figures rather than silently substitute arbitrary shapes. Keep the legacy constellation data and player-earned star indices unchanged unless a lossless, tested compatibility/migration path is proven. A new cataloguing or rendering feature ships with completeness, visual, licensing/attribution and cloud-persistence tests. This requirement applies to all future automated generation, not only the current 40-constellation migration.
@@ -698,7 +758,7 @@ Use the appropriate source of truth:
 | Concept | Owner / calculation |
 |---|---|
 | Audited puzzle inventory, including unused grids | `catalogue.js`: `CAT` |
-| Scheduled quest → grid assignment | `data.js`: `CAMPAIGN_SIZE_SCHEDULE`, `CAMPAIGN6_ORDER` |
+| Scheduled quest â†’ grid assignment | `data.js`: `CAMPAIGN_SIZE_SCHEDULE`, `CAMPAIGN6_ORDER` |
 | Campaign/pack quest count, stable IDs, access policy | `content.js`: content registry, `baseCampaignQuestCount()`, pack metadata/access functions |
 | Quest constellation, its range, current endpoint/completion | `progression.js`: `chapterForGrid()`, `constellationGridRange()`, `campaignQuestCount()`, `isCampaignFinalQuest()`, `isCampaignComplete()` |
 | Sky target and exact quest rewards | `data.js`: constellation star counts and derived `SKY_TARGET`; `progression.js`: `skyStarsForGrid()` |
@@ -841,7 +901,7 @@ Canonical stable-ID quest replays use `lumen_commit_canonical_victory`, the same
 transactional server ledger as first completion. Under the player row lock,
 replays merge explicitly earned badges monotonically without changing XP,
 stars, first-completion performance, currency or entitlements, and without a
-second reward event. Maîtrise must be explicitly earned on one run, never
+second reward event. MaÃ®trise must be explicitly earned on one run, never
 inferred from accumulated badge flags. The client confirms every requested
 badge by reading the cloud profile before acknowledging its durable outbox
 entry; an existing solved flag alone does not confirm a replay upgrade (#453).
@@ -869,13 +929,13 @@ Backend objects:
 
 Challenge URLs contain only an opaque UUID (`?challenge=<id>`). They contain no nickname, time, badge, email or other PII. The pre-play RPC intentionally withholds the sender's performance until that participant has completed/abandoned; the sender can always inspect their own snapshot.
 
-Authenticated ownership uses `auth.uid()`. Guests use the existing stable anonymous browser ID and must provide a 2–24 character display name before social participation. The unique server key `(challenge_id, participant_key)` makes a normal guest/browser one-shot. Clearing browser storage or changing browser/device can bypass guest identity, so the product must never claim absolute anonymous anti-cheat.
+Authenticated ownership uses `auth.uid()`. Guests use the existing stable anonymous browser ID and must provide a 2â€“24 character display name before social participation. The unique server key `(challenge_id, participant_key)` makes a normal guest/browser one-shot. Clearing browser storage or changing browser/device can bypass guest identity, so the product must never claim absolute anonymous anti-cheat.
 
 Challenge writes go through SECURITY DEFINER RPCs while both social tables keep RLS enabled and no direct client write contract. The live migration is named `lumen_social_challenges`; its repository companion is `supabase/migrations/20261004_lumen_social_challenges.sql`.
 
 The existing `lumen-push` Edge Function also owns challenge-result delivery. A completed participation triggers a server-verified challenge-result notification to subscriptions owned by the sender. Push payloads reveal only that a result exists, not the result itself, and deep-link to `?myChallenges=<challenge-id>`. Notification tags are challenge-scoped so repeated results for the same shared link collapse instead of flooding the device.
 
-One challenge link may have many independent participants. “Mes défis” is therefore sender-centric and shows participant count, unread results and each terminal result. This data model intentionally leaves sender/recipient account links compatible with the later Social V2 issue without requiring an internal friends/inbox system now.
+One challenge link may have many independent participants. â€œMes dÃ©fisâ€ is therefore sender-centric and shows participant count, unread results and each terminal result. This data model intentionally leaves sender/recipient account links compatible with the later Social V2 issue without requiring an internal friends/inbox system now.
 
 ### Security-advisor note
 Supabase reports the two social tables as `rls_enabled_no_policy` and the anonymous social RPCs as callable SECURITY DEFINER functions. For #18 this is intentional: guests are a product requirement, direct table access is denied by RLS, and the narrow RPCs enforce the ownership/one-attempt contract. These warnings are not a claim that the whole project is security-clean; unrelated existing advisor warnings remain and must be reviewed separately.
