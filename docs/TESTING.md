@@ -28,6 +28,18 @@ verification. All prior cloud, wallet, canonical and SQL regressions are retaine
 
 ## Session achievement recovery — #530
 
+Quota follow-up: `cloud-achievements-quota-recovery-tests.mjs` covers the shared
+durable recovery planner with backup-only quota, failed IndexedDB open/write/read,
+installation quota, silent backup/install refusal, account/local changes during
+backup, absent fallback, immutable conflicts and idempotent retry. The account
+browser suite includes `quota-recovery-browser.mjs`: a disposable blank fixture
+fills actual browser localStorage, reproduces the synchronous backup refusal,
+then verifies the exact original in native IndexedDB, achievement restoration,
+unchanged unconfirmed balances and retry. This storage test uses native modules;
+it does not exercise real Auth/RPC or Rachel's physical phone.
+The CDP evaluation explicitly awaits the asynchronous recovery and archive read;
+an unresolved Promise cannot count as browser storage evidence.
+
 `node scripts/cloud-achievements-session-recovery-tests.mjs` is a mandatory
 quality-gate suite. Two business assertions failed on `d5d7484` before the fix:
 coverage of a verified canonical badge upgrade, and partial recovery while a

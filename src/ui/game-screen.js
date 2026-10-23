@@ -11,7 +11,7 @@ import {canonicalAttemptToResume,nextCanonicalAtLegacyBoundary,preserveAttemptSn
 import {createCloudPersistence} from "../persistence/cloud.js";
 import {guestAccountSeed,preserveGuestBeforeHydration,guestNeedsReconciliation} from '../persistence/guest-account.js';
 import {reconcileDailyIntoCloudProfile} from "../persistence/daily-hydration.js";
-import {CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievements,achievementRecoveryDiagnostic,reconciliationFailureDiagnostic,hydrationFailureDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles} from "../persistence/cloud-profile.js";
+import {CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievementsDurably,achievementRecoveryDiagnostic,reconciliationFailureDiagnostic,hydrationFailureDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
@@ -196,10 +196,11 @@ async function exportLumenRecoveryBundle(){
   const key=localStorage.key(i);
   if(prefixList.some(prefix=>key.startsWith(prefix)))local[key]=localStorage.getItem(key);
  }
- const indexed={};
+ const indexed={},cloudRecoveryIndexedDB={};
  if(typeof indexedDB!=="undefined"){
+  for(const [databaseName,output] of [["lumen-unsynced-checkpoints",indexed],["lumenCloudRecoveryV1",cloudRecoveryIndexedDB]]){
   await new Promise((resolve,reject)=>{
-   const request=indexedDB.open("lumen-unsynced-checkpoints",1);
+   const request=indexedDB.open(databaseName,1);
    request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains("snapshots"))db.createObjectStore("snapshots")};
    request.onerror=()=>reject(request.error||Error("IndexedDB unavailable"));
    request.onsuccess=()=>{
@@ -207,14 +208,16 @@ async function exportLumenRecoveryBundle(){
     const tx=db.transaction("snapshots","readonly");
     const store=tx.objectStore("snapshots");
     const cursor=store.openCursor();
-    cursor.onsuccess=()=>{const item=cursor.result;if(item){indexed[item.key]=item.value;item.continue()}};
+    cursor.onsuccess=()=>{const item=cursor.result;if(item){output[item.key]=item.value;item.continue()}};
     cursor.onerror=()=>{db.close();reject(cursor.error||Error("IndexedDB read failed"))};
     tx.oncomplete=()=>{db.close();resolve()};
     tx.onerror=()=>{db.close();reject(tx.error||Error("IndexedDB transaction failed"))};
+    tx.onabort=()=>{db.close();reject(tx.error||Error("IndexedDB transaction aborted"))};
    };
   });
+  }
  }
- const bundle={app:"Lumen",format:"recovery-export-v1",exportedAt:new Date().toISOString(),localStorage:local,indexedDB:indexed};
+ const bundle={app:"Lumen",format:"recovery-export-v1",exportedAt:new Date().toISOString(),localStorage:local,indexedDB:indexed,cloudRecoveryIndexedDB};
  const url=URL.createObjectURL(new Blob([JSON.stringify(bundle,null,2)],{type:"application/json"}));
  try{
   const a=document.createElement("a");a.href=url;a.download="lumen-sauvegarde-"+new Date().toISOString().slice(0,10)+".json";
@@ -634,13 +637,15 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    if(!covered){
     hydrationStage="achievement_recovery";
     try{
-     const partial=reconcileCloudAchievements(localStorage,cloud);
+     const partial=await reconcileCloudAchievementsDurably(localStorage,cloud,{sessionValid});
+     if(!sessionValid()||partial.interrupted)return;
      if(partial.changed){
       recordCloudDiagnostic("cloud_achievements_locally_recovered",{fullSync:false});
       location.reload();
       return;
      }
     }catch(error){
+     if(!sessionValid())return;
      const details=achievementRecoveryDiagnostic(error);
      // Only a public catalogue identity can enter local diagnostics; never echo
      // a profile's arbitrary keys, provider message, values or storage payload.

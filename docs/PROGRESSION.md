@@ -104,6 +104,12 @@ Existing performance data must be migrated conservatively; never infer newly ear
 
 ## Progress integrity
 
+When localStorage cannot fit a recovery backup, verified cloud achievements can
+still be restored using a read-back copy of the original in IndexedDB (#536).
+The wallet and full hydration must still be verified before canonical replay;
+restored completion evidence alone does not release that hold. No previous
+quest, badge, balance or entitlement is synthesized or removed by this path.
+
 ### Catalogue additions and acquired access (#470)
 
 `catalogueOrigin` identifies the immutable catalogue at the start of a player's

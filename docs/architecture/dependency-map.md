@@ -1,5 +1,11 @@
 # Dependencies and data flow
 
+Achievement backup quota (#536): verified server achievements + unchanged local
+profile → shared recovery planner → verified localStorage or IndexedDB original
+→ session/owner/local-byte recheck → achievement-only cache installation.
+Explicit recovery export reads both IndexedDB snapshot stores. Wallet and full
+hydration holds retain their existing authority and release conditions.
+
 Completed quest presentation (#537): confirmed progress + existing availability
 decision → completed card/history + explicit replay hold. Renderers never write
 the profile or change catalogue, pack, Auth or hydration guards.

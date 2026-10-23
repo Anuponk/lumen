@@ -393,11 +393,11 @@ export function restoreRicherCloudProfile(storage,remote){
  * Never guess which mutable currency balance or XP is authoritative.
  * Never write back to the cloud as part of this reconciliation.
  */
-export function reconcileCloudAchievements(storage,remote){
+function cloudAchievementRecoveryPlan(storage,remote){
   const cloud=validateCloudProfile(remote);
   const key="lumenProgressV1";
   const raw=achievementStorageStep('achievement_local_read',()=>storage.getItem(key));
-  if(raw===null)return restoreIntoEmptyGuestStorage(storage,cloud);
+  if(raw===null)return {empty:cloud};
   let local;
   try{local=JSON.parse(raw)}catch{throw achievementRecoveryError('ACHIEVEMENT_LOCAL_INVALID')}
   if(!local||typeof local!=="object"||Array.isArray(local))throw achievementRecoveryError('ACHIEVEMENT_LOCAL_INVALID');
@@ -456,16 +456,48 @@ export function reconcileCloudAchievements(storage,remote){
   }
   if(Object.keys(localCanonical).length)merged.canonicalQuestState=localCanonical;
   if(!changed)return {changed:false,currencyConflict:Number(local.shards)!==Number(cloud.shards)};
-  const backupKey="lumenBeforeCloudReconcile_"+Date.now();
-  achievementStorageStep('achievement_backup',()=>storage.setItem(backupKey,raw));
-  if(achievementStorageStep('achievement_backup',()=>storage.getItem(backupKey))!==raw)throw achievementRecoveryError('ACHIEVEMENT_BACKUP_UNVERIFIED',{stage:'achievement_backup'});
-  const payload=JSON.stringify(merged);
+  return {changed:true,raw,payload:JSON.stringify(merged),currencyConflict:Number(local.shards)!==Number(cloud.shards)};
+}
+function installCloudAchievements(storage,plan,backupKey){
+  const key="lumenProgressV1",{raw,payload,currencyConflict}=plan;
   achievementStorageStep('achievement_install',()=>storage.setItem(key,payload));
   if(achievementStorageStep('achievement_install',()=>storage.getItem(key))!==payload){
     achievementStorageStep('achievement_rollback',()=>storage.setItem(key,raw));
     throw achievementRecoveryError('ACHIEVEMENT_INSTALL_UNVERIFIED',{stage:'achievement_install'});
   }
-  return {changed:true,backupKey,currencyConflict:Number(local.shards)!==Number(cloud.shards)};
+  return {changed:true,backupKey,currencyConflict};
+}
+export function reconcileCloudAchievements(storage,remote){
+  const plan=cloudAchievementRecoveryPlan(storage,remote);
+  if(plan.empty)return restoreIntoEmptyGuestStorage(storage,plan.empty);
+  if(!plan.changed)return plan;
+  const {raw}=plan;
+  const backupKey="lumenBeforeCloudReconcile_"+Date.now();
+  achievementStorageStep('achievement_backup',()=>storage.setItem(backupKey,raw));
+  if(achievementStorageStep('achievement_backup',()=>storage.getItem(backupKey))!==raw)throw achievementRecoveryError('ACHIEVEMENT_BACKUP_UNVERIFIED',{stage:'achievement_backup'});
+  return installCloudAchievements(storage,plan,backupKey);
+}
+// The recovery copy can exceed localStorage's remaining space even when the
+// updated profile fits. Preserve and read back the original in the existing
+// IndexedDB recovery store before installing the same monotonic projection.
+export async function reconcileCloudAchievementsDurably(storage,remote,{sessionValid=()=>true}={}){
+  if(!sessionValid())return {changed:false,interrupted:true};
+  const owner=achievementStorageStep('achievement_local_read',()=>storage.getItem('lumenCloudOwnerId'));
+  const unchangedOwner=()=>sessionValid()&&achievementStorageStep('achievement_local_read',()=>storage.getItem('lumenCloudOwnerId'))===owner;
+  const plan=cloudAchievementRecoveryPlan(storage,remote);
+  if(plan.empty)return restoreIntoEmptyGuestStorage(storage,plan.empty);
+  if(!plan.changed)return plan;
+  let backupKey;
+  try{backupKey=await preserveRecoverySnapshot(storage,"lumenBeforeCloudReconcile_",plan.raw)}
+  catch(error){
+    if(!unchangedOwner())return {changed:false,interrupted:true};
+    if(error?.code==='RECOVERY_BACKUP_UNVERIFIED')throw achievementRecoveryError('ACHIEVEMENT_BACKUP_UNVERIFIED',{stage:'achievement_backup'});
+    if(error?.code==='RECOVERY_STORAGE_UNAVAILABLE')throw achievementRecoveryError('ACHIEVEMENT_STORAGE_FAILED',{stage:'achievement_backup',recoveryReason:'storage_quota'});
+    const reason=achievementRecoveryDiagnostic(error).reason;
+    throw achievementRecoveryError('ACHIEVEMENT_STORAGE_FAILED',{stage:'achievement_backup',recoveryReason:['storage_quota','storage_unavailable'].includes(reason)?reason:'storage_failed'});
+  }
+  if(!unchangedOwner()||achievementStorageStep('achievement_local_read',()=>storage.getItem("lumenProgressV1"))!==plan.raw)return {changed:false,interrupted:true};
+  return installCloudAchievements(storage,plan,backupKey);
 }
 
 export async function initializeCloudProfile(supabase,localProfile,{userId}={}){
@@ -522,7 +554,7 @@ function preserveVerifiedSnapshot(storage,prefix,value){
  const key=prefix+Date.now();
  try{
   storage.setItem(key,value);
-  if(storage.getItem(key)!==value)throw Error("Recovery snapshot verification failed");
+  if(storage.getItem(key)!==value)throw Object.assign(Error("Recovery snapshot verification failed"),{code:'RECOVERY_BACKUP_UNVERIFIED'});
  }catch(error){
   if(error?.name==="QuotaExceededError"||error?.code===22||error?.code===1014){
    const quota=new Error("Recovery snapshot storage quota exceeded; originals preserved");
@@ -561,7 +593,7 @@ async function preserveRecoverySnapshot(storage,prefix,value){
     request.onsuccess=()=>resolve(request.result);
     request.onerror=()=>reject(request.error||Error("Recovery verification failed"));
    });
-   if(saved!==value)throw Error("IndexedDB recovery verification mismatch");
+   if(saved!==value)throw Object.assign(Error("IndexedDB recovery verification mismatch"),{code:'RECOVERY_BACKUP_UNVERIFIED'});
    return "indexeddb:"+key;
   }finally{database.close()}
  }

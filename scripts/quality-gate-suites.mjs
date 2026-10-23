@@ -1,4 +1,5 @@
 export const nodeSuites=[
+ 'cloud-achievements-quota-recovery-tests.mjs',
  'cloud-hydration-mirror-session-tests.mjs',
 
  'badge-availability-ui-tests.mjs',
