@@ -58,6 +58,19 @@ test('a backend lacking atomic support never claims paired preservation',async()
  let writes=0;const store=createTransactionalCommandCache({put:async()=>writes++});
  await assert.rejects(store.put('lumenWalletVictoryOutboxV2:a:op',JSON.stringify({version:2,userId:'a',operationId:'op'})),/unavailable/);assert.equal(writes,0);
 });
+test('an old-client acknowledgement leaves advisory bytes intact without resurrecting a command',async()=>{
+ const rows=new Map(),store={get:async key=>rows.get(key)??null,entries:async prefix=>[...rows].filter(([key])=>key.startsWith(prefix)),capture:async(key,raw,stateKey,stateRaw)=>{rows.set(key,raw);rows.set(stateKey,stateRaw)}};
+ const cache=createTransactionalCommandCache(store),key='lumenWalletVictoryOutboxV2:a:op';
+ await cache.put(key,JSON.stringify({version:2,userId:'a',operationId:'op',questId:'wallet',createdAt:'now'}));
+ assert.equal((await cache.pendingState('a')).length,1);rows.delete(key);
+ assert.equal((await cache.pendingState('a')).length,0);assert.equal(rows.size,1);
+});
+test('racing confirmed installations cannot overwrite a projection installed after their baseline read',async()=>{
+ const rows=new Map(),store={get:async key=>rows.get(key)??null,compareAndSwap:async(key,expected,raw,valid)=>{await tick();if(!valid()||(rows.get(key)??null)!==expected)throw Error('changed');rows.set(key,raw)}},cache=createConfirmedProfileCache(store);
+ const results=await Promise.allSettled([cache.install('a',{shards:2}),cache.install('a',{shards:1})]);
+ assert.equal(results.filter(result=>result.status==='fulfilled').length,1);assert.equal(results.filter(result=>result.status==='rejected').length,1);
+ assert.equal((await cache.read('a')).revision,1);
+});
 test('confirmed cache preserves unknown fields, isolates owners and refuses stale installation',async()=>{
  const rows=new Map(),store={get:async key=>rows.get(key)??null,compareAndSwap:async(key,expected,raw,valid)=>{if(!valid()||(rows.get(key)??null)!==expected)throw Error('changed');rows.set(key,raw)}},cache=createConfirmedProfileCache(store);
  const profile={shards:3,solved:{0:true},future:{keep:1}};
