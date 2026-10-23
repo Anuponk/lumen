@@ -1,5 +1,11 @@
 # Existing verification map
 
+Optional diagnostics (#534): `diagnostic-reporter-tests.mjs` covers privacy,
+transport/account races and actual Undo markers under historical fault injection.
+PostgreSQL fixture/concurrency checks privileges, quotas, identity, consent and
+retention. The account browser adds offline reload/reconnect and withdrawal
+with native storage and synthetic Auth/RPC. See OBSERVABILITY_534 for limits.
+
 Storage inventory/retention: `storage-maintenance-tests.mjs` owns privacy,
 read-only measurement, archival/retention and failure/race coverage. The account
 browser suite adds mobile touch and desktop/native IndexedDB checks, and the

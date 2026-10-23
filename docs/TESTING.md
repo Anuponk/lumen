@@ -1,5 +1,28 @@
 # Testing and quality gate
 
+## Optional persistent diagnostics — #534
+
+Mandatory `diagnostic-reporter-tests.mjs`: privacy, deferred capture, offline
+reload, denied/corrupt storage, queue/batch/TTL bounds, deduplication, lost replies,
+single-flight timeout and account/client success/rejection races. The actual Undo
+instrumentation runs under historical clear-fault injection: error → Undo →
+blocked → repeated Undo → released in one episode. The unchanged guided-undo
+suite remains the positive control for corrected gameplay.
+
+`fixtures/diagnostic-incidents.sql` follows #398 migrations in PostgreSQL CI:
+consent default off, closed context/identity, raw and non-admin/guest denial,
+idempotence, #533 timeline, minute/global quotas, withdrawal/stale re-opt-in,
+retention and synthetic Auth cascade. `diagnostic-concurrency.py` requires the
+explicit disposable localhost fixture and checks concurrent duplicate delivery,
+daily quota and withdrawal. No profiles are read/changed. Embedded PostgreSQL
+is useful local evidence; concurrent PostgreSQL 17 CI remains authoritative.
+
+The account browser suite checks 390/1440 pixels with native storage and synthetic
+Auth/RPC: optional choice, secret-bearing ErrorEvent reduced to fixed context,
+offline resource event/reload/reconnect, withdrawal and unchanged live profile.
+No actual provider, real user, physical Android or affected-phone proof. Run full
+client/catalogue/hint, documentation and protected CI gates as applicable.
+
 ## Hydration refusal and final-session boundary — #536
 
 The mandatory `cloud-achievements-session-recovery-tests.mjs` now reproduces the

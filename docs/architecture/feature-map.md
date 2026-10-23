@@ -1,5 +1,10 @@
 # Feature map
 
+Optional incidents (#534): `persistence/diagnostic-reporter.js` owns bounded
+transport, fixed codes and safe runtime listeners; `game-screen.js` owns account
+choice, cloud/outbox hooks and #533 markers. The diagnostic migration extends
+the same #398 cockpit/cron and hardens legacy ingestion. See OBSERVABILITY_534.
+
 Storage diagnostics/retention: `persistence/storage-maintenance.js` owns aggregate
 size inventory and verified archival of older recovery copies; `game-screen.js`
 wires account diagnostics, explicit maintenance and recovery export. See

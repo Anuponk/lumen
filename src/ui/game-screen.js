@@ -40,6 +40,7 @@ import {createCloudRetryScheduler} from "../persistence/cloud-retry-scheduler.js
 import {legacyCommandsSupported,commitLegacyVictoryCommand,loadCommittedLegacyAttempt,replayLegacyVictoryOutbox} from "../persistence/legacy-command.js";
 import {pendingNavigationProfile} from "../persistence/pending-navigation.js";
 import {createOutboxHealthReporter} from "../persistence/outbox-health.js";
+import {createDiagnosticReporter,mapCloudDiagnostic,installDiagnosticListeners} from '../persistence/diagnostic-reporter.js';
 import {createSyncPresentation} from "../persistence/sync-presentation.js";
 import {walletCommandsSupported,walletSpendIdentity,submitWalletCommand,recoverWalletCache} from "../persistence/wallet-command.js";
 import {applyLegacyVictory} from "../campaign/legacy-victory.js";
@@ -68,6 +69,75 @@ let legacyVictoryBusy=false,legacyCommandInFlight=false,legacyVictoryRetry=null;
 let walletSpendInFlight=false,walletPaidPermit=null,pendingVictoryView=null;
 let pendingNavigationEntries=[],syncPresentationOwner=null;
 const shownPendingVictories=new Set();
+let diagnosticEnabled=false,diagnosticOwner=null,diagnosticClient=null,diagnosticPending=false,guidedDiagnosticTrace=null;
+const diagnosticChoiceKey='lumenDiagnosticChoiceV1';
+function diagnosticContext(){
+ const ua=navigator.userAgent||'';
+ return {userId:lumenUser?.id,client:lumenSupabase,enabled:diagnosticEnabled&&diagnosticOwner===lumenUser?.id&&diagnosticClient===lumenSupabase&&!qaActive,
+  version:document.getElementById('lumenAccountVersion')?.textContent||'unknown',
+  platform:/Android/i.test(ua)?(window.matchMedia?.('(display-mode: standalone)').matches?'android-pwa':'android-web'):/Windows|Macintosh|Linux/i.test(ua)?'desktop':'other',
+  browser:/Firefox\//i.test(ua)?'firefox':/Chrome|Chromium|Edg\//i.test(ua)?'chromium':/Safari\//i.test(ua)?'safari':'other'};
+}
+const incidentReporter=createDiagnosticReporter({storage:localStorage,context:diagnosticContext,send:async(ctx,payload,signal)=>{
+ let request=ctx.client.rpc('lumen_record_diagnostics',payload);
+ if(typeof request.abortSignal==='function')request=request.abortSignal(signal);
+ const result=await request;if(result.error)throw Error('Diagnostics unavailable');return result.data;
+}});
+installDiagnosticListeners(window,incidentReporter);
+function diagnosticChoice(){try{return JSON.parse(localStorage.getItem(diagnosticChoiceKey)||'null')}catch{return null}}
+function saveDiagnosticChoice(owner,enabled,pending=false){try{localStorage.setItem(diagnosticChoiceKey,JSON.stringify({owner,enabled,pending}))}catch{}}
+function renderDiagnosticPreference(message=''){
+ const input=document.getElementById('diagnosticConsent'),status=document.getElementById('diagnosticConsentStatus');
+ if(input){input.checked=diagnosticEnabled;input.disabled=!lumenUser||qaActive||diagnosticPending}
+ if(status)status.textContent=message||(!lumenUser?'Connecte-toi pour gérer ce choix.':diagnosticEnabled?'Partage des diagnostics détaillés activé.':'Partage des diagnostics détaillés désactivé.');
+}
+async function requestDiagnosticPreference(client,enabled){
+ const controller=new AbortController();let timer;
+ try{
+  let request=client.rpc('lumen_diagnostic_preference',enabled===undefined?{}:{p_enabled:enabled});
+  if(typeof request.abortSignal==='function')request=request.abortSignal(controller.signal);
+  const result=await Promise.race([request,new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(Error('Preference timeout'))},5000)})]);
+  if(result.error||typeof result.data?.enabled!=='boolean')throw Error('Preference unavailable');
+  return result.data;
+ }finally{clearTimeout(timer)}
+}
+function queueDiagnosticPreferenceRefresh(force=false){setTimeout(()=>{void refreshDiagnosticPreference(force)},0)}
+async function refreshDiagnosticPreference(force=false){
+ try{
+  const user=lumenUser?.id,client=lumenSupabase;
+  if(!user||!client||qaActive){diagnosticEnabled=false;diagnosticOwner=null;diagnosticClient=null;incidentReporter.clear();renderDiagnosticPreference();return}
+  if(diagnosticPending||(!force&&diagnosticOwner===user&&diagnosticClient===client))return;
+  diagnosticOwner=user;diagnosticClient=client;diagnosticEnabled=false;
+  const local=diagnosticChoice();
+  if(local?.owner===user&&local.enabled&&!local.pending)diagnosticEnabled=true;
+  incidentReporter.refresh();
+  const pref=await requestDiagnosticPreference(client,local?.owner===user&&local.pending?false:undefined);
+  if(lumenUser?.id!==user||lumenSupabase!==client)return;
+  diagnosticEnabled=pref.enabled;saveDiagnosticChoice(user,pref.enabled);incidentReporter.refresh();renderDiagnosticPreference();
+ }catch{renderDiagnosticPreference('Choix serveur indisponible. Le jeu et les sauvegardes restent accessibles.')}
+}
+async function changeDiagnosticPreference(){
+ const input=document.getElementById('diagnosticConsent'),user=lumenUser?.id,client=lumenSupabase;
+ if(!input||!user||!client||diagnosticPending)return;
+ const enabled=input.checked;diagnosticPending=true;
+ if(!enabled){diagnosticEnabled=false;incidentReporter.clear();saveDiagnosticChoice(user,false,true)}
+ renderDiagnosticPreference('Enregistrement du choix…');
+ try{
+  const pref=await requestDiagnosticPreference(client,enabled);
+  if(lumenUser?.id!==user||lumenSupabase!==client)return;
+  diagnosticEnabled=pref.enabled;saveDiagnosticChoice(user,pref.enabled);incidentReporter.clear();incidentReporter.refresh();
+  renderDiagnosticPreference(pref.enabled?'Partage activé.':'Partage désactivé et diagnostics détaillés effacés côté serveur.');
+ }catch{renderDiagnosticPreference(enabled?'Activation non confirmée ; aucun nouveau partage.':'Partage arrêté ici ; effacement serveur en attente de connexion.')}
+ finally{diagnosticPending=false;const checkbox=document.getElementById('diagnosticConsent');if(checkbox){checkbox.checked=diagnosticEnabled;checkbox.disabled=!lumenUser||qaActive}}
+}
+window.addEventListener('online',()=>queueDiagnosticPreferenceRefresh(true));
+function recordGuidedDiagnostic(code,before,after){
+ try{
+  if(code==='guided_error'||!guidedDiagnosticTrace)guidedDiagnosticTrace=crypto.randomUUID();
+  incidentReporter.capture(code,{stage:'guided',before,after,trace:guidedDiagnosticTrace});
+  if(code==='guided_input_released')guidedDiagnosticTrace=null;
+ }catch{}
+}
 function navigationProgress(){return pendingNavigationProfile(lumenProgress,pendingNavigationEntries,lumenUser?.id,canonicalQuestList())}
 const outboxHealthReporter=createOutboxHealthReporter({storage:localStorage,send:async(client,payload)=>{
  const result=await client.rpc('lumen_record_outbox_health',payload);if(result.error)throw Error('Observation unavailable');
@@ -126,6 +196,7 @@ let canonicalRecoveryContext=null;
 // Local-only, privacy-safe cloud diagnostics. Never log IDs, emails, tokens or save payloads.
 const cloudDiagKey="lumenCloudDiagnosticsV1";
 function recordCloudDiagnostic(event,details={}){
+ try{const detail=mapCloudDiagnostic(event,details);if(detail)incidentReporter.capture(detail.code,detail)}catch{}
  try{
   const previous=JSON.parse(localStorage.getItem(cloudDiagKey)||"[]");
   const entry={at:new Date().toISOString(),event,...details};
@@ -176,6 +247,7 @@ function cloudDiagnosticReport(){
  catch(_){return "Diagnostics indisponibles"}
 }
 function showAccountCloudDiagnostic(){
+ try{renderDiagnosticPreference();queueDiagnosticPreferenceRefresh()}catch{}
  syncMobileAuthUI();
  const panel=document.getElementById("accountSyncDiagnosticPanel"),text=document.getElementById("accountSyncDiagnosticText"),copy=document.getElementById("copyAccountSyncDiagnostic");
  if(!panel||!text)return;
@@ -456,6 +528,7 @@ async function retryPendingCanonicalOutboxOnReconnect(){
   try{remaining=await canonicalVictoryOutbox.pending(userId)}catch(error){recordCloudDiagnostic("canonical_outbox_read_failed",{reason:"integrity"});return}
   if(!sessionValid())return;
   if(!remaining.length)return;
+  recordCloudDiagnostic('canonical_outbox_retry_started',{reason:'retry'});
   const confirmed=await replayCanonicalVictoryOutbox(canonicalVictoryOutbox,userId,
    (questId,reward,options)=>commitCanonicalVictory(client,questId,reward,options),{sessionValid,recoverCommitted:entry=>recoverQueuedCanonicalReceipt(userId,client,entry,sessionValid),onIssue:issue=>recordCloudDiagnostic("canonical_outbox_recovery_pending",{reason:issue.kind})});
   if(!sessionValid())return;
@@ -503,7 +576,7 @@ get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get navigationLocked(){return !!socialChallenge},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
-const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(["SIGNED_IN","TOKEN_REFRESHED"].includes(event?.authEvent)){const ownerId=lumenUser?.id,client=lumenSupabase;setTimeout(()=>{void resumeCanonicalAfterAuthRefresh(ownerId,client);void resumeLegacyAfterAuthRefresh(ownerId,client)},0)}if(event?.type==="restore_failed")cloudProfileFailure={reason:"restore_failed"};if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI();if(event?.type==="password_recovery"){sessionStorage.setItem("lumenPasswordRecoveryPending","1");const editor=document.getElementById("accountProfileEditor");if(editor){editor.dataset.open="true";editor.hidden=false}const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=false;const password=document.getElementById("setPasswordPanel");if(password)password.hidden=false;document.getElementById("setPasswordValue")?.focus()}},renderDaily:(...args)=>renderDaily(...args),claimWalletDaily:(date,index)=>claimWalletDaily(date,index),afterAuthCloudSync:async()=>{
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{queueDiagnosticPreferenceRefresh();if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(["SIGNED_IN","TOKEN_REFRESHED"].includes(event?.authEvent)){const ownerId=lumenUser?.id,client=lumenSupabase;setTimeout(()=>{void resumeCanonicalAfterAuthRefresh(ownerId,client);void resumeLegacyAfterAuthRefresh(ownerId,client)},0)}if(event?.type==="restore_failed")cloudProfileFailure={reason:"restore_failed"};if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI();if(event?.type==="password_recovery"){sessionStorage.setItem("lumenPasswordRecoveryPending","1");const editor=document.getElementById("accountProfileEditor");if(editor){editor.dataset.open="true";editor.hidden=false}const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=false;const password=document.getElementById("setPasswordPanel");if(password)password.hidden=false;document.getElementById("setPasswordValue")?.focus()}},renderDaily:(...args)=>renderDaily(...args),claimWalletDaily:(date,index)=>claimWalletDaily(date,index),afterAuthCloudSync:async()=>{
  if(qaActive||!lumenUser||!lumenSupabase)return;
  canonicalRecoveryContext=null;canonicalRecovery.cancel();
  if(sessionStorage.getItem("lumenPasswordRecoveryPending")==="1")return;
@@ -1695,6 +1768,7 @@ function showGuidedConflict(r,c,info){
  document.getElementById("guidedCopy").textContent=info.copy+(introduceAssist?" Assist te prévient quand une action enfreint une règle. Corrige ton choix, puis continue.":"");
  document.getElementById("guidedCard").hidden=false;
  board.setAttribute("aria-disabled","true");
+ try{recordGuidedDiagnostic('guided_error','ready','blocked')}catch{}
 }
 function clearGuidedConflict(){
  guidedPending=null;guidedDeferred=null;
@@ -1990,6 +2064,8 @@ async function loadAdminCockpit(){
   ["Joueurs uniques",m.unique_players],["Nouveaux",m.new_players],["Revenants",m.returning_players],["DAU",m.dau],["WAU",m.wau],["Sessions",m.sessions],["Quêtes commencées",m.quests_started],["Quêtes terminées",m.quests_completed],["Feedbacks",m.feedback_count]
  ].map(x=>'<div class="admin-kpi"><strong>'+adminNumber(x[1])+'</strong><span>'+x[0]+'</span></div>').join("");
  const health=syncHealth.error?null:syncHealth.data;
+ const incidentView=document.getElementById('adminDiagnosticIncidents');
+ if(incidentView)incidentView.textContent=health?.diagnostics?JSON.stringify(health.diagnostics,null,2):'Diagnostics détaillés indisponibles.';
  if(health){
   document.getElementById("adminCockpitKpis").insertAdjacentHTML("beforeend",[
    ["Échecs de sauvegarde",health.failures],
@@ -2923,7 +2999,7 @@ if(runTestsButton)runTestsButton.onclick=runHintTests;
 
 const hintClose=document.getElementById("hintClose");
 if(hintClose)hintClose.onclick=()=>{clearHintDisplay();hintStage=0;hintFocus=null;render()};
-document.getElementById("undo").onclick=()=>{if(celebrated||scriptedLearningActive())return;if(hist.length){const previous=hist.pop(),pending=attemptEngine.snapshot()?.wrongGuardianPending;if(pending){const [pr,pc]=pending.split(",").map(Number);if(previous?.[pr]?.[pc]!==2)attemptEngine.clearWrongGuardianPending(pending)}state=previous;clearGuidedConflict();clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";render();persistAttemptBoard()}};
+document.getElementById("undo").onclick=()=>{if(celebrated||scriptedLearningActive())return;const diagnosticWasBlocked=!!(guidedPending||guidedDeferred);if(diagnosticWasBlocked)try{recordGuidedDiagnostic("guided_undo","blocked","unknown")}catch{};if(hist.length){const previous=hist.pop(),pending=attemptEngine.snapshot()?.wrongGuardianPending;if(pending){const [pr,pc]=pending.split(",").map(Number);if(previous?.[pr]?.[pc]!==2)attemptEngine.clearWrongGuardianPending(pending)}state=previous;clearGuidedConflict();clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";render();persistAttemptBoard()}if(diagnosticWasBlocked)try{recordGuidedDiagnostic(guidedPending||guidedDeferred?"guided_input_blocked":"guided_input_released","blocked",guidedPending||guidedDeferred?"blocked":"ready")}catch{}};
 const ac=document.getElementById("autoCross");
 const lumenAutoCrossStored=localStorage.getItem("lumenAutoCross");const legacyAutoCrossStored=localStorage.getItem("regaliaAutoCross");ac.checked=(lumenAutoCrossStored??legacyAutoCrossStored)!=="0";if(lumenAutoCrossStored===null&&legacyAutoCrossStored!==null){localStorage.setItem("lumenAutoCross",legacyAutoCrossStored);localStorage.removeItem("regaliaAutoCross")};
 ac.onchange=()=>{if(celebrated){ac.checked=!ac.checked;return}if(levelIndex<=4&&!replayMode){ac.checked=false;return}if(ac.checked){autoUsedThisGame=true;attemptEngine.markAssistance();trackAttemptEvent("auto_marking_enabled")}localStorage.setItem("lumenAutoCross",ac.checked?"1":"0");if(!ac.checked)maybeShowManualCrossTip();hi=null;render()};
@@ -3346,6 +3422,7 @@ const closeAccount=document.getElementById("accountOptinClose");if(closeAccount)
 const accountLater=document.getElementById("accountOptinLater");if(accountLater)accountLater.onclick=dismissAccountOffer;
 const retryAccountSync=document.getElementById("retryAccountSync");if(retryAccountSync)retryAccountSync.onclick=retryAccountCloudSync;
 const showAccountSyncDiagnostic=document.getElementById("showAccountSyncDiagnostic");if(showAccountSyncDiagnostic)showAccountSyncDiagnostic.onclick=showAccountCloudDiagnostic;
+const diagnosticConsent=document.getElementById('diagnosticConsent');if(diagnosticConsent)diagnosticConsent.onchange=changeDiagnosticPreference;
 const archiveAccountStorage=document.getElementById('archiveAccountStorage');if(archiveAccountStorage)archiveAccountStorage.onclick=compactAccountStorage;
 const exportAccountStorage=document.getElementById('exportAccountStorage');if(exportAccountStorage)exportAccountStorage.onclick=()=>exportLumenRecoveryBundle().catch(()=>{document.getElementById('accountStorageStatus').textContent='Export incomplet : les sauvegardes restent conservées.'});
 const copyAccountSyncDiagnostic=document.getElementById("copyAccountSyncDiagnostic");if(copyAccountSyncDiagnostic)copyAccountSyncDiagnostic.onclick=copyAccountCloudDiagnostic;
