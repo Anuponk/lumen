@@ -351,6 +351,17 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Completed quest presentation (#537): `campaign-presentation-tests.mjs` executes
+the actual detail/catalogue renderers with a minimal DOM. It distinguishes
+completed history from a replay action hold across Auth, hydration, unsupported
+origin, serialized restored copies and missing rights/prerequisites. The
+catalogue-access suite checks every published stable quest's standalone completed
+evidence without granting new rights. `completed-quest-hold-browser.mjs`, included
+in the account browser suite, uses native modules and browser storage with
+synthetic Auth/RPC for mobile touch during a delayed restore and verified replay.
+No real-player profile is read or changed; physical Android and Loutre's actual
+account state remain separate field validation.
+
 ### P0 integration: wallet, pending victories and observations (22 October 2026)
 
 PR CI must not mutate the catalogue it verifies. The issue-222 generator retains

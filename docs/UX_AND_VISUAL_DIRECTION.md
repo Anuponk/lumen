@@ -14,6 +14,13 @@ support action does not alter gameplay onboarding.
 
 ## Visual identity
 
+Mon ciel distinguishes a completed quest from a temporarily unavailable replay.
+Completed cards retain their completion styling and accessible label, with the
+specific authentication/synchronization reason when needed. The constellation
+detail also shows that completed quests are preserved, so touch users do not
+depend on a tooltip. Pending replay stays disabled until the existing guard
+permits it; an unfinished quest still displays its actual progression lock.
+
 Constellation detail uses the same verified drawing and canonical reward total
 for historical, inserted and generated catalogue entries. On small phones the
 SVG takes the remaining detail space after text and controls; it has no fixed

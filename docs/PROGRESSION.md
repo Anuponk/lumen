@@ -126,6 +126,13 @@ open all its future constellations. New players follow their current catalogue
 sequence. Pack ownership remains a separate prerequisite; inserted quests also
 require authentication and verified cloud hydration.
 
+Completion and immediate playability are separate presentation states (#537).
+During an authentication/synchronization hold, an already completed quest keeps
+its completed history, badges and label. Mon ciel explains the hold visibly and
+in its accessible name; the replay button and direct start remain guarded.
+An unfinished quest retains its real prerequisite/ownership lock. Displaying
+preserved history never grants a win, entitlement or permission to replay.
+
 Map cards, the catalogue list, sky callbacks, direct starts and canonical
 navigation use the same policy. Historical numeric continuation delegates to it.
 Reasons distinguish missing rights, authentication, hydration, prerequisites and
