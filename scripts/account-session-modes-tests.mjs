@@ -47,12 +47,15 @@ console.log('Account session regressions passed: startup race, sign-out before d
 // Exercise the real menu renderer while the SDK has not finished restoration.
 const {default:vm}=await import('node:vm');
 const {functionSource}=await import('./source-tools.mjs');
+const {gameplayDomainState}=await import('../src/persistence/gameplay-sync.js');
 const authNodes=new Map();
 for(const id of ['mobileAuthStatus','mobileAuthAction','mobileAccount','mobileAuthPopover','guestSaveExplainer','accountProfileEditor','editAccountProfile','retryAccountSync'])authNodes.set(id,{textContent:'',disabled:false,hidden:false,dataset:{},classList:{toggle(){}},setAttribute(){}});
 const recoveryState=new Map([['lumenPasswordRecoveryPending','1']]);
 const menuContext=vm.createContext({document:{getElementById:id=>authNodes.get(id)},sessionStorage:{getItem:k=>recoveryState.get(k)??null,removeItem:k=>recoveryState.delete(k)},
+ gameplayDomainState,qaActive:false,cloudHydrationGeneration:0,canonicalRecoveryContext:null,
  syncAdministrationMenu(){},lumenUser:null,lumenSupabase:{},authSessionPending:true,canonicalOutboxNotice:null,cloudProfileReady:false,cloudProfileFailure:null,lumenNickname:'',cloudProfileBusy:false,cloudProfileDirty:false,navigator:{onLine:true}});
 vm.runInContext(functionSource(ui,'cloudReconciliationMessage'),menuContext);
+vm.runInContext(functionSource(ui,'gameplaySyncState'),menuContext);
 vm.runInContext(functionSource(ui,'syncMobileAuthUI'),menuContext);menuContext.syncMobileAuthUI();
 assert.equal(authNodes.get('mobileAuthAction').disabled,true,'No sign-in prompt while an existing session is still loading');
 assert(!authNodes.get('mobileAuthAction').textContent.includes('Se connecter'));

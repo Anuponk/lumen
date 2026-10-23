@@ -5,6 +5,10 @@ import assert from 'node:assert/strict';
 export async function verifyQuotaRecovery({evaluate,navigate,url}){
  await navigate('Page.navigate',{url:new URL('/scripts/fixtures/storage-quota.html',url).href});
  const result=await evaluate(`(async()=>{
+  const {createLocalPersistence}=await import('/src/persistence/local.js');
+  const invalid='{native synthetic invalid';localStorage.clear();localStorage.setItem('lumenProgressV1',invalid);
+  const localPersistence=createLocalPersistence(localStorage,()=>({solved:{},badges:{}}));localPersistence.loadLumenProgress();
+  if(!localPersistence.saveLumenProgress().durable||!Object.keys(localStorage).some(key=>key.startsWith('lumenLocalQuarantineV1:')&&localStorage.getItem(key)===invalid))throw Error('Native corrupt original was not preserved');
   const {reconcileCloudAchievementsDurably,reconcileCloudAchievements,achievementRecoveryDiagnostic}=await import('/src/persistence/cloud-profile.js');
   const {archiveRecoveryBackups}=await import('/src/persistence/storage-maintenance.js');
   localStorage.clear();
@@ -32,6 +36,8 @@ export async function verifyQuotaRecovery({evaluate,navigate,url}){
    try{for(let i=0;i<1000;i++)localStorage.setItem('quota-fill-'+serial++,'x'.repeat(size))}catch(error){if(error.name!=='QuotaExceededError')throw error}
   }
   const cloud={...structuredClone(local),solved:Object.fromEntries(Array.from({length:40},(_,i)=>[i,true])),shards:3,xp:20};
+  const deniedLocal=createLocalPersistence(localStorage,()=>({...local,extra:'y'.repeat(131072)}));
+  if(deniedLocal.saveLumenProgress().ok!==false||localStorage.getItem('lumenProgressV1')!==raw)throw Error('Native quota refusal did not retain the active original');
   let baseline;
   try{reconcileCloudAchievements(localStorage,cloud)}catch(error){baseline=achievementRecoveryDiagnostic(error).reason}
   const recovered=await reconcileCloudAchievementsDurably(localStorage,cloud);

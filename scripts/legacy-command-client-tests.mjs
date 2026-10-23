@@ -205,7 +205,7 @@ function uiFixture(){
  const fallback={entries:async()=>[],put:async()=>{throw Error('denied')},get:async()=>null,remove:async()=>{}};
  const box=createDurableCanonicalVictoryOutbox(store,{fallback,namespace:'Legacy'});
  const attempt={attemptId:'ui-attempt',resetCount:0,startedAt:Date.parse(facts.qualifiedAt),qualifying:true};
- const ctx={lumenUser:{id:userId},lumenSupabase:client,levelIndex:0,attemptEngine:{snapshot:()=>attempt},canonicalQuestForLegacy:()=>({id:legacyVictoryRules()[0].questId}),
+ const ctx={cloudHydrationGeneration:0,lumenUser:{id:userId},lumenSupabase:client,levelIndex:0,attemptEngine:{snapshot:()=>attempt},canonicalQuestForLegacy:()=>({id:legacyVictoryRules()[0].questId}),
   authSessionPending:false,qaActive:false,legacyVictoryBusy:false,legacyCommandInFlight:false,legacyVictoryRetry:null,legacyVictoryOutbox:box,
   activeGameSeconds:()=>45,localCalendarDay:()=>facts.qualifiedDay,hintUsedInAttempt:()=>false,usedHintThisGame:false,questFailed:false,cloudProfileReady:true,cloudProfileDirty:false,cloudProfileTimer:null,
   canonicalOutboxRetryInFlight:false,lumenProgress:base(),legacyCommandsSupported,commitLegacyVictoryCommand,loadCommittedLegacyAttempt,structuredClone,
@@ -222,6 +222,35 @@ test('real UI coordinator persists pending victory before readiness without opti
  assert.equal((await box.pending(userId)).length,1);assert.equal(state.receipts.size,0);
  assert.equal(ctx.presented.length,1,'A durably captured win receives its pending celebration');
  assert.match(ctx.msg.textContent,/conservée sur cet appareil/);
+});
+test('a Wallet hold with an old server cannot fall through to local authenticated rewards',async()=>{
+ const {ctx,box,state,run}=uiFixture();ctx.cloudProfileReady=false;ctx.legacyCommandsSupported=async()=>false;
+ const before=JSON.stringify(ctx.lumenProgress),result=await run();
+ assert.equal(result.handled,true);assert.equal(result.saved,undefined);assert.equal(JSON.stringify(ctx.lumenProgress),before);
+ assert.equal((await box.pending(userId)).length,1);assert.equal(state.receipts.size,0);
+});
+test('a held replay is captured without waiting for a capability network response',async()=>{
+ const {ctx,box,run}=uiFixture();ctx.cloudProfileReady=false;let release;
+ const gate=new Promise(resolve=>release=resolve);ctx.legacyCommandsSupported=()=>gate;
+ const running=run();await new Promise(resolve=>setTimeout(resolve,0));
+ try{assert.equal((await box.pending(userId)).length,1,'The only intent must already be durable while the network is pending')}
+ finally{release(true);await running}
+});
+test('a held victory retries the original attempt/reset facts exactly once after readiness returns',async()=>{
+ const {ctx,box,state,run}=uiFixture();ctx.cloudProfileReady=false;
+ await run();const captured=(await box.pending(userId))[0];ctx.activeGameSeconds=()=>99;
+ ctx.cloudProfileReady=true;const result=await run();
+ assert.equal(result.saved,true);assert.equal(result.facts.seconds,45);assert.equal(state.receipts.size,1);
+ assert.equal([...state.receipts.keys()][0],captured.operationId);assert.equal(state.profile.performances[0].attempts,1);
+ assert.equal((await box.pending(userId)).length,0);
+});
+test('a generation change after server commit retains the intent and prevents installation of the old result',async()=>{
+ const {ctx,box,state,run}=uiFixture(),original=ctx.commitLegacyVictoryCommand,before=JSON.stringify(ctx.lumenProgress);
+ ctx.commitLegacyVictoryCommand=async(...args)=>{const result=await original(...args);ctx.cloudHydrationGeneration++;return result};
+ assert.equal((await run()).saved,undefined);assert.equal(JSON.stringify(ctx.lumenProgress),before);
+ assert.equal(state.receipts.size,1);assert.equal((await box.pending(userId)).length,1);
+ ctx.commitLegacyVictoryCommand=original;ctx.activeGameSeconds=()=>99;
+ const retried=await run();assert.equal(retried.saved,true);assert.equal(retried.facts.seconds,45);assert.equal(state.receipts.size,1);
 });
 
 test('a restored board reuses the acknowledged run receipt without recapturing later elapsed time',async()=>{

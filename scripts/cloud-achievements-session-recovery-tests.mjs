@@ -124,7 +124,7 @@ test('quota and unverified backup block partial installation without acknowledgi
 });
 
 test('account status explains a held reconciliation while preserving a generic retry for other failures',()=>{
- const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8'),ctx=vm.createContext({});
+ const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8'),ctx=vm.createContext({cloudHydrationGeneration:0,});
  vm.runInContext(functionSource(source,'cloudReconciliationMessage'),ctx);
  for(const detail of ['storage_quota','canonical_reward_conflict','backup_unverified']){
   const message=ctx.cloudReconciliationMessage({reason:'partial_reconciliation',detail});
@@ -186,7 +186,7 @@ async function sessionFixture({conflict=false,quota=false,deferWallet=false}={})
  const end=source.indexOf('},holdLegacyMergeForFullRestore',start);
  assert(end>start,'Actual production hydration hook found');
  const noop=()=>{},scheduler={cancel:noop,schedule:noop};
- const ctx=vm.createContext({...profiles,structuredClone,currentCatalogueOrigin,qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,
+ const ctx=vm.createContext({cloudHydrationGeneration:0,...profiles,structuredClone,currentCatalogueOrigin,qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,
   canonicalRecoveryContext:null,canonicalRecovery:scheduler,sessionStorage:{getItem:()=>null},localStorage:storage,
   cloudProfileReady:false,cloudProfileBaseline:null,cloudProfileFailure:null,lumenProgress:local,
   walletCommandsSupported,walletOutbox:wallet,canonicalVictoryOutbox:canonical,legacyVictoryOutbox:{resume:async()=>{}},
@@ -197,7 +197,7 @@ async function sessionFixture({conflict=false,quota=false,deferWallet=false}={})
   canonicalAttemptToResume:()=>null,canonicalQuestList:()=>[{id:'fixture-quest',legacyIndex:null}],
   currentQuestPosition:()=>0,reconcileDailyIntoCloudProfile,canonicalResumeOwner:null,
   recordCloudDiagnostic:(event,details={})=>events.push({event,...JSON.parse(JSON.stringify(details))}),
-  renderDaily:noop,updateAuthUI:noop,refreshJourney:noop,resumeCanonicalCampaignBoundary:noop,
+  updateShardMeter:()=>{},renderDaily:noop,updateAuthUI:noop,refreshJourney:noop,resumeCanonicalCampaignBoundary:noop,
   verifyLegacyProgressMirror:async()=>({ok:true,count:0}),resumeCanonicalVictoryAfterHydration:noop,
   maybeShowStreakLoss:noop,document:{getElementById:()=>null},location:{reload:()=>ctx.reloads++},reloads:0,
   console:{warn:(_message,error)=>{throw error}}

@@ -71,7 +71,7 @@ assert.match(gameScreen,/canonicalQuestAvailable\(quest\)/);
 assert.match(gameScreen,/startCanonicalQuest\(quest\)/);
 assert.match(gameScreen,/const ownerClient=lumenSupabase/);
 assert.match(gameScreen,/await commitCanonicalVictory\(ownerClient,q\.id,pending\.reward,\{operationId:pending\.operationId,userId:ownerId,sessionValid:sameVictoryContext\}\)/);
-assert.match(gameScreen,/const sameVictoryContext=\(\)=>lumenUser\?\.id===victoryOwner&&lumenSupabase===victoryClient/);
+assert.match(gameScreen,/const sameVictoryContext=\(\)=>cloudHydrationGeneration===victoryGeneration&&lumenUser\?\.id===victoryOwner&&lumenSupabase===victoryClient/);
 assert.match(gameScreen,/if\(!sameVictoryContext\(\)\)return/);
 assert.match(gameScreen,/canonicalVictoryOutbox\.enqueue\(ownerId,q\.id,queuedReward,\{operationId\}\)/);
 assert.match(gameScreen,/const canonicalFollowing=canonicalPrevious&&canonicalQuestByOrdinal/);

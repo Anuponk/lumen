@@ -1,5 +1,40 @@
 # Dependencies and data flow
 
+Historical initialization: game-screen.js supplies original guest bytes and
+session guard → cloud-profile.js → guest-claim.js (capture/discovery/receipt) →
+private SQL guest_claim_receipts. Existing initialize is used only after an
+explicit missing-capability discovery, never after ambiguous command emission.
+historical-inventory.js reads cloud field/coverage contracts without mutating them.
+rollout-gates.js and its CLI only evaluate operator evidence; sync_cohorts has
+no browser writer. No SQL retirement/deletion dependency is introduced.
+
+Persistence lot 3: gameplay-sync.js derives ephemeral domain readiness from a
+current verified account/client/generation completion list. catalogue-access.js
+and both UI access adapters isolate acquired replay from Wallet-only holds;
+spending and pending-reward proofs remain guarded. Confirmed command results use
+transactional-command-cache.js installAndRead before UI application; historical
+startup readers remain compatible. Required coverage: gameplay-domain-tests.mjs,
+Legacy UI tests and domain-replay-browser.mjs in the account browser suite.
+See the cloud contract and PROGRESSION.md for proof and rollback boundaries.
+
+
+Persistence lot 2: UI command imports → coordinated-command-adapters.js →
+persistence-coordinator.js → existing Canonical/Legacy/Wallet proof adapters.
+transactional-command-cache.js uses indexed-outbox-store.js version 1 to pair
+immutable intentions with pending metadata and mirror owner-bound verified
+profiles. Legacy UI cache reads remain active. Tests: persistence-coordinator-tests.mjs
+and transactional-command-cache-browser.mjs (account-session browser suite).
+Shadow instances inspect only; same-origin Web Locks serialize updated tabs.
+See the cloud contract for fallback, authority and rollback limits.
+
+
+Persistence foundations (lot 1): local.js returns verified durable results and
+quarantines malformed bytes before replacement; game-screen.js reports refusals
+and scopes hydration to account/client/generation, including rejected awaits.
+profile-size.js owns the UTF-8/JSONB size boundary. Required checks:
+local-persistence-contract-tests.mjs and cloud-hydration-generation-tests.mjs.
+No reward authority, command identity or outbox format changes.
+
 Reviewed recovery: account file choice → captured owner/client →
 `approved-device-recovery.js` exact snapshot digests → expected-account restore →
 acquisition coverage → verified exportable originals → second cloud read →

@@ -7,6 +7,7 @@ import {classifyCanonicalRecoveryError} from '../src/persistence/canonical-recov
 import {functionSource} from './source-tools.mjs';
 
 function prepareContext(ctx){
+ ctx.cloudHydrationGeneration??=0;
  ctx.pendingVictoryView??=null;
  ctx.syncPresentation??={failed(){},acknowledged(){},celebration(){},snapshot:()=>({status:'confirmed',failures:0})};
  ctx.presentPendingVictory??=()=>{};
@@ -55,7 +56,7 @@ test('asynchronous durable adapters are awaited before removing a victory',async
 
 test('an old victory cannot update the UI after account, quest or attempt-reset changes during persistence',async()=>{
  const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
- for(const change of ['account','quest','reset']){
+ for(const change of ['account','client','quest','reset','generation']){
   let finish,persisting=false,uiUpdates=0;
   const attempt={attemptId:'persisted-attempt',resetCount:0};
   const context={canonicalActiveQuest:{id:'q',ordinal:10},canonicalVictoryInFlight:null,celebrated:false,activeGameSeconds:()=>10,
@@ -69,6 +70,8 @@ test('an old victory cannot update the UI after account, quest or attempt-reset 
   for(let i=0;i<10&&!persisting;i++)await Promise.resolve();
   assert.equal(persisting,true);
   if(change==='account')context.lumenUser={id:'new'};
+  if(change==='client')context.lumenSupabase={};
+  if(change==='generation')context.cloudHydrationGeneration++;
   if(change==='quest')context.canonicalActiveQuest={id:'other',ordinal:11};
   if(change==='reset')attempt.resetCount++;
   finish({operationId:'persisted-attempt-reset-0',reward});await running;
@@ -99,6 +102,7 @@ test('a temporarily unreadable queue keeps a visible pending check and retry dem
  const context={lumenUser:{id:'a'},canonicalOutboxNotice:null,updateAuthUI:()=>{},
   legacyVictoryOutbox:{inspect:async()=>({pending:[],retryable:[],paused:[],issues:[],complete:true})},
   canonicalVictoryOutbox:{inspect:async()=>({pending:[],retryable:[],paused:[],issues:complete?[]:['indexed_unavailable'],complete})}};
+ context.inspectCommandOutboxes=async()=>({Canonical:await context.canonicalVictoryOutbox.inspect(),Legacy:await context.legacyVictoryOutbox.inspect(),Wallet:{pending:[],retryable:[],paused:[],issues:[],complete:true}});
  prepareContext(context);vm.runInContext(functionSource(source,'refreshCanonicalOutboxNotice'),context);
  assert.equal(await vm.runInContext("refreshCanonicalOutboxNotice('a')",context),1);
  assert.equal(context.canonicalOutboxNotice,'checking');
@@ -200,9 +204,10 @@ test('replacing the cloud client invalidates the isolated permission and cancels
  const end=source.indexOf(';\nconst {loadLumenProfile',start);
  assert.ok(end>start);
  let cancelled=0;
- const context={lumenSupabase:{},canonicalRecoveryContext:{userId:'a'},canonicalRecovery:{cancel:()=>{cancelled++}}};
+ const context={cloudHydrationGeneration:0,lumenSupabase:{},canonicalRecoveryContext:{userId:'a'},canonicalRecovery:{cancel:()=>{cancelled++}}};
  prepareContext(context);const model=vm.runInContext('('+source.slice(start,end)+')',context);
  model.lumenSupabase={};assert.equal(context.canonicalRecoveryContext,null);assert.equal(cancelled,1);
+ assert.equal(context.cloudHydrationGeneration,1,'Replacing a client invalidates pending hydration generations too');
 });
 
 

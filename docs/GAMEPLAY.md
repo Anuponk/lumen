@@ -126,6 +126,14 @@ badges or Adventure rights. See `CLOUD_RECOVERY_391.md` for recovery and release
 validation boundaries.
 
 ## Feedback and modals
+
+During Wallet-only review, a quest already completed locally and confirmed by
+the current account's server read can be replayed without spending. Its new run
+is captured under the same attempt/reset ID; performance and rewards remain
+pending until verified. Pending replay presentation never advertises an extra
+star or confirmed badge. Free-help rules and qualification/cooldown rules remain
+unchanged; paid help is refused until the Wallet is ready.
+
 Informational overlays should have sensible outside-tap behavior. Corrective overlays (guided conflict and verification correction) deliberately require explicit acknowledgement/action so a correction is not dismissed accidentally.
 
 ## Social challenges — first-performance contract

@@ -502,6 +502,72 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Historical/rollout preparation: `historical-rollout-tests.mjs` covers byte-level
+inventory and unknown fields, foreign owners, ambiguous balances, immutable
+account-bound guest manifests, denied storage, lost replies and receipt reads,
+independent receipt/profile verification, session changes and strictly scoped
+old-server fallback. It also refuses mocked/stale/shared-production rollout
+proofs and premature retirement. The read-only RPC inventory also checks exact Wallet receipt/request coverage,
+expected owner and stable before/after projection, without mutation or ack.
+The account browser suite adds `historical-claim-browser.mjs` with native localStorage and Web Crypto; Auth/RPC
+remain synthetic. It preserves its originals and exercises a restarted adapter,
+lost reply/read, exactly one effect and the read-only inventory.
+
+`historical-claim-rollout.sql` exercises the actual additive migration in the
+disposable CI PostgreSQL database: expected account, private tables, anonymous
+refusal, exact immutable receipts, no merge into an existing account, rollback
+on receipt failure, durable administrative activation and forbidden downgrade.
+`guest-claim-concurrency.py` checks simultaneous identical retries and competing
+owners in localhost-only fixture mode. These are not live Supabase or Android
+tests. Run `node scripts/test-affected.mjs --full` before delivery; retain all
+prior guest, Wallet, badge, quota and recovery regressions.
+
+
+Lot 3: `gameplay-domain-tests.mjs` covers both quest identities, the direct
+historical start guard (both reproduced failing before correction),
+navigation from a pending success to another replay without dropping the old
+intention (also reproduced failing before correction), expected
+account/client/generation/password scope, unknown/reward/storage refusals, free
+versus paid help, pending replay presentation without a new star or confirmed
+badge, and confirmed-cache read-back/races. Legacy UI regressions also check an
+unsupported command server during a hold, immutable facts across readiness retry,
+and durable capture even while a capability network response would remain pending,
+and a generation change after commit without local installation or a second
+reward. The native account browser suite runs `domain-replay-browser.mjs`:
+verified Wallet conflict, actual map starts for stable/historical acquired replay,
+free and refused paid hint, solved boards with pending rewards, immutable intents
+through document restart and preserved balance/unknown fields. The original
+initial-hydration replay hold remains tested. Auth/RPC are synthetic; no phone
+recovery or production data is inferred. Full in-app hints, strict catalogue and
+all prior cloud/Wallet/badge suites remain mandatory.
+
+
+Lot 2: `persistence-coordinator-tests.mjs` is required by the quality gate.
+It covers one-account serialization, rejected responses, queued work after
+account/client/generation/logout changes, immutable capture, mutation-free shadow
+inspection, shared lock naming and owner-bound cache installation. The account
+generation is also rechecked after asynchronous acknowledgement inspection;
+its regression fails before the facade injects the guard. The account
+browser suite also runs `transactional-command-cache-browser.mjs`: native
+IndexedDB paired capture, an actual aborted write transaction, conflict rollback,
+restart before/after acknowledgement, unknown-field preservation, owner isolation,
+stale-install refusal, version-1 old-client opening, and native Web Locks across
+two same-origin browsing contexts. These are disposable fixtures, not live Auth,
+production SQL or physical Android recovery evidence. Existing command receipt,
+Wallet, quota and guest tests remain required.
+
+
+Lot 1: local-persistence-contract-tests.mjs covers verified save/refusal, silent
+failure, unavailable reads, exact quarantine, failed backups, changed source,
+unsupported origins and UTF-8/JSONB sizing. cloud-hydration-generation-tests.mjs
+executes the production hook with late rejected restores under account/client/
+generation/logout changes and a same-session control. Both suites are required
+in the quality gate. Existing mirror/session assertions remain enabled; their VM
+fixtures now supply the real generation state. Native quota browser coverage
+also verifies a malformed original is archived before replacement. No fixture
+uses production data. Physical Android/live Auth and SQL remain separate evidence.
+
+
 Quota continuation (#536/#537): `storage-maintenance-tests.mjs` reproduces
 `achievement_install` failure with retained old backups, verified archival and
 one installation retry; aborted archive commits preserve the active original.

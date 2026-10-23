@@ -1,5 +1,39 @@
 # Existing verification map
 
+Historical provenance/rollout: historical-rollout-tests.mjs (mandatory Node),
+historical-claim-browser.mjs (account browser suite; native storage/mock RPC),
+fixtures/historical-claim-rollout.sql and guest-claim-concurrency.py (isolated
+PostgreSQL CI). Preserve guest-account-hydration-tests.mjs and the prior cloud,
+Wallet, quota, badge and recovery suites. Real Android/live-project evidence is
+separate and required by persistence-release-check.mjs before rollout/retirement.
+
+Persistence lot 3: gameplay-sync.js derives ephemeral domain readiness from a
+current verified account/client/generation completion list. catalogue-access.js
+and both UI access adapters isolate acquired replay from Wallet-only holds;
+spending and pending-reward proofs remain guarded. Confirmed command results use
+transactional-command-cache.js installAndRead before UI application; historical
+startup readers remain compatible. Required coverage: gameplay-domain-tests.mjs,
+Legacy UI tests and domain-replay-browser.mjs in the account browser suite.
+See the cloud contract and PROGRESSION.md for proof and rollback boundaries.
+
+
+Persistence lot 2: UI command imports → coordinated-command-adapters.js →
+persistence-coordinator.js → existing Canonical/Legacy/Wallet proof adapters.
+transactional-command-cache.js uses indexed-outbox-store.js version 1 to pair
+immutable intentions with pending metadata and mirror owner-bound verified
+profiles. Legacy UI cache reads remain active. Tests: persistence-coordinator-tests.mjs
+and transactional-command-cache-browser.mjs (account-session browser suite).
+Shadow instances inspect only; same-origin Web Locks serialize updated tabs.
+See the cloud contract for fallback, authority and rollback limits.
+
+
+Persistence foundations (lot 1): local.js returns verified durable results and
+quarantines malformed bytes before replacement; game-screen.js reports refusals
+and scopes hydration to account/client/generation, including rejected awaits.
+profile-size.js owns the UTF-8/JSONB size boundary. Required checks:
+local-persistence-contract-tests.mjs and cloud-hydration-generation-tests.mjs.
+No reward authority, command identity or outbox format changes.
+
 Reviewed device recovery: `approved-device-recovery-tests.mjs` covers explicit
 wallet choice, exact owner/digests, expiry, lost acquisitions, changed cloud,
 changed local bytes, account/session switch and failed archival. The existing
