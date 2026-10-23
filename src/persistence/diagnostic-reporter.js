@@ -4,6 +4,7 @@ export const DIAGNOSTIC_CODES=['sync_write_failed','sync_conflict','sync_retry',
 const stages=['sync_write','reconciliation','cloud_initialize','daily_read','wallet_receipt_readback','achievement_backup','achievement_install','achievement_rollback','legacy_mirror','outbox_capture','outbox_read','outbox_retry','guided','runtime','unknown'];
 const kinds=['quota','storage','network','auth','conflict','unknown'];
 const platforms=['android-pwa','android-web','desktop','other'],browsers=['chromium','firefox','safari','other'],states=['ready','blocked','unknown'];
+export {stages as DIAGNOSTIC_STAGES,kinds as DIAGNOSTIC_KINDS,platforms as DIAGNOSTIC_PLATFORMS,browsers as DIAGNOSTIC_BROWSERS};
 const key='lumenDiagnosticQueueV1',uuidPattern=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const versionPattern=/\b\d{1,3}\.\d{1,3}\.\d{1,3}\+\d{1,9}\b/;
 const fields=['id','session','trace','seq','at','code','stage','kind','platform','browser','version','before','after','retry'];

@@ -398,6 +398,14 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Phase-2 diagnostic investigation (#534): `incident-investigation-tests.mjs`
+checks ordered #533 episodes, session isolation, partial-window semantics,
+closed report export/GitHub drafts, grouped alerts and the actual cockpit loader's
+capability/account race guard. `incident-investigation-browser.mjs` extends the
+390/1440 isolated account suite with native rendering, state filters, explicit
+review/revocation and stale-action refusal. It creates no GitHub issue and reads
+no real accounts. Existing collection/privacy/SQL tests remain mandatory.
+
 Completed quest presentation (#537): `campaign-presentation-tests.mjs` executes
 the actual detail/catalogue renderers with a minimal DOM. It distinguishes
 completed history from a replay action hold across Auth, hydration, unsupported

@@ -1,5 +1,10 @@
 # Feature map
 
+Incident investigation (#534 phase 2): `ui/incident-investigation.js` owns
+bounded episode grouping, observed-state filters, fixed hypotheses and sanitised
+report/GitHub drafts. `game-screen.js` feeds only authorised diagnostic data and
+adds grouped detail signals to the existing alert list. No new persistence.
+
 Optional incidents (#534): `persistence/diagnostic-reporter.js` owns bounded
 transport, fixed codes and safe runtime listeners; `game-screen.js` owns account
 choice, cloud/outbox hooks and #533 markers. The diagnostic migration extends

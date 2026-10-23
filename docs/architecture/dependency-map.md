@@ -1,5 +1,10 @@
 # Dependencies and data flow
 
+Phase-2 investigation: existing admin capability/RPC → closed timeline projection
+→ session/trace episodes → observed transitions, bounded detail alerts, reviewed
+report/GitHub composer. Account/client/capability guard rejects stale results and
+actions. Export never depends on accounts/profiles or live gameplay objects.
+
 Optional diagnostics (#534): guarded capture → separate bounded queue → Auth and
 closed-schema batch → consent-locked private details → existing cockpit guard.
 The existing operator cron prunes bounded details/budgets/resolved old health.

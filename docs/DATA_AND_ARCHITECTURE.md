@@ -196,6 +196,14 @@ the session is usable on that particular browser/PWA.
 
 ## Cloud persistence contract
 
+Diagnostic investigation (#534 phase 2) is a read-only projection of the existing
+capability-guarded cockpit timeline, owned by `ui/incident-investigation.js`.
+It adds no persisted fields, RPC, grant, profile join or save writer. Closed
+report export omits session/trace IDs and all arbitrary fields; GitHub receives
+only a bounded draft after explicit administrator review. Details remain partial
+and independent from #398 live health and business acknowledgements. See
+OBSERVABILITY_534 for the bounded first slice and remaining phase-2 work.
+
 Completed-quest presentation (#537) reads confirmed completion separately from
 the existing action decision. A replay held for authentication/hydration keeps
 its historical label and badges; this UI projection never writes progress,

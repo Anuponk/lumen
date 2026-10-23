@@ -5,6 +5,7 @@ import {learningStep, dragLearningStep, learningAllows, learningCopy} from "../g
 import {createAnalytics,attemptAnalyticsProperties} from "../analytics/events.js";
 import {createHintTestSuite} from "../testing/hint-tests.js";
 import {createDiagnostics} from "../testing/diagnostics.js";
+import {buildIncidentInvestigation,incidentAlerts,renderIncidentInvestigation} from './incident-investigation.js';
 import {createLocalPersistence} from "../persistence/local.js";
 import {currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
 import {canonicalAttemptToResume,nextCanonicalAtLegacyBoundary,preserveAttemptSnapshot} from '../campaign/campaign-resume.js';
@@ -1019,6 +1020,10 @@ function updateAdminTools(){
  if(qaTools)qaTools.hidden=!(shards||analytics||qaActive);
  toggle.parentElement.hidden=!shards;toggle.checked=shards&&unlimitedShardsEnabled();
  if(cockpit)cockpit.hidden=!analytics;
+ if(!analytics){
+  document.getElementById('adminDiagnosticIncidents')?.replaceChildren();
+  const modal=document.getElementById('adminCockpit');if(modal)modal.hidden=true;
+ }
 }
 function cloudReconciliationMessage(failure){
  if(failure?.reason==='partial_reconciliation'){
@@ -2046,6 +2051,9 @@ function renderAdminCatalogue(){
  }
 }
 async function loadAdminCockpit(){
+ if(!lumenUser||!lumenSupabase||!hasInternalCapability('analytics_cockpit'))return;
+ const requestUser=lumenUser.id,requestClient=lumenSupabase;
+ const authorized=()=>lumenUser?.id===requestUser&&lumenSupabase===requestClient&&hasInternalCapability('analytics_cockpit');
  const status=document.getElementById("adminCockpitStatus"),days=Number(document.getElementById("adminCockpitDays")?.value||7);
  status.textContent="Actualisation…";
  const [cockpit,accounts,feedbacks,playerSnapshot,syncHealth]=await Promise.all([
@@ -2055,6 +2063,7 @@ async function loadAdminCockpit(){
    lumenSupabase.rpc("lumen_admin_recent_players",{p_limit:250}),
    lumenSupabase.rpc("lumen_admin_sync_health",{p_days:days})
  ]);
+ if(!authorized())return;
  const players=playerSnapshot.data||[];
  const playerError=playerSnapshot.error;
  const realFeedbacks=feedbacks.data||[];
@@ -2065,7 +2074,7 @@ async function loadAdminCockpit(){
  ].map(x=>'<div class="admin-kpi"><strong>'+adminNumber(x[1])+'</strong><span>'+x[0]+'</span></div>').join("");
  const health=syncHealth.error?null:syncHealth.data;
  const incidentView=document.getElementById('adminDiagnosticIncidents');
- if(incidentView)incidentView.textContent=health?.diagnostics?JSON.stringify(health.diagnostics,null,2):'Diagnostics détaillés indisponibles.';
+ renderIncidentInvestigation(incidentView,health?.diagnostics,{authorized});
  if(health){
   document.getElementById("adminCockpitKpis").insertAdjacentHTML("beforeend",[
    ["Échecs de sauvegarde",health.failures],
@@ -2083,7 +2092,8 @@ async function loadAdminCockpit(){
  document.getElementById("adminFriction").innerHTML=(d.friction||[]).map(x=>{const rate=Number(x.started)?Math.round(100*Number(x.completed)/Number(x.started)):0;return '<tr><td>Q'+x.puzzle_id+'</td><td>'+adminNumber(x.started)+'</td><td>'+rate+' %</td><td>'+adminNumber(x.resets)+'</td><td>'+adminNumber(x.abandons)+'</td><td>'+adminNumber(x.hints)+'</td><td>'+adminNumber(x.verifies)+'</td><td>'+(x.median_seconds==null?"—":Math.round(x.median_seconds)+" s")+'</td></tr>'}).join("");
  const syncAlerts=health&&Number(health.stalled_players)>0?["Sauvegardes : "+health.stalled_players+" joueur(s) bloqué(s) depuis plus de 15 minutes"]:[];
  const outboxAlerts=health?.outbox?.alerts||[];
- const alerts=[...syncAlerts,...outboxAlerts.map(a=>'Sauvegarde '+a.state+' · '+a.pending+' opération(s) · '+a.platform+' · '+a.version),...adminAlerts(d.friction)];document.getElementById("adminAlerts").innerHTML=alerts.map(x=>'<div class="admin-alert"><strong>⚠</strong><span>'+adminEsc(x)+'</span></div>').join("")||"<p>Pas d’anomalie significative avec le volume actuel.</p>";
+ const detailAlerts=incidentAlerts(buildIncidentInvestigation(health?.diagnostics));
+ const alerts=[...syncAlerts,...outboxAlerts.map(a=>'Sauvegarde '+a.state+' · '+a.pending+' opération(s) · '+a.platform+' · '+a.version),...detailAlerts.map(a=>a.text),...adminAlerts(d.friction)];document.getElementById("adminAlerts").innerHTML=alerts.map(x=>'<div class="admin-alert"><strong>⚠</strong><span>'+adminEsc(x)+'</span></div>').join("")||"<p>Pas d’anomalie significative avec le volume actuel.</p>";
  document.getElementById("adminPlayers").innerHTML=playerError?'<p>Activité récente indisponible : '+adminEsc(playerError.message)+'</p>':players.map(x=>'<div class="admin-player" data-player="'+adminEsc(x.player_key)+'"><span><strong>'+adminEsc(x.display_name||x.player_label||x.player_type)+'</strong><br><small>'+adminEsc(x.player_type)+" · Q"+(x.current_quest||"—")+' · '+x.sessions+' sessions</small></span><small>'+new Date(x.last_seen).toLocaleString("fr-FR")+'</small></div>').join("");
  document.querySelectorAll("#adminPlayers .admin-player").forEach(x=>x.onclick=()=>loadAdminTimeline(x.dataset.player));
  const accountRows=document.getElementById("adminAccounts");
