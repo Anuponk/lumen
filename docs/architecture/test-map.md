@@ -1,5 +1,11 @@
 # Existing verification map
 
+Achievement backup quota (#536): `cloud-achievements-quota-recovery-tests.mjs`
+covers alternate verified storage, interrupted sessions/local copies and closed
+failure paths. `quota-recovery-browser.mjs` in the account suite fills native
+localStorage on a blank disposable fixture and reads back the original from
+native IndexedDB. This is storage validation, not a real-player repair.
+
 Completed replay holds (#537): `campaign-presentation-tests.mjs` runs actual
 detail/history renderers; `catalogue-access-tests.mjs` checks every published
 completed ID. Account browser suite includes `completed-quest-hold-browser.mjs`

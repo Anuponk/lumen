@@ -1,5 +1,10 @@
 # Feature map
 
+Local quota recovery: `cloud-profile.js` `reconcileCloudAchievementsDurably`
+uses the existing verified IndexedDB snapshot fallback before cache installation;
+the account recovery export includes that store. See DATA_AND_ARCHITECTURE and
+the quota suite/native browser scenario in TESTING. Wallet holds stay separate.
+
 Completed quest holds (#537): `game-screen.js` preserves completed card labels
 and displays the replay hold in constellation detail. `catalogue-access.js` and
 the canonical adapter still own action authorization; no persistence policy changes.

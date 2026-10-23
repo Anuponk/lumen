@@ -24,6 +24,18 @@ See [evidence and remaining limits](validation/2026-10-23-hydration-536.md).
 
 ## Session achievement recovery — #530
 
+Local quota follow-up (#536/#537, 23 October 2026): hydration uses
+`reconcileCloudAchievementsDurably`, sharing the synchronous recovery planner
+and its existing monotonic achievement rules. If the original's backup cannot
+fit in localStorage, the existing `lumenCloudRecoveryV1` IndexedDB snapshot
+store must commit and read back that original before the updated cache is
+installed. No backup is removed. A changed account/client or local profile
+during the await cancels installation. Both storage pools being full, an
+unverified backup, or a cache that cannot fit retains the hold and originals.
+Recovery exports now include this store as `cloudRecoveryIndexedDB` alongside
+the existing unsynced checkpoints. This does not reconcile an unproven wallet,
+mark partial hydration ready, grant a reward or authorize a locked replay.
+
 The [reproduced case and release limits](validation/2026-10-22-achievement-recovery-530.md)
 cover a server badge replay being rejected as an immutable canonical reward.
 Coverage and partial local recovery now accept only recognized badge additions

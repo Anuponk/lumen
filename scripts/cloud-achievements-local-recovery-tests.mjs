@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {reconcileCloudAchievements} from "../src/persistence/cloud-profile.js";
 const ui=readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
-assert.match(ui,/reconcileCloudAchievements\(localStorage,cloud\)/);
+assert.match(ui,/await reconcileCloudAchievementsDurably\(localStorage,cloud,\{sessionValid\}\)/);
+assert.match(ui,/if\(!sessionValid\(\)\|\|partial.interrupted\)return/);
 assert.match(ui,/cloud_achievements_locally_recovered/);
 function memoryStore(initial){const m=new Map(Object.entries(initial));return {getItem:k=>m.get(k)??null,setItem:(k,v)=>m.set(k,v),key:i=>[...m.keys()][i]??null,get length(){return m.size}}}
 const old={solved:{"173":true},historyBackup:{},badges:{},stars:{},performances:{},canonicalQuestState:{},daily:{dates:["2026-10-15"]},challenges:{},xp:100,shards:9,skyScore:0};
