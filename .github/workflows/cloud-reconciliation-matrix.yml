@@ -18,6 +18,7 @@ jobs:
           node-version: '22'
       - name: Reconciliation and fault matrix
         run: |
+          node scripts/storage-maintenance-tests.mjs
           node scripts/cloud-achievements-session-recovery-tests.mjs
           node scripts/cloud-achievements-quota-recovery-tests.mjs
           node scripts/cloud-hydration-mirror-session-tests.mjs

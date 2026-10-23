@@ -1,5 +1,10 @@
 # Feature map
 
+Storage diagnostics/retention: `persistence/storage-maintenance.js` owns aggregate
+size inventory and verified archival of older recovery copies; `game-screen.js`
+wires account diagnostics, explicit maintenance and recovery export. See
+DATA_AND_ARCHITECTURE for exclusions and transaction/session guards.
+
 Local quota recovery: `cloud-profile.js` `reconcileCloudAchievementsDurably`
 uses the existing verified IndexedDB snapshot fallback before cache installation;
 the account recovery export includes that store. See DATA_AND_ARCHITECTURE and

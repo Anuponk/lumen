@@ -28,6 +28,18 @@ verification. All prior cloud, wallet, canonical and SQL regressions are retaine
 
 ## Session achievement recovery — #530
 
+Storage inventory/retention: `node scripts/storage-maintenance-tests.mjs` covers
+fixed-category privacy-safe sizes, unavailable stores, independent browser quota,
+read-only existing IndexedDB inventory, exact archival, keep-two retention,
+idempotence, failed open/write/read/commit, conflicting archives and session,
+owner, live-profile and source races. It is mandatory in quality/reconciliation.
+The account browser suite exercises the diagnostic and native archival at
+390/1440 pixels, using actual mobile touch and scroll visibility at 390. The
+quota fixture also archives an old original when real localStorage is full.
+Exports retain the existing archived-originals store; VM export regressions cover
+both stores and transaction aborts. These disposable fixtures are not proof of
+physical-phone recovery or disk capacity. No real player is read or changed.
+
 Quota follow-up: `cloud-achievements-quota-recovery-tests.mjs` covers the shared
 durable recovery planner with backup-only quota, failed IndexedDB open/write/read,
 installation quota, silent backup/install refusal, account/local changes during
