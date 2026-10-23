@@ -1,5 +1,13 @@
 # UX and visual direction
 
+The diagnostic cockpit (#534 phase 2) groups the optional bounded timeline into
+episodes, with filters for the last observed guided transition. Every view is
+labelled partial; released input never means restored saves. Reports contain
+fixed codes and cautious reproduction steps. An explicit review checkbox enables
+a sanitised GitHub draft; the administrator validates publication on GitHub.
+Existing issue search and local text export help investigation. No auto-ticket,
+notification, live-resolution claim or player repair is introduced.
+
 Optional diagnostics (#534) live in the existing account diagnostic panel.
 Default off, explain purpose, pseudonymous account linkage, permitted technical
 fields, seven-day detail period and withdrawal/erasure. A refusal never changes

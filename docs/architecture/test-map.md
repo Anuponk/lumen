@@ -1,5 +1,10 @@
 # Existing verification map
 
+Incident investigation: `incident-investigation-tests.mjs` checks correlation,
+partial state, privacy, grouped signals and actual loader account/capability
+races. `incident-investigation-browser.mjs`, called in the 390/1440 account suite,
+checks native review/filter/revocation UI without creating issues or live RPC.
+
 Optional diagnostics (#534): `diagnostic-reporter-tests.mjs` covers privacy,
 transport/account races and actual Undo markers under historical fault injection.
 PostgreSQL fixture/concurrency checks privileges, quotas, identity, consent and

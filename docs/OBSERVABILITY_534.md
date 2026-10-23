@@ -226,3 +226,62 @@ applied as `20261023104105`; its normalised SQL SHA-256 matches migration histor
 Production function metadata confirms the guard is installed. The final filename
 alignment changes no SQL; final-head checks and exact client publication remain
 separate release gates.
+
+## Phase 2, first investigation slice
+
+`src/ui/incident-investigation.js` consumes only the already capability-guarded
+`diagnostics.timeline` from #398's cockpit response. It adds no RPC, database
+table, scheduler, player-profile join or persisted client state. Events are
+revalidated against the collector's enums, limited to 100, grouped by session
+and trace, then ordered by session sequence. Every episode remains a partial
+opt-in sample. A last guided blocked/released marker describes an observed
+transition, never current live health, confirmed save restoration or a ticket's
+resolution. A retry/ack does not resolve an unrelated hydration/guided incident.
+
+The existing alert list gains at most two grouped detail signals: last-observed
+guided blocks and exceptions observed in at least three sessions. They do not
+duplicate cloud/outbox alarms from #398, send notifications or open tickets.
+Refresh replaces the projection; no growing notification queue or polling is
+added. Thresholds describe this sample, not all-player incident rates.
+
+The panel filters episodes by observed state and offers fixed, cautious
+investigation hypotheses and reproduction steps for guided/storage/cloud/runtime
+failures. No inferred cause is represented as proven. Reports are built from a
+second closed-schema projection, with at most 20 events, and omit UUIDs, dates,
+messages, stack traces, accounts and free context. Download stays local. Search
+uses only a fixed event code. An explicit review checkbox enables a GitHub
+composer URL containing a bounded sanitised draft (at most 2,000 URL characters);
+the administrator still submits on GitHub. No GitHub token or direct ticket
+creation endpoint is added. The composer may omit later events to fit its URL;
+the local report preserves its own stated 20-event limit. This uses GitHub's
+[documented URL composer](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/creating-an-issue#creating-an-issue-from-a-url-query).
+
+Capability/account/client checks guard requests, asynchronous results and report
+actions; loss of the capability clears the diagnostic panel. The existing server
+capability check remains authoritative. No SQL/grant change is needed. Existing
+consent, quota and TTL policies remain unchanged; no extra server storage or
+provider cost beyond the current cockpit read. Exported files/GitHub issues have
+their own lifetime, so the administrator must review them before publication.
+
+RED: the investigation module did not exist; four new behavioral tests failed.
+GREEN covers #533 ordering, separated sessions, ambiguous recovery, hostile
+fields/export boundaries, bounded URL and grouped alerts. A fifth test executes
+the actual cockpit loader to verify non-admin refusal and ignored stale results
+after account switch. The native browser extension tests rendering/filtering,
+explicit review/revocation and capability loss without visiting GitHub or creating
+an issue. These are synthetic fixtures, not actual player investigations.
+An additional RED/GREEN case preserves bounded signature aggregates while
+dropping raw signatures and arbitrary context; the targeted suite has six cases.
+Local verification: full affected runner passed all 30 groups (including nine
+browser suites, strict catalogue audit and hints) in 356.9 seconds. The final
+390/1440 account browser was also rerun after signature rendering was added:
+review/filter/revocation checks passed with zero exceptions. No GitHub page was
+submitted. Server metadata confirms the existing private helper remains denied
+to anon/authenticated; this client-only slice changes no grant or function.
+
+This is a first phase-2 slice: durable triage status/issue backlinks, true
+cross-version regression detection, complete episode pagination, notifications
+and consultation audit remain future work. Phase 3 repairs remain excluded.
+The upgraded purge's first scheduled execution is still pending: the latest
+observed run on 23 October at 03:17 UTC preceded the migration. No manual purge
+or real-player operation was performed.
