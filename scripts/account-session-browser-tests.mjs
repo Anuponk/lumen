@@ -157,7 +157,7 @@ async function verifyIsolatedRecovery(){
  assert.equal(after.commits,1);assert.equal(after.pending,0);assert.equal(after.serverXp,15);assert.equal(after.serverReceipt,'cloud');
  assert.equal(await evaluate('window.__fixtureCommandReceipts.size'),1,'V2 recovery uses the receipt protocol');
  assert.ok(await evaluate("[...window.__fixtureCommandReceipts.keys()][0].startsWith('isolated-browser-')"),'Preserve queued operation identity through the UI adapter');
- assert.ok(after.status.includes('sauvegarde Ã  resynchroniser'),'Do not label a partial recovery fully synced');
+ assert.ok(after.status.includes('sauvegarde à resynchroniser'),'Do not label a partial recovery fully synced');
  // An expired session pauses the persisted badge replay; a verified token
  // refresh must release only auth holds, without a full-profile replacement.
  await evaluate(`(async()=>{
@@ -166,13 +166,13 @@ async function verifyIsolatedRecovery(){
   await createDurableCanonicalVictoryOutbox(localStorage).enqueue('fixture-player',${JSON.stringify(quest.id)},{badges:{speed:true},performance:{seconds:15}},{operationId:'auth-browser-'+Date.now()});
   window.dispatchEvent(new Event('online'));
  })()`,true);
- await until(`document.getElementById('mobileAuthStatus').textContent.includes('Session Ã  renouveler')`);
+ await until(`document.getElementById('mobileAuthStatus').textContent.includes('Session à renouveler')`);
  const attempts=await evaluate('window.__fixtureLedgerAttempts');
  await evaluate(`window.dispatchEvent(new Event('online'));window.dispatchEvent(new Event('online'))`);await sleep(200);
  assert.equal(await evaluate('window.__fixtureLedgerAttempts'),attempts,'No automatic RPC loop while auth is paused');
  await evaluate(`window.__fixtureLedgerError=null;window.__emitAuthEvent('TOKEN_REFRESHED')`);
  await until('window.__fixtureLedgerWrites===2');
- await until(`document.getElementById('mobileAuthStatus').textContent.includes('sauvegarde Ã  resynchroniser')`);
+ await until(`document.getElementById('mobileAuthStatus').textContent.includes('sauvegarde à resynchroniser')`);
  assert.equal(await evaluate('window.__fixtureProfile.xp'),15,'Badge replay cannot award XP again');
  assert.equal(await evaluate(`localStorage.getItem('lumenProgressV1')`),before.local);
  assert.equal(await evaluate('window.__fixtureSnapshotWrites'),before.snapshots);
@@ -188,7 +188,7 @@ async function verifyIsolatedRecovery(){
   window.dispatchEvent(new Event('online'));
  })()`,true);
  await until(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='legacy_outbox_isolated_recovered')`);
- await until(`document.getElementById('mobileAuthStatus').textContent.includes('sauvegarde Ã  resynchroniser')`);
+ await until(`document.getElementById('mobileAuthStatus').textContent.includes('sauvegarde à resynchroniser')`);
  assert.equal(await evaluate('window.__fixtureLegacyWrites'),1);
  assert.equal(await evaluate('window.__fixtureLegacyReceipts.size'),1);
  assert.equal(await evaluate('window.__fixtureProfile.performances[0].attempts'),1);
@@ -201,13 +201,13 @@ async function verifyIsolatedRecovery(){
   await createDurableCanonicalVictoryOutbox(localStorage,{namespace:'Legacy'}).enqueue('fixture-player',${JSON.stringify(legacy.id)},{facts},{operationId:'isolated-legacy-browser-reset-1'});
   window.dispatchEvent(new Event('online'));
  })()`,true);
- await until(`document.getElementById('mobileAuthStatus').textContent.includes('Session Ã  renouveler')`);
+ await until(`document.getElementById('mobileAuthStatus').textContent.includes('Session à renouveler')`);
  const legacyAttempts=await evaluate('window.__fixtureLegacyAttempts');
  await evaluate(`window.dispatchEvent(new Event('online'));window.dispatchEvent(new Event('online'))`);await sleep(200);
  assert.equal(await evaluate('window.__fixtureLegacyAttempts'),legacyAttempts);
  await evaluate(`window.__fixtureLegacyError=null;window.__emitAuthEvent('TOKEN_REFRESHED')`);
  await until('window.__fixtureLegacyWrites===2');
- await until(`document.getElementById('mobileAuthStatus').textContent.includes('sauvegarde Ã  resynchroniser')`);
+ await until(`document.getElementById('mobileAuthStatus').textContent.includes('sauvegarde à resynchroniser')`);
  assert.equal(await evaluate('window.__fixtureLegacyReceipts.size'),2);
  assert.equal(await evaluate('window.__fixtureProfile.performances[0].attempts'),2);
  assert.equal(await evaluate('window.__fixtureProfile.xp'),30);
@@ -327,7 +327,7 @@ try{
   await evaluate(`document.getElementById('accountOptinLater').click()`);
   assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),true);
   await evaluate(`document.getElementById('mobileAuthAction').click();document.getElementById('accountAuthSwitch').click();document.getElementById('accountEmail').value='fixture@example.test';document.getElementById('accountPassword').value='test-password-only';document.getElementById('accountPasswordSubmit').click()`);
-  await until(`document.getElementById('mobileAuthStatus').textContent.includes('sauvegarde Ã  resynchroniser')`);
+  await until(`document.getElementById('mobileAuthStatus').textContent.includes('sauvegarde à resynchroniser')`);
   assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),true);
   assert.equal(await evaluate(`document.getElementById('retryAccountSync').hidden`),false);
   const progressBeforeDiagnostic=await evaluate("localStorage.getItem('lumenProgressV1')");
@@ -341,7 +341,7 @@ try{
   await until(`!document.getElementById('diagnosticConsent').disabled`);
   assert.equal(await evaluate(`document.getElementById('diagnosticConsent').checked`),false,'Optional diagnostics start disabled');
   await evaluate(`document.getElementById('diagnosticConsent').click()`);
-  await until(`document.getElementById('diagnosticConsentStatus').textContent.includes('Partage activÃ©')`);
+  await until(`document.getElementById('diagnosticConsentStatus').textContent.includes('Partage activé')`);
   await evaluate(`window.dispatchEvent(new ErrorEvent('error',{message:'forbidden@example.invalid',filename:'https://private/?token=secret',error:{stack:'Bearer secret'}}))`);
   await until(`window.__diagnosticRows.some(e=>e.code==='runtime_exception')`);
   assert.equal(await evaluate(`JSON.stringify(window.__diagnosticRows).includes('secret')||JSON.stringify(window.__diagnosticRows).includes('@')`),false);
@@ -356,11 +356,11 @@ try{
   await evaluate(`document.getElementById('showAccountSyncDiagnostic').click()`);
   await until(`document.getElementById('diagnosticConsent').checked&&!document.getElementById('diagnosticConsent').disabled`);
   await evaluate(`document.getElementById('diagnosticConsent').click()`);
-  await until(`document.getElementById('diagnosticConsentStatus').textContent.includes('effacÃ©s')`);
+  await until(`document.getElementById('diagnosticConsentStatus').textContent.includes('effacés')`);
   assert.equal(await evaluate(`window.__diagnosticRows.length`),0);
   assert.equal(await evaluate("localStorage.getItem('lumenProgressV1')"),progressBeforeDiagnostic,'Optional telemetry/offline/restart/withdrawal preserve the live save');
   await until(`!!JSON.parse(document.getElementById('accountSyncDiagnosticText').value).storage?.local?.available`);
-  assert.equal(await evaluate(`document.getElementById('accountStorageSummary').textContent.includes('ne permettent pas de connaÃ®tre')`),true);
+  assert.equal(await evaluate(`document.getElementById('accountStorageSummary').textContent.includes('ne permettent pas de connaître')`),true);
   await evaluate(`for(const stamp of [100,200,300])localStorage.setItem('lumenBeforeCloudRestore_'+stamp,'storage-fixture-'+stamp)`);
   if(viewport.mobile){
    const point=await evaluate(`(()=>{const b=document.getElementById('archiveAccountStorage');b.scrollIntoView({block:'center'});const r=b.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
@@ -382,10 +382,10 @@ try{
   await evaluate("document.getElementById('closeAccountSyncDiagnostic').click()");
   assert.equal(await evaluate("document.getElementById('accountSyncDiagnosticPanel').hidden"),true);
   await navigate('Page.reload');
-  await until(`document.getElementById('mobileAuthAction').textContent==='DÃ©connexion'`);
+  await until(`document.getElementById('mobileAuthAction').textContent==='Déconnexion'`);
   await evaluate(`sessionStorage.setItem('fixtureAuthQuota','1')`);
   await navigate('Page.reload');
-  assert.equal(await evaluate(`document.getElementById('mobileAuthAction').textContent`),'DÃ©connexion','A readable persisted session must survive a failed SDK write probe');
+  assert.equal(await evaluate(`document.getElementById('mobileAuthAction').textContent`),'Déconnexion','A readable persisted session must survive a failed SDK write probe');
   await evaluate(`sessionStorage.removeItem('fixtureAuthQuota')`);
   const recovery=new URL(url);recovery.searchParams.set('lumen_confirm','a'.repeat(64));recovery.searchParams.set('type','recovery');
   await navigate('Page.navigate',{url:recovery.href});await until(`window.__authCalls?.includes('recovery')`);
@@ -396,7 +396,7 @@ try{
   assert.equal(await evaluate(`document.getElementById('setPasswordValue').getClientRects().length>0`),true);
   await evaluate(`document.getElementById('setPasswordValue').value='new-test-password';document.getElementById('setPasswordSave').click()`);
   await until(`sessionStorage.getItem('lumenPasswordRecoveryPending')===null`);
-  await until(`document.getElementById('mobileAuthAction').textContent==='DÃ©connexion'`);
+  await until(`document.getElementById('mobileAuthAction').textContent==='Déconnexion'`);
   await evaluate(`document.getElementById('mobileAuthAction').click()`);
   await until(`document.getElementById('mobileAuthAction').textContent.includes('Se connecter')`);
   const isolatedCanonicalRecovery=await verifyIsolatedRecovery();

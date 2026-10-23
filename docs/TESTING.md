@@ -19,7 +19,7 @@ Account browser cases retain numeric and stable guest solved boards beyond
 discovery, with unchanged rewards, the same attempt ID and a paused clock after
 reload. Resuming an ordinary restored board requires the real attempt-mask gesture.
 `quest-victory-parity-tests.mjs` covers no-hint XP, third autonomous win,
-same-run MaÃ®trise, cooldown, grandfathered rewards and variable future groups.
+same-run Maîtrise, cooldown, grandfathered rewards and variable future groups.
 It also covers durable partial recovery of a protected V2 replay summary while
 preserving first-win performance and rejecting unknown badge-field changes.
 Authenticated acquired/started replay access remains held beyond discovery
@@ -50,7 +50,7 @@ these fixtures may run against player data. Schema application and live release
 remain separately authorized and verified; Android emulation does not replace
 physical Android readability validation for #521.
 
-## Missed short taps â€” #548
+## Missed short taps — #548
 
 Confirmed reproduction: after correcting the offending Guardian by touching it,
 the old `suppressGuidedClickUntil = now + 700` rejected every cell action for
@@ -77,7 +77,7 @@ remain unconfirmed; confirmation on the affected Android/PWA after release is
 required. No affected profile/storage is inspected, changed or cleared, and no
 gesture telemetry is collected. Physical Android/iOS/Safari remain untested.
 
-## Touch Guardian hold â€” #531
+## Touch Guardian hold — #531
 
 `long-press-guardian-tests.mjs` uses a deterministic timer for the 500 ms hold,
 single activation, short/mouse/keyboard preservation, movement/multitouch/cancel,
@@ -92,7 +92,7 @@ undo, cancellation, pause during hold and movement handing off to drag. Full
 gameplay validation still includes all hints, strict catalogue, first-quest
 learning, mouse/tap/drag, cloud and reward checks. These are isolated Chromium
 fixtures; no physical Android or iOS/Safari validation is claimed.
-The full suite caught the extra help copy overflowing 360Ã—640. The help card now
+The full suite caught the extra help copy overflowing 360×640. The help card now
 scrolls within the viewport; `ux-cleanup-tests.mjs` retains the original geometry
 assertion and verifies that close/replay actions remain reachable after scrolling.
 
@@ -104,13 +104,13 @@ Every fresh pointerdown clears stale suppression; keyboard/programmatic clicks
 with detail zero remain available. Event semantics reference:
 [Pointer Events click dispatch](https://www.w3.org/TR/pointerevents3/#the-click-auxclick-and-contextmenu-events).
 
-## Optional persistent diagnostics â€” #534
+## Optional persistent diagnostics — #534
 
 Mandatory `diagnostic-reporter-tests.mjs`: privacy, deferred capture, offline
 reload, denied/corrupt storage, queue/batch/TTL bounds, deduplication, lost replies,
 single-flight timeout and account/client success/rejection races. The actual Undo
-instrumentation runs under historical clear-fault injection: error â†’ Undo â†’
-blocked â†’ repeated Undo â†’ released in one episode. The unchanged guided-undo
+instrumentation runs under historical clear-fault injection: error → Undo →
+blocked → repeated Undo → released in one episode. The unchanged guided-undo
 suite remains the positive control for corrected gameplay.
 
 `fixtures/diagnostic-incidents.sql` follows #398 migrations in PostgreSQL CI:
@@ -127,7 +127,7 @@ offline resource event/reload/reconnect, withdrawal and unchanged live profile.
 No actual provider, real user, physical Android or affected-phone proof. Run full
 client/catalogue/hint, documentation and protected CI gates as applicable.
 
-## Hydration refusal and final-session boundary â€” #536
+## Hydration refusal and final-session boundary — #536
 
 The mandatory `cloud-achievements-session-recovery-tests.mjs` now reproduces the
 reported event order with synthetic data: actual canonical capture archive,
@@ -151,9 +151,9 @@ verification. All prior cloud, wallet, canonical and SQL regressions are retaine
 
 ## Guest, guided undo and first-quest badges (#528/#533/#529)
 
-`guest-account-tests.mjs` and `guest-account-hydration-tests.mjs` cover guest ownership, exact backup, registration through the actual UI hydration hook, second-device installation, repeated auth, offline and interrupted verification, account change and existing-cloud preservation. Ambiguous balances retain both copies and hold instead of guessing a transaction. `guided-undo-tests.mjs` executes the actual Undo handler with pending/deferred conflicts; mobile browser smoke additionally exercises real conflict â†’ Undo â†’ new move. `performance-badge-tests.mjs` and embedded tests cover eligibility from quest 1, same-run awards, assistance, qualification cooldown and persisted badges. SQL parity runs the new eligibility migration before comparing current client/server outcomes, while retaining old receipt/wallet regressions. No real player fixtures or production Auth emails are used.
+`guest-account-tests.mjs` and `guest-account-hydration-tests.mjs` cover guest ownership, exact backup, registration through the actual UI hydration hook, second-device installation, repeated auth, offline and interrupted verification, account change and existing-cloud preservation. Ambiguous balances retain both copies and hold instead of guessing a transaction. `guided-undo-tests.mjs` executes the actual Undo handler with pending/deferred conflicts; mobile browser smoke additionally exercises real conflict → Undo → new move. `performance-badge-tests.mjs` and embedded tests cover eligibility from quest 1, same-run awards, assistance, qualification cooldown and persisted badges. SQL parity runs the new eligibility migration before comparing current client/server outcomes, while retaining old receipt/wallet regressions. No real player fixtures or production Auth emails are used.
 
-## Session achievement recovery â€” #530
+## Session achievement recovery — #530
 
 Storage inventory/retention: `node scripts/storage-maintenance-tests.mjs` covers
 fixed-category privacy-safe sizes, unavailable stores, independent browser quota,
@@ -212,7 +212,7 @@ Mandatory Node gates: `board-feedback-tests.mjs` (mutation-only halfway,
 restore, terminal state, undo and reset for every size), `group-hint-tests.mjs`
 (real visible quest 91, both auto-marking modes, row/column groups of 2/3,
 certain action and protected lesson gate), and `quest-definition-tests.mjs`
-(published identities/order/membership, variable sizes and Nâ†’N+k recovery).
+(published identities/order/membership, variable sizes and N→N+k recovery).
 `quest-view-tests.mjs` additionally executes the actual telemetry adapters with
 the same stable quest at two numeric frontiers, verifies start-event identity,
 nullable unavailable counters, legacy badge compatibility and read-only totals.
@@ -398,7 +398,7 @@ assertions to make this proof pass.
 Initial full-client run: all 85 orchestrated Node suites passed, including strict
 catalogue audit and the two newly wired suites. Account-session browser and the
 complete embedded hint suite passed before the generic browser runner stopped on
-its viewport assertion (375Ã—667, app vertical overflow 3 px). Among 32 supplemental
+its viewport assertion (375×667, app vertical overflow 3 px). Among 32 supplemental
 standalone suites, four failed: `admin-catalogue.test.mjs` and
 `generated-adventure-map.test.mjs` expect 34 constellations rather than 40;
 `extended-boundary.test.mjs` expects all historical/generated content accessible;
@@ -415,7 +415,7 @@ runners pass locally; the generic runner retains its baseline viewport failure.
 
 Timing observations: initial gate 57.8 s, including historical engine equivalence
 25.3 s, account-session browser 9.0 s and generic browser 7.8 s before failure.
-Most critical Node suites took roughly 0.1â€“0.3 s. These single observations are not
+Most critical Node suites took roughly 0.1–0.3 s. These single observations are not
 benchmarks. Cloud matrices overlap policy/source assertions with behavior tests;
 retain them for distinct failure paths. Avoid duplicate gate/supplemental Node
 runs, without removing browser/SQL coverage. General Actions work remains phase 3.
@@ -423,8 +423,8 @@ runs, without removing browser/SQL coverage. General Actions work remains phase 
 The actual CLI was also exercised with a temporary whitespace-only change in
 `src/persistence/cloud-profile.js`: `node scripts/test-affected.mjs --base HEAD`
 selected 59 critical checks, all passed, then the file was restored byte for byte.
-Plan checks verified clean HEAD â†’ no runtime checks, absent reference â†’ full
-fallback, and the PR branch â†’ full mode for tooling/setup changes. Generated
+Plan checks verified clean HEAD → no runtime checks, absent reference → full
+fallback, and the PR branch → full mode for tooling/setup changes. Generated
 untracked validation reports also widen conservatively; archive/clean those
 reports before the next iteration to avoid an unnecessary full rerun.
 
@@ -456,7 +456,7 @@ pass and a content edit selects all 63 checks.
 `node scripts/test-affected.mjs --full` was rerun: all 89 gate Node suites and all
 28 supplemental Node suites pass, as does the cloud policy check. Local full mode
 still exits 1 solely on the previously reproduced Edge viewport overflow (3 px at
-375Ã—667); account-session browser and embedded hint checks pass before that
+375×667); account-session browser and embedded hint checks pass before that
 failure. The other five browser runners passed earlier on unchanged application
 code and were not repeated. The final PR records CI results for the new commit.
 
@@ -472,7 +472,7 @@ Before release, validate Google/password login and reload on an isolated account
 
 `campaign-presentation-tests.mjs` reproduces four presentation failures against
 the pre-fix UI: canonical-only cards reading zero historical stars, a prior
-RapiditÃ© missing from victory rewards, Grand Chien 8/10 labelled final, and the
+Rapidité missing from victory rewards, Grand Chien 8/10 labelled final, and the
 numeric endpoint ending an incomplete canonical campaign. The actual adapter and
 renderers are exercised, plus empty/variable-size/growing catalogue fixtures.
 `catalogue-access-tests.mjs` distinguishes historical Antlia access from a
@@ -482,18 +482,18 @@ reward mutation. These are synthetic tests, not affected-account evidence.
 `campaign-resume-browser-tests.mjs` checks zero/nonzero totals, partial versus
 completed Dauphin/Petit Cheval cards, full illumination, mobile/desktop refresh
 and unchanged progress/attempt bytes. `canonical-replay-browser-tests.mjs` checks
-a previously held RapiditÃ© remains visible with Â« dÃ©jÃ  obtenu Â» and no duplicate
+a previously held Rapidité remains visible with « déjà obtenu » and no duplicate
 star. `late-game-browser-tests.mjs` rejects the old numeric endgame and plays the
 actual catalogue's final board through its victory CTA and endgame summary on
 mobile/desktop. This replaces the obsolete numeric-finale expectation while
-retaining capped-save, 100â†’101, reload and reward regressions. Browser Auth/RPC
+retaining capped-save, 100→101, reload and reward regressions. Browser Auth/RPC
 fixtures remain simulated; they do not prove a reported phone is repaired.
 
 Onboarding impact: quest 2 retains its explicit Mon ciel handoff; the eligibility
 milestones, assistance and badge teaching rules do not change. Finale terminology
 now follows canonical membership without changing reward rules or saved data.
 Every change affecting content, progression, shop, sky navigation or saved state must test catalogue growth without source-code boundary edits:
-- Existing catalogue N â†’ N+k quests, with multiple appended Adventures of different sizes.
+- Existing catalogue N → N+k quests, with multiple appended Adventures of different sizes.
 - First and final quest of each Adventure, crossing pack boundaries, and visible locked/unlocked packs.
 - New constellations with varying quest counts and calculated stars; navigation/pagination beyond the first page.
 - Previously complete cloud/local player resume into newly appended content without loss of badges, stars, currency or entitlements.
@@ -846,7 +846,7 @@ privacy-limited authenticated health event. Guest/QA/event guards remain tested.
 
 | Scenario | Required assertion |
 |---|---|
-| Account A on device 1 â†’ device 2 | Same completed quests, constellation progress, stars, badges, Ã‰clats, skills and Adventure entitlements |
+| Account A on device 1 → device 2 | Same completed quests, constellation progress, stars, badges, Éclats, skills and Adventure entitlements |
 | Cache cleared / PWA reinstalled | Every acknowledged cloud achievement and purchased right is restored |
 | Old local snapshot reintroduced | Cloud progress is never rolled back by stale local state |
 | Network interrupted, retry and duplicate request | Pending state is distinguishable; idempotent writes cause no lost or duplicate grants |
@@ -941,11 +941,11 @@ The Chrome runner automates the tap/drag/reset/reload/PWA checks below. Keep exp
 
 ## Unified local / CI quality gate (#58)
 
-The gate also runs `node scripts/late-game-tests.mjs` and the isolated-browser `node scripts/late-game-browser-tests.mjs <report-path>`. They cover quest 100 â†’ 101, unsolved-quest locking, replay, the actual campaign boundary, cloud restoration with extended histories, the normal celebration CTA on mobile/desktop, reward preservation, reload of quest 101 and restoration of its active attempt.
+The gate also runs `node scripts/late-game-tests.mjs` and the isolated-browser `node scripts/late-game-browser-tests.mjs <report-path>`. They cover quest 100 → 101, unsolved-quest locking, replay, the actual campaign boundary, cloud restoration with extended histories, the normal celebration CTA on mobile/desktop, reward preservation, reload of quest 101 and restoration of its active attempt.
 
 On 2026-10-04, against main `57c958e` plus the continuation fix, these dedicated checks pass. The complete embedded suite was executed for 5x5, 6x6, 7x7 and 8x8: 96/98 cases pass per size, with the existing 100 quests / 12 constellations and exactly 150 sky stars assertions failing after #94. The strict catalogue audit and difficulty/campaign/content-architecture gates also fail on the expansion's existing count, historical-data and finale contracts. These assertions remain intact; the unified gate is not green. Reports are `quest100-transition.json`, `quest100-embedded.json` and `quest100-node.json` under `docs/validation/`.
 
-The subsequent CI repair replaces those fixed-total assertions with cross-checks of the content model, contiguous schedule, unique puzzle references and exact rewards for every constellation. Catalogue growth must automatically affect loading, cloud restore, final-quest detection, registry IDs, shared result cards and sky totals. Campaign tests retain the immutable first-100 schedule and rewards, historical save comparisons and Q81â€“100 difficulty contract; that historic Orion finale is distinct from the current campaign endpoint. Additional fixtures simulate appending 1, 2, 3 and 10 quests with different constellation star counts, verifying updated boundaries, IDs, rewards and recovery of previously capped saves without changing actual catalogue data.
+The subsequent CI repair replaces those fixed-total assertions with cross-checks of the content model, contiguous schedule, unique puzzle references and exact rewards for every constellation. Catalogue growth must automatically affect loading, cloud restore, final-quest detection, registry IDs, shared result cards and sky totals. Campaign tests retain the immutable first-100 schedule and rewards, historical save comparisons and Q81–100 difficulty contract; that historic Orion finale is distinct from the current campaign endpoint. Additional fixtures simulate appending 1, 2, 3 and 10 quests with different constellation star counts, verifying updated boundaries, IDs, rewards and recovery of previously capped saves without changing actual catalogue data.
 
 Repair validation: all 17 Node gates and all four browser runners pass in the unified gate. The actual embedded suite passes 98/98 cases on each of 5x5, 6x6, 7x7 and 8x8 (392 cases); touch cycle/drag, reset, reload, PWA, UX and learning suites pass. The late-game browser runner also restores a capped pre-final save, completes the actual final quest and verifies the full sky and endgame celebration on mobile/desktop. Reports are `docs/validation/dynamic-catalogue-{audit,browser,ux,learning,late-game,summary}` (JSON). These are isolated local guest tests and simulated cloud fixtures, not live OAuth or Production verification.
 
@@ -1008,7 +1008,7 @@ A gameplay change is not done unless:
 - commit SHA is reported;
 - intended Vercel deployment status is checked.
 
-Never claim â€œall tests passâ€ if only static/source inspection was performed.
+Never claim “all tests pass” if only static/source inspection was performed.
 
 ## Social challenge gate (#18)
 
@@ -1016,7 +1016,7 @@ Run `node scripts/social-challenge-tests.mjs` for the pure challenge contract. I
 
 Any change to challenge behavior must additionally verify:
 - first play can challenge; replay cannot;
-- first play + Mastery is the only â€œremarkable performanceâ€ condition;
+- first play + Mastery is the only “remarkable performance” condition;
 - recipient prior campaign exposure does not block participation;
 - source performance is hidden until terminal result;
 - corrections are allowed and only success/explicit abandon terminate the challenge;
@@ -1036,13 +1036,13 @@ Run `node scripts/learning-tests.mjs`, then launch an isolated debugging Chrome 
 
 The learning gate checks every taught Guardian is forced by the territory's remaining candidates, no solution cell is excluded, no coach action mutates the board, wrong taps cannot start the attempt, half of a two-tap placement survives reload, actual touch/mouse dragging does not rebuild/scroll the board, and coach bubbles fit without covering the board or normal controls. It also checks quest 1 victory/progression, guided quest 2 placement, tap refusal during its drag lesson, partial-drag reload/resume, protection outside the row throughout the gesture, then free placement/Verify, normal quest 2 victory, the sky tour and transition to quest 3. Run the full catalogue audit and existing Node/browser/UX/social gates in addition.
 
-### CI regression-contract repair â€” 2026-10-04
+### CI regression-contract repair — 2026-10-04
 
 Main `d5478e6` failed before browser execution because `module-structure-tests.mjs` still expected 79 cases while the suite contained 89. Declare every added regression label explicitly; do not derive the expected labels from the current suite or relax the historical 66-case contract. The repaired suite contains 90 cases per size (360 executions), including a new visible/hidden milestone-overlay regression.
 
 Onboarding assertions receive their UI dependencies through the existing live adapters and import badge eligibility from its owning module. The sky-tour array is read lazily because it is initialized after suite construction. The SEE/UNDERSTAND assertion creates a quest 1 fixture, checks all six steps, numbers and rejected board taps, then restores the previous board/quest/intro state in `finally`; ordinary quest 3 boards must not be expected to show teaching numbers.
 
-Browser fixtures acknowledge newly opened badge/auto-marking milestones through their real buttons. UX replay verifies the introduction before the first playable cell. The learning runner checks the explicit quest 2 discovery CTA, inert success backdrop, all four highlighted sky zones and the quest 3 RapiditÃ© milestone. The touch-cycle runner requires correct placement without a guided-conflict overlay. These fixtures preserve the intended onboarding rather than removing its dialogs to make tests pass.
+Browser fixtures acknowledge newly opened badge/auto-marking milestones through their real buttons. UX replay verifies the introduction before the first playable cell. The learning runner checks the explicit quest 2 discovery CTA, inert success backdrop, all four highlighted sky zones and the quest 3 Rapidité milestone. The touch-cycle runner requires correct placement without a guided-conflict overlay. These fixtures preserve the intended onboarding rather than removing its dialogs to make tests pass.
 
 Local validation for #57: all 13 Node gates passed, including the unchanged 134-grid / 100-quest catalogue audit. The full browser suite passed 79/79 cases on each of four grid sizes, and the UX suite passed its 12 quest/viewport scenarios. The learning interaction runner passed the full two-quest/tour/replay journey on four viewport sizes. Reports are `docs/validation/issue57-{node,browser,ux,learning}.json`; screenshots are `docs/validation/learning-{360,390,768,1440}.png`. These are isolated local guest-profile results, not live OAuth/cloud or Production validation.
 
@@ -1066,9 +1066,9 @@ Run `node scripts/difficulty-audit.mjs [optional-report.json]` to measure the ca
 
 
 ## Late-game difficulty curve (#81 phase 2)
-The base campaign intentionally consumes every currently audited 7Ã—7 and 8Ã—8 catalogue entry. The second half alternates easier 6Ã—6 breathing quests with 7Ã—7 hard steps and 8Ã—8 expert peaks instead of using grid size as a monotonic ladder. `scripts/difficulty-audit.mjs` guards the curve itself: all five 20-quest segment averages must rise, the final segment must materially exceed the first, Q81â€“100 must contain several expert/expert+ peaks and several breathers, and Q100 must be expert+.
+The base campaign intentionally consumes every currently audited 7×7 and 8×8 catalogue entry. The second half alternates easier 6×6 breathing quests with 7×7 hard steps and 8×8 expert peaks instead of using grid size as a monotonic ladder. `scripts/difficulty-audit.mjs` guards the curve itself: all five 20-quest segment averages must rise, the final segment must materially exceed the first, Q81–100 must contain several expert/expert+ peaks and several breathers, and Q100 must be expert+.
 
-The fixed metric is `round((size-5)*6 + max(0,steps-size)*0.45 + group*1.25 + locked*0.6)`. Tiers: accessible <40, intermediate 40â€“54, hard 55â€“69, expert 70â€“89, expert+ â‰¥90. This is a reproducible solver proxy, not a claim about human solve time; validate it against #65 telemetry as data accumulates.
+The fixed metric is `round((size-5)*6 + max(0,steps-size)*0.45 + group*1.25 + locked*0.6)`. Tiers: accessible <40, intermediate 40–54, hard 55–69, expert 70–89, expert+ ≥90. This is a reproducible solver proxy, not a claim about human solve time; validate it against #65 telemetry as data accumulates.
 
 
 ## Extensible content registry (#47)
@@ -1086,17 +1086,17 @@ The production backend already exposes `lumen_get_entitlements()` over `lumen.en
 ## Tutorial skip eligibility (#80)
 Do not use `lumenTutorialSeen` as proof of onboarding completion: it only means the introductory slides were dismissed/completed. Durable skip eligibility is `lumenTutorialCompletedV1`, granted only after Q2 succeeds, with Q1+Q2 solved progress as a recovery fallback after cloud restore.
 
-A genuine first-time player never sees â€œPasser le tutorielâ€. A player who has already completed Q1+Q2 may skip only a voluntary learning replay; doing so returns to the prior quest and must not mutate solved quests, badges, shards or milestone state. QA new-player mode uses its isolated `lumenQa...` namespace and a fresh QA reset clears that proof.
+A genuine first-time player never sees “Passer le tutoriel”. A player who has already completed Q1+Q2 may skip only a voluntary learning replay; doing so returns to the prior quest and must not mutate solved quests, badges, shards or milestone state. QA new-player mode uses its isolated `lumenQa...` namespace and a fresh QA reset clears that proof.
 
 
-## RapiditÃ© countdown UX (#88)
-The RapiditÃ© badge threshold itself is unchanged. The visual countdown window is 30 seconds: the indicator appears when 30 s remain and its fill represents `remaining / 30s`. The first 20 seconds stay deliberately subdued; only the final 10 seconds receive a modest visual emphasis. No blinking/pulsing animation is allowed and the countdown must remain outside the puzzle grid.
+## Rapidité countdown UX (#88)
+The Rapidité badge threshold itself is unchanged. The visual countdown window is 30 seconds: the indicator appears when 30 s remain and its fill represents `remaining / 30s`. The first 20 seconds stay deliberately subdued; only the final 10 seconds receive a modest visual emphasis. No blinking/pulsing animation is allowed and the countdown must remain outside the puzzle grid.
 
 
 ## Internal tester capabilities (#33)
 Never authorize admin/tester tools from a browser email comparison or localStorage alone. The client must first receive the capability from `lumen_get_internal_capabilities()`. Local device preferences may only toggle a capability already granted by the server. Commercial ownership remains in `lumen.entitlements`; internal tester capabilities live separately in `lumen.internal_capabilities`.
 
-## Issue #340 â€” diverse generator regression
+## Issue #340 — diverse generator regression
 
 Run `node scripts/generate-diverse-grids-tests.mjs` to cover seeded determinism, all five geometry profiles, connected regions, Guardian constraints, symmetry signatures, exhaustive uniqueness (for accepted candidates) and replay. New grids remain offline and unscheduled until reviewed; no player-save mutation. This focused contract supplements, and does not replace, `node scripts/quality-gate.mjs` and `node scripts/audit-catalogue.mjs`. A full quality gate is required before merge. Do not label the heuristic score as a validated human-difficulty metric.
 
@@ -1217,8 +1217,8 @@ The campaign browser fixture opens the account menu and diagnostic and checks
 that the visible summary matches the current verdict above the technical log.
 
 The account-switch browser setup explicitly opens its target canonical quest
-through the new accountâ€™s sky and canonical quest panel, including catalogue-driven
-pagination. A switched account need not inherit the previous accountâ€™s active
+through the new account’s sky and canonical quest panel, including catalogue-driven
+pagination. A switched account need not inherit the previous account’s active
 quest. Exact quest, attempt, grant, XP and archive assertions remain mandatory.
 
 
