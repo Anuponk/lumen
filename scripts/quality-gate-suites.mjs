@@ -1,4 +1,6 @@
 export const nodeSuites=[
+ 'cloud-hydration-mirror-session-tests.mjs',
+
  'badge-availability-ui-tests.mjs',
  'guest-account-tests.mjs',
  'guest-account-hydration-tests.mjs',

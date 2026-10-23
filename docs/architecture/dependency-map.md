@@ -1,5 +1,10 @@
 # Dependencies and data flow
 
+Hydration #536: selected verified snapshot → existing reconciliation refusal →
+classified wallet/reward/storage diagnostic and safe hold. Final mirror result →
+account/client recheck → current-session presentation only. Diagnostic formatting
+never supplies proof for a reward merge or wallet acknowledgement.
+
 Session recovery #530: verified server profile → canonical badge coverage →
 safe local install or protected partial recovery. Unconfirmed wallet/canonical
 operations stay in their durable stores. Classified local failure → account

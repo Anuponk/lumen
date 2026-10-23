@@ -1,5 +1,27 @@
 # Testing and quality gate
 
+## Hydration refusal and final-session boundary — #536
+
+The mandatory `cloud-achievements-session-recovery-tests.mjs` now reproduces the
+reported event order with synthetic data: actual canonical capture archive,
+SIGNED_IN/INITIAL_SESSION (both orders), actual wallet outbox indexed checkpoint,
+discordant snapshots and a safe partial hold. It checks wallet versus reward
+diagnostics, offline interruption, reconstructed durable adapters on restart,
+retry/idempotence, backup/install failures, privacy and unchanged local evidence.
+The fallback adapter is in memory; this is not a recording of the affected
+player's profiles or proof of real-device IndexedDB behavior.
+
+`cloud-hydration-mirror-session-tests.mjs` executes the production hook and
+reproduces account/client switches during successful and failed mirror awaits.
+Four assertions fail before the final session guard, while the unchanged-session
+positive control passes. Two further RED cases cover mirror promise rejection
+after the same account/client switches; the current-session rejection remains
+an explicit failure. No obsolete success/failure may be published for the
+new session. Both suites run in the quality gate and Cloud reconciliation matrix.
+See [the #536 report](validation/2026-10-23-hydration-536.md); physical Android
+and Rachel's actual reward divergence still require separate non-destructive
+verification. All prior cloud, wallet, canonical and SQL regressions are retained.
+
 ## Guest, guided undo and first-quest badges (#528/#533/#529)
 
 `guest-account-tests.mjs` and `guest-account-hydration-tests.mjs` cover guest ownership, exact backup, registration through the actual UI hydration hook, second-device installation, repeated auth, offline and interrupted verification, account change and existing-cloud preservation. Ambiguous balances retain both copies and hold instead of guessing a transaction. `guided-undo-tests.mjs` executes the actual Undo handler with pending/deferred conflicts; mobile browser smoke additionally exercises real conflict → Undo → new move. `performance-badge-tests.mjs` and embedded tests cover eligibility from quest 1, same-run awards, assistance, qualification cooldown and persisted badges. SQL parity runs the new eligibility migration before comparing current client/server outcomes, while retaining old receipt/wallet regressions. No real player fixtures or production Auth emails are used.

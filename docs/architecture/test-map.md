@@ -4,6 +4,12 @@ Baseline: `bef5f32`. All paths are repository-relative. This phase indexes exist
 
 ## Select a check
 
+Hydration #536: `cloud-achievements-session-recovery-tests.mjs` covers the exact
+reported event ordering with synthetic discordant profiles and durable adapters;
+`cloud-hydration-mirror-session-tests.mjs` covers the demonstrated late-mirror
+account/client race. Both are mandatory in quality and cloud-reconciliation CI.
+Physical Android and the affected player's unknown state are separate limits.
+
 Session achievement recovery: `cloud-achievements-session-recovery-tests.mjs`
 executes coverage, partial installation and the production hydration hook with
 Auth event permutations, durable archive and simulated wallet fallback/restart.
