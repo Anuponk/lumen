@@ -89,7 +89,7 @@ console.log(JSON.stringify({quest2:true,partialDragRestore:true,protectedGuardia
  assert.ok(handler.includes("state[pending.r][pending.c]=1"),"Only erroneous Guardian may be removed");
  assert.ok(handler.includes("persistAttemptBoard()"),"Correction must persist");
  assert.ok(handler.includes("guidedPending=null"),"Unlock only after correcting wrong guardian");
- const ack=ui.slice(ui.indexOf("function closeGuidedConflict(){"),ui.indexOf("let suppressGuidedClickUntil",ui.indexOf("function closeGuidedConflict(){")));
+ const ack=ui.slice(ui.indexOf("function closeGuidedConflict(){"),ui.indexOf("const guidedCorrectionClicks",ui.indexOf("function closeGuidedConflict(){")));
  assert.ok(!ack.includes("guidedPending=null"),"Acknowledging must not unlock incorrect Guardian");
 }
 

@@ -29,6 +29,8 @@ export function constellationCatchupAvailable(quest,progress={},quests,origin=qu
 export function catalogueQuestDecision(quest,progress={},quests=[],context={}){
  if(!quest||!quests.some(q=>q.id===quest.id))return {status:'missing-content'};
  if(context.packAllowed===false)return {status:'pack-locked'};
+ // Preserved guest access does not release a signed-in account's restore hold.
+ if(quest.ordinal>QUEST_MILESTONES.discovery&&context.signedIn!==false&&context.cloudReady===false)return {status:'sync-required'};
  if(questCompleted(quest,progress))return {status:'ready',reason:'replay'};
  const attempt=context.attempt;
  if(attempt?.startedAt&&attempt.mode!=='challenge'&&

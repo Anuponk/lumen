@@ -5,6 +5,16 @@ import vm from 'node:vm';
 import {catalogueQuestDecision} from '../src/campaign/catalogue-access.js';
 import {functionSource} from './source-tools.mjs';
 import {QUEST_MILESTONES,questLearningRules} from '../src/campaign/quest-rules.js';
+import {createDiagnostics} from '../src/testing/diagnostics.js';
+
+test('explicit numeric diagnostic entry clears a preceding stable quest before initialization',()=>{
+ const progress={solved:{0:1}},model={levelIndex:70,canonicalActiveQuest:{id:'previous-stable',legacyIndex:null},lumenProgress:progress};
+ let selected;
+ const diagnostics=createDiagnostics(model,{init(){selected={index:model.levelIndex,canonical:model.canonicalActiveQuest}},closeTutorial(){}});
+ diagnostics.setupQuest(6);
+ assert.equal(selected.index,6);assert.equal(selected.canonical,null);
+ assert.equal(model.lumenProgress,progress);
+});
 
 test('discovery ends after six visible quests for either persistence identity',()=>{
  for(const legacyIndex of [null,20]){
@@ -41,6 +51,18 @@ test('guest access retains completed quests and real started campaign attempts, 
   for(const mode of ['campaign','replay'])assert.equal(catalogueQuestDecision(quest,{},[quest],{signedIn:false,attempt:{questId:'saved',mode,startedAt:1}}).status,'ready');
   for(const attempt of [{questId:'saved',mode:'campaign'},{questId:'saved',mode:'challenge',startedAt:1}])assert.equal(catalogueQuestDecision(quest,{},[quest],{signedIn:false,attempt}).status,'auth-required');
   assert.equal(JSON.stringify(p),before);
+ }
+});
+
+test('authenticated replay and started access beyond discovery cannot bypass an unverified restore',()=>{
+ for(const legacyIndex of [null,20]){
+  const quest={id:'saved',ordinal:30,legacyIndex,packId:'a',constellationId:'c'};
+  const progress=legacyIndex===null?{canonicalQuestState:{saved:{solved:true}}}:{solved:{20:1}};
+  const before=JSON.stringify(progress);
+  assert.equal(catalogueQuestDecision(quest,progress,[quest],{signedIn:true,cloudReady:false}).status,'sync-required');
+  assert.equal(catalogueQuestDecision(quest,{},[quest],{signedIn:true,cloudReady:false,attempt:{questId:'saved',mode:'replay',startedAt:1}}).status,'sync-required');
+  assert.equal(catalogueQuestDecision(quest,progress,[quest],{signedIn:true,cloudReady:true}).status,'ready');
+  assert.equal(JSON.stringify(progress),before);
  }
 });
 

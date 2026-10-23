@@ -10,12 +10,35 @@ les décisions ultérieures. Trois migrations candidates sont préparées et tes
 en PostgreSQL jetable ; elles ne sont pas appliquées en production. La recette
 Android physique de #521 reste distincte des validations navigateur simulées.
 
-La validation locale finale est conservée dans
+## Intégration du 23 octobre
+
+La PR #527 intègre désormais `main` jusqu'à `a0fc695` (#553). Le contrat livré
+sur main prévaut : quatre badges disponibles dès la quête 1, avec explications
+aux quêtes 3 et 6. La migration candidate et une régression SQL sur les ordres
+1 à 6 suivent cette règle. Les corrections de quota, session, gestes et diagnostics
+de main sont conservées.
+
+Les nouvelles régressions couvrent le blocage du rejeu authentifié pendant une
+restauration incomplète, la récupération partielle d'un résumé de rejeu V2 sans
+modifier la première victoire, et le rejet des faits de badge inconnus modifiés.
+Le point d'entrée QA numérique oublie l'ancienne quête stable sans effacer les
+acquis. Les parcours navigateur utilisent les vrais boutons de briefing/reset ;
+les assertions d'annulation et d'appui immédiatement suivant restent obligatoires.
+
+Les trois migrations ont passé les assertions de parité, reçus, social privé et
+capability analytics dans PostgreSQL embarqué jetable le 23 octobre. La
+concurrence PostgreSQL 17, la validation complète actualisée et la production
+restent des résultats distincts. Aucun schéma de production n'a été appliqué.
+
+## Validation historique du 22 octobre
+
+La validation locale de la précédente révision est conservée dans
 [`quest-convergence-522.json`](quest-convergence-522.json), avec empreinte des
 sources et des trois migrations : 121 suites Node, neuf parcours navigateur,
 29 suites complémentaires, 396 tests intégrés et audit strict réussis. Les
 210 scénarios SQL embarqués ne remplacent pas la concurrence PostgreSQL 17
-de la PR. Les captures 390 px et desktop ont été revues ; Android physique
+de la PR. Ces empreintes ne décrivent pas l'intégration du 23 octobre.
+Les captures 390 px et desktop ont été revues ; Android physique
 et application du schéma en production restent non exécutés à ce stade.
 
 État initial : **étape 1, avant corrections métier**, conformément à #522. L'audit

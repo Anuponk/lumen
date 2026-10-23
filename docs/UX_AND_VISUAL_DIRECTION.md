@@ -20,11 +20,42 @@ earlier manual browsing returns to the current quest without granting progress.
 Quest launch and early tour close cannot bypass these steps. The tour mentions
 future badges without introducing their conditions ahead of their milestones.
 
-Rapidité introduction follows eligibility at quest 3, the full badge system and
-optional Marquage auto at quest 6, and the reversible guided-control choice at
+All four badges remain eligible from quest 1 (#529). Quest 3 explains their
+conditions, quest 6 recalls assistance and introduces optional Marquage auto,
+and the reversible guided-control choice remains at
 quest 11. Controls and hint pricing use the active quest's visible ordinal,
 including stable-only quests, rather than the dormant numeric frontier. Both
 replay formats display the same cooldown warning and acquired badge labels.
+
+Guided correction (#548) filters only the handled gesture's release click.
+There is no 700 ms cooldown across the board: a fresh tap works immediately.
+
+Touch shortcut (#531): a stationary 500 ms hold directly places/removes one
+Guardian through the normal action rules, with a brief outline and optional
+haptic feedback. Release never also short-clicks. Moving over 8 px cancels the
+hold in favor of the existing drag; cancelled/multiple pointers and background
+states cannot commit a pending hold. Short clicks and mouse/keyboard remain
+unchanged. Constrained first-quest learning keeps its two-touch and drag lessons;
+the help panel explains that the shortcut is available after that learning.
+On short screens its card scrolls within the viewport, with a sticky close
+header and the learning-replay action reachable at the bottom.
+
+The diagnostic cockpit (#534 phase 2) groups the optional bounded timeline into
+episodes, with filters for the last observed guided transition. Every view is
+labelled partial; released input never means restored saves. Reports contain
+fixed codes and cautious reproduction steps. An explicit review checkbox enables
+a sanitised GitHub draft; the administrator validates publication on GitHub.
+Existing issue search and local text export help investigation. No auto-ticket,
+notification, live-resolution claim or player repair is introduced.
+
+Optional diagnostics (#534) live in the existing account diagnostic panel.
+Default off, explain purpose, pseudonymous account linkage, permitted technical
+fields, seven-day detail period and withdrawal/erasure. A refusal never changes
+gameplay or saves. Withdrawal stops locally immediately; say explicitly when
+server deletion is pending offline. Existing minimal operational sync indicators
+are separate. The same admin cockpit shows a bounded opt-in/incomplete sample,
+using text rendering and no profile/email joins or repair action. No teaching,
+assistance, eligibility or gameplay milestone changes.
 
 ## Account access (2026-10-18)
 
@@ -38,7 +69,24 @@ Opening/copying the report changes no save, retry state or server data and uploa
 nothing. It includes no account identity, token or whole player profile. This
 support action does not alter gameplay onboarding.
 
+The same panel shows LUMEN's storage by category, with approximate sizes and no
+account identities, keys or save contents. Browser quota is not presented as
+free phone capacity; a quota refusal says LUMEN lacks storage space. An explicit
+**Libérer l’espace des anciennes copies** action archives older backups after
+verified read-back, keeps two recent copies per eligible family and preserves
+the live profile and pending operations. **Exporter mes sauvegardes** includes
+archives. Show success, partial failure or interruption without claiming sync
+is repaired. The mobile panel scrolls so maintenance/export remain reachable.
+These support actions change no gameplay or learning milestones.
+
 ## Visual identity
+
+Mon ciel distinguishes a completed quest from a temporarily unavailable replay.
+Completed cards retain their completion styling and accessible label, with the
+specific authentication/synchronization reason when needed. The constellation
+detail also shows that completed quests are preserved, so touch users do not
+depend on a tooltip. Pending replay stays disabled until the existing guard
+permits it; an unfinished quest still displays its actual progression lock.
 
 Constellation detail uses the same verified drawing and canonical reward total
 for historical, inserted and generated catalogue entries. On small phones the
@@ -212,7 +260,7 @@ When the player reaches the autonomy milestone (quest 11), explain the **Contrô
 
 
 ### Badge learning milestones
-Do not explain performance badges before they can be earned. The onboarding must derive its timing from the real eligibility model: quests 1–2 have no badge, quest 3 introduces **Rapidité** because it is the first earnable performance reward, and quest 6 introduces **Autonomie**, **Sans erreur** and **Maîtrise** when the complete four-badge system becomes available. Explain the conditions in player language: Rapidité = beat the target time; Autonomie = succeed without assistance; Sans erreur = use no assistance and never continue after a wrong Guardian; Maîtrise = earn Autonomie, Rapidité and Sans erreur on the same badge run. A wrong Guardian removed or immediately undone before any other logical move does not break Sans erreur. Never expose the pending/error state during play. At quest 6, connect this explanation to assistance choices without portraying assisted play as inferior.
+All four performance badges are available from quest 1 (#529). Name them during the objective step without interrupting SEE → UNDERSTAND → ACT. Quest 3 explains conditions, without announcing an unlock; quest 6 connects the same conditions to assistance choices. Missing badges are discreet/grayed, earned badges are illuminated; neither uses a lock. Rapidité means less than 60 seconds; Autonomie means no effective assistance; Sans erreur means no effective assistance and no confirmed wrong Guardian; Maîtrise requires those three on the same qualifying run. Immediate correction/undo of a pending wrong Guardian does not commit the mistake. Keep the existing fifteen-minute qualification cooldown. Assisted play remains a valid choice.
 
 
 ## Onboarding is coupled to product rules

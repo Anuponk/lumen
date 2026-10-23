@@ -45,7 +45,7 @@ begin
  -- A valid count must not smuggle any reward, evidence, schema or cursor change.
  for candidate in select value from jsonb_array_elements(jsonb_build_array(
   jsonb_set(latest,'{solved,1}','1'),jsonb_set(latest,'{stars,0}','9'),
-  jsonb_set(latest,'{performances,0,badges,mastery}','true'),
+  jsonb_set(latest,'{performances,0,badges,mastery}',to_jsonb(not (latest#>>'{performances,0,badges,mastery}')::boolean)),
   jsonb_set(latest,'{performances,0,bestTime}','1'),jsonb_set(latest,'{performances,0,version}','2'),
   jsonb_set(latest,'{challenges,invented}','true'),jsonb_set(latest,'{noHint,0}','true'),
   jsonb_set(latest,'{autonomousWins}','999'),jsonb_set(latest,'{legacyVictoryRevision}','99'),

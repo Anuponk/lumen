@@ -6,8 +6,34 @@ import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {applyQuestVictory} from '../src/campaign/quest-victory.js';
 import {questBadgeQualification} from '../src/campaign/quest-rules.js';
 import {questRewardDefinition} from '../src/campaign/quest-rewards.js';
+import {cloudSafelyCoversLocal,reconcileCloudAchievementsDurably} from '../src/persistence/cloud-profile.js';
 const quest=canonicalQuestList().find(q=>q.legacyIndex===null);
 const facts={seconds:45,assistanceUsed:false,mistakeCommitted:false,qualifying:true,hintUsed:false,challengeFailed:false,qualifiedDay:'2026-10-22',qualifiedAt:'2026-10-22T10:00:00.000Z'};
+
+test('verified V2 replay summaries restore through the existing achievement path without changing balances or first completion',async()=>{
+ const local={solved:{},badges:{},xp:0,shards:3,legacyVictoryRevision:1,walletRevision:1,canonicalQuestState:{}};
+ applyQuestVictory(local,quest,{...facts,seconds:80});
+ const remote=structuredClone(local);applyQuestVictory(remote,quest,{...facts,seconds:20,qualifiedAt:'2026-10-22T10:15:00.000Z'});
+ assert.equal(cloudSafelyCoversLocal(local,remote),true);
+ const raw=JSON.stringify(local),values=new Map([['lumenProgressV1',raw],['lumenCloudOwnerId','fixture-owner']]);
+ const storage={getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,v)};
+ assert.equal((await reconcileCloudAchievementsDurably(storage,remote)).changed,true);
+ const saved=JSON.parse(values.get('lumenProgressV1'));
+ assert.deepEqual(saved.canonicalQuestState,remote.canonicalQuestState);
+ assert.equal(saved.shards,local.shards);assert.equal(saved.xp,local.xp);
+ assert.deepEqual(saved.canonicalQuestState[quest.id].performance,local.canonicalQuestState[quest.id].performance);
+ assert.ok([...values.values()].includes(raw));
+});
+test('V2 coverage keeps unknown badge facts immutable',()=>{
+ const local={solved:{},badges:{},xp:0,shards:3,legacyVictoryRevision:1,walletRevision:1,canonicalQuestState:{}};
+ applyQuestVictory(local,quest,facts);
+ local.canonicalQuestState[quest.id].badges.futureFact=false;
+ local.canonicalQuestState[quest.id].runPerformance.badges.futureFact=false;
+ const remote=structuredClone(local);
+ remote.canonicalQuestState[quest.id].badges.futureFact=true;
+ remote.canonicalQuestState[quest.id].runPerformance.badges.futureFact=true;
+ assert.equal(cloudSafelyCoversLocal(local,remote),false,'Unknown evidence cannot be treated like one of the four badge flags');
+});
 test('first win without a hint earns the same XP even when another assistance was used',()=>{
  const p={xp:42,shards:7,canonicalQuestState:{}};
  applyQuestVictory(p,quest,{...facts,assistanceUsed:true});

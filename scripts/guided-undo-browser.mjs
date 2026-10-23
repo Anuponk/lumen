@@ -1,0 +1,45 @@
+import assert from 'node:assert/strict';
+import {acknowledgeLearningMilestones} from './cdp-client.mjs';
+export async function verifyGuidedUndo({send,evaluate}){
+ await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,mobile:true,deviceScaleFactor:1});
+ await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
+ const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+ const point=selector=>evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);
+ async function tap(selector){const p=await point(selector);const hit=await evaluate(`(()=>{const hit=document.elementFromPoint(${p.x},${p.y});return {expected:!!hit?.closest(${JSON.stringify(selector)}),id:hit?.id,cls:hit?.className}})()`);assert(hit.expected,'Touch target covered: '+selector+' '+JSON.stringify(hit));await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[p]});await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await sleep(60)}
+ const cell=(r,c)=>`.cell[data-row="${r}"][data-col="${c}"]`;
+ const results=[];
+ for(const index of [6,10]){
+  await evaluate(`lumenDiagnostics.setupQuest(${index})`);await acknowledgeLearningMilestones(evaluate);
+  // Convergence restores an existing run. This scenario explicitly starts a
+  // fresh board through the real reset instead of assuming entry erases it.
+  await evaluate(`window.confirm=()=>true;document.getElementById('new').click()`);await acknowledgeLearningMilestones(evaluate);
+  await evaluate(`document.getElementById('questGo').click();document.getElementById('manualCrossTipOk').click();if(!document.getElementById('autonomyOverlay').hidden)document.getElementById('autonomyKeep').click();if(!document.getElementById('attemptMask').hidden)document.getElementById('attemptMask').click()`);
+  await evaluate(`document.getElementById('guidedErrors').checked=true;document.getElementById('autoCross').checked=false`);
+  assert.equal(await evaluate('lumenDiagnostics.snapshot().state.flat().every(v=>v===0)'),true,'Guided conflict fixture starts from the explicitly reset board');
+  const first=await evaluate('lumenDiagnostics.snapshot().puz.sol[0]'),size=await evaluate('lumenDiagnostics.snapshot().n'),wrong=(first+1)%size;
+  await tap(cell(0,first));await tap(cell(0,first));
+  await tap(cell(0,wrong));await tap(cell(0,wrong));
+  // A different logical move commits the deferred guided intervention.
+  await tap(cell(1,0));
+  assert.equal(await evaluate(`document.getElementById('guidedCard').hidden`),false,'Actual touch produces the guided conflict: '+JSON.stringify(await evaluate(`({n:lumenDiagnostics.snapshot().n,row:lumenDiagnostics.snapshot().state[0],guided:document.getElementById('guidedErrors').checked,mask:document.getElementById('attemptMask').hidden,msg:document.getElementById('msg')?.textContent})`)));
+  const before=await evaluate('lumenDiagnostics.snapshot().state');
+  assert.equal(before[0][wrong],2);
+  await tap('#undo');
+  assert.equal(await evaluate(`document.getElementById('guidedCard').hidden`),true);
+  assert.equal(await evaluate(`document.getElementById('board').getAttribute('aria-disabled')`),null);
+  assert.equal(await evaluate(`lumenDiagnostics.snapshot().state[0][${first}]`),2,'Undo preserves the earlier valid Guardian');
+  assert.equal(await evaluate(`lumenDiagnostics.snapshot().state[0][${wrong}]`),1,'One Undo reverses just the incorrect placement');
+  await tap(cell(1,0));
+  assert.equal(await evaluate('lumenDiagnostics.snapshot().state[1][0]'),1,'The next touch works immediately');
+  await tap('#undo');await tap(cell(1,1));
+  assert.equal(await evaluate('lumenDiagnostics.snapshot().state[1][1]'),1,'Repeated Undo remains playable');
+  await tap(cell(0,wrong));await tap(cell(2,0));
+  assert.equal(await evaluate(`document.getElementById('guidedCard').hidden`),false);
+  await tap(cell(0,wrong));
+  assert.equal(await evaluate(`lumenDiagnostics.snapshot().state[0][${wrong}]`),1,'Touching the incorrect Guardian corrects it once');
+  await tap(cell(3,0));
+  assert.equal(await evaluate('lumenDiagnostics.snapshot().state[3][0]'),1,'A fresh touch after guided correction must work immediately, without a global cooldown');
+  results.push({questIndex:index,conflict:true,singleUndo:true,nextTouch:true});
+ }
+ return results;
+}

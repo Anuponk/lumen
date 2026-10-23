@@ -16,7 +16,7 @@ if(process.argv.includes('--write-seed')){
  fs.writeFileSync(migration,source.slice(0,source.indexOf(start)+start.length)+'\n'+seed+'\n'+source.slice(source.indexOf(end)));
  console.log(`Seeded ${rules.length} quest contracts in the pending migration`);
 }else if(process.argv.includes('--check')){
- const source=fs.readFileSync(migration,'utf8');
+ const source=fs.readFileSync(migration,'utf8').replace(/\r\n/g,'\n');
  assert.equal(source.slice(source.indexOf(start)+start.length,source.indexOf(end)).trim(),seed);
  console.log(`${rules.length} server quest contracts match source`);
 }else{

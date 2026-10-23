@@ -5,13 +5,75 @@ Quest convergence (#522): `quest-policy-tests`, `quest-victory-parity-tests`,
 same-run rewards, receipt/current-profile/account guards and stable analytics.
 `quest-policy-browser` joins the standard browser runner; learning/account/
 canonical-replay/campaign-resume runners cover actual handoff and persistence.
-`quest-command-fixtures`, receipt/social/analytics SQL fixtures and
+`quest-command-fixtures`, `quest-first-badges.sql`, receipt/social/analytics SQL fixtures and
 `quest-command-concurrency.py` extend the disposable PostgreSQL ledger workflow.
 See `docs/TESTING.md` for commands and distinction from production/device proof.
+
+Quota continuation (#536/#537): `storage-maintenance-tests.mjs` owns the
+installation-quota archival retry; `cloud-wallet-quota-recovery-tests.mjs` owns
+receipt-covered wallet backup fallback and interrupted/failed storage. Native
+quota, exact originals and idempotent retry run in `quota-recovery-browser.mjs`
+through the existing account suite. Device/account confirmation remains separate.
+
+Missed taps (#548): `guided-undo-browser.mjs` reproduces immediate input after
+touch correction (RED/GREEN); `touch-input-browser.mjs` covers whole-board
+consecutive center/border taps with small movement. Both run in the general
+isolated browser. Affected physical Android/PWA confirmation remains pending.
+
+Touch hold: `long-press-guardian-tests.mjs` covers timers, cancellation, input
+guards, direct/short transitions and retargeted release. The native
+`long-press-guardian-browser.mjs` extends the general browser suite. All learning,
+incremental paint, Undo, gesture, hint/catalogue and cloud regressions remain.
+
+Incident investigation: `incident-investigation-tests.mjs` checks correlation,
+partial state, privacy, grouped signals and actual loader account/capability
+races. `incident-investigation-browser-tests.mjs` runs its shared review helper
+in a dedicated browser at 390/1440,
+checks native review/filter/revocation UI without creating issues or live RPC.
+
+Report review uses real pointer clicks on visible controls in the independent
+`scripts/fixtures/incident-investigation.html` document, avoiding the preceding
+cloud-recovery scenario's expected reloads. Hidden/review/revoke/privacy and
+capability assertions remain mandatory. It is the tenth quality browser suite,
+using CDP 9235 and `ci-incident-investigation.json`; previous nine suites remain.
+
+Optional diagnostics (#534): `diagnostic-reporter-tests.mjs` covers privacy,
+transport/account races and actual Undo markers under historical fault injection.
+PostgreSQL fixture/concurrency checks privileges, quotas, identity, consent and
+retention. The account browser adds offline reload/reconnect and withdrawal
+with native storage and synthetic Auth/RPC. See OBSERVABILITY_534 for limits.
+
+Storage inventory/retention: `storage-maintenance-tests.mjs` owns privacy,
+read-only measurement, archival/retention and failure/race coverage. The account
+browser suite adds mobile touch and desktop/native IndexedDB checks, and the
+quota fixture verifies space release without replacing the active profile.
+
+Achievement backup quota (#536): `cloud-achievements-quota-recovery-tests.mjs`
+covers alternate verified storage, interrupted sessions/local copies and closed
+failure paths. `quota-recovery-browser.mjs` in the account suite fills native
+localStorage on a blank disposable fixture and reads back the original from
+native IndexedDB. This is storage validation, not a real-player repair.
+
+Completed replay holds (#537): `campaign-presentation-tests.mjs` runs actual
+detail/history renderers; `catalogue-access-tests.mjs` checks every published
+completed ID. Account browser suite includes `completed-quest-hold-browser.mjs`
+for native mobile touch and delayed/verified hydration with synthetic Auth/RPC.
 
 Baseline: `bef5f32`. All paths are repository-relative. This phase indexes existing checks without changing tests or GitHub Actions. `docs/TESTING.md` retains execution contracts and detailed scenarios. Presence of a suite does not mean it ran or proves live production behavior.
 
 ## Select a check
+
+Hydration #536: `cloud-achievements-session-recovery-tests.mjs` covers the exact
+reported event ordering with synthetic discordant profiles and durable adapters;
+`cloud-hydration-mirror-session-tests.mjs` covers the demonstrated late-mirror
+account/client race. Both are mandatory in quality and cloud-reconciliation CI.
+Physical Android and the affected player's unknown state are separate limits.
+
+Session achievement recovery: `cloud-achievements-session-recovery-tests.mjs`
+executes coverage, partial installation and the production hydration hook with
+Auth event permutations, durable archive and simulated wallet fallback/restart.
+`cloud-diagnostics-tests.mjs` verifies bounded server signals despite local
+diagnostic failure. Device/real IndexedDB proof is separate; see #530 report.
 
 Private physical-device preview: see
 [`ISOLATED_VALIDATION_PREVIEW.md`](../ISOLATED_VALIDATION_PREVIEW.md) for the
@@ -130,3 +192,5 @@ Deployment checks also exist as `scripts/o2switch-deploy-tests.py` and `scripts/
 - Passed: `performance-qualification-merge-tests.mjs`, `canonical-ledger-client-tests.mjs`, `performance-badge-tests.mjs` (14 cases), `sky-navigation-tests.mjs`, `content-architecture-tests.mjs`, `cloud-contract-check.mjs` (commands prefixed with `node scripts/`). The content/policy checks pass with mandatory root contract phrases retained; no test changes were needed.
 - Existing failure: `node scripts/unlocked-adventure-progress.test.mjs` fails at line 15, expected `{completed:1,total:2}`, actual `{completed:3,total:4}`. Reproduced independently on untouched `bef5f32`. Its fixture contains a solved quest in the nominally locked extra pack; current `hasPackAccess` recognizes that as started access. This is a fixture/expectation mismatch with the implemented access rule, not evidence that current players should lose access. Left unchanged for a separate phase.
 - All documented concrete paths/links and the three symptom routes were checked; moved contracts were compared with the original, allowing only introduction and relative-link edits. `git diff --check` passes. Full quality gate, browser, SQL and live-device checks were not run in this documentation phase.
+
+Guest registration, guided undo and universal badge eligibility: `guest-account-tests.mjs`, `guest-account-hydration-tests.mjs`, `guided-undo-tests.mjs`, `performance-badge-tests.mjs`; real browser interaction and SQL parity supplement these isolated fixtures (#528/#533/#529).

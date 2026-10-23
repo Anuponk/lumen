@@ -1,4 +1,6 @@
 *{box-sizing:border-box}body{margin:0;background:#f7f5ef;color:#202124;font-family:Arial,sans-serif}.app{max-width:680px;margin:auto;padding:20px 16px 42px}
+#board{-webkit-touch-callout:none}
+.cell.long-press-accepted{outline:3px solid #cfab55;outline-offset:-4px}
 .head{display:flex;justify-content:space-between;align-items:center}h1{font-size:38px;margin:4px 0 0}.sub{font-size:20px;font-weight:700;color:#777;margin-bottom:24px}
 button{font:inherit;font-weight:700;background:#fff;border:1.8px solid #555;border-radius:24px;padding:12px 17px}.levels{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 22px}
 .level{border-radius:15px;padding:11px 3px}.level.active{background:#222;color:#fff}.level small{display:block;margin-top:4px}.status{display:flex;justify-content:space-between;font-size:20px;font-weight:bold;margin:8px 3px 17px}
@@ -297,7 +299,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .daily-info-popover p{margin:0 0 9px}
  .daily-info-status{color:#e4f5ff;font-weight:800;margin-bottom:8px}
  .daily-info-reward{padding-top:8px;border-top:1px solid #28415b;color:#ffbd59}
- .mobile-auth-popover{display:block;position:absolute;z-index:130;top:55px;right:10px;width:min(290px,calc(100vw - 20px));padding:12px;background:#101d2e;border:1px solid #28415b;border-radius:15px;box-shadow:0 16px 40px rgba(0,0,0,.35);font-size:12px;color:#9fb3c8}
+ .mobile-auth-popover{display:block;position:absolute;z-index:130;top:55px;right:10px;width:min(290px,calc(100vw - 20px));max-height:calc(100dvh - 80px);overflow:auto;padding:12px;background:#101d2e;border:1px solid #28415b;border-radius:15px;box-shadow:0 16px 40px rgba(0,0,0,.35);font-size:12px;color:#9fb3c8}
  .mobile-auth-popover[hidden]{display:none!important}
  .mobile-auth-popover button{width:100%;margin-top:9px;padding:9px 11px;font-size:12px}
  .game-core{position:relative}
@@ -437,6 +439,8 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .hint-guided-close{width:30px!important;height:30px;padding:0!important;border-radius:50%;font-size:20px;line-height:1;background:transparent!important;color:#5b3b00!important;border-color:rgba(91,59,0,.3)!important}
 .hint-guided-card{border-color:#f2b84b}
 .help-card h3{margin:16px 0 6px;color:#eafaff;font-size:15px}
+.help-card{max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px);overflow-y:auto;overscroll-behavior:contain}
+.help-card .shard-rules-head{position:sticky;top:-20px;background:#08131f;z-index:1}
 .help-learning{margin-top:14px;padding-top:14px;border-top:1px solid #28415b}
 .help-learning>strong{color:#eafaff}
 .help-learning p{margin:5px 0 11px}
@@ -1059,6 +1063,12 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 @media(max-height:700px){.sky-reveal-svg{height:150px;margin:5px 0}.sky-reveal-title{font-size:22px}.sky-reveal-name{font-size:15px}.sky-reveal-results{gap:5px}.sky-reveal-actions button{padding:7px 3px}}
 
 #accountSyncDiagnosticPanel{margin-top:10px}
+#accountStorageSummary{white-space:pre-line;line-height:1.45}
+.diagnostic-incidents{overflow-wrap:anywhere;max-height:500px;overflow:auto;font-size:12px}
+.diagnostic-incidents details{padding:8px 0;border-bottom:1px solid #ffffff30}
+.diagnostic-incidents textarea{box-sizing:border-box;width:100%;max-width:100%;margin:8px 0;white-space:pre-wrap}
+.diagnostic-incidents label,.diagnostic-incidents a,.diagnostic-incidents button{display:block;margin:8px 0}
+.diagnostic-incidents a[hidden]{display:none}
 #accountSyncDiagnosticPanel label{display:block;font-size:12px;line-height:1.4}
 #accountSyncDiagnosticText{box-sizing:border-box;width:100%;max-width:100%;margin-top:8px;padding:8px;background:#0b1525;color:#dce8f5;border:1px solid #28415b;border-radius:8px;font-size:12px;resize:vertical}
 

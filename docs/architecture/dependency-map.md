@@ -9,6 +9,57 @@ evidence. Cloud restore adopts a covering server V2 summary, never creates one.
 Social stable identity uses its own RPC; participation still bypasses campaign
 writers. Admin metrics/timeline read stable identity under existing capability.
 
+Installation quota: achievement plan → verified original → failed cache install
+→ bounded verified archival → unchanged owner/session/local bytes → one retry.
+Wallet receipt recovery → exact coverage predicate → two verified originals
+(localStorage/IndexedDB) → unchanged owner/session/local bytes → cache install
+→ guarded outbox acknowledgement. Full synchronization still needs server proof.
+
+Guided correction: pointerdown on incorrect Guardian → existing correction and
+save → suppress that gesture's compatibility click → next pointerdown releases
+suppression immediately. Shared helper also owns long-hold click suppression.
+
+Guardian hold: touch pointer → 500 ms recogniser / movement cancellation → live
+cell/attempt/learning guards → normal cell action → existing history, mistake,
+assistance and persistence. Pointer identity suppresses a release retargeted to
+the pause mask. Moving hands off to exclusion drag; mouse/keyboard keep clicks.
+
+Phase-2 investigation: existing admin capability/RPC → closed timeline projection
+→ session/trace episodes → observed transitions, bounded detail alerts, reviewed
+report/GitHub composer. Account/client/capability guard rejects stale results and
+actions. Export never depends on accounts/profiles or live gameplay objects.
+
+Optional diagnostics (#534): guarded capture → separate bounded queue → Auth and
+closed-schema batch → consent-locked private details → existing cockpit guard.
+The existing operator cron prunes bounded details/budgets/resolved old health.
+No save/receipt/profile dependency or competing live incident/alert algorithm.
+
+Storage maintenance: account diagnostic → aggregate local/IndexedDB/browser
+inventory; explicit maintenance → retain recent copies → exact original in
+existing IndexedDB recovery store → committed read-back + session/source recheck
+→ local removal. Export includes the archive. No profile/RPC/reward mutation.
+
+Achievement backup quota (#536): verified server achievements + unchanged local
+profile → shared recovery planner → verified localStorage or IndexedDB original
+→ session/owner/local-byte recheck → achievement-only cache installation.
+Explicit recovery export reads both IndexedDB snapshot stores. Wallet and full
+hydration holds retain their existing authority and release conditions.
+
+Completed quest presentation (#537): confirmed progress + existing availability
+decision → completed card/history + explicit replay hold. Renderers never write
+the profile or change catalogue, pack, Auth or hydration guards.
+
+Hydration #536: selected verified snapshot → existing reconciliation refusal →
+classified wallet/reward/storage diagnostic and safe hold. Final mirror result →
+account/client recheck → current-session presentation only. Diagnostic formatting
+never supplies proof for a reward merge or wallet acknowledgement.
+
+Session recovery #530: verified server profile → canonical badge coverage →
+safe local install or protected partial recovery. Unconfirmed wallet/canonical
+operations stay in their durable stores. Classified local failure → account
+status and existing `hydration_reconciliation` telemetry (fixed reason only).
+No new RPC, Auth configuration or persisted profile field.
+
 Baseline: `bef5f32`. Paths are repository-relative. Consult relevant rows only. `docs/DATA_AND_ARCHITECTURE.md` owns contracts; this file identifies implemented boundaries and effects.
 
 Published schedule (#522): current `access-origins.json` revision →

@@ -2,10 +2,11 @@
 
 ## Uniform quest contract (#522, convergence candidate)
 
-Every quest uses its visible catalogue ordinal for teaching, assistance and badge
-eligibility, independently of its saved numeric key. `PERFORMANCE_UNLOCKS` owns
-Rapidité at quest 3 and the four-badge system at quest 6; `questLearningRules`
-drives their UI introductions. Assistance stays forced through 5, optional through
+Every quest uses its visible catalogue ordinal for teaching and assistance,
+independently of its saved numeric key. All four badges are eligible from quest 1.
+`PERFORMANCE_UNLOCKS` owns the explanations of Rapidité at quest 3 and the
+four-badge system at quest 6; `questLearningRules` drives those introductions
+without delaying eligibility. Assistance stays forced through 5, optional through
 10; autonomous play is introduced at 11. Hints remain free through 10.
 
 Qualified badge runs share a fifteen-minute cooldown. Replays preserve acquired
@@ -39,6 +40,9 @@ For an N x N puzzle:
 
 The stored board uses three user-visible states: empty, excluded, Guardian. Interaction order is **empty -> excluded -> Guardian -> empty**.
 
+Correcting the offending Guardian in guided mode consumes only that correction
+gesture. The next separate tap is immediately available, without a global delay.
+
 A wrong intermediate Guardian is allowed to exist long enough for the player to reason/correct it. Guided assistance may explain a direct row/column/territory/touch conflict or a dead end, but the first tap is an exclusion and must not be treated as an attempted Guardian.
 
 The tap handler checks guided Guardian conflicts on the second tap, when the next state is Guardian. Rejecting the intermediate exclusion on a required solution cell would make the two-tap placement cycle impossible. The engine can still diagnose an exclusion dead end, and Verify/hints can explain an incorrect exclusion; that diagnostic must not block the first half of a tap placement.
@@ -59,9 +63,27 @@ Every Guardian uses the real empty -> exclusion -> Guardian cycle. All exclusion
 
 The lesson is derived from canonical board state by `src/game/learning.js`. Reload restores the same attempt and half-completed tap cycle; pause/background restoration still requires explicit resume. Reset returns to the first deduction without changing attempt identity, elapsed time, assistance or campaign progression. Ordinary replay and social challenges do not activate the constrained lesson; explicit learning replay does.
 
-Quest 1 uses the normal success experience. Quest 2 success requires the explicit Découvrir Mon ciel CTA; its backdrop does not navigate. The tour explains four real zones in sequence: constellation navigation, quest cards, performance badges and constellation/stars. Its final CTA or close action leads to quest 3. Badge introductions happen at actual eligibility milestones: Rapidité at quest 3, Autonomie/Maîtrise at quest 6. No imposed board coach remains from quest 3 onward, while the existing Assist eligibility continues.
+Quest 1 uses the normal success experience. Quest 2 success requires the explicit Découvrir Mon ciel CTA; its backdrop does not navigate. The tour explains four real zones in sequence: constellation navigation, quest cards, performance badges and constellation/stars. Its final CTA or close action leads to quest 3. All four badges are eligible from quest 1. The objective step names them; quest 3 explains the conditions without promising an unlock, and quest 6 recalls assistance choices. No imposed board coach remains from quest 3 onward, while the existing Assist eligibility continues.
+
+Undo after a guided conflict restores the preceding board and clears the pending/deferred guided conflict, its card and its interaction lock. Acknowledging the explanation alone still leaves the incorrect Guardian to correct. Assistance already used remains recorded.
 
 ## Mobile input
+
+Touch-only long press (#531): after constrained learning has finished, holding
+a cell for 500 ms places a Guardian directly from empty/manual/automatic exclusion,
+or removes a Guardian to the neutral stored state. It uses the same cell-action
+handler, validation, assistance/mistake accounting, history and persistence as a
+short click. Derived automatic exclusions still follow existing rules. A hold
+fires once and consumes its release click; short taps retain empty → excluded →
+Guardian → empty. Mouse/keyboard click behavior remains unchanged.
+
+Movement over 8 px transfers to the existing exclusion drag and cancels the hold.
+Multitouch, pointer cancellation, blur/background and a detached/replaced cell
+cancel it. Permissions are checked again at activation: no action while paused,
+loading, victorious, guided/verification-blocked or inside constrained learning.
+The ordinary SEE → UNDERSTAND → ACT/two-tap/drag lessons stay intact; the help
+panel presents the shortcut as available after learning. A brief outline and
+optional vibration acknowledge an accepted action without additional game state.
 Dragging a finger over cells marks exclusions. It must:
 - avoid overwriting Guardians;
 - avoid repeatedly processing the same cell in one drag;

@@ -1,8 +1,58 @@
 # Feature map
 
+Installation quota (#536/#537): `cloud-profile.js` retries achievement installation
+once after verified bounded archival by `storage-maintenance.js`. Wallet
+`recoverWalletCacheDurably` uses the existing original snapshot store and exact
+receipt predicate. Neither path fabricates rewards or releases unproven holds.
+
+Guided correction (#548): `ui/gesture-click-suppression.js` scopes suppression
+to the handled pointer's release, shared with Guardian hold. `game-screen.js`
+clears it on each new gesture; no global post-correction input cooldown.
+
+Touch hold (#531): `ui/long-press-guardian.js` recognises one 500 ms touch and
+suppresses its own release click. `game-screen.js` owns live guards and dispatches
+the dedicated gesture into the existing cell handler; no alternate game writer.
+
+Incident investigation (#534 phase 2): `ui/incident-investigation.js` owns
+bounded episode grouping, observed-state filters, fixed hypotheses and sanitised
+report/GitHub drafts. `game-screen.js` feeds only authorised diagnostic data and
+adds grouped detail signals to the existing alert list. No new persistence.
+
+Optional incidents (#534): `persistence/diagnostic-reporter.js` owns bounded
+transport, fixed codes and safe runtime listeners; `game-screen.js` owns account
+choice, cloud/outbox hooks and #533 markers. The diagnostic migration extends
+the same #398 cockpit/cron and hardens legacy ingestion. See OBSERVABILITY_534.
+
+Storage diagnostics/retention: `persistence/storage-maintenance.js` owns aggregate
+size inventory and verified archival of older recovery copies; `game-screen.js`
+wires account diagnostics, explicit maintenance and recovery export. See
+DATA_AND_ARCHITECTURE for exclusions and transaction/session guards.
+
+Local quota recovery: `cloud-profile.js` `reconcileCloudAchievementsDurably`
+uses the existing verified IndexedDB snapshot fallback before cache installation;
+the account recovery export includes that store. See DATA_AND_ARCHITECTURE and
+the quota suite/native browser scenario in TESTING. Wallet holds stay separate.
+
+Completed quest holds (#537): `game-screen.js` preserves completed card labels
+and displays the replay hold in constellation detail. `catalogue-access.js` and
+the canonical adapter still own action authorization; no persistence policy changes.
+
 Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This lookup index complements contracts in `docs/AGENT_CONTRACTS.md`, `docs/PROGRESSION.md` and `docs/DATA_AND_ARCHITECTURE.md`. Recheck symbols after relevant changes; historical counts in validation reports are not current catalogue totals.
 
 ## Entry points and shape
+
+Hydration #536: `cloud-profile.js` fixed-domain/stage diagnostic helpers retain
+wallet refusals separately from partial reward recovery. The game-screen hook
+checks its account/client after the final mirror await. No new reward policy,
+writer or profile field; see `docs/validation/2026-10-23-hydration-536.md`.
+
+Guest registration (#528): `src/persistence/guest-account.js` selects an ownership-safe initial profile and verifies an account-scoped original backup before UI hydration. Existing cloud conflicts retain guest progress. Guided Undo (#533): UI `clearGuidedConflict` clears the stale interaction lock while restoring history. Badge eligibility (#529): `performanceEligibility` exposes all four goals from quest 1; quest 3/6 are explanations, not badge unlocks.
+
+Session recovery #530: `cloud-profile.js` canonical achievement coverage accepts
+only server badge additions on identical immutable victory evidence.
+`achievementRecoveryDiagnostic` supplies fixed failure categories;
+UI `cloudReconciliationMessage` explains held local data. See the dedicated
+report in `docs/validation/2026-10-22-achievement-recovery-530.md`.
 
 Published definitions: `quest-definition.js` validates the current revision
 exposed by `catalogue-origin.js` and consumed by `canonical-quests.js`, with

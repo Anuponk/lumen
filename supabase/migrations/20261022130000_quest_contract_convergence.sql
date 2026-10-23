@@ -637,8 +637,8 @@ begin
  first_win:=coalesce(entry->>'solved','false') not in ('true','1');seconds:=(p_facts->>'seconds')::integer;
  qualified:=(p_facts->>'qualifying')::boolean;assisted:=(p_facts->>'assistanceUsed')::boolean;hint:=(p_facts->>'hintUsed')::boolean;wrong:=(p_facts->>'mistakeCommitted')::boolean;
  ordinal:=(r->>'ordinal')::integer;
- eligible:=jsonb_build_object('speed',ordinal>=3,'autonomy',ordinal>=6,'noError',ordinal>=6,'mastery',ordinal>=6);
- speed:=ordinal>=3 and seconds<60;autonomy:=ordinal>=6 and not assisted;no_error:=ordinal>=6 and not assisted and not wrong;mastery:=speed and autonomy and no_error;
+ eligible:=jsonb_build_object('speed',true,'autonomy',true,'noError',true,'mastery',true);
+ speed:=seconds<60;autonomy:=not assisted;no_error:=not assisted and not wrong;mastery:=speed and autonomy and no_error;
  run:=jsonb_build_object('eligibility',eligible,'speed',speed,'autonomy',autonomy,'noError',no_error,'mastery',mastery,'targetSeconds',60,'qualifying',qualified);
  badges:=prior;
  foreach k in array array['speed','autonomy','noError','mastery'] loop badges:=badges||jsonb_build_object(k,coalesce(prior->>k,'false') in ('true','1') or qualified and (run->>k)::boolean);end loop;

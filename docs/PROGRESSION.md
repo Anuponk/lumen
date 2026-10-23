@@ -111,13 +111,19 @@ Per-quest performance has exactly four badges, as implemented in `src/campaign/p
 - ✓ **Sans erreur**: solve without effective assistance and without a confirmed wrong Guardian.
 - ✦ **Maîtrise**: earn Autonomie, Rapidité and Sans erreur in the **same qualifying attempt**. Never combine achievements from separate attempts.
 
-Eligibility follows unlocked global progression: Rapidité unlocks at quest 3; the other three badges unlock at quest 6. Previously played tutorial quests can become eligible for the unlocked badge families when replayed, as defined by `performanceEligibility(questIndex, unlockedQuestCount)`.
+All four badges are available from the first quest for guests and authenticated players (#529). Eligibility never depends on quest number, Adventure or global progression. A missing badge is shown as not earned, without a lock. Effective assistance, confirmed mistakes and the existing qualification cooldown still determine the outcome of each run. No historical badges are awarded automatically.
 
 A quest has a **15-minute qualification cooldown** based on `lastQualifiedAt`; replay during cooldown remains possible but cannot improve qualifying badges. Reset/restore must preserve attempt identity and qualification metadata. See `badgeCooldownRemaining` and `mergeEarnedBadges` in `src/campaign/performance.js`.
 
 Existing performance data must be migrated conservatively; never infer newly earned badges from an incompatible legacy record.
 
 ## Progress integrity
+
+When localStorage cannot fit a recovery backup, verified cloud achievements can
+still be restored using a read-back copy of the original in IndexedDB (#536).
+The wallet and full hydration must still be verified before canonical replay;
+restored completion evidence alone does not release that hold. No previous
+quest, badge, balance or entitlement is synthesized or removed by this path.
 
 ### Catalogue additions and acquired access (#470)
 
@@ -140,6 +146,13 @@ quest of each newly added constellation. Merely starting an adventure does not
 open all its future constellations. New players follow their current catalogue
 sequence. Pack ownership remains a separate prerequisite; inserted quests also
 require authentication and verified cloud hydration.
+
+Completion and immediate playability are separate presentation states (#537).
+During an authentication/synchronization hold, an already completed quest keeps
+its completed history, badges and label. Mon ciel explains the hold visibly and
+in its accessible name; the replay button and direct start remain guarded.
+An unfinished quest retains its real prerequisite/ownership lock. Displaying
+preserved history never grants a win, entitlement or permission to replay.
 
 Map cards, the catalogue list, sky callbacks, direct starts and canonical
 navigation use the same policy. Historical numeric continuation delegates to it.

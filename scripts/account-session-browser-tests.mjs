@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {verifyWalletAndOfflineFlow} from './wallet-flow-browser.mjs';
+import {verifyCompletedQuestHold} from './completed-quest-hold-browser.mjs';
+import {verifyQuotaRecovery} from './quota-recovery-browser.mjs';
 import {connectBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
 const {send,evaluate,errors}=await connectBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -14,6 +16,7 @@ localStorage.setItem('lumenSound','off');
 window.__authCalls=[];
 window.__fixtureLedgerWrites=0;window.__fixtureSnapshotWrites=0;
 window.__fixtureLedgerAttempts=0;
+window.__diagnosticRows=JSON.parse(sessionStorage.getItem('fixtureDiagnosticRows')||'[]');
 window.__fixtureCommandReceipts=new Map();
 window.__fixtureLegacyReceipts=new Map();window.__fixtureLegacyWrites=0;window.__fixtureLegacyAttempts=0;
 const isolatedRecovery=sessionStorage.getItem('fixtureIsolatedRecovery')==='1';
@@ -48,6 +51,18 @@ window.supabase={createClient(url,key,options){
  const set=(event,value)=>{session=value;storage.setItem('fixtureAuthSession',JSON.stringify(value));callback(event,value)};
  window.__emitAuthEvent=event=>set(event,session);
  return {rpc:async(name,args)=>{
+  if(name==='lumen_diagnostic_preference'){
+   if(typeof args?.p_enabled==='boolean')sessionStorage.setItem('fixtureDiagnosticConsent',String(args.p_enabled));
+   const enabled=sessionStorage.getItem('fixtureDiagnosticConsent')==='true';
+   if(!enabled){window.__diagnosticRows=[];sessionStorage.removeItem('fixtureDiagnosticRows')}
+   return {data:{enabled,since:new Date().toISOString(),purpose:'534-v1'},error:null};
+  }
+  if(name==='lumen_record_diagnostics'){
+   const allowed=sessionStorage.getItem('fixtureDiagnosticConsent')==='true';
+   if(allowed)for(const event of args.p_events)if(!window.__diagnosticRows.some(row=>row.id===event.id))window.__diagnosticRows.push(structuredClone(event));
+   sessionStorage.setItem('fixtureDiagnosticRows',JSON.stringify(window.__diagnosticRows));
+   return {data:{disabled:!allowed,accepted:allowed?args.p_events.map(e=>e.id):[]},error:null};
+  }
   if(name==='lumen_wallet_command_version')return {error:{code:'PGRST202'},status:404};
   if(!isolatedRecovery)return name==='lumen_restore_profile'?{data:null,error:{message:'simulated restore outage'}}:{data:[],error:null};
   if(name==='lumen_restore_profile')return {data:structuredClone(window.__fixtureProfile),error:null};
@@ -322,6 +337,47 @@ try{
   assert.equal(await evaluate("JSON.parse(document.getElementById('accountSyncDiagnosticText').value).app"),'Lumen');
   if(viewport.mobile)assert.equal(await evaluate("document.getElementById('accountSyncDiagnosticText').getClientRects().length>0"),true);
   assert.equal(await evaluate("localStorage.getItem('lumenProgressV1')"),progressBeforeDiagnostic,'Diagnostic viewing preserves the local save');
+  await until(`!document.getElementById('diagnosticConsent').disabled`);
+  assert.equal(await evaluate(`document.getElementById('diagnosticConsent').checked`),false,'Optional diagnostics start disabled');
+  await evaluate(`document.getElementById('diagnosticConsent').click()`);
+  await until(`document.getElementById('diagnosticConsentStatus').textContent.includes('Partage activé')`);
+  await evaluate(`window.dispatchEvent(new ErrorEvent('error',{message:'forbidden@example.invalid',filename:'https://private/?token=secret',error:{stack:'Bearer secret'}}))`);
+  await until(`window.__diagnosticRows.some(e=>e.code==='runtime_exception')`);
+  assert.equal(await evaluate(`JSON.stringify(window.__diagnosticRows).includes('secret')||JSON.stringify(window.__diagnosticRows).includes('@')`),false);
+  await send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
+  await evaluate(`const resource=document.createElement('script');document.body.append(resource);resource.dispatchEvent(new Event('error',{bubbles:true}));resource.remove()`);
+  await until(`JSON.parse(localStorage.getItem('lumenDiagnosticQueueV1')||'{}').events?.some(e=>e.code==='resource_failed')`);
+  await navigate('Page.reload');
+  await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
+  await evaluate(`window.dispatchEvent(new Event('online'))`);
+  await until(`window.__diagnosticRows.some(e=>e.code==='resource_failed')`);
+  if(viewport.mobile)await evaluate(`if(document.getElementById('mobileAuthPopover').hidden)document.getElementById('mobileAccount').click()`);
+  await evaluate(`document.getElementById('showAccountSyncDiagnostic').click()`);
+  await until(`document.getElementById('diagnosticConsent').checked&&!document.getElementById('diagnosticConsent').disabled`);
+  await evaluate(`document.getElementById('diagnosticConsent').click()`);
+  await until(`document.getElementById('diagnosticConsentStatus').textContent.includes('effacés')`);
+  assert.equal(await evaluate(`window.__diagnosticRows.length`),0);
+  assert.equal(await evaluate("localStorage.getItem('lumenProgressV1')"),progressBeforeDiagnostic,'Optional telemetry/offline/restart/withdrawal preserve the live save');
+  await until(`!!JSON.parse(document.getElementById('accountSyncDiagnosticText').value).storage?.local?.available`);
+  assert.equal(await evaluate(`document.getElementById('accountStorageSummary').textContent.includes('ne permettent pas de connaître')`),true);
+  await evaluate(`for(const stamp of [100,200,300])localStorage.setItem('lumenBeforeCloudRestore_'+stamp,'storage-fixture-'+stamp)`);
+  if(viewport.mobile){
+   const point=await evaluate(`(()=>{const b=document.getElementById('archiveAccountStorage');b.scrollIntoView({block:'center'});const r=b.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
+   assert(point.y>0&&point.y<viewport.height,'Storage maintenance stays reachable on mobile');
+   await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});
+   await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  }else await evaluate(`document.getElementById('archiveAccountStorage').click()`);
+  await until(`!document.getElementById('archiveAccountStorage').disabled`);
+  assert.equal(await evaluate(`localStorage.getItem('lumenBeforeCloudRestore_100')`),null);
+  assert.equal(await evaluate(`localStorage.getItem('lumenBeforeCloudRestore_300')`),'storage-fixture-300');
+  assert.equal(await evaluate(`document.getElementById('accountStorageStatus').textContent.includes('exportables')`),true);
+  assert.equal(await evaluate(`new Promise((resolve,reject)=>{const r=indexedDB.open('lumenCloudRecoveryV1',1);r.onerror=()=>reject(r.error);r.onsuccess=()=>{const db=r.result,q=db.transaction('snapshots','readonly').objectStore('snapshots').get('localStorage:lumenBeforeCloudRestore_100');q.onsuccess=()=>{db.close();resolve(q.result)}}})`,true),'storage-fixture-100');
+  assert.equal(await evaluate("localStorage.getItem('lumenProgressV1')"),progressBeforeDiagnostic,'Archival never replaces the live profile');
+  await until(`JSON.parse(document.getElementById('accountSyncDiagnosticText').value).storage?.indexed?.available`);
+  await evaluate(`document.getElementById('accountStorageSummary').scrollIntoView({block:'center'})`);
+  const storageScreenshot=await send('Page.captureScreenshot',{format:'png'});
+  fs.writeFileSync((process.env.TEMP||'/tmp')+'/lumen-storage-'+viewport.width+'.png',Buffer.from(storageScreenshot.data,'base64'));
+  await evaluate(`localStorage.removeItem('lumenBeforeCloudRestore_200');localStorage.removeItem('lumenBeforeCloudRestore_300')`);
   await evaluate("document.getElementById('closeAccountSyncDiagnostic').click()");
   assert.equal(await evaluate("document.getElementById('accountSyncDiagnosticPanel').hidden"),true);
   await navigate('Page.reload');
@@ -343,12 +399,14 @@ try{
   await evaluate(`document.getElementById('mobileAuthAction').click()`);
   await until(`document.getElementById('mobileAuthAction').textContent.includes('Se connecter')`);
   const isolatedCanonicalRecovery=await verifyIsolatedRecovery();
-  results.push({viewport,guestDismiss:true,automaticOfferDismiss:true,repeatedSignupLoginDismiss:true,passwordLogin:true,reload:true,readableSessionWithQuota:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,restoreFailureVisible:true,isolatedCanonicalRecovery,isolatedLegacyRecovery:true});
+  results.push({viewport,guestDismiss:true,automaticOfferDismiss:true,repeatedSignupLoginDismiss:true,passwordLogin:true,reload:true,readableSessionWithQuota:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,restoreFailureVisible:true,isolatedCanonicalRecovery,isolatedLegacyRecovery:true,optionalDiagnostics:{defaultOff:true,sanitised:true,offlineRestartReconnect:true,withdrawalErases:true,profilePreserved:true}});
  }
  await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:authFixtureId});
  const walletFlow=await verifyWalletAndOfflineFlow({send,evaluate,navigate,url});
+ const completedQuestHold=await verifyCompletedQuestHold({send,evaluate,navigate,url});
+ const quotaRecovery=await verifyQuotaRecovery({evaluate,navigate,url});
  assert.equal(errors.length,0,JSON.stringify(errors));
- const report={simulatedAuth:true,liveCloudWrites:false,results,walletFlow,exceptions:errors};
+ const report={simulatedAuth:true,liveCloudWrites:false,results,walletFlow,completedQuestHold,quotaRecovery,exceptions:errors};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));
  console.log(JSON.stringify(report));
 }finally{await send('Browser.close').catch(()=>{})}

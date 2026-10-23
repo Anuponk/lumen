@@ -30,7 +30,7 @@ Completion means a **nonempty** set of all quests belonging to the current catal
 - Cell cycle: empty -> exclusion -> Guardian -> empty. The first tap must never be rejected as an invalid Guardian.
 - Victory depends on the Guardian placement satisfying the puzzle, not on whether all remaining cells are manually excluded.
 - Guardians: exactly one per row, column and territory; Guardians cannot touch, including diagonally.
-- Completed quests are replayable to improve performance badges. Badges must describe a single attempt; no farming by combining achievements from different attempts. From quest 6, Sans erreur requires no assistance and no confirmed wrong Guardian; Maîtrise requires Autonomie + Rapidité + Sans erreur on the same badge run. A campaign/replay reset starts a fresh badge run without changing the technical/social attempt identity.
+- Completed quests are replayable to improve performance badges. Badges must describe a single attempt; no farming by combining achievements from different attempts. From quest 1, Sans erreur requires no assistance and no confirmed wrong Guardian; Maîtrise requires Autonomie + Rapidité + Sans erreur on the same badge run. A campaign/replay reset starts a fresh badge run without changing the technical/social attempt identity.
 - Learning onboarding is a protected **SEE -> UNDERSTAND -> ACT** sequence: quest 1 must show and number the territories, explain the goal and all four Guardian constraints, and only then allow the first board interaction. Do not collapse this into immediate action. Territory numbers are teaching-only.\n- Learning: quests 1–5 force assistance; 6–10 make it optional; quest 11 introduces autonomous play. Quest 1 constrains real player actions with progressively lighter guidance through all five Guardians; quest 2 guides its first Guardian and requires practicing the real drag gesture before free play with contextual advice.
 - Mobile drag across cells adds exclusions efficiently and must not trigger full-board renders during pointer movement.
 - Guest progress works locally. Authenticated progress syncs to Supabase and local history is merged to cloud.
@@ -78,7 +78,7 @@ When a product rule, reward, progression rule, data contract, UX invariant, anal
 - Assistance unlocks are teaching milestones. At quest 6 (index 5), introduce Marquage auto as an optional comfort playstyle and explain badge impact before normal play. At quest 11 (index 10), when Contrôle guidé becomes an autonomy choice, explain that it can be re-enabled; merely being enabled does not invalidate badges, but an actual guided intervention marks assistance. Assistance removes Autonomie and therefore Maîtrise, while Rapidité remains possible. Do not present assisted play as inferior.
 
 
-- Badge onboarding must follow actual `performanceEligibility`: quests 1–2 teach no badge; quest 3 introduces Rapidité (the only eligible badge on quests 3–5); quest 6 introduces Autonomie, Sans erreur and Maîtrise when the full four-badge system becomes eligible. Sans erreur means no assistance and no confirmed wrong Guardian; Maîtrise means Autonomie + Rapidité + Sans erreur on the same badge run. Explain badge conditions at those exact milestones, not earlier. Keep this synchronized with performance.js if eligibility changes.
+- Badge onboarding follows `performanceEligibility`: all four badges are available from quest 1. Name the goals in the objective step, explain conditions at quest 3 without a badge-unlock promise, and recall assistance choices at quest 6. Preserve SEE → UNDERSTAND → ACT, same-run performance, assistance effects and qualification cooldown.
 
 
 ## Mandatory onboarding impact check
@@ -97,7 +97,7 @@ This check is mandatory even when the requested change does not explicitly menti
 
 
 ## 2026-10-04 — Sans erreur and Mastery contract
-Issue #82 adds **Sans erreur** as a performance badge from quest 6. A wrong Guardian is only committed as an error when the player continues with another logical board mutation before removing/undoing that Guardian. The pending state is silent: never reveal correctness during play. Any effective assistance (Hint, Verify, Auto marking, guided intervention) makes Sans erreur ineligible for that badge run.
+Issue #82 introduced **Sans erreur**; #529 makes all four badges available from quest 1. A wrong Guardian is only committed as an error when the player continues with another logical board mutation before removing/undoing that Guardian. The pending state is silent: never reveal correctness during play. Any effective assistance (Hint, Verify, Auto marking, guided intervention) makes Sans erreur ineligible for that badge run.
 
 **Mastery = Autonomy + Speed + Sans erreur on the same badge run.** Existing persisted Mastery is grandfathered and must never be revoked retroactively.
 
