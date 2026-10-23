@@ -122,9 +122,12 @@ Existing performance data must be migrated conservatively; never infer newly ear
 
 When localStorage cannot fit a recovery backup, verified cloud achievements can
 still be restored using a read-back copy of the original in IndexedDB (#536).
-The wallet and full hydration must still be verified before canonical replay;
-restored completion evidence alone does not release that hold. No previous
-quest, badge, balance or entitlement is synthesized or removed by this path.
+Full profile installation and spending remain held until verified. A wallet-only
+conflict may allow an already completed quest to be replayed when the current
+account/client/generation also has server-verified completion for that stable ID.
+Pack access still applies. Storage, reward, catalogue and unverified hydration
+holds do not gain this permission. No previous quest, badge, balance or
+entitlement is synthesized or removed by this path.
 
 ### Catalogue additions and acquired access (#470)
 
@@ -151,9 +154,12 @@ require authentication and verified cloud hydration.
 Completion and immediate playability are separate presentation states (#537).
 During an authentication/synchronization hold, an already completed quest keeps
 its completed history, badges and label. Mon ciel explains the hold visibly and
-in its accessible name; the replay button and direct start remain guarded.
+in its accessible name; the replay button and direct start remain guarded until
+their relevant domain proof is available. A current server-confirmed acquired
+replay may run during Wallet review, with free help and durably pending results.
+Paid help, new completion rewards and ambiguous profile installation stay held.
 An unfinished quest retains its real prerequisite/ownership lock. Displaying
-preserved history never grants a win, entitlement or permission to replay.
+preserved history alone never grants a win, entitlement or permission to replay.
 
 Map cards, the catalogue list, sky callbacks, direct starts and canonical
 navigation use the same policy. Historical numeric continuation delegates to it.

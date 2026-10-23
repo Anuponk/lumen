@@ -62,5 +62,11 @@ export function createConfirmedProfileCache(store){
   if(!sessionValid())throw Error('Cache session changed');
   return state;
  }
- return {read,install};
+ async function installAndRead(userId,profile,options={}){
+  const installed=await install(userId,profile,options),cached=await read(userId);
+  if(options.sessionValid&&!options.sessionValid())throw Error('Cache session changed');
+  if(!cached||cached.revision!==installed.revision||JSON.stringify(cached.profile)!==JSON.stringify(installed.profile))throw Error('Confirmed cache changed before read');
+  return cached;
+ }
+ return {read,install,installAndRead};
 }

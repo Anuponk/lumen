@@ -196,6 +196,50 @@ the session is usable on that particular browser/PWA.
 
 ## Cloud persistence contract
 
+### Gameplay and domain readiness — lot 3
+
+`gameplay-sync.js` derives profile, achievement, wallet and reward states from
+the current account/client/hydration generation. A completed quest can be replayed
+during a wallet-only reconciliation hold after an expected-account server read
+confirms its stable catalogue ID in that same generation. The hydration hook
+keeps only this ephemeral list of IDs, not another live profile. It is created
+only for an existing same-owner cache with a Wallet diagnostic and no failed
+achievement recovery. Auth in flight, password recovery, a changed account/client/
+generation, missing proof, storage/reward/catalogue conflicts or unknown failures
+do not grant this permission. Pack access and an actual local completion remain
+independent guards for both stable-only and historical quest identities. Direct
+historical replay entry now checks access before clearing the preceding attempt.
+
+This permission enables play, not reconciliation of the ambiguous Wallet.
+Free help retains its ordinary rules; paid help remains refused before mutation.
+A replay solved during this hold captures the same immutable attempt/reset
+operation in its existing outbox and shows pending performance, without a new
+star animation or confirmed badge. Rewards, daily credits and full-profile
+installation still await their existing proof/readiness contracts. An older
+server without Legacy commands cannot fall through to local authenticated
+rewards during a hold. Retry retains the captured time, assistance, facts and
+operation ID; session generation is checked on both victory paths. Existing
+isolated receipt recovery may confirm commands without replacing divergent local
+currency. No scalar maximum, new guest grant or entitlement is introduced.
+
+New command confirmations now pass through `installAndRead` in the owner-bound
+IndexedDB confirmed cache before reaching the UI. The re-read must match owner,
+installation revision, full profile bytes and current session. A racing cache
+writer/refusal reports the existing fixed cache issue; the already verified RPC
+profile remains the compatibility fallback and no new command is emitted. Wallet
+does this before its existing application/acknowledgement callback. Cold startup,
+historical localStorage evidence and conservative hydration are retained for the
+later migration lot; no old cache, backup, intention or unknown profile field is
+deleted. These reads are not an independent server receipt.
+
+Presentation distinguishes confirmed quests, Wallet review and pending rewards.
+An uncertain local balance is not labelled spendable: the meter displays
+« Éclats à vérifier ». Initial unverified hydration still guards completed replay
+buttons. The new permission expires with the generation rather than persisting
+an access flag. Rollback restores the prior stricter replay gate and compatible
+adapters while retaining the exact cache/outbox formats from lot 2.
+
+
 ### Persistence coordinator and transactional cache — lot 2
 
 The UI's Canonical, Legacy and Wallet adapters now share

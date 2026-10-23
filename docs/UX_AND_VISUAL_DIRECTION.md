@@ -1,5 +1,16 @@
 # UX and visual direction
 
+Domain readiness (persistence lot 3): a current verified acquired replay may be
+available during Wallet review. Account status distinguishes « Quêtes confirmées ·
+Éclats à vérifier »; the shard meter does not label an ambiguous balance available.
+Free-help explanations stay unchanged. A pending replay shows performance awaiting
+confirmation, never an extra star or earned badge. Initial hydration and other
+domain holds retain their visible completion/disabled-replay explanation.
+Onboarding impact: discovery, help milestones and badge rules are unchanged;
+no new lesson or unlock is added. The changed status/pending copy is shared by
+replay surfaces rather than duplicating rules in the teaching sequence.
+
+
 ## Quest convergence onboarding (#522, candidate)
 
 Discovery covers the first six visible quests. Continuing beyond them requires

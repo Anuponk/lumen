@@ -1,5 +1,15 @@
 # Existing verification map
 
+Persistence lot 3: gameplay-sync.js derives ephemeral domain readiness from a
+current verified account/client/generation completion list. catalogue-access.js
+and both UI access adapters isolate acquired replay from Wallet-only holds;
+spending and pending-reward proofs remain guarded. Confirmed command results use
+transactional-command-cache.js installAndRead before UI application; historical
+startup readers remain compatible. Required coverage: gameplay-domain-tests.mjs,
+Legacy UI tests and domain-replay-browser.mjs in the account browser suite.
+See the cloud contract and PROGRESSION.md for proof and rollback boundaries.
+
+
 Persistence lot 2: UI command imports → coordinated-command-adapters.js →
 persistence-coordinator.js → existing Canonical/Legacy/Wallet proof adapters.
 transactional-command-cache.js uses indexed-outbox-store.js version 1 to pair

@@ -13,13 +13,15 @@ export const inspectCommandOutboxes=userId=>coordinator.inspect(userId);
 // Only the explicit private recovery download uses this raw snapshot.
 export const exportCommandStorage=async()=>Object.fromEntries(await databaseStore().entries(''));
 function databaseStore(){let database;try{database=globalThis.indexedDB}catch{}return createIndexedOutboxStore(database)}
-async function mirrorVerifiedProfile(userId,result,sessionValid){
+async function installVerifiedProfile(userId,result,sessionValid){
  if(!sessionValid())throw Error('Cache session changed');
- // During lot 2 the installed legacy cache remains the UI read source. Cache
- // refusal is observable, never a reason to repeat an already verified effect.
- try{await createConfirmedProfileCache(databaseStore()).install(userId,result.profile,{sessionValid})}
+ // New command confirmations are read through the owner-bound indexed cache.
+ // Its refusal remains observable and cannot repeat a verified server effect.
+ let profile=result.profile;
+ try{profile=(await createConfirmedProfileCache(databaseStore()).installAndRead(userId,profile,{sessionValid})).profile}
  catch{if(sessionValid())try{onCacheIssue({kind:'confirmed_cache_unavailable'})}catch{}}
  if(!sessionValid())throw Error('Cache session changed');
+ return profile;
 }
 export function createDurableCanonicalVictoryOutbox(storage,options={}){
  const fallback=options.fallback??createTransactionalCommandCache(databaseStore());
@@ -29,7 +31,7 @@ function send(client,options,run,{mirror=true}={}){
  options={...options};
  return coordinator.dispatch(options.userId,client,async valid=>{
   const result=await run({...options,sessionValid:valid});
-  if(mirror)await mirrorVerifiedProfile(options.userId,result,valid);
+  if(mirror)result.profile=await installVerifiedProfile(options.userId,result,valid);
   return result;
  },options);
 }
@@ -47,7 +49,7 @@ export function submitWalletCommand(outbox,client,userId,operationId,request,opt
  return outbox.enqueue(userId,'wallet',{request:evidence},{operationId}).then(entry=>
   send(client,{...options,userId},guarded=>wallet(outbox,client,userId,entry.operationId,entry.reward.request,{
    ...guarded,beforeAcknowledge:async result=>{
-    await mirrorVerifiedProfile(userId,result,guarded.sessionValid);
+    result.profile=await installVerifiedProfile(userId,result,guarded.sessionValid);
     if(options.beforeAcknowledge)await options.beforeAcknowledge(result);
    }
   }),{mirror:false}));

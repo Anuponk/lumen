@@ -502,6 +502,22 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Lot 3: `gameplay-domain-tests.mjs` covers both quest identities, the direct
+historical start guard (both reproduced failing before correction), expected
+account/client/generation/password scope, unknown/reward/storage refusals, free
+versus paid help, pending replay presentation without a new star or confirmed
+badge, and confirmed-cache read-back/races. Legacy UI regressions also check an
+unsupported command server during a hold, immutable facts across readiness retry,
+and a generation change after commit without local installation or a second
+reward. The native account browser suite runs `domain-replay-browser.mjs`:
+verified Wallet conflict, actual map starts for stable/historical acquired replay,
+free and refused paid hint, solved boards with pending rewards, immutable intents
+through document restart and preserved balance/unknown fields. The original
+initial-hydration replay hold remains tested. Auth/RPC are synthetic; no phone
+recovery or production data is inferred. Full in-app hints, strict catalogue and
+all prior cloud/Wallet/badge suites remain mandatory.
+
+
 Lot 2: `persistence-coordinator-tests.mjs` is required by the quality gate.
 It covers one-account serialization, rejected responses, queued work after
 account/client/generation/logout changes, immutable capture, mutation-free shadow
