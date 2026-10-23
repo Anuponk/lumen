@@ -7,6 +7,27 @@ const load=()=>import('../src/ui/incident-investigation.js');
 const session='00000000-0000-0000-0000-000000000001',trace='00000000-0000-0000-0000-000000000002';
 const event=(code,sequence,extra={})=>({session_id:session,trace_id:trace,sequence,code,stage:'guided',kind:'unknown',app_version:'1.11.1+500',platform:'desktop',browser:'chromium',before_state:'unknown',after_state:'unknown',...extra});
 const scenario=()=>['guided_error','guided_undo','guided_input_blocked','guided_undo','guided_input_blocked','guided_undo','guided_input_released'].map((code,i)=>event(code,i+1,{after_state:code.endsWith('blocked')?'blocked':code.endsWith('released')?'ready':'unknown'}));
+
+test('observed versions sort numerically and keep aggregate counts separate from episode counts',async()=>{
+ const {buildIncidentInvestigation}=await load();
+ const data={timeline:[event('guided_error',1,{app_version:'1.11.1+99'}),event('guided_input_blocked',2,{app_version:'1.11.1+100'})],
+  signatures:[{code:'guided_error',stage:'guided',app_version:'1.11.1+99',occurrences:8,sessions:2},
+   {code:'guided_input_blocked',stage:'guided',app_version:'1.11.1+100',occurrences:2,sessions:1},
+   {code:'runtime_exception',stage:'runtime',app_version:'1.12.0+1',occurrences:3,sessions:1}]};
+ const before=JSON.stringify(data),model=buildIncidentInvestigation(data);
+ assert.deepEqual(model.versions,[{version:'1.12.0+1',occurrences:3,signatures:1,episodes:0},
+  {version:'1.11.1+100',occurrences:2,signatures:1,episodes:1},{version:'1.11.1+99',occurrences:8,signatures:1,episodes:1}]);
+ assert.equal(model.episodes.length,1,'A release change never splits or merges session evidence');
+ assert.equal(JSON.stringify(data),before);
+});
+test('unknown versions stay visible without exposing untrusted labels or inventing observations',async()=>{
+ const {buildIncidentInvestigation}=await load();
+ const model=buildIncidentInvestigation({timeline:[event('guided_error',1,{app_version:'Bearer PRIVATE'})],
+  signatures:[{code:'guided_error',app_version:'<private@example.invalid>',occurrences:-3,sessions:5}]});
+ assert.deepEqual(model.versions,[{version:'unknown',occurrences:0,signatures:1,episodes:1}]);
+ assert(!JSON.stringify(model.versions).includes('PRIVATE')&&!JSON.stringify(model.versions).includes('private@'));
+ assert.deepEqual(buildIncidentInvestigation({}).versions,[]);
+});
 test('#533 correlates ordered error/undo/blocked/additional undo/release without claiming save recovery',async()=>{
  const {buildIncidentInvestigation}=await load();const rows=scenario();const m=buildIncidentInvestigation({timeline:rows.reverse()});
  assert.equal(m.episodes.length,1);assert.deepEqual(m.episodes[0].events.map(e=>e.code),scenario().map(e=>e.code));

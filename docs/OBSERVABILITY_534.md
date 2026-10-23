@@ -1,5 +1,32 @@
 # Diagnostic collection — #534 phases 0 and 1
 
+## Phase 2 continuation: observations by version
+
+The existing authorised response now supplies a local version comparison and
+an episode version filter, combined with the observed-state filter. Sorting is
+numeric across release/build numbers; malformed versions remain an explicit
+unknown bucket. Aggregate occurrence/group counts and episodes containing each
+version are separate. Cross-version episodes retain their full ordered context
+and count once for each version they contain; their counts cannot be summed as
+unique sessions. No exposed-population denominator or comparable duration is
+available, so the UI explicitly refuses error-rate/regression conclusions.
+
+Changing either filter revokes all report checkboxes and draft URLs. Detached
+actions also fail the current-render and containment checks; permission checks
+remain live. A fresh review is required before preparing another GitHub draft.
+No new telemetry, identifier, RPC, schema, storage, external service, live-player
+read or automatic ticket/repair is introduced. Reports retain their closed
+schema. Eight Node tests cover ordering/count/privacy/capability behavior; native
+390/1440 checks exercise combined filters, revoked stale actions and new review.
+Full local verification passed all 30 groups with two browser workers, including
+all ten browser runners, strict catalogue audit and 396 embedded cases (quality
+gate: 298 s). Native 390/1440 comparison/filter/review checks reported no uncaught
+exceptions. Protected CI and exact published SHA remain separate release gates.
+
+This completes version comparison within the bounded sample, not statistical
+regression detection. Durable triage/backlinks, complete pagination, notifications,
+consultation audit and phase-3 repairs remain separate work.
+
 ## Phase 0: verified audit, 23 October 2026
 
 Source: `main` at `4a0eaa4`, #398 and its six comments, #534, #316,

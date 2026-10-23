@@ -1,5 +1,9 @@
 # Feature map
 
+Incident versions (#534): `ui/incident-investigation.js` derives ordered version
+observations from the existing bounded cockpit response, combines episode filters
+and revokes review/draft actions whenever the view changes. No new persistence.
+
 Installation quota (#536/#537): `cloud-profile.js` retries achievement installation
 once after verified bounded archival by `storage-maintenance.js`. Wallet
 `recoverWalletCacheDurably` uses the existing original snapshot store and exact
