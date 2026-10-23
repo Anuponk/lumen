@@ -443,6 +443,16 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Quota continuation (#536/#537): `storage-maintenance-tests.mjs` reproduces
+`achievement_install` failure with retained old backups, verified archival and
+one installation retry; aborted archive commits preserve the active original.
+`cloud-wallet-quota-recovery-tests.mjs` checks both original copies, exact receipt
+coverage, repeat recovery, unavailable/failed storage, silent write refusal and
+session/owner/local changes. The native account quota fixture now requires a
+larger achievement projection, committed archival and receipted wallet recovery
+at the actual localStorage quota. It uses a disposable origin and synthetic
+profiles, never a real player account. Real-device recovery remains separate.
+
 Phase-2 diagnostic investigation (#534): `incident-investigation-tests.mjs`
 checks ordered #533 episodes, session isolation, partial-window semantics,
 closed report export/GitHub drafts, grouped alerts and the actual cockpit loader's

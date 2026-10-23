@@ -1,5 +1,10 @@
 # Feature map
 
+Installation quota (#536/#537): `cloud-profile.js` retries achievement installation
+once after verified bounded archival by `storage-maintenance.js`. Wallet
+`recoverWalletCacheDurably` uses the existing original snapshot store and exact
+receipt predicate. Neither path fabricates rewards or releases unproven holds.
+
 Guided correction (#548): `ui/gesture-click-suppression.js` scopes suppression
 to the handled pointer's release, shared with Guardian hold. `game-screen.js`
 clears it on each new gesture; no global post-correction input cooldown.

@@ -1,5 +1,11 @@
 # Existing verification map
 
+Quota continuation (#536/#537): `storage-maintenance-tests.mjs` owns the
+installation-quota archival retry; `cloud-wallet-quota-recovery-tests.mjs` owns
+receipt-covered wallet backup fallback and interrupted/failed storage. Native
+quota, exact originals and idempotent retry run in `quota-recovery-browser.mjs`
+through the existing account suite. Device/account confirmation remains separate.
+
 Missed taps (#548): `guided-undo-browser.mjs` reproduces immediate input after
 touch correction (RED/GREEN); `touch-input-browser.mjs` covers whole-board
 consecutive center/border taps with small movement. Both run in the general
