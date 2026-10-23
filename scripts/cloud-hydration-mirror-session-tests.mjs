@@ -27,7 +27,7 @@ function fixture({change=null,mirrorOk=true,mirrorReject=false}={}){
   storage.setItem('lumenProgressV1',JSON.stringify(otherProfile));
   ctx.cloudProfileReady=false;ctx.cloudProfileBaseline=null;ctx.cloudProfileFailure=otherFailure;
  };
- ctx=vm.createContext({...profiles,structuredClone,currentCatalogueOrigin,reconcileDailyIntoCloudProfile,
+ ctx=vm.createContext({cloudHydrationGeneration:0,...profiles,structuredClone,currentCatalogueOrigin,reconcileDailyIntoCloudProfile,
   qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,localStorage:storage,sessionStorage:{getItem:()=>null},
   lumenProgress:profile,cloudProfileReady:false,cloudProfileBaseline:null,cloudProfileFailure:null,
   canonicalRecoveryContext:null,canonicalRecovery:{cancel:noop,schedule:noop},

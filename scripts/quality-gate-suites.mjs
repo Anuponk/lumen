@@ -1,4 +1,6 @@
 export const nodeSuites=[
+ 'local-persistence-contract-tests.mjs',
+ 'cloud-hydration-generation-tests.mjs',
  'approved-device-recovery-tests.mjs',
  'long-press-guardian-tests.mjs',
  'incident-investigation-tests.mjs',

@@ -31,7 +31,7 @@ function fixture({cloud=null,owner=null,offline=false,failVerification=false,swi
   }
   throw Error('Unexpected RPC '+name);
  }};
- const ctx=vm.createContext({...profiles,...guestAccount,structuredClone,currentCatalogueOrigin,
+ const ctx=vm.createContext({cloudHydrationGeneration:0,...profiles,...guestAccount,structuredClone,currentCatalogueOrigin,
   qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,lumenProgress:structuredClone(guest),localStorage:storage,
   sessionStorage:{getItem:()=>null},canonicalRecoveryContext:null,canonicalRecovery:{cancel:noop,schedule:noop},
   cloudProfileReady:false,cloudProfileBaseline:null,cloudProfileFailure:null,canonicalResumeOwner:null,

@@ -200,9 +200,10 @@ test('replacing the cloud client invalidates the isolated permission and cancels
  const end=source.indexOf(';\nconst {loadLumenProfile',start);
  assert.ok(end>start);
  let cancelled=0;
- const context={lumenSupabase:{},canonicalRecoveryContext:{userId:'a'},canonicalRecovery:{cancel:()=>{cancelled++}}};
+ const context={cloudHydrationGeneration:0,lumenSupabase:{},canonicalRecoveryContext:{userId:'a'},canonicalRecovery:{cancel:()=>{cancelled++}}};
  prepareContext(context);const model=vm.runInContext('('+source.slice(start,end)+')',context);
  model.lumenSupabase={};assert.equal(context.canonicalRecoveryContext,null);assert.equal(cancelled,1);
+ assert.equal(context.cloudHydrationGeneration,1,'Replacing a client invalidates pending hydration generations too');
 });
 
 

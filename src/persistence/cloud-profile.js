@@ -1,7 +1,7 @@
 // Explicit migration backup. Never automatically overwrites a cloud snapshot.
 import {catalogueOrigin,mergeCatalogueOrigin,currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
 import {archiveRecoveryBackups} from './storage-maintenance.js';
-const MAX_CHARS=524288;
+import {MAX_PROFILE_BYTES,profileStorageBytes} from './profile-size.js';
 // Top-level profile contract. Policies describe existing recovery rules, not
 // permission to award a reward or bypass a transactional server projection.
 export const CLOUD_PROFILE_FIELDS=Object.freeze(Object.fromEntries(Object.entries({
@@ -25,7 +25,7 @@ export function validateCloudProfile(profile){
   if(!profile.solved || typeof profile.solved!=="object" || Array.isArray(profile.solved)) throw Error("Quêtes invalides");
   if(!profile.badges || typeof profile.badges!=="object" || Array.isArray(profile.badges)) throw Error("Badges invalides");
   const json=JSON.stringify(profile);
-  if(!json || json.length>MAX_CHARS) throw Error("Sauvegarde trop volumineuse");
+  if(!json || profileStorageBytes(json)>MAX_PROFILE_BYTES) throw Error("Sauvegarde trop volumineuse");
   return JSON.parse(json);
 }
 export async function backupAndVerifyProfile(supabase,profile){

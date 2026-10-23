@@ -11,7 +11,7 @@ function backupIdentity(key){
  return checkpoint?{family:checkpoint[1],time:Number(checkpoint[2])}:null;
 }
 function category(key){
- if(backupIdentity(key)||/^lumen(?:Before|GuestBeforeAccount_|UnsyncedCloudBackup)/.test(key))return 'backups';
+ if(backupIdentity(key)||/^lumen(?:Before|GuestBeforeAccount_|UnsyncedCloudBackup|LocalQuarantineV1:)/.test(key))return 'backups';
  if(/^lumenCloud(?:Diagnostics|Health)V1$/.test(key))return 'logs';
  if(/^(?:lumen|regalia).*Outbox/.test(key))return 'pending';
  if(key==='lumenProgressV1'||/^lumen.*Attempt/.test(key))return 'progress';

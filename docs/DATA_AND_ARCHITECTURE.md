@@ -196,6 +196,41 @@ the session is usable on that particular browser/PWA.
 
 ## Cloud persistence contract
 
+### Persistence foundations — lot 1 (23 October 2026)
+
+Local saves return {ok:true,durable:true} only after exact read-back, otherwise
+{ok:false,durable:false,code} with a fixed privacy-safe code. onSave runs only
+after verified preservation; onIssue reports refusals independently. Hook failures
+cannot turn a committed write into a claimed storage failure. A visible local
+status reports failed preservation even for guests; no server receipt is implied.
+
+Unreadable storage never authorizes replacement. Before replacing malformed local
+bytes, preserve their exact original under lumenLocalQuarantineV1:<progressKey>:
+<hash>:<length>:<collision>, read it back, and recheck the active source. Hashes
+only select candidates: different bytes use a different collision slot. Failed
+quarantine leaves the active original intact and refuses the save. Unsupported
+catalogue origins stay held for review. Quarantine is local recovery evidence,
+grants nothing, remains exportable, and is excluded from automatic archival and
+deletion. Rollback preserves these keys; older clients do not recover them.
+
+Hydration captures expected account/client and a monotonically increasing local
+generation before storage/network work. Account/client replacement and every new
+hydration invalidate the old generation. Both resolved and rejected awaits must
+verify it before installing data or publishing current-session status. Generation
+is ephemeral control state, not a persisted reward or server revision.
+
+Cloud profile limits use 524288 UTF-8 bytes with JSONB structural-space and
+scientific-number expansion reserve, rather than JavaScript character count.
+Validation fails before a new RPC; server limits remain unchanged.
+
+Existing command envelopes retain their domain/version, captured expected owner,
+operation identity and immutable request. Durable acceptance, remote commit,
+exact independent receipt, current covering projection and local acknowledgement
+are distinct states. Neither a local save result nor a generation grants rewards.
+No command namespace, receipt, outbox or authority is rewritten by this lot;
+one entry point and transactional cache remain the later coordinator work.
+
+
 ### Explicit reviewed device recovery (#536/#537, 23 October 2026)
 
 `approved-device-recovery.js` provides a manual installation boundary for a

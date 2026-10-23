@@ -1,5 +1,12 @@
 # Dependencies and data flow
 
+Persistence foundations (lot 1): local.js returns verified durable results and
+quarantines malformed bytes before replacement; game-screen.js reports refusals
+and scopes hydration to account/client/generation, including rejected awaits.
+profile-size.js owns the UTF-8/JSONB size boundary. Required checks:
+local-persistence-contract-tests.mjs and cloud-hydration-generation-tests.mjs.
+No reward authority, command identity or outbox format changes.
+
 Reviewed recovery: account file choice → captured owner/client →
 `approved-device-recovery.js` exact snapshot digests → expected-account restore →
 acquisition coverage → verified exportable originals → second cloud read →

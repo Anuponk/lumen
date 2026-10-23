@@ -1,5 +1,12 @@
 # Feature map
 
+Persistence foundations (lot 1): local.js returns verified durable results and
+quarantines malformed bytes before replacement; game-screen.js reports refusals
+and scopes hydration to account/client/generation, including rejected awaits.
+profile-size.js owns the UTF-8/JSONB size boundary. Required checks:
+local-persistence-contract-tests.mjs and cloud-hydration-generation-tests.mjs.
+No reward authority, command identity or outbox format changes.
+
 Reviewed device recovery (#536/#537): `persistence/approved-device-recovery.js`
 installs a re-read cloud snapshot after an explicit reviewed file matches the
 authenticated owner and exact local/cloud SHA-256 digests. `game-screen.js`

@@ -71,6 +71,7 @@ if(qaFresh){
 const qaKey=suffix=>qaActive?"lumenQa"+suffix:suffix;
 const {normalizeSequentialProgress,solvedCount,exactSkyScoreForSolvedPrefix,ensureSkyScore,skyStarsEarned,challengeRewardKeys,constellationProgress,constellationLitAt,awards,performanceRun,savePerformance}=createCampaign(()=>lumenProgress,()=>saveLumenProgress(),()=>({activeGameSeconds,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted,qualifying:!!attemptEngine.snapshot()?.qualifying}),()=>canonicalQuestList());
 let cloudProfileReady=false,cloudProfileTimer=null,cloudProfileBusy=false,cloudProfileDirty=false,cloudProfileBaseline=null,cloudProfileInFlight=null,cloudProfileFailure=null;
+let cloudHydrationGeneration=0;
 let canonicalOutboxNotice=null;
 let legacyVictoryBusy=false,legacyCommandInFlight=false,legacyVictoryRetry=null;
 let walletSpendInFlight=false,walletPaidPermit=null,pendingVictoryView=null;
@@ -304,7 +305,7 @@ async function copyAccountCloudDiagnostic(){
 }
 // Explicit player-controlled export: never uploads or mutates any backup.
 async function exportLumenRecoveryBundle(){
- const prefixList=["lumenProgressV1","lumenUnsyncedCloudBackupV1:","lumenUnsyncedCloudBackupV2:","lumenBeforeCloud","lumenBeforeWalletRecovery","lumenBeforeAccountSwitch_","lumenBeforeCanonicalStartMetadata","lumenGuestBeforeAccount_"];
+ const prefixList=["lumenProgressV1","lumenLocalQuarantineV1:","lumenUnsyncedCloudBackupV1:","lumenUnsyncedCloudBackupV2:","lumenBeforeCloud","lumenBeforeWalletRecovery","lumenBeforeAccountSwitch_","lumenBeforeCanonicalStartMetadata","lumenGuestBeforeAccount_"];
  const local={};
  for(let i=0;i<localStorage.length;i++){
   const key=localStorage.key(i);
@@ -569,12 +570,19 @@ document.addEventListener("visibilitychange",()=>{
   retryPendingCloudWriteOnReconnect();
  }else canonicalRecovery.cancel();
 });
-const {loadLumenProgress,saveLumenProgress}=createLocalPersistence(localStorage,()=>lumenProgress,{progressKey:qaActive?"lumenQaProgressV1":"lumenProgressV1",onSave:scheduleCloudProfile});
+function reportLocalPersistence(result){
+ const status=document.getElementById('localPersistenceStatus');
+ if(status){status.hidden=!!result.ok;status.textContent=result.ok?'':result.code==='LOCAL_INVALID_DATA'||result.code==='LOCAL_UNSUPPORTED_PROFILE'
+  ?'La sauvegarde locale ne peut pas être chargée. Les données sont conservées ; exporte tes sauvegardes avant de poursuivre.'
+  :'La sauvegarde sur cet appareil n’est pas confirmée. Garde Lumen ouvert et réessaie ; tes copies précédentes sont conservées.';}
+ if(!result.ok)recordCloudDiagnostic('local_preservation_failed',{reason:result.code});
+}
+const {loadLumenProgress,saveLumenProgress}=createLocalPersistence(localStorage,()=>lumenProgress,{progressKey:qaActive?"lumenQaProgressV1":"lumenProgressV1",onSave:result=>{reportLocalPersistence(result);scheduleCloudProfile()},onIssue:reportLocalPersistence});
 const persistenceModel={
-get lumenSupabase(){return lumenSupabase},set lumenSupabase(value){if(lumenSupabase!==value){canonicalRecoveryContext=null;canonicalRecovery.cancel()}lumenSupabase=value},
+get lumenSupabase(){return lumenSupabase},set lumenSupabase(value){if(lumenSupabase!==value){cloudHydrationGeneration++;canonicalRecoveryContext=null;canonicalRecovery.cancel()}lumenSupabase=value},
 get lumenEntitlements(){return lumenEntitlements},set lumenEntitlements(value){lumenEntitlements=Array.isArray(value)?value:[]},
 get lumenCapabilities(){return lumenCapabilities},set lumenCapabilities(value){lumenCapabilities=Array.isArray(value)?value:[]},
-get lumenUser(){return lumenUser},set lumenUser(value){if(lumenUser?.id!==value?.id){canonicalRecovery.cancel();canonicalRecoveryContext=null;canonicalOutboxNotice=null;cloudProfileReady=false;cloudProfileBaseline=null;cloudProfileFailure=null;lumenNickname=""}lumenUser=value},
+get lumenUser(){return lumenUser},set lumenUser(value){if(lumenUser?.id!==value?.id){cloudHydrationGeneration++;canonicalRecovery.cancel();canonicalRecoveryContext=null;canonicalOutboxNotice=null;cloudProfileReady=false;cloudProfileBaseline=null;cloudProfileFailure=null;lumenNickname=""}lumenUser=value},
 get lumenCloudReady(){return lumenCloudReady},set lumenCloudReady(value){lumenCloudReady=value},
 get lumenNickname(){return lumenNickname},set lumenNickname(value){lumenNickname=value},
 get lumenProgress(){return lumenProgress},set lumenProgress(value){lumenProgress=value},
@@ -587,6 +595,9 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
  if(qaActive||!lumenUser||!lumenSupabase)return;
  canonicalRecoveryContext=null;canonicalRecovery.cancel();
  if(sessionStorage.getItem("lumenPasswordRecoveryPending")==="1")return;
+ const accountId=lumenUser.id,hydrationClient=lumenSupabase;
+ const hydrationGeneration=++cloudHydrationGeneration;
+ const sessionValid=()=>lumenUser?.id===accountId&&lumenSupabase===hydrationClient&&!qaActive&&cloudHydrationGeneration===hydrationGeneration;
  cloudProfileReady=false;cloudProfileBaseline=null;
  let hydrationStage="start";
  try{
@@ -596,9 +607,6 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   // First login: create the profile exactly once. An existing cloud profile wins.
   const ownerKey='lumenCloudOwnerId';
   const currentOwner=localStorage.getItem(ownerKey);
-  const accountId=lumenUser.id;
-  const hydrationClient=lumenSupabase;
-  const sessionValid=()=>lumenUser?.id===accountId&&lumenSupabase===hydrationClient&&!qaActive;
   if(!currentOwner)preserveGuestBeforeHydration(localStorage,{accountId,currentOwner,sessionValid});
   hydrationStage="cloud_restore";
   const existing=await loadVerifiedProfile(hydrationClient,{userId:accountId});
@@ -845,7 +853,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   resumeCanonicalVictoryAfterHydration(accountId,hydrationClient);
   maybeShowStreakLoss();
   const gate=document.getElementById("accountOptin");if(gate){const wasVisible=!gate.hidden;gate.hidden=true;if(wasVisible)showAccountSavedConfirmation()}
- }catch(e){recordCloudDiagnostic("hydration_failed",{errorCode:String(e?.code||e?.status||"unknown").slice(0,48),errorName:String(e?.name||"unknown").slice(0,48),stage:String(e?.stage||hydrationStage).slice(0,48),reason:e?.message?.startsWith("Profil local divergent")?"local_divergence":e?.message?.startsWith("Daily history unavailable")?"daily_history":e?.message?.startsWith("Daily rewards unavailable")?"daily_rewards":e?.message?.startsWith("Impossible de restaurer le profil")?"cloud_restore":e?.message?.startsWith("Sauvegarde cloud impossible")?"cloud_cas":"other",kind:e?.code==="LOCAL_STORAGE_QUOTA"||e?.name==="QuotaExceededError"||e?.code===22?"local_quota":"other",...hydrationFailureDiagnostic(e,hydrationStage)});cloudProfileFailure={reason:"restore_failed"};updateAuthUI();console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
+ }catch(e){if(!sessionValid())return;recordCloudDiagnostic("hydration_failed",{errorCode:String(e?.code||e?.status||"unknown").slice(0,48),errorName:String(e?.name||"unknown").slice(0,48),stage:String(e?.stage||hydrationStage).slice(0,48),reason:e?.message?.startsWith("Profil local divergent")?"local_divergence":e?.message?.startsWith("Daily history unavailable")?"daily_history":e?.message?.startsWith("Daily rewards unavailable")?"daily_rewards":e?.message?.startsWith("Impossible de restaurer le profil")?"cloud_restore":e?.message?.startsWith("Sauvegarde cloud impossible")?"cloud_cas":"other",kind:e?.code==="LOCAL_STORAGE_QUOTA"||e?.name==="QuotaExceededError"||e?.code===22?"local_quota":"other",...hydrationFailureDiagnostic(e,hydrationStage)});cloudProfileFailure={reason:"restore_failed"};updateAuthUI();console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
 },holdLegacyMergeForFullRestore:async()=>true},{setTimeout,console,qaMode});
 let skipFirstGridTutorial=false;
 try{skipFirstGridTutorial=localStorage.getItem(qaKey('lumenSkipFirstGridTutorial'))==='1'}catch(_){}

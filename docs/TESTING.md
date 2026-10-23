@@ -502,6 +502,17 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Lot 1: local-persistence-contract-tests.mjs covers verified save/refusal, silent
+failure, unavailable reads, exact quarantine, failed backups, changed source,
+unsupported origins and UTF-8/JSONB sizing. cloud-hydration-generation-tests.mjs
+executes the production hook with late rejected restores under account/client/
+generation/logout changes and a same-session control. Both suites are required
+in the quality gate. Existing mirror/session assertions remain enabled; their VM
+fixtures now supply the real generation state. Native quota browser coverage
+also verifies a malformed original is archived before replacement. No fixture
+uses production data. Physical Android/live Auth and SQL remain separate evidence.
+
+
 Quota continuation (#536/#537): `storage-maintenance-tests.mjs` reproduces
 `achievement_install` failure with retained old backups, verified archival and
 one installation retry; aborted archive commits preserve the active original.

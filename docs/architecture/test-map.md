@@ -1,5 +1,12 @@
 # Existing verification map
 
+Persistence foundations (lot 1): local.js returns verified durable results and
+quarantines malformed bytes before replacement; game-screen.js reports refusals
+and scopes hydration to account/client/generation, including rejected awaits.
+profile-size.js owns the UTF-8/JSONB size boundary. Required checks:
+local-persistence-contract-tests.mjs and cloud-hydration-generation-tests.mjs.
+No reward authority, command identity or outbox format changes.
+
 Reviewed device recovery: `approved-device-recovery-tests.mjs` covers explicit
 wallet choice, exact owner/digests, expiry, lost acquisitions, changed cloud,
 changed local bytes, account/session switch and failed archival. The existing
