@@ -1,6 +1,6 @@
 // Requires a local static server and an isolated Chrome debugging profile.
 import fs from 'node:fs';
-import {connectBrowser,acknowledgeLearningMilestones} from './cdp-client.mjs';
+import {connectBrowser,acknowledgeLearningMilestones,navigateAndWait} from './cdp-client.mjs';
 import {verifyFinaleResponsive} from './finale-responsive-browser.mjs';
 import {verifyBoardFeedback} from './board-feedback-browser.mjs';
 import {verifyGuidedUndo} from './guided-undo-browser.mjs';
@@ -16,9 +16,7 @@ try{
  await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
  await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
  const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:'localStorage.setItem("lumenProgressV1",JSON.stringify({solved:{0:1,1:1},badges:{}}));localStorage.setItem("lumenSound","off");localStorage.setItem("lumenInstallLater",String(Date.now()));localStorage.setItem("lumenPushChoice","later");'});
- await send('Page.navigate',{url});
- for(let attempt=0;attempt<100;attempt++){if(await evaluate('!!window.lumenDiagnostics'))break;await sleep(100)}
- assert(await evaluate('!!window.lumenDiagnostics'),'Application did not start: '+JSON.stringify(errors));
+ await navigateAndWait({send,evaluate},'Page.navigate',{url});
  if(fixture.identifier)await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier}).catch(error=>{if(!String(error).includes('Script not found'))throw error});
  await sleep(1500);
  console.log('browser-test: embedded-regressions:start');

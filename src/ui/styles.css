@@ -1089,3 +1089,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .cloud-sync-status{font-size:.8rem;line-height:1.4;max-width:32rem;padding:.4rem .6rem;color:var(--muted,#b6c2d9)}
 .cloud-sync-status[role="alert"]{color:#ffd6b0}
 .cloud-sync-status button{font:inherit;margin:.2rem}
+
+/* Keep countdown transitions out of board geometry and status intrinsic width. */
+.status{position:relative;padding-bottom:18px}
+.speed-countdown{position:absolute;left:50%;bottom:0;margin-left:0;transform:translateX(-50%);height:16px}

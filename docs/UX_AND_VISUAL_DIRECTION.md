@@ -6,6 +6,10 @@ error rates and do not prove regressions. Mixed-version episodes retain context.
 Each filter change revokes report review and its draft URL; a newly displayed
 report must be reviewed again. No game, teaching or saved-player behavior changes.
 
+The hidden Rapidité countdown retains its layout space. Showing/hiding it at
+the qualification thresholds must not move a cell under an ongoing touch;
+the clock, badge criteria and hidden accessibility state remain unchanged.
+
 Guided correction (#548) filters only the handled gesture's release click.
 There is no 700 ms cooldown across the board: a fresh tap works immediately.
 
