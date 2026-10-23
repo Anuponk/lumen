@@ -10,6 +10,9 @@ For an N x N puzzle:
 
 The stored board uses three user-visible states: empty, excluded, Guardian. Interaction order is **empty -> excluded -> Guardian -> empty**.
 
+Correcting the offending Guardian in guided mode consumes only that correction
+gesture. The next separate tap is immediately available, without a global delay.
+
 A wrong intermediate Guardian is allowed to exist long enough for the player to reason/correct it. Guided assistance may explain a direct row/column/territory/touch conflict or a dead end, but the first tap is an exclusion and must not be treated as an attempted Guardian.
 
 The tap handler checks guided Guardian conflicts on the second tap, when the next state is Guardian. Rejecting the intermediate exclusion on a required solution cell would make the two-tap placement cycle impossible. The engine can still diagnose an exclusion dead end, and Verify/hints can explain an incorrect exclusion; that diagnostic must not block the first half of a tap placement.
@@ -35,6 +38,22 @@ Quest 1 uses the normal success experience. Quest 2 success requires the explici
 Undo after a guided conflict restores the preceding board and clears the pending/deferred guided conflict, its card and its interaction lock. Acknowledging the explanation alone still leaves the incorrect Guardian to correct. Assistance already used remains recorded.
 
 ## Mobile input
+
+Touch-only long press (#531): after constrained learning has finished, holding
+a cell for 500 ms places a Guardian directly from empty/manual/automatic exclusion,
+or removes a Guardian to the neutral stored state. It uses the same cell-action
+handler, validation, assistance/mistake accounting, history and persistence as a
+short click. Derived automatic exclusions still follow existing rules. A hold
+fires once and consumes its release click; short taps retain empty → excluded →
+Guardian → empty. Mouse/keyboard click behavior remains unchanged.
+
+Movement over 8 px transfers to the existing exclusion drag and cancels the hold.
+Multitouch, pointer cancellation, blur/background and a detached/replaced cell
+cancel it. Permissions are checked again at activation: no action while paused,
+loading, victorious, guided/verification-blocked or inside constrained learning.
+The ordinary SEE → UNDERSTAND → ACT/two-tap/drag lessons stay intact; the help
+panel presents the shortcut as available after learning. A brief outline and
+optional vibration acknowledge an accepted action without additional game state.
 Dragging a finger over cells marks exclusions. It must:
 - avoid overwriting Guardians;
 - avoid repeatedly processing the same cell in one drag;

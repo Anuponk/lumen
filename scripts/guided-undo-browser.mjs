@@ -29,6 +29,12 @@ export async function verifyGuidedUndo({send,evaluate}){
   assert.equal(await evaluate('lumenDiagnostics.snapshot().state[1][0]'),1,'The next touch works immediately');
   await tap('#undo');await tap(cell(1,1));
   assert.equal(await evaluate('lumenDiagnostics.snapshot().state[1][1]'),1,'Repeated Undo remains playable');
+  await tap(cell(0,wrong));await tap(cell(2,0));
+  assert.equal(await evaluate(`document.getElementById('guidedCard').hidden`),false);
+  await tap(cell(0,wrong));
+  assert.equal(await evaluate(`lumenDiagnostics.snapshot().state[0][${wrong}]`),1,'Touching the incorrect Guardian corrects it once');
+  await tap(cell(3,0));
+  assert.equal(await evaluate('lumenDiagnostics.snapshot().state[3][0]'),1,'A fresh touch after guided correction must work immediately, without a global cooldown');
   results.push({questIndex:index,conflict:true,singleUndo:true,nextTouch:true});
  }
  return results;

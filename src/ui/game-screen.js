@@ -5,6 +5,8 @@ import {learningStep, dragLearningStep, learningAllows, learningCopy} from "../g
 import {createAnalytics,attemptAnalyticsProperties} from "../analytics/events.js";
 import {createHintTestSuite} from "../testing/hint-tests.js";
 import {createDiagnostics} from "../testing/diagnostics.js";
+import {createLongPressGuardian} from './long-press-guardian.js';
+import {createGestureClickSuppression} from './gesture-click-suppression.js';
 import {buildIncidentInvestigation,incidentAlerts,renderIncidentInvestigation} from './incident-investigation.js';
 import {createLocalPersistence} from "../persistence/local.js";
 import {currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
@@ -1784,8 +1786,9 @@ function closeGuidedConflict(){
  // The acknowledgment hides the explanation, but never releases an incorrect Guardian.
  document.getElementById("guidedCard").hidden=true;
 }
-let suppressGuidedClickUntil=0;
+const guidedCorrectionClicks=createGestureClickSuppression();
 function dismissGuidedOnAnyTap(e){
+ guidedCorrectionClicks.clear();
  if(!guidedPending)return;
  const pending=guidedPending,cell=e.target.closest&&e.target.closest(".cell");
  const sameAttempt=cell&&Number(cell.dataset.row)===pending.r&&Number(cell.dataset.col)===pending.c;
@@ -1801,11 +1804,14 @@ function dismissGuidedOnAnyTap(e){
  guidedPending=null;guidedDeferred=null;
  document.getElementById("guidedCard").hidden=true;
  board.removeAttribute("aria-disabled");
- suppressGuidedClickUntil=performance.now()+700;
+ guidedCorrectionClicks.suppress(e,cell,cell.closest('.learning-board-wrap'));
  persistAttemptBoard();
  render();
 }
 document.addEventListener("pointerdown",dismissGuidedOnAnyTap,true);
+document.addEventListener('click',e=>{
+ if(guidedCorrectionClicks.consume(e)){e.preventDefault();e.stopImmediatePropagation()}
+},true);
 function configureLearningMode(){
  for(const id of ["undo","hint","verify"])document.getElementById(id).disabled=scriptedLearningActive();
  const cb=document.getElementById("autoCross"),wrap=document.getElementById("autoCrossWrap"),note=document.getElementById("learningNote"),guided=document.getElementById("guidedErrors"),gwrap=document.getElementById("guidedErrorsWrap");
@@ -2660,6 +2666,24 @@ function launchWinStar(stars,{pending=false}={}){
  if(stars<=0)return;victorySound();setTimeout(starArrivalSound,1900);const x=document.createElement("div");x.className="win-flight";x.textContent=stars>1?"★ +"+stars:"★";document.body.appendChild(x);if(!pending)showRewardToast(stars>1?"+"+stars+" étoiles gagnées":"Étoile gagnée");setTimeout(()=>x.remove(),2550);
 }
 let dragCross=null,dragCrossSuppressClick=false;
+function longPressGuardianAllowed(cell){
+ return !!cell?.isConnected&&board.contains(cell)&&!celebrated&&!guidedPending&&!verifyPending&&
+  !scriptedLearningActive()&&
+  attemptEngine.snapshot()?.state===ATTEMPT_STATES.RUNNING&&document.visibilityState==='visible'&&
+  document.getElementById('attemptMask')?.hidden!==false&&!board.hasAttribute('aria-disabled');
+}
+const guardianLongPress=createLongPressGuardian({allowed:longPressGuardianAllowed,clickScope:cell=>cell.closest('.learning-board-wrap'),activate:cell=>{
+ dragCross=null;
+ cell.dispatchEvent(new Event('lumen-guardian-toggle'));
+}});
+document.addEventListener('pointerdown',e=>guardianLongPress.down(e,board.contains(e.target)?e.target.closest('.cell'):null),true);
+document.addEventListener('pointermove',e=>guardianLongPress.move(e),{passive:true});
+document.addEventListener('pointerup',e=>guardianLongPress.up(e));
+document.addEventListener('pointercancel',()=>guardianLongPress.cancel());
+document.addEventListener('visibilitychange',()=>{if(document.hidden)guardianLongPress.cancel()});
+window.addEventListener('blur',()=>guardianLongPress.cancel());
+document.addEventListener('click',e=>{if(guardianLongPress.consumeClick(e)){e.preventDefault();e.stopImmediatePropagation()}},true);
+board.addEventListener('contextmenu',e=>{if(e.pointerType==='touch'||guardianLongPress.active())e.preventDefault()});
 function dragCrossCellAt(x,y){
  const el=document.elementFromPoint(x,y)?.closest?.(".cell");
  if(!el||!board.contains(el))return null;
@@ -2710,6 +2734,7 @@ function markDragCross(r,c){
  }
 }
 board.addEventListener("pointerdown",e=>{
+ if(guardianLongPress.multiTouch()){dragCross=null;return}
  if(celebrated||guidedPending||verifyPending)return;
  if(!learningDragAllowed())return;
  const cell=e.target.closest(".cell");if(!cell)return;
@@ -2770,8 +2795,10 @@ function render(){
   }
   if(shown===3)d.classList.add("auto-x");
   d.dataset.row=r;d.dataset.col=c;
-  d.onclick=async()=>{if(celebrated||dragCrossSuppressClick||guidedPending||verifyPending||performance.now()<suppressGuidedClickUntil)return;
- let shown=displayedCellState(r,c),next=shown===3?2:(state[r][c]+1)%3,currentGuardians=state.flat().filter(v=>v===2).length;
+  d.onclick=async(event)=>{if(celebrated||dragCrossSuppressClick||guidedPending||verifyPending)return;
+ const directGuardian=event?.type==='lumen-guardian-toggle';
+ if(directGuardian&&!longPressGuardianAllowed(d))return;
+ let shown=displayedCellState(r,c),next=directGuardian?(state[r][c]===2?0:2):shown===3?2:(state[r][c]+1)%3,currentGuardians=state.flat().filter(v=>v===2).length;
  if(scriptedLearningActive()){
   if(learningStage==="intro")return;
   if(learningStage==="place"){if(!scriptedAllowsGuardian(r,c))return;if(state[r][c]===0){next=1}else if(state[r][c]===1){next=2}else next=0}
@@ -2815,8 +2842,13 @@ function render(){
  paintBoardState();if(next===2&&resolutionBefore)animateLogicalResolution(r,c,resolutionBefore);updateScriptedLearning();if(levelIndex===1&&next===2&&!scriptedLearningActive())showLearningTip("tools","Cette quête est à toi","Tu joues librement. Essaie Indice pour apprendre une nouvelle déduction : les indices sont offerts jusqu’à la quête 10. Vérifier examine tes choix.");persistAttemptBoard();
  const q=state.flat().filter(v=>v===2).length;
  rewardProgressPulse(q,{mutation:true});
+ if(directGuardian){
+  d.classList.add('long-press-accepted');setTimeout(()=>d.classList.remove('long-press-accepted'),180);
+  try{navigator.vibrate?.(12)}catch{}
+ }
  if(q===n&&!scriptedLearningActive())render()
 };board.appendChild(d)
+ d.addEventListener('lumen-guardian-toggle',d.onclick);
  }
  let q=state.flat().filter(v=>v===2).length;const countEl=document.getElementById("count");countEl.textContent=q+"/"+n;rewardProgressPulse(q);updateScriptedLearning();
  if(q===n&&(!scriptedLearningActive()||learningStage==="complete")){

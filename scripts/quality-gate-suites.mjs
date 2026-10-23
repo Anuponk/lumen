@@ -1,4 +1,5 @@
 export const nodeSuites=[
+ 'long-press-guardian-tests.mjs',
  'incident-investigation-tests.mjs',
  'diagnostic-reporter-tests.mjs',
  'storage-maintenance-tests.mjs',

@@ -1,5 +1,15 @@
 # Existing verification map
 
+Missed taps (#548): `guided-undo-browser.mjs` reproduces immediate input after
+touch correction (RED/GREEN); `touch-input-browser.mjs` covers whole-board
+consecutive center/border taps with small movement. Both run in the general
+isolated browser. Affected physical Android/PWA confirmation remains pending.
+
+Touch hold: `long-press-guardian-tests.mjs` covers timers, cancellation, input
+guards, direct/short transitions and retargeted release. The native
+`long-press-guardian-browser.mjs` extends the general browser suite. All learning,
+incremental paint, Undo, gesture, hint/catalogue and cloud regressions remain.
+
 Incident investigation: `incident-investigation-tests.mjs` checks correlation,
 partial state, privacy, grouped signals and actual loader account/capability
 races. `incident-investigation-browser-tests.mjs` runs its shared review helper

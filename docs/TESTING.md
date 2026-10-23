@@ -1,5 +1,50 @@
 # Testing and quality gate
 
+## Missed short taps — #548
+
+Confirmed reproduction: after correcting the offending Guardian by touching it,
+the old `suppressGuidedClickUntil = now + 700` rejected every cell action for
+700 ms. Native CDP touch in `guided-undo-browser.mjs` first failed (next valid
+cell stayed 0 instead of 1), then passed with gesture-scoped click suppression.
+The original correction still occurs once; a fresh pointerdown immediately
+releases suppression. Undo and the guided lock remain covered at quests 7/11.
+The shared `gesture-click-suppression.js` also handles the hold's release.
+
+`touch-input-browser.mjs` exercises consecutive native short taps across every
+cell, through empty/exclusion/Guardian, at centers and inside borders, including
+small movement. These checks do not establish the cause of every failure on
+Rachel's Android. Concurrent hydration/render loss and device-specific behavior
+remain unconfirmed; confirmation on the affected Android/PWA after release is
+required. No affected profile/storage is inspected, changed or cleared, and no
+gesture telemetry is collected. Physical Android/iOS/Safari remain untested.
+
+## Touch Guardian hold — #531
+
+`long-press-guardian-tests.mjs` uses a deterministic timer for the 500 ms hold,
+single activation, short/mouse/keyboard preservation, movement/multitouch/cancel,
+guard changes and retargeted release suppression. It also executes the actual
+cell handler for direct/normal transitions, undo evidence and locked input.
+The performance source regression retains the same assertions while accepting
+the handler's new event parameter; painting still stays incremental.
+
+`long-press-guardian-browser.mjs`, in the existing general browser suite, uses
+native CDP touch for empty/marked placement, removal, release suppression, single
+undo, cancellation, pause during hold and movement handing off to drag. Full
+gameplay validation still includes all hints, strict catalogue, first-quest
+learning, mouse/tap/drag, cloud and reward checks. These are isolated Chromium
+fixtures; no physical Android or iOS/Safari validation is claimed.
+The full suite caught the extra help copy overflowing 360×640. The help card now
+scrolls within the viewport; `ux-cleanup-tests.mjs` retains the original geometry
+assertion and verifies that close/replay actions remain reachable after scrolling.
+
+The initial native pause test exposed a retargeted release: the pause mask is a
+sibling of the board, so a board-only click interceptor could not see it. The
+regression first failed, then passed after intercepting at document capture and
+matching the original pointer identity (or board frame for legacy clicks).
+Every fresh pointerdown clears stale suppression; keyboard/programmatic clicks
+with detail zero remain available. Event semantics reference:
+[Pointer Events click dispatch](https://www.w3.org/TR/pointerevents3/#the-click-auxclick-and-contextmenu-events).
+
 ## Optional persistent diagnostics — #534
 
 Mandatory `diagnostic-reporter-tests.mjs`: privacy, deferred capture, offline
