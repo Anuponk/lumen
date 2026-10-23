@@ -96,7 +96,7 @@ Per-quest performance has exactly four badges, as implemented in `src/campaign/p
 - ✓ **Sans erreur**: solve without effective assistance and without a confirmed wrong Guardian.
 - ✦ **Maîtrise**: earn Autonomie, Rapidité and Sans erreur in the **same qualifying attempt**. Never combine achievements from separate attempts.
 
-Eligibility follows unlocked global progression: Rapidité unlocks at quest 3; the other three badges unlock at quest 6. Previously played tutorial quests can become eligible for the unlocked badge families when replayed, as defined by `performanceEligibility(questIndex, unlockedQuestCount)`.
+All four badges are available from the first quest for guests and authenticated players (#529). Eligibility never depends on quest number, Adventure or global progression. A missing badge is shown as not earned, without a lock. Effective assistance, confirmed mistakes and the existing qualification cooldown still determine the outcome of each run. No historical badges are awarded automatically.
 
 A quest has a **15-minute qualification cooldown** based on `lastQualifiedAt`; replay during cooldown remains possible but cannot improve qualifying badges. Reset/restore must preserve attempt identity and qualification metadata. See `badgeCooldownRemaining` and `mergeEarnedBadges` in `src/campaign/performance.js`.
 

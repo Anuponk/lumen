@@ -30,7 +30,9 @@ Every Guardian uses the real empty -> exclusion -> Guardian cycle. All exclusion
 
 The lesson is derived from canonical board state by `src/game/learning.js`. Reload restores the same attempt and half-completed tap cycle; pause/background restoration still requires explicit resume. Reset returns to the first deduction without changing attempt identity, elapsed time, assistance or campaign progression. Ordinary replay and social challenges do not activate the constrained lesson; explicit learning replay does.
 
-Quest 1 uses the normal success experience. Quest 2 success requires the explicit Découvrir Mon ciel CTA; its backdrop does not navigate. The tour explains four real zones in sequence: constellation navigation, quest cards, performance badges and constellation/stars. Its final CTA or close action leads to quest 3. Badge introductions happen at actual eligibility milestones: Rapidité at quest 3, Autonomie/Maîtrise at quest 6. No imposed board coach remains from quest 3 onward, while the existing Assist eligibility continues.
+Quest 1 uses the normal success experience. Quest 2 success requires the explicit Découvrir Mon ciel CTA; its backdrop does not navigate. The tour explains four real zones in sequence: constellation navigation, quest cards, performance badges and constellation/stars. Its final CTA or close action leads to quest 3. All four badges are eligible from quest 1. The objective step names them; quest 3 explains the conditions without promising an unlock, and quest 6 recalls assistance choices. No imposed board coach remains from quest 3 onward, while the existing Assist eligibility continues.
+
+Undo after a guided conflict restores the preceding board and clears the pending/deferred guided conflict, its card and its interaction lock. Acknowledging the explanation alone still leaves the incorrect Guardian to correct. Assistance already used remains recorded.
 
 ## Mobile input
 Dragging a finger over cells marks exclusions. It must:

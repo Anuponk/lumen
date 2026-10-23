@@ -4,6 +4,8 @@ Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This loo
 
 ## Entry points and shape
 
+Guest registration (#528): `src/persistence/guest-account.js` selects an ownership-safe initial profile and verifies an account-scoped original backup before UI hydration. Existing cloud conflicts retain guest progress. Guided Undo (#533): UI `clearGuidedConflict` clears the stale interaction lock while restoring history. Badge eligibility (#529): `performanceEligibility` exposes all four goals from quest 1; quest 3/6 are explanations, not badge unlocks.
+
 Session recovery #530: `cloud-profile.js` canonical achievement coverage accepts
 only server badge additions on identical immutable victory evidence.
 `achievementRecoveryDiagnostic` supplies fixed failure categories;

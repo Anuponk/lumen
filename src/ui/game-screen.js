@@ -9,6 +9,7 @@ import {createLocalPersistence} from "../persistence/local.js";
 import {currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
 import {canonicalAttemptToResume,nextCanonicalAtLegacyBoundary,preserveAttemptSnapshot} from '../campaign/campaign-resume.js';
 import {createCloudPersistence} from "../persistence/cloud.js";
+import {guestAccountSeed,preserveGuestBeforeHydration,guestNeedsReconciliation} from '../persistence/guest-account.js';
 import {reconcileDailyIntoCloudProfile} from "../persistence/daily-hydration.js";
 import {CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievements,achievementRecoveryDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
@@ -480,12 +481,24 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   const accountId=lumenUser.id;
   const hydrationClient=lumenSupabase;
   const sessionValid=()=>lumenUser?.id===accountId&&lumenSupabase===hydrationClient&&!qaActive;
+  if(!currentOwner)preserveGuestBeforeHydration(localStorage,{accountId,currentOwner,sessionValid});
   hydrationStage="cloud_restore";
   const existing=await loadVerifiedProfile(hydrationClient,{userId:accountId});
   if(!sessionValid())return;
-  const fresh={...incoming,solved:{},historyBackup:{},badges:{},stars:{},performances:{},noHint:{},xp:0,skyScore:0,shards:3,catalogueOrigin:currentCatalogueOrigin};
+  const fresh={solved:{},historyBackup:{},badges:{},stars:{},performances:{},noHint:{},xp:0,skyScore:0,shards:3,catalogueOrigin:currentCatalogueOrigin};
   hydrationStage="cloud_initialize";
-  let cloud=existing||await initializeCloudProfile(hydrationClient,currentOwner===accountId?incoming:fresh,{userId:accountId});
+  let cloud=existing||await initializeCloudProfile(hydrationClient,currentOwner===accountId?incoming:!currentOwner?guestAccountSeed(incoming,currentOwner,accountId,fresh):fresh,{userId:accountId});
+  if(!sessionValid())return;
+  // An existing account must cover the guest before its cache can be replaced.
+  // Preserve both copies and use the existing conservative merge contract. An
+  // ambiguous balance/receipt stays pending instead of silently resetting play.
+  if(!currentOwner&&guestNeedsReconciliation(incoming,cloud)){
+   hydrationStage='guest_reconciliation';
+   const resolution=await reconcileCompatibleCloudProfiles(hydrationClient,localStorage,cloud,{userId:accountId});
+   if(!sessionValid())return;
+   if(resolution.status==='reconciled'||resolution.status==='cloud_dominant')cloud=resolution.profile;
+   if(guestNeedsReconciliation(incoming,cloud))throw Error('Progression invitée conservée : fusion cloud en attente');
+  }
   // Resume verified canonical victory intents before installing the cloud profile.
   // Keep unacknowledged entries on read/write failure; do not replay any other
   // legacy rewards or unknown account's snapshots.
@@ -1461,7 +1474,7 @@ function fixVerificationErrors(){
 let learningStage="place",learningTip=null,learningTipSeen=new Set(),learningIntroStep=0;
 const LEARNING_INTRO=[
  {title:"Observe le plateau",copy:"La grille est découpée en plusieurs territoires colorés. Les numéros 1 à 5 t’aident à les distinguer : chaque couleur forme un territoire."},
- {title:"Ton objectif",copy:"Tu vas placer des Gardiens sur la grille. Pour réussir, tous les Gardiens doivent respecter les mêmes quatre règles."},
+ {title:"Ton objectif",copy:"Tu vas placer des Gardiens sur la grille. Pour réussir, tous les Gardiens doivent respecter les mêmes quatre règles. Dès cette quête, tu peux aussi gagner des badges de performance : Rapidité, Autonomie, Sans erreur et Maîtrise, selon ton essai."},
  {title:"Un par territoire",copy:"Chaque territoire coloré doit contenir exactement un Gardien."},
  {title:"Un par ligne et par colonne",copy:"Chaque ligne contient exactement un Gardien, et chaque colonne aussi."},
  {title:"Ils gardent leurs distances",copy:"Deux Gardiens ne peuvent jamais se toucher, même en diagonale."},
@@ -1611,6 +1624,11 @@ function showGuidedConflict(r,c,info){
  document.getElementById("guidedCard").hidden=false;
  board.setAttribute("aria-disabled","true");
 }
+function clearGuidedConflict(){
+ guidedPending=null;guidedDeferred=null;
+ document.getElementById("guidedCard").hidden=true;
+ board.removeAttribute("aria-disabled");
+}
 function closeGuidedConflict(){
  // The acknowledgment hides the explanation, but never releases an incorrect Guardian.
  document.getElementById("guidedCard").hidden=true;
@@ -1695,10 +1713,10 @@ function maybeShowBadgeMilestone(){
  if(!o||!title||!copy)return;
  o.dataset.kind=kind;
  if(kind==="speed"){
-  title.textContent="Ton premier badge est à gagner";
-  copy.innerHTML="<strong>⚡ Rapidité</strong> : termine cette quête avant le temps cible pour gagner le badge.<br><br>Les règles détaillées restent consultables dans Badges.";
+  title.textContent="Des objectifs pour chaque quête";
+  copy.innerHTML="<strong>⚡ Rapidité</strong> : termine cette quête avant le temps cible pour gagner le badge.<br><br>Tous les badges sont accessibles depuis la première quête. Une assistance utilisée empêche Autonomie, Sans erreur et Maîtrise sur cet essai ; Rapidité reste possible. Les règles détaillées restent consultables dans Badges.";
  }else{
-  title.textContent="Tous les badges sont maintenant accessibles";
+  title.textContent="Choisis tes aides de jeu";
   copy.innerHTML="<strong>◐ Marquage auto débloqué</strong> (désactivé par défaut).<br><strong>🧠 Autonomie</strong> : sans assistance.<br><strong>✓ Sans erreur</strong> : sans erreur conservée et sans assistance.<br><strong>✦ Maîtrise</strong> : réunis les trois badges sur un essai.<br><br>Détails dans Aides et Badges.";
  }
  o.hidden=false;o.style.display="flex";pauseGameClock();
@@ -2830,7 +2848,7 @@ if(runTestsButton)runTestsButton.onclick=runHintTests;
 
 const hintClose=document.getElementById("hintClose");
 if(hintClose)hintClose.onclick=()=>{clearHintDisplay();hintStage=0;hintFocus=null;render()};
-document.getElementById("undo").onclick=()=>{if(celebrated||scriptedLearningActive())return;if(hist.length){const previous=hist.pop(),pending=attemptEngine.snapshot()?.wrongGuardianPending;if(pending){const [pr,pc]=pending.split(",").map(Number);if(previous?.[pr]?.[pc]!==2)attemptEngine.clearWrongGuardianPending(pending)}state=previous;clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";render();persistAttemptBoard()}};
+document.getElementById("undo").onclick=()=>{if(celebrated||scriptedLearningActive())return;if(hist.length){const previous=hist.pop(),pending=attemptEngine.snapshot()?.wrongGuardianPending;if(pending){const [pr,pc]=pending.split(",").map(Number);if(previous?.[pr]?.[pc]!==2)attemptEngine.clearWrongGuardianPending(pending)}state=previous;clearGuidedConflict();clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";render();persistAttemptBoard()}};
 const ac=document.getElementById("autoCross");
 const lumenAutoCrossStored=localStorage.getItem("lumenAutoCross");const legacyAutoCrossStored=localStorage.getItem("regaliaAutoCross");ac.checked=(lumenAutoCrossStored??legacyAutoCrossStored)!=="0";if(lumenAutoCrossStored===null&&legacyAutoCrossStored!==null){localStorage.setItem("lumenAutoCross",legacyAutoCrossStored);localStorage.removeItem("regaliaAutoCross")};
 ac.onchange=()=>{if(celebrated){ac.checked=!ac.checked;return}if(levelIndex<=4&&!replayMode){ac.checked=false;return}if(ac.checked){autoUsedThisGame=true;attemptEngine.markAssistance();trackAttemptEvent("auto_marking_enabled")}localStorage.setItem("lumenAutoCross",ac.checked?"1":"0");if(!ac.checked)maybeShowManualCrossTip();hi=null;render()};
@@ -3076,11 +3094,11 @@ updateHintButton();renderXP();if(!document.getElementById("mapModal").hidden)sky
 
 function performanceIcon(type){const icons={autonomy:'<span aria-hidden="true">🧠</span>',speed:'<span aria-hidden="true">⚡</span>',noError:'<span aria-hidden="true">✓</span>',mastery:'<span aria-hidden="true">✦</span>'};return icons[type]||""}
 function performanceBadges(i){
- const p=lumenProgress.performances?.[i],earned=p?.version>=2?p.badges||{}:{},eligibility=currentPerformanceEligibility(i);
+ const p=lumenProgress.performances?.[i],earned=p?.version>=2?p.badges||{}:{};
  const badges=[{cls:"autonomy",key:"autonomy",label:"Autonomie"},{cls:"speed",key:"speed",label:"Rapidité"},{cls:"no-error",key:"noError",label:"Sans erreur"},{cls:"mastery",key:"mastery",label:"Maîtrise"}];
  const remaining=badgeCooldownRemaining(p);const statusLabel=remaining?`Badges en pause : ${badgeCooldownLabel(remaining)}`:"Badges disponibles";
  const status="";
-  return '<span class="performance-grid" aria-label="Performance">'+badges.map(x=>{const locked=!eligibility[x.key],got=!!earned[x.key],state=locked?" verrouillé":got?" obtenu":" disponible";return '<span class="performance-slot '+x.cls+(got?' earned':'')+(locked?' locked':'')+'" title="'+x.label+state+'" aria-label="'+x.label+state+'">'+(locked?'🔒':got?performanceIcon(x.key):'')+'</span>'}).join("")+'</span>'+status
+  return '<span class="performance-grid" aria-label="Performance">'+badges.map(x=>{const got=!!earned[x.key],state=got?" obtenu":" non obtenu";return '<span class="performance-slot '+x.cls+(got?' earned':'')+'" title="'+x.label+state+'" aria-label="'+x.label+state+'">'+(got?performanceIcon(x.key):'')+'</span>'}).join("")+'</span>'+status
 }
 function canonicalPerformanceBadges(questId){
  const earned=lumenProgress.canonicalQuestState?.[questId]?.badges||{};

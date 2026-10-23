@@ -1,4 +1,8 @@
 export const nodeSuites=[
+ 'badge-availability-ui-tests.mjs',
+ 'guest-account-tests.mjs',
+ 'guest-account-hydration-tests.mjs',
+ 'guided-undo-tests.mjs',
  'cloud-daily-session-tests.mjs',
  'cloud-wallet-command-tests.mjs',
  'cloud-wallet-reconciliation-tests.mjs',
