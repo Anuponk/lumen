@@ -25,7 +25,7 @@ export async function applyApprovedDeviceRecovery(plan,{storage,client,userId,se
  if(!Number.isSafeInteger(remote.walletRevision)||remote.walletRevision<1||!Number.isSafeInteger(remote.shards)||remote.shards<0||
   !cloudSafelyCoversLocal({...local,shards:remote.shards,walletRevision:remote.walletRevision,legacyVictoryRevision:remote.legacyVictoryRevision},remote))fail();
  for(const [side,value] of [['Local',raw],['Remote',JSON.stringify(remote)]]){
-  await preserveSnapshot(storage,'lumenBeforeApprovedRecovery'+side+'_',value);
+  await preserveSnapshot(storage,'lumenBeforeCloudApprovedRecovery'+side+'_',value);
   if(!valid())fail();
  }
  const latest=await loadVerifiedProfile(client,{userId});

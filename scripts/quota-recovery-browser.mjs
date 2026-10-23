@@ -21,7 +21,7 @@ export async function verifyQuotaRecovery({evaluate,navigate,url}){
    reads++;return {data:approvedCloud};
   }}});
   if(reads!==2||localStorage.getItem('lumenProgressV1')!==JSON.stringify(approvedCloud)||localStorage.getItem('fixture-pending')!=='retained')throw Error('Reviewed recovery native installation failed');
-  if(!Object.keys(localStorage).some(key=>key.startsWith('lumenBeforeApprovedRecoveryLocal_')&&localStorage.getItem(key)===approvedRaw))throw Error('Reviewed original backup missing');
+  if(!Object.keys(localStorage).some(key=>key.startsWith('lumenBeforeCloudApprovedRecoveryLocal_')&&localStorage.getItem(key)===approvedRaw))throw Error('Reviewed original backup missing');
   localStorage.clear();
   const local={solved:{0:true},badges:{},shards:9,xp:10,daily:{dates:[]},fixturePadding:'x'.repeat(6000)};
   const raw=JSON.stringify(local);localStorage.setItem('lumenProgressV1',raw);

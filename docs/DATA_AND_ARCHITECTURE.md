@@ -212,6 +212,7 @@ The account diagnostic chooser checks size (4 KiB), captured owner/client and
 QA exclusion. Expected-account restore and fingerprints must match. Existing
 local acquisition coverage still applies after the explicit monetary choice.
 Both originals are preserved in the existing exportable backup store, including
+the existing `lumenBeforeCloud` export prefix for local copies and
 its IndexedDB quota fallback. Owner, session and exact local bytes are rechecked
 after awaits; a second cloud read must equal the first. Only the local progress
 cache is installed, verified and followed by reload. No outbox, attempt, reward,
