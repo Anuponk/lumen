@@ -9,12 +9,17 @@ insert into auth.users(id) values('00000000-0000-0000-0000-000000053401'),('0000
 set request.jwt.claim.sub='00000000-0000-0000-0000-000000053401';
 set test.analytics_admin='yes';
 set role authenticated;
-do $$declare r jsonb;e jsonb;begin
+do $$declare r jsonb;e jsonb;duplicate_packet jsonb;begin
  e:=jsonb_build_array(jsonb_build_object('id','00000000-0000-0000-0000-000000000001','session','00000000-0000-0000-0000-000000000002','trace','00000000-0000-0000-0000-000000000003','seq',1,'at',clock_timestamp(),'code','guided_error','stage','guided','kind','unknown','platform','desktop','browser','chromium','version','1.11.1+501','before','ready','after','blocked','retry',0));
  assert not (public.lumen_diagnostic_preference()->>'enabled')::boolean;
  r:=public.lumen_record_diagnostics(auth.uid(),e);assert r->>'disabled'='true';
  perform public.lumen_diagnostic_preference(true);
  e:=jsonb_set(e,'{0,at}',to_jsonb(clock_timestamp()));
+ duplicate_packet:=jsonb_set(e,'{0,id}','"00000000-0000-0000-0000-000000999999"');
+ begin
+  perform public.lumen_record_diagnostics(auth.uid(),duplicate_packet||jsonb_set(duplicate_packet,'{0,code}','"unhandled_rejection"'));
+  raise exception 'duplicate batch identity accepted with different evidence';
+ exception when invalid_parameter_value then null;end;
  r:=public.lumen_record_diagnostics(auth.uid(),e);assert jsonb_array_length(r->'accepted')=1;
  perform set_config('test.old_diagnostic_packet',e::text,false);
  r:=public.lumen_record_diagnostics(auth.uid(),e);assert jsonb_array_length(r->'accepted')=1;

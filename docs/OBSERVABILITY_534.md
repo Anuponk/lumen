@@ -211,3 +211,10 @@ revoked table grants, not a reason to create permissive policies. No new WARN;
 existing shared-project warnings remain. See [Supabase's explanation](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy).
 No production diagnostic fixture, user creation/deletion, profile query or
 player-data repair was performed. Client publication is verified separately.
+
+Pre-publication review added a RED case for two different payloads using a fresh
+identity inside one batch: the original INSERT conflict path kept the first.
+A telemetry-only follow-up rejects duplicate batch identities (including UUID
+case aliases) before budget/data writes. Separate-delivery retry idempotence
+remains unchanged. Its SQL is validated and released through the same gates;
+no player profile or business command is involved.
