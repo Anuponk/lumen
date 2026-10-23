@@ -24,6 +24,18 @@ test('a direct historical replay start cannot erase an attempt or replace its bo
  vm.createContext(ctx);vm.runInContext(functionSource(source,'launchReplay'),ctx);ctx.launchReplay(10);
  assert.equal(changed,0);assert.equal(ctx.levelIndex,1);
 });
+test('choosing another acquired replay retires only the old pending presentation, keeping its captured operation',()=>{
+ const source=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8'),client={},captured={operationId:'first-reset-0',reward:{facts:{seconds:45}}};
+ const pending={userId:'a',client,attemptId:'first',questId:'first-quest'},rows=new Map([['original',JSON.stringify(captured)]]);let state='RUNNING',cleared=0;
+ const ctx={pendingVictoryView:pending,lumenUser:{id:'a'},lumenSupabase:client,skyTourActive:()=>false,questIsAccessible:()=>true,
+  attemptEngine:{snapshot:()=>({state,attemptId:'first'}),complete:()=>{state='COMPLETED'},clear:()=>cleared++},
+  syncPresentation:{celebration(){}},hideSuccess(){},canonicalActiveQuest:null,levelIndex:0,replayMode:false,
+  document:{getElementById:()=>({})},loadPuzzle(){},refreshJourney(){}};
+ vm.createContext(ctx);
+ vm.runInContext(functionSource(source,'leavePendingVictoryForNavigation'),ctx);
+ vm.runInContext(functionSource(source,'launchReplay'),ctx);ctx.launchReplay(10);
+ assert.equal(ctx.pendingVictoryView,null);assert.equal(cleared,1);assert.equal(rows.get('original'),JSON.stringify(captured));
+});
 const client={},proof={userId:'a',client,generation:4,confirmedQuestIds:['confirmed']};
 const held={signedIn:true,userId:'a',client,generation:4,ready:false,failure:{reason:'partial_reconciliation',domain:'wallet',detail:'mutable_balance'},proof};
 test('domain permissions keep rewards and spending held while allowing only current server-confirmed replays',()=>{

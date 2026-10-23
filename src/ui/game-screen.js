@@ -201,6 +201,14 @@ async function retryPresentedVictory(){
  pendingVictoryView=null;
  await celebrateSuccess();
 }
+function leavePendingVictoryForNavigation(){
+ if(!pendingVictoryView)return;
+ const pending=pendingVictoryView;
+ if(pending.userId===lumenUser?.id&&pending.client===lumenSupabase&&pending.attemptId===attemptEngine.snapshot()?.attemptId)attemptEngine.complete();
+ // The immutable outbox entry remains the sole retry source. Retire only the
+ // solved board's presentation before preparing a different acquired replay.
+ pendingVictoryView=null;syncPresentation.celebration(false);hideSuccess();
+}
 // Session-scoped permission to replay ledger commands after verified hydration
 // found only a local legacy divergence. Never a second profile or reward cache.
 let canonicalRecoveryContext=null;
@@ -2063,6 +2071,7 @@ function startCanonicalQuest(quest,{confirmedCooldown=false}={}){
  if(replay&&!confirmedCooldown&&badgeCooldownRemaining(questPerformanceRecord(quest,lumenProgress))){
   showReplayCooldown(quest,()=>startCanonicalQuest(quest,{confirmedCooldown:true}));return true;
  }
+ leavePendingVictoryForNavigation();
  canonicalActiveQuest=quest;
  canonicalResumeOwner=lumenUser?.id??null;
  levelIndex=Math.max(0,Math.min(currentQuestPosition(),currentQuestLimit()-1));
@@ -3414,7 +3423,7 @@ function performanceBadges(i){return questPerformanceBadges(canonicalQuestForLeg
 function canonicalPerformanceBadges(questId){
  return questPerformanceBadges(canonicalQuestList().find(q=>q.id===questId));
 }
-function launchReplay(i){if(skyTourActive()||!questIsAccessible(i))return;if(["COMPLETED","ABANDONED"].includes(attemptEngine.snapshot()?.state))attemptEngine.clear();canonicalActiveQuest=null;levelIndex=i;replayMode=true;document.getElementById("mapModal").hidden=true;document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;loadPuzzle();usedHintThisGame=false;refreshJourney()}
+function launchReplay(i){if(skyTourActive()||!questIsAccessible(i))return;leavePendingVictoryForNavigation();if(["COMPLETED","ABANDONED"].includes(attemptEngine.snapshot()?.state))attemptEngine.clear();canonicalActiveQuest=null;levelIndex=i;replayMode=true;document.getElementById("mapModal").hidden=true;document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;loadPuzzle();usedHintThisGame=false;refreshJourney()}
 function startReplay(i){
  if(!lumenProgress.solved[i])return;
  const remaining=badgeCooldownRemaining(questPerformanceRecord(canonicalQuestForLegacy(i),lumenProgress));

@@ -43,7 +43,7 @@ function questCardFixture(progress,{signedIn=true,cloudReady=true,entryId}={}){
  const grid=element(),section=element(),modal=element(),sky=element();
  modal.querySelector=selector=>selector==='#canonicalJourneyPreview'?section:null;
  const entry=CONTENT_CONSTELLATIONS.find(c=>entryId?c.id===entryId:all.some(q=>q.constellationId===c.id&&q.legacyIndex===null));
- const context={...canonical,confirmedReplayAllowed:()=>false,lumenProgress:progress,qaActive:false,
+ const context={...canonical,leavePendingVictoryForNavigation:()=>{},confirmedReplayAllowed:()=>false,lumenProgress:progress,qaActive:false,
   lumenUser:signedIn?{id:'synthetic-owner'}:null,cloudProfileReady:cloudReady,
   adventureAccessEntitlements:()=>[],attemptEngine:{snapshot:()=>null},campaignAccessAttempt:()=>null,
   navigationProgress:()=>progress,document:{createElement:element,createElementNS:element,getElementById:id=>id==='puzzleGrid'?grid:id==='mapModal'?modal:id==='skyCard'?sky:null},

@@ -23,13 +23,14 @@ export async function verifyDomainReplay({send,evaluate,navigate,url}){
    localStorage.removeItem('lumenActiveAttemptV1');sessionStorage.setItem('domainFixtureStarted','1');
   }
   for(const key of ['lumenTutorialSeen','lumenTutorialCompletedV1','lumenSkyTourSeen','lumenSound'])localStorage.setItem(key,key==='lumenSound'?'off':'1');
-  window.__domainWrites=0;window.__domainProfile={...structuredClone(profile),shards:7};
+  window.__domainWrites=0;window.__domainCommandAttempts=0;window.__domainProfile={...structuredClone(profile),shards:7};
   window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:{user:{id:owner}}}}),getUser:async()=>({data:{user:{id:owner}}}),onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})},rpc:async(name,args={})=>{
    if(name==='lumen_restore_profile')return {data:structuredClone(__domainProfile)};
    if(name==='lumen_get_progress')return {data:Object.keys(profile.solved).map(key=>({puzzle_id:Number(key)+1}))};
    if(name==='lumen_get_daily')return {data:[]};if(name==='lumen_get_engagement')return {data:[{rewarded_days:{}}]};
    if(['lumen_wallet_command_version','lumen_legacy_command_version','lumen_canonical_command_version'].includes(name))return {data:1};
-   if(['lumen_cas_profile','lumen_commit_wallet_command','lumen_commit_quest_command','lumen_commit_legacy_command','lumen_commit_canonical_command'].includes(name)){__domainWrites++;return {error:{code:'PGRST003'},status:503}};
+   if(['lumen_cas_profile','lumen_commit_wallet_command'].includes(name)){__domainWrites++;return {error:{code:'PGRST003'},status:503}};
+   if(['lumen_commit_quest_command','lumen_commit_legacy_command','lumen_commit_canonical_command'].includes(name)){__domainCommandAttempts++;return {error:{code:'PGRST003'},status:503}};
    return {data:[]};
   }})};
  `;
@@ -43,12 +44,13 @@ export async function verifyDomainReplay({send,evaluate,navigate,url}){
  async function start(quest){
   await acknowledgeLearningMilestones(evaluate);
   await evaluate(`if(!document.getElementById('questStart').hidden)document.getElementById('questGo').click()`);
-  await touch('#openSky');await until('!document.getElementById("mapModal").hidden');
+  if(await evaluate('document.getElementById("mapModal").hidden'))await touch('#openSky');await until('!document.getElementById("mapModal").hidden');
   await touch('#adventureRail [data-pack-id="'+quest.packId+'"]');await touch('#sectorTabs [data-content-id="'+quest.constellationId+'"]');
   const selector='#puzzleGrid [data-quest-id="'+quest.id+'"]';await until('!!document.querySelector('+JSON.stringify(selector)+')');
   assert.equal(await evaluate('document.querySelector('+JSON.stringify(selector)+').disabled'),false,'A verified acquired replay is enabled');
   await touch(selector);await until('document.getElementById("mapModal").hidden');
   await acknowledgeLearningMilestones(evaluate);
+  await evaluate(`if(!document.getElementById('autonomyOverlay').hidden)document.getElementById('autonomyTry').click()`);
   await evaluate(`if(!document.getElementById('questStart').hidden)document.getElementById('questGo').click();document.getElementById('attemptMask').click()`);
  }
  const {identifier}=await send('Page.addScriptToEvaluateOnNewDocument',{source:fixture});
@@ -75,9 +77,9 @@ export async function verifyDomainReplay({send,evaluate,navigate,url}){
    assert.doesNotMatch(await evaluate(`document.getElementById('successRewards').textContent`),/Étoile/);
    assert.equal(await evaluate('lumenDiagnostics.snapshot().progress.shards'),10);
    assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().progress.badges'),before.badges);
-   assert.equal(await evaluate('__domainWrites'),0,'Only durable capture occurs before readiness');
+   assert.equal(await evaluate('__domainWrites'),0,'Wallet and snapshot writes stay held while command intentions remain recoverable');
    captured.push({domain:quest===stable?'Canonical':'Legacy',questId:quest.id,operationId:identity.attemptId+'-reset-'+(identity.resetCount||0)});
-   await evaluate(`document.getElementById('successOverlay').classList.remove('show')`);
+   await touch('#successSky');
   }
   const readIntents=`(async()=>{const {createIndexedOutboxStore}=await import('/src/persistence/indexed-outbox-store.js');return (await createIndexedOutboxStore(indexedDB).entries('lumen')).filter(([key])=>key.includes('VictoryOutboxV2:${owner}:')).map(([,raw])=>JSON.parse(raw))})()`;
   const first=await evaluate(readIntents,true);assert.equal(first.length,2);
