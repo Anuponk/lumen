@@ -1,5 +1,15 @@
 # Data and architecture
 
+Private recipe/control follow-up (24 October 2026): the shared-project
+`lumen_recette` is private, role-isolated and uses synthetic SQL claims only.
+No player copy or shared Auth mutation is permitted. Release approvals, cohort
+events and the closed-by-default activation control are administrative authority;
+clients cannot enroll themselves. Explicit guest capability 0 preserves the old
+initializer before mutation; unknown versions refuse. The new claim endpoint also
+requires activation, retaining exact issued-receipt retry. See
+[recipe and activation procedure](CLOUD_RECOVERY_391.md#private-schema-recipe-and-activation-control-24-october-2026)
+for installation order, actual SQL evidence and outstanding physical gates.
+
 ## Optional incident details — #534
 
 [Audit and architecture](OBSERVABILITY_534.md). Preserve #398's live health,

@@ -92,6 +92,15 @@ test('old server fallback requires exact missing-capability evidence before any 
  await assert.rejects(initializeCloudProfile(client,guest,{userId:'a',guestSource:{storage:s,original:raw}}));
  assert.deepEqual(calls,['lumen_guest_claim_version','lumen_claim_guest_profile','lumen_get_guest_claim']);
 });
+test('a nonactivated cohort uses explicit protocol zero before mutation, unknown versions refuse',async()=>{
+ for(const version of [0,2,null,'1']){
+  const s=storage(),calls=[];
+  const client={rpc:async name=>{calls.push(name);return {data:name==='lumen_guest_claim_version'?version:guest}}};
+  const work=initializeCloudProfile(client,guest,{userId:'a',guestSource:{storage:s,original:raw}});
+  if(version===0){assert.deepEqual(await work,guest);assert.deepEqual(calls,['lumen_guest_claim_version','lumen_initialize_profile','lumen_restore_profile'])}
+  else{await assert.rejects(work);assert.deepEqual(calls,['lumen_guest_claim_version'])}
+ }
+});
 function evidence(){const revision='a'.repeat(40);return {app:'Lumen',format:'persistence-release-evidence-v1',revision,environment:'isolated',projectRef:'qa',productionProjectRef:'production',protocol:1,serverRevision:revision,clientRevision:revision,ci:{revision,success:true},scenarios:Object.fromEntries(RECETTE_SCENARIOS.map(s=>[s,{revision,passed:true,transport:'real',reference:'private-evidence:'+s}])),physicalAndroid:{revision,passed:true,devices:['A','B']},shadow:{revision,secondEmissions:0,parity:true},losses:0,doubleRewards:0,unreviewedBaselines:0,observation:{revision,startedAt:'2026-10-01',endedAt:'2026-10-15',broadCohort:true},legacyWriters:0,migrationParity:true,originalsRestorable:true,mirrorServerDerived:true}}
 test('rollout refuses absent, mocked, stale and shared-production proofs',()=>{
  assert.equal(evaluatePersistenceRollout(null).activate,false);
@@ -104,4 +113,13 @@ test('retirement requires actual observation interval, parity and restorable ori
  for(const mutate of [e=>e.observation.startedAt='2026-10-14',e=>e.observation.endedAt='2099-01-01',e=>e.legacyWriters=1,e=>e.originalsRestorable=false,e=>e.mirrorServerDerived=false,e=>e.migrationParity=false]){
   const e=evidence();mutate(e);const result=evaluatePersistenceRollout(e);assert.equal(result.activate,true);assert.equal(result.retire,false);
  }
+});
+test('shared-project recipe requires attested private-schema isolation and still two Androids',()=>{
+ const e=evidence();e.environment='schema_isolated';e.projectRef=e.productionProjectRef;
+ e.schemaIsolation={revision:e.revision,schema:'lumen_recette',role:'lumen_recette_runner',reference:'private:grants-audit',productionAccess:false,sharedAuthWrites:false,publicApi:false,rlsEnabled:true};
+ assert.equal(evaluatePersistenceRollout(e).activate,true);
+ for(const change of [p=>p.productionAccess=true,p=>p.sharedAuthWrites=true,p=>p.publicApi=true,p=>p.rlsEnabled=false,p=>p.schema='public',p=>p.role='postgres',p=>p.reference='',p=>p.revision='b'.repeat(40)]){
+  const bad=structuredClone(e);change(bad.schemaIsolation);assert.equal(evaluatePersistenceRollout(bad).activate,false);
+ }
+ e.physicalAndroid.devices=['A'];assert.equal(evaluatePersistenceRollout(e).activate,false);
 });

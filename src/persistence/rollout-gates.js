@@ -6,7 +6,10 @@ export function evaluatePersistenceRollout(evidence,{now=Date.now()}={}){
  if(!evidence||evidence.app!=='Lumen'||evidence.format!=='persistence-release-evidence-v1')return {activate:false,retire:false,blockers:['invalid_evidence']};
  const revision=evidence.revision;
  if(!sha.test(revision??''))blockers.push('revision_missing');
- if(evidence.environment!=='isolated'||evidence.projectRef===evidence.productionProjectRef||!evidence.projectRef||!evidence.productionProjectRef)blockers.push('isolated_environment_required');
+ const isolation=evidence.schemaIsolation;
+ const privateSchema=evidence.environment==='schema_isolated'&&isolation?.revision===revision&&isolation?.schema==='lumen_recette'&&isolation?.role==='lumen_recette_runner'&&Boolean(isolation?.reference)&&isolation?.productionAccess===false&&isolation?.sharedAuthWrites===false&&isolation?.publicApi===false&&isolation?.rlsEnabled===true;
+ const separateProject=evidence.environment==='isolated'&&evidence.projectRef!==evidence.productionProjectRef;
+ if((!privateSchema&&!separateProject)||!evidence.projectRef||!evidence.productionProjectRef)blockers.push('isolated_environment_required');
  if(evidence.protocol!==1||evidence.serverRevision!==revision||evidence.clientRevision!==revision)blockers.push('version_attestation_required');
  if(evidence.ci?.revision!==revision||evidence.ci?.success!==true)blockers.push('exact_revision_ci_required');
  for(const scenario of RECETTE_SCENARIOS){

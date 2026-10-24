@@ -1,5 +1,12 @@
 # Dependencies and data flow
 
+Private QA structure: `scripts/recette-schema.mjs` consumes reviewed structural
+metadata, emitting only `lumen_recette` objects plus whitelisted catalogue reads.
+The restricted runner owns QA tables/functions; synthetic SQL claims never grant
+shared Auth access. Cohort activation is admin-only, with reviewed release digest,
+durable activation and a default-closed emergency stop. Guest capability 0 selects
+compatibility before mutation. See the [runbook](../CLOUD_RECOVERY_391.md#private-schema-recipe-and-activation-control-24-october-2026).
+
 Historical initialization: game-screen.js supplies original guest bytes and
 session guard → cloud-profile.js → guest-claim.js (capture/discovery/receipt) →
 private SQL guest_claim_receipts. Existing initialize is used only after an
