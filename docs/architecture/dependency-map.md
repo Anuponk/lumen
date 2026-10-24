@@ -11,6 +11,8 @@ marker → game-screen supplies catalogue-first astronomical SVG → inert overl
 and narrative clock → release/focus on the same actual learning board. Aide replay
 uses existing pause, never loadPuzzle/reset or a reward path. Context changes
 cancel the presentation; no dependency on cloud readiness or command dispatch.
+Explicit story/replay action → intro-music local Web Audio context; presentation
+pause/exit → synchronous silence and context close. Audio refusal stays local.
 
 Private QA structure: `scripts/recette-schema.mjs` consumes reviewed structural
 metadata, emitting only `lumen_recette` objects plus whitelisted catalogue reads.
