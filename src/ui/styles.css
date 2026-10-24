@@ -1093,3 +1093,20 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 /* Keep countdown transitions out of board geometry and status intrinsic width. */
 .status{position:relative;padding-bottom:18px}
 .speed-countdown{position:absolute;left:50%;bottom:0;margin-left:0;transform:translateX(-50%);height:16px}
+
+/* #555: the hint participates in layout; the remaining space owns the board. */
+#completedQuestNext{min-height:44px;min-width:44px;font-size:13px}
+.puzzle-card.account-required{opacity:.85;cursor:pointer}
+@media(max-width:900px){
+ .app:has(#hintCard:not([hidden])){display:flex;flex-direction:column}
+ .game-core:has(#hintCard:not([hidden])){display:flex;flex-direction:column;flex:1;min-height:0}
+ .game-core:has(#hintCard:not([hidden]))>*{flex-shrink:0}
+ .game-core:has(#hintCard:not([hidden])) .learning-board-wrap{flex:1;min-height:0;container-type:size;display:grid;place-items:center;padding:0}
+ .game-core:has(#hintCard:not([hidden])) #board{width:min(100%,100cqh)!important;max-width:100%!important}
+ #hintCard{position:static;max-height:min(26dvh,180px);min-height:60px;overflow:auto;margin:4px 0;box-shadow:none}
+}
+@media(max-width:900px) and (orientation:landscape){
+ .game-core:has(#hintCard:not([hidden])){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:repeat(14,auto);column-gap:12px}
+ .game-core:has(#hintCard:not([hidden]))>*{grid-column:2;min-height:0}
+ .game-core:has(#hintCard:not([hidden])) .learning-board-wrap{grid-column:1;grid-row:1 / -1;height:100%;width:100%}
+}

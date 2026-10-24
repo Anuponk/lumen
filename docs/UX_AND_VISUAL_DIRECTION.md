@@ -364,3 +364,20 @@ is hidden from victory cards to keep rewards and the next-quest action visible.
 Learning quest 2 retains its intentional Mon ciel CTA, and badge introduction
 milestones and reward eligibility remain unchanged. Challenge and learning-only
 replays retain their isolated reward rules.
+
+For small play viewports, an open hint participates in the layout and scrolls
+within its own card. The board fits the remaining space; short landscape views
+place it beside the controls and hint. Territory rendering and cell input stay
+unchanged. Closing the hint restores the ordinary layout.
+
+At the catalogue-driven guest discovery boundary, the account dialog explicitly
+asks for a free account to continue and recover progress. Creating an account
+and signing in remain available through the existing form and Google action.
+Dismissal allows browsing; trying an account-locked quest opens that explanation
+again without starting it. Access and guest transfer rules are unchanged.
+
+A completed quest in its ready replay state offers « Quête suivante » when its
+immediate catalogue successor is accessible. Starting the replay hides this
+shortcut. Navigation rechecks live access and grants no completion or reward.
+Challenge and learning-only replays retain their existing navigation; notably,
+the quest-2 victory still introduces Mon ciel.

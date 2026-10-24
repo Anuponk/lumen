@@ -283,7 +283,15 @@ try{
    assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),true);
     assert.equal(await evaluate('lumenDiagnostics.snapshot().levelIndex'),5,'Dismissing cannot start quest 7 without an account');
     assert.equal(await evaluate(`document.getElementById('mapModal').hidden`),false,'Guest can continue browsing');
-    assert.equal(await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="planned-real-01-q07"]').disabled`),true,'The same discovery gate protects inserted quests');
+    // #552: an account-locked card is actionable to explain the gate again;
+    // it must still refuse to start the quest or change the retained attempt.
+    const attemptBeforeAccountRetry=await evaluate(`localStorage.getItem('lumenActiveAttemptV1')`);
+    assert.equal(await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="planned-real-01-q07"]').disabled`),false);
+    await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="planned-real-01-q07"]').click()`);
+    assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),false,'A blocked continuation explicitly explains the account requirement');
+    assert.equal(await evaluate('lumenDiagnostics.snapshot().levelIndex'),5,'The discovery guard still refuses the next quest');
+    assert.equal(await evaluate(`localStorage.getItem('lumenActiveAttemptV1')`),attemptBeforeAccountRetry,'Explaining the gate cannot create or replace an attempt');
+    await evaluate(`document.getElementById('accountOptinClose').click()`);
    assert.equal(await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress.solved)`),before,'Automatic offer dismissal preserves earned victories');
    assert.deepEqual(await evaluate('window.__authCalls'),[],'Continuing as guest must not authenticate');
   }
