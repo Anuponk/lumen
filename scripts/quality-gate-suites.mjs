@@ -1,5 +1,6 @@
 export const nodeSuites=[
  'ux-lot-tests.mjs',
+ 'first-welcome-tests.mjs',
  'recette-schema-tests.mjs',
  'historical-rollout-tests.mjs',
  'gameplay-domain-tests.mjs',

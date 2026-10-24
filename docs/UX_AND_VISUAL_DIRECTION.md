@@ -1,5 +1,39 @@
 # UX and visual direction
 
+## Optional first welcome and story — #532
+
+A fresh local campaign opens a celestial welcome with the existing LUMEN brand,
+the approved tagline and two actions: **Commencer l’aventure** opens the actual
+first board; **Découvrir l’histoire** plays the approved five scenes in 30 seconds.
+**Passer** is available immediately and skips only the story. Quest 1 retains
+SEE → UNDERSTAND → ACT and its existing independent tutorial opt-out.
+
+The presentation uses the first catalogue quest's licensed astronomical reference,
+without invented coordinates, reward effects or a second board. The final seven
+seconds fade the celestial layer above the real board. One responsive DOM serves
+mobile and desktop. The game is inert while the presentation owns focus.
+
+`lumenIntroPresentedV1` is a local presentation marker, claimed and read back
+before ordinary startup. Existing profiles, attempts, owners, remembered sessions,
+recovery sources, tutorial visits and parameterized/deep-link contexts bypass the
+automatic welcome. Denied/unverifiable storage also bypasses it. It never enters
+the player profile or cloud commands. Storage removal/new devices can remove this
+local preference; a known existing profile still bypasses automatic presentation.
+
+**Revoir l’introduction** belongs in Aide. It pauses a running attempt through the
+existing pause action, preserves its board/identity/rewards and returns to that
+paused game, without forcing quest 1 or restarting the attempt. Escape and Passer
+restore focus. A changed account/quest/attempt or pagehide cancels obsolete work.
+Hidden tabs pause narrative time. Reduced motion suppresses animated effects;
+an accessible, expandable transcript pauses playback and exposes the full text.
+An animation failure releases the game immediately. No audio or remote resource
+is needed by the story; cold offline startup remains the existing PWA's scope.
+The first service-worker acquisition does not reload that fresh document; an
+actual replacement retains the existing upgrade reload and OAuth-return guards.
+The return notification remains a passive, automatically dismissed status; it
+must not intercept Help or board gestures now that first installation stays on
+the original document. Its text, timing and player data remain unchanged.
+
 Domain readiness (persistence lot 3): a current verified acquired replay may be
 available during Wallet review. Account status distinguishes « Quêtes confirmées ·
 Éclats à vérifier »; the shard meter does not label an ambiguous balance available.

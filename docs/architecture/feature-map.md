@@ -1,5 +1,11 @@
 # Feature map
 
+First welcome/story (#532): `ui/first-welcome.js` owns the local presentation
+marker, deterministic narrative clock and accessible overlay; its CSS is separate.
+`game-screen.js` captures eligibility before startup, supplies the first catalogue
+constellation's reference SVG and binds Aide replay to existing pause/focus behavior.
+No campaign, reward, Auth or cloud writer is added. See UX_AND_VISUAL_DIRECTION.
+
 Historical/rollout preparation: historical-inventory.js → private dry-run CLI;
 guest-claim.js → cloud-profile initialize → expected-account guest claim RPC,
 private immutable receipt and current covered projection. The original guest
