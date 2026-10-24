@@ -1,5 +1,19 @@
 # Testing and quality gate
 
+## Player ergonomics (#555, #552, #566)
+
+`ux-lot-tests.mjs` covers catalogue successors (including inserted quests and
+nonconsecutive historical keys), live access refusal, missing/final quests,
+challenge/lesson isolation and mutation-free navigation. The mandatory
+`ux-lot-browser-tests.mjs` checks hint last-row hit testing and actual touch/mouse
+input at 320×568, 360×640, 390×844, 667×375, 844×390 and 1440×900, account-copy
+and signup/login modes plus retry from Mon ciel, and keyboard replay navigation.
+It uses disposable guest/QA fixtures and disables service-worker installation
+only in those layout fixtures; the independent PWA update suite stays mandatory.
+Browser emulation does not establish physical-device, live Auth or cross-device
+transfer validation. The existing account, touch/drag, cloud, embedded hint and
+strict catalogue suites remain required.
+
 ## Optional first welcome/story — #532
 
 `node scripts/first-welcome-tests.mjs` covers fresh/returning/owned contexts,
