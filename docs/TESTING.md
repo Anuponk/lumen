@@ -1,5 +1,22 @@
 # Testing and quality gate
 
+## Optional first welcome/story — #532
+
+`node scripts/first-welcome-tests.mjs` covers fresh/returning/owned contexts,
+deep links, denied/unverified presentation storage, exact texts, scene boundaries,
+30-second completion, excluded background time and cancellation. It is mandatory
+in the Node gate. `first-welcome-browser-tests.mjs` joins the full browser gate:
+native Chromium with real DOM/local storage, actual 30-second playback, direct
+entry, immediate skip, refresh, Aide replay of a paused existing attempt, keyboard
+Escape/focus, 320/360/landscape/1440 geometry, reduced-motion emulation, transcript
+and warm offline exit. It compares unchanged live profile, board and attempt bytes
+around presentation actions. Existing learning/gesture/hint/cloud regressions stay.
+
+Physical acceptance remains required: small Android/PWA, actual background/close,
+large text and screen reader, guest → account/reconnect, and cold offline startup
+under existing service-worker constraints. No physical or live-account result may
+be inferred from Chromium fixtures. #532 stays open until this acceptance.
+
 Private recipe follow-up (24 October 2026): `recette-schema-tests.mjs` rejects
 external schema dependencies and player-row copying; `historical-rollout-tests.mjs`
 covers explicit capability 0 and attested schema isolation without relaxing the

@@ -59,8 +59,11 @@ import {localDateKey,dateOffsetKey,formatDuration} from "../ui/format.js";
 import {streakFromDates,dailyState,cycleDay,nextReward,qualifiesDailyActivity,grantDaily,grantAutonomyMilestone} from "../campaign/daily-engagement.js";
 import {createTutorial} from "./tutorial.js";
 import {createSound} from "./sound.js";
+import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 
 export function startGameScreen(){
+const firstWelcomeEligible=(()=>{try{return claimFirstWelcome(localStorage,new URL(location.href))}catch{return false}})();
+let firstWelcome=null;
 const qaParams=new URL(location.href).searchParams;
 const qaMode=qaParams.get("qa")==="new"?"new":null;
 const qaActive=qaMode==="new";
@@ -1118,6 +1121,12 @@ function setupRulesHelp(){
  modal.onclick=e=>{if(e.target===modal)hide()};
  modal.addEventListener("keydown",e=>{if(e.key==="Escape")hide()});
  if(replay)replay.onclick=()=>{hide(false);startLearningReplay()};
+ const story=document.getElementById('replayIntroduction');
+ if(story)story.onclick=()=>{
+  if(!firstWelcome)return;
+  hide(false);
+  try{firstWelcome.replay()}catch{firstWelcome.cancel();open.focus()}
+ };
 }
 setupRulesHelp();
 function setupDailyInfo(){
@@ -1783,6 +1792,7 @@ function updateScriptedLearning(){
 }
 function finishManualLearningMarks(){updateScriptedLearning();return true}
 function handleLearningTap(event){
+ if(firstWelcome?.active)return;
  if(!scriptedLearningActive())return;
  const target=event.target instanceof Element?event.target:null;if(!target)return;
  if(document.querySelector('#mapModal:not([hidden]),#rulesModal:not([hidden]),#feedbackModal:not([hidden]),#tutorialOverlay:not([hidden]),#shardRulesModal:not([hidden]),#badgeRulesModal:not([hidden])'))return;
@@ -3576,7 +3586,27 @@ document.addEventListener("click",handleLearningTap,true);
 // Start after campaign data are initialized. A deep-linked social challenge resolves its
 // server snapshot before the board is created so campaign progression is never mutated.
 setupMobileAuth();setupTutorial();setupOutsideDefaults();setupQaMode();
-async function bootGame(){await bootstrapSocialChallenge();restoreCanonicalCampaignAttempt();init();refreshJourney();maybeShowReturnWelcome();const focus=new URL(location.href).searchParams.get("myChallenges");if(focus)openMyChallenges(focus);else loadMyChallenges()}
+async function bootGame(){
+ await bootstrapSocialChallenge();restoreCanonicalCampaignAttempt();init();refreshJourney();
+ try{
+  const first=canonicalQuestList()[0],entry=CONTENT_CONSTELLATIONS.find(c=>c.id===first.constellationId);
+  const figureSvg=astronomicalReferenceSvg(entry);
+  if(figureSvg){
+   firstWelcome=createFirstWelcome({document,window,figureSvg,
+    contextKey:()=>JSON.stringify([lumenUser?.id??null,activeQuest().id,attemptEngine.snapshot()?.attemptId]),
+    onReplayStart:()=>pauseGameClock(),
+    onReturn:({replay,origin})=>{
+     updateAttemptUI();
+     if(replay){(origin?.isConnected&&!origin.closest('[hidden]')?origin:document.getElementById('tutorialHelp'))?.focus();return}
+     const target=document.getElementById('learningCoachNext');
+     if(target&&!target.hidden)target.focus();else document.getElementById('attemptMask')?.focus();
+    }});
+   if(firstWelcomeEligible&&!socialChallenge&&!lumenUser&&activeQuest().id===first.id)firstWelcome.show();
+  }
+ }catch{firstWelcome?.cancel()}
+ if(!firstWelcome?.active)maybeShowReturnWelcome();
+ const focus=new URL(location.href).searchParams.get('myChallenges');if(focus)openMyChallenges(focus);else loadMyChallenges();
+}
 bootGame();
 
 setupBetaFeedback();
@@ -3641,6 +3671,7 @@ initLumenCloud().catch(error=>{recordCloudDiagnostic("auth_initialization_failed
 
 if("serviceWorker" in navigator){
  let lumenReloadingForSW=false;
+ let previousServiceWorkerController=navigator.serviceWorker.controller;
  const updateStatus=message=>{const node=document.getElementById("appUpdateStatus");if(node)node.textContent=message};
  const activateWaitingWorker=registration=>{if(registration.waiting)registration.waiting.postMessage({type:"SKIP_WAITING"})};
  const checkLumenUpdate=async({manual=false}={})=>{
@@ -3658,6 +3689,11 @@ if("serviceWorker" in navigator){
   }
  };
  navigator.serviceWorker.addEventListener("controllerchange",()=>{
+  // First installation already serves this document's modules. Reload only
+  // when replacing a controller, otherwise a fresh welcome is interrupted.
+  const replacingController=!!previousServiceWorkerController;
+  previousServiceWorkerController=navigator.serviceWorker.controller;
+  if(!replacingController)return;
   if(lumenReloadingForSW)return;
   lumenReloadingForSW=true;
   if(new URLSearchParams(location.search).has("code")||location.hash.includes("access_token=")){lumenReloadingForSW=false;return}

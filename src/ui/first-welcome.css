@@ -1,0 +1,41 @@
+/* One responsive presentation above the existing game DOM. */
+.first-welcome{--intro-passage:0;position:fixed;inset:0;z-index:3000;isolation:isolate;display:grid;place-items:center;padding:calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));color:#eafaff;overflow:auto;overscroll-behavior:contain}
+.first-welcome[hidden],.first-welcome [hidden]{display:none!important}
+.intro-veil{position:absolute;inset:0;z-index:-2;background:radial-gradient(ellipse at 50% 38%,#102d43,#07111d 72%);opacity:calc(1 - var(--intro-passage));pointer-events:none}
+.intro-art{position:absolute;inset:22% 8% 30%;z-index:-1;display:grid;place-items:center;pointer-events:none;opacity:calc(1 - var(--intro-passage));color:#68e7ff}
+.intro-art svg{width:min(100%,680px);max-height:100%;overflow:visible}
+.intro-art .astronomical-reference{stroke-opacity:.22;stroke-width:.8}
+.intro-art .astronomical-reference-stars{fill:#eafaff;opacity:.3}
+.intro-welcome{text-align:center;width:min(100%,460px);display:flex;flex-direction:column;align-items:center;gap:20px}
+.intro-welcome h2{font-size:clamp(38px,8vw,58px);letter-spacing:.14em;margin:0;color:#eafaff}
+.intro-welcome p{font-size:clamp(18px,4.5vw,23px);line-height:1.5;margin:0;text-wrap:balance;text-shadow:0 2px 16px #07111d}
+.intro-actions{display:grid;gap:12px;width:100%;max-width:340px;margin-top:clamp(48px,12vh,120px)}
+.first-welcome button{min-height:48px;border-radius:999px;border:1px solid #7bafc3;background:#102537;color:#eafaff;padding:12px 18px;font-size:16px;cursor:pointer;line-height:1.3}
+.first-welcome .intro-play{background:#a9eef5;border-color:#a9eef5;color:#07111d}
+.first-welcome :focus-visible{outline:3px solid #ffe3a1;outline-offset:5px}
+.first-welcome .intro-skip{position:absolute;top:calc(16px + env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));min-width:84px;background:#0b1a29;z-index:3}
+.intro-caption{align-self:end;width:min(100%,580px);margin:0 0 clamp(66px,13vh,130px);font-size:clamp(19px,4.9vw,26px);line-height:1.5;text-align:center;text-wrap:balance;text-shadow:0 2px 12px #07111d,0 0 24px #07111d;background:#07111de8;border-radius:16px;padding:14px;opacity:clamp(0,calc((1 - var(--intro-passage))*5),1)}
+.intro-transcript{position:absolute;bottom:calc(16px + env(safe-area-inset-bottom));left:24px;right:24px;margin:auto;width:min(520px,calc(100% - 48px));z-index:4;color:#eafaff;border-radius:16px;background:#0b1a29}
+.intro-transcript summary{cursor:pointer;padding:12px 16px;min-height:44px;font-size:14px}
+.intro-transcript[open]{max-height:70dvh;overflow:auto;border:1px solid #7bafc3}
+.intro-transcript div{padding:0 16px 12px;line-height:1.6}
+.intro-playing[data-scene="0"] .astronomical-reference{opacity:0}
+.intro-playing[data-scene="0"] .astronomical-reference-stars{animation:intro-dim 5s linear both}
+.intro-playing[data-scene="1"] .astronomical-reference{stroke-dasharray:340;animation:intro-trace 5s ease-in-out both}
+.intro-playing[data-scene="2"] .astronomical-reference{opacity:0}
+.intro-playing[data-scene="2"] .astronomical-reference-stars{opacity:1}
+.intro-playing[data-scene="2"] .astronomical-reference-stars circle{opacity:.12}
+.intro-playing[data-scene="2"] .astronomical-reference-stars circle:first-child{opacity:1;fill:#ffe3a1;animation:intro-glow 3s ease-in-out infinite}
+.intro-playing[data-scene="3"] .astronomical-reference{stroke-opacity:.7;stroke-dasharray:340;animation:intro-trace-in 5s ease-out both}
+.intro-playing[data-scene="3"] .astronomical-reference-stars{animation:intro-light 5s ease-out both}
+.intro-playing[data-scene="4"] .astronomical-reference-stars{opacity:1;fill:#ffe3a1}
+.intro-reduced .intro-art *{animation:none!important}
+.intro-paused .intro-art *{animation-play-state:paused!important}
+.intro-reduced .intro-art{opacity:calc(1 - var(--intro-passage))}
+@keyframes intro-dim{from{opacity:.45}to{opacity:.12}}
+@keyframes intro-trace{0%{stroke-dashoffset:340;opacity:0}40%{opacity:1}70%{stroke-dashoffset:0;opacity:1}100%{opacity:.1}}
+@keyframes intro-trace-in{from{stroke-dashoffset:340;opacity:.1}to{stroke-dashoffset:0;opacity:1}}
+@keyframes intro-glow{50%{opacity:.6}}
+@keyframes intro-light{from{opacity:.2}to{opacity:1}}
+@media(max-height:560px){.intro-welcome{gap:10px}.intro-welcome h2{font-size:32px}.intro-actions{margin-top:14px;gap:8px}.intro-caption{margin-bottom:50px}.intro-art{inset:12% 15% 20%}}
+@media(prefers-reduced-motion:reduce){.first-welcome .intro-art *{animation:none!important}}

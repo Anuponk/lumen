@@ -1,5 +1,11 @@
 # Dependencies and data flow
 
+Optional story (#532): startup eligibility → first-welcome local presentation
+marker → game-screen supplies catalogue-first astronomical SVG → inert overlay
+and narrative clock → release/focus on the same actual learning board. Aide replay
+uses existing pause, never loadPuzzle/reset or a reward path. Context changes
+cancel the presentation; no dependency on cloud readiness or command dispatch.
+
 Private QA structure: `scripts/recette-schema.mjs` consumes reviewed structural
 metadata, emitting only `lumen_recette` objects plus whitelisted catalogue reads.
 The restricted runner owns QA tables/functions; synthetic SQL claims never grant

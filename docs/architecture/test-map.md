@@ -1,5 +1,12 @@
 # Existing verification map
 
+First welcome/story (#532): `first-welcome-tests.mjs` checks local presentation
+eligibility, refused storage, exact narrative timing, hidden-time exclusion and
+cancellation. `first-welcome-browser-tests.mjs` exercises fresh/direct/full/skip/
+reload/Aide flows against the real board, profile and attempt, responsive geometry,
+motion preference, readable transcript and warm offline use. Both join the full
+gate. Chromium emulation is not physical Android, screen-reader or account QA.
+
 Private QA/cohort controls: `recette-schema-tests.mjs`,
 `historical-rollout-tests.mjs`, disposable `scripts/fixtures/sync-cohort-control.sql`
 and optional `supabase/recette/smoke.sql`. The latter executes actual SQL under
