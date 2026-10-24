@@ -1,5 +1,12 @@
 # Feature map
 
+Historical recreated-capture recovery: `legacy-command.js`
+(`assertRecreatedLegacyCapture`, `loadCommittedLegacyAttempt`) supplies the exact
+receipt/current projection proof; `durable-canonical-outbox.js`
+(`archiveRecreatedCapture`, Legacy namespace) preserves the later copy and
+receipt before cleanup. UI `recoverQueuedLegacyReceipt` connects hydration and
+reconnect recovery. The data contract owns its strict unchanged-facts rules.
+
 First welcome/story (#532): `ui/first-welcome.js` owns the local presentation
 marker, deterministic narrative clock and accessible overlay; its CSS is separate.
 `ui/intro-music.js` owns the optional original Web Audio score and disposes its

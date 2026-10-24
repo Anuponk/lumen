@@ -1,5 +1,11 @@
 # Existing verification map
 
+Historical recreated-capture recovery: `canonical-durable-outbox-tests.mjs`
+covers paused duplicates, immutable facts, receipt/projection proof, archival and
+session/storage refusals. `legacy-command-client-tests.mjs` exercises the real
+UI reconnect helper; `cloud-unsynced-recovery-tests.mjs` verifies local archive
+export alongside both IndexedDB stores. These fixtures do not prove phone recovery.
+
 Player ergonomics (#555/#552/#566): `ux-lot-tests.mjs` (catalogue successor,
 live guards, unchanged rewards, replay ready/running states) and
 `ux-lot-browser-tests.mjs` (hint geometry/touch, guest account explanation and

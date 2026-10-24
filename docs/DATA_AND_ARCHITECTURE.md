@@ -483,6 +483,16 @@ flag cannot serve as this proof. Numeric cold resume restores both quest and
 campaign/replay mode before the attempt engine's strict identity comparison;
 a READY board does not establish preserved campaign access.
 
+The historical outbox uses the same archival recovery for a later capture of
+an already committed operation. It independently reads the original receipt
+and current profile, requires the same account, operation, quest, start timestamp,
+day and all assistance/qualification flags, a non-improved elapsed time, and
+covered attempts/badges. Only a `22023` review pause permits this read-only
+inspection; other holds remain. The later capture must postdate the receipt.
+Exact original bytes and receipt are verified in a private exportable archive
+before retiring that pending copy. No command is resent, receipt changed or
+reward granted. Archive or session failure retains the pending operation.
+
 Migration `20261023181900_quest_social_identity.sql` adds stable quest identity
 to challenges and privacy-filtered create/get/list RPCs. Numeric URLs and
 existing participation/terminal protocols retain their identity. No challenge
