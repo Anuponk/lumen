@@ -9,7 +9,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const validationDir=path.join(root,"docs","validation");
 fs.mkdirSync(validationDir,{recursive:true});
 // A failed suite must not upload JSON left in the checkout by a previous run.
-for(const name of ['browser','ux','learning','late-game','sky-navigation','account-session','canonical-replay','campaign-resume','pwa-update','incident-investigation','quality-summary'])
+for(const name of ['browser','ux','learning','late-game','sky-navigation','account-session','canonical-replay','campaign-resume','pwa-update','incident-investigation','ux-lot','quality-summary'])
  fs.rmSync(path.join(validationDir,`ci-${name}.json`),{force:true});
 import {nodeSuites} from "./quality-gate-suites.mjs";
 import {runPool} from "./quality-gate-pool.mjs";
@@ -114,7 +114,7 @@ try{
  console.log("LUMEN quality gate — Node "+process.version+" — "+process.platform);
  for(const suite of nodeSuites)await run(process.execPath,[path.join("scripts",suite)],{label:suite});
  await startServer();
- // Start the longest historical suite first; all ten checks remain mandatory.
+ // Start the longest historical suite first; all browser checks remain mandatory.
  await runPool([
   ()=>runBrowser("learning-browser-tests.mjs","ci-learning.json",9224),
   ()=>runBrowser("account-session-browser-tests.mjs","ci-account-session.json",9230),
@@ -125,7 +125,8 @@ try{
   ()=>runBrowser("canonical-replay-browser-tests.mjs","ci-canonical-replay.json",9227),
   ()=>runBrowser("campaign-resume-browser-tests.mjs","ci-campaign-resume.json",9231),
   ()=>runBrowser("service-worker-update-browser-tests.mjs","ci-pwa-update.json",9232),
-  ()=>runBrowser("incident-investigation-browser-tests.mjs","ci-incident-investigation.json",9235)
+  ()=>runBrowser("incident-investigation-browser-tests.mjs","ci-incident-investigation.json",9235),
+  ()=>runBrowser("ux-lot-browser-tests.mjs","ci-ux-lot.json",9236)
  ],workers);
 }catch(error){failed=error;console.error("\nQUALITY GATE FAILED:",error.message)}
 finally{

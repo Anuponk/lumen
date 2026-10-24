@@ -916,7 +916,7 @@ let accountOfferResumeNext=false;
 function accountOfferKey(name){return qaKey("lumenAccountOffer"+name)}
 function showAccountSavedConfirmation(){const toast=document.getElementById("accountSavedToast");if(!toast)return;toast.hidden=false;setTimeout(()=>{toast.hidden=true},2200)}
 function accountOfferMilestone(){return QUEST_MILESTONES.discovery}
-function accountDiscoveryCopy(){return `Les ${QUEST_MILESTONES.discovery} premières quêtes se découvrent sans compte. Crée un compte pour poursuivre et retrouver ton aventure sur tous tes appareils. Tes acquis sont conservés.`}
+function accountDiscoveryCopy(){return `Créez un compte gratuit pour poursuivre votre aventure et retrouver votre progression. Les ${QUEST_MILESTONES.discovery} premières quêtes se découvrent sans compte. Tes acquis sont conservés.`}
 function accountRequired(){
  if(authSessionPending||qaActive||socialChallenge||lumenUser)return false;
  return canonicalQuestList().filter(q=>q.ordinal<=QUEST_MILESTONES.discovery).every(q=>questIsCompleted(lumenProgress,q.id));
@@ -925,9 +925,9 @@ function maybeOfferAccount(){
  if(!accountRequired())return false;
  const box=document.getElementById("accountOptin");
  if(!box||!box.hidden)return false;
- box.hidden=false;
- document.getElementById('accountOptinDescription').textContent=accountDiscoveryCopy();
- document.getElementById('accountOptinLater').textContent='Explorer Mon ciel';
+ openEmailAccountOffer('signup',false);
+ document.getElementById('accountOptinTitle').textContent='Un compte gratuit pour continuer';
+ document.getElementById('accountSignupTab').focus();
  trackLumenEvent("account_offer_shown",null,{milestone:solvedCount(),source:"quest_milestone",qa:qaActive});
  return true;
 }
@@ -938,7 +938,7 @@ function dismissAccountOffer(){
  if(accountOfferResumeNext){accountOfferResumeNext=false;openJourneyMap()}
 }
 async function acceptAccountOffer(){const box=document.getElementById("accountOptin");if(box)box.hidden=true;const milestone=accountOfferMilestone();trackLumenEvent("account_offer_accept",null,{milestone,source:"constellation_complete",qa:qaActive});if(!lumenSupabase){trackLumenEvent("account_signin_failure",null,{milestone,reason:"cloud_unavailable",qa:qaActive});return}accountOfferSignInPending=true;try{sessionStorage.setItem("lumenAccountOfferSignInPending","1")}catch(_){}const result=await signIn(new URL("/", location.origin).toString());if(!result.ok){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_failure",null,{milestone,reason:result.reason||"oauth",qa:qaActive})}}
-function openEmailAccountOffer(mode="signup"){
+function openEmailAccountOffer(mode="signup",userSelection=true){
  accountEmailMode=mode==="login"?"login":"signup";
  const login=accountEmailMode==="login";
  const offer=document.getElementById("accountOptin");if(offer)offer.hidden=false;
@@ -947,7 +947,7 @@ function openEmailAccountOffer(mode="signup"){
  const later=document.getElementById('accountOptinLater');if(later)later.textContent=accountRequired()?'Explorer Mon ciel':'Retour au jeu';
  const password=document.getElementById("accountPassword"),submit=document.getElementById("accountPasswordSubmit");
  if(password){password.autocomplete=login?"current-password":"new-password";password.minLength=login?1:12;}
- if(submit)submit.textContent=login?"Me connecter →":"Créer mon compte →";
+ if(submit)submit.textContent=login?"Se connecter":"Créer un compte";
  const recover=document.getElementById("accountRecovery");if(recover)recover.hidden=!login;
  const signup=document.getElementById("accountSignupTab"),switcher=document.getElementById("accountAuthSwitch");
  if(signup)signup.setAttribute("aria-pressed",String(!login));
@@ -955,8 +955,8 @@ function openEmailAccountOffer(mode="signup"){
  const status=document.getElementById("accountEmailStatus");if(status)status.textContent="";
  const send=document.getElementById("accountEmailSend");if(send)send.hidden=true;
  const otp=document.getElementById("accountOtpStep");if(otp)otp.hidden=true;
- document.getElementById("accountEmail")?.focus();
- trackLumenEvent("account_email_selected",null,{milestone:5,source:"quest_5_gate",qa:qaActive});
+ if(userSelection)document.getElementById("accountEmail")?.focus();
+ if(userSelection)trackLumenEvent("account_email_selected",null,{milestone:5,source:"quest_5_gate",qa:qaActive});
 }
 async function submitAccountPassword(){
  const email=document.getElementById("accountEmail")?.value;
@@ -1582,7 +1582,24 @@ function updateAttemptUI(){
  document.getElementById("attemptMaskCopy").textContent=paused?"Reprendre pour continuer la même tentative.":"Le chrono démarrera au premier geste.";
  if(pause){pause.hidden=!a||![ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(a.state);pause.textContent=paused?"Reprendre":"Pause"}
  if(abandon)abandon.hidden=!a||attemptMode()==="campaign"||![ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(a.state);
+ const next=document.getElementById('completedQuestNext');
+ if(next)next.hidden=!!socialChallenge||learningReplayActive()||celebrated||!!a&&a.state!==ATTEMPT_STATES.READY||!completedQuestSuccessor();
 }
+function completedQuestSuccessor(){
+ const played=activeQuest(),quests=canonicalQuestList(),index=quests.findIndex(q=>q.id===played.id);
+ if(index<0||!questIsCompleted(lumenProgress,played.id))return null;
+ const next=quests[index+1];
+ return next&&(next.legacyIndex===null?canonicalQuestAvailable(next):questIsAccessible(next.legacyIndex))?next:null;
+}
+function advanceCompletedQuest(){
+ const next=completedQuestSuccessor();
+ if(!next||socialChallenge||learningReplayActive())return;
+ if(next.legacyIndex===null){startCanonicalQuest(next);return}
+ if(questIsCompleted(lumenProgress,next.id)){startReplay(next.legacyIndex);return}
+ canonicalActiveQuest=null;levelIndex=next.legacyIndex;replayMode=false;
+ loadPuzzle();refreshJourney();
+}
+document.getElementById('completedQuestNext').onclick=advanceCompletedQuest;
 function ensureAttemptStarted(){
  const a=attemptEngine.snapshot();if(a?.state!==ATTEMPT_STATES.READY)return;
  if(a.qualifying&&!canonicalActiveQuest){
@@ -3480,7 +3497,16 @@ function renderMap(){
     button.title='Quête '+quest.ordinal+' · '+status;
      button.innerHTML=legacy!==null&&solved?performanceBadges(legacy):solved?canonicalPerformanceBadges(quest.id):available?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+quest.ordinal+'</span>' :'<span class="puzzle-lock-only" aria-hidden="true">🔒</span>';
      button.setAttribute("aria-label",`Quête ${quest.ordinal} · ${status}`);
-    button.disabled=!available;
+    const needsAccount=canonicalCampaignQuestDecision(quest,navigationProgress(),{
+     entitlements:adventureAccessEntitlements(),attempt:campaignAccessAttempt(),signedIn:qaActive||!!lumenUser,cloudReady:qaActive||cloudProfileReady
+    }).status==='auth-required';
+    button.disabled=!available&&!needsAccount;
+    if(needsAccount){
+     button.classList.add('account-required');
+     button.title+=' · Créer un compte gratuit pour continuer';
+     button.setAttribute('aria-label',button.title);
+     button.onclick=()=>maybeOfferAccount();
+    }
     if(available)button.onclick=()=>{
      if(skyTourActive())return;
      if(legacy===null){startCanonicalQuest(quest);return}

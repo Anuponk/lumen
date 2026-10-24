@@ -1,5 +1,12 @@
 # Existing verification map
 
+Player ergonomics (#555/#552/#566): `ux-lot-tests.mjs` (catalogue successor,
+live guards, unchanged rewards, replay ready/running states) and
+`ux-lot-browser-tests.mjs` (hint geometry/touch, guest account explanation and
+retry, historical/inserted/constellation navigation by keyboard/mouse/touch).
+Both are mandatory quality-gate suites; browser evidence is emulation with
+synthetic saves, separate from physical mobile and live Auth/cloud acceptance.
+
 Private QA/cohort controls: `recette-schema-tests.mjs`,
 `historical-rollout-tests.mjs`, disposable `scripts/fixtures/sync-cohort-control.sql`
 and optional `supabase/recette/smoke.sql`. The latter executes actual SQL under
