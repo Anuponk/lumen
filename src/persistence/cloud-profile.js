@@ -552,7 +552,8 @@ export async function initializeCloudProfile(supabase,localProfile,{userId,guest
   }
   // Missing capability is known before emission. Never fall back after an
   // ambiguous claim result, timeout, permission error or unknown protocol.
-  if(version.error?.code!=='PGRST202'||version.status!==404)throw Error('Protocole de revendication indisponible');
+  const compatible=(!version.error&&version.data===0)||(version.error?.code==='PGRST202'&&version.status===404);
+  if(!compatible)throw Error('Protocole de revendication indisponible');
  }
  const {data,error}=await supabase.rpc("lumen_initialize_profile",{p_payload:proposed,...(userId?{p_expected_user_id:userId}:{})});
  if(!sessionValid())throw Error('Initialisation suspendue : session modifiée');

@@ -108,3 +108,6 @@ jobs:
             -f supabase/migrations/20261023211412_historical_claim_rollout.sql \
             -f scripts/fixtures/historical-claim-rollout.sql
           python3 scripts/guest-claim-concurrency.py
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261024042823_sync_cohort_activation_control.sql \
+            -f scripts/fixtures/sync-cohort-control.sql

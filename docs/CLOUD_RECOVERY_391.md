@@ -459,8 +459,9 @@ only after comparing the actual private copies and current server receipts.
 
 The following operational gates remain mandatory, even when automated tests pass:
 
-1. Supply an isolated Lumen project and accounts. Never run bootstrap fixtures
-   against the shared SoldeZen project. Apply additive migrations to recipe first,
+1. Supply an isolated Lumen project and accounts, or the private schema recipe
+   described below. Never run disposable bootstrap fixtures against the shared
+   SoldeZen project. Apply additive migrations to recipe first,
    verify advisors/RLS and restore an export there; record the actual version.
 2. Run the existing coordinator in read-only shadow inspection, without a second
    dispatcher/emission. Record exact client/server Git revision, parity and all
@@ -486,6 +487,53 @@ The following operational gates remain mandatory, even when automated tests pass
    `originalsRestorable:true`, `mirrorServerDerived:true`. Run the checker with
    `retire`. Verify old-client rejection, a dormant intent, export restoration and
    rollback to a compatible client before a separate writer-removal change.
+
+### Private schema recipe and activation control (24 October 2026)
+
+The owner selected a dedicated schema on the shared SoldeZen project.
+`scripts/recette-schema.mjs` compiles reviewed structure metadata into an optional
+bootstrap for an **empty** `lumen_recette`: empty business tables, selected
+functions/triggers and whitelisted catalogue rules. No player rows are copied.
+It never resets existing objects or modifies shared Auth. The NOLOGIN/NOINHERIT
+runner owns QA objects only; all QA tables have RLS and no browser/API grants.
+A private `auth_uid()` reads synthetic SQL claims without Auth access. This is
+a constrained compiler, not a general SQL parser; reviewed metadata and database
+role isolation remain required. Disposable `auth`/`lumen` bootstraps stay forbidden
+on the shared project.
+
+`supabase/recette/smoke.sql` executes real Quest/Wallet/guest commands under that
+role: isolation, receipt-failure rollback, immutable retry, independent receipt
+and current projection, one first reward, same-run Mastery and stable quest-7 ID.
+The 24 October run passed, including cohort controls. All synthetic writes were
+rolled back; profiles, guest receipts and cohorts remained empty. This is SQL
+proof with synthetic claims, **not** live Auth, HTTP transport or Android proof.
+The structure source is observed server DDL; its recorded Git baseline identifies
+client code and is not an independent server Git attestation.
+
+The checker accepts `environment: schema_isolated` with
+`schemaIsolation:{revision,schema:'lumen_recette',role:'lumen_recette_runner',
+reference,productionAccess:false,sharedAuthWrites:false,publicApi:false,
+rlsEnabled:true}` and actual project references. Review the referenced grants
+audit. Exact versions, real transports, two Androids and observation still apply.
+
+Migration `20261024042823_sync_cohort_activation_control.sql` adds private release
+approvals, an admin-only cohort setter, activation events and an emergency stop
+defaulting to false. Browsers cannot approve or enroll accounts. Capability 0
+explicitly selects compatibility before mutation; 1 requires an active cohort.
+The claim endpoint enforces activation too. Previously issued exact receipts stay
+retryable without a second seed. Stopping new activations preserves active
+authority; downgrade is refused. Approval digests require operator review.
+
+Deploy the client accepting capability 0 **before** installing historical-claim
+and activation-control migrations atomically in application schemas. Never install
+the historical migration alone: its original capability returns 1 globally.
+Neither production application migration was applied during the schema recipe.
+No real account was approved or enrolled.
+
+One Android is offered for guided testing. The second device, real-transport
+release evidence and 14-day broad observation remain open. CAS/mirror writers,
+old readers and recovery archives remain until the retirement gate passes.
+Lots 5–7 cannot be declared operationally complete from SQL/CI alone.
 
 Current preparation does not remove CAS, mirror repair, compatibility RPCs,
 historical readers or backups. No blanket production migration, cohort activation

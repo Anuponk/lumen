@@ -1,5 +1,15 @@
 # Testing and quality gate
 
+Private recipe follow-up (24 October 2026): `recette-schema-tests.mjs` rejects
+external schema dependencies and player-row copying; `historical-rollout-tests.mjs`
+covers explicit capability 0 and attested schema isolation without relaxing the
+two-Android gate. Both belong to the full Node gate. `sync-cohort-control.sql`
+runs after the historical SQL/concurrency fixtures in disposable PostgreSQL and
+checks actual authenticated-role denial, public endpoint activation, emergency
+stop, immutable authority and duplicate enrollment. Never run those bootstrap
+fixtures on a shared project. The optional private-schema SQL smoke and its
+limitations are documented in [the runbook](CLOUD_RECOVERY_391.md#private-schema-recipe-and-activation-control-24-october-2026).
+
 Reviewed recovery: `node scripts/approved-device-recovery-tests.mjs` checks
 owner/fingerprint/expiry guards, preserved acquisitions, archived originals,
 unchanged pending work and safe holds on session/storage/cloud changes. The

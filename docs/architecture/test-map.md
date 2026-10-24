@@ -1,5 +1,12 @@
 # Existing verification map
 
+Private QA/cohort controls: `recette-schema-tests.mjs`,
+`historical-rollout-tests.mjs`, disposable `scripts/fixtures/sync-cohort-control.sql`
+and optional `supabase/recette/smoke.sql`. The latter executes actual SQL under
+the private runner with synthetic claims and rolls back writes; it does not test
+real Auth, HTTP or phones. Physical/retirement gates remain separate; see
+[the recipe runbook](../CLOUD_RECOVERY_391.md#private-schema-recipe-and-activation-control-24-october-2026).
+
 Historical provenance/rollout: historical-rollout-tests.mjs (mandatory Node),
 historical-claim-browser.mjs (account browser suite; native storage/mock RPC),
 fixtures/historical-claim-rollout.sql and guest-claim-concurrency.py (isolated

@@ -1,4 +1,5 @@
 export const nodeSuites=[
+ 'recette-schema-tests.mjs',
  'historical-rollout-tests.mjs',
  'gameplay-domain-tests.mjs',
  'persistence-coordinator-tests.mjs',
