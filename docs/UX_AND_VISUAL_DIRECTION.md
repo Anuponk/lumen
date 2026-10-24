@@ -30,6 +30,9 @@ An animation failure releases the game immediately. No audio or remote resource
 is needed by the story; cold offline startup remains the existing PWA's scope.
 The first service-worker acquisition does not reload that fresh document; an
 actual replacement retains the existing upgrade reload and OAuth-return guards.
+The return notification remains a passive, automatically dismissed status; it
+must not intercept Help or board gestures now that first installation stays on
+the original document. Its text, timing and player data remain unchanged.
 
 Domain readiness (persistence lot 3): a current verified acquired replay may be
 available during Wallet review. Account status distinguishes « Quêtes confirmées ·

@@ -1385,7 +1385,7 @@ function maybeShowReturnWelcome(){
  copy.textContent=status.done?"Ta progression est bien enregistrée.":status.grace?"Ta Série de lumière est protégée aujourd’hui. Joue pour la continuer.":"Reprends ton exploration du ciel là où tu l’as laissée.";
  if(status.done)copy.textContent+=" · Prochaine récompense : +"+next.amount+" ✦ à J"+next.cycleDay+".";
  stars.textContent="✦".repeat(cycle)+"·".repeat(7-cycle);toast.hidden=false;
- const close=()=>{toast.classList.add("hide");setTimeout(()=>toast.hidden=true,260)};toast.onclick=close;setTimeout(close,5200);
+ const close=()=>{toast.classList.add("hide");setTimeout(()=>toast.hidden=true,260)};setTimeout(close,5200);
 }
 // A single celebration per validated calendar day, even across reloads.
 function scheduleDailyCelebration(claim){
