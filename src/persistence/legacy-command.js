@@ -24,7 +24,25 @@ export async function loadCommittedLegacyAttempt(client,questId,operationId,{use
  if(!receipt?.request?.facts||!sameCloudProfile(receipt.request,{version:1,operationId,questId,facts:receipt.request.facts})||typeof receipt.outcome?.firstCompletion!=='boolean'||!Number.isFinite(Date.parse(receipt.recordedAt)))throw canonicalRecoveryFailure({code:'22023'});
  const profile=await loadVerifiedProfile(client,{userId});scope();
  verifyLegacyProjection(profile,receipt,quest);
- return {profile,receipt,quest};
+ return {profile,receipt,quest,userId};
+}
+// A later copy of an already committed run is evidence to archive, not a new
+// command or permission to rewrite its receipt. Every fact except elapsed time
+// must match, and the later capture may not improve the committed performance.
+export function assertRecreatedLegacyCapture(userId,entry,committed){
+ const fail=()=>{throw Error('Recreated legacy capture proof unconfirmed')};
+ const exactKeys=(v,keys)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length===keys.length&&keys.every(k=>Object.hasOwn(v,k));
+ const receipt=committed?.receipt,request=receipt?.request;
+ const quest=canonicalQuestList().find(q=>q.id===entry?.questId&&q.legacyIndex!==null);
+ const fields=['seconds','assistanceUsed','mistakeCommitted','qualifying','hintUsed','challengeFailed','qualifiedDay','qualifiedAt'];
+ const validFacts=v=>exactKeys(v,fields)&&Number.isSafeInteger(v.seconds)&&v.seconds>=0&&fields.slice(1,6).every(k=>typeof v[k]==='boolean')&&typeof v.qualifiedDay==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v.qualifiedDay)&&typeof v.qualifiedAt==='string'&&Number.isFinite(Date.parse(v.qualifiedAt));
+ const later=entry?.reward?.facts,earlier=request?.facts;
+ if(!quest||!exactKeys(entry,['version','operationId','userId','questId','reward','createdAt'])||entry.version!==2||entry.userId!==userId||committed?.userId!==userId||
+  !exactKeys(entry.reward,['facts'])||!exactKeys(request,['version','operationId','questId','facts'])||request.version!==1||request.operationId!==entry.operationId||request.questId!==quest.id||
+  !validFacts(later)||!validFacts(earlier)||later.seconds<earlier.seconds||!fields.filter(k=>k!=='seconds').every(k=>later[k]===earlier[k])||
+  typeof receipt.outcome?.firstCompletion!=='boolean'||!Number.isSafeInteger(receipt.outcome.attempts)||receipt.outcome.attempts<1||!Number.isFinite(Date.parse(receipt.recordedAt))||!Number.isFinite(Date.parse(entry.createdAt))||
+  (later.seconds!==earlier.seconds&&Date.parse(entry.createdAt)<Date.parse(receipt.recordedAt)))fail();
+ verifyLegacyProjection(committed.profile,receipt,quest);
 }
 export async function commitLegacyVictoryCommand(client,questId,facts,operationId,{userId,sessionValid=()=>true}={}){
  const quest=canonicalQuestList().find(q=>q.id===questId&&q.legacyIndex!==null);
@@ -47,17 +65,21 @@ export async function commitLegacyVictoryCommand(client,questId,facts,operationI
 }
 // Recovery keeps immutable evidence and pauses refusals independently. Legacy
 // scalar rewards require a clean verified baseline before UI installation.
-export async function replayLegacyVictoryOutbox(outbox,userId,commit,{sessionValid=()=>true,onIssue=()=>{}}={}){
+export async function replayLegacyVictoryOutbox(outbox,userId,commit,{sessionValid=()=>true,onIssue=()=>{},recoverCommitted}={}){
  const confirmed=[],blocked=new Set(),state=await outbox.inspect(userId);
  if(state.authRequired)return confirmed;
- const paused=new Set(state.paused.map(e=>e.operationId));
+ const paused=new Map(state.paused.map(e=>[e.operationId,e]));
  for(const entry of state.pending){
   if(!sessionValid())break;
-  if(paused.has(entry.operationId)||blocked.has(entry.questId)){blocked.add(entry.questId);continue}
+  const hold=paused.get(entry.operationId);
+  if((hold&&!(recoverCommitted&&hold.kind==='review'&&hold.code==='22023'))||blocked.has(entry.questId)){blocked.add(entry.questId);continue}
   try{
-   const saved=await commit(entry.questId,entry.reward.facts,entry.operationId,{userId,sessionValid});
+   const recovered=recoverCommitted?await recoverCommitted(entry):null;
    if(!sessionValid())break;
-   await outbox.acknowledge(userId,entry.questId,entry.reward,entry.operationId);confirmed.push(saved);
+   if(hold&&!recovered){blocked.add(entry.questId);continue}
+   const saved=recovered||await commit(entry.questId,entry.reward.facts,entry.operationId,{userId,sessionValid});
+   if(!sessionValid())break;
+   if(!recovered)await outbox.acknowledge(userId,entry.questId,entry.reward,entry.operationId);confirmed.push(saved);
   }catch(error){
    if(!sessionValid())break;
    blocked.add(entry.questId);try{await outbox.pause(userId,entry,error)}catch{onIssue({kind:'retry_state_unpersisted'})}

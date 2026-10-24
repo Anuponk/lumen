@@ -1,5 +1,11 @@
 # Dependencies and data flow
 
+Historical queued recapture: UI `recoverQueuedLegacyReceipt` reads the original
+expected-account receipt and current profile through `legacy-command.js`.
+`durable-canonical-outbox.js` calls its strict duplicate proof, archives exact
+evidence, then retires the original pending copy through the transactional cache.
+The cache retires its paired navigation row; no server command is emitted.
+
 Optional story (#532): startup eligibility → first-welcome local presentation
 marker → game-screen supplies catalogue-first astronomical SVG → inert overlay
 and narrative clock → release/focus on the same actual learning board. Aide replay

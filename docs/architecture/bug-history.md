@@ -1,5 +1,13 @@
 # Verified historical causes
 
+Historical pending copy after an acknowledged run: a synthetic regression on
+`3496069` fails with a `22023`-paused later capture even though its original
+receipt and current profile are available. Canonical outboxes already had an
+archival path, but historical replay skipped all review holds. Historical replay
+now permits receipt-only inspection of this specific hold and archives an exact
+later copy only under the strict data-contract proof. See
+`canonical-durable-outbox-tests.mjs`; device acceptance remains separate.
+
 Small, evidence-based register, verified from Git diffs at `bef5f32`. These are historical fixes, not diagnoses of current player incidents. Add an entry only with a concrete causal diff/reproduction and a GitHub reference; do not infer causes from issue titles. Tests below exist; execution status belongs to the PR/report that ran them.
 
 | Symptom | Confirmed cause / fix evidence | Module | GitHub reference | Associated existing test |

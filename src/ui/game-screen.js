@@ -332,7 +332,7 @@ async function exportLumenRecoveryBundle(){
  const local={};
  for(let i=0;i<localStorage.length;i++){
   const key=localStorage.key(i);
-  if(prefixList.some(prefix=>key.startsWith(prefix)))local[key]=localStorage.getItem(key);
+  if(prefixList.some(prefix=>key.startsWith(prefix))||/^lumen(?:Canonical|Legacy)RecreatedCaptureArchiveV1:/.test(key))local[key]=localStorage.getItem(key);
  }
  const indexed={},cloudRecoveryIndexedDB={};
  if(typeof indexedDB!=="undefined"){
@@ -549,6 +549,15 @@ async function recoverQueuedCanonicalReceipt(ownerId,client,entry,sessionValid){
  recordCloudDiagnostic('canonical_queued_receipt_recovered',{count:1});
  return committed;
 }
+async function recoverQueuedLegacyReceipt(ownerId,client,entry,sessionValid){
+ if(!sessionValid()||entry.userId!==ownerId||!entry.operationId)return null;
+ const committed=await loadCommittedLegacyAttempt(client,entry.questId,entry.operationId,{userId:ownerId,sessionValid});
+ if(!sessionValid()||!committed)return null;
+ await legacyVictoryOutbox.archiveRecreatedCapture(ownerId,entry,committed,{sessionValid});
+ if(!sessionValid())return null;
+ recordCloudDiagnostic('legacy_queued_receipt_recovered',{count:1});
+ return committed;
+}
 async function retryPendingCanonicalOutboxOnReconnect(){
  if(canonicalOutboxRetryInFlight||!canReplayCanonicalOutbox())return;
  const userId=lumenUser.id,client=lumenSupabase;
@@ -704,7 +713,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   hydrationStage="legacy_replay";
   try{await legacyVictoryOutbox.resume(accountId,{kind:'auth'})}catch{recordCloudDiagnostic('legacy_outbox_resume_pending',{reason:'storage'})}
   if(!sessionValid())return;
-  const legacyRecovered=await replayLegacyVictoryOutbox(legacyVictoryOutbox,accountId,(questId,facts,id,options)=>commitLegacyVictoryCommand(hydrationClient,questId,facts,id,options),{sessionValid});
+  const legacyRecovered=await replayLegacyVictoryOutbox(legacyVictoryOutbox,accountId,(questId,facts,id,options)=>commitLegacyVictoryCommand(hydrationClient,questId,facts,id,options),{sessionValid,recoverCommitted:entry=>recoverQueuedLegacyReceipt(accountId,hydrationClient,entry,sessionValid)});
   if(!sessionValid())return;
   if(legacyRecovered.length)recordCloudDiagnostic('legacy_outbox_replayed',{count:legacyRecovered.length});
   if(recovered.length||legacyRecovered.length){
@@ -2419,7 +2428,7 @@ async function retryPendingLegacyOutboxOnReconnect(){
  try{
   const recovered=await replayLegacyVictoryOutbox(legacyVictoryOutbox,ownerId,
    (id,facts,op,options)=>commitLegacyVictoryCommand(client,id,facts,op,options),
-   {sessionValid:sameSession,onIssue:issue=>recordCloudDiagnostic('legacy_outbox_recovery_pending',{reason:issue.kind})});
+   {sessionValid:sameSession,recoverCommitted:entry=>recoverQueuedLegacyReceipt(ownerId,client,entry,sameSession),onIssue:issue=>recordCloudDiagnostic('legacy_outbox_recovery_pending',{reason:issue.kind})});
   if(!sameSession()||!recovered.length)return false;
   if(cloudProfileReady){location.reload();return true}
   // The receipt confirms only this operation. Divergent local state and the

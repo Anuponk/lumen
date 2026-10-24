@@ -543,6 +543,15 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Historical recreated-capture recovery: `canonical-durable-outbox-tests.mjs`
+reproduces a committed 37-second run with a later 41-second local copy and a
+`22023` review pause. It verifies archival without resending, and rejects improved
+times, changed flags/identity/owner, missing projected attempts, a capture older
+than the receipt, denied archival and account changes. Run the historical client,
+canonical outbox, storage/export, hydration and full affected suites as well.
+Phone recovery remains a separate acceptance check. Onboarding impact: none;
+no rule, reward, assistance or navigation destination changes.
+
 Historical/rollout preparation: `historical-rollout-tests.mjs` covers byte-level
 inventory and unknown fields, foreign owners, ambiguous balances, immutable
 account-bound guest manifests, denied storage, lost replies and receipt reads,
