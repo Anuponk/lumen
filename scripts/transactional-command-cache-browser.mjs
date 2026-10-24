@@ -20,6 +20,7 @@ export async function verifyTransactionalCommandCache({evaluate,navigate,url}){
   release();await Promise.all([first,second]);frame.remove();
   if(order.join(',')!=='first,second')throw Error('Native lock lost dispatch');
   const store=createIndexedOutboxStore(indexedDB),cache=createTransactionalCommandCache(store);
+  {
   const {canonicalQuestList}=await import('/src/campaign/canonical-quests.js');
   const {loadCommittedLegacyAttempt,replayLegacyVictoryOutbox}=await import('/src/persistence/legacy-command.js');
   const legacyOwner='recapture-fixture-'+crypto.randomUUID(),quest=canonicalQuestList().find(q=>q.legacyIndex===73);
@@ -35,6 +36,7 @@ export async function verifyTransactionalCommandCache({evaluate,navigate,url}){
   const archives=await store.entries('lumenLegacyRecreatedCaptureArchiveV1:'+legacyOwner+':');
   if(recovered.length!==1||reads!==2||(await legacyBox.pending(legacyOwner)).length||(await legacyBox.inspect(legacyOwner)).paused.length||(await cache.pendingState(legacyOwner)).length||archives.length!==1)throw Error('Legacy native archive recovery incomplete');
   if(JSON.stringify(JSON.parse(archives[0][1]).entry)!==JSON.stringify(later)||JSON.stringify(JSON.parse(archives[0][1]).receipt)!==JSON.stringify(receipt))throw Error('Original legacy evidence lost');
+  }
   const userId='atomic-fixture-'+crypto.randomUUID(),key='lumenCanonicalVictoryOutboxV2:'+userId+':op',stateKey=COMMAND_CACHE_PREFIX+'Canonical:'+userId+':op';
   const box=createDurableCanonicalVictoryOutbox(localStorage,{fallback:cache});
   const entry=await box.enqueue(userId,'q',{stars:1},{operationId:'op'});
