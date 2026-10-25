@@ -36,13 +36,23 @@ export function buildPlayerSessions(data){
 function element(doc,tag,text){const node=doc.createElement(tag);if(text!==undefined)node.textContent=text;return node}
 function select(doc,label,values){const node=element(doc,'select');node.setAttribute('aria-label',label);for(const [value,text] of values){const option=element(doc,'option',text);option.value=value;node.append(option)}return node}
 
-export function registeredPlayers(players){
- return (Array.isArray(players)?players:[]).filter(p=>p?.player_type==='authenticated'&&typeof p.player_key==='string'&&p.player_key.startsWith('u:')).slice(0,250);
+export function registeredPlayers(players,accounts=[]){
+ const identities=new Map((Array.isArray(accounts)?accounts:[]).filter(a=>typeof a?.user_id==='string').map(a=>['u:'+a.user_id,a]));
+ return (Array.isArray(players)?players:[]).filter(p=>p?.player_type==='authenticated'&&typeof p.player_key==='string'&&p.player_key.startsWith('u:')).slice(0,250).map(p=>{
+  const account=identities.get(p.player_key);if(!account)return p;
+  const email=String(account.email||'').trim(),nickname=String(account.nickname||'').trim();
+  return {...p,email,display_name:nickname||email||p.display_name||p.player_label||'Compte inscrit'};
+ });
+}
+
+const searchText=value=>String(value||'').normalize('NFD').replace(/\p{M}/gu,'').toLocaleLowerCase('fr').trim();
+export function playerMatchesSearch(player,query){
+ const needle=searchText(query);return [player.display_name,player.email,player.player_label].some(value=>searchText(value).includes(needle));
 }
 
 export function renderPlayerDirectory(host,players,observations,{authorized=()=>false,onSelect=()=>{}}={}){
  if(!host)return;host.replaceChildren();if(!authorized())return;
- const doc=host.ownerDocument,search=element(doc,'input');search.type='search';search.placeholder='Rechercher un joueur';search.setAttribute('aria-label','Rechercher un joueur');
+ const doc=host.ownerDocument,search=element(doc,'input');search.type='search';search.placeholder='Pseudo ou email';search.setAttribute('aria-label','Rechercher par pseudo ou email');
  const sort=select(doc,'Trier les joueurs',[['activity','Activité récente'],['auth','Connexion Auth récente'],['wallet','Dernier reçu portefeuille']]);
  const filter=select(doc,'Filtrer l’état observé',[['all','Tous les états'],['pending','En attente'],['failure','Échec / revue'],['unknown','État inconnu'],['confirmed','File observée sans attente']]);
  const controls=element(doc,'div');controls.className='admin-player-controls';controls.append(search,sort,filter);
@@ -50,7 +60,7 @@ export function renderPlayerDirectory(host,players,observations,{authorized=()=>
  const list=element(doc,'div');list.className='admin-player-list';host.append(controls,sources,list);
  const draw=()=>{
   list.replaceChildren();if(!authorized())return;
-  const rows=registeredPlayers(players).filter(p=>String(p.display_name||p.player_label||p.player_type||'').toLocaleLowerCase('fr').includes(search.value.toLocaleLowerCase('fr'))&&
+  const rows=registeredPlayers(players).filter(p=>playerMatchesSearch(p,search.value)&&
    (filter.value==='all'||(observations?.players?.[p.player_key]?.state||'unknown')===filter.value));
   const date=p=>{const proof=observations?.players?.[p.player_key];return Date.parse(sort.value==='auth'?proof?.auth_at:sort.value==='wallet'?proof?.domains?.wallet:p.last_seen)||0};
   rows.sort((a,b)=>date(b)-date(a)||String(a.player_key).localeCompare(String(b.player_key)));

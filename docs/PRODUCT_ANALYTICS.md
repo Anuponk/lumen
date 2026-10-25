@@ -145,6 +145,14 @@ The analytics ingestion allow-list accepts canonical attempt/friction events and
 ### Admin account directory (#112)
 The cockpit can list created authentication accounts through `lumen_admin_accounts(limit)`. The RPC reads email and authentication timestamps directly from `auth.users` only after checking the authenticated caller has the `analytics_cockpit` capability. Email is not copied into `analytics_events`, is not part of player telemetry, and the RPC is revoked from public/anonymous roles.
 
+The recent registered-player list joins this already-loaded bounded account
+response by exact user identity. It shows the email when the trimmed nickname is
+empty and searches both fields regardless of which is displayed (case/accent and
+surrounding-whitespace insensitive). Missing/unavailable account metadata keeps
+the prior label; it never borrows another account's email. All cockpit sections
+can be collapsed independently with native headings, without removing loaded
+content or filter values. No RPC, schema, collection or aggregate changes.
+
 
 ### Shared Supabase auth isolation (#112)
 Lumen shares the SoldeZen Supabase project but not application membership. `lumen.users` is the source of truth for authenticated accounts that actually used Lumen; the admin directory joins `auth.users` through that registry, so SoldeZen-only accounts are excluded. Existing membership is backfilled only from Lumen-owned profile, progress, or authenticated analytics data. Google sign-in initiated by Lumen uses the canonical production return URL `https://lumen-xi-seven.vercel.app/` at both sign-in entry points.
