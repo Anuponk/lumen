@@ -166,9 +166,13 @@ JSONB/TOAST/index overhead and WAL are not bounded by serialized payload bytes.
 [Supabase pricing](https://supabase.com/pricing), checked 25 October 2026:
 Free includes 500 MB database, 5 GB egress and 1 GB object storage. This design
 uses the database quota, not the unused object-storage allocation. The 32 MiB
-payload cap alone is about 6.7% of 500 MB, before overhead/other apps. #316/#526
-reports Free, but current plan and remaining live headroom have not been queried
-for this task. No extra service/subscription is purchased. Marginal charge is
+payload cap alone is about 6.7% of 500 MB, before overhead/other apps. Read-only
+provider metadata on 25 October confirms the shared project's **Free** plan and
+EU Central region. `pg_database_size` reports **163,032,211 bytes** (163 MB,
+155.5 MiB), including other applications. Adding the entire support payload cap
+would bring that aggregate to about 196.6 MB before extra table/index/WAL/bloat
+growth. This database-size reading is not the provider's complete billing meter
+or a reserved quota. No extra service/subscription is purchased. Marginal charge is
 expected zero only while included quotas suffice; refusal is preferable to
 silently upgrading. On the published Pro offer, the base is from $25/month,
 included disk 8 GB and ordinary egress 250 GB; this task does not authorize it.
