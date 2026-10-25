@@ -5,7 +5,9 @@
 Player cards now show a compact visual status: green `✓ Sans attente observée`,
 amber `… En attente`, red `! Problème signalé`, grey `? État inconnu` or
 `? Signal ancien`. Colour is paired with text and a symbol. Quest/session counts
-remain visible; full activity/Auth/receipt/queue dates are retained in a closed
+remain visible. The quest label is the furthest observed current catalogue ordinal
+(see PRODUCT_ANALYTICS), so an earlier replay never lowers it. Full
+activity/Auth/receipt/queue dates are retained in a closed
 native “Détails de synchronisation” disclosure. One shared explanation qualifies
 the signals rather than repeating paragraphs on every card.
 
