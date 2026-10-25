@@ -1110,3 +1110,21 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .game-core:has(#hintCard:not([hidden]))>*{grid-column:2;min-height:0}
  .game-core:has(#hintCard:not([hidden])) .learning-board-wrap{grid-column:1;grid-row:1 / -1;height:100%;width:100%}
 }
+
+/* #534: bounded, keyboard-operable administrative directory and sessions. */
+.admin-player-controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.admin-player-controls>*{max-width:100%;min-width:0;flex:1 1 150px}
+.admin-player-list{display:grid;gap:12px;max-height:75vh;overflow:auto}
+.admin-player-list .admin-player{display:block;min-width:0;padding:12px;border:1px solid #294359;border-radius:10px;overflow-wrap:anywhere}
+.admin-player-dates{font-size:12px;line-height:1.6;white-space:normal}
+.admin-player-dates small{display:block;margin-top:8px}
+.admin-player-list button{max-width:100%;white-space:normal;min-height:44px}
+.admin-timeline details{border:1px solid #294359;border-radius:8px;margin:10px 0;padding:10px;min-width:0}
+.admin-timeline summary{cursor:pointer;min-height:44px;overflow-wrap:anywhere}
+.admin-timeline select{max-width:100%;margin:4px;min-height:44px}
+.admin-session-events{padding-left:22px;font-size:13px;overflow-wrap:anywhere}
+.admin-session-events li{margin:10px 0}
+.admin-cockpit :is(button,input,select,summary,a):focus-visible{outline:3px solid #8beaff;outline-offset:3px}
+.admin-cockpit-head{position:sticky;top:0;background:#0c1a28;z-index:2;padding:8px}
+@media(max-width:760px){.admin-cockpit-head{position:static}.admin-player-list{max-height:none}.admin-cockpit-shell{min-width:0}.admin-cockpit section{padding:10px}}
+@media(prefers-reduced-motion:reduce){.admin-cockpit *{scroll-behavior:auto;transition:none;animation:none}}

@@ -30,7 +30,7 @@ test('timeline never publishes a stale account result or an older player selecti
  const source=readFileSync('src/ui/game-screen.js','utf8');
  const start=source.indexOf('async function loadAdminTimeline('),end=source.indexOf('\nfunction adminAlerts',start);
  let resolve;const pending=new Promise(r=>resolve=r);const box={innerHTML:''};
- const context=vm.createContext({lumenUser:{id:'admin'},lumenSupabase:{rpc:()=>pending},hasInternalCapability:()=>true,document:{getElementById:()=>box}});
+ const context=vm.createContext({lumenUser:{id:'admin'},lumenSupabase:{rpc:()=>pending},hasInternalCapability:()=>true,rememberSessionExpansion:()=>{},document:{getElementById:()=>box}});
  vm.runInContext(source.slice(start,end)+';globalThis.load=loadAdminTimeline',context);
  const loading=context.load('u:player');context.lumenUser={id:'other'};box.innerHTML='new account';
  resolve({data:[],error:null});await loading;assert.equal(box.innerHTML,'new account');

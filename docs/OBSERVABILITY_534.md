@@ -1,5 +1,43 @@
 # Diagnostic collection — #534 phases 0 and 1
 
+## Cockpit lot 2 — players, sessions, episodes (25 October 2026)
+
+`ui/cockpit-sessions.js` replaces the flat directory/timeline. A labelled search,
+date ordering and observed-state filter select among at most 250 recent players.
+Each player opens a bounded read of at most 100 analytics events (90-day window)
+and 100 optional diagnostic events (seven-day window). Native `details/summary`
+provides independent closed-by-default sessions, nested diagnostic episodes and
+chronological events. Version/state filters and reasonable same-player refresh
+preserve session expansion in memory; account/player changes reset it. Existing
+incident filters, reports and mandatory review remain unchanged. Detached report
+actions are invalidated. Capability loss clears administrative data and pending
+requests cannot repopulate it. Request rejection yields an explicit error.
+
+Analytics session IDs are the existing browser `lumenAnalyticsSessionV2`, reused
+within 30 minutes of inactivity, possibly across tabs/reloads; they are not Auth
+sessions or reliable device identities. Diagnostic sessions are separate UUIDs
+and appear separately, never joined by time proximity. Missing IDs produce
+separate unknown observations. Session intervals describe the visible sample,
+not true play duration. Commit timestamps from lot 1 remain per-domain account
+evidence, not invented per-session ACKs. Device information stays unavailable
+unless provided by existing diagnostic enums. There is no new tracking.
+
+The invoker `lumen_admin_player_sessions` facade delegates to a private live
+capability check. Explicit account ownership restricts analytics and diagnostic
+reads. Guest observations require a null user and the exact anonymous key;
+shared-browser events are never relinked to another account. Only closed fields
+are selected, stable quest ordinals are resolved from existing rules, and optional
+diagnostics require current consent. Three read indexes support bounded access.
+No profile/receipt payload, amount, email, token or arbitrary properties leave
+the RPC. No collection, retention, purge, alert or player writer changes.
+
+Automated contract: `cockpit-sessions-tests.mjs`, isolated SQL fixture and the
+existing independent incident browser, extended by `cockpit-browser.mjs`.
+Native keyboard, expansion/filter/refresh/reset, nested review and no horizontal
+overflow are checked at 320/360/390/844 landscape/1440. Browser transport is
+synthetic, not live players; accessibility-tree checks are not screen-reader
+acceptance. Full CI and real-phone acceptance remain distinct gates.
+
 ## Cockpit lot 1 — dates (25 October 2026)
 
 Baseline `429ff40`. Metadata-only reads confirmed the existing recent-player

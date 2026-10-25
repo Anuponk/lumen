@@ -1,4 +1,4 @@
-import {appendPlayerDates} from './cockpit-dates.js';
+import {renderPlayerDirectory,renderPlayerSessions,rememberSessionExpansion} from './cockpit-sessions.js';
 import {qualifyDifficulty} from "../campaign/difficulty.js";
 import {readQuestView} from "../campaign/quest-view.js";
 import {QUEST_MILESTONES,questLearningRules,questPerformanceRecord,questBadgeQualification} from "../campaign/quest-rules.js";
@@ -1078,7 +1078,8 @@ function updateAdminTools(){
  toggle.parentElement.hidden=!shards;toggle.checked=shards&&unlimitedShardsEnabled();
  if(cockpit)cockpit.hidden=!analytics;
  if(!analytics){
-  document.getElementById('adminDiagnosticIncidents')?.replaceChildren();
+  for(const id of ['adminDiagnosticIncidents','adminPlayers','adminTimeline','adminAccounts'])document.getElementById(id)?.replaceChildren();
+  const timeline=document.getElementById('adminTimeline');if(timeline){timeline.cockpitRequest=null;timeline.cockpitPlayer=null}
   const modal=document.getElementById('adminCockpit');if(modal)modal.hidden=true;
  }
 }
@@ -2049,14 +2050,15 @@ function adminEventLabel(name){return ({session_start:"Ouverture",attempt_starte
 async function loadAdminTimeline(key){
  if(!lumenUser||!lumenSupabase||!hasInternalCapability('analytics_cockpit'))return;
  const owner=lumenUser.id,client=lumenSupabase,box=document.getElementById("adminTimeline"),request={};
- box.cockpitRequest=request;
+ rememberSessionExpansion(box);
+ box.cockpitRequest=request;box.cockpitPlayer=key;
  const authorized=()=>lumenUser?.id===owner&&lumenSupabase===client&&hasInternalCapability('analytics_cockpit')&&box.cockpitRequest===request;
  box.innerHTML="<p>Chargement…</p>";
- let response;try{response=await client.rpc("lumen_admin_quest_timeline",{p_player_key:key,p_limit:100})}catch(_){response={error:true}}
+ let response;try{response=await client.rpc("lumen_admin_player_sessions",{p_player_key:key})}catch(_){response={error:true}}
  if(!authorized())return;
  const {data,error}=response;
  if(error){box.innerHTML="<p>Timeline indisponible.</p>";return}
- box.innerHTML=(data||[]).map(x=>'<div class="admin-event"><span>'+adminEsc(adminEventLabel(x.event_name))+(x.quest_ordinal?" · Q"+x.quest_ordinal:"")+'</span><small>'+new Date(x.occurred_at).toLocaleString("fr-FR")+'</small></div>').join("")||"<p>Aucun événement.</p>";
+ renderPlayerSessions(box,data,{authorized,scope:owner+':'+key});
 }
 function adminAlerts(rows){
  const alerts=[];
@@ -2195,8 +2197,9 @@ function renderAdminCatalogue(){
 }
 async function loadAdminCockpit(){
  if(!lumenUser||!lumenSupabase||!hasInternalCapability('analytics_cockpit'))return;
- const requestUser=lumenUser.id,requestClient=lumenSupabase;
- const authorized=()=>lumenUser?.id===requestUser&&lumenSupabase===requestClient&&hasInternalCapability('analytics_cockpit');
+ const requestUser=lumenUser.id,requestClient=lumenSupabase,request={};
+ loadAdminCockpit.request=request;
+ const authorized=()=>lumenUser?.id===requestUser&&lumenSupabase===requestClient&&hasInternalCapability('analytics_cockpit')&&loadAdminCockpit.request===request;
  const status=document.getElementById("adminCockpitStatus"),days=Number(document.getElementById("adminCockpitDays")?.value||7);
  status.textContent="Actualisation…";
  const [cockpit,accounts,feedbacks,playerSnapshot,syncHealth,questMetrics]=await Promise.all([
@@ -2206,7 +2209,7 @@ async function loadAdminCockpit(){
    lumenSupabase.rpc("lumen_admin_recent_players",{p_limit:250}),
    lumenSupabase.rpc("lumen_admin_sync_health",{p_days:days}),
    lumenSupabase.rpc("lumen_admin_quest_metrics",{p_days:days})
- ]);
+ ].map(request=>Promise.resolve(request).catch(()=>({error:{message:'Service indisponible'}}))));
  if(!authorized())return;
  const players=(playerSnapshot.data||[]).map(x=>({...x,current_quest:questMetrics.data?.current_players?.[x.player_key]??null}));
  const playerError=playerSnapshot.error;
@@ -2240,12 +2243,10 @@ async function loadAdminCockpit(){
  const outboxAlerts=health?.outbox?.alerts||[];
  const detailAlerts=incidentAlerts(buildIncidentInvestigation(health?.diagnostics));
  const alerts=[...syncAlerts,...outboxAlerts.map(a=>'Sauvegarde '+a.state+' · '+a.pending+' opération(s) · '+a.platform+' · '+a.version),...detailAlerts.map(a=>a.text),...adminAlerts(d.friction)];document.getElementById("adminAlerts").innerHTML=alerts.map(x=>'<div class="admin-alert"><strong>⚠</strong><span>'+adminEsc(x)+'</span></div>').join("")||"<p>Pas d’anomalie significative avec le volume actuel.</p>";
- document.getElementById("adminPlayers").innerHTML=playerError?'<p>Activité récente indisponible : '+adminEsc(playerError.message)+'</p>':players.map(x=>'<div class="admin-player" data-player="'+adminEsc(x.player_key)+'"><span><strong>'+adminEsc(x.display_name||x.player_label||x.player_type)+'</strong><br><small>'+adminEsc(x.player_type)+" · Q"+(x.current_quest||"—")+' · '+x.sessions+' sessions</small></span><small>'+new Date(x.last_seen).toLocaleString("fr-FR")+'</small></div>').join("");
- document.querySelectorAll("#adminPlayers .admin-player").forEach(x=>{
-  const player=players.find(p=>p.player_key===x.dataset.player);
-  const dates=document.createElement('div');dates.className='admin-player-dates';appendPlayerDates(dates,player,observations.error?undefined:observations.data?.players?.[player.player_key]);x.append(dates);
-  x.onclick=()=>{if(authorized())loadAdminTimeline(x.dataset.player)};
- });
+ const directory=document.getElementById('adminPlayers');
+ if(playerError){directory.replaceChildren();const note=document.createElement('p');note.textContent='Activité récente indisponible.';directory.append(note)}
+ else renderPlayerDirectory(directory,players,observations.error?undefined:observations.data,{authorized,onSelect:loadAdminTimeline});
+ const timeline=document.getElementById('adminTimeline');if(timeline?.cockpitPlayer)loadAdminTimeline(timeline.cockpitPlayer);
  const accountRows=document.getElementById("adminAccounts");
  if(accountRows)accountRows.innerHTML=accounts.error?'<tr><td colspan="6">Comptes indisponibles.</td></tr>':(accounts.data||[]).map(x=>'<tr><td>'+adminEsc(x.email||"—")+'</td><td>'+adminEsc(x.nickname||"—")+'</td><td>'+new Date(x.created_at).toLocaleString("fr-FR")+'</td><td>'+(x.last_sign_in_at?new Date(x.last_sign_in_at).toLocaleString("fr-FR"):"—")+'</td><td>'+(x.last_activity?new Date(x.last_activity).toLocaleString("fr-FR"):"—")+'</td><td>'+(questMetrics.data?.current_players?.['u:'+x.user_id]||"—")+'</td></tr>').join("")||'<tr><td colspan="6">Aucun compte.</td></tr>';
  document.getElementById("adminFeedbacks").innerHTML=feedbacks.error?"<p>Feedbacks indisponibles.</p>":realFeedbacks.map(x=>'<div class="admin-feedback"><strong>'+adminEsc(x.kind)+' · '+adminEsc(x.player_label)+(x.puzzle_id?" · Q"+x.puzzle_id:"")+'</strong><p>'+adminEsc(x.message||"Sans commentaire")+'</p><small>'+new Date(x.created_at).toLocaleString("fr-FR")+(x.app_version?" · "+adminEsc(x.app_version):"")+'</small></div>').join("");

@@ -550,6 +550,15 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Cockpit sessions #534: `node scripts/cockpit-sessions-tests.mjs` covers bounded
+chronological grouping, missing identities and separate diagnostic correlation.
+The independent incident browser now also runs `cockpit-browser.mjs` at five
+viewports, with native keyboard, expansion/filter/refresh, capability clearing,
+empty views, nested reviewed reports and accessibility-tree checks. Its RPCs
+are synthetic; physical phone and screen reader remain separate acceptance.
+`fixtures/cockpit-sessions.sql` tests the actual RPC in isolated PostgreSQL:
+non-admin/expired capability, shared-browser account separation and closed data.
+
 Cockpit #534: `node scripts/cockpit-dates-tests.mjs` checks independent date
 sources, persistent-session Auth, missing signals, timezone/UTC/age and stale
 account results. `scripts/fixtures/cockpit-dates.sql` is required in the isolated
