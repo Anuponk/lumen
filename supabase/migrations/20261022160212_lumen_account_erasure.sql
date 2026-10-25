@@ -211,7 +211,7 @@ end $$;
 create function lumen_privacy.erase_account(p_user_id uuid,p_verified_actors text[],p_confirmation text)
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare r record; report jsonb; actors text[] := coalesce(p_verified_actors,array[]::text[]);
- keys text[]; predicate text;
+ keys text[]; predicate text; remaining bigint;
 begin
  if current_setting('transaction_isolation') <> 'read committed' then
   raise exception using errcode='25000',message='LUMEN_WRITE_REQUIRES_READ_COMMITTED';
@@ -249,6 +249,11 @@ begin
    execute format('delete from %I.%I where %s',r.ns,r.rel,predicate)
     using p_user_id,actors,keys;
   end if;
+  -- Check while indirect parent keys still exist. A trigger may silently skip
+  -- a row without throwing; that is an incomplete transaction, never success.
+  execute format('select count(*) from %I.%I where %s',r.ns,r.rel,predicate)
+   into remaining using p_user_id,actors,keys;
+  if remaining<>0 then raise exception 'LUMEN_ERASURE_INCOMPLETE';end if;
  end loop;
  return report||jsonb_build_object('status','erased','barrier','active');
 end $$;

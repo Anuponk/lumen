@@ -141,6 +141,12 @@ RED : les migrations originales de #526 refusent le catalogue actuel avec
 `LUMEN_ERASURE_SCHEMA_REVIEW_REQUIRED`. GREEN : politique consolidée et mêmes
 tests, plus refus des audits non attribuables et de garde aux mauvais arguments.
 
+Régression finale RED/GREEN : un trigger `BEFORE DELETE` retournant NULL pouvait
+laisser une sauvegarde sans erreur SQL et faire annoncer un succès partiel.
+Chaque catégorie est maintenant recomptée avant de perdre ses clés indirectes ;
+une ligne restante déclenche `LUMEN_ERASURE_INCOMPLETE` et annule toute la
+transaction, y compris copies support et barrières. Le test vérifie ce rollback.
+
 Les empreintes de dossiers retirés restent attribuables dans la barrière par un
 `owner_digest` pseudonymisé, pour permettre leur accès privé après effacement.
 Pas d'email, de texte libre ni de copie de profil dans cette barrière. Sa durée et

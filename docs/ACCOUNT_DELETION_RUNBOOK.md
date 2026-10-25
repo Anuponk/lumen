@@ -38,6 +38,10 @@ transaction effectuée → contrôles des copies/fournisseurs → réponse. Une 
 un timeout, une limite fournisseur ou une suppression partielle maintient le
 dossier ouvert avec son résultat exact ; jamais « Compte supprimé » par défaut.
 
+Après chaque suppression/anonymisation, le serveur recompte le périmètre avant
+perte de ses clés. Un trigger silencieux laissant des lignes déclenche
+`LUMEN_ERASURE_INCOMPLETE` : rollback intégral, pas de succès partiel.
+
 `/supprimer-compte.html` prépare un email au contact de Nopuna, également
 accessible par « Supprimer mon compte » dans l'application. Aucun login ni
 réinstallation n'est exigé pour accéder à ce canal. Sans JavaScript, un lien

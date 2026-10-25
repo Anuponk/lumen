@@ -72,6 +72,19 @@ begin
  assert exists(select 1 from lumen_commands.support_contents where capture_id=capture);
  assert not exists(select 1 from lumen_privacy.erased_identifiers where digest=lumen_privacy.fingerprint(u::text));
  assert exists(select 1 from lumen.profile_snapshots where user_id=u);
+ -- A silent BEFORE DELETE trigger is not an SQL error, but must never turn
+ -- partial erasure into an apparent success.
+ create function fixture_other_app.skip_current_delete() returns trigger language plpgsql as $fn$
+ begin return null;end $fn$;
+ create trigger fixture_current_skip before delete on lumen.profile_snapshots for each row execute function fixture_other_app.skip_current_delete();
+ begin
+  perform lumen_privacy.erase_account(u,array[]::text[],'ERASE LUMEN '||u);
+  raise exception 'Silent partial erasure returned success';
+ exception when raise_exception then assert sqlerrm='LUMEN_ERASURE_INCOMPLETE';end;
+ drop trigger fixture_current_skip on lumen.profile_snapshots;
+ drop function fixture_other_app.skip_current_delete();
+ assert exists(select 1 from lumen_commands.support_contents where capture_id=capture),'Partial refusal must roll back earlier copies';
+ assert not exists(select 1 from lumen_privacy.erased_identifiers where digest=lumen_privacy.fingerprint(u::text));
  -- Revocation is support-only and leaves business backup bytes untouched.
  perform set_config('request.jwt.claim.sub',other_uid::text,true);
  perform public.lumen_support(other_uid,'revoke');
