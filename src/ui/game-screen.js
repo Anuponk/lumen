@@ -589,7 +589,7 @@ function retryPendingCloudWriteOnReconnect(){
  if(qaActive||!lumenUser||!lumenSupabase)return;
  void retryPendingCanonicalOutboxOnReconnect();
  canonicalRecovery.schedule();
- if(!cloudProfileReady){void acquisitionRecovery.wake();return;}
+ if(!cloudProfileReady){acquisitionRecoveryAttempts=0;void acquisitionRecovery.wake();return;}
  if(!["network","legacy_mirror"].includes(cloudProfileFailure?.reason))return;
  if(cloudProfileBusy||cloudProfileTimer!==null)return;
  recordCloudDiagnostic("flush_retry_online",{reason:cloudProfileFailure.reason});

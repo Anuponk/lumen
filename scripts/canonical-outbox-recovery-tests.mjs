@@ -192,10 +192,12 @@ test('online wakes isolated recovery without starting legacy full-profile writes
  const context={qaActive:false,lumenUser:{id:'a'},lumenSupabase:{},cloudProfileReady:false,
   retryPendingCanonicalOutboxOnReconnect:()=>{replay++},canonicalRecovery:{schedule:()=>{retry++}},
   acquisitionRecovery:{wake:()=>{acquisitions++}},
+  acquisitionRecoveryAttempts:5,
   scheduleCloudProfile:()=>{writes++}};
  prepareContext(context);vm.runInContext(functionSource(source,'retryPendingCloudWriteOnReconnect'),context);
  vm.runInContext('retryPendingCloudWriteOnReconnect()',context);
  assert.equal(replay,1);assert.equal(retry,1);assert.equal(acquisitions,1);assert.equal(writes,0);
+ assert.equal(context.acquisitionRecoveryAttempts,0,'Returning online opens a new bounded retry window');
 });
 
 test('replacing the cloud client invalidates the isolated permission and cancels its schedule',()=>{
