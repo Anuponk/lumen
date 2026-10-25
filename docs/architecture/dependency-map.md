@@ -1,5 +1,11 @@
 # Dependencies and data flow
 
+Confirmed victory: before-scope projection → existing receipt/outcome → current
+scope comparison → one celestial result (global > Adventure > constellation).
+Badge additions → owner/catalogue-scoped ephemeral playhead → visible Mon ciel
+background. SVG failures return to ordinary actions; rendering/skip/navigation
+cannot write rewards. Actual geometry remains owned by the licensed atlas.
+
 Existing-account ownership handoff: verified profile + archived previous attempt
 → one live progress object → `nextCanonicalQuest` (catalogue origin/access)
 → `resumeHydratedCampaignSelection` → existing grid/tutorial initialization.

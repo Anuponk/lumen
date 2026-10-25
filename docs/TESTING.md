@@ -571,6 +571,20 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Celestial UI: `celestial-ux-tests.mjs` covers variable/reordered/growing catalogue
+membership, distinct completion/mastery, empty denominators, explicit historical
+badges, input immutability and deterministic continuous dust. The native
+`celestial-ux-browser.mjs` extends the sky navigation runner: first real
+constellation/Adventure wins, one scene, skip by hit-tested input, keyboard focus,
+locked following Adventure, reload silence, unchanged rewards on navigation and
+reduced motion. Screens: 320×568, 360×640, 390×844, 844×390 and desktop. It saves
+0/25/50/75/100% comparisons for small/large/additional-light constellations under
+`docs/validation/milky-way-*.png`; restored mastery must be static and original
+astronomical/secondary lights remain intact. The late-game runner asserts a
+single global finale with the full-catalogue recap and preserved historical
+award. Auth/RPC and QA data are synthetic; physical Android, screen readers and
+real cross-device acceptance remain separate.
+
 Ownership-handoff presentation: `player-favorable-browser.mjs` asserts the
 actual active quest identity, rendered label and grid immediately after restore,
 before any map interaction, then again after reload. Virgin and first-gesture

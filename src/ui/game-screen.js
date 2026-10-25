@@ -60,6 +60,9 @@ import {createAttemptEngine,ATTEMPT_STATES} from "../game/attempt-engine.js";
 import {localDateKey,dateOffsetKey,formatDuration} from "../ui/format.js";
 import {streakFromDates,dailyState,cycleDay,nextReward,qualifiesDailyActivity,grantDaily,grantAutonomyMilestone} from "../campaign/daily-engagement.js";
 import {createOnboardingPreferences} from "./onboarding-preferences.js";
+import {celestialScope,captureCelestialProgress,celestialTransition} from './celestial-progress.js';
+import {milkyWaySvg} from './celestial-effects.js';
+import {createCelestialCelebration} from './celestial-celebration.js';
 import {createTutorial} from "./tutorial.js";
 import {createSound} from "./sound.js";
 import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
@@ -2654,6 +2657,7 @@ function resumeCanonicalVictoryAfterHydration(ownerId,client){
 }
 async function celebrateCanonicalSuccess(){
  const q=canonicalActiveQuest;if(!q||celebrated||pendingVictoryView)return;
+ const celestialBefore=captureCelestialProgress(lumenProgress,q,canonicalQuestList());
  if(!qaActive&&!lumenUser){
   msg.textContent=authSessionPending?"Restauration du compte en cours. Ta grille est conserv\u00e9e.":"Connecte-toi pour sauvegarder cette victoire. Ta grille est conserv\u00e9e.";
   return;
@@ -2675,7 +2679,7 @@ async function celebrateCanonicalSuccess(){
  const facts={seconds,assistanceUsed:assisted,mistakeCommitted:!!attempt?.mistakeCommitted,qualifying,
   hintUsed:hintUsedInAttempt(),challengeFailed:!!questFailed,qualifiedDay:localCalendarDay(),qualifiedAt:new Date(attempt?.startedAt||Date.now()).toISOString()};
  const reward={badges,performance:{bestTime:seconds,assisted,seconds},stars:questRewardDefinition(q).stars,facts};
- let committed,durableIntent=null,confirmedBadges=badges;
+ let committed,durableIntent=null,confirmedBadges=badges,reusedVictory=false;
  try{
   if(qaActive){const profile=structuredClone(lumenProgress),outcome=applyQuestVictory(profile,q,facts);if(outcome.dailyQualified)grantDaily(profile,localCalendarDay());committed={profile,outcome,newlyCompleted:outcome.firstCompletion}}
   else{
@@ -2687,6 +2691,7 @@ async function celebrateCanonicalSuccess(){
    const operationId=attempt?.attemptId?attempt.attemptId+"-reset-"+(attempt.resetCount||0):undefined;
    victoryStage='pending_read';
    const existing=operationId?(await canonicalVictoryOutbox.pending(ownerId)).find(entry=>entry.operationId===operationId&&entry.questId===q.id):null;
+   reusedVictory=!!existing;
    if(!sameVictoryContext())return;
    const queuedReward=existing?.reward||reward;
    victoryStage='enqueue';
@@ -2745,6 +2750,7 @@ async function celebrateCanonicalSuccess(){
  // Install only the acknowledged profile; never optimistically mutate a
  // legacy quest or attempt to upload new IDs as numeric puzzle IDs.
  lumenProgress=committed.profile;pendingVictoryView=null;syncPresentation.acknowledged();syncPresentation.celebration(true);
+ prepareCelestialVictory(celestialBefore,q,committed.newlyCompleted,reusedVictory||committed.alreadySaved);
  if(!qaActive&&lumenUser)void refreshCanonicalOutboxNotice(lumenUser.id);
  if(!qaActive){cloudProfileBaseline=structuredClone(committed.profile)}
  const previousCloudReady=cloudProfileReady;
@@ -2774,9 +2780,9 @@ async function celebrateCanonicalSuccess(){
  document.getElementById("successNew").textContent="Quête suivante";
  configureSuccessFeedback(false);
  refreshJourney();
- launchWinStar(committed.newlyCompleted?1:0);
+ if(!celestialPending)launchWinStar(committed.newlyCompleted?1:0);
  const reveal=()=>{if(canonicalActiveQuest?.id===q.id&&celebrated)showSkyReveal(null,null,{quest:q,newlyCompleted:committed.newlyCompleted})};
- if(committed.newlyCompleted)setTimeout(reveal,2250);else reveal();
+ if(committed.newlyCompleted&&!celestialPending)setTimeout(reveal,2250);else reveal();
  }finally{if(canonicalVictoryInFlight===capture)canonicalVictoryInFlight=null;}
 }
 
@@ -2818,7 +2824,7 @@ async function captureLegacyCommandVictory(){
    if(restored){
     if(!sameCloudProfile(before,lumenProgress)||!sameCloudProfile(before,restored.profile))throw Error('Restored victory requires reconciliation');
     pendingVictoryView=null;syncPresentation.acknowledged();syncPresentation.celebration(true);
-    return {handled:true,saved:true,outcome:restored.receipt.outcome,facts:restored.receipt.request.facts};
+    return {handled:true,saved:true,outcome:restored.receipt.outcome,facts:restored.receipt.request.facts,recovered:true};
    }
   }
   // Before rewards, network mutation, completed attempt or victory animation.
@@ -2844,7 +2850,7 @@ async function captureLegacyCommandVictory(){
   try{await legacyVictoryOutbox.acknowledge(ownerId,quest.id,intent.reward,intent.operationId)}catch{recordCloudDiagnostic('legacy_outbox_cleanup_pending',{reason:'storage'})}
   if(!sameContext())return {handled:true};
   pendingVictoryView=null;syncPresentation.acknowledged();syncPresentation.celebration(true);
-  return {handled:true,saved:true,outcome:committed.receipt.outcome,facts:intent.reward.facts};
+  return {handled:true,saved:true,outcome:committed.receipt.outcome,facts:intent.reward.facts,recovered:!!prior};
  }catch(error){
   if(!sameContext())return {handled:true};
   if(intent){try{await legacyVictoryOutbox.pause(ownerId,intent,error)}catch{recordCloudDiagnostic('legacy_outbox_pause_pending',{reason:'storage'})}}
@@ -2879,8 +2885,9 @@ async function celebrateSuccess(){
  }
  if(canonicalActiveQuest){await celebrateCanonicalSuccess();return}
  if(learningReplayActive()){celebrateLearningReplaySuccess();return}
- let commanded=null,confirmedFacts=null;
- if(lumenUser&&!qaActive){const result=await captureLegacyCommandVictory();if(result.handled&&!result.saved)return;if(result.saved){commanded=result.outcome;confirmedFacts=result.facts}}
+ const celestialQuest=canonicalQuestForLegacy(levelIndex),celestialBefore=captureCelestialProgress(lumenProgress,celestialQuest,canonicalQuestList());
+ let commanded=null,confirmedFacts=null,recoveredVictory=false;
+ if(lumenUser&&!qaActive){const result=await captureLegacyCommandVictory();if(result.handled&&!result.saved)return;if(result.saved){commanded=result.outcome;confirmedFacts=result.facts;recoveredVictory=!!result.recovered}}
  const facts=confirmedFacts||{seconds:activeGameSeconds(),assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted,qualifying:!!attemptEngine.snapshot()?.qualifying,hintUsed:hintUsedInAttempt(),challengeFailed:!!questFailed,qualifiedDay:localCalendarDay(),qualifiedAt:new Date().toISOString()};
  const outcome=commanded||applyLegacyVictory(lumenProgress,levelIndex,facts);
  const {firstCompletion,questPassed,skyEarnedBefore,priorPerformance,priorBadges,savedPerformance,autonomyShard,dailyQualified}=outcome;
@@ -2891,7 +2898,6 @@ async function celebrateSuccess(){
  const playedPack=packForLegacyQuest(levelIndex),adventureQuests=playedPack?canonicalQuestList().filter(q=>q.packId===playedPack.id):[];
  adventurePending=firstCompletion&&playedPack&&!canonicalCampaignComplete(lumenProgress)&&adventureQuests.length>0&&adventureQuests.every(q=>questIsCompleted(lumenProgress,q.id))?playedPack:null;
  endgamePending=firstCompletion&&canonicalCampaignComplete(lumenProgress);
- launchWinStar(earnedThisRun);
  configureVictoryChallenge({priorPerformance,run:savedPerformance.run,firstCompletion,snapshot:challengeSnapshot({questIndex:levelIndex,seconds:facts.seconds,run:savedPerformance.run,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed})});
  if(dailyQualified&&!commanded)completeDaily();
  renderSuccessRewards(earnedThisRun,savedPerformance,priorBadges);renderSuccessAchievement();
@@ -2904,6 +2910,8 @@ async function celebrateSuccess(){
  if(firstCompletion){setTimeout(maybeOfferInstall,1600);setTimeout(maybeOfferPush,5200)}
  refreshJourney();
  pauseGameClock();
+ prepareCelestialVictory(celestialBefore,celestialQuest,firstCompletion,recoveredVictory);
+ if(!celestialPending)launchWinStar(earnedThisRun);
  clearInterval(timer);
  clock();
  board.classList.add("win");
@@ -2918,7 +2926,7 @@ async function celebrateSuccess(){
  configureSuccessFeedback(questPassed);
  const skyEarnedAfter=skyStarsEarned(),crossedConstellation=firstCompletion&&(()=>{let total=0;for(const cs of CONSTELLATIONS){total+=cs.count;if(skyEarnedBefore<total&&skyEarnedAfter>=total)return true}return false})();
  const checkpoint=firstCompletion&&!crossedConstellation?constellationCheckpoint(skyEarnedBefore,skyEarnedAfter):null;
- const revealDelay=!generatedQuest&&earnedThisRun>0?2250:0;
+ const revealDelay=!celestialPending&&!generatedQuest&&earnedThisRun>0?2250:0;
  const revealQuest=canonicalQuestForLegacy(levelIndex),revealCampaign=revealQuest?{quest:revealQuest,newlyCompleted:firstCompletion}:null;
  const clearVictoryConfetti=()=>document.getElementById("victoryConfetti")?.remove();
  if(firstCompletion&&earnedThisRun>0&&!generatedQuest){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint,revealCampaign)},revealDelay)}else if(questPassed||crossedConstellation||checkpoint){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint,revealCampaign)},revealDelay)}else setTimeout(()=>showSkyReveal(skyEarnedBefore,null,revealCampaign),revealDelay);
@@ -3474,6 +3482,70 @@ const attemptAbandon=document.getElementById("attemptAbandon");
 if(attemptAbandon)attemptAbandon.onclick=async()=>{const a=attemptEngine.snapshot();if(!a)return;if(!confirm("Abandonner cette tentative ?"))return;trackAttemptEvent("attempt_abandoned",{reason:"explicit"});attemptEngine.abandon();if(socialChallenge){trackAttemptEvent("challenge_abandoned",{reason:"explicit"});await finishSocialChallenge("abandoned");return}attemptEngine.clear();init()};
 
 
+const celestialCelebration=createCelestialCelebration(document);
+let celestialPending=null;
+const masteryPulses=new Map();
+function constellationMastery(entry){return celestialScope(lumenProgress,canonicalQuestList().filter(q=>q.constellationId===entry.id))}
+function takeMasteryPulse(entry){
+ const pulse=masteryPulses.get(entry.id);
+ const current=constellationMastery(entry);
+ if(!pulse)return null;
+ if(pulse.owner!==(lumenUser?.id??null)||pulse.signature!==current.signature||pulse.ratio!==current.ratio){masteryPulses.delete(entry.id);return null}
+ pulse.startedAt??=Date.now();
+ const elapsed=Date.now()-pulse.startedAt;
+ if(elapsed>=(pulse.full?1600:1000)){masteryPulses.delete(entry.id);return null}
+ // Repeated map renders resume the same brief playhead, never restart it.
+ return {...pulse,elapsed};
+}
+function prepareCelestialVictory(before,quest,firstCompletion,recovered=false){
+ const transition=celestialTransition(before,lumenProgress,quest,canonicalQuestList(),{firstCompletion,recovered});
+ celestialPending=transition.kind?{...transition,quest,owner:lumenUser?.id??null}:null;
+ if(transition.pulse)masteryPulses.set(quest.constellationId,{...transition.pulse,owner:lumenUser?.id??null});
+}
+function celestialQuestAvailable(quest){return quest.legacyIndex===null?canonicalQuestAvailable(quest):questIsAccessible(quest.legacyIndex)}
+function startCelestialQuest(quest){
+ if(!celestialQuestAvailable(quest))return false;
+ if(quest.legacyIndex===null)return startCanonicalQuest(quest);
+ leavePendingVictoryForNavigation();
+ if(['COMPLETED','ABANDONED'].includes(attemptEngine.snapshot()?.state))attemptEngine.clear();
+ canonicalActiveQuest=null;levelIndex=quest.legacyIndex;replayMode=false;socialChallenge=null;
+ document.getElementById('mapModal').hidden=true;
+ for(const id of ['undo','hint','autoCross'])document.getElementById(id).disabled=false;
+ loadPuzzle();usedHintThisGame=false;refreshJourney();return true;
+}
+function showCelestialVictory(){
+ const event=celestialPending;celestialPending=null;
+ if(!event||event.owner!==(lumenUser?.id??null)||event.quest.id!==activeQuest().id)return false;
+ const adventure=event.kind!=='constellation',q=event.quest,quests=canonicalQuestList();
+ const model=contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot()});
+ const pack=model.skies.flatMap(s=>s.packs).find(p=>p.id===q.packId);
+ const entries=adventure?CONTENT_CONSTELLATIONS.filter(c=>quests.some(x=>x.constellationId===c.id&&x.packId===q.packId)):CONTENT_CONSTELLATIONS.filter(c=>c.id===q.constellationId);
+ const ordered=[...entries.filter(c=>c.id===q.constellationId),...entries.filter(c=>c.id!==q.constellationId)];
+ const summary=event.kind==='campaign'?event.after.campaign:adventure?event.after.adventure:event.after.constellation;
+ const count=adventure?`${event.kind==='campaign'?new Set(quests.map(x=>x.constellationId)).size:entries.length} constellations · `:'';
+ const badgeText=Object.entries(summary.badges).map(([key,n])=>`${n} ${{autonomy:'Autonomie',speed:'Rapidité',noError:'Sans erreur',mastery:'Maîtrise'}[key]}`).join(' · ');
+ const columns=matchMedia('(max-width:600px) and (orientation:portrait)').matches?Math.min(3,Math.max(1,ordered.length)):Math.ceil(Math.sqrt(Math.max(1,ordered.length)*2)),rows=Math.ceil(ordered.length/columns);
+ const vault=adventure?'<svg class="celestial-vault" viewBox="0 0 290 115" preserveAspectRatio="none" aria-hidden="true">'+milkyWaySvg('adventure:'+q.packId,1)+'</svg>':'';
+ const art='<div class="celestial-scene'+(adventure?' celestial-panorama':'')+'" style="--celestial-columns:'+columns+';--celestial-shift-x:'+((columns-1)*50)+'%;--celestial-shift-y:'+((rows-1)*50)+'%">'+vault+ordered.map((entry,i)=>{
+  const scope=celestialScope(lumenProgress,quests.filter(x=>x.constellationId===entry.id));
+  return '<figure class="celestial-figure" style="--celestial-order:'+i+';--celestial-cascade:'+(i/Math.max(1,ordered.length-1)*1)+'s"><svg viewBox="0 0 290 115" aria-hidden="true">'+milkyWaySvg(entry.id,.4)+astronomicalPrimarySvg(entry,scope.completed,scope.total,i===0?Math.max(0,scope.completed-1):scope.completed)+'</svg><figcaption>'+adminEsc(entry.label)+'</figcaption></figure>';
+ }).join('')+'</div>';
+ const leave=action=>()=>{closeUnifiedSkyReveal();hideSuccess();action()};
+ const sky=()=>openJourneyMap(false,{constellationId:q.constellationId});
+ const nextPack=pack&&model.skies.find(s=>s.id===pack.skyId)?.packs.find((p,i,list)=>list[i-1]?.id===pack.id);
+ const packEntries=CONTENT_CONSTELLATIONS.filter(c=>c.packId===q.packId),following=packEntries.slice(packEntries.findIndex(c=>c.id===q.constellationId)+1);
+ const next=adventure?nextPack?.accessible&&quests.find(x=>x.packId===nextPack.id&&!questIsCompleted(lumenProgress,x.id)&&celestialQuestAvailable(x)):following.flatMap(c=>quests.filter(x=>x.constellationId===c.id)).find(x=>!questIsCompleted(lumenProgress,x.id)&&celestialQuestAvailable(x));
+ const primary=next?{label:adventure?'Découvrir l’aventure suivante':'Constellation suivante',run:leave(()=>startCelestialQuest(next))}:{label:adventure?'Admirer mon ciel':'Retour à Mon ciel',run:leave(sky)};
+ const entry=entries.find(c=>c.id===q.constellationId);
+ const challenge=document.getElementById('successShare');
+ const shown=celestialCelebration.show({kind:event.kind,title:adventure?'Aventure accomplie':(entry?.label||q.constellationId)+' brille à nouveau !',
+  copy:adventure?'Chaque étoile retrouvée a repoussé l’obscurité. Ensemble, elles ont redonné vie à ce ciel.':'Une nouvelle lumière a retrouvé sa place dans le ciel.',
+  summary:(event.kind==='campaign'?'Tout le contenu actuellement disponible est terminé. ':'')+count+`${summary.completed}/${summary.total} quêtes · ${summary.stars} étoiles · `+badgeText,art,primary,
+  secondary:next?{label:'Mon ciel',run:leave(sky)}:null,review:adventure?{label:'Revoir mon aventure',run:leave(()=>openJourneyMap(false,{constellationId:q.constellationId,detail:false}))}:null,
+  share:challenge&&!challenge.hidden?{label:'Défier un ami',disabled:challenge.disabled,remarkable:challenge.classList.contains('remarkable'),run:()=>challenge.click()}:null});
+ if(shown){adventurePending=null;endgamePending=false;if(event.kind==='campaign'){try{localStorage.setItem(endgameSeenKey(),'1')}catch(_){}trackLumenEvent('campaign_completed',null,{content_quests:summary.total,constellations:new Set(quests.map(x=>x.constellationId)).size,stars:summary.stars})}}
+ return shown;
+}
 let mapConstellation=0,skyTourStep=0,mapCatalogueOverride=null;
 const skyNavigation=createSkyNavigation({document,getModel:()=>mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot()}),getQuest:()=>currentQuestPosition(),
  getSolved:i=>!!lumenProgress.solved[i],
@@ -3483,6 +3555,7 @@ const skyNavigation=createSkyNavigation({document,getModel:()=>mapCatalogueOverr
  getLit:entry=>canonicalScopeProgress(lumenProgress,{constellationId:entry.id}).completed,
  getShape:entry=>({...astronomicalDisplayShape(entry.shape||CONSTELLATIONS[entry.legacyIndex]),count:canonicalScopeProgress(lumenProgress,{constellationId:entry.id}).total}),
  getMastered:entry=>canonicalScopeProgress(lumenProgress,{constellationId:entry.id}).mastered,
+ getMastery:constellationMastery,takeMasteryPulse,
  getBadgeCounts:entry=>canonicalScopeProgress(lumenProgress,entry.constellations?{packId:entry.id}:{constellationId:entry.id}).badges,onConstellation:entry=>{if(entry.canonicalOnly){renderMap();return}if(mapConstellationRange(entry.legacyIndex)){mapConstellation=entry.legacyIndex;renderMap()}}});
 const SKY_TOUR_STEPS=[
  {target:"skyNavigation",title:"Ciels et Aventures",copy:"Choisis un Ciel, puis une Aventure. Les autres restent compactes ; un cadenas indique un contenu verrouillé. Consulter une autre Aventure ne change pas ta progression."},
@@ -3506,7 +3579,7 @@ function renderCanonicalSky(entry){
  head.append(name,count);el.appendChild(head);
  const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
  svg.classList.add("sky-svg");svg.setAttribute("viewBox","0 0 290 115");
- svg.innerHTML=astronomicalPrimarySvg(entry,lit,total);el.appendChild(svg);
+ svg.innerHTML=milkyWaySvg(entry.id,constellationMastery(entry).ratio,[0,0,290,115],takeMasteryPulse(entry))+astronomicalPrimarySvg(entry,lit,total);el.appendChild(svg);
  const note=document.createElement("div");note.className="sky-note";
  note.textContent=lit===total?"Constellation compl\u00e9t\u00e9e":lit?"Constellation en cours":"Constellation \u00e0 d\u00e9couvrir";
  const heldReplay=quests.find(q=>q.legacyIndex===null&&questIsCompleted(lumenProgress,q.id)&&!canonicalQuestAvailable(q));
@@ -3524,6 +3597,9 @@ function celebrateConstellationReveal(){
  setTimeout(()=>o.classList.remove("complete-celebration"),3800);
 }
 function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
+ celestialCelebration.clear();
+ for(const id of ['skyRevealTime','skyRevealRewards','skyRevealFeedback'])document.getElementById(id).hidden=false;
+ document.getElementById('skyRevealNext').textContent='Quête suivante →';document.getElementById('skyRevealSky').textContent='✦ Mon ciel';document.getElementById('skyRevealRetry').textContent='↻ Réessayer';
  const after=skyStarsEarned(),crossed=beforeEarned!==null&&after>beforeEarned;
  const playedQuest=canonicalActiveQuest??canonicalQuestForLegacy(levelIndex);
  if(!canonical&&playedQuest)canonical={quest:playedQuest,newlyCompleted:crossed};
@@ -3538,7 +3614,6 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
  const newlyCompleted=canonical?canonical.newlyCompleted:crossed;
  const constellationCompleted=canonical?newlyCompleted&&p.lit===p.count:completedIndex>=0;
  if(constellationCompleted){
-   constellationSound();
    k.textContent="CONSTELLATION COMPLÉTÉE";
    t.textContent="✦ "+p.name.replace(" · Grand Chariot","");
    document.getElementById("skyRevealName").textContent=completedIndex<CONSTELLATIONS.length-1?"La constellation suivante est maintenant à découvrir.":"Ton ciel est entièrement révélé.";
@@ -3589,9 +3664,12 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
    }
   }
  }
- if(constellationCompleted)celebrateConstellationReveal();
+ // Completion is presented once here, never as a second popup after Next.
+ adventurePending=null;endgamePending=false;
+ try{showCelestialVictory()}catch(error){celestialCelebration.clear();celestialPending=null;console.warn('Celestial presentation unavailable',error)}
 }
 function closeUnifiedSkyReveal(){
+ celestialCelebration.clear();
  syncPresentation.celebration(false);
  const o=document.getElementById("skyReveal");
  o.hidden=true;o.classList.remove("complete-celebration");

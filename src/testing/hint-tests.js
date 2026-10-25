@@ -67,7 +67,7 @@ async function runHintTests(){
    return src.includes('aria-label="Gardien positionné"')&&paintCell.toString().includes('aria-label="Gardien positionné"')&&document.getElementById("count").textContent.endsWith("/"+model.n)&&document.querySelectorAll("#count").length===1&&rules.includes("un Gardien par ligne")&&!rules.includes("source de lumière");
  });
  test("Récompense : une constellation terminée déclenche une célébration dédiée",()=>{
-   return typeof celebrateConstellationReveal==="function"&&showSkyReveal.toString().includes("celebrateConstellationReveal()");
+   return showSkyReveal.toString().includes("showCelestialVictory()")&&!showSkyReveal.toString().includes("celebrateConstellationReveal()");
  });
  test("Récompense : chaque première étoile gagnée ouvre le ciel",()=>{
    return celebrateSuccess.toString().includes("firstCompletion&&earnedThisRun>0")&&celebrateSuccess.toString().includes("showSkyReveal(skyEarnedBefore,checkpoint,revealCampaign)")&&celebrateSuccess.toString().includes("newlyCompleted:firstCompletion");

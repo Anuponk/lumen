@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {verifyCelestialUX} from './celestial-ux-browser.mjs';
 import fs from 'node:fs';
 import {connectBrowser,acknowledgeLearningMilestones} from './cdp-client.mjs';
 import {CONTENT_PACKS} from '../src/campaign/content.js';
@@ -96,5 +97,6 @@ try{
  }
  const astronomy=await verifyAstronomicalRendering({send,evaluate},url);
  const issueRegressions=await verifySkyIssueRegressions({send,evaluate},url);
- assert.deepEqual(errors,[]);const report={results,astronomy,issueRegressions,uncaughtErrors:errors};if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+ const celestial=await verifyCelestialUX({send,evaluate},url);
+ assert.deepEqual(errors,[]);const report={results,astronomy,issueRegressions,celestial,uncaughtErrors:errors};if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }finally{await send('Browser.close')}
