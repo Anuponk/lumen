@@ -260,8 +260,13 @@ test('favorable recovery completes the production hydration hook in the current 
 });
 
 test('the production backoff resumes a lost acquisition reply autonomously and bounds repeated failures',async()=>{
- for(const scenario of ['lost-reply','restore-outage','repeated-network','account-switch','active-game','offline']){
-  const f=await sessionFixture({conflict:true}),rpc=f.ctx.lumenSupabase.rpc,timers=[];let attempts=0;
+ for(const scenario of ['lost-reply','covered-reply','restore-outage','repeated-network','account-switch','active-game','offline']){
+  const f=await sessionFixture({conflict:scenario!=='covered-reply'}),rpc=f.ctx.lumenSupabase.rpc,timers=[];let attempts=0;
+  if(scenario==='covered-reply'){
+   f.remote.walletRevision=2;f.remote.legacyVictoryRevision=1;
+   const local=JSON.parse(f.storage.getItem('lumenProgressV1'));local.badges.localOnly=1;f.storage.setItem('lumenProgressV1',JSON.stringify(local));
+   f.ctx.reconcileDominantLocalProfile=async()=>{throw Object.assign(Error('guarded'),{code:'QUEST_COMMAND_REQUIRED'});};
+  }
   f.ctx.createCloudRetryScheduler=options=>createCloudRetryScheduler({...options,
    setTimer:fn=>{timers.push(fn);return fn},clearTimer:fn=>{const i=timers.indexOf(fn);if(i>=0)timers.splice(i,1)},random:()=>0});
   f.ctx.hydrateCloudProfile=f.hook;
@@ -273,6 +278,7 @@ test('the production backoff resumes a lost acquisition reply autonomously and b
    if(scenario==='restore-outage'&&name==='lumen_restore_profile'&&attempts===1&&!restoreFailed){restoreFailed=true;throw TypeError('temporary restore outage');}
    if(name!=='lumen_reconcile_acquisitions')return rpc(name,args);
    attempts++;
+   f.remote.badges={...f.remote.badges,...args.p_local.badges};
    const entry=f.remote.canonicalQuestState['fixture-quest'];
    entry.badges={...entry.badges,...args.p_local.canonicalQuestState['fixture-quest'].badges,speed:true};
    entry.runPerformance={version:3,bestTime:12,badges:entry.badges};
@@ -290,6 +296,7 @@ test('the production backoff resumes a lost acquisition reply autonomously and b
   }
   assert.equal(timers.length,0,'No unbounded retry loop');assert.equal(f.ctx.reloads,0);
   if(scenario==='lost-reply'||scenario==='restore-outage'){assert.equal(f.ctx.cloudProfileReady,true);assert.equal(attempts,2);}
+  if(scenario==='covered-reply'){assert.equal(f.ctx.cloudProfileReady,true);assert.equal(attempts,1,'Server read alone proves the committed union');}
   if(scenario==='repeated-network'){assert.equal(f.ctx.cloudProfileReady,false);assert.equal(attempts,6);}
   if(scenario==='account-switch'){assert.equal(f.ctx.cloudProfileReady,false);assert.equal(attempts,1);}
   if(scenario==='active-game'||scenario==='offline'){
