@@ -185,6 +185,7 @@ try {
     await navigateAndWait({send,evaluate},'Page.reload',{ignoreCache:true});await ready();
     if(await evaluate('!document.getElementById("questStart").hidden'))await control('questGo',viewport.mobile);
     assert.equal(await evaluate('document.getElementById("autoCrossWrap").classList.contains("onboarding-control-focus")'),true,'Interrupted lesson resumes');
+    assert(await evaluate(`(()=>{const coach=document.getElementById('scriptedLearn').getBoundingClientRect(),control=document.getElementById('autoCrossWrap').getBoundingClientRect();return coach.bottom<=control.top||coach.top>=control.bottom||coach.right<=control.left||coach.left>=control.right})()`),'The coach leaves the whole checkbox and its label visible');
     if(output&&viewport.width===320){const shot=await send('Page.captureScreenshot');fs.writeFileSync(path.join(path.dirname(output),'onboarding-six-320.png'),Buffer.from(shot.data,'base64'))}
     await control('autoCross',viewport.mobile);
     assert.equal((await snapshot()).progress.autoCrossUnlockSeen,1,'Actual uncheck acknowledges the lesson');

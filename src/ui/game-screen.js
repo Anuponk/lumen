@@ -1828,6 +1828,14 @@ function positionLearningCoach(){
  const width=Math.min(mobile?innerWidth-20:330,innerWidth-20);
  card.style.width=width+"px";
  const actions=document.querySelector(".actions").getBoundingClientRect();
+ if(mobile&&autoMarkingLessonRequired()){
+  const controlsBottom=Math.max(document.getElementById('autoCrossWrap').getBoundingClientRect().bottom,document.getElementById('guidedErrorsWrap').getBoundingClientRect().bottom);
+  const space=rect.top-controlsBottom-16;
+  if(space>=48){
+   card.style.maxHeight=Math.min(140,space)+'px';card.style.overflowY='hidden';
+   card.style.left=Math.max(10,(innerWidth-width)/2)+'px';card.style.top=(controlsBottom+8)+'px';return;
+  }
+ }
  const compactLesson=mobile&&activeQuestOrdinal()<=QUEST_MILESTONES.skyTourAfter;
  const belowActions=actions.bottom+8;
  // A compact lesson must never cover the normal actions or puzzle cells.
