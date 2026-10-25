@@ -41,6 +41,13 @@ retain the selected run/replay; a new account seeded from guest progress keeps
 its guest run. This navigation grants no completion, reward or access, and
 leaves social challenges and unavailable frontiers alone.
 
+An existing same-owner cache may retain an earlier inserted catch-up quest in
+READY state while its origin frontier is farther ahead. After verified hydration,
+an empty, unstarted campaign selection is archived before moving to that frontier.
+Started/paused runs and replay selections remain unchanged. No earlier catch-up
+quest is marked completed; these remain available through Mon ciel. Failure to
+verify this optional board archive keeps the selection and the account ready.
+
 Target decisions confirmed on 22 October 2026 for the continuation of #522:
 guest discovery covers the first six **visible** quests; an account is required
 to start a later quest, independently of its persistence key. Already completed

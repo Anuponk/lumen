@@ -13,6 +13,12 @@ handoff versus guest seeding; `campaign-resume-tests.mjs` covers both quest
 formats and unavailable/social/session guards. Synthetic browser data and RPCs;
 real-device acceptance remains separate.
 
+Owned historical frontier: `player-favorable-browser.mjs` restores a dormant
+inserted catch-up board with acquired access farther into a later Adventure.
+Assert origin-frontier identity, grid/label, exact archive and unchanged cloud.
+`campaign-resume-tests.mjs` guards active/replay/nonempty preservation and a
+failed optional archive without a global readiness hold.
+
 Guest start-only hydration: guest-account helper/hook tests run the real first
 gesture producer, reject earned/unknown performance evidence, and verify attempt
 backup failure conservation. The account browser suite starts a signed-out guest

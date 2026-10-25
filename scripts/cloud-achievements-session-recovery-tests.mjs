@@ -201,7 +201,7 @@ async function sessionFixture({conflict=false,quota=false,deferWallet=false}={})
   canonicalAttemptToResume:()=>null,canonicalQuestList:()=>[{id:'fixture-quest',legacyIndex:null}],
   currentQuestPosition:()=>0,reconcileDailyIntoCloudProfile,canonicalResumeOwner:null,
   recordCloudDiagnostic:(event,details={})=>events.push({event,...JSON.parse(JSON.stringify(details))}),
-  updateShardMeter:()=>{},renderDaily:noop,updateAuthUI:noop,refreshJourney:noop,resumeCanonicalCampaignBoundary:noop,
+  updateShardMeter:()=>{},renderDaily:noop,updateAuthUI:noop,refreshJourney:noop,resumeCanonicalCampaignBoundary:noop,resumeHydratedCampaignSelection:noop,
   verifyLegacyProgressMirror:async()=>({ok:true,count:0}),resumeCanonicalVictoryAfterHydration:noop,
   maybeShowStreakLoss:noop,document:{getElementById:()=>null},location:{reload:()=>ctx.reloads++},reloads:0,
   console:{warn:(_message,error)=>{throw error}}
