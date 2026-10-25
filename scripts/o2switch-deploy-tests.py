@@ -153,6 +153,8 @@ fi
             self.assertFalse((self.target / name).exists())
 
     def test_historical_release_without_public_pages_removes_stale_copies(self):
+        # Unversioned static site: exercise activation, not the same-SHA no-op.
+        (self.target / ".lumen-release-sha").unlink()
         for name in PUBLIC_PAGES:
             (self.target / name).write_text("stale candidate")
         self.env["TEST_HTTP_SHA"] = self.old
