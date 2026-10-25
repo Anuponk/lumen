@@ -635,6 +635,15 @@ operation writes campaign progress, daily credit, unlocks or wallet rewards.
 Migration `20261023181918_quest_analytics_identity.sql` adds capability-checked,
 read-only ordinal metrics/timeline; it does not rewrite events or players.
 
+Migration `20261025191634_cockpit_furthest_quest.sql` (prepared, not applied)
+changes only the directory's compatible `current_players` projection to the
+highest observed current catalogue ordinal over lifetime quest lifecycle events.
+Last qualifying activity still bounds the player set; earlier replays cannot
+lower its displayed point. Capability, stable identity and traffic guards,
+friction windows and chronological timelines remain intact. This read model
+does not repair or mutate profiles, events, rewards, balances or entitlements.
+See PRODUCT_ANALYTICS for the distinction between observed reach and completion.
+
 The owner authorised these three migrations on 23 October 2026 after the
 disposable PostgreSQL fixtures and concurrency CI passed. They are applied in
 production under the versions above; 400 rules, RLS, grants and both identity
