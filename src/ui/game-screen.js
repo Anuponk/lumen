@@ -1791,7 +1791,7 @@ function maybeShowContextualLesson(){
  if(socialChallenge||replayMode||learningReplayActive())return;
  if(autoMarkingLessonRequired()){
   if(!document.getElementById('autoCross').checked){finishAutoMarkingLesson();return}
-  learningTip={title:'Essaie le marquage manuel',copy:'Décoche Marquage auto ci-dessous pour choisir tes exclusions. Sans assistance, tu peux obtenir Autonomie, Sans erreur et Maîtrise. Tu pourras le recocher immédiatement : Rapidité reste possible avec une aide.'};
+  learningTip={title:'Essaie le marquage manuel',copy:'Décoche Marquage auto : sans aide, vise Autonomie, Sans erreur et Maîtrise. Tu peux le recocher aussitôt ; Rapidité reste possible.'};
   document.getElementById('autoCrossWrap').classList.add('onboarding-control-focus');
   document.getElementById('autoCross').setAttribute('aria-describedby','scriptedLearnCopy');
   document.getElementById('board').setAttribute('aria-disabled','true');
