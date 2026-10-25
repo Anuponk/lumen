@@ -6,6 +6,10 @@ an existing account with a changed owner. Original attempt archival precedes
 the handoff; the real grid and label refresh together without a map visit.
 Same-owner runs, guest registration and social challenges retain their flows.
 
+The same hook now checks an owned READY/empty/unstarted campaign selection:
+archive it before replacing an earlier catch-up board with the origin frontier.
+An optional archive refusal preserves board/readiness with a bounded diagnostic.
+
 Virgin-browser account restore: `persistence/guest-account.js` scopes the default
 reserve/catalogue exception to unowned profiles without acquired facts. Both
 guest checks in the UI hydration hook use it; account authorities stay unchanged.

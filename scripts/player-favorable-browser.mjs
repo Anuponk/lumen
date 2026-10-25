@@ -5,10 +5,12 @@ import {learningStep} from '../src/game/learning.js';
 import {nextCanonicalQuest} from '../src/campaign/playable-navigation.js';
 import {readQuestView} from '../src/campaign/quest-view.js';
 import {CONTENT_CONSTELLATIONS} from '../src/campaign/content.js';
+import {baseCampaignQuestCount,preserveStartedAdventureAccess} from '../src/campaign/content.js';
+import {SKY_TARGET} from '../src/campaign/data.js';
 
 // Native application/hydration/DOM/storage, synthetic Auth and RPC only. The
 // actual SQL merge/transactions have independent PostgreSQL fixture coverage.
-export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,loseReply=false,guestStarted=false}){
+export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,loseReply=false,guestStarted=false,historicalFrontier=false}){
  await send('Page.enable');await send('Runtime.enable');
  await send('Network.enable');
  await send('Network.setBlockedURLs',{urls:['*supabase*']});
@@ -24,7 +26,12 @@ export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,
  const local={...structuredClone(remote),solved:{[left.legacyIndex]:1},shards:99,walletRevision:7,
   badges:{first:1},oldUnknown:{preserve:true},performances:{[left.legacyIndex]:{
    time:37,bestTime:37,version:3,attempts:2,badges:{noError:true,mastery:false},oldRunMetadata:'archive'}}};
- await evaluate(`sessionStorage.removeItem('favorableServer');sessionStorage.removeItem('favorableLoads');localStorage.setItem('lumenCloudOwnerId',${JSON.stringify(owner)});localStorage.setItem('lumenProgressV1',${JSON.stringify(JSON.stringify(local))});localStorage.removeItem('lumenCloudDiagnosticsV1');localStorage.removeItem('lumenActiveAttemptV1')`);
+ const ownedRun={attemptId:'owned-started-run',questId:right.legacyIndex+1,mode:'campaign',state:'PAUSED',startedAt:123,activeDuration:1000,board:right.reg.map(row=>row.map(()=>0)),qualifying:true};
+ // Lost-response recovery deliberately requires an idle run: the production
+ // retry scheduler conserves active/paused attempts instead of hydrating over
+ // them. Other variants exercise preservation of a genuinely started run.
+ const initialAttempt=loseReply?null:JSON.stringify(ownedRun);
+ await evaluate(`sessionStorage.removeItem('favorableServer');sessionStorage.removeItem('favorableLoads');localStorage.setItem('lumenCloudOwnerId',${JSON.stringify(owner)});localStorage.setItem('lumenProgressV1',${JSON.stringify(JSON.stringify(local))});localStorage.removeItem('lumenCloudDiagnosticsV1');${initialAttempt===null?"localStorage.removeItem('lumenActiveAttemptV1')":"localStorage.setItem('lumenActiveAttemptV1',"+JSON.stringify(initialAttempt)+")"}`);
  const fixture=`
   const owner=${JSON.stringify(owner)};
   window.__favServer=JSON.parse(sessionStorage.getItem('favorableServer')||${JSON.stringify(JSON.stringify(remote))});
@@ -34,7 +41,7 @@ export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,
   window.__favRecovery=0;window.__favCommands=0;window.__favRightsReads=0;window.__favLoseReply=${JSON.stringify(loseReply)};
   const persist=()=>sessionStorage.setItem('favorableServer',JSON.stringify(__favServer));persist();
   window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:__favGuestStart?null:{user:{id:owner}}}}),getUser:async()=>({data:{user:{id:owner}}}),onAuthStateChange:cb=>{window.__favAuth=cb;return {data:{subscription:{unsubscribe(){}}}}}},rpc:async(name,args={})=>{
-   if(name==='lumen_restore_profile')return {data:structuredClone(__favServer)};
+   if(name==='lumen_restore_profile'){window.__favAttemptBeforeHydration=localStorage.getItem('lumenActiveAttemptV1');return {data:structuredClone(__favServer)};}
    if(name==='lumen_reconcile_acquisitions'){
     __favRecovery++;
     if(args.p_expected_user_id!==owner)return {error:{code:'42501'}};
@@ -129,6 +136,43 @@ export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,
   await until(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='hydration_ready')`);
   assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).questId`),selected.attempt.questId,'The restored frontier survives reload without opening the map');
   assert.equal(await evaluate('JSON.stringify(__favServer)'),serverBefore);
-  return {nativeHydration:true,noConflictReload:true,noNewVictory:true,scheduledFlush:true,automaticLostReplyRetry:loseReply,tokenRefresh:true,reload:true,freshDeviceCache:true,guestStartedBeforeLogin:guestStarted,automaticQuestSelection:true,selectionSurvivesReload:true,originalsPreserved:true,confirmedSpending:true,simulatedRpc:true};
+  if(historicalFrontier){
+   // An owned cache may already contain a READY inserted catch-up board. A
+   // later numeric adventure is still the preserved historical frontier.
+   const all=canonicalQuestList(),extension=quests.filter(q=>q.legacyIndex>=baseCampaignQuestCount());
+   const groups=[...new Set(extension.map(q=>q.constellationId))];
+   const laterGroup=extension.filter(q=>q.constellationId===groups[1]),target=laterGroup[Math.floor(laterGroup.length/2)];
+   const earlierGroup=all.find(q=>q.ordinal<target.ordinal&&q.legacyIndex===null&&!all.some(other=>other.constellationId===q.constellationId&&other.legacyIndex!==null));
+   const dormant=all.find(q=>q.constellationId===earlierGroup.constellationId&&q.ordinal>earlierGroup.ordinal);
+   const solved=Object.fromEntries(quests.filter(q=>q.ordinal<target.ordinal).map(q=>[q.legacyIndex,1]));
+   const historical={...restored,solved,historyBackup:solved,skyScore:SKY_TARGET,badges:{...restored.badges,explorer:1,beacon:1},
+    canonicalQuestState:Object.fromEntries(all.filter(q=>q.legacyIndex===null&&q.ordinal<=earlierGroup.ordinal).map(q=>[q.id,{solved:true,stars:1,badges:{}}]))};
+   delete historical.catalogueOrigin;
+   preserveStartedAdventureAccess(historical);
+   assert.equal(nextCanonicalQuest(historical.solved,historical.canonicalQuestState,[],historical).quest.id,target.id);
+   const idle={attemptId:'owned-idle-catchup',questId:dormant.id,mode:'campaign',state:'READY',startedAt:null,board:dormant.reg.map(row=>row.map(()=>0)),activeDuration:0,qualifying:true};
+   await evaluate(`sessionStorage.setItem('favorableServer',${JSON.stringify(JSON.stringify(historical))});localStorage.setItem('lumenProgressV1',${JSON.stringify(JSON.stringify(historical))});localStorage.setItem('lumenActiveAttemptV1',${JSON.stringify(JSON.stringify(idle))});localStorage.removeItem('lumenCloudDiagnosticsV1')`);
+   await navigate('Page.reload');
+   await until(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='hydration_ready')`);
+   assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).questId`),target.legacyIndex+1,'Cold same-owner restore must resume the historical frontier, not an earlier idle catch-up board');
+   assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().puz.reg'),target.reg);
+   assert((await evaluate(`document.getElementById('campaignMapLabel').textContent`)).includes(readQuestView(target,historical,all,CONTENT_CONSTELLATIONS).label));
+   const beforeHydration=await evaluate('__favAttemptBeforeHydration');
+   assert.equal(JSON.parse(beforeHydration).attemptId,idle.attemptId);assert.deepEqual(JSON.parse(beforeHydration).board,idle.board);
+   assert.equal(await evaluate(`Object.keys(localStorage).filter(k=>k.startsWith('lumenBeforeAccountSwitchAttempt_')).some(k=>localStorage.getItem(k)===__favAttemptBeforeHydration)`),true,'The actual displaced idle board bytes, including restored engine metadata, are preserved exactly');
+   assert.equal(await evaluate('JSON.stringify(__favServer)'),JSON.stringify(historical),'Historical frontier selection cannot rewrite acquired history or balances');
+   assert.equal(await evaluate('__favCommands'),0);
+   for(const patch of [{state:'PAUSED',startedAt:123,activeDuration:7000},{mode:'replay'}]){
+    const kept={...idle,...patch};
+    await evaluate(`localStorage.setItem('lumenActiveAttemptV1',${JSON.stringify(JSON.stringify(kept))});localStorage.removeItem('lumenCloudDiagnosticsV1')`);
+    await navigate('Page.reload');
+    await until(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='hydration_ready')`);
+    const active=await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1'))`);
+    assert.equal(active.attemptId,kept.attemptId);assert.equal(active.questId,kept.questId);assert.equal(active.mode,kept.mode);
+    assert.equal(active.startedAt,kept.startedAt);assert.equal(active.activeDuration,kept.activeDuration);assert.deepEqual(active.board,kept.board);
+    assert.equal(await evaluate('JSON.stringify(__favServer)'),JSON.stringify(historical),'An active historical catch-up run or replay remains untouched');
+   }
+  }
+  return {nativeHydration:true,noConflictReload:true,noNewVictory:true,scheduledFlush:true,automaticLostReplyRetry:loseReply,tokenRefresh:true,reload:true,freshDeviceCache:true,guestStartedBeforeLogin:guestStarted,historicalFrontier,automaticQuestSelection:true,selectionSurvivesReload:true,originalsPreserved:true,confirmedSpending:true,simulatedRpc:true};
  }finally{await send('Page.removeScriptToEvaluateOnNewDocument',{identifier});}
 }

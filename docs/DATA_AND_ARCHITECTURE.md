@@ -236,6 +236,14 @@ it. Same-owner Auth refresh/reconnect and new guest-account seeding do not
 perform that handoff. No completion, cooldown, balance or reward is synthesized.
 Social challenges and locked/missing frontiers remain outside this navigation.
 
+The same selection check also handles a same-owner READY campaign board with no
+start timestamp and only empty cells. If it differs from the preserved origin
+frontier, its exact storage bytes are archived and verified before replacement.
+This repairs an idle inserted catch-up selection without moving a started/paused
+attempt or replay. An already correct selection is a no-op. Archive failure emits
+the bounded `campaign_resume_deferred` / `attempt_backup` diagnostic and leaves
+the board and verified account readiness intact. No player profile is modified.
+
 The cockpit's `playerSyncStatus` presentation qualifies existing queue evidence
 by observation freshness, including the oldest device timestamp. Badges and
 filters share this model; full original dates/state remain under a disclosure.

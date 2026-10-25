@@ -21,19 +21,19 @@ test('verified ownership handoff selects a catalogue frontier and refreshes its 
   const ctx={qaActive:false,cloudProfileReady:true,lumenUser:{id:'account'},socialChallenge:null,
    lumenProgress:profile,nextCanonicalQuest,adventureAccessEntitlements:()=>[],canonicalActiveQuest:null,canonicalResumeOwner:null,
    levelIndex:0,replayMode:true,currentQuestPosition:()=>2,currentQuestLimit:()=>quests.length,
-   attemptEngine:{clear:()=>calls.push('clear')},loadPuzzle:()=>calls.push('load'),refreshJourney:()=>calls.push('refresh')};
+   attemptEngine:{snapshot:()=>null,clear:()=>calls.push('clear')},loadPuzzle:()=>calls.push('load'),refreshJourney:()=>calls.push('refresh')};
   vm.createContext(ctx);vm.runInContext(functionSource(source,'resumeHydratedCampaignSelection'),ctx);
-  assert.equal(ctx.resumeHydratedCampaignSelection(),true);
+  assert.equal(ctx.resumeHydratedCampaignSelection({ownershipChanged:true}),true);
   assert.deepEqual(calls,['clear','load','refresh']);assert.equal(ctx.replayMode,false);
   assert.equal(ctx.canonicalActiveQuest?.id??quests.find(q=>q.legacyIndex===ctx.levelIndex).id,target.id);
   assert.equal(ctx.canonicalResumeOwner,target.legacyIndex===null?'account':null);
   assert.equal(JSON.stringify(profile),before,'Navigation cannot grant an acquisition or change the wallet');
   for(const patch of [{qaActive:true},{cloudProfileReady:false},{lumenUser:null},{socialChallenge:{id:'social'}}]){
    const saved=Object.fromEntries(Object.keys(patch).map(k=>[k,ctx[k]]));Object.assign(ctx,patch);calls.length=0;
-   assert.equal(ctx.resumeHydratedCampaignSelection(),false);assert.deepEqual(calls,[]);Object.assign(ctx,saved);
+   assert.equal(ctx.resumeHydratedCampaignSelection({ownershipChanged:true}),false);assert.deepEqual(calls,[]);Object.assign(ctx,saved);
   }
   ctx.nextCanonicalQuest=()=>({status:'locked'});calls.length=0;
-  assert.equal(ctx.resumeHydratedCampaignSelection(),false);assert.deepEqual(calls,[],'Locked content cannot replace the preserved attempt');
+  assert.equal(ctx.resumeHydratedCampaignSelection({ownershipChanged:true}),false);assert.deepEqual(calls,[],'Locked content cannot replace the preserved attempt');
  }
 });
 test('the completed numeric boundary resumes the first unfinished canonical constellation',()=>{
@@ -41,6 +41,31 @@ test('the completed numeric boundary resumes the first unfinished canonical cons
  assert.equal(nextCanonicalAtLegacyBoundary(quests,progress,{atBoundary:true,available}).id,next.id);
  assert.equal(JSON.stringify(progress),before);
  for(const context of [{atBoundary:false,available},{atBoundary:true,available:()=>false},{atBoundary:true,available,attempt:{state:'RUNNING'}},{atBoundary:true,available,attempt:{state:'PAUSED'}}])assert.equal(nextCanonicalAtLegacyBoundary(quests,progress,context),null);
+});
+
+test('same-owner hydration moves only an empty unstarted campaign selection, with verified backup',async()=>{
+ const vm=await import('node:vm'),{readFileSync}=await import('node:fs'),{functionSource}=await import('./source-tools.mjs');
+ const source=readFileSync('src/ui/game-screen.js','utf8'),calls=[],events=[],values=new Map();
+ let attempt={attemptId:'idle-run',questId:'old-catchup',state:'READY',mode:'campaign',startedAt:null,board:[[0]],activeDuration:0};
+ const original=JSON.stringify(attempt),profile={solved:{0:1},shards:7};values.set('active',original);
+ const ctx={qaActive:false,cloudProfileReady:true,lumenUser:{id:'owner'},socialChallenge:null,replayMode:false,lumenProgress:profile,
+  ATTEMPT_STATES:{READY:'READY'},canonicalActiveQuest:null,canonicalResumeOwner:null,levelIndex:0,
+  nextCanonicalQuest:()=>({status:'ready',quest:{id:'next-numeric',legacyIndex:1}}),adventureAccessEntitlements:()=>[],
+  attemptEngine:{storageKey:'active',snapshot:()=>attempt,clear:()=>calls.push('clear')},
+  preserveAttemptSnapshot,localStorage:{getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,v)},
+  loadPuzzle:()=>calls.push('load'),refreshJourney:()=>calls.push('refresh'),recordCloudDiagnostic:(event,detail)=>events.push({event,detail})};
+ vm.createContext(ctx);vm.runInContext(functionSource(source,'resumeHydratedCampaignSelection'),ctx);
+ assert.equal(ctx.resumeHydratedCampaignSelection(),true);assert.deepEqual(calls,['clear','load','refresh']);assert.equal(ctx.levelIndex,1);
+ assert([...values].some(([key,value])=>key.startsWith('lumenBeforeAccountSwitchAttempt_')&&value===original));
+ assert.deepEqual(profile,{solved:{0:1},shards:7});
+ for(const patch of [{state:'RUNNING',startedAt:1},{state:'PAUSED',startedAt:1},{state:'COMPLETED'},{mode:'replay'},{mode:'challenge'},{startedAt:1},{board:[[1]]},{questId:2}]){
+  attempt={...JSON.parse(original),...patch};calls.length=0;
+  assert.equal(ctx.resumeHydratedCampaignSelection(),false);assert.deepEqual(calls,[],'Keep active/replay evidence or an already correct selection');
+ }
+ attempt=JSON.parse(original);calls.length=0;ctx.localStorage.setItem=()=>{};values.clear();values.set('active',original);
+ assert.equal(ctx.resumeHydratedCampaignSelection(),false);assert.deepEqual(calls,[]);assert.equal(values.get('active'),original);
+ assert.equal(ctx.cloudProfileReady,true,'An optional selection backup failure cannot lock the verified account');
+ assert.equal(events.at(-1).event,'campaign_resume_deferred');
 });
 test('a later frontier is independent from earlier catch-up and from ownership of the next pack',()=>{
  const historical={solved:{...progress.solved},canonicalQuestState:{[last.id]:{solved:true},[quests.find(q=>q.ordinal===last.ordinal-1).id]:{solved:true}}};

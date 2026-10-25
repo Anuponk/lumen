@@ -5,6 +5,10 @@ Existing-account ownership handoff: verified profile + archived previous attempt
 → `resumeHydratedCampaignSelection` → existing grid/tutorial initialization.
 No completion, reward or wallet mutation is part of selection.
 
+Same-owner idle board → READY/campaign/no-start/empty-cell guard → origin frontier
+comparison → exact attempt backup → normal board initialization. Started, replay
+and already-correct selections stop before archival or navigation.
+
 Guest first gesture: `ensureAttemptStarted` → start-only performance timestamps →
 shared strict `isAttemptStartPerformance` → guest coverage exception only without
 acquired facts → verified original profile/attempt archives → existing cloud
