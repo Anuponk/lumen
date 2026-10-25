@@ -54,7 +54,7 @@ test('verified account restoration applies its own auto choice without restartin
  const attempt={attemptId:'preserved',board:[[1,0],[0,0]]},before=JSON.stringify(attempt);
  const ctx={QUEST_MILESTONES,questLearningRules,activeQuestOrdinal:()=>3,replayMode:false,scriptedLearningActive:()=>false,
   onboardingPreferences:{auto:()=>ctx.lumenUser?.id==='b'},onboardingPreferenceOwner:null,socialChallenge:null,learningReplayActive:()=>false,
-  localStorage:{getItem:()=>null},sessionStorage:{getItem:()=>null},document:{getElementById:node},
+  verifiedOwner:'a',localStorage:{getItem:key=>key==='lumenCloudOwnerId'?ctx.verifiedOwner:null},sessionStorage:{getItem:()=>null},document:{getElementById:node},
   activeBonusChallenge:()=>null,lumenProgress:{stars:{}},lumenUser:{id:'a'},cloudProfileReady:false,
   syncPresentationOwner:null,pendingNavigationEntries:[],syncPresentation:{reset(){}},pendingVictoryView:null,
   accountOfferSignInPending:false,lumenNickname:'',cloudProfileDirty:false,cloudProfileFailure:null,canonicalOutboxNotice:null,
@@ -66,8 +66,10 @@ test('verified account restoration applies its own auto choice without restartin
  ctx.updateAuthUI();assert.equal(node('autoCross').checked,true,'Pending account cannot apply an unverified profile');
  ctx.cloudProfileReady=true;ctx.updateAuthUI();assert.equal(node('autoCross').checked,false,'The restored account replaces the startup guest choice');
  node('autoCross').checked=true;ctx.updateAuthUI();assert.equal(node('autoCross').checked,true,'Same-owner refresh preserves the current choice');
- ctx.lumenUser={id:'b'};ctx.updateAuthUI();assert.equal(node('autoCross').checked,true);
- ctx.lumenUser={id:'a'};ctx.updateAuthUI();assert.equal(node('autoCross').checked,false,'Switching back restores account A');
+ ctx.lumenUser={id:'b'};ctx.updateAuthUI();assert.equal(ctx.onboardingPreferenceOwner,'a','Readiness from another owner is insufficient');
+ ctx.verifiedOwner='b';ctx.updateAuthUI();assert.equal(node('autoCross').checked,true);
+ ctx.lumenUser={id:'a'};ctx.updateAuthUI();assert.equal(node('autoCross').checked,true,'The previous profile cannot restore another account choice');
+ ctx.verifiedOwner='a';ctx.updateAuthUI();assert.equal(node('autoCross').checked,false,'Switching back restores account A');
  ctx.socialChallenge={id:'challenge'};ctx.lumenUser={id:'b'};ctx.updateAuthUI();assert.equal(node('autoCross').checked,false,'Auth cannot change an isolated challenge playstyle');
  assert.equal(JSON.stringify(attempt),before);
 });
