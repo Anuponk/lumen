@@ -4,6 +4,8 @@ import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 // Native application/hydration/DOM/storage, synthetic Auth and RPC only. The
 // actual SQL merge/transactions have independent PostgreSQL fixture coverage.
 export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url}){
+ await send('Network.enable');
+ await send('Network.setBlockedURLs',{urls:['*supabase*']});
  const quests=canonicalQuestList().filter(q=>q.legacyIndex!==null),[left,right]=quests;
  const owner='favorable-native-fixture';
  const remote={solved:{[right.legacyIndex]:1},badges:{},shards:7,walletRevision:8,legacyVictoryRevision:3,
