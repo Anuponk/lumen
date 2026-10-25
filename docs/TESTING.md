@@ -550,6 +550,12 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+`cockpit-registered-players-tests.mjs` verifies registered-only directory
+projection without source mutation or nickname heuristics, its bound, and no
+anonymous timeline RPC. The controller fixture covers metadata filtering and
+clearing a previously anonymous selection; the independent cockpit browser
+asserts the same directory boundary at all five existing viewports.
+
 `node scripts/cockpit-acceptance-tests.mjs` verifies administrator-to-administrator
 scope clearing, rejected/stale timeline responses and separate activity/Auth/
 commit dates during resumed synchronization. Acceptance evidence and untested

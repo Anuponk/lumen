@@ -1,4 +1,4 @@
-import {renderPlayerDirectory,renderPlayerSessions,rememberSessionExpansion} from './cockpit-sessions.js';
+import {renderPlayerDirectory,renderPlayerSessions,rememberSessionExpansion,registeredPlayers} from './cockpit-sessions.js';
 import {qualifyDifficulty} from "../campaign/difficulty.js";
 import {readQuestView} from "../campaign/quest-view.js";
 import {QUEST_MILESTONES,questLearningRules,questPerformanceRecord,questBadgeQualification} from "../campaign/quest-rules.js";
@@ -2049,6 +2049,7 @@ function adminEsc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<
 function adminNumber(v){return new Intl.NumberFormat("fr-FR").format(Number(v)||0)}
 function adminEventLabel(name){return ({session_start:"Ouverture",attempt_started:"Quête commencée",puzzle_start:"Quête commencée",attempt_completed:"Quête réussie",puzzle_complete:"Quête réussie",attempt_reset:"Réinitialisation",attempt_abandoned:"Abandon",hint_used:"Indice utilisé",verify_used:"Vérification",guided_intervention:"Contrôle guidé"}[name]||name)}
 async function loadAdminTimeline(key){
+ if(typeof key!=='string'||!key.startsWith('u:'))return;
  if(!lumenUser||!lumenSupabase||!hasInternalCapability('analytics_cockpit'))return;
  const owner=lumenUser.id,client=lumenSupabase,box=document.getElementById("adminTimeline"),request={};
  rememberSessionExpansion(box);
@@ -2213,7 +2214,7 @@ async function loadAdminCockpit(){
    lumenSupabase.rpc("lumen_admin_quest_metrics",{p_days:days})
  ].map(request=>Promise.resolve(request).catch(()=>({error:{message:'Service indisponible'}}))));
  if(!authorized())return;
- const players=(playerSnapshot.data||[]).map(x=>({...x,current_quest:questMetrics.data?.current_players?.[x.player_key]??null}));
+ const players=registeredPlayers(playerSnapshot.data).map(x=>({...x,current_quest:questMetrics.data?.current_players?.[x.player_key]??null}));
  const playerError=playerSnapshot.error;
  let observations;try{observations=await requestClient.rpc('lumen_admin_player_observations',{p_player_keys:players.map(p=>p.player_key)})}catch(_){observations={error:true}}
  if(!authorized())return;
@@ -2248,7 +2249,11 @@ async function loadAdminCockpit(){
  const directory=document.getElementById('adminPlayers');
  if(playerError){directory.replaceChildren();const note=document.createElement('p');note.textContent='Activité récente indisponible.';directory.append(note)}
  else renderPlayerDirectory(directory,players,observations.error?undefined:observations.data,{authorized,onSelect:loadAdminTimeline});
- const timeline=document.getElementById('adminTimeline');if(timeline?.cockpitPlayer)loadAdminTimeline(timeline.cockpitPlayer);
+ const timeline=document.getElementById('adminTimeline');
+ if(timeline?.cockpitPlayer){
+  if(players.some(p=>p.player_key===timeline.cockpitPlayer))loadAdminTimeline(timeline.cockpitPlayer);
+  else {timeline.cockpitRequest=null;timeline.cockpitPlayer=null;timeline.textContent='Sélectionne un joueur inscrit.'}
+ }
  const accountRows=document.getElementById("adminAccounts");
  if(accountRows)accountRows.innerHTML=accounts.error?'<tr><td colspan="6">Comptes indisponibles.</td></tr>':(accounts.data||[]).map(x=>'<tr><td>'+adminEsc(x.email||"—")+'</td><td>'+adminEsc(x.nickname||"—")+'</td><td>'+new Date(x.created_at).toLocaleString("fr-FR")+'</td><td>'+(x.last_sign_in_at?new Date(x.last_sign_in_at).toLocaleString("fr-FR"):"—")+'</td><td>'+(x.last_activity?new Date(x.last_activity).toLocaleString("fr-FR"):"—")+'</td><td>'+(questMetrics.data?.current_players?.['u:'+x.user_id]||"—")+'</td></tr>').join("")||'<tr><td colspan="6">Aucun compte.</td></tr>';
  document.getElementById("adminFeedbacks").innerHTML=feedbacks.error?"<p>Feedbacks indisponibles.</p>":realFeedbacks.map(x=>'<div class="admin-feedback"><strong>'+adminEsc(x.kind)+' · '+adminEsc(x.player_label)+(x.puzzle_id?" · Q"+x.puzzle_id:"")+'</strong><p>'+adminEsc(x.message||"Sans commentaire")+'</p><small>'+new Date(x.created_at).toLocaleString("fr-FR")+(x.app_version?" · "+adminEsc(x.app_version):"")+'</small></div>').join("");

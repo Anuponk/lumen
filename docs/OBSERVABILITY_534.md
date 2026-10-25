@@ -1,5 +1,27 @@
 # Diagnostic collection — #534 phases 0 and 1
 
+## Registered-player directory (25 October 2026)
+
+The recent-player RPC definition generates `Joueur XXXX` from the anonymous
+player key hash, not a test-player classification. Its existing `qa_mode` and
+traffic filters exclude marked QA/automation, but a missing historical marker
+cannot prove a person is fictitious. No player/event rows were inspected to
+classify these labels.
+
+The requested view now displays only registered identities (`u:` key and
+`authenticated` type), using the shared `registeredPlayers` projection before
+rendering and batch metadata reads. It never infers identity from the nickname.
+An anonymous timeline cannot be requested; refresh clears a formerly selected
+anonymous or no-longer-visible timeline and invalidates its pending response.
+The heading explicitly says registered players. This is a read-only view
+restriction: no SQL/schema, save, event, analytics identity/linking, collection,
+retention or aggregate definition is changed. Anonymous does not mean test.
+
+Regression contract: `cockpit-registered-players-tests.mjs` reproduced all three
+failures before correction; controller tests cover filtered metadata keys and
+stale selection. The independent native cockpit browser asserts that an
+anonymous `Joueur 3E8B` row is absent while the registered account remains.
+
 ## Cockpit lot 3 — security and acceptance
 
 Native 320/390/1440 screenshots also exposed repetitive source explanations in

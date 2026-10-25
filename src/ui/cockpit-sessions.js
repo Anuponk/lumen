@@ -36,6 +36,10 @@ export function buildPlayerSessions(data){
 function element(doc,tag,text){const node=doc.createElement(tag);if(text!==undefined)node.textContent=text;return node}
 function select(doc,label,values){const node=element(doc,'select');node.setAttribute('aria-label',label);for(const [value,text] of values){const option=element(doc,'option',text);option.value=value;node.append(option)}return node}
 
+export function registeredPlayers(players){
+ return (Array.isArray(players)?players:[]).filter(p=>p?.player_type==='authenticated'&&typeof p.player_key==='string'&&p.player_key.startsWith('u:')).slice(0,250);
+}
+
 export function renderPlayerDirectory(host,players,observations,{authorized=()=>false,onSelect=()=>{}}={}){
  if(!host)return;host.replaceChildren();if(!authorized())return;
  const doc=host.ownerDocument,search=element(doc,'input');search.type='search';search.placeholder='Rechercher un joueur';search.setAttribute('aria-label','Rechercher un joueur');
@@ -46,7 +50,7 @@ export function renderPlayerDirectory(host,players,observations,{authorized=()=>
  const list=element(doc,'div');list.className='admin-player-list';host.append(controls,sources,list);
  const draw=()=>{
   list.replaceChildren();if(!authorized())return;
-  const rows=(Array.isArray(players)?players:[]).slice(0,250).filter(p=>String(p.display_name||p.player_label||p.player_type||'').toLocaleLowerCase('fr').includes(search.value.toLocaleLowerCase('fr'))&&
+  const rows=registeredPlayers(players).filter(p=>String(p.display_name||p.player_label||p.player_type||'').toLocaleLowerCase('fr').includes(search.value.toLocaleLowerCase('fr'))&&
    (filter.value==='all'||(observations?.players?.[p.player_key]?.state||'unknown')===filter.value));
   const date=p=>{const proof=observations?.players?.[p.player_key];return Date.parse(sort.value==='auth'?proof?.auth_at:sort.value==='wallet'?proof?.domains?.wallet:p.last_seen)||0};
   rows.sort((a,b)=>date(b)-date(a)||String(a.player_key).localeCompare(String(b.player_key)));

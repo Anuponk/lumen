@@ -1,5 +1,13 @@
 # Product analytics contract
 
+## Administrative registered-player view
+
+The recent-player directory shows registered identities only, by key/type,
+without classifying nicknames. `Joueur XXXX` is an anonymous hash label and is
+not evidence of QA. Existing server QA/traffic filters remain authoritative for
+known test exclusions. View restriction does not rewrite analytics, delete
+guests or change aggregate statistics; the heading states its registered scope.
+
 ## Stable quest reads (#522, candidate)
 
 Lifecycle events carry `stable_quest_id` and `quest_ordinal`; their historical

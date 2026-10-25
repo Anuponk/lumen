@@ -206,6 +206,11 @@ the session is usable on that particular browser/PWA.
 
 ## Cloud persistence contract
 
+The administrative recent-player directory now limits its view to registered
+`authenticated` / `u:` identities. Anonymous hash labels do not establish test
+traffic and never authorise deletion. The view filter and timeline reset touch
+no player persistence, telemetry storage, aggregate definition or backend RPC.
+
 Cockpit acceptance (#534 lot 3): administrative data is bound to the captured
 cockpit owner as well as live capability. Switching between two authorised
 accounts clears the previous view immediately. This does not change player

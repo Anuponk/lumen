@@ -1,5 +1,10 @@
 # Feature map
 
+Registered-player cockpit view: `registeredPlayers` in `ui/cockpit-sessions.js`
+filters key/type before rendering and metadata reads; `loadAdminTimeline` refuses
+anonymous navigation. Tests: `cockpit-registered-players-tests.mjs`, the recent
+player loader fixture and the independent native cockpit browser.
+
 Cockpit acceptance (#534 lot 3): `cockpit-acceptance-tests.mjs` guards immediate
 administrative scope clearing and stale network failures. The dated acceptance
 record distinguishes synthetic/native checks from physical/release evidence.
