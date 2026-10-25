@@ -27,7 +27,9 @@ capability check. Explicit account ownership restricts analytics and diagnostic
 reads. Guest observations require a null user and the exact anonymous key;
 shared-browser events are never relinked to another account. Only closed fields
 are selected, stable quest ordinals are resolved from existing rules, and optional
-diagnostics require current consent. Three read indexes support bounded access.
+diagnostics require current consent. Existing user/time and anonymous/time
+analytics indexes are reused (metadata verified); one diagnostic user/time index
+is added. No redundant analytics indexes or unrelated index cleanup.
 No profile/receipt payload, amount, email, token or arbitrary properties leave
 the RPC. No collection, retention, purge, alert or player writer changes.
 

@@ -1,6 +1,8 @@
 -- #534 lot 2: closed administrative read model over existing telemetry only.
-create index if not exists analytics_admin_user_time_idx on lumen.analytics_events(user_id,occurred_at desc);
-create index if not exists analytics_admin_guest_time_idx on lumen.analytics_events(anonymous_id,occurred_at desc) where user_id is null;
+-- Reuse the production analytics indexes; equality on the first column permits
+-- backwards scans for recent events. These create missing indexes on old setups.
+create index if not exists analytics_events_user_idx on lumen.analytics_events(user_id,occurred_at);
+create index if not exists analytics_events_anon_idx on lumen.analytics_events(anonymous_id,occurred_at);
 create index if not exists diagnostic_admin_user_time_idx on lumen_commands.diagnostic_events(user_id,received_at desc);
 create function lumen_commands.admin_player_sessions(p_player_key text)
 returns jsonb language plpgsql stable security definer set search_path='' as $$
