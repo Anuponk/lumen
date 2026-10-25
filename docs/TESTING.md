@@ -550,6 +550,12 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Cockpit #534: `node scripts/cockpit-dates-tests.mjs` checks independent date
+sources, persistent-session Auth, missing signals, timezone/UTC/age and stale
+account results. `scripts/fixtures/cockpit-dates.sql` is required in the isolated
+ledger CI; never execute fixtures against production. It verifies capability
+expiry, Lumen account scope, immutable receipt dates and multi-device pending.
+
 Historical recreated-capture recovery: `canonical-durable-outbox-tests.mjs`
 reproduces a committed 37-second run with a later 41-second local copy and a
 `22023` review pause. It verifies archival without resending, and rejects improved

@@ -1,5 +1,42 @@
 # Diagnostic collection — #534 phases 0 and 1
 
+## Cockpit lot 1 — dates (25 October 2026)
+
+Baseline `429ff40`. Metadata-only reads confirmed the existing recent-player
+RPC derives `last_seen` from human/non-QA analytics (90 days), including passive
+`session_start`; this is **last recorded activity**, not a verified user gesture.
+The existing accounts RPC already uses `auth.users.last_sign_in_at`, scoped by
+`lumen.users`. Persistent-session reopening does not change this source. Neither
+`profiles.updated_at` nor hydration health is a durable domain receipt.
+
+`lumen_admin_player_observations(text[])` adds one bounded batch read after the
+existing directory, for at most 250 requested keys. The private implementation
+checks the live `analytics_cockpit` capability and its expiry; the public facade
+is invoker. Only Lumen-owned accounts qualify. It returns Auth timestamp, latest
+immutable Canonical/Legacy/Wallet receipt timestamps and aggregate outbox state
+across devices. Three `(user_id, recorded_at desc)` indexes bound receipt reads;
+no receipts, amounts, operation IDs, payloads, emails or secrets are returned.
+No profile joins, player writes, collection, retention or business RPC changes.
+
+Each domain timestamp proves a server-committed operation and its durable
+receipt. It does **not** prove browser acknowledgement, installation of the
+current projection, or that every domain/device is synchronised. Historical
+writers without receipts remain unobserved. Pending/failure observations do not
+advance these timestamps. A pending device is not hidden by an idle one. Idle
+observations are labelled conservatively; stale/offline state is not live health.
+Dates use the viewer timezone, full time and UTC/age in the detail. Missing RPC
+is “Indisponible”; null receipt/Auth date is “Jamais observée”.
+
+Migration is additive and backward-compatible; deploy schema before client.
+Without it, the existing directory works and additional dates are unavailable.
+Rollback client keeps receipt indexes/boundaries; never grant receipt SELECT.
+Timeline awaits now guard account/client/capability and selected request, on
+success and rejection. RED reproduced a stale response replacing another
+account's timeline. Three new Node cases pass; SQL fixture runs in disposable
+CI only, covering account scope, expired capabilities, multi-device pending and
+failure dates. Physical phone and screen-reader acceptance remain required.
+Onboarding impact: none; administrative observations do not change gameplay.
+
 ## Phase 2 continuation: observations by version
 
 The existing authorised response now supplies a local version comparison and

@@ -1,5 +1,10 @@
 # Feature map
 
+Cockpit dates (#534 lot 1): `ui/cockpit-dates.js` qualifies analytics activity,
+Auth and per-domain durable receipt dates. `lumen_admin_player_observations`
+adds a bounded capability-checked read; `cockpit-dates-tests.mjs` and the
+disposable `fixtures/cockpit-dates.sql` verify scope, dates and stale timelines.
+
 Historical recreated-capture recovery: `legacy-command.js`
 (`assertRecreatedLegacyCapture`, `loadCommittedLegacyAttempt`) supplies the exact
 receipt/current projection proof; `durable-canonical-outbox.js`
