@@ -105,11 +105,14 @@ validates tokens; this feature does not replace Supabase session validation.
 
 ## Retention, deployment and rollback
 
-Migration `20261025200603_temporary_support.sql` is **prepared, not applied**.
-`support_control.enabled=false` is the default. A missing/unavailable RPC exposes
-an unavailable assistance state. Merging the inert client cannot authorize any
-save transfer. Production SQL installation and enabling the control require
-explicit owner authorization, separately from merge permission.
+Source migration `20261025200603_temporary_support.sql` was applied with explicit
+owner authorization on 25 October 2026; the provider assigned production version
+`20261025204916` (`temporary_support`). The SQL is unchanged; its LF SHA-256 is
+`4b36d2f429a03f4b34c36230c8db6bea4eb7b0210bed01b7c107f41ace7252f4`.
+The private control was enabled at `2026-10-25T20:50:52Z`, after verification.
+Each player must still opt in separately. The migration's default remains false
+for a new installation. A missing/unavailable RPC exposes an unavailable state.
+Merge permission alone never authorizes SQL installation or activation.
 
 The existing daily prune calls `prune_support` and deletes whole cases after
 six days from activation, cascading content/metadata. This permits physical
@@ -182,6 +185,77 @@ was reviewed: obsolete CBC suites are due to be removed from HTTP APIs from
 10 November 2026 at the earliest. No client/API signature change is needed here;
 real-device acceptance should use supported TLS/browser versions.
 
+## Authorized production rollout (25 October 2026)
+
+The owner explicitly authorized publication retry, SQL migration and activation.
+PR [#593](https://github.com/Anuponk/lumen/pull/593) is merged at
+`e0c7f200d85e70875d0b42945976b447c941527e`. Its exact main quality, ledger-SQL,
+reconciliation and documentation checks passed. Deployment
+[40232014218](https://github.com/Anuponk/lumen/actions/runs/40232014218)
+first received HTTP 503 from the publishing receiver; the authorized retry
+succeeded. Public HTTPS `build-info.json` reported `1.11.1+534` at that SHA.
+SHA-256 comparisons of the five affected public JS/CSS modules matched the
+reviewed source after LF normalization.
+
+Before installation, a server-side adaptation of `scripts/fixtures/support.sql`
+ran in private `lumen_recette`. Only schema references, the synthetic identity
+reader/FKs and grants were relocated. The support function bodies and validators
+were retained. A separate NOLOGIN/NOINHERIT/NOBYPASSRLS caller had only schema usage
+and required RPC execution; QA objects belonged to the existing private runner.
+The existing production cron hook was not executed in QA; its presence was
+checked separately after installation. Synthetic actors and capability rows
+replaced shared Auth/capability dependencies.
+
+The complete fixture passed: consent, same-user guards, guessed foreign
+references, idempotence/conflicting identity, nested fake secrets, minute/owner/
+global quotas, capability expiry, audit/hash, deletion-failure rollback,
+revocation/rejected replay and cascading expiry. A caught subtransaction rolled
+back every QA object, caller role and synthetic row. Migration-history marker
+`20261025204857_support_574_private_recipe_verification` records that successful
+verification, not a persistent QA installation. QA actors remained empty and
+`lumen_recette.support_cases` and the temporary caller role were absent afterward.
+No shared Auth or player-save rows were inserted, read or changed.
+
+Production history attested the exact source SQL hash above. All five support
+tables have RLS enabled and no raw SELECT/INSERT/UPDATE/DELETE access for
+`anon`/`authenticated`. The public wrapper is invoker; the private support RPC
+is definer; all four new functions have empty search paths. Anonymous execution
+is denied; only the authenticated role can execute the two support entry points.
+Validation and pruning remain private. Additional production SQL checks, with
+synthetic claims and rollback, confirmed the disabled operator gate, anonymous
+denial, expected-user mismatch refusal, ordinary-user admin refusal and withdrawal.
+After enabling, status still returned disabled without player consent, upload
+without consent was refused, and withdrawal returned deleted.
+
+Live HTTPS RPC calls using only the public key returned 401/42501 for anonymous
+access and 401/PGRST301 for an invalid token. These checks and SQL synthetic claims
+do **not** prove a signed-in Auth session's full HTTP lifecycle. That acceptance
+remains open; no private player session or save was used.
+
+Security Advisor comparison added only five INFO `rls_enabled_no_policy` notices
+for the deliberately RPC-only private tables
+([linter explanation](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy)).
+No new warning/error was introduced. Existing unrelated findings were not changed.
+Cron job 5 is active at `17 3 * * *`, its last pre-install execution succeeded at
+`2026-10-25T03:17:00Z`, and the exact existing prune function now includes
+`+lumen_commands.prune_support()`. Direct support pruning returned zero on the
+empty production tables. A scheduled post-install execution is still to observe.
+At activation, cases/captures/contents/access were all empty.
+
+Aggregate database size after installation was 164,367,507 bytes. No plan,
+subscription, Auth configuration, log setting or backup job was changed.
+Observed PostgreSQL settings: SSL on, statement logging DDL, error parameter
+logging zero; no API-role logging override was found. A read-only inspection of
+gateway-log attribute names found request/response metadata and no body fields;
+no private log values were retrieved. This bounded check is not a guarantee about
+unobservable provider internals or future settings.
+[Provider security](https://supabase.com/security) documents encryption at rest
+and TLS. [Backup documentation](https://supabase.com/docs/guides/platform/backups)
+reserves managed daily-backup access for paid plans; no Free-plan backup coverage
+or operator export inventory was independently attested. Operator exports must
+exclude support contents or obey the same deletion/restore-purge policy.
+The #316 provider/backup policy review remains open.
+
 ## Verification and outstanding acceptance
 
 `support-tests.mjs` covers closed projection, nested fake secrets, account
@@ -196,11 +270,12 @@ pointer input, large text, accessibility tree and stale admin-action refusal.
 
 Full-suite results and exact candidate/release SHAs are recorded in the PR and
 #574. Local SQL uses PGlite, not a claim of live Supabase/RLS/Storage behavior.
-Remaining: authorized isolated live Supabase transport/Auth/expiry tests,
-production migration/control/purge/permissions/quotas/logs verification, real
-phone portrait/landscape, large system fonts and screen reader, second-device
-session/account changes, PWA background/closure, physical gameplay during
-support failures and #316 privacy/provider/backup policy acceptance.
+Completed production and isolated-server checks are recorded above. Remaining:
+signed-in synthetic Auth/HTTP lifecycle and session expiry, the first scheduled
+post-install purge result, real phone portrait/landscape, large system fonts and
+screen reader, second-device session/account changes, PWA background/closure,
+physical gameplay during support failures and #316 privacy/provider/backup policy
+acceptance. #574 stays open as **To be tested**.
 
 Onboarding impact: account technical support does not change puzzle assistance,
 the Marquage auto lesson, badge eligibility, navigation or teaching milestones.
