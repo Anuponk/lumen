@@ -54,9 +54,13 @@ export async function verifyVictoryChallenge({send,evaluate},url){
    assert.equal(await evaluate('window.__challengeCalls.length'),1,'Reopening shares the same challenge');
    assert.equal(await evaluate('JSON.stringify(lumenDiagnostics.snapshot().progress)'),saved,'Challenge creation preserves confirmed victory and all rewards');
    if(mode==='adventure-final'){
-    await evaluate(`document.getElementById('challengeShareClose').click();document.getElementById('skyRevealNext').click()`);
-    assert.equal(await evaluate(`document.getElementById('adventureNotice').hidden`),false,'Sharing does not consume the pending Adventure celebration');
-    assert.match(await evaluate(`document.getElementById('adventureNoticeTitle').textContent`),/Aventure terminée/);
+    await evaluate(`document.getElementById('challengeShareClose').click()`);
+    assert.equal(await evaluate(`document.getElementById('skyReveal').hidden`),false,'Closing share retains the single Adventure scene until explicit navigation');
+    assert.equal(await evaluate(`document.getElementById('skyReveal').dataset.celestial`),'adventure');
+    assert.match(await evaluate(`document.getElementById('skyRevealTitle').textContent`),/Aventure accomplie/);
+    await evaluate(`document.getElementById('skyRevealNext').click()`);
+    assert.equal(await evaluate(`document.getElementById('adventureNotice').hidden`),true,'No second Adventure popup after the already presented scene');
+    assert.equal(await evaluate(`document.getElementById('mapModal').hidden`),false);
    }
   }
   results.push({width,mode,button,simulatedRpc:true});

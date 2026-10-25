@@ -1,5 +1,13 @@
 # Existing verification map
 
+Celestial UX (#575/#519): `celestial-ux-tests.mjs` verifies priority, catalogue
+growth/order, badge ratios, historical evidence, deterministic dust, immutability
+and the actual pulse consumer. `celestial-ux-browser.mjs`, imported by the sky
+navigation runner, exercises real wins, skip/focus, all five requested formats,
+15 comparative mastery captures, replay-only badge crossing, reduced motion and
+decorative-failure fallback. The late-game runner retains global completion and
+historical-award assertions in the new single scene. Physical acceptance remains.
+
 Temporary support #574: `support-tests.mjs` joins the Node gate;
 `fixtures/support.sql` and `support-concurrency.py` join disposable PostgreSQL CI.
 `support-browser.mjs` extends the independent incident/cockpit browser at four

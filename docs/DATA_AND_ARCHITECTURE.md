@@ -240,6 +240,18 @@ known field names (otherwise `unknown_field`), without profile contents.
 
 ## Cloud persistence contract
 
+Celestial UX (#575/#519) is a read-only projection. `ui/celestial-progress.js`
+captures scope completion and eligible badge counts before a victory, compares
+them only after the existing confirmed outcome, and never writes a profile.
+`celestial-effects.js` seeds bounded decorative SVG dust by stable identity;
+`celestial-celebration.js` reuses the result sheet. Completion events and mastery
+pulses exist only in memory, scoped to the current owner and catalogue membership.
+No new cloud/local field, RPC, receipt, ledger, entitlement or migration is added.
+Hydration/read-back alone never invokes this presentation event producer.
+Reused durable intents and already-committed receipts explicitly suppress
+milestone/mastery events. A scope crossing requires exactly one missing quest
+before the live win; unrelated remote batches cannot manufacture a finale.
+
 An existing-account ownership handoff installs the verified profile into the
 single live progress object and refreshes board selection through
 `nextCanonicalQuest` / `resumeHydratedCampaignSelection`. The old active attempt

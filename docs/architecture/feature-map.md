@@ -1,5 +1,12 @@
 # Feature map
 
+Celestial milestones/mastery (#575/#519): `ui/celestial-progress.js` is the pure
+catalogue/badge projection; `celestial-effects.js` draws seeded background dust;
+`celestial-celebration.js` presents the existing victory sheet. `game-screen.js`
+captures only confirmed win transitions and adapts existing access/navigation;
+`sky-navigation.js` reuses the layer behind unchanged astronomical cards. No
+profile writer, cockpit, introduction or reward path is added.
+
 Temporary support #574: `persistence/support-capture.js` owns the closed typed
 profile/checkpoint projection; `support-session.js` owns separate consent,
 volatile retries/expiry/revocation; `ui/support-panel.js` owns account and selected

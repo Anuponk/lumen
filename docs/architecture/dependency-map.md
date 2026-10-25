@@ -1,5 +1,11 @@
 # Dependencies and data flow
 
+Confirmed victory: before-scope projection → existing receipt/outcome → current
+scope comparison → one celestial result (global > Adventure > constellation).
+Badge additions → owner/catalogue-scoped ephemeral playhead → visible Mon ciel
+background. SVG failures return to ordinary actions; rendering/skip/navigation
+cannot write rewards. Actual geometry remains owned by the licensed atlas.
+
 #574: explicit account opt-in → live owner → typed read-only profile/checkpoint
 projection + bounded incident codes → volatile support queue → separate private
 RPC consent/metadata/content transaction. Selected cockpit player → existing

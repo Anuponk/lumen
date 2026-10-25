@@ -1,4 +1,5 @@
 export const nodeSuites=[
+ 'celestial-ux-tests.mjs',
  'support-tests.mjs',
  'cockpit-registered-players-tests.mjs',
 
