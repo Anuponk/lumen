@@ -19,6 +19,8 @@ cancellation. `first-welcome-browser-tests.mjs` exercises fresh/direct/full/skip
 reload/Aide flows against the real board, profile and attempt, responsive geometry,
 motion preference, readable transcript and warm offline use. Both join the full
 gate. Chromium emulation is not physical Android, screen-reader or account QA.
+The same suites exercise music lifecycle/refusal with fake nodes and native Web
+Audio, including a 30-second offline render, mute and pause/exit cleanup.
 
 Private QA/cohort controls: `recette-schema-tests.mjs`,
 `historical-rollout-tests.mjs`, disposable `scripts/fixtures/sync-cohort-control.sql`

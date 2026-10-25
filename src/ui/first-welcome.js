@@ -1,4 +1,5 @@
 // Presentation only: no campaign, attempt, reward or cloud writer belongs here.
+import {createIntroMusic} from './intro-music.js';
 export const INTRO_SEEN_KEY='lumenIntroPresentedV1';
 export const INTRO_SCENES=Object.freeze([
  {start:0,text:"Le ciel s'est assombri."},
@@ -52,6 +53,7 @@ export function createFirstWelcome({document,window,figureSvg,contextKey,onRepla
  root.innerHTML=`<div class="intro-veil" aria-hidden="true"></div>
   <div class="intro-art" aria-hidden="true"><svg viewBox="0 0 290 115" preserveAspectRatio="xMidYMid meet">${figureSvg}</svg></div>
   <button type="button" class="intro-skip" aria-label="Passer l’introduction" hidden>Passer</button>
+  <button type="button" class="intro-music" aria-pressed="false" hidden>Musique coupée</button>
   <div class="intro-welcome"><h2 class="lumen-brand">LUMEN</h2>
    <p>Le ciel a perdu ses étoiles.<br>À toi de les réveiller.</p>
    <div class="intro-actions"><button type="button" class="intro-play">Commencer l’aventure</button>
@@ -65,10 +67,14 @@ export function createFirstWelcome({document,window,figureSvg,contextKey,onRepla
   skip=root.querySelector('.intro-skip'),story=root.querySelector('.intro-story'),play=root.querySelector('.intro-play'),
   reading=root.querySelector('.intro-transcript'),motion=window.matchMedia('(prefers-reduced-motion: reduce)');
  let active=false,mode=null,origin=null,captured=null,raf=null,timeline=null,appWasInert=false,lastScene=-1;
+ const musicButton=root.querySelector('.intro-music');
+ const music=createIntroMusic({window,onChange:updateMusic});
+ function updateMusic(){musicButton.textContent=music.enabled?'Musique activée':'Musique coupée';musicButton.setAttribute('aria-pressed',String(music.enabled))}
+ updateMusic();
  const reduced=()=>root.classList.toggle('intro-reduced',motion.matches);
  function close(restoreFocus=true){
   if(!active)return;
-  active=false;timeline?.stop();window.cancelAnimationFrame(raf);raf=null;
+  active=false;timeline?.stop();music.stop();window.cancelAnimationFrame(raf);raf=null;
   root.hidden=true;root.classList.remove('intro-playing');root.style.removeProperty('--intro-passage');
   if(app)app.inert=appWasInert;
   const returnTo=origin;origin=null;
@@ -86,26 +92,28 @@ export function createFirstWelcome({document,window,figureSvg,contextKey,onRepla
   if(active)return;
   if(replay)onReplayStart();
   origin=document.activeElement;captured=contextKey();mode=replay?'replay':'first';lastScene=-1;
+  music.resetPreference();
   appWasInert=!!app?.inert;if(app)app.inert=true;
   active=true;root.hidden=false;root.classList.remove('intro-paused');root.dataset.scene='0';root.style.setProperty('--intro-passage','0');
-  welcome.hidden=replay;skip.hidden=!replay;caption.hidden=!replay;reading.hidden=!replay;reading.open=false;
+  welcome.hidden=replay;skip.hidden=!replay;musicButton.hidden=!replay;caption.hidden=!replay;reading.hidden=!replay;reading.open=false;
   reduced();
   if(replay)startStory();else play.focus();
   if(active)raf=window.requestAnimationFrame(pump);
  }
  function startStory(){
   if(!active||timeline)return;
-  welcome.hidden=true;skip.hidden=false;caption.hidden=false;reading.hidden=false;
+  welcome.hidden=true;skip.hidden=false;musicButton.hidden=false;caption.hidden=false;reading.hidden=false;
   root.classList.add('intro-playing');
   timeline=createIntroTimeline({now:()=>window.performance.now(),onFinish:()=>close(),onFrame:({scene,passage})=>{
    if(scene!==lastScene){lastScene=scene;root.dataset.scene=String(scene);caption.textContent=INTRO_SCENES[scene].text}
    root.style.setProperty('--intro-passage',String(passage));
   }});
-  timeline.start();skip.focus();
+  timeline.start();if(!document.hidden&&!reading.open)music.start(timeline.elapsed);skip.focus();
  }
  play.onclick=()=>close();story.onclick=startStory;skip.onclick=()=>close();
+ musicButton.onclick=()=>{music.setEnabled(!music.enabled);if(music.enabled&&active&&timeline&&!document.hidden&&!reading.open)music.start(timeline.elapsed)};
  // Keep timed reading optional: the transcript pauses at the current scene.
- reading.addEventListener('toggle',()=>{if(active&&timeline){root.classList.toggle('intro-paused',document.hidden||reading.open);if(reading.open)timeline.pause();else if(!document.hidden)timeline.resume()}});
+ reading.addEventListener('toggle',()=>{if(active&&timeline){root.classList.toggle('intro-paused',document.hidden||reading.open);if(reading.open){timeline.pause();music.pause()}else if(!document.hidden){timeline.resume();music.start(timeline.elapsed)}}});
  root.addEventListener('keydown',event=>{
   event.stopPropagation();
   if(event.key==='Escape'){event.preventDefault();close();return}
@@ -115,7 +123,7 @@ export function createFirstWelcome({document,window,figureSvg,contextKey,onRepla
   if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}
   else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}
  });
- const visibility=()=>{if(!active||!timeline)return;root.classList.toggle('intro-paused',document.hidden||reading.open);if(document.hidden)timeline.pause();else if(!reading.open)timeline.resume()};
+ const visibility=()=>{if(!active||!timeline)return;root.classList.toggle('intro-paused',document.hidden||reading.open);if(document.hidden){timeline.pause();music.pause()}else if(!reading.open){timeline.resume();music.start(timeline.elapsed)}};
  const pagehide=()=>close(false);
  document.addEventListener('visibilitychange',visibility);
  window.addEventListener('pagehide',pagehide);

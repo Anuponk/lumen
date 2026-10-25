@@ -2,6 +2,32 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {claimFirstWelcome,INTRO_SEEN_KEY,INTRO_SCENES,INTRO_DURATION,createIntroTimeline} from '../src/ui/first-welcome.js';
+import {createIntroMusic} from '../src/ui/intro-music.js';
+
+// Audio lifecycle uses fake nodes here; native synthesis is covered in Chromium.
+const contexts=[];
+class AudioFixture{
+ constructor(){this.currentTime=0;this.destination={};this.nodes=[];this.closed=false;contexts.push(this)}
+ createGain(){const node={gain:{value:0,setValueAtTime(){},exponentialRampToValueAtTime(){},cancelScheduledValues(){}},connect(){},disconnect(){this.disconnected=true}};this.nodes.push(node);return node}
+ createOscillator(){const node={frequency:{},connect(){},start(t){this.startsAt=t},stop(){this.stopped=true},disconnect(){this.disconnected=true}};this.nodes.push(node);return node}
+ resume(){return Promise.resolve()}
+ close(){this.closed=true;return Promise.resolve()}
+}
+const audioWindow={AudioContext:AudioFixture,localStorage:{getItem:()=> 'off'}};
+const score=createIntroMusic({window:audioWindow});score.start();assert.equal(contexts.length,0,'Respect existing mute');
+score.setEnabled(true);score.start();assert.equal(contexts.length,1);assert.ok(contexts[0].nodes.length<60,'Bounded score');
+score.pause();assert.equal(contexts[0].closed,true);assert.ok(contexts[0].nodes.every(n=>n.disconnected),'No connected nodes after pause');
+score.start(24000);assert.ok(contexts[1].nodes.length<contexts[0].nodes.length,'Resume current passage without replaying earlier notes');
+score.setEnabled(false);assert.equal(contexts[1].closed,true);score.start();assert.equal(contexts.length,2);
+score.setEnabled(true);score.start(29999);score.stop();assert.equal(contexts[2].closed,true,'Near-end resume is safe');
+const unavailable=createIntroMusic({window:{localStorage:{getItem:()=> 'on'}}});unavailable.start();assert.equal(unavailable.enabled,false,'Unavailable audio never blocks the story');
+const deniedAudio=createIntroMusic({window:{AudioContext:AudioFixture,localStorage:{getItem(){throw Error('denied')}}}});deniedAudio.start();assert.equal(contexts.length,3);
+class RejectedAudio extends AudioFixture{resume(){return Promise.reject(Error('blocked'))}}
+const blocked=createIntroMusic({window:{...audioWindow,AudioContext:RejectedAudio}});blocked.setEnabled(true);blocked.start();await Promise.resolve();assert.equal(blocked.enabled,false);assert.equal(contexts.at(-1).closed,true);
+const stale=createIntroMusic({window:{...audioWindow,AudioContext:RejectedAudio}});stale.setEnabled(true);stale.start();stale.stop();await Promise.resolve();assert.equal(stale.enabled,true,'Late rejection cannot change a stopped presentation');
+let currentSound='on';const changedPreference=createIntroMusic({window:{...audioWindow,localStorage:{getItem:()=>currentSound}}});
+currentSound='off';changedPreference.resetPreference();assert.equal(changedPreference.enabled,false,'Replay reads the current global sound setting');
+changedPreference.setEnabled(true);changedPreference.resetPreference();assert.equal(changedPreference.enabled,false,'A local override ends with this presentation');
 
 function storage(entries=[]){const values=new Map(entries);return {get length(){return values.size},key:i=>[...values.keys()][i]??null,getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value)}}
 const url=new URL('https://lumen.example/');

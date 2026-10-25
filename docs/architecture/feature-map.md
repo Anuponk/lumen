@@ -9,6 +9,8 @@ reconnect recovery. The data contract owns its strict unchanged-facts rules.
 
 First welcome/story (#532): `ui/first-welcome.js` owns the local presentation
 marker, deterministic narrative clock and accessible overlay; its CSS is separate.
+`ui/intro-music.js` owns the optional original Web Audio score and disposes its
+nodes/context on pause or exit; it reads the sound preference without writing it.
 `game-screen.js` captures eligibility before startup, supplies the first catalogue
 constellation's reference SVG and binds Aide replay to existing pause/focus behavior.
 No campaign, reward, Auth or cloud writer is added. See UX_AND_VISUAL_DIRECTION.

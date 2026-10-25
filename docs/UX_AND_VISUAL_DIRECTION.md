@@ -26,8 +26,14 @@ paused game, without forcing quest 1 or restarting the attempt. Escape and Passe
 restore focus. A changed account/quest/attempt or pagehide cancels obsolete work.
 Hidden tabs pause narrative time. Reduced motion suppresses animated effects;
 an accessible, expandable transcript pauses playback and exposes the full text.
-An animation failure releases the game immediately. No audio or remote resource
-is needed by the story; cold offline startup remains the existing PWA's scope.
+An animation failure releases the game immediately. An original, quiet Web Audio
+score accompanies the story after an explicit story/replay action. It initially
+reads the current sound preference at every opening; a visible music toggle changes only this
+presentation's session choice, without writing a new preference or player field.
+Music pauses with hidden tabs and the transcript, resumes at the current passage,
+and stops on completion, skip, Escape, cancellation or pagehide. Audio refusal or
+unavailability leaves the visual story usable. No remote audio asset is needed;
+cold offline startup remains the existing PWA's scope.
 The first service-worker acquisition does not reload that fresh document; an
 actual replacement retains the existing upgrade reload and OAuth-return guards.
 The return notification remains a passive, automatically dismissed status; it

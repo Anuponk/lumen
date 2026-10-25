@@ -25,8 +25,15 @@ entry, immediate skip, refresh, Aide replay of a paused existing attempt, keyboa
 Escape/focus, 320/360/landscape/1440 geometry, reduced-motion emulation, transcript
 and warm offline exit. It compares unchanged live profile, board and attempt bytes
 around presentation actions. Existing learning/gesture/hint/cloud regressions stay.
+The same suites cover the original local ambient score: mute preference, bounded
+audio nodes, unavailable/refused audio and late rejection cleanup in Node;
+native user activation, silent welcome, completion/skip cleanup, local mute,
+transcript/background pause/resume and a full offline audio render in Chromium.
+Rendering verifies a nonzero quiet signal and final fade, not subjective listening
+quality. No recording or external audio dependency is introduced.
 
-Physical acceptance remains required: small Android/PWA, actual background/close,
+Physical acceptance remains required: listening volume/timbre on real speakers,
+small Android/PWA, actual background/close,
 large text and screen reader, guest → account/reconnect, and cold offline startup
 under existing service-worker constraints. No physical or live-account result may
 be inferred from Chromium fixtures. #532 stays open until this acceptance.
