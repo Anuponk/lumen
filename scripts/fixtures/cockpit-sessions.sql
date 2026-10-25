@@ -22,6 +22,18 @@ begin
  assert r->'analytics'->0->>'session_id'='00000000-0000-0000-0000-000000000001';assert r::text not like '%SECRET%';
  r:=public.lumen_admin_player_sessions('a:shared-browser');assert jsonb_array_length(r->'analytics')=1;
  assert r->'analytics'->0->'session_id'='null'::jsonb;assert r::text not like '%SECRET%';
+ insert into lumen_commands.diagnostic_preferences(user_id,enabled) values(actor,true);
+ insert into lumen_commands.diagnostic_events(user_id,event_id,session_id,trace_id,sequence,occurred_at,received_at,code,stage,kind,severity,platform,browser,app_version,before_state,after_state,retry,signature)
+ select actor,gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),1,now(),now()-make_interval(days=>age),
+  'guided_input_blocked','guided','unknown','warning','desktop','chromium','1.11.1+101','ready','blocked',0,'synthetic'
+ from generate_series(0,8,8) age;
+ r:=public.lumen_admin_player_sessions('u:'||actor);
+ assert jsonb_array_length(r->'diagnostics')=1,'expired optional data is never displayed';
+ update lumen_commands.diagnostic_preferences set enabled=false where user_id=actor;
+ r:=public.lumen_admin_player_sessions('u:'||actor);assert jsonb_array_length(r->'diagnostics')=0,'withdrawn consent is honoured';
+ insert into lumen.analytics_events(user_id,anonymous_id,session_id,event_name,properties)
+ select actor,'shared-browser',gen_random_uuid()::text,'hint_used','{"traffic_type":"human"}'::jsonb from generate_series(1,200);
+ r:=public.lumen_admin_player_sessions('u:'||actor);assert jsonb_array_length(r->'analytics')=100,'response is bounded';
  assert not has_table_privilege('authenticated','lumen_commands.diagnostic_events','SELECT');
  assert not has_function_privilege('anon','public.lumen_admin_player_sessions(text)','EXECUTE');
  update lumen.internal_capabilities set expires_at=now()-interval '1 second' where user_id=admin;

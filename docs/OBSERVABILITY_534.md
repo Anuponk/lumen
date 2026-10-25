@@ -1,5 +1,17 @@
 # Diagnostic collection — #534 phases 0 and 1
 
+## Cockpit lot 3 — security and acceptance
+
+The [three-lot evidence record](validation/2026-10-25-cockpit-534.md) separates
+synthetic Node/native-browser/PostgreSQL results from physical and production
+acceptance. `cockpit-acceptance-tests.mjs` reproduced an administrative scope
+switch retaining the prior view even when both accounts had the capability.
+`updateAdminTools` now clears the directory, accounts, diagnostics, timeline and
+selection immediately when the cockpit owner changes. Stale success/rejection
+guards remain intact. SQL acceptance adds actual Auth change, later receipt,
+optional-consent withdrawal, expired detail and response-size cases. No new
+RPC, data collection, retention, player mutation or automatic repair in lot 3.
+
 ## Cockpit lot 2 — players, sessions, episodes (25 October 2026)
 
 `ui/cockpit-sessions.js` replaces the flat directory/timeline. A labelled search,

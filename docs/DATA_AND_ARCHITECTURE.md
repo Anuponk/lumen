@@ -206,6 +206,11 @@ the session is usable on that particular browser/PWA.
 
 ## Cloud persistence contract
 
+Cockpit acceptance (#534 lot 3): administrative data is bound to the captured
+cockpit owner as well as live capability. Switching between two authorised
+accounts clears the previous view immediately. This does not change player
+Auth or persistence; receipt dates retain their limited domain-commit meaning.
+
 Cockpit sessions (#534 lot 2): capability-checked, closed administrative reads
 group existing analytics and consented diagnostic sessions separately. No
 session is inferred from Auth timestamps or a temporal match; no shared-browser

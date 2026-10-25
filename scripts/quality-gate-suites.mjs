@@ -1,4 +1,5 @@
 export const nodeSuites=[
+ 'cockpit-acceptance-tests.mjs',
  'cockpit-sessions-tests.mjs',
  'cockpit-dates-tests.mjs',
  'ux-lot-tests.mjs',

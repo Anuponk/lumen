@@ -1,5 +1,9 @@
 # Feature map
 
+Cockpit acceptance (#534 lot 3): `cockpit-acceptance-tests.mjs` guards immediate
+administrative scope clearing and stale network failures. The dated acceptance
+record distinguishes synthetic/native checks from physical/release evidence.
+
 Cockpit sessions (#534 lot 2): `ui/cockpit-sessions.js` renders directory filters,
 independent session disclosures and nested `incident-investigation.js` episodes.
 `lumen_admin_player_sessions` selects bounded, closed existing telemetry fields;
