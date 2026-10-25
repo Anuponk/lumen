@@ -377,7 +377,8 @@ constellation leads, existing figures appear in cascade (1.5–3.5 s), then a
 subtle Milky Way (3.5–5.5 s), resting by 7 s. Copy: “Aventure accomplie” and
 “Chaque étoile retrouvée a repoussé l’obscurité. Ensemble, elles ont redonné vie
 à ce ciel.” Reliable scope recaps use acquired quests/stars and named badges.
-Actions stay available throughout and until the player chooses. “Passer
+Narrative copy fades in during the conclusion (2.8–4 s / 5.5–7 s), with its
+layout reserved from the start; actions stay available until the player chooses. “Passer
 l’animation” stops decoration; reduced motion shows the final state immediately.
 Next-constellation / next-Adventure requires an existing access decision and a
 real unfinished quest. Otherwise return to Mon ciel. Reviewing an Adventure
