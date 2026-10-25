@@ -7,10 +7,12 @@ Prefer batching coherent work instead of pushing every micro-edit, especially wh
 
 ## Intended workflow
 
-PR #526: the owner's current decision is to keep the privacy preparation in
-draft until complete validation. Follow the [remaining-work checklist](PRIVACY_RELEASE_CHECKLIST.md)
-before proposing its release. This documentation does not authorize its three
-SQL migrations, merge or deployment; merging into `main` may trigger publication.
+PR #526: on 25 October 2026 the owner explicitly authorized merging the technical
+preparation, superseding the earlier draft-only decision. The normal main
+publication may therefore expose the pages with their visible candidate status.
+This is not legal validation or authorization for SQL migrations, production
+purges/erasure, shared Auth changes, children or Google Play. Follow the
+[remaining-work checklist](PRIVACY_RELEASE_CHECKLIST.md) for those separate gates.
 
 For o2switch, `Deploy Lumen to o2switch` publishes the exact successful `main`
 revision after all three release gates pass, when `O2SWITCH_DEPLOY_ENABLED=true`.

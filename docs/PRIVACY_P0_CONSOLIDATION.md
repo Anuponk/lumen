@@ -1,5 +1,13 @@
 # Consolidation P0 — audit préalable du 25 octobre 2026
 
+**Décision ultérieure de l'éditeur, 25 octobre :** fusion de la préparation
+technique autorisée (« ok pour merger »), remplaçant la consigne de brouillon.
+Les constats et limites de cet audit restent applicables. La publication normale
+du client et des pages candidates ne vaut ni validation juridique ni autorisation
+SQL/purge/suppression réelle/Auth/enfants/Play. Preuve finale de fusion et de
+publication à consulter dans #526 ; les mentions de non-fusion ci-dessous
+décrivent l'état avant cet accord.
+
 Branche de départ : #526 `f936f95`, main comparé : `e0c7f20` (inclut #593).
 Audit du code et des contrats, sans écriture de production. #526 reste en
 brouillon. Aucun accord de migration, publication, purge ou effacement réel.

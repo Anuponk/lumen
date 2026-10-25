@@ -1,5 +1,18 @@
 # Reste à faire — confidentialité PWA et préparation Play
 
+## Décision de fusion du 25 octobre 2026
+
+Après la préparation technique et ses contrôles verts, l'éditeur autorise
+explicitement la fusion de #526 (« ok pour merger »). Cette décision remplace
+le maintien obligatoire en brouillon pour la **livraison technique**. Les pages
+gardent leur statut visible de candidates ; la publication normale de main
+n'atteste aucune validation juridique. Les anciennes conditions de brouillon
+ci-dessous décrivent la décision antérieure.
+
+Les validations juridiques, les trois migrations SQL, les purges, les suppressions
+réelles, Auth partagée, les enfants et Google Play restent des étapes distinctes,
+non autorisées par ce seul accord. #316 et #170 restent ouvertes.
+
 **Actualisation P0 du 25 octobre :** lire d'abord
 [le dossier comparatif](PRIVACY_P0_CONSOLIDATION.md). Les références de tests
 du 22 octobre restent historiques. L'assistance est maintenant installée et
