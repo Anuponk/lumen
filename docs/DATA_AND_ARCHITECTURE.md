@@ -206,6 +206,15 @@ the session is usable on that particular browser/PWA.
 
 ## Cloud persistence contract
 
+Administrative dates (#534 lot 1): `ui/cockpit-dates.js` displays last recorded
+analytics activity separately from Auth `last_sign_in_at`. The additive
+`lumen_admin_player_observations` RPC reads only latest immutable domain receipt
+timestamps and existing outbox observations, behind a live, expiring cockpit
+capability and Lumen account scope. These timestamps prove server commits,
+not device receipt, current projection installation or full synchronization.
+No player-data writer, ACK, receipt format, collection or retention changes.
+See `OBSERVABILITY_534.md` for source audit and compatibility.
+
 ### Historical inventory and guest claims — lot 4
 
 `historical-inventory.js` produces a private, mutation-free manifest. Each source
