@@ -6,6 +6,7 @@ revoke all on schema lumen_privacy from public, anon, authenticated, service_rol
 create table lumen_privacy.erased_identifiers (
  kind text not null check (kind in ('user','actor','key')),
  digest text not null check (digest ~ '^[0-9a-f]{64}$'),
+ owner_digest text not null check (owner_digest ~ '^[0-9a-f]{64}$'),
  erased_at timestamptz not null default now(),
  primary key(kind,digest)
 );
@@ -230,13 +231,13 @@ begin
  end loop;
  report:=lumen_privacy.review_erasure(p_user_id,actors);
  keys:=array['u:'||p_user_id::text]||array(select 'a:'||a from unnest(actors) a);
- insert into lumen_privacy.erased_identifiers(kind,digest)
- select 'user',lumen_privacy.fingerprint(p_user_id::text)
- union select 'actor',lumen_privacy.fingerprint(a) from unnest(actors) a
- union select 'key',lumen_privacy.fingerprint(k) from unnest(keys) k
+ insert into lumen_privacy.erased_identifiers(kind,digest,owner_digest)
+ select 'user',lumen_privacy.fingerprint(p_user_id::text),lumen_privacy.fingerprint(p_user_id::text)
+ union select 'actor',lumen_privacy.fingerprint(a),lumen_privacy.fingerprint(p_user_id::text) from unnest(actors) a
+ union select 'key',lumen_privacy.fingerprint(k),lumen_privacy.fingerprint(p_user_id::text) from unnest(keys) k
  on conflict do nothing;
  if to_regclass('lumen_commands.support_cases') is not null then
-  execute 'insert into lumen_privacy.erased_identifiers(kind,digest) select ''key'',lumen_privacy.fingerprint(''support:''||id::text) from lumen_commands.support_cases where user_id=$1 on conflict do nothing' using p_user_id;
+  execute 'insert into lumen_privacy.erased_identifiers(kind,digest,owner_digest) select ''key'',lumen_privacy.fingerprint(''support:''||id::text),lumen_privacy.fingerprint($1::text) from (select id from lumen_commands.support_cases where user_id=$1 union select case_id as id from lumen_commands.support_access where privacy_owner_id=$1 and case_id is not null) retired on conflict do nothing' using p_user_id;
  end if;
  for r in select * from lumen_privacy.policy() where action in ('delete','anonymize') order by case rel when 'support_contents' then 0 when 'support_access' then 1 when 'support_captures' then 2 when 'support_cases' then 3 else 4 end,ns,rel loop
   predicate:=lumen_privacy.scope_predicate(r.ns,r.rel,r.uid_col,r.actor_col,r.key_col);

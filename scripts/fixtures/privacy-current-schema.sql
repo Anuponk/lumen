@@ -13,6 +13,8 @@ do $$begin
   delete from lumen_commands.support_access a where case_id is not null and privacy_owner_id is null and not exists(select 1 from lumen_commands.support_cases c where c.id=a.case_id);
  end if;
 end $$;
+
+
 -- Trigger name/function alone are insufficient if its actor arguments drift.
 drop trigger lumen_erasure_guard on lumen.analytics_events;
 create trigger lumen_erasure_guard before insert or update on lumen.analytics_events
@@ -124,3 +126,11 @@ do $$declare u uuid:=current_setting('test.privacy_user')::uuid;other_uid uuid:=
  end loop;
  perform set_config('request.jwt.claim.sub','',true);
 end $$;
+
+begin isolation level repeatable read read only;
+do $$declare e jsonb;begin
+ e:=lumen_privacy.export_account(current_setting('test.privacy_user')::uuid,array[]::text[]);
+ assert jsonb_array_length(e->'erasureBarrier')=4,'Export must include UID/key and both retired support cases';
+ assert jsonb_array_length(e->'tables'->'lumen_commands.support_cases')=0;
+end $$;
+commit;

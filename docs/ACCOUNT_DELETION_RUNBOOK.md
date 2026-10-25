@@ -171,7 +171,9 @@ participants restent, tandis que ses propres participations sont supprimées.
 ### Barrière et conservation proposée
 
 Les seules métadonnées conservées dans la barrière sont le type, l'empreinte
-SHA-256 des UID/acteurs/player keys et la date d'effacement. Elles sont
+SHA-256 des UID/acteurs/player keys/dossiers, une empreinte de rattachement
+`owner_digest` pour l'accès ultérieur aux seules barrières du demandeur et la
+date d'effacement. Elles sont
 **pseudonymisées**, pas anonymes : aucun email, profil, message ou reçu recopié.
 Conservation proposée : tant que l'identité partagée ou d'anciennes copies
 peuvent réécrire dans Lumen. Aucune purge automatique ou réinscription implicite

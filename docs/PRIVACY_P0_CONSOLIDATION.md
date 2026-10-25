@@ -120,7 +120,49 @@ Ces références ne constituent pas une validation juridique ni une approbation 
 
 ## Preuves et décisions restantes
 
-Résultats à compléter après exécution des tests du candidat. Les résultats
-historiques de #526 ne valent pas validation de cette intégration. Fournisseurs,
-backups physiques, appareils hors ligne, adresse de contact effectivement suivie,
-identité du demandeur et réponse réelle restent des contrôles opérationnels.
+| Contrôle | Statut | Preuve et limite |
+|---|---|---|
+| Effacement transactionnel Lumen, Auth/autre application, clés/UID anciens, schéma inconnu | Conforme techniquement en environnement isolé | Chaîne réelle des migrations + fixtures, rollback, refus et compte non supprimé ; pas d'effacement réel |
+| Support, diagnostics, export et journaux expirés | Conforme techniquement en environnement isolé | Tests SQL réels, attributs tiers masqués, droits directs privés et rétention relue ; chaîne opérateur externe non attestée |
+| Concurrence et anciens reçus | Conforme techniquement sur candidat intermédiaire `0beabb0` | CI PostgreSQL 17 verte, nouveaux verrous/support, anciens scénarios retenus ; vérifier la CI de la tête finale avant livraison |
+| Demande publique et pages candidates | Conforme techniquement en navigateur synthétique | Compte/Auth simulés, SDK bloqué pour les pages, confirmation/mail préparé sans envoi, originaux conservés, zéro exception à 320/360/390/1440 px |
+| URLs finales de droits/confidentialité/mentions | À corriger avant livraison autorisée | GET public des trois pages : 404 ; aucune publication par ce lot |
+| Fournisseurs, copies physiques, réponse opérateur et retrait sur vrais appareils | À confirmer | Aucune donnée réelle inspectée/effacée ; contrats/options/copies et recette physique nécessaires |
+| Bases légales, immatriculation, politique de conservation, réinscription, mineurs | À confirmer | Informations et décisions restantes ci-dessous ; aucune conformité juridique revendiquée |
+| Paiement/publicité et paquet Android | Non applicable à cette implémentation PWA | Aucun ajout commercial, package ou envoi Console ; inspection du futur paquet nécessaire |
+
+Exécutions locales : `node scripts/test-affected.mjs --full`, **30 groupes, zéro
+échec**, dont quality **165 suites** (343,6 s). Rejeu final compte/pages : quatre
+largeurs, sauvegardes préservées, retrait diagnostics hors ligne puis reconnexion,
+zéro exception. PGlite **0.3.14** : anciennes fixtures, chaîne actuelle et support
+installé après la confidentialité passent ; PostgreSQL embarqué ne prouve pas les
+courses entre connexions, vérifiées séparément par la CI PostgreSQL 17.
+RED : les migrations originales de #526 refusent le catalogue actuel avec
+`LUMEN_ERASURE_SCHEMA_REVIEW_REQUIRED`. GREEN : politique consolidée et mêmes
+tests, plus refus des audits non attribuables et de garde aux mauvais arguments.
+
+Les empreintes de dossiers retirés restent attribuables dans la barrière par un
+`owner_digest` pseudonymisé, pour permettre leur accès privé après effacement.
+Pas d'email, de texte libre ni de copie de profil dans cette barrière. Sa durée et
+la réinscription restent à adopter juridiquement et opérationnellement.
+
+GET public : **1.11.1+535 / d33c19a**, qui n'est pas cette PR. La page publique
+référence encore Supabase JS `@2` sur jsDelivr et QRCode 1.0.0 sur cdnjs ; le
+candidat #526 embarque les versions figées localement. Pas d'affirmation globale
+« aucun CDN » pour la production actuelle. Une capture exhaustive des requêtes
+authentifiées et des appareils reste à réaliser sans publier secrets ni sauvegardes.
+
+Décisions/informations bloquantes : mentions d'immatriculation et activité
+professionnelle justifiées, textes finaux et bases par traitement, comptes enfants
+supervisés, durées/holds et réinscription, DPA/options/régions/transferts propres
+aux fournisseurs, sauvegarde chiffrée/rotation/restauration et copies externes,
+canal privé de vérification/remise/réponse, recette réelle après autorisation.
+Les coordonnées déjà déclarées dans `publisher.json` ne sont pas réinventées.
+`node scripts/play-readiness.mjs` reste **ready:false** : aucune preuve fictive
+ajoutée pour obtenir un statut favorable.
+
+Développement préparé et tests locaux effectués ; CI finale à confirmer sur la
+tête de #526. PR en brouillon, non fusionnée, migrations non appliquées par ce
+chantier, aucun compte réel supprimé, aucune purge/dépense/publication activée.
+#316 et #170 restent ouvertes. Téléphone, lecteur d'écran et deux appareils
+physiques, Auth réel et fournisseurs/backups restent non testés par ce lot.

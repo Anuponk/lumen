@@ -21,7 +21,7 @@ begin
  report:=lumen_privacy.review_erasure(p_user_id,actors);
  keys:=array['u:'||p_user_id::text]||array(select 'a:'||a from unnest(actors) a);
  select coalesce(jsonb_agg(to_jsonb(e) order by e.kind,e.digest),'[]') into barrier
- from lumen_privacy.erased_identifiers e where
+ from lumen_privacy.erased_identifiers e where e.owner_digest=lumen_privacy.fingerprint(p_user_id::text) or
   (e.kind='user' and e.digest=lumen_privacy.fingerprint(p_user_id::text))
   or (e.kind='actor' and e.digest in (select lumen_privacy.fingerprint(a) from unnest(actors) a))
   or (e.kind='key' and e.digest in (select lumen_privacy.fingerprint(k) from unnest(keys) k));
@@ -53,7 +53,7 @@ begin
  end loop;
  return jsonb_build_object('scope','Lumen only','formatVersion',1,'userId',p_user_id,
   'capturedAt',transaction_timestamp(),'tables',tables,'erasureBarrier',barrier,
-  'thirdPartyReviewRequired',true,'omittedTechnicalFields',jsonb_build_array('push subscription.keys'),
+  'thirdPartyReviewRequired',true,'omittedTechnicalFields',jsonb_build_array('push subscription.keys','support_access.actor','support_access.case_id','support_access.privacy_owner_id'),
   'authIncluded',false,'restoreSupported',false);
 end $$;
 revoke all on function lumen_privacy.export_account(uuid,text[],integer) from public,anon,authenticated,service_role;
