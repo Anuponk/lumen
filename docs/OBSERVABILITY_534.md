@@ -2,6 +2,12 @@
 
 ## Cockpit lot 3 — security and acceptance
 
+Native 320/390/1440 screenshots also exposed repetitive source explanations in
+every player card. The final view keeps one expandable date explanation and one
+session explanation, with a height-bounded mobile directory. Critical dates and
+observed state stay visible. Native keyboard and five-viewport checks passed
+after this density adjustment; no collection or date meaning changes.
+
 The [three-lot evidence record](validation/2026-10-25-cockpit-534.md) separates
 synthetic Node/native-browser/PostgreSQL results from physical and production
 acceptance. `cockpit-acceptance-tests.mjs` reproduced an administrative scope
