@@ -1,5 +1,19 @@
 # Existing verification map
 
+Privacy consolidation #316: `privacy-current-schema.sql` checks real current
+SQL dependencies and support expiry/export/rollback; `privacy-optional-support.sql`
+checks absent/partial support; `privacy-support-concurrency.py` retains original
+erasure races and adds real support lock ordering. See `docs/TESTING.md`.
+
+Technical retention: `scripts/fixtures/technical-retention*.sql` and
+`scripts/technical-retention-concurrency.py` in disposable PostgreSQL 17 CI.
+See `docs/TESTING.md` for preview, dates, held/open data, rollback, role denial,
+concurrent reenabling and DDL checks; no production purge is tested.
+
+Private rights export: `scripts/fixtures/account-rights*.sql` after both privacy
+migrations, in `canonical-ledger.yml` PostgreSQL 17. Covers bounds, stable
+read-only requirement, role denial, guest/account scope, Auth/other-app/push
+secret exclusion and access after erasure. Local PGlite is separate evidence.
 Celestial UX (#575/#519): `celestial-ux-tests.mjs` verifies priority, catalogue
 growth/order, badge ratios, historical evidence, deterministic dust, immutability
 and the actual pulse consumer. `celestial-ux-browser.mjs`, imported by the sky
@@ -190,6 +204,28 @@ Baseline: `bef5f32`. All paths are repository-relative. This phase indexes exist
 
 ## Select a check
 
+Lumen-only erasure: `scripts/fixtures/account-erasure-bootstrap.sql`,
+`scripts/fixtures/account-erasure.sql`, `scripts/account-erasure-concurrency.py`
+and the real private migration run after wallet regressions in
+`canonical-ledger.yml` on disposable PostgreSQL 17. See `docs/TESTING.md` for
+scope/denial/race assertions; this does not certify production/native deletion.
+
+Compact tutorial coach: `learning-coach-placement-tests.mjs` reproduces the
+short-screen header overlap using the real placement function; existing
+`ux-cleanup-tests.mjs` checks browser help click, modal focus and preservation.
+
+Play/privacy preparation: `privacy-readiness-tests.mjs` plus `analytics-tests.mjs`;
+account-session browser runner invokes `privacy-browser.mjs` for mobile/desktop
+request preparation without live mail/Auth. `play-readiness.mjs --enforce`
+deliberately blocks missing real evidence; it is not a passing CI certification.
+See `docs/PLAY_STORE_READINESS.md` and the account-deletion runbook.
+The same browser runner reads the two HTML legal candidates at mobile/desktop
+sizes, without scripts/Auth, preserving saves and retaining access to requests.
+
+Browser libraries: `browser-dependency-tests.mjs` checks exact local assets,
+hashes/licenses and absence of CDN script tags. `privacy-browser.mjs` loads the
+real local exports and renders a fixture QR without Auth; worker cache tests
+cover both bundles offline. Family-account design is not implementation evidence.
 Hydration #536: `cloud-achievements-session-recovery-tests.mjs` covers the exact
 reported event ordering with synthetic discordant profiles and durable adapters;
 `cloud-hydration-mirror-session-tests.mjs` covers the demonstrated late-mirror

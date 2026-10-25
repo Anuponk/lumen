@@ -1,5 +1,27 @@
 # Data and architecture
 
+## Prepared technical retention (#316)
+
+`20261022192259_lumen_technical_retention.sql` adds operator-only bounded
+retention of an explicit non-gameplay event allowlist (90 days), feedback closed
+for 180 days without a hold, and subscriptions disabled for 90 days. Server
+transition timestamps reject backdating; unknown historical transitions start
+at migration. New metadata lives on existing rows, is covered by rights export
+and erasure, and never enters game snapshots or reward restoration. Preserve
+functional historical analytics, accounts, receipts, recovery and unresolved
+incidents. No production migration, cron or cleanup is enabled. Procedure and
+rollback limits: [runbook](TECHNICAL_RETENTION_RUNBOOK.md).
+
+## Prepared operator access and portability (#316)
+
+`20261022184145_lumen_account_rights_export.sql` adds only a private SECURITY
+INVOKER export, never a public RPC. It reuses the erasure ownership policy and
+ambiguity guards, requires a stable read-only owner transaction, caps rows and
+source JSON bytes, excludes Auth/other applications and strips push keys.
+No writes, restore path, new persistence or gameplay effects. Manual review and
+secure delivery are mandatory; see [procedure](ACCOUNT_RIGHTS_RUNBOOK.md).
+Production migration remains unauthorized; PR stays draft. Proposed retention
+criteria are [separate from implemented behavior](PRIVACY_RETENTION_PROPOSAL.md).
 ## Temporary private assistance — #574
 
 [Audit, data contract, budgets and rollout](SUPPORT_574.md). A separate explicit
@@ -240,6 +262,29 @@ known field names (otherwise `unknown_field`), without profile contents.
 
 ## Cloud persistence contract
 
+### Requested account erasure (prepared, not deployed)
+
+P0 consolidation: the private policy now recognizes current optional diagnostics,
+command metadata and support tables. `scope_predicate` owns indirect attribution;
+`install_guards` registers the reviewed tables only. Support audit's private
+`privacy_owner_id` is derived from server cases, retained through case expiry,
+excluded from rights export and deleted by erasure/seven-day audit retention.
+Unattributable old audit references fail closed pending review. No gameplay
+profile, reward, wallet or reconciliation rule changes. See
+[the comparative audit](PRIVACY_P0_CONSOLIDATION.md).
+
+`20261022160212_lumen_account_erasure.sql` is the operator-verified exception
+to durable Lumen restoration: requested erasure removes that player's Lumen
+data, receipts and recovery copies atomically, preserving shared Auth and other
+applications. Private scope review rejects ambiguous actors/schema changes.
+Social challenges lose sender identity while other participants survive.
+Private pseudonymous fingerprints and INSERT/UPDATE guards prevent old clients
+and JWTs from recreating erased data; READ COMMITTED is required. No browser
+request automatically executes erasure or clears local stores. Other players'
+restoration, rewards and pending intentions keep their existing contracts.
+See `ACCOUNT_DELETION_RUNBOOK.md` for access, locking, reenrollment, proposed
+barrier retention and provider/backups limits. Separate production authorization
+and verified SQL CI are required before applying this migration.
 Celestial UX (#575/#519) is a read-only projection. `ui/celestial-progress.js`
 captures scope completion and eligible badge counts before a victory, compares
 them only after the existing confirmed outcome, and never writes a profile.

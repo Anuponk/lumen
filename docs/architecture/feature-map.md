@@ -1,5 +1,9 @@
 # Feature map
 
+Privacy P0: `lumen_privacy.scope_predicate` and `install_guards` extend the
+existing #526 operator policy to current metadata and private support ownership.
+Audit/conditions: [PRIVACY_P0_CONSOLIDATION](../PRIVACY_P0_CONSOLIDATION.md).
+
 Celestial milestones/mastery (#575/#519): `ui/celestial-progress.js` is the pure
 catalogue/badge projection; `celestial-effects.js` draws seeded background dust;
 `celestial-celebration.js` presents the existing victory sheet. `game-screen.js`
@@ -172,6 +176,22 @@ Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This loo
 
 ## Entry points and shape
 
+Technical retention: prepared private `lumen_privacy.retain_technical_data` and
+server date triggers, no scheduled production job. Scope and holds:
+`docs/TECHNICAL_RETENTION_RUNBOOK.md`; operational recommendations:
+`docs/PRIVACY_LOGS_AND_BACKUPS.md`.
+
+Operator access/portability: private `lumen_privacy.export_account`, prepared
+migration `20261022184145_lumen_account_rights_export.sql`; stable read-only
+snapshot, bounded scope, manual review before sharing. Procedure:
+`docs/ACCOUNT_RIGHTS_RUNBOOK.md`. Retention decisions proposed separately in
+`docs/PRIVACY_RETENTION_PROPOSAL.md`; no new production cleanup enabled.
+
+Privacy entry points: `supprimer-compte.html` prepares a request only;
+`mentions-legales.html` and `confidentialite.html` are explicitly unapproved
+HTML candidates, linked from `index.html`, using `src/privacy/pages.css` without
+SDK/login. Owning legal text: `docs/legal/`; vendor evidence:
+`docs/PRIVACY_PROCESSORS.md`. HTML presence does not clear Play readiness.
 Fluid onboarding (#569/#576): `ui/onboarding-preferences.js` owns local scoped
 auto choice/tip history; `game-screen.js` reuses the real coach/checkbox, existing
 `autoCrossUnlockSeen` acknowledgement and ordinary victory navigation. Quest 1
@@ -229,6 +249,8 @@ content size plus CSS square-board budgets in `styles.css`.
 
 | Feature | Responsible files / principal symbols | Entry / source of truth |
 |---|---|---|
+| Browser dependencies | `src/vendor/`; `content/legal/browser-dependencies.json`; `scripts/browser-dependency-tests.mjs` | Exact local SDK/QR assets and hashes/license copies; no CDN scripts at startup. Updates documented in vendor README; Families review remains open |
+| Play preparation / privacy | `src/analytics/events.js`: `analyticsAllowed`; `src/privacy/account-deletion.js`; `supprimer-compte.html`; `scripts/play-readiness.mjs`; `content/legal/publisher.json` | Optional product analytics defaults off; user explicitly sends a prepared deletion-request email. No automatic deletion or Play submission. Evidence and open gates in `docs/PLAY_STORE_READINESS.md` |
 | Private Android recipe preview | `docs/ISOLATED_VALIDATION_PREVIEW.md`; source is the existing private Sites project, with a dated archive under `docs/validation/isolated-preview-20261022/` | Reusable isolated UI/PWA/storage validation with synthetic Auth/RPC; v2 verifies uncached HTTP before simulated acknowledgement. Not live account/cloud proof |
 | P0 wallet and offline recovery | `src/persistence/wallet-command.js`, `pending-navigation.js`, `sync-presentation.js`, `outbox-health.js`; UI `authorizeWalletSpend`, `presentPendingVictory`, `refreshCanonicalOutboxNotice` | Wallet durable domain, immutable receipt and current cursor; pending navigation never grants rewards or access; unobtrusive celebration status; private aggregate observations. Prepared SQL requires separate approval; runbook in `docs/CLOUD_RECOVERY_391.md` |
 | Persistent Auth storage | UI `window.supabase.createClient` initialization | Explicit persistent localStorage and automatic renewal; SDK retains token/key/rotation authority. Readable existing sessions survive the SDK writable-probe failure; no quota-write or revoked-session bypass |

@@ -1,0 +1,8 @@
+body{margin:0;background:#07111d;color:#e0eaf5;font:16px/1.6 system-ui,sans-serif}
+main{max-width:46rem;margin:auto;padding:1.5rem}
+a{color:#8ee8ff}h1,h2{line-height:1.2}h2{margin-top:2rem}
+label{display:block;margin-top:1rem}input[type=email]{display:block;box-sizing:border-box;width:100%;padding:.8rem;font:inherit;border:1px solid #94abc1;border-radius:.4rem}
+.confirmation{display:flex;gap:.7rem;align-items:flex-start}.confirmation input{margin-top:.45rem;flex-shrink:0}
+button{margin-top:1rem;padding:.8rem 1rem;font:inherit;font-weight:600;border:1px solid #8ee8ff;border-radius:.5rem;background:#13334a;color:#fff;cursor:pointer}
+:focus-visible{outline:3px solid #ffdb83;outline-offset:3px}
+nav{display:block;line-height:1.8}aside{border-left:3px solid #ffdb83;padding:.1rem 1rem;background:#162334}dd{margin:0 0 .7rem}dt{font-weight:700}main{overflow-wrap:anywhere}

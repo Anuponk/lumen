@@ -123,3 +123,53 @@ jobs:
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
             -f supabase/migrations/20261024042823_sync_cohort_activation_control.sql \
             -f scripts/fixtures/sync-cohort-control.sql
+
+      - name: Verify Lumen-only erasure, private access and concurrent stale writers
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          createdb -h localhost -U postgres lumen_privacy_test
+          psql -h localhost -U postgres -d lumen_privacy_test -v ON_ERROR_STOP=1 -f scripts/fixtures/privacy-legacy-bootstrap.sql
+          psql -h localhost -U postgres -d lumen_privacy_test -v ON_ERROR_STOP=1 \
+            -f scripts/fixtures/account-erasure-bootstrap.sql \
+            -f supabase/migrations/20261022160212_lumen_account_erasure.sql \
+            -f scripts/fixtures/account-erasure.sql
+          LUMEN_SQL_TEST_DB=lumen_privacy_test python3 scripts/account-erasure-concurrency.py
+      - name: Verify bounded private rights export and post-erasure access
+        env:
+          PGPASSWORD: isolated-test-only
+        run: >-
+          psql -h localhost -U postgres -d lumen_privacy_test -v ON_ERROR_STOP=1
+          -f supabase/migrations/20261022184145_lumen_account_rights_export.sql
+          -f scripts/fixtures/account-rights.sql
+          -f scripts/fixtures/account-rights-readonly.sql
+          -f scripts/fixtures/account-rights-erasure.sql
+          -f scripts/fixtures/account-rights-after-erasure.sql
+      - name: Verify bounded technical retention and concurrent reenabling
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_privacy_test -v ON_ERROR_STOP=1 \
+            -f scripts/fixtures/technical-retention-bootstrap.sql \
+            -f supabase/migrations/20261022192259_lumen_technical_retention.sql \
+            -f scripts/fixtures/technical-retention.sql \
+            -f scripts/fixtures/technical-retention-readonly.sql
+          LUMEN_SQL_TEST_DB=lumen_privacy_test python3 scripts/technical-retention-concurrency.py
+
+      - name: Verify current schema erasure, export and support isolation
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f scripts/fixtures/account-erasure-bootstrap.sql \
+            -f supabase/migrations/20261022160212_lumen_account_erasure.sql \
+            -f supabase/migrations/20261022184145_lumen_account_rights_export.sql \
+            -f scripts/fixtures/privacy-current-schema.sql -f scripts/fixtures/privacy-optional-support.sql
+          python3 scripts/account-erasure-concurrency.py
+          python3 scripts/privacy-support-concurrency.py
+          python3 scripts/canonical-command-concurrency.py
+          python3 scripts/legacy-command-concurrency.py
+          python3 scripts/wallet-command-concurrency.py

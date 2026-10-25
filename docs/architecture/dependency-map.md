@@ -1,5 +1,26 @@
 # Dependencies and data flow
 
+Server support case → private audit ownership → reviewed erasure predicate;
+erase before loss of attribution, retain shared Auth. Unknown old audit is a
+review blocker. No profile/reconciliation dependency is changed.
+
+Retention preview → explicit owner confirmation → bounded technical-only DELETE
+under schema/trigger checks and DDL locks. Existing erasure guards remain;
+server closure/disable clocks live on the same exported/erasable rows. No
+game-state rewrite or scheduled job. `docs/TECHNICAL_RETENTION_RUNBOOK.md`.
+
+Access/portability request → verified operator scope → private SECURITY INVOKER
+`lumen_privacy.export_account` → existing policy/review → stable read-only JSON
+→ manual third-party review and secure delivery. No public API or Auth export.
+Prepared only; see `docs/ACCOUNT_RIGHTS_RUNBOOK.md`.
+
+Account erasure: standalone request page → operator-verified scope → private
+`lumen_privacy.review_erasure` / `erase_account` → explicit Lumen relation
+policy and write guards. Shared Auth is preserved. Procedure and limits:
+`docs/ACCOUNT_DELETION_RUNBOOK.md`; SQL/concurrency coverage: `docs/TESTING.md`.
+The HTML legal candidates and request page share only CSS/navigation; they
+load no Auth/analytics SDK, mutate no game storage and do not approve legal
+evidence. Vendor metadata/source review is in `docs/PRIVACY_PROCESSORS.md`.
 Confirmed victory: before-scope projection → existing receipt/outcome → current
 scope comparison → one celestial result (global > Adventure > constellation).
 Badge additions → owner/catalogue-scoped ephemeral playhead → visible Mon ciel
@@ -170,6 +191,8 @@ grant access nor migrate saved rewards; old writers remain in their own domains.
 
 | Boundary | Dependencies / flow | Effects / caution |
 |---|---|---|
+| Browser dependencies | HTML → local SDK/QR bundles → existing app APIs; inventory → integrity checks; worker → offline public asset copies | Pinned bytes replace CDN execution. Provider APIs and existing Auth/progress storage remain unchanged; SDK/family qualification is separate |
+| Privacy / Play readiness | Optional analytics permission → event/session/referral; external account-deletion page → mailto composition only; publisher manifest → readiness report | No provider means no optional analytics. No Auth deletion or game-store clearing. Shared-identity deletion and family/native/Console evidence remain blocked; see privacy/readiness runbooks |
 | P0 commands / presentation | Wallet durable intent → expected-account RPC → immutable receipt → account-bound current profile → verified cache → acknowledgement; victory intents → ephemeral `pending-navigation.js` view | Wallet, Canonical and Legacy namespaces remain isolated. Snapshot guards preserve server currency authority; pending navigation cannot serialize rewards. `sync-presentation.js` defers recoverable warnings during celebration; `outbox-health.js` emits bounded private counts, never save payloads |
 | Catalogue origin / acquired access | Immutable `content/catalogue/access-origins.json` → `catalogue-origin.js` / `catalogue-access.js` → canonical adapter → map/start/navigation; local creation + guarded profile JSON | Pack ownership remains independent. Server cohort cannot be deleted/relabelled; explicit conflicts hold. Origin metadata never awards completion, changes attempts or invokes reward RPCs |
 | Historical command | UI `captureLegacyCommandVictory` → Legacy durable outbox → `legacy-command.js` → locked profile, private rules/receipt/authority and existing daily/mirror RPCs | First accepted command protects legacy reward projection/revision against old snapshots. Guests/explicitly older unmigrated servers use `legacy-victory.js`; no ambiguous fallback |

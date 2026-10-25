@@ -21,7 +21,7 @@ function fixture(){
 }
 test('modules and content bypass both HTTP/resource caches and retain explicit offline copies',async()=>{
  const f=fixture();
- for(const path of ['/src/main.js','/src/persistence/cloud-profile.js','/content/catalogue/access-origins.json']){
+ for(const path of ['/src/main.js','/src/persistence/cloud-profile.js','/src/vendor/supabase-2.118.0.js','/src/vendor/qrcode-1.0.0.js','/content/catalogue/access-origins.json']){
   const response=await f.fetchAsset(path);assert.equal(await response.text(),'fresh');
   assert.equal(response.headers.get('Cache-Control'),'no-store');assert.equal(f.calls.at(-1)[1].cache,'no-store');
   assert(f.stores.get('lumen-assets-v10').has('https://lumen.test'+path));

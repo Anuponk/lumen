@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {verifyWalletAndOfflineFlow} from './wallet-flow-browser.mjs';
+import {verifyPrivacyRequests,verifyBundledLibraries} from './privacy-browser.mjs';
 import {verifyCompletedQuestHold} from './completed-quest-hold-browser.mjs';
 import {verifyQuotaRecovery} from './quota-recovery-browser.mjs';
 import {verifyTransactionalCommandCache} from './transactional-command-cache-browser.mjs';
@@ -416,6 +417,9 @@ try{
  }
  await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:authFixtureId});
  const walletFlow=await verifyWalletAndOfflineFlow({send,evaluate,navigate,url});
+ const deletionRequests=await verifyPrivacyRequests({send,evaluate},url);
+ const bundledLibraries=await verifyBundledLibraries({evaluate});
+ assert.equal(errors.length,0,JSON.stringify(errors));
  const completedQuestHold=await verifyCompletedQuestHold({send,evaluate,navigate,url});
  const domainReplay=await verifyDomainReplay({send,evaluate,navigate,url});
  const quotaRecovery=await verifyQuotaRecovery({evaluate,navigate,url});
@@ -426,7 +430,7 @@ try{
  const favorableGuestStart=await verifyPlayerFavorableRecovery({send,evaluate,navigate,url,guestStarted:true});
  const favorableHistoricalFrontier=await verifyPlayerFavorableRecovery({send,evaluate,navigate,url,historicalFrontier:true});
  assert.equal(errors.length,0,JSON.stringify(errors));
- const report={simulatedAuth:true,liveCloudWrites:false,results,walletFlow,completedQuestHold,domainReplay,quotaRecovery,transactionalCache,historicalClaim,favorableRecovery,favorableLostReply,favorableGuestStart,favorableHistoricalFrontier,exceptions:errors};
+ const report={simulatedAuth:true,liveCloudWrites:false,results,walletFlow,deletionRequests,bundledLibraries,completedQuestHold,domainReplay,quotaRecovery,transactionalCache,historicalClaim,favorableRecovery,favorableLostReply,favorableGuestStart,favorableHistoricalFrontier,exceptions:errors};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));
  console.log(JSON.stringify(report));
 }finally{await send('Browser.close').catch(()=>{})}
