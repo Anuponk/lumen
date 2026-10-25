@@ -23,8 +23,8 @@ async function input(p,mobile){
   await sleep(40);
 }
 async function control(id,mobile){
- const p=await evaluate(`(()=>{const e=document.getElementById(${JSON.stringify(id)}),r=e.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;return {x,y,reachable:document.elementFromPoint(x,y)===e||e.contains(document.elementFromPoint(x,y))}})()`);
- assert(p.reachable,'Real control remains reachable: '+id);await input({x:p.x,y:p.y},mobile);
+ const p=await evaluate(`(()=>{const e=document.getElementById(${JSON.stringify(id)}),r=e.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,hit=document.elementFromPoint(x,y);return {x,y,hit:hit?.outerHTML,reachable:hit===e||e.contains(hit)}})()`);
+ assert(p.reachable,'Real control remains reachable: '+id+' '+JSON.stringify(p));await input({x:p.x,y:p.y},mobile);
 }
 async function drag(cells,mobile){
   const points=[];for(const cell of cells)points.push(await point(...cell));
