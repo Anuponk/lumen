@@ -1,5 +1,11 @@
 # Feature map
 
+Cockpit sessions (#534 lot 2): `ui/cockpit-sessions.js` renders directory filters,
+independent session disclosures and nested `incident-investigation.js` episodes.
+`lumen_admin_player_sessions` selects bounded, closed existing telemetry fields;
+tests: `cockpit-sessions-tests.mjs`, `cockpit-browser.mjs` in the independent
+incident browser, and disposable `fixtures/cockpit-sessions.sql`.
+
 Cockpit dates (#534 lot 1): `ui/cockpit-dates.js` qualifies analytics activity,
 Auth and per-domain durable receipt dates. `lumen_admin_player_observations`
 adds a bounded capability-checked read; `cockpit-dates-tests.mjs` and the

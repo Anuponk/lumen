@@ -105,6 +105,7 @@ jobs:
             -f scripts/fixtures/diagnostic-incidents.sql
           python3 scripts/diagnostic-concurrency.py
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/cockpit-dates.sql
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/cockpit-sessions.sql
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
             -f supabase/migrations/20261023211412_historical_claim_rollout.sql \
             -f scripts/fixtures/historical-claim-rollout.sql

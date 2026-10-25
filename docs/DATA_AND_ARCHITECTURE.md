@@ -206,6 +206,13 @@ the session is usable on that particular browser/PWA.
 
 ## Cloud persistence contract
 
+Cockpit sessions (#534 lot 2): capability-checked, closed administrative reads
+group existing analytics and consented diagnostic sessions separately. No
+session is inferred from Auth timestamps or a temporal match; no shared-browser
+guest event is reassigned to a signed-in account. `ui/cockpit-sessions.js` owns
+the bounded view, in-memory expansion and filters. New read-only session RPC
+and supporting indexes change neither collection nor player persistence.
+
 Administrative dates (#534 lot 1): `ui/cockpit-dates.js` displays last recorded
 analytics activity separately from Auth `last_sign_in_at`. The additive
 `lumen_admin_player_observations` RPC reads only latest immutable domain receipt
