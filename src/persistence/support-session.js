@@ -5,7 +5,7 @@ export function createSupportSession({context,capture,onChange=()=>{},storage,no
  let scope=null,dossier=null,pending=null,timer=null,controller=null,generation=0,busy=false,state='disabled',last=null,blocked=false;
  let events=[];
  const revokeKey='lumenSupportRevocationsV1';
- const readRevokes=()=>{try{return JSON.parse(storage?.getItem(revokeKey)||'{}')}catch{return {}}};
+ const readRevokes=()=>{try{const value=JSON.parse(storage?.getItem(revokeKey)||'{}');return value&&typeof value==='object'&&!Array.isArray(value)?Object.fromEntries(Object.entries(value).filter(([,pending])=>pending===true)):{}}catch{return {}}};
  function revokeLocal(owner,value){try{const r=readRevokes();if(value)r[owner]=true;else delete r[owner];storage?.setItem(revokeKey,JSON.stringify(r))}catch{}}
  const view=()=>({state,dossier,last,pending:!!pending});
  function emit(s){state=s;try{onChange(view())}catch{}}
@@ -47,6 +47,7 @@ export function createSupportSession({context,capture,onChange=()=>{},storage,no
   if(valid(c,g)&&pending)void flush();
  }
  async function flush(){
+  if(timer){cancel(timer);timer=null}
   const c=bind();if(!c||busy||!pending)return;
   if(!active()){pending=null;emit('expired');return}
   if(now()-pending.at>3600000){pending=null;emit('failed');return}

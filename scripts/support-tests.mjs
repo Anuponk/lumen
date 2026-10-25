@@ -83,3 +83,6 @@ test('denied local storage cannot re-enable uploads after an unconfirmed revocat
 test('missing/corrupt local profile refuses capture without touching an original',()=>{
  const s=storage();for(const raw of ['null','{"secret":"FAKE_SECRET"}','{corrupted']){s.setItem('lumenProgressV1',raw);assert.throws(()=>captureSupportCopy({storage:s,owner,quests}));assert.equal(s.getItem('lumenProgressV1'),raw)}
 });
+test('corrupt withdrawal metadata cannot break consent or confirmed transport',async()=>{
+ for(const raw of ['null','42','"corrupt"','[]']){const f=fixture();f.store.setItem('lumenSupportRevocationsV1',raw);await f.s.activate(true);await f.s.send();await tick();assert.equal(f.s.view().state,'confirmed')}
+});
