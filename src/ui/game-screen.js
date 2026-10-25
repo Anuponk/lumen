@@ -1781,7 +1781,7 @@ const onboardingPreferences=createOnboardingPreferences({storage:localStorage,ge
 let onboardingPreferenceOwner=null;
 function refreshOnboardingPreferenceOwner(){
  const owner=lumenUser?.id??null;
- if(socialChallenge||learningReplayActive()||owner===onboardingPreferenceOwner||owner&&(!cloudProfileReady||localStorage.getItem('lumenCloudOwnerId')!==owner))return;
+ if(!state||!puz||socialChallenge||learningReplayActive()||owner===onboardingPreferenceOwner||owner&&(!cloudProfileReady||localStorage.getItem('lumenCloudOwnerId')!==owner))return;
  // Session restoration may retain the already displayed run. Refresh only its
  // presentation controls after the verified owner changes, never its attempt.
  learningTip=null;configureLearningMode();applyQuestRestrictions();

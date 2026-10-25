@@ -55,7 +55,7 @@ test('verified account restoration applies its own auto choice without restartin
  const ctx={QUEST_MILESTONES,questLearningRules,activeQuestOrdinal:()=>3,replayMode:false,scriptedLearningActive:()=>false,
   onboardingPreferences:{auto:()=>ctx.lumenUser?.id==='b'},onboardingPreferenceOwner:null,socialChallenge:null,learningReplayActive:()=>false,
   verifiedOwner:'a',localStorage:{getItem:key=>key==='lumenCloudOwnerId'?ctx.verifiedOwner:null},sessionStorage:{getItem:()=>null},document:{getElementById:node},
-  activeBonusChallenge:()=>null,lumenProgress:{stars:{}},lumenUser:{id:'a'},cloudProfileReady:false,
+  activeBonusChallenge:()=>null,lumenProgress:{stars:{}},lumenUser:{id:'a'},cloudProfileReady:false,state:null,puz:null,
   syncPresentationOwner:null,pendingNavigationEntries:[],syncPresentation:{reset(){}},pendingVictoryView:null,
   accountOfferSignInPending:false,lumenNickname:'',cloudProfileDirty:false,cloudProfileFailure:null,canonicalOutboxNotice:null,
   syncMobileAuthUI(){},updateAdminTools(){},accountRequired:()=>false,render(){},maybeShowContextualLesson(){},
@@ -64,7 +64,8 @@ test('verified account restoration applies its own auto choice without restartin
  vm.createContext(ctx);for(const fn of ['configureLearningMode','applyQuestRestrictions','updateAuthUI'])vm.runInContext(functionSource(source,fn),ctx);
  if(source.includes('function refreshOnboardingPreferenceOwner('))vm.runInContext(functionSource(source,'refreshOnboardingPreferenceOwner'),ctx);
  ctx.updateAuthUI();assert.equal(node('autoCross').checked,true,'Pending account cannot apply an unverified profile');
- ctx.cloudProfileReady=true;ctx.updateAuthUI();assert.equal(node('autoCross').checked,false,'The restored account replaces the startup guest choice');
+ ctx.cloudProfileReady=true;ctx.updateAuthUI();assert.equal(node('autoCross').checked,true,'Auth cannot render a board still loading');
+ ctx.state=attempt.board;ctx.puz={reg:[[0,0],[1,1]]};ctx.updateAuthUI();assert.equal(node('autoCross').checked,false,'The restored account replaces the startup guest choice');
  node('autoCross').checked=true;ctx.updateAuthUI();assert.equal(node('autoCross').checked,true,'Same-owner refresh preserves the current choice');
  ctx.lumenUser={id:'b'};ctx.updateAuthUI();assert.equal(ctx.onboardingPreferenceOwner,'a','Readiness from another owner is insufficient');
  ctx.verifiedOwner='b';ctx.updateAuthUI();assert.equal(node('autoCross').checked,true);
