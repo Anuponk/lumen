@@ -2,6 +2,25 @@
 
 ## Registered-player directory (25 October 2026)
 
+Player cards now show a compact visual status: green `✓ Sans attente observée`,
+amber `… En attente`, red `! Problème signalé`, grey `? État inconnu` or
+`? Signal ancien`. Colour is paired with text and a symbol. Quest/session counts
+remain visible; full activity/Auth/receipt/queue dates are retained in a closed
+native “Détails de synchronisation” disclosure. One shared explanation qualifies
+the signals rather than repeating paragraphs on every card.
+
+`playerSyncStatus` is a presentation model, not a new health authority. Green
+requires `confirmed` queue evidence with valid timestamps and no observation
+older than 15 minutes (including `oldest_observation_at` across devices). This
+15-minute display freshness policy is not an SLA or a declaration of complete
+cross-device synchronisation. Recent pending/failure evidence stays amber/red;
+older evidence becomes grey while its original state and dates remain in the
+detail. Missing/invalid/future-inconsistent timestamps never produce green, and
+Auth or domain receipt dates alone cannot produce it. The state filter uses this
+same qualified model, grouping old and missing observations under unknown.
+Freshness is evaluated when rendering the directory; no new polling, storage,
+RPC, telemetry, data repair or change to server observations is introduced.
+
 The directory joins the existing bounded admin account response by exact `u:`
 identity. A trimmed nickname is preferred; when blank, the account email is the
 visible label. Search covers both nickname and email, ignoring case, surrounding

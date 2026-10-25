@@ -1,4 +1,12 @@
 // Administrative read model. A durable server commit is not a device ACK.
+export function playerSyncStatus(proof,{now=Date.now()}={}){
+ const latest=Date.parse(proof?.observed_at),oldest=Date.parse(proof?.oldest_observation_at??proof?.observed_at);
+ const valid=Number.isFinite(latest)&&Number.isFinite(oldest)&&latest<=now+60000&&oldest<=latest;
+ const stale=valid&&now-oldest>15*60000;
+ const state=valid&&!stale&&['confirmed','pending','failure'].includes(proof?.state)?proof.state:'unknown';
+ const view={confirmed:['✓','Sans attente observée'],pending:['…','En attente'],failure:['!','Problème signalé'],unknown:['?',stale?'Signal ancien':'État inconnu']}[state];
+ return {state,icon:view[0],label:view[1],description:stale?'Observation de plus de 15 min : état actuel à vérifier.':state==='confirmed'?'Aucune attente dans les files récemment observées ; synchronisation complète de tous les appareils non attestée.':state==='pending'?'Une file observée contient des opérations en attente.':state==='failure'?'Un échec ou une revue a été signalé dans une file observée.':'Aucune observation récente exploitable de la file.'};
+}
 export function playerDates(player,proof){
  const domains={};
  for(const name of ['canonical','legacy','wallet'])if(proof?.domains&&Object.hasOwn(proof.domains,name))domains[name]=proof.domains[name];

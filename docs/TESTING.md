@@ -550,6 +550,12 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+`cockpit-dates-tests.mjs` also guards visual status: recent confirmed/pending/
+failure observations, missing/invalid/future dates, receipt-only evidence and an
+old second-device observation. No stale signal becomes green. Native cockpit
+browser tests cover badges/text, closed date details with all prior evidence
+retained, qualified state filters and five viewport widths without overflow.
+
 The registered-player suite also covers exact account/email joins, blank
 nicknames, email search with/without a nickname, case/whitespace/accents, missing
 metadata and source immutability. The loader fixture verifies email delivery to

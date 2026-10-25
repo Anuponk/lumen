@@ -3,6 +3,24 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 
+test('visual status needs recent queue evidence, not Auth or successful domain receipts',async()=>{
+ const {playerSyncStatus}=await import('../src/ui/cockpit-dates.js');
+ const now=Date.parse('2026-10-25T12:00:00Z'),at='2026-10-25T11:59:00Z';
+ for(const state of ['confirmed','pending','failure'])assert.equal(playerSyncStatus({state,observed_at:at},{now}).state,state);
+ assert.equal(playerSyncStatus({state:'confirmed',domains:{wallet:at},auth_at:at},{now}).state,'unknown');
+ assert.equal(playerSyncStatus(undefined,{now}).state,'unknown');
+ assert.equal(playerSyncStatus({state:'confirmed',observed_at:'invalid'},{now}).state,'unknown');
+ assert.equal(playerSyncStatus({state:'confirmed',observed_at:at,oldest_observation_at:'2026-10-25T10:00:00Z'},{now}).state,'unknown','A stale second device prevents green');
+ for(const state of ['confirmed','pending','failure']){
+  const proof={state,observed_at:'2026-10-25T11:44:59Z'},before=JSON.stringify(proof);
+  assert.equal(playerSyncStatus(proof,{now}).state,'unknown');
+  assert.equal(playerSyncStatus(proof,{now}).label,'Signal ancien');
+  assert.equal(JSON.stringify(proof),before,'Presentation never rewrites evidence');
+ }
+ assert.equal(playerSyncStatus({state:'confirmed',observed_at:'2026-10-25T13:00:00Z'},{now}).state,'unknown');
+ assert.equal(playerSyncStatus({state:'unknown',observed_at:at},{now}).state,'unknown');
+});
+
 test('dates keep Auth, activity, durable commits and pending observations independent', async()=>{
  const {playerDates}=await import('../src/ui/cockpit-dates.js');
  const source={last_seen:'2026-10-25T05:00:00Z',updated_at:'2026-10-25T06:00:00Z'};
