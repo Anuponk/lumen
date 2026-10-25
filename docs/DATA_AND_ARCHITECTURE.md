@@ -217,6 +217,56 @@ The administrative recent-player directory now limits its view to registered
 traffic and never authorise deletion. The view filter and timeline reset touch
 no player persistence, telemetry storage, aggregate definition or backend RPC.
 
+### Positive acquisition recovery — #391, 25 October 2026
+
+The free game's product policy gives structurally valid positive acquisitions
+the benefit of the doubt. Conservative snapshot coverage remains the ordinary
+restore guard. On a same-owner hydration refusal, `reconcilePlayerAcquisitions`
+uses the additive expected-account `lumen_reconcile_acquisitions` RPC and a
+separate server read-back. The current session installs that verified result and
+refreshes its one live progress object without a reload or new victory.
+
+Under the existing snapshot row lock, the RPC unions catalogue-recognized solved
+identities, existing badge flags and historical achievement maps. It keeps the
+best compatible performance summaries, cumulative counters by maximum and latest
+cooldown. Time/assistance/error facts come from one saved run. Mastery is kept
+only when explicitly present, never synthesized from its components. The server's
+immutable canonical first-completion record stays exact; improvements use the
+existing mutable `runPerformance`. Legacy and Quest authority projections update
+atomically, keeping the ordinary snapshot guards active and cursors unchanged.
+
+Shards, Wallet revision, daily ledger, receipts and catalogue origin remain
+exactly server-owned. Recovery never credits money or replays a reward from
+completion. XP and skyScore keep the existing maximum policy, never addition.
+Uninterpretable historical properties stay in the original instead of blocking
+independent known acquisitions. Corrupt core structure, identity uncertainty or
+failed archival/read-back still refuse.
+
+Before emission, both originals are durably archived and verified with existing
+recovery storage, including its IndexedDB fallback. Timestamp collisions cannot
+replace an older original. The server also retains both JSONB sources in private,
+RLS-enabled `lumen_commands.acquisition_recovery_sources`, keyed by owner and
+SHA-256 of canonical JSONB. No direct client access or diagnostic profile payload
+is added. Existing local recovery exports include the original device bytes;
+server copies remain operator-readable evidence. No retention/cleanup job is added.
+
+Two CAS attempts bound each recovery. A stale snapshot causes a fresh account
+read; a lost reply is safe to repeat without another reward. Read-back,
+owner/client/generation and current local bytes must match before installation.
+This merge never acknowledges pending commands. Cache quota after verified
+archival/read-back permits in-memory play. Missing migration/transient failure
+keeps partial recovery and retry, without claiming convergence.
+Transient acquisition failures use the existing retry scheduler with exponential
+backoff and at most five autonomous retries per window. Online/Auth renewal wakes
+that window; active play, hidden/offline documents and changed identity/client/
+generation prevent emission. Structural refusal and missing migration do not loop.
+An intervening server-read outage retains the retry window without granting replay
+or Wallet proof. Success cancels the hold; repeated failures stay diagnosable.
+`hydration_reconciliation` records `positive_acquisitions`; `hydration_ready` and
+the scheduled flush report subsequent readiness. This supersedes support-only
+treatment of ordinary acquisition differences. It does not authorize ambiguous
+monetary reconstruction, production SQL or old-writer retirement.
+
 Cockpit acceptance (#534 lot 3): administrative data is bound to the captured
 cockpit owner as well as live capability. Switching between two authorised
 accounts clears the previous view immediately. This does not change player
