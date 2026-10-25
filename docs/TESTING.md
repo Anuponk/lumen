@@ -550,6 +550,14 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+The registered-player suite also covers exact account/email joins, blank
+nicknames, email search with/without a nickname, case/whitespace/accents, missing
+metadata and source immutability. The loader fixture verifies email delivery to
+the renderer. `cockpit-browser.mjs` mounts the real cockpit HTML, verifies email
+fallback/search, every section's native disclosure, keyboard collapse of quest
+friction and retained content/filters. Five viewports include 320 px and mobile
+landscape; no live RPC or physical-device validation is implied.
+
 `cockpit-registered-players-tests.mjs` verifies registered-only directory
 projection without source mutation or nickname heuristics, its bound, and no
 anonymous timeline RPC. The controller fixture covers metadata filtering and

@@ -4,6 +4,26 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {functionSource} from './source-tools.mjs';
 
+test('admin account identity supplies email fallback without confusing nicknames or other accounts',async()=>{
+ const {registeredPlayers,playerMatchesSearch}=await import('../src/ui/cockpit-sessions.js');
+ const rows=[{player_key:'u:empty',player_type:'authenticated',display_name:'Compte 1234'},
+  {player_key:'u:named',player_type:'authenticated',display_name:'Ancien nom'},
+  {player_key:'u:unavailable',player_type:'authenticated',display_name:'Compte 5678'}];
+ const accounts=[{user_id:'empty',nickname:'  ',email:'  sans.pseudo@example.invalid '},
+  {user_id:'named',nickname:' Étoile ',email:'etoile@example.invalid'},
+  {user_id:'someone-else',nickname:null,email:'wrong@example.invalid'}];
+ const before=JSON.stringify({rows,accounts}),result=registeredPlayers(rows,accounts);
+ assert.equal(result[0].display_name,'sans.pseudo@example.invalid');
+ assert.equal(result[1].display_name,'Étoile');
+ assert.equal(result[2].display_name,'Compte 5678');
+ assert.equal(result[2].email,undefined);
+ assert.equal(playerMatchesSearch(result[0],'  SANS.PSEUDO@EXAMPLE.INVALID '),true);
+ assert.equal(playerMatchesSearch(result[1],'etoile@example.invalid'),true,'Email searchable even when a nickname exists');
+ assert.equal(playerMatchesSearch(result[1],'etoile'),true,'Search tolerates nickname accents');
+ assert.equal(playerMatchesSearch(result[0],'wrong@example.invalid'),false);
+ assert.equal(JSON.stringify({rows,accounts}),before,'View enrichment never mutates records');
+});
+
 test('directory removes anonymous labels by identity, not by the spelling of a nickname',async()=>{
  const {registeredPlayers}=await import('../src/ui/cockpit-sessions.js');
  const rows=[{player_key:'a:guest',player_type:'anonymous',display_name:'Joueur 3E8B'},
