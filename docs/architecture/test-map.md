@@ -8,6 +8,12 @@ navigation runner, exercises real wins, skip/focus, all five requested formats,
 decorative-failure fallback. The late-game runner retains global completion and
 historical-award assertions in the new single scene. Physical acceptance remains.
 
+Temporary support #574: `support-tests.mjs` joins the Node gate;
+`fixtures/support.sql` and `support-concurrency.py` join disposable PostgreSQL CI.
+`support-browser.mjs` extends the independent incident/cockpit browser at four
+mobile/landscape sizes, with consent/send/revoke and detached-action checks.
+See [limits and remaining live/physical acceptance](../SUPPORT_574.md).
+
 Cockpit furthest point: disposable `fixtures/cockpit-furthest-quest.sql` covers
 an older higher catalogue ordinal followed by a lower replay, reporting-window
 independence, unchanged chronology, traffic filters and capability guards.

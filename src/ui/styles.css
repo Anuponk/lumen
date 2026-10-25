@@ -1200,3 +1200,11 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 @media(prefers-reduced-motion:reduce){.sky-reveal[data-celestial] *,.milky-way{animation:none!important;transition:none!important;stroke-dashoffset:0!important}}
 
 @keyframes celestial-apogee{0%,50%{opacity:0}78%,100%{opacity:1}}
+
+/* #574: account support stays inside the scrollable mobile diagnostic. */
+.support-panel{margin:12px 0;overflow-wrap:anywhere}
+.support-panel summary{cursor:pointer;font-weight:700;min-height:44px;display:list-item}
+.support-panel button{white-space:normal;max-width:100%;min-height:44px;margin:4px 0}
+.support-panel label{display:block;line-height:1.5}
+.support-panel input{min-width:24px;min-height:24px;vertical-align:middle}
+.support-panel p{line-height:1.5}

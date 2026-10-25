@@ -1,5 +1,17 @@
 # Testing and quality gate
 
+## Temporary private assistance #574
+
+`node scripts/support-tests.mjs` covers closed-schema copies, secrets, consent,
+offline/expiry/retries, account changes and revoke/upload races. The existing
+independent incident browser runs the support journey at 320×568, 360×640,
+390×844 and 844×390 with real pointer input, large text and accessibility checks.
+Canonical-ledger CI applies the prepared support migration in disposable
+PostgreSQL, then executes `fixtures/support.sql` and `support-concurrency.py`.
+Local PGlite and mocked browser RPCs are not live Supabase/physical acceptance.
+Run `test-affected.mjs --full`; retain all game/cloud/embedded/catalogue gates.
+See [audit, privacy contract and outstanding verification](SUPPORT_574.md).
+
 ## Fluid onboarding P1 (#569 / #576)
 
 onboarding-fluid-tests.mjs executes the real victory handler for quests 1–5,
