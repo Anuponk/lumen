@@ -7,7 +7,10 @@ import uuid
 
 if os.environ.get('LUMEN_SQL_FIXTURE') != '1':
     raise SystemExit('Requires explicit disposable SQL fixture mode')
-PSQL = ['psql', '-h', '127.0.0.1', '-U', 'postgres', '-d', 'lumen_test',
+database = os.environ.get('LUMEN_SQL_TEST_DB', 'lumen_test')
+if database not in ('lumen_test', 'lumen_privacy_test'):
+    raise SystemExit('Disposable database name required')
+PSQL = ['psql', '-h', '127.0.0.1', '-U', 'postgres', '-d', database,
         '-v', 'ON_ERROR_STOP=1', '-At']
 
 
@@ -29,7 +32,7 @@ def wait_for(name, wait_type):
     raise AssertionError(f'{name} did not reach {wait_type}')
 
 
-assert query("select current_database()='lumen_test' and to_regclass('auth.sessions') is null "
+assert query(f"select current_database()='{database}' and to_regclass('auth.sessions') is null "
              "and to_regclass('fixture_other_app.records') is not null").stdout.strip() == 't'
 
 with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:

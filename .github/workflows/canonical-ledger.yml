@@ -130,12 +130,12 @@ jobs:
           LUMEN_SQL_FIXTURE: '1'
         run: |
           createdb -h localhost -U postgres lumen_privacy_test
-          psql -h localhost -U postgres -d lumen_privacy_test -v ON_ERROR_STOP=1 -f scripts/fixtures/canonical-ledger-bootstrap.sql
+          psql -h localhost -U postgres -d lumen_privacy_test -v ON_ERROR_STOP=1 -f scripts/fixtures/privacy-legacy-bootstrap.sql
           psql -h localhost -U postgres -d lumen_privacy_test -v ON_ERROR_STOP=1 \
             -f scripts/fixtures/account-erasure-bootstrap.sql \
             -f supabase/migrations/20261022160212_lumen_account_erasure.sql \
             -f scripts/fixtures/account-erasure.sql
-          # The new guards must also preserve normal players' receipt protocols.
+          LUMEN_SQL_TEST_DB=lumen_privacy_test python3 scripts/account-erasure-concurrency.py
       - name: Verify bounded private rights export and post-erasure access
         env:
           PGPASSWORD: isolated-test-only
@@ -156,6 +156,7 @@ jobs:
             -f supabase/migrations/20261022192259_lumen_technical_retention.sql \
             -f scripts/fixtures/technical-retention.sql \
             -f scripts/fixtures/technical-retention-readonly.sql
+          LUMEN_SQL_TEST_DB=lumen_privacy_test python3 scripts/technical-retention-concurrency.py
 
       - name: Verify current schema erasure, export and support isolation
         env:
