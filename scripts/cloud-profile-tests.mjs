@@ -82,7 +82,14 @@ assert.equal(reconcileCloudAchievements(localStorageReconcile,conflictingRemote)
 const cloudSrc=(await import('node:fs')).readFileSync(new URL('../src/persistence/cloud.js',import.meta.url),'utf8');
 const uiSrc=(await import('node:fs')).readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 const html=(await import('node:fs')).readFileSync(new URL('../index.html',import.meta.url),'utf8');
-assert.equal(cloudSrc.split('hooks.afterAuthCloudSync?.()').length-1,2,'Cloud sync must run after both session and sign-in auth flows');
+// #391 adds a third, explicit in-session retry entry point. Both original Auth
+// entry points remain; the added adapter delegates to that same verified hook.
+assert.equal(cloudSrc.split('hooks.afterAuthCloudSync?.()').length-1,3,'Cloud sync must retain startup, sign-in and in-session retry entry points');
+const {createCloudPersistence}=await import('../src/persistence/cloud.js');
+let explicitHydrations=0;const verifiedHookResult={verified:'synthetic'};
+const retryAdapter=createCloudPersistence({}, {afterAuthCloudSync:async()=>{explicitHydrations++;return verifiedHookResult}}, {setTimeout,console});
+assert.equal(await retryAdapter.hydrateCloudProfile(),verifiedHookResult);
+assert.equal(explicitHydrations,1,'Retry invokes exactly the existing hydration hook, not another writer');
 assert.ok(uiSrc.includes('afterAuthCloudSync:async'),'Auth hook is wired');
 assert.ok(uiSrc.includes('compareAndSwapCloudProfile(savingCloudClient,current,cloudProfileBaseline,{userId:savingUserId})'),'Atomic background write binds the expected account');
 assert.ok(uiSrc.includes('installCloudProfileLocally(localStorage,cloud)'),'Cloud overrides local after login');

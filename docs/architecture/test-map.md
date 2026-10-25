@@ -269,3 +269,10 @@ Deployment checks also exist as `scripts/o2switch-deploy-tests.py` and `scripts/
 - All documented concrete paths/links and the three symptom routes were checked; moved contracts were compared with the original, allowing only introduction and relative-link edits. `git diff --check` passes. Full quality gate, browser, SQL and live-device checks were not run in this documentation phase.
 
 Guest registration, guided undo and universal badge eligibility: `guest-account-tests.mjs`, `guest-account-hydration-tests.mjs`, `guided-undo-tests.mjs`, `performance-badge-tests.mjs`; real browser interaction and SQL parity supplement these isolated fixtures (#528/#533/#529).
+## Player-favorable recovery coverage (#391)
+
+`cloud-player-favorable-tests.mjs` → client backup/CAS/read-back/install boundary;
+`cloud-achievements-session-recovery-tests.mjs` → production hydration hook and
+pending intent preservation; `fixtures/player-favorable-acquisitions.sql` plus
+`acquisition-recovery-concurrency.py` → actual RPC/guards/concurrent spending.
+See TESTING.md for native browser and physical-device evidence limits.

@@ -1,5 +1,7 @@
 export const nodeSuites=[
  'cockpit-registered-players-tests.mjs',
+
+ 'cloud-player-favorable-tests.mjs',
  'cockpit-acceptance-tests.mjs',
  'cockpit-sessions-tests.mjs',
  'cockpit-dates-tests.mjs',

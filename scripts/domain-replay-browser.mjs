@@ -26,6 +26,7 @@ export async function verifyDomainReplay({send,evaluate,navigate,url}){
   window.__domainWrites=0;window.__domainCommandAttempts=0;window.__domainProfile={...structuredClone(profile),shards:7};
   window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:{user:{id:owner}}}}),getUser:async()=>({data:{user:{id:owner}}}),onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})},rpc:async(name,args={})=>{
    if(name==='lumen_restore_profile')return {data:structuredClone(__domainProfile)};
+   if(name==='lumen_reconcile_acquisitions')return {error:{code:'PGRST202'},status:404};
    if(name==='lumen_get_progress')return {data:Object.keys(profile.solved).map(key=>({puzzle_id:Number(key)+1}))};
    if(name==='lumen_get_daily')return {data:[]};if(name==='lumen_get_engagement')return {data:[{rewarded_days:{}}]};
    if(['lumen_wallet_command_version','lumen_legacy_command_version','lumen_canonical_command_version'].includes(name))return {data:1};

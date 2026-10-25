@@ -20,7 +20,7 @@ import {createCloudPersistence} from "../persistence/cloud.js";
 import {guestAccountSeed,preserveGuestBeforeHydration,guestNeedsReconciliation} from '../persistence/guest-account.js';
 import {storageReport,archiveRecoveryBackups} from '../persistence/storage-maintenance.js';
 import {reconcileDailyIntoCloudProfile} from "../persistence/daily-hydration.js";
-import {CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievementsDurably,achievementRecoveryDiagnostic,reconciliationFailureDiagnostic,hydrationFailureDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles} from "../persistence/cloud-profile.js";
+import {CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievementsDurably,achievementRecoveryDiagnostic,reconciliationFailureDiagnostic,hydrationFailureDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles,reconcilePlayerAcquisitions} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
@@ -589,7 +589,7 @@ function retryPendingCloudWriteOnReconnect(){
  if(qaActive||!lumenUser||!lumenSupabase)return;
  void retryPendingCanonicalOutboxOnReconnect();
  canonicalRecovery.schedule();
- if(!cloudProfileReady)return;
+ if(!cloudProfileReady){acquisitionRecoveryAttempts=0;void acquisitionRecovery.wake();return;}
  if(!["network","legacy_mirror"].includes(cloudProfileFailure?.reason))return;
  if(cloudProfileBusy||cloudProfileTimer!==null)return;
  recordCloudDiagnostic("flush_retry_online",{reason:cloudProfileFailure.reason});
@@ -625,11 +625,15 @@ get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get navigationLocked(){return !!socialChallenge},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
-const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{queueDiagnosticPreferenceRefresh();if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(["SIGNED_IN","TOKEN_REFRESHED"].includes(event?.authEvent)){const ownerId=lumenUser?.id,client=lumenSupabase;setTimeout(()=>{void resumeCanonicalAfterAuthRefresh(ownerId,client);void resumeLegacyAfterAuthRefresh(ownerId,client)},0)}if(event?.type==="restore_failed")cloudProfileFailure={reason:"restore_failed"};if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI();if(event?.type==="password_recovery"){sessionStorage.setItem("lumenPasswordRecoveryPending","1");const editor=document.getElementById("accountProfileEditor");if(editor){editor.dataset.open="true";editor.hidden=false}const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=false;const password=document.getElementById("setPasswordPanel");if(password)password.hidden=false;document.getElementById("setPasswordValue")?.focus()}},renderDaily:(...args)=>renderDaily(...args),claimWalletDaily:(date,index)=>claimWalletDaily(date,index),afterAuthCloudSync:async()=>{
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut,hydrateCloudProfile}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{queueDiagnosticPreferenceRefresh();if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(["SIGNED_IN","TOKEN_REFRESHED"].includes(event?.authEvent)){const ownerId=lumenUser?.id,client=lumenSupabase;setTimeout(()=>{void resumeCanonicalAfterAuthRefresh(ownerId,client);void resumeLegacyAfterAuthRefresh(ownerId,client);acquisitionRecoveryAttempts=0;void acquisitionRecovery.wake()},0)}if(event?.type==="restore_failed")cloudProfileFailure={reason:"restore_failed"};if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI();if(event?.type==="password_recovery"){sessionStorage.setItem("lumenPasswordRecoveryPending","1");const editor=document.getElementById("accountProfileEditor");if(editor){editor.dataset.open="true";editor.hidden=false}const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=false;const password=document.getElementById("setPasswordPanel");if(password)password.hidden=false;document.getElementById("setPasswordValue")?.focus()}},renderDaily:(...args)=>renderDaily(...args),claimWalletDaily:(date,index)=>claimWalletDaily(date,index),afterAuthCloudSync:async()=>{
  if(qaActive||!lumenUser||!lumenSupabase)return;
+ const priorAcquisitionRecovery=canonicalRecoveryContext;
  canonicalRecoveryContext=null;canonicalRecovery.cancel();
  if(sessionStorage.getItem("lumenPasswordRecoveryPending")==="1")return;
  const accountId=lumenUser.id,hydrationClient=lumenSupabase;
+ const acquisitionRetryContinuation=priorAcquisitionRecovery?.retryAcquisitions===true&&
+  priorAcquisitionRecovery.userId===accountId&&priorAcquisitionRecovery.client===hydrationClient&&
+  priorAcquisitionRecovery.generation===cloudHydrationGeneration;
  const hydrationGeneration=++cloudHydrationGeneration;
  const sessionValid=()=>lumenUser?.id===accountId&&lumenSupabase===hydrationClient&&!qaActive&&cloudHydrationGeneration===hydrationGeneration;
  cloudProfileReady=false;cloudProfileBaseline=null;
@@ -766,16 +770,37 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   }
   hydrationStage="local_reconciliation";
   let reconciliationFailure=null;
+  let favourableRecovery=null;
+  let retryAcquisitions=false;
   if(currentLocal&&existing&&!switchingOwner){
    let conflict=false;
    try{conflict=!cloudSafelyCoversLocal(JSON.parse(currentLocal),cloud)}catch{conflict=true}
    if(conflict){
-    let resolution=await reconcileDominantLocalProfile(hydrationClient,localStorage,cloud,{userId:accountId});
-    if(!sessionValid())return;
-    if(resolution.status==="blocked"&&["missing_cloud_achievements","mutable_balance","mutable_ledger"].includes(resolution.reason)){
-     hydrationStage="bidirectional_reconciliation";
-     resolution=await reconcileCompatibleCloudProfiles(hydrationClient,localStorage,cloud,{userId:accountId});
+    let resolution;
+    try{
+     resolution=await reconcileDominantLocalProfile(hydrationClient,localStorage,cloud,{userId:accountId});
      if(!sessionValid())return;
+     if(resolution.status==="blocked"&&["missing_cloud_achievements","mutable_balance","mutable_ledger"].includes(resolution.reason)){
+      hydrationStage="bidirectional_reconciliation";
+      resolution=await reconcileCompatibleCloudProfiles(hydrationClient,localStorage,cloud,{userId:accountId});
+      if(!sessionValid())return;
+     }
+    }catch(error){
+     if(!sessionValid())return;
+     if(!['QUEST_COMMAND_REQUIRED','QUEST_RUN_AUTHORITY_MISSING','WALLET_COMMAND_REQUIRED','CLOUD_CAS_CONFLICT'].includes(error?.code))throw error;
+     resolution={status:'blocked',reason:'reward_conflict'};
+    }
+    if(resolution.status==='blocked'){
+     try{
+      const recovery=await reconcilePlayerAcquisitions(hydrationClient,localStorage,cloud,{userId:accountId,sessionValid});
+      if(!sessionValid()||recovery.interrupted)return;
+      if(recovery.status==='reconciled'){resolution=recovery;favourableRecovery=recovery;}
+      else retryAcquisitions=recovery.reason==='cloud_local_divergence';
+     }catch(error){
+      if(!sessionValid())return;
+      recordCloudDiagnostic('acquisition_recovery_pending',hydrationFailureDiagnostic(error,hydrationStage));
+      retryAcquisitions=error?.code!=='22023';
+     }
     }
     const fields=Array.isArray(resolution.fields)?[...new Set(resolution.fields.map(key=>Object.hasOwn(CLOUD_PROFILE_FIELDS,key)?key:'unknown_field'))].slice(0,8):[];
     const knownConflictQuest=typeof resolution.conflictId==='string'?canonicalQuestList().find(quest=>quest.id===resolution.conflictId||Number.isSafeInteger(quest.legacyIndex)&&String(quest.legacyIndex)===resolution.conflictId):null;
@@ -792,7 +817,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   // achievements. The routine backs up the old local snapshot and never
   // overwrites local currencies, daily ledger, or conflicting rewards.
   // This is a partial display recovery, NOT a completed cloud sync.
-  if(currentLocal&&existing&&!switchingOwner){
+  if(currentLocal&&existing&&!switchingOwner&&!favourableRecovery&&!retryAcquisitions){
    let covered=false;
    try{covered=cloudSafelyCoversLocal(JSON.parse(localStorage.getItem("lumenProgressV1")),cloud)}catch{}
    if(!covered){
@@ -821,24 +846,32 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   // Achievements may be recovered while balances or immutable reward
   // histories still disagree. Never attempt the unsafe full replacement,
   // and do not report this expected protection as an auth failure.
-  if(currentLocal&&existing&&!switchingOwner){
+  if(currentLocal&&existing&&!switchingOwner&&!favourableRecovery){
    let fullyCovered=false;
    try{fullyCovered=cloudSafelyCoversLocal(JSON.parse(localStorage.getItem("lumenProgressV1")),cloud)}catch{}
    if(!fullyCovered){
     if(!sessionValid())return;
     cloudProfileFailure={reason:"partial_reconciliation",detail:achievementRecoveryFailure||reconciliationFailure?.reason||"cloud_local_divergence",domain:achievementRecoveryFailure?reconciliationFailureDiagnostic(achievementRecoveryFailure).domain:reconciliationFailure?.domain||'profile'};
     canonicalRecoveryContext={userId:accountId,client:hydrationClient,generation:hydrationGeneration,
+     retryAcquisitions,
      confirmedQuestIds:cloudProfileFailure.domain==='wallet'&&!achievementRecoveryFailure?
       canonicalQuestList().filter(quest=>quest.legacyIndex!==null?!!cloud.solved?.[quest.legacyIndex]:!!cloud.canonicalQuestState?.[quest.id]?.solved).map(quest=>quest.id):[]};
     recordCloudDiagnostic("hydration_partial_reconciliation_pending",{profileReady:false,...reconciliationFailureDiagnostic(cloudProfileFailure.detail),domain:cloudProfileFailure.domain,stage:hydrationStage});
     renderDaily();updateAuthUI();refreshJourney();updateShardMeter();
     canonicalRecovery.schedule();
+    if(retryAcquisitions)acquisitionRecovery.schedule();
     return;
    }
   }
   hydrationStage="local_install";
   let changed;
-  if(switchingOwner){
+  if(favourableRecovery){
+   // Already archived, merged, re-read and installed for this owner. Refresh
+   // the single live progress object without forcing a document restart.
+   changed=false;
+   lumenProgress=structuredClone(cloud);
+   sequentialSolvedCount=normalizeSequentialProgress();
+  }else if(switchingOwner){
    // The previous local state has been backed up and verified above.
    // Do not let a different owner (or anonymous starter state) block login.
    if(currentLocal!==null)localStorage.removeItem("lumenProgressV1");
@@ -858,9 +891,15 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    // The authoritative cloud snapshot is installed in memory without reload.
    lumenProgress=structuredClone(cloud);
    recordCloudDiagnostic("hydration_local_quota_bypass",{cloudVerified:true});
-  }else if(changed){recordCloudDiagnostic("hydration_reload",{stage:"local_install"});location.reload();return}
+  }else if(changed){
+   if(!acquisitionRetryContinuation){recordCloudDiagnostic("hydration_reload",{stage:"local_install"});location.reload();return}
+   // The lost response may already have committed the complete union. Normal
+   // coverage plus this verified installation is sufficient; do not restart.
+   lumenProgress=structuredClone(cloud);sequentialSolvedCount=normalizeSequentialProgress();
+  }
   cloudProfileFailure=null;
   cloudProfileReady=true;
+  acquisitionRecoveryAttempts=0;
   resumeCanonicalCampaignBoundary();
    canonicalRecovery.schedule();
   // Do not claim hydration is fully synchronized until the quest mirror is
@@ -887,6 +926,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   renderDaily();
   refreshJourney();updateAuthUI();
   resumeCanonicalVictoryAfterHydration(accountId,hydrationClient);
+  if(favourableRecovery||acquisitionRetryContinuation)scheduleCloudProfile();
   maybeShowStreakLoss();
   const gate=document.getElementById("accountOptin");if(gate){const wasVisible=!gate.hidden;gate.hidden=true;if(wasVisible)showAccountSavedConfirmation()}
  }catch(e){if(!sessionValid())return;recordCloudDiagnostic("hydration_failed",{errorCode:String(e?.code||e?.status||"unknown").slice(0,48),errorName:String(e?.name||"unknown").slice(0,48),stage:String(e?.stage||hydrationStage).slice(0,48),reason:e?.message?.startsWith("Profil local divergent")?"local_divergence":e?.message?.startsWith("Daily history unavailable")?"daily_history":e?.message?.startsWith("Daily rewards unavailable")?"daily_rewards":e?.message?.startsWith("Impossible de restaurer le profil")?"cloud_restore":e?.message?.startsWith("Sauvegarde cloud impossible")?"cloud_cas":"other",kind:e?.code==="LOCAL_STORAGE_QUOTA"||e?.name==="QuotaExceededError"||e?.code===22?"local_quota":"other",...hydrationFailureDiagnostic(e,hydrationStage)});cloudProfileFailure={reason:"restore_failed"};updateAuthUI();console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
@@ -2471,6 +2511,31 @@ const canonicalRecovery=createCloudRetryScheduler({
   return (await refreshCanonicalOutboxNotice(ownerId))>0;
  },
  onError:()=>recordCloudDiagnostic("canonical_outbox_reconnect_failed",{reason:"retry"})
+});
+// Reuse the existing bounded-backoff scheduler for acquisition-only hydration.
+// Five autonomous retries per recovery window; Auth/online can wake it sooner.
+// A missing protocol or structural refusal never enters this retry loop.
+let acquisitionRecoveryAttempts=0;
+const acquisitionRecovery=createCloudRetryScheduler({
+ ready:()=>!qaActive&&!cloudProfileReady&&!authSessionPending&&acquisitionRecoveryAttempts<5&&
+  navigator.onLine!==false&&document.visibilityState!=='hidden'&&
+  canonicalRecoveryContext?.retryAcquisitions===true&&
+  canonicalRecoveryContext.userId===lumenUser?.id&&canonicalRecoveryContext.client===lumenSupabase&&
+  canonicalRecoveryContext.generation===cloudHydrationGeneration&&
+  !['RUNNING','PAUSED'].includes(attemptEngine.snapshot()?.state),
+ run:async()=>{
+  const ownerId=lumenUser.id,client=lumenSupabase,generation=cloudHydrationGeneration;
+  acquisitionRecoveryAttempts++;
+  try{await hydrateCloudProfile();}
+  finally{
+   // A temporary read outage during the next hydration must not erase the
+   // already established retry window. This grants no replay or wallet proof.
+   if(!cloudProfileReady&&!canonicalRecoveryContext&&lumenUser?.id===ownerId&&lumenSupabase===client&&cloudHydrationGeneration===generation+1)
+    canonicalRecoveryContext={userId:ownerId,client,generation:cloudHydrationGeneration,retryAcquisitions:true,confirmedQuestIds:[]};
+  }
+  return !cloudProfileReady;
+ },
+ onError:()=>recordCloudDiagnostic('acquisition_recovery_pending',{reason:'retry'})
 });
 async function retryAccountCloudSync({sessionValid=()=>true}={}){
  if(!sessionValid())return;

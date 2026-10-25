@@ -89,6 +89,10 @@ jobs:
             -f scripts/fixtures/quest-first-badges.sql \
             -f scripts/fixtures/quest-command-receipts.sql
           python3 scripts/quest-command-concurrency.py
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261025145734_player_favorable_acquisitions.sql \
+            -f scripts/fixtures/player-favorable-acquisitions.sql
+          python3 scripts/acquisition-recovery-concurrency.py
           node scripts/social-fixture-bootstrap.mjs > /tmp/lumen-social-bootstrap.sql
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
             -f /tmp/lumen-social-bootstrap.sql \
