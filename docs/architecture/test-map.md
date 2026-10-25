@@ -1,5 +1,11 @@
 # Existing verification map
 
+Guest start-only hydration: guest-account helper/hook tests run the real first
+gesture producer, reject earned/unknown performance evidence, and verify attempt
+backup failure conservation. The account browser suite starts a signed-out guest
+by native input before Auth and restores from the same persisted mock cloud.
+`campaign-resume-tests.mjs` guards parity of the shared start-only classifier.
+
 Virgin-browser restore: `guest-account-tests.mjs` checks default-reserve/origin
 coverage versus genuine guest facts; `guest-account-hydration-tests.mjs` executes
 the production hook, verifies originals and unchanged cloud, then owned reload.

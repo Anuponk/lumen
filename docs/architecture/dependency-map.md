@@ -1,5 +1,10 @@
 # Dependencies and data flow
 
+Guest first gesture: `ensureAttemptStarted` → start-only performance timestamps →
+shared strict `isAttemptStartPerformance` → guest coverage exception only without
+acquired facts → verified original profile/attempt archives → existing cloud
+installation. No guest timestamp is imported into account reward/cooldown state.
+
 Virgin-browser restore: empty unowned guest cache → exact original backup →
 `guestNeedsReconciliation` checks acquired evidence without starter reserve or
 current-origin defaults → verified existing cloud → owner-bound installation.

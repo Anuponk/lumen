@@ -661,7 +661,12 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    const resolution=await reconcileCompatibleCloudProfiles(hydrationClient,localStorage,cloud,{userId:accountId});
    if(!sessionValid())return;
    if(resolution.status==='reconciled'||resolution.status==='cloud_dominant')cloud=resolution.profile;
-   if(guestNeedsReconciliation(incoming,cloud))throw Error('Progression invitée conservée : fusion cloud en attente');
+   if(guestNeedsReconciliation(incoming,cloud)){
+    const fields=Array.isArray(resolution.fields)?[...new Set(resolution.fields.map(key=>Object.hasOwn(CLOUD_PROFILE_FIELDS,key)?key:'unknown_field'))].slice(0,8):[];
+    const refusal=reconciliationFailureDiagnostic(resolution.reason,fields);
+    recordCloudDiagnostic('hydration_reconciliation',{result:'blocked',reason:resolution.reason||'cloud_local_divergence',domain:refusal.domain,stage:hydrationStage,fields});
+    throw Error('Progression invitée conservée : fusion cloud en attente');
+   }
   }
   // Resume verified canonical victory intents before installing the cloud profile.
   // Keep unacknowledged entries on read/write failure; do not replay any other
@@ -757,6 +762,9 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    const backupKey="lumenBeforeAccountSwitch_"+Date.now();
    localStorage.setItem(backupKey,currentLocal);
    if(localStorage.getItem(backupKey)!==currentLocal)throw Error("Sauvegarde du profil invité non vérifiée");
+  }
+  if(switchingOwner&&!currentOwner&&attemptEngine.snapshot()){
+   preserveAttemptSnapshot(localStorage,attemptEngine.storageKey);
   }
   // Local play may advance while initialization/daily reads are in flight.
   // Recheck the latest bytes, not just the guest captured before those awaits.

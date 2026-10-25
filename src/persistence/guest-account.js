@@ -1,4 +1,4 @@
-import {validateCloudProfile,cloudSafelyCoversLocal} from './cloud-profile.js';
+import {validateCloudProfile,cloudSafelyCoversLocal,isAttemptStartPerformance} from './cloud-profile.js';
 import {currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
 
 // A missing owner denotes a real guest. A signed-out account cache is still
@@ -35,15 +35,20 @@ export function guestNeedsReconciliation(guest,cloud){
  // Ignore only those defaults for coverage of an EXISTING cloud profile.
  // The original is still archived; new-account seeding remains unchanged.
  const empty=value=>value===undefined||!!value&&typeof value==='object'&&!Array.isArray(value)&&Object.values(value).every(empty);
+ const starts=guest?.performances;
+ const startsOnly=starts===undefined||!!starts&&typeof starts==='object'&&!Array.isArray(starts)&&
+  Object.entries(starts).every(([key,record])=>/^(0|[1-9]\d*)$/.test(key)&&isAttemptStartPerformance(record,Number(key)));
  const untouched=guest&&[undefined,3].includes(guest.shards)&&
   guest.walletRevision===undefined&&guest.legacyVictoryRevision===undefined&&
   [undefined,currentCatalogueOrigin].includes(guest.catalogueOrigin)&&
   [undefined,0].includes(guest.xp)&&[undefined,null,0].includes(guest.skyScore)&&
   (guest.autonomousWins===0||empty(guest.autonomousWins))&&
-  ['solved','historyBackup','badges','stars','noHint','performances','canonicalQuestState','challenges','daily'].every(key=>empty(guest[key]));
+  startsOnly&&['solved','historyBackup','badges','stars','noHint','canonicalQuestState','challenges','daily'].every(key=>empty(guest[key]));
  if(untouched){
   // Empty daily containers are also scaffolding, not earned dates/rewards.
-  const {shards,catalogueOrigin,daily,...evidence}=guest;
+  // Pure first-gesture timestamps are archived locally, never imported as an
+  // account cooldown or treated as a completed/qualified performance.
+  const {shards,catalogueOrigin,daily,performances,...evidence}=guest;
   return !cloudSafelyCoversLocal(evidence,cloud);
  }
  return !cloudSafelyCoversLocal(guest,cloud);

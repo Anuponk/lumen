@@ -423,8 +423,9 @@ try{
  const historicalClaim=await verifyHistoricalClaim({evaluate,navigate,url});
  const favorableRecovery=await verifyPlayerFavorableRecovery({send,evaluate,navigate,url});
  const favorableLostReply=await verifyPlayerFavorableRecovery({send,evaluate,navigate,url,loseReply:true});
+ const favorableGuestStart=await verifyPlayerFavorableRecovery({send,evaluate,navigate,url,guestStarted:true});
  assert.equal(errors.length,0,JSON.stringify(errors));
- const report={simulatedAuth:true,liveCloudWrites:false,results,walletFlow,completedQuestHold,domainReplay,quotaRecovery,transactionalCache,historicalClaim,favorableRecovery,favorableLostReply,exceptions:errors};
+ const report={simulatedAuth:true,liveCloudWrites:false,results,walletFlow,completedQuestHold,domainReplay,quotaRecovery,transactionalCache,historicalClaim,favorableRecovery,favorableLostReply,favorableGuestStart,exceptions:errors};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));
  console.log(JSON.stringify(report));
 }finally{await send('Browser.close').catch(()=>{})}

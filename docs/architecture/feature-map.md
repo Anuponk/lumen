@@ -3,6 +3,9 @@
 Virgin-browser account restore: `persistence/guest-account.js` scopes the default
 reserve/catalogue exception to unowned profiles without acquired facts. Both
 guest checks in the UI hydration hook use it; account authorities stay unchanged.
+The shared `cloud-profile.js::isAttemptStartPerformance` also distinguishes
+first-gesture timestamps from earned results. Unowned active attempts use the
+existing verified archive before account installation.
 
 Cockpit visual status: `ui/cockpit-dates.js::playerSyncStatus` qualifies existing
 queue timestamps; `ui/cockpit-sessions.js` renders text/symbol/colour badges and

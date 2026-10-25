@@ -211,6 +211,19 @@ archived before installation. Actual guest earnings, spending, performances,
 authority revisions and unclassified evidence retain the previous safeguards.
 New-account initialization still uses the complete guest seed and net balance.
 
+`ensureAttemptStarted` writes a performance-map entry on the first gesture,
+before any victory: quest index plus qualification day/timestamp. The shared
+`isAttemptStartPerformance` recognizes only that exact validated shape; rewards,
+times, badges, attempts and unknown fields are never classified as start-only.
+An otherwise unacquired guest may restore an existing account despite these
+markers. Keep the full original guest snapshot and a verified active-attempt
+backup before installation; never copy the guest timestamps into the account's
+cooldown or manufacture a qualified result. A failed attempt backup blocks the
+installation and leaves both account and guest data intact.
+Genuine guest conflicts emit the existing bounded `hydration_reconciliation`
+event at `guest_reconciliation`, including its fixed reason/domain and only
+known field names (otherwise `unknown_field`), without profile contents.
+
 `guest-account.js` distinguishes an unowned guest from a signed-out account cache. Before first authenticated I/O, preserve and read back the exact guest snapshot under `lumenGuestBeforeAccount_<accountId>` (additional versions retain subsequent offline play). Initialize a missing cloud profile from the whole validated guest snapshot, including net currency, earned badges and compatibility access; use a fresh seed only for another account’s cache. Existing cloud achievements must cover the guest, or the existing conservative reconciler must succeed before installation. Recheck the latest local bytes immediately before installation: achievements earned during initialization/daily I/O must also be covered, or remain pending with the live attempt preserved. Conflicting receipts/balances stay pending with both originals preserved; never infer money, copy another account, or erase guest achievements. Initial creation remains atomic and read-back verified; no duplicate victory commands are emitted. Failed backup, offline initialization, read-back or account switch cannot install an empty profile.
 
 ## Cloud persistence contract
