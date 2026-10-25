@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
+import {currentCatalogueOrigin} from '../src/campaign/catalogue-origin.js';
 
 // Native application/hydration/DOM/storage, synthetic Auth and RPC only. The
 // actual SQL merge/transactions have independent PostgreSQL fixture coverage.
@@ -12,7 +13,7 @@ export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,
  await navigate('Page.navigate',{url:new URL('/scripts/fixtures/storage-quota.html',url).href});
  const quests=canonicalQuestList().filter(q=>q.legacyIndex!==null),[left,right]=quests;
  const owner='favorable-native-fixture';
- const remote={solved:{[right.legacyIndex]:1},badges:{},shards:7,walletRevision:8,legacyVictoryRevision:3,
+ const remote={solved:{[right.legacyIndex]:1},badges:{},stars:{},shards:7,walletRevision:8,legacyVictoryRevision:3,
   xp:20,skyScore:0,skyHistoryVersion:4,daily:{},challenges:{},canonicalQuestState:{},
   performances:{[left.legacyIndex]:{time:50,bestTime:50,version:3,attempts:1,badges:{speed:true,mastery:false}}}};
  const local={...structuredClone(remote),solved:{[left.legacyIndex]:1},shards:99,walletRevision:7,
@@ -79,11 +80,14 @@ export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,
   assert.equal(await evaluate('__favRecovery'),expectedRecoveries,'Token renewal does not repeat a converged recovery');
   // A second device starts without the old cache. Model that independent cache
   // against the same persisted synthetic server, then let normal restore run.
-  await evaluate(`localStorage.setItem('lumenProgressV1',JSON.stringify({solved:{},badges:{},xp:0}));localStorage.removeItem('lumenCloudDiagnosticsV1')`);
+  const serverBefore=await evaluate('JSON.stringify(__favServer)');
+  await evaluate(`localStorage.clear();localStorage.setItem('lumenProgressV1',JSON.stringify({solved:{},badges:{},xp:0,shards:3,catalogueOrigin:${JSON.stringify(currentCatalogueOrigin)}}))`);
   await navigate('Page.reload');
   await until(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='hydration_ready')`);
   const restored=await evaluate('lumenDiagnostics.snapshot().progress');
   assert(restored.solved[left.legacyIndex]&&restored.solved[right.legacyIndex]);assert.equal(restored.shards,7);
+  assert.equal(await evaluate(`localStorage.getItem('lumenCloudOwnerId')`),owner);
+  assert.equal(await evaluate('JSON.stringify(__favServer)'),serverBefore,'A virgin browser restores without changing the cloud or minting its starter reserve');
   assert.equal(await evaluate('__favCommands'),0);
   return {nativeHydration:true,noConflictReload:true,noNewVictory:true,scheduledFlush:true,automaticLostReplyRetry:loseReply,tokenRefresh:true,reload:true,freshDeviceCache:true,originalsPreserved:true,confirmedSpending:true,simulatedRpc:true};
  }finally{await send('Page.removeScriptToEvaluateOnNewDocument',{identifier});}

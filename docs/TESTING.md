@@ -550,6 +550,18 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Virgin-browser restoration: `guest-account-tests.mjs` and the actual UI hook in
+`guest-account-hydration-tests.mjs` cover an unowned starter with three shards and
+the current catalogue against an existing historical account, including a zero
+or spent cloud balance. Retain guest originals and assert no profile write,
+initialization, reward or wallet change on restore/reload. Real guest acquisitions,
+spending, performances and unknown evidence must still require coverage.
+`player-favorable-browser.mjs` now clears the synthetic device's local storage,
+including owner identity, and restores from the realistic starter reserve. This
+replaces the insufficient fixture that retained the owner and omitted currency.
+Native browser checks use simulated Auth/RPC; a real private-window login remains
+separate acceptance evidence.
+
 `cockpit-dates-tests.mjs` also guards visual status: recent confirmed/pending/
 failure observations, missing/invalid/future dates, receipt-only evidence and an
 old second-device observation. No stale signal becomes green. Native cockpit

@@ -1,5 +1,11 @@
 # Dependencies and data flow
 
+Virgin-browser restore: empty unowned guest cache → exact original backup →
+`guestNeedsReconciliation` checks acquired evidence without starter reserve or
+current-origin defaults → verified existing cloud → owner-bound installation.
+Guest play during hydration is rechecked; genuine spending/acquisitions still
+use conservative coverage. No server, receipt or wallet writer changes.
+
 Player-favorable recovery: same-owner hydration refusal → verified originals →
 `cloud-profile.js:reconcilePlayerAcquisitions` → expected-account RPC with snapshot
 row lock/CAS → positive projection merge and private source archive → independent
