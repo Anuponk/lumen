@@ -1150,3 +1150,53 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .admin-player-list .admin-player[data-sync-state="unknown"]{border-left:4px solid #a6b4c7}
 .admin-player-proof>summary{cursor:pointer;min-height:44px;align-content:center;font-size:12px;color:#a6c6da}
 .admin-player-proof>p{font-size:12px;line-height:1.5}
+/* Celestial milestones share the existing victory sheet. Actions stay
+   available; narrative copy follows the storyboard without layout changes. */
+.sky-reveal[data-celestial]{z-index:2100}
+.sky-reveal[data-celestial] [hidden]{display:none!important}
+.sky-reveal[data-celestial] .sky-reveal-card{display:flex;flex-direction:column;gap:8px;width:min(94vw,840px);max-height:calc(100dvh - 24px);padding:20px;overflow:auto}
+.sky-reveal[data-celestial] .sky-reveal-title{font-size:clamp(20px,3.3vw,32px);line-height:1.15;margin:0}
+.sky-reveal[data-celestial] .sky-reveal-name{font-size:clamp(12px,2vw,16px);line-height:1.4;margin:0 auto;max-width:580px}
+.sky-reveal[data-celestial] #skyRevealTitle,.sky-reveal[data-celestial] #skyRevealName,.sky-reveal[data-celestial] .celestial-summary{animation:celestial-conclusion 4s both}
+.sky-reveal[data-celestial="adventure"] #skyRevealTitle,.sky-reveal[data-celestial="adventure"] #skyRevealName,.sky-reveal[data-celestial="adventure"] .celestial-summary,.sky-reveal[data-celestial="campaign"] #skyRevealTitle,.sky-reveal[data-celestial="campaign"] #skyRevealName,.sky-reveal[data-celestial="campaign"] .celestial-summary{animation:celestial-adventure-conclusion 7s both}
+.sky-reveal[data-celestial] #skyRevealCanvas{flex:1;min-height:72px;overflow:hidden}
+.celestial-skip{align-self:flex-end;width:auto!important;margin:0!important;min-height:36px;padding:5px 12px!important;font-size:12px!important}
+.celestial-summary{font-size:12px;line-height:1.5;color:var(--muted,#b8cbe1);margin:0}
+.celestial-scene{display:grid;place-items:center;min-height:110px;position:relative;isolation:isolate}
+.celestial-figure{margin:0;width:100%;min-width:0;position:relative}
+.celestial-figure svg{display:block;width:100%;max-height:220px;overflow:visible}
+.celestial-figure figcaption{font-size:10px;color:#a8d5e8;text-align:center}
+.celestial-panorama{grid-template-columns:repeat(var(--celestial-columns),minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:4px 8px;max-height:44dvh;min-height:100px}
+.celestial-panorama .celestial-figure{height:100%;min-height:0;display:flex;flex-direction:column}
+.celestial-panorama .celestial-figure svg{min-height:0;flex:1}
+.celestial-panorama figcaption{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:none}
+.celestial-vault{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+.celestial-panorama .celestial-figure{opacity:1;animation:celestial-cascade 1s both;animation-delay:calc(var(--celestial-cascade) + 1.5s)}
+.celestial-panorama .celestial-figure:first-of-type{animation:celestial-last 7s both;animation-delay:0s;z-index:1}
+.celestial-panorama .celestial-figure svg{max-height:105px}
+.sky-reveal[data-celestial] .sky-line.on{stroke:#7edff4;animation:celestial-trace 4s both;stroke-dasharray:1;stroke-dashoffset:0}
+.sky-reveal[data-celestial] .sky-star.on{fill:#c2f2ff;animation:celestial-glow 4s both}
+.sky-reveal[data-celestial] .new-star,.sky-reveal[data-celestial] .new-secondary{animation:celestial-last-light .6s both;transform-box:fill-box;transform-origin:center}
+.sky-reveal[data-celestial] .milky-way{animation:celestial-dust 4s both}
+.sky-reveal[data-celestial="adventure"] .milky-way,.sky-reveal[data-celestial="campaign"] .milky-way{animation:celestial-apogee 7s both}
+.sky-reveal[data-celestial] .sky-reveal-actions{margin:0;gap:6px;display:flex;flex-wrap:wrap;justify-content:center}
+.sky-reveal[data-celestial] .sky-reveal-actions button{min-height:38px;font-size:13px;padding:7px 12px}
+.sky-reveal[data-celestial] .sky-reveal-time:has([hidden]){display:none}
+.mastery-pulse{animation:mastery-breath 1s ease-out both}
+.mastery-arrival{animation-duration:1.6s}
+@keyframes celestial-trace{0%,15%{stroke-dashoffset:1;opacity:.25}45%,100%{stroke-dashoffset:0;opacity:1}}
+@keyframes celestial-glow{0%{opacity:.35}45%,70%{opacity:1}100%{opacity:.9}}
+@keyframes celestial-last-light{0%{opacity:.3;transform:scale(.7)}60%{fill:#ead7a6;transform:scale(1.5)}100%{opacity:1;transform:scale(1)}}
+@keyframes celestial-dust{0%,30%{opacity:0}70%,100%{opacity:1}}
+@keyframes celestial-cascade{0%,20%{opacity:0;transform:scale(.94)}50%,100%{opacity:1;transform:none}}
+@keyframes celestial-last{0%,21%{transform:translate(var(--celestial-shift-x),var(--celestial-shift-y)) scale(var(--celestial-columns))}50%,100%{transform:none}}
+@keyframes mastery-breath{0%{opacity:.6}50%{opacity:1;filter:brightness(1.4)}100%{opacity:1;filter:none}}
+.celestial-still .celestial-scene *{animation:none!important;stroke-dashoffset:0!important}
+.sky-reveal.celestial-still #skyRevealTitle,.sky-reveal.celestial-still #skyRevealName,.sky-reveal.celestial-still .celestial-summary{animation:none!important}
+@keyframes celestial-conclusion{0%,70%{opacity:0}100%{opacity:1}}
+@keyframes celestial-adventure-conclusion{0%,78.57%{opacity:0}100%{opacity:1}}
+@media(max-height:600px){.sky-reveal[data-celestial] .sky-reveal-card{gap:5px;padding:10px}.celestial-panorama{max-height:30dvh}.celestial-figure svg{max-height:125px}.celestial-panorama .celestial-figure svg{max-height:58px}.celestial-summary{font-size:11px}.sky-reveal[data-celestial] .sky-reveal-kicker{font-size:10px}}
+@media(orientation:landscape) and (max-height:500px){.sky-reveal[data-celestial] .sky-reveal-card{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px}.celestial-skip{grid-column:2;justify-self:end}.sky-reveal[data-celestial] #skyRevealKicker{grid-column:1;grid-row:1}.sky-reveal[data-celestial] #skyRevealTitle,.sky-reveal[data-celestial] #skyRevealName,.celestial-summary{grid-column:2}.sky-reveal[data-celestial] #skyRevealCanvas{grid-column:1;grid-row:2/6}.sky-reveal[data-celestial] #skyRevealResults{grid-column:1/3}.celestial-panorama{max-height:45dvh}}
+@media(prefers-reduced-motion:reduce){.sky-reveal[data-celestial] *,.milky-way{animation:none!important;transition:none!important;stroke-dashoffset:0!important}}
+
+@keyframes celestial-apogee{0%,50%{opacity:0}78%,100%{opacity:1}}

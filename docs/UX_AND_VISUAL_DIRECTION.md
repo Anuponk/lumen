@@ -352,7 +352,57 @@ Campaign/replay Reset deliberately gives the player a fresh badge run and restar
 
 
 ## End-of-campaign celebration
-The final currently available quest is not a normal success. After the last constellation reveal, show a dedicated full-campaign celebration with explicit completion copy, a compact recap (quests, constellations, stars, Autonomy/Sans erreur/Mastery counts) and post-game actions toward Mon ciel / badge completion. Detection derives from the campaign content count, not a hard-coded quest id. The “seen” key is versioned by available quest count so a future content extension can earn its own new ending.
+The final currently available quest is not a normal success. Its global ending
+has priority over Adventure, constellation and ordinary quest results, in the
+same single celestial scene. Explicit copy confirms completion of all currently
+available content, with catalogue-derived quests, constellations, stars and all
+four badge counts. Post-game actions retain access to Mon ciel and missing
+badges. No second finale opens after the player chooses an action.
+
+### Celestial milestones and progressive mastery (#575 / #519)
+
+Audit: `showSkyReveal` owns the shared quest result, licensed astronomy and
+explicit Next/Sky actions. The old Adventure notice and global ending could
+follow that result as another popup. Completion now projects a before/after
+confirmed victory over stable catalogue membership: global ending > Adventure
+> constellation > ordinary victory. Missing badges never prevent completion.
+Artwork comes from `astronomicalPrimarySvg`, preserving HIP geometry, cyan
+lines and secondary earned lights. No introduction or cockpit changes belong
+to this lot; #588/#590 ordinary continuation and account preferences remain.
+
+Constellation: last light (0–0.6 s), cyan trace (0.6–1.8 s), gentle breathing
+(1.8–2.8 s), resting final state by 4 s. Copy: “[Name] brille à nouveau !” and
+“Une nouvelle lumière a retrouvé sa place dans le ciel.” Adventure: the last
+constellation leads, existing figures appear in cascade (1.5–3.5 s), then a
+subtle Milky Way (3.5–5.5 s), resting by 7 s. Copy: “Aventure accomplie” and
+“Chaque étoile retrouvée a repoussé l’obscurité. Ensemble, elles ont redonné vie
+à ce ciel.” Reliable scope recaps use acquired quests/stars and named badges.
+Narrative copy fades in during the conclusion (2.8–4 s / 5.5–7 s), with its
+layout reserved from the start; actions stay available until the player chooses. “Passer
+l’animation” stops decoration; reduced motion shows the final state immediately.
+Next-constellation / next-Adventure requires an existing access decision and a
+real unfinished quest. Otherwise return to Mon ciel. Reviewing an Adventure
+uses existing map/replay navigation, without replaying its cinematic.
+
+Mastery in Mon ciel is separate: acquired eligible badges / currently possible
+badges, continuously scaled from 0 to 1. Empty scopes yield 0; catalogue growth
+recomputes the denominator without revoking historical awards. Versioned legacy
+and canonical badges retain existing qualification semantics; Mastery is never
+inferred from three separate historical facts. A fixed bounded dust composition
+seeded by stable constellation ID sits behind cyan geometry. At 0 there is no
+added layer; 25% reveals dust, 50% richer light, 75% an identifiable band and
+100% a subtle signature. No crowns, opaque clouds or permanent animation.
+Only real badge additions queue a short owner-scoped in-memory pulse; opening,
+reload, Auth, restored acquisitions or catalogue changes cannot queue one. It is
+consumed by the next visible rendering and is not a persisted reward.
+Repeated map refreshes retain the same short playhead rather than restarting
+the animation. Recovered receipts, retrying old durable intents and remote
+acquisition batches remain visually silent.
+
+Comparable previews: [0/25/50/75/100%](validation/celestial-preview.html), generated
+from the shared SVG components for a small figure, a large figure and an
+additional-light figure. Native mobile and desktop milestone captures accompany
+the PR; physical-device artistic acceptance remains separate.
 
 
 Canonical board identity: the header and any challenge/finale presentation must

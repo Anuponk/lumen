@@ -5,8 +5,11 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {classifyCanonicalRecoveryError} from '../src/persistence/canonical-recovery-errors.js';
 import {functionSource} from './source-tools.mjs';
+import {captureCelestialProgress} from '../src/ui/celestial-progress.js';
 
 function prepareContext(ctx){
+ ctx.captureCelestialProgress??=captureCelestialProgress;
+ ctx.canonicalQuestList??=()=>[ctx.canonicalActiveQuest].filter(Boolean);
  ctx.cloudHydrationGeneration??=0;
  ctx.pendingVictoryView??=null;
  ctx.syncPresentation??={failed(){},acknowledged(){},celebration(){},snapshot:()=>({status:'confirmed',failures:0})};

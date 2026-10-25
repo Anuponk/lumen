@@ -1,5 +1,12 @@
 # Feature map
 
+Celestial milestones/mastery (#575/#519): `ui/celestial-progress.js` is the pure
+catalogue/badge projection; `celestial-effects.js` draws seeded background dust;
+`celestial-celebration.js` presents the existing victory sheet. `game-screen.js`
+captures only confirmed win transitions and adapts existing access/navigation;
+`sky-navigation.js` reuses the layer behind unchanged astronomical cards. No
+profile writer, cockpit, introduction or reward path is added.
+
 Restored board selection: `game-screen.js::resumeHydratedCampaignSelection`
 uses `playable-navigation.js::nextCanonicalQuest` after verified installation of
 an existing account with a changed owner. Original attempt archival precedes

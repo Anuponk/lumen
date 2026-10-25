@@ -9,6 +9,8 @@ import {createCampaign,milestoneFor,isCampaignFinalQuest,isCampaignComplete,camp
 import {questIsCompleted} from '../src/persistence/canonical-progress.js';
 import {questPerformanceRecord} from '../src/campaign/quest-rules.js';
 import {functionSource} from './source-tools.mjs';
+import {celestialScope} from '../src/ui/celestial-progress.js';
+import {milkyWaySvg} from '../src/ui/celestial-effects.js';
 
 const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 const all=canonical.canonicalQuestList();
@@ -43,7 +45,7 @@ function questCardFixture(progress,{signedIn=true,cloudReady=true,entryId}={}){
  const grid=element(),section=element(),modal=element(),sky=element();
  modal.querySelector=selector=>selector==='#canonicalJourneyPreview'?section:null;
  const entry=CONTENT_CONSTELLATIONS.find(c=>entryId?c.id===entryId:all.some(q=>q.constellationId===c.id&&q.legacyIndex===null));
- const context={...canonical,leavePendingVictoryForNavigation:()=>{},confirmedReplayAllowed:()=>false,lumenProgress:progress,qaActive:false,
+ const context={...canonical,celestialScope,milkyWaySvg,takeMasteryPulse:()=>null,leavePendingVictoryForNavigation:()=>{},confirmedReplayAllowed:()=>false,lumenProgress:progress,qaActive:false,
   lumenUser:signedIn?{id:'synthetic-owner'}:null,cloudProfileReady:cloudReady,
   adventureAccessEntitlements:()=>[],attemptEngine:{snapshot:()=>null},campaignAccessAttempt:()=>null,
   navigationProgress:()=>progress,document:{createElement:element,createElementNS:element,getElementById:id=>id==='puzzleGrid'?grid:id==='mapModal'?modal:id==='skyCard'?sky:null},
@@ -53,7 +55,7 @@ function questCardFixture(progress,{signedIn=true,cloudReady=true,entryId}={}){
   performanceBadges:()=>'<span>badge historique</span>',canonicalPerformanceBadges:()=>'<span>badge canonique</span>',
   badgeCooldownRemaining:()=>0,questPerformanceRecord,verifiedAstronomicalFigure:()=>true,questIsCompleted,astronomicalPrimarySvg:()=>''};
  vm.createContext(context);
- const names=['canonicalQuestAccess','canonicalQuestAvailable','canonicalQuestLockReason','questIsAccessible','renderMap','renderCanonicalSky','renderCanonicalJourneyPreview','startCanonicalQuest'];
+ const names=['constellationMastery','canonicalQuestAccess','canonicalQuestAvailable','canonicalQuestLockReason','questIsAccessible','renderMap','renderCanonicalSky','renderCanonicalJourneyPreview','startCanonicalQuest'];
  vm.runInContext(names.map(name=>functionSource(source,name)).join('\n'),context);
  return {context,grid,section,elements,entry,sky};
 }
@@ -146,12 +148,12 @@ test('catalogue history distinguishes a completed sync-held quest from a missing
 test('actual sky adapter counts completed canonical-only quests instead of absent legacy shape slots',()=>{
  const entry=CONTENT_CONSTELLATIONS.find(c=>c.canonicalOnly);
  const quests=all.filter(q=>q.constellationId===entry.id),progress=complete(quests);
- const context={...canonical,document:{},CONSTELLATIONS,lumenProgress:progress,
+ const context={...canonical,document:{},CONSTELLATIONS,lumenProgress:progress,celestialScope,takeMasteryPulse:()=>null,
   questIsCompleted,astronomicalDisplayShape:shape=>shape,constellationLitAt:()=>0,
   createSkyNavigation:options=>options};
  vm.createContext(context);
  const start=source.indexOf('const skyNavigation=createSkyNavigation('),end=source.indexOf('const SKY_TOUR_STEPS',start);
- vm.runInContext(source.slice(start,end)+'\nglobalThis.options=skyNavigation;',context);
+ vm.runInContext(functionSource(source,'constellationMastery')+'\n'+source.slice(start,end)+'\nglobalThis.options=skyNavigation;',context);
  assert.equal(context.options.getLit(entry),quests.length);
  assert.equal(context.options.getShape(entry).count,quests.length);
  assert.equal(context.options.getBadgeCounts(entry).speed,quests.length);
