@@ -250,6 +250,15 @@ immutable canonical first-completion record stays exact; improvements use the
 existing mutable `runPerformance`. Legacy and Quest authority projections update
 atomically, keeping the ordinary snapshot guards active and cursors unchanged.
 
+Historical acquisition recovery may copy a first performance into an unversioned
+`runPerformance` with empty badges. Client coverage accepts that redundant seed
+only with an active Legacy authority, no pre-existing local run, exactly the
+`seconds`/`assisted`/`bestTime`/`badges` shape, finite nonnegative times and exact
+equality with the preserved first performance. First rewards and unknown evidence
+remain protected; the seed never proves a new qualifying run or grants a badge.
+Existing V3 replay coverage remains unchanged. No profile or server migration is
+required, and original device bytes remain archived before installation.
+
 Shards, Wallet revision, daily ledger, receipts and catalogue origin remain
 exactly server-owned. Recovery never credits money or replays a reward from
 completion. XP and skyScore keep the existing maximum policy, never addition.
