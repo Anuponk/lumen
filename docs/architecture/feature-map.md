@@ -5,6 +5,13 @@ filters key/type before rendering and metadata reads; `loadAdminTimeline` refuse
 anonymous navigation. Tests: `cockpit-registered-players-tests.mjs`, the recent
 player loader fixture and the independent native cockpit browser.
 
+Positive acquisition recovery (#391): `cloud-profile.js`
+`reconcilePlayerAcquisitions` is the bounded same-owner hydration fallback in
+`ui/game-screen.js`. The additive SQL RPC owns positive merging and private
+original archives under the existing snapshot/authority locks. See the owning
+cloud contract and `cloud-player-favorable-tests.mjs`, production hydration hook,
+SQL fixture and concurrency suite. Wallet/daily receipts remain independent.
+
 Cockpit acceptance (#534 lot 3): `cockpit-acceptance-tests.mjs` guards immediate
 administrative scope clearing and stale network failures. The dated acceptance
 record distinguishes synthetic/native checks from physical/release evidence.

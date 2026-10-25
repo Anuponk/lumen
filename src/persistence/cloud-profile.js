@@ -577,6 +577,9 @@ export async function compareAndSwapCloudProfile(supabase,profile,expected,{user
   // Do not retain provider messages, details, hints or an unsanitized cause.
   const reasons=new Map([
    ["legacy victory command required; preserve pending data and update client","LEGACY_COMMAND_REQUIRED"],
+   ["quest command required; preserve pending data","QUEST_COMMAND_REQUIRED"],
+   ["quest run authority missing","QUEST_RUN_AUTHORITY_MISSING"],
+   ["wallet command required; preserve pending data and update client","WALLET_COMMAND_REQUIRED"],
    ["earned XP cannot decrease","LEGACY_XP_REGRESSION"],
    ["canonical acquisition removal rejected","CANONICAL_ACQUISITION_REMOVAL"],
    ["canonical badge removal rejected","CANONICAL_BADGE_REMOVAL"],
@@ -606,7 +609,11 @@ function preserveVerifiedSnapshot(storage,prefix,value){
   }
  }
  for(const key of existing){if(storage.getItem(key)===value)return key}
- const key=prefix+Date.now();
+ const base=prefix+Date.now();let key=base,collision=0;
+ while(storage.getItem(key)!==null){
+  if(storage.getItem(key)===value)return key;
+  key=base+'_'+(++collision);
+ }
  try{
   storage.setItem(key,value);
   if(storage.getItem(key)!==value)throw Object.assign(Error("Recovery snapshot verification failed"),{code:'RECOVERY_BACKUP_UNVERIFIED'});
@@ -931,4 +938,57 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote,{
  const verified=await loadVerifiedProfile(supabase,{userId});
  if(!sameCloudProfile(updated,verified))throw Error("Reconciliation cloud non verifiee");
  return {status:"reconciled",profile:verified,playerFavouredBalances:differingBalances};
+}
+
+// Explicit product policy: recover positive acquisitions, never infer a money
+// transaction from a historical snapshot. The server owns the merge and keeps
+// its Wallet/daily/receipt authorities. Preserve the exact device bytes first.
+// This path is separate from conservative coverage: its verified result is the
+// authority for retiring an ambiguous cache, whose original remains exportable.
+export async function reconcilePlayerAcquisitions(supabase,storage,remote,{userId,sessionValid=()=>true}={}){
+ const raw=storage.getItem('lumenProgressV1');
+ if(!raw||!userId)return {status:'blocked',reason:'missing_local'};
+ let local;
+ try{local=validateCloudProfile(JSON.parse(raw))}catch{return {status:'blocked',reason:'invalid_local'}}
+ const current=()=>sessionValid()&&storage.getItem('lumenProgressV1')===raw;
+ if(!current())return {interrupted:true};
+ await preserveRecoverySnapshot(storage,'lumenBeforeCloudReconcileLocal_',raw);
+ if(!current())return {interrupted:true};
+ let expected=validateCloudProfile(remote);
+ for(let attempt=0;attempt<2;attempt++){
+  await preserveRecoverySnapshot(storage,'lumenBeforeCloudReconcileRemote_',JSON.stringify(expected));
+  if(!current())return {interrupted:true};
+  const {data,error}=await supabase.rpc('lumen_reconcile_acquisitions',{
+   p_expected_user_id:userId,p_expected:expected,p_local:local
+  });
+  if(!current())return {interrupted:true};
+  if(error){
+   if(error.code==='PGRST202')return {status:'blocked',reason:'legacy_command_required'};
+   const failure=Error('Acquisition recovery refused');failure.code=error.code;throw failure;
+  }
+  if(data===null){
+   expected=await loadVerifiedProfile(supabase,{userId});
+   if(!current())return {interrupted:true};
+   if(!expected)throw Error('Acquisition recovery profile missing');
+   continue;
+  }
+  if(data?.policy!=='positive-acquisitions-v1'||data.userId!==userId)throw Error('Acquisition recovery proof invalid');
+  const profile=validateCloudProfile(data.profile);
+  const verified=await loadVerifiedProfile(supabase,{userId});
+  if(!current())return {interrupted:true};
+  if(!sameCloudProfile(profile,verified))throw Error('Acquisition recovery readback mismatch');
+  // Both copies are durable, the server transaction is re-read, and the owner
+  // and latest local bytes still match. No outbox entry is acknowledged here.
+  const json=JSON.stringify(verified);
+  try{
+   storage.setItem('lumenProgressV1',json);
+   if(storage.getItem('lumenProgressV1')!==json)throw Error('Acquisition cache verification failed');
+  }catch(error){
+   // A verified server result can run in memory if cache quota is exhausted.
+   if(!['QuotaExceededError'].includes(error?.name)&&![22,1014,'LOCAL_STORAGE_QUOTA'].includes(error?.code))throw error;
+   return {status:'reconciled',reason:'positive_acquisitions',profile:verified,memoryOnly:true};
+  }
+  return {status:'reconciled',reason:'positive_acquisitions',profile:verified};
+ }
+ return {status:'blocked',reason:'cloud_local_divergence'};
 }

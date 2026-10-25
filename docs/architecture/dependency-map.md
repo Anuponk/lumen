@@ -1,5 +1,12 @@
 # Dependencies and data flow
 
+Player-favorable recovery: same-owner hydration refusal → verified originals →
+`cloud-profile.js:reconcilePlayerAcquisitions` → expected-account RPC with snapshot
+row lock/CAS → positive projection merge and private source archive → independent
+read-back → cache and one live UI progress object → mirror verification and flush.
+Wallet/daily operations and pending-intent acknowledgement keep their existing
+authorities. See the cloud contract for interpretation and release boundaries.
+
 Historical queued recapture: UI `recoverQueuedLegacyReceipt` reads the original
 expected-account receipt and current profile through `legacy-command.js`.
 `durable-canonical-outbox.js` calls its strict duplicate proof, archives exact

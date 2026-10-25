@@ -556,6 +556,24 @@ anonymous timeline RPC. The controller fixture covers metadata filtering and
 clearing a previously anonymous selection; the independent cockpit browser
 asserts the same directory boundary at all five existing viewports.
 
+Player-favorable hydration (#391, 25 October 2026):
+`cloud-player-favorable-tests.mjs` covers preserved originals, expected-account
+read-back, bounded CAS races, response loss, restart/second-device restoration,
+missing migration and storage/session interruption. The production hydration hook
+is executed by `cloud-achievements-session-recovery-tests.mjs`, including automatic
+readiness without reload, preserved pending Wallet intent and scheduled flush.
+The existing conservative suites remain intact; an unavailable recovery endpoint
+still exposes their previous protected holds.
+
+`fixtures/player-favorable-acquisitions.sql` runs with real RPCs and projection
+guards after the Quest migrations in `ledger-sql`: complementary acquisitions,
+one-sided badges, immutable first evidence, best run, no synthesized Mastery,
+unknown fields, unchanged confirmed spending/cursors/receipts, repeated import
+and subsequent command replay. `acquisition-recovery-concurrency.py` verifies
+parallel recovery and a duplicate spend on disposable PostgreSQL 17. Native
+browser coverage uses synthetic Auth/RPC; installed Android/PWA and physical
+second-device acceptance remain separate, unverified release criteria.
+
 `node scripts/cockpit-acceptance-tests.mjs` verifies administrator-to-administrator
 scope clearing, rejected/stale timeline responses and separate activity/Auth/
 commit dates during resumed synchronization. Acceptance evidence and untested

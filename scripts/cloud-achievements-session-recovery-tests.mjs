@@ -170,6 +170,7 @@ async function sessionFixture({conflict=false,quota=false,deferWallet=false}={})
  let authCallback,resolveSession;
  const client={auth:{onAuthStateChange:fn=>{authCallback=fn},getSession:()=>new Promise(resolve=>{resolveSession=resolve})},rpc:async(name,args)=>{
   calls.push(name);
+  if(name==='lumen_reconcile_acquisitions')return {error:{code:'PGRST202'},status:404};
   if(name==='lumen_wallet_command_version')return {error:{code:'PGRST202'},status:404};
   if(name==='lumen_restore_profile'){
    if(!walletEntry)await checkpointWallet();
@@ -189,6 +190,7 @@ async function sessionFixture({conflict=false,quota=false,deferWallet=false}={})
  const ctx=vm.createContext({cloudHydrationGeneration:0,...profiles,structuredClone,currentCatalogueOrigin,qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,
   canonicalRecoveryContext:null,canonicalRecovery:scheduler,sessionStorage:{getItem:()=>null},localStorage:storage,
   cloudProfileReady:false,cloudProfileBaseline:null,cloudProfileFailure:null,lumenProgress:local,
+  normalizeSequentialProgress:()=>0,sequentialSolvedCount:0,scheduleCloudProfile:()=>calls.push('schedule_flush'),
   walletCommandsSupported,walletOutbox:wallet,canonicalVictoryOutbox:canonical,legacyVictoryOutbox:{resume:async()=>{}},
   replayCanonicalVictoryOutbox,replayLegacyVictoryOutbox:async()=>[],
   commitCanonicalVictory:()=>assert.fail('An archived capture is not a new command'),
@@ -224,6 +226,36 @@ async function sessionFixture({conflict=false,quota=false,deferWallet=false}={})
    assert.equal(JSON.stringify(await wallet.pending('a')),walletBefore);
   }};
 }
+
+test('favorable recovery completes the production hydration hook in the current session without reload or a new victory',async()=>{
+ for(const hold of ['wallet','quest-authority','cas-race']){
+ const f=await sessionFixture({conflict:true}),rpc=f.ctx.lumenSupabase.rpc;
+ if(hold!=='wallet')f.ctx.reconcileDominantLocalProfile=async()=>{throw Object.assign(Error('synthetic guarded writer refusal'),{code:hold==='quest-authority'?'QUEST_COMMAND_REQUIRED':'CLOUD_CAS_CONFLICT'});};
+ const original=f.storage.getItem('lumenProgressV1');
+ f.ctx.lumenSupabase.rpc=async(name,args)=>{
+  if(name!=='lumen_reconcile_acquisitions')return rpc(name,args);
+  assert.equal(args.p_expected_user_id,'a');
+  const entry=f.remote.canonicalQuestState['fixture-quest'];
+  // SQL fixtures verify the real merge; this transport models its result while
+  // executing the actual owner-bound orchestration and native outbox adapters.
+  entry.badges={...entry.badges,...args.p_local.canonicalQuestState['fixture-quest'].badges,speed:true};
+  entry.runPerformance={version:3,bestTime:12,badges:entry.badges};
+  return {data:{policy:'positive-acquisitions-v1',userId:'a',profile:structuredClone(f.remote)}};
+ };
+ await f.hook();
+ assert.equal(f.ctx.cloudProfileReady,true);assert.equal(f.ctx.cloudProfileFailure,null);
+ assert.equal(f.ctx.reloads,0);assert(f.calls.includes('schedule_flush'));
+ assert.equal(f.ctx.lumenProgress.shards,3,'Confirmed server spending wins over the old local balance');
+ assert.equal(f.ctx.lumenProgress.canonicalQuestState['fixture-quest'].badges.speed,true);
+ assert([...f.storage.data.values()].includes(original));await f.assertEvidence();
+ assert(f.events.some(e=>e.event==='hydration_reconciliation'&&e.reason==='positive_acquisitions'));
+ assert(f.events.some(e=>e.event==='hydration_ready'&&e.profileReady));
+ // Restart/verified token refresh consumes the converged snapshot and does not
+ // recreate a victory or acknowledge any unrelated pending Wallet intention.
+ f.restart();await f.hook();assert.equal(f.ctx.cloudProfileReady,true);assert.equal(f.ctx.reloads,0);
+ await f.assertEvidence();
+ }
+});
 
 test('SIGNED_IN plus INITIAL_SESSION preserves the indexed wallet and archived capture across restart and verified recovery',async()=>{
  for(const order of [['SIGNED_IN','INITIAL_SESSION'],['INITIAL_SESSION','SIGNED_IN']]){
