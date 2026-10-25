@@ -13,6 +13,7 @@ spec = importlib.util.spec_from_file_location("ci_status", ROOT / "scripts/o2swi
 ci = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ci)
 SHA = "a" * 40
+PUBLIC_PAGES = ("mentions-legales.html", "confidentialite.html", "supprimer-compte.html")
 
 
 def runs():
@@ -82,7 +83,10 @@ class Publisher(unittest.TestCase):
         self.git("add", ".")
         self.git("commit", "-m", "baseline")
         self.old = self.git("rev-parse", "HEAD").strip()
+        for name in PUBLIC_PAGES + ("internal-preview.html",):
+            (self.source / name).write_text("Reviewed page: " + name)
         (self.source / "sw.js").write_text("new version")
+        self.git("add", ".")
         self.git("commit", "-am", "new release")
         self.sha = self.git("rev-parse", "HEAD").strip()
         self.git("remote", "add", "origin", ".")
@@ -97,6 +101,10 @@ if [[ "$endpoint" == *build-info.json* ]]; then
  printf '{"sha":"%s"}\\n' "$TEST_HTTP_SHA"
 elif [[ "$endpoint" == *'/src/'* ]]; then
  [[ "${TEST_STATIC_FORBIDDEN:-0}" != 1 ]] || exit 22
+ asset="${endpoint#https://lumen.nopuna.fr/}"
+ cat "$HOME/lumen.nopuna.fr/${asset%%\\?*}"
+elif [[ "$endpoint" == *'.html?'* ]]; then
+ [[ "${TEST_PAGE_FORBIDDEN:-0}" != 1 ]] || exit 22
  asset="${endpoint#https://lumen.nopuna.fr/}"
  cat "$HOME/lumen.nopuna.fr/${asset%%\\?*}"
 else
@@ -126,6 +134,34 @@ fi
             for path in directory.rglob("*"):
                 self.assertEqual(path.stat().st_mode & 0o777, 0o755 if path.is_dir() else 0o644)
         self.assertEqual(secret.stat().st_mode & 0o777, 0o600)
+
+    def test_reviewed_public_pages_are_published_without_other_html(self):
+        result = self.publish(mask=0o077)
+        self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+        for name in PUBLIC_PAGES:
+            self.assertTrue((self.target / name).is_file(), "Missing public page: " + name)
+            self.assertEqual((self.target / name).read_bytes(), (self.source / name).read_bytes())
+            self.assertEqual((self.target / name).stat().st_mode & 0o777, 0o644)
+        self.assertFalse((self.target / "internal-preview.html").exists())
+
+    def test_forbidden_public_page_restores_previous_site(self):
+        self.env["TEST_PAGE_FORBIDDEN"] = "1"
+        result = self.publish()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual((self.target / "index.html").read_text(), "original site")
+        for name in PUBLIC_PAGES:
+            self.assertFalse((self.target / name).exists())
+
+    def test_historical_release_without_public_pages_removes_stale_copies(self):
+        # Unversioned static site: exercise activation, not the same-SHA no-op.
+        (self.target / ".lumen-release-sha").unlink()
+        for name in PUBLIC_PAGES:
+            (self.target / name).write_text("stale candidate")
+        self.env["TEST_HTTP_SHA"] = self.old
+        result = self.publish(self.old)
+        self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+        for name in PUBLIC_PAGES:
+            self.assertFalse((self.target / name).exists())
 
     def test_forbidden_static_module_rolls_back_even_with_correct_marker(self):
         self.env["TEST_STATIC_FORBIDDEN"] = "1"
