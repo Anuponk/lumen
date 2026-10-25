@@ -1,5 +1,10 @@
 # Dependencies and data flow
 
+Existing-account ownership handoff: verified profile + archived previous attempt
+→ one live progress object → `nextCanonicalQuest` (catalogue origin/access)
+→ `resumeHydratedCampaignSelection` → existing grid/tutorial initialization.
+No completion, reward or wallet mutation is part of selection.
+
 Guest first gesture: `ensureAttemptStarted` → start-only performance timestamps →
 shared strict `isAttemptStartPerformance` → guest coverage exception only without
 acquired facts → verified original profile/attempt archives → existing cloud

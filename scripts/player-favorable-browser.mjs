@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {currentCatalogueOrigin} from '../src/campaign/catalogue-origin.js';
 import {learningStep} from '../src/game/learning.js';
+import {nextCanonicalQuest} from '../src/campaign/playable-navigation.js';
+import {readQuestView} from '../src/campaign/quest-view.js';
+import {CONTENT_CONSTELLATIONS} from '../src/campaign/content.js';
 
 // Native application/hydration/DOM/storage, synthetic Auth and RPC only. The
 // actual SQL merge/transactions have independent PostgreSQL fixture coverage.
@@ -77,10 +80,12 @@ export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,
   assert.equal(progress.performances[left.legacyIndex].badges.mastery,false);
   assert.equal(await evaluate(`Object.keys(localStorage).filter(k=>k.startsWith('lumenBeforeCloudReconcileLocal_')).some(k=>JSON.parse(localStorage.getItem(k)).oldUnknown?.preserve)`),true);
   const rightsReads=await evaluate('__favRightsReads');
+  const ownedBoard=await evaluate(`({id:JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).attemptId,state:lumenDiagnostics.snapshot().state,label:document.getElementById('campaignMapLabel').textContent})`);
   await evaluate(`localStorage.removeItem('lumenCloudDiagnosticsV1');__favAuth('TOKEN_REFRESHED',{user:{id:${JSON.stringify(owner)}}})`);
   await until(`__favRightsReads>${rightsReads}`);
   assert.equal(await evaluate(`document.getElementById('mobileAuthStatus').textContent.includes('synchronisée')`),true);
   assert.equal(await evaluate('__favRecovery'),expectedRecoveries,'Token renewal does not repeat a converged recovery');
+  assert.deepEqual(await evaluate(`({id:JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).attemptId,state:lumenDiagnostics.snapshot().state,label:document.getElementById('campaignMapLabel').textContent})`),ownedBoard,'Same-owner hydration preserves the selected board and run');
   // A second device starts without the old cache. Model that independent cache
   // against the same persisted synthetic server, then let normal restore run.
   const serverBefore=await evaluate('JSON.stringify(__favServer)');
@@ -110,10 +115,20 @@ export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,
   assert.equal(await evaluate(`localStorage.getItem('lumenCloudOwnerId')`),owner);
   assert.equal(await evaluate('JSON.stringify(__favServer)'),serverBefore,'A virgin browser restores without changing the cloud or minting its starter reserve');
   assert.equal(await evaluate('__favCommands'),0);
+  const frontier=nextCanonicalQuest(restored.solved,restored.canonicalQuestState,[],restored);
+  assert.equal(frontier.status,'ready');
+  const selected=await evaluate(`({attempt:JSON.parse(localStorage.getItem('lumenActiveAttemptV1')),snapshot:lumenDiagnostics.snapshot(),label:document.getElementById('campaignMapLabel').textContent})`);
+  assert.equal(selected.attempt.questId,frontier.quest.legacyIndex===null?frontier.quest.id:frontier.quest.legacyIndex+1,'Verified account restoration must select its frontier without opening Mon ciel');
+  assert.deepEqual(selected.snapshot.puz.reg,frontier.quest.reg,'Displayed label and board must describe the same restored quest');
+  assert(selected.label.includes(readQuestView(frontier.quest,restored,canonicalQuestList(),CONTENT_CONSTELLATIONS).label));
   if(guestStarted){
    const originals=await evaluate(`Object.keys(localStorage).filter(k=>k.startsWith('lumenGuestBeforeAccount_')||k.startsWith('lumenBeforeAccountSwitchAttempt_')).map(k=>localStorage.getItem(k))`);
    assert(originals.includes(guestRaw));assert(originals.includes(guestAttempt));
   }
-  return {nativeHydration:true,noConflictReload:true,noNewVictory:true,scheduledFlush:true,automaticLostReplyRetry:loseReply,tokenRefresh:true,reload:true,freshDeviceCache:true,guestStartedBeforeLogin:guestStarted,originalsPreserved:true,confirmedSpending:true,simulatedRpc:true};
+  await evaluate(`localStorage.removeItem('lumenCloudDiagnosticsV1')`);await navigate('Page.reload');
+  await until(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='hydration_ready')`);
+  assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).questId`),selected.attempt.questId,'The restored frontier survives reload without opening the map');
+  assert.equal(await evaluate('JSON.stringify(__favServer)'),serverBefore);
+  return {nativeHydration:true,noConflictReload:true,noNewVictory:true,scheduledFlush:true,automaticLostReplyRetry:loseReply,tokenRefresh:true,reload:true,freshDeviceCache:true,guestStartedBeforeLogin:guestStarted,automaticQuestSelection:true,selectionSurvivesReload:true,originalsPreserved:true,confirmedSpending:true,simulatedRpc:true};
  }finally{await send('Page.removeScriptToEvaluateOnNewDocument',{identifier});}
 }

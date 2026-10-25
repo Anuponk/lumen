@@ -228,6 +228,14 @@ known field names (otherwise `unknown_field`), without profile contents.
 
 ## Cloud persistence contract
 
+An existing-account ownership handoff installs the verified profile into the
+single live progress object and refreshes board selection through
+`nextCanonicalQuest` / `resumeHydratedCampaignSelection`. The old active attempt
+is archived and verified before installation; only then may navigation replace
+it. Same-owner Auth refresh/reconnect and new guest-account seeding do not
+perform that handoff. No completion, cooldown, balance or reward is synthesized.
+Social challenges and locked/missing frontiers remain outside this navigation.
+
 The cockpit's `playerSyncStatus` presentation qualifies existing queue evidence
 by observation freshness, including the oldest device timestamp. Badges and
 filters share this model; full original dates/state remain under a disclosure.

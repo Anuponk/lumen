@@ -550,6 +550,17 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Ownership-handoff presentation: `player-favorable-browser.mjs` asserts the
+actual active quest identity, rendered label and grid immediately after restore,
+before any map interaction, then again after reload. Virgin and first-gesture
+devices use simulated Auth/RPC and retain original archives and exact balances.
+Same-owner token refresh preserves the selected board/run. The production hook
+fixture checks handoff once, readiness without document restart, and no handoff
+when a new account is seeded from guest progress. `campaign-resume-tests.mjs`
+covers numeric and inserted canonical frontiers, unavailable content and social,
+QA and unverified-session guards. Learning rules and gestures are unchanged;
+the restored quest uses the existing board/tutorial initialization.
+
 Historical acquisition seed compatibility: `quest-victory-parity-tests.mjs`
 guards verified unversioned first-performance copies, original archival and
 idempotent retry. Divergent times/assistance, added badges or unknown fields,

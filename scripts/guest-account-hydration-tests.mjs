@@ -16,7 +16,7 @@ function fixture({cloud=null,owner=null,offline=false,failVerification=false,swi
  const data=new Map([['lumenProgressV1',JSON.stringify(local)]]);
  if(owner)data.set('lumenCloudOwnerId',owner);
  const storage={getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k),key:i=>[...data.keys()][i]??null,get length(){return data.size}};
- let remote=structuredClone(cloud),initialized=0,reads=0,reloads=0,claimReceipt=null;
+ let remote=structuredClone(cloud),initialized=0,reads=0,reloads=0,handoffs=0,claimReceipt=null;
  const calls=[],events=[],noop=()=>{};
  const client={rpc:async(name,args)=>{
   calls.push(name);
@@ -44,6 +44,7 @@ function fixture({cloud=null,owner=null,offline=false,failVerification=false,swi
  }};
  const ctx=vm.createContext({cloudHydrationGeneration:0,...profiles,...guestAccount,structuredClone,currentCatalogueOrigin,
   qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,lumenProgress:structuredClone(local),localStorage:storage,
+  sequentialSolvedCount:0,normalizeSequentialProgress:()=>Object.keys(remote?.solved||{}).length,
   sessionStorage:{getItem:()=>null},canonicalRecoveryContext:null,canonicalRecovery:{cancel:noop,schedule:noop},
   cloudProfileReady:false,cloudProfileBaseline:null,cloudProfileFailure:null,canonicalResumeOwner:null,acquisitionRecoveryAttempts:0,preserveAttemptSnapshot,
   walletCommandsSupported:async()=>false,canonicalVictoryOutbox:{resume:async()=>{},pending:async()=>[]},
@@ -52,11 +53,11 @@ function fixture({cloud=null,owner=null,offline=false,failVerification=false,swi
   commitCanonicalVictory:noop,commitLegacyVictoryCommand:noop,refreshCanonicalOutboxNotice:async()=>{},
   attemptEngine:{snapshot:()=>null},canonicalAttemptToResume:()=>null,canonicalQuestList:()=>[],
   reconcileDailyIntoCloudProfile,recordCloudDiagnostic:(event,details)=>events.push({event,details}),
-  updateShardMeter:()=>{},renderDaily:noop,updateAuthUI:noop,refreshJourney:noop,resumeCanonicalCampaignBoundary:noop,
+  updateShardMeter:()=>{},renderDaily:noop,updateAuthUI:noop,refreshJourney:noop,resumeCanonicalCampaignBoundary:noop,resumeHydratedCampaignSelection:()=>handoffs++,
   resumeCanonicalVictoryAfterHydration:noop,maybeShowStreakLoss:noop,verifyLegacyProgressMirror:async()=>({ok:true,count:2}),
   document:{getElementById:()=>null},location:{reload:()=>reloads++},console:{warn:noop}
  });
- return {ctx,storage,data,calls,events,hook:vm.runInContext('(async()=>{'+source.slice(start,end)+'})',ctx),get remote(){return remote},get initialized(){return initialized},get reloads(){return reloads}};
+ return {ctx,storage,data,calls,events,hook:vm.runInContext('(async()=>{'+source.slice(start,end)+'})',ctx),get remote(){return remote},get initialized(){return initialized},get reloads(){return reloads},get handoffs(){return handoffs}};
 }
 {
  const f=fixture();await f.hook();
@@ -118,6 +119,10 @@ for(const backupFailed of [false,true]){
  assert([...f.data.values()].includes(raw),'The complete start-only guest profile is archived');
  assert([...f.data].some(([k,v])=>k.startsWith('lumenBeforeAccountSwitchAttempt_')&&v===attemptRaw),'Guest board and run identity are archived before account installation');
  assert.deepEqual(f.remote,cloud,'Guest start cannot change the account cooldown, rewards or wallet');
+ assert.equal(f.handoffs,1,'Existing account selects its campaign immediately after installation');
+ assert.equal(f.ctx.cloudProfileReady,true);
+ assert.equal(f.reloads,0,'Account selection does not require a document restart');
+ await f.hook();assert.equal(f.handoffs,1,'Same-owner Auth refresh never replaces a selected run');
 }
 {
  const local={solved:{},badges:{},stars:{},performances:{},challenges:{},daily:{dates:{},rewards:{}},xp:0,shards:3,catalogueOrigin:currentCatalogueOrigin};
@@ -134,6 +139,7 @@ for(const backupFailed of [false,true]){
 {
  const f=fixture({modernClaim:true});await f.hook();
  assert.equal(f.reloads,1,'First owner installation follows the existing verified reload boundary');
+ assert.equal(f.handoffs,0,'New account seeding keeps the guest run rather than selecting another quest');
  assert.deepEqual(f.remote,guest);assert.equal(f.storage.getItem('lumenCloudOwnerId'),'a');
  assert.ok(f.calls.includes('lumen_get_guest_claim'));assert.ok(!f.calls.includes('lumen_initialize_profile'));
  assert.equal([...f.data.keys()].filter(key=>key.startsWith('lumenGuestClaimV1:')).length,1);
@@ -142,6 +148,14 @@ for(const backupFailed of [false,true]){
  const denied=fixture({modernClaim:true,failVerification:true}),before=denied.storage.getItem('lumenProgressV1');await denied.hook();
  assert.equal(denied.storage.getItem('lumenProgressV1'),before);assert.equal(denied.storage.getItem('lumenCloudOwnerId'),null);assert.equal(denied.ctx.cloudProfileReady,false);
  console.log('Actual hydration: modern guest receipt, repeated auth, exact net balance and failed readback conservation passed');
+}
+{
+ const f=fixture({modernClaim:true}),attempt={attemptId:'retained-guest-run',questId:1,mode:'campaign',state:'PAUSED',board:[[1,0],[0,0]],startedAt:123};
+ const key='lumenActiveAttemptV1',raw=JSON.stringify(attempt);f.storage.setItem(key,raw);
+ f.ctx.attemptEngine={storageKey:key,snapshot:()=>attempt};await f.hook();
+ assert.equal(f.storage.getItem(key),raw,'Guest registration keeps the active run exactly');
+ assert([...f.data].some(([k,v])=>k.startsWith('lumenBeforeAccountSwitchAttempt_')&&v===raw),'The previous verified guest-attempt archive guarantee also remains on registration');
+ assert.equal(f.handoffs,0,'Registration does not navigate away from the preserved guest run');
 }
 {
  const f=fixture({advanceDuringHydration:true});await f.hook();

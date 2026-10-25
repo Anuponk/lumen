@@ -2,10 +2,40 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {canonicalAttemptToResume,nextCanonicalAtLegacyBoundary,preserveAttemptSnapshot} from '../src/campaign/campaign-resume.js';
 import {canonicalQuestList,canonicalInsertedQuestDecision} from '../src/campaign/canonical-quests.js';
+import {nextCanonicalQuest} from '../src/campaign/playable-navigation.js';
+import {currentCatalogueOrigin} from '../src/campaign/catalogue-origin.js';
 const quests=canonicalQuestList(),last=quests.find(q=>q.id==='planned-real-24-q10'),next=quests.find(q=>q.ordinal===last.ordinal+1);
 const completed=quests.filter(q=>q.ordinal<=last.ordinal);
 const progress={solved:Object.fromEntries(completed.filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1])),canonicalQuestState:Object.fromEntries(completed.filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true}]))};
 const available=q=>canonicalInsertedQuestDecision(q,progress).status==='ready';
+
+test('verified ownership handoff selects a catalogue frontier and refreshes its real board without reward writes',async()=>{
+ const vm=await import('node:vm'),{readFileSync}=await import('node:fs'),{functionSource}=await import('./source-tools.mjs');
+ const source=readFileSync('src/ui/game-screen.js','utf8');
+ const inserted=quests.find(q=>q.legacyIndex===null);
+ for(const target of [quests[2],inserted]){
+  const done=quests.filter(q=>q.ordinal<target.ordinal),profile={catalogueOrigin:currentCatalogueOrigin,
+   solved:Object.fromEntries(done.filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1])),
+   canonicalQuestState:Object.fromEntries(done.filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true}]))};
+  const before=JSON.stringify(profile),calls=[];
+  const ctx={qaActive:false,cloudProfileReady:true,lumenUser:{id:'account'},socialChallenge:null,
+   lumenProgress:profile,nextCanonicalQuest,adventureAccessEntitlements:()=>[],canonicalActiveQuest:null,canonicalResumeOwner:null,
+   levelIndex:0,replayMode:true,currentQuestPosition:()=>2,currentQuestLimit:()=>quests.length,
+   attemptEngine:{clear:()=>calls.push('clear')},loadPuzzle:()=>calls.push('load'),refreshJourney:()=>calls.push('refresh')};
+  vm.createContext(ctx);vm.runInContext(functionSource(source,'resumeHydratedCampaignSelection'),ctx);
+  assert.equal(ctx.resumeHydratedCampaignSelection(),true);
+  assert.deepEqual(calls,['clear','load','refresh']);assert.equal(ctx.replayMode,false);
+  assert.equal(ctx.canonicalActiveQuest?.id??quests.find(q=>q.legacyIndex===ctx.levelIndex).id,target.id);
+  assert.equal(ctx.canonicalResumeOwner,target.legacyIndex===null?'account':null);
+  assert.equal(JSON.stringify(profile),before,'Navigation cannot grant an acquisition or change the wallet');
+  for(const patch of [{qaActive:true},{cloudProfileReady:false},{lumenUser:null},{socialChallenge:{id:'social'}}]){
+   const saved=Object.fromEntries(Object.keys(patch).map(k=>[k,ctx[k]]));Object.assign(ctx,patch);calls.length=0;
+   assert.equal(ctx.resumeHydratedCampaignSelection(),false);assert.deepEqual(calls,[]);Object.assign(ctx,saved);
+  }
+  ctx.nextCanonicalQuest=()=>({status:'locked'});calls.length=0;
+  assert.equal(ctx.resumeHydratedCampaignSelection(),false);assert.deepEqual(calls,[],'Locked content cannot replace the preserved attempt');
+ }
+});
 test('the completed numeric boundary resumes the first unfinished canonical constellation',()=>{
  const before=JSON.stringify(progress);
  assert.equal(nextCanonicalAtLegacyBoundary(quests,progress,{atBoundary:true,available}).id,next.id);
