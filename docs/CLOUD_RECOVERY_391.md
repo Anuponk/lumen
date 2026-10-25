@@ -12,11 +12,18 @@ make retries safe. No per-player, conflict-index or application-version rule is
 used. Ordinary CAS/backup writers retain their existing protections.
 
 Deployment requires reviewed application of
-`20261025093627_player_favorable_acquisitions.sql` and the matching client.
+`20261025145734_player_favorable_acquisitions.sql` and the matching client.
 The migration has no backfill, cohort enrollment or automatic production job.
 Client-before-SQL remains safe: a missing endpoint retains the existing partial
 recovery. Rollback keeps archives, receipts and projection guards; do not undo
-recovered player data. This candidate has no production authorization.
+recovered player data. On 25 October the owner explicitly authorized merge,
+automatic publication and this production migration. Supabase applied the exact
+reviewed SQL as `20261025145734`; the source filename and SQL CI reference were
+aligned with that assigned version without rewriting migration history.
+Read-only postchecks confirmed the RPC, private RLS archive, denied client table
+reads and anonymous RPC execution, authenticated RPC execution, badge union and
+best-time helpers. No player profile was manually changed. Application merge and
+publication remain separate facts to verify against the exact release SHA.
 
 Known limits: unknown quest identities are archived pending compatible content;
 unknown noncritical metadata is retained in originals rather than interpreted.
