@@ -1,0 +1,28 @@
+// Administrative read model. A durable server commit is not a device ACK.
+export function playerDates(player,proof){
+ const domains={};
+ for(const name of ['canonical','legacy','wallet'])if(proof?.domains&&Object.hasOwn(proof.domains,name))domains[name]=proof.domains[name];
+ return {activity:player.last_seen,auth:proof?.auth_at,domains,
+  state:['pending','failure'].includes(proof?.state)?proof.state:proof?.state==='confirmed'?'observed':'unknown',
+  observedAt:proof?.observed_at};
+}
+export function datePresentation(value,{now=Date.now(),timeZone=Intl.DateTimeFormat().resolvedOptions().timeZone}={}){
+ if(value===undefined)return {text:'Indisponible',title:'Source indisponible'};
+ if(value===null)return {text:'Jamais observée',title:'Aucune date dans la source consultée'};
+ const stamp=Date.parse(value);if(!Number.isFinite(stamp))return {text:'Indisponible',title:'Date invalide'};
+ const text=new Intl.DateTimeFormat('fr-FR',{dateStyle:'short',timeStyle:'medium',timeZone}).format(stamp);
+ return {text,title:new Date(stamp).toISOString()+' UTC · '+timeZone+' · âge '+Math.max(0,Math.floor((now-stamp)/60000))+' min'};
+}
+export function dateNode(document,value,options){
+ const p=datePresentation(value,options),node=document.createElement('time');node.textContent=p.text;node.title=p.title;
+ if(value&&Number.isFinite(Date.parse(value)))node.dateTime=new Date(value).toISOString();
+ return node;
+}
+export function appendPlayerDates(host,player,proof){
+ const doc=host.ownerDocument,model=playerDates(player,proof);
+ const add=(label,value)=>{const line=doc.createElement('div');line.append(label+' : ',dateNode(doc,value));host.append(line)};
+ add('Dernière activité enregistrée',model.activity);add('Dernière connexion Auth',model.auth);
+ for(const [domain,label] of [['canonical','Quêtes'],['legacy','Historique'],['wallet','Portefeuille']])add('Dernière synchro réussie · '+label,model.domains[domain]);
+ const note=doc.createElement('small');note.textContent='Synchro : dernier commit confirmé par reçu serveur, par domaine. Réception sur l’appareil et synchronisation complète non attestées. Activité : événements analytiques, pouvant inclure une ouverture automatique. Auth : dernière authentification connue, distincte d’une réouverture.';host.append(note);
+ const state=doc.createElement('div');state.textContent='État observé : '+({pending:'en attente',failure:'échec / revue',observed:'file observée sans attente',unknown:'inconnu'}[model.state]);host.append(state);add('Observation de la file',model.observedAt);
+}

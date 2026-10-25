@@ -1,3 +1,4 @@
+import {appendPlayerDates} from './cockpit-dates.js';
 import {qualifyDifficulty} from "../campaign/difficulty.js";
 import {readQuestView} from "../campaign/quest-view.js";
 import {QUEST_MILESTONES,questLearningRules,questPerformanceRecord,questBadgeQualification} from "../campaign/quest-rules.js";
@@ -2046,8 +2047,14 @@ function adminEsc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<
 function adminNumber(v){return new Intl.NumberFormat("fr-FR").format(Number(v)||0)}
 function adminEventLabel(name){return ({session_start:"Ouverture",attempt_started:"Quête commencée",puzzle_start:"Quête commencée",attempt_completed:"Quête réussie",puzzle_complete:"Quête réussie",attempt_reset:"Réinitialisation",attempt_abandoned:"Abandon",hint_used:"Indice utilisé",verify_used:"Vérification",guided_intervention:"Contrôle guidé"}[name]||name)}
 async function loadAdminTimeline(key){
- const box=document.getElementById("adminTimeline");box.innerHTML="<p>Chargement…</p>";
- const {data,error}=await lumenSupabase.rpc("lumen_admin_quest_timeline",{p_player_key:key,p_limit:100});
+ if(!lumenUser||!lumenSupabase||!hasInternalCapability('analytics_cockpit'))return;
+ const owner=lumenUser.id,client=lumenSupabase,box=document.getElementById("adminTimeline"),request={};
+ box.cockpitRequest=request;
+ const authorized=()=>lumenUser?.id===owner&&lumenSupabase===client&&hasInternalCapability('analytics_cockpit')&&box.cockpitRequest===request;
+ box.innerHTML="<p>Chargement…</p>";
+ let response;try{response=await client.rpc("lumen_admin_quest_timeline",{p_player_key:key,p_limit:100})}catch(_){response={error:true}}
+ if(!authorized())return;
+ const {data,error}=response;
  if(error){box.innerHTML="<p>Timeline indisponible.</p>";return}
  box.innerHTML=(data||[]).map(x=>'<div class="admin-event"><span>'+adminEsc(adminEventLabel(x.event_name))+(x.quest_ordinal?" · Q"+x.quest_ordinal:"")+'</span><small>'+new Date(x.occurred_at).toLocaleString("fr-FR")+'</small></div>').join("")||"<p>Aucun événement.</p>";
 }
@@ -2203,6 +2210,8 @@ async function loadAdminCockpit(){
  if(!authorized())return;
  const players=(playerSnapshot.data||[]).map(x=>({...x,current_quest:questMetrics.data?.current_players?.[x.player_key]??null}));
  const playerError=playerSnapshot.error;
+ let observations;try{observations=await requestClient.rpc('lumen_admin_player_observations',{p_player_keys:players.map(p=>p.player_key)})}catch(_){observations={error:true}}
+ if(!authorized())return;
  const realFeedbacks=feedbacks.data||[];
  if(cockpit.error){status.textContent="Cockpit indisponible : "+cockpit.error.message;return}
  const d={...cockpit.data,friction:questMetrics.data?.friction||[],funnel:questMetrics.data?.funnel||[]},m=d.summary||{};
@@ -2232,7 +2241,11 @@ async function loadAdminCockpit(){
  const detailAlerts=incidentAlerts(buildIncidentInvestigation(health?.diagnostics));
  const alerts=[...syncAlerts,...outboxAlerts.map(a=>'Sauvegarde '+a.state+' · '+a.pending+' opération(s) · '+a.platform+' · '+a.version),...detailAlerts.map(a=>a.text),...adminAlerts(d.friction)];document.getElementById("adminAlerts").innerHTML=alerts.map(x=>'<div class="admin-alert"><strong>⚠</strong><span>'+adminEsc(x)+'</span></div>').join("")||"<p>Pas d’anomalie significative avec le volume actuel.</p>";
  document.getElementById("adminPlayers").innerHTML=playerError?'<p>Activité récente indisponible : '+adminEsc(playerError.message)+'</p>':players.map(x=>'<div class="admin-player" data-player="'+adminEsc(x.player_key)+'"><span><strong>'+adminEsc(x.display_name||x.player_label||x.player_type)+'</strong><br><small>'+adminEsc(x.player_type)+" · Q"+(x.current_quest||"—")+' · '+x.sessions+' sessions</small></span><small>'+new Date(x.last_seen).toLocaleString("fr-FR")+'</small></div>').join("");
- document.querySelectorAll("#adminPlayers .admin-player").forEach(x=>x.onclick=()=>loadAdminTimeline(x.dataset.player));
+ document.querySelectorAll("#adminPlayers .admin-player").forEach(x=>{
+  const player=players.find(p=>p.player_key===x.dataset.player);
+  const dates=document.createElement('div');dates.className='admin-player-dates';appendPlayerDates(dates,player,observations.error?undefined:observations.data?.players?.[player.player_key]);x.append(dates);
+  x.onclick=()=>{if(authorized())loadAdminTimeline(x.dataset.player)};
+ });
  const accountRows=document.getElementById("adminAccounts");
  if(accountRows)accountRows.innerHTML=accounts.error?'<tr><td colspan="6">Comptes indisponibles.</td></tr>':(accounts.data||[]).map(x=>'<tr><td>'+adminEsc(x.email||"—")+'</td><td>'+adminEsc(x.nickname||"—")+'</td><td>'+new Date(x.created_at).toLocaleString("fr-FR")+'</td><td>'+(x.last_sign_in_at?new Date(x.last_sign_in_at).toLocaleString("fr-FR"):"—")+'</td><td>'+(x.last_activity?new Date(x.last_activity).toLocaleString("fr-FR"):"—")+'</td><td>'+(questMetrics.data?.current_players?.['u:'+x.user_id]||"—")+'</td></tr>').join("")||'<tr><td colspan="6">Aucun compte.</td></tr>';
  document.getElementById("adminFeedbacks").innerHTML=feedbacks.error?"<p>Feedbacks indisponibles.</p>":realFeedbacks.map(x=>'<div class="admin-feedback"><strong>'+adminEsc(x.kind)+' · '+adminEsc(x.player_label)+(x.puzzle_id?" · Q"+x.puzzle_id:"")+'</strong><p>'+adminEsc(x.message||"Sans commentaire")+'</p><small>'+new Date(x.created_at).toLocaleString("fr-FR")+(x.app_version?" · "+adminEsc(x.app_version):"")+'</small></div>').join("");
