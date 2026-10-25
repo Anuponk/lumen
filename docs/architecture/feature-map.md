@@ -1,5 +1,11 @@
 # Feature map
 
+Restored board selection: `game-screen.js::resumeHydratedCampaignSelection`
+uses `playable-navigation.js::nextCanonicalQuest` after verified installation of
+an existing account with a changed owner. Original attempt archival precedes
+the handoff; the real grid and label refresh together without a map visit.
+Same-owner runs, guest registration and social challenges retain their flows.
+
 Virgin-browser account restore: `persistence/guest-account.js` scopes the default
 reserve/catalogue exception to unowned profiles without acquired facts. Both
 guest checks in the UI hydration hook use it; account authorities stay unchanged.

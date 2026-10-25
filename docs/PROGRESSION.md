@@ -33,6 +33,14 @@ prerequisites, and pack ownership/authentication/hydration still apply.
 
 ## Adventures and access (#96)
 
+After verified restoration of an existing account on an unowned device or an
+account switch, the board and quest label select the account's next playable
+catalogue frontier without opening Mon ciel. The previous profile and active
+attempt are archived and verified before installation. Same-owner refreshes
+retain the selected run/replay; a new account seeded from guest progress keeps
+its guest run. This navigation grants no completion, reward or access, and
+leaves social challenges and unavailable frontiers alone.
+
 Target decisions confirmed on 22 October 2026 for the continuation of #522:
 guest discovery covers the first six **visible** quests; an account is required
 to start a later quest, independently of its persistence key. Already completed

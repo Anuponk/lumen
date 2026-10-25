@@ -1,5 +1,12 @@
 # Existing verification map
 
+Restored grid/label: `player-favorable-browser.mjs` checks actual quest identity,
+grid and label before any map click and after reload, plus same-owner Auth
+refresh preservation. `guest-account-hydration-tests.mjs` guards existing-account
+handoff versus guest seeding; `campaign-resume-tests.mjs` covers both quest
+formats and unavailable/social/session guards. Synthetic browser data and RPCs;
+real-device acceptance remains separate.
+
 Guest start-only hydration: guest-account helper/hook tests run the real first
 gesture producer, reject earned/unknown performance evidence, and verify attempt
 backup failure conservation. The account browser suite starts a signed-out guest

@@ -24,6 +24,7 @@ import {CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCan
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
+import {nextCanonicalQuest} from '../campaign/playable-navigation.js';
 import {extendedSequentialCount,extendedQuestLimit} from "../campaign/extended-boundary.js";
 import {generatedQuestReward,generatedAdventureRewards} from "../campaign/generated-rewards.js";
 import {generatedQuestProgress} from "../campaign/generated-progression.js";
@@ -763,7 +764,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    localStorage.setItem(backupKey,currentLocal);
    if(localStorage.getItem(backupKey)!==currentLocal)throw Error("Sauvegarde du profil invité non vérifiée");
   }
-  if(switchingOwner&&!currentOwner&&attemptEngine.snapshot()){
+  if(switchingOwner&&attemptEngine.snapshot()){
    preserveAttemptSnapshot(localStorage,attemptEngine.storageKey);
   }
   // Local play may advance while initialization/daily reads are in flight.
@@ -898,16 +899,20 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    // Cloud is verified; a full localStorage must not deadlock signed-in play.
    // The authoritative cloud snapshot is installed in memory without reload.
    lumenProgress=structuredClone(cloud);
+   sequentialSolvedCount=normalizeSequentialProgress();
    recordCloudDiagnostic("hydration_local_quota_bypass",{cloudVerified:true});
   }else if(changed){
-   if(!acquisitionRetryContinuation){recordCloudDiagnostic("hydration_reload",{stage:"local_install"});location.reload();return}
-   // The lost response may already have committed the complete union. Normal
-   // coverage plus this verified installation is sufficient; do not restart.
+   if(!acquisitionRetryContinuation&&!(switchingOwner&&existing)){recordCloudDiagnostic("hydration_reload",{stage:"local_install"});location.reload();return}
+   // A lost response may already have committed the union. An existing-account
+   // ownership handoff also refreshes the live view without a document restart.
    lumenProgress=structuredClone(cloud);sequentialSolvedCount=normalizeSequentialProgress();
   }
   cloudProfileFailure=null;
   cloudProfileReady=true;
   acquisitionRecoveryAttempts=0;
+  // A verified existing account must not inherit the anonymous/other owner's
+  // selected board. Its original attempt was archived before installation.
+  if(switchingOwner&&existing)resumeHydratedCampaignSelection();
   resumeCanonicalCampaignBoundary();
    canonicalRecovery.schedule();
   // Do not claim hydration is fully synchronized until the quest mirror is
@@ -2140,6 +2145,19 @@ function restoreCanonicalCampaignAttempt(){
  }
  if(lumenUser&&lumenUser.id!==ownerId){preserveAttemptSnapshot(localStorage,attemptEngine.storageKey);return}
  canonicalActiveQuest=quest;canonicalResumeOwner=ownerId;replayMode=saved.mode==='replay';
+}
+function resumeHydratedCampaignSelection(){
+ if(qaActive||!cloudProfileReady||!lumenUser||socialChallenge)return false;
+ const next=nextCanonicalQuest(lumenProgress.solved,lumenProgress.canonicalQuestState,adventureAccessEntitlements(),lumenProgress);
+ if(next.status!=='ready')return false;
+ // Only called at a verified ownership handoff, after preserving the original.
+ // A same-owner refresh/reconnect never discards an active run or a replay.
+ attemptEngine.clear();
+ canonicalActiveQuest=next.quest.legacyIndex===null?next.quest:null;
+ canonicalResumeOwner=canonicalActiveQuest?lumenUser.id:null;
+ levelIndex=next.quest.legacyIndex??Math.min(currentQuestPosition(),currentQuestLimit()-1);
+ replayMode=false;
+ loadPuzzle();refreshJourney();return true;
 }
 function resumeCanonicalCampaignBoundary(){
  if(qaActive||!cloudProfileReady||!lumenUser||socialChallenge||canonicalActiveQuest||replayMode||learningReplayActive())return false;
