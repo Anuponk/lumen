@@ -59,6 +59,7 @@ import {createGameEngine} from "../game/engine.js";
 import {createAttemptEngine,ATTEMPT_STATES} from "../game/attempt-engine.js";
 import {localDateKey,dateOffsetKey,formatDuration} from "../ui/format.js";
 import {streakFromDates,dailyState,cycleDay,nextReward,qualifiesDailyActivity,grantDaily,grantAutonomyMilestone} from "../campaign/daily-engagement.js";
+import {createOnboardingPreferences} from "./onboarding-preferences.js";
 import {createTutorial} from "./tutorial.js";
 import {createSound} from "./sound.js";
 import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
@@ -1776,14 +1777,45 @@ const LEARNING_INTRO=[
  {title:"Ils gardent leurs distances",copy:"Deux Gardiens ne peuvent jamais se toucher, même en diagonale."},
  {title:"Comment jouer",copy:"Un premier toucher pose une croix pour écarter une case. Un deuxième toucher sur la même case y pose un Gardien. Maintenant, essaie-le toi-même."}
 ];
+const onboardingPreferences=createOnboardingPreferences({storage:localStorage,getOwner:()=>lumenUser?.id,prefix:qaKey('lumenOnboardingV1')});
+function autoMarkingLessonRequired(){return !socialChallenge&&!replayMode&&!learningReplayActive()&&activeQuestOrdinal()===QUEST_MILESTONES.fullBadges&&!lumenProgress.autoCrossUnlockSeen}
+function finishAutoMarkingLesson(){
+ lumenProgress.autoCrossUnlockSeen=1;saveLumenProgress();
+ configureLearningMode();applyQuestRestrictions();
+ document.getElementById('autoCrossWrap').classList.remove('onboarding-control-focus');
+ document.getElementById('autoCross').removeAttribute('aria-describedby');
+ document.getElementById('board').removeAttribute('aria-disabled');
+ learningTip=null;updateScriptedLearning();
+}
+function maybeShowContextualLesson(){
+ if(socialChallenge||replayMode||learningReplayActive())return;
+ if(autoMarkingLessonRequired()){
+  if(!document.getElementById('autoCross').checked){finishAutoMarkingLesson();return}
+  learningTip={title:'Essaie le marquage manuel',copy:'Décoche Marquage auto : sans aide, vise Autonomie, Sans erreur et Maîtrise. Tu peux le recocher aussitôt ; Rapidité reste possible.'};
+  document.getElementById('autoCrossWrap').classList.add('onboarding-control-focus');
+  document.getElementById('autoCross').setAttribute('aria-describedby','scriptedLearnCopy');
+  document.getElementById('board').setAttribute('aria-disabled','true');
+  for(const id of ['undo','hint','verify'])document.getElementById(id).disabled=true;
+  updateScriptedLearning();return;
+ }
+ const lessons={
+  2:['drag','Va plus vite avec le glissé','Maintiens le doigt ou le clic et glisse sur les cases pour les écarter. Tu peux aussi les toucher une par une. Marquage auto est maintenant disponible ci-dessous ; ton choix sera conservé.'],
+  3:['badges','Tes badges, à ton rythme','Rapidité récompense le temps cible. Autonomie et Sans erreur demandent un essai sans assistance ; Maîtrise réunit les trois. Tous sont disponibles depuis la première quête. Retrouve les détails dans Badges.'],
+  4:['hold','Un raccourci facultatif','Un appui long pose un Gardien ; un nouvel appui long le retire. Tu peux garder le cycle habituel : croix, Gardien, vide.']
+ };
+ const lesson=lessons[activeQuestOrdinal()];
+ if(lesson&&!onboardingPreferences.seen(lesson[0])){
+  onboardingPreferences.markSeen(lesson[0]);learningTip={title:lesson[1],copy:lesson[2]};updateScriptedLearning();
+ }
+}
 function activePerformanceEligibility(){return performanceEligibility(activeQuestOrdinal()-1,Math.max(canonicalScopeProgress(lumenProgress).completed,activeQuestOrdinal()))}
-function learningQuestActive(){return questLearningRules(activeQuestOrdinal()).scripted&&!socialChallenge&&(!replayMode||learningReplayActive())}
+function learningQuestActive(){return (questLearningRules(activeQuestOrdinal()).scripted||learningReplayActive()&&activeQuestOrdinal()===2)&&!socialChallenge&&(!replayMode||learningReplayActive())}
 function learningIntroActive(){return activeQuestOrdinal()===1&&learningQuestActive()&&state&&state.flat().every(v=>v===0)&&learningIntroStep<LEARNING_INTRO.length}
 function currentLearningStep(){if(learningIntroActive())return {phase:"intro",introStep:learningIntroStep,cells:[],number:0};return activeQuestOrdinal()===2?dragLearningStep(puz,state):learningStep(puz,state)}
 function scriptedLearningActive(){return !(skipFirstGridTutorial&&!learningReplayActive())&&learningQuestActive()&&!!state&&currentLearningStep().phase!=="complete"}
 function learningMarkAllowed(r,c){const step=currentLearningStep();return step.phase!=="place"&&learningAllows(step,r,c)}
 function scriptedAllowsGuardian(r,c){const step=currentLearningStep();return step.phase==="place"&&learningAllows(step,r,c)}
-function learningDragAllowed(){return !scriptedLearningActive()||["reuse","drag","practice"].includes(currentLearningStep().phase)}
+function learningDragAllowed(){if(autoMarkingLessonRequired()&&document.getElementById('autoCross').checked)return false;return !scriptedLearningActive()||["reuse","drag","practice"].includes(currentLearningStep().phase)}
 function advanceLearningIntro(){
  if(!learningIntroActive())return;
  learningIntroStep++;
@@ -1796,6 +1828,14 @@ function positionLearningCoach(){
  const width=Math.min(mobile?innerWidth-20:330,innerWidth-20);
  card.style.width=width+"px";
  const actions=document.querySelector(".actions").getBoundingClientRect();
+ if(mobile&&autoMarkingLessonRequired()){
+  const controlsBottom=Math.max(document.getElementById('autoCrossWrap').getBoundingClientRect().bottom,document.getElementById('guidedErrorsWrap').getBoundingClientRect().bottom);
+  const space=rect.top-controlsBottom-16;
+  if(space>=48){
+   card.style.maxHeight=Math.min(140,space)+'px';card.style.overflowY='hidden';
+   card.style.left=Math.max(10,(innerWidth-width)/2)+'px';card.style.top=(controlsBottom+8)+'px';return;
+  }
+ }
  const compactLesson=mobile&&activeQuestOrdinal()<=QUEST_MILESTONES.skyTourAfter;
  const belowActions=actions.bottom+8;
  // A compact lesson must never cover the normal actions or puzzle cells.
@@ -1804,7 +1844,7 @@ function positionLearningCoach(){
  const aboveBoardSpace=Math.max(0,rect.top-16);
  const compactAboveBoard=compactLesson&&aboveBoardSpace>=48;
  card.style.maxHeight=compactLesson?(compactAboveBoard?Math.min(96,aboveBoardSpace)+"px":Math.max(32,innerHeight-belowActions-8)+"px"):"";
- card.style.overflowY=compactLesson?"auto":"";
+ card.style.overflowY=compactLesson?"hidden":"";
  const aboveBoard=rect.top-card.offsetHeight-8;
  const top=mobile?(compactAboveBoard?Math.max(8,aboveBoard):compactLesson?Math.min(belowActions,innerHeight-card.offsetHeight-8):aboveBoard>=48?aboveBoard:Math.max(48,Math.min(innerHeight-card.offsetHeight-8,belowActions))):Math.max(12,Math.min(rect.top,innerHeight-card.offsetHeight-12));
  const left=mobile?Math.max(10,(innerWidth-width)/2):rect.right+14+width<=innerWidth?rect.right+14:Math.max(10,rect.left-width-14);
@@ -1831,7 +1871,8 @@ finaleLayoutObserver.observe(challengeBanner);
 finaleLayoutObserver.observe(document.querySelector(".app"));
 window.addEventListener("resize",()=>requestAnimationFrame(fitFinaleBoard));
 function showLearningTip(id,title,copy){
- if(socialChallenge||!((activeQuestOrdinal()===1&&learningQuestActive())||(activeQuestOrdinal()===2&&!replayMode))||learningTipSeen.has(id))return;
+ if(socialChallenge||!((activeQuestOrdinal()===1&&learningQuestActive())||(activeQuestOrdinal()===2&&!replayMode))||learningTipSeen.has(id)||onboardingPreferences.seen('context:'+id))return;
+ onboardingPreferences.markSeen('context:'+id);
  learningTipSeen.add(id);learningTip={title,copy};updateScriptedLearning();
 }
 function updateScriptedLearning(){
@@ -1860,12 +1901,12 @@ function updateScriptedLearning(){
  wrap.classList.remove("is-learning");
  const blocked=celebrated||!!guidedPending||!!verifyPending;
  card.hidden=blocked||(!guided&&!learningTip);
- document.getElementById("learningCoachDismiss").hidden=guided;
+ document.getElementById("learningCoachDismiss").hidden=guided||autoMarkingLessonRequired();
  const next=document.getElementById("learningCoachNext");
  if(next){next.hidden=!(guided&&step?.phase==="intro");next.textContent=step?.introStep===LEARNING_INTRO.length-1?"À moi de jouer":"Suivant"}
  if(skip){skip.hidden=!((activeQuestOrdinal()===1&&!skipFirstGridTutorial&&!socialChallenge)||(learningReplayActive()&&tutorialCompletedProof()));skip.textContent=activeQuestOrdinal()===1&&!skipFirstGridTutorial?"Passer le tutoriel":"Quitter le tutoriel";}
  if(activeQuestOrdinal()<=QUEST_MILESTONES.skyTourAfter&&!socialChallenge)for(const id of ["undo","hint","verify"])document.getElementById(id).disabled=guided;
- if(activeQuestOrdinal()===2&&!guided&&!replayMode&&!learningTip&&hintUsesThisGame===0)learningTip={title:"Découvre les indices",copy:"Essaie maintenant Indice : il t’explique une logique de résolution sans jouer à ta place. Les indices sont offerts jusqu’à la quête 10."};
+
  if(card.hidden)return;
  const text=step?.phase==="intro"?LEARNING_INTRO[step.introStep]:step?learningCopy(step,state,matchMedia("(pointer:coarse)").matches):learningTip;
  document.getElementById("scriptedLearnTitle").textContent=text.title;
@@ -1875,6 +1916,7 @@ function updateScriptedLearning(){
 function finishManualLearningMarks(){updateScriptedLearning();return true}
 function handleLearningTap(event){
  if(firstWelcome?.active)return;
+ if(autoMarkingLessonRequired()&&document.getElementById('autoCross').checked&&event.target?.closest?.('#board,#attemptMask')){event.preventDefault();event.stopImmediatePropagation();document.getElementById('autoCross').focus();return}
  if(!scriptedLearningActive())return;
  const target=event.target instanceof Element?event.target:null;if(!target)return;
  if(document.querySelector('#mapModal:not([hidden]),#rulesModal:not([hidden]),#feedbackModal:not([hidden]),#tutorialOverlay:not([hidden]),#shardRulesModal:not([hidden]),#badgeRulesModal:not([hidden])'))return;
@@ -1959,9 +2001,9 @@ function configureLearningMode(){
  const rules=questLearningRules(activeQuestOrdinal());
  for(const id of ["undo","hint","verify"])document.getElementById(id).disabled=scriptedLearningActive();
  const cb=document.getElementById("autoCross"),wrap=document.getElementById("autoCrossWrap"),note=document.getElementById("learningNote"),guided=document.getElementById("guidedErrors"),gwrap=document.getElementById("guidedErrorsWrap");
- if(!cb||!wrap)return;
+ if(!cb||!wrap)return;wrap.classList.remove('onboarding-control-focus');
  if(!rules.autoMarking&&!replayMode){cb.checked=false;cb.disabled=true;wrap.hidden=false;wrap.classList.add("learning-locked");if(note){note.hidden=true;note.textContent=""}}
- else{cb.disabled=false;cb.checked=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=activeQuestOrdinal()!==QUEST_MILESTONES.fullBadges;note.textContent=activeQuestOrdinal()===QUEST_MILESTONES.fullBadges?"Nouveau · Marquage auto débloqué. Active-le si tu veux que LUMEN écarte les cases impossibles à ta place.":""}}
+ else{cb.disabled=false;cb.checked=onboardingPreferences.auto();wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=activeQuestOrdinal()!==QUEST_MILESTONES.fullBadges;note.textContent=activeQuestOrdinal()===QUEST_MILESTONES.fullBadges?"Marquage auto : ton choix est conservé. Tu peux le réactiver à tout moment.":""}}
  if(guided&&gwrap){
   let saved=null;try{saved=localStorage.getItem("lumenGuidedErrors")}catch(_){}
   gwrap.hidden=false;gwrap.classList.remove("learning-locked");
@@ -1997,30 +2039,13 @@ function finishAutonomyChoice(keepGuided){
  trackAttemptEvent("guided_autonomy_choice",{guided:!!keepGuided});
 }
 function maybeShowAutoCrossUnlock(){
- if(activeQuestOrdinal()!==QUEST_MILESTONES.fullBadges||lumenProgress.autoCrossUnlockSeen||!lumenProgress.fullBadgeIntroSeen)return;
- const o=document.getElementById("autoCrossUnlockOverlay");if(o){o.hidden=false;o.style.display="flex";pauseGameClock()}
+ // The required quest-6 step uses the real checkbox, never a second modal.
 }
 function closeAutoCrossUnlock(){
- lumenProgress.autoCrossUnlockSeen=1;saveLumenProgress();
- const o=document.getElementById("autoCrossUnlockOverlay");if(o){o.hidden=true;o.style.display="none"}
- resumeGameClock();
+ const o=document.getElementById('autoCrossUnlockOverlay');if(o){o.hidden=true;o.style.display='none'}
 }
 function maybeShowBadgeMilestone(){
- let kind=null;
- if(activeQuestOrdinal()===QUEST_MILESTONES.speed&&!lumenProgress.speedBadgeIntroSeen)kind="speed";
- if(activeQuestOrdinal()===QUEST_MILESTONES.fullBadges&&!lumenProgress.fullBadgeIntroSeen)kind="full";
- if(!kind)return;
- const o=document.getElementById("badgeUnlockOverlay"),title=document.getElementById("badgeUnlockTitle"),copy=document.getElementById("badgeUnlockCopy");
- if(!o||!title||!copy)return;
- o.dataset.kind=kind;
- if(kind==="speed"){
-  title.textContent="Des objectifs pour chaque quête";
-  copy.innerHTML="<strong>⚡ Rapidité</strong> : termine cette quête avant le temps cible pour gagner le badge.<br><br>Tous les badges sont accessibles depuis la première quête. Une assistance utilisée empêche Autonomie, Sans erreur et Maîtrise sur cet essai ; Rapidité reste possible. Les règles détaillées restent consultables dans Badges.";
- }else{
-  title.textContent="Choisis tes aides de jeu";
-  copy.innerHTML="<strong>◐ Marquage auto débloqué</strong> (désactivé par défaut).<br><strong>🧠 Autonomie</strong> : sans assistance.<br><strong>✓ Sans erreur</strong> : sans erreur conservée et sans assistance.<br><strong>✦ Maîtrise</strong> : réunis les trois badges sur un essai.<br><br>Détails dans Aides et Badges.";
- }
- o.hidden=false;o.style.display="flex";pauseGameClock();
+ // Badge conditions are an optional contextual lesson, not a play gate.
 }
 function closeBadgeMilestone(){
  const o=document.getElementById("badgeUnlockOverlay");if(!o)return;
@@ -2049,7 +2074,7 @@ function init(){document.getElementById('successRetry').textContent='↻ Réessa
   attemptEngine.create({questId:canonicalActiveQuest?.id??levelIndex+1,mode:attemptMode(),qualifying,challengeId:socialChallenge?.challenge_id||null,board:state});
  }
  hintUsesThisGame=attemptEngine.snapshot()?.helpUses?.hint||0;verifyUsesThisGame=attemptEngine.snapshot()?.helpUses?.verify||0;updateHintButton();updateVerifyButton();
- trackCurrentPuzzleStart();clock();prepareQuestStart();updateAttemptUI();updateScriptedLearning();maybeShowHintEconomyTransition();updateBadgeQualificationStatus()}
+ trackCurrentPuzzleStart();clock();prepareQuestStart();updateAttemptUI();updateScriptedLearning();maybeShowContextualLesson();maybeShowHintEconomyTransition();updateBadgeQualificationStatus()}
 function updateBadgeQualificationStatus(){
  const a=attemptEngine.snapshot(),label=document.getElementById('campaignMapLabel');
  if(!label||socialChallenge||!a)return;
@@ -2867,7 +2892,7 @@ async function celebrateSuccess(){
  document.getElementById("successTime").textContent=commanded?formatDuration(facts.seconds):document.getElementById("time").textContent;
  const qr=document.getElementById("questResult");if(ch){qr.hidden=false;qr.className="quest-result "+(questPassed||lumenProgress.stars[ch.id]?"success":"fail");qr.textContent=questPassed?"✦ Défi réussi ! +25 XP et un éclat gagné.":lumenProgress.stars[ch.id]?"✦ Défi déjà accompli":"Défi échoué — la quête est tout de même accomplie."}else qr.hidden=true;
  const m=canonicalQuestMilestone(canonicalQuestForLegacy(levelIndex)),sub=document.getElementById("successSub");if(sub)sub.textContent=m?(m.kind==="boss"?(canonicalScopeProgress(lumenProgress,{constellationId:canonicalQuestForLegacy(levelIndex).constellationId}).complete?"Défi final réussi · constellation complétée":"Dernière quête réussie · des quêtes restent à accomplir"):"Étape intermédiaire réussie"):(questPassed?"Quête réussie · +25 XP et +1 ✦":"Ton ciel progresse");
- if(levelIndex===1&&sub)sub.textContent="Ton ciel progresse. Rapidité arrive à la quête 3 ; Autonomie et Maîtrise à la quête 6.";
+ if(activeQuestOrdinal()===1&&sub)sub.textContent='Marquage manuel compris ! Dès la prochaine quête, Marquage auto peut écarter les cases impossibles. Décoche-le pour jouer sans cette aide.';
  if(levelIndex<=1)try{localStorage.setItem(qaActive?"lumenQaTutorialSeen":"lumenTutorialSeen","1")}catch(_){}
  if(levelIndex===1)markTutorialCompleted();
  configureSuccessFeedback(questPassed);
@@ -3064,6 +3089,7 @@ function render(){
  const directGuardian=event?.type==='lumen-guardian-toggle';
  if(directGuardian&&!longPressGuardianAllowed(d))return;
  let shown=displayedCellState(r,c),next=directGuardian?(state[r][c]===2?0:2):shown===3?2:(state[r][c]+1)%3,currentGuardians=state.flat().filter(v=>v===2).length;
+ if(autoMarkingLessonRequired()&&document.getElementById('autoCross').checked)return;
  if(scriptedLearningActive()){
   if(learningStage==="intro")return;
   if(learningStage==="place"){if(!scriptedAllowsGuardian(r,c))return;if(state[r][c]===0){next=1}else if(state[r][c]===1){next=2}else next=0}
@@ -3309,8 +3335,16 @@ const hintClose=document.getElementById("hintClose");
 if(hintClose)hintClose.onclick=()=>{clearHintDisplay();hintStage=0;hintFocus=null;render()};
 document.getElementById("undo").onclick=()=>{if(celebrated||scriptedLearningActive())return;const diagnosticWasBlocked=!!(guidedPending||guidedDeferred);if(diagnosticWasBlocked)try{recordGuidedDiagnostic("guided_undo","blocked","unknown")}catch{};if(hist.length){const previous=hist.pop(),pending=attemptEngine.snapshot()?.wrongGuardianPending;if(pending){const [pr,pc]=pending.split(",").map(Number);if(previous?.[pr]?.[pc]!==2)attemptEngine.clearWrongGuardianPending(pending)}state=previous;clearGuidedConflict();clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";render();persistAttemptBoard()}if(diagnosticWasBlocked)try{recordGuidedDiagnostic(guidedPending||guidedDeferred?"guided_input_blocked":"guided_input_released","blocked",guidedPending||guidedDeferred?"blocked":"ready")}catch{}};
 const ac=document.getElementById("autoCross");
-const lumenAutoCrossStored=localStorage.getItem("lumenAutoCross");const legacyAutoCrossStored=localStorage.getItem("regaliaAutoCross");ac.checked=(lumenAutoCrossStored??legacyAutoCrossStored)!=="0";if(lumenAutoCrossStored===null&&legacyAutoCrossStored!==null){localStorage.setItem("lumenAutoCross",legacyAutoCrossStored);localStorage.removeItem("regaliaAutoCross")};
-ac.onchange=()=>{if(celebrated){ac.checked=!ac.checked;return}if(!questLearningRules(activeQuestOrdinal()).autoMarking&&!replayMode){ac.checked=false;return}if(ac.checked){autoUsedThisGame=true;attemptEngine.markAssistance();trackAttemptEvent("auto_marking_enabled")}localStorage.setItem("lumenAutoCross",ac.checked?"1":"0");if(!ac.checked)maybeShowManualCrossTip();hi=null;render()};
+ac.checked=onboardingPreferences.auto();
+ac.onchange=()=>{
+ if(celebrated){ac.checked=!ac.checked;return}
+ if(!questLearningRules(activeQuestOrdinal()).autoMarking&&!replayMode){ac.checked=false;return}
+ const lesson=autoMarkingLessonRequired();
+ onboardingPreferences.setAuto(ac.checked);
+ if(lesson&&!ac.checked)finishAutoMarkingLesson();
+ if(ac.checked){autoUsedThisGame=true;attemptEngine.markAssistance();trackAttemptEvent('auto_marking_enabled')}
+ if(!ac.checked&&!lesson)maybeShowManualCrossTip();hi=null;render();
+};
 function advanceToNextPuzzle(){
  const played=activeQuest(),following=canonicalQuestByOrdinal(played.ordinal+1);
  if(questIsCompleted(lumenProgress,played.id)&&following?.ordinal>QUEST_MILESTONES.discovery&&accountRequired()&&maybeOfferAccount()){
@@ -3365,12 +3399,9 @@ document.getElementById("successSky").onclick=()=>{
  try{learningTour=learningSkyDiscoveryRequired()&&localStorage.getItem("lumenSkyTourSeen")!=="1"}catch(_){}
  openJourneyMap(true,{detail:true,advanceOnClose:true,learningTour,questIndex:targetLegacyIndex,constellationId:targetConstellationId});
 };
-function learningSkyDiscoveryRequired(){return activeQuestOrdinal()===QUEST_MILESTONES.skyTourAfter&&!replayMode&&!socialChallenge}
+function learningSkyDiscoveryRequired(){return false}
 function skyTourActive(){return document.getElementById('skyTour')?.hidden===false}
-function firstLearningSkyVisit(){
- if(socialChallenge||replayMode||activeQuestOrdinal()>QUEST_MILESTONES.skyTourAfter)return false;
- try{return localStorage.getItem('lumenSkyTourSeen')!=='1'}catch{return true}
-}
+function firstLearningSkyVisit(){return false}
 function updateLearningSuccessCTA(){
  const b=document.getElementById("successNew");if(!b)return;
  b.textContent=learningSkyDiscoveryRequired()?"✦ Découvrir Mon ciel":"Quête suivante";
@@ -3508,6 +3539,7 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
  let lines=p.edges.map(e=>{let on=e[0]<p.lit&&e[1]<p.lit,newLine=on&&(e[0]===idx||e[1]===idx);return '<line class="sky-line '+(on?'on ':'')+(newLine?'new-line':'')+'" x1="'+p.pts[e[0]][0]+'" y1="'+p.pts[e[0]][1]+'" x2="'+p.pts[e[1]][0]+'" y2="'+p.pts[e[1]][1]+'"/>'}).join("");
  let stars=p.pts.map((v,i)=>'<circle class="sky-star '+(i<p.lit?'on ':'')+(i===idx&&newlyCompleted?'new-star':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i===idx?6:i<p.lit?4:3)+'"/>').join("");
  canvas.innerHTML='<svg class="sky-reveal-svg" viewBox="0 0 290 115">'+(astronomicalPrimarySvg({id:canonical?.quest.constellationId||CONTENT_CONSTELLATIONS[p.index]?.id},p.lit,p.count,newlyCompleted?Math.max(0,p.lit-(canonical?1:after-beforeEarned)):p.lit)||lines+stars)+'</svg><div>'+p.lit+' / '+p.count+' étoiles</div>';o.hidden=false;
+ if(canonical?.quest.ordinal===1&&newlyCompleted)document.getElementById('skyRevealName').textContent=document.getElementById('successSub').textContent;
  const result=document.getElementById("skyRevealResults"),continueButton=document.getElementById("skyRevealContinue");
  const victory=document.getElementById("successOverlay");
  const isNormalVictory=!!victory&&!document.getElementById("successNew")?.hidden&&!document.getElementById("successRetry")?.hidden;

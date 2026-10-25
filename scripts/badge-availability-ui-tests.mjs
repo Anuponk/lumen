@@ -23,12 +23,9 @@ for(const index of [0,1,2,3])for(const earned of [false,true]){
  assert(html.includes('Autonomie non obtenu'));
 }
 vm.runInContext('maybeShowBadgeMilestone()',ctx);
-assert.equal(controls.badgeUnlockOverlay.hidden,false);
-assert(controls.badgeUnlockCopy.innerHTML.includes('depuis la première quête'));
-assert(!controls.badgeUnlockTitle.textContent.includes('premier badge'));
+assert.equal(controls.badgeUnlockOverlay.hidden,true,'Badge advice must not open a blocking modal');
 ctx.levelIndex=5;vm.runInContext('maybeShowBadgeMilestone()',ctx);
-assert(!controls.badgeUnlockTitle.textContent.includes('maintenant accessibles'));
-assert(controls.badgeUnlockCopy.innerHTML.includes('Marquage auto débloqué'),'The separate assistance unlock remains accurate');
+assert.equal(controls.badgeUnlockOverlay.hidden,true,'Quest 6 uses its real assistance control');
 const markup=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const rulesNote=markup.match(/class="badge-rules-note">([^<]+)/)?.[1]||'';
 assert(rulesNote.includes('dès la quête 1')&&!rulesNote.includes('verrouillées'),'The actual rules dialog must retain four-badge eligibility from quest 1');

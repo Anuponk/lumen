@@ -49,7 +49,9 @@ try{
    check(await snapshot()===before,label+' modal interactions changed quest/teaching state');
    results.push({viewport,quest:quest+1,failures:failures.slice(start)});
   }
-  await evaluate(`(()=>{lumenDiagnostics.setupQuest(5);document.getElementById('manualCrossTip').hidden=true;document.getElementById('questStart').hidden=true;const s=lumenDiagnostics.snapshot();s.state[0][s.puz.sol[0]]=2;lumenDiagnostics.setBoard(s.state)})()`);
+  // This case checks missing MANUAL exclusions; explicitly choose that playstyle.
+  // The P1 default is auto-on, whose derived crosses need no manual hint.
+  await evaluate(`(()=>{lumenDiagnostics.setupQuest(5);const auto=document.getElementById('autoCross');if(auto.checked)auto.click();document.getElementById('manualCrossTip').hidden=true;document.getElementById('questStart').hidden=true;const s=lumenDiagnostics.snapshot();s.state[0][s.puz.sol[0]]=2;lumenDiagnostics.setBoard(s.state)})()`);
   await acknowledgeLearningMilestones(evaluate);
   await click('#hint');
   const hint=await evaluate(`({hidden:document.getElementById('hintCard').hidden,title:document.getElementById('hintTitle').textContent,copy:document.getElementById('hintCopy').textContent,highlighted:document.querySelectorAll('#board .cell.hi').length})`);
