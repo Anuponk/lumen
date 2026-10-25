@@ -53,7 +53,7 @@ function fixture({cloud=null,owner=null,offline=false,failVerification=false,swi
   commitCanonicalVictory:noop,commitLegacyVictoryCommand:noop,refreshCanonicalOutboxNotice:async()=>{},
   attemptEngine:{snapshot:()=>null},canonicalAttemptToResume:()=>null,canonicalQuestList:()=>[],
   reconcileDailyIntoCloudProfile,recordCloudDiagnostic:(event,details)=>events.push({event,details}),
-  updateShardMeter:()=>{},renderDaily:noop,updateAuthUI:noop,refreshJourney:noop,resumeCanonicalCampaignBoundary:noop,resumeHydratedCampaignSelection:()=>handoffs++,
+  updateShardMeter:()=>{},renderDaily:noop,updateAuthUI:noop,refreshJourney:noop,resumeCanonicalCampaignBoundary:noop,resumeHydratedCampaignSelection:({ownershipChanged})=>{if(ownershipChanged)handoffs++},
   resumeCanonicalVictoryAfterHydration:noop,maybeShowStreakLoss:noop,verifyLegacyProgressMirror:async()=>({ok:true,count:2}),
   document:{getElementById:()=>null},location:{reload:()=>reloads++},console:{warn:noop}
  });

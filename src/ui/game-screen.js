@@ -911,9 +911,9 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   cloudProfileFailure=null;
   cloudProfileReady=true;
   acquisitionRecoveryAttempts=0;
-  // A verified existing account must not inherit the anonymous/other owner's
-  // selected board. Its original attempt was archived before installation.
-  if(switchingOwner&&existing)resumeHydratedCampaignSelection();
+  // Resume the verified catalogue frontier after ownership handoff or from an
+  // idle campaign selection. Started runs and replays retain their identity.
+  if(existing)resumeHydratedCampaignSelection({ownershipChanged:switchingOwner});
   resumeCanonicalCampaignBoundary();
    canonicalRecovery.schedule();
   // Do not claim hydration is fully synchronized until the quest mirror is
@@ -2181,12 +2181,22 @@ function restoreCanonicalCampaignAttempt(){
  if(lumenUser&&lumenUser.id!==ownerId){preserveAttemptSnapshot(localStorage,attemptEngine.storageKey);return}
  canonicalActiveQuest=quest;canonicalResumeOwner=ownerId;replayMode=saved.mode==='replay';
 }
-function resumeHydratedCampaignSelection(){
+function resumeHydratedCampaignSelection({ownershipChanged=false}={}){
  if(qaActive||!cloudProfileReady||!lumenUser||socialChallenge)return false;
+ const attempt=attemptEngine.snapshot();
+ if(!ownershipChanged&&(replayMode||attempt?.mode!=='campaign'||attempt.state!==ATTEMPT_STATES.READY||attempt.startedAt||
+  !Array.isArray(attempt.board)||!attempt.board.every(row=>Array.isArray(row)&&row.every(cell=>cell===0))))return false;
  const next=nextCanonicalQuest(lumenProgress.solved,lumenProgress.canonicalQuestState,adventureAccessEntitlements(),lumenProgress);
  if(next.status!=='ready')return false;
- // Only called at a verified ownership handoff, after preserving the original.
- // A same-owner refresh/reconnect never discards an active run or a replay.
+ const nextId=next.quest.legacyIndex===null?next.quest.id:next.quest.legacyIndex+1;
+ if(!ownershipChanged){
+  if(attempt.questId===nextId)return false;
+  // A dormant catch-up selection is not an active run. Archive it before
+  // resuming the account's preserved frontier; never move a started/replay run.
+  try{preserveAttemptSnapshot(localStorage,attemptEngine.storageKey)}catch{
+   recordCloudDiagnostic('campaign_resume_deferred',{reason:'attempt_backup'});return false;
+  }
+ }
  attemptEngine.clear();
  canonicalActiveQuest=next.quest.legacyIndex===null?next.quest:null;
  canonicalResumeOwner=canonicalActiveQuest?lumenUser.id:null;

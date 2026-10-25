@@ -582,6 +582,16 @@ covers numeric and inserted canonical frontiers, unavailable content and social,
 QA and unverified-session guards. Learning rules and gestures are unchanged;
 the restored quest uses the existing board/tutorial initialization.
 
+Same-owner historical frontier: a native synthetic browser restores an owned
+READY canonical catch-up board while numeric acquisitions already reach a later
+Adventure. Assert the later origin frontier, matching grid/label, exact original
+attempt archive and unchanged cloud/balance without a map visit. The existing
+same-owner test now supplies an actual started/paused run rather than an idle
+placeholder and retains its board/run assertions. Helper tests keep started,
+paused, replay, nonempty and already-correct selections; a failed archive must
+not lock the hydrated account. Hydration-hook fixtures retain their existing
+session/mirror assertions while stubbing this separately tested UI selection.
+
 Historical acquisition seed compatibility: `quest-victory-parity-tests.mjs`
 guards verified unversioned first-performance copies, original archival and
 idempotent retry. Divergent times/assistance, added badges or unknown fields,
