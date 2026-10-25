@@ -1,5 +1,17 @@
 # Data and architecture
 
+## Temporary private assistance — #574
+
+[Audit, data contract, budgets and rollout](SUPPORT_574.md). A separate explicit
+24-hour consent permits filtered owned profile/checkpoint copies through
+`lumen_support`. Private support metadata/content tables stay separate from
+ordinary telemetry. Existing capability/cron are reused; all operations check
+Auth/ownership, admin reads are audited, revocation deletes content atomically.
+No game writer, save mutation or reconciliation change; originals remain local.
+The migration/control are prepared and disabled pending explicit production
+authorization. A volatile one-hour queue deliberately does not survive page
+closure. Do not upload the raw multicomponent manual recovery export.
+
 Private recipe/control follow-up (24 October 2026): the shared-project
 `lumen_recette` is private, role-isolated and uses synthetic SQL claims only.
 No player copy or shared Auth mutation is permitted. Release approvals, cohort

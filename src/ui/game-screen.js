@@ -61,6 +61,8 @@ import {localDateKey,dateOffsetKey,formatDuration} from "../ui/format.js";
 import {streakFromDates,dailyState,cycleDay,nextReward,qualifiesDailyActivity,grantDaily,grantAutonomyMilestone} from "../campaign/daily-engagement.js";
 import {createOnboardingPreferences} from "./onboarding-preferences.js";
 import {createTutorial} from "./tutorial.js";
+import {captureSupportCopy} from '../persistence/support-capture.js';
+import {mountSupportPanel,mountSupportDossier} from './support-panel.js';
 import {createSound} from "./sound.js";
 import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 
@@ -86,6 +88,7 @@ let walletSpendInFlight=false,walletPaidPermit=null,pendingVictoryView=null;
 let pendingNavigationEntries=[],syncPresentationOwner=null;
 const shownPendingVictories=new Set();
 let diagnosticEnabled=false,diagnosticOwner=null,diagnosticClient=null,diagnosticPending=false,guidedDiagnosticTrace=null;
+let supportSession=null;
 const diagnosticChoiceKey='lumenDiagnosticChoiceV1';
 function diagnosticContext(){
  const ua=navigator.userAgent||'';
@@ -117,7 +120,10 @@ async function requestDiagnosticPreference(client,enabled){
   return result.data;
  }finally{clearTimeout(timer)}
 }
-function queueDiagnosticPreferenceRefresh(force=false){setTimeout(()=>{void refreshDiagnosticPreference(force)},0)}
+function queueDiagnosticPreferenceRefresh(force=false){
+ try{supportSession?.changed();setTimeout(()=>{void supportSession?.refresh()},0)}catch{}
+ setTimeout(()=>{void refreshDiagnosticPreference(force)},0)
+}
 async function refreshDiagnosticPreference(force=false){
  try{
   const user=lumenUser?.id,client=lumenSupabase;
@@ -151,6 +157,7 @@ function recordGuidedDiagnostic(code,before,after){
  try{
   if(code==='guided_error'||!guidedDiagnosticTrace)guidedDiagnosticTrace=crypto.randomUUID();
   incidentReporter.capture(code,{stage:'guided',before,after,trace:guidedDiagnosticTrace});
+  supportSession?.incident(code);
   if(code==='guided_input_released')guidedDiagnosticTrace=null;
  }catch{}
 }
@@ -230,7 +237,7 @@ function confirmedReplayAllowed(quest){return !qaActive&&gameplaySyncState().con
 // Local-only, privacy-safe cloud diagnostics. Never log IDs, emails, tokens or save payloads.
 const cloudDiagKey="lumenCloudDiagnosticsV1";
 function recordCloudDiagnostic(event,details={}){
- try{const detail=mapCloudDiagnostic(event,details);if(detail)incidentReporter.capture(detail.code,detail)}catch{}
+ try{const detail=mapCloudDiagnostic(event,details);if(detail){incidentReporter.capture(detail.code,detail);supportSession?.incident(detail.code)}}catch{}
  try{
   const previous=JSON.parse(localStorage.getItem(cloudDiagKey)||"[]");
   const entry={at:new Date().toISOString(),event,...details};
@@ -2149,6 +2156,7 @@ async function loadAdminTimeline(key){
  const {data,error}=response;
  if(error){box.innerHTML="<p>Timeline indisponible.</p>";return}
  renderPlayerSessions(box,data,{authorized,scope:owner+':'+key});
+ void mountSupportDossier(box,{client,owner,target:key.slice(2),authorized});
 }
 function adminAlerts(rows){
  const alerts=[];
@@ -3827,6 +3835,20 @@ const accountLater=document.getElementById("accountOptinLater");if(accountLater)
 const retryAccountSync=document.getElementById("retryAccountSync");if(retryAccountSync)retryAccountSync.onclick=retryAccountCloudSync;
 const showAccountSyncDiagnostic=document.getElementById("showAccountSyncDiagnostic");if(showAccountSyncDiagnostic)showAccountSyncDiagnostic.onclick=showAccountCloudDiagnostic;
 const diagnosticConsent=document.getElementById('diagnosticConsent');if(diagnosticConsent)diagnosticConsent.onchange=changeDiagnosticPreference;
+const supportHost=document.getElementById('supportAssistance');
+if(supportHost){
+ supportSession=mountSupportPanel(supportHost,{storage:localStorage,
+  context:()=>({userId:lumenUser?.id,client:lumenSupabase,qa:qaActive}),
+  capture:async(ctx,code)=>{
+   const copy=captureSupportCopy({storage:localStorage,owner:ctx.userId,code,version:appVersion()});
+   try{const queues=await inspectCommandOutboxes(ctx.userId);for(const name of ['Canonical','Legacy','Wallet']){const queue=queues[name];if(queue?.complete)copy.copies[0].facts.push({quest:0,metric:'pending'+name,value:queue.pending.length})}}catch{}
+   return copy;
+  }});
+ installDiagnosticListeners(window,{capture:code=>supportSession.incident(code),refresh:()=>supportSession.refresh()});
+ window.addEventListener('storage',event=>{if(event.key==='lumenSupportRevocationsV1')void supportSession.refresh()});
+ // Local clock enforces expiry even while the phone stays offline.
+ setInterval(()=>{supportSession.changed();const v=supportSession.view();if(v.dossier?.state==='active'&&Date.parse(v.dossier.expires_at)<=Date.now())void supportSession.refresh()},30000);
+}
 const archiveAccountStorage=document.getElementById('archiveAccountStorage');if(archiveAccountStorage)archiveAccountStorage.onclick=compactAccountStorage;
 const exportAccountStorage=document.getElementById('exportAccountStorage');if(exportAccountStorage)exportAccountStorage.onclick=()=>exportLumenRecoveryBundle().catch(()=>{document.getElementById('accountStorageStatus').textContent='Export incomplet : les sauvegardes restent conservées.'});
 if(exportAccountStorage){

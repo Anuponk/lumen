@@ -1,5 +1,11 @@
 # Dependencies and data flow
 
+#574: explicit account opt-in → live owner → typed read-only profile/checkpoint
+projection + bounded incident codes → volatile support queue → separate private
+RPC consent/metadata/content transaction. Selected cockpit player → existing
+capability → audited authenticated download → local hash check/Blob. Withdrawal
+and the existing cron delete only support copies. No edge to any game writer.
+
 Existing-account ownership handoff: verified profile + archived previous attempt
 → one live progress object → `nextCanonicalQuest` (catalogue origin/access)
 → `resumeHydratedCampaignSelection` → existing grid/tutorial initialization.

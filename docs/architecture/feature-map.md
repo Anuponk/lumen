@@ -1,5 +1,12 @@
 # Feature map
 
+Temporary support #574: `persistence/support-capture.js` owns the closed typed
+profile/checkpoint projection; `support-session.js` owns separate consent,
+volatile retries/expiry/revocation; `ui/support-panel.js` owns account and selected
+player disclosures. `game-screen.js` wires live identity and existing incident
+signals. Private support RPC/migration reuses capability/cron, never game writers.
+See [audit and rollout](../SUPPORT_574.md).
+
 Restored board selection: `game-screen.js::resumeHydratedCampaignSelection`
 uses `playable-navigation.js::nextCanonicalQuest` after verified installation of
 an existing account with a changed owner. Original attempt archival precedes
