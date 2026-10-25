@@ -31,7 +31,7 @@ test('actual assistance controls and onboarding follow visible milestones at dif
  const source=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
  for(const ordinal of [1,3,5,6,7,10,11,30])for(const levelIndex of [0,70]){
   const nodes=new Map();const node=id=>{if(!nodes.has(id))nodes.set(id,{hidden:true,style:{},dataset:{},classList:{add(){},remove(){}}});return nodes.get(id)};
-  const ctx={QUEST_MILESTONES,questLearningRules,activeQuestOrdinal:()=>ordinal,levelIndex,replayMode:false,socialChallenge:null,
+  const ctx={QUEST_MILESTONES,questLearningRules,activeQuestOrdinal:()=>ordinal,levelIndex,replayMode:false,socialChallenge:null,lumenUser:null,
    lumenProgress:{},onboardingPreferences:{auto:()=>true},scriptedLearningActive:()=>ordinal===1,localStorage:{getItem:()=>null},document:{getElementById:node},pauseGameClock(){}};
   vm.createContext(ctx);for(const fn of ['configureLearningMode','maybeShowBadgeMilestone','maybeShowAutonomy','learningSkyDiscoveryRequired'])vm.runInContext(functionSource(source,fn),ctx);
   ctx.configureLearningMode();assert.equal(node('autoCross').disabled,ordinal===1);

@@ -27,6 +27,8 @@ export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,
  await evaluate(`sessionStorage.removeItem('favorableServer');sessionStorage.removeItem('favorableLoads');localStorage.setItem('lumenCloudOwnerId',${JSON.stringify(owner)});localStorage.setItem('lumenProgressV1',${JSON.stringify(JSON.stringify(local))});localStorage.removeItem('lumenCloudDiagnosticsV1');localStorage.removeItem('lumenActiveAttemptV1')`);
  const fixture=`
   const owner=${JSON.stringify(owner)};
+  localStorage.setItem('lumenOnboardingV1:guest',JSON.stringify({auto:true}));
+  localStorage.setItem('lumenOnboardingV1:'+owner,JSON.stringify({auto:false}));
   window.__favServer=JSON.parse(sessionStorage.getItem('favorableServer')||${JSON.stringify(JSON.stringify(remote))});
   window.__favGuestStart=sessionStorage.getItem('favorableGuestStart')==='1';
   sessionStorage.setItem('favorableLoads',String(Number(sessionStorage.getItem('favorableLoads')||0)+1));
@@ -72,6 +74,7 @@ export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,
   assert.equal(await evaluate(`sessionStorage.getItem('favorableLoads')`),'1','Conflict resolves without document reload');
   const expectedRecoveries=loseReply?2:1;
   assert.equal(await evaluate('__favRecovery'),expectedRecoveries);assert.equal(await evaluate('__favCommands'),0,'No new victory or money command');
+  assert.equal(await evaluate('document.getElementById("autoCross").checked'),false,'Verified owner restores its manual choice after startup guest controls');
   const progress=await evaluate('lumenDiagnostics.snapshot().progress');
   assert(progress.solved[left.legacyIndex]&&progress.solved[right.legacyIndex]);
   assert.equal(progress.shards,7);assert.equal(progress.performances[left.legacyIndex].bestTime,37);
@@ -85,6 +88,7 @@ export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,
   await until(`__favRightsReads>${rightsReads}`);
   assert.equal(await evaluate(`document.getElementById('mobileAuthStatus').textContent.includes('synchronisée')`),true);
   assert.equal(await evaluate('__favRecovery'),expectedRecoveries,'Token renewal does not repeat a converged recovery');
+  assert.equal(await evaluate('document.getElementById("autoCross").checked'),false,'Same-owner refresh retains the account choice');
   assert.deepEqual(await evaluate(`({id:JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).attemptId,state:lumenDiagnostics.snapshot().state,label:document.getElementById('campaignMapLabel').textContent})`),ownedBoard,'Same-owner hydration preserves the selected board and run');
   // A second device starts without the old cache. Model that independent cache
   // against the same persisted synthetic server, then let normal restore run.
@@ -128,6 +132,7 @@ export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,
   await evaluate(`localStorage.removeItem('lumenCloudDiagnosticsV1')`);await navigate('Page.reload');
   await until(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='hydration_ready')`);
   assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).questId`),selected.attempt.questId,'The restored frontier survives reload without opening the map');
+  assert.equal(await evaluate('document.getElementById("autoCross").checked'),false,'The account choice survives a cold reload');
   assert.equal(await evaluate('JSON.stringify(__favServer)'),serverBefore);
   return {nativeHydration:true,noConflictReload:true,noNewVictory:true,scheduledFlush:true,automaticLostReplyRetry:loseReply,tokenRefresh:true,reload:true,freshDeviceCache:true,guestStartedBeforeLogin:guestStarted,automaticQuestSelection:true,selectionSurvivesReload:true,originalsPreserved:true,confirmedSpending:true,simulatedRpc:true};
  }finally{await send('Page.removeScriptToEvaluateOnNewDocument',{identifier});}

@@ -1219,6 +1219,10 @@ saves default to on after manual quest 1. Lesson/challenge constraints only alte
 the active UI. Quota/refused storage keeps a scoped in-memory choice for this
 session; cache loss/new devices may reset preferences. These are local settings,
 never cloud achievements, rewards, entitlements or a second progress store.
+The board may initialize before Auth resolves. `refreshOnboardingPreferenceOwner`
+reapplies the verified account's controls when readiness and owner change, without
+recreating its board or attempt. Same-owner refreshes leave the active choice alone;
+temporary teaching/challenge restrictions still take precedence.
 The existing cloud autoCrossUnlockSeen marker retains its normal serialization
 and recovery: quest 6 sets it only after unchecking, or observing unchecked.
 No new profile field, RPC, table, outbox or cloud reconciliation rule is added.
