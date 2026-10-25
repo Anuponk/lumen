@@ -1,7 +1,7 @@
 -- Disposable test database only; all synthetic accounts roll back.
 begin;
 create table if not exists lumen.users(user_id uuid primary key references auth.users(id));
-\ir ../../supabase/migrations/20261025063343_cockpit_player_sessions.sql
+\ir ../../supabase/migrations/20261025065959_cockpit_player_sessions.sql
 do $$
 declare admin uuid:=gen_random_uuid();actor uuid:=gen_random_uuid();other uuid:=gen_random_uuid();r jsonb;
 begin

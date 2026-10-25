@@ -448,3 +448,16 @@ The full affected runner then passed all 30 groups with
 `LUMEN_BROWSER_WORKERS=2`, including all ten mandatory browser suites. This
 matches the CI concurrency setting; exact final-main verification is still
 required before declaring a release.
+
+### Authorised schema rollout, 25 October 2026
+
+The owner explicitly authorised production SQL and delivery after CI. The exact
+reviewed date SQL was applied as `20261025065956`; its LF/trim-normalised MD5
+`ab6867cb3c01dc90fd95d6a119416510` matches migration history. Repository filename
+and disposable fixture are aligned to the assigned version without SQL changes.
+The session SQL was applied as `20261025065959` in the subsequent lot. Public
+facades are invokers with empty search paths; anonymous execution and direct
+player receipt/diagnostic SELECT remain denied. Missing-capability calls were
+verified to reject without querying a player. Advisor comparison: no new security
+or performance findings. No player profile, save, event payload or Auth row was
+queried/modified. Client merge and exact publication remain separate gates.
