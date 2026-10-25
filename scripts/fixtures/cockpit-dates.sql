@@ -2,7 +2,7 @@
 begin;
 alter table auth.users add column if not exists last_sign_in_at timestamptz;
 create table if not exists lumen.users(user_id uuid primary key references auth.users(id));
-\ir ../../supabase/migrations/20261025062807_cockpit_activity_dates.sql
+\ir ../../supabase/migrations/20261025065956_cockpit_activity_dates.sql
 do $$
 declare admin uuid:=gen_random_uuid();actor uuid:=gen_random_uuid();other uuid:=gen_random_uuid();r jsonb;original jsonb;
 begin
