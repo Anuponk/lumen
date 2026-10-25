@@ -1,5 +1,9 @@
 # Feature map
 
+Virgin-browser account restore: `persistence/guest-account.js` scopes the default
+reserve/catalogue exception to unowned profiles without acquired facts. Both
+guest checks in the UI hydration hook use it; account authorities stay unchanged.
+
 Cockpit visual status: `ui/cockpit-dates.js::playerSyncStatus` qualifies existing
 queue timestamps; `ui/cockpit-sessions.js` renders text/symbol/colour badges and
 closed date disclosures and uses the same status for filters. Tests extend the

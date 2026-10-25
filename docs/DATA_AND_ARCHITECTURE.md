@@ -202,6 +202,15 @@ the session is usable on that particular browser/PWA.
 
 ## Guest registration preservation (#528)
 
+For an existing account, an unowned browser with no acquired guest facts must
+not compare its default three-shard reserve or current catalogue origin against
+the account's confirmed wallet and historical origin. `guestNeedsReconciliation`
+ignores those defaults and empty daily containers when all acquisition maps/counters are empty;
+all other fields still pass conservative coverage. Exact guest originals remain
+archived before installation. Actual guest earnings, spending, performances,
+authority revisions and unclassified evidence retain the previous safeguards.
+New-account initialization still uses the complete guest seed and net balance.
+
 `guest-account.js` distinguishes an unowned guest from a signed-out account cache. Before first authenticated I/O, preserve and read back the exact guest snapshot under `lumenGuestBeforeAccount_<accountId>` (additional versions retain subsequent offline play). Initialize a missing cloud profile from the whole validated guest snapshot, including net currency, earned badges and compatibility access; use a fresh seed only for another account’s cache. Existing cloud achievements must cover the guest, or the existing conservative reconciler must succeed before installation. Recheck the latest local bytes immediately before installation: achievements earned during initialization/daily I/O must also be covered, or remain pending with the live attempt preserved. Conflicting receipts/balances stay pending with both originals preserved; never infer money, copy another account, or erase guest achievements. Initial creation remains atomic and read-back verified; no duplicate victory commands are emitted. Failed backup, offline initialization, read-back or account switch cannot install an empty profile.
 
 ## Cloud persistence contract

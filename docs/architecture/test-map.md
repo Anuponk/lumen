@@ -1,5 +1,12 @@
 # Existing verification map
 
+Virgin-browser restore: `guest-account-tests.mjs` checks default-reserve/origin
+coverage versus genuine guest facts; `guest-account-hydration-tests.mjs` executes
+the production hook, verifies originals and unchanged cloud, then owned reload.
+`player-favorable-browser.mjs` clears all synthetic local storage, including owner,
+and tests a three-shard starter against the same persisted mock cloud. These are
+automated fixtures, not proof of recovery on a real second device.
+
 Historical recreated-capture recovery: `canonical-durable-outbox-tests.mjs`
 covers paused duplicates, immutable facts, receipt/projection proof, archival and
 session/storage refusals. `legacy-command-client-tests.mjs` exercises the real

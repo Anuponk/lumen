@@ -9,8 +9,8 @@ import {currentCatalogueOrigin} from '../src/campaign/catalogue-origin.js';
 const source=process.argv.includes('--baseline')?execFileSync('../.tools/mingit/cmd/git.exe',['show','HEAD:src/ui/game-screen.js'],{encoding:'utf8'}):readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 const start=source.indexOf('afterAuthCloudSync:async()=>{')+'afterAuthCloudSync:async()=>{'.length,end=source.indexOf('},holdLegacyMergeForFullRestore',start);
 const guest={solved:{0:1,1:1},historyBackup:{0:1,1:1},badges:{first:1},stars:{},performances:{0:{version:3,badges:{speed:true},bestTime:45}},noHint:{0:1},daily:{dates:{},rewards:{}},challenges:{},shards:2,xp:30,skyScore:2,skyHistoryVersion:4,catalogueOrigin:currentCatalogueOrigin};
-function fixture({cloud=null,owner=null,offline=false,failVerification=false,switchDuringRead=false,advanceDuringHydration=false,modernClaim=false}={}){
- const data=new Map([['lumenProgressV1',JSON.stringify(guest)]]);
+function fixture({cloud=null,owner=null,offline=false,failVerification=false,switchDuringRead=false,advanceDuringHydration=false,modernClaim=false,local=guest}={}){
+ const data=new Map([['lumenProgressV1',JSON.stringify(local)]]);
  if(owner)data.set('lumenCloudOwnerId',owner);
  const storage={getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k),key:i=>[...data.keys()][i]??null,get length(){return data.size}};
  let remote=structuredClone(cloud),initialized=0,reads=0,reloads=0,claimReceipt=null;
@@ -40,9 +40,9 @@ function fixture({cloud=null,owner=null,offline=false,failVerification=false,swi
   throw Error('Unexpected RPC '+name);
  }};
  const ctx=vm.createContext({cloudHydrationGeneration:0,...profiles,...guestAccount,structuredClone,currentCatalogueOrigin,
-  qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,lumenProgress:structuredClone(guest),localStorage:storage,
+  qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,lumenProgress:structuredClone(local),localStorage:storage,
   sessionStorage:{getItem:()=>null},canonicalRecoveryContext:null,canonicalRecovery:{cancel:noop,schedule:noop},
-  cloudProfileReady:false,cloudProfileBaseline:null,cloudProfileFailure:null,canonicalResumeOwner:null,
+  cloudProfileReady:false,cloudProfileBaseline:null,cloudProfileFailure:null,canonicalResumeOwner:null,acquisitionRecoveryAttempts:0,
   walletCommandsSupported:async()=>false,canonicalVictoryOutbox:{resume:async()=>{},pending:async()=>[]},
   walletOutbox:{pending:async()=>[]},
   legacyVictoryOutbox:{resume:async()=>{}},replayCanonicalVictoryOutbox:async()=>[],replayLegacyVictoryOutbox:async()=>[],
@@ -81,6 +81,18 @@ for(const options of [{offline:true},{failVerification:true},{switchDuringRead:t
  assert.equal(f.storage.getItem('lumenCloudOwnerId'),null);
 }
 console.log('Actual hydration: guest registration, second device, retry, offline, interrupted readback, account switch and existing cloud passed');
+{
+ const local={solved:{},badges:{},stars:{},performances:{},challenges:{},daily:{dates:{},rewards:{}},xp:0,shards:3,catalogueOrigin:currentCatalogueOrigin};
+ const cloud={...structuredClone(guest),shards:99,walletRevision:7};delete cloud.catalogueOrigin;
+ const f=fixture({cloud,local}),raw=f.storage.getItem('lumenProgressV1');await f.hook();
+ assert.deepEqual(JSON.parse(f.storage.getItem('lumenProgressV1')),cloud,'A first login from a virgin browser restores the full authenticated cloud');
+ assert.equal(f.storage.getItem('lumenCloudOwnerId'),'a');
+ assert([...f.data.values()].includes(raw),'The exact guest starter original is retained');
+ assert.equal(f.initialized,0,'Existing cloud is not initialized again');
+ assert(!f.calls.includes('lumen_cas_profile'),'A virgin device does not mint starter currency or rewrite account history');
+ await f.hook();assert.equal(f.ctx.cloudProfileReady,true,'Reload reaches ready with the restored owned cache');
+ assert.deepEqual(f.remote,cloud,'Repeated hydration does not credit or debit the wallet');
+}
 {
  const f=fixture({modernClaim:true});await f.hook();
  assert.equal(f.reloads,1,'First owner installation follows the existing verified reload boundary');
