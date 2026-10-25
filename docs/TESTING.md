@@ -562,6 +562,17 @@ replaces the insufficient fixture that retained the owner and omitted currency.
 Native browser checks use simulated Auth/RPC; a real private-window login remains
 separate acceptance evidence.
 
+Guest first-gesture regression: the actual `ensureAttemptStarted` producer runs
+before the extracted hydration hook in `guest-account-hydration-tests.mjs`.
+Assert restoration despite start-only timestamps, exact guest and active-board
+archives, unchanged cloud cooldown/rewards/wallet, and refusal on failed attempt
+backup. The helper matrix rejects completed results, extra/unknown fields,
+malformed dates and mismatched indices. `campaign-resume-tests.mjs` retains
+canonical start-archive coverage of the shared classifier.
+`player-favorable-browser.mjs` additionally boots a signed-out virgin device,
+uses a native mouse gesture to start the quest, then signs in through the actual
+Auth callback and checks profile/attempt archives and unchanged mock cloud.
+
 `cockpit-dates-tests.mjs` also guards visual status: recent confirmed/pending/
 failure observations, missing/invalid/future dates, receipt-only evidence and an
 old second-device observation. No stale signal becomes green. Native cockpit

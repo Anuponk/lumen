@@ -701,6 +701,11 @@ export function installCloudProfileLocally(storage,cloud){
 
 // Quarantine only the exact cooldown-only record produced by older canonical
 // starts under the dormant numeric index. Never discard rewards/unknown data.
+export function isAttemptStartPerformance(record,questIndex){
+ return Number.isSafeInteger(questIndex)&&questIndex>=0&&!!record&&typeof record==='object'&&!Array.isArray(record)&&
+  record.questIndex===questIndex&&Object.keys(record).every(key=>['questIndex',...qualificationFields].includes(key))&&
+  typeof record.lastQualifiedAt==='string'&&typeof record.lastQualifiedDay==='string'&&mergeQualificationMetadata(record,record).ok;
+}
 export async function archiveCanonicalStartMetadata(storage,remote,{quest,attempt,legacyIndex,ownerId,accountId,sessionValid=()=>true}={}){
  if(!sessionValid()||!ownerId||ownerId!==accountId||!quest||quest.legacyIndex!==null||quest.id!==attempt?.questId||!attempt.attemptId||
   !['campaign','replay'].includes(attempt.mode)||!['RUNNING','PAUSED'].includes(attempt.state)||!Number.isFinite(attempt.startedAt)||attempt.startedAt<=0||
@@ -710,9 +715,7 @@ export async function archiveCanonicalStartMetadata(storage,remote,{quest,attemp
  const cloud=validateCloudProfile(remote),raw=storage.getItem('lumenProgressV1');
  if(!raw)return {changed:false};
  const local=validateCloudProfile(JSON.parse(raw)),key=String(legacyIndex),record=local.performances?.[key];
- if(!record||typeof record!=='object'||Array.isArray(record)||record.questIndex!==legacyIndex||
-  Object.keys(record).some(k=>!['questIndex',...qualificationFields].includes(k))||
-  typeof record.lastQualifiedAt!=='string'||typeof record.lastQualifiedDay!=='string'||!mergeQualificationMetadata(record,record).ok||
+ if(!isAttemptStartPerformance(record,legacyIndex)||
   Object.hasOwn(cloud.performances||{},key))return {changed:false};
  await preserveRecoverySnapshot(storage,'lumenBeforeCanonicalStartMetadataLocal_',raw);
  await preserveRecoverySnapshot(storage,'lumenBeforeCanonicalStartMetadataRemote_',JSON.stringify(cloud));

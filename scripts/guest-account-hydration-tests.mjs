@@ -6,6 +6,9 @@ import * as profiles from '../src/persistence/cloud-profile.js';
 import * as guestAccount from '../src/persistence/guest-account.js';
 import {reconcileDailyIntoCloudProfile} from '../src/persistence/daily-hydration.js';
 import {currentCatalogueOrigin} from '../src/campaign/catalogue-origin.js';
+import {preserveAttemptSnapshot} from '../src/campaign/campaign-resume.js';
+import {functionSource} from './source-tools.mjs';
+import {ATTEMPT_STATES} from '../src/game/attempt-engine.js';
 const source=process.argv.includes('--baseline')?execFileSync('../.tools/mingit/cmd/git.exe',['show','HEAD:src/ui/game-screen.js'],{encoding:'utf8'}):readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 const start=source.indexOf('afterAuthCloudSync:async()=>{')+'afterAuthCloudSync:async()=>{'.length,end=source.indexOf('},holdLegacyMergeForFullRestore',start);
 const guest={solved:{0:1,1:1},historyBackup:{0:1,1:1},badges:{first:1},stars:{},performances:{0:{version:3,badges:{speed:true},bestTime:45}},noHint:{0:1},daily:{dates:{},rewards:{}},challenges:{},shards:2,xp:30,skyScore:2,skyHistoryVersion:4,catalogueOrigin:currentCatalogueOrigin};
@@ -42,7 +45,7 @@ function fixture({cloud=null,owner=null,offline=false,failVerification=false,swi
  const ctx=vm.createContext({cloudHydrationGeneration:0,...profiles,...guestAccount,structuredClone,currentCatalogueOrigin,
   qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,lumenProgress:structuredClone(local),localStorage:storage,
   sessionStorage:{getItem:()=>null},canonicalRecoveryContext:null,canonicalRecovery:{cancel:noop,schedule:noop},
-  cloudProfileReady:false,cloudProfileBaseline:null,cloudProfileFailure:null,canonicalResumeOwner:null,acquisitionRecoveryAttempts:0,
+  cloudProfileReady:false,cloudProfileBaseline:null,cloudProfileFailure:null,canonicalResumeOwner:null,acquisitionRecoveryAttempts:0,preserveAttemptSnapshot,
   walletCommandsSupported:async()=>false,canonicalVictoryOutbox:{resume:async()=>{},pending:async()=>[]},
   walletOutbox:{pending:async()=>[]},
   legacyVictoryOutbox:{resume:async()=>{}},replayCanonicalVictoryOutbox:async()=>[],replayLegacyVictoryOutbox:async()=>[],
@@ -79,8 +82,34 @@ for(const options of [{offline:true},{failVerification:true},{switchDuringRead:t
  const f=fixture({cloud:{solved:{},badges:{},shards:3,xp:0}}),raw=f.storage.getItem('lumenProgressV1');await f.hook();
  assert.equal(f.storage.getItem('lumenProgressV1'),raw,'Ambiguous preexisting account cannot erase or borrow a guest balance');
  assert.equal(f.storage.getItem('lumenCloudOwnerId'),null);
+ assert(f.events.some(e=>e.event==='hydration_reconciliation'&&e.details.stage==='guest_reconciliation'&&e.details.result==='blocked'&&e.details.reason==='mutable_balance'),'An actual guest conflict reports its bounded cause, not only a generic hydration failure');
 }
 console.log('Actual hydration: guest registration, second device, retry, offline, interrupted readback, account switch and existing cloud passed');
+for(const backupFailed of [false,true]){
+ const local={solved:{},badges:{},stars:{},performances:{},challenges:{},daily:{dates:{},rewards:{}},xp:0,shards:3,catalogueOrigin:currentCatalogueOrigin};
+ const cloud={...structuredClone(guest),shards:99,walletRevision:7};delete cloud.catalogueOrigin;
+ const f=fixture({cloud,local});
+ const attempt={attemptId:'guest-run',questId:'0',mode:'campaign',state:'READY',qualifying:true,board:[[1,0],[0,0]]};
+ const key='lumenActiveAttemptV1';
+ f.ctx.ATTEMPT_STATES=ATTEMPT_STATES;f.ctx.levelIndex=0;f.ctx.canonicalActiveQuest=null;f.ctx.localCalendarDay=()=>new Date().toISOString().slice(0,10);
+ f.ctx.saveLumenProgress=()=>f.storage.setItem('lumenProgressV1',JSON.stringify(f.ctx.lumenProgress));
+ f.ctx.trackAttemptEvent=()=>{};f.ctx.attemptMode=()=>attempt.mode;
+ f.ctx.attemptEngine={storageKey:key,snapshot:()=>attempt,start:()=>{attempt.state='RUNNING';f.storage.setItem(key,JSON.stringify(attempt))}};
+ const begin=vm.runInContext('('+functionSource(source,'ensureAttemptStarted')+')',f.ctx);begin();
+ const raw=f.storage.getItem('lumenProgressV1'),attemptRaw=f.storage.getItem(key);
+ assert.equal(Object.keys(JSON.parse(raw).performances).length,1,'Actual first-gesture producer ran before login');
+ if(backupFailed){const set=f.storage.setItem;f.storage.setItem=(k,v)=>{if(!k.startsWith('lumenBeforeAccountSwitchAttempt_'))set(k,v)};}
+ await f.hook();
+ if(backupFailed){
+  assert.equal(f.storage.getItem('lumenProgressV1'),raw);assert.equal(f.storage.getItem(key),attemptRaw);
+  assert.equal(f.storage.getItem('lumenCloudOwnerId'),null);assert.equal(f.ctx.cloudProfileReady,false);
+  assert.deepEqual(f.remote,cloud);continue;
+ }
+ assert.deepEqual(JSON.parse(f.storage.getItem('lumenProgressV1')),cloud,'Start-only guest metadata must not block account restoration');
+ assert([...f.data.values()].includes(raw),'The complete start-only guest profile is archived');
+ assert([...f.data].some(([k,v])=>k.startsWith('lumenBeforeAccountSwitchAttempt_')&&v===attemptRaw),'Guest board and run identity are archived before account installation');
+ assert.deepEqual(f.remote,cloud,'Guest start cannot change the account cooldown, rewards or wallet');
+}
 {
  const local={solved:{},badges:{},stars:{},performances:{},challenges:{},daily:{dates:{},rewards:{}},xp:0,shards:3,catalogueOrigin:currentCatalogueOrigin};
  const cloud={...structuredClone(guest),shards:99,walletRevision:7};delete cloud.catalogueOrigin;

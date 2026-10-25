@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {currentCatalogueOrigin} from '../src/campaign/catalogue-origin.js';
+import {learningStep} from '../src/game/learning.js';
 
 // Native application/hydration/DOM/storage, synthetic Auth and RPC only. The
 // actual SQL merge/transactions have independent PostgreSQL fixture coverage.
-export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,loseReply=false}){
+export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,loseReply=false,guestStarted=false}){
  await send('Page.enable');await send('Runtime.enable');
  await send('Network.enable');
  await send('Network.setBlockedURLs',{urls:['*supabase*']});
@@ -13,6 +14,7 @@ export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,
  await navigate('Page.navigate',{url:new URL('/scripts/fixtures/storage-quota.html',url).href});
  const quests=canonicalQuestList().filter(q=>q.legacyIndex!==null),[left,right]=quests;
  const owner='favorable-native-fixture';
+ await evaluate(`sessionStorage.removeItem('favorableGuestStart')`);
  const remote={solved:{[right.legacyIndex]:1},badges:{},stars:{},shards:7,walletRevision:8,legacyVictoryRevision:3,
   xp:20,skyScore:0,skyHistoryVersion:4,daily:{},challenges:{},canonicalQuestState:{},
   performances:{[left.legacyIndex]:{time:50,bestTime:50,version:3,attempts:1,badges:{speed:true,mastery:false}}}};
@@ -23,11 +25,12 @@ export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,
  const fixture=`
   const owner=${JSON.stringify(owner)};
   window.__favServer=JSON.parse(sessionStorage.getItem('favorableServer')||${JSON.stringify(JSON.stringify(remote))});
+  window.__favGuestStart=sessionStorage.getItem('favorableGuestStart')==='1';
   sessionStorage.setItem('favorableLoads',String(Number(sessionStorage.getItem('favorableLoads')||0)+1));
-  for(const key of ['lumenTutorialSeen','lumenTutorialCompletedV1','lumenSkyTourSeen','lumenSound'])localStorage.setItem(key,key==='lumenSound'?'off':'1');
+  for(const key of ['lumenTutorialSeen','lumenTutorialCompletedV1','lumenSkyTourSeen','lumenIntroPresentedV1','lumenSound'])localStorage.setItem(key,key==='lumenSound'?'off':'1');
   window.__favRecovery=0;window.__favCommands=0;window.__favRightsReads=0;window.__favLoseReply=${JSON.stringify(loseReply)};
   const persist=()=>sessionStorage.setItem('favorableServer',JSON.stringify(__favServer));persist();
-  window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:{user:{id:owner}}}}),getUser:async()=>({data:{user:{id:owner}}}),onAuthStateChange:cb=>{window.__favAuth=cb;return {data:{subscription:{unsubscribe(){}}}}}},rpc:async(name,args={})=>{
+  window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:__favGuestStart?null:{user:{id:owner}}}}),getUser:async()=>({data:{user:{id:owner}}}),onAuthStateChange:cb=>{window.__favAuth=cb;return {data:{subscription:{unsubscribe(){}}}}}},rpc:async(name,args={})=>{
    if(name==='lumen_restore_profile')return {data:structuredClone(__favServer)};
    if(name==='lumen_reconcile_acquisitions'){
     __favRecovery++;
@@ -82,13 +85,35 @@ export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,
   // against the same persisted synthetic server, then let normal restore run.
   const serverBefore=await evaluate('JSON.stringify(__favServer)');
   await evaluate(`localStorage.clear();localStorage.setItem('lumenProgressV1',JSON.stringify({solved:{},badges:{},xp:0,shards:3,catalogueOrigin:${JSON.stringify(currentCatalogueOrigin)}}))`);
+  if(guestStarted)await evaluate(`sessionStorage.setItem('favorableGuestStart','1')`);
   await navigate('Page.reload');
+  let guestRaw,guestAttempt;
+  if(guestStarted){
+   await until(`typeof __favAuth==='function'&&!!window.lumenDiagnostics&&document.querySelectorAll('#board .cell').length>0`);
+   for(let step=0;step<12&&await evaluate(`document.getElementById('board').dataset.learningStage==='intro'`);step++){
+    await evaluate(`document.getElementById('learningCoachNext').click()`);
+   }
+   const snapshot=await evaluate('lumenDiagnostics.snapshot()'),[row,col]=learningStep(snapshot.puz,snapshot.state).cells[0];
+   const target=await evaluate(`(()=>{const cell=document.querySelector('#board .cell[data-row="${row}"][data-col="${col}"]');cell.scrollIntoView({block:'center'});const r=cell.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
+   await send('Input.dispatchMouseEvent',{type:'mousePressed',...target,button:'left',clickCount:1});
+   await send('Input.dispatchMouseEvent',{type:'mouseReleased',...target,button:'left',clickCount:1});
+   await until(`Object.keys(JSON.parse(localStorage.getItem('lumenProgressV1')).performances||{}).length===1`);
+   guestRaw=await evaluate(`localStorage.getItem('lumenProgressV1')`);guestAttempt=await evaluate(`localStorage.getItem('lumenActiveAttemptV1')`);
+   const start=Object.values(JSON.parse(guestRaw).performances)[0];
+   assert.deepEqual(Object.keys(start).sort(),['lastQualifiedAt','lastQualifiedDay','questIndex']);
+   assert(guestAttempt,'The real first gesture persisted an active guest attempt');
+   await evaluate(`sessionStorage.removeItem('favorableGuestStart');__favGuestStart=false;__favAuth('SIGNED_IN',{user:{id:${JSON.stringify(owner)}}})`);
+  }
   await until(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='hydration_ready')`);
   const restored=await evaluate('lumenDiagnostics.snapshot().progress');
   assert(restored.solved[left.legacyIndex]&&restored.solved[right.legacyIndex]);assert.equal(restored.shards,7);
   assert.equal(await evaluate(`localStorage.getItem('lumenCloudOwnerId')`),owner);
   assert.equal(await evaluate('JSON.stringify(__favServer)'),serverBefore,'A virgin browser restores without changing the cloud or minting its starter reserve');
   assert.equal(await evaluate('__favCommands'),0);
-  return {nativeHydration:true,noConflictReload:true,noNewVictory:true,scheduledFlush:true,automaticLostReplyRetry:loseReply,tokenRefresh:true,reload:true,freshDeviceCache:true,originalsPreserved:true,confirmedSpending:true,simulatedRpc:true};
+  if(guestStarted){
+   const originals=await evaluate(`Object.keys(localStorage).filter(k=>k.startsWith('lumenGuestBeforeAccount_')||k.startsWith('lumenBeforeAccountSwitchAttempt_')).map(k=>localStorage.getItem(k))`);
+   assert(originals.includes(guestRaw));assert(originals.includes(guestAttempt));
+  }
+  return {nativeHydration:true,noConflictReload:true,noNewVictory:true,scheduledFlush:true,automaticLostReplyRetry:loseReply,tokenRefresh:true,reload:true,freshDeviceCache:true,guestStartedBeforeLogin:guestStarted,originalsPreserved:true,confirmedSpending:true,simulatedRpc:true};
  }finally{await send('Page.removeScriptToEvaluateOnNewDocument',{identifier});}
 }
