@@ -1,5 +1,13 @@
 # Testing and quality gate
 
+Public-page release packaging: `python3 scripts/o2switch-deploy-tests.py` runs
+disposable Linux publisher fixtures. It checks that the three reviewed privacy
+HTML pages are published byte-for-byte with mode 644, unrelated root HTML is
+excluded, a forbidden page restores the previous static site, and historical
+revisions without those pages remove stale managed copies. The regression was
+RED at `d2bc918` (three expected failures); these are static publishing tests,
+not evidence of a live account erasure or legal acceptance.
+
 `node scripts/learning-coach-placement-tests.mjs` executes the actual coach
 placement function against the 360x640 header/board geometry for quests 1–2.
 It retains clear space for help/focus, board cells and actions. The existing

@@ -8,6 +8,8 @@ BACKUPS="${HOME}/lumen-deploy-backups"
 LOCK="${HOME}/.lumen-cron-publish.lock"
 MODE="${1:---deploy}"
 REQUESTED_SHA="${2:-}"
+# Closed list: historical revisions may predate these public pages.
+PUBLIC_PAGES=(mentions-legales.html confidentialite.html supprimer-compte.html)
 [[ $# -le 2 && ( "$MODE" == "--deploy" || "$MODE" == "--dry-run" ) ]] || { echo "Usage: $0 [--deploy|--dry-run] [SHA]"; exit 2; }
 [[ -z "$REQUESTED_SHA" || "$REQUESTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid requested SHA" >&2; exit 2; }
 for cmd in git python3 flock cp tar mktemp curl cmp; do command -v "$cmd" >/dev/null || { echo "Missing $cmd" >&2; exit 1; }; done
@@ -115,6 +117,11 @@ if [[ ! -d "$RELEASE" ]]; then
    git cat-file -e "$SHA:$asset" || { echo "Missing verified asset $asset"; exit 1; }
    git show "$SHA:$asset" > "$TMP/$asset"
  done
+ for page in "${PUBLIC_PAGES[@]}"; do
+   if git cat-file -e "$SHA:$page" 2>/dev/null; then
+     git show "$SHA:$page" > "$TMP/$page"
+   fi
+ done
  for dir in src content; do
    git cat-file -e "$SHA:$dir" || { echo "Missing verified directory $dir"; exit 1; }
    git archive "$SHA" "$dir" | tar -xf - -C "$TMP"
@@ -168,6 +175,13 @@ done
 for file in index.html build-info.json sw.js manifest.webmanifest icon.svg icon-maskable.svg; do
  cp -p "$RELEASE/$file" "$TARGET/$file"
 done
+for page in "${PUBLIC_PAGES[@]}"; do
+ if [[ -f "$RELEASE/$page" ]]; then
+  cp -p "$RELEASE/$page" "$TARGET/$page"
+ else
+  rm -f -- "$TARGET/$page"
+ fi
+done
 rm -f -- "$TARGET/transfer.html"
 printf '%s\n' "$SHA" > "$TARGET/.lumen-release-sha"
 # Verify the server answers with the expected application HTML.
@@ -179,6 +193,11 @@ printf '%s' "$BUILD_INFO" | python3 -c 'import json,sys; assert json.load(sys.st
 # Verify the actual public entry points before declaring the job successful.
 for asset in src/main.js src/ui/game-screen.js src/ui/styles.css; do
  curl -fsS --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/$asset?release=$SHA" | cmp -s - "$RELEASE/$asset"
+done
+for page in "${PUBLIC_PAGES[@]}"; do
+ if [[ -f "$RELEASE/$page" ]]; then
+  curl -fsS --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/$page?release=$SHA" | cmp -s - "$RELEASE/$page"
+ fi
 done
 trap - ERR
 echo "Lumen deployed $SHA; backup $BACKUP"
