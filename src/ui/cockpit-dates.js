@@ -18,11 +18,12 @@ export function dateNode(document,value,options){
  if(value&&Number.isFinite(Date.parse(value)))node.dateTime=new Date(value).toISOString();
  return node;
 }
-export function appendPlayerDates(host,player,proof){
+export const DATE_SOURCE_DESCRIPTION='Synchro : dernier commit confirmé par reçu serveur, par domaine. Réception sur l’appareil et synchronisation complète non attestées. Activité : événements analytiques, pouvant inclure une ouverture automatique. Auth : dernière authentification connue, distincte d’une réouverture.';
+export function appendPlayerDates(host,player,proof,{explain=true}={}){
  const doc=host.ownerDocument,model=playerDates(player,proof);
  const add=(label,value)=>{const line=doc.createElement('div');line.append(label+' : ',dateNode(doc,value));host.append(line)};
  add('Dernière activité enregistrée',model.activity);add('Dernière connexion Auth',model.auth);
  for(const [domain,label] of [['canonical','Quêtes'],['legacy','Historique'],['wallet','Portefeuille']])add('Dernière synchro réussie · '+label,model.domains[domain]);
- const note=doc.createElement('small');note.textContent='Synchro : dernier commit confirmé par reçu serveur, par domaine. Réception sur l’appareil et synchronisation complète non attestées. Activité : événements analytiques, pouvant inclure une ouverture automatique. Auth : dernière authentification connue, distincte d’une réouverture.';host.append(note);
+ if(explain){const note=doc.createElement('small');note.textContent=DATE_SOURCE_DESCRIPTION;host.append(note)}
  const state=doc.createElement('div');state.textContent='État observé : '+({pending:'en attente',failure:'échec / revue',observed:'file observée sans attente',unknown:'inconnu'}[model.state]);host.append(state);add('Observation de la file',model.observedAt);
 }

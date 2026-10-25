@@ -31,6 +31,15 @@ begin
  update lumen_commands.outbox_health set failures=1,state='critical' where user_id=actor and pending=1;
  r:=public.lumen_admin_player_observations(array['u:'||actor])->'players'->('u:'||actor);
  assert r->>'state'='failure';assert r->'domains'=original->'domains','failure must not advance receipt dates';
+ update auth.users set last_sign_in_at=now() where id=actor;
+ r:=public.lumen_admin_player_observations(array['u:'||actor])->'players'->('u:'||actor);
+ assert r->'auth_at'<>original->'auth_at','an actual authentication advances only Auth';
+ assert r->'domains'=original->'domains';
+ insert into lumen_commands.wallet_receipts(user_id,operation_id,request,outcome)
+ values(actor,'cockpit-534-resumed','{}','{"revision":2}');
+ r:=public.lumen_admin_player_observations(array['u:'||actor])->'players'->('u:'||actor);
+ assert r->'domains'->'wallet'<>original->'domains'->'wallet','a later durable commit advances the domain';
+ assert r->'domains'->'canonical'=original->'domains'->'canonical';
  update lumen.internal_capabilities set expires_at=now()-interval '1 second' where user_id=admin;
  begin perform public.lumen_admin_player_observations(array['u:'||actor]);raise exception 'expired capability';exception when insufficient_privilege then null;end;
  assert not has_function_privilege('anon','public.lumen_admin_player_observations(text[])','EXECUTE');

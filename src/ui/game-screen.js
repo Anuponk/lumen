@@ -1077,10 +1077,11 @@ function updateAdminTools(){
  if(qaTools)qaTools.hidden=!(shards||analytics||qaActive);
  toggle.parentElement.hidden=!shards;toggle.checked=shards&&unlimitedShardsEnabled();
  if(cockpit)cockpit.hidden=!analytics;
- if(!analytics){
+ const adminModal=document.getElementById('adminCockpit');
+ if(!analytics||(adminModal?.cockpitOwner&&adminModal.cockpitOwner!==lumenUser?.id)){
   for(const id of ['adminDiagnosticIncidents','adminPlayers','adminTimeline','adminAccounts'])document.getElementById(id)?.replaceChildren();
   const timeline=document.getElementById('adminTimeline');if(timeline){timeline.cockpitRequest=null;timeline.cockpitPlayer=null}
-  const modal=document.getElementById('adminCockpit');if(modal)modal.hidden=true;
+  const modal=document.getElementById('adminCockpit');if(modal){modal.hidden=true;modal.cockpitOwner=null}
  }
 }
 function cloudReconciliationMessage(failure){
@@ -2198,6 +2199,7 @@ function renderAdminCatalogue(){
 async function loadAdminCockpit(){
  if(!lumenUser||!lumenSupabase||!hasInternalCapability('analytics_cockpit'))return;
  const requestUser=lumenUser.id,requestClient=lumenSupabase,request={};
+ const modal=document.getElementById('adminCockpit');if(modal)modal.cockpitOwner=requestUser;
  loadAdminCockpit.request=request;
  const authorized=()=>lumenUser?.id===requestUser&&lumenSupabase===requestClient&&hasInternalCapability('analytics_cockpit')&&loadAdminCockpit.request===request;
  const status=document.getElementById("adminCockpitStatus"),days=Number(document.getElementById("adminCockpitDays")?.value||7);

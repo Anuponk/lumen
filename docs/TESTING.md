@@ -550,6 +550,12 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+`node scripts/cockpit-acceptance-tests.mjs` verifies administrator-to-administrator
+scope clearing, rejected/stale timeline responses and separate activity/Auth/
+commit dates during resumed synchronization. Acceptance evidence and untested
+physical scenarios: `docs/validation/2026-10-25-cockpit-534.md`. All prior cockpit,
+incident browser and PostgreSQL tests remain required.
+
 Cockpit sessions #534: `node scripts/cockpit-sessions-tests.mjs` covers bounded
 chronological grouping, missing identities and separate diagnostic correlation.
 The independent incident browser now also runs `cockpit-browser.mjs` at five

@@ -16,9 +16,9 @@ export async function verifyCockpit({send,evaluate,url}){
   renderPlayerDirectory(players,[{player_key:'u:actor',display_name:'Joueur synthétique',player_type:'authenticated',last_seen:'2026-10-25T05:00:00Z',sessions:20}],{players:{'u:actor':{auth_at:'2026-10-23T05:00:00Z',domains:{wallet:'2026-10-24T05:00:00Z'},state:'pending'}}},{authorized:()=>allowed,onSelect:key=>chosen.push(key)});
   const cards=[...sessions.querySelectorAll('details[data-session-key]')];cards[0].querySelector('summary').focus();
   window.cockpitFixture={host,players,sessions,cards,data,render,chosen,deny:()=>{allowed=false;render('admin:player')}};
-  return {count:cards.length,closed:cards.every(c=>!c.open),name:document.activeElement.tagName,stableOrdinal:sessions.textContent.includes('Q91'),overflow:document.documentElement.scrollWidth>innerWidth};
+  return {count:cards.length,closed:cards.every(c=>!c.open),name:document.activeElement.tagName,stableOrdinal:sessions.textContent.includes('Q91'),sharedDateHelp:players.querySelectorAll('details[data-date-sources]').length===1&&players.querySelectorAll('.admin-player-dates small').length===0,overflow:document.documentElement.scrollWidth>innerWidth};
  })()`,true);
- assert.equal(initial.stableOrdinal,true);assert.equal(initial.count,20);assert.equal(initial.closed,true);assert.equal(initial.name,'SUMMARY');assert.equal(initial.overflow,false);
+ assert.equal(initial.sharedDateHelp,true);assert.equal(initial.stableOrdinal,true);assert.equal(initial.count,20);assert.equal(initial.closed,true);assert.equal(initial.name,'SUMMARY');assert.equal(initial.overflow,false);
  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',text:'\r',unmodifiedText:'\r',windowsVirtualKeyCode:13,nativeVirtualKeyCode:13});
  await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
  const state=await evaluate(`(()=>{const f=window.cockpitFixture;return {opened:f.cards[0].open,otherClosed:!f.cards[1].open}})()`);

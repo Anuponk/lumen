@@ -1,5 +1,23 @@
 # Diagnostic collection — #534 phases 0 and 1
 
+## Cockpit lot 3 — security and acceptance
+
+Native 320/390/1440 screenshots also exposed repetitive source explanations in
+every player card. The final view keeps one expandable date explanation and one
+session explanation, with a height-bounded mobile directory. Critical dates and
+observed state stay visible. Native keyboard and five-viewport checks passed
+after this density adjustment; no collection or date meaning changes.
+
+The [three-lot evidence record](validation/2026-10-25-cockpit-534.md) separates
+synthetic Node/native-browser/PostgreSQL results from physical and production
+acceptance. `cockpit-acceptance-tests.mjs` reproduced an administrative scope
+switch retaining the prior view even when both accounts had the capability.
+`updateAdminTools` now clears the directory, accounts, diagnostics, timeline and
+selection immediately when the cockpit owner changes. Stale success/rejection
+guards remain intact. SQL acceptance adds actual Auth change, later receipt,
+optional-consent withdrawal, expired detail and response-size cases. No new
+RPC, data collection, retention, player mutation or automatic repair in lot 3.
+
 ## Cockpit lot 2 — players, sessions, episodes (25 October 2026)
 
 `ui/cockpit-sessions.js` replaces the flat directory/timeline. A labelled search,
