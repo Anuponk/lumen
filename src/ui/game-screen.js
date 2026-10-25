@@ -1165,7 +1165,7 @@ function updateAuthUI(){
    u.textContent="Progression enregistrée sur cet appareil";
    login.hidden=false; logout.hidden=true;
  }
- syncMobileAuthUI();updateAdminTools();
+ refreshOnboardingPreferenceOwner();syncMobileAuthUI();updateAdminTools();
  if(!lumenUser&&accountRequired())maybeOfferAccount();
  if(lumenUser&&wasOfferPending){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_success",null,{source:"account_offer",qa:qaActive});const box=document.getElementById("accountOptin");if(box)box.hidden=true}
 }
@@ -1778,6 +1778,15 @@ const LEARNING_INTRO=[
  {title:"Comment jouer",copy:"Un premier toucher pose une croix pour écarter une case. Un deuxième toucher sur la même case y pose un Gardien. Maintenant, essaie-le toi-même."}
 ];
 const onboardingPreferences=createOnboardingPreferences({storage:localStorage,getOwner:()=>lumenUser?.id,prefix:qaKey('lumenOnboardingV1')});
+let onboardingPreferenceOwner=null;
+function refreshOnboardingPreferenceOwner(){
+ const owner=lumenUser?.id??null;
+ if(!state||!puz||socialChallenge||learningReplayActive()||owner===onboardingPreferenceOwner||owner&&(!cloudProfileReady||localStorage.getItem('lumenCloudOwnerId')!==owner))return;
+ // Session restoration may retain the already displayed run. Refresh only its
+ // presentation controls after the verified owner changes, never its attempt.
+ learningTip=null;configureLearningMode();applyQuestRestrictions();
+ maybeShowContextualLesson();render();
+}
 function autoMarkingLessonRequired(){return !socialChallenge&&!replayMode&&!learningReplayActive()&&activeQuestOrdinal()===QUEST_MILESTONES.fullBadges&&!lumenProgress.autoCrossUnlockSeen}
 function finishAutoMarkingLesson(){
  lumenProgress.autoCrossUnlockSeen=1;saveLumenProgress();
@@ -1998,6 +2007,7 @@ document.addEventListener('click',e=>{
  if(guidedCorrectionClicks.consume(e)){e.preventDefault();e.stopImmediatePropagation()}
 },true);
 function configureLearningMode(){
+ onboardingPreferenceOwner=lumenUser?.id??null;
  const rules=questLearningRules(activeQuestOrdinal());
  for(const id of ["undo","hint","verify"])document.getElementById(id).disabled=scriptedLearningActive();
  const cb=document.getElementById("autoCross"),wrap=document.getElementById("autoCrossWrap"),note=document.getElementById("learningNote"),guided=document.getElementById("guidedErrors"),gwrap=document.getElementById("guidedErrorsWrap");
