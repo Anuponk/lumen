@@ -11,6 +11,12 @@ activity/Auth/receipt/queue dates are retained in a closed
 native “Détails de synchronisation” disclosure. One shared explanation qualifies
 the signals rather than repeating paragraphs on every card.
 
+The furthest-point calculation requires migration
+`20261025191634_cockpit_furthest_quest.sql` as well as the directory label update.
+Retaining the RPC field `current_players` keeps older clients compatible, but
+deploying only the label does not change the server calculation. Acceptance must
+check a higher opening followed by an earlier replay after SQL and client release.
+
 `playerSyncStatus` is a presentation model, not a new health authority. Green
 requires `confirmed` queue evidence with valid timestamps and no observation
 older than 15 minutes (including `oldest_observation_at` across devices). This
