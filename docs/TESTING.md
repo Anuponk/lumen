@@ -562,6 +562,8 @@ read-back, bounded CAS races, response loss, restart/second-device restoration,
 missing migration and storage/session interruption. The production hydration hook
 is executed by `cloud-achievements-session-recovery-tests.mjs`, including automatic
 readiness without reload, preserved pending Wallet intent and scheduled flush.
+The actual UI backoff definition is also executed: lost reply, intervening read
+outage, bounded repeated failures, account switch, active play and offline wake.
 The existing conservative suites remain intact; an unavailable recovery endpoint
 still exposes their previous protected holds.
 

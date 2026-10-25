@@ -250,6 +250,12 @@ owner/client/generation and current local bytes must match before installation.
 This merge never acknowledges pending commands. Cache quota after verified
 archival/read-back permits in-memory play. Missing migration/transient failure
 keeps partial recovery and retry, without claiming convergence.
+Transient acquisition failures use the existing retry scheduler with exponential
+backoff and at most five autonomous retries per window. Online/Auth renewal wakes
+that window; active play, hidden/offline documents and changed identity/client/
+generation prevent emission. Structural refusal and missing migration do not loop.
+An intervening server-read outage retains the retry window without granting replay
+or Wallet proof. Success cancels the hold; repeated failures stay diagnosable.
 `hydration_reconciliation` records `positive_acquisitions`; `hydration_ready` and
 the scheduled flush report subsequent readiness. This supersedes support-only
 treatment of ordinary acquisition differences. It does not authorize ambiguous
