@@ -4,8 +4,8 @@ import {performanceEligibility,badgeCooldownRemaining,PERFORMANCE_UNLOCKS} from 
 export const QUEST_MILESTONES=Object.freeze({discovery:6,speed:PERFORMANCE_UNLOCKS.speed,fullBadges:PERFORMANCE_UNLOCKS.full,autonomy:11,freeHintsThrough:10,skyTourAfter:2});
 export function questLearningRules(ordinal){
  if(!Number.isSafeInteger(ordinal)||ordinal<1)throw Error('Invalid visible quest ordinal');
- return Object.freeze({scripted:ordinal<=QUEST_MILESTONES.skyTourAfter,forcedGuided:ordinal<QUEST_MILESTONES.fullBadges,
-  optionalGuided:ordinal<QUEST_MILESTONES.autonomy,autoMarking:ordinal>=QUEST_MILESTONES.fullBadges,
+ return Object.freeze({scripted:ordinal===1,forcedGuided:ordinal<QUEST_MILESTONES.fullBadges,
+  optionalGuided:ordinal<QUEST_MILESTONES.autonomy,autoMarking:ordinal>1,
   freeHints:ordinal<=QUEST_MILESTONES.freeHintsThrough,discovery:ordinal<=QUEST_MILESTONES.discovery});
 }
 // Compatibility only: saved keys never become gameplay ordinals.

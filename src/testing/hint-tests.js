@@ -47,8 +47,8 @@ async function runHintTests(){
  test("Campagne : chaque quête appartient à une constellation",()=>Array.from({length:campaignQuestCount()},(_,i)=>chapterForGrid(i)).every(i=>i>=0&&i<CONSTELLATIONS.length));
  test("Interaction : le cycle reste exclusion, Gardien, case libre",()=>{const src=render.toString();return src.includes("(state[r][c]+1)%3")});
  test("Apprentissage : poser un Gardien utilise le vrai cycle à deux touchers",()=>{const src=render.toString();return src.includes("state[r][c]===0){next=1")&&src.includes("state[r][c]===1){next=2")&&!src.includes("scriptedAllowsGuardian(r,c)){if(!scriptedAllowsGuardian")});
- test("Apprentissage : les cinq premières quêtes imposent le jeu manuel",()=>[1,2,3,4,5].every(q=>{const c=learningControlsAt(q);return c.autoDisabled&&!c.autoChecked}));
- test("Apprentissage : le Marquage auto se débloque à la quête 6 sans s’activer seul",()=>{const c=learningControlsAt(6);return !c.autoDisabled&&!c.autoChecked});
+ test("Apprentissage : la première quête enseigne le manuel puis laisse le choix",()=>learningControlsAt(1).autoDisabled&&[2,3,4,5].every(q=>!learningControlsAt(q).autoDisabled));
+ test("Apprentissage : la quête 6 restaure le choix courant du Marquage auto",()=>{const c=learningControlsAt(6);return !c.autoDisabled&&typeof c.autoChecked==="boolean"});
  test("Apprentissage : après la quête 2 Mon ciel propose une visite contextuelle",()=>{const src=openJourneyMap().toString();return !!document.getElementById("skyTour")&&!!document.getElementById("skyTourNext")&&src.includes("learningTour")});
  test("Guidage : contrôle activable avec explication persistante",()=>!!document.getElementById("guidedErrors")&&!!document.getElementById("guidedCard")&&typeof guidedConflictForAction==="function"&&typeof showGuidedConflict==="function");
  test("Guidage : validation logique utilise le solveur",()=>guidedConflictForAction.toString().includes("solutions("));
@@ -108,7 +108,7 @@ async function runHintTests(){
  test("Autonomie : la quête 11 propose de jouer sans contrôle guidé",()=>!learningControlsAt(11).guidedDisabled&&maybeShowAutonomy.toString().includes("QUEST_MILESTONES.autonomy")&&!!document.getElementById("autonomyTry")&&!!document.getElementById("autonomyKeep"));
  test("Autonomie : toucher hors popup choisit sans aide",()=>closeAutonomyOverlay.toString().includes("finishAutonomyChoice(false)"));
  test("Apprentissage : les deux premières quêtes guident les actions réelles",()=>scriptedLearningActive.toString().includes("learningQuestActive")&&render.toString().includes("scriptedAllowsGuardian"));
- test("Tutoriel joué : Marquage auto verrouillé pendant les cinq premières quêtes",()=>[1,2,3,4,5].every(q=>{const c=learningControlsAt(q);return c.autoDisabled&&!c.autoChecked}));
+ test("Tutoriel joué : Marquage auto disponible après la première quête",()=>learningControlsAt(1).autoDisabled&&[2,3,4,5].every(q=>!learningControlsAt(q).autoDisabled));
  test("Apprentissage : le glissé utilise le plateau normal dans les étapes autorisées",()=>document.querySelector("#board")&&moveDragCross.toString().includes("markDragCross"));
  test("Tip exclusions : apparaît au premier arrêt de le Marquage auto",()=>model.ac.onchange.toString().includes("maybeShowManualCrossTip")&&maybeShowManualCrossTip.toString().includes("lumenManualCrossTipSeen"));
 
@@ -271,10 +271,10 @@ async function runHintTests(){
    }finally{Object.assign(model,saved);render()}
  });
 
- test("Apprentissage : la fin de quête 2 exige explicitement la découverte du ciel",()=>{const src=handleSuccessAdvance.toString()+setupOutsideDefaults.toString();return src.includes("learningSkyDiscoveryRequired")&&!src.includes('bindOutsideDefault("successOverlay"')&&document.getElementById("skyTourNext")});
+ test("Apprentissage : le ciel reste une action volontaire après la quête 2",()=>{const src=handleSuccessAdvance.toString()+setupOutsideDefaults.toString();return src.includes("learningSkyDiscoveryRequired")&&!src.includes('bindOutsideDefault("successOverlay"')&&document.getElementById("skyTourNext")});
 
  test("Apprentissage : le ciel est expliqué zone par zone",()=>{const steps=getSkyTourSteps();return steps.length>=4&&steps.some(s=>s.target==="sectorTabs")&&steps.some(s=>s.target==="puzzleGrid")&&steps.some(s=>s.target==="performanceLegend")&&steps.some(s=>s.target==="skyCard")});
- test("Apprentissage : le déblocage du Marquage auto explique le choix et les badges",()=>{const o=document.getElementById("autoCrossUnlockOverlay");return maybeShowAutoCrossUnlock.toString().includes("QUEST_MILESTONES.fullBadges")&&!!o&&o.textContent.includes("Rapidité")&&o.textContent.includes("Autonomie")&&o.textContent.includes("Maîtrise")});
+ test("Apprentissage : le déblocage du Marquage auto explique le choix et les badges",()=>{const o=document.getElementById("autoCrossUnlockOverlay");return !maybeShowAutoCrossUnlock.toString().includes("pauseGameClock()")&&!!o&&o.textContent.includes("Rapidité")&&o.textContent.includes("Autonomie")&&o.textContent.includes("Maîtrise")});
  test("Apprentissage : les fenêtres de jalons cachées ne bloquent pas le plateau",()=>{
    return ["autoCrossUnlockOverlay","badgeUnlockOverlay"].every(id=>{
      const overlay=document.getElementById(id),hidden=overlay.hidden,style=overlay.style.cssText;
@@ -283,8 +283,8 @@ async function runHintTests(){
    });
  });
  test("Apprentissage : le choix du Contrôle guidé explique l’intervention réelle sur les badges",()=>{const o=document.getElementById("autonomyOverlay");return maybeShowAutonomy.toString().includes("QUEST_MILESTONES.autonomy")&&o.textContent.includes("ne te pénalise pas tant qu")&&o.textContent.includes("s’il bloque une erreur")&&o.textContent.includes("Rapidité")});
- test("Apprentissage : Rapidité est introduit exactement à la quête 3",()=>{const src=maybeShowBadgeMilestone.toString();return src.includes("QUEST_MILESTONES.speed")&&QUEST_MILESTONES.speed===3&&document.getElementById("badgeUnlockOverlay")});
- test("Apprentissage : Autonomie, Sans erreur et Maîtrise sont introduits à la quête 6",()=>{const src=maybeShowBadgeMilestone.toString();return src.includes("QUEST_MILESTONES.fullBadges")&&QUEST_MILESTONES.fullBadges===6&&src.includes("Autonomie")&&src.includes("Sans erreur")&&src.includes("Maîtrise")&&src.includes("Rapidité")});
+ test("Apprentissage : les badges ne bloquent pas la quête 3",()=>{const src=maybeShowBadgeMilestone.toString();return !src.includes("pauseGameClock()")&&QUEST_MILESTONES.speed===3&&document.getElementById("badgeUnlockOverlay")});
+ test("Apprentissage : Autonomie, Sans erreur et Maîtrise sont introduits à la quête 6",()=>{const src=maybeShowBadgeMilestone.toString();return !src.includes("pauseGameClock()")&&QUEST_MILESTONES.fullBadges===6});
  test("Badges : les jalons pédagogiques suivent l’éligibilité réelle",()=>{const q2=performanceEligibility(1),q3=performanceEligibility(2),q6=performanceEligibility(5);return [q2,q3,q6].every(q=>Object.values(q).every(Boolean))});
  test("Onboarding : les jalons de badges suivent l’éligibilité réelle",()=>{const firstEligible=badge=>{for(let i=0;i<100;i++)if(performanceEligibility(i)[badge])return i;return -1};return firstEligible("speed")===0&&firstEligible("autonomy")===0&&firstEligible("noError")===0&&firstEligible("mastery")===0});
  test("Badges : Sans erreur exige zéro assistance et zéro erreur confirmée",()=>{const clean=performanceAttempt({questIndex:5,seconds:59}),wrong=performanceAttempt({questIndex:5,seconds:59,mistakeCommitted:true}),assisted=performanceAttempt({questIndex:5,seconds:59,assistanceUsed:true});return clean.noError&&clean.mastery&&!wrong.noError&&!wrong.mastery&&!assisted.autonomy&&!assisted.noError&&!assisted.mastery});
