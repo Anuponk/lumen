@@ -1,5 +1,20 @@
 # Testing and quality gate
 
+## Fluid onboarding P1 (#569 / #576)
+
+onboarding-fluid-tests.mjs executes the real victory handler for quests 1–5,
+the quest-6 checked/already-unchecked lesson, and scoped preference recreation,
+account switches and storage refusal. quest-policy tests preserve the independent
+six-visible-quest registration boundary. learning-browser-tests.mjs retains the
+manual quest-1 gestures/intro, tests optional quest-2 drag with reload and direct
+quest-3 navigation; the general browser suites retain rewards, replays, cloud
+failure, guest claim, constellation/finale and catalogue-growth regressions.
+Changed assertions replace the obsolete mandatory quest-2 lesson/tour contract
+with the product decision of 25 October, without changing award eligibility.
+Run test-affected.mjs --full, including all embedded runHintTests sizes and strict
+catalogue checks. Physical phones, real signup/cloud transfer and screen-reader
+acceptance remain separate from isolated Chromium/CDP fixtures.
+
 ## Player ergonomics (#555, #552, #566)
 
 `ux-lot-tests.mjs` covers catalogue successors (including inserted quests and

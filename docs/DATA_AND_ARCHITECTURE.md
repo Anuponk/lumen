@@ -1217,11 +1217,25 @@ One challenge link may have many independent participants. “Mes défis” is t
 ### Security-advisor note
 Supabase reports the two social tables as `rls_enabled_no_policy` and the anonymous social RPCs as callable SECURITY DEFINER functions. For #18 this is intentional: guests are a product requirement, direct table access is denied by RLS, and the narrow RPCs enforce the ownership/one-attempt contract. These warnings are not a claim that the whole project is security-clean; unrelated existing advisor warnings remain and must be reviewed separately.
 
+## Onboarding local preference (#569 / #576)
+
+ui/onboarding-preferences.js stores presentation-only auto choice and viewed tip
+IDs in lumenOnboardingV1:<owner-or-guest> (QA uses the existing qaKey namespace).
+The owner is read dynamically at every access; no global lumenAutoCross or
+regaliaAutoCross value is imported because its account owner is unknown. Old
+saves default to on after manual quest 1. Lesson/challenge constraints only alter
+the active UI. Quota/refused storage keeps a scoped in-memory choice for this
+session; cache loss/new devices may reset preferences. These are local settings,
+never cloud achievements, rewards, entitlements or a second progress store.
+The existing cloud autoCrossUnlockSeen marker retains its normal serialization
+and recovery: quest 6 sets it only after unchecking, or observing unchecked.
+No new profile field, RPC, table, outbox or cloud reconciliation rule is added.
+
 ## Current learning controller (#57)
 
-`src/game/learning.js` is a pure, read-only lesson planner over the canonical board. It produces the expected cell actions and context-specific copy, using the audited opening grid and its `learnOrder`. `game-screen.js` enforces the interaction gate and presents the coach. It does not keep a second teaching board or persist a parallel lesson cursor; refresh resumes by deriving the step from the restored attempt board. Later placements spotlight the territory instead of the solution cell. Quest 2 derives a short placement/drag lesson from the same persisted board using `dragLearningStep`, then releases free gameplay and normal assistance controls. The transient pointer gesture freezes its permitted cells until release so completing the row mid-drag cannot mark unrelated cells. The older stage #25 descriptions above record the historical extraction, not the current learning behavior.
+`src/game/learning.js` is a pure, read-only lesson planner over the canonical board. It produces the expected cell actions and context-specific copy, using the audited opening grid and its `learnOrder`. `game-screen.js` enforces the interaction gate and presents the coach. It does not keep a second teaching board or persist a parallel lesson cursor; refresh resumes by deriving the step from the restored attempt board. Later placements spotlight the territory instead of the solution cell. Quest 2 is free play with optional drag advice. Explicit learning replay can still derive the historical gesture lesson from the same board using `dragLearningStep`. The transient pointer gesture freezes its permitted cells until release so completing the row mid-drag cannot mark unrelated cells. The older stage #25 descriptions above record the historical extraction, not the current learning behavior.
 
-Validation: `scripts/learning-tests.mjs` proves the five forced deductions and requested exclusions; `scripts/learning-browser-tests.mjs` exercises real touch/mouse actions, ignored taps, reload, drag, complete quest 1, free quest 2 and Mon ciel navigation on 360x640, 390x844, 768x1024 and 1440x900 viewports. Both are part of the CI gate.
+Validation: `scripts/learning-tests.mjs` proves the five forced deductions and requested exclusions; `scripts/learning-browser-tests.mjs` exercises real touch/mouse actions, ignored taps, reload, drag, complete quest 1, free quest 2, direct ordinary continuation and optional Mon ciel navigation on 320x568, 360x640, 390x844, 768x1024 and 1440x900 viewports. Both are part of the CI gate.
 ### Server incident age and alert scope (#398)
 
 `20261017181513_sync_health_incident_tracking.sql` versions the existing bounded

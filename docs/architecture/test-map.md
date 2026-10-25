@@ -1,5 +1,11 @@
 # Existing verification map
 
+Fluid onboarding (#569/#576): onboarding-fluid-tests.mjs executes direct ordinary
+victory navigation, the real quest-6 lesson and account-scoped local preferences.
+learning-browser-tests.mjs covers manual quest 1, free 2–5, voluntary sky, reload,
+the actual sixth-quest checkbox and immediate re-enable at 320/360/390 and desktop.
+Existing policy/account/cloud suites preserve six-quest signup, rewards and holds.
+
 Restored grid/label: `player-favorable-browser.mjs` checks actual quest identity,
 grid and label before any map click and after reload, plus same-owner Auth
 refresh preservation. `guest-account-hydration-tests.mjs` guards existing-account

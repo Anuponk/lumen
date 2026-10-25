@@ -308,14 +308,27 @@ destination based on the active quest.
 “Mes défis” belongs under Mon ciel. New results use a small unread indicator. Push permission must be requested contextually (“Préviens-moi quand quelqu'un relève mes défis”), never as an unexplained first-launch permission prompt.
 
 
-### Quest 2 → Mon ciel learning handoff
-The end of quest 2 is part of onboarding, not ordinary success navigation. The primary CTA explicitly teaches the destination: **Découvrir Mon ciel**. The success backdrop is inert at this point; opening the sky must be an intentional action.
+### Fluid onboarding (#569 / #576, product decision 25 October 2026)
+Quest 1 retains SEE → UNDERSTAND → ACT and real manual exclusions. Its result
+introduces automatic marking for subsequent quests. Quests 2–5 are free play:
+dismissible contextual advice explains drag (2), badges (3), then long press (4).
+No automatic generic tutorial or mandatory sky tour interrupts this chain.
+Help and Mon ciel remain available voluntarily. Ordinary victories retain one
+shared result with earned stars/badges, primary **Quête suivante**, secondary
+**Mon ciel**. Advancing requires an explicit action and existing catalogue access.
+Constellation/adventure/finale handling is preserved; #575 remains separate.
 
-On the first guided visit, teach the real screen progressively rather than with one generic paragraph: highlight and explain (1) constellation navigation, (2) quest/progression cards, (3) performance badges, and (4) the constellation drawing and earned stars. Use **SEE → UNDERSTAND → ACT**: one highlighted real zone and one short explanation at a time. Only the final step offers **Jouer la quête 3**.
-
-
-### Progressive assistance unlocks
-Assistance options are introduced only when they become meaningful. On quest 6, announce **Marquage auto** with a short modal: it is an optional, legitimate comfort-oriented alternative to manual marking, not the “wrong” way to play. Explain the reward trade-off before play: using it counts as assistance, so Rapidité remains possible but Autonomie, Sans erreur and consequently Maîtrise do not.
+### Progressive assistance choices
+After manual learning, Marquage auto defaults on and remembers the voluntary
+choice locally per guest/account. A temporary lesson or challenge override never
+overwrites this preference. At visible quest 6, spotlight the real checkbox and
+require the player to uncheck it before interacting with the board; an already
+unchecked box satisfies the lesson without a synthetic gesture. Immediately allow
+re-enabling it. Record completion with the existing autoCrossUnlockSeen marker;
+replays do not impose teaching. No second assistance modal is presented.
+Assistance prevents Autonomie, Sans erreur and Maîtrise; Rapidité remains possible.
+This is independent of the unchanged guest boundary: six visible quests may be
+completed before registration is required to continue. No lock is bypassed.
 
 When the player reaches the autonomy milestone (quest 11), explain the **Contrôle guidé** choice. The player may turn it off and may re-enable it later. The important distinction is intervention, not the visual toggle alone: keeping guided control enabled does not invalidate an attempt unless it actually prevents/corrects an error. An intervention counts as assistance and removes Autonomie/Sans erreur/Maîtrise; Rapidité remains available. Teach trade-offs without shaming assisted play.
 

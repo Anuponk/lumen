@@ -32,13 +32,13 @@ test('actual assistance controls and onboarding follow visible milestones at dif
  for(const ordinal of [1,3,5,6,7,10,11,30])for(const levelIndex of [0,70]){
   const nodes=new Map();const node=id=>{if(!nodes.has(id))nodes.set(id,{hidden:true,style:{},dataset:{},classList:{add(){},remove(){}}});return nodes.get(id)};
   const ctx={QUEST_MILESTONES,questLearningRules,activeQuestOrdinal:()=>ordinal,levelIndex,replayMode:false,socialChallenge:null,
-   lumenProgress:{},scriptedLearningActive:()=>ordinal<=2,localStorage:{getItem:()=>null},document:{getElementById:node},pauseGameClock(){}};
+   lumenProgress:{},onboardingPreferences:{auto:()=>true},scriptedLearningActive:()=>ordinal===1,localStorage:{getItem:()=>null},document:{getElementById:node},pauseGameClock(){}};
   vm.createContext(ctx);for(const fn of ['configureLearningMode','maybeShowBadgeMilestone','maybeShowAutonomy','learningSkyDiscoveryRequired'])vm.runInContext(functionSource(source,fn),ctx);
-  ctx.configureLearningMode();assert.equal(node('autoCross').disabled,ordinal<6);
+  ctx.configureLearningMode();assert.equal(node('autoCross').disabled,ordinal===1);
   assert.equal(node('guidedErrors').disabled,ordinal<6);assert.equal(node('guidedErrors').checked,ordinal<11);
-  ctx.maybeShowBadgeMilestone();assert.equal(node('badgeUnlockOverlay').hidden,![3,6].includes(ordinal));
+  ctx.maybeShowBadgeMilestone();assert.equal(node('badgeUnlockOverlay').hidden,true);
   ctx.maybeShowAutonomy();assert.equal(node('autonomyOverlay').hidden,ordinal!==11);
-  assert.equal(ctx.learningSkyDiscoveryRequired(),ordinal===2);
+  assert.equal(ctx.learningSkyDiscoveryRequired(),false);
  }
 });
 
@@ -120,9 +120,12 @@ test('cold numeric replay restores its quest and mode before strict engine resto
 test('contextual learning tips follow the visible lesson, never a dormant numeric frontier',()=>{
  const source=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
  for(const ordinal of [2,7])for(const levelIndex of [1,70]){
-  const ctx={activeQuestOrdinal:()=>ordinal,learningQuestActive:()=>ordinal<=2,socialChallenge:null,replayMode:false,levelIndex,learningTipSeen:new Set(),updates:0,updateScriptedLearning(){ctx.updates++}};
+  const viewed=new Set();
+  const ctx={onboardingPreferences:{seen:id=>viewed.has(id),markSeen:id=>viewed.add(id)},activeQuestOrdinal:()=>ordinal,learningQuestActive:()=>ordinal<=2,socialChallenge:null,replayMode:false,levelIndex,learningTipSeen:new Set(),updates:0,updateScriptedLearning(){ctx.updates++}};
   vm.createContext(ctx);vm.runInContext(functionSource(source,'showLearningTip'),ctx);ctx.showLearningTip('tools','Fixture','Fixture');
   assert.equal(ctx.updates,ordinal===2?1:0,ordinal+' at '+levelIndex);
+  ctx.learningTipSeen.clear();ctx.showLearningTip('tools','Fixture','Fixture');
+  assert.equal(ctx.updates,ordinal===2?1:0,'A remembered optional explanation is not repeated');
  }
 });
 

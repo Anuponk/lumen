@@ -158,6 +158,11 @@ Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This loo
 
 ## Entry points and shape
 
+Fluid onboarding (#569/#576): `ui/onboarding-preferences.js` owns local scoped
+auto choice/tip history; `game-screen.js` reuses the real coach/checkbox, existing
+`autoCrossUnlockSeen` acknowledgement and ordinary victory navigation. Quest 1
+remains constrained; quests 2–5 have optional advice. No new cloud writer.
+
 Hydration #536: `cloud-profile.js` fixed-domain/stage diagnostic helpers retain
 wallet refusals separately from partial reward recovery. The game-screen hook
 checks its account/client after the final mirror await. No new reward policy,
