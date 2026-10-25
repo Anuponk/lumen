@@ -315,6 +315,17 @@ function walletConflict(local,cloud){
 function canonicalQuestCovered(local,remote){
  if(sameCloudProfile(local,remote))return true;
  const run=remote?.runPerformance;
+ // Acquisition recovery can seed an unversioned copy of a historical first
+ // performance. It is a redundant projection, not evidence of a new badge run.
+ // Admit only that exact known shape, never an arbitrary unversioned replay.
+ if(local?.solved&&remote?.solved&&!Object.hasOwn(local,'runPerformance')&&
+  run&&typeof run==='object'&&!Array.isArray(run)&&
+  Object.keys(run).length===4&&['seconds','assisted','bestTime','badges'].every(key=>Object.hasOwn(run,key))&&
+  Number.isFinite(run.seconds)&&run.seconds>=0&&Number.isFinite(run.bestTime)&&run.bestTime>=0&&
+  typeof run.assisted==='boolean'&&sameCloudProfile(run.badges,{})){
+  const {badges,...performance}=run,{runPerformance,...reward}=remote;
+  if(sameCloudProfile(performance,local.performance)&&canonicalAchievementCovered(local,reward))return true;
+ }
  if(!local?.solved||!remote?.solved||run?.version!==3)return false;
  const immutable=entry=>Object.fromEntries(Object.entries(entry).filter(([key])=>!['badges','runPerformance'].includes(key)));
  if(!sameCloudProfile(immutable(local),immutable(remote)))return false;

@@ -229,6 +229,25 @@ async function sessionFixture({conflict=false,quota=false,deferWallet=false}={})
   }};
 }
 
+test('historical acquisition seed installs once then completes hydration without another recovery RPC or victory',async()=>{
+ const f=await sessionFixture(),local=JSON.parse(f.storage.getItem('lumenProgressV1'));
+ local.legacyVictoryRevision=1;
+ local.canonicalQuestState['fixture-quest'].performance={seconds:48,bestTime:48,assisted:false};
+ f.storage.setItem('lumenProgressV1',JSON.stringify(local));
+ Object.assign(f.ctx.lumenProgress,structuredClone(local));
+ f.remote=structuredClone(local);
+ f.remote.canonicalQuestState['fixture-quest'].runPerformance={seconds:48,bestTime:48,assisted:false,badges:{}};
+ for(let restart=0;restart<2;restart++){
+  await f.hook();
+  assert.equal(f.ctx.cloudProfileReady,restart===1,JSON.stringify(f.events));assert.equal(f.ctx.cloudProfileFailure,null);
+  assert.equal(f.ctx.reloads,1,'The ordinary verified installation reloads exactly once');
+  assert.equal(f.ctx.lumenProgress.shards,local.shards);
+  assert.deepEqual(JSON.parse(f.storage.getItem('lumenProgressV1')).canonicalQuestState,f.remote.canonicalQuestState);
+  assert.equal(f.calls.includes('lumen_reconcile_acquisitions'),false);
+  await f.assertEvidence();f.restart();
+ }
+});
+
 test('favorable recovery completes the production hydration hook in the current session without reload or a new victory',async()=>{
  for(const hold of ['wallet','quest-authority','cas-race']){
  const f=await sessionFixture({conflict:true}),rpc=f.ctx.lumenSupabase.rpc;

@@ -550,6 +550,15 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Historical acquisition seed compatibility: `quest-victory-parity-tests.mjs`
+guards verified unversioned first-performance copies, original archival and
+idempotent retry. Divergent times/assistance, added badges or unknown fields,
+unsupported versions, changed first rewards, existing local runs, missing
+authority and Wallet conflicts remain refused. The real hydration hook in
+`cloud-achievements-session-recovery-tests.mjs` installs once and reaches readiness
+after the ordinary reload without another recovery RPC or victory. These use
+synthetic data; affected-device confirmation remains separate.
+
 Virgin-browser restoration: `guest-account-tests.mjs` and the actual UI hook in
 `guest-account-hydration-tests.mjs` cover an unowned starter with three shards and
 the current catalogue against an existing historical account, including a zero
