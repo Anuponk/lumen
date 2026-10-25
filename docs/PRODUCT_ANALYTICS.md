@@ -1,5 +1,37 @@
 # Product analytics contract
 
+## Administrative registered-player view
+
+The recent-player directory shows registered identities only, by key/type,
+without classifying nicknames. `Joueur XXXX` is an anonymous hash label and is
+not evidence of QA. Existing server QA/traffic filters remain authoritative for
+known test exclusions. View restriction does not rewrite analytics, delete
+guests or change aggregate statistics; the heading states its registered scope.
+
+## Stable quest reads (#522, candidate)
+
+Lifecycle events carry `stable_quest_id` and `quest_ordinal`; their historical
+`puzzle_id` remains the original numeric key plus one, or null for stable-only
+quests. The admin quest metrics/timeline resolve current ordinals through the
+server quest rules. Contradictory stable/numeric identities are not attributed
+to a quest. The funnel uses visible teaching milestones. The directory's
+**Point le plus avancé** uses the highest current catalogue ordinal observed
+over the player's lifetime in quest opening/start/completion events, across
+unambiguously linked devices. A later replay of an earlier quest cannot lower it.
+This is an observed reached point, not a completed-quest count or the currently
+open board; absent telemetry stays unknown. It never takes the maximum raw
+historical numeric key. The compatible RPC field remains `current_players`;
+the 1,000-player bound uses last qualifying activity independently of progression.
+The reporting window still applies to friction/funnel; session timelines remain
+chronological.
+
+These read-only RPCs require a current `analytics_cockpit` capability, exclude
+QA/non-human/unspecified traffic and cannot mutate campaign or reward data.
+Guest-to-user linking requires one unambiguous authenticated owner for the
+anonymous identity; an explicit event user always owns that event. Operational
+day/row limits do not limit catalogue size. Feedback captures stable identity
+in metadata and never substitutes a dormant quest's numeric ID.
+
 Issue #65 measures campaign lifetime and friction without logging cell-by-cell play.
 
 ## Identity and privacy
@@ -128,7 +160,23 @@ The analytics ingestion allow-list accepts canonical attempt/friction events and
 
 
 ### Admin account directory (#112)
+
+Recent player cards use labelled/symbolised green, amber, red and grey badges
+for recent observed idle queues, pending work, reported problems and unknown/old
+signals. This is not complete-device sync confirmation. Signals older than the
+15-minute display freshness window (including the oldest device observation)
+are grey and remain inspectable, with all original dates, under collapsed
+“Détails de synchronisation”. Filters use the same qualified badge state. No
+new data collection or authority is inferred from Auth/receipt timestamps.
 The cockpit can list created authentication accounts through `lumen_admin_accounts(limit)`. The RPC reads email and authentication timestamps directly from `auth.users` only after checking the authenticated caller has the `analytics_cockpit` capability. Email is not copied into `analytics_events`, is not part of player telemetry, and the RPC is revoked from public/anonymous roles.
+
+The recent registered-player list joins this already-loaded bounded account
+response by exact user identity. It shows the email when the trimmed nickname is
+empty and searches both fields regardless of which is displayed (case/accent and
+surrounding-whitespace insensitive). Missing/unavailable account metadata keeps
+the prior label; it never borrows another account's email. All cockpit sections
+can be collapsed independently with native headings, without removing loaded
+content or filter values. No RPC, schema, collection or aggregate changes.
 
 
 ### Shared Supabase auth isolation (#112)

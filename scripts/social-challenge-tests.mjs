@@ -7,6 +7,7 @@ assert.deepEqual(challengeEligibility({priorPerformance:{attempts:0},run:{autono
 assert.equal(challengeEligibility({priorPerformance:{attempts:1},run:mastery}).canChallenge,false,"replay cannot create challenge");
 assert.equal(challengeEligibility({priorPerformance:{attempts:9},run:mastery}).remarkable,false,"replay mastery is not remarkable");
 assert.equal(challengeEligibility({priorPerformance:{},run:mastery,firstCompletion:false}).canChallenge,false,"A historical solved quest without performance metadata is still a replay");
+assert.deepEqual(challengeEligibility({priorPerformance:{},run:{...mastery,qualifying:false},firstCompletion:true}),{firstPlay:true,remarkable:false,canChallenge:true},'An unqualified run never advertises an earned Mastery');
 
 const snap=challengeSnapshot({questIndex:11,seconds:87.8,run:mastery,assistanceUsed:false});
 assert.equal(snap.questId,12);

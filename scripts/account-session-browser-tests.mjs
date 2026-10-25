@@ -4,6 +4,12 @@ import fs from 'node:fs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {verifyWalletAndOfflineFlow} from './wallet-flow-browser.mjs';
 import {verifyPrivacyRequests,verifyBundledLibraries} from './privacy-browser.mjs';
+import {verifyCompletedQuestHold} from './completed-quest-hold-browser.mjs';
+import {verifyQuotaRecovery} from './quota-recovery-browser.mjs';
+import {verifyTransactionalCommandCache} from './transactional-command-cache-browser.mjs';
+import {verifyDomainReplay} from './domain-replay-browser.mjs';
+import {verifyHistoricalClaim} from './historical-claim-browser.mjs';
+import {verifyPlayerFavorableRecovery} from './player-favorable-browser.mjs';
 import {connectBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
 const {send,evaluate,errors}=await connectBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -15,6 +21,7 @@ localStorage.setItem('lumenSound','off');
 window.__authCalls=[];
 window.__fixtureLedgerWrites=0;window.__fixtureSnapshotWrites=0;
 window.__fixtureLedgerAttempts=0;
+window.__diagnosticRows=JSON.parse(sessionStorage.getItem('fixtureDiagnosticRows')||'[]');
 window.__fixtureCommandReceipts=new Map();
 window.__fixtureLegacyReceipts=new Map();window.__fixtureLegacyWrites=0;window.__fixtureLegacyAttempts=0;
 const isolatedRecovery=sessionStorage.getItem('fixtureIsolatedRecovery')==='1';
@@ -49,9 +56,22 @@ window.supabase={createClient(url,key,options){
  const set=(event,value)=>{session=value;storage.setItem('fixtureAuthSession',JSON.stringify(value));callback(event,value)};
  window.__emitAuthEvent=event=>set(event,session);
  return {rpc:async(name,args)=>{
+  if(name==='lumen_diagnostic_preference'){
+   if(typeof args?.p_enabled==='boolean')sessionStorage.setItem('fixtureDiagnosticConsent',String(args.p_enabled));
+   const enabled=sessionStorage.getItem('fixtureDiagnosticConsent')==='true';
+   if(!enabled){window.__diagnosticRows=[];sessionStorage.removeItem('fixtureDiagnosticRows')}
+   return {data:{enabled,since:new Date().toISOString(),purpose:'534-v1'},error:null};
+  }
+  if(name==='lumen_record_diagnostics'){
+   const allowed=sessionStorage.getItem('fixtureDiagnosticConsent')==='true';
+   if(allowed)for(const event of args.p_events)if(!window.__diagnosticRows.some(row=>row.id===event.id))window.__diagnosticRows.push(structuredClone(event));
+   sessionStorage.setItem('fixtureDiagnosticRows',JSON.stringify(window.__diagnosticRows));
+   return {data:{disabled:!allowed,accepted:allowed?args.p_events.map(e=>e.id):[]},error:null};
+  }
   if(name==='lumen_wallet_command_version')return {error:{code:'PGRST202'},status:404};
   if(!isolatedRecovery)return name==='lumen_restore_profile'?{data:null,error:{message:'simulated restore outage'}}:{data:[],error:null};
   if(name==='lumen_restore_profile')return {data:structuredClone(window.__fixtureProfile),error:null};
+  if(name==='lumen_reconcile_acquisitions')return {error:{code:'PGRST202'},status:404};
   if(['lumen_commit_legacy_command','lumen_get_legacy_command'].includes(name)&&args.p_expected_user_id!=='fixture-player')return {data:null,error:{code:'42501'},status:403};
   if(name==='lumen_legacy_command_version')return {data:1,error:null};
   if(name==='lumen_get_legacy_command')return {data:window.__fixtureLegacyReceipts.get(args.p_operation_id)??null,error:null};
@@ -72,7 +92,23 @@ window.supabase={createClient(url,key,options){
    if(window.__fixtureLegacyLost)throw Error('simulated lost response after commit');
    return {data:window.__fixtureLegacyReceipts.get(args.p_operation_id),error:null};
   }
-  if(['lumen_commit_canonical_command','lumen_get_canonical_command'].includes(name)&&args.p_expected_user_id!=='fixture-player')return {data:null,error:{code:'42501'},status:403};
+  if(['lumen_commit_canonical_command','lumen_get_canonical_command','lumen_commit_quest_command','lumen_get_quest_command'].includes(name)&&args.p_expected_user_id!=='fixture-player')return {data:null,error:{code:'42501'},status:403};
+  if(name==='lumen_get_quest_command'){
+   const receipt=window.__fixtureCommandReceipts.get(args.p_operation_id);
+   return {data:receipt?.request?receipt:receipt?{request:receipt,outcome:{newlyCompleted:receipt.newlyCompleted},recordedAt:receipt.recordedAt}:null,error:null};
+  }
+  if(name==='lumen_commit_quest_command'){
+   window.__fixtureLedgerAttempts++;
+   if(window.__fixtureLedgerError)return {data:null,error:{code:window.__fixtureLedgerError},status:401};
+   if(!window.__fixtureCommandReceipts.has(args.p_operation_id)){
+    const {applyQuestVictory}=await import('/src/campaign/quest-victory.js');
+    const {canonicalQuestById}=await import('/src/campaign/canonical-quests.js');
+    const outcome=applyQuestVictory(window.__fixtureProfile,canonicalQuestById(args.p_quest_id),args.p_facts);
+    window.__fixtureCommandReceipts.set(args.p_operation_id,{request:{version:2,operationId:args.p_operation_id,questId:args.p_quest_id,facts:args.p_facts},outcome,recordedAt:new Date().toISOString()});
+    window.__fixtureLedgerWrites++;window.__persistFixtureServer();
+   }
+   return {data:{profile:structuredClone(window.__fixtureProfile)},error:null};
+  }
   if(name==='lumen_canonical_command_version')return {data:1,error:null};
   if(name==='lumen_get_canonical_command')return {data:window.__fixtureCommandReceipts.get(args.p_operation_id)??null,error:null};
   if(name==='lumen_cas_profile'){window.__fixtureSnapshotWrites++;return {data:null,error:{code:'22023',message:'legacy victory command required; preserve pending data and update client'}};}
@@ -232,10 +268,15 @@ try{
   // Exercise the automatic quest milestone through a real guest victory, too.
   const originalGuest=await evaluate("localStorage.getItem('lumenProgressV1')");
   for(const dismiss of ['accountOptinClose','accountOptinLater']){
-   await evaluate(`localStorage.setItem('lumenProgressV1',JSON.stringify({solved:{0:1,1:1,2:1,3:1},badges:{historical:1}}));localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenAccountOfferNextMilestone');localStorage.setItem('lumenTutorialSeen','1');localStorage.setItem('lumenTutorialCompletedV1','1')`);
+    // Seed after the outgoing document's pagehide has persisted its live attempt.
+    // Cold resume now correctly preserves that attempt; it must not replace this
+    // independent six-quest discovery fixture.
+    const discoveryFixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:`localStorage.setItem('lumenProgressV1',JSON.stringify({solved:{0:1,1:1,2:1,3:1,4:1},badges:{historical:1}}));localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenAccountOfferNextMilestone');localStorage.setItem('lumenTutorialSeen','1');localStorage.setItem('lumenTutorialCompletedV1','1')`});
    await navigate('Page.reload');
+   await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:discoveryFixture.identifier});
    await acknowledgeLearningMilestones(evaluate);
-   assert.equal(await evaluate('lumenDiagnostics.snapshot().levelIndex'),4);
+    assert.equal(await evaluate('lumenDiagnostics.snapshot().levelIndex'),5);
+    await evaluate(`if(!document.getElementById('questStart').hidden)document.getElementById('questGo').click()`);
    await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
    await until(`!document.getElementById('skyReveal').hidden && !document.getElementById('skyRevealResults').hidden`);
    await evaluate(`document.getElementById('skyRevealNext').click()`);
@@ -243,11 +284,42 @@ try{
    const before=await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress.solved)`);
    await evaluate(`document.getElementById('${dismiss}').click()`);
    assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),true);
-   await until('lumenDiagnostics.snapshot().levelIndex===5');
+    assert.equal(await evaluate('lumenDiagnostics.snapshot().levelIndex'),5,'Dismissing cannot start quest 7 without an account');
+    assert.equal(await evaluate(`document.getElementById('mapModal').hidden`),false,'Guest can continue browsing');
+    // #552: an account-locked card is actionable to explain the gate again;
+    // it must still refuse to start the quest or change the retained attempt.
+    const attemptBeforeAccountRetry=await evaluate(`localStorage.getItem('lumenActiveAttemptV1')`);
+    assert.equal(await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="planned-real-01-q07"]').disabled`),false);
+    await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="planned-real-01-q07"]').click()`);
+    assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),false,'A blocked continuation explicitly explains the account requirement');
+    assert.equal(await evaluate('lumenDiagnostics.snapshot().levelIndex'),5,'The discovery guard still refuses the next quest');
+    assert.equal(await evaluate(`localStorage.getItem('lumenActiveAttemptV1')`),attemptBeforeAccountRetry,'Explaining the gate cannot create or replace an attempt');
+    await evaluate(`document.getElementById('accountOptinClose').click()`);
    assert.equal(await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress.solved)`),before,'Automatic offer dismissal preserves earned victories');
    assert.deepEqual(await evaluate('window.__authCalls'),[],'Continuing as guest must not authenticate');
   }
-  await evaluate(`localStorage.setItem('lumenProgressV1',${JSON.stringify(originalGuest)});localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenAccountOfferNextMilestone')`);
+  const guestOwner=await evaluate(`localStorage.getItem('lumenCloudOwnerId')`);
+  for(const quest of [canonicalQuestList().find(q=>q.legacyIndex!==null&&q.ordinal>6),canonicalQuestList().find(q=>q.legacyIndex===null)]){
+   const progress={solved:Object.fromEntries(canonicalQuestList().filter(q=>q.ordinal<=6&&q.legacyIndex!==null).map(q=>[q.legacyIndex,1])),badges:{historical:1},xp:42,shards:7,autonomySeen:1,fullBadgeIntroSeen:1,speedBadgeIntroSeen:1,autoCrossUnlockSeen:1};
+   const saved={attemptId:'guest-held-'+quest.id,questId:quest.legacyIndex===null?quest.id:quest.legacyIndex+1,mode:'campaign',state:'PAUSED',startedAt:Date.now()-5000,activeDuration:5000,qualifying:true,assistanceUsed:false,mistakeCommitted:false,resetCount:0,board:quest.reg.map(row=>row.map(()=>0))};
+   const seed=await send('Page.addScriptToEvaluateOnNewDocument',{source:`localStorage.setItem('lumenCloudOwnerId','guest-held-owner');localStorage.setItem('lumenProgressV1',${JSON.stringify(JSON.stringify(progress))});localStorage.setItem('lumenActiveAttemptV1',${JSON.stringify(JSON.stringify(saved))});`});
+   await navigate('Page.reload');await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:seed.identifier});
+   await until(`!document.getElementById('mobileAuthAction').disabled`);
+   await evaluate(`if(!document.getElementById('accountOptin').hidden)document.getElementById('accountOptinClose').click()`);
+   const before=await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress)`);
+   const solved=quest.sol.map(c=>Array.from({length:quest.size},(_,i)=>i===c?2:0));
+   await evaluate(`document.getElementById('attemptMask').click();lumenDiagnostics.setBoard(${JSON.stringify(solved)})`);
+   await until(`document.getElementById('msg').textContent.includes('compte')&&!document.getElementById('accountOptin').hidden`);
+   assert.equal(await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress)`),before,'An acquired guest solve grants no unconfirmed post-discovery rewards');
+   const held=await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1'))`);
+   assert.equal(held.attemptId,saved.attemptId);assert.equal(held.state,'PAUSED');assert.deepEqual(held.board,solved);
+   await navigate('Page.reload');await until(`!document.getElementById('mobileAuthAction').disabled`);
+   assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).attemptId`),saved.attemptId,'Reload retains the same resolved attempt');
+   assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).state`),'PAUSED','Waiting for an account cannot add solving time');
+   assert.deepEqual(await evaluate(`lumenDiagnostics.snapshot().state`),solved);
+   assert.deepEqual(await evaluate('window.__authCalls'),[]);
+  }
+  await evaluate(`localStorage.setItem('lumenProgressV1',${JSON.stringify(originalGuest)});${guestOwner===null?"localStorage.removeItem('lumenCloudOwnerId')":`localStorage.setItem('lumenCloudOwnerId',${JSON.stringify(guestOwner)})`};localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenAccountOfferNextMilestone')`);
   await navigate('Page.reload');
   // #356: both dismissal actions work repeatedly from signup and login,
   // preserving guest achievements and avoiding any Auth call.
@@ -279,6 +351,47 @@ try{
   assert.equal(await evaluate("JSON.parse(document.getElementById('accountSyncDiagnosticText').value).app"),'Lumen');
   if(viewport.mobile)assert.equal(await evaluate("document.getElementById('accountSyncDiagnosticText').getClientRects().length>0"),true);
   assert.equal(await evaluate("localStorage.getItem('lumenProgressV1')"),progressBeforeDiagnostic,'Diagnostic viewing preserves the local save');
+  await until(`!document.getElementById('diagnosticConsent').disabled`);
+  assert.equal(await evaluate(`document.getElementById('diagnosticConsent').checked`),false,'Optional diagnostics start disabled');
+  await evaluate(`document.getElementById('diagnosticConsent').click()`);
+  await until(`document.getElementById('diagnosticConsentStatus').textContent.includes('Partage activé')`);
+  await evaluate(`window.dispatchEvent(new ErrorEvent('error',{message:'forbidden@example.invalid',filename:'https://private/?token=secret',error:{stack:'Bearer secret'}}))`);
+  await until(`window.__diagnosticRows.some(e=>e.code==='runtime_exception')`);
+  assert.equal(await evaluate(`JSON.stringify(window.__diagnosticRows).includes('secret')||JSON.stringify(window.__diagnosticRows).includes('@')`),false);
+  await send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
+  await evaluate(`const resource=document.createElement('script');document.body.append(resource);resource.dispatchEvent(new Event('error',{bubbles:true}));resource.remove()`);
+  await until(`JSON.parse(localStorage.getItem('lumenDiagnosticQueueV1')||'{}').events?.some(e=>e.code==='resource_failed')`);
+  await navigate('Page.reload');
+  await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
+  await evaluate(`window.dispatchEvent(new Event('online'))`);
+  await until(`window.__diagnosticRows.some(e=>e.code==='resource_failed')`);
+  if(viewport.mobile)await evaluate(`if(document.getElementById('mobileAuthPopover').hidden)document.getElementById('mobileAccount').click()`);
+  await evaluate(`document.getElementById('showAccountSyncDiagnostic').click()`);
+  await until(`document.getElementById('diagnosticConsent').checked&&!document.getElementById('diagnosticConsent').disabled`);
+  await evaluate(`document.getElementById('diagnosticConsent').click()`);
+  await until(`document.getElementById('diagnosticConsentStatus').textContent.includes('effacés')`);
+  assert.equal(await evaluate(`window.__diagnosticRows.length`),0);
+  assert.equal(await evaluate("localStorage.getItem('lumenProgressV1')"),progressBeforeDiagnostic,'Optional telemetry/offline/restart/withdrawal preserve the live save');
+  await until(`!!JSON.parse(document.getElementById('accountSyncDiagnosticText').value).storage?.local?.available`);
+  assert.equal(await evaluate(`document.getElementById('accountStorageSummary').textContent.includes('ne permettent pas de connaître')`),true);
+  await evaluate(`for(const stamp of [100,200,300])localStorage.setItem('lumenBeforeCloudRestore_'+stamp,'storage-fixture-'+stamp)`);
+  if(viewport.mobile){
+   const point=await evaluate(`(()=>{const b=document.getElementById('archiveAccountStorage');b.scrollIntoView({block:'center'});const r=b.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
+   assert(point.y>0&&point.y<viewport.height,'Storage maintenance stays reachable on mobile');
+   await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});
+   await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  }else await evaluate(`document.getElementById('archiveAccountStorage').click()`);
+  await until(`!document.getElementById('archiveAccountStorage').disabled`);
+  assert.equal(await evaluate(`localStorage.getItem('lumenBeforeCloudRestore_100')`),null);
+  assert.equal(await evaluate(`localStorage.getItem('lumenBeforeCloudRestore_300')`),'storage-fixture-300');
+  assert.equal(await evaluate(`document.getElementById('accountStorageStatus').textContent.includes('exportables')`),true);
+  assert.equal(await evaluate(`new Promise((resolve,reject)=>{const r=indexedDB.open('lumenCloudRecoveryV1',1);r.onerror=()=>reject(r.error);r.onsuccess=()=>{const db=r.result,q=db.transaction('snapshots','readonly').objectStore('snapshots').get('localStorage:lumenBeforeCloudRestore_100');q.onsuccess=()=>{db.close();resolve(q.result)}}})`,true),'storage-fixture-100');
+  assert.equal(await evaluate("localStorage.getItem('lumenProgressV1')"),progressBeforeDiagnostic,'Archival never replaces the live profile');
+  await until(`JSON.parse(document.getElementById('accountSyncDiagnosticText').value).storage?.indexed?.available`);
+  await evaluate(`document.getElementById('accountStorageSummary').scrollIntoView({block:'center'})`);
+  const storageScreenshot=await send('Page.captureScreenshot',{format:'png'});
+  fs.writeFileSync((process.env.TEMP||'/tmp')+'/lumen-storage-'+viewport.width+'.png',Buffer.from(storageScreenshot.data,'base64'));
+  await evaluate(`localStorage.removeItem('lumenBeforeCloudRestore_200');localStorage.removeItem('lumenBeforeCloudRestore_300')`);
   await evaluate("document.getElementById('closeAccountSyncDiagnostic').click()");
   assert.equal(await evaluate("document.getElementById('accountSyncDiagnosticPanel').hidden"),true);
   await navigate('Page.reload');
@@ -300,14 +413,24 @@ try{
   await evaluate(`document.getElementById('mobileAuthAction').click()`);
   await until(`document.getElementById('mobileAuthAction').textContent.includes('Se connecter')`);
   const isolatedCanonicalRecovery=await verifyIsolatedRecovery();
-  results.push({viewport,guestDismiss:true,automaticOfferDismiss:true,repeatedSignupLoginDismiss:true,passwordLogin:true,reload:true,readableSessionWithQuota:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,restoreFailureVisible:true,isolatedCanonicalRecovery,isolatedLegacyRecovery:true});
+  results.push({viewport,guestDismiss:true,automaticOfferDismiss:true,repeatedSignupLoginDismiss:true,passwordLogin:true,reload:true,readableSessionWithQuota:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,restoreFailureVisible:true,isolatedCanonicalRecovery,isolatedLegacyRecovery:true,optionalDiagnostics:{defaultOff:true,sanitised:true,offlineRestartReconnect:true,withdrawalErases:true,profilePreserved:true}});
  }
  await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:authFixtureId});
  const walletFlow=await verifyWalletAndOfflineFlow({send,evaluate,navigate,url});
  const deletionRequests=await verifyPrivacyRequests({send,evaluate},url);
  const bundledLibraries=await verifyBundledLibraries({evaluate});
  assert.equal(errors.length,0,JSON.stringify(errors));
- const report={simulatedAuth:true,liveCloudWrites:false,results,walletFlow,deletionRequests,bundledLibraries,exceptions:errors};
+ const completedQuestHold=await verifyCompletedQuestHold({send,evaluate,navigate,url});
+ const domainReplay=await verifyDomainReplay({send,evaluate,navigate,url});
+ const quotaRecovery=await verifyQuotaRecovery({evaluate,navigate,url});
+ const transactionalCache=await verifyTransactionalCommandCache({evaluate,navigate,url});
+ const historicalClaim=await verifyHistoricalClaim({evaluate,navigate,url});
+ const favorableRecovery=await verifyPlayerFavorableRecovery({send,evaluate,navigate,url});
+ const favorableLostReply=await verifyPlayerFavorableRecovery({send,evaluate,navigate,url,loseReply:true});
+ const favorableGuestStart=await verifyPlayerFavorableRecovery({send,evaluate,navigate,url,guestStarted:true});
+ const favorableHistoricalFrontier=await verifyPlayerFavorableRecovery({send,evaluate,navigate,url,historicalFrontier:true});
+ assert.equal(errors.length,0,JSON.stringify(errors));
+ const report={simulatedAuth:true,liveCloudWrites:false,results,walletFlow,deletionRequests,bundledLibraries,completedQuestHold,domainReplay,quotaRecovery,transactionalCache,historicalClaim,favorableRecovery,favorableLostReply,favorableGuestStart,favorableHistoricalFrontier,exceptions:errors};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));
  console.log(JSON.stringify(report));
 }finally{await send('Browser.close').catch(()=>{})}

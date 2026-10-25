@@ -207,3 +207,7 @@ Les tests locaux, pages publiées, captures, contrats fournisseurs et déclarati
 Console doivent être conservés avec date, version et limites. Aucune suppression
 réelle, inscription Console, publication, migration ou nouvelle ressource payante
 n'a lieu dans cette préparation. #316 reste bloquante avant Google Play.
+
+## Actualisation P0 du 25 octobre 2026
+
+Voir [la consolidation et les preuves datées](PRIVACY_P0_CONSOLIDATION.md) pour les diagnostics, le support privé, les métadonnées de production et les validations manquantes. Les durées proposées du 22 octobre restent non adoptées ; le candidat n'autorise aucune nouvelle activation.

@@ -1,5 +1,6 @@
 import {CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,CONSTELLATION_QUESTS,CAMPAIGN_SIZE_SCHEDULE} from "./data.js";
-import {cataloguePackForQuestId} from './catalogue-origin.js';
+import {cataloguePackForQuestId,publishedCatalogueQuests} from './catalogue-origin.js';
+import generatedContentSnapshot from '../../content/generated/first-adventure.json' with {type:'json'};
 
 export const CONTENT_MODEL_VERSION=1;
 export const BASE_SKY_ID="real-sky";
@@ -33,9 +34,9 @@ const LEGACY_CONTENT_PACKS=Object.freeze(Array.from({length:Math.ceil(BASE_CONST
  return Object.freeze({id:adventureId(index),skyId:BASE_SKY_ID,kind:index===0?"base":"addon",access:index===0?"included":"locked",order:index,displayName:adventureNames[index]||`Aventure ${index+1}`,shortDescription:index===0?"Tes premières constellations":"Une nouvelle aventure dans le vrai ciel",legacyQuestStart:questIndices[0]??0,questCount:questIndices.length,questIndices,constellationIds:Object.freeze(entries.map(c=>c.id))});
 }));
 
-// Generated content extends the map without changing the historical quest schedule.
-// A lightweight descriptor keeps this module compatible with VM-based legacy regression tests.
-const generatedManifest={pack:{id:"real-adventure-04",skyId:"real-sky",kind:"addon",access:"locked",order:3,displayName:"Horizons inconnus",questCount:100,legacyQuestStart:196,questIndices:Array.from({length:100},(_,i)=>196+i),constellationIds:["iau-ant","iau-aps","iau-ara","iau-ari","iau-aur","iau-cae","iau-cam","iau-cnc","iau-cvn","iau-cmi"]},constellations:["iau-ant","iau-aps","iau-ara","iau-ari","iau-aur","iau-cae","iau-cam","iau-cnc","iau-cvn","iau-cmi"].map((id,i)=>({id,label:["Antlia","Apus","Ara","Aries","Auriga","Caelum","Camelopardalis","Cancer","Canes Venatici","Canis Minor"][i],packId:"real-adventure-04",skyId:"real-sky",questIndices:Array.from({length:10},(_,j)=>196+i*10+j)}))};
+// Read the published asset's descriptor. VM fixtures inject this same input;
+// test loading constraints must never duplicate catalogue counts in production.
+const generatedManifest=generatedContentSnapshot.manifest;
 export const GENERATED_CONSTELLATIONS=Object.freeze(generatedManifest.constellations.map((c,index)=>Object.freeze({
  ...c,legacyIndex:BASE_CONSTELLATIONS.length+index,
  questStart:c.questIndices[0],questCount:c.questIndices.length
@@ -53,13 +54,13 @@ export const RESERVED_ADVENTURE_03_CONSTELLATIONS=Object.freeze([
 ].map(([id,label,iau],index)=>Object.freeze({
  id,label,iau,skyId:BASE_SKY_ID,packId:"real-adventure-03",
  legacyIndex:BASE_CONSTELLATIONS.length+GENERATED_CONSTELLATIONS.length+index,
- questStart:null,questCount:10,questIndices:Object.freeze([]),
+ questStart:null,questCount:publishedCatalogueQuests().filter(q=>q.constellationId===id).length,questIndices:Object.freeze([]),
  canonicalOnly:true
 })));
 
 export const CONTENT_PACKS=Object.freeze([...LEGACY_CONTENT_PACKS.map(pack=>pack.id==="real-adventure-03"
  ?Object.freeze({...pack,constellationIds:Object.freeze([...pack.constellationIds,...RESERVED_ADVENTURE_03_CONSTELLATIONS.map(c=>c.id)])})
- :pack),Object.freeze({...generatedManifest.pack})]);
+ :pack),Object.freeze({...generatedManifest.pack,legacyQuestStart:generatedManifest.pack.questIndices[0]})]);
 export const CONTENT_CONSTELLATIONS=Object.freeze([...BASE_CONSTELLATIONS,...GENERATED_CONSTELLATIONS,...RESERVED_ADVENTURE_03_CONSTELLATIONS]);
 
 export function normalizeEntitlements(rows=[]){

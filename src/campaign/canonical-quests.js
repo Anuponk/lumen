@@ -10,6 +10,7 @@ import {qualifyDifficulty} from "./difficulty.js";
 import {constellationCatchupAvailable,catalogueQuestDecision,questCompleted} from "./catalogue-access.js";
 import {originQuests,pastCatalogues,publishedCatalogueQuests} from './catalogue-origin.js';
 import {buildQuestDefinitions} from './quest-definition.js';
+import {questRewardDefinition} from './quest-rewards.js';
 
 const slots=buildQuestDefinitions(publishedCatalogueQuests(),CONTENT_PACKS,CONTENT_CONSTELLATIONS);
 const added=new Map(staged.quests.map(q=>[q.id,q]));
@@ -21,7 +22,7 @@ const all=Object.freeze(slots.map(slot=>{
  const replacement=diverseById.get(slot.id);
  if(replacement&&(replacement.packId!==slot.packId||replacement.ordinal!==slot.ordinal))throw Error("Invalid diversity override target "+slot.id);
  const grid=replacement||original;
- return Object.freeze({...slot,size:grid.size??grid.reg.length,reg:grid.reg,sol:grid.sol,audit:grid.audit??null,difficulty:qualifyDifficulty(grid),family:grid.family??null});
+ return Object.freeze({...slot,rewards:questRewardDefinition(slot,{total:slots.filter(q=>q.constellationId===slot.constellationId).length}),size:grid.size??grid.reg.length,reg:grid.reg,sol:grid.sol,audit:grid.audit??null,difficulty:qualifyDifficulty(grid),family:grid.family??null});
 }));
 if(new Set(all.map(q=>q.id)).size!==all.length||all.filter(q=>q.legacyIndex!==null).length!==playableQuestCount()||[...added.keys()].some(id=>!all.some(q=>q.id===id))||[...diverseById.keys()].some(id=>!all.some(q=>q.id===id)))throw Error("Inconsistent canonical catalogue");
 const byId=new Map(all.map(q=>[q.id,q]));

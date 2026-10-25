@@ -5,11 +5,19 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {classifyCanonicalRecoveryError} from '../src/persistence/canonical-recovery-errors.js';
 import {functionSource} from './source-tools.mjs';
+import {captureCelestialProgress} from '../src/ui/celestial-progress.js';
 
 function prepareContext(ctx){
+ ctx.captureCelestialProgress??=captureCelestialProgress;
+ ctx.canonicalQuestList??=()=>[ctx.canonicalActiveQuest].filter(Boolean);
+ ctx.cloudHydrationGeneration??=0;
  ctx.pendingVictoryView??=null;
  ctx.syncPresentation??={failed(){},acknowledged(){},celebration(){},snapshot:()=>({status:'confirmed',failures:0})};
  ctx.presentPendingVictory??=()=>{};
+ ctx.questRewardDefinition??=()=>({stars:1,bonus:null});
+ ctx.localCalendarDay??=()=> '2026-10-22';
+ ctx.questFailed??=false;
+ ctx.hintUsedInAttempt??=()=>!!ctx.usedHintThisGame||(ctx.attemptEngine?.snapshot()?.helpUses?.hint||0)>0;
  return vm.createContext(ctx);
 }
 const storage=()=>{const values=new Map();return {get length(){return values.size},key:i=>[...values.keys()][i]??null,getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,String(v)),removeItem:k=>values.delete(k)};};
@@ -51,7 +59,7 @@ test('asynchronous durable adapters are awaited before removing a victory',async
 
 test('an old victory cannot update the UI after account, quest or attempt-reset changes during persistence',async()=>{
  const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
- for(const change of ['account','quest','reset']){
+ for(const change of ['account','client','quest','reset','generation']){
   let finish,persisting=false,uiUpdates=0;
   const attempt={attemptId:'persisted-attempt',resetCount:0};
   const context={canonicalActiveQuest:{id:'q',ordinal:10},canonicalVictoryInFlight:null,celebrated:false,activeGameSeconds:()=>10,
@@ -65,6 +73,8 @@ test('an old victory cannot update the UI after account, quest or attempt-reset 
   for(let i=0;i<10&&!persisting;i++)await Promise.resolve();
   assert.equal(persisting,true);
   if(change==='account')context.lumenUser={id:'new'};
+  if(change==='client')context.lumenSupabase={};
+  if(change==='generation')context.cloudHydrationGeneration++;
   if(change==='quest')context.canonicalActiveQuest={id:'other',ordinal:11};
   if(change==='reset')attempt.resetCount++;
   finish({operationId:'persisted-attempt-reset-0',reward});await running;
@@ -95,6 +105,7 @@ test('a temporarily unreadable queue keeps a visible pending check and retry dem
  const context={lumenUser:{id:'a'},canonicalOutboxNotice:null,updateAuthUI:()=>{},
   legacyVictoryOutbox:{inspect:async()=>({pending:[],retryable:[],paused:[],issues:[],complete:true})},
   canonicalVictoryOutbox:{inspect:async()=>({pending:[],retryable:[],paused:[],issues:complete?[]:['indexed_unavailable'],complete})}};
+ context.inspectCommandOutboxes=async()=>({Canonical:await context.canonicalVictoryOutbox.inspect(),Legacy:await context.legacyVictoryOutbox.inspect(),Wallet:{pending:[],retryable:[],paused:[],issues:[],complete:true}});
  prepareContext(context);vm.runInContext(functionSource(source,'refreshCanonicalOutboxNotice'),context);
  assert.equal(await vm.runInContext("refreshCanonicalOutboxNotice('a')",context),1);
  assert.equal(context.canonicalOutboxNotice,'checking');
@@ -180,13 +191,16 @@ test('isolated network failure preserves the unacknowledged intent and local div
 
 test('online wakes isolated recovery without starting legacy full-profile writes',()=>{
  const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
- let replay=0,retry=0,writes=0;
+ let replay=0,retry=0,writes=0,acquisitions=0;
  const context={qaActive:false,lumenUser:{id:'a'},lumenSupabase:{},cloudProfileReady:false,
   retryPendingCanonicalOutboxOnReconnect:()=>{replay++},canonicalRecovery:{schedule:()=>{retry++}},
+  acquisitionRecovery:{wake:()=>{acquisitions++}},
+  acquisitionRecoveryAttempts:5,
   scheduleCloudProfile:()=>{writes++}};
  prepareContext(context);vm.runInContext(functionSource(source,'retryPendingCloudWriteOnReconnect'),context);
  vm.runInContext('retryPendingCloudWriteOnReconnect()',context);
- assert.equal(replay,1);assert.equal(retry,1);assert.equal(writes,0);
+ assert.equal(replay,1);assert.equal(retry,1);assert.equal(acquisitions,1);assert.equal(writes,0);
+ assert.equal(context.acquisitionRecoveryAttempts,0,'Returning online opens a new bounded retry window');
 });
 
 test('replacing the cloud client invalidates the isolated permission and cancels its schedule',()=>{
@@ -196,9 +210,10 @@ test('replacing the cloud client invalidates the isolated permission and cancels
  const end=source.indexOf(';\nconst {loadLumenProfile',start);
  assert.ok(end>start);
  let cancelled=0;
- const context={lumenSupabase:{},canonicalRecoveryContext:{userId:'a'},canonicalRecovery:{cancel:()=>{cancelled++}}};
+ const context={cloudHydrationGeneration:0,lumenSupabase:{},canonicalRecoveryContext:{userId:'a'},canonicalRecovery:{cancel:()=>{cancelled++}}};
  prepareContext(context);const model=vm.runInContext('('+source.slice(start,end)+')',context);
  model.lumenSupabase={};assert.equal(context.canonicalRecoveryContext,null);assert.equal(cancelled,1);
+ assert.equal(context.cloudHydrationGeneration,1,'Replacing a client invalidates pending hydration generations too');
 });
 
 

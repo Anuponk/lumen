@@ -2,6 +2,42 @@
 
 ## Canal livré dans cette branche
 
+Actualisation P0 du 25 octobre : [audit comparatif, inventaire, état observé et
+conditions](PRIVACY_P0_CONSOLIDATION.md). Les chiffres « 29 relations / 26 tables »
+ci-dessous décrivent le périmètre historique du 22 octobre ; la politique actuelle
+reconnaît aussi les relations récentes lorsqu'elles sont installées.
+
+### Extension diagnostics, commandes et assistance
+
+`policy()` couvre diagnostics/préférences/budgets individuels, autorités de run,
+reçus invités, cohortes/événements et archives de récupération d'acquis. Règles et
+contrôles globaux sont conservés. Aucune règle de synchronisation n'est modifiée.
+Pour #593, l'ordre est contenus → consultations → captures → dossiers ; les logs
+sans FK sont rattachés avant de perdre l'ID de dossier. Une consultation effectuée
+par le demandeur en tant qu'administrateur est aussi effacée ; les autres dossiers
+et participants restent intacts. Aucun délai de conservation légal n'est inventé.
+
+Les anciens IDs de dossiers deviennent des empreintes `key` supplémentaires dans
+la barrière, préfixées `support:`. Ils empêchent une insertion tardive de log ou de
+capture sans recréer un dossier supprimé. Même propriétaire, conservation et revue
+de réinscription que les autres barrières ; aucune donnée métier n'y est copiée.
+
+`support_access.privacy_owner_id` conserve le rattachement serveur quand le cron
+supprime le dossier. Ce champ est privé, suit l'expiration du journal et la demande
+d'effacement, et n'est jamais exporté au demandeur. Une trace ancienne déjà
+orpheline sans rattachement bloque l'effacement : revue ou expiration réelle
+vérifiée, pas de déduction de propriétaire ni de purge générale d'autres joueurs.
+
+L'absence complète du support reste compatible ; une installation ultérieure doit
+appeler `lumen_privacy.install_guards()` dans sa transaction propriétaire avant
+activation. Vérifier ensuite `review_erasure`. Ne pas changer le SQL déjà appliqué
+de #593. Une garde de mauvais type, condition ou arguments bloque la revue.
+
+Suivi privé d'une demande : reçu → identité vérifiée → périmètre approuvé →
+transaction effectuée → contrôles des copies/fournisseurs → réponse. Une erreur,
+un timeout, une limite fournisseur ou une suppression partielle maintient le
+dossier ouvert avec son résultat exact ; jamais « Compte supprimé » par défaut.
+
 `/supprimer-compte.html` prépare un email au contact de Nopuna, également
 accessible par « Supprimer mon compte » dans l'application. Aucun login ni
 réinstallation n'est exigé pour accéder à ce canal. Sans JavaScript, un lien

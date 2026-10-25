@@ -11,7 +11,7 @@ const url = process.env.LUMEN_TEST_URL || 'http://127.0.0.1:8000/';
 const snapshot = () => evaluate('lumenDiagnostics.snapshot()');
 async function ready(){
   for(let i=0;i<100;i++){
-    if(await evaluate('!!window.lumenDiagnostics&&!!lumenDiagnostics.snapshot().state&&document.querySelectorAll("#board .cell").length===25'))return;
+    if(await evaluate('!!window.lumenDiagnostics&&!!lumenDiagnostics.snapshot().state&&document.querySelectorAll("#board .cell").length===lumenDiagnostics.snapshot().state.flat().length'))return;
     await sleep(100);
   }
   throw Error('Learning app did not initialize: '+JSON.stringify(errors));
@@ -21,6 +21,10 @@ async function input(p,mobile){
   if(mobile){await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[p]});await sleep(50);await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}
   else {await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...p});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...p});}
   await sleep(40);
+}
+async function control(id,mobile){
+ const p=await evaluate(`(()=>{const e=document.getElementById(${JSON.stringify(id)}),r=e.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,hit=document.elementFromPoint(x,y);return {x,y,hit:hit?.outerHTML,reachable:hit===e||e.contains(hit)}})()`);
+ assert(p.reachable,'Real control remains reachable: '+id+' '+JSON.stringify(p));await input({x:p.x,y:p.y},mobile);
 }
 async function drag(cells,mobile){
   const points=[];for(const cell of cells)points.push(await point(...cell));
@@ -41,7 +45,7 @@ async function geometry(){
 }
 try {
   await send('Page.enable');await send('Runtime.enable');
-  for (const viewport of [{width:360,height:640,mobile:true},{width:390,height:844,mobile:true},{width:768,height:1024,mobile:true},{width:1440,height:900,mobile:false}]) {
+  for (const viewport of [{width:320,height:568,mobile:true},{width:360,height:640,mobile:true},{width:390,height:844,mobile:true},{width:768,height:1024,mobile:true},{width:1440,height:900,mobile:false}]) {
     await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});
     await send('Emulation.setTouchEmulationEnabled',{enabled:viewport.mobile,maxTouchPoints:1});
     const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:'localStorage.clear();localStorage.setItem("lumenSound","off");localStorage.setItem("lumenTutorialSeen","1");localStorage.setItem("lumenPushChoice","later");localStorage.setItem("lumenInstallLater",String(Date.now()));'});
@@ -61,6 +65,8 @@ try {
     for(let intro=0;intro<6;intro++){
       introTitles.push(await evaluate('document.getElementById("scriptedLearnTitle").textContent'));
       assert.equal(JSON.stringify((await snapshot()).state),untouched,'Intro navigation never changes the board');
+      const nextRect=await evaluate(`(()=>{const r=document.getElementById('learningCoachNext').getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right}})()`);
+      assert(nextRect.top>=0&&nextRect.bottom<=viewport.height&&nextRect.left>=0&&nextRect.right<=viewport.width,'Next stays visible without scrolling');
       await evaluate('document.getElementById("learningCoachNext").click()');
       await sleep(40);
     }
@@ -114,34 +120,19 @@ try {
     assert.equal((await snapshot()).progress.solved[0],1);
     await evaluate('document.getElementById("successNew").click()');await sleep(150);
     assert.equal((await snapshot()).levelIndex,1);
-    assert.equal(await evaluate('document.getElementById("attemptMask").hidden'),true);
-    const quest2Before=JSON.stringify((await snapshot()).state);
+    assert.equal(await evaluate('document.getElementById("attemptMask").hidden'),false,'Free quest 2 retains the ordinary start control');
+    assert.equal(await evaluate('document.getElementById("autoCross").checked'),true,'Manual quest 1 is followed by default auto marking');
+    await evaluate('document.getElementById("learningCoachDismiss").click();document.getElementById("autoCross").click();document.getElementById("manualCrossTip").hidden=true;document.getElementById("attemptMask").click()');
     await input(await point(2,4),viewport.mobile);
-    assert.equal(JSON.stringify((await snapshot()).state),quest2Before,'Quest 2 begins with a guided singleton');
-    await input(await point(0,0),viewport.mobile);await input(await point(0,0),viewport.mobile);
-    assert.equal(dragLearningStep((await snapshot()).puz,(await snapshot()).state).phase,'drag');
-    await input(await point(0,1),viewport.mobile);
-    assert.equal((await snapshot()).state[0][1],0,'A tap cannot skip practicing the real drag gesture');
-    assert.equal(await evaluate('document.getElementById("verify").disabled'),true);
+    assert.equal((await snapshot()).state[2][4],1,'Quest 2 allows any normal first exclusion');
     await drag([[0,1],[0,2]],viewport.mobile);
-    assert.deepEqual((await snapshot()).state[0],[2,1,1,0,0]);
-    await navigateAndWait({send,evaluate},'Page.reload',{ignoreCache:true});await sleep(100);await ready();
-    assert.deepEqual((await snapshot()).state[0],[2,1,1,0,0],'Partial gesture survives reload');
+    assert.equal((await snapshot()).state[0][1],1,'Real optional drag excludes cells');
+    await navigateAndWait({send,evaluate},'Page.reload',{ignoreCache:true});await ready();
+    assert.equal((await snapshot()).state[0][1],1,'Free quest 2 marks survive reload');
+    assert.equal(await evaluate('document.getElementById("autoCross").checked'),false,'Voluntary auto choice survives reload');
     await evaluate('document.getElementById("attemptMask").click()');
-    await sleep(60);
-    const q2Layout=await geometry();
-    assert(q2Layout.coach.top>=0&&q2Layout.coach.bottom<=q2Layout.height+1,'Quest 2 coach fits the viewport');
-    assert(q2Layout.coach.bottom<=q2Layout.actions.top||q2Layout.coach.top>=q2Layout.actions.bottom||q2Layout.coach.right<=q2Layout.actions.left||q2Layout.coach.left>=q2Layout.actions.right,'Quest 2 coach leaves controls visible: '+JSON.stringify(q2Layout));
-    assert(q2Layout.coach.bottom<=q2Layout.board.top||q2Layout.coach.top>=q2Layout.board.bottom||q2Layout.coach.right<=q2Layout.board.left||q2Layout.coach.left>=q2Layout.board.right,'Quest 2 coach leaves the puzzle visible: '+JSON.stringify(q2Layout));
-    // Resume on an existing cross and move outside the lesson after finishing it.
-    await drag([[0,2],[0,3],[0,4],[1,4],[0,0]],viewport.mobile);
-    board=await snapshot();
-    assert.deepEqual(board.state[0],[2,1,1,1,1]);
-    assert.equal(board.state[1][4],0,'Completing the gesture cannot release its action gate mid-drag');
-    assert.equal(dragLearningStep(board.puz,board.state).phase,'complete');
-    assert.equal(await evaluate('document.getElementById("verify").disabled'),false);
     await sleep(1200);
-    await input(await point(2,4),viewport.mobile);await input(await point(2,4),viewport.mobile);
+    await input(await point(2,4),viewport.mobile);
     assert.equal((await snapshot()).state[2][4],2,'Quest 2 free placement: '+JSON.stringify({viewport,board:await snapshot(),layout:await geometry()}));
     assert.equal(await evaluate('document.getElementById("verify").disabled'),false);
     assert.equal(await evaluate('document.getElementById("hint").textContent'),'Indice · OFFERT','Quest 2 advertises learning hints as offered');
@@ -155,14 +146,57 @@ try {
     board=await snapshot();
     for(let r=0;r<5;r++)if(board.state[r][board.puz.sol[r]]!==2){await input(await point(r,board.puz.sol[r]),viewport.mobile);await input(await point(r,board.puz.sol[r]),viewport.mobile);}
     assert.equal((await snapshot()).celebrated,true,'Quest 2 has normal victory');
-    assert.match(await evaluate('document.getElementById("successNew").textContent'),/Quête suivante/,'Quest 2 now continues directly: Mon ciel is deliberately introduced at quest 8');
-    await evaluate('document.getElementById("successNew").click()');await sleep(100);
-    assert.equal((await snapshot()).levelIndex,2,'Quest 2 leads directly to quest 3 without the sky tour');
-    assert.equal(await evaluate('document.getElementById("badgeUnlockOverlay").hidden'),false,'Quest 3 teaches its newly eligible speed badge');
-    assert.match(await evaluate('document.getElementById("badgeUnlockCopy").textContent'),/Rapidité/);
-    await acknowledgeLearningMilestones(evaluate);
-    assert.equal(await evaluate('document.getElementById("scriptedLearn").hidden'),true);
+    assert.equal(await evaluate('document.getElementById("successNew").textContent'),'Quête suivante');
+    for(let i=0;i<100&&await evaluate('document.getElementById("skyReveal").hidden');i++)await sleep(50);
+    await evaluate('document.getElementById("skyRevealNext").click()');await sleep(100);
+    assert.equal((await snapshot()).levelIndex,2,'Quest 3 opens without mandatory sky');
+    assert.equal(await evaluate('document.getElementById("mapModal").hidden'),true);
+    assert.equal(await evaluate('document.getElementById("badgeUnlockOverlay").hidden'),true,'Badge explanation is optional');
+    await evaluate('document.getElementById("learningCoachDismiss").click()');
+    for(const ordinal of [3,4,5]){
+      assert.equal(await evaluate('document.getElementById("autoCross").checked'),false,'Voluntary choice survives each next quest');
+      await evaluate('document.getElementById("learningCoachDismiss").click();document.getElementById("attemptMask").click()');
+      if(ordinal===5)await evaluate('document.getElementById("autoCross").click()');
+      board=await snapshot();
+      for(let r=0;r<board.n;r++){
+        for(let tries=0;tries<3;tries++){
+          const current=await snapshot();if(current.state[r][current.puz.sol[r]]===2)break;
+          await input(await point(r,current.puz.sol[r]),viewport.mobile);
+        }
+      }
+      for(let i=0;i<100&&await evaluate('document.getElementById("skyReveal").hidden');i++)await sleep(50);
+      assert.equal((await snapshot()).celebrated,true,'Normal quest '+ordinal+' victory');
+      assert.equal(await evaluate('document.getElementById("mapModal").hidden'),true);
+      const before=JSON.stringify((await snapshot()).progress);
+      if(ordinal===4){
+        await evaluate('document.getElementById("skyRevealSky").click()');
+        assert.equal(await evaluate('document.getElementById("mapModal").hidden'),false,'Sky is available voluntarily');
+        assert.equal(JSON.stringify((await snapshot()).progress),before,'Browsing cannot grant rewards');
+        await evaluate('document.getElementById("closeMap").click()');
+      }else await evaluate('document.getElementById("skyRevealNext").click()');
+      await sleep(120);
+    }
+    assert.equal((await snapshot()).levelIndex,5,'Direct chain reaches visible quest 6');
+    if(await evaluate('!document.getElementById("questStart").hidden'))await control('questGo',viewport.mobile);
+    assert.equal(await evaluate('document.getElementById("autoCross").checked'),true,'Quest 6 does not silently uncheck');
+    const sixthBefore=JSON.stringify((await snapshot()).state);
+    await input(await point(0,0),viewport.mobile);
+    assert.equal(JSON.stringify((await snapshot()).state),sixthBefore,'Required control lesson prevents play before uncheck');
+    await navigateAndWait({send,evaluate},'Page.reload',{ignoreCache:true});await ready();
+    if(await evaluate('!document.getElementById("questStart").hidden'))await control('questGo',viewport.mobile);
+    assert.equal(await evaluate('document.getElementById("autoCrossWrap").classList.contains("onboarding-control-focus")'),true,'Interrupted lesson resumes');
+    assert(await evaluate(`(()=>{const coach=document.getElementById('scriptedLearn').getBoundingClientRect(),control=document.getElementById('autoCrossWrap').getBoundingClientRect();return coach.bottom<=control.top||coach.top>=control.bottom||coach.right<=control.left||coach.left>=control.right})()`),'The coach leaves the whole checkbox and its label visible');
+    if(output&&viewport.width===320){const shot=await send('Page.captureScreenshot');fs.writeFileSync(path.join(path.dirname(output),'onboarding-six-320.png'),Buffer.from(shot.data,'base64'))}
+    await control('autoCross',viewport.mobile);
+    assert.equal((await snapshot()).progress.autoCrossUnlockSeen,1,'Actual uncheck acknowledges the lesson');
+    await control('autoCross',viewport.mobile);
+    assert.equal(await evaluate('document.getElementById("autoCross").checked'),true,'Immediate re-enable remains possible');
+    await navigateAndWait({send,evaluate},'Page.reload',{ignoreCache:true});await ready();
+    assert.equal(await evaluate('document.getElementById("autoCrossWrap").classList.contains("onboarding-control-focus")'),false,'Acknowledged lesson does not repeat');
     await evaluate('document.getElementById("openSky").click();document.querySelector("#sectorTabs .constellation-card").click();document.querySelector("#puzzleGrid .puzzle-card.done").click()');
+    assert.equal(await evaluate('document.querySelectorAll("#puzzleGrid .performance-slot.locked").length'),0,'Earned and missing early badges have no locks');
+    assert.equal(await evaluate('document.getElementById("replayCooldownModal").hidden'),false,'First-quest badges preserve the qualification cooldown');
+    await evaluate('document.getElementById("replayCooldownPlay").click()');
     assert.equal((await snapshot()).replayMode,true);
     assert.equal(await evaluate('document.getElementById("scriptedLearn").hidden'),true,'Ordinary replay has no imposed lesson');
 
@@ -180,7 +214,7 @@ try {
     if(returnQuest<=1)assert.equal(afterSkip.replayMode,true,'Completed learning quests return as ordinary replays');
     assert.equal(await evaluate('document.getElementById("scriptedLearn").hidden'),true,'Skip exits the learning UI');
     assert.equal(await evaluate('JSON.stringify((()=>{const p=lumenDiagnostics.snapshot().progress;return {solved:p.solved,badges:p.badges,shards:p.shards}})())'),beforeSkip,'Skip must not award progress, badges or shards');
-    results.push({viewport,stages,realDrag:true,reload:true,reset:true,guidedQuest2Drag:true,partialQuest2Reload:true,freeQuest2:true,skyTour:true,freeReplay:true,firstTimerNoSkip:true,completedReplaySkip:true});
+    results.push({viewport,stages,realDrag:true,reload:true,reset:true,optionalQuest2Drag:true,partialQuest2Reload:true,freeQuest2:true,directQuest3:true,freeReplay:true,firstTimerNoSkip:true,completedReplaySkip:true});
 
   }
   assert.deepEqual(errors,[]);

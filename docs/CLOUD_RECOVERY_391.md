@@ -2,6 +2,36 @@
 
 This is a staged implementation record, not a declaration that #391 is closed.
 
+## Player-favorable recovery candidate (25 October 2026)
+
+The approved free-game policy is implemented by the existing hydration fallback
+and an additive `lumen_reconcile_acquisitions` RPC. See the owning
+[positive acquisition contract](DATA_AND_ARCHITECTURE.md#positive-acquisition-recovery--391-25-october-2026).
+The snapshot lock, CAS baseline, immutable originals and verified current read
+make retries safe. No per-player, conflict-index or application-version rule is
+used. Ordinary CAS/backup writers retain their existing protections.
+
+Deployment requires reviewed application of
+`20261025145734_player_favorable_acquisitions.sql` and the matching client.
+The migration has no backfill, cohort enrollment or automatic production job.
+Client-before-SQL remains safe: a missing endpoint retains the existing partial
+recovery. Rollback keeps archives, receipts and projection guards; do not undo
+recovered player data. On 25 October the owner explicitly authorized merge,
+automatic publication and this production migration. Supabase applied the exact
+reviewed SQL as `20261025145734`; the source filename and SQL CI reference were
+aligned with that assigned version without rewriting migration history.
+Read-only postchecks confirmed the RPC, private RLS archive, denied client table
+reads and anonymous RPC execution, authenticated RPC execution, badge union and
+best-time helpers. No player profile was manually changed. Application merge and
+publication remain separate facts to verify against the exact release SHA.
+
+Known limits: unknown quest identities are archived pending compatible content;
+unknown noncritical metadata is retained in originals rather than interpreted.
+An unproven local currency credit is not restored as spendable shards. Confirmed
+server spending remains effective while known quests become accessible. Real
+Android/PWA and two physical devices remain acceptance work after review and an
+approved release; simulated transport/SQL tests do not establish field recovery.
+
 ## Final delivery evidence (22 October 2026)
 
 The owner explicitly authorized both production SQL migrations, the final merge
@@ -447,6 +477,99 @@ for every legacy acquisition, balance or historical reward. In particular,
 existing max-balance reconciliation is not a transaction reconstruction.
 
 ## Validation and release
+
+### Audit trajectory: remaining lot gates (23 October 2026)
+
+The historical inventory and new-account guest claim are additive preparation.
+No private player profile is available in this checkout. Rachel/Loutre/Chloé
+recovery remains unverified; no baseline may be selected on their behalf.
+Keep their original ownership, unknown fields and pending operation identities.
+For existing-account contradictions, use the independently reviewed #558 path
+only after comparing the actual private copies and current server receipts.
+
+The following operational gates remain mandatory, even when automated tests pass:
+
+1. Supply an isolated Lumen project and accounts, or the private schema recipe
+   described below. Never run disposable bootstrap fixtures against the shared
+   SoldeZen project. Apply additive migrations to recipe first,
+   verify advisors/RLS and restore an export there; record the actual version.
+2. Run the existing coordinator in read-only shadow inspection, without a second
+   dispatcher/emission. Record exact client/server Git revision, parity and all
+   failures. Administrative cohort records are attestation preparation; they do
+   not enable a second writer and have no client activation endpoint.
+3. Execute `RECETTE_SCENARIOS` from `rollout-gates.js` on real transports and two
+   physical Android devices. Keep private evidence references, exact revision,
+   transport (`real` or `mock`) and pass/failure for every scenario. The visible
+   guest quest 6 → account → stable quest 7 must use catalogue identities, not
+   `solved[6]`. Confirm affected player recovery separately before closing issues.
+4. Create an evidence file with format `persistence-release-evidence-v1`, app
+   `Lumen`, `revision`, isolated `projectRef`/`productionProjectRef`, protocol 1,
+   `serverRevision`/`clientRevision`, `ci:{revision,success}`, per-scenario
+   `{revision,passed,transport,reference}`, `physicalAndroid:{revision,passed,devices}`,
+   `shadow:{revision,parity,secondEmissions}`, and zero `losses`, `doubleRewards`,
+   `unreviewedBaselines`. Run `node scripts/persistence-release-check.mjs FILE activate`.
+   An operator must review referenced evidence; self-reported JSON is not proof.
+5. After authorized release, verify the exact production SHA per RELEASE.md.
+   Start with QA/internal cohorts and stop new activations at the first
+   conservation failure; keep already active authorities, receipts and archives.
+6. Before retirement, additionally require `observation:{revision,startedAt,endedAt,
+   broadCohort}` spanning at least 14 days, `legacyWriters:0`, `migrationParity:true`,
+   `originalsRestorable:true`, `mirrorServerDerived:true`. Run the checker with
+   `retire`. Verify old-client rejection, a dormant intent, export restoration and
+   rollback to a compatible client before a separate writer-removal change.
+
+### Private schema recipe and activation control (24 October 2026)
+
+The owner selected a dedicated schema on the shared SoldeZen project.
+`scripts/recette-schema.mjs` compiles reviewed structure metadata into an optional
+bootstrap for an **empty** `lumen_recette`: empty business tables, selected
+functions/triggers and whitelisted catalogue rules. No player rows are copied.
+It never resets existing objects or modifies shared Auth. The NOLOGIN/NOINHERIT
+runner owns QA objects only; all QA tables have RLS and no browser/API grants.
+A private `auth_uid()` reads synthetic SQL claims without Auth access. This is
+a constrained compiler, not a general SQL parser; reviewed metadata and database
+role isolation remain required. Disposable `auth`/`lumen` bootstraps stay forbidden
+on the shared project.
+
+`supabase/recette/smoke.sql` executes real Quest/Wallet/guest commands under that
+role: isolation, receipt-failure rollback, immutable retry, independent receipt
+and current projection, one first reward, same-run Mastery and stable quest-7 ID.
+The 24 October run passed, including cohort controls. All synthetic writes were
+rolled back; profiles, guest receipts and cohorts remained empty. This is SQL
+proof with synthetic claims, **not** live Auth, HTTP transport or Android proof.
+The structure source is observed server DDL; its recorded Git baseline identifies
+client code and is not an independent server Git attestation.
+
+The checker accepts `environment: schema_isolated` with
+`schemaIsolation:{revision,schema:'lumen_recette',role:'lumen_recette_runner',
+reference,productionAccess:false,sharedAuthWrites:false,publicApi:false,
+rlsEnabled:true}` and actual project references. Review the referenced grants
+audit. Exact versions, real transports, two Androids and observation still apply.
+
+Migration `20261024042823_sync_cohort_activation_control.sql` adds private release
+approvals, an admin-only cohort setter, activation events and an emergency stop
+defaulting to false. Browsers cannot approve or enroll accounts. Capability 0
+explicitly selects compatibility before mutation; 1 requires an active cohort.
+The claim endpoint enforces activation too. Previously issued exact receipts stay
+retryable without a second seed. Stopping new activations preserves active
+authority; downgrade is refused. Approval digests require operator review.
+
+Deploy the client accepting capability 0 **before** installing historical-claim
+and activation-control migrations atomically in application schemas. Never install
+the historical migration alone: its original capability returns 1 globally.
+Neither production application migration was applied during the schema recipe.
+No real account was approved or enrolled.
+
+One Android is offered for guided testing. The second device, real-transport
+release evidence and 14-day broad observation remain open. CAS/mirror writers,
+old readers and recovery archives remain until the retirement gate passes.
+Lots 5–7 cannot be declared operationally complete from SQL/CI alone.
+
+Current preparation does not remove CAS, mirror repair, compatibility RPCs,
+historical readers or backups. No blanket production migration, cohort activation
+or cleanup is justified by the presence of these tools. The physical recipe,
+observation and gated writer removal cannot be declared completed by CI.
+
 
 New mandatory Node suites: `canonical-outbox-recovery-tests.mjs`,
 `canonical-durable-outbox-tests.mjs`, `canonical-retry-state-tests.mjs`,

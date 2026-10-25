@@ -1,5 +1,177 @@
 # Feature map
 
+Privacy P0: `lumen_privacy.scope_predicate` and `install_guards` extend the
+existing #526 operator policy to current metadata and private support ownership.
+Audit/conditions: [PRIVACY_P0_CONSOLIDATION](../PRIVACY_P0_CONSOLIDATION.md).
+
+Celestial milestones/mastery (#575/#519): `ui/celestial-progress.js` is the pure
+catalogue/badge projection; `celestial-effects.js` draws seeded background dust;
+`celestial-celebration.js` presents the existing victory sheet. `game-screen.js`
+captures only confirmed win transitions and adapts existing access/navigation;
+`sky-navigation.js` reuses the layer behind unchanged astronomical cards. No
+profile writer, cockpit, introduction or reward path is added.
+
+Temporary support #574: `persistence/support-capture.js` owns the closed typed
+profile/checkpoint projection; `support-session.js` owns separate consent,
+volatile retries/expiry/revocation; `ui/support-panel.js` owns account and selected
+player disclosures. `game-screen.js` wires live identity and existing incident
+signals. Private support RPC/migration reuses capability/cron, never game writers.
+See [audit and rollout](../SUPPORT_574.md).
+
+Restored board selection: `game-screen.js::resumeHydratedCampaignSelection`
+uses `playable-navigation.js::nextCanonicalQuest` after verified installation of
+an existing account with a changed owner. Original attempt archival precedes
+the handoff; the real grid and label refresh together without a map visit.
+Same-owner runs, guest registration and social challenges retain their flows.
+
+The same hook now checks an owned READY/empty/unstarted campaign selection:
+archive it before replacing an earlier catch-up board with the origin frontier.
+An optional archive refusal preserves board/readiness with a bounded diagnostic.
+
+Virgin-browser account restore: `persistence/guest-account.js` scopes the default
+reserve/catalogue exception to unowned profiles without acquired facts. Both
+guest checks in the UI hydration hook use it; account authorities stay unchanged.
+The shared `cloud-profile.js::isAttemptStartPerformance` also distinguishes
+first-gesture timestamps from earned results. Unowned active attempts use the
+existing verified archive before account installation.
+
+Cockpit visual status: `ui/cockpit-dates.js::playerSyncStatus` qualifies existing
+queue timestamps; `ui/cockpit-sessions.js` renders text/symbol/colour badges and
+closed date disclosures and uses the same status for filters. Tests extend the
+dates suite and native browser coverage. No new backend or player-state writer.
+
+Registered-player cockpit view: `registeredPlayers` joins existing bounded admin
+account data by identity for nickname/email labels; `playerMatchesSearch` owns
+case/accent/whitespace-insensitive name/email search. `index.html` owns the eleven
+native collapsible section wrappers, preserved through content refresh. Tests
+extend the registered-player and loader suites plus actual-HTML native browser
+coverage; no new RPC or persistent state.
+
+Registered-player cockpit view: `registeredPlayers` in `ui/cockpit-sessions.js`
+filters key/type before rendering and metadata reads; `loadAdminTimeline` refuses
+anonymous navigation. Tests: `cockpit-registered-players-tests.mjs`, the recent
+player loader fixture and the independent native cockpit browser.
+
+Positive acquisition recovery (#391): `cloud-profile.js`
+`reconcilePlayerAcquisitions` is the bounded same-owner hydration fallback in
+`ui/game-screen.js`. The additive SQL RPC owns positive merging and private
+original archives under the existing snapshot/authority locks. See the owning
+cloud contract and `cloud-player-favorable-tests.mjs`, production hydration hook,
+SQL fixture and concurrency suite. Wallet/daily receipts remain independent.
+
+Cockpit acceptance (#534 lot 3): `cockpit-acceptance-tests.mjs` guards immediate
+administrative scope clearing and stale network failures. The dated acceptance
+record distinguishes synthetic/native checks from physical/release evidence.
+
+Cockpit sessions (#534 lot 2): `ui/cockpit-sessions.js` renders directory filters,
+independent session disclosures and nested `incident-investigation.js` episodes.
+`lumen_admin_player_sessions` selects bounded, closed existing telemetry fields;
+tests: `cockpit-sessions-tests.mjs`, `cockpit-browser.mjs` in the independent
+incident browser, and disposable `fixtures/cockpit-sessions.sql`.
+
+Cockpit dates (#534 lot 1): `ui/cockpit-dates.js` qualifies analytics activity,
+Auth and per-domain durable receipt dates. `lumen_admin_player_observations`
+adds a bounded capability-checked read; `cockpit-dates-tests.mjs` and the
+disposable `fixtures/cockpit-dates.sql` verify scope, dates and stale timelines.
+
+Historical recreated-capture recovery: `legacy-command.js`
+(`assertRecreatedLegacyCapture`, `loadCommittedLegacyAttempt`) supplies the exact
+receipt/current projection proof; `durable-canonical-outbox.js`
+(`archiveRecreatedCapture`, Legacy namespace) preserves the later copy and
+receipt before cleanup. UI `recoverQueuedLegacyReceipt` connects hydration and
+reconnect recovery. The data contract owns its strict unchanged-facts rules.
+
+First welcome/story (#532): `ui/first-welcome.js` owns the local presentation
+marker, deterministic narrative clock and accessible overlay; its CSS is separate.
+`ui/intro-music.js` owns the optional original Web Audio score and disposes its
+nodes/context on pause or exit; it reads the sound preference without writing it.
+`game-screen.js` captures eligibility before startup, supplies the first catalogue
+constellation's reference SVG and binds Aide replay to existing pause/focus behavior.
+No campaign, reward, Auth or cloud writer is added. See UX_AND_VISUAL_DIRECTION.
+
+Historical/rollout preparation: historical-inventory.js → private dry-run CLI;
+guest-claim.js → cloud-profile initialize → expected-account guest claim RPC,
+private immutable receipt and current covered projection. The original guest
+copy/manifest and unknown fields survive. rollout-gates.js owns evidence checks,
+not activation or cleanup. See CLOUD_RECOVERY_391.md for the unfulfilled real
+device, rollout and retirement gates; old writers stay enabled until parity.
+
+Persistence lot 3: gameplay-sync.js derives ephemeral domain readiness from a
+current verified account/client/generation completion list. catalogue-access.js
+and both UI access adapters isolate acquired replay from Wallet-only holds;
+spending and pending-reward proofs remain guarded. Confirmed command results use
+transactional-command-cache.js installAndRead before UI application; historical
+startup readers remain compatible. Required coverage: gameplay-domain-tests.mjs,
+Legacy UI tests and domain-replay-browser.mjs in the account browser suite.
+See the cloud contract and PROGRESSION.md for proof and rollback boundaries.
+
+
+Persistence lot 2: UI command imports → coordinated-command-adapters.js →
+persistence-coordinator.js → existing Canonical/Legacy/Wallet proof adapters.
+transactional-command-cache.js uses indexed-outbox-store.js version 1 to pair
+immutable intentions with pending metadata and mirror owner-bound verified
+profiles. Legacy UI cache reads remain active. Tests: persistence-coordinator-tests.mjs
+and transactional-command-cache-browser.mjs (account-session browser suite).
+Shadow instances inspect only; same-origin Web Locks serialize updated tabs.
+See the cloud contract for fallback, authority and rollback limits.
+
+
+Persistence foundations (lot 1): local.js returns verified durable results and
+quarantines malformed bytes before replacement; game-screen.js reports refusals
+and scopes hydration to account/client/generation, including rejected awaits.
+profile-size.js owns the UTF-8/JSONB size boundary. Required checks:
+local-persistence-contract-tests.mjs and cloud-hydration-generation-tests.mjs.
+No reward authority, command identity or outbox format changes.
+
+Reviewed device recovery (#536/#537): `persistence/approved-device-recovery.js`
+installs a re-read cloud snapshot after an explicit reviewed file matches the
+authenticated owner and exact local/cloud SHA-256 digests. `game-screen.js`
+exposes the account diagnostic chooser; no file/profile upload or pending purge.
+
+Incident versions (#534): `ui/incident-investigation.js` derives ordered version
+observations from the existing bounded cockpit response, combines episode filters
+and revokes review/draft actions whenever the view changes. No new persistence.
+
+Installation quota (#536/#537): `cloud-profile.js` retries achievement installation
+once after verified bounded archival by `storage-maintenance.js`. Wallet
+`recoverWalletCacheDurably` uses the existing original snapshot store and exact
+receipt predicate. Neither path fabricates rewards or releases unproven holds.
+
+Countdown touch stability (#548): `ui/styles.css` reserves the hidden countdown's
+space. `clock()` owns visibility; cells keep their coordinates across transitions.
+
+Guided correction (#548): `ui/gesture-click-suppression.js` scopes suppression
+to the handled pointer's release, shared with Guardian hold. `game-screen.js`
+clears it on each new gesture; no global post-correction input cooldown.
+
+Touch hold (#531): `ui/long-press-guardian.js` recognises one 500 ms touch and
+suppresses its own release click. `game-screen.js` owns live guards and dispatches
+the dedicated gesture into the existing cell handler; no alternate game writer.
+
+Incident investigation (#534 phase 2): `ui/incident-investigation.js` owns
+bounded episode grouping, observed-state filters, fixed hypotheses and sanitised
+report/GitHub drafts. `game-screen.js` feeds only authorised diagnostic data and
+adds grouped detail signals to the existing alert list. No new persistence.
+
+Optional incidents (#534): `persistence/diagnostic-reporter.js` owns bounded
+transport, fixed codes and safe runtime listeners; `game-screen.js` owns account
+choice, cloud/outbox hooks and #533 markers. The diagnostic migration extends
+the same #398 cockpit/cron and hardens legacy ingestion. See OBSERVABILITY_534.
+
+Storage diagnostics/retention: `persistence/storage-maintenance.js` owns aggregate
+size inventory and verified archival of older recovery copies; `game-screen.js`
+wires account diagnostics, explicit maintenance and recovery export. See
+DATA_AND_ARCHITECTURE for exclusions and transaction/session guards.
+
+Local quota recovery: `cloud-profile.js` `reconcileCloudAchievementsDurably`
+uses the existing verified IndexedDB snapshot fallback before cache installation;
+the account recovery export includes that store. See DATA_AND_ARCHITECTURE and
+the quota suite/native browser scenario in TESTING. Wallet holds stay separate.
+
+Completed quest holds (#537): `game-screen.js` preserves completed card labels
+and displays the replay hold in constellation detail. `catalogue-access.js` and
+the canonical adapter still own action authorization; no persistence policy changes.
+
 Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This lookup index complements contracts in `docs/AGENT_CONTRACTS.md`, `docs/PROGRESSION.md` and `docs/DATA_AND_ARCHITECTURE.md`. Recheck symbols after relevant changes; historical counts in validation reports are not current catalogue totals.
 
 ## Entry points and shape
@@ -20,6 +192,23 @@ Privacy entry points: `supprimer-compte.html` prepares a request only;
 HTML candidates, linked from `index.html`, using `src/privacy/pages.css` without
 SDK/login. Owning legal text: `docs/legal/`; vendor evidence:
 `docs/PRIVACY_PROCESSORS.md`. HTML presence does not clear Play readiness.
+Fluid onboarding (#569/#576): `ui/onboarding-preferences.js` owns local scoped
+auto choice/tip history; `game-screen.js` reuses the real coach/checkbox, existing
+`autoCrossUnlockSeen` acknowledgement and ordinary victory navigation. Quest 1
+remains constrained; quests 2–5 have optional advice. No new cloud writer.
+
+Hydration #536: `cloud-profile.js` fixed-domain/stage diagnostic helpers retain
+wallet refusals separately from partial reward recovery. The game-screen hook
+checks its account/client after the final mirror await. No new reward policy,
+writer or profile field; see `docs/validation/2026-10-23-hydration-536.md`.
+
+Guest registration (#528): `src/persistence/guest-account.js` selects an ownership-safe initial profile and verifies an account-scoped original backup before UI hydration. Existing cloud conflicts retain guest progress. Guided Undo (#533): UI `clearGuidedConflict` clears the stale interaction lock while restoring history. Badge eligibility (#529): `performanceEligibility` exposes all four goals from quest 1; quest 3/6 are explanations, not badge unlocks.
+
+Session recovery #530: `cloud-profile.js` canonical achievement coverage accepts
+only server badge additions on identical immutable victory evidence.
+`achievementRecoveryDiagnostic` supplies fixed failure categories;
+UI `cloudReconciliationMessage` explains held local data. See the dedicated
+report in `docs/validation/2026-10-22-achievement-recovery-530.md`.
 
 Published definitions: `quest-definition.js` validates the current revision
 exposed by `catalogue-origin.js` and consumed by `canonical-quests.js`, with
@@ -32,9 +221,17 @@ hint handler (source/target roles).
 keys separate from active stable quest identity.
 
 Victory challenge visibility: UI `configureVictoryChallenge` applies the existing
-first-play rule and the historical-quest protocol limit to both victory surfaces.
+first-play rule to both victory surfaces. The stable quest social migration adds
+a stable-ID RPC while preserving the historical numeric protocol.
 `createSocialChallengeFromSuccess` guards pending creation and reuses that
 offer's URL. Adventure focus/scroll lives in `sky-navigation.js` (`revealAdventure`).
+
+Quest convergence (#522): `quest-rules.js` owns visible teaching/access milestones
+and shared qualification; `quest-rewards.js` owns compatibility reward definitions;
+`quest-victory.js` is the pure QA/fixture projection. `quest-command.js` validates
+V2 receipt/current-profile authority. See the cloud candidate contract in
+`DATA_AND_ARCHITECTURE.md`; the three pending 20261022 quest migrations require
+separate production authorization. Admin quest reads use stable metrics/timeline.
 
 Astronomy fidelity: `scripts/audit-astronomical-figures.mjs` rebuilds all shipped
 figures from versioned source fixtures under `scripts/fixtures/astronomy/`.

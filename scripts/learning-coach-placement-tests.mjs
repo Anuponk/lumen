@@ -12,7 +12,7 @@ for(const levelIndex of [0,1]){
  const help={getBoundingClientRect:()=>({top:5,bottom:41})};
  const document={getElementById:id=>id==='scriptedLearn'?card:id==='tutorialHelp'?help:null,querySelector:selector=>{assert.equal(selector,'.actions');return {getBoundingClientRect:()=>({top:570,bottom:609})}}};
  const board={getBoundingClientRect:()=>({top:114,bottom:540,left:20,right:340})};
- vm.runInNewContext(source.slice(start,end)+'\npositionLearningCoach();',{document,board,innerWidth:360,innerHeight:640,levelIndex});
+ vm.runInNewContext(source.slice(start,end)+'\npositionLearningCoach();',{document,board,innerWidth:360,innerHeight:640,autoMarkingLessonRequired:()=>false,activeQuestOrdinal:()=>1,QUEST_MILESTONES:{skyTourAfter:3},levelIndex});
  const top=parseFloat(card.style.top)+(card.style.position==='absolute'?card.parentElement.getBoundingClientRect().top:0),bottom=top+card.offsetHeight;
  assert(top>=help.getBoundingClientRect().bottom+8,'short-screen learning coach must leave the help button reachable, including its focus ring');
  assert(bottom<=board.getBoundingClientRect().top-8,'coach must fit before the board without covering cells');
@@ -27,7 +27,7 @@ for(const levelIndex of [0,1]){
  const board={getBoundingClientRect:()=>({top:boardTop,bottom:500,left:20,right:340})};
  card.parentElement={getBoundingClientRect:()=>({top:boardTop,left:10}),scrollTop:0,scrollLeft:0};
  const document={getElementById:id=>id==='scriptedLearn'?card:help,querySelector:()=>({getBoundingClientRect:()=>({bottom:609})})};
- vm.runInNewContext(source.slice(start,end)+'\npositionLearningCoach();',{document,board,innerWidth:360,innerHeight:640,levelIndex:0});
+ vm.runInNewContext(source.slice(start,end)+'\npositionLearningCoach();',{document,board,innerWidth:360,innerHeight:640,autoMarkingLessonRequired:()=>false,activeQuestOrdinal:()=>1,QUEST_MILESTONES:{skyTourAfter:3},levelIndex:0});
  const viewportTop=()=>parseFloat(card.style.top)+(card.style.position==='absolute'?boardTop:0);
  assert(viewportTop()<41,'fixture reproduces the earlier off-screen-header placement');
  headerBottom=41;boardTop=172;

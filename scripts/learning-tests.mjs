@@ -89,14 +89,14 @@ console.log(JSON.stringify({quest2:true,partialDragRestore:true,protectedGuardia
  assert.ok(handler.includes("state[pending.r][pending.c]=1"),"Only erroneous Guardian may be removed");
  assert.ok(handler.includes("persistAttemptBoard()"),"Correction must persist");
  assert.ok(handler.includes("guidedPending=null"),"Unlock only after correcting wrong guardian");
- const ack=ui.slice(ui.indexOf("function closeGuidedConflict(){"),ui.indexOf("let suppressGuidedClickUntil",ui.indexOf("function closeGuidedConflict(){")));
+ const ack=ui.slice(ui.indexOf("function closeGuidedConflict(){"),ui.indexOf("const guidedCorrectionClicks",ui.indexOf("function closeGuidedConflict(){")));
  assert.ok(!ack.includes("guidedPending=null"),"Acknowledging must not unlock incorrect Guardian");
 }
 
 // #240: quest 1's introduction and scripted coach are both dismissible.
 const onboardingUi=readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
 const tutorialUi=readFileSync(new URL("../src/ui/tutorial.js",import.meta.url),"utf8");
-assert.match(onboardingUi,/canSkip:\(\)=>levelIndex===0\|\|tutorialCompletedProof\(\)/);
+assert.match(onboardingUi,/canSkip:\(\)=>activeQuestOrdinal\(\)===1\|\|tutorialCompletedProof\(\)/);
 assert.match(onboardingUi,/function skipFirstGridGuidance\(\)/);
 assert.match(onboardingUi,/skipFirstGridTutorial=true/);
 assert.match(onboardingUi,/lumenSkipFirstGridTutorial/);
@@ -113,4 +113,4 @@ assert.match(installUi,/solvedCount\(\)<12/,"Installation deferred past onboardi
 assert.match(installUi,/accountRequired\(\)/,"Do not offer install at account gate");
 assert.match(installUi,/if\(!ios&&!lumenInstallPrompt\)return/,"Do not show unusable Android install CTA");
 assert.match(onboardingUi,/lumenProgress\.autoCrossUnlockSeen=1/,"Quest-six unlock tracked together with badge intro");
-assert.match(onboardingUi,/Marquage auto débloqué/,"Quest-six combined introduction");
+assert.match(onboardingUi,/Décoche Marquage auto : sans aide/,"Quest-six instruction targets the real checkbox and explains assistance");

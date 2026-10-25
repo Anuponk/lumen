@@ -1,5 +1,11 @@
 # Reste à faire — confidentialité PWA et préparation Play
 
+**Actualisation P0 du 25 octobre :** lire d'abord
+[le dossier comparatif](PRIVACY_P0_CONSOLIDATION.md). Les références de tests
+du 22 octobre restent historiques. L'assistance est maintenant installée et
+active selon les métadonnées lues ; aucune activation par ce chantier. Les
+migrations #526, les textes finaux, la fusion et Play restent non autorisés.
+
 État au **22 octobre 2026**, [PR #526](https://github.com/Anuponk/lumen/pull/526),
 issues [#316](https://github.com/Anuponk/lumen/issues/316) et
 [#170](https://github.com/Anuponk/lumen/issues/170).

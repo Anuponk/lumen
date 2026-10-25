@@ -89,3 +89,7 @@ Un inventaire de sous-traitants n'affirme pas que chaque société listée reço
 chaque donnée Lumen. Le futur paquet et les options du compte doivent être
 rapprochés des définitions de collecte/partage de la feuille Data Safety.
 Le dossier n'active ni compte enfant, ni publication Play, ni migration.
+
+## Actualisation P0 du 25 octobre 2026
+
+Voir [la consolidation et les preuves datées](PRIVACY_P0_CONSOLIDATION.md) pour les diagnostics, le support privé, les métadonnées de production et les validations manquantes. Les durées proposées du 22 octobre restent non adoptées ; le candidat n'autorise aucune nouvelle activation.

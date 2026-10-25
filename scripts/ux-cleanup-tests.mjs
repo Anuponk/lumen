@@ -20,6 +20,7 @@ try{
  await send('Page.navigate',{url:process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/'});
  for(let i=0;i<100&&!await evaluate('!!window.lumenDiagnostics');i++)await sleep(100);
  assert(await evaluate('!!window.lumenDiagnostics'),'Application did not start');await sleep(1200);
+ check(await evaluate('getComputedStyle(document.getElementById("returnToast")).pointerEvents==="none"'),'Noninteractive return notification must not intercept Help or board gestures');
  for(const viewport of [{width:390,height:844,mobile:true},{width:360,height:640,mobile:true},{width:1440,height:900,mobile:false}]){
   await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});
   for(const quest of [0,1,5,10]){
@@ -33,6 +34,7 @@ try{
    if(viewport.mobile&&quest<2)console.log('help-debug',label,await evaluate(`(()=>{const h=document.getElementById('tutorialHelp'),r=h.getBoundingClientRect(),m=document.getElementById('rulesModal');return {help:[r.x,r.y,r.width,r.height],hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.id,modalHidden:m.hidden,active:document.activeElement.id,coach:document.getElementById('scriptedLearn').getBoundingClientRect().toJSON()}})()`));
    check(await evaluate(`!document.getElementById('rulesModal').hidden&&document.activeElement.id==='closeRulesModal'`),label+' open/focus');
    check(await evaluate(`(()=>{const r=document.querySelector('#rulesModal .shard-rules-card').getBoundingClientRect(),b=document.getElementById('board').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1&&b.width<=innerWidth&&!!document.getElementById('replayLearning')})()`),label+' help layout');
+   check(await evaluate(`(()=>{const card=document.querySelector('#rulesModal .help-card');card.scrollTop=card.scrollHeight;const buttons=['closeRulesModal','replayLearning'].map(id=>{const el=document.getElementById(id),r=el.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight&&document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.closest('button')?.id===id});card.scrollTop=0;return buttons.every(Boolean)})()`),label+' help actions remain reachable after scrolling');
    if(viewport.mobile){const fit=await evaluate(`(()=>{const b=document.getElementById('board').getBoundingClientRect(),a=document.querySelector('.actions').getBoundingClientRect(),w=document.getElementById('learningBoardWrap')?.getBoundingClientRect();return {ok:document.documentElement.scrollHeight<=innerHeight+1&&b.top>=0&&b.bottom<=innerHeight&&a.bottom<=innerHeight,scrollHeight:document.documentElement.scrollHeight,innerHeight,board:[b.top,b.bottom,b.height],actions:[a.top,a.bottom,a.height],wrap:w?[w.top,w.bottom,w.height]:null,bodyScroll:document.body.scrollHeight}})()`);if(!fit.ok)console.log('ux-fit:',label,JSON.stringify(fit));check(fit.ok,label+' play viewport fits without vertical scroll');}
    await click('#rulesModal p');
    check(await snapshot()===before,label+' modal content changed quest/teaching state');
@@ -47,7 +49,9 @@ try{
    check(await snapshot()===before,label+' modal interactions changed quest/teaching state');
    results.push({viewport,quest:quest+1,failures:failures.slice(start)});
   }
-  await evaluate(`(()=>{lumenDiagnostics.setupQuest(5);document.getElementById('manualCrossTip').hidden=true;document.getElementById('questStart').hidden=true;const s=lumenDiagnostics.snapshot();s.state[0][s.puz.sol[0]]=2;lumenDiagnostics.setBoard(s.state)})()`);
+  // This case checks missing MANUAL exclusions; explicitly choose that playstyle.
+  // The P1 default is auto-on, whose derived crosses need no manual hint.
+  await evaluate(`(()=>{lumenDiagnostics.setupQuest(5);const auto=document.getElementById('autoCross');if(auto.checked)auto.click();document.getElementById('manualCrossTip').hidden=true;document.getElementById('questStart').hidden=true;const s=lumenDiagnostics.snapshot();s.state[0][s.puz.sol[0]]=2;lumenDiagnostics.setBoard(s.state)})()`);
   await acknowledgeLearningMilestones(evaluate);
   await click('#hint');
   const hint=await evaluate(`({hidden:document.getElementById('hintCard').hidden,title:document.getElementById('hintTitle').textContent,copy:document.getElementById('hintCopy').textContent,highlighted:document.querySelectorAll('#board .cell.hi').length})`);

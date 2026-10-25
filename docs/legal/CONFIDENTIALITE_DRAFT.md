@@ -123,3 +123,7 @@ appliquées ; ne pas les présenter comme une rétention en production.
 La première version prévue est gratuite, sans publicité ni achats. Ajouter un
 SDK, des annonces, un paiement ou un traitement nécessite une nouvelle revue
 du texte, des choix utilisateurs et des déclarations de la fiche Store.
+
+## Actualisation P0 du 25 octobre 2026
+
+Voir [la consolidation et les preuves datées](../PRIVACY_P0_CONSOLIDATION.md) pour les diagnostics, le support privé, les métadonnées de production et les validations manquantes. Les durées proposées du 22 octobre restent non adoptées ; le candidat n'autorise aucune nouvelle activation.

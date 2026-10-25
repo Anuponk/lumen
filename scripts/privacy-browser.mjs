@@ -6,7 +6,7 @@ export async function verifyPrivacyRequests({send,evaluate},baseUrl){
  await send('Network.enable');
  await send('Network.setBlockedURLs',{urls:['*supabase.co/*']});
  const before=await evaluate(`JSON.stringify(['lumenProgressV1','lumenActiveAttemptV1'].map(k=>[k,localStorage.getItem(k)]))`);
- for(const width of [390,1440]){
+ for(const width of [320,360,390,1440]){
   await send('Emulation.setDeviceMetricsOverride',{width,height:844,deviceScaleFactor:1,mobile:width<700});
   const previous=await evaluate('performance.timeOrigin');
   await send('Page.navigate',{url:new URL('/supprimer-compte.html',baseUrl).href});

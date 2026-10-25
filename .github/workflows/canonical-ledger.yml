@@ -63,6 +63,7 @@ jobs:
             -f supabase/migrations/20261010_lumen_daily_catalogue_ceiling_repair.sql \
             -f supabase/migrations/20261018193133_legacy_victory_commands.sql \
             -f supabase/migrations/20261020084328_legacy_attempt_counter_metadata.sql \
+            -f supabase/migrations/20261023045558_guest_progress_and_badge_eligibility.sql \
             -f /tmp/lumen-legacy-parity.sql \
             -f scripts/fixtures/legacy-command-receipts.sql \
             -f scripts/fixtures/legacy-attempt-counter.sql
@@ -76,28 +77,70 @@ jobs:
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
             -f supabase/migrations/20261022082153_wallet_command_authority.sql \
             -f scripts/fixtures/wallet-command-receipts.sql \
+            -f scripts/fixtures/first-quest-badges.sql \
             -f supabase/migrations/20261022082203_outbox_health_observations.sql \
             -f scripts/fixtures/outbox-health-observations.sql
           python3 scripts/wallet-command-concurrency.py
+          node scripts/quest-command-fixtures.mjs --check
+          node scripts/quest-command-fixtures.mjs > /tmp/lumen-quest-parity.sql
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261023181850_quest_contract_convergence.sql \
+            -f /tmp/lumen-quest-parity.sql \
+            -f scripts/fixtures/quest-first-badges.sql \
+            -f scripts/fixtures/quest-command-receipts.sql
+          python3 scripts/quest-command-concurrency.py
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261025145734_player_favorable_acquisitions.sql \
+            -f scripts/fixtures/player-favorable-acquisitions.sql
+          python3 scripts/acquisition-recovery-concurrency.py
+          node scripts/social-fixture-bootstrap.mjs > /tmp/lumen-social-bootstrap.sql
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f /tmp/lumen-social-bootstrap.sql \
+            -f supabase/migrations/20261023181900_quest_social_identity.sql \
+            -f scripts/fixtures/quest-social-identity.sql
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f scripts/fixtures/quest-analytics-bootstrap.sql \
+            -f supabase/migrations/20261023181918_quest_analytics_identity.sql \
+            -f scripts/fixtures/quest-analytics-identity.sql \
+            -f supabase/migrations/20261025191634_cockpit_furthest_quest.sql \
+            -f scripts/fixtures/cockpit-furthest-quest.sql
+
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261023103114_diagnostic_incident_mvp.sql \
+            -f supabase/migrations/20261023104105_diagnostic_batch_identity_guard.sql \
+            -f scripts/fixtures/diagnostic-incidents.sql
+          python3 scripts/diagnostic-concurrency.py
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261025200603_temporary_support.sql \
+            -f scripts/fixtures/support.sql
+          python3 scripts/support-concurrency.py
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/cockpit-dates.sql
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/cockpit-sessions.sql
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261023211412_historical_claim_rollout.sql \
+            -f scripts/fixtures/historical-claim-rollout.sql
+          python3 scripts/guest-claim-concurrency.py
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261024042823_sync_cohort_activation_control.sql \
+            -f scripts/fixtures/sync-cohort-control.sql
+
       - name: Verify Lumen-only erasure, private access and concurrent stale writers
         env:
           PGPASSWORD: isolated-test-only
           LUMEN_SQL_FIXTURE: '1'
         run: |
-          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+          createdb -h localhost -U postgres lumen_privacy_test
+          psql -h localhost -U postgres -d lumen_privacy_test -v ON_ERROR_STOP=1 -f scripts/fixtures/canonical-ledger-bootstrap.sql
+          psql -h localhost -U postgres -d lumen_privacy_test -v ON_ERROR_STOP=1 \
             -f scripts/fixtures/account-erasure-bootstrap.sql \
             -f supabase/migrations/20261022160212_lumen_account_erasure.sql \
             -f scripts/fixtures/account-erasure.sql
-          python3 scripts/account-erasure-concurrency.py
           # The new guards must also preserve normal players' receipt protocols.
-          python3 scripts/canonical-command-concurrency.py
-          python3 scripts/legacy-command-concurrency.py
-          python3 scripts/wallet-command-concurrency.py
       - name: Verify bounded private rights export and post-erasure access
         env:
           PGPASSWORD: isolated-test-only
         run: >-
-          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1
+          psql -h localhost -U postgres -d lumen_privacy_test -v ON_ERROR_STOP=1
           -f supabase/migrations/20261022184145_lumen_account_rights_export.sql
           -f scripts/fixtures/account-rights.sql
           -f scripts/fixtures/account-rights-readonly.sql
@@ -108,9 +151,24 @@ jobs:
           PGPASSWORD: isolated-test-only
           LUMEN_SQL_FIXTURE: '1'
         run: |
-          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+          psql -h localhost -U postgres -d lumen_privacy_test -v ON_ERROR_STOP=1 \
             -f scripts/fixtures/technical-retention-bootstrap.sql \
             -f supabase/migrations/20261022192259_lumen_technical_retention.sql \
             -f scripts/fixtures/technical-retention.sql \
             -f scripts/fixtures/technical-retention-readonly.sql
-          python3 scripts/technical-retention-concurrency.py
+
+      - name: Verify current schema erasure, export and support isolation
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f scripts/fixtures/account-erasure-bootstrap.sql \
+            -f supabase/migrations/20261022160212_lumen_account_erasure.sql \
+            -f supabase/migrations/20261022184145_lumen_account_rights_export.sql \
+            -f scripts/fixtures/privacy-current-schema.sql -f scripts/fixtures/privacy-optional-support.sql
+          python3 scripts/account-erasure-concurrency.py
+          python3 scripts/privacy-support-concurrency.py
+          python3 scripts/canonical-command-concurrency.py
+          python3 scripts/legacy-command-concurrency.py
+          python3 scripts/wallet-command-concurrency.py

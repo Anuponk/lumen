@@ -5,11 +5,11 @@ import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAt
 const cases=[];
 function test(name,fn){fn();cases.push(name)}
 
-test("quests 1-2 lock every performance badge",()=>{
- for(const i of [0,1])assert.deepEqual(performanceEligibility(i),{autonomy:false,speed:false,noError:false,mastery:false});
+test("quests 1-2 expose every performance badge",()=>{
+ for(const i of [0,1])assert.deepEqual(performanceEligibility(i),{autonomy:true,speed:true,noError:true,mastery:true});
 });
-test("quests 3-5 expose speed only",()=>{
- for(const i of [2,3,4])assert.deepEqual(performanceEligibility(i),{autonomy:false,speed:true,noError:false,mastery:false});
+test("quests 3-5 expose every performance badge",()=>{
+ for(const i of [2,3,4])assert.deepEqual(performanceEligibility(i),{autonomy:true,speed:true,noError:true,mastery:true});
 });
 test("quest 6+ exposes all four badges",()=>{
  assert.deepEqual(performanceEligibility(5),{autonomy:true,speed:true,noError:true,mastery:true});
@@ -56,9 +56,9 @@ test("early quests unlock badge families from global progression for NEW attempt
   assert.equal(run.mastery,true);
   assert.equal(performanceAttempt({questIndex:i,unlockedQuestCount:6,seconds:60}).speed,false);
  }
- assert.equal(performanceAttempt({questIndex:0,unlockedQuestCount:2,seconds:30}).speed,false);
+ assert.equal(performanceAttempt({questIndex:0,unlockedQuestCount:2,seconds:30}).speed,true);
  assert.equal(performanceAttempt({questIndex:0,unlockedQuestCount:3,seconds:30}).speed,true);
- assert.equal(performanceAttempt({questIndex:0,unlockedQuestCount:5,seconds:30}).mastery,false);
+ assert.equal(performanceAttempt({questIndex:0,unlockedQuestCount:5,seconds:30}).mastery,true);
 });
 
 test("campaign save grants unlocked early badges only on a new qualifying replay",()=>{
@@ -83,11 +83,11 @@ test("campaign save grants unlocked early badges only on a new qualifying replay
   assert.deepEqual(second.badges,{autonomy:false,speed:false,noError:false,mastery:false});
  }
 });
-test("first-time tutorial players remain restricted until the global unlock",()=>{
+test("first-time tutorial players may earn every badge",()=>{
  const progress={solved:{0:1,1:1},performances:{},stars:{},badges:{}};
  const campaign=createCampaign(()=>progress,()=>{},()=>({activeGameSeconds:()=>30,assistanceUsed:false,mistakeCommitted:false,qualifying:true}));
- assert.deepEqual(campaign.performanceRun(0).eligibility,{autonomy:false,speed:false,noError:false,mastery:false});
- assert.deepEqual(campaign.savePerformance(0,1).badges,{autonomy:false,speed:false,noError:false,mastery:false});
+ assert.deepEqual(campaign.performanceRun(0).eligibility,{autonomy:true,speed:true,noError:true,mastery:true});
+ assert.deepEqual(campaign.savePerformance(0,1).badges,{autonomy:true,speed:true,noError:true,mastery:true});
 });
 
 test("15 minute badge cooldown boundaries and midnight",()=>{

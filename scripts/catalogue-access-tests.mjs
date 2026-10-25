@@ -12,6 +12,18 @@ import vm from 'node:vm';
 import {functionSource} from './source-tools.mjs';
 const q=(id,index,pack,constellation,ordinal)=>({id,legacyIndex:index,packId:pack,constellationId:constellation,ordinal});
 
+test('each completed published quest preserves pack access and replay independently of inserted prerequisites',()=>{
+ const quests=canonicalQuestList();
+ for(const quest of quests){
+  const progress=quest.legacyIndex!==null?{solved:{[quest.legacyIndex]:1}}:{solved:{},canonicalQuestState:{[quest.id]:{solved:true,badges:{speed:true}}}};
+  const before=JSON.stringify(progress),pack=CONTENT_PACKS.find(p=>p.id===quest.packId);
+  assert.equal(hasPackAccess(pack,[],progress),true,quest.id+' completion proves started access');
+  assert.deepEqual(canonicalCampaignQuestDecision(quest,progress,{signedIn:true,cloudReady:true}),{status:'ready',reason:'replay'},quest.id);
+  if(quest.legacyIndex===null)assert.equal(canonicalCampaignQuestDecision(quest,progress,{signedIn:true,cloudReady:false}).status,'sync-required');
+  assert.equal(JSON.stringify(progress),before,'A read cannot materialize acquisitions');
+ }
+});
+
 test('Antlia: historical frontier stays acquired while a current-cohort player cannot skip new prerequisites',()=>{
  const quests=canonicalQuestList(),antlia=quests.find(q=>q.constellationId==='iau-ant');
  const preceding=quests.filter(q=>q.ordinal<antlia.ordinal);
@@ -98,12 +110,13 @@ test('a started canonical-only constellation survives another earlier addition',
  assert.equal(insertedQuestDecision(v3.find(q=>q.id==='b-new-2'),progress,v3).status,'ready');
  assert.equal(insertedQuestDecision(v3.find(q=>q.id==='b-second-1'),progress,v3).status,'prerequisite');
 });
-test('historical access never creates ownership, authentication or hydration',()=>{
- const quest=v3.find(q=>q.id==='b-new-1');
+test('historical access never creates ownership or bypasses account requirements beyond discovery; acquired replays remain accessible',()=>{
+ // #522 intentionally replaces the storage-key account gate with visible quest 7.
+ const later=v3.map(q=>({...q,ordinal:q.ordinal+6})),quest=later.find(q=>q.id==='b-new-1');
  for(const [context,status] of [[{packAllowed:false},'pack-locked'],[{signedIn:false},'auth-required'],[{cloudReady:false},'sync-required']]){
-  assert.equal(insertedQuestDecision(quest,historic,v3,context).status,status);
+  assert.equal(insertedQuestDecision(quest,historic,later,context).status,status);
   const replay={...historic,canonicalQuestState:{[quest.id]:{solved:true}}};
-  assert.equal(insertedQuestDecision(quest,replay,v3,context).status,status,'Replay retains the same guards');
+  assert.equal(insertedQuestDecision(quest,replay,later,context).status,context.packAllowed===false?'pack-locked':context.cloudReady===false?'sync-required':'ready','Replay preserves acquired guest access without creating pack ownership or releasing an authenticated restore hold');
  }
 });
 test('no-history adventure and absent content cannot receive fabricated historical access',()=>{
@@ -179,7 +192,7 @@ test('the actual UI adapter and start guard share readiness without bypassing pr
  const quests=canonicalQuestList(),pack=CONTENT_PACKS.find(p=>p.id==='real-adventure-03');
  const group=quests.filter(q=>q.packId===pack.id&&q.constellationId===pack.id+'-new-01');
  const progress={solved:Object.fromEntries(quests.filter(q=>q.packId===pack.id&&q.legacyIndex!==null).map(q=>[q.legacyIndex,1]))};
- const context={canonicalInsertedQuestDecision,canonicalQuestList,lumenProgress:progress,lumenEntitlements:[],adventureAccessEntitlements:()=>[],attemptEngine:{snapshot:()=>null},qaActive:false,lumenUser:{id:'synthetic'},cloudProfileReady:true};
+ const context={leavePendingVictoryForNavigation:()=>{},confirmedReplayAllowed:()=>false,canonicalInsertedQuestDecision,canonicalQuestList,lumenProgress:progress,lumenEntitlements:[],adventureAccessEntitlements:()=>[],attemptEngine:{snapshot:()=>null},qaActive:false,lumenUser:{id:'synthetic'},cloudProfileReady:true};
  context.navigationProgress=()=>context.lumenProgress;
  vm.createContext(context);
  vm.runInContext(['canonicalQuestAccess','canonicalQuestAvailable','canonicalQuestLockReason','startCanonicalQuest'].map(name=>functionSource(source,name)).join('\n'),context);

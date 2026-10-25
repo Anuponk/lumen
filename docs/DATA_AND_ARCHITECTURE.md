@@ -22,6 +22,146 @@ No writes, restore path, new persistence or gameplay effects. Manual review and
 secure delivery are mandatory; see [procedure](ACCOUNT_RIGHTS_RUNBOOK.md).
 Production migration remains unauthorized; PR stays draft. Proposed retention
 criteria are [separate from implemented behavior](PRIVACY_RETENTION_PROPOSAL.md).
+## Temporary private assistance — #574
+
+[Audit, data contract, budgets and rollout](SUPPORT_574.md). A separate explicit
+24-hour consent permits filtered owned profile/checkpoint copies through
+`lumen_support`. Private support metadata/content tables stay separate from
+ordinary telemetry. Existing capability/cron are reused; all operations check
+Auth/ownership, admin reads are audited, revocation deletes content atomically.
+No game writer, save mutation or reconciliation change; originals remain local.
+The migration/control are prepared and disabled pending explicit production
+authorization. A volatile one-hour queue deliberately does not survive page
+closure. Do not upload the raw multicomponent manual recovery export.
+
+Private recipe/control follow-up (24 October 2026): the shared-project
+`lumen_recette` is private, role-isolated and uses synthetic SQL claims only.
+No player copy or shared Auth mutation is permitted. Release approvals, cohort
+events and the closed-by-default activation control are administrative authority;
+clients cannot enroll themselves. Explicit guest capability 0 preserves the old
+initializer before mutation; unknown versions refuse. The new claim endpoint also
+requires activation, retaining exact issued-receipt retry. See
+[recipe and activation procedure](CLOUD_RECOVERY_391.md#private-schema-recipe-and-activation-control-24-october-2026)
+for installation order, actual SQL evidence and outstanding physical gates.
+
+## Optional incident details — #534
+
+[Audit and architecture](OBSERVABILITY_534.md). Preserve #398's live health,
+outbox state, fifteen-minute alert and capability; add a private companion
+detail stream, not another backlog/repair engine. `diagnostic-reporter.js` maps
+fixed cloud/outbox/runtime codes and #533 blocked/Undo/released transitions.
+`lumen_record_diagnostics` derives Auth identity and checks the expected account;
+the same `lumen_admin_sync_health` response adds a bounded diagnostic sample,
+without profile/account joins. Public RPC wrappers are invokers; privileged
+writers live in the existing private schema, verify Auth and fix search_path.
+RLS and revoked direct grants deny raw access. The old health INSERT/sequence
+bypass closes and its compatible RPC normalises legacy text and applies quotas.
+
+Optional details default off. Separate `diagnostic_preferences` records purpose
+`534-v1`, choice and timestamp; no player profile field changes. Withdrawal
+stops capture/clears the local queue, deletes own optional server details, and
+persists a pending withdrawal for reconnect on failure. Consent-row locks prevent
+post-withdrawal insertions. A fresh opt-in cannot replay earlier events. Auth
+deletion cascades to the new preference/details, tested only in disposable SQL.
+The existing #398 operational data is distinct. Pseudonyms remain personal data;
+#316 publisher/legal/rights work is not declared complete.
+
+Closed context: stable codes/severity, stage/category, timestamps, random session/
+episode UUIDs, sequence/retry, normalised version, platform/browser families and
+blocked/ready state. No message, stack, URL, user agent string, email, board,
+balance, receipt, whole profile/save or arbitrary JSON. UUID delivery is immutable
+and idempotent; signature grouping uses only these technical fields.
+
+Queue: 30 events / 16 KiB, TTL 24 h, ten events / 8 KiB per batch, one request in
+flight and five attempts with bounded exponential backoff/timeout. Capture never
+awaits transport; storage denial/quota/corruption falls back to memory. Only
+diagnostics can be dropped, never business intentions. Offline reload/reconnect
+and obsolete account/client responses are guarded. Budgets: ten requests/minute,
+120/day/account, 200 new events/day/account; global 5,000 details/day and separate
+20,000 legacy health/day. A coalesced hydration-ready after a failure can bypass
+the health cap so quotas cannot leave a recovered account falsely stalled; another
+exception requires another accepted failure. SQL locks telemetry, never profiles.
+Preference read/withdrawal remains available when ingestion quota is full.
+
+The existing daily operator-only prune adds seven-day details, two UTC-day
+budget buckets and resolved legacy health older than 30 days only if a later
+hydration-ready anchor exists. Deletes cap at 20,000 rows/table/run. Never erase
+unresolved health, outboxes or receipts. Physical deletion normally lags expiry
+by at most the daily schedule; job failures/backlogs can extend that lag. The
+cockpit shows only seven days and labels the sample opt-in/incomplete.
+
+## Storage inventory and recovery retention
+
+`storage-maintenance.js` measures localStorage by fixed categories and estimates
+UTF-16 key/value bytes. The browser's `storage.estimate()` budget is separate
+from localStorage's limit and never proves free device space. Where supported,
+IndexedDB inventory reads only existing recovery/checkpoint/outbox databases;
+measurement creates no database, changes no save and reveals no keys or values.
+
+The account diagnostic offers explicit local-space maintenance. Retain two
+recent immutable copies per recognized backup family (per owner for V2 unsynced
+checkpoints), and archive up to 50 older copies per invocation in the existing
+`lumenCloudRecoveryV1` snapshots store. Each `localStorage:<original key>` entry
+preserves the exact original string. A different pre-existing archive aborts;
+write/read-back and transaction completion precede local removal. Recheck the
+captured session, owner, live profile bytes and source bytes after the await.
+Failure or a changed session/source leaves the unverified source in place.
+
+This is relocation, not age-based destruction of evidence. IndexedDB originals
+remain exportable and do not expire. Live profiles, attempts, Auth, guest-before-
+account originals, unknown keys, V1 backups, V2 latest pointers and pending
+commands are excluded. No cloud acknowledgement, wallet authority or readiness
+is inferred. Existing outbox acknowledgement and 40-entry diagnostic rotation
+remain unchanged. UI-triggered export also includes guest and canonical metadata
+originals that were previously omitted from its local prefix selection.
+
+## Hydration refusal boundaries — #536
+
+Hydration retains a known wallet refusal (`mutable_balance`, invalid/stale wallet
+revision or invalid balance) when achievement-only recovery makes no change.
+A simultaneous canonical reward refusal is reported separately; neither reason
+authorizes a new merge or marks the profile ready. The wallet's IndexedDB
+checkpoint proves only durable staging, not a confirmed debit or storage loss.
+`reconciliationFailureDiagnostic` classifies fixed reason codes by domain;
+`hydrationFailureDiagnostic` identifies the wallet receipt, profile read-back,
+cache restore, acknowledgement, achievement backup/install and mirror boundary.
+Only fixed stages, known error categories and allowlisted field names are used;
+no revision numbers, amounts, profiles, operation/account identities or provider
+messages are added to telemetry. Full snapshots and all pending intents retain
+their existing preservation and acknowledgement rules.
+
+The final asynchronous legacy-mirror verification must check the captured account
+and client again before emitting readiness/failure or updating presentation.
+An account/client change aborts that obsolete continuation without touching the
+new session. This guard closes a reproduced race; it is not proof that Rachel's
+reported acquisition conflict was caused by session switching.
+See [evidence and remaining limits](validation/2026-10-23-hydration-536.md).
+
+## Session achievement recovery — #530
+
+Local quota follow-up (#536/#537, 23 October 2026): hydration uses
+`reconcileCloudAchievementsDurably`, sharing the synchronous recovery planner
+and its existing monotonic achievement rules. If the original's backup cannot
+fit in localStorage, the existing `lumenCloudRecoveryV1` IndexedDB snapshot
+store must commit and read back that original before the updated cache is
+installed. No backup is removed. A changed account/client or local profile
+during the await cancels installation. Both storage pools being full, an
+unverified backup, or a cache that cannot fit retains the hold and originals.
+Recovery exports now include this store as `cloudRecoveryIndexedDB` alongside
+the existing unsynced checkpoints. This does not reconcile an unproven wallet,
+mark partial hydration ready, grant a reward or authorize a locked replay.
+
+The [reproduced case and release limits](validation/2026-10-22-achievement-recovery-530.md)
+cover a server badge replay being rejected as an immutable canonical reward.
+Coverage and partial local recovery now accept only recognized badge additions
+when every non-badge field is identical. Stars, initial performance, unknown
+fields and badge removal still hold; no reward or balance is recomputed.
+Partial recovery retains local currency/cursors and cannot authorize hydration.
+Session identity/client is rechecked after daily reads/CAS and each reconciliation
+await, before applying the result to local data or readiness of another account.
+Only a verified coherent installation clears the previous failure. Specific
+storage/reward diagnostics use fixed fields, catalogue-validated local quest IDs
+and the existing server health event without profile values or new SQL.
 
 ## Quest parity audit — #522, 2026-10-22
 
@@ -94,9 +234,44 @@ changed. An affected player's device, storage context and fresh diagnostic must
 still confirm which cause applies. Server session presence alone does not prove
 the session is usable on that particular browser/PWA.
 
+## Guest registration preservation (#528)
+
+For an existing account, an unowned browser with no acquired guest facts must
+not compare its default three-shard reserve or current catalogue origin against
+the account's confirmed wallet and historical origin. `guestNeedsReconciliation`
+ignores those defaults and empty daily containers when all acquisition maps/counters are empty;
+all other fields still pass conservative coverage. Exact guest originals remain
+archived before installation. Actual guest earnings, spending, performances,
+authority revisions and unclassified evidence retain the previous safeguards.
+New-account initialization still uses the complete guest seed and net balance.
+
+`ensureAttemptStarted` writes a performance-map entry on the first gesture,
+before any victory: quest index plus qualification day/timestamp. The shared
+`isAttemptStartPerformance` recognizes only that exact validated shape; rewards,
+times, badges, attempts and unknown fields are never classified as start-only.
+An otherwise unacquired guest may restore an existing account despite these
+markers. Keep the full original guest snapshot and a verified active-attempt
+backup before installation; never copy the guest timestamps into the account's
+cooldown or manufacture a qualified result. A failed attempt backup blocks the
+installation and leaves both account and guest data intact.
+Genuine guest conflicts emit the existing bounded `hydration_reconciliation`
+event at `guest_reconciliation`, including its fixed reason/domain and only
+known field names (otherwise `unknown_field`), without profile contents.
+
+`guest-account.js` distinguishes an unowned guest from a signed-out account cache. Before first authenticated I/O, preserve and read back the exact guest snapshot under `lumenGuestBeforeAccount_<accountId>` (additional versions retain subsequent offline play). Initialize a missing cloud profile from the whole validated guest snapshot, including net currency, earned badges and compatibility access; use a fresh seed only for another account’s cache. Existing cloud achievements must cover the guest, or the existing conservative reconciler must succeed before installation. Recheck the latest local bytes immediately before installation: achievements earned during initialization/daily I/O must also be covered, or remain pending with the live attempt preserved. Conflicting receipts/balances stay pending with both originals preserved; never infer money, copy another account, or erase guest achievements. Initial creation remains atomic and read-back verified; no duplicate victory commands are emitted. Failed backup, offline initialization, read-back or account switch cannot install an empty profile.
+
 ## Cloud persistence contract
 
 ### Requested account erasure (prepared, not deployed)
+
+P0 consolidation: the private policy now recognizes current optional diagnostics,
+command metadata and support tables. `scope_predicate` owns indirect attribution;
+`install_guards` registers the reviewed tables only. Support audit's private
+`privacy_owner_id` is derived from server cases, retained through case expiry,
+excluded from rights export and deleted by erasure/seven-day audit retention.
+Unattributable old audit references fail closed pending review. No gameplay
+profile, reward, wallet or reconciliation rule changes. See
+[the comparative audit](PRIVACY_P0_CONSOLIDATION.md).
 
 `20261022160212_lumen_account_erasure.sql` is the operator-verified exception
 to durable Lumen restoration: requested erasure removes that player's Lumen
@@ -110,6 +285,487 @@ restoration, rewards and pending intentions keep their existing contracts.
 See `ACCOUNT_DELETION_RUNBOOK.md` for access, locking, reenrollment, proposed
 barrier retention and provider/backups limits. Separate production authorization
 and verified SQL CI are required before applying this migration.
+Celestial UX (#575/#519) is a read-only projection. `ui/celestial-progress.js`
+captures scope completion and eligible badge counts before a victory, compares
+them only after the existing confirmed outcome, and never writes a profile.
+`celestial-effects.js` seeds bounded decorative SVG dust by stable identity;
+`celestial-celebration.js` reuses the result sheet. Completion events and mastery
+pulses exist only in memory, scoped to the current owner and catalogue membership.
+No new cloud/local field, RPC, receipt, ledger, entitlement or migration is added.
+Hydration/read-back alone never invokes this presentation event producer.
+Reused durable intents and already-committed receipts explicitly suppress
+milestone/mastery events. A scope crossing requires exactly one missing quest
+before the live win; unrelated remote batches cannot manufacture a finale.
+
+An existing-account ownership handoff installs the verified profile into the
+single live progress object and refreshes board selection through
+`nextCanonicalQuest` / `resumeHydratedCampaignSelection`. The old active attempt
+is archived and verified before installation; only then may navigation replace
+it. Same-owner Auth refresh/reconnect and new guest-account seeding do not
+perform that handoff. No completion, cooldown, balance or reward is synthesized.
+Social challenges and locked/missing frontiers remain outside this navigation.
+
+The same selection check also handles a same-owner READY campaign board with no
+start timestamp and only empty cells. If it differs from the preserved origin
+frontier, its exact storage bytes are archived and verified before replacement.
+This repairs an idle inserted catch-up selection without moving a started/paused
+attempt or replay. An already correct selection is a no-op. Archive failure emits
+the bounded `campaign_resume_deferred` / `attempt_backup` diagnostic and leaves
+the board and verified account readiness intact. No player profile is modified.
+
+The cockpit's `playerSyncStatus` presentation qualifies existing queue evidence
+by observation freshness, including the oldest device timestamp. Badges and
+filters share this model; full original dates/state remain under a disclosure.
+Green never derives from a domain receipt/Auth date alone and does not certify
+complete-device sync. This is UI-only; no authority or persistent fields change.
+
+The administrative directory enriches its registered-player projection with the
+already-loaded, capability-guarded account response by exact user identity.
+Nickname/email search and email fallback remain in memory; no email is written
+to telemetry/storage and no API/schema or authority changes. Native collapsible
+cockpit sections retain their content and mounted open/closed state.
+
+The administrative recent-player directory now limits its view to registered
+`authenticated` / `u:` identities. Anonymous hash labels do not establish test
+traffic and never authorise deletion. The view filter and timeline reset touch
+no player persistence, telemetry storage, aggregate definition or backend RPC.
+
+### Positive acquisition recovery — #391, 25 October 2026
+
+The free game's product policy gives structurally valid positive acquisitions
+the benefit of the doubt. Conservative snapshot coverage remains the ordinary
+restore guard. On a same-owner hydration refusal, `reconcilePlayerAcquisitions`
+uses the additive expected-account `lumen_reconcile_acquisitions` RPC and a
+separate server read-back. The current session installs that verified result and
+refreshes its one live progress object without a reload or new victory.
+
+Under the existing snapshot row lock, the RPC unions catalogue-recognized solved
+identities, existing badge flags and historical achievement maps. It keeps the
+best compatible performance summaries, cumulative counters by maximum and latest
+cooldown. Time/assistance/error facts come from one saved run. Mastery is kept
+only when explicitly present, never synthesized from its components. The server's
+immutable canonical first-completion record stays exact; improvements use the
+existing mutable `runPerformance`. Legacy and Quest authority projections update
+atomically, keeping the ordinary snapshot guards active and cursors unchanged.
+
+Historical acquisition recovery may copy a first performance into an unversioned
+`runPerformance` with empty badges. Client coverage accepts that redundant seed
+only with an active Legacy authority, no pre-existing local run, exactly the
+`seconds`/`assisted`/`bestTime`/`badges` shape, finite nonnegative times and exact
+equality with the preserved first performance. First rewards and unknown evidence
+remain protected; the seed never proves a new qualifying run or grants a badge.
+Existing V3 replay coverage remains unchanged. No profile or server migration is
+required, and original device bytes remain archived before installation.
+
+Shards, Wallet revision, daily ledger, receipts and catalogue origin remain
+exactly server-owned. Recovery never credits money or replays a reward from
+completion. XP and skyScore keep the existing maximum policy, never addition.
+Uninterpretable historical properties stay in the original instead of blocking
+independent known acquisitions. Corrupt core structure, identity uncertainty or
+failed archival/read-back still refuse.
+
+Before emission, both originals are durably archived and verified with existing
+recovery storage, including its IndexedDB fallback. Timestamp collisions cannot
+replace an older original. The server also retains both JSONB sources in private,
+RLS-enabled `lumen_commands.acquisition_recovery_sources`, keyed by owner and
+SHA-256 of canonical JSONB. No direct client access or diagnostic profile payload
+is added. Existing local recovery exports include the original device bytes;
+server copies remain operator-readable evidence. No retention/cleanup job is added.
+
+Two CAS attempts bound each recovery. A stale snapshot causes a fresh account
+read; a lost reply is safe to repeat without another reward. Read-back,
+owner/client/generation and current local bytes must match before installation.
+This merge never acknowledges pending commands. Cache quota after verified
+archival/read-back permits in-memory play. Missing migration/transient failure
+keeps partial recovery and retry, without claiming convergence.
+Transient acquisition failures use the existing retry scheduler with exponential
+backoff and at most five autonomous retries per window. Online/Auth renewal wakes
+that window; active play, hidden/offline documents and changed identity/client/
+generation prevent emission. Structural refusal and missing migration do not loop.
+An intervening server-read outage retains the retry window without granting replay
+or Wallet proof. Success cancels the hold; repeated failures stay diagnosable.
+`hydration_reconciliation` records `positive_acquisitions`; `hydration_ready` and
+the scheduled flush report subsequent readiness. This supersedes support-only
+treatment of ordinary acquisition differences. It does not authorize ambiguous
+monetary reconstruction, production SQL or old-writer retirement.
+
+Cockpit acceptance (#534 lot 3): administrative data is bound to the captured
+cockpit owner as well as live capability. Switching between two authorised
+accounts clears the previous view immediately. This does not change player
+Auth or persistence; receipt dates retain their limited domain-commit meaning.
+
+Cockpit sessions (#534 lot 2): capability-checked, closed administrative reads
+group existing analytics and consented diagnostic sessions separately. No
+session is inferred from Auth timestamps or a temporal match; no shared-browser
+guest event is reassigned to a signed-in account. `ui/cockpit-sessions.js` owns
+the bounded view, in-memory expansion and filters. New read-only session RPC
+and supporting indexes change neither collection nor player persistence.
+
+Administrative dates (#534 lot 1): `ui/cockpit-dates.js` displays last recorded
+analytics activity separately from Auth `last_sign_in_at`. The additive
+`lumen_admin_player_observations` RPC reads only latest immutable domain receipt
+timestamps and existing outbox observations, behind a live, expiring cockpit
+capability and Lumen account scope. These timestamps prove server commits,
+not device receipt, current projection installation or full synchronization.
+No player-data writer, ACK, receipt format, collection or retention changes.
+See `OBSERVABILITY_534.md` for source audit and compatibility.
+
+### Historical inventory and guest claims — lot 4
+
+`historical-inventory.js` produces a private, mutation-free manifest. Each source
+retains its original string, SHA-256, owner, origin and unknown fields. States are
+`identical`, `covered_projection`, `incomplete` and `contradictory`. A covered
+projection is **not** a transaction receipt. Exported receipts alone cannot
+authorize a baseline: verification still uses the existing expected-account RPC
+adapters. Invalid/foreign sources and ambiguous balances remain under review.
+The optional `inventoryHistoricalAccount` reads the expected-account profile,
+independently reads exact Wallet operation receipts, then re-reads the profile.
+Only an immutable request and the existing exact Wallet coverage predicate may
+classify a source as `receipt_covered`. A moving projection, foreign owner,
+unknown-field mismatch or missing receipt cannot receive that classification.
+This API neither installs the result nor acknowledges an outbox entry.
+`node scripts/historical-inventory.mjs private-input.json private-output.json`
+requires an explicit destination, refuses overwrite and prints only counts.
+Input shape: `{userId,sources:[{id,owner,origin,raw}],remoteOwner,remoteRaw}`.
+The result contains private save contents and must never enter Git or an issue.
+
+An actual unowned guest's initialization now captures `lumenGuestClaimV1:<digest>`
+before I/O. The immutable manifest contains the target owner, random claim ID,
+original/seed strings and SHA-256 digests. A preserved source remains bound to
+that target even when sign-in was interrupted. Native Web Locks serialize new
+claim captures across updated same-origin tabs; without them the verified
+localStorage write remains document-scoped, not a cross-tab transaction.
+Manifests and the prior guest backups are retained and privately exportable.
+The export also retains the local owner, active attempt and fallback outboxes.
+
+The additive `historical_claim_rollout` migration introduces private, RLS-enabled
+guest receipts, no new authenticated table grants, expected-account RPCs and
+an invoker public facade. A claim atomically creates **only a missing profile**
+and its receipt. Existing profiles receive `review_required`, without addition,
+maximum or replacement. The seed must equal the original JSON except for the
+existing default reserve when `shards` was absent. Unknown fields survive.
+Account-authority fields are refused. The original new-account net-balance policy
+is preserved as `new-profile-net-balance-v1`; this is an explicit historical
+baseline, not a reconstruction or proof of earlier spending. Guest bytes remain
+client-originated evidence, not proof of purchase or an anti-cheat attestation.
+
+Retry retains the exact manifest. An independent claim receipt and a current
+expected-account projection covering the seed are required, including after a
+lost mutation reply. No response failure switches writers. Only an explicit
+404/PGRST202 from capability discovery, before any claim emission, uses the
+old initialization path; all other discovery failures or versions hold.
+Originals are never deleted on success or rollback. Existing-account divergent
+guest merges remain under the earlier conservative reconciliation contract;
+this release does not claim to resolve their missing transaction history.
+
+### Rollout and retirement evidence — lots 5–7
+
+`rollout-gates.js` and `persistence-release-check.mjs` evaluate an explicit private
+evidence file; they do not deploy, migrate players, authorize money, or activate
+accounts. CI, client and server attestations must name the same exact Git SHA.
+The gate requires isolated real transports, all named failure scenarios, two
+distinct Android devices and shadow parity with zero second emissions. Mock
+successes are deliberately insufficient. The retirement decision additionally
+requires 14 elapsed calendar days of broad-cohort observation for that revision,
+zero old writers, migration parity, restorable originals and a server-derived
+mirror. Missing/contradictory proofs fail closed. See CLOUD_RECOVERY_391.md.
+
+The migration prepares private `sync_cohorts` administrative rows (shadow/active,
+protocol, revision, evidence digest) and an owner-bound read-only contract RPC.
+It inserts **no** cohort. Browsers cannot create, activate, downgrade or delete
+cohorts; active state survives a client rollback. Auth-user deletion retains its
+normal FK cascade. These rows are preparation/attestation only: they do not
+switch an application dispatcher or retire any RPC. No unsupported future
+protocol may be activated by this schema. Existing command authorities remain.
+There is intentionally no retirement stage before server projection parity.
+No old snapshot/mirror writer or dormant-client reader is removed in this lot.
+Such removal remains blocked until the actual release/restore evidence exists.
+
+
+### Gameplay and domain readiness — lot 3
+
+`gameplay-sync.js` derives profile, achievement, wallet and reward states from
+the current account/client/hydration generation. A completed quest can be replayed
+during a wallet-only reconciliation hold after an expected-account server read
+confirms its stable catalogue ID in that same generation. The hydration hook
+keeps only this ephemeral list of IDs, not another live profile. It is created
+only for an existing same-owner cache with a Wallet diagnostic and no failed
+achievement recovery. Auth in flight, password recovery, a changed account/client/
+generation, missing proof, storage/reward/catalogue conflicts or unknown failures
+do not grant this permission. Pack access and an actual local completion remain
+independent guards for both stable-only and historical quest identities. Direct
+historical replay entry now checks access before clearing the preceding attempt.
+
+This permission enables play, not reconciliation of the ambiguous Wallet.
+Free help retains its ordinary rules; paid help remains refused before mutation.
+A replay solved during this hold captures locally before any capability network
+read; closing offline must not depend on that read. It keeps the same attempt/reset
+operation in its existing outbox and shows pending performance, without a new
+star animation or confirmed badge. Rewards, daily credits and full-profile
+installation still await their existing proof/readiness contracts. An older
+server without Legacy commands cannot fall through to local authenticated
+rewards during a hold. Retry retains the captured time, assistance, facts and
+operation ID; session generation is checked on both victory paths.
+Starting another accessible replay retires only the prior pending presentation
+and completes its already solved attempt; its outbox entry stays intact. Failed
+access/cooldown checks leave that presentation and attempt unchanged. Both map
+and direct historical entry use this boundary, so a pending success cannot
+suppress the next victory through a leftover global presentation flag. Existing
+isolated receipt recovery may confirm commands without replacing divergent local
+currency. No scalar maximum, new guest grant or entitlement is introduced.
+
+New command confirmations now pass through `installAndRead` in the owner-bound
+IndexedDB confirmed cache before reaching the UI. The re-read must match owner,
+installation revision, full profile bytes and current session. A racing cache
+writer/refusal reports the existing fixed cache issue; the already verified RPC
+profile remains the compatibility fallback and no new command is emitted. Wallet
+does this before its existing application/acknowledgement callback. Cold startup,
+historical localStorage evidence and conservative hydration are retained for the
+later migration lot; no old cache, backup, intention or unknown profile field is
+deleted. These reads are not an independent server receipt.
+
+Presentation distinguishes confirmed quests, Wallet review and pending rewards.
+An uncertain local balance is not labelled spendable: the meter displays
+« Éclats à vérifier ». Initial unverified hydration still guards completed replay
+buttons. The new permission expires with the generation rather than persisting
+an access flag. Rollback restores the prior stricter replay gate and compatible
+adapters while retaining the exact cache/outbox formats from lot 2.
+
+
+### Persistence coordinator and transactional cache — lot 2
+
+The UI's Canonical, Legacy and Wallet adapters now share
+`persistence-coordinator.js`. `submit(domain, owner, quest, evidence, identity)`
+captures immutable evidence before asynchronous I/O. Its outbox facades retain
+the existing namespaces, V1/V2 readers, paused states, receipts and operation IDs.
+`coordinated-command-adapters.js` wraps the existing verified transports; it
+does not introduce a second command emitter. Immediate actions, hydration and
+reconnect replays use the same per-account queue. Account, client and hydration
+generation are captured before waiting; stale work cannot start or acknowledge
+through the supplied session guard. An in-flight request retains its queue slot
+until settlement, including after a session change or rejected response.
+
+Native Web Locks serialize updated clients across same-origin browsing contexts
+using `lumen-command-dispatch:<owner>`. Without Web Locks, serialization is
+limited to the current document; SQL locks, exact receipts and operation IDs
+remain mandatory across old clients/devices. This is an explicit compatibility
+limit, not a cross-device client lock. No lock release creates a new operation ID.
+
+`transactional-command-cache.js` stores `lumenCommandCacheV1:<domain>:<owner>:<op>`
+in the existing version-1 `lumen-canonical-outbox/intents` store. One read-write
+transaction checks immutable bytes and commits both the original V2 intention
+and its pending metadata (owner, domain, operation/quest IDs, creation time).
+Acknowledgement retires the indexed intention and its pending row in one
+transaction after the existing adapter proves the result. Pending metadata
+contains no balance, badges, entitlements or speculative projection. A conflict
+or abort leaves the original bytes intact. No database version upgrade, store
+rename, key migration or old-intent enumeration change occurs. V1 and legacy
+localStorage entries remain readable in place and are not silently migrated.
+If IndexedDB is refused, the existing verified localStorage compatibility path
+remains available; that path provides durable intent capture, not a paired
+IndexedDB cache transaction. Its existing fixed storage issue reports remain.
+
+The confirmed read model is `lumenConfirmedCacheV1:<owner>` in that same store:
+one JSON record contains schema version 1, owner, local installation revision
+and the entire verified profile, including unknown fields. Compare-and-swap
+and a session guard prevent racing installations. The local revision is not a
+server wallet cursor. Only results already verified by the existing receipt/
+current-profile adapters reach its writer; no merging or numeric maximum occurs.
+Cache refusal is reported as `confirmed_cache_unavailable` without retrying a
+verified server effect. During this lot it is a mirror: existing verified
+localStorage installation remains the UI read source. Switching that source,
+domain-specific gameplay holds, guest claims and historical migration belong to
+later lots. The guest profile and active attempt still use their original paths.
+
+A coordinator constructed in `shadow` mode can inspect registered domains;
+submit, dispatch, acknowledgement, pause, resume and capture archival all refuse
+mutation. It is a separate read-only instance, never a second live dispatcher.
+Rollback uses the original adapters and preserves both cache prefixes and every
+original intention. Older clients ignore these extra keys and can still open
+database version 1; pending cache rows are advisory, never replay authority.
+Snapshots/CAS and the historical mirror are deliberately not retired in lot 2.
+
+The explicit private recovery download adds `commandIndexedDB`, containing raw
+intents and both cache prefixes. It performs read-only enumeration; no upload,
+TTL or cleanup is introduced. Incomplete reads refuse the download. A pending
+view orphaned by an older client's acknowledgement remains preserved but is
+excluded from `pendingState`; actual intentions remain the replay source.
+
+
+### Persistence foundations — lot 1 (23 October 2026)
+
+Local saves return {ok:true,durable:true} only after exact read-back, otherwise
+{ok:false,durable:false,code} with a fixed privacy-safe code. onSave runs only
+after verified preservation; onIssue reports refusals independently. Hook failures
+cannot turn a committed write into a claimed storage failure. A visible local
+status reports failed preservation even for guests; no server receipt is implied.
+
+Unreadable storage never authorizes replacement. Before replacing malformed local
+bytes, preserve their exact original under lumenLocalQuarantineV1:<progressKey>:
+<hash>:<length>:<collision>, read it back, and recheck the active source. Hashes
+only select candidates: different bytes use a different collision slot. Failed
+quarantine leaves the active original intact and refuses the save. Unsupported
+catalogue origins stay held for review. Quarantine is local recovery evidence,
+grants nothing, remains exportable, and is excluded from automatic archival and
+deletion. Rollback preserves these keys; older clients do not recover them.
+
+Hydration captures expected account/client and a monotonically increasing local
+generation before storage/network work. Account/client replacement and every new
+hydration invalidate the old generation. Both resolved and rejected awaits must
+verify it before installing data or publishing current-session status. Generation
+is ephemeral control state, not a persisted reward or server revision.
+
+Cloud profile limits use 524288 UTF-8 bytes with JSONB structural-space and
+scientific-number expansion reserve, rather than JavaScript character count.
+Validation fails before a new RPC; server limits remain unchanged.
+
+Existing command envelopes retain their domain/version, captured expected owner,
+operation identity and immutable request. Durable acceptance, remote commit,
+exact independent receipt, current covering projection and local acknowledgement
+are distinct states. Neither a local save result nor a generation grants rewards.
+No command namespace, receipt, outbox or authority is rewritten by this lot;
+one entry point and transactional cache remain the later coordinator work.
+
+
+### Explicit reviewed device recovery (#536/#537, 23 October 2026)
+
+`approved-device-recovery.js` provides a manual installation boundary for a
+historical wallet divergence after individual owner review. It does not alter
+automatic reconciliation or grant clients authority over server balances.
+The private `approved-device-recovery-v1` file records the explicit choice of
+the verified cloud wallet, expected account, exact canonical JSON SHA-256 local
+and cloud fingerprints and expiry. It is a reviewed handoff, not a signed
+capability or permission to change server data. It contains no token or profile.
+An operator must independently review originals and monetary discrepancies;
+never automatically generate a file to release an ambiguous wallet hold.
+
+The account diagnostic chooser checks size (4 KiB), captured owner/client and
+QA exclusion. Expected-account restore and fingerprints must match. Existing
+local acquisition coverage still applies after the explicit monetary choice.
+Both originals are preserved in the existing exportable backup store, including
+the existing `lumenBeforeCloud` export prefix for local copies and
+its IndexedDB quota fallback. Owner, session and exact local bytes are rechecked
+after awaits; a second cloud read must equal the first. Only the local progress
+cache is installed, verified and followed by reload. No outbox, attempt, reward,
+entitlement or acknowledgement is edited. Changed snapshots need another review.
+
+No server schema, persisted profile field or recovery grant is added. Individual
+repair approval is distinct from release approval. Server metadata repair and
+device installation remain separate evidence; physical confirmation is required.
+
+### Quest convergence candidate (#522, 22 October 2026)
+
+The dedicated convergence branch introduces `quest-rules.js`, `quest-rewards.js`
+and `quest-victory.js`. Visible ordinal owns teaching and assistance; all four
+badges remain eligible from quest 1. The numeric
+compatibility adapter preserves historical reward IDs and allocations.
+`quest-victory.js` is a pure fixture/QA projection, never authenticated authority.
+
+Migration `20261023181850_quest_contract_convergence.sql` adds V2
+`lumen_commit_quest_command` / `lumen_get_quest_command`. Immutable facts,
+operation ID, account and stable quest ID identify a command. For stable-only
+quests the transaction locks the profile, computes rewards, records first-win
+ledger evidence, updates daily/wallet authority and writes the profile and receipt
+atomically. Numeric commands delegate to the existing historical transaction.
+There is no bulk player rewrite or retrospective reward grant. Existing first
+completion `performance`, stars, unknown fields and acquired badges survive;
+mutable replay statistics live in `canonicalQuestState[id].runPerformance`.
+Its attempts, best time and last qualified timestamp are server protected.
+
+The client persists facts before I/O, independently reads the exact receipt and
+the current verified profile, and checks owner/client/attempt throughout. A
+solved flag alone cannot acknowledge a command. Current wallet cursors and
+legitimate decreases win over an earlier receipt balance. Ambiguous errors
+never select an older writer. V1 pending commands remain recoverable in their
+existing namespace; a V1 badge replay cannot rewrite V2 run statistics.
+An explicit missing V2 read endpoint permits V1 read recovery only.
+
+A recreated V2 capture may be retired only after archiving its exact bytes and
+original receipt, with matching operation/account/quest, unchanged immutable
+facts and no improved elapsed time or uncovered badge. Readiness or a solved
+flag cannot serve as this proof. Numeric cold resume restores both quest and
+campaign/replay mode before the attempt engine's strict identity comparison;
+a READY board does not establish preserved campaign access.
+
+The historical outbox uses the same archival recovery for a later capture of
+an already committed operation. It independently reads the original receipt
+and current profile, requires the same account, operation, quest, start timestamp,
+day and all assistance/qualification flags, a non-improved elapsed time, and
+covered attempts/badges. Only a `22023` review pause permits this read-only
+inspection; other holds remain. The later capture must postdate the receipt.
+Exact original bytes and receipt are verified in a private exportable archive
+before retiring that pending copy. No command is resent, receipt changed or
+reward granted. Archive or session failure retains the pending operation.
+
+Migration `20261023181900_quest_social_identity.sql` adds stable quest identity
+to challenges and privacy-filtered create/get/list RPCs. Numeric URLs and
+existing participation/terminal protocols retain their identity. No challenge
+operation writes campaign progress, daily credit, unlocks or wallet rewards.
+Migration `20261023181918_quest_analytics_identity.sql` adds capability-checked,
+read-only ordinal metrics/timeline; it does not rewrite events or players.
+
+Migration `20261025191634_cockpit_furthest_quest.sql` (prepared, not applied)
+changes only the directory's compatible `current_players` projection to the
+highest observed current catalogue ordinal over lifetime quest lifecycle events.
+Last qualifying activity still bounds the player set; earlier replays cannot
+lower its displayed point. Capability, stable identity and traffic guards,
+friction windows and chronological timelines remain intact. This read model
+does not repair or mutate profiles, events, rewards, balances or entitlements.
+See PRODUCT_ANALYTICS for the distinction between observed reach and completion.
+
+The owner authorised these three migrations on 23 October 2026 after the
+disposable PostgreSQL fixtures and concurrency CI passed. They are applied in
+production under the versions above; 400 rules, RLS, grants and both identity
+constraints were verified before client release. The SQL bodies retain their
+tested fingerprints; filenames match the actual provider migration history.
+Any subsequent production schema application needs separate owner authorization,
+then schema verification before the client is released. Shared authentication settings and
+SoldeZen data are outside this change. Roll back the client while retaining the
+additive schema and receipts; never delete player projections to roll back.
+
+Post-application advisor review retains the intended boundaries: private tables
+have RLS and no player grants/policies; guest social RPCs reuse the existing
+privacy-filtered protocol, while admin RPCs enforce a live capability (both
+unauthenticated admin calls were rejected in production). These expected
+[private RLS](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy)
+and [definer RPC](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable)
+notices are documented rather than opening direct access. The two new
+[unindexed FK notices](https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys)
+point to the immutable catalogue-key parent; rollout neither updates nor deletes
+those keys. Existing shared-project advisor findings are outside this release.
+
+Achievement installation quota (#536/#537): after a verified original backup,
+an `achievement_install` quota refusal may archive one bounded batch of eligible
+old originals through `archiveRecoveryBackups`, then retry installation once.
+Each original is committed and read back in the existing exportable IndexedDB
+store before its local copy is removed; two recent copies per family, unknown
+keys, active progress and pending operations remain untouched. Owner, session
+and exact local bytes must still match after archival. Any unverified archive,
+remaining quota or conflicting reward keeps the hold. This automatic path is
+limited to the installation quota refusal; explicit account maintenance remains
+available. It does not confirm wallet balances or full synchronization.
+
+Receipt-based wallet cache recovery uses the same verified snapshot fallback
+when backup copies cannot fit in localStorage. Both local and remote originals
+must be preserved before installing the exact receipt-covered projection;
+session/owner/local-byte guards follow every wait. No command is replayed by
+this helper, and the unchanged receipt predicate refuses unrelated acquisitions,
+unknown facts and unproven currency differences. Recovery export includes local
+wallet originals and both existing IndexedDB stores. No schema or reward changes.
+
+Diagnostic investigation (#534 phase 2) is a read-only projection of the existing
+capability-guarded cockpit timeline, owned by `ui/incident-investigation.js`.
+It adds no persisted fields, RPC, grant, profile join or save writer. Closed
+report export omits session/trace IDs and all arbitrary fields; GitHub receives
+only a bounded draft after explicit administrator review. Details remain partial
+and independent from #398 live health and business acknowledgements. See
+OBSERVABILITY_534 for the bounded first slice and remaining phase-2 work.
+
+Completed-quest presentation (#537) reads confirmed completion separately from
+the existing action decision. A replay held for authentication/hydration keeps
+its historical label and badges; this UI projection never writes progress,
+changes ownership or releases a wallet/reward/storage conflict. Catalogue/pack
+and direct-start guards are unchanged. See PROGRESSION and the #537 report.
 
 ### Wallet command cutover (#248/#391, 22 October 2026)
 
@@ -639,11 +1295,29 @@ One challenge link may have many independent participants. “Mes défis” is t
 ### Security-advisor note
 Supabase reports the two social tables as `rls_enabled_no_policy` and the anonymous social RPCs as callable SECURITY DEFINER functions. For #18 this is intentional: guests are a product requirement, direct table access is denied by RLS, and the narrow RPCs enforce the ownership/one-attempt contract. These warnings are not a claim that the whole project is security-clean; unrelated existing advisor warnings remain and must be reviewed separately.
 
+## Onboarding local preference (#569 / #576)
+
+ui/onboarding-preferences.js stores presentation-only auto choice and viewed tip
+IDs in lumenOnboardingV1:<owner-or-guest> (QA uses the existing qaKey namespace).
+The owner is read dynamically at every access; no global lumenAutoCross or
+regaliaAutoCross value is imported because its account owner is unknown. Old
+saves default to on after manual quest 1. Lesson/challenge constraints only alter
+the active UI. Quota/refused storage keeps a scoped in-memory choice for this
+session; cache loss/new devices may reset preferences. These are local settings,
+never cloud achievements, rewards, entitlements or a second progress store.
+The board may initialize before Auth resolves. `refreshOnboardingPreferenceOwner`
+reapplies the verified account's controls when readiness and owner change, without
+recreating its board or attempt. Same-owner refreshes leave the active choice alone;
+temporary teaching/challenge restrictions still take precedence.
+The existing cloud autoCrossUnlockSeen marker retains its normal serialization
+and recovery: quest 6 sets it only after unchecking, or observing unchecked.
+No new profile field, RPC, table, outbox or cloud reconciliation rule is added.
+
 ## Current learning controller (#57)
 
-`src/game/learning.js` is a pure, read-only lesson planner over the canonical board. It produces the expected cell actions and context-specific copy, using the audited opening grid and its `learnOrder`. `game-screen.js` enforces the interaction gate and presents the coach. It does not keep a second teaching board or persist a parallel lesson cursor; refresh resumes by deriving the step from the restored attempt board. Later placements spotlight the territory instead of the solution cell. Quest 2 derives a short placement/drag lesson from the same persisted board using `dragLearningStep`, then releases free gameplay and normal assistance controls. The transient pointer gesture freezes its permitted cells until release so completing the row mid-drag cannot mark unrelated cells. The older stage #25 descriptions above record the historical extraction, not the current learning behavior.
+`src/game/learning.js` is a pure, read-only lesson planner over the canonical board. It produces the expected cell actions and context-specific copy, using the audited opening grid and its `learnOrder`. `game-screen.js` enforces the interaction gate and presents the coach. It does not keep a second teaching board or persist a parallel lesson cursor; refresh resumes by deriving the step from the restored attempt board. Later placements spotlight the territory instead of the solution cell. Quest 2 is free play with optional drag advice. Explicit learning replay can still derive the historical gesture lesson from the same board using `dragLearningStep`. The transient pointer gesture freezes its permitted cells until release so completing the row mid-drag cannot mark unrelated cells. The older stage #25 descriptions above record the historical extraction, not the current learning behavior.
 
-Validation: `scripts/learning-tests.mjs` proves the five forced deductions and requested exclusions; `scripts/learning-browser-tests.mjs` exercises real touch/mouse actions, ignored taps, reload, drag, complete quest 1, free quest 2 and Mon ciel navigation on 360x640, 390x844, 768x1024 and 1440x900 viewports. Both are part of the CI gate.
+Validation: `scripts/learning-tests.mjs` proves the five forced deductions and requested exclusions; `scripts/learning-browser-tests.mjs` exercises real touch/mouse actions, ignored taps, reload, drag, complete quest 1, free quest 2, direct ordinary continuation and optional Mon ciel navigation on 320x568, 360x640, 390x844, 768x1024 and 1440x900 viewports. Both are part of the CI gate.
 ### Server incident age and alert scope (#398)
 
 `20261017181513_sync_health_incident_tracking.sql` versions the existing bounded

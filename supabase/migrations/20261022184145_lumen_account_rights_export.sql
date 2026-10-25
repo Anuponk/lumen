@@ -29,10 +29,7 @@ begin
  total_bytes:=pg_column_size(barrier);
  -- Preflight every category before materializing the combined JSON. Never truncate.
  for r in select * from lumen_privacy.policy() where action in ('delete','anonymize') order by ns,rel loop
-  predicate:=concat_ws(' or ',
-   case when r.uid_col is not null then format('%I=$1',r.uid_col) end,
-   case when r.actor_col is not null then format('%I::text=any($2)',r.actor_col) end,
-   case when r.key_col is not null then format('%I=any($3)',r.key_col) end);
+  predicate:=lumen_privacy.scope_predicate(r.ns,r.rel,r.uid_col,r.actor_col,r.key_col);
   execute format('select count(*),coalesce(sum(pg_column_size(to_jsonb(t))),0) from %I.%I t where %s',r.ns,r.rel,predicate)
    into n,bytes using p_user_id,actors,keys;
   if n<>(report->'tables'->(r.ns||'.'||r.rel)->>'rows')::bigint then
@@ -44,11 +41,9 @@ begin
   end if;
  end loop;
  for r in select * from lumen_privacy.policy() where action in ('delete','anonymize') order by ns,rel loop
-  predicate:=concat_ws(' or ',
-   case when r.uid_col is not null then format('%I=$1',r.uid_col) end,
-   case when r.actor_col is not null then format('%I::text=any($2)',r.actor_col) end,
-   case when r.key_col is not null then format('%I=any($3)',r.key_col) end);
+  predicate:=lumen_privacy.scope_predicate(r.ns,r.rel,r.uid_col,r.actor_col,r.key_col);
   expression:='to_jsonb(t)';
+  if r.ns='lumen_commands' and r.rel='support_access' then expression:='to_jsonb(t)-''actor''-''case_id''-''privacy_owner_id''';end if;
   if r.ns='public' and r.rel='lumen_push_subscriptions' then
    expression:='case when jsonb_typeof(to_jsonb(t)->''subscription'')=''object'' then jsonb_set(to_jsonb(t),''{subscription}'',(to_jsonb(t)->''subscription'')-''keys'') else to_jsonb(t) end';
   end if;

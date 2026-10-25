@@ -19,15 +19,15 @@ create table if not exists lumen.entitlements(user_id uuid,entitlement text);
 create table if not exists lumen.feedback(user_id uuid,anonymous_id text,message text);
 create table if not exists lumen.historical_performance(player_key text,user_id uuid,anonymous_id text,puzzle_id integer not null);
 create table if not exists lumen.internal_capabilities(user_id uuid,capability text);
-create view lumen.player_analytics as select user_id,anonymous_id from lumen.analytics_events;
+create or replace view lumen.player_analytics as select user_id,anonymous_id from lumen.analytics_events;
 create table if not exists lumen.profiles(user_id uuid primary key,nickname text);
 create table if not exists lumen.progress(user_id uuid,puzzle_id integer);
 create table if not exists lumen.recovery_backups(user_id uuid,payload jsonb);
-create table lumen.social_challenges(
+create table if not exists lumen.social_challenges(
  id uuid primary key,sender_user_id uuid references auth.users(id) on delete set null,
  sender_anonymous_id text,sender_display_name text not null check(length(sender_display_name) between 2 and 24)
 );
-create table lumen.social_challenge_participations(
+create table if not exists lumen.social_challenge_participations(
  id uuid primary key,challenge_id uuid references lumen.social_challenges(id) on delete cascade,
  participant_user_id uuid references auth.users(id) on delete set null,
  participant_anonymous_id text,participant_key text not null,participant_display_name text
@@ -40,6 +40,10 @@ create table if not exists lumen_commands.legacy_rules(quest_id text primary key
 create table if not exists lumen_commands.outbox_health(user_id uuid,client_id uuid,session_id uuid,session_started timestamptz,sequence integer,platform text,state text,pending integer,failures integer,app_version text);
 create table if not exists lumen_commands.wallet_authority(user_id uuid,revision bigint,balance bigint,daily jsonb);
 create table if not exists lumen_commands.wallet_receipts(user_id uuid,operation_id text,request jsonb,outcome jsonb);
-create table public.lumen_admin_player_snapshot(player_key text primary key,display_name text);
-create table public.lumen_push_subscriptions(user_id uuid,anonymous_id text,endpoint text);
+create table if not exists public.lumen_admin_player_snapshot(player_key text primary key,display_name text);
+create table if not exists public.lumen_push_subscriptions(user_id uuid,anonymous_id text,endpoint text);
 create table if not exists public.lumen_sync_health(user_id uuid,event text);
+
+alter table public.lumen_push_subscriptions add column if not exists user_id uuid;
+alter table public.lumen_push_subscriptions add column if not exists anonymous_id text;
+alter table public.lumen_push_subscriptions add column if not exists endpoint text;

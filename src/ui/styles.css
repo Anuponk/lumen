@@ -1,4 +1,6 @@
 *{box-sizing:border-box}body{margin:0;background:#f7f5ef;color:#202124;font-family:Arial,sans-serif}.app{max-width:680px;margin:auto;padding:20px 16px 42px}
+#board{-webkit-touch-callout:none}
+.cell.long-press-accepted{outline:3px solid #cfab55;outline-offset:-4px}
 .head{display:flex;justify-content:space-between;align-items:center}h1{font-size:38px;margin:4px 0 0}.sub{font-size:20px;font-weight:700;color:#777;margin-bottom:24px}
 button{font:inherit;font-weight:700;background:#fff;border:1.8px solid #555;border-radius:24px;padding:12px 17px}.levels{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 22px}
 .level{border-radius:15px;padding:11px 3px}.level.active{background:#222;color:#fff}.level small{display:block;margin-top:4px}.status{display:flex;justify-content:space-between;font-size:20px;font-weight:bold;margin:8px 3px 17px}
@@ -266,7 +268,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  body{min-height:0!important}
  .app{max-width:620px!important;width:min(56vw,620px)!important;height:100dvh!important;min-height:0!important;padding:12px 18px!important;display:block!important;overflow:hidden!important}
  .game-core{width:100%;max-width:620px;margin:auto;min-width:0}
- .journey{position:fixed;top:80px;left:max(18px,calc(50vw - 510px));width:clamp(190px,22vw,280px);margin:0!important}
+ .journey{position:fixed;top:80px;left:max(18px,calc(50vw - 610px));width:min(280px,calc(50vw - 338px));margin:0!important}
  .msg{position:fixed;top:80px;right:max(18px,calc(50vw - 510px));width:clamp(190px,22vw,280px);min-height:180px!important;margin:0!important;padding:18px!important;border:1px solid #28415b;border-radius:20px;background:linear-gradient(145deg,#101d2e,#0b1522);color:#dce9f7;font-size:14px;line-height:1.5;text-align:left!important;box-shadow:0 16px 42px rgba(0,0,0,.16)}
  .msg:empty{display:none}
  #board{width:min(100%,55dvh)!important}
@@ -297,7 +299,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .daily-info-popover p{margin:0 0 9px}
  .daily-info-status{color:#e4f5ff;font-weight:800;margin-bottom:8px}
  .daily-info-reward{padding-top:8px;border-top:1px solid #28415b;color:#ffbd59}
- .mobile-auth-popover{display:block;position:absolute;z-index:130;top:55px;right:10px;width:min(290px,calc(100vw - 20px));padding:12px;background:#101d2e;border:1px solid #28415b;border-radius:15px;box-shadow:0 16px 40px rgba(0,0,0,.35);font-size:12px;color:#9fb3c8}
+ .mobile-auth-popover{display:block;position:absolute;z-index:130;top:55px;right:10px;width:min(290px,calc(100vw - 20px));max-height:calc(100dvh - 80px);overflow:auto;padding:12px;background:#101d2e;border:1px solid #28415b;border-radius:15px;box-shadow:0 16px 40px rgba(0,0,0,.35);font-size:12px;color:#9fb3c8}
  .mobile-auth-popover[hidden]{display:none!important}
  .mobile-auth-popover button{width:100%;margin-top:9px;padding:9px 11px;font-size:12px}
  .game-core{position:relative}
@@ -364,7 +366,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .feedback-flag{color:#bdefff!important}
 .beta-modal{position:fixed;inset:0;z-index:1200;background:rgba(2,9,16,.72);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:18px}.beta-modal[hidden]{display:none}.beta-card{width:min(430px,94vw);background:#0c1928;color:#eaf9ff;border:1px solid rgba(104,231,255,.25);border-radius:22px;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.45)}.beta-card h2{margin:0 0 6px}.beta-card p{color:#9eb7c8}.beta-kinds,.difficulty-choices{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}.beta-kinds button,.difficulty-choices button{background:#12283d;color:#dff8ff;border:1px solid rgba(104,231,255,.22);border-radius:13px;padding:11px 8px;cursor:pointer;touch-action:manipulation;position:relative;z-index:1}.beta-kinds button.selected{background:#17405a;color:#fff;border-color:#68e7ff;box-shadow:0 0 0 2px rgba(104,231,255,.3),0 0 16px rgba(104,231,255,.18)}#feedbackText{width:100%;min-height:90px;box-sizing:border-box;border-radius:13px;padding:11px;background:#07111d;color:#fff;border:1px solid #29465e;resize:vertical}.beta-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}.difficulty-box{margin-top:18px;padding-top:14px;border-top:1px solid rgba(104,231,255,.16)}.difficulty-box.done{opacity:.65}
 
-.return-toast{position:fixed;left:50%;top:max(14px,env(safe-area-inset-top));transform:translateX(-50%);z-index:1150;width:min(430px,calc(100vw - 28px));padding:14px 16px;border:1px solid rgba(104,231,255,.3);border-radius:18px;background:rgba(10,25,40,.97);color:#eafaff;box-shadow:0 16px 44px rgba(0,0,0,.38);transition:opacity .25s,transform .25s}.return-toast[hidden]{display:none}.return-toast.hide{opacity:0;transform:translate(-50%,-10px)}.return-toast-title{font-weight:950;font-size:16px}.return-toast-copy{color:#9fb7ca;font-size:13px;margin-top:4px;line-height:1.35}.return-toast-stars{color:#68e7ff;letter-spacing:3px;margin-top:7px;text-shadow:0 0 8px rgba(104,231,255,.65)}
+.return-toast{pointer-events:none;position:fixed;left:50%;top:max(14px,env(safe-area-inset-top));transform:translateX(-50%);z-index:1150;width:min(430px,calc(100vw - 28px));padding:14px 16px;border:1px solid rgba(104,231,255,.3);border-radius:18px;background:rgba(10,25,40,.97);color:#eafaff;box-shadow:0 16px 44px rgba(0,0,0,.38);transition:opacity .25s,transform .25s}.return-toast[hidden]{display:none}.return-toast.hide{opacity:0;transform:translate(-50%,-10px)}.return-toast-title{font-weight:950;font-size:16px}.return-toast-copy{color:#9fb7ca;font-size:13px;margin-top:4px;line-height:1.35}.return-toast-stars{color:#68e7ff;letter-spacing:3px;margin-top:7px;text-shadow:0 0 8px rgba(104,231,255,.65)}
 .xp-card{margin:0 0 10px;padding:10px 13px;border:1px solid #28415b;border-radius:15px;background:#0d1725}.xp-row{display:flex;justify-content:space-between;gap:10px;color:#dff9ff;font-size:12px;font-weight:850}.xp-track{height:5px;background:#1c2c40;border-radius:9px;overflow:hidden;margin-top:7px}.xp-track span{display:block;height:100%;background:#68e7ff}.challenge-banner{margin:0 0 10px;padding:11px 13px;border:1px solid rgba(255,189,89,.45);border-radius:15px;background:#111a28;color:#f4f8ff}.challenge-banner[hidden]{display:none}.challenge-banner strong{color:#ffbd59}.challenge-banner small{display:block;color:#9fb1c5;margin-top:3px}.sky-card{margin:12px 0;padding:13px;border:1px solid #263650;border-radius:16px;background:#091421}.sky-head{display:flex;justify-content:space-between;align-items:center;color:#eafaff;font-size:12px}.sky-name{color:#68e7ff;font-weight:900}.sky-svg{width:100%;height:145px;margin-top:6px}.sky-line{stroke:#34516c;stroke-width:2}.sky-line.on{stroke:#68e7ff;filter:drop-shadow(0 0 4px #68e7ff)}.sky-star{fill:#31455c}.sky-star.on{fill:#eafcff;filter:drop-shadow(0 0 5px #68e7ff)}.sky-label{fill:#9fb7cc;font-size:7px;font-weight:700}.sky-note{margin-top:-5px;color:#7189a0;font-size:10px;line-height:1.35}.quest-start{position:fixed;inset:0;z-index:1080;display:flex;align-items:center;justify-content:center;background:rgba(3,7,13,.96);padding:24px}.quest-start[hidden]{display:none}.quest-start-card{width:min(430px,92vw);text-align:center;padding:30px 24px;border:1px solid rgba(255,189,89,.5);border-radius:26px;background:#0d1725;color:#eefaff;box-shadow:0 22px 70px rgba(0,0,0,.5)}.quest-start-icon{font-size:50px;color:#ffbd59}.quest-start-title{font-size:25px;font-weight:950;margin:8px 0}.quest-start-rule{font-size:16px;line-height:1.45;color:#c9d9e7;margin:12px 0 20px}.quest-start button{width:100%;font-size:18px;background:#ffbd59;color:#111827}.quest-result{margin:10px 0 16px;padding:12px;border-radius:14px;font-weight:900}.quest-result.success{background:#e9fbff;color:#08758c}.quest-result.fail{background:#fff2e2;color:#a55700}.sky-reveal{position:fixed;inset:0;z-index:1300;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 38%,#102b45 0,#06111e 48%,#02070d 100%);padding:22px;color:#eefaff}.sky-reveal[hidden]{display:none}.sky-reveal-card{width:min(520px,94vw);text-align:center}.sky-reveal-kicker{font-size:12px;font-weight:900;letter-spacing:.16em;color:#ffbd59}.sky-reveal-title{font-size:27px;font-weight:950;margin:7px 0 2px}.sky-reveal-name{color:#68e7ff;font-size:18px;font-weight:900}.sky-reveal-svg{width:100%;height:250px;margin:12px 0}.sky-reveal .new-star{transform-box:fill-box;transform-origin:center;animation:starBirth 1.25s cubic-bezier(.15,1.4,.35,1) both}.sky-reveal .new-line{stroke-dasharray:180;stroke-dashoffset:180;animation:lineBirth .9s .7s ease-out forwards}.sky-reveal button{width:100%;max-width:330px;margin:auto}.sky-reveal.complete-celebration .sky-reveal-card{animation:celebrateCard 1s cubic-bezier(.2,.9,.3,1)}.sky-reveal.complete-celebration .sky-reveal-svg{filter:drop-shadow(0 0 18px rgba(104,231,255,.55));animation:constellationGlow 1.8s ease-in-out 2}.sky-bravo{font-size:34px;font-weight:1000;letter-spacing:.08em;color:#ffd36b;margin:4px 0 0;animation:bravoPop 1s cubic-bezier(.15,1.5,.3,1) both}.sky-spark{position:fixed;z-index:1310;pointer-events:none;color:#ffe28a;font-size:18px;animation:skySpark 1.8s ease-out forwards}@keyframes bravoPop{0%{opacity:0;transform:scale(.35) rotate(-5deg)}55%{opacity:1;transform:scale(1.18) rotate(2deg)}100%{opacity:1;transform:scale(1)}}@keyframes celebrateCard{0%{transform:scale(.94)}55%{transform:scale(1.025)}100%{transform:scale(1)}}@keyframes constellationGlow{50%{filter:drop-shadow(0 0 32px rgba(104,231,255,.95))}}@keyframes skySpark{0%{opacity:0;transform:translateY(0) scale(.4) rotate(0)}18%{opacity:1}100%{opacity:0;transform:translateY(-90px) scale(1.25) rotate(160deg)}}@keyframes starBirth{0%{opacity:0;transform:scale(0)}45%{opacity:1;transform:scale(2.4)}100%{opacity:1;transform:scale(1)}}@keyframes lineBirth{to{stroke-dashoffset:0}}.push-optin{position:fixed;inset:0;z-index:1400;background:rgba(2,9,16,.78);display:flex;align-items:center;justify-content:center;padding:20px}.push-optin[hidden]{display:none}.push-optin-card{width:min(420px,94vw);background:#0c1928;color:#eaf9ff;border:1px solid rgba(104,231,255,.28);border-radius:24px;padding:24px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.5)}.push-optin-icon{font-size:42px}.push-optin-card h2{margin:8px 0}.push-optin-card p{color:#a9bfd0;line-height:1.45}.push-optin-actions{display:grid;gap:9px;margin-top:18px}.push-optin-actions .primary{background:#68e7ff;color:#07111d;border-color:#68e7ff}.push-setting{margin-top:10px;font-size:13px;color:#7891a5;background:transparent;border-color:#29465e}
 
 /* LUMEN — Guardians are puzzle pieces; stars are rewards only */
@@ -437,6 +439,8 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .hint-guided-close{width:30px!important;height:30px;padding:0!important;border-radius:50%;font-size:20px;line-height:1;background:transparent!important;color:#5b3b00!important;border-color:rgba(91,59,0,.3)!important}
 .hint-guided-card{border-color:#f2b84b}
 .help-card h3{margin:16px 0 6px;color:#eafaff;font-size:15px}
+.help-card{max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px);overflow-y:auto;overscroll-behavior:contain}
+.help-card .shard-rules-head{position:sticky;top:-20px;background:#08131f;z-index:1}
 .help-learning{margin-top:14px;padding-top:14px;border-top:1px solid #28415b}
 .help-learning>strong{color:#eafaff}
 .help-learning p{margin:5px 0 11px}
@@ -518,6 +522,12 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .learning-territory-number{position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%);font-weight:900;font-size:clamp(14px,4vw,22px);color:rgba(255,255,255,.9);text-shadow:0 1px 5px rgba(0,0,0,.8);pointer-events:none}
 .learning-intro-cell{cursor:default}
 .learning-coach-next{margin-top:10px;width:100%;font-weight:800}
+.learning-board-wrap .scripted-learn:not([hidden]){display:flex;flex-direction:column;overflow:hidden}
+.learning-board-wrap .scripted-learn>strong,.learning-board-wrap .scripted-learn>button{flex-shrink:0}
+.learning-board-wrap #scriptedLearnCopy{min-height:0;overflow:auto;overscroll-behavior:contain}
+.learning-board-wrap .scripted-learn .learning-coach-next{margin-top:5px}
+.onboarding-control-focus{outline:3px solid #ffe1a0;outline-offset:4px;border-radius:8px}
+.onboarding-control-focus input{min-width:24px;min-height:24px}
 
 .sky-tour-focus{position:relative;z-index:3;outline:3px solid rgba(95,220,255,.9);outline-offset:5px;border-radius:14px;box-shadow:0 0 0 9999px rgba(2,8,18,.38),0 0 28px rgba(95,220,255,.32)}
 
@@ -582,10 +592,10 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .admin-cockpit-shell{max-width:1180px;margin:auto;color:#e9f8ff}
 .admin-cockpit-head,.admin-cockpit-filters{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
 .admin-cockpit-head span{font-size:11px;letter-spacing:.18em;color:#68e7ff}.admin-cockpit-head h2{margin:4px 0 0}
-.admin-cockpit section{background:#0c1a28;border:1px solid #183a50;border-radius:16px;padding:16px;margin-bottom:16px}
+.admin-cockpit :is(section,.admin-section){background:#0c1a28;border:1px solid #183a50;border-radius:16px;padding:16px;margin-bottom:16px}
 .admin-cockpit h3{margin:0 0 12px}.admin-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:16px}
 .admin-kpi{background:#102335;border:1px solid #1d455e;border-radius:12px;padding:12px}.admin-kpi strong{display:block;font-size:25px}.admin-kpi span{font-size:11px;color:#9eb9c8}
-.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.admin-grid section{min-width:0}
+.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.admin-grid{align-items:start}.admin-grid :is(section,.admin-section){min-width:0}
 .admin-bars{display:flex;align-items:flex-end;gap:5px;height:150px}.admin-bar{flex:1;min-width:5px;background:#42d7ff;border-radius:4px 4px 0 0;position:relative}.admin-bar:hover:after{content:attr(data-label);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);white-space:nowrap;background:#06101a;padding:4px 6px;border-radius:5px;font-size:10px}
 .admin-retention{display:flex;gap:10px}.admin-retention div{flex:1;text-align:center;background:#102335;border-radius:12px;padding:16px}.admin-retention strong{display:block;font-size:24px}
 .admin-funnel-row,.admin-player,.admin-feedback,.admin-alert,.admin-event{display:flex;gap:10px;justify-content:space-between;padding:9px 0;border-bottom:1px solid #173044;font-size:13px}
@@ -1059,6 +1069,12 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 @media(max-height:700px){.sky-reveal-svg{height:150px;margin:5px 0}.sky-reveal-title{font-size:22px}.sky-reveal-name{font-size:15px}.sky-reveal-results{gap:5px}.sky-reveal-actions button{padding:7px 3px}}
 
 #accountSyncDiagnosticPanel{margin-top:10px}
+#accountStorageSummary{white-space:pre-line;line-height:1.45}
+.diagnostic-incidents{overflow-wrap:anywhere;max-height:500px;overflow:auto;font-size:12px}
+.diagnostic-incidents details{padding:8px 0;border-bottom:1px solid #ffffff30}
+.diagnostic-incidents textarea{box-sizing:border-box;width:100%;max-width:100%;margin:8px 0;white-space:pre-wrap}
+.diagnostic-incidents label,.diagnostic-incidents a,.diagnostic-incidents button{display:block;margin:8px 0}
+.diagnostic-incidents a[hidden]{display:none}
 #accountSyncDiagnosticPanel label{display:block;font-size:12px;line-height:1.4}
 #accountSyncDiagnosticText{box-sizing:border-box;width:100%;max-width:100%;margin-top:8px;padding:8px;background:#0b1525;color:#dce8f5;border:1px solid #28415b;border-radius:8px;font-size:12px;resize:vertical}
 
@@ -1079,3 +1095,116 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .cloud-sync-status{font-size:.8rem;line-height:1.4;max-width:32rem;padding:.4rem .6rem;color:var(--muted,#b6c2d9)}
 .cloud-sync-status[role="alert"]{color:#ffd6b0}
 .cloud-sync-status button{font:inherit;margin:.2rem}
+
+/* Keep countdown transitions out of board geometry and status intrinsic width. */
+.status{position:relative;padding-bottom:18px}
+.speed-countdown{position:absolute;left:50%;bottom:0;margin-left:0;transform:translateX(-50%);height:16px}
+
+/* #555: the hint participates in layout; the remaining space owns the board. */
+#completedQuestNext{min-height:44px;min-width:44px;font-size:13px}
+.puzzle-card.account-required{opacity:.85;cursor:pointer}
+@media(max-width:900px){
+ .app:has(#hintCard:not([hidden])){display:flex;flex-direction:column}
+ .game-core:has(#hintCard:not([hidden])){display:flex;flex-direction:column;flex:1;min-height:0}
+ .game-core:has(#hintCard:not([hidden]))>*{flex-shrink:0}
+ .game-core:has(#hintCard:not([hidden])) .learning-board-wrap{flex:1;min-height:0;container-type:size;display:grid;place-items:center;padding:0}
+ .game-core:has(#hintCard:not([hidden])) #board{width:min(100%,100cqh)!important;max-width:100%!important}
+ #hintCard{position:static;max-height:min(26dvh,180px);min-height:60px;overflow:auto;margin:4px 0;box-shadow:none}
+}
+@media(max-width:900px) and (orientation:landscape){
+ .game-core:has(#hintCard:not([hidden])){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:repeat(14,auto);column-gap:12px}
+ .game-core:has(#hintCard:not([hidden]))>*{grid-column:2;min-height:0}
+ .game-core:has(#hintCard:not([hidden])) .learning-board-wrap{grid-column:1;grid-row:1 / -1;height:100%;width:100%}
+}
+
+/* #534: bounded, keyboard-operable administrative directory and sessions. */
+.admin-player-controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.admin-player-controls>*{max-width:100%;min-width:0;flex:1 1 150px}
+.admin-player-list{display:grid;gap:12px;max-height:75vh;overflow:auto}
+.admin-player-list .admin-player{display:block;min-width:0;padding:12px;border:1px solid #294359;border-radius:10px;overflow-wrap:anywhere}
+.admin-player-dates{font-size:12px;line-height:1.6;white-space:normal}
+.admin-player-dates small{display:block;margin-top:8px}
+.admin-player-list button{max-width:100%;white-space:normal;min-height:44px}
+.admin-timeline details{border:1px solid #294359;border-radius:8px;margin:10px 0;padding:10px;min-width:0}
+.admin-timeline summary{cursor:pointer;min-height:44px;overflow-wrap:anywhere}
+.admin-timeline select{max-width:100%;margin:4px;min-height:44px}
+.admin-session-events{padding-left:22px;font-size:13px;overflow-wrap:anywhere}
+.admin-session-events li{margin:10px 0}
+.admin-cockpit :is(button,input,select,summary,a):focus-visible{outline:3px solid #8beaff;outline-offset:3px}
+.admin-cockpit-head{position:sticky;top:0;background:#0c1a28;z-index:2;padding:8px}
+@media(max-width:760px){.admin-cockpit-head{position:static}.admin-player-list{max-height:60vh}.admin-cockpit-shell{min-width:0}.admin-cockpit :is(section,.admin-section){padding:10px}}
+@media(prefers-reduced-motion:reduce){.admin-cockpit *{scroll-behavior:auto;transition:none;animation:none}}
+
+/* Native cockpit disclosures retain filters and loaded content when collapsed. */
+.admin-section>summary{cursor:pointer;min-height:44px;align-content:center;overflow-wrap:anywhere}
+.admin-section>summary h3{display:inline;margin:0}
+.admin-section[open]>summary{margin-bottom:12px}
+.admin-player-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.admin-sync-badge{display:inline-flex;align-items:center;border:1px solid currentColor;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700;line-height:1.4;color:#cad3df;background:#222e3d}
+.admin-player-list .admin-player[data-sync-state="confirmed"]{border-left:4px solid #73e8b0}
+.admin-player[data-sync-state="confirmed"] .admin-sync-badge{color:#73e8b0;background:#0b3028}
+.admin-player-list .admin-player[data-sync-state="pending"]{border-left:4px solid #ffd37a}
+.admin-player[data-sync-state="pending"] .admin-sync-badge{color:#ffd37a;background:#352b16}
+.admin-player-list .admin-player[data-sync-state="failure"]{border-left:4px solid #ffabb0}
+.admin-player[data-sync-state="failure"] .admin-sync-badge{color:#ffabb0;background:#3b202b}
+.admin-player-list .admin-player[data-sync-state="unknown"]{border-left:4px solid #a6b4c7}
+.admin-player-proof>summary{cursor:pointer;min-height:44px;align-content:center;font-size:12px;color:#a6c6da}
+.admin-player-proof>p{font-size:12px;line-height:1.5}
+/* Celestial milestones share the existing victory sheet. Actions stay
+   available; narrative copy follows the storyboard without layout changes. */
+.sky-reveal[data-celestial]{z-index:2100}
+.sky-reveal[data-celestial] [hidden]{display:none!important}
+.sky-reveal[data-celestial] .sky-reveal-card{display:flex;flex-direction:column;gap:8px;width:min(94vw,840px);max-height:calc(100dvh - 24px);padding:20px;overflow:auto}
+.sky-reveal[data-celestial] .sky-reveal-title{font-size:clamp(20px,3.3vw,32px);line-height:1.15;margin:0}
+.sky-reveal[data-celestial] .sky-reveal-name{font-size:clamp(12px,2vw,16px);line-height:1.4;margin:0 auto;max-width:580px}
+.sky-reveal[data-celestial] #skyRevealTitle,.sky-reveal[data-celestial] #skyRevealName,.sky-reveal[data-celestial] .celestial-summary{animation:celestial-conclusion 4s both}
+.sky-reveal[data-celestial="adventure"] #skyRevealTitle,.sky-reveal[data-celestial="adventure"] #skyRevealName,.sky-reveal[data-celestial="adventure"] .celestial-summary,.sky-reveal[data-celestial="campaign"] #skyRevealTitle,.sky-reveal[data-celestial="campaign"] #skyRevealName,.sky-reveal[data-celestial="campaign"] .celestial-summary{animation:celestial-adventure-conclusion 7s both}
+.sky-reveal[data-celestial] #skyRevealCanvas{flex:1;min-height:72px;overflow:hidden}
+.celestial-skip{align-self:flex-end;width:auto!important;margin:0!important;min-height:36px;padding:5px 12px!important;font-size:12px!important}
+.celestial-summary{font-size:12px;line-height:1.5;color:var(--muted,#b8cbe1);margin:0}
+.celestial-scene{display:grid;place-items:center;min-height:110px;position:relative;isolation:isolate}
+.celestial-figure{margin:0;width:100%;min-width:0;position:relative}
+.celestial-figure svg{display:block;width:100%;max-height:220px;overflow:visible}
+.celestial-figure figcaption{font-size:10px;color:#a8d5e8;text-align:center}
+.celestial-panorama{grid-template-columns:repeat(var(--celestial-columns),minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:4px 8px;max-height:44dvh;min-height:100px}
+.celestial-panorama .celestial-figure{height:100%;min-height:0;display:flex;flex-direction:column}
+.celestial-panorama .celestial-figure svg{min-height:0;flex:1}
+.celestial-panorama figcaption{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:none}
+.celestial-vault{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+.celestial-panorama .celestial-figure{opacity:1;animation:celestial-cascade 1s both;animation-delay:calc(var(--celestial-cascade) + 1.5s)}
+.celestial-panorama .celestial-figure:first-of-type{animation:celestial-last 7s both;animation-delay:0s;z-index:1}
+.celestial-panorama .celestial-figure svg{max-height:105px}
+.sky-reveal[data-celestial] .sky-line.on{stroke:#7edff4;animation:celestial-trace 4s both;stroke-dasharray:1;stroke-dashoffset:0}
+.sky-reveal[data-celestial] .sky-star.on{fill:#c2f2ff;animation:celestial-glow 4s both}
+.sky-reveal[data-celestial] .new-star,.sky-reveal[data-celestial] .new-secondary{animation:celestial-last-light .6s both;transform-box:fill-box;transform-origin:center}
+.sky-reveal[data-celestial] .milky-way{animation:celestial-dust 4s both}
+.sky-reveal[data-celestial="adventure"] .milky-way,.sky-reveal[data-celestial="campaign"] .milky-way{animation:celestial-apogee 7s both}
+.sky-reveal[data-celestial] .sky-reveal-actions{margin:0;gap:6px;display:flex;flex-wrap:wrap;justify-content:center}
+.sky-reveal[data-celestial] .sky-reveal-actions button{min-height:38px;font-size:13px;padding:7px 12px}
+.sky-reveal[data-celestial] .sky-reveal-time:has([hidden]){display:none}
+.mastery-pulse{animation:mastery-breath 1s ease-out both}
+.mastery-arrival{animation-duration:1.6s}
+@keyframes celestial-trace{0%,15%{stroke-dashoffset:1;opacity:.25}45%,100%{stroke-dashoffset:0;opacity:1}}
+@keyframes celestial-glow{0%{opacity:.35}45%,70%{opacity:1}100%{opacity:.9}}
+@keyframes celestial-last-light{0%{opacity:.3;transform:scale(.7)}60%{fill:#ead7a6;transform:scale(1.5)}100%{opacity:1;transform:scale(1)}}
+@keyframes celestial-dust{0%,30%{opacity:0}70%,100%{opacity:1}}
+@keyframes celestial-cascade{0%,20%{opacity:0;transform:scale(.94)}50%,100%{opacity:1;transform:none}}
+@keyframes celestial-last{0%,21%{transform:translate(var(--celestial-shift-x),var(--celestial-shift-y)) scale(var(--celestial-columns))}50%,100%{transform:none}}
+@keyframes mastery-breath{0%{opacity:.6}50%{opacity:1;filter:brightness(1.4)}100%{opacity:1;filter:none}}
+.celestial-still .celestial-scene *{animation:none!important;stroke-dashoffset:0!important}
+.sky-reveal.celestial-still #skyRevealTitle,.sky-reveal.celestial-still #skyRevealName,.sky-reveal.celestial-still .celestial-summary{animation:none!important}
+@keyframes celestial-conclusion{0%,70%{opacity:0}100%{opacity:1}}
+@keyframes celestial-adventure-conclusion{0%,78.57%{opacity:0}100%{opacity:1}}
+@media(max-height:600px){.sky-reveal[data-celestial] .sky-reveal-card{gap:5px;padding:10px}.celestial-panorama{max-height:30dvh}.celestial-figure svg{max-height:125px}.celestial-panorama .celestial-figure svg{max-height:58px}.celestial-summary{font-size:11px}.sky-reveal[data-celestial] .sky-reveal-kicker{font-size:10px}}
+@media(orientation:landscape) and (max-height:500px){.sky-reveal[data-celestial] .sky-reveal-card{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px}.celestial-skip{grid-column:2;justify-self:end}.sky-reveal[data-celestial] #skyRevealKicker{grid-column:1;grid-row:1}.sky-reveal[data-celestial] #skyRevealTitle,.sky-reveal[data-celestial] #skyRevealName,.celestial-summary{grid-column:2}.sky-reveal[data-celestial] #skyRevealCanvas{grid-column:1;grid-row:2/6}.sky-reveal[data-celestial] #skyRevealResults{grid-column:1/3}.celestial-panorama{max-height:45dvh}}
+@media(prefers-reduced-motion:reduce){.sky-reveal[data-celestial] *,.milky-way{animation:none!important;transition:none!important;stroke-dashoffset:0!important}}
+
+@keyframes celestial-apogee{0%,50%{opacity:0}78%,100%{opacity:1}}
+
+/* #574: account support stays inside the scrollable mobile diagnostic. */
+.support-panel{margin:12px 0;overflow-wrap:anywhere}
+.support-panel summary{cursor:pointer;font-weight:700;min-height:44px;display:list-item}
+.support-panel button{white-space:normal;max-width:100%;min-height:44px;margin:4px 0}
+.support-panel label{display:block;line-height:1.5}
+.support-panel input{min-width:24px;min-height:24px;vertical-align:middle}
+.support-panel p{line-height:1.5}

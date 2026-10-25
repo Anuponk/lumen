@@ -1,5 +1,21 @@
 # Sécurité des données Play — feuille de préparation
 
+Actualisation technique du 25 octobre :
+[matrice de preuves et traitements](PRIVACY_P0_CONSOLIDATION.md).
+
+| Rubrique | Code | Configuration | Test | Non vérifié / décision |
+|---|---|---|---|---|
+| Compte et progression | Auth, profils, reçus, archives confirmés | Région européenne confirmée ; Auth partagée | Fixtures d'isolation/effacement | Fournisseurs et bases légales à confirmer |
+| Diagnostics | Opt-in et retrait hors ligne confirmés | Fonction de purge/cron présents | SQL, client et navigateur synthétiques | Recette physique, contenu résiduel de production non inspecté |
+| Assistance privée | Copies filtrées, accord spécifique, audit | Tables privées et contrôle actif observés | Effacement/export/rollback synthétiques | Premier passage cron après installation et validation juridique |
+| Analytics facultatives | Refus par défaut dans candidat | Versions publiques non attestées globalement | Régressions candidat | Inventaire réseau complet à confirmer |
+| Publicités et achats intégrés | Aucun SDK/flux commercial trouvé dans PWA inspectée | Console non inspectée | Pas de paiement applicable | Aucun ajout ; modèle gratuit à reconfirmer sur paquet final |
+| Android, Families et permissions natives | Aucun paquet créé ici | Non applicable à la PWA seule | Non testé | Décisions enfants/Android et soumission bloquées |
+
+Code, configuration et test restent des preuves différentes. Les champs sans
+preuve gardent le statut non vérifié ; bases légales et textes nécessitent la
+validation appropriée. Aucune déclaration Data Safety n'est envoyée.
+
 État du 22 octobre 2026 ; **aucune déclaration Console envoyée**. Cette matrice
 rapproche le code PWA et l'audit de #316 des rubriques à examiner pour le futur
 paquet Android. Ce sont des correspondances proposées, pas une certification

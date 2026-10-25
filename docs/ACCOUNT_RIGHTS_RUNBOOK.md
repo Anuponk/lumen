@@ -4,6 +4,14 @@ Statut : PR #526 en brouillon, migration non appliquée en production. Ce
 parcours opérateur complète la [suppression](ACCOUNT_DELETION_RUNBOOK.md).
 Il ne constitue ni un export automatique dans le jeu, ni une restauration.
 
+Extension du 25 octobre : les relations récentes de `policy()` sont incluses
+si présentes, notamment les contenus support par rattachement dossier/capture.
+Les champs `support_access.actor`, `case_id` et `privacy_owner_id` sont retirés
+de l'export pour ne pas remettre l'identité d'un autre opérateur ni une référence
+à un dossier tiers. Les autres textes/JSON exigent toujours la
+relecture des tiers décrite ci-dessous. Les bornes sont cumulées sur toutes
+les catégories ; absence de troncature et lecture seule restent obligatoires.
+
 1. Recevoir la demande au contact de l'éditeur. Préciser le droit et la portée
    demandés. Vérifier proportionnellement le droit à agir ; ne pas demander
    systématiquement une pièce d'identité, ni jamais un mot de passe ou un code.

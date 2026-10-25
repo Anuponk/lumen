@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+import {functionSource} from './source-tools.mjs';
+import {badgeCooldownRemaining,badgeCooldownLabel,performanceEligibility} from '../src/campaign/performance.js';
+import {QUEST_MILESTONES} from '../src/campaign/quest-rules.js';
+import {canonicalQuestForLegacy,canonicalQuestList,canonicalScopeProgress} from '../src/campaign/canonical-quests.js';
+import {readQuestView} from '../src/campaign/quest-view.js';
+import {CONTENT_CONSTELLATIONS} from '../src/campaign/content.js';
+const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+const controls=Object.fromEntries(['badgeUnlockOverlay','badgeUnlockTitle','badgeUnlockCopy'].map(id=>[id,{hidden:true,dataset:{},style:{}}]));
+const ctx=vm.createContext({lumenProgress:{performances:{}},badgeCooldownRemaining,badgeCooldownLabel,performanceEligibility,QUEST_MILESTONES,
+ canonicalQuestForLegacy,canonicalQuestList,canonicalScopeProgress,readQuestView,CONTENT_CONSTELLATIONS,
+ document:{getElementById:id=>controls[id]},pauseGameClock:()=>{},levelIndex:2});
+ctx.activeQuestOrdinal=()=>canonicalQuestForLegacy(ctx.levelIndex).ordinal;
+for(const name of ['performanceIcon','questPerformanceBadges','performanceBadges','maybeShowBadgeMilestone'])vm.runInContext(functionSource(source,name),ctx);
+for(const index of [0,1,2,3])for(const earned of [false,true]){
+ ctx.lumenProgress=JSON.parse(JSON.stringify({performances:{[index]:{version:3,badges:{speed:earned}}}}));
+ const html=vm.runInContext(`performanceBadges(${index})`,ctx);
+ assert.equal((html.match(/performance-slot /g)||[]).length,4);
+ assert(!html.includes('🔒')&&!html.includes('locked')&&!html.includes('verrouillé'));
+ assert(html.includes(earned?'Rapidité obtenu':'Rapidité non obtenu'));
+ assert(html.includes('Autonomie non obtenu'));
+}
+vm.runInContext('maybeShowBadgeMilestone()',ctx);
+assert.equal(controls.badgeUnlockOverlay.hidden,true,'Badge advice must not open a blocking modal');
+ctx.levelIndex=5;vm.runInContext('maybeShowBadgeMilestone()',ctx);
+assert.equal(controls.badgeUnlockOverlay.hidden,true,'Quest 6 uses its real assistance control');
+const markup=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const rulesNote=markup.match(/class="badge-rules-note">([^<]+)/)?.[1]||'';
+assert(rulesNote.includes('dès la quête 1')&&!rulesNote.includes('verrouillées'),'The actual rules dialog must retain four-badge eligibility from quest 1');
+const rulesIntro=markup.match(/class="badge-rules-intro">([^<]+)/)?.[1]||'';
+assert(rulesIntro.includes('quinze minutes')&&!rulesIntro.includes('par jour'),'Rules must describe the actual qualification cooldown');
+console.log('Four early quests: earned/missing badge UI, reload and educational dialogs passed');

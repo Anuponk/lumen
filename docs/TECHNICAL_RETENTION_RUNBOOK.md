@@ -79,3 +79,7 @@ supprimée n'est pas reconstruite par la fonction ; une restauration éventuelle
 doit respecter les effacements intervenus depuis la copie. Pour retirer le
 mécanisme, préparer une migration distincte ; ne pas retirer les gardes privées
 d'effacement ou effacer le schéma `lumen_privacy`.
+
+## Actualisation P0 du 25 octobre 2026
+
+Voir [la consolidation et les preuves datées](PRIVACY_P0_CONSOLIDATION.md) pour les diagnostics, le support privé, les métadonnées de production et les validations manquantes. Les durées proposées du 22 octobre restent non adoptées ; le candidat n'autorise aucune nouvelle activation.

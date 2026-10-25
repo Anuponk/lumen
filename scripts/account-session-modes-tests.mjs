@@ -38,7 +38,7 @@ await recovery.api.signOut();assert.deepEqual(recovery.calls.at(-1),['signOut',{
 const cloud=fs.readFileSync('src/persistence/cloud.js','utf8'),ui=fs.readFileSync('src/ui/game-screen.js','utf8'),html=fs.readFileSync('index.html','utf8');
 assert.doesNotMatch(cloud,/sendEmailOtp|verifyEmailOtp|requestLumenAuthMail\("magiclink"/);
 assert.doesNotMatch(html,/id="account(?:LegacyOtp|Otp|EmailSend)/);
-assert.match(html,/Continuer sans compte/);assert.match(html,/Continuer avec Google/);
+assert.match(html,/id="accountOptinLater"[^>]*>Retour au jeu/);assert.match(html,/Continuer avec Google/);
 assert.match(cloud,/signInWithPassword/);assert.match(ui,/requestPasswordRecovery\(email\)/);
 assert.match(ui,/editor\.dataset\.open="true";editor\.hidden=false/);
 assert.match(ui,/renderDaily\(\);\s*refreshJourney\(\);updateAuthUI\(\)/);
@@ -47,11 +47,15 @@ console.log('Account session regressions passed: startup race, sign-out before d
 // Exercise the real menu renderer while the SDK has not finished restoration.
 const {default:vm}=await import('node:vm');
 const {functionSource}=await import('./source-tools.mjs');
+const {gameplayDomainState}=await import('../src/persistence/gameplay-sync.js');
 const authNodes=new Map();
 for(const id of ['mobileAuthStatus','mobileAuthAction','mobileAccount','mobileAuthPopover','guestSaveExplainer','accountProfileEditor','editAccountProfile','retryAccountSync'])authNodes.set(id,{textContent:'',disabled:false,hidden:false,dataset:{},classList:{toggle(){}},setAttribute(){}});
 const recoveryState=new Map([['lumenPasswordRecoveryPending','1']]);
 const menuContext=vm.createContext({document:{getElementById:id=>authNodes.get(id)},sessionStorage:{getItem:k=>recoveryState.get(k)??null,removeItem:k=>recoveryState.delete(k)},
+ gameplayDomainState,qaActive:false,cloudHydrationGeneration:0,canonicalRecoveryContext:null,
  syncAdministrationMenu(){},lumenUser:null,lumenSupabase:{},authSessionPending:true,canonicalOutboxNotice:null,cloudProfileReady:false,cloudProfileFailure:null,lumenNickname:'',cloudProfileBusy:false,cloudProfileDirty:false,navigator:{onLine:true}});
+vm.runInContext(functionSource(ui,'cloudReconciliationMessage'),menuContext);
+vm.runInContext(functionSource(ui,'gameplaySyncState'),menuContext);
 vm.runInContext(functionSource(ui,'syncMobileAuthUI'),menuContext);menuContext.syncMobileAuthUI();
 assert.equal(authNodes.get('mobileAuthAction').disabled,true,'No sign-in prompt while an existing session is still loading');
 assert(!authNodes.get('mobileAuthAction').textContent.includes('Se connecter'));
@@ -75,6 +79,13 @@ for(const change of ['busy','dirty','offline','failure','pending']){
 }
 
 // Finishing a flush refreshes a diagnostic already open, after clearing busy.
+menuContext.canonicalOutboxNotice=null;
+for(const detail of ['canonical_reward_conflict','storage_quota','backup_unverified']){
+ menuContext.cloudProfileFailure={reason:'partial_reconciliation',detail};menuContext.syncMobileAuthUI();
+ assert.match(authNodes.get('mobileAuthStatus').textContent,/conservées/);
+ assert.doesNotMatch(authNodes.get('mobileAuthStatus').textContent,/Progression synchronis/);
+ assert.equal(authNodes.get('retryAccountSync').hidden,false,'Held reconciliation offers a safe retry');
+}
 const verdicts=[];
 const flushContext=vm.createContext({legacyCommandInFlight:false,cloudProfileBusy:false,cloudProfileDirty:false,cloudProfileReady:true,
  lumenUser:{id:'a'},lumenSupabase:{},qaActive:false,authSessionPending:false,lumenProgress:{solved:{},badges:{}},cloudProfileBaseline:{solved:{},badges:{}},cloudProfileInFlight:null,cloudProfileFailure:null,

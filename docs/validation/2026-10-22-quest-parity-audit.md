@@ -1,5 +1,67 @@
 # Chantier #522 / #516 / #521 / #515 — audit et plan
 
+**État courant du lot de convergence :** branche `chantier/522-convergence`,
+après le premier lot fusionné dans #525 (`d5d7484`). Le contrat a été arrêté à
+six quêtes visibles de découverte puis compte obligatoire, avec mêmes règles
+de badges/récompenses/daily/social pour toutes les quêtes et conservation des
+acquis. Les mentions « proposé » et « à définir » ci-dessous décrivent l'audit
+initial ; la section de convergence et les documents propriétaires consignent
+les décisions ultérieures. Les trois migrations ont passé PostgreSQL jetable et
+la CI concurrente, puis ont été autorisées et appliquées en production le 23 octobre.
+Le [rapport d'intégration](quest-convergence-522-integration.json) enregistre leurs
+versions réelles et la vérification du schéma et des permissions. La recette
+Android physique de #521 reste distincte des validations navigateur simulées.
+
+## Intégration du 23 octobre
+
+La PR #527 intègre désormais `main` jusqu'à `a76939e` (#553, #554 puis #556). Le contrat livré
+sur main prévaut : quatre badges disponibles dès la quête 1, avec explications
+aux quêtes 3 et 6. La migration candidate et une régression SQL sur les ordres
+1 à 6 suivent cette règle. Les corrections de quota, session, gestes et diagnostics
+de main sont conservées.
+Une régression lit aussi le vrai texte de la modale de règles : il annonçait
+encore des verrous 3/6 et une qualification par jour. Le texte suit désormais
+les quatre badges dès 1 et le cooldown de quinze minutes, sans changer la règle.
+
+Les nouvelles régressions couvrent le blocage du rejeu authentifié pendant une
+restauration incomplète, la récupération partielle d'un résumé de rejeu V2 sans
+modifier la première victoire, et le rejet des faits de badge inconnus modifiés.
+Le point d'entrée QA numérique oublie l'ancienne quête stable sans effacer les
+acquis. Les parcours navigateur utilisent les vrais boutons de briefing/reset ;
+les assertions d'annulation et d'appui immédiatement suivant restent obligatoires.
+Le parcours complet a aussi reproduit un décalage tactile distinct : afficher
+le compte à rebours déplaçait le plateau de 16,125 px à 390 px. Le correctif
+dédié #556 réserve une ligne indépendante ; l'assertion géométrique sur cinq
+largeurs et les 216 appuis restent dans le parcours général, sans réessai d'une
+assertion métier échouée. La confirmation sur téléphone physique reste séparée.
+
+Les trois migrations ont passé les assertions de parité, reçus, social privé et
+capability analytics dans PostgreSQL embarqué jetable le 23 octobre. La
+concurrence PostgreSQL 17 et la vérification de production sont des preuves
+distinctes. Les migrations ont ensuite été appliquées avec accord du propriétaire,
+sans réécriture de profils ni crédit rétroactif ; 400 règles et les permissions
+attendues ont été vérifiées. Le client reste soumis à sa publication du SHA exact.
+
+La validation complète actualisée passe : 133 suites Node, dix parcours
+navigateur, 29 suites complémentaires, 396 cas intégrés et audit strict.
+Le gate de qualité dure 229,3 s avec deux workers navigateur ; le
+[rapport d'intégration](quest-convergence-522-integration.json) donne les
+empreintes actuelles et les limites. Une exécution antérieure s'était arrêtée
+sur un défaut d'attachement CDP à 1,6 s, avant les assertions du compte ; la
+relance complète inchangée passe. L'intégration du squash main conserve les
+mêmes sources et scripts que cette exécution validée.
+
+## Validation historique du 22 octobre
+
+La validation locale de la précédente révision est conservée dans
+[`quest-convergence-522.json`](quest-convergence-522.json), avec empreinte des
+sources et des trois migrations : 121 suites Node, neuf parcours navigateur,
+29 suites complémentaires, 396 tests intégrés et audit strict réussis. Les
+210 scénarios SQL embarqués ne remplacent pas la concurrence PostgreSQL 17
+de la PR. Ces empreintes ne décrivent pas l'intégration du 23 octobre.
+Les captures 390 px et desktop ont été revues ; Android physique
+et application du schéma en production restent non exécutés à ce stade.
+
 État initial : **étape 1, avant corrections métier**, conformément à #522. L'audit
 initial ne vaut ni correction des quatre issues, ni validation navigateur, ni recette
 sur le téléphone du signalement. Aucune sauvegarde réelle n'a été utilisée.
@@ -185,6 +247,43 @@ Tests à écrire : avant/seuil/après, victoire valide et invalide, undo/repose,
 reload avant/après seuil, reset/rejeu, aide, et tailles paires/impaires.
 
 ## Modèle cible proposé et compatibilité
+
+### Contrat validé pour la convergence après #525
+
+L'utilisateur a confirmé la découverte jusqu'à la quête affichée 6, puis un
+compte obligatoire, avec conservation des quêtes terminées et des tentatives
+réellement commencées. Il a aussi validé l'extension des règles numériques :
+cooldown de 15 minutes, récompenses, activité quotidienne et défi social de
+première partie identiques. Aucun crédit rétroactif ni retrait d'acquis.
+
+Le travail suit `chantier/522-convergence` depuis `d5d7484`. Les jalons
+d'apprentissage doivent lire la quête affichée active (3/6/11, indices offerts
+jusqu'à 10) ; le passage protégé après quête 2 doit annoncer Mon ciel puis
+présenter son vrai parcours avant quête 3. Un index numérique dormant ne peut
+piloter ni ces règles ni les coûts.
+
+Pour les récompenses, préparer une transaction versionnée recevant l'identité
+stable et les faits immuables de l'essai, indépendamment du format de stockage.
+Elle doit conserver les namespaces/reçus antérieurs, vérifier le compte et
+verrouiller le profil avant de consulter le reçu. Même opération rejouée : même
+résultat, profil courant et aucun double crédit ; faits différents : refus.
+La qualification, le bonus, le compteur d'autonomie, le daily et les projections
+Wallet/Legacy doivent être mis à jour dans la même transaction. Préserver la
+performance du premier accomplissement et ses champs inconnus ; les résumés de
+rejeu exigent un champ distinct et un garde serveur adapté. Aucune mise à jour
+en masse des joueurs. Un client ne doit pas simuler ces crédits authentifiés
+ni revenir à un writer ancien après une réponse ambiguë.
+
+`quest-victory-parity-tests.mjs` a d'abord reproduit deux écarts rouges du writer :
+XP sans indice malgré une autre assistance, et troisième victoire autonome.
+Après le refus initial du contrôle automatique, l'utilisateur a explicitement
+autorisé l'implémentation et les migrations sur la branche dédiée, avec tests
+PostgreSQL jetables. La projection pure, le client à reçus V2 et les migrations
+sont désormais implémentés ; ces régressions passent en conservant les acquis.
+Les assertions SQL locales passent dans PostgreSQL embarqué jetable ; ce résultat
+ne remplace pas les sessions concurrentes du workflow PostgreSQL 17. Le gate
+complet et la CI restent requis avant livraison. Aucune de ces migrations n'est
+appliquée en production ; cette application demande toujours un accord distinct.
 
 ### Suite du lot 3 : rafraîchissement des badges de Mon ciel
 
