@@ -85,6 +85,15 @@ for(const options of [{offline:true},{failVerification:true},{switchDuringRead:t
  assert(f.events.some(e=>e.event==='hydration_reconciliation'&&e.details.stage==='guest_reconciliation'&&e.details.result==='blocked'&&e.details.reason==='mutable_balance'),'An actual guest conflict reports its bounded cause, not only a generic hydration failure');
 }
 console.log('Actual hydration: guest registration, second device, retry, offline, interrupted readback, account switch and existing cloud passed');
+{
+ const local={...structuredClone(guest),'private-field':'private-fixture@example.test'},f=fixture({cloud:guest,local});
+ const raw=f.storage.getItem('lumenProgressV1');await f.hook();
+ const report=f.events.find(e=>e.event==='hydration_reconciliation');
+ assert.equal(report.details.reason,'unclassified_field');
+ assert.deepEqual(Array.from(report.details.fields),['unknown_field']);
+ assert(!JSON.stringify(f.events).includes('private-'),'Guest diagnostics cannot expose unknown field names or values');
+ assert.equal(f.storage.getItem('lumenProgressV1'),raw,'Unknown guest evidence stays intact');
+}
 for(const backupFailed of [false,true]){
  const local={solved:{},badges:{},stars:{},performances:{},challenges:{},daily:{dates:{},rewards:{}},xp:0,shards:3,catalogueOrigin:currentCatalogueOrigin};
  const cloud={...structuredClone(guest),shards:99,walletRevision:7};delete cloud.catalogueOrigin;

@@ -3,9 +3,10 @@ import {readFileSync} from "node:fs";
 import vm from 'node:vm';
 import {CLOUD_PROFILE_FIELDS,reconciliationFailureDiagnostic} from '../src/persistence/cloud-profile.js';
 const ui=readFileSync(new URL("../src/ui/game-screen.js",import.meta.url),"utf8");
-const start=ui.indexOf('const fields=Array.isArray(resolution.fields)');
+const reconciliation=ui.indexOf('hydrationStage="local_reconciliation"');
+const start=ui.indexOf('const fields=Array.isArray(resolution.fields)',reconciliation);
 const end=ui.indexOf('if(resolution.status==="reconciled"',start);
-assert(start>0&&end>start,'Actual reconciliation diagnostic formatting is exercised');
+assert(reconciliation>0&&start>reconciliation&&end>start,'Actual same-owner reconciliation diagnostic formatting is exercised, independently of the earlier guest formatter');
 for(const id of ['known-quest','195','private-fixture@example.test','unknown-quest']){
  const records=[],context=vm.createContext({CLOUD_PROFILE_FIELDS,reconciliationFailureDiagnostic,
   reconciliationFailure:null,hydrationStage:'bidirectional_reconciliation',
