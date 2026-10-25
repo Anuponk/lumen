@@ -2254,7 +2254,7 @@ async function loadAdminCockpit(){
    lumenSupabase.rpc("lumen_admin_quest_metrics",{p_days:days})
  ].map(request=>Promise.resolve(request).catch(()=>({error:{message:'Service indisponible'}}))));
  if(!authorized())return;
- const players=registeredPlayers(playerSnapshot.data).map(x=>({...x,current_quest:questMetrics.data?.current_players?.[x.player_key]??null}));
+ const players=registeredPlayers(playerSnapshot.data,accounts.error?[]:accounts.data).map(x=>({...x,current_quest:questMetrics.data?.current_players?.[x.player_key]??null}));
  const playerError=playerSnapshot.error;
  let observations;try{observations=await requestClient.rpc('lumen_admin_player_observations',{p_player_keys:players.map(p=>p.player_key)})}catch(_){observations={error:true}}
  if(!authorized())return;

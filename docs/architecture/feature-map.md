@@ -1,5 +1,12 @@
 # Feature map
 
+Registered-player cockpit view: `registeredPlayers` joins existing bounded admin
+account data by identity for nickname/email labels; `playerMatchesSearch` owns
+case/accent/whitespace-insensitive name/email search. `index.html` owns the eleven
+native collapsible section wrappers, preserved through content refresh. Tests
+extend the registered-player and loader suites plus actual-HTML native browser
+coverage; no new RPC or persistent state.
+
 Registered-player cockpit view: `registeredPlayers` in `ui/cockpit-sessions.js`
 filters key/type before rendering and metadata reads; `loadAdminTimeline` refuses
 anonymous navigation. Tests: `cockpit-registered-players-tests.mjs`, the recent

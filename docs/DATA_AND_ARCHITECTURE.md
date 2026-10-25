@@ -206,6 +206,12 @@ the session is usable on that particular browser/PWA.
 
 ## Cloud persistence contract
 
+The administrative directory enriches its registered-player projection with the
+already-loaded, capability-guarded account response by exact user identity.
+Nickname/email search and email fallback remain in memory; no email is written
+to telemetry/storage and no API/schema or authority changes. Native collapsible
+cockpit sections retain their content and mounted open/closed state.
+
 The administrative recent-player directory now limits its view to registered
 `authenticated` / `u:` identities. Anonymous hash labels do not establish test
 traffic and never authorise deletion. The view filter and timeline reset touch

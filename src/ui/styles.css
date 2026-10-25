@@ -586,10 +586,10 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .admin-cockpit-shell{max-width:1180px;margin:auto;color:#e9f8ff}
 .admin-cockpit-head,.admin-cockpit-filters{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
 .admin-cockpit-head span{font-size:11px;letter-spacing:.18em;color:#68e7ff}.admin-cockpit-head h2{margin:4px 0 0}
-.admin-cockpit section{background:#0c1a28;border:1px solid #183a50;border-radius:16px;padding:16px;margin-bottom:16px}
+.admin-cockpit :is(section,.admin-section){background:#0c1a28;border:1px solid #183a50;border-radius:16px;padding:16px;margin-bottom:16px}
 .admin-cockpit h3{margin:0 0 12px}.admin-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:16px}
 .admin-kpi{background:#102335;border:1px solid #1d455e;border-radius:12px;padding:12px}.admin-kpi strong{display:block;font-size:25px}.admin-kpi span{font-size:11px;color:#9eb9c8}
-.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.admin-grid section{min-width:0}
+.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.admin-grid{align-items:start}.admin-grid :is(section,.admin-section){min-width:0}
 .admin-bars{display:flex;align-items:flex-end;gap:5px;height:150px}.admin-bar{flex:1;min-width:5px;background:#42d7ff;border-radius:4px 4px 0 0;position:relative}.admin-bar:hover:after{content:attr(data-label);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);white-space:nowrap;background:#06101a;padding:4px 6px;border-radius:5px;font-size:10px}
 .admin-retention{display:flex;gap:10px}.admin-retention div{flex:1;text-align:center;background:#102335;border-radius:12px;padding:16px}.admin-retention strong{display:block;font-size:24px}
 .admin-funnel-row,.admin-player,.admin-feedback,.admin-alert,.admin-event{display:flex;gap:10px;justify-content:space-between;padding:9px 0;border-bottom:1px solid #173044;font-size:13px}
@@ -1126,5 +1126,10 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .admin-session-events li{margin:10px 0}
 .admin-cockpit :is(button,input,select,summary,a):focus-visible{outline:3px solid #8beaff;outline-offset:3px}
 .admin-cockpit-head{position:sticky;top:0;background:#0c1a28;z-index:2;padding:8px}
-@media(max-width:760px){.admin-cockpit-head{position:static}.admin-player-list{max-height:60vh}.admin-cockpit-shell{min-width:0}.admin-cockpit section{padding:10px}}
+@media(max-width:760px){.admin-cockpit-head{position:static}.admin-player-list{max-height:60vh}.admin-cockpit-shell{min-width:0}.admin-cockpit :is(section,.admin-section){padding:10px}}
 @media(prefers-reduced-motion:reduce){.admin-cockpit *{scroll-behavior:auto;transition:none;animation:none}}
+
+/* Native cockpit disclosures retain filters and loaded content when collapsed. */
+.admin-section>summary{cursor:pointer;min-height:44px;align-content:center;overflow-wrap:anywhere}
+.admin-section>summary h3{display:inline;margin:0}
+.admin-section[open]>summary{margin-bottom:12px}

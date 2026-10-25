@@ -2,6 +2,23 @@
 
 ## Registered-player directory (25 October 2026)
 
+The directory joins the existing bounded admin account response by exact `u:`
+identity. A trimmed nickname is preferred; when blank, the account email is the
+visible label. Search covers both nickname and email, ignoring case, surrounding
+whitespace and nickname accents. No email is inferred from event properties or
+another account. If the account read fails or a player falls outside that bounded
+response, the existing directory label remains available. Emails stay in the
+authorised in-memory admin view, never in telemetry or local storage.
+
+All eleven cockpit sections, including key indicators and quest friction, use
+native `details/summary`, initially expanded. Their headings work by keyboard or
+pointer and preserve child filters/content while collapsed. Refresh updates the
+content inside each disclosure without recreating the disclosure itself; its
+open/closed state is retained for the mounted cockpit. This is not a persisted
+player preference. Native browser coverage loads the actual cockpit HTML at five
+viewports, checks email search, toggles every section, and closes friction with
+Enter. No live player query or physical-device acceptance is claimed.
+
 The recent-player RPC definition generates `Joueur XXXX` from the anonymous
 player key hash, not a test-player classification. Its existing `qa_mode` and
 traffic filters exclude marked QA/automation, but a missing historical marker
