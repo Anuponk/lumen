@@ -14,8 +14,16 @@ Lifecycle events carry `stable_quest_id` and `quest_ordinal`; their historical
 `puzzle_id` remains the original numeric key plus one, or null for stable-only
 quests. The admin quest metrics/timeline resolve current ordinals through the
 server quest rules. Contradictory stable/numeric identities are not attributed
-to a quest. The funnel uses visible teaching milestones, and current position
-uses the latest known quest event rather than a maximum numeric key.
+to a quest. The funnel uses visible teaching milestones. The directory's
+**Point le plus avancé** uses the highest current catalogue ordinal observed
+over the player's lifetime in quest opening/start/completion events, across
+unambiguously linked devices. A later replay of an earlier quest cannot lower it.
+This is an observed reached point, not a completed-quest count or the currently
+open board; absent telemetry stays unknown. It never takes the maximum raw
+historical numeric key. The compatible RPC field remains `current_players`;
+the 1,000-player bound uses last qualifying activity independently of progression.
+The reporting window still applies to friction/funnel; session timelines remain
+chronological.
 
 These read-only RPCs require a current `analytics_cockpit` capability, exclude
 QA/non-human/unspecified traffic and cannot mutate campaign or reward data.

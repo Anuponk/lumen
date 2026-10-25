@@ -73,7 +73,7 @@ export function renderPlayerDirectory(host,players,observations,{authorized=()=>
    button.setAttribute('aria-controls','adminTimeline');
    button.onclick=()=>{if(authorized()&&host.contains(button))onSelect(p.player_key)};
    const badge=element(doc,'span',status.icon+' '+status.label);badge.className='admin-sync-badge';badge.title=status.description;
-   header.append(button,badge);card.append(header,element(doc,'p',`Q${p.current_quest||'—'} · ${Number(p.sessions)||0} session(s)`));
+   header.append(button,badge);card.append(header,element(doc,'p',`Point le plus avancé : Q${p.current_quest||'—'} · ${Number(p.sessions)||0} session(s)`));
    const details=element(doc,'details');details.className='admin-player-proof';details.append(element(doc,'summary','Détails de synchronisation'));
    details.append(element(doc,'p',status.description));
    const dates=element(doc,'div');dates.className='admin-player-dates';appendPlayerDates(dates,p,proof,{explain:false});details.append(dates);card.append(details);list.append(card);

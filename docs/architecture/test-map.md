@@ -1,5 +1,11 @@
 # Existing verification map
 
+Cockpit furthest point: disposable `fixtures/cockpit-furthest-quest.sql` covers
+an older higher catalogue ordinal followed by a lower replay, reporting-window
+independence, unchanged chronology, traffic filters and capability guards.
+Canonical-ledger CI runs the forward migration; `cockpit-browser.mjs` checks
+the explicit directory label and unknown state in the native UI.
+
 Fluid onboarding (#569/#576): onboarding-fluid-tests.mjs executes direct ordinary
 victory navigation, the real quest-6 lesson and account-scoped local preferences.
 learning-browser-tests.mjs covers manual quest 1, free 2–5, voluntary sky, reload,
