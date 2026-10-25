@@ -65,7 +65,26 @@ export async function verifyCockpit({send,evaluate,url}){
   });
  })()`,true);
  assert.deepEqual(nested,{sessionClosed:true,episodeClosed:true,report:true,reviewRequired:true,draftHidden:true});
+ const badges=await evaluate(`(async()=>{
+  const {renderPlayerDirectory}=await import('/src/ui/cockpit-sessions.js'),f=window.cockpitFixture;
+  const now=Date.parse('2026-10-25T12:00:00Z'),states=['confirmed','pending','failure','unknown','stale'];
+  const players=states.map(state=>({player_key:'u:'+state,player_type:'authenticated',display_name:state+'@example.invalid',current_quest:48,sessions:8}));
+  const proof={players:Object.fromEntries(states.map(state=>['u:'+state,{state:state==='stale'?'confirmed':state,observed_at:state==='stale'?'2026-10-25T10:00:00Z':'2026-10-25T11:59:00Z'}]))};
+  renderPlayerDirectory(f.players,players,proof,{authorized:()=>true,now});
+  const cards=[...f.players.querySelectorAll('.admin-player')],labels=cards.map(c=>c.querySelector('.admin-sync-badge').textContent);
+  const collapsed=cards.every(c=>!c.querySelector('details.admin-player-proof').open);
+  const compact=cards.every(c=>!c.querySelector('p').textContent.includes('authenticated'));
+  const card=cards[0],details=card.querySelector('details.admin-player-proof');details.querySelector('summary').click();
+  const evidence=details.open&&details.textContent.includes('Dernière connexion Auth')&&details.textContent.includes('Portefeuille');
+  const filter=f.players.querySelectorAll('select')[1];filter.value='confirmed';filter.dispatchEvent(new Event('change'));
+  const green=f.players.querySelectorAll('.admin-player').length===1&&f.players.querySelector('.admin-player').dataset.syncState==='confirmed';
+  filter.value='unknown';filter.dispatchEvent(new Event('change'));const unknown=f.players.querySelectorAll('.admin-player').length;
+  filter.value='all';filter.dispatchEvent(new Event('change'));
+  return {labels,collapsed,compact,evidence,green,unknown,overflow:document.documentElement.scrollWidth>innerWidth};
+ })()`,true);
+ assert.deepEqual([...badges.labels].sort(),['✓ Sans attente observée','… En attente','! Problème signalé','? État inconnu','? Signal ancien'].sort());
+ assert.equal(badges.collapsed,true);assert.equal(badges.compact,true);assert.equal(badges.evidence,true);assert.equal(badges.green,true);assert.equal(badges.unknown,2);assert.equal(badges.overflow,false);
  const ax=await send('Accessibility.getFullAXTree');
  assert(ax.nodes.some(n=>n.role?.value==='DisclosureTriangle'),'Native session disclosure appears in accessibility tree');
- return {initial,state,refreshed,sections,nested,nativeKeyboard:true,accessibilityTree:true,liveRPC:false,physicalDevice:false};
+ return {initial,state,refreshed,sections,nested,badges,nativeKeyboard:true,accessibilityTree:true,liveRPC:false,physicalDevice:false};
 }

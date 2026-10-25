@@ -1,5 +1,10 @@
 # Feature map
 
+Cockpit visual status: `ui/cockpit-dates.js::playerSyncStatus` qualifies existing
+queue timestamps; `ui/cockpit-sessions.js` renders text/symbol/colour badges and
+closed date disclosures and uses the same status for filters. Tests extend the
+dates suite and native browser coverage. No new backend or player-state writer.
+
 Registered-player cockpit view: `registeredPlayers` joins existing bounded admin
 account data by identity for nickname/email labels; `playerMatchesSearch` owns
 case/accent/whitespace-insensitive name/email search. `index.html` owns the eleven

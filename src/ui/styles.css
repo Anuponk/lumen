@@ -1133,3 +1133,14 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .admin-section>summary{cursor:pointer;min-height:44px;align-content:center;overflow-wrap:anywhere}
 .admin-section>summary h3{display:inline;margin:0}
 .admin-section[open]>summary{margin-bottom:12px}
+.admin-player-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.admin-sync-badge{display:inline-flex;align-items:center;border:1px solid currentColor;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700;line-height:1.4;color:#cad3df;background:#222e3d}
+.admin-player-list .admin-player[data-sync-state="confirmed"]{border-left:4px solid #73e8b0}
+.admin-player[data-sync-state="confirmed"] .admin-sync-badge{color:#73e8b0;background:#0b3028}
+.admin-player-list .admin-player[data-sync-state="pending"]{border-left:4px solid #ffd37a}
+.admin-player[data-sync-state="pending"] .admin-sync-badge{color:#ffd37a;background:#352b16}
+.admin-player-list .admin-player[data-sync-state="failure"]{border-left:4px solid #ffabb0}
+.admin-player[data-sync-state="failure"] .admin-sync-badge{color:#ffabb0;background:#3b202b}
+.admin-player-list .admin-player[data-sync-state="unknown"]{border-left:4px solid #a6b4c7}
+.admin-player-proof>summary{cursor:pointer;min-height:44px;align-content:center;font-size:12px;color:#a6c6da}
+.admin-player-proof>p{font-size:12px;line-height:1.5}

@@ -206,6 +206,12 @@ the session is usable on that particular browser/PWA.
 
 ## Cloud persistence contract
 
+The cockpit's `playerSyncStatus` presentation qualifies existing queue evidence
+by observation freshness, including the oldest device timestamp. Badges and
+filters share this model; full original dates/state remain under a disclosure.
+Green never derives from a domain receipt/Auth date alone and does not certify
+complete-device sync. This is UI-only; no authority or persistent fields change.
+
 The administrative directory enriches its registered-player projection with the
 already-loaded, capability-guarded account response by exact user identity.
 Nickname/email search and email fallback remain in memory; no email is written

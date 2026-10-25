@@ -1,5 +1,5 @@
 import {buildIncidentInvestigation,renderIncidentInvestigation} from './incident-investigation.js';
-import {appendPlayerDates,dateNode,DATE_SOURCE_DESCRIPTION} from './cockpit-dates.js';
+import {appendPlayerDates,dateNode,playerSyncStatus,DATE_SOURCE_DESCRIPTION} from './cockpit-dates.js';
 const labels={session_start:'Ouverture enregistrée',attempt_started:'Quête commencée',puzzle_start:'Quête commencée',attempt_completed:'Quête réussie',puzzle_complete:'Quête réussie',attempt_reset:'Réinitialisation',attempt_abandoned:'Abandon',hint_used:'Indice utilisé',verify_used:'Vérification',guided_intervention:'Contrôle guidé',tutorial_complete:'Apprentissage terminé'};
 const validDate=value=>typeof value==='string'&&Number.isFinite(Date.parse(value))?new Date(value).toISOString():null;
 const version=value=>typeof value==='string'&&/^\d{1,3}\.\d{1,3}\.\d{1,3}\+\d{1,9}$/.test(value)?value:'unknown';
@@ -50,28 +50,33 @@ export function playerMatchesSearch(player,query){
  const needle=searchText(query);return [player.display_name,player.email,player.player_label].some(value=>searchText(value).includes(needle));
 }
 
-export function renderPlayerDirectory(host,players,observations,{authorized=()=>false,onSelect=()=>{}}={}){
+export function renderPlayerDirectory(host,players,observations,{authorized=()=>false,onSelect=()=>{},now=Date.now()}={}){
  if(!host)return;host.replaceChildren();if(!authorized())return;
  const doc=host.ownerDocument,search=element(doc,'input');search.type='search';search.placeholder='Pseudo ou email';search.setAttribute('aria-label','Rechercher par pseudo ou email');
  const sort=select(doc,'Trier les joueurs',[['activity','Activité récente'],['auth','Connexion Auth récente'],['wallet','Dernier reçu portefeuille']]);
- const filter=select(doc,'Filtrer l’état observé',[['all','Tous les états'],['pending','En attente'],['failure','Échec / revue'],['unknown','État inconnu'],['confirmed','File observée sans attente']]);
+ const filter=select(doc,'Filtrer l’état observé',[['all','Tous les états'],['pending','En attente'],['failure','Problème signalé'],['unknown','Inconnu / ancien'],['confirmed','Sans attente observée']]);
  const controls=element(doc,'div');controls.className='admin-player-controls';controls.append(search,sort,filter);
- const sources=element(doc,'details');sources.dataset.dateSources='';sources.append(element(doc,'summary','Comprendre les dates'),element(doc,'p',DATE_SOURCE_DESCRIPTION));
+ const sources=element(doc,'details');sources.dataset.dateSources='';sources.append(element(doc,'summary','Comprendre les statuts et les dates'),element(doc,'p','✓ Vert : sans attente observée. … Orange : en attente. ! Rouge : problème signalé. ? Gris : état inconnu ou signal de plus de 15 min. Un signal ancien ne prouve pas un problème actuel. '+DATE_SOURCE_DESCRIPTION));
  const list=element(doc,'div');list.className='admin-player-list';host.append(controls,sources,list);
  const draw=()=>{
   list.replaceChildren();if(!authorized())return;
   const rows=registeredPlayers(players).filter(p=>playerMatchesSearch(p,search.value)&&
-   (filter.value==='all'||(observations?.players?.[p.player_key]?.state||'unknown')===filter.value));
+   (filter.value==='all'||playerSyncStatus(observations?.players?.[p.player_key],{now}).state===filter.value));
   const date=p=>{const proof=observations?.players?.[p.player_key];return Date.parse(sort.value==='auth'?proof?.auth_at:sort.value==='wallet'?proof?.domains?.wallet:p.last_seen)||0};
   rows.sort((a,b)=>date(b)-date(a)||String(a.player_key).localeCompare(String(b.player_key)));
   if(!rows.length)list.append(element(doc,'p','Aucun joueur pour ces filtres.'));
   for(const p of rows){
-   const card=element(doc,'article');card.className='admin-player';
+   const proof=observations?.players?.[p.player_key],status=playerSyncStatus(proof,{now});
+   const card=element(doc,'article');card.className='admin-player';card.dataset.syncState=status.state;
+   const header=element(doc,'div');header.className='admin-player-head';
    const button=element(doc,'button',String(p.display_name||p.player_label||p.player_type||'Joueur'));button.type='button';button.setAttribute('aria-label','Consulter les sessions de '+button.textContent);
    button.setAttribute('aria-controls','adminTimeline');
    button.onclick=()=>{if(authorized()&&host.contains(button))onSelect(p.player_key)};
-   card.append(button,element(doc,'p',`${p.player_type||'inconnu'} · Q${p.current_quest||'—'} · ${Number(p.sessions)||0} session(s) enregistrée(s)`));
-   const dates=element(doc,'div');dates.className='admin-player-dates';appendPlayerDates(dates,p,observations?.players?.[p.player_key],{explain:false});card.append(dates);list.append(card);
+   const badge=element(doc,'span',status.icon+' '+status.label);badge.className='admin-sync-badge';badge.title=status.description;
+   header.append(button,badge);card.append(header,element(doc,'p',`Q${p.current_quest||'—'} · ${Number(p.sessions)||0} session(s)`));
+   const details=element(doc,'details');details.className='admin-player-proof';details.append(element(doc,'summary','Détails de synchronisation'));
+   details.append(element(doc,'p',status.description));
+   const dates=element(doc,'div');dates.className='admin-player-dates';appendPlayerDates(dates,p,proof,{explain:false});details.append(dates);card.append(details);list.append(card);
   }
  };
  search.oninput=draw;sort.onchange=draw;filter.onchange=draw;draw();

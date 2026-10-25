@@ -143,6 +143,14 @@ The analytics ingestion allow-list accepts canonical attempt/friction events and
 
 
 ### Admin account directory (#112)
+
+Recent player cards use labelled/symbolised green, amber, red and grey badges
+for recent observed idle queues, pending work, reported problems and unknown/old
+signals. This is not complete-device sync confirmation. Signals older than the
+15-minute display freshness window (including the oldest device observation)
+are grey and remain inspectable, with all original dates, under collapsed
+“Détails de synchronisation”. Filters use the same qualified badge state. No
+new data collection or authority is inferred from Auth/receipt timestamps.
 The cockpit can list created authentication accounts through `lumen_admin_accounts(limit)`. The RPC reads email and authentication timestamps directly from `auth.users` only after checking the authenticated caller has the `analytics_cockpit` capability. Email is not copied into `analytics_events`, is not part of player telemetry, and the RPC is revoked from public/anonymous roles.
 
 The recent registered-player list joins this already-loaded bounded account
