@@ -1,0 +1,34 @@
+name: Diagnose production HTTP filtering
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Inspect public responses without deployment credentials
+        shell: python
+        run: |
+          import json, re, urllib.request, urllib.error
+          base = 'https://lumen.nopuna.fr/'
+          for path, data in [('build-info.json', None), ('src/main.js', None), ('lumen-release/', b'{"action":"status","sha":"' + b'a'*40 + b'"}')]:
+              request = urllib.request.Request(base + path, data=data, headers={'User-Agent': 'lumen-release', 'Content-Type': 'application/json'})
+              try:
+                  response = urllib.request.urlopen(request, timeout=20)
+              except urllib.error.HTTPError as error:
+                  response = error
+              except Exception as error:
+                  print(path, type(error).__name__)
+                  continue
+              with response:
+                  body = response.read(16384).decode('utf-8', errors='replace')
+                  report = {'path': path, 'status': response.code, 'html': 'text/html' in response.headers.get('Content-Type', '')}
+                  report['tigerprotect'] = 'faq.o2switch.fr' in body and ('tiger-protect' in body or 'tiger-protect-waf' in body)
+                  match = re.search(r'Request_ID\s*=\s*"([0-9a-f]{32})"', body)
+                  if match:
+                      report['request_id'] = match[1]
+                  # Only fixed categories; never print arbitrary HTML, headers or credentials.
+                  report['receiver_auth_rejection'] = 'Invalid signature or expired request' in body
+                  print(json.dumps(report))

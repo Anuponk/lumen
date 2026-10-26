@@ -78,6 +78,42 @@ un test local ne suffit pas à déclarer le déploiement opérationnel.
 
 ## Contrat de sécurité et diagnostic
 
+### Refus TigerProtect (429 / 503)
+
+Le 23 octobre 2026, un navigateur Edge isolé reçoit HTTP 429 sur
+`/src/main.js` et le manifeste, tandis que Node reçoit HTTP 200. Le diagnostic
+GitHub Actions [39909932076](https://github.com/Anuponk/lumen/actions/runs/39909932076)
+reçoit HTTP 503 avec la page TigerProtect sur un POST **non signé** à
+`/lumen-release/`, avant le rejet d'authentification PHP attendu (401).
+Ces refus viennent du filtre d'hébergement, pas du jeu ni du worker.
+Un autre runner a publié et vérifié `72f96a360e46e9255fa4a8cc5d039b1408a5a0e8`
+([39908907546](https://github.com/Anuponk/lumen/actions/runs/39908907546)) :
+une publication réussie ne prouve donc pas la disparition du filtrage.
+
+Dans cPanel → TigerProtect, sélectionner `lumen.nopuna.fr` et relever les
+règles actives. Vérifier le mode temporaire « Je suis attaqué », les contrôles
+de navigateur et la réputation IP/robots. Ajuster uniquement la règle identifiée
+ou faire examiner le faux positif par o2switch avec l'URL, l'heure et le Request_ID.
+Les assets publics doivent rester accessibles aux navigateurs ; le récepteur
+HMAC doit pouvoir recevoir les POST des runners sans challenge JavaScript.
+Ne pas désactiver toutes les protections ni modifier l'authentification HMAC.
+Voir la [documentation TigerProtect](https://faq.o2switch.fr/cpanel/o2switch/tiger-protect-waf/).
+
+Le client reconnaît les pages TigerProtect 429/503 via une lecture bornée,
+échoue avec un diagnostic fixe et le seul identifiant de requête validé, puis
+évite les tentatives supplémentaires inutiles. Il ne journalise ni la page,
+ni les en-têtes, ni les secrets. Un 503 non identifié conserve le transport
+de secours existant ; aucun filtre n'est contourné par le code.
+Le workflow manuel `Diagnose production HTTP filtering` sonde les assets et
+un statut non signé, sans accès aux secrets ni lancement de publication.
+Son succès indique que les sondes ont terminé ; lire les statuts enregistrés.
+
+Après réglage, vérifier le chargement complet dans un navigateur vierge et
+un véritable déploiement GitHub avec concordance du SHA public. La correction
+du filtrage reste **en attente** tant que ces deux contrôles ne passent pas.
+
+### Authentification et exécution
+
 Chaque POST contient uniquement action (deploy/status) et SHA complet. L'en-tête
 X-Lumen-Signature contient `sha256=HMAC(secret, timestamp + "\n" + corps brut)` ;
 X-Lumen-Timestamp expire après cinq minutes. La comparaison est constante,
