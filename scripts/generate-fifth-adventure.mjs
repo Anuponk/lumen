@@ -23,7 +23,8 @@ for(let c=0;c<config.constellations.length;c++){
     quests.push({id:'pack-'+config.id+'-q'+String(quests.length+1).padStart(3,'0'),constellationId:config.constellations[c].id,size:puzzle.reg.length,reg:puzzle.reg,sol:puzzle.sol,audit:puzzle.audit});
   }
 }
-const manifest={status:'staging-only',generatedAt:new Date().toISOString(),seed:config.seed,pack:{id:config.id,displayName:config.displayName,access:config.access,questCount:quests.length},constellations:config.constellations,quests};
+const manifest={status:'staging-proof-audited',seed:config.seed,questCount:quests.length,validation:{uniqueSolution:true,distinctDihedralSignatures:true,proofEngine:'validated',existingCatalogueCollision:'validated',astronomical:'not-yet-validated'},quests};
 fs.mkdirSync('artifacts',{recursive:true});
 fs.writeFileSync('artifacts/adventure-05-candidates.json',JSON.stringify(manifest,null,2)+'\n');
+fs.writeFileSync('content/generated/fifth-adventure-candidates.json',JSON.stringify(manifest,null,2)+'\n');
 console.log('Generated and proof-audited '+quests.length+' staging-only grids. NOT published.');
