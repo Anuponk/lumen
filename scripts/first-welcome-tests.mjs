@@ -17,9 +17,9 @@ const audioWindow={AudioContext:AudioFixture,localStorage:{getItem:()=> 'off'}};
 const score=createIntroMusic({window:audioWindow});score.start();assert.equal(contexts.length,0,'Respect existing mute');
 score.setEnabled(true);score.start();assert.equal(contexts.length,1);assert.ok(contexts[0].nodes.length<60,'Bounded score');
 score.pause();assert.equal(contexts[0].closed,true);assert.ok(contexts[0].nodes.every(n=>n.disconnected),'No connected nodes after pause');
-score.start(24000);assert.ok(contexts[1].nodes.length<contexts[0].nodes.length,'Resume current passage without replaying earlier notes');
+score.start(19000);assert.ok(contexts[1].nodes.length<contexts[0].nodes.length,'Resume current passage without replaying earlier notes');
 score.setEnabled(false);assert.equal(contexts[1].closed,true);score.start();assert.equal(contexts.length,2);
-score.setEnabled(true);score.start(29999);score.stop();assert.equal(contexts[2].closed,true,'Near-end resume is safe');
+score.setEnabled(true);score.start(23999);score.stop();assert.equal(contexts[2].closed,true,'Near-end resume is safe');
 const unavailable=createIntroMusic({window:{localStorage:{getItem:()=> 'on'}}});unavailable.start();assert.equal(unavailable.enabled,false,'Unavailable audio never blocks the story');
 const deniedAudio=createIntroMusic({window:{AudioContext:AudioFixture,localStorage:{getItem(){throw Error('denied')}}}});deniedAudio.start();assert.equal(contexts.length,3);
 class RejectedAudio extends AudioFixture{resume(){return Promise.reject(Error('blocked'))}}
@@ -43,14 +43,20 @@ const unread=storage();unread.setItem=()=>{};assert.equal(claimFirstWelcome(unre
 let now=0,frames=[],finishes=0;
 const timeline=createIntroTimeline({now:()=>now,onFrame:f=>frames.push(f),onFinish:()=>finishes++});
 timeline.start();assert.equal(frames.at(-1).scene,0);
-for(const [time,scene] of [[4999,0],[5000,1],[10000,2],[16000,3],[23000,4]]){now=time;timeline.frame();assert.equal(frames.at(-1).scene,scene)}
-now=24000;timeline.pause();const paused=timeline.elapsed;now+=60000;timeline.frame();assert.equal(timeline.elapsed,paused,'Background/reading time is excluded');
-timeline.resume();now+=1000;timeline.frame();assert.equal(timeline.elapsed,25000);
+for(const [time,scene] of [[3999,0],[4000,1],[8000,2],[13000,3],[18000,4]]){now=time;timeline.frame();assert.equal(frames.at(-1).scene,scene)}
+now=19000;timeline.pause();const paused=timeline.elapsed;now+=60000;timeline.frame();assert.equal(timeline.elapsed,paused,'Background/reading time is excluded');
+timeline.resume();now+=1000;timeline.frame();assert.equal(timeline.elapsed,20000);
 assert.ok(frames.at(-1).passage>0&&frames.at(-1).passage<1);
-now+=5000;timeline.frame();timeline.frame();timeline.start();assert.equal(finishes,1,'One completion only');
-assert.equal(INTRO_DURATION,30000);assert.deepEqual(INTRO_SCENES.map(s=>s.text),[
+now+=4000;timeline.frame();timeline.frame();timeline.start();assert.equal(finishes,1,'One completion only');
+assert.equal(INTRO_DURATION,24000);assert.deepEqual(INTRO_SCENES.map(s=>s.text),[
  "Le ciel s'est assombri.","Les constellations sommeillent dans l'ombre.",'Une dernière lueur peut encore les éveiller.','Chaque énigme résolue rendra une étoile au ciel.','À toi de réveiller les étoiles.'
 ]);
+assert.deepEqual(INTRO_SCENES.map(scene=>scene.start),[0,4000,8000,13000,18000]);
+const welcomeSource=fs.readFileSync(new URL('../src/ui/first-welcome.js',import.meta.url),'utf8');
+assert.ok(welcomeSource.indexOf('class=\"intro-story\"')<welcomeSource.indexOf('class=\"intro-play\"'),'Watch story comes first');
+assert.match(welcomeSource,/else story\.focus\(\)/,'Watch story gets initial focus');
+const welcomeCss=fs.readFileSync(new URL('../src/ui/first-welcome.css',import.meta.url),'utf8');
+assert.match(welcomeCss,/\.first-welcome \.intro-story\{background:#a9eef5/,'Watch story is primary');
 const stopped=createIntroTimeline({now:()=>now,onFrame(){},onFinish(){throw Error('Cancelled timeline completed')}});stopped.start();stopped.stop();now+=INTRO_DURATION;stopped.frame();stopped.resume();stopped.frame();
 // Execute the actual controller-change callback, preserving OAuth exceptions.
 const source=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
