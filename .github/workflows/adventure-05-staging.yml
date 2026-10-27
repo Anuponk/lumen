@@ -1,12 +1,18 @@
-name: Adventure 5 staging generation
+name: Adventure 5 staging validation
 on:
+  pull_request:
+    paths:
+      - 'content/fifth-adventure-preview.json'
+      - 'content/generated/fifth-adventure-candidates.json'
+      - 'scripts/validate-fifth-adventure.mjs'
+      - '.github/workflows/adventure-05-staging.yml'
   push:
     branches: [content/adventure-05-staging]
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  generate:
+  validate:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -14,12 +20,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Generate and audit candidate grids (no publication)
+      - name: Validate 100 staging grids with real proof engine
+        run: node scripts/validate-fifth-adventure.mjs
+      - name: Generate independent candidates for comparison
         run: node scripts/generate-fifth-adventure.mjs
-        # Dedicated staging generation rerun; do not publish to runtime.
-      - name: Upload candidate manifest
+      - name: Upload independently generated candidate manifest
         uses: actions/upload-artifact@v4
         with:
-          name: adventure-05-candidates
+          name: adventure-05-independent-candidates
           path: artifacts/adventure-05-candidates.json
           retention-days: 14
