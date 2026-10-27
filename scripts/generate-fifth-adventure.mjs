@@ -7,12 +7,23 @@ if(config.constellations.length!==10||expected!==100||config.sizes.length!==2)th
 const all=[],seen=new Set();
 for(const [i,size] of config.sizes.entries()){
   const count=expected/config.sizes.length;
-  const result=selectCandidates({size,family:'hybrid',count,seed:config.seed+i,attempts:60000});
-  if(result.shortfall)throw Error('Insufficient unique grids at '+size+': '+result.shortfall);
-  for(const puzzle of result.selected){
+  const selected=[];
+  for(const [j,family] of ['hybrid','serpentine','balanced','mosaic','classic'].entries()){
+    if(selected.length>=count)break;
+    const result=selectCandidates({size,family,count,seed:config.seed+i*100+j,attempts:60000});
+    for(const puzzle of result.selected){
+      const key=signature(puzzle.reg);
+      if(seen.has(key))continue;
+      if(!connected(puzzle.reg)||countSolutions(puzzle)!==1||!replay(puzzle))throw Error('Grid audit failed');
+      seen.add(key);selected.push(puzzle);
+      if(selected.length===count)break;
+    }
+  }
+  if(selected.length!==count)throw Error('Insufficient unique proof-audited grids at '+size+': '+selected.length+'/'+count);
+  for(const puzzle of selected){
     const key=signature(puzzle.reg);
-    if(seen.has(key)||!connected(puzzle.reg)||countSolutions(puzzle)!==1||!replay(puzzle))throw Error('Grid audit failed');
-    seen.add(key);all.push(puzzle);
+    if(!seen.has(key)||!connected(puzzle.reg)||countSolutions(puzzle)!==1||!replay(puzzle))throw Error('Grid audit failed');
+    all.push(puzzle);
   }
 }
 if(all.length!==expected)throw Error('Unexpected quest count');
