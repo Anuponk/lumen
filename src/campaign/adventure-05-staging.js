@@ -3,6 +3,7 @@ import candidates from '../../content/generated/fifth-adventure-candidates.json'
 import config from '../../content/fifth-adventure-preview.json' with {type:'json'};
 import {buildQuestDefinitions} from './quest-definition.js';
 import {CONTENT_PACKS,CONTENT_CONSTELLATIONS,contentMapModel} from './content.js';
+import {publishedCatalogueQuests} from './catalogue-origin.js';
 export const ADVENTURE_05_STAGING_PACK=Object.freeze({
  id:config.id,skyId:config.skyId,kind:'addon',access:config.access,order:config.order,
  displayName:config.displayName,shortDescription:'Dix nouvelles constellations du ciel réel',
@@ -42,4 +43,17 @@ export function adventure05QuestForPlay(id,entitlements=[]){
  if(!grid)return null;
  // Clone arrays: game interaction must never mutate the imported content.
  return {...definition,reg:grid.reg.map(row=>[...row]),sol:[...grid.sol],audit:grid.audit?structuredClone(grid.audit):null};
+}
+
+// Preview published ordering without changing historical catalogue origins.
+// Staging ordinals are local; runtime ordinals must follow the published tail.
+export function adventure05CanonicalPreview(){
+ const existing=publishedCatalogueQuests();
+ const records=[...existing,...ADVENTURE_05_STAGING_QUESTS.map((quest,index)=>({
+  id:quest.id,ordinal:existing.length+index+1,legacyIndex:null,
+  packId:quest.packId,constellationId:quest.constellationId
+ }))];
+ return buildQuestDefinitions(records,
+  [...CONTENT_PACKS,ADVENTURE_05_STAGING_PACK],
+  [...CONTENT_CONSTELLATIONS,...ADVENTURE_05_STAGING_CONSTELLATIONS]);
 }
