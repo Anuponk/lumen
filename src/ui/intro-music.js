@@ -1,12 +1,12 @@
 // Original, local ambient score. No recording, request or player-data writer.
 const CHORDS=[
- [0,5,[146.83,220,293.66]],
- [5,10,[130.81,196,261.63]],
- [10,16,[174.61,220,349.23]],
- [16,23,[130.81,196,329.63]],
- [23,30,[146.83,220,293.66,440]]
+ [0,4,[146.83,220,293.66]],
+ [4,8,[130.81,196,261.63]],
+ [8,13,[174.61,220,349.23]],
+ [13,18,[130.81,196,329.63]],
+ [18,24,[146.83,220,293.66,440]]
 ];
-const MELODY=[[10.8,587.33],[13,659.25],[16.8,783.99],[19.2,659.25],[23.5,587.33],[26,880]];
+const MELODY=[[8.6,587.33],[10.5,659.25],[13.6,783.99],[15.5,659.25],[18.5,587.33],[21,880]];
 
 export function createIntroMusic({window,onChange=()=>{}}){
  let enabled=false,context=null,nodes=[],master=null;
@@ -21,7 +21,7 @@ export function createIntroMusic({window,onChange=()=>{}}){
   try{old?.close()?.catch(()=>{})}catch{}
  }
  function start(elapsed=0){
-  pause();if(!enabled||elapsed>=30000)return;
+  pause();if(!enabled||elapsed>=24000)return;
   let audio;
   try{
    const Audio=window.AudioContext||window.webkitAudioContext;
@@ -40,7 +40,7 @@ export function createIntroMusic({window,onChange=()=>{}}){
     oscillator.connect(gain);gain.connect(master);oscillator.start(at);oscillator.stop(until+.02);
    }
    for(const [start,end,frequencies] of CHORDS)for(const frequency of frequencies)note(start,end,frequency,.035);
-   for(const [start,frequency] of MELODY)note(start,Math.min(30,start+2.8),frequency,.025);
+   for(const [start,frequency] of MELODY)note(start,Math.min(24,start+2.3),frequency,.025);
    const resumed=audio.resume();
    resumed?.catch(()=>{if(context===audio){pause();enabled=false;onChange()}});
   }catch{pause();enabled=false;onChange()}
