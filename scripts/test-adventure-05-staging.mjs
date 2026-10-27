@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {verifiedAstronomicalFigure} from '../src/ui/astronomical-catalogue.js';
-import {ADVENTURE_05_STAGING_PACK as pack,ADVENTURE_05_STAGING_CONSTELLATIONS as constellations,ADVENTURE_05_STAGING_QUESTS as quests,ADVENTURE_05_STAGING_GRIDS as grids,adventure05PreviewMap,adventure05QuestForPlay,adventure05CanonicalPreview} from '../src/campaign/adventure-05-staging.js';
+import {ADVENTURE_05_STAGING_PACK as pack,ADVENTURE_05_STAGING_CONSTELLATIONS as constellations,ADVENTURE_05_STAGING_QUESTS as quests,ADVENTURE_05_STAGING_GRIDS as grids,adventure05PreviewMap,adventure05QuestForPlay,adventure05CanonicalPreview,adventure05PreviewQuestDecision} from '../src/campaign/adventure-05-staging.js';
 assert.equal(pack.id,'real-adventure-05');
 assert.equal(pack.questCount,100);
 assert.equal(constellations.length,10);
@@ -53,3 +53,13 @@ assert.deepEqual(canonical.slice(-100).map(q=>q.id),quests.map(q=>q.id));
 assert.equal(canonical.at(-100).ordinal,canonical.length-99);
 assert.ok(canonical.slice(-100).every(q=>q.legacyIndex===null&&q.packId===pack.id));
 console.log('PASS: Adventure 5 appends 100 stable canonical quests without reordering existing entries.');
+
+const q1=quests[0],q2=quests[1],ent=[{entitlement:pack.id}];
+assert.equal(adventure05PreviewQuestDecision(q1.id,[],{}).status,'pack-locked');
+assert.equal(adventure05PreviewQuestDecision(q1.id,ent,{},false).status,'sync-required');
+assert.equal(adventure05PreviewQuestDecision(q1.id,ent,{}).status,'ready');
+assert.equal(adventure05PreviewQuestDecision(q2.id,ent,{}).status,'prerequisite');
+assert.equal(adventure05PreviewQuestDecision(q2.id,ent,{canonicalQuestState:{[q1.id]:{solved:true}}}).status,'ready');
+assert.equal(adventure05PreviewQuestDecision(q1.id,ent,{canonicalQuestState:{[q1.id]:{solved:true}}}).reason,'replay');
+assert.equal(adventure05PreviewQuestDecision('unknown',ent,{}).status,'missing-content');
+console.log('PASS: Adventure 5 preview navigation requires entitlement, cloud readiness and sequential progress.');
