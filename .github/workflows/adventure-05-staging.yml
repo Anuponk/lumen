@@ -7,6 +7,7 @@ on:
       - 'scripts/generate-fifth-adventure.mjs'
       - 'scripts/validate-fifth-adventure.mjs'
       - 'scripts/test-adventure-05-staging.mjs'
+      - 'scripts/prepare-adventure-05-allowlist.mjs'
       - 'src/campaign/adventure-05-staging.js'
       - 'src/ui/astronomical-catalogue.js'
       - '.github/workflows/adventure-05-staging.yml'
@@ -40,6 +41,8 @@ jobs:
           fi
       - name: Validate isolated content adapter
         run: node scripts/test-adventure-05-staging.mjs
+      - name: Validate cloud allowlist migration preparation
+        run: node scripts/prepare-adventure-05-allowlist.mjs
       - name: Upload validated candidate manifest
         uses: actions/upload-artifact@v4
         with:
