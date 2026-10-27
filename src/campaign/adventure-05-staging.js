@@ -2,6 +2,7 @@
 import candidates from '../../content/generated/fifth-adventure-candidates.json' with {type:'json'};
 import config from '../../content/fifth-adventure-preview.json' with {type:'json'};
 import {buildQuestDefinitions} from './quest-definition.js';
+import {CONTENT_PACKS,CONTENT_CONSTELLATIONS,contentMapModel} from './content.js';
 export const ADVENTURE_05_STAGING_PACK=Object.freeze({
  id:config.id,skyId:config.skyId,kind:'addon',access:config.access,order:config.order,
  displayName:config.displayName,shortDescription:'Dix nouvelles constellations du ciel réel',
@@ -21,3 +22,10 @@ export const ADVENTURE_05_STAGING_QUESTS=Object.freeze(buildQuestDefinitions(
 export const ADVENTURE_05_STAGING_GRIDS=Object.freeze(new Map(candidates.quests.map(q=>[
  q.id,Object.freeze({reg:q.reg,sol:q.sol,audit:q.audit})
 ])));
+
+// Explicit preview only: production content registries remain untouched until publication.
+export function adventure05PreviewMap(entitlements=[],progress={}){
+ const packs=[...CONTENT_PACKS,ADVENTURE_05_STAGING_PACK];
+ const constellations=[...CONTENT_CONSTELLATIONS,...ADVENTURE_05_STAGING_CONSTELLATIONS];
+ return contentMapModel(entitlements,{packs,constellations,progress});
+}
