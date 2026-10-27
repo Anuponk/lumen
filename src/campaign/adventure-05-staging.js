@@ -4,6 +4,7 @@ import config from '../../content/fifth-adventure-preview.json' with {type:'json
 import {buildQuestDefinitions} from './quest-definition.js';
 import {CONTENT_PACKS,CONTENT_CONSTELLATIONS,contentMapModel} from './content.js';
 import {publishedCatalogueQuests} from './catalogue-origin.js';
+import {normalizeEntitlements} from './content.js';
 export const ADVENTURE_05_STAGING_PACK=Object.freeze({
  id:config.id,skyId:config.skyId,kind:'addon',access:config.access,order:config.order,
  displayName:config.displayName,shortDescription:'Dix nouvelles constellations du ciel réel',
@@ -34,8 +35,7 @@ export function adventure05PreviewMap(entitlements=[],progress={}){
 // Read-only canonical quest lookup for the eventual gameplay bridge.
 // No legacy numeric index, reward write or cloud mutation is performed here.
 export function adventure05QuestForPlay(id,entitlements=[]){
- if(!entitlements || !Array.isArray(entitlements) && !(entitlements instanceof Set))return null;
- const access=new Set([...entitlements].map(value=>typeof value==='string'?value:(value?.entitlement??value?.pack_id??value?.packId)));
+ const access=normalizeEntitlements(entitlements);
  if(!access.has(ADVENTURE_05_STAGING_PACK.id))return null;
  const definition=ADVENTURE_05_STAGING_QUESTS.find(quest=>quest.id===String(id));
  if(!definition)return null;
@@ -56,4 +56,19 @@ export function adventure05CanonicalPreview(){
  return buildQuestDefinitions(records,
   [...CONTENT_PACKS,ADVENTURE_05_STAGING_PACK],
   [...CONTENT_CONSTELLATIONS,...ADVENTURE_05_STAGING_CONSTELLATIONS]);
+}
+
+// Preview navigation is independent of legacy indices and rewards.
+// Replays are allowed; new quests advance only after the prior quest in this pack.
+export function adventure05PreviewQuestDecision(id,entitlements=[],progress={},cloudReady=true){
+ const quest=ADVENTURE_05_STAGING_QUESTS.find(q=>q.id===String(id));
+ if(!quest)return {status:'missing-content'};
+ if(!normalizeEntitlements(entitlements).has(ADVENTURE_05_STAGING_PACK.id))return {status:'pack-locked'};
+ if(!cloudReady)return {status:'sync-required'};
+ const state=progress?.canonicalQuestState??{};
+ if(state[quest.id]?.solved)return {status:'ready',reason:'replay',quest};
+ const index=ADVENTURE_05_STAGING_QUESTS.findIndex(q=>q.id===quest.id);
+ const previous=index>0?ADVENTURE_05_STAGING_QUESTS[index-1]:null;
+ if(previous&&!state[previous.id]?.solved)return {status:'prerequisite',questId:previous.id};
+ return {status:'ready',reason:'sequential',quest};
 }
