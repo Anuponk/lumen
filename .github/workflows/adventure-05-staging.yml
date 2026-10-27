@@ -6,6 +6,9 @@ on:
       - 'content/generated/fifth-adventure-candidates.json'
       - 'scripts/generate-fifth-adventure.mjs'
       - 'scripts/validate-fifth-adventure.mjs'
+      - 'scripts/test-adventure-05-staging.mjs'
+      - 'src/campaign/adventure-05-staging.js'
+      - 'src/ui/astronomical-catalogue.js'
       - '.github/workflows/adventure-05-staging.yml'
   push:
     branches: [content/adventure-05-staging]
