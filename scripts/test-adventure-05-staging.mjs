@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {verifiedAstronomicalFigure} from '../src/ui/astronomical-catalogue.js';
 import {ADVENTURE_05_STAGING_PACK as pack,ADVENTURE_05_STAGING_CONSTELLATIONS as constellations,ADVENTURE_05_STAGING_QUESTS as quests,ADVENTURE_05_STAGING_GRIDS as grids,adventure05PreviewMap,adventure05QuestForPlay} from '../src/campaign/adventure-05-staging.js';
 assert.equal(pack.id,'real-adventure-05');
 assert.equal(pack.questCount,100);
@@ -37,3 +38,11 @@ const oldCell=grids.get(first.id).reg[0][0];
 playable.reg[0][0]=999;
 assert.equal(grids.get(first.id).reg[0][0],oldCell);
 console.log('PASS: entitlement-gated quest lookup rejects unauthorized access and protects source grids.');
+
+for(const constellation of constellations){
+ const figure=verifiedAstronomicalFigure(constellation);
+ assert.ok(figure,'Missing audited astronomy for '+constellation.iau);
+ assert.equal(figure.iau,constellation.iau);
+ assert.ok(figure.pts.length>0&&figure.edges.length>0);
+}
+console.log('PASS: all ten Adventure 5 constellations resolve to audited Western figures.');
