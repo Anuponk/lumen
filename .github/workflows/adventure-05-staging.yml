@@ -16,6 +16,7 @@ jobs:
           node-version: '22'
       - name: Generate and audit candidate grids (no publication)
         run: node scripts/generate-fifth-adventure.mjs
+        # Dedicated staging generation rerun; do not publish to runtime.
       - name: Upload candidate manifest
         uses: actions/upload-artifact@v4
         with:
