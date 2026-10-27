@@ -29,3 +29,17 @@ export function adventure05PreviewMap(entitlements=[],progress={}){
  const constellations=[...CONTENT_CONSTELLATIONS,...ADVENTURE_05_STAGING_CONSTELLATIONS];
  return contentMapModel(entitlements,{packs,constellations,progress});
 }
+
+// Read-only canonical quest lookup for the eventual gameplay bridge.
+// No legacy numeric index, reward write or cloud mutation is performed here.
+export function adventure05QuestForPlay(id,entitlements=[]){
+ if(!entitlements || !Array.isArray(entitlements) && !(entitlements instanceof Set))return null;
+ const access=new Set([...entitlements].map(value=>typeof value==='string'?value:(value?.entitlement??value?.pack_id??value?.packId)));
+ if(!access.has(ADVENTURE_05_STAGING_PACK.id))return null;
+ const definition=ADVENTURE_05_STAGING_QUESTS.find(quest=>quest.id===String(id));
+ if(!definition)return null;
+ const grid=ADVENTURE_05_STAGING_GRIDS.get(definition.id);
+ if(!grid)return null;
+ // Clone arrays: game interaction must never mutate the imported content.
+ return {...definition,reg:grid.reg.map(row=>[...row]),sol:[...grid.sol],audit:grid.audit?structuredClone(grid.audit):null};
+}
