@@ -3,12 +3,12 @@ import {createIntroMusic} from './intro-music.js';
 export const INTRO_SEEN_KEY='lumenIntroPresentedV1';
 export const INTRO_SCENES=Object.freeze([
  {start:0,text:"Le ciel s'est assombri."},
- {start:5000,text:"Les constellations sommeillent dans l'ombre."},
- {start:10000,text:'Une dernière lueur peut encore les éveiller.'},
- {start:16000,text:'Chaque énigme résolue rendra une étoile au ciel.'},
- {start:23000,text:'À toi de réveiller les étoiles.'}
+ {start:4000,text:"Les constellations sommeillent dans l'ombre."},
+ {start:8000,text:'Une dernière lueur peut encore les éveiller.'},
+ {start:13000,text:'Chaque énigme résolue rendra une étoile au ciel.'},
+ {start:18000,text:'À toi de réveiller les étoiles.'}
 ]);
-export const INTRO_DURATION=30000;
+export const INTRO_DURATION=24000;
 
 // Called before normal startup creates/restores the board. Unknown or returning
 // contexts always retain ordinary startup. The marker is not an Auth preference.
@@ -34,7 +34,7 @@ export function createIntroTimeline({now,onFrame,onFinish}){
   if(elapsed>=INTRO_DURATION){finished=true;running=false;onFinish();return}
   let scene=0;
   while(scene+1<INTRO_SCENES.length&&elapsed>=INTRO_SCENES[scene+1].start)scene++;
-  onFrame({elapsed,scene,passage:Math.max(0,Math.min(1,(elapsed-23000)/7000))});
+  onFrame({elapsed,scene,passage:Math.max(0,Math.min(1,(elapsed-18000)/6000))});
  }
  return {
   start(){if(finished)return;running=true;last=now();frame()},
@@ -56,8 +56,8 @@ export function createFirstWelcome({document,window,figureSvg,contextKey,onRepla
   <button type="button" class="intro-music" aria-pressed="false" hidden>Musique coupée</button>
   <div class="intro-welcome"><h2 class="lumen-brand">LUMEN</h2>
    <p>Le ciel a perdu ses étoiles.<br>À toi de les réveiller.</p>
-   <div class="intro-actions"><button type="button" class="intro-play">Commencer l’aventure</button>
-   <button type="button" class="intro-story">Découvrir l’histoire</button></div></div>
+   <div class="intro-actions"><button type="button" class="intro-story">Regarder la cinématique</button>
+   <button type="button" class="intro-play">Aller directement à l’aventure</button></div></div>
   <p class="intro-caption" aria-hidden="true" hidden></p>
   <details class="intro-transcript" hidden><summary>Lire le récit</summary><div></div></details>`;
  const transcript=root.querySelector('.intro-transcript div');
@@ -97,7 +97,7 @@ export function createFirstWelcome({document,window,figureSvg,contextKey,onRepla
   active=true;root.hidden=false;root.classList.remove('intro-paused');root.dataset.scene='0';root.style.setProperty('--intro-passage','0');
   welcome.hidden=replay;skip.hidden=!replay;musicButton.hidden=!replay;caption.hidden=!replay;reading.hidden=!replay;reading.open=false;
   reduced();
-  if(replay)startStory();else play.focus();
+  if(replay)startStory();else story.focus();
   if(active)raf=window.requestAnimationFrame(pump);
  }
  function startStory(){
