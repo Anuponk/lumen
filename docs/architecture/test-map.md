@@ -364,3 +364,7 @@ Guest registration, guided undo and universal badge eligibility: `guest-account-
 pending intent preservation; `fixtures/player-favorable-acquisitions.sql` plus
 `acquisition-recovery-concurrency.py` → actual RPC/guards/concurrent spending.
 See TESTING.md for native browser and physical-device evidence limits.
+
+## Adventure 5 staging generation (#598)
+
+`node scripts/generate-fifth-adventure.mjs` uses the deterministic existing candidate generator to target 100 puzzles, 50 per size (7 and 8), checking uniqueness, connected regions and proof replay before writing an **unpublished** artifact to `artifacts/adventure-05-candidates.json`. Its input is `content/fifth-adventure-preview.json`. `.github/workflows/adventure-05-staging.yml` is a manually dispatchable or branch-push staging job; its execution and artifact must be verified separately. This is **not** a catalogue integration test or a publication step. Before publishing, run strict catalogue audit, astronomical audit, content/progression and cloud regression tests, full quality gate and mobile acceptance. No execution result is claimed by this map entry.
