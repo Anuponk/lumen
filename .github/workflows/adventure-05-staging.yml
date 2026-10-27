@@ -35,6 +35,8 @@ jobs:
             git commit -m 'content: record proof-audited Adventure 5 candidates (#598)'
             git push origin HEAD:content/adventure-05-staging
           fi
+      - name: Validate isolated content adapter
+        run: node scripts/test-adventure-05-staging.mjs
       - name: Upload validated candidate manifest
         uses: actions/upload-artifact@v4
         with:
