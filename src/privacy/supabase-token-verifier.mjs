@@ -8,7 +8,8 @@ export function createSupabaseTokenVerifier({supabaseAuth,verifyJwtClaims,lookup
     const [{data,error},claims]=await Promise.all([supabaseAuth.getUser(token),verifyJwtClaims(token)]);
     if(error||!data?.user?.id||!claims||claims.sub!==data.user.id||
        typeof claims.session_id!=='string'||!claims.session_id) throw Error('Invalid Auth identity');
-    const session=await lookupSession({userId:data.user.id,sessionId:claims.session_id});
+    if(!Number.isFinite(claims.exp)||claims.exp*1000<=now())throw Error('Expired signed token');
+    const session=await lookupSession({userId:data.user.id,sessionId:claims.session_id,verifiedJwtExpiryMs:claims.exp*1000});
     if(!session||session.id!==claims.session_id||session.user_id!==data.user.id||
        session.revoked===true||!Number.isFinite(session.expires_at)||session.expires_at<=now()) {
       throw Error('Inactive Auth session');
