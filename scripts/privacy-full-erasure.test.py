@@ -70,6 +70,21 @@ end $fixture$;
 drop schema lumen_privacy cascade;
 """
 tests = """
+-- Unknown Lumen tables must prevent erasure until the policy is reviewed.
+create table lumen.unreviewed_private_records (id uuid, user_id uuid);
+do $unknown$
+begin
+ begin
+  perform lumen_privacy.erase_account(
+   'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',array[]::text[],
+   'ERASE LUMEN aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+  raise exception 'Unreviewed table was not rejected';
+ exception when raise_exception then
+  if sqlerrm <> 'LUMEN_ERASURE_SCHEMA_REVIEW_REQUIRED' then raise; end if;
+ end;
+ raise notice 'PASS: unreviewed schema fails closed';
+end $unknown$;
+drop table lumen.unreviewed_private_records;
 insert into lumen.profiles(id,user_id) values
  ('11111111-1111-1111-1111-111111111111','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
  ('22222222-2222-2222-2222-222222222222','bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
