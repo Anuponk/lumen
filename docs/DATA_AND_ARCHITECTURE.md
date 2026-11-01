@@ -1408,3 +1408,14 @@ Missing receipts, uncovered evidence, unreadable storage and session changes
 retain the entry; unchanged-evidence ordinary replay still uses its normal path.
 Already archived recovery is never acknowledged again as matching changed
 evidence. Recovery cannot mutate the running board, current attempt or reset.
+
+
+## Privacy #316: isolated SQL regression (2026-11-01)
+
+The operator-only `lumen_privacy` erasure migration is **not deployed** by this PR.
+`support_access.actor` is compared as text to the verified UUID scope to avoid
+PostgreSQL type mismatches. The private tombstone barrier and existing Lumen-only
+scope remain unchanged. The `Privacy SQL integration` GitHub Actions workflow
+runs a disposable PostgreSQL 17 service; it does not connect to production or
+create a billable Supabase project. A green scope test does not establish that
+full account erasure, anti-resurrection, or SoldeZen isolation is validated.
