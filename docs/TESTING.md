@@ -1608,3 +1608,8 @@ another user's records are excluded. All changes are rolled back. No
 production credentials, Supabase project, or live player records are used.
 This is a **scope regression only**; end-to-end erasure, trigger barriers,
 retention, rights export and production compatibility still need testing.
+
+
+### Complete migration smoke test
+
+`python3 scripts/privacy-full-erasure.test.py` is also run by the same disposable PostgreSQL 17 GitHub Actions job. It constructs a synthetic catalog from the migration's real policy, installs the **entire** erasure migration, verifies explicit confirmation, deletes a fixture Lumen profile, retains another player's profile and synthetic `auth.users`/SoldeZen records, and checks the post-erasure write barrier. The entire transaction is rolled back. This is a synthetic smoke test, not a substitute for a schema-accurate production rehearsal or legal approval.
