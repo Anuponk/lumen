@@ -4,7 +4,7 @@ import {Readable} from 'node:stream';
 import {createPrivateErasureEndpoint} from '../src/privacy/private-erasure-endpoint.mjs';
 const uid='00000000-0000-4000-8000-000000000001';
 const sid='00000000-0000-4000-8000-000000000002';
-const now=1_800_000_000_000;
+const now=Date.now();
 async function call(endpoint,body={confirmation:'SUPPRIMER'}) {
  const req=Readable.from([JSON.stringify(body)]);req.method='POST';
  req.headers={'content-type':'application/json',authorization:'Bearer '+('a'.repeat(40))};
