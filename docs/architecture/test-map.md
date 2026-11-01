@@ -364,3 +364,7 @@ Guest registration, guided undo and universal badge eligibility: `guest-account-
 pending intent preservation; `fixtures/player-favorable-acquisitions.sql` plus
 `acquisition-recovery-concurrency.py` → actual RPC/guards/concurrent spending.
 See TESTING.md for native browser and physical-device evidence limits.
+
+## Account deletion request journey (#316)
+
+`node --test scripts/account-deletion-request-journey.test.mjs` covers the public `supprimer-compte.html` form and `src/privacy/account-deletion.js`: manual mailto preparation, invalid-address rejection, explicit Lumen-only scope, and honest non-automatic-send messaging. `.github/workflows/account-deletion-request-journey.yml` runs this focused regression on PR changes. This is a simulated form contract, **not** browser/email delivery or a real-account production erasure test. The disposable PostgreSQL deletion test remains in `.github/workflows/privacy-sql-integration.yml` and should not be rerun for documentation-only changes.
