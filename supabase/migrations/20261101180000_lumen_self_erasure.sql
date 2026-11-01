@@ -4,7 +4,7 @@ returns jsonb language plpgsql security definer set search_path = ''
 as $$
 declare v_uid uuid; v_result jsonb; v_actors text[] := array[]::text[]; v_row record; v_found text[];
 begin
-  if current_user <> 'service_role' or auth.uid() is not null then
+  if (select auth.role()) is distinct from 'service_role' or auth.uid() is not null then
     raise exception 'Service role required' using errcode='42501';
   end if;
   v_uid := p_user_id;
