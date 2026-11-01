@@ -13,7 +13,11 @@ begin
   end if;
   -- Existing audited operator procedure checks that the operation is not
   -- performed as a client session. Preserve the verified UUID first.
+  -- The operator-only procedure refuses client JWT context. Clear it only
+  -- inside this transaction, after deriving the verified self identity.
+  perform set_config('request.jwt.claims', '{}', true);
   perform set_config('request.jwt.claim.sub', '', true);
+  perform set_config('request.jwt.claim.role', '', true);
   v_result := lumen_privacy.erase_account(v_uid, array[]::text[], 'ERASE LUMEN ' || v_uid::text);
   return v_result;
 end;
