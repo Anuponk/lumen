@@ -32,7 +32,7 @@ test('social challenges are anonymized, not indiscriminately removed', () => {
   const text = normalize(sql);
   assert.match(text, /'lumen','social_challenges','sender_user_id','sender_anonymous_id',null,'anonymize'/);
   assert.match(text, /'lumen','social_challenge_participations','participant_user_id','participant_anonymous_id','participant_key','delete'/);
-  assert.match(text, /set sender_user_id=null,sender_anonymous_id=null,sender_display_name='compte supprimé'/);
+  assert.match(text, /set sender_user_id=null,sender_anonymous_id=null,sender_display_name=''compte supprimé''/);
 });
 
 test('support records are included and ownership is backfilled', () => {
