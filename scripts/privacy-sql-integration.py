@@ -80,10 +80,10 @@ begin
  raise notice 'PASS: tombstone blocks erased owner, unrelated user remains writable';
 end $;
 """
-sql = ("begin;\\n" + setup
+sql = ("begin;\n" + setup
        + source[fingerprint_start:fingerprint_end]
        + function_sql + guard_setup + source[guard_start:guard_end]
-       + tests + guard_tests + "rollback;\\n")
+       + tests + guard_tests + "rollback;\n")
 result = subprocess.run(
     ["psql", "-X", "-v", "ON_ERROR_STOP=1", "-q"],
     input=sql, text=True, capture_output=True, env=os.environ
