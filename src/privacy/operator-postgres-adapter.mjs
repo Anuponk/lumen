@@ -10,8 +10,8 @@ export async function createOperatorTransaction({ connectionString, connect }) {
     let committed = false;
     try {
       await client.query('BEGIN ISOLATION LEVEL READ COMMITTED');
-      const role = await client.query('select current_user as role, auth.uid() as auth_uid');
-      if (role.rows?.[0]?.role !== 'postgres' || role.rows?.[0]?.auth_uid != null) {
+      const role = await client.query('select current_user as role, session_user as login_role, auth.uid() as auth_uid');
+      if (role.rows?.[0]?.role !== 'postgres' || role.rows?.[0]?.login_role !== 'postgres' || role.rows?.[0]?.auth_uid != null) {
         throw new Error('Operator-only PostgreSQL session required');
       }
       const tx = {
