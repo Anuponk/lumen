@@ -1419,3 +1419,7 @@ scope remain unchanged. The `Privacy SQL integration` GitHub Actions workflow
 runs a disposable PostgreSQL 17 service; it does not connect to production or
 create a billable Supabase project. A green scope test does not establish that
 full account erasure, anti-resurrection, or SoldeZen isolation is validated.
+
+## Account erasure self-service (#316, pending release)
+
+The proposed browser account menu invokes `lumen-self-erasure` with the current user JWT and explicit confirmation. The Edge Function verifies the user and calls `public.lumen_self_erase` as that user. The database derives the target from `auth.uid()` and invokes the existing transactional Lumen-only erasure policy. The shared Supabase Auth identity and SoldeZen tables are not deleted. This implementation is **not production ready** until verified guest actors and local persisted state are handled and a QA end-to-end deletion succeeds. The migration and function must be deployed together only after security review; rollback is to disable the Edge Function and revoke the RPC execute privilege, not to restore deleted player data. Cloud restore is intentionally blocked for erased identifiers by the existing erasure guards.
