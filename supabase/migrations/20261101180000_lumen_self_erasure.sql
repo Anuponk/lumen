@@ -1,4 +1,6 @@
 -- #316: Self-service Lumen-only erasure. The caller cannot choose the target identity.
+-- Retire the old client-callable overload if it was previously installed.
+drop function if exists public.lumen_self_erase(text);
 create or replace function public.lumen_self_erase(p_user_id uuid, p_confirmation text)
 returns jsonb language plpgsql security definer set search_path = ''
 as $$
