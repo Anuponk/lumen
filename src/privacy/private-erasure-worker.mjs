@@ -29,6 +29,10 @@ export async function processAccountErasure({
   });
   // A successful transaction is necessary but not sufficient for end-user completion:
   // caller must also enforce session invalidation and local cleanup.
-  if (typeof onCompleted === 'function') await onCompleted(userId);
-  return { status: 'erasure_committed', authDeleted: false, report: result };
+  let cleanupStatus = 'pending';
+  if (typeof onCompleted === 'function') {
+    try { await onCompleted(userId); cleanupStatus = 'completed'; }
+    catch { cleanupStatus = 'failed'; }
+  }
+  return { status: 'erasure_committed', cleanupStatus, authDeleted: false, report: result };
 }
