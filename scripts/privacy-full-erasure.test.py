@@ -91,6 +91,14 @@ insert into lumen.profiles(id,user_id) values
 do $check$
 declare result jsonb;
 begin
+ if has_schema_privilege('anon','lumen_privacy','USAGE') or
+    has_schema_privilege('authenticated','lumen_privacy','USAGE') or
+    has_schema_privilege('service_role','lumen_privacy','USAGE') or
+    has_function_privilege('anon','lumen_privacy.erase_account(uuid,text[],text)','EXECUTE') or
+    has_function_privilege('authenticated','lumen_privacy.erase_account(uuid,text[],text)','EXECUTE') or
+    has_function_privilege('service_role','lumen_privacy.erase_account(uuid,text[],text)','EXECUTE') then
+   raise exception 'Private erasure procedure exposed to API roles';
+ end if;
  begin
   perform lumen_privacy.erase_account(
     'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',array[]::text[],'WRONG');
