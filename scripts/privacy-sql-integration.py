@@ -52,9 +52,6 @@ create table lumen_privacy.erased_identifiers (
  kind text not null, digest text not null, owner_digest text not null,
  primary key(kind,digest)
 );
-create trigger lumen_erasure_guard before insert or update
- on lumen_commands.support_access for each row
- execute function lumen_privacy.guard_write('','','');
 """
 guard_tests = """
 insert into lumen_privacy.erased_identifiers(kind,digest,owner_digest)
@@ -83,6 +80,10 @@ end $test$;
 sql = ("begin;\n" + setup
        + source[fingerprint_start:fingerprint_end]
        + function_sql + guard_setup + source[guard_start:guard_end]
+       + """create trigger lumen_erasure_guard before insert or update
+ on lumen_commands.support_access for each row
+ execute function lumen_privacy.guard_write('','','');
+"""
        + tests + guard_tests + "rollback;\n")
 result = subprocess.run(
     ["psql", "-X", "-v", "ON_ERROR_STOP=1", "-q"],
