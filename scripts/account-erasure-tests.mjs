@@ -19,3 +19,4 @@ import '../tests/private-erasure-endpoint.test.mjs';
 import '../tests/account-deletion-controller.test.mjs';
 import '../tests/postgres-verified-actor-reader.test.mjs';
 import '../tests/private-erasure-end-to-end.test.mjs';
+import '../tests/private-erasure-preflight.test.mjs';
