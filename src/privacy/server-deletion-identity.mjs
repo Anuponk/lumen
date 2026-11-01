@@ -12,7 +12,10 @@ export function createVerifiedDeletionIdentity({getUserFromToken,lookupSession,l
     const session=await lookupSession(token,user.id); // must check auth.sessions, expiry and revocation
     if (!session||session.user_id!==user.id||session.revoked===true||
       !Number.isFinite(session.expires_at)||session.expires_at<=now()) throw Error('Inactive session');
-    // expires_at is deliberately milliseconds since epoch in this adapter.\n    // Supabase Auth session.expires_at is usually seconds; the trusted adapter\n    // MUST normalize before passing it here.\n    const verifiedAt=await lookupRecentReauth({userId:user.id,sessionId:session.id});
+    // expires_at is deliberately milliseconds since epoch in this adapter.
+    // Supabase Auth session.expires_at is usually seconds; the trusted adapter
+    // MUST normalize before passing it here.
+    const verifiedAt=await lookupRecentReauth({userId:user.id,sessionId:session.id});
     if (!Number.isFinite(verifiedAt)||verifiedAt>now()||now()-verifiedAt>300000) {
       throw Error('Recent reauthentication required');
     }
