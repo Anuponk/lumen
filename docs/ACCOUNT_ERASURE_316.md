@@ -22,3 +22,7 @@ Le projet Supabase partagé est `tjdjlavmusmncuszhsuw` (SoldeZen). Les schémas 
 4. Finaliser les preuves éditeur, fournisseurs, conservation, pages légales, droits des mineurs et Data Safety. Les tests synthétiques ne valent pas validation juridique.
 
 **Statut :** code préparé antérieurement, migration production absente, recette réelle et conformité éditoriale en attente. Issue #316 reste ouverte. Aucun changement de gameplay, onboarding ou synchronisation dans cette PR.
+
+## Compatibility finding
+
+The live `lumen_commands.support_access` table currently has no `privacy_owner_id` column. The prepared migration's `lumen_privacy.install_guards()` intentionally adds and backfills it transactionally. Do not apply this ALTER separately. The schema, migration dependencies, and restoration barriers require isolated integration testing before production installation.
