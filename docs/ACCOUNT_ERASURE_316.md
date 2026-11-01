@@ -26,3 +26,18 @@ Le projet Supabase partagé est `tjdjlavmusmncuszhsuw` (SoldeZen). Les schémas 
 ## Compatibility finding
 
 The live `lumen_commands.support_access` table currently has no `privacy_owner_id` column. The prepared migration's `lumen_privacy.install_guards()` intentionally adds and backfills it transactionally. Do not apply this ALTER separately. The schema, migration dependencies, and restoration barriers require isolated integration testing before production installation.
+
+
+## Production status — 2026-11-01 (supersedes historical status above)
+
+The Lumen-only erasure migration was applied to shared Supabase project `tjdjlavmusmncuszhsuw` after PR #602 was merged. Read-only checks confirmed the private `lumen_privacy` schema, operator `erase_account(uuid,text[],text)` function, 38 erasure guard triggers, and no schema USAGE for `anon`, `authenticated`, or `service_role`. A read-only `review_erasure` with the nil UUID and no actors succeeded. **No real user was erased.** The earlier statement that the migration is absent is historical.
+
+### Operator acceptance checklist
+
+1. Log the incoming request and verify identity and any parental authority proportionately; an email address alone is not proof.
+2. Resolve the verified Lumen UUID and linked anonymous actors, avoiding cross-user matching. Never delete shared `auth.users` or SoldeZen data for a Lumen-only request.
+3. Run the read-only `lumen_privacy.review_erasure` for that verified UUID and verified actor array. Review table scope, third-party social challenges, support records, pending offline writes and backup obligations.
+4. Obtain explicit approval for the exact account and scope. Execute the operator-only `erase_account` with the confirmation string required by its SQL definition. Never run this operation against a real account as a test.
+5. Verify result and non-resurrection; separately address vendor copies, backups, sessions and lawful retention. Do not confirm completion until these are checked.
+
+Synthetic PostgreSQL CI tests and a nil-UUID read-only review do not constitute a live end-to-end erasure rehearsal or RGPD/Google Play legal approval. The user-facing form initiates an email request; it does not automatically erase the account. Review Supabase RLS advisor notices separately.
