@@ -13,3 +13,4 @@ import '../tests/verified-actor-resolver.test.mjs';
 import '../tests/node-deletion-route.test.mjs';
 import '../tests/recent-reauth-ledger.test.mjs';
 import '../tests/postgres-reauth-proof-store.test.mjs';
+import '../tests/reauth-proof-cleanup.test.mjs';
