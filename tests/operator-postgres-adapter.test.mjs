@@ -14,7 +14,7 @@ test('non-operator database connection rolls back',async()=>{
  await assert.rejects(run(async()=>{}),/Operator-only/);assert.equal(sql.at(-1),'ROLLBACK');
 });
 test('SQL failure rolls back and never commits',async()=>{
- const sql=[];const client={query:async q=>{sql.push(q);if(q.startsWith('select current_user'))return {rows:[{role:'postgres',auth_uid:null}]};if(q.includes('erase_account'))throw Error('db failure');return {rows:[{report:{}}]};},end:async()=>{}};
+ const sql=[];const client={query:async q=>{sql.push(q);if(q.startsWith('select current_user'))return {rows:[{role:'postgres',login_role:'postgres',auth_uid:null}]};if(q.includes('erase_account'))throw Error('db failure');return {rows:[{report:{}}]};},end:async()=>{}};
  const run=await createOperatorTransaction({connectionString:'postgresql://private-host/db',connect:async()=>client});
  await assert.rejects(run(tx=>tx.erase('00000000-0000-4000-8000-000000000001',[],'ERASE LUMEN 00000000-0000-4000-8000-000000000001')),/db failure/);
  assert.equal(sql.at(-1),'ROLLBACK');assert.equal(sql.includes('COMMIT'),false);
