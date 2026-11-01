@@ -983,6 +983,28 @@ let authSessionPending=true;
 
 // #316: Self-service erasure is deliberately unavailable until the server
 // can guarantee complete deletion of all verified Lumen identities.
+async function clearErasedLumenDeviceData(){
+ // Only Lumen-owned storage: never clear the origin indiscriminately.
+ for(const store of [localStorage,sessionStorage]){
+  for(const key of Object.keys(store)){
+   if(/^lumen/i.test(key) && !/^lumenSupabase/i.test(key))store.removeItem(key);
+  }
+ }
+ // IndexedDB names are browser-dependent. Never delete unknown databases.
+ if(typeof indexedDB.databases==='function'){
+  const databases=await indexedDB.databases();
+  for(const db of databases){
+   if(!/^lumen/i.test(db.name||''))continue;
+   await new Promise((resolve,reject)=>{
+    const request=indexedDB.deleteDatabase(db.name);
+    request.onsuccess=resolve;
+    request.onerror=()=>reject(request.error||new Error('Local database deletion failed'));
+    request.onblocked=()=>reject(new Error('Close other Lumen tabs to erase local data'));
+   });
+  }
+ }
+}
+
 function wireLumenErasureControls(){
  const open=document.getElementById('eraseLumenAccount');
  const panel=document.getElementById('eraseLumenConfirmPanel');
@@ -1008,7 +1030,9 @@ function wireLumenErasureControls(){
    });
    if(!response.ok)throw Error('Suppression non terminée. Aucune confirmation de suppression ne peut être donnée. Contacte le support.');
    await signOut();
-   status.textContent='Suppression serveur confirmée. Les données locales doivent aussi être effacées sur cet appareil.';
+   await clearErasedLumenDeviceData();
+   status.textContent='Données Lumen supprimées sur le serveur et cet appareil.';
+   location.reload();
   }catch(error){status.textContent=error.message||'La suppression a échoué.'}
   finally{execute.disabled=false;refresh()}
  });
