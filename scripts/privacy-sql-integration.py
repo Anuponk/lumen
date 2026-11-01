@@ -38,7 +38,52 @@ begin
  raise notice 'PASS: correct actor and support-case erasure scope; other player retained';
 end $$;
 """
-sql = "begin;\n" + setup + function_sql + tests + "rollback;\n"
+# Exercise the real anti-resurrection trigger against synthetic records.
+fingerprint_start = source.index("create function lumen_privacy.fingerprint(")
+fingerprint_end = source.index("-- Explicit ownership policy.", fingerprint_start)
+guard_start = source.index("create function lumen_privacy.guard_write()")
+guard_end = source.index("-- Called by both the read-only review", guard_start)
+guard_setup = """
+create schema auth;
+create function auth.uid() returns uuid language sql stable as $
+ select nullif(current_setting('request.jwt.claim.sub', true),'')::uuid
+$;
+create table lumen_privacy.erased_identifiers (
+ kind text not null, digest text not null, owner_digest text not null,
+ primary key(kind,digest)
+);
+create trigger lumen_erasure_guard before insert or update
+ on lumen_commands.support_access for each row
+ execute function lumen_privacy.guard_write('','','');
+"""
+guard_tests = """
+insert into lumen_privacy.erased_identifiers(kind,digest,owner_digest)
+values ('user',lumen_privacy.fingerprint('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
+        lumen_privacy.fingerprint('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'));
+do $
+begin
+ begin
+  insert into lumen_commands.support_access values
+   ('66666666-6666-6666-6666-666666666666','other',null,
+    '11111111-1111-1111-1111-111111111111');
+  raise exception 'Guard failed to block erased owner';
+ exception when sqlstate '42501' then
+  if sqlerrm <> 'LUMEN_ACCOUNT_ERASED' then raise; end if;
+ end;
+ insert into lumen_commands.support_access values
+  ('77777777-7777-7777-7777-777777777777','other',null,
+   '22222222-2222-2222-2222-222222222222');
+ if (select count(*) from lumen_commands.support_access
+     where id='77777777-7777-7777-7777-777777777777')<>1 then
+  raise exception 'Unrelated user blocked';
+ end if;
+ raise notice 'PASS: tombstone blocks erased owner, unrelated user remains writable';
+end $;
+"""
+sql = ("begin;\\n" + setup
+       + source[fingerprint_start:fingerprint_end]
+       + function_sql + guard_setup + source[guard_start:guard_end]
+       + tests + guard_tests + "rollback;\\n")
 result = subprocess.run(
     ["psql", "-X", "-v", "ON_ERROR_STOP=1", "-q"],
     input=sql, text=True, capture_output=True, env=os.environ
