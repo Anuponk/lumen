@@ -16,3 +16,4 @@ import '../tests/postgres-reauth-proof-store.test.mjs';
 import '../tests/reauth-proof-cleanup.test.mjs';
 import '../tests/erasure-completion.test.mjs';
 import '../tests/private-erasure-endpoint.test.mjs';
+import '../tests/account-deletion-controller.test.mjs';
