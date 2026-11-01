@@ -980,6 +980,42 @@ function skipTutorialReplay(){
 }
 const {renderTutorial,openTutorial,closeTutorial,setupTutorial}=createTutorial(()=>activeQuestOrdinal()<=QUEST_MILESTONES.skyTourAfter,{tutorialSeenKey:qaActive?"lumenQaTutorialSeen":"lumenTutorialSeen",canSkip:()=>activeQuestOrdinal()===1||tutorialCompletedProof()&&!qaFresh,onSkip:skipTutorialReplay});
 let authSessionPending=true;
+
+// #316: Self-service erasure is deliberately unavailable until the server
+// can guarantee complete deletion of all verified Lumen identities.
+function wireLumenErasureControls(){
+ const open=document.getElementById('eraseLumenAccount');
+ const panel=document.getElementById('eraseLumenConfirmPanel');
+ const input=document.getElementById('eraseLumenConfirmText');
+ const status=document.getElementById('eraseLumenStatus');
+ const execute=document.getElementById('eraseLumenExecute');
+ const cancel=document.getElementById('eraseLumenCancel');
+ if(!open||!panel||!input||!status||!execute||!cancel)return;
+ const refresh=()=>{open.hidden=!lumenUser||!lumenSupabase;};
+ open.addEventListener('click',()=>{panel.hidden=false;input.value='';status.textContent='';input.focus()});
+ cancel.addEventListener('click',()=>{panel.hidden=true;input.value='';status.textContent=''});
+ execute.addEventListener('click',async()=>{
+  if(!lumenUser||!lumenSupabase){status.textContent='Connecte-toi à ton compte Lumen.';return}
+  if(input.value!=='SUPPRIMER'){status.textContent='Saisis exactement SUPPRIMER.';return}
+  execute.disabled=true;status.textContent='Suppression en cours…';
+  try{
+   const {data:sessionData,error:sessionError}=await lumenSupabase.auth.getSession();
+   const token=sessionData?.session?.access_token;
+   if(sessionError||!token)throw Error('Session expirée : reconnecte-toi.');
+   const response=await fetch(LUMEN_SUPABASE_URL+'/functions/v1/lumen-self-erasure',{
+    method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+token,apikey:LUMEN_SUPABASE_KEY},
+    body:JSON.stringify({confirmation:'SUPPRIMER'})
+   });
+   if(!response.ok)throw Error('Suppression non terminée. Aucune confirmation de suppression ne peut être donnée. Contacte le support.');
+   await signOut();
+   status.textContent='Données Lumen supprimées sur le serveur. Vérifie les sauvegardes locales de cet appareil.';
+  }catch(error){status.textContent=error.message||'La suppression a échoué.'}
+  finally{execute.disabled=false;refresh()}
+ });
+ document.addEventListener('click',refresh,true);
+ refresh();
+}
+
 let lumenSupabase=null,lumenUser=null,lumenCloudReady=false,lumenEntitlements=[],lumenCapabilities=[];
 // Use the SDK's existing persistent store directly: its default write probe can
 // reject a full but readable store and silently hide a valid saved session.
@@ -4015,6 +4051,7 @@ if("serviceWorker" in navigator){
 }
 
 // Preserve the public browser testing entry points.
+wireLumenErasureControls();
 window.runHintTests=runHintTests;
 window.lumenDiagnostics=createDiagnostics(testModel,{init,runHintTests,setSoundEnabled,closeTutorial,hideSuccess,render});
 Object.assign(window.lumenDiagnostics,{skySnapshot:()=>skyNavigation.snapshot(),setSkyCatalogue:(model,{reset=true}={})=>{mapCatalogueOverride=model;if(reset)skyNavigation.open();else skyNavigation.render()},refreshSky:()=>skyNavigation.render()});
