@@ -99,4 +99,12 @@ try{
  const issueRegressions=await verifySkyIssueRegressions({send,evaluate},url);
  const celestial=await verifyCelestialUX({send,evaluate},url);
  assert.deepEqual(errors,[]);const report={results,astronomy,issueRegressions,celestial,uncaughtErrors:errors};if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));console.log(JSON.stringify(report));
-}finally{await send('Browser.close')}
+}finally{
+ // Chrome can terminate its CDP transport before acknowledging Browser.close.
+ // The test assertions have already run; an absent shutdown ACK is not a test failure.
+ try { await send('Browser.close'); }
+ catch(error) {
+  if (!/^CDP timeout after 15s: Browser\.close$/.test(error.message)) throw error;
+  console.warn('Chrome did not acknowledge Browser.close; continuing runner teardown.');
+ }
+}
