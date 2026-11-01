@@ -76,7 +76,7 @@ begin
   if rel='diagnostic_budgets' then return 'subject=$1::text';end if;
   if rel='support_captures' then return 'case_id in(select id from lumen_commands.support_cases where user_id=$1)';end if;
   if rel='support_contents' then return 'capture_id in(select id from lumen_commands.support_captures where case_id in(select id from lumen_commands.support_cases where user_id=$1))';end if;
-  if rel='support_access' then return 'actor=$1 or privacy_owner_id=$1 or case_id in(select id from lumen_commands.support_cases where user_id=$1)';end if;
+  if rel='support_access' then return 'actor::text=$1::text or privacy_owner_id=$1 or case_id in(select id from lumen_commands.support_cases where user_id=$1)';end if;
  end if;
  return concat_ws(' or ',case when uid_col is not null then format('%I=$1',uid_col) end,
   case when actor_col is not null then format('%I::text=any($2)',actor_col) end,
