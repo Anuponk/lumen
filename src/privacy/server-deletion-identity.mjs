@@ -10,7 +10,7 @@ export function createVerifiedDeletionIdentity({getUserFromToken,lookupSession,l
     const user=await getUserFromToken(token); // Supabase Auth getUser(token), not getSession/JWT decode
     if (!user?.id) throw Error('Unauthenticated');
     const session=await lookupSession(token,user.id); // must check auth.sessions, expiry and revocation
-    if (!session||session.user_id!==user.id||session.revoked===true||
+    if (!session||typeof session.id!=='string'||!session.id||session.user_id!==user.id||session.revoked===true||
       !Number.isFinite(session.expires_at)||session.expires_at<=now()) throw Error('Inactive session');
     // expires_at is deliberately milliseconds since epoch in this adapter.
     // Supabase Auth session.expires_at is usually seconds; the trusted adapter
