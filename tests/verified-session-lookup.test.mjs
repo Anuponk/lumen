@@ -17,3 +17,10 @@ test('rejects malformed identifiers before query',async()=>{
  const lookup=createVerifiedSessionLookup({query:async()=>{throw Error('query should not execute')}});
  await assert.rejects(lookup({userId:uid,sessionId:'forged'}),/Verified UUIDs/);
 });
+
+test('nullable Supabase not_after falls back only to signed JWT expiry',async()=>{
+ const lookup=createVerifiedSessionLookup({now:()=>now,query:async()=>({rows:[{id:sid,user_id:uid,expires_at:null}]})});
+ const session=await lookup({userId:uid,sessionId:sid,verifiedJwtExpiryMs:now+60000});
+ assert.equal(session.expires_at,now+60000);
+ assert.equal(await lookup({userId:uid,sessionId:sid,verifiedJwtExpiryMs:now-1}),null);
+});
