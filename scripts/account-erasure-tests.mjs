@@ -11,3 +11,4 @@ import '../tests/verified-jwt-claims.test.mjs';
 import '../tests/account-erasure-client.test.mjs';
 import '../tests/verified-actor-resolver.test.mjs';
 import '../tests/node-deletion-route.test.mjs';
+import '../tests/recent-reauth-ledger.test.mjs';
