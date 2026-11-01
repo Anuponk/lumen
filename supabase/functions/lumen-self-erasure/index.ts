@@ -2,7 +2,18 @@
 // The database derives the user from the verified JWT, never from request JSON.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 Deno.serve(async (request) => {
-  const headers = { 'content-type': 'application/json', 'cache-control': 'no-store' };
+  const headers = {
+    'content-type': 'application/json',
+    'cache-control': 'no-store',
+    'access-control-allow-origin': 'https://lumen.nopuna.fr',
+    'access-control-allow-headers': 'authorization, apikey, content-type, x-client-info',
+    'access-control-allow-methods': 'POST, OPTIONS',
+    'vary': 'Origin',
+  };
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
+  const origin = request.headers.get('origin');
+  if (origin && origin !== 'https://lumen.nopuna.fr')
+    return new Response(JSON.stringify({ error: 'origin_not_allowed' }), { status: 403, headers });
   if (request.method !== 'POST') return new Response(JSON.stringify({ error: 'method_not_allowed' }), { status: 405, headers });
   const token = request.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1];
   if (!token) return new Response(JSON.stringify({ error: 'authentication_required' }), { status: 401, headers });
