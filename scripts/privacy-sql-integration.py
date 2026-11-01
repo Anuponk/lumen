@@ -45,9 +45,9 @@ guard_start = source.index("create function lumen_privacy.guard_write()")
 guard_end = source.index("-- Called by both the read-only review", guard_start)
 guard_setup = """
 create schema auth;
-create function auth.uid() returns uuid language sql stable as $
+create function auth.uid() returns uuid language sql stable as $body$
  select nullif(current_setting('request.jwt.claim.sub', true),'')::uuid
-$;
+$body$;
 create table lumen_privacy.erased_identifiers (
  kind text not null, digest text not null, owner_digest text not null,
  primary key(kind,digest)
@@ -60,7 +60,7 @@ guard_tests = """
 insert into lumen_privacy.erased_identifiers(kind,digest,owner_digest)
 values ('user',lumen_privacy.fingerprint('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
         lumen_privacy.fingerprint('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'));
-do $
+do $test$
 begin
  begin
   insert into lumen_commands.support_access values
@@ -78,7 +78,7 @@ begin
   raise exception 'Unrelated user blocked';
  end if;
  raise notice 'PASS: tombstone blocks erased owner, unrelated user remains writable';
-end $;
+end $test$;
 """
 sql = ("begin;\n" + setup
        + source[fingerprint_start:fingerprint_end]
