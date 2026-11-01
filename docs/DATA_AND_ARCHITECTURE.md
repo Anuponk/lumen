@@ -1419,3 +1419,15 @@ scope remain unchanged. The `Privacy SQL integration` GitHub Actions workflow
 runs a disposable PostgreSQL 17 service; it does not connect to production or
 create a billable Supabase project. A green scope test does not establish that
 full account erasure, anti-resurrection, or SoldeZen isolation is validated.
+
+
+## Privacy #316: private reauthentication proof storage (2026-11-01)
+
+The draft `20261101131100_lumen_private_reauth_proofs.sql` adds an operator-only
+`lumen_privacy.reauth_proofs` table keyed by user and session, containing a
+short-lived server-verified timestamp. Browser, `authenticated`, `anon` and
+`service_role` have no table access. The Node adapter uses parameterized queries;
+no client-provided timestamp is trusted. This migration is committed to PR #609
+but has **not been applied** to the shared production database. A real provider
+challenge verifier, private operator host and cleanup/retention controls are
+still prerequisites; these tests do not validate live account deletion.
