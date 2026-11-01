@@ -45,6 +45,11 @@ guard_start = source.index("create function lumen_privacy.guard_write()")
 guard_end = source.index("-- Called by both the read-only review", guard_start)
 guard_setup = """
 create schema auth;
+create table auth.users (id uuid primary key);
+insert into auth.users values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
+create schema soldezen;
+create table soldezen.accounts (user_id uuid primary key, balance integer not null);
+insert into soldezen.accounts values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',42),('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',17);
 create function auth.uid() returns uuid language sql stable as $body$
  select nullif(current_setting('request.jwt.claim.sub', true),'')::uuid
 $body$;
@@ -74,7 +79,22 @@ begin
      where id='77777777-7777-7777-7777-777777777777')<>1 then
   raise exception 'Unrelated user blocked';
  end if;
- raise notice 'PASS: tombstone blocks erased owner, unrelated user remains writable';
+ begin
+  update lumen_commands.support_access set actor='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+   where id='77777777-7777-7777-7777-777777777777';
+  raise exception 'Guard failed to block reassignment to erased actor';
+ exception when sqlstate '42501' then
+  if sqlerrm <> 'LUMEN_ACCOUNT_ERASED' then raise; end if;
+ end;
+ if (select actor from lumen_commands.support_access
+     where id='77777777-7777-7777-7777-777777777777') <> 'other' then
+  raise exception 'Failed update mutated unrelated row';
+ end if;
+ if (select count(*) from auth.users) <> 2 or
+    (select sum(balance) from soldezen.accounts) <> 59 then
+  raise exception 'Shared auth or unrelated application data changed';
+ end if;
+ raise notice 'PASS: tombstone blocks erased owner and update; shared auth and other application unchanged';
 end $test$;
 """
 sql = ("begin;\n" + setup
