@@ -1008,11 +1008,12 @@ function wireLumenErasureControls(){
    });
    if(!response.ok)throw Error('Suppression non terminée. Aucune confirmation de suppression ne peut être donnée. Contacte le support.');
    await signOut();
-   status.textContent='Données Lumen supprimées sur le serveur. Vérifie les sauvegardes locales de cet appareil.';
+   status.textContent='Suppression serveur confirmée. Les données locales doivent aussi être effacées sur cet appareil.';
   }catch(error){status.textContent=error.message||'La suppression a échoué.'}
   finally{execute.disabled=false;refresh()}
  });
- document.addEventListener('click',refresh,true);
+ const authObserver=new MutationObserver(refresh);
+ authObserver.observe(document.getElementById('mobileAuthStatus')||open,{childList:true,subtree:true,characterData:true});
  refresh();
 }
 
