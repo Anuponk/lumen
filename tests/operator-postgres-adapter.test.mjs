@@ -3,7 +3,7 @@ import {test} from 'node:test';
 import {createOperatorTransaction} from '../src/privacy/operator-postgres-adapter.mjs';
 test('owner-only transaction commits after reviewed erasure',async()=>{
  const sql=[];
- const client={query:async(q,args)=>{sql.push([q,args]);if(q.startsWith('select current_user'))return {rows:[{role:'postgres',auth_uid:null}]};return {rows:[{report:{ok:true}}]};},end:async()=>{}};
+ const client={query:async(q,args)=>{sql.push([q,args]);if(q.startsWith('select current_user'))return {rows:[{role:'postgres',login_role:'postgres',auth_uid:null}]};return {rows:[{report:{ok:true}}]};},end:async()=>{}};
  const run=await createOperatorTransaction({connectionString:'postgresql://private-host/db',connect:async()=>client});
  const result=await run(async tx=>{await tx.review('00000000-0000-4000-8000-000000000001',[]);return tx.erase('00000000-0000-4000-8000-000000000001',[],'ERASE LUMEN 00000000-0000-4000-8000-000000000001')});
  assert.deepEqual(result,{ok:true});assert.equal(sql.at(-1)[0],'COMMIT');
