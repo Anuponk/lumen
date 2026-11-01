@@ -1595,3 +1595,16 @@ constellation reveal, confirmed star, newly earned badges, no duplicate replay
 star, no difficulty survey, reachable next action and reload-safe badge state.
 `astronomical-reference-svg-tests.mjs` checks arrived real points/links and
 absence of arrival animation when no star was gained. No live account writes.
+
+
+## Privacy #316: PostgreSQL integration workflow
+
+`.github/workflows/privacy-sql-integration.yml` starts a disposable PostgreSQL
+17 service on pull requests. `python3 scripts/privacy-sql-integration.py`
+extracts the **actual** `lumen_privacy.scope_predicate` migration function,
+executes it in PostgreSQL with synthetic support cases and access rows, and
+asserts that the target user's actor and case-linked records are selected while
+another user's records are excluded. All changes are rolled back. No
+production credentials, Supabase project, or live player records are used.
+This is a **scope regression only**; end-to-end erasure, trigger barriers,
+retention, rights export and production compatibility still need testing.
