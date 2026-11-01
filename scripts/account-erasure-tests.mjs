@@ -9,3 +9,4 @@ import '../tests/supabase-token-verifier.test.mjs';
 import '../tests/verified-session-lookup.test.mjs';
 import '../tests/verified-jwt-claims.test.mjs';
 import '../tests/account-erasure-client.test.mjs';
+import '../tests/verified-actor-resolver.test.mjs';
