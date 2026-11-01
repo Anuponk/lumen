@@ -24,7 +24,7 @@ export function createNodeDeletionRoute({handle,maxBodyBytes=1024}) {
         body+=chunk.toString('utf8');
       }
       const response=await handle({method:req.method,headers:req.headers,body});
-      res.writeHead(response.status,{...response.headers,'x-content-type-options':'nosniff','referrer-policy':'no-referrer'});
+      res.writeHead(response.status,{'cache-control':'no-store',...response.headers,'x-content-type-options':'nosniff','referrer-policy':'no-referrer'});
       res.end(response.body);
     }catch {
       if(!res.headersSent)reply(503,{error:'temporarily_unavailable'});
