@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { validateDeletionAuthorization, validateDeletionConfirmation, deletionTarget } from '../src/privacy/deletion-authorization.mjs';
-const user = { id: '4df5425e-ad4a-41a8-912d-4db8eff261a8' };
+const user = { id: '00000000-0000-4000-8000-000000000001' };
 const now = 1700000000000;
 const session = { user_id: user.id, expires_at: now + 60000, revoked: false };
 test('valid recent server identity resolves own account only', () => {
