@@ -19,14 +19,17 @@ Deno.serve(async (request) => {
   if (!token) return new Response(JSON.stringify({ error: 'authentication_required' }), { status: 401, headers });
   const url = Deno.env.get('SUPABASE_URL');
   const key = Deno.env.get('SUPABASE_ANON_KEY');
-  if (!url || !key) return new Response(JSON.stringify({ error: 'unavailable' }), { status: 503, headers });
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !key || !serviceKey) return new Response(JSON.stringify({ error: 'unavailable' }), { status: 503, headers });
   try {
     const body = await request.json();
     if (body?.confirmation !== 'SUPPRIMER') return new Response(JSON.stringify({ error: 'confirmation_required' }), { status: 400, headers });
     const client = createClient(url, key, { global: { headers: { Authorization: 'Bearer ' + token } }, auth: { persistSession: false, autoRefreshToken: false } });
     const { data: { user }, error: authError } = await client.auth.getUser(token);
     if (authError || !user) return new Response(JSON.stringify({ error: 'invalid_session' }), { status: 401, headers });
-    const { data, error } = await client.rpc('lumen_self_erase', { p_confirmation: 'SUPPRIMER' });
+    // Privileged credentials remain server-side and are never sent to the browser.
+    const operator = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { data, error } = await operator.rpc('lumen_self_erase', { p_user_id: user.id, p_confirmation: 'SUPPRIMER' });
     if (error) {
       console.error('Lumen erasure failed:', error.code);
       return new Response(JSON.stringify({ error: 'erasure_not_completed' }), { status: 409, headers });
