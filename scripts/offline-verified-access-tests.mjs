@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {catalogueQuestDecision,offlineVerifiedAccess} from '../src/campaign/catalogue-access.js';
 
@@ -17,4 +18,13 @@ test('unverified, signed-out or online sessions cannot bypass hydration',()=>{
 });
 test('verified offline access does not unlock a quest before its prerequisite',()=>{
  assert.equal(catalogueQuestDecision(quests[1],{},quests,{...context,offline:true,verifiedSession:true}).status,'prerequisite');
+});
+
+test('offline victories must enqueue before cloud readiness and avoid network calls',()=>{
+ const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+ const canonical=source.slice(source.indexOf('async function celebrateCanonicalSuccess()'),source.indexOf('const legacyVictoryOutbox='));
+ const legacy=source.slice(source.indexOf('async function captureLegacyCommandVictory()'),source.indexOf('async function celebrateSuccess()'));
+ assert(canonical.indexOf('canonicalVictoryOutbox.enqueue(')<canonical.indexOf('if(navigator.onLine===false)throw Error('));
+ assert(legacy.includes('if(!cloudProfileReady||navigator.onLine===false)'));
+ assert(legacy.indexOf('legacyVictoryOutbox.enqueue(')<legacy.indexOf("if(!cloudProfileReady||canonicalOutboxRetryInFlight"));
 });
