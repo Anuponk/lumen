@@ -66,3 +66,51 @@ test('a cold offline public navigation restores the shell without caching auth o
  assert.equal((await f.fetchAsset('/',{mode:'navigate'})).status,503,'HTTP refusals are not disguised as offline success');
  assert.equal(f.stores.get(currentCache).size,1);
 });
+
+test('installation fetches transitive quest JSON before activating, including never-opened quests',async()=>{
+ const f=fixture();
+ f.setNetwork=(f.setNetwork);
+ f.setNetwork((path)=>{
+  const pathname=new URL(path,'https://lumen.test').pathname;
+  const files={
+   '/src/main.js':"import './ui/game-screen.js';",
+   '/src/ui/game-screen.js':"import {puzzles} from '../campaign/quests.js';",
+   '/src/campaign/quests.js':"import puzzles from '../../content/quests.json' with {type:'json'}; export {puzzles};",
+   '/content/quests.json':'{"lockedQuest":{"reg":[[0]],"sol":[0]}}'
+  };
+  return new Response(files[pathname]??'asset',{status:200});
+ });
+ let installation;
+ f.handlers.install({waitUntil:p=>installation=p});
+ await installation;
+ assert(f.stores.get(currentCache).has('/content/quests.json'));
+ assert(f.stores.get(currentCache).has('/src/campaign/quests.js'));
+ f.setNetwork(()=>{throw Error('offline')});
+ assert.equal((await f.fetchAsset('/content/quests.json')).status,200);
+});
+test('incomplete transitive dependency rejects service worker installation',async()=>{
+ const f=fixture();
+ f.setNetwork(path=>{
+  const pathname=new URL(path,'https://lumen.test').pathname;
+  if(pathname==='/src/main.js')return new Response("import './campaign/missing.js';");
+  if(pathname==='/src/campaign/missing.js')return new Response('missing',{status:404});
+  return new Response('asset');
+ });
+ let installation;
+ f.handlers.install({waitUntil:p=>installation=p});
+ await assert.rejects(installation,/Offline shell unavailable/);
+});
+test('cyclic module imports are only fetched once during installation',async()=>{
+ const f=fixture();
+ f.setNetwork(path=>{
+  const pathname=new URL(path,'https://lumen.test').pathname;
+  if(pathname==='/src/main.js')return new Response("import './campaign/a.js';");
+  if(pathname==='/src/campaign/a.js')return new Response("import './b.js';");
+  if(pathname==='/src/campaign/b.js')return new Response("import './a.js';");
+  return new Response('asset');
+ });
+ let installation;
+ f.handlers.install({waitUntil:p=>installation=p});
+ await installation;
+ assert.equal(f.calls.filter(([path])=>new URL(path,'https://lumen.test').pathname==='/src/campaign/a.js').length,1);
+});
