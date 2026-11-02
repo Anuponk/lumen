@@ -3458,17 +3458,18 @@ ac.onchange=()=>{
  if(!ac.checked&&!lesson)maybeShowManualCrossTip();hi=null;render();
 };
 function advanceToNextPuzzle(){
+ const locallyNavigable=navigationProgress();
  const played=activeQuest(),following=canonicalQuestByOrdinal(played.ordinal+1);
- if(questIsCompleted(lumenProgress,played.id)&&following?.ordinal>QUEST_MILESTONES.discovery&&accountRequired()&&maybeOfferAccount()){
+ if(questIsCompleted(locallyNavigable,played.id)&&following?.ordinal>QUEST_MILESTONES.discovery&&accountRequired()&&maybeOfferAccount()){
   accountOfferResumeNext=true;hideSuccess();return;
  }
  if(canonicalActiveQuest){
-  if(!questIsCompleted(lumenProgress,canonicalActiveQuest.id))return;
+  if(!questIsCompleted(locallyNavigable,canonicalActiveQuest.id))return;
   const next=canonicalQuestByOrdinal(canonicalActiveQuest.ordinal+1);
   if(next?.legacyIndex===null&&canonicalQuestAvailable(next)){hideSuccess();startCanonicalQuest(next);return}
   canonicalActiveQuest=null;hideSuccess();
   if(next&&next.legacyIndex!==null&&questIsAccessible(next.legacyIndex)){
-   levelIndex=next.legacyIndex;replayMode=!!lumenProgress.solved[levelIndex];
+   levelIndex=next.legacyIndex;replayMode=!!locallyNavigable.solved[levelIndex];
    for(const id of ["undo","hint","autoCross"])document.getElementById(id).disabled=false;
    loadPuzzle();refreshJourney();return;
   }
@@ -3476,12 +3477,12 @@ function advanceToNextPuzzle(){
  }
  const canonicalPrevious=canonicalQuestForLegacy(levelIndex);
  const canonicalFollowing=canonicalPrevious&&canonicalQuestByOrdinal(canonicalPrevious.ordinal+1);
- if(lumenProgress.solved[levelIndex]&&canonicalFollowing?.legacyIndex===null&&!historicalContinuationAllowed(levelIndex+1)){
+ if(locallyNavigable.solved[levelIndex]&&canonicalFollowing?.legacyIndex===null&&!historicalContinuationAllowed(levelIndex+1)){
   if(canonicalQuestAvailable(canonicalFollowing)){hideSuccess();startCanonicalQuest(canonicalFollowing);return}
   // Do not skip an inserted quest just because the legacy numeric index continues.
   hideSuccess();openJourneyMap();return;
  }
- if(!lumenProgress.solved[levelIndex])return;
+ if(!locallyNavigable.solved[levelIndex])return;
  // Canonical order, not consecutive legacy storage IDs, controls unlocking.
  if(canonicalFollowing&&canonicalFollowing.legacyIndex!==null&&canonicalFollowing.legacyIndex!==levelIndex+1){hideSuccess();openJourneyMap();return}
  // "Quête suivante" is relative to the quest just played, including replays.
