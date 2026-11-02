@@ -629,7 +629,7 @@ const persistenceModel={
 get lumenSupabase(){return lumenSupabase},set lumenSupabase(value){if(lumenSupabase!==value){cloudHydrationGeneration++;canonicalRecoveryContext=null;canonicalRecovery.cancel()}lumenSupabase=value},
 get lumenEntitlements(){return lumenEntitlements},set lumenEntitlements(value){lumenEntitlements=Array.isArray(value)?value:[]},
 get lumenCapabilities(){return lumenCapabilities},set lumenCapabilities(value){lumenCapabilities=Array.isArray(value)?value:[]},
-get lumenUser(){return lumenUser},set lumenUser(value){if(lumenUser?.id!==value?.id){cloudHydrationGeneration++;canonicalRecovery.cancel();canonicalRecoveryContext=null;canonicalOutboxNotice=null;verifiedOfflineOwnerId=null;cloudProfileReady=false;cloudProfileBaseline=null;cloudProfileFailure=null;lumenNickname=""}lumenUser=value},
+get lumenUser(){return lumenUser},set lumenUser(value){if(lumenUser?.id!==value?.id){cloudHydrationGeneration++;canonicalRecovery.cancel();canonicalRecoveryContext=null;canonicalOutboxNotice=null;verifiedOfflineOwnerId=null;if(value===null)clearVerifiedOfflineOwner(localStorage);cloudProfileReady=false;cloudProfileBaseline=null;cloudProfileFailure=null;lumenNickname=""}lumenUser=value},
 get lumenCloudReady(){return lumenCloudReady},set lumenCloudReady(value){lumenCloudReady=value},
 get lumenNickname(){return lumenNickname},set lumenNickname(value){lumenNickname=value},
 get lumenProgress(){return lumenProgress},set lumenProgress(value){lumenProgress=value},
@@ -922,6 +922,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   cloudProfileFailure=null;
   cloudProfileReady=true;
   verifiedOfflineOwnerId=lumenUser?.id??null;
+  rememberVerifiedOfflineOwner(localStorage,verifiedOfflineOwnerId);
   acquisitionRecoveryAttempts=0;
   // Resume the verified catalogue frontier after ownership handoff or from an
   // idle campaign selection. Started runs and replays retain their identity.
@@ -1776,7 +1777,7 @@ function historicalContinuationAllowed(index){
 function offlineQuestAccessContext(){
  // Memory-only proof: never trust an old account marker from localStorage.
  // The current page must have successfully verified this exact owner.
- return {offline:navigator.onLine===false,verifiedSession:!!lumenUser&&verifiedOfflineOwnerId===lumenUser.id};
+ return {offline:navigator.onLine===false,verifiedSession:!!lumenUser&&(verifiedOfflineOwnerId===lumenUser.id||isVerifiedOfflineOwner(localStorage,lumenUser.id,{offline:navigator.onLine===false}))};
 }
 function questIsAccessible(index){
  return canonicalCampaignQuestDecision(canonicalQuestForLegacy(index),navigationProgress(),{
