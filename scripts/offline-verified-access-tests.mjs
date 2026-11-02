@@ -24,7 +24,7 @@ test('offline victories must enqueue before cloud readiness and avoid network ca
  const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
  const canonical=source.slice(source.indexOf('async function celebrateCanonicalSuccess()'),source.indexOf('const legacyVictoryOutbox='));
  const legacy=source.slice(source.indexOf('async function captureLegacyCommandVictory()'),source.indexOf('async function celebrateSuccess()'));
- assert(canonical.indexOf('canonicalVictoryOutbox.enqueue(')<canonical.indexOf('if(navigator.onLine===false)throw Error('));
- assert(legacy.includes('if(!cloudProfileReady||navigator.onLine===false)'));
+ assert(canonical.indexOf('canonicalVictoryOutbox.enqueue(')<canonical.indexOf('if(typeof navigator!=="undefined"&&navigator.onLine===false)throw Error('));
+ assert(legacy.includes('if(!cloudProfileReady||(typeof navigator!=="undefined"&&navigator.onLine===false))'));
  assert(legacy.indexOf('legacyVictoryOutbox.enqueue(')<legacy.indexOf("if(!cloudProfileReady||canonicalOutboxRetryInFlight"));
 });
