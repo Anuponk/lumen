@@ -23,7 +23,9 @@ for(const asset of required){
  assert(fs.existsSync(asset.slice(1)||'index.html'),'Offline entrypoint missing from repository: '+asset);
 }
 assert(sw.includes('if(!response.ok)throw new Error('),'Mandatory shell HTTP failures must fail install');
-assert(sw.includes('await Promise.all(SHELL.map('),'All mandatory assets must be awaited');
+assert(sw.includes('await precacheCompleteShell(cache);'),'All mandatory and transitive assets must be awaited');
+assert(sw.includes('staticDependencies(source,'),'Transitive static module dependencies must be discovered');
+assert(sw.includes('visited.has(path)'),'Cyclic imports must be handled');
 assert(sw.includes("url.search===''"),'Auth or query-bearing navigation must not be cached as public shell');
 assert(sw.includes("url.pathname.startsWith('/src/')"));
 assert(sw.includes("url.pathname.startsWith('/content/')"));
