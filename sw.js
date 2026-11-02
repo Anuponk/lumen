@@ -1,5 +1,31 @@
-const CACHE="lumen-assets-v12";
+const CACHE="lumen-assets-v13";
 const SHELL=["/manifest.webmanifest","/icon.svg","/icon-maskable.svg","/","/src/main.js","/src/ui/game-screen.js","/src/ui/styles.css","/src/ui/first-welcome.css","/src/ui/build-version.js","/src/vendor/supabase-2.118.0.js","/src/vendor/qrcode-1.0.0.js"];
+// Crawl the static ES-module graph before activation, including JSON imports.
+// Only same-origin public application resources are eligible for this cache.
+function staticDependencies(source,base){
+ const found=new Set();
+ const patterns=[/(?:import|export)\s+(?:[^'";]*?\s+from\s*)?["']([^"']+)["']/g,/\bimport\s*\(\s*["']([^"']+)["']\s*\)/g,/@import\s+(?:url\()?["']([^"']+)["']/g];
+ for(const pattern of patterns){for(const match of source.matchAll(pattern)){
+  try{const url=new URL(match[1],base);if(url.origin===self.location.origin&&(/^\/src\//.test(url.pathname)||/^\/content\//.test(url.pathname))&&!url.search)found.add(url.pathname)}catch{}
+ }}
+ return [...found];
+}
+async function precacheCompleteShell(cache){
+ const pending=[...SHELL],visited=new Set();
+ while(pending.length){
+  const path=pending.shift();
+  if(visited.has(path))continue;
+  visited.add(path);
+  const response=await fetch(path,{cache:"no-store"});
+  if(!response.ok)throw new Error("Offline shell unavailable: "+path+" ("+response.status+")");
+  const contentType=response.headers.get("Content-Type")||"";
+  if(/\.(?:js|mjs|css)$/.test(path)&&visited.size<2000){
+   const source=await response.clone().text();
+   pending.push(...staticDependencies(source,new URL(path,self.location.origin)));
+  }
+  await cache.put(path,response);
+ }
+}
 
 self.addEventListener("install",e=>{
  self.skipWaiting();
@@ -7,11 +33,7 @@ self.addEventListener("install",e=>{
   // The worker must not activate with an incomplete mandatory shell.
   // Keep the previous cache available if a required asset cannot be fetched.
   const cache=await caches.open(CACHE);
-  await Promise.all(SHELL.map(async path=>{
-   const response=await fetch(path,{cache:"no-store"});
-   if(!response.ok)throw new Error("Offline shell unavailable: "+path+" ("+response.status+")");
-   await cache.put(path,response);
-  }));
+  await precacheCompleteShell(cache);
  })());
 });
 
