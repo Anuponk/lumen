@@ -52,6 +52,7 @@ test('public navigation bypasses HTTP cache and activation only retires old Lume
  const f=fixture();await f.fetchAsset('/',{mode:'navigate'});assert.equal(f.calls[0][1].cache,'no-store');assert.equal(f.stores.size,1);
  assert(f.stores.get(currentCache).has('https://lumen.test/'));
  for(const key of ['lumen-assets-v9',currentCache,'another-feature'])f.stores.set(key,new Map());
+ f.stores.get(currentCache).set('https://lumen.test/__lumen_offline_ready_v13__',new Response('ready'));
  let activation;f.handlers.activate({waitUntil:p=>activation=p});await activation;
  assert.deepEqual([...f.stores.keys()],[currentCache,'another-feature']);
 });
