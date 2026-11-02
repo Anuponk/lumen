@@ -9,7 +9,7 @@ function fixture(){
  const handlers={},stores=new Map(),calls=[];let network=()=>new Response('fresh',{headers:{'Cache-Control':'max-age=3600'}});
  const caches={keys:async()=>[...stores.keys()],delete:async key=>stores.delete(key),open:async key=>{
   if(!stores.has(key))stores.set(key,new Map());const values=stores.get(key);
-  return {put:async(req,res)=>values.set(req.url,res),match:async req=>values.get(req.url)?.clone(),addAll:async()=>{}};
+  return {put:async(req,res)=>values.set(typeof req==='string'?new URL(req,'https://lumen.test').href:req.url,res),match:async req=>values.get(typeof req==='string'?new URL(req,'https://lumen.test').href:req.url)?.clone(),addAll:async()=>{}};
  }};
  const self={location:{origin:'https://lumen.test'},addEventListener:(name,fn)=>handlers[name]=fn,clients:{claim:async()=>{}},skipWaiting:()=>{}};
  vm.runInNewContext(source,{self,caches,URL,Response,Headers,fetch:async(...args)=>{calls.push(args);return network(...args)}});
@@ -69,7 +69,6 @@ test('a cold offline public navigation restores the shell without caching auth o
 
 test('installation fetches transitive quest JSON before activating, including never-opened quests',async()=>{
  const f=fixture();
- f.setNetwork=(f.setNetwork);
  f.setNetwork((path)=>{
   const pathname=new URL(path,'https://lumen.test').pathname;
   const files={
@@ -83,8 +82,8 @@ test('installation fetches transitive quest JSON before activating, including ne
  let installation;
  f.handlers.install({waitUntil:p=>installation=p});
  await installation;
- assert(f.stores.get(currentCache).has('/content/quests.json'));
- assert(f.stores.get(currentCache).has('/src/campaign/quests.js'));
+ assert(f.stores.get(currentCache).has('https://lumen.test/content/quests.json'));
+ assert(f.stores.get(currentCache).has('https://lumen.test/src/campaign/quests.js'));
  f.setNetwork(()=>{throw Error('offline')});
  assert.equal((await f.fetchAsset('/content/quests.json')).status,200);
 });
