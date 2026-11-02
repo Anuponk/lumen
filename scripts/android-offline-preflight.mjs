@@ -24,6 +24,8 @@ for(const asset of required){
 }
 assert(sw.includes('if(!response.ok)throw new Error('),'Mandatory shell HTTP failures must fail install');
 assert(sw.includes('await precacheCompleteShell(cache);'),'All mandatory and transitive assets must be awaited');
+assert(sw.indexOf('await precacheCompleteShell(cache);')<sw.indexOf('await self.skipWaiting();'),'Worker must only skip waiting after full cache installation');
+assert(sw.includes('if(visited.size>2000)throw'),'Unexpectedly large dependency graphs must abort installation');
 assert(sw.includes('staticDependencies(source,'),'Transitive static module dependencies must be discovered');
 assert(sw.includes('visited.has(path)'),'Cyclic imports must be handled');
 assert(sw.includes("url.search===''"),'Auth or query-bearing navigation must not be cached as public shell');
