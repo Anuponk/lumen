@@ -922,7 +922,6 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   cloudProfileFailure=null;
   cloudProfileReady=true;
   verifiedOfflineOwnerId=lumenUser?.id??null;
-  rememberVerifiedOfflineOwner(localStorage,verifiedOfflineOwnerId);
   acquisitionRecoveryAttempts=0;
   // Resume the verified catalogue frontier after ownership handoff or from an
   // idle campaign selection. Started runs and replays retain their identity.
@@ -1775,8 +1774,8 @@ function historicalContinuationAllowed(index){
  return !!quest&&!lumenProgress.solved?.[index]&&!!first&&quest.ordinal>first.ordinal&&questIsAccessible(index);
 }
 function offlineQuestAccessContext(){
- // Memory-only proof: never trust an old account marker from localStorage.
- // The current page must have successfully verified this exact owner.
+ // Persist proof only after this page completed verified cloud hydration.
+ if(navigator.onLine!==false&&cloudProfileReady&&verifiedOfflineOwnerId===lumenUser?.id)rememberVerifiedOfflineOwner(localStorage,verifiedOfflineOwnerId);
  return {offline:navigator.onLine===false,verifiedSession:!!lumenUser&&(verifiedOfflineOwnerId===lumenUser.id||isVerifiedOfflineOwner(localStorage,lumenUser.id,{offline:navigator.onLine===false}))};
 }
 function questIsAccessible(index){
