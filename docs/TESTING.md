@@ -1632,3 +1632,14 @@ Release acceptance still requires Android installed-PWA testing: warm a playable
 quest online, close the app, switch to airplane mode, reopen and play that quest,
 then reconnect and confirm the pending attempt synchronizes once without lost
 progress. Do not cache OAuth callbacks, private responses or cloud APIs.
+
+## Offline full catalogue foundation (#597)
+
+The service worker v13 now follows same-origin static ES imports/exports and CSS
+imports from the mandatory shell entrypoints, including the imported catalogue
+JSON assets. Installation must finish fetching these dependencies before the
+new worker can activate. The static preflight checks this contract. This does
+**not** yet validate offline progression, complete runtime/dynamic imports,
+quota/eviction handling, guest registration boundary, or reconciliation after
+reconnection. Do not declare #597 complete or release this without a real
+Android offline multi-quest test and cloud persistence regression checks.
