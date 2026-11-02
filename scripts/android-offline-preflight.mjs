@@ -31,3 +31,5 @@ assert(sw.includes("url.pathname.startsWith('/src/')"));
 assert(sw.includes("url.pathname.startsWith('/content/')"));
 assert(sw.includes('url.origin!==self.location.origin'),'Never intercept third-party APIs');
 console.log('Android/PWA static preflight OK. Offline gameplay still requires real device validation.');
+
+// Budget report is informational; a separate test checks the complete asset graph.
