@@ -18,8 +18,8 @@ async function precacheCompleteShell(cache){
   visited.add(path);
   const response=await fetch(path,{cache:"no-store"});
   if(!response.ok)throw new Error("Offline shell unavailable: "+path+" ("+response.status+")");
-  const contentType=response.headers.get("Content-Type")||"";
-  if(/\.(?:js|mjs|css)$/.test(path)&&visited.size<2000){
+  if(visited.size>2000)throw new Error("Offline asset graph exceeds safety limit");
+  if(/\.(?:js|mjs|css)$/.test(path)){
    const source=await response.clone().text();
    pending.push(...staticDependencies(source,new URL(path,self.location.origin)));
   }
@@ -28,12 +28,12 @@ async function precacheCompleteShell(cache){
 }
 
 self.addEventListener("install",e=>{
- self.skipWaiting();
  e.waitUntil((async()=>{
   // The worker must not activate with an incomplete mandatory shell.
   // Keep the previous cache available if a required asset cannot be fetched.
   const cache=await caches.open(CACHE);
   await precacheCompleteShell(cache);
+  await self.skipWaiting();
  })());
 });
 
