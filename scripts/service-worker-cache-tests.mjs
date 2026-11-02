@@ -9,7 +9,7 @@ function fixture(){
  const handlers={},stores=new Map(),calls=[],messages=[],lifecycle={skipWaiting:0};let network=()=>new Response('fresh',{headers:{'Cache-Control':'max-age=3600'}});
  const caches={keys:async()=>[...stores.keys()],delete:async key=>stores.delete(key),open:async key=>{
   if(!stores.has(key))stores.set(key,new Map());const values=stores.get(key);
-  return {put:async(req,res)=>values.set(typeof req==='string'?new URL(req,'https://lumen.test').href:req.url,res),match:async req=>values.get(typeof req==='string'?new URL(req,'https://lumen.test').href:req.url)?.clone(),addAll:async()=>{}};
+  return {put:async(req,res)=>values.set(typeof req==='string'?new URL(req,'https://lumen.test').href:req.url,res),match:async req=>values.get(typeof req==='string'?new URL(req,'https://lumen.test').href:req.url)?.clone(),keys:async()=>[...values.keys()],addAll:async()=>{}};
  }};
  const self={location:{origin:'https://lumen.test'},addEventListener:(name,fn)=>handlers[name]=fn,clients:{claim:async()=>{}},skipWaiting:()=>{lifecycle.skipWaiting++}};
  vm.runInNewContext(source,{self,caches,URL,Response,Headers,fetch:async(...args)=>{calls.push(args);return network(...args)}});
