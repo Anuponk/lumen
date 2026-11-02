@@ -1,4 +1,5 @@
 const CACHE="lumen-assets-v13";
+const OFFLINE_READY_MARKER="/__lumen_offline_ready_v13__";
 const SHELL=["/manifest.webmanifest","/icon.svg","/icon-maskable.svg","/","/src/main.js","/src/ui/game-screen.js","/src/ui/styles.css","/src/ui/first-welcome.css","/src/ui/build-version.js","/src/vendor/supabase-2.118.0.js","/src/vendor/qrcode-1.0.0.js"];
 // Crawl the static ES-module graph before activation, including JSON imports.
 // Only same-origin public application resources are eligible for this cache.
@@ -33,11 +34,27 @@ self.addEventListener("install",e=>{
   // Keep the previous cache available if a required asset cannot be fetched.
   const cache=await caches.open(CACHE);
   await precacheCompleteShell(cache);
+  // A completion marker is written last. A partially populated cache cannot
+  // claim offline readiness even if the install was interrupted.
+  await cache.put(OFFLINE_READY_MARKER,new Response("ready"));
   await self.skipWaiting();
  })());
 });
 
-self.addEventListener("message",e=>{if(e.data&&e.data.type==="SKIP_WAITING")self.skipWaiting()});
+self.addEventListener("message",e=>{
+ if(e.data?.type==="SKIP_WAITING")self.skipWaiting();
+ if(e.data?.type==="OFFLINE_CACHE_STATUS"&&e.source?.postMessage){
+  e.waitUntil((async()=>{
+   let ready=false,assets=0;
+   try{
+    const cache=await caches.open(CACHE);
+    ready=!!(await cache.match(OFFLINE_READY_MARKER));
+    if(ready)assets=(await cache.keys()).length-1;
+   }catch{}
+   e.source.postMessage({type:"OFFLINE_CACHE_STATUS",ready,assets,version:CACHE});
+  })());
+ }
+});
 
 self.addEventListener("activate",e=>{
  e.waitUntil(
