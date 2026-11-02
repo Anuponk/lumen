@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,existsSync as importedExistsSync} from 'node:fs';
 import vm from 'node:vm';
 const source=readFileSync(new URL('../sw.js',import.meta.url),'utf8');
 const currentCache=source.match(/const CACHE="([^"]+)"/)?.[1];
@@ -113,3 +113,27 @@ test('cyclic module imports are only fetched once during installation',async()=>
  await installation;
  assert.equal(f.calls.filter(([path])=>new URL(path,'https://lumen.test').pathname==='/src/campaign/a.js').length,1);
 });
+
+test('real published game module graph includes catalogue data before offline activation',()=>{
+ const {existsSync}=fsForOfflineGraph();
+ const root=new URL('../',import.meta.url);
+ const visited=new Set(),pending=['/src/main.js','/src/ui/game-screen.js'];
+ const dependencies=/(?:import|export)\\s+(?:[^'";]*?\\s+from\\s*)?["']([^"']+)["']/g;
+ while(pending.length){
+  const path=pending.shift();
+  if(visited.has(path))continue;
+  visited.add(path);
+  const file=new URL('.'+path,root);
+  assert(existsSync(file),'Missing module dependency: '+path);
+  if(!/\\.(?:js|mjs|css)$/.test(path))continue;
+  const source=readFileSync(file,'utf8');
+  for(const match of source.matchAll(dependencies)){
+   const resolved=new URL(match[1],'https://lumen.test'+path);
+   if(resolved.origin==='https://lumen.test'&&(/^\\/src\\//.test(resolved.pathname)||/^\\/content\\//.test(resolved.pathname)))pending.push(resolved.pathname);
+  }
+  assert(visited.size<2000,'Unexpectedly large or cyclic dependency graph');
+ }
+ for(const required of ['/src/campaign/catalogue.js','/content/generated/first-adventure.json','/content/generated/diverse-adventures-3-4.json','/content/catalogue/access-origins.json'])
+  assert(visited.has(required),'Offline module graph omitted required catalogue asset: '+required);
+});
+function fsForOfflineGraph(){return {existsSync:importedExistsSync};}
