@@ -59,3 +59,24 @@ Ce tableau est une **hypothèse de qualification**, pas une déclaration de conf
 5. Vérifier l'audience incluant des enfants, les modalités de consentement/autorité parentale et les exigences Google Play Families avant toute activation du parcours enfant.
 
 Aucun accès aux données personnelles, aucune purge, aucune modification SQL ou de synchronisation n'a été réalisé pour ce registre.
+
+## Décision de l'éditeur — politique cible approuvée le 2 novembre 2026
+
+**L'éditeur valide les durées cibles suivantes.** Cette décision remplace les propositions incompatibles ci-dessus, **mais n'atteste pas que les purges soient actives**. L'implémentation, les contrôles et la mise à jour de la politique publique restent à faire catégorie par catégorie.
+
+| Catégorie | Durée cible approuvée | Point de départ / réserve |
+|---|---|---|
+| Compte, progression, étoiles, badges, records | Pendant l'existence du compte | Effacement sur demande vérifiée, sous réserve des exceptions justifiées |
+| Compte inactif | Avertissement après 24 mois, suppression à 30 mois | Dernière activité fiable à définir ; **aucune suppression automatique à activer avant fiabilisation de #316 et de la synchronisation**, preuve de notification et possibilité de reconnexion |
+| Tentatives et reçus indispensables à la synchronisation | Pendant l'existence du compte | Ne jamais purger indépendamment des acquis tant que nécessaires à la reprise |
+| Défis | 12 mois après dernière activité | Préserver les droits des autres participants ; vérifier la date d'activité |
+| Diagnostics techniques résolus | 30 jours après résolution | Exclure incidents non résolus, reçus et commandes en attente |
+| Diagnostics détaillés facultatifs | 7 jours après collecte | Consentement/retrait distincts ; vérifier la purge active |
+| Copies d'assistance temporaires | 7 jours maximum | Détruire dès retrait de l'autorisation ; une limite technique plus courte (6 jours) reste acceptable |
+| Retours et signalements clôturés | 6 mois après clôture | Exceptions motivées et revues ; pas de purge des dossiers encore ouverts |
+| Statistiques facultatives | 90 jours après événement | Uniquement les statistiques effectivement facultatives, jamais les preuves de progression |
+| Abonnements push désactivés | 90 jours après désactivation | Protéger la réactivation |
+| Journaux de sécurité | 6 mois après événement | Accès restreint, finalité sécurité, exceptions documentées |
+| Preuves minimales des demandes RGPD | 12 mois après clôture | Pas d'export complet ni de copie de pièces inutile |
+
+Les journaux de prestataires, les sauvegardes physiques et les barrières anti-résurrection ont leurs propres contraintes : inventorier leurs délais réels et documenter les exceptions. Les délais fournisseur ne sont pas modifiés par cette décision. **Aucune purge n'est autorisée par le seul ajout de ce tableau** ; validation technique et tests de non-régression restent nécessaires. Les bases juridiques et la justification des durées demeurent à vérifier avant publication définitive.
