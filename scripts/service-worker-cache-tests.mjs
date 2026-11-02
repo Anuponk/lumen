@@ -6,12 +6,12 @@ const source=readFileSync(new URL('../sw.js',import.meta.url),'utf8');
 const currentCache=source.match(/const CACHE="([^"]+)"/)?.[1];
 assert(currentCache?.startsWith('lumen-assets-'));
 function fixture(){
- const handlers={},stores=new Map(),calls=[];let network=()=>new Response('fresh',{headers:{'Cache-Control':'max-age=3600'}});
+ const handlers={},stores=new Map(),calls=[],lifecycle={skipWaiting:0};let network=()=>new Response('fresh',{headers:{'Cache-Control':'max-age=3600'}});
  const caches={keys:async()=>[...stores.keys()],delete:async key=>stores.delete(key),open:async key=>{
   if(!stores.has(key))stores.set(key,new Map());const values=stores.get(key);
   return {put:async(req,res)=>values.set(typeof req==='string'?new URL(req,'https://lumen.test').href:req.url,res),match:async req=>values.get(typeof req==='string'?new URL(req,'https://lumen.test').href:req.url)?.clone(),addAll:async()=>{}};
  }};
- const self={location:{origin:'https://lumen.test'},addEventListener:(name,fn)=>handlers[name]=fn,clients:{claim:async()=>{}},skipWaiting:()=>{}};
+ const self={location:{origin:'https://lumen.test'},addEventListener:(name,fn)=>handlers[name]=fn,clients:{claim:async()=>{}},skipWaiting:()=>{lifecycle.skipWaiting++}};
  vm.runInNewContext(source,{self,caches,URL,Response,Headers,fetch:async(...args)=>{calls.push(args);return network(...args)}});
  async function fetchAsset(path,{mode='cors',method='GET'}={}){
   let response;const jobs=[],request={url:new URL(path,'https://lumen.test').href,mode,method};
@@ -19,7 +19,7 @@ function fixture(){
   if(!response)return null;
   const result=await response;await Promise.all(jobs);return result;
  }
- return {handlers,stores,calls,caches,fetchAsset,setNetwork:fn=>network=fn};
+ return {handlers,stores,calls,caches,lifecycle,fetchAsset,setNetwork:fn=>network=fn};
 }
 test('modules and content bypass both HTTP/resource caches and retain explicit offline copies',async()=>{
  const f=fixture();
@@ -137,3 +137,25 @@ test('real published game module graph includes catalogue data before offline ac
   assert(visited.has(required),'Offline module graph omitted required catalogue asset: '+required);
 });
 function fsForOfflineGraph(){return {existsSync:importedExistsSync};}
+
+test('failed install does not request activation and keeps prior cache',async()=>{
+ const f=fixture();
+ f.stores.set('lumen-assets-v12',new Map([['https://lumen.test/',new Response('previous')]]));
+ f.setNetwork(path=>new URL(path,'https://lumen.test').pathname==='/src/main.js'
+  ?new Response('missing',{status:503}):new Response('ok'));
+ let install;
+ f.handlers.install({waitUntil:p=>install=p});
+ await assert.rejects(install,/Offline shell unavailable/);
+ assert.equal(f.lifecycle.skipWaiting,0);
+ assert(f.stores.has('lumen-assets-v12'));
+});
+test('successful install requests activation only after the complete shell is cached',async()=>{
+ const f=fixture();
+ f.setNetwork(()=>new Response('ok'));
+ let install;
+ f.handlers.install({waitUntil:p=>install=p});
+ assert.equal(f.lifecycle.skipWaiting,0);
+ await install;
+ assert.equal(f.lifecycle.skipWaiting,1);
+ assert(f.stores.get(currentCache).has('https://lumen.test/src/main.js'));
+});
