@@ -118,18 +118,18 @@ test('real published game module graph includes catalogue data before offline ac
  const {existsSync}=fsForOfflineGraph();
  const root=new URL('../',import.meta.url);
  const visited=new Set(),pending=['/src/main.js','/src/ui/game-screen.js'];
- const dependencies=/(?:import|export)\\s+(?:[^'";]*?\\s+from\\s*)?["']([^"']+)["']/g;
+ const dependencies=/(?:import|export)\s+(?:[^'";]*?\s+from\s*)?["']([^"']+)["']/g;
  while(pending.length){
   const path=pending.shift();
   if(visited.has(path))continue;
   visited.add(path);
   const file=new URL('.'+path,root);
   assert(existsSync(file),'Missing module dependency: '+path);
-  if(!/\\.(?:js|mjs|css)$/.test(path))continue;
+  if(!/\.(?:js|mjs|css)$/.test(path))continue;
   const source=readFileSync(file,'utf8');
   for(const match of source.matchAll(dependencies)){
    const resolved=new URL(match[1],'https://lumen.test'+path);
-   if(resolved.origin==='https://lumen.test'&&(/^\\/src\\//.test(resolved.pathname)||/^\\/content\\//.test(resolved.pathname)))pending.push(resolved.pathname);
+   if(resolved.origin==='https://lumen.test'&&(/^\/src\//.test(resolved.pathname)||/^\/content\//.test(resolved.pathname)))pending.push(resolved.pathname);
   }
   assert(visited.size<2000,'Unexpectedly large or cyclic dependency graph');
  }
