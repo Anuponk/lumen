@@ -10,7 +10,8 @@ test('public deletion request is available without login and states manual send'
   assert.match(page, /id="deletionConfirmation"/);
   assert.match(page, /type="email"/);
   assert.match(page, /Aucune demande n.est envoyée automatiquement/);
-  assert.match(page, /SoldeZen/);
+  assert.match(page, /uniquement les données associées à Lumen/i);
+  assert.doesNotMatch(page, /SoldeZen|Supabase/i);
   assert.match(page, /mailto:valente\.cedric@gmail\.com/);
   assert.doesNotMatch(page, /type="password"/);
 });

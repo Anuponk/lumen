@@ -33,3 +33,29 @@ indéfinie par défaut.
 Références : [CNIL, durées de conservation](https://www.cnil.fr/fr/passer-laction/les-durees-de-conservation-des-donnees)
 et [preuves fournisseurs](PRIVACY_PROCESSORS.md). Les points externes encore
 inconnus figurent dans l'audit ; ce document ne les marque pas validés.
+
+## Registre de traitements — bases juridiques à confirmer (2 novembre 2026)
+
+Ce tableau est une **hypothèse de qualification**, pas une déclaration de conformité ni une preuve de déploiement. Une même catégorie peut relever de plusieurs finalités distinctes ; documenter la finalité et le déclencheur avant d'arrêter sa base juridique. L'éditeur doit valider ces choix avant publication.
+
+| Traitement observé/documenté | Finalité | Base envisagée, à valider | État de conservation et preuve manquante |
+|---|---|---|---|
+| Compte, identifiant, email, connexion et progression synchronisée | Fournir le jeu et retrouver la progression | Exécution du service demandé (art. 6(1)(b) RGPD), sous réserve du parcours réellement proposé | Pas de purge automatique des comptes inactifs confirmée ; suppression #316 non validée E2E |
+| Reçus, récompenses, tentatives et sauvegardes de récupération | Garantir les acquis, empêcher les doubles écritures et restaurer le jeu | Exécution du service ; intérêt légitime à examiner pour les traces anti-fraude strictement nécessaires | Conservation fonctionnelle ; ne pas confondre avec les statistiques facultatives |
+| Défis entre joueurs | Permettre le partage et le résultat du défi | Exécution de la fonctionnalité demandée ; examiner les données des autres participants | Revue à 12 mois proposée, non automatisée |
+| Statistiques facultatives et diagnostics détaillés optionnels | Mesure d'usage et assistance avancée | Consentement distinct, libre et révocable si collecte facultative | Préférence et retrait à vérifier en production ; purge technique 90 jours seulement proposée pour une liste limitée |
+| Diagnostics indispensables et sécurité | Corriger les incidents, préserver l'intégrité du service | Intérêt légitime à documenter avec nécessité, minimisation et balance des intérêts | Observations outbox résolues : 30 jours documentés ; ne pas assimiler tous les logs à cette catégorie |
+| Retours volontaires et dossiers d'assistance | Répondre aux signalements | Base à qualifier selon le type de demande (service demandé / intérêt légitime) ; accord séparé pour copies privées facultatives | 180 jours après clôture proposés pour les retours ; 6–7 jours décrits pour les copies/support facultatifs, vérifier activation réelle |
+| Notifications push | Envoyer les notifications choisies | Base RGPD à justifier par finalité ; permission navigateur distincte de la base RGPD | Désabonnement et purge à 90 jours proposés, non activés |
+| Demandes de droits et preuves minimales | Traiter les obligations RGPD | Obligation légale pour la gestion de la demande, conservation des preuves à justifier | 12 mois après clôture proposés, sans archive de l'export complet |
+| Barrière anti-résurrection après effacement | Empêcher le retour des données supprimées | Intérêt légitime / obligation de respecter l'effacement à documenter | Empreintes pseudonymisées ; durée non arrêtée, revue annuelle proposée |
+
+### Vérifications bloquantes avant publication
+
+1. Confronter ce registre aux tables et flux réellement **déployés**, aux scripts de nettoyage actifs et aux consentements effectivement présentés ; un code préparé en branche n'est pas une fonctionnalité active.
+2. Vérifier pour chaque traitement : données exactes, destinataires, pays/transferts, sous-traitants, durée et justification, accès, droits et contact. Les preuves fournisseurs sont listées dans [PRIVACY_PROCESSORS.md](PRIVACY_PROCESSORS.md).
+3. Faire valider par l'éditeur les bases et durées, puis activer/tester séparément les purges autorisées. Ne pas effacer les reçus ou les données d'autres joueurs pour satisfaire un délai théorique.
+4. Mettre à jour la page publique `confidentialite.html` **après** ces confirmations ; conserver explicitement les réserves tant qu'elles manquent.
+5. Vérifier l'audience incluant des enfants, les modalités de consentement/autorité parentale et les exigences Google Play Families avant toute activation du parcours enfant.
+
+Aucun accès aux données personnelles, aucune purge, aucune modification SQL ou de synchronisation n'a été réalisé pour ce registre.
