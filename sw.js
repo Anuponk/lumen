@@ -42,7 +42,12 @@ self.addEventListener("install",e=>{
 });
 
 self.addEventListener("message",e=>{
- if(e.data?.type==="SKIP_WAITING")self.skipWaiting();
+ if(e.data?.type==="SKIP_WAITING"){
+  e.waitUntil((async()=>{
+   const cache=await caches.open(CACHE);
+   if(await cache.match(OFFLINE_READY_MARKER))await self.skipWaiting();
+  })());
+ }
  if(e.data?.type==="OFFLINE_CACHE_STATUS"&&e.source?.postMessage){
   e.waitUntil((async()=>{
    let ready=false,assets=0;
@@ -57,11 +62,13 @@ self.addEventListener("message",e=>{
 });
 
 self.addEventListener("activate",e=>{
- e.waitUntil(
-  caches.keys()
-   .then(keys=>Promise.all(keys.filter(k=>k.startsWith("lumen-assets-")&&k!==CACHE).map(k=>caches.delete(k))))
-   .then(()=>self.clients.claim())
- );
+ e.waitUntil((async()=>{
+  const current=await caches.open(CACHE);
+  if(!(await current.match(OFFLINE_READY_MARKER)))return;
+  const keys=await caches.keys();
+  await Promise.all(keys.filter(k=>k.startsWith("lumen-assets-")&&k!==CACHE).map(k=>caches.delete(k)));
+  await self.clients.claim();
+ })());
 });
 
 self.addEventListener("fetch",e=>{
