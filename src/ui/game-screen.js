@@ -82,6 +82,7 @@ if(qaFresh){
 }
 const qaKey=suffix=>qaActive?"lumenQa"+suffix:suffix;
 const {normalizeSequentialProgress,solvedCount,exactSkyScoreForSolvedPrefix,ensureSkyScore,skyStarsEarned,challengeRewardKeys,constellationProgress,constellationLitAt,awards,performanceRun,savePerformance}=createCampaign(()=>lumenProgress,()=>saveLumenProgress(),()=>({activeGameSeconds,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted,qualifying:!!attemptEngine.snapshot()?.qualifying}),()=>canonicalQuestList());
+let verifiedOfflineOwnerId=null;
 let cloudProfileReady=false,cloudProfileTimer=null,cloudProfileBusy=false,cloudProfileDirty=false,cloudProfileBaseline=null,cloudProfileInFlight=null,cloudProfileFailure=null;
 let cloudHydrationGeneration=0;
 configureCommandSession(()=>({userId:lumenUser?.id,client:lumenSupabase,generation:cloudHydrationGeneration}),{onIssue:issue=>recordCloudDiagnostic('command_cache_storage',{reason:issue.kind})});
@@ -920,6 +921,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   }
   cloudProfileFailure=null;
   cloudProfileReady=true;
+  verifiedOfflineOwnerId=lumenUser?.id??null;
   acquisitionRecoveryAttempts=0;
   // Resume the verified catalogue frontier after ownership handoff or from an
   // idle campaign selection. Started runs and replays retain their identity.
@@ -1771,9 +1773,14 @@ function historicalContinuationAllowed(index){
  const first=canonicalNextUnsolved(lumenProgress.solved,lumenProgress.canonicalQuestState||{});
  return !!quest&&!lumenProgress.solved?.[index]&&!!first&&quest.ordinal>first.ordinal&&questIsAccessible(index);
 }
+function offlineQuestAccessContext(){
+ // Memory-only proof: never trust an old account marker from localStorage.
+ // The current page must have successfully verified this exact owner.
+ return {offline:navigator.onLine===false,verifiedSession:!!lumenUser&&verifiedOfflineOwnerId===lumenUser.id};
+}
 function questIsAccessible(index){
  return canonicalCampaignQuestDecision(canonicalQuestForLegacy(index),navigationProgress(),{
-  entitlements:adventureAccessEntitlements(),attempt:campaignAccessAttempt(),signedIn:qaActive||!!lumenUser,cloudReady:qaActive||cloudProfileReady,confirmedReplay:confirmedReplayAllowed(canonicalQuestForLegacy(index))
+  entitlements:adventureAccessEntitlements(),attempt:campaignAccessAttempt(),signedIn:qaActive||!!lumenUser,cloudReady:qaActive||cloudProfileReady,confirmedReplay:confirmedReplayAllowed(canonicalQuestForLegacy(index)),...offlineQuestAccessContext()
  }).status==='ready';
 }
 function choose(){if(canonicalActiveQuest){puz={reg:canonicalActiveQuest.reg,sol:canonicalActiveQuest.sol,audit:canonicalActiveQuest.audit,difficulty:canonicalActiveQuest.difficulty};n=puz.reg.length;return}levelIndex=Math.max(0,Math.min(levelIndex,currentQuestLimit()-1));if(!socialChallenge&&!questIsAccessible(levelIndex)){while(levelIndex>0&&!questIsAccessible(levelIndex))levelIndex--;replayMode=!!lumenProgress.solved[levelIndex]}const resolved=playableQuest(levelIndex);if(!resolved)throw new Error("Missing campaign quest "+levelIndex);puz=resolved.source==="generated"?{reg:resolved.reg,sol:resolved.sol,audit:resolved.audit,difficulty:resolved.difficulty}:resolved.size===6?CAT["6"][CAMPAIGN6_ORDER[CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]]]:CAT[String(resolved.size)][CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]];n=puz.reg.length;last[n]=levelIndex}
@@ -2235,7 +2242,7 @@ function adminAlerts(rows){
 function canonicalQuestAccess(quest){
  return canonicalInsertedQuestDecision(quest,navigationProgress(),{
   entitlements:adventureAccessEntitlements(),attempt:attemptEngine.snapshot(),
-  signedIn:qaActive||!!lumenUser,cloudReady:qaActive||cloudProfileReady,confirmedReplay:confirmedReplayAllowed(quest)
+  signedIn:qaActive||!!lumenUser,cloudReady:qaActive||cloudProfileReady,confirmedReplay:confirmedReplayAllowed(quest),...offlineQuestAccessContext()
  });
 }
 function canonicalQuestAvailable(quest){return canonicalQuestAccess(quest).status==='ready'}
