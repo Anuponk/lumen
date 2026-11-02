@@ -3,11 +3,14 @@ const SHELL=["/manifest.webmanifest","/icon.svg","/icon-maskable.svg","/","/src/
 
 self.addEventListener("install",e=>{
  self.skipWaiting();
- // Cache the known public entrypoints. The full ES module dependency graph\n // is still cached on first online load; never cache auth callbacks or APIs.\n e.waitUntil((async()=>{
+ e.waitUntil((async()=>{
+  // The worker must not activate with an incomplete mandatory shell.
+  // Keep the previous cache available if a required asset cannot be fetched.
   const cache=await caches.open(CACHE);
-  // A missing optional asset must not prevent installation of the worker.
   await Promise.all(SHELL.map(async path=>{
-   try{const response=await fetch(path,{cache:"no-store"});if(response.ok)await cache.put(path,response)}catch(_error){}
+   const response=await fetch(path,{cache:"no-store"});
+   if(!response.ok)throw new Error("Offline shell unavailable: "+path+" ("+response.status+")");
+   await cache.put(path,response);
   }));
  })());
 });
