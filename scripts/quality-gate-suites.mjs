@@ -47,6 +47,8 @@ export const nodeSuites=[
  'quest-victory-parity-tests.mjs',
  'quest-command-tests.mjs',
  'service-worker-cache-tests.mjs',
+ 'offline-verified-access-tests.mjs',
+ 'offline-catalogue-budget.mjs',
  'campaign-resume-tests.mjs',
  'campaign-presentation-tests.mjs',
  'quest-secondary-stars-tests.mjs',
