@@ -2784,6 +2784,9 @@ async function celebrateCanonicalSuccess(){
    updateAuthUI();
    canonicalRecovery.schedule();
    victoryStage='readiness';
+   // Never start a cloud receipt read or command while the device reports offline.
+   // The immutable intent has already been durably captured for replay.
+   if(navigator.onLine===false)throw Error("Victoire conservée localement, appareil hors ligne");
    if(!cloudProfileReady)throw Error("Victoire conservée localement, cloud non prêt");
    if(cloudProfileDirty&&!(await confirmCloudReward({durable:true})))throw Error('Verified baseline pending');
    if(!sameVictoryContext())return;
@@ -2882,7 +2885,7 @@ async function captureLegacyCommandVictory(){
   const prior=(await legacyVictoryOutbox.pending(ownerId)).find(e=>e.operationId===operationId);
   if(!sameContext())return {handled:true};
   const facts=prior?.reward.facts||{seconds:activeGameSeconds(),assistanceUsed:!!attempt.assistanceUsed,mistakeCommitted:!!attempt.mistakeCommitted,qualifying:!!attempt.qualifying,hintUsed:hintUsedInAttempt(),challengeFailed:!!questFailed,qualifiedDay:localCalendarDay(),qualifiedAt:new Date(attempt.startedAt||Date.now()).toISOString()};
-  if(!cloudProfileReady){
+  if(!cloudProfileReady||navigator.onLine===false){
    // A held replay needs only local durability. A capability read can hang
    // offline and must never delay the sole immutable capture of this run.
    victoryStage='durable_capture';
