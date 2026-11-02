@@ -6,7 +6,7 @@ const source=readFileSync(new URL('../sw.js',import.meta.url),'utf8');
 const currentCache=source.match(/const CACHE="([^"]+)"/)?.[1];
 assert(currentCache?.startsWith('lumen-assets-'));
 function fixture(){
- const handlers={},stores=new Map(),calls=[],lifecycle={skipWaiting:0};let network=()=>new Response('fresh',{headers:{'Cache-Control':'max-age=3600'}});
+ const handlers={},stores=new Map(),calls=[],messages=[],lifecycle={skipWaiting:0};let network=()=>new Response('fresh',{headers:{'Cache-Control':'max-age=3600'}});
  const caches={keys:async()=>[...stores.keys()],delete:async key=>stores.delete(key),open:async key=>{
   if(!stores.has(key))stores.set(key,new Map());const values=stores.get(key);
   return {put:async(req,res)=>values.set(typeof req==='string'?new URL(req,'https://lumen.test').href:req.url,res),match:async req=>values.get(typeof req==='string'?new URL(req,'https://lumen.test').href:req.url)?.clone(),addAll:async()=>{}};
@@ -19,7 +19,7 @@ function fixture(){
   if(!response)return null;
   const result=await response;await Promise.all(jobs);return result;
  }
- return {handlers,stores,calls,caches,lifecycle,fetchAsset,setNetwork:fn=>network=fn};
+ return {handlers,stores,calls,caches,messages,lifecycle,fetchAsset,setNetwork:fn=>network=fn};
 }
 test('modules and content bypass both HTTP/resource caches and retain explicit offline copies',async()=>{
  const f=fixture();
@@ -158,4 +158,24 @@ test('successful install requests activation only after the complete shell is ca
  await install;
  assert.equal(f.lifecycle.skipWaiting,1);
  assert(f.stores.get(currentCache).has('https://lumen.test/src/main.js'));
+});
+
+test('offline readiness is reported only after a complete install',async()=>{
+ const f=fixture();
+ f.setNetwork(()=>new Response('asset'));
+ let install;
+ f.handlers.install({waitUntil:p=>install=p});
+ await install;
+ const replies=[];
+ let status;
+ f.handlers.message({data:{type:'OFFLINE_CACHE_STATUS'},source:{postMessage:x=>replies.push(x)},waitUntil:p=>status=p});
+ await status;
+ assert.equal(replies[0].ready,true);
+ assert(replies[0].assets>=11);
+ assert.equal(replies[0].version,currentCache);
+ const cache=f.stores.get(currentCache);
+ cache.delete('https://lumen.test/__lumen_offline_ready_v13__');
+ f.handlers.message({data:{type:'OFFLINE_CACHE_STATUS'},source:{postMessage:x=>replies.push(x)},waitUntil:p=>status=p});
+ await status;
+ assert.equal(replies[1].ready,false);
 });
