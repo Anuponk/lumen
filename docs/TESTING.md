@@ -1643,3 +1643,13 @@ new worker can activate. The static preflight checks this contract. This does
 quota/eviction handling, guest registration boundary, or reconciliation after
 reconnection. Do not declare #597 complete or release this without a real
 Android offline multi-quest test and cloud persistence regression checks.
+
+### Offline multi-quest Android acceptance (#597, mandatory before merge)
+1. On Wi-Fi, sign in and complete verified cloud hydration. Wait for the service worker to finish installing; verify its cache contains every public quest definition used by the published catalogue, including a locked quest never previously opened.
+2. Turn on airplane mode, force-close the PWA, then reopen it. The sky, an unopened available grid, and the next grid must all load. **Known gap:** the current in-memory verified-owner proof does not survive force-close; cold-start authorization needs an explicitly designed durable, owner-bound verification record, without treating a mere saved user ID as proof.
+3. Complete two sequential quests offline, with a badge and best time. Both completions must be durably recorded, immediately unlock the next quest, and survive another force-close. **Known gap:** current pending-victory UI does not yet project a verified provisional win into navigation; offline quest chaining is not complete.
+4. Reconnect and verify that canonical and legacy command outboxes replay once, reward balances are not duplicated, best times and badges remain correct, and all completed quests stay unlocked.
+5. Repeat with a failed sync, storage quota pressure, account switch and a revoked session. The previous account's pending commands must never be attributed to the new account. Do not clear local outboxes to recover.
+6. Fail one mandatory catalogue asset during installation: the old active worker must remain usable and the new worker must not claim offline readiness.
+
+Do not merge or mark #597 complete solely because the static service-worker tests pass. A real Android device, a cold start, and an end-to-end cloud reconciliation are required.
