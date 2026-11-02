@@ -179,3 +179,21 @@ test('offline readiness is reported only after a complete install',async()=>{
  await status;
  assert.equal(replies[1].ready,false);
 });
+
+test('activation with an incomplete cache does not delete the previous version',async()=>{
+ const f=fixture();
+ f.stores.set('lumen-assets-v12',new Map([['https://lumen.test/',new Response('old')]]));
+ f.stores.set(currentCache,new Map([['https://lumen.test/src/main.js',new Response('partial')]]));
+ let activation;
+ f.handlers.activate({waitUntil:p=>activation=p});
+ await activation;
+ assert(f.stores.has('lumen-assets-v12'));
+ assert(f.stores.has(currentCache));
+});
+test('manual skip waiting cannot activate an incomplete cache',async()=>{
+ const f=fixture();
+ let task;
+ f.handlers.message({data:{type:'SKIP_WAITING'},waitUntil:p=>task=p});
+ await task;
+ assert.equal(f.lifecycle.skipWaiting,0);
+});
