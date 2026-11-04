@@ -1,9 +1,18 @@
-const CACHE="lumen-assets-v10";
-const SHELL=["/manifest.webmanifest","/icon.svg","/icon-maskable.svg","/"];
+const CACHE="lumen-assets-v12";
+const SHELL=["/manifest.webmanifest","/icon.svg","/icon-maskable.svg","/","/src/main.js","/src/ui/game-screen.js","/src/ui/styles.css","/src/ui/first-welcome.css","/src/ui/build-version.js","/src/vendor/supabase-2.118.0.js","/src/vendor/qrcode-1.0.0.js"];
 
 self.addEventListener("install",e=>{
  self.skipWaiting();
- e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)));
+ e.waitUntil((async()=>{
+  // The worker must not activate with an incomplete mandatory shell.
+  // Keep the previous cache available if a required asset cannot be fetched.
+  const cache=await caches.open(CACHE);
+  await Promise.all(SHELL.map(async path=>{
+   const response=await fetch(path,{cache:"no-store"});
+   if(!response.ok)throw new Error("Offline shell unavailable: "+path+" ("+response.status+")");
+   await cache.put(path,response);
+  }));
+ })());
 });
 
 self.addEventListener("message",e=>{if(e.data&&e.data.type==="SKIP_WAITING")self.skipWaiting()});

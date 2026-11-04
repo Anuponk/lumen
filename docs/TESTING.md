@@ -1595,3 +1595,40 @@ constellation reveal, confirmed star, newly earned badges, no duplicate replay
 star, no difficulty survey, reachable next action and reload-safe badge state.
 `astronomical-reference-svg-tests.mjs` checks arrived real points/links and
 absence of arrival animation when no star was gained. No live account writes.
+
+
+## Privacy #316: PostgreSQL integration workflow
+
+`.github/workflows/privacy-sql-integration.yml` starts a disposable PostgreSQL
+17 service on pull requests. `python3 scripts/privacy-sql-integration.py`
+extracts the **actual** `lumen_privacy.scope_predicate` migration function,
+executes it in PostgreSQL with synthetic support cases and access rows, and
+asserts that the target user's actor and case-linked records are selected while
+another user's records are excluded. All changes are rolled back. No
+production credentials, Supabase project, or live player records are used.
+This is a **scope regression only**; end-to-end erasure, trigger barriers,
+retention, rights export and production compatibility still need testing.
+
+
+### Complete migration smoke test
+
+`python3 scripts/privacy-full-erasure.test.py` is also run by the same disposable PostgreSQL 17 GitHub Actions job. It constructs a synthetic catalog from the migration's real policy, installs the **entire** erasure migration, verifies explicit confirmation, deletes a fixture Lumen profile, retains another player's profile and synthetic `auth.users`/SoldeZen records, and checks the post-erasure write barrier. The entire transaction is rolled back. This is a synthetic smoke test, not a substitute for a schema-accurate production rehearsal or legal approval.
+
+## Offline PWA shell and update regression (#597 / #618)
+
+`node scripts/android-offline-preflight.mjs` runs in the PR quality workflow and
+checks the mandatory public service-worker shell entrypoints, repository assets,
+install-failure guards and public navigation restrictions. This is static
+preflight, not proof that a quest opens offline on a physical Android device.
+
+`node scripts/service-worker-update-browser-tests.mjs` exercises a real
+service-worker upgrade with a synthetic application. Its cache assertions derive
+the current version from `sw.js` rather than assuming the historical v10 name.
+The worker now refuses installation if any mandatory precache fetch fails; this
+avoids activating an incomplete new shell. Neither test guarantees the entire
+transitive ES-module graph or quest content is available offline.
+
+Release acceptance still requires Android installed-PWA testing: warm a playable
+quest online, close the app, switch to airplane mode, reopen and play that quest,
+then reconnect and confirm the pending attempt synchronizes once without lost
+progress. Do not cache OAuth callbacks, private responses or cloud APIs.
