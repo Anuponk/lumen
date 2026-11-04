@@ -52,7 +52,8 @@ test('public navigation bypasses HTTP cache and activation only retires old Lume
  const f=fixture();await f.fetchAsset('/',{mode:'navigate'});assert.equal(f.calls[0][1].cache,'no-store');assert.equal(f.stores.size,1);
  assert(f.stores.get(currentCache).has('https://lumen.test/'));
  for(const key of ['lumen-assets-v9',currentCache,'another-feature'])f.stores.set(key,new Map());
- f.stores.get(currentCache).set('https://lumen.test/__lumen_offline_ready_v13__',new Response('ready'));
+ f.stores.get(currentCache).set('https://lumen.test/',new Response('new'));
+ f.stores.get(currentCache).set('https://lumen.test/__lumen_offline_ready_v14__',new Response(JSON.stringify(['/'])));
  let activation;f.handlers.activate({waitUntil:p=>activation=p});await activation;
  assert.deepEqual([...f.stores.keys()],[currentCache,'another-feature']);
 });
@@ -175,7 +176,7 @@ test('offline readiness is reported only after a complete install',async()=>{
  assert(replies[0].assets>=11);
  assert.equal(replies[0].version,currentCache);
  const cache=f.stores.get(currentCache);
- cache.delete('https://lumen.test/__lumen_offline_ready_v13__');
+ cache.delete('https://lumen.test/__lumen_offline_ready_v14__');
  f.handlers.message({data:{type:'OFFLINE_CACHE_STATUS'},source:{postMessage:x=>replies.push(x)},waitUntil:p=>status=p});
  await status;
  assert.equal(replies[1].ready,false);
@@ -219,5 +220,22 @@ test('cache quota refusal cannot activate a partial worker or erase the previous
  let install;f.handlers.install({waitUntil:p=>install=p});
  await assert.rejects(install,/QuotaExceededError/);
  assert.equal(f.lifecycle.skipWaiting,0);assert.equal(f.stores.get('lumen-assets-v12'),previous);
- assert.equal(f.stores.get(currentCache).has('https://lumen.test/__lumen_offline_ready_v13__'),false);
+ assert.equal(f.stores.get(currentCache).has('https://lumen.test/__lumen_offline_ready_v14__'),false);
+});
+
+test('an evicted mandatory asset withdraws readiness and keeps the old shell during activation',async()=>{
+ const f=fixture();let task;f.handlers.install({waitUntil:p=>task=p});await task;
+ f.stores.get(currentCache).delete('https://lumen.test/src/main.js');
+ const replies=[];f.handlers.message({data:{type:'OFFLINE_CACHE_STATUS'},source:{postMessage:x=>replies.push(x)},waitUntil:p=>task=p});await task;
+ assert.equal(replies[0].ready,false);
+ f.stores.set('lumen-assets-v12',new Map());f.handlers.activate({waitUntil:p=>task=p});await task;
+ assert(f.stores.has('lumen-assets-v12'));
+});
+
+test('redirected responses never enter the public asset or document cache',async()=>{
+ const f=fixture();f.setNetwork(()=>{const r=new Response('private redirect target');Object.defineProperty(r,'redirected',{value:true});return r});
+ await f.fetchAsset('/',{mode:'navigate'});await f.fetchAsset('/src/main.js');
+ assert.equal(f.stores.size,0);
+ let task;f.handlers.install({waitUntil:p=>task=p});await assert.rejects(task,/Offline shell unavailable/);
+ assert.equal(f.lifecycle.skipWaiting,0);
 });

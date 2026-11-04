@@ -22,7 +22,7 @@ for(const asset of required){
  assert(shell.includes(asset),'Missing mandatory offline entrypoint: '+asset);
  assert(fs.existsSync(asset.slice(1)||'index.html'),'Offline entrypoint missing from repository: '+asset);
 }
-assert(sw.includes('if(!response.ok)throw new Error('),'Mandatory shell HTTP failures must fail install');
+assert(sw.includes('if(!response.ok||response.redirected)throw new Error('),'Mandatory shell HTTP failures and redirects must fail install');
 assert(sw.includes('await precacheCompleteShell(cache);'),'All mandatory and transitive assets must be awaited');
 assert(sw.indexOf('await precacheCompleteShell(cache);')<sw.indexOf('await self.skipWaiting();'),'Worker must only skip waiting after full cache installation');
 assert(sw.includes('if(visited.size>2000)throw'),'Unexpectedly large dependency graphs must abort installation');

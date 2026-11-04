@@ -1635,7 +1635,7 @@ progress. Do not cache OAuth callbacks, private responses or cloud APIs.
 
 ## Offline full catalogue foundation (#597)
 
-The service worker v13 now follows same-origin static ES imports/exports and CSS
+The service worker v14 now follows same-origin static ES imports/exports and CSS
 imports from the mandatory shell entrypoints, including the imported catalogue
 JSON assets. Installation must finish fetching these dependencies before the
 new worker can activate. The static preflight checks this contract. This does

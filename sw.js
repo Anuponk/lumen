@@ -1,5 +1,5 @@
-const CACHE="lumen-assets-v13";
-const OFFLINE_READY_MARKER="/__lumen_offline_ready_v13__";
+const CACHE="lumen-assets-v14";
+const OFFLINE_READY_MARKER="/__lumen_offline_ready_v14__";
 const SHELL=["/manifest.webmanifest","/icon.svg","/icon-maskable.svg","/","/src/main.js","/src/ui/game-screen.js","/src/ui/styles.css","/src/ui/first-welcome.css","/src/ui/build-version.js","/src/vendor/supabase-2.118.0.js","/src/vendor/qrcode-1.0.0.js"];
 // Crawl the static ES-module graph before activation, including JSON imports.
 // Only same-origin public application resources are eligible for this cache.
@@ -21,7 +21,7 @@ async function precacheCompleteShell(cache){
   if(visited.has(path))continue;
   visited.add(path);
   const response=await fetch(path,{cache:"no-store"});
-  if(!response.ok)throw new Error("Offline shell unavailable: "+path+" ("+response.status+")");
+  if(!response.ok||response.redirected)throw new Error("Offline shell unavailable: "+path+" ("+response.status+")");
   if(visited.size>2000)throw new Error("Offline asset graph exceeds safety limit");
   if(/\.(?:js|mjs|css)$/.test(path)){
    const source=await response.clone().text();
@@ -29,6 +29,16 @@ async function precacheCompleteShell(cache){
   }
   await cache.put(path,response);
  }
+ return [...visited];
+}
+async function completeCachedShell(cache){
+ const marker=await cache.match(OFFLINE_READY_MARKER);if(!marker)return false;
+ try{
+  const assets=await marker.json();
+  if(!Array.isArray(assets)||!assets.length)return false;
+  for(const path of assets)if(typeof path!=='string'||!path.startsWith('/')||!(await cache.match(path)))return false;
+  return true;
+ }catch{return false}
 }
 
 self.addEventListener("install",e=>{
@@ -36,10 +46,10 @@ self.addEventListener("install",e=>{
   // The worker must not activate with an incomplete mandatory shell.
   // Keep the previous cache available if a required asset cannot be fetched.
   const cache=await caches.open(CACHE);
-  await precacheCompleteShell(cache);
+  const assets=await precacheCompleteShell(cache);
   // A completion marker is written last. A partially populated cache cannot
   // claim offline readiness even if the install was interrupted.
-  await cache.put(OFFLINE_READY_MARKER,new Response("ready"));
+  await cache.put(OFFLINE_READY_MARKER,new Response(JSON.stringify(assets)));
   await self.skipWaiting();
  })());
 });
@@ -48,7 +58,7 @@ self.addEventListener("message",e=>{
  if(e.data?.type==="SKIP_WAITING"){
   e.waitUntil((async()=>{
    const cache=await caches.open(CACHE);
-   if(await cache.match(OFFLINE_READY_MARKER))await self.skipWaiting();
+   if(await completeCachedShell(cache))await self.skipWaiting();
   })());
  }
  if(e.data?.type==="OFFLINE_CACHE_STATUS"&&e.source?.postMessage){
@@ -56,7 +66,7 @@ self.addEventListener("message",e=>{
    let ready=false,assets=0;
    try{
     const cache=await caches.open(CACHE);
-    ready=!!(await cache.match(OFFLINE_READY_MARKER));
+    ready=await completeCachedShell(cache);
     if(ready)assets=(await cache.keys()).length-1;
    }catch{}
    e.source.postMessage({type:"OFFLINE_CACHE_STATUS",ready,assets,version:CACHE});
@@ -67,7 +77,7 @@ self.addEventListener("message",e=>{
 self.addEventListener("activate",e=>{
  e.waitUntil((async()=>{
   const current=await caches.open(CACHE);
-  if(!(await current.match(OFFLINE_READY_MARKER)))return;
+  if(!(await completeCachedShell(current)))return;
   const keys=await caches.keys();
   await Promise.all(keys.filter(k=>k.startsWith("lumen-assets-")&&k!==CACHE).map(k=>caches.delete(k)));
   await self.clients.claim();
@@ -87,7 +97,7 @@ self.addEventListener("fetch",e=>{
   e.respondWith((async()=>{
    try{
     const response=await fetch(e.request,{cache:'no-store'});
-    if(publicShell&&response.ok){
+    if(publicShell&&response.ok&&!response.redirected){
      const copy=response.clone();
      e.waitUntil(caches.open(CACHE).then(cache=>cache.put(e.request,copy)).catch(()=>{}));
     }
@@ -108,7 +118,7 @@ self.addEventListener("fetch",e=>{
    // Network-first must bypass the HTTP cache too: a fresh document alone
    // does not invalidate cached native-module imports from an earlier release.
    const response=await fetch(e.request,{cache:"no-store"});
-   if(response.ok){
+   if(response.ok&&!response.redirected){
     // Prevent the page's resource cache from retaining the worker's response
     // for the next release. The Cache API still holds an explicit offline copy.
     const headers=new Headers(response.headers);headers.set('Cache-Control','no-store');

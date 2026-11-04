@@ -4097,7 +4097,7 @@ markLumenSeen();
 if(!qaActive)cloudMergeHistoricalPerformance(lumenAnonymousId);
 function initializeAccountSession(){
  const connect=()=>initLumenCloud().catch(error=>{recordCloudDiagnostic('auth_initialization_failed',{errorCode:String(error?.code||'unknown').slice(0,48)});cloudProfileFailure={reason:'restore_failed'};updateAuthUI();console.warn('Lumen session initialization failed',error)});
- const offline=preparedOfflineUser(localStorage,{offline:navigator.onLine===false});
+ const offline=qaActive?null:preparedOfflineUser(localStorage,{offline:navigator.onLine===false});
  if(offline){
   // This is device-local continuation, not a replacement for Auth. In
   // particular, an expired token must not hold cached gameplay behind refresh.
