@@ -1613,3 +1613,22 @@ retention, rights export and production compatibility still need testing.
 ### Complete migration smoke test
 
 `python3 scripts/privacy-full-erasure.test.py` is also run by the same disposable PostgreSQL 17 GitHub Actions job. It constructs a synthetic catalog from the migration's real policy, installs the **entire** erasure migration, verifies explicit confirmation, deletes a fixture Lumen profile, retains another player's profile and synthetic `auth.users`/SoldeZen records, and checks the post-erasure write barrier. The entire transaction is rolled back. This is a synthetic smoke test, not a substitute for a schema-accurate production rehearsal or legal approval.
+
+## Offline PWA shell and update regression (#597 / #618)
+
+`node scripts/android-offline-preflight.mjs` runs in the PR quality workflow and
+checks the mandatory public service-worker shell entrypoints, repository assets,
+install-failure guards and public navigation restrictions. This is static
+preflight, not proof that a quest opens offline on a physical Android device.
+
+`node scripts/service-worker-update-browser-tests.mjs` exercises a real
+service-worker upgrade with a synthetic application. Its cache assertions derive
+the current version from `sw.js` rather than assuming the historical v10 name.
+The worker now refuses installation if any mandatory precache fetch fails; this
+avoids activating an incomplete new shell. Neither test guarantees the entire
+transitive ES-module graph or quest content is available offline.
+
+Release acceptance still requires Android installed-PWA testing: warm a playable
+quest online, close the app, switch to airplane mode, reopen and play that quest,
+then reconnect and confirm the pending attempt synchronizes once without lost
+progress. Do not cache OAuth callbacks, private responses or cloud APIs.

@@ -82,6 +82,10 @@ jobs:
         if: steps.scheduled_check.outputs.need_tests == 'true'
         run: node --check scripts/issue-222-generate-grids.mjs && node --check scripts/issue-222-migration-plan.mjs
 
+      - name: Validate Android offline shell preflight
+        if: steps.scheduled_check.outputs.need_tests == 'true'
+        run: node scripts/android-offline-preflight.mjs
+
       - name: Unified quality gate
         if: steps.scheduled_check.outputs.need_tests == 'true'
         env:
