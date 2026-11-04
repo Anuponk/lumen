@@ -104,19 +104,7 @@ jobs:
           profile: pixel_6
           disable-animations: true
           working-directory: android
-          script: |
-            set -eu
-            adb install -r app/build/outputs/apk/debug/app-debug.apk
-            adb logcat -c
-            adb shell am start -W -n fr.nopuna.lumen.debug/com.google.androidbrowserhelper.trusted.LauncherActivity
-            sleep 12
-            adb logcat -d -v time > android-startup-logcat.txt
-            if grep -E -A 25 'FATAL EXCEPTION|Process: fr\\.nopuna\\.lumen\\.debug' android-startup-logcat.txt | grep -E -q 'FATAL EXCEPTION|Process: fr\\.nopuna\\.lumen\\.debug'; then
-              echo 'Potential Android runtime crash detected; inspect uploaded Logcat.'
-              grep -E -A 35 'FATAL EXCEPTION|Process: fr\\.nopuna\\.lumen\\.debug' android-startup-logcat.txt | head -100
-              exit 1
-            fi
-            echo 'No fatal exception observed; launch success alone does not certify TWA display or device compatibility.'
+          script: bash tools/emulator-smoke.sh
       - name: Preserve Android startup evidence
         if: always()
         uses: actions/upload-artifact@v4
