@@ -6,6 +6,8 @@ import {execFileSync} from 'node:child_process';
 import {connectBrowser} from './cdp-client.mjs';
 const oldWorker=execFileSync('git',['show','df340a64930254c6697b0f066d35873df0debdcc:sw.js'],{encoding:'utf8'});
 const worker=fs.readFileSync(new URL('../sw.js',import.meta.url),'utf8');
+const activeCache=worker.match(/const CACHE="([^"]+)"/)?.[1];
+assert(activeCache?.startsWith('lumen-assets-'),'Worker cache name missing');
 const {send,evaluate}=await connectBrowser();
 let revision=1,upgrade=false,offline=false;const requests=[];
 const server=http.createServer((req,res)=>{
@@ -55,15 +57,15 @@ try{
  // Upgrade an already controlled tab, rather than merely testing a fresh install.
  upgrade=true;await evaluate('(async()=>{const r=await navigator.serviceWorker.ready;await r.update()})()',true);
  await until('window.codeRevision===2');
- await until(`(async()=>{const c=await caches.open('lumen-assets-v10');return !!(await c.match('/src/persistence/cloud-profile.js'))})()`);
+ await until(`(async()=>{const c=await caches.open('${activeCache}');return !!(await c.match('/src/persistence/cloud-profile.js'))})()`);
  assert(requests.some(r=>r.path==='/src/persistence/cloud-profile.js'&&r.revision===2));
  // Subsequent releases need no worker-version bump to refresh transitive imports.
  revision=3;await send('Page.reload');await until(`document.querySelector('meta')?.content==='3'&&window.codeRevision===3`);
- await until(`(async()=>{const c=await caches.open('lumen-assets-v10');const r=await c.match('/src/persistence/cloud-profile.js');return r&&(await r.text()).includes('=3')})()`);
+ await until(`(async()=>{const c=await caches.open('${activeCache}');const r=await c.match('/src/persistence/cloud-profile.js');return r&&(await r.text()).includes('=3')})()`);
  // Warm the public query-free document too, then remove ALL network access to
  // the document/modules. A retained intent must survive this cold navigation.
  await send('Page.navigate',{url:origin+'/'});await until(`document.querySelector('meta')?.content==='3'&&window.codeRevision===3`);
- await until(`(async()=>{const c=await caches.open('lumen-assets-v10');const r=await c.match('/');return r&&(await r.text()).includes('content="3"')})()`);
+ await until(`(async()=>{const c=await caches.open('${activeCache}');const r=await c.match('/');return r&&(await r.text()).includes('content="3"')})()`);
  const epoch=await evaluate('performance.timeOrigin');
  offline=true;await send('Page.reload');await until(`performance.timeOrigin!==${epoch}&&window.codeRevision===3`);
  const after=await evaluate(`(async()=>{

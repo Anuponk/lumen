@@ -1,5 +1,5 @@
 // #316 — Minimal authenticated Lumen-only account erasure.
-// The database derives the user from the verified JWT, never from request JSON.
+// The Edge derives the target from verified Auth, never from request JSON.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 Deno.serve(async (request) => {
   const headers = {
@@ -30,8 +30,8 @@ Deno.serve(async (request) => {
     // Privileged credentials remain server-side and are never sent to the browser.
     const operator = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
     const { data, error } = await operator.rpc('lumen_self_erase', { p_user_id: user.id, p_confirmation: 'SUPPRIMER' });
-    if (error) {
-      console.error('Lumen erasure failed:', error.code);
+    if (error || data?.status !== 'erased' || data?.barrier !== 'active' || data?.authDeleted !== false) {
+      console.error('Lumen erasure failed:', error?.code || 'acknowledgement_missing');
       return new Response(JSON.stringify({ error: 'erasure_not_completed' }), { status: 409, headers });
     }
     return new Response(JSON.stringify({ status: 'erased', scope: 'lumen', details: data?.status }), { status: 200, headers });

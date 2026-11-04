@@ -1422,8 +1422,13 @@ full account erasure, anti-resurrection, or SoldeZen isolation is validated.
 
 ## Account erasure self-service (#316, pending release)
 
-The proposed browser account menu invokes `lumen-self-erasure` with the current user JWT and explicit confirmation. The Edge Function verifies the user and calls `public.lumen_self_erase` as that user. The database derives the target from `auth.uid()` and invokes the existing transactional Lumen-only erasure policy. The shared Supabase Auth identity and SoldeZen tables are not deleted. This implementation is **not production ready** until verified guest actors and local persisted state are handled and a QA end-to-end deletion succeeds. The migration and function must be deployed together only after security review; rollback is to disable the Edge Function and revoke the RPC execute privilege, not to restore deleted player data. Cloud restore is intentionally blocked for erased identifiers by the existing erasure guards.
+Historical proposal, superseded by the privileged boundary below (never deploy this client-callable design): the browser account menu invokes `lumen-self-erasure` with the current user JWT and explicit confirmation. The Edge Function verifies the user and calls `public.lumen_self_erase` as that user. The database derives the target from `auth.uid()` and invokes the existing transactional Lumen-only erasure policy. The shared Supabase Auth identity and SoldeZen tables are not deleted. This implementation is **not production ready** until verified guest actors and local persisted state are handled and a QA end-to-end deletion succeeds. The migration and function must be deployed together only after security review; rollback is to disable the Edge Function and revoke the RPC execute privilege, not to restore deleted player data. Cloud restore is intentionally blocked for erased identifiers by the existing erasure guards.
 
 
 ### #316 — Privileged erasure boundary (PR #611)
+
+The Edge reports success only for the SQL acknowledgement `status=erased`,
+`barrier=active` and `authDeleted=false`. An empty, incomplete or inconsistent
+response remains an explicit failure, even when transport succeeded. The target
+always comes from verified Auth; a client-supplied target is ignored.
 The browser submits an explicit `SUPPRIMER` confirmation to the Lumen Edge Function. The function verifies the bearer token with Supabase Auth, then uses server-only service credentials to call `public.lumen_self_erase(uuid,text)`. The SQL entrypoint rejects non-service roles and uses the existing transactional `lumen_privacy.erase_account` policy, actor collision checks, and anti-resurrection tombstones. It never deletes shared `auth.users` or SoldeZen data. The previous client-callable JWT-clearing procedure must not be deployed. Deployment requires an isolated authenticated QA erasure and rollback verification; static CI alone is insufficient.

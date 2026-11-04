@@ -1616,4 +1616,28 @@ retention, rights export and production compatibility still need testing.
 
 
 ### #316 — Supabase isolated Edge HTTP smoke
+
+`node scripts/self-erasure-handler-tests.mjs` executes the actual Edge handler
+with synthetic Auth/RPC boundaries. It checks a forged target, denied identity,
+confirmation/origin/method refusals, SQL failure and incomplete acknowledgements.
+The latter returned HTTP 200 before the fix and now returns 409. No SQL, live
+Auth, credentials or deletion is used; authorized isolated E2E is still required.
 The workflow `.github/workflows/erasure-qa-smoke.yml` checks the deployed `lumen-erasure-qa-smoke` endpoint from a GitHub-hosted runner. It expects HTTP 401 without a bearer token, 405 for GET, and 403 for an untrusted browser Origin. This endpoint has no service-role key, no SQL erasure invocation, and cannot delete data. Passing this smoke test is **not** an authenticated end-to-end account-erasure test; the destructive release gate remains blocked until separately validated in isolated QA.
+## Offline PWA shell and update regression (#597 / #618)
+
+`node scripts/android-offline-preflight.mjs` runs in the PR quality workflow and
+checks the mandatory public service-worker shell entrypoints, repository assets,
+install-failure guards and public navigation restrictions. This is static
+preflight, not proof that a quest opens offline on a physical Android device.
+
+`node scripts/service-worker-update-browser-tests.mjs` exercises a real
+service-worker upgrade with a synthetic application. Its cache assertions derive
+the current version from `sw.js` rather than assuming the historical v10 name.
+The worker now refuses installation if any mandatory precache fetch fails; this
+avoids activating an incomplete new shell. Neither test guarantees the entire
+transitive ES-module graph or quest content is available offline.
+
+Release acceptance still requires Android installed-PWA testing: warm a playable
+quest online, close the app, switch to airplane mode, reopen and play that quest,
+then reconnect and confirm the pending attempt synchronizes once without lost
+progress. Do not cache OAuth callbacks, private responses or cloud APIs.
