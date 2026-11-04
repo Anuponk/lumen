@@ -17,7 +17,9 @@ non autorisées par ce seul accord. #316 et #170 restent ouvertes.
 [le dossier comparatif](PRIVACY_P0_CONSOLIDATION.md). Les références de tests
 du 22 octobre restent historiques. L'assistance est maintenant installée et
 active selon les métadonnées lues ; aucune activation par ce chantier. Les
-migrations #526, les textes finaux, la fusion et Play restent non autorisés.
+migrations #526, les textes finaux et Play restent des étapes distinctes.
+La fusion technique a été autorisée ensuite et réalisée ; ne pas réappliquer
+les anciennes consignes de brouillon comme un blocage de fusion courant.
 
 État au **22 octobre 2026**, [PR #526](https://github.com/Anuponk/lumen/pull/526),
 issues [#316](https://github.com/Anuponk/lumen/issues/316) et
@@ -26,10 +28,10 @@ Référence technique testée : `8a6ef78566ce377b97b9ee74a9606763ce1d7bd7`.
 Cette checklist décrit le travail restant ; elle ne vaut ni validation juridique
 ni autorisation d'agir en production.
 
-## Décisions à conserver
+## Décisions historiques du 22 octobre — fusion remplacée par l'accord ci-dessus
 
-- **PR en brouillon jusqu'à conformité complète** selon la décision de l'éditeur,
-  reconfirmée après examen de la possibilité de fusion. Pas de fusion maintenant.
+- Le maintien initial de la PR en brouillon a été remplacé par l'accord de
+  livraison technique du 25 octobre. Il ne vaut pas validation juridique.
 - Aucune application des trois migrations de cette PR, aucun déploiement,
   effacement/export de compte réel ou nouveau service payant autorisé ici.
   L'accord antérieur concernant #523 ne couvre pas #526.
@@ -98,9 +100,8 @@ ni que les migrations SQL sont appliquées par ce déploiement.
 
 - [ ] Clore les validations PWA ci-dessus et préparer la version revue, ses
   preuves et la procédure de retour arrière.
-- [ ] Obtenir une décision explicite remplaçant le maintien en brouillon et
-  couvrant le périmètre exact de livraison, les migrations et le déploiement.
-  Ce n'est pas une demande d'accord en cours : la décision actuelle reste non.
+- [x] Accord de fusion technique obtenu le 25 octobre ; les migrations et
+  opérations destructives restent soumises à leur autorisation distincte.
 - [ ] Avant exécution, revoir le catalogue, les dépendances, les permissions,
   les avis de sécurité pertinents et les copies/restaurations ; conserver les
   contrats d'acquis et l'isolation Auth/SoldeZen. Établir l'ordre SQL/code.
