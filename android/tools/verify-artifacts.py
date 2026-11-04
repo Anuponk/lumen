@@ -33,7 +33,9 @@ def verify_manifest(xml, package, debug):
     assert permissions == {'android.permission.INTERNET', receiver_permission}, permissions
     declared = {item.attrib[ANDROID + 'name']: item.attrib[ANDROID + 'protectionLevel']
                 for item in manifest.findall('permission')}
-    assert declared == {receiver_permission: 'signature'}, declared
+    assert set(declared) == {receiver_permission}, declared
+    # apkanalyzer prints the binary enum as 0x2; bundletool may use its symbolic name.
+    assert declared[receiver_permission] in {'signature', '0x2', '0x00000002', '2'}, declared
     app = manifest.find('application')
     assert app.attrib[ANDROID + 'usesCleartextTraffic'] == 'false'
     assert (app.attrib.get(ANDROID + 'debuggable') == 'true') == debug

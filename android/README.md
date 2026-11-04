@@ -14,6 +14,9 @@ licences SDK avec `sdkmanager --licenses`. Le wrapper officiel vérifié téléc
 Gradle **8.13** ; AGP **8.13.2**, Android Browser Helper **2.7.3**, minSdk **24**,
 targetSdk **36**. Aucun npm install ni build web nécessaire.
 Les versions sont figées ; une compilation nécessite les dépôts Google/Maven.
+Sous Windows, privilégier un chemin de checkout court : le lancement du binaire
+AAPT2 depuis un cache à plus de 260 caractères peut échouer. Le build local de
+ce lot a utilisé le même AAPT2 copié à un chemin court, sans changer sa version.
 
 Depuis `android/` (Windows : remplacer `./gradlew` par `.\gradlew.bat`) :
 
@@ -34,8 +37,14 @@ bundletool **1.18.2**, apkanalyzer, apksigner et jarsigner. Il vérifie versions
 permissions du manifeste fusionné, liens HTTPS, absence de code natif `.so` et
 signature attendue. Les APK/AAB, empreintes SHA-256 et rapports sont téléchargeables
 14 jours dans Actions. Aucun secret de production, aucune étape de déploiement.
+`lint.xml` ignore uniquement la suggestion de mise à jour du wrapper épinglé,
+sur son fichier précis ; les autres diagnostics restent bloquants. Le wrapper
+exclut ses fichiers des sauvegardes/transferts Android ; cela ne modifie pas le
+stockage du navigateur ni les sauvegardes de progression existantes.
 Le certificat debug CI change avec le runner : préférer une clé locale stable
 pour les essais TWA sans barre d'adresse ; ne jamais conserver la clé CI.
+
+Preuves locales et limites de la première livraison : [EVIDENCE.md](EVIDENCE.md).
 
 `release.properties` est la source des coordonnées publiques candidates :
 `fr.nopuna.lumen`, versionCode `1`, versionName `1.0.0`. Le propriétaire doit
@@ -82,8 +91,10 @@ La désinstallation du wrapper ne prouve pas l'effacement des données web.
 Portrait est demandé comme la PWA ; Android 16 peut ignorer ce choix sur grands
 écrans. Tester tablettes, redimensionnement, encoches et Android récent.
 
-Les icônes raster, adaptatives et le splash reprennent uniquement la géométrie
-de `icon-maskable.svg` et les couleurs existantes. Aucun contenu astronomique
+Les icônes raster reprennent `icon.svg` (coins transparents), les icônes
+adaptatives et le splash reprennent `icon-maskable.svg`, avec une variante
+monochrome du symbole pour Android 13+. Les couleurs restent celles de la PWA.
+Aucun contenu astronomique
 ni catalogue modifié. La seule permission plateforme déclarée est INTERNET ;
 AndroidX ajoute une permission interne par package
 `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, protégée par signature et vérifiée

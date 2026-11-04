@@ -58,6 +58,7 @@ test('icons cover pre-adaptive and adaptive launchers plus PNG TWA splash', () =
     assert.equal(readFileSync(root + `app/src/main/res/mipmap-${density}/ic_launcher.png`).subarray(1,4).toString(), 'PNG');
   }
   assert.match(read('app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml'), /adaptive-icon/);
+  assert.match(read('app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml'), /monochrome android:drawable="@drawable\/ic_monochrome"/);
   assert.equal(readFileSync(root + 'app/src/main/res/drawable-nodpi/splash.png').subarray(1,4).toString(), 'PNG');
 });
 test('no private signing material is present in packaging sources', () => {

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- This wrapper deliberately pins the AGP 8.13 / Gradle 8.13 / JDK 17
+         supported matrix. A newer Gradle suggestion is not a build defect.
+         Keep all other correctness/security/usability diagnostics blocking. -->
+    <issue id="AndroidGradlePluginVersion">
+        <ignore path="gradle/wrapper/gradle-wrapper.properties" />
+    </issue>
+</lint>
