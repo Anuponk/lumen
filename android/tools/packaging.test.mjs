@@ -47,6 +47,13 @@ test('launcher opens only HTTPS Lumen links and grants only Internet permission'
   assert.match(read('app/build.gradle'), /lumenHost: 'lumen\.nopuna\.fr'/);
   assert.match(read('app/src/main/res/values/strings.xml'), /https:\/\/lumen\.nopuna\.fr/);
 });
+test('ABH ManageDataLauncherActivity is declared so the launcher cannot crash at startup', () => {
+  const manifest = read('app/src/main/AndroidManifest.xml');
+  assert.match(manifest, /android:name="com\\.google\\.androidbrowserhelper\\.trusted\\.ManageDataLauncherActivity"/);
+  assert.match(manifest, /android:name="android\\.support\\.customtabs\\.trusted\\.MANAGE_SPACE_URL"/);
+  assert.match(manifest, /android:value="https:\\/\\/\\$\\{lumenHost\\}\\/"/);
+});
+
 test('Android dependencies, SDK and toolchain are explicit; release never uses debug signer', () => {
   const build = read('app/build.gradle');
   for (const expression of [/compileSdk 36/, /targetSdk 36/, /minSdk 24/, /VERSION_17/, /androidbrowserhelper:2\.7\.3/]) assert.match(build, expression);
