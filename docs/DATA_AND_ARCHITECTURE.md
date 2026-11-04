@@ -1423,3 +1423,27 @@ full account erasure, anti-resurrection, or SoldeZen isolation is validated.
 ## Account erasure self-service (#316, pending release)
 
 The proposed browser account menu invokes `lumen-self-erasure` with the current user JWT and explicit confirmation. The Edge Function verifies the user and calls `public.lumen_self_erase` as that user. The database derives the target from `auth.uid()` and invokes the existing transactional Lumen-only erasure policy. The shared Supabase Auth identity and SoldeZen tables are not deleted. This implementation is **not production ready** until verified guest actors and local persisted state are handled and a QA end-to-end deletion succeeds. The migration and function must be deployed together only after security review; rollback is to disable the Edge Function and revoke the RPC execute privilege, not to restore deleted player data. Cloud restore is intentionally blocked for erased identifiers by the existing erasure guards.
+
+### Offline catalogue and pending wins (#597)
+The offline service worker caches the published static module graph and catalogue data, marking a cache ready only after successful completion. Cloud profiles and reward receipts remain authoritative. A verified account may retain a bounded, device-local owner-specific offline continuation marker; this is not cryptographic authentication and must not authorize cloud writes or another account. Canonical and legacy victory intents are stored in durable owner-bound command outboxes; pending navigation projects completion without modifying rewards or cloud state. On reconnect, command replay and cloud reconciliation must remain idempotent. Android cold-start and multi-quest acceptance remain release blockers.
+
+Offline startup (#597, 4 November): restored solved boards are revalidated after
+the same account's local Auth restoration when the bounded verified-offline
+continuation marker is present, even while cloud readiness remains false.
+This schedules the existing real victory validator and durable enqueue; it never
+installs a cloud profile or acknowledges a reward. Switched accounts, changed
+attempts/quests, unverified sessions and password recovery remain held.
+Historical cloud performance recovery is deferred while navigator reports offline.
+
+Offline paid-aid decision (owner, 4 November 2026): a verified device may use
+paid Hint/Verify against its last confirmed cloud balance, less all durable
+pending wallet reservations. The existing Wallet outbox stores the unchanged
+server request before an aid is provided; Web Locks serialize device tabs.
+No profile balance, reward or receipt is invented. The verified-owner marker
+also retains that confirmed balance; older markers without a balance permit
+play but require fresh online hydration before paid offline aids. Reconnect
+replays through the existing coordinator and exact receipt/cache recovery.
+An insufficient-balance refusal is retained for review, never erased and never
+used to revoke earned progression. Offline spending across two disconnected
+devices can conflict; the owner explicitly accepted retained reconciliation.
+Server tariffs, eligibility and badge assistance rules remain unchanged.

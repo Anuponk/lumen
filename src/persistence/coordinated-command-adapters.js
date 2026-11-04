@@ -5,6 +5,7 @@ import {createTransactionalCommandCache,createConfirmedProfileCache} from './tra
 import {commitCanonicalVictoryViaLedger as canonical} from './canonical-progress.js';
 import {commitLegacyVictoryCommand as legacy} from './legacy-command.js';
 import {submitWalletCommand as wallet} from './wallet-command.js';
+import {commitWalletCommand as replayWallet} from './wallet-command.js';
 
 let currentSession,onCacheIssue=()=>{};
 const coordinator=createPersistenceCoordinator({session:()=>currentSession?.()});
@@ -53,4 +54,11 @@ export function submitWalletCommand(outbox,client,userId,operationId,request,opt
     if(options.beforeAcknowledge)await options.beforeAcknowledge(result);
    }
   }),{mirror:false}));
+}
+// Recovery commits the immutable intent through the same dispatcher; its caller
+// acknowledges only after the existing receipt/cache reconciliation succeeds.
+export function replayWalletCommand(client,userId,entry,options={}){
+ const captured=structuredClone(entry);
+ if(captured.userId!==userId)throw Error('Wallet recovery owner mismatch');
+ return send(client,{...options,userId},guarded=>replayWallet(client,userId,captured.operationId,captured.reward.request,guarded));
 }

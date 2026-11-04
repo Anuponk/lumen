@@ -22,10 +22,16 @@ for(const asset of required){
  assert(shell.includes(asset),'Missing mandatory offline entrypoint: '+asset);
  assert(fs.existsSync(asset.slice(1)||'index.html'),'Offline entrypoint missing from repository: '+asset);
 }
-assert(sw.includes('if(!response.ok)throw new Error('),'Mandatory shell HTTP failures must fail install');
-assert(sw.includes('await Promise.all(SHELL.map('),'All mandatory assets must be awaited');
+assert(sw.includes('if(!response.ok||response.redirected)throw new Error('),'Mandatory shell HTTP failures and redirects must fail install');
+assert(sw.includes('await precacheCompleteShell(cache);'),'All mandatory and transitive assets must be awaited');
+assert(sw.indexOf('await precacheCompleteShell(cache);')<sw.indexOf('await self.skipWaiting();'),'Worker must only skip waiting after full cache installation');
+assert(sw.includes('if(visited.size>2000)throw'),'Unexpectedly large dependency graphs must abort installation');
+assert(sw.includes('staticDependencies(source,'),'Transitive static module dependencies must be discovered');
+assert(sw.includes('visited.has(path)'),'Cyclic imports must be handled');
 assert(sw.includes("url.search===''"),'Auth or query-bearing navigation must not be cached as public shell');
 assert(sw.includes("url.pathname.startsWith('/src/')"));
 assert(sw.includes("url.pathname.startsWith('/content/')"));
 assert(sw.includes('url.origin!==self.location.origin'),'Never intercept third-party APIs');
 console.log('Android/PWA static preflight OK. Offline gameplay still requires real device validation.');
+
+// Budget report is informational; a separate test checks the complete asset graph.
