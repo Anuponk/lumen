@@ -122,6 +122,11 @@ if [[ ! -d "$RELEASE" ]]; then
      git show "$SHA:$page" > "$TMP/$page"
    fi
  done
+ # Android Digital Asset Links for the exact app certificate, with no secrets.
+ if git cat-file -e "$SHA:.well-known/assetlinks.json" 2>/dev/null; then
+   mkdir -p "$TMP/.well-known"
+   git show "$SHA:.well-known/assetlinks.json" > "$TMP/.well-known/assetlinks.json"
+ fi
  for dir in src content; do
    git cat-file -e "$SHA:$dir" || { echo "Missing verified directory $dir"; exit 1; }
    git archive "$SHA" "$dir" | tar -xf - -C "$TMP"
@@ -182,6 +187,14 @@ for page in "${PUBLIC_PAGES[@]}"; do
   rm -f -- "$TARGET/$page"
  fi
 done
+# Publish DAL without deleting other applications' existing associations.
+if [[ -f "$RELEASE/.well-known/assetlinks.json" ]]; then
+ [[ ! -L "$TARGET/.well-known" ]] || { echo "Refusing symlinked .well-known" >&2; false; }
+ python3 "$SOURCE/scripts/merge-assetlinks.py" \
+   "$TARGET/.well-known/assetlinks.json" \
+   "$RELEASE/.well-known/assetlinks.json" \
+   "$TARGET/.well-known/assetlinks.json"
+fi
 rm -f -- "$TARGET/transfer.html"
 printf '%s\n' "$SHA" > "$TARGET/.lumen-release-sha"
 # Verify the server answers with the expected application HTML.
@@ -199,5 +212,22 @@ for page in "${PUBLIC_PAGES[@]}"; do
   curl -fsS --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/$page?release=$SHA" | cmp -s - "$RELEASE/$page"
  fi
 done
+# A broken/forbidden DAL must roll back the publication, not strand a CCT fallback.
+if [[ -f "$RELEASE/.well-known/assetlinks.json" ]]; then
+ curl -fsS --connect-timeout 5 --max-time 20 \
+   "https://lumen.nopuna.fr/.well-known/assetlinks.json?release=$SHA" | \
+   python3 -c 'import json,sys
+desired=json.load(open(sys.argv[1]))
+published=json.load(sys.stdin)
+assert isinstance(published,list)
+for item in desired:
+ t=item["target"]
+ assert any(
+  p.get("relation")==item["relation"] and p.get("target",{}).get("namespace")==t["namespace"]
+  and p["target"].get("package_name")==t["package_name"]
+  and set(t["sha256_cert_fingerprints"]).issubset(set(p["target"].get("sha256_cert_fingerprints",[])))
+  for p in published
+ ), "Published DAL missing required app/certificate"' "$RELEASE/.well-known/assetlinks.json"
+fi
 trap - ERR
 echo "Lumen deployed $SHA; backup $BACKUP"
