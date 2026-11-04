@@ -78,7 +78,7 @@ assert.match(gameScreen,/const canonicalFollowing=canonicalPrevious&&canonicalQu
 assert.match(gameScreen,/if\(!current\)return;canonicalActiveQuest=null;levelIndex=i/);
 assert.match(gameScreen,/confirmedBadges\.autonomy\?15:10/);
 // A legacy quest cannot jump into a newly inserted quest before being solved.
-assert.match(gameScreen,/lumenProgress\.solved\[levelIndex\]&&canonicalFollowing\?\.legacyIndex===null/);
+assert.match(gameScreen,/locallyNavigable\.solved\[levelIndex\]&&canonicalFollowing\?\.legacyIndex===null/);
 assert.match(gameScreen,/hideSuccess\(\);openJourneyMap\(\);return;/);
 assert.match(gameScreen,/canonicalFollowing\.legacyIndex!==levelIndex\+1/);
 // Every inserted quest retains the authoritative engine proof and its stable ID.

@@ -1,4 +1,5 @@
 export const nodeSuites=[
+ 'erasure-qa-schema.mjs',
  'self-erasure-handler-tests.mjs',
  'learning-coach-placement-tests.mjs',
  'browser-dependency-tests.mjs',
@@ -48,6 +49,10 @@ export const nodeSuites=[
  'quest-victory-parity-tests.mjs',
  'quest-command-tests.mjs',
  'service-worker-cache-tests.mjs',
+ 'offline-verified-access-tests.mjs',
+ 'offline-owner-resume-tests.mjs',
+ 'offline-wallet-tests.mjs',
+ 'offline-catalogue-budget.mjs',
  'campaign-resume-tests.mjs',
  'campaign-presentation-tests.mjs',
  'quest-secondary-stars-tests.mjs',

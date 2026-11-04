@@ -1641,3 +1641,68 @@ Release acceptance still requires Android installed-PWA testing: warm a playable
 quest online, close the app, switch to airplane mode, reopen and play that quest,
 then reconnect and confirm the pending attempt synchronizes once without lost
 progress. Do not cache OAuth callbacks, private responses or cloud APIs.
+
+## Offline full catalogue foundation (#597)
+
+The service worker v14 now follows same-origin static ES imports/exports and CSS
+imports from the mandatory shell entrypoints, including the imported catalogue
+JSON assets. Installation must finish fetching these dependencies before the
+new worker can activate. The static preflight checks this contract. This does
+**not** yet validate offline progression, complete runtime/dynamic imports,
+quota/eviction handling, guest registration boundary, or reconciliation after
+reconnection. Do not declare #597 complete or release this without a real
+Android offline multi-quest test and cloud persistence regression checks.
+
+### Offline multi-quest Android acceptance (#597, required before full validation)
+1. On Wi-Fi, sign in and complete verified cloud hydration. Wait for the service worker to finish installing; verify its cache contains every public quest definition used by the published catalogue, including a locked quest never previously opened.
+2. Turn on airplane mode, force-close the PWA, then reopen it. The sky, an unopened available grid, and the next grid must all load. The durable owner-bound continuation marker is valid only for the same account, offline, for at most 30 days after successful online hydration; it is not authentication or a cloud receipt.
+3. Complete two sequential quests offline, with a badge and best time. Both completions must be durably recorded, immediately unlock the next quest, and survive another force-close. Durable Canonical/Legacy outbox entries supply a navigation-only view; confirmed profiles, badges, rewards and balances are not fabricated.
+4. Reconnect and verify that canonical and legacy command outboxes replay once, reward balances are not duplicated, best times and badges remain correct, and all completed quests stay unlocked.
+5. Repeat with a failed sync, storage quota pressure, account switch and a revoked session. The previous account's pending commands must never be attributed to the new account. Do not clear local outboxes to recover.
+6. Fail one mandatory catalogue asset during installation: the old active worker must remain usable and the new worker must not claim offline readiness.
+
+The 4 November delivery mission permits integration after applicable automated gates, with status To be tested while physical acceptance remains. Do not mark #597 Done or certify release readiness solely from static or synthetic checks. Real Android cold start and end-to-end cloud reconciliation remain required.
+
+### Offline regression corrections — 4 November 2026
+
+The actual worker installation is executed against the repository files in
+service-worker-cache-tests.mjs. A bare optional SDK package specifier previously
+resolved to a nonexistent local path and rejected installation; only URL paths
+are crawled now. Storage quota refusal retains the old shell without activation.
+The owner-resume suite resolves the UI imports and exercises restart/account
+isolation, catching the missing runtime import. The outbox suite checks a solved
+board resuming after verified offline Auth while cloud hydration is unavailable.
+Historical cloud recovery is deferred offline rather than launching an unhandled
+network request at startup. Existing unverified/account/run/recovery guards remain.
+
+The campaign-resume browser suite uses native Cache API, IndexedDB and actual
+network disconnection: offline reload, three wins, three next quests, another reload
+and reconnect with exact-once synthetic receipts. Auth/RPC are mocked; this is
+not a physical Android, actual expired-token or second-device acceptance result.
+
+Measured repository graph: 102 resources, approximately 2.06 MB uncompressed;
+per-file Brotli estimate 345 kB. Browser storage overhead and device quotas vary.
+
+Paid offline aids (owner decision, 4 November): `offline-wallet-tests.mjs` uses
+the actual durable Wallet outbox for restart, immutable retry, tariffs, owner
+isolation, two concurrent tabs, quota and unavailable inventory/lock. A simulated
+server refusal retains the identical debit in review and does not alter earned
+progress. The campaign browser now completes three quests offline, reloads before
+the third, uses a paid Verify and checks one wallet debit and one grant per win
+after reconnect. Actual Auth/RPC/device acceptance remains separate. The cache
+graph is now 102 resources, approximately 2.06 MB raw / 345 kB estimated Brotli.
+
+Prepared offline startup does not invoke SDK session refresh. It uses only the
+matching bounded device-owner record and registers one Auth initialization on
+reconnection. The browser mock refuses any offline getSession call, including
+the expired-token refresh path. This is local continuation only: no new cloud
+authentication, entitlement, reward or server-side privilege is granted.
+
+The offline browser fixture also refuses every request at its local HTTP server,
+so a worker cannot escape page-only DevTools emulation. It evicts a mandatory
+module from Cache API and clears only the disposable browser HTTP cache, then
+asserts an explicit loading/reconnection message and unchanged IndexedDB entry
+count. Reconnection repairs the assets and synchronizes the same operations.
+Worker v14 readiness validates the recorded asset manifest after eviction;
+redirects never enter public caches. Both network and offline fallback responses
+use no-store HTTP headers, while Cache API retains the explicit offline copies.

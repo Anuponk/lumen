@@ -1,5 +1,39 @@
 # #316 — Suppression autonome sécurisée (plan de livraison)
 
+## État courant du 4 novembre 2026
+
+Le contrat de livraison courant est celui de la PR #611 : Edge avec vérification
+Auth du JWT, cible dérivée de cette identité, credentials service uniquement côté
+serveur, wrapper SQL privilégié puis moteur transactionnel existant. Les sections
+de conception ci-dessous décrivent l’ancienne proposition ; elles n’autorisent
+pas un serveur/worker supplémentaire ni des identifiants PostgreSQL propriétaire.
+
+Après autorisation explicite du propriétaire, la recette SQL a été exécutée dans
+le projet partagé, **uniquement dans les espaces QA dédiés**. Le schéma vide
+`lumen_erasure_qa` a été réutilisé ; les copies de données, commandes, API, Auth
+fictive et autre application sont préfixées `lumen_erasure_qa_`. Aucun namespace
+de production n’est ciblé par cette adaptation, ni aucun compte réel supprimé.
+
+`node scripts/erasure-qa-schema.mjs` génère l’adaptation de namespace du moteur
+complet et du wrapper, avec refus de namespace inconnu et contrôle d’absence de
+référence qualifiée aux schémas de production. Source SHA256 de la recette :
+`14e0229abbec9d22e8d18b64d7b40d9e347f72b580cfecb108b5b3af11cdb988`
+(source normalisée LF ; code identique à la recette distante).
+Les modes `--setup`, `--schema-check`, `--fixture` sont des outils QA à relire,
+jamais des migrations de publication. Le setup refuse de remplacer des objets QA
+existants ; les tests de lignes synthétiques se terminent par ROLLBACK.
+
+Résultat sur PostgreSQL partagé : effacement du moteur complet, confirmation,
+refus de schéma inconnu, barrière anti-résurrection et appel du wrapper sous le
+rôle service passés. Auth et autre application **fictives** conservées. Après
+rollback : profils, identités fictives et barrières QA vides ; pas d’USAGE du
+schéma privé pour anon/authenticated/service_role. La RPC de production reste
+absente. Les objets QA restent privés, sans activation du service d’effacement.
+
+Cette preuve SQL ne valide pas encore la chaîne interface → JWT réel → Edge →
+RPC. Une recette authentifiée isolée de cette chaîne et une décision séparée
+d’activation production restent nécessaires ; #611 reste ouverte.
+
 ## Décision d'architecture
 
 L'effacement SQL existant est **opérateur uniquement** : `lumen_privacy.erase_account(uuid,text[],text)` est accessible au propriétaire PostgreSQL, et `review_erasure` refuse explicitement une session `auth.uid()` non nulle. Le rôle `service_role` n'a pas accès au schéma. **Ne pas** accorder `EXECUTE` aux rôles client, ni exposer le propriétaire PostgreSQL dans le navigateur ou une Edge Function. Ne pas supprimer `auth.users` : l'identité est partagée avec SoldeZen.
