@@ -24,7 +24,7 @@ test('modules and content bypass both HTTP/resource caches and retain explicit o
  for(const path of ['/src/main.js','/src/persistence/cloud-profile.js','/src/vendor/supabase-2.118.0.js','/src/vendor/qrcode-1.0.0.js','/content/catalogue/access-origins.json']){
   const response=await f.fetchAsset(path);assert.equal(await response.text(),'fresh');
   assert.equal(response.headers.get('Cache-Control'),'no-store');assert.equal(f.calls.at(-1)[1].cache,'no-store');
-  assert(f.stores.get('lumen-assets-v10').has('https://lumen.test'+path));
+  assert(f.stores.get('lumen-assets-v12').has('https://lumen.test'+path));
  }
  f.setNetwork(()=>{throw Error('offline')});
  assert.equal(await (await f.fetchAsset('/src/main.js')).text(),'fresh');
@@ -48,10 +48,10 @@ test('an unavailable asset cache cannot hide a successful network response',asyn
 });
 test('public navigation bypasses HTTP cache and activation only retires old Lumen asset caches',async()=>{
  const f=fixture();await f.fetchAsset('/',{mode:'navigate'});assert.equal(f.calls[0][1].cache,'no-store');assert.equal(f.stores.size,1);
- assert(f.stores.get('lumen-assets-v10').has('https://lumen.test/'));
- for(const key of ['lumen-assets-v9','lumen-assets-v10','another-feature'])f.stores.set(key,new Map());
+ assert(f.stores.get('lumen-assets-v12').has('https://lumen.test/'));
+ for(const key of ['lumen-assets-v9','lumen-assets-v12','another-feature'])f.stores.set(key,new Map());
  let activation;f.handlers.activate({waitUntil:p=>activation=p});await activation;
- assert.deepEqual([...f.stores.keys()],['lumen-assets-v10','another-feature']);
+ assert.deepEqual([...f.stores.keys()],['lumen-assets-v12','another-feature']);
 });
 
 test('a cold offline public navigation restores the shell without caching auth or private URLs',async()=>{
@@ -62,5 +62,5 @@ test('a cold offline public navigation restores the shell without caching auth o
  await assert.rejects(f.fetchAsset('/private/',{mode:'navigate'}),/offline/);
  f.setNetwork(()=>new Response('refused',{status:503}));
  assert.equal((await f.fetchAsset('/',{mode:'navigate'})).status,503,'HTTP refusals are not disguised as offline success');
- assert.equal(f.stores.get('lumen-assets-v10').size,1);
+ assert.equal(f.stores.get('lumen-assets-v12').size,1);
 });
