@@ -309,4 +309,3 @@ test('a review hold remains without a receipt and session changes cannot acknowl
   assert.equal(result.length,0);assert.equal(writes,0);assert.equal(acks,0);
  }
 });
-

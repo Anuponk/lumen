@@ -221,4 +221,3 @@ test('cache quota refusal cannot activate a partial worker or erase the previous
  assert.equal(f.lifecycle.skipWaiting,0);assert.equal(f.stores.get('lumen-assets-v12'),previous);
  assert.equal(f.stores.get(currentCache).has('https://lumen.test/__lumen_offline_ready_v13__'),false);
 });
-

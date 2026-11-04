@@ -18,6 +18,12 @@ test('offline startup does not launch historical cloud recovery or mutate cached
  const cloud=createCloudPersistence(model,{}, {navigator:{onLine:false}});
  await cloud.cloudMergeHistoricalPerformance();
  assert.equal(calls,0);assert.equal(JSON.stringify(model.lumenProgress),before);
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis.navigator,'onLine');
+ try{
+  Object.defineProperty(globalThis.navigator,'onLine',{value:false,configurable:true});
+  await createCloudPersistence(model,{},{}).cloudMergeHistoricalPerformance();
+  assert.equal(calls,0,'The real UI omits navigator from its injected environment');
+ }finally{if(descriptor)Object.defineProperty(globalThis.navigator,'onLine',descriptor);else delete globalThis.navigator.onLine}
 });
 test('unverified, signed-out or online sessions cannot bypass hydration',()=>{
  for(const override of [{verifiedSession:false,offline:true},{verifiedSession:true,offline:false},{verifiedSession:true,offline:true,signedIn:false}]){
@@ -37,4 +43,3 @@ test('offline victories must enqueue before cloud readiness and avoid network ca
  assert(legacy.includes('if(!cloudProfileReady||(typeof navigator!=="undefined"&&navigator.onLine===false))'));
  assert(legacy.indexOf('legacyVictoryOutbox.enqueue(')<legacy.indexOf("if(!cloudProfileReady||canonicalOutboxRetryInFlight"));
 });
-

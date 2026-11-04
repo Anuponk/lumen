@@ -1435,3 +1435,15 @@ installs a cloud profile or acknowledges a reward. Switched accounts, changed
 attempts/quests, unverified sessions and password recovery remain held.
 Historical cloud performance recovery is deferred while navigator reports offline.
 
+Offline paid-aid decision (owner, 4 November 2026): a verified device may use
+paid Hint/Verify against its last confirmed cloud balance, less all durable
+pending wallet reservations. The existing Wallet outbox stores the unchanged
+server request before an aid is provided; Web Locks serialize device tabs.
+No profile balance, reward or receipt is invented. The verified-owner marker
+also retains that confirmed balance; older markers without a balance permit
+play but require fresh online hydration before paid offline aids. Reconnect
+replays through the existing coordinator and exact receipt/cache recovery.
+An insufficient-balance refusal is retained for review, never erased and never
+used to revoke earned progression. Offline spending across two disconnected
+devices can conflict; the owner explicitly accepted retained reconciliation.
+Server tariffs, eligibility and badge assistance rules remain unchanged.

@@ -7,16 +7,28 @@ import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 const {send,evaluate,errors}=await connectBrowser();
 const all=canonicalQuestList(),boundary=all.find(q=>q.id==='planned-real-24-q10'),next=all.find(q=>q.ordinal===boundary.ordinal+1);
 const done=all.filter(q=>q.ordinal<=boundary.ordinal),solved=Object.fromEntries(done.filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1]));
-const profile={solved,historyBackup:solved,badges:{},stars:{},performances:{},noHint:{},canonicalQuestState:Object.fromEntries(done.filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true,stars:1,badges:{}}])),daily:{dates:{},rewards:{}},challenges:{},xp:1000,shards:3,skyScore:298,skyHistoryVersion:4};
+const profile={solved,historyBackup:solved,badges:{},stars:{},performances:{},noHint:{},canonicalQuestState:Object.fromEntries(done.filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true,stars:1,badges:{}}])),daily:{dates:{},rewards:{}},challenges:{},xp:1000,shards:3,walletRevision:1,skyScore:298,skyHistoryVersion:4};
 const fixture=`localStorage.setItem('lumenTutorialSeen','1');localStorage.setItem('lumenTutorialCompletedV1','1');localStorage.setItem('lumenSound','off');if(!sessionStorage.getItem('grandChienFixture')){localStorage.setItem('lumenCloudOwnerId','synthetic-frontier');localStorage.setItem('lumenProgressV1',JSON.stringify(${JSON.stringify(profile)}));sessionStorage.setItem('grandChienFixture',JSON.stringify(${JSON.stringify(profile)}));}
 if(sessionStorage.getItem('solvedBoardOnLoad')){const a=JSON.parse(localStorage.getItem('lumenActiveAttemptV1'));a.board=JSON.parse(sessionStorage.getItem('solvedBoardOnLoad'));localStorage.setItem('lumenActiveAttemptV1',JSON.stringify(a));sessionStorage.removeItem('solvedBoardOnLoad');}
 window.__profile=JSON.parse(sessionStorage.getItem('grandChienFixture'));window.__canonicalReceipts=new Map(JSON.parse(sessionStorage.getItem('canonicalReceipts')||'[]'));window.__canonicalGrants=Number(sessionStorage.getItem('canonicalGrants')||0);
 if(sessionStorage.getItem('recreatedCaptureOnLoad')){const fixture=JSON.parse(sessionStorage.getItem('recreatedCaptureOnLoad'));localStorage.setItem('lumenActiveAttemptV1',JSON.stringify(fixture.attempt));localStorage.setItem('lumenCanonicalVictoryOutboxV2:'+fixture.entry.userId+':'+fixture.entry.operationId,JSON.stringify(fixture.entry));if(fixture.paused)localStorage.setItem('lumenCanonicalVictoryRetryV1:'+fixture.entry.userId+':v2-'+fixture.entry.operationId,JSON.stringify({version:1,userId:fixture.entry.userId,questId:fixture.entry.questId,operationId:fixture.entry.operationId,intentCreatedAt:fixture.entry.createdAt,kind:'review',code:'22023'}));sessionStorage.removeItem('recreatedCaptureOnLoad');}
-window.supabase={createClient(){return {auth:{getSession:async()=>{await new Promise(resolve=>setTimeout(resolve,300));return {data:{session:{user:{id:sessionStorage.getItem('grandChienOwner')||'synthetic-frontier'}}}}},onAuthStateChange(){}},rpc:async(name,args)=>{
+window.supabase={createClient(){return {auth:{getSession:async()=>{if(navigator.onLine===false)throw Error('Synthetic expired session refresh unavailable');await new Promise(resolve=>setTimeout(resolve,300));return {data:{session:{user:{id:sessionStorage.getItem('grandChienOwner')||'synthetic-frontier'}}}}},onAuthStateChange(){}},rpc:async(name,args)=>{
  if(navigator.onLine===false)throw new TypeError('Synthetic RPC offline');
  if(name==='lumen_restore_profile')return {data:structuredClone(window.__profile)};
  if(name==='lumen_cas_profile'){const stable=value=>value&&typeof value==='object'&&!Array.isArray(value)?Object.fromEntries(Object.keys(value).sort().map(key=>[key,stable(value[key])])):Array.isArray(value)?value.map(stable):value;if(JSON.stringify(stable(args.p_expected))!==JSON.stringify(stable(window.__profile)))return {data:false,error:null};if(JSON.stringify(args.p_payload.performances||{})!==JSON.stringify(window.__profile.performances||{}))return {data:null,error:{code:'22023',message:'legacy victory command required; preserve pending data and update client'}};window.__profile=structuredClone(args.p_payload);sessionStorage.setItem('grandChienFixture',JSON.stringify(window.__profile));return {data:true}};
- if(name==='lumen_wallet_command_version')return {error:{code:'PGRST202'},status:404};
+ if(name==='lumen_wallet_command_version')return {data:1};
+ if(name==='lumen_get_wallet_command')return {data:JSON.parse(sessionStorage.getItem('walletReceipts')||'{}')[args.p_operation_id]??null};
+ if(name==='lumen_commit_wallet_command'){
+  const receipts=JSON.parse(sessionStorage.getItem('walletReceipts')||'{}');let receipt=receipts[args.p_operation_id];
+  if(!receipt){
+   const cost=args.p_request.kind==='hint'&&args.p_request.sequence>1?2:1;
+   if(window.__profile.shards<cost)return {error:{code:'P0001',message:'insufficient wallet balance'}};
+   window.__profile.shards-=cost;window.__profile.walletRevision++;
+   receipt={version:1,operationId:args.p_operation_id,request:args.p_request,revision:window.__profile.walletRevision,balance:window.__profile.shards,balanceDelta:-cost};
+   receipts[args.p_operation_id]=receipt;sessionStorage.setItem('walletReceipts',JSON.stringify(receipts));sessionStorage.setItem('grandChienFixture',JSON.stringify(window.__profile));sessionStorage.setItem('walletDebits',String(Number(sessionStorage.getItem('walletDebits')||0)+1));
+  }
+  return {data:receipt};
+ }
  if(name==='lumen_canonical_command_version')return {data:1,error:null};
  if(name==='lumen_get_quest_command'){
   const receipt=window.__canonicalReceipts.get(args.p_operation_id);
@@ -54,7 +66,7 @@ window.supabase={createClient(){return {auth:{getSession:async()=>{await new Pro
  if(name==='lumen_get_progress')return {data:Object.keys(window.__profile.solved).map(k=>({puzzle_id:Number(k)+1}))};
  return {data:[],error:null};
 }}}};Object.defineProperty(window,'supabase',{value:window.supabase,writable:false,configurable:true});`;
-async function until(expression){for(let i=0;i<120;i++){if(await evaluate(expression))return;await new Promise(r=>setTimeout(r,100))}throw Error('Timed out '+expression+' '+JSON.stringify(await evaluate(`({message:document.getElementById('msg')?.textContent,guardians:lumenDiagnostics.snapshot().state.flat().filter(v=>v===2).length,diagnostics:localStorage.getItem('lumenCloudDiagnosticsV1'),status:document.getElementById('mobileAuthStatus')?.textContent,attempt:(()=>{const a=JSON.parse(localStorage.getItem('lumenActiveAttemptV1')||'null');return a&&{questId:a.questId,state:a.state,mode:a.mode,startedAt:a.startedAt}})(),legacyIndex:lumenDiagnostics.snapshot().levelIndex,owner:localStorage.getItem('lumenCloudOwnerId'),localPerformances:lumenDiagnostics.snapshot().progress.performances})`)))}
+async function until(expression){for(let i=0;i<120;i++){if(await evaluate(expression,true))return;await new Promise(r=>setTimeout(r,100))}throw Error('Timed out '+expression+' '+JSON.stringify(await evaluate(`({message:document.getElementById('msg')?.textContent,guardians:lumenDiagnostics.snapshot().state.flat().filter(v=>v===2).length,diagnostics:localStorage.getItem('lumenCloudDiagnosticsV1'),status:document.getElementById('mobileAuthStatus')?.textContent,attempt:(()=>{const a=JSON.parse(localStorage.getItem('lumenActiveAttemptV1')||'null');return a&&{questId:a.questId,state:a.state,mode:a.mode,startedAt:a.startedAt}})(),legacyIndex:lumenDiagnostics.snapshot().levelIndex,owner:localStorage.getItem('lumenCloudOwnerId'),localPerformances:lumenDiagnostics.snapshot().progress.performances})`)))}
 try{
  await send('Page.enable');await send('Runtime.enable');await send('Network.enable');await send('Network.setBlockedURLs',{urls:['*supabase.co*']});
  await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
@@ -206,8 +218,15 @@ try{
  try{await navigateAndWait({send,evaluate},'Page.reload',{ignoreCache:false})}catch(error){throw Error(error.message+' '+JSON.stringify({errors,page:await evaluate(`({url:location.href,title:document.title,text:document.body?.innerText.slice(0,250)})`)}))}
  await until(`navigator.onLine===false&&!!document.querySelector('#board .cell')`);
  const offlineWins=[];
- for(let i=0;i<2;i++){
+ for(let i=0;i<3;i++){
+  if(i===2){await navigateAndWait({send,evaluate},'Page.reload');await until(`!document.getElementById('authLogout').hidden`)}
   await acknowledgeLearningMilestones(evaluate);
+  if(i===0){
+   await until(`!document.getElementById('authLogout').hidden`);
+   await evaluate(`document.getElementById('verify').click();document.getElementById('verify').click()`);
+   await until(`(async()=>{const {createDurableCanonicalVictoryOutbox}=await import('/src/persistence/durable-canonical-outbox.js');return (await createDurableCanonicalVictoryOutbox(localStorage,{namespace:'Wallet'}).pending('other-synthetic')).length===1})()`);
+   assert.equal(await evaluate(`lumenDiagnostics.snapshot().progress.shards`),3,'Offline aid reserves funds without changing the confirmed profile');
+  }
   await evaluate(`(()=>{document.getElementById('attemptMask').click();const d=lumenDiagnostics.snapshot();const solved=d.puz.reg.map(row=>row.map(()=>0));d.puz.sol.forEach((col,row)=>solved[row][col]=2);lumenDiagnostics.setBoard(solved)})()`);
   await until(`document.getElementById('successOverlay').classList.contains('show')&&document.getElementById('successSub').textContent.includes('attente de confirmation')`);
   const id=await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).questId`);offlineWins.push(id);
@@ -221,10 +240,11 @@ try{
  assert.equal(await evaluate(`window.__canonicalGrants`),1,'No grants while disconnected');
  await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
  await until(`${JSON.stringify(offlineWins)}.every(id=>window.__profile.canonicalQuestState[id]?.solved)`);
- assert.equal(await evaluate(`window.__canonicalGrants`),3,'Reconnection grants each of the two durable wins once');
+ assert.equal(await evaluate(`window.__canonicalGrants`),4,'Reconnection grants each durable offline win once');
  await navigateAndWait({send,evaluate},'Page.reload');
  await until(`document.getElementById('retryAccountSync').hidden`);
- assert.equal(await evaluate(`window.__canonicalGrants`),3,'Reload does not replay rewards');
+ assert.equal(await evaluate(`window.__canonicalGrants`),4,'Reload does not replay rewards');
+ assert.equal(await evaluate(`Number(sessionStorage.getItem('walletDebits'))`),1,'The offline paid aid is debited exactly once after reconnect');
  // Completed/partial canonical-only constellations use actual quest membership,
  // even when a historical numeric slot/drawing is absent. Read-only browsing
  // and refresh must preserve the running attempt and all reward balances.
@@ -246,8 +266,7 @@ try{
  }
  assert.equal(await evaluate(`JSON.stringify({progress:lumenDiagnostics.snapshot().progress,attempt:localStorage.getItem('lumenActiveAttemptV1')})`),preserved,'Rendering cannot rewrite rewards or attempt data');
  assert.deepEqual(errors,[]);
- const report={authenticatedMobile:true,grandChienToDauphin:true,canonicalReload:true,attemptIdentityPreserved:true,accountSwitchIsolated:true,canonicalBannerIsolated:true,canonicalStartMetadataArchived:true,canonicalVictoryConfirmed:true,oneGrant:true,quest:next.ordinal,solvedBoardResumedAfterAuth:true,committedReceiptResumed:true,recreatedCaptureArchived:true,oldQuestRecoveryPreservesActiveBoard:true,canonicalRewardCelebration:true};
+ const report={authenticatedMobile:true,grandChienToDauphin:true,canonicalReload:true,attemptIdentityPreserved:true,accountSwitchIsolated:true,canonicalBannerIsolated:true,canonicalStartMetadataArchived:true,canonicalVictoryConfirmed:true,oneGrant:true,quest:next.ordinal,solvedBoardResumedAfterAuth:true,committedReceiptResumed:true,recreatedCaptureArchived:true,oldQuestRecoveryPreservesActiveBoard:true,canonicalRewardCelebration:true,offlineWins:3,offlineReload:true,offlinePaidAid:true,offlineWalletDebitOnce:true};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));
  console.log(JSON.stringify(report));
 }finally{await send('Browser.close').catch(()=>{})}
-

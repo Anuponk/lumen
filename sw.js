@@ -141,4 +141,3 @@ self.addEventListener("notificationclick",function(e){
  e.notification.close();
  e.waitUntil(clients.openWindow(e.notification.data&&e.notification.data.url?e.notification.data.url:"/"));
 });
-

@@ -108,4 +108,3 @@ assert.match(gameScreen,/termine d’abord les quêtes précédentes/);
 const constellationEnds=quests.filter((q,i)=>i===quests.length-1||quests[i+1].constellationId!==q.constellationId);
 assert.equal(constellationEnds.length,40);
 assert.equal(new Set(constellationEnds.map(q=>q.id)).size,40);
-
