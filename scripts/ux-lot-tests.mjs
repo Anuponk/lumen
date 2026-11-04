@@ -3,11 +3,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {functionSource} from './source-tools.mjs';
+import {recordLabel} from '../src/ui/personal-records.js';
+import {questPerformanceRecord} from '../src/campaign/quest-rules.js';
 const source=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 function context({completed=true,available=true,legacy=null}={}){
  const quests=[{id:'old-91',ordinal:1,legacyIndex:70},{id:'inserted-a',ordinal:2,legacyIndex:legacy},{id:'tail',ordinal:3,legacyIndex:92}];
  const progress={solved:{70:1},shards:7,badges:{kept:true}},calls=[];
- const c={activeQuest:()=>quests[0],canonicalQuestList:()=>quests,questIsCompleted:(_p,id)=>id==='old-91'&&completed,
+ const c={recordLabel,questPerformanceRecord,formatDuration:seconds=>String(seconds),activeQuest:()=>quests[0],canonicalQuestList:()=>quests,questIsCompleted:(_p,id)=>id==='old-91'&&completed,
   lumenProgress:progress,canonicalQuestAvailable:()=>available,questIsAccessible:()=>available,
   socialChallenge:null,learningReplayActive:()=>false,startCanonicalQuest:q=>calls.push(q.id),startReplay:i=>calls.push(i),
   canonicalActiveQuest:null,levelIndex:70,replayMode:true,loadPuzzle:()=>calls.push('load'),refreshJourney:()=>calls.push('refresh')};

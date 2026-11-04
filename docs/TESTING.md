@@ -1697,6 +1697,23 @@ count. Reconnection repairs the assets and synchronizes the same operations.
 Worker v14 readiness validates the recorded asset manifest after eviction;
 redirects never enter public caches. Both network and offline fallback responses
 use no-store HTTP headers, while Cache API retains the explicit offline copies.
+## Records personnels (#600)
+
+- `node scripts/personal-records-tests.mjs` : deux générations de quêtes,
+  minima indépendants, replays non qualifiants, aucune inférence historique,
+  récompenses inchangées et récupération du meilleur record cloud/local.
+- `node scripts/personal-records-browser-tests.mjs` via le lanceur CDP : vraie
+  interface QA à 320/390/1440 px, avant partie, nouveau record, rechargement,
+  absence de débordement horizontal et reduced-motion. Aucune Auth réelle.
+- CI PostgreSQL 17 : migration dans une base jetable, parité intégrale des deux
+  commandes avec les projections JS, puis `scripts/fixtures/personal-records.sql`.
+  Les fixtures de parité s’exécutent après toutes les extensions de commandes ;
+  leurs profils historiques portent l’origine catalogue explicite de test.
+
+Recette restant nécessaire : deux appareils authentifiés, conflit de temps
+absolu/sans aide, aide payante puis victoire, reprise d’une victoire hors ligne,
+ancienne sauvegarde sans record et Android réel. Ne pas annoncer cette partie
+serveur active tant que sa migration et son read-back ne sont pas vérifiés.
 
 ## TWA Digital Asset Links on o2switch (#170)
 

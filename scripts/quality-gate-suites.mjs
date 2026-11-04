@@ -1,4 +1,5 @@
 export const nodeSuites=[
+ 'personal-records-tests.mjs',
  'learning-coach-placement-tests.mjs',
  'browser-dependency-tests.mjs',
  'privacy-readiness-tests.mjs',
