@@ -84,7 +84,10 @@ Portrait est demandé comme la PWA ; Android 16 peut ignorer ce choix sur grands
 
 Les icônes raster, adaptatives et le splash reprennent uniquement la géométrie
 de `icon-maskable.svg` et les couleurs existantes. Aucun contenu astronomique
-ni catalogue modifié. La seule permission déclarée est INTERNET ; ni publicité,
+ni catalogue modifié. La seule permission plateforme déclarée est INTERNET ;
+AndroidX ajoute une permission interne par package
+`DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, protégée par signature et vérifiée
+dans le manifeste compilé. Ni publicité,
 analytics natif, stockage, localisation, caméra ni paiement ajouté.
 
 ## Isolation et suites futures

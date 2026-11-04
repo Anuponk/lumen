@@ -4,9 +4,6 @@ on:
   pull_request:
     branches: [main]
     paths: ['android/**', '.github/workflows/android-packaging.yml']
-  push:
-    branches: ['feature/170-android-packaging']
-    paths: ['android/**', '.github/workflows/android-packaging.yml']
   workflow_dispatch:
 
 permissions:

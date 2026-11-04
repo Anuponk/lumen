@@ -72,6 +72,8 @@ la déclaration site → app à
 Réponse directe **200**, HTTPS valide, **application/json**, aucun login ni
 redirection. Aucun fichier vide, certificat factice ou placeholder n'est livré
 à cette URL par ce chantier. Aucun déploiement du domaine n'est déclenché.
+Contrôle HTTP du 4 novembre 2026 : cette URL répondait **404**, association à
+configurer avant recette sans barre d'adresse. Le manifeste PWA répondait 200.
 
 Depuis `android/`, remplacer les arguments descriptifs par les valeurs réelles :
 
