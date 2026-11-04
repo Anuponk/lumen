@@ -2,9 +2,21 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
+import http from 'node:http';
 import {connectBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 const {send,evaluate,errors}=await connectBrowser();
+let offlineAssets=false;
+const appRoot=path.resolve('.');
+const appServer=http.createServer((req,res)=>{
+ if(offlineAssets){req.socket.destroy();return}
+ const pathname=new URL(req.url,'http://localhost').pathname;
+ const file=path.resolve(appRoot,pathname==='/'?'index.html':pathname.replace(/^\//,''));
+ if(path.relative(appRoot,file).startsWith('..')||!fs.existsSync(file)){res.writeHead(404);res.end();return}
+ const mime={'.js':'text/javascript','.mjs':'text/javascript','.json':'application/json','.html':'text/html','.css':'text/css','.svg':'image/svg+xml','.webmanifest':'application/manifest+json'};
+ res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','Cache-Control':'no-store'});
+ fs.createReadStream(file).pipe(res);
+});
 const all=canonicalQuestList(),boundary=all.find(q=>q.id==='planned-real-24-q10'),next=all.find(q=>q.ordinal===boundary.ordinal+1);
 const done=all.filter(q=>q.ordinal<=boundary.ordinal),solved=Object.fromEntries(done.filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1]));
 const profile={solved,historyBackup:solved,badges:{},stars:{},performances:{},noHint:{},canonicalQuestState:Object.fromEntries(done.filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true,stars:1,badges:{}}])),daily:{dates:{},rewards:{}},challenges:{},xp:1000,shards:3,walletRevision:1,skyScore:298,skyHistoryVersion:4};
@@ -68,10 +80,11 @@ window.supabase={createClient(){return {auth:{getSession:async()=>{if(navigator.
 }}}};Object.defineProperty(window,'supabase',{value:window.supabase,writable:false,configurable:true});`;
 async function until(expression){for(let i=0;i<120;i++){if(await evaluate(expression,true))return;await new Promise(r=>setTimeout(r,100))}throw Error('Timed out '+expression+' '+JSON.stringify(await evaluate(`({message:document.getElementById('msg')?.textContent,guardians:lumenDiagnostics.snapshot().state.flat().filter(v=>v===2).length,diagnostics:localStorage.getItem('lumenCloudDiagnosticsV1'),status:document.getElementById('mobileAuthStatus')?.textContent,attempt:(()=>{const a=JSON.parse(localStorage.getItem('lumenActiveAttemptV1')||'null');return a&&{questId:a.questId,state:a.state,mode:a.mode,startedAt:a.startedAt}})(),legacyIndex:lumenDiagnostics.snapshot().levelIndex,owner:localStorage.getItem('lumenCloudOwnerId'),localPerformances:lumenDiagnostics.snapshot().progress.performances})`)))}
 try{
+ await new Promise(resolve=>appServer.listen(0,'127.0.0.1',resolve));
  await send('Page.enable');await send('Runtime.enable');await send('Network.enable');await send('Network.setBlockedURLs',{urls:['*supabase.co*']});
  await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
  await send('Page.addScriptToEvaluateOnNewDocument',{source:fixture});
- await navigateAndWait({send,evaluate},'Page.navigate',{url:process.env.LUMEN_TEST_URL});
+ await navigateAndWait({send,evaluate},'Page.navigate',{url:'http://127.0.0.1:'+appServer.address().port+'/'});
  await new Promise(r=>setTimeout(r,700));
  await until(`!!window.lumenDiagnostics&&JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')||'[]').some(e=>e.event==='hydration_ready')`);
  await acknowledgeLearningMilestones(evaluate);
@@ -214,6 +227,9 @@ try{
  assert.equal(await evaluate(`!!localStorage.getItem('lumenOfflineVerifiedOwnerV1')`),true);
  assert.equal(await evaluate(`(async()=>!!(await caches.match(location.href)))()`,true),true,'Public document is prepared before disconnection');
  await send('Network.setBypassServiceWorker',{bypass:false});
+ // DevTools' page-only emulation is insufficient for worker fetches. Also
+ // reject requests at the fixture server so every fallback is genuinely cached.
+ offlineAssets=true;
  await send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
  try{await navigateAndWait({send,evaluate},'Page.reload',{ignoreCache:false})}catch(error){throw Error(error.message+' '+JSON.stringify({errors,page:await evaluate(`({url:location.href,title:document.title,text:document.body?.innerText.slice(0,250)})`)}))}
  await until(`navigator.onLine===false&&!!document.querySelector('#board .cell')`);
@@ -238,7 +254,17 @@ try{
  await navigateAndWait({send,evaluate},'Page.reload');
  await until(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).questId===${JSON.stringify(offlineNext)}`);
  assert.equal(await evaluate(`window.__canonicalGrants`),1,'No grants while disconnected');
+ const checkpointCount=()=>evaluate(`(async()=>{const db=await new Promise((resolve,reject)=>{const r=indexedDB.open('lumen-canonical-outbox',1);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});const count=await new Promise(resolve=>{const r=db.transaction('intents').objectStore('intents').count();r.onsuccess=()=>resolve(r.result)});db.close();return count})()`,true);
+ const countBeforeEviction=await checkpointCount();
+ await evaluate(`(async()=>{for(const key of await caches.keys())if(key.startsWith('lumen-assets-'))await (await caches.open(key)).delete('/src/campaign/catalogue.js')})()`,true);
+ await send('Network.clearBrowserCache');
+ await send('Page.reload',{ignoreCache:false});
+ await until(`document.getElementById('localPersistenceStatus')?.textContent.includes('Chargement de Lumen incomplet')`);
+ assert.equal(await evaluate(`document.getElementById('localPersistenceStatus').hidden`),false,'An evicted dependency has an explicit recovery message');
+ assert.equal(await checkpointCount(),countBeforeEviction,'An incomplete cache never deletes command checkpoints');
+ offlineAssets=false;
  await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
+ await navigateAndWait({send,evaluate},'Page.reload');
  await until(`${JSON.stringify(offlineWins)}.every(id=>window.__profile.canonicalQuestState[id]?.solved)`);
  assert.equal(await evaluate(`window.__canonicalGrants`),4,'Reconnection grants each durable offline win once');
  await navigateAndWait({send,evaluate},'Page.reload');
@@ -266,7 +292,7 @@ try{
  }
  assert.equal(await evaluate(`JSON.stringify({progress:lumenDiagnostics.snapshot().progress,attempt:localStorage.getItem('lumenActiveAttemptV1')})`),preserved,'Rendering cannot rewrite rewards or attempt data');
  assert.deepEqual(errors,[]);
- const report={authenticatedMobile:true,grandChienToDauphin:true,canonicalReload:true,attemptIdentityPreserved:true,accountSwitchIsolated:true,canonicalBannerIsolated:true,canonicalStartMetadataArchived:true,canonicalVictoryConfirmed:true,oneGrant:true,quest:next.ordinal,solvedBoardResumedAfterAuth:true,committedReceiptResumed:true,recreatedCaptureArchived:true,oldQuestRecoveryPreservesActiveBoard:true,canonicalRewardCelebration:true,offlineWins:3,offlineReload:true,offlinePaidAid:true,offlineWalletDebitOnce:true};
+ const report={authenticatedMobile:true,grandChienToDauphin:true,canonicalReload:true,attemptIdentityPreserved:true,accountSwitchIsolated:true,canonicalBannerIsolated:true,canonicalStartMetadataArchived:true,canonicalVictoryConfirmed:true,oneGrant:true,quest:next.ordinal,solvedBoardResumedAfterAuth:true,committedReceiptResumed:true,recreatedCaptureArchived:true,oldQuestRecoveryPreservesActiveBoard:true,canonicalRewardCelebration:true,offlineWins:3,offlineReload:true,offlinePaidAid:true,offlineWalletDebitOnce:true,assetServerDisconnected:true,cacheEvictionFeedback:true,checkpointsPreserved:true};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));
  console.log(JSON.stringify(report));
-}finally{await send('Browser.close').catch(()=>{})}
+}finally{appServer.closeAllConnections();await new Promise(resolve=>appServer.close(resolve));await send('Browser.close').catch(()=>{})}

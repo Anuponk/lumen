@@ -40,6 +40,10 @@ async function completeCachedShell(cache){
   return true;
  }catch{return false}
 }
+function withoutHttpCache(response){
+ const headers=new Headers(response.headers);headers.set('Cache-Control','no-store');
+ return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
+}
 
 self.addEventListener("install",e=>{
  e.waitUntil((async()=>{
@@ -103,7 +107,7 @@ self.addEventListener("fetch",e=>{
     }
     return response;
    }catch(error){
-    if(publicShell){const cached=await caches.open(CACHE).then(cache=>cache.match(e.request)).catch(()=>undefined);if(cached)return cached}
+    if(publicShell){const cached=await caches.open(CACHE).then(cache=>cache.match(e.request)).catch(()=>undefined);if(cached)return withoutHttpCache(cached)}
     throw error;
    }
   })());
@@ -130,7 +134,7 @@ self.addEventListener("fetch",e=>{
    return response;
   }catch(error){
    const cached=await caches.open(CACHE).then(cache=>cache.match(e.request)).catch(()=>undefined);
-   if(cached)return cached;
+   if(cached)return withoutHttpCache(cached);
    throw error;
   }
  })());

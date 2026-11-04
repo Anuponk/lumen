@@ -239,3 +239,9 @@ test('redirected responses never enter the public asset or document cache',async
  let task;f.handlers.install({waitUntil:p=>task=p});await assert.rejects(task,/Offline shell unavailable/);
  assert.equal(f.lifecycle.skipWaiting,0);
 });
+
+test('precache fallback cannot seed a stale HTTP module cache during offline play',async()=>{
+ const f=fixture();let task;f.handlers.install({waitUntil:p=>task=p});await task;
+ f.setNetwork(()=>{throw Error('offline')});
+ assert.equal((await f.fetchAsset('/src/main.js')).headers.get('Cache-Control'),'no-store');
+});

@@ -1688,3 +1688,12 @@ matching bounded device-owner record and registers one Auth initialization on
 reconnection. The browser mock refuses any offline getSession call, including
 the expired-token refresh path. This is local continuation only: no new cloud
 authentication, entitlement, reward or server-side privilege is granted.
+
+The offline browser fixture also refuses every request at its local HTTP server,
+so a worker cannot escape page-only DevTools emulation. It evicts a mandatory
+module from Cache API and clears only the disposable browser HTTP cache, then
+asserts an explicit loading/reconnection message and unchanged IndexedDB entry
+count. Reconnection repairs the assets and synchronizes the same operations.
+Worker v14 readiness validates the recorded asset manifest after eviction;
+redirects never enter public caches. Both network and offline fallback responses
+use no-store HTTP headers, while Cache API retains the explicit offline copies.
