@@ -85,6 +85,11 @@ class Publisher(unittest.TestCase):
         self.old = self.git("rev-parse", "HEAD").strip()
         for name in PUBLIC_PAGES + ("internal-preview.html",):
             (self.source / name).write_text("Reviewed page: " + name)
+        (self.source / ".well-known").mkdir()
+        self.debug_dal = [{"relation": ["delegate_permission/common.handle_all_urls"],
+                           "target": {"namespace": "android_app", "package_name": "fr.nopuna.lumen.debug",
+                                      "sha256_cert_fingerprints": ["AA:" * 31 + "AA"]}}]
+        (self.source / ".well-known" / "assetlinks.json").write_text(json.dumps(self.debug_dal))
         (self.source / "sw.js").write_text("new version")
         self.git("add", ".")
         self.git("commit", "-am", "new release")
@@ -99,6 +104,10 @@ class Publisher(unittest.TestCase):
 endpoint="${@: -1}"
 if [[ "$endpoint" == *build-info.json* ]]; then
  printf '{"sha":"%s"}\\n' "$TEST_HTTP_SHA"
+elif [[ "$endpoint" == *'/assetlinks.json?'* ]]; then
+ [[ "${TEST_DAL_FORBIDDEN:-0}" != 1 ]] || exit 22
+ asset="${endpoint#https://lumen.nopuna.fr/}"
+ cat "$HOME/lumen.nopuna.fr/${asset%%\\?*}"
 elif [[ "$endpoint" == *'/src/'* ]]; then
  [[ "${TEST_STATIC_FORBIDDEN:-0}" != 1 ]] || exit 22
  asset="${endpoint#https://lumen.nopuna.fr/}"
@@ -143,6 +152,25 @@ fi
             self.assertEqual((self.target / name).read_bytes(), (self.source / name).read_bytes())
             self.assertEqual((self.target / name).stat().st_mode & 0o777, 0o644)
         self.assertFalse((self.target / "internal-preview.html").exists())
+
+    def test_dal_published_with_correct_certificate_and_other_app_preserved(self):
+        existing = [{"relation": ["delegate_permission/common.handle_all_urls"],
+                     "target": {"namespace": "android_app", "package_name": "org.example.another",
+                                "sha256_cert_fingerprints": ["BB:" * 31 + "BB"]}}]
+        (self.target / ".well-known").mkdir()
+        (self.target / ".well-known" / "assetlinks.json").write_text(json.dumps(existing))
+        result = self.publish(mask=0o077)
+        self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+        published = json.loads((self.target / ".well-known" / "assetlinks.json").read_text())
+        self.assertEqual(published, existing + self.debug_dal)
+        self.assertEqual((self.target / ".well-known" / "assetlinks.json").stat().st_mode & 0o777, 0o644)
+
+    def test_dal_http_rejection_rolls_back_entire_site(self):
+        self.env["TEST_DAL_FORBIDDEN"] = "1"
+        result = self.publish()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual((self.target / "index.html").read_text(), "original site")
+        self.assertFalse((self.target / ".well-known" / "assetlinks.json").exists())
 
     def test_forbidden_public_page_restores_previous_site(self):
         self.env["TEST_PAGE_FORBIDDEN"] = "1"
