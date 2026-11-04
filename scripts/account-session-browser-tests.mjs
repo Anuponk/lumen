@@ -3,11 +3,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {verifyWalletAndOfflineFlow} from './wallet-flow-browser.mjs';
+import {verifyPrivacyRequests,verifyBundledLibraries} from './privacy-browser.mjs';
 import {verifyCompletedQuestHold} from './completed-quest-hold-browser.mjs';
 import {verifyQuotaRecovery} from './quota-recovery-browser.mjs';
 import {verifyTransactionalCommandCache} from './transactional-command-cache-browser.mjs';
 import {verifyDomainReplay} from './domain-replay-browser.mjs';
 import {verifyHistoricalClaim} from './historical-claim-browser.mjs';
+import {verifyPlayerFavorableRecovery} from './player-favorable-browser.mjs';
 import {connectBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
 const {send,evaluate,errors}=await connectBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -69,6 +71,7 @@ window.supabase={createClient(url,key,options){
   if(name==='lumen_wallet_command_version')return {error:{code:'PGRST202'},status:404};
   if(!isolatedRecovery)return name==='lumen_restore_profile'?{data:null,error:{message:'simulated restore outage'}}:{data:[],error:null};
   if(name==='lumen_restore_profile')return {data:structuredClone(window.__fixtureProfile),error:null};
+  if(name==='lumen_reconcile_acquisitions')return {error:{code:'PGRST202'},status:404};
   if(['lumen_commit_legacy_command','lumen_get_legacy_command'].includes(name)&&args.p_expected_user_id!=='fixture-player')return {data:null,error:{code:'42501'},status:403};
   if(name==='lumen_legacy_command_version')return {data:1,error:null};
   if(name==='lumen_get_legacy_command')return {data:window.__fixtureLegacyReceipts.get(args.p_operation_id)??null,error:null};
@@ -283,7 +286,15 @@ try{
    assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),true);
     assert.equal(await evaluate('lumenDiagnostics.snapshot().levelIndex'),5,'Dismissing cannot start quest 7 without an account');
     assert.equal(await evaluate(`document.getElementById('mapModal').hidden`),false,'Guest can continue browsing');
-    assert.equal(await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="planned-real-01-q07"]').disabled`),true,'The same discovery gate protects inserted quests');
+    // #552: an account-locked card is actionable to explain the gate again;
+    // it must still refuse to start the quest or change the retained attempt.
+    const attemptBeforeAccountRetry=await evaluate(`localStorage.getItem('lumenActiveAttemptV1')`);
+    assert.equal(await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="planned-real-01-q07"]').disabled`),false);
+    await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="planned-real-01-q07"]').click()`);
+    assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),false,'A blocked continuation explicitly explains the account requirement');
+    assert.equal(await evaluate('lumenDiagnostics.snapshot().levelIndex'),5,'The discovery guard still refuses the next quest');
+    assert.equal(await evaluate(`localStorage.getItem('lumenActiveAttemptV1')`),attemptBeforeAccountRetry,'Explaining the gate cannot create or replace an attempt');
+    await evaluate(`document.getElementById('accountOptinClose').click()`);
    assert.equal(await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress.solved)`),before,'Automatic offer dismissal preserves earned victories');
    assert.deepEqual(await evaluate('window.__authCalls'),[],'Continuing as guest must not authenticate');
   }
@@ -406,13 +417,20 @@ try{
  }
  await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:authFixtureId});
  const walletFlow=await verifyWalletAndOfflineFlow({send,evaluate,navigate,url});
+ const deletionRequests=await verifyPrivacyRequests({send,evaluate},url);
+ const bundledLibraries=await verifyBundledLibraries({evaluate});
+ assert.equal(errors.length,0,JSON.stringify(errors));
  const completedQuestHold=await verifyCompletedQuestHold({send,evaluate,navigate,url});
  const domainReplay=await verifyDomainReplay({send,evaluate,navigate,url});
  const quotaRecovery=await verifyQuotaRecovery({evaluate,navigate,url});
  const transactionalCache=await verifyTransactionalCommandCache({evaluate,navigate,url});
  const historicalClaim=await verifyHistoricalClaim({evaluate,navigate,url});
+ const favorableRecovery=await verifyPlayerFavorableRecovery({send,evaluate,navigate,url});
+ const favorableLostReply=await verifyPlayerFavorableRecovery({send,evaluate,navigate,url,loseReply:true});
+ const favorableGuestStart=await verifyPlayerFavorableRecovery({send,evaluate,navigate,url,guestStarted:true});
+ const favorableHistoricalFrontier=await verifyPlayerFavorableRecovery({send,evaluate,navigate,url,historicalFrontier:true});
  assert.equal(errors.length,0,JSON.stringify(errors));
- const report={simulatedAuth:true,liveCloudWrites:false,results,walletFlow,completedQuestHold,domainReplay,quotaRecovery,transactionalCache,historicalClaim,exceptions:errors};
+ const report={simulatedAuth:true,liveCloudWrites:false,results,walletFlow,deletionRequests,bundledLibraries,completedQuestHold,domainReplay,quotaRecovery,transactionalCache,historicalClaim,favorableRecovery,favorableLostReply,favorableGuestStart,favorableHistoricalFrontier,exceptions:errors};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));
  console.log(JSON.stringify(report));
 }finally{await send('Browser.close').catch(()=>{})}

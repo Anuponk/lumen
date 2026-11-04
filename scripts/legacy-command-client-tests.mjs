@@ -24,7 +24,7 @@ async function isolatedLegacyFixture(){
   createCloudRetryScheduler:options=>options,retryPendingCanonicalOutboxOnReconnect:async()=>{},
   refreshCanonicalOutboxNotice:async()=> (await box.pending(userId)).length});
  const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
- for(const name of ['canReplayCanonicalOutbox','canReplayLegacyOutbox','retryPendingLegacyOutboxOnReconnect']){
+ for(const name of ['canReplayCanonicalOutbox','canReplayLegacyOutbox','recoverQueuedLegacyReceipt','retryPendingLegacyOutboxOnReconnect']){
   if(source.includes('function '+name+'('))vm.runInContext(functionSource(source,name),ctx);
  }
  const start=source.indexOf('const canonicalRecovery=createCloudRetryScheduler('),end=source.indexOf('\nasync function retryAccountCloudSync',start);
@@ -44,6 +44,19 @@ test('verified partial hydration recovers a queued historical command without re
  assert.equal(f.ctx.cloudProfileReady,false);assert.equal(f.ctx.reloads,0);
  assert.ok(f.ctx.events.includes('legacy_outbox_isolated_recovered'));
  assert.ok(f.state.calls.every(([name])=>!['lumen_cas_profile','lumen_backup_profile'].includes(name)));
+});
+
+test('UI reconnect retires a paused later historical capture through receipt reads only',async()=>{
+ const f=await isolatedLegacyFixture();await f.run();
+ const originalReceipt=[...f.state.receipts.values()][0],questId=originalReceipt.request.questId,operationId=originalReceipt.request.operationId;
+ const later=await f.box.enqueue(userId,questId,{facts:{...facts,seconds:49}},{operationId});
+ await f.box.pause(userId,later,{code:'22023'});f.state.calls.length=0;
+ await f.run();
+ assert.equal((await f.box.pending(userId)).length,0);assert.equal((await f.box.inspect(userId)).paused.length,0);
+ assert.deepEqual(f.state.calls.map(([name])=>name),['lumen_get_legacy_command','lumen_restore_profile']);
+ assert.equal(f.state.receipts.size,1);assert.equal(f.state.profile.performances[0].attempts,1);
+ assert.equal(JSON.stringify(f.ctx.lumenProgress),f.original);
+ assert.ok(f.ctx.events.includes('legacy_queued_receipt_recovered'));
 });
 
 test('historical isolated recovery retains account, client, active-attempt and readiness guards',async()=>{

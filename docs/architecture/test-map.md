@@ -1,5 +1,93 @@
 # Existing verification map
 
+Privacy consolidation #316: `privacy-current-schema.sql` checks real current
+SQL dependencies and support expiry/export/rollback; `privacy-optional-support.sql`
+checks absent/partial support; `privacy-support-concurrency.py` retains original
+erasure races and adds real support lock ordering. See `docs/TESTING.md`.
+
+Technical retention: `scripts/fixtures/technical-retention*.sql` and
+`scripts/technical-retention-concurrency.py` in disposable PostgreSQL 17 CI.
+See `docs/TESTING.md` for preview, dates, held/open data, rollback, role denial,
+concurrent reenabling and DDL checks; no production purge is tested.
+
+Private rights export: `scripts/fixtures/account-rights*.sql` after both privacy
+migrations, in `canonical-ledger.yml` PostgreSQL 17. Covers bounds, stable
+read-only requirement, role denial, guest/account scope, Auth/other-app/push
+secret exclusion and access after erasure. Local PGlite is separate evidence.
+Celestial UX (#575/#519): `celestial-ux-tests.mjs` verifies priority, catalogue
+growth/order, badge ratios, historical evidence, deterministic dust, immutability
+and the actual pulse consumer. `celestial-ux-browser.mjs`, imported by the sky
+navigation runner, exercises real wins, skip/focus, all five requested formats,
+15 comparative mastery captures, replay-only badge crossing, reduced motion and
+decorative-failure fallback. The late-game runner retains global completion and
+historical-award assertions in the new single scene. Physical acceptance remains.
+
+Temporary support #574: `support-tests.mjs` joins the Node gate;
+`fixtures/support.sql` and `support-concurrency.py` join disposable PostgreSQL CI.
+`support-browser.mjs` extends the independent incident/cockpit browser at four
+mobile/landscape sizes, with consent/send/revoke and detached-action checks.
+See [limits and remaining live/physical acceptance](../SUPPORT_574.md).
+
+Cockpit furthest point: disposable `fixtures/cockpit-furthest-quest.sql` covers
+an older higher catalogue ordinal followed by a lower replay, reporting-window
+independence, unchanged chronology, traffic filters and capability guards.
+Canonical-ledger CI runs the forward migration; `cockpit-browser.mjs` checks
+the explicit directory label and unknown state in the native UI.
+
+Fluid onboarding (#569/#576): onboarding-fluid-tests.mjs executes direct ordinary
+victory navigation, the real quest-6 lesson and account-scoped local preferences.
+learning-browser-tests.mjs covers manual quest 1, free 2–5, voluntary sky, reload,
+the actual sixth-quest checkbox and immediate re-enable at 320/360/390 and desktop.
+Existing policy/account/cloud suites preserve six-quest signup, rewards and holds.
+
+Restored grid/label: `player-favorable-browser.mjs` checks actual quest identity,
+grid and label before any map click and after reload, plus same-owner Auth
+refresh preservation. `guest-account-hydration-tests.mjs` guards existing-account
+handoff versus guest seeding; `campaign-resume-tests.mjs` covers both quest
+formats and unavailable/social/session guards. Synthetic browser data and RPCs;
+real-device acceptance remains separate.
+
+Owned historical frontier: `player-favorable-browser.mjs` restores a dormant
+inserted catch-up board with acquired access farther into a later Adventure.
+Assert origin-frontier identity, grid/label, exact archive and unchanged cloud.
+`campaign-resume-tests.mjs` guards active/replay/nonempty preservation and a
+failed optional archive without a global readiness hold.
+
+Guest start-only hydration: guest-account helper/hook tests run the real first
+gesture producer, reject earned/unknown performance evidence, and verify attempt
+backup failure conservation. The account browser suite starts a signed-out guest
+by native input before Auth and restores from the same persisted mock cloud.
+`campaign-resume-tests.mjs` guards parity of the shared start-only classifier.
+
+Virgin-browser restore: `guest-account-tests.mjs` checks default-reserve/origin
+coverage versus genuine guest facts; `guest-account-hydration-tests.mjs` executes
+the production hook, verifies originals and unchanged cloud, then owned reload.
+`player-favorable-browser.mjs` clears all synthetic local storage, including owner,
+and tests a three-shard starter against the same persisted mock cloud. These are
+automated fixtures, not proof of recovery on a real second device.
+
+Historical recreated-capture recovery: `canonical-durable-outbox-tests.mjs`
+covers paused duplicates, immutable facts, receipt/projection proof, archival and
+session/storage refusals. `legacy-command-client-tests.mjs` exercises the real
+UI reconnect helper; `cloud-unsynced-recovery-tests.mjs` verifies local archive
+export alongside both IndexedDB stores. These fixtures do not prove phone recovery.
+
+Player ergonomics (#555/#552/#566): `ux-lot-tests.mjs` (catalogue successor,
+live guards, unchanged rewards, replay ready/running states) and
+`ux-lot-browser-tests.mjs` (hint geometry/touch, guest account explanation and
+retry, historical/inserted/constellation navigation by keyboard/mouse/touch).
+Both are mandatory quality-gate suites; browser evidence is emulation with
+synthetic saves, separate from physical mobile and live Auth/cloud acceptance.
+
+First welcome/story (#532): `first-welcome-tests.mjs` checks local presentation
+eligibility, refused storage, exact narrative timing, hidden-time exclusion and
+cancellation. `first-welcome-browser-tests.mjs` exercises fresh/direct/full/skip/
+reload/Aide flows against the real board, profile and attempt, responsive geometry,
+motion preference, readable transcript and warm offline use. Both join the full
+gate. Chromium emulation is not physical Android, screen-reader or account QA.
+The same suites exercise music lifecycle/refusal with fake nodes and native Web
+Audio, including a 30-second offline render, mute and pause/exit cleanup.
+
 Private QA/cohort controls: `recette-schema-tests.mjs`,
 `historical-rollout-tests.mjs`, disposable `scripts/fixtures/sync-cohort-control.sql`
 and optional `supabase/recette/smoke.sql`. The latter executes actual SQL under
@@ -116,6 +204,28 @@ Baseline: `bef5f32`. All paths are repository-relative. This phase indexes exist
 
 ## Select a check
 
+Lumen-only erasure: `scripts/fixtures/account-erasure-bootstrap.sql`,
+`scripts/fixtures/account-erasure.sql`, `scripts/account-erasure-concurrency.py`
+and the real private migration run after wallet regressions in
+`canonical-ledger.yml` on disposable PostgreSQL 17. See `docs/TESTING.md` for
+scope/denial/race assertions; this does not certify production/native deletion.
+
+Compact tutorial coach: `learning-coach-placement-tests.mjs` reproduces the
+short-screen header overlap using the real placement function; existing
+`ux-cleanup-tests.mjs` checks browser help click, modal focus and preservation.
+
+Play/privacy preparation: `privacy-readiness-tests.mjs` plus `analytics-tests.mjs`;
+account-session browser runner invokes `privacy-browser.mjs` for mobile/desktop
+request preparation without live mail/Auth. `play-readiness.mjs --enforce`
+deliberately blocks missing real evidence; it is not a passing CI certification.
+See `docs/PLAY_STORE_READINESS.md` and the account-deletion runbook.
+The same browser runner reads the two HTML legal candidates at mobile/desktop
+sizes, without scripts/Auth, preserving saves and retaining access to requests.
+
+Browser libraries: `browser-dependency-tests.mjs` checks exact local assets,
+hashes/licenses and absence of CDN script tags. `privacy-browser.mjs` loads the
+real local exports and renders a fixture QR without Auth; worker cache tests
+cover both bundles offline. Family-account design is not implementation evidence.
 Hydration #536: `cloud-achievements-session-recovery-tests.mjs` covers the exact
 reported event ordering with synthetic discordant profiles and durable adapters;
 `cloud-hydration-mirror-session-tests.mjs` covers the demonstrated late-mirror
@@ -247,3 +357,14 @@ Deployment checks also exist as `scripts/o2switch-deploy-tests.py` and `scripts/
 - All documented concrete paths/links and the three symptom routes were checked; moved contracts were compared with the original, allowing only introduction and relative-link edits. `git diff --check` passes. Full quality gate, browser, SQL and live-device checks were not run in this documentation phase.
 
 Guest registration, guided undo and universal badge eligibility: `guest-account-tests.mjs`, `guest-account-hydration-tests.mjs`, `guided-undo-tests.mjs`, `performance-badge-tests.mjs`; real browser interaction and SQL parity supplement these isolated fixtures (#528/#533/#529).
+## Player-favorable recovery coverage (#391)
+
+`cloud-player-favorable-tests.mjs` → client backup/CAS/read-back/install boundary;
+`cloud-achievements-session-recovery-tests.mjs` → production hydration hook and
+pending intent preservation; `fixtures/player-favorable-acquisitions.sql` plus
+`acquisition-recovery-concurrency.py` → actual RPC/guards/concurrent spending.
+See TESTING.md for native browser and physical-device evidence limits.
+
+## Account deletion request journey (#316)
+
+`node --test scripts/account-deletion-request-journey.test.mjs` covers the public `supprimer-compte.html` form and `src/privacy/account-deletion.js`: manual mailto preparation, invalid-address rejection, explicit Lumen-only scope, and honest non-automatic-send messaging. `.github/workflows/account-deletion-request-journey.yml` runs this focused regression on PR changes. This is a simulated form contract, **not** browser/email delivery or a real-account production erasure test. The disposable PostgreSQL deletion test remains in `.github/workflows/privacy-sql-integration.yml` and should not be rerun for documentation-only changes.

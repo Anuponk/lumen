@@ -1,5 +1,6 @@
 import {createIndexedOutboxStore} from './indexed-outbox-store.js';
 import {classifyCanonicalRecoveryError} from './canonical-recovery-errors.js';
+import {assertRecreatedLegacyCapture} from './legacy-command.js';
 
 const PREFIX='lumenCanonicalVictoryOutboxV2:',LEGACY_PREFIX='lumenCanonicalVictoryOutboxV1:',RETRY_PREFIX='lumenCanonicalVictoryRetryV1:';
 function browserStore(){let database;try{database=globalThis.indexedDB}catch{}return createIndexedOutboxStore(database)}
@@ -97,6 +98,10 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
  // capture with the exact server receipt before retiring the redundant record.
  async function archiveRecreatedCapture(userId,entry,committed,{sessionValid=()=>true}={}){
   const originalReceipt=committed?.receipt,saved=committed?.profile?.canonicalQuestState?.[entry?.questId];
+  if(namespace==='Legacy'){
+   if(!sessionValid())throw Error('Legacy archive session changed');
+   assertRecreatedLegacyCapture(userId,entry,committed);
+  }else{
   let receipt=originalReceipt,reward=entry?.reward;
   const keys=(value,allowed)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).every(key=>allowed.includes(key));
   if(receipt?.request?.version===2){
@@ -129,9 +134,10 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
   const normalize=value=>value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,normalize(value[key])])):value;
   const exact=JSON.stringify(normalize(reward))===JSON.stringify(normalize(accepted));
   if(!exact&&Date.parse(entry.createdAt)<Date.parse(receipt.recordedAt))throw Error('Capture predates committed receipt');
+  }
   const inspection=await scan(userId),target=inspection.groups.find(copies=>copies[0].entry.operationId===entry.operationId&&copies[0].entry.questId===entry.questId);
   if(!inspection.complete||inspection.issues.length||!target||JSON.stringify(target[0].entry)!==JSON.stringify(entry))throw Error('Recreated capture storage unconfirmed');
-  const key='lumenCanonicalRecreatedCaptureArchiveV1:'+userId+':'+entry.operationId+':'+encodeURIComponent(entry.createdAt);
+  const key=domainPrefix('lumenCanonicalRecreatedCaptureArchiveV1:')+userId+':'+entry.operationId+':'+encodeURIComponent(entry.createdAt);
   const raw=JSON.stringify({version:1,userId,entry,receipt:originalReceipt,copies:target.map(copy=>({store:copy.store,raw:copy.raw}))});
   let archived=false;
   try{await fallback.put(key,raw);archived=await fallback.get(key)===raw}catch{}

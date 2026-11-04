@@ -20,6 +20,7 @@ try{
  await send('Page.navigate',{url:process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/'});
  for(let i=0;i<100&&!await evaluate('!!window.lumenDiagnostics');i++)await sleep(100);
  assert(await evaluate('!!window.lumenDiagnostics'),'Application did not start');await sleep(1200);
+ check(await evaluate('getComputedStyle(document.getElementById("returnToast")).pointerEvents==="none"'),'Noninteractive return notification must not intercept Help or board gestures');
  for(const viewport of [{width:390,height:844,mobile:true},{width:360,height:640,mobile:true},{width:1440,height:900,mobile:false}]){
   await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});
   for(const quest of [0,1,5,10]){
@@ -48,7 +49,9 @@ try{
    check(await snapshot()===before,label+' modal interactions changed quest/teaching state');
    results.push({viewport,quest:quest+1,failures:failures.slice(start)});
   }
-  await evaluate(`(()=>{lumenDiagnostics.setupQuest(5);document.getElementById('manualCrossTip').hidden=true;document.getElementById('questStart').hidden=true;const s=lumenDiagnostics.snapshot();s.state[0][s.puz.sol[0]]=2;lumenDiagnostics.setBoard(s.state)})()`);
+  // This case checks missing MANUAL exclusions; explicitly choose that playstyle.
+  // The P1 default is auto-on, whose derived crosses need no manual hint.
+  await evaluate(`(()=>{lumenDiagnostics.setupQuest(5);const auto=document.getElementById('autoCross');if(auto.checked)auto.click();document.getElementById('manualCrossTip').hidden=true;document.getElementById('questStart').hidden=true;const s=lumenDiagnostics.snapshot();s.state[0][s.puz.sol[0]]=2;lumenDiagnostics.setBoard(s.state)})()`);
   await acknowledgeLearningMilestones(evaluate);
   await click('#hint');
   const hint=await evaluate(`({hidden:document.getElementById('hintCard').hidden,title:document.getElementById('hintTitle').textContent,copy:document.getElementById('hintCopy').textContent,highlighted:document.querySelectorAll('#board .cell.hi').length})`);

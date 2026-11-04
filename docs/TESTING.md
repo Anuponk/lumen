@@ -1,5 +1,139 @@
 # Testing and quality gate
 
+Public-page release packaging: `python3 scripts/o2switch-deploy-tests.py` runs
+disposable Linux publisher fixtures. It checks that the three reviewed privacy
+HTML pages are published byte-for-byte with mode 644, unrelated root HTML is
+excluded, a forbidden page restores the previous static site, and historical
+revisions without those pages remove stale managed copies. The regression was
+RED at `d2bc918` (three expected failures); these are static publishing tests,
+not evidence of a live account erasure or legal acceptance.
+
+`node scripts/learning-coach-placement-tests.mjs` executes the actual coach
+placement function against the 360x640 header/board geometry for quests 1–2.
+It retains clear space for help/focus, board cells and actions. The existing
+UX browser checks validate actual pointer clicks and modal focus restoration.
+The regression also moves the board/header by the measured 54px scroll without
+running another frame, verifying that the compact coach follows before a click.
+
+Browser dependency preparation: `node scripts/browser-dependency-tests.mjs`
+rejects third-party executable script URLs and checks pinned bundle hashes and
+license copies. The account-session browser runner also loads the actual local
+SDK and renders a synthetic QR, without live Auth. Worker cache fixtures cover
+both vendor assets online/offline. This is not native or Families certification.
+
+## Play preparation and privacy (#170/#316)
+
+Technical retention: `technical-retention-bootstrap.sql` adds catalog-shaped
+columns to the disposable fixture; the real migration runs before
+`technical-retention.sql` / `technical-retention-readonly.sql`. The initial test
+failed for the missing function; local SQL then passed. Tests cover default
+read-only preview, confirmation and bounds, API denial, atomic rollback, clock
+backdating, reopen/reenable, support holds, disabled clock guards and preserved
+progress/receipts/historical evidence/unknown events. Synthetic age setup
+temporarily disables only the new date triggers, never erasure guards.
+`technical-retention-concurrency.py` is restricted to disposable localhost CI:
+it tests concurrent reenabling with SKIP LOCKED and DDL serialization. Native
+PostgreSQL 17 results are distinct from local PGlite and production evidence.
+
+The prepared private rights-export migration is exercised by
+`scripts/fixtures/account-rights.sql`, `account-rights-readonly.sql`,
+`account-rights-erasure.sql` and `account-rights-after-erasure.sql`, after the
+erasure migration and its concurrency tests in native PostgreSQL 17 CI.
+The export test first failed for the missing function, then passed locally.
+Assertions cover read-only stable snapshots, row/source-byte bounds without
+truncation, missing actors, actual denial under all API roles, own receipts and
+challenges, exclusion of other participants/apps/Auth and push keys, unchanged
+source data, and remaining private barriers after erasure. This is disposable
+fixture evidence, not a real user request or production deployment.
+
+The preparation report also blocks `children.activationReview` while child
+activation is deferred, even with synthetic complete evidence for other fields.
+The positive fixture uses an explicitly enabled synthetic parental-process
+state; it does not claim any production child account or consent is verified.
+
+`privacy-readiness-tests.mjs` checks the intentionally blocked preparation
+manifest, request-mail encoding/injection refusal and no destructive client path.
+The account-session browser suite runs `privacy-browser.mjs` at mobile/desktop
+sizes: confirmation, prepared mail only, no SDK/mail transport and unchanged
+save/attempt. These tests do not execute or certify account deletion.
+`analytics-tests.mjs` retains granted-payload parity and adds default-deny,
+per-event revocation, permission failure and no optional session/referral storage.
+
+`node scripts/play-readiness.mjs --enforce` is expected to fail until all real
+publisher, family, deletion, native-device and Console evidence is supplied.
+It is a future publishing prerequisite, not a test to weaken for green CI or a
+remote Play Console lock. See [readiness](PLAY_STORE_READINESS.md).
+## Temporary private assistance #574
+
+`node scripts/support-tests.mjs` covers closed-schema copies, secrets, consent,
+offline/expiry/retries, account changes and revoke/upload races. The existing
+independent incident browser runs the support journey at 320×568, 360×640,
+390×844 and 844×390 with real pointer input, large text and accessibility checks.
+Canonical-ledger CI applies the prepared support migration in disposable
+PostgreSQL, then executes `fixtures/support.sql` and `support-concurrency.py`.
+Local PGlite and mocked browser RPCs are not live Supabase/physical acceptance.
+Run `test-affected.mjs --full`; retain all game/cloud/embedded/catalogue gates.
+See [audit, privacy contract and outstanding verification](SUPPORT_574.md).
+
+## Fluid onboarding P1 (#569 / #576)
+
+onboarding-fluid-tests.mjs executes the real victory handler for quests 1–5,
+the quest-6 checked/already-unchecked lesson, and scoped preference recreation,
+account switches and storage refusal. quest-policy tests preserve the independent
+six-visible-quest registration boundary.
+
+The account-ready handoff executes the real `updateAuthUI` and control functions:
+pending identity, restored choice, same-owner refresh and account switches preserve
+the selected run. `player-favorable-browser.mjs` uses different guest/account choices
+and asserts the real checkbox after verified Auth, token refresh and cold reload.
+
+learning-browser-tests.mjs retains the manual quest-1 gestures/intro, tests optional quest-2 drag with reload and direct
+quest-3 navigation; the general browser suites retain rewards, replays, cloud
+failure, guest claim, constellation/finale and catalogue-growth regressions.
+Changed assertions replace the obsolete mandatory quest-2 lesson/tour contract
+with the product decision of 25 October, without changing award eligibility.
+Run test-affected.mjs --full, including all embedded runHintTests sizes and strict
+catalogue checks. Physical phones, real signup/cloud transfer and screen-reader
+acceptance remain separate from isolated Chromium/CDP fixtures.
+
+## Player ergonomics (#555, #552, #566)
+
+`ux-lot-tests.mjs` covers catalogue successors (including inserted quests and
+nonconsecutive historical keys), live access refusal, missing/final quests,
+challenge/lesson isolation and mutation-free navigation. The mandatory
+`ux-lot-browser-tests.mjs` checks hint last-row hit testing and actual touch/mouse
+input at 320×568, 360×640, 390×844, 667×375, 844×390 and 1440×900, account-copy
+and signup/login modes plus retry from Mon ciel, and keyboard replay navigation.
+It uses disposable guest/QA fixtures and disables service-worker installation
+only in those layout fixtures; the independent PWA update suite stays mandatory.
+Browser emulation does not establish physical-device, live Auth or cross-device
+transfer validation. The existing account, touch/drag, cloud, embedded hint and
+strict catalogue suites remain required.
+
+## Optional first welcome/story — #532
+
+`node scripts/first-welcome-tests.mjs` covers fresh/returning/owned contexts,
+deep links, denied/unverified presentation storage, exact texts, scene boundaries,
+30-second completion, excluded background time and cancellation. It is mandatory
+in the Node gate. `first-welcome-browser-tests.mjs` joins the full browser gate:
+native Chromium with real DOM/local storage, actual 30-second playback, direct
+entry, immediate skip, refresh, Aide replay of a paused existing attempt, keyboard
+Escape/focus, 320/360/landscape/1440 geometry, reduced-motion emulation, transcript
+and warm offline exit. It compares unchanged live profile, board and attempt bytes
+around presentation actions. Existing learning/gesture/hint/cloud regressions stay.
+The same suites cover the original local ambient score: mute preference, bounded
+audio nodes, unavailable/refused audio and late rejection cleanup in Node;
+native user activation, silent welcome, completion/skip cleanup, local mute,
+transcript/background pause/resume and a full offline audio render in Chromium.
+Rendering verifies a nonzero quiet signal and final fade, not subjective listening
+quality. No recording or external audio dependency is introduced.
+
+Physical acceptance remains required: listening volume/timbre on real speakers,
+small Android/PWA, actual background/close,
+large text and screen reader, guest → account/reconnect, and cold offline startup
+under existing service-worker constraints. No physical or live-account result may
+be inferred from Chromium fixtures. #532 stays open until this acceptance.
+
 Private recipe follow-up (24 October 2026): `recette-schema-tests.mjs` rejects
 external schema dependencies and player-row copying; `historical-rollout-tests.mjs`
 covers explicit capability 0 and attested schema isolation without relaxing the
@@ -511,6 +645,187 @@ Every change affecting content, progression, shop, sky navigation or saved state
 Tests should assert relationships derived from the content registry rather than a specific future total. Documentation alone is not proof of runtime coverage.
 
 ## Cloud persistence regression matrix
+
+### Lumen-only erasure (#316, prepared migration)
+
+Current-schema extension: `fixtures/privacy-current-schema.sql` runs after the
+real main migration chain, including #593. It covers private audit attribution,
+expired cases, rollback of copies and saves, rights export without third-party
+operator/reference fields, erased-UID and delayed-upload refusals, real support
+revocation preserving saves, unknown audits and changed guard arguments.
+`privacy-optional-support.sql` checks absence and partial-schema refusal inside
+a disposable rollback. `privacy-support-concurrency.py` uses distinct PostgreSQL
+connections for support/erasure lock ordering and duplicate erasure. Historical
+#526 fixtures run separately in `lumen_privacy_test`; current-schema fixtures and
+existing command concurrency remain in `lumen_test`. No production fixtures.
+
+Legal-page candidates: `privacy-browser.mjs` loads the actual HTML pages at
+390/1440 px, opening `mentions-legales.html` / `confidentialite.html` independently
+without SDK/login/scripts, verifies viewport fit, visible candidate status,
+the rights-request link and unchanged save/attempt. The existing mailto checks
+and real local-library checks remain. Rendering does not certify legal content
+or production publication; the preparation evidence fields remain unverified.
+
+`canonical-ledger.yml` adds `account-erasure-bootstrap.sql`, real migration
+`20261022160212_lumen_account_erasure.sql`, `account-erasure.sql` and
+`account-erasure-concurrency.py` after the actual snapshot/ledger/wallet
+regressions on disposable PostgreSQL **17**. No provider connection, real
+identity or paid database. The extra fixture schema fails if reused.
+
+All 26 owned data tables are seeded. Assertions cover erasure, social sender
+anonymization, other participants, shared Auth/other-app preservation, rule
+retention, explicit confirmation, missing/shared actors, contradictory keys,
+schema/guard drift, mid-deletion rollback, retry, anonymous/cache resurrection,
+an incoming cross-application cascade rejected before any deletion,
+old JWTs on every guarded table and the real backup RPC. Anon/player/service
+roles have no private access. Repeatable-read writes fail closed. Separate
+Python connections cover both lock orders: erasure commits before a blocked
+old writer, and an in-flight write commits before the locked erasure review.
+The existing canonical/legacy/wallet concurrency suites run again with new
+synthetic accounts after guard installation, preserving normal players' command
+receipts, exact balances and restore behavior.
+
+The initial pre-migration assertion failed on the missing Lumen-only function.
+Local PGlite 0.5.11 / PostgreSQL 18.6 checks synthetic SQL and the actual migration
+chain; it does not replace PostgreSQL 17 concurrency CI, provider retention,
+parental verification or future native-device erasure. Production application
+and `accountDeletionEndToEnd` remain separate gates. See the deletion runbook.
+Celestial UI: `celestial-ux-tests.mjs` covers variable/reordered/growing catalogue
+membership, distinct completion/mastery, empty denominators, explicit historical
+badges, input immutability and deterministic continuous dust. The native
+`celestial-ux-browser.mjs` extends the sky navigation runner: first real
+constellation/Adventure wins, one scene, skip by hit-tested input, keyboard focus,
+locked following Adventure, reload silence, unchanged rewards on navigation and
+reduced motion. Screens: 320×568, 360×640, 390×844, 844×390 and desktop. It saves
+0/25/50/75/100% comparisons for small/large/additional-light constellations under
+`docs/validation/milky-way-*.png`; restored mastery must be static and original
+astronomical/secondary lights remain intact. The late-game runner asserts a
+single global finale with the full-catalogue recap and preserved historical
+award. Auth/RPC and QA data are synthetic; physical Android, screen readers and
+real cross-device acceptance remain separate.
+
+Ownership-handoff presentation: `player-favorable-browser.mjs` asserts the
+actual active quest identity, rendered label and grid immediately after restore,
+before any map interaction, then again after reload. Virgin and first-gesture
+devices use simulated Auth/RPC and retain original archives and exact balances.
+Same-owner token refresh preserves the selected board/run. The production hook
+fixture checks handoff once, readiness without document restart, and no handoff
+when a new account is seeded from guest progress. `campaign-resume-tests.mjs`
+covers numeric and inserted canonical frontiers, unavailable content and social,
+QA and unverified-session guards. Learning rules and gestures are unchanged;
+the restored quest uses the existing board/tutorial initialization.
+
+Same-owner historical frontier: a native synthetic browser restores an owned
+READY canonical catch-up board while numeric acquisitions already reach a later
+Adventure. Assert the later origin frontier, matching grid/label, exact original
+attempt archive and unchanged cloud/balance without a map visit. The existing
+same-owner test now supplies an actual started/paused run rather than an idle
+placeholder and retains its board/run assertions. Helper tests keep started,
+paused, replay, nonempty and already-correct selections; a failed archive must
+not lock the hydrated account. Hydration-hook fixtures retain their existing
+session/mirror assertions while stubbing this separately tested UI selection.
+
+Historical acquisition seed compatibility: `quest-victory-parity-tests.mjs`
+guards verified unversioned first-performance copies, original archival and
+idempotent retry. Divergent times/assistance, added badges or unknown fields,
+unsupported versions, changed first rewards, existing local runs, missing
+authority and Wallet conflicts remain refused. The real hydration hook in
+`cloud-achievements-session-recovery-tests.mjs` installs once and reaches readiness
+after the ordinary reload without another recovery RPC or victory. These use
+synthetic data; affected-device confirmation remains separate.
+
+Virgin-browser restoration: `guest-account-tests.mjs` and the actual UI hook in
+`guest-account-hydration-tests.mjs` cover an unowned starter with three shards and
+the current catalogue against an existing historical account, including a zero
+or spent cloud balance. Retain guest originals and assert no profile write,
+initialization, reward or wallet change on restore/reload. Real guest acquisitions,
+spending, performances and unknown evidence must still require coverage.
+`player-favorable-browser.mjs` now clears the synthetic device's local storage,
+including owner identity, and restores from the realistic starter reserve. This
+replaces the insufficient fixture that retained the owner and omitted currency.
+Native browser checks use simulated Auth/RPC; a real private-window login remains
+separate acceptance evidence.
+
+Guest first-gesture regression: the actual `ensureAttemptStarted` producer runs
+before the extracted hydration hook in `guest-account-hydration-tests.mjs`.
+Assert restoration despite start-only timestamps, exact guest and active-board
+archives, unchanged cloud cooldown/rewards/wallet, and refusal on failed attempt
+backup. The helper matrix rejects completed results, extra/unknown fields,
+malformed dates and mismatched indices. `campaign-resume-tests.mjs` retains
+canonical start-archive coverage of the shared classifier.
+`player-favorable-browser.mjs` additionally boots a signed-out virgin device,
+uses a native mouse gesture to start the quest, then signs in through the actual
+Auth callback and checks profile/attempt archives and unchanged mock cloud.
+
+`cockpit-dates-tests.mjs` also guards visual status: recent confirmed/pending/
+failure observations, missing/invalid/future dates, receipt-only evidence and an
+old second-device observation. No stale signal becomes green. Native cockpit
+browser tests cover badges/text, closed date details with all prior evidence
+retained, qualified state filters and five viewport widths without overflow.
+
+The registered-player suite also covers exact account/email joins, blank
+nicknames, email search with/without a nickname, case/whitespace/accents, missing
+metadata and source immutability. The loader fixture verifies email delivery to
+the renderer. `cockpit-browser.mjs` mounts the real cockpit HTML, verifies email
+fallback/search, every section's native disclosure, keyboard collapse of quest
+friction and retained content/filters. Five viewports include 320 px and mobile
+landscape; no live RPC or physical-device validation is implied.
+
+`cockpit-registered-players-tests.mjs` verifies registered-only directory
+projection without source mutation or nickname heuristics, its bound, and no
+anonymous timeline RPC. The controller fixture covers metadata filtering and
+clearing a previously anonymous selection; the independent cockpit browser
+asserts the same directory boundary at all five existing viewports.
+
+Player-favorable hydration (#391, 25 October 2026):
+`cloud-player-favorable-tests.mjs` covers preserved originals, expected-account
+read-back, bounded CAS races, response loss, restart/second-device restoration,
+missing migration and storage/session interruption. The production hydration hook
+is executed by `cloud-achievements-session-recovery-tests.mjs`, including automatic
+readiness without reload, preserved pending Wallet intent and scheduled flush.
+The actual UI backoff definition is also executed: lost reply, intervening read
+outage, bounded repeated failures, account switch, active play and offline wake.
+The existing conservative suites remain intact; an unavailable recovery endpoint
+still exposes their previous protected holds.
+
+`fixtures/player-favorable-acquisitions.sql` runs with real RPCs and projection
+guards after the Quest migrations in `ledger-sql`: complementary acquisitions,
+one-sided badges, immutable first evidence, best run, no synthesized Mastery,
+unknown fields, unchanged confirmed spending/cursors/receipts, repeated import
+and subsequent command replay. `acquisition-recovery-concurrency.py` verifies
+parallel recovery and a duplicate spend on disposable PostgreSQL 17. Native
+browser coverage uses synthetic Auth/RPC; installed Android/PWA and physical
+second-device acceptance remain separate, unverified release criteria.
+
+`node scripts/cockpit-acceptance-tests.mjs` verifies administrator-to-administrator
+scope clearing, rejected/stale timeline responses and separate activity/Auth/
+commit dates during resumed synchronization. Acceptance evidence and untested
+physical scenarios: `docs/validation/2026-10-25-cockpit-534.md`. All prior cockpit,
+incident browser and PostgreSQL tests remain required.
+
+Cockpit sessions #534: `node scripts/cockpit-sessions-tests.mjs` covers bounded
+chronological grouping, missing identities and separate diagnostic correlation.
+The independent incident browser now also runs `cockpit-browser.mjs` at five
+viewports, with native keyboard, expansion/filter/refresh, capability clearing,
+empty views, nested reviewed reports and accessibility-tree checks. Its RPCs
+are synthetic; physical phone and screen reader remain separate acceptance.
+`fixtures/cockpit-sessions.sql` tests the actual RPC in isolated PostgreSQL:
+non-admin/expired capability, shared-browser account separation and closed data.
+
+Cockpit #534: `node scripts/cockpit-dates-tests.mjs` checks independent date
+sources, persistent-session Auth, missing signals, timezone/UTC/age and stale
+account results. `scripts/fixtures/cockpit-dates.sql` is required in the isolated
+ledger CI; never execute fixtures against production. It verifies capability
+expiry, Lumen account scope, immutable receipt dates and multi-device pending.
+
+Historical recreated-capture recovery: `canonical-durable-outbox-tests.mjs`
+reproduces a committed 37-second run with a later 41-second local copy and a
+`22023` review pause. It verifies archival without resending, and rejects improved
+times, changed flags/identity/owner, missing projected attempts, a capture older
+than the receipt, denied archival and account changes. Run the historical client,
+canonical outbox, storage/export, hydration and full affected suites as well.
+Phone recovery remains a separate acceptance check. Onboarding impact: none;
+no rule, reward, assistance or navigation destination changes.
 
 Historical/rollout preparation: `historical-rollout-tests.mjs` covers byte-level
 inventory and unknown fields, foreign owners, ambiguous balances, immutable
@@ -1280,3 +1595,40 @@ constellation reveal, confirmed star, newly earned badges, no duplicate replay
 star, no difficulty survey, reachable next action and reload-safe badge state.
 `astronomical-reference-svg-tests.mjs` checks arrived real points/links and
 absence of arrival animation when no star was gained. No live account writes.
+
+
+## Privacy #316: PostgreSQL integration workflow
+
+`.github/workflows/privacy-sql-integration.yml` starts a disposable PostgreSQL
+17 service on pull requests. `python3 scripts/privacy-sql-integration.py`
+extracts the **actual** `lumen_privacy.scope_predicate` migration function,
+executes it in PostgreSQL with synthetic support cases and access rows, and
+asserts that the target user's actor and case-linked records are selected while
+another user's records are excluded. All changes are rolled back. No
+production credentials, Supabase project, or live player records are used.
+This is a **scope regression only**; end-to-end erasure, trigger barriers,
+retention, rights export and production compatibility still need testing.
+
+
+### Complete migration smoke test
+
+`python3 scripts/privacy-full-erasure.test.py` is also run by the same disposable PostgreSQL 17 GitHub Actions job. It constructs a synthetic catalog from the migration's real policy, installs the **entire** erasure migration, verifies explicit confirmation, deletes a fixture Lumen profile, retains another player's profile and synthetic `auth.users`/SoldeZen records, and checks the post-erasure write barrier. The entire transaction is rolled back. This is a synthetic smoke test, not a substitute for a schema-accurate production rehearsal or legal approval.
+
+## Offline PWA shell and update regression (#597 / #618)
+
+`node scripts/android-offline-preflight.mjs` runs in the PR quality workflow and
+checks the mandatory public service-worker shell entrypoints, repository assets,
+install-failure guards and public navigation restrictions. This is static
+preflight, not proof that a quest opens offline on a physical Android device.
+
+`node scripts/service-worker-update-browser-tests.mjs` exercises a real
+service-worker upgrade with a synthetic application. Its cache assertions derive
+the current version from `sw.js` rather than assuming the historical v10 name.
+The worker now refuses installation if any mandatory precache fetch fails; this
+avoids activating an incomplete new shell. Neither test guarantees the entire
+transitive ES-module graph or quest content is available offline.
+
+Release acceptance still requires Android installed-PWA testing: warm a playable
+quest online, close the app, switch to airplane mode, reopen and play that quest,
+then reconnect and confirm the pending attempt synchronizes once without lost
+progress. Do not cache OAuth callbacks, private responses or cloud APIs.

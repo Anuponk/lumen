@@ -40,6 +40,8 @@ for(const abort of [false,true]){
  const stores={'lumen-unsynced-checkpoints':{pending:'original-pending'},lumenCloudRecoveryV1:{archive:'original-before-quota'}},modes=[];
  let exported=null,downloads=0;
  const locals=new Map([['lumenProgressV1','original-local'],['lumenGuestBeforeAccount_fixture','original-guest'],['lumenBeforeCanonicalStartMetadataLocal_123','original-metadata'],['lumenBeforeWalletRecoveryLocal_fixture','original-wallet']]);
+ locals.set('lumenLegacyRecreatedCaptureArchiveV1:fixture:op','original-legacy-capture-and-receipt');
+ locals.set('lumenCanonicalRecreatedCaptureArchiveV1:fixture:op','original-canonical-capture-and-receipt');
  const context=vm.createContext({Blob,Date,JSON,setTimeout:()=>{},
   exportCommandStorage:async()=>({'lumenConfirmedCacheV1:fixture':'original-confirmed-cache','lumenCommandCacheV1:Wallet:fixture:op':'original-pending-view'}),
   localStorage:{length:locals.size,key:i=>[...locals.keys()][i],getItem:key=>locals.get(key)??null},
@@ -69,6 +71,8 @@ for(const abort of [false,true]){
   assert.equal(bundle.localStorage.lumenGuestBeforeAccount_fixture,'original-guest');
   assert.equal(bundle.localStorage.lumenBeforeCanonicalStartMetadataLocal_123,'original-metadata');
   assert.equal(bundle.localStorage.lumenBeforeWalletRecoveryLocal_fixture,'original-wallet');
+  assert.equal(bundle.localStorage['lumenLegacyRecreatedCaptureArchiveV1:fixture:op'],'original-legacy-capture-and-receipt');
+  assert.equal(bundle.localStorage['lumenCanonicalRecreatedCaptureArchiveV1:fixture:op'],'original-canonical-capture-and-receipt');
   assert.deepEqual(bundle.indexedDB,stores['lumen-unsynced-checkpoints']);
   assert.deepEqual(bundle.cloudRecoveryIndexedDB,stores.lumenCloudRecoveryV1);assert.equal(downloads,1);
   assert.equal(bundle.commandIndexedDB['lumenConfirmedCacheV1:fixture'],'original-confirmed-cache');

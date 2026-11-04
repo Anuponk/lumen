@@ -1,5 +1,94 @@
 # Feature map
 
+Privacy P0: `lumen_privacy.scope_predicate` and `install_guards` extend the
+existing #526 operator policy to current metadata and private support ownership.
+Audit/conditions: [PRIVACY_P0_CONSOLIDATION](../PRIVACY_P0_CONSOLIDATION.md).
+
+Celestial milestones/mastery (#575/#519): `ui/celestial-progress.js` is the pure
+catalogue/badge projection; `celestial-effects.js` draws seeded background dust;
+`celestial-celebration.js` presents the existing victory sheet. `game-screen.js`
+captures only confirmed win transitions and adapts existing access/navigation;
+`sky-navigation.js` reuses the layer behind unchanged astronomical cards. No
+profile writer, cockpit, introduction or reward path is added.
+
+Temporary support #574: `persistence/support-capture.js` owns the closed typed
+profile/checkpoint projection; `support-session.js` owns separate consent,
+volatile retries/expiry/revocation; `ui/support-panel.js` owns account and selected
+player disclosures. `game-screen.js` wires live identity and existing incident
+signals. Private support RPC/migration reuses capability/cron, never game writers.
+See [audit and rollout](../SUPPORT_574.md).
+
+Restored board selection: `game-screen.js::resumeHydratedCampaignSelection`
+uses `playable-navigation.js::nextCanonicalQuest` after verified installation of
+an existing account with a changed owner. Original attempt archival precedes
+the handoff; the real grid and label refresh together without a map visit.
+Same-owner runs, guest registration and social challenges retain their flows.
+
+The same hook now checks an owned READY/empty/unstarted campaign selection:
+archive it before replacing an earlier catch-up board with the origin frontier.
+An optional archive refusal preserves board/readiness with a bounded diagnostic.
+
+Virgin-browser account restore: `persistence/guest-account.js` scopes the default
+reserve/catalogue exception to unowned profiles without acquired facts. Both
+guest checks in the UI hydration hook use it; account authorities stay unchanged.
+The shared `cloud-profile.js::isAttemptStartPerformance` also distinguishes
+first-gesture timestamps from earned results. Unowned active attempts use the
+existing verified archive before account installation.
+
+Cockpit visual status: `ui/cockpit-dates.js::playerSyncStatus` qualifies existing
+queue timestamps; `ui/cockpit-sessions.js` renders text/symbol/colour badges and
+closed date disclosures and uses the same status for filters. Tests extend the
+dates suite and native browser coverage. No new backend or player-state writer.
+
+Registered-player cockpit view: `registeredPlayers` joins existing bounded admin
+account data by identity for nickname/email labels; `playerMatchesSearch` owns
+case/accent/whitespace-insensitive name/email search. `index.html` owns the eleven
+native collapsible section wrappers, preserved through content refresh. Tests
+extend the registered-player and loader suites plus actual-HTML native browser
+coverage; no new RPC or persistent state.
+
+Registered-player cockpit view: `registeredPlayers` in `ui/cockpit-sessions.js`
+filters key/type before rendering and metadata reads; `loadAdminTimeline` refuses
+anonymous navigation. Tests: `cockpit-registered-players-tests.mjs`, the recent
+player loader fixture and the independent native cockpit browser.
+
+Positive acquisition recovery (#391): `cloud-profile.js`
+`reconcilePlayerAcquisitions` is the bounded same-owner hydration fallback in
+`ui/game-screen.js`. The additive SQL RPC owns positive merging and private
+original archives under the existing snapshot/authority locks. See the owning
+cloud contract and `cloud-player-favorable-tests.mjs`, production hydration hook,
+SQL fixture and concurrency suite. Wallet/daily receipts remain independent.
+
+Cockpit acceptance (#534 lot 3): `cockpit-acceptance-tests.mjs` guards immediate
+administrative scope clearing and stale network failures. The dated acceptance
+record distinguishes synthetic/native checks from physical/release evidence.
+
+Cockpit sessions (#534 lot 2): `ui/cockpit-sessions.js` renders directory filters,
+independent session disclosures and nested `incident-investigation.js` episodes.
+`lumen_admin_player_sessions` selects bounded, closed existing telemetry fields;
+tests: `cockpit-sessions-tests.mjs`, `cockpit-browser.mjs` in the independent
+incident browser, and disposable `fixtures/cockpit-sessions.sql`.
+
+Cockpit dates (#534 lot 1): `ui/cockpit-dates.js` qualifies analytics activity,
+Auth and per-domain durable receipt dates. `lumen_admin_player_observations`
+adds a bounded capability-checked read; `cockpit-dates-tests.mjs` and the
+disposable `fixtures/cockpit-dates.sql` verify scope, dates and stale timelines.
+
+Historical recreated-capture recovery: `legacy-command.js`
+(`assertRecreatedLegacyCapture`, `loadCommittedLegacyAttempt`) supplies the exact
+receipt/current projection proof; `durable-canonical-outbox.js`
+(`archiveRecreatedCapture`, Legacy namespace) preserves the later copy and
+receipt before cleanup. UI `recoverQueuedLegacyReceipt` connects hydration and
+reconnect recovery. The data contract owns its strict unchanged-facts rules.
+
+First welcome/story (#532): `ui/first-welcome.js` owns the local presentation
+marker, deterministic narrative clock and accessible overlay; its CSS is separate.
+`ui/intro-music.js` owns the optional original Web Audio score and disposes its
+nodes/context on pause or exit; it reads the sound preference without writing it.
+`game-screen.js` captures eligibility before startup, supplies the first catalogue
+constellation's reference SVG and binds Aide replay to existing pause/focus behavior.
+No campaign, reward, Auth or cloud writer is added. See UX_AND_VISUAL_DIRECTION.
+
 Historical/rollout preparation: historical-inventory.js → private dry-run CLI;
 guest-claim.js → cloud-profile initialize → expected-account guest claim RPC,
 private immutable receipt and current covered projection. The original guest
@@ -87,6 +176,27 @@ Verified against `bef5f32` (2026-10-18). Paths are repository-relative. This loo
 
 ## Entry points and shape
 
+Technical retention: prepared private `lumen_privacy.retain_technical_data` and
+server date triggers, no scheduled production job. Scope and holds:
+`docs/TECHNICAL_RETENTION_RUNBOOK.md`; operational recommendations:
+`docs/PRIVACY_LOGS_AND_BACKUPS.md`.
+
+Operator access/portability: private `lumen_privacy.export_account`, prepared
+migration `20261022184145_lumen_account_rights_export.sql`; stable read-only
+snapshot, bounded scope, manual review before sharing. Procedure:
+`docs/ACCOUNT_RIGHTS_RUNBOOK.md`. Retention decisions proposed separately in
+`docs/PRIVACY_RETENTION_PROPOSAL.md`; no new production cleanup enabled.
+
+Privacy entry points: `supprimer-compte.html` prepares a request only;
+`mentions-legales.html` and `confidentialite.html` are explicitly unapproved
+HTML candidates, linked from `index.html`, using `src/privacy/pages.css` without
+SDK/login. Owning legal text: `docs/legal/`; vendor evidence:
+`docs/PRIVACY_PROCESSORS.md`. HTML presence does not clear Play readiness.
+Fluid onboarding (#569/#576): `ui/onboarding-preferences.js` owns local scoped
+auto choice/tip history; `game-screen.js` reuses the real coach/checkbox, existing
+`autoCrossUnlockSeen` acknowledgement and ordinary victory navigation. Quest 1
+remains constrained; quests 2–5 have optional advice. No new cloud writer.
+
 Hydration #536: `cloud-profile.js` fixed-domain/stage diagnostic helpers retain
 wallet refusals separately from partial reward recovery. The game-screen hook
 checks its account/client after the final mirror await. No new reward policy,
@@ -139,6 +249,8 @@ content size plus CSS square-board budgets in `styles.css`.
 
 | Feature | Responsible files / principal symbols | Entry / source of truth |
 |---|---|---|
+| Browser dependencies | `src/vendor/`; `content/legal/browser-dependencies.json`; `scripts/browser-dependency-tests.mjs` | Exact local SDK/QR assets and hashes/license copies; no CDN scripts at startup. Updates documented in vendor README; Families review remains open |
+| Play preparation / privacy | `src/analytics/events.js`: `analyticsAllowed`; `src/privacy/account-deletion.js`; `supprimer-compte.html`; `scripts/play-readiness.mjs`; `content/legal/publisher.json` | Optional product analytics defaults off; user explicitly sends a prepared deletion-request email. No automatic deletion or Play submission. Evidence and open gates in `docs/PLAY_STORE_READINESS.md` |
 | Private Android recipe preview | `docs/ISOLATED_VALIDATION_PREVIEW.md`; source is the existing private Sites project, with a dated archive under `docs/validation/isolated-preview-20261022/` | Reusable isolated UI/PWA/storage validation with synthetic Auth/RPC; v2 verifies uncached HTTP before simulated acknowledgement. Not live account/cloud proof |
 | P0 wallet and offline recovery | `src/persistence/wallet-command.js`, `pending-navigation.js`, `sync-presentation.js`, `outbox-health.js`; UI `authorizeWalletSpend`, `presentPendingVictory`, `refreshCanonicalOutboxNotice` | Wallet durable domain, immutable receipt and current cursor; pending navigation never grants rewards or access; unobtrusive celebration status; private aggregate observations. Prepared SQL requires separate approval; runbook in `docs/CLOUD_RECOVERY_391.md` |
 | Persistent Auth storage | UI `window.supabase.createClient` initialization | Explicit persistent localStorage and automatic renewal; SDK retains token/key/rotation authority. Readable existing sessions survive the SDK writable-probe failure; no quota-write or revoked-session bypass |

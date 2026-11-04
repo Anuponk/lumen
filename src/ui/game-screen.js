@@ -1,3 +1,4 @@
+import {renderPlayerDirectory,renderPlayerSessions,rememberSessionExpansion,registeredPlayers} from './cockpit-sessions.js';
 import {qualifyDifficulty} from "../campaign/difficulty.js";
 import {readQuestView} from "../campaign/quest-view.js";
 import {QUEST_MILESTONES,questLearningRules,questPerformanceRecord,questBadgeQualification} from "../campaign/quest-rules.js";
@@ -19,10 +20,11 @@ import {createCloudPersistence} from "../persistence/cloud.js";
 import {guestAccountSeed,preserveGuestBeforeHydration,guestNeedsReconciliation} from '../persistence/guest-account.js';
 import {storageReport,archiveRecoveryBackups} from '../persistence/storage-maintenance.js';
 import {reconcileDailyIntoCloudProfile} from "../persistence/daily-hydration.js";
-import {CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievementsDurably,achievementRecoveryDiagnostic,reconciliationFailureDiagnostic,hydrationFailureDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles} from "../persistence/cloud-profile.js";
+import {CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievementsDurably,achievementRecoveryDiagnostic,reconciliationFailureDiagnostic,hydrationFailureDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles,reconcilePlayerAcquisitions} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
+import {nextCanonicalQuest} from '../campaign/playable-navigation.js';
 import {extendedSequentialCount,extendedQuestLimit} from "../campaign/extended-boundary.js";
 import {generatedQuestReward,generatedAdventureRewards} from "../campaign/generated-rewards.js";
 import {generatedQuestProgress} from "../campaign/generated-progression.js";
@@ -57,10 +59,19 @@ import {createGameEngine} from "../game/engine.js";
 import {createAttemptEngine,ATTEMPT_STATES} from "../game/attempt-engine.js";
 import {localDateKey,dateOffsetKey,formatDuration} from "../ui/format.js";
 import {streakFromDates,dailyState,cycleDay,nextReward,qualifiesDailyActivity,grantDaily,grantAutonomyMilestone} from "../campaign/daily-engagement.js";
+import {createOnboardingPreferences} from "./onboarding-preferences.js";
+import {celestialScope,captureCelestialProgress,celestialTransition} from './celestial-progress.js';
+import {milkyWaySvg} from './celestial-effects.js';
+import {createCelestialCelebration} from './celestial-celebration.js';
 import {createTutorial} from "./tutorial.js";
+import {captureSupportCopy} from '../persistence/support-capture.js';
+import {mountSupportPanel,mountSupportDossier} from './support-panel.js';
 import {createSound} from "./sound.js";
+import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 
 export function startGameScreen(){
+const firstWelcomeEligible=(()=>{try{return claimFirstWelcome(localStorage,new URL(location.href))}catch{return false}})();
+let firstWelcome=null;
 const qaParams=new URL(location.href).searchParams;
 const qaMode=qaParams.get("qa")==="new"?"new":null;
 const qaActive=qaMode==="new";
@@ -80,6 +91,7 @@ let walletSpendInFlight=false,walletPaidPermit=null,pendingVictoryView=null;
 let pendingNavigationEntries=[],syncPresentationOwner=null;
 const shownPendingVictories=new Set();
 let diagnosticEnabled=false,diagnosticOwner=null,diagnosticClient=null,diagnosticPending=false,guidedDiagnosticTrace=null;
+let supportSession=null;
 const diagnosticChoiceKey='lumenDiagnosticChoiceV1';
 function diagnosticContext(){
  const ua=navigator.userAgent||'';
@@ -111,7 +123,10 @@ async function requestDiagnosticPreference(client,enabled){
   return result.data;
  }finally{clearTimeout(timer)}
 }
-function queueDiagnosticPreferenceRefresh(force=false){setTimeout(()=>{void refreshDiagnosticPreference(force)},0)}
+function queueDiagnosticPreferenceRefresh(force=false){
+ try{supportSession?.changed();setTimeout(()=>{void supportSession?.refresh()},0)}catch{}
+ setTimeout(()=>{void refreshDiagnosticPreference(force)},0)
+}
 async function refreshDiagnosticPreference(force=false){
  try{
   const user=lumenUser?.id,client=lumenSupabase;
@@ -145,6 +160,7 @@ function recordGuidedDiagnostic(code,before,after){
  try{
   if(code==='guided_error'||!guidedDiagnosticTrace)guidedDiagnosticTrace=crypto.randomUUID();
   incidentReporter.capture(code,{stage:'guided',before,after,trace:guidedDiagnosticTrace});
+  supportSession?.incident(code);
   if(code==='guided_input_released')guidedDiagnosticTrace=null;
  }catch{}
 }
@@ -224,7 +240,7 @@ function confirmedReplayAllowed(quest){return !qaActive&&gameplaySyncState().con
 // Local-only, privacy-safe cloud diagnostics. Never log IDs, emails, tokens or save payloads.
 const cloudDiagKey="lumenCloudDiagnosticsV1";
 function recordCloudDiagnostic(event,details={}){
- try{const detail=mapCloudDiagnostic(event,details);if(detail)incidentReporter.capture(detail.code,detail)}catch{}
+ try{const detail=mapCloudDiagnostic(event,details);if(detail){incidentReporter.capture(detail.code,detail);supportSession?.incident(detail.code)}}catch{}
  try{
   const previous=JSON.parse(localStorage.getItem(cloudDiagKey)||"[]");
   const entry={at:new Date().toISOString(),event,...details};
@@ -329,7 +345,7 @@ async function exportLumenRecoveryBundle(){
  const local={};
  for(let i=0;i<localStorage.length;i++){
   const key=localStorage.key(i);
-  if(prefixList.some(prefix=>key.startsWith(prefix)))local[key]=localStorage.getItem(key);
+  if(prefixList.some(prefix=>key.startsWith(prefix))||/^lumen(?:Canonical|Legacy)RecreatedCaptureArchiveV1:/.test(key))local[key]=localStorage.getItem(key);
  }
  const indexed={},cloudRecoveryIndexedDB={};
  if(typeof indexedDB!=="undefined"){
@@ -546,6 +562,15 @@ async function recoverQueuedCanonicalReceipt(ownerId,client,entry,sessionValid){
  recordCloudDiagnostic('canonical_queued_receipt_recovered',{count:1});
  return committed;
 }
+async function recoverQueuedLegacyReceipt(ownerId,client,entry,sessionValid){
+ if(!sessionValid()||entry.userId!==ownerId||!entry.operationId)return null;
+ const committed=await loadCommittedLegacyAttempt(client,entry.questId,entry.operationId,{userId:ownerId,sessionValid});
+ if(!sessionValid()||!committed)return null;
+ await legacyVictoryOutbox.archiveRecreatedCapture(ownerId,entry,committed,{sessionValid});
+ if(!sessionValid())return null;
+ recordCloudDiagnostic('legacy_queued_receipt_recovered',{count:1});
+ return committed;
+}
 async function retryPendingCanonicalOutboxOnReconnect(){
  if(canonicalOutboxRetryInFlight||!canReplayCanonicalOutbox())return;
  const userId=lumenUser.id,client=lumenSupabase;
@@ -576,7 +601,7 @@ function retryPendingCloudWriteOnReconnect(){
  if(qaActive||!lumenUser||!lumenSupabase)return;
  void retryPendingCanonicalOutboxOnReconnect();
  canonicalRecovery.schedule();
- if(!cloudProfileReady)return;
+ if(!cloudProfileReady){acquisitionRecoveryAttempts=0;void acquisitionRecovery.wake();return;}
  if(!["network","legacy_mirror"].includes(cloudProfileFailure?.reason))return;
  if(cloudProfileBusy||cloudProfileTimer!==null)return;
  recordCloudDiagnostic("flush_retry_online",{reason:cloudProfileFailure.reason});
@@ -612,11 +637,15 @@ get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get navigationLocked(){return !!socialChallenge},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
-const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{queueDiagnosticPreferenceRefresh();if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(["SIGNED_IN","TOKEN_REFRESHED"].includes(event?.authEvent)){const ownerId=lumenUser?.id,client=lumenSupabase;setTimeout(()=>{void resumeCanonicalAfterAuthRefresh(ownerId,client);void resumeLegacyAfterAuthRefresh(ownerId,client)},0)}if(event?.type==="restore_failed")cloudProfileFailure={reason:"restore_failed"};if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI();if(event?.type==="password_recovery"){sessionStorage.setItem("lumenPasswordRecoveryPending","1");const editor=document.getElementById("accountProfileEditor");if(editor){editor.dataset.open="true";editor.hidden=false}const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=false;const password=document.getElementById("setPasswordPanel");if(password)password.hidden=false;document.getElementById("setPasswordValue")?.focus()}},renderDaily:(...args)=>renderDaily(...args),claimWalletDaily:(date,index)=>claimWalletDaily(date,index),afterAuthCloudSync:async()=>{
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut,hydrateCloudProfile}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{queueDiagnosticPreferenceRefresh();if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(["SIGNED_IN","TOKEN_REFRESHED"].includes(event?.authEvent)){const ownerId=lumenUser?.id,client=lumenSupabase;setTimeout(()=>{void resumeCanonicalAfterAuthRefresh(ownerId,client);void resumeLegacyAfterAuthRefresh(ownerId,client);acquisitionRecoveryAttempts=0;void acquisitionRecovery.wake()},0)}if(event?.type==="restore_failed")cloudProfileFailure={reason:"restore_failed"};if(event?.type==="profile"){const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}updateAuthUI();if(event?.type==="password_recovery"){sessionStorage.setItem("lumenPasswordRecoveryPending","1");const editor=document.getElementById("accountProfileEditor");if(editor){editor.dataset.open="true";editor.hidden=false}const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=false;const password=document.getElementById("setPasswordPanel");if(password)password.hidden=false;document.getElementById("setPasswordValue")?.focus()}},renderDaily:(...args)=>renderDaily(...args),claimWalletDaily:(date,index)=>claimWalletDaily(date,index),afterAuthCloudSync:async()=>{
  if(qaActive||!lumenUser||!lumenSupabase)return;
+ const priorAcquisitionRecovery=canonicalRecoveryContext;
  canonicalRecoveryContext=null;canonicalRecovery.cancel();
  if(sessionStorage.getItem("lumenPasswordRecoveryPending")==="1")return;
  const accountId=lumenUser.id,hydrationClient=lumenSupabase;
+ const acquisitionRetryContinuation=priorAcquisitionRecovery?.retryAcquisitions===true&&
+  priorAcquisitionRecovery.userId===accountId&&priorAcquisitionRecovery.client===hydrationClient&&
+  priorAcquisitionRecovery.generation===cloudHydrationGeneration;
  const hydrationGeneration=++cloudHydrationGeneration;
  const sessionValid=()=>lumenUser?.id===accountId&&lumenSupabase===hydrationClient&&!qaActive&&cloudHydrationGeneration===hydrationGeneration;
  cloudProfileReady=false;cloudProfileBaseline=null;
@@ -644,7 +673,12 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    const resolution=await reconcileCompatibleCloudProfiles(hydrationClient,localStorage,cloud,{userId:accountId});
    if(!sessionValid())return;
    if(resolution.status==='reconciled'||resolution.status==='cloud_dominant')cloud=resolution.profile;
-   if(guestNeedsReconciliation(incoming,cloud))throw Error('Progression invitée conservée : fusion cloud en attente');
+   if(guestNeedsReconciliation(incoming,cloud)){
+    const fields=Array.isArray(resolution.fields)?[...new Set(resolution.fields.map(key=>Object.hasOwn(CLOUD_PROFILE_FIELDS,key)?key:'unknown_field'))].slice(0,8):[];
+    const refusal=reconciliationFailureDiagnostic(resolution.reason,fields);
+    recordCloudDiagnostic('hydration_reconciliation',{result:'blocked',reason:resolution.reason||'cloud_local_divergence',domain:refusal.domain,stage:hydrationStage,fields});
+    throw Error('Progression invitée conservée : fusion cloud en attente');
+   }
   }
   // Resume verified canonical victory intents before installing the cloud profile.
   // Keep unacknowledged entries on read/write failure; do not replay any other
@@ -701,7 +735,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   hydrationStage="legacy_replay";
   try{await legacyVictoryOutbox.resume(accountId,{kind:'auth'})}catch{recordCloudDiagnostic('legacy_outbox_resume_pending',{reason:'storage'})}
   if(!sessionValid())return;
-  const legacyRecovered=await replayLegacyVictoryOutbox(legacyVictoryOutbox,accountId,(questId,facts,id,options)=>commitLegacyVictoryCommand(hydrationClient,questId,facts,id,options),{sessionValid});
+  const legacyRecovered=await replayLegacyVictoryOutbox(legacyVictoryOutbox,accountId,(questId,facts,id,options)=>commitLegacyVictoryCommand(hydrationClient,questId,facts,id,options),{sessionValid,recoverCommitted:entry=>recoverQueuedLegacyReceipt(accountId,hydrationClient,entry,sessionValid)});
   if(!sessionValid())return;
   if(legacyRecovered.length)recordCloudDiagnostic('legacy_outbox_replayed',{count:legacyRecovered.length});
   if(recovered.length||legacyRecovered.length){
@@ -741,6 +775,9 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    localStorage.setItem(backupKey,currentLocal);
    if(localStorage.getItem(backupKey)!==currentLocal)throw Error("Sauvegarde du profil invité non vérifiée");
   }
+  if(switchingOwner&&attemptEngine.snapshot()){
+   preserveAttemptSnapshot(localStorage,attemptEngine.storageKey);
+  }
   // Local play may advance while initialization/daily reads are in flight.
   // Recheck the latest bytes, not just the guest captured before those awaits.
   if(switchingOwner&&!currentOwner&&currentLocal&&guestNeedsReconciliation(JSON.parse(currentLocal),cloud)){
@@ -753,16 +790,37 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   }
   hydrationStage="local_reconciliation";
   let reconciliationFailure=null;
+  let favourableRecovery=null;
+  let retryAcquisitions=false;
   if(currentLocal&&existing&&!switchingOwner){
    let conflict=false;
    try{conflict=!cloudSafelyCoversLocal(JSON.parse(currentLocal),cloud)}catch{conflict=true}
    if(conflict){
-    let resolution=await reconcileDominantLocalProfile(hydrationClient,localStorage,cloud,{userId:accountId});
-    if(!sessionValid())return;
-    if(resolution.status==="blocked"&&["missing_cloud_achievements","mutable_balance","mutable_ledger"].includes(resolution.reason)){
-     hydrationStage="bidirectional_reconciliation";
-     resolution=await reconcileCompatibleCloudProfiles(hydrationClient,localStorage,cloud,{userId:accountId});
+    let resolution;
+    try{
+     resolution=await reconcileDominantLocalProfile(hydrationClient,localStorage,cloud,{userId:accountId});
      if(!sessionValid())return;
+     if(resolution.status==="blocked"&&["missing_cloud_achievements","mutable_balance","mutable_ledger"].includes(resolution.reason)){
+      hydrationStage="bidirectional_reconciliation";
+      resolution=await reconcileCompatibleCloudProfiles(hydrationClient,localStorage,cloud,{userId:accountId});
+      if(!sessionValid())return;
+     }
+    }catch(error){
+     if(!sessionValid())return;
+     if(!['QUEST_COMMAND_REQUIRED','QUEST_RUN_AUTHORITY_MISSING','WALLET_COMMAND_REQUIRED','CLOUD_CAS_CONFLICT'].includes(error?.code))throw error;
+     resolution={status:'blocked',reason:'reward_conflict'};
+    }
+    if(resolution.status==='blocked'){
+     try{
+      const recovery=await reconcilePlayerAcquisitions(hydrationClient,localStorage,cloud,{userId:accountId,sessionValid});
+      if(!sessionValid()||recovery.interrupted)return;
+      if(recovery.status==='reconciled'){resolution=recovery;favourableRecovery=recovery;}
+      else retryAcquisitions=recovery.reason==='cloud_local_divergence';
+     }catch(error){
+      if(!sessionValid())return;
+      recordCloudDiagnostic('acquisition_recovery_pending',hydrationFailureDiagnostic(error,hydrationStage));
+      retryAcquisitions=error?.code!=='22023';
+     }
     }
     const fields=Array.isArray(resolution.fields)?[...new Set(resolution.fields.map(key=>Object.hasOwn(CLOUD_PROFILE_FIELDS,key)?key:'unknown_field'))].slice(0,8):[];
     const knownConflictQuest=typeof resolution.conflictId==='string'?canonicalQuestList().find(quest=>quest.id===resolution.conflictId||Number.isSafeInteger(quest.legacyIndex)&&String(quest.legacyIndex)===resolution.conflictId):null;
@@ -779,7 +837,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   // achievements. The routine backs up the old local snapshot and never
   // overwrites local currencies, daily ledger, or conflicting rewards.
   // This is a partial display recovery, NOT a completed cloud sync.
-  if(currentLocal&&existing&&!switchingOwner){
+  if(currentLocal&&existing&&!switchingOwner&&!favourableRecovery&&!retryAcquisitions){
    let covered=false;
    try{covered=cloudSafelyCoversLocal(JSON.parse(localStorage.getItem("lumenProgressV1")),cloud)}catch{}
    if(!covered){
@@ -808,24 +866,32 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   // Achievements may be recovered while balances or immutable reward
   // histories still disagree. Never attempt the unsafe full replacement,
   // and do not report this expected protection as an auth failure.
-  if(currentLocal&&existing&&!switchingOwner){
+  if(currentLocal&&existing&&!switchingOwner&&!favourableRecovery){
    let fullyCovered=false;
    try{fullyCovered=cloudSafelyCoversLocal(JSON.parse(localStorage.getItem("lumenProgressV1")),cloud)}catch{}
    if(!fullyCovered){
     if(!sessionValid())return;
     cloudProfileFailure={reason:"partial_reconciliation",detail:achievementRecoveryFailure||reconciliationFailure?.reason||"cloud_local_divergence",domain:achievementRecoveryFailure?reconciliationFailureDiagnostic(achievementRecoveryFailure).domain:reconciliationFailure?.domain||'profile'};
     canonicalRecoveryContext={userId:accountId,client:hydrationClient,generation:hydrationGeneration,
+     retryAcquisitions,
      confirmedQuestIds:cloudProfileFailure.domain==='wallet'&&!achievementRecoveryFailure?
       canonicalQuestList().filter(quest=>quest.legacyIndex!==null?!!cloud.solved?.[quest.legacyIndex]:!!cloud.canonicalQuestState?.[quest.id]?.solved).map(quest=>quest.id):[]};
     recordCloudDiagnostic("hydration_partial_reconciliation_pending",{profileReady:false,...reconciliationFailureDiagnostic(cloudProfileFailure.detail),domain:cloudProfileFailure.domain,stage:hydrationStage});
     renderDaily();updateAuthUI();refreshJourney();updateShardMeter();
     canonicalRecovery.schedule();
+    if(retryAcquisitions)acquisitionRecovery.schedule();
     return;
    }
   }
   hydrationStage="local_install";
   let changed;
-  if(switchingOwner){
+  if(favourableRecovery){
+   // Already archived, merged, re-read and installed for this owner. Refresh
+   // the single live progress object without forcing a document restart.
+   changed=false;
+   lumenProgress=structuredClone(cloud);
+   sequentialSolvedCount=normalizeSequentialProgress();
+  }else if(switchingOwner){
    // The previous local state has been backed up and verified above.
    // Do not let a different owner (or anonymous starter state) block login.
    if(currentLocal!==null)localStorage.removeItem("lumenProgressV1");
@@ -844,10 +910,20 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    // Cloud is verified; a full localStorage must not deadlock signed-in play.
    // The authoritative cloud snapshot is installed in memory without reload.
    lumenProgress=structuredClone(cloud);
+   sequentialSolvedCount=normalizeSequentialProgress();
    recordCloudDiagnostic("hydration_local_quota_bypass",{cloudVerified:true});
-  }else if(changed){recordCloudDiagnostic("hydration_reload",{stage:"local_install"});location.reload();return}
+  }else if(changed){
+   if(!acquisitionRetryContinuation&&!(switchingOwner&&existing)){recordCloudDiagnostic("hydration_reload",{stage:"local_install"});location.reload();return}
+   // A lost response may already have committed the union. An existing-account
+   // ownership handoff also refreshes the live view without a document restart.
+   lumenProgress=structuredClone(cloud);sequentialSolvedCount=normalizeSequentialProgress();
+  }
   cloudProfileFailure=null;
   cloudProfileReady=true;
+  acquisitionRecoveryAttempts=0;
+  // Resume the verified catalogue frontier after ownership handoff or from an
+  // idle campaign selection. Started runs and replays retain their identity.
+  if(existing)resumeHydratedCampaignSelection({ownershipChanged:switchingOwner});
   resumeCanonicalCampaignBoundary();
    canonicalRecovery.schedule();
   // Do not claim hydration is fully synchronized until the quest mirror is
@@ -874,6 +950,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   renderDaily();
   refreshJourney();updateAuthUI();
   resumeCanonicalVictoryAfterHydration(accountId,hydrationClient);
+  if(favourableRecovery||acquisitionRetryContinuation)scheduleCloudProfile();
   maybeShowStreakLoss();
   const gate=document.getElementById("accountOptin");if(gate){const wasVisible=!gate.hidden;gate.hidden=true;if(wasVisible)showAccountSavedConfirmation()}
  }catch(e){if(!sessionValid())return;recordCloudDiagnostic("hydration_failed",{errorCode:String(e?.code||e?.status||"unknown").slice(0,48),errorName:String(e?.name||"unknown").slice(0,48),stage:String(e?.stage||hydrationStage).slice(0,48),reason:e?.message?.startsWith("Profil local divergent")?"local_divergence":e?.message?.startsWith("Daily history unavailable")?"daily_history":e?.message?.startsWith("Daily rewards unavailable")?"daily_rewards":e?.message?.startsWith("Impossible de restaurer le profil")?"cloud_restore":e?.message?.startsWith("Sauvegarde cloud impossible")?"cloud_cas":"other",kind:e?.code==="LOCAL_STORAGE_QUOTA"||e?.name==="QuotaExceededError"||e?.code===22?"local_quota":"other",...hydrationFailureDiagnostic(e,hydrationStage)});cloudProfileFailure={reason:"restore_failed"};updateAuthUI();console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
@@ -903,6 +980,67 @@ function skipTutorialReplay(){
 }
 const {renderTutorial,openTutorial,closeTutorial,setupTutorial}=createTutorial(()=>activeQuestOrdinal()<=QUEST_MILESTONES.skyTourAfter,{tutorialSeenKey:qaActive?"lumenQaTutorialSeen":"lumenTutorialSeen",canSkip:()=>activeQuestOrdinal()===1||tutorialCompletedProof()&&!qaFresh,onSkip:skipTutorialReplay});
 let authSessionPending=true;
+
+// #316: Self-service erasure is deliberately unavailable until the server
+// can guarantee complete deletion of all verified Lumen identities.
+async function clearErasedLumenDeviceData(){
+ // Only Lumen-owned storage: never clear the origin indiscriminately.
+ for(const store of [localStorage,sessionStorage]){
+  for(const key of Object.keys(store)){
+   if(/^lumen/i.test(key) && !/^lumenSupabase/i.test(key))store.removeItem(key);
+  }
+ }
+ // IndexedDB names are browser-dependent. Never delete unknown databases.
+ if(typeof indexedDB.databases==='function'){
+  const databases=await indexedDB.databases();
+  for(const db of databases){
+   if(!/^lumen/i.test(db.name||''))continue;
+   await new Promise((resolve,reject)=>{
+    const request=indexedDB.deleteDatabase(db.name);
+    request.onsuccess=resolve;
+    request.onerror=()=>reject(request.error||new Error('Local database deletion failed'));
+    request.onblocked=()=>reject(new Error('Close other Lumen tabs to erase local data'));
+   });
+  }
+ }
+}
+
+function wireLumenErasureControls(){
+ const open=document.getElementById('eraseLumenAccount');
+ const panel=document.getElementById('eraseLumenConfirmPanel');
+ const input=document.getElementById('eraseLumenConfirmText');
+ const status=document.getElementById('eraseLumenStatus');
+ const execute=document.getElementById('eraseLumenExecute');
+ const cancel=document.getElementById('eraseLumenCancel');
+ if(!open||!panel||!input||!status||!execute||!cancel)return;
+ const refresh=()=>{open.hidden=!lumenUser||!lumenSupabase;};
+ open.addEventListener('click',()=>{panel.hidden=false;input.value='';status.textContent='';input.focus()});
+ cancel.addEventListener('click',()=>{panel.hidden=true;input.value='';status.textContent=''});
+ execute.addEventListener('click',async()=>{
+  if(!lumenUser||!lumenSupabase){status.textContent='Connecte-toi à ton compte Lumen.';return}
+  if(input.value!=='SUPPRIMER'){status.textContent='Saisis exactement SUPPRIMER.';return}
+  execute.disabled=true;status.textContent='Suppression en cours…';
+  try{
+   const {data:sessionData,error:sessionError}=await lumenSupabase.auth.getSession();
+   const token=sessionData?.session?.access_token;
+   if(sessionError||!token)throw Error('Session expirée : reconnecte-toi.');
+   const response=await fetch(LUMEN_SUPABASE_URL+'/functions/v1/lumen-self-erasure',{
+    method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+token,apikey:LUMEN_SUPABASE_KEY},
+    body:JSON.stringify({confirmation:'SUPPRIMER'})
+   });
+   if(!response.ok)throw Error('Suppression non terminée. Aucune confirmation de suppression ne peut être donnée. Contacte le support.');
+   await signOut();
+   await clearErasedLumenDeviceData();
+   status.textContent='Données Lumen supprimées sur le serveur et cet appareil.';
+   location.reload();
+  }catch(error){status.textContent=error.message||'La suppression a échoué.'}
+  finally{execute.disabled=false;refresh()}
+ });
+ const authObserver=new MutationObserver(refresh);
+ authObserver.observe(document.getElementById('mobileAuthStatus')||open,{childList:true,subtree:true,characterData:true});
+ refresh();
+}
+
 let lumenSupabase=null,lumenUser=null,lumenCloudReady=false,lumenEntitlements=[],lumenCapabilities=[];
 // Use the SDK's existing persistent store directly: its default write probe can
 // reject a full but readable store and silently hide a valid saved session.
@@ -916,7 +1054,7 @@ let accountOfferResumeNext=false;
 function accountOfferKey(name){return qaKey("lumenAccountOffer"+name)}
 function showAccountSavedConfirmation(){const toast=document.getElementById("accountSavedToast");if(!toast)return;toast.hidden=false;setTimeout(()=>{toast.hidden=true},2200)}
 function accountOfferMilestone(){return QUEST_MILESTONES.discovery}
-function accountDiscoveryCopy(){return `Les ${QUEST_MILESTONES.discovery} premières quêtes se découvrent sans compte. Crée un compte pour poursuivre et retrouver ton aventure sur tous tes appareils. Tes acquis sont conservés.`}
+function accountDiscoveryCopy(){return `Créez un compte gratuit pour poursuivre votre aventure et retrouver votre progression. Les ${QUEST_MILESTONES.discovery} premières quêtes se découvrent sans compte. Tes acquis sont conservés.`}
 function accountRequired(){
  if(authSessionPending||qaActive||socialChallenge||lumenUser)return false;
  return canonicalQuestList().filter(q=>q.ordinal<=QUEST_MILESTONES.discovery).every(q=>questIsCompleted(lumenProgress,q.id));
@@ -925,9 +1063,9 @@ function maybeOfferAccount(){
  if(!accountRequired())return false;
  const box=document.getElementById("accountOptin");
  if(!box||!box.hidden)return false;
- box.hidden=false;
- document.getElementById('accountOptinDescription').textContent=accountDiscoveryCopy();
- document.getElementById('accountOptinLater').textContent='Explorer Mon ciel';
+ openEmailAccountOffer('signup',false);
+ document.getElementById('accountOptinTitle').textContent='Un compte gratuit pour continuer';
+ document.getElementById('accountSignupTab').focus();
  trackLumenEvent("account_offer_shown",null,{milestone:solvedCount(),source:"quest_milestone",qa:qaActive});
  return true;
 }
@@ -938,7 +1076,7 @@ function dismissAccountOffer(){
  if(accountOfferResumeNext){accountOfferResumeNext=false;openJourneyMap()}
 }
 async function acceptAccountOffer(){const box=document.getElementById("accountOptin");if(box)box.hidden=true;const milestone=accountOfferMilestone();trackLumenEvent("account_offer_accept",null,{milestone,source:"constellation_complete",qa:qaActive});if(!lumenSupabase){trackLumenEvent("account_signin_failure",null,{milestone,reason:"cloud_unavailable",qa:qaActive});return}accountOfferSignInPending=true;try{sessionStorage.setItem("lumenAccountOfferSignInPending","1")}catch(_){}const result=await signIn(new URL("/", location.origin).toString());if(!result.ok){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_failure",null,{milestone,reason:result.reason||"oauth",qa:qaActive})}}
-function openEmailAccountOffer(mode="signup"){
+function openEmailAccountOffer(mode="signup",userSelection=true){
  accountEmailMode=mode==="login"?"login":"signup";
  const login=accountEmailMode==="login";
  const offer=document.getElementById("accountOptin");if(offer)offer.hidden=false;
@@ -947,7 +1085,7 @@ function openEmailAccountOffer(mode="signup"){
  const later=document.getElementById('accountOptinLater');if(later)later.textContent=accountRequired()?'Explorer Mon ciel':'Retour au jeu';
  const password=document.getElementById("accountPassword"),submit=document.getElementById("accountPasswordSubmit");
  if(password){password.autocomplete=login?"current-password":"new-password";password.minLength=login?1:12;}
- if(submit)submit.textContent=login?"Me connecter →":"Créer mon compte →";
+ if(submit)submit.textContent=login?"Se connecter":"Créer un compte";
  const recover=document.getElementById("accountRecovery");if(recover)recover.hidden=!login;
  const signup=document.getElementById("accountSignupTab"),switcher=document.getElementById("accountAuthSwitch");
  if(signup)signup.setAttribute("aria-pressed",String(!login));
@@ -955,8 +1093,8 @@ function openEmailAccountOffer(mode="signup"){
  const status=document.getElementById("accountEmailStatus");if(status)status.textContent="";
  const send=document.getElementById("accountEmailSend");if(send)send.hidden=true;
  const otp=document.getElementById("accountOtpStep");if(otp)otp.hidden=true;
- document.getElementById("accountEmail")?.focus();
- trackLumenEvent("account_email_selected",null,{milestone:5,source:"quest_5_gate",qa:qaActive});
+ if(userSelection)document.getElementById("accountEmail")?.focus();
+ if(userSelection)trackLumenEvent("account_email_selected",null,{milestone:5,source:"quest_5_gate",qa:qaActive});
 }
 async function submitAccountPassword(){
  const email=document.getElementById("accountEmail")?.value;
@@ -1064,9 +1202,11 @@ function updateAdminTools(){
  if(qaTools)qaTools.hidden=!(shards||analytics||qaActive);
  toggle.parentElement.hidden=!shards;toggle.checked=shards&&unlimitedShardsEnabled();
  if(cockpit)cockpit.hidden=!analytics;
- if(!analytics){
-  document.getElementById('adminDiagnosticIncidents')?.replaceChildren();
-  const modal=document.getElementById('adminCockpit');if(modal)modal.hidden=true;
+ const adminModal=document.getElementById('adminCockpit');
+ if(!analytics||(adminModal?.cockpitOwner&&adminModal.cockpitOwner!==lumenUser?.id)){
+  for(const id of ['adminDiagnosticIncidents','adminPlayers','adminTimeline','adminAccounts'])document.getElementById(id)?.replaceChildren();
+  const timeline=document.getElementById('adminTimeline');if(timeline){timeline.cockpitRequest=null;timeline.cockpitPlayer=null}
+  const modal=document.getElementById('adminCockpit');if(modal){modal.hidden=true;modal.cockpitOwner=null}
  }
 }
 function cloudReconciliationMessage(failure){
@@ -1096,7 +1236,7 @@ function updateAuthUI(){
    u.textContent="Progression enregistrée sur cet appareil";
    login.hidden=false; logout.hidden=true;
  }
- syncMobileAuthUI();updateAdminTools();
+ refreshOnboardingPreferenceOwner();syncMobileAuthUI();updateAdminTools();
  if(!lumenUser&&accountRequired())maybeOfferAccount();
  if(lumenUser&&wasOfferPending){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_success",null,{source:"account_offer",qa:qaActive});const box=document.getElementById("accountOptin");if(box)box.hidden=true}
 }
@@ -1118,6 +1258,12 @@ function setupRulesHelp(){
  modal.onclick=e=>{if(e.target===modal)hide()};
  modal.addEventListener("keydown",e=>{if(e.key==="Escape")hide()});
  if(replay)replay.onclick=()=>{hide(false);startLearningReplay()};
+ const story=document.getElementById('replayIntroduction');
+ if(story)story.onclick=()=>{
+  if(!firstWelcome)return;
+  hide(false);
+  try{firstWelcome.replay()}catch{firstWelcome.cancel();open.focus()}
+ };
 }
 setupRulesHelp();
 function setupDailyInfo(){
@@ -1376,7 +1522,7 @@ function maybeShowReturnWelcome(){
  copy.textContent=status.done?"Ta progression est bien enregistrée.":status.grace?"Ta Série de lumière est protégée aujourd’hui. Joue pour la continuer.":"Reprends ton exploration du ciel là où tu l’as laissée.";
  if(status.done)copy.textContent+=" · Prochaine récompense : +"+next.amount+" ✦ à J"+next.cycleDay+".";
  stars.textContent="✦".repeat(cycle)+"·".repeat(7-cycle);toast.hidden=false;
- const close=()=>{toast.classList.add("hide");setTimeout(()=>toast.hidden=true,260)};toast.onclick=close;setTimeout(close,5200);
+ const close=()=>{toast.classList.add("hide");setTimeout(()=>toast.hidden=true,260)};setTimeout(close,5200);
 }
 // A single celebration per validated calendar day, even across reloads.
 function scheduleDailyCelebration(claim){
@@ -1582,7 +1728,24 @@ function updateAttemptUI(){
  document.getElementById("attemptMaskCopy").textContent=paused?"Reprendre pour continuer la même tentative.":"Le chrono démarrera au premier geste.";
  if(pause){pause.hidden=!a||![ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(a.state);pause.textContent=paused?"Reprendre":"Pause"}
  if(abandon)abandon.hidden=!a||attemptMode()==="campaign"||![ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(a.state);
+ const next=document.getElementById('completedQuestNext');
+ if(next)next.hidden=!!socialChallenge||learningReplayActive()||celebrated||!!a&&a.state!==ATTEMPT_STATES.READY||!completedQuestSuccessor();
 }
+function completedQuestSuccessor(){
+ const played=activeQuest(),quests=canonicalQuestList(),index=quests.findIndex(q=>q.id===played.id);
+ if(index<0||!questIsCompleted(lumenProgress,played.id))return null;
+ const next=quests[index+1];
+ return next&&(next.legacyIndex===null?canonicalQuestAvailable(next):questIsAccessible(next.legacyIndex))?next:null;
+}
+function advanceCompletedQuest(){
+ const next=completedQuestSuccessor();
+ if(!next||socialChallenge||learningReplayActive())return;
+ if(next.legacyIndex===null){startCanonicalQuest(next);return}
+ if(questIsCompleted(lumenProgress,next.id)){startReplay(next.legacyIndex);return}
+ canonicalActiveQuest=null;levelIndex=next.legacyIndex;replayMode=false;
+ loadPuzzle();refreshJourney();
+}
+document.getElementById('completedQuestNext').onclick=advanceCompletedQuest;
 function ensureAttemptStarted(){
  const a=attemptEngine.snapshot();if(a?.state!==ATTEMPT_STATES.READY)return;
  if(a.qualifying&&!canonicalActiveQuest){
@@ -1685,14 +1848,54 @@ const LEARNING_INTRO=[
  {title:"Ils gardent leurs distances",copy:"Deux Gardiens ne peuvent jamais se toucher, même en diagonale."},
  {title:"Comment jouer",copy:"Un premier toucher pose une croix pour écarter une case. Un deuxième toucher sur la même case y pose un Gardien. Maintenant, essaie-le toi-même."}
 ];
+const onboardingPreferences=createOnboardingPreferences({storage:localStorage,getOwner:()=>lumenUser?.id,prefix:qaKey('lumenOnboardingV1')});
+let onboardingPreferenceOwner=null;
+function refreshOnboardingPreferenceOwner(){
+ const owner=lumenUser?.id??null;
+ if(!state||!puz||socialChallenge||learningReplayActive()||owner===onboardingPreferenceOwner||owner&&(!cloudProfileReady||localStorage.getItem('lumenCloudOwnerId')!==owner))return;
+ // Session restoration may retain the already displayed run. Refresh only its
+ // presentation controls after the verified owner changes, never its attempt.
+ learningTip=null;configureLearningMode();applyQuestRestrictions();
+ maybeShowContextualLesson();render();
+}
+function autoMarkingLessonRequired(){return !socialChallenge&&!replayMode&&!learningReplayActive()&&activeQuestOrdinal()===QUEST_MILESTONES.fullBadges&&!lumenProgress.autoCrossUnlockSeen}
+function finishAutoMarkingLesson(){
+ lumenProgress.autoCrossUnlockSeen=1;saveLumenProgress();
+ configureLearningMode();applyQuestRestrictions();
+ document.getElementById('autoCrossWrap').classList.remove('onboarding-control-focus');
+ document.getElementById('autoCross').removeAttribute('aria-describedby');
+ document.getElementById('board').removeAttribute('aria-disabled');
+ learningTip=null;updateScriptedLearning();
+}
+function maybeShowContextualLesson(){
+ if(socialChallenge||replayMode||learningReplayActive())return;
+ if(autoMarkingLessonRequired()){
+  if(!document.getElementById('autoCross').checked){finishAutoMarkingLesson();return}
+  learningTip={title:'Essaie le marquage manuel',copy:'Décoche Marquage auto : sans aide, vise Autonomie, Sans erreur et Maîtrise. Tu peux le recocher aussitôt ; Rapidité reste possible.'};
+  document.getElementById('autoCrossWrap').classList.add('onboarding-control-focus');
+  document.getElementById('autoCross').setAttribute('aria-describedby','scriptedLearnCopy');
+  document.getElementById('board').setAttribute('aria-disabled','true');
+  for(const id of ['undo','hint','verify'])document.getElementById(id).disabled=true;
+  updateScriptedLearning();return;
+ }
+ const lessons={
+  2:['drag','Va plus vite avec le glissé','Maintiens le doigt ou le clic et glisse sur les cases pour les écarter. Tu peux aussi les toucher une par une. Marquage auto est maintenant disponible ci-dessous ; ton choix sera conservé.'],
+  3:['badges','Tes badges, à ton rythme','Rapidité récompense le temps cible. Autonomie et Sans erreur demandent un essai sans assistance ; Maîtrise réunit les trois. Tous sont disponibles depuis la première quête. Retrouve les détails dans Badges.'],
+  4:['hold','Un raccourci facultatif','Un appui long pose un Gardien ; un nouvel appui long le retire. Tu peux garder le cycle habituel : croix, Gardien, vide.']
+ };
+ const lesson=lessons[activeQuestOrdinal()];
+ if(lesson&&!onboardingPreferences.seen(lesson[0])){
+  onboardingPreferences.markSeen(lesson[0]);learningTip={title:lesson[1],copy:lesson[2]};updateScriptedLearning();
+ }
+}
 function activePerformanceEligibility(){return performanceEligibility(activeQuestOrdinal()-1,Math.max(canonicalScopeProgress(lumenProgress).completed,activeQuestOrdinal()))}
-function learningQuestActive(){return questLearningRules(activeQuestOrdinal()).scripted&&!socialChallenge&&(!replayMode||learningReplayActive())}
+function learningQuestActive(){return (questLearningRules(activeQuestOrdinal()).scripted||learningReplayActive()&&activeQuestOrdinal()===2)&&!socialChallenge&&(!replayMode||learningReplayActive())}
 function learningIntroActive(){return activeQuestOrdinal()===1&&learningQuestActive()&&state&&state.flat().every(v=>v===0)&&learningIntroStep<LEARNING_INTRO.length}
 function currentLearningStep(){if(learningIntroActive())return {phase:"intro",introStep:learningIntroStep,cells:[],number:0};return activeQuestOrdinal()===2?dragLearningStep(puz,state):learningStep(puz,state)}
 function scriptedLearningActive(){return !(skipFirstGridTutorial&&!learningReplayActive())&&learningQuestActive()&&!!state&&currentLearningStep().phase!=="complete"}
 function learningMarkAllowed(r,c){const step=currentLearningStep();return step.phase!=="place"&&learningAllows(step,r,c)}
 function scriptedAllowsGuardian(r,c){const step=currentLearningStep();return step.phase==="place"&&learningAllows(step,r,c)}
-function learningDragAllowed(){return !scriptedLearningActive()||["reuse","drag","practice"].includes(currentLearningStep().phase)}
+function learningDragAllowed(){if(autoMarkingLessonRequired()&&document.getElementById('autoCross').checked)return false;return !scriptedLearningActive()||["reuse","drag","practice"].includes(currentLearningStep().phase)}
 function advanceLearningIntro(){
  if(!learningIntroActive())return;
  learningIntroStep++;
@@ -1705,19 +1908,32 @@ function positionLearningCoach(){
  const width=Math.min(mobile?innerWidth-20:330,innerWidth-20);
  card.style.width=width+"px";
  const actions=document.querySelector(".actions").getBoundingClientRect();
+ if(mobile&&autoMarkingLessonRequired()){
+  const controlsBottom=Math.max(document.getElementById('autoCrossWrap').getBoundingClientRect().bottom,document.getElementById('guidedErrorsWrap').getBoundingClientRect().bottom);
+  const space=rect.top-controlsBottom-16;
+  if(space>=48){
+   card.style.maxHeight=Math.min(140,space)+'px';card.style.overflowY='hidden';
+   card.style.left=Math.max(10,(innerWidth-width)/2)+'px';card.style.top=(controlsBottom+8)+'px';return;
+  }
+ }
  const compactLesson=mobile&&activeQuestOrdinal()<=QUEST_MILESTONES.skyTourAfter;
+ const anchor=compactLesson?card.parentElement:null;
+ card.style.position=anchor?'absolute':'fixed';
  const belowActions=actions.bottom+8;
  // A compact lesson must never cover the normal actions or puzzle cells.
  // The old fallback positioned the coach below actions even when the bottom
  // of the viewport had no space (e.g. 360x640: actions end at y=609).
- const aboveBoardSpace=Math.max(0,rect.top-16);
+ const safeTop=Math.max(8,(document.getElementById("tutorialHelp")?.getBoundingClientRect().bottom||0)+8);
+ const aboveBoardSpace=Math.max(0,rect.top-safeTop-8);
  const compactAboveBoard=compactLesson&&aboveBoardSpace>=48;
  card.style.maxHeight=compactLesson?(compactAboveBoard?Math.min(96,aboveBoardSpace)+"px":Math.max(32,innerHeight-belowActions-8)+"px"):"";
- card.style.overflowY=compactLesson?"auto":"";
+ card.style.overflowY=compactLesson?"hidden":"";
  const aboveBoard=rect.top-card.offsetHeight-8;
- const top=mobile?(compactAboveBoard?Math.max(8,aboveBoard):compactLesson?Math.min(belowActions,innerHeight-card.offsetHeight-8):aboveBoard>=48?aboveBoard:Math.max(48,Math.min(innerHeight-card.offsetHeight-8,belowActions))):Math.max(12,Math.min(rect.top,innerHeight-card.offsetHeight-12));
+ const top=mobile?(compactAboveBoard?Math.max(safeTop,aboveBoard):compactLesson?Math.min(belowActions,innerHeight-card.offsetHeight-8):aboveBoard>=48?aboveBoard:Math.max(48,Math.min(innerHeight-card.offsetHeight-8,belowActions))):Math.max(12,Math.min(rect.top,innerHeight-card.offsetHeight-12));
  const left=mobile?Math.max(10,(innerWidth-width)/2):rect.right+14+width<=innerWidth?rect.right+14:Math.max(10,rect.left-width-14);
- card.style.left=left+"px";card.style.top=top+"px";
+ const origin=anchor?.getBoundingClientRect();
+ card.style.left=(left-(origin?.left||0)+(anchor?.scrollLeft||0))+"px";
+ card.style.top=(top-(origin?.top||0)+(anchor?.scrollTop||0))+"px";
 }
 window.addEventListener("resize",()=>requestAnimationFrame(positionLearningCoach));
 // Measure finale copy and the complete game stack, including wrapped action labels.
@@ -1740,7 +1956,8 @@ finaleLayoutObserver.observe(challengeBanner);
 finaleLayoutObserver.observe(document.querySelector(".app"));
 window.addEventListener("resize",()=>requestAnimationFrame(fitFinaleBoard));
 function showLearningTip(id,title,copy){
- if(socialChallenge||!((activeQuestOrdinal()===1&&learningQuestActive())||(activeQuestOrdinal()===2&&!replayMode))||learningTipSeen.has(id))return;
+ if(socialChallenge||!((activeQuestOrdinal()===1&&learningQuestActive())||(activeQuestOrdinal()===2&&!replayMode))||learningTipSeen.has(id)||onboardingPreferences.seen('context:'+id))return;
+ onboardingPreferences.markSeen('context:'+id);
  learningTipSeen.add(id);learningTip={title,copy};updateScriptedLearning();
 }
 function updateScriptedLearning(){
@@ -1769,12 +1986,12 @@ function updateScriptedLearning(){
  wrap.classList.remove("is-learning");
  const blocked=celebrated||!!guidedPending||!!verifyPending;
  card.hidden=blocked||(!guided&&!learningTip);
- document.getElementById("learningCoachDismiss").hidden=guided;
+ document.getElementById("learningCoachDismiss").hidden=guided||autoMarkingLessonRequired();
  const next=document.getElementById("learningCoachNext");
  if(next){next.hidden=!(guided&&step?.phase==="intro");next.textContent=step?.introStep===LEARNING_INTRO.length-1?"À moi de jouer":"Suivant"}
  if(skip){skip.hidden=!((activeQuestOrdinal()===1&&!skipFirstGridTutorial&&!socialChallenge)||(learningReplayActive()&&tutorialCompletedProof()));skip.textContent=activeQuestOrdinal()===1&&!skipFirstGridTutorial?"Passer le tutoriel":"Quitter le tutoriel";}
  if(activeQuestOrdinal()<=QUEST_MILESTONES.skyTourAfter&&!socialChallenge)for(const id of ["undo","hint","verify"])document.getElementById(id).disabled=guided;
- if(activeQuestOrdinal()===2&&!guided&&!replayMode&&!learningTip&&hintUsesThisGame===0)learningTip={title:"Découvre les indices",copy:"Essaie maintenant Indice : il t’explique une logique de résolution sans jouer à ta place. Les indices sont offerts jusqu’à la quête 10."};
+
  if(card.hidden)return;
  const text=step?.phase==="intro"?LEARNING_INTRO[step.introStep]:step?learningCopy(step,state,matchMedia("(pointer:coarse)").matches):learningTip;
  document.getElementById("scriptedLearnTitle").textContent=text.title;
@@ -1783,6 +2000,8 @@ function updateScriptedLearning(){
 }
 function finishManualLearningMarks(){updateScriptedLearning();return true}
 function handleLearningTap(event){
+ if(firstWelcome?.active)return;
+ if(autoMarkingLessonRequired()&&document.getElementById('autoCross').checked&&event.target?.closest?.('#board,#attemptMask')){event.preventDefault();event.stopImmediatePropagation();document.getElementById('autoCross').focus();return}
  if(!scriptedLearningActive())return;
  const target=event.target instanceof Element?event.target:null;if(!target)return;
  if(document.querySelector('#mapModal:not([hidden]),#rulesModal:not([hidden]),#feedbackModal:not([hidden]),#tutorialOverlay:not([hidden]),#shardRulesModal:not([hidden]),#badgeRulesModal:not([hidden])'))return;
@@ -1864,12 +2083,13 @@ document.addEventListener('click',e=>{
  if(guidedCorrectionClicks.consume(e)){e.preventDefault();e.stopImmediatePropagation()}
 },true);
 function configureLearningMode(){
+ onboardingPreferenceOwner=lumenUser?.id??null;
  const rules=questLearningRules(activeQuestOrdinal());
  for(const id of ["undo","hint","verify"])document.getElementById(id).disabled=scriptedLearningActive();
  const cb=document.getElementById("autoCross"),wrap=document.getElementById("autoCrossWrap"),note=document.getElementById("learningNote"),guided=document.getElementById("guidedErrors"),gwrap=document.getElementById("guidedErrorsWrap");
- if(!cb||!wrap)return;
+ if(!cb||!wrap)return;wrap.classList.remove('onboarding-control-focus');
  if(!rules.autoMarking&&!replayMode){cb.checked=false;cb.disabled=true;wrap.hidden=false;wrap.classList.add("learning-locked");if(note){note.hidden=true;note.textContent=""}}
- else{cb.disabled=false;cb.checked=false;wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=activeQuestOrdinal()!==QUEST_MILESTONES.fullBadges;note.textContent=activeQuestOrdinal()===QUEST_MILESTONES.fullBadges?"Nouveau · Marquage auto débloqué. Active-le si tu veux que LUMEN écarte les cases impossibles à ta place.":""}}
+ else{cb.disabled=false;cb.checked=onboardingPreferences.auto();wrap.hidden=false;wrap.classList.remove("learning-locked");if(note){note.hidden=activeQuestOrdinal()!==QUEST_MILESTONES.fullBadges;note.textContent=activeQuestOrdinal()===QUEST_MILESTONES.fullBadges?"Marquage auto : ton choix est conservé. Tu peux le réactiver à tout moment.":""}}
  if(guided&&gwrap){
   let saved=null;try{saved=localStorage.getItem("lumenGuidedErrors")}catch(_){}
   gwrap.hidden=false;gwrap.classList.remove("learning-locked");
@@ -1905,30 +2125,13 @@ function finishAutonomyChoice(keepGuided){
  trackAttemptEvent("guided_autonomy_choice",{guided:!!keepGuided});
 }
 function maybeShowAutoCrossUnlock(){
- if(activeQuestOrdinal()!==QUEST_MILESTONES.fullBadges||lumenProgress.autoCrossUnlockSeen||!lumenProgress.fullBadgeIntroSeen)return;
- const o=document.getElementById("autoCrossUnlockOverlay");if(o){o.hidden=false;o.style.display="flex";pauseGameClock()}
+ // The required quest-6 step uses the real checkbox, never a second modal.
 }
 function closeAutoCrossUnlock(){
- lumenProgress.autoCrossUnlockSeen=1;saveLumenProgress();
- const o=document.getElementById("autoCrossUnlockOverlay");if(o){o.hidden=true;o.style.display="none"}
- resumeGameClock();
+ const o=document.getElementById('autoCrossUnlockOverlay');if(o){o.hidden=true;o.style.display='none'}
 }
 function maybeShowBadgeMilestone(){
- let kind=null;
- if(activeQuestOrdinal()===QUEST_MILESTONES.speed&&!lumenProgress.speedBadgeIntroSeen)kind="speed";
- if(activeQuestOrdinal()===QUEST_MILESTONES.fullBadges&&!lumenProgress.fullBadgeIntroSeen)kind="full";
- if(!kind)return;
- const o=document.getElementById("badgeUnlockOverlay"),title=document.getElementById("badgeUnlockTitle"),copy=document.getElementById("badgeUnlockCopy");
- if(!o||!title||!copy)return;
- o.dataset.kind=kind;
- if(kind==="speed"){
-  title.textContent="Des objectifs pour chaque quête";
-  copy.innerHTML="<strong>⚡ Rapidité</strong> : termine cette quête avant le temps cible pour gagner le badge.<br><br>Tous les badges sont accessibles depuis la première quête. Une assistance utilisée empêche Autonomie, Sans erreur et Maîtrise sur cet essai ; Rapidité reste possible. Les règles détaillées restent consultables dans Badges.";
- }else{
-  title.textContent="Choisis tes aides de jeu";
-  copy.innerHTML="<strong>◐ Marquage auto débloqué</strong> (désactivé par défaut).<br><strong>🧠 Autonomie</strong> : sans assistance.<br><strong>✓ Sans erreur</strong> : sans erreur conservée et sans assistance.<br><strong>✦ Maîtrise</strong> : réunis les trois badges sur un essai.<br><br>Détails dans Aides et Badges.";
- }
- o.hidden=false;o.style.display="flex";pauseGameClock();
+ // Badge conditions are an optional contextual lesson, not a play gate.
 }
 function closeBadgeMilestone(){
  const o=document.getElementById("badgeUnlockOverlay");if(!o)return;
@@ -1957,7 +2160,7 @@ function init(){document.getElementById('successRetry').textContent='↻ Réessa
   attemptEngine.create({questId:canonicalActiveQuest?.id??levelIndex+1,mode:attemptMode(),qualifying,challengeId:socialChallenge?.challenge_id||null,board:state});
  }
  hintUsesThisGame=attemptEngine.snapshot()?.helpUses?.hint||0;verifyUsesThisGame=attemptEngine.snapshot()?.helpUses?.verify||0;updateHintButton();updateVerifyButton();
- trackCurrentPuzzleStart();clock();prepareQuestStart();updateAttemptUI();updateScriptedLearning();maybeShowHintEconomyTransition();updateBadgeQualificationStatus()}
+ trackCurrentPuzzleStart();clock();prepareQuestStart();updateAttemptUI();updateScriptedLearning();maybeShowContextualLesson();maybeShowHintEconomyTransition();updateBadgeQualificationStatus()}
 function updateBadgeQualificationStatus(){
  const a=attemptEngine.snapshot(),label=document.getElementById('campaignMapLabel');
  if(!label||socialChallenge||!a)return;
@@ -2010,10 +2213,19 @@ function adminEsc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<
 function adminNumber(v){return new Intl.NumberFormat("fr-FR").format(Number(v)||0)}
 function adminEventLabel(name){return ({session_start:"Ouverture",attempt_started:"Quête commencée",puzzle_start:"Quête commencée",attempt_completed:"Quête réussie",puzzle_complete:"Quête réussie",attempt_reset:"Réinitialisation",attempt_abandoned:"Abandon",hint_used:"Indice utilisé",verify_used:"Vérification",guided_intervention:"Contrôle guidé"}[name]||name)}
 async function loadAdminTimeline(key){
- const box=document.getElementById("adminTimeline");box.innerHTML="<p>Chargement…</p>";
- const {data,error}=await lumenSupabase.rpc("lumen_admin_quest_timeline",{p_player_key:key,p_limit:100});
+ if(typeof key!=='string'||!key.startsWith('u:'))return;
+ if(!lumenUser||!lumenSupabase||!hasInternalCapability('analytics_cockpit'))return;
+ const owner=lumenUser.id,client=lumenSupabase,box=document.getElementById("adminTimeline"),request={};
+ rememberSessionExpansion(box);
+ box.cockpitRequest=request;box.cockpitPlayer=key;
+ const authorized=()=>lumenUser?.id===owner&&lumenSupabase===client&&hasInternalCapability('analytics_cockpit')&&box.cockpitRequest===request;
+ box.innerHTML="<p>Chargement…</p>";
+ let response;try{response=await client.rpc("lumen_admin_player_sessions",{p_player_key:key})}catch(_){response={error:true}}
+ if(!authorized())return;
+ const {data,error}=response;
  if(error){box.innerHTML="<p>Timeline indisponible.</p>";return}
- box.innerHTML=(data||[]).map(x=>'<div class="admin-event"><span>'+adminEsc(adminEventLabel(x.event_name))+(x.quest_ordinal?" · Q"+x.quest_ordinal:"")+'</span><small>'+new Date(x.occurred_at).toLocaleString("fr-FR")+'</small></div>').join("")||"<p>Aucun événement.</p>";
+ renderPlayerSessions(box,data,{authorized,scope:owner+':'+key});
+ void mountSupportDossier(box,{client,owner,target:key.slice(2),authorized});
 }
 function adminAlerts(rows){
  const alerts=[];
@@ -2045,6 +2257,29 @@ function restoreCanonicalCampaignAttempt(){
  }
  if(lumenUser&&lumenUser.id!==ownerId){preserveAttemptSnapshot(localStorage,attemptEngine.storageKey);return}
  canonicalActiveQuest=quest;canonicalResumeOwner=ownerId;replayMode=saved.mode==='replay';
+}
+function resumeHydratedCampaignSelection({ownershipChanged=false}={}){
+ if(qaActive||!cloudProfileReady||!lumenUser||socialChallenge)return false;
+ const attempt=attemptEngine.snapshot();
+ if(!ownershipChanged&&(replayMode||attempt?.mode!=='campaign'||attempt.state!==ATTEMPT_STATES.READY||attempt.startedAt||
+  !Array.isArray(attempt.board)||!attempt.board.every(row=>Array.isArray(row)&&row.every(cell=>cell===0))))return false;
+ const next=nextCanonicalQuest(lumenProgress.solved,lumenProgress.canonicalQuestState,adventureAccessEntitlements(),lumenProgress);
+ if(next.status!=='ready')return false;
+ const nextId=next.quest.legacyIndex===null?next.quest.id:next.quest.legacyIndex+1;
+ if(!ownershipChanged){
+  if(attempt.questId===nextId)return false;
+  // A dormant catch-up selection is not an active run. Archive it before
+  // resuming the account's preserved frontier; never move a started/replay run.
+  try{preserveAttemptSnapshot(localStorage,attemptEngine.storageKey)}catch{
+   recordCloudDiagnostic('campaign_resume_deferred',{reason:'attempt_backup'});return false;
+  }
+ }
+ attemptEngine.clear();
+ canonicalActiveQuest=next.quest.legacyIndex===null?next.quest:null;
+ canonicalResumeOwner=canonicalActiveQuest?lumenUser.id:null;
+ levelIndex=next.quest.legacyIndex??Math.min(currentQuestPosition(),currentQuestLimit()-1);
+ replayMode=false;
+ loadPuzzle();refreshJourney();return true;
 }
 function resumeCanonicalCampaignBoundary(){
  if(qaActive||!cloudProfileReady||!lumenUser||socialChallenge||canonicalActiveQuest||replayMode||learningReplayActive())return false;
@@ -2152,8 +2387,10 @@ function renderAdminCatalogue(){
 }
 async function loadAdminCockpit(){
  if(!lumenUser||!lumenSupabase||!hasInternalCapability('analytics_cockpit'))return;
- const requestUser=lumenUser.id,requestClient=lumenSupabase;
- const authorized=()=>lumenUser?.id===requestUser&&lumenSupabase===requestClient&&hasInternalCapability('analytics_cockpit');
+ const requestUser=lumenUser.id,requestClient=lumenSupabase,request={};
+ const modal=document.getElementById('adminCockpit');if(modal)modal.cockpitOwner=requestUser;
+ loadAdminCockpit.request=request;
+ const authorized=()=>lumenUser?.id===requestUser&&lumenSupabase===requestClient&&hasInternalCapability('analytics_cockpit')&&loadAdminCockpit.request===request;
  const status=document.getElementById("adminCockpitStatus"),days=Number(document.getElementById("adminCockpitDays")?.value||7);
  status.textContent="Actualisation…";
  const [cockpit,accounts,feedbacks,playerSnapshot,syncHealth,questMetrics]=await Promise.all([
@@ -2163,10 +2400,12 @@ async function loadAdminCockpit(){
    lumenSupabase.rpc("lumen_admin_recent_players",{p_limit:250}),
    lumenSupabase.rpc("lumen_admin_sync_health",{p_days:days}),
    lumenSupabase.rpc("lumen_admin_quest_metrics",{p_days:days})
- ]);
+ ].map(request=>Promise.resolve(request).catch(()=>({error:{message:'Service indisponible'}}))));
  if(!authorized())return;
- const players=(playerSnapshot.data||[]).map(x=>({...x,current_quest:questMetrics.data?.current_players?.[x.player_key]??null}));
+ const players=registeredPlayers(playerSnapshot.data,accounts.error?[]:accounts.data).map(x=>({...x,current_quest:questMetrics.data?.current_players?.[x.player_key]??null}));
  const playerError=playerSnapshot.error;
+ let observations;try{observations=await requestClient.rpc('lumen_admin_player_observations',{p_player_keys:players.map(p=>p.player_key)})}catch(_){observations={error:true}}
+ if(!authorized())return;
  const realFeedbacks=feedbacks.data||[];
  if(cockpit.error){status.textContent="Cockpit indisponible : "+cockpit.error.message;return}
  const d={...cockpit.data,friction:questMetrics.data?.friction||[],funnel:questMetrics.data?.funnel||[]},m=d.summary||{};
@@ -2195,8 +2434,14 @@ async function loadAdminCockpit(){
  const outboxAlerts=health?.outbox?.alerts||[];
  const detailAlerts=incidentAlerts(buildIncidentInvestigation(health?.diagnostics));
  const alerts=[...syncAlerts,...outboxAlerts.map(a=>'Sauvegarde '+a.state+' · '+a.pending+' opération(s) · '+a.platform+' · '+a.version),...detailAlerts.map(a=>a.text),...adminAlerts(d.friction)];document.getElementById("adminAlerts").innerHTML=alerts.map(x=>'<div class="admin-alert"><strong>⚠</strong><span>'+adminEsc(x)+'</span></div>').join("")||"<p>Pas d’anomalie significative avec le volume actuel.</p>";
- document.getElementById("adminPlayers").innerHTML=playerError?'<p>Activité récente indisponible : '+adminEsc(playerError.message)+'</p>':players.map(x=>'<div class="admin-player" data-player="'+adminEsc(x.player_key)+'"><span><strong>'+adminEsc(x.display_name||x.player_label||x.player_type)+'</strong><br><small>'+adminEsc(x.player_type)+" · Q"+(x.current_quest||"—")+' · '+x.sessions+' sessions</small></span><small>'+new Date(x.last_seen).toLocaleString("fr-FR")+'</small></div>').join("");
- document.querySelectorAll("#adminPlayers .admin-player").forEach(x=>x.onclick=()=>loadAdminTimeline(x.dataset.player));
+ const directory=document.getElementById('adminPlayers');
+ if(playerError){directory.replaceChildren();const note=document.createElement('p');note.textContent='Activité récente indisponible.';directory.append(note)}
+ else renderPlayerDirectory(directory,players,observations.error?undefined:observations.data,{authorized,onSelect:loadAdminTimeline});
+ const timeline=document.getElementById('adminTimeline');
+ if(timeline?.cockpitPlayer){
+  if(players.some(p=>p.player_key===timeline.cockpitPlayer))loadAdminTimeline(timeline.cockpitPlayer);
+  else {timeline.cockpitRequest=null;timeline.cockpitPlayer=null;timeline.textContent='Sélectionne un joueur inscrit.'}
+ }
  const accountRows=document.getElementById("adminAccounts");
  if(accountRows)accountRows.innerHTML=accounts.error?'<tr><td colspan="6">Comptes indisponibles.</td></tr>':(accounts.data||[]).map(x=>'<tr><td>'+adminEsc(x.email||"—")+'</td><td>'+adminEsc(x.nickname||"—")+'</td><td>'+new Date(x.created_at).toLocaleString("fr-FR")+'</td><td>'+(x.last_sign_in_at?new Date(x.last_sign_in_at).toLocaleString("fr-FR"):"—")+'</td><td>'+(x.last_activity?new Date(x.last_activity).toLocaleString("fr-FR"):"—")+'</td><td>'+(questMetrics.data?.current_players?.['u:'+x.user_id]||"—")+'</td></tr>').join("")||'<tr><td colspan="6">Aucun compte.</td></tr>';
  document.getElementById("adminFeedbacks").innerHTML=feedbacks.error?"<p>Feedbacks indisponibles.</p>":realFeedbacks.map(x=>'<div class="admin-feedback"><strong>'+adminEsc(x.kind)+' · '+adminEsc(x.player_label)+(x.puzzle_id?" · Q"+x.puzzle_id:"")+'</strong><p>'+adminEsc(x.message||"Sans commentaire")+'</p><small>'+new Date(x.created_at).toLocaleString("fr-FR")+(x.app_version?" · "+adminEsc(x.app_version):"")+'</small></div>').join("");
@@ -2392,7 +2637,7 @@ async function retryPendingLegacyOutboxOnReconnect(){
  try{
   const recovered=await replayLegacyVictoryOutbox(legacyVictoryOutbox,ownerId,
    (id,facts,op,options)=>commitLegacyVictoryCommand(client,id,facts,op,options),
-   {sessionValid:sameSession,onIssue:issue=>recordCloudDiagnostic('legacy_outbox_recovery_pending',{reason:issue.kind})});
+   {sessionValid:sameSession,recoverCommitted:entry=>recoverQueuedLegacyReceipt(ownerId,client,entry,sameSession),onIssue:issue=>recordCloudDiagnostic('legacy_outbox_recovery_pending',{reason:issue.kind})});
   if(!sameSession()||!recovered.length)return false;
   if(cloudProfileReady){location.reload();return true}
   // The receipt confirms only this operation. Divergent local state and the
@@ -2414,6 +2659,31 @@ const canonicalRecovery=createCloudRetryScheduler({
   return (await refreshCanonicalOutboxNotice(ownerId))>0;
  },
  onError:()=>recordCloudDiagnostic("canonical_outbox_reconnect_failed",{reason:"retry"})
+});
+// Reuse the existing bounded-backoff scheduler for acquisition-only hydration.
+// Five autonomous retries per recovery window; Auth/online can wake it sooner.
+// A missing protocol or structural refusal never enters this retry loop.
+let acquisitionRecoveryAttempts=0;
+const acquisitionRecovery=createCloudRetryScheduler({
+ ready:()=>!qaActive&&!cloudProfileReady&&!authSessionPending&&acquisitionRecoveryAttempts<5&&
+  navigator.onLine!==false&&document.visibilityState!=='hidden'&&
+  canonicalRecoveryContext?.retryAcquisitions===true&&
+  canonicalRecoveryContext.userId===lumenUser?.id&&canonicalRecoveryContext.client===lumenSupabase&&
+  canonicalRecoveryContext.generation===cloudHydrationGeneration&&
+  !['RUNNING','PAUSED'].includes(attemptEngine.snapshot()?.state),
+ run:async()=>{
+  const ownerId=lumenUser.id,client=lumenSupabase,generation=cloudHydrationGeneration;
+  acquisitionRecoveryAttempts++;
+  try{await hydrateCloudProfile();}
+  finally{
+   // A temporary read outage during the next hydration must not erase the
+   // already established retry window. This grants no replay or wallet proof.
+   if(!cloudProfileReady&&!canonicalRecoveryContext&&lumenUser?.id===ownerId&&lumenSupabase===client&&cloudHydrationGeneration===generation+1)
+    canonicalRecoveryContext={userId:ownerId,client,generation:cloudHydrationGeneration,retryAcquisitions:true,confirmedQuestIds:[]};
+  }
+  return !cloudProfileReady;
+ },
+ onError:()=>recordCloudDiagnostic('acquisition_recovery_pending',{reason:'retry'})
 });
 async function retryAccountCloudSync({sessionValid=()=>true}={}){
  if(!sessionValid())return;
@@ -2461,6 +2731,7 @@ function resumeCanonicalVictoryAfterHydration(ownerId,client){
 }
 async function celebrateCanonicalSuccess(){
  const q=canonicalActiveQuest;if(!q||celebrated||pendingVictoryView)return;
+ const celestialBefore=captureCelestialProgress(lumenProgress,q,canonicalQuestList());
  if(!qaActive&&!lumenUser){
   msg.textContent=authSessionPending?"Restauration du compte en cours. Ta grille est conserv\u00e9e.":"Connecte-toi pour sauvegarder cette victoire. Ta grille est conserv\u00e9e.";
   return;
@@ -2482,7 +2753,7 @@ async function celebrateCanonicalSuccess(){
  const facts={seconds,assistanceUsed:assisted,mistakeCommitted:!!attempt?.mistakeCommitted,qualifying,
   hintUsed:hintUsedInAttempt(),challengeFailed:!!questFailed,qualifiedDay:localCalendarDay(),qualifiedAt:new Date(attempt?.startedAt||Date.now()).toISOString()};
  const reward={badges,performance:{bestTime:seconds,assisted,seconds},stars:questRewardDefinition(q).stars,facts};
- let committed,durableIntent=null,confirmedBadges=badges;
+ let committed,durableIntent=null,confirmedBadges=badges,reusedVictory=false;
  try{
   if(qaActive){const profile=structuredClone(lumenProgress),outcome=applyQuestVictory(profile,q,facts);if(outcome.dailyQualified)grantDaily(profile,localCalendarDay());committed={profile,outcome,newlyCompleted:outcome.firstCompletion}}
   else{
@@ -2494,6 +2765,7 @@ async function celebrateCanonicalSuccess(){
    const operationId=attempt?.attemptId?attempt.attemptId+"-reset-"+(attempt.resetCount||0):undefined;
    victoryStage='pending_read';
    const existing=operationId?(await canonicalVictoryOutbox.pending(ownerId)).find(entry=>entry.operationId===operationId&&entry.questId===q.id):null;
+   reusedVictory=!!existing;
    if(!sameVictoryContext())return;
    const queuedReward=existing?.reward||reward;
    victoryStage='enqueue';
@@ -2552,6 +2824,7 @@ async function celebrateCanonicalSuccess(){
  // Install only the acknowledged profile; never optimistically mutate a
  // legacy quest or attempt to upload new IDs as numeric puzzle IDs.
  lumenProgress=committed.profile;pendingVictoryView=null;syncPresentation.acknowledged();syncPresentation.celebration(true);
+ prepareCelestialVictory(celestialBefore,q,committed.newlyCompleted,reusedVictory||committed.alreadySaved);
  if(!qaActive&&lumenUser)void refreshCanonicalOutboxNotice(lumenUser.id);
  if(!qaActive){cloudProfileBaseline=structuredClone(committed.profile)}
  const previousCloudReady=cloudProfileReady;
@@ -2581,9 +2854,9 @@ async function celebrateCanonicalSuccess(){
  document.getElementById("successNew").textContent="Quête suivante";
  configureSuccessFeedback(false);
  refreshJourney();
- launchWinStar(committed.newlyCompleted?1:0);
+ if(!celestialPending)launchWinStar(committed.newlyCompleted?1:0);
  const reveal=()=>{if(canonicalActiveQuest?.id===q.id&&celebrated)showSkyReveal(null,null,{quest:q,newlyCompleted:committed.newlyCompleted})};
- if(committed.newlyCompleted)setTimeout(reveal,2250);else reveal();
+ if(committed.newlyCompleted&&!celestialPending)setTimeout(reveal,2250);else reveal();
  }finally{if(canonicalVictoryInFlight===capture)canonicalVictoryInFlight=null;}
 }
 
@@ -2625,7 +2898,7 @@ async function captureLegacyCommandVictory(){
    if(restored){
     if(!sameCloudProfile(before,lumenProgress)||!sameCloudProfile(before,restored.profile))throw Error('Restored victory requires reconciliation');
     pendingVictoryView=null;syncPresentation.acknowledged();syncPresentation.celebration(true);
-    return {handled:true,saved:true,outcome:restored.receipt.outcome,facts:restored.receipt.request.facts};
+    return {handled:true,saved:true,outcome:restored.receipt.outcome,facts:restored.receipt.request.facts,recovered:true};
    }
   }
   // Before rewards, network mutation, completed attempt or victory animation.
@@ -2651,7 +2924,7 @@ async function captureLegacyCommandVictory(){
   try{await legacyVictoryOutbox.acknowledge(ownerId,quest.id,intent.reward,intent.operationId)}catch{recordCloudDiagnostic('legacy_outbox_cleanup_pending',{reason:'storage'})}
   if(!sameContext())return {handled:true};
   pendingVictoryView=null;syncPresentation.acknowledged();syncPresentation.celebration(true);
-  return {handled:true,saved:true,outcome:committed.receipt.outcome,facts:intent.reward.facts};
+  return {handled:true,saved:true,outcome:committed.receipt.outcome,facts:intent.reward.facts,recovered:!!prior};
  }catch(error){
   if(!sameContext())return {handled:true};
   if(intent){try{await legacyVictoryOutbox.pause(ownerId,intent,error)}catch{recordCloudDiagnostic('legacy_outbox_pause_pending',{reason:'storage'})}}
@@ -2686,8 +2959,9 @@ async function celebrateSuccess(){
  }
  if(canonicalActiveQuest){await celebrateCanonicalSuccess();return}
  if(learningReplayActive()){celebrateLearningReplaySuccess();return}
- let commanded=null,confirmedFacts=null;
- if(lumenUser&&!qaActive){const result=await captureLegacyCommandVictory();if(result.handled&&!result.saved)return;if(result.saved){commanded=result.outcome;confirmedFacts=result.facts}}
+ const celestialQuest=canonicalQuestForLegacy(levelIndex),celestialBefore=captureCelestialProgress(lumenProgress,celestialQuest,canonicalQuestList());
+ let commanded=null,confirmedFacts=null,recoveredVictory=false;
+ if(lumenUser&&!qaActive){const result=await captureLegacyCommandVictory();if(result.handled&&!result.saved)return;if(result.saved){commanded=result.outcome;confirmedFacts=result.facts;recoveredVictory=!!result.recovered}}
  const facts=confirmedFacts||{seconds:activeGameSeconds(),assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted,qualifying:!!attemptEngine.snapshot()?.qualifying,hintUsed:hintUsedInAttempt(),challengeFailed:!!questFailed,qualifiedDay:localCalendarDay(),qualifiedAt:new Date().toISOString()};
  const outcome=commanded||applyLegacyVictory(lumenProgress,levelIndex,facts);
  const {firstCompletion,questPassed,skyEarnedBefore,priorPerformance,priorBadges,savedPerformance,autonomyShard,dailyQualified}=outcome;
@@ -2698,7 +2972,6 @@ async function celebrateSuccess(){
  const playedPack=packForLegacyQuest(levelIndex),adventureQuests=playedPack?canonicalQuestList().filter(q=>q.packId===playedPack.id):[];
  adventurePending=firstCompletion&&playedPack&&!canonicalCampaignComplete(lumenProgress)&&adventureQuests.length>0&&adventureQuests.every(q=>questIsCompleted(lumenProgress,q.id))?playedPack:null;
  endgamePending=firstCompletion&&canonicalCampaignComplete(lumenProgress);
- launchWinStar(earnedThisRun);
  configureVictoryChallenge({priorPerformance,run:savedPerformance.run,firstCompletion,snapshot:challengeSnapshot({questIndex:levelIndex,seconds:facts.seconds,run:savedPerformance.run,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed})});
  if(dailyQualified&&!commanded)completeDaily();
  renderSuccessRewards(earnedThisRun,savedPerformance,priorBadges);renderSuccessAchievement();
@@ -2711,6 +2984,8 @@ async function celebrateSuccess(){
  if(firstCompletion){setTimeout(maybeOfferInstall,1600);setTimeout(maybeOfferPush,5200)}
  refreshJourney();
  pauseGameClock();
+ prepareCelestialVictory(celestialBefore,celestialQuest,firstCompletion,recoveredVictory);
+ if(!celestialPending)launchWinStar(earnedThisRun);
  clearInterval(timer);
  clock();
  board.classList.add("win");
@@ -2719,13 +2994,13 @@ async function celebrateSuccess(){
  document.getElementById("successTime").textContent=commanded?formatDuration(facts.seconds):document.getElementById("time").textContent;
  const qr=document.getElementById("questResult");if(ch){qr.hidden=false;qr.className="quest-result "+(questPassed||lumenProgress.stars[ch.id]?"success":"fail");qr.textContent=questPassed?"✦ Défi réussi ! +25 XP et un éclat gagné.":lumenProgress.stars[ch.id]?"✦ Défi déjà accompli":"Défi échoué — la quête est tout de même accomplie."}else qr.hidden=true;
  const m=canonicalQuestMilestone(canonicalQuestForLegacy(levelIndex)),sub=document.getElementById("successSub");if(sub)sub.textContent=m?(m.kind==="boss"?(canonicalScopeProgress(lumenProgress,{constellationId:canonicalQuestForLegacy(levelIndex).constellationId}).complete?"Défi final réussi · constellation complétée":"Dernière quête réussie · des quêtes restent à accomplir"):"Étape intermédiaire réussie"):(questPassed?"Quête réussie · +25 XP et +1 ✦":"Ton ciel progresse");
- if(levelIndex===1&&sub)sub.textContent="Ton ciel progresse. Rapidité arrive à la quête 3 ; Autonomie et Maîtrise à la quête 6.";
+ if(activeQuestOrdinal()===1&&sub)sub.textContent='Marquage manuel compris ! Dès la prochaine quête, Marquage auto peut écarter les cases impossibles. Décoche-le pour jouer sans cette aide.';
  if(levelIndex<=1)try{localStorage.setItem(qaActive?"lumenQaTutorialSeen":"lumenTutorialSeen","1")}catch(_){}
  if(levelIndex===1)markTutorialCompleted();
  configureSuccessFeedback(questPassed);
  const skyEarnedAfter=skyStarsEarned(),crossedConstellation=firstCompletion&&(()=>{let total=0;for(const cs of CONSTELLATIONS){total+=cs.count;if(skyEarnedBefore<total&&skyEarnedAfter>=total)return true}return false})();
  const checkpoint=firstCompletion&&!crossedConstellation?constellationCheckpoint(skyEarnedBefore,skyEarnedAfter):null;
- const revealDelay=!generatedQuest&&earnedThisRun>0?2250:0;
+ const revealDelay=!celestialPending&&!generatedQuest&&earnedThisRun>0?2250:0;
  const revealQuest=canonicalQuestForLegacy(levelIndex),revealCampaign=revealQuest?{quest:revealQuest,newlyCompleted:firstCompletion}:null;
  const clearVictoryConfetti=()=>document.getElementById("victoryConfetti")?.remove();
  if(firstCompletion&&earnedThisRun>0&&!generatedQuest){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint,revealCampaign)},revealDelay)}else if(questPassed||crossedConstellation||checkpoint){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint,revealCampaign)},revealDelay)}else setTimeout(()=>showSkyReveal(skyEarnedBefore,null,revealCampaign),revealDelay);
@@ -2916,6 +3191,7 @@ function render(){
  const directGuardian=event?.type==='lumen-guardian-toggle';
  if(directGuardian&&!longPressGuardianAllowed(d))return;
  let shown=displayedCellState(r,c),next=directGuardian?(state[r][c]===2?0:2):shown===3?2:(state[r][c]+1)%3,currentGuardians=state.flat().filter(v=>v===2).length;
+ if(autoMarkingLessonRequired()&&document.getElementById('autoCross').checked)return;
  if(scriptedLearningActive()){
   if(learningStage==="intro")return;
   if(learningStage==="place"){if(!scriptedAllowsGuardian(r,c))return;if(state[r][c]===0){next=1}else if(state[r][c]===1){next=2}else next=0}
@@ -3161,8 +3437,16 @@ const hintClose=document.getElementById("hintClose");
 if(hintClose)hintClose.onclick=()=>{clearHintDisplay();hintStage=0;hintFocus=null;render()};
 document.getElementById("undo").onclick=()=>{if(celebrated||scriptedLearningActive())return;const diagnosticWasBlocked=!!(guidedPending||guidedDeferred);if(diagnosticWasBlocked)try{recordGuidedDiagnostic("guided_undo","blocked","unknown")}catch{};if(hist.length){const previous=hist.pop(),pending=attemptEngine.snapshot()?.wrongGuardianPending;if(pending){const [pr,pc]=pending.split(",").map(Number);if(previous?.[pr]?.[pc]!==2)attemptEngine.clearWrongGuardianPending(pending)}state=previous;clearGuidedConflict();clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";render();persistAttemptBoard()}if(diagnosticWasBlocked)try{recordGuidedDiagnostic(guidedPending||guidedDeferred?"guided_input_blocked":"guided_input_released","blocked",guidedPending||guidedDeferred?"blocked":"ready")}catch{}};
 const ac=document.getElementById("autoCross");
-const lumenAutoCrossStored=localStorage.getItem("lumenAutoCross");const legacyAutoCrossStored=localStorage.getItem("regaliaAutoCross");ac.checked=(lumenAutoCrossStored??legacyAutoCrossStored)!=="0";if(lumenAutoCrossStored===null&&legacyAutoCrossStored!==null){localStorage.setItem("lumenAutoCross",legacyAutoCrossStored);localStorage.removeItem("regaliaAutoCross")};
-ac.onchange=()=>{if(celebrated){ac.checked=!ac.checked;return}if(!questLearningRules(activeQuestOrdinal()).autoMarking&&!replayMode){ac.checked=false;return}if(ac.checked){autoUsedThisGame=true;attemptEngine.markAssistance();trackAttemptEvent("auto_marking_enabled")}localStorage.setItem("lumenAutoCross",ac.checked?"1":"0");if(!ac.checked)maybeShowManualCrossTip();hi=null;render()};
+ac.checked=onboardingPreferences.auto();
+ac.onchange=()=>{
+ if(celebrated){ac.checked=!ac.checked;return}
+ if(!questLearningRules(activeQuestOrdinal()).autoMarking&&!replayMode){ac.checked=false;return}
+ const lesson=autoMarkingLessonRequired();
+ onboardingPreferences.setAuto(ac.checked);
+ if(lesson&&!ac.checked)finishAutoMarkingLesson();
+ if(ac.checked){autoUsedThisGame=true;attemptEngine.markAssistance();trackAttemptEvent('auto_marking_enabled')}
+ if(!ac.checked&&!lesson)maybeShowManualCrossTip();hi=null;render();
+};
 function advanceToNextPuzzle(){
  const played=activeQuest(),following=canonicalQuestByOrdinal(played.ordinal+1);
  if(questIsCompleted(lumenProgress,played.id)&&following?.ordinal>QUEST_MILESTONES.discovery&&accountRequired()&&maybeOfferAccount()){
@@ -3217,12 +3501,9 @@ document.getElementById("successSky").onclick=()=>{
  try{learningTour=learningSkyDiscoveryRequired()&&localStorage.getItem("lumenSkyTourSeen")!=="1"}catch(_){}
  openJourneyMap(true,{detail:true,advanceOnClose:true,learningTour,questIndex:targetLegacyIndex,constellationId:targetConstellationId});
 };
-function learningSkyDiscoveryRequired(){return activeQuestOrdinal()===QUEST_MILESTONES.skyTourAfter&&!replayMode&&!socialChallenge}
+function learningSkyDiscoveryRequired(){return false}
 function skyTourActive(){return document.getElementById('skyTour')?.hidden===false}
-function firstLearningSkyVisit(){
- if(socialChallenge||replayMode||activeQuestOrdinal()>QUEST_MILESTONES.skyTourAfter)return false;
- try{return localStorage.getItem('lumenSkyTourSeen')!=='1'}catch{return true}
-}
+function firstLearningSkyVisit(){return false}
 function updateLearningSuccessCTA(){
  const b=document.getElementById("successNew");if(!b)return;
  b.textContent=learningSkyDiscoveryRequired()?"✦ Découvrir Mon ciel":"Quête suivante";
@@ -3275,6 +3556,70 @@ const attemptAbandon=document.getElementById("attemptAbandon");
 if(attemptAbandon)attemptAbandon.onclick=async()=>{const a=attemptEngine.snapshot();if(!a)return;if(!confirm("Abandonner cette tentative ?"))return;trackAttemptEvent("attempt_abandoned",{reason:"explicit"});attemptEngine.abandon();if(socialChallenge){trackAttemptEvent("challenge_abandoned",{reason:"explicit"});await finishSocialChallenge("abandoned");return}attemptEngine.clear();init()};
 
 
+const celestialCelebration=createCelestialCelebration(document);
+let celestialPending=null;
+const masteryPulses=new Map();
+function constellationMastery(entry){return celestialScope(lumenProgress,canonicalQuestList().filter(q=>q.constellationId===entry.id))}
+function takeMasteryPulse(entry){
+ const pulse=masteryPulses.get(entry.id);
+ const current=constellationMastery(entry);
+ if(!pulse)return null;
+ if(pulse.owner!==(lumenUser?.id??null)||pulse.signature!==current.signature||pulse.ratio!==current.ratio){masteryPulses.delete(entry.id);return null}
+ pulse.startedAt??=Date.now();
+ const elapsed=Date.now()-pulse.startedAt;
+ if(elapsed>=(pulse.full?1600:1000)){masteryPulses.delete(entry.id);return null}
+ // Repeated map renders resume the same brief playhead, never restart it.
+ return {...pulse,elapsed};
+}
+function prepareCelestialVictory(before,quest,firstCompletion,recovered=false){
+ const transition=celestialTransition(before,lumenProgress,quest,canonicalQuestList(),{firstCompletion,recovered});
+ celestialPending=transition.kind?{...transition,quest,owner:lumenUser?.id??null}:null;
+ if(transition.pulse)masteryPulses.set(quest.constellationId,{...transition.pulse,owner:lumenUser?.id??null});
+}
+function celestialQuestAvailable(quest){return quest.legacyIndex===null?canonicalQuestAvailable(quest):questIsAccessible(quest.legacyIndex)}
+function startCelestialQuest(quest){
+ if(!celestialQuestAvailable(quest))return false;
+ if(quest.legacyIndex===null)return startCanonicalQuest(quest);
+ leavePendingVictoryForNavigation();
+ if(['COMPLETED','ABANDONED'].includes(attemptEngine.snapshot()?.state))attemptEngine.clear();
+ canonicalActiveQuest=null;levelIndex=quest.legacyIndex;replayMode=false;socialChallenge=null;
+ document.getElementById('mapModal').hidden=true;
+ for(const id of ['undo','hint','autoCross'])document.getElementById(id).disabled=false;
+ loadPuzzle();usedHintThisGame=false;refreshJourney();return true;
+}
+function showCelestialVictory(){
+ const event=celestialPending;celestialPending=null;
+ if(!event||event.owner!==(lumenUser?.id??null)||event.quest.id!==activeQuest().id)return false;
+ const adventure=event.kind!=='constellation',q=event.quest,quests=canonicalQuestList();
+ const model=contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot()});
+ const pack=model.skies.flatMap(s=>s.packs).find(p=>p.id===q.packId);
+ const entries=adventure?CONTENT_CONSTELLATIONS.filter(c=>quests.some(x=>x.constellationId===c.id&&x.packId===q.packId)):CONTENT_CONSTELLATIONS.filter(c=>c.id===q.constellationId);
+ const ordered=[...entries.filter(c=>c.id===q.constellationId),...entries.filter(c=>c.id!==q.constellationId)];
+ const summary=event.kind==='campaign'?event.after.campaign:adventure?event.after.adventure:event.after.constellation;
+ const count=adventure?`${event.kind==='campaign'?new Set(quests.map(x=>x.constellationId)).size:entries.length} constellations · `:'';
+ const badgeText=Object.entries(summary.badges).map(([key,n])=>`${n} ${{autonomy:'Autonomie',speed:'Rapidité',noError:'Sans erreur',mastery:'Maîtrise'}[key]}`).join(' · ');
+ const columns=matchMedia('(max-width:600px) and (orientation:portrait)').matches?Math.min(3,Math.max(1,ordered.length)):Math.ceil(Math.sqrt(Math.max(1,ordered.length)*2)),rows=Math.ceil(ordered.length/columns);
+ const vault=adventure?'<svg class="celestial-vault" viewBox="0 0 290 115" preserveAspectRatio="none" aria-hidden="true">'+milkyWaySvg('adventure:'+q.packId,1)+'</svg>':'';
+ const art='<div class="celestial-scene'+(adventure?' celestial-panorama':'')+'" style="--celestial-columns:'+columns+';--celestial-shift-x:'+((columns-1)*50)+'%;--celestial-shift-y:'+((rows-1)*50)+'%">'+vault+ordered.map((entry,i)=>{
+  const scope=celestialScope(lumenProgress,quests.filter(x=>x.constellationId===entry.id));
+  return '<figure class="celestial-figure" style="--celestial-order:'+i+';--celestial-cascade:'+(i/Math.max(1,ordered.length-1)*1)+'s"><svg viewBox="0 0 290 115" aria-hidden="true">'+milkyWaySvg(entry.id,.4)+astronomicalPrimarySvg(entry,scope.completed,scope.total,i===0?Math.max(0,scope.completed-1):scope.completed)+'</svg><figcaption>'+adminEsc(entry.label)+'</figcaption></figure>';
+ }).join('')+'</div>';
+ const leave=action=>()=>{closeUnifiedSkyReveal();hideSuccess();action()};
+ const sky=()=>openJourneyMap(false,{constellationId:q.constellationId});
+ const nextPack=pack&&model.skies.find(s=>s.id===pack.skyId)?.packs.find((p,i,list)=>list[i-1]?.id===pack.id);
+ const packEntries=CONTENT_CONSTELLATIONS.filter(c=>c.packId===q.packId),following=packEntries.slice(packEntries.findIndex(c=>c.id===q.constellationId)+1);
+ const next=adventure?nextPack?.accessible&&quests.find(x=>x.packId===nextPack.id&&!questIsCompleted(lumenProgress,x.id)&&celestialQuestAvailable(x)):following.flatMap(c=>quests.filter(x=>x.constellationId===c.id)).find(x=>!questIsCompleted(lumenProgress,x.id)&&celestialQuestAvailable(x));
+ const primary=next?{label:adventure?'Découvrir l’aventure suivante':'Constellation suivante',run:leave(()=>startCelestialQuest(next))}:{label:adventure?'Admirer mon ciel':'Retour à Mon ciel',run:leave(sky)};
+ const entry=entries.find(c=>c.id===q.constellationId);
+ const challenge=document.getElementById('successShare');
+ const shown=celestialCelebration.show({kind:event.kind,title:adventure?'Aventure accomplie':(entry?.label||q.constellationId)+' brille à nouveau !',
+  copy:adventure?'Chaque étoile retrouvée a repoussé l’obscurité. Ensemble, elles ont redonné vie à ce ciel.':'Une nouvelle lumière a retrouvé sa place dans le ciel.',
+  summary:(event.kind==='campaign'?'Tout le contenu actuellement disponible est terminé. ':'')+count+`${summary.completed}/${summary.total} quêtes · ${summary.stars} étoiles · `+badgeText,art,primary,
+  secondary:next?{label:'Mon ciel',run:leave(sky)}:null,review:adventure?{label:'Revoir mon aventure',run:leave(()=>openJourneyMap(false,{constellationId:q.constellationId,detail:false}))}:null,
+  share:challenge&&!challenge.hidden?{label:'Défier un ami',disabled:challenge.disabled,remarkable:challenge.classList.contains('remarkable'),run:()=>challenge.click()}:null});
+ if(shown){adventurePending=null;endgamePending=false;if(event.kind==='campaign'){try{localStorage.setItem(endgameSeenKey(),'1')}catch(_){}trackLumenEvent('campaign_completed',null,{content_quests:summary.total,constellations:new Set(quests.map(x=>x.constellationId)).size,stars:summary.stars})}}
+ return shown;
+}
 let mapConstellation=0,skyTourStep=0,mapCatalogueOverride=null;
 const skyNavigation=createSkyNavigation({document,getModel:()=>mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot()}),getQuest:()=>currentQuestPosition(),
  getSolved:i=>!!lumenProgress.solved[i],
@@ -3284,6 +3629,7 @@ const skyNavigation=createSkyNavigation({document,getModel:()=>mapCatalogueOverr
  getLit:entry=>canonicalScopeProgress(lumenProgress,{constellationId:entry.id}).completed,
  getShape:entry=>({...astronomicalDisplayShape(entry.shape||CONSTELLATIONS[entry.legacyIndex]),count:canonicalScopeProgress(lumenProgress,{constellationId:entry.id}).total}),
  getMastered:entry=>canonicalScopeProgress(lumenProgress,{constellationId:entry.id}).mastered,
+ getMastery:constellationMastery,takeMasteryPulse,
  getBadgeCounts:entry=>canonicalScopeProgress(lumenProgress,entry.constellations?{packId:entry.id}:{constellationId:entry.id}).badges,onConstellation:entry=>{if(entry.canonicalOnly){renderMap();return}if(mapConstellationRange(entry.legacyIndex)){mapConstellation=entry.legacyIndex;renderMap()}}});
 const SKY_TOUR_STEPS=[
  {target:"skyNavigation",title:"Ciels et Aventures",copy:"Choisis un Ciel, puis une Aventure. Les autres restent compactes ; un cadenas indique un contenu verrouillé. Consulter une autre Aventure ne change pas ta progression."},
@@ -3307,7 +3653,7 @@ function renderCanonicalSky(entry){
  head.append(name,count);el.appendChild(head);
  const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
  svg.classList.add("sky-svg");svg.setAttribute("viewBox","0 0 290 115");
- svg.innerHTML=astronomicalPrimarySvg(entry,lit,total);el.appendChild(svg);
+ svg.innerHTML=milkyWaySvg(entry.id,constellationMastery(entry).ratio,[0,0,290,115],takeMasteryPulse(entry))+astronomicalPrimarySvg(entry,lit,total);el.appendChild(svg);
  const note=document.createElement("div");note.className="sky-note";
  note.textContent=lit===total?"Constellation compl\u00e9t\u00e9e":lit?"Constellation en cours":"Constellation \u00e0 d\u00e9couvrir";
  const heldReplay=quests.find(q=>q.legacyIndex===null&&questIsCompleted(lumenProgress,q.id)&&!canonicalQuestAvailable(q));
@@ -3325,6 +3671,9 @@ function celebrateConstellationReveal(){
  setTimeout(()=>o.classList.remove("complete-celebration"),3800);
 }
 function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
+ celestialCelebration.clear();
+ for(const id of ['skyRevealTime','skyRevealRewards','skyRevealFeedback'])document.getElementById(id).hidden=false;
+ document.getElementById('skyRevealNext').textContent='Quête suivante →';document.getElementById('skyRevealSky').textContent='✦ Mon ciel';document.getElementById('skyRevealRetry').textContent='↻ Réessayer';
  const after=skyStarsEarned(),crossed=beforeEarned!==null&&after>beforeEarned;
  const playedQuest=canonicalActiveQuest??canonicalQuestForLegacy(levelIndex);
  if(!canonical&&playedQuest)canonical={quest:playedQuest,newlyCompleted:crossed};
@@ -3339,7 +3688,6 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
  const newlyCompleted=canonical?canonical.newlyCompleted:crossed;
  const constellationCompleted=canonical?newlyCompleted&&p.lit===p.count:completedIndex>=0;
  if(constellationCompleted){
-   constellationSound();
    k.textContent="CONSTELLATION COMPLÉTÉE";
    t.textContent="✦ "+p.name.replace(" · Grand Chariot","");
    document.getElementById("skyRevealName").textContent=completedIndex<CONSTELLATIONS.length-1?"La constellation suivante est maintenant à découvrir.":"Ton ciel est entièrement révélé.";
@@ -3360,6 +3708,7 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
  let lines=p.edges.map(e=>{let on=e[0]<p.lit&&e[1]<p.lit,newLine=on&&(e[0]===idx||e[1]===idx);return '<line class="sky-line '+(on?'on ':'')+(newLine?'new-line':'')+'" x1="'+p.pts[e[0]][0]+'" y1="'+p.pts[e[0]][1]+'" x2="'+p.pts[e[1]][0]+'" y2="'+p.pts[e[1]][1]+'"/>'}).join("");
  let stars=p.pts.map((v,i)=>'<circle class="sky-star '+(i<p.lit?'on ':'')+(i===idx&&newlyCompleted?'new-star':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i===idx?6:i<p.lit?4:3)+'"/>').join("");
  canvas.innerHTML='<svg class="sky-reveal-svg" viewBox="0 0 290 115">'+(astronomicalPrimarySvg({id:canonical?.quest.constellationId||CONTENT_CONSTELLATIONS[p.index]?.id},p.lit,p.count,newlyCompleted?Math.max(0,p.lit-(canonical?1:after-beforeEarned)):p.lit)||lines+stars)+'</svg><div>'+p.lit+' / '+p.count+' étoiles</div>';o.hidden=false;
+ if(canonical?.quest.ordinal===1&&newlyCompleted)document.getElementById('skyRevealName').textContent=document.getElementById('successSub').textContent;
  const result=document.getElementById("skyRevealResults"),continueButton=document.getElementById("skyRevealContinue");
  const victory=document.getElementById("successOverlay");
  const isNormalVictory=!!victory&&!document.getElementById("successNew")?.hidden&&!document.getElementById("successRetry")?.hidden;
@@ -3389,9 +3738,12 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
    }
   }
  }
- if(constellationCompleted)celebrateConstellationReveal();
+ // Completion is presented once here, never as a second popup after Next.
+ adventurePending=null;endgamePending=false;
+ try{showCelestialVictory()}catch(error){celestialCelebration.clear();celestialPending=null;console.warn('Celestial presentation unavailable',error)}
 }
 function closeUnifiedSkyReveal(){
+ celestialCelebration.clear();
  syncPresentation.celebration(false);
  const o=document.getElementById("skyReveal");
  o.hidden=true;o.classList.remove("complete-celebration");
@@ -3480,7 +3832,16 @@ function renderMap(){
     button.title='Quête '+quest.ordinal+' · '+status;
      button.innerHTML=legacy!==null&&solved?performanceBadges(legacy):solved?canonicalPerformanceBadges(quest.id):available?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+quest.ordinal+'</span>' :'<span class="puzzle-lock-only" aria-hidden="true">🔒</span>';
      button.setAttribute("aria-label",`Quête ${quest.ordinal} · ${status}`);
-    button.disabled=!available;
+    const needsAccount=canonicalCampaignQuestDecision(quest,navigationProgress(),{
+     entitlements:adventureAccessEntitlements(),attempt:campaignAccessAttempt(),signedIn:qaActive||!!lumenUser,cloudReady:qaActive||cloudProfileReady
+    }).status==='auth-required';
+    button.disabled=!available&&!needsAccount;
+    if(needsAccount){
+     button.classList.add('account-required');
+     button.title+=' · Créer un compte gratuit pour continuer';
+     button.setAttribute('aria-label',button.title);
+     button.onclick=()=>maybeOfferAccount();
+    }
     if(available)button.onclick=()=>{
      if(skyTourActive())return;
      if(legacy===null){startCanonicalQuest(quest);return}
@@ -3576,7 +3937,27 @@ document.addEventListener("click",handleLearningTap,true);
 // Start after campaign data are initialized. A deep-linked social challenge resolves its
 // server snapshot before the board is created so campaign progression is never mutated.
 setupMobileAuth();setupTutorial();setupOutsideDefaults();setupQaMode();
-async function bootGame(){await bootstrapSocialChallenge();restoreCanonicalCampaignAttempt();init();refreshJourney();maybeShowReturnWelcome();const focus=new URL(location.href).searchParams.get("myChallenges");if(focus)openMyChallenges(focus);else loadMyChallenges()}
+async function bootGame(){
+ await bootstrapSocialChallenge();restoreCanonicalCampaignAttempt();init();refreshJourney();
+ try{
+  const first=canonicalQuestList()[0],entry=CONTENT_CONSTELLATIONS.find(c=>c.id===first.constellationId);
+  const figureSvg=astronomicalReferenceSvg(entry);
+  if(figureSvg){
+   firstWelcome=createFirstWelcome({document,window,figureSvg,
+    contextKey:()=>JSON.stringify([lumenUser?.id??null,activeQuest().id,attemptEngine.snapshot()?.attemptId]),
+    onReplayStart:()=>pauseGameClock(),
+    onReturn:({replay,origin})=>{
+     updateAttemptUI();
+     if(replay){(origin?.isConnected&&!origin.closest('[hidden]')?origin:document.getElementById('tutorialHelp'))?.focus();return}
+     const target=document.getElementById('learningCoachNext');
+     if(target&&!target.hidden)target.focus();else document.getElementById('attemptMask')?.focus();
+    }});
+   if(firstWelcomeEligible&&!socialChallenge&&!lumenUser&&activeQuest().id===first.id)firstWelcome.show();
+  }
+ }catch{firstWelcome?.cancel()}
+ if(!firstWelcome?.active)maybeShowReturnWelcome();
+ const focus=new URL(location.href).searchParams.get('myChallenges');if(focus)openMyChallenges(focus);else loadMyChallenges();
+}
 bootGame();
 
 setupBetaFeedback();
@@ -3598,6 +3979,20 @@ const accountLater=document.getElementById("accountOptinLater");if(accountLater)
 const retryAccountSync=document.getElementById("retryAccountSync");if(retryAccountSync)retryAccountSync.onclick=retryAccountCloudSync;
 const showAccountSyncDiagnostic=document.getElementById("showAccountSyncDiagnostic");if(showAccountSyncDiagnostic)showAccountSyncDiagnostic.onclick=showAccountCloudDiagnostic;
 const diagnosticConsent=document.getElementById('diagnosticConsent');if(diagnosticConsent)diagnosticConsent.onchange=changeDiagnosticPreference;
+const supportHost=document.getElementById('supportAssistance');
+if(supportHost){
+ supportSession=mountSupportPanel(supportHost,{storage:localStorage,
+  context:()=>({userId:lumenUser?.id,client:lumenSupabase,qa:qaActive}),
+  capture:async(ctx,code)=>{
+   const copy=captureSupportCopy({storage:localStorage,owner:ctx.userId,code,version:appVersion()});
+   try{const queues=await inspectCommandOutboxes(ctx.userId);for(const name of ['Canonical','Legacy','Wallet']){const queue=queues[name];if(queue?.complete)copy.copies[0].facts.push({quest:0,metric:'pending'+name,value:queue.pending.length})}}catch{}
+   return copy;
+  }});
+ installDiagnosticListeners(window,{capture:code=>supportSession.incident(code),refresh:()=>supportSession.refresh()});
+ window.addEventListener('storage',event=>{if(event.key==='lumenSupportRevocationsV1')void supportSession.refresh()});
+ // Local clock enforces expiry even while the phone stays offline.
+ setInterval(()=>{supportSession.changed();const v=supportSession.view();if(v.dossier?.state==='active'&&Date.parse(v.dossier.expires_at)<=Date.now())void supportSession.refresh()},30000);
+}
 const archiveAccountStorage=document.getElementById('archiveAccountStorage');if(archiveAccountStorage)archiveAccountStorage.onclick=compactAccountStorage;
 const exportAccountStorage=document.getElementById('exportAccountStorage');if(exportAccountStorage)exportAccountStorage.onclick=()=>exportLumenRecoveryBundle().catch(()=>{document.getElementById('accountStorageStatus').textContent='Export incomplet : les sauvegardes restent conservées.'});
 if(exportAccountStorage){
@@ -3641,6 +4036,7 @@ initLumenCloud().catch(error=>{recordCloudDiagnostic("auth_initialization_failed
 
 if("serviceWorker" in navigator){
  let lumenReloadingForSW=false;
+ let previousServiceWorkerController=navigator.serviceWorker.controller;
  const updateStatus=message=>{const node=document.getElementById("appUpdateStatus");if(node)node.textContent=message};
  const activateWaitingWorker=registration=>{if(registration.waiting)registration.waiting.postMessage({type:"SKIP_WAITING"})};
  const checkLumenUpdate=async({manual=false}={})=>{
@@ -3658,6 +4054,11 @@ if("serviceWorker" in navigator){
   }
  };
  navigator.serviceWorker.addEventListener("controllerchange",()=>{
+  // First installation already serves this document's modules. Reload only
+  // when replacing a controller, otherwise a fresh welcome is interrupted.
+  const replacingController=!!previousServiceWorkerController;
+  previousServiceWorkerController=navigator.serviceWorker.controller;
+  if(!replacingController)return;
   if(lumenReloadingForSW)return;
   lumenReloadingForSW=true;
   if(new URLSearchParams(location.search).has("code")||location.hash.includes("access_token=")){lumenReloadingForSW=false;return}
@@ -3675,6 +4076,7 @@ if("serviceWorker" in navigator){
 }
 
 // Preserve the public browser testing entry points.
+wireLumenErasureControls();
 window.runHintTests=runHintTests;
 window.lumenDiagnostics=createDiagnostics(testModel,{init,runHintTests,setSoundEnabled,closeTutorial,hideSuccess,render});
 Object.assign(window.lumenDiagnostics,{skySnapshot:()=>skyNavigation.snapshot(),setSkyCatalogue:(model,{reset=true}={})=>{mapCatalogueOverride=model;if(reset)skyNavigation.open();else skyNavigation.render()},refreshSky:()=>skyNavigation.render()});

@@ -20,6 +20,23 @@ export async function verifyTransactionalCommandCache({evaluate,navigate,url}){
   release();await Promise.all([first,second]);frame.remove();
   if(order.join(',')!=='first,second')throw Error('Native lock lost dispatch');
   const store=createIndexedOutboxStore(indexedDB),cache=createTransactionalCommandCache(store);
+  {
+  const {canonicalQuestList}=await import('/src/campaign/canonical-quests.js');
+  const {loadCommittedLegacyAttempt,replayLegacyVictoryOutbox}=await import('/src/persistence/legacy-command.js');
+  const legacyOwner='recapture-fixture-'+crypto.randomUUID(),quest=canonicalQuestList().find(q=>q.legacyIndex===73);
+  const legacyBox=createDurableCanonicalVictoryOutbox(localStorage,{namespace:'Legacy',fallback:cache,now:()=> '2026-10-24T08:00:00Z'});
+  const facts={seconds:37,assistanceUsed:false,mistakeCommitted:false,qualifying:true,hintUsed:false,challengeFailed:false,qualifiedDay:'2026-10-24',qualifiedAt:'2026-10-24T07:00:00Z'};
+  const later=await legacyBox.enqueue(legacyOwner,quest.id,{facts:{...facts,seconds:41}},{operationId:'same-run-reset-0'});
+  await legacyBox.pause(legacyOwner,later,{code:'22023'});
+  const receipt={request:{version:1,operationId:later.operationId,questId:quest.id,facts},outcome:{firstCompletion:false,attempts:4,savedPerformance:{badges:{speed:true,autonomy:true,noError:true,mastery:true}}},recordedAt:'2026-10-24T07:00:40Z'};
+  const profile={solved:{73:1},badges:{},performances:{73:{attempts:4,badges:{speed:true,autonomy:true,noError:true,mastery:true}}},shards:92,walletRevision:9};
+  let reads=0;
+  const client={rpc:async(name,args)=>{if(args.p_expected_user_id!==legacyOwner)throw Error('Foreign receipt read');reads++;if(name==='lumen_get_legacy_command')return {data:receipt};if(name==='lumen_restore_profile')return {data:profile};throw Error('No replay write expected')}};
+  const recovered=await replayLegacyVictoryOutbox(legacyBox,legacyOwner,async()=>{throw Error('No resend expected')},{recoverCommitted:async entry=>{const committed=await loadCommittedLegacyAttempt(client,entry.questId,entry.operationId,{userId:legacyOwner});await legacyBox.archiveRecreatedCapture(legacyOwner,entry,committed);return committed}});
+  const archives=await store.entries('lumenLegacyRecreatedCaptureArchiveV1:'+legacyOwner+':');
+  if(recovered.length!==1||reads!==2||(await legacyBox.pending(legacyOwner)).length||(await legacyBox.inspect(legacyOwner)).paused.length||(await cache.pendingState(legacyOwner)).length||archives.length!==1)throw Error('Legacy native archive recovery incomplete');
+  if(JSON.stringify(JSON.parse(archives[0][1]).entry)!==JSON.stringify(later)||JSON.stringify(JSON.parse(archives[0][1]).receipt)!==JSON.stringify(receipt))throw Error('Original legacy evidence lost');
+  }
   const userId='atomic-fixture-'+crypto.randomUUID(),key='lumenCanonicalVictoryOutboxV2:'+userId+':op',stateKey=COMMAND_CACHE_PREFIX+'Canonical:'+userId+':op';
   const box=createDurableCanonicalVictoryOutbox(localStorage,{fallback:cache});
   const entry=await box.enqueue(userId,'q',{stars:1},{operationId:'op'});

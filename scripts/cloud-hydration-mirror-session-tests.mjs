@@ -36,7 +36,7 @@ function fixture({change=null,mirrorOk=true,mirrorReject=false}={}){
   attemptEngine:{snapshot:()=>null},canonicalAttemptToResume:()=>null,canonicalQuestList:()=>[],currentQuestPosition:()=>0,
   canonicalResumeOwner:null,refreshCanonicalOutboxNotice:async()=>{},
   recordCloudDiagnostic:(event,details)=>events.push({event,...details}),
-  resumeCanonicalCampaignBoundary:noop,preserveUnsyncedCloudProgress:()=>calls.push('preserve'),
+  resumeCanonicalCampaignBoundary:noop,resumeHydratedCampaignSelection:noop,preserveUnsyncedCloudProgress:()=>calls.push('preserve'),
   verifyLegacyProgressMirror:async()=>{switchSession();if(mirrorReject)throw Error('Synthetic mirror rejection');return mirrorOk?{ok:true,count:0}:{ok:false,reason:'synthetic_failure',pending:1};},
   updateShardMeter:()=>{},renderDaily:()=>calls.push('render'),refreshJourney:()=>calls.push('journey'),updateAuthUI:()=>calls.push('auth'),
   resumeCanonicalVictoryAfterHydration:()=>calls.push('victory'),maybeShowStreakLoss:()=>calls.push('streak'),

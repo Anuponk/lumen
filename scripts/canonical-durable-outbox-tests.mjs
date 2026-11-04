@@ -2,11 +2,39 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createDurableCanonicalVictoryOutbox} from '../src/persistence/durable-canonical-outbox.js';
 import {replayCanonicalVictoryOutbox} from '../src/persistence/canonical-outbox.js';
+import {replayLegacyVictoryOutbox} from '../src/persistence/legacy-command.js';
+import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 
 function local(){const data=new Map();return {data,get length(){return data.size},key:i=>[...data.keys()][i]??null,getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,String(v)),removeItem:k=>data.delete(k)};}
 function indexed(){const data=new Map();return {data,entries:async prefix=>[...data].filter(([key])=>key.startsWith(prefix)),get:async key=>data.get(key)??null,put:async(key,raw)=>{if(data.has(key)&&data.get(key)!==raw)throw Error('immutable');data.set(key,raw)},remove:async(key,raw)=>{if(data.has(key)&&data.get(key)!==raw)throw Error('changed');data.delete(key)}};}
 const unavailable={entries:async()=>{throw Error('denied')},get:async()=>{throw Error('denied')},put:async()=>{throw Error('denied')},remove:async()=>{throw Error('denied')}};
 const reward={badges:{autonomy:true},stars:1};
+test('legacy later capture with a review pause archives evidence against an independently read receipt without resending',async()=>{
+ const quest=canonicalQuestList().find(q=>q.legacyIndex===73);
+ for(const variant of ['valid','better-time','changed-flags','unknown-fact','wrong-operation','wrong-owner','missing-projection','missing-badge','missing-receipt','early-capture','archive-denied','account-change']){
+  const storage=local(),fallback=indexed(),box=createDurableCanonicalVictoryOutbox(storage,{namespace:'Legacy',fallback,now:()=>variant==='early-capture'?'2026-10-24T06:40:00Z':'2026-10-24T06:45:00Z'});
+  const facts={seconds:37,assistanceUsed:false,mistakeCommitted:false,qualifying:true,hintUsed:false,challengeFailed:false,qualifiedDay:'2026-10-24',qualifiedAt:'2026-10-24T06:41:12Z'};
+  const later={...facts,seconds:variant==='better-time'?36:41};if(variant==='changed-flags')later.hintUsed=true;
+  if(variant==='unknown-fact')later.future=true;
+  const entry=await box.enqueue('a',quest.id,{facts:later},{operationId:'run-reset-0'});
+  await box.pause('a',entry,{code:'22023'});
+  const receipt={request:{version:1,operationId:variant==='wrong-operation'?'other':entry.operationId,questId:quest.id,facts},outcome:{firstCompletion:false,attempts:4,savedPerformance:{badges:{autonomy:true,speed:true,noError:true,mastery:true}}},recordedAt:'2026-10-24T06:41:13Z'};
+  const profile={solved:{73:1},performances:{73:{attempts:variant==='missing-projection'?3:4,badges:{autonomy:true,speed:true,noError:true,mastery:true}}}};
+  const committed={userId:variant==='wrong-owner'?'b':'a',quest,receipt,profile};
+  if(variant==='missing-badge')profile.performances[73].badges.mastery=false;
+  let active=true,commits=0;
+  if(variant==='archive-denied'){fallback.put=async()=>{throw Error('quota')};storage.setItem=()=>{throw Error('quota')}}
+  if(variant==='account-change'){const put=fallback.put;fallback.put=async(k,v)=>{await put(k,v);active=false}}
+  const recovered=await replayLegacyVictoryOutbox(box,'a',async()=>{commits++;throw Error('must not resend')},{sessionValid:()=>active,recoverCommitted:async e=>{if(variant==='missing-receipt')return null;await box.archiveRecreatedCapture('a',e,committed,{sessionValid:()=>active});return committed}});
+  assert.equal(commits,0,variant);
+  if(variant==='valid'){
+   assert.equal(recovered.length,1);assert.deepEqual(await box.pending('a'),[]);
+   assert.equal((await box.inspect('a')).paused.length,0);
+   const archived=[...fallback.data].find(([k])=>k.startsWith('lumenLegacyRecreatedCaptureArchiveV1:'));
+   assert.ok(archived);assert.deepEqual(JSON.parse(archived[1]).entry,entry);assert.deepEqual(JSON.parse(archived[1]).receipt,receipt);
+  }else{assert.equal(recovered.length,0,variant);assert.deepEqual(await box.pending('a'),[entry],variant)}
+ }
+});
 const saved=id=>({profile:{canonicalQuestState:{[id]:{solved:true,badges:{autonomy:true,speed:true}}}}});
 const legacy=(userId,questId)=>({userId,questId,reward,createdAt:'2026-10-18T00:00:00.000Z'});
 

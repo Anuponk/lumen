@@ -54,6 +54,10 @@ if [[ "$MODE" != "--rollback" ]]; then
     [[ -s "$asset" ]] || { echo "Missing $asset"; exit 1; }
     install -m 644 "$asset" "$TMP/$asset"
   done
+  # Publish only reviewed public pages; older revisions can omit them.
+  for page in mentions-legales.html confidentialite.html supprimer-compte.html; do
+    if [[ -f "$page" ]]; then install -m 644 "$page" "$TMP/$page"; fi
+  done
   for dir in src content; do
     [[ -d "$dir" ]] || { echo "Missing $dir"; exit 1; }
     cp -R "$dir" "$TMP/$dir"

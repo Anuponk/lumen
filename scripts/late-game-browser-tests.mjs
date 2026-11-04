@@ -76,10 +76,12 @@ try{
   assert.deepEqual((await snapshot()).puz.reg,final.reg,'The final actual catalogue board must be played');
   await evaluate('document.getElementById("attemptMask").click();(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');
   await until('!document.getElementById("skyReveal").hidden');
-  assert.match(await evaluate('document.getElementById("skyRevealKicker").textContent'),/CONSTELLATION COMPLÉTÉE/,'The true final victory celebrates the completed current constellation');
+  assert.equal(await evaluate('document.getElementById("skyReveal").dataset.celestial'),'campaign','The global finale has priority in the same single scene');
+  assert.match(await evaluate('document.getElementById("celestialSummary").textContent'),new RegExp(String(all.length)+'/'+String(all.length)+' quêtes'));
+  assert.match(await evaluate('document.getElementById("celestialSummary").textContent'),/Tout le contenu actuellement disponible est terminé/);
+  assert.equal(await evaluate('document.getElementById("endgameOverlay").hidden'),true,'No second finale popup');
   await evaluate('document.getElementById("skyRevealNext").click()');
-  await until('!document.getElementById("endgameOverlay").hidden');
-  assert.match(await evaluate('document.getElementById("endgameSummary").textContent'),new RegExp(String(all.length)+' quêtes'));
+  await until('!document.getElementById("mapModal").hidden');
   assert.equal((await snapshot()).progress.badges.historical,1);
   results.push({viewport,transition100to101:true,normalCelebration:true,noSkip:true,rewardsPreserved:true,reload:true,sameAttempt:true,mapReturn:true,lastQuest:true,cappedSaveRecovery:true,finalVictory:true,completeSky:true});
  }

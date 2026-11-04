@@ -1,5 +1,45 @@
 # UX and visual direction
 
+## Optional first welcome and story — #532
+
+A fresh local campaign opens a celestial welcome with the existing LUMEN brand,
+the approved tagline and two actions: **Commencer l’aventure** opens the actual
+first board; **Découvrir l’histoire** plays the approved five scenes in 30 seconds.
+**Passer** is available immediately and skips only the story. Quest 1 retains
+SEE → UNDERSTAND → ACT and its existing independent tutorial opt-out.
+
+The presentation uses the first catalogue quest's licensed astronomical reference,
+without invented coordinates, reward effects or a second board. The final seven
+seconds fade the celestial layer above the real board. One responsive DOM serves
+mobile and desktop. The game is inert while the presentation owns focus.
+
+`lumenIntroPresentedV1` is a local presentation marker, claimed and read back
+before ordinary startup. Existing profiles, attempts, owners, remembered sessions,
+recovery sources, tutorial visits and parameterized/deep-link contexts bypass the
+automatic welcome. Denied/unverifiable storage also bypasses it. It never enters
+the player profile or cloud commands. Storage removal/new devices can remove this
+local preference; a known existing profile still bypasses automatic presentation.
+
+**Revoir l’introduction** belongs in Aide. It pauses a running attempt through the
+existing pause action, preserves its board/identity/rewards and returns to that
+paused game, without forcing quest 1 or restarting the attempt. Escape and Passer
+restore focus. A changed account/quest/attempt or pagehide cancels obsolete work.
+Hidden tabs pause narrative time. Reduced motion suppresses animated effects;
+an accessible, expandable transcript pauses playback and exposes the full text.
+An animation failure releases the game immediately. An original, quiet Web Audio
+score accompanies the story after an explicit story/replay action. It initially
+reads the current sound preference at every opening; a visible music toggle changes only this
+presentation's session choice, without writing a new preference or player field.
+Music pauses with hidden tabs and the transcript, resumes at the current passage,
+and stops on completion, skip, Escape, cancellation or pagehide. Audio refusal or
+unavailability leaves the visual story usable. No remote audio asset is needed;
+cold offline startup remains the existing PWA's scope.
+The first service-worker acquisition does not reload that fresh document; an
+actual replacement retains the existing upgrade reload and OAuth-return guards.
+The return notification remains a passive, automatically dismissed status; it
+must not intercept Help or board gestures now that first installation stays on
+the original document. Its text, timing and player data remain unchanged.
+
 Domain readiness (persistence lot 3): a current verified acquired replay may be
 available during Wallet review. Account status distinguishes « Quêtes confirmées ·
 Éclats à vérifier »; the shard meter does not label an ambiguous balance available.
@@ -172,6 +212,16 @@ Mobile play is primary. Marking many impossible cells one-by-one was identified 
 Board rows/cells must not visually jump when exclusion markers appear. Exclusion appearance should remain consistent between manual and automatic marking.
 
 ## Learning UX
+
+On short screens, the compact coach for learning quests 1–2 reserves the
+interactive header before measuring available space above the board. Its
+height may shrink and scroll internally; it must not intercept the help button,
+its focus ring, puzzle cells or normal actions. Teaching steps and eligibility
+remain unchanged. The placement regression reproduces the 360x640 geometry;
+the UX browser suite retains real help open/close/focus checks.
+The compact coach is anchored to the board wrapper, so restoring an off-screen
+help control into view moves both in the same coordinate space immediately.
+It must not remain fixed over the header until a later animation frame.
 The onboarding has a protected **SEE -> UNDERSTAND -> ACT** order. “Learn by playing” does not mean “act immediately”: before the first board interaction, quest 1 gives the player a short visual model of what the board is and what success means.
 
 **SEE:** show the real quest-1 board without accepting board input. Temporarily number the five colored territories 1–5 so a new player can perceive that color/shape defines distinct territories. These numbers are teaching scaffolding only and must disappear from ordinary play.
@@ -268,14 +318,27 @@ destination based on the active quest.
 “Mes défis” belongs under Mon ciel. New results use a small unread indicator. Push permission must be requested contextually (“Préviens-moi quand quelqu'un relève mes défis”), never as an unexplained first-launch permission prompt.
 
 
-### Quest 2 → Mon ciel learning handoff
-The end of quest 2 is part of onboarding, not ordinary success navigation. The primary CTA explicitly teaches the destination: **Découvrir Mon ciel**. The success backdrop is inert at this point; opening the sky must be an intentional action.
+### Fluid onboarding (#569 / #576, product decision 25 October 2026)
+Quest 1 retains SEE → UNDERSTAND → ACT and real manual exclusions. Its result
+introduces automatic marking for subsequent quests. Quests 2–5 are free play:
+dismissible contextual advice explains drag (2), badges (3), then long press (4).
+No automatic generic tutorial or mandatory sky tour interrupts this chain.
+Help and Mon ciel remain available voluntarily. Ordinary victories retain one
+shared result with earned stars/badges, primary **Quête suivante**, secondary
+**Mon ciel**. Advancing requires an explicit action and existing catalogue access.
+Constellation/adventure/finale handling is preserved; #575 remains separate.
 
-On the first guided visit, teach the real screen progressively rather than with one generic paragraph: highlight and explain (1) constellation navigation, (2) quest/progression cards, (3) performance badges, and (4) the constellation drawing and earned stars. Use **SEE → UNDERSTAND → ACT**: one highlighted real zone and one short explanation at a time. Only the final step offers **Jouer la quête 3**.
-
-
-### Progressive assistance unlocks
-Assistance options are introduced only when they become meaningful. On quest 6, announce **Marquage auto** with a short modal: it is an optional, legitimate comfort-oriented alternative to manual marking, not the “wrong” way to play. Explain the reward trade-off before play: using it counts as assistance, so Rapidité remains possible but Autonomie, Sans erreur and consequently Maîtrise do not.
+### Progressive assistance choices
+After manual learning, Marquage auto defaults on and remembers the voluntary
+choice locally per guest/account. A temporary lesson or challenge override never
+overwrites this preference. At visible quest 6, spotlight the real checkbox and
+require the player to uncheck it before interacting with the board; an already
+unchecked box satisfies the lesson without a synthetic gesture. Immediately allow
+re-enabling it. Record completion with the existing autoCrossUnlockSeen marker;
+replays do not impose teaching. No second assistance modal is presented.
+Assistance prevents Autonomie, Sans erreur and Maîtrise; Rapidité remains possible.
+This is independent of the unchanged guest boundary: six visible quests may be
+completed before registration is required to continue. No lock is bypassed.
 
 When the player reaches the autonomy milestone (quest 11), explain the **Contrôle guidé** choice. The player may turn it off and may re-enable it later. The important distinction is intervention, not the visual toggle alone: keeping guided control enabled does not invalidate an attempt unless it actually prevents/corrects an error. An intervention counts as assistance and removes Autonomie/Sans erreur/Maîtrise; Rapidité remains available. Teach trade-offs without shaming assisted play.
 
@@ -299,7 +362,57 @@ Campaign/replay Reset deliberately gives the player a fresh badge run and restar
 
 
 ## End-of-campaign celebration
-The final currently available quest is not a normal success. After the last constellation reveal, show a dedicated full-campaign celebration with explicit completion copy, a compact recap (quests, constellations, stars, Autonomy/Sans erreur/Mastery counts) and post-game actions toward Mon ciel / badge completion. Detection derives from the campaign content count, not a hard-coded quest id. The “seen” key is versioned by available quest count so a future content extension can earn its own new ending.
+The final currently available quest is not a normal success. Its global ending
+has priority over Adventure, constellation and ordinary quest results, in the
+same single celestial scene. Explicit copy confirms completion of all currently
+available content, with catalogue-derived quests, constellations, stars and all
+four badge counts. Post-game actions retain access to Mon ciel and missing
+badges. No second finale opens after the player chooses an action.
+
+### Celestial milestones and progressive mastery (#575 / #519)
+
+Audit: `showSkyReveal` owns the shared quest result, licensed astronomy and
+explicit Next/Sky actions. The old Adventure notice and global ending could
+follow that result as another popup. Completion now projects a before/after
+confirmed victory over stable catalogue membership: global ending > Adventure
+> constellation > ordinary victory. Missing badges never prevent completion.
+Artwork comes from `astronomicalPrimarySvg`, preserving HIP geometry, cyan
+lines and secondary earned lights. No introduction or cockpit changes belong
+to this lot; #588/#590 ordinary continuation and account preferences remain.
+
+Constellation: last light (0–0.6 s), cyan trace (0.6–1.8 s), gentle breathing
+(1.8–2.8 s), resting final state by 4 s. Copy: “[Name] brille à nouveau !” and
+“Une nouvelle lumière a retrouvé sa place dans le ciel.” Adventure: the last
+constellation leads, existing figures appear in cascade (1.5–3.5 s), then a
+subtle Milky Way (3.5–5.5 s), resting by 7 s. Copy: “Aventure accomplie” and
+“Chaque étoile retrouvée a repoussé l’obscurité. Ensemble, elles ont redonné vie
+à ce ciel.” Reliable scope recaps use acquired quests/stars and named badges.
+Narrative copy fades in during the conclusion (2.8–4 s / 5.5–7 s), with its
+layout reserved from the start; actions stay available until the player chooses. “Passer
+l’animation” stops decoration; reduced motion shows the final state immediately.
+Next-constellation / next-Adventure requires an existing access decision and a
+real unfinished quest. Otherwise return to Mon ciel. Reviewing an Adventure
+uses existing map/replay navigation, without replaying its cinematic.
+
+Mastery in Mon ciel is separate: acquired eligible badges / currently possible
+badges, continuously scaled from 0 to 1. Empty scopes yield 0; catalogue growth
+recomputes the denominator without revoking historical awards. Versioned legacy
+and canonical badges retain existing qualification semantics; Mastery is never
+inferred from three separate historical facts. A fixed bounded dust composition
+seeded by stable constellation ID sits behind cyan geometry. At 0 there is no
+added layer; 25% reveals dust, 50% richer light, 75% an identifiable band and
+100% a subtle signature. No crowns, opaque clouds or permanent animation.
+Only real badge additions queue a short owner-scoped in-memory pulse; opening,
+reload, Auth, restored acquisitions or catalogue changes cannot queue one. It is
+consumed by the next visible rendering and is not a persisted reward.
+Repeated map refreshes retain the same short playhead rather than restarting
+the animation. Recovered receipts, retrying old durable intents and remote
+acquisition batches remain visually silent.
+
+Comparable previews: [0/25/50/75/100%](validation/celestial-preview.html), generated
+from the shared SVG components for a small figure, a large figure and an
+additional-light figure. Native mobile and desktop milestone captures accompany
+the PR; physical-device artistic acceptance remains separate.
 
 
 Canonical board identity: the header and any challenge/finale presentation must
@@ -364,3 +477,20 @@ is hidden from victory cards to keep rewards and the next-quest action visible.
 Learning quest 2 retains its intentional Mon ciel CTA, and badge introduction
 milestones and reward eligibility remain unchanged. Challenge and learning-only
 replays retain their isolated reward rules.
+
+For small play viewports, an open hint participates in the layout and scrolls
+within its own card. The board fits the remaining space; short landscape views
+place it beside the controls and hint. Territory rendering and cell input stay
+unchanged. Closing the hint restores the ordinary layout.
+
+At the catalogue-driven guest discovery boundary, the account dialog explicitly
+asks for a free account to continue and recover progress. Creating an account
+and signing in remain available through the existing form and Google action.
+Dismissal allows browsing; trying an account-locked quest opens that explanation
+again without starting it. Access and guest transfer rules are unchanged.
+
+A completed quest in its ready replay state offers « Quête suivante » when its
+immediate catalogue successor is accessible. Starting the replay hides this
+shortcut. Navigation rechecks live access and grants no completion or reward.
+Challenge and learning-only replays retain their existing navigation; notably,
+the quest-2 victory still introduces Mon ciel.

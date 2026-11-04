@@ -1,0 +1,65 @@
+{
+  "status": "preparation",
+  "application": "Lumen",
+  "commercialName": "Nopuna",
+  "legalName": "Cédric Valente EI",
+  "siren": "897865747",
+  "siret": "89786574700025",
+  "contactEmail": "valente.cedric@gmail.com",
+  "address": "1 boulevard Achille Marcel, 13010 Marseille, France",
+  "telephone": "06 95 11 68 37",
+  "registrationDetails": null,
+  "vatOwnerDeclaration": {
+    "chargesVat": false,
+    "confirmedOn": "2026-10-22",
+    "source": "owner-confirmation",
+    "legalBasis": null
+  },
+  "audience": "mixed-including-children",
+  "childrenAccountModel": "supervised-online",
+  "childrenActivation": "blocked-pending-verification-method",
+  "initialPlayCountries": ["FR"],
+  "businessActivityOwnerDeclaration": {
+    "activity": "Développement ou édition de jeux, activité secondaire",
+    "declared": true,
+    "confirmedOn": "2026-10-22",
+    "source": "owner-confirmation"
+  },
+  "monetization": "free-no-ads-no-purchases",
+  "hosting": {
+    "provider": "o2switch",
+    "offerOwnerDeclaration": {
+      "description": "Offre payante de base, nom commercial exact non confirmé",
+      "confirmedOn": "2026-10-22",
+      "source": "owner-confirmation"
+    },
+    "address": "Chemin des Pardiaux, 63000 Clermont-Ferrand, France",
+    "telephone": "04 44 44 60 40",
+    "source": "https://blog.o2switch.fr/que-renseigner-dans-la-page-mentions-legales/"
+  },
+  "emailProvider": {
+    "provider": "Resend",
+    "plan": "Free",
+    "confirmedOn": "2026-10-22",
+    "source": "owner-confirmation",
+    "accountSettingsVerified": false
+  },
+  "native": {
+    "strategy": "capacitor-candidate-not-adopted",
+    "applicationId": null,
+    "targetApiReviewed": 36,
+    "targetApiReviewedOn": "2026-10-22"
+  },
+  "evidence": {
+    "privacyPolicy": null,
+    "legalPages": null,
+    "accountDeletionEndToEnd": null,
+    "childSafety": null,
+    "nativeDevice": null,
+    "dataSafety": null,
+    "storeListing": null,
+    "identityIsolation": null,
+    "assetLicenses": null,
+    "businessActivity": null
+  }
+}

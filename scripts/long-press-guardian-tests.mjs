@@ -55,7 +55,7 @@ test('real cell action preserves direct toggle, ordinary cycle, undo and blocked
  for(const [initial,direct,expected] of [[0,true,2],[1,true,2],[2,true,0],[0,false,1],[1,false,2],[2,false,0]]){
   const cell={classList:{add(){},remove(){}}},ctx=vm.createContext({r:0,c:0,d:cell,state:[[initial,0],[0,0]],n:2,puz:{sol:[0,1]},hist:[],
    celebrated:false,dragCrossSuppressClick:false,guidedPending:null,verifyPending:false,
-   longPressGuardianAllowed:()=>true,displayedCellState:()=>initial,scriptedLearningActive:()=>false,ensureAttemptStarted(){},guidedDeferred:null,
+   autoMarkingLessonRequired:()=>false,longPressGuardianAllowed:()=>true,displayedCellState:()=>initial,scriptedLearningActive:()=>false,ensureAttemptStarted(){},guidedDeferred:null,
    guidedErrorsEnabled:()=>false,attemptEngine:{snapshot:()=>({}),setWrongGuardianPending(){},markAssistance(){}},resolutionSnapshot:()=>null,
    document:{getElementById:()=>({checked:false})},clearHintDisplay(){},hintStage:0,hintFocus:null,msg:{},paintBoardState(){},updateScriptedLearning(){},
    levelIndex:2,persistAttemptBoard(){},rewardProgressPulse(){},navigator:{},setTimeout:fn=>fn(),render(){throw Error('Ordinary input rebuilt board')}});

@@ -17,7 +17,7 @@ export async function verifyQuestPolicy(browser,baseUrl){
   const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:`
    localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(progress))});
    localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQaActiveAttemptV1');
-   localStorage.setItem('lumenSound','off');localStorage.setItem('lumenSkyTourSeen','1');localStorage.removeItem('lumenGuidedErrors');
+   localStorage.setItem('lumenSound','off');localStorage.setItem('lumenSkyTourSeen','1');localStorage.removeItem('lumenGuidedErrors');localStorage.removeItem('lumenQalumenOnboardingV1:guest');
   `});
   await navigateAndWait(browser,'Page.navigate',{url:String(url)});
   await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});
@@ -29,9 +29,9 @@ export async function verifyQuestPolicy(browser,baseUrl){
    label:document.getElementById('campaignMapLabel').textContent,autoDisabled:auto.disabled,autoChecked:auto.checked,guidedDisabled:guided.disabled,guidedChecked:guided.checked,
    badge:!badge.hidden?badge.dataset.kind:null,autonomy:!document.getElementById('autonomyOverlay').hidden,hint:document.getElementById('hint').textContent}})()`);
   assert(state.label.startsWith('Quête '+ordinal+' -'),JSON.stringify(state));
-  assert.equal(state.autoDisabled,ordinal<6,'Real auto-marking availability at quest '+ordinal);
-  assert.equal(state.autoChecked,false);assert.equal(state.guidedDisabled,ordinal<6);assert.equal(state.guidedChecked,ordinal<11);
-  assert.equal(state.badge,ordinal===3?'speed':ordinal===6?'full':null);
+  assert.equal(state.autoDisabled,ordinal===1,'Real auto-marking availability at quest '+ordinal);
+  assert.equal(state.autoChecked,ordinal>1);assert.equal(state.guidedDisabled,ordinal<6);assert.equal(state.guidedChecked,ordinal<11);
+  assert.equal(state.badge,null);
   assert.equal(state.autonomy,ordinal===11);
   assert.equal(state.hint.includes('OFFERT'),ordinal<=10);
   await acknowledgeLearningMilestones(evaluate);
@@ -45,7 +45,7 @@ export async function verifyQuestPolicy(browser,baseUrl){
   })()`);
   assert.equal(toggles.guidedChanged,ordinal>=6,'The real guided toggle follows visible quest availability');
   assert.equal(toggles.guidedAssisted,false,'Choosing guided control alone is not assistance');
-  assert.equal(toggles.autoChecked,ordinal>=6,'The real auto toggle must not reject a canonical quest because of a dormant index');
+  assert.equal(toggles.autoChecked,false,'The real auto toggle must not reject a canonical quest because of a dormant index');
   results.push({width,ordinal,stableQuestId:target.id,...state});
  }
  }

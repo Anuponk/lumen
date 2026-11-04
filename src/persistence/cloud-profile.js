@@ -315,6 +315,17 @@ function walletConflict(local,cloud){
 function canonicalQuestCovered(local,remote){
  if(sameCloudProfile(local,remote))return true;
  const run=remote?.runPerformance;
+ // Acquisition recovery can seed an unversioned copy of a historical first
+ // performance. It is a redundant projection, not evidence of a new badge run.
+ // Admit only that exact known shape, never an arbitrary unversioned replay.
+ if(local?.solved&&remote?.solved&&!Object.hasOwn(local,'runPerformance')&&
+  run&&typeof run==='object'&&!Array.isArray(run)&&
+  Object.keys(run).length===4&&['seconds','assisted','bestTime','badges'].every(key=>Object.hasOwn(run,key))&&
+  Number.isFinite(run.seconds)&&run.seconds>=0&&Number.isFinite(run.bestTime)&&run.bestTime>=0&&
+  typeof run.assisted==='boolean'&&sameCloudProfile(run.badges,{})){
+  const {badges,...performance}=run,{runPerformance,...reward}=remote;
+  if(sameCloudProfile(performance,local.performance)&&canonicalAchievementCovered(local,reward))return true;
+ }
  if(!local?.solved||!remote?.solved||run?.version!==3)return false;
  const immutable=entry=>Object.fromEntries(Object.entries(entry).filter(([key])=>!['badges','runPerformance'].includes(key)));
  if(!sameCloudProfile(immutable(local),immutable(remote)))return false;
@@ -577,6 +588,9 @@ export async function compareAndSwapCloudProfile(supabase,profile,expected,{user
   // Do not retain provider messages, details, hints or an unsanitized cause.
   const reasons=new Map([
    ["legacy victory command required; preserve pending data and update client","LEGACY_COMMAND_REQUIRED"],
+   ["quest command required; preserve pending data","QUEST_COMMAND_REQUIRED"],
+   ["quest run authority missing","QUEST_RUN_AUTHORITY_MISSING"],
+   ["wallet command required; preserve pending data and update client","WALLET_COMMAND_REQUIRED"],
    ["earned XP cannot decrease","LEGACY_XP_REGRESSION"],
    ["canonical acquisition removal rejected","CANONICAL_ACQUISITION_REMOVAL"],
    ["canonical badge removal rejected","CANONICAL_BADGE_REMOVAL"],
@@ -606,7 +620,11 @@ function preserveVerifiedSnapshot(storage,prefix,value){
   }
  }
  for(const key of existing){if(storage.getItem(key)===value)return key}
- const key=prefix+Date.now();
+ const base=prefix+Date.now();let key=base,collision=0;
+ while(storage.getItem(key)!==null){
+  if(storage.getItem(key)===value)return key;
+  key=base+'_'+(++collision);
+ }
  try{
   storage.setItem(key,value);
   if(storage.getItem(key)!==value)throw Object.assign(Error("Recovery snapshot verification failed"),{code:'RECOVERY_BACKUP_UNVERIFIED'});
@@ -694,6 +712,11 @@ export function installCloudProfileLocally(storage,cloud){
 
 // Quarantine only the exact cooldown-only record produced by older canonical
 // starts under the dormant numeric index. Never discard rewards/unknown data.
+export function isAttemptStartPerformance(record,questIndex){
+ return Number.isSafeInteger(questIndex)&&questIndex>=0&&!!record&&typeof record==='object'&&!Array.isArray(record)&&
+  record.questIndex===questIndex&&Object.keys(record).every(key=>['questIndex',...qualificationFields].includes(key))&&
+  typeof record.lastQualifiedAt==='string'&&typeof record.lastQualifiedDay==='string'&&mergeQualificationMetadata(record,record).ok;
+}
 export async function archiveCanonicalStartMetadata(storage,remote,{quest,attempt,legacyIndex,ownerId,accountId,sessionValid=()=>true}={}){
  if(!sessionValid()||!ownerId||ownerId!==accountId||!quest||quest.legacyIndex!==null||quest.id!==attempt?.questId||!attempt.attemptId||
   !['campaign','replay'].includes(attempt.mode)||!['RUNNING','PAUSED'].includes(attempt.state)||!Number.isFinite(attempt.startedAt)||attempt.startedAt<=0||
@@ -703,9 +726,7 @@ export async function archiveCanonicalStartMetadata(storage,remote,{quest,attemp
  const cloud=validateCloudProfile(remote),raw=storage.getItem('lumenProgressV1');
  if(!raw)return {changed:false};
  const local=validateCloudProfile(JSON.parse(raw)),key=String(legacyIndex),record=local.performances?.[key];
- if(!record||typeof record!=='object'||Array.isArray(record)||record.questIndex!==legacyIndex||
-  Object.keys(record).some(k=>!['questIndex',...qualificationFields].includes(k))||
-  typeof record.lastQualifiedAt!=='string'||typeof record.lastQualifiedDay!=='string'||!mergeQualificationMetadata(record,record).ok||
+ if(!isAttemptStartPerformance(record,legacyIndex)||
   Object.hasOwn(cloud.performances||{},key))return {changed:false};
  await preserveRecoverySnapshot(storage,'lumenBeforeCanonicalStartMetadataLocal_',raw);
  await preserveRecoverySnapshot(storage,'lumenBeforeCanonicalStartMetadataRemote_',JSON.stringify(cloud));
@@ -931,4 +952,57 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote,{
  const verified=await loadVerifiedProfile(supabase,{userId});
  if(!sameCloudProfile(updated,verified))throw Error("Reconciliation cloud non verifiee");
  return {status:"reconciled",profile:verified,playerFavouredBalances:differingBalances};
+}
+
+// Explicit product policy: recover positive acquisitions, never infer a money
+// transaction from a historical snapshot. The server owns the merge and keeps
+// its Wallet/daily/receipt authorities. Preserve the exact device bytes first.
+// This path is separate from conservative coverage: its verified result is the
+// authority for retiring an ambiguous cache, whose original remains exportable.
+export async function reconcilePlayerAcquisitions(supabase,storage,remote,{userId,sessionValid=()=>true}={}){
+ const raw=storage.getItem('lumenProgressV1');
+ if(!raw||!userId)return {status:'blocked',reason:'missing_local'};
+ let local;
+ try{local=validateCloudProfile(JSON.parse(raw))}catch{return {status:'blocked',reason:'invalid_local'}}
+ const current=()=>sessionValid()&&storage.getItem('lumenProgressV1')===raw;
+ if(!current())return {interrupted:true};
+ await preserveRecoverySnapshot(storage,'lumenBeforeCloudReconcileLocal_',raw);
+ if(!current())return {interrupted:true};
+ let expected=validateCloudProfile(remote);
+ for(let attempt=0;attempt<2;attempt++){
+  await preserveRecoverySnapshot(storage,'lumenBeforeCloudReconcileRemote_',JSON.stringify(expected));
+  if(!current())return {interrupted:true};
+  const {data,error}=await supabase.rpc('lumen_reconcile_acquisitions',{
+   p_expected_user_id:userId,p_expected:expected,p_local:local
+  });
+  if(!current())return {interrupted:true};
+  if(error){
+   if(error.code==='PGRST202')return {status:'blocked',reason:'legacy_command_required'};
+   const failure=Error('Acquisition recovery refused');failure.code=error.code;throw failure;
+  }
+  if(data===null){
+   expected=await loadVerifiedProfile(supabase,{userId});
+   if(!current())return {interrupted:true};
+   if(!expected)throw Error('Acquisition recovery profile missing');
+   continue;
+  }
+  if(data?.policy!=='positive-acquisitions-v1'||data.userId!==userId)throw Error('Acquisition recovery proof invalid');
+  const profile=validateCloudProfile(data.profile);
+  const verified=await loadVerifiedProfile(supabase,{userId});
+  if(!current())return {interrupted:true};
+  if(!sameCloudProfile(profile,verified))throw Error('Acquisition recovery readback mismatch');
+  // Both copies are durable, the server transaction is re-read, and the owner
+  // and latest local bytes still match. No outbox entry is acknowledged here.
+  const json=JSON.stringify(verified);
+  try{
+   storage.setItem('lumenProgressV1',json);
+   if(storage.getItem('lumenProgressV1')!==json)throw Error('Acquisition cache verification failed');
+  }catch(error){
+   // A verified server result can run in memory if cache quota is exhausted.
+   if(!['QuotaExceededError'].includes(error?.name)&&![22,1014,'LOCAL_STORAGE_QUOTA'].includes(error?.code))throw error;
+   return {status:'reconciled',reason:'positive_acquisitions',profile:verified,memoryOnly:true};
+  }
+  return {status:'reconciled',reason:'positive_acquisitions',profile:verified};
+ }
+ return {status:'blocked',reason:'cloud_local_divergence'};
 }

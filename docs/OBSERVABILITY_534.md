@@ -1,5 +1,166 @@
 # Diagnostic collection — #534 phases 0 and 1
 
+## Registered-player directory (25 October 2026)
+
+Player cards now show a compact visual status: green `✓ Sans attente observée`,
+amber `… En attente`, red `! Problème signalé`, grey `? État inconnu` or
+`? Signal ancien`. Colour is paired with text and a symbol. Quest/session counts
+remain visible. The quest label is the furthest observed current catalogue ordinal
+(see PRODUCT_ANALYTICS), so an earlier replay never lowers it. Full
+activity/Auth/receipt/queue dates are retained in a closed
+native “Détails de synchronisation” disclosure. One shared explanation qualifies
+the signals rather than repeating paragraphs on every card.
+
+The furthest-point calculation requires migration
+`20261025191634_cockpit_furthest_quest.sql` as well as the directory label update.
+Retaining the RPC field `current_players` keeps older clients compatible, but
+deploying only the label does not change the server calculation. Acceptance must
+check a higher opening followed by an earlier replay after SQL and client release.
+
+`playerSyncStatus` is a presentation model, not a new health authority. Green
+requires `confirmed` queue evidence with valid timestamps and no observation
+older than 15 minutes (including `oldest_observation_at` across devices). This
+15-minute display freshness policy is not an SLA or a declaration of complete
+cross-device synchronisation. Recent pending/failure evidence stays amber/red;
+older evidence becomes grey while its original state and dates remain in the
+detail. Missing/invalid/future-inconsistent timestamps never produce green, and
+Auth or domain receipt dates alone cannot produce it. The state filter uses this
+same qualified model, grouping old and missing observations under unknown.
+Freshness is evaluated when rendering the directory; no new polling, storage,
+RPC, telemetry, data repair or change to server observations is introduced.
+
+The directory joins the existing bounded admin account response by exact `u:`
+identity. A trimmed nickname is preferred; when blank, the account email is the
+visible label. Search covers both nickname and email, ignoring case, surrounding
+whitespace and nickname accents. No email is inferred from event properties or
+another account. If the account read fails or a player falls outside that bounded
+response, the existing directory label remains available. Emails stay in the
+authorised in-memory admin view, never in telemetry or local storage.
+
+All eleven cockpit sections, including key indicators and quest friction, use
+native `details/summary`, initially expanded. Their headings work by keyboard or
+pointer and preserve child filters/content while collapsed. Refresh updates the
+content inside each disclosure without recreating the disclosure itself; its
+open/closed state is retained for the mounted cockpit. This is not a persisted
+player preference. Native browser coverage loads the actual cockpit HTML at five
+viewports, checks email search, toggles every section, and closes friction with
+Enter. No live player query or physical-device acceptance is claimed.
+
+The recent-player RPC definition generates `Joueur XXXX` from the anonymous
+player key hash, not a test-player classification. Its existing `qa_mode` and
+traffic filters exclude marked QA/automation, but a missing historical marker
+cannot prove a person is fictitious. No player/event rows were inspected to
+classify these labels.
+
+The requested view now displays only registered identities (`u:` key and
+`authenticated` type), using the shared `registeredPlayers` projection before
+rendering and batch metadata reads. It never infers identity from the nickname.
+An anonymous timeline cannot be requested; refresh clears a formerly selected
+anonymous or no-longer-visible timeline and invalidates its pending response.
+The heading explicitly says registered players. This is a read-only view
+restriction: no SQL/schema, save, event, analytics identity/linking, collection,
+retention or aggregate definition is changed. Anonymous does not mean test.
+
+Regression contract: `cockpit-registered-players-tests.mjs` reproduced all three
+failures before correction; controller tests cover filtered metadata keys and
+stale selection. The independent native cockpit browser asserts that an
+anonymous `Joueur 3E8B` row is absent while the registered account remains.
+
+## Cockpit lot 3 — security and acceptance
+
+Native 320/390/1440 screenshots also exposed repetitive source explanations in
+every player card. The final view keeps one expandable date explanation and one
+session explanation, with a height-bounded mobile directory. Critical dates and
+observed state stay visible. Native keyboard and five-viewport checks passed
+after this density adjustment; no collection or date meaning changes.
+
+The [three-lot evidence record](validation/2026-10-25-cockpit-534.md) separates
+synthetic Node/native-browser/PostgreSQL results from physical and production
+acceptance. `cockpit-acceptance-tests.mjs` reproduced an administrative scope
+switch retaining the prior view even when both accounts had the capability.
+`updateAdminTools` now clears the directory, accounts, diagnostics, timeline and
+selection immediately when the cockpit owner changes. Stale success/rejection
+guards remain intact. SQL acceptance adds actual Auth change, later receipt,
+optional-consent withdrawal, expired detail and response-size cases. No new
+RPC, data collection, retention, player mutation or automatic repair in lot 3.
+
+## Cockpit lot 2 — players, sessions, episodes (25 October 2026)
+
+`ui/cockpit-sessions.js` replaces the flat directory/timeline. A labelled search,
+date ordering and observed-state filter select among at most 250 recent players.
+Each player opens a bounded read of at most 100 analytics events (90-day window)
+and 100 optional diagnostic events (seven-day window). Native `details/summary`
+provides independent closed-by-default sessions, nested diagnostic episodes and
+chronological events. Version/state filters and reasonable same-player refresh
+preserve session expansion in memory; account/player changes reset it. Existing
+incident filters, reports and mandatory review remain unchanged. Detached report
+actions are invalidated. Capability loss clears administrative data and pending
+requests cannot repopulate it. Request rejection yields an explicit error.
+
+Analytics session IDs are the existing browser `lumenAnalyticsSessionV2`, reused
+within 30 minutes of inactivity, possibly across tabs/reloads; they are not Auth
+sessions or reliable device identities. Diagnostic sessions are separate UUIDs
+and appear separately, never joined by time proximity. Missing IDs produce
+separate unknown observations. Session intervals describe the visible sample,
+not true play duration. Commit timestamps from lot 1 remain per-domain account
+evidence, not invented per-session ACKs. Device information stays unavailable
+unless provided by existing diagnostic enums. There is no new tracking.
+
+The invoker `lumen_admin_player_sessions` facade delegates to a private live
+capability check. Explicit account ownership restricts analytics and diagnostic
+reads. Guest observations require a null user and the exact anonymous key;
+shared-browser events are never relinked to another account. Only closed fields
+are selected, stable quest ordinals are resolved from existing rules, and optional
+diagnostics require current consent. Existing user/time and anonymous/time
+analytics indexes are reused (metadata verified); one diagnostic user/time index
+is added. No redundant analytics indexes or unrelated index cleanup.
+No profile/receipt payload, amount, email, token or arbitrary properties leave
+the RPC. No collection, retention, purge, alert or player writer changes.
+
+Automated contract: `cockpit-sessions-tests.mjs`, isolated SQL fixture and the
+existing independent incident browser, extended by `cockpit-browser.mjs`.
+Native keyboard, expansion/filter/refresh/reset, nested review and no horizontal
+overflow are checked at 320/360/390/844 landscape/1440. Browser transport is
+synthetic, not live players; accessibility-tree checks are not screen-reader
+acceptance. Full CI and real-phone acceptance remain distinct gates.
+
+## Cockpit lot 1 — dates (25 October 2026)
+
+Baseline `429ff40`. Metadata-only reads confirmed the existing recent-player
+RPC derives `last_seen` from human/non-QA analytics (90 days), including passive
+`session_start`; this is **last recorded activity**, not a verified user gesture.
+The existing accounts RPC already uses `auth.users.last_sign_in_at`, scoped by
+`lumen.users`. Persistent-session reopening does not change this source. Neither
+`profiles.updated_at` nor hydration health is a durable domain receipt.
+
+`lumen_admin_player_observations(text[])` adds one bounded batch read after the
+existing directory, for at most 250 requested keys. The private implementation
+checks the live `analytics_cockpit` capability and its expiry; the public facade
+is invoker. Only Lumen-owned accounts qualify. It returns Auth timestamp, latest
+immutable Canonical/Legacy/Wallet receipt timestamps and aggregate outbox state
+across devices. Three `(user_id, recorded_at desc)` indexes bound receipt reads;
+no receipts, amounts, operation IDs, payloads, emails or secrets are returned.
+No profile joins, player writes, collection, retention or business RPC changes.
+
+Each domain timestamp proves a server-committed operation and its durable
+receipt. It does **not** prove browser acknowledgement, installation of the
+current projection, or that every domain/device is synchronised. Historical
+writers without receipts remain unobserved. Pending/failure observations do not
+advance these timestamps. A pending device is not hidden by an idle one. Idle
+observations are labelled conservatively; stale/offline state is not live health.
+Dates use the viewer timezone, full time and UTC/age in the detail. Missing RPC
+is “Indisponible”; null receipt/Auth date is “Jamais observée”.
+
+Migration is additive and backward-compatible; deploy schema before client.
+Without it, the existing directory works and additional dates are unavailable.
+Rollback client keeps receipt indexes/boundaries; never grant receipt SELECT.
+Timeline awaits now guard account/client/capability and selected request, on
+success and rejection. RED reproduced a stale response replacing another
+account's timeline. Three new Node cases pass; SQL fixture runs in disposable
+CI only, covering account scope, expired capabilities, multi-device pending and
+failure dates. Physical phone and screen-reader acceptance remain required.
+Onboarding impact: none; administrative observations do not change gameplay.
+
 ## Phase 2 continuation: observations by version
 
 The existing authorised response now supplies a local version comparison and
@@ -359,3 +520,16 @@ The full affected runner then passed all 30 groups with
 `LUMEN_BROWSER_WORKERS=2`, including all ten mandatory browser suites. This
 matches the CI concurrency setting; exact final-main verification is still
 required before declaring a release.
+
+### Authorised schema rollout, 25 October 2026
+
+The owner explicitly authorised production SQL and delivery after CI. The exact
+reviewed date SQL was applied as `20261025065956`; its LF/trim-normalised MD5
+`ab6867cb3c01dc90fd95d6a119416510` matches migration history. Repository filename
+and disposable fixture are aligned to the assigned version without SQL changes.
+The session SQL was applied as `20261025065959` in the subsequent lot. Public
+facades are invokers with empty search paths; anonymous execution and direct
+player receipt/diagnostic SELECT remain denied. Missing-capability calls were
+verified to reject without querying a player. Advisor comparison: no new security
+or performance findings. No player profile, save, event payload or Auth row was
+queried/modified. Client merge and exact publication remain separate gates.

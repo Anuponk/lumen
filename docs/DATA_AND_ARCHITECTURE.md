@@ -1,5 +1,39 @@
 # Data and architecture
 
+## Prepared technical retention (#316)
+
+`20261022192259_lumen_technical_retention.sql` adds operator-only bounded
+retention of an explicit non-gameplay event allowlist (90 days), feedback closed
+for 180 days without a hold, and subscriptions disabled for 90 days. Server
+transition timestamps reject backdating; unknown historical transitions start
+at migration. New metadata lives on existing rows, is covered by rights export
+and erasure, and never enters game snapshots or reward restoration. Preserve
+functional historical analytics, accounts, receipts, recovery and unresolved
+incidents. No production migration, cron or cleanup is enabled. Procedure and
+rollback limits: [runbook](TECHNICAL_RETENTION_RUNBOOK.md).
+
+## Prepared operator access and portability (#316)
+
+`20261022184145_lumen_account_rights_export.sql` adds only a private SECURITY
+INVOKER export, never a public RPC. It reuses the erasure ownership policy and
+ambiguity guards, requires a stable read-only owner transaction, caps rows and
+source JSON bytes, excludes Auth/other applications and strips push keys.
+No writes, restore path, new persistence or gameplay effects. Manual review and
+secure delivery are mandatory; see [procedure](ACCOUNT_RIGHTS_RUNBOOK.md).
+Production migration remains unauthorized; PR stays draft. Proposed retention
+criteria are [separate from implemented behavior](PRIVACY_RETENTION_PROPOSAL.md).
+## Temporary private assistance — #574
+
+[Audit, data contract, budgets and rollout](SUPPORT_574.md). A separate explicit
+24-hour consent permits filtered owned profile/checkpoint copies through
+`lumen_support`. Private support metadata/content tables stay separate from
+ordinary telemetry. Existing capability/cron are reused; all operations check
+Auth/ownership, admin reads are audited, revocation deletes content atomically.
+No game writer, save mutation or reconciliation change; originals remain local.
+The migration/control are prepared and disabled pending explicit production
+authorization. A volatile one-hour queue deliberately does not survive page
+closure. Do not upload the raw multicomponent manual recovery export.
+
 Private recipe/control follow-up (24 October 2026): the shared-project
 `lumen_recette` is private, role-isolated and uses synthetic SQL claims only.
 No player copy or shared Auth mutation is permitted. Release approvals, cohort
@@ -202,9 +236,179 @@ the session is usable on that particular browser/PWA.
 
 ## Guest registration preservation (#528)
 
+For an existing account, an unowned browser with no acquired guest facts must
+not compare its default three-shard reserve or current catalogue origin against
+the account's confirmed wallet and historical origin. `guestNeedsReconciliation`
+ignores those defaults and empty daily containers when all acquisition maps/counters are empty;
+all other fields still pass conservative coverage. Exact guest originals remain
+archived before installation. Actual guest earnings, spending, performances,
+authority revisions and unclassified evidence retain the previous safeguards.
+New-account initialization still uses the complete guest seed and net balance.
+
+`ensureAttemptStarted` writes a performance-map entry on the first gesture,
+before any victory: quest index plus qualification day/timestamp. The shared
+`isAttemptStartPerformance` recognizes only that exact validated shape; rewards,
+times, badges, attempts and unknown fields are never classified as start-only.
+An otherwise unacquired guest may restore an existing account despite these
+markers. Keep the full original guest snapshot and a verified active-attempt
+backup before installation; never copy the guest timestamps into the account's
+cooldown or manufacture a qualified result. A failed attempt backup blocks the
+installation and leaves both account and guest data intact.
+Genuine guest conflicts emit the existing bounded `hydration_reconciliation`
+event at `guest_reconciliation`, including its fixed reason/domain and only
+known field names (otherwise `unknown_field`), without profile contents.
+
 `guest-account.js` distinguishes an unowned guest from a signed-out account cache. Before first authenticated I/O, preserve and read back the exact guest snapshot under `lumenGuestBeforeAccount_<accountId>` (additional versions retain subsequent offline play). Initialize a missing cloud profile from the whole validated guest snapshot, including net currency, earned badges and compatibility access; use a fresh seed only for another account’s cache. Existing cloud achievements must cover the guest, or the existing conservative reconciler must succeed before installation. Recheck the latest local bytes immediately before installation: achievements earned during initialization/daily I/O must also be covered, or remain pending with the live attempt preserved. Conflicting receipts/balances stay pending with both originals preserved; never infer money, copy another account, or erase guest achievements. Initial creation remains atomic and read-back verified; no duplicate victory commands are emitted. Failed backup, offline initialization, read-back or account switch cannot install an empty profile.
 
 ## Cloud persistence contract
+
+### Requested account erasure (prepared, not deployed)
+
+P0 consolidation: the private policy now recognizes current optional diagnostics,
+command metadata and support tables. `scope_predicate` owns indirect attribution;
+`install_guards` registers the reviewed tables only. Support audit's private
+`privacy_owner_id` is derived from server cases, retained through case expiry,
+excluded from rights export and deleted by erasure/seven-day audit retention.
+Unattributable old audit references fail closed pending review. No gameplay
+profile, reward, wallet or reconciliation rule changes. See
+[the comparative audit](PRIVACY_P0_CONSOLIDATION.md).
+
+`20261022160212_lumen_account_erasure.sql` is the operator-verified exception
+to durable Lumen restoration: requested erasure removes that player's Lumen
+data, receipts and recovery copies atomically, preserving shared Auth and other
+applications. Private scope review rejects ambiguous actors/schema changes.
+Social challenges lose sender identity while other participants survive.
+Private pseudonymous fingerprints and INSERT/UPDATE guards prevent old clients
+and JWTs from recreating erased data; READ COMMITTED is required. No browser
+request automatically executes erasure or clears local stores. Other players'
+restoration, rewards and pending intentions keep their existing contracts.
+See `ACCOUNT_DELETION_RUNBOOK.md` for access, locking, reenrollment, proposed
+barrier retention and provider/backups limits. Separate production authorization
+and verified SQL CI are required before applying this migration.
+Celestial UX (#575/#519) is a read-only projection. `ui/celestial-progress.js`
+captures scope completion and eligible badge counts before a victory, compares
+them only after the existing confirmed outcome, and never writes a profile.
+`celestial-effects.js` seeds bounded decorative SVG dust by stable identity;
+`celestial-celebration.js` reuses the result sheet. Completion events and mastery
+pulses exist only in memory, scoped to the current owner and catalogue membership.
+No new cloud/local field, RPC, receipt, ledger, entitlement or migration is added.
+Hydration/read-back alone never invokes this presentation event producer.
+Reused durable intents and already-committed receipts explicitly suppress
+milestone/mastery events. A scope crossing requires exactly one missing quest
+before the live win; unrelated remote batches cannot manufacture a finale.
+
+An existing-account ownership handoff installs the verified profile into the
+single live progress object and refreshes board selection through
+`nextCanonicalQuest` / `resumeHydratedCampaignSelection`. The old active attempt
+is archived and verified before installation; only then may navigation replace
+it. Same-owner Auth refresh/reconnect and new guest-account seeding do not
+perform that handoff. No completion, cooldown, balance or reward is synthesized.
+Social challenges and locked/missing frontiers remain outside this navigation.
+
+The same selection check also handles a same-owner READY campaign board with no
+start timestamp and only empty cells. If it differs from the preserved origin
+frontier, its exact storage bytes are archived and verified before replacement.
+This repairs an idle inserted catch-up selection without moving a started/paused
+attempt or replay. An already correct selection is a no-op. Archive failure emits
+the bounded `campaign_resume_deferred` / `attempt_backup` diagnostic and leaves
+the board and verified account readiness intact. No player profile is modified.
+
+The cockpit's `playerSyncStatus` presentation qualifies existing queue evidence
+by observation freshness, including the oldest device timestamp. Badges and
+filters share this model; full original dates/state remain under a disclosure.
+Green never derives from a domain receipt/Auth date alone and does not certify
+complete-device sync. This is UI-only; no authority or persistent fields change.
+
+The administrative directory enriches its registered-player projection with the
+already-loaded, capability-guarded account response by exact user identity.
+Nickname/email search and email fallback remain in memory; no email is written
+to telemetry/storage and no API/schema or authority changes. Native collapsible
+cockpit sections retain their content and mounted open/closed state.
+
+The administrative recent-player directory now limits its view to registered
+`authenticated` / `u:` identities. Anonymous hash labels do not establish test
+traffic and never authorise deletion. The view filter and timeline reset touch
+no player persistence, telemetry storage, aggregate definition or backend RPC.
+
+### Positive acquisition recovery — #391, 25 October 2026
+
+The free game's product policy gives structurally valid positive acquisitions
+the benefit of the doubt. Conservative snapshot coverage remains the ordinary
+restore guard. On a same-owner hydration refusal, `reconcilePlayerAcquisitions`
+uses the additive expected-account `lumen_reconcile_acquisitions` RPC and a
+separate server read-back. The current session installs that verified result and
+refreshes its one live progress object without a reload or new victory.
+
+Under the existing snapshot row lock, the RPC unions catalogue-recognized solved
+identities, existing badge flags and historical achievement maps. It keeps the
+best compatible performance summaries, cumulative counters by maximum and latest
+cooldown. Time/assistance/error facts come from one saved run. Mastery is kept
+only when explicitly present, never synthesized from its components. The server's
+immutable canonical first-completion record stays exact; improvements use the
+existing mutable `runPerformance`. Legacy and Quest authority projections update
+atomically, keeping the ordinary snapshot guards active and cursors unchanged.
+
+Historical acquisition recovery may copy a first performance into an unversioned
+`runPerformance` with empty badges. Client coverage accepts that redundant seed
+only with an active Legacy authority, no pre-existing local run, exactly the
+`seconds`/`assisted`/`bestTime`/`badges` shape, finite nonnegative times and exact
+equality with the preserved first performance. First rewards and unknown evidence
+remain protected; the seed never proves a new qualifying run or grants a badge.
+Existing V3 replay coverage remains unchanged. No profile or server migration is
+required, and original device bytes remain archived before installation.
+
+Shards, Wallet revision, daily ledger, receipts and catalogue origin remain
+exactly server-owned. Recovery never credits money or replays a reward from
+completion. XP and skyScore keep the existing maximum policy, never addition.
+Uninterpretable historical properties stay in the original instead of blocking
+independent known acquisitions. Corrupt core structure, identity uncertainty or
+failed archival/read-back still refuse.
+
+Before emission, both originals are durably archived and verified with existing
+recovery storage, including its IndexedDB fallback. Timestamp collisions cannot
+replace an older original. The server also retains both JSONB sources in private,
+RLS-enabled `lumen_commands.acquisition_recovery_sources`, keyed by owner and
+SHA-256 of canonical JSONB. No direct client access or diagnostic profile payload
+is added. Existing local recovery exports include the original device bytes;
+server copies remain operator-readable evidence. No retention/cleanup job is added.
+
+Two CAS attempts bound each recovery. A stale snapshot causes a fresh account
+read; a lost reply is safe to repeat without another reward. Read-back,
+owner/client/generation and current local bytes must match before installation.
+This merge never acknowledges pending commands. Cache quota after verified
+archival/read-back permits in-memory play. Missing migration/transient failure
+keeps partial recovery and retry, without claiming convergence.
+Transient acquisition failures use the existing retry scheduler with exponential
+backoff and at most five autonomous retries per window. Online/Auth renewal wakes
+that window; active play, hidden/offline documents and changed identity/client/
+generation prevent emission. Structural refusal and missing migration do not loop.
+An intervening server-read outage retains the retry window without granting replay
+or Wallet proof. Success cancels the hold; repeated failures stay diagnosable.
+`hydration_reconciliation` records `positive_acquisitions`; `hydration_ready` and
+the scheduled flush report subsequent readiness. This supersedes support-only
+treatment of ordinary acquisition differences. It does not authorize ambiguous
+monetary reconstruction, production SQL or old-writer retirement.
+
+Cockpit acceptance (#534 lot 3): administrative data is bound to the captured
+cockpit owner as well as live capability. Switching between two authorised
+accounts clears the previous view immediately. This does not change player
+Auth or persistence; receipt dates retain their limited domain-commit meaning.
+
+Cockpit sessions (#534 lot 2): capability-checked, closed administrative reads
+group existing analytics and consented diagnostic sessions separately. No
+session is inferred from Auth timestamps or a temporal match; no shared-browser
+guest event is reassigned to a signed-in account. `ui/cockpit-sessions.js` owns
+the bounded view, in-memory expansion and filters. New read-only session RPC
+and supporting indexes change neither collection nor player persistence.
+
+Administrative dates (#534 lot 1): `ui/cockpit-dates.js` displays last recorded
+analytics activity separately from Auth `last_sign_in_at`. The additive
+`lumen_admin_player_observations` RPC reads only latest immutable domain receipt
+timestamps and existing outbox observations, behind a live, expiring cockpit
+capability and Lumen account scope. These timestamps prove server commits,
+not device receipt, current projection installation or full synchronization.
+No player-data writer, ACK, receipt format, collection or retention changes.
+See `OBSERVABILITY_534.md` for source audit and compatibility.
 
 ### Historical inventory and guest claims — lot 4
 
@@ -483,12 +687,31 @@ flag cannot serve as this proof. Numeric cold resume restores both quest and
 campaign/replay mode before the attempt engine's strict identity comparison;
 a READY board does not establish preserved campaign access.
 
+The historical outbox uses the same archival recovery for a later capture of
+an already committed operation. It independently reads the original receipt
+and current profile, requires the same account, operation, quest, start timestamp,
+day and all assistance/qualification flags, a non-improved elapsed time, and
+covered attempts/badges. Only a `22023` review pause permits this read-only
+inspection; other holds remain. The later capture must postdate the receipt.
+Exact original bytes and receipt are verified in a private exportable archive
+before retiring that pending copy. No command is resent, receipt changed or
+reward granted. Archive or session failure retains the pending operation.
+
 Migration `20261023181900_quest_social_identity.sql` adds stable quest identity
 to challenges and privacy-filtered create/get/list RPCs. Numeric URLs and
 existing participation/terminal protocols retain their identity. No challenge
 operation writes campaign progress, daily credit, unlocks or wallet rewards.
 Migration `20261023181918_quest_analytics_identity.sql` adds capability-checked,
 read-only ordinal metrics/timeline; it does not rewrite events or players.
+
+Migration `20261025191634_cockpit_furthest_quest.sql` (prepared, not applied)
+changes only the directory's compatible `current_players` projection to the
+highest observed current catalogue ordinal over lifetime quest lifecycle events.
+Last qualifying activity still bounds the player set; earlier replays cannot
+lower its displayed point. Capability, stable identity and traffic guards,
+friction windows and chronological timelines remain intact. This read model
+does not repair or mutate profiles, events, rewards, balances or entitlements.
+See PRODUCT_ANALYTICS for the distinction between observed reach and completion.
 
 The owner authorised these three migrations on 23 October 2026 after the
 disposable PostgreSQL fixtures and concurrency CI passed. They are applied in
@@ -1072,11 +1295,29 @@ One challenge link may have many independent participants. “Mes défis” is t
 ### Security-advisor note
 Supabase reports the two social tables as `rls_enabled_no_policy` and the anonymous social RPCs as callable SECURITY DEFINER functions. For #18 this is intentional: guests are a product requirement, direct table access is denied by RLS, and the narrow RPCs enforce the ownership/one-attempt contract. These warnings are not a claim that the whole project is security-clean; unrelated existing advisor warnings remain and must be reviewed separately.
 
+## Onboarding local preference (#569 / #576)
+
+ui/onboarding-preferences.js stores presentation-only auto choice and viewed tip
+IDs in lumenOnboardingV1:<owner-or-guest> (QA uses the existing qaKey namespace).
+The owner is read dynamically at every access; no global lumenAutoCross or
+regaliaAutoCross value is imported because its account owner is unknown. Old
+saves default to on after manual quest 1. Lesson/challenge constraints only alter
+the active UI. Quota/refused storage keeps a scoped in-memory choice for this
+session; cache loss/new devices may reset preferences. These are local settings,
+never cloud achievements, rewards, entitlements or a second progress store.
+The board may initialize before Auth resolves. `refreshOnboardingPreferenceOwner`
+reapplies the verified account's controls when readiness and owner change, without
+recreating its board or attempt. Same-owner refreshes leave the active choice alone;
+temporary teaching/challenge restrictions still take precedence.
+The existing cloud autoCrossUnlockSeen marker retains its normal serialization
+and recovery: quest 6 sets it only after unchecking, or observing unchecked.
+No new profile field, RPC, table, outbox or cloud reconciliation rule is added.
+
 ## Current learning controller (#57)
 
-`src/game/learning.js` is a pure, read-only lesson planner over the canonical board. It produces the expected cell actions and context-specific copy, using the audited opening grid and its `learnOrder`. `game-screen.js` enforces the interaction gate and presents the coach. It does not keep a second teaching board or persist a parallel lesson cursor; refresh resumes by deriving the step from the restored attempt board. Later placements spotlight the territory instead of the solution cell. Quest 2 derives a short placement/drag lesson from the same persisted board using `dragLearningStep`, then releases free gameplay and normal assistance controls. The transient pointer gesture freezes its permitted cells until release so completing the row mid-drag cannot mark unrelated cells. The older stage #25 descriptions above record the historical extraction, not the current learning behavior.
+`src/game/learning.js` is a pure, read-only lesson planner over the canonical board. It produces the expected cell actions and context-specific copy, using the audited opening grid and its `learnOrder`. `game-screen.js` enforces the interaction gate and presents the coach. It does not keep a second teaching board or persist a parallel lesson cursor; refresh resumes by deriving the step from the restored attempt board. Later placements spotlight the territory instead of the solution cell. Quest 2 is free play with optional drag advice. Explicit learning replay can still derive the historical gesture lesson from the same board using `dragLearningStep`. The transient pointer gesture freezes its permitted cells until release so completing the row mid-drag cannot mark unrelated cells. The older stage #25 descriptions above record the historical extraction, not the current learning behavior.
 
-Validation: `scripts/learning-tests.mjs` proves the five forced deductions and requested exclusions; `scripts/learning-browser-tests.mjs` exercises real touch/mouse actions, ignored taps, reload, drag, complete quest 1, free quest 2 and Mon ciel navigation on 360x640, 390x844, 768x1024 and 1440x900 viewports. Both are part of the CI gate.
+Validation: `scripts/learning-tests.mjs` proves the five forced deductions and requested exclusions; `scripts/learning-browser-tests.mjs` exercises real touch/mouse actions, ignored taps, reload, drag, complete quest 1, free quest 2, direct ordinary continuation and optional Mon ciel navigation on 320x568, 360x640, 390x844, 768x1024 and 1440x900 viewports. Both are part of the CI gate.
 ### Server incident age and alert scope (#398)
 
 `20261017181513_sync_health_incident_tracking.sql` versions the existing bounded
@@ -1167,3 +1408,18 @@ Missing receipts, uncovered evidence, unreadable storage and session changes
 retain the entry; unchanged-evidence ordinary replay still uses its normal path.
 Already archived recovery is never acknowledged again as matching changed
 evidence. Recovery cannot mutate the running board, current attempt or reset.
+
+
+## Privacy #316: isolated SQL regression (2026-11-01)
+
+The operator-only `lumen_privacy` erasure migration is **not deployed** by this PR.
+`support_access.actor` is compared as text to the verified UUID scope to avoid
+PostgreSQL type mismatches. The private tombstone barrier and existing Lumen-only
+scope remain unchanged. The `Privacy SQL integration` GitHub Actions workflow
+runs a disposable PostgreSQL 17 service; it does not connect to production or
+create a billable Supabase project. A green scope test does not establish that
+full account erasure, anti-resurrection, or SoldeZen isolation is validated.
+
+## Account erasure self-service (#316, pending release)
+
+The proposed browser account menu invokes `lumen-self-erasure` with the current user JWT and explicit confirmation. The Edge Function verifies the user and calls `public.lumen_self_erase` as that user. The database derives the target from `auth.uid()` and invokes the existing transactional Lumen-only erasure policy. The shared Supabase Auth identity and SoldeZen tables are not deleted. This implementation is **not production ready** until verified guest actors and local persisted state are handled and a QA end-to-end deletion succeeds. The migration and function must be deployed together only after security review; rollback is to disable the Edge Function and revoke the RPC execute privilege, not to restore deleted player data. Cloud restore is intentionally blocked for erased identifiers by the existing erasure guards.

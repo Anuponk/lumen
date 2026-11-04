@@ -29,18 +29,25 @@ const {localStorage,crypto,location,console}=environment;
 const localTestHost=['localhost','127.0.0.1','::1'].includes(location?.hostname);
 const trafficType=environment.trafficType||(environment.qaMode?'qa':(localTestHost?'automated_test':'human'));
 const testRunId=environment.testRunId||null;
+// Optional product analytics requires a separately verified permission. The
+// family launch intentionally supplies none; login/QA mode is not permission.
+function analyticsAllowed(){try{return environment.analyticsAllowed?.()===true}catch{return false}}
 function lumenId(key){
  try{let v=localStorage.getItem(key);if(!v){v=(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2));localStorage.setItem(key,v)}return v}catch(e){return Date.now()+"-"+Math.random().toString(36).slice(2)}
 }
 const lumenAnonymousId=lumenId("lumenAnonymousIdV1");
-const sessionKey="lumenAnalyticsSessionV2",now=Date.now(),timeoutMs=30*60*1000;
+const sessionKey="lumenAnalyticsSessionV2",timeoutMs=30*60*1000;
 let lumenSessionId;
+function ensureSession(){
+ if(lumenSessionId)return;
+ const now=Date.now();
 try{
  const previous=JSON.parse(localStorage.getItem(sessionKey)||"null");
  lumenSessionId=previous&&previous.id&&now-Number(previous.lastSeen||0)<timeoutMs?previous.id:null;
  if(!lumenSessionId)lumenSessionId=(crypto.randomUUID?crypto.randomUUID():now+"-"+Math.random().toString(36).slice(2));
  localStorage.setItem(sessionKey,JSON.stringify({id:lumenSessionId,lastSeen:now}));
 }catch(e){lumenSessionId=(crypto.randomUUID?crypto.randomUUID():now+"-"+Math.random().toString(36).slice(2))}
+}
 function touchSession(){try{localStorage.setItem(sessionKey,JSON.stringify({id:lumenSessionId,lastSeen:Date.now()}))}catch(e){}}
 const sessionStartMarker="lumenAnalyticsSessionStartV1";
 function shouldTrackSessionStart(){
@@ -51,15 +58,16 @@ function shouldTrackSessionStart(){
  return true;
 }
 async function trackLumenEvent(name,puzzleId=null,properties={}){
- touchSession();
+ if(!analyticsAllowed())return;
  const lumenSupabase=getClient();
  if(!lumenSupabase||trafficType==="automated_test")return;
+ ensureSession();touchSession();
  if(name==="session_start"&&!shouldTrackSessionStart())return;
  properties={...properties,traffic_type:trafficType};
  if(testRunId)properties.test_run_id=testRunId;
  if(environment.qaMode)properties={...properties,qa_mode:environment.qaMode};
  try{await lumenSupabase.rpc("lumen_track_event",{p_anonymous_id:lumenAnonymousId,p_event_name:name,p_session_id:lumenSessionId,p_puzzle_id:puzzleId,p_properties:properties})}catch(e){console.warn("LUMEN analytics",e)}
 }
-function captureReferral(){const ref=new URLSearchParams(location.search).get("ref");if(!ref)return;const clean=ref.replace(/[^a-zA-Z0-9_-]/g,"").slice(0,64);if(!clean)return;try{localStorage.setItem("lumenReferral",clean)}catch(e){}trackLumenEvent("referral_visit",null,{ref:clean})}
-return {lumenAnonymousId,lumenSessionId,trackLumenEvent,captureReferral};
+function captureReferral(){if(!analyticsAllowed())return;const ref=new URLSearchParams(location.search).get("ref");if(!ref)return;const clean=ref.replace(/[^a-zA-Z0-9_-]/g,"").slice(0,64);if(!clean)return;try{localStorage.setItem("lumenReferral",clean)}catch(e){}trackLumenEvent("referral_visit",null,{ref:clean})}
+return {lumenAnonymousId,get lumenSessionId(){return lumenSessionId||null},trackLumenEvent,captureReferral};
 }

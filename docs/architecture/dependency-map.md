@@ -1,5 +1,79 @@
 # Dependencies and data flow
 
+Server support case → private audit ownership → reviewed erasure predicate;
+erase before loss of attribution, retain shared Auth. Unknown old audit is a
+review blocker. No profile/reconciliation dependency is changed.
+
+Retention preview → explicit owner confirmation → bounded technical-only DELETE
+under schema/trigger checks and DDL locks. Existing erasure guards remain;
+server closure/disable clocks live on the same exported/erasable rows. No
+game-state rewrite or scheduled job. `docs/TECHNICAL_RETENTION_RUNBOOK.md`.
+
+Access/portability request → verified operator scope → private SECURITY INVOKER
+`lumen_privacy.export_account` → existing policy/review → stable read-only JSON
+→ manual third-party review and secure delivery. No public API or Auth export.
+Prepared only; see `docs/ACCOUNT_RIGHTS_RUNBOOK.md`.
+
+Account erasure: standalone request page → operator-verified scope → private
+`lumen_privacy.review_erasure` / `erase_account` → explicit Lumen relation
+policy and write guards. Shared Auth is preserved. Procedure and limits:
+`docs/ACCOUNT_DELETION_RUNBOOK.md`; SQL/concurrency coverage: `docs/TESTING.md`.
+The HTML legal candidates and request page share only CSS/navigation; they
+load no Auth/analytics SDK, mutate no game storage and do not approve legal
+evidence. Vendor metadata/source review is in `docs/PRIVACY_PROCESSORS.md`.
+Confirmed victory: before-scope projection → existing receipt/outcome → current
+scope comparison → one celestial result (global > Adventure > constellation).
+Badge additions → owner/catalogue-scoped ephemeral playhead → visible Mon ciel
+background. SVG failures return to ordinary actions; rendering/skip/navigation
+cannot write rewards. Actual geometry remains owned by the licensed atlas.
+
+#574: explicit account opt-in → live owner → typed read-only profile/checkpoint
+projection + bounded incident codes → volatile support queue → separate private
+RPC consent/metadata/content transaction. Selected cockpit player → existing
+capability → audited authenticated download → local hash check/Blob. Withdrawal
+and the existing cron delete only support copies. No edge to any game writer.
+
+Existing-account ownership handoff: verified profile + archived previous attempt
+→ one live progress object → `nextCanonicalQuest` (catalogue origin/access)
+→ `resumeHydratedCampaignSelection` → existing grid/tutorial initialization.
+No completion, reward or wallet mutation is part of selection.
+
+Same-owner idle board → READY/campaign/no-start/empty-cell guard → origin frontier
+comparison → exact attempt backup → normal board initialization. Started, replay
+and already-correct selections stop before archival or navigation.
+
+Guest first gesture: `ensureAttemptStarted` → start-only performance timestamps →
+shared strict `isAttemptStartPerformance` → guest coverage exception only without
+acquired facts → verified original profile/attempt archives → existing cloud
+installation. No guest timestamp is imported into account reward/cooldown state.
+
+Virgin-browser restore: empty unowned guest cache → exact original backup →
+`guestNeedsReconciliation` checks acquired evidence without starter reserve or
+current-origin defaults → verified existing cloud → owner-bound installation.
+Guest play during hydration is rechecked; genuine spending/acquisitions still
+use conservative coverage. No server, receipt or wallet writer changes.
+
+Player-favorable recovery: same-owner hydration refusal → verified originals →
+`cloud-profile.js:reconcilePlayerAcquisitions` → expected-account RPC with snapshot
+row lock/CAS → positive projection merge and private source archive → independent
+read-back → cache and one live UI progress object → mirror verification and flush.
+Wallet/daily operations and pending-intent acknowledgement keep their existing
+authorities. See the cloud contract for interpretation and release boundaries.
+
+Historical queued recapture: UI `recoverQueuedLegacyReceipt` reads the original
+expected-account receipt and current profile through `legacy-command.js`.
+`durable-canonical-outbox.js` calls its strict duplicate proof, archives exact
+evidence, then retires the original pending copy through the transactional cache.
+The cache retires its paired navigation row; no server command is emitted.
+
+Optional story (#532): startup eligibility → first-welcome local presentation
+marker → game-screen supplies catalogue-first astronomical SVG → inert overlay
+and narrative clock → release/focus on the same actual learning board. Aide replay
+uses existing pause, never loadPuzzle/reset or a reward path. Context changes
+cancel the presentation; no dependency on cloud readiness or command dispatch.
+Explicit story/replay action → intro-music local Web Audio context; presentation
+pause/exit → synchronous silence and context close. Audio refusal stays local.
+
 Private QA structure: `scripts/recette-schema.mjs` consumes reviewed structural
 metadata, emitting only `lumen_recette` objects plus whitelisted catalogue reads.
 The restricted runner owns QA tables/functions; synthetic SQL claims never grant
@@ -117,6 +191,8 @@ grant access nor migrate saved rewards; old writers remain in their own domains.
 
 | Boundary | Dependencies / flow | Effects / caution |
 |---|---|---|
+| Browser dependencies | HTML → local SDK/QR bundles → existing app APIs; inventory → integrity checks; worker → offline public asset copies | Pinned bytes replace CDN execution. Provider APIs and existing Auth/progress storage remain unchanged; SDK/family qualification is separate |
+| Privacy / Play readiness | Optional analytics permission → event/session/referral; external account-deletion page → mailto composition only; publisher manifest → readiness report | No provider means no optional analytics. No Auth deletion or game-store clearing. Shared-identity deletion and family/native/Console evidence remain blocked; see privacy/readiness runbooks |
 | P0 commands / presentation | Wallet durable intent → expected-account RPC → immutable receipt → account-bound current profile → verified cache → acknowledgement; victory intents → ephemeral `pending-navigation.js` view | Wallet, Canonical and Legacy namespaces remain isolated. Snapshot guards preserve server currency authority; pending navigation cannot serialize rewards. `sync-presentation.js` defers recoverable warnings during celebration; `outbox-health.js` emits bounded private counts, never save payloads |
 | Catalogue origin / acquired access | Immutable `content/catalogue/access-origins.json` → `catalogue-origin.js` / `catalogue-access.js` → canonical adapter → map/start/navigation; local creation + guarded profile JSON | Pack ownership remains independent. Server cohort cannot be deleted/relabelled; explicit conflicts hold. Origin metadata never awards completion, changes attempts or invokes reward RPCs |
 | Historical command | UI `captureLegacyCommandVictory` → Legacy durable outbox → `legacy-command.js` → locked profile, private rules/receipt/authority and existing daily/mirror RPCs | First accepted command protects legacy reward projection/revision against old snapshots. Guests/explicitly older unmigrated servers use `legacy-victory.js`; no ambiguous fallback |

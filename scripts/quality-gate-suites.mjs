@@ -1,4 +1,17 @@
 export const nodeSuites=[
+ 'learning-coach-placement-tests.mjs',
+ 'browser-dependency-tests.mjs',
+ 'privacy-readiness-tests.mjs',
+ 'celestial-ux-tests.mjs',
+ 'support-tests.mjs',
+ 'cockpit-registered-players-tests.mjs',
+
+ 'cloud-player-favorable-tests.mjs',
+ 'cockpit-acceptance-tests.mjs',
+ 'cockpit-sessions-tests.mjs',
+ 'cockpit-dates-tests.mjs',
+ 'ux-lot-tests.mjs',
+ 'first-welcome-tests.mjs',
  'recette-schema-tests.mjs',
  'historical-rollout-tests.mjs',
  'gameplay-domain-tests.mjs',
@@ -138,6 +151,7 @@ export const nodeSuites=[
  "admin-menu-tests.mjs",
  "streak-banner-mockup-tests.mjs",
  "learning-tests.mjs",
+ "onboarding-fluid-tests.mjs",
  "social-challenge-tests.mjs",
  "social-challenge-ui-tests.mjs",
  // Solver equivalence is the slowest Node suite; reject cheap regressions first.

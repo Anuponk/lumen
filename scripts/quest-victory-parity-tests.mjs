@@ -10,6 +10,46 @@ import {cloudSafelyCoversLocal,reconcileCloudAchievementsDurably} from '../src/p
 const quest=canonicalQuestList().find(q=>q.legacyIndex===null);
 const facts={seconds:45,assistanceUsed:false,mistakeCommitted:false,qualifying:true,hintUsed:false,challengeFailed:false,qualifiedDay:'2026-10-22',qualifiedAt:'2026-10-22T10:00:00.000Z'};
 
+test('historical first-performance copies added by acquisition recovery restore without a new run or reward',async()=>{
+ const first={solved:true,stars:1,badges:{autonomy:true,speed:true,noError:true,mastery:true},
+  performance:{seconds:48,assisted:false,bestTime:48}};
+ const local={solved:{},historyBackup:{},performances:{},badges:{},xp:15,shards:4,walletRevision:2,legacyVictoryRevision:1,
+  canonicalQuestState:{[quest.id]:first}};
+ const remote=structuredClone(local);
+ remote.canonicalQuestState[quest.id].runPerformance={...first.performance,badges:{}};
+ assert.equal(cloudSafelyCoversLocal(local,remote),true);
+ const raw=JSON.stringify(local),values=new Map([['lumenProgressV1',raw]]);
+ const storage={getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,v)};
+ assert.equal((await reconcileCloudAchievementsDurably(storage,remote)).changed,true);
+ assert.deepEqual(JSON.parse(values.get('lumenProgressV1')),remote);
+ assert.ok([...values.values()].includes(raw),'Original bytes remain archived');
+ assert.equal((await reconcileCloudAchievementsDurably(storage,remote)).changed,false);
+ assert.equal(cloudSafelyCoversLocal(remote,local),false,'Old writers cannot remove the server projection');
+ for(const change of ['seconds','assisted','badge','unknown','version','stars','first','localRun','authority','wallet']){
+  const l=structuredClone(local),r=structuredClone(remote),entry=r.canonicalQuestState[quest.id];
+  if(change==='seconds')entry.runPerformance.seconds=10;
+  if(change==='assisted')entry.runPerformance.assisted=true;
+  if(change==='badge')entry.runPerformance.badges.mastery=true;
+  if(change==='unknown')entry.runPerformance.futureEvidence=1;
+  if(change==='version')entry.runPerformance.version=2;
+  if(change==='stars')entry.stars=2;
+  if(change==='first')entry.performance.seconds=10;
+  if(change==='localRun')l.canonicalQuestState[quest.id].runPerformance={version:3,bestTime:10};
+  if(change==='authority')delete r.legacyVictoryRevision;
+  if(change==='wallet')r.shards=100;
+  assert.equal(cloudSafelyCoversLocal(l,r),false,change);
+  const before=JSON.stringify(l),held=new Map([['lumenProgressV1',before]]);
+  const heldStorage={getItem:k=>held.get(k)??null,setItem:(k,v)=>held.set(k,v)};
+  if(change!=='wallet'){
+   await assert.rejects(reconcileCloudAchievementsDurably(heldStorage,r),{code:'CANONICAL_REWARD_CONFLICT'},change);
+   assert.equal(held.get('lumenProgressV1'),before,change);
+  }else{
+   await reconcileCloudAchievementsDurably(heldStorage,r);
+   assert.equal(JSON.parse(held.get('lumenProgressV1')).shards,l.shards,'Partial display recovery cannot credit money');
+  }
+ }
+});
+
 test('verified V2 replay summaries restore through the existing achievement path without changing balances or first completion',async()=>{
  const local={solved:{},badges:{},xp:0,shards:3,legacyVictoryRevision:1,walletRevision:1,canonicalQuestState:{}};
  applyQuestVictory(local,quest,{...facts,seconds:80});
