@@ -49,9 +49,9 @@ test('launcher opens only HTTPS Lumen links and grants only Internet permission'
 });
 test('ABH ManageDataLauncherActivity is declared so the launcher cannot crash at startup', () => {
   const manifest = read('app/src/main/AndroidManifest.xml');
-  assert.match(manifest, /android:name="com\\.google\\.androidbrowserhelper\\.trusted\\.ManageDataLauncherActivity"/);
-  assert.match(manifest, /android:name="android\\.support\\.customtabs\\.trusted\\.MANAGE_SPACE_URL"/);
-  assert.match(manifest, /android:value="https:\\/\\/\\$\\{lumenHost\\}\\/"/);
+  assert.match(manifest, /android:name="com\.google\.androidbrowserhelper\.trusted\.ManageDataLauncherActivity"/);
+  assert.match(manifest, /android:name="android\.support\.customtabs\.trusted\.MANAGE_SPACE_URL"/);
+  assert.match(manifest, /android:value="https:\/\/\$\{lumenHost\}\/"/);
 });
 
 test('Android dependencies, SDK and toolchain are explicit; release never uses debug signer', () => {
