@@ -1632,3 +1632,11 @@ Release acceptance still requires Android installed-PWA testing: warm a playable
 quest online, close the app, switch to airplane mode, reopen and play that quest,
 then reconnect and confirm the pending attempt synchronizes once without lost
 progress. Do not cache OAuth callbacks, private responses or cloud APIs.
+
+## TWA Digital Asset Links on o2switch (#170)
+
+The Android debug APK built by GitHub Actions on PR #621 uses package `fr.nopuna.lumen.debug`. The **specific distributed APK** certificate was extracted from its APK Signature Scheme v2 block (SHA-256 fingerprint recorded in `.well-known/assetlinks.json`). CI debug certificates are ephemeral: **new GitHub builds have different fingerprints** and must not be assumed verified by this file. The eventual Play package `fr.nopuna.lumen` must use its **real Play App Signing certificate** in a separate statement before publication.
+
+The o2switch static publisher stages `.well-known/assetlinks.json`, merges it into the existing live DAL without deleting other applications' statements, and verifies an HTTPS GET of the exact expected package/fingerprint. A missing/forbidden file triggers rollback of the entire static deployment. Tests in `scripts/o2switch-deploy-tests.py` cover preservation, publication and rollback. This is a public trust declaration; no private signing key is stored in Git. Do not substitute the upload key fingerprint for Play App Signing.
+
+Release acceptance: verify `https://lumen.nopuna.fr/.well-known/assetlinks.json` returns 200, JSON, no redirects; test Android's domain verification and launch the **same APK whose certificate is listed** to verify the browser toolbar is absent. A successful HTTP check alone does not guarantee that a specific browser/device accepts TWA verification.
