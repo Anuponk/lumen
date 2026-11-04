@@ -8,7 +8,7 @@ const source=JSON.parse(fs.readFileSync('content/generated/fifth-adventure-candi
 const config=JSON.parse(fs.readFileSync('content/fifth-adventure-preview.json','utf8'));
 assert.equal(source.quests.length,100);
 assert.equal(source.questCount,100);
-const known=new Set([...Object.values(CAT).flat(),...canonicalQuestList()].map(p=>signature(p.reg)));
+const known=new Set([...Object.values(CAT).flat(),...canonicalQuestList().filter(q=>q.packId!==config.id)].map(p=>signature(p.reg)));
 const ids=new Set(),signatures=new Set(),codes=new Set(config.constellations.map(c=>c.id));
 let proved=0;
 for(const q of source.quests){

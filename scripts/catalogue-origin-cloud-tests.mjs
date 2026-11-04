@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {cloudSafelyCoversLocal,reconcileCompatibleCloudProfiles,reconcileDominantLocalProfile,compareAndSwapCloudProfile,installCloudProfileLocally} from '../src/persistence/cloud-profile.js';
 import {createLocalPersistence} from '../src/persistence/local.js';
 import {exportGuestSave,importGuestSave} from '../src/persistence/guest-transfer.js';
+import {currentCatalogueOrigin} from '../src/campaign/catalogue-origin.js';
 const profile=(origin)=>({solved:{0:1},badges:{earned:1},shards:3,xp:10,skyScore:1,...(origin===undefined?{}:{catalogueOrigin:origin})});
 function storage(initial){const values=new Map(initial?[['lumenProgressV1',JSON.stringify(initial)]]:[]);return {get length(){return values.size},key:i=>[...values.keys()][i],getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value)}}
 function server(initial){let current=structuredClone(initial),writes=0;return {get profile(){return current},get writes(){return writes},async rpc(name,args){
@@ -33,5 +34,5 @@ assert.equal(createLocalPersistence(installed,()=>null).loadLumenProgress().cata
 const future=storage(profile(999));assert.deepEqual(createLocalPersistence(future,()=>null).loadLumenProgress(),{...profile(999),historyBackup:{0:1}},'Unsupported origins retain every fact for an updated client');
 const empty={solved:{},badges:{}},emptyClient=server(empty);
 await compareAndSwapCloudProfile(emptyClient,{...empty,solved:{0:1}},empty);
-assert.equal(emptyClient.profile.catalogueOrigin,2,'An old empty cloud profile is classified before its first victory');
+assert.equal(emptyClient.profile.catalogueOrigin,currentCatalogueOrigin,'An old empty cloud profile is classified before its first victory');
 console.log(JSON.stringify({cloudCohort:true,reconciliationModes:2,contradictionsPreserved:true,guestRescue:true,futureOriginPreserved:true}));

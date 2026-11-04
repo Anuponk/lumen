@@ -1,6 +1,7 @@
 // Explicit migration backup. Never automatically overwrites a cloud snapshot.
 import {catalogueOrigin,mergeCatalogueOrigin,currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
 import {archiveRecoveryBackups} from './storage-maintenance.js';
+import {validRecordTime,recordMinimum} from '../campaign/personal-records.js';
 import {MAX_PROFILE_BYTES,profileStorageBytes} from './profile-size.js';
 import {captureGuestClaim,claimGuestProfile} from './guest-claim.js';
 // Top-level profile contract. Policies describe existing recovery rules, not
@@ -339,7 +340,7 @@ function canonicalQuestCovered(local,remote){
  if(!badgesCovered(old.badges||{},run.badges||{}))return false;
  for(const [key,value] of Object.entries(old)){
   if(['badges',...performanceSummaryFields,...qualificationFields].includes(key))continue;
-  if(key==='bestTime'||key==='time'){
+  if(key==='bestTime'||key==='time'||key==='bestUnassistedTime'){
    if(!Number.isFinite(value)||value<0||!Number.isFinite(run[key])||run[key]<0||run[key]>value)return false;
   }else if(!sameCloudProfile(value,run[key]))return false;
  }
@@ -390,9 +391,9 @@ export function cloudSafelyCoversLocal(local,remote){
     if(!qualification.ok||!sameCloudProfile(qualification.value,qualificationMetadata(saved)))return false;
     for(const [badge,earned] of Object.entries(perf.badges||{}))
       if(earned && !saved.badges?.[badge])return false;
-    const localBest=Number(perf.bestTime);
-    const remoteBest=Number(saved.bestTime);
-    if(Number.isFinite(localBest)&&localBest>0&&(!Number.isFinite(remoteBest)||remoteBest>localBest))return false;
+    const localBest=perf.bestTime,remoteBest=saved.bestTime;
+    if(validRecordTime(localBest)&&(!validRecordTime(remoteBest)||remoteBest>localBest))return false;
+    if(validRecordTime(perf.bestUnassistedTime)&&(!validRecordTime(saved.bestUnassistedTime)||saved.bestUnassistedTime>perf.bestUnassistedTime))return false;
   }
   // Dates and challenges may contain non-repeatable rewards and are not safely
   // unionable. Require equivalent values to avoid silent drops.
@@ -461,14 +462,15 @@ function cloudAchievementRecoveryPlan(storage,remote){
     for(const [badge,earned] of Object.entries(incoming.badges||{})){
       if(earned&&!nextBadges[badge]){nextBadges[badge]=true;changed=true}
     }
-    const localTime=Number(current.bestTime);
-    const cloudTime=Number(incoming.bestTime);
-    if(Number.isFinite(cloudTime)&&cloudTime>0&&
-       (!Number.isFinite(localTime)||localTime<=0||cloudTime<localTime)){
+    const localTime=current.bestTime,cloudTime=incoming.bestTime;
+    if(validRecordTime(cloudTime)&&
+       (!validRecordTime(localTime)||cloudTime<localTime)){
       current.bestTime=incoming.bestTime;
       changed=true;
     }
     if(changed&&JSON.stringify(nextBadges)!==JSON.stringify(existingBadges))current.badges=nextBadges;
+    const unaided=recordMinimum(current.bestUnassistedTime,incoming.bestUnassistedTime);
+    if(unaided!==undefined&&unaided!==current.bestUnassistedTime){current.bestUnassistedTime=unaided;changed=true}
   }
   // Global badges can be scalar flags or structured objects: add only missing
   // top-level rewards, never overwrite existing local values.
@@ -480,7 +482,10 @@ function cloudAchievementRecoveryPlan(storage,remote){
   // Never replace an existing local reward with a different cloud snapshot:
   // fail closed so neither device loses an achievement or currency record.
   const localCanonical=merged.canonicalQuestState||{},remoteCanonical=cloud.canonicalQuestState||{};
-  for(const [id,entry] of Object.entries(remoteCanonical)){
+  for(const [id,remoteEntry] of Object.entries(remoteCanonical)){
+    const entry=structuredClone(remoteEntry);
+    const best=recordMinimum(localCanonical[id]?.runPerformance?.bestUnassistedTime,entry?.runPerformance?.bestUnassistedTime);
+    if(best!==undefined&&entry?.runPerformance)entry.runPerformance.bestUnassistedTime=best;
     if(!entry?.solved)continue;
     if(localCanonical[id]?.solved){
       if(!(canonicalAchievementCovered(localCanonical[id],entry)||cloud.legacyVictoryRevision>0&&canonicalQuestCovered(localCanonical[id],entry)))throw achievementRecoveryError('CANONICAL_REWARD_CONFLICT',{
@@ -912,6 +917,9 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote,{
    Object.assign(out,qualification.value);
   }
   for(const [key,value] of Object.entries(left)){
+   if(key==='bestUnassistedTime'){
+    const best=recordMinimum(value,out[key]);if(best!==undefined)out[key]=best;else delete out[key];continue;
+   }
    if(field==="performances"&&(qualificationFields.includes(key)||performanceSummaryFields.includes(key)))continue;
    if(!Object.hasOwn(out,key)){out[key]=structuredClone(value);continue}
    if(sameCloudProfile(value,out[key]))continue;
@@ -921,7 +929,7 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote,{
    if(field==="badges"||field==="stars"){
     const nested=rewardMerge(field,value,out[key]);if(nested.ok){out[key]=nested.value;continue}
    }
-   if((key==="bestTime"||key==="bestSeconds"||(field==="performances"&&key==="time"))&&typeof value==="number"&&typeof out[key]==="number"&&Number.isFinite(value)&&Number.isFinite(out[key])&&value>0&&out[key]>0){out[key]=Math.min(value,out[key]);continue}
+   if((key==="bestTime"||key==="bestSeconds"||(field==="performances"&&key==="time"))&&validRecordTime(value)&&validRecordTime(out[key])){out[key]=Math.min(value,out[key]);continue}
    // Conflicting run records, canonical rewards, and other timestamps are not
    // equivalent to monotonic achievements: preserve both backups and block.
    return {ok:false,conflictKeys:[key]};

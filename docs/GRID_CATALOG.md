@@ -86,3 +86,24 @@ The opening catalogue data is unchanged. Its existing center singleton and conne
 `node scripts/generate-diverse-grids.mjs --size 8 --family serpentine --count 5 --seed 340 --attempts 10000 --out /tmp/lumen-candidates.json` proposes **new** candidates without touching `CAT` or saved progress. Supported experimental profiles: `classic`, `serpentine`, `mosaic`, `balanced`, `hybrid`. Use `--minimum-score` to filter by explainable proof score. The output contains reproducible source seed, unique puzzles, proof-derived metadata, geometry metrics and a shortfall field. Nonzero exit on shortfall. These are **candidates, not automatically published quests**; reviewers must still visually inspect them and schedule them through the catalogue contract. Scores are heuristics, not calibrated human difficulty or measured chain depth. Avoid making a claim about Expert difficulty from score alone.
 
 Run `node scripts/generate-diverse-grids-tests.mjs` as a dedicated check and then the full quality gate before integrating content. Generated JSON never overwrites campaign grids. A later enhancement should model dependency chains, catalogue-level similarity and empirical player calibration.
+## Aventure 5 — candidat de publication (#598 / #599)
+
+« Les chemins du firmament » ajoute 100 quêtes canoniques, numérotées 401–500,
+dans dix constellations réelles. Les identités, positions, grilles et clés de
+sauvegarde des 400 quêtes précédentes restent exactes. La révision 3 est ajoutée
+à l’historique immuable ; aucune ancienne révision ni origine de joueur n’est
+réécrite. Les nouveaux IDs sont `pack-real-adventure-05-q001` à `q100`.
+
+Le générateur conserve le même pool de 100 grilles inédites et ordonne le
+candidat non publié par taille puis score de preuve croissants. Chaque
+constellation passe de cinq 7×7 à cinq 8×8. Le score reste une heuristique,
+pas une difficulté humaine acceptée. Le validateur rejoue proofEngine,
+l’unicité, la connexité, l’absence de singleton et les signatures D4 contre les
+autres aventures. Aucun point ou segment astronomique n’est inventé : les dix
+figures utilisent l’atlas Western/Hipparcos déjà audité et attribué.
+
+La migration candidate `20261104191554_adventure_05_catalogue.sql` ajoute les
+100 contrats/allowlists et la prise en charge d’origine 3, sans backfill de
+profils, droits, badges ou monnaie. Sa préparation n’autorise pas son activation.
+La publication exige CI, recette, décision serveur distincte et read-back du
+déploiement ; ne pas annoncer l’aventure disponible sur la seule génération.

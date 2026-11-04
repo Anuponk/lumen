@@ -64,7 +64,6 @@ jobs:
             -f supabase/migrations/20261018193133_legacy_victory_commands.sql \
             -f supabase/migrations/20261020084328_legacy_attempt_counter_metadata.sql \
             -f supabase/migrations/20261023045558_guest_progress_and_badge_eligibility.sql \
-            -f /tmp/lumen-legacy-parity.sql \
             -f scripts/fixtures/legacy-command-receipts.sql \
             -f scripts/fixtures/legacy-attempt-counter.sql
           python3 scripts/legacy-command-concurrency.py
@@ -72,8 +71,7 @@ jobs:
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
             -f scripts/fixtures/catalogue-origin-before.sql \
             -f supabase/migrations/20261018200805_catalogue_origin_access.sql \
-            -f scripts/fixtures/catalogue-origin.sql \
-            -f /tmp/lumen-catalogue-origin.sql
+            -f scripts/fixtures/catalogue-origin.sql
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
             -f supabase/migrations/20261022082153_wallet_command_authority.sql \
             -f scripts/fixtures/wallet-command-receipts.sql \
@@ -85,7 +83,6 @@ jobs:
           node scripts/quest-command-fixtures.mjs > /tmp/lumen-quest-parity.sql
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
             -f supabase/migrations/20261023181850_quest_contract_convergence.sql \
-            -f /tmp/lumen-quest-parity.sql \
             -f scripts/fixtures/quest-first-badges.sql \
             -f scripts/fixtures/quest-command-receipts.sql
           python3 scripts/quest-command-concurrency.py
@@ -123,6 +120,19 @@ jobs:
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
             -f supabase/migrations/20261024042823_sync_cohort_activation_control.sql \
             -f scripts/fixtures/sync-cohort-control.sql
+
+      - name: Verify records, append-only catalogue and complete victory parity
+        env:
+          PGPASSWORD: isolated-test-only
+        run: >-
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1
+          -f supabase/migrations/20261104155248_personal_records.sql
+          -f supabase/migrations/20261104191554_adventure_05_catalogue.sql
+          -f /tmp/lumen-catalogue-origin.sql
+          -f /tmp/lumen-legacy-parity.sql
+          -f /tmp/lumen-quest-parity.sql
+          -f scripts/fixtures/personal-records.sql
+          -f scripts/fixtures/adventure-05.sql
 
       - name: Verify Lumen-only erasure, private access and concurrent stale writers
         env:

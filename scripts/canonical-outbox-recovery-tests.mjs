@@ -6,8 +6,11 @@ import vm from 'node:vm';
 import {classifyCanonicalRecoveryError} from '../src/persistence/canonical-recovery-errors.js';
 import {functionSource} from './source-tools.mjs';
 import {captureCelestialProgress} from '../src/ui/celestial-progress.js';
+import {questPerformanceRecord} from '../src/campaign/quest-rules.js';
+import {renderRecordResult} from '../src/ui/personal-records.js';
 
 function prepareContext(ctx){
+ ctx.structuredClone??=structuredClone;ctx.questPerformanceRecord??=questPerformanceRecord;ctx.renderRecordResult??=renderRecordResult;
  ctx.captureCelestialProgress??=captureCelestialProgress;
  ctx.canonicalQuestList??=()=>[ctx.canonicalActiveQuest].filter(Boolean);
  ctx.cloudHydrationGeneration??=0;
@@ -255,7 +258,7 @@ test('a restored solved canonical board waits for startup Auth without claiming 
 
 test('verified hydration rechecks the same restored board, never a switched account or run',()=>{
  const source=readFileSync('src/ui/game-screen.js','utf8');
- for(const change of ['none','account','client','quest','index','attempt','reset','owner','not-ready','pending','recovery','celebrated']){
+ for(const change of ['none','account','client','quest','index','attempt','reset','owner','not-ready','pending','recovery','celebrated','offline-verified','offline-unverified']){
   let scheduled,rendered=0;const attempt={attemptId:'restored',resetCount:0};
   const client={};const ctx={qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,
    canonicalResumeOwner:'a',canonicalActiveQuest:{id:'q'},levelIndex:20,celebrated:false,cloudProfileReady:true,
@@ -274,7 +277,8 @@ test('verified hydration rechecks the same restored board, never a switched acco
   if(change==='pending')ctx.authSessionPending=true;
   if(change==='recovery')ctx.sessionStorage.getItem=()=> '1';
   if(change==='celebrated')ctx.celebrated=true;
-  scheduled();assert.equal(rendered,change==='none'?1:0,change);
+  if(change.startsWith('offline-')){ctx.cloudProfileReady=false;ctx.navigator={onLine:false};ctx.offlineQuestAccessContext=()=>({verifiedSession:change==='offline-verified'})}
+  scheduled();assert.equal(rendered,['none','offline-verified'].includes(change)?1:0,change);
  }
  const hydration=source.slice(source.indexOf('afterAuthCloudSync:async()=>{'),source.indexOf('holdLegacyMergeForFullRestore'));
  assert(hydration.indexOf('resumeCanonicalVictoryAfterHydration(accountId,hydrationClient)')>hydration.indexOf('recordCloudDiagnostic("hydration_ready"'),'Resume follows verified hydration');

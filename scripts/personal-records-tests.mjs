@@ -1,0 +1,36 @@
+import assert from 'node:assert/strict';
+import {completedRunRecords,personalRecordComparison} from '../src/campaign/personal-records.js';
+import {applyQuestVictory} from '../src/campaign/quest-victory.js';
+import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
+import {cloudSafelyCoversLocal,reconcileCloudAchievements} from '../src/persistence/cloud-profile.js';
+const facts={seconds:80,assistanceUsed:false,hintUsed:false,mistakeCommitted:true,qualifying:false,challengeFailed:false,qualifiedDay:'2026-11-04',qualifiedAt:'2026-11-04T10:00:00.000Z'};
+assert.deepEqual(completedRunRecords({bestTime:12,badges:{autonomy:true}},{...facts,assistanceUsed:true}),{bestTime:12,time:12});
+assert.deepEqual(completedRunRecords({bestTime:12,badges:{autonomy:true}},facts),{bestTime:12,time:12,bestUnassistedTime:80});
+assert.equal(completedRunRecords({bestUnassistedTime:70},facts).bestUnassistedTime,70);
+assert.equal(completedRunRecords({}, {...facts,hintUsed:true}).bestUnassistedTime,undefined);
+assert.deepEqual(completedRunRecords({bestTime:-1,bestUnassistedTime:'2'},facts),{bestTime:80,time:80,bestUnassistedTime:80});
+assert.deepEqual(personalRecordComparison({bestTime:90},{bestTime:80,bestUnassistedTime:80},facts),{absolute:true,unassisted:true});
+for(const quest of [canonicalQuestList().find(q=>q.legacyIndex===0),canonicalQuestList().find(q=>q.legacyIndex===null)]){
+ const p={solved:{},stars:{},badges:{},challenges:{},performances:{},xp:0,shards:0};
+ applyQuestVictory(p,quest,{...facts,seconds:100});
+ const state=()=>quest.legacyIndex===null?p.canonicalQuestState[quest.id].runPerformance:p.performances[quest.legacyIndex];
+ assert.equal(state().bestUnassistedTime,100);
+ const rewards={xp:p.xp,shards:p.shards,badges:structuredClone(state().badges)};
+ applyQuestVictory(p,quest,{...facts,seconds:40,assistanceUsed:true});
+ assert.equal(state().bestTime,40);assert.equal(state().bestUnassistedTime,100);
+ applyQuestVictory(p,quest,{...facts,seconds:60});
+ assert.equal(state().bestTime,40);assert.equal(state().bestUnassistedTime,60);
+ assert.deepEqual({xp:p.xp,shards:p.shards,badges:state().badges},rewards,'Non-qualifying replay changes records without rewards/badges');
+}
+const local={solved:{0:1},badges:{},performances:{0:{bestTime:40,bestUnassistedTime:80}}},remote={solved:{0:1},badges:{},performances:{0:{bestTime:30,bestUnassistedTime:100}}};
+assert.equal(cloudSafelyCoversLocal(local,remote),false,'A faster absolute time does not cover a worse unassisted record');
+const values=new Map([['lumenProgressV1',JSON.stringify(local)]]),storage={getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)};
+reconcileCloudAchievements(storage,remote);
+assert.equal(JSON.parse(storage.getItem('lumenProgressV1')).performances[0].bestUnassistedTime,80);
+reconcileCloudAchievements(storage,{...remote,performances:{0:{bestTime:30,bestUnassistedTime:50}}});
+assert.equal(JSON.parse(storage.getItem('lumenProgressV1')).performances[0].bestUnassistedTime,50);
+storage.setItem('lumenProgressV1',JSON.stringify({...local,performances:{0:{bestTime:0,bestUnassistedTime:0}}}));
+assert.equal(cloudSafelyCoversLocal(JSON.parse(storage.getItem('lumenProgressV1')),remote),false);
+reconcileCloudAchievements(storage,remote);
+assert.equal(JSON.parse(storage.getItem('lumenProgressV1')).performances[0].bestTime,0,'A valid zero must not be overwritten by a slower cloud record');
+console.log('PASS personal records: both quest generations, assisted/non-qualifying replay, no historical inference, rewards unchanged, cloud minima');

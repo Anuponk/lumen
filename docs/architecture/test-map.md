@@ -386,3 +386,20 @@ revision, published pack/constellation/grid records, reviewed server quest_rules
 and catalogue-origin support, full cloud/offline/browser audits and physical
 acceptance. The allowlist generator alone does not install that metadata or
 authorize a production migration. No player profile or entitlement was changed.
+
+### Records personnels (#600)
+
+`personal-records-tests.mjs` couvre les projections Legacy/Quest, minima et
+récupération. `personal-records-browser-tests.mjs` couvre l’interface QA à
+320/390/1440 px et le redémarrage. `fixtures/personal-records.sql` vérifie les
+commandes réelles en base jetable, après les parités Legacy/Quest complètes.
+L’intégration serveur et la recette réelle multi-appareils restent distinctes.
+
+### Aventure 5 — candidat d’intégration après le staging initial
+
+`adventure-05-runtime-tests.mjs` couvre le préfixe immuable, la courbe heuristique,
+la progression et les replays. `adventure-05-browser-tests.mjs` vérifie les vraies
+cartes/grilles QA, deux victoires, reload et précache aux trois largeurs.
+`fixtures/adventure-05.sql` complète les parités de commandes en PostgreSQL
+jetable, après la migration additive. Le candidat corrige l’ordre du même pool
+non publié ; les comptes et les 400 anciennes grilles restent intacts.

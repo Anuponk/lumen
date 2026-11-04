@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {legacyVictoryRules,applyLegacyVictory} from '../src/campaign/legacy-victory.js';
+import {currentCatalogueOrigin} from '../src/campaign/catalogue-origin.js';
 const rows=legacyVictoryRules(),quote=v=>"'"+JSON.stringify(v).replaceAll("'","''")+"'::jsonb";
 const seed=rows.map(row=>`insert into lumen_commands.legacy_rules values ('${row.questId.replaceAll("'","''")}',${row.index},${quote(row)}) on conflict(quest_id) do update set legacy_index=excluded.legacy_index,rules=excluded.rules;`).join('\n');
 const start='-- BEGIN CATALOGUE SEED (scripts/legacy-command-fixtures.mjs --write-seed)',end='-- END CATALOGUE SEED';
@@ -27,7 +28,7 @@ else if(process.argv.includes('--check')){
  console.log(`${rows.length} historical rules match cumulative migration seeds`);
 }
 else{
- const base=()=>({solved:{},badges:{},stars:{},challenges:{},performances:{},noHint:{},xp:42,shards:7,skyHistoryVersion:4,skyScore:0,future:{keep:true}});
+ const base=()=>({solved:{},badges:{},stars:{},challenges:{},performances:{},noHint:{},xp:42,shards:7,catalogueOrigin:currentCatalogueOrigin,skyHistoryVersion:4,skyScore:0,future:{keep:true}});
  const facts={seconds:45,assistanceUsed:false,mistakeCommitted:false,qualifying:true,hintUsed:false,challengeFailed:false,qualifiedDay:'2026-10-18',qualifiedAt:'2026-10-18T10:00:00.000Z'};
  let sql='-- Generated fixtures; no player records. Requires isolated bootstrap.\n';let n=0;
  function scenario(row,profile,run,label){
