@@ -1632,3 +1632,7 @@ Release acceptance still requires Android installed-PWA testing: warm a playable
 quest online, close the app, switch to airplane mode, reopen and play that quest,
 then reconnect and confirm the pending attempt synchronizes once without lost
 progress. Do not cache OAuth callbacks, private responses or cloud APIs.
+
+## Android APK startup smoke (#170 / PR #621)
+
+The Android packaging workflow now builds a debug APK, installs it on a Google APIs Android 35 emulator and launches `com.google.androidbrowserhelper.trusted.LauncherActivity`. It collects `android-startup-logcat.txt` as a downloadable artifact on success or failure, and fails when a fatal startup exception is detected. Consult `android/TESTING.md` for the physical-device matrix. This automated smoke is **not** proof of TWA rendering, Digital Asset Links verification, OAuth, real-phone functionality or production readiness; inspect Logcat before attributing any crash to missing asset links.
