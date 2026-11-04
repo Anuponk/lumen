@@ -1646,10 +1646,31 @@ Android offline multi-quest test and cloud persistence regression checks.
 
 ### Offline multi-quest Android acceptance (#597, mandatory before merge)
 1. On Wi-Fi, sign in and complete verified cloud hydration. Wait for the service worker to finish installing; verify its cache contains every public quest definition used by the published catalogue, including a locked quest never previously opened.
-2. Turn on airplane mode, force-close the PWA, then reopen it. The sky, an unopened available grid, and the next grid must all load. **Known gap:** the current in-memory verified-owner proof does not survive force-close; cold-start authorization needs an explicitly designed durable, owner-bound verification record, without treating a mere saved user ID as proof.
-3. Complete two sequential quests offline, with a badge and best time. Both completions must be durably recorded, immediately unlock the next quest, and survive another force-close. **Known gap:** current pending-victory UI does not yet project a verified provisional win into navigation; offline quest chaining is not complete.
+2. Turn on airplane mode, force-close the PWA, then reopen it. The sky, an unopened available grid, and the next grid must all load. The durable owner-bound continuation marker is valid only for the same account, offline, for at most 30 days after successful online hydration; it is not authentication or a cloud receipt.
+3. Complete two sequential quests offline, with a badge and best time. Both completions must be durably recorded, immediately unlock the next quest, and survive another force-close. Durable Canonical/Legacy outbox entries supply a navigation-only view; confirmed profiles, badges, rewards and balances are not fabricated.
 4. Reconnect and verify that canonical and legacy command outboxes replay once, reward balances are not duplicated, best times and badges remain correct, and all completed quests stay unlocked.
 5. Repeat with a failed sync, storage quota pressure, account switch and a revoked session. The previous account's pending commands must never be attributed to the new account. Do not clear local outboxes to recover.
 6. Fail one mandatory catalogue asset during installation: the old active worker must remain usable and the new worker must not claim offline readiness.
 
 Do not merge or mark #597 complete solely because the static service-worker tests pass. A real Android device, a cold start, and an end-to-end cloud reconciliation are required.
+
+### Offline regression corrections — 4 November 2026
+
+The actual worker installation is executed against the repository files in
+service-worker-cache-tests.mjs. A bare optional SDK package specifier previously
+resolved to a nonexistent local path and rejected installation; only URL paths
+are crawled now. Storage quota refusal retains the old shell without activation.
+The owner-resume suite resolves the UI imports and exercises restart/account
+isolation, catching the missing runtime import. The outbox suite checks a solved
+board resuming after verified offline Auth while cloud hydration is unavailable.
+Historical cloud recovery is deferred offline rather than launching an unhandled
+network request at startup. Existing unverified/account/run/recovery guards remain.
+
+The campaign-resume browser suite uses native Cache API, IndexedDB and actual
+network disconnection: offline reload, two wins, two next quests, another reload
+and reconnect with exact-once synthetic receipts. Auth/RPC are mocked; this is
+not a physical Android, actual expired-token or second-device acceptance result.
+
+Measured repository graph: 101 resources, approximately 2.05 MB uncompressed;
+per-file Brotli estimate 344 kB. Browser storage overhead and device quotas vary.
+

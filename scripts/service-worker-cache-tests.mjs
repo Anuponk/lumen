@@ -198,3 +198,27 @@ test('manual skip waiting cannot activate an incomplete cache',async()=>{
  await task;
  assert.equal(f.lifecycle.skipWaiting,0);
 });
+
+test('the actual worker installs the complete repository graph including dynamic imports',async()=>{
+ const f=fixture(),root=new URL('../',import.meta.url);
+ f.setNetwork(path=>{
+  const url=new URL(path,'https://lumen.test');
+  const file=new URL(url.pathname==='/'?'index.html':'.'+url.pathname,root);
+  return importedExistsSync(file)?new Response(readFileSync(file)):new Response('missing',{status:404});
+ });
+ let install;f.handlers.install({waitUntil:p=>install=p});await install;
+ assert.equal(f.lifecycle.skipWaiting,1);
+ assert(f.stores.get(currentCache).has('https://lumen.test/src/persistence/offline-verified-owner.js'));
+});
+
+test('cache quota refusal cannot activate a partial worker or erase the previous shell',async()=>{
+ const f=fixture(),previous=new Map([['https://lumen.test/',new Response('previous')]]);
+ f.stores.set('lumen-assets-v12',previous);
+ const open=f.caches.open;
+ f.caches.open=async key=>{const cache=await open(key);if(key===currentCache)cache.put=async()=>{throw Error('QuotaExceededError')};return cache};
+ let install;f.handlers.install({waitUntil:p=>install=p});
+ await assert.rejects(install,/QuotaExceededError/);
+ assert.equal(f.lifecycle.skipWaiting,0);assert.equal(f.stores.get('lumen-assets-v12'),previous);
+ assert.equal(f.stores.get(currentCache).has('https://lumen.test/__lumen_offline_ready_v13__'),false);
+});
+

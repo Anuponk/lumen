@@ -1426,3 +1426,12 @@ The proposed browser account menu invokes `lumen-self-erasure` with the current 
 
 ### Offline catalogue and pending wins (#597)
 The offline service worker caches the published static module graph and catalogue data, marking a cache ready only after successful completion. Cloud profiles and reward receipts remain authoritative. A verified account may retain a bounded, device-local owner-specific offline continuation marker; this is not cryptographic authentication and must not authorize cloud writes or another account. Canonical and legacy victory intents are stored in durable owner-bound command outboxes; pending navigation projects completion without modifying rewards or cloud state. On reconnect, command replay and cloud reconciliation must remain idempotent. Android cold-start and multi-quest acceptance remain release blockers.
+
+Offline startup (#597, 4 November): restored solved boards are revalidated after
+the same account's local Auth restoration when the bounded verified-offline
+continuation marker is present, even while cloud readiness remains false.
+This schedules the existing real victory validator and durable enqueue; it never
+installs a cloud profile or acknowledges a reward. Switched accounts, changed
+attempts/quests, unverified sessions and password recovery remain held.
+Historical cloud performance recovery is deferred while navigator reports offline.
+

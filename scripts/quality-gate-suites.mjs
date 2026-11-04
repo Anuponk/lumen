@@ -48,6 +48,7 @@ export const nodeSuites=[
  'quest-command-tests.mjs',
  'service-worker-cache-tests.mjs',
  'offline-verified-access-tests.mjs',
+ 'offline-owner-resume-tests.mjs',
  'offline-catalogue-budget.mjs',
  'campaign-resume-tests.mjs',
  'campaign-presentation-tests.mjs',
@@ -159,3 +160,4 @@ export const nodeSuites=[
  // Solver equivalence is the slowest Node suite; reject cheap regressions first.
  "engine-equivalence.mjs"
 ];
+

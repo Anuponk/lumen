@@ -7,6 +7,9 @@ function staticDependencies(source,base){
  const found=new Set();
  const patterns=[/(?:import|export)\s+(?:[^'";]*?\s+from\s*)?["']([^"']+)["']/g,/\bimport\s*\(\s*["']([^"']+)["']\s*\)/g,/@import\s+(?:url\()?["']([^"']+)["']/g];
  for(const pattern of patterns){for(const match of source.matchAll(pattern)){
+  // Native public modules use URL specifiers. Bare package names embedded in
+  // vendored bundles are not paths relative to that bundle (e.g. optional SDK tracing).
+  if(!match[1].startsWith('.')&&!match[1].startsWith('/'))continue;
   try{const url=new URL(match[1],base);if(url.origin===self.location.origin&&(/^\/src\//.test(url.pathname)||/^\/content\//.test(url.pathname))&&!url.search)found.add(url.pathname)}catch{}
  }}
  return [...found];
@@ -138,3 +141,4 @@ self.addEventListener("notificationclick",function(e){
  e.notification.close();
  e.waitUntil(clients.openWindow(e.notification.data&&e.notification.data.url?e.notification.data.url:"/"));
 });
+
