@@ -48,7 +48,7 @@ function questCardFixture(progress,{signedIn=true,cloudReady=true,entryId}={}){
  const context={...canonical,celestialScope,milkyWaySvg,takeMasteryPulse:()=>null,leavePendingVictoryForNavigation:()=>{},confirmedReplayAllowed:()=>false,lumenProgress:progress,qaActive:false,
   lumenUser:signedIn?{id:'synthetic-owner'}:null,cloudProfileReady:cloudReady,
   adventureAccessEntitlements:()=>[],attemptEngine:{snapshot:()=>null},campaignAccessAttempt:()=>null,
-  navigationProgress:()=>progress,document:{createElement:element,createElementNS:element,getElementById:id=>id==='puzzleGrid'?grid:id==='mapModal'?modal:id==='skyCard'?sky:null},
+  navigationProgress:()=>progress,offlineQuestAccessContext:()=>({offline:false,verifiedSession:false}),document:{createElement:element,createElementNS:element,getElementById:id=>id==='puzzleGrid'?grid:id==='mapModal'?modal:id==='skyCard'?sky:null},
   CONTENT_CONSTELLATIONS,mapConstellation:0,
   skyNavigation:{render(){},selectedConstellation:()=>entry},
   mapConstellationRange:()=>({quests:[]}),maybeShowStreakLoss(){},renderDaily(){},
