@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Geometry and palette from /icon-maskable.svg; no new brand or star map. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="512" android:viewportHeight="512">
+    <path android:fillColor="#10283d" android:strokeColor="#68e7ff" android:strokeWidth="20"
+        android:pathData="M128,256a128,128 0,1 0,256 0a128,128 0,1 0,-256 0" />
+    <path android:fillColor="#68e7ff"
+        android:pathData="M186,256a70,70 0,1 0,140 0a70,70 0,1 0,-140 0" />
+    <path android:fillColor="#eaffff" android:fillAlpha="0.9"
+        android:pathData="M212,230a22,22 0,1 0,44 0a22,22 0,1 0,-44 0" />
+</vector>

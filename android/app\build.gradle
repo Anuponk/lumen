@@ -1,0 +1,62 @@
+plugins { id 'com.android.application' }
+
+// These are public release coordinates, never signing secrets.
+def coordinates = new Properties()
+file('../release.properties').withInputStream { coordinates.load(it) }
+def packageId = providers.gradleProperty('lumenApplicationId').getOrElse(coordinates.applicationId)
+def androidCode = providers.gradleProperty('lumenVersionCode').getOrElse(coordinates.versionCode)
+def androidName = providers.gradleProperty('lumenVersionName').getOrElse(coordinates.versionName)
+if (!(packageId ==~ /[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+/)) {
+    throw new GradleException('Invalid lumenApplicationId')
+}
+if (!(androidCode ==~ /[1-9][0-9]*/) || androidCode.toLong() > 2100000000L) {
+    throw new GradleException('Invalid lumenVersionCode')
+}
+if (!(androidName ==~ /[0-9]+\.[0-9]+\.[0-9]+([.-][a-zA-Z0-9]+)*/)) {
+    throw new GradleException('Invalid lumenVersionName')
+}
+def signingNames = ['LUMEN_UPLOAD_STORE_FILE', 'LUMEN_UPLOAD_STORE_PASSWORD',
+                    'LUMEN_UPLOAD_KEY_ALIAS', 'LUMEN_UPLOAD_KEY_PASSWORD']
+def signingValues = signingNames.collect { providers.environmentVariable(it).orNull }
+if (signingValues.any { it } && !signingValues.every { it }) {
+    throw new GradleException('Provide all four LUMEN_UPLOAD_* signing variables or none')
+}
+
+android {
+    namespace 'fr.nopuna.lumen'
+    compileSdk 36
+    buildToolsVersion '35.0.0'
+    defaultConfig {
+        applicationId packageId
+        minSdk 24
+        targetSdk 36
+        versionCode androidCode.toInteger()
+        versionName androidName
+        manifestPlaceholders = [lumenHost: 'lumen.nopuna.fr']
+    }
+    signingConfigs {
+        if (signingValues.every { it }) {
+            upload {
+                storeFile file(signingValues[0])
+                storePassword signingValues[1]
+                keyAlias signingValues[2]
+                keyPassword signingValues[3]
+            }
+        }
+    }
+    buildTypes {
+        // Separate install identity so local tests cannot replace a Play installation.
+        debug { applicationIdSuffix '.debug' }
+        release {
+            minifyEnabled false
+            if (signingValues.every { it }) signingConfig signingConfigs.upload
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    lint { abortOnError true; warningsAsErrors true }
+}
+
+dependencies { implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.3' }

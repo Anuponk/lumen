@@ -1,0 +1,66 @@
+name: Android packaging
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ['android/**', '.github/workflows/android-packaging.yml']
+  push:
+    branches: ['feature/170-android-packaging']
+    paths: ['android/**', '.github/workflows/android-packaging.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-packaging-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  packaging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Static packaging and DAL regression tests
+        run: node --test tools/packaging.test.mjs
+      - name: Install pinned SDK
+        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+      - name: Build without any release credentials
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --console=plain :app:lint :app:assembleDebug :app:bundleDebug :app:bundleRelease
+      - name: Validate compiled APK and AAB
+        run: |
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/bundletool.jar" https://github.com/google/bundletool/releases/download/1.18.2/bundletool-all-1.18.2.jar
+          echo "378b5434cd1378bef6b2bc527b8c7f0ff2584b273830335bce54d6d0813c8584  $RUNNER_TEMP/bundletool.jar" | sha256sum --check
+          python3 tools/verify-artifacts.py "$RUNNER_TEMP/bundletool.jar"
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: lumen-android-test-${{ github.sha }}
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/bundle/debug/app-debug.aab
+            android/app/build/outputs/bundle/release/app-release.aab
+            android/app/build/outputs/packaging-verification.json
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lumen-android-reports-${{ github.sha }}
+          path: android/app/build/reports/
+          retention-days: 14
