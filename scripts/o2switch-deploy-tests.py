@@ -78,6 +78,7 @@ class Publisher(unittest.TestCase):
             (self.source / folder).mkdir()
         for name in ("index.html", "sw.js", "manifest.webmanifest", "icon.svg", "icon-maskable.svg", "src/main.js", "src/ui/game-screen.js", "src/ui/styles.css", "content/data.json"):
             (self.source / name).write_text('<meta name="lumen-build" content="fixture"><script src="src/main.js"></script>')
+        (self.source / "scripts/merge-assetlinks.py").write_bytes((ROOT / "scripts/merge-assetlinks.py").read_bytes())
         # The gate selector is tested above; stub only its network boundary here.
         (self.source / "scripts/o2switch-ci-status.py").write_text('import os,sys;sys.exit(int(os.environ.get("TEST_GATE_STATUS","0")))')
         self.git("add", ".")
