@@ -9,7 +9,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const validationDir=path.join(root,"docs","validation");
 fs.mkdirSync(validationDir,{recursive:true});
 // A failed suite must not upload JSON left in the checkout by a previous run.
-for(const name of ['browser','ux','learning','late-game','sky-navigation','account-session','canonical-replay','campaign-resume','pwa-update','incident-investigation','ux-lot','first-welcome','quality-summary'])
+for(const name of ['browser','ux','learning','late-game','sky-navigation','account-session','canonical-replay','campaign-resume','pwa-update','incident-investigation','ux-lot','first-welcome','personal-records','quality-summary'])
  fs.rmSync(path.join(validationDir,`ci-${name}.json`),{force:true});
 import {nodeSuites} from "./quality-gate-suites.mjs";
 import {runPool} from "./quality-gate-pool.mjs";
@@ -127,7 +127,8 @@ try{
   ()=>runBrowser("service-worker-update-browser-tests.mjs","ci-pwa-update.json",9232),
   ()=>runBrowser("incident-investigation-browser-tests.mjs","ci-incident-investigation.json",9235),
   ()=>runBrowser("ux-lot-browser-tests.mjs","ci-ux-lot.json",9236),
-  ()=>runBrowser("first-welcome-browser-tests.mjs","ci-first-welcome.json",9237)
+  ()=>runBrowser("first-welcome-browser-tests.mjs","ci-first-welcome.json",9237),
+  ()=>runBrowser("personal-records-browser-tests.mjs","ci-personal-records.json",9238)
  ],workers);
 }catch(error){failed=error;console.error("\nQUALITY GATE FAILED:",error.message)}
 finally{

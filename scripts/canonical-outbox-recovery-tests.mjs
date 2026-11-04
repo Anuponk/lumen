@@ -6,8 +6,11 @@ import vm from 'node:vm';
 import {classifyCanonicalRecoveryError} from '../src/persistence/canonical-recovery-errors.js';
 import {functionSource} from './source-tools.mjs';
 import {captureCelestialProgress} from '../src/ui/celestial-progress.js';
+import {questPerformanceRecord} from '../src/campaign/quest-rules.js';
+import {renderRecordResult} from '../src/ui/personal-records.js';
 
 function prepareContext(ctx){
+ ctx.structuredClone??=structuredClone;ctx.questPerformanceRecord??=questPerformanceRecord;ctx.renderRecordResult??=renderRecordResult;
  ctx.captureCelestialProgress??=captureCelestialProgress;
  ctx.canonicalQuestList??=()=>[ctx.canonicalActiveQuest].filter(Boolean);
  ctx.cloudHydrationGeneration??=0;

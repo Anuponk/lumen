@@ -1447,3 +1447,20 @@ An insufficient-balance refusal is retained for review, never erased and never
 used to revoke earned progression. Offline spending across two disconnected
 devices can conflict; the owner explicitly accepted retained reconciliation.
 Server tariffs, eligibility and badge assistance rules remain unchanged.
+## Métadonnée de record sans assistance (#600)
+
+`performances[index].bestUnassistedTime` et
+`canonicalQuestState[id].runPerformance.bestUnassistedTime` prolongent les
+résumés existants ; aucun nouveau champ de profil racine ni magasin parallèle.
+Les commandes Legacy/Quest calculent le minimum à partir des faits d’une
+nouvelle victoire. Le reçu reste idempotent. La récupération des acquis conserve
+le minimum valide sans transformer les badges cumulés en preuve historique.
+
+La migration `20261104155248_personal_records.sql` modifie uniquement les
+fonctions, avec contrôle du corps attendu ; elle ne réécrit aucune sauvegarde,
+récompense, monnaie ou historique. Son déploiement serveur reste une étape
+distincte, non exécutée par les tests ni par la fusion du client. Sans cette
+migration, un ancien serveur continue de confirmer ses temps absolus, mais ne
+confirme pas de nouveau record sans aide : le client ne le fabrique pas.
+Avant activation, conserver les définitions des fonctions pour un rollback ;
+un retour aux fonctions précédentes doit conserver le JSON et les reçus acquis.

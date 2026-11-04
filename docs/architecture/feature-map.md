@@ -286,3 +286,10 @@ Queued canonical receipt recovery: UI `recoverQueuedCanonicalReceipt` connects t
 `pending-navigation.js` projects durable wins for access only. UI Auth restoration
 reloads these views before resumed navigation. `sw.js` caches the real public URL
 graph; tests and physical acceptance remain distinguished in `docs/TESTING.md`.
+### Records personnels (#600)
+
+`src/campaign/personal-records.js` calcule les minima des nouveaux parcours ;
+`progression.js` et `quest-victory.js` alimentent les résumés existants.
+`src/ui/personal-records.js` présente le record dans le plateau et le récapitulatif.
+La réconciliation est dans `cloud-profile.js` ; l’autorité serveur demeure dans
+les commandes et `recover_performance`, étendues par la migration des records.
