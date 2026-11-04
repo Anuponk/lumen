@@ -6,7 +6,7 @@ Ce document suit les preuves disponibles dans le dépôt ; **il ne vaut ni valid
 
 - Pages accessibles depuis le jeu : [mentions légales](../mentions-legales.html), [confidentialité](../confidentialite.html), [demande de suppression](../supprimer-compte.html). La page de demande prépare un email : **aucune demande n'est envoyée automatiquement** et aucune donnée n'est effacée par cette page.
 - Portée publique de la suppression limitée à Lumen, sans exposer la dépendance technique à une autre application. Tests automatisés associés à la PR #612, fusionnée après six contrôles verts.
-- Inventaire de catégories, finalités, bases **envisagées** et durées **proposées** dans [PRIVACY_RETENTION_PROPOSAL.md](PRIVACY_RETENTION_PROPOSAL.md). Les durées ne sont pas assimilées à une politique adoptée ou à une purge active.
+- Inventaire de catégories, finalités, bases **envisagées** et durées cibles **adoptées le 2 novembre 2026** (PR #614) dans [PRIVACY_RETENTION_PROPOSAL.md](PRIVACY_RETENTION_PROPOSAL.md). La politique cible adoptée ne prouve pas que les purges soient actives.
 - Inventaire et limites des sous-traitants dans [PRIVACY_PROCESSORS.md](PRIVACY_PROCESSORS.md) ; procédure d'accès/portabilité [ACCOUNT_RIGHTS_RUNBOOK.md](ACCOUNT_RIGHTS_RUNBOOK.md) et conservation technique [TECHNICAL_RETENTION_RUNBOOK.md](TECHNICAL_RETENTION_RUNBOOK.md) préparées, **non attestées actives**.
 - Les mentions légales contiennent des coordonnées déclarées par l'éditeur, à confirmer avant publication finale. Jeu déclaré gratuit, sans publicité ni achats.
 
@@ -15,7 +15,7 @@ Ce document suit les preuves disponibles dans le dépôt ; **il ne vaut ni valid
 | Sujet | État | Preuve / décision requise |
 |---|---|---|
 | Suppression autonome réelle (#316, PR #611) | **Bloqué E2E** | Test autorisé sur compte QA, périmètre Lumen uniquement, vérification des résidus et non-régression des autres applications ; ne pas contourner les contrôles de sécurité de migration |
-| Bases juridiques et durées | **À valider par l'éditeur** | Décision datée par finalité, durée justifiée, exceptions documentées, puis preuve des tâches réellement actives ; pas de purge de reçus/progression sur simple hypothèse |
+| Bases juridiques et durées | **Durées cibles adoptées (#614), activation non attestée** | Bases par finalité et exceptions à confirmer ; fournir les preuves des tâches réellement actives, sans purger reçus ou progression sur simple hypothèse |
 | Droits d'accès, rectification et portabilité | **Procédures préparées** | Canal et responsable de traitement effectifs, test opérateur autorisé, transmission sécurisée ; réponse en principe dans un mois |
 | Sous-traitants et transferts | **À confirmer** | Contrats et paramètres effectifs de Supabase, o2switch, Resend, Google et notifications ; preuves des durées fournisseur et localisation des traitements |
 | Journaux, sauvegardes et restauration | **À qualifier** | Réglages réels, rotations, copie d'effacements anti-résurrection et test de restauration sans réintroduction d'un compte supprimé |
