@@ -4,6 +4,7 @@ import {readQuestView} from "../campaign/quest-view.js";
 import {QUEST_MILESTONES,questLearningRules,questPerformanceRecord,questBadgeQualification} from "../campaign/quest-rules.js";
 import {questRewardDefinition} from "../campaign/quest-rewards.js";
 import {applyQuestVictory} from "../campaign/quest-victory.js";
+import {recordLabel,renderRecordResult} from './personal-records.js';
 import {streakVisual,lostStreak} from "../campaign/streak-visual.js";
 import {learningStep, dragLearningStep, learningAllows, learningCopy} from "../game/learning.js";
 import {createAnalytics,attemptAnalyticsProperties} from "../analytics/events.js";
@@ -197,6 +198,7 @@ function renderSyncStatus(view){
  if(view.alert&&view.status==='persistent')queueMicrotask(()=>syncPresentation.announced());
 }
 function presentPendingVictory(questId,operationId){
+ const record=document.getElementById('successRecord');if(record)record.hidden=true;
  if(pendingVictoryView?.operationId===operationId)return;
  pendingVictoryView={questId,operationId,userId:lumenUser?.id,client:lumenSupabase,attemptId:attemptEngine.snapshot()?.attemptId};
  if(!pendingNavigationEntries.some(e=>e.operationId===operationId))pendingNavigationEntries.push({questId,operationId,userId:lumenUser?.id});
@@ -1745,6 +1747,8 @@ function updateAttemptUI(){
  mask.hidden=!(ready||paused)||(ready&&learningQuestActive());
  document.getElementById("attemptMaskTitle").textContent=paused?"Tentative en pause":"Touchez la grille pour commencer";
  document.getElementById("attemptMaskCopy").textContent=paused?"Reprendre pour continuer la même tentative.":"Le chrono démarrera au premier geste.";
+ const record=document.getElementById('personalRecord'),quest=activeQuest();
+ if(record){record.textContent=!socialChallenge&&questIsCompleted(lumenProgress,quest.id)?recordLabel(questPerformanceRecord(quest,lumenProgress),formatDuration):'';record.hidden=!record.textContent}
  if(pause){pause.hidden=!a||![ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(a.state);pause.textContent=paused?"Reprendre":"Pause"}
  if(abandon)abandon.hidden=!a||attemptMode()==="campaign"||![ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(a.state);
  const next=document.getElementById('completedQuestNext');
@@ -2551,6 +2555,7 @@ function closeEndgameToSky(focus=true){
 }
 
 function hideSuccess(){
+ const record=document.getElementById('successRecord');if(record){record.hidden=true;record.textContent='';record.classList.remove('personal-record-new')}
  let o=document.getElementById("successOverlay");
  if(o)o.classList.remove("show");
  board.classList.remove("win");
@@ -2809,6 +2814,7 @@ async function celebrateCanonicalSuccess(){
  const qualifying=!!attempt?.qualifying;
  const badges={speed:qualifying&&run.speed,autonomy:qualifying&&run.autonomy,noError:qualifying&&run.noError,mastery:qualifying&&run.mastery};
  const priorBadges=lumenProgress.canonicalQuestState?.[q.id]?.badges||{};
+ const priorRecords=structuredClone(questPerformanceRecord(q,lumenProgress));
  const facts={seconds,assistanceUsed:assisted,mistakeCommitted:!!attempt?.mistakeCommitted,qualifying,
   hintUsed:hintUsedInAttempt(),challengeFailed:!!questFailed,qualifiedDay:localCalendarDay(),qualifiedAt:new Date(attempt?.startedAt||Date.now()).toISOString()};
  const reward={badges,performance:{bestTime:seconds,assisted,seconds},stars:questRewardDefinition(q).stars,facts};
@@ -2904,6 +2910,7 @@ async function celebrateCanonicalSuccess(){
  const earnedLabels=[["speed","Rapidité"],["autonomy","Autonomie"],["noError","Sans erreur"],["mastery","Maîtrise"]].filter(([key])=>confirmedBadges[key]&&!priorBadges[key]&&committed.profile.canonicalQuestState[q.id].badges?.[key]).map(([,label])=>label);
  document.getElementById("successSub").textContent=[committed.newlyCompleted?"+ "+(committed.outcome?(facts.hintUsed?10:15):(confirmedBadges.autonomy?15:10))+" XP · +"+reward.stars+" étoile":"Quête déjà réussie",...earnedLabels,"sauvegarde confirmée"].join(" · ");
  document.getElementById("successTime").textContent=formatDuration(referenceSeconds);
+ renderRecordResult(document.getElementById('successRecord'),priorRecords,questPerformanceRecord(q,lumenProgress),{seconds:referenceSeconds,assistanceUsed:referenceAssisted,hintUsed:committed.receipt?.request?.facts?.hintUsed??facts.hintUsed},formatDuration,{reused:reusedVictory});
  configureVictoryChallenge({priorPerformance:committed.outcome?.priorPerformance,run:confirmedRun,firstCompletion:committed.newlyCompleted,
   snapshot:challengeSnapshot({quest:q,seconds:referenceSeconds,run:confirmedRun,assistanceUsed:referenceAssisted})});
  const achievements=document.getElementById("successAchievement");if(achievements){achievements.hidden=false;renderSuccessAchievement()}
@@ -3037,6 +3044,7 @@ async function celebrateSuccess(){
  configureVictoryChallenge({priorPerformance,run:savedPerformance.run,firstCompletion,snapshot:challengeSnapshot({questIndex:levelIndex,seconds:facts.seconds,run:savedPerformance.run,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed})});
  if(dailyQualified&&!commanded)completeDaily();
  renderSuccessRewards(earnedThisRun,savedPerformance,priorBadges);renderSuccessAchievement();
+ renderRecordResult(document.getElementById('successRecord'),priorPerformance,lumenProgress.performances[levelIndex],facts,formatDuration);
  if(commanded){renderDaily()}
  else{
   saveLumenProgress();
@@ -3780,6 +3788,8 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
   continueButton.hidden=isNormalVictory;
   if(isNormalVictory){
    document.getElementById("skyRevealTime").textContent=document.getElementById("successTime")?.textContent||"";
+   const record=document.getElementById('successRecord'),revealRecord=document.getElementById('skyRevealRecord');
+   if(revealRecord){revealRecord.textContent=record?.textContent||'';revealRecord.hidden=record?.hidden!==false;revealRecord.classList.toggle('personal-record-new',!!record?.classList.contains('personal-record-new'))}
    document.getElementById("skyRevealRewards").innerHTML=document.getElementById("successRewards")?.innerHTML||"";
    document.getElementById("skyRevealRewards").className="sky-reveal-rewards "+(document.getElementById("successRewards")?.className||"");
    const reason=document.getElementById('successChallengeReason'),revealReason=document.getElementById('skyRevealChallengeReason');

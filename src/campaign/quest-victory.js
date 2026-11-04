@@ -1,4 +1,5 @@
 import {applyLegacyVictory} from './legacy-victory.js';
+import {completedRunRecords} from './personal-records.js';
 import {performanceAttempt,mergeEarnedBadges} from './performance.js';
 import {questPerformanceRecord} from './quest-rules.js';
 import {questRewardDefinition} from './quest-rewards.js';
@@ -18,6 +19,7 @@ export function applyQuestVictory(progress,quest,facts){
  const performance={...priorPerformance,version:3,badges,bestTime,time:bestTime,stars:Math.max(priorPerformance.stars||0,stars),
   attempts:(priorPerformance.attempts||0)+1,lastQualifiedDay:qualifying?facts.qualifiedDay:priorPerformance.lastQualifiedDay??null,
   lastQualifiedAt:qualifying?facts.qualifiedAt:priorPerformance.lastQualifiedAt??null};
+ Object.assign(performance,completedRunRecords(priorPerformance,facts));
  progress.canonicalQuestState={...state,[quest.id]:{...old,solved:true,badges,
   ...(firstCompletion?{stars,performance:{bestTime:facts.seconds,seconds:facts.seconds,assisted:!!facts.assistanceUsed}}:{}),runPerformance:performance}};
  if(firstCompletion)progress.xp=(progress.xp||0)+10+(facts.hintUsed?0:5);
