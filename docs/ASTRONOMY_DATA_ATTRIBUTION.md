@@ -159,3 +159,11 @@ et non sur une simple égalité de compteurs.
 | Vir | 12 | 12 | Identique |
 | Vol | 6 | 7 | Identique |
 | Vul | 2 | 1 | Identique |
+## Extension à l’aventure 5 — 4 novembre 2026
+
+Les dix identités Cet, Col, Crv, Crt, Dor, Eri, Gru, Hyi, Lac et Lup réutilisent
+les figures déjà présentes dans le même atlas de 88 constellations. Aucun
+nouveau point HIP, segment ou dessin Stellarium n’est ajouté. La reconstruction
+complète reste identique aux sources figées ; la couverture du catalogue Lumen
+passe à 50 figures. L’attribution et les notices Western CC BY-SA/Hipparcos
+ci-dessus restent requises pour cette redistribution du catalogue dérivé.

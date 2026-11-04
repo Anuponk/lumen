@@ -5,19 +5,24 @@ import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {questRewardDefinition} from '../src/campaign/quest-rewards.js';
 import {applyQuestVictory} from '../src/campaign/quest-victory.js';
 import {currentCatalogueOrigin} from '../src/campaign/catalogue-origin.js';
-const migration='supabase/migrations/20261023181850_quest_contract_convergence.sql';
+const migration=process.argv[process.argv.indexOf('--write-seed')+1];
 const quests=canonicalQuestList(),quote=value=>"'"+JSON.stringify(value).replaceAll("'","''")+"'::jsonb";
 const rules=quests.map(q=>({questId:q.id,ordinal:q.ordinal,legacyIndex:q.legacyIndex,...questRewardDefinition(q)}));
 const seed=rules.map(q=>`insert into lumen_commands.quest_rules values ('${q.questId.replaceAll("'","''")}',${q.legacyIndex??'null'},${quote(q)});`+
  (q.legacyIndex===null?`\ninsert into lumen.canonical_quest_allowlist values ('${q.questId.replaceAll("'","''")}') on conflict do nothing;`:'')).join('\n');
 const start='-- BEGIN QUEST RULES',end='-- END QUEST RULES';
 if(process.argv.includes('--write-seed')){
+ assert.match(migration||'',/^supabase\/migrations\/\d+_[a-z0-9_]+\.sql$/,'Pass the new CLI-generated migration path');
  const source=fs.readFileSync(migration,'utf8');assert(source.includes(start)&&source.includes(end));
- fs.writeFileSync(migration,source.slice(0,source.indexOf(start)+start.length)+'\n'+seed+'\n'+source.slice(source.indexOf(end)));
- console.log(`Seeded ${rules.length} quest contracts in the pending migration`);
+ const prior=fs.readdirSync('supabase/migrations').filter(f=>f.endsWith('.sql')&&'supabase/migrations/'+f!==migration).map(f=>fs.readFileSync('supabase/migrations/'+f,'utf8')).join('\n');
+ const existing=new Set([...prior.matchAll(/insert into lumen_commands\.quest_rules values \('([^']+)'/g)].map(m=>m[1]));
+ const missing=rules.filter(q=>!existing.has(q.questId));
+ const additions=missing.map(q=>`insert into lumen_commands.quest_rules values ('${q.questId.replaceAll("'","''")}',${q.legacyIndex??'null'},${quote(q)});`+(q.legacyIndex===null?`\ninsert into lumen.canonical_quest_allowlist values ('${q.questId.replaceAll("'","''")}') on conflict do nothing;`:'')).join('\n');
+ fs.writeFileSync(migration,source.slice(0,source.indexOf(start)+start.length)+'\n'+additions+'\n'+source.slice(source.indexOf(end)));
+ console.log(`Seeded ${missing.length} new quest contracts; prior migrations unchanged`);
 }else if(process.argv.includes('--check')){
- const source=fs.readFileSync(migration,'utf8').replace(/\r\n/g,'\n');
- assert.equal(source.slice(source.indexOf(start)+start.length,source.indexOf(end)).trim(),seed);
+ const accumulated=fs.readdirSync('supabase/migrations').filter(f=>f.endsWith('.sql')).sort().map(f=>fs.readFileSync('supabase/migrations/'+f,'utf8').replace(/\r\n/g,'\n')).filter(s=>s.includes(start)).map(s=>s.slice(s.indexOf(start)+start.length,s.indexOf(end)).trim()).join('\n');
+ assert.equal(accumulated,seed,'Cumulative append-only server rules must exactly match the published catalogue');
  console.log(`${rules.length} server quest contracts match source`);
 }else{
  const facts={seconds:45,assistanceUsed:false,mistakeCommitted:false,qualifying:true,hintUsed:false,challengeFailed:false,qualifiedDay:'2026-10-22',qualifiedAt:'2026-10-22T10:00:00.000Z'};
