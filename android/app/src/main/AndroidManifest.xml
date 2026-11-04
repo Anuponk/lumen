@@ -41,6 +41,16 @@
                 <data android:scheme="https" android:host="${lumenHost}" />
             </intent-filter>
         </activity>
+        <!-- Required by Android Browser Helper at every LauncherActivity startup.
+             Without this declaration addSiteSettingsShortcut crashes with
+             IllegalArgumentException: Component class ... does not exist. -->
+        <activity
+            android:name="com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity"
+            android:exported="false">
+            <meta-data
+                android:name="android.support.customtabs.trusted.MANAGE_SPACE_URL"
+                android:value="https://${lumenHost}/" />
+        </activity>
         <activity android:name="com.google.androidbrowserhelper.trusted.FocusActivity"
             android:exported="false" />
         <provider android:name="androidx.core.content.FileProvider"
