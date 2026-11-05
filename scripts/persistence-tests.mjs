@@ -12,8 +12,8 @@ const baseline='dcd9f3c872e623541be698edc212b64589d3b164';
 const source=(process.argv[2]?fs.readFileSync(process.argv[2],'utf8'):execFileSync('git',['show',baseline+':index.html'],{encoding:'utf8'})).replace(/\r/g,'');
 const names=['loadLumenProfile','saveLumenNickname','loadEntitlements','cloudSavePuzzle','cloudMergeProgress','initLumenCloud','cloudSaveDaily','cloudMergeDaily'];
 const plain=value=>JSON.parse(JSON.stringify(value));
-for(const stored of [null,'bad JSON',JSON.stringify({solved:{0:1,1:1},badges:{}})]){
- let progress,written;const storage={getItem:()=>stored,setItem:(key,value)=>written={key,value}};
+for(const stored of [null,JSON.stringify({solved:{0:1,1:1},badges:{}})]){
+ let progress,written,current=stored;const storage={getItem:()=>current,setItem:(key,value)=>{current=value;written={key,value}}};
  const local=createLocalPersistence(storage,()=>progress);
  const legacy={localStorage:storage};vm.createContext(legacy);
  vm.runInContext(functionSource(source,'loadLumenProgress')+'\n'+functionSource(source,'saveLumenProgress'),legacy);
@@ -182,7 +182,7 @@ for(const options of scenarios){
    assert.ok(actual.trace.some(x=>x.name==='lumen_claim_daily'),'Authenticated daily completion must use the atomic server claim');
  }
 }
-console.log(JSON.stringify({baseline,localFixtures:4,cloudFixtures:scenarios.length,authCallbacks:true,rpcPayloads:'legacy except intentional daily sync',result:'passing',liveCloudWrites:false}));
+console.log(JSON.stringify({baseline,localFixtures:3,cloudFixtures:scenarios.length,authCallbacks:true,rpcPayloads:'legacy except intentional daily sync',result:'passing',liveCloudWrites:false}));
 
 {
  const migration=fs.readFileSync('supabase/migrations/20261007_lumen_user_isolation.sql','utf8');

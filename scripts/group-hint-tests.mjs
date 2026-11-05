@@ -9,7 +9,7 @@ const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'u
 const handler=source.slice(source.indexOf('document.getElementById("hint").onclick=()=>{'),source.indexOf('\nconst testModel='));
 function present(h,lesson=false,engine=null){
  const button={},messages=[],grants=[];
- const context={document:{getElementById:()=>button},scriptedLearningActive:()=>lesson,levelIndex:70,
+ const context={document:{getElementById:()=>button},scriptedLearningActive:()=>lesson,activeQuestOrdinal:()=>91,levelIndex:70,
   consumeHintCost:()=>{grants.push(true);return true},playerError:()=>engine?.playerError()??null,directMissingCross:()=>engine?.directMissingCross()??null,
   simpleForcedPlacement:()=>engine?.simpleForcedPlacement()??null,proofEngine:()=>h,proofs:{},hi:null,hiCells:[],hintStage:0,hintFocus:null,
   showHintMessage:t=>messages.push(t),render(){}};

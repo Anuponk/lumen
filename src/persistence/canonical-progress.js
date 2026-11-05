@@ -5,6 +5,7 @@ import {canonicalQuestById,canonicalQuestByOrdinal,canonicalQuestList} from "../
 import {loadVerifiedProfile,compareAndSwapCloudProfile} from "./cloud-profile.js";
 import {canonicalRecoveryFailure} from "./canonical-recovery-errors.js";
 import {canonicalCommandsSupported,commitCanonicalCommand} from "./canonical-command.js";
+import {commitQuestCommand} from './quest-command.js';
 
 export const CANONICAL_PROGRESS_VERSION=1;
 function copy(profile){
@@ -110,6 +111,7 @@ export async function commitCanonicalVictoryViaLedger(supabase,questId,reward,{o
  const quest=canonicalQuestById(questId);
  if(!quest||quest.legacyIndex!==null)throw canonicalRecoveryFailure({code:'LUMEN_QUEST_UNAVAILABLE'});
  if(!sessionValid())throw Error('Canonical session changed');
+ if(reward?.facts)return commitQuestCommand(supabase,quest,reward,operationId,{userId,sessionValid});
  if(operationId!==undefined){
   if(typeof operationId!=='string'||!/^[A-Za-z0-9._-]{1,120}$/.test(operationId)||typeof userId!=='string'||!userId)throw canonicalRecoveryFailure({code:'22023'});
   const supported=await canonicalCommandsSupported(supabase);

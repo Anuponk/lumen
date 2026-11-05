@@ -5,7 +5,7 @@ const TUTORIAL_STEPS=[
  {title:"Ta mission",copy:"Positionne les 6 Gardiens : exactement un par ligne, un par colonne et un par territoire coloré.",visual:'<div class="tutorial-mini-grid"><span></span><span class="orb guardian-mini"></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>'},
  {title:"Les Gardiens gardent leurs distances",copy:"Deux Gardiens ne peuvent jamais être voisins, même en diagonale. Chaque Gardien doit avoir de l’espace autour de lui.",visual:'<div class="tutorial-mini-grid"><span class="orb guardian-mini"></span><span></span><span></span><span></span><span>↘</span><span class="orb guardian-mini"></span><span></span><span></span><span></span></div>'},
  {title:"Observe les emplacements impossibles",copy:"Une croix écarte une case. Touche une fois pour la marquer ; maintiens et glisse pour écarter plusieurs cases.",visual:'<div class="tutorial-mini-grid"><span></span><span class="dim">○</span><span></span><span></span><span class="orb guardian-mini"></span><span></span><span></span><span></span><span></span></div>'},
- {title:"LUMEN t’aide au début",copy:"Sur les quêtes 1 à 5, tu marques les cases toi-même et Assist explique les conflits. Le Marquage auto devient disponible à la quête 6, désactivé par défaut.",visual:"<span>1–5 ✦ → 6–10 ◐ → 11+ ✧</span>"},
+ {title:"LUMEN t’aide au début",copy:"La première quête apprend les exclusions manuelles. Ensuite, Marquage auto peut écarter les cases impossibles ; ton choix est conservé. À la quête 6, essaie de le décocher : tu pourras le réactiver librement.",visual:"<span>1–5 ✦ → 6–10 ◐ → 11+ ✧</span>"},
  {title:"Bloqué ? Utilise Indice",copy:"LUMEN ne révèle pas simplement la solution : il te guide vers la prochaine déduction logique. Tu peux demander davantage de précision si nécessaire.",visual:"<span>💡 &nbsp; Indice logique</span>"}
 ];
 let tutorialStep=0;
@@ -25,7 +25,7 @@ function setupTutorial(){
  prev.onclick=()=>{if(tutorialStep){tutorialStep--;renderTutorial()}};
  skip.onclick=()=>{if(!canSkip())return;closeTutorial(true);if(onSkip)onSkip()};
  let seen=false;try{seen=localStorage.getItem(tutorialSeenKey)==="1"}catch(e){}
- if(!seen&&!scriptedLearningActive())openTutorial();
+ // Help is opened explicitly; the real board owns first-play teaching.
 }
 
 

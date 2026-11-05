@@ -1,5 +1,6 @@
 import {CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,CONSTELLATION_QUESTS,SKY_TARGET} from "./data.js";
 import {baseCampaignQuestCount} from "./content.js";
+import {completedRunRecords} from './personal-records.js';
 import {performanceAttempt,performanceEligibility,localCalendarDay,badgeCooldownRemaining,mergeEarnedBadges} from "./performance.js";
 export function campaignQuestCount(){return baseCampaignQuestCount()}
 export function sequentialCount(source){let count=0,total=campaignQuestCount();while(count<total&&source&&source[count])count++;return count}
@@ -44,7 +45,7 @@ export function constellationStateForEarned(earned){let total=0;for(let i=0;i<CO
 
 export function starsAwardedForGrid(i,firstCompletion,questPassed){if(!firstCompletion)return 0;return skyStarsForGrid(i)}
 
-export function createCampaign(getProgress,saveLumenProgress,getAttempt){
+export function createCampaign(getProgress,saveLumenProgress,getAttempt,getCatalogue=null){
 function normalizeSequentialProgress(){
  const lumenProgress=getProgress();
  if(!lumenProgress.historyBackup&&lumenProgress.solved)lumenProgress.historyBackup={...lumenProgress.solved};
@@ -76,7 +77,18 @@ function constellationLitAt(index){
  const lumenProgress=getProgress();let earned=skyStarsEarned(),before=0;for(let i=0;i<index;i++)before+=CONSTELLATIONS[i].count;return Math.max(0,Math.min(CONSTELLATIONS[index].count,earned-before))}
 
 function awards(){
- const lumenProgress=getProgress();let t=Object.keys(lumenProgress.solved).length;if(t>=1)lumenProgress.badges.first=1;if(t>=20)lumenProgress.badges.explorer=1;if(t>=50)lumenProgress.badges.beacon=1;if(t>=campaignQuestCount())lumenProgress.badges.master=1;if(challengeRewardKeys().length>=1)lumenProgress.badges.challenge1=1;if(challengeRewardKeys().length>=16)lumenProgress.badges.challengeAll=1;saveLumenProgress()}
+ const lumenProgress=getProgress(),quests=getCatalogue?.();
+ const completed=quest=>quest.legacyIndex===null?!!lumenProgress.canonicalQuestState?.[quest.id]?.solved:!!lumenProgress.solved?.[quest.legacyIndex];
+ const t=quests?quests.filter(completed).length:Object.keys(lumenProgress.solved).length;
+ const bonusKeys=quests?quests.map(q=>q.rewards?.bonus?.id).filter(Boolean):null;
+ const earned=bonusKeys?bonusKeys.filter(key=>lumenProgress.stars?.[key]).length:challengeRewardKeys().length;
+ if(t>=1)lumenProgress.badges.first=1;if(t>=20)lumenProgress.badges.explorer=1;if(t>=50)lumenProgress.badges.beacon=1;
+ // Existing profile achievements are grandfathered; never erase an old finale.
+ if(quests?quests.length>0&&quests.every(completed):t>=campaignQuestCount())lumenProgress.badges.master=1;
+ if(earned>=1)lumenProgress.badges.challenge1=1;
+ if(bonusKeys?bonusKeys.length>0&&earned===bonusKeys.length:earned>=16)lumenProgress.badges.challengeAll=1;
+ saveLumenProgress();
+}
 
 function unlockedPerformanceQuestCount(i){
  const progress=getProgress();return Math.max(i+1,sequentialCount(progress.solved||{}));
@@ -91,8 +103,9 @@ function savePerformance(i,stars,{day=localCalendarDay(),at=new Date().toISOStri
  const attempt=getAttempt(),seconds=attempt.activeGameSeconds(),run=performanceRun(i),old=getProgress().performances[i]||{};
  const eligible=performanceEligibility(i,unlockedPerformanceQuestCount(i)),qualifying=!!attempt.qualifying,priorBadges=old.version>=2?old.badges:{};
  const badges=qualifying?mergeEarnedBadges(priorBadges,run,eligible):mergeEarnedBadges(priorBadges,{},{});
- const bestTime=!Number.isFinite(old.bestTime)||seconds<old.bestTime?seconds:old.bestTime;
+ const records=completedRunRecords(old,{seconds,assistanceUsed:!!attempt.assistanceUsed,hintUsed:!!attempt.hintUsed}),bestTime=records.bestTime;
  getProgress().performances[i]={...old,version:3,questIndex:i,badges,bestTime,time:bestTime,stars:Math.max(old.stars||0,stars),quest:!!bonusChallengeFor(i),milestone:milestoneFor(i)?.kind||null,attempts:(old.attempts||0)+1,lastQualifiedDay:qualifying?day:old.lastQualifiedDay||null,lastQualifiedAt:qualifying?(old.lastQualifiedAt||at):old.lastQualifiedAt||null};
+ Object.assign(getProgress().performances[i],records);
  return {run,qualifying,badges};
 }
 

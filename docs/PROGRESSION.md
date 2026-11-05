@@ -33,11 +33,42 @@ prerequisites, and pack ownership/authentication/hydration still apply.
 
 ## Adventures and access (#96)
 
-Target decision recorded on 22 October 2026 for #522: an account will be required
-after a discovery phase whose boundary and transition UX must be specified
-separately. Apply that future policy uniformly through explicit discovery/access
-metadata, never through presence of a historical numeric quest key. This decision
-does not yet change the shipped guest/access behavior or grant any Adventure.
+After verified restoration of an existing account on an unowned device or an
+account switch, the board and quest label select the account's next playable
+catalogue frontier without opening Mon ciel. The previous profile and active
+attempt are archived and verified before installation. Same-owner refreshes
+retain the selected run/replay; a new account seeded from guest progress keeps
+its guest run. This navigation grants no completion, reward or access, and
+leaves social challenges and unavailable frontiers alone.
+
+An existing same-owner cache may retain an earlier inserted catch-up quest in
+READY state while its origin frontier is farther ahead. After verified hydration,
+an empty, unstarted campaign selection is archived before moving to that frontier.
+Started/paused runs and replay selections remain unchanged. No earlier catch-up
+quest is marked completed; these remain available through Mon ciel. Failure to
+verify this optional board archive keeps the selection and the account ready.
+
+Target decisions confirmed on 22 October 2026 for the continuation of #522:
+guest discovery covers the first six **visible** quests; an account is required
+to start a later quest, independently of its persistence key. Already completed
+quests remain replayable and a real started campaign/replay attempt remains
+resumable; a READY boundary or social attempt is not acquired campaign access.
+Pack ownership remains an independent guard. Account dismissal opens browsing;
+it never postpones or bypasses the discovery boundary.
+
+An acquired guest board remains playable. Beyond discovery, solving pauses and
+persists that same attempt; confirming its victory/rewards requires the account,
+for either saved quest format. No provisional reward is written and no prior
+achievement is removed. Authenticated recovery resumes the retained solved board.
+
+The approved convergence contract extends the existing numeric-quest rules to
+all quests: fifteen-minute badge qualification cooldown, the same first-win,
+autonomy/bonus and daily activity rules, and first-play social challenges.
+Existing acquired rewards and Mastery remain preserved without retroactive
+credits. Persistence formats and historical URLs remain compatibility adapters.
+The owner authorised the server migrations on 23 October 2026; their schema and
+permissions were verified after application. Rollout still requires the matching
+client and an exact-SHA publication check, preserving the acquired-access policy.
 
 The real-sky catalogue is grouped into Adventures of at most ten constellations, configured in `content.js`. The current groups are 1–10, 11–20 and 21–24. The first Adventure is included; subsequent Adventures remain visible but locked unless already owned or already started by an existing player. Their unlock mechanism is deferred. The grouping size is a product rule, not a campaign-size ceiling: new Adventures are derived as the catalogue grows.
 
@@ -104,6 +135,15 @@ Existing performance data must be migrated conservatively; never infer newly ear
 
 ## Progress integrity
 
+When localStorage cannot fit a recovery backup, verified cloud achievements can
+still be restored using a read-back copy of the original in IndexedDB (#536).
+Full profile installation and spending remain held until verified. A wallet-only
+conflict may allow an already completed quest to be replayed when the current
+account/client/generation also has server-verified completion for that stable ID.
+Pack access still applies. Storage, reward, catalogue and unverified hydration
+holds do not gain this permission. No previous quest, badge, balance or
+entitlement is synthesized or removed by this path.
+
 ### Catalogue additions and acquired access (#470)
 
 `catalogueOrigin` identifies the immutable catalogue at the start of a player's
@@ -125,6 +165,16 @@ quest of each newly added constellation. Merely starting an adventure does not
 open all its future constellations. New players follow their current catalogue
 sequence. Pack ownership remains a separate prerequisite; inserted quests also
 require authentication and verified cloud hydration.
+
+Completion and immediate playability are separate presentation states (#537).
+During an authentication/synchronization hold, an already completed quest keeps
+its completed history, badges and label. Mon ciel explains the hold visibly and
+in its accessible name; the replay button and direct start remain guarded until
+their relevant domain proof is available. A current server-confirmed acquired
+replay may run during Wallet review, with free help and durably pending results.
+Paid help, new completion rewards and ambiguous profile installation stay held.
+An unfinished quest retains its real prerequisite/ownership lock. Displaying
+preserved history alone never grants a win, entitlement or permission to replay.
 
 Map cards, the catalogue list, sky callbacks, direct starts and canonical
 navigation use the same policy. Historical numeric continuation delegates to it.
@@ -185,3 +235,25 @@ When changing progression, test old/local data migration behavior and cloud merg
 Social challenges are outside campaign progression. Completing a challenge never solves the corresponding campaign quest, unlocks a constellation, awards campaign stars/badges, changes the daily qualifying attempt, or transfers the challenged quest into normal progression. This remains true when the challenged quest is the participant's current campaign quest.
 
 A challenge participation has its own attempt identity and is terminal after success or explicit abandon. Reload/background restore the same challenge attempt through the shared attempt engine; they do not grant a fresh attempt.
+## Records personnels — #600
+
+Une victoire terminée peut améliorer le meilleur temps absolu, même lors d’une
+tentative non qualifiante pour les badges. `bestUnassistedTime` est un minimum
+indépendant : seuls les nouveaux parcours sans assistance et sans indice le
+renseignent. Une erreur seule ne constitue pas une assistance. Aucun ancien
+badge ni temps de première victoire ne prouve un ancien record sans aide.
+Les règles des badges, de qualification et de récompense restent inchangées.
+
+Les temps sont des nombres finis positifs ou nuls, au plus `MAX_SAFE_INTEGER`.
+En cas de conflit, chaque minimum valide est conservé séparément. Les records
+avant partie concernent uniquement les quêtes déjà réussies ; le récapitulatif
+compare le parcours acquitté et le record précédent. Une victoire en attente ne
+présente aucun nouveau record confirmé.
+## Aventure 5 — prolongement du catalogue
+
+Les quêtes 401–500 de « Les chemins du firmament » prolongent les aventures
+existantes. Un ancien compte ayant terminé les 400 quêtes retrouve ses acquis
+et poursuit vers ce pack selon ses droits et les prérequis habituels, sans
+rejouer l’ancienne finale. Une victoire débloque la suivante ; posséder le pack
+ne permet pas de sauter une quête. Les replays, records personnels, badges et
+récompenses utilisent le même contrat canonique que les autres quêtes.

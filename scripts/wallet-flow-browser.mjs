@@ -69,11 +69,13 @@ export async function verifyWalletAndOfflineFlow({send,evaluate,navigate,url}){
   await until(`document.getElementById('authUser').textContent==='Progression synchronisée'`);
   await evaluate(`lumenDiagnostics.setupQuest(20);document.getElementById('attemptMask').click()`);
   await acknowledgeLearningMilestones(evaluate);
+  assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).state`),'RUNNING','Wallet fixture must begin a real attempt');
   await click('hint');assert.equal(await evaluate('__walletServer.debits'),0);
   await evaluate('__walletLoseReply=true');await click('hint');
   await until('__walletServer.debits===1 && lumenDiagnostics.snapshot().progress.shards===9');
   await evaluate('__walletLoseReply=false;__walletHideReceipt=true');await click('hint');
   await until('__walletServer.debits===2');
+  assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).state`),'RUNNING','An interrupted debit must not recreate a READY attempt');
   await navigate('Page.reload');
   await until(`window.lumenDiagnostics&&lumenDiagnostics.snapshot().progress.shards===7`);
   await until(`document.getElementById('authUser').textContent==='Progression synchronisée'`);

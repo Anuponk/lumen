@@ -1,4 +1,4 @@
-import {loadVerifiedProfile,sameCloudProfile} from './cloud-profile.js';
+import {loadVerifiedProfile,sameCloudProfile,preserveRecoverySnapshot} from './cloud-profile.js';
 import {canonicalRecoveryFailure} from './canonical-recovery-errors.js';
 
 export function walletSpendIdentity(kind,attempt,sequence){
@@ -74,6 +74,30 @@ export function recoverWalletCache(storage,remote,receipt,{userId,sessionValid=(
  }
  if(!sessionValid()||storage.getItem('lumenCloudOwnerId')!==userId||storage.getItem('lumenProgressV1')!==raw)return false;
  const saved=JSON.stringify(remote);storage.setItem('lumenProgressV1',saved);
+ if(storage.getItem('lumenProgressV1')!==saved)throw Error('Wallet recovery cache unverified');
+ return true;
+}
+
+// Backup-only localStorage quota must not block a proven wallet recovery when
+// the existing exportable recovery store can durably preserve both originals.
+// The receipt predicate is unchanged; no command or speculative reward is sent.
+export async function recoverWalletCacheDurably(storage,remote,receipt,{userId,sessionValid=()=>true}={}){
+ const raw=storage.getItem('lumenProgressV1');
+ const unchanged=()=>sessionValid()&&storage.getItem('lumenCloudOwnerId')===userId&&storage.getItem('lumenProgressV1')===raw;
+ if(!raw||!unchanged())return false;
+ let local;try{local=JSON.parse(raw)}catch{return false}
+ if(!walletReceiptCoversLocal(local,remote,receipt))return false;
+ const saved=JSON.stringify(remote);
+ for(const [side,value] of [['Local',raw],['Remote',saved]]){
+  const prefix=`lumenBeforeWalletRecovery${side}_${receipt.operationId}`;
+  try{
+   const old=storage.getItem(prefix);
+   if(old!==null&&old!==value)throw Error('Wallet recovery archive conflict');
+   if(old!==value)await preserveRecoverySnapshot(storage,prefix+'_',value);
+  }catch(error){if(!unchanged())return false;throw error}
+  if(!unchanged())return false;
+ }
+ storage.setItem('lumenProgressV1',saved);
  if(storage.getItem('lumenProgressV1')!==saved)throw Error('Wallet recovery cache unverified');
  return true;
 }

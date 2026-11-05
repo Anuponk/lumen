@@ -10,6 +10,7 @@ function fixture(){
  const state={profile:base(),receipts:new Map(),calls:[],missing:false,lost:false,readLost:false,versionError:null,userId:ownerId};
  const client={rpc:async(name,args)=>{
   state.calls.push([name,args]);
+  if(name==='lumen_get_quest_command')return {data:null,error:{code:'PGRST202'},status:404}; // Explicit V1-only server fixture.
   if(['lumen_commit_canonical_command','lumen_get_canonical_command'].includes(name)&&args.p_expected_user_id!==state.userId)return {data:null,error:{code:'42501'},status:403};
   if(name==='lumen_canonical_command_version')return state.versionError||{data:state.missing?null:1,error:state.missing?{code:'PGRST202'}:null,status:state.missing?404:200};
   if(name==='lumen_get_canonical_command')return {data:state.readLost?null:state.receipts.get(args.p_operation_id)??null,error:null};

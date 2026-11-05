@@ -82,7 +82,14 @@ assert.equal(reconcileCloudAchievements(localStorageReconcile,conflictingRemote)
 const cloudSrc=(await import('node:fs')).readFileSync(new URL('../src/persistence/cloud.js',import.meta.url),'utf8');
 const uiSrc=(await import('node:fs')).readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 const html=(await import('node:fs')).readFileSync(new URL('../index.html',import.meta.url),'utf8');
-assert.equal(cloudSrc.split('hooks.afterAuthCloudSync?.()').length-1,2,'Cloud sync must run after both session and sign-in auth flows');
+// #391 adds a third, explicit in-session retry entry point. Both original Auth
+// entry points remain; the added adapter delegates to that same verified hook.
+assert.equal(cloudSrc.split('hooks.afterAuthCloudSync?.()').length-1,3,'Cloud sync must retain startup, sign-in and in-session retry entry points');
+const {createCloudPersistence}=await import('../src/persistence/cloud.js');
+let explicitHydrations=0;const verifiedHookResult={verified:'synthetic'};
+const retryAdapter=createCloudPersistence({}, {afterAuthCloudSync:async()=>{explicitHydrations++;return verifiedHookResult}}, {setTimeout,console});
+assert.equal(await retryAdapter.hydrateCloudProfile(),verifiedHookResult);
+assert.equal(explicitHydrations,1,'Retry invokes exactly the existing hydration hook, not another writer');
 assert.ok(uiSrc.includes('afterAuthCloudSync:async'),'Auth hook is wired');
 assert.ok(uiSrc.includes('compareAndSwapCloudProfile(savingCloudClient,current,cloudProfileBaseline,{userId:savingUserId})'),'Atomic background write binds the expected account');
 assert.ok(uiSrc.includes('installCloudProfileLocally(localStorage,cloud)'),'Cloud overrides local after login');
@@ -90,9 +97,16 @@ assert.ok(uiSrc.includes('holdLegacyMergeForFullRestore:async()=>true'),'Legacy 
 assert.doesNotMatch(html,/id="migrationCloud(?:Save|Restore)"/);
 
 assert.match(uiSrc,/function accountRequired\(\)\s*\{[\s\S]*?authSessionPending\|\|qaActive\|\|socialChallenge\|\|lumenUser/,'Guest invitation is optional and waits for auth resolution');
-assert.ok(uiSrc.includes('accountOfferKey("NextMilestone")'),'Account invitation can be deferred without changing progression');
-assert.ok(uiSrc.includes('if(accountRequired()&&maybeOfferAccount()){accountOfferResumeNext=true;hideSuccess();return}'),'Account prompt interrupts once but allows guest continuation');
-assert.ok(uiSrc.includes('if(!canonicalActiveQuest&&accountRequired())queueMicrotask(()=>maybeOfferAccount())'),'Milestone invitation survives reload without mandatory account gate');
+// #522 intentional product change: six visible discovery quests, then account.
+// Dismissal still preserves every acquired reward; it opens the sky, not quest 7.
+const {functionSource}=await import('./source-tools.mjs');
+const vm=await import('node:vm');
+const copy=JSON.stringify(source),box={hidden:false};
+const ctx={accountOfferResumeNext:true,lumenProgress:source,document:{getElementById:()=>box},trackLumenEvent(){},solvedCount:()=>6,qaActive:false,openJourneyMap(){ctx.opened=true}};
+vm.createContext(ctx);vm.runInContext(functionSource(uiSrc,'dismissAccountOffer'),ctx);ctx.dismissAccountOffer();
+assert.equal(JSON.stringify(source),copy,'Dismissal preserves progression');assert.equal(ctx.opened,true);assert.equal(box.hidden,true);assert.equal(ctx.accountOfferResumeNext,false);
+assert.ok(uiSrc.includes('following?.ordinal>QUEST_MILESTONES.discovery&&accountRequired()&&maybeOfferAccount()'),'Only continuation beyond discovery triggers the account gate');
+assert.ok(uiSrc.includes('if(!canonicalActiveQuest&&accountRequired())queueMicrotask(()=>maybeOfferAccount())'),'Account gate survives reload');
 assert.ok(uiSrc.includes('const accountLater=document.getElementById("accountOptinLater")'),'Continue without account is wired');
 assert.ok(uiSrc.includes('if(closeAccount)closeAccount.onclick=dismissAccountOffer'),'Close button dismisses the account invitation');
 assert.ok(html.includes('id="accountOptinLater"'),'Guest has an explicit continue option');

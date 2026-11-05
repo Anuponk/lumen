@@ -1,6 +1,9 @@
 // Explicit migration backup. Never automatically overwrites a cloud snapshot.
 import {catalogueOrigin,mergeCatalogueOrigin,currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
-const MAX_CHARS=524288;
+import {archiveRecoveryBackups} from './storage-maintenance.js';
+import {validRecordTime,recordMinimum} from '../campaign/personal-records.js';
+import {MAX_PROFILE_BYTES,profileStorageBytes} from './profile-size.js';
+import {captureGuestClaim,claimGuestProfile} from './guest-claim.js';
 // Top-level profile contract. Policies describe existing recovery rules, not
 // permission to award a reward or bypass a transactional server projection.
 export const CLOUD_PROFILE_FIELDS=Object.freeze(Object.fromEntries(Object.entries({
@@ -24,7 +27,7 @@ export function validateCloudProfile(profile){
   if(!profile.solved || typeof profile.solved!=="object" || Array.isArray(profile.solved)) throw Error("Quêtes invalides");
   if(!profile.badges || typeof profile.badges!=="object" || Array.isArray(profile.badges)) throw Error("Badges invalides");
   const json=JSON.stringify(profile);
-  if(!json || json.length>MAX_CHARS) throw Error("Sauvegarde trop volumineuse");
+  if(!json || profileStorageBytes(json)>MAX_PROFILE_BYTES) throw Error("Sauvegarde trop volumineuse");
   return JSON.parse(json);
 }
 export async function backupAndVerifyProfile(supabase,profile){
@@ -307,6 +310,42 @@ function walletConflict(local,cloud){
   return {status:'blocked',reason:'mutable_balance',fields:['shards']};
  return null;
 }
+// Read-only coverage of server-protected V2 quest summaries. Never synthesize a
+// run or merge first-completion/unknown evidence; only adopt a newer verified
+// server projection which already contains every locally acknowledged fact.
+function canonicalQuestCovered(local,remote){
+ if(sameCloudProfile(local,remote))return true;
+ const run=remote?.runPerformance;
+ // Acquisition recovery can seed an unversioned copy of a historical first
+ // performance. It is a redundant projection, not evidence of a new badge run.
+ // Admit only that exact known shape, never an arbitrary unversioned replay.
+ if(local?.solved&&remote?.solved&&!Object.hasOwn(local,'runPerformance')&&
+  run&&typeof run==='object'&&!Array.isArray(run)&&
+  Object.keys(run).length===4&&['seconds','assisted','bestTime','badges'].every(key=>Object.hasOwn(run,key))&&
+  Number.isFinite(run.seconds)&&run.seconds>=0&&Number.isFinite(run.bestTime)&&run.bestTime>=0&&
+  typeof run.assisted==='boolean'&&sameCloudProfile(run.badges,{})){
+  const {badges,...performance}=run,{runPerformance,...reward}=remote;
+  if(sameCloudProfile(performance,local.performance)&&canonicalAchievementCovered(local,reward))return true;
+ }
+ if(!local?.solved||!remote?.solved||run?.version!==3)return false;
+ const immutable=entry=>Object.fromEntries(Object.entries(entry).filter(([key])=>!['badges','runPerformance'].includes(key)));
+ if(!sameCloudProfile(immutable(local),immutable(remote)))return false;
+ const badgesCovered=(left,right)=>canonicalAchievementCovered({solved:true,badges:left},{solved:true,badges:right});
+ if(!badgesCovered(local.badges||{},remote.badges||{})||!badgesCovered(run.badges||{},remote.badges||{}))return false;
+ const old=local.runPerformance;
+ if(!old)return true;
+ if(old.version!==3)return false;
+ const summary=mergePerformanceSummaryMetadata(old,run),qualification=mergeQualificationMetadata(old,run);
+ if(!summary.ok||!sameCloudProfile(summary.value,performanceSummaryMetadata(run))||!qualification.ok||!sameCloudProfile(qualification.value,qualificationMetadata(run)))return false;
+ if(!badgesCovered(old.badges||{},run.badges||{}))return false;
+ for(const [key,value] of Object.entries(old)){
+  if(['badges',...performanceSummaryFields,...qualificationFields].includes(key))continue;
+  if(key==='bestTime'||key==='time'||key==='bestUnassistedTime'){
+   if(!Number.isFinite(value)||value<0||!Number.isFinite(run[key])||run[key]<0||run[key]>value)return false;
+  }else if(!sameCloudProfile(value,run[key]))return false;
+ }
+ return true;
+}
 export function cloudSafelyCoversLocal(local,remote){
   if(!local || typeof local!=="object" || Array.isArray(local))return true;
   const cloud=validateCloudProfile(remote);
@@ -341,7 +380,7 @@ export function cloudSafelyCoversLocal(local,remote){
   for(const [id,entry] of Object.entries(local.canonicalQuestState||{})){
     if(!entry?.solved)continue;
     const saved=cloud.canonicalQuestState?.[id];
-    if(!saved?.solved||!canonicalAchievementCovered(entry,saved))return false;
+    if(!saved?.solved||!(canonicalAchievementCovered(entry,saved)||cloud.legacyVictoryRevision>0&&canonicalQuestCovered(entry,saved)))return false;
   }
   for(const [key,perf] of Object.entries(local.performances||{})){
     const saved=cloud.performances?.[key];
@@ -352,9 +391,9 @@ export function cloudSafelyCoversLocal(local,remote){
     if(!qualification.ok||!sameCloudProfile(qualification.value,qualificationMetadata(saved)))return false;
     for(const [badge,earned] of Object.entries(perf.badges||{}))
       if(earned && !saved.badges?.[badge])return false;
-    const localBest=Number(perf.bestTime);
-    const remoteBest=Number(saved.bestTime);
-    if(Number.isFinite(localBest)&&localBest>0&&(!Number.isFinite(remoteBest)||remoteBest>localBest))return false;
+    const localBest=perf.bestTime,remoteBest=saved.bestTime;
+    if(validRecordTime(localBest)&&(!validRecordTime(remoteBest)||remoteBest>localBest))return false;
+    if(validRecordTime(perf.bestUnassistedTime)&&(!validRecordTime(saved.bestUnassistedTime)||saved.bestUnassistedTime>perf.bestUnassistedTime))return false;
   }
   // Dates and challenges may contain non-repeatable rewards and are not safely
   // unionable. Require equivalent values to avoid silent drops.
@@ -393,11 +432,11 @@ export function restoreRicherCloudProfile(storage,remote){
  * Never guess which mutable currency balance or XP is authoritative.
  * Never write back to the cloud as part of this reconciliation.
  */
-export function reconcileCloudAchievements(storage,remote){
+function cloudAchievementRecoveryPlan(storage,remote){
   const cloud=validateCloudProfile(remote);
   const key="lumenProgressV1";
   const raw=achievementStorageStep('achievement_local_read',()=>storage.getItem(key));
-  if(raw===null)return restoreIntoEmptyGuestStorage(storage,cloud);
+  if(raw===null)return {empty:cloud};
   let local;
   try{local=JSON.parse(raw)}catch{throw achievementRecoveryError('ACHIEVEMENT_LOCAL_INVALID')}
   if(!local||typeof local!=="object"||Array.isArray(local))throw achievementRecoveryError('ACHIEVEMENT_LOCAL_INVALID');
@@ -423,14 +462,15 @@ export function reconcileCloudAchievements(storage,remote){
     for(const [badge,earned] of Object.entries(incoming.badges||{})){
       if(earned&&!nextBadges[badge]){nextBadges[badge]=true;changed=true}
     }
-    const localTime=Number(current.bestTime);
-    const cloudTime=Number(incoming.bestTime);
-    if(Number.isFinite(cloudTime)&&cloudTime>0&&
-       (!Number.isFinite(localTime)||localTime<=0||cloudTime<localTime)){
+    const localTime=current.bestTime,cloudTime=incoming.bestTime;
+    if(validRecordTime(cloudTime)&&
+       (!validRecordTime(localTime)||cloudTime<localTime)){
       current.bestTime=incoming.bestTime;
       changed=true;
     }
     if(changed&&JSON.stringify(nextBadges)!==JSON.stringify(existingBadges))current.badges=nextBadges;
+    const unaided=recordMinimum(current.bestUnassistedTime,incoming.bestUnassistedTime);
+    if(unaided!==undefined&&unaided!==current.bestUnassistedTime){current.bestUnassistedTime=unaided;changed=true}
   }
   // Global badges can be scalar flags or structured objects: add only missing
   // top-level rewards, never overwrite existing local values.
@@ -442,10 +482,13 @@ export function reconcileCloudAchievements(storage,remote){
   // Never replace an existing local reward with a different cloud snapshot:
   // fail closed so neither device loses an achievement or currency record.
   const localCanonical=merged.canonicalQuestState||{},remoteCanonical=cloud.canonicalQuestState||{};
-  for(const [id,entry] of Object.entries(remoteCanonical)){
+  for(const [id,remoteEntry] of Object.entries(remoteCanonical)){
+    const entry=structuredClone(remoteEntry);
+    const best=recordMinimum(localCanonical[id]?.runPerformance?.bestUnassistedTime,entry?.runPerformance?.bestUnassistedTime);
+    if(best!==undefined&&entry?.runPerformance)entry.runPerformance.bestUnassistedTime=best;
     if(!entry?.solved)continue;
     if(localCanonical[id]?.solved){
-      if(!canonicalAchievementCovered(localCanonical[id],entry))throw achievementRecoveryError('CANONICAL_REWARD_CONFLICT',{
+      if(!(canonicalAchievementCovered(localCanonical[id],entry)||cloud.legacyVictoryRevision>0&&canonicalQuestCovered(localCanonical[id],entry)))throw achievementRecoveryError('CANONICAL_REWARD_CONFLICT',{
        conflictId:id,conflictKeys:[...new Set([...Object.keys(localCanonical[id]),...Object.keys(entry)])]
         .filter(key=>!sameCloudProfile(localCanonical[id][key],entry[key]))
       });
@@ -456,21 +499,80 @@ export function reconcileCloudAchievements(storage,remote){
   }
   if(Object.keys(localCanonical).length)merged.canonicalQuestState=localCanonical;
   if(!changed)return {changed:false,currencyConflict:Number(local.shards)!==Number(cloud.shards)};
-  const backupKey="lumenBeforeCloudReconcile_"+Date.now();
-  achievementStorageStep('achievement_backup',()=>storage.setItem(backupKey,raw));
-  if(achievementStorageStep('achievement_backup',()=>storage.getItem(backupKey))!==raw)throw achievementRecoveryError('ACHIEVEMENT_BACKUP_UNVERIFIED',{stage:'achievement_backup'});
-  const payload=JSON.stringify(merged);
+  return {changed:true,raw,payload:JSON.stringify(merged),currencyConflict:Number(local.shards)!==Number(cloud.shards)};
+}
+function installCloudAchievements(storage,plan,backupKey){
+  const key="lumenProgressV1",{raw,payload,currencyConflict}=plan;
   achievementStorageStep('achievement_install',()=>storage.setItem(key,payload));
   if(achievementStorageStep('achievement_install',()=>storage.getItem(key))!==payload){
     achievementStorageStep('achievement_rollback',()=>storage.setItem(key,raw));
     throw achievementRecoveryError('ACHIEVEMENT_INSTALL_UNVERIFIED',{stage:'achievement_install'});
   }
-  return {changed:true,backupKey,currencyConflict:Number(local.shards)!==Number(cloud.shards)};
+  return {changed:true,backupKey,currencyConflict};
+}
+export function reconcileCloudAchievements(storage,remote){
+  const plan=cloudAchievementRecoveryPlan(storage,remote);
+  if(plan.empty)return restoreIntoEmptyGuestStorage(storage,plan.empty);
+  if(!plan.changed)return plan;
+  const {raw}=plan;
+  const backupKey="lumenBeforeCloudReconcile_"+Date.now();
+  achievementStorageStep('achievement_backup',()=>storage.setItem(backupKey,raw));
+  if(achievementStorageStep('achievement_backup',()=>storage.getItem(backupKey))!==raw)throw achievementRecoveryError('ACHIEVEMENT_BACKUP_UNVERIFIED',{stage:'achievement_backup'});
+  return installCloudAchievements(storage,plan,backupKey);
+}
+// The recovery copy can exceed localStorage's remaining space even when the
+// updated profile fits. Preserve and read back the original in the existing
+// IndexedDB recovery store before installing the same monotonic projection.
+export async function reconcileCloudAchievementsDurably(storage,remote,{sessionValid=()=>true}={}){
+  if(!sessionValid())return {changed:false,interrupted:true};
+  const owner=achievementStorageStep('achievement_local_read',()=>storage.getItem('lumenCloudOwnerId'));
+  const unchangedOwner=()=>sessionValid()&&achievementStorageStep('achievement_local_read',()=>storage.getItem('lumenCloudOwnerId'))===owner;
+  const plan=cloudAchievementRecoveryPlan(storage,remote);
+  if(plan.empty)return restoreIntoEmptyGuestStorage(storage,plan.empty);
+  if(!plan.changed)return plan;
+  let backupKey;
+  try{backupKey=await preserveRecoverySnapshot(storage,"lumenBeforeCloudReconcile_",plan.raw)}
+  catch(error){
+    if(!unchangedOwner())return {changed:false,interrupted:true};
+    if(error?.code==='RECOVERY_BACKUP_UNVERIFIED')throw achievementRecoveryError('ACHIEVEMENT_BACKUP_UNVERIFIED',{stage:'achievement_backup'});
+    if(error?.code==='RECOVERY_STORAGE_UNAVAILABLE')throw achievementRecoveryError('ACHIEVEMENT_STORAGE_FAILED',{stage:'achievement_backup',recoveryReason:'storage_quota'});
+    const reason=achievementRecoveryDiagnostic(error).reason;
+    throw achievementRecoveryError('ACHIEVEMENT_STORAGE_FAILED',{stage:'achievement_backup',recoveryReason:['storage_quota','storage_unavailable'].includes(reason)?reason:'storage_failed'});
+  }
+  if(!unchangedOwner()||achievementStorageStep('achievement_local_read',()=>storage.getItem("lumenProgressV1"))!==plan.raw)return {changed:false,interrupted:true};
+  try{return installCloudAchievements(storage,plan,backupKey)}
+  catch(error){
+    if(achievementRecoveryDiagnostic(error).reason!=='storage_quota')throw error;
+    // A larger recovered cache can fail even after its original was preserved.
+    // Move only eligible old copies, with the same committed/read-back archival
+    // policy as account maintenance. Never purge evidence or touch the outbox.
+    const unchanged=()=>unchangedOwner()&&storage.getItem('lumenProgressV1')===plan.raw;
+    if(!unchanged())return {changed:false,interrupted:true};
+    const archived=await archiveRecoveryBackups(storage,{sessionValid:unchanged});
+    if(!unchanged()||archived.interrupted)return {changed:false,interrupted:true};
+    if(!archived.archived||archived.failed)throw error;
+    return installCloudAchievements(storage,plan,backupKey);
+  }
 }
 
-export async function initializeCloudProfile(supabase,localProfile,{userId}={}){
+export async function initializeCloudProfile(supabase,localProfile,{userId,guestSource,sessionValid=()=>true}={}){
  const proposed=validateCloudProfile(localProfile);
+ if(!sessionValid())throw Error('Initialisation suspendue : session modifiée');
+ if(guestSource){
+  const manifest=await captureGuestClaim(guestSource.storage,{userId,profile:proposed,original:guestSource.original,sessionValid});
+  if(!sessionValid())throw Error('Initialisation suspendue : session modifiée');
+  const version=await supabase.rpc('lumen_guest_claim_version');
+  if(!sessionValid())throw Error('Initialisation suspendue : session modifiée');
+  if(!version.error&&version.data===1){
+   return (await claimGuestProfile(supabase,manifest,{sessionValid,covers:cloudSafelyCoversLocal,loadProfile:id=>loadVerifiedProfile(supabase,{userId:id})})).profile;
+  }
+  // Missing capability is known before emission. Never fall back after an
+  // ambiguous claim result, timeout, permission error or unknown protocol.
+  const compatible=(!version.error&&version.data===0)||(version.error?.code==='PGRST202'&&version.status===404);
+  if(!compatible)throw Error('Protocole de revendication indisponible');
+ }
  const {data,error}=await supabase.rpc("lumen_initialize_profile",{p_payload:proposed,...(userId?{p_expected_user_id:userId}:{})});
+ if(!sessionValid())throw Error('Initialisation suspendue : session modifiée');
  if(error){
   const failure=Error("Initialisation cloud impossible : refus du serveur");
   if(typeof error.code==='string'&&/^[A-Z0-9]{5,12}$/.test(error.code))failure.code=error.code;
@@ -478,6 +580,7 @@ export async function initializeCloudProfile(supabase,localProfile,{userId}={}){
  }
  const saved=validateCloudProfile(data);
  const verified=await loadVerifiedProfile(supabase,{userId});
+ if(!sessionValid())throw Error('Initialisation suspendue : session modifiée');
  if(!sameCloudProfile(saved,verified))throw Error("Profil cloud initial non vérifié");
  return saved;
 }
@@ -490,6 +593,9 @@ export async function compareAndSwapCloudProfile(supabase,profile,expected,{user
   // Do not retain provider messages, details, hints or an unsanitized cause.
   const reasons=new Map([
    ["legacy victory command required; preserve pending data and update client","LEGACY_COMMAND_REQUIRED"],
+   ["quest command required; preserve pending data","QUEST_COMMAND_REQUIRED"],
+   ["quest run authority missing","QUEST_RUN_AUTHORITY_MISSING"],
+   ["wallet command required; preserve pending data and update client","WALLET_COMMAND_REQUIRED"],
    ["earned XP cannot decrease","LEGACY_XP_REGRESSION"],
    ["canonical acquisition removal rejected","CANONICAL_ACQUISITION_REMOVAL"],
    ["canonical badge removal rejected","CANONICAL_BADGE_REMOVAL"],
@@ -519,10 +625,14 @@ function preserveVerifiedSnapshot(storage,prefix,value){
   }
  }
  for(const key of existing){if(storage.getItem(key)===value)return key}
- const key=prefix+Date.now();
+ const base=prefix+Date.now();let key=base,collision=0;
+ while(storage.getItem(key)!==null){
+  if(storage.getItem(key)===value)return key;
+  key=base+'_'+(++collision);
+ }
  try{
   storage.setItem(key,value);
-  if(storage.getItem(key)!==value)throw Error("Recovery snapshot verification failed");
+  if(storage.getItem(key)!==value)throw Object.assign(Error("Recovery snapshot verification failed"),{code:'RECOVERY_BACKUP_UNVERIFIED'});
  }catch(error){
   if(error?.name==="QuotaExceededError"||error?.code===22||error?.code===1014){
    const quota=new Error("Recovery snapshot storage quota exceeded; originals preserved");
@@ -534,7 +644,7 @@ function preserveVerifiedSnapshot(storage,prefix,value){
 }
 // IndexedDB is a separate quota pool from localStorage. Never proceed with a
 // cloud write unless BOTH recovery snapshots were read back successfully.
-async function preserveRecoverySnapshot(storage,prefix,value){
+export async function preserveRecoverySnapshot(storage,prefix,value){
  try{return preserveVerifiedSnapshot(storage,prefix,value)}
  catch(error){if(error?.code!=="LOCAL_STORAGE_QUOTA")throw error}
  if(typeof indexedDB==="object"&&indexedDB&&typeof indexedDB.open==="function"){
@@ -561,7 +671,7 @@ async function preserveRecoverySnapshot(storage,prefix,value){
     request.onsuccess=()=>resolve(request.result);
     request.onerror=()=>reject(request.error||Error("Recovery verification failed"));
    });
-   if(saved!==value)throw Error("IndexedDB recovery verification mismatch");
+   if(saved!==value)throw Object.assign(Error("IndexedDB recovery verification mismatch"),{code:'RECOVERY_BACKUP_UNVERIFIED'});
    return "indexeddb:"+key;
   }finally{database.close()}
  }
@@ -607,6 +717,11 @@ export function installCloudProfileLocally(storage,cloud){
 
 // Quarantine only the exact cooldown-only record produced by older canonical
 // starts under the dormant numeric index. Never discard rewards/unknown data.
+export function isAttemptStartPerformance(record,questIndex){
+ return Number.isSafeInteger(questIndex)&&questIndex>=0&&!!record&&typeof record==='object'&&!Array.isArray(record)&&
+  record.questIndex===questIndex&&Object.keys(record).every(key=>['questIndex',...qualificationFields].includes(key))&&
+  typeof record.lastQualifiedAt==='string'&&typeof record.lastQualifiedDay==='string'&&mergeQualificationMetadata(record,record).ok;
+}
 export async function archiveCanonicalStartMetadata(storage,remote,{quest,attempt,legacyIndex,ownerId,accountId,sessionValid=()=>true}={}){
  if(!sessionValid()||!ownerId||ownerId!==accountId||!quest||quest.legacyIndex!==null||quest.id!==attempt?.questId||!attempt.attemptId||
   !['campaign','replay'].includes(attempt.mode)||!['RUNNING','PAUSED'].includes(attempt.state)||!Number.isFinite(attempt.startedAt)||attempt.startedAt<=0||
@@ -616,9 +731,7 @@ export async function archiveCanonicalStartMetadata(storage,remote,{quest,attemp
  const cloud=validateCloudProfile(remote),raw=storage.getItem('lumenProgressV1');
  if(!raw)return {changed:false};
  const local=validateCloudProfile(JSON.parse(raw)),key=String(legacyIndex),record=local.performances?.[key];
- if(!record||typeof record!=='object'||Array.isArray(record)||record.questIndex!==legacyIndex||
-  Object.keys(record).some(k=>!['questIndex',...qualificationFields].includes(k))||
-  typeof record.lastQualifiedAt!=='string'||typeof record.lastQualifiedDay!=='string'||!mergeQualificationMetadata(record,record).ok||
+ if(!isAttemptStartPerformance(record,legacyIndex)||
   Object.hasOwn(cloud.performances||{},key))return {changed:false};
  await preserveRecoverySnapshot(storage,'lumenBeforeCanonicalStartMetadataLocal_',raw);
  await preserveRecoverySnapshot(storage,'lumenBeforeCanonicalStartMetadataRemote_',JSON.stringify(cloud));
@@ -804,6 +917,9 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote,{
    Object.assign(out,qualification.value);
   }
   for(const [key,value] of Object.entries(left)){
+   if(key==='bestUnassistedTime'){
+    const best=recordMinimum(value,out[key]);if(best!==undefined)out[key]=best;else delete out[key];continue;
+   }
    if(field==="performances"&&(qualificationFields.includes(key)||performanceSummaryFields.includes(key)))continue;
    if(!Object.hasOwn(out,key)){out[key]=structuredClone(value);continue}
    if(sameCloudProfile(value,out[key]))continue;
@@ -813,7 +929,7 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote,{
    if(field==="badges"||field==="stars"){
     const nested=rewardMerge(field,value,out[key]);if(nested.ok){out[key]=nested.value;continue}
    }
-   if((key==="bestTime"||key==="bestSeconds"||(field==="performances"&&key==="time"))&&typeof value==="number"&&typeof out[key]==="number"&&Number.isFinite(value)&&Number.isFinite(out[key])&&value>0&&out[key]>0){out[key]=Math.min(value,out[key]);continue}
+   if((key==="bestTime"||key==="bestSeconds"||(field==="performances"&&key==="time"))&&validRecordTime(value)&&validRecordTime(out[key])){out[key]=Math.min(value,out[key]);continue}
    // Conflicting run records, canonical rewards, and other timestamps are not
    // equivalent to monotonic achievements: preserve both backups and block.
    return {ok:false,conflictKeys:[key]};
@@ -824,6 +940,7 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote,{
   merged[field]=structuredClone(cloud[field]||{});
   for(const [id,value] of Object.entries(local[field]||{})){
    if(!Object.hasOwn(merged[field],id)){merged[field][id]=structuredClone(value);continue}
+   if(field==='canonicalQuestState'&&cloud.legacyVictoryRevision>0&&canonicalQuestCovered(value,merged[field][id]))continue;
    const result=rewardMerge(field,value,merged[field][id]);
    if(!result.ok)return {status:"blocked",reason:"reward_conflict",fields:[field],conflictId:id,conflictKeys:Array.isArray(result.conflictKeys)?result.conflictKeys.slice(0,8):[]};
    merged[field][id]=result.value;
@@ -843,4 +960,57 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote,{
  const verified=await loadVerifiedProfile(supabase,{userId});
  if(!sameCloudProfile(updated,verified))throw Error("Reconciliation cloud non verifiee");
  return {status:"reconciled",profile:verified,playerFavouredBalances:differingBalances};
+}
+
+// Explicit product policy: recover positive acquisitions, never infer a money
+// transaction from a historical snapshot. The server owns the merge and keeps
+// its Wallet/daily/receipt authorities. Preserve the exact device bytes first.
+// This path is separate from conservative coverage: its verified result is the
+// authority for retiring an ambiguous cache, whose original remains exportable.
+export async function reconcilePlayerAcquisitions(supabase,storage,remote,{userId,sessionValid=()=>true}={}){
+ const raw=storage.getItem('lumenProgressV1');
+ if(!raw||!userId)return {status:'blocked',reason:'missing_local'};
+ let local;
+ try{local=validateCloudProfile(JSON.parse(raw))}catch{return {status:'blocked',reason:'invalid_local'}}
+ const current=()=>sessionValid()&&storage.getItem('lumenProgressV1')===raw;
+ if(!current())return {interrupted:true};
+ await preserveRecoverySnapshot(storage,'lumenBeforeCloudReconcileLocal_',raw);
+ if(!current())return {interrupted:true};
+ let expected=validateCloudProfile(remote);
+ for(let attempt=0;attempt<2;attempt++){
+  await preserveRecoverySnapshot(storage,'lumenBeforeCloudReconcileRemote_',JSON.stringify(expected));
+  if(!current())return {interrupted:true};
+  const {data,error}=await supabase.rpc('lumen_reconcile_acquisitions',{
+   p_expected_user_id:userId,p_expected:expected,p_local:local
+  });
+  if(!current())return {interrupted:true};
+  if(error){
+   if(error.code==='PGRST202')return {status:'blocked',reason:'legacy_command_required'};
+   const failure=Error('Acquisition recovery refused');failure.code=error.code;throw failure;
+  }
+  if(data===null){
+   expected=await loadVerifiedProfile(supabase,{userId});
+   if(!current())return {interrupted:true};
+   if(!expected)throw Error('Acquisition recovery profile missing');
+   continue;
+  }
+  if(data?.policy!=='positive-acquisitions-v1'||data.userId!==userId)throw Error('Acquisition recovery proof invalid');
+  const profile=validateCloudProfile(data.profile);
+  const verified=await loadVerifiedProfile(supabase,{userId});
+  if(!current())return {interrupted:true};
+  if(!sameCloudProfile(profile,verified))throw Error('Acquisition recovery readback mismatch');
+  // Both copies are durable, the server transaction is re-read, and the owner
+  // and latest local bytes still match. No outbox entry is acknowledged here.
+  const json=JSON.stringify(verified);
+  try{
+   storage.setItem('lumenProgressV1',json);
+   if(storage.getItem('lumenProgressV1')!==json)throw Error('Acquisition cache verification failed');
+  }catch(error){
+   // A verified server result can run in memory if cache quota is exhausted.
+   if(!['QuotaExceededError'].includes(error?.name)&&![22,1014,'LOCAL_STORAGE_QUOTA'].includes(error?.code))throw error;
+   return {status:'reconciled',reason:'positive_acquisitions',profile:verified,memoryOnly:true};
+  }
+  return {status:'reconciled',reason:'positive_acquisitions',profile:verified};
+ }
+ return {status:'blocked',reason:'cloud_local_divergence'};
 }

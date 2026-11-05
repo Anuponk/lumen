@@ -82,6 +82,10 @@ jobs:
         if: steps.scheduled_check.outputs.need_tests == 'true'
         run: node --check scripts/issue-222-generate-grids.mjs && node --check scripts/issue-222-migration-plan.mjs
 
+      - name: Validate Android offline shell preflight
+        if: steps.scheduled_check.outputs.need_tests == 'true'
+        run: node scripts/android-offline-preflight.mjs
+
       - name: Unified quality gate
         if: steps.scheduled_check.outputs.need_tests == 'true'
         env:
@@ -121,6 +125,8 @@ jobs:
             docs/validation/ci-sky-navigation.json
             docs/validation/ci-account-session.json
             docs/validation/ci-canonical-replay.json
+            docs/validation/ci-personal-records.json
+            docs/validation/ci-adventure-05.json
             docs/validation/ci-quality-summary.json
           retention-days: 14
           if-no-files-found: ignore

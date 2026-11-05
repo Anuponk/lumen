@@ -1,5 +1,6 @@
 import {loadVerifiedProfile} from './cloud-profile.js';
 import {canonicalRecoveryFailure} from './canonical-recovery-errors.js';
+import {loadCommittedQuestAttempt} from './quest-command.js';
 const support=new WeakMap();
 export async function canonicalCommandsSupported(client){
  if(support.has(client))return support.get(client);
@@ -56,6 +57,8 @@ export async function commitCanonicalCommand(client,quest,reward,operationId,{us
 export async function loadCommittedCanonicalAttempt(client,quest,operationId,{userId,sessionValid=()=>true}={}){
  if(!userId||typeof operationId!=='string'||!/^[A-Za-z0-9._-]{1,120}$/.test(operationId)||!quest?.id)throw canonicalRecoveryFailure({code:'22023'});
  if(!sessionValid())throw Error('Canonical command session changed');
+ const unified=await loadCommittedQuestAttempt(client,quest,operationId,{userId,sessionValid});
+ if(unified)return unified;
  if(!(await canonicalCommandsSupported(client)))return null;
  if(!sessionValid())throw Error('Canonical command session changed');
  const {data:receipt,error,status}=await client.rpc('lumen_get_canonical_command',{p_operation_id:operationId,p_expected_user_id:userId});

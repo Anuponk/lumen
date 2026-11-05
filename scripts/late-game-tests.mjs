@@ -7,14 +7,20 @@ import {playableQuest} from '../src/campaign/playable-quests.js';
 import {CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE} from '../src/campaign/data.js';
 import {campaignQuestCount} from '../src/campaign/progression.js';
 import {createCloudPersistence} from '../src/persistence/cloud.js';
+import {QUEST_MILESTONES} from '../src/campaign/quest-rules.js';
+import {pendingNavigationProfile} from '../src/persistence/pending-navigation.js';
 
 const total=campaignQuestCount();
 assert(total>100,'The extension must have playable quests after quest 100');
 const source=fs.readFileSync('src/ui/game-screen.js','utf8');
 const controls=new Map();
-const context={campaignQuestCount,currentQuestLimit:campaignQuestCount,CAT,playableQuest,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,questIsAccessible:()=>true,socialChallenge:null,canonicalActiveQuest:null,canonicalQuestForLegacy:()=>null,canonicalQuestByOrdinal:()=>null,canonicalQuestAvailable:()=>false,levelIndex:99,n:0,puz:null,last:{},replayMode:false,lumenProgress:{solved:{}},loads:0,
- accountRequired:()=>false,document:{getElementById:id=>{if(!controls.has(id))controls.set(id,{});return controls.get(id)}},hideSuccess(){},refreshJourney(){}};
+const context={QUEST_MILESTONES,campaignQuestCount,currentQuestLimit:campaignQuestCount,CAT,playableQuest,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,questIsAccessible:()=>true,socialChallenge:null,canonicalActiveQuest:null,canonicalQuestForLegacy:()=>null,canonicalQuestByOrdinal:()=>null,canonicalQuestAvailable:()=>false,levelIndex:99,n:0,puz:null,last:{},replayMode:false,lumenProgress:{solved:{}},loads:0,
+ activeQuest:()=>({id:'fixture',ordinal:context.levelIndex+1}),questIsCompleted:()=>!!context.lumenProgress.solved[context.levelIndex],accountRequired:()=>false,document:{getElementById:id=>{if(!controls.has(id))controls.set(id,{});return controls.get(id)}},hideSuccess(){},refreshJourney(){}};
 vm.createContext(context);
+const pending=[];
+context.navigationProgress=()=>pendingNavigationProfile(context.lumenProgress,pending,'fixture',[
+ {id:'fixture',legacyIndex:context.levelIndex}
+]);
 vm.runInContext(functionSource(source,'choose')+'\n'+functionSource(source,'advanceToNextPuzzle')+'\nfunction loadPuzzle(){loads++;choose()}',context);
 for(const index of [-1,0,99,100,101,total-1,total+5]){
  context.levelIndex=index;context.choose();
@@ -32,6 +38,14 @@ assert.equal(context.levelIndex,100,'Replay continuation is relative to the play
 context.levelIndex=total-1;context.lumenProgress.solved[total-1]=1;
 const loads=context.loads;context.advanceToNextPuzzle();
 assert.equal(context.levelIndex,total-1);assert.equal(context.loads,loads,'Final quest cannot load beyond the catalogue');
+
+context.levelIndex=100;delete context.lumenProgress.solved[100];
+pending.push({userId:'other',questId:'fixture'});context.advanceToNextPuzzle();
+assert.equal(context.levelIndex,100,'Another account pending win cannot unlock the next quest');
+pending.push({userId:'fixture',questId:'fixture'});context.advanceToNextPuzzle();
+assert.equal(context.levelIndex,101,'A durable own pending win permits offline continuation');
+assert.equal(context.lumenProgress.solved[100],undefined,'Navigation never confirms a pending win in the saved profile');
+pending.length=0;
 
 const drawn=[];
 context.document.createElement=()=>({getContext:()=>({createLinearGradient:()=>({addColorStop(){}}),fillRect(){},beginPath(){},arc(){},fill(){},strokeRect(){},fillText:text=>drawn.push(text)})});

@@ -9,6 +9,7 @@ assert.match(segment,/cloudSafelyCoversLocal/);
 assert.match(segment,/cloudProfileFailure=\{reason:"partial_reconciliation"/);
 assert.match(segment,/profileReady:false/);
 assert.match(segment,/return;/);
-assert.match(segment,/if\(!sessionValid\(\)\)return;\s*cloudProfileFailure=[^\n]+\s*canonicalRecoveryContext=\{userId:accountId,client:hydrationClient\}/);
+assert.match(segment,/if\(!sessionValid\(\)\)return;\s*cloudProfileFailure=[^\n]+\s*canonicalRecoveryContext=\{userId:accountId,client:hydrationClient,generation:hydrationGeneration,/);
+assert.match(segment,/confirmedQuestIds:cloudProfileFailure\.domain==='wallet'&&!achievementRecoveryFailure\?/,'Only the verified Wallet-only branch supplies replay proof');
 assert.ok(segment.indexOf('updateAuthUI()')<segment.indexOf('canonicalRecovery.schedule()'),'Retry is scheduled after the UI clears startup auth pending');
 console.log("Unresolved local/cloud rewards are reported as partial reconciliation without unsafe install");

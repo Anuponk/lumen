@@ -1,0 +1,66 @@
+{
+  "id": "real-adventure-05",
+  "displayName": "Les chemins du firmament",
+  "skyId": "real-sky",
+  "type": "real",
+  "access": "locked",
+  "order": 4,
+  "seed": 20261027,
+  "questsPerConstellation": 10,
+  "sizes": [
+    7,
+    8
+  ],
+  "constellations": [
+    {
+      "id": "iau-cet",
+      "name": "Baleine",
+      "iau": "Cet"
+    },
+    {
+      "id": "iau-col",
+      "name": "Colombe",
+      "iau": "Col"
+    },
+    {
+      "id": "iau-crv",
+      "name": "Corbeau",
+      "iau": "Crv"
+    },
+    {
+      "id": "iau-crt",
+      "name": "Coupe",
+      "iau": "Crt"
+    },
+    {
+      "id": "iau-dor",
+      "name": "Dorade",
+      "iau": "Dor"
+    },
+    {
+      "id": "iau-eri",
+      "name": "Éridan",
+      "iau": "Eri"
+    },
+    {
+      "id": "iau-gru",
+      "name": "Grue",
+      "iau": "Gru"
+    },
+    {
+      "id": "iau-hyi",
+      "name": "Hydre mâle",
+      "iau": "Hyi"
+    },
+    {
+      "id": "iau-lac",
+      "name": "Lézard",
+      "iau": "Lac"
+    },
+    {
+      "id": "iau-lup",
+      "name": "Loup",
+      "iau": "Lup"
+    }
+  ]
+}

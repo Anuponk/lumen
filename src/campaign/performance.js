@@ -1,4 +1,5 @@
 export const PERFORMANCE_BADGES=Object.freeze(["autonomy","speed","noError","mastery"]);
+export const PERFORMANCE_UNLOCKS=Object.freeze({speed:3,full:6});
 
 export function performanceEligibility(questIndex,unlockedQuestCount=Number(questIndex)+1){
  // Badges are performance goals on every quest, never progression unlocks (#529).

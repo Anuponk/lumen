@@ -2,6 +2,36 @@
 
 This is a staged implementation record, not a declaration that #391 is closed.
 
+## Player-favorable recovery candidate (25 October 2026)
+
+The approved free-game policy is implemented by the existing hydration fallback
+and an additive `lumen_reconcile_acquisitions` RPC. See the owning
+[positive acquisition contract](DATA_AND_ARCHITECTURE.md#positive-acquisition-recovery--391-25-october-2026).
+The snapshot lock, CAS baseline, immutable originals and verified current read
+make retries safe. No per-player, conflict-index or application-version rule is
+used. Ordinary CAS/backup writers retain their existing protections.
+
+Deployment requires reviewed application of
+`20261025145734_player_favorable_acquisitions.sql` and the matching client.
+The migration has no backfill, cohort enrollment or automatic production job.
+Client-before-SQL remains safe: a missing endpoint retains the existing partial
+recovery. Rollback keeps archives, receipts and projection guards; do not undo
+recovered player data. On 25 October the owner explicitly authorized merge,
+automatic publication and this production migration. Supabase applied the exact
+reviewed SQL as `20261025145734`; the source filename and SQL CI reference were
+aligned with that assigned version without rewriting migration history.
+Read-only postchecks confirmed the RPC, private RLS archive, denied client table
+reads and anonymous RPC execution, authenticated RPC execution, badge union and
+best-time helpers. No player profile was manually changed. Application merge and
+publication remain separate facts to verify against the exact release SHA.
+
+Known limits: unknown quest identities are archived pending compatible content;
+unknown noncritical metadata is retained in originals rather than interpreted.
+An unproven local currency credit is not restored as spendable shards. Confirmed
+server spending remains effective while known quests become accessible. Real
+Android/PWA and two physical devices remain acceptance work after review and an
+approved release; simulated transport/SQL tests do not establish field recovery.
+
 ## Final delivery evidence (22 October 2026)
 
 The owner explicitly authorized both production SQL migrations, the final merge
@@ -448,6 +478,99 @@ existing max-balance reconciliation is not a transaction reconstruction.
 
 ## Validation and release
 
+### Audit trajectory: remaining lot gates (23 October 2026)
+
+The historical inventory and new-account guest claim are additive preparation.
+No private player profile is available in this checkout. Rachel/Loutre/Chloé
+recovery remains unverified; no baseline may be selected on their behalf.
+Keep their original ownership, unknown fields and pending operation identities.
+For existing-account contradictions, use the independently reviewed #558 path
+only after comparing the actual private copies and current server receipts.
+
+The following operational gates remain mandatory, even when automated tests pass:
+
+1. Supply an isolated Lumen project and accounts, or the private schema recipe
+   described below. Never run disposable bootstrap fixtures against the shared
+   SoldeZen project. Apply additive migrations to recipe first,
+   verify advisors/RLS and restore an export there; record the actual version.
+2. Run the existing coordinator in read-only shadow inspection, without a second
+   dispatcher/emission. Record exact client/server Git revision, parity and all
+   failures. Administrative cohort records are attestation preparation; they do
+   not enable a second writer and have no client activation endpoint.
+3. Execute `RECETTE_SCENARIOS` from `rollout-gates.js` on real transports and two
+   physical Android devices. Keep private evidence references, exact revision,
+   transport (`real` or `mock`) and pass/failure for every scenario. The visible
+   guest quest 6 → account → stable quest 7 must use catalogue identities, not
+   `solved[6]`. Confirm affected player recovery separately before closing issues.
+4. Create an evidence file with format `persistence-release-evidence-v1`, app
+   `Lumen`, `revision`, isolated `projectRef`/`productionProjectRef`, protocol 1,
+   `serverRevision`/`clientRevision`, `ci:{revision,success}`, per-scenario
+   `{revision,passed,transport,reference}`, `physicalAndroid:{revision,passed,devices}`,
+   `shadow:{revision,parity,secondEmissions}`, and zero `losses`, `doubleRewards`,
+   `unreviewedBaselines`. Run `node scripts/persistence-release-check.mjs FILE activate`.
+   An operator must review referenced evidence; self-reported JSON is not proof.
+5. After authorized release, verify the exact production SHA per RELEASE.md.
+   Start with QA/internal cohorts and stop new activations at the first
+   conservation failure; keep already active authorities, receipts and archives.
+6. Before retirement, additionally require `observation:{revision,startedAt,endedAt,
+   broadCohort}` spanning at least 14 days, `legacyWriters:0`, `migrationParity:true`,
+   `originalsRestorable:true`, `mirrorServerDerived:true`. Run the checker with
+   `retire`. Verify old-client rejection, a dormant intent, export restoration and
+   rollback to a compatible client before a separate writer-removal change.
+
+### Private schema recipe and activation control (24 October 2026)
+
+The owner selected a dedicated schema on the shared SoldeZen project.
+`scripts/recette-schema.mjs` compiles reviewed structure metadata into an optional
+bootstrap for an **empty** `lumen_recette`: empty business tables, selected
+functions/triggers and whitelisted catalogue rules. No player rows are copied.
+It never resets existing objects or modifies shared Auth. The NOLOGIN/NOINHERIT
+runner owns QA objects only; all QA tables have RLS and no browser/API grants.
+A private `auth_uid()` reads synthetic SQL claims without Auth access. This is
+a constrained compiler, not a general SQL parser; reviewed metadata and database
+role isolation remain required. Disposable `auth`/`lumen` bootstraps stay forbidden
+on the shared project.
+
+`supabase/recette/smoke.sql` executes real Quest/Wallet/guest commands under that
+role: isolation, receipt-failure rollback, immutable retry, independent receipt
+and current projection, one first reward, same-run Mastery and stable quest-7 ID.
+The 24 October run passed, including cohort controls. All synthetic writes were
+rolled back; profiles, guest receipts and cohorts remained empty. This is SQL
+proof with synthetic claims, **not** live Auth, HTTP transport or Android proof.
+The structure source is observed server DDL; its recorded Git baseline identifies
+client code and is not an independent server Git attestation.
+
+The checker accepts `environment: schema_isolated` with
+`schemaIsolation:{revision,schema:'lumen_recette',role:'lumen_recette_runner',
+reference,productionAccess:false,sharedAuthWrites:false,publicApi:false,
+rlsEnabled:true}` and actual project references. Review the referenced grants
+audit. Exact versions, real transports, two Androids and observation still apply.
+
+Migration `20261024042823_sync_cohort_activation_control.sql` adds private release
+approvals, an admin-only cohort setter, activation events and an emergency stop
+defaulting to false. Browsers cannot approve or enroll accounts. Capability 0
+explicitly selects compatibility before mutation; 1 requires an active cohort.
+The claim endpoint enforces activation too. Previously issued exact receipts stay
+retryable without a second seed. Stopping new activations preserves active
+authority; downgrade is refused. Approval digests require operator review.
+
+Deploy the client accepting capability 0 **before** installing historical-claim
+and activation-control migrations atomically in application schemas. Never install
+the historical migration alone: its original capability returns 1 globally.
+Neither production application migration was applied during the schema recipe.
+No real account was approved or enrolled.
+
+One Android is offered for guided testing. The second device, real-transport
+release evidence and 14-day broad observation remain open. CAS/mirror writers,
+old readers and recovery archives remain until the retirement gate passes.
+Lots 5–7 cannot be declared operationally complete from SQL/CI alone.
+
+Current preparation does not remove CAS, mirror repair, compatibility RPCs,
+historical readers or backups. No blanket production migration, cohort activation
+or cleanup is justified by the presence of these tools. The physical recipe,
+observation and gated writer removal cannot be declared completed by CI.
+
+
 New mandatory Node suites: `canonical-outbox-recovery-tests.mjs`,
 `canonical-durable-outbox-tests.mjs`, `canonical-retry-state-tests.mjs`,
 `cloud-retry-scheduler-tests.mjs`.
@@ -481,3 +604,123 @@ audited repair of ambiguous profiles, server-side command refusal/repair policy 
 observation. A CI pass is not proof of those phases. The proposed 14-day
 observation starts only after the agreed architecture cutover is generally
 deployed and its recovery objectives are defined.
+
+## Final read-only architecture audit #560 — 4 November 2026
+
+Scope: repository code at `399f7afac1a26707fd53dc5cb3470a64ef7017ed`;
+its runtime is unchanged from `0532924` by the subsequent legal-document PRs.
+This audit changes no business code, database, cohort, profile or deployment.
+Corrections in #619 and #611 are separate deliveries and are not audit evidence
+that their pending operational acceptance has succeeded.
+
+### 1. Map and current authorities
+
+| Data / boundary | Actual owners and writers | Recovery and remaining duplication |
+|---|---|---|
+| Confirmed cloud profile | `cloud-profile.js::loadVerifiedProfile`, `compareAndSwapCloudProfile`; SQL snapshot/CAS and command authorities | Expected owner and protected fields are checked; full snapshots still coexist with domain commands |
+| Device profile | `local.js::createLocalPersistence`, `cloud-profile.js::installCloudProfileLocally` | Exact local read-back; original invalid bytes and recovery snapshots are preserved; this is not a confirmed transaction authority |
+| Durable intentions | `durable-canonical-outbox.js::enqueue/inspect/acknowledge`, `indexed-outbox-store.js` | IndexedDB first, verified localStorage fallback, conflicting copies held; Canonical/Legacy/Wallet keep distinct namespaces |
+| Orchestration | `persistence-coordinator.js::capture/dispatch`, `coordinated-command-adapters.js` | One captured account/generation and per-user transport tail, Web Locks when available; UI still orchestrates readiness/recovery |
+| Confirmed device read model | `transactional-command-cache.js::createConfirmedProfileCache` | Owner-scoped indexed projection with revision/CAS; original outbox and compatibility profile are not yet retired |
+| Quest victories, badges, rewards | `quest-command.js`, `legacy-command.js`, `canonical-progress.js`; SQL immutable receipts | Exact operation/request/read-back precedes acknowledgement; pure `quest-victory.js` is guest/test projection, not Auth reward authority |
+| Wallet | `wallet-command.js::commitWalletCommand`, SQL `lumen_commit_wallet_command` | Exact receipt/revision/balance; never numeric maximum. Ambiguous balances remain a hold rather than invented money |
+| Guest to account | `guest-account.js`, `guest-claim.js::captureGuestClaim/claimGuestProfile`, `initializeCloudProfile` | Original/seed digests and server claim receipt exist; deployment/cohort gates remain separate from code presence |
+| Historical saves | `historical-inventory.js`, `reconcileCompatibleCloudProfiles`, `reconcilePlayerAcquisitions` | Preserve originals/unknown fields, explicit acquisition recovery and read-back; legacy mirror/readers remain active |
+| Gameplay during recovery | `gameplay-sync.js::gameplayDomainState`, UI access policy and shared catalogue | Confirmed replays can be isolated from some wallet holds; not every new-quest permission is independent of global hydration |
+
+These files are under `src/persistence/` unless named otherwise. The actual
+integration is `src/ui/game-screen.js`, not a second standalone persistence engine.
+
+```mermaid
+flowchart LR
+  A[Live board and attempt] --> B[Durable owner scoped intent]
+  B --> C[Shared coordinator and domain adapter]
+  C --> D[Supabase command transaction]
+  D --> E[Exact receipt and current profile read]
+  E --> F[Verified local projection]
+  F --> G[Acknowledge original intent]
+  H[Historical snapshots and guest originals] --> I[Guarded reconciliation]
+  I --> D
+  E --> J[Legacy progress mirror]
+```
+
+Intended simplification preserves A–G and removes redundant historical writers
+only after measured convergence. Adding another writer beside C would increase
+the risk rather than finish the work.
+
+### 2. Findings, incidents and invariant evidence
+
+The audit in the [23 October issue decision](https://github.com/Anuponk/lumen/issues/560#issuecomment-6373667465)
+proved four defects: silent local-write refusal, invalid JSON overwritten without
+quarantine, stale-session rejection published into a later session, and character
+versus UTF-8 limits. Their repairs are **already merged**, not work to redevelop:
+#561 (`d6d1eff`), coordinator/cache #562 (`c4bfd85`), domain gameplay #563
+(`084f151`), guest claim/preparation #564 (`a91eb59`) and cohort gates #565
+(`d3d8aba`). Their presence does not prove the remaining rollout was activated.
+
+| Invariant | Evidence | Current conclusion |
+|---|---|---|
+| No silent local loss | `local-persistence-contract-tests`, quota/recovery suites; exact durable write and original-byte quarantine | Covered in automated fixtures; device eviction/physical closure still requires QA |
+| One reward per immutable command | Quest/Legacy/Wallet client suites, ambiguous-ACK and durable outbox tests, disposable SQL/concurrency CI | Covered for tested operations; do not generalize to unreviewed historical imports |
+| Account isolation | Coordinator generation guards, expected-user RPCs, owner-scoped stores; stale resolution and rejection tests | Implemented and tested synthetically; real expired-token/account-switch acceptance remains |
+| Cloud/local divergent acquisitions | `cloud-player-favorable-tests`, reconciliation matrix, actual acquisition SQL/concurrency fixtures | Explicit guarded merge; wallet ambiguity intentionally does not become a maximum balance |
+| Guest quest 6 to account to quest 7 | Guest/hydration/browser fixtures and stable catalogue navigation | Code coverage exists; real registration and second-phone result not demonstrated by this audit |
+| Offline victory, lost response, restart | Durable outbox and command receipts; #619 adds actual worker/cold-start regressions separately | Baseline cold offline is incomplete; do not mark #597 Done from this audit |
+| Two-device convergence | Exact server reads/receipts and simulated multi-device tests | Partial operational evidence; physical two-device gate remains required |
+| Retirement of old writers | `rollout-gates.js::evaluatePersistenceRollout` | Not complete: real transport, two Androids, shadow parity and at least 14 days of broad observation are explicit gates |
+
+For #536, existing quota/session/hydration repairs and acquisition fallback are
+in main; the real affected-device recovery is not inferred from those tests.
+For #557, do not equate displayed quest 7 with legacy key 6: the stable catalogue
+identity and guest ownership handoff are the relevant boundaries. #522 already
+has unified quest policy/reward/command consumers. No private affected-player
+profile was inspected, repaired or used as a fixture for this audit. The root
+cause of an individual's incident remains unproven without its authorized evidence.
+
+Residual structural risks are concrete: snapshot CAS + domain receipts + legacy
+mirror are still multiple representations; the UI owns many async transitions;
+compatibility outboxes and recovery archives have different retention/inspection
+paths; some access still depends on global `cloudProfileReady`. They are reasons
+for bounded consolidation and real acceptance, not proof of a new data loss.
+
+### 3. Options, cost, recommendation and delivery/rollback
+
+| Option | Incremental cost / maintenance | Data and rollback risk |
+|---|---|---|
+| A: consolidate current implementation | Lowest immediate cost: demonstrated bugs, existing tests, removal of duplicated orchestration only when parity is measured; no extra hosted database required | Small reversible client changes; preserves existing receipts and originals; does not by itself remove all historical complexity |
+| B: progressive V2 | Foundational lots 1–4 are already delivered. Remaining cost is integration/physical QA, cohort operation, observation and proven writer retirement, not another full engine | Preserve existing command protocol and rollback to compatibility cohorts; do not run a second dispatcher or erase old stores |
+| C: replace persistence layer | Highest cost: re-prove every caller, migrate representations, compatibility and recovery, plus all the same device QA; storage replacement alone cannot solve Auth/ordering | Highest migration and rollback risk; old clients and unacknowledged intents need a bridge; no demonstrated benefit justifies it now |
+
+Recommendation: **finish the already chosen B by consolidating the delivered
+implementation (A-style bounded repairs); do not restart B or implement C.**
+The owner chose B on 23 October. This audit does not silently reverse that
+decision or authorize a new migration. The older 35–65 person-day estimate in
+the issue described the pre-lot baseline; it is not an estimate of work still
+remaining. A new calendar estimate would require the actual two-device QA
+availability and cohort evidence; inventing one would obscure the blocking work.
+
+1. Finish independent #597/#316 defects and automated gates in their existing
+   PRs. Keep unresolved identity/paid-aid/erasure cases explicit and preserve all
+   originals, queues and receipt authority. No schema/data reset.
+2. Execute the existing `RECETTE_SCENARIOS` matrix: guest 6/account 7, old-account
+   restore, token expiry, two devices/tabs, offline capture/restart, lost ACK,
+   duplicate operations, quota/denied IDB, catalogue growth and dormant clients.
+   Record exact revision, real transport, device and private evidence reference.
+3. Use existing cohort control and emergency stop only after those gates pass.
+   Observe one revision consistently; archive the old source snapshots and prove
+   rollback/recovery, rather than deleting them to obtain a clean dashboard.
+4. Retire a legacy writer only after the 14-day observation, parity and
+   restorable-original criteria pass. Wallet holds remain reviewable independently
+   of acquired-quest presentation. A new migration/refactor needs an explicit
+   decision with backup and rollback; no such execution is part of this audit.
+
+Rollback for a client fix is a reviewed revert/new worker revision, retaining
+IndexedDB/outboxes/originals and replaying immutable IDs. Rollout rollback stops
+new cohort activation and uses the already-supported compatibility path. Never
+restore a stale whole profile over newer server receipts, maximize balances,
+re-enrol an erased identity, or clear a queue merely because replay is difficult.
+
+Acceptance: architectural audit/report complete as a reviewable document;
+**#560 stays open for owner review and operational gates**. Automated CI,
+synthetic SQL and a deployed SHA are different evidence from physical Android,
+real Auth, affected-account recovery and a completed observation period.

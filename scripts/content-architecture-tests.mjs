@@ -45,21 +45,21 @@ for(let i=0;i<BASE_CONSTELLATIONS.length;i++){
 }
 assert.equal(new Set(BASE_CONSTELLATIONS.flatMap(c=>c.questIndices)).size,total);
 assert.equal(CONTENT_SKIES.length,1);
-assert.equal(CONTENT_PACKS.length,Math.ceil(constellations/ADVENTURE_SIZE)+1);
+assert.equal(CONTENT_PACKS.length,Math.ceil(constellations/ADVENTURE_SIZE)+2);
 assert.equal(CONTENT_PACKS[0].questCount,BASE_CONSTELLATIONS.slice(0,ADVENTURE_SIZE).reduce((sum,c)=>sum+c.questCount,0));
-assert.equal(CONTENT_PACKS.reduce((sum,p)=>sum+p.questCount,0),total+100);
+assert.equal(CONTENT_PACKS.reduce((sum,p)=>sum+p.questCount,0),total+200);
 assert.deepEqual(CONTENT_PACKS.slice(0,-1).flatMap(p=>p.constellationIds).filter(id=>id.startsWith("real-")&&!id.includes("-new-")),BASE_CONSTELLATION_IDS);
 assert.equal(RESERVED_ADVENTURE_03_CONSTELLATIONS.length,6);
 assert.equal(CONTENT_PACKS[2].constellationIds.length,10);
 assert.equal(new Set(CONTENT_PACKS[2].constellationIds).size,10);
-assert.equal(CONTENT_CONSTELLATIONS.length,40);
+assert.equal(CONTENT_CONSTELLATIONS.length,50);
 for(const c of RESERVED_ADVENTURE_03_CONSTELLATIONS){
  assert.equal(c.questCount,10);
  assert.equal(c.questIndices.length,0);
  assert.equal(c.canonicalOnly,true);
  assert.equal(c.packId,"real-adventure-03");
 }
-for(const pack of CONTENT_PACKS){assert.equal(pack.questCount,pack.questIndices.length);assert.equal(pack.legacyQuestStart,pack.questIndices[0]);}
+for(const pack of CONTENT_PACKS){if(pack.canonicalOnly){assert.equal(pack.questCount,100);assert.equal(pack.questIndices.length,0)}else{assert.equal(pack.questCount,pack.questIndices.length);assert.equal(pack.legacyQuestStart,pack.questIndices[0])}}
 assert.equal(baseQuestId(0),"base-q001");
 assert.equal(baseQuestId(99),"base-q100");
 assert.equal(baseQuestId(100),"base-q101");
@@ -74,7 +74,7 @@ assert.equal(hasPackAccess(futurePack,[]),false);
 assert.equal(hasPackAccess(futurePack,[{pack_id:"extraordinary-01"}]),true);
 assert.equal(normalizeEntitlements([{content_id:"extraordinary-01"}]).has("extraordinary-01"),true);
 assert.equal(normalizeEntitlements([{entitlement:"extraordinary-01",source:"purchase"}]).has("extraordinary-01"),true);
-assert.equal(packForLegacyQuest(total-1,[...CONTENT_PACKS,futurePack])?.id,CONTENT_PACKS.at(-2).id);
+assert.equal(packForLegacyQuest(total-1,[...CONTENT_PACKS,futurePack])?.id,BASE_CONSTELLATIONS.at(-1).packId);
 assert.equal(packForLegacyQuest(total+10,[...CONTENT_PACKS,futurePack])?.id,"real-adventure-04");
 assert.equal(contentAccessForLegacyQuest(total+10,[{pack_id:"real-adventure-04"}],[...CONTENT_PACKS,futurePack]).accessible,true);
 assert.equal(baseCampaignQuestCount(),total);
@@ -86,7 +86,7 @@ console.log(JSON.stringify({contentArchitecture:true,baseQuests:baseCampaignQues
  const anonymous=contentMapModel([]);
  assert.equal(anonymous.skies[0].id,BASE_SKY_ID);
  assert.equal(anonymous.skies[0].packs[0].accessible,true);
- assert.equal(anonymous.skies[0].constellations.length,constellations+16);
+ assert.equal(anonymous.skies[0].constellations.length,constellations+26);
  assert.ok(anonymous.skies[0].packs[0].constellations.every(c=>c.accessible));
  assert.ok(anonymous.skies[0].packs.slice(1).every(p=>!p.accessible));
 }

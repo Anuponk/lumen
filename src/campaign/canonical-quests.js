@@ -2,6 +2,7 @@
 // the legacy numeric index remains the key in existing cloud saves.
 import staged from "../../content/generated/issue-222-additions.json" with {type:"json"};
 import diverse from "../../content/generated/diverse-adventures-3-4.json" with {type:"json"};
+import fifth from '../../content/generated/fifth-adventure-candidates.json' with {type:'json'};
 const diverseById=new Map(diverse.puzzles.map(q=>[q.id,q]));
 if(diverse.schema!=="lumen-grid-overrides-v1"||diverseById.size!==diverse.puzzles.length)throw Error("Invalid diversity override manifest");
 import {CONTENT_PACKS,CONTENT_CONSTELLATIONS,hasPackAccess} from "./content.js";
@@ -10,10 +11,11 @@ import {qualifyDifficulty} from "./difficulty.js";
 import {constellationCatchupAvailable,catalogueQuestDecision,questCompleted} from "./catalogue-access.js";
 import {originQuests,pastCatalogues,publishedCatalogueQuests} from './catalogue-origin.js';
 import {buildQuestDefinitions} from './quest-definition.js';
+import {questRewardDefinition} from './quest-rewards.js';
 
 const slots=buildQuestDefinitions(publishedCatalogueQuests(),CONTENT_PACKS,CONTENT_CONSTELLATIONS);
-const added=new Map(staged.quests.map(q=>[q.id,q]));
-if(staged.status!=="staged-only"||added.size!==staged.quests.length)throw Error("Invalid staged content");
+const added=new Map([...staged.quests,...fifth.quests].map(q=>[q.id,q]));
+if(staged.status!=="staged-only"||fifth.status!=='staging-proof-audited'||added.size!==staged.quests.length+fifth.quests.length)throw Error("Invalid staged content");
 const all=Object.freeze(slots.map(slot=>{
  const original=slot.legacyIndex===null?added.get(slot.id):playableQuest(slot.legacyIndex);
  if(!original||original.id!==slot.id)throw Error("Missing canonical grid "+slot.id);
@@ -21,7 +23,7 @@ const all=Object.freeze(slots.map(slot=>{
  const replacement=diverseById.get(slot.id);
  if(replacement&&(replacement.packId!==slot.packId||replacement.ordinal!==slot.ordinal))throw Error("Invalid diversity override target "+slot.id);
  const grid=replacement||original;
- return Object.freeze({...slot,size:grid.size??grid.reg.length,reg:grid.reg,sol:grid.sol,audit:grid.audit??null,difficulty:qualifyDifficulty(grid),family:grid.family??null});
+ return Object.freeze({...slot,rewards:questRewardDefinition(slot,{total:slots.filter(q=>q.constellationId===slot.constellationId).length}),size:grid.size??grid.reg.length,reg:grid.reg,sol:grid.sol,audit:grid.audit??null,difficulty:qualifyDifficulty(grid),family:grid.family??null});
 }));
 if(new Set(all.map(q=>q.id)).size!==all.length||all.filter(q=>q.legacyIndex!==null).length!==playableQuestCount()||[...added.keys()].some(id=>!all.some(q=>q.id===id))||[...diverseById.keys()].some(id=>!all.some(q=>q.id===id)))throw Error("Inconsistent canonical catalogue");
 const byId=new Map(all.map(q=>[q.id,q]));

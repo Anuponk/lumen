@@ -1,0 +1,115 @@
+{
+  "schema": 1,
+  "date": "2026-10-23T18:00:54.849Z",
+  "integratedMain": "a76939e2786aa6f3b4cec8aa62f589472025fe1f",
+  "sourceFingerprint": {
+    "normalization": "UTF-8 LF, sorted relative path + NUL + contents + NUL",
+    "files": 81,
+    "sha256": "9717e964672e618451ea2797d68c3b45cee54a889684c0cee3fe0e79c6ccdaaa"
+  },
+  "command": "node scripts/test-affected.mjs --full",
+  "ok": true,
+  "nodeSuites": 133,
+  "browserRunners": 10,
+  "qualitySeconds": 229.347,
+  "supplementarySuites": 29,
+  "browserWorkers": 2,
+  "embedded": [
+    {
+      "size": 5,
+      "total": 99,
+      "failures": []
+    },
+    {
+      "size": 6,
+      "total": 99,
+      "failures": []
+    },
+    {
+      "size": 7,
+      "total": 99,
+      "failures": []
+    },
+    {
+      "size": 8,
+      "total": 99,
+      "failures": []
+    }
+  ],
+  "questPolicyBrowserCases": 12,
+  "mobileTouch": {
+    "nativeTouch": true,
+    "taps": 216,
+    "wholeBoard": true,
+    "markedAndEmpty": true,
+    "consecutive": true,
+    "borders": true,
+    "smallMovement": true,
+    "layoutChanges": 0,
+    "countdownBoardStable": true,
+    "countdownWidths": [
+      320,
+      360,
+      390,
+      768,
+      1440
+    ],
+    "physicalDevice": false
+  },
+  "sql": {
+    "engine": "Disposable embedded PostgreSQL (PGlite), no provider connection",
+    "questParity": true,
+    "earlyOrdinalBadges": true,
+    "receipts": true,
+    "socialPrivacy": true,
+    "analyticsCapability": true,
+    "concurrentPostgreSQL17": "Required GitHub CI, separate evidence",
+    "productionWrites": false
+  },
+  "migrations": [
+    {
+      "path": "supabase/migrations/20261023181850_quest_contract_convergence.sql",
+      "sha256LF": "2667f9cc3eb5fa54ee72b141f39ea74442060deb5512e266d23e2cf87b21c89b",
+      "productionApplied": true,
+      "productionVersion": "20261023181850"
+    },
+    {
+      "path": "supabase/migrations/20261023181900_quest_social_identity.sql",
+      "sha256LF": "53f0e6bf7e351908c09419fff584de00e12a9d2b0edb213eba95b0384839e08b",
+      "productionApplied": true,
+      "productionVersion": "20261023181900"
+    },
+    {
+      "path": "supabase/migrations/20261023181918_quest_analytics_identity.sql",
+      "sha256LF": "aa7bde5935753391f9a0c74f547a0f9bb4d297c892b8396cd29644a9764bb0b6",
+      "productionApplied": true,
+      "productionVersion": "20261023181918"
+    }
+  ],
+  "limitations": [
+    "Physical Android confirmation remains pending",
+    "Auth/RPC browser checks are simulated"
+  ],
+  "production": {
+    "ownerAuthorized": true,
+    "verifiedAt": "2026-10-23T18:25:11.581Z",
+    "catalogue": {
+      "rules": 400,
+      "numeric": 296,
+      "stableOnly": 104,
+      "ordinals": 400
+    },
+    "privateTablesRls": true,
+    "privateTablesDirectAccessDenied": true,
+    "commandRpcAuthenticatedOnly": true,
+    "internalHelpersExecuteDenied": true,
+    "identityConstraintsValidated": true,
+    "unauthenticatedAdminCallsDenied": true,
+    "advisorsReviewed": true,
+    "playerBackfill": false,
+    "operationalGuards": {
+      "lockTimeout": "5s",
+      "statementTimeout": "60s"
+    }
+  }
+}
