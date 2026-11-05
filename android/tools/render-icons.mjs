@@ -18,9 +18,13 @@ fs.writeFileSync(new URL('values/colors.xml',res),header+'<resources><color name
 const browser=await connectBrowser();
 try{
  await browser.send('Page.enable');await browser.send('Runtime.enable');
+ await browser.send('Emulation.setDefaultBackgroundColorOverride',{color:{r:0,g:0,b:0,a:0}});
  await browser.send('Page.navigate',{url:'data:text/html;base64,'+Buffer.from('<!doctype html><style>html,body{margin:0;width:100%;height:100%;overflow:hidden}svg{display:block;width:100%;height:100%}</style>'+svg).toString('base64')});
  for(const [density,size] of [['mdpi',48],['hdpi',72],['xhdpi',96],['xxhdpi',144],['xxxhdpi',192],['splash',512]]){
   await browser.send('Emulation.setDeviceMetricsOverride',{width:size,height:size,deviceScaleFactor:1,mobile:false});
+  // Legacy launchers need transparent rounded corners; adaptive icons own their
+  // mask and the TWA splash stays opaque. Do not suppress IconLauncherShape lint.
+  await browser.evaluate(`document.querySelector('svg').style.borderRadius=${JSON.stringify(density==='splash'?'0':'21.1%')}`);
   await browser.evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))',true);
   const image=await browser.send('Page.captureScreenshot',{format:'png',clip:{x:0,y:0,width:size,height:size,scale:1}});
   const output=density==='splash'?'drawable-nodpi/splash.png':`mipmap-${density}/ic_launcher.png`;

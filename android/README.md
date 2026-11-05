@@ -12,6 +12,8 @@ Les PNG launcher des cinq densités et le splash 512 × 512 sont rendus depuis
 `../icon-maskable.svg`, identité céleste validée dans #625. Les vecteurs adaptatif
 et monochrome en reprennent les arcs et l'étoile ; les dégradés restent dans les
 PNG, le vecteur emploie l'or uni. Aucun nouveau dessin de constellation.
+Les PNG legacy ont des coins transparents arrondis ; le splash reste opaque,
+et Android applique lui-même le masque aux icônes adaptatives.
 
 Pour régénérer, démarrer Chromium/Edge headless avec un **profil temporaire
 dédié** et un port de débogage local, puis exécuter depuis `android/` :

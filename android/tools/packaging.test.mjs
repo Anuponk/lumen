@@ -65,6 +65,7 @@ test('icons cover pre-adaptive and adaptive launchers plus PNG TWA splash', () =
     const png=readFileSync(root + `app/src/main/res/mipmap-${density}/ic_launcher.png`);
     assert.equal(png.subarray(1,4).toString(), 'PNG');
     assert.equal(png.readUInt32BE(16),size);assert.equal(png.readUInt32BE(20),size);
+    assert.equal(png[25],6,'Legacy launcher PNG requires an alpha channel for its rounded shape');
   }
   assert.match(read('app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml'), /adaptive-icon/);
   assert.match(read('app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml'), /monochrome android:drawable="@drawable\/ic_monochrome"/);
