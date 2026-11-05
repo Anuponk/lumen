@@ -1,5 +1,14 @@
 # Testing and quality gate
 
+Browser shutdown: `scripts/cdp-client.mjs::closeBrowser` extends the exact
+Browser.close acknowledgement-timeout policy already used by the sky suite to
+the remaining unguarded core suites. The quality runner still owns process
+cleanup. `browser-navigation-tests.mjs` executes the actual five suite teardowns
+with successful shutdown, missing acknowledgement, an earlier failed business
+assertion and unrelated transport/evaluation errors. Four suites reproduced RED
+before the correction; unrelated errors and all gameplay assertions remain
+blocking. This does not retry or ignore a failed test.
+
 Public-page release packaging: `python3 scripts/o2switch-deploy-tests.py` runs
 disposable Linux publisher fixtures. It checks that the three reviewed privacy
 HTML pages are published byte-for-byte with mode 644, unrelated root HTML is

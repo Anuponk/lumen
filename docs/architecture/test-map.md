@@ -1,5 +1,9 @@
 # Existing verification map
 
+CDP shutdown: `browser-navigation-tests.mjs` executes the actual core-suite
+teardowns and checks that `cdp-client.mjs::closeBrowser` preserves business and
+non-shutdown failures while tolerating only the known missing close ACK.
+
 Privacy consolidation #316: `privacy-current-schema.sql` checks real current
 SQL dependencies and support expiry/export/rollback; `privacy-optional-support.sql`
 checks absent/partial support; `privacy-support-concurrency.py` retains original

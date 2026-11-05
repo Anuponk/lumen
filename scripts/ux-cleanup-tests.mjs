@@ -1,7 +1,7 @@
 // Real browser checks for #16/#17/#19; use the isolated CDP setup in docs/TESTING.md.
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import {connectBrowser,acknowledgeLearningMilestones} from './cdp-client.mjs';
+import {connectBrowser,closeBrowser,acknowledgeLearningMilestones} from './cdp-client.mjs';
 const {send,evaluate,errors}=await connectBrowser();
 const gameScreenSource=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 const performanceSource=fs.readFileSync(new URL('../src/campaign/performance.js',import.meta.url),'utf8');
@@ -90,4 +90,4 @@ try{
  const report={modalScenarios:results,vocabularyAndCTAViewports:3,failures,uncaughtErrors:errors};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2)+'\n');
  console.log(JSON.stringify(report));assert.deepEqual(failures,[],'UX browser regressions');
-}finally{await send('Browser.close')}
+}finally{await closeBrowser(send)}
