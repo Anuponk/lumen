@@ -1,3 +1,10 @@
+// Chromium can exit before acknowledging its close command. The quality runner
+// still owns process cleanup. Never hide a navigation/evaluation/assertion error.
+export async function closeBrowser(send){
+ try{await send('Browser.close')}
+ catch(error){if(error?.message!=='CDP timeout after 15s: Browser.close')throw error;}
+}
+
 // CDP acknowledges navigation before the old document is necessarily replaced.
 export async function navigateAndWait({send,evaluate},method,params={}) {
  const previous=await evaluate('performance.timeOrigin');

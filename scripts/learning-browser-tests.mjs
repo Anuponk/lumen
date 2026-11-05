@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { connectBrowser, acknowledgeLearningMilestones, navigateAndWait } from './cdp-client.mjs';
+import { connectBrowser, closeBrowser, acknowledgeLearningMilestones, navigateAndWait } from './cdp-client.mjs';
 import { learningStep, dragLearningStep } from '../src/game/learning.js';
 const { send, evaluate, errors } = await connectBrowser();
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -219,4 +219,4 @@ try {
   }
   assert.deepEqual(errors,[]);
   const report={results,uncaughtErrors:errors};if(output)fs.writeFileSync(output,JSON.stringify(report,null,2));console.log(JSON.stringify(report));
-}finally{await send('Browser.close')}
+}finally{await closeBrowser(send)}
