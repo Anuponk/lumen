@@ -1,4 +1,6 @@
 export const nodeSuites=[
+ 'erasure-qa-schema.mjs',
+ 'self-erasure-handler-tests.mjs',
  'self-erasure-controls-tests.mjs',
  'adventure-05-runtime-tests.mjs',
  'test-adventure-05-staging.mjs',

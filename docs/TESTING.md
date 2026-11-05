@@ -1632,6 +1632,15 @@ retention, rights export and production compatibility still need testing.
 
 `python3 scripts/privacy-full-erasure.test.py` is also run by the same disposable PostgreSQL 17 GitHub Actions job. It constructs a synthetic catalog from the migration's real policy, installs the **entire** erasure migration, verifies explicit confirmation, deletes a fixture Lumen profile, retains another player's profile and synthetic `auth.users`/SoldeZen records, and checks the post-erasure write barrier. The entire transaction is rolled back. This is a synthetic smoke test, not a substitute for a schema-accurate production rehearsal or legal approval.
 
+
+### #316 — Supabase isolated Edge HTTP smoke
+
+`node scripts/self-erasure-handler-tests.mjs` executes the actual Edge handler
+with synthetic Auth/RPC boundaries. It checks a forged target, denied identity,
+confirmation/origin/method refusals, SQL failure and incomplete acknowledgements.
+The latter returned HTTP 200 before the fix and now returns 409. No SQL, live
+Auth, credentials or deletion is used; authorized isolated E2E is still required.
+The workflow `.github/workflows/erasure-qa-smoke.yml` checks the deployed `lumen-erasure-qa-smoke` endpoint from a GitHub-hosted runner. It expects HTTP 401 without a bearer token, 405 for GET, and 403 for an untrusted browser Origin. This endpoint has no service-role key, no SQL erasure invocation, and cannot delete data. Passing this smoke test is **not** an authenticated end-to-end account-erasure test; the destructive release gate remains blocked until separately validated in isolated QA.
 ## Offline PWA shell and update regression (#597 / #618)
 
 `node scripts/android-offline-preflight.mjs` runs in the PR quality workflow and

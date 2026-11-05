@@ -1,23 +1,19 @@
 -- #316: Self-service Lumen-only erasure. The caller cannot choose the target identity.
-create or replace function public.lumen_self_erase(p_confirmation text)
+-- Retire the old client-callable overload if it was previously installed.
+drop function if exists public.lumen_self_erase(text);
+create or replace function public.lumen_self_erase(p_user_id uuid, p_confirmation text)
 returns jsonb language plpgsql security definer set search_path = ''
 as $$
 declare v_uid uuid; v_result jsonb; v_actors text[] := array[]::text[]; v_row record; v_found text[];
 begin
-  v_uid := auth.uid();
-  if v_uid is null or (select auth.role()) <> 'authenticated' then
-    raise exception 'Authentication required' using errcode='42501';
+  if (select auth.role()) is distinct from 'service_role' or auth.uid() is not null then
+    raise exception 'Service role required' using errcode='42501';
   end if;
+  v_uid := p_user_id;
+  if v_uid is null then raise exception 'Missing user identity' using errcode='22023'; end if;
   if p_confirmation is distinct from 'SUPPRIMER' then
     raise exception 'Explicit confirmation required' using errcode='22023';
   end if;
-  -- Existing audited operator procedure checks that the operation is not
-  -- performed as a client session. Preserve the verified UUID first.
-  -- The operator-only procedure refuses client JWT context. Clear it only
-  -- inside this transaction, after deriving the verified self identity.
-  perform set_config('request.jwt.claims', '{}', true);
-  perform set_config('request.jwt.claim.sub', '', true);
-  perform set_config('request.jwt.claim.role', '', true);
   -- Only infer actor ownership from a direct user_id + anonymous_id pairing
   -- in Lumen-owned policy tables; never accept actor identifiers from callers.
   for v_row in
@@ -38,5 +34,5 @@ begin
   return v_result;
 end;
 $$;
-revoke all on function public.lumen_self_erase(text) from public, anon;
-grant execute on function public.lumen_self_erase(text) to authenticated;
+revoke all on function public.lumen_self_erase(uuid,text) from public, anon, authenticated;
+grant execute on function public.lumen_self_erase(uuid,text) to service_role;
