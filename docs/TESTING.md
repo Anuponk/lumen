@@ -5,7 +5,9 @@ executes the real controls with synthetic DOM/Auth/HTTP and cleanup spies. Six
 cases reproduce unsafe cleanup on baseline, then seven pass: incomplete HTTP
 success, stale session, unverified owner/token, replacement during signout,
 double submission, failed signout and explicit completed acknowledgement.
-No real account deletion, server deployment or physical acceptance is claimed.
+The eighth check verifies the existing confirmation describes irreversible
+progress loss in Lumen without infrastructure details. No real account deletion,
+server deployment or physical acceptance is claimed.
 
 Browser shutdown: `scripts/cdp-client.mjs::closeBrowser` extends the exact
 Browser.close acknowledgement-timeout policy already used by the sky suite to

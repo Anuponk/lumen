@@ -8,6 +8,8 @@ d'un autre compte refuse la demande. Une réponse HTTP 200 seule ne permet plus
 de nettoyer cet appareil : le JSON doit confirmer `status=erased`, `scope=lumen`
 et `details=erased`. Une déconnexion échouée ou une session remplacée conserve
 les données locales ; une double soumission ne lance qu'une requête.
+La confirmation explicite la perte irréversible de progression, récompenses et
+statistiques Lumen, sans exposer les noms de services ou d'applications internes.
 
 Cette protection reprend le correctif client de #611 indépendamment de son
 backend privilégié encore en recette. Elle ne modifie ni Edge Function, RPC,

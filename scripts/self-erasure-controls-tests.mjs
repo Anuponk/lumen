@@ -9,6 +9,13 @@ const start=source.indexOf('function wireLumenErasureControls(){');
 const end=source.indexOf('\nlet lumenSupabase=',start);
 assert(start>=0&&end>start);
 const success={status:'erased',scope:'lumen',details:'erased'};
+test('confirmation explains irreversible loss in Lumen without infrastructure details',()=>{
+ const html=fs.readFileSync('index.html','utf8');
+ const panel=html.match(/id="eraseLumenConfirmPanel"[\s\S]*?<\/div>/)?.[0];
+ assert(panel,'Existing confirmation panel must remain present');
+ for(const term of [/Lumen/,/progression/,/irréversible/])assert.match(panel,term);
+ assert.doesNotMatch(panel,/Supabase|SoldeZen/);
+});
 function fixture({body=success,status=200,change,phase='response',signoutOk=true,localOwner='owner',tokenOwner='owner'}={}){
  const calls=[],elements=new Map();let ctx;
  for(const id of ['eraseLumenAccount','eraseLumenConfirmPanel','eraseLumenConfirmText','eraseLumenStatus','eraseLumenExecute','eraseLumenCancel']){
