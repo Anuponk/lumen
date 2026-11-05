@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp" android:height="108dp" android:viewportWidth="512" android:viewportHeight="512">
-    <path android:fillColor="#ffffff" android:fillType="evenOdd"
-        android:pathData="M118,256a138,138 0,1 0,276 0a138,138 0,1 0,-276 0M138,256a118,118 0,1 0,236 0a118,118 0,1 0,-236 0" />
-    <path android:fillColor="#ffffff"
-        android:pathData="M186,256a70,70 0,1 0,140 0a70,70 0,1 0,-140 0" />
+<!-- Geometry from repository icon-maskable.svg (#625). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="512" android:viewportHeight="512">
+    <path android:fillColor="#ffffff" android:pathData="M306 122C235 103 161 142 133 221c-21 62-6 119 27 153C129 329 133 258 157 208c27-57 76-88 149-86Z" />
+    <path android:fillColor="#ffffff" android:pathData="M354 209c18 34 18 85-2 121-33 62-102 86-156 61 67 16 120-18 146-71 16-32 19-73 12-111Z" />
+    <path android:fillColor="#ffffff" android:pathData="M248 170c8 66 13 80 78 96-65 11-70 29-78 96-12-67-20-84-78-96 58-14 66-30 78-96Z" />
 </vector>

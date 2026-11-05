@@ -6,6 +6,26 @@ ligne de la PWA. Développement du packaging et recette Android sont distincts.
 Lire [signature et domaine](SIGNING.md), [recette](TESTING.md) et
 [dossier Google Play](PLAY.md) avant distribution.
 
+## Icônes et splash
+
+Les PNG launcher des cinq densités et le splash 512 × 512 sont rendus depuis
+`../icon-maskable.svg`, identité céleste validée dans #625. Les vecteurs adaptatif
+et monochrome en reprennent les arcs et l'étoile ; les dégradés restent dans les
+PNG, le vecteur emploie l'or uni. Aucun nouveau dessin de constellation.
+
+Pour régénérer, démarrer Chromium/Edge headless avec un **profil temporaire
+dédié** et un port de débogage local, puis exécuter depuis `android/` :
+
+```sh
+LUMEN_CDP_URL=http://127.0.0.1:9222 node tools/render-icons.mjs
+node --test tools/packaging.test.mjs
+```
+
+Le générateur ferme ce navigateur dédié, lit seulement le SVG du dépôt et
+n'utilise aucun site ou compte. Il refuse une structure de SVG inattendue.
+Revoir visuellement les fichiers puis laisser la CI lint/compiler les ressources.
+L'acceptation dans un lanceur Android réel reste distincte.
+
 ## Compilation reproductible
 
 Prérequis : JDK **17**, Android SDK Platform **36**, Build Tools **35.0.0**,

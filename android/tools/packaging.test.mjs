@@ -61,12 +61,22 @@ test('Android dependencies, SDK and toolchain are explicit; release never uses d
   assert.match(build, /Provide all four LUMEN_UPLOAD_/);
 });
 test('icons cover pre-adaptive and adaptive launchers plus PNG TWA splash', () => {
-  for (const density of ['mdpi','hdpi','xhdpi','xxhdpi','xxxhdpi']) {
-    assert.equal(readFileSync(root + `app/src/main/res/mipmap-${density}/ic_launcher.png`).subarray(1,4).toString(), 'PNG');
+  for (const [density,size] of [['mdpi',48],['hdpi',72],['xhdpi',96],['xxhdpi',144],['xxxhdpi',192]]) {
+    const png=readFileSync(root + `app/src/main/res/mipmap-${density}/ic_launcher.png`);
+    assert.equal(png.subarray(1,4).toString(), 'PNG');
+    assert.equal(png.readUInt32BE(16),size);assert.equal(png.readUInt32BE(20),size);
   }
   assert.match(read('app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml'), /adaptive-icon/);
   assert.match(read('app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml'), /monochrome android:drawable="@drawable\/ic_monochrome"/);
   assert.equal(readFileSync(root + 'app/src/main/res/drawable-nodpi/splash.png').subarray(1,4).toString(), 'PNG');
+});
+
+test('native launcher and themed icon retain the approved celestial star geometry', () => {
+  const svg=readFileSync(new URL('../../icon-maskable.svg',import.meta.url),'utf8');
+  const star=[...svg.matchAll(/<path d="([^"]+)" fill="#fff3c5"/g)][0]?.[1];
+  assert(star,'Approved star shape must exist');
+  for(const name of ['ic_foreground','ic_monochrome'])assert(read(`app/src/main/res/drawable/${name}.xml`).includes(star),name+' must reuse the approved shape');
+  assert.match(read('app/src/main/res/values/colors.xml'),/#081333/);
 });
 test('no private signing material is present in packaging sources', () => {
   function scan(path) {

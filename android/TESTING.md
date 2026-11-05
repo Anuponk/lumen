@@ -1,9 +1,16 @@
 # Contrat de validation Android
 
 Les assertions Node ne certifient ni le gameplay hors ligne ni OAuth réel.
-La CI compile et inspecte le paquet, sans émulateur ni appareil physique.
+La CI compile et inspecte le paquet ; un job distinct le lance sur émulateur
+Google APIs 35 et conserve Logcat. Ce smoke ne valide ni TWA/DAL ni OAuth.
+Il ne remplace pas un appareil physique.
 La recette ci-dessous est **non exécutée** au moment de l'introduction du lot.
 Ne pas fermer #170 avant les preuves ; conserver le statut To be tested.
+
+Depuis le 5 novembre, dix tests Node couvrent aussi les dimensions exactes des
+PNG et la reprise de l'étoile approuvée dans les deux vecteurs. Ils ont échoué
+avec l'ancienne icône, puis passé après régénération depuis le SVG #625. La revue
+locale du splash et des sources ne remplace pas le rendu du lanceur sur appareil.
 
 ## Automatisation dédiée
 

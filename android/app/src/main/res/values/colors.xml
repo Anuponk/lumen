@@ -1,2 +1,3 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources><color name="night">#07111d</color></resources>
+<!-- Geometry from repository icon-maskable.svg (#625). -->
+<resources><color name="night">#081333</color></resources>
