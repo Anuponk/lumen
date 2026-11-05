@@ -1,5 +1,6 @@
 import {CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,CONSTELLATION_QUESTS,SKY_TARGET} from "./data.js";
 import {baseCampaignQuestCount} from "./content.js";
+import {completedRunRecords} from './personal-records.js';
 import {performanceAttempt,performanceEligibility,localCalendarDay,badgeCooldownRemaining,mergeEarnedBadges} from "./performance.js";
 export function campaignQuestCount(){return baseCampaignQuestCount()}
 export function sequentialCount(source){let count=0,total=campaignQuestCount();while(count<total&&source&&source[count])count++;return count}
@@ -102,8 +103,9 @@ function savePerformance(i,stars,{day=localCalendarDay(),at=new Date().toISOStri
  const attempt=getAttempt(),seconds=attempt.activeGameSeconds(),run=performanceRun(i),old=getProgress().performances[i]||{};
  const eligible=performanceEligibility(i,unlockedPerformanceQuestCount(i)),qualifying=!!attempt.qualifying,priorBadges=old.version>=2?old.badges:{};
  const badges=qualifying?mergeEarnedBadges(priorBadges,run,eligible):mergeEarnedBadges(priorBadges,{},{});
- const bestTime=!Number.isFinite(old.bestTime)||seconds<old.bestTime?seconds:old.bestTime;
+ const records=completedRunRecords(old,{seconds,assistanceUsed:!!attempt.assistanceUsed,hintUsed:!!attempt.hintUsed}),bestTime=records.bestTime;
  getProgress().performances[i]={...old,version:3,questIndex:i,badges,bestTime,time:bestTime,stars:Math.max(old.stars||0,stars),quest:!!bonusChallengeFor(i),milestone:milestoneFor(i)?.kind||null,attempts:(old.attempts||0)+1,lastQualifiedDay:qualifying?day:old.lastQualifiedDay||null,lastQualifiedAt:qualifying?(old.lastQualifiedAt||at):old.lastQualifiedAt||null};
+ Object.assign(getProgress().performances[i],records);
  return {run,qualifying,badges};
 }
 

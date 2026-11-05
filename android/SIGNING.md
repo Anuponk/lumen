@@ -72,8 +72,13 @@ la déclaration site → app à
 Réponse directe **200**, HTTPS valide, **application/json**, aucun login ni
 redirection. Aucun fichier vide, certificat factice ou placeholder n'est livré
 à cette URL par ce chantier. Aucun déploiement du domaine n'est déclenché.
-Contrôle HTTP du 4 novembre 2026 : cette URL répondait **404**, association à
-configurer avant recette sans barre d'adresse. Le manifeste PWA répondait 200.
+Le contrôle initial du 4 novembre répondait **404**. Depuis #624, la publication
+sert l'association debug de l'APK distribué (workflow 41882238087,
+artefact 13350282143) pour `fr.nopuna.lumen.debug`. Son certificat public est
+`1F:ED:54:5E:DE:8B:B2:9D:F6:E9:52:FA:90:7D:AD:40:59:CF:BE:34:20:27:77:41:AB:70:47:5D:F2:48:8F:C7`.
+Recontrôler la réponse avec `--live` et recetter le même APK ; un nouveau build
+debug CI peut utiliser un autre certificat. Conserver les autres associations.
+Le certificat Play App Signing de `fr.nopuna.lumen` reste à ajouter séparément.
 
 Depuis `android/`, remplacer les arguments descriptifs par les valeurs réelles :
 

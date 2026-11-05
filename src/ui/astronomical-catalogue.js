@@ -19,6 +19,7 @@ export function iauForConstellation(entry){
  if(!entry?.id)return null;
  if(RESERVED_IAU[entry.id])return RESERVED_IAU[entry.id];
  const registered=byId.get(entry.id)||entry;
+ if(registered.iau&&atlas.figures[registered.iau])return registered.iau;
  if(registered.id?.startsWith("iau-"))return GENERATED_IAU[registered.id.slice(4)]||null;
  return LEGACY_IAU[registered.legacyIndex]||null;
 }

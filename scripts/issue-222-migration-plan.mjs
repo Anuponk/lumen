@@ -12,7 +12,7 @@ function allocation(existing){
  return existing.map(()=>10);
 }
 
-export function buildMigrationPlan({packs=CONTENT_PACKS,constellations=CONTENT_CONSTELLATIONS,getQuest=playableQuest,questCount=playableQuestCount()}={}){
+export function buildMigrationPlan({packs=CONTENT_PACKS.filter(p=>!p.canonicalOnly),constellations=CONTENT_CONSTELLATIONS,getQuest=playableQuest,questCount=playableQuestCount()}={}){
  const ordered=[...packs].sort((a,b)=>a.order-b.order);
  const currentIds=new Set(),records=[],adventures=[];
  for(const [adventureIndex,pack] of ordered.entries()){

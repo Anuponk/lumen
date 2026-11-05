@@ -1,6 +1,7 @@
 import {CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,CONSTELLATION_QUESTS,CAMPAIGN_SIZE_SCHEDULE} from "./data.js";
 import {cataloguePackForQuestId,publishedCatalogueQuests} from './catalogue-origin.js';
 import generatedContentSnapshot from '../../content/generated/first-adventure.json' with {type:'json'};
+import fifthAdventureConfig from '../../content/fifth-adventure-preview.json' with {type:'json'};
 
 export const CONTENT_MODEL_VERSION=1;
 export const BASE_SKY_ID="real-sky";
@@ -58,10 +59,21 @@ export const RESERVED_ADVENTURE_03_CONSTELLATIONS=Object.freeze([
  canonicalOnly:true
 })));
 
+export const FIFTH_ADVENTURE_PACK=Object.freeze({
+ id:fifthAdventureConfig.id,skyId:fifthAdventureConfig.skyId,kind:'addon',access:fifthAdventureConfig.access,order:fifthAdventureConfig.order,
+ displayName:fifthAdventureConfig.displayName,shortDescription:'Dix nouvelles constellations du ciel réel',
+ questCount:fifthAdventureConfig.constellations.length*fifthAdventureConfig.questsPerConstellation,questIndices:Object.freeze([]),
+ constellationIds:Object.freeze(fifthAdventureConfig.constellations.map(c=>c.id)),canonicalOnly:true
+});
+export const FIFTH_ADVENTURE_CONSTELLATIONS=Object.freeze(fifthAdventureConfig.constellations.map((c,index)=>Object.freeze({
+ id:c.id,label:c.name,iau:c.iau,skyId:fifthAdventureConfig.skyId,packId:fifthAdventureConfig.id,
+ legacyIndex:null,questStart:null,questCount:fifthAdventureConfig.questsPerConstellation,
+ questIndices:Object.freeze([]),canonicalOnly:true,displayOrder:index
+})));
 export const CONTENT_PACKS=Object.freeze([...LEGACY_CONTENT_PACKS.map(pack=>pack.id==="real-adventure-03"
  ?Object.freeze({...pack,constellationIds:Object.freeze([...pack.constellationIds,...RESERVED_ADVENTURE_03_CONSTELLATIONS.map(c=>c.id)])})
- :pack),Object.freeze({...generatedManifest.pack,legacyQuestStart:generatedManifest.pack.questIndices[0]})]);
-export const CONTENT_CONSTELLATIONS=Object.freeze([...BASE_CONSTELLATIONS,...GENERATED_CONSTELLATIONS,...RESERVED_ADVENTURE_03_CONSTELLATIONS]);
+ :pack),Object.freeze({...generatedManifest.pack,legacyQuestStart:generatedManifest.pack.questIndices[0]}),FIFTH_ADVENTURE_PACK]);
+export const CONTENT_CONSTELLATIONS=Object.freeze([...BASE_CONSTELLATIONS,...GENERATED_CONSTELLATIONS,...RESERVED_ADVENTURE_03_CONSTELLATIONS,...FIFTH_ADVENTURE_CONSTELLATIONS]);
 
 export function normalizeEntitlements(rows=[]){
  return new Set((rows instanceof Set?[...rows]:Array.isArray(rows)?rows:[])

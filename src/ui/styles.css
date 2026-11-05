@@ -1208,3 +1208,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .support-panel label{display:block;line-height:1.5}
 .support-panel input{min-width:24px;min-height:24px;vertical-align:middle}
 .support-panel p{line-height:1.5}
+.personal-record{font-size:.8rem;line-height:1.5;color:var(--gold,#d8b66a);max-width:100%;overflow-wrap:anywhere}
+.personal-record-new{animation:personalRecordGlow 1.2s ease-out}
+@keyframes personalRecordGlow{50%{text-shadow:0 0 12px #dfbd7088}}
+@media(prefers-reduced-motion:reduce){.personal-record-new{animation:none}}

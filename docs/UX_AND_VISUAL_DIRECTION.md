@@ -494,3 +494,19 @@ immediate catalogue successor is accessible. Starting the replay hides this
 shortcut. Navigation rechecks live access and grants no completion or reward.
 Challenge and learning-only replays retain their existing navigation; notably,
 the quest-2 victory still introduces Mon ciel.
+## Offline aids — approved 4 November 2026 (#597)
+
+Paid Hint and Verify may reserve the last verified device balance while offline.
+Show the remaining available Éclats and the amount pending synchronization;
+do not describe a reservation as a confirmed debit. A server refusal remains
+reviewable without withdrawing earned progression. Existing free aids, teaching
+milestones and assistance effects on badges are unchanged; no extra blocking
+tutorial is introduced.
+## Records personnels (#600)
+
+Afficher le record absolu et, s’il existe, le record « Sans aide » dans le masque
+de départ d’une quête déjà réussie. À la victoire confirmée, le récapitulatif
+existant montre la comparaison et une courte lueur pour un nouveau record ;
+aucune fenêtre supplémentaire. La lueur respecte reduced-motion. Les victoires
+en attente ne revendiquent pas de record confirmé. Les essais non qualifiants
+restent utiles pour améliorer le temps, sans changer les badges.

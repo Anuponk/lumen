@@ -365,6 +365,41 @@ pending intent preservation; `fixtures/player-favorable-acquisitions.sql` plus
 `acquisition-recovery-concurrency.py` → actual RPC/guards/concurrent spending.
 See TESTING.md for native browser and physical-device evidence limits.
 
+## Adventure 5 staging generation (#598)
+
+`node scripts/generate-fifth-adventure.mjs` uses the deterministic existing candidate generator to target 100 puzzles, 50 per size (7 and 8), checking uniqueness, connected regions and proof replay before writing an **unpublished** artifact to `artifacts/adventure-05-candidates.json`. Its input is `content/fifth-adventure-preview.json`. `.github/workflows/adventure-05-staging.yml` is a manually dispatchable or branch-push staging job; its execution and artifact must be verified separately. This is **not** a catalogue integration test or a publication step. Before publishing, run strict catalogue audit, astronomical audit, content/progression and cloud regression tests, full quality gate and mobile acceptance. No execution result is claimed by this map entry.
 ## Account deletion request journey (#316)
 
 `node --test scripts/account-deletion-request-journey.test.mjs` covers the public `supprimer-compte.html` form and `src/privacy/account-deletion.js`: manual mailto preparation, invalid-address rejection, explicit Lumen-only scope, and honest non-automatic-send messaging. `.github/workflows/account-deletion-request-journey.yml` runs this focused regression on PR changes. This is a simulated form contract, **not** browser/email delivery or a real-account production erasure test. The disposable PostgreSQL deletion test remains in `.github/workflows/privacy-sql-integration.yml` and should not be rerun for documentation-only changes.
+
+### Adventure 5 staging verification — 4 November 2026
+
+Generation was rerun deterministically: the 100 committed candidates are unchanged.
+The strict staging validator now checks singleton-free territories and collisions
+against all 400 published canonical quests, not only the historical CAT arrays.
+Validation, the preview adapter and allowlist preparation passed. All ten IAU
+figures resolve to the existing audited Western source. The workflow is artifact
+only with contents:read and cannot push regenerated files to the PR branch.
+
+This remains unpublished. Actual promotion requires a new immutable catalogue
+revision, published pack/constellation/grid records, reviewed server quest_rules
+and catalogue-origin support, full cloud/offline/browser audits and physical
+acceptance. The allowlist generator alone does not install that metadata or
+authorize a production migration. No player profile or entitlement was changed.
+
+### Records personnels (#600)
+
+`personal-records-tests.mjs` couvre les projections Legacy/Quest, minima et
+récupération. `personal-records-browser-tests.mjs` couvre l’interface QA à
+320/390/1440 px et le redémarrage. `fixtures/personal-records.sql` vérifie les
+commandes réelles en base jetable, après les parités Legacy/Quest complètes.
+L’intégration serveur et la recette réelle multi-appareils restent distinctes.
+
+### Aventure 5 — candidat d’intégration après le staging initial
+
+`adventure-05-runtime-tests.mjs` couvre le préfixe immuable, la courbe heuristique,
+la progression et les replays. `adventure-05-browser-tests.mjs` vérifie les vraies
+cartes/grilles QA, deux victoires, reload et précache aux trois largeurs.
+`fixtures/adventure-05.sql` complète les parités de commandes en PostgreSQL
+jetable, après la migration additive. Le candidat corrige l’ordre du même pool
+non publié ; les comptes et les 400 anciennes grilles restent intacts.

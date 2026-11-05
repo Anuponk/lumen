@@ -89,11 +89,19 @@ Description longue (maximum Console 4 000 caractères) :
 > Avec son univers de lumière et ses règles accessibles, Lumen invite à
 > prendre le temps de réfléchir, seul ou en famille.
 >
-> Lumen est gratuit, sans publicité ni achats intégrés.
+> Découvre gratuitement les 100 premières quêtes de Lumen, sans publicité.
 
-La dernière phrase reprend le modèle confirmé de première publication ; la
-revalider avant soumission. Aucun nombre de quêtes, mode hors ligne garanti,
-compte enfant, promesse de confidentialité ou réception push native ajouté.
+La dernière phrase reprend les 100 quêtes gratuites de l'Aventure 1 décidées
+le 4 novembre (#170). L'offre future « Débloquer le ciel principal », achat
+définitif non consommable au prix public cible France de 4,99 €, couvrira toutes
+les aventures principales présentes et futures ; aucun paiement ni verrou
+premium n'est activé par ce packaging. Les droits acquis des joueurs restent
+protégés. Ne pas annoncer « sans achats intégrés » comme modèle définitif.
+Avant soumission, accorder la fiche aux fonctions réellement actives et au prix
+localisé fourni par le canal de paiement. Play Billing, droits serveur et
+restauration sandbox restent à valider dans leur chantier séparé ; ne pas
+implémenter de paiement dans le wrapper. Aucun hors ligne garanti, compte enfant,
+promesse de confidentialité ou réception push native annoncé.
 
 ## Visuels à produire à partir d'une vraie installation
 

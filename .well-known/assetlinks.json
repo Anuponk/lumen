@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "fr.nopuna.lumen.debug",
+      "sha256_cert_fingerprints": [
+        "1F:ED:54:5E:DE:8B:B2:9D:F6:E9:52:FA:90:7D:AD:40:59:CF:BE:34:20:27:77:41:AB:70:47:5D:F2:48:8F:C7"
+      ]
+    }
+  }
+]
