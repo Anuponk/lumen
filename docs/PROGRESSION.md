@@ -249,3 +249,11 @@ En cas de conflit, chaque minimum valide est conservé séparément. Les records
 avant partie concernent uniquement les quêtes déjà réussies ; le récapitulatif
 compare le parcours acquitté et le record précédent. Une victoire en attente ne
 présente aucun nouveau record confirmé.
+## Aventure 5 — prolongement du catalogue
+
+Les quêtes 401–500 de « Les chemins du firmament » prolongent les aventures
+existantes. Un ancien compte ayant terminé les 400 quêtes retrouve ses acquis
+et poursuit vers ce pack selon ses droits et les prérequis habituels, sans
+rejouer l’ancienne finale. Une victoire débloque la suivante ; posséder le pack
+ne permet pas de sauter une quête. Les replays, records personnels, badges et
+récompenses utilisent le même contrat canonique que les autres quêtes.

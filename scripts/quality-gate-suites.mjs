@@ -1,4 +1,7 @@
 export const nodeSuites=[
+ 'adventure-05-runtime-tests.mjs',
+ 'test-adventure-05-staging.mjs',
+ 'validate-fifth-adventure.mjs',
  'personal-records-tests.mjs',
  'learning-coach-placement-tests.mjs',
  'browser-dependency-tests.mjs',

@@ -2,6 +2,7 @@
 // the legacy numeric index remains the key in existing cloud saves.
 import staged from "../../content/generated/issue-222-additions.json" with {type:"json"};
 import diverse from "../../content/generated/diverse-adventures-3-4.json" with {type:"json"};
+import fifth from '../../content/generated/fifth-adventure-candidates.json' with {type:'json'};
 const diverseById=new Map(diverse.puzzles.map(q=>[q.id,q]));
 if(diverse.schema!=="lumen-grid-overrides-v1"||diverseById.size!==diverse.puzzles.length)throw Error("Invalid diversity override manifest");
 import {CONTENT_PACKS,CONTENT_CONSTELLATIONS,hasPackAccess} from "./content.js";
@@ -13,8 +14,8 @@ import {buildQuestDefinitions} from './quest-definition.js';
 import {questRewardDefinition} from './quest-rewards.js';
 
 const slots=buildQuestDefinitions(publishedCatalogueQuests(),CONTENT_PACKS,CONTENT_CONSTELLATIONS);
-const added=new Map(staged.quests.map(q=>[q.id,q]));
-if(staged.status!=="staged-only"||added.size!==staged.quests.length)throw Error("Invalid staged content");
+const added=new Map([...staged.quests,...fifth.quests].map(q=>[q.id,q]));
+if(staged.status!=="staged-only"||fifth.status!=='staging-proof-audited'||added.size!==staged.quests.length+fifth.quests.length)throw Error("Invalid staged content");
 const all=Object.freeze(slots.map(slot=>{
  const original=slot.legacyIndex===null?added.get(slot.id):playableQuest(slot.legacyIndex);
  if(!original||original.id!==slot.id)throw Error("Missing canonical grid "+slot.id);

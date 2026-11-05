@@ -1714,6 +1714,25 @@ Recette restant nécessaire : deux appareils authentifiés, conflit de temps
 absolu/sans aide, aide payante puis victoire, reprise d’une victoire hors ligne,
 ancienne sauvegarde sans record et Android réel. Ne pas annoncer cette partie
 serveur active tant que sa migration et son read-back ne sont pas vérifiés.
+## Candidat d’intégration de l’aventure 5 (#598 / #599)
+
+- `adventure-05-runtime-tests.mjs` vérifie les 400 anciens IDs/ordres/hashs
+  exacts, les 100 ajouts, l’accès, la séquence, les rewards et les replays. Un
+  test de courbe a reproduit le tri décroissant initial avant sa correction.
+- `validate-fifth-adventure.mjs` rejoue l’unicité, proofEngine, la connexité,
+  l’absence de singleton et de collisions D4 contre le reste du catalogue.
+- `adventure-05-browser-tests.mjs` parcourt les vraies cartes/grilles QA à
+  320/390/1440 px, réussit deux quêtes, conserve l’ancien préfixe, recharge et
+  attend la présence effective du JSON dans Cache API. Auth réelle non testée.
+- PostgreSQL 17 jetable : migrations records/catalogue puis parités complètes
+  Legacy/Quest, anciens/nouveaux profils et `fixtures/adventure-05.sql`.
+- Worker v15 renouvelle le manifeste complet ; les tests d’update préservent
+  les intentions et les scénarios offline existants restent obligatoires.
+
+Recette restant nécessaire : difficulté perçue, rendu des dix constellations,
+Android réel, deux comptes/appareils, vieux client puis mise à jour, activation
+serveur autorisée et vérification du SHA publié. Les fixtures ne publient pas
+l’aventure et ne modifient aucun joueur de production.
 
 ## TWA Digital Asset Links on o2switch (#170)
 
@@ -1724,3 +1743,4 @@ The o2switch static publisher stages `.well-known/assetlinks.json`, merges it in
 Release acceptance: verify `https://lumen.nopuna.fr/.well-known/assetlinks.json` returns 200, JSON, no redirects; test Android's domain verification and launch the **same APK whose certificate is listed** to verify the browser toolbar is absent. A successful HTTP check alone does not guarantee that a specific browser/device accepts TWA verification.
 
 For release verification, use the *original* APK from Android workflow run 41882238087 (artifact 13350282143); rebuilding a debug APK changes the CI signing certificate and invalidates the published fingerprint. After the public DAL is verified, force-stop and relaunch the installed app. Do not remove its browser data as a workaround.
+

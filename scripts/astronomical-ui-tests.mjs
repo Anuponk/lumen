@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {astronomyVisualMetadata,verifiedAstronomicalFigure,iauForConstellation} from "../src/ui/astronomical-catalogue.js";
 import {astronomicalIdentityAudit} from "./astronomical-identity-audit.mjs";
 const audit=astronomicalIdentityAudit();
-assert.equal(audit.mapped.length,40);
+assert.equal(audit.mapped.length,50);
 for(const identity of audit.mapped){
  assert.equal(iauForConstellation(identity),identity.iau,identity.id);
  const figure=verifiedAstronomicalFigure(identity);
@@ -18,4 +18,4 @@ import {readFileSync} from "node:fs";
 const skyNavigationSource=readFileSync(new URL("../src/ui/sky-navigation.js",import.meta.url),"utf8");
 assert.match(skyNavigationSource,/if\(shape\|\|reference\)/,"Reference-only constellation cards must render");
 for(const reserved of audit.reserved)assert(verifiedAstronomicalFigure(reserved),"Reserved constellation missing real atlas figure");
-console.log("All 40 playable constellation cards use verified Western atlas shapes");
+console.log("All 50 playable constellation cards use verified Western atlas shapes");
