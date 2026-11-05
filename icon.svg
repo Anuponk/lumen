@@ -1,1 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#07111d"/><circle cx="256" cy="256" r="118" fill="#10283d" stroke="#68e7ff" stroke-width="18"/><circle cx="256" cy="256" r="64" fill="#68e7ff"/><circle cx="236" cy="232" r="20" fill="#eaffff" opacity=".9"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Lumen, étoile et constellation">
+<defs>
+<linearGradient id="sky" x1=".1" y1="0" x2=".8" y2="1"><stop stop-color="#081333"/><stop offset=".66" stop-color="#132551"/><stop offset="1" stop-color="#182e69"/></linearGradient>
+<linearGradient id="gold" x1=".15" y1=".15" x2=".85" y2=".86"><stop stop-color="#fff0b8"/><stop offset=".38" stop-color="#ffda77"/><stop offset="1" stop-color="#e89c39"/></linearGradient>
+<radialGradient id="glow"><stop stop-color="#ffefbf" stop-opacity=".52"/><stop offset="1" stop-color="#ffcc63" stop-opacity="0"/></radialGradient>
+<linearGradient id="cloud" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#49649b" stop-opacity=".5"/><stop offset="1" stop-color="#14234e" stop-opacity=".13"/></linearGradient>
+</defs>
+<rect width="512" height="512" rx="108" fill="url(#sky)"/>
+<circle cx="252" cy="272" r="165" fill="url(#glow)"/>
+<g fill="#e1ebff"><circle cx="94" cy="143" r="1.6"/><circle cx="130" cy="85" r="1"/><circle cx="357" cy="80" r="1.5"/><circle cx="423" cy="176" r="1.4"/><circle cx="89" cy="304" r="1.2"/><circle cx="411" cy="314" r="1"/><circle cx="366" cy="405" r="1.2"/><circle cx="193" cy="399" r="1.2"/></g>
+<g fill="#fdd88b"><circle cx="152" cy="189" r="1.5"/><circle cx="388" cy="243" r="1.3"/><circle cx="118" cy="273" r="1.4"/></g>
+<path d="M306 122C235 103 161 142 133 221c-21 62-6 119 27 153C129 329 133 258 157 208c27-57 76-88 149-86Z" fill="url(#gold)"/>
+<path d="M354 209c18 34 18 85-2 121-33 62-102 86-156 61 67 16 120-18 146-71 16-32 19-73 12-111Z" fill="url(#gold)"/>
+<circle cx="248" cy="266" r="97" fill="url(#glow)"/>
+<path d="M248 170c8 66 13 80 78 96-65 11-70 29-78 96-12-67-20-84-78-96 58-14 66-30 78-96Z" fill="#fff3c5"/>
+<path d="M248 201c7 45 16 54 57 65-41 9-50 19-57 65-9-46-19-56-57-65 38-11 48-20 57-65Z" fill="#fff9e8"/>
+<g stroke="#ffc867" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+<path d="M224 87 279 96 322 134 332 166 380 179"/>
+</g>
+<g fill="#fff1c6" stroke="#ffc768" stroke-width="2"><circle cx="224" cy="87" r="5"/><circle cx="279" cy="96" r="5"/><circle cx="322" cy="134" r="4.3"/><circle cx="332" cy="166" r="4.3"/><circle cx="380" cy="179" r="5.5"/></g>
+<path d="M408 126c4 22 8 25 26 29-18 4-22 9-26 29-4-20-8-25-26-29 18-4 22-7 26-29Z" fill="#ffde8b"/>
+<path d="M0 396c42-27 68-22 100-1 36-15 69-6 89 17 37-17 66-7 91 10 38-23 72-19 105 5 48-32 92-18 127-2v87H0Z" fill="url(#cloud)"/>
+</svg>

@@ -2,6 +2,15 @@
 
 ## État courant du 4 novembre 2026
 
+Complément du 5 novembre : le handler UI exige aussi l'acquittement JSON exact
+de l'Edge avant toute déconnexion/nettoyage. Une réponse 200 vide, en attente,
+d'un autre périmètre ou illisible conserve les données locales. Le compte et la
+génération sont revérifiés après les attentes ; une session remplacée ne reçoit
+pas le résultat tardif. Le nettoyage requiert une déconnexion réussie et le même
+propriétaire local. Régression exécutant le vrai handler :
+`scripts/self-erasure-controls-tests.mjs` (transport et nettoyage fictifs).
+Ce correctif client n'active pas l'effacement serveur.
+
 Le contrat de livraison courant est celui de la PR #611 : Edge avec vérification
 Auth du JWT, cible dérivée de cette identité, credentials service uniquement côté
 serveur, wrapper SQL privilégié puis moteur transactionnel existant. Les sections

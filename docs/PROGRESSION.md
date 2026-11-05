@@ -235,3 +235,25 @@ When changing progression, test old/local data migration behavior and cloud merg
 Social challenges are outside campaign progression. Completing a challenge never solves the corresponding campaign quest, unlocks a constellation, awards campaign stars/badges, changes the daily qualifying attempt, or transfers the challenged quest into normal progression. This remains true when the challenged quest is the participant's current campaign quest.
 
 A challenge participation has its own attempt identity and is terminal after success or explicit abandon. Reload/background restore the same challenge attempt through the shared attempt engine; they do not grant a fresh attempt.
+## Records personnels — #600
+
+Une victoire terminée peut améliorer le meilleur temps absolu, même lors d’une
+tentative non qualifiante pour les badges. `bestUnassistedTime` est un minimum
+indépendant : seuls les nouveaux parcours sans assistance et sans indice le
+renseignent. Une erreur seule ne constitue pas une assistance. Aucun ancien
+badge ni temps de première victoire ne prouve un ancien record sans aide.
+Les règles des badges, de qualification et de récompense restent inchangées.
+
+Les temps sont des nombres finis positifs ou nuls, au plus `MAX_SAFE_INTEGER`.
+En cas de conflit, chaque minimum valide est conservé séparément. Les records
+avant partie concernent uniquement les quêtes déjà réussies ; le récapitulatif
+compare le parcours acquitté et le record précédent. Une victoire en attente ne
+présente aucun nouveau record confirmé.
+## Aventure 5 — prolongement du catalogue
+
+Les quêtes 401–500 de « Les chemins du firmament » prolongent les aventures
+existantes. Un ancien compte ayant terminé les 400 quêtes retrouve ses acquis
+et poursuit vers ce pack selon ses droits et les prérequis habituels, sans
+rejouer l’ancienne finale. Une victoire débloque la suivante ; posséder le pack
+ne permet pas de sauter une quête. Les replays, records personnels, badges et
+récompenses utilisent le même contrat canonique que les autres quêtes.

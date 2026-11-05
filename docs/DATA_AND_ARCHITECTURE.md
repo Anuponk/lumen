@@ -1456,4 +1456,50 @@ An insufficient-balance refusal is retained for review, never erased and never
 used to revoke earned progression. Offline spending across two disconnected
 devices can conflict; the owner explicitly accepted retained reconciliation.
 Server tariffs, eligibility and badge assistance rules remain unchanged.
+## Métadonnée de record sans assistance (#600)
 
+`performances[index].bestUnassistedTime` et
+`canonicalQuestState[id].runPerformance.bestUnassistedTime` prolongent les
+résumés existants ; aucun nouveau champ de profil racine ni magasin parallèle.
+Les commandes Legacy/Quest calculent le minimum à partir des faits d’une
+nouvelle victoire. Le reçu reste idempotent. La récupération des acquis conserve
+le minimum valide sans transformer les badges cumulés en preuve historique.
+
+La migration `20261104155248_personal_records.sql` modifie uniquement les
+fonctions, avec contrôle du corps attendu ; elle ne réécrit aucune sauvegarde,
+récompense, monnaie ou historique. Son déploiement serveur reste une étape
+distincte, non exécutée par les tests ni par la fusion du client. Sans cette
+migration, un ancien serveur continue de confirmer ses temps absolus, mais ne
+confirme pas de nouveau record sans aide : le client ne le fabrique pas.
+Avant activation, conserver les définitions des fonctions pour un rollback ;
+un retour aux fonctions précédentes doit conserver le JSON et les reçus acquis.
+## Publication append-only de l’aventure 5
+
+Le candidat #599 conserve les révisions 1/2 et leurs digests. La révision 3
+contient leur préfixe de 400 quêtes inchangé et les 100 ajouts de l’aventure 5.
+Les snapshots explicites d’origine 1/2 restent lisibles et immuables ; seul un
+nouveau profil sans origine est classé dans la révision courante. Aucun profil
+existant n’est parcouru ni réécrit par la migration.
+
+L’activation des 100 règles serveur et du garde d’origine doit être coordonnée
+avec le client compatible. Un ancien client qui ne connaît pas l’origine 3 doit
+être mis à jour ; il ne faut jamais « réparer » son profil en réécrivant cette
+origine ou en supprimant ses sauvegardes. Pour revenir d’une publication,
+conserver les lecteurs d’origine 3, les IDs, reçus et acquis ; ne pas redéployer
+un ancien catalogue de 400 quêtes au-dessus de nouveaux acquis. Sauvegarder les
+définitions des fonctions avant toute activation autorisée.
+
+L’accès au pack et les prérequis réutilisent le contrat normal. Les grilles
+verrouillées sont précachées sans conférer d’accès. Toutes les victoires et
+replays passent par les commandes canoniques existantes ; aucune seconde outbox
+ni règle économique ajoutée.
+
+### Confirmation cliente de suppression (#316)
+
+Le client conserve le compte, le client Auth et la génération de session de la
+demande. Il refuse un jeton d'un autre compte et toute réponse devenue obsolète.
+Un HTTP 200 seul n'autorise aucun nettoyage : la réponse JSON doit confirmer
+`status=erased`, `scope=lumen`, `details=erased`. L'échec de déconnexion ou un
+changement de propriétaire local conserve les données de cet appareil et affiche
+un état incomplet, sans revendiquer une suppression locale réussie. Les contrôles
+serveur et la recette authentifiée isolée restent obligatoires avant activation.
