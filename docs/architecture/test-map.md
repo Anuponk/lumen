@@ -1,9 +1,9 @@
 # Existing verification map
 
-Account erasure #316: `scripts/self-erasure-controls-tests.mjs` executes the real
-UI handler against synthetic boundaries: strict acknowledgement, session/owner
-isolation and signout failure. Complements handler/SQL tests; does not activate
-or certify real end-to-end deletion.
+Erasure UI: `self-erasure-controls-tests.mjs` executes the production controls
+with synthetic boundaries, proving strict acknowledgement, current ownership,
+session isolation and signout success before local cleanup. It does not certify
+or deploy the privileged backend in #611.
 
 CDP shutdown: `browser-navigation-tests.mjs` executes the actual core-suite
 teardowns and checks that `cdp-client.mjs::closeBrowser` preserves business and

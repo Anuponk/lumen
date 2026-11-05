@@ -2,15 +2,6 @@
 
 ## État courant du 4 novembre 2026
 
-Complément du 5 novembre : le handler UI exige aussi l'acquittement JSON exact
-de l'Edge avant toute déconnexion/nettoyage. Une réponse 200 vide, en attente,
-d'un autre périmètre ou illisible conserve les données locales. Le compte et la
-génération sont revérifiés après les attentes ; une session remplacée ne reçoit
-pas le résultat tardif. Le nettoyage requiert une déconnexion réussie et le même
-propriétaire local. Régression exécutant le vrai handler :
-`scripts/self-erasure-controls-tests.mjs` (transport et nettoyage fictifs).
-Ce correctif client n'active pas l'effacement serveur.
-
 Le contrat de livraison courant est celui de la PR #611 : Edge avec vérification
 Auth du JWT, cible dérivée de cette identité, credentials service uniquement côté
 serveur, wrapper SQL privilégié puis moteur transactionnel existant. Les sections
@@ -42,6 +33,21 @@ absente. Les objets QA restent privés, sans activation du service d’effacemen
 Cette preuve SQL ne valide pas encore la chaîne interface → JWT réel → Edge →
 RPC. Une recette authentifiée isolée de cette chaîne et une décision séparée
 d’activation production restent nécessaires ; #611 reste ouverte.
+
+## Protection cliente intégrable sans activation serveur
+
+Le handler de confirmation garde le compte, le client Auth et la génération
+de session pendant les attentes. Un propriétaire local non vérifié ou le jeton
+d'un autre compte refuse la demande. Une réponse HTTP 200 seule ne permet plus
+de nettoyer cet appareil : le JSON doit confirmer `status=erased`, `scope=lumen`
+et `details=erased`. Une déconnexion échouée ou une session remplacée conserve
+les données locales ; une double soumission ne lance qu'une requête.
+
+Cette protection reprend le correctif client de #611 indépendamment de son
+backend privilégié encore en recette. Elle ne modifie ni Edge Function, RPC,
+schéma SQL, permissions ou barrières, et n'active aucune suppression serveur.
+Les tests du vrai handler utilisent uniquement des frontières fictives ; la
+recette positive avec JWT réel et l'activation restent des étapes distinctes.
 
 ## Décision d'architecture
 
