@@ -1038,19 +1038,32 @@ function wireLumenErasureControls(){
  open.addEventListener('click',()=>{panel.hidden=false;input.value='';status.textContent='';input.focus()});
  cancel.addEventListener('click',()=>{panel.hidden=true;input.value='';status.textContent=''});
  execute.addEventListener('click',async()=>{
+  if(execute.disabled)return;
   if(!lumenUser||!lumenSupabase){status.textContent='Connecte-toi à ton compte Lumen.';return}
   if(input.value!=='SUPPRIMER'){status.textContent='Saisis exactement SUPPRIMER.';return}
+  const ownerId=lumenUser.id,client=lumenSupabase,generation=cloudHydrationGeneration;
+  const sameSession=()=>lumenUser?.id===ownerId&&lumenSupabase===client&&cloudHydrationGeneration===generation;
+  const requireSession=()=>{if(!sameSession())throw Error('La session a changé. Les données de cet appareil sont conservées.');};
   execute.disabled=true;status.textContent='Suppression en cours…';
   try{
-   const {data:sessionData,error:sessionError}=await lumenSupabase.auth.getSession();
+   if(localStorage.getItem('lumenCloudOwnerId')!==ownerId)throw Error('Attends la restauration de ton compte avant de supprimer ses données.');
+   const {data:sessionData,error:sessionError}=await client.auth.getSession();
+   requireSession();
    const token=sessionData?.session?.access_token;
-   if(sessionError||!token)throw Error('Session expirée : reconnecte-toi.');
+   if(sessionError||!token||sessionData?.session?.user?.id!==ownerId)throw Error('Session expirée : reconnecte-toi.');
    const response=await fetch(LUMEN_SUPABASE_URL+'/functions/v1/lumen-self-erasure',{
     method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+token,apikey:LUMEN_SUPABASE_KEY},
     body:JSON.stringify({confirmation:'SUPPRIMER'})
    });
+   requireSession();
    if(!response.ok)throw Error('Suppression non terminée. Aucune confirmation de suppression ne peut être donnée. Contacte le support.');
-   await signOut();
+   const acknowledgement=await response.json();
+   requireSession();
+   if(acknowledgement?.status!=='erased'||acknowledgement?.scope!=='lumen'||acknowledgement?.details!=='erased')
+    throw Error('Confirmation d’effacement absente. Les données de cet appareil sont conservées.');
+   const signedOut=await signOut();
+   if(!signedOut?.ok||lumenUser||lumenSupabase!==client||localStorage.getItem('lumenCloudOwnerId')!==ownerId)
+    throw Error('Effacement serveur confirmé. Nettoyage de cet appareil interrompu : vérifie la session puis contacte le support.');
    await clearErasedLumenDeviceData();
    status.textContent='Données Lumen supprimées sur le serveur et cet appareil.';
    location.reload();

@@ -1,5 +1,20 @@
 # #316 — Suppression autonome sécurisée (plan de livraison)
 
+## Protection cliente intégrable sans activation serveur
+
+Le handler de confirmation garde le compte, le client Auth et la génération
+de session pendant les attentes. Un propriétaire local non vérifié ou le jeton
+d'un autre compte refuse la demande. Une réponse HTTP 200 seule ne permet plus
+de nettoyer cet appareil : le JSON doit confirmer `status=erased`, `scope=lumen`
+et `details=erased`. Une déconnexion échouée ou une session remplacée conserve
+les données locales ; une double soumission ne lance qu'une requête.
+
+Cette protection reprend le correctif client de #611 indépendamment de son
+backend privilégié encore en recette. Elle ne modifie ni Edge Function, RPC,
+schéma SQL, permissions ou barrières, et n'active aucune suppression serveur.
+Les tests du vrai handler utilisent uniquement des frontières fictives ; la
+recette positive avec JWT réel et l'activation restent des étapes distinctes.
+
 ## Décision d'architecture
 
 L'effacement SQL existant est **opérateur uniquement** : `lumen_privacy.erase_account(uuid,text[],text)` est accessible au propriétaire PostgreSQL, et `review_erasure` refuse explicitement une session `auth.uid()` non nulle. Le rôle `service_role` n'a pas accès au schéma. **Ne pas** accorder `EXECUTE` aux rôles client, ni exposer le propriétaire PostgreSQL dans le navigateur ou une Edge Function. Ne pas supprimer `auth.users` : l'identité est partagée avec SoldeZen.

@@ -1,5 +1,10 @@
 # Existing verification map
 
+Erasure UI: `self-erasure-controls-tests.mjs` executes the production controls
+with synthetic boundaries, proving strict acknowledgement, current ownership,
+session isolation and signout success before local cleanup. It does not certify
+or deploy the privileged backend in #611.
+
 CDP shutdown: `browser-navigation-tests.mjs` executes the actual core-suite
 teardowns and checks that `cdp-client.mjs::closeBrowser` preserves business and
 non-shutdown failures while tolerating only the known missing close ACK.
