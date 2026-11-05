@@ -6,6 +6,15 @@ false cleanup after HTTP 200 without acknowledgement, obsolete-account responses
 and failed signout, and verifies the explicit completed path. No real deletion,
 Supabase Auth, IndexedDB cleanup or physical-device acceptance is claimed.
 
+Browser shutdown: `scripts/cdp-client.mjs::closeBrowser` extends the exact
+Browser.close acknowledgement-timeout policy already used by the sky suite to
+the remaining unguarded core suites. The quality runner still owns process
+cleanup. `browser-navigation-tests.mjs` executes the actual five suite teardowns
+with successful shutdown, missing acknowledgement, an earlier failed business
+assertion and unrelated transport/evaluation errors. Four suites reproduced RED
+before the correction; unrelated errors and all gameplay assertions remain
+blocking. This does not retry or ignore a failed test.
+
 Public-page release packaging: `python3 scripts/o2switch-deploy-tests.py` runs
 disposable Linux publisher fixtures. It checks that the three reviewed privacy
 HTML pages are published byte-for-byte with mode 644, unrelated root HTML is
@@ -1648,6 +1657,10 @@ quest online, close the app, switch to airplane mode, reopen and play that quest
 then reconnect and confirm the pending attempt synchronizes once without lost
 progress. Do not cache OAuth callbacks, private responses or cloud APIs.
 
+## Android APK startup smoke (#170 / PR #621)
+
+The Android packaging workflow now builds a debug APK, installs it on a Google APIs Android 35 emulator and launches `com.google.androidbrowserhelper.trusted.LauncherActivity`. It collects `android-startup-logcat.txt` as a downloadable artifact on success or failure, and fails when a fatal startup exception is detected. Consult `android/TESTING.md` for the physical-device matrix. This automated smoke is **not** proof of TWA rendering, Digital Asset Links verification, OAuth, real-phone functionality or production readiness; inspect Logcat before attributing any crash to missing asset links.
+
 ## Offline full catalogue foundation (#597)
 
 The service worker v14 now follows same-origin static ES imports/exports and CSS
@@ -1758,4 +1771,3 @@ The o2switch static publisher stages `.well-known/assetlinks.json`, merges it in
 Release acceptance: verify `https://lumen.nopuna.fr/.well-known/assetlinks.json` returns 200, JSON, no redirects; test Android's domain verification and launch the **same APK whose certificate is listed** to verify the browser toolbar is absent. A successful HTTP check alone does not guarantee that a specific browser/device accepts TWA verification.
 
 For release verification, use the *original* APK from Android workflow run 41882238087 (artifact 13350282143); rebuilding a debug APK changes the CI signing certificate and invalidates the published fingerprint. After the public DAL is verified, force-stop and relaunch the installed app. Do not remove its browser data as a workaround.
-

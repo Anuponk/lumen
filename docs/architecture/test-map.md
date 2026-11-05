@@ -5,6 +5,10 @@ UI handler against synthetic boundaries: strict acknowledgement, session/owner
 isolation and signout failure. Complements handler/SQL tests; does not activate
 or certify real end-to-end deletion.
 
+CDP shutdown: `browser-navigation-tests.mjs` executes the actual core-suite
+teardowns and checks that `cdp-client.mjs::closeBrowser` preserves business and
+non-shutdown failures while tolerating only the known missing close ACK.
+
 Privacy consolidation #316: `privacy-current-schema.sql` checks real current
 SQL dependencies and support expiry/export/rollback; `privacy-optional-support.sql`
 checks absent/partial support; `privacy-support-concurrency.py` retains original
@@ -346,6 +350,11 @@ Phase 2 follow-up: `admin-catalogue.test.mjs`, `generated-adventure-map.test.mjs
 `scripts/fixtures/canonical-ledger-bootstrap.sql`, `scripts/fixtures/canonical-ledger-replay.sql`, `scripts/fixtures/canonical-snapshot-guard.sql` and `scripts/fixtures/sync-health-incidents.sql` exercise real migration behavior in disposable PostgreSQL. They cover replay/idempotence, snapshot protection and incident signals. Bootstrap deliberately creates `auth`/`lumen` schemas; never run these against a player database. See `docs/TESTING.md` for the existing SQL regression procedure. `supabase/tests/391_isolated_reward_ledger.sql` and `supabase/tests/391_profile_preflight.sql` are additional existing SQL checks; inspect their prerequisites before execution.
 
 Deployment checks also exist as `scripts/o2switch-deploy-tests.py` and `scripts/o2switch-https-tests.py`. They are indexed only; deployment/Actions optimization belongs to phase 3.
+
+HTTPS deployment regressions also cover TigerProtect 429/503 classification,
+bounded/private error bodies, validated support IDs and no retry after an
+identified hosting refusal. `.github/workflows/diagnose-http.yml` is a manual,
+credential-free production probe; it records status codes, not release success.
 
 ## Gaps and limits, without corrections
 

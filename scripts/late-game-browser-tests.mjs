@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {connectBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
+import {connectBrowser,closeBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {campaignQuestCount,skyStarsForGrid} from '../src/campaign/progression.js';
 import {CAT} from '../src/campaign/catalogue.js';
@@ -87,4 +87,4 @@ try{
  }
  assert.deepEqual(errors,[]);
  const report={results,uncaughtErrors:errors};if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));console.log(JSON.stringify(report));
-}finally{await send('Browser.close')}
+}finally{await closeBrowser(send)}

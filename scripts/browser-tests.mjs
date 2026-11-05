@@ -1,6 +1,6 @@
 // Requires a local static server and an isolated Chrome debugging profile.
 import fs from 'node:fs';
-import {connectBrowser,acknowledgeLearningMilestones,navigateAndWait} from './cdp-client.mjs';
+import {connectBrowser,closeBrowser,acknowledgeLearningMilestones,navigateAndWait} from './cdp-client.mjs';
 import {verifyFinaleResponsive} from './finale-responsive-browser.mjs';
 import {verifyBoardFeedback} from './board-feedback-browser.mjs';
 import {verifyQuestPolicy} from './quest-policy-browser.mjs';
@@ -114,4 +114,4 @@ try{
  const report={suites,mobile:{tapCycle:[1,2,0],drag:true,guardianPreserved:true,noScroll:true,reset:true},guestReload:true,pwa,finaleResponsive,boardFeedback,questPolicy,guidedUndo,longPressGuardian,touchInput,uncaughtErrors:errors};
  if(output)fs.writeFileSync(output,JSON.stringify(report,null,2)+'\n');
  console.log(JSON.stringify(report));
-}finally{await send('Browser.close')}
+}finally{await closeBrowser(send)}
