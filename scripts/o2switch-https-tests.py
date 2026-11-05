@@ -187,6 +187,46 @@ class InstallerTests(unittest.TestCase):
 
 
 class ClientTests(unittest.TestCase):
+    def test_tigerprotect_refusal_is_actionable_without_retries_or_body_leaks(self):
+        from io import BytesIO
+        for status in (429, 503):
+            body = (b'<!--Debug Request_ID = "' + b'c'*32 + b'" -->'
+                    b'https://faq.o2switch.fr/cpanel/o2switch/tiger-protect-waf/ '
+                    + SECRET.encode())
+            error = urllib.error.HTTPError(client.HOOK, status, 'unavailable', {}, BytesIO(body))
+            with self.subTest(status=status), \
+                 patch.object(client.time, 'sleep'), \
+                 patch.object(client.urllib.request, 'build_opener') as opener, \
+                 patch.object(client.subprocess, 'run') as curl:
+                opener.return_value.open.side_effect = error
+                with self.assertRaisesRegex(RuntimeError, 'TigerProtect') as caught:
+                    client.deploy(SHA, SECRET)
+                self.assertIn('HTTP ' + str(status), str(caught.exception))
+                self.assertIn('c'*32, str(caught.exception))
+                self.assertNotIn(SECRET, str(caught.exception))
+                self.assertNotIn('<!--', str(caught.exception))
+                curl.assert_not_called()
+
+    def test_curl_tigerprotect_refusal_keeps_body_private(self):
+        with patch.object(client.urllib.request, 'build_opener') as opener, \
+             patch.object(client.subprocess, 'run') as curl:
+            opener.return_value.open.side_effect = client.http.client.RemoteDisconnected()
+            curl.return_value = subprocess.CompletedProcess([], 0,
+                'https://faq.o2switch.fr/hebergement-mutualise/tutoriels-cpanel/tiger-protect ' + SECRET + '\n503', '')
+            with self.assertRaisesRegex(RuntimeError, 'TigerProtect') as caught:
+                client.deploy(SHA, SECRET)
+            self.assertNotIn(SECRET, str(caught.exception))
+
+    def test_filter_diagnostic_bounds_body_and_rejects_untrusted_request_id(self):
+        marker = 'https://faq.o2switch.fr/cpanel/o2switch/tiger-protect-waf/'
+        client.reject_hosting_filter(503, 'x'*16384 + marker)
+        client.reject_hosting_filter(401, marker)
+        client.reject_hosting_filter(503, 'generic upstream error')
+        with self.assertRaisesRegex(RuntimeError, 'TigerProtect') as caught:
+            client.reject_hosting_filter(429, marker + ' Request_ID = "' + SECRET + '"')
+        self.assertNotIn(SECRET, str(caught.exception))
+        self.assertNotIn('request ID', str(caught.exception))
+
     def test_frontend_503_retries_identical_signed_request_with_curl(self):
         error = urllib.error.HTTPError(client.HOOK, 503, 'unavailable', {}, None)
         with patch.object(client.urllib.request, 'build_opener') as opener, \
