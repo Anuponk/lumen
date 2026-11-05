@@ -21,8 +21,12 @@ the existing backup/restore and shared publish lock. An authenticated HTTPS
 receiver at `/lumen-release/` (HMAC-SHA256, five-minute expiry) avoids incoming
 SSH firewall rules and direct public requests to a `.php` path.
 The private receiver and GitHub secret require one-time setup documented in
-`O2SWITCH_SIMPLE_CRON.md`. Until the first real deployment succeeds, activation
-is pending. The ten-minute cron remains a fallback; event-driven publication
+`O2SWITCH_SIMPLE_CRON.md`. A real GitHub deployment verified main SHA
+`72f96a360e46e9255fa4a8cc5d039b1408a5a0e8` on 2026-10-23
+([run](https://github.com/Anuponk/lumen/actions/runs/39908907546)), but TigerProtect
+still intermittently rejects runners (503) and browser assets (429).
+See the hosting-filter diagnosis in that runbook; deployment success alone
+does not establish browser availability. The ten-minute cron remains a fallback; event-driven publication
 does not wait for its five-minute CI-poll cooldown.
 1. Work on a non-production branch.
 2. Run tests + strict grid audit.
