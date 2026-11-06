@@ -445,3 +445,7 @@ ligne après reconnexion ; sa fixture RPC est partagée avec la reprise historiq
 doubles célébrations, restaurations et lots distants. `fixtures/iau-completion.sql`
 teste les 380 contrats, les reçus réessayés et les gains d’un second appareil
 en PostgreSQL jetable. La parité existante couvre aussi les 880 quêtes.
+
+Le job `astronomy` exécute `vizier-fetch-tests.py` avant de récupérer les données
+fraîches : panne réseau CDS → miroir officiel CfA pour le même catalogue ; réponse
+vide/invalide ou deux serveurs injoignables → échec maintenu.

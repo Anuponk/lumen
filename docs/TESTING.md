@@ -1806,3 +1806,9 @@ victoire en attente puis confirmée à la reconnexion et conservée au redémarr
 Cette suite partage la fixture RPC synthétique de `campaign-resume-browser-tests.mjs`.
 Les contrats serveur relèvent de la CI ledger-sql. Voir le
 [rapport du catalogue](CATALOGUE_88.md) et la recette physique encore distincte.
+
+Le job d’astronomie lance aussi `python scripts/vizier-fetch-tests.py` : une
+expiration réseau du CDS utilise le miroir VizieR officiel du CfA pour le même
+catalogue, sans rendre verts les cas de réponse vide, invalide ou indisponible
+sur les deux serveurs. Le rapport frais et l’audit des sources figées restent
+des preuves complémentaires.

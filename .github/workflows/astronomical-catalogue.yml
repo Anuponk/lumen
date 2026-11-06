@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/astronomical-catalogue.yml'
       - 'scripts/fetch-hipparcos-line-stars.py'
+      - 'scripts/vizier-fetch-tests.py'
       - 'scripts/build-astronomical-catalogue.mjs'
       - 'scripts/validate-playable-astronomy.mjs'
       - 'scripts/astronomy-requirements.txt'
@@ -29,6 +30,8 @@ jobs:
           cache-dependency-path: scripts/astronomy-requirements.txt
       - name: Install astronomy preparation dependencies
         run: python -m pip install -r scripts/astronomy-requirements.txt
+      - name: Verify bounded official-mirror fallback without hiding data errors
+        run: python scripts/vizier-fetch-tests.py
       - name: Fetch Stellarium Western data (CC BY-SA)
         run: |
           mkdir -p .cache/astronomy
@@ -39,7 +42,7 @@ jobs:
         run: python scripts/fetch-hipparcos-line-stars.py .cache/astronomy/western-index.json .cache/astronomy/hip-lines.json --cache .cache/astronomy/hipparcos2.ecsv
       - name: Build full astronomical catalogue
         run: node scripts/build-astronomical-catalogue.mjs .cache/astronomy/western-index.json .cache/astronomy/hip-lines.json .cache/astronomy/report.json
-      - name: Validate all 40 Lumen constellation identities
+      - name: Validate every published Lumen constellation identity
         run: node scripts/validate-playable-astronomy.mjs .cache/astronomy/report.json
       - name: Upload audit report and positions for review
         if: always()
