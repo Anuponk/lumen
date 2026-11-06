@@ -94,3 +94,16 @@ test('victory failures enter the existing privacy-safe shared incident stream',(
   assert.equal(mapCloudDiagnostic(event,{errorCode:'PGRST301',durable:true}).kind,'auth');
  }
 });
+
+test('a stale client inspection cannot block recovery for the current client',async()=>{
+ const f=await fixture(),inspect=f.box.inspect;let release,reads=0;
+ f.box.inspect=async uid=>{if(++reads===1)await new Promise(resolve=>{release=resolve});return inspect(uid)};
+ const old=vm.runInContext('retryPresentedVictory({automatic:true})',f.c);
+ for(let i=0;i<20&&!release;i++)await Promise.resolve();
+ const client={};f.c.lumenSupabase=client;f.c.pendingVictoryView={...f.c.pendingVictoryView,client};
+ await vm.runInContext('retryPresentedVictory({automatic:true})',f.c);
+ const currentCalls=f.calls.length;
+ release();await old;
+ assert.equal(currentCalls,1,'The current client must not wait for an obsolete read');
+ assert.equal(f.calls.length,1,'Stale inspection cannot send a second command');
+});

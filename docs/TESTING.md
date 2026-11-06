@@ -669,7 +669,8 @@ retry functions and the bounded scheduler with real durable outboxes and
 synthetic command confirmation. Canonical and historical results recover while
 open; transient failures preserve operation identity, Auth/review holds prevent
 resends, account changes during inspection and simultaneous online/timer wakes
-cannot authorize a stale or concurrent command. Dirty profiles, active writes,
+cannot authorize a stale or concurrent command. An obsolete client inspection
+cannot hold the current result's retry lock. Dirty profiles, active writes,
 reset attempts, hidden/offline and recovery sessions stay held. Existing ledger
 and historical command suites retain exact receipt/current-profile checks.
 The diagnostic assertion admits only existing fixed incident vocabulary, never

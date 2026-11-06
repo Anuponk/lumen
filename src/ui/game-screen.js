@@ -217,7 +217,7 @@ function presentPendingVictory(questId,operationId){
  const animationKey=lumenUser?.id+':'+operationId;
  if(!shownPendingVictories.has(animationKey)){shownPendingVictories.add(animationKey);if(!replay)launchWinStar(1,{pending:true})}
 }
-let pendingVictoryRetryInFlight=false;
+let pendingVictoryRetryInFlight=null;
 function canRetryPresentedVictory(){
  const pending=pendingVictoryView,attempt=attemptEngine.snapshot();
  if(!pending||pending.userId!==lumenUser?.id||pending.client!==lumenSupabase||pending.attemptId!==attempt?.attemptId||(pending.resetCount??0)!==(attempt?.resetCount||0))return false;
@@ -227,8 +227,8 @@ function canRetryPresentedVictory(){
 async function retryPresentedVictory({automatic=false}={}){
  const pending=pendingVictoryView;
  if(!pending||pending.userId!==lumenUser?.id||pending.client!==lumenSupabase||pending.attemptId!==attemptEngine.snapshot()?.attemptId)return;
- if(pendingVictoryRetryInFlight||automatic&&!canRetryPresentedVictory())return false;
- pendingVictoryRetryInFlight=true;
+ if(pendingVictoryRetryInFlight===pending||automatic&&!canRetryPresentedVictory())return false;
+ pendingVictoryRetryInFlight=pending;
  try{
   if(automatic){
    const box=canonicalActiveQuest?canonicalVictoryOutbox:legacyVictoryOutbox;
@@ -240,7 +240,7 @@ async function retryPresentedVictory({automatic=false}={}){
   pendingVictoryView=null;
   await celebrateSuccess();
   return !!pendingVictoryView&&canRetryPresentedVictory();
- }finally{pendingVictoryRetryInFlight=false}
+ }finally{if(pendingVictoryRetryInFlight===pending)pendingVictoryRetryInFlight=null}
 }
 function leavePendingVictoryForNavigation(){
  if(!pendingVictoryView)return;
