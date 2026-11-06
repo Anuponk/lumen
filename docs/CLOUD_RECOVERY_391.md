@@ -2,6 +2,16 @@
 
 This is a staged implementation record, not a declaration that #391 is closed.
 
+Pending victory follow-up (6 November 2026): on main 725e1c3, synthetic
+regressions reproduce a canonical result that cannot enter background retry
+while its quest is active, and a historical result whose retry callback returns
+immediately because the pending result guard remains set. The existing bounded
+scheduler now routes the displayed retryable operation through guarded foreground
+retry, preserving its durable identity and respecting Auth/review holds. Shared
+incident mapping also covers these previously local-only victory failures.
+See `cloud-pending-victory-tests.mjs`; no production SQL, player repair or
+cutover of other writers is performed. Live-device acceptance remains distinct.
+
 ## Player-favorable recovery candidate (25 October 2026)
 
 The approved free-game policy is implemented by the existing hydration fallback

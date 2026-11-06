@@ -1,5 +1,10 @@
 # Dependencies and data flow
 
+Pending result -> bounded command scheduler -> same-owner clean-session gate ->
+owning durable queue's retryable operation -> frozen victory coordinator ->
+existing receipt/read-back. Auth/review holds and active writer guards remain.
+Victory failure -> fixed incident projection -> optional reporter/support.
+
 Server support case → private audit ownership → reviewed erasure predicate;
 erase before loss of attribution, retain shared Auth. Unknown old audit is a
 review blocker. No profile/reconciliation dependency is changed.

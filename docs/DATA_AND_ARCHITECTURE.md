@@ -262,6 +262,19 @@ known field names (otherwise `unknown_field`), without profile contents.
 
 ## Cloud persistence contract
 
+Pending result recovery: the bounded command scheduler also retries the exact
+durable victory displayed on the current result sheet, including canonical
+quests whose active board intentionally blocks background outbox replay.
+Automatic foreground retry requires the same owner/client/attempt/reset, a
+verified clean profile, no active writer, visible online state and no Auth or
+password-recovery hold. It inspects the owning outbox and retries only the exact
+retryable operation; Auth/review holds are never cleared automatically. The
+result stays visible and frozen facts remain the command source. Canonical
+foreground refusals retain the same retry policy metadata as historical ones.
+Victory failures map to existing optional diagnostic codes/stages/kinds;
+no raw provider error, operation ID or profile enters that stream. No SQL,
+reward, currency, receipt, entitlement or guest-save schema changes.
+
 ### Requested account erasure (prepared, not deployed)
 
 P0 consolidation: the private policy now recognizes current optional diagnostics,

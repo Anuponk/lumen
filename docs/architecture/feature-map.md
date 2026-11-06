@@ -1,5 +1,11 @@
 # Feature map
 
+Pending victory foreground retry: `game-screen.js::canRetryPresentedVictory`,
+`retryPresentedVictory` and `canonicalRecovery` reuse the bounded scheduler and
+owning durable queue while the result sheet is open. No background-play guard
+is relaxed. Existing fixed diagnostic vocabulary receives victory failures via
+`diagnostic-reporter.js::mapCloudDiagnostic`; see the cloud persistence contract.
+
 Privacy P0: `lumen_privacy.scope_predicate` and `install_guards` extend the
 existing #526 operator policy to current metadata and private support ownership.
 Audit/conditions: [PRIVACY_P0_CONSOLIDATION](../PRIVACY_P0_CONSOLIDATION.md).

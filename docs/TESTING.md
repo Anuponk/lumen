@@ -664,6 +664,18 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+`node scripts/cloud-pending-victory-tests.mjs` exercises production result
+retry functions and the bounded scheduler with real durable outboxes and
+synthetic command confirmation. Canonical and historical results recover while
+open; transient failures preserve operation identity, Auth/review holds prevent
+resends, account changes during inspection and simultaneous online/timer wakes
+cannot authorize a stale or concurrent command. Dirty profiles, active writes,
+reset attempts, hidden/offline and recovery sessions stay held. Existing ledger
+and historical command suites retain exact receipt/current-profile checks.
+The diagnostic assertion admits only existing fixed incident vocabulary, never
+provider text or payload. These simulations do not prove physical-device or
+live-account recovery; reproduce the affected pending victory after deployment.
+
 ### Lumen-only erasure (#316, prepared migration)
 
 Current-schema extension: `fixtures/privacy-current-schema.sql` runs after the
