@@ -63,6 +63,7 @@ test('paid help stays refused during a hold while free help needs no Wallet RPC'
   cloudProfileReady:false,cloudProfileFailure:held.failure,walletCommandsSupported:async()=>{calls++;return true},msg:{textContent:''},recordCloudDiagnostic(){},refreshCanonicalOutboxNotice(){}};
  vm.createContext(ctx);vm.runInContext(functionSource(source,'authorizeWalletSpend'),ctx);
  assert.equal(await ctx.authorizeWalletSpend('hint'),false);assert.equal(calls,0);
+ assert.match(ctx.msg.textContent,/Dépense non confirmée/,'A held balance explains why the paid aid is refused');
  cost=0;assert.equal(await ctx.authorizeWalletSpend('hint'),true);assert.equal(calls,0);
 });
 test('pending replay presentation never advertises an extra star or a confirmed badge',()=>{

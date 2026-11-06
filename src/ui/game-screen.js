@@ -2649,7 +2649,10 @@ async function claimWalletDaily(date,index){
 async function authorizeWalletSpend(kind){
  const cost=kind==='hint'?hintCost():verifyCost();
  if(!cost||!lumenUser||qaActive||unlimitedShardsEnabled())return true;
- if(cloudProfileFailure?.reason==='partial_reconciliation')return false;
+ if(cloudProfileFailure?.reason==='partial_reconciliation'){
+  msg.textContent='Dépense non confirmée. Tes Éclats doivent être vérifiés avant une nouvelle dépense.';
+  return false;
+ }
  if(walletSpendInFlight||legacyCommandInFlight||legacyVictoryBusy||canonicalOutboxRetryInFlight)return false;
  const ownerId=lumenUser.id,client=lumenSupabase,attempt=attemptEngine.snapshot();
  const sequence=kind==='hint'?hintUsesThisGame:verifyUsesThisGame;
