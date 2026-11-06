@@ -10,11 +10,14 @@ export function validatePlayableAstronomy(report, identities=astronomicalIdentit
  const coverage=new Map(report.coverage.map(c=>[c.iau,c]));
  const absent=[],incomplete=[],mismatched=[];
  for(const [iau,id] of targets){
-  const record=coverage.get(iau);
+  // Stellarium's pinned Western source calls official TrA "Tra". Normalize
+  // only this documented source alias; never rewrite source geometry.
+  const sourceIau=iau==='TrA'&&report.figures.Tra?'Tra':iau;
+  const record=coverage.get(sourceIau);
   if(!record){absent.push({iau,id});continue}
-  if(!record.complete||!report.figures[iau]){incomplete.push({iau,id,missingHip:record.missingHip||[]});continue}
-  const figure=report.figures[iau];
-  if(figure.iau!==iau||figure.count!==record.requiredStars||figure.hipIds?.length!==figure.count||figure.pts?.length!==figure.count||!Array.isArray(figure.edges))
+  if(!record.complete||!report.figures[sourceIau]){incomplete.push({iau,id,missingHip:record.missingHip||[]});continue}
+  const figure=report.figures[sourceIau];
+  if(figure.iau!==sourceIau||figure.count!==record.requiredStars||figure.hipIds?.length!==figure.count||figure.pts?.length!==figure.count||!Array.isArray(figure.edges))
    mismatched.push({iau,id});
  }
  return {targetCount:targets.size,coveredCount:targets.size-absent.length-incomplete.length-mismatched.length,absent,incomplete,mismatched,ready:absent.length===0&&incomplete.length===0&&mismatched.length===0};

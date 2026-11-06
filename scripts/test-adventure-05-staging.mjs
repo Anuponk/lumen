@@ -18,12 +18,12 @@ console.log('PASS: Adventure 5 staging adapter: 10 constellations, 100 canonical
 const preview=adventure05PreviewMap();
 const sky=preview.skies.find(s=>s.id==='real-sky');
 assert.ok(sky);
-assert.equal(sky.packs.at(-1).id,pack.id);
-assert.equal(sky.packs.at(-1).accessible,false);
-assert.equal(sky.packs.at(-1).constellations.length,10);
+assert.equal(sky.packs.find(p=>p.id===pack.id).id,pack.id);
+assert.equal(sky.packs.find(p=>p.id===pack.id).accessible,false);
+assert.equal(sky.packs.find(p=>p.id===pack.id).constellations.length,10);
 assert.equal(sky.constellations.filter(c=>c.packId===pack.id).length,10);
 const unlocked=adventure05PreviewMap([pack.id]).skies.find(s=>s.id==='real-sky');
-assert.equal(unlocked.packs.at(-1).accessible,true);
+assert.equal(unlocked.packs.find(p=>p.id===pack.id).accessible,true);
 console.log('PASS: opt-in sky preview respects pack access and preserves prior packs.');
 
 const first=quests[0];
@@ -49,9 +49,9 @@ console.log('PASS: all ten Adventure 5 constellations resolve to audited Western
 
 const canonical=adventure05CanonicalPreview();
 assert.equal(canonical.length>=100,true);
-assert.deepEqual(canonical.slice(-100).map(q=>q.id),quests.map(q=>q.id));
-assert.equal(canonical.at(-100).ordinal,canonical.length-99);
-assert.ok(canonical.slice(-100).every(q=>q.legacyIndex===null&&q.packId===pack.id));
+assert.deepEqual(canonical.filter(q=>q.packId===pack.id).map(q=>q.id),quests.map(q=>q.id));
+assert.equal(canonical.find(q=>q.packId===pack.id).ordinal,401);
+assert.ok(canonical.filter(q=>q.packId===pack.id).every(q=>q.legacyIndex===null&&q.packId===pack.id));
 console.log('PASS: Adventure 5 appends 100 stable canonical quests without reordering existing entries.');
 
 const q1=quests[0],q2=quests[1],ent=[{entitlement:pack.id}];

@@ -33,10 +33,14 @@ export function celestialTransition(before,progress,quest,quests,{firstCompletio
  if(recovered||!before||!after||before.questId!==quest.id)return {kind:null,pulse:null,after};
  const sameScope=key=>before[key].signature===after[key].signature;
  const crossing=key=>sameScope(key)&&before[key].completed===before[key].total-1&&after[key].complete;
- const kind=firstCompletion&&!before.solved&&after.solved
+ const gained=after.questState.earned-before.questState.earned;
+ const mastery=sameScope('campaign')&&after.campaign.complete&&after.campaign.possible>0
+  &&before.campaign.earned<before.campaign.possible&&after.campaign.earned===after.campaign.possible
+  &&after.campaign.completed-before.campaign.completed===Number(after.solved)-Number(before.solved)
+  &&gained>0&&after.campaign.earned-before.campaign.earned===gained;
+ const kind=mastery?'campaign-mastery':firstCompletion&&!before.solved&&after.solved
   ?crossing('campaign')?'campaign':crossing('adventure')?'adventure':crossing('constellation')?'constellation':null:null;
  const a=after.constellation,b=before.constellation;
- const gained=after.questState.earned-before.questState.earned;
  const pulse=sameScope('constellation')&&gained>0&&a.earned-b.earned===gained&&a.ratio>b.ratio
   ?{constellationId:quest.constellationId,signature:a.signature,ratio:a.ratio,full:b.ratio<1&&a.ratio===1}:null;
  return {kind,pulse,after};

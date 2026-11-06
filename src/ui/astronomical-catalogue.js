@@ -15,20 +15,22 @@ const RESERVED_IAU=Object.freeze({
  "real-adventure-03-new-05":"Mon","real-adventure-03-new-06":"Oph"
 });
 const byId=new Map(CONTENT_CONSTELLATIONS.map(c=>[c.id,c]));
+// Preserve the pinned source spelling and geometry; expose the official IAU code.
+const sourceCode=iau=>iau==='TrA'?'Tra':iau;
 export function iauForConstellation(entry){
  if(!entry?.id)return null;
  if(RESERVED_IAU[entry.id])return RESERVED_IAU[entry.id];
  const registered=byId.get(entry.id)||entry;
- if(registered.iau&&atlas.figures[registered.iau])return registered.iau;
+ if(registered.iau&&atlas.figures[sourceCode(registered.iau)])return registered.iau;
  if(registered.id?.startsWith("iau-"))return GENERATED_IAU[registered.id.slice(4)]||null;
  return LEGACY_IAU[registered.legacyIndex]||null;
 }
 export function verifiedAstronomicalFigure(entry){
  const iau=iauForConstellation(entry);
- const figure=iau&&atlas.figures[iau];
- if(!figure||figure.iau!==iau||!Array.isArray(figure.pts)||!Array.isArray(figure.edges)
+ const source=sourceCode(iau),figure=iau&&atlas.figures[source];
+ if(!figure||figure.iau!==source||!Array.isArray(figure.pts)||!Array.isArray(figure.edges)
   ||figure.pts.length!==figure.count||figure.count===0)return null;
- return figure;
+ return iau===source?figure:Object.freeze({...figure,iau,sourceIau:source});
 }
 // A visual reference, not a conversion of historical star progress. Lumen's
 // lit count is displayed independently until explicit legacyIndex->HIP review.

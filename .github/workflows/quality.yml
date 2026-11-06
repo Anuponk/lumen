@@ -127,6 +127,8 @@ jobs:
             docs/validation/ci-canonical-replay.json
             docs/validation/ci-personal-records.json
             docs/validation/ci-adventure-05.json
+            docs/validation/ci-iau-completion.json
+            docs/validation/ci-iau-completion-cloud.json
             docs/validation/ci-quality-summary.json
           retention-days: 14
           if-no-files-found: ignore

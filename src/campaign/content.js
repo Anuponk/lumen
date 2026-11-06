@@ -2,6 +2,7 @@ import {CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,CONSTELLATION_QUESTS,CAMPAIGN_S
 import {cataloguePackForQuestId,publishedCatalogueQuests} from './catalogue-origin.js';
 import generatedContentSnapshot from '../../content/generated/first-adventure.json' with {type:'json'};
 import fifthAdventureConfig from '../../content/fifth-adventure-preview.json' with {type:'json'};
+import remainingAdventures from '../../content/catalogue/remaining-adventures.json' with {type:'json'};
 
 export const CONTENT_MODEL_VERSION=1;
 export const BASE_SKY_ID="real-sky";
@@ -70,10 +71,20 @@ export const FIFTH_ADVENTURE_CONSTELLATIONS=Object.freeze(fifthAdventureConfig.c
  legacyIndex:null,questStart:null,questCount:fifthAdventureConfig.questsPerConstellation,
  questIndices:Object.freeze([]),canonicalOnly:true,displayOrder:index
 })));
+const completionPacks=remainingAdventures.adventures.map(p=>Object.freeze({
+ id:p.id,skyId:p.skyId,kind:p.kind,access:p.access,order:p.order,displayName:p.displayName,
+ shortDescription:p.shortDescription,narrative:p.narrative,finale:p.finale,
+ questCount:p.constellations.length*p.questsPerConstellation,questIndices:Object.freeze([]),
+ constellationIds:Object.freeze(p.constellations.map(c=>c.id)),canonicalOnly:true
+}));
+const completionConstellations=remainingAdventures.adventures.flatMap(p=>p.constellations.map((c,index)=>Object.freeze({
+ id:c.id,label:c.name,iau:c.iau,skyId:p.skyId,packId:p.id,legacyIndex:null,questStart:null,
+ questCount:p.questsPerConstellation,questIndices:Object.freeze([]),canonicalOnly:true,displayOrder:index
+})));
 export const CONTENT_PACKS=Object.freeze([...LEGACY_CONTENT_PACKS.map(pack=>pack.id==="real-adventure-03"
  ?Object.freeze({...pack,constellationIds:Object.freeze([...pack.constellationIds,...RESERVED_ADVENTURE_03_CONSTELLATIONS.map(c=>c.id)])})
- :pack),Object.freeze({...generatedManifest.pack,legacyQuestStart:generatedManifest.pack.questIndices[0]}),FIFTH_ADVENTURE_PACK]);
-export const CONTENT_CONSTELLATIONS=Object.freeze([...BASE_CONSTELLATIONS,...GENERATED_CONSTELLATIONS,...RESERVED_ADVENTURE_03_CONSTELLATIONS,...FIFTH_ADVENTURE_CONSTELLATIONS]);
+ :pack),Object.freeze({...generatedManifest.pack,legacyQuestStart:generatedManifest.pack.questIndices[0]}),FIFTH_ADVENTURE_PACK,...completionPacks]);
+export const CONTENT_CONSTELLATIONS=Object.freeze([...BASE_CONSTELLATIONS,...GENERATED_CONSTELLATIONS,...RESERVED_ADVENTURE_03_CONSTELLATIONS,...FIFTH_ADVENTURE_CONSTELLATIONS,...completionConstellations]);
 
 export function normalizeEntitlements(rows=[]){
  return new Set((rows instanceof Set?[...rows]:Array.isArray(rows)?rows:[])

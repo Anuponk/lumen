@@ -1025,7 +1025,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  #mapModal #dailyCard{padding:5px 8px;gap:2px;margin-bottom:0}
  /* Share the top row between drawing and name instead of squeezing the
     drawing underneath a wrapped alias. Progress and badges keep full rows. */
- #mapModal #sectorTabs .constellation-card{grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr);grid-template-rows:minmax(0,1fr) repeat(2,max-content);gap:2px 4px}
+ #mapModal #sectorTabs .constellation-card{grid-template-columns:minmax(24px,.5fr) minmax(0,1.5fr);grid-template-rows:minmax(0,1fr) repeat(2,max-content);gap:2px 4px}
  #mapModal #sectorTabs .constellation-card svg{grid-area:1/1}
  #mapModal #sectorTabs .constellation-card strong{grid-area:1/2;align-self:center}
  #mapModal #sectorTabs .constellation-card small{grid-column:1/-1}

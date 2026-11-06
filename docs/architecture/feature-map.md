@@ -312,3 +312,11 @@ les commandes et `recover_performance`, étendues par la migration des records.
 `access-origins.json` ajoute la révision 3 et conserve le préfixe historique.
 Le générateur/validateur et la migration additive des règles restent séparés
 de l’activation de production. Aucun writer de progression supplémentaire.
+
+### Catalogue UAI complet — aventures 6 à 9
+
+`content/catalogue/remaining-adventures.json` porte les 38 identités restantes,
+leurs packs et récits. `remaining-adventures.json` dans `content/generated`
+fournit les 380 grilles. `canonical-quests.js` les joint à la révision 4 ; les
+révisions précédentes et les 500 anciennes quêtes restent immuables.
+Voir [CATALOGUE_88](../CATALOGUE_88.md) pour les commandes, courbes et limites.

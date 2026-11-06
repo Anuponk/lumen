@@ -25,7 +25,7 @@ function completedCatalogueStorage(){
 test('a progressed catalogue account can share its complete current projection within the server size limit',()=>{
  const store=completedCatalogueStorage(),before=JSON.stringify([...store.map]);
  const copy=captureSupportCopy({storage:store,owner,version:'1.11.1+562'});
- assert.deepEqual(copy.copies[0],{source:'local',facts:projectSupportProfile(JSON.parse(store.getItem('lumenProgressV1')))});
+ assert.deepEqual(copy.copies.filter(c=>c.source==='local').flatMap(c=>c.facts),projectSupportProfile(JSON.parse(store.getItem('lumenProgressV1'))),'All current facts survive catalogue growth across bounded protocol chunks');
  // All admitted strings are fixed ASCII vocabulary; this independently counts
  // PostgreSQL jsonb's separator spaces for these integer-only facts.
  copy.events=Array(20).fill('guided_input_blocked');

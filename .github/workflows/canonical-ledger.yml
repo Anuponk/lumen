@@ -128,11 +128,13 @@ jobs:
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1
           -f supabase/migrations/20261104155248_personal_records.sql
           -f supabase/migrations/20261104191554_adventure_05_catalogue.sql
+          -f supabase/migrations/20261106115913_complete_iau_catalogue.sql
           -f /tmp/lumen-catalogue-origin.sql
           -f /tmp/lumen-legacy-parity.sql
           -f /tmp/lumen-quest-parity.sql
           -f scripts/fixtures/personal-records.sql
           -f scripts/fixtures/adventure-05.sql
+          -f scripts/fixtures/iau-completion.sql
 
       - name: Verify Lumen-only erasure, private access and concurrent stale writers
         env:
