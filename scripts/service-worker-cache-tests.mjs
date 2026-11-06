@@ -135,7 +135,7 @@ test('real published game module graph includes catalogue data before offline ac
   }
   assert(visited.size<2000,'Unexpectedly large or cyclic dependency graph');
  }
- for(const required of ['/src/campaign/catalogue.js','/content/generated/first-adventure.json','/content/generated/diverse-adventures-3-4.json','/content/catalogue/access-origins.json'])
+ for(const required of ['/src/campaign/catalogue.js','/content/generated/first-adventure.json','/content/generated/diverse-adventures-3-4.json','/content/catalogue/access-origins.json','/content/catalogue/remaining-adventures.json','/content/generated/remaining-adventures.json'])
   assert(visited.has(required),'Offline module graph omitted required catalogue asset: '+required);
 });
 function fsForOfflineGraph(){return {existsSync:importedExistsSync};}

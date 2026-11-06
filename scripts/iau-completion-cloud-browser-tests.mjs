@@ -1,0 +1,43 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
+import {authenticatedCampaignFixture} from './fixtures/authenticated-campaign-browser.mjs';
+import {connectBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
+const {send,evaluate,errors}=await connectBrowser(),all=canonicalQuestList(),q=all[500];
+const done=all.slice(0,500),solved=Object.fromEntries(done.filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1]));
+const profile={catalogueOrigin:3,solved,historyBackup:solved,badges:{},stars:{},performances:{},noHint:{},canonicalQuestState:Object.fromEntries(done.filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true,stars:1,badges:{}}])),daily:{dates:{},rewards:{}},challenges:{},xp:1000,shards:3,walletRevision:1,skyScore:298,skyHistoryVersion:4,legacyAdventureAccess:['real-adventure-06']};
+const url=process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/';
+async function until(expression){for(let i=0;i<180;i++){if(await evaluate(expression,true))return;await new Promise(r=>setTimeout(r,100))}throw Error('Timed out '+expression)}
+const pending=`(async()=>{const {createDurableCanonicalVictoryOutbox}=await import('/src/persistence/durable-canonical-outbox.js');return (await createDurableCanonicalVictoryOutbox(localStorage).pending('synthetic-frontier')).length})()`;
+try{
+ await send('Page.enable');await send('Runtime.enable');await send('Network.enable');await send('Network.setBlockedURLs',{urls:['*supabase.co*']});
+ await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+ await send('Page.addScriptToEvaluateOnNewDocument',{source:authenticatedCampaignFixture(profile)});
+ await navigateAndWait({send,evaluate},'Page.navigate',{url});
+ await until("!!window.lumenDiagnostics&&document.getElementById('mobileAuthStatus').textContent.includes('Progression synchronis')");
+ await acknowledgeLearningMilestones(evaluate);
+ assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().puz.reg'),q.reg,'An authenticated account complete through A5 resumes at A6');
+ await evaluate("document.getElementById('attemptMask').click()");
+ const attempt=await evaluate("JSON.parse(localStorage.getItem('lumenActiveAttemptV1'))");assert.equal(attempt.questId,q.id);
+ await until('!!navigator.serviceWorker.controller');
+ await evaluate('navigator.serviceWorker.ready',true);
+ await until(`(async()=>{for(const k of await caches.keys())if(await (await caches.open(k)).match('/content/generated/remaining-adventures.json'))return true;return false})()`);
+ await send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
+ await navigateAndWait({send,evaluate},'Page.reload');await until('!!window.lumenDiagnostics');await acknowledgeLearningMilestones(evaluate);
+ assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().puz.reg'),q.reg,'Started A6 attempt resumes offline in the real account path');
+ assert.equal(await evaluate("JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).attemptId"),attempt.attemptId);
+ await evaluate(`if(!document.getElementById('attemptMask').hidden)document.getElementById('attemptMask').click();document.getElementById('questStart').hidden=true;(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
+ await until(`(${pending}).then(n=>n===1)`);
+ assert.equal(await evaluate(`!!window.__profile.canonicalQuestState[${JSON.stringify(q.id)}]?.solved`),false,'Offline pending win is not a confirmed server grant');
+ await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
+ await evaluate("dispatchEvent(new Event('online'))");
+ await until(`(${pending}).then(n=>n===0)`);
+ await until(`!!window.lumenDiagnostics&&!!lumenDiagnostics.snapshot().progress.canonicalQuestState[${JSON.stringify(q.id)}]?.solved`);
+ assert.equal(await evaluate('window.__canonicalGrants'),1);assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().progress.solved'),solved);
+ await navigateAndWait({send,evaluate},'Page.reload');await until("!!window.lumenDiagnostics&&document.getElementById('mobileAuthStatus').textContent.includes('Progression synchronis')");
+ assert.equal(await evaluate(`!!lumenDiagnostics.snapshot().progress.canonicalQuestState[${JSON.stringify(q.id)}]?.solved`),true);
+ assert.equal(await evaluate('window.__canonicalGrants'),1,'Reload cannot duplicate A6 grant');
+ assert.deepEqual(errors,[]);
+ const report={authenticated:true,old500Preserved:true,adventure6:true,offlineAttemptIdentity:true,offlineWinPending:true,reconnectConfirmed:true,oneGrant:true,reload:true,uncaughtErrors:errors};
+ if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));
+}finally{await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1}).catch(()=>{});await send('Browser.close').catch(()=>{})}

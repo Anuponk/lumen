@@ -2,6 +2,8 @@ export const nodeSuites=[
  'cloud-pending-victory-tests.mjs',
  'self-erasure-controls-tests.mjs',
  'adventure-05-runtime-tests.mjs',
+ 'iau-completion-tests.mjs',
+ 'validate-iau-completion.mjs',
  'test-adventure-05-staging.mjs',
  'validate-fifth-adventure.mjs',
  'personal-records-tests.mjs',

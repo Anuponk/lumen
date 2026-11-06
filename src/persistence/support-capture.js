@@ -66,14 +66,19 @@ export function captureSupportCopy({storage,owner,code='manual',version='unknown
  if(!owner||storage.getItem('lumenCloudOwnerId')!==owner)throw Error('SUPPORT_OWNER');
  const raw=storage.getItem('lumenProgressV1'),profile=JSON.parse(raw||'null');
  if(!profile||typeof profile!=='object'||Array.isArray(profile)||!profile.solved||typeof profile.solved!=='object'||Array.isArray(profile.solved))throw Error('SUPPORT_PROFILE');
- const copies=[{source:'local',facts:projectSupportProfile(profile,quests)}];
+ const facts=projectSupportProfile(profile,quests),copies=[];
+ // A complete growing catalogue may exceed the per-copy fact cap. Preserve
+ // every current fact across bounded local chunks in the existing protocol.
+ for(let i=0;i<facts.length;){const limit=copies.length===0?factLimit-reservedQueueFacts:factLimit;copies.push({source:'local',facts:facts.slice(i,i+limit)});i+=limit}
+ if(!copies.length)copies.push({source:'local',facts:[]});
  const payload={format:1,code,events:[],version:String(version).match(/\d{1,3}\.\d{1,3}\.\d{1,3}\+\d{1,9}/)?.[0]||'unknown',copies};
  validateSupportCapture(payload);
- if(copies[0].facts.length>factLimit-reservedQueueFacts||supportStoredBytes(payload)>SUPPORT_MAX_BYTES-captureHeadroom)throw Error('SUPPORT_SIZE');
+ if(supportStoredBytes(payload)>SUPPORT_MAX_BYTES-captureHeadroom)throw Error('SUPPORT_SIZE');
  // V2 checkpoints have explicit ownership. Old unscoped archives are excluded.
  const prefix='lumenUnsyncedCloudBackupV2:'+owner+':';
  const keys=[];for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key?.startsWith(prefix)&&!key.endsWith(':latest'))keys.push(key)}
  for(const key of keys.sort().reverse().slice(0,2)){
+  if(copies.length>=3)break;
   try{
    const data=JSON.parse(storage.getItem(key));if(!data?.progress)continue;
    const candidate={...payload,copies:[...copies,{source:'checkpoint',facts:projectSupportProfile(data.progress,quests)}]};

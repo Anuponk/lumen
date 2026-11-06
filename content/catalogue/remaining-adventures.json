@@ -1,0 +1,302 @@
+{
+  "schema": "lumen-iau-completion-v1",
+  "baselineRevision": 3,
+  "revision": 4,
+  "adventures": [
+    {
+      "id": "real-adventure-06",
+      "displayName": "Les artisans de la lumière",
+      "shortDescription": "Des instruments patientent dans la nuit : chaque déduction révèle une nouvelle façon de regarder le ciel.",
+      "narrative": "Des instruments patientent dans la nuit : chaque déduction révèle une nouvelle façon de regarder le ciel.",
+      "skyId": "real-sky",
+      "kind": "addon",
+      "access": "locked",
+      "order": 5,
+      "questsPerConstellation": 10,
+      "finale": false,
+      "constellations": [
+        {
+          "id": "iau-for",
+          "iau": "For",
+          "name": "Fourneau"
+        },
+        {
+          "id": "iau-hor",
+          "iau": "Hor",
+          "name": "Horloge"
+        },
+        {
+          "id": "iau-ret",
+          "iau": "Ret",
+          "name": "Réticule"
+        },
+        {
+          "id": "iau-pic",
+          "iau": "Pic",
+          "name": "Peintre"
+        },
+        {
+          "id": "iau-scl",
+          "iau": "Scl",
+          "name": "Sculpteur"
+        },
+        {
+          "id": "iau-mic",
+          "iau": "Mic",
+          "name": "Microscope"
+        },
+        {
+          "id": "iau-tel",
+          "iau": "Tel",
+          "name": "Télescope"
+        },
+        {
+          "id": "iau-cir",
+          "iau": "Cir",
+          "name": "Compas"
+        },
+        {
+          "id": "iau-nor",
+          "iau": "Nor",
+          "name": "Règle"
+        },
+        {
+          "id": "iau-sex",
+          "iau": "Sex",
+          "name": "Sextant"
+        }
+      ],
+      "candidateSizeSchedule": [
+        8,
+        8,
+        8,
+        8,
+        8,
+        9,
+        9,
+        9,
+        9,
+        9
+      ]
+    },
+    {
+      "id": "real-adventure-07",
+      "displayName": "Les voyageurs de l’aube",
+      "shortDescription": "La Carène, la Poupe et les Voiles tracent une traversée entre les oiseaux et les lumières du ciel austral.",
+      "narrative": "La Carène, la Poupe et les Voiles tracent une traversée entre les oiseaux et les lumières du ciel austral.",
+      "skyId": "real-sky",
+      "kind": "addon",
+      "access": "locked",
+      "order": 6,
+      "questsPerConstellation": 10,
+      "finale": false,
+      "constellations": [
+        {
+          "id": "iau-pyx",
+          "iau": "Pyx",
+          "name": "Boussole"
+        },
+        {
+          "id": "iau-vol",
+          "iau": "Vol",
+          "name": "Poisson volant"
+        },
+        {
+          "id": "iau-mus",
+          "iau": "Mus",
+          "name": "Mouche"
+        },
+        {
+          "id": "iau-ind",
+          "iau": "Ind",
+          "name": "Indien"
+        },
+        {
+          "id": "iau-tuc",
+          "iau": "Tuc",
+          "name": "Toucan"
+        },
+        {
+          "id": "iau-pav",
+          "iau": "Pav",
+          "name": "Paon"
+        },
+        {
+          "id": "iau-phe",
+          "iau": "Phe",
+          "name": "Phénix"
+        },
+        {
+          "id": "iau-car",
+          "iau": "Car",
+          "name": "Carène"
+        },
+        {
+          "id": "iau-pup",
+          "iau": "Pup",
+          "name": "Poupe"
+        },
+        {
+          "id": "iau-vel",
+          "iau": "Vel",
+          "name": "Voiles"
+        }
+      ],
+      "candidateSizeSchedule": [
+        8,
+        8,
+        8,
+        8,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9
+      ]
+    },
+    {
+      "id": "real-adventure-08",
+      "displayName": "Les gardiens de l’immensité",
+      "shortDescription": "Aux portes du dernier passage, les silhouettes se déploient et les liens du ciel deviennent plus subtils.",
+      "narrative": "Aux portes du dernier passage, les silhouettes se déploient et les liens du ciel deviennent plus subtils.",
+      "skyId": "real-sky",
+      "kind": "addon",
+      "access": "locked",
+      "order": 7,
+      "questsPerConstellation": 10,
+      "finale": false,
+      "constellations": [
+        {
+          "id": "iau-lmi",
+          "iau": "LMi",
+          "name": "Petit Lion"
+        },
+        {
+          "id": "iau-lyn",
+          "iau": "Lyn",
+          "name": "Lynx"
+        },
+        {
+          "id": "iau-vul",
+          "iau": "Vul",
+          "name": "Petit Renard"
+        },
+        {
+          "id": "iau-com",
+          "iau": "Com",
+          "name": "Chevelure de Bérénice"
+        },
+        {
+          "id": "iau-lib",
+          "iau": "Lib",
+          "name": "Balance"
+        },
+        {
+          "id": "iau-cra",
+          "iau": "CrA",
+          "name": "Couronne australe"
+        },
+        {
+          "id": "iau-sct",
+          "iau": "Sct",
+          "name": "Écu de Sobieski"
+        },
+        {
+          "id": "iau-ser",
+          "iau": "Ser",
+          "name": "Serpent"
+        },
+        {
+          "id": "iau-hya",
+          "iau": "Hya",
+          "name": "Hydre"
+        },
+        {
+          "id": "iau-cen",
+          "iau": "Cen",
+          "name": "Centaure"
+        }
+      ],
+      "candidateSizeSchedule": [
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "id": "real-adventure-09",
+      "displayName": "Le ciel réuni",
+      "shortDescription": "Les deux hémisphères se répondent. Autour de la Petite Ourse, les dernières lumières referment le cercle du voyage.",
+      "narrative": "Les deux hémisphères se répondent. Autour de la Petite Ourse, les dernières lumières referment le cercle du voyage.",
+      "skyId": "real-sky",
+      "kind": "addon",
+      "access": "locked",
+      "order": 8,
+      "questsPerConstellation": 10,
+      "finale": true,
+      "constellations": [
+        {
+          "id": "iau-sge",
+          "iau": "Sge",
+          "name": "Flèche"
+        },
+        {
+          "id": "iau-tri",
+          "iau": "Tri",
+          "name": "Triangle"
+        },
+        {
+          "id": "iau-tra",
+          "iau": "TrA",
+          "name": "Triangle austral"
+        },
+        {
+          "id": "iau-psa",
+          "iau": "PsA",
+          "name": "Poisson austral"
+        },
+        {
+          "id": "iau-cha",
+          "iau": "Cha",
+          "name": "Caméléon"
+        },
+        {
+          "id": "iau-men",
+          "iau": "Men",
+          "name": "Table"
+        },
+        {
+          "id": "iau-oct",
+          "iau": "Oct",
+          "name": "Octant"
+        },
+        {
+          "id": "iau-umi",
+          "iau": "UMi",
+          "name": "Petite Ourse"
+        }
+      ],
+      "candidateSizeSchedule": [
+        9,
+        9,
+        9,
+        9,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10
+      ]
+    }
+  ],
+  "seed": 20261106
+}

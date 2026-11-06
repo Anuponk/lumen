@@ -78,7 +78,8 @@ try{
   await until('!document.getElementById("skyReveal").hidden');
   assert.equal(await evaluate('document.getElementById("skyReveal").dataset.celestial'),'campaign','The global finale has priority in the same single scene');
   assert.match(await evaluate('document.getElementById("celestialSummary").textContent'),new RegExp(String(all.length)+'/'+String(all.length)+' quêtes'));
-  assert.match(await evaluate('document.getElementById("celestialSummary").textContent'),/Tout le contenu actuellement disponible est terminé/);
+  assert.match(await evaluate('document.getElementById("celestialSummary").textContent'),/Toutes les quêtes sont terminées\. Les badges restent à explorer/);
+  assert.equal(await evaluate('document.getElementById("skyRevealTitle").textContent'),'Le ciel est réuni');
   assert.equal(await evaluate('document.getElementById("endgameOverlay").hidden'),true,'No second finale popup');
   await evaluate('document.getElementById("skyRevealNext").click()');
   await until('!document.getElementById("mapModal").hidden');

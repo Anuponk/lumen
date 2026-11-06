@@ -3695,13 +3695,13 @@ function startCelestialQuest(quest){
 function showCelestialVictory(){
  const event=celestialPending;celestialPending=null;
  if(!event||event.owner!==(lumenUser?.id??null)||event.quest.id!==activeQuest().id)return false;
- const adventure=event.kind!=='constellation',q=event.quest,quests=canonicalQuestList();
+ const adventure=event.kind!=='constellation',campaign=event.kind==='campaign'||event.kind==='campaign-mastery',mastery=event.kind==='campaign-mastery',q=event.quest,quests=canonicalQuestList();
  const model=contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot()});
  const pack=model.skies.flatMap(s=>s.packs).find(p=>p.id===q.packId);
  const entries=adventure?CONTENT_CONSTELLATIONS.filter(c=>quests.some(x=>x.constellationId===c.id&&x.packId===q.packId)):CONTENT_CONSTELLATIONS.filter(c=>c.id===q.constellationId);
  const ordered=[...entries.filter(c=>c.id===q.constellationId),...entries.filter(c=>c.id!==q.constellationId)];
- const summary=event.kind==='campaign'?event.after.campaign:adventure?event.after.adventure:event.after.constellation;
- const count=adventure?`${event.kind==='campaign'?new Set(quests.map(x=>x.constellationId)).size:entries.length} constellations · `:'';
+ const summary=campaign?event.after.campaign:adventure?event.after.adventure:event.after.constellation;
+ const count=adventure?`${campaign?new Set(quests.map(x=>x.constellationId)).size:entries.length} constellations · `:'';
  const badgeText=Object.entries(summary.badges).map(([key,n])=>`${n} ${{autonomy:'Autonomie',speed:'Rapidité',noError:'Sans erreur',mastery:'Maîtrise'}[key]}`).join(' · ');
  const columns=matchMedia('(max-width:600px) and (orientation:portrait)').matches?Math.min(3,Math.max(1,ordered.length)):Math.ceil(Math.sqrt(Math.max(1,ordered.length)*2)),rows=Math.ceil(ordered.length/columns);
  const vault=adventure?'<svg class="celestial-vault" viewBox="0 0 290 115" preserveAspectRatio="none" aria-hidden="true">'+milkyWaySvg('adventure:'+q.packId,1)+'</svg>':'';
@@ -3717,9 +3717,9 @@ function showCelestialVictory(){
  const primary=next?{label:adventure?'Découvrir l’aventure suivante':'Constellation suivante',run:leave(()=>startCelestialQuest(next))}:{label:adventure?'Admirer mon ciel':'Retour à Mon ciel',run:leave(sky)};
  const entry=entries.find(c=>c.id===q.constellationId);
  const challenge=document.getElementById('successShare');
- const shown=celestialCelebration.show({kind:event.kind,title:adventure?'Aventure accomplie':(entry?.label||q.constellationId)+' brille à nouveau !',
-  copy:adventure?'Chaque étoile retrouvée a repoussé l’obscurité. Ensemble, elles ont redonné vie à ce ciel.':'Une nouvelle lumière a retrouvé sa place dans le ciel.',
-  summary:(event.kind==='campaign'?'Tout le contenu actuellement disponible est terminé. ':'')+count+`${summary.completed}/${summary.total} quêtes · ${summary.stars} étoiles · `+badgeText,art,primary,
+ const shown=celestialCelebration.show({kind:event.kind,title:mastery?'Le ciel pleinement maîtrisé':campaign?'Le ciel est réuni':adventure?'Aventure accomplie':(entry?.label||q.constellationId)+' brille à nouveau !',
+  copy:campaign?(pack?.narrative||'Toutes les lumières du voyage se répondent désormais.'):adventure?(pack?.narrative||'Chaque étoile retrouvée a repoussé l’obscurité. Ensemble, elles ont redonné vie à ce ciel.'):'Une nouvelle lumière a retrouvé sa place dans le ciel.',
+  summary:(mastery?'Toutes les quêtes et tous les badges disponibles sont accomplis. ':campaign?'Toutes les quêtes sont terminées. Les badges restent à explorer. ':'')+count+`${summary.completed}/${summary.total} quêtes · ${summary.stars} étoiles · `+badgeText,art,primary,
   secondary:next?{label:'Mon ciel',run:leave(sky)}:null,review:adventure?{label:'Revoir mon aventure',run:leave(()=>openJourneyMap(false,{constellationId:q.constellationId,detail:false}))}:null,
   share:challenge&&!challenge.hidden?{label:'Défier un ami',disabled:challenge.disabled,remarkable:challenge.classList.contains('remarkable'),run:()=>challenge.click()}:null});
  if(shown){adventurePending=null;endgamePending=false;if(event.kind==='campaign'){try{localStorage.setItem(endgameSeenKey(),'1')}catch(_){}trackLumenEvent('campaign_completed',null,{content_quests:summary.total,constellations:new Set(quests.map(x=>x.constellationId)).size,stars:summary.stars})}}

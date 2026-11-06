@@ -1507,3 +1507,24 @@ L’accès au pack et les prérequis réutilisent le contrat normal. Les grilles
 verrouillées sont précachées sans conférer d’accès. Toutes les victoires et
 replays passent par les commandes canoniques existantes ; aucune seconde outbox
 ni règle économique ajoutée.
+
+## Catalogue complet UAI — révision 4
+
+Le [catalogue 88/880](CATALOGUE_88.md) ajoute les aventures 6–9 à la révision 3,
+sans modifier les définitions complètes des 500 quêtes précédentes ni aucune
+révision archivée. Le défaut des profils vides passe à 4 dans la migration
+additive `20261106115913_complete_iau_catalogue.sql`. Les cohortes existantes
+restent immuables ; aucune ligne de joueur n’est parcourue ou réécrite.
+Les 380 nouvelles règles et IDs serveur précèdent le déploiement du client
+compatible, après autorisation de l’activation de production. Les lecteurs
+d’origine 4, règles et reçus gagnés doivent survivre à tout rollback.
+Les droits d’aventure, le wallet et les preuves de victoire restent détenus
+par leurs autorités existantes ; les célébrations ne sauvegardent aucun gain.
+
+Une copie d’assistance d’un compte avancé peut dépasser les 6000 faits par
+bloc. Le client utilise alors plusieurs blocs `source: local` du protocole
+existant : tous les faits courants sont conservés dans l’ordre, et les trois
+compteurs de file gardent leur réserve dans le premier bloc. Le plafond de
+trois blocs/524288 octets JSONB reste inchangé. Les checkpoints facultatifs
+s’ajoutent seulement s’ils tiennent ; les originaux restent sur l’appareil.
+Un échec de taille ne tronque ni sauvegarde ni opération en attente.

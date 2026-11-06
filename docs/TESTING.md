@@ -1792,3 +1792,17 @@ The o2switch static publisher stages `.well-known/assetlinks.json`, merges it in
 Release acceptance: verify `https://lumen.nopuna.fr/.well-known/assetlinks.json` returns 200, JSON, no redirects; test Android's domain verification and launch the **same APK whose certificate is listed** to verify the browser toolbar is absent. A successful HTTP check alone does not guarantee that a specific browser/device accepts TWA verification.
 
 For release verification, use the *original* APK from Android workflow run 41882238087 (artifact 13350282143); rebuilding a debug APK changes the CI signing certificate and invalidates the published fingerprint. After the public DAL is verified, force-stop and relaunch the installed app. Do not remove its browser data as a workaround.
+
+## Catalogue complet 88 / 880
+
+Le gate enregistre `iau-completion-tests.mjs`, `validate-iau-completion.mjs` et
+`iau-completion-browser-tests.mjs`. Le premier conserve le préfixe de 500 quêtes
+et fait terminer les 380 nouvelles ; le second rejoue les preuves et vérifie le
+rapport déterministe ; le navigateur joue les transitions et les deux finales
+à 320/390/1440 px avec consultation hors ligne. Le mode QA désactive volontairement
+la restauration automatique de compte ; `iau-completion-cloud-browser-tests.mjs`
+vérifie la reprise A6 authentifiée, l’identité de tentative hors ligne, une
+victoire en attente puis confirmée à la reconnexion et conservée au redémarrage.
+Cette suite partage la fixture RPC synthétique de `campaign-resume-browser-tests.mjs`.
+Les contrats serveur relèvent de la CI ledger-sql. Voir le
+[rapport du catalogue](CATALOGUE_88.md) et la recette physique encore distincte.

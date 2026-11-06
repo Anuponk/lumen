@@ -240,3 +240,9 @@ existing recovery stores before a single reload; uncertain/earned data is never
 removed. The real start renderer and victory capture share the active stable
 quest; the dormant numeric index must not supply canonical start-performance
 or finale identity.
+
+Catalogue completion: `remaining-adventures.json` (configuration) → `content.js`
+(packs/constellations) + `access-origins.json` revision 4 → `canonical-quests.js`
+(committed proof-audited grids) → existing navigation, rewards and cloud commands.
+`celestial-progress.js` selects one quest/badge crossing; `game-screen.js` renders
+it through the existing celestial celebration. No new progression writer.

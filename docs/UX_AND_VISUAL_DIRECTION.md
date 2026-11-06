@@ -510,3 +510,16 @@ existant montre la comparaison et une courte lueur pour un nouveau record ;
 aucune fenêtre supplémentaire. La lueur respecte reduced-motion. Les victoires
 en attente ne revendiquent pas de record confirmé. Les essais non qualifiants
 restent utiles pour améliorer le temps, sans changer les badges.
+
+## Catalogue complet et final du ciel
+
+Les neuf aventures utilisent les mêmes cartes et la même pagination ; la dernière
+affiche huit constellations, sans cases manquantes. Les intitulés et récits des
+aventures 6–9 viennent du catalogue. La dernière s’intitule « Le ciel réuni ».
+La célébration existante annonce séparément toutes les quêtes terminées et tous
+les badges éligibles acquis (« Le ciel pleinement maîtrisé »). Une seule priorité
+visuelle s’affiche si les deux seuils coïncident. Une restauration, un réessai de
+reçu ou une ouverture de carte ne rejoue pas ces événements. Le panorama reste
+borné aux constellations de l’aventure jouée ; le bilan global et Mon ciel donnent
+accès au catalogue complet. Le composant conserve clavier, animation réduite,
+bouton pour passer et retour à Mon ciel. Aucun tutoriel ni règle d’aide ne change.

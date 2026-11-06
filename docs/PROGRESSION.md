@@ -1,7 +1,7 @@
 # Campaign, progression and rewards
 
 ## Source of truth
-The campaign is sequential and represented through constellations. Quest count derives from `CONSTELLATION_GRID_COUNTS` through the content model; the schedule must cover that count without gaps or duplicate grids. The sky target derives from the sum of `CONSTELLATIONS[].count`. Currently the catalogue contains **134 quests across 24 constellations and 298 stars**, including the unchanged historical first 100 quests / 12 constellations / 150 stars. These totals are catalogue data, not permanent limits.
+The campaign is sequential and represented through constellations. The published canonical revision in `content/catalogue/access-origins.json`, `content.js` and `canonical-quests.js` owns membership, order and counts: **880 quests, 88 official IAU constellations, nine Adventures**. Adventures 1–8 contain ten constellations/100 quests each; Adventure 9 contains eight/80. The legacy numeric schedule and historical reward allocations remain compatibility data. Displayed constellation lights count distinct completed quests; they do not replace economic rewards or historical star balances. Catalogue totals are data, not permanent limits.
 
 A quest belongs to one constellation. Each constellation has an intermediate milestone and a final/boss quest. First completion awards the quest's sky-star value; replay does not farm additional sky stars.
 
@@ -70,7 +70,7 @@ The owner authorised the server migrations on 23 October 2026; their schema and
 permissions were verified after application. Rollout still requires the matching
 client and an exact-SHA publication check, preserving the acquired-access policy.
 
-The real-sky catalogue is grouped into Adventures of at most ten constellations, configured in `content.js`. The current groups are 1–10, 11–20 and 21–24. The first Adventure is included; subsequent Adventures remain visible but locked unless already owned or already started by an existing player. Their unlock mechanism is deferred. The grouping size is a product rule, not a campaign-size ceiling: new Adventures are derived as the catalogue grows.
+The real-sky catalogue is grouped into Adventures of at most ten constellations, configured in `content.js`. The current catalogue has nine Adventures: eight groups of ten constellations, then one group of eight. The first Adventure is included; subsequent Adventures remain visible but locked unless already owned or already started by an existing player. Their unlock mechanism is deferred. The grouping size is a product rule, not a campaign-size ceiling: new Adventures are derived as the catalogue grows.
 
 The user's migration decision is to **retain access to Adventures already started and lock subsequent unstarted Adventures**. A solved quest in an Adventure proves it was started; a locally restored campaign/replay attempt with `startedAt` also proves it, including an unsolved first quest. Merely reaching a READY quest at the next Adventure boundary does not grant access. Social attempts do not grant campaign access. `legacyAdventureAccess` retains proven Adventure IDs in the existing local progress object, idempotently; solved history restored from cloud can reconstruct access without a new entitlement or backend RPC. An unsolved local attempt has the same device-local persistence scope as before.
 
@@ -257,3 +257,11 @@ et poursuit vers ce pack selon ses droits et les prérequis habituels, sans
 rejouer l’ancienne finale. Une victoire débloque la suivante ; posséder le pack
 ne permet pas de sauter une quête. Les replays, records personnels, badges et
 récompenses utilisent le même contrat canonique que les autres quêtes.
+
+## Catalogue complet — aventures 6 à 9
+
+La révision 4 ajoute 380 quêtes (501–880), sans modifier les 500 premières ni
+les cohortes existantes. Les anciennes fins ne plafonnent pas le nouveau parcours.
+La fin de campagne dépend de toutes les quêtes actuelles ; la maîtrise globale
+dépend en plus de tous les badges éligibles. Replays, reçus retrouvés et
+restaurations ne rejouent pas une célébration acquise. Voir [CATALOGUE_88](CATALOGUE_88.md).

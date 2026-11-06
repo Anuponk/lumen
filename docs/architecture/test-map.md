@@ -429,3 +429,19 @@ cartes/grilles QA, deux victoires, reload et précache aux trois largeurs.
 `fixtures/adventure-05.sql` complète les parités de commandes en PostgreSQL
 jetable, après la migration additive. Le candidat corrige l’ordre du même pool
 non publié ; les comptes et les 400 anciennes grilles restent intacts.
+
+### Catalogue UAI 88 / 880
+
+`iau-completion-tests.mjs` couvre les comptes révision 3, le préfixe exact de
+500 quêtes, A6→A9, les droits, les récompenses idempotentes et la taille JSONB
+d’une progression complète. `validate-iau-completion.mjs` recompte les solutions,
+rejoue toutes les preuves, contrôle la diversité D4 et la courbe mesurée ;
+`--write` renouvelle son rapport déterministe. `iau-completion-browser-tests.mjs`
+fait jouer les vraies cartes/grilles à 320/390/1440 px, les passages A6→A9,
+la consultation hors ligne et les deux finales. `iau-completion-cloud-browser-tests.mjs`
+exerce le chemin authentifié A5→A6 et la confirmation unique d’une victoire hors
+ligne après reconnexion ; sa fixture RPC est partagée avec la reprise historique.
+`celestial-ux-tests.mjs` exclut les
+doubles célébrations, restaurations et lots distants. `fixtures/iau-completion.sql`
+teste les 380 contrats, les reçus réessayés et les gains d’un second appareil
+en PostgreSQL jetable. La parité existante couvre aussi les 880 quêtes.

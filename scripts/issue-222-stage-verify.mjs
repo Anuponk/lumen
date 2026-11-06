@@ -36,14 +36,14 @@ for(const adventure of plan.adventures){
 }
 // #341: production, staging migration and admin cockpit must share one catalogue.
 const live=canonicalQuestList(),admin=adminCanonicalCatalogueTree();
-assert.equal(live.length,500);
-assert.deepEqual(live.map(q=>q.ordinal),Array.from({length:500},(_,i)=>i+1));
+assert.equal(live.length,880);
+assert.deepEqual(live.map(q=>q.ordinal),Array.from({length:880},(_,i)=>i+1));
 assert.deepEqual(live.slice(0,plan.total).map(q=>q.id),canonical.map(q=>q.id),"Historical runtime and migration quest identities diverge");
 assert.deepEqual(live.slice(0,plan.total).map(q=>q.constellationId),canonical.map(q=>q.constellationId),"Historical runtime and migration constellation assignments diverge");
-assert.equal(admin.length,5);
+assert.equal(admin.length,9);
 for(const adventure of admin){
- assert.equal(adventure.questCount,100,adventure.id+" must contain 100 quests");
- assert.equal(adventure.constellations.length,10,adventure.id+" must contain 10 constellations");
+ assert.equal(adventure.questCount,adventure.constellations.length*10,adventure.id+" must contain 100 quests");
+ assert.equal(adventure.constellations.length,adventure.id==='real-adventure-09'?8:10,adventure.id+" must contain 10 constellations");
  for(const constellation of adventure.constellations){
   assert.equal(constellation.questCount,10,constellation.id+" must contain 10 quests");
   assert.equal(constellation.quests.length,10,constellation.id+" must expose 10 cockpit quests");

@@ -1,9 +1,9 @@
 # Grid catalogue, generation and audit
 
 ## Current state
-Production does **not generate campaign grids on demand**. The campaign uses the pre-generated `CAT` in `src/campaign/catalogue.js`, with a fixed `CAMPAIGN_SIZE_SCHEDULE` and curated 6x6 order in `src/campaign/data.js`.
+Production does **not generate campaign grids on demand**. The canonical campaign combines the legacy pre-generated `CAT`/numeric schedule with audited committed JSON manifests through `canonical-quests.js`. Published catalogue revision 4 contains 880 quests across 88 constellations and nine Adventures. See [the full catalogue](CATALOGUE_88.md) and [the 380-grid replay report](validation/iau-completion.md).
 
-The schedule starts with two 5x5 onboarding grids, then uses 6x6, 7x7 and 8x8 puzzles. Campaign length derives from the content model (currently 134 quests); the original 100 assignments remain protected by a frozen pre-wave-2 comparison. Do not replace this with runtime random generation without an explicit product decision.
+The schedule starts with two 5x5 onboarding grids. Later Adventures use audited grids up to 10x10. Campaign length derives from the content model; the original 100 assignments and the entire previously published 500-quest prefix remain protected by frozen compatibility comparisons. Do not replace this with runtime random generation without an explicit product decision.
 
 All future development must follow the [evolving catalogue contract](DATA_AND_ARCHITECTURE.md#evolving-catalogue-contract): catalogue totals are data, existing player identities are stable, and every addition must be checked across navigation, rewards, restoration and dependent product surfaces. Adding an audited unused grid does not automatically schedule it or grant access to it.
 
