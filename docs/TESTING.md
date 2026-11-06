@@ -859,9 +859,15 @@ expiry, Lumen account scope, immutable receipt dates and multi-device pending.
 
 Historical recreated-capture recovery: `canonical-durable-outbox-tests.mjs`
 reproduces a committed 37-second run with a later 41-second local copy and a
-`22023` review pause. It verifies archival without resending, and rejects improved
-times, changed flags/identity/owner, missing projected attempts, a capture older
-than the receipt, denied archival and account changes. Run the historical client,
+`22023` review pause. It verifies archival without resending for a covered copy
+created either before or after the better server receipt. It rejects improved
+times and changed flags even on an older capture, wrong identity/owner, missing
+projected attempts/badges, denied archival and account changes. The real UI
+reconnect regression also preserves the server profile, receipt and local view
+while retiring an older slower copy through reads and verified archival only.
+This intentionally replaces the former older-capture rejection: chronology
+alone cannot override an exact same-operation receipt proving a better result.
+Run the historical client,
 canonical outbox, storage/export, hydration and full affected suites as well.
 Phone recovery remains a separate acceptance check. Onboarding impact: none;
 no rule, reward, assistance or navigation destination changes.

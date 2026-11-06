@@ -87,9 +87,10 @@ disposable `fixtures/cockpit-dates.sql` verify scope, dates and stale timelines.
 Historical recreated-capture recovery: `legacy-command.js`
 (`assertRecreatedLegacyCapture`, `loadCommittedLegacyAttempt`) supplies the exact
 receipt/current projection proof; `durable-canonical-outbox.js`
-(`archiveRecreatedCapture`, Legacy namespace) preserves the later copy and
+(`archiveRecreatedCapture`, Legacy namespace) preserves the covered copy and
 receipt before cleanup. UI `recoverQueuedLegacyReceipt` connects hydration and
-reconnect recovery. The data contract owns its strict unchanged-facts rules.
+reconnect recovery. An older slower capture can be covered by the better exact
+receipt; chronology cannot replace its strict unchanged-facts/projection proof.
 
 First welcome/story (#532): `ui/first-welcome.js` owns the local presentation
 marker, deterministic narrative clock and accessible overlay; its CSS is separate.

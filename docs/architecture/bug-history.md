@@ -1,5 +1,14 @@
 # Verified historical causes
 
+Historical pending receipt chronology (reproduced on e5393fe, 6 November 2026):
+an older slower captured intention was covered by a better exact server receipt,
+with identical non-time facts and covered badges/attempts. The Legacy predicate
+rejected it solely by capture date. Two business regressions fail before the
+correction; receipt dominance now permits verified archival independent of date
+ordering. Earlier better claims and changed flags still fail closed. Original
+bytes/receipt are archived before retirement; no command, reward or profile write.
+See canonical-durable-outbox-tests and the real UI historical recovery test.
+
 Support capture preparation on advanced accounts (6 November 2026): a complete
 current catalogue plus two checkpoints reproduces SUPPORT_SIZE before transport.
 The initial validator also accepts compact JSON that the existing SQL jsonb text
