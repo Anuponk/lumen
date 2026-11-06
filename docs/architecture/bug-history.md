@@ -234,3 +234,8 @@ for #470 on 22 October 2026. That is user-reported physical validation; the
 phone's version was not supplied. Automated access/resume fixtures remain
 separate evidence. No player save, entitlement, migration or storage purge is
 part of this follow-up.
+
+
+### #629 / #632 / #627 — fix/offline-hints-drag-adventure-mastery
+
+Les événements espacés ne marquaient que les extrémités (RED gestionnaire réel) ; interpolation des segments, mêmes cellules DOM. Le rôle exact du scintillement sur le téléphone signalé reste à confirmer. Le repli d’aide dépendait uniquement du drapeau hors ligne : une panne transport avec `onLine=true` refusait une réservation vérifiée (RED UI). Une restauration interrompue pouvait omettre les réservations du compteur. Le dernier badge d’aventure ne déclenchait aucune scène (RED transition) ; il a désormais sa priorité sans écrire de progression.

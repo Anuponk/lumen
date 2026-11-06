@@ -449,3 +449,8 @@ en PostgreSQL jetable. La parité existante couvre aussi les 880 quêtes.
 Le job `astronomy` exécute `vizier-fetch-tests.py` avant de récupérer les données
 fraîches : panne réseau CDS → miroir officiel CfA pour le même catalogue ; réponse
 vide/invalide ou deux serveurs injoignables → échec maintenu.
+
+
+### #629 / #632 / #627
+
+`offline-wallet-ui-tests.mjs` et `offline-wallet-tests.mjs` couvrent aides et réservations. `drag-grid-path-tests.mjs` couvre le gestionnaire réel. `celestial-ux-tests.mjs` couvre maîtrise et priorités. Les quatre nouvelles suites navigateur sont obligatoires dans `quality-gate.mjs` ; détails et limites dans TESTING.

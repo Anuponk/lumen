@@ -320,3 +320,8 @@ leurs packs et récits. `remaining-adventures.json` dans `content/generated`
 fournit les 380 grilles. `canonical-quests.js` les joint à la révision 4 ; les
 révisions précédentes et les 500 anciennes quêtes restent immuables.
 Voir [CATALOGUE_88](../CATALOGUE_88.md) pour les commandes, courbes et limites.
+
+
+### Correctifs #629 / #632 / #627
+
+Aides : `game-screen.js` → `offline-wallet.js`. Glissements : `drag-grid-path.js` → `moveDragCross`. Maîtrise : `celestial-progress.js` → célébration et `sky-navigation.js`. Contrats : GAMEPLAY, PROGRESSION, UX_AND_VISUAL_DIRECTION, DATA_AND_ARCHITECTURE.

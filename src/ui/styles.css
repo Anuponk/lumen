@@ -541,6 +541,9 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .adventure-rail{justify-content:flex-start;scroll-padding-inline:2px;padding-inline:2px;overscroll-behavior-x:contain}
 .adventure-chip{max-width:100%;white-space:normal;overflow-wrap:anywhere;min-width:0}
 .adventure-chip:focus-visible{outline:2px solid #b8f4ff;outline-offset:-3px}
+.adventure-chip.mastered{border-color:#b49a5c;color:#ffe3a1;background:radial-gradient(ellipse at top,rgba(193,160,86,.14),transparent),#102535}
+#skyReveal[data-celestial="adventure-mastery"] .celestial-summary{color:#ffe3a1}
+#skyReveal[data-celestial="adventure-mastery"] .celestial-vault{filter:drop-shadow(0 0 7px rgba(214,183,111,.35))}
 #sectorTabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:8px;flex:1;min-height:0;margin:0;overflow:hidden}
 #sectorTabs .constellation-card{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) repeat(3,max-content);justify-content:stretch;justify-items:center;align-content:stretch;gap:3px;min-width:0;min-height:0;padding:4px 6px!important;border-radius:14px;overflow:hidden;background:#0e2133}
 .constellation-card svg{width:100%;height:clamp(30px,7vh,64px);flex:0 1 auto}.constellation-card strong{max-width:100%;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.constellation-card small{font-size:11px;color:#b9d8e8}.constellation-card.locked{opacity:.55}

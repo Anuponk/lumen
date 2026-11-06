@@ -10,6 +10,7 @@ import {questPerformanceRecord} from '../src/campaign/quest-rules.js';
 import {renderRecordResult} from '../src/ui/personal-records.js';
 
 function prepareContext(ctx){
+ ctx.updateHintButton??=()=>{};ctx.updateVerifyButton??=()=>{};
  ctx.structuredClone??=structuredClone;ctx.questPerformanceRecord??=questPerformanceRecord;ctx.renderRecordResult??=renderRecordResult;
  ctx.captureCelestialProgress??=captureCelestialProgress;
  ctx.canonicalQuestList??=()=>[ctx.canonicalActiveQuest].filter(Boolean);

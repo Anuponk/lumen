@@ -9,7 +9,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const validationDir=path.join(root,"docs","validation");
 fs.mkdirSync(validationDir,{recursive:true});
 // A failed suite must not upload JSON left in the checkout by a previous run.
-for(const name of ['browser','ux','learning','late-game','sky-navigation','account-session','canonical-replay','campaign-resume','pwa-update','incident-investigation','ux-lot','first-welcome','personal-records','adventure-05','iau-completion','iau-completion-cloud','quality-summary'])
+for(const name of ['browser','ux','learning','late-game','sky-navigation','account-session','canonical-replay','campaign-resume','pwa-update','incident-investigation','ux-lot','first-welcome','personal-records','adventure-05','iau-completion','iau-completion-cloud','offline-hint','offline-hint-network','drag-cascade','adventure-mastery','quality-summary'])
  fs.rmSync(path.join(validationDir,`ci-${name}.json`),{force:true});
 import {nodeSuites} from "./quality-gate-suites.mjs";
 import {runPool} from "./quality-gate-pool.mjs";
@@ -116,6 +116,10 @@ try{
  await startServer();
  // Start the longest historical suite first; all browser checks remain mandatory.
  await runPool([
+  ()=>runBrowser("offline-hint-purchase-browser-tests.mjs","ci-offline-hint.json",9242),
+  ()=>runBrowser("offline-hint-network-browser-tests.mjs","ci-offline-hint-network.json",9243),
+  ()=>runBrowser("drag-cascade-browser-tests.mjs","ci-drag-cascade.json",9244),
+  ()=>runBrowser("adventure-mastery-browser-tests.mjs","ci-adventure-mastery.json",9245),
   ()=>runBrowser("learning-browser-tests.mjs","ci-learning.json",9224),
   ()=>runBrowser("account-session-browser-tests.mjs","ci-account-session.json",9230),
   ()=>runBrowser("browser-tests.mjs","ci-browser.json",9222),

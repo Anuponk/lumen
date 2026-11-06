@@ -20,6 +20,7 @@ export async function queueOfflineWalletSpend(outbox,{userId,operation,balance,s
  const reserve=async()=>{
   guard();const state=await outbox.inspect(userId);guard();
   if(!state.complete||state.issues.length)throw Error('Offline wallet inventory unavailable');
+  if(state.paused?.some(entry=>entry.kind==='review'||entry.kind==='auth'))throw Error('Offline wallet requires review');
   const prior=state.pending.find(e=>e.operationId===operation.operationId);
   const cost=walletReservationCost([{userId,operationId:operation.operationId,reward:{request:operation.request}}],userId);
   if(!prior&&walletReservationCost(state.pending,userId)+cost>balance)return {allowed:false,reason:'balance'};

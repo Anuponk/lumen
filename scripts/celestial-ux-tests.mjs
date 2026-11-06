@@ -49,6 +49,15 @@ test('pure projections cannot modify a save, reward, wallet or catalogue',()=>{
  assert.equal(JSON.stringify(p),bytes);assert.equal(JSON.stringify(quests),catalogue);
  for(const q of canonicalQuestList())assert.equal(celestialScope({},[q]).possible,4,'current eligibility is shared with gameplay');
 });
+test('adventure mastery crosses on the final badge, independently of global completion',()=>{
+ const badges={autonomy:true,speed:true,noError:true,mastery:true},q=quests[1];
+ const p=won(['a','b','c']);p.performances[0]={version:3,badges:{...badges}};
+ p.canonicalQuestState.b.badges={...badges};p.canonicalQuestState.c.badges={...badges};delete p.canonicalQuestState.b.badges.mastery;
+ const before=captureCelestialProgress(p,q,quests);p.canonicalQuestState.b.badges.mastery=true;
+ assert.equal(celestialTransition(before,p,q,quests).kind,'adventure-mastery');
+ assert.equal(celestialTransition(before,p,q,quests,{recovered:true}).kind,null);
+ assert.equal(celestialTransition(captureCelestialProgress(p,q,quests),p,q,quests).kind,null);
+});
 test('full catalogue mastery is distinct, replayable only at the earned crossing, and takes one priority',()=>{
  const badges={autonomy:true,speed:true,noError:true,mastery:true},ids=quests.map(q=>q.id),q=quests.at(-1);
  const full=members=>{const p=won(members,badges);p.performances[0].badges={...badges};for(const r of Object.values(p.canonicalQuestState))r.badges={...badges};return p};
