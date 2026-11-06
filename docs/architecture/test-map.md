@@ -1,5 +1,11 @@
 # Existing verification map
 
+`cloud-pending-victory-tests.mjs`: actual UI retry declarations + bounded
+scheduler + durable outboxes, with synthetic command confirmation. Covers both
+victory domains, transient retry, Auth/review holds, unsafe contexts, session
+switch during inspection, concurrent wakes and fixed diagnostic projection.
+Included in quality gate; physical/live-account recovery is separate acceptance.
+
 Erasure UI: `self-erasure-controls-tests.mjs` executes the production controls
 with synthetic boundaries, proving strict acknowledgement, current ownership,
 session isolation and signout success before local cleanup. It does not certify

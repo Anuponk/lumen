@@ -8,6 +8,7 @@ import vm from 'node:vm';
 import {functionSource} from './source-tools.mjs';
 import {cloudSafelyCoversLocal,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles,restoreRicherCloudProfile,sameCloudProfile} from '../src/persistence/cloud-profile.js';
 import {createCloudPersistence} from '../src/persistence/cloud.js';
+import {classifyCanonicalRecoveryError} from '../src/persistence/canonical-recovery-errors.js';
 const userId='00000000-0000-0000-0000-000000000001';
 const facts={seconds:45,assistanceUsed:false,mistakeCommitted:false,qualifying:true,hintUsed:false,challengeFailed:false,qualifiedDay:'2026-10-18',qualifiedAt:'2026-10-18T10:00:00.000Z'};
 const base=()=>({solved:{},badges:{},stars:{},challenges:{},performances:{},noHint:{},xp:0,shards:3,skyHistoryVersion:4,skyScore:0});
@@ -16,7 +17,7 @@ async function isolatedLegacyFixture(){
  const original=JSON.stringify(ctx.lumenProgress),raw=new Map([['lumenProgressV1',original]]);
  Object.assign(ctx,{cloudProfileReady:false,cloudProfileDirty:true,cloudProfileBusy:false,
   cloudProfileFailure:{reason:'partial_reconciliation'},canonicalRecoveryContext:{userId,client:ctx.lumenSupabase},
-  canonicalActiveQuest:null,ATTEMPT_STATES:{RUNNING:'running',PAUSED:'paused'},
+  canonicalActiveQuest:null,pendingVictoryView:null,ATTEMPT_STATES:{RUNNING:'running',PAUSED:'paused'},
   attemptEngine:{snapshot:()=>({state:'ready'})},sessionStorage:{getItem:()=>null},
   document:{visibilityState:'visible'},navigator:{onLine:true},replayLegacyVictoryOutbox,
   localStorage:{getItem:k=>raw.get(k)??null},reloads:0,events:[],
@@ -218,7 +219,7 @@ function uiFixture(){
  const fallback={entries:async()=>[],put:async()=>{throw Error('denied')},get:async()=>null,remove:async()=>{}};
  const box=createDurableCanonicalVictoryOutbox(store,{fallback,namespace:'Legacy'});
  const attempt={attemptId:'ui-attempt',resetCount:0,startedAt:Date.parse(facts.qualifiedAt),qualifying:true};
- const ctx={cloudHydrationGeneration:0,lumenUser:{id:userId},lumenSupabase:client,levelIndex:0,attemptEngine:{snapshot:()=>attempt},canonicalQuestForLegacy:()=>({id:legacyVictoryRules()[0].questId}),
+ const ctx={classifyCanonicalRecoveryError,cloudHydrationGeneration:0,lumenUser:{id:userId},lumenSupabase:client,levelIndex:0,attemptEngine:{snapshot:()=>attempt},canonicalQuestForLegacy:()=>({id:legacyVictoryRules()[0].questId}),
   authSessionPending:false,qaActive:false,legacyVictoryBusy:false,legacyCommandInFlight:false,legacyVictoryRetry:null,legacyVictoryOutbox:box,
   activeGameSeconds:()=>45,localCalendarDay:()=>facts.qualifiedDay,hintUsedInAttempt:()=>false,usedHintThisGame:false,questFailed:false,cloudProfileReady:true,cloudProfileDirty:false,cloudProfileTimer:null,
   canonicalOutboxRetryInFlight:false,lumenProgress:base(),legacyCommandsSupported,commitLegacyVictoryCommand,loadCommittedLegacyAttempt,structuredClone,

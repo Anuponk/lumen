@@ -200,7 +200,7 @@ function renderSyncStatus(view){
 function presentPendingVictory(questId,operationId){
  const record=document.getElementById('successRecord');if(record)record.hidden=true;
  if(pendingVictoryView?.operationId===operationId)return;
- pendingVictoryView={questId,operationId,userId:lumenUser?.id,client:lumenSupabase,attemptId:attemptEngine.snapshot()?.attemptId};
+ pendingVictoryView={questId,operationId,userId:lumenUser?.id,client:lumenSupabase,attemptId:attemptEngine.snapshot()?.attemptId,resetCount:attemptEngine.snapshot()?.resetCount||0};
  if(!pendingNavigationEntries.some(e=>e.operationId===operationId))pendingNavigationEntries.push({questId,operationId,userId:lumenUser?.id});
  const replay=questIsCompleted(lumenProgress,questId);
  syncPresentation.celebration(true);syncPresentation.pending({durable:true});
@@ -217,12 +217,30 @@ function presentPendingVictory(questId,operationId){
  const animationKey=lumenUser?.id+':'+operationId;
  if(!shownPendingVictories.has(animationKey)){shownPendingVictories.add(animationKey);if(!replay)launchWinStar(1,{pending:true})}
 }
-async function retryPresentedVictory(){
+let pendingVictoryRetryInFlight=null;
+function canRetryPresentedVictory(){
+ const pending=pendingVictoryView,attempt=attemptEngine.snapshot();
+ if(!pending||pending.userId!==lumenUser?.id||pending.client!==lumenSupabase||pending.attemptId!==attempt?.attemptId||(pending.resetCount??0)!==(attempt?.resetCount||0))return false;
+ if(qaActive||authSessionPending||!cloudProfileReady||cloudProfileBusy||cloudProfileDirty||canonicalOutboxRetryInFlight||canonicalVictoryInFlight||legacyVictoryBusy||legacyCommandInFlight||document.visibilityState==='hidden'||navigator.onLine===false)return false;
+ try{return sessionStorage.getItem('lumenPasswordRecoveryPending')!=='1'}catch{return false}
+}
+async function retryPresentedVictory({automatic=false}={}){
  const pending=pendingVictoryView;
  if(!pending||pending.userId!==lumenUser?.id||pending.client!==lumenSupabase||pending.attemptId!==attemptEngine.snapshot()?.attemptId)return;
- // Retry the frozen operation, without dismissing the victory presentation.
- pendingVictoryView=null;
- await celebrateSuccess();
+ if(pendingVictoryRetryInFlight===pending||automatic&&!canRetryPresentedVictory())return false;
+ pendingVictoryRetryInFlight=pending;
+ try{
+  if(automatic){
+   const box=canonicalActiveQuest?canonicalVictoryOutbox:legacyVictoryOutbox;
+   const state=await box.inspect(pending.userId);
+   // Auth/review holds and changed sessions never authorize a foreground resend.
+   if(pendingVictoryView!==pending||!canRetryPresentedVictory()||!state.retryable.some(entry=>entry.questId===pending.questId&&entry.operationId===pending.operationId))return false;
+  }
+  // Retry the frozen operation, without dismissing the victory presentation.
+  pendingVictoryView=null;
+  await celebrateSuccess();
+  return !!pendingVictoryView&&canRetryPresentedVictory();
+ }finally{if(pendingVictoryRetryInFlight===pending)pendingVictoryRetryInFlight=null}
 }
 function leavePendingVictoryForNavigation(){
  if(!pendingVictoryView)return;
@@ -604,7 +622,7 @@ async function retryPendingCanonicalOutboxOnReconnect(){
  finally{canonicalOutboxRetryInFlight=false}
 }
 function retryPendingCloudWriteOnReconnect(){
- if(pendingVictoryView&&navigator.onLine!==false)void retryPresentedVictory();
+ if(pendingVictoryView&&navigator.onLine!==false)void retryPresentedVictory({automatic:true});
  if(qaActive||!lumenUser||!lumenSupabase)return;
  void retryPendingCanonicalOutboxOnReconnect();
  canonicalRecovery.schedule();
@@ -2714,8 +2732,9 @@ async function retryPendingLegacyOutboxOnReconnect(){
  return false;
 }
 const canonicalRecovery=createCloudRetryScheduler({
- ready:canReplayCanonicalOutbox,
+ ready:()=>canReplayCanonicalOutbox()||canRetryPresentedVictory(),
  run:async()=>{
+  if(pendingVictoryView)return retryPresentedVictory({automatic:true});
   const ownerId=lumenUser.id,client=lumenSupabase;
   if(legacyVictoryRetry){await legacyVictoryRetry();return (await refreshCanonicalOutboxNotice(ownerId))>0}
   if(await retryPendingLegacyOutboxOnReconnect())return false;
@@ -2889,6 +2908,8 @@ async function celebrateCanonicalSuccess(){
   if(!sameVictoryContext())return;
   console.error("Canonical victory not saved",error);
   recordCloudDiagnostic('canonical_victory_failed',{stage:victoryStage,errorCode:classifyCanonicalRecoveryError(error).code,reason:error?.code==='OUTBOX_CONFLICT'||error?.message==='Operation identity reused with different evidence'?'operation_conflict':durableIntent?'intent_recorded':'capture_unconfirmed'});
+  if(durableIntent){try{await canonicalVictoryOutbox.pause(victoryOwner,durableIntent,error)}catch{recordCloudDiagnostic('canonical_outbox_pause_pending',{reason:'storage'})}}
+  if(!sameVictoryContext())return;
   let locallySaved=false;
   try{locallySaved=!!lumenUser&&!!durableIntent&&(await canonicalVictoryOutbox.pending(lumenUser.id)).some(entry=>entry.operationId===durableIntent.operationId&&entry.questId===q.id)}catch(readError){
    recordCloudDiagnostic("canonical_outbox_read_failed",{reason:"integrity"});
@@ -2939,7 +2960,7 @@ async function celebrateCanonicalSuccess(){
  if(!celestialPending)launchWinStar(committed.newlyCompleted?1:0);
  const reveal=()=>{if(canonicalActiveQuest?.id===q.id&&celebrated)showSkyReveal(null,null,{quest:q,newlyCompleted:committed.newlyCompleted})};
  if(committed.newlyCompleted&&!celestialPending)setTimeout(reveal,2250);else reveal();
- }finally{if(canonicalVictoryInFlight===capture)canonicalVictoryInFlight=null;}
+ }finally{if(canonicalVictoryInFlight===capture)canonicalVictoryInFlight=null;if(pendingVictoryView)canonicalRecovery.schedule();}
 }
 
 const legacyVictoryOutbox=createDurableCanonicalVictoryOutbox(localStorage,{namespace:'Legacy',onIssue:issue=>recordCloudDiagnostic('legacy_outbox_storage',{reason:issue.kind})});
@@ -3022,7 +3043,7 @@ async function captureLegacyCommandVictory(){
     else{retry.remove();await celebrateSuccess()}
    }finally{retry.disabled=false}
   };msg.append(' ',retry);
-  recordCloudDiagnostic('legacy_victory_pending',{durable:!!intent,stage:victoryStage});
+  recordCloudDiagnostic('legacy_victory_pending',{durable:!!intent,stage:victoryStage,errorCode:classifyCanonicalRecoveryError(error).code});
    if(intent){presentPendingVictory(quest.id,intent.operationId);syncPresentation.failed({durable:true})}else syncPresentation.failed({durable:false});
   if(intent)legacyVictoryRetry=async()=>{if(!sameContext()){legacyVictoryRetry=null;return}const state=await legacyVictoryOutbox.inspect(ownerId);if(state.retryable.some(e=>e.operationId===intent.operationId))await celebrateSuccess()};
   return {handled:true};

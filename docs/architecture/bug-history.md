@@ -1,5 +1,15 @@
 # Verified historical causes
 
+Pending result retry stalls (reproduced on 725e1c3, 6 November 2026): canonical
+background readiness rejects the still-open canonical quest; historical retry
+calls the coordinator while its pending-result guard returns immediately. Three
+business regressions fail before the correction. The scheduler now retries the
+displayed durable operation through a clean-session foreground route, keeping
+outbox holds and immutable evidence. A fourth failing regression demonstrates
+that victory failures were absent from shared incident mapping; existing fixed
+codes now cover them. See `cloud-pending-victory-tests.mjs`; no live player
+recovery is inferred from these simulations.
+
 Historical pending copy after an acknowledged run: a synthetic regression on
 `3496069` fails with a `22023`-paused later capture even though its original
 receipt and current profile are available. Canonical outboxes already had an
