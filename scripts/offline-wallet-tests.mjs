@@ -34,6 +34,7 @@ test('a server refusal retains the offline debit and never changes earned progre
  assert.equal(refusal.code,'P0001');await box.pause('a',entry,refusal);
  assert.equal(JSON.stringify(profile),original);assert.deepEqual((await box.pending('a'))[0],entry);
  assert.equal((await box.inspect('a')).paused[0].kind,'review');
+ await assert.rejects(queueOfflineWalletSpend(box,{userId:'a',balance:80,operation:operation('hint',2),locks:f.locks}),/requires review/);
 });
 test('two concurrent tabs cannot reserve beyond the confirmed device balance',async()=>{
  const f=fixture(),common={userId:'a',balance:1,locks:f.locks};

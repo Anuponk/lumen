@@ -1528,3 +1528,10 @@ compteurs de file gardent leur réserve dans le premier bloc. Le plafond de
 trois blocs/524288 octets JSONB reste inchangé. Les checkpoints facultatifs
 s’ajoutent seulement s’ils tiennent ; les originaux restent sur l’appareil.
 Un échec de taille ne tronque ni sauvegarde ni opération en attente.
+
+
+## Réservations d’aides et réseau inaccessible (#629)
+
+Le signal `navigator.onLine` ne prouve pas que le serveur est joignable. Après une erreur temporaire classée UNKNOWN, 408, 429 ou 5xx, une aide peut utiliser la réservation hors ligne existante : propriétaire vérifié sur cet appareil, preuve de solde valide, verrou inter-onglets, inventaire durable complet et identité exacte tentative/reset/type/séquence. Les refus Auth, métier ou de schéma ne permettent pas ce repli. Une file Wallet suspendue pour Auth ou revue refuse toute nouvelle réservation. Même si la restauration cloud échoue, les réservations locales du compte sont déduites du compteur.
+
+Le solde confirmé reste distinct du disponible. La restauration authentifiée rejoue les commandes et vérifie leurs reçus avant de retirer la file. Aucun champ persistant, migration SQL ou droit ajouté ; les garanties multi-appareils et transfert invité restent inchangées.

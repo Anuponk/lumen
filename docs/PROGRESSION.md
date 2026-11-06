@@ -265,3 +265,8 @@ les cohortes existantes. Les anciennes fins ne plafonnent pas le nouveau parcour
 La fin de campagne dépend de toutes les quêtes actuelles ; la maîtrise globale
 dépend en plus de tous les badges éligibles. Replays, reçus retrouvés et
 restaurations ne rejouent pas une célébration acquise. Voir [CATALOGUE_88](CATALOGUE_88.md).
+
+
+## Maîtrise complète d’une aventure (#627)
+
+Toutes les quêtes et tous les badges actuellement éligibles sont nécessaires. Le statut « Maîtrisée » est une projection des preuves existantes, sans champ ni récompense ajouté. Le dernier badge peut être gagné en replay. Une seule priorité : maîtrise globale, fin globale, maîtrise d’aventure, fin d’aventure, fin de constellation. Restaurations et reçus retrouvés ne rejouent pas ces scènes ; un changement de catalogue ne fabrique pas de franchissement.

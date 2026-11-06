@@ -145,3 +145,8 @@ LUMEN guarantees the sender-side condition (the shared snapshot comes from the s
 The sender's time and badges stay hidden before the recipient finishes, so the reference does not become a target during solving. At the end, comparison is factual across time, Autonomy and Mastery; there is no composite score that pretends an assisted faster run is objectively better than an autonomous slower run.
 
 **Remarkable performance** has one exact social definition: **Mastery earned on the sender's first play of that quest**. Every first play may be challenged, but this case receives stronger celebration and a more prominent “Défier un ami” CTA. Mastery earned on replay is never a remarkable social performance and cannot create a challenge.
+
+
+## Continuité des glissements (#632)
+
+Chaque segment de pointeur assombrit toutes les cases traversées, même lorsque le navigateur regroupe les déplacements pendant les effets. Le seuil de 8 px distingue tap et glissement ; la capture commence au seuil. Les Gardiens, les contraintes pédagogiques et les cellules DOM restent préservés. Annuler restaure tout le geste.

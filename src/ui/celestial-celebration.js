@@ -9,7 +9,7 @@ export function createCelestialCelebration(document){
   const restore=()=>originals.forEach(({e,hidden,disabled,text,click})=>{e.hidden=hidden;e.disabled=disabled;if(text!==null)e.textContent=text;e.onclick=click});
   cleanup=restore;
   host.dataset.celestial=kind;host.setAttribute('aria-labelledby','skyRevealTitle');host.setAttribute('aria-describedby','skyRevealName celestialSummary');
-  document.getElementById('skyRevealKicker').textContent=kind==='constellation'?'UNE CONSTELLATION RÉVEILLÉE':'UN CIEL RALLUMÉ';
+  document.getElementById('skyRevealKicker').textContent=kind==='adventure-mastery'?'UNE AVENTURE MAÎTRISÉE':kind==='constellation'?'UNE CONSTELLATION RÉVEILLÉE':'UN CIEL RALLUMÉ';
   document.getElementById('skyRevealTitle').textContent=title;
   document.getElementById('skyRevealName').textContent=copy;
   const canvas=document.getElementById('skyRevealCanvas');canvas.innerHTML=art;

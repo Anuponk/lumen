@@ -60,7 +60,7 @@ test('paid help stays refused during a hold while free help needs no Wallet RPC'
  const ctx={hintCost:()=>cost,verifyCost:()=>cost,lumenUser:{id:'a'},qaActive:false,unlimitedShardsEnabled:()=>false,
   walletSpendInFlight:false,legacyCommandInFlight:false,legacyVictoryBusy:false,canonicalOutboxRetryInFlight:false,lumenSupabase:{},
   attemptEngine:{snapshot:()=>({attemptId:'same-attempt'})},hintUsesThisGame:2,verifyUsesThisGame:2,authSessionPending:false,
-  cloudProfileReady:false,walletCommandsSupported:async()=>{calls++;return true},msg:{textContent:''},recordCloudDiagnostic(){},refreshCanonicalOutboxNotice(){}};
+  cloudProfileReady:false,cloudProfileFailure:held.failure,walletCommandsSupported:async()=>{calls++;return true},msg:{textContent:''},recordCloudDiagnostic(){},refreshCanonicalOutboxNotice(){}};
  vm.createContext(ctx);vm.runInContext(functionSource(source,'authorizeWalletSpend'),ctx);
  assert.equal(await ctx.authorizeWalletSpend('hint'),false);assert.equal(calls,0);
  cost=0;assert.equal(await ctx.authorizeWalletSpend('hint'),true);assert.equal(calls,0);

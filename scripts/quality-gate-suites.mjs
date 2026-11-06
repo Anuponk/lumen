@@ -1,4 +1,6 @@
 export const nodeSuites=[
+ 'drag-grid-path-tests.mjs',
+ 'offline-wallet-ui-tests.mjs',
  'cloud-pending-victory-tests.mjs',
  'self-erasure-controls-tests.mjs',
  'adventure-05-runtime-tests.mjs',

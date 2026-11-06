@@ -1812,3 +1812,12 @@ expiration réseau du CDS utilise le miroir VizieR officiel du CfA pour le même
 catalogue, sans rendre verts les cas de réponse vide, invalide ou indisponible
 sur les deux serveurs. Le rapport frais et l’audit des sources figées restent
 des preuves complémentaires.
+
+
+## Régressions groupées #629, #632 et #627
+
+`offline-wallet-ui-tests.mjs` reproduit le refus avec solde 80 et panne réseau malgré le signal en ligne ; conserve les refus Auth/métier et sans preuve. `offline-wallet-tests.mjs` couvre concurrence, quota, identité et file en revue. `drag-grid-path-tests.mjs` exécute le vrai gestionnaire avec événements espacés (RED avant correctif). `celestial-ux-tests.mjs` vérifie le dernier badge d’aventure et les priorités (RED avant correctif).
+
+La quality gate ajoute `offline-hint-purchase-browser-tests.mjs`, `offline-hint-network-browser-tests.mjs`, `drag-cascade-browser-tests.mjs`, `adventure-mastery-browser-tests.mjs`. Profils et RPC sont synthétiques ; Chromium exerce les vrais boutons, le stockage durable, la reconnexion, les gestes tactiles et les scènes mobiles/bureau. Rapports CI : `ci-offline-hint.json`, `ci-offline-hint-network.json`, `ci-drag-cascade.json`, `ci-adventure-mastery.json`.
+
+Recette physique restante : indice avec 80 Éclats en mode avion puis reconnexion ; glissement pendant scintillement avec/sans marquage automatique ; dernier badge d’aventure puis réouverture de Mon ciel. Ces tests simulés ne valent pas recette sur téléphone. Les issues restent ouvertes « To be tested » jusqu’à acceptation.

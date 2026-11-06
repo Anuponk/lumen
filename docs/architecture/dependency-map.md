@@ -246,3 +246,8 @@ Catalogue completion: `remaining-adventures.json` (configuration) → `content.j
 (committed proof-audited grids) → existing navigation, rewards and cloud commands.
 `celestial-progress.js` selects one quest/badge crossing; `game-screen.js` renders
 it through the existing celestial celebration. No new progression writer.
+
+
+### #629 / #632 / #627
+
+`game-screen.js` importe `drag-grid-path.js` et projette `celestialScope` vers `sky-navigation.js`. Le repli réseau conserve les outboxes Wallet, les verrous et les reçus existants. Aucune dépendance externe ajoutée.
