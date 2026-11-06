@@ -2,6 +2,18 @@
 
 This is a staged implementation record, not a declaration that #391 is closed.
 
+Historical pending follow-up (6 November 2026): comparison of an owner-supplied
+export with its existing exact server receipt reproduced a covered slower local
+copy blocked solely because it was created before the better accepted result.
+The Legacy archival predicate now relies on the exact account/operation/quest,
+identical non-time facts, non-improved elapsed time and covered current server
+badges/attempts, not the order of capture and receipt timestamps. Both dates
+remain validated; better local claims, changed flags, missing proof and archive
+failure still retain the intention. The existing verified archive preserves the
+original bytes and receipt before cleanup, without command replay or grants.
+Tests use synthetic identities and generic values; private recovery data does
+not belong in source or CI artifacts. No production migration or repair script.
+
 Pending victory follow-up (6 November 2026): on main 725e1c3, synthetic
 regressions reproduce a canonical result that cannot enter background retry
 while its quest is active, and a historical result whose retry callback returns

@@ -707,12 +707,15 @@ flag cannot serve as this proof. Numeric cold resume restores both quest and
 campaign/replay mode before the attempt engine's strict identity comparison;
 a READY board does not establish preserved campaign access.
 
-The historical outbox uses the same archival recovery for a later capture of
+The historical outbox uses the same archival recovery for a covered capture of
 an already committed operation. It independently reads the original receipt
 and current profile, requires the same account, operation, quest, start timestamp,
 day and all assistance/qualification flags, a non-improved elapsed time, and
 covered attempts/badges. Only a `22023` review pause permits this read-only
-inspection; other holds remain. The later capture must postdate the receipt.
+inspection; other holds remain. The capture may predate the receipt when its
+elapsed time is equal or worse and all other facts are identical. Local capture
+chronology is not proof of better performance and must not hold an already
+confirmed better result indefinitely. Both timestamps must still be valid.
 Exact original bytes and receipt are verified in a private exportable archive
 before retiring that pending copy. No command is resent, receipt changed or
 reward granted. Archive or session failure retains the pending operation.

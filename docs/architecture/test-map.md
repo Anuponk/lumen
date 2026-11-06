@@ -88,7 +88,8 @@ automated fixtures, not proof of recovery on a real second device.
 
 Historical recreated-capture recovery: `canonical-durable-outbox-tests.mjs`
 covers paused duplicates, immutable facts, receipt/projection proof, archival and
-session/storage refusals. `legacy-command-client-tests.mjs` exercises the real
+session/storage refusals, including an older slower copy while retaining older
+better/changed claims. `legacy-command-client-tests.mjs` exercises the real
 UI reconnect helper; `cloud-unsynced-recovery-tests.mjs` verifies local archive
 export alongside both IndexedDB stores. These fixtures do not prove phone recovery.
 

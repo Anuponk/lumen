@@ -26,9 +26,10 @@ export async function loadCommittedLegacyAttempt(client,questId,operationId,{use
  verifyLegacyProjection(profile,receipt,quest);
  return {profile,receipt,quest,userId};
 }
-// A later copy of an already committed run is evidence to archive, not a new
-// command or permission to rewrite its receipt. Every fact except elapsed time
-// must match, and the later capture may not improve the committed performance.
+// A dominated copy of an already committed run is evidence to archive, not a
+// new command or permission to rewrite its receipt. Every fact except elapsed
+// time must match. The captured time cannot improve the accepted performance;
+// local capture chronology is not authority over the immutable server receipt.
 export function assertRecreatedLegacyCapture(userId,entry,committed){
  const fail=()=>{throw Error('Recreated legacy capture proof unconfirmed')};
  const exactKeys=(v,keys)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length===keys.length&&keys.every(k=>Object.hasOwn(v,k));
@@ -40,8 +41,7 @@ export function assertRecreatedLegacyCapture(userId,entry,committed){
  if(!quest||!exactKeys(entry,['version','operationId','userId','questId','reward','createdAt'])||entry.version!==2||entry.userId!==userId||committed?.userId!==userId||
   !exactKeys(entry.reward,['facts'])||!exactKeys(request,['version','operationId','questId','facts'])||request.version!==1||request.operationId!==entry.operationId||request.questId!==quest.id||
   !validFacts(later)||!validFacts(earlier)||later.seconds<earlier.seconds||!fields.filter(k=>k!=='seconds').every(k=>later[k]===earlier[k])||
-  typeof receipt.outcome?.firstCompletion!=='boolean'||!Number.isSafeInteger(receipt.outcome.attempts)||receipt.outcome.attempts<1||!Number.isFinite(Date.parse(receipt.recordedAt))||!Number.isFinite(Date.parse(entry.createdAt))||
-  (later.seconds!==earlier.seconds&&Date.parse(entry.createdAt)<Date.parse(receipt.recordedAt)))fail();
+  typeof receipt.outcome?.firstCompletion!=='boolean'||!Number.isSafeInteger(receipt.outcome.attempts)||receipt.outcome.attempts<1||!Number.isFinite(Date.parse(receipt.recordedAt))||!Number.isFinite(Date.parse(entry.createdAt)))fail();
  verifyLegacyProjection(committed.profile,receipt,quest);
 }
 export async function commitLegacyVictoryCommand(client,questId,facts,operationId,{userId,sessionValid=()=>true}={}){
