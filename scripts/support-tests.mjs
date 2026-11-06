@@ -2,12 +2,67 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {captureSupportCopy,validateSupportCapture,projectSupportProfile} from '../src/persistence/support-capture.js';
 import {createSupportSession} from '../src/persistence/support-session.js';
+import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 const owner='00000000-0000-0000-0000-000000000001';
 const quests=[{id:'q1',ordinal:1,legacyIndex:0},{id:'q-next',ordinal:345,legacyIndex:null}];
 const profile={solved:{0:1},shards:99,performances:{0:{badges:{mastery:true},bestTime:12,secret:'FAKE_REFRESH_SECRET'}},canonicalQuestState:{'q-next':{solved:true}},token:'FAKE_AUTH_SECRET'};
 function storage(){const map=new Map([['lumenCloudOwnerId',owner],['lumenProgressV1',JSON.stringify(profile)]]);return {map,get length(){return map.size},key:i=>[...map.keys()][i],getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,String(v))}}
 const packet=()=>({format:1,code:'manual',events:[],version:'unknown',copies:[{source:'local',facts:[]}]});
 const tick=()=>new Promise(r=>setImmediate(r));
+
+function completedCatalogueStorage(){
+ const store=storage(),p={solved:{},stars:{},noHint:{},performances:{},canonicalQuestState:{},shards:3,xp:10000,skyScore:999};
+ for(const q of canonicalQuestList()){
+  const badges={autonomy:true,speed:true,noError:true,mastery:true};
+  if(q.legacyIndex!==null){const i=q.legacyIndex;p.solved[i]=1;p.stars[i]=1;p.noHint[i]=true;p.performances[i]={badges,bestTime:22,time:23,attempts:2,version:2};}
+  else p.canonicalQuestState[q.id]={solved:true,badges,performance:{bestTime:22,time:23,attempts:2}};
+ }
+ store.setItem('lumenProgressV1',JSON.stringify(p));
+ for(let i=0;i<2;i++)store.setItem('lumenUnsyncedCloudBackupV2:'+owner+':'+i,JSON.stringify({progress:p}));
+ return store;
+}
+
+test('a progressed catalogue account can share its complete current projection within the server size limit',()=>{
+ const store=completedCatalogueStorage(),before=JSON.stringify([...store.map]);
+ const copy=captureSupportCopy({storage:store,owner,version:'1.11.1+562'});
+ assert.deepEqual(copy.copies[0],{source:'local',facts:projectSupportProfile(JSON.parse(store.getItem('lumenProgressV1')))});
+ // All admitted strings are fixed ASCII vocabulary; this independently counts
+ // PostgreSQL jsonb's separator spaces for these integer-only facts.
+ copy.events=Array(20).fill('guided_input_blocked');
+ for(const metric of ['pendingCanonical','pendingLegacy','pendingWallet'])copy.copies[0].facts.push({quest:0,metric,value:1000000000000});
+ assert.ok(Buffer.byteLength(JSON.stringify(copy).replace(/[:,]/g,'$& '))<=524288);
+ assert.ok(copy.copies.length>=1&&copy.copies.length<=3);
+ assert.equal(JSON.stringify([...store.map]),before,'Never prune or mutate originals to prepare a support copy');
+});
+
+test('compact JSON below the limit must still be refused when PostgreSQL jsonb text exceeds it',()=>{
+ const facts=Array.from({length:3750},()=>({quest:9999999,metric:'pendingCanonical',value:1000000000000}));
+ const copy={...packet(),copies:[{source:'local',facts},{source:'checkpoint',facts}]};
+ assert.ok(Buffer.byteLength(JSON.stringify(copy))<=524288);
+ assert.ok(Buffer.byteLength(JSON.stringify(copy).replace(/[:,]/g,'$& '))>524288);
+ assert.throws(()=>validateSupportCapture(copy),/SUPPORT_SIZE/);
+});
+
+test('numeric exponents use the server decimal size rather than their short JSON notation',()=>{
+ const facts=Array.from({length:1600},()=>({quest:1,metric:'time',value:1e-100}));
+ const copy={...packet(),copies:[{source:'local',facts}]};
+ assert.doesNotThrow(()=>validateSupportCapture(copy));
+ copy.copies.push({source:'checkpoint',facts},{source:'checkpoint',facts});
+ assert.ok(Buffer.byteLength(JSON.stringify(copy))<524288);
+ assert.throws(()=>validateSupportCapture(copy),/SUPPORT_SIZE/);
+});
+
+test('an oversized optional checkpoint cannot prevent delivery or evict a smaller recent one',()=>{
+ const store=storage();
+ const huge={solved:{},performances:{}};
+ const many=Array.from({length:1000},(_,i)=>({id:'q'+i,ordinal:i+1,legacyIndex:i}));
+ for(const q of many){huge.solved[q.legacyIndex]=1;huge.performances[q.legacyIndex]={bestTime:1,time:2,attempts:3,version:2,badges:{autonomy:true,speed:true,noError:true,mastery:true}};}
+ store.setItem('lumenUnsyncedCloudBackupV2:'+owner+':9',JSON.stringify({progress:huge}));
+ store.setItem('lumenUnsyncedCloudBackupV2:'+owner+':8',JSON.stringify({progress:profile}));
+ const before=JSON.stringify([...store.map]),copy=captureSupportCopy({storage:store,owner,quests:many});
+ assert.equal(copy.copies.length,2);assert.deepEqual(copy.copies[1].facts,projectSupportProfile(profile,many));
+ assert.equal(JSON.stringify([...store.map]),before);
+});
 function fixture(){
  const timers=new Map(),calls=[],store=storage();let stamp=1800000000000,counter=0,connected=true,handler;
  const client={rpc:async(name,args)=>{calls.push(args);return handler?handler(args):{data:args.p_action==='activate'||args.p_action==='status'?{id:'case',state:'active',expires_at:new Date(stamp+86400000).toISOString()}:args.p_action==='revoke'?{state:'deleted'}:{capture_id:args.p_capture_id,received_at:new Date(stamp).toISOString()}}}};

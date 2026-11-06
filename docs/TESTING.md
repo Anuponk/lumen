@@ -664,6 +664,14 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Support sizing: `node scripts/support-tests.mjs` constructs the full current
+catalogue projection with two synthetic checkpoints. The current projection
+must remain complete, optional copies must fit the server's spaced/decimal
+`jsonb::text` limit including later incident/counter metadata, and all source
+bytes must remain unchanged. Compact-only and exponent cases cross the limit;
+the real validator is exercised independently in disposable `fixtures/support.sql`.
+No production fixture or real-account upload is implied by these tests.
+
 `node scripts/cloud-pending-victory-tests.mjs` exercises production result
 retry functions and the bounded scheduler with real durable outboxes and
 synthetic command confirmation. Canonical and historical results recover while

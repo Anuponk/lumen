@@ -1,5 +1,9 @@
 # Dependencies and data flow
 
+Support projection -> complete current copy + optional bounded checkpoints ->
+server-representation byte budget with metadata reserve -> existing support RPC.
+No edge to a game writer or original-data cleanup; an unfit current copy fails.
+
 Pending result -> bounded command scheduler -> same-owner clean-session gate ->
 owning durable queue's retryable operation -> frozen victory coordinator ->
 existing receipt/read-back. Auth/review holds and active writer guards remain.

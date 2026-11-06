@@ -1,5 +1,9 @@
 # Feature map
 
+Support size boundary: `support-capture.js` budgets the complete current
+projection and optional checkpoints using server `jsonb::text` bytes. No profile,
+outbox or archive mutation; unchanged support schema/limits. See SUPPORT_574.
+
 Pending victory foreground retry: `game-screen.js::canRetryPresentedVictory`,
 `retryPresentedVictory` and `canonicalRecovery` reuse the bounded scheduler and
 owning durable queue while the result sheet is open. No background-play guard

@@ -262,6 +262,13 @@ known field names (otherwise `unknown_field`), without profile contents.
 
 ## Cloud persistence contract
 
+Support capture budgeting preserves the complete current typed projection and
+only adds optional owner-bound checkpoints within the existing server size limit.
+The budget uses `jsonb::text` bytes, reserving existing incident/counter metadata;
+an oversized current projection fails explicitly. This never deletes originals,
+changes a gameplay writer, retires a pending command or relaxes server validation.
+See [temporary assistance](SUPPORT_574.md#capture-size-follow-up-6-november-2026).
+
 Pending result recovery: the bounded command scheduler also retries the exact
 durable victory displayed on the current result sheet, including canonical
 quests whose active board intentionally blocks background outbox replay.

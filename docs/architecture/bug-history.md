@@ -1,5 +1,14 @@
 # Verified historical causes
 
+Support capture preparation on advanced accounts (6 November 2026): a complete
+current catalogue plus two checkpoints reproduces SUPPORT_SIZE before transport.
+The initial validator also accepts compact JSON that the existing SQL jsonb text
+limit refuses. Two business regressions fail on 8e84d57 before correction.
+Capture now preserves the complete current projection and fits only optional
+checkpoints within a matching server-representation budget and metadata reserve.
+Original saves and all pending intentions stay unchanged. See support-tests and
+disposable fixtures/support.sql; this is not proof of a real phone upload.
+
 Pending result retry stalls (reproduced on 725e1c3, 6 November 2026): canonical
 background readiness rejects the still-open canonical quest; historical retry
 calls the coordinator while its pending-result guard returns immediately. Three

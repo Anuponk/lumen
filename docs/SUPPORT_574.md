@@ -1,5 +1,27 @@
 # Temporary assistance — #574
 
+## Capture size follow-up (6 November 2026)
+
+An advanced catalogue profile plus two recovery copies can exceed the existing
+512 KiB server limit. `captureSupportCopy` now keeps the complete current typed
+projection and includes only the newest optional checkpoints that fit; skipped
+copies and all game/outbox/archive bytes remain untouched on the device. If the
+current projection alone cannot fit, preparation still fails explicitly rather
+than truncating facts or pretending to have sent a complete copy.
+
+The client measures the PostgreSQL `jsonb::text` representation, including
+separator spaces and expanded decimal exponents, matching the existing server
+validator. See [PostgreSQL JSON input/output](https://www.postgresql.org/docs/current/datatype-json.html#JSON-INPUT-OUTPUT).
+Preparation reserves 2 KiB for the existing maximum 20 fixed incident codes and
+three pending-queue counters, plus three fact slots in the current projection.
+Consent, ownership, expiry, retry identity, access and server limits are unchanged.
+No production SQL or save/reward/receipt format changes are needed. Older clients
+may still fail to prepare an oversized capture until the normal application update.
+
+`support-tests.mjs` covers a completed real catalogue with checkpoints, compact
+versus stored-byte disagreement, numeric exponents and oversized optional copies.
+The real SQL validator is checked independently in disposable `fixtures/support.sql`.
+
 ## Audit and minimal architecture (25 October 2026)
 
 Base: `7306fd5` on main, isolated branch `feat/support-574`. Read #574, #534,

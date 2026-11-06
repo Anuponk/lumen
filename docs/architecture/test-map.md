@@ -1,5 +1,10 @@
 # Existing verification map
 
+Support size follow-up: `support-tests.mjs` covers full catalogue copies,
+source preservation, metadata headroom, oversized optional checkpoints and
+compact-versus-jsonb/exponent limits. `fixtures/support.sql` checks the actual
+existing validator inside the disposable SQL workflow, never on production.
+
 `cloud-pending-victory-tests.mjs`: actual UI retry declarations + bounded
 scheduler + durable outboxes, with synthetic command confirmation. Covers both
 victory domains, transient retry, Auth/review holds, unsafe contexts, session
