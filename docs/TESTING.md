@@ -1820,4 +1820,6 @@ des preuves complémentaires.
 
 La quality gate ajoute `offline-hint-purchase-browser-tests.mjs`, `offline-hint-network-browser-tests.mjs`, `drag-cascade-browser-tests.mjs`, `adventure-mastery-browser-tests.mjs`. Profils et RPC sont synthétiques ; Chromium exerce les vrais boutons, le stockage durable, la reconnexion, les gestes tactiles et les scènes mobiles/bureau. Rapports CI : `ci-offline-hint.json`, `ci-offline-hint-network.json`, `ci-drag-cascade.json`, `ci-adventure-mastery.json`.
 
-Recette physique restante : indice avec 80 Éclats en mode avion puis reconnexion ; glissement pendant scintillement avec/sans marquage automatique ; dernier badge d’aventure puis réouverture de Mon ciel. Ces tests simulés ne valent pas recette sur téléphone. Les issues restent ouvertes « To be tested » jusqu’à acceptation.
+`adventure-mastery-browser-tests.mjs` vérifie aussi le libellé « Maîtrisée » visible dans la barre d’aventures et le fond rempli distinct, conservé lorsque la sélection change. La navigation et le rechargement conservent les acquis sans récompense ajoutée.
+
+Recette physique restante : indice avec 80 Éclats en mode avion puis reconnexion ; glissement pendant scintillement avec/sans marquage automatique ; dernier badge d’aventure puis réouverture de Mon ciel, avec fond doré et libellé de maîtrise lisibles. Ces tests simulés ne valent pas recette sur téléphone. Les issues restent ouvertes « To be tested » jusqu’à acceptation.

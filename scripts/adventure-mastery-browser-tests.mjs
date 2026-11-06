@@ -36,6 +36,13 @@ try{
   await evaluate("document.getElementById('skyRevealSky').click()");
   assert.equal(await evaluate(`document.querySelector('#adventureRail [data-pack-id="${pack.id}"]').classList.contains('mastered')`),true);
   assert.match(await evaluate(`document.querySelector('#adventureRail [data-pack-id="${pack.id}"]').getAttribute('aria-label')`),/Maîtrisée/);
+  const appearance=await evaluate(`(()=>{const mastered=document.querySelector('#adventureRail [data-pack-id="${pack.id}"]'),ordinary=document.querySelector('#adventureRail .adventure-chip:not(.mastered)');return {label:mastered.textContent,background:getComputedStyle(mastered).backgroundImage,ordinaryBackground:getComputedStyle(ordinary).backgroundImage,ordinaryId:ordinary.dataset.packId}})()`);
+  assert.match(appearance.label,/Maîtrisée/,'Mastery must be visible in the rail, beyond color or a tooltip');
+  assert.notEqual(appearance.background,appearance.ordinaryBackground,'Mastered adventures have a distinct filled background');
+  await evaluate(`document.querySelector('#adventureRail [data-pack-id="${appearance.ordinaryId}"]').click()`);
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('#adventureRail [data-pack-id="${pack.id}"]')).backgroundImage`),appearance.background,'The mastered fill remains when another adventure is selected');
+  assert.equal(await evaluate(`document.querySelector('#adventureRail [data-pack-id="${pack.id}"]').getAttribute('aria-pressed')`),'false');
+  if(width===390){const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(`docs/validation/mastered-rail-${pack.id}.png`,Buffer.from(shot.data,'base64'))}
   await navigateAndWait({send,evaluate},'Page.reload');await acknowledgeLearningMilestones(evaluate);
   assert.equal(await evaluate("document.getElementById('skyReveal').hidden"),true,'Refresh cannot replay mastery');
   await evaluate("document.getElementById('openSky').click()");

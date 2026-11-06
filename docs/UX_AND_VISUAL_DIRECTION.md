@@ -527,6 +527,6 @@ bouton pour passer et retour à Mon ciel. Aucun tutoriel ni règle d’aide ne c
 
 ## Reconnaissance de la maîtrise d’aventure (#627)
 
-Le panorama existant annonce « Une aventure pleinement maîtrisée » avec une lumière dorée discrète ; Mon ciel conserve ✦ et un libellé accessible « Maîtrisée ». Le marqueur reste statique après rechargement. Une seule scène apparaît lorsque les seuils coïncident. Clavier, passer, mouvement réduit et retour à Mon ciel restent disponibles.
+Le panorama existant annonce « Une aventure pleinement maîtrisée » avec une lumière dorée discrète ; Mon ciel conserve un fond doré rempli, ✦ et le libellé visible et accessible « Maîtrisée » sur l’aventure. Le fond reste doré quand une autre aventure est sélectionnée ; un bord cyan indique la sélection, indépendamment de la maîtrise. Les aventures simplement terminées conservent leur aspect habituel. Le marqueur reste statique après rechargement. Une seule scène apparaît lorsque les seuils coïncident. Clavier, passer, mouvement réduit et retour à Mon ciel restent disponibles.
 
 Impact onboarding #627/#629/#632 : les règles, tarifs et seuils pédagogiques restent inchangés. Le glissement devient continu ; les aides hors ligne respectent les preuves et réservations existantes. Aucun nouvel enseignement nécessaire.
