@@ -108,4 +108,12 @@ assert.equal((await rawBox.pending('player')).length,1,'coordinator generation p
 const shadow=createPersistenceCoordinator({mode:'shadow'}).register(rawBox);
 assert.throws(()=>shadow.retireQuestResets('player',remote),/Read-only/);
 console.log('PASS coordinator generation and read-only reset guards');
+const challengeStorage=memory(),challengeEngine=createAttemptEngine({storage:challengeStorage});
+const challengeAttempt=challengeEngine.create({questId:quest.id,mode:'challenge',challengeId:'social-only',board,gridRevision:1,questResetRevision:1});
+assert.equal(challengeAttempt.questResetRevision,undefined,'campaign reset does not version a social attempt');
+challengeEngine.start();challengeEngine.markAssistance();challengeEngine.commitMistake();
+const restoredChallenge=createAttemptEngine({storage:challengeStorage}).restore({questId:quest.id,mode:'challenge',gridRevision:1,questResetRevision:2});
+assert.equal(restoredChallenge.attemptId,challengeAttempt.attemptId);
+assert.equal(restoredChallenge.assistanceUsed,true);assert.equal(restoredChallenge.mistakeCommitted,true);
+console.log('PASS personal campaign reset preserves social challenge attempt identity and facts');
 

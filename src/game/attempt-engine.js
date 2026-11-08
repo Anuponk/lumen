@@ -15,12 +15,13 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
  function activeMs(){return attempt?attempt.activeDuration+(attempt.state===ATTEMPT_STATES.RUNNING&&activeSince!==null?Math.max(0,perfNow()-activeSince):0):0}
  function persist(){if(!attempt)return storage?.removeItem?.(STORAGE_KEY);const copy={...attempt,board:cloneBoard(attempt.board),activeDuration:activeMs(),updatedAt:now()};storage?.setItem?.(STORAGE_KEY,JSON.stringify(copy))}
  function create({questId,mode="campaign",qualifying=false,challengeId=null,board=[],gridRevision=0,questResetRevision=0}){
+  if(mode==='challenge')questResetRevision=0;
   attempt={attemptId:(questResetRevision?'qr'+questResetRevision+'.':'')+newId(),questId,mode,...(gridRevision?{gridRevision}:{}),...(questResetRevision?{questResetRevision}:{}),state:ATTEMPT_STATES.READY,startedAt:null,activeDuration:0,lastActiveAt:null,assistanceUsed:false,mistakeCommitted:false,wrongGuardianPending:null,resetCount:0,qualifying:!!qualifying,challengeId,board:cloneBoard(board),createdAt:now(),updatedAt:now()};activeSince=null;emit();return snapshot()
  }
  function restore({questId,mode,gridRevision,questResetRevision}={}){
   const saved=safeParse(storage?.getItem?.(STORAGE_KEY));if(!saved||!saved.attemptId)return null;
   if(questId!=null&&saved.questId!==questId)return null;if(mode&&saved.mode!==mode)return null;
-  if((gridRevision!==undefined&&(saved.gridRevision??0)!==gridRevision)||(questResetRevision!==undefined&&(saved.questResetRevision??0)!==questResetRevision)){
+  if((gridRevision!==undefined&&(saved.gridRevision??0)!==gridRevision)||(saved.mode!=='challenge'&&questResetRevision!==undefined&&(saved.questResetRevision??0)!==questResetRevision)){
    // Preserve the exact old attempt before a new grid can overwrite this slot.
    // Failure is blocking; never silently discard an offline attempt.
    const raw=storage.getItem(STORAGE_KEY),key=STORAGE_KEY+':grid-archive:'+saved.attemptId+':'+(saved.gridRevision??0);
