@@ -13,7 +13,7 @@ assert.equal(CONTENT_CONSTELLATIONS.filter(c=>c.packId==='real-adventure-05').le
 assert(tail.every((q,i)=>q.ordinal===401+i&&q.legacyIndex===null&&q.packId==='real-adventure-05'));
 for(const id of new Set(tail.map(q=>q.constellationId))){
  const quests=tail.filter(q=>q.constellationId===id);
- for(let i=1;i<quests.length;i++)assert(quests[i].size>=quests[i-1].size&&(quests[i].size!==quests[i-1].size||quests[i].audit.score>=quests[i-1].audit.score),'Candidate schedule must not descend at the same size: '+id);
+ for(let i=1;i<quests.length;i++)assert(quests[i].difficulty.score>=quests[i-1].difficulty.score,'Logical difficulty must not descend: '+id);
 }
 const p={catalogueOrigin:2,solved:Object.fromEntries(all.slice(0,400).filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1])),canonicalQuestState:Object.fromEntries(all.slice(0,400).filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true,badges:{},stars:1}])),performances:{},badges:{},stars:{},challenges:{},xp:1000,shards:7};
 assert.equal(canonicalCampaignComplete(p),false,'A formerly complete account resumes at the appended pack');

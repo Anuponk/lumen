@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {CONTENT_CONSTELLATIONS} from '../src/campaign/content.js';
+import {rateLogicalDifficulty} from '../src/game/logical-difficulty.js';
 import {CONSTELLATIONS_PER_PAGE} from '../src/ui/sky-navigation.js';
 import {connectBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
 const {send,evaluate,errors}=await connectBrowser(),all=canonicalQuestList(),results=[];
@@ -55,7 +56,21 @@ try{
     await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="${q.id}"]').click()`);await acknowledgeLearningMilestones(evaluate);
     assert.deepEqual((await evaluate('lumenDiagnostics.snapshot()')).puz.reg,q.reg,'New adventure card and actual grid are available offline');
    }
-   await evaluate(`if(!document.getElementById('attemptMask').hidden)document.getElementById('attemptMask').click();document.getElementById('questStart').hidden=true;(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
+   const logicalTouchReplay=width===390&&[500,600,700,800].includes(ordinal);
+   if(logicalTouchReplay){
+    await evaluate("if(!document.getElementById('attemptMask').hidden)document.getElementById('attemptMask').click();document.getElementById('questStart').hidden=true");
+    const proof=rateLogicalDifficulty(q.reg);assert(proof.solved);
+    // Play an independently derived proof through actual touch handlers. No
+    // diagnostics setBoard and no solution lookup for these four samples.
+    for(const fact of proof.trace.filter(f=>f.rule==='single'))for(const [r,c] of fact.targets){
+     const point=await evaluate(`(()=>{const r=document.querySelector('.cell[data-row="${r}"][data-col="${c}"]').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);
+     for(let tap=0;tap<2;tap++){
+      await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});await pause(50);
+      await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await pause(80);
+     }
+     assert.equal(await evaluate(`lumenDiagnostics.snapshot().state[${r}][${c}]`),2,'Real tap cycle places proven guardian');
+    }
+   }else await evaluate(`if(!document.getElementById('attemptMask').hidden)document.getElementById('attemptMask').click();document.getElementById('questStart').hidden=true;(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
    await until('!document.getElementById("skyReveal").hidden');
    const after=await evaluate('lumenDiagnostics.snapshot().progress');assert.equal(after.canonicalQuestState[q.id].solved,true);assert.deepEqual(after.solved,progress.solved);
    const expected=mastery?'campaign-mastery':ordinal===880?'campaign':ordinal===501?null:'adventure';
@@ -73,7 +88,7 @@ try{
     await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
     await navigateAndWait({send,evaluate},'Page.reload');assert.equal((await evaluate('lumenDiagnostics.snapshot().progress')).canonicalQuestState[q.id].solved,true,'Offline victory survives reconnect and restart');
    }
-   results.push({width,ordinal,actualGrid:true,oldProgressPreserved:true,celebration:expected,offline:width===390&&ordinal===501});
+   results.push({width,ordinal,actualGrid:true,oldProgressPreserved:true,celebration:expected,logicalTouchReplay,offline:width===390&&ordinal===501});
    console.log('PASS IAU browser '+width+' '+ordinal);
   }
  }

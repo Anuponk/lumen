@@ -3,7 +3,7 @@ import {createHash} from 'node:crypto';
 import baseline from '../content/catalogue/iau-completion-baseline.json' with {type:'json'};
 import config from '../content/catalogue/remaining-adventures.json' with {type:'json'};
 import history from '../content/catalogue/access-origins.json' with {type:'json'};
-import {canonicalQuestList,canonicalCampaignComplete,canonicalCampaignQuestDecision,canonicalNextUnsolved,canonicalAdventureSummary} from '../src/campaign/canonical-quests.js';
+import {canonicalQuestList,originalCanonicalQuestList,canonicalCampaignComplete,canonicalCampaignQuestDecision,canonicalNextUnsolved,canonicalAdventureSummary} from '../src/campaign/canonical-quests.js';
 import {CONTENT_PACKS,CONTENT_CONSTELLATIONS,contentMapModel} from '../src/campaign/content.js';
 import {IAU_CONSTELLATIONS} from '../src/campaign/iau-constellations.js';
 import {iauForConstellation,verifiedAstronomicalFigure} from '../src/ui/astronomical-catalogue.js';
@@ -13,7 +13,7 @@ import {createDiagnostics} from '../src/testing/diagnostics.js';
 
 const all=canonicalQuestList(),old=all.slice(0,baseline.questCount),tail=all.slice(baseline.questCount);
 assert.equal(all.length,880);assert.equal(CONTENT_PACKS.length,9);assert.equal(CONTENT_CONSTELLATIONS.length,88);
-assert.equal(createHash('sha256').update(JSON.stringify(old)).digest('hex'),baseline.identityAndGridSha256,'All 500 published quest identities, grids, rewards and difficulty stay exact');
+assert.equal(createHash('sha256').update(JSON.stringify(originalCanonicalQuestList().slice(0,baseline.questCount))).digest('hex'),baseline.identityAndGridSha256,'All 500 original grid contracts remain verifiable; explicit #640 revisions have a separate audit');
 assert.equal(tail.length,380);assert.equal(history.current,4);
 assert.deepEqual(CONTENT_CONSTELLATIONS.map(iauForConstellation).sort(),IAU_CONSTELLATIONS.map(c=>c.abbr).sort(),'Exactly one of each official constellation');
 for(const c of CONTENT_CONSTELLATIONS)assert.equal(verifiedAstronomicalFigure(c)?.iau,iauForConstellation(c));

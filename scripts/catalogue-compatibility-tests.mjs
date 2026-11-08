@@ -1,14 +1,16 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
-import {canonicalQuestList,canonicalCampaignQuestDecision} from '../src/campaign/canonical-quests.js';
+import {canonicalQuestList,originalCanonicalQuestList,canonicalCampaignQuestDecision} from '../src/campaign/canonical-quests.js';
 import {currentCatalogueOrigin,catalogueOrigin,mergeCatalogueOrigin} from '../src/campaign/catalogue-origin.js';
 import {createLocalPersistence} from '../src/persistence/local.js';
 import {CONTENT_PACKS} from '../src/campaign/content.js';
 const history=JSON.parse(fs.readFileSync('content/catalogue/access-origins.json','utf8'));
 assert.equal(history.version,1);
 const hash=quest=>createHash('sha256').update(JSON.stringify({reg:quest.reg,sol:quest.sol})).digest('hex');
-const active=canonicalQuestList().map(({id,legacyIndex,packId,constellationId,ordinal,...quest})=>({id,legacyIndex,packId,constellationId,ordinal,gridHash:hash(quest)}));
+// Access-origin hashes remain immutable. Explicit gameplay revisions are audited
+// separately (old hash -> new hash, scope, proof and restore) by logical-grid-tests.
+const active=originalCanonicalQuestList().map(({id,legacyIndex,packId,constellationId,ordinal,...quest})=>({id,legacyIndex,packId,constellationId,ordinal,gridHash:hash(quest)}));
 assert.equal(history.current,history.catalogues.at(-1).revision);
 assert.deepEqual(history.catalogues.at(-1).quests,active,'Catalogue changes require a new immutable revision before publishing');
 let previous=[];

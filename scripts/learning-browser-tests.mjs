@@ -143,6 +143,10 @@ try {
     await evaluate('document.getElementById("learningCoachDismiss").click();document.getElementById("verify").click()');
     assert.match(await evaluate('document.getElementById("scriptedLearnCopy").textContent'),/première vérification/);
     await evaluate('document.getElementById("learningCoachDismiss").click()');
+    // Dismissing the verification coach after a hint changes the mobile board
+    // layout. Let ResizeObserver and its following paint settle before measuring
+    // native touch coordinates; otherwise the first guardian tap can miss.
+    await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))',true);
     board=await snapshot();
     for(let r=0;r<5;r++)if(board.state[r][board.puz.sol[r]]!==2){await input(await point(r,board.puz.sol[r]),viewport.mobile);await input(await point(r,board.puz.sol[r]),viewport.mobile);}
     assert.equal((await snapshot()).celebrated,true,'Quest 2 has normal victory');

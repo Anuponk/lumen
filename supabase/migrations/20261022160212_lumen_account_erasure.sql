@@ -185,7 +185,14 @@ begin
     and a.attnum>0 and not a.attisdropped and a.attname not in (
      'id','puzzle_id','sender_user_id','sender_anonymous_id','sender_display_name',
      'source_duration_seconds','source_autonomy','source_speed','source_mastery',
-     'source_assistance_used','source_first_play','created_at','stable_quest_id')
+     'source_assistance_used','source_first_play','created_at','stable_quest_id','grid_revision')
+  ) then raise exception 'LUMEN_ERASURE_SOCIAL_REVIEW_REQUIRED'; end if;
+  -- #640 reviewed non-identifying puzzle metadata. This erasure migration is
+  -- still preparation-only; accepting the new integer must not accept PII text.
+  if r.action='anonymize' and exists (
+   select 1 from pg_attribute a where a.attrelid=to_regclass(format('%I.%I',r.ns,r.rel))
+    and a.attname='grid_revision' and not a.attisdropped
+    and (a.atttypid<>'integer'::regtype or not a.attnotnull)
   ) then raise exception 'LUMEN_ERASURE_SOCIAL_REVIEW_REQUIRED'; end if;
   if r.uid_col is not null and r.actor_col is not null then
    execute format('select array_agg(distinct %1$I::text) from %2$I.%3$I where %4$I=$1 and %1$I is not null and not (%1$I::text=any($2))',

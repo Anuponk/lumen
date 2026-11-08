@@ -1,5 +1,13 @@
 # Feature map
 
+Logical grid difficulty #640: `game/logical-difficulty.js` owns solution-blind
+human-style propagation and dependency traces. `canonical-quests.js` applies
+the scoped versioned replacement manifest; original source grids remain available
+to audit tooling. `attempt-engine.js` and `campaign-resume.js` reject obsolete
+active boards. Offline search, independent acceptance and distribution:
+`scripts/regenerate-logical-grids.mjs`, `logical-difficulty-tests.mjs`,
+`logical-grid-tests.mjs`; see [GRID_CATALOG](../GRID_CATALOG.md).
+
 Support size boundary: `support-capture.js` budgets the complete current
 projection and optional checkpoints using server `jsonb::text` bytes. No profile,
 outbox or archive mutation; unchanged support schema/limits. See SUPPORT_574.

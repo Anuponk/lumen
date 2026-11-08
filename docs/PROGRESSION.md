@@ -1,6 +1,12 @@
 # Campaign, progression and rewards
 
 ## Source of truth
+
+Issue #640 changes the puzzle layouts of Adventures 5–8 through a separate
+gameplay revision. Stable membership, order, access cohorts, acquired rights,
+completion and one-time rewards remain unchanged. Existing badges/records are
+grandfathered quest achievements. In-progress boards from the old revision are
+archived and restart empty; see the [restore contract](DATA_AND_ARCHITECTURE.md#cloud-persistence-contract).
 The campaign is sequential and represented through constellations. The published canonical revision in `content/catalogue/access-origins.json`, `content.js` and `canonical-quests.js` owns membership, order and counts: **880 quests, 88 official IAU constellations, nine Adventures**. Adventures 1–8 contain ten constellations/100 quests each; Adventure 9 contains eight/80. The legacy numeric schedule and historical reward allocations remain compatibility data. Displayed constellation lights count distinct completed quests; they do not replace economic rewards or historical star balances. Catalogue totals are data, not permanent limits.
 
 A quest belongs to one constellation. Each constellation has an intermediate milestone and a final/boss quest. First completion awards the quest's sky-star value; replay does not farm additional sky stars.

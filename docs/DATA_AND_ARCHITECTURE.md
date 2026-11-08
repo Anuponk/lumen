@@ -262,6 +262,57 @@ known field names (otherwise `unknown_field`), without profile contents.
 
 ## Cloud persistence contract
 
+Grid revision #640 deliberately preserves earned completion, badges, records,
+currency, stars and entitlements under their existing stable quest IDs. It does
+not delete local facts and then allow cloud copies to resurrect them. Records
+remain historical all-time quest records across this revision, not measured
+completion times for the harder grid; they must not calibrate its difficulty.
+Replays retain the existing exactly-once reward policy. No profile schema,
+access-origin cohort or reward allowlist changes; no production SQL runs.
+
+Only the device-local active attempt gains `gridRevision` (missing means 0).
+The runtime quest's explicit replacement revision is 1; other quests remain 0.
+Attempt restore requires an exact revision match as well as quest/mode, including
+same-size replacements and downgrades. Before replacing a stale local board,
+the engine preserves and reads back its original bytes under
+`lumenActiveAttemptV1:grid-archive:<attemptId>:<revision>`. An archive collision
+or write/quota failure blocks replacement. Canonical account restoration rejects
+the obsolete attempt; existing account-switch preservation remains in force.
+Fresh device restores cloud achievements normally and starts an empty current
+grid. An old offline client's eventual earned facts follow existing cloud merge
+rules and cannot inject its active board into a new grid. Pending commands and
+their frozen facts/receipts are not rewritten. Rollback restores original grid
+sources and rejects a revision-1 active board instead of reinterpreting it.
+Worker cache v16 precaches the complete module/JSON graph before activation,
+including the replacement manifest; old complete shells remain available until
+the new shell is complete. See [grid revision audit](GRID_CATALOG.md#logical-difficulty-and-explicit-grid-revisions-640).
+
+Social challenge rows separately gain server-owned `grid_revision`, default 0
+for historical rows/old clients. The additive prepared migration
+`20261108061843_logical_grid_challenge_revision.sql` adds a v2 creation RPC that
+atomically validates the explicit Adventure 5–8 revision-1 scope and delegates
+identity/name/first-play/allowlisting to the existing RPC. Versioned get/list
+wrappers expose the revision in addition to already privacy-filtered fields;
+old canonical get/list endpoints show revision 0 only. Versioned start/finish
+require the exact stored revision before delegating to the established private
+one-shot implementations, whose direct API grants are revoked. Old writers
+reject revision-1 challenges without consuming an attempt or comparing a result.
+Unversioned challenges resolve to original grids; revision-1 challenges
+resolve to the replacement. Unknown revisions fail closed. New clients never
+fallback to revision-0 creation after an unavailable/ambiguous v2 call. No reward
+or campaign write is introduced. Activation order for a later authorized release:
+apply and verify this additive migration first, then the complete frontend;
+keep both grid revisions for old/offline links and clients. Until separately
+authorized, the migration is only exercised against disposable test databases.
+The existing preparation-only erasure migration also reviews `grid_revision`
+as non-identifying, non-null integer metadata. Unknown social fields and altered
+revision types still block erasure. Its current-schema fixture verifies that
+anonymization removes the sender but retains the exact puzzle revision. This
+compatibility edit does not authorize installing or activating account erasure.
+If that private erasure review is already installed, the grid migration invokes
+its read-only schema review and fails atomically on incompatibility; it never
+silently replaces an independently activated privacy contract.
+
 Support capture budgeting preserves the complete current typed projection and
 only adds optional owner-bound checkpoints within the existing server size limit.
 The budget uses `jsonb::text` bytes, reserving existing incident/counter metadata;

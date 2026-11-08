@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import config from '../content/catalogue/remaining-adventures.json' with {type:'json'};
 import source from '../content/generated/remaining-adventures.json' with {type:'json'};
-import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
+import {originalCanonicalQuestList as canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {qualifyDifficulty} from '../src/campaign/difficulty.js';
 import {CAT} from '../src/campaign/catalogue.js';
 import {connected,countSolutions,replay,signature,features} from './generate-diverse-grids.mjs';
