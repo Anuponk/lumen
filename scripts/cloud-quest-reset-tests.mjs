@@ -8,6 +8,7 @@ import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {applyQuestVictory} from '../src/campaign/quest-victory.js';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import {createPersistenceCoordinator} from '../src/persistence/persistence-coordinator.js';
 const local={solved:{},badges:{},canonicalQuestState:{q:{solved:true,badges:{mastery:true},performance:{bestTime:1}}}};
 const remote={solved:{},badges:{},canonicalQuestState:{q:{solved:false,badges:{},runPerformance:{},resetRevision:1,resetAt:'2026-11-08T00:00:00Z',rewardedBeforeReset:true}}};
 assert.equal(cloudSafelyCoversLocal(local,remote),true,'explicit server reset supersedes obsolete local achievements');
@@ -97,3 +98,14 @@ for(const changeSession of [false,true]){
  assert.equal(context.cloudProfileReady,false,'no stale ready profile published');
 }
 console.log('PASS production hydration reset ordering and session switch');
+const coordinatedStorage=memory(),coordinatedStore=indexed(),rawBox=createDurableCanonicalVictoryOutbox(coordinatedStorage,{fallback:coordinatedStore});
+await rawBox.enqueue('player','q',{facts:{seconds:1}},{operationId:'stale-coordinated'});
+let session={userId:'player',client:{},generation:1};
+const facade=createPersistenceCoordinator({session:()=>session}).register(rawBox),write=coordinatedStore.put;
+coordinatedStore.put=async(key,raw)=>{await write(key,raw);session={...session,generation:2}};
+await assert.rejects(facade.retireQuestResets('player',remote),/session|changed/i);
+assert.equal((await rawBox.pending('player')).length,1,'coordinator generation prevents stale cleanup');
+const shadow=createPersistenceCoordinator({mode:'shadow'}).register(rawBox);
+assert.throws(()=>shadow.retireQuestResets('player',remote),/Read-only/);
+console.log('PASS coordinator generation and read-only reset guards');
+
