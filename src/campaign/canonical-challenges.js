@@ -1,7 +1,7 @@
 // Adapter for existing social challenge links and canonical future challenges.
 // Historic links with numeric puzzle_id ALWAYS resolve against the original
 // immutable legacy index (not the new visible quest ordinal).
-import {canonicalQuestById,canonicalQuestForLegacy,canonicalQuestByOrdinal,originalCanonicalQuestList} from "./canonical-quests.js";
+import {canonicalQuestById,canonicalQuestForLegacy,canonicalQuestByOrdinal,originalCanonicalQuestList,canonicalQuestAtGridRevision} from "./canonical-quests.js";
 const originalById=new Map(originalCanonicalQuestList().map(q=>[q.id,q]));
 
 export function resolveChallengeQuest(challenge){
@@ -18,6 +18,7 @@ export function resolveChallengeQuest(challenge){
   const revision=challenge.grid_revision??challenge.gridRevision??0;
   if(revision===(quest.gridRevision??0))return quest;
   if(revision===0)return originalById.get(quest.id);
+  if(revision===1){const historical=canonicalQuestAtGridRevision(quest.id,revision);if(historical)return historical;}
   throw Error('Unknown challenge grid revision');
  }
  if(legacy==null)throw Error("Challenge has no quest identity");

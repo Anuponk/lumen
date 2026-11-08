@@ -80,7 +80,7 @@ jobs:
             -f scripts/fixtures/outbox-health-observations.sql
           python3 scripts/wallet-command-concurrency.py
           node scripts/quest-command-fixtures.mjs --check
-          node scripts/quest-command-fixtures.mjs > /tmp/lumen-quest-parity.sql
+          node scripts/quest-command-fixtures.mjs --grid-revision 1 > /tmp/lumen-quest-parity.sql
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
             -f supabase/migrations/20261023181850_quest_contract_convergence.sql \
             -f scripts/fixtures/quest-first-badges.sql \
@@ -140,6 +140,20 @@ jobs:
           -f supabase/migrations/20261108110404_player_quest_reset.sql
           -f scripts/fixtures/quest-reset.sql
 
+      - name: Verify mixed grid activation, historical links and scoped reset epochs
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          node scripts/mixed-grid-revision-fixtures.mjs --output /tmp/lumen-mixed-grid-activation.sql
+          node scripts/quest-command-fixtures.mjs --changed-only --fixture-prefix 52300000 > /tmp/lumen-mixed-quest-parity.sql
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261108160020_mixed_grid_difficulty_revision.sql \
+            -f scripts/fixtures/mixed-grid-before-activation.sql \
+            -f /tmp/lumen-mixed-grid-activation.sql \
+            -f scripts/fixtures/mixed-grid-revision.sql \
+            -f /tmp/lumen-mixed-quest-parity.sql
+
       - name: Verify Lumen-only erasure, private access and concurrent stale writers
         env:
           PGPASSWORD: isolated-test-only
@@ -183,7 +197,8 @@ jobs:
             -f scripts/fixtures/account-erasure-bootstrap.sql \
             -f supabase/migrations/20261022160212_lumen_account_erasure.sql \
             -f supabase/migrations/20261022184145_lumen_account_rights_export.sql \
-            -f scripts/fixtures/privacy-current-schema.sql -f scripts/fixtures/privacy-optional-support.sql
+            -f scripts/fixtures/privacy-current-schema.sql -f scripts/fixtures/privacy-optional-support.sql \
+            -f scripts/fixtures/mixed-grid-privacy.sql
           python3 scripts/account-erasure-concurrency.py
           python3 scripts/privacy-support-concurrency.py
           python3 scripts/canonical-command-concurrency.py

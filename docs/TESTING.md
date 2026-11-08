@@ -1,5 +1,22 @@
 # Testing and quality gate
 
+Mixed pacing: `node scripts/mixed-difficulty-tests.mjs` independently rates,
+recounts and replays all 480 targeted grids, checks the 200 changed / 280 retained
+boards, exact protected Adventure 1–4 definitions, D4 diversity, measured score
+relief/final peaks and the all-Master finale. Different constellation lengths,
+attempt versions, older social geometry and stale reset-aware intents are covered.
+`--write` regenerates `validation/mixed-logical-difficulty.json`; the ordinary
+test compares that report with freshly measured output.
+
+SQL CI explicitly uses `quest-command-fixtures --grid-revision 1` before the
+new cutover. After preparation/activation it runs current changed-board parity
+with a separate synthetic identity namespace, plus rollback, old API/receipt
+refusal, two reset epochs, no duplicate rewards, preserved original Adventures,
+unchanged-board records, historical social participation and export/erasure of
+both histories. Prepared DDL must leave old clients functional until activation.
+Fixtures and activation generation are offline/disposable checks, not production
+authorization or evidence of real-device play.
+
 Explicit quest resets: `node scripts/cloud-quest-reset-tests.mjs` covers obsolete
 local achievements, two devices, exact archives, outbox replicas and owner scope,
 quota/session holds, active attempt epochs and fresh records without duplicate

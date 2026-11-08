@@ -27,6 +27,7 @@ export function installVerifiedQuestResets(storage,remote,{userId,sessionValid=(
  return true;
 }
 export function obsoleteQuestIntent(entry,profile){
- const revision=questResetRevision(profile.canonicalQuestState?.[entry.questId]);
- return revision>0&&!entry.operationId?.startsWith('qr'+revision+'.');
+ const state=profile.canonicalQuestState?.[entry.questId],revision=questResetRevision(state);
+ const prefix='qr'+revision+'.'+(state?.gridRevision>1?'gv'+state.gridRevision+'.':'');
+ return revision>0&&!entry.operationId?.startsWith(prefix);
 }

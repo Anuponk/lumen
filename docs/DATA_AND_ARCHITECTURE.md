@@ -1,5 +1,38 @@
 # Data and architecture
 
+## Mixed grid revision 2
+
+The source-owned revision-2 manifest changes 200 boards in Adventures 5–9 and
+preserves 280 targeted boards plus all Adventures 1–4. `quest_rules.grid_revision`
+is private reference metadata, independent of reward JSON and player reset epochs.
+The prepared migration seeds only the previous revision-1 registry; it neither
+activates revision 2 nor changes any player's snapshot. `mixed-grid-revision-fixtures`
+generates the explicit reviewed activation input from both immutable manifests.
+Activate reference metadata only with the matching client available.
+
+Revision-2 attempts carry `gv2.` in the existing operation identity, after an
+optional `qr<reset epoch>.` prefix. The server validates the active version under
+the snapshot lock before looking up a receipt. It stores `gridRevision` in new
+records, refuses old badge-only writers and skips old acquisition recovery for
+changed boards. Unchanged revision-0/1 commands retain their existing protocol.
+Snapshot guards require the matching private authority and current grid marker.
+
+The private three-argument `reset_replaced_quests` overload accepts only a scope
+whose active reference version matches the requested epoch. It archives both the
+current entry and prior reset histories, preserves spendable balances/receipts
+and acquired access, and skips a repeated epoch instead of erasing new replays.
+Only changed boards belong in a reset scope. `quest-reset-scope --revision 2`
+derives it from hashes; `--revision 1` remains available for historical audit.
+Grid and player epochs are both checked when archiving obsolete local intents,
+including an older client that understands reset epochs but still plays a v1 board.
+All original local bytes remain archived before replacement or retirement.
+
+Historical social links resolve their exact revision-0/1 geometry; current
+creation requires the active registry version. Stored-link start/finish checks
+remain tied to that link's revision, not the latest campaign board. Personal
+campaign resets never reset a social attempt. Account export/erasure includes
+all reset histories through the existing user-owned authority inventory.
+
 ## Explicit player quest reset
 
 An operator may revoke progression on explicitly selected replacement grids.

@@ -1,4 +1,5 @@
 export const nodeSuites=[
+ 'mixed-difficulty-tests.mjs',
  'cloud-quest-reset-tests.mjs',
  'logical-difficulty-tests.mjs',
  'logical-grid-tests.mjs',

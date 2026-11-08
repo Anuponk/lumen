@@ -9,6 +9,8 @@ import {IAU_CONSTELLATIONS} from '../src/campaign/iau-constellations.js';
 import {iauForConstellation,verifiedAstronomicalFigure} from '../src/ui/astronomical-catalogue.js';
 import {applyQuestVictory} from '../src/campaign/quest-victory.js';
 import {profileStorageBytes,MAX_PROFILE_BYTES} from '../src/persistence/profile-size.js';
+import {mixedTierSchedule,MIXED_TARGETS} from './mixed-difficulty-policy.mjs';
+import {logicalDifficultyTier} from '../src/campaign/logical-difficulty-bands.js';
 import {createDiagnostics} from '../src/testing/diagnostics.js';
 
 const all=canonicalQuestList(),old=all.slice(0,baseline.questCount),tail=all.slice(baseline.questCount);
@@ -23,7 +25,10 @@ for(const p of config.adventures){
  assert.deepEqual(constellations.map(c=>c.iau),p.constellations.map(c=>c.iau));
  for(const c of constellations){
   const qs=entries.filter(q=>q.constellationId===c.id);assert.equal(qs.length,10);
-  for(let i=1;i<qs.length;i++)assert(qs[i].difficulty.score>=qs[i-1].difficulty.score,'Measured difficulty progression '+c.id);
+  assert.deepEqual(qs.map(q=>logicalDifficultyTier(q.difficulty.score)),mixedTierSchedule(qs.length,MIXED_TARGETS.find(policy=>policy.packId===p.id).weights),'Measured pacing '+c.id);
+  const scores=qs.map(q=>q.difficulty.score);
+  assert.equal(scores.at(-1),Math.max(...scores),'Final peak '+c.id);
+  assert(scores.some((score,i)=>i&&score<scores[i-1]),'Measured relief '+c.id);
  }
 }
 const summaries=canonicalAdventureSummary({});assert.equal(summaries.at(-1).quests,80);assert.equal(summaries.at(-1).constellations,8);
