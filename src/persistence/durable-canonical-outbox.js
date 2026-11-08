@@ -1,7 +1,7 @@
 import {createIndexedOutboxStore} from './indexed-outbox-store.js';
 import {classifyCanonicalRecoveryError} from './canonical-recovery-errors.js';
 import {assertRecreatedLegacyCapture} from './legacy-command.js';
-import {obsoleteQuestIntent,questResetRevision} from './quest-reset.js';
+import {obsoleteQuestIntent,questResetRevision,canonicalIntentVersionKey} from './quest-reset.js';
 
 const PREFIX='lumenCanonicalVictoryOutboxV2:',LEGACY_PREFIX='lumenCanonicalVictoryOutboxV1:',RETRY_PREFIX='lumenCanonicalVictoryRetryV1:';
 function browserStore(){let database;try{database=globalThis.indexedDB}catch{}return createIndexedOutboxStore(database)}
@@ -232,9 +232,9 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
   const result=await scan(userId),pending=result.groups.map(copies=>copies[0].entry),paused=[...result.paused.values()];
   const authRequired=paused.some(state=>state.kind==='auth'),blocked=new Set(),retryable=[];
   for(const copies of result.groups){
-   const entry=copies[0].entry;
-   if(result.paused.has(copies[0].key))blocked.add(entry.questId);
-   if(!authRequired&&!blocked.has(entry.questId))retryable.push(entry);
+   const entry=copies[0].entry,scope=namespace==='Canonical'?canonicalIntentVersionKey(entry):entry.questId;
+   if(result.paused.has(copies[0].key))blocked.add(scope);
+   if(!authRequired&&!blocked.has(scope))retryable.push(entry);
   }
   return {pending,paused,retryable,authRequired,issues:result.issues,complete:result.complete};
  }

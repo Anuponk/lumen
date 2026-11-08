@@ -5,6 +5,8 @@ recounts and replays all 480 targeted grids, checks the 200 changed / 280 retain
 boards, exact protected Adventure 1–4 definitions, D4 diversity, measured score
 relief/final peaks and the all-Master finale. Different constellation lengths,
 attempt versions, older social geometry and stale reset-aware intents are covered.
+Offline regressions retain older pending evidence while recovering a new board
+version, and preserve same-version, Auth and economic-domain ordering.
 `--write` regenerates `validation/mixed-logical-difficulty.json`; the ordinary
 test compares that report with freshly measured output.
 

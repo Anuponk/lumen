@@ -11,6 +11,8 @@ import {createAttemptEngine} from '../src/game/attempt-engine.js';
 import {obsoleteQuestIntent,alignQuestResets} from '../src/persistence/quest-reset.js';
 import manifest from '../content/generated/logical-grids-v2.json' with {type:'json'};
 import fs from 'node:fs';
+import {createDurableCanonicalVictoryOutbox} from '../src/persistence/durable-canonical-outbox.js';
+import {replayCanonicalVictoryOutbox} from '../src/persistence/canonical-outbox.js';
 const all=canonicalQuestList(),protectedPacks=['base-real-sky','real-adventure-02','real-adventure-03','real-adventure-04'];
 const protectedQuests=all.filter(q=>protectedPacks.includes(q.packId));
 assert.equal(createHash('sha256').update(JSON.stringify(protectedQuests)).digest('hex'),'e2042bdc8a771e9493ab3caf44c037024ca825aca7d6958ea7646aa7f529544f','Adventures 1–4 retain every published grid, solution, reward, position and difficulty');
@@ -78,6 +80,42 @@ const reset={canonicalQuestState:{[revised.id]:{solved:false,badges:{},runPerfor
 assert(obsoleteQuestIntent({questId:revised.id,operationId:'qr2.cached-old-grid'},reset));
 assert(!obsoleteQuestIntent({questId:revised.id,operationId:fresh.attemptId},reset));
 assert.equal(alignQuestResets({canonicalQuestState:{[revised.id]:{solved:true,resetRevision:1,resetAt:'2026-11-01T00:00:00Z'}}},reset).profile.canonicalQuestState[revised.id].solved,false);
+function outboxFixture(namespace='Canonical'){
+ const local=new Map(),indexed=new Map();let clock=0;
+ const storage={get length(){return local.size},key:i=>[...local.keys()][i]??null,getItem:k=>local.get(k)??null,setItem:(k,v)=>local.set(k,v),removeItem:k=>local.delete(k)};
+ const fallback={entries:async prefix=>[...indexed].filter(([key])=>key.startsWith(prefix)),get:async key=>indexed.get(key)??null,put:async(k,v)=>indexed.set(k,v),remove:async(k,raw)=>{assert.equal(indexed.get(k),raw);indexed.delete(k)}};
+ return {box:createDurableCanonicalVictoryOutbox(storage,{namespace,fallback,now:()=>new Date(Date.UTC(2026,10,8)+clock++).toISOString()}),indexed};
+}
+const offline=outboxFixture(),owner='offline-owner';
+const oldWin=await offline.box.enqueue(owner,revised.id,{badges:{}},{operationId:'qr1.old-board'});
+await offline.box.pause(owner,oldWin,{code:'23514'});
+const oldRaw=JSON.stringify(oldWin);
+await offline.box.enqueue(owner,revised.id,{badges:{autonomy:true}},{operationId:'gv2.current-board'});
+assert.deepEqual((await offline.box.inspect(owner)).retryable.map(e=>e.operationId),['gv2.current-board'],'Unacknowledged old-grid evidence does not block another content version');
+const restored=await replayCanonicalVictoryOutbox(offline.box,owner,async(id,reward,options)=>{
+ assert.equal(options.operationId,'gv2.current-board');return {profile:{canonicalQuestState:{[id]:{solved:true,gridRevision:2,badges:{autonomy:true}}}}};
+});
+assert.equal(restored.length,1);assert.deepEqual(await offline.box.pending(owner),[oldWin]);
+assert([...offline.indexed.values()].includes(oldRaw),'Previous-grid intention remains byte-for-byte pending, never silently acknowledged');
+const reconnect=outboxFixture(),seenOperations=[];
+const older=await reconnect.box.enqueue(owner,revised.id,{badges:{}},{operationId:'qr1.not-yet-reviewed'});
+await reconnect.box.enqueue(owner,revised.id,{badges:{}},{operationId:'gv2.reconnected-win'});
+const recoveredVersions=await replayCanonicalVictoryOutbox(reconnect.box,owner,async(id,reward,options)=>{
+ seenOperations.push(options.operationId);
+ if(options.operationId===older.operationId)throw Object.assign(Error('Old grid rejected'),{code:'23514'});
+ return {profile:{canonicalQuestState:{[id]:{solved:true,gridRevision:2,badges:{}}}}};
+});
+assert.deepEqual(seenOperations,[older.operationId,'gv2.reconnected-win']);assert.equal(recoveredVersions.length,1);
+assert.deepEqual(await reconnect.box.pending(owner),[older],'First rejection preserves older evidence without delaying the new board');
+for(const namespace of ['Canonical','Legacy','Wallet']){
+ const f=outboxFixture(namespace),first=await f.box.enqueue(owner,revised.id,{badges:{}},{operationId:'gv2.first'});
+ await f.box.pause(owner,first,{code:'23514'});await f.box.enqueue(owner,revised.id,{badges:{}},{operationId:'gv2.later'});
+ assert.equal((await f.box.inspect(owner)).retryable.length,0,'Same-version and economic ordering remain held');
+ if(namespace!=='Canonical'){await f.box.enqueue(owner,revised.id,{badges:{}},{operationId:'gv3.independent-label'});assert.equal((await f.box.inspect(owner)).retryable.length,0,'Economic domains never split by a grid label');}
+}
+const auth=outboxFixture(),expired=await auth.box.enqueue(owner,revised.id,{badges:{}},{operationId:'old-auth'});
+await auth.box.pause(owner,expired,{code:'PGRST301'});await auth.box.enqueue(owner,revised.id,{badges:{}},{operationId:'gv2.new-auth'});
+assert.equal((await auth.box.inspect(owner)).retryable.length,0,'Auth holds every version');
 const report={schema:2,method:'lumen-logic-v1',protectedHash:'e2042bdc8a771e9493ab3caf44c037024ca825aca7d6958ea7646aa7f529544f',changed,retained,generation:manifest.stats,distribution};
 if(process.argv.includes('--write'))fs.writeFileSync('docs/validation/mixed-logical-difficulty.json',JSON.stringify(report,null,2)+'\n');
 else assert.deepEqual(JSON.parse(fs.readFileSync('docs/validation/mixed-logical-difficulty.json','utf8')),report);

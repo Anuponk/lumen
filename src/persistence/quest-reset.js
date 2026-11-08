@@ -1,5 +1,10 @@
 // A reset epoch is supplied only by an authenticated, verified server profile.
 // It revokes obsolete achievements, never changes balances or other quests.
+export function canonicalIntentVersionKey(entry){
+ const marker=/^(?:qr[0-9]+\.)?gv([1-9][0-9]*)\./.exec(entry.operationId??'');
+ const version=marker&&marker[1]!=='1'?marker[1]:'0';
+ return JSON.stringify([entry.questId,version]);
+}
 export function questResetRevision(entry){
  const revision=entry?.resetRevision??0;
  if(!Number.isSafeInteger(revision)||revision<0||(revision>0&&!Number.isFinite(Date.parse(entry.resetAt))))throw Error('Invalid quest reset revision');

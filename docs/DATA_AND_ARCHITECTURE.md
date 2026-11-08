@@ -26,6 +26,10 @@ derives it from hashes; `--revision 1` remains available for historical audit.
 Grid and player epochs are both checked when archiving obsolete local intents,
 including an older client that understands reset epochs but still plays a v1 board.
 All original local bytes remain archived before replacement or retirement.
+An unacknowledged historical intention outside an explicitly reset account remains
+pending byte-for-byte. Its review hold blocks that board version, allowing a new
+version's independent win to recover. Same-board, Auth, Legacy and Wallet holds
+retain their existing ordering; a grid label can never split monetary commands.
 
 Historical social links resolve their exact revision-0/1 geometry; current
 creation requires the active registry version. Stored-link start/finish checks
