@@ -1,4 +1,5 @@
 export const nodeSuites=[
+ 'cloud-quest-reset-tests.mjs',
  'logical-difficulty-tests.mjs',
  'logical-grid-tests.mjs',
  'drag-grid-path-tests.mjs',
@@ -173,3 +174,4 @@ export const nodeSuites=[
  // Solver equivalence is the slowest Node suite; reject cheap regressions first.
  "engine-equivalence.mjs"
 ];
+
