@@ -300,6 +300,11 @@ or campaign write is introduced. Activation order for a later authorized release
 apply and verify this additive migration first, then the complete frontend;
 keep both grid revisions for old/offline links and clients. Until separately
 authorized, the migration is only exercised against disposable test databases.
+The existing preparation-only erasure migration also reviews `grid_revision`
+as non-identifying, non-null integer metadata. Unknown social fields and altered
+revision types still block erasure. Its current-schema fixture verifies that
+anonymization removes the sender but retains the exact puzzle revision. This
+compatibility edit does not authorize installing or activating account erasure.
 
 Support capture budgeting preserves the complete current typed projection and
 only adds optional owner-bound checkpoints within the existing server size limit.

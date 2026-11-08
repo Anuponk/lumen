@@ -87,3 +87,13 @@ téléphone physique, reprendre une ancienne partie après mise à jour puis
 tester mode avion → fermeture → réouverture → reconnexion. Sur deux appareils,
 vérifier acquis historiques, nouveau replay et ancien/nouveau lien de défi.
 Ces observations humaines et physiques ne sont pas présentées comme réalisées.
+
+La recette a aussi révélé une référence de fixture au marqueur de cache v15,
+adaptée à v16, et une course de coordonnées tactiles en quête 2 après fermeture
+d'un indice. Deux frames de mise en page sont attendues avant de mesurer les
+cibles ; les gestes et l'assertion de victoire restent identiques. Le parcours
+apprentissage passe aux cinq formats, dont 320×568. La CI PostgreSQL a confirmé
+les tests de défis versionnés et a signalé que la préparation RGPD refusait
+la nouvelle colonne : sa liste de métadonnées revues accepte désormais le
+seul entier non-null `grid_revision`. L'anonymisation et le refus des champs
+inconnus/nullables sont testés ; l'activation de l'effacement reste interdite.
