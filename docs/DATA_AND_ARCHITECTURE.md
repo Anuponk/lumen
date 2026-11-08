@@ -49,7 +49,12 @@ balances, cumulative XP, daily history and economic reward receipts remain intac
 
 Only a verified server profile may supersede a lower local quest reset epoch.
 Hydration archives the exact local profile, retires obsolete same-owner canonical
-intents into verified local/IndexedDB archives, then reloads. Archive, quota or
+intents into verified local/IndexedDB archives, then reloads. The reset cache
+installer uses the existing durable recovery snapshot fallback when Web Storage
+cannot fit its original copy. It awaits archival and rechecks account, session
+and exact current bytes before installation. If the larger updated cache also
+hits quota, one bounded archival of eligible older backups may free space;
+failed/unverified archives never authorize replacement. Archive, quota or
 session failures hold recovery. Active attempts also carry the epoch and archive
 obsolete boards before replacement. New operation IDs start with `qr<epoch>.`;
 the server rejects earlier identities and facts predating the reset, including

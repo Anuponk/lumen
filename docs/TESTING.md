@@ -728,6 +728,13 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+`cloud-reset-browser-tests.mjs` exercises the full authenticated hydration,
+automatic reload and real grid-card opening after a 200-grid epoch change.
+Both ordinary storage and backup-only Web Storage quota with native IndexedDB
+must retain the exact original (including old wins), install the reset, reach
+ready and open a grid without granting a new victory. Async owner/session/cache
+changes and archive refusal are covered by `cloud-quest-reset-tests.mjs`.
+
 Support sizing: `node scripts/support-tests.mjs` constructs the full current
 catalogue projection with two synthetic checkpoints. The current projection
 must remain complete, optional copies must fit the server's spaced/decimal

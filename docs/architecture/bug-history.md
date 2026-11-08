@@ -1,5 +1,15 @@
 # Verified historical causes
 
+Explicit quest reset backup quota, reproduced at production baseline
+`53b482a` (#640 follow-up): the synchronous reset installer writes its only
+original copy into Web Storage. A native quota refusal keeps every grid behind
+the hydration hold even with working IndexedDB. `cloud-reset-browser-tests.mjs`
+is RED on that baseline and GREEN with the durable recovery installer, exact
+original read-back, reload and real grid opening. Unit regressions also retain
+session/owner/newer-cache guards and both-stores-unavailable refusal. This
+incident journal confirms `QuotaExceededError` at `canonical_start_recovery`
+while IndexedDB is available, matching this reproduced failure path.
+
 Historical pending receipt chronology (reproduced on e5393fe, 6 November 2026):
 an older slower captured intention was covered by a better exact server receipt,
 with identical non-time facts and covered badges/attempts. The Legacy predicate
