@@ -22,7 +22,8 @@ export function applyQuestVictory(progress,quest,facts){
  Object.assign(performance,completedRunRecords(priorPerformance,facts));
  progress.canonicalQuestState={...state,[quest.id]:{...old,solved:true,badges,
   ...(firstCompletion?{stars,performance:{bestTime:facts.seconds,seconds:facts.seconds,assisted:!!facts.assistanceUsed}}:{}),runPerformance:performance}};
- if(firstCompletion)progress.xp=(progress.xp||0)+10+(facts.hintUsed?0:5);
+ const firstEconomicCompletion=firstCompletion&&!old.rewardedBeforeReset;
+ if(firstEconomicCompletion)progress.xp=(progress.xp||0)+10+(facts.hintUsed?0:5);
  progress.stars??={};progress.challenges??={};
  const bonus=definition.bonus;
  let questPassed=false;
@@ -30,7 +31,7 @@ export function applyQuestVictory(progress,quest,facts){
   questPassed=!facts.challengeFailed&&(bonus.seconds!==null?facts.seconds<=bonus.seconds:bonus.type===2?!facts.hintUsed:true);
   if(questPassed){progress.stars[bonus.id]=1;progress.challenges[bonus.id]=1;progress.xp=(progress.xp||0)+25;progress.shards=(progress.shards||0)+1}
  }
- const autonomyShard=grantAutonomyMilestone(progress,{firstCompletion,autonomy:run.autonomy});
+ const autonomyShard=grantAutonomyMilestone(progress,{firstCompletion:firstEconomicCompletion,autonomy:run.autonomy});
  return {firstCompletion,questPassed,stars,priorPerformance,priorBadges,savedPerformance:{run,qualifying,badges},autonomyShard,
   dailyQualified:qualifiesDailyActivity({firstCompletion,performanceQualifying:qualifying,priorBadges,earnedBadges:badges}),attempts:performance.attempts};
 }

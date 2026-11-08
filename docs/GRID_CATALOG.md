@@ -1,5 +1,12 @@
 # Grid catalogue, generation and audit
 
+When an explicitly authorized player reset accompanies regenerated grids, its
+quest scope comes from the replacement manifest, never ordinal ranges at runtime.
+Grid revision and player reset epoch are independent: changing acquired records
+on the same grid also invalidates that player's active attempt. Exact prior board
+bytes are archived before replacement; quota or archive conflicts block it. Other
+players and untouched grids keep their normal progression and active attempts.
+
 ## Logical difficulty and explicit grid revisions (#640)
 
 `src/game/logical-difficulty.js` rates a territory matrix without reading its

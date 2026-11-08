@@ -137,6 +137,8 @@ jobs:
           -f scripts/fixtures/iau-completion.sql
           -f supabase/migrations/20261108061843_logical_grid_challenge_revision.sql
           -f scripts/fixtures/logical-grid-challenges.sql
+          -f supabase/migrations/20261108110404_player_quest_reset.sql
+          -f scripts/fixtures/quest-reset.sql
 
       - name: Verify Lumen-only erasure, private access and concurrent stale writers
         env:

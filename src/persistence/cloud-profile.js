@@ -1,6 +1,7 @@
 // Explicit migration backup. Never automatically overwrites a cloud snapshot.
 import {catalogueOrigin,mergeCatalogueOrigin,currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
 import {archiveRecoveryBackups} from './storage-maintenance.js';
+import {alignQuestResets} from './quest-reset.js';
 import {validRecordTime,recordMinimum} from '../campaign/personal-records.js';
 import {MAX_PROFILE_BYTES,profileStorageBytes} from './profile-size.js';
 import {captureGuestClaim,claimGuestProfile} from './guest-claim.js';
@@ -349,6 +350,7 @@ function canonicalQuestCovered(local,remote){
 export function cloudSafelyCoversLocal(local,remote){
   if(!local || typeof local!=="object" || Array.isArray(local))return true;
   const cloud=validateCloudProfile(remote);
+  try{local=alignQuestResets(local,cloud).profile}catch{return false}
   if(!mergeCatalogueOrigin(local,cloud).ok)return false;
   if(legacyRevisionConflict(local,cloud)||walletConflict(local,cloud))return false;
   // Coverage is an installation boundary too: it must not silently drop local
@@ -440,8 +442,8 @@ function cloudAchievementRecoveryPlan(storage,remote){
   let local;
   try{local=JSON.parse(raw)}catch{throw achievementRecoveryError('ACHIEVEMENT_LOCAL_INVALID')}
   if(!local||typeof local!=="object"||Array.isArray(local))throw achievementRecoveryError('ACHIEVEMENT_LOCAL_INVALID');
-  const merged=structuredClone(local);
-  let changed=false;
+  const reset=alignQuestResets(local,cloud),merged=reset.profile;
+  let changed=reset.changed;
   for(const field of ["solved","historyBackup"]){
     if(!merged[field]||typeof merged[field]!=="object")merged[field]={};
     for(const [quest,done] of Object.entries(cloud[field]||{})){

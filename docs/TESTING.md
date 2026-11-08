@@ -1,5 +1,15 @@
 # Testing and quality gate
 
+Explicit quest resets: `node scripts/cloud-quest-reset-tests.mjs` covers obsolete
+local achievements, two devices, exact archives, outbox replicas and owner scope,
+quota/session holds, active attempt epochs and fresh records without duplicate
+economic rewards. The full affected gate discovers this suite automatically.
+`fixtures/quest-reset.sql` runs after the current catalogue/records migrations in
+the canonical ledger CI: reset idempotence, original archives, access, other-player
+isolation, stale snapshots/receipts/facts, old APIs, acquisition recovery and new
+command retry. Current-schema privacy tests follow the additive migration.
+Synthetic fixtures never authorize production account changes.
+
 Logical difficulty #640: `node scripts/logical-difficulty-tests.mjs` verifies
 solution-blind reproducible traces, prerequisite DAGs, sound deductions, stalls,
 same-size board replacement, unversioned saves, offline reload, downgrade and

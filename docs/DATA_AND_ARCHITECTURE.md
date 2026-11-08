@@ -1,5 +1,33 @@
 # Data and architecture
 
+## Explicit player quest reset
+
+An operator may revoke progression on explicitly selected replacement grids.
+`quest_run_authority.reset_info` privately archives each original entry and owns
+the reset epoch, timestamp and cleared projection. No public reset RPC exists.
+`reset_replaced_quests` locks the player snapshot, validates the supplied stable
+IDs, preserves started Adventure access and advances the command cursor. It is
+idempotent: running the same reset again cannot erase later replays. Purchases,
+balances, cumulative XP, daily history and economic reward receipts remain intact.
+
+Only a verified server profile may supersede a lower local quest reset epoch.
+Hydration archives the exact local profile, retires obsolete same-owner canonical
+intents into verified local/IndexedDB archives, then reloads. Archive, quota or
+session failures hold recovery. Active attempts also carry the epoch and archive
+obsolete boards before replacement. New operation IDs start with `qr<epoch>.`;
+the server rejects earlier identities and facts predating the reset, including
+old receipt retries and the badge-only API. Full-profile writers cannot change
+the protected projection; positive-acquisition recovery skips reset quests.
+
+The schema migration changes no player data. Generate the explicit reset scope
+with `node scripts/quest-reset-scope.mjs`, review it against the replacement
+manifest, and invoke the private operator function only for separately authorized
+accounts after the compatible client is available. Account IDs and original
+player data must never enter public source, issues, PRs or validation logs.
+Rollback must retain the epoch/guards; reinstalling an old save would undo the
+requested reset. Existing privacy export/erasure includes this already inventoried
+user-owned authority table and its private originals.
+
 ## Prepared technical retention (#316)
 
 `20261022192259_lumen_technical_retention.sql` adds operator-only bounded

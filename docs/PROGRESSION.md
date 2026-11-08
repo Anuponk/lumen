@@ -1,5 +1,15 @@
 # Campaign, progression and rewards
 
+Explicit operator resets on replaced grids clear their completion, quest stars,
+badges and personal records only for the authorized accounts and catalogue scope.
+Previously started Adventures keep their access. Replaying earns fresh visible
+progression and records. A server-owned `rewardedBeforeReset` marker prevents
+paying first-win XP or autonomy milestones twice; economic bonus receipts,
+currency, purchases and access rights remain acquired. Unplayed reset quests
+still earn their ordinary first rewards. Other quests and players are untouched.
+This exception is intentional revocation, rather than automatic save repair.
+Onboarding impact: no teaching rule, gesture, badge condition or help flow changes.
+
 ## Source of truth
 
 Issue #640 changes the puzzle layouts of Adventures 5–8 through a separate

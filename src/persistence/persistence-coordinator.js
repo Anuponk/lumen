@@ -33,6 +33,10 @@ export function createPersistenceCoordinator({session,locks=globalThis.navigator
    active();const valid=capture(userId),original=options.sessionValid??(()=>true);
    return box.archiveRecreatedCapture(userId,entry,committed,{...options,sessionValid:()=>valid()&&original()});
   };
+  if(box.retireQuestResets)facade.retireQuestResets=(userId,profile,options={})=>{
+   active();const valid=capture(userId),original=options.sessionValid??(()=>true);
+   return box.retireQuestResets(userId,profile,{...options,sessionValid:()=>valid()&&original()});
+  };
   return facade;
  }
  async function inspect(userId){
@@ -56,3 +60,4 @@ export function createPersistenceCoordinator({session,locks=globalThis.navigator
  }
  return {register,submit,inspect,dispatch,capabilities:()=>({mode,crossTab:!!locks?.request})};
 }
+
