@@ -1,5 +1,16 @@
 # Campaign, progression and rewards
 
+Mixed pacing applies only to Adventures 5–9. Adventures 1–4 retain their complete
+published quest definitions and teaching rules. Difficulty levels for revised
+content come from fixed logical score thresholds, not Adventure membership.
+Constellations mix opening, intermediate peak, relief and final peak; the final
+grid is strongest and average difficulty still rises between Adventures.
+Adventure 9 consists exclusively of measured Master grids. Quotas derive from
+actual catalogue membership, including differing constellation lengths.
+Boards retained at the same stable ID preserve their records. Changed boards
+have a distinct grid version and may receive an explicitly authorized scoped
+reset; old rewards are never paid twice, and unaffected progression is preserved.
+
 Explicit operator resets on replaced grids clear their completion, quest stars,
 badges and personal records only for the authorized accounts and catalogue scope.
 Previously started Adventures keep their access. Replaying earns fresh visible

@@ -4,6 +4,8 @@ import history from '../content/catalogue/access-origins.json' with {type:'json'
 import {canonicalQuestList,canonicalCampaignComplete,canonicalCampaignQuestDecision} from '../src/campaign/canonical-quests.js';
 import {applyQuestVictory} from '../src/campaign/quest-victory.js';
 import {CONTENT_PACKS,CONTENT_CONSTELLATIONS} from '../src/campaign/content.js';
+import {mixedTierSchedule,MIXED_TARGETS} from './mixed-difficulty-policy.mjs';
+import {logicalDifficultyTier} from '../src/campaign/logical-difficulty-bands.js';
 const all=canonicalQuestList(),old=history.catalogues.find(c=>c.revision===2).quests,tail=all.filter(q=>q.packId==='real-adventure-05');
 assert.equal(old.length,400);assert.equal(tail.length,100);assert.equal(all.slice(0,500).length,500);
 const hash=q=>createHash('sha256').update(JSON.stringify({reg:q.reg,sol:q.sol})).digest('hex');
@@ -13,7 +15,10 @@ assert.equal(CONTENT_CONSTELLATIONS.filter(c=>c.packId==='real-adventure-05').le
 assert(tail.every((q,i)=>q.ordinal===401+i&&q.legacyIndex===null&&q.packId==='real-adventure-05'));
 for(const id of new Set(tail.map(q=>q.constellationId))){
  const quests=tail.filter(q=>q.constellationId===id);
- for(let i=1;i<quests.length;i++)assert(quests[i].difficulty.score>=quests[i-1].difficulty.score,'Logical difficulty must not descend: '+id);
+ assert.deepEqual(quests.map(q=>logicalDifficultyTier(q.difficulty.score)),mixedTierSchedule(quests.length,MIXED_TARGETS.find(p=>p.packId==='real-adventure-05').weights),'Measured mixed pacing: '+id);
+ const scores=quests.map(q=>q.difficulty.score);
+ assert.equal(scores.at(-1),Math.max(...scores),'Final peak: '+id);
+ assert(scores.some((score,i)=>i&&score<scores[i-1]),'A real relief follows a peak: '+id);
 }
 const p={catalogueOrigin:2,solved:Object.fromEntries(all.slice(0,400).filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1])),canonicalQuestState:Object.fromEntries(all.slice(0,400).filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true,badges:{},stars:1}])),performances:{},badges:{},stars:{},challenges:{},xp:1000,shards:7};
 assert.equal(canonicalCampaignComplete(p),false,'A formerly complete account resumes at the appended pack');

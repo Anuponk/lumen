@@ -1,5 +1,49 @@
 # Grid catalogue, generation and audit
 
+## Current mixed pacing revision (2)
+
+Adventures **1–4 remain equivalent as complete runtime quest definitions**:
+all grids, solutions, IDs, order, rewards, displayed difficulty and learning
+rules are checked against the published baseline hash in `mixed-difficulty-tests`.
+Their historical difficulty model is not relabelled by this revision.
+
+The `lumen-logic-v1` score remains unchanged. Fixed score boundaries **133.5,
+140 and 149.25** determine Intermédiaire / Avancé / Expert / Maître independently
+of Adventure membership. These preserve the initial measured band boundaries;
+the estimates are not human-calibrated completion times.
+
+| Adventure | Current measured mix |
+|---|---|
+| 5 | 80 Intermédiaire, 20 Avancé |
+| 6 | 20 Intermédiaire, 60 Avancé, 20 Expert |
+| 7 | 20 Avancé, 60 Expert, 20 Maître |
+| 8 | 20 Expert, 80 Maître |
+| 9 | 80 Maître |
+
+`mixed-difficulty-policy.mjs` derives quotas from actual constellation membership
+and uses a normalized pacing curve: opening, intermediate peak, relief, final
+peak. It supports differing constellation lengths; the final grid is strongest.
+The mean measured difficulty still rises between Adventures. Existing grids
+whose band fits their slot remain exactly in place: **280 preserved**, **120
+exchanged** across Adventures 5–8. Adventure 9 receives **80 independently
+validated new Master grids**, with deeper opening deductions and no speculative
+branching. Only **200 grid identities change geometry**; catalogue membership,
+astronomy, order, rewards and access origins remain unchanged.
+
+`logical-grids-v2.json` records previous/current hashes and per-quest grid
+revisions. Unchanged revision-1 grids stay at revision 1; changed grids use 2.
+`canonicalQuestListForRevision` and `canonicalQuestAtGridRevision` retain exact
+revision-0 and revision-1 boards for historical social links. New challenges
+must match the server's active reference metadata. Campaign reset epochs remain
+independent from social attempts.
+
+Regenerate offline with `node scripts/regenerate-mixed-difficulty.mjs`; independently
+verify all 480 targeted grids with `node scripts/mixed-difficulty-tests.mjs`.
+The audit recounts uniqueness, replays both logical engines, checks D4 diversity,
+real score relief and preservation of protected content. The immutable #640
+revision-1 audit still runs against its historical catalogue rather than being
+weakened to accept different boards. See [current distribution](validation/mixed-logical-difficulty.json).
+
 When an explicitly authorized player reset accompanies regenerated grids, its
 quest scope comes from the replacement manifest, never ordinal ranges at runtime.
 Grid revision and player reset epoch are independent: changing acquired records
@@ -8,6 +52,9 @@ bytes are archived before replacement; quota or archive conflicts block it. Othe
 players and untouched grids keep their normal progression and active attempts.
 
 ## Logical difficulty and explicit grid revisions (#640)
+
+The following describes the retained historical revision 1. Current pacing and
+Adventure 9 are defined by revision 2 above.
 
 `src/game/logical-difficulty.js` rates a territory matrix without reading its
 stored solution. It always takes available singles before more complex rules.

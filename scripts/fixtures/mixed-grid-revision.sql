@@ -1,0 +1,60 @@
+-- Disposable PostgreSQL only. Never run this fixture against player data.
+do $$
+declare uid uuid:='64300000-0000-0000-0000-000000000001';q text:='pack-real-adventure-05-q004';f jsonb;b jsonb;p jsonb;r jsonb;info jsonb;old_info jsonb;events bigint;link uuid;participant uuid;
+begin
+ assert (select grid_revision=2 from lumen_commands.quest_rules where quest_id=q);
+ assert (select grid_revision=1 from lumen_commands.quest_rules where quest_id='pack-real-adventure-05-q001');
+ assert not exists(select 1 from lumen_commands.quest_rules where legacy_index is not null and grid_revision<>0),'Protected Adventures remain original';
+ perform set_config('request.jwt.claim.sub',uid::text,true);
+ select payload into b from lumen.profile_snapshots where user_id=uid;
+ select reset_info into old_info from lumen_commands.quest_run_authority where user_id=uid and quest_id=q;
+ select count(*) into events from lumen.canonical_reward_events where user_id=uid;
+ f:=jsonb_build_object('seconds',120,'assistanceUsed',false,'mistakeCommitted',false,'qualifying',true,'hintUsed',false,'challengeFailed',true,'qualifiedDay',(now() at time zone 'Europe/Paris')::date::text,'qualifiedAt',clock_timestamp());
+ begin perform public.lumen_commit_quest_command('cached-v1',uid,q,f);raise exception 'Old content command accepted';exception when check_violation then null;end;
+ begin perform public.lumen_commit_quest_command('qr1.after-first-reset',uid,q,f);raise exception 'Old receipt accepted after new content';exception when check_violation then null;end;
+ begin perform public.lumen_commit_canonical_victory(q,'{"mastery":true}',null);raise exception 'Badge-only old content accepted';exception when check_violation then null;end;
+ r:=lumen_commands.reset_replaced_quests(uid,jsonb_build_object(q,'real-adventure-05'),2);
+ assert r='{"changed":1,"completedReset":1}'::jsonb;
+ select payload into p from lumen.profile_snapshots where user_id=uid;
+ select reset_info into info from lumen_commands.quest_run_authority where user_id=uid and quest_id=q;
+ assert info->'history'->0=old_info,'Original reset archive is retained exactly';
+ assert info->'previous'=b->'canonicalQuestState'->q,'Latest original is retained exactly';
+ assert info->'history'->0->'previous'->'runPerformance'->>'bestTime'='15';
+ assert info->'previous'->'runPerformance'->>'bestTime'='20';
+ assert p->'canonicalQuestState'->q->>'gridRevision'='2' and p->'canonicalQuestState'->q->>'resetRevision'='2';
+ assert p->'canonicalQuestState'->q->>'solved'='false';
+ assert (p-'canonicalQuestState'-'legacyVictoryRevision'-'legacyAdventureAccess')=(b-'canonicalQuestState'-'legacyVictoryRevision'-'legacyAdventureAccess'),'Protected numeric data, balances, rewards and preferences unchanged';
+ assert p->'canonicalQuestState'->'pack-real-adventure-05-q001'=b->'canonicalQuestState'->'pack-real-adventure-05-q001','Unchanged Adventure 5 grid keeps records';
+ begin
+  update lumen.profile_snapshots set payload=b where user_id=uid;raise exception 'Old save restored';
+ exception when check_violation or invalid_parameter_value then null;end;
+ begin perform public.lumen_commit_quest_command('qr2.cached-old-board',uid,q,f);raise exception 'Reset-aware old board accepted';exception when check_violation then null;end;
+ f:=f||jsonb_build_object('qualifiedAt',clock_timestamp());
+ r:=public.lumen_commit_quest_command('qr2.gv2.new-board',uid,q,f);
+ assert r->'profile'->'canonicalQuestState'->q->'runPerformance'->>'bestTime'='120';
+ assert r->'profile'->'canonicalQuestState'->q->'badges'->>'speed'='false';
+ assert r->'profile'->'xp'=b->'xp' and r->'profile'->'shards'=b->'shards' and r->'profile'->'autonomousWins'=b->'autonomousWins','No economic reward paid twice';
+ assert (select count(*)=events from lumen.canonical_reward_events where user_id=uid);
+ assert public.lumen_commit_quest_command('qr2.gv2.new-board',uid,q,f)=r,'New content retry is exact';
+ assert lumen_commands.reset_replaced_quests(uid,jsonb_build_object(q,'real-adventure-05'),2)->>'changed'='0','Repeated activation never resets a replay';
+ p:=r->'profile';
+ begin perform lumen_commands.reset_replaced_quests(uid,jsonb_build_object('base-q001','base-real-sky'),2);raise exception 'Protected Adventure reset accepted';exception when raise_exception then assert sqlerrm='reset scope does not match active content revision';end;
+ assert (select payload=p from lumen.profile_snapshots where user_id=uid);
+ r:=lumen_commands.reconcile_acquisitions(uid,p,b);
+ assert r->'profile'->'canonicalQuestState'->q=p->'canonicalQuestState'->q,'Positive recovery cannot restore a previous board record';
+ r:=public.lumen_commit_quest_command('gv2.finale-first',uid,'pack-real-adventure-09-q001',f);
+ assert r->'outcome'->>'firstCompletion'='true' and r->'profile'->'canonicalQuestState'->'pack-real-adventure-09-q001'->>'gridRevision'='2';
+ assert (r->'profile'->>'xp')::integer=(b->>'xp')::integer+15,'New Master grid retains its first economic reward';
+ assert (select count(*)=events+1 from lumen.canonical_reward_events where user_id=uid);
+ select id into link from lumen.social_challenges where stable_quest_id=q and grid_revision=1 and sender_user_id=uid limit 1;
+ -- Stored historic links use their own revision, even after current content changes.
+ perform set_config('request.jwt.claim.sub','',true);
+ select participation_id into participant from public.lumen_start_quest_challenge_v2(link,'mixed-history-recipient','Recipient',false,1);
+ assert participant is not null;
+ perform public.lumen_finish_quest_challenge_v2(link,'mixed-history-recipient','Recipient','completed',200,true,false,false,false,1);
+ begin perform public.lumen_create_quest_challenge_v2('mixed-new-source','New source',q,200,true,false,false,false,true,1);raise exception 'New challenge on obsolete content accepted';exception when raise_exception then assert sqlerrm='invalid_grid_revision';end;
+ select challenge_id into link from public.lumen_create_quest_challenge_v2('mixed-new-source','New source',q,200,true,false,false,false,true,2);
+ assert public.lumen_get_quest_challenge_v2(link,'mixed-new-source','New source')->>'grid_revision'='2';
+ assert not has_function_privilege('authenticated','lumen_commands.reset_replaced_quests(uuid,jsonb,integer)','EXECUTE');
+ assert not has_function_privilege('anon','lumen_commands.reset_replaced_quests(uuid,jsonb,integer)','EXECUTE');
+end $$;

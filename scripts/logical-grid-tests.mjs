@@ -2,14 +2,14 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {canonicalQuestList,originalCanonicalQuestList} from '../src/campaign/canonical-quests.js';
+import {canonicalQuestListForRevision,originalCanonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {rateLogicalDifficulty} from '../src/game/logical-difficulty.js';
 import {connected,countSolutions,replay,signature} from './generate-diverse-grids.mjs';
 import {applyQuestVictory} from '../src/campaign/quest-victory.js';
 import {cloudSafelyCoversLocal,reconcileCloudAchievements} from '../src/persistence/cloud-profile.js';
 import manifest from '../content/generated/logical-grids-v1.json' with {type:'json'};
 const hash=q=>createHash('sha256').update(JSON.stringify({reg:q.reg,sol:q.sol})).digest('hex');
-const original=originalCanonicalQuestList(),all=canonicalQuestList(),ids=new Set(manifest.quests.map(q=>q.id));
+const original=originalCanonicalQuestList(),all=canonicalQuestListForRevision(1),ids=new Set(manifest.quests.map(q=>q.id));
 const packs=['real-adventure-05','real-adventure-06','real-adventure-07','real-adventure-08'];
 assert.equal(manifest.quests.length,original.filter(q=>packs.includes(q.packId)).length);
 assert.equal(ids.size,manifest.quests.length);

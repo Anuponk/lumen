@@ -1,4 +1,5 @@
 import {classifyCanonicalRecoveryError} from './canonical-recovery-errors.js';
+import {canonicalIntentVersionKey} from './quest-reset.js';
 // Durable, per-account canonical victory intents. A verified local write comes
 // before any network attempt; server CAS remains the authority for rewards.
 // Entries never expire or get removed on network failure.
@@ -61,19 +62,20 @@ export async function replayCanonicalVictoryOutbox(outbox,userId,commit,{session
  const paused=new Map((state.paused||[]).map(entry=>[JSON.stringify([entry.questId,entry.operationId??null]),entry]));
  for(const entry of state.pending){
   if(!sessionValid())break;
+  const versionKey=canonicalIntentVersionKey(entry);
   const hold=paused.get(JSON.stringify([entry.questId,entry.operationId??null]));
-  if(hold&&!(recoverCommitted&&entry.operationId&&hold.kind==='review'&&hold.code==='22023')){blockedQuests.add(entry.questId);continue}
-  if(blockedQuests.has(entry.questId))continue;
+  if(hold&&!(recoverCommitted&&entry.operationId&&hold.kind==='review'&&hold.code==='22023')){blockedQuests.add(versionKey);continue}
+  if(blockedQuests.has(versionKey))continue;
   try{
    const recovered=entry.operationId&&recoverCommitted?await recoverCommitted(entry):null;
    if(!sessionValid())break;
-   if(hold&&!recovered){blockedQuests.add(entry.questId);continue}
+   if(hold&&!recovered){blockedQuests.add(versionKey);continue}
    const result=recovered||await commit(entry.questId,entry.reward,{operationId:entry.operationId,userId,sessionValid});
    if(!sessionValid())break;
    const saved=result?.profile?.canonicalQuestState?.[entry.questId];
    const badges=['autonomy','speed','noError','mastery'];
    if(!saved?.solved||!badges.every(key=>!entry.reward?.badges?.[key]||saved.badges?.[key]===true||saved.badges?.[key]===1)){
-    blockedQuests.add(entry.questId);report('unverified');continue;
+    blockedQuests.add(versionKey);report('unverified');continue;
    }
    confirmed.push(result);
    // A failed local cleanup cannot undo a verified server acknowledgement.
@@ -82,10 +84,10 @@ export async function replayCanonicalVictoryOutbox(outbox,userId,commit,{session
   }catch(error){
    if(!sessionValid())break;
    const classification=classifyCanonicalRecoveryError(error);
-   blockedQuests.add(entry.questId);report(classification.kind==='retry'?'commit':classification.kind);
+   blockedQuests.add(versionKey);report(classification.kind==='retry'?'commit':classification.kind);
    if(classification.kind!=='retry'&&outbox.pause){try{await outbox.pause(userId,entry,error)}catch{report('pause_storage')}}
    if(classification.kind==='auth'||error?.retryScope==='session')break;
-   // Preserve this quest's order while allowing independent victories to recover.
+   // Preserve same-board order while allowing another content version to recover.
   }
  }
  return confirmed;

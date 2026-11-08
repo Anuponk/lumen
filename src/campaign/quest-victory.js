@@ -20,7 +20,7 @@ export function applyQuestVictory(progress,quest,facts){
   attempts:(priorPerformance.attempts||0)+1,lastQualifiedDay:qualifying?facts.qualifiedDay:priorPerformance.lastQualifiedDay??null,
   lastQualifiedAt:qualifying?facts.qualifiedAt:priorPerformance.lastQualifiedAt??null};
  Object.assign(performance,completedRunRecords(priorPerformance,facts));
- progress.canonicalQuestState={...state,[quest.id]:{...old,solved:true,badges,
+ progress.canonicalQuestState={...state,[quest.id]:{...old,...(quest.gridRevision>1?{gridRevision:quest.gridRevision}:{}),solved:true,badges,
   ...(firstCompletion?{stars,performance:{bestTime:facts.seconds,seconds:facts.seconds,assisted:!!facts.assistanceUsed}}:{}),runPerformance:performance}};
  const firstEconomicCompletion=firstCompletion&&!old.rewardedBeforeReset;
  if(firstEconomicCompletion)progress.xp=(progress.xp||0)+10+(facts.hintUsed?0:5);

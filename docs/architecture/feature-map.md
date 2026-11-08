@@ -1,5 +1,13 @@
 # Feature map
 
+Mixed pacing revision 2: immutable `logical-grids-v2.json` → canonical revision
+adapter → score-owned `logical-difficulty-bands.js` → existing gameplay/card
+readers. Offline policy/search and independent acceptance live in
+`mixed-difficulty-policy`, `regenerate-mixed-difficulty` and `mixed-difficulty-tests`.
+`quest_rules.grid_revision` guards current commands; historical social boards
+retain their own geometry. Scoped player resets preserve earlier archives.
+Adventures 1–4 have an exact baseline-definition fingerprint; see GRID_CATALOG.
+
 Explicit reset of replaced quests: `persistence/quest-reset.js` aligns verified
 server epochs; `durable-canonical-outbox.js::retireQuestResets` archives revoked
 intents; hydration reloads before replay. Attempt engine/resume reject obsolete

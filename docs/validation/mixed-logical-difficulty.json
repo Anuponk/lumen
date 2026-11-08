@@ -1,0 +1,82 @@
+{
+  "schema": 2,
+  "method": "lumen-logic-v1",
+  "protectedHash": "e2042bdc8a771e9493ab3caf44c037024ca825aca7d6958ea7646aa7f529544f",
+  "changed": 200,
+  "retained": 280,
+  "generation": {
+    "attempts": 30000,
+    "seed": 2026110809,
+    "floor": 167.75,
+    "connected": 17811,
+    "unique": 8072,
+    "logical": 3479,
+    "replay": 2973,
+    "selectedMasters": 80,
+    "changed": 200,
+    "preserved": 280
+  },
+  "distribution": [
+    {
+      "packId": "real-adventure-05",
+      "count": 100,
+      "levels": {
+        "Intermédiaire": 80,
+        "Avancé": 20
+      },
+      "min": 129.25,
+      "median": 131.75,
+      "max": 135.75,
+      "mean": 131.87
+    },
+    {
+      "packId": "real-adventure-06",
+      "count": 100,
+      "levels": {
+        "Intermédiaire": 20,
+        "Avancé": 60,
+        "Expert": 20
+      },
+      "min": 130.5,
+      "median": 136.5,
+      "max": 142.5,
+      "mean": 136.5
+    },
+    {
+      "packId": "real-adventure-07",
+      "count": 100,
+      "levels": {
+        "Avancé": 20,
+        "Expert": 60,
+        "Maître": 20
+      },
+      "min": 136.25,
+      "median": 144.25,
+      "max": 161.5,
+      "mean": 145.11
+    },
+    {
+      "packId": "real-adventure-08",
+      "count": 100,
+      "levels": {
+        "Expert": 20,
+        "Maître": 80
+      },
+      "min": 143,
+      "median": 157.5,
+      "max": 190,
+      "mean": 160.18
+    },
+    {
+      "packId": "real-adventure-09",
+      "count": 80,
+      "levels": {
+        "Maître": 80
+      },
+      "min": 190.75,
+      "median": 198.25,
+      "max": 226.5,
+      "mean": 200.128
+    }
+  ]
+}
