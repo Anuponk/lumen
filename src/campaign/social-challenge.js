@@ -21,6 +21,7 @@ export function challengeSnapshot({questIndex,quest,seconds,run,assistanceUsed=f
  return {
   questId:quest?(quest.legacyIndex===null?null:quest.legacyIndex+1):Number(questIndex)+1,
   ...(quest?{stableQuestId:quest.id,questOrdinal:quest.ordinal}:{}),
+  ...(quest?.gridRevision?{gridRevision:quest.gridRevision}:{}),
   durationSeconds:Math.max(0,Number(seconds)||0),
   autonomy:!!run?.autonomy,
   speed:!!run?.speed,
@@ -64,7 +65,9 @@ export function createChallengeClient(supabase,{getUserId=()=>null,getAnonymousI
  async function rpc(name,args={}){if(!supabase)throw new Error("cloud_unavailable");const {data,error}=await supabase.rpc(name,args);if(error)throw error;return data}
  async function create(snapshot){
   const stableOnly=snapshot.questId===null&&!!snapshot.stableQuestId;
-  const rows=await rpc(stableOnly?'lumen_create_quest_challenge':'lumen_create_social_challenge',{...identity(),
+  const versioned=stableOnly&&snapshot.gridRevision>0;
+  const rows=await rpc(versioned?'lumen_create_quest_challenge_v2':stableOnly?'lumen_create_quest_challenge':'lumen_create_social_challenge',{...identity(),
+   ...(versioned?{p_grid_revision:snapshot.gridRevision}:{}),
    ...(stableOnly?{p_quest_id:snapshot.stableQuestId}:{p_puzzle_id:snapshot.questId}),p_duration_seconds:Math.round(snapshot.durationSeconds),p_autonomy:!!snapshot.autonomy,p_speed:!!snapshot.speed,p_mastery:!!snapshot.mastery,p_assistance_used:!!snapshot.assistanceUsed,p_first_play:true});
   return Array.isArray(rows)?rows[0]:rows;
  }

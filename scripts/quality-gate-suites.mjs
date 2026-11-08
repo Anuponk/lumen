@@ -1,4 +1,6 @@
 export const nodeSuites=[
+ 'logical-difficulty-tests.mjs',
+ 'logical-grid-tests.mjs',
  'drag-grid-path-tests.mjs',
  'offline-wallet-ui-tests.mjs',
  'cloud-pending-victory-tests.mjs',

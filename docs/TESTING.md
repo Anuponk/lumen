@@ -1,5 +1,37 @@
 # Testing and quality gate
 
+Logical difficulty #640: `node scripts/logical-difficulty-tests.mjs` verifies
+solution-blind reproducible traces, prerequisite DAGs, sound deductions, stalls,
+same-size board replacement, unversioned saves, offline reload, downgrade and
+archive quota failures. `node scripts/logical-grid-tests.mjs` independently
+recounts and replays every new grid in both logical models; checks old/new
+hashes, exact replacement scope, unchanged identities/rewards/outside content,
+near-duplicate distance, strict Adventure bands, within-constellation progression,
+matched-size improvement, shallow guardians and first-placement depth; and checks
+grandfathered cloud facts and non-duplicating replay awards. `--write` records
+the deterministic distribution, excluding environment-dependent benchmark time.
+Both suites are part of the quality gate. Existing frozen-grid audits continue
+against the original manifests, alongside the new complete replacement audit.
+
+The IAU browser suite additionally plays one proof-derived sample in each of
+Adventures 5–8 at 390px through actual touch handlers (two taps per guardian),
+without setting the board or consulting `sol` for those moves. Existing cases
+cover victory, next-Adventure navigation, guest reload, offline shell and the
+authenticated offline/reconnect exactly-once receipt. This is automated browser
+evidence, not a human difficulty study or physical phone acceptance.
+
+`scripts/fixtures/logical-grid-challenges.sql` runs after the actual challenge
+and catalogue migrations in canonical-ledger CI's disposable PostgreSQL 17.
+It checks default revision-0 links, v2/get/list round trips, hidden reference
+performance, stable one-shot participation, inbox privacy, invalid revision,
+wrong Adventure, unknown quest, replay rejection, narrow privileges and no
+campaign write. The Node difficulty suite checks routing both revisions and
+refuses an unsafe old-RPC fallback. Production application is not a test step.
+
+Onboarding impact #640: rules, gestures, assistance, badge eligibility, learning
+quests and their timing are unchanged. Only later Adventure grids/labels change;
+the complete embedded and learning-browser regressions remain mandatory.
+
 Erasure UI acknowledgement: `node scripts/self-erasure-controls-tests.mjs`
 executes the real controls with synthetic DOM/Auth/HTTP and cleanup spies. Six
 cases reproduce unsafe cleanup on baseline, then seven pass: incomplete HTTP

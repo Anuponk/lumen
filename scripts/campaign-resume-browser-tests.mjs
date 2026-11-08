@@ -167,7 +167,7 @@ try{
  // Actual app and worker, native Cache API/IndexedDB and network disconnection.
  // Auth and server receipts remain synthetic: this is not physical Android QA.
  await evaluate(`document.getElementById('closeMap').click()`);
- await until(`(async()=>{const r=await navigator.serviceWorker.ready;return !!navigator.serviceWorker.controller&&!!(await caches.match('/__lumen_offline_ready_v15__'))})()`);
+ await until(`(async()=>{const r=await navigator.serviceWorker.ready;return !!navigator.serviceWorker.controller&&!!(await caches.match('/__lumen_offline_ready_v16__'))})()`);
  assert.equal(await evaluate(`!!localStorage.getItem('lumenOfflineVerifiedOwnerV1')`),true);
  assert.equal(await evaluate(`(async()=>!!(await caches.match(location.href)))()`,true),true,'Public document is prepared before disconnection');
  await send('Network.setBypassServiceWorker',{bypass:false});

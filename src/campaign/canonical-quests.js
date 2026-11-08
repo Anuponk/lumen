@@ -4,6 +4,7 @@ import staged from "../../content/generated/issue-222-additions.json" with {type
 import diverse from "../../content/generated/diverse-adventures-3-4.json" with {type:"json"};
 import fifth from '../../content/generated/fifth-adventure-candidates.json' with {type:'json'};
 import completion from '../../content/generated/remaining-adventures.json' with {type:'json'};
+import logicalReplacements from '../../content/generated/logical-grids-v1.json' with {type:'json'};
 const diverseById=new Map(diverse.puzzles.map(q=>[q.id,q]));
 if(diverse.schema!=="lumen-grid-overrides-v1"||diverseById.size!==diverse.puzzles.length)throw Error("Invalid diversity override manifest");
 import {CONTENT_PACKS,CONTENT_CONSTELLATIONS,hasPackAccess} from "./content.js";
@@ -17,7 +18,7 @@ import {questRewardDefinition} from './quest-rewards.js';
 const slots=buildQuestDefinitions(publishedCatalogueQuests(),CONTENT_PACKS,CONTENT_CONSTELLATIONS);
 const added=new Map([...staged.quests,...fifth.quests,...completion.quests].map(q=>[q.id,q]));
 if(staged.status!=="staged-only"||fifth.status!=='staging-proof-audited'||completion.schema!=='lumen-iau-completion-grids-v1'||completion.status!=='proof-audited'||completion.questCount!==completion.quests.length||added.size!==staged.quests.length+fifth.quests.length+completion.quests.length)throw Error("Invalid staged content");
-const all=Object.freeze(slots.map(slot=>{
+const originalAll=Object.freeze(slots.map(slot=>{
  const original=slot.legacyIndex===null?added.get(slot.id):playableQuest(slot.legacyIndex);
  if(!original||original.id!==slot.id)throw Error("Missing canonical grid "+slot.id);
  if(slot.legacyIndex===null&&(!original.audit?.ok||original.audit.solutions!==1))throw Error("Unaudited grid "+slot.id);
@@ -26,6 +27,18 @@ const all=Object.freeze(slots.map(slot=>{
  const grid=replacement||original;
  return Object.freeze({...slot,rewards:questRewardDefinition(slot,{total:slots.filter(q=>q.constellationId===slot.constellationId).length}),size:grid.size??grid.reg.length,reg:grid.reg,sol:grid.sol,audit:grid.audit??null,difficulty:qualifyDifficulty(grid),family:grid.family??null});
 }));
+// Gameplay revisions are separate from immutable membership/access origins.
+// Existing completion/rewards keep their stable IDs; only active boards expire.
+const logicalById=new Map(logicalReplacements.quests.map(q=>[q.id,q]));
+if(logicalReplacements.schema!=='lumen-logical-grid-replacements-v1'||logicalById.size!==logicalReplacements.quests.length||[...logicalById.keys()].some(id=>!originalAll.some(q=>q.id===id)))throw Error('Invalid logical grid revisions');
+const all=Object.freeze(originalAll.map(original=>{
+ const replacement=logicalById.get(original.id);if(!replacement)return original;
+ if(replacement.packId!==original.packId||replacement.constellationId!==original.constellationId||replacement.ordinal!==original.ordinal||replacement.gridRevision!==1||!replacement.logical?.solved)throw Error('Invalid logical replacement '+original.id);
+ const grid={...original,size:replacement.size,reg:replacement.reg,sol:replacement.sol,audit:replacement.audit,family:replacement.family,logical:replacement.logical,logicalTier:replacement.logicalTier,gridRevision:replacement.gridRevision};
+ return Object.freeze({...grid,difficulty:qualifyDifficulty(grid)});
+}));
+// Audit/rollback tooling only: frozen original grid contracts remain verifiable.
+export function originalCanonicalQuestList(){return [...originalAll]}
 if(new Set(all.map(q=>q.id)).size!==all.length||all.filter(q=>q.legacyIndex!==null).length!==playableQuestCount()||[...added.keys()].some(id=>!all.some(q=>q.id===id))||[...diverseById.keys()].some(id=>!all.some(q=>q.id===id)))throw Error("Inconsistent canonical catalogue");
 const byId=new Map(all.map(q=>[q.id,q]));
 const byLegacy=new Map(all.filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,q]));

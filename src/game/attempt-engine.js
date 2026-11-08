@@ -14,12 +14,22 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
  const snapshot=()=>attempt?{...attempt,board:cloneBoard(attempt.board),activeDuration:activeMs()}:null;
  function activeMs(){return attempt?attempt.activeDuration+(attempt.state===ATTEMPT_STATES.RUNNING&&activeSince!==null?Math.max(0,perfNow()-activeSince):0):0}
  function persist(){if(!attempt)return storage?.removeItem?.(STORAGE_KEY);const copy={...attempt,board:cloneBoard(attempt.board),activeDuration:activeMs(),updatedAt:now()};storage?.setItem?.(STORAGE_KEY,JSON.stringify(copy))}
- function create({questId,mode="campaign",qualifying=false,challengeId=null,board=[]}){
-  attempt={attemptId:newId(),questId,mode,state:ATTEMPT_STATES.READY,startedAt:null,activeDuration:0,lastActiveAt:null,assistanceUsed:false,mistakeCommitted:false,wrongGuardianPending:null,resetCount:0,qualifying:!!qualifying,challengeId,board:cloneBoard(board),createdAt:now(),updatedAt:now()};activeSince=null;emit();return snapshot()
+ function create({questId,mode="campaign",qualifying=false,challengeId=null,board=[],gridRevision=0}){
+  attempt={attemptId:newId(),questId,mode,gridRevision,state:ATTEMPT_STATES.READY,startedAt:null,activeDuration:0,lastActiveAt:null,assistanceUsed:false,mistakeCommitted:false,wrongGuardianPending:null,resetCount:0,qualifying:!!qualifying,challengeId,board:cloneBoard(board),createdAt:now(),updatedAt:now()};activeSince=null;emit();return snapshot()
  }
- function restore({questId,mode}={}){
+ function restore({questId,mode,gridRevision}={}){
   const saved=safeParse(storage?.getItem?.(STORAGE_KEY));if(!saved||!saved.attemptId)return null;
   if(questId!=null&&saved.questId!==questId)return null;if(mode&&saved.mode!==mode)return null;
+  if(gridRevision!==undefined&&(saved.gridRevision??0)!==gridRevision){
+   // Preserve the exact old attempt before a new grid can overwrite this slot.
+   // Failure is blocking; never silently discard an offline attempt.
+   const raw=storage.getItem(STORAGE_KEY),key=STORAGE_KEY+':grid-archive:'+saved.attemptId+':'+(saved.gridRevision??0);
+   const previous=storage.getItem(key);
+   if(previous!==null&&previous!==raw)throw Error('Grid attempt archive conflict');
+   storage.setItem(key,raw);
+   if(storage.getItem(key)!==raw)throw Error('Grid attempt archive unverified');
+   return null;
+  }
   attempt={...saved,board:cloneBoard(saved.board),activeDuration:Number(saved.activeDuration)||0,assistanceUsed:!!saved.assistanceUsed,mistakeCommitted:!!saved.mistakeCommitted,wrongGuardianPending:saved.wrongGuardianPending||null};
   activeSince=null;
   if(attempt.state===ATTEMPT_STATES.RUNNING)attempt.state=ATTEMPT_STATES.PAUSED;

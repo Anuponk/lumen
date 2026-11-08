@@ -1,5 +1,67 @@
 # Grid catalogue, generation and audit
 
+## Logical difficulty and explicit grid revisions (#640)
+
+`src/game/logical-difficulty.js` rates a territory matrix without reading its
+stored solution. It always takes available singles before more complex rules.
+It propagates exact-one rows, columns and territories, guardian conflicts,
+house intersections, common non-touching consequences and Hall pairs/triples
+between disjoint exact-one partitions. Sudoku digit techniques are not imported.
+There is no speculative placement, contradiction branch or backtracking in this
+model. Stalling rejects the candidate. Mathematical uniqueness is a separate
+enumeration; the existing UI `proofEngine` must independently finish every grid.
+
+Each deduction records targets, rule, candidate houses, prior elimination fact
+IDs, dependency depth and remaining global candidates. Guardian propagation is
+recorded separately with its placement as prerequisite. One fact may eliminate
+several cells with identical premises. Depth is one plus the maximum premise
+depth, not the trace index. Candidate scans have a fixed row/column/region and
+row-major tie order; this is one reproducible solving policy, not the minimum
+over every possible human solving path. Rule complexity and dependency structure
+follow [Pelánek's overview and evaluation](https://arxiv.org/abs/1403.7373)
+and [computational model](https://www.fi.muni.cz/~xpelanek/publications/flairs-sudoku.pdf).
+Generate-and-test with independent uniqueness and inference checks follows
+[Hunt, Pong and Tucker](https://aaaipress.org/Library/AAAI/2007/aaai07-361.php).
+
+The v1 score is `10 * effort / N + 2 * maximumPlacementDepth +
+4 * deductionsBeforeFirstPlacement + 8 * advancedDeductions / N`.
+Effort weights: single 1, guardian propagation 0, intersection 2, common
+adjacency 3, Hall pair 4, Hall triple 6. Advanced deductions are adjacency,
+pairs and triples. Dimension has no additive reward. Initial singletons,
+shallow placements (depth <= 3), first-placement depth, intermediate deductions,
+rule diversity and total effort are reported separately. Forced branches are
+explicitly zero. These are logical model estimates, **not human-calibrated times**.
+
+`node scripts/regenerate-logical-grids.mjs` performs seeded boundary mutation
+and connected growth offline. It rejects disconnected/singleton territories,
+multiple solutions, stalled models, stalled UI proofs, shallow openings and D4
+duplicates against the original catalogue. Selection also requires at least six
+different cells between normalized D4 signatures, avoiding near-identical
+boundary variants. All selected grids are 8×8: the increased difficulty in
+Adventures 5–8 is not obtained by making the later boards larger. Scores form
+strictly separated Adventure bands and ascend within each constellation. Band
+labels are content assignments (Intermédiaire, Avancé, Expert, Maître), checked
+against the measured distribution rather than claimed as player calibration.
+
+`content/generated/logical-grids-v1.json` is the explicit, scoped replacement
+manifest for Adventures 5–8. It records old/new SHA-256 grid hashes, unchanged
+quest membership, seed/search statistics and independently reproducible ratings.
+Original source manifests and access-origin hashes remain immutable;
+`originalCanonicalQuestList()` is audit/rollback tooling, while gameplay uses
+`canonicalQuestList()`. This is the owner-authorized exception to the general
+unchanged-grid rule; future unlisted replacements still fail the audit. Astronomy,
+quest IDs, order, rewards and rights do not change. Adventure 9 is unchanged.
+Historical social links keep the original grid; new challenges carry revision 1
+through the additive prepared RPC. Both versions remain independently auditable.
+
+Run `node scripts/logical-grid-tests.mjs` to independently verify all replacements
+and the committed [distribution](validation/logical-difficulty-640.json), then
+the full quality gate and strict catalogue audit. `--write` recomputes the report;
+it does not publish content. Review all source changes together in one PR. Do not
+merge while production deployment is forbidden: the main quality workflow can
+trigger the production publisher. Human timing/physical-device QA remains a
+distinct acceptance step; touch-handler proof replays are automated evidence.
+
 ## Current state
 Production does **not generate campaign grids on demand**. The canonical campaign combines the legacy pre-generated `CAT`/numeric schedule with audited committed JSON manifests through `canonical-quests.js`. Published catalogue revision 4 contains 880 quests across 88 constellations and nine Adventures. See [the full catalogue](CATALOGUE_88.md) and [the 380-grid replay report](validation/iau-completion.md).
 
