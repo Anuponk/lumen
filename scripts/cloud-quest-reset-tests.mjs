@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {cloudSafelyCoversLocal,restoreRicherCloudProfile} from '../src/persistence/cloud-profile.js';
-import {alignQuestResets,installVerifiedQuestResets,obsoleteQuestIntent} from '../src/persistence/quest-reset.js';
+import {alignQuestResets,obsoleteQuestIntent} from '../src/persistence/quest-reset.js';
+import {installVerifiedQuestResets} from '../src/persistence/quest-reset-install.js';
 import {createDurableCanonicalVictoryOutbox} from '../src/persistence/durable-canonical-outbox.js';
 import {createAttemptEngine} from '../src/game/attempt-engine.js';
 import {canonicalAttemptToResume} from '../src/campaign/campaign-resume.js';
@@ -31,13 +32,14 @@ assert.equal(alignQuestResets(aligned.profile,remote).changed,false,'idempotent 
 assert.throws(()=>alignQuestResets(remote,local),/stale/);
 assert.throws(()=>alignQuestResets(local,{canonicalQuestState:{q:{resetRevision:-1}}}),/Invalid/);
 const denied=memory();denied.setItem('lumenProgressV1',JSON.stringify(local));
+denied.setItem('lumenCloudOwnerId','player');
 denied.setItem=()=>{throw Error('quota')};
-assert.throws(()=>installVerifiedQuestResets(denied,remote,{userId:'player'}),/quota/);
+await assert.rejects(installVerifiedQuestResets(denied,remote,{userId:'player'}),/quota/);
 assert.equal(denied.getItem('lumenProgressV1'),JSON.stringify(local));
 const switched=memory();switched.setItem('lumenProgressV1',JSON.stringify(local));
-assert.throws(()=>installVerifiedQuestResets(switched,remote,{userId:'player',sessionValid:()=>false}),/session/);
+await assert.rejects(installVerifiedQuestResets(switched,remote,{userId:'player',sessionValid:()=>false}),/session/);
 for(const device of [memory(),memory()]){
- device.setItem('lumenProgressV1',JSON.stringify(local));assert(installVerifiedQuestResets(device,remote,{userId:'player'}));
+ device.setItem('lumenProgressV1',JSON.stringify(local));device.setItem('lumenCloudOwnerId','player');assert(await installVerifiedQuestResets(device,remote,{userId:'player'}));
  assert.equal(JSON.parse(device.getItem('lumenProgressV1')).canonicalQuestState.q.solved,false);
 }
 const s=memory(),fallback=indexed(),outbox=createDurableCanonicalVictoryOutbox(s,{fallback});
@@ -108,6 +110,32 @@ assert.equal((await rawBox.pending('player')).length,1,'coordinator generation p
 const shadow=createPersistenceCoordinator({mode:'shadow'}).register(rawBox);
 assert.throws(()=>shadow.retireQuestResets('player',remote),/Read-only/);
 console.log('PASS coordinator generation and read-only reset guards');
+for(const changedPart of ['session','owner','cache']){
+ const guarded=memory(),original=JSON.stringify(local);guarded.setItem('lumenCloudOwnerId','player');guarded.setItem('lumenProgressV1',original);
+ let valid=true;
+ await assert.rejects(installVerifiedQuestResets(guarded,remote,{userId:'player',sessionValid:()=>valid,preserveSnapshot:async(_storage,_prefix,raw)=>{
+  assert.equal(raw,original);
+  if(changedPart==='session')valid=false;
+  else if(changedPart==='owner')guarded.setItem('lumenCloudOwnerId','replacement');
+  else guarded.setItem('lumenProgressV1','newer local bytes');
+ }}),/changed/);
+ assert.equal(guarded.getItem('lumenProgressV1'),changedPart==='cache'?'newer local bytes':original);
+}
+const unavailable=memory(),unavailableRaw=JSON.stringify(local);unavailable.setItem('lumenCloudOwnerId','player');unavailable.setItem('lumenProgressV1',unavailableRaw);
+await assert.rejects(installVerifiedQuestResets(unavailable,remote,{userId:'player',preserveSnapshot:async()=>{throw Error('archive unavailable')}}),/archive unavailable/);
+assert.equal(unavailable.getItem('lumenProgressV1'),unavailableRaw);
+console.log('PASS asynchronous reset archive failures preserve original, newer local state and account/session ownership');
+const larger=memory(),largerRaw=JSON.stringify(local),largerSet=larger.setItem;let roomCalls=0,refused=false;
+larger.setItem('lumenCloudOwnerId','player');larger.setItem('lumenProgressV1',largerRaw);
+larger.setItem=(key,value)=>{if(key==='lumenProgressV1'&&!refused){refused=true;throw new DOMException('Synthetic larger projection quota','QuotaExceededError')}largerSet(key,value)};
+assert(await installVerifiedQuestResets(larger,remote,{userId:'player',makeRoom:async(_storage,{sessionValid})=>{assert(sessionValid());assert.equal(larger.getItem('lumenProgressV1'),largerRaw);roomCalls++;return {archived:1,failed:false,interrupted:false}}}));
+assert.equal(roomCalls,1,'Larger cache gets one bounded maintenance attempt');
+assert([...larger.map.values()].includes(largerRaw),'Original is still retained after freeing space');
+const full=memory(),fullRaw=JSON.stringify(local);full.setItem('lumenCloudOwnerId','player');full.setItem('lumenProgressV1',fullRaw);
+full.setItem=()=>{throw new DOMException('Synthetic full local storage','QuotaExceededError')};
+await assert.rejects(installVerifiedQuestResets(full,remote,{userId:'player'}),error=>error.code==='RECOVERY_STORAGE_UNAVAILABLE');
+assert.equal(full.getItem('lumenProgressV1'),fullRaw,'Both stores unavailable cannot authorize a reset');
+console.log('PASS reset cache growth retry and both-stores-unavailable preservation');
 const challengeStorage=memory(),challengeEngine=createAttemptEngine({storage:challengeStorage});
 const challengeAttempt=challengeEngine.create({questId:quest.id,mode:'challenge',challengeId:'social-only',board,gridRevision:1,questResetRevision:1});
 assert.equal(challengeAttempt.questResetRevision,undefined,'campaign reset does not version a social attempt');

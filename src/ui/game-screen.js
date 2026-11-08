@@ -17,7 +17,7 @@ import {buildIncidentInvestigation,incidentAlerts,renderIncidentInvestigation} f
 import {createLocalPersistence} from "../persistence/local.js";
 import {currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
 import {canonicalAttemptToResume,nextCanonicalAtLegacyBoundary,preserveAttemptSnapshot} from '../campaign/campaign-resume.js';
-import {installVerifiedQuestResets} from '../persistence/quest-reset.js';
+import {installVerifiedQuestResets} from '../persistence/quest-reset-install.js';
 import {createCloudPersistence} from "../persistence/cloud.js";
 import {guestAccountSeed,preserveGuestBeforeHydration,guestNeedsReconciliation} from '../persistence/guest-account.js';
 import {storageReport,archiveRecoveryBackups} from '../persistence/storage-maintenance.js';
@@ -697,7 +697,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    hydrationStage='canonical_start_recovery';
    await canonicalVictoryOutbox.retireQuestResets(accountId,cloud,{sessionValid});
    if(!sessionValid())return;
-   if(installVerifiedQuestResets(localStorage,cloud,{userId:accountId,sessionValid})){
+   if(await installVerifiedQuestResets(localStorage,cloud,{userId:accountId,sessionValid})){
     location.reload();return;
    }
   }

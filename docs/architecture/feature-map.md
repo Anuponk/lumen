@@ -9,7 +9,9 @@ retain their own geometry. Scoped player resets preserve earlier archives.
 Adventures 1–4 have an exact baseline-definition fingerprint; see GRID_CATALOG.
 
 Explicit reset of replaced quests: `persistence/quest-reset.js` aligns verified
-server epochs; `durable-canonical-outbox.js::retireQuestResets` archives revoked
+server epochs; `quest-reset-install.js` preserves the original through the
+durable recovery store before installing epochs, with async ownership guards.
+`durable-canonical-outbox.js::retireQuestResets` archives revoked
 intents; hydration reloads before replay. Attempt engine/resume reject obsolete
 epochs. Private `reset_replaced_quests` owns reset scope and originals, guarded
 quest commands own new records/rewards. See DATA_AND_ARCHITECTURE and TESTING.
