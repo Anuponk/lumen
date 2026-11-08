@@ -42,6 +42,7 @@ for(let sample=0;sample<30;sample++){
 
 const data=new Map(),storage={getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};
 const old=createAttemptEngine({storage});old.create({questId:'changed',board:[[2,0],[0,0]]});old.start();old.markAssistance();
+assert.equal(Object.hasOwn(old.snapshot(),'gridRevision'),false,'Unchanged/original grids preserve the legacy serialized attempt shape');
 const raw=data.get(old.storageKey),fresh=createAttemptEngine({storage});
 assert.equal(fresh.restore({questId:'changed',gridRevision:1}),null,'Same-size obsolete board cannot restore');
 assert([...data.entries()].some(([key,value])=>key.includes('grid-archive')&&value===raw),'Original board, timer, identity and assistance archived');
