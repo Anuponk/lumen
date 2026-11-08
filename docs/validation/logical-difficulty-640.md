@@ -86,6 +86,9 @@ indices ; relever premier gardien, temps, règles comprises et blocages. Sur
 téléphone physique, reprendre une ancienne partie après mise à jour puis
 tester mode avion → fermeture → réouverture → reconnexion. Sur deux appareils,
 vérifier acquis historiques, nouveau replay et ancien/nouveau lien de défi.
+Un ancien client doit conserver les défis de révision 0 et refuser une révision
+1 sans consommer sa tentative ; un client actualisé doit jouer les deux grilles
+exactes, avec résultat seulement à révision identique.
 Ces observations humaines et physiques ne sont pas présentées comme réalisées.
 
 La recette a aussi révélé une référence de fixture au marqueur de cache v15,

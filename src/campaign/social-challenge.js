@@ -72,24 +72,24 @@ export function createChallengeClient(supabase,{getUserId=()=>null,getAnonymousI
   return Array.isArray(rows)?rows[0]:rows;
  }
  async function get(challengeId){
-  const rows=await compatibleRead('lumen_get_quest_challenge','lumen_get_social_challenge',{p_challenge_id:challengeId,...identity()});
+  const rows=await compatibleRead('lumen_get_quest_challenge_v2','lumen_get_quest_challenge',{p_challenge_id:challengeId,...identity()},'lumen_get_social_challenge');
   return Array.isArray(rows)?rows[0]:rows;
  }
- async function start(challengeId,previouslyPlayed){
-  const rows=await rpc("lumen_start_social_challenge",{p_challenge_id:challengeId,...identity(),p_previously_played:!!previouslyPlayed});
+ async function start(challengeId,previouslyPlayed,gridRevision=0){
+  const rows=await rpc(gridRevision?'lumen_start_quest_challenge_v2':"lumen_start_social_challenge",{p_challenge_id:challengeId,...identity(),p_previously_played:!!previouslyPlayed,...(gridRevision?{p_grid_revision:gridRevision}:{})});
   return Array.isArray(rows)?rows[0]:rows;
  }
- async function finish(challengeId,{status,durationSeconds,autonomy,speed,mastery,assistanceUsed}){
-  const rows=await rpc("lumen_finish_social_challenge",{p_challenge_id:challengeId,...identity(),p_status:status,p_duration_seconds:Math.round(durationSeconds||0),p_autonomy:!!autonomy,p_speed:!!speed,p_mastery:!!mastery,p_assistance_used:!!assistanceUsed});
+ async function finish(challengeId,{status,durationSeconds,autonomy,speed,mastery,assistanceUsed,gridRevision=0}){
+  const rows=await rpc(gridRevision?'lumen_finish_quest_challenge_v2':"lumen_finish_social_challenge",{p_challenge_id:challengeId,...identity(),p_status:status,p_duration_seconds:Math.round(durationSeconds||0),p_autonomy:!!autonomy,p_speed:!!speed,p_mastery:!!mastery,p_assistance_used:!!assistanceUsed,...(gridRevision?{p_grid_revision:gridRevision}:{})});
   return Array.isArray(rows)?rows[0]:rows;
  }
  async function sent(){
-  return await compatibleRead('lumen_list_quest_challenges','lumen_list_social_challenges',identity())||[];
+  return await compatibleRead('lumen_list_quest_challenges_v2','lumen_list_quest_challenges',identity(),'lumen_list_social_challenges')||[];
  }
- async function compatibleRead(primary,legacy,args){
+ async function compatibleRead(primary,legacy,args,oldest=null){
   if(!supabase)throw Error('cloud_unavailable');
   const result=await supabase.rpc(primary,args);
-  if(result.error?.code==='PGRST202'&&result.status===404)return rpc(legacy,args);
+  if(result.error?.code==='PGRST202'&&result.status===404)return oldest?compatibleRead(legacy,oldest,args):rpc(legacy,args);
   if(result.error)throw result.error;
   return result.data;
  }

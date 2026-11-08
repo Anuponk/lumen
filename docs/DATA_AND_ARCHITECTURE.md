@@ -291,9 +291,13 @@ Social challenge rows separately gain server-owned `grid_revision`, default 0
 for historical rows/old clients. The additive prepared migration
 `20261108061843_logical_grid_challenge_revision.sql` adds a v2 creation RPC that
 atomically validates the explicit Adventure 5–8 revision-1 scope and delegates
-identity/name/first-play/allowlisting to the existing RPC. Existing get/list
-wrappers expose only that revision in addition to their already privacy-filtered
-fields. Unversioned challenges resolve to original grids; revision-1 challenges
+identity/name/first-play/allowlisting to the existing RPC. Versioned get/list
+wrappers expose the revision in addition to already privacy-filtered fields;
+old canonical get/list endpoints show revision 0 only. Versioned start/finish
+require the exact stored revision before delegating to the established private
+one-shot implementations, whose direct API grants are revoked. Old writers
+reject revision-1 challenges without consuming an attempt or comparing a result.
+Unversioned challenges resolve to original grids; revision-1 challenges
 resolve to the replacement. Unknown revisions fail closed. New clients never
 fallback to revision-0 creation after an unavailable/ambiguous v2 call. No reward
 or campaign write is introduced. Activation order for a later authorized release:
@@ -305,6 +309,9 @@ as non-identifying, non-null integer metadata. Unknown social fields and altered
 revision types still block erasure. Its current-schema fixture verifies that
 anonymization removes the sender but retains the exact puzzle revision. This
 compatibility edit does not authorize installing or activating account erasure.
+If that private erasure review is already installed, the grid migration invokes
+its read-only schema review and fails atomically on incompatibility; it never
+silently replaces an independently activated privacy contract.
 
 Support capture budgeting preserves the complete current typed projection and
 only adds optional owner-bound checkpoints within the existing server size limit.

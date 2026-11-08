@@ -27,6 +27,9 @@ performance, stable one-shot participation, inbox privacy, invalid revision,
 wrong Adventure, unknown quest, replay rejection, narrow privileges and no
 campaign write. The Node difficulty suite checks routing both revisions and
 refuses an unsafe old-RPC fallback. Production application is not a test step.
+Versioned read/list/start/finish also cover old-client rejection without
+consuming an attempt, wrong-revision resume, private implementation denial and
+prevention of a cross-grid result through the legacy finish RPC.
 
 Onboarding impact #640: rules, gestures, assistance, badge eligibility, learning
 quests and their timing are unchanged. Only later Adventure grids/labels change;
