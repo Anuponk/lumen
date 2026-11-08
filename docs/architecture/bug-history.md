@@ -7,8 +7,8 @@ the hydration hold even with working IndexedDB. `cloud-reset-browser-tests.mjs`
 is RED on that baseline and GREEN with the durable recovery installer, exact
 original read-back, reload and real grid opening. Unit regressions also retain
 session/owner/newer-cache guards and both-stores-unavailable refusal. This
-reproduction establishes the quota path; the reported player's precise local
-exception still requires the separate diagnostic journal.
+incident journal confirms `QuotaExceededError` at `canonical_start_recovery`
+while IndexedDB is available, matching this reproduced failure path.
 
 Historical pending receipt chronology (reproduced on e5393fe, 6 November 2026):
 an older slower captured intention was covered by a better exact server receipt,
