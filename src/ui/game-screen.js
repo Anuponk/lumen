@@ -17,6 +17,7 @@ import {buildIncidentInvestigation,incidentAlerts,renderIncidentInvestigation} f
 import {createLocalPersistence} from "../persistence/local.js";
 import {currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
 import {canonicalAttemptToResume,nextCanonicalAtLegacyBoundary,preserveAttemptSnapshot} from '../campaign/campaign-resume.js';
+import {installVerifiedQuestResets} from '../persistence/quest-reset.js';
 import {createCloudPersistence} from "../persistence/cloud.js";
 import {guestAccountSeed,preserveGuestBeforeHydration,guestNeedsReconciliation} from '../persistence/guest-account.js';
 import {storageReport,archiveRecoveryBackups} from '../persistence/storage-maintenance.js';
@@ -692,6 +693,14 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   let cloud=existing||await initializeCloudProfile(hydrationClient,currentOwner===accountId?incoming:!currentOwner?guestAccountSeed(incoming,currentOwner,accountId,fresh):fresh,{userId:accountId,sessionValid,...(!currentOwner&&original!==null?{guestSource:{storage:localStorage,original}}:{})});
   if(!sessionValid())return;
   // An existing account must cover the guest before its cache can be replaced.
+  if(currentOwner===accountId&&Object.values(cloud.canonicalQuestState||{}).some(entry=>entry?.resetRevision>0)){
+   hydrationStage='canonical_start_recovery';
+   await canonicalVictoryOutbox.retireQuestResets(accountId,cloud,{sessionValid});
+   if(!sessionValid())return;
+   if(installVerifiedQuestResets(localStorage,cloud,{userId:accountId,sessionValid})){
+    location.reload();return;
+   }
+  }
   // Preserve both copies and use the existing conservative merge contract. An
   // ambiguous balance/receipt stays pending instead of silently resetting play.
   if(!currentOwner&&guestNeedsReconciliation(incoming,cloud)){
@@ -757,7 +766,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    }
   }
   const canonicalAttempt=attemptEngine.snapshot();
-  const canonicalQuest=canonicalAttemptToResume(canonicalAttempt,canonicalQuestList(),{ownerId:currentOwner,accountId});
+  const canonicalQuest=canonicalAttemptToResume(canonicalAttempt,canonicalQuestList(),{ownerId:currentOwner,accountId,progress:cloud});
   if(existing&&currentOwner===accountId&&canonicalQuest){
    hydrationStage="canonical_start_recovery";
    const repaired=await archiveCanonicalStartMetadata(localStorage,cloud,{quest:canonicalQuest,attempt:canonicalAttempt,legacyIndex:currentQuestPosition(),ownerId:currentOwner,accountId,sessionValid});
@@ -2227,10 +2236,10 @@ function maybeShowHintEconomyTransition(){
 function prepareQuestStart(){let q=activeBonusChallenge(),o=document.getElementById("questStart");questFailed=false;if(!q||lumenProgress.stars[q.id]){questStarted=true;o.hidden=true;return}questStarted=false;pauseGameClock();document.getElementById("questStartTitle").textContent=q.title+" · Difficulté : "+(puz.difficulty?.label??qualifyDifficulty(puz).label);document.getElementById("questStartRule").textContent=q.copy+" Récompense : +25 XP et +1 ✦ éclat.";o.hidden=false}
 document.getElementById("questGo").onclick=()=>{document.getElementById("questStart").hidden=true;questStarted=true;clock();updateAttemptUI()};
 function init(){document.getElementById('successRetry').textContent='↻ Réessayer';if(!canonicalActiveQuest&&accountRequired())queueMicrotask(()=>maybeOfferAccount());setLearningReplaySuccessMode(false);document.getElementById("successNew").textContent="Quête suivante";updateLearningSuccessCTA();learningTip=null;learningTipSeen=new Set();learningStage="place";learningIntroStep=0;choose();configureLearningMode();applyQuestRestrictions();maybeShowBadgeMilestone();maybeShowAutoCrossUnlock();maybeShowAutonomy();let cl=document.getElementById("campaignMapLabel");if(cl){const quest=canonicalActiveQuest??canonicalQuestForLegacy(levelIndex),view=readQuestView(quest,lumenProgress,canonicalQuestList(),CONTENT_CONSTELLATIONS);cl.textContent=view.label+" · "+(puz.difficulty?.label??qualifyDifficulty(puz).label);cl.title="Difficulté : "+(puz.difficulty?.label??qualifyDifficulty(puz).label);}document.getElementById("difficulty").textContent=(n===7?"7 × 7":n===8?"8 × 8":n+" × "+n)+(" · Difficulté : "+(puz.difficulty?.label??qualifyDifficulty(puz).label));state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];const hintCard=document.getElementById("hintCard");if(hintCard)hintCard.hidden=true;celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;guidedDeferred=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,100);
- const restored=attemptEngine.restore({questId:canonicalActiveQuest?.id??levelIndex+1,mode:attemptMode(),gridRevision:activeQuest()?.gridRevision??0});
+ const restored=attemptEngine.restore({questId:canonicalActiveQuest?.id??levelIndex+1,mode:attemptMode(),gridRevision:activeQuest()?.gridRevision??0,questResetRevision:lumenProgress.canonicalQuestState?.[activeQuest()?.id]?.resetRevision??0});
  if(restored&&Array.isArray(restored.board)&&restored.board.length===n){state=restored.board.map(row=>row.slice());render()}else {
   const qualifying=!socialChallenge&&questBadgeQualification(activeQuest(),lumenProgress,Math.max(canonicalScopeProgress(lumenProgress).completed,activeQuestOrdinal()));
-  attemptEngine.create({questId:canonicalActiveQuest?.id??levelIndex+1,mode:attemptMode(),qualifying,challengeId:socialChallenge?.challenge_id||null,board:state,gridRevision:activeQuest()?.gridRevision??0});
+  attemptEngine.create({questId:canonicalActiveQuest?.id??levelIndex+1,mode:attemptMode(),qualifying,challengeId:socialChallenge?.challenge_id||null,board:state,gridRevision:activeQuest()?.gridRevision??0,questResetRevision:lumenProgress.canonicalQuestState?.[activeQuest()?.id]?.resetRevision??0});
  }
  hintUsesThisGame=attemptEngine.snapshot()?.helpUses?.hint||0;verifyUsesThisGame=attemptEngine.snapshot()?.helpUses?.verify||0;updateHintButton();updateVerifyButton();
  trackCurrentPuzzleStart();clock();prepareQuestStart();updateAttemptUI();updateScriptedLearning();maybeShowContextualLesson();maybeShowHintEconomyTransition();updateBadgeQualificationStatus()}
@@ -2323,7 +2332,7 @@ function restoreCanonicalCampaignAttempt(){
   if(quest&&questIsAccessible(quest.legacyIndex)){levelIndex=quest.legacyIndex;replayMode=saved.mode==='replay'}
   return;
  }
- const quest=canonicalAttemptToResume(saved,canonicalQuestList(),{ownerId});
+ const quest=canonicalAttemptToResume(saved,canonicalQuestList(),{ownerId,progress:lumenProgress});
  if(!quest){
   if(saved?.attemptId&&typeof saved.questId==='string'&&Number.isNaN(Number(saved.questId))&&['campaign','replay'].includes(saved.mode)&&['READY','RUNNING','PAUSED'].includes(saved.state))preserveAttemptSnapshot(localStorage,attemptEngine.storageKey);
   return;

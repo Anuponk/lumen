@@ -1,5 +1,11 @@
 # Feature map
 
+Explicit reset of replaced quests: `persistence/quest-reset.js` aligns verified
+server epochs; `durable-canonical-outbox.js::retireQuestResets` archives revoked
+intents; hydration reloads before replay. Attempt engine/resume reject obsolete
+epochs. Private `reset_replaced_quests` owns reset scope and originals, guarded
+quest commands own new records/rewards. See DATA_AND_ARCHITECTURE and TESTING.
+
 Logical grid difficulty #640: `game/logical-difficulty.js` owns solution-blind
 human-style propagation and dependency traces. `canonical-quests.js` applies
 the scoped versioned replacement manifest; original source grids remain available
