@@ -1,11 +1,15 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {skyQuestTarget} from '../src/ui/sky-navigation.js';
 const source=readFileSync(new URL('../src/ui/sky-navigation.js',import.meta.url),'utf8');
 const game=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 const opening=source.slice(source.indexOf('open({detail:showDetail='),source.indexOf('snapshot:()=>'));
-assert.match(opening,/model\.skies\.flatMap\(/,'Search all skies and packs, not only progress-selected adventure');
-assert.match(opening,/c\.id===constellationId/,'Prefer exact played constellation identity');
-assert.match(opening,/c\.questIndices\?\.includes\(index\)/,'Handle inserted canonical quests');
+const earlier={id:'old',questIndices:[0]},inserted={id:'played',questIndices:[]};
+const model={skies:[{id:'early',packs:[{id:'first',accessible:true,constellations:[earlier]}]},{id:'late',packs:[{id:'played-pack',accessible:true,constellations:[inserted]}]}]};
+assert.match(opening,/skyQuestTarget\(model,index,constellationId\)/,'Production opening uses the tested destination resolver');
+assert.equal(skyQuestTarget(model,0,'played').sky.id,'late','Search all skies before numeric fallback');
+assert.equal(skyQuestTarget(model,0,'played').entry,inserted,'Exact inserted canonical identity overrides dormant index');
+assert.equal(skyQuestTarget(model,0).entry,earlier,'Numeric quests retain their fallback');
 assert.match(opening,/selection=target\?\{skyId:target\.sky\.id,packId:target\.pack\.id\}/,'Choose played adventure before rendering');
 assert.match(game,/openJourneyMap\(true,\{detail:true,advanceOnClose:true,learningTour,questIndex:targetLegacyIndex,constellationId:targetConstellationId\}\)/);
 console.log('Played-constellation return navigation contract passed');

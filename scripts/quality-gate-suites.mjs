@@ -109,6 +109,7 @@ export const nodeSuites=[
  "issue-222-challenge-tests.mjs",
  "catalogue-ceiling-tests.mjs",
  "sky-navigation-tests.mjs",
+ "sky-return-tests.mjs",
  "played-constellation-return-tests.mjs",
  "success-sky-detail-tests.mjs",
  "extraordinary-skies-tests.mjs",

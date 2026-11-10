@@ -1,5 +1,14 @@
 # Verified historical causes
 
+Sky return after a canonical board, reproduced at `4657ab7`: the default map
+opener used a dormant legacy index; even explicit constellation destinations
+could lose to an earlier pack's numeric match because the renderer mixed the
+two searches pack by pack. Node and real-browser regressions fail before the
+correction. The active stable constellation now supplies default returns, and
+explicit constellation resolution wins globally before legacy fallback.
+All nine Adventures, replay/victory, previous browsing and last-page selection
+are covered without progression/reward/attempt identity changes.
+
 Explicit quest reset backup quota, reproduced at production baseline
 `53b482a` (#640 follow-up): the synchronous reset installer writes its only
 original copy into Web Storage. A native quota refusal keeps every grid behind

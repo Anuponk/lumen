@@ -7,6 +7,11 @@ import {PERFORMANCE_BADGES,performanceEligibility} from '../campaign/performance
 // One responsive component: browsing state never writes campaign progression.
 export const CONSTELLATIONS_PER_PAGE=6;
 export const skyPickerVisible=model=>(model?.skies?.length||0)>1;
+export function skyQuestTarget(model,index,constellationId=null){
+ const packs=model.skies.flatMap(sky=>sky.packs.filter(pack=>pack.accessible).map(pack=>({sky,pack})));
+ const find=predicate=>packs.map(({sky,pack})=>({sky,pack,entry:pack.constellations.find(predicate)})).find(target=>target.entry);
+ return (constellationId&&find(c=>c.id===constellationId))||find(c=>c.questIndices?.includes(index));
+}
 export function constellationUnlocked(entry,pack,getSolved,getQuest){
  if(!entry?.accessible)return false;
  const entries=pack?.constellations||[],index=entries.findIndex(c=>c.id===entry.id);
@@ -163,5 +168,5 @@ export function createSkyNavigation({document,getModel,getQuest,getSolved,getLit
   if(e.target.closest('button,input,select,textarea'))return;
   if(e.key==='ArrowRight'||e.key==='ArrowLeft'){if(turnDetail(e.key==='ArrowRight'?1:-1))e.preventDefault()}
  });
- return {render,setView,showLocked,showCompletion,selectedConstellation:()=>selectedConstellation,open({detail:showDetail=false,questIndex=null,constellationId=null}={}){const index=Number.isInteger(questIndex)?questIndex:getQuest();const model=getModel();const target=model.skies.flatMap(sky=>sky.packs.map(pack=>({sky,pack,entry:pack.constellations.find(c=>c.id===constellationId)||pack.constellations.find(c=>c.questIndices?.includes(index))}))).find(x=>x.entry&&x.pack.accessible);selection=target?{skyId:target.sky.id,packId:target.pack.id}:{};current=skySelection(model,selection,index);const entry=(target?.pack.id===current.adventure?.id?target.entry:null)||current.adventure?.constellations.find(c=>c.id===constellationId)||current.adventure?.constellations.find(c=>c.questIndices?.includes(index)||index>=c.questStart&&index<c.questStart+c.questCount)||current.adventure?.constellations[0];if(entry){selection.page=Math.floor(current.adventure.constellations.indexOf(entry)/CONSTELLATIONS_PER_PAGE);selectedConstellation=entry;onConstellation(entry)}view=showDetail?'detail':'overview';notice.hidden=true;render();element('adventureRail').querySelector('.selected')?.scrollIntoView({block:'nearest',inline:'center'})},snapshot:()=>({view,selection:{...selection},activeAdventure:current.active?.id,viewedAdventure:current.adventure?.id,page:current.page,pages:current.pages})};
+ return {render,setView,showLocked,showCompletion,selectedConstellation:()=>selectedConstellation,open({detail:showDetail=false,questIndex=null,constellationId=null}={}){const index=Number.isInteger(questIndex)?questIndex:getQuest();const model=getModel();const target=skyQuestTarget(model,index,constellationId);selection=target?{skyId:target.sky.id,packId:target.pack.id}:{};current=skySelection(model,selection,index);const entry=(target?.pack.id===current.adventure?.id?target.entry:null)||current.adventure?.constellations.find(c=>c.id===constellationId)||current.adventure?.constellations.find(c=>c.questIndices?.includes(index)||index>=c.questStart&&index<c.questStart+c.questCount)||current.adventure?.constellations[0];if(entry){selection.page=Math.floor(current.adventure.constellations.indexOf(entry)/CONSTELLATIONS_PER_PAGE);selectedConstellation=entry;onConstellation(entry)}view=showDetail?'detail':'overview';notice.hidden=true;render();element('adventureRail').querySelector('.selected')?.scrollIntoView({block:'nearest',inline:'center'})},snapshot:()=>({view,selection:{...selection},activeAdventure:current.active?.id,viewedAdventure:current.adventure?.id,page:current.page,pages:current.pages})};
 }
