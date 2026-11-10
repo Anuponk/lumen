@@ -1,5 +1,46 @@
 # Testing and quality gate
 
+## Current validation entry points
+
+- `npm ci --ignore-scripts` installs development tooling; runtime has no build step.
+- `npm run format:check` checks the reviewed formatting scope and syntax equivalence.
+- `npm run test:affected -- --list` explains test selection without running it;
+  `npm run test:affected` executes it. UI, tooling and uncertain impact select full validation.
+- `npm run test:full` runs the gate and complementary standalone suites. Node
+  inventory: `scripts/quality-gate-suites.mjs`; browser composition: `scripts/quality-gate.mjs`.
+- `await window.runHintTests()` tests one size; `await window.lumenDiagnostics.runAllHintTests()`
+  derives all sizes from the catalogue. Use an isolated QA/guest profile and read
+  actual totals/failures from the returned results and `docs/validation/ci-*.json`.
+
+Old counts (66, 69, 79, 316 or 360 executions) below describe historical runs,
+not current totals. `module-structure-tests.mjs` retains original case labels plus
+reviewed product changes; never remove coverage to reconcile a count. Use the
+[test map](architecture/test-map.md) for neighboring checks. Fixtures/CI do not
+replace live-service or physical acceptance.
+
+## Reproducible formatting (#59)
+
+Prettier 3.6.2 and Acorn 8.15.0 are exact development-only versions, locked with
+integrity in `package-lock.json`. `.prettierrc.json` defines two spaces, single
+quotes, semicolons, trailing commas, 100-column wrapping and LF. Run `npm run format`
+to write or `npm run format:check` to inspect. Both compare parsed syntax before
+and after formatting; a syntax-tree change fails before writing. CI installs
+locked tooling and runs the check.
+
+Rollout is incremental: `scripts/format-scope.json` lists migrated modules/tools.
+Unlisted legacy modules are not silently reformatted. Extend the list in dedicated
+changes with behavior checks. Immutable catalogue/astronomy/generated data,
+vendored dependencies and reports are excluded by `.prettierignore`; the script
+never traverses them. Avoid editor-wide formatting of those files. Source-text
+tests must follow the owning module or become behavior tests after extraction.
+
+`app-updates-tests.mjs` was run against the original worker block, then the same
+scenarios against `ui/app-updates.js`: first controller, one upgrade reload,
+OAuth code/token exceptions, manual messages, waiting-worker activation and
+asset-cache-only cleanup. The welcome regression also executes the actual new
+listener. `service-worker-update-browser-tests.mjs` retains real worker/cache
+upgrade and local/IndexedDB preservation checks. No live cloud transport is asserted.
+
 Mixed pacing: `node scripts/mixed-difficulty-tests.mjs` independently rates,
 recounts and replays all 480 targeted grids, checks the 200 changed / 280 retained
 boards, exact protected Adventure 1–4 definitions, D4 diversity, measured score
@@ -1373,7 +1414,12 @@ After **every modification affecting LUMEN code, gameplay or a product feature**
 For gameplay, board, progression or catalogue changes, also run the strict grid audit. Do this even for changes that appear purely visual if they touch board DOM/input/state. A feature is not complete when its implementation exists but its test contract still describes the previous behavior.
 
 ## Browser regression suite
-The app exposes `await window.runHintTests()`; the 66 original cases plus three UX regressions (#16/#17/#19) live in `src/testing/hint-tests.js`. The narrative assertion now reads the on-demand rules modal. `window.lumenDiagnostics.runAllHintTests()` runs the suite for every size. The suite runs cases sequentially and waits for asynchronous victory/reveal behavior. It covers, among other things:
+The app exposes `await window.runHintTests()`; current cases live in
+`src/testing/hint-tests.js`. The original extraction had 66 cases and #38 added
+three UX regressions; later additions/intentional changes are guarded by
+`module-structure-tests.mjs`. The narrative assertion reads the rules modal.
+`window.lumenDiagnostics.runAllHintTests()` runs the current suite for every
+catalogue size, sequentially and awaiting victory/reveal behavior. Coverage includes:
 - PWA install timing and standalone behavior;
 - sharing/referral and account/profile behavior;
 - reminder opt-in rules;
@@ -1460,6 +1506,11 @@ node scripts/quality-gate.mjs
 The orchestrator runs every current Node gate, starts its own static HTTP server, launches isolated temporary browser profiles for browser/UX/learning suites, writes the usual reports under `docs/validation/`, and closes only the server/browser processes it started. On Windows it auto-detects Chrome or Edge; on Linux it looks for Chromium/Chrome. Set `LUMEN_CHROME_BIN` when the browser lives elsewhere. Any failing suite returns a non-zero exit code with a timing/status summary.
 
 ## Reproducible modular-refactor checks
+
+Historical reproducibility — the October 2026 extraction baseline. Commands still
+describe differential checks against immutable commits; the counts in this section
+belong to those recorded runs. Use the current entry points above for today's
+browser suite and catalogue. Never replace current totals with 69/79-case snapshots.
 
 Use a recent Node runtime with native ES modules, built-in `fetch` and `WebSocket` (validated with Node 22.22.3). No npm install or bundler is needed. From the repository root:
 

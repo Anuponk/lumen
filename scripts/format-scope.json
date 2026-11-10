@@ -1,0 +1,11 @@
+[
+  "src/ui/app-updates.js",
+  "src/ui/format.js",
+  "src/ui/drag-grid-path.js",
+  "src/ui/gesture-click-suppression.js",
+  "src/ui/long-press-guardian.js",
+  "src/ui/personal-records.js",
+  "src/ui/celestial-progress.js",
+  "scripts/format.mjs",
+  "scripts/app-updates-tests.mjs"
+]

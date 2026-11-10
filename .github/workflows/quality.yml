@@ -70,6 +70,12 @@ jobs:
             print("No completed green main CI for this SHA; running full quality")
           PY
 
+      - name: Check reproducible formatting
+        if: steps.scheduled_check.outputs.need_tests == 'true'
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run format:check
+
       - name: Validate o2switch release script syntax
         if: steps.scheduled_check.outputs.need_tests == 'true'
         run: |

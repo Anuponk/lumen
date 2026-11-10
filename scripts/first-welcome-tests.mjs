@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import vm from 'node:vm';
+import {setupAppUpdates} from '../src/ui/app-updates.js';
 import {claimFirstWelcome,INTRO_SEEN_KEY,INTRO_SCENES,INTRO_DURATION,createIntroTimeline} from '../src/ui/first-welcome.js';
 import {createIntroMusic} from '../src/ui/intro-music.js';
 
@@ -58,14 +58,13 @@ assert.match(welcomeSource,/else story\.focus\(\)/,'Watch story gets initial foc
 const welcomeCss=fs.readFileSync(new URL('../src/ui/first-welcome.css',import.meta.url),'utf8');
 assert.match(welcomeCss,/\.first-welcome \.intro-story\{background:#a9eef5/,'Watch story is primary');
 const stopped=createIntroTimeline({now:()=>now,onFrame(){},onFinish(){throw Error('Cancelled timeline completed')}});stopped.start();stopped.stop();now+=INTRO_DURATION;stopped.frame();stopped.resume();stopped.frame();
-// Execute the actual controller-change callback, preserving OAuth exceptions.
-const source=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
-const handler=source.match(/navigator.serviceWorker.addEventListener\("controllerchange",\(\)=>\{([\s\S]*?)\n \}\);/)[1];
-let reloads=0;const worker={controller:{id:'first'}},location={search:'',hash:'',reload(){reloads++}};
-const context=vm.createContext({navigator:{serviceWorker:worker},location,URLSearchParams,previousServiceWorkerController:null,lumenReloadingForSW:false});
-vm.runInContext('function controllerChanged(){'+handler+'}',context);
-vm.runInContext('controllerChanged()',context);assert.equal(reloads,0,'Initial worker acquisition must not interrupt the welcome');
-worker.controller={id:'update'};vm.runInContext('controllerChanged()',context);assert.equal(reloads,1,'Actual upgrade reloads');
-vm.runInContext('controllerChanged()',context);assert.equal(reloads,1,'Upgrade reload once');
-context.lumenReloadingForSW=false;location.search='?code=synthetic';vm.runInContext('controllerChanged()',context);assert.equal(reloads,1,'OAuth exception retained');
+// Exercise the real extracted worker listener; no source parsing dependency.
+let reloads=0,controllerChanged;
+const worker={controller:null,addEventListener(name,callback){if(name==='controllerchange')controllerChanged=callback;}};
+const location={search:'',hash:'',reload(){reloads++}};
+setupAppUpdates({navigator:{serviceWorker:worker},window:{addEventListener(){}},document:{getElementById(){return null}},location});
+worker.controller={id:'first'};controllerChanged();assert.equal(reloads,0,'Initial acquisition preserves welcome');
+location.search='?code=synthetic';worker.controller={id:'update'};controllerChanged();assert.equal(reloads,0,'OAuth exception retained');
+location.search='';controllerChanged();assert.equal(reloads,1,'Actual upgrade reloads');
+controllerChanged();assert.equal(reloads,1,'Upgrade reload once');
 console.log('First welcome: fresh/returning/owned/deep-link/storage guards, exact story, boundaries, background pause and cancellation passed');
