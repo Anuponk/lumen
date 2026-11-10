@@ -18,20 +18,20 @@ test('fresh ordinary victories let the player continue without a required sky to
   ctx.handleSuccessAdvance();assert.equal(advanced,1,`quest ${ordinal} advances directly`);assert.equal(sky,0);
  }
 });
-test('voluntary auto preference survives recreation and isolates guest and accounts, including denied storage',()=>{
+test('retired auto preference stays disabled while teaching tips isolate guest and accounts',()=>{
  for(const denied of [false,true]){
   const values=new Map();let owner=null;
   const storage={getItem:k=>values.get(k)||null,setItem(k,v){if(denied)throw Error('quota');values.set(k,v)}};
   const create=()=>createOnboardingPreferences({storage,getOwner:()=>owner});
-  const p=create();assert.equal(p.auto(),true);p.setAuto(false);p.markSeen('drag');
-  owner='a';assert.equal(p.auto(),true);assert.equal(p.seen('drag'),false);p.setAuto(false);
-  owner='b';assert.equal(p.auto(),true);p.markSeen('hold');
+  const p=create();assert.equal(p.auto(),false);p.setAuto(false);p.markSeen('drag');
+  owner='a';assert.equal(p.auto(),false);assert.equal(p.seen('drag'),false);p.setAuto(false);
+  owner='b';assert.equal(p.auto(),false);p.markSeen('hold');
   owner='a';assert.equal(p.auto(),false);assert.equal(p.seen('hold'),false);
   owner=null;assert.equal(p.auto(),false);assert.equal(p.seen('drag'),true);
   if(!denied){assert.equal(create().auto(),false);owner='a';assert.equal(create().auto(),false)}
  }
 });
-test('quest-six lesson never toggles the real control; unchecked is satisfied, checked requires actual action',()=>{
+test('quest-six no longer gates on the retired checkbox or writes an unlock',()=>{
  for(const checked of [true,false]){
   let saved=0;const nodes=new Map(),node=id=>{if(!nodes.has(id))nodes.set(id,{checked,hidden:true,classList:{add(){},remove(){}},setAttribute(){},removeAttribute(){}});return nodes.get(id)};
   const progress={};
@@ -39,8 +39,8 @@ test('quest-six lesson never toggles the real control; unchecked is satisfied, c
    document:{getElementById:node},saveLumenProgress(){saved++},configureLearningMode(){},applyQuestRestrictions(){},updateScriptedLearning(){},learningTip:null};
   vm.createContext(ctx);for(const fn of ['autoMarkingLessonRequired','finishAutoMarkingLesson','maybeShowContextualLesson'])vm.runInContext(functionSource(source,fn),ctx);
   ctx.maybeShowContextualLesson();assert.equal(node('autoCross').checked,checked);
-  assert.equal(saved,checked?0:1);assert.equal(!!progress.autoCrossUnlockSeen,!checked);
-  if(checked){node('autoCross').checked=false;ctx.finishAutoMarkingLesson();assert.equal(progress.autoCrossUnlockSeen,1)}
+  assert.equal(saved,0);assert.equal(!!progress.autoCrossUnlockSeen,false);
+
   assert.equal(ctx.autoMarkingLessonRequired(),false);
  }
 });
@@ -68,8 +68,8 @@ test('verified account restoration applies its own auto choice without restartin
  ctx.state=attempt.board;ctx.puz={reg:[[0,0],[1,1]]};ctx.updateAuthUI();assert.equal(node('autoCross').checked,false,'The restored account replaces the startup guest choice');
  node('autoCross').checked=true;ctx.updateAuthUI();assert.equal(node('autoCross').checked,true,'Same-owner refresh preserves the current choice');
  ctx.lumenUser={id:'b'};ctx.updateAuthUI();assert.equal(ctx.onboardingPreferenceOwner,'a','Readiness from another owner is insufficient');
- ctx.verifiedOwner='b';ctx.updateAuthUI();assert.equal(node('autoCross').checked,true);
- ctx.lumenUser={id:'a'};ctx.updateAuthUI();assert.equal(node('autoCross').checked,true,'The previous profile cannot restore another account choice');
+ ctx.verifiedOwner='b';ctx.updateAuthUI();assert.equal(node('autoCross').checked,false);
+ ctx.lumenUser={id:'a'};ctx.updateAuthUI();assert.equal(node('autoCross').checked,false,'A stale profile cannot enable the retired aid');
  ctx.verifiedOwner='a';ctx.updateAuthUI();assert.equal(node('autoCross').checked,false,'Switching back restores account A');
  ctx.socialChallenge={id:'challenge'};ctx.lumenUser={id:'b'};ctx.updateAuthUI();assert.equal(node('autoCross').checked,false,'Auth cannot change an isolated challenge playstyle');
  assert.equal(JSON.stringify(attempt),before);
@@ -83,8 +83,8 @@ test('temporary manual lesson and challenge restrictions never overwrite the vol
    localStorage:{getItem:()=>null},document:{getElementById:node},activeBonusChallenge:()=>({id:'challenge',noAuto:true}),lumenProgress:{stars:{}}};
   vm.createContext(ctx);for(const fn of ['configureLearningMode','applyQuestRestrictions'])vm.runInContext(functionSource(source,fn),ctx);
   ctx.configureLearningMode();assert.equal(node('autoCross').checked,false);
-  ordinal=2;ctx.configureLearningMode();assert.equal(node('autoCross').checked,preference);
+  ordinal=2;ctx.configureLearningMode();assert.equal(node('autoCross').checked,false);
   ctx.applyQuestRestrictions();assert.equal(node('autoCross').checked,false);
-  ctx.configureLearningMode();assert.equal(node('autoCross').checked,preference);assert.equal(writes,0);
+  ctx.configureLearningMode();assert.equal(node('autoCross').checked,false);assert.equal(writes,0);
  }
 });

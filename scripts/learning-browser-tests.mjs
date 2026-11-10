@@ -121,7 +121,7 @@ try {
     await evaluate('document.getElementById("successNew").click()');await sleep(150);
     assert.equal((await snapshot()).levelIndex,1);
     assert.equal(await evaluate('document.getElementById("attemptMask").hidden'),false,'Free quest 2 retains the ordinary start control');
-    assert.equal(await evaluate('document.getElementById("autoCross").checked'),true,'Manual quest 1 is followed by default auto marking');
+    assert.equal(await evaluate('document.getElementById("autoCross").checked'),false,'All following quests retain manual marking');
     await evaluate('document.getElementById("learningCoachDismiss").click();document.getElementById("autoCross").click();document.getElementById("manualCrossTip").hidden=true;document.getElementById("attemptMask").click()');
     await input(await point(2,4),viewport.mobile);
     assert.equal((await snapshot()).state[2][4],1,'Quest 2 allows any normal first exclusion');
@@ -135,7 +135,7 @@ try {
     await input(await point(2,4),viewport.mobile);
     assert.equal((await snapshot()).state[2][4],2,'Quest 2 free placement: '+JSON.stringify({viewport,board:await snapshot(),layout:await geometry()}));
     assert.equal(await evaluate('document.getElementById("verify").disabled'),false);
-    assert.equal(await evaluate('document.getElementById("hint").textContent'),'Indice · OFFERT','Quest 2 advertises learning hints as offered');
+    assert.equal(await evaluate('document.getElementById("hint").textContent'),'Indice · OFFERT · +15 s','Quest 2 offers the hint and announces its competition penalty');
     const shardsBeforeHint=await evaluate('lumenDiagnostics.snapshot().progress.shards||0');
     await evaluate('document.getElementById("hint").click()');await sleep(40);
     assert.equal(await evaluate('lumenDiagnostics.snapshot().progress.shards||0'),shardsBeforeHint,'Quest 2 hint never spends a shard');
@@ -182,21 +182,15 @@ try {
     }
     assert.equal((await snapshot()).levelIndex,5,'Direct chain reaches visible quest 6');
     if(await evaluate('!document.getElementById("questStart").hidden'))await control('questGo',viewport.mobile);
-    assert.equal(await evaluate('document.getElementById("autoCross").checked'),true,'Quest 6 does not silently uncheck');
+    assert.equal(await evaluate('document.getElementById("autoCross").checked'),false,'Quest 6 cannot revive marking');
+    assert.equal(await evaluate('getComputedStyle(document.getElementById("autoCrossWrap")).display'),'none','Retired option is invisible');
+    if(await evaluate('!document.getElementById("attemptMask").hidden'))await control('attemptMask',viewport.mobile);
+    await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))',true);
     const sixthBefore=JSON.stringify((await snapshot()).state);
     await input(await point(0,0),viewport.mobile);
-    assert.equal(JSON.stringify((await snapshot()).state),sixthBefore,'Required control lesson prevents play before uncheck');
+    assert.notEqual(JSON.stringify((await snapshot()).state),sixthBefore,'No obsolete checkbox lesson blocks the board');
     await navigateAndWait({send,evaluate},'Page.reload',{ignoreCache:true});await ready();
-    if(await evaluate('!document.getElementById("questStart").hidden'))await control('questGo',viewport.mobile);
-    assert.equal(await evaluate('document.getElementById("autoCrossWrap").classList.contains("onboarding-control-focus")'),true,'Interrupted lesson resumes');
-    assert(await evaluate(`(()=>{const coach=document.getElementById('scriptedLearn').getBoundingClientRect(),control=document.getElementById('autoCrossWrap').getBoundingClientRect();return coach.bottom<=control.top||coach.top>=control.bottom||coach.right<=control.left||coach.left>=control.right})()`),'The coach leaves the whole checkbox and its label visible');
-    if(output&&viewport.width===320){const shot=await send('Page.captureScreenshot');fs.writeFileSync(path.join(path.dirname(output),'onboarding-six-320.png'),Buffer.from(shot.data,'base64'))}
-    await control('autoCross',viewport.mobile);
-    assert.equal((await snapshot()).progress.autoCrossUnlockSeen,1,'Actual uncheck acknowledges the lesson');
-    await control('autoCross',viewport.mobile);
-    assert.equal(await evaluate('document.getElementById("autoCross").checked'),true,'Immediate re-enable remains possible');
-    await navigateAndWait({send,evaluate},'Page.reload',{ignoreCache:true});await ready();
-    assert.equal(await evaluate('document.getElementById("autoCrossWrap").classList.contains("onboarding-control-focus")'),false,'Acknowledged lesson does not repeat');
+    assert.equal(await evaluate('document.getElementById("autoCross").checked'),false,'Reload cannot reactivate a historical preference');
     await evaluate('document.getElementById("openSky").click();document.querySelector("#sectorTabs .constellation-card").click();document.querySelector("#puzzleGrid .puzzle-card.done").click()');
     assert.equal(await evaluate('document.querySelectorAll("#puzzleGrid .performance-slot.locked").length'),0,'Earned and missing early badges have no locks');
     assert.equal(await evaluate('document.getElementById("replayCooldownModal").hidden'),false,'First-quest badges preserve the qualification cooldown');

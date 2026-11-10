@@ -29,8 +29,8 @@ export async function verifyQuestPolicy(browser,baseUrl){
    label:document.getElementById('campaignMapLabel').textContent,autoDisabled:auto.disabled,autoChecked:auto.checked,guidedDisabled:guided.disabled,guidedChecked:guided.checked,
    badge:!badge.hidden?badge.dataset.kind:null,autonomy:!document.getElementById('autonomyOverlay').hidden,hint:document.getElementById('hint').textContent}})()`);
   assert(state.label.startsWith('Quête '+ordinal+' -'),JSON.stringify(state));
-  assert.equal(state.autoDisabled,ordinal===1,'Real auto-marking availability at quest '+ordinal);
-  assert.equal(state.autoChecked,ordinal>1);assert.equal(state.guidedDisabled,ordinal<6);assert.equal(state.guidedChecked,ordinal<11);
+  assert.equal(state.autoDisabled,true,'Retired auto-marking stays disabled at quest '+ordinal);
+  assert.equal(state.autoChecked,false);assert.equal(state.guidedDisabled,ordinal<6);assert.equal(state.guidedChecked,ordinal<11);
   assert.equal(state.badge,null);
   assert.equal(state.autonomy,ordinal===11);
   assert.equal(state.hint.includes('OFFERT'),ordinal<=10);

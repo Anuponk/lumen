@@ -53,7 +53,7 @@ test('public navigation bypasses HTTP cache and activation only retires old Lume
  assert(f.stores.get(currentCache).has('https://lumen.test/'));
  for(const key of ['lumen-assets-v9',currentCache,'another-feature'])f.stores.set(key,new Map());
  f.stores.get(currentCache).set('https://lumen.test/',new Response('new'));
- f.stores.get(currentCache).set('https://lumen.test/__lumen_offline_ready_v16__',new Response(JSON.stringify(['/'])));
+ f.stores.get(currentCache).set('https://lumen.test/__lumen_offline_ready_v17__',new Response(JSON.stringify(['/'])));
  let activation;f.handlers.activate({waitUntil:p=>activation=p});await activation;
  assert.deepEqual([...f.stores.keys()],[currentCache,'another-feature']);
 });
@@ -176,7 +176,7 @@ test('offline readiness is reported only after a complete install',async()=>{
  assert(replies[0].assets>=11);
  assert.equal(replies[0].version,currentCache);
  const cache=f.stores.get(currentCache);
- cache.delete('https://lumen.test/__lumen_offline_ready_v16__');
+ cache.delete('https://lumen.test/__lumen_offline_ready_v17__');
  f.handlers.message({data:{type:'OFFLINE_CACHE_STATUS'},source:{postMessage:x=>replies.push(x)},waitUntil:p=>status=p});
  await status;
  assert.equal(replies[1].ready,false);
@@ -220,7 +220,7 @@ test('cache quota refusal cannot activate a partial worker or erase the previous
  let install;f.handlers.install({waitUntil:p=>install=p});
  await assert.rejects(install,/QuotaExceededError/);
  assert.equal(f.lifecycle.skipWaiting,0);assert.equal(f.stores.get('lumen-assets-v12'),previous);
- assert.equal(f.stores.get(currentCache).has('https://lumen.test/__lumen_offline_ready_v16__'),false);
+ assert.equal(f.stores.get(currentCache).has('https://lumen.test/__lumen_offline_ready_v17__'),false);
 });
 
 test('an evicted mandatory asset withdraws readiness and keeps the old shell during activation',async()=>{

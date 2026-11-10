@@ -5,7 +5,7 @@ export async function verifyGuidedUndo({send,evaluate}){
  await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
  const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
  const point=selector=>evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);
- async function tap(selector){const p=await point(selector);const hit=await evaluate(`(()=>{const hit=document.elementFromPoint(${p.x},${p.y});return {expected:!!hit?.closest(${JSON.stringify(selector)}),id:hit?.id,cls:hit?.className}})()`);assert(hit.expected,'Touch target covered: '+selector+' '+JSON.stringify(hit));await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[p]});await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await sleep(60)}
+ async function tap(selector){const p=await point(selector);const hit=await evaluate(`(()=>{const hit=document.elementFromPoint(${p.x},${p.y});return {expected:!!hit?.closest(${JSON.stringify(selector)}),id:hit?.id,cls:hit?.className,point:${JSON.stringify(p)},height:innerHeight,layout:Object.fromEntries(['.app','.game-core','.learning-board-wrap','#board','#guidedCard','.actions','#undo'].map(s=>{const el=document.querySelector(s),r=el.getBoundingClientRect();return [s,{top:r.top,bottom:r.bottom,height:r.height,min:getComputedStyle(el).minHeight,flex:getComputedStyle(el).flex}]}))}})()`);assert(hit.expected,'Touch target covered: '+selector+' '+JSON.stringify(hit));await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[p]});await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await sleep(60)}
  const cell=(r,c)=>`.cell[data-row="${r}"][data-col="${c}"]`;
  const results=[];
  for(const index of [6,10]){
@@ -16,6 +16,8 @@ export async function verifyGuidedUndo({send,evaluate}){
   await evaluate(`document.getElementById('questGo').click();document.getElementById('manualCrossTipOk').click();if(!document.getElementById('autonomyOverlay').hidden)document.getElementById('autonomyKeep').click();if(!document.getElementById('attemptMask').hidden)document.getElementById('attemptMask').click()`);
   await evaluate(`document.getElementById('guidedErrors').checked=true;document.getElementById('autoCross').checked=false`);
   assert.equal(await evaluate('lumenDiagnostics.snapshot().state.flat().every(v=>v===0)'),true,'Guided conflict fixture starts from the explicitly reset board');
+  const guidedUses=()=>evaluate("JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).helpUses?.guided||0");
+  const usesBefore=await guidedUses();
   const first=await evaluate('lumenDiagnostics.snapshot().puz.sol[0]'),size=await evaluate('lumenDiagnostics.snapshot().n'),wrong=(first+1)%size;
   await tap(cell(0,first));await tap(cell(0,first));
   await tap(cell(0,wrong));await tap(cell(0,wrong));
@@ -23,9 +25,11 @@ export async function verifyGuidedUndo({send,evaluate}){
   await tap(cell(1,0));
   assert.equal(await evaluate(`document.getElementById('guidedCard').hidden`),false,'Actual touch produces the guided conflict: '+JSON.stringify(await evaluate(`({n:lumenDiagnostics.snapshot().n,row:lumenDiagnostics.snapshot().state[0],guided:document.getElementById('guidedErrors').checked,mask:document.getElementById('attemptMask').hidden,msg:document.getElementById('msg')?.textContent})`)));
   const before=await evaluate('lumenDiagnostics.snapshot().state');
+  assert.equal(await guidedUses(),usesBefore+1,'One guided intervention adds one five-second penalty');
   assert.equal(before[0][wrong],2);
   await tap('#undo');
   assert.equal(await evaluate(`document.getElementById('guidedCard').hidden`),true);
+  assert.equal(await guidedUses(),usesBefore+1,'Undo never refunds an already revealed guided check');
   assert.equal(await evaluate(`document.getElementById('board').getAttribute('aria-disabled')`),null);
   assert.equal(await evaluate(`lumenDiagnostics.snapshot().state[0][${first}]`),2,'Undo preserves the earlier valid Guardian');
   assert.equal(await evaluate(`lumenDiagnostics.snapshot().state[0][${wrong}]`),1,'One Undo reverses just the incorrect placement');
@@ -35,6 +39,7 @@ export async function verifyGuidedUndo({send,evaluate}){
   assert.equal(await evaluate('lumenDiagnostics.snapshot().state[1][1]'),1,'Repeated Undo remains playable');
   await tap(cell(0,wrong));await tap(cell(2,0));
   assert.equal(await evaluate(`document.getElementById('guidedCard').hidden`),false);
+  assert.equal(await guidedUses(),usesBefore+2,'A second intervention adds another penalty');
   await tap(cell(0,wrong));
   assert.equal(await evaluate(`lumenDiagnostics.snapshot().state[0][${wrong}]`),1,'Touching the incorrect Guardian corrects it once');
   await tap(cell(3,0));

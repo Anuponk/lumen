@@ -1,5 +1,10 @@
 # Existing verification map
 
+Ranking/manual marking #638/#647: `ranking-tests.mjs`, `ranking-client-tests.mjs`,
+`manual-marking-tests.mjs`, `ranking-browser-tests.mjs`, disposable SQL
+`fixtures/ranking.sql` and PostgreSQL `ranking-concurrency.py`. Full gate includes
+the new Node/browser suites; SQL concurrency runs in canonical-ledger CI.
+
 Support size follow-up: `support-tests.mjs` covers full catalogue copies,
 source preservation, metadata headroom, oversized optional checkpoints and
 compact-versus-jsonb/exponent limits. `fixtures/support.sql` checks the actual

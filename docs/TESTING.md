@@ -728,6 +728,19 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Competition #638 / marking retirement #647: `ranking-client-tests.mjs` covers
+durable offline/reload staging, counters, account/client changes, begin/finish
+races, withdrawal and quota. `manual-marking-tests.mjs` checks stale preferences
+and the live engine injection independently of historical solver simulation.
+`ranking-browser-tests.mjs` covers 320/390/1440px, actual retired controls, the
+production list animation, top-10/centered/boundary fixtures, virtual labels,
+new-record visibility and reduced motion. Synthetic RPC fixtures are not live
+account or physical-device acceptance. `fixtures/ranking.sql` exercises the
+real migration/APIs in disposable PostgreSQL: receipt admission, +5/+15,
+frozen cooldown, privacy/grants and withdrawal. `ranking-concurrency.py` checks
+simultaneous device starts/finishes in CI. Existing full `runHintTests`, strict
+catalogue/proof audit and cloud matrix remain mandatory.
+
 Sky-return navigation: `sky-return-tests.mjs` tests the actual map opener and
 stable-identity precedence across variable catalogue sizes and multiple skies;
 `sky-return-browser-tests.mjs` opens a real board in every Adventure, browses

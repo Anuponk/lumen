@@ -1,5 +1,12 @@
 # Dependencies and data flow
 
+Competition #638/#647: attempt (version/start/aid counters) → separate durable
+ranking capture → confirmed existing victory receipt → private ranking admission
+and minimum → bounded public list → shared result animation. Owner/client guards
+apply across every await. No edge points back into progression, Wallet or badges.
+Manual marking is forced by the live game-engine injection; proof-audit tooling
+retains historical simulation behavior for meaningful non-regression comparisons.
+
 Support projection -> complete current copy + optional bounded checkpoints ->
 server-representation byte budget with metadata reserve -> existing support RPC.
 No edge to a game writer or original-data cleanup; an unfit current copy fails.

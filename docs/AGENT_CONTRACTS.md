@@ -24,6 +24,13 @@ All gameplay, navigation, completion, unlocking, rewards, badges, UI counters an
 
 Completion means a **nonempty** set of all quests belonging to the current catalogue Adventure (or constellation) are individually solved. An unlocked next quest must be determined from the catalogue order and saved completion, not a legacy numeric offset. Adding/removing/reordering content must not falsely complete an Adventure, strand a quest behind a lock, or erase existing progress. Every change to campaign logic MUST add or maintain tests for differing Adventure counts, differing quest counts per Adventure/constellation, inserted quests and partially completed content; CI must fail on hardcoded gameplay boundaries.
 
+## Product decision superseding historical marking instructions — #647
+
+From 10 November 2026, auto marking is retired in live play and onboarding.
+Any older instruction below about unlocking/restoring it is historical and
+superseded. Preserve preference bytes and prior badges; never re-enable it.
+Proof-audit simulation APIs remain unchanged to retain meaningful regressions.
+
 ## Product invariants
 - Campaign size and sky stars derive from the content catalogue, never fixed limits. Currently: 134 sequential quests across 24 constellations / 298 stars, including the preserved historical 100 quests / 12 constellations / 150 stars. Every constellation's quest rewards must sum exactly to its star count.
 - A new campaign cannot skip an unsolved prerequisite. Catalogue additions preserve acquired access using the immutable origin policy in `PROGRESSION.md` (#470), without awarding completion. “Réinitialiser” resets the current board; only victory advances its sequence.

@@ -137,7 +137,8 @@ try{
   ()=>runBrowser("iau-completion-browser-tests.mjs","ci-iau-completion.json",9240),
   ()=>runBrowser("iau-completion-cloud-browser-tests.mjs","ci-iau-completion-cloud.json",9241),
   ()=>runBrowser("cloud-reset-browser-tests.mjs","ci-cloud-reset.json",9250),
-  ()=>runBrowser("sky-return-browser-tests.mjs","ci-sky-return.json",9251)
+  ()=>runBrowser("sky-return-browser-tests.mjs","ci-sky-return.json",9251),
+  ()=>runBrowser("ranking-browser-tests.mjs","ci-ranking.json",9252)
  ],workers);
 }catch(error){failed=error;console.error("\nQUALITY GATE FAILED:",error.message)}
 finally{

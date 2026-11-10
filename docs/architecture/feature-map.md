@@ -330,6 +330,13 @@ reloads these views before resumed navigation. `sw.js` caches the real public UR
 graph; tests and physical acceptance remain distinguished in `docs/TESTING.md`.
 ### Records personnels (#600)
 
+Competition #638 / manual marking #647: `campaign/ranking.js` validates penalties;
+`persistence/ranking.js` owns separate durable per-owner captures; `ui/ranking.js`
+owns the shared result list. `game-screen.js` wires start, pre-victory capture,
+confirmed reveal and reconnection. `onboarding-preferences` ignores old auto
+preferences without deleting them. Server authority is in the prepared
+`20261110190629_grid_ranking.sql` migration.
+
 `src/campaign/personal-records.js` calcule les minima des nouveaux parcours ;
 `progression.js` et `quest-victory.js` alimentent les résumés existants.
 `src/ui/personal-records.js` présente le record dans le plateau et le récapitulatif.
