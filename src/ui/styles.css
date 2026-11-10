@@ -1230,3 +1230,14 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .ranking-row:first-child{position:sticky;top:0;z-index:2;background:#14202e}
 .ranking-list{position:relative}
 .ranking{background:#0c1826;padding:10px;border:1px solid #273c50;border-radius:12px}
+/* Retired controls free space; guided feedback must still leave Undo reachable. */
+@media(max-width:900px){
+ body:has(#guidedCard:not([hidden])){display:flex;flex-direction:column;height:100dvh;min-height:0}
+ body:has(#guidedCard:not([hidden]))>.qa-banner{flex-shrink:0}
+ .app:has(#guidedCard:not([hidden])){display:flex;flex-direction:column;flex:1;width:100%;height:auto!important;min-height:0}
+ .game-core:has(#guidedCard:not([hidden])){display:flex;flex-direction:column;flex:1;min-height:0}
+ .game-core:has(#guidedCard:not([hidden]))>*{flex-shrink:0}
+ .game-core:has(#guidedCard:not([hidden])) .learning-board-wrap{flex:1;min-height:0;container-type:size;display:grid;place-items:center;padding:0}
+ .game-core:has(#guidedCard:not([hidden])) #board{width:min(100%,100cqh)!important;max-width:100%!important}
+ #guidedCard{position:static;max-height:min(26dvh,180px);min-height:60px;overflow:auto;margin:4px 0;box-shadow:none}
+}

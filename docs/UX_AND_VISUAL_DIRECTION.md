@@ -518,6 +518,8 @@ en attente, jamais de blocage de Quête suivante/Mon ciel. Réduction des mouvem
 position finale immédiate. Les contrôles annoncent Vérifier +5 s, Indice +15 s
 et Contrôle guidé +5 s par intervention. Les pénalités restent distinctes du temps
 réel ; les anciennes préférences de marquage automatique restent inertes.
+Sur mobile, le retour du Contrôle guidé participe à la mise en page, comme
+l'indice : il ne doit recouvrir ni Annuler ni le Gardien à corriger.
 
 Afficher le record absolu et, s’il existe, le record « Sans aide » dans le masque
 de départ d’une quête déjà réussie. À la victoire confirmée, le récapitulatif
