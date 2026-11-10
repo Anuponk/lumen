@@ -1,5 +1,11 @@
 # Feature map
 
+Maintenance #59/#60/#62: `package.json` owns locked development commands;
+`scripts/format.mjs` checks reviewed `format-scope.json` with syntax comparison.
+`ui/app-updates.js` owns registration/controller changes and manual asset refresh,
+composed once by `game-screen.js` with the live version getter. Current topology
+heads DATA_AND_ARCHITECTURE; October counts remain historical. See TESTING.
+
 Sky return identity: `game-screen.js::openJourneyMap` defaults to the active
 quest's stable constellation; explicit numeric teaching destinations remain
 supported. `sky-navigation.js::skyQuestTarget` resolves explicit constellation

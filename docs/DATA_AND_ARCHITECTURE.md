@@ -1,5 +1,34 @@
 # Data and architecture
 
+## Current architecture
+
+Lumen is a static PWA using native ES modules, with no application build step.
+`index.html` owns markup; `src/main.js` starts `ui/game-screen.js`. The controller
+composes one live board, attempt and progression model; injected getters observe
+current state rather than copied snapshots. Browser dependencies are pinned
+under `src/vendor/`. Development-only npm tools never enter the browser graph.
+
+| Responsibility | Current owner / first route |
+|---|---|
+| Rules, proofs, active attempt | `src/game/engine.js`, `attempt-engine.js` |
+| Catalogue, stable quest identity, access and rewards | `src/campaign/`; [feature map](architecture/feature-map.md) |
+| Local staging, ownership, receipts and cloud restoration | `src/persistence/`; [blocking contract](#cloud-persistence-contract) |
+| Board, sky, onboarding and result composition | `src/ui/game-screen.js` and injected UI modules |
+| Worker updates and public asset-cache refresh | `src/ui/app-updates.js`; no access to player storage |
+| Offline public shell and asset graph | `sw.js`; [release verification](RELEASE.md) |
+| Telemetry and test entry points | `src/analytics/`, `src/testing/` |
+
+Use the [feature map](architecture/feature-map.md) to locate a symptom, relevant
+[dependency rows](architecture/dependency-map.md) to follow its producer/consumer,
+then the [test map](architecture/test-map.md). Current executable validation is
+documented in [TESTING](TESTING.md#current-validation-entry-points). Counts come
+from current suite reports, not old snapshots. Fixtures/CI do not establish live
+Auth, email delivery or physical-device acceptance.
+
+Stages #21–#26 and #38 results below are historical October 2026 records. Their
+counts and then-unchanged behavior apply to those snapshots; current owning
+contracts/modules take precedence. Prepared migrations and activation are separate facts.
+
 ## Mixed grid revision 2
 
 The source-owned revision-2 manifest changes 200 boards in Adventures 5–9 and
@@ -1267,7 +1296,9 @@ Remote payloads retain only event/reason/outcome/version, with identity derived
 from the authenticated server session; no profile or token is transmitted.
 
 ## Client
-LUMEN is a static web/PWA application using native ES modules without a build step. `index.html` is a markup shell: the existing document markup, stylesheet link, Supabase CDN script and module entry point. It has no inline JavaScript or CSS. `src/main.js` starts the UI controller; domain modules contain the application logic. `manifest.webmanifest` and `sw.js` are unchanged.
+The current topology is described [at the start of this document](#current-architecture).
+The extraction records below describe the October 2026 baseline, not current
+worker/cache policy, SDK distribution or test totals.
 
 The #21–#26 migration starts from main `dcd9f3c872e623541be698edc212b64589d3b164`. Rules, catalogue, badge semantics, progression, tutorial, UX, storage keys and backend contracts are preserved. Issues #30/#31 are explicitly excluded. The stage descriptions below record the incremental extraction; the navigation map describes the final source layout.
 
@@ -1334,17 +1365,23 @@ Browser diagnostics can inject a synthetic map catalogue without editing campaig
 
 ## Stage #22: game engine
 
+Historical extraction record — October 2026; current rules belong to GAMEPLAY.
+
 `src/game/engine.js` exposes `createGameEngine(getBoard, getAutoCrossEnabled)`. It reads the current `{n,puz,state}` through the injected accessor and never accesses the DOM. Its API contains enumeration (`solutions`), automatic exclusions, stored-solution verification, Guardian conflict/validity checks, guided action checks and the existing proof engine. Algorithms, traversal order, reasons and hint text are retained. `solutions(board)` accepts an explicit board for the guided hypothetical placement, avoiding any mutation of application state during that calculation.
 
 Victory validation is now called by the renderer through `validateGuardians`; rendering and celebrations remain in the application. The catalogue audit and offline generator import the same engine used in the browser instead of copying its source from HTML. `scripts/engine-equivalence.mjs` compares complete proof objects and guided/error/enumeration outputs against main commit `dcd9f3c872e623541be698edc212b64589d3b164`, across every catalogue grid and automatic-marking modes. An optional first argument supplies that baseline HTML without invoking Git.
 
 ## Stage #23: campaign
 
+Historical extraction record — October 2026; current catalogue/progression contracts take precedence.
+
 `src/campaign/catalogue.js` owns `CAT` and `LEVELS`; `data.js` owns quest metadata, fixed schedule, constellation shapes/counts and existing badge display definitions. `progression.js` exports pure campaign calculations and `createCampaign(getProgress, saveProgress, getAttempt)` for calculations that use the current canonical progress/attempt. It retains the existing performance recording and badge rules verbatim in behavior; #30/#31 remain out of scope. UI navigation, quest loading and celebration orchestration belong to the UI controller.
 
 `scripts/campaign-tests.mjs` preserves original catalogue and historical data/reward comparisons against the starting main commit, and protects the first 100 schedule assignments against the immutable pre-wave-2 commit. Current boundaries, constellation rewards and registry coverage derive from content data. It checks four historical progress fixtures, capped-save recovery and hypothetical future extensions. Both the strict audit and generator import catalogue/campaign modules directly; the generator's optional write targets `src/campaign/catalogue.js` instead of HTML.
 
 ## Stage #24: persistence
+
+Historical extraction record — October 2026; current persistence follows the cloud contract above.
 
 `src/persistence/local.js` exposes `createLocalPersistence(storage,getProgress)` for existing load/save behavior. `cloud.js` exposes `createCloudPersistence(model,hooks,environment)` for profile, entitlements, auth initialization, progress and daily synchronization. `config.js` contains the same public client URL/key. No backend schema, RPC, auth provider, SDK version or storage format changed.
 
@@ -1354,6 +1391,8 @@ The model adapter has explicit getters/setters for the existing auth/progress/qu
 
 ## Stage #25: UI and input
 
+Historical extraction record — October 2026; subsequent UI modules and behavior have evolved.
+
 `src/main.js` starts `startGameScreen()` from `src/ui/game-screen.js`. This controller owns the one live board/attempt state, composes the game/campaign/persistence APIs, binds events and orchestrates rendering/navigation/celebrations. `tutorial.js` owns the existing general-help walkthrough; `sound.js` owns audio and its preference; `styles.css` is the existing CSS moved without rule changes. HTML is now markup plus stylesheet/CDN/module entry points.
 
 The scripted coach, assistance restrictions and all timings remain unchanged. The pointermove callback has a name (`moveDragCross`) so source/performance tests can inspect the actual handler after it leaves HTML. Actual Chrome touch tests also observe board child mutations and reject a full board rebuild during drag. The 66 browser regression cases are retained; only their two HTML-source lookups were updated to inspect the real module handler.
@@ -1361,6 +1400,8 @@ The scripted coach, assistance restrictions and all timings remain unchanged. Th
 `scripts/ui-equivalence.mjs` compares rendered board DOM, geometry, cell colors/borders and control text/visibility/enabled states with starting main. It covers empty/marked boards for quests 1, 3, 12 and 48 on 390x844, 360x640 and 1440x900 viewports (12 scenarios, both mobile and desktop). To reproduce, serve the starting main HTML temporarily as `.refactor-baseline.html` next to the current page in the isolated browser test setup, then remove that temporary file. Reports are under `docs/validation/refactor-ui-equivalence.json`. Analytics and the suite were subsequently extracted in #26.
 
 ## Stage #26: analytics, tests and final boundaries
+
+Historical extraction record — October 2026; use the current gate for suite inventory.
 
 `src/analytics/events.js` exposes `createAnalytics(getClient,environment)`: anonymous/session identity, existing event RPC payloads and referral sanitization. The UI calls it at the original startup/event locations, preserving event order. The client accessor reads the current Supabase client after async initialization. `scripts/analytics-tests.mjs` compares identity storage, event names/payloads, sanitized referrals and failed-network warnings against starting main in eight scenarios, without live writes.
 
@@ -1374,7 +1415,12 @@ The final browser gate also verifies active/controlling service-worker registrat
 
 ## Subsequent UX changes (#16/#17/#19)
 
-The modular migration reports above describe behavior-preserving extraction. PR #38 then intentionally changes hint vocabulary, primary success CTA and rules presentation. `setupRulesHelp()` in the UI controller binds the existing help dialog markup. The scripted click interceptor exempts the rules modal, preserving teaching state and allowing backdrop dismissal. The rules modal consumes no permanent board space. The compact success card is height-limited and scrollable. `scripts/ux-cleanup-tests.mjs` exercises these changes with real browser events; the suite now contains 69 cases (66 original plus three UX regressions).
+Historical record — October 2026. PR #38 intentionally changed hint vocabulary,
+primary success CTA and rules presentation after the behavior-preserving
+extractions. `setupRulesHelp()` bound the on-demand rules modal; the scripted
+interceptor exempted that modal. The compact result card was scrollable. That
+snapshot contained 69 cases (66 original plus three UX regressions), not the
+current total. Current rules and checks are owned by GAMEPLAY and TESTING.
 
 ## Local/guest mode
 Guest play is first-class. Progress is stored in localStorage under `lumenProgressV1`; tutorial, install/push choices, anonymous/session identity and UX preferences also use localStorage keys.
@@ -1383,16 +1429,25 @@ Anonymous users are tracked through an anonymous identifier/session so usage can
 
 ### Existing persistence contracts (inventory before #24 extraction)
 
+Historical inventory — October 2026. These keys/RPCs document the extraction
+baseline, not the complete current projection or writer authority. Consult the
+[cloud contract](#cloud-persistence-contract) for current commands and recovery.
+
 The canonical `lumenProgressV1` object retains `solved`, `historyBackup`, `badges`, `noHint`, `performances`, `xp`, `challenges`, `stars`, `shards`, `daily` (dates/rewards), `skyScore` and `skyHistoryVersion`. Keys are zero-based quest indices; cloud `p_puzzle_id` values are one-based. No schema/key migration is part of the refactor.
 
 Other existing keys: `lumenTutorialSeen`, `lumenAnonymousIdV1`, `lumenReferral`, `lumenInstalled`, `lumenInstallLater`, `lumenWelcomeDayV1`, `lumenPushChoice`, `lumenManualCrossTipSeen`, `lumenGuidedErrors`, `lumenSound`, `lumenAutoCross` and the read-only legacy `regaliaAutoCross` fallback. The Supabase SDK retains its own auth storage.
 
 RPC contracts retained: `lumen_get_profile`, `lumen_set_nickname(p_nickname)`, `lumen_get_entitlements`, `lumen_get_progress`, `lumen_save_progress(p_puzzle_id,p_duration_seconds,p_hints_used)`, `lumen_get_daily`, `lumen_save_daily(p_play_date,p_puzzle_id)`. Analytics and feedback RPCs remain separate responsibilities. Authentication retains Google OAuth with the current origin/path redirect, `getSession`, `onAuthStateChange` and `signOut`.
 
-The current merge prioritizes a non-empty cloud history, otherwise uses local/backup history, then derives a continuous prefix and imports missing local records. This exact existing behavior is retained; this extraction does not redesign merge policy or badge semantics.
+At the #24 extraction baseline, merging prioritized non-empty cloud history,
+otherwise local/backup history and prefix import. That historical description
+does not authorize current full-profile overwrites: owned receipts, transactional
+commands and verified reconciliation now govern restoration under the cloud contract.
 
 ## Supabase
-The client uses Supabase. Project-side database objects for LUMEN live in the **`lumen` schema**. Relevant RPC responsibilities visible from the client include:
+The client uses a shared Supabase project. Application records live in `lumen`
+and dedicated private schemas (including command and privacy machinery); public
+RPC wrappers expose bounded, authorized operations. Relevant responsibilities include:
 - profile/nickname;
 - progress save/load and local-to-cloud migration;
 - analytics event tracking;
@@ -1406,7 +1461,12 @@ Google OAuth is supported. When a local player signs in, local solved history mu
 Events include puzzle start/completion, hints, sharing/referral, installation and related engagement events. Referral parameters are sanitized before analytics.
 
 ## PWA
-Installation is offered only after meaningful engagement (currently after 3 solved quests), and standalone installs should not be nagged again. Push/reminder permission must only be requested after an explicit user action; the app hides its own prompt before invoking the Android/browser permission dialog.
+Installation follows the initial welcome/learning flow and meaningful engagement,
+using current `maybeOfferInstall` guards in `game-screen.js`; installed apps and
+deferred offers remain excluded. Push/reminder permission requires explicit user
+action. `setupAppUpdates` preserves the welcome on first controller acquisition
+and reloads once on controller replacement, with OAuth-return exceptions. Manual
+refresh only deletes `lumen-assets-*` caches, never player localStorage/IndexedDB.
 
 Push support should not be considered complete merely because subscription/server code exists: service-worker receipt/display and end-to-end delivery must be verified.
 

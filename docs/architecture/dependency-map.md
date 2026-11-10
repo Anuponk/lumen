@@ -1,5 +1,10 @@
 # Dependencies and data flow
 
+Worker updates: `game-screen.js` injects browser APIs and live `appVersion` into
+`app-updates.js` → worker registration / bounded controller reload / public asset
+caches only. No edge to player storage, Auth or cloud writers. Welcome and
+OAuth-return guards remain in the same listener.
+
 Competition #638/#647: attempt (version/start/aid counters) → separate durable
 ranking capture → confirmed existing victory receipt → private ranking admission
 and minimum → bounded public list → shared result animation. Owner/client guards

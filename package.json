@@ -2,9 +2,17 @@
   "name": "lumen",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "test:affected": "node scripts/test-affected.mjs",
-    "test:full": "node scripts/test-affected.mjs --full"
+    "test:full": "node scripts/test-affected.mjs --full",
+    "format": "node scripts/format.mjs --write",
+    "format:check": "node scripts/format.mjs --check"
+  },
+  "devDependencies": {
+    "acorn": "8.15.0",
+    "prettier": "3.6.2"
   }
 }
