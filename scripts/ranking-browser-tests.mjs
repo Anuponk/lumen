@@ -23,13 +23,13 @@ try{
    document.getElementById('successOverlay').classList.add('show');
   })()`);
   for(const position of [7,21,38]){
-   await evaluate(`(()=>{const pos=${position};const start=pos<=10?1:Math.max(2,Math.min(pos-5,29));const positions=pos<=10?Array.from({length:10},(_,i)=>i+1):[1,...Array.from({length:10},(_,i)=>start+i)];rankFixture.rows=positions.map(p=>({place:p,position:p,nickname:p===pos?'Anupon':'Écho '+p,score:p*15,seconds:p*15-5,penalty:5,mine:p===pos,virtual:p!==pos}));rankView.show({id:'test'});rankView.mount()})()`);
+   await evaluate(`(()=>{const pos=${position};const start=pos<=10?1:Math.max(2,Math.min(pos-5,29));const positions=pos<=10?Array.from({length:10},(_,i)=>i+1):[1,...Array.from({length:10},(_,i)=>start+i)];rankFixture.rows=positions.map(p=>({place:p,position:p,nickname:p===pos?'Anupon':(pos<=10?'Écho ':'Joueur ')+p,score:p*15,seconds:p*15-5,penalty:5,mine:p===pos,virtual:pos<=10&&p!==pos}));rankView.show({id:'test'});rankView.mount()})()`);
    await until('document.querySelectorAll(".ranking-row").length>0');
    assert.equal(await evaluate('document.querySelectorAll(".ranking-row").length'),position<=10?10:11);
    assert.equal(await evaluate('Number(document.querySelector(".ranking-mine").dataset.position)'),position);
    assert.match(await evaluate('document.querySelector(".ranking-mine").textContent'),/Nouveau record/);
    assert.ok(await evaluate('document.querySelector(".ranking-mine").getAnimations().length>0'),'Confirmed improvement moves the player line');
-   assert.match(await evaluate('document.querySelector(".ranking-name small").textContent'),/Virtuel/);
+   if(position<=10)assert.match(await evaluate('document.querySelector(".ranking-name small").textContent'),/Virtuel/);else assert.equal(await evaluate('document.querySelectorAll(".ranking-name small").length'),0);
   }
   await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
   await evaluate('rankView.show({id:"test"});rankView.mount()');await until('document.querySelectorAll(".ranking-row").length>0');

@@ -36,7 +36,7 @@ export function createRankingClient({storage,getContext,now=()=>Date.now()}={}){
   async flush(){const c=context();if(!valid(c))return [];const out=[];for(const e of entries(c.owner)){if(!valid(c))break;out.push(await send(c,e))}return out},
   async board(quest){const c=context();return rpc(c,'lumen_ranking_board',{p_quest_id:quest.id,p_grid_revision:quest.gridRevision??0})},
   async membership(enabled,nickname){const c=context();const result=await rpc(c,'lumen_ranking_membership',{p_enabled:enabled,p_nickname:nickname||null});if(!enabled)for(const e of entries(c.owner))storage.removeItem(key(c.owner,e.operationId));return result},
-  entries
-  ,takeResult(operationId){const id=key(context().owner,operationId),r=recent.get(id);recent.delete(id);return r}
+  entries,
+  takeResult(operationId){const id=key(context().owner,operationId),r=recent.get(id);recent.delete(id);return r}
  };
 }
