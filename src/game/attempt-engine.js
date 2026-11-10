@@ -16,7 +16,7 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
  function persist(){if(!attempt)return storage?.removeItem?.(STORAGE_KEY);const copy={...attempt,board:cloneBoard(attempt.board),activeDuration:activeMs(),updatedAt:now()};storage?.setItem?.(STORAGE_KEY,JSON.stringify(copy))}
  function create({questId,mode="campaign",qualifying=false,challengeId=null,board=[],gridRevision=0,questResetRevision=0}){
   if(mode==='challenge')questResetRevision=0;
-  attempt={attemptId:(questResetRevision?'qr'+questResetRevision+'.':'')+(gridRevision>1?'gv'+gridRevision+'.':'')+newId(),questId,mode,...(gridRevision?{gridRevision}:{}),...(questResetRevision?{questResetRevision}:{}),state:ATTEMPT_STATES.READY,startedAt:null,activeDuration:0,lastActiveAt:null,assistanceUsed:false,mistakeCommitted:false,wrongGuardianPending:null,resetCount:0,qualifying:!!qualifying,challengeId,board:cloneBoard(board),createdAt:now(),updatedAt:now()};activeSince=null;emit();return snapshot()
+  attempt={attemptId:(questResetRevision?'qr'+questResetRevision+'.':'')+(gridRevision>1?'gv'+gridRevision+'.':'')+newId(),questId,mode,rankingVersion:1,...(gridRevision?{gridRevision}:{}),...(questResetRevision?{questResetRevision}:{}),state:ATTEMPT_STATES.READY,startedAt:null,activeDuration:0,lastActiveAt:null,assistanceUsed:false,mistakeCommitted:false,wrongGuardianPending:null,resetCount:0,qualifying:!!qualifying,challengeId,board:cloneBoard(board),createdAt:now(),updatedAt:now()};activeSince=null;emit();return snapshot()
  }
  function restore({questId,mode,gridRevision,questResetRevision}={}){
   const saved=safeParse(storage?.getItem?.(STORAGE_KEY));if(!saved||!saved.attemptId)return null;
@@ -66,7 +66,7 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
  function updateBoard(board){if(!attempt)return;attempt.board=cloneBoard(board);emit()}
  function markAssistance(){if(!attempt||attempt.assistanceUsed)return;attempt.assistanceUsed=true;emit()}
  function recordAssistanceUse(kind,count){
-  if(!attempt||!['hint','verify'].includes(kind)||!Number.isSafeInteger(count)||count<0)return;
+  if(!attempt||!['hint','verify','guided'].includes(kind)||!Number.isSafeInteger(count)||count<0)return;
   attempt.helpUses={...(attempt.helpUses||{}),[kind]:Math.max(count,attempt.helpUses?.[kind]||0)};emit();
  }
  function setWrongGuardianPending(cellKey){if(!attempt||attempt.mistakeCommitted)return;attempt.wrongGuardianPending=cellKey||null;emit()}

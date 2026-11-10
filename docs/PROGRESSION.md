@@ -264,6 +264,16 @@ Social challenges are outside campaign progression. Completing a challenge never
 A challenge participation has its own attempt identity and is terminal after success or explicit abandon. Reload/background restore the same challenge attempt through the shared attempt engine; they do not grant a fresh attempt.
 ## Records personnels — #600
 
+Le classement #638 est distinct de ces records bruts : minimum de `temps réel +
+5 × vérifications + 15 × indices`. Une intervention du Contrôle guidé compte
+comme une vérification. Un seul classement existe par identité et révision de
+grille, avec une entrée par participant. Le début de la tentative fige son
+admission : même délai de quinze minutes que les badges, plus réservation
+serveur atomique entre appareils. Jouer pendant le délai reste possible ;
+attendre à la victoire ne rend pas l'essai admissible. Les pénalités ne changent
+ni les badges, ni les Éclats, ni les minima bruts. Le marquage automatique est
+retiré (#647), y compris dans le tutoriel et les anciennes préférences restaurées.
+
 Une victoire terminée peut améliorer le meilleur temps absolu, même lors d’une
 tentative non qualifiante pour les badges. `bestUnassistedTime` est un minimum
 indépendant : seuls les nouveaux parcours sans assistance et sans indice le

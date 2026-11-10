@@ -33,7 +33,7 @@ additionalTests.push(
  "Apprentissage : voir puis comprendre avant d’agir",
  "Apprentissage : la fin de quête 2 exige explicitement la découverte du ciel",
  "Apprentissage : le ciel est expliqué zone par zone",
- "Apprentissage : le déblocage du Marquage auto explique le choix et les badges",
+ "Apprentissage : aucun déblocage de marquage automatique ne bloque le jeu",
  "Apprentissage : les fenêtres de jalons cachées ne bloquent pas le plateau",
  "Apprentissage : le choix du Contrôle guidé explique l’intervention réelle sur les badges",
  "Apprentissage : Rapidité est introduit exactement à la quête 3",
@@ -54,7 +54,7 @@ additionalTests.push(
 // handoff/manual-through-five cases; retain their explicit coverage in the list.
 const fluidRenames=new Map([
  ["Apprentissage : les cinq premières quêtes imposent le jeu manuel","Apprentissage : la première quête enseigne le manuel puis laisse le choix"],
- ["Apprentissage : le Marquage auto se débloque à la quête 6 sans s’activer seul","Apprentissage : la quête 6 restaure le choix courant du Marquage auto"],
+ ["Apprentissage : le Marquage auto se débloque à la quête 6 sans s’activer seul","Apprentissage : la quête 6 reste manuelle malgré les anciennes préférences"],
  ["Apprentissage : la fin de quête 2 exige explicitement la découverte du ciel","Apprentissage : le ciel reste une action volontaire après la quête 2"],
  ["Apprentissage : Rapidité est introduit exactement à la quête 3","Apprentissage : les badges ne bloquent pas la quête 3"]
 ]);
@@ -64,7 +64,8 @@ assert.equal(tests.length,originalTests.length+additionalTests.length);
 const intentionalRenames=new Map([["PWA : installation proposée seulement après 3 quêtes","PWA : proposition différée après le parcours d'accueil"],["PWA : le mode standalone empêche de reproposer l’installation","PWA : une installation existante bloque la proposition"],["Tutoriel joué : quêtes 1 et 2 n’enseignent que les Gardiens","Apprentissage : les deux premières quêtes guident les actions réelles"],["Tutoriel joué : le glisser des exclusions est bloqué pendant le scénario","Apprentissage : le glissé utilise le plateau normal dans les étapes autorisées"],["Indice : bouton Revoir la quête présent","Indice : fermeture contextuelle remplace Revoir la quête"],["Tutoriel joué : Marquage auto verrouillée sur les deux premières quêtes","Tutoriel joué : Marquage auto verrouillé pendant les cinq premières quêtes"]]);
 intentionalRenames.set("Campagne : 100 quêtes réparties sur 12 constellations","Campagne : les quêtes couvrent toutes les constellations du catalogue");
 intentionalRenames.set("Campagne : le ciel contient exactement 150 étoiles","Campagne : les récompenses couvrent toutes les étoiles du catalogue");
-intentionalRenames.set("Tutoriel joué : Marquage auto verrouillée sur les deux premières quêtes","Tutoriel joué : Marquage auto disponible après la première quête");
+intentionalRenames.set("Tutoriel joué : Marquage auto verrouillée sur les deux premières quêtes","Tutoriel joué : le marquage reste manuel à toutes les étapes");
+intentionalRenames.set("Tip exclusions : apparaît au premier arrêt de le Marquage auto","Marquage retiré : une ancienne commande ne peut pas le réactiver");
 const normalizedTests=tests.filter(label=>!additionalTests.includes(label)).map(label=>[...intentionalRenames].find(([,next])=>next===label)?.[0]||label);
 assert.deepEqual(normalizedTests,originalTests,'Regression cases removed or renamed');
 assert.deepEqual(tests.filter(label=>additionalTests.includes(label)).sort(),[...additionalTests].sort(),'UX regression cases missing');

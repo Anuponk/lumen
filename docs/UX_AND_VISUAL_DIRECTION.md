@@ -320,7 +320,7 @@ destination based on the active quest.
 
 ### Fluid onboarding (#569 / #576, product decision 25 October 2026)
 Quest 1 retains SEE → UNDERSTAND → ACT and real manual exclusions. Its result
-introduces automatic marking for subsequent quests. Quests 2–5 are free play:
+recalls manual marking. Quests 2–5 are free play:
 dismissible contextual advice explains drag (2), badges (3), then long press (4).
 No automatic generic tutorial or mandatory sky tour interrupts this chain.
 Help and Mon ciel remain available voluntarily. Ordinary victories retain one
@@ -329,13 +329,8 @@ shared result with earned stars/badges, primary **Quête suivante**, secondary
 Constellation/adventure/finale handling is preserved; #575 remains separate.
 
 ### Progressive assistance choices
-After manual learning, Marquage auto defaults on and remembers the voluntary
-choice locally per guest/account. A temporary lesson or challenge override never
-overwrites this preference. At visible quest 6, spotlight the real checkbox and
-require the player to uncheck it before interacting with the board; an already
-unchecked box satisfies the lesson without a synthetic gesture. Immediately allow
-re-enabling it. Record completion with the existing autoCrossUnlockSeen marker;
-replays do not impose teaching. No second assistance modal is presented.
+Marquage auto is retired (#647); all marks remain manual. Historical preferences
+are preserved but ignored. No quest-six checkbox lesson or blocking unlock remains.
 Assistance prevents Autonomie, Sans erreur and Maîtrise; Rapidité remains possible.
 This is independent of the unchanged guest boundary: six visible quests may be
 completed before registration is required to continue. No lock is bypassed.
@@ -503,6 +498,26 @@ reviewable without withdrawing earned progression. Existing free aids, teaching
 milestones and assistance effects on badges are unchanged; no extra blocking
 tutorial is introduced.
 ## Records personnels (#600)
+
+### Classement (#638)
+
+Liste compacte dans le résultat : place, pseudo, meilleur temps pénalisé.
+La ligne du joueur se distingue ; « Nouveau record » apparaît à côté lors
+d'une amélioration confirmée. Elle remonte depuis le bas pendant deux secondes
+puis reste visible à sa place. Pas de discours supplémentaire ni de monnaie.
+Top 10 si le joueur y figure ; sinon premier puis dix lignes autour de lui
+(cinq devant, soi, quatre derrière ; compléter au bord). Les égalités partagent
+leur place et l'ordre des lignes reste déterministe.
+
+Les profils « Écho … » portent toujours « Virtuel ». Leurs temps fixes sont
+des objectifs conçus à partir de la difficulté, pas des performances humaines.
+Un joueur réel remplace un Écho jusqu'à leur disparition à dix participants.
+Aucun faux effectif humain ou percentile. Participation volontaire sous pseudo,
+retrait depuis le résultat ou le compte. Réseau/API indisponible : classement
+en attente, jamais de blocage de Quête suivante/Mon ciel. Réduction des mouvements :
+position finale immédiate. Les contrôles annoncent Vérifier +5 s, Indice +15 s
+et Contrôle guidé +5 s par intervention. Les pénalités restent distinctes du temps
+réel ; les anciennes préférences de marquage automatique restent inertes.
 
 Afficher le record absolu et, s’il existe, le record « Sans aide » dans le masque
 de départ d’une quête déjà réussie. À la victoire confirmée, le récapitulatif

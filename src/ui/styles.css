@@ -1216,3 +1216,17 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .personal-record-new{animation:personalRecordGlow 1.2s ease-out}
 @keyframes personalRecordGlow{50%{text-shadow:0 0 12px #dfbd7088}}
 @media(prefers-reduced-motion:reduce){.personal-record-new{animation:none}}
+
+/* #638: compact ranking; inert legacy auto-marking compatibility control. */
+#autoCrossWrap,#autoCrossUnlockOverlay{display:none!important}
+.ranking{margin:12px 0;text-align:left;font-size:14px;max-width:100%;isolation:isolate}
+.ranking[hidden]{display:none}.ranking h3{font-size:14px;margin:0 0 8px}
+.ranking-list{list-style:none;margin:0;padding:0;max-height:320px;overflow:auto;overscroll-behavior:contain}
+.ranking-row{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:8px;padding:7px 9px;min-height:34px;border-bottom:1px solid #ffffff12}
+.ranking-mine{position:relative;z-index:1;background:#243e50;color:#d4f8ff;border-radius:8px;box-shadow:inset 3px 0 #8de1ef}
+.ranking-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ranking-row small{display:block;font-size:10px;opacity:.75}
+.ranking-time{font-variant-numeric:tabular-nums;text-align:right}.ranking-gap{text-align:center;padding:2px}
+.ranking-withdraw{font-size:11px;opacity:.7}.ranking button{margin-top:8px}
+.ranking-row:first-child{position:sticky;top:0;z-index:2;background:#14202e}
+.ranking-list{position:relative}
+.ranking{background:#0c1826;padding:10px;border:1px solid #273c50;border-radius:12px}

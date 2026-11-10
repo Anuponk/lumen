@@ -332,6 +332,38 @@ known field names (otherwise `unknown_field`), without profile contents.
 
 ## Cloud persistence contract
 
+### Competition (#638/#647)
+
+`persistence/ranking.js` durably stages new version-1 captures separately from
+progression, keyed by authenticated owner + exact victory operation ID. The
+attempt restores hint/verify/guided counts; old attempts never acquire ranking
+eligibility by inference. Capture precedes the victory write. Reconnect resends
+the original start/counts, guards owner/client changes and retains unconfirmed
+entries. Missing competition APIs never block a victory.
+
+Private `ranking_control` records activation; `ranking_runs` reserves one
+eligible start per owner/grid/revision per fifteen minutes under a transaction
+advisory lock. Delayed submissions retain their original immutable start.
+`ranking_finish` requires the exact canonical/historical victory receipt and
+matching quest/start/hint facts. It computes penalties and retains the lower
+admitted score. Nonqualifying badge runs cannot enter competition. No historical
+minimum is imported. Elapsed time and aid counts remain client assertions,
+checked for bounds, consistency and wall time; this is not tamper-proof timing.
+
+`ranking_members` owns explicit participation and a validated public nickname.
+Only nickname/place/time/penalty/own-row/virtual flags leave the board RPC; no
+account ID/email. Opt-out deletes public scores and membership; minimal private
+runs retain cooldown/idempotence until Lumen erasure. The privacy inventory,
+rights export and anti-resurrection guards cover all four new tables. No
+progression/reward/Wallet writer is added.
+
+`20261110190629_grid_ranking.sql` is prepared, transactional and requires separate
+production authorization after the existing privacy engine. Rollback withdraws
+ranking API grants and the client; retain records/guards rather than deleting
+archives or restoring erased data. A new registered quest works automatically;
+virtual targets can be calibrated using `ranking-reference-fixtures.mjs` during
+catalogue publication. Existing clients/saves retain their contracts.
+
 Grid revision #640 deliberately preserves earned completion, badges, records,
 currency, stars and entitlements under their existing stable quest IDs. It does
 not delete local facts and then allow cloud copies to resurrect them. Records

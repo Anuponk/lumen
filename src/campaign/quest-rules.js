@@ -5,7 +5,7 @@ export const QUEST_MILESTONES=Object.freeze({discovery:6,speed:PERFORMANCE_UNLOC
 export function questLearningRules(ordinal){
  if(!Number.isSafeInteger(ordinal)||ordinal<1)throw Error('Invalid visible quest ordinal');
  return Object.freeze({scripted:ordinal===1,forcedGuided:ordinal<QUEST_MILESTONES.fullBadges,
-  optionalGuided:ordinal<QUEST_MILESTONES.autonomy,autoMarking:ordinal>1,
+  optionalGuided:ordinal<QUEST_MILESTONES.autonomy,autoMarking:false,
   freeHints:ordinal<=QUEST_MILESTONES.freeHintsThrough,discovery:ordinal<=QUEST_MILESTONES.discovery});
 }
 // Compatibility only: saved keys never become gameplay ordinals.

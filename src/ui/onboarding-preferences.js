@@ -13,8 +13,8 @@ export function createOnboardingPreferences({storage,getOwner=()=>null,prefix='l
   try{storage.setItem(k,JSON.stringify(value))}catch{}
  }
  return {
-  auto(){const value=read().auto;return typeof value==='boolean'?value:true},
-  setAuto(value){write({auto:!!value})},
+  auto(){return false},
+  setAuto(){},
   seen(id){return read().tips?.includes(id)||false},
   markSeen(id){write({tips:[...new Set([...(read().tips||[]),id])]})}
  };
