@@ -1,5 +1,12 @@
 # Feature map
 
+Sky return identity: `game-screen.js::openJourneyMap` defaults to the active
+quest's stable constellation; explicit numeric teaching destinations remain
+supported. `sky-navigation.js::skyQuestTarget` resolves explicit constellation
+identity across all accessible skies before numeric fallback. Browsing never
+changes campaign state. Regressions: `sky-return-tests.mjs` and
+`sky-return-browser-tests.mjs` (header, previous browsing, replay/victory, pages).
+
 Mixed pacing revision 2: immutable `logical-grids-v2.json` → canonical revision
 adapter → score-owned `logical-difficulty-bands.js` → existing gameplay/card
 readers. Offline policy/search and independent acceptance live in

@@ -728,6 +728,12 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Sky-return navigation: `sky-return-tests.mjs` tests the actual map opener and
+stable-identity precedence across variable catalogue sizes and multiple skies;
+`sky-return-browser-tests.mjs` opens a real board in every Adventure, browses
+elsewhere, returns from the header and from a replay victory, and verifies the
+adventure/constellation/page plus unchanged progression and attempt identity.
+
 `cloud-reset-browser-tests.mjs` exercises the full authenticated hydration,
 automatic reload and real grid-card opening after a 200-grid epoch change.
 Both ordinary storage and backup-only Web Storage quota with native IndexedDB
