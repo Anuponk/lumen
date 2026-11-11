@@ -121,6 +121,7 @@ try{
   ()=>runBrowser("learning-browser-tests.mjs","ci-learning.json",9224),
   ()=>runBrowser("account-session-browser-tests.mjs","ci-account-session.json",9230),
   ()=>runBrowser("browser-tests.mjs","ci-browser.json",9222),
+  ()=>runBrowser("iau-completion-browser-tests.mjs","ci-iau-completion.json",9240),
   ()=>runBrowser("first-welcome-browser-tests.mjs","ci-first-welcome.json",9237),
   ()=>runBrowser("canonical-replay-browser-tests.mjs","ci-canonical-replay.json",9227),
   ()=>runBrowser("campaign-resume-browser-tests.mjs","ci-campaign-resume.json",9231),
@@ -132,14 +133,13 @@ try{
   ()=>runBrowser("sky-return-browser-tests.mjs","ci-sky-return.json",9251),
   ()=>runBrowser("offline-hint-network-browser-tests.mjs","ci-offline-hint-network.json",9243),
   ()=>runBrowser("offline-hint-purchase-browser-tests.mjs","ci-offline-hint.json",9242),
+  ()=>runBrowser("ux-cleanup-tests.mjs","ci-ux.json",9223),
   ()=>runBrowser("drag-cascade-browser-tests.mjs","ci-drag-cascade.json",9244),
   ()=>runBrowser("cloud-reset-browser-tests.mjs","ci-cloud-reset.json",9250),
   ()=>runBrowser("service-worker-update-browser-tests.mjs","ci-pwa-update.json",9232),
   ()=>runBrowser("iau-completion-cloud-browser-tests.mjs","ci-iau-completion-cloud.json",9241),
   ()=>runBrowser("incident-investigation-browser-tests.mjs","ci-incident-investigation.json",9235),
   ()=>runBrowser("personal-records-browser-tests.mjs","ci-personal-records.json",9238),
-  ()=>runBrowser("ux-cleanup-tests.mjs","ci-ux.json",9223),
-  ()=>runBrowser("iau-completion-browser-tests.mjs","ci-iau-completion.json",9240),
  ],workers);
 }catch(error){failed=error;console.error("\nQUALITY GATE FAILED:",error.message)}
 finally{
