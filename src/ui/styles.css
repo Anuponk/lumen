@@ -1246,7 +1246,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .sky-reveal .sky-reveal-card,.sky-reveal[data-celestial] .sky-reveal-card{max-height:100%;overflow:visible;min-height:0;box-sizing:border-box;padding:8px;display:flex;flex-direction:column;gap:5px}
 .sky-reveal #skyRevealCanvas{min-height:0;flex:0 1 auto}
 .sky-reveal .sky-reveal-svg{height:min(24dvh,180px);margin:4px 0}
-.sky-reveal[data-victory-phase="celebration"]{cursor:pointer}
+.sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]){cursor:default}
 .sky-reveal[data-victory-phase="ranking"] #skyRevealCanvas,.sky-reveal[data-victory-phase="ranking"] #skyRevealName{display:none}
 .sky-reveal[data-victory-phase="ranking"] .celestial-summary{font-size:12px;line-height:1.3}
 .sky-reveal-results{width:100%;min-height:0;gap:5px;margin-top:4px}
@@ -1295,37 +1295,37 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .ranking-podium{padding-bottom:10px}
 .sky-reveal[data-victory-phase="ranking"] .sky-reveal-actions button{line-height:1.2;padding:5px 2px}
 
- .sky-reveal[data-victory-phase="celebration"] .sky-reveal-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:4px 10px}
- .sky-reveal[data-victory-phase="celebration"] #skyRevealTitle{grid-column:1/-1;grid-row:1;font-size:20px;margin:2px 0}
- .sky-reveal[data-victory-phase="celebration"] #skyRevealResults{display:contents}
- .sky-reveal[data-victory-phase="celebration"] #skyRevealName{grid-column:2;grid-row:2;font-size:14px;line-height:1.25}
- .sky-reveal[data-victory-phase="celebration"] #skyRevealCanvas{grid-column:2;grid-row:3;min-height:0;max-height:100px;overflow:hidden}
- .sky-reveal[data-victory-phase="celebration"] .sky-reveal-svg{height:80px}
- .sky-reveal[data-victory-phase="celebration"] .celestial-scene{min-height:56px;max-height:100px}
- .sky-reveal[data-victory-phase="celebration"] .sky-reveal-time{grid-column:1;grid-row:2;font-size:16px}
- .sky-reveal[data-victory-phase="celebration"] .sky-reveal-rewards{grid-column:1;grid-row:3;grid-template-columns:repeat(2,minmax(0,1fr));margin:0}
- .sky-reveal[data-victory-phase="celebration"] .success-reward{flex-direction:row;display:flex;line-height:1.2}
- .sky-reveal[data-victory-phase="celebration"] .success-reward span:first-child{font-size:14px}
- .sky-reveal[data-victory-phase="celebration"] .success-reward .performance-icon{width:14px;height:14px}
- .sky-reveal[data-victory-phase="celebration"] .personal-record{grid-column:1;grid-row:4}
- .sky-reveal[data-victory-phase="celebration"] .celestial-summary{grid-column:2;grid-row:4;font-size:12px;line-height:1.25}
- .sky-reveal[data-victory-phase="celebration"] .sky-reveal-actions{grid-column:1/-1;grid-row:6;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
- .sky-reveal[data-victory-phase="celebration"] .sky-reveal-actions .sky-reveal-primary{grid-column:auto;font-size:13px}
- .sky-reveal[data-victory-phase="celebration"] .sky-reveal-actions button{line-height:1.2;padding:5px 2px;min-height:36px}
- .sky-reveal[data-victory-phase="celebration"] .challenge-unavailable{grid-column:1/-1;grid-row:5}
- .sky-reveal[data-victory-phase="celebration"] #skyRevealFeedback{display:none}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:4px 10px}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) #skyRevealTitle{grid-column:1/-1;grid-row:1;font-size:20px;margin:2px 0}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) #skyRevealResults{display:contents}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) #skyRevealName{grid-column:2;grid-row:2;font-size:14px;line-height:1.25}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) #skyRevealCanvas{grid-column:2;grid-row:3;min-height:0;max-height:100px;overflow:hidden}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-svg{height:80px}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .celestial-scene{min-height:56px;max-height:100px}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-time{grid-column:1;grid-row:2;font-size:16px}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-rewards{grid-column:1;grid-row:3;grid-template-columns:repeat(2,minmax(0,1fr));margin:0}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .success-reward{flex-direction:row;display:flex;line-height:1.2}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .success-reward span:first-child{font-size:14px}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .success-reward .performance-icon{width:14px;height:14px}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .personal-record{grid-column:1;grid-row:4}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .celestial-summary{grid-column:2;grid-row:4;font-size:12px;line-height:1.25}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-actions{grid-column:1/-1;grid-row:6;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-actions .sky-reveal-primary{grid-column:auto;font-size:13px}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-actions button{line-height:1.2;padding:5px 2px;min-height:36px}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .challenge-unavailable{grid-column:1/-1;grid-row:5}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) #skyRevealFeedback{display:none}
 
 .sky-reveal[data-victory-phase="ranking"] .sky-reveal-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}.sky-reveal[data-victory-phase="ranking"] .sky-reveal-actions .sky-reveal-primary{grid-column:auto;font-size:13px}.sky-reveal[data-victory-phase="ranking"] .sky-reveal-actions button{line-height:1.2;padding:5px 2px;min-height:36px}
 
- .sky-reveal[data-victory-phase="celebration"] #skyRevealName{grid-column:2;grid-row:2}
- .sky-reveal[data-victory-phase="celebration"] #skyRevealCanvas{grid-column:1;grid-row:2/4}
- .sky-reveal[data-victory-phase="celebration"] .sky-reveal-time{grid-column:1;grid-row:4}
- .sky-reveal[data-victory-phase="celebration"] .personal-record{grid-column:2;grid-row:3/5}
- .sky-reveal[data-victory-phase="celebration"] .sky-reveal-rewards{grid-column:1/-1;grid-row:5;grid-template-columns:repeat(5,minmax(0,1fr))}
- .sky-reveal[data-victory-phase="celebration"] .success-reward{flex-direction:column;gap:2px}
- .sky-reveal[data-victory-phase="celebration"] .celestial-summary{grid-column:1/-1;grid-row:6}
- .sky-reveal[data-victory-phase="celebration"] .sky-reveal-actions{grid-row:7}
- .sky-reveal[data-victory-phase="celebration"] .challenge-unavailable{grid-row:8}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) #skyRevealName{grid-column:2;grid-row:2}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) #skyRevealCanvas{grid-column:1;grid-row:2/4}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-time{grid-column:1;grid-row:4}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .personal-record{grid-column:2;grid-row:3/5}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-rewards{grid-column:1/-1;grid-row:5;grid-template-columns:repeat(5,minmax(0,1fr))}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .success-reward{flex-direction:column;gap:2px}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .celestial-summary{grid-column:1/-1;grid-row:6}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-actions{grid-row:7}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .challenge-unavailable{grid-row:8}
 
 }
 
@@ -1336,3 +1336,5 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 
 
 .ranking-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sky-reveal #skyRevealRanking{grid-column:1/-1;color:#ffe1a0;border-color:#a48d53}
+#time{position:relative;font-variant-numeric:tabular-nums} .time-penalty{position:absolute;margin-left:5px;color:#ffe1a0;font-size:12px;pointer-events:none;white-space:nowrap}

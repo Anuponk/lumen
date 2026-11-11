@@ -3,6 +3,8 @@ import {catalogueOrigin,mergeCatalogueOrigin,currentCatalogueOrigin} from '../ca
 import {archiveRecoveryBackups} from './storage-maintenance.js';
 import {alignQuestResets} from './quest-reset.js';
 import {validRecordTime,recordMinimum} from '../campaign/personal-records.js';
+import {mergeOfficialTimes} from '../campaign/official-time.js';
+function officialTimesCovered(local,remote){try{return Object.entries(mergeOfficialTimes(local)).every(([rev,time])=>Number.isSafeInteger(remote?.[rev])&&remote[rev]>=0&&remote[rev]<=time)}catch{return false}}
 import {MAX_PROFILE_BYTES,profileStorageBytes} from './profile-size.js';
 import {captureGuestClaim,claimGuestProfile} from './guest-claim.js';
 // Top-level profile contract. Policies describe existing recovery rules, not
@@ -341,6 +343,7 @@ function canonicalQuestCovered(local,remote){
  if(!badgesCovered(old.badges||{},run.badges||{}))return false;
  for(const [key,value] of Object.entries(old)){
   if(['badges',...performanceSummaryFields,...qualificationFields].includes(key))continue;
+  if(key==='officialTimes'){if(!officialTimesCovered(value,run[key]))return false;continue}
   if(key==='bestTime'||key==='time'||key==='bestUnassistedTime'){
    if(!Number.isFinite(value)||value<0||!Number.isFinite(run[key])||run[key]<0||run[key]>value)return false;
   }else if(!sameCloudProfile(value,run[key]))return false;
@@ -395,6 +398,7 @@ export function cloudSafelyCoversLocal(local,remote){
       if(earned && !saved.badges?.[badge])return false;
     const localBest=perf.bestTime,remoteBest=saved.bestTime;
     if(validRecordTime(localBest)&&(!validRecordTime(remoteBest)||remoteBest>localBest))return false;
+    if(!officialTimesCovered(perf.officialTimes,saved.officialTimes))return false;
     if(validRecordTime(perf.bestUnassistedTime)&&(!validRecordTime(saved.bestUnassistedTime)||saved.bestUnassistedTime>perf.bestUnassistedTime))return false;
   }
   // Dates and challenges may contain non-repeatable rewards and are not safely
@@ -471,6 +475,7 @@ function cloudAchievementRecoveryPlan(storage,remote){
       changed=true;
     }
     if(changed&&JSON.stringify(nextBadges)!==JSON.stringify(existingBadges))current.badges=nextBadges;
+    if(current.officialTimes||incoming.officialTimes){const times=mergeOfficialTimes(current.officialTimes,incoming.officialTimes);if(!sameCloudProfile(times,current.officialTimes)){current.officialTimes=times;changed=true}}
     const unaided=recordMinimum(current.bestUnassistedTime,incoming.bestUnassistedTime);
     if(unaided!==undefined&&unaided!==current.bestUnassistedTime){current.bestUnassistedTime=unaided;changed=true}
   }
@@ -486,6 +491,7 @@ function cloudAchievementRecoveryPlan(storage,remote){
   const localCanonical=merged.canonicalQuestState||{},remoteCanonical=cloud.canonicalQuestState||{};
   for(const [id,remoteEntry] of Object.entries(remoteCanonical)){
     const entry=structuredClone(remoteEntry);
+    if(entry?.runPerformance&&(localCanonical[id]?.runPerformance?.officialTimes||entry.runPerformance.officialTimes))entry.runPerformance.officialTimes=mergeOfficialTimes(localCanonical[id]?.runPerformance?.officialTimes,entry.runPerformance.officialTimes);
     const best=recordMinimum(localCanonical[id]?.runPerformance?.bestUnassistedTime,entry?.runPerformance?.bestUnassistedTime);
     if(best!==undefined&&entry?.runPerformance)entry.runPerformance.bestUnassistedTime=best;
     if(!entry?.solved)continue;
@@ -919,6 +925,7 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote,{
    Object.assign(out,qualification.value);
   }
   for(const [key,value] of Object.entries(left)){
+   if(key==='officialTimes'){try{out[key]=mergeOfficialTimes(value,out[key])}catch{return {ok:false,conflictKeys:[key]}}continue}
    if(key==='bestUnassistedTime'){
     const best=recordMinimum(value,out[key]);if(best!==undefined)out[key]=best;else delete out[key];continue;
    }

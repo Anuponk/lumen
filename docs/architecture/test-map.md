@@ -470,3 +470,9 @@ vide/invalide ou deux serveurs injoignables → échec maintenu.
 Highscore follow-up: victory-presentation-tests.mjs, ranking-browser-tests.mjs,
 fixtures/highscore-before.sql and fixtures/highscore.sql; full gate and SQL
 concurrency required. Animation completion is presentation-only.
+
+Official timing / #652: official-time-tests.mjs, official-time-browser-tests.mjs,
+victory-presentation-tests.mjs, quest-command-tests.mjs and fixtures/official-time.sql
+cover timing, strict records, restoration, read-back, receipt idempotence and
+revision minima. ranking-browser-tests.mjs covers explicit pointer/keyboard entry,
+seven viewports and reduced motion. The full gate includes the new suites.

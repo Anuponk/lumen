@@ -1,6 +1,7 @@
 import {loadVerifiedProfile,sameCloudProfile} from './cloud-profile.js';
 import {canonicalRecoveryFailure} from './canonical-recovery-errors.js';
 import {canonicalQuestList} from '../campaign/canonical-quests.js';
+import {verifyOfficialProjection} from '../campaign/official-time.js';
 const supported=new WeakMap();
 export async function legacyCommandsSupported(client){
  if(supported.has(client))return true;
@@ -13,6 +14,7 @@ export async function legacyCommandsSupported(client){
 function verifyLegacyProjection(profile,receipt,quest){
  const saved=profile?.performances?.[quest.legacyIndex],badges=receipt.outcome.savedPerformance?.badges;
  if(!profile?.solved?.[quest.legacyIndex]||!saved||!badges||!['speed','autonomy','noError','mastery'].every(k=>!badges[k]||!!saved.badges?.[k])||!Number.isSafeInteger(receipt.outcome.attempts)||!Number.isSafeInteger(saved.attempts)||saved.attempts<receipt.outcome.attempts)throw Error('Legacy command projection unconfirmed');
+ verifyOfficialProjection(saved,receipt.request?.facts);
 }
 export async function loadCommittedLegacyAttempt(client,questId,operationId,{userId,sessionValid=()=>true}={}){
  const quest=canonicalQuestList().find(q=>q.id===questId&&q.legacyIndex!==null);
@@ -36,11 +38,11 @@ export function assertRecreatedLegacyCapture(userId,entry,committed){
  const receipt=committed?.receipt,request=receipt?.request;
  const quest=canonicalQuestList().find(q=>q.id===entry?.questId&&q.legacyIndex!==null);
  const fields=['seconds','assistanceUsed','mistakeCommitted','qualifying','hintUsed','challengeFailed','qualifiedDay','qualifiedAt'];
- const validFacts=v=>exactKeys(v,fields)&&Number.isSafeInteger(v.seconds)&&v.seconds>=0&&fields.slice(1,6).every(k=>typeof v[k]==='boolean')&&typeof v.qualifiedDay==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v.qualifiedDay)&&typeof v.qualifiedAt==='string'&&Number.isFinite(Date.parse(v.qualifiedAt));
+ const validFacts=v=>exactKeys(v,v?.timing?[...fields,'timing']:fields)&&Number.isSafeInteger(v.seconds)&&v.seconds>=0&&fields.slice(1,6).every(k=>typeof v[k]==='boolean')&&typeof v.qualifiedDay==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v.qualifiedDay)&&typeof v.qualifiedAt==='string'&&Number.isFinite(Date.parse(v.qualifiedAt));
  const later=entry?.reward?.facts,earlier=request?.facts;
  if(!quest||!exactKeys(entry,['version','operationId','userId','questId','reward','createdAt'])||entry.version!==2||entry.userId!==userId||committed?.userId!==userId||
   !exactKeys(entry.reward,['facts'])||!exactKeys(request,['version','operationId','questId','facts'])||request.version!==1||request.operationId!==entry.operationId||request.questId!==quest.id||
-  !validFacts(later)||!validFacts(earlier)||later.seconds<earlier.seconds||!fields.filter(k=>k!=='seconds').every(k=>later[k]===earlier[k])||
+  !validFacts(later)||!validFacts(earlier)||!sameCloudProfile(later.timing??null,earlier.timing??null)||later.seconds<earlier.seconds||!fields.filter(k=>k!=='seconds').every(k=>later[k]===earlier[k])||
   typeof receipt.outcome?.firstCompletion!=='boolean'||!Number.isSafeInteger(receipt.outcome.attempts)||receipt.outcome.attempts<1||!Number.isFinite(Date.parse(receipt.recordedAt))||!Number.isFinite(Date.parse(entry.createdAt)))fail();
  verifyLegacyProjection(committed.profile,receipt,quest);
 }

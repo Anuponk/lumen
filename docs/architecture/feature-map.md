@@ -374,3 +374,10 @@ Highscore finalization: ui/victory-presentation.js owns animation completion and
 activation consumption; ui/ranking.js owns the compact view. The follow-up SQL
 owns canonical nickname uniqueness, durable opposition and operator-only history.
 Production gates and restore procedure: docs/HIGHSCORE_ROLLOUT.md.
+
+Official attempt time: campaign/official-time.js derives technical elapsed +
+assistance and revision-specific officialTimes; attempt-engine retains elapsed.
+persistence/official-time.js negotiates optional receipt timing, while existing
+Legacy/Quest commands and cloud-profile own its persistence/recovery. UI record
+presentation reads official records only; victory-presentation owns the explicit
+two-second/animation gate and ranking button (#652).

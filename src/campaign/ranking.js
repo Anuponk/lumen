@@ -1,11 +1,11 @@
 // Public competition is independent of badges, rewards and personal raw times.
 export const RANKING_VERSION=1;
 export const RANKING_COOLDOWN_MS=15*60*1000;
-export const RANKING_PENALTIES=Object.freeze({verify:5,hint:15});
+export const RANKING_PENALTIES=Object.freeze({verify:5,hint:15,guided:5});
 export function rankedTime(seconds,uses={}){
  if(!Number.isSafeInteger(seconds)||seconds<0)throw Error('Invalid ranking time');
- for(const k of ['verify','hint'])if(!Number.isSafeInteger(uses[k]??0)||(uses[k]??0)<0)throw Error('Invalid aid count');
- const penalty=(uses.verify??0)*5+(uses.hint??0)*15,score=seconds+penalty;
+ for(const k of Object.keys(RANKING_PENALTIES))if(!Number.isSafeInteger(uses[k]??0)||(uses[k]??0)<0)throw Error('Invalid aid count');
+ const penalty=Object.entries(RANKING_PENALTIES).reduce((total,[kind,cost])=>total+(uses[kind]??0)*cost,0),score=seconds+penalty;
  if(!Number.isSafeInteger(score))throw Error('Invalid ranking total');
  return {seconds,penalty,score};
 }

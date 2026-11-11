@@ -1,4 +1,5 @@
 export const ATTEMPT_STATES=Object.freeze({READY:"READY",RUNNING:"RUNNING",PAUSED:"PAUSED",COMPLETED:"COMPLETED",ABANDONED:"ABANDONED"});
+import {rankedTime} from '../campaign/ranking.js';
 const STORAGE_KEY="lumenActiveAttemptV1";
 
 function newId(){
@@ -8,11 +9,12 @@ function newId(){
 function cloneBoard(board){return Array.isArray(board)?board.map(row=>Array.isArray(row)?row.slice():[]):[]}
 function safeParse(raw){try{return raw?JSON.parse(raw):null}catch(_){return null}}
 
-export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Date.now(),perfNow=()=>globalThis.performance?.now?.()??Date.now(),onChange=()=>{}}={}){
+export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Date.now(),perfNow=()=>globalThis.performance?.now?.()??Date.now(),onChange=()=>{},onAssistanceUse=()=>{}}={}){
  let attempt=null,activeSince=null;
  const emit=()=>{persist();onChange(snapshot())};
- const snapshot=()=>attempt?{...attempt,board:cloneBoard(attempt.board),activeDuration:activeMs()}:null;
+ const snapshot=()=>attempt?{...attempt,...(attempt.helpUses?{helpUses:{...attempt.helpUses}}:{}),board:cloneBoard(attempt.board),activeDuration:activeMs()}:null;
  function activeMs(){return attempt?attempt.activeDuration+(attempt.state===ATTEMPT_STATES.RUNNING&&activeSince!==null?Math.max(0,perfNow()-activeSince):0):0}
+ function officialSeconds(){return rankedTime(Math.max(0,Math.floor(activeMs()/1000)),attempt?.helpUses).score}
  function persist(){if(!attempt)return storage?.removeItem?.(STORAGE_KEY);const copy={...attempt,board:cloneBoard(attempt.board),activeDuration:activeMs(),updatedAt:now()};storage?.setItem?.(STORAGE_KEY,JSON.stringify(copy))}
  function create({questId,mode="campaign",qualifying=false,challengeId=null,board=[],gridRevision=0,questResetRevision=0}){
   if(mode==='challenge')questResetRevision=0;
@@ -67,11 +69,12 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
  function markAssistance(){if(!attempt||attempt.assistanceUsed)return;attempt.assistanceUsed=true;emit()}
  function recordAssistanceUse(kind,count){
   if(!attempt||!['hint','verify','guided'].includes(kind)||!Number.isSafeInteger(count)||count<0)return;
-  attempt.helpUses={...(attempt.helpUses||{}),[kind]:Math.max(count,attempt.helpUses?.[kind]||0)};emit();
+  const previous=attempt.helpUses?.[kind]||0;if(count<=previous)return;
+  attempt.helpUses={...(attempt.helpUses||{}),[kind]:count};emit();onAssistanceUse({kind,count,delta:count-previous});
  }
  function setWrongGuardianPending(cellKey){if(!attempt||attempt.mistakeCommitted)return;attempt.wrongGuardianPending=cellKey||null;emit()}
  function clearWrongGuardianPending(cellKey=null){if(!attempt||!attempt.wrongGuardianPending)return;if(cellKey&&attempt.wrongGuardianPending!==cellKey)return;attempt.wrongGuardianPending=null;emit()}
  function commitMistake(){if(!attempt)return;if(attempt.mistakeCommitted&&attempt.wrongGuardianPending===null)return;attempt.mistakeCommitted=true;attempt.wrongGuardianPending=null;emit()}
  function clear(){attempt=null;activeSince=null;storage?.removeItem?.(STORAGE_KEY);onChange(null)}
- return {create,restore,start,pause,resume,complete,abandon,reset,updateBoard,markAssistance,recordAssistanceUse,setWrongGuardianPending,clearWrongGuardianPending,commitMistake,clear,snapshot,activeMs,states:ATTEMPT_STATES,storageKey:STORAGE_KEY};
+ return {create,restore,start,pause,resume,complete,abandon,reset,updateBoard,markAssistance,recordAssistanceUse,setWrongGuardianPending,clearWrongGuardianPending,commitMistake,clear,snapshot,activeMs,officialSeconds,states:ATTEMPT_STATES,storageKey:STORAGE_KEY};
 }

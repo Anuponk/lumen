@@ -1764,3 +1764,52 @@ Un échec de taille ne tronque ni sauvegarde ni opération en attente.
 Le signal `navigator.onLine` ne prouve pas que le serveur est joignable. Après une erreur temporaire classée UNKNOWN, 408, 429 ou 5xx, une aide peut utiliser la réservation hors ligne existante : propriétaire vérifié sur cet appareil, preuve de solde valide, verrou inter-onglets, inventaire durable complet et identité exacte tentative/reset/type/séquence. Les refus Auth, métier ou de schéma ne permettent pas ce repli. Une file Wallet suspendue pour Auth ou revue refuse toute nouvelle réservation. Même si la restauration cloud échoue, les réservations locales du compte sont déduites du compteur.
 
 Le solde confirmé reste distinct du disponible. La restauration authentifiée rejoue les commandes et vérifie leurs reçus avant de retirer la file. Aucun champ persistant, migration SQL ou droit ajouté ; les garanties multi-appareils et transfert invité restent inchangées.
+
+## Temps officiel et compatibilité des reçus (#638, #652)
+
+Le compteur actif reste une durée réelle en millisecondes. Le chrono officiel est
+dérivé de cette durée et des compteurs cumulatifs hint/verify/guided (15/5/5 s).
+La restauration ne crédite jamais une pénalité : elle recalcule la même somme.
+Les resets de campagne remettent les compteurs à zéro ; un défi social reste
+une tentative unique. Rapidité, bonus temporels, indice offert après 90 s et
+cooldowns conservent leurs chronomètres métier réels.
+
+Une nouvelle victoire peut ajouter aux huit faits existants un objet facultatif
+timing {version:1, gridRevision, helpUses:{hint,verify,guided}}. Il est figé dans
+les outboxes et le reçu original, sans réécriture lors d’une reprise. Le serveur
+recalcule les pénalités, valide types, compteurs, assistance et révision, puis
+conserve officialTimes[revision] dans les résumés Legacy et Quest existants.
+Les minima bestTime/time/bestUnassistedTime restent techniques. Aucun nouveau
+magasin de progression ni nouvelle autorité monétaire. La vérification de
+lecture doit couvrir le record officiel avant confirmation du client.
+
+La capability lumen_official_time_version annonce le support serveur. Avant sa
+confirmation, aucun support n’est inventé. Une confirmation positive est mise
+en cache pour cette URL publique de backend, afin qu’une PWA entièrement fermée
+puisse reprendre hors ligne et figer les mêmes preuves. Une absence explicite
+du RPC invalide ce cache ; les intentions déjà figées ne sont jamais réécrites.
+Sans confirmation, les anciens faits à huit champs restent utilisables ; la victoire
+et le chrono affichent leur somme locale, sans fabriquer de record confirmé.
+Un record historique n’est affiché que depuis la projection officielle serveur.
+Les endpoints privés de lecture ne dépendent pas de l’inscription publique.
+
+La conversion paresseuse, dans la transaction suivante, applique la convention
+historique zéro pénalité aux seuls anciens minima de révision 0. Un score déjà
+compétitif est utilisé une fois, sans lui ajouter une deuxième pénalité. Si son
+temps brut est le minimum historique et sa pénalité positive, ce brut n’est pas
+un record sans aide ; le serveur utilise le score et un éventuel minimum sans
+aide prouvé. Les minima de révision ambiguë ne sont jamais transférés. Le reçu
+nouveau contient le précédent record comparable ; une égalité ne peut donc
+être annoncée comme un premier record. La récupération fusionne les minima
+officiels indépendamment pour chaque révision, sans toucher aux acquisitions.
+
+Les défis sociaux existants ont un protocole non versionné de durée réelle,
+sans compteurs d’aides dans la référence. Ils conservent ce protocole : comparer
+un score officiel nouveau à une référence réelle ancienne serait incompatible.
+Leur chrono reste celui du défi. Une évolution de ce protocole nécessite sa
+propre migration versionnée des deux participants.
+
+La présentation de victoire ne valide aucune acquisition. La progression et
+les badges sont confirmés avant la célébration ; fermer avant « Voir le
+classement » ne change ni leur persistance ni les intentions en attente.
+Voir [le plan de migration](OFFICIAL_TIME_ROLLOUT.md).

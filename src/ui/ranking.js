@@ -20,10 +20,8 @@ export function createRankingView({client,getContext,format,document=globalThis.
   root.append(list);
   const card=element('div','ranking-personal','');
   if(mine&&mine.position>3){card.classList.add('ranking-mine');card.dataset.position=mine.position;card.append(element('strong','',`Ta place : ${mine.place}`),element('span','ranking-time',format(mine.score)));
-   if(data.improved)card.append(element('strong','ranking-record','Nouveau record !'));
    const third=top.find(r=>r.position===3);if(third&&mine.score>third.score)card.append(element('small','',format(mine.score-third.score)+' du podium'));
   }else if(!mine)card.append(element('span','','Aucun temps compétitif pour cette révision.'));
-  if(mine&&mine.position<=3&&data.improved)card.append(element('strong','ranking-record','Nouveau record !'));
   if(Number.isInteger(total)){const count=element('small','ranking-participants',total+' joueur'+(total>1?'s':''));count.title=total+' participants réels, hors Échos';count.setAttribute('aria-label',count.title);card.append(count)}
   if(!data.participating)card.append(element('small','',data.withdrawn?'Participation désactivée. Réinscription depuis Compte.':'Ton pseudo et les règles de participation sont disponibles dans Compte.'));
   root.append(card);

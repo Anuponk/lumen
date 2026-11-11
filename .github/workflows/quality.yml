@@ -22,7 +22,8 @@ concurrency:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    # Victory regressions exercise the real minimum viewing period (#652).
+    timeout-minutes: 20
     steps:
       - name: Checkout PR
         uses: actions/checkout@v4
