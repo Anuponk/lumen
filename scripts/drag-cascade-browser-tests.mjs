@@ -7,6 +7,7 @@ try{
  await send('Page.enable');await send('Runtime.enable');
  await send('Page.addScriptToEvaluateOnNewDocument',{source:`localStorage.setItem('lumenQaProgressV1',JSON.stringify({catalogueOrigin:1,badges:{},stars:{},challenges:{},performances:{},solved:Object.fromEntries(Array.from({length:80},(_,i)=>[i,1])),shards:80,autoCrossUnlockSeen:1,fullBadgeIntroSeen:1}));localStorage.setItem('lumenSound','off')`});
  await navigateAndWait({send,evaluate},'Page.navigate',{url:url.href});
+ await evaluate(`window.dragTrace=[];for(const type of ['pointerdown','pointermove','pointerup','pointercancel','lumen-guardian-toggle'])document.addEventListener(type,e=>{window.dragTrace.push({type,at:performance.now(),id:e.pointerId,x:e.clientX,y:e.clientY,target:e.target.className,row:lumenDiagnostics.snapshot().state[0]});if(window.dragTrace.length>20)window.dragTrace.shift()},{capture:true})`);
  for(const width of [320,390,1440])for(const auto of [false,true]){
   await send('Emulation.setDeviceMetricsOverride',{width,height:width===320?568:900,mobile:width<600,deviceScaleFactor:1});
   await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
@@ -25,7 +26,7 @@ try{
   if(speed==='slow')for(const ratio of [.2,.4,.6,.8]){await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:points[0].x+(points[1].x-points[0].x)*ratio,y:points[0].y}]});await new Promise(r=>setTimeout(r,35))}
   await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[points[1]]});
   await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
-  assert((await evaluate('lumenDiagnostics.snapshot().state[0]')).every(v=>v===1||v===2),'Every crossed cell must be marked during the cascade');
+  assert((await evaluate('lumenDiagnostics.snapshot().state[0]')).every(v=>v===1||v===2),'Every crossed cell must be marked during the cascade '+JSON.stringify({width,auto,speed,points,trace:await evaluate('dragTrace')}));
   assert(await evaluate('[...document.querySelectorAll("#board .cell")].every((el,i)=>el===dragNodes[i])'),'Drag and animation preserve cell nodes');
   assert.equal(await evaluate('lumenDiagnostics.snapshot().state[0].filter(v=>v===2).length'),1,'Guardian remains intact');
   await evaluate("document.getElementById('undo').click()");
