@@ -1795,7 +1795,7 @@ nicknameGate.hidden=true;
 nicknameGate.setAttribute('role','dialog');
 nicknameGate.setAttribute('aria-modal','true');
 nicknameGate.setAttribute('aria-labelledby','nicknameRequiredTitle');
-nicknameGate.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(5,10,30,.94);display:grid;place-items:center;padding:20px';
+nicknameGate.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(5,10,30,.94);display:none;place-items:center;padding:20px';
 nicknameGate.innerHTML='<div style="max-width:380px;width:100%;padding:24px;border-radius:18px;background:#15213b;color:white;box-shadow:0 10px 40px #0008"><h2 id="nicknameRequiredTitle">Choisis ton pseudo</h2><p>Un pseudo unique de 3 à 20 caractères est nécessaire pour ton compte LUMEN et les classements.</p><form id="nicknameRequiredForm"><label for="nicknameRequiredInput">Ton pseudo</label><input id="nicknameRequiredInput" required minlength="3" maxlength="20" autocomplete="nickname" style="width:100%;box-sizing:border-box;margin:10px 0;padding:12px;border-radius:8px"><p id="nicknameRequiredError" role="status" aria-live="polite"></p><button type="submit">Valider mon pseudo</button></form><button id="nicknameRequiredSignout" type="button" style="margin-top:12px">Continuer sans compte</button></div>';
 document.body.append(nicknameGate);
 nicknameGate.hidden=true;
