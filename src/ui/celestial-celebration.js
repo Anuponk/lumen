@@ -16,15 +16,12 @@ export function createCelestialCelebration(document){
   // Normalize only the decorative reveal dash, never the source coordinates.
   canvas.querySelectorAll('.sky-line').forEach(line=>line.setAttribute('pathLength','1'));
   const recap=document.createElement('p');recap.id='celestialSummary';recap.dataset.celestialExtra='';recap.className='celestial-summary';recap.textContent=summary;canvas.after(recap);
-  const skip=document.createElement('button');skip.id='celestialSkip';skip.dataset.celestialExtra='';skip.className='celestial-skip';skip.textContent='Passer l’animation';skip.type='button';
-  const finish=()=>{host.classList.add('celestial-still');skip.hidden=true;document.getElementById('skyRevealNext').focus()};skip.onclick=finish;card.prepend(skip);
   document.getElementById('skyRevealResults').hidden=false;document.getElementById('skyRevealContinue').hidden=true;
-  for(const id of ['skyRevealTime','skyRevealRewards','skyRevealFeedback'])document.getElementById(id).hidden=true;
+  document.getElementById('skyRevealFeedback').hidden=true;
   const bind=(id,action)=>{const b=document.getElementById(id);b.hidden=!action;b.disabled=!!action?.disabled;b.classList.toggle('remarkable',!!action?.remarkable);if(action){b.textContent=action.label;b.onclick=action.run}};
   bind('skyRevealNext',primary);bind('skyRevealSky',secondary);bind('skyRevealRetry',review);bind('skyRevealShare',share);
-  const key=e=>{if(e.key==='Escape'){e.preventDefault();finish()}if(e.key==='Tab'){const buttons=[...card.querySelectorAll('button')].filter(b=>!b.hidden&&!b.disabled&&b.getClientRects().length);const i=buttons.indexOf(document.activeElement);e.preventDefault();buttons[(i+(e.shiftKey?-1:1)+buttons.length)%buttons.length]?.focus()}};
+  const key=e=>{if(e.key==='Tab'){const buttons=[...card.querySelectorAll('button')].filter(b=>!b.hidden&&!b.disabled&&b.getClientRects().length);const i=buttons.indexOf(document.activeElement);e.preventDefault();buttons[(i+(e.shiftKey?-1:1)+buttons.length)%buttons.length]?.focus()}};
   host.addEventListener('keydown',key);cleanup=()=>{host.removeEventListener('keydown',key);restore()};
-  if(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches)finish();else skip.focus();
   return true;
  }
  return {show,clear};

@@ -1964,3 +1964,17 @@ La quality gate ajoute `offline-hint-purchase-browser-tests.mjs`, `offline-hint-
 `adventure-mastery-browser-tests.mjs` vérifie aussi le libellé « Maîtrisée » visible dans la barre d’aventures et le fond rempli distinct, conservé lorsque la sélection change. La navigation et le rechargement conservent les acquis sans récompense ajoutée.
 
 Recette physique restante : indice avec 80 Éclats en mode avion puis reconnexion ; glissement pendant scintillement avec/sans marquage automatique ; dernier badge d’aventure puis réouverture de Mon ciel, avec fond doré et libellé de maîtrise lisibles. Ces tests simulés ne valent pas recette sur téléphone. Les issues restent ouvertes « To be tested » jusqu’à acceptation.
+
+## Highscore et séquence de victoire
+
+La quality gate exécute victory-presentation-tests.mjs et ranking-browser-tests.mjs :
+fin effective/annulation, accélération sans activation derrière, podium et carte,
+Top 3/hors podium/sans score/Échos, reduced-motion, largeur 320/390/768/1440 et
+petites hauteurs 320/360/480. Les fixtures highscore-before.sql,
+highscore-between.sql et highscore.sql
+encadrent deux applications de la nouvelle migration dans PostgreSQL jetable :
+doublons historiques, unicité, renommage, opposition sans tentative, nouveau compte
+entre deux applications de la migration, dry-run, minima et rollback.
+La concurrence SQL complète reste obligatoire en CI. Les tests simulés ne prouvent
+ni l'information juridique, ni une compétition entre comptes de production, ni la
+recette sur téléphone physique ; voir HIGHSCORE_ROLLOUT.md.

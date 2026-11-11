@@ -34,7 +34,7 @@ try{
   assert.equal((await evaluate("JSON.parse(localStorage.getItem('lumenActiveAttemptV1'))")).attemptId,attempt.attemptId);
   await evaluate("if(!document.getElementById('attemptMask').hidden)document.getElementById('attemptMask').click();document.getElementById('questStart').hidden=true;(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()");
   await until("!document.getElementById('skyReveal').hidden");
-  await evaluate("document.getElementById('skyRevealSky').click()");
+  await evaluate("(()=>{const h=document.getElementById('skyReveal');if(h?.dataset.victoryPhase==='celebration')h.click();document.getElementById('skyRevealSky').click()})()");
   const victorySky=await evaluate('lumenDiagnostics.skySnapshot()');assert.equal(victorySky.viewedAdventure,pack.id,'Victory returns to the played adventure');assert.equal(victorySky.view,'detail');
   assert(await evaluate(`!!document.querySelector('#puzzleGrid [data-quest-id="${q.id}"]')`));
   await evaluate("document.getElementById('closeMap').click()");

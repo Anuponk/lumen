@@ -1,0 +1,34 @@
+{
+  "date": "2026-11-11",
+  "mode": "read-only-production-preview",
+  "scope": "Current membership only; equivalent candidate query without installing the prepared migration",
+  "profilesAudited": 3,
+  "duplicateNicknameGroups": 0,
+  "invalidNicknameLengths": 0,
+  "snapshotPlayers": 8,
+  "snapshotLegacyTimedRecords": 732,
+  "snapshotCanonicalTimedRecords": 491,
+  "candidateOwners": 7,
+  "sourceRecordsIdentified": 2934,
+  "sourceRecordsExcluded": 2254,
+  "exclusionReasons": {
+    "participation_disabled": 1526,
+    "unlinked_identity": 132,
+    "ambiguous_revision": 480,
+    "missing_or_invalid_time": 116
+  },
+  "eligiblePlayerGridRevisionIdentities": 392,
+  "wouldImport": 389,
+  "wouldImproveExistingCompetitiveScores": 0,
+  "alreadyBetterOrEqualCompetitiveScores": 3,
+  "productionRecordsImportedByThisTask": 0,
+  "productionWritesByThisTask": 0,
+  "limits": [
+    "Source counts include duplicates across cloud snapshots and legacy authority, plus badge-only records",
+    "No UUID, nickname, email, save or receipt is exported in this report",
+    "Anonymous or unlinked identities are not labelled deleted accounts",
+    "Missing historical membership includes unverifiable opposition and is protected in the frozen legacy cohort",
+    "Automatic participation and historical publication require separate prerequisite verification and authorization",
+    "Run the exact operator dry-run again after installing the approved migration; values may change"
+  ]
+}

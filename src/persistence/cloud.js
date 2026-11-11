@@ -12,17 +12,22 @@ async function registerLumenUser(){
 }
 async function loadLumenProfile(){
  if(!model.lumenSupabase||!model.lumenUser)return;
- const {data,error}=await model.lumenSupabase.rpc("lumen_get_profile");if(error){console.warn("LUMEN profile",error);return}
+ const owner=model.lumenUser.id,client=model.lumenSupabase;
+ const {data,error}=await client.rpc("lumen_get_profile");
+ if(model.lumenUser?.id!==owner||model.lumenSupabase!==client)return;
+ if(error){console.warn("LUMEN profile",error);return}
  model.lumenNickname=(data&&data[0]&&data[0].nickname)||"";
  onAccountChanged({type:"profile",nickname:model.lumenNickname});
 }
 
 async function saveLumenNickname(value){
  value=String(value||"").trim();
- if(value.length<2||value.length>24)return {ok:false,reason:"length"};
+ if([...value].length<3||[...value].length>20)return {ok:false,reason:"length"};
  if(!model.lumenSupabase||!model.lumenUser)return {ok:false,reason:"signed_out"};
- const {data,error}=await model.lumenSupabase.rpc("lumen_set_nickname",{p_nickname:value});
- if(error)return {ok:false,reason:"invalid",error};
+ const owner=model.lumenUser.id,client=model.lumenSupabase;
+ const {data,error}=await client.rpc("lumen_set_nickname",{p_nickname:value});
+ if(model.lumenUser?.id!==owner||model.lumenSupabase!==client)return {ok:false,reason:"signed_out"};
+ if(error)return {ok:false,reason:error.code==='23505'?"unavailable":"invalid",error};
  model.lumenNickname=data||value;onAccountChanged({type:"profile",nickname:model.lumenNickname});return {ok:true,nickname:model.lumenNickname};
 }
 

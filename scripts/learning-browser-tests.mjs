@@ -152,7 +152,7 @@ try {
     assert.equal((await snapshot()).celebrated,true,'Quest 2 has normal victory');
     assert.equal(await evaluate('document.getElementById("successNew").textContent'),'Quête suivante');
     for(let i=0;i<100&&await evaluate('document.getElementById("skyReveal").hidden');i++)await sleep(50);
-    await evaluate('document.getElementById("skyRevealNext").click()');await sleep(100);
+    await evaluate('(()=>{const h=document.getElementById("skyReveal");if(h?.dataset.victoryPhase==="celebration")h.click();document.getElementById("skyRevealNext").click()})()');await sleep(100);
     assert.equal((await snapshot()).levelIndex,2,'Quest 3 opens without mandatory sky');
     assert.equal(await evaluate('document.getElementById("mapModal").hidden'),true);
     assert.equal(await evaluate('document.getElementById("badgeUnlockOverlay").hidden'),true,'Badge explanation is optional');
@@ -173,11 +173,11 @@ try {
       assert.equal(await evaluate('document.getElementById("mapModal").hidden'),true);
       const before=JSON.stringify((await snapshot()).progress);
       if(ordinal===4){
-        await evaluate('document.getElementById("skyRevealSky").click()');
+        await evaluate('(()=>{const h=document.getElementById("skyReveal");if(h?.dataset.victoryPhase==="celebration")h.click();document.getElementById("skyRevealSky").click()})()');
         assert.equal(await evaluate('document.getElementById("mapModal").hidden'),false,'Sky is available voluntarily');
         assert.equal(JSON.stringify((await snapshot()).progress),before,'Browsing cannot grant rewards');
         await evaluate('document.getElementById("closeMap").click()');
-      }else await evaluate('document.getElementById("skyRevealNext").click()');
+      }else await evaluate('(()=>{const h=document.getElementById("skyReveal");if(h?.dataset.victoryPhase==="celebration")h.click();document.getElementById("skyRevealNext").click()})()');
       await sleep(120);
     }
     assert.equal((await snapshot()).levelIndex,5,'Direct chain reaches visible quest 6');

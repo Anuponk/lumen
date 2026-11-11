@@ -28,7 +28,7 @@ try{
   assert.match(await evaluate("document.getElementById('skyRevealTitle').textContent"),/aventure pleinement maîtrisée/);
   assert.equal(await evaluate("document.getElementById('skyReveal').classList.contains('celestial-still')"),reduced);
   assert.equal(await evaluate("document.documentElement.scrollWidth<=innerWidth"),true);
-  await evaluate("document.getElementById('celestialSkip').click()");
+  await evaluate("document.getElementById('skyRevealTitle').click()");
   if(width===390){const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(`docs/validation/adventure-mastery-${pack.id}.png`,Buffer.from(shot.data,'base64'))}
   await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});
   assert(await evaluate('!!document.activeElement.closest("#skyReveal")'));

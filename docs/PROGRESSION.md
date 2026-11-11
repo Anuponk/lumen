@@ -274,6 +274,12 @@ attendre à la victoire ne rend pas l'essai admissible. Les pénalités ne chang
 ni les badges, ni les Éclats, ni les minima bruts. Le marquage automatique est
 retiré (#647), y compris dans le tutoriel et les anciennes préférences restaurées.
 
+La reprise historique utilise une pénalité nulle par convention, jamais déduite
+des badges. Seuls les minima rattachables à la bonne grille sont admissibles ;
+un record de version indéterminée reste personnel. L'import conserve le meilleur
+score compétitif et ne change ni progression ni récompense. Publication automatique
+et reprise nécessitent leurs activations distinctes : voir [le runbook](HIGHSCORE_ROLLOUT.md).
+
 Une victoire terminée peut améliorer le meilleur temps absolu, même lors d’une
 tentative non qualifiante pour les badges. `bestUnassistedTime` est un minimum
 indépendant : seuls les nouveaux parcours sans assistance et sans indice le

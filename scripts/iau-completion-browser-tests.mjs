@@ -77,13 +77,13 @@ try{
    if(expected){
     await until(`document.getElementById('skyReveal').dataset.celestial===${JSON.stringify(expected)}`);
     if(ordinal===880||mastery)assert.match(await evaluate("document.getElementById('celestialSummary').textContent"),/88 constellations.*880\/880/);
-    await evaluate("document.getElementById('celestialSkip').click()");
+    await evaluate("document.getElementById('skyRevealTitle').click()");
    }
    assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth'),true);
    if([500,600,700,800].includes(ordinal)){
-    await evaluate("document.getElementById('skyRevealNext').click()");await acknowledgeLearningMilestones(evaluate);
+    await evaluate("(()=>{const h=document.getElementById('skyReveal');if(h?.dataset.victoryPhase==='celebration')h.click();document.getElementById('skyRevealNext').click()})()");await acknowledgeLearningMilestones(evaluate);
     assert.deepEqual((await evaluate('lumenDiagnostics.snapshot()')).puz.reg,all[ordinal].reg,'Boundary launches next adventure');
-   }else await evaluate("document.getElementById('skyRevealNext').click()");
+   }else await evaluate("(()=>{const h=document.getElementById('skyReveal');if(h?.dataset.victoryPhase==='celebration')h.click();document.getElementById('skyRevealNext').click()})()");
    if(width===390&&ordinal===501){
     await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
     await navigateAndWait({send,evaluate},'Page.reload');assert.equal((await evaluate('lumenDiagnostics.snapshot().progress')).canonicalQuestState[q.id].solved,true,'Offline victory survives reconnect and restart');

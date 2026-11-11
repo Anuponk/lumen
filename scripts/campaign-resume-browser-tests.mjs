@@ -1,5 +1,7 @@
+import {revealVictoryResults} from './cdp-client.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+const offlineReadyMarker=fs.readFileSync(new URL('../sw.js',import.meta.url),'utf8').match(/const OFFLINE_READY_MARKER="([^"]+)"/)[1];
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
@@ -77,6 +79,7 @@ try{
 
  await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="${boundary.id}"]').click()`);
  await acknowledgeLearningMilestones(evaluate);
+ await revealVictoryResults(evaluate);
  await evaluate(`(document.getElementById('skyReveal').hidden?document.getElementById('successNew'):document.getElementById('skyRevealNext')).click()`);
  const actual=await evaluate(`({board:lumenDiagnostics.snapshot().puz.reg,status:document.getElementById('mobileAuthStatus').textContent,completed:!!lumenDiagnostics.snapshot().progress.canonicalQuestState[${JSON.stringify(next.id)}]?.solved})`);
  assert.deepEqual(actual.board,next.reg,'Actual authenticated next action must load Dauphin quest 241');assert.equal(actual.completed,false);
@@ -139,6 +142,7 @@ try{
  assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenCloudDiagnosticsV1')).some(e=>e.event==='canonical_attempt_receipt_recovered')`),true);
  // Leave the old committed quest behind while its recognized duplicate is paused.
  const following=all.find(q=>q.ordinal===next.ordinal+1);
+ await revealVictoryResults(evaluate);
  await evaluate(`(document.getElementById('skyReveal').hidden?document.getElementById('successNew'):document.getElementById('skyRevealNext')).click()`);
  await until(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).questId===${JSON.stringify(following.id)}`);
  await evaluate(`document.getElementById('attemptMask').click();const d=lumenDiagnostics.snapshot();const cell=document.querySelectorAll('#board .cell')[d.puz.sol[0]];cell.click();cell.click()`);
@@ -167,7 +171,7 @@ try{
  // Actual app and worker, native Cache API/IndexedDB and network disconnection.
  // Auth and server receipts remain synthetic: this is not physical Android QA.
  await evaluate(`document.getElementById('closeMap').click()`);
- await until(`(async()=>{const r=await navigator.serviceWorker.ready;return !!navigator.serviceWorker.controller&&!!(await caches.match('/__lumen_offline_ready_v17__'))})()`);
+ await until(`(async()=>{const r=await navigator.serviceWorker.ready;return !!navigator.serviceWorker.controller&&!!(await caches.match(${JSON.stringify(offlineReadyMarker)}))})()`);
  assert.equal(await evaluate(`!!localStorage.getItem('lumenOfflineVerifiedOwnerV1')`),true);
  assert.equal(await evaluate(`(async()=>!!(await caches.match(location.href)))()`,true),true,'Public document is prepared before disconnection');
  await send('Network.setBypassServiceWorker',{bypass:false});

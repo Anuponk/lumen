@@ -501,19 +501,20 @@ tutorial is introduced.
 
 ### Classement (#638)
 
-Liste compacte dans le résultat : place, pseudo, meilleur temps pénalisé.
-La ligne du joueur se distingue ; « Nouveau record » apparaît à côté lors
-d'une amélioration confirmée. Elle remonte depuis le bas pendant deux secondes
-puis reste visible à sa place. Pas de discours supplémentaire ni de monnaie.
-Top 10 si le joueur y figure ; sinon premier puis dix lignes autour de lui
-(cinq devant, soi, quatre derrière ; compléter au bord). Les égalités partagent
-leur place et l'ordre des lignes reste déterministe.
+Après la célébration complète, podium des trois meilleurs temps pénalisés,
+premier au centre. La carte personnelle indique rang, temps, nombre de joueurs
+réels et écart au podium si pertinent. Un joueur du Top 3 est marqué « Toi »,
+sans répétition de son temps. « Nouveau record ! » suit une amélioration confirmée.
+Les trois places puis la carte apparaissent en environ 2,3 secondes, sans déplacer
+les commandes. Les égalités et l'ordre déterministe restent calculés sur tous
+les scores côté serveur. Aucun défilement de liste ou de page.
 
 Les profils « Écho … » portent toujours « Virtuel ». Leurs temps fixes sont
 des objectifs conçus à partir de la difficulté, pas des performances humaines.
 Un joueur réel remplace un Écho jusqu'à leur disparition à dix participants.
-Aucun faux effectif humain ou percentile. Participation volontaire sous pseudo,
-retrait depuis le résultat ou le compte. Réseau/API indisponible : classement
+Aucun faux effectif humain ou percentile. Participation automatique sous pseudo
+unique après activation juridique et information ; opposition persistante et
+réinscription explicite depuis Compte. Réseau/API indisponible : classement
 en attente, jamais de blocage de Quête suivante/Mon ciel. Réduction des mouvements :
 position finale immédiate. Les contrôles annoncent Vérifier +5 s, Indice +15 s
 et Contrôle guidé +5 s par intervention. Les pénalités restent distinctes du temps
@@ -539,11 +540,25 @@ visuelle s’affiche si les deux seuils coïncident. Une restauration, un réess
 reçu ou une ouverture de carte ne rejoue pas ces événements. Le panorama reste
 borné aux constellations de l’aventure jouée ; le bilan global et Mon ciel donnent
 accès au catalogue complet. Le composant conserve clavier, animation réduite,
-bouton pour passer et retour à Mon ciel. Aucun tutoriel ni règle d’aide ne change.
+tap de la surface pour accélérer et retour à Mon ciel. Aucun tutoriel ni règle d’aide ne change.
 
 
 ## Reconnaissance de la maîtrise d’aventure (#627)
 
-Le panorama existant annonce « Une aventure pleinement maîtrisée » avec une lumière dorée discrète ; Mon ciel conserve un fond doré rempli, ✦ et le libellé visible et accessible « Maîtrisée » sur l’aventure. Le fond reste doré quand une autre aventure est sélectionnée ; un bord cyan indique la sélection, indépendamment de la maîtrise. Les aventures simplement terminées conservent leur aspect habituel. Le marqueur reste statique après rechargement. Une seule scène apparaît lorsque les seuils coïncident. Clavier, passer, mouvement réduit et retour à Mon ciel restent disponibles.
+Le panorama existant annonce « Une aventure pleinement maîtrisée » avec une lumière dorée discrète ; Mon ciel conserve un fond doré rempli, ✦ et le libellé visible et accessible « Maîtrisée » sur l’aventure. Le fond reste doré quand une autre aventure est sélectionnée ; un bord cyan indique la sélection, indépendamment de la maîtrise. Les aventures simplement terminées conservent leur aspect habituel. Le marqueur reste statique après rechargement. Une seule scène apparaît lorsque les seuils coïncident. Clavier, tap de la surface, mouvement réduit et retour à Mon ciel restent disponibles.
 
 Impact onboarding #627/#629/#632 : les règles, tarifs et seuils pédagogiques restent inchangés. Le glissement devient continu ; les aides hors ligne respectent les preuves et réservations existantes. Aucun nouvel enseignement nécessaire.
+
+## Victoire et podium compact
+
+Une seule surface attend la fin effective des animations finies, sans attendre les
+effets ambiants infinis. Un tap/clic sur toute sa surface ou Entrée/Espace/Échap
+consomme la première activation et révèle le résultat sans action derrière. Aucun
+bouton Passer n'est ajouté. Reduced-motion présente le résultat immédiatement.
+Le podium montre trois temps (premier au centre), puis la position personnelle
+et le nombre réel de participants, sans répéter la ligne du joueur du podium.
+Les récompenses restent accessibles. Les apparitions durent environ 2,3 secondes
+sans déplacer les commandes. Les petites hauteurs réorganisent la scène en
+colonnes ; podium, résultat et page ne défilent pas. Le choix de participation et
+le pseudo unique se gèrent depuis Compte. L'étape Découvrir Mon ciel en quête 2
+et les enseignements des badges gardent leurs destinations et conditions.

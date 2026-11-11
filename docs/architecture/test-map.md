@@ -466,3 +466,7 @@ vide/invalide ou deux serveurs injoignables → échec maintenu.
 ### #629 / #632 / #627
 
 `offline-wallet-ui-tests.mjs` et `offline-wallet-tests.mjs` couvrent aides et réservations. `drag-grid-path-tests.mjs` couvre le gestionnaire réel. `celestial-ux-tests.mjs` couvre maîtrise et priorités. Les quatre nouvelles suites navigateur sont obligatoires dans `quality-gate.mjs` ; détails et limites dans TESTING.
+
+Highscore follow-up: victory-presentation-tests.mjs, ranking-browser-tests.mjs,
+fixtures/highscore-before.sql and fixtures/highscore.sql; full gate and SQL
+concurrency required. Animation completion is presentation-only.

@@ -279,7 +279,7 @@ try{
     await evaluate(`if(!document.getElementById('questStart').hidden)document.getElementById('questGo').click()`);
    await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
    await until(`!document.getElementById('skyReveal').hidden && !document.getElementById('skyRevealResults').hidden`);
-   await evaluate(`document.getElementById('skyRevealNext').click()`);
+   await evaluate(`(()=>{const h=document.getElementById('skyReveal');if(h?.dataset.victoryPhase==='celebration')h.click();document.getElementById('skyRevealNext').click()})()`);
    await until(`!document.getElementById('accountOptin').hidden`);
    const before=await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress.solved)`);
    await evaluate(`document.getElementById('${dismiss}').click()`);
