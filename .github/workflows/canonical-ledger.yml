@@ -222,6 +222,7 @@ jobs:
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
             -f scripts/fixtures/highscore-before.sql \
             -f supabase/migrations/20261111060216_highscore_victory.sql \
+            -f scripts/fixtures/highscore-between.sql \
             -f supabase/migrations/20261111060216_highscore_victory.sql \
             -f scripts/fixtures/highscore.sql
           python3 scripts/highscore-concurrency.py

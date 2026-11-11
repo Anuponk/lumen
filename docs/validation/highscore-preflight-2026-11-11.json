@@ -12,22 +12,22 @@
   "sourceRecordsIdentified": 2934,
   "sourceRecordsExcluded": 2254,
   "exclusionReasons": {
-    "nickname_required": 345,
-    "not_participating": 1181,
+    "participation_disabled": 1526,
     "unlinked_identity": 132,
     "ambiguous_revision": 480,
     "missing_or_invalid_time": 116
   },
   "eligiblePlayerGridRevisionIdentities": 392,
-  "wouldImport": 390,
+  "wouldImport": 389,
   "wouldImproveExistingCompetitiveScores": 0,
-  "alreadyBetterOrEqualCompetitiveScores": 2,
+  "alreadyBetterOrEqualCompetitiveScores": 3,
   "productionRecordsImportedByThisTask": 0,
   "productionWritesByThisTask": 0,
   "limits": [
     "Source counts include duplicates across cloud snapshots and legacy authority, plus badge-only records",
     "No UUID, nickname, email, save or receipt is exported in this report",
     "Anonymous or unlinked identities are not labelled deleted accounts",
+    "Missing historical membership includes unverifiable opposition and is protected in the frozen legacy cohort",
     "Automatic participation and historical publication require separate prerequisite verification and authorization",
     "Run the exact operator dry-run again after installing the approved migration; values may change"
   ]

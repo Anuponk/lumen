@@ -17,8 +17,13 @@ Un changement de pseudo n'affecte aucune clé de score ou de sauvegarde.
 
 L'opposition `ranking_opted_out` appartient au profil serveur. Reconnexion,
 synchronisation, renommage et import ne la retirent jamais. L'ancienne API
-effaçait l'adhésion : un ancien run sans adhésion est traité conservativement
-comme une opposition, y compris en l'absence d'un profil. Seule l'action explicite
+effaçait l'adhésion, même sans tentative : il est impossible de distinguer un ancien
+retrait d'une absence d'inscription. Les comptes Lumen historiques sans adhésion
+active sont donc protégés conservativement, y compris sans profil ni tentative.
+Cette cohorte est figée une seule fois : rejouer la migration n'exclut pas les
+nouveaux comptes. Les anciennes adhésions actives sont conservées ; les nouveaux
+comptes restent éligibles à la participation automatique après activation.
+Pour les comptes historiques indéterminés, seule l'action explicite
 « Rejoindre le classement » dans Compte peut la lever. Le retrait efface les scores
 publics et conserve le cooldown. Les barrières d'effacement existantes couvrent
 le profil et la sauvegarde privée de reprise ; aucune restauration aveugle.

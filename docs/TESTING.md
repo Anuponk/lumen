@@ -1970,9 +1970,11 @@ Recette physique restante : indice avec 80 Éclats en mode avion puis reconnexio
 La quality gate exécute victory-presentation-tests.mjs et ranking-browser-tests.mjs :
 fin effective/annulation, accélération sans activation derrière, podium et carte,
 Top 3/hors podium/sans score/Échos, reduced-motion, largeur 320/390/768/1440 et
-petites hauteurs 320/360/480. Les fixtures highscore-before.sql et highscore.sql
+petites hauteurs 320/360/480. Les fixtures highscore-before.sql,
+highscore-between.sql et highscore.sql
 encadrent deux applications de la nouvelle migration dans PostgreSQL jetable :
-doublons historiques, unicité, renommage, opposition, dry-run, minima et rollback.
+doublons historiques, unicité, renommage, opposition sans tentative, nouveau compte
+entre deux applications de la migration, dry-run, minima et rollback.
 La concurrence SQL complète reste obligatoire en CI. Les tests simulés ne prouvent
 ni l'information juridique, ni une compétition entre comptes de production, ni la
 recette sur téléphone physique ; voir HIGHSCORE_ROLLOUT.md.

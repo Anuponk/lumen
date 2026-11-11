@@ -372,6 +372,10 @@ grid identities. Private per-batch backups use the erasure inventory and conditi
 rollback. It never writes badges, progression or Wallet state. Automatic publishing
 and historical import have separate closed activation gates. See the
 [activation and restoration runbook](HIGHSCORE_ROLLOUT.md).
+The old API deleted opposition even without a run. Existing Lumen accounts
+without active membership are conservatively protected in a one-time frozen
+cohort; only an explicit account action can rejoin them. Newly created accounts
+remain eligible for automatic participation, including after migration replay.
 
 `persistence/ranking.js` durably stages new version-1 captures separately from
 progression, keyed by authenticated owner + exact victory operation ID. The

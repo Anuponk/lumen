@@ -4,6 +4,7 @@ set local lock_timeout='5s';
 -- of installing this migration. The timestamps are the published notice boundary.
 alter table lumen_commands.ranking_control add column if not exists automatic_after timestamptz;
 alter table lumen_commands.ranking_control add column if not exists historical_enabled boolean not null default false;
+alter table lumen_commands.ranking_control add column if not exists legacy_cohort_captured boolean not null default false;
 alter table lumen.profiles add column if not exists ranking_opted_out boolean not null default false;
 alter table lumen.profiles add column if not exists nickname_ready boolean not null default false;
 -- This migration never renames a player. All members of a collision must choose.
@@ -11,14 +12,24 @@ update lumen.profiles p set nickname_ready=true where char_length(btrim(p.nickna
  and p.nickname ~ '^[[:alnum:]][[:alnum:] _.-]*$'
  and not exists(select 1 from lumen.profiles other where other.user_id<>p.user_id and lower(btrim(other.nickname))=lower(btrim(p.nickname)));
 create unique index if not exists lumen_nickname_unique on lumen.profiles(lower(btrim(nickname))) where nickname_ready;
--- Conservatively preserve historical withdrawals: the old API deleted membership.
-insert into lumen.profiles(user_id,ranking_opted_out)
- select distinct r.user_id,true from lumen_commands.ranking_runs r join auth.users a on a.id=r.user_id
- where not exists(select 1 from lumen.profiles p where p.user_id=r.user_id)
- and not exists(select 1 from lumen_commands.ranking_members m where m.user_id=r.user_id)
- on conflict do nothing;
-update lumen.profiles p set ranking_opted_out=true where not exists(select 1 from lumen_commands.ranking_members m where m.user_id=p.user_id)
- and exists(select 1 from lumen_commands.ranking_runs r where r.user_id=p.user_id);
+-- The predecessor deleted opposition, even without a run. An absent historical
+-- membership is ambiguous: never infer permission from missing evidence. Freeze
+-- that cohort once; replaying the migration must not opt out new accounts.
+do $$begin
+ if exists(select 1 from lumen_commands.ranking_control where not legacy_cohort_captured) then
+  insert into lumen.profiles(user_id,ranking_opted_out)
+   select c.user_id,not exists(select 1 from lumen_commands.ranking_members m where m.user_id=c.user_id and m.participating)
+   from (select user_id from lumen.users union select user_id from lumen.profile_snapshots
+    union select user_id from lumen_commands.legacy_authority union select user_id from lumen_commands.ranking_runs
+    union select user_id from lumen.historical_performance union select user_id from lumen_commands.ranking_members) c
+   join auth.users a on a.id=c.user_id
+   where not exists(select 1 from lumen.profiles p where p.user_id=c.user_id)
+   on conflict do nothing;
+  update lumen.profiles p set ranking_opted_out=true
+   where not exists(select 1 from lumen_commands.ranking_members m where m.user_id=p.user_id and m.participating);
+  update lumen_commands.ranking_control set legacy_cohort_captured=true;
+ end if;
+end $$;
 
 create or replace function lumen_commands.profile_nickname_guard() returns trigger
 language plpgsql security definer set search_path='' as $$
@@ -168,7 +179,7 @@ with snapshots as (
 select i.*,case
  when i.user_id is null then 'unlinked_identity'
  when not exists(select 1 from auth.users a where a.id=i.user_id) then 'deleted_account'
- when p.ranking_opted_out then 'withdrawn'
+ when p.ranking_opted_out then 'participation_disabled'
  when not coalesce(p.nickname_ready,false) then 'nickname_required'
  when not exists(select 1 from lumen_commands.ranking_members m where m.user_id=i.user_id and m.participating) then 'not_participating'
  when i.quest_id is null then 'unknown_quest'

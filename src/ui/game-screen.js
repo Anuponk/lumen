@@ -1779,7 +1779,7 @@ async function refreshRankingAccount(){
  const c=rankingContext();if(!c.owner||!c.client||c.qa)return;
  try{const {data,error}=await c.client.rpc('lumen_ranking_account');if(error||rankingContext().owner!==c.owner||rankingContext().client!==c.client)return;
   document.getElementById('rankingRejoin').hidden=!data?.withdrawn;
-  const status=document.getElementById('rankingAccountStatus');status.textContent=data?.nicknameRequired?'Choisis un pseudo unique de 3 à 20 caractères pour les classements.':data?.withdrawn?'Tu as quitté les classements.':'Les nouvelles performances admissibles participent automatiquement après activation. Ton pseudo, ton rang et ton temps sont visibles aux joueurs connectés.';
+  const status=document.getElementById('rankingAccountStatus');status.textContent=data?.nicknameRequired?'Choisis un pseudo unique de 3 à 20 caractères pour les classements.':data?.withdrawn?'Participation désactivée. Tu peux rejoindre le classement depuis Compte.':'Les nouvelles performances admissibles participent automatiquement après activation. Ton pseudo, ton rang et ton temps sont visibles aux joueurs connectés.';
   if(data?.nicknameRequired){document.getElementById('accountProfileEditor').hidden=false;document.getElementById('accountProfileEditor').dataset.open='true';showRewardToast('Choisis un pseudo unique dans Compte.')}
  }catch{}
 }

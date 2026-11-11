@@ -25,7 +25,7 @@ export function createRankingView({client,getContext,format,document=globalThis.
   }else if(!mine)card.append(element('span','','Aucun temps compétitif pour cette révision.'));
   if(mine&&mine.position<=3&&data.improved)card.append(element('strong','ranking-record','Nouveau record !'));
   if(Number.isInteger(total)){const count=element('small','ranking-participants',total+' joueur'+(total>1?'s':''));count.title=total+' participants réels, hors Échos';count.setAttribute('aria-label',count.title);card.append(count)}
-  if(!data.participating)card.append(element('small','',data.withdrawn?'Tu as quitté le classement. Réinscription depuis Compte.':'Ton pseudo et les règles de participation sont disponibles dans Compte.'));
+  if(!data.participating)card.append(element('small','',data.withdrawn?'Participation désactivée. Réinscription depuis Compte.':'Ton pseudo et les règles de participation sont disponibles dans Compte.'));
   root.append(card);
   if(!animated&&!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches){
    [...list.children,card].forEach((e,i)=>e.animate?.([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],{duration:500,delay:i*450,easing:'ease-out',fill:'backwards'}));

@@ -5,6 +5,8 @@ begin
  assert (select count(*)=2 from lumen.profiles where lower(btrim(nickname))='legacy' and not nickname_ready),'Both historical duplicates stay unchanged and unresolved';
  assert (select nickname=' Legacy ' from lumen.profiles where user_id='65000000-0000-4000-8000-000000000001'),'No arbitrary rename';
  assert (select nickname_ready from lumen.profiles where nickname='Unique old'),'Existing unique pseudo preserved';
+ assert (select ranking_opted_out from lumen.profiles where nickname='Unique old'),'A historical withdrawal without any run cannot be distinguished from never joining; protect both';
+ assert (select not ranking_opted_out from lumen.profiles where nickname='New cohort'),'Migration replay cannot exclude accounts created after the frozen cohort';
  assert not has_table_privilege('authenticated','lumen_commands.ranking_import_backup','select'),'Backups private';
  assert not has_function_privilege('authenticated','lumen_commands.import_ranking_history(boolean,uuid)','execute'),'No public import API';
  insert into auth.users values(u),(v);
@@ -50,7 +52,7 @@ begin
  update lumen_commands.quest_rules set grid_revision=1 where legacy_index::text=changed;
  insert into lumen.profile_snapshots(user_id,payload) values(v,jsonb_build_object('solved','{}'::jsonb,'canonicalQuestState','{}'::jsonb,'performances',jsonb_build_object(changed,jsonb_build_object('bestTime',1),'not-a-quest',jsonb_build_object('bestTime',2)),'xp',0,'shards',7));
  perform public.lumen_ranking_membership(false,null);
- assert exists(select 1 from lumen_commands.ranking_history_candidates where user_id=u and exclusion='withdrawn'),'Withdrawn record excluded';
+ assert exists(select 1 from lumen_commands.ranking_history_candidates where user_id=u and exclusion='participation_disabled'),'Withdrawn record excluded';
  perform public.lumen_ranking_membership(true,null);
  -- Withdrawal correctly deleted the first score. Recreate the independent
  -- competitive baseline used by the following dry-run/import comparisons.
