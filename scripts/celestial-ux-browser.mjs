@@ -25,8 +25,11 @@ export async function verifyCelestialUX({send,evaluate},url){
   assert.equal(await evaluate('document.getElementById("endgameOverlay").hidden&&document.getElementById("adventureNotice").hidden'),true);
   const won=await evaluate('JSON.stringify(lumenDiagnostics.snapshot().progress)');
   assert.equal(await evaluate('getComputedStyle(document.getElementById("skyRevealTitle")).animationName'),'celestial-conclusion');
-  await realClick('skyRevealTitle',viewport.mobile);assert.equal(await evaluate('document.getElementById("skyReveal").classList.contains("celestial-still")'),true);
-  assert.equal(await evaluate('getComputedStyle(document.getElementById("skyRevealTitle")).opacity'),'1','Skip reveals the final narrative immediately');
+  await realClick('skyRevealTitle',viewport.mobile);
+  assert.notEqual(await evaluate('document.getElementById("skyReveal").dataset.victoryPhase'),'ranking','Surface tap cannot skip the celebration');
+  await until('document.getElementById("skyReveal").dataset.victoryPhase==="admire"');
+  assert.equal(await evaluate('getComputedStyle(document.getElementById("skyRevealTitle")).opacity'),'1','Complete narrative remains visible until explicit action');
+  assert.equal(await evaluate('document.getElementById("skyRevealRanking").hidden'),false);
   await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});
   assert.equal(await evaluate('!!document.activeElement.closest("#skyReveal")'),true,'keyboard stays in the scene');
   const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(`docs/validation/celestial-constellation-${viewport.width}.png`,Buffer.from(shot.data,'base64'));
@@ -42,7 +45,7 @@ export async function verifyCelestialUX({send,evaluate},url){
   await realClick('skyRevealTitle',viewport.mobile);
   const adventureShot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(`docs/validation/celestial-adventure-${viewport.width}.png`,Buffer.from(adventureShot.data,'base64'));
   await realClick('skyRevealNext',viewport.mobile);assert.equal(await evaluate('document.getElementById("adventureNotice").hidden'),true,'No second popup after adventure');
-  results.push({viewport,constellation:true,adventure:true,singleScene:true,skip:true,keyboard:true,refreshSilent:true,noRewardOnNavigation:true,lockedNext:true});
+  results.push({viewport,constellation:true,adventure:true,singleScene:true,explicitRanking:true,keyboard:true,refreshSilent:true,noRewardOnNavigation:true,lockedNext:true});
  }
  // Compare actual Mon ciel SVGs using the same acquired records as gameplay.
  await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,mobile:true,deviceScaleFactor:1});

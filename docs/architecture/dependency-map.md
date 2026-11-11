@@ -8,7 +8,8 @@ OAuth-return guards remain in the same listener.
 Competition #638/#647: attempt (version/start/aid counters) → separate durable
 ranking capture → confirmed existing victory receipt → private ranking admission
 and minimum → server Top 3 + personal position + human count → result after
-finite celebration completion (or consumed surface activation). Canonical profile
+finite celebration completion and at least two seconds, then an explicit
+« Voir le classement » button; the scene otherwise remains indefinitely. Canonical profile
 nickname/withdrawal gates admission; the separately gated historical minima import
 uses private per-batch backups and conditional rollback. Owner/client guards
 apply across every await. No edge points back into progression, Wallet or badges.

@@ -1,6 +1,7 @@
 import {loadVerifiedProfile,sameCloudProfile} from './cloud-profile.js';
 import {canonicalRecoveryFailure} from './canonical-recovery-errors.js';
 import {questPerformanceRecord} from '../campaign/quest-rules.js';
+import {verifyOfficialProjection} from '../campaign/official-time.js';
 
 function matches(receipt,questId,operationId,facts){
  return receipt?.request?.version===2&&receipt.request.questId===questId&&receipt.request.operationId===operationId
@@ -29,6 +30,7 @@ export async function commitQuestCommand(client,quest,reward,operationId,{userId
  const badges=receipt.outcome.savedPerformance.badges;
  if(!state?.solved||!['speed','autonomy','noError','mastery'].every(key=>!badges[key]||state.badges?.[key]===true||state.badges?.[key]===1)
   ||!(performance.attempts>=receipt.outcome.attempts))throw Error('Quest projection unconfirmed');
+ verifyOfficialProjection(performance,reward.facts);
  return {profile,quest,receipt,newlyCompleted:receipt.outcome.firstCompletion,outcome:receipt.outcome,alreadySaved:!!failure};
 }
 export async function loadCommittedQuestAttempt(client,quest,operationId,{userId,sessionValid=()=>true}={}){
@@ -45,6 +47,7 @@ export async function loadCommittedQuestAttempt(client,quest,operationId,{userId
  if(!saved?.solved||!['speed','autonomy','noError','mastery'].every(key=>!receipt.outcome.savedPerformance.badges[key]||!!saved.badges?.[key])
   ||!(questPerformanceRecord(quest,profile).attempts>=receipt.outcome.attempts))throw Error('Quest projection unconfirmed');
  const badges=receipt.outcome.savedPerformance.badges,facts=receipt.request.facts;
+ verifyOfficialProjection(questPerformanceRecord(quest,profile),facts);
  return {userId,profile,quest,receipt,outcome:receipt.outcome,newlyCompleted:false,alreadySaved:true,
   reward:{badges,performance:{bestTime:facts.seconds,seconds:facts.seconds,assisted:facts.assistanceUsed},stars:receipt.outcome.stars,facts}};
 }

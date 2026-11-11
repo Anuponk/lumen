@@ -10,12 +10,12 @@ try{
   await send('Emulation.setDeviceMetricsOverride',{width,height:844,deviceScaleFactor:1,mobile:width<600});
   await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
   const p={solved:Object.fromEntries(Array.from({length:21},(_,i)=>[i,1])),badges:{},stars:{},challenges:{},xp:123,shards:7,
-   performances:{20:{version:3,badges:{},bestTime:90,bestUnassistedTime:120,lastQualifiedAt:new Date().toISOString(),attempts:1},21:{bestTime:999}}};
+   performances:{20:{version:3,badges:{},bestTime:90,officialTimes:{0:90},bestUnassistedTime:120,lastQualifiedAt:new Date().toISOString(),attempts:1},21:{bestTime:999}}};
   const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:`localStorage.clear();localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(p))});for(const k of ['lumenTutorialSeen','lumenQaTutorialSeen','lumenQaTutorialCompletedV1','lumenSkyTourSeen'])localStorage.setItem(k,'1');localStorage.setItem('lumenSound','off');`});
   await send('Page.navigate',{url:url.href});await until('!!window.lumenDiagnostics');
   await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});
   await evaluate('lumenDiagnostics.setupQuest(20)');await acknowledgeLearningMilestones(evaluate);
-  assert.match(await evaluate('document.getElementById("personalRecord").textContent'),/Record : 1:30.*Sans aide : 2:00/);
+  assert.match(await evaluate('document.getElementById("personalRecord").textContent'),/Record : 1:30/);
   assert.equal(await evaluate('document.getElementById("personalRecord").hidden'),false);
   await evaluate('document.getElementById("attemptMask").click();(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');
   await until('!document.getElementById("skyReveal").hidden');

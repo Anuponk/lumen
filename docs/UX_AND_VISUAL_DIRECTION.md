@@ -501,7 +501,11 @@ tutorial is introduced.
 
 ### Classement (#638)
 
-Après la célébration complète, podium des trois meilleurs temps pénalisés,
+La célébration dure au moins deux secondes et attend la fin des animations
+finies de constellation et de badges. Elle reste ensuite affichée sans limite,
+même sans nouveau badge. Aucun tap sur la surface ni délai ne change d’écran.
+Le bouton « Voir le classement » apparaît alors ; lui seul ouvre le
+podium des trois meilleurs temps officiels,
 premier au centre. La carte personnelle indique rang, temps, nombre de joueurs
 réels et écart au podium si pertinent. Un joueur du Top 3 est marqué « Toi »,
 sans répétition de son temps. « Nouveau record ! » suit une amélioration confirmée.
@@ -517,14 +521,20 @@ unique après activation juridique et information ; opposition persistante et
 réinscription explicite depuis Compte. Réseau/API indisponible : classement
 en attente, jamais de blocage de Quête suivante/Mon ciel. Réduction des mouvements :
 position finale immédiate. Les contrôles annoncent Vérifier +5 s, Indice +15 s
-et Contrôle guidé +5 s par intervention. Les pénalités restent distinctes du temps
-réel ; les anciennes préférences de marquage automatique restent inertes.
+et Contrôle guidé +5 s par intervention. Le chrono augmente aussitôt, avec un
+bref +5 s / +15 s sans déplacement de grille ; il continue à compter normalement.
+La durée réelle reste une donnée technique ; les anciennes préférences de
+marquage automatique restent inertes.
 Sur mobile, le retour du Contrôle guidé participe à la mise en page, comme
 l'indice : il ne doit recouvrir ni Annuler ni le Gardien à corriger.
 
-Afficher le record absolu et, s’il existe, le record « Sans aide » dans le masque
-de départ d’une quête déjà réussie. À la victoire confirmée, le récapitulatif
-existant montre la comparaison et une courte lueur pour un nouveau record ;
+Afficher un seul meilleur record officiel comparable à la révision de grille
+dans le masque de départ d’une quête déjà réussie. À la victoire confirmée,
+le récapitulatif montre la tentative officielle et le meilleur record officiel.
+Une amélioration strictement inférieure annonce une seule fois « Nouveau record ! »
+après preuve serveur ; égalité et amélioration du seul temps réel ne suffisent pas.
+La carte du classement ne répète pas cette annonce. Une courte lueur accompagne
+le nouveau record ;
 aucune fenêtre supplémentaire. La lueur respecte reduced-motion. Les victoires
 en attente ne revendiquent pas de record confirmé. Les essais non qualifiants
 restent utiles pour améliorer le temps, sans changer les badges.

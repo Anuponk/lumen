@@ -8,8 +8,11 @@ import {functionSource} from './source-tools.mjs';
 import {captureCelestialProgress} from '../src/ui/celestial-progress.js';
 import {questPerformanceRecord} from '../src/campaign/quest-rules.js';
 import {renderRecordResult} from '../src/ui/personal-records.js';
+import {attemptTiming,officialResult} from '../src/campaign/official-time.js';
+import {officialTimingSupported} from '../src/persistence/official-time.js';
 
 function prepareContext(ctx){
+ Object.assign(ctx,{attemptTiming,officialResult,officialTimingSupported});
  ctx.updateHintButton??=()=>{};ctx.updateVerifyButton??=()=>{};
  ctx.structuredClone??=structuredClone;ctx.questPerformanceRecord??=questPerformanceRecord;ctx.renderRecordResult??=renderRecordResult;
  ctx.captureCelestialProgress??=captureCelestialProgress;
@@ -22,7 +25,9 @@ function prepareContext(ctx){
  ctx.localCalendarDay??=()=> '2026-10-22';
  ctx.questFailed??=false;
  ctx.hintUsedInAttempt??=()=>!!ctx.usedHintThisGame||(ctx.attemptEngine?.snapshot()?.helpUses?.hint||0)>0;
- return vm.createContext(ctx);
+ vm.createContext(ctx);
+ vm.runInContext(functionSource(readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8'),'capturedTiming'),ctx);
+ return ctx;
 }
 const storage=()=>{const values=new Map();return {get length(){return values.size},key:i=>[...values.keys()][i]??null,getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,String(v)),removeItem:k=>values.delete(k)};};
 const reward={badges:{autonomy:true},stars:1};

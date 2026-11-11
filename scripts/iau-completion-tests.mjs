@@ -55,6 +55,13 @@ for(const q of all){
 assert(canonicalCampaignComplete(complete));
 const bytes=profileStorageBytes(JSON.stringify(complete));assert(bytes<MAX_PROFILE_BYTES,'A fully played 880-quest projection must fit the existing cloud JSONB limit: '+bytes);
 console.log('Complete 880-quest cloud projection: '+bytes+'/'+MAX_PROFILE_BYTES+' bytes');
+for(const q of all){
+ const record=q.legacyIndex!==null?complete.performances[q.legacyIndex]:complete.canonicalQuestState[q.id].runPerformance;
+ record.officialTimes={[q.gridRevision??0]:135,...(q.gridRevision?{0:150}:{})};
+}
+const officialBytes=profileStorageBytes(JSON.stringify(complete));
+assert(officialBytes<MAX_PROFILE_BYTES,'Full catalogue with current and original revision official records fits the unchanged cloud limit: '+officialBytes);
+console.log('Complete official-time cloud projection: '+officialBytes+'/'+MAX_PROFILE_BYTES+' bytes');
 const embedded=await createDiagnostics({}, {init(){},async runHintTests(){return [{ok:true}]}}).runAllHintTests();
 assert.deepEqual(embedded.map(s=>s.size),[...new Set(all.map(q=>q.size))].sort((a,b)=>a-b),'Embedded assistance regressions must exercise every playable board size');
 console.log('PASS IAU88: 9 adventures, 88 official figures, 880 quests, exact historical prefix, A6→A9, ownership, eight-constellation finale, replay rewards');

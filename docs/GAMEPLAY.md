@@ -1,5 +1,25 @@
 # Gameplay and UX specification
 
+## Official attempt time and victory (#638, #652)
+
+The visible campaign clock is real elapsed time plus 5 seconds per Verify,
+15 per Hint and 5 per effective guided intervention. Free assistance has the
+same time cost. Each action updates the clock immediately with a brief penalty
+label; restoration derives the sum from durable counters and does not replay
+the label or add another penalty. Technical elapsed time remains available for
+the unchanged Rapidité rule (strictly below 60 real seconds), bonus conditions,
+free-hint research period and cooldowns.
+
+Victory and comparable personal records use official time for the same grid
+revision. Only a strict confirmed improvement announces one new record; equality
+and a better raw time alone do not. The constellation and badges finish their
+animations with a minimum two-second viewing period. They then remain visible
+until explicit action; only « Voir le classement » opens ranking. Reduced motion
+uses a static scene immediately while retaining that minimum period. Progress
+and badges are already durable before the button is used. The unversioned social
+challenge protocol retains real elapsed references until a compatible versioned
+score protocol exists.
+
 ## Uniform quest contract (#522, convergence candidate)
 
 Every quest uses its visible catalogue ordinal for teaching and assistance,

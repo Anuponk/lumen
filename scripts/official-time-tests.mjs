@@ -1,0 +1,62 @@
+import assert from 'node:assert/strict';
+import {rankedTime} from '../src/campaign/ranking.js';
+import {createAttemptEngine} from '../src/game/attempt-engine.js';
+import {completedRunRecords} from '../src/campaign/personal-records.js';
+import {officialRecordTime,completedOfficialRecords,mergeOfficialTimes} from '../src/campaign/official-time.js';
+import {recordLabel,renderRecordResult} from '../src/ui/personal-records.js';
+import {cloudSafelyCoversLocal,reconcileCloudAchievements} from '../src/persistence/cloud-profile.js';
+import {officialTimingSupported,refreshOfficialTimingSupport} from '../src/persistence/official-time.js';
+import {performanceAttempt,speedTargetSeconds} from '../src/campaign/performance.js';
+import fs from 'node:fs';
+// Reference acceptance: real 60, five hints, official 135.
+assert.equal(rankedTime(60,{hint:5}).score,135);
+assert.equal(rankedTime(60,{verify:1,hint:1,guided:1}).score,85);
+const values=new Map(),storage={getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)};
+let now=0;const aidEvents=[],options={storage,now:()=>1000,perfNow:()=>now,onAssistanceUse:event=>aidEvents.push(event)};
+const a=createAttemptEngine(options);a.create({questId:'test'});a.start();now=40000;
+assert.equal(a.officialSeconds(),40);a.recordAssistanceUse('hint',1);assert.equal(a.officialSeconds(),55);
+assert.deepEqual(aidEvents,[{kind:'hint',count:1,delta:1}],'Only a real new aid emits the penalty animation event');
+now=60000;a.recordAssistanceUse('verify',1);a.recordAssistanceUse('guided',1);assert.equal(a.officialSeconds(),85);
+a.recordAssistanceUse('hint',1);assert.equal(a.officialSeconds(),85,'duplicate cumulative assistance is idempotent');
+const b=createAttemptEngine(options);b.restore();assert.equal(b.officialSeconds(),85);b.resume();now+=2000;assert.equal(b.officialSeconds(),87);
+assert.equal(aidEvents.length,3,'Restore and duplicate count must never replay a penalty animation');
+b.reset();assert.equal(b.officialSeconds(),0);assert.equal(b.activeMs(),0);
+const f={seconds:60,timing:{version:1,gridRevision:0,helpUses:{hint:5}}};
+const element={hidden:true,classList:{toggle(){}},textContent:''};
+for(const [prior,improved] of [[110,false],[150,true],[135,false]]){
+ const old={bestTime:prior,officialTimes:{0:prior}},saved={...old,...completedRunRecords(old,f)};
+ assert.equal(saved.bestTime,60,'Technical raw minimum remains preserved');
+ assert.equal(officialRecordTime(saved),Math.min(prior,135));renderRecordResult(element,old,saved,f,String);
+ assert.equal(element.textContent.includes('Nouveau record !'),improved);assert.equal(element.textContent.includes('Record : 60'),false);
+}
+assert.equal(recordLabel({bestTime:60},String),'','Unknown raw minima cannot be presented as official records');
+assert.deepEqual(completedOfficialRecords({officialTimes:{0:110}}, {...f,timing:{...f.timing,gridRevision:2}}),{officialTimes:{0:110,2:135}});
+assert.deepEqual(mergeOfficialTimes({0:150,2:80},{0:135,3:90}),{0:135,2:80,3:90});
+assert.throws(()=>mergeOfficialTimes({0:'135'}));
+const legacy={rpc:async()=>({error:{code:'PGRST202'},status:404})},modern={rpc:async()=>({data:1})};
+assert.equal(await refreshOfficialTimingSupport(legacy),false);assert.equal(await refreshOfficialTimingSupport(modern),true);assert.equal(officialTimingSupported(legacy),false);
+const endpoint='https://synthetic.supabase.invalid';
+assert.equal(await refreshOfficialTimingSupport({supabaseUrl:endpoint,rpc:async()=>({data:1})},{storage}),true);
+const coldOffline={supabaseUrl:endpoint,rpc:async()=>{throw Error('offline')}};
+assert.equal(await refreshOfficialTimingSupport(coldOffline,{storage}),true,'A fully closed offline PWA retains the verified server capability and captures aid evidence');
+assert.equal(officialTimingSupported({supabaseUrl:'https://different.invalid'},{storage}),false,'Backend capabilities never cross projects');
+await refreshOfficialTimingSupport({supabaseUrl:endpoint,...legacy},{storage});assert.equal(officialTimingSupported(coldOffline,{storage}),false,'Explicit absent endpoint disables future new captures without rewriting queued facts');
+const controlled={supabaseUrl:endpoint,rpc:async()=>({data:1})};await refreshOfficialTimingSupport(controlled,{storage});controlled.rpc=async()=>({data:0});assert.equal(await refreshOfficialTimingSupport(controlled,{storage}),false,'Operator deactivation invalidates a positive cache without changing frozen intentions');
+assert.equal(performanceAttempt({questIndex:20,seconds:59,assistanceUsed:true}).speed,true,'Rapidité retains elapsed time rule');
+assert.equal(performanceAttempt({questIndex:20,seconds:60}).speed,false);
+const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),tutorial=fs.readFileSync(new URL('../src/ui/tutorial.js',import.meta.url),'utf8');
+assert.ok(html.includes('moins de '+speedTargetSeconds()+' secondes de recherche (hors pénalités)'));
+assert.ok(tutorial.includes('ajoute 15 secondes au chrono'));assert.ok(tutorial.includes('chaque intervention ajoute 5 secondes au chrono'));
+const profile=times=>({solved:{0:1},badges:{},performances:{0:{bestTime:60,officialTimes:times}}});
+const local=profile({0:110,2:80}),remote=profile({0:135,3:90});
+assert.equal(cloudSafelyCoversLocal(local,remote),false);
+storage.setItem('lumenProgressV1',JSON.stringify(local));reconcileCloudAchievements(storage,remote);
+assert.deepEqual(JSON.parse(storage.getItem('lumenProgressV1')).performances[0].officialTimes,{0:110,2:80,3:90});
+assert.equal(cloudSafelyCoversLocal(local,profile({0:105,2:80,3:90})),true);
+for(const times of [{0:135},{0:100}]){
+ const canonical=t=>({solved:{},badges:{},legacyVictoryRevision:1,canonicalQuestState:{test:{solved:true,stars:1,performance:{seconds:60},badges:{},runPerformance:{version:3,bestTime:60,badges:{},officialTimes:t}}}});
+ const before=canonical({0:110,2:80}),after=canonical(times);
+ storage.setItem('lumenProgressV1',JSON.stringify(before));reconcileCloudAchievements(storage,after);
+ assert.deepEqual(JSON.parse(storage.getItem('lumenProgressV1')).canonicalQuestState.test.runPerformance.officialTimes,{0:Math.min(110,times[0]),2:80});
+}
+console.log('PASS official timing: raw preserved, all aid types, duplicate, interruption, offline restore, reset');

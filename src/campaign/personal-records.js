@@ -1,3 +1,4 @@
+import {completedOfficialRecords} from './official-time.js';
 // Times come from completed runs. Never infer an unassisted run from badges.
 export function validRecordTime(value){return typeof value==='number'&&Number.isFinite(value)&&value>=0&&value<=Number.MAX_SAFE_INTEGER}
 export function recordMinimum(...values){const times=values.filter(validRecordTime);return times.length?Math.min(...times):undefined}
@@ -5,7 +6,7 @@ export function completedRunRecords(previous={},facts={}){
  const bestTime=recordMinimum(previous.bestTime,facts.seconds);
  const bestUnassistedTime=recordMinimum(previous.bestUnassistedTime,
   !facts.assistanceUsed&&!facts.hintUsed?facts.seconds:undefined);
- return {...(bestTime===undefined?{}:{bestTime,time:bestTime}),...(bestUnassistedTime===undefined?{}:{bestUnassistedTime})};
+ return {...(bestTime===undefined?{}:{bestTime,time:bestTime}),...(bestUnassistedTime===undefined?{}:{bestUnassistedTime}),...completedOfficialRecords(previous,facts)};
 }
 export function personalRecordComparison(previous={},confirmed={},facts={}){
  const seconds=facts.seconds;
