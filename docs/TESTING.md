@@ -1978,3 +1978,9 @@ entre deux applications de la migration, dry-run, minima et rollback.
 La concurrence SQL complète reste obligatoire en CI. Les tests simulés ne prouvent
 ni l'information juridique, ni une compétition entre comptes de production, ni la
 recette sur téléphone physique ; voir HIGHSCORE_ROLLOUT.md.
+
+## Sélection CI des PR purement documentaires
+
+Le job GitHub Actions `Lumen quality gate` conserve son statut de contrôle obligatoire, mais évite ses tests applicatifs pour une pull request ne modifiant **que** `AGENTS.md` ou des fichiers `docs/**/*.md` (hors `docs/validation/`). Le contrôle indépendant `Documentation consistency` reste exécuté. La détection compare les commits base et head ; si la comparaison échoue ou si un fichier inconnu, généré, SQL, applicatif ou de workflow est touché, la gate complète reste obligatoire (fail closed). Les pushes sur `main`, lancements manuels et contrôles programmés ne changent pas. Une PR modifiant elle-même la CI exécute donc la gate complète.
+
+Ce filtrage ne remplace ni les tests ciblés pendant le développement ni les contrats de sauvegarde et de synchronisation. Avant de fusionner, vérifier que le check `quality` reste présent et vert sur une PR documentaire et que la gate complète s'exécute sur une PR de code.
