@@ -70,14 +70,52 @@ jobs:
             print("No completed green main CI for this SHA; running full quality")
           PY
 
+      - name: Classify documentation-only pull requests
+        id: scope
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          # Fail closed: any ambiguity executes the full gate.
+          echo "run_full=true" >> "$GITHUB_OUTPUT"
+          if ! git cat-file -e "$BASE_SHA^{commit}" || ! git cat-file -e "$HEAD_SHA^{commit}"; then
+            echo "Cannot resolve both PR commits; running full gate"
+            exit 0
+          fi
+          if ! git diff --name-only --no-renames "$BASE_SHA" "$HEAD_SHA" > /tmp/lumen-changed-paths; then
+            echo "Cannot classify PR diff; running full gate"
+            exit 0
+          fi
+          python3 - <<'PY'
+          import os
+          from pathlib import PurePosixPath
+          paths = [p for p in open('/tmp/lumen-changed-paths', encoding='utf-8').read().splitlines() if p]
+          def docs_only(path):
+              if path == 'AGENTS.md':
+                  return True
+              return path.startswith('docs/') and path.endswith('.md') and not path.startswith('docs/validation/')
+          if paths and all(docs_only(p) for p in paths):
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+                  output.write('run_full=false\n')
+              print('Documentation-only PR: full runtime gate not needed; documentation CI remains separate')
+          else:
+              print('Code, workflow, generated files, or unknown scope: run full gate')
+          PY
+
+      - name: Explain quality gate scope
+        if: github.event_name == 'pull_request' && steps.scope.outputs.run_full == 'false'
+        run: echo "Documentation-only changes; full runtime gate skipped. Required quality job succeeds; documentation consistency runs independently."
+
       - name: Check reproducible formatting
-        if: steps.scheduled_check.outputs.need_tests == 'true'
+        if: steps.scheduled_check.outputs.need_tests == 'true' && steps.scope.outputs.run_full != 'false'
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           npm run format:check
 
       - name: Validate o2switch release script syntax
-        if: steps.scheduled_check.outputs.need_tests == 'true'
+        if: steps.scheduled_check.outputs.need_tests == 'true' && steps.scope.outputs.run_full != 'false'
         run: |
           for script in scripts/o2switch-{safe-release,cron-publish,deploy-monitor,ssh-deploy,runner-firewall,webhook-worker,install-webhook}.sh; do bash -n "$script"; done
           python3 scripts/o2switch-deploy-tests.py
@@ -85,11 +123,11 @@ jobs:
           python3 scripts/o2switch-https-tests.py
 
       - name: Validate offline issue 222 generator syntax
-        if: steps.scheduled_check.outputs.need_tests == 'true'
+        if: steps.scheduled_check.outputs.need_tests == 'true' && steps.scope.outputs.run_full != 'false'
         run: node --check scripts/issue-222-generate-grids.mjs && node --check scripts/issue-222-migration-plan.mjs
 
       - name: Validate Android offline shell preflight
-        if: steps.scheduled_check.outputs.need_tests == 'true'
+        if: steps.scheduled_check.outputs.need_tests == 'true' && steps.scope.outputs.run_full != 'false'
         run: node scripts/android-offline-preflight.mjs
 
       - name: Select learning browser coverage
@@ -120,41 +158,41 @@ jobs:
                   return p in ('scripts/ranking-tests.mjs','scripts/ranking-client-tests.mjs','scripts/personal-records-tests.mjs')
               return False
           if changed and all(safe_to_skip(p) for p in changed):
-              with open(os.environ['GITHUB_OUTPUT'],'a') as out: out.write('run_learning=false\\n')
+              with open(os.environ['GITHUB_OUTPUT'],'a') as out: out.write('run_learning=false\n')
               print('Learning browser suite skipped for isolated changes:',', '.join(changed))
           else:
               print('Learning browser suite required (shared or uncertain impact)')
           PY
 
       - name: Unified quality gate
-        if: steps.scheduled_check.outputs.need_tests == 'true'
+        if: steps.scheduled_check.outputs.need_tests == 'true' && steps.scope.outputs.run_full != 'false'
         env:
           LUMEN_BROWSER_WORKERS: '2'
           LUMEN_RUN_LEARNING_BROWSER: ${{ steps.learning_scope.outputs.run_learning }}
         run: node scripts/quality-gate.mjs
 
       - name: Complete cloud profile backup regression
-        if: steps.scheduled_check.outputs.need_tests == 'true'
+        if: steps.scheduled_check.outputs.need_tests == 'true' && steps.scope.outputs.run_full != 'false'
         run: node scripts/cloud-profile-tests.mjs
 
       - name: Cross-device cloud persistence regression matrix
-        if: steps.scheduled_check.outputs.need_tests == 'true'
+        if: steps.scheduled_check.outputs.need_tests == 'true' && steps.scope.outputs.run_full != 'false'
         run: node scripts/cloud-regression-matrix-tests.mjs
 
       - name: Guest save migration recovery regression
-        if: steps.scheduled_check.outputs.need_tests == 'true'
+        if: steps.scheduled_check.outputs.need_tests == 'true' && steps.scope.outputs.run_full != 'false'
         run: node scripts/guest-transfer-tests.mjs
 
       - name: OAuth redirect regression
-        if: steps.scheduled_check.outputs.need_tests == 'true'
+        if: steps.scheduled_check.outputs.need_tests == 'true' && steps.scope.outputs.run_full != 'false'
         run: node scripts/oauth-return.test.mjs
 
       - name: Verify cloud persistence policy on main
-        if: steps.scheduled_check.outputs.need_tests == 'true' && github.event_name != 'pull_request'
+        if: steps.scheduled_check.outputs.need_tests == 'true' && steps.scope.outputs.run_full != 'false' && github.event_name != 'pull_request'
         run: node scripts/cloud-contract-check.mjs
 
       - name: Upload validation reports
-        if: always() && steps.scheduled_check.outputs.need_tests == 'true'
+        if: always() && steps.scheduled_check.outputs.need_tests == 'true' && steps.scope.outputs.run_full != 'false'
         uses: actions/upload-artifact@v4
         with:
           name: lumen-validation-reports
