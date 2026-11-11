@@ -1813,3 +1813,9 @@ La présentation de victoire ne valide aucune acquisition. La progression et
 les badges sont confirmés avant la célébration ; fermer avant « Voir le
 classement » ne change ni leur persistance ni les intentions en attente.
 Voir [le plan de migration](OFFICIAL_TIME_ROLLOUT.md).
+
+## Pseudo et participation au classement (issue #659)
+
+Les comptes connectés doivent choisir un pseudo unique de 3 à 20 caractères avant d'utiliser le classement. La fenêtre de saisie propose une sortie vers le jeu invité plutôt que de bloquer l'accès à la progression locale. L'unicité et les caractères autorisés sont validés côté serveur par `lumen_set_nickname` ; une erreur ne modifie pas les sauvegardes.
+
+La migration `20261111210000_ranking_default_nickname.sql` introduit `ranking_withdrawn_explicit` et crée automatiquement une adhésion pour les profils nouvellement nommés et non exclus. Le retrait volontaire supprime les temps publics et reste effectif sur les nouvelles tentatives. Les anciens `ranking_opted_out=true` ne sont pas réactivés automatiquement, car la migration historique ne permet pas de distinguer une exclusion technique d'un retrait volontaire. Une reprise séparée avec examen des cas historiques est nécessaire. Aucune modification des étoiles, badges, monnaies, droits d'aventure, progression, ni des instantanés cloud.
