@@ -1,0 +1,96 @@
+begin;
+do $test$
+declare u uuid:=gen_random_uuid();v uuid:=gen_random_uuid();other uuid;deleted uuid:=gen_random_uuid();q text;changed text;rev integer;i integer;b jsonb;r jsonb;before jsonb;batch uuid:=gen_random_uuid();
+begin
+ assert (select count(*)=2 from lumen.profiles where lower(btrim(nickname))='legacy' and not nickname_ready),'Both historical duplicates stay unchanged and unresolved';
+ assert (select nickname=' Legacy ' from lumen.profiles where user_id='65000000-0000-4000-8000-000000000001'),'No arbitrary rename';
+ assert (select nickname_ready from lumen.profiles where nickname='Unique old'),'Existing unique pseudo preserved';
+ assert not has_table_privilege('authenticated','lumen_commands.ranking_import_backup','select'),'Backups private';
+ assert not has_function_privilege('authenticated','lumen_commands.import_ranking_history(boolean,uuid)','execute'),'No public import API';
+ insert into auth.users values(u),(v);
+ perform set_config('request.jwt.claim.sub',u::text,true);
+ assert public.lumen_set_nickname('  Vega  ')='Vega','Trimmed canonical nickname';
+ perform set_config('request.jwt.claim.sub',v::text,true);
+ begin perform public.lumen_set_nickname('veGA');raise exception 'Duplicate accepted';exception when unique_violation then null;end;
+ begin perform public.lumen_set_nickname('ab');raise exception 'Short accepted';exception when invalid_parameter_value then null;end;
+ begin perform public.lumen_set_nickname('abcdefghijklmnopqrstu');raise exception 'Long accepted';exception when invalid_parameter_value then null;end;
+ begin perform public.lumen_set_nickname('Legacy');raise exception 'Unresolved historical alias stolen';exception when unique_violation then null;end;
+ perform public.lumen_set_nickname('Atlas');
+ select quest_id,grid_revision into q,rev from lumen_commands.quest_rules where grid_revision=0 and legacy_index is not null order by quest_id limit 1;
+ assert q is not null,'Revision-zero test grid';
+ perform set_config('request.jwt.claim.sub',u::text,true);
+ perform lumen_commands.ranking_auto(clock_timestamp());
+ assert not exists(select 1 from lumen_commands.ranking_members where user_id=u),'Automatic publishing closed before legal activation';
+ update lumen_commands.ranking_control set automatic_after=clock_timestamp()-interval '1 second';
+ perform lumen_commands.ranking_auto(clock_timestamp());
+ assert exists(select 1 from lumen_commands.ranking_members where user_id=u),'Eligible account participates automatically';
+ insert into lumen_commands.ranking_scores(user_id,quest_id,grid_revision,seconds,penalty) values(u,q,rev,40,5);
+ perform public.lumen_set_nickname('Vega new');
+ assert (select score=45 from lumen_commands.ranking_scores where user_id=u),'Rename preserves score identity';
+ b:=public.lumen_ranking_board(q,rev);
+ assert jsonb_array_length(b->'top')=3 and b->'realParticipants'='1','Three visible places, only humans counted';
+ assert b->'personal'->>'nickname'='Vega new','Canonical profile owns public nickname';
+ assert not (b::text ~ u::text),'No public UUID';
+ for i in 1..10 loop
+  other:=gen_random_uuid();insert into auth.users values(other);
+  insert into lumen.profiles(user_id,nickname) values(other,'Highscore '||i);
+  insert into lumen_commands.ranking_members values(other,'Highscore '||i,true);
+  insert into lumen_commands.ranking_scores(user_id,quest_id,grid_revision,seconds,penalty) values(other,q,rev,i,0);
+ end loop;
+ b:=public.lumen_ranking_board(q,rev);
+ assert b->'realParticipants'='11' and b->'personal'->'position'='11','Personal rank covers all scores, not just the podium';
+ assert jsonb_array_length(b->'top')=3 and not exists(select 1 from jsonb_array_elements(b->'top') x where x->'virtual'='true'),'Ten real participants retire every Echo';
+ -- Snapshot records are kept as evidence, never rewritten to manufacture a revision.
+ insert into lumen.profile_snapshots(user_id,payload) values(u,jsonb_build_object('performances',jsonb_build_object((select legacy_index::text from lumen_commands.quest_rules where quest_id=q),jsonb_build_object('bestTime',30)),'canonicalQuestState','{}'::jsonb,'solved','{}'::jsonb,'xp',123,'shards',7));
+ select payload into before from lumen.profile_snapshots where user_id=u;
+ -- A synthetic revised historical mapping proves the exclusion without
+ -- bypassing the real canonical run-authority writer.
+ select legacy_index::text into changed from lumen_commands.quest_rules where grid_revision=0 and legacy_index is not null and quest_id<>q order by quest_id limit 1;
+ assert changed is not null,'Historical mapping fixture exists';
+ update lumen_commands.quest_rules set grid_revision=1 where legacy_index::text=changed;
+ insert into lumen.profile_snapshots(user_id,payload) values(v,jsonb_build_object('solved','{}'::jsonb,'canonicalQuestState','{}'::jsonb,'performances',jsonb_build_object(changed,jsonb_build_object('bestTime',1),'not-a-quest',jsonb_build_object('bestTime',2)),'xp',0,'shards',7));
+ perform public.lumen_ranking_membership(false,null);
+ assert exists(select 1 from lumen_commands.ranking_history_candidates where user_id=u and exclusion='withdrawn'),'Withdrawn record excluded';
+ perform public.lumen_ranking_membership(true,null);
+ -- Withdrawal correctly deleted the first score. Recreate the independent
+ -- competitive baseline used by the following dry-run/import comparisons.
+ insert into lumen_commands.ranking_scores(user_id,quest_id,grid_revision,seconds,penalty) values(u,q,rev,40,5);
+ perform set_config('request.jwt.claim.sub',v::text,true);perform public.lumen_ranking_membership(true,null);
+ assert exists(select 1 from lumen_commands.ranking_history_candidates where user_id=v and exclusion='ambiguous_revision'),'All-time minimum cannot borrow the new grid revision';
+ assert exists(select 1 from lumen_commands.ranking_history_candidates where user_id=v and exclusion='unknown_quest'),'Unmapped identity stays historical';
+ insert into auth.users values(deleted);
+ insert into lumen.historical_performance(player_key,user_id,puzzle_id) values('u:'||deleted,deleted,1);
+ delete from auth.users where id=deleted;
+ assert not exists(select 1 from lumen_commands.ranking_history_candidates where user_id=deleted and exclusion is null),'Deleted accounts cannot be reactivated';
+ perform set_config('request.jwt.claim.sub',u::text,true);
+ begin perform lumen_commands.import_ranking_history(true,batch);raise exception 'Ungated history';exception when insufficient_privilege then null;end;
+ update lumen_commands.ranking_control set historical_enabled=true;
+ r:=lumen_commands.import_ranking_history(false,batch);assert (r->>'imported')::integer>=1,'Dry run reports admissible minimum';
+ assert (select score=45 from lumen_commands.ranking_scores where user_id=u),'Dry run never writes';
+ r:=lumen_commands.import_ranking_history(true,batch);
+ assert (select score=30 and penalty=0 from lumen_commands.ranking_scores where user_id=u),'Historical convention: zero penalty';
+ assert (select payload=before from lumen.profile_snapshots where user_id=u),'Progress, rewards and badges remain byte equivalent';
+ perform lumen_commands.import_ranking_history(true,batch);
+ assert (select count(*)=1 from lumen_commands.ranking_scores where user_id=u),'Repeated import has no duplicate';
+ assert lumen_commands.rollback_ranking_history(batch)>=1,'Rollback can restore the previous competitive record';
+ assert (select score=45 from lumen_commands.ranking_scores where user_id=u),'Previous score restored';
+ perform lumen_commands.import_ranking_history(true,batch);
+ update lumen_commands.ranking_scores set seconds=20 where user_id=u;
+ perform lumen_commands.rollback_ranking_history(batch);
+ assert (select score=20 from lumen_commands.ranking_scores where user_id=u),'Rollback preserves newer better performance';
+ perform lumen_commands.import_ranking_history(true);
+ assert (select score=20 from lumen_commands.ranking_scores where user_id=u),'Import preserves an already faster competitive result';
+ perform public.lumen_ranking_membership(false,null);
+ perform lumen_commands.ranking_auto(clock_timestamp());
+ perform lumen_commands.import_ranking_history(true);
+ assert not exists(select 1 from lumen_commands.ranking_scores where user_id=u),'Withdrawal cannot be resurrected by auto or import';
+ assert public.lumen_ranking_account()->'withdrawn'='true','Opposition survives reconnect/readback';
+ perform public.lumen_ranking_membership(true,null);
+ assert public.lumen_ranking_account()->'withdrawn'='false','Only explicit rejoin lifts opposition';
+ perform set_config('request.jwt.claim.sub','',true);
+ perform lumen_privacy.erase_account(u,array[]::text[],'ERASE LUMEN '||u);
+ assert not exists(select 1 from lumen_commands.ranking_import_backup where user_id=u),'Erasure covers all per-batch backups';
+ perform lumen_commands.rollback_ranking_history(batch);
+ assert not exists(select 1 from lumen_commands.ranking_scores where user_id=u),'Rollback cannot resurrect erased player data';
+end $test$;
+rollback;

@@ -363,6 +363,16 @@ known field names (otherwise `unknown_field`), without profile contents.
 
 ### Competition (#638/#647)
 
+The follow-up `20261111060216_highscore_victory.sql` returns Top 3, personal position
+and the real participant total over the complete deterministic ranking. Canonical
+profile names are unique after trim/case folding (3–20 characters); legacy
+collisions retain their names until progressive resolution. No UUID is public.
+Historical import is dry-run by default, zero penalty and minimum-only for certain
+grid identities. Private per-batch backups use the erasure inventory and conditional
+rollback. It never writes badges, progression or Wallet state. Automatic publishing
+and historical import have separate closed activation gates. See the
+[activation and restoration runbook](HIGHSCORE_ROLLOUT.md).
+
 `persistence/ranking.js` durably stages new version-1 captures separately from
 progression, keyed by authenticated owner + exact victory operation ID. The
 attempt restores hint/verify/guided counts; old attempts never acquire ranking
@@ -375,13 +385,15 @@ eligible start per owner/grid/revision per fifteen minutes under a transaction
 advisory lock. Delayed submissions retain their original immutable start.
 `ranking_finish` requires the exact canonical/historical victory receipt and
 matching quest/start/hint facts. It computes penalties and retains the lower
-admitted score. Nonqualifying badge runs cannot enter competition. No historical
-minimum is imported. Elapsed time and aid counts remain client assertions,
+admitted score. Nonqualifying badge runs cannot enter competition. Historical
+minima follow the separately gated, revision-safe import above. Elapsed time and aid counts remain client assertions,
 checked for bounds, consistency and wall time; this is not tamper-proof timing.
 
-`ranking_members` owns explicit participation and a validated public nickname.
+`lumen.profiles` owns the canonical unique nickname and durable ranking opposition;
+`ranking_members` owns public participation. Automatic participation is server-gated
+by the published information boundary, never inferred from reconnect.
 Only nickname/place/time/penalty/own-row/virtual flags leave the board RPC; no
-account ID/email. Opt-out deletes public scores and membership; minimal private
+account ID/email. Opt-out deletes public scores and membership while retaining profile opposition; minimal private
 runs retain cooldown/idempotence until Lumen erasure. The privacy inventory,
 rights export and anti-resurrection guards cover all four new tables. No
 progression/reward/Wallet writer is added.

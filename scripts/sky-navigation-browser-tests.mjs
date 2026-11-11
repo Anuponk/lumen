@@ -1,3 +1,4 @@
+import {revealVictoryResults} from './cdp-client.mjs';
 import assert from 'node:assert/strict';
 import {verifyCelestialUX} from './celestial-ux-browser.mjs';
 import fs from 'node:fs';
@@ -9,7 +10,7 @@ const {send,evaluate,errors}=await connectBrowser(),sleep=ms=>new Promise(r=>set
 const url=new URL(process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/');url.searchParams.set('qa','new');
 const snapshot=()=>evaluate('lumenDiagnostics.snapshot()');
 async function ready(controlled=false){for(let i=0;i<150;i++){if(await evaluate(`!!window.lumenDiagnostics && (!${controlled} || !!navigator.serviceWorker.controller)`))return;await sleep(100)}throw Error('Application did not start: '+JSON.stringify(errors))}
-async function click(selector){const p=await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)}),r=e.getBoundingClientRect();if(!r.width||!r.height)throw Error('Hidden target '+${JSON.stringify(selector)});return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...p});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...p})}
+async function click(selector){if(/^#skyReveal/.test(selector))await revealVictoryResults(evaluate);const p=await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)}),r=e.getBoundingClientRect();if(!r.width||!r.height)throw Error('Hidden target '+${JSON.stringify(selector)});return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...p});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...p})}
 async function fit(){const result=await evaluate(`(()=>{const sheet=document.querySelector('#mapModal .map-sheet'),modal=document.getElementById('mapModal'),r=sheet.getBoundingClientRect(),selectors=['#closeMap','#adventureRail','#sectorTabs','#constellationPages','#openMyChallenges'];return {height:r.height,overflow:Math.max(sheet.scrollHeight-sheet.clientHeight,modal.scrollHeight-modal.clientHeight),targets:selectors.map(s=>{const e=document.querySelector(s),q=e.getBoundingClientRect();return {s,visible:!e.hidden&&!!q.height,inside:q.top>=0&&q.bottom<=innerHeight&&q.left>=0&&q.right<=innerWidth}})}})()`);assert(result.overflow<=2,'Vertical overflow: '+JSON.stringify(result));assert(result.targets.every(t=>!t.visible||t.inside),'Controls outside viewport: '+JSON.stringify(result));return result.height}
 async function until(expression){for(let i=0;i<100;i++){if(await evaluate(expression))return;await sleep(100)}throw Error('Timed out: '+expression)}
 async function cardTextFits(){

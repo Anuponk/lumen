@@ -369,3 +369,8 @@ Voir [CATALOGUE_88](../CATALOGUE_88.md) pour les commandes, courbes et limites.
 ### Correctifs #629 / #632 / #627
 
 Aides : `game-screen.js` → `offline-wallet.js`. Glissements : `drag-grid-path.js` → `moveDragCross`. Maîtrise : `celestial-progress.js` → célébration et `sky-navigation.js`. Contrats : GAMEPLAY, PROGRESSION, UX_AND_VISUAL_DIRECTION, DATA_AND_ARCHITECTURE.
+
+Highscore finalization: ui/victory-presentation.js owns animation completion and
+activation consumption; ui/ranking.js owns the compact view. The follow-up SQL
+owns canonical nickname uniqueness, durable opposition and operator-only history.
+Production gates and restore procedure: docs/HIGHSCORE_ROLLOUT.md.

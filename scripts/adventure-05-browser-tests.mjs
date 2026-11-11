@@ -30,7 +30,7 @@ try{
    const after=await evaluate('lumenDiagnostics.snapshot().progress');assert.equal(after.canonicalQuestState[quest.id].solved,true);
    assert.deepEqual(after.solved,progress.solved,'Old numeric progress is unchanged');
    for(const [id,entry] of Object.entries(progress.canonicalQuestState))assert.deepEqual(after.canonicalQuestState[id],entry);
-   await evaluate('document.getElementById("skyRevealNext").click()');await acknowledgeLearningMilestones(evaluate);
+   await evaluate('(()=>{const h=document.getElementById("skyReveal");if(h?.dataset.victoryPhase==="celebration")h.click();document.getElementById("skyRevealNext").click()})()');await acknowledgeLearningMilestones(evaluate);
   }
   assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth'),true);
   await navigateAndWait({send,evaluate},'Page.reload');

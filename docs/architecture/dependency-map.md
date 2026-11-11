@@ -7,7 +7,10 @@ OAuth-return guards remain in the same listener.
 
 Competition #638/#647: attempt (version/start/aid counters) → separate durable
 ranking capture → confirmed existing victory receipt → private ranking admission
-and minimum → bounded public list → shared result animation. Owner/client guards
+and minimum → server Top 3 + personal position + human count → result after
+finite celebration completion (or consumed surface activation). Canonical profile
+nickname/withdrawal gates admission; the separately gated historical minima import
+uses private per-batch backups and conditional rollback. Owner/client guards
 apply across every await. No edge points back into progression, Wallet or badges.
 Manual marking is forced by the live game-engine injection; proof-audit tooling
 retains historical simulation behavior for meaningful non-regression comparisons.

@@ -1,3 +1,4 @@
+import {revealVictoryResults} from './cdp-client.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {connectBrowser,closeBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
@@ -11,7 +12,7 @@ const url=new URL(process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/');url.sear
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const snapshot=()=>evaluate('lumenDiagnostics.snapshot()');
 async function until(expression){for(let i=0;i<100;i++){if(await evaluate(expression))return;await sleep(100)}throw Error('Timed out: '+expression+'; '+JSON.stringify({snapshot:await snapshot(),errors}))}
-async function click(id){const p=await evaluate(`(()=>{const r=document.getElementById(${JSON.stringify(id)}).getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...p});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...p});}
+async function click(id){if(/^skyReveal/.test(id))await revealVictoryResults(evaluate);const p=await evaluate(`(()=>{const r=document.getElementById(${JSON.stringify(id)}).getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...p});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...p});}
 const results=[];
 try{
  await send('Page.enable');await send('Runtime.enable');
@@ -81,7 +82,7 @@ try{
   assert.match(await evaluate('document.getElementById("celestialSummary").textContent'),/Toutes les quêtes sont terminées\. Les badges restent à explorer/);
   assert.equal(await evaluate('document.getElementById("skyRevealTitle").textContent'),'Le ciel est réuni');
   assert.equal(await evaluate('document.getElementById("endgameOverlay").hidden'),true,'No second finale popup');
-  await evaluate('document.getElementById("skyRevealNext").click()');
+  await evaluate('(()=>{const h=document.getElementById("skyReveal");if(h?.dataset.victoryPhase==="celebration")h.click();document.getElementById("skyRevealNext").click()})()');
   await until('!document.getElementById("mapModal").hidden');
   assert.equal((await snapshot()).progress.badges.historical,1);
   results.push({viewport,transition100to101:true,normalCelebration:true,noSkip:true,rewardsPreserved:true,reload:true,sameAttempt:true,mapReturn:true,lastQuest:true,cappedSaveRecovery:true,finalVictory:true,completeSky:true});

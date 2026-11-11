@@ -5,6 +5,12 @@ export async function closeBrowser(send){
  catch(error){if(error?.message!=='CDP timeout after 15s: Browser.close')throw error;}
 }
 
+// Navigation regressions accelerate through the real surface before the action.
+// The ranking suite separately verifies that the first tap is consumed.
+export async function revealVictoryResults(evaluate){
+ await evaluate("(()=>{const h=document.getElementById('skyReveal');if(!h?.hidden&&h?.dataset.victoryPhase==='celebration')h.click()})()");
+}
+
 // CDP acknowledges navigation before the old document is necessarily replaced.
 export async function navigateAndWait({send,evaluate},method,params={}) {
  const previous=await evaluate('performance.timeOrigin');

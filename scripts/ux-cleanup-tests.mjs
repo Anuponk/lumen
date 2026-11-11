@@ -1,3 +1,4 @@
+import {revealVictoryResults} from './cdp-client.mjs';
 // Real browser checks for #16/#17/#19; use the isolated CDP setup in docs/TESTING.md.
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
@@ -8,7 +9,7 @@ const performanceSource=fs.readFileSync(new URL('../src/campaign/performance.js'
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const results=[],failures=[];
 const check=(value,message)=>{if(!value)failures.push(message)};
-async function click(selector){
+async function click(selector){if(/^#skyReveal/.test(selector))await revealVictoryResults(evaluate);
  const point=await evaluate(`(()=>{const element=document.querySelector(${JSON.stringify(selector)});element.scrollIntoView({block:'center'});const r=element.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);
  await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...point});
  await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...point});await sleep(70);

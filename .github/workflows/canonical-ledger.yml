@@ -214,3 +214,14 @@ jobs:
             -f supabase/migrations/20261110190629_grid_ranking.sql \
             -f scripts/fixtures/ranking.sql
           python3 scripts/ranking-concurrency.py
+      - name: Verify compact podium, unique profiles and guarded historical import
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f scripts/fixtures/highscore-before.sql \
+            -f supabase/migrations/20261111060216_highscore_victory.sql \
+            -f supabase/migrations/20261111060216_highscore_victory.sql \
+            -f scripts/fixtures/highscore.sql
+          python3 scripts/highscore-concurrency.py
