@@ -1968,7 +1968,8 @@ Recette physique restante : indice avec 80 Éclats en mode avion puis reconnexio
 ## Highscore et séquence de victoire
 
 La quality gate exécute victory-presentation-tests.mjs et ranking-browser-tests.mjs :
-fin effective/annulation, accélération sans activation derrière, podium et carte,
+fin effective/annulation, minimum de deux secondes, attente sans limite puis
+bouton explicite pointeur/clavier, podium et carte,
 Top 3/hors podium/sans score/Échos, reduced-motion, largeur 320/390/768/1440 et
 petites hauteurs 320/360/480. Les fixtures highscore-before.sql,
 highscore-between.sql et highscore.sql
@@ -1978,3 +1979,13 @@ entre deux applications de la migration, dry-run, minima et rollback.
 La concurrence SQL complète reste obligatoire en CI. Les tests simulés ne prouvent
 ni l'information juridique, ni une compétition entre comptes de production, ni la
 recette sur téléphone physique ; voir HIGHSCORE_ROLLOUT.md.
+
+Le chrono officiel est couvert par official-time-tests.mjs et
+official-time-browser-tests.mjs : 60 + 75 = 135 secondes, comparaison à 110/150/135,
+pénalité immédiate, géométrie de mise en page inchangée, absence d’annonce en double,
+preuve persistée avant ouverture du classement et capability conservée après
+fermeture hors ligne de la PWA. Les compteurs répétés/restaurés n’émettent pas de
+nouvelle animation. fixtures/official-time.sql et official-time-concurrency.py
+vérifient les deux générations de commandes, droits, read-back, import historique,
+retrait et plusieurs appareils dans PostgreSQL 17 jetable. Aucun test SQL de fixture
+ne doit viser la production ; voir OFFICIAL_TIME_ROLLOUT.md pour le plan opérateur.

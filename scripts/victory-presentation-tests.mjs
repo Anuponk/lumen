@@ -6,7 +6,7 @@ function fixture(reduced=false){
  const button=new EventTarget();button.hidden=true;host.querySelector=()=>button;
  let frame,resolve,elapsed;const finished=new Promise(r=>resolve=r);
  host.getAnimations=()=>[{finished,effect:{getComputedTiming:()=>({endTime:7000})}},{finished:new Promise(()=>{}),effect:{getComputedTiming:()=>({endTime:Infinity})}}];
- const view=createVictoryPresentation(host,{frame:f=>frame=f,reducedMotion:()=>reduced,delay:()=>new Promise(r=>elapsed=r)});let completions=0;
+ const view=createVictoryPresentation(host,{frame:f=>frame=f,reducedMotion:()=>reduced,delay:ms=>{assert.ok(ms>=2000,'Minimum viewing period is two seconds');return new Promise(r=>elapsed=r)}});let completions=0;
  return {host,button,view,start(){view.start(()=>completions++)},frame:()=>frame(),resolve,elapsed:()=>elapsed(),get completions(){return completions}};
 }
 const settle=()=>new Promise(r=>setImmediate(r));
@@ -24,4 +24,10 @@ test('reduced motion also preserves the two second viewing period, including no 
 test('closing cancels a stale completion and detaches its button',async()=>{
  const f=fixture();f.start();f.frame();f.view.clear();f.resolve();f.elapsed();await settle();
  assert.equal(f.button.hidden,true);f.button.dispatchEvent(new Event('click'));assert.equal(f.completions,0);
+});
+
+test('a victory without finite badge animations still waits and never opens ranking itself',async()=>{
+ const f=fixture();f.host.getAnimations=()=>[];f.start();f.frame();await settle();assert.equal(f.button.hidden,true);
+ const key=new Event('keydown');Object.defineProperty(key,'key',{value:'Enter'});f.host.dispatchEvent(key);assert.equal(f.completions,0);
+ f.elapsed();await settle();assert.equal(f.button.hidden,false);assert.equal(f.completions,0);
 });
