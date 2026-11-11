@@ -92,10 +92,45 @@ jobs:
         if: steps.scheduled_check.outputs.need_tests == 'true'
         run: node scripts/android-offline-preflight.mjs
 
+      - name: Select learning browser coverage
+        id: learning_scope
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          echo "run_learning=true" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" ]]; then exit 0; fi
+          if [[ -z "$BASE_SHA" || -z "$HEAD_SHA" ]]; then exit 0; fi
+          if ! git diff --name-only --no-renames "$BASE_SHA" "$HEAD_SHA" > /tmp/lumen-learning-changes.txt; then
+            echo "Diff unavailable; retain full learning coverage"
+            exit 0
+          fi
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          changed=[p.strip() for p in Path('/tmp/lumen-learning-changes.txt').read_text().splitlines() if p.strip()]
+          def safe_to_skip(p):
+              if p == 'AGENTS.md' or (p.startswith('docs/') and p.endswith('.md') and not p.startswith('docs/validation/')):
+                  return True
+              if p.startswith('src/'):
+                  # Only narrowly isolated features; shared gameplay, UI, auth and persistence stay covered.
+                  return p.startswith(('src/persistence/ranking.js','src/ui/ranking.js','src/ui/personal-records.js'))
+              if p.startswith('scripts/'):
+                  return p in ('scripts/ranking-tests.mjs','scripts/ranking-client-tests.mjs','scripts/personal-records-tests.mjs')
+              return False
+          if changed and all(safe_to_skip(p) for p in changed):
+              with open(os.environ['GITHUB_OUTPUT'],'a') as out: out.write('run_learning=false\\n')
+              print('Learning browser suite skipped for isolated changes:',', '.join(changed))
+          else:
+              print('Learning browser suite required (shared or uncertain impact)')
+          PY
+
       - name: Unified quality gate
         if: steps.scheduled_check.outputs.need_tests == 'true'
         env:
           LUMEN_BROWSER_WORKERS: '2'
+          LUMEN_RUN_LEARNING_BROWSER: ${{ steps.learning_scope.outputs.run_learning }}
         run: node scripts/quality-gate.mjs
 
       - name: Complete cloud profile backup regression
