@@ -1788,10 +1788,39 @@ function capturedTiming(){return qaActive||officialTimingSupported(lumenSupabase
 const rankingContext=()=>({owner:lumenUser?.id,client:lumenSupabase,nickname:lumenNickname,qa:qaActive});
 const rankingClient=createRankingClient({storage:localStorage,getContext:rankingContext});
 const rankingView=createRankingView({client:rankingClient,getContext:rankingContext,format:seconds=>formatDuration(seconds)});
+// A nickname is required for every signed-in account, independently of ranking opt-out.
+const nicknameGate=document.createElement('div');
+nicknameGate.id='nicknameRequiredGate';
+nicknameGate.hidden=true;
+nicknameGate.setAttribute('role','dialog');
+nicknameGate.setAttribute('aria-modal','true');
+nicknameGate.setAttribute('aria-labelledby','nicknameRequiredTitle');
+nicknameGate.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(5,10,30,.94);display:grid;place-items:center;padding:20px';
+nicknameGate.innerHTML='<div style="max-width:380px;width:100%;padding:24px;border-radius:18px;background:#15213b;color:white;box-shadow:0 10px 40px #0008"><h2 id="nicknameRequiredTitle">Choisis ton pseudo</h2><p>Un pseudo unique de 3 à 20 caractères est nécessaire pour ton compte LUMEN et les classements.</p><form id="nicknameRequiredForm"><label for="nicknameRequiredInput">Ton pseudo</label><input id="nicknameRequiredInput" required minlength="3" maxlength="20" autocomplete="nickname" style="width:100%;box-sizing:border-box;margin:10px 0;padding:12px;border-radius:8px"><p id="nicknameRequiredError" role="status" aria-live="polite"></p><button type="submit">Valider mon pseudo</button></form><button id="nicknameRequiredSignout" type="button" style="margin-top:12px">Continuer sans compte</button></div>';
+document.body.append(nicknameGate);
+nicknameGate.hidden=true;
+function showNicknameGate(required){
+ nicknameGate.hidden=!required;
+ nicknameGate.style.display=required?'grid':'none';
+ if(required)nicknameGate.querySelector('input')?.focus();
+}
+nicknameGate.querySelector('#nicknameRequiredForm').addEventListener('submit',async event=>{
+ event.preventDefault();
+ const input=nicknameGate.querySelector('#nicknameRequiredInput');
+ const error=nicknameGate.querySelector('#nicknameRequiredError');
+ const button=nicknameGate.querySelector('button[type="submit"]');
+ button.disabled=true;
+ const result=await saveLumenNickname(input.value);
+ if(result.ok){showNicknameGate(false);void refreshRankingAccount()}
+ else error.textContent=result.reason==='length'?'Pseudo : 3 à 20 caractères':result.reason==='unavailable'?'Ce pseudo est déjà utilisé.':'Pseudo invalide. Réessaie.';
+ button.disabled=false;
+});
+nicknameGate.querySelector('#nicknameRequiredSignout').addEventListener('click',async()=>{await signOut();showNicknameGate(false)});
 async function refreshRankingAccount(){
- const c=rankingContext();if(!c.owner||!c.client||c.qa)return;
+ const c=rankingContext();if(!c.owner||!c.client||c.qa){showNicknameGate(false);return;}
  void refreshOfficialTimingSupport(c.client).then(()=>refreshOfficialRecordLabel());
  try{const {data,error}=await c.client.rpc('lumen_ranking_account');if(error||rankingContext().owner!==c.owner||rankingContext().client!==c.client)return;
+  showNicknameGate(!!data?.nicknameRequired);
   document.getElementById('rankingRejoin').hidden=!data?.withdrawn;
   const status=document.getElementById('rankingAccountStatus');status.textContent=data?.nicknameRequired?'Choisis un pseudo unique de 3 à 20 caractères pour les classements.':data?.withdrawn?'Participation désactivée. Tu peux rejoindre le classement depuis Compte.':'Les nouvelles performances admissibles participent automatiquement après activation. Ton pseudo, ton rang et ton temps sont visibles aux joueurs connectés.';
   if(data?.nicknameRequired){document.getElementById('accountProfileEditor').hidden=false;document.getElementById('accountProfileEditor').dataset.open='true';showRewardToast('Choisis un pseudo unique dans Compte.')}
