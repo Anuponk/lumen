@@ -1978,3 +1978,9 @@ entre deux applications de la migration, dry-run, minima et rollback.
 La concurrence SQL complète reste obligatoire en CI. Les tests simulés ne prouvent
 ni l'information juridique, ni une compétition entre comptes de production, ni la
 recette sur téléphone physique ; voir HIGHSCORE_ROLLOUT.md.
+
+## Sélection conservatrice du navigateur Learning
+
+Sur les pull requests, la quality gate conserve les tests Node et les autres suites navigateur. Le test coûteux `learning-browser-tests.mjs` peut être ignoré uniquement lorsque **tous** les fichiers modifiés appartiennent à une liste fermée de zones isolées : `AGENTS.md`, documentation Markdown hors `docs/validation/`, trois modules spécifiques au classement/records (`src/persistence/ranking.js`, `src/ui/ranking.js`, `src/ui/personal-records.js`) ou leurs trois scripts de test (`scripts/ranking-tests.mjs`, `scripts/ranking-client-tests.mjs`, `scripts/personal-records-tests.mjs`). Toute modification partagée (moteur, tutoriel, onboarding, gestes, navigation, CSS, sauvegarde, authentification, configuration, CI, scripts inconnus) déclenche Learning. Une erreur de diff ou une liste vide entraîne également son exécution. Les pushes sur `main`, exécutions planifiées et manuelles gardent Learning systématiquement. Le rapport `ci-quality-summary.json` permet de constater l'absence de la suite sur les PR éligibles ; le check qualité reste obligatoire.
+
+Cette première liste volontairement restrictive est à élargir seulement après analyse des dépendances et validation de PR représentatives. Le filtrage n'affecte pas les contrats cloud indépendants.
