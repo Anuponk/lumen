@@ -1,5 +1,15 @@
 # LUMEN — Codex workflow
 
+
+## Execution efficiency and bounded scope
+- Classify each task before editing: **light** (isolated UI/docs, no state or contract change), **standard** (bounded feature/bug), or **critical** (auth, cloud persistence, progression, rewards, commerce, migrations, historical records). Classification guides investigation and iteration, **not** permission to skip mandatory tests or contracts. Escalate when evidence shows wider impact.
+- State a brief scope plan: user-visible outcome, likely owning modules from the feature map, risks/invariants, and initial focused tests. Do not combine unrelated backlog issues or refactor adjacent systems without necessity; record newly found work separately. Never silently defer a correctness or data-loss blocker.
+- Read only the relevant map rows and bounded source excerpts first. Avoid repeatedly dumping full files, complete test logs, or unchanged documentation. Prefer existing scripts over generating one-off tracked helpers; put disposable scripts/logs outside the repository and remove any temporary artifacts before PR.
+- Iterate with affected tests and nearby regression checks. Run full validation when required by the existing testing contract (including UI/uncertain-impact cases) and before PR where mandated; do not weaken or bypass gates to save tokens. If the same unchanged gate already passed for the exact commit, reuse that evidence instead of rerunning it. After a code change, rerun impacted checks and any mandatory final gate.
+- After **two similar failed attempts**, stop speculative edits, summarize the observed failure and root-cause evidence, and reassess. If blocked or the investigation grows beyond the agreed task, report current changes, tests, unresolved risks and a proposed next step; do not merge unsafe or unvalidated changes.
+- Prefer a small PR with a clear acceptance checklist. Separate server activation, production migrations and real-device acceptance from implementation when safe; do not claim they are complete. Do not change the established issue lifecycle or automatic merge authorization when all applicable checks actually pass.
+- At completion, report concise evidence: files/areas changed, targeted/full tests actually run, PR/commit, CI/deployment state, and outstanding manual or production checks. Duration and token use should be measured from Codex session data when available; do not infer token savings from elapsed time alone.
+
 ## Locate before reading
 - Start with `git status --short`, the symptom and affected invariant. Use [feature-map](docs/architecture/feature-map.md) to select modules, then relevant rows of [dependency-map](docs/architecture/dependency-map.md) and [test-map](docs/architecture/test-map.md). Do not load all maps by default.
 - Follow the eight steps in [debugging-guide](docs/architecture/debugging-guide.md). Search symbols/references with scoped `rg -n`; discover paths with `rg --files`. Read bounded excerpts, then recent `git log`/`git show` for those paths. Broaden only when evidence requires it.
