@@ -118,7 +118,7 @@ try{
  // All browser suites, ports and reports are retained; only order changes.
  await runPool([
   ()=>runBrowser("sky-navigation-browser-tests.mjs","ci-sky-navigation.json",9226),
-  ()=>runBrowser("learning-browser-tests.mjs","ci-learning.json",9224),
+  ...(process.env.LUMEN_RUN_LEARNING_BROWSER === "false" ? [] : [()=>runBrowser("learning-browser-tests.mjs","ci-learning.json",9224)]),
   ()=>runBrowser("account-session-browser-tests.mjs","ci-account-session.json",9230),
   ()=>runBrowser("browser-tests.mjs","ci-browser.json",9222),
   ()=>runBrowser("iau-completion-browser-tests.mjs","ci-iau-completion.json",9240),
