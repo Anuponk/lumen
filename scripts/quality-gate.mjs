@@ -120,7 +120,7 @@ try{
   ()=>runBrowser("offline-hint-network-browser-tests.mjs","ci-offline-hint-network.json",9243),
   ()=>runBrowser("drag-cascade-browser-tests.mjs","ci-drag-cascade.json",9244),
   ()=>runBrowser("adventure-mastery-browser-tests.mjs","ci-adventure-mastery.json",9245),
-  ()=>runBrowser("learning-browser-tests.mjs","ci-learning.json",9224),
+  ...(process.env.LUMEN_RUN_LEARNING_BROWSER === "false" ? [] : [()=>runBrowser("learning-browser-tests.mjs","ci-learning.json",9224)]),
   ()=>runBrowser("account-session-browser-tests.mjs","ci-account-session.json",9230),
   ()=>runBrowser("browser-tests.mjs","ci-browser.json",9222),
   ()=>runBrowser("ux-cleanup-tests.mjs","ci-ux.json",9223),
