@@ -2005,3 +2005,7 @@ Cette première liste volontairement restrictive est à élargir seulement aprè
 ## o2switch release authorization
 
 The full quality suite runs on pull requests. After a squash merge, the publisher verifies the exact merged commit, its PR provenance, and the successful PR quality, cloud persistence, reconciliation, SQL ledger, and documentation workflows. Cloud reconciliation and SQL ledger must also pass for the exact `main` SHA. Direct or unverified commits cannot deploy. A failed or missing check blocks publication; the deployment must never silently bypass a gate.
+
+## Unified victory screen regression (#661)
+
+The normal quest and final constellation victory use the same `skyReveal` surface. The result, official time, earned badges, personal record, and ranking remain on that surface, with no delayed second celestial modal or automatic navigation. Milestone text is rendered in the same surface. Check both regular quests and constellation milestones on mobile.
