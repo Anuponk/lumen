@@ -118,7 +118,7 @@ try {
     }
     assert.equal((await snapshot()).celebrated,true,'Normal victory ends the guided quest');
     assert.equal((await snapshot()).progress.solved[0],1);
-    await evaluate('document.getElementById("successNew").click()');await sleep(150);
+    await evaluate('document.getElementById("skyReveal").hidden ? document.getElementById("successNew").click() : document.getElementById("skyRevealNext").click()');await sleep(150);
     assert.equal((await snapshot()).levelIndex,1);
     assert.equal(await evaluate('document.getElementById("attemptMask").hidden'),false,'Free quest 2 retains the ordinary start control');
     assert.equal(await evaluate('document.getElementById("autoCross").checked'),false,'All following quests retain manual marking');
