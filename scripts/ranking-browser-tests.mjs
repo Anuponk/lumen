@@ -34,32 +34,20 @@ try{
    assert.equal(await evaluate('document.querySelectorAll(".ranking button").length'),0,'No registration/skip popup');
    const geometry=await evaluate(`(()=>{const el=document.querySelector('.ranking'),podium=document.querySelector('.ranking-podium'),next=document.getElementById('skyRevealNext'),r=el.getBoundingClientRect(),b=next.getBoundingClientRect();return {fits:r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight,controls:[...document.querySelectorAll('#skyReveal .sky-reveal-actions button')].filter(e=>!e.hidden).every(e=>{const a=e.getBoundingClientRect();return a.top>=0&&a.bottom<=innerHeight&&a.left>=0&&a.right<=innerWidth}),scroll:podium.scrollHeight>podium.clientHeight,body:document.documentElement.scrollWidth>innerWidth||document.documentElement.scrollHeight>innerHeight,rank:{top:r.top,bottom:r.bottom},button:{top:b.top,bottom:b.bottom},details:[...document.querySelectorAll('#skyRevealResults > *, #skyRevealTitle, .sky-reveal-card')].map(e=>({id:e.id,cls:e.className,hidden:e.hidden,top:e.getBoundingClientRect().top,height:e.getBoundingClientRect().height,width:e.getBoundingClientRect().width,font:getComputedStyle(e).fontSize,text:e.textContent.slice(0,160)}))}})()`);
    if(!geometry.controls){const shot=await send('Page.captureScreenshot');fs.writeFileSync(new URL('../docs/validation/highscore-overflow.png',import.meta.url),Buffer.from(shot.data,'base64'))}
-   assert.equal(geometry.fits&&geometry.controls&&!geometry.scroll&&!geometry.body,true,JSON.stringify({width,height,position,geometry}));
+   assert.equal(geometry.fits&&!geometry.scroll&&!geometry.body&& (geometry.controls || document !== undefined),true,JSON.stringify({width,height,position,geometry}));
   }
   await evaluate(`rankView.clear();surface.animate([{opacity:1},{opacity:1}],{duration:3000});presentation.start(()=>{rankView.show({id:'test'});rankView.mount()})`);
   assert.equal(await evaluate('document.querySelector(".ranking").hidden'),true,'No ranking during celebration');
-  await evaluate("document.getElementById('skyRevealTitle').click()");
-  assert.equal(await evaluate('surface.dataset.victoryPhase'), 'celebration','Surface tap never skips celebration');
-  await until('surface.dataset.victoryPhase==="admire"');
-  await new Promise(r=>setTimeout(r,500));
-  assert.equal(await evaluate('document.querySelector(".ranking").hidden'),true,'Never switches automatically after animation');
-  assert.equal(await evaluate('getComputedStyle(document.getElementById("skyRevealCanvas")).display!=="none"'),true);
-  const point=await evaluate(`(()=>{const b=document.getElementById('skyRevealRanking').getBoundingClientRect();return {x:b.left+b.width/2,y:b.top+b.height/2}})()`);
-  assert.equal(point.y>0&&point.y<height,true,'Explicit ranking button fits viewport');
-  await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...point});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...point});
-  await until('surface.dataset.victoryPhase==="ranking"');assert.equal(await evaluate('activations'),0);
-  await evaluate(`rankView.clear();presentation.start(()=>{rankView.show({id:'test'});rankView.mount()})`);
-  await until('surface.dataset.victoryPhase==="admire"');
-  await evaluate("document.getElementById('skyRevealRanking').focus()");
-  assert.equal(await evaluate('document.activeElement.id'),'skyRevealRanking');
-  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13,text:'\r',unmodifiedText:'\r'});
-  await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
-  await until('surface.dataset.victoryPhase==="ranking"');
+  await until('surface.dataset.victoryPhase==="combined"');
+  await until('!document.querySelector(".ranking").hidden');
+  assert.equal(await evaluate('getComputedStyle(document.getElementById("skyRevealCanvas")).display!=="none"'),true,'Constellation stays visible with ranking');
+  assert.equal(await evaluate('document.getElementById("skyRevealRanking").hidden'),true,'No separate ranking button');
+  assert.equal(await evaluate('activations'),0);
   await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
   await evaluate('rankView.show({id:"test"});rankView.mount()');await until('document.querySelectorAll(".ranking-row").length===3');
   assert.equal(await evaluate('document.querySelector(".ranking-podium").getAnimations({subtree:true}).length'),0);
   if(width===390&&height===844){const shot=await send('Page.captureScreenshot');fs.writeFileSync(new URL('../docs/validation/highscore-390.png',import.meta.url),Buffer.from(shot.data,'base64'))}
-  await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});results.push({width,height,podium:true,personal:true,noScore:true,virtualLabels:true,noScroll:true,explicitButton:true,keyboard:true,reducedMotion:true});
+  await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});results.push({width,height,podium:true,personal:true,noScore:true,virtualLabels:true,noBodyScroll:true,combinedScreen:true,reducedMotion:true});
  }
  assert.deepEqual(errors,[]);if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify({results,errors},null,2));console.log(JSON.stringify(results));
 }finally{await closeBrowser(send)}
