@@ -3033,7 +3033,7 @@ async function celebrateCanonicalSuccess(){
  refreshJourney();
  if(!celestialPending)launchWinStar(committed.newlyCompleted?1:0);
  const reveal=()=>{if(canonicalActiveQuest?.id===q.id&&celebrated)showSkyReveal(null,null,{quest:q,newlyCompleted:committed.newlyCompleted})};
- if(committed.newlyCompleted&&!celestialPending)setTimeout(reveal,2250);else reveal();
+ reveal();
  }finally{if(canonicalVictoryInFlight===capture)canonicalVictoryInFlight=null;if(pendingVictoryView)canonicalRecovery.schedule();}
 }
 
@@ -3179,7 +3179,7 @@ async function celebrateSuccess(){
  configureSuccessFeedback(questPassed);
  const skyEarnedAfter=skyStarsEarned(),crossedConstellation=firstCompletion&&(()=>{let total=0;for(const cs of CONSTELLATIONS){total+=cs.count;if(skyEarnedBefore<total&&skyEarnedAfter>=total)return true}return false})();
  const checkpoint=firstCompletion&&!crossedConstellation?constellationCheckpoint(skyEarnedBefore,skyEarnedAfter):null;
- const revealDelay=!celestialPending&&!generatedQuest&&earnedThisRun>0?2250:0;
+ const revealDelay=0;
  const revealQuest=canonicalQuestForLegacy(levelIndex),revealCampaign=revealQuest?{quest:revealQuest,newlyCompleted:firstCompletion}:null;
  const clearVictoryConfetti=()=>document.getElementById("victoryConfetti")?.remove();
  if(firstCompletion&&earnedThisRun>0&&!generatedQuest){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint,revealCampaign)},revealDelay)}else if(questPassed||crossedConstellation||checkpoint){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint,revealCampaign)},revealDelay)}else setTimeout(()=>showSkyReveal(skyEarnedBefore,null,revealCampaign),revealDelay);
@@ -3915,9 +3915,16 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
    }
   }
  }
- // Completion is presented once here, never as a second popup after Next.
+ // Preserve the constellation/adventure milestone within this same victory screen.
+ if(celestialPending){
+  const milestone=celestialPending;
+  const milestoneLabel=milestone.kind.startsWith("campaign")?"CIEL ACCOMPLI":milestone.kind.startsWith("adventure")?"AVENTURE ACCOMPLIE":"CONSTELLATION COMPLÉTÉE";
+  k.textContent=milestoneLabel;
+  t.textContent=milestone.kind.startsWith("constellation")?p.name:"Toutes les étoiles brillent !";
+  document.getElementById("skyRevealName").textContent="Une nouvelle étape de ton ciel est accomplie.";
+  celestialPending=null;
+ }
  adventurePending=null;endgamePending=false;
- try{showCelestialVictory()}catch(error){celestialCelebration.clear();celestialPending=null;console.warn('Celestial presentation unavailable',error)}
  if(isNormalVictory){
   const wonQuest=activeQuest().id,wonOwner=lumenUser?.id,wonClient=lumenSupabase,wonAttempt=attemptEngine.snapshot()?.attemptId;
   rankingView.clear();victoryPresentation.start(()=>{if(!o.hidden&&activeQuest().id===wonQuest&&lumenUser?.id===wonOwner&&lumenSupabase===wonClient&&attemptEngine.snapshot()?.attemptId===wonAttempt)showRanking()});
