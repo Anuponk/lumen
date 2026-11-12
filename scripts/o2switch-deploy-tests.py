@@ -71,7 +71,7 @@ class Gates(unittest.TestCase):
                     for i, name in enumerate(sorted(ci.PR_REQUIRED), 1)]}
             raise AssertionError(path)
         self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 0)
-        pr["base"]["sha"] = "d" * 40
+        pr["merge_commit_sha"] = "d" * 40
         self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 1)
 
     def test_reject_unreviewed_commit(self):
