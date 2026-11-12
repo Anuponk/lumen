@@ -50,6 +50,37 @@ class Gates(unittest.TestCase):
         rows.append({**rows[0], "id": 999, "conclusion": "failure"})
         self.assertEqual(ci.check_runs(rows, SHA)[0], 1)
 
+    def test_verified_squash_merge_reuses_green_pr_checks(self):
+        head = "b" * 40
+        base = "c" * 40
+        merged = SHA
+        pr = {"number": 663, "merged_at": "2026-11-12T20:00:00Z",
+              "merge_commit_sha": merged, "base": {"ref": "main", "sha": base},
+              "head": {"sha": head, "repo": {"full_name": ci.REPOSITORY}}}
+        def fetch(path):
+            if path.endswith("/commits/" + merged):
+                return {"parents": [{"sha": base}]}
+            if path.endswith("/commits/" + merged + "/pulls"):
+                return [pr]
+            if "actions/runs?" in path:
+                return {"workflow_runs": [
+                    {"id": i, "path": ".github/workflows/" + name,
+                     "status": "completed", "conclusion": "success",
+                     "head_sha": head, "event": "pull_request",
+                     "head_repository": {"full_name": ci.REPOSITORY}}
+                    for i, name in enumerate(sorted(ci.PR_REQUIRED), 1)]}
+            raise AssertionError(path)
+        self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 0)
+        pr["merge_commit_sha"] = "d" * 40
+        self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 1)
+
+    def test_reject_unreviewed_commit(self):
+        def fetch(path):
+            if path.endswith("/pulls"):
+                return []
+            return {"parents": [{"sha": "c" * 40}]}
+        self.assertEqual(ci.validated_merged_pr(SHA, fetch)[0], 1)
+
     def test_dispatcher_rejects_arbitrary_commands(self):
         shell = os.environ.get("LUMEN_BASH", "bash")
         if not shutil.which(shell):
