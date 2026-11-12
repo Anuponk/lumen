@@ -34,7 +34,7 @@ try{
   if(prior===110){
    // Close before ever opening ranking: confirmed progression must already survive.
    await navigateAndWait({send,evaluate},'Page.reload');assert.equal(await evaluate('lumenDiagnostics.snapshot().progress.performances[20].officialTimes[0]'),110);
-  }else{await revealVictoryResults(evaluate);assert.equal(await evaluate('document.getElementById("skyReveal").dataset.victoryPhase'),'ranking')}
+  }else{await revealVictoryResults(evaluate);assert.equal(await evaluate('document.getElementById("skyReveal").dataset.victoryPhase'),'combined')}
   results.push({width,prior,official:135,newRecord:prior>135,immediatePenalty:true,stableGrid:true,noDoublePenalty:true,persistedBeforeRanking:true});
  }
  assert.deepEqual(errors,[]);if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify({results,errors},null,2));console.log(JSON.stringify(results));
