@@ -3,13 +3,6 @@ name: Lumen quality gate
 on:
   pull_request:
     branches: [main]
-  push:
-    branches: [main]
-  workflow_dispatch:
-  # Some bot-mediated squash merges do not generate a new push workflow run.
-  # A scheduled verification on main makes the publisher fully unattended.
-  schedule:
-    - cron: '*/10 * * * *'
 
 permissions:
   contents: read
