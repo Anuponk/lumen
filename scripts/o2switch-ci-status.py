@@ -43,9 +43,6 @@ def validated_merged_pr(sha, fetch):
             continue
         if pr.get("merge_commit_sha") != sha:
             continue
-        base = pr["base"].get("sha")
-        if parents[0].get("sha") != base:
-            continue
         head = pr["head"].get("sha")
         if not head or pr["head"].get("repo", {}).get("full_name") != REPOSITORY:
             continue
