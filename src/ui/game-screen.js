@@ -3915,16 +3915,9 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
    }
   }
  }
- // Preserve the constellation/adventure milestone within this same victory screen.
- if(celestialPending){
-  const milestone=celestialPending;
-  const milestoneLabel=milestone.kind.startsWith("campaign")?"CIEL ACCOMPLI":milestone.kind.startsWith("adventure")?"AVENTURE ACCOMPLIE":"CONSTELLATION COMPLÉTÉE";
-  k.textContent=milestoneLabel;
-  t.textContent=milestone.kind.startsWith("constellation")?p.name:"Toutes les étoiles brillent !";
-  document.getElementById("skyRevealName").textContent="Une nouvelle étape de ton ciel est accomplie.";
-  celestialPending=null;
- }
+ // Milestones reuse the same skyReveal host, with richer art and navigation.
  adventurePending=null;endgamePending=false;
+ try{showCelestialVictory()}catch(error){celestialCelebration.clear();celestialPending=null;console.warn('Celestial presentation unavailable',error)}
  if(isNormalVictory){
   const wonQuest=activeQuest().id,wonOwner=lumenUser?.id,wonClient=lumenSupabase,wonAttempt=attemptEngine.snapshot()?.attemptId;
   rankingView.clear();victoryPresentation.start(()=>{if(!o.hidden&&activeQuest().id===wonQuest&&lumenUser?.id===wonOwner&&lumenSupabase===wonClient&&attemptEngine.snapshot()?.attemptId===wonAttempt)showRanking()});
