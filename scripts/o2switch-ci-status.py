@@ -7,7 +7,7 @@ import urllib.request
 
 REPOSITORY = "Anuponk/lumen"
 REQUIRED = {"cloud-reconciliation-matrix.yml", "canonical-ledger.yml"}
-PR_REQUIRED = {"quality.yml", "cloud-reconciliation-matrix.yml", "canonical-ledger.yml", "cloud-persistence-contract.yml", "documentation-consistency.yml"}
+PR_REQUIRED = {"quality.yml", "cloud-reconciliation-matrix.yml", "canonical-ledger.yml", "cloud-persistence-contract.yml", "docs-consistency.yml"}
 
 
 def check_runs(runs, sha):
