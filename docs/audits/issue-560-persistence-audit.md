@@ -31,3 +31,23 @@
 ## Garde-fous
 
 Audit documentaire uniquement. Aucun correctif métier, migration, backfill, suppression de sauvegarde, accès aux profils réels ou déploiement.
+
+## Incidents historiques — première confrontation aux tickets (étape 2, partielle)
+
+| Ticket | Preuve documentaire | Limite de preuve |
+|---|---|---|
+| [#530](https://github.com/Anuponk/lumen/issues/530) | Logs du 22/10 : `SIGNED_IN` puis `INITIAL_SESSION`, checkpoint wallet IndexedDB, `cloud_achievements_recovery_blocked`, `profileReady=false` | Blocage observé, **aucune perte définitive démontrée** ; ticket clos, ne prouve pas la guérison de #536 |
+| [#536](https://github.com/Anuponk/lumen/issues/536) | PR #543 traite le quota de copie locale ; ticket reste ouvert | Pas de preuve de résolution du conflit wallet/récompenses sur appareil réel |
+| [#537](https://github.com/Anuponk/lumen/issues/537) | Quêtes précédemment terminées affichées non jouées et verrouillées ; ticket clos | Ni effacement serveur ni cause commune avec #536 démontrés ; distinguer projection et stockage |
+| [#557](https://github.com/Anuponk/lumen/issues/557) | Quête 7 verrouillée après inscription à la quête 6 ; ticket clos « not planned » le 13/11 | La clôture ne démontre pas une correction ; recette multi-appareil et conservation cloud à vérifier |
+
+### Invariants — statut provisoire
+
+- **Non-perte des acquis** : non démontré de bout en bout ; protections de backup et CAS observées.
+- **Pas de double récompense** : non démontré de bout en bout ; reçus et mécanismes de revendication présents.
+- **Migration invité vers compte** : partiel ; protocole de claim présent, cas #557 historique à vérifier.
+- **Convergence multi-appareil** : non démontrée à ce stade.
+- **Tolérance aux quotas** : partielle ; archive IndexedDB et PR #543 documentées, cas de double saturation non étudié.
+- **Non-contamination entre comptes** : non démontrée ; vérifier contrôles d'identité et générations de session sur toutes les écritures.
+
+**Ne pas confondre « ticket clos » et « invariant prouvé ».** Les éléments ci-dessus sont des constats documentaires, pas des résultats de tests nouvellement exécutés.
