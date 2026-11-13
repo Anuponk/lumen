@@ -25,7 +25,7 @@ try{
    document.getElementById('skyRevealNext').onclick=()=>activations++;
   })()`);
   for(const position of [1,2,3,7,38,null]){
-   await evaluate(`(()=>{const pos=${position};rankFixture={participating:true,realParticipants:pos===7?2:38,top:[1,2,3].map(p=>({place:p,position:p,nickname:p===pos?'WWWWWWWWWWWWWWWWWWWW':(pos===7?'Écho Alcyone ':'Joueur ')+p,score:p*15,mine:p===pos,virtual:pos===7})),personal:pos?{place:pos,position:pos,nickname:'Anupon',score:pos*15,mine:true}:null};rankView.show({id:'test'});rankView.mount()})()`);
+   await evaluate(`(()=>{const pos=${position};rankFixture={participating:true,realParticipants:pos===7?2:38,top:[1,2,3].map(p=>({place:p,position:p,nickname:p===pos?'WWWWWWWWWWWWWWWWWWWW':(pos===7?'Écho Alcyone ':'Joueur ')+p,score:p*15,mine:p===pos,virtual:pos===7})),personal:pos?{place:pos,position:pos,nickname:'Anupon',score:pos*15,mine:true}:null};window.rankView.show({id:'test'});window.rankView.mount()})()`);
    await until('document.querySelectorAll(".ranking-row").length===3');
    assert.equal(await evaluate('document.querySelectorAll(".ranking-row").length'),3);
    if(position){assert.equal(await evaluate('Number(document.querySelector(".ranking-mine").dataset.position)'),position);assert.doesNotMatch(await evaluate('document.querySelector(".ranking").textContent'),/Nouveau record/,'Personal record has one confirmed announcement owner')}
@@ -36,7 +36,7 @@ try{
    if(!geometry.controls){const shot=await send('Page.captureScreenshot');fs.writeFileSync(new URL('../docs/validation/highscore-overflow.png',import.meta.url),Buffer.from(shot.data,'base64'))}
    assert.equal((geometry.fits || height<650)&&!geometry.scroll&&!geometry.body,true,JSON.stringify({width,height,position,geometry}));
   }
-  await evaluate(`rankView.clear();surface.animate([{opacity:1},{opacity:1}],{duration:3000});presentation.start(()=>{rankView.show({id:'test'});rankView.mount()})`);
+  await evaluate(`window.rankView.clear();surface.animate([{opacity:1},{opacity:1}],{duration:3000});presentation.start(()=>{window.rankView.show({id:'test'});window.rankView.mount()})`);
   assert.equal(await evaluate('document.querySelector(".ranking").hidden'),true,'No ranking during celebration');
   await until('surface.dataset.victoryPhase==="combined"');
   await until('!document.querySelector(".ranking").hidden');
@@ -44,7 +44,7 @@ try{
   assert.equal(await evaluate('document.getElementById("skyRevealRanking").hidden'),true,'No separate ranking button');
   assert.equal(await evaluate('activations'),0);
   await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
-  await evaluate('rankView.show({id:"test"});rankView.mount()');await until('document.querySelectorAll(".ranking-row").length===3');
+  await evaluate('window.rankView.show({id:"test"});window.rankView.mount()');await until('document.querySelectorAll(".ranking-row").length===3');
   assert.equal(await evaluate('document.querySelector(".ranking-podium").getAnimations({subtree:true}).length'),0);
   if(width===390&&height===844){const shot=await send('Page.captureScreenshot');fs.writeFileSync(new URL('../docs/validation/highscore-390.png',import.meta.url),Buffer.from(shot.data,'base64'))}
   await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});results.push({width,height,podium:true,personal:true,noScore:true,virtualLabels:true,noBodyScroll:true,combinedScreen:true,reducedMotion:true});
