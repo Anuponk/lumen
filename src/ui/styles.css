@@ -1431,3 +1431,9 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .learning-board-wrap .scripted-learn{min-width:0;max-width:100%;box-sizing:border-box}
 .learning-board-wrap .scripted-learn strong,.learning-board-wrap #scriptedLearnCopy{white-space:normal;overflow-wrap:anywhere}
 @media(max-width:390px) and (max-height:650px){.learning-board-wrap .scripted-learn{padding:7px 9px;margin:3px 0;line-height:1.25;font-size:clamp(12px,3.6vw,14px)}.learning-board-wrap .scripted-learn strong{margin-bottom:2px}.learning-board-wrap .scripted-learn .learning-coach-next{min-height:36px;margin-top:3px}}
+/* Mobile recipe: the introduction must not be clipped by legacy 52/90/150px coach limits. */
+@media(max-width:1100px){
+ .learning-board-wrap .scripted-learn.learning-intro-panel{position:fixed!important;top:50%!important;bottom:auto!important;max-height:min(70dvh,420px)!important;overflow-y:auto!important;overscroll-behavior:contain;z-index:1500}
+ .learning-board-wrap .scripted-learn.learning-intro-panel #scriptedLearnCopy{overflow:visible;flex-shrink:0}
+ .learning-board-wrap .scripted-learn.learning-intro-panel .learning-coach-next{flex-shrink:0;position:sticky;bottom:0}
+}
