@@ -2100,7 +2100,7 @@ function positionLearningCoach(){
  const card=document.getElementById("scriptedLearn");
  if(card.hidden)return;
  const rect=board.getBoundingClientRect(),mobile=innerWidth<=1100;
- if(mobile&&learningIntroActive()){
+ if(mobile&&typeof learningIntroActive==="function"&&learningIntroActive()){
   card.style.position="fixed";card.style.width=Math.min(innerWidth-20,430)+"px";
   card.style.left=Math.max(10,(innerWidth-Math.min(innerWidth-20,430))/2)+"px";
   card.style.top="50%";card.style.transform="translateY(-50%)";
