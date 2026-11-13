@@ -1252,7 +1252,7 @@ function syncMobileAuthUI(){
  show("guestSaveExplainer",!signedIn);
  const pendingNotice=canonicalOutboxNotice==="attention"?"Sauvegarde à vérifier · données locales conservées":canonicalOutboxNotice==="auth"?"Session à renouveler · victoire conservée":canonicalOutboxNotice==="pending"?"Victoire en attente de synchronisation":canonicalOutboxNotice==="checking"?"Vérification des sauvegardes en attente":canonicalOutboxNotice==="storage"?"Enregistrement local indisponible":null;
  const domainState=gameplaySyncState();
- const syncMessage=pendingNotice||(domainState.wallet==='review'&&domainState.confirmedReplayIds.length?'Quêtes confirmées · Éclats à vérifier':cloudProfileFailure?cloudReconciliationMessage(cloudProfileFailure):navigator.onLine===false?"Compte connect\u00e9 \u00b7 hors connexion":!cloudProfileReady?"Compte connect\u00e9 \u00b7 synchronisation en cours\u2026":cloudProfileBusy||cloudProfileDirty?"Enregistrement en cours\u2026":(lumenNickname?lumenNickname+" \u00b7 ":"")+"Progression synchronis\u00e9e");
+ const syncMessage=(pendingNotice&&cloudProfileFailure?pendingNotice+" · "+cloudReconciliationMessage(cloudProfileFailure):pendingNotice)||(domainState.wallet==='review'&&domainState.confirmedReplayIds.length?'Quêtes confirmées · Éclats à vérifier':cloudProfileFailure?cloudReconciliationMessage(cloudProfileFailure):navigator.onLine===false?"Compte connect\u00e9 \u00b7 hors connexion":!cloudProfileReady?"Compte connect\u00e9 \u00b7 synchronisation en cours\u2026":cloudProfileBusy||cloudProfileDirty?"Enregistrement en cours\u2026":(lumenNickname?lumenNickname+" \u00b7 ":"")+"Progression synchronis\u00e9e");
  status.textContent=recovering?"Choisis ton nouveau mot de passe":signedIn?syncMessage:"Progression enregistr\u00e9e sur cet appareil";
  const summary=document.getElementById("accountSyncDiagnosticSummary");if(summary)summary.textContent=status.textContent;
  show("retryAccountSync",signedIn&&(!!cloudProfileFailure||!!pendingNotice));
@@ -1327,6 +1327,7 @@ function updateAuthUI(){
    u.textContent="Progression enregistrée sur cet appareil";
    login.hidden=false; logout.hidden=true;
  }
+ if(!lumenUser)showMandatoryNickname(false);
  refreshOnboardingPreferenceOwner();syncMobileAuthUI();updateAdminTools();
  if(!lumenUser&&accountRequired())maybeOfferAccount();
  if(lumenUser&&wasOfferPending){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_success",null,{source:"account_offer",qa:qaActive});const box=document.getElementById("accountOptin");if(box)box.hidden=true}
@@ -1810,13 +1811,54 @@ function capturedTiming(){return qaActive||officialTimingSupported(lumenSupabase
 const rankingContext=()=>({owner:lumenUser?.id,client:lumenSupabase,nickname:lumenNickname,qa:qaActive});
 const rankingClient=createRankingClient({storage:localStorage,getContext:rankingContext});
 const rankingView=createRankingView({client:rankingClient,getContext:rankingContext,format:seconds=>formatDuration(seconds)});
+let nicknameOnboardingOwner=null;
+let nicknameOnboardingBusy=false;
+function showMandatoryNickname(required,owner=lumenUser?.id){
+ const dialog=document.getElementById('mandatoryNickname');
+ if(!dialog)return;
+ if(!required||!owner||owner!==lumenUser?.id||qaActive){
+  dialog.hidden=true;nicknameOnboardingOwner=null;return;
+ }
+ if(nicknameOnboardingOwner!==owner){
+  nicknameOnboardingOwner=owner;
+  const input=document.getElementById('mandatoryNicknameInput');
+  if(input)input.value=lumenNickname||'';
+ }
+ dialog.hidden=false;
+ const account=document.getElementById('accountOptin');if(account)account.hidden=true;
+ const status=document.getElementById('mandatoryNicknameStatus');if(status&&!nicknameOnboardingBusy)status.textContent='';
+ document.getElementById('mandatoryNicknameInput')?.focus();
+}
+async function submitMandatoryNickname(){
+ if(nicknameOnboardingBusy||!lumenUser||qaActive)return;
+ const owner=lumenUser.id,input=document.getElementById('mandatoryNicknameInput');
+ const status=document.getElementById('mandatoryNicknameStatus'),button=document.getElementById('mandatoryNicknameSave');
+ nicknameOnboardingBusy=true;if(button)button.disabled=true;
+ if(status)status.textContent='Enregistrement du pseudo…';
+ try{
+  const result=await saveLumenNickname(input?.value);
+  if(lumenUser?.id!==owner)return;
+  if(!result.ok){
+   if(status)status.textContent=result.reason==='length'?'Choisis un pseudo de 3 à 20 caractères.':result.reason==='unavailable'?'Ce pseudo est déjà pris. Essaie-en un autre.':'Enregistrement impossible. Vérifie ta connexion et réessaie.';
+   return;
+  }
+  // Only a successful server write unlocks the onboarding.
+  showMandatoryNickname(false);
+  void refreshRankingAccount();
+ }catch{
+  if(status)status.textContent='Connexion indisponible. Réessaie.';
+ }finally{nicknameOnboardingBusy=false;if(button)button.disabled=false}
+}
+document.getElementById('mandatoryNicknameSave')?.addEventListener('click',()=>void submitMandatoryNickname());
+document.getElementById('mandatoryNicknameInput')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();void submitMandatoryNickname()}});
+document.getElementById('mandatoryNicknameSignout')?.addEventListener('click',async()=>{await signOut();showMandatoryNickname(false)});
 async function refreshRankingAccount(){
  const c=rankingContext();if(!c.owner||!c.client||c.qa)return;
  void refreshOfficialTimingSupport(c.client).then(()=>refreshOfficialRecordLabel());
  try{const {data,error}=await c.client.rpc('lumen_ranking_account');if(error||rankingContext().owner!==c.owner||rankingContext().client!==c.client)return;
   document.getElementById('rankingRejoin').hidden=!data?.withdrawn;
   const status=document.getElementById('rankingAccountStatus');status.textContent=data?.nicknameRequired?'Choisis un pseudo unique de 3 à 20 caractères pour les classements.':data?.withdrawn?'Participation désactivée. Tu peux rejoindre le classement depuis Compte.':'Les nouvelles performances admissibles participent automatiquement après activation. Ton pseudo, ton rang et ton temps sont visibles aux joueurs connectés.';
-  if(data?.nicknameRequired){document.getElementById('accountProfileEditor').hidden=false;document.getElementById('accountProfileEditor').dataset.open='true';showRewardToast('Choisis un pseudo unique dans Compte.')}
+  showMandatoryNickname(Boolean(data?.nicknameRequired),c.owner);
  }catch{}
 }
 document.getElementById('rankingRejoin').onclick=async()=>{try{await rankingClient.membership(true,lumenNickname);await refreshRankingAccount()}catch{document.getElementById('rankingAccountStatus').textContent='Choisis un pseudo disponible avant de rejoindre le classement.'}};

@@ -1415,3 +1415,14 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .account-optin #accountEmailAuth label{margin:4px 0 2px}
  .account-optin .account-auth-divider{margin:4px 0}
 }
+
+/* #670: nickname onboarding is independent from the dismissible account popover. */
+.mandatory-nickname{z-index:10050!important}
+.mandatory-nickname[hidden]{display:none!important}
+.mandatory-nickname .account-optin-card{max-width:390px;text-align:center}
+.mandatory-nickname label{display:block;margin:12px 0 6px;text-align:left}
+.mandatory-nickname input{box-sizing:border-box;width:100%;min-height:44px;padding:10px 12px;border-radius:12px;border:1px solid #6383a8;background:#0b1a30;color:#fff;font-size:16px}
+.mandatory-nickname small{display:block;min-height:24px;margin:8px 0;color:#e9e6c5}
+.mandatory-nickname button{width:100%;min-height:44px;margin-top:8px}
+.mandatory-nickname #mandatoryNicknameSignout{background:transparent;border:0;color:#b7c9e2}
+@media(max-width:380px){.mandatory-nickname .account-optin-card{padding:14px!important}.mandatory-nickname h2{margin:4px 0}}
