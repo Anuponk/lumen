@@ -1387,3 +1387,31 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 
 /* #666: completed narrative remains legible after the animation ends. */
 .sky-reveal[data-victory-phase="combined"].celestial-still #skyRevealTitle{opacity:1!important}
+
+/* #668: compact, self-contained authentication and prominent sent-email state. */
+.account-optin #accountSignupConfirmation[hidden],.account-optin #accountEmailAuth [hidden]{display:none!important}
+.account-optin .account-signup-confirmation{margin:12px 0 0;padding:16px;border:1px solid #62d9fc;border-radius:16px;background:#102c42;color:#e7f7ff;text-align:center}
+.account-optin .account-signup-confirmation h3{font-size:19px;margin:0 0 8px;color:#fff}
+.account-optin .account-signup-confirmation p{font-size:14px;line-height:1.4;margin:0 0 12px;overflow-wrap:anywhere}
+.account-optin .account-signup-confirmation button{min-height:40px;padding:8px 12px}
+.account-optin #accountPasswordSubmit:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+@media(max-width:700px){
+ .account-optin .account-optin-card{padding:12px 16px!important;max-height:calc(100dvh - 16px)!important}
+ .account-optin .account-optin-art{display:none!important}
+ .account-optin .account-auth-tabs{margin-bottom:8px}
+ .account-optin .account-auth-tabs button{padding:7px 5px}
+ .account-optin #accountOptinEnable{min-height:40px}
+ .account-optin .account-auth-divider{margin:7px 0}
+ .account-optin #accountEmailAuth label{margin:7px 0 3px}
+ .account-optin #accountEmailAuth input{min-height:40px;padding:8px 12px}
+ .account-optin #accountPasswordVisibility{height:40px}
+ .account-optin #accountPasswordSubmit{min-height:42px;margin-top:10px;padding:8px}
+ .account-optin #accountRecovery{margin-top:6px}
+}
+@media(max-width:380px) and (max-height:650px){
+ .account-optin .account-optin-card{padding:8px 12px!important}
+ .account-optin #accountOptinDescription{font-size:12px;line-height:1.25;margin:3px 0 7px}
+ .account-optin .account-auth-tabs{margin-bottom:5px}
+ .account-optin #accountEmailAuth label{margin:4px 0 2px}
+ .account-optin .account-auth-divider{margin:4px 0}
+}
