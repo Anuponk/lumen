@@ -42,6 +42,7 @@ export function createIntroTimeline({now,onFrame,onFinish}){
   pause(){if(!running)return;frame();running=false;last=null},
   resume(){if(finished)return;running=true;last=now()},
   stop(){running=false;finished=true},
+  advance(){if(finished)return false;const scene=INTRO_SCENES.findIndex(item=>item.start>elapsed);if(scene<0){elapsed=INTRO_DURATION;finished=true;running=false;onFinish();return false}elapsed=INTRO_SCENES[scene].start;last=now();onFrame({elapsed,scene,passage:Math.max(0,Math.min(1,(elapsed-18000)/6000))});return true},
   get elapsed(){return elapsed}
  };
 }
@@ -110,6 +111,19 @@ export function createFirstWelcome({document,window,figureSvg,contextKey,onRepla
   }});
   timeline.start();if(!document.hidden&&!reading.open)music.start(timeline.elapsed);skip.focus();
  }
+ // Tap/click on the cinematic surface advances exactly one phrase.
+ // Interactive controls retain their own behavior and must not advance the story.
+ function advanceStory(event){
+  if(!active||!timeline||document.hidden||reading.open)return;
+  if(event.target.closest('button,summary,details,a,input,select,textarea'))return;
+  if(event.type==='keydown'&&event.key!=='Enter'&&event.key!==' ')return;
+  event.preventDefault();event.stopPropagation();
+  const advanced=timeline.advance();
+  if(advanced&&music.enabled)music.start(timeline.elapsed);
+ }
+ root.addEventListener('click',advanceStory);
+ caption.tabIndex=0;caption.setAttribute('role','button');caption.setAttribute('aria-label','Afficher la phrase suivante du récit');
+ caption.addEventListener('keydown',advanceStory);
  play.onclick=()=>close();story.onclick=startStory;skip.onclick=()=>close();
  musicButton.onclick=()=>{music.setEnabled(!music.enabled);if(music.enabled&&active&&timeline&&!document.hidden&&!reading.open)music.start(timeline.elapsed)};
  // Keep timed reading optional: the transcript pauses at the current scene.
