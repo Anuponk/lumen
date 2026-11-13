@@ -23,7 +23,7 @@ try{
    window.rankView=createRankingView({client:{flush:async()=>[{questId:'test',improved:rankImproved}],board:async()=>rankFixture},getContext:()=>({owner:'synthetic',client:null}),format:s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0')});
    window.surface=document.getElementById('skyReveal');window.presentation=createVictoryPresentation(surface);window.activations=0;
    document.getElementById('skyRevealNext').onclick=()=>activations++;
-  })()`);
+  })()`,true);
   for(const position of [1,2,3,7,38,null]){
    await evaluate(`(()=>{const pos=${position};rankFixture={participating:true,realParticipants:pos===7?2:38,top:[1,2,3].map(p=>({place:p,position:p,nickname:p===pos?'WWWWWWWWWWWWWWWWWWWW':(pos===7?'Écho Alcyone ':'Joueur ')+p,score:p*15,mine:p===pos,virtual:pos===7})),personal:pos?{place:pos,position:pos,nickname:'Anupon',score:pos*15,mine:true}:null};window.rankView.show({id:'test'});window.rankView.mount()})()`);
    await until('document.querySelectorAll(".ranking-row").length===3');
