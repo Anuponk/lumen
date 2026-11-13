@@ -381,7 +381,7 @@ try{
    await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});
    await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   }else await evaluate(`document.getElementById('archiveAccountStorage').click()`);
-  await until(`!document.getElementById('archiveAccountStorage').disabled`);
+  await until(`localStorage.getItem('lumenBeforeCloudRestore_100')===null`);
   assert.equal(await evaluate(`localStorage.getItem('lumenBeforeCloudRestore_100')`),null);
   assert.equal(await evaluate(`localStorage.getItem('lumenBeforeCloudRestore_300')`),'storage-fixture-300');
   assert.equal(await evaluate(`document.getElementById('accountStorageStatus').textContent.includes('exportables')`),true);
