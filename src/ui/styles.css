@@ -1384,3 +1384,6 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .sky-reveal[data-victory-phase="combined"] .ranking{order:8;margin:0;flex:none}
  .sky-reveal[data-victory-phase="combined"] .sky-reveal-actions{order:9}
 }
+
+/* #666: completed narrative remains legible after the animation ends. */
+.sky-reveal[data-victory-phase="combined"].celestial-still #skyRevealTitle{opacity:1!important}
