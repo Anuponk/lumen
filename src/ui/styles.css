@@ -1370,3 +1370,20 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .sky-reveal[data-victory-phase="combined"] .ranking .ranking-row{min-height:56px}
  .sky-reveal[data-victory-phase="combined"] .ranking-step-1{min-height:72px!important}
 }
+
+/* #666: the ranking owns a dedicated layout region from the first victory frame.
+   Do not let the async leaderboard paint over the constellation or badges. */
+.sky-reveal[data-victory-phase="combined"] .sky-reveal-card{position:relative;isolation:isolate}
+.sky-reveal[data-victory-phase="combined"] .ranking{position:relative!important;inset:auto!important;transform:none!important;z-index:auto!important;width:100%;max-width:100%;box-sizing:border-box;min-height:170px;overflow:visible}
+.sky-reveal[data-victory-phase="combined"] .ranking[hidden]{display:block!important;visibility:hidden;pointer-events:none}
+.sky-reveal[data-victory-phase="combined"] #skyRevealCanvas{position:relative;z-index:auto;min-width:0}
+.sky-reveal[data-victory-phase="combined"] .sky-reveal-rewards{position:relative;min-width:0}
+@media(max-width:699px){
+ .sky-reveal[data-victory-phase="combined"] .sky-reveal-card{display:flex;flex-direction:column;align-items:stretch;gap:8px}
+ .sky-reveal[data-victory-phase="combined"] #skyRevealResults{display:contents}
+ .sky-reveal[data-victory-phase="combined"] .ranking{order:8;margin:0;flex:none}
+ .sky-reveal[data-victory-phase="combined"] .sky-reveal-actions{order:9}
+}
+
+/* #666: completed narrative remains legible after the animation ends. */
+.sky-reveal[data-victory-phase="combined"].celestial-still #skyRevealTitle{opacity:1!important}

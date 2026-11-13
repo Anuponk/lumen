@@ -11,14 +11,14 @@ function fixture(reduced=false){
 }
 const settle=()=>new Promise(r=>setImmediate(r));
 test('reveals ranking automatically on the same screen only after minimum and finite animations',async()=>{
- const f=fixture();f.start();f.frame();f.elapsed();await settle();
+ const f=fixture();f.start();assert.equal(f.host.dataset.victoryPhase,'combined','Unified layout must exist before animation finishes');f.frame();f.elapsed();await settle();
  assert.equal(f.completions,0);assert.equal(f.button.hidden,true);
  f.resolve();await settle();
  assert.equal(f.completions,1);assert.equal(f.host.dataset.victoryPhase,'combined');
  assert.equal(f.button.hidden,true);
 });
 test('reduced motion waits two seconds then displays combined results',async()=>{
- const f=fixture(true);f.start();f.frame();await settle();assert.equal(f.completions,0);
+ const f=fixture(true);f.start();assert.equal(f.host.dataset.victoryPhase,'combined');f.frame();await settle();assert.equal(f.completions,0);
  f.elapsed();await settle();assert.equal(f.completions,1);assert.equal(f.host.dataset.victoryPhase,'combined');
 });
 test('closing cancels stale completion',async()=>{

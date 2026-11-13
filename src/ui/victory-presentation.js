@@ -9,8 +9,8 @@ export function createVictoryPresentation(host,{reducedMotion=()=>globalThis.mat
   if(obsoleteButton)obsoleteButton.hidden=true;
   const minimum=delay(2000);
   if(reducedMotion())host.classList.add('celestial-still');
-  host.dataset.victoryPhase='celebration';host.tabIndex=-1;host.focus({preventScroll:true});
-  const finish=()=>{if(finished||cancelled)return;finished=true;host.classList.add('celestial-still');host.dataset.victoryPhase='combined';onComplete();host.dispatchEvent(new Event('lumen:celebration-end'))};
+  host.dataset.victoryPhase='combined';host.tabIndex=-1;host.focus({preventScroll:true});
+  const finish=()=>{if(finished||cancelled)return;finished=true;host.classList.add('celestial-still');onComplete();host.dispatchEvent(new Event('lumen:celebration-end'))};
   dispose=()=>{cancelled=true;if(obsoleteButton)obsoleteButton.hidden=true};
   // Wait for finite reveal animations and at least two seconds, then reveal the
   // ranking alongside the constellation without navigating or hiding the art.

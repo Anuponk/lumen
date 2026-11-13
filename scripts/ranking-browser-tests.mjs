@@ -12,7 +12,7 @@ try{
   await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});
   await evaluate(`lumenDiagnostics.setupQuest(20);(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
   await until('!document.getElementById("skyReveal").hidden');
-  const celebrationFits=await evaluate("[...document.querySelectorAll('#skyReveal .sky-reveal-actions button')].filter(e=>!e.hidden).every(e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth})");assert.equal(celebrationFits,true,'Celebration navigation fits '+width+'x'+height);
+  const celebrationFits=await evaluate("[...document.querySelectorAll('#skyReveal .sky-reveal-actions button')].filter(e=>!e.hidden).every(e=>{e.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});const r=e.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth&&(hit===e||e.contains(hit))})");assert.equal(celebrationFits,true,'Celebration navigation fits '+width+'x'+height);
   await evaluate(`document.getElementById('skyRevealTitle').click()`);
   await revealVictoryResults(evaluate);
   assert.equal(await evaluate('getComputedStyle(document.getElementById("autoCrossWrap")).display'),'none');
