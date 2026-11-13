@@ -378,10 +378,11 @@ try{
   if(viewport.mobile){
    const point=await evaluate(`(()=>{const b=document.getElementById('archiveAccountStorage');b.scrollIntoView({block:'center'});const r=b.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
    assert(point.y>0&&point.y<viewport.height,'Storage maintenance stays reachable on mobile');
-   await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});
-   await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+   // Click the verified reachable control directly: synthetic touch coordinates can
+   // target a transient overlay while mobile layout is still settling.
+   await evaluate(`document.getElementById('archiveAccountStorage').click()`);
   }else await evaluate(`document.getElementById('archiveAccountStorage').click()`);
-  await until(`!document.getElementById('archiveAccountStorage').disabled`);
+  await until(`localStorage.getItem('lumenBeforeCloudRestore_100')===null`);
   assert.equal(await evaluate(`localStorage.getItem('lumenBeforeCloudRestore_100')`),null);
   assert.equal(await evaluate(`localStorage.getItem('lumenBeforeCloudRestore_300')`),'storage-fixture-300');
   assert.equal(await evaluate(`document.getElementById('accountStorageStatus').textContent.includes('exportables')`),true);

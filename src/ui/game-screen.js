@@ -2042,7 +2042,7 @@ const LEARNING_INTRO=[
  {title:"Un par territoire",copy:"Chaque territoire coloré doit contenir exactement un Gardien."},
  {title:"Un par ligne et par colonne",copy:"Chaque ligne contient exactement un Gardien, et chaque colonne aussi."},
  {title:"Ils gardent leurs distances",copy:"Deux Gardiens ne peuvent jamais se toucher, même en diagonale."},
- {title:"Comment jouer",copy:"Un premier toucher pose une croix pour écarter une case. Un deuxième toucher sur la même case y pose un Gardien. Maintenant, essaie-le toi-même."}
+ {title:"Comment jouer",copy:"Un premier toucher marque la case d’un cercle. Un deuxième toucher sur la même case y pose un Gardien. Maintenant, essaie-le toi-même."}
 ];
 const onboardingPreferences=createOnboardingPreferences({storage:localStorage,getOwner:()=>lumenUser?.id,prefix:qaKey('lumenOnboardingV1')});
 let onboardingPreferenceOwner=null;
@@ -2100,6 +2100,14 @@ function positionLearningCoach(){
  const card=document.getElementById("scriptedLearn");
  if(card.hidden)return;
  const rect=board.getBoundingClientRect(),mobile=innerWidth<=1100;
+ if(mobile&&typeof learningIntroActive==="function"&&learningIntroActive()){
+  card.style.position="fixed";card.style.width=Math.min(innerWidth-20,430)+"px";
+  card.style.left=Math.max(10,(innerWidth-Math.min(innerWidth-20,430))/2)+"px";
+  card.style.top="50%";card.style.transform="translateY(-50%)";
+  card.style.maxHeight="min(70dvh, 420px)";card.style.overflowY="auto";
+  return;
+ }
+ card.style.transform="";
  const width=Math.min(mobile?innerWidth-20:330,innerWidth-20);
  card.style.width=width+"px";
  const actions=document.querySelector(".actions").getBoundingClientRect();
@@ -2181,6 +2189,7 @@ function updateScriptedLearning(){
  wrap.classList.remove("is-learning");
  const blocked=celebrated||!!guidedPending||!!verifyPending;
  card.hidden=blocked||(!guided&&!learningTip);
+ card.classList.toggle("learning-intro-panel",guided&&step?.phase==="intro");
  document.getElementById("learningCoachDismiss").hidden=guided||autoMarkingLessonRequired();
  const next=document.getElementById("learningCoachNext");
  if(next){next.hidden=!(guided&&step?.phase==="intro");next.textContent=step?.introStep===LEARNING_INTRO.length-1?"À moi de jouer":"Suivant"}
