@@ -28,7 +28,7 @@ export async function verifyCelestialUX({send,evaluate},url){
   await realClick('skyRevealTitle',viewport.mobile);
   assert.notEqual(await evaluate('document.getElementById("skyReveal").dataset.victoryPhase'),'ranking','Surface tap cannot skip the celebration');
   await until('document.getElementById("skyReveal").dataset.victoryPhase==="combined"');
-  assert.equal(await evaluate('getComputedStyle(document.getElementById("skyRevealTitle")).opacity'),'1','Complete narrative remains visible until explicit action');
+  await until('getComputedStyle(document.getElementById("skyRevealTitle")).opacity==="1"');
   assert.equal(await evaluate('document.getElementById("skyRevealRanking").hidden'),true,'Ranking is integrated into the celebration');
   assert.equal(await evaluate('getComputedStyle(document.getElementById("skyRevealCanvas")).display!=="none"'),true,'Constellation remains visible');
   await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});
