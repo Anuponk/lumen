@@ -2076,7 +2076,7 @@ function maybeShowContextualLesson(){
  }
  const lessons={
   2:['drag','Va plus vite avec le glissé','Maintiens le doigt ou le clic et glisse sur les cases pour les écarter. Tu peux aussi les toucher une par une. Les marques restent entièrement manuelles.'],
-  4:['hold','Un raccourci facultatif','Un appui long pose un Gardien ; un nouvel appui long le retire. Tu peux garder le cycle habituel : croix, Gardien, vide.']
+  4:['hold','Un raccourci facultatif','Un appui long pose un Gardien ; un nouvel appui long le retire. Tu peux garder le cycle habituel : cercle, Gardien, vide.']
  };
  const lesson=lessons[activeQuestOrdinal()];
  if(lesson&&!onboardingPreferences.seen(lesson[0])){
