@@ -1125,7 +1125,7 @@ function setSignupConfirmation(pending,email=""){
  accountSignupConfirmedPending=pending;
  const panel=document.getElementById("accountSignupConfirmation"),fields=document.getElementById("accountEmailAuth"),submit=document.getElementById("accountPasswordSubmit");
  if(panel)panel.hidden=!pending;
- if(fields)for(const el of fields.querySelectorAll("label,input,.account-password-wrap,#accountPasswordSubmit,#accountRecovery"))el.hidden=pending;
+ if(fields)for(const el of fields.querySelectorAll("label,input,.account-password-wrap,#accountPasswordSubmit"))el.hidden=pending;
  if(submit)submit.disabled=pending||accountSignupSubmitting;
  const destination=document.getElementById("accountSignupDestination");if(destination)destination.textContent=email;
  const status=document.getElementById("accountEmailStatus");if(status&&pending)status.textContent="";
