@@ -1,7 +1,19 @@
 import {rankedTime} from '../campaign/ranking.js';
 // Separate, per-owner durable staging. Never writes the progression or wallet.
-export function createRankingClient({storage,getContext,now=()=>Date.now()}={}){
- const prefix='lumenRankingPendingV1:',flights=new Map(),recent=new Map();
+export function createRankingClient({storage,getContext,now=()=>Date.now(),currentGridRevision=null}={}){
+ const prefix='lumenRankingPendingV1:',obsoletePrefix='lumenRankingObsoleteV1:',flights=new Map(),recent=new Map();
+ // A run captured on a replaced board can never be accepted by the server.
+ // Archive it (never silently delete) so it cannot block later entries.
+ function obsolete(entry){
+  if(typeof currentGridRevision!=='function')return false;
+  const current=currentGridRevision(entry.questId);
+  return Number.isInteger(current)&&(entry.gridRevision??0)!==current;
+ }
+ function archive(c,entry){
+  const id=key(c.owner,entry.operationId),raw=storage.getItem(id);if(raw===null)return;
+  const target=obsoletePrefix+c.owner+':'+entry.operationId;storage.setItem(target,raw);
+  if(storage.getItem(target)!==raw)throw Error('Ranking archive unverified');storage.removeItem(id);
+ }
  const context=()=>getContext()||{};
  const key=(owner,operation)=>prefix+owner+':'+operation;
  function save(value){const k=key(value.owner,value.operationId),raw=JSON.stringify(value);storage.setItem(k,raw);if(storage.getItem(k)!==raw)throw Error('Ranking capture unverified');return value}
@@ -11,6 +23,7 @@ export function createRankingClient({storage,getContext,now=()=>Date.now()}={}){
  function entries(owner){const out=[];for(let i=0;i<storage.length;i++){const k=storage.key(i);if(k?.startsWith(prefix+owner+':')){const v=read(k);if(v?.owner!==owner||key(owner,v.operationId)!==k)throw Error('Ranking identity mismatch');out.push(v)}}return out.sort((a,b)=>a.createdAt-b.createdAt)}
  async function send(c,entry){
   const id=key(c.owner,entry.operationId);if(flights.has(id)){await flights.get(id);if(!read(id))return {status:'confirmed'};return send(c,entry)}
+  if(obsolete(entry)){archive(c,entry);return {status:'obsolete'}}
   const promise=(async()=>{
    const begin=await rpc(c,'lumen_ranking_begin',{p_operation_id:entry.operationId,p_quest_id:entry.questId,p_grid_revision:entry.gridRevision,p_started_at:entry.startedAt});
    if(!entry.result){if(JSON.stringify(read(id))===JSON.stringify(entry))storage.removeItem(id);return begin}

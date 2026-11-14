@@ -41,6 +41,12 @@ asset-cache-only cleanup. The welcome regression also executes the actual new
 listener. `service-worker-update-browser-tests.mjs` retains real worker/cache
 upgrade and local/IndexedDB preservation checks. No live cloud transport is asserted.
 
+Onboarding boards #650: `node scripts/onboarding-grids-650-tests.mjs` recounts the
+four replacement boards (uniqueness, D4 novelty, both logical engines), checks the
+monotone quest 2–6 profile, unchanged identities/rewards/labels, revision-0 links,
+absence of `gv` markers, archived old attempts, obsolete ranking archiving and the
+exact migration scope. Adventure 1–4 protection tests compare these IDs at revision 0.
+
 Mixed pacing: `node scripts/mixed-difficulty-tests.mjs` independently rates,
 recounts and replays all 480 targeted grids, checks the 200 changed / 280 retained
 boards, exact protected Adventure 1–4 definitions, D4 diversity, measured score

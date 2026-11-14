@@ -29,6 +29,19 @@ Stages #21–#26 and #38 results below are historical October 2026 records. Thei
 counts and then-unchanged behavior apply to those snapshots; current owning
 contracts/modules take precedence. Prepared migrations and activation are separate facts.
 
+## Legacy onboarding grid revision 1 (#650)
+
+Legacy quests 3–6 are played through `levelIndex`; `choose()` reads their revised
+board from the canonical quest when it carries a grid revision. Revision 1 is the
+soft revision: no `gv` operation marker, no stored `gridRevision`, and every
+server guard (`grid_revision>1`) ignores it, so legacy victories, acquisitions and
+saves keep their revision-0 identity. Active local attempts on the former board are
+archived by the existing grid-revision restore check. Ranking runs and boards use
+revision 1; a pending ranking run captured on a replaced board is moved to
+`lumenRankingObsoleteV1:` instead of blocking later entries. The data-only migration
+`20261114090000_onboarding_grid_revision_650.sql` sets `quest_rules.grid_revision=1`
+for these four quests and must be applied right after the matching client deploys.
+
 ## Mixed grid revision 2
 
 The source-owned revision-2 manifest changes 200 boards in Adventures 5–9 and
