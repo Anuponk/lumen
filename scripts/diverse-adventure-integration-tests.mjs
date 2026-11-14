@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import manifest from '../content/generated/diverse-adventures-3-4.json' with {type:'json'};
-import {canonicalQuestById,canonicalQuestList} from '../src/campaign/canonical-quests.js';
+import {canonicalQuestById,canonicalQuestList,canonicalQuestListForRevision} from '../src/campaign/canonical-quests.js';
+import onboarding650 from '../content/generated/onboarding-grids-650.json' with {type:'json'};
 import {playableQuest} from '../src/campaign/playable-quests.js';
 import {qualifyDifficulty} from '../src/campaign/difficulty.js';
 import {connected,countSolutions,replay,signature} from './generate-diverse-grids.mjs';
@@ -27,8 +28,11 @@ for(const replacement of manifest.puzzles){
    assert.deepEqual(q.difficulty,qualifyDifficulty(game));
  }
 }
-for(const q of all.filter(q=>q.legacyIndex!==null&&q.legacyIndex<196)){
- const game=playableQuest(q.legacyIndex);
+// #650 boards replace the historical CAT board at revision 1; the CAT bridge
+// still serves their revision-0 board (audited by onboarding-grids-650-tests).
+const onboardingIds=new Set(onboarding650.quests.map(x=>x.id)),revisionZero=new Map(canonicalQuestListForRevision(0).map(x=>[x.id,x]));
+for(const current of all.filter(q=>q.legacyIndex!==null&&q.legacyIndex<196)){
+ const q=onboardingIds.has(current.id)?revisionZero.get(current.id):current,game=playableQuest(q.legacyIndex);
  assert.deepEqual(game.reg,q.reg,'Historical grid changed: '+q.id);
 }
 assert.deepEqual(Object.entries(manifest.totals).map(([packId,count])=>[packId,manifest.puzzles.filter(p=>p.packId===packId).length]),Object.entries(manifest.totals));

@@ -1,5 +1,21 @@
 # Grid catalogue, generation and audit
 
+## Onboarding boards for quests 3–6 (#650)
+
+Owner-approved on 2026-11-14 after the #650 audit: quest 3 had no free start and
+opened with an adjacency deduction, and quests 4–6 required 6–10 deductions before
+the first Guardian (logic-v1 57 / 103 / 103 / 127). The legacy quests
+`base-q003`–`base-q006` now use new audited 6×6 boards on **soft grid revision 1**
+(`content/generated/onboarding-grids-650.json`): logic-v1 **41 / 49 / 58 / 70**,
+monotone from quest 2 (28), at most three deductions before the first Guardian, and
+quest 3 opens with a simple locked deduction. IDs, legacy indexes, order, rewards,
+constellation and the displayed historical label are unchanged; the published
+revision-0 boards stay available through `canonicalQuestListForRevision(0)` and
+access-origin hashes are not rewritten. Completion, badges, stars and saved times
+earned on the former boards are kept by owner decision. These four IDs are the only
+explicit exception to the Adventures 1–4 equivalence below; protection tests compare
+them at revision 0 and `onboarding-grids-650-tests` audits the replacements.
+
 ## Current mixed pacing revision (2)
 
 Adventures **1–4 remain equivalent as complete runtime quest definitions**:

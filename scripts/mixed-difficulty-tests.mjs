@@ -7,6 +7,7 @@ import {logicalDifficultyTier,LOGICAL_DIFFICULTY_THRESHOLDS} from '../src/campai
 import {connected,countSolutions,replay,signature} from './generate-diverse-grids.mjs';
 import {mixedTierSchedule,MIXED_TARGETS,pacingIntensity} from './mixed-difficulty-policy.mjs';
 import {resolveChallengeQuest} from '../src/campaign/canonical-challenges.js';
+import onboarding650 from '../content/generated/onboarding-grids-650.json' with {type:'json'};
 import {createAttemptEngine} from '../src/game/attempt-engine.js';
 import {obsoleteQuestIntent,alignQuestResets} from '../src/persistence/quest-reset.js';
 import manifest from '../content/generated/logical-grids-v2.json' with {type:'json'};
@@ -14,7 +15,11 @@ import fs from 'node:fs';
 import {createDurableCanonicalVictoryOutbox} from '../src/persistence/durable-canonical-outbox.js';
 import {replayCanonicalVictoryOutbox} from '../src/persistence/canonical-outbox.js';
 const all=canonicalQuestList(),protectedPacks=['base-real-sky','real-adventure-02','real-adventure-03','real-adventure-04'];
-const protectedQuests=all.filter(q=>protectedPacks.includes(q.packId));
+// Exact protection is kept: only the four owner-approved #650 boards are
+// compared at revision 0; onboarding-grids-650-tests audits their replacement.
+const onboardingIds=new Set(onboarding650.quests.map(q=>q.id)),revisionZero=new Map(canonicalQuestListForRevision(0).map(q=>[q.id,q]));
+assert.deepEqual([...onboardingIds],['base-q003','base-q004','base-q005','base-q006']);
+const protectedQuests=all.filter(q=>protectedPacks.includes(q.packId)).map(q=>onboardingIds.has(q.id)?revisionZero.get(q.id):q);
 assert.equal(createHash('sha256').update(JSON.stringify(protectedQuests)).digest('hex'),'e2042bdc8a771e9493ab3caf44c037024ca825aca7d6958ea7646aa7f529544f','Adventures 1–4 retain every published grid, solution, reward, position and difficulty');
 for(const pack of ['real-adventure-05','real-adventure-06','real-adventure-07','real-adventure-08']){
  const members=all.filter(q=>q.packId===pack);assert(members.length);

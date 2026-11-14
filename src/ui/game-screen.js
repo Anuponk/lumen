@@ -48,7 +48,7 @@ import {LUMEN_META,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATI
 import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt,badgeCooldownRemaining,badgeCooldownLabel} from "../campaign/performance.js";
 import {challengeEligibility,challengeSnapshot,compareChallenge,createChallengeClient,normalizeChallengeName,validChallengeName} from "../campaign/social-challenge.js";
 import {resolveChallengeQuest} from "../campaign/canonical-challenges.js";
-import {canonicalDisplayForLegacy,canonicalScopeProgress,canonicalCampaignComplete,canonicalQuestMilestone,canonicalQuestList,canonicalAdventureSummary,canonicalQuestByOrdinal,canonicalQuestForLegacy,canonicalNextUnsolved,canonicalCampaignQuestDecision,canonicalInsertedQuestDecision,unlockedAdventureProgress} from "../campaign/canonical-quests.js";
+import {canonicalDisplayForLegacy,canonicalScopeProgress,canonicalCampaignComplete,canonicalQuestMilestone,canonicalQuestList,canonicalAdventureSummary,canonicalQuestByOrdinal,canonicalQuestById,canonicalQuestForLegacy,canonicalNextUnsolved,canonicalCampaignQuestDecision,canonicalInsertedQuestDecision,unlockedAdventureProgress} from "../campaign/canonical-quests.js";
 import {acknowledgeCanonicalVictory,questIsCompleted} from "../persistence/canonical-progress.js";
 import {loadCommittedCanonicalAttempt} from '../persistence/canonical-command.js';
 import {classifyCanonicalRecoveryError} from '../persistence/canonical-recovery-errors.js';
@@ -1809,7 +1809,7 @@ function showPenaltyIndicator({kind,delta}){
 const attemptEngine=createAttemptEngine({onChange:attempt=>{updateAttemptUI();const surface=attempt?attempt.attemptId+':'+(attempt.resetCount||0):null;if(surface!==penaltySurface){clearPenaltyIndicator();penaltySurface=surface}},onAssistanceUse:showPenaltyIndicator});
 function capturedTiming(){return qaActive||officialTimingSupported(lumenSupabase)?{timing:attemptTiming(attemptEngine.snapshot()??{})}:{}}
 const rankingContext=()=>({owner:lumenUser?.id,client:lumenSupabase,nickname:lumenNickname,qa:qaActive});
-const rankingClient=createRankingClient({storage:localStorage,getContext:rankingContext});
+const rankingClient=createRankingClient({storage:localStorage,getContext:rankingContext,currentGridRevision:id=>{const q=canonicalQuestById(id);return q?q.gridRevision??0:null}});
 const rankingView=createRankingView({client:rankingClient,getContext:rankingContext,format:seconds=>formatDuration(seconds)});
 let nicknameOnboardingOwner=null;
 let nicknameOnboardingBusy=false;
@@ -1959,7 +1959,10 @@ function questIsAccessible(index){
   entitlements:adventureAccessEntitlements(),attempt:campaignAccessAttempt(),signedIn:qaActive||!!lumenUser,cloudReady:qaActive||cloudProfileReady,confirmedReplay:confirmedReplayAllowed(canonicalQuestForLegacy(index)),...offlineQuestAccessContext()
  }).status==='ready';
 }
-function choose(){if(canonicalActiveQuest){puz={reg:canonicalActiveQuest.reg,sol:canonicalActiveQuest.sol,audit:canonicalActiveQuest.audit,difficulty:canonicalActiveQuest.difficulty};n=puz.reg.length;return}levelIndex=Math.max(0,Math.min(levelIndex,currentQuestLimit()-1));if(!socialChallenge&&!questIsAccessible(levelIndex)){while(levelIndex>0&&!questIsAccessible(levelIndex))levelIndex--;replayMode=!!lumenProgress.solved[levelIndex]}const resolved=playableQuest(levelIndex);if(!resolved)throw new Error("Missing campaign quest "+levelIndex);puz=resolved.source==="generated"?{reg:resolved.reg,sol:resolved.sol,audit:resolved.audit,difficulty:resolved.difficulty}:resolved.size===6?CAT["6"][CAMPAIGN6_ORDER[CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]]]:CAT[String(resolved.size)][CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]];n=puz.reg.length;last[n]=levelIndex}
+function choose(){if(canonicalActiveQuest){puz={reg:canonicalActiveQuest.reg,sol:canonicalActiveQuest.sol,audit:canonicalActiveQuest.audit,difficulty:canonicalActiveQuest.difficulty};n=puz.reg.length;return}levelIndex=Math.max(0,Math.min(levelIndex,currentQuestLimit()-1));if(!socialChallenge&&!questIsAccessible(levelIndex)){while(levelIndex>0&&!questIsAccessible(levelIndex))levelIndex--;replayMode=!!lumenProgress.solved[levelIndex]}const resolved=playableQuest(levelIndex);if(!resolved)throw new Error("Missing campaign quest "+levelIndex);puz=resolved.source==="generated"?{reg:resolved.reg,sol:resolved.sol,audit:resolved.audit,difficulty:resolved.difficulty}:resolved.size===6?CAT["6"][CAMPAIGN6_ORDER[CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]]]:CAT[String(resolved.size)][CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]];
+ // #650: an explicit legacy grid revision replaces the historical CAT board.
+ const revised=canonicalQuestForLegacy(levelIndex);if(revised?.gridRevision&&revised.legacyIndex===levelIndex)puz={...puz,reg:revised.reg,sol:revised.sol};
+ n=puz.reg.length;last[n]=levelIndex}
 function loadPuzzle(){init();}
 function startLearningReplay(){
  if(learningReplayReturn===null)learningReplayReturn={levelIndex,replayMode,canonicalQuest:canonicalActiveQuest};

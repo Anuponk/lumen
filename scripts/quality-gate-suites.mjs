@@ -7,6 +7,7 @@ export const nodeSuites=[
  'ranking-client-tests.mjs',
  'manual-marking-tests.mjs',
  'mixed-difficulty-tests.mjs',
+ 'onboarding-grids-650-tests.mjs',
  'cloud-quest-reset-tests.mjs',
  'logical-difficulty-tests.mjs',
  'logical-grid-tests.mjs',
