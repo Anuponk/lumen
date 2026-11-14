@@ -1100,7 +1100,7 @@ function wireLumenErasureControls(){
    if(!signedOut?.ok||lumenUser||lumenSupabase!==client||localStorage.getItem('lumenCloudOwnerId')!==ownerId)
     throw Error('Effacement serveur confirmé. Nettoyage de cet appareil interrompu : vérifie la session puis contacte le support.');
    await clearErasedLumenDeviceData();
-   status.textContent='Données Lumen supprimées sur le serveur et cet appareil.';
+   status.textContent=acknowledgement?.accountDeleted===true?'Ton compte et tes données Lumen sont supprimés.':'Données Lumen supprimées sur le serveur et cet appareil.';
    location.reload();
   }catch(error){status.textContent=error.message||'La suppression a échoué.'}
   finally{execute.disabled=false;refresh()}
@@ -1327,7 +1327,7 @@ function updateAuthUI(){
    u.textContent="Progression enregistrée sur cet appareil";
    login.hidden=false; logout.hidden=true;
  }
- if(!lumenUser)showMandatoryNickname(false);
+ if(!lumenUser){showMandatoryNickname(false);showErasedAccountNotice(false)}
  refreshOnboardingPreferenceOwner();syncMobileAuthUI();updateAdminTools();
  if(!lumenUser&&accountRequired())maybeOfferAccount();
  if(lumenUser&&wasOfferPending){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_success",null,{source:"account_offer",qa:qaActive});const box=document.getElementById("accountOptin");if(box)box.hidden=true}
@@ -1852,8 +1852,15 @@ async function submitMandatoryNickname(){
 document.getElementById('mandatoryNicknameSave')?.addEventListener('click',()=>void submitMandatoryNickname());
 document.getElementById('mandatoryNicknameInput')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();void submitMandatoryNickname()}});
 document.getElementById('mandatoryNicknameSignout')?.addEventListener('click',async()=>{await signOut();showMandatoryNickname(false)});
+function showErasedAccountNotice(show){const notice=document.getElementById('erasedAccountNotice');if(notice)notice.hidden=!show}
+document.getElementById('erasedAccountSignout')?.addEventListener('click',async()=>{await signOut();showErasedAccountNotice(false)});
 async function refreshRankingAccount(){
- const c=rankingContext();if(!c.owner||!c.client||c.qa)return;
+ const c=rankingContext();if(!c.owner||!c.client||c.qa){showErasedAccountNotice(false);return}
+ // #316: an erased account kept for another app can never write Lumen data again.
+ try{const {data:erased,error}=await c.client.rpc('lumen_account_erased');
+  if(!error&&erased===true&&rankingContext().owner===c.owner){showMandatoryNickname(false);showErasedAccountNotice(true);return}
+ }catch{}
+ showErasedAccountNotice(false);
  void refreshOfficialTimingSupport(c.client).then(()=>refreshOfficialRecordLabel());
  try{const {data,error}=await c.client.rpc('lumen_ranking_account');if(error||rankingContext().owner!==c.owner||rankingContext().client!==c.client)return;
   document.getElementById('rankingRejoin').hidden=!data?.withdrawn;
