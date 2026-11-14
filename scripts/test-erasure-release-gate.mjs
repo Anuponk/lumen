@@ -23,7 +23,9 @@ const checks=[
  ['edge checks explicit confirmation',edge.includes("body?.confirmation !== 'SUPPRIMER'")],
  ['edge handles browser preflight',edge.includes("request.method === 'OPTIONS'")],
  ['account deletion action exists',html.includes('id="eraseLumenExecute"')],
- ['client clears local Lumen data after success',ui.includes('await clearErasedLumenDeviceData()')],
+ ['client clears local Lumen data after success',ui.includes('await clearErasedLumenDeviceData({includeSession:accountDeleted})')],
+ ['client sign-out after erasure is time-bounded',ui.includes("Promise.race([signOut(),new Promise(resolve=>setTimeout(")],
+ ['stored session removed only for a deleted sign-in account',ui.includes("const accountDeleted=acknowledgement?.accountDeleted===true")],
  ['full deletion SQL never deletes auth.users itself',!/delete\s+from\s+auth\.users/i.test(full)&&!/auth\.users\s+where/i.test(full.replace(/confrelid='auth\.users'::regclass/g,''))],
  ['deletable check is service-role only',full.includes("function public.lumen_account_deletable")&&full.includes('lumen_account_deletable(uuid) from public,anon,authenticated')&&full.includes('lumen_account_deletable(uuid) to service_role')&&full.includes("auth.role()) is distinct from 'service_role'")],
  ['deletion requires the Lumen erasure barrier',full.includes("kind='user' and digest=lumen_privacy.fingerprint(p_user_id::text)")],
@@ -32,7 +34,7 @@ const checks=[
  ['edge deletes the account only after an explicit safe answer',edge.indexOf("operator.rpc('lumen_self_erase'")<edge.indexOf("operator.rpc('lumen_account_deletable'")&&edge.includes('deletable === true')&&edge.indexOf('deletable === true')<edge.indexOf('operator.auth.admin.deleteUser(user.id)')],
  ['erased-status RPC is self-only',full.includes('auth.uid() is not null and exists')&&full.includes('lumen_account_erased() from public,anon')],
  ['client explains erased accounts before the nickname gate',html.includes('id="erasedAccountNotice"')&&ui.indexOf("rpc('lumen_account_erased')")<ui.indexOf("rpc('lumen_ranking_account')")],
- ['client does not claim success before HTTP success',ui.indexOf('if(!response.ok)throw Error') < ui.indexOf('await clearErasedLumenDeviceData()')],
+ ['client does not claim success before HTTP success',ui.indexOf('if(!response.ok)throw Error') < ui.indexOf('await clearErasedLumenDeviceData(')],
 ];
 for(const [name,ok] of checks){console.log((ok?'PASS':'FAIL')+' '+name);assert.ok(ok,name)}
 console.log('Static release gate passed. NOT an authenticated end-to-end erasure test.');

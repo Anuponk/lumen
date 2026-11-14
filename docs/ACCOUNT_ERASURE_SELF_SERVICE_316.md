@@ -42,6 +42,8 @@ Décision du propriétaire : **« Supprimer mon compte » supprime aussi le comp
 
 Un compte partagé effacé qui se reconnecte voit `erasedAccountNotice` (via `public.lumen_account_erased()`, limité à son propre identifiant) au lieu de la saisie du pseudo, et peut se déconnecter. Un nouveau compte (nouvel identifiant) peut ensuite être créé, y compris avec la même adresse lorsque l'ancien compte a été supprimé ; la barrière reste attachée à l'ancien identifiant.
 
+Correctif du 14/11 (test réel `+l6`) : le serveur avait tout supprimé mais l'interface restait sur « Suppression en cours… », la déconnexion du SDK pouvant attendre indéfiniment une fois le compte supprimé. La déconnexion est désormais bornée (6 s). Si `accountDeleted` est vrai, la session locale (morte) est retirée avec les données Lumen puis la page est rechargée ; un compte conservé garde le contrôle strict et affiche une erreur au lieu d'attendre.
+
 ## Protection cliente intégrable sans activation serveur
 
 Le handler de confirmation garde le compte, le client Auth et la génération

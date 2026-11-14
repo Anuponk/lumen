@@ -1811,6 +1811,8 @@ retention, rights export and production compatibility still need testing.
 
 ### #316 — Supabase isolated Edge HTTP smoke
 
+Erasure UI completion (#316, 2026-11-14): `self-erasure-controls-tests.mjs` runs the real handler with a sign-out that never settles; a deleted account must still clear device data and its stored session and reload, and a kept account must report the interruption instead of waiting.
+
 Full account deletion (#316, 2026-11-14): the handler tests also cover the sign-in account deletion order (erasure → `lumen_account_deletable` → `auth.admin.deleteUser`), shared/unknown/failed cases keeping the account, and no check when erasure is not acknowledged; `test-erasure-release-gate.mjs` statically checks the fail-closed SQL, self-only erased status and the client notice before the nickname gate.
 
 `node scripts/self-erasure-handler-tests.mjs` executes the actual Edge handler

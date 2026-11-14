@@ -1039,11 +1039,12 @@ let authSessionPending=true;
 
 // #316: Self-service erasure is deliberately unavailable until the server
 // can guarantee complete deletion of all verified Lumen identities.
-async function clearErasedLumenDeviceData(){
- // Only Lumen-owned storage: never clear the origin indiscriminately.
+async function clearErasedLumenDeviceData({includeSession=false}={}){
+ // Only Lumen-owned storage: never clear the origin indiscriminately. The
+ // Lumen Supabase session is removed only once the sign-in account is deleted.
  for(const store of [localStorage,sessionStorage]){
   for(const key of Object.keys(store)){
-   if(/^lumen/i.test(key) && !/^lumenSupabase/i.test(key))store.removeItem(key);
+   if(/^lumen/i.test(key) && (includeSession || !/^lumenSupabase/i.test(key)))store.removeItem(key);
   }
  }
  // IndexedDB names are browser-dependent. Never delete unknown databases.
@@ -1096,10 +1097,14 @@ function wireLumenErasureControls(){
    requireSession();
    if(acknowledgement?.status!=='erased'||acknowledgement?.scope!=='lumen'||acknowledgement?.details!=='erased')
     throw Error('Confirmation d’effacement absente. Les données de cet appareil sont conservées.');
-   const signedOut=await signOut();
-   if(!signedOut?.ok||lumenUser||lumenSupabase!==client||localStorage.getItem('lumenCloudOwnerId')!==ownerId)
+   // The SDK sign-out can wait on its auth lock or a revoked session forever once
+   // the server deleted the account: bound it. A deleted account's local session
+   // is dead, so its device cleanup also removes the stored session and reloads.
+   const accountDeleted=acknowledgement?.accountDeleted===true;
+   const signedOut=await Promise.race([signOut(),new Promise(resolve=>setTimeout(()=>resolve({ok:false,reason:'timeout'}),6000))]);
+   if(!accountDeleted&&(!signedOut?.ok||lumenUser||lumenSupabase!==client||localStorage.getItem('lumenCloudOwnerId')!==ownerId))
     throw Error('Effacement serveur confirmé. Nettoyage de cet appareil interrompu : vérifie la session puis contacte le support.');
-   await clearErasedLumenDeviceData();
+   await clearErasedLumenDeviceData({includeSession:accountDeleted});
    status.textContent=acknowledgement?.accountDeleted===true?'Ton compte et tes données Lumen sont supprimés.':'Données Lumen supprimées sur le serveur et cet appareil.';
    location.reload();
   }catch(error){status.textContent=error.message||'La suppression a échoué.'}
