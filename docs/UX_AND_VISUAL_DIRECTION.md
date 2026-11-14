@@ -213,6 +213,16 @@ Board rows/cells must not visually jump when exclusion markers appear. Exclusion
 
 ## Learning UX
 
+Phones (≤ 700 px, #687, 14 November 2026): the learning coach is laid out
+**above the board, never over it**, for every learning step including the quest-1
+intro. Its full text stays visible (no internal clipping); the board shrinks by
+the coach height so its bottom and the actions keep their position, down to a
+playable minimum of 180 px. On very small screens (320×568) the action row may
+then extend below the fold; those actions are disabled during guided learning and
+the coach's own « Suivant » stays visible. Tablets and desktop keep the placement
+described below. Account screens (#688) always win: the coach stays below them,
+is hidden while one is open, and resumes at the same step when it closes.
+
 On short screens, the compact coach for learning quests 1–2 reserves the
 interactive header before measuring available space above the board. Its
 height may shrink and scroll internally; it must not intercept the help button,

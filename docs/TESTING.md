@@ -47,6 +47,8 @@ monotone quest 2–6 profile, unchanged identities/rewards/labels, revision-0 li
 absence of `gv` markers, archived old attempts, obsolete ranking archiving and the
 exact migration scope. Adventure 1–4 protection tests compare these IDs at revision 0.
 
+Learning coach placement #687/#688: `learning-coach-placement-browser-tests.mjs` walks the quest-1 intro on a fresh guest at 320×568, 360×640 and 390×844 and requires zero overlap between the coach and the board, full coach text, a reachable « Suivant » and a board of at least 180 px; it then opens « Créer un compte » during a step and requires the account screen on top with the coach hidden, and the same step after closing. It fails on the previous centred intro panel (z-index 1500).
+
 Victory screen #682: `node --test scripts/victory-celebration-tests.mjs` covers the five stable reward slots, confirmed-only rank messages (no lead claim with Échos, no participant counter), graded levels and composition, the shared engine (amplify without restart or downgrade, reduced motion) and the absence of quest-number conditions. `victory-layout-browser-tests.mjs` checks on real portrait viewports (320×568, 360×640, 390×844) that a board arriving after 0, 1 or 5 s moves no zone, five badges fit one row, the three secondary actions share one row below the full-width next action, the podium is ordered 2–1–3 with decreasing heights and only the player highlighted, no counter or horizontal scroll, and no particles in reduced motion.
 
 Mixed pacing: `node scripts/mixed-difficulty-tests.mjs` independently rates,

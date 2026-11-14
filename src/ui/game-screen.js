@@ -2112,9 +2112,28 @@ function advanceLearningIntro(){
  learningIntroStep++;
  render();
 }
+// #687: on phones the learning coach sits above the board, never over it.
+// The board shrinks by the coach height so its bottom (and the actions) stay put.
+const COACH_ABOVE_MAX_WIDTH=700,COACH_MIN_BOARD=180;
+function clearCoachAboveBoard(){
+ const wrap=document.getElementById("learningBoardWrap");if(!wrap?.classList||!wrap.style?.removeProperty)return;
+ wrap.classList.remove("coach-above");wrap.style.removeProperty("--coach-height");wrap.style.removeProperty("--coach-board-size");
+}
+function placeCoachAboveBoard(card){
+ const wrap=document.getElementById("learningBoardWrap");
+ for(const key of ["position","left","top","width","transform","maxHeight","overflowY"])card.style[key]="";
+ clearCoachAboveBoard();
+ const natural=board.getBoundingClientRect().width;
+ wrap.classList.add("coach-above");
+ const height=Math.ceil(card.getBoundingClientRect().height);
+ wrap.style.setProperty("--coach-height",height+"px");
+ wrap.style.setProperty("--coach-board-size",Math.floor(Math.min(natural,Math.max(COACH_MIN_BOARD,natural-height-8)))+"px");
+}
 function positionLearningCoach(){
  const card=document.getElementById("scriptedLearn");
- if(card.hidden)return;
+ if(card.hidden){clearCoachAboveBoard();return}
+ if(innerWidth<=COACH_ABOVE_MAX_WIDTH){placeCoachAboveBoard(card);return}
+ clearCoachAboveBoard();
  const rect=board.getBoundingClientRect(),mobile=innerWidth<=1100;
  if(mobile&&typeof learningIntroActive==="function"&&learningIntroActive()){
   card.style.position="fixed";card.style.width=Math.min(innerWidth-20,430)+"px";
@@ -2212,7 +2231,7 @@ function updateScriptedLearning(){
  if(skip){skip.hidden=!((activeQuestOrdinal()===1&&!skipFirstGridTutorial&&!socialChallenge)||(learningReplayActive()&&tutorialCompletedProof()));skip.textContent=activeQuestOrdinal()===1&&!skipFirstGridTutorial?"Passer le tutoriel":"Quitter le tutoriel";}
  if(activeQuestOrdinal()<=QUEST_MILESTONES.skyTourAfter&&!socialChallenge)for(const id of ["undo","hint","verify"])document.getElementById(id).disabled=guided;
 
- if(card.hidden)return;
+ if(card.hidden){clearCoachAboveBoard();return}
  const text=step?.phase==="intro"?LEARNING_INTRO[step.introStep]:step?learningCopy(step,state,matchMedia("(pointer:coarse)").matches):learningTip;
  document.getElementById("scriptedLearnTitle").textContent=text.title;
  document.getElementById("scriptedLearnCopy").textContent=text.copy;

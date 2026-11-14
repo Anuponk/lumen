@@ -1398,7 +1398,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 @media(max-width:390px) and (max-height:650px){.learning-board-wrap .scripted-learn{padding:7px 9px;margin:3px 0;line-height:1.25;font-size:clamp(12px,3.6vw,14px)}.learning-board-wrap .scripted-learn strong{margin-bottom:2px}.learning-board-wrap .scripted-learn .learning-coach-next{min-height:36px;margin-top:3px}}
 /* Mobile recipe: the introduction must not be clipped by legacy 52/90/150px coach limits. */
 @media(max-width:1100px){
- .learning-board-wrap .scripted-learn.learning-intro-panel{position:fixed!important;top:50%!important;bottom:auto!important;max-height:min(70dvh,420px)!important;overflow-y:auto!important;overscroll-behavior:contain;z-index:1500}
+ .learning-board-wrap .scripted-learn.learning-intro-panel{position:fixed!important;top:50%!important;bottom:auto!important;max-height:min(70dvh,420px)!important;overflow-y:auto!important;overscroll-behavior:contain;z-index:1300}
  .learning-board-wrap .scripted-learn.learning-intro-panel #scriptedLearnCopy{overflow:visible;flex-shrink:0}
  .learning-board-wrap .scripted-learn.learning-intro-panel .learning-coach-next{flex-shrink:0;position:sticky;bottom:0}
 }
@@ -1473,3 +1473,18 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 @media(max-height:700px){.sky-reveal .victory-performance-ranked .victory-podium-slot,.sky-reveal .victory-podium-slot .ranking{height:140px}.sky-reveal .ranking-podium{min-height:112px}.sky-reveal .ranking .ranking-step-1,.sky-reveal .ranking-step-skeleton.ranking-step-1{min-height:100px!important}.sky-reveal .ranking .ranking-step-2,.sky-reveal .ranking-step-skeleton.ranking-step-2{min-height:88px!important}.sky-reveal .ranking .ranking-step-3,.sky-reveal .ranking-step-skeleton.ranking-step-3{min-height:78px!important}.sky-reveal .victory-performance-row{min-height:54px}}
 @media(max-width:360px){.sky-reveal .victory-reward{font-size:9px}.sky-reveal .victory-reward-icon{font-size:14px}.sky-reveal .sky-reveal-results .sky-reveal-actions .sky-reveal-secondary{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.victory-particle,.sky-reveal .victory-reward-new{animation:none!important}.victory-celebration-layer{display:none}}
+
+/* #687: on phones the learning coach is laid out above the board, never over it.
+   JS sets --coach-height and shrinks the board by the same amount (--coach-board-size). */
+@media (max-width:700px){
+ #learningBoardWrap.coach-above{position:relative;padding-top:calc(var(--coach-height,0px) + 8px)!important}
+ #learningBoardWrap.coach-above .scripted-learn{position:absolute!important;top:0!important;left:0!important;right:0!important;bottom:auto!important;width:auto!important;max-width:none!important;max-height:none!important;min-height:0!important;margin:0!important;overflow:visible!important;transform:none!important;z-index:20!important;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+ #learningBoardWrap.coach-above #scriptedLearnCopy{max-height:none!important;overflow:visible!important}
+ /* Must outrank .game-core:has(#guidedCard/#hintCard:not([hidden])) #board (2,2,0). */
+ .app .game-core #learningBoardWrap.coach-above.coach-above #board{width:min(100%,var(--coach-board-size,100%))!important;max-width:100%!important;margin-inline:auto!important}
+}
+/* #688: one modal at a time. The learning coach stays below account screens and
+   is hidden while one is open; it resumes at the same step when it closes. */
+body:has(#accountOptin:not([hidden])) #scriptedLearn,
+body:has(#mandatoryNickname:not([hidden])) #scriptedLearn,
+body:has(#erasedAccountNotice:not([hidden])) #scriptedLearn{visibility:hidden!important}
