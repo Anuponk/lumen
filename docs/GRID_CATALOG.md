@@ -16,6 +16,19 @@ earned on the former boards are kept by owner decision. These four IDs are the o
 explicit exception to the Adventures 1–4 equivalence below; protection tests compare
 them at revision 0 and `onboarding-grids-650-tests` audits the replacements.
 
+**#692 amendment (owner decision, 2026-11-14).** After real-device play, quests
+4–6 were still too demanding: they are replaced again, **under the same soft
+revision 1**, by boards using only the rules taught in the tutorial (zero
+adjacency/pair/triple deduction): logic-v1 **42.7 / 46.0 / 48.0** (were 49 / 58 /
+70). Quest 7 (`planned-real-01-q07`, 7×7, canonical non-legacy) moves to soft
+revision 1 with a gentler board, **61.4** with two adjacency deductions (was 97.4
+with six), so the step to 7×7 stays regular. Profile: 28 → 41.3 → 42.7 → 46.0 →
+48.0 → 61.4. Each superseded #650 board keeps its hash (`supersededGridHash`) for
+audit. Reusing revision 1 was accepted because only owner test runs existed on the
+#650 boards; their two ranking scores are removed by an operator script, never by
+a migration. Migration `20261114180000_quest7_grid_revision_692.sql` only moves
+quest 7 to revision 1. Completion, badges, stars and saved times are kept.
+
 ## Current mixed pacing revision (2)
 
 Adventures **1–4 remain equivalent as complete runtime quest definitions**:

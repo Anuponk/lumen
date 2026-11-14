@@ -1,4 +1,5 @@
-// #650 acceptance gate: owner-approved easier boards for legacy quests 3-6.
+// #650/#692 acceptance gate: owner-approved easier boards for Adventure 1 quests 3-7
+// (#650: legacy quests 3-6; #692: quests 4-6 again without advanced deductions, and quest 7).
 // Independently recounts every claim of the manifest and checks that saves,
 // historical links, attempts and ranking stay compatible with soft revision 1.
 import assert from 'node:assert/strict';
@@ -15,18 +16,21 @@ import {CAT} from '../src/campaign/catalogue.js';
 import {connected,countSolutions,replay,signature} from './generate-diverse-grids.mjs';
 
 const hash=q=>createHash('sha256').update(JSON.stringify({reg:q.reg,sol:q.sol})).digest('hex');
-const ids=['base-q003','base-q004','base-q005','base-q006'];
+const ids=['base-q003','base-q004','base-q005','base-q006','planned-real-01-q07'];
+const legacyIds=ids.slice(0,4);
 const revisionZero=new Map(canonicalQuestListForRevision(0).map(q=>[q.id,q]));
 const current=canonicalQuestList();
 
-// 1. Exact scope: four legacy Adventure 1 quests, soft revision 0 -> 1.
+// 1. Exact scope: four legacy quests and quest 7, soft revision 0 -> 1.
 assert.equal(manifest.schema,'lumen-onboarding-grid-revision-v1');
 assert.deepEqual(manifest.quests.map(q=>q.id),ids);
-assert.deepEqual(current.filter(q=>q.legacyIndex!==null&&q.gridRevision).map(q=>q.id),ids,'No other legacy board is revised');
+assert.deepEqual(current.filter(q=>q.legacyIndex!==null&&q.gridRevision).map(q=>q.id),legacyIds,'No other legacy board is revised');
+assert.deepEqual(current.filter(q=>q.ordinal<=12&&q.gridRevision===1).map(q=>q.id),ids,'Only quests 3-7 use the onboarding revision');
 for(const [i,q] of manifest.quests.entries()){
  const old=revisionZero.get(q.id),now=canonicalQuestByOrdinal(i+3);
  assert.equal(now.id,q.id,'Order is unchanged');
- assert.equal(q.legacyIndex,i+2);assert.equal(old.legacyIndex,q.legacyIndex);assert.equal(canonicalQuestForLegacy(q.legacyIndex).id,q.id);
+ assert.equal(old.legacyIndex,q.legacyIndex);
+ if(i<4){assert.equal(q.legacyIndex,i+2);assert.equal(canonicalQuestForLegacy(q.legacyIndex).id,q.id)}else assert.equal(q.legacyIndex,null,'Quest 7 is a canonical (non-legacy) quest');
  assert.equal(q.previousGridRevision,0);assert.equal(q.gridRevision,1);assert.equal(now.gridRevision,1);
  assert.equal(q.previousGridHash,hash(old),'Previous hash is the published revision-0 board');
  assert.equal(q.gridHash,hash(q));assert.notEqual(q.gridHash,q.previousGridHash);
@@ -50,10 +54,18 @@ for(const q of manifest.quests){
  assert.equal(rateLogicalDifficulty(revisionZero.get(q.id).reg).score,q.logical.previousScore);
 }
 
-// 3. Difficulty profile (#650 acceptance): gentle, monotone rise from quest 2.
-const scores=[2,3,4,5,6].map(o=>rateLogicalDifficulty(canonicalQuestByOrdinal(o).reg,{trace:false}).score);
+// #692: quests 4-6 replaced the #650 boards under the same revision; the
+// superseded hash is recorded for audit and never served again.
+for(const q of manifest.quests.slice(1)){assert.equal(q.supersededBy??q.addedBy,692);if(q.legacyIndex!==null){assert.match(q.supersededGridHash,/^[0-9a-f]{64}$/);assert.notEqual(q.supersededGridHash,q.gridHash)}}
+
+// 3. Difficulty profile (#650/#692 acceptance): gentle, monotone rise from quest 2.
+const scores=[2,3,4,5,6,7].map(o=>rateLogicalDifficulty(canonicalQuestByOrdinal(o).reg,{trace:false}).score);
 for(let i=1;i<scores.length;i++)assert(scores[i]>scores[i-1],'Monotone onboarding '+scores.join(' < '));
-assert(scores[1]<=45,'Quest 3 stays very easy');assert(scores.at(-1)<75,'Quest 6 stays below the former peak');
+assert(scores[1]<=45,'Quest 3 stays very easy');
+// #692 owner decision: quests 4-6 form a gentle plateau with no advanced
+// deduction (adjacency, pairs, triples); quest 7 smooths the step to 7x7.
+for(const q of manifest.quests.slice(1,4)){assert.equal(q.logical.advancedDeductions,0,q.id+' uses only taught rules');assert(q.logical.score<=50,q.id+' stays on the gentle plateau')}
+const q7=manifest.quests[4];assert(q7.logical.score>=55&&q7.logical.score<=70,'Quest 7 bridges the plateau to 7x7');assert(q7.logical.advancedDeductions<=2);
 for(const q of manifest.quests){
  assert(q.logical.score<q.logical.previousScore,q.id+' is easier than before');
  assert(q.logical.deductionsBeforeFirst<=3,q.id+' first guardian is reached quickly');
@@ -103,7 +115,12 @@ assert.notEqual((await plain.flush())[0]?.status,'obsolete');
 // 8. The server data migration targets exactly these quests and legacy indexes.
 const sql=fs.readFileSync('supabase/migrations/20261114090000_onboarding_grid_revision_650.sql','utf8');
 const expected=JSON.parse(/expected jsonb:='([^']+)'/.exec(sql)[1]);
-assert.deepEqual(expected,Object.fromEntries(manifest.quests.map(q=>[q.id,q.legacyIndex])));
+assert.deepEqual(expected,Object.fromEntries(manifest.quests.slice(0,4).map(q=>[q.id,q.legacyIndex])));
 assert.match(sql,/grid_revision not in \(0,1\)/);assert.doesNotMatch(sql,/delete|truncate|drop /i);
 
-console.log('onboarding grids #650: 4 boards, scores',scores.join(' < '));
+// 9. #692 server migration: quest 7 only, data-only, never deletes.
+const sql692=fs.readFileSync('supabase/migrations/20261114180000_quest7_grid_revision_692.sql','utf8');
+assert.deepEqual(Object.keys(JSON.parse(/expected jsonb:='([^']+)'/.exec(sql692)[1])),['planned-real-01-q07']);
+assert.match(sql692,/grid_revision not in \(0,1\)/);assert.doesNotMatch(sql692,/delete|truncate|drop /i);
+
+console.log('onboarding grids #650/#692: 5 boards, scores',scores.map(x=>x.toFixed(1)).join(' < '));
