@@ -1,4 +1,6 @@
 export const nodeSuites=[
+ 'erasure-qa-schema.mjs',
+ 'self-erasure-handler-tests.mjs',
  'app-updates-tests.mjs',
  'ranking-tests.mjs',
  'official-time-tests.mjs',

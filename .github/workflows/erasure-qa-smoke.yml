@@ -1,0 +1,28 @@
+name: Lumen erasure QA smoke HTTP
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/erasure-qa-smoke.yml'
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check isolated non-destructive Edge endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://tjdjlavmusmncuszhsuw.supabase.co/functions/v1/lumen-erasure-qa-smoke"
+          check() {
+            expected="$1"; shift
+            actual=$(curl --silent --show-error --location --max-time 15 --output /tmp/lumen-qa-response --write-out '%{http_code}' "$@" "$url")
+            echo "Expected HTTP $expected; got $actual"
+            cat /tmp/lumen-qa-response
+            echo
+            test "$actual" = "$expected"
+          }
+          check 401 -X POST -H 'content-type: application/json' --data '{"confirmation":"SUPPRIMER"}'
+          check 405 -X GET
+          check 403 -X POST -H 'origin: https://untrusted.example' -H 'content-type: application/json' --data '{"confirmation":"SUPPRIMER"}'
+          echo "QA smoke complete: no credentials and no data deletion"

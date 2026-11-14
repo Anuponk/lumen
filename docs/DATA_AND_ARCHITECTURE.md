@@ -1687,7 +1687,16 @@ full account erasure, anti-resurrection, or SoldeZen isolation is validated.
 
 ## Account erasure self-service (#316, pending release)
 
-The proposed browser account menu invokes `lumen-self-erasure` with the current user JWT and explicit confirmation. The Edge Function verifies the user and calls `public.lumen_self_erase` as that user. The database derives the target from `auth.uid()` and invokes the existing transactional Lumen-only erasure policy. The shared Supabase Auth identity and SoldeZen tables are not deleted. This implementation is **not production ready** until verified guest actors and local persisted state are handled and a QA end-to-end deletion succeeds. The migration and function must be deployed together only after security review; rollback is to disable the Edge Function and revoke the RPC execute privilege, not to restore deleted player data. Cloud restore is intentionally blocked for erased identifiers by the existing erasure guards.
+Historical proposal, superseded by the privileged boundary below (never deploy this client-callable design): the browser account menu invokes `lumen-self-erasure` with the current user JWT and explicit confirmation. The Edge Function verifies the user and calls `public.lumen_self_erase` as that user. The database derives the target from `auth.uid()` and invokes the existing transactional Lumen-only erasure policy. The shared Supabase Auth identity and SoldeZen tables are not deleted. This implementation is **not production ready** until verified guest actors and local persisted state are handled and a QA end-to-end deletion succeeds. The migration and function must be deployed together only after security review; rollback is to disable the Edge Function and revoke the RPC execute privilege, not to restore deleted player data. Cloud restore is intentionally blocked for erased identifiers by the existing erasure guards.
+
+
+### #316 — Privileged erasure boundary (PR #611)
+
+The Edge reports success only for the SQL acknowledgement `status=erased`,
+`barrier=active` and `authDeleted=false`. An empty, incomplete or inconsistent
+response remains an explicit failure, even when transport succeeded. The target
+always comes from verified Auth; a client-supplied target is ignored.
+The browser submits an explicit `SUPPRIMER` confirmation to the Lumen Edge Function. The function verifies the bearer token with Supabase Auth, then uses server-only service credentials to call `public.lumen_self_erase(uuid,text)`. The SQL entrypoint rejects non-service roles and uses the existing transactional `lumen_privacy.erase_account` policy, actor collision checks, and anti-resurrection tombstones. It never deletes shared `auth.users` or SoldeZen data. The previous client-callable JWT-clearing procedure must not be deployed. Deployment requires an isolated authenticated QA erasure and rollback verification; static CI alone is insufficient.
 
 ### Offline catalogue and pending wins (#597)
 The offline service worker caches the published static module graph and catalogue data, marking a cache ready only after successful completion. Cloud profiles and reward receipts remain authoritative. A verified account may retain a bounded, device-local owner-specific offline continuation marker; this is not cryptographic authentication and must not authorize cloud writes or another account. Canonical and legacy victory intents are stored in durable owner-bound command outboxes; pending navigation projects completion without modifying rewards or cloud state. On reconnect, command replay and cloud reconciliation must remain idempotent. Android cold-start and multi-quest acceptance remain release blockers.
@@ -1749,6 +1758,16 @@ L’accès au pack et les prérequis réutilisent le contrat normal. Les grilles
 verrouillées sont précachées sans conférer d’accès. Toutes les victoires et
 replays passent par les commandes canoniques existantes ; aucune seconde outbox
 ni règle économique ajoutée.
+
+### Confirmation cliente de suppression (#316)
+
+Le client conserve le compte, le client Auth et la génération de session de la
+demande. Il refuse un jeton d'un autre compte et toute réponse devenue obsolète.
+Un HTTP 200 seul n'autorise aucun nettoyage : la réponse JSON doit confirmer
+`status=erased`, `scope=lumen`, `details=erased`. L'échec de déconnexion ou un
+changement de propriétaire local conserve les données de cet appareil et affiche
+un état incomplet, sans revendiquer une suppression locale réussie. Les contrôles
+serveur et la recette authentifiée isolée restent obligatoires avant activation.
 
 ## Catalogue complet UAI — révision 4
 
