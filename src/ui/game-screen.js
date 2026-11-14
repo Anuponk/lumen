@@ -2923,9 +2923,31 @@ const canonicalVictoryOutbox=createDurableCanonicalVictoryOutbox(localStorage,{
   recordCloudDiagnostic("canonical_outbox_storage",{reason:issue.kind});
  }
 });
+let lastOutboxDiagnosticFingerprint=null;
+function summarizeOutboxForDiagnostic(queue){
+ const paused=queue.paused||[];
+ const counts=kind=>paused.filter(entry=>entry.kind===kind).length;
+ return {
+  pending:queue.pending?.length||0,
+  retryable:queue.retryable?.length||0,
+  pausedAuth:counts('auth'),
+  pausedReview:counts('review'),
+  authRequired:!!queue.authRequired,
+  complete:!!queue.complete,
+  issues:[...new Set(queue.issues||[])].filter(value=>typeof value==='string').sort()
+ };
+}
 async function refreshCanonicalOutboxNotice(ownerId){
  try{
   const {Canonical:canonicalState,Legacy:legacyState,Wallet:walletState}=await inspectCommandOutboxes(ownerId);
+  if(lumenUser?.id===ownerId){
+   const summary={canonical:summarizeOutboxForDiagnostic(canonicalState),legacy:summarizeOutboxForDiagnostic(legacyState),wallet:summarizeOutboxForDiagnostic(walletState)};
+   const fingerprint=JSON.stringify(summary);
+   if(fingerprint!==lastOutboxDiagnosticFingerprint){
+    lastOutboxDiagnosticFingerprint=fingerprint;
+    recordCloudDiagnostic('outbox_state_summary',summary);
+   }
+  }
   const state={issues:[...canonicalState.issues,...legacyState.issues,...walletState.issues],paused:[...canonicalState.paused,...legacyState.paused],authRequired:canonicalState.authRequired||legacyState.authRequired,pending:[...canonicalState.pending,...legacyState.pending,...walletState.pending],retryable:[...canonicalState.retryable,...legacyState.retryable],complete:canonicalState.complete&&legacyState.complete&&walletState.complete};
   if(lumenUser?.id!==ownerId)return 0;
   pendingWalletReservations=walletState.pending;
