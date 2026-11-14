@@ -25,6 +25,8 @@ The private receiver and GitHub secret require one-time setup documented in
 `72f96a360e46e9255fa4a8cc5d039b1408a5a0e8` on 2026-10-23
 ([run](https://github.com/Anuponk/lumen/actions/runs/39908907546)), but TigerProtect
 still intermittently rejects runners (503) and browser assets (429).
+A refusal by the hosting filter (exit 75) is retried from up to two fresh runner
+jobs; the workflow fails unless one attempt publishes and verifies the SHA.
 See the hosting-filter diagnosis in that runbook; deployment success alone
 does not establish browser availability. The ten-minute cron remains a fallback; event-driven publication
 does not wait for its five-minute CI-poll cooldown.

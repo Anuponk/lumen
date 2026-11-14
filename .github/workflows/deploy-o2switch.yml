@@ -11,6 +11,10 @@ permissions:
 concurrency:
   group: lumen-o2switch-production
   cancel-in-progress: false
+# TigerProtect (o2switch default rules) intermittently rejects GitHub runner IPs
+# with HTTP 503 before PHP. A new job gets a new runner (usually a new IP), so a
+# hosting-filter refusal (exit 75) is retried by up to two further jobs. Every
+# other failure (gates, server publication, SHA mismatch) stops immediately.
 jobs:
   deploy:
     if: >-
@@ -24,6 +28,8 @@ jobs:
     environment:
       name: production
       url: https://lumen.nopuna.fr
+    outputs:
+      result: ${{ steps.publish.outputs.result }}
     env:
       DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
       O2SWITCH_DEPLOY_WEBHOOK_SECRET: ${{ secrets.O2SWITCH_DEPLOY_WEBHOOK_SECRET }}
@@ -47,7 +53,73 @@ jobs:
           echo '::error::Release gates still pending'
           exit 1
       - name: Publish and verify the exact commit over authenticated HTTPS
-        run: python3 scripts/o2switch-https-deploy.py
-      - name: Record verified publication
+        id: publish
         shell: bash
-        run: printf 'Published Lumen commit `%s` to https://lumen.nopuna.fr\n' "$DEPLOY_SHA" >> "$GITHUB_STEP_SUMMARY"
+        run: bash scripts/o2switch-publish-attempt.sh
+
+  deploy-retry-1:
+    needs: deploy
+    if: needs.deploy.outputs.result == 'blocked'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment:
+      name: production
+      url: https://lumen.nopuna.fr
+    outputs:
+      result: ${{ steps.publish.outputs.result }}
+    env:
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      O2SWITCH_DEPLOY_WEBHOOK_SECRET: ${{ secrets.O2SWITCH_DEPLOY_WEBHOOK_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
+          persist-credentials: false
+      - name: Publish from a fresh runner after a hosting-filter refusal
+        id: publish
+        shell: bash
+        run: sleep 60 && bash scripts/o2switch-publish-attempt.sh
+
+  deploy-retry-2:
+    needs: deploy-retry-1
+    if: needs.deploy-retry-1.outputs.result == 'blocked'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment:
+      name: production
+      url: https://lumen.nopuna.fr
+    outputs:
+      result: ${{ steps.publish.outputs.result }}
+    env:
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      O2SWITCH_DEPLOY_WEBHOOK_SECRET: ${{ secrets.O2SWITCH_DEPLOY_WEBHOOK_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
+          persist-credentials: false
+      - name: Publish from a fresh runner after a hosting-filter refusal
+        id: publish
+        shell: bash
+        run: sleep 60 && bash scripts/o2switch-publish-attempt.sh
+
+  confirm:
+    needs: [deploy, deploy-retry-1, deploy-retry-2]
+    if: always() && needs.deploy.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      RESULTS: ${{ needs.deploy.outputs.result }} ${{ needs.deploy-retry-1.outputs.result }} ${{ needs.deploy-retry-2.outputs.result }}
+    steps:
+      - name: Require one verified publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Attempt results: $RESULTS"
+          if [[ " $RESULTS " == *" published "* ]]; then
+            printf 'Published Lumen commit `%s` to https://lumen.nopuna.fr\n' "$DEPLOY_SHA" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo '::error::No verified publication (hosting filter refused every runner, or a non-retryable failure occurred)'
+          exit 1
