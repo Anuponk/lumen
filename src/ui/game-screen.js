@@ -2923,9 +2923,22 @@ const canonicalVictoryOutbox=createDurableCanonicalVictoryOutbox(localStorage,{
   recordCloudDiagnostic("canonical_outbox_storage",{reason:issue.kind});
  }
 });
+let lastOutboxDiagnosticFingerprint=null;
+let lastOutboxDiagnosticOwner=null;
 async function refreshCanonicalOutboxNotice(ownerId){
  try{
   const {Canonical:canonicalState,Legacy:legacyState,Wallet:walletState}=await inspectCommandOutboxes(ownerId);
+  if(lumenUser?.id===ownerId){
+   const safeIssues=['local_unavailable','indexed_unavailable','conflicting_copies','invalid_entry','retry_state_invalid','retry_state_unpersisted','retry_state_conflict','storage_unavailable'];
+   const summarize=queue=>({pending:queue.pending?.length||0,retryable:queue.retryable?.length||0,pausedAuth:(queue.paused||[]).filter(entry=>entry.kind==='auth').length,pausedReview:(queue.paused||[]).filter(entry=>entry.kind==='review').length,authRequired:!!queue.authRequired,complete:!!queue.complete,issues:[...new Set(queue.issues||[])].filter(value=>safeIssues.includes(value)).sort()});
+   const summary={canonical:summarize(canonicalState),legacy:summarize(legacyState),wallet:summarize(walletState)};
+   const fingerprint=JSON.stringify(summary);
+   if(typeof recordCloudDiagnostic==='function'&&(typeof lastOutboxDiagnosticFingerprint==='undefined'||fingerprint!==lastOutboxDiagnosticFingerprint||typeof lastOutboxDiagnosticOwner==='undefined'||lastOutboxDiagnosticOwner!==ownerId)){
+    lastOutboxDiagnosticFingerprint=fingerprint;
+    lastOutboxDiagnosticOwner=ownerId;
+    recordCloudDiagnostic('outbox_state_summary',summary);
+   }
+  }
   const state={issues:[...canonicalState.issues,...legacyState.issues,...walletState.issues],paused:[...canonicalState.paused,...legacyState.paused],authRequired:canonicalState.authRequired||legacyState.authRequired,pending:[...canonicalState.pending,...legacyState.pending,...walletState.pending],retryable:[...canonicalState.retryable,...legacyState.retryable],complete:canonicalState.complete&&legacyState.complete&&walletState.complete};
   if(lumenUser?.id!==ownerId)return 0;
   pendingWalletReservations=walletState.pending;
