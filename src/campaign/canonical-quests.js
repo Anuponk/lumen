@@ -6,6 +6,7 @@ import fifth from '../../content/generated/fifth-adventure-candidates.json' with
 import completion from '../../content/generated/remaining-adventures.json' with {type:'json'};
 import logicalReplacements from '../../content/generated/logical-grids-v1.json' with {type:'json'};
 import mixedReplacements from '../../content/generated/logical-grids-v2.json' with {type:'json'};
+import onboardingReplacements from '../../content/generated/onboarding-grids-650.json' with {type:'json'};
 const diverseById=new Map(diverse.puzzles.map(q=>[q.id,q]));
 if(diverse.schema!=="lumen-grid-overrides-v1"||diverseById.size!==diverse.puzzles.length)throw Error("Invalid diversity override manifest");
 import {CONTENT_PACKS,CONTENT_CONSTELLATIONS,hasPackAccess} from "./content.js";
@@ -32,8 +33,18 @@ const originalAll=Object.freeze(slots.map(slot=>{
 // Existing completion/rewards keep their stable IDs; only active boards expire.
 const logicalById=new Map(logicalReplacements.quests.map(q=>[q.id,q]));
 if(logicalReplacements.schema!=='lumen-logical-grid-replacements-v1'||logicalById.size!==logicalReplacements.quests.length||[...logicalById.keys()].some(id=>!originalAll.some(q=>q.id===id)))throw Error('Invalid logical grid revisions');
+// #650: owner-approved onboarding boards for legacy Adventure 1 quests. Soft
+// revision 1 keeps completion, badges, stars and times; revision 0 keeps the
+// original boards for historical links. The displayed legacy label is unchanged.
+const onboardingById=new Map(onboardingReplacements.quests.map(q=>[q.id,q]));
+if(onboardingReplacements.schema!=='lumen-onboarding-grid-revision-v1'||onboardingById.size!==onboardingReplacements.quests.length||[...onboardingById.keys()].some(id=>logicalById.has(id)||!originalAll.some(q=>q.id===id&&q.legacyIndex!==null)))throw Error('Invalid onboarding grid revision manifest');
+function onboardingRevision(original){
+ const replacement=onboardingById.get(original.id);if(!replacement)return original;
+ if(replacement.legacyIndex!==original.legacyIndex||replacement.packId!==original.packId||replacement.constellationId!==original.constellationId||replacement.ordinal!==original.ordinal||replacement.size!==original.size||replacement.previousGridRevision!==0||replacement.gridRevision!==1)throw Error('Invalid onboarding replacement '+original.id);
+ return Object.freeze({...original,reg:replacement.reg,sol:replacement.sol,gridRevision:1});
+}
 const revisionOne=Object.freeze(originalAll.map(original=>{
- const replacement=logicalById.get(original.id);if(!replacement)return original;
+ const replacement=logicalById.get(original.id);if(!replacement)return onboardingRevision(original);
  if(replacement.packId!==original.packId||replacement.constellationId!==original.constellationId||replacement.ordinal!==original.ordinal||replacement.gridRevision!==1||!replacement.logical?.solved)throw Error('Invalid logical replacement '+original.id);
  const grid={...original,size:replacement.size,reg:replacement.reg,sol:replacement.sol,audit:replacement.audit,family:replacement.family,logical:replacement.logical,logicalTier:replacement.logicalTier,gridRevision:replacement.gridRevision};
  return Object.freeze({...grid,difficulty:qualifyDifficulty(grid)});

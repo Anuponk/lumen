@@ -8,6 +8,7 @@ import {connected,countSolutions,replay,signature} from './generate-diverse-grid
 import {applyQuestVictory} from '../src/campaign/quest-victory.js';
 import {cloudSafelyCoversLocal,reconcileCloudAchievements} from '../src/persistence/cloud-profile.js';
 import manifest from '../content/generated/logical-grids-v1.json' with {type:'json'};
+import onboarding650 from '../content/generated/onboarding-grids-650.json' with {type:'json'};
 const hash=q=>createHash('sha256').update(JSON.stringify({reg:q.reg,sol:q.sol})).digest('hex');
 const original=originalCanonicalQuestList(),all=canonicalQuestListForRevision(1),ids=new Set(manifest.quests.map(q=>q.id));
 const packs=['real-adventure-05','real-adventure-06','real-adventure-07','real-adventure-08'];
@@ -27,7 +28,9 @@ for(const q of manifest.quests){
  const proof=replay(q);assert(proof,q.id+' actual hint engine');assert.equal(proof.proofSteps,q.audit.proofSteps);assert.deepEqual(proof.rules,q.audit.rules);
  ratings.set(q.id,{before:rateLogicalDifficulty(old.reg),after:rateLogicalDifficulty(q.reg)});
 }
-for(const q of all.filter(q=>!ids.has(q.id)))assert.deepEqual(q,original.find(x=>x.id===q.id),'Unchanged adventure '+q.id);
+// #650 onboarding boards are audited exactly by onboarding-grids-650-tests.
+const onboardingIds=new Set(onboarding650.quests.map(q=>q.id));
+for(const q of all.filter(q=>!ids.has(q.id)&&!onboardingIds.has(q.id)))assert.deepEqual(q,original.find(x=>x.id===q.id),'Unchanged adventure '+q.id);
 const mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
 const quantiles=a=>{a=[...a].sort((x,y)=>x-y);return [a[0],a[Math.floor(a.length*.25)],a[Math.floor(a.length*.5)],a[Math.floor(a.length*.75)],a.at(-1)]};
 const easy=r=>r.trace.filter(f=>f.rule==='single'&&f.depth<=3).length;

@@ -1,0 +1,368 @@
+{
+ "schema": "lumen-onboarding-grid-revision-v1",
+ "issue": 650,
+ "status": "owner-approved-2026-11-14",
+ "note": "Legacy Adventure 1 quests 3-6 replaced on soft grid revision 1. Completion, badges, stars and saved times are kept; revision-0 boards stay available through canonicalQuestListForRevision(0).",
+ "quests": [
+  {
+   "id": "base-q003",
+   "legacyIndex": 2,
+   "packId": "base-real-sky",
+   "constellationId": "real-01",
+   "ordinal": 3,
+   "size": 6,
+   "previousGridRevision": 0,
+   "gridRevision": 1,
+   "previousGridHash": "bc4ca10f446184fb96f7d873dcb151d4ccc1095004178d382ba84621157b1b4f",
+   "gridHash": "e030e97c3bcdf9913c2672f652ee1ef7e3ba8f0347264d15d404c7883f377d4c",
+   "reg": [
+    [
+     0,
+     0,
+     1,
+     1,
+     2,
+     2
+    ],
+    [
+     0,
+     3,
+     3,
+     1,
+     2,
+     2
+    ],
+    [
+     0,
+     0,
+     3,
+     3,
+     4,
+     2
+    ],
+    [
+     0,
+     0,
+     3,
+     3,
+     4,
+     4
+    ],
+    [
+     0,
+     0,
+     0,
+     5,
+     4,
+     4
+    ],
+    [
+     0,
+     0,
+     5,
+     5,
+     4,
+     4
+    ]
+   ],
+   "sol": [
+    3,
+    1,
+    5,
+    0,
+    4,
+    2
+   ],
+   "family": "hybrid",
+   "proof": {
+    "solutions": 1,
+    "proofSteps": 36,
+    "rules": {
+     "group": 25,
+     "locked": 5,
+     "single": 6
+    },
+    "hardestRule": "group"
+   },
+   "logical": {
+    "version": "lumen-logic-v1",
+    "score": 41.333,
+    "deductionsBeforeFirst": 1,
+    "firstPlacementDepth": 2,
+    "dependencyDepth": 12,
+    "advancedDeductions": 0,
+    "previousScore": 57
+   }
+  },
+  {
+   "id": "base-q004",
+   "legacyIndex": 3,
+   "packId": "base-real-sky",
+   "constellationId": "real-01",
+   "ordinal": 4,
+   "size": 6,
+   "previousGridRevision": 0,
+   "gridRevision": 1,
+   "previousGridHash": "28332b2ab2affd6e9535b2ce9de1c23b686c93ae0833e82b764b820798ac1977",
+   "gridHash": "c712b6f6b6f23b2b82a794d8a5f58b8e11e47021347c972aa399251b56f9685d",
+   "reg": [
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     1,
+     1,
+     1,
+     2,
+     2,
+     2
+    ],
+    [
+     1,
+     1,
+     3,
+     3,
+     3,
+     4
+    ],
+    [
+     3,
+     3,
+     3,
+     5,
+     4,
+     4
+    ],
+    [
+     3,
+     5,
+     5,
+     5,
+     4,
+     4
+    ]
+   ],
+   "sol": [
+    4,
+    1,
+    3,
+    5,
+    0,
+    2
+   ],
+   "family": "hybrid",
+   "proof": {
+    "solutions": 1,
+    "proofSteps": 35,
+    "rules": {
+     "locked": 11,
+     "group": 18,
+     "single": 6
+    },
+    "hardestRule": "group"
+   },
+   "logical": {
+    "version": "lumen-logic-v1",
+    "score": 49,
+    "deductionsBeforeFirst": 1,
+    "firstPlacementDepth": 2,
+    "dependencyDepth": 11,
+    "advancedDeductions": 1,
+    "previousScore": 102.667
+   }
+  },
+  {
+   "id": "base-q005",
+   "legacyIndex": 4,
+   "packId": "base-real-sky",
+   "constellationId": "real-01",
+   "ordinal": 5,
+   "size": 6,
+   "previousGridRevision": 0,
+   "gridRevision": 1,
+   "previousGridHash": "5caa18c9f18000288fbc166f742b3c317c925d95096e0783311813f7279106e5",
+   "gridHash": "86ea65b595582c238d65e14b3d9c4767c2bec6edadfb6cd1e95b50d4f039d816",
+   "reg": [
+    [
+     0,
+     0,
+     0,
+     1,
+     1,
+     1
+    ],
+    [
+     0,
+     0,
+     1,
+     1,
+     1,
+     2
+    ],
+    [
+     0,
+     3,
+     1,
+     1,
+     1,
+     2
+    ],
+    [
+     0,
+     3,
+     1,
+     1,
+     1,
+     2
+    ],
+    [
+     0,
+     3,
+     4,
+     4,
+     4,
+     5
+    ],
+    [
+     0,
+     0,
+     4,
+     4,
+     5,
+     5
+    ]
+   ],
+   "sol": [
+    0,
+    3,
+    1,
+    5,
+    2,
+    4
+   ],
+   "family": "classic",
+   "proof": {
+    "solutions": 1,
+    "proofSteps": 32,
+    "rules": {
+     "locked": 8,
+     "group": 18,
+     "single": 6
+    },
+    "hardestRule": "group"
+   },
+   "logical": {
+    "version": "lumen-logic-v1",
+    "score": 58,
+    "deductionsBeforeFirst": 3,
+    "firstPlacementDepth": 2,
+    "dependencyDepth": 10,
+    "advancedDeductions": 2,
+    "previousScore": 102.667
+   }
+  },
+  {
+   "id": "base-q006",
+   "legacyIndex": 5,
+   "packId": "base-real-sky",
+   "constellationId": "real-01",
+   "ordinal": 6,
+   "size": 6,
+   "previousGridRevision": 0,
+   "gridRevision": 1,
+   "previousGridHash": "350b55652b9ae94efadc860db490818865503d1cc597c432afda896b3cd37d3e",
+   "gridHash": "23a63a85f21888622c8970c912ba96684060ea42497b64683f5de48e993d3e62",
+   "reg": [
+    [
+     0,
+     0,
+     0,
+     1,
+     1,
+     1
+    ],
+    [
+     0,
+     2,
+     2,
+     3,
+     3,
+     4
+    ],
+    [
+     0,
+     0,
+     2,
+     3,
+     4,
+     4
+    ],
+    [
+     0,
+     0,
+     0,
+     3,
+     5,
+     5
+    ],
+    [
+     0,
+     0,
+     5,
+     5,
+     5,
+     5
+    ],
+    [
+     0,
+     5,
+     5,
+     5,
+     5,
+     5
+    ]
+   ],
+   "sol": [
+    4,
+    1,
+    5,
+    3,
+    0,
+    2
+   ],
+   "family": "classic",
+   "proof": {
+    "solutions": 1,
+    "proofSteps": 34,
+    "rules": {
+     "locked": 8,
+     "group": 20,
+     "single": 6
+    },
+    "hardestRule": "group"
+   },
+   "logical": {
+    "version": "lumen-logic-v1",
+    "score": 69.667,
+    "deductionsBeforeFirst": 2,
+    "firstPlacementDepth": 2,
+    "dependencyDepth": 13,
+    "advancedDeductions": 3,
+    "previousScore": 127.333
+   }
+  }
+ ]
+}

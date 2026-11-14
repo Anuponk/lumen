@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import history from '../content/catalogue/access-origins.json' with {type:'json'};
-import {canonicalQuestList,canonicalCampaignComplete,canonicalCampaignQuestDecision} from '../src/campaign/canonical-quests.js';
+import onboarding650 from '../content/generated/onboarding-grids-650.json' with {type:'json'};
+import {canonicalQuestList,canonicalCampaignComplete,canonicalCampaignQuestDecision,canonicalQuestListForRevision} from '../src/campaign/canonical-quests.js';
 import {applyQuestVictory} from '../src/campaign/quest-victory.js';
 import {CONTENT_PACKS,CONTENT_CONSTELLATIONS} from '../src/campaign/content.js';
 import {mixedTierSchedule,MIXED_TARGETS} from './mixed-difficulty-policy.mjs';
@@ -9,7 +10,9 @@ import {logicalDifficultyTier} from '../src/campaign/logical-difficulty-bands.js
 const all=canonicalQuestList(),old=history.catalogues.find(c=>c.revision===2).quests,tail=all.filter(q=>q.packId==='real-adventure-05');
 assert.equal(old.length,400);assert.equal(tail.length,100);assert.equal(all.slice(0,500).length,500);
 const hash=q=>createHash('sha256').update(JSON.stringify({reg:q.reg,sol:q.sol})).digest('hex');
-assert.deepEqual(all.slice(0,400).map(({id,legacyIndex,packId,constellationId,ordinal,...q})=>({id,legacyIndex,packId,constellationId,ordinal,gridHash:hash(q)})),old,'Every prior identity, order and grid remains exact');
+const onboardingIds=new Set(onboarding650.quests.map(q=>q.id)),revisionZero=new Map(canonicalQuestListForRevision(0).map(q=>[q.id,q]));
+// #650 boards are audited by onboarding-grids-650-tests; their published identity is revision 0.
+assert.deepEqual(all.slice(0,400).map(q=>onboardingIds.has(q.id)?revisionZero.get(q.id):q).map(({id,legacyIndex,packId,constellationId,ordinal,...q})=>({id,legacyIndex,packId,constellationId,ordinal,gridHash:hash(q)})),old,'Every prior identity, order and grid remains exact');
 assert.equal(CONTENT_PACKS.find(p=>p.order===4).id,'real-adventure-05');
 assert.equal(CONTENT_CONSTELLATIONS.filter(c=>c.packId==='real-adventure-05').length,10);
 assert(tail.every((q,i)=>q.ordinal===401+i&&q.legacyIndex===null&&q.packId==='real-adventure-05'));

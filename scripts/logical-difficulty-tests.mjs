@@ -53,7 +53,7 @@ const q={id:'changed',legacyIndex:null,gridRevision:1,reg:[[0,1],[0,1]]};
 assert.equal(canonicalAttemptToResume(JSON.parse(raw),[q],{ownerId:'owner'}),null,'Cloud hydration cannot select an obsolete run');
 const denied={...storage,setItem(){throw Error('quota')}};data.set(old.storageKey,raw);
 assert.throws(()=>createAttemptEngine({storage:denied}).restore({questId:'changed',gridRevision:1}),/quota/);assert.equal(data.get(old.storageKey),raw);
-const revised=canonicalQuestList().find(q=>q.gridRevision===1);
+const revised=canonicalQuestList().find(q=>q.gridRevision===1&&q.legacyIndex===null);
 assert.notDeepEqual(resolveChallengeQuest({stable_quest_id:revised.id}).reg,revised.reg,'Unversioned links keep original puzzle');
 assert.deepEqual(resolveChallengeQuest({stable_quest_id:revised.id,grid_revision:1}).reg,revised.reg,'New links resolve exact harder puzzle');
 assert.throws(()=>resolveChallengeQuest({stable_quest_id:revised.id,grid_revision:2}),/revision/);
