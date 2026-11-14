@@ -41,11 +41,12 @@ asset-cache-only cleanup. The welcome regression also executes the actual new
 listener. `service-worker-update-browser-tests.mjs` retains real worker/cache
 upgrade and local/IndexedDB preservation checks. No live cloud transport is asserted.
 
-Onboarding boards #650: `node scripts/onboarding-grids-650-tests.mjs` recounts the
-four replacement boards (uniqueness, D4 novelty, both logical engines), checks the
-monotone quest 2–6 profile, unchanged identities/rewards/labels, revision-0 links,
+Onboarding boards #650/#692: `node scripts/onboarding-grids-650-tests.mjs` recounts the
+five replacement boards (uniqueness, D4 novelty, both logical engines), checks the
+monotone quest 2–7 profile, the quest 4–6 plateau without advanced deductions and
+the quest 7 bridge (55–70), unchanged identities/rewards/labels, revision-0 links,
 absence of `gv` markers, archived old attempts, obsolete ranking archiving and the
-exact migration scope. Adventure 1–4 protection tests compare these IDs at revision 0.
+exact scope of both migrations. Adventure 1–4 protection tests compare these IDs at revision 0.
 
 Learning coach placement #687/#688: `learning-coach-placement-browser-tests.mjs` walks the quest-1 intro on a fresh guest at 320×568, 360×640 and 390×844 and requires zero overlap between the coach and the board, full coach text, a reachable « Suivant », a board of at least 180 px and (#690) one stable board size and coach reserve across every step; it then opens « Créer un compte » during a step and requires the account screen on top with the coach hidden, and the same step after closing. It fails on the previous centred intro panel (z-index 1500).
 

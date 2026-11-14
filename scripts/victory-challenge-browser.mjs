@@ -26,7 +26,8 @@ export async function verifyVictoryChallenge({send,evaluate},url){
    for(const k of ['lumenQaTutorialSeen','lumenQaTutorialCompletedV1','lumenSkyTourSeen'])localStorage.setItem(k,'1');
    window.__challengeCalls=[];
    window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:null}}),onAuthStateChange(){}},rpc:async(name,args)=>{
-    if(name==='lumen_create_social_challenge'||name==='lumen_create_quest_challenge'){window.__challengeCalls.push(args);await new Promise(r=>setTimeout(r,150));return {data:[{challenge_id:'00000000-0000-4000-8000-000000000511'}],error:null}}
+    // #692: a revised stable quest (quest 7, revision 1) uses the versioned v2 command.
+    if(name==='lumen_create_social_challenge'||name==='lumen_create_quest_challenge'||name==='lumen_create_quest_challenge_v2'){window.__challengeCalls.push({...args,rpc:name});await new Promise(r=>setTimeout(r,150));return {data:[{challenge_id:'00000000-0000-4000-8000-000000000511'}],error:null}}
     return {data:[],error:null};
    }})};`});
   await navigateAndWait({send,evaluate},'Page.navigate',{url:String(url)});await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});
@@ -50,6 +51,7 @@ export async function verifyVictoryChallenge({send,evaluate},url){
    for(let i=0;i<100;i++){if(await evaluate(`!document.getElementById('challengeShareModal').hidden`))break;await new Promise(r=>setTimeout(r,50));}
    assert.equal(await evaluate(`document.getElementById('challengeShareModal').hidden`),false,'Click opens the challenge share flow');
    const calls=await evaluate('window.__challengeCalls');assert.equal(calls.length,1,'One RPC despite repeated activation');assert.equal(stable?calls[0].p_quest_id:calls[0].p_puzzle_id,stable?stable.id:questIndex+1,'Stable historical identity, never the renumbered ordinal');
+   if(stable?.gridRevision){assert.equal(calls[0].rpc,'lumen_create_quest_challenge_v2','A revised stable quest uses the versioned command');assert.equal(calls[0].p_grid_revision,stable.gridRevision)}
    assert.equal(calls[0].p_mastery,mode!=='assisted');assert.equal(calls[0].p_first_play,true);
    await evaluate(`document.getElementById('challengeShareModal').hidden=true;document.getElementById('successShare').click()`);
    await new Promise(r=>setTimeout(r,100));

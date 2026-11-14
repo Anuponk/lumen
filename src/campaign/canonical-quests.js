@@ -33,11 +33,12 @@ const originalAll=Object.freeze(slots.map(slot=>{
 // Existing completion/rewards keep their stable IDs; only active boards expire.
 const logicalById=new Map(logicalReplacements.quests.map(q=>[q.id,q]));
 if(logicalReplacements.schema!=='lumen-logical-grid-replacements-v1'||logicalById.size!==logicalReplacements.quests.length||[...logicalById.keys()].some(id=>!originalAll.some(q=>q.id===id)))throw Error('Invalid logical grid revisions');
-// #650: owner-approved onboarding boards for legacy Adventure 1 quests. Soft
+// #650/#692: owner-approved onboarding boards for Adventure 1 quests 3-7. Soft
 // revision 1 keeps completion, badges, stars and times; revision 0 keeps the
-// original boards for historical links. The displayed legacy label is unchanged.
+// original boards for historical links. The displayed label is unchanged.
+// Quest 7 (#692) is the only non-legacy entry; it is never in the v1/v2 layers.
 const onboardingById=new Map(onboardingReplacements.quests.map(q=>[q.id,q]));
-if(onboardingReplacements.schema!=='lumen-onboarding-grid-revision-v1'||onboardingById.size!==onboardingReplacements.quests.length||[...onboardingById.keys()].some(id=>logicalById.has(id)||!originalAll.some(q=>q.id===id&&q.legacyIndex!==null)))throw Error('Invalid onboarding grid revision manifest');
+if(onboardingReplacements.schema!=='lumen-onboarding-grid-revision-v1'||onboardingById.size!==onboardingReplacements.quests.length||[...onboardingById.keys()].some(id=>logicalById.has(id)||!originalAll.some(q=>q.id===id)))throw Error('Invalid onboarding grid revision manifest');
 function onboardingRevision(original){
  const replacement=onboardingById.get(original.id);if(!replacement)return original;
  if(replacement.legacyIndex!==original.legacyIndex||replacement.packId!==original.packId||replacement.constellationId!==original.constellationId||replacement.ordinal!==original.ordinal||replacement.size!==original.size||replacement.previousGridRevision!==0||replacement.gridRevision!==1)throw Error('Invalid onboarding replacement '+original.id);

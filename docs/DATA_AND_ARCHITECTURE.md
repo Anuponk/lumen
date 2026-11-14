@@ -29,7 +29,7 @@ Stages #21–#26 and #38 results below are historical October 2026 records. Thei
 counts and then-unchanged behavior apply to those snapshots; current owning
 contracts/modules take precedence. Prepared migrations and activation are separate facts.
 
-## Legacy onboarding grid revision 1 (#650)
+## Onboarding grid revision 1 (#650, #692)
 
 Legacy quests 3–6 are played through `levelIndex`; `choose()` reads their revised
 board from the canonical quest when it carries a grid revision. Revision 1 is the
@@ -41,6 +41,15 @@ revision 1; a pending ranking run captured on a replaced board is moved to
 `lumenRankingObsoleteV1:` instead of blocking later entries. The data-only migration
 `20261114090000_onboarding_grid_revision_650.sql` sets `quest_rules.grid_revision=1`
 for these four quests and must be applied right after the matching client deploys.
+
+#692 replaces the quest 4–6 boards again **under the same revision 1** (owner
+decision: only owner test runs existed; their revision-1 ranking scores are removed
+by an operator script, never by a migration) and moves quest 7
+(`planned-real-01-q07`, a non-legacy canonical quest) to soft revision 1. Quest 7
+is played from `canonicalActiveQuest`; its new challenge links carry
+`grid_revision: 1`, while older links without a revision keep the original board.
+`20261114180000_quest7_grid_revision_692.sql` only moves quest 7 to revision 1,
+again right after the matching client deploys.
 
 ## Mixed grid revision 2
 
