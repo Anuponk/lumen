@@ -1,3 +1,4 @@
+import {REPLAY_FROM_REVIEW} from './cdp-client.mjs';
 import {revealVictoryResults} from './cdp-client.mjs';
 import assert from 'node:assert/strict';
 import {verifyCelestialUX} from './celestial-ux-browser.mjs';
@@ -59,7 +60,7 @@ try{
   assert.equal(await evaluate('document.querySelectorAll("#skyCard .quest-secondary-star").length'),overviewRewardCount.total,'Detail and overview share actual reward totals');
   assert.equal(await evaluate('document.querySelectorAll("#skyCard .quest-secondary-star.on").length'),overviewRewardCount.earned);
 
-  await click('#puzzleGrid .puzzle-card.done');assert((await snapshot()).replayMode);assert.deepEqual((await snapshot()).progress,original.progress);
+  await click('#puzzleGrid .puzzle-card.done');assert.equal(await evaluate("document.getElementById('skyReveal').classList.contains('quest-review')"),true,'A completed quest opens its review');await evaluate(REPLAY_FROM_REVIEW);assert((await snapshot()).replayMode);assert.deepEqual((await snapshot()).progress,original.progress);
   await click('#openSky');await click('#closeMap');assert((await snapshot()).replayMode,'Browsing must preserve replay');
   // Real prior progression beyond Adventure 1 remains accessible after reload.
   await evaluate(`localStorage.setItem('lumenQaProgressV1',JSON.stringify({solved:Object.fromEntries(Array.from({length:100},(_,i)=>[i,1])),badges:{historical:1}}));localStorage.removeItem('lumenActiveAttemptV1')`);

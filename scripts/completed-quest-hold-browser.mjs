@@ -83,7 +83,9 @@ export async function verifyCompletedQuestHold({send,evaluate,navigate,url}){
   assert.match(ready.label,/terminée, rejouable/i);assert.equal(ready.badges,held.badges);
   assert.deepEqual(ready.solved,profile.canonicalQuestState[quest.id]);
   assert.doesNotMatch(await evaluate(`document.querySelector('#skyCard .sky-note').textContent`),/synchronisation/i);
-  await touch(cardSelector);await until('document.getElementById("mapModal").hidden');
+  // #695: a completed quest opens its review; touching Rejouer starts the replay.
+  await touch(cardSelector);await until('!document.getElementById("skyReveal").hidden');
+  await touch('#skyRevealRetry');await until('document.getElementById("mapModal").hidden');
   assert.equal(await evaluate("JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).questId"),quest.id);
   return {mobileTouch:true,completedHeld:true,visibleReason:true,disabledReplay:true,verifiedHydrationReleasesReplay:true,rewardsPreserved:true};
  }finally{await send('Page.removeScriptToEvaluateOnNewDocument',{identifier})}

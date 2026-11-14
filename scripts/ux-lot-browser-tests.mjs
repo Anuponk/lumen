@@ -1,3 +1,4 @@
+import {REPLAY_FROM_REVIEW} from './cdp-client.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -44,13 +45,13 @@ try{
   assert.equal(await evaluate(`document.getElementById('accountPassword').autocomplete`),'new-password');
   await evaluate(`document.getElementById('accountOptinLater').click();document.getElementById('openSky').click();document.querySelector('#adventureRail [data-pack-id="base-real-sky"]').click();document.querySelector('#sectorTabs [data-content-id="real-01"]').click()`);
   const next=quests[6];
-  await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="${next.id}"]').click()`);
+  await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="${next.id}"]').click();${REPLAY_FROM_REVIEW}`);
   assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),false,'Trying the locked quest explains the required account again');
  });
  for(const [w,h] of [[360,640],[1440,900]])for(const played of [quests[2],quests.find(q=>q.legacyIndex===null),quests.filter(q=>q.constellationId===quests[0].constellationId).at(-1)])await check(`566 completed quest ${played.id} navigation ${w}`,async()=>{
   await fixture(w,h);
   // Close the first-visit help, then enter through actual map/replay adapters.
-  await evaluate(`lumenDiagnostics.setupQuest(2);document.getElementById('openSky').click();document.querySelector('#adventureRail [data-pack-id="${played.packId}"]').click();document.querySelector('#sectorTabs [data-content-id="${played.constellationId}"]').click();document.querySelector('#puzzleGrid [data-quest-id="${played.id}"]').click();document.getElementById('questStart').hidden=true`);
+  await evaluate(`lumenDiagnostics.setupQuest(2);document.getElementById('openSky').click();document.querySelector('#adventureRail [data-pack-id="${played.packId}"]').click();document.querySelector('#sectorTabs [data-content-id="${played.constellationId}"]').click();document.querySelector('#puzzleGrid [data-quest-id="${played.id}"]').click();${REPLAY_FROM_REVIEW};document.getElementById('questStart').hidden=true`);
   await acknowledgeLearningMilestones(evaluate);
   const state=await evaluate(`({visible:!!document.getElementById('completedQuestNext')&&!document.getElementById('completedQuestNext').hidden,attempt:localStorage.getItem('lumenQaActiveAttemptV1'),label:document.getElementById('campaignMapLabel').textContent,progress:JSON.stringify(lumenDiagnostics.snapshot().progress)})`);
   assert(state.visible,'Completed quest needs Quête suivante '+JSON.stringify({attempt:state.attempt,label:state.label}));

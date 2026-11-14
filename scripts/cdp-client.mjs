@@ -1,5 +1,8 @@
 // Chromium can exit before acknowledging its close command. The quality runner
 // still owns process cleanup. Never hide a navigation/evaluation/assertion error.
+// #695: touching a completed quest in Mon ciel opens its read-only review;
+// its Rejouer keeps the former replay entry. No-op for unfinished quests.
+export const REPLAY_FROM_REVIEW="(()=>{const r=document.getElementById('skyReveal');if(r&&!r.hidden&&r.classList.contains('quest-review'))document.getElementById('skyRevealRetry').click()})()";
 export async function closeBrowser(send){
  try{await send('Browser.close')}
  catch(error){if(error?.message!=='CDP timeout after 15s: Browser.close')throw error;}

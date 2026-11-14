@@ -1,3 +1,4 @@
+import {REPLAY_FROM_REVIEW} from './cdp-client.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
@@ -20,7 +21,7 @@ try{
   await evaluate(`document.getElementById('openSky').click();document.querySelector('#adventureRail [data-pack-id="${pack.id}"]').click()`);
   const page=Math.floor((entries.length-1)/CONSTELLATIONS_PER_PAGE);
   for(let i=0;i<page;i++)await evaluate("document.getElementById('constellationNext').click()");
-  await evaluate(`document.querySelector('#sectorTabs [data-content-id="${constellation.id}"]').click();document.querySelector('#puzzleGrid [data-quest-id="${q.id}"]').click()`);await acknowledgeLearningMilestones(evaluate);
+  await evaluate(`document.querySelector('#sectorTabs [data-content-id="${constellation.id}"]').click();document.querySelector('#puzzleGrid [data-quest-id="${q.id}"]').click();${REPLAY_FROM_REVIEW}`);await acknowledgeLearningMilestones(evaluate);
   assert.deepEqual((await evaluate('lumenDiagnostics.snapshot()')).puz.reg,q.reg);
   const before=await evaluate('lumenDiagnostics.snapshot().progress'),attempt=await evaluate("JSON.parse(localStorage.getItem('lumenActiveAttemptV1'))");
   for(const browseElsewhere of [false,true]){

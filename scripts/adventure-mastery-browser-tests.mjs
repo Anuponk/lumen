@@ -1,3 +1,4 @@
+import {REPLAY_FROM_REVIEW} from './cdp-client.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
@@ -21,7 +22,7 @@ try{
   assert.equal(await evaluate(`document.querySelector('#adventureRail [data-pack-id="${pack.id}"]').classList.contains('mastered')`),false,'Completed quests alone are not mastery');
   const entries=CONTENT_CONSTELLATIONS.filter(c=>c.packId===pack.id),page=Math.floor(entries.findIndex(c=>c.id===q.constellationId)/CONSTELLATIONS_PER_PAGE);
   for(let i=0;i<page;i++)await evaluate("document.getElementById('constellationNext').click()");
-  await evaluate(`document.querySelector('#sectorTabs [data-content-id="${q.constellationId}"]').click();document.querySelector('#puzzleGrid [data-quest-id="${q.id}"]').click()`);await acknowledgeLearningMilestones(evaluate);
+  await evaluate(`document.querySelector('#sectorTabs [data-content-id="${q.constellationId}"]').click();document.querySelector('#puzzleGrid [data-quest-id="${q.id}"]').click();${REPLAY_FROM_REVIEW}`);await acknowledgeLearningMilestones(evaluate);
   await evaluate(`if(!document.getElementById('attemptMask').hidden)document.getElementById('attemptMask').click();document.getElementById('questStart').hidden=true;(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
   await until("document.getElementById('skyReveal').dataset.celestial==='adventure-mastery'");
   assert.equal(await evaluate("document.querySelectorAll('.celestial-figure').length"),entries.length);
