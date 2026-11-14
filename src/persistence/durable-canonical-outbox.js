@@ -113,12 +113,12 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
    if(!keys(reward,['facts','badges','performance','stars'])||!validFacts(facts)||!validFacts(later)||later.seconds<facts.seconds||
     !factKeys.filter(key=>key!=='seconds').every(key=>later[key]===facts[key])||
     !Number.isSafeInteger(receipt.outcome?.attempts)||receipt.outcome.attempts<1||!(saved?.runPerformance?.attempts>=receipt.outcome.attempts)||
-    (reward.stars!==undefined&&(!Number.isSafeInteger(reward.stars)||reward.stars<1)))throw Error('Recreated V2 capture proof unconfirmed');
+    (reward.stars!==undefined&&(!Number.isSafeInteger(reward.stars)||reward.stars<1)))throw Object.assign(Error('Recreated V2 capture proof unconfirmed'),{code:'CAPTURE_V2_PROOF_UNCONFIRMED'});
    const performance={seconds:facts.seconds,bestTime:facts.seconds,assisted:facts.assistanceUsed};
    receipt={version:1,operationId:request.operationId,questId:request.questId,newlyCompleted:receipt.outcome.firstCompletion,
     recordedAt:receipt.recordedAt,badges:receipt.outcome.savedPerformance?.badges,performance};
    reward={badges:reward.badges||{},performance:reward.performance||{seconds:later.seconds,bestTime:later.seconds,assisted:later.assistanceUsed},stars:1};
-   if(reward.performance.seconds!==later.seconds||reward.performance.assisted!==later.assistanceUsed)throw Error('Recreated V2 performance mismatch');
+   if(reward.performance.seconds!==later.seconds||reward.performance.assisted!==later.assistanceUsed)throw Object.assign(Error('Recreated V2 performance mismatch'),{code:'CAPTURE_V2_PERFORMANCE_MISMATCH'});
   }
   const validReward=value=>keys(value,['badges','performance','stars'])&&value.stars===1&&
    keys(value.badges,['autonomy','speed','noError','mastery'])&&Object.values(value.badges).every(v=>typeof v==='boolean')&&
@@ -131,20 +131,20 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
    !Object.keys(accepted.badges).every(key=>!accepted.badges[key]||saved.badges?.[key]===true||saved.badges?.[key]===1)||
    !Object.keys(reward.badges).every(key=>!reward.badges[key]||(receipt.badges[key]===true&&(saved.badges?.[key]===true||saved.badges?.[key]===1)))||
    reward.performance.seconds<accepted.performance.seconds||
-   (accepted.performance.assisted&&!reward.performance.assisted))throw Error('Recreated capture proof unconfirmed');
+   (accepted.performance.assisted&&!reward.performance.assisted))throw Object.assign(Error('Recreated capture proof unconfirmed'),{code:'CAPTURE_RECEIPT_PROOF_UNCONFIRMED'});
   const normalize=value=>value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,normalize(value[key])])):value;
   const exact=JSON.stringify(normalize(reward))===JSON.stringify(normalize(accepted));
-  if(!exact&&Date.parse(entry.createdAt)<Date.parse(receipt.recordedAt))throw Error('Capture predates committed receipt');
+  if(!exact&&Date.parse(entry.createdAt)<Date.parse(receipt.recordedAt))throw Object.assign(Error('Capture predates committed receipt'),{code:'CAPTURE_RECEIPT_ORDER_CONFLICT'});
   }
   const inspection=await scan(userId),target=inspection.groups.find(copies=>copies[0].entry.operationId===entry.operationId&&copies[0].entry.questId===entry.questId);
-  if(!inspection.complete||inspection.issues.length||!target||JSON.stringify(target[0].entry)!==JSON.stringify(entry))throw Error('Recreated capture storage unconfirmed');
+  if(!inspection.complete||inspection.issues.length||!target||JSON.stringify(target[0].entry)!==JSON.stringify(entry))throw Object.assign(Error('Recreated capture storage unconfirmed'),{code:'CAPTURE_STORAGE_UNCONFIRMED'});
   const key=domainPrefix('lumenCanonicalRecreatedCaptureArchiveV1:')+userId+':'+entry.operationId+':'+encodeURIComponent(entry.createdAt);
   const raw=JSON.stringify({version:1,userId,entry,receipt:originalReceipt,copies:target.map(copy=>({store:copy.store,raw:copy.raw}))});
   let archived=false;
   try{await fallback.put(key,raw);archived=await fallback.get(key)===raw}catch{}
   if(!archived){
-   const prior=storage.getItem(key);if(prior!==null&&prior!==raw)throw Error('Capture archive changed');
-   storage.setItem(key,raw);if(storage.getItem(key)!==raw)throw Error('Capture archive unconfirmed');
+   const prior=storage.getItem(key);if(prior!==null&&prior!==raw)throw Object.assign(Error('Capture archive changed'),{code:'CAPTURE_ARCHIVE_CONFLICT'});
+   storage.setItem(key,raw);if(storage.getItem(key)!==raw)throw Object.assign(Error('Capture archive unconfirmed'),{code:'CAPTURE_ARCHIVE_WRITE_FAILED'});
   }
   if(!sessionValid())throw Error('Canonical archive session changed');
   await acknowledge(userId,entry.questId,entry.reward,entry.operationId,{expectedEntry:entry,sessionValid});
