@@ -40,7 +40,7 @@ for(const levelIndex of [0,1]){
 // #687/#690 phone branch: the coach is in flow above the board with ONE reserve
 // for the whole lesson (its longest step). The board keeps the same size on
 // every step and only gives back what the reserve pushes past the screen.
-function phoneFixture({ slackBelow, longest = 'x'.repeat(120) }) {
+function phoneFixture({ slackBelow, longest = 'x'.repeat(120), giveBack = 1 }) {
   const props = new Map(), classes = new Set();
   const wrap = { classList: { add: (c) => classes.add(c), remove: (c) => classes.delete(c), contains: (c) => classes.has(c) }, style: { setProperty: (k, v) => props.set(k, v), removeProperty: (k) => props.delete(k) } };
   const title = { textContent: 'Observe le plateau' }, copy = { textContent: 'court' }, next = { hidden: false, textContent: 'Suivant' };
@@ -49,7 +49,7 @@ function phoneFixture({ slackBelow, longest = 'x'.repeat(120) }) {
   const natural = 370, innerHeight = 844, before = innerHeight - slackBelow;
   const board = { getBoundingClientRect: () => ({ width: natural }) };
   // Stack bottom: reserve + gap pushes it down, a smaller board pulls it up.
-  const bottom = () => before + (classes.has('coach-above') ? parseFloat(props.get('--coach-height') || 0) + 8 - (natural - parseFloat(props.get('--coach-board-size') || natural)) : 0);
+  const bottom = () => before + (classes.has('coach-above') ? parseFloat(props.get('--coach-height') || 0) + 8 - giveBack * (natural - parseFloat(props.get('--coach-board-size') || natural)) : 0);
   const document = { getElementById: (id) => ({ scriptedLearn: card, learningBoardWrap: wrap, scriptedLearnTitle: title, scriptedLearnCopy: copy, learningCoachNext: next })[id] ?? null, querySelector: () => ({ getBoundingClientRect: () => ({ bottom: bottom() }) }) };
   const intro = [{ title: 'Observe le plateau', copy: 'court' }, { title: 'Ton objectif', copy: longest }];
   const context = vm.createContext({ document, board, innerWidth: 390, innerHeight, scrollY: 0, matchMedia: () => ({ matches: true }), learningCopy, LEARNING_INTRO: intro, autoMarkingLessonRequired: () => false, activeQuestOrdinal: () => 1, QUEST_MILESTONES: { skyTourAfter: 3 }, levelIndex: 0 });
@@ -86,6 +86,13 @@ function phoneFixture({ slackBelow, longest = 'x'.repeat(120) }) {
   p.run();
   const reserve = parseFloat(p.props.get('--coach-height'));
   assert.equal(p.props.get('--coach-board-size'), 370 - (reserve + 8 - (100 - 8)) + 'px');
+  // Real layout (#691 CI, 360x640): the stack re-centres, so shrinking the
+  // board gives back only about half of its height. The board still converges
+  // until the actions fit on screen.
+  const c = phoneFixture({ slackBelow: 60, longest: 'x'.repeat(40), giveBack: 0.5 });
+  c.run();
+  assert(c.bottom() <= 844 - 8 + 1, 'actions fit after re-centring (' + c.bottom() + ')');
+  assert(parseFloat(c.props.get('--coach-board-size')) > 180, 'the fit is reached above the minimum');
   // A huge lesson never shrinks the board below its playable minimum.
   const h = phoneFixture({ slackBelow: 0, longest: 'x'.repeat(1600) });
   h.run();

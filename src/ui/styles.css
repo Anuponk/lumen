@@ -1489,3 +1489,11 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 body:has(#accountOptin:not([hidden])) #scriptedLearn,
 body:has(#mandatoryNickname:not([hidden])) #scriptedLearn,
 body:has(#erasedAccountNotice:not([hidden])) #scriptedLearn{visibility:hidden!important}
+/* #690: short phones cannot fit the stable lesson reserve, a playable board and
+   the actions with every play control shown. During the guided lesson the
+   attempt controls (Pause/Abandonner) and the progress line are hidden there;
+   « Passer le tutoriel » stays in the coach. They return when the lesson ends. */
+@media (max-width:700px) and (max-height:700px){
+ .game-core:has(#learningBoardWrap.coach-above)>.attempt-controls,
+ .game-core:has(#learningBoardWrap.coach-above)>#rewardLive{display:none!important}
+}

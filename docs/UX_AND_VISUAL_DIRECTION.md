@@ -220,7 +220,12 @@ reserves **one height for the whole lesson** (its longest step at the current
 screen size), so the board keeps the **same size on every « Suivant »** and guided
 step. The board only gives back what that reserve pushes past the bottom of the
 screen: free space below the actions is used first (390×844 keeps a full-size
-board), down to a playable minimum of 180 px. On very small screens (320×568) the action row may
+board), down to a playable minimum of 180 px. The fit is measured in content
+coordinates (a header scrolled out of view counts) and is re-run when controls
+around the board change size, never on a step change. On short phones
+(height ≤ 700 px) the attempt controls (Pause/Abandonner) and the progress line
+are hidden during the guided lesson so the reserve fits (360×640: stable 219 px
+board); « Passer le tutoriel » stays in the coach. On very small screens (320×568) the action row may
 then extend below the fold; those actions are disabled during guided learning and
 the coach's own « Suivant » stays visible. Tablets and desktop keep the placement
 described below. Account screens (#688) always win: the coach stays below them,

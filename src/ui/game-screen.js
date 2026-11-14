@@ -2142,7 +2142,13 @@ function measureCoachReserve(card){
  [title.textContent,copy.textContent,next.hidden,next.textContent]=saved;
  return reserve;
 }
-function coachStackBottom(){return scrollY+Math.max(document.querySelector(".game-core").getBoundingClientRect().bottom,document.querySelector(".actions").getBoundingClientRect().bottom)}
+// Content coordinates: short screens may scroll the header out of view (and
+// bring it back for help), so every ancestor scroll offset is neutralised.
+function coachStackBottom(){
+ const core=document.querySelector(".game-core");let offset=scrollY||0;
+ for(let el=core?.parentElement;el&&el!==document.documentElement;el=el.parentElement)offset+=el.scrollTop||0;
+ return offset+Math.max(core.getBoundingClientRect().bottom,document.querySelector(".actions").getBoundingClientRect().bottom);
+}
 function placeCoachAboveBoard(card){
  const wrap=document.getElementById("learningBoardWrap");
  for(const key of ["position","left","top","width","transform","maxHeight","overflowY"])card.style[key]="";
@@ -2150,16 +2156,22 @@ function placeCoachAboveBoard(card){
  const key=innerWidth+"x"+innerHeight+":"+activeQuestOrdinal();
  const natural=board.getBoundingClientRect().width,before=coachStackBottom();
  wrap.classList.add("coach-above");
- if(coachLayout?.key!==key)coachLayout={key,reserve:0,size:0};
- // A later contextual tip longer than the lesson grows the reserve once.
- const reserve=coachLayout.reserve?Math.max(coachLayout.reserve,Math.ceil(card.getBoundingClientRect().height)):measureCoachReserve(card);
- wrap.style.setProperty("--coach-height",reserve+"px");
- if(reserve!==coachLayout.reserve){
-  wrap.style.setProperty("--coach-board-size",Math.floor(natural)+"px");
-  coachLayout.size=coachBoardSize(natural,coachStackBottom()-Math.max(innerHeight-COACH_GAP,before));
-  coachLayout.reserve=reserve;
+ if(coachLayout?.key!==key)coachLayout={key,reserve:0};
+ // Only the reserve is remembered: a later contextual tip longer than the
+ // lesson grows it once. The board size is derived from it on every placement,
+ // so it is identical across steps yet follows real layout changes around it.
+ coachLayout.reserve=coachLayout.reserve?Math.max(coachLayout.reserve,Math.ceil(card.getBoundingClientRect().height)):measureCoachReserve(card);
+ wrap.style.setProperty("--coach-height",coachLayout.reserve+"px");
+ // The surrounding stack may re-centre when the board shrinks, so a smaller
+ // board does not give back its full height: converge in a few measured steps.
+ const limit=Math.max(innerHeight-COACH_GAP,before);
+ let size=Math.floor(natural);
+ for(let i=0;i<6;i++){
+  wrap.style.setProperty("--coach-board-size",size+"px");
+  const next=coachBoardSize(size,coachStackBottom()-limit);
+  if(next===size)break;size=next;
  }
- wrap.style.setProperty("--coach-board-size",coachLayout.size+"px");
+ wrap.style.setProperty("--coach-board-size",size+"px");
 }
 function positionLearningCoach(){
  const card=document.getElementById("scriptedLearn");
@@ -2206,6 +2218,13 @@ function positionLearningCoach(){
  card.style.top=(top-(origin?.top||0)+(anchor?.scrollTop||0))+"px";
 }
 window.addEventListener("resize",()=>requestAnimationFrame(positionLearningCoach));
+// #690: controls around the board can appear after placement (attempt controls
+// and progress once the timer starts). Re-fit the phone coach layout then; the
+// lesson steps themselves never change these sizes, so "Suivant" stays stable.
+if(typeof ResizeObserver==="function"){
+ const coachSurroundings=new ResizeObserver(()=>{if(document.getElementById("learningBoardWrap")?.classList.contains("coach-above"))requestAnimationFrame(positionLearningCoach)});
+ for(const element of [document.querySelector(".app"),...(document.querySelector(".game-core")?.children??[])])if(element&&element.id!=="learningBoardWrap")coachSurroundings.observe(element);
+}
 // Measure finale copy and the complete game stack, including wrapped action labels.
 // The ordinary quest budget remains the upper bound for the square board.
 const challengeBanner=document.getElementById("challengeBanner");
