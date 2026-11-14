@@ -301,7 +301,9 @@ try{
   const guestOwner=await evaluate(`localStorage.getItem('lumenCloudOwnerId')`);
   for(const quest of [canonicalQuestList().find(q=>q.legacyIndex!==null&&q.ordinal>6),canonicalQuestList().find(q=>q.legacyIndex===null)]){
    const progress={solved:Object.fromEntries(canonicalQuestList().filter(q=>q.ordinal<=6&&q.legacyIndex!==null).map(q=>[q.legacyIndex,1])),badges:{historical:1},xp:42,shards:7,autonomySeen:1,fullBadgeIntroSeen:1,speedBadgeIntroSeen:1,autoCrossUnlockSeen:1};
-   const saved={attemptId:'guest-held-'+quest.id,questId:quest.legacyIndex===null?quest.id:quest.legacyIndex+1,mode:'campaign',state:'PAUSED',startedAt:Date.now()-5000,activeDuration:5000,qualifying:true,assistanceUsed:false,mistakeCommitted:false,resetCount:0,board:quest.reg.map(row=>row.map(()=>0))};
+   // The held attempt carries its quest grid revision, as attempt-engine writes it
+   // (#692 moved quest 7 to revision 1; a revision-0 attempt is archived, not resumed).
+   const saved={attemptId:'guest-held-'+quest.id,questId:quest.legacyIndex===null?quest.id:quest.legacyIndex+1,...(quest.gridRevision?{gridRevision:quest.gridRevision}:{}),mode:'campaign',state:'PAUSED',startedAt:Date.now()-5000,activeDuration:5000,qualifying:true,assistanceUsed:false,mistakeCommitted:false,resetCount:0,board:quest.reg.map(row=>row.map(()=>0))};
    const seed=await send('Page.addScriptToEvaluateOnNewDocument',{source:`localStorage.setItem('lumenCloudOwnerId','guest-held-owner');localStorage.setItem('lumenProgressV1',${JSON.stringify(JSON.stringify(progress))});localStorage.setItem('lumenActiveAttemptV1',${JSON.stringify(JSON.stringify(saved))});`});
    await navigate('Page.reload');await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:seed.identifier});
    await until(`!document.getElementById('mobileAuthAction').disabled`);
