@@ -1858,3 +1858,8 @@ La présentation de victoire ne valide aucune acquisition. La progression et
 les badges sont confirmés avant la célébration ; fermer avant « Voir le
 classement » ne change ni leur persistance ni les intentions en attente.
 Voir [le plan de migration](OFFICIAL_TIME_ROLLOUT.md).
+
+
+### Diagnostic des archives de reçus canoniques (incident #700)
+
+Les échecs de validation d'une capture recréée et de son reçu cloud restent bloquants : aucune archive n'est acquittée sans preuve vérifiée. Pour faciliter le diagnostic sans exposer les données de joueur, les erreurs d'archivage disposent de codes stables : `CAPTURE_V2_PROOF_UNCONFIRMED`, `CAPTURE_V2_PERFORMANCE_MISMATCH`, `CAPTURE_RECEIPT_PROOF_UNCONFIRMED`, `CAPTURE_RECEIPT_ORDER_CONFLICT`, `CAPTURE_STORAGE_UNCONFIRMED`, `CAPTURE_ARCHIVE_CONFLICT` et `CAPTURE_ARCHIVE_WRITE_FAILED`. Ces codes ne changent ni la politique de retry ni la validation du reçu, et ne doivent pas être interprétés comme une autorisation de supprimer une intention locale. Les conflits de version cloud (`CLOUD_CAS_CONFLICT`) sont investigués séparément.
