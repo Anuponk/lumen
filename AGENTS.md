@@ -10,8 +10,15 @@
 - Prefer a small PR with a clear acceptance checklist. Separate server activation, production migrations and real-device acceptance from implementation when safe; do not claim they are complete. Do not change the established issue lifecycle or automatic merge authorization when all applicable checks actually pass.
 - At completion, report concise evidence: files/areas changed, targeted/full tests actually run, PR/commit, CI/deployment state, and outstanding manual or production checks. Duration and token use should be measured from Codex session data when available; do not infer token savings from elapsed time alone.
 
+## Fresh clone before any work — mandatory
+- Before every task (investigation, fix, feature, documentation or backlog review), make a **fresh clone** of the remote repository (`git clone https://github.com/Anuponk/lumen.git`) into a new, empty directory outside the user's existing checkout (for example a temporary/scratch directory), then create the task branch from the freshly cloned `main`. Never start work in, or reuse, a pre-existing local checkout.
+- The user's local checkout may be on an unrelated branch, behind `origin/main`, or contain untracked/uncommitted files (IDE folders, release builds, local saves). Never modify, stash, reset, clean, commit or push from it; leave it exactly as found.
+- Read, edit, test, commit and push only from the fresh clone. If dependencies are needed, install them in the clone (e.g. `npm ci`). Record the cloned `main` SHA in notes and in the PR report.
+- If cloning is impossible (no network, authentication failure), stop and report the blocker instead of silently falling back to the local checkout; work locally only with the owner's explicit approval.
+- Remove the temporary clone once the PR is merged or the task is handed off, after confirming nothing unpushed remains.
+
 ## Locate before reading
-- Start with `git status --short`, the symptom and affected invariant. Use [feature-map](docs/architecture/feature-map.md) to select modules, then relevant rows of [dependency-map](docs/architecture/dependency-map.md) and [test-map](docs/architecture/test-map.md). Do not load all maps by default.
+- In the fresh clone, start with `git status --short`, the symptom and affected invariant. Use [feature-map](docs/architecture/feature-map.md) to select modules, then relevant rows of [dependency-map](docs/architecture/dependency-map.md) and [test-map](docs/architecture/test-map.md). Do not load all maps by default.
 - Follow the eight steps in [debugging-guide](docs/architecture/debugging-guide.md). Search symbols/references with scoped `rg -n`; discover paths with `rg --files`. Read bounded excerpts, then recent `git log`/`git show` for those paths. Broaden only when evidence requires it.
 - Confirm root cause with a reproduction, assertion or trace before corrective edits. Distinguish hypotheses from confirmed causes; reuse verified [bug-history](docs/architecture/bug-history.md) entries.
 - Match effort to complexity. No parallel agents for simple work. When delegation is justified, assign disjoint investigations and share evidence instead of repeating reads.
