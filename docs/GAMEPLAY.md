@@ -14,7 +14,7 @@ Victory and comparable personal records use official time for the same grid
 revision. Only a strict confirmed improvement announces one new record; equality
 and a better raw time alone do not. The constellation and badges finish their
 animations with a minimum two-second viewing period. They then remain visible
-until explicit action; only « Voir le classement » opens ranking. Reduced motion
+until explicit action; the podium then appears in the same performance block (#682), with no ranking button or second screen. Reduced motion
 uses a static scene immediately while retaining that minimum period. Progress
 and badges are already durable before the button is used. The unversioned social
 challenge protocol retains real elapsed references until a compatible versioned

@@ -295,7 +295,7 @@ Do not introduce parallel `MobileX` / `DesktopX` gameplay components. If a compa
 
 Keep the challenge loop celestial and performance-led, not leaderboard-heavy. Before play, show who sent the challenge and the one-attempt rule, but hide the sender's time/badges. After play, reveal both performances side by side and describe differences factually.
 
-A remarkable first-play Mastery deserves stronger visual emphasis around “Défier un ami”, while “Quête suivante” remains the primary campaign continuation for an ordinary first completion. Do not turn replay Mastery into a challenge CTA.
+A remarkable first-play Mastery deserves stronger visual emphasis around “Défier”, while “Quête suivante” remains the primary campaign continuation for an ordinary first completion. Do not turn replay Mastery into a challenge CTA.
 
 The current social RPC protocol supports historical numeric quest identities.
 For a first victory on a canonical-only quest, show the challenge action disabled
@@ -501,19 +501,33 @@ tutorial is introduced.
 
 ### Classement (#638)
 
+Écran unique de victoire (#682), dans un ordre constant : constellation et
+progression (« 6 / 10 étoiles »), cinq badges sur une ligne (+étoile, Autonomie,
+Rapidité, Sans erreur, Maîtrise ; un badge non obtenu reste visible, atténué),
+bloc « Ta performance et ton classement » (temps final, record, rang, podium),
+puis « Quête suivante » pleine largeur et une rangée Mon ciel | Défier | Rejouer.
+Chaque zone a sa place dès la première image : le podium arrive dans un
+emplacement réservé (squelette de même gabarit), sans déplacer les autres zones.
 La célébration dure au moins deux secondes et attend la fin des animations
-finies de constellation et de badges. Elle reste ensuite affichée sans limite,
-même sans nouveau badge. Aucun tap sur la surface ni délai ne change d’écran.
-Le bouton « Voir le classement » apparaît alors ; lui seul ouvre le
-podium des trois meilleurs temps officiels,
-premier au centre. La carte personnelle indique rang, temps, nombre de joueurs
-réels et écart au podium si pertinent. Un joueur du Top 3 est marqué « Toi »,
-sans répétition de son temps. « Nouveau record ! » suit une amélioration confirmée.
-Les trois places puis la carte apparaissent en environ 2,3 secondes, sans déplacer
-les commandes. Les égalités et l'ordre déterministe restent calculés sur tous
+finies ; le podium apparaît ensuite dans le même bloc, sans bouton ni second écran.
+Podium à trois marches 2–1–3 de hauteurs décroissantes 1 > 2 > 3 ; seule la
+marche du joueur est mise en évidence. Hors podium : « Classement : Ne place ».
+Aucun compteur de joueurs (réels, virtuels ou total) n'est affiché. Les messages
+« 1re/2e/3e place ! » n'apparaissent que pour un rang confirmé par le serveur ;
+« Tu prends la tête du classement ! » seulement si aucun Écho n'est sur le podium.
+« Nouveau record ! » suit une amélioration confirmée.
+
+Célébration graduée partagée (#682) : un seul moteur pour toutes les quêtes et
+rejeux, sans condition sur le numéro de quête. Niveau 1 victoire, 2 record ou
+badges remarquables (Maîtrise nouvelle ou deux nouveaux badges), 3 podium #2/#3
+confirmé (ou #1 avec Échos), 4 première place confirmée sans Écho ; une
+constellation terminée ajoute un accent céleste. Un rang tardif ne fait
+qu'amplifier, sans relancer ni déplacer. Calibration centralisée dans
+`CELEBRATION_CONFIG` (`src/ui/victory-celebration.js`) ; aucune particule
+en mouvement réduit. Lumen est joué en portrait (manifeste `portrait-primary`). Les égalités et l'ordre déterministe restent calculés sur tous
 les scores côté serveur. Aucun défilement de liste ou de page.
 
-Les profils « Écho … » portent toujours « Virtuel ». Leurs temps fixes sont
+Les profils « Écho … » portent toujours une mention « Écho virtuel » pour les lecteurs d’écran. Leurs temps fixes sont
 des objectifs conçus à partir de la difficulté, pas des performances humaines.
 Un joueur réel remplace un Écho jusqu'à leur disparition à dix participants.
 Aucun faux effectif humain ou percentile. Participation automatique sous pseudo

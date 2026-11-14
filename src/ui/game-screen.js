@@ -12,6 +12,7 @@ import {officialTimingSupported,refreshOfficialTimingSupport} from '../persisten
 import {createRankingClient} from '../persistence/ranking.js';
 import {createRankingView} from './ranking.js';
 import {createVictoryPresentation} from './victory-presentation.js';
+import {createCelebration,rewardSlots,remarkableRewards,rankSummary,celebrationLevel} from './victory-celebration.js';
 import {streakVisual,lostStreak} from "../campaign/streak-visual.js";
 import {learningStep, dragLearningStep, learningAllows, learningCopy} from "../game/learning.js";
 import {createAnalytics,attemptAnalyticsProperties} from "../analytics/events.js";
@@ -1815,7 +1816,7 @@ const attemptEngine=createAttemptEngine({onChange:attempt=>{updateAttemptUI();co
 function capturedTiming(){return qaActive||officialTimingSupported(lumenSupabase)?{timing:attemptTiming(attemptEngine.snapshot()??{})}:{}}
 const rankingContext=()=>({owner:lumenUser?.id,client:lumenSupabase,nickname:lumenNickname,qa:qaActive});
 const rankingClient=createRankingClient({storage:localStorage,getContext:rankingContext,currentGridRevision:id=>{const q=canonicalQuestById(id);return q?q.gridRevision??0:null}});
-const rankingView=createRankingView({client:rankingClient,getContext:rankingContext,format:seconds=>formatDuration(seconds)});
+const rankingView=createRankingView({client:rankingClient,getContext:rankingContext,format:seconds=>formatDuration(seconds),onUpdate:update=>renderVictoryRank(update)});
 let nicknameOnboardingOwner=null;
 let nicknameOnboardingBusy=false;
 function showMandatoryNickname(required,owner=lumenUser?.id){
@@ -2754,9 +2755,11 @@ function celebrateLearningReplaySuccess(){
  setLearningReplaySuccessMode(true);document.getElementById("successOverlay").classList.add("show");
 }
 
+let lastRewardState=null;
 function renderSuccessRewards(stars,savedPerformance,priorBadges={}){
  const el=document.getElementById("successRewards");if(!el)return;
  const earned=savedPerformance.badges||{},qualifying=savedPerformance.qualifying,rewards=[];
+ lastRewardState={stars,badges:{...earned},qualifying:!!qualifying,prior:{...priorBadges}};
  if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});
  for(const [key,cls,label] of [["autonomy","autonomy","Autonomie"],["speed","speed","Rapidité"],["noError","no-error","Sans erreur"],["mastery","mastery","Maîtrise"]]){
   if(!earned[key])continue;
@@ -3268,26 +3271,9 @@ async function celebrateSuccess(){
  const checkpoint=firstCompletion&&!crossedConstellation?constellationCheckpoint(skyEarnedBefore,skyEarnedAfter):null;
  const revealDelay=!celestialPending&&!generatedQuest&&earnedThisRun>0?2250:0;
  const revealQuest=canonicalQuestForLegacy(levelIndex),revealCampaign=revealQuest?{quest:revealQuest,newlyCompleted:firstCompletion}:null;
- const clearVictoryConfetti=()=>document.getElementById("victoryConfetti")?.remove();
- if(firstCompletion&&earnedThisRun>0&&!generatedQuest){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint,revealCampaign)},revealDelay)}else if(questPassed||crossedConstellation||checkpoint){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{clearVictoryConfetti();showSkyReveal(skyEarnedBefore,checkpoint,revealCampaign)},revealDelay)}else setTimeout(()=>showSkyReveal(skyEarnedBefore,null,revealCampaign),revealDelay);
+ if(firstCompletion&&earnedThisRun>0&&!generatedQuest){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{showSkyReveal(skyEarnedBefore,checkpoint,revealCampaign)},revealDelay)}else if(questPassed||crossedConstellation||checkpoint){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{showSkyReveal(skyEarnedBefore,checkpoint,revealCampaign)},revealDelay)}else setTimeout(()=>showSkyReveal(skyEarnedBefore,null,revealCampaign),revealDelay);
 
- // Deliberately varied shapes/positions; purely visual, no game-state effect.
- const palette=["#68e7ff","#5ea7ff","#8b7cff","#67d8c2","#d7f8ff","#87bfff"];
- const confettiCount=matchMedia("(max-width: 700px)").matches?28:40;
- const confettiHost=document.createElement("div");confettiHost.id="victoryConfetti";confettiHost.className="victory-confetti";const confettiFragment=document.createDocumentFragment();
- for(let i=0;i<confettiCount;i++){
-  let x=document.createElement("i");
-  x.className="confetti";
-  x.style.left=((i*37)%101)+"vw";
-  x.style.background=palette[i%palette.length];
-  x.style.setProperty("--dur",(2.2+(i%9)*.16)+"s");
-  x.style.setProperty("--rot",((i*47)%360)+"deg");
-  x.style.animationDelay=((i%13)*.035)+"s";
-  if(i%3===0){x.style.borderRadius="50%";x.style.width="10px";x.style.height="10px"}
-  confettiFragment.appendChild(x);
- }
- confettiHost.appendChild(confettiFragment);document.body.appendChild(confettiHost);
- setTimeout(clearVictoryConfetti,3600);
+ // #682: the shared celebration now plays inside the final victory surface.
 }
 
 function haptic(pattern){try{if("vibrate" in navigator)navigator.vibrate(pattern)}catch(_){}}
@@ -3819,6 +3805,36 @@ if(attemptAbandon)attemptAbandon.onclick=async()=>{const a=attemptEngine.snapsho
 
 const celestialCelebration=createCelestialCelebration(document);
 const victoryPresentation=createVictoryPresentation(document.getElementById('skyReveal'));
+// #682: one shared, graded celebration for every quest and replay.
+const victoryCelebration=createCelebration(document.querySelector('#skyReveal .sky-reveal-card')||document.getElementById('skyReveal'));
+let victoryFacts=null;
+function renderVictoryRewards(slots){
+ const el=document.getElementById('skyRevealRewards');if(!el)return;
+ const legacy={star:'star',autonomy:'autonomy',speed:'speed',noError:'no-error',mastery:'mastery'};
+ el.className='sky-reveal-rewards victory-rewards';
+ el.replaceChildren(...slots.map((slot,i)=>{
+  const item=document.createElement('span');
+  // Earned slots keep the historical success-reward classes; missing ones stay neutral.
+  item.className='victory-reward victory-reward-'+slot.state+(slot.state==='missing'?'':' success-reward '+legacy[slot.key]+(slot.state==='owned'?' previously-earned':''));
+  item.dataset.reward=slot.key;item.setAttribute('role','listitem');item.style.setProperty('--reward-delay',(220+i*160)+'ms');
+  const icon=document.createElement('span');icon.className='victory-reward-icon';icon.setAttribute('aria-hidden','true');icon.textContent=slot.icon;
+  const label=document.createElement('span');label.className='victory-reward-label';label.textContent=slot.label;
+  const state=document.createElement('span');state.className='visually-hidden';state.textContent=slot.state==='new'?' · obtenu':slot.state==='owned'?' · déjà obtenu':' · non obtenu';
+  item.append(icon,label,state);return item;
+ }));
+}
+function renderVictoryRank(update){
+ const tile=document.getElementById('skyRevealRank');
+ if(!tile||!victoryFacts||tile.hidden||document.getElementById('skyReveal')?.hidden)return;
+ if(update?.quest?.id&&victoryFacts.questId&&update.quest.id!==victoryFacts.questId)return;
+ if(update?.state!=='ready'){tile.className='victory-rank victory-rank-pending';tile.textContent=update?.state==='offline'?'Classement hors ligne':'Classement…';return}
+ const data=update.data||{},summary=rankSummary({state:'ready',top:data.top??data.rows??[],personal:data.personal??data.rows?.find(r=>r.mine)??null});
+ tile.className='victory-rank'+(summary.rank&&summary.rank.position<=3?' victory-rank-podium victory-rank-'+summary.rank.position:'');
+ tile.replaceChildren();
+ const strong=document.createElement('strong');strong.textContent=summary.label||'Pas encore classé';tile.append(strong);
+ if(summary.lead){const lead=document.createElement('small');lead.textContent=summary.lead;tile.append(lead)}
+ if(summary.rank)victoryCelebration.amplify(celebrationLevel({...victoryFacts,rank:summary.rank}).level);
+}
 let celestialPending=null;
 const masteryPulses=new Map();
 function constellationMastery(entry){return celestialScope(lumenProgress,canonicalQuestList().filter(q=>q.constellationId===entry.id))}
@@ -3877,8 +3893,8 @@ function showCelestialVictory(){
  const shown=celestialCelebration.show({kind:event.kind,title:mastery?(campaign?'Le ciel pleinement maîtrisé':'Une aventure pleinement maîtrisée'):campaign?'Le ciel est réuni':adventure?'Aventure accomplie':(entry?.label||q.constellationId)+' brille à nouveau !',
   copy:campaign?(pack?.narrative||'Toutes les lumières du voyage se répondent désormais.'):adventure?(pack?.narrative||'Chaque étoile retrouvée a repoussé l’obscurité. Ensemble, elles ont redonné vie à ce ciel.'):'Une nouvelle lumière a retrouvé sa place dans le ciel.',
   summary:(mastery?'Toutes les quêtes et tous les badges disponibles sont accomplis. ':campaign?'Toutes les quêtes sont terminées. Les badges restent à explorer. ':'')+count+`${summary.completed}/${summary.total} quêtes · ${summary.stars} étoiles · `+badgeText,art,primary,
-  secondary:next?{label:'Mon ciel',run:leave(sky)}:null,review:adventure?{label:'Revoir mon aventure',run:leave(()=>openJourneyMap(false,{constellationId:q.constellationId,detail:false}))}:null,
-  share:challenge&&!challenge.hidden?{label:'Défier un ami',disabled:challenge.disabled,remarkable:challenge.classList.contains('remarkable'),run:()=>challenge.click()}:null});
+  secondary:next?{label:'✦ Mon ciel',run:leave(sky)}:null,review:adventure?{label:'Revoir mon aventure',run:leave(()=>openJourneyMap(false,{constellationId:q.constellationId,detail:false}))}:null,
+  share:challenge&&!challenge.hidden?{label:'➤ Défier',disabled:challenge.disabled,remarkable:challenge.classList.contains('remarkable'),run:()=>challenge.click()}:null});
  if(shown){adventurePending=null;endgamePending=false;if(event.kind==='campaign'){try{localStorage.setItem(endgameSeenKey(),'1')}catch(_){}trackLumenEvent('campaign_completed',null,{content_quests:summary.total,constellations:new Set(quests.map(x=>x.constellationId)).size,stars:summary.stars})}}
  return shown;
 }
@@ -3935,7 +3951,7 @@ function celebrateConstellationReveal(){
 function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
  celestialCelebration.clear();
  for(const id of ['skyRevealTime','skyRevealRewards','skyRevealFeedback'])document.getElementById(id).hidden=false;
- document.getElementById('skyRevealNext').textContent='Quête suivante →';document.getElementById('skyRevealSky').textContent='✦ Mon ciel';document.getElementById('skyRevealRetry').textContent='↻ Réessayer';
+ document.getElementById('skyRevealNext').textContent='Quête suivante →';document.getElementById('skyRevealSky').textContent='✦ Mon ciel';document.getElementById('skyRevealRetry').textContent='↻ Rejouer';document.getElementById('skyRevealShare').textContent='➤ Défier';
  const after=skyStarsEarned(),crossed=beforeEarned!==null&&after>beforeEarned;
  const playedQuest=canonicalActiveQuest??canonicalQuestForLegacy(levelIndex);
  if(!canonical&&playedQuest)canonical={quest:playedQuest,newlyCompleted:crossed};
@@ -3969,7 +3985,7 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
  }
  let lines=p.edges.map(e=>{let on=e[0]<p.lit&&e[1]<p.lit,newLine=on&&(e[0]===idx||e[1]===idx);return '<line class="sky-line '+(on?'on ':'')+(newLine?'new-line':'')+'" x1="'+p.pts[e[0]][0]+'" y1="'+p.pts[e[0]][1]+'" x2="'+p.pts[e[1]][0]+'" y2="'+p.pts[e[1]][1]+'"/>'}).join("");
  let stars=p.pts.map((v,i)=>'<circle class="sky-star '+(i<p.lit?'on ':'')+(i===idx&&newlyCompleted?'new-star':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i===idx?6:i<p.lit?4:3)+'"/>').join("");
- canvas.innerHTML='<svg class="sky-reveal-svg" viewBox="0 0 290 115">'+(astronomicalPrimarySvg({id:canonical?.quest.constellationId||CONTENT_CONSTELLATIONS[p.index]?.id},p.lit,p.count,newlyCompleted?Math.max(0,p.lit-(canonical?1:after-beforeEarned)):p.lit)||lines+stars)+'</svg><div>'+p.lit+' / '+p.count+' étoiles</div>';o.hidden=false;
+ canvas.innerHTML='<svg class="sky-reveal-svg" viewBox="0 0 290 115">'+(astronomicalPrimarySvg({id:canonical?.quest.constellationId||CONTENT_CONSTELLATIONS[p.index]?.id},p.lit,p.count,newlyCompleted?Math.max(0,p.lit-(canonical?1:after-beforeEarned)):p.lit)||lines+stars)+'</svg><div class="sky-reveal-progress">◔ '+p.lit+' / '+p.count+' étoiles</div>';o.hidden=false;
  if(canonical?.quest.ordinal===1&&newlyCompleted)document.getElementById('skyRevealName').textContent=document.getElementById('successSub').textContent;
  const result=document.getElementById("skyRevealResults"),continueButton=document.getElementById("skyRevealContinue");
  const victory=document.getElementById("successOverlay");
@@ -3981,8 +3997,11 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
    document.getElementById("skyRevealTime").textContent=document.getElementById("successTime")?.textContent||"";
    const record=document.getElementById('successRecord'),revealRecord=document.getElementById('skyRevealRecord');
    if(revealRecord){revealRecord.textContent=record?.textContent||'';revealRecord.hidden=record?.hidden!==false;revealRecord.classList.toggle('personal-record-new',!!record?.classList.contains('personal-record-new'))}
-   document.getElementById("skyRevealRewards").innerHTML=document.getElementById("successRewards")?.innerHTML||"";
-   document.getElementById("skyRevealRewards").className="sky-reveal-rewards "+(document.getElementById("successRewards")?.className||"");
+   const slots=rewardSlots(lastRewardState||{});renderVictoryRewards(slots);
+   const rankingExpected=!(socialChallenge||learningReplayActive()||qaActive||!lumenUser);
+   document.getElementById('skyRevealPerformance')?.classList.toggle('victory-performance-ranked',rankingExpected);
+   const rankTile=document.getElementById('skyRevealRank');if(rankTile){rankTile.hidden=!rankingExpected;rankTile.className='victory-rank victory-rank-pending';rankTile.textContent=rankingExpected?'Classement…':''}
+   victoryFacts={questId:activeQuest().id,newRecord:!!record?.classList.contains('personal-record-new'),remarkableBadges:remarkableRewards(slots),constellationCompleted};
    const reason=document.getElementById('successChallengeReason'),revealReason=document.getElementById('skyRevealChallengeReason');
    revealReason.textContent=reason.textContent;revealReason.hidden=reason.hidden;
    const feedback=document.getElementById("skyRevealFeedback");
@@ -4002,9 +4021,11 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
    }
   }
  }
+ if(!isNormalVictory)victoryFacts={questId:playedQuest?.id??null,newRecord:false,remarkableBadges:false,constellationCompleted};
  // Completion is presented once here, never as a second popup after Next.
  adventurePending=null;endgamePending=false;
  try{showCelestialVictory()}catch(error){celestialCelebration.clear();celestialPending=null;console.warn('Celestial presentation unavailable',error)}
+ if(isNormalVictory||constellationCompleted)victoryCelebration.start(celebrationLevel(victoryFacts));
  if(isNormalVictory){
   const wonQuest=activeQuest().id,wonOwner=lumenUser?.id,wonClient=lumenSupabase,wonAttempt=attemptEngine.snapshot()?.attemptId;
   rankingView.clear();victoryPresentation.start(()=>{if(!o.hidden&&activeQuest().id===wonQuest&&lumenUser?.id===wonOwner&&lumenSupabase===wonClient&&attemptEngine.snapshot()?.attemptId===wonAttempt)showRanking()});
@@ -4012,6 +4033,7 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
 }
 function closeUnifiedSkyReveal(){
  victoryPresentation.clear();
+ victoryCelebration.clear();victoryFacts=null;
  celestialCelebration.clear();
  syncPresentation.celebration(false);
  const o=document.getElementById("skyReveal");

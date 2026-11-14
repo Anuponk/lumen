@@ -47,6 +47,8 @@ monotone quest 2–6 profile, unchanged identities/rewards/labels, revision-0 li
 absence of `gv` markers, archived old attempts, obsolete ranking archiving and the
 exact migration scope. Adventure 1–4 protection tests compare these IDs at revision 0.
 
+Victory screen #682: `node --test scripts/victory-celebration-tests.mjs` covers the five stable reward slots, confirmed-only rank messages (no lead claim with Échos, no participant counter), graded levels and composition, the shared engine (amplify without restart or downgrade, reduced motion) and the absence of quest-number conditions. `victory-layout-browser-tests.mjs` checks on real portrait viewports (320×568, 360×640, 390×844) that a board arriving after 0, 1 or 5 s moves no zone, five badges fit one row, the three secondary actions share one row below the full-width next action, the podium is ordered 2–1–3 with decreasing heights and only the player highlighted, no counter or horizontal scroll, and no particles in reduced motion.
+
 Mixed pacing: `node scripts/mixed-difficulty-tests.mjs` independently rates,
 recounts and replays all 480 targeted grids, checks the 200 changed / 280 retained
 boards, exact protected Adventure 1–4 definitions, D4 diversity, measured score

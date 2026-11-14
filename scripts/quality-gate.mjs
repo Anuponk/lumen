@@ -129,6 +129,7 @@ try{
   ()=>runBrowser("late-game-browser-tests.mjs","ci-late-game.json",9225),
   ()=>runBrowser("ranking-browser-tests.mjs","ci-ranking.json",9252),
   ()=>runBrowser("official-time-browser-tests.mjs","ci-official-time.json",9253),
+  ()=>runBrowser("victory-layout-browser-tests.mjs","ci-victory-layout.json",9254),
   ()=>runBrowser("adventure-mastery-browser-tests.mjs","ci-adventure-mastery.json",9245),
   ()=>runBrowser("adventure-05-browser-tests.mjs","ci-adventure-05.json",9239),
   ()=>runBrowser("sky-return-browser-tests.mjs","ci-sky-return.json",9251),
