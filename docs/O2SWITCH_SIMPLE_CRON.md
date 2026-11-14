@@ -100,8 +100,12 @@ Ne pas désactiver toutes les protections ni modifier l'authentification HMAC.
 Voir la [documentation TigerProtect](https://faq.o2switch.fr/cpanel/o2switch/tiger-protect-waf/).
 
 Le client reconnaît les pages TigerProtect 429/503 via une lecture bornée,
-échoue avec un diagnostic fixe et le seul identifiant de requête validé, puis
-évite les tentatives supplémentaires inutiles. Il ne journalise ni la page,
+échoue avec un diagnostic fixe et le seul identifiant de requête validé, et
+sort avec le code 75. Le filtre juge l'IP du runner : le workflow relance alors
+la publication depuis un **nouveau job** (nouveau runner), au plus deux fois,
+une minute d'intervalle (14/11/2026 : refus sur 3 des 5 derniers déploiements ;
+seule la règle « Sécurité par défaut d'o2switch » est active, sans liste
+blanche possible). Toute autre erreur reste définitive et n'est jamais relancée. Il ne journalise ni la page,
 ni les en-têtes, ni les secrets. Un 503 non identifié conserve le transport
 de secours existant ; aucun filtre n'est contourné par le code.
 Le workflow manuel `Diagnose production HTTP filtering` sonde les assets et

@@ -17,6 +17,15 @@ PUBLIC = 'https://lumen.nopuna.fr/build-info.json'
 NETWORK_ERRORS = (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException)
 
 
+# Exit status for a hosting-filter refusal. The filter judges the runner's IP,
+# so the workflow retries from a fresh runner; every other failure stays final.
+HOSTING_FILTER_EXIT = 75
+
+
+class HostingFilterRejected(RuntimeError):
+    pass
+
+
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None  # Never forward authentication to another URL/host.
@@ -32,8 +41,8 @@ def reject_hosting_filter(status, body):
         return
     request_id = re.search(r'Request_ID\s*=\s*"([0-9a-f]{32})"', sample)
     detail = '; request ID ' + request_id[1] if request_id else ''
-    raise RuntimeError('TigerProtect hosting firewall rejected HTTPS (HTTP ' + str(status) + detail
-                       + '); inspect domain rules in cPanel before retrying')
+    raise HostingFilterRejected('TigerProtect hosting firewall rejected HTTPS (HTTP ' + str(status) + detail
+                                + '); inspect domain rules in cPanel before retrying')
 
 
 def fetch_json(req):
@@ -112,10 +121,15 @@ def deploy(sha, secret):
     raise RuntimeError('Publication completion not confirmed; inspect private deploy-jobs log')
 
 
-if __name__ == '__main__':
+def main():
     try:
         deploy(os.environ.get('DEPLOY_SHA', ''), os.environ.get('O2SWITCH_DEPLOY_WEBHOOK_SECRET', ''))
+        return 0
     except Exception as exc:
         # Never log headers, secret, signed requests, or raw server response bodies.
         print('Deployment failed: ' + (str(exc) if isinstance(exc, RuntimeError) else type(exc).__name__), file=sys.stderr)
-        sys.exit(1)
+        return HOSTING_FILTER_EXIT if isinstance(exc, HostingFilterRejected) else 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())

@@ -217,6 +217,50 @@ class ClientTests(unittest.TestCase):
                 client.deploy(SHA, SECRET)
             self.assertNotIn(SECRET, str(caught.exception))
 
+    def test_hosting_filter_refusal_exits_75_and_other_failures_exit_1(self):
+        marker = b'https://faq.o2switch.fr/cpanel/o2switch/tiger-protect-waf/'
+        from io import BytesIO
+        env = {'DEPLOY_SHA': SHA, 'O2SWITCH_DEPLOY_WEBHOOK_SECRET': SECRET}
+        cases = [
+            (urllib.error.HTTPError(client.HOOK, 503, 'unavailable', {}, BytesIO(marker)), client.HOSTING_FILTER_EXIT),
+            (urllib.error.HTTPError(client.HOOK, 401, 'unauthorized', {}, None), 1),
+        ]
+        for error, expected in cases:
+            with self.subTest(expected=expected), patch.dict(os.environ, env),                  patch.object(client.time, 'sleep'),                  patch.object(client.urllib.request, 'build_opener') as opener,                  patch.object(client.subprocess, 'run'):
+                opener.return_value.open.side_effect = error
+                self.assertEqual(client.main(), expected)
+        with patch.dict(os.environ, {'DEPLOY_SHA': 'bad', 'O2SWITCH_DEPLOY_WEBHOOK_SECRET': SECRET}):
+            self.assertEqual(client.main(), 1, 'invalid input is never retried')
+        self.assertEqual(client.HOSTING_FILTER_EXIT, 75)
+
+    def test_publish_attempt_wrapper_maps_only_the_filter_to_a_retry(self):
+        wrapper = (SCRIPTS / 'o2switch-publish-attempt.sh').read_text()
+        bash = shutil.which('bash')
+        if not bash:
+            self.skipTest('bash required')
+        for code, output, job_exit in ((0, 'result=published', 0), (75, 'result=blocked', 0), (1, '', 1), (2, '', 2)):
+            with self.subTest(code=code), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                (root / 'scripts').mkdir()
+                (root / 'scripts' / 'o2switch-https-deploy.py').write_text('import sys\nsys.exit(' + str(code) + ')\n')
+                (root / 'scripts' / 'o2switch-publish-attempt.sh').write_text(wrapper)
+                out = root / 'out'
+                out.write_text('')
+                result = subprocess.run([bash, 'scripts/o2switch-publish-attempt.sh'], cwd=root,
+                                        env={**os.environ, 'GITHUB_OUTPUT': str(out)}, capture_output=True, text=True)
+                self.assertEqual(result.returncode, job_exit)
+                self.assertEqual(out.read_text().strip(), output)
+
+    def test_workflow_retries_only_filter_refusals_and_requires_a_publication(self):
+        workflow = (SCRIPTS.parent / '.github' / 'workflows' / 'deploy-o2switch.yml').read_text()
+        self.assertIn("if: needs.deploy.outputs.result == 'blocked'", workflow)
+        self.assertIn("if: needs.deploy-retry-1.outputs.result == 'blocked'", workflow)
+        self.assertEqual(workflow.count('bash scripts/o2switch-publish-attempt.sh'), 3)
+        self.assertEqual(workflow.count('Verify merged PR quality and exact-commit release gates'), 1)
+        self.assertIn('needs: [deploy, deploy-retry-1, deploy-retry-2]', workflow)
+        self.assertIn('*" published "*', workflow)
+        self.assertIn("cancel-in-progress: false", workflow)
+
     def test_filter_diagnostic_bounds_body_and_rejects_untrusted_request_id(self):
         marker = 'https://faq.o2switch.fr/cpanel/o2switch/tiger-protect-waf/'
         client.reject_hosting_filter(503, 'x'*16384 + marker)
