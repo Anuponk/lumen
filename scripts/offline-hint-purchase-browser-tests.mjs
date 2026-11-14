@@ -26,8 +26,11 @@ try{
  await until("JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).helpUses.hint===1");
  await evaluate("document.getElementById('hint').click()");await until(`(${pending}).then(n=>n===1)`);
  await until("JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).helpUses.hint===2");
+ // The meter renders after the reservation commits; wait for it, then assert.
+ await until("document.getElementById('shardMeter').textContent.includes('79')");
  assert.match(await evaluate("document.getElementById('shardMeter').textContent"),/79/);
  await evaluate("document.getElementById('hint').click()");await until(`(${pending}).then(n=>n===2)`);
+ await until("document.getElementById('shardMeter').textContent.includes('77')");
  assert.match(await evaluate("document.getElementById('shardMeter').textContent"),/77/);
  assert.equal(await evaluate('lumenDiagnostics.snapshot().progress.shards'),80,'Confirmed balance remains separate from reservations');
  await navigateAndWait({send,evaluate},'Page.reload');await until('!!window.lumenDiagnostics');await acknowledgeLearningMilestones(evaluate);

@@ -34,6 +34,14 @@ Cette preuve SQL ne valide pas encore la chaîne interface → JWT réel → Edg
 RPC. Une recette authentifiée isolée de cette chaîne et une décision séparée
 d’activation production restent nécessaires ; #611 reste ouverte.
 
+## Activation et suppression complète du compte — 14 novembre 2026
+
+Recette authentifiée de bout en bout réussie (schémas isolés, puis production avec un compte de test). Activation production le 14/11 (migration `20261101180000`, Edge `lumen-self-erasure`, PR #611 `549b343`), puis **désactivation temporaire** le même jour : un compte effacé restait connectable mais bloqué sur la saisie du pseudo, la barrière refusant toute nouvelle écriture.
+
+Décision du propriétaire : **« Supprimer mon compte » supprime aussi le compte de connexion** lorsqu'il ne sert qu'à Lumen. L'Edge efface d'abord les données Lumen, puis demande `public.lumen_account_deletable` (rôle service uniquement : barrière Lumen présente **et** aucune ligne dans une table non-Lumen liée à `auth.users` ou dans une colonne propriétaire `*user_id/*owner_id/*_by`). Seule une réponse `true` déclenche `auth.admin.deleteUser` ; toute erreur ou doute conserve le compte (fermé par défaut). Les tables SoldeZen et nounou cascadent depuis `auth.users` : un compte partagé n'est jamais supprimé. Le SQL ne supprime jamais `auth.users` lui-même.
+
+Un compte partagé effacé qui se reconnecte voit `erasedAccountNotice` (via `public.lumen_account_erased()`, limité à son propre identifiant) au lieu de la saisie du pseudo, et peut se déconnecter. Un nouveau compte (nouvel identifiant) peut ensuite être créé, y compris avec la même adresse lorsque l'ancien compte a été supprimé ; la barrière reste attachée à l'ancien identifiant.
+
 ## Protection cliente intégrable sans activation serveur
 
 Le handler de confirmation garde le compte, le client Auth et la génération
