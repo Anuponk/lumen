@@ -34,7 +34,17 @@ Deno.serve(async (request) => {
       console.error('Lumen erasure failed:', error?.code || 'acknowledgement_missing');
       return new Response(JSON.stringify({ error: 'erasure_not_completed' }), { status: 409, headers });
     }
-    return new Response(JSON.stringify({ status: 'erased', scope: 'lumen', details: data?.status }), { status: 200, headers });
+    // Owner decision (2026-11-14): delete the sign-in account too, only after the
+    // Lumen barrier exists and when no other application uses it. Any doubt or
+    // failure keeps the account; the Lumen erasure itself is already complete.
+    let accountDeleted = false;
+    const { data: deletable, error: checkError } = await operator.rpc('lumen_account_deletable', { p_user_id: user.id });
+    if (!checkError && deletable === true) {
+      const { error: deleteError } = await operator.auth.admin.deleteUser(user.id);
+      accountDeleted = !deleteError;
+      if (deleteError) console.error('Sign-in account kept:', deleteError.status || 'delete_failed');
+    }
+    return new Response(JSON.stringify({ status: 'erased', scope: 'lumen', details: data?.status, accountDeleted }), { status: 200, headers });
   } catch {
     return new Response(JSON.stringify({ error: 'invalid_request' }), { status: 400, headers });
   }

@@ -6,6 +6,7 @@ const sql=read('supabase/migrations/20261101180000_lumen_self_erasure.sql');
 const edge=read('supabase/functions/lumen-self-erasure/index.ts');
 const ui=read('src/ui/game-screen.js');
 const html=read('index.html');
+const full=read('supabase/migrations/20261114120000_lumen_full_account_deletion.sql');
 const checks=[
  ['SQL entrypoint requires service role',sql.includes("auth.role()) is distinct from 'service_role'")],
  ['SQL target passed by server',sql.includes('v_uid := p_user_id')],
@@ -23,6 +24,14 @@ const checks=[
  ['edge handles browser preflight',edge.includes("request.method === 'OPTIONS'")],
  ['account deletion action exists',html.includes('id="eraseLumenExecute"')],
  ['client clears local Lumen data after success',ui.includes('await clearErasedLumenDeviceData()')],
+ ['full deletion SQL never deletes auth.users itself',!/delete\s+from\s+auth\.users/i.test(full)&&!/auth\.users\s+where/i.test(full.replace(/confrelid='auth\.users'::regclass/g,''))],
+ ['deletable check is service-role only',full.includes("function public.lumen_account_deletable")&&full.includes('lumen_account_deletable(uuid) from public,anon,authenticated')&&full.includes('lumen_account_deletable(uuid) to service_role')&&full.includes("auth.role()) is distinct from 'service_role'")],
+ ['deletion requires the Lumen erasure barrier',full.includes("kind='user' and digest=lumen_privacy.fingerprint(p_user_id::text)")],
+ ['accounts used by another app are kept',full.includes('return not lumen_privacy.account_used_elsewhere(p_user_id)')&&full.includes("confrelid='auth.users'::regclass")],
+ ['other-app scan fails closed',/exception when others then\s+return true;/.test(full)],
+ ['edge deletes the account only after an explicit safe answer',edge.indexOf("operator.rpc('lumen_self_erase'")<edge.indexOf("operator.rpc('lumen_account_deletable'")&&edge.includes('deletable === true')&&edge.indexOf('deletable === true')<edge.indexOf('operator.auth.admin.deleteUser(user.id)')],
+ ['erased-status RPC is self-only',full.includes('auth.uid() is not null and exists')&&full.includes('lumen_account_erased() from public,anon')],
+ ['client explains erased accounts before the nickname gate',html.includes('id="erasedAccountNotice"')&&ui.indexOf("rpc('lumen_account_erased')")<ui.indexOf("rpc('lumen_ranking_account')")],
  ['client does not claim success before HTTP success',ui.indexOf('if(!response.ok)throw Error') < ui.indexOf('await clearErasedLumenDeviceData()')],
 ];
 for(const [name,ok] of checks){console.log((ok?'PASS':'FAIL')+' '+name);assert.ok(ok,name)}
