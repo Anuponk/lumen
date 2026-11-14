@@ -2924,6 +2924,8 @@ const canonicalVictoryOutbox=createDurableCanonicalVictoryOutbox(localStorage,{
  }
 });
 let lastOutboxDiagnosticFingerprint=null;
+let lastOutboxDiagnosticOwner=null;
+const OUTBOX_DIAGNOSTIC_ISSUES=new Set(['local_unavailable','indexed_unavailable','conflicting_copies','invalid_entry','retry_state_invalid','retry_state_unpersisted','retry_state_conflict','storage_unavailable']);
 function summarizeOutboxForDiagnostic(queue){
  const paused=queue.paused||[];
  const counts=kind=>paused.filter(entry=>entry.kind===kind).length;
@@ -2934,7 +2936,7 @@ function summarizeOutboxForDiagnostic(queue){
   pausedReview:counts('review'),
   authRequired:!!queue.authRequired,
   complete:!!queue.complete,
-  issues:[...new Set(queue.issues||[])].filter(value=>typeof value==='string').sort()
+  issues:[...new Set(queue.issues||[])].filter(value=>OUTBOX_DIAGNOSTIC_ISSUES.has(value)).sort()
  };
 }
 async function refreshCanonicalOutboxNotice(ownerId){
@@ -2943,8 +2945,9 @@ async function refreshCanonicalOutboxNotice(ownerId){
   if(lumenUser?.id===ownerId){
    const summary={canonical:summarizeOutboxForDiagnostic(canonicalState),legacy:summarizeOutboxForDiagnostic(legacyState),wallet:summarizeOutboxForDiagnostic(walletState)};
    const fingerprint=JSON.stringify(summary);
-   if(fingerprint!==lastOutboxDiagnosticFingerprint){
+   if(fingerprint!==lastOutboxDiagnosticFingerprint||lastOutboxDiagnosticOwner!==ownerId){
     lastOutboxDiagnosticFingerprint=fingerprint;
+    lastOutboxDiagnosticOwner=ownerId;
     recordCloudDiagnostic('outbox_state_summary',summary);
    }
   }
