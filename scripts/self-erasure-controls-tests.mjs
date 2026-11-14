@@ -16,7 +16,7 @@ test('confirmation explains irreversible loss in Lumen without infrastructure de
  for(const term of [/Lumen/,/progression/,/irréversible/])assert.match(panel,term);
  assert.doesNotMatch(panel,/Supabase|SoldeZen/);
 });
-function fixture({body=success,status=200,change,phase='response',signoutOk=true,localOwner='owner',tokenOwner='owner'}={}){
+function fixture({body=success,status=200,change,phase='response',signoutOk=true,signoutHangs=false,localOwner='owner',tokenOwner='owner'}={}){
  const calls=[],elements=new Map();let ctx;
  for(const id of ['eraseLumenAccount','eraseLumenConfirmPanel','eraseLumenConfirmText','eraseLumenStatus','eraseLumenExecute','eraseLumenCancel']){
   elements.set(id,{hidden:false,value:id==='eraseLumenConfirmText'?'SUPPRIMER':'',disabled:false,handlers:{},focus(){},addEventListener(name,fn){this.handlers[name]=fn;}});
@@ -33,8 +33,9 @@ function fixture({body=success,status=200,change,phase='response',signoutOk=true
   document:{getElementById:id=>elements.get(id)},MutationObserver:class{observe(){}},
   lumenSupabase:{auth:{getSession:async()=>{if(phase==='session')mutate();return {data:{session:{user:{id:tokenOwner},access_token:'synthetic'}}};}}},
   fetch:async()=>{calls.push('request');if(phase==='response')mutate();const response=new Response(typeof body==='string'?body:JSON.stringify(body),{status});const parse=response.json.bind(response);response.json=async()=>{const result=await parse();if(phase==='json')mutate();return result;};return response;},
-  signOut:async()=>{calls.push('signout');if(signoutOk)ctx.lumenUser=null;if(phase==='signout')mutate();return {ok:signoutOk};},
-  clearErasedLumenDeviceData:async()=>{calls.push('clear');},
+  signOut:async()=>{calls.push('signout');if(signoutHangs)return new Promise(()=>{});if(signoutOk)ctx.lumenUser=null;if(phase==='signout')mutate();return {ok:signoutOk};},
+  clearErasedLumenDeviceData:async(options)=>{calls.push(options?.includeSession?'clear+session':'clear');},
+  setTimeout:(fn)=>setTimeout(fn,0),
   location:{reload:()=>calls.push('reload')},JSON,Error,
  });
  vm.runInContext(source.slice(start,end)+'\nwireLumenErasureControls();',ctx);
@@ -71,4 +72,17 @@ test('failed signout preserves local data and permits an explicit retry',async()
 test('confirmed erasure signs out, clears and reloads once; HTTP failure keeps data',async()=>{
  const f=fixture();await f.execute();assert.deepEqual(f.calls,['request','signout','clear','reload']);
  const refused=fixture({status:409});await refused.execute();assert.deepEqual(refused.calls,['request']);
+});
+
+test('a deleted account finishes local cleanup even when sign-out never settles',async()=>{
+ const f=fixture({body:{...success,accountDeleted:true},signoutHangs:true});
+ await Promise.race([f.execute(),new Promise((_,reject)=>setTimeout(()=>reject(Error('erasure UI stayed pending')),1000))]);
+ assert.deepEqual(f.calls,['request','signout','clear+session','reload']);
+ assert.match(f.elements.get('eraseLumenStatus').textContent,/compte et tes données Lumen sont supprimés/);
+});
+test('a kept shared account reports a stuck sign-out instead of waiting forever',async()=>{
+ const f=fixture({body:{...success,accountDeleted:false},signoutHangs:true});
+ await Promise.race([f.execute(),new Promise((_,reject)=>setTimeout(()=>reject(Error('erasure UI stayed pending')),1000))]);
+ assert.deepEqual(f.calls,['request','signout']);
+ assert.match(f.elements.get('eraseLumenStatus').textContent,/Effacement serveur confirmé/);
 });
