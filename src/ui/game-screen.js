@@ -2113,21 +2113,53 @@ function advanceLearningIntro(){
  render();
 }
 // #687: on phones the learning coach sits above the board, never over it.
-// The board shrinks by the coach height so its bottom (and the actions) stay put.
-const COACH_ABOVE_MAX_WIDTH=700,COACH_MIN_BOARD=180;
+// #690: one reserve for the whole lesson (its longest step), so the board keeps
+// the same size on every "Suivant". The board only shrinks by what the reserve
+// pushes past the screen bottom: unused space below the actions is used first.
+const COACH_ABOVE_MAX_WIDTH=700,COACH_MIN_BOARD=180,COACH_GAP=8;
+let coachLayout=null;
 function clearCoachAboveBoard(){
  const wrap=document.getElementById("learningBoardWrap");if(!wrap?.classList||!wrap.style?.removeProperty)return;
  wrap.classList.remove("coach-above");wrap.style.removeProperty("--coach-height");wrap.style.removeProperty("--coach-board-size");
 }
+function coachBoardSize(natural,overflow){return Math.floor(Math.min(natural,Math.max(COACH_MIN_BOARD,natural-Math.max(0,overflow))))}
+function coachLessonTexts(){
+ const coarse=typeof matchMedia==="function"&&matchMedia("(pointer:coarse)").matches;
+ if(activeQuestOrdinal()===2)return [[0],[1]].flatMap(v=>[learningCopy({dragLesson:true,phase:"place"},[v],coarse),learningCopy({dragLesson:true,phase:"drag"},[v],coarse)]).map(t=>({...t,next:false}));
+ const texts=LEARNING_INTRO.map(t=>({...t,next:true}));
+ for(const number of [1,2,3,4])for(const v of [0,1])texts.push({...learningCopy({phase:"place",number,target:[0,0]},[[v]],coarse),next:false});
+ for(const phase of ["row","column","neighbors","territory","reuse","drag","practice"])texts.push({...learningCopy({phase},[[0]],coarse),next:false});
+ return texts;
+}
+function measureCoachReserve(card){
+ const title=document.getElementById("scriptedLearnTitle"),copy=document.getElementById("scriptedLearnCopy"),next=document.getElementById("learningCoachNext");
+ const saved=[title.textContent,copy.textContent,next.hidden,next.textContent];
+ let reserve=Math.ceil(card.getBoundingClientRect().height);
+ for(const text of coachLessonTexts()){
+  title.textContent=text.title;copy.textContent=text.copy;next.hidden=!text.next;next.textContent="À moi de jouer";
+  reserve=Math.max(reserve,Math.ceil(card.getBoundingClientRect().height));
+ }
+ [title.textContent,copy.textContent,next.hidden,next.textContent]=saved;
+ return reserve;
+}
+function coachStackBottom(){return scrollY+Math.max(document.querySelector(".game-core").getBoundingClientRect().bottom,document.querySelector(".actions").getBoundingClientRect().bottom)}
 function placeCoachAboveBoard(card){
  const wrap=document.getElementById("learningBoardWrap");
  for(const key of ["position","left","top","width","transform","maxHeight","overflowY"])card.style[key]="";
  clearCoachAboveBoard();
- const natural=board.getBoundingClientRect().width;
+ const key=innerWidth+"x"+innerHeight+":"+activeQuestOrdinal();
+ const natural=board.getBoundingClientRect().width,before=coachStackBottom();
  wrap.classList.add("coach-above");
- const height=Math.ceil(card.getBoundingClientRect().height);
- wrap.style.setProperty("--coach-height",height+"px");
- wrap.style.setProperty("--coach-board-size",Math.floor(Math.min(natural,Math.max(COACH_MIN_BOARD,natural-height-8)))+"px");
+ if(coachLayout?.key!==key)coachLayout={key,reserve:0,size:0};
+ // A later contextual tip longer than the lesson grows the reserve once.
+ const reserve=coachLayout.reserve?Math.max(coachLayout.reserve,Math.ceil(card.getBoundingClientRect().height)):measureCoachReserve(card);
+ wrap.style.setProperty("--coach-height",reserve+"px");
+ if(reserve!==coachLayout.reserve){
+  wrap.style.setProperty("--coach-board-size",Math.floor(natural)+"px");
+  coachLayout.size=coachBoardSize(natural,coachStackBottom()-Math.max(innerHeight-COACH_GAP,before));
+  coachLayout.reserve=reserve;
+ }
+ wrap.style.setProperty("--coach-board-size",coachLayout.size+"px");
 }
 function positionLearningCoach(){
  const card=document.getElementById("scriptedLearn");

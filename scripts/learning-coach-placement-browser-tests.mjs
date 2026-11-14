@@ -15,7 +15,7 @@ async function until(expr) {
 }
 const MEASURE = `(()=>{const c=document.getElementById('scriptedLearn'),b=document.getElementById('board');if(!c||c.hidden)return null;const r=c.getBoundingClientRect(),g=b.getBoundingClientRect();
  const ox=Math.max(0,Math.min(r.right,g.right)-Math.max(r.left,g.left)),oy=Math.max(0,Math.min(r.bottom,g.bottom)-Math.max(r.top,g.top));
- return {title:document.getElementById('scriptedLearnTitle').textContent.trim(),covered:ox*oy,boardWidth:Math.round(g.width),fullText:document.getElementById('scriptedLearnCopy').scrollHeight<=document.getElementById('scriptedLearnCopy').clientHeight+1,helpReachable:(()=>{const h=document.getElementById('tutorialHelp').getBoundingClientRect();return r.top>=h.bottom+8})(),nextVisible:(()=>{const n=document.getElementById('learningCoachNext');if(n.hidden)return true;const q=n.getBoundingClientRect();return q.bottom<=innerHeight&&q.top>=0})()}})()`;
+ return {title:document.getElementById('scriptedLearnTitle').textContent.trim(),covered:ox*oy,boardWidth:Math.round(g.width),gapBelow:Math.round(innerHeight-Math.max(document.querySelector('.game-core').getBoundingClientRect().bottom,document.querySelector('.actions').getBoundingClientRect().bottom)),coachHeight:Math.round(r.height),fullText:document.getElementById('scriptedLearnCopy').scrollHeight<=document.getElementById('scriptedLearnCopy').clientHeight+1,helpReachable:(()=>{const h=document.getElementById('tutorialHelp').getBoundingClientRect();return r.top>=h.bottom+8})(),nextVisible:(()=>{const n=document.getElementById('learningCoachNext');if(n.hidden)return true;const q=n.getBoundingClientRect();return q.bottom<=innerHeight&&q.top>=0})()}})()`;
 async function freshGuest(width, height) {
   await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: true });
   const fixture = await send('Page.addScriptToEvaluateOnNewDocument', {
@@ -43,19 +43,22 @@ try {
       await sleep(250);
       const m = await evaluate(MEASURE);
       if (!m) break;
-      steps.push(m);
       assert.equal(m.covered, 0, 'Coach covers the board at ' + width + 'x' + height + ' on « ' + m.title + ' »');
+      // #690: the board keeps one size for the whole lesson.
+      assert(!steps.length || Math.abs(m.boardWidth - steps[0].boardWidth) <= 1, 'Board size changes on « ' + m.title + ' » (' + steps[0]?.boardWidth + ' -> ' + m.boardWidth + ')');
+      assert(!steps.length || Math.abs(m.coachHeight - steps[0].coachHeight) <= 1, 'Coach reserve changes on « ' + m.title + ' »');
       assert(m.boardWidth >= 180, 'Board stays playable (' + m.boardWidth + 'px) on « ' + m.title + ' »');
       assert.equal(m.fullText, true, 'Coach text is not clipped on « ' + m.title + ' »');
       assert.equal(m.helpReachable, true, 'Help button stays reachable above the coach on « ' + m.title + ' »');
       assert.equal(m.nextVisible, true, 'Next control stays reachable on « ' + m.title + ' »');
+      steps.push(m);
       const moved = await evaluate(
         `(()=>{const n=document.getElementById('learningCoachNext');if(n.hidden)return false;n.click();return true})()`,
       );
       if (!moved) break;
     }
     assert(steps.length >= 4, 'The intro steps were measured at ' + width + 'x' + height);
-    results.push({ width, height, steps: steps.length, covered: 0 });
+    results.push({ width, height, steps: steps.length, covered: 0, board: steps[0].boardWidth, coach: steps[0].coachHeight, gapBelow: steps[0].gapBelow });
   }
   // #688: opening the sign-up screen during a learning step.
   await freshGuest(390, 844);

@@ -1474,11 +1474,12 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 @media(max-width:360px){.sky-reveal .victory-reward{font-size:9px}.sky-reveal .victory-reward-icon{font-size:14px}.sky-reveal .sky-reveal-results .sky-reveal-actions .sky-reveal-secondary{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.victory-particle,.sky-reveal .victory-reward-new{animation:none!important}.victory-celebration-layer{display:none}}
 
-/* #687: on phones the learning coach is laid out above the board, never over it.
-   JS sets --coach-height and shrinks the board by the same amount (--coach-board-size). */
+/* #687/#690: on phones the learning coach is laid out above the board, never over it.
+   JS reserves one --coach-height for the whole lesson (longest step) and sets a stable
+   --coach-board-size that only gives back the space missing below the actions. */
 @media (max-width:700px){
  #learningBoardWrap.coach-above{position:relative;padding-top:calc(var(--coach-height,0px) + 8px)!important}
- #learningBoardWrap.coach-above .scripted-learn{position:absolute!important;top:0!important;left:0!important;right:0!important;bottom:auto!important;width:auto!important;max-width:none!important;max-height:none!important;min-height:0!important;margin:0!important;overflow:visible!important;transform:none!important;z-index:20!important;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+ #learningBoardWrap.coach-above .scripted-learn{position:absolute!important;top:0!important;left:0!important;right:0!important;bottom:auto!important;width:auto!important;max-width:none!important;max-height:none!important;min-height:var(--coach-height,0px)!important;margin:0!important;overflow:visible!important;transform:none!important;z-index:20!important;box-shadow:0 8px 24px rgba(0,0,0,.35)}
  #learningBoardWrap.coach-above #scriptedLearnCopy{max-height:none!important;overflow:visible!important}
  /* Must outrank .game-core:has(#guidedCard/#hintCard:not([hidden])) #board (2,2,0). */
  .app .game-core #learningBoardWrap.coach-above.coach-above #board{width:min(100%,var(--coach-board-size,100%))!important;max-width:100%!important;margin-inline:auto!important}
