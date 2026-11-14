@@ -52,6 +52,15 @@ Learning coach placement #687/#688: `learning-coach-placement-browser-tests.mjs`
 
 Victory screen #682: `node --test scripts/victory-celebration-tests.mjs` covers the five stable reward slots, confirmed-only rank messages (no lead claim with Échos, no participant counter), graded levels and composition, the shared engine (amplify without restart or downgrade, reduced motion) and the absence of quest-number conditions. `victory-layout-browser-tests.mjs` checks on real portrait viewports (320×568, 360×640, 390×844) that a board arriving after 0, 1 or 5 s moves no zone, five badges fit one row, the three secondary actions share one row below the full-width next action, the podium is ordered 2–1–3 with decreasing heights and only the player highlighted, no counter or horizontal scroll, and no particles in reduced motion.
 
+Quest review #695: `node --test scripts/quest-review-tests.mjs` covers the saved badge/star
+slots (never "new"), the current-revision official time, the read-only ranking
+review mode (board only, no outbox flush, no animation, neutral errors) and the Mon
+ciel wiring. `quest-review-browser-tests.mjs` opens a completed quest from the real
+Mon ciel tiles at 320×568, 360×640 and 390×844 and checks content, hidden
+Next/Défier, reachable Rejouer/Mon ciel, no particles, no localStorage write and
+the usual replay entry. `canonical-replay` and `learning` browser suites go
+through the review before the replay cooldown.
+
 Mixed pacing: `node scripts/mixed-difficulty-tests.mjs` independently rates,
 recounts and replays all 480 targeted grids, checks the 200 changed / 280 retained
 boards, exact protected Adventure 1–4 definitions, D4 diversity, measured score

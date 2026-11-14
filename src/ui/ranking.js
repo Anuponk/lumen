@@ -3,9 +3,9 @@
 // states share one geometry, so the late board never moves other zones.
 export function createRankingView({client,getContext,format,document=globalThis.document,onUpdate=()=>{}}={}){
  const root=document.createElement('section');root.className='ranking';root.hidden=true;root.setAttribute('aria-label','Classement de la grille');
- let generation=0,quest=null,owner=null,connection=null,operation=null,improvedForView=false,animated=false;
+ let generation=0,quest=null,owner=null,connection=null,operation=null,improvedForView=false,animated=false,review=false;
  const reduced=()=>!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
- function clear(){generation++;root.hidden=true;root.replaceChildren();delete root.dataset.state;quest=null;improvedForView=false;animated=false}
+ function clear(){generation++;root.hidden=true;root.replaceChildren();delete root.dataset.state;quest=null;improvedForView=false;animated=false;review=false}
  function element(tag,className,text){const e=document.createElement(tag);e.className=className;e.textContent=text;return e}
  function skeleton(){
   const list=element('ol','ranking-podium ranking-podium-skeleton','');list.setAttribute('aria-hidden','true');
@@ -45,8 +45,11 @@ export function createRankingView({client,getContext,format,document=globalThis.
   }
   onUpdate({state:'ready',quest,data});
  }
- async function refresh(results=[]){const token=generation,q=quest;if(!q)return;try{const data=await client.board(q);if(token===generation&&quest===q&&getContext().owner===owner&&getContext().client===connection){const captured=operation?client.takeResult?.(operation):null;improvedForView=improvedForView||!!captured?.improved||(!operation&&results.some(r=>r?.questId===q.id&&r.improved));rows({...data,improved:improvedForView})}}catch{if(token===generation)status(globalThis.navigator?.onLine===false?'Hors ligne : le classement s’affichera au retour du réseau. Ta victoire est sauvegardée.':'Classement en attente de synchronisation. Ta victoire est sauvegardée.',globalThis.navigator?.onLine===false?'offline':'pending')}}
- function show(q,operationId=null){clear();quest=q;operation=operationId;owner=getContext().owner;connection=getContext().client;root.hidden=false;status('Classement en attente de synchronisation. Ta victoire est sauvegardée.');void client.flush().catch(()=>[]).then(refresh)}
+ async function refresh(results=[]){const token=generation,q=quest;if(!q)return;try{const data=await client.board(q);if(token===generation&&quest===q&&getContext().owner===owner&&getContext().client===connection){const captured=operation?client.takeResult?.(operation):null;improvedForView=improvedForView||!!captured?.improved||(!operation&&results.some(r=>r?.questId===q.id&&r.improved));rows({...data,improved:improvedForView})}}catch{if(token===generation)status(globalThis.navigator?.onLine===false?(review?'Hors ligne : le classement s’affichera au retour du réseau.':'Hors ligne : le classement s’affichera au retour du réseau. Ta victoire est sauvegardée.'):(review?'Classement indisponible pour le moment.':'Classement en attente de synchronisation. Ta victoire est sauvegardée.'),globalThis.navigator?.onLine===false?'offline':review?'error':'pending')}}
+ function show(q,operationId=null,options={}){clear();quest=q;operation=operationId;owner=getContext().owner;connection=getContext().client;root.hidden=false;
+  // #695 review: read the board only; nothing is flushed or animated.
+  if(options.review){review=true;animated=true;status('Chargement du classement…');void refresh();return}
+  status('Classement en attente de synchronisation. Ta victoire est sauvegardée.');void client.flush().catch(()=>[]).then(refresh)}
  function mount(){if(owner&&(getContext().owner!==owner||getContext().client!==connection)){clear();return}const slot=document.getElementById('skyRevealPodium'),sky=document.getElementById('skyRevealResults'),normal=document.getElementById('successRecord');const visibleSky=sky&&!sky.hidden&&!document.getElementById('skyReveal')?.hidden;if(visibleSky&&slot)slot.prepend(root);else if(visibleSky)document.getElementById('skyRevealRecord')?.after(root);else normal?.after(root)}
  return {show,refresh,clear,mount,root};
 }

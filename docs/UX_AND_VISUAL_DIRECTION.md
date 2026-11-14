@@ -277,7 +277,7 @@ Show at most six constellation cards per page: 2×3 on mobile and 3×2 on deskto
 
 Every constellation, including canonical-only entries such as Dauphin, uses the same quest grid, four-slot badge cards, current-quest treatment, lock icons, shared badge legend and star card. Resolve cards from the selected stable constellation ID, never a dormant numeric index. Canonical star cards use the licensed atlas and completed canonical quest count. The two rows of cards stay compact on desktop so the legend, star card and challenges action remain inside the sheet. Hidden panels stay visually hidden after refresh.
 
-Selecting an unlocked constellation opens its detail in the same sheet: quests, performance badges and stars, with a **Toutes les constellations** back button. Completed quests keep their replay behavior. Mes défis stays reachable from the main sheet. Keyboard navigation is contained in the modal, Escape closes the appropriate notice/sheet, and notices restore focus. Long current-quest labels truncate on mobile so Mon ciel remains reachable.
+Selecting an unlocked constellation opens its detail in the same sheet: quests, performance badges and stars, with a **Toutes les constellations** back button. Touching a completed quest opens its **bilan** (#695): the read-only review described under the victory screen. Its « ↻ Rejouer » keeps the previous replay behavior, including the badge cooldown dialog. Mes défis stays reachable from the main sheet. Keyboard navigation is contained in the modal, Escape closes the appropriate notice/sheet, and notices restore focus. Long current-quest labels truncate on mobile so Mon ciel remains reachable.
 
 Browsing and progression are separate: opening Mon ciel from a board or its victory returns to that played quest's Adventure, constellation and page. Its stable constellation identity takes priority over a dormant legacy index or an earlier browsing choice. Explicit teaching destinations remain supported. Consulting a previous Adventure does not change the board, current attempt, unlocked quest or rewards. A refreshed access model must invalidate an inaccessible viewed Adventure and return to an accessible view. Browsing preference is intentionally not persisted across reloads.
 
@@ -542,7 +542,21 @@ confirmé (ou #1 avec Échos), 4 première place confirmée sans Écho ; une
 constellation terminée ajoute un accent céleste. Un rang tardif ne fait
 qu'amplifier, sans relancer ni déplacer. Calibration centralisée dans
 `CELEBRATION_CONFIG` (`src/ui/victory-celebration.js`) ; aucune particule
-en mouvement réduit. Lumen est joué en portrait (manifeste `portrait-primary`). Les égalités et l'ordre déterministe restent calculés sur tous
+en mouvement réduit. Lumen est joué en portrait (manifeste `portrait-primary`).
+
+Bilan d'une quête terminée (#695, décision du 14/11/2026) : toucher une quête
+terminée dans Mon ciel ouvre son bilan sur la même surface que la victoire, dans
+sa composition finale, mais en **lecture seule** et **sans aucun effet** :
+- en-tête « TON BILAN · QUÊTE N » et constellation ;
+- record officiel de la révision de grille courante, ou « Pas encore de temps
+  officiel sur cette version de la grille » ;
+- étoile et badges enregistrés à l'état « déjà obtenu » (jamais « nouveau ») ;
+- podium lu sans envoi ni animation, avec des messages neutres hors ligne ou en
+  erreur.
+
+Seuls « ↻ Rejouer » (entrée de rejeu existante, délai des badges compris) et
+« ✦ Mon ciel » (refermer) sont proposés : ni « Quête suivante » ni « Défier »,
+puisqu'un défi fige une première réussite. Rien n'est écrit (`src/ui/quest-review.js`). Les égalités et l'ordre déterministe restent calculés sur tous
 les scores côté serveur. Aucun défilement de liste ou de page.
 
 Les profils « Écho … » portent toujours une mention « Écho virtuel » pour les lecteurs d’écran. Leurs temps fixes sont
