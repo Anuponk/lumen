@@ -5,6 +5,7 @@ import vm from 'node:vm';
 const source=readFileSync(new URL('../sw.js',import.meta.url),'utf8');
 const currentCache=source.match(/const CACHE="([^"]+)"/)?.[1];
 assert(currentCache?.startsWith('lumen-assets-'));
+const readyMarker='https://lumen.test'+source.match(/const OFFLINE_READY_MARKER="([^"]+)"/)[1];
 function fixture(){
  const handlers={},stores=new Map(),calls=[],messages=[],lifecycle={skipWaiting:0};let network=()=>new Response('fresh',{headers:{'Cache-Control':'max-age=3600'}});
  const caches={keys:async()=>[...stores.keys()],delete:async key=>stores.delete(key),open:async key=>{
@@ -53,7 +54,7 @@ test('public navigation bypasses HTTP cache and activation only retires old Lume
  assert(f.stores.get(currentCache).has('https://lumen.test/'));
  for(const key of ['lumen-assets-v9',currentCache,'another-feature'])f.stores.set(key,new Map());
  f.stores.get(currentCache).set('https://lumen.test/',new Response('new'));
- f.stores.get(currentCache).set('https://lumen.test/__lumen_offline_ready_v15__',new Response(JSON.stringify(['/'])));
+ f.stores.get(currentCache).set(readyMarker,new Response(JSON.stringify(['/'])));
  let activation;f.handlers.activate({waitUntil:p=>activation=p});await activation;
  assert.deepEqual([...f.stores.keys()],[currentCache,'another-feature']);
 });
@@ -135,7 +136,7 @@ test('real published game module graph includes catalogue data before offline ac
   }
   assert(visited.size<2000,'Unexpectedly large or cyclic dependency graph');
  }
- for(const required of ['/src/campaign/catalogue.js','/content/generated/first-adventure.json','/content/generated/diverse-adventures-3-4.json','/content/catalogue/access-origins.json'])
+ for(const required of ['/src/campaign/catalogue.js','/content/generated/first-adventure.json','/content/generated/diverse-adventures-3-4.json','/content/catalogue/access-origins.json','/content/catalogue/remaining-adventures.json','/content/generated/remaining-adventures.json','/content/generated/logical-grids-v1.json'])
   assert(visited.has(required),'Offline module graph omitted required catalogue asset: '+required);
 });
 function fsForOfflineGraph(){return {existsSync:importedExistsSync};}
@@ -176,7 +177,7 @@ test('offline readiness is reported only after a complete install',async()=>{
  assert(replies[0].assets>=11);
  assert.equal(replies[0].version,currentCache);
  const cache=f.stores.get(currentCache);
- cache.delete('https://lumen.test/__lumen_offline_ready_v15__');
+ cache.delete(readyMarker);
  f.handlers.message({data:{type:'OFFLINE_CACHE_STATUS'},source:{postMessage:x=>replies.push(x)},waitUntil:p=>status=p});
  await status;
  assert.equal(replies[1].ready,false);
@@ -220,7 +221,7 @@ test('cache quota refusal cannot activate a partial worker or erase the previous
  let install;f.handlers.install({waitUntil:p=>install=p});
  await assert.rejects(install,/QuotaExceededError/);
  assert.equal(f.lifecycle.skipWaiting,0);assert.equal(f.stores.get('lumen-assets-v12'),previous);
- assert.equal(f.stores.get(currentCache).has('https://lumen.test/__lumen_offline_ready_v15__'),false);
+ assert.equal(f.stores.get(currentCache).has(readyMarker),false);
 });
 
 test('an evicted mandatory asset withdraws readiness and keeps the old shell during activation',async()=>{

@@ -1,7 +1,8 @@
 // Adapter for existing social challenge links and canonical future challenges.
 // Historic links with numeric puzzle_id ALWAYS resolve against the original
 // immutable legacy index (not the new visible quest ordinal).
-import {canonicalQuestById,canonicalQuestForLegacy,canonicalQuestByOrdinal} from "./canonical-quests.js";
+import {canonicalQuestById,canonicalQuestForLegacy,canonicalQuestByOrdinal,originalCanonicalQuestList,canonicalQuestAtGridRevision} from "./canonical-quests.js";
+const originalById=new Map(originalCanonicalQuestList().map(q=>[q.id,q]));
 
 export function resolveChallengeQuest(challenge){
  if(!challenge||typeof challenge!=="object")throw Error("Invalid challenge");
@@ -14,7 +15,11 @@ export function resolveChallengeQuest(challenge){
    const index=Number(legacy)-1;
    if(!Number.isSafeInteger(index)||quest.legacyIndex!==index)throw Error("Challenge stable ID / legacy ID mismatch");
   }
-  return quest;
+  const revision=challenge.grid_revision??challenge.gridRevision??0;
+  if(revision===(quest.gridRevision??0))return quest;
+  if(revision===0)return originalById.get(quest.id);
+  if(revision===1){const historical=canonicalQuestAtGridRevision(quest.id,revision);if(historical)return historical;}
+  throw Error('Unknown challenge grid revision');
  }
  if(legacy==null)throw Error("Challenge has no quest identity");
  const index=Number(legacy)-1;
@@ -28,7 +33,7 @@ export function challengeIdentityForQuest(stableQuestId){
  if(!quest)throw Error("Unknown quest ID "+stableQuestId);
  return quest.legacyIndex!==null?
   {puzzle_id:quest.legacyIndex+1,stable_quest_id:quest.id}:
-  {stable_quest_id:quest.id};
+  {stable_quest_id:quest.id,...(quest.gridRevision?{grid_revision:quest.gridRevision}:{})};
 }
 export function canonicalOrdinalForChallenge(challenge){
  return resolveChallengeQuest(challenge).ordinal;

@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {officialTimingSupported,refreshOfficialTimingSupport} from '../src/persistence/official-time.js';
+import {attemptTiming} from '../src/campaign/official-time.js';
 import {legacyCommandsSupported,commitLegacyVictoryCommand,loadCommittedLegacyAttempt,replayLegacyVictoryOutbox} from '../src/persistence/legacy-command.js';
 import {applyLegacyVictory,legacyVictoryRules} from '../src/campaign/legacy-victory.js';
 import {createDurableCanonicalVictoryOutbox} from '../src/persistence/durable-canonical-outbox.js';
@@ -8,15 +10,16 @@ import vm from 'node:vm';
 import {functionSource} from './source-tools.mjs';
 import {cloudSafelyCoversLocal,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles,restoreRicherCloudProfile,sameCloudProfile} from '../src/persistence/cloud-profile.js';
 import {createCloudPersistence} from '../src/persistence/cloud.js';
+import {classifyCanonicalRecoveryError} from '../src/persistence/canonical-recovery-errors.js';
 const userId='00000000-0000-0000-0000-000000000001';
 const facts={seconds:45,assistanceUsed:false,mistakeCommitted:false,qualifying:true,hintUsed:false,challengeFailed:false,qualifiedDay:'2026-10-18',qualifiedAt:'2026-10-18T10:00:00.000Z'};
 const base=()=>({solved:{},badges:{},stars:{},challenges:{},performances:{},noHint:{},xp:0,shards:3,skyHistoryVersion:4,skyScore:0});
-async function isolatedLegacyFixture(){
- const {ctx,box,state}=uiFixture();
+async function isolatedLegacyFixture(options){
+ const {ctx,box,state}=uiFixture(options);
  const original=JSON.stringify(ctx.lumenProgress),raw=new Map([['lumenProgressV1',original]]);
  Object.assign(ctx,{cloudProfileReady:false,cloudProfileDirty:true,cloudProfileBusy:false,
   cloudProfileFailure:{reason:'partial_reconciliation'},canonicalRecoveryContext:{userId,client:ctx.lumenSupabase},
-  canonicalActiveQuest:null,ATTEMPT_STATES:{RUNNING:'running',PAUSED:'paused'},
+  canonicalActiveQuest:null,pendingVictoryView:null,ATTEMPT_STATES:{RUNNING:'running',PAUSED:'paused'},
   attemptEngine:{snapshot:()=>({state:'ready'})},sessionStorage:{getItem:()=>null},
   document:{visibilityState:'visible'},navigator:{onLine:true},replayLegacyVictoryOutbox,
   localStorage:{getItem:k=>raw.get(k)??null},reloads:0,events:[],
@@ -56,6 +59,20 @@ test('UI reconnect retires a paused later historical capture through receipt rea
  assert.deepEqual(f.state.calls.map(([name])=>name),['lumen_get_legacy_command','lumen_restore_profile']);
  assert.equal(f.state.receipts.size,1);assert.equal(f.state.profile.performances[0].attempts,1);
  assert.equal(JSON.stringify(f.ctx.lumenProgress),f.original);
+ assert.ok(f.ctx.events.includes('legacy_queued_receipt_recovered'));
+});
+
+test('UI recovery archives an older slower intention when that exact operation already has a better confirmed receipt',async()=>{
+ const f=await isolatedLegacyFixture({now:()=> '2026-10-18T09:59:00Z'});
+ const entry=(await f.box.pending(userId))[0];
+ await commitLegacyVictoryCommand(f.ctx.lumenSupabase,entry.questId,{...entry.reward.facts,seconds:30},entry.operationId,{userId});
+ const serverBefore=JSON.stringify(f.state.profile),receiptsBefore=JSON.stringify([...f.state.receipts]);
+ f.state.calls.length=0;
+ await f.run();
+ assert.equal((await f.box.pending(userId)).length,0,'A confirmed better result must not leave a permanent pending victory');
+ assert.deepEqual(f.state.calls.map(([name])=>name),['lumen_get_legacy_command','lumen_restore_profile']);
+ assert.equal(JSON.stringify(f.state.profile),serverBefore);assert.equal(JSON.stringify([...f.state.receipts]),receiptsBefore);
+ assert.equal(JSON.stringify(f.ctx.lumenProgress),f.original);assert.equal(f.ctx.reloads,0);
  assert.ok(f.ctx.events.includes('legacy_queued_receipt_recovered'));
 });
 
@@ -213,19 +230,19 @@ test('legacy durable namespace cannot be replayed or acknowledged by a canonical
  assert.equal((await canonical.pending(userId)).length,0);assert.equal((await legacy.pending(userId)).length,1);
  await canonical.acknowledge(userId,'base-q001',undefined,'run-reset-0');assert.equal(records.size,1);
 });
-function uiFixture(){
+function uiFixture({now}={}){
  const {state,client}=fixture(),data=new Map(),store={get length(){return data.size},key:i=>[...data.keys()][i],getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};
  const fallback={entries:async()=>[],put:async()=>{throw Error('denied')},get:async()=>null,remove:async()=>{}};
- const box=createDurableCanonicalVictoryOutbox(store,{fallback,namespace:'Legacy'});
+ const box=createDurableCanonicalVictoryOutbox(store,{fallback,namespace:'Legacy',...(now?{now}:{})});
  const attempt={attemptId:'ui-attempt',resetCount:0,startedAt:Date.parse(facts.qualifiedAt),qualifying:true};
- const ctx={cloudHydrationGeneration:0,lumenUser:{id:userId},lumenSupabase:client,levelIndex:0,attemptEngine:{snapshot:()=>attempt},canonicalQuestForLegacy:()=>({id:legacyVictoryRules()[0].questId}),
+ const ctx={officialTimingSupported,attemptTiming,classifyCanonicalRecoveryError,cloudHydrationGeneration:0,lumenUser:{id:userId},lumenSupabase:client,levelIndex:0,attemptEngine:{snapshot:()=>attempt},canonicalQuestForLegacy:()=>({id:legacyVictoryRules()[0].questId}),
   authSessionPending:false,qaActive:false,legacyVictoryBusy:false,legacyCommandInFlight:false,legacyVictoryRetry:null,legacyVictoryOutbox:box,
   activeGameSeconds:()=>45,localCalendarDay:()=>facts.qualifiedDay,hintUsedInAttempt:()=>false,usedHintThisGame:false,questFailed:false,cloudProfileReady:true,cloudProfileDirty:false,cloudProfileTimer:null,
   canonicalOutboxRetryInFlight:false,lumenProgress:base(),legacyCommandsSupported,commitLegacyVictoryCommand,loadCommittedLegacyAttempt,structuredClone,
   flushCloudProfile:async()=>true,sameCloudProfile:(a,b)=>JSON.stringify(a)===JSON.stringify(b),saveLumenProgress:()=>{},recordCloudDiagnostic:()=>{},
   refreshCanonicalOutboxNotice:async()=>{},canonicalRecovery:{schedule:()=>{}},scheduleCloudProfile:()=>{},msg:{textContent:'',append:()=>{}},document:{createElement:()=>({})},
   pendingVictoryView:null,presented:[],presentPendingVictory:(...args)=>ctx.presented.push(args),syncPresentation:{failed(){},acknowledged(){},celebration(){}}};
- const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');vm.createContext(ctx);vm.runInContext(functionSource(source,'captureLegacyCommandVictory'),ctx);
+ const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');vm.createContext(ctx);vm.runInContext(functionSource(source,'capturedTiming'),ctx);vm.runInContext(functionSource(source,'captureLegacyCommandVictory'),ctx);
  return {ctx,box,state,run:()=>vm.runInContext('captureLegacyCommandVictory()',ctx)};
 }
 test('real UI coordinator persists pending victory before readiness without optimistic rewards',async()=>{
@@ -256,6 +273,18 @@ test('a held victory retries the original attempt/reset facts exactly once after
  assert.equal(result.saved,true);assert.equal(result.facts.seconds,45);assert.equal(state.receipts.size,1);
  assert.equal([...state.receipts.keys()][0],captured.operationId);assert.equal(state.profile.performances[0].attempts,1);
  assert.equal((await box.pending(userId)).length,0);
+});
+
+test('new server freezes assistance evidence in the durable legacy intention across offline retry',async()=>{
+ const f=uiFixture(),rpc=f.ctx.lumenSupabase.rpc;
+ f.ctx.lumenSupabase.rpc=async(name,args)=>name==='lumen_official_time_version'?{data:1}:rpc(name,args);
+ await refreshOfficialTimingSupport(f.ctx.lumenSupabase);
+ const attempt={attemptId:'timed-attempt',resetCount:0,startedAt:Date.parse(facts.qualifiedAt),qualifying:true,assistanceUsed:true,gridRevision:0,helpUses:{hint:5}};
+ f.ctx.attemptEngine.snapshot=()=>attempt;f.ctx.activeGameSeconds=()=>60;f.ctx.hintUsedInAttempt=()=>true;f.ctx.cloudProfileReady=false;
+ await f.run();const entry=(await f.box.pending(userId))[0];assert.equal(entry.reward.facts.timing.helpUses.hint,5);
+ attempt.helpUses.hint=8;f.ctx.activeGameSeconds=()=>99;f.ctx.cloudProfileReady=true;
+ const saved=await f.run();assert.equal(saved.facts.seconds,60);assert.equal(saved.facts.timing.helpUses.hint,5);
+ assert.equal(f.ctx.lumenProgress.performances[0].officialTimes[0],135);assert.equal(f.state.receipts.size,1);
 });
 test('a generation change after server commit retains the intent and prevents installation of the old result',async()=>{
  const {ctx,box,state,run}=uiFixture(),original=ctx.commitLegacyVictoryCommand,before=JSON.stringify(ctx.lumenProgress);

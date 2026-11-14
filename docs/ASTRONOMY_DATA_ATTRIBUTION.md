@@ -167,3 +167,18 @@ nouveau point HIP, segment ou dessin Stellarium n’est ajouté. La reconstructi
 complète reste identique aux sources figées ; la couverture du catalogue Lumen
 passe à 50 figures. L’attribution et les notices Western CC BY-SA/Hipparcos
 ci-dessus restent requises pour cette redistribution du catalogue dérivé.
+
+## Catalogue complet — 6 novembre 2026
+
+Les 38 nouvelles identités réutilisent les mêmes 88 figures versionnées et leurs
+691 étoiles HIP, sans modifier un point ni un segment. L’alias source `Tra`
+est exposé sous le code officiel `TrA`. L’audit source-vers-runtime reste distinct
+de la récupération fraîche des données astronomiques.
+
+Après deux expirations de connexion du serveur CDS en CI, le téléchargeur peut
+joindre le [miroir officiel VizieR du CfA Harvard](https://vizier.cfa.harvard.edu/vizier/mirrors.gml).
+Il demande le même catalogue `I/311/hip2`, toutes les lignes et les mêmes colonnes,
+avec deux essais bornés à 30 secondes chacun. Le serveur effectivement utilisé
+apparaît dans le journal. Une réponse vide, un schéma incorrect, une coordonnée
+invalide ou une étoile manquante font toujours échouer le contrôle. Aucune fixture
+ne remplace un téléchargement manqué et aucune géométrie publiée n’est réécrite.

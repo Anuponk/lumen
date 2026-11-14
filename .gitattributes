@@ -1,2 +1,13 @@
 # Preserve the reviewed upstream browser bundles byte-for-byte on every OS.
 src/vendor/*.js -text whitespace=-blank-at-eol,-blank-at-eof
+
+# Formatting rollout: retain LF in migrated files on Windows and Linux alike.
+src/ui/app-updates.js text eol=lf
+src/ui/format.js text eol=lf
+src/ui/drag-grid-path.js text eol=lf
+src/ui/gesture-click-suppression.js text eol=lf
+src/ui/long-press-guardian.js text eol=lf
+src/ui/personal-records.js text eol=lf
+src/ui/celestial-progress.js text eol=lf
+scripts/format.mjs text eol=lf
+scripts/app-updates-tests.mjs text eol=lf

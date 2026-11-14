@@ -1,5 +1,52 @@
 # Verified historical causes
 
+Sky return after a canonical board, reproduced at `4657ab7`: the default map
+opener used a dormant legacy index; even explicit constellation destinations
+could lose to an earlier pack's numeric match because the renderer mixed the
+two searches pack by pack. Node and real-browser regressions fail before the
+correction. The active stable constellation now supplies default returns, and
+explicit constellation resolution wins globally before legacy fallback.
+All nine Adventures, replay/victory, previous browsing and last-page selection
+are covered without progression/reward/attempt identity changes.
+
+Explicit quest reset backup quota, reproduced at production baseline
+`53b482a` (#640 follow-up): the synchronous reset installer writes its only
+original copy into Web Storage. A native quota refusal keeps every grid behind
+the hydration hold even with working IndexedDB. `cloud-reset-browser-tests.mjs`
+is RED on that baseline and GREEN with the durable recovery installer, exact
+original read-back, reload and real grid opening. Unit regressions also retain
+session/owner/newer-cache guards and both-stores-unavailable refusal. This
+incident journal confirms `QuotaExceededError` at `canonical_start_recovery`
+while IndexedDB is available, matching this reproduced failure path.
+
+Historical pending receipt chronology (reproduced on e5393fe, 6 November 2026):
+an older slower captured intention was covered by a better exact server receipt,
+with identical non-time facts and covered badges/attempts. The Legacy predicate
+rejected it solely by capture date. Two business regressions fail before the
+correction; receipt dominance now permits verified archival independent of date
+ordering. Earlier better claims and changed flags still fail closed. Original
+bytes/receipt are archived before retirement; no command, reward or profile write.
+See canonical-durable-outbox-tests and the real UI historical recovery test.
+
+Support capture preparation on advanced accounts (6 November 2026): a complete
+current catalogue plus two checkpoints reproduces SUPPORT_SIZE before transport.
+The initial validator also accepts compact JSON that the existing SQL jsonb text
+limit refuses. Two business regressions fail on 8e84d57 before correction.
+Capture now preserves the complete current projection and fits only optional
+checkpoints within a matching server-representation budget and metadata reserve.
+Original saves and all pending intentions stay unchanged. See support-tests and
+disposable fixtures/support.sql; this is not proof of a real phone upload.
+
+Pending result retry stalls (reproduced on 725e1c3, 6 November 2026): canonical
+background readiness rejects the still-open canonical quest; historical retry
+calls the coordinator while its pending-result guard returns immediately. Three
+business regressions fail before the correction. The scheduler now retries the
+displayed durable operation through a clean-session foreground route, keeping
+outbox holds and immutable evidence. A fourth failing regression demonstrates
+that victory failures were absent from shared incident mapping; existing fixed
+codes now cover them. See `cloud-pending-victory-tests.mjs`; no live player
+recovery is inferred from these simulations.
+
 Historical pending copy after an acknowledged run: a synthetic regression on
 `3496069` fails with a `22023`-paused later capture even though its original
 receipt and current profile are available. Canonical outboxes already had an
@@ -206,3 +253,8 @@ for #470 on 22 October 2026. That is user-reported physical validation; the
 phone's version was not supplied. Automated access/resume fixtures remain
 separate evidence. No player save, entitlement, migration or storage purge is
 part of this follow-up.
+
+
+### #629 / #632 / #627 — fix/offline-hints-drag-adventure-mastery
+
+Les événements espacés ne marquaient que les extrémités (RED gestionnaire réel) ; interpolation des segments, mêmes cellules DOM. Le rôle exact du scintillement sur le téléphone signalé reste à confirmer. Le repli d’aide dépendait uniquement du drapeau hors ligne : une panne transport avec `onLine=true` refusait une réservation vérifiée (RED UI). Une restauration interrompue pouvait omettre les réservations du compteur. Le dernier badge d’aventure ne déclenchait aucune scène (RED transition) ; il a désormais sa priorité sans écrire de progression.

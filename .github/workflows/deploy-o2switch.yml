@@ -1,7 +1,7 @@
 name: Deploy Lumen to o2switch
 on:
   workflow_run:
-    workflows: ['Lumen quality gate']
+    workflows: ['Cloud reconciliation matrix']
     branches: [main]
     types: [completed]
   workflow_dispatch:
@@ -33,7 +33,7 @@ jobs:
         with:
           ref: ${{ env.DEPLOY_SHA }}
           persist-credentials: false
-      - name: Wait for every release gate on the exact commit
+      - name: Verify merged PR quality and exact-commit release gates
         shell: bash
         run: |
           set -euo pipefail

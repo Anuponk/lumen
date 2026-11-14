@@ -8,9 +8,11 @@ export function preserveAttemptSnapshot(storage,storageKey,{now=Date.now}={}){
  if(storage.getItem(key)!==raw)throw Error('Attempt backup verification failed');
  return key;
 }
-export function canonicalAttemptToResume(attempt,quests,{ownerId,accountId,qa=false,social=false}={}){
+export function canonicalAttemptToResume(attempt,quests,{ownerId,accountId,qa=false,social=false,progress}={}){
  if(!ownerId||(accountId&&ownerId!==accountId)||qa||social||!attempt?.attemptId||!['campaign','replay'].includes(attempt.mode)||!['READY','RUNNING','PAUSED'].includes(attempt.state))return null;
  const quest=quests.find(q=>q.id===attempt.questId&&q.legacyIndex===null);
+ if(quest&&(attempt.gridRevision??0)!==(quest.gridRevision??0))return null;
+ if(quest&&progress&&(attempt.questResetRevision??0)!==(progress.canonicalQuestState?.[quest.id]?.resetRevision??0))return null;
  if(!quest||!Array.isArray(attempt.board)||attempt.board.length!==quest.reg.length||!attempt.board.every(row=>Array.isArray(row)&&row.length===quest.reg.length&&row.every(cell=>[0,1,2].includes(cell))))return null;
  return quest;
 }

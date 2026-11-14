@@ -6,7 +6,8 @@ import sys
 import urllib.request
 
 REPOSITORY = "Anuponk/lumen"
-REQUIRED = {"quality.yml", "cloud-reconciliation-matrix.yml", "canonical-ledger.yml"}
+REQUIRED = {"cloud-reconciliation-matrix.yml", "canonical-ledger.yml"}
+PR_REQUIRED = {"quality.yml", "cloud-reconciliation-matrix.yml", "canonical-ledger.yml", "cloud-persistence-contract.yml", "docs-consistency.yml"}
 
 
 def check_runs(runs, sha):
@@ -30,6 +31,46 @@ def check_runs(runs, sha):
     return 0, "All release gates passed for " + sha
 
 
+def validated_merged_pr(sha, fetch):
+    """Only reuse PR checks for a squash merge directly onto its reviewed base."""
+    commit = fetch(f"/repos/{REPOSITORY}/commits/{sha}")
+    parents = commit.get("parents", [])
+    if len(parents) != 1:
+        return 1, "Expected a squash commit with exactly one parent"
+    candidates = fetch(f"/repos/{REPOSITORY}/commits/{sha}/pulls")
+    for pr in candidates:
+        if not pr.get("merged_at") or pr.get("base", {}).get("ref") != "main":
+            continue
+        if pr.get("merge_commit_sha") != sha:
+            continue
+        head = pr["head"].get("sha")
+        if not head or pr["head"].get("repo", {}).get("full_name") != REPOSITORY:
+            continue
+        runs = fetch(f"/repos/{REPOSITORY}/actions/runs?head_sha={head}&per_page=100").get("workflow_runs", [])
+        latest = {}
+        for run in runs:
+            if run.get("head_sha") != head or run.get("event") != "pull_request":
+                continue
+            if run.get("head_repository", {}).get("full_name") != REPOSITORY:
+                continue
+            name = run.get("path", "").split("@")[0].rsplit("/", 1)[-1]
+            if name not in PR_REQUIRED:
+                continue
+            prior = latest.get(name)
+            if prior is None or (run.get("id", 0), run.get("run_attempt", 1)) > (prior.get("id", 0), prior.get("run_attempt", 1)):
+                latest[name] = run
+        missing = PR_REQUIRED - latest.keys()
+        if missing:
+            return 75, "Waiting for PR release gates: " + ", ".join(sorted(missing))
+        for name, run in latest.items():
+            if run.get("status") != "completed":
+                return 75, "Waiting for PR release gate: " + name
+            if run.get("conclusion") != "success":
+                return 1, "PR release gate failed: " + name
+        return 0, "Merged PR quality verified: #" + str(pr["number"])
+    return 1, "No verified squash-merged PR matching the exact main commit and parent"
+
+
 def main():
     if len(sys.argv) != 2 or not re.fullmatch(r"[0-9a-f]{40}", sys.argv[1]):
         return 2
@@ -37,11 +78,17 @@ def main():
     headers = {"Accept": "application/vnd.github+json", "User-Agent": "lumen-deployment"}
     if os.environ.get("GH_TOKEN"):
         headers["Authorization"] = "Bearer " + os.environ["GH_TOKEN"]
+    def fetch(path):
+        url = "https://api.github.com" + path
+        with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=20) as response:
+            return json.load(response)
+    pr_code, pr_message = validated_merged_pr(sha, fetch)
+    print(pr_message)
+    if pr_code != 0:
+        return pr_code
     runs = []
     for page in range(1, 11):
-        url = f"https://api.github.com/repos/{REPOSITORY}/actions/runs?head_sha={sha}&per_page=100&page={page}"
-        with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=20) as response:
-            batch = json.load(response)["workflow_runs"]
+        batch = fetch(f"/repos/{REPOSITORY}/actions/runs?head_sha={sha}&per_page=100&page={page}")["workflow_runs"]
         runs.extend(batch)
         if len(batch) < 100:
             break

@@ -261,7 +261,7 @@ Every constellation, including canonical-only entries such as Dauphin, uses the 
 
 Selecting an unlocked constellation opens its detail in the same sheet: quests, performance badges and stars, with a **Toutes les constellations** back button. Completed quests keep their replay behavior. Mes défis stays reachable from the main sheet. Keyboard navigation is contained in the modal, Escape closes the appropriate notice/sheet, and notices restore focus. Long current-quest labels truncate on mobile so Mon ciel remains reachable.
 
-Browsing and progression are separate: opening Mon ciel defaults to the Adventure of the player's real accessible progress; consulting a previous Adventure does not change the board, current attempt, unlocked quest or rewards. A refreshed access model must invalidate an inaccessible viewed Adventure and return to an accessible view. Browsing preference is intentionally not persisted across reloads.
+Browsing and progression are separate: opening Mon ciel from a board or its victory returns to that played quest's Adventure, constellation and page. Its stable constellation identity takes priority over a dormant legacy index or an earlier browsing choice. Explicit teaching destinations remain supported. Consulting a previous Adventure does not change the board, current attempt, unlocked quest or rewards. A refreshed access model must invalidate an inaccessible viewed Adventure and return to an accessible view. Browsing preference is intentionally not persisted across reloads.
 
 The first guided visit after quest 2 now teaches five real zones in order: Ciels/Aventures, constellations, quests, performances, constellation drawing. Each step reveals the corresponding overview/detail pane. The first tour cannot be skipped by closing the sheet or touching the backdrop; only its final step offers **Jouer la quête 3**.
 
@@ -320,7 +320,7 @@ destination based on the active quest.
 
 ### Fluid onboarding (#569 / #576, product decision 25 October 2026)
 Quest 1 retains SEE → UNDERSTAND → ACT and real manual exclusions. Its result
-introduces automatic marking for subsequent quests. Quests 2–5 are free play:
+recalls manual marking. Quests 2–5 are free play:
 dismissible contextual advice explains drag (2), badges (3), then long press (4).
 No automatic generic tutorial or mandatory sky tour interrupts this chain.
 Help and Mon ciel remain available voluntarily. Ordinary victories retain one
@@ -329,13 +329,8 @@ shared result with earned stars/badges, primary **Quête suivante**, secondary
 Constellation/adventure/finale handling is preserved; #575 remains separate.
 
 ### Progressive assistance choices
-After manual learning, Marquage auto defaults on and remembers the voluntary
-choice locally per guest/account. A temporary lesson or challenge override never
-overwrites this preference. At visible quest 6, spotlight the real checkbox and
-require the player to uncheck it before interacting with the board; an already
-unchecked box satisfies the lesson without a synthetic gesture. Immediately allow
-re-enabling it. Record completion with the existing autoCrossUnlockSeen marker;
-replays do not impose teaching. No second assistance modal is presented.
+Marquage auto is retired (#647); all marks remain manual. Historical preferences
+are preserved but ignored. No quest-six checkbox lesson or blocking unlock remains.
 Assistance prevents Autonomie, Sans erreur and Maîtrise; Rapidité remains possible.
 This is independent of the unchanged guest boundary: six visible quests may be
 completed before registration is required to continue. No lock is bypassed.
@@ -504,9 +499,76 @@ milestones and assistance effects on badges are unchanged; no extra blocking
 tutorial is introduced.
 ## Records personnels (#600)
 
-Afficher le record absolu et, s’il existe, le record « Sans aide » dans le masque
-de départ d’une quête déjà réussie. À la victoire confirmée, le récapitulatif
-existant montre la comparaison et une courte lueur pour un nouveau record ;
+### Classement (#638)
+
+La célébration dure au moins deux secondes et attend la fin des animations
+finies de constellation et de badges. Elle reste ensuite affichée sans limite,
+même sans nouveau badge. Aucun tap sur la surface ni délai ne change d’écran.
+Le bouton « Voir le classement » apparaît alors ; lui seul ouvre le
+podium des trois meilleurs temps officiels,
+premier au centre. La carte personnelle indique rang, temps, nombre de joueurs
+réels et écart au podium si pertinent. Un joueur du Top 3 est marqué « Toi »,
+sans répétition de son temps. « Nouveau record ! » suit une amélioration confirmée.
+Les trois places puis la carte apparaissent en environ 2,3 secondes, sans déplacer
+les commandes. Les égalités et l'ordre déterministe restent calculés sur tous
+les scores côté serveur. Aucun défilement de liste ou de page.
+
+Les profils « Écho … » portent toujours « Virtuel ». Leurs temps fixes sont
+des objectifs conçus à partir de la difficulté, pas des performances humaines.
+Un joueur réel remplace un Écho jusqu'à leur disparition à dix participants.
+Aucun faux effectif humain ou percentile. Participation automatique sous pseudo
+unique après activation juridique et information ; opposition persistante et
+réinscription explicite depuis Compte. Réseau/API indisponible : classement
+en attente, jamais de blocage de Quête suivante/Mon ciel. Réduction des mouvements :
+position finale immédiate. Les contrôles annoncent Vérifier +5 s, Indice +15 s
+et Contrôle guidé +5 s par intervention. Le chrono augmente aussitôt, avec un
+bref +5 s / +15 s sans déplacement de grille ; il continue à compter normalement.
+La durée réelle reste une donnée technique ; les anciennes préférences de
+marquage automatique restent inertes.
+Sur mobile, le retour du Contrôle guidé participe à la mise en page, comme
+l'indice : il ne doit recouvrir ni Annuler ni le Gardien à corriger.
+
+Afficher un seul meilleur record officiel comparable à la révision de grille
+dans le masque de départ d’une quête déjà réussie. À la victoire confirmée,
+le récapitulatif montre la tentative officielle et le meilleur record officiel.
+Une amélioration strictement inférieure annonce une seule fois « Nouveau record ! »
+après preuve serveur ; égalité et amélioration du seul temps réel ne suffisent pas.
+La carte du classement ne répète pas cette annonce. Une courte lueur accompagne
+le nouveau record ;
 aucune fenêtre supplémentaire. La lueur respecte reduced-motion. Les victoires
 en attente ne revendiquent pas de record confirmé. Les essais non qualifiants
 restent utiles pour améliorer le temps, sans changer les badges.
+
+## Catalogue complet et final du ciel
+
+Les neuf aventures utilisent les mêmes cartes et la même pagination ; la dernière
+affiche huit constellations, sans cases manquantes. Les intitulés et récits des
+aventures 6–9 viennent du catalogue. La dernière s’intitule « Le ciel réuni ».
+La célébration existante annonce séparément toutes les quêtes terminées et tous
+les badges éligibles acquis (« Le ciel pleinement maîtrisé »). Une seule priorité
+visuelle s’affiche si les deux seuils coïncident. Une restauration, un réessai de
+reçu ou une ouverture de carte ne rejoue pas ces événements. Le panorama reste
+borné aux constellations de l’aventure jouée ; le bilan global et Mon ciel donnent
+accès au catalogue complet. Le composant conserve clavier, animation réduite,
+tap de la surface pour accélérer et retour à Mon ciel. Aucun tutoriel ni règle d’aide ne change.
+
+
+## Reconnaissance de la maîtrise d’aventure (#627)
+
+Le panorama existant annonce « Une aventure pleinement maîtrisée » avec une lumière dorée discrète ; Mon ciel conserve un fond doré rempli, ✦ et le libellé visible et accessible « Maîtrisée » sur l’aventure. Le fond reste doré quand une autre aventure est sélectionnée ; un bord cyan indique la sélection, indépendamment de la maîtrise. Les aventures simplement terminées conservent leur aspect habituel. Le marqueur reste statique après rechargement. Une seule scène apparaît lorsque les seuils coïncident. Clavier, tap de la surface, mouvement réduit et retour à Mon ciel restent disponibles.
+
+Impact onboarding #627/#629/#632 : les règles, tarifs et seuils pédagogiques restent inchangés. Le glissement devient continu ; les aides hors ligne respectent les preuves et réservations existantes. Aucun nouvel enseignement nécessaire.
+
+## Victoire et podium compact
+
+Une seule surface attend la fin effective des animations finies, sans attendre les
+effets ambiants infinis. Un tap/clic sur toute sa surface ou Entrée/Espace/Échap
+consomme la première activation et révèle le résultat sans action derrière. Aucun
+bouton Passer n'est ajouté. Reduced-motion présente le résultat immédiatement.
+Le podium montre trois temps (premier au centre), puis la position personnelle
+et le nombre réel de participants, sans répéter la ligne du joueur du podium.
+Les récompenses restent accessibles. Les apparitions durent environ 2,3 secondes
+sans déplacer les commandes. Les petites hauteurs réorganisent la scène en
+colonnes ; podium, résultat et page ne défilent pas. Le choix de participation et
+le pseudo unique se gèrent depuis Compte. L'étape Découvrir Mon ciel en quête 2
+et les enseignements des badges gardent leurs destinations et conditions.

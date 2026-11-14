@@ -49,6 +49,32 @@ test('pure projections cannot modify a save, reward, wallet or catalogue',()=>{
  assert.equal(JSON.stringify(p),bytes);assert.equal(JSON.stringify(quests),catalogue);
  for(const q of canonicalQuestList())assert.equal(celestialScope({},[q]).possible,4,'current eligibility is shared with gameplay');
 });
+test('adventure mastery crosses on the final badge, independently of global completion',()=>{
+ const badges={autonomy:true,speed:true,noError:true,mastery:true},q=quests[1];
+ const p=won(['a','b','c']);p.performances[0]={version:3,badges:{...badges}};
+ p.canonicalQuestState.b.badges={...badges};p.canonicalQuestState.c.badges={...badges};delete p.canonicalQuestState.b.badges.mastery;
+ const before=captureCelestialProgress(p,q,quests);p.canonicalQuestState.b.badges.mastery=true;
+ assert.equal(celestialTransition(before,p,q,quests).kind,'adventure-mastery');
+ assert.equal(celestialTransition(before,p,q,quests,{recovered:true}).kind,null);
+ assert.equal(celestialTransition(captureCelestialProgress(p,q,quests),p,q,quests).kind,null);
+});
+test('full catalogue mastery is distinct, replayable only at the earned crossing, and takes one priority',()=>{
+ const badges={autonomy:true,speed:true,noError:true,mastery:true},ids=quests.map(q=>q.id),q=quests.at(-1);
+ const full=members=>{const p=won(members,badges);p.performances[0].badges={...badges};for(const r of Object.values(p.canonicalQuestState))r.badges={...badges};return p};
+ const p=full(ids);delete p.canonicalQuestState[q.id].badges.mastery;
+ const before=captureCelestialProgress(p,q,quests);p.canonicalQuestState[q.id].badges.mastery=true;
+ assert.equal(celestialTransition(before,p,q,quests).kind,'campaign-mastery','The final badge can be earned on replay');
+ assert.equal(celestialTransition(before,p,q,quests,{recovered:true}).kind,null);
+ assert.equal(celestialTransition(captureCelestialProgress(p,q,quests),p,q,quests).kind,null,'No duplicate on reopen');
+ const unfinished=full(ids.slice(0,-1)),start=captureCelestialProgress(unfinished,q,quests);
+ unfinished.canonicalQuestState[q.id]={solved:true,badges:{...badges}};
+ assert.equal(celestialTransition(start,unfinished,q,quests,{firstCompletion:true}).kind,'campaign-mastery','One higher-priority final, even if the last quest earns every badge');
+ const batch=full(ids);delete batch.canonicalQuestState.b.badges.mastery;delete batch.canonicalQuestState.d.badges.mastery;
+ const remote=captureCelestialProgress(batch,q,quests);batch.canonicalQuestState.b.badges.mastery=true;batch.canonicalQuestState.d.badges.mastery=true;
+ assert.equal(celestialTransition(remote,batch,q,quests).kind,null,'A remote batch cannot manufacture the final local badge');
+ const expanded=[...quests,{...q,id:'future-last',ordinal:5}];
+ assert.equal(celestialTransition(before,p,q,expanded).kind,null,'Catalogue changes cannot manufacture mastery');
+});
 test('dust is deterministic, continuous, bounded, behind the original cyan drawing',()=>{
  assert.equal(milkyWaySvg('x',0),'');
  for(const ratio of [.25,.5,.75,1]){const a=milkyWaySvg('x',ratio);assert.equal(a,milkyWaySvg('x',ratio));assert.equal((a.match(/<circle /g)||[]).length,48);assert(!/NaN|Infinity|crown|Math.random/.test(a))}

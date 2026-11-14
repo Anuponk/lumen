@@ -1,7 +1,16 @@
 // Single deterministic difficulty contract for all canonical quests.
 // Derived from puzzle proof complexity, never from a mutable player rating.
-export const DIFFICULTY_LABELS=Object.freeze(["Facile","Intermédiaire","Difficile","Expert"]);
+import {logicalDifficultyTier} from './logical-difficulty-bands.js';
+export const DIFFICULTY_LABELS=Object.freeze(["Facile","Intermédiaire","Difficile","Avancé","Expert","Maître"]);
 export function qualifyDifficulty(quest){
+ if(quest?.logical?.version==='lumen-logic-v1'&&quest.logical.solved){
+  const score=quest.logical.score;
+  const tier=logicalDifficultyTier(score);
+  if(quest.logicalTier!==undefined&&quest.logicalTier!==tier)throw Error('Logical tier does not match measured score');
+  const label=['Intermédiaire','Avancé','Expert','Maître'][tier];
+  if(!label)throw Error('Missing audited logical tier');
+  return Object.freeze({label,score,version:'lumen-logic-v1',calibrated:false});
+ }
  const size=Number(quest?.size??quest?.reg?.length);
  const proof=Number(quest?.audit?.proofSteps);
  const rules=quest?.audit?.rules||{};

@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {rankedTime,rankingWindow,rankRows} from '../src/campaign/ranking.js';
+assert.deepEqual(rankedTime(120,{verify:2,hint:1}),{seconds:120,penalty:25,score:145});
+assert.throws(()=>rankedTime(-1));assert.throws(()=>rankedTime(1,{hint:0.5}));
+const rows=rankRows(Array.from({length:38},(_,i)=>({key:'p'+String(i).padStart(2,'0'),score:i+10})));
+assert.deepEqual(rankingWindow(rows,'p06').map(r=>r.place),[1,2,3,4,5,6,7,8,9,10]);
+assert.deepEqual(rankingWindow(rows,'p20').map(r=>r.place),[1,16,17,18,19,20,21,22,23,24,25]);
+assert.deepEqual(rankingWindow(rows,'p37').map(r=>r.place),[1,29,30,31,32,33,34,35,36,37,38]);
+assert.equal(rankingWindow(rows.slice(0,4),'p02').length,4);
+assert.deepEqual(rankRows([{key:'b',score:12},{key:'a',score:12},{key:'c',score:14}]).map(r=>r.place),[1,1,3]);
+console.log('Ranking: penalties, ties, top 10, centered and boundary windows pass');

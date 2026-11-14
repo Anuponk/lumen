@@ -1,5 +1,104 @@
 # Data and architecture
 
+## Current architecture
+
+Lumen is a static PWA using native ES modules, with no application build step.
+`index.html` owns markup; `src/main.js` starts `ui/game-screen.js`. The controller
+composes one live board, attempt and progression model; injected getters observe
+current state rather than copied snapshots. Browser dependencies are pinned
+under `src/vendor/`. Development-only npm tools never enter the browser graph.
+
+| Responsibility | Current owner / first route |
+|---|---|
+| Rules, proofs, active attempt | `src/game/engine.js`, `attempt-engine.js` |
+| Catalogue, stable quest identity, access and rewards | `src/campaign/`; [feature map](architecture/feature-map.md) |
+| Local staging, ownership, receipts and cloud restoration | `src/persistence/`; [blocking contract](#cloud-persistence-contract) |
+| Board, sky, onboarding and result composition | `src/ui/game-screen.js` and injected UI modules |
+| Worker updates and public asset-cache refresh | `src/ui/app-updates.js`; no access to player storage |
+| Offline public shell and asset graph | `sw.js`; [release verification](RELEASE.md) |
+| Telemetry and test entry points | `src/analytics/`, `src/testing/` |
+
+Use the [feature map](architecture/feature-map.md) to locate a symptom, relevant
+[dependency rows](architecture/dependency-map.md) to follow its producer/consumer,
+then the [test map](architecture/test-map.md). Current executable validation is
+documented in [TESTING](TESTING.md#current-validation-entry-points). Counts come
+from current suite reports, not old snapshots. Fixtures/CI do not establish live
+Auth, email delivery or physical-device acceptance.
+
+Stages #21–#26 and #38 results below are historical October 2026 records. Their
+counts and then-unchanged behavior apply to those snapshots; current owning
+contracts/modules take precedence. Prepared migrations and activation are separate facts.
+
+## Mixed grid revision 2
+
+The source-owned revision-2 manifest changes 200 boards in Adventures 5–9 and
+preserves 280 targeted boards plus all Adventures 1–4. `quest_rules.grid_revision`
+is private reference metadata, independent of reward JSON and player reset epochs.
+The prepared migration seeds only the previous revision-1 registry; it neither
+activates revision 2 nor changes any player's snapshot. `mixed-grid-revision-fixtures`
+generates the explicit reviewed activation input from both immutable manifests.
+Activate reference metadata only with the matching client available.
+
+Revision-2 attempts carry `gv2.` in the existing operation identity, after an
+optional `qr<reset epoch>.` prefix. The server validates the active version under
+the snapshot lock before looking up a receipt. It stores `gridRevision` in new
+records, refuses old badge-only writers and skips old acquisition recovery for
+changed boards. Unchanged revision-0/1 commands retain their existing protocol.
+Snapshot guards require the matching private authority and current grid marker.
+
+The private three-argument `reset_replaced_quests` overload accepts only a scope
+whose active reference version matches the requested epoch. It archives both the
+current entry and prior reset histories, preserves spendable balances/receipts
+and acquired access, and skips a repeated epoch instead of erasing new replays.
+Only changed boards belong in a reset scope. `quest-reset-scope --revision 2`
+derives it from hashes; `--revision 1` remains available for historical audit.
+Grid and player epochs are both checked when archiving obsolete local intents,
+including an older client that understands reset epochs but still plays a v1 board.
+All original local bytes remain archived before replacement or retirement.
+An unacknowledged historical intention outside an explicitly reset account remains
+pending byte-for-byte. Its review hold blocks that board version, allowing a new
+version's independent win to recover. Same-board, Auth, Legacy and Wallet holds
+retain their existing ordering; a grid label can never split monetary commands.
+
+Historical social links resolve their exact revision-0/1 geometry; current
+creation requires the active registry version. Stored-link start/finish checks
+remain tied to that link's revision, not the latest campaign board. Personal
+campaign resets never reset a social attempt. Account export/erasure includes
+all reset histories through the existing user-owned authority inventory.
+
+## Explicit player quest reset
+
+An operator may revoke progression on explicitly selected replacement grids.
+`quest_run_authority.reset_info` privately archives each original entry and owns
+the reset epoch, timestamp and cleared projection. No public reset RPC exists.
+`reset_replaced_quests` locks the player snapshot, validates the supplied stable
+IDs, preserves started Adventure access and advances the command cursor. It is
+idempotent: running the same reset again cannot erase later replays. Purchases,
+balances, cumulative XP, daily history and economic reward receipts remain intact.
+
+Only a verified server profile may supersede a lower local quest reset epoch.
+Hydration archives the exact local profile, retires obsolete same-owner canonical
+intents into verified local/IndexedDB archives, then reloads. The reset cache
+installer uses the existing durable recovery snapshot fallback when Web Storage
+cannot fit its original copy. It awaits archival and rechecks account, session
+and exact current bytes before installation. If the larger updated cache also
+hits quota, one bounded archival of eligible older backups may free space;
+failed/unverified archives never authorize replacement. Archive, quota or
+session failures hold recovery. Active attempts also carry the epoch and archive
+obsolete boards before replacement. New operation IDs start with `qr<epoch>.`;
+the server rejects earlier identities and facts predating the reset, including
+old receipt retries and the badge-only API. Full-profile writers cannot change
+the protected projection; positive-acquisition recovery skips reset quests.
+
+The schema migration changes no player data. Generate the explicit reset scope
+with `node scripts/quest-reset-scope.mjs`, review it against the replacement
+manifest, and invoke the private operator function only for separately authorized
+accounts after the compatible client is available. Account IDs and original
+player data must never enter public source, issues, PRs or validation logs.
+Rollback must retain the epoch/guards; reinstalling an old save would undo the
+requested reset. Existing privacy export/erasure includes this already inventoried
+user-owned authority table and its private originals.
+
 ## Prepared technical retention (#316)
 
 `20261022192259_lumen_technical_retention.sql` adds operator-only bounded
@@ -261,6 +360,125 @@ known field names (otherwise `unknown_field`), without profile contents.
 `guest-account.js` distinguishes an unowned guest from a signed-out account cache. Before first authenticated I/O, preserve and read back the exact guest snapshot under `lumenGuestBeforeAccount_<accountId>` (additional versions retain subsequent offline play). Initialize a missing cloud profile from the whole validated guest snapshot, including net currency, earned badges and compatibility access; use a fresh seed only for another account’s cache. Existing cloud achievements must cover the guest, or the existing conservative reconciler must succeed before installation. Recheck the latest local bytes immediately before installation: achievements earned during initialization/daily I/O must also be covered, or remain pending with the live attempt preserved. Conflicting receipts/balances stay pending with both originals preserved; never infer money, copy another account, or erase guest achievements. Initial creation remains atomic and read-back verified; no duplicate victory commands are emitted. Failed backup, offline initialization, read-back or account switch cannot install an empty profile.
 
 ## Cloud persistence contract
+
+### Competition (#638/#647)
+
+The follow-up `20261111060216_highscore_victory.sql` returns Top 3, personal position
+and the real participant total over the complete deterministic ranking. Canonical
+profile names are unique after trim/case folding (3–20 characters); legacy
+collisions retain their names until progressive resolution. No UUID is public.
+Historical import is dry-run by default, zero penalty and minimum-only for certain
+grid identities. Private per-batch backups use the erasure inventory and conditional
+rollback. It never writes badges, progression or Wallet state. Automatic publishing
+and historical import have separate closed activation gates. See the
+[activation and restoration runbook](HIGHSCORE_ROLLOUT.md).
+The old API deleted opposition even without a run. Existing Lumen accounts
+without active membership are conservatively protected in a one-time frozen
+cohort; only an explicit account action can rejoin them. Newly created accounts
+remain eligible for automatic participation, including after migration replay.
+
+`persistence/ranking.js` durably stages new version-1 captures separately from
+progression, keyed by authenticated owner + exact victory operation ID. The
+attempt restores hint/verify/guided counts; old attempts never acquire ranking
+eligibility by inference. Capture precedes the victory write. Reconnect resends
+the original start/counts, guards owner/client changes and retains unconfirmed
+entries. Missing competition APIs never block a victory.
+
+Private `ranking_control` records activation; `ranking_runs` reserves one
+eligible start per owner/grid/revision per fifteen minutes under a transaction
+advisory lock. Delayed submissions retain their original immutable start.
+`ranking_finish` requires the exact canonical/historical victory receipt and
+matching quest/start/hint facts. It computes penalties and retains the lower
+admitted score. Nonqualifying badge runs cannot enter competition. Historical
+minima follow the separately gated, revision-safe import above. Elapsed time and aid counts remain client assertions,
+checked for bounds, consistency and wall time; this is not tamper-proof timing.
+
+`lumen.profiles` owns the canonical unique nickname and durable ranking opposition;
+`ranking_members` owns public participation. Automatic participation is server-gated
+by the published information boundary, never inferred from reconnect.
+Only nickname/place/time/penalty/own-row/virtual flags leave the board RPC; no
+account ID/email. Opt-out deletes public scores and membership while retaining profile opposition; minimal private
+runs retain cooldown/idempotence until Lumen erasure. The privacy inventory,
+rights export and anti-resurrection guards cover all four new tables. No
+progression/reward/Wallet writer is added.
+
+`20261110190629_grid_ranking.sql` is prepared, transactional and requires separate
+production authorization after the existing privacy engine. Rollback withdraws
+ranking API grants and the client; retain records/guards rather than deleting
+archives or restoring erased data. A new registered quest works automatically;
+virtual targets can be calibrated using `ranking-reference-fixtures.mjs` during
+catalogue publication. Existing clients/saves retain their contracts.
+
+Grid revision #640 deliberately preserves earned completion, badges, records,
+currency, stars and entitlements under their existing stable quest IDs. It does
+not delete local facts and then allow cloud copies to resurrect them. Records
+remain historical all-time quest records across this revision, not measured
+completion times for the harder grid; they must not calibrate its difficulty.
+Replays retain the existing exactly-once reward policy. No profile schema,
+access-origin cohort or reward allowlist changes; no production SQL runs.
+
+Only the device-local active attempt gains `gridRevision` (missing means 0).
+The runtime quest's explicit replacement revision is 1; other quests remain 0.
+Attempt restore requires an exact revision match as well as quest/mode, including
+same-size replacements and downgrades. Before replacing a stale local board,
+the engine preserves and reads back its original bytes under
+`lumenActiveAttemptV1:grid-archive:<attemptId>:<revision>`. An archive collision
+or write/quota failure blocks replacement. Canonical account restoration rejects
+the obsolete attempt; existing account-switch preservation remains in force.
+Fresh device restores cloud achievements normally and starts an empty current
+grid. An old offline client's eventual earned facts follow existing cloud merge
+rules and cannot inject its active board into a new grid. Pending commands and
+their frozen facts/receipts are not rewritten. Rollback restores original grid
+sources and rejects a revision-1 active board instead of reinterpreting it.
+Worker cache v16 precaches the complete module/JSON graph before activation,
+including the replacement manifest; old complete shells remain available until
+the new shell is complete. See [grid revision audit](GRID_CATALOG.md#logical-difficulty-and-explicit-grid-revisions-640).
+
+Social challenge rows separately gain server-owned `grid_revision`, default 0
+for historical rows/old clients. The additive prepared migration
+`20261108061843_logical_grid_challenge_revision.sql` adds a v2 creation RPC that
+atomically validates the explicit Adventure 5–8 revision-1 scope and delegates
+identity/name/first-play/allowlisting to the existing RPC. Versioned get/list
+wrappers expose the revision in addition to already privacy-filtered fields;
+old canonical get/list endpoints show revision 0 only. Versioned start/finish
+require the exact stored revision before delegating to the established private
+one-shot implementations, whose direct API grants are revoked. Old writers
+reject revision-1 challenges without consuming an attempt or comparing a result.
+Unversioned challenges resolve to original grids; revision-1 challenges
+resolve to the replacement. Unknown revisions fail closed. New clients never
+fallback to revision-0 creation after an unavailable/ambiguous v2 call. No reward
+or campaign write is introduced. Activation order for a later authorized release:
+apply and verify this additive migration first, then the complete frontend;
+keep both grid revisions for old/offline links and clients. Until separately
+authorized, the migration is only exercised against disposable test databases.
+The existing preparation-only erasure migration also reviews `grid_revision`
+as non-identifying, non-null integer metadata. Unknown social fields and altered
+revision types still block erasure. Its current-schema fixture verifies that
+anonymization removes the sender but retains the exact puzzle revision. This
+compatibility edit does not authorize installing or activating account erasure.
+If that private erasure review is already installed, the grid migration invokes
+its read-only schema review and fails atomically on incompatibility; it never
+silently replaces an independently activated privacy contract.
+
+Support capture budgeting preserves the complete current typed projection and
+only adds optional owner-bound checkpoints within the existing server size limit.
+The budget uses `jsonb::text` bytes, reserving existing incident/counter metadata;
+an oversized current projection fails explicitly. This never deletes originals,
+changes a gameplay writer, retires a pending command or relaxes server validation.
+See [temporary assistance](SUPPORT_574.md#capture-size-follow-up-6-november-2026).
+
+Pending result recovery: the bounded command scheduler also retries the exact
+durable victory displayed on the current result sheet, including canonical
+quests whose active board intentionally blocks background outbox replay.
+Automatic foreground retry requires the same owner/client/attempt/reset, a
+verified clean profile, no active writer, visible online state and no Auth or
+password-recovery hold. It inspects the owning outbox and retries only the exact
+retryable operation; Auth/review holds are never cleared automatically. The
+result stays visible and frozen facts remain the command source. Canonical
+foreground refusals retain the same retry policy metadata as historical ones.
+Victory failures map to existing optional diagnostic codes/stages/kinds;
+no raw provider error, operation ID or profile enters that stream. No SQL,
+reward, currency, receipt, entitlement or guest-save schema changes.
 
 ### Requested account erasure (prepared, not deployed)
 
@@ -687,12 +905,15 @@ flag cannot serve as this proof. Numeric cold resume restores both quest and
 campaign/replay mode before the attempt engine's strict identity comparison;
 a READY board does not establish preserved campaign access.
 
-The historical outbox uses the same archival recovery for a later capture of
+The historical outbox uses the same archival recovery for a covered capture of
 an already committed operation. It independently reads the original receipt
 and current profile, requires the same account, operation, quest, start timestamp,
 day and all assistance/qualification flags, a non-improved elapsed time, and
 covered attempts/badges. Only a `22023` review pause permits this read-only
-inspection; other holds remain. The later capture must postdate the receipt.
+inspection; other holds remain. The capture may predate the receipt when its
+elapsed time is equal or worse and all other facts are identical. Local capture
+chronology is not proof of better performance and must not hold an already
+confirmed better result indefinitely. Both timestamps must still be valid.
 Exact original bytes and receipt are verified in a private exportable archive
 before retiring that pending copy. No command is resent, receipt changed or
 reward granted. Archive or session failure retains the pending operation.
@@ -1091,7 +1312,9 @@ Remote payloads retain only event/reason/outcome/version, with identity derived
 from the authenticated server session; no profile or token is transmitted.
 
 ## Client
-LUMEN is a static web/PWA application using native ES modules without a build step. `index.html` is a markup shell: the existing document markup, stylesheet link, Supabase CDN script and module entry point. It has no inline JavaScript or CSS. `src/main.js` starts the UI controller; domain modules contain the application logic. `manifest.webmanifest` and `sw.js` are unchanged.
+The current topology is described [at the start of this document](#current-architecture).
+The extraction records below describe the October 2026 baseline, not current
+worker/cache policy, SDK distribution or test totals.
 
 The #21–#26 migration starts from main `dcd9f3c872e623541be698edc212b64589d3b164`. Rules, catalogue, badge semantics, progression, tutorial, UX, storage keys and backend contracts are preserved. Issues #30/#31 are explicitly excluded. The stage descriptions below record the incremental extraction; the navigation map describes the final source layout.
 
@@ -1158,17 +1381,23 @@ Browser diagnostics can inject a synthetic map catalogue without editing campaig
 
 ## Stage #22: game engine
 
+Historical extraction record — October 2026; current rules belong to GAMEPLAY.
+
 `src/game/engine.js` exposes `createGameEngine(getBoard, getAutoCrossEnabled)`. It reads the current `{n,puz,state}` through the injected accessor and never accesses the DOM. Its API contains enumeration (`solutions`), automatic exclusions, stored-solution verification, Guardian conflict/validity checks, guided action checks and the existing proof engine. Algorithms, traversal order, reasons and hint text are retained. `solutions(board)` accepts an explicit board for the guided hypothetical placement, avoiding any mutation of application state during that calculation.
 
 Victory validation is now called by the renderer through `validateGuardians`; rendering and celebrations remain in the application. The catalogue audit and offline generator import the same engine used in the browser instead of copying its source from HTML. `scripts/engine-equivalence.mjs` compares complete proof objects and guided/error/enumeration outputs against main commit `dcd9f3c872e623541be698edc212b64589d3b164`, across every catalogue grid and automatic-marking modes. An optional first argument supplies that baseline HTML without invoking Git.
 
 ## Stage #23: campaign
 
+Historical extraction record — October 2026; current catalogue/progression contracts take precedence.
+
 `src/campaign/catalogue.js` owns `CAT` and `LEVELS`; `data.js` owns quest metadata, fixed schedule, constellation shapes/counts and existing badge display definitions. `progression.js` exports pure campaign calculations and `createCampaign(getProgress, saveProgress, getAttempt)` for calculations that use the current canonical progress/attempt. It retains the existing performance recording and badge rules verbatim in behavior; #30/#31 remain out of scope. UI navigation, quest loading and celebration orchestration belong to the UI controller.
 
 `scripts/campaign-tests.mjs` preserves original catalogue and historical data/reward comparisons against the starting main commit, and protects the first 100 schedule assignments against the immutable pre-wave-2 commit. Current boundaries, constellation rewards and registry coverage derive from content data. It checks four historical progress fixtures, capped-save recovery and hypothetical future extensions. Both the strict audit and generator import catalogue/campaign modules directly; the generator's optional write targets `src/campaign/catalogue.js` instead of HTML.
 
 ## Stage #24: persistence
+
+Historical extraction record — October 2026; current persistence follows the cloud contract above.
 
 `src/persistence/local.js` exposes `createLocalPersistence(storage,getProgress)` for existing load/save behavior. `cloud.js` exposes `createCloudPersistence(model,hooks,environment)` for profile, entitlements, auth initialization, progress and daily synchronization. `config.js` contains the same public client URL/key. No backend schema, RPC, auth provider, SDK version or storage format changed.
 
@@ -1178,6 +1407,8 @@ The model adapter has explicit getters/setters for the existing auth/progress/qu
 
 ## Stage #25: UI and input
 
+Historical extraction record — October 2026; subsequent UI modules and behavior have evolved.
+
 `src/main.js` starts `startGameScreen()` from `src/ui/game-screen.js`. This controller owns the one live board/attempt state, composes the game/campaign/persistence APIs, binds events and orchestrates rendering/navigation/celebrations. `tutorial.js` owns the existing general-help walkthrough; `sound.js` owns audio and its preference; `styles.css` is the existing CSS moved without rule changes. HTML is now markup plus stylesheet/CDN/module entry points.
 
 The scripted coach, assistance restrictions and all timings remain unchanged. The pointermove callback has a name (`moveDragCross`) so source/performance tests can inspect the actual handler after it leaves HTML. Actual Chrome touch tests also observe board child mutations and reject a full board rebuild during drag. The 66 browser regression cases are retained; only their two HTML-source lookups were updated to inspect the real module handler.
@@ -1185,6 +1416,8 @@ The scripted coach, assistance restrictions and all timings remain unchanged. Th
 `scripts/ui-equivalence.mjs` compares rendered board DOM, geometry, cell colors/borders and control text/visibility/enabled states with starting main. It covers empty/marked boards for quests 1, 3, 12 and 48 on 390x844, 360x640 and 1440x900 viewports (12 scenarios, both mobile and desktop). To reproduce, serve the starting main HTML temporarily as `.refactor-baseline.html` next to the current page in the isolated browser test setup, then remove that temporary file. Reports are under `docs/validation/refactor-ui-equivalence.json`. Analytics and the suite were subsequently extracted in #26.
 
 ## Stage #26: analytics, tests and final boundaries
+
+Historical extraction record — October 2026; use the current gate for suite inventory.
 
 `src/analytics/events.js` exposes `createAnalytics(getClient,environment)`: anonymous/session identity, existing event RPC payloads and referral sanitization. The UI calls it at the original startup/event locations, preserving event order. The client accessor reads the current Supabase client after async initialization. `scripts/analytics-tests.mjs` compares identity storage, event names/payloads, sanitized referrals and failed-network warnings against starting main in eight scenarios, without live writes.
 
@@ -1198,7 +1431,12 @@ The final browser gate also verifies active/controlling service-worker registrat
 
 ## Subsequent UX changes (#16/#17/#19)
 
-The modular migration reports above describe behavior-preserving extraction. PR #38 then intentionally changes hint vocabulary, primary success CTA and rules presentation. `setupRulesHelp()` in the UI controller binds the existing help dialog markup. The scripted click interceptor exempts the rules modal, preserving teaching state and allowing backdrop dismissal. The rules modal consumes no permanent board space. The compact success card is height-limited and scrollable. `scripts/ux-cleanup-tests.mjs` exercises these changes with real browser events; the suite now contains 69 cases (66 original plus three UX regressions).
+Historical record — October 2026. PR #38 intentionally changed hint vocabulary,
+primary success CTA and rules presentation after the behavior-preserving
+extractions. `setupRulesHelp()` bound the on-demand rules modal; the scripted
+interceptor exempted that modal. The compact result card was scrollable. That
+snapshot contained 69 cases (66 original plus three UX regressions), not the
+current total. Current rules and checks are owned by GAMEPLAY and TESTING.
 
 ## Local/guest mode
 Guest play is first-class. Progress is stored in localStorage under `lumenProgressV1`; tutorial, install/push choices, anonymous/session identity and UX preferences also use localStorage keys.
@@ -1207,16 +1445,25 @@ Anonymous users are tracked through an anonymous identifier/session so usage can
 
 ### Existing persistence contracts (inventory before #24 extraction)
 
+Historical inventory — October 2026. These keys/RPCs document the extraction
+baseline, not the complete current projection or writer authority. Consult the
+[cloud contract](#cloud-persistence-contract) for current commands and recovery.
+
 The canonical `lumenProgressV1` object retains `solved`, `historyBackup`, `badges`, `noHint`, `performances`, `xp`, `challenges`, `stars`, `shards`, `daily` (dates/rewards), `skyScore` and `skyHistoryVersion`. Keys are zero-based quest indices; cloud `p_puzzle_id` values are one-based. No schema/key migration is part of the refactor.
 
 Other existing keys: `lumenTutorialSeen`, `lumenAnonymousIdV1`, `lumenReferral`, `lumenInstalled`, `lumenInstallLater`, `lumenWelcomeDayV1`, `lumenPushChoice`, `lumenManualCrossTipSeen`, `lumenGuidedErrors`, `lumenSound`, `lumenAutoCross` and the read-only legacy `regaliaAutoCross` fallback. The Supabase SDK retains its own auth storage.
 
 RPC contracts retained: `lumen_get_profile`, `lumen_set_nickname(p_nickname)`, `lumen_get_entitlements`, `lumen_get_progress`, `lumen_save_progress(p_puzzle_id,p_duration_seconds,p_hints_used)`, `lumen_get_daily`, `lumen_save_daily(p_play_date,p_puzzle_id)`. Analytics and feedback RPCs remain separate responsibilities. Authentication retains Google OAuth with the current origin/path redirect, `getSession`, `onAuthStateChange` and `signOut`.
 
-The current merge prioritizes a non-empty cloud history, otherwise uses local/backup history, then derives a continuous prefix and imports missing local records. This exact existing behavior is retained; this extraction does not redesign merge policy or badge semantics.
+At the #24 extraction baseline, merging prioritized non-empty cloud history,
+otherwise local/backup history and prefix import. That historical description
+does not authorize current full-profile overwrites: owned receipts, transactional
+commands and verified reconciliation now govern restoration under the cloud contract.
 
 ## Supabase
-The client uses Supabase. Project-side database objects for LUMEN live in the **`lumen` schema**. Relevant RPC responsibilities visible from the client include:
+The client uses a shared Supabase project. Application records live in `lumen`
+and dedicated private schemas (including command and privacy machinery); public
+RPC wrappers expose bounded, authorized operations. Relevant responsibilities include:
 - profile/nickname;
 - progress save/load and local-to-cloud migration;
 - analytics event tracking;
@@ -1230,7 +1477,12 @@ Google OAuth is supported. When a local player signs in, local solved history mu
 Events include puzzle start/completion, hints, sharing/referral, installation and related engagement events. Referral parameters are sanitized before analytics.
 
 ## PWA
-Installation is offered only after meaningful engagement (currently after 3 solved quests), and standalone installs should not be nagged again. Push/reminder permission must only be requested after an explicit user action; the app hides its own prompt before invoking the Android/browser permission dialog.
+Installation follows the initial welcome/learning flow and meaningful engagement,
+using current `maybeOfferInstall` guards in `game-screen.js`; installed apps and
+deferred offers remain excluded. Push/reminder permission requires explicit user
+action. `setupAppUpdates` preserves the welcome on first controller acquisition
+and reloads once on controller replacement, with OAuth-return exceptions. Manual
+refresh only deletes `lumen-assets-*` caches, never player localStorage/IndexedDB.
 
 Push support should not be considered complete merely because subscription/server code exists: service-worker receipt/display and end-to-end delivery must be verified.
 
@@ -1503,3 +1755,80 @@ Un HTTP 200 seul n'autorise aucun nettoyage : la réponse JSON doit confirmer
 changement de propriétaire local conserve les données de cet appareil et affiche
 un état incomplet, sans revendiquer une suppression locale réussie. Les contrôles
 serveur et la recette authentifiée isolée restent obligatoires avant activation.
+
+## Catalogue complet UAI — révision 4
+
+Le [catalogue 88/880](CATALOGUE_88.md) ajoute les aventures 6–9 à la révision 3,
+sans modifier les définitions complètes des 500 quêtes précédentes ni aucune
+révision archivée. Le défaut des profils vides passe à 4 dans la migration
+additive `20261106115913_complete_iau_catalogue.sql`. Les cohortes existantes
+restent immuables ; aucune ligne de joueur n’est parcourue ou réécrite.
+Les 380 nouvelles règles et IDs serveur précèdent le déploiement du client
+compatible, après autorisation de l’activation de production. Les lecteurs
+d’origine 4, règles et reçus gagnés doivent survivre à tout rollback.
+Les droits d’aventure, le wallet et les preuves de victoire restent détenus
+par leurs autorités existantes ; les célébrations ne sauvegardent aucun gain.
+
+Une copie d’assistance d’un compte avancé peut dépasser les 6000 faits par
+bloc. Le client utilise alors plusieurs blocs `source: local` du protocole
+existant : tous les faits courants sont conservés dans l’ordre, et les trois
+compteurs de file gardent leur réserve dans le premier bloc. Le plafond de
+trois blocs/524288 octets JSONB reste inchangé. Les checkpoints facultatifs
+s’ajoutent seulement s’ils tiennent ; les originaux restent sur l’appareil.
+Un échec de taille ne tronque ni sauvegarde ni opération en attente.
+
+
+## Réservations d’aides et réseau inaccessible (#629)
+
+Le signal `navigator.onLine` ne prouve pas que le serveur est joignable. Après une erreur temporaire classée UNKNOWN, 408, 429 ou 5xx, une aide peut utiliser la réservation hors ligne existante : propriétaire vérifié sur cet appareil, preuve de solde valide, verrou inter-onglets, inventaire durable complet et identité exacte tentative/reset/type/séquence. Les refus Auth, métier ou de schéma ne permettent pas ce repli. Une file Wallet suspendue pour Auth ou revue refuse toute nouvelle réservation. Même si la restauration cloud échoue, les réservations locales du compte sont déduites du compteur.
+
+Le solde confirmé reste distinct du disponible. La restauration authentifiée rejoue les commandes et vérifie leurs reçus avant de retirer la file. Aucun champ persistant, migration SQL ou droit ajouté ; les garanties multi-appareils et transfert invité restent inchangées.
+
+## Temps officiel et compatibilité des reçus (#638, #652)
+
+Le compteur actif reste une durée réelle en millisecondes. Le chrono officiel est
+dérivé de cette durée et des compteurs cumulatifs hint/verify/guided (15/5/5 s).
+La restauration ne crédite jamais une pénalité : elle recalcule la même somme.
+Les resets de campagne remettent les compteurs à zéro ; un défi social reste
+une tentative unique. Rapidité, bonus temporels, indice offert après 90 s et
+cooldowns conservent leurs chronomètres métier réels.
+
+Une nouvelle victoire peut ajouter aux huit faits existants un objet facultatif
+timing {version:1, gridRevision, helpUses:{hint,verify,guided}}. Il est figé dans
+les outboxes et le reçu original, sans réécriture lors d’une reprise. Le serveur
+recalcule les pénalités, valide types, compteurs, assistance et révision, puis
+conserve officialTimes[revision] dans les résumés Legacy et Quest existants.
+Les minima bestTime/time/bestUnassistedTime restent techniques. Aucun nouveau
+magasin de progression ni nouvelle autorité monétaire. La vérification de
+lecture doit couvrir le record officiel avant confirmation du client.
+
+La capability lumen_official_time_version annonce le support serveur. Avant sa
+confirmation, aucun support n’est inventé. Une confirmation positive est mise
+en cache pour cette URL publique de backend, afin qu’une PWA entièrement fermée
+puisse reprendre hors ligne et figer les mêmes preuves. Une absence explicite
+du RPC invalide ce cache ; les intentions déjà figées ne sont jamais réécrites.
+Sans confirmation, les anciens faits à huit champs restent utilisables ; la victoire
+et le chrono affichent leur somme locale, sans fabriquer de record confirmé.
+Un record historique n’est affiché que depuis la projection officielle serveur.
+Les endpoints privés de lecture ne dépendent pas de l’inscription publique.
+
+La conversion paresseuse, dans la transaction suivante, applique la convention
+historique zéro pénalité aux seuls anciens minima de révision 0. Un score déjà
+compétitif est utilisé une fois, sans lui ajouter une deuxième pénalité. Si son
+temps brut est le minimum historique et sa pénalité positive, ce brut n’est pas
+un record sans aide ; le serveur utilise le score et un éventuel minimum sans
+aide prouvé. Les minima de révision ambiguë ne sont jamais transférés. Le reçu
+nouveau contient le précédent record comparable ; une égalité ne peut donc
+être annoncée comme un premier record. La récupération fusionne les minima
+officiels indépendamment pour chaque révision, sans toucher aux acquisitions.
+
+Les défis sociaux existants ont un protocole non versionné de durée réelle,
+sans compteurs d’aides dans la référence. Ils conservent ce protocole : comparer
+un score officiel nouveau à une référence réelle ancienne serait incompatible.
+Leur chrono reste celui du défi. Une évolution de ce protocole nécessite sa
+propre migration versionnée des deux participants.
+
+La présentation de victoire ne valide aucune acquisition. La progression et
+les badges sont confirmés avant la célébration ; fermer avant « Voir le
+classement » ne change ni leur persistance ni les intentions en attente.
+Voir [le plan de migration](OFFICIAL_TIME_ROLLOUT.md).

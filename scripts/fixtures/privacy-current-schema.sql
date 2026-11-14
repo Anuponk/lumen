@@ -27,7 +27,7 @@ drop trigger lumen_erasure_guard on lumen.analytics_events;
 select lumen_privacy.install_guards();
 do $$declare
  u uuid:=gen_random_uuid(); other_uid uuid:=gen_random_uuid(); admin_uid uuid:=gen_random_uuid();
- c uuid; other_case uuid; capture uuid:=gen_random_uuid(); expired uuid:=gen_random_uuid();
+ c uuid; other_case uuid; grid_challenge uuid; capture uuid:=gen_random_uuid(); expired uuid:=gen_random_uuid();
  report jsonb; r record; n bigint;
  p jsonb:='{"format":1,"events":[],"version":"unknown","code":"manual","copies":[{"source":"local","facts":[{"quest":1,"metric":"solved","value":true}]}]}';
 begin
@@ -42,6 +42,8 @@ begin
  insert into lumen_commands.guest_claim_receipts(claim_id,user_id,manifest) values(gen_random_uuid(),u,'{}');
  update lumen_commands.support_control set enabled=true;
  perform set_config('request.jwt.claim.sub',u::text,true);
+ select challenge_id into grid_challenge from public.lumen_create_quest_challenge_v2(null,'Private sender','pack-real-adventure-05-q001',400,true,true,true,false,true,1);
+ perform set_config('test.privacy_grid_challenge',grid_challenge::text,false);
  c:=(public.lumen_support(u,'activate')->>'id')::uuid;
  perform public.lumen_support(u,'capture',c,capture,p);
  perform set_config('request.jwt.claim.sub',other_uid::text,true);
@@ -105,12 +107,32 @@ do $$declare e jsonb;begin
 end $$;
 commit;
 
+-- The reviewed puzzle metadata is narrow: a nullable or identifying extension
+-- must still stop erasure before any mutation. Disposable schema, rolled back.
+begin;
+alter table lumen.social_challenges alter column grid_revision drop not null;
+do $$begin
+ begin perform lumen_privacy.review_erasure('00000000-0000-0000-0000-000000000000',array[]::text[]);raise exception 'Nullable grid revision accepted';
+ exception when raise_exception then assert sqlerrm='LUMEN_ERASURE_SOCIAL_REVIEW_REQUIRED';end;
+end $$;
+rollback;
+begin;
+alter table lumen.social_challenges add column fixture_sender_notes text;
+do $$begin
+ begin perform lumen_privacy.review_erasure('00000000-0000-0000-0000-000000000000',array[]::text[]);raise exception 'Unknown sender notes accepted';
+ exception when raise_exception then assert sqlerrm='LUMEN_ERASURE_SOCIAL_REVIEW_REQUIRED';end;
+end $$;
+rollback;
+
 do $$declare u uuid:=current_setting('test.privacy_user')::uuid;other_uid uuid:=current_setting('test.privacy_other')::uuid;
  c uuid:=current_setting('test.privacy_case')::uuid;r record;n bigint;report jsonb;begin
  perform lumen_commands.prune_support();
  assert exists(select 1 from lumen_commands.support_access where case_id=current_setting('test.privacy_expired')::uuid and privacy_owner_id=u),'Purged case lost audit attribution';
  report:=lumen_privacy.erase_account(u,array[]::text[],'ERASE LUMEN '||u);
  assert report->>'status'='erased';
+ assert exists(select 1 from lumen.social_challenges where id=current_setting('test.privacy_grid_challenge')::uuid
+  and sender_user_id is null and sender_anonymous_id is null and sender_display_name='Compte supprimé' and grid_revision=1),
+  'Anonymization removes sender identity while retaining the exact puzzle revision';
  assert not exists(select 1 from lumen_commands.support_cases where user_id=u);
  assert not exists(select 1 from lumen_commands.support_access where case_id=c);
  assert not exists(select 1 from lumen_commands.support_contents sc join lumen_commands.support_captures cp on cp.id=sc.capture_id join lumen_commands.support_cases cs on cs.id=cp.case_id where cs.user_id=u);

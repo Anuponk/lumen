@@ -1,3 +1,4 @@
+import {revealVictoryResults} from './cdp-client.mjs';
 import assert from 'node:assert/strict';
 import {navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
@@ -34,6 +35,7 @@ export async function verifyVictoryChallenge({send,evaluate},url){
   if(mode==='assisted')await evaluate(`document.getElementById('hint').click()`);
   await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
   for(let i=0;i<100;i++){if(await evaluate(`!document.getElementById('skyReveal').hidden`))break;await new Promise(r=>setTimeout(r,100));}
+  await revealVictoryResults(evaluate);
   const button=await evaluate(`(()=>{const b=document.getElementById('skyRevealShare'),r=b.getBoundingClientRect();return {hidden:b.hidden,disabled:b.disabled,remarkable:b.classList.contains('remarkable'),inside:r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth}})()`);
   if(mode.startsWith('replay')){
    assert(button.hidden,'An already solved quest with missing metadata cannot create a first-play challenge');

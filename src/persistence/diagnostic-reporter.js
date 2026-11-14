@@ -1,3 +1,4 @@
+import {classifyCanonicalRecoveryError} from './canonical-recovery-errors.js';
 // Optional #534 details. No game/save path awaits transport; forbidden data is
 // never read from Error objects. #398's operational projections stay separate.
 export const DIAGNOSTIC_CODES=['sync_write_failed','sync_conflict','sync_retry','hydration_failed','hydration_blocked','outbox_read_failed','outbox_retry_failed','outbox_capture_failed','outbox_retried','outbox_acknowledged','runtime_exception','unhandled_rejection','resource_failed','guided_error','guided_undo','guided_input_blocked','guided_input_released'];
@@ -19,6 +20,12 @@ function restorable(e,now){
   Number.isFinite(Date.parse(e.at))&&Date.parse(e.at)>now-86400000&&Date.parse(e.at)<=now+300000;
 }
 export function mapCloudDiagnostic(event,details={}){
+ if(event==='canonical_victory_failed'||event==='legacy_victory_pending'){
+  const failure=classifyCanonicalRecoveryError({code:details.errorCode});
+  const captured=details.durable===true||details.reason==='intent_recorded';
+  return {code:captured?'outbox_retry_failed':'outbox_capture_failed',stage:captured?'outbox_retry':'outbox_capture',
+   kind:failure.kind==='auth'?'auth':failure.kind==='review'?'conflict':'unknown'};
+ }
  const code={flush_failed:'sync_write_failed',flush_conflict:'sync_conflict',flush_retry_online:'sync_retry',hydration_failed:'hydration_failed',
   canonical_outbox_retry_started:'outbox_retried',canonical_outbox_reconnect_replayed:'outbox_acknowledged',
   cloud_achievements_recovery_blocked:'hydration_blocked',canonical_outbox_read_failed:'outbox_read_failed',

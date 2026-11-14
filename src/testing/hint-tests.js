@@ -4,7 +4,13 @@ import {chapterForGrid,campaignQuestCount,constellationGridRange,skyStarsForGrid
 import {performanceEligibility,performanceAttempt} from "../campaign/performance.js";
 import {createAttemptEngine} from "../game/attempt-engine.js";
 import {QUEST_MILESTONES} from '../campaign/quest-rules.js';
-import {canonicalQuestByOrdinal} from '../campaign/canonical-quests.js';
+import {canonicalQuestByOrdinal,canonicalQuestList} from '../campaign/canonical-quests.js';
+
+// Keep auditing all legacy CAT entries, and cover committed canonical-only
+// sizes that have no legacy bucket (currently 9×9 and 10×10).
+const canonicalBySize=new Map();
+for(const q of canonicalQuestList()){if(!canonicalBySize.has(q.size))canonicalBySize.set(q.size,[]);canonicalBySize.get(q.size).push(q)}
+const gridsForSize=size=>CAT[size]??canonicalBySize.get(Number(size))??[];
 
 export function createHintTestSuite(model,api){
 const {handleSuccessAdvance,getSkyTourSteps,maybeShowAutoCrossUnlock,maybeShowBadgeMilestone}=api;
@@ -47,13 +53,13 @@ async function runHintTests(){
  test("Campagne : chaque quête appartient à une constellation",()=>Array.from({length:campaignQuestCount()},(_,i)=>chapterForGrid(i)).every(i=>i>=0&&i<CONSTELLATIONS.length));
  test("Interaction : le cycle reste exclusion, Gardien, case libre",()=>{const src=render.toString();return src.includes("(state[r][c]+1)%3")});
  test("Apprentissage : poser un Gardien utilise le vrai cycle à deux touchers",()=>{const src=render.toString();return src.includes("state[r][c]===0){next=1")&&src.includes("state[r][c]===1){next=2")&&!src.includes("scriptedAllowsGuardian(r,c)){if(!scriptedAllowsGuardian")});
- test("Apprentissage : la première quête enseigne le manuel puis laisse le choix",()=>learningControlsAt(1).autoDisabled&&[2,3,4,5].every(q=>!learningControlsAt(q).autoDisabled));
- test("Apprentissage : la quête 6 restaure le choix courant du Marquage auto",()=>{const c=learningControlsAt(6);return !c.autoDisabled&&typeof c.autoChecked==="boolean"});
+ test("Apprentissage : la première quête enseigne le manuel puis laisse le choix",()=>[1,2,3,4,5].every(q=>learningControlsAt(q).autoDisabled&&!learningControlsAt(q).autoChecked));
+ test("Apprentissage : la quête 6 reste manuelle malgré les anciennes préférences",()=>{const c=learningControlsAt(6);return c.autoDisabled&&!c.autoChecked});
  test("Apprentissage : après la quête 2 Mon ciel propose une visite contextuelle",()=>{const src=openJourneyMap().toString();return !!document.getElementById("skyTour")&&!!document.getElementById("skyTourNext")&&src.includes("learningTour")});
  test("Guidage : contrôle activable avec explication persistante",()=>!!document.getElementById("guidedErrors")&&!!document.getElementById("guidedCard")&&typeof guidedConflictForAction==="function"&&typeof showGuidedConflict==="function");
  test("Guidage : validation logique utilise le solveur",()=>guidedConflictForAction.toString().includes("solutions("));
  test("Guidage : une exclusion qui supprime toute solution est refusée",()=>{
-   const p=CAT[model.n][0],oldP=model.puz,oldS=model.state;
+   const p=gridsForSize(model.n)[0],oldP=model.puz,oldS=model.state;
    model.puz=p;model.state=Array.from({length:model.n},()=>Array(model.n).fill(0));
    const r=0,c=p.sol[0],conflict=guidedConflictForAction(r,c,1);
    model.puz=oldP;model.state=oldS;
@@ -108,9 +114,9 @@ async function runHintTests(){
  test("Autonomie : la quête 11 propose de jouer sans contrôle guidé",()=>!learningControlsAt(11).guidedDisabled&&maybeShowAutonomy.toString().includes("QUEST_MILESTONES.autonomy")&&!!document.getElementById("autonomyTry")&&!!document.getElementById("autonomyKeep"));
  test("Autonomie : toucher hors popup choisit sans aide",()=>closeAutonomyOverlay.toString().includes("finishAutonomyChoice(false)"));
  test("Apprentissage : les deux premières quêtes guident les actions réelles",()=>scriptedLearningActive.toString().includes("learningQuestActive")&&render.toString().includes("scriptedAllowsGuardian"));
- test("Tutoriel joué : Marquage auto disponible après la première quête",()=>learningControlsAt(1).autoDisabled&&[2,3,4,5].every(q=>!learningControlsAt(q).autoDisabled));
+ test("Tutoriel joué : le marquage reste manuel à toutes les étapes",()=>[1,2,3,4,5,6,11].every(q=>{const c=learningControlsAt(q);return c.autoDisabled&&!c.autoChecked}));
  test("Apprentissage : le glissé utilise le plateau normal dans les étapes autorisées",()=>document.querySelector("#board")&&moveDragCross.toString().includes("markDragCross"));
- test("Tip exclusions : apparaît au premier arrêt de le Marquage auto",()=>model.ac.onchange.toString().includes("maybeShowManualCrossTip")&&maybeShowManualCrossTip.toString().includes("lumenManualCrossTipSeen"));
+ test("Marquage retiré : une ancienne commande ne peut pas le réactiver",()=>{model.ac.checked=true;model.ac.onchange();return !model.ac.checked});
 
  // Regression: a completed valid constellation is judged from its guardians,
  // independently of remaining manual/automatic exclusions.
@@ -143,7 +149,7 @@ async function runHintTests(){
  test("Hauteur des lignes fixe quand une croix apparaît",()=>{
   let css=getComputedStyle(board);
   let before=board.getBoundingClientRect().height;
-  let p=CAT[model.n][0],oldP=model.puz,oldS=model.state;
+  let p=gridsForSize(model.n)[0],oldP=model.puz,oldS=model.state;
   model.puz=p;model.state=Array.from({length:model.n},()=>Array(model.n).fill(0));render();
   let rowsBefore=[...board.children].filter((_,i)=>i%model.n===0).map(e=>e.getBoundingClientRect().height);
   model.state[0][0]=1;render();
@@ -154,7 +160,7 @@ async function runHintTests(){
          rowsBefore.every((h,i)=>Math.abs(h-rowsAfter[i])<0.5);
  });
  test("Succès : une quête accomplie déclenche la célébration",async()=>{
-  let p=CAT[model.n][0],oldP=model.puz,oldS=model.state,oldCelebrated=model.celebrated;
+  let p=gridsForSize(model.n)[0],oldP=model.puz,oldS=model.state,oldCelebrated=model.celebrated;
   model.puz=p;model.state=Array.from({length:model.n},(_,r)=>Array.from({length:model.n},(_,c)=>c===p.sol[r]?2:0));
   model.celebrated=false;render();
   const deadline=performance.now()+3000;
@@ -165,7 +171,7 @@ async function runHintTests(){
   return ok;
  });
  test("Succès : aucune célébration sur une quête incomplète",()=>{
-  let p=CAT[model.n][0],oldP=model.puz,oldS=model.state,oldCelebrated=model.celebrated;
+  let p=gridsForSize(model.n)[0],oldP=model.puz,oldS=model.state,oldCelebrated=model.celebrated;
   model.puz=p;model.state=Array.from({length:model.n},()=>Array(model.n).fill(0));model.celebrated=false;hideSuccess();render();
   let ok=!model.celebrated && !document.getElementById("successOverlay").classList.contains("show");
   model.puz=oldP;model.state=oldS;model.celebrated=oldCelebrated;render();
@@ -185,15 +191,15 @@ async function runHintTests(){
          parseFloat(m.borderTopWidth)>=2;
   manual.remove();auto.remove();return ok;
  });
- test("Catalogue non vide",()=>CAT[model.n]&&CAT[model.n].length>0);
+ test("Catalogue non vide",()=>gridsForSize(model.n)&&gridsForSize(model.n).length>0);
  test("Territoires : pas de monocellule hors des deux introductions scriptées",()=>{
-  return CAT[model.n].every(p=>{
+  return gridsForSize(model.n).every(p=>{
    let counts={};p.reg.flat().forEach(g=>counts[g]=(counts[g]||0)+1);
    return Object.entries(counts).every(([g,count])=>count>=2||(model.n===5&&((p===CAT["5"][0]&&Number(g)===2&&p.reg[2][2]===2)||(p===CAT["5"][1]&&Number(g)===0&&p.reg[0][0]===0))));
   });
  });
  test("Solutions stockées respectent lignes/colonnes/territoires/non-contact",()=>{
-  return CAT[model.n].every(p=>{
+  return gridsForSize(model.n).every(p=>{
    let s=p.sol;
    if(new Set(s).size!==model.n)return false;
    if(new Set(s.map((c,r)=>p.reg[r][c])).size!==model.n)return false;
@@ -202,7 +208,7 @@ async function runHintTests(){
   });
  });
  test("Une croix correcte est réutilisée par le moteur",()=>{
-  let p=CAT[model.n][0];model.puz=p;model.state=Array.from({length:model.n},()=>Array(model.n).fill(0));
+  let p=gridsForSize(model.n)[0];model.puz=p;model.state=Array.from({length:model.n},()=>Array(model.n).fill(0));
   let q=null;
   for(let r=0;r<model.n&&!q;r++)for(let c=0;c<model.n;c++)if(c!==p.sol[r]){q=[r,c];break}
   model.state[q[0]][q[1]]=1;
@@ -210,12 +216,12 @@ async function runHintTests(){
   return h.elim && h.elim[key(q[0],q[1])];
  });
  test("Une croix sur la solution est détectée comme erreur",()=>{
-  let p=CAT[model.n][0];model.puz=p;model.state=Array.from({length:model.n},()=>Array(model.n).fill(0));
+  let p=gridsForSize(model.n)[0];model.puz=p;model.state=Array.from({length:model.n},()=>Array(model.n).fill(0));
   model.state[0][p.sol[0]]=1;
   return !!playerError();
  });
  test("Un mauvais Gardien est détecté comme erreur",()=>{
-  let p=CAT[model.n][0];model.puz=p;model.state=Array.from({length:model.n},()=>Array(model.n).fill(0));
+  let p=gridsForSize(model.n)[0];model.puz=p;model.state=Array.from({length:model.n},()=>Array(model.n).fill(0));
   let c=(p.sol[0]+1)%model.n;model.state[0][c]=2;
   return !!playerError();
  });
@@ -228,7 +234,7 @@ async function runHintTests(){
    return !src.includes("cette territoire")&&!src.includes("territoires surlignées")&&src.includes("ce territoire");
  });
  test("Aucun indice 'place' sans preuve structurée",()=>{
-  return CAT[model.n].every(p=>{
+  return gridsForSize(model.n).every(p=>{
    model.puz=p;model.state=Array.from({length:model.n},()=>Array(model.n).fill(0));
    let h=proofEngine();
    return h.kind!=="place" || (h.detail && h.detail.rule==="single");
@@ -239,14 +245,14 @@ async function runHintTests(){
   return !txt.includes("solutions()")&&!txt.includes("contradiction");
  });
  test("Les indices locked ont des prémisses visibles",()=>{
-  return CAT[model.n].every(p=>{
+  return gridsForSize(model.n).every(p=>{
    model.puz=p;model.state=Array.from({length:model.n},()=>Array(model.n).fill(0));
    let h=proofEngine();
    return !(h.detail&&h.detail.rule==="locked") || (h.detail.source&&h.detail.source.length>=2);
   });
  });
  test("Les indices group ont territoires + axes + prémisses",()=>{
-  return CAT[model.n].every(p=>{
+  return gridsForSize(model.n).every(p=>{
    model.puz=p;model.state=Array.from({length:model.n},()=>Array(model.n).fill(0));
    let h=proofEngine(),d=h.detail;
    return !(d&&d.rule==="group") || (d.regions&&d.indices&&d.source&&d.regions.length===d.indices.length&&d.source.length>0);
@@ -274,11 +280,11 @@ async function runHintTests(){
  test("Apprentissage : le ciel reste une action volontaire après la quête 2",()=>{const src=handleSuccessAdvance.toString()+setupOutsideDefaults.toString();return src.includes("learningSkyDiscoveryRequired")&&!src.includes('bindOutsideDefault("successOverlay"')&&document.getElementById("skyTourNext")});
 
  test("Apprentissage : le ciel est expliqué zone par zone",()=>{const steps=getSkyTourSteps();return steps.length>=4&&steps.some(s=>s.target==="sectorTabs")&&steps.some(s=>s.target==="puzzleGrid")&&steps.some(s=>s.target==="performanceLegend")&&steps.some(s=>s.target==="skyCard")});
- test("Apprentissage : le déblocage du Marquage auto explique le choix et les badges",()=>{const o=document.getElementById("autoCrossUnlockOverlay");return !maybeShowAutoCrossUnlock.toString().includes("pauseGameClock()")&&!!o&&o.textContent.includes("Rapidité")&&o.textContent.includes("Autonomie")&&o.textContent.includes("Maîtrise")});
+ test("Apprentissage : aucun déblocage de marquage automatique ne bloque le jeu",()=>!maybeShowAutoCrossUnlock.toString().includes("pauseGameClock()")&&getComputedStyle(document.getElementById('autoCrossWrap')).display==='none');
  test("Apprentissage : les fenêtres de jalons cachées ne bloquent pas le plateau",()=>{
    return ["autoCrossUnlockOverlay","badgeUnlockOverlay"].every(id=>{
      const overlay=document.getElementById(id),hidden=overlay.hidden,style=overlay.style.cssText;
-     try{overlay.style.display="flex";overlay.hidden=false;if(getComputedStyle(overlay).display!=="flex")return false;overlay.hidden=true;return getComputedStyle(overlay).display==="none"}
+     try{overlay.style.display="flex";overlay.hidden=false;if(getComputedStyle(overlay).display!==(id==='autoCrossUnlockOverlay'?'none':'flex'))return false;overlay.hidden=true;return getComputedStyle(overlay).display==="none"}
      finally{overlay.hidden=hidden;overlay.style.cssText=style}
    });
  });
@@ -329,7 +335,7 @@ async function runHintTests(){
 
  // Replay each puzzle automatically. Every requested next step must be explainable.
  test("Replay complet : jamais bloqué, jamais d'indice opaque",()=>{
-  return CAT[model.n].every(p=>{
+  return gridsForSize(model.n).every(p=>{
    model.puz=p;model.state=Array.from({length:model.n},()=>Array(model.n).fill(0));
    for(let step=0;step<200;step++){
     if(model.state.flat().filter(v=>v===2).length===model.n)return true;

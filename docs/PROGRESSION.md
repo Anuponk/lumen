@@ -1,7 +1,34 @@
 # Campaign, progression and rewards
 
+Mixed pacing applies only to Adventures 5–9. Adventures 1–4 retain their complete
+published quest definitions and teaching rules. Difficulty levels for revised
+content come from fixed logical score thresholds, not Adventure membership.
+Constellations mix opening, intermediate peak, relief and final peak; the final
+grid is strongest and average difficulty still rises between Adventures.
+Adventure 9 consists exclusively of measured Master grids. Quotas derive from
+actual catalogue membership, including differing constellation lengths.
+Boards retained at the same stable ID preserve their records. Changed boards
+have a distinct grid version and may receive an explicitly authorized scoped
+reset; old rewards are never paid twice, and unaffected progression is preserved.
+
+Explicit operator resets on replaced grids clear their completion, quest stars,
+badges and personal records only for the authorized accounts and catalogue scope.
+Previously started Adventures keep their access. Replaying earns fresh visible
+progression and records. A server-owned `rewardedBeforeReset` marker prevents
+paying first-win XP or autonomy milestones twice; economic bonus receipts,
+currency, purchases and access rights remain acquired. Unplayed reset quests
+still earn their ordinary first rewards. Other quests and players are untouched.
+This exception is intentional revocation, rather than automatic save repair.
+Onboarding impact: no teaching rule, gesture, badge condition or help flow changes.
+
 ## Source of truth
-The campaign is sequential and represented through constellations. Quest count derives from `CONSTELLATION_GRID_COUNTS` through the content model; the schedule must cover that count without gaps or duplicate grids. The sky target derives from the sum of `CONSTELLATIONS[].count`. Currently the catalogue contains **134 quests across 24 constellations and 298 stars**, including the unchanged historical first 100 quests / 12 constellations / 150 stars. These totals are catalogue data, not permanent limits.
+
+Issue #640 changes the puzzle layouts of Adventures 5–8 through a separate
+gameplay revision. Stable membership, order, access cohorts, acquired rights,
+completion and one-time rewards remain unchanged. Existing badges/records are
+grandfathered quest achievements. In-progress boards from the old revision are
+archived and restart empty; see the [restore contract](DATA_AND_ARCHITECTURE.md#cloud-persistence-contract).
+The campaign is sequential and represented through constellations. The published canonical revision in `content/catalogue/access-origins.json`, `content.js` and `canonical-quests.js` owns membership, order and counts: **880 quests, 88 official IAU constellations, nine Adventures**. Adventures 1–8 contain ten constellations/100 quests each; Adventure 9 contains eight/80. The legacy numeric schedule and historical reward allocations remain compatibility data. Displayed constellation lights count distinct completed quests; they do not replace economic rewards or historical star balances. Catalogue totals are data, not permanent limits.
 
 A quest belongs to one constellation. Each constellation has an intermediate milestone and a final/boss quest. First completion awards the quest's sky-star value; replay does not farm additional sky stars.
 
@@ -70,7 +97,7 @@ The owner authorised the server migrations on 23 October 2026; their schema and
 permissions were verified after application. Rollout still requires the matching
 client and an exact-SHA publication check, preserving the acquired-access policy.
 
-The real-sky catalogue is grouped into Adventures of at most ten constellations, configured in `content.js`. The current groups are 1–10, 11–20 and 21–24. The first Adventure is included; subsequent Adventures remain visible but locked unless already owned or already started by an existing player. Their unlock mechanism is deferred. The grouping size is a product rule, not a campaign-size ceiling: new Adventures are derived as the catalogue grows.
+The real-sky catalogue is grouped into Adventures of at most ten constellations, configured in `content.js`. The current catalogue has nine Adventures: eight groups of ten constellations, then one group of eight. The first Adventure is included; subsequent Adventures remain visible but locked unless already owned or already started by an existing player. Their unlock mechanism is deferred. The grouping size is a product rule, not a campaign-size ceiling: new Adventures are derived as the catalogue grows.
 
 The user's migration decision is to **retain access to Adventures already started and lock subsequent unstarted Adventures**. A solved quest in an Adventure proves it was started; a locally restored campaign/replay attempt with `startedAt` also proves it, including an unsolved first quest. Merely reaching a READY quest at the next Adventure boundary does not grant access. Social attempts do not grant campaign access. `legacyAdventureAccess` retains proven Adventure IDs in the existing local progress object, idempotently; solved history restored from cloud can reconstruct access without a new entitlement or backend RPC. An unsolved local attempt has the same device-local persistence scope as before.
 
@@ -237,6 +264,23 @@ Social challenges are outside campaign progression. Completing a challenge never
 A challenge participation has its own attempt identity and is terminal after success or explicit abandon. Reload/background restore the same challenge attempt through the shared attempt engine; they do not grant a fresh attempt.
 ## Records personnels — #600
 
+Le temps officiel unique (#638) vaut `temps réel +
+5 × vérifications + 15 × indices + 5 × interventions guidées`. Une intervention du Contrôle guidé compte
+comme une vérification. Un seul classement existe par identité et révision de
+grille, avec une entrée par participant. Le début de la tentative fige son
+admission : même délai de quinze minutes que les badges, plus réservation
+serveur atomique entre appareils. Jouer pendant le délai reste possible ;
+attendre à la victoire ne rend pas l'essai admissible. Les pénalités apparaissent immédiatement au chrono. Elles ne changent
+ni les badges, ni les Éclats, ni les minima bruts techniques. Rapidité conserve
+strictement sa règle de moins de 60 secondes réelles, hors pénalités. Le marquage automatique est
+retiré (#647), y compris dans le tutoriel et les anciennes préférences restaurées.
+
+La reprise historique utilise une pénalité nulle par convention, jamais déduite
+des badges. Seuls les minima rattachables à la bonne grille sont admissibles ;
+un record de version indéterminée reste personnel. L'import conserve le meilleur
+score compétitif et ne change ni progression ni récompense. Publication automatique
+et reprise nécessitent leurs activations distinctes : voir [le runbook](HIGHSCORE_ROLLOUT.md).
+
 Une victoire terminée peut améliorer le meilleur temps absolu, même lors d’une
 tentative non qualifiante pour les badges. `bestUnassistedTime` est un minimum
 indépendant : seuls les nouveaux parcours sans assistance et sans indice le
@@ -257,3 +301,16 @@ et poursuit vers ce pack selon ses droits et les prérequis habituels, sans
 rejouer l’ancienne finale. Une victoire débloque la suivante ; posséder le pack
 ne permet pas de sauter une quête. Les replays, records personnels, badges et
 récompenses utilisent le même contrat canonique que les autres quêtes.
+
+## Catalogue complet — aventures 6 à 9
+
+La révision 4 ajoute 380 quêtes (501–880), sans modifier les 500 premières ni
+les cohortes existantes. Les anciennes fins ne plafonnent pas le nouveau parcours.
+La fin de campagne dépend de toutes les quêtes actuelles ; la maîtrise globale
+dépend en plus de tous les badges éligibles. Replays, reçus retrouvés et
+restaurations ne rejouent pas une célébration acquise. Voir [CATALOGUE_88](CATALOGUE_88.md).
+
+
+## Maîtrise complète d’une aventure (#627)
+
+Toutes les quêtes et tous les badges actuellement éligibles sont nécessaires. Le statut « Maîtrisée » est une projection des preuves existantes, sans champ ni récompense ajouté. Le dernier badge peut être gagné en replay. Une seule priorité : maîtrise globale, fin globale, maîtrise d’aventure, fin d’aventure, fin de constellation. Restaurations et reçus retrouvés ne rejouent pas ces scènes ; un changement de catalogue ne fabrique pas de franchissement.

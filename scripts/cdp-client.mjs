@@ -5,6 +5,12 @@ export async function closeBrowser(send){
  catch(error){if(error?.message!=='CDP timeout after 15s: Browser.close')throw error;}
 }
 
+// Navigation regressions wait for and activate the explicit ranking button.
+// The ranking suite verifies that the surface never advances automatically.
+export async function revealVictoryResults(evaluate){
+ for(let i=0;i<150;i++){const phase=await evaluate("document.getElementById('skyReveal')?.dataset.victoryPhase");if(!['celebration','admire'].includes(phase))return;if(phase==='admire'){await evaluate("document.getElementById('skyRevealRanking').click()");return}await new Promise(r=>setTimeout(r,80))}throw Error('Victory ranking button unavailable');
+}
+
 // CDP acknowledges navigation before the old document is necessarily replaced.
 export async function navigateAndWait({send,evaluate},method,params={}) {
  const previous=await evaluate('performance.timeOrigin');

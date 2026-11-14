@@ -1,4 +1,22 @@
 -- Synthetic accounts only, disposable DB. Run after the diagnostic migration.
+-- jsonb::text contains separator spaces and expands exponents. A compact HTTP
+-- representation below the limit is not sufficient to admit a support packet.
+do $$declare f jsonb;p jsonb;begin
+ select jsonb_agg(jsonb_build_object('quest',9999999,'metric','pendingCanonical','value',1000000000000)) into f from generate_series(1,3750);
+ p:=jsonb_build_object('format',1,'code','manual','events','[]'::jsonb,'version','unknown','copies',jsonb_build_array(jsonb_build_object('source','local','facts',f),jsonb_build_object('source','checkpoint','facts',f)));
+ assert octet_length(replace(p::text,' ',''))<524288;
+ assert octet_length(p::text)>524288;
+ begin perform lumen_commands.validate_support(p);raise exception 'oversized jsonb accepted';exception when invalid_parameter_value then null;end;
+ p:=jsonb_set(p,'{copies}',jsonb_build_array(p->'copies'->0));
+ perform lumen_commands.validate_support(p);
+ select jsonb_agg(jsonb_build_object('quest',1,'metric','time','value',1e-100::numeric)) into f from generate_series(1,1600);
+ p:=jsonb_set(p,'{copies}',jsonb_build_array(jsonb_build_object('source','local','facts',f)));
+ perform lumen_commands.validate_support(p);
+ p:=jsonb_set(p,'{copies}',jsonb_build_array(p->'copies'->0,p->'copies'->0,p->'copies'->0));
+ assert octet_length(p::text)>524288;
+ begin perform lumen_commands.validate_support(p);raise exception 'expanded numeric packet accepted';exception when invalid_parameter_value then null;end;
+end $$;
+
 insert into auth.users(id) values('00000000-0000-0000-0000-000000057401'),('00000000-0000-0000-0000-000000057402'),('00000000-0000-0000-0000-000000057403');
 insert into lumen.internal_capabilities(user_id,capability) values('00000000-0000-0000-0000-000000057403','analytics_cockpit');
 set request.jwt.claim.sub='00000000-0000-0000-0000-000000057401';

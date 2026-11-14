@@ -1,0 +1,7 @@
+# Immutable generated catalogues, astronomy data, third-party code and reports.
+content/
+docs/validation/
+scripts/generated/
+src/vendor/
+src/campaign/catalogue.js
+node_modules/

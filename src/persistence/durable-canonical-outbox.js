@@ -1,6 +1,7 @@
 import {createIndexedOutboxStore} from './indexed-outbox-store.js';
 import {classifyCanonicalRecoveryError} from './canonical-recovery-errors.js';
 import {assertRecreatedLegacyCapture} from './legacy-command.js';
+import {obsoleteQuestIntent,questResetRevision,canonicalIntentVersionKey} from './quest-reset.js';
 
 const PREFIX='lumenCanonicalVictoryOutboxV2:',LEGACY_PREFIX='lumenCanonicalVictoryOutboxV1:',RETRY_PREFIX='lumenCanonicalVictoryRetryV1:';
 function browserStore(){let database;try{database=globalThis.indexedDB}catch{}return createIndexedOutboxStore(database)}
@@ -149,6 +150,27 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
   await acknowledge(userId,entry.questId,entry.reward,entry.operationId,{expectedEntry:entry,sessionValid});
   report('recreated_capture_archived');
  }
+ // Explicit operator reset revokes these intents. Archive original bytes before
+ // retirement; this is never presented as a successful victory acknowledgement.
+ async function retireQuestResets(userId,profile,{sessionValid=()=>true}={}){
+  if(namespace!=='Canonical')throw Error('Quest reset requires canonical outbox');
+  const inspection=await scan(userId);let count=0;
+  for(const copies of inspection.groups){
+   const entry=copies[0].entry;if(!obsoleteQuestIntent(entry,profile))continue;
+   if(!inspection.complete||inspection.issues.length||!sessionValid())throw Error('Quest reset outbox inspection incomplete');
+   const revision=questResetRevision(profile.canonicalQuestState[entry.questId]);
+   const key='lumenQuestResetIntentArchiveV1:'+userId+':'+revision+':'+encodeURIComponent(copies[0].key);
+   const raw=JSON.stringify({version:1,revision,entry,copies:copies.map(copy=>({store:copy.store,raw:copy.raw}))});
+   let archived=false;
+   try{await fallback.put(key,raw);archived=await fallback.get(key)===raw}catch{}
+   if(!archived){
+    const prior=storage.getItem(key);if(prior!==null&&prior!==raw)throw Error('Quest reset intent archive conflict');
+    storage.setItem(key,raw);if(storage.getItem(key)!==raw)throw Error('Quest reset intent archive unverified');
+   }
+   await acknowledge(userId,entry.questId,entry.reward,entry.operationId,{expectedEntry:entry,sessionValid});count++;
+  }
+  return count;
+ }
  async function acknowledge(userId,questId,expectedReward,operationId,{expectedEntry,sessionValid=()=>true}={}){
   const inspection=await scan(userId);
   const target=inspection.groups.find(group=>group[0].entry.questId===questId&&(operationId===undefined?group[0].entry.operationId===undefined:group[0].entry.operationId===operationId));
@@ -210,11 +232,11 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
   const result=await scan(userId),pending=result.groups.map(copies=>copies[0].entry),paused=[...result.paused.values()];
   const authRequired=paused.some(state=>state.kind==='auth'),blocked=new Set(),retryable=[];
   for(const copies of result.groups){
-   const entry=copies[0].entry;
-   if(result.paused.has(copies[0].key))blocked.add(entry.questId);
-   if(!authRequired&&!blocked.has(entry.questId))retryable.push(entry);
+   const entry=copies[0].entry,scope=namespace==='Canonical'?canonicalIntentVersionKey(entry):entry.questId;
+   if(result.paused.has(copies[0].key))blocked.add(scope);
+   if(!authRequired&&!blocked.has(scope))retryable.push(entry);
   }
   return {pending,paused,retryable,authRequired,issues:result.issues,complete:result.complete};
  }
- return {domain:namespace,enqueue,acknowledge,archiveRecreatedCapture,pause,resume,pending:async userId=>(await scan(userId)).groups.map(copies=>copies[0].entry),inspect};
+ return {domain:namespace,enqueue,acknowledge,archiveRecreatedCapture,retireQuestResets,pause,resume,pending:async userId=>(await scan(userId)).groups.map(copies=>copies[0].entry),inspect};
 }

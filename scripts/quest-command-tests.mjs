@@ -71,3 +71,13 @@ test('missing read-only endpoint permits V1 recovery; ambiguous failure does not
  await assert.rejects(loadCommittedQuestAttempt({rpc:async()=>{throw Error('offline')}},quest,'old-run',options));
  await assert.rejects(loadCommittedQuestAttempt({rpc:async()=>({data:[]})},quest,'old-run',options),'An unverified successful shape cannot downgrade');
 });
+
+test('official timing survives lost response, read-back and receipt replay; missing projection is never confirmed',async()=>{
+ const f=fixture(),timed={...facts,seconds:60,assistanceUsed:true,hintUsed:true,timing:{version:1,gridRevision:quest.gridRevision??0,helpUses:{hint:5,verify:0,guided:0}}};
+ const saved=await commitQuestCommand(f.client,quest,{facts:timed},'official-reset-0',{userId:'owner'});
+ assert.equal(saved.profile.canonicalQuestState[quest.id].runPerformance.officialTimes[quest.gridRevision??0],135);
+ const recovered=await loadCommittedQuestAttempt(f.client,quest,'official-reset-0',{userId:'owner'});
+ assert.deepEqual(recovered.reward.facts,timed);assert.equal(f.writes,1);
+ delete f.profile.canonicalQuestState[quest.id].runPerformance.officialTimes;
+ await assert.rejects(loadCommittedQuestAttempt(f.client,quest,'official-reset-0',{userId:'owner'}),/Official time projection unconfirmed/);
+});

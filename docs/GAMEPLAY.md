@@ -1,5 +1,25 @@
 # Gameplay and UX specification
 
+## Official attempt time and victory (#638, #652)
+
+The visible campaign clock is real elapsed time plus 5 seconds per Verify,
+15 per Hint and 5 per effective guided intervention. Free assistance has the
+same time cost. Each action updates the clock immediately with a brief penalty
+label; restoration derives the sum from durable counters and does not replay
+the label or add another penalty. Technical elapsed time remains available for
+the unchanged Rapidité rule (strictly below 60 real seconds), bonus conditions,
+free-hint research period and cooldowns.
+
+Victory and comparable personal records use official time for the same grid
+revision. Only a strict confirmed improvement announces one new record; equality
+and a better raw time alone do not. The constellation and badges finish their
+animations with a minimum two-second viewing period. They then remain visible
+until explicit action; only « Voir le classement » opens ranking. Reduced motion
+uses a static scene immediately while retaining that minimum period. Progress
+and badges are already durable before the button is used. The unversioned social
+challenge protocol retains real elapsed references until a compatible versioned
+score protocol exists.
+
 ## Uniform quest contract (#522, convergence candidate)
 
 Every quest uses its visible catalogue ordinal for teaching and assistance,
@@ -7,7 +27,7 @@ independently of its saved numeric key. All four badges are eligible from quest 
 `PERFORMANCE_UNLOCKS` owns the explanations of Rapidité at quest 3 and the
 four-badge system at quest 6; `questLearningRules` drives those introductions
 without delaying eligibility. Guided conflict control stays forced through 5, optional through
-10; automatic marking is optional after manual quest 1. Guided autonomy is introduced at 11. Hints remain free through 10.
+10; marking is manual throughout the campaign (#647). Guided autonomy is introduced at 11. Hints remain free through 10.
 
 Qualified badge runs share a fifteen-minute cooldown. Replays preserve acquired
 badges and first-win stars; Maîtrise is earned on one run, never accumulated.
@@ -19,8 +39,7 @@ from the quest ID, with cadence based on visible order. Historical bonus IDs
 and star allocations stay frozen. New constellation allocations derive from
 their real positions/count, including intermediate and final rewards.
 
-At quest 6, the timed bonus permits optional Marquage auto;
-it must not contradict that comfort introduction. Effective assistance still
+Automatic marking is retired, including historical saved preferences. Effective assistance still
 removes Autonomie and therefore Maîtrise. No-hint XP and badge autonomy are
 different conditions. Reload retains a hint already used in the same attempt.
 
@@ -53,8 +72,8 @@ There is no separate Validate action. Reaching N Guardians triggers evaluation. 
 ## Learning curve
 - Quest 1: first observe the five temporarily numbered territories and read the six SEE -> UNDERSTAND introduction steps, then play the normal board with a contextual coach. Intro navigation leaves the board untouched and numbers disappear before ACT. Only the expected cell actions are allowed during guided steps; unrelated taps are ignored without errors or starting the attempt. Help, pause, account and reset remain available.
 - Quests 2–5: free play, with optional drag, badges and long-press advice in that order.
-- Quest 1: manual marking; subsequent quests restore the voluntary automatic marking preference (default on), except an existing challenge restriction.
-- Quest 6: real checkbox focus and manual uncheck once; already unchecked needs no gesture; re-enabling is immediately allowed. Guided control remains forced through 5 and optional from 6.
+- All quests: manual marking; old automatic-marking preferences remain stored but are ignored (#647).
+- Quest 6: no automatic-marking lesson or blocking checkbox. Guided control remains forced through 5 and optional from 6.
 - Quest 11: autonomy choice is presented; playing without guided control is a valid/default dismissal path.
 
 Quest 1 retains the audited 5x5 grid with its deliberate singleton at (2,2), using zero-based coordinates. The pedagogical sequence is verified against the actual topology: Guardian (2,2), manual row exclusions, column exclusions, adjacent/diagonal exclusions, forced Guardian (4,3), reuse of the rules, drag across (4,0) and (4,1), then Guardian (3,0), followed by lighter guided practice for (0,1) and (1,4). The user requested guidance through the end of quest 1, so the later bubbles remain short and spotlight a territory rather than revealing a target cell.
@@ -63,17 +82,17 @@ Every Guardian uses the real empty -> exclusion -> Guardian cycle. All exclusion
 
 The lesson is derived from canonical board state by `src/game/learning.js`. Reload restores the same attempt and half-completed tap cycle; pause/background restoration still requires explicit resume. Reset returns to the first deduction without changing attempt identity, elapsed time, assistance or campaign progression. Ordinary replay and social challenges do not activate the constrained lesson; explicit learning replay does.
 
-Quest 1 and ordinary quest victories share the existing result and explicit Quête suivante / Mon ciel actions. No mandatory tour precedes quest 3. All badges are eligible from quest 1; the objective names them and the optional quest-3 advice explains them. Quest 6 recalls assistance choices on the real control. The guest registration boundary remains six visible quests; success navigation cannot bypass it.
+Quest 1 and ordinary quest victories share the existing result and explicit Quête suivante / Mon ciel actions. No mandatory tour precedes quest 3. All badges are eligible from quest 1; the objective names them and the optional quest-3 advice explains them. Quest 6 keeps optional guided assistance, without a retired marking lesson. The guest registration boundary remains six visible quests; success navigation cannot bypass it.
 
 Undo after a guided conflict restores the preceding board and clears the pending/deferred guided conflict, its card and its interaction lock. Acknowledging the explanation alone still leaves the incorrect Guardian to correct. Assistance already used remains recorded.
 
 ## Mobile input
 
 Touch-only long press (#531): after constrained learning has finished, holding
-a cell for 500 ms places a Guardian directly from empty/manual/automatic exclusion,
+a cell for 500 ms places a Guardian directly from empty/manual exclusion,
 or removes a Guardian to the neutral stored state. It uses the same cell-action
 handler, validation, assistance/mistake accounting, history and persistence as a
-short click. Derived automatic exclusions still follow existing rules. A hold
+short click. Exclusions remain manual throughout play. A hold
 fires once and consumes its release click; short taps retain empty → excluded →
 Guardian → empty. Mouse/keyboard click behavior remains unchanged.
 
@@ -145,3 +164,8 @@ LUMEN guarantees the sender-side condition (the shared snapshot comes from the s
 The sender's time and badges stay hidden before the recipient finishes, so the reference does not become a target during solving. At the end, comparison is factual across time, Autonomy and Mastery; there is no composite score that pretends an assisted faster run is objectively better than an autonomous slower run.
 
 **Remarkable performance** has one exact social definition: **Mastery earned on the sender's first play of that quest**. Every first play may be challenged, but this case receives stronger celebration and a more prominent “Défier un ami” CTA. Mastery earned on replay is never a remarkable social performance and cannot create a challenge.
+
+
+## Continuité des glissements (#632)
+
+Chaque segment de pointeur assombrit toutes les cases traversées, même lorsque le navigateur regroupe les déplacements pendant les effets. Le seuil de 8 px distingue tap et glissement ; la capture commence au seuil. Les Gardiens, les contraintes pédagogiques et les cellules DOM restent préservés. Annuler restaure tout le geste.

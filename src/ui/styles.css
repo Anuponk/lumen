@@ -524,7 +524,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .learning-coach-next{margin-top:10px;width:100%;font-weight:800}
 .learning-board-wrap .scripted-learn:not([hidden]){display:flex;flex-direction:column;overflow:hidden}
 .learning-board-wrap .scripted-learn>strong,.learning-board-wrap .scripted-learn>button{flex-shrink:0}
-.learning-board-wrap #scriptedLearnCopy{min-height:0;overflow:auto;overscroll-behavior:contain}
+.learning-board-wrap #scriptedLearnCopy{min-height:0;max-height:none;overflow:visible;white-space:normal;overflow-wrap:anywhere;line-height:1.35}
 .learning-board-wrap .scripted-learn .learning-coach-next{margin-top:5px}
 .onboarding-control-focus{outline:3px solid #ffe1a0;outline-offset:4px;border-radius:8px}
 .onboarding-control-focus input{min-width:24px;min-height:24px}
@@ -541,6 +541,10 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .adventure-rail{justify-content:flex-start;scroll-padding-inline:2px;padding-inline:2px;overscroll-behavior-x:contain}
 .adventure-chip{max-width:100%;white-space:normal;overflow-wrap:anywhere;min-width:0}
 .adventure-chip:focus-visible{outline:2px solid #b8f4ff;outline-offset:-3px}
+.adventure-chip.mastered{border-color:#dfbe6e;color:#fff1c6;background:linear-gradient(135deg,#795821,#4d3717);box-shadow:inset 0 1px 0 rgba(255,232,166,.18)}
+.adventure-chip.mastered.selected{border-color:#9ef4ff;box-shadow:inset 0 0 0 1px #9ef4ff}
+#skyReveal[data-celestial="adventure-mastery"] .celestial-summary{color:#ffe3a1}
+#skyReveal[data-celestial="adventure-mastery"] .celestial-vault{filter:drop-shadow(0 0 7px rgba(214,183,111,.35))}
 #sectorTabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:8px;flex:1;min-height:0;margin:0;overflow:hidden}
 #sectorTabs .constellation-card{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) repeat(3,max-content);justify-content:stretch;justify-items:center;align-content:stretch;gap:3px;min-width:0;min-height:0;padding:4px 6px!important;border-radius:14px;overflow:hidden;background:#0e2133}
 .constellation-card svg{width:100%;height:clamp(30px,7vh,64px);flex:0 1 auto}.constellation-card strong{max-width:100%;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.constellation-card small{font-size:11px;color:#b9d8e8}.constellation-card.locked{opacity:.55}
@@ -1025,7 +1029,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  #mapModal #dailyCard{padding:5px 8px;gap:2px;margin-bottom:0}
  /* Share the top row between drawing and name instead of squeezing the
     drawing underneath a wrapped alias. Progress and badges keep full rows. */
- #mapModal #sectorTabs .constellation-card{grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr);grid-template-rows:minmax(0,1fr) repeat(2,max-content);gap:2px 4px}
+ #mapModal #sectorTabs .constellation-card{grid-template-columns:minmax(24px,.5fr) minmax(0,1.5fr);grid-template-rows:minmax(0,1fr) repeat(2,max-content);gap:2px 4px}
  #mapModal #sectorTabs .constellation-card svg{grid-area:1/1}
  #mapModal #sectorTabs .constellation-card strong{grid-area:1/2;align-self:center}
  #mapModal #sectorTabs .constellation-card small{grid-column:1/-1}
@@ -1212,3 +1216,224 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .personal-record-new{animation:personalRecordGlow 1.2s ease-out}
 @keyframes personalRecordGlow{50%{text-shadow:0 0 12px #dfbd7088}}
 @media(prefers-reduced-motion:reduce){.personal-record-new{animation:none}}
+
+/* #638: compact ranking; inert legacy auto-marking compatibility control. */
+#autoCrossWrap,#autoCrossUnlockOverlay{display:none!important}
+.ranking{margin:12px 0;text-align:left;font-size:14px;max-width:100%;isolation:isolate}
+.ranking[hidden]{display:none}.ranking h3{font-size:14px;margin:0 0 8px}
+.ranking-list{list-style:none;margin:0;padding:0;max-height:320px;overflow:auto;overscroll-behavior:contain}
+.ranking-row{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:8px;padding:7px 9px;min-height:34px;border-bottom:1px solid #ffffff12}
+.ranking-mine{position:relative;z-index:1;background:#243e50;color:#d4f8ff;border-radius:8px;box-shadow:inset 3px 0 #8de1ef}
+.ranking-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ranking-row small{display:block;font-size:10px;opacity:.75}
+.ranking-time{font-variant-numeric:tabular-nums;text-align:right}.ranking-gap{text-align:center;padding:2px}
+.ranking-withdraw{font-size:11px;opacity:.7}.ranking button{margin-top:8px}
+.ranking-row:first-child{position:sticky;top:0;z-index:2;background:#14202e}
+.ranking-list{position:relative}
+.ranking{background:#0c1826;padding:10px;border:1px solid #273c50;border-radius:12px}
+/* Retired controls free space; guided feedback must still leave Undo reachable. */
+@media(max-width:900px){
+ body:has(#guidedCard:not([hidden])){display:flex;flex-direction:column;height:100dvh;min-height:0}
+ body:has(#guidedCard:not([hidden]))>.qa-banner{flex-shrink:0}
+ .app:has(#guidedCard:not([hidden])){display:flex;flex-direction:column;flex:1;width:100%;height:auto!important;min-height:0}
+ .game-core:has(#guidedCard:not([hidden])){display:flex;flex-direction:column;flex:1;min-height:0}
+ .game-core:has(#guidedCard:not([hidden]))>*{flex-shrink:0}
+ .game-core:has(#guidedCard:not([hidden])) .learning-board-wrap{flex:1;min-height:0;container-type:size;display:grid;place-items:center;padding:0}
+ .game-core:has(#guidedCard:not([hidden])) #board{width:min(100%,100cqh)!important;max-width:100%!important}
+ #guidedCard{position:static;max-height:min(26dvh,180px);min-height:60px;overflow:auto;margin:4px 0;box-shadow:none}
+}
+/* Victory phases share the same surface and navigation geometry. */
+.sky-reveal{padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));overflow:hidden}
+.sky-reveal .sky-reveal-card,.sky-reveal[data-celestial] .sky-reveal-card{max-height:100%;overflow:visible;min-height:0;box-sizing:border-box;padding:8px;display:flex;flex-direction:column;gap:5px}
+.sky-reveal #skyRevealCanvas{min-height:0;flex:0 1 auto}
+.sky-reveal .sky-reveal-svg{height:min(24dvh,180px);margin:4px 0}
+.sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]){cursor:default}
+.sky-reveal[data-victory-phase="ranking"] #skyRevealCanvas,.sky-reveal[data-victory-phase="ranking"] #skyRevealName{display:none}
+.sky-reveal[data-victory-phase="ranking"] .celestial-summary{font-size:12px;line-height:1.3}
+.sky-reveal-results{width:100%;min-height:0;gap:5px;margin-top:4px}
+.sky-reveal-title{margin:2px 0;font-size:clamp(20px,3vw,27px)}
+.ranking{margin:4px 0;padding:9px;background:#0c1826;border:1px solid #273c50;border-radius:12px;text-align:center;font-size:14px;max-width:100%;min-width:0;isolation:isolate}
+.ranking h3{font-size:14px;margin:0 0 8px}.ranking-podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:6px;list-style:none;margin:0;padding:0;overflow:visible}
+.ranking .ranking-row{display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0;min-height:80px;padding:8px 3px;border:1px solid #294157;border-radius:10px;background:#142536;position:static}
+.ranking-step-1{grid-column:2;grid-row:1;min-height:102px!important;border-color:#a48d53!important;background:#2c2d30!important}
+.ranking-step-2{grid-column:1;grid-row:1}.ranking-step-3{grid-column:3;grid-row:1}
+.ranking-place{font-size:18px;font-weight:800}.ranking-step-1 .ranking-place{color:#ffe1a0}.ranking-name{width:100%;overflow-wrap:anywhere;white-space:normal;font-size:13px;line-height:1.2}
+.ranking-time{font-variant-numeric:tabular-nums;font-weight:700}.ranking small{font-size:12px;line-height:1.25}.ranking-mine{box-shadow:inset 0 0 0 2px #8de1ef;color:#d4f8ff}
+.ranking-personal{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px 10px;margin-top:8px;padding:6px;border-radius:8px}
+.ranking-participants{flex-basis:100%}.ranking-record{color:#ffe1a0;font-size:12px}.ranking-status{margin:4px 0}
+@media(max-height:650px){.sky-reveal #skyRevealKicker{display:none}.sky-reveal .sky-reveal-svg{height:90px}.sky-reveal .sky-reveal-name{font-size:14px}.sky-reveal .sky-reveal-card{gap:3px}.sky-reveal .sky-reveal-rewards{margin:0}.sky-reveal .sky-reveal-actions{gap:4px}.sky-reveal .sky-reveal-actions button{min-height:36px;padding:5px}.ranking .ranking-row{min-height:65px}.ranking-step-1{min-height:80px!important}}
+@media(max-height:440px) and (min-width:560px){.sky-reveal .sky-reveal-card,.sky-reveal[data-celestial] .sky-reveal-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:3px 12px}.sky-reveal #skyRevealTitle,.sky-reveal #skyRevealName,.sky-reveal #skyRevealCanvas,.sky-reveal .celestial-summary{grid-column:1}.sky-reveal #skyRevealResults{grid-column:2;grid-row:1/6}.sky-reveal[data-victory-phase="ranking"] #skyRevealCanvas{display:none}}
+@media(prefers-reduced-motion:reduce){.ranking *{animation:none!important;transition:none!important}}
+.ranking-podium{padding-bottom:10px}
+.sky-reveal .sky-reveal-rewards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.sky-reveal .sky-reveal-rewards .success-reward{min-width:0;padding:5px 2px;overflow-wrap:anywhere}
+.sky-reveal .personal-record,.sky-reveal .challenge-unavailable{font-size:12px;line-height:1.25;margin:3px 0}
+.sky-reveal[data-victory-phase="ranking"] .sky-reveal-time{font-size:16px}
+/* Short screens use parallel columns instead of shrinking readable labels. */
+@media(max-height:700px){
+
+ .sky-reveal[data-victory-phase="ranking"] .sky-reveal-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:4px 10px}
+ .sky-reveal[data-victory-phase="ranking"] #skyRevealTitle{grid-column:1;grid-row:1;font-size:20px}
+ .sky-reveal[data-victory-phase="ranking"] #skyRevealResults{display:contents}
+ .sky-reveal[data-victory-phase="ranking"] .ranking{grid-column:2;grid-row:1/6;margin:0}
+ .sky-reveal[data-victory-phase="ranking"] .sky-reveal-time{grid-column:1;grid-row:2}
+ .sky-reveal[data-victory-phase="ranking"] .sky-reveal-rewards{grid-column:1;grid-row:3;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .sky-reveal[data-victory-phase="ranking"] .personal-record{grid-column:1;grid-row:4}
+ .sky-reveal[data-victory-phase="ranking"] .celestial-summary{grid-column:1;grid-row:5}
+ .sky-reveal[data-victory-phase="ranking"] .challenge-unavailable{grid-column:1/-1;grid-row:6}
+ .sky-reveal[data-victory-phase="ranking"] .sky-reveal-actions{grid-column:1/-1;grid-row:7}
+ .sky-reveal[data-victory-phase="ranking"] #skyRevealFeedback{display:none}
+
+.sky-reveal[data-victory-phase="ranking"] .sky-reveal-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}.sky-reveal[data-victory-phase="ranking"] .sky-reveal-actions .sky-reveal-primary{grid-column:auto;font-size:13px}
+.sky-reveal[data-victory-phase="ranking"] .sky-reveal-rewards .success-reward{display:flex;align-items:center;justify-content:center;gap:3px;line-height:1.2}.sky-reveal[data-victory-phase="ranking"] .sky-reveal-rewards .success-reward span:first-child{font-size:14px;line-height:1}.sky-reveal[data-victory-phase="ranking"] .ranking{align-self:start}
+.sky-reveal[data-victory-phase="ranking"] .sky-reveal-rewards{margin:0}.sky-reveal[data-victory-phase="ranking"] .sky-reveal-rewards .success-reward{flex-direction:row}.sky-reveal[data-victory-phase="ranking"] .success-reward .performance-icon{width:14px;height:14px}
+
+ .sky-reveal[data-victory-phase="ranking"] #skyRevealTitle{grid-column:1/-1;grid-row:1}
+ .sky-reveal[data-victory-phase="ranking"] .ranking{grid-row:2/6}
+ .sky-reveal[data-victory-phase="ranking"] .ranking-personal{margin-top:3px;padding:3px}
+
+.ranking-participants{flex-basis:auto}.ranking-personal{gap:3px 7px}.ranking h3{margin-bottom:4px}.ranking-podium{padding-bottom:6px}
+.ranking-podium{padding-bottom:10px}
+.sky-reveal[data-victory-phase="ranking"] .sky-reveal-actions button{line-height:1.2;padding:5px 2px}
+
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:4px 10px}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) #skyRevealTitle{grid-column:1/-1;grid-row:1;font-size:20px;margin:2px 0}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) #skyRevealResults{display:contents}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) #skyRevealName{grid-column:2;grid-row:2;font-size:14px;line-height:1.25}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) #skyRevealCanvas{grid-column:2;grid-row:3;min-height:0;max-height:100px;overflow:hidden}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-svg{height:80px}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .celestial-scene{min-height:56px;max-height:100px}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-time{grid-column:1;grid-row:2;font-size:16px}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-rewards{grid-column:1;grid-row:3;grid-template-columns:repeat(2,minmax(0,1fr));margin:0}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .success-reward{flex-direction:row;display:flex;line-height:1.2}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .success-reward span:first-child{font-size:14px}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .success-reward .performance-icon{width:14px;height:14px}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .personal-record{grid-column:1;grid-row:4}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .celestial-summary{grid-column:2;grid-row:4;font-size:12px;line-height:1.25}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-actions{grid-column:1/-1;grid-row:6;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-actions .sky-reveal-primary{grid-column:auto;font-size:13px}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-actions button{line-height:1.2;padding:5px 2px;min-height:36px}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .challenge-unavailable{grid-column:1/-1;grid-row:5}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) #skyRevealFeedback{display:none}
+
+.sky-reveal[data-victory-phase="ranking"] .sky-reveal-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}.sky-reveal[data-victory-phase="ranking"] .sky-reveal-actions .sky-reveal-primary{grid-column:auto;font-size:13px}.sky-reveal[data-victory-phase="ranking"] .sky-reveal-actions button{line-height:1.2;padding:5px 2px;min-height:36px}
+
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) #skyRevealName{grid-column:2;grid-row:2}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) #skyRevealCanvas{grid-column:1;grid-row:2/4}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-time{grid-column:1;grid-row:4}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .personal-record{grid-column:2;grid-row:3/5}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-rewards{grid-column:1/-1;grid-row:5;grid-template-columns:repeat(5,minmax(0,1fr))}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .success-reward{flex-direction:column;gap:2px}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .celestial-summary{grid-column:1/-1;grid-row:6}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .sky-reveal-actions{grid-row:7}
+ .sky-reveal:is([data-victory-phase="celebration"],[data-victory-phase="admire"]) .challenge-unavailable{grid-row:8}
+
+}
+
+
+
+
+
+
+
+.ranking-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sky-reveal #skyRevealRanking{grid-column:1/-1;color:#ffe1a0;border-color:#a48d53}
+#time{position:relative;font-variant-numeric:tabular-nums} .time-penalty{position:absolute;margin-left:5px;color:#ffe1a0;font-size:12px;pointer-events:none;white-space:nowrap}
+
+
+/* #661 — single victory screen: never replace the constellation with ranking. */
+.sky-reveal[data-victory-phase="combined"] .sky-reveal-card{width:min(980px,96vw);max-height:94dvh;overflow-y:auto;overscroll-behavior:contain}
+.sky-reveal[data-victory-phase="combined"] #skyRevealCanvas,
+.sky-reveal[data-victory-phase="combined"] #skyRevealName{display:block}
+.sky-reveal[data-victory-phase="combined"] .ranking{margin:10px 0;min-width:0}
+.sky-reveal[data-victory-phase="combined"] .sky-reveal-svg{height:clamp(130px,24dvh,250px)}
+.sky-reveal[data-victory-phase="combined"] .sky-reveal-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.sky-reveal[data-victory-phase="combined"] .sky-reveal-actions .sky-reveal-primary{grid-column:1/-1}
+@media(min-width:700px){
+ .sky-reveal[data-victory-phase="combined"] .sky-reveal-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 20px;align-items:start}
+ .sky-reveal[data-victory-phase="combined"] #skyRevealKicker,
+ .sky-reveal[data-victory-phase="combined"] #skyRevealTitle{grid-column:1/-1}
+ .sky-reveal[data-victory-phase="combined"] #skyRevealName{grid-column:1;grid-row:3}
+ .sky-reveal[data-victory-phase="combined"] #skyRevealCanvas{grid-column:1;grid-row:4/7}
+ .sky-reveal[data-victory-phase="combined"] #skyRevealResults{display:contents}
+ .sky-reveal[data-victory-phase="combined"] .sky-reveal-time{grid-column:1;grid-row:7}
+ .sky-reveal[data-victory-phase="combined"] .personal-record{grid-column:1;grid-row:8}
+ .sky-reveal[data-victory-phase="combined"] .sky-reveal-rewards{grid-column:1;grid-row:9}
+ .sky-reveal[data-victory-phase="combined"] .ranking{grid-column:2;grid-row:3/10;align-self:start}
+ .sky-reveal[data-victory-phase="combined"] .sky-reveal-actions{grid-column:1/-1;grid-row:12;grid-template-columns:repeat(4,minmax(0,1fr))}
+ .sky-reveal[data-victory-phase="combined"] .sky-reveal-actions .sky-reveal-primary{grid-column:auto}
+ .sky-reveal[data-victory-phase="combined"] #skyRevealFeedback,
+ .sky-reveal[data-victory-phase="combined"] #skyRevealChallengeReason{grid-column:1/-1}
+}
+@media(max-width:699px){
+ .sky-reveal[data-victory-phase="combined"] .sky-reveal-card{width:min(520px,96vw)}
+ .sky-reveal[data-victory-phase="combined"] .sky-reveal-svg{height:clamp(110px,21dvh,190px);margin:4px 0}
+ .sky-reveal[data-victory-phase="combined"] .ranking .ranking-row{min-height:56px}
+ .sky-reveal[data-victory-phase="combined"] .ranking-step-1{min-height:72px!important}
+}
+
+/* #666: the ranking owns a dedicated layout region from the first victory frame.
+   Do not let the async leaderboard paint over the constellation or badges. */
+.sky-reveal[data-victory-phase="combined"] .sky-reveal-card{position:relative;isolation:isolate}
+.sky-reveal[data-victory-phase="combined"] .ranking{position:relative!important;inset:auto!important;transform:none!important;z-index:auto!important;width:100%;max-width:100%;box-sizing:border-box;min-height:170px;overflow:visible}
+.sky-reveal[data-victory-phase="combined"] .ranking[hidden]{display:block!important;visibility:hidden;pointer-events:none}
+.sky-reveal[data-victory-phase="combined"] #skyRevealCanvas{position:relative;z-index:auto;min-width:0}
+.sky-reveal[data-victory-phase="combined"] .sky-reveal-rewards{position:relative;min-width:0}
+@media(max-width:699px){
+ .sky-reveal[data-victory-phase="combined"] .sky-reveal-card{display:flex;flex-direction:column;align-items:stretch;gap:8px}
+ .sky-reveal[data-victory-phase="combined"] #skyRevealResults{display:contents}
+ .sky-reveal[data-victory-phase="combined"] .ranking{order:8;margin:0;flex:none}
+ .sky-reveal[data-victory-phase="combined"] .sky-reveal-actions{order:9}
+}
+
+/* #666: completed narrative remains legible after the animation ends. */
+.sky-reveal[data-victory-phase="combined"].celestial-still #skyRevealTitle{opacity:1!important}
+
+/* #668: compact, self-contained authentication and prominent sent-email state. */
+.account-optin #accountSignupConfirmation[hidden],.account-optin #accountEmailAuth [hidden]{display:none!important}
+.account-optin .account-signup-confirmation{margin:12px 0 0;padding:16px;border:1px solid #62d9fc;border-radius:16px;background:#102c42;color:#e7f7ff;text-align:center}
+.account-optin .account-signup-confirmation h3{font-size:19px;margin:0 0 8px;color:#fff}
+.account-optin .account-signup-confirmation p{font-size:14px;line-height:1.4;margin:0 0 12px;overflow-wrap:anywhere}
+.account-optin .account-signup-confirmation button{min-height:40px;padding:8px 12px}
+.account-optin #accountPasswordSubmit:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+@media(max-width:700px){
+ .account-optin .account-optin-card{padding:12px 16px!important;max-height:calc(100dvh - 16px)!important}
+ .account-optin .account-optin-art{display:none!important}
+ .account-optin .account-auth-tabs{margin-bottom:8px}
+ .account-optin .account-auth-tabs button{padding:7px 5px}
+ .account-optin #accountOptinEnable{min-height:40px}
+ .account-optin .account-auth-divider{margin:7px 0}
+ .account-optin #accountEmailAuth label{margin:7px 0 3px}
+ .account-optin #accountEmailAuth input{min-height:40px;padding:8px 12px}
+ .account-optin #accountPasswordVisibility{height:40px}
+ .account-optin #accountPasswordSubmit{min-height:42px;margin-top:10px;padding:8px}
+ .account-optin #accountRecovery{margin-top:6px}
+}
+@media(max-width:380px) and (max-height:650px){
+ .account-optin .account-optin-card{padding:8px 12px!important}
+ .account-optin #accountOptinDescription{font-size:12px;line-height:1.25;margin:3px 0 7px}
+ .account-optin .account-auth-tabs{margin-bottom:5px}
+ .account-optin #accountEmailAuth label{margin:4px 0 2px}
+ .account-optin .account-auth-divider{margin:4px 0}
+}
+
+/* #670: nickname onboarding is independent from the dismissible account popover. */
+.mandatory-nickname{z-index:10050!important}
+.mandatory-nickname[hidden]{display:none!important}
+.mandatory-nickname .account-optin-card{max-width:390px;text-align:center}
+.mandatory-nickname label{display:block;margin:12px 0 6px;text-align:left}
+.mandatory-nickname input{box-sizing:border-box;width:100%;min-height:44px;padding:10px 12px;border-radius:12px;border:1px solid #6383a8;background:#0b1a30;color:#fff;font-size:16px}
+.mandatory-nickname small{display:block;min-height:24px;margin:8px 0;color:#e9e6c5}
+.mandatory-nickname button{width:100%;min-height:44px;margin-top:8px}
+.mandatory-nickname #mandatoryNicknameSignout{background:transparent;border:0;color:#b7c9e2}
+@media(max-width:380px){.mandatory-nickname .account-optin-card{padding:14px!important}.mandatory-nickname h2{margin:4px 0}}
+
+/* #569: keep instructional copy and action in view on narrow portrait screens. */
+.learning-board-wrap .scripted-learn{min-width:0;max-width:100%;box-sizing:border-box}
+.learning-board-wrap .scripted-learn strong,.learning-board-wrap #scriptedLearnCopy{white-space:normal;overflow-wrap:anywhere}
+@media(max-width:390px) and (max-height:650px){.learning-board-wrap .scripted-learn{padding:7px 9px;margin:3px 0;line-height:1.25;font-size:clamp(12px,3.6vw,14px)}.learning-board-wrap .scripted-learn strong{margin-bottom:2px}.learning-board-wrap .scripted-learn .learning-coach-next{min-height:36px;margin-top:3px}}
+/* Mobile recipe: the introduction must not be clipped by legacy 52/90/150px coach limits. */
+@media(max-width:1100px){
+ .learning-board-wrap .scripted-learn.learning-intro-panel{position:fixed!important;top:50%!important;bottom:auto!important;max-height:min(70dvh,420px)!important;overflow-y:auto!important;overscroll-behavior:contain;z-index:1500}
+ .learning-board-wrap .scripted-learn.learning-intro-panel #scriptedLearnCopy{overflow:visible;flex-shrink:0}
+ .learning-board-wrap .scripted-learn.learning-intro-panel .learning-coach-next{flex-shrink:0;position:sticky;bottom:0}
+}

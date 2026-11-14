@@ -1,5 +1,110 @@
 # Testing and quality gate
 
+## Current validation entry points
+
+- `npm ci --ignore-scripts` installs development tooling; runtime has no build step.
+- `npm run format:check` checks the reviewed formatting scope and syntax equivalence.
+- `npm run test:affected -- --list` explains test selection without running it;
+  `npm run test:affected` executes it. UI, tooling and uncertain impact select full validation.
+- `npm run test:full` runs the gate and complementary standalone suites. Node
+  inventory: `scripts/quality-gate-suites.mjs`; browser composition: `scripts/quality-gate.mjs`.
+- `await window.runHintTests()` tests one size; `await window.lumenDiagnostics.runAllHintTests()`
+  derives all sizes from the catalogue. Use an isolated QA/guest profile and read
+  actual totals/failures from the returned results and `docs/validation/ci-*.json`.
+
+Old counts (66, 69, 79, 316 or 360 executions) below describe historical runs,
+not current totals. `module-structure-tests.mjs` retains original case labels plus
+reviewed product changes; never remove coverage to reconcile a count. Use the
+[test map](architecture/test-map.md) for neighboring checks. Fixtures/CI do not
+replace live-service or physical acceptance.
+
+## Reproducible formatting (#59)
+
+Prettier 3.6.2 and Acorn 8.15.0 are exact development-only versions, locked with
+integrity in `package-lock.json`. `.prettierrc.json` defines two spaces, single
+quotes, semicolons, trailing commas, 100-column wrapping and LF. Run `npm run format`
+to write or `npm run format:check` to inspect. Both compare parsed syntax before
+and after formatting; a syntax-tree change fails before writing. CI installs
+locked tooling and runs the check.
+
+Rollout is incremental: `scripts/format-scope.json` lists migrated modules/tools.
+Unlisted legacy modules are not silently reformatted. Extend the list in dedicated
+changes with behavior checks. Immutable catalogue/astronomy/generated data,
+vendored dependencies and reports are excluded by `.prettierignore`; the script
+never traverses them. Avoid editor-wide formatting of those files. Source-text
+tests must follow the owning module or become behavior tests after extraction.
+
+`app-updates-tests.mjs` was run against the original worker block, then the same
+scenarios against `ui/app-updates.js`: first controller, one upgrade reload,
+OAuth code/token exceptions, manual messages, waiting-worker activation and
+asset-cache-only cleanup. The welcome regression also executes the actual new
+listener. `service-worker-update-browser-tests.mjs` retains real worker/cache
+upgrade and local/IndexedDB preservation checks. No live cloud transport is asserted.
+
+Mixed pacing: `node scripts/mixed-difficulty-tests.mjs` independently rates,
+recounts and replays all 480 targeted grids, checks the 200 changed / 280 retained
+boards, exact protected Adventure 1–4 definitions, D4 diversity, measured score
+relief/final peaks and the all-Master finale. Different constellation lengths,
+attempt versions, older social geometry and stale reset-aware intents are covered.
+Offline regressions retain older pending evidence while recovering a new board
+version, and preserve same-version, Auth and economic-domain ordering.
+`--write` regenerates `validation/mixed-logical-difficulty.json`; the ordinary
+test compares that report with freshly measured output.
+
+SQL CI explicitly uses `quest-command-fixtures --grid-revision 1` before the
+new cutover. After preparation/activation it runs current changed-board parity
+with a separate synthetic identity namespace, plus rollback, old API/receipt
+refusal, two reset epochs, no duplicate rewards, preserved original Adventures,
+unchanged-board records, historical social participation and export/erasure of
+both histories. Prepared DDL must leave old clients functional until activation.
+Fixtures and activation generation are offline/disposable checks, not production
+authorization or evidence of real-device play.
+
+Explicit quest resets: `node scripts/cloud-quest-reset-tests.mjs` covers obsolete
+local achievements, two devices, exact archives, outbox replicas and owner scope,
+quota/session holds, active attempt epochs and fresh records without duplicate
+economic rewards. The full affected gate discovers this suite automatically.
+`fixtures/quest-reset.sql` runs after the current catalogue/records migrations in
+the canonical ledger CI: reset idempotence, original archives, access, other-player
+isolation, stale snapshots/receipts/facts, old APIs, acquisition recovery and new
+command retry. Current-schema privacy tests follow the additive migration.
+Synthetic fixtures never authorize production account changes.
+
+Logical difficulty #640: `node scripts/logical-difficulty-tests.mjs` verifies
+solution-blind reproducible traces, prerequisite DAGs, sound deductions, stalls,
+same-size board replacement, unversioned saves, offline reload, downgrade and
+archive quota failures. `node scripts/logical-grid-tests.mjs` independently
+recounts and replays every new grid in both logical models; checks old/new
+hashes, exact replacement scope, unchanged identities/rewards/outside content,
+near-duplicate distance, strict Adventure bands, within-constellation progression,
+matched-size improvement, shallow guardians and first-placement depth; and checks
+grandfathered cloud facts and non-duplicating replay awards. `--write` records
+the deterministic distribution, excluding environment-dependent benchmark time.
+Both suites are part of the quality gate. Existing frozen-grid audits continue
+against the original manifests, alongside the new complete replacement audit.
+
+The IAU browser suite additionally plays one proof-derived sample in each of
+Adventures 5–8 at 390px through actual touch handlers (two taps per guardian),
+without setting the board or consulting `sol` for those moves. Existing cases
+cover victory, next-Adventure navigation, guest reload, offline shell and the
+authenticated offline/reconnect exactly-once receipt. This is automated browser
+evidence, not a human difficulty study or physical phone acceptance.
+
+`scripts/fixtures/logical-grid-challenges.sql` runs after the actual challenge
+and catalogue migrations in canonical-ledger CI's disposable PostgreSQL 17.
+It checks default revision-0 links, v2/get/list round trips, hidden reference
+performance, stable one-shot participation, inbox privacy, invalid revision,
+wrong Adventure, unknown quest, replay rejection, narrow privileges and no
+campaign write. The Node difficulty suite checks routing both revisions and
+refuses an unsafe old-RPC fallback. Production application is not a test step.
+Versioned read/list/start/finish also cover old-client rejection without
+consuming an attempt, wrong-revision resume, private implementation denial and
+prevention of a cross-grid result through the legacy finish RPC.
+
+Onboarding impact #640: rules, gestures, assistance, badge eligibility, learning
+quests and their timing are unchanged. Only later Adventure grids/labels change;
+the complete embedded and learning-browser regressions remain mandatory.
+
 Erasure UI acknowledgement: `node scripts/self-erasure-controls-tests.mjs`
 executes the real controls with synthetic DOM/Auth/HTTP and cleanup spies. Six
 cases reproduce unsafe cleanup on baseline, then seven pass: incomplete HTTP
@@ -664,6 +769,53 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Competition #638 / marking retirement #647: `ranking-client-tests.mjs` covers
+durable offline/reload staging, counters, account/client changes, begin/finish
+races, withdrawal and quota. `manual-marking-tests.mjs` checks stale preferences
+and the live engine injection independently of historical solver simulation.
+`ranking-browser-tests.mjs` covers 320/390/1440px, actual retired controls, the
+production list animation, top-10/centered/boundary fixtures, virtual labels,
+new-record visibility and reduced motion. Synthetic RPC fixtures are not live
+account or physical-device acceptance. `fixtures/ranking.sql` exercises the
+real migration/APIs in disposable PostgreSQL: receipt admission, +5/+15,
+frozen cooldown, privacy/grants and withdrawal. `ranking-concurrency.py` checks
+simultaneous device starts/finishes in CI. Existing full `runHintTests`, strict
+catalogue/proof audit and cloud matrix remain mandatory.
+
+Sky-return navigation: `sky-return-tests.mjs` tests the actual map opener and
+stable-identity precedence across variable catalogue sizes and multiple skies;
+`sky-return-browser-tests.mjs` opens a real board in every Adventure, browses
+elsewhere, returns from the header and from a replay victory, and verifies the
+adventure/constellation/page plus unchanged progression and attempt identity.
+
+`cloud-reset-browser-tests.mjs` exercises the full authenticated hydration,
+automatic reload and real grid-card opening after a 200-grid epoch change.
+Both ordinary storage and backup-only Web Storage quota with native IndexedDB
+must retain the exact original (including old wins), install the reset, reach
+ready and open a grid without granting a new victory. Async owner/session/cache
+changes and archive refusal are covered by `cloud-quest-reset-tests.mjs`.
+
+Support sizing: `node scripts/support-tests.mjs` constructs the full current
+catalogue projection with two synthetic checkpoints. The current projection
+must remain complete, optional copies must fit the server's spaced/decimal
+`jsonb::text` limit including later incident/counter metadata, and all source
+bytes must remain unchanged. Compact-only and exponent cases cross the limit;
+the real validator is exercised independently in disposable `fixtures/support.sql`.
+No production fixture or real-account upload is implied by these tests.
+
+`node scripts/cloud-pending-victory-tests.mjs` exercises production result
+retry functions and the bounded scheduler with real durable outboxes and
+synthetic command confirmation. Canonical and historical results recover while
+open; transient failures preserve operation identity, Auth/review holds prevent
+resends, account changes during inspection and simultaneous online/timer wakes
+cannot authorize a stale or concurrent command. An obsolete client inspection
+cannot hold the current result's retry lock. Dirty profiles, active writes,
+reset attempts, hidden/offline and recovery sessions stay held. Existing ledger
+and historical command suites retain exact receipt/current-profile checks.
+The diagnostic assertion admits only existing fixed incident vocabulary, never
+provider text or payload. These simulations do not prove physical-device or
+live-account recovery; reproduce the affected pending victory after deployment.
+
 ### Lumen-only erasure (#316, prepared migration)
 
 Current-schema extension: `fixtures/privacy-current-schema.sql` runs after the
@@ -838,9 +990,15 @@ expiry, Lumen account scope, immutable receipt dates and multi-device pending.
 
 Historical recreated-capture recovery: `canonical-durable-outbox-tests.mjs`
 reproduces a committed 37-second run with a later 41-second local copy and a
-`22023` review pause. It verifies archival without resending, and rejects improved
-times, changed flags/identity/owner, missing projected attempts, a capture older
-than the receipt, denied archival and account changes. Run the historical client,
+`22023` review pause. It verifies archival without resending for a covered copy
+created either before or after the better server receipt. It rejects improved
+times and changed flags even on an older capture, wrong identity/owner, missing
+projected attempts/badges, denied archival and account changes. The real UI
+reconnect regression also preserves the server profile, receipt and local view
+while retiring an older slower copy through reads and verified archival only.
+This intentionally replaces the former older-capture rejection: chronology
+alone cannot override an exact same-operation receipt proving a better result.
+Run the historical client,
 canonical outbox, storage/export, hydration and full affected suites as well.
 Phone recovery remains a separate acceptance check. Onboarding impact: none;
 no rule, reward, assistance or navigation destination changes.
@@ -1256,7 +1414,12 @@ After **every modification affecting LUMEN code, gameplay or a product feature**
 For gameplay, board, progression or catalogue changes, also run the strict grid audit. Do this even for changes that appear purely visual if they touch board DOM/input/state. A feature is not complete when its implementation exists but its test contract still describes the previous behavior.
 
 ## Browser regression suite
-The app exposes `await window.runHintTests()`; the 66 original cases plus three UX regressions (#16/#17/#19) live in `src/testing/hint-tests.js`. The narrative assertion now reads the on-demand rules modal. `window.lumenDiagnostics.runAllHintTests()` runs the suite for every size. The suite runs cases sequentially and waits for asynchronous victory/reveal behavior. It covers, among other things:
+The app exposes `await window.runHintTests()`; current cases live in
+`src/testing/hint-tests.js`. The original extraction had 66 cases and #38 added
+three UX regressions; later additions/intentional changes are guarded by
+`module-structure-tests.mjs`. The narrative assertion reads the rules modal.
+`window.lumenDiagnostics.runAllHintTests()` runs the current suite for every
+catalogue size, sequentially and awaiting victory/reveal behavior. Coverage includes:
 - PWA install timing and standalone behavior;
 - sharing/referral and account/profile behavior;
 - reminder opt-in rules;
@@ -1343,6 +1506,11 @@ node scripts/quality-gate.mjs
 The orchestrator runs every current Node gate, starts its own static HTTP server, launches isolated temporary browser profiles for browser/UX/learning suites, writes the usual reports under `docs/validation/`, and closes only the server/browser processes it started. On Windows it auto-detects Chrome or Edge; on Linux it looks for Chromium/Chrome. Set `LUMEN_CHROME_BIN` when the browser lives elsewhere. Any failing suite returns a non-zero exit code with a timing/status summary.
 
 ## Reproducible modular-refactor checks
+
+Historical reproducibility — the October 2026 extraction baseline. Commands still
+describe differential checks against immutable commits; the counts in this section
+belong to those recorded runs. Use the current entry points above for today's
+browser suite and catalogue. Never replace current totals with 69/79-case snapshots.
 
 Use a recent Node runtime with native ES modules, built-in `fetch` and `WebSocket` (validated with Node 22.22.3). No npm install or bundler is needed. From the repository root:
 
@@ -1774,3 +1942,75 @@ The o2switch static publisher stages `.well-known/assetlinks.json`, merges it in
 Release acceptance: verify `https://lumen.nopuna.fr/.well-known/assetlinks.json` returns 200, JSON, no redirects; test Android's domain verification and launch the **same APK whose certificate is listed** to verify the browser toolbar is absent. A successful HTTP check alone does not guarantee that a specific browser/device accepts TWA verification.
 
 For release verification, use the *original* APK from Android workflow run 41882238087 (artifact 13350282143); rebuilding a debug APK changes the CI signing certificate and invalidates the published fingerprint. After the public DAL is verified, force-stop and relaunch the installed app. Do not remove its browser data as a workaround.
+
+## Catalogue complet 88 / 880
+
+Le gate enregistre `iau-completion-tests.mjs`, `validate-iau-completion.mjs` et
+`iau-completion-browser-tests.mjs`. Le premier conserve le préfixe de 500 quêtes
+et fait terminer les 380 nouvelles ; le second rejoue les preuves et vérifie le
+rapport déterministe ; le navigateur joue les transitions et les deux finales
+à 320/390/1440 px avec consultation hors ligne. Le mode QA désactive volontairement
+la restauration automatique de compte ; `iau-completion-cloud-browser-tests.mjs`
+vérifie la reprise A6 authentifiée, l’identité de tentative hors ligne, une
+victoire en attente puis confirmée à la reconnexion et conservée au redémarrage.
+Cette suite partage la fixture RPC synthétique de `campaign-resume-browser-tests.mjs`.
+Les contrats serveur relèvent de la CI ledger-sql. Voir le
+[rapport du catalogue](CATALOGUE_88.md) et la recette physique encore distincte.
+
+Le job d’astronomie lance aussi `python scripts/vizier-fetch-tests.py` : une
+expiration réseau du CDS utilise le miroir VizieR officiel du CfA pour le même
+catalogue, sans rendre verts les cas de réponse vide, invalide ou indisponible
+sur les deux serveurs. Le rapport frais et l’audit des sources figées restent
+des preuves complémentaires.
+
+
+## Régressions groupées #629, #632 et #627
+
+`offline-wallet-ui-tests.mjs` reproduit le refus avec solde 80 et panne réseau malgré le signal en ligne ; conserve les refus Auth/métier et sans preuve. `offline-wallet-tests.mjs` couvre concurrence, quota, identité et file en revue. `drag-grid-path-tests.mjs` exécute le vrai gestionnaire avec événements espacés (RED avant correctif). `celestial-ux-tests.mjs` vérifie le dernier badge d’aventure et les priorités (RED avant correctif).
+
+La quality gate ajoute `offline-hint-purchase-browser-tests.mjs`, `offline-hint-network-browser-tests.mjs`, `drag-cascade-browser-tests.mjs`, `adventure-mastery-browser-tests.mjs`. Profils et RPC sont synthétiques ; Chromium exerce les vrais boutons, le stockage durable, la reconnexion, les gestes tactiles et les scènes mobiles/bureau. Rapports CI : `ci-offline-hint.json`, `ci-offline-hint-network.json`, `ci-drag-cascade.json`, `ci-adventure-mastery.json`.
+
+`adventure-mastery-browser-tests.mjs` vérifie aussi le libellé « Maîtrisée » visible dans la barre d’aventures et le fond rempli distinct, conservé lorsque la sélection change. La navigation et le rechargement conservent les acquis sans récompense ajoutée.
+
+Recette physique restante : indice avec 80 Éclats en mode avion puis reconnexion ; glissement pendant scintillement avec/sans marquage automatique ; dernier badge d’aventure puis réouverture de Mon ciel, avec fond doré et libellé de maîtrise lisibles. Ces tests simulés ne valent pas recette sur téléphone. Les issues restent ouvertes « To be tested » jusqu’à acceptation.
+
+## Highscore et séquence de victoire
+
+La quality gate exécute victory-presentation-tests.mjs et ranking-browser-tests.mjs :
+fin effective/annulation, minimum de deux secondes, attente sans limite puis
+bouton explicite pointeur/clavier, podium et carte,
+Top 3/hors podium/sans score/Échos, reduced-motion, largeur 320/390/768/1440 et
+petites hauteurs 320/360/480. Les fixtures highscore-before.sql,
+highscore-between.sql et highscore.sql
+encadrent deux applications de la nouvelle migration dans PostgreSQL jetable :
+doublons historiques, unicité, renommage, opposition sans tentative, nouveau compte
+entre deux applications de la migration, dry-run, minima et rollback.
+La concurrence SQL complète reste obligatoire en CI. Les tests simulés ne prouvent
+ni l'information juridique, ni une compétition entre comptes de production, ni la
+recette sur téléphone physique ; voir HIGHSCORE_ROLLOUT.md.
+
+Le chrono officiel est couvert par official-time-tests.mjs et
+official-time-browser-tests.mjs : 60 + 75 = 135 secondes, comparaison à 110/150/135,
+pénalité immédiate, géométrie de mise en page inchangée, absence d’annonce en double,
+preuve persistée avant ouverture du classement et capability conservée après
+fermeture hors ligne de la PWA. Les compteurs répétés/restaurés n’émettent pas de
+nouvelle animation. fixtures/official-time.sql et official-time-concurrency.py
+vérifient les deux générations de commandes, droits, read-back, import historique,
+retrait et plusieurs appareils dans PostgreSQL 17 jetable. Aucun test SQL de fixture
+ne doit viser la production ; voir OFFICIAL_TIME_ROLLOUT.md pour le plan opérateur.
+
+## Sélection CI des PR purement documentaires
+
+Le job GitHub Actions `Lumen quality gate` conserve son statut de contrôle obligatoire, mais évite ses tests applicatifs pour une pull request ne modifiant **que** `AGENTS.md` ou des fichiers `docs/**/*.md` (hors `docs/validation/`). Le contrôle indépendant `Documentation consistency` reste exécuté. La détection compare les commits base et head ; si la comparaison échoue ou si un fichier inconnu, généré, SQL, applicatif ou de workflow est touché, la gate complète reste obligatoire (fail closed). Les pushes sur `main`, lancements manuels et contrôles programmés ne changent pas. Une PR modifiant elle-même la CI exécute donc la gate complète.
+
+Ce filtrage ne remplace ni les tests ciblés pendant le développement ni les contrats de sauvegarde et de synchronisation. Avant de fusionner, vérifier que le check `quality` reste présent et vert sur une PR documentaire et que la gate complète s'exécute sur une PR de code.
+
+## Sélection conservatrice du navigateur Learning
+
+Sur les pull requests, la quality gate conserve les tests Node et les autres suites navigateur. Le test coûteux `learning-browser-tests.mjs` peut être ignoré uniquement lorsque **tous** les fichiers modifiés appartiennent à une liste fermée de zones isolées : `AGENTS.md`, documentation Markdown hors `docs/validation/`, trois modules spécifiques au classement/records (`src/persistence/ranking.js`, `src/ui/ranking.js`, `src/ui/personal-records.js`) ou leurs trois scripts de test (`scripts/ranking-tests.mjs`, `scripts/ranking-client-tests.mjs`, `scripts/personal-records-tests.mjs`). Toute modification partagée (moteur, tutoriel, onboarding, gestes, navigation, CSS, sauvegarde, authentification, configuration, CI, scripts inconnus) déclenche Learning. Une erreur de diff ou une liste vide entraîne également son exécution. Les pushes sur `main`, exécutions planifiées et manuelles gardent Learning systématiquement. Le rapport `ci-quality-summary.json` permet de constater l'absence de la suite sur les PR éligibles ; le check qualité reste obligatoire.
+
+Cette première liste volontairement restrictive est à élargir seulement après analyse des dépendances et validation de PR représentatives. Le filtrage n'affecte pas les contrats cloud indépendants.
+
+## o2switch release authorization
+
+The full quality suite runs on pull requests. After a squash merge, the publisher verifies the exact merged commit, its PR provenance, and the successful PR quality, cloud persistence, reconciliation, SQL ledger, and documentation workflows. Cloud reconciliation and SQL ledger must also pass for the exact `main` SHA. Direct or unverified commits cannot deploy. A failed or missing check blocks publication; the deployment must never silently bypass a gate.

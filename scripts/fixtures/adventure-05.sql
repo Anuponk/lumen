@@ -2,12 +2,12 @@
 do $test$
 declare uid uuid:=gen_random_uuid();other uuid:=gen_random_uuid();q text;f jsonb;r jsonb;saved jsonb;
 begin
- assert (select count(*) from lumen_commands.quest_rules where (rules->>'ordinal')::integer>400)=100,'Exactly 100 appended rules';
- assert (select max((rules->>'ordinal')::integer) from lumen_commands.quest_rules)=500,'Contiguous appended tail';
+ assert (select count(*) from lumen_commands.quest_rules where (rules->>'ordinal')::integer between 401 and 500)=100,'Exactly 100 appended rules';
+ assert (select max((rules->>'ordinal')::integer) from lumen_commands.quest_rules where (rules->>'ordinal')::integer<=500)=500,'Contiguous appended tail';
  insert into auth.users values(uid),(other);
  insert into lumen.profile_snapshots(user_id,payload) values(uid,'{"catalogueOrigin":2,"solved":{"0":1},"badges":{},"stars":{},"performances":{},"canonicalQuestState":{},"challenges":{},"xp":42,"shards":7,"future":{"keep":true}}');
  insert into lumen.profile_snapshots(user_id,payload) values(other,'{"solved":{},"badges":{}}');
- assert (select payload->>'catalogueOrigin' from lumen.profile_snapshots where user_id=other)='3','New empty account gets current origin';
+ assert (select payload->>'catalogueOrigin' from lumen.profile_snapshots where user_id=other)='4','New empty account gets current origin';
  perform set_config('request.jwt.claim.sub',uid::text,true);
  perform public.lumen_commit_wallet_command('wallet-establish-v1',uid,'{"kind":"establish"}');
  select quest_id into q from lumen_commands.quest_rules where (rules->>'ordinal')::integer=401;

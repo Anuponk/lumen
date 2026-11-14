@@ -1,5 +1,12 @@
 import assert from "node:assert/strict";
 import {buildAstronomicalCatalogue} from "./build-astronomical-catalogue.mjs";
+import {iauForConstellation,verifiedAstronomicalFigure} from '../src/ui/astronomical-catalogue.js';
+import atlas from '../src/data/astronomy/stellarium-western-figures.json' with {type:'json'};
+const triangle={id:'iau-tra',iau:'TrA'};
+assert.equal(iauForConstellation(triangle),'TrA','Official TrA must map to the pinned Stellarium Tra spelling');
+assert.equal(verifiedAstronomicalFigure(triangle)?.iau,'TrA');
+assert.deepEqual(verifiedAstronomicalFigure(triangle)?.pts,atlas.figures.Tra.pts);
+assert.deepEqual(verifiedAstronomicalFigure(triangle)?.edges,atlas.figures.Tra.edges);
 const source={constellations:[
  {iau:"Ori",lines:[[1,2,3],[3,4]]},
  {iau:"And",lines:[["thin",10,11]]}

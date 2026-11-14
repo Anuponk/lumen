@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {connectBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
-const {send,evaluate,errors}=await connectBrowser(),all=canonicalQuestList(),tail=all.slice(400),results=[];
+const {send,evaluate,errors}=await connectBrowser(),all=canonicalQuestList(),tail=all.filter(q=>q.packId==='real-adventure-05'),results=[];
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(expression){for(let i=0;i<150;i++){if(await evaluate(expression,true))return;await sleep(100)}throw Error('Timed out: '+expression)}
 const url=new URL(process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/');url.searchParams.set('qa','new');
@@ -30,7 +30,7 @@ try{
    const after=await evaluate('lumenDiagnostics.snapshot().progress');assert.equal(after.canonicalQuestState[quest.id].solved,true);
    assert.deepEqual(after.solved,progress.solved,'Old numeric progress is unchanged');
    for(const [id,entry] of Object.entries(progress.canonicalQuestState))assert.deepEqual(after.canonicalQuestState[id],entry);
-   await evaluate('document.getElementById("skyRevealNext").click()');await acknowledgeLearningMilestones(evaluate);
+   await evaluate('(()=>{const h=document.getElementById("skyReveal");if(h?.dataset.victoryPhase==="celebration")h.click();document.getElementById("skyRevealNext").click()})()');await acknowledgeLearningMilestones(evaluate);
   }
   assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth'),true);
   await navigateAndWait({send,evaluate},'Page.reload');

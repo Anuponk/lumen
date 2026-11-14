@@ -1,8 +1,24 @@
 export const nodeSuites=[
  'erasure-qa-schema.mjs',
  'self-erasure-handler-tests.mjs',
+ 'app-updates-tests.mjs',
+ 'ranking-tests.mjs',
+ 'official-time-tests.mjs',
+ 'victory-presentation-tests.mjs',
+ 'nickname-tests.mjs',
+ 'ranking-client-tests.mjs',
+ 'manual-marking-tests.mjs',
+ 'mixed-difficulty-tests.mjs',
+ 'cloud-quest-reset-tests.mjs',
+ 'logical-difficulty-tests.mjs',
+ 'logical-grid-tests.mjs',
+ 'drag-grid-path-tests.mjs',
+ 'offline-wallet-ui-tests.mjs',
+ 'cloud-pending-victory-tests.mjs',
  'self-erasure-controls-tests.mjs',
  'adventure-05-runtime-tests.mjs',
+ 'iau-completion-tests.mjs',
+ 'validate-iau-completion.mjs',
  'test-adventure-05-staging.mjs',
  'validate-fifth-adventure.mjs',
  'personal-records-tests.mjs',
@@ -102,6 +118,7 @@ export const nodeSuites=[
  "issue-222-challenge-tests.mjs",
  "catalogue-ceiling-tests.mjs",
  "sky-navigation-tests.mjs",
+ "sky-return-tests.mjs",
  "played-constellation-return-tests.mjs",
  "success-sky-detail-tests.mjs",
  "extraordinary-skies-tests.mjs",
@@ -168,3 +185,4 @@ export const nodeSuites=[
  // Solver equivalence is the slowest Node suite; reject cheap regressions first.
  "engine-equivalence.mjs"
 ];
+

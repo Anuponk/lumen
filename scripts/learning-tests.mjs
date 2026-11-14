@@ -113,4 +113,4 @@ assert.match(installUi,/solvedCount\(\)<12/,"Installation deferred past onboardi
 assert.match(installUi,/accountRequired\(\)/,"Do not offer install at account gate");
 assert.match(installUi,/if\(!ios&&!lumenInstallPrompt\)return/,"Do not show unusable Android install CTA");
 assert.match(onboardingUi,/lumenProgress\.autoCrossUnlockSeen=1/,"Quest-six unlock tracked together with badge intro");
-assert.match(onboardingUi,/Décoche Marquage auto : sans aide/,"Quest-six instruction targets the real checkbox and explains assistance");
+assert.match(onboardingUi,/function autoMarkingLessonRequired\(\)\{return false\}/,"Retired marking never gates quest six");

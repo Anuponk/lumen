@@ -1,5 +1,28 @@
 # Existing verification map
 
+Maintenance #59/#60/#62: locked `npm run format:check` verifies the migrated
+scope and parsed syntax preservation. `app-updates-tests.mjs` checks the actual
+update module; `first-welcome-tests.mjs` retains first-controller/OAuth guards.
+Real cache upgrade/player-data preservation remains in
+`service-worker-update-browser-tests.mjs`. Run the full gate and complementary
+suites for these tooling/UI changes; use actual reports for current counts.
+
+Ranking/manual marking #638/#647: `ranking-tests.mjs`, `ranking-client-tests.mjs`,
+`manual-marking-tests.mjs`, `ranking-browser-tests.mjs`, disposable SQL
+`fixtures/ranking.sql` and PostgreSQL `ranking-concurrency.py`. Full gate includes
+the new Node/browser suites; SQL concurrency runs in canonical-ledger CI.
+
+Support size follow-up: `support-tests.mjs` covers full catalogue copies,
+source preservation, metadata headroom, oversized optional checkpoints and
+compact-versus-jsonb/exponent limits. `fixtures/support.sql` checks the actual
+existing validator inside the disposable SQL workflow, never on production.
+
+`cloud-pending-victory-tests.mjs`: actual UI retry declarations + bounded
+scheduler + durable outboxes, with synthetic command confirmation. Covers both
+victory domains, transient retry, Auth/review holds, unsafe contexts, session
+switch during inspection, concurrent wakes and fixed diagnostic projection.
+Included in quality gate; physical/live-account recovery is separate acceptance.
+
 Erasure UI: `self-erasure-controls-tests.mjs` executes the production controls
 with synthetic boundaries, proving strict acknowledgement, current ownership,
 session isolation and signout success before local cleanup. It does not certify
@@ -77,7 +100,8 @@ automated fixtures, not proof of recovery on a real second device.
 
 Historical recreated-capture recovery: `canonical-durable-outbox-tests.mjs`
 covers paused duplicates, immutable facts, receipt/projection proof, archival and
-session/storage refusals. `legacy-command-client-tests.mjs` exercises the real
+session/storage refusals, including an older slower copy while retaining older
+better/changed claims. `legacy-command-client-tests.mjs` exercises the real
 UI reconnect helper; `cloud-unsynced-recovery-tests.mjs` verifies local archive
 export alongside both IndexedDB stores. These fixtures do not prove phone recovery.
 
@@ -341,7 +365,7 @@ Phase 2: `npm run test:affected` / `node scripts/test-affected.mjs` selects the 
 
 Phase 2 follow-up: `admin-catalogue.test.mjs`, `generated-adventure-map.test.mjs`, `staged-adventure.test.mjs` and `extended-boundary.test.mjs` now run inside the gate. Their obsolete catalogue/access expectations are corrected with retained identity, locked-access and historical-save assertions; [causes and red/green evidence](../TESTING.md#follow-up-four-obsolete-standalone-suites-corrected).
 
-- `node scripts/quality-gate.mjs`: authoritative list of currently orchestrated Node suites plus nine browser runners. Starts its own server/browser and writes reports under `docs/validation/`. Needs Chrome/Chromium/Edge; set `LUMEN_CHROME_BIN` if needed. Some differential suites need Git and their historical baseline. Do not infer total case counts from old reports.
+- `node scripts/quality-gate.mjs`: composes current Node and browser suites (Node list in `quality-gate-suites.mjs`). Starts its own server/browser and writes reports under `docs/validation/`. Needs Chrome/Chromium/Edge; set `LUMEN_CHROME_BIN` if needed. Some differential suites need Git and their historical baseline. Read counts from the current report, not old snapshots.
 - Browser runners: `scripts/account-session-browser-tests.mjs`, `scripts/browser-tests.mjs`, `scripts/ux-cleanup-tests.mjs`, `scripts/learning-browser-tests.mjs`, `scripts/late-game-browser-tests.mjs`, `scripts/sky-navigation-browser-tests.mjs`, `scripts/canonical-replay-browser-tests.mjs`. Prefer aggregate orchestration; standalone setup/server/CDP/report arguments are documented in `docs/TESTING.md` and runner headers. Use isolated temporary profiles.
 - `await window.runHintTests()` and `await window.lumenDiagnostics.runAllHintTests()` execute `src/testing/hint-tests.js`; these exercise real local state. Never use a player's authenticated profile. `scripts/engine-equivalence.mjs` and `scripts/ui-equivalence.mjs` compare a historical baseline; check setup in `docs/TESTING.md` first.
 
@@ -417,3 +441,38 @@ cartes/grilles QA, deux victoires, reload et précache aux trois largeurs.
 `fixtures/adventure-05.sql` complète les parités de commandes en PostgreSQL
 jetable, après la migration additive. Le candidat corrige l’ordre du même pool
 non publié ; les comptes et les 400 anciennes grilles restent intacts.
+
+### Catalogue UAI 88 / 880
+
+`iau-completion-tests.mjs` couvre les comptes révision 3, le préfixe exact de
+500 quêtes, A6→A9, les droits, les récompenses idempotentes et la taille JSONB
+d’une progression complète. `validate-iau-completion.mjs` recompte les solutions,
+rejoue toutes les preuves, contrôle la diversité D4 et la courbe mesurée ;
+`--write` renouvelle son rapport déterministe. `iau-completion-browser-tests.mjs`
+fait jouer les vraies cartes/grilles à 320/390/1440 px, les passages A6→A9,
+la consultation hors ligne et les deux finales. `iau-completion-cloud-browser-tests.mjs`
+exerce le chemin authentifié A5→A6 et la confirmation unique d’une victoire hors
+ligne après reconnexion ; sa fixture RPC est partagée avec la reprise historique.
+`celestial-ux-tests.mjs` exclut les
+doubles célébrations, restaurations et lots distants. `fixtures/iau-completion.sql`
+teste les 380 contrats, les reçus réessayés et les gains d’un second appareil
+en PostgreSQL jetable. La parité existante couvre aussi les 880 quêtes.
+
+Le job `astronomy` exécute `vizier-fetch-tests.py` avant de récupérer les données
+fraîches : panne réseau CDS → miroir officiel CfA pour le même catalogue ; réponse
+vide/invalide ou deux serveurs injoignables → échec maintenu.
+
+
+### #629 / #632 / #627
+
+`offline-wallet-ui-tests.mjs` et `offline-wallet-tests.mjs` couvrent aides et réservations. `drag-grid-path-tests.mjs` couvre le gestionnaire réel. `celestial-ux-tests.mjs` couvre maîtrise et priorités. Les quatre nouvelles suites navigateur sont obligatoires dans `quality-gate.mjs` ; détails et limites dans TESTING.
+
+Highscore follow-up: victory-presentation-tests.mjs, ranking-browser-tests.mjs,
+fixtures/highscore-before.sql and fixtures/highscore.sql; full gate and SQL
+concurrency required. Animation completion is presentation-only.
+
+Official timing / #652: official-time-tests.mjs, official-time-browser-tests.mjs,
+victory-presentation-tests.mjs, quest-command-tests.mjs and fixtures/official-time.sql
+cover timing, strict records, restoration, read-back, receipt idempotence and
+revision minima. ranking-browser-tests.mjs covers explicit pointer/keyboard entry,
+seven viewports and reduced motion. The full gate includes the new suites.

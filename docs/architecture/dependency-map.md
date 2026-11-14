@@ -1,5 +1,30 @@
 # Dependencies and data flow
 
+Worker updates: `game-screen.js` injects browser APIs and live `appVersion` into
+`app-updates.js` → worker registration / bounded controller reload / public asset
+caches only. No edge to player storage, Auth or cloud writers. Welcome and
+OAuth-return guards remain in the same listener.
+
+Competition #638/#647: attempt (version/start/aid counters) → separate durable
+ranking capture → confirmed existing victory receipt → private ranking admission
+and minimum → server Top 3 + personal position + human count → result after
+finite celebration completion and at least two seconds, then an explicit
+« Voir le classement » button; the scene otherwise remains indefinitely. Canonical profile
+nickname/withdrawal gates admission; the separately gated historical minima import
+uses private per-batch backups and conditional rollback. Owner/client guards
+apply across every await. No edge points back into progression, Wallet or badges.
+Manual marking is forced by the live game-engine injection; proof-audit tooling
+retains historical simulation behavior for meaningful non-regression comparisons.
+
+Support projection -> complete current copy + optional bounded checkpoints ->
+server-representation byte budget with metadata reserve -> existing support RPC.
+No edge to a game writer or original-data cleanup; an unfit current copy fails.
+
+Pending result -> bounded command scheduler -> same-owner clean-session gate ->
+owning durable queue's retryable operation -> frozen victory coordinator ->
+existing receipt/read-back. Auth/review holds and active writer guards remain.
+Victory failure -> fixed incident projection -> optional reporter/support.
+
 Server support case → private audit ownership → reviewed erasure predicate;
 erase before loss of attribution, retain shared Auth. Unknown old audit is a
 review blocker. No profile/reconciliation dependency is changed.
@@ -231,3 +256,14 @@ existing recovery stores before a single reload; uncertain/earned data is never
 removed. The real start renderer and victory capture share the active stable
 quest; the dormant numeric index must not supply canonical start-performance
 or finale identity.
+
+Catalogue completion: `remaining-adventures.json` (configuration) → `content.js`
+(packs/constellations) + `access-origins.json` revision 4 → `canonical-quests.js`
+(committed proof-audited grids) → existing navigation, rewards and cloud commands.
+`celestial-progress.js` selects one quest/badge crossing; `game-screen.js` renders
+it through the existing celestial celebration. No new progression writer.
+
+
+### #629 / #632 / #627
+
+`game-screen.js` importe `drag-grid-path.js` et projette `celestialScope` vers `sky-navigation.js`. Le repli réseau conserve les outboxes Wallet, les verrous et les reçus existants. Aucune dépendance externe ajoutée.

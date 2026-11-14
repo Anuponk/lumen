@@ -1,5 +1,52 @@
 # Feature map
 
+Maintenance #59/#60/#62: `package.json` owns locked development commands;
+`scripts/format.mjs` checks reviewed `format-scope.json` with syntax comparison.
+`ui/app-updates.js` owns registration/controller changes and manual asset refresh,
+composed once by `game-screen.js` with the live version getter. Current topology
+heads DATA_AND_ARCHITECTURE; October counts remain historical. See TESTING.
+
+Sky return identity: `game-screen.js::openJourneyMap` defaults to the active
+quest's stable constellation; explicit numeric teaching destinations remain
+supported. `sky-navigation.js::skyQuestTarget` resolves explicit constellation
+identity across all accessible skies before numeric fallback. Browsing never
+changes campaign state. Regressions: `sky-return-tests.mjs` and
+`sky-return-browser-tests.mjs` (header, previous browsing, replay/victory, pages).
+
+Mixed pacing revision 2: immutable `logical-grids-v2.json` → canonical revision
+adapter → score-owned `logical-difficulty-bands.js` → existing gameplay/card
+readers. Offline policy/search and independent acceptance live in
+`mixed-difficulty-policy`, `regenerate-mixed-difficulty` and `mixed-difficulty-tests`.
+`quest_rules.grid_revision` guards current commands; historical social boards
+retain their own geometry. Scoped player resets preserve earlier archives.
+Adventures 1–4 have an exact baseline-definition fingerprint; see GRID_CATALOG.
+
+Explicit reset of replaced quests: `persistence/quest-reset.js` aligns verified
+server epochs; `quest-reset-install.js` preserves the original through the
+durable recovery store before installing epochs, with async ownership guards.
+`durable-canonical-outbox.js::retireQuestResets` archives revoked
+intents; hydration reloads before replay. Attempt engine/resume reject obsolete
+epochs. Private `reset_replaced_quests` owns reset scope and originals, guarded
+quest commands own new records/rewards. See DATA_AND_ARCHITECTURE and TESTING.
+
+Logical grid difficulty #640: `game/logical-difficulty.js` owns solution-blind
+human-style propagation and dependency traces. `canonical-quests.js` applies
+the scoped versioned replacement manifest; original source grids remain available
+to audit tooling. `attempt-engine.js` and `campaign-resume.js` reject obsolete
+active boards. Offline search, independent acceptance and distribution:
+`scripts/regenerate-logical-grids.mjs`, `logical-difficulty-tests.mjs`,
+`logical-grid-tests.mjs`; see [GRID_CATALOG](../GRID_CATALOG.md).
+
+Support size boundary: `support-capture.js` budgets the complete current
+projection and optional checkpoints using server `jsonb::text` bytes. No profile,
+outbox or archive mutation; unchanged support schema/limits. See SUPPORT_574.
+
+Pending victory foreground retry: `game-screen.js::canRetryPresentedVictory`,
+`retryPresentedVictory` and `canonicalRecovery` reuse the bounded scheduler and
+owning durable queue while the result sheet is open. No background-play guard
+is relaxed. Existing fixed diagnostic vocabulary receives victory failures via
+`diagnostic-reporter.js::mapCloudDiagnostic`; see the cloud persistence contract.
+
 Privacy P0: `lumen_privacy.scope_predicate` and `install_guards` extend the
 existing #526 operator policy to current metadata and private support ownership.
 Audit/conditions: [PRIVACY_P0_CONSOLIDATION](../PRIVACY_P0_CONSOLIDATION.md).
@@ -77,9 +124,10 @@ disposable `fixtures/cockpit-dates.sql` verify scope, dates and stale timelines.
 Historical recreated-capture recovery: `legacy-command.js`
 (`assertRecreatedLegacyCapture`, `loadCommittedLegacyAttempt`) supplies the exact
 receipt/current projection proof; `durable-canonical-outbox.js`
-(`archiveRecreatedCapture`, Legacy namespace) preserves the later copy and
+(`archiveRecreatedCapture`, Legacy namespace) preserves the covered copy and
 receipt before cleanup. UI `recoverQueuedLegacyReceipt` connects hydration and
-reconnect recovery. The data contract owns its strict unchanged-facts rules.
+reconnect recovery. An older slower capture can be covered by the better exact
+receipt; chronology cannot replace its strict unchanged-facts/projection proof.
 
 First welcome/story (#532): `ui/first-welcome.js` owns the local presentation
 marker, deterministic narrative clock and accessible overlay; its CSS is separate.
@@ -288,6 +336,13 @@ reloads these views before resumed navigation. `sw.js` caches the real public UR
 graph; tests and physical acceptance remain distinguished in `docs/TESTING.md`.
 ### Records personnels (#600)
 
+Competition #638 / manual marking #647: `campaign/ranking.js` validates penalties;
+`persistence/ranking.js` owns separate durable per-owner captures; `ui/ranking.js`
+owns the shared result list. `game-screen.js` wires start, pre-victory capture,
+confirmed reveal and reconnection. `onboarding-preferences` ignores old auto
+preferences without deleting them. Server authority is in the prepared
+`20261110190629_grid_ranking.sql` migration.
+
 `src/campaign/personal-records.js` calcule les minima des nouveaux parcours ;
 `progression.js` et `quest-victory.js` alimentent les résumés existants.
 `src/ui/personal-records.js` présente le record dans le plateau et le récapitulatif.
@@ -301,3 +356,28 @@ les commandes et `recover_performance`, étendues par la migration des records.
 `access-origins.json` ajoute la révision 3 et conserve le préfixe historique.
 Le générateur/validateur et la migration additive des règles restent séparés
 de l’activation de production. Aucun writer de progression supplémentaire.
+
+### Catalogue UAI complet — aventures 6 à 9
+
+`content/catalogue/remaining-adventures.json` porte les 38 identités restantes,
+leurs packs et récits. `remaining-adventures.json` dans `content/generated`
+fournit les 380 grilles. `canonical-quests.js` les joint à la révision 4 ; les
+révisions précédentes et les 500 anciennes quêtes restent immuables.
+Voir [CATALOGUE_88](../CATALOGUE_88.md) pour les commandes, courbes et limites.
+
+
+### Correctifs #629 / #632 / #627
+
+Aides : `game-screen.js` → `offline-wallet.js`. Glissements : `drag-grid-path.js` → `moveDragCross`. Maîtrise : `celestial-progress.js` → célébration et `sky-navigation.js`. Contrats : GAMEPLAY, PROGRESSION, UX_AND_VISUAL_DIRECTION, DATA_AND_ARCHITECTURE.
+
+Highscore finalization: ui/victory-presentation.js owns animation completion and
+activation consumption; ui/ranking.js owns the compact view. The follow-up SQL
+owns canonical nickname uniqueness, durable opposition and operator-only history.
+Production gates and restore procedure: docs/HIGHSCORE_ROLLOUT.md.
+
+Official attempt time: campaign/official-time.js derives technical elapsed +
+assistance and revision-specific officialTimes; attempt-engine retains elapsed.
+persistence/official-time.js negotiates optional receipt timing, while existing
+Legacy/Quest commands and cloud-profile own its persistence/recovery. UI record
+presentation reads official records only; victory-presentation owns the explicit
+two-second/animation gate and ranking button (#652).

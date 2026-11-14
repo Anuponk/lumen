@@ -1,0 +1,143 @@
+{
+  "schema": 1,
+  "method": "lumen-logic-v1",
+  "generation": {
+    "attempts": 100000,
+    "seed": 64020261108,
+    "connected": 77632,
+    "unique": 25309,
+    "logical": 22076,
+    "legacyReplay": 19924
+  },
+  "validated": 400,
+  "rows": [
+    {
+      "adventure": 5,
+      "count": 100,
+      "label": "Intermédiaire",
+      "before": [
+        36.5,
+        59.75,
+        78.75,
+        96.75,
+        134.857
+      ],
+      "after": [
+        129.25,
+        130.25,
+        131.5,
+        132.5,
+        133.25
+      ],
+      "meanBefore": 79.33573,
+      "meanAfter": 131.3575,
+      "firstDepthBefore": 3.22,
+      "firstDepthAfter": 4.96,
+      "easyBefore": 0.76,
+      "easyAfter": 0.26,
+      "sizeBefore": 7.5,
+      "sizeAfter": 8,
+      "sameSize": 50,
+      "sampleIds": [
+        "pack-real-adventure-05-q001",
+        "pack-real-adventure-05-q100"
+      ]
+    },
+    {
+      "adventure": 6,
+      "count": 100,
+      "label": "Avancé",
+      "before": [
+        32.5,
+        54.25,
+        72.75,
+        95.25,
+        150.75
+      ],
+      "after": [
+        133.5,
+        134.75,
+        136.25,
+        138,
+        139.75
+      ],
+      "meanBefore": 76.03638,
+      "meanAfter": 136.3575,
+      "firstDepthBefore": 3.4,
+      "firstDepthAfter": 5.48,
+      "easyBefore": 0.95,
+      "easyAfter": 0.22,
+      "sizeBefore": 8.1,
+      "sizeAfter": 8,
+      "sameSize": 90,
+      "sampleIds": [
+        "pack-real-adventure-06-q001",
+        "pack-real-adventure-06-q100"
+      ]
+    },
+    {
+      "adventure": 7,
+      "count": 100,
+      "label": "Expert",
+      "before": [
+        36.222,
+        56.889,
+        75.111,
+        91.778,
+        145.111
+      ],
+      "after": [
+        140,
+        141.5,
+        143,
+        146.25,
+        149
+      ],
+      "meanBefore": 77.28664000000002,
+      "meanAfter": 143.8375,
+      "firstDepthBefore": 3.65,
+      "firstDepthAfter": 5.3,
+      "easyBefore": 0.78,
+      "easyAfter": 0.2,
+      "sizeBefore": 9,
+      "sizeAfter": 8,
+      "sameSize": 0,
+      "sampleIds": [
+        "pack-real-adventure-07-q001",
+        "pack-real-adventure-07-q100"
+      ]
+    },
+    {
+      "adventure": 8,
+      "count": 100,
+      "label": "Maître",
+      "before": [
+        32.222,
+        54.444,
+        68.889,
+        93.778,
+        153.333
+      ],
+      "after": [
+        149.25,
+        155.25,
+        160,
+        167.75,
+        190
+      ],
+      "meanBefore": 73.99958000000007,
+      "meanAfter": 162.1075,
+      "firstDepthBefore": 3.28,
+      "firstDepthAfter": 6.31,
+      "easyBefore": 0.99,
+      "easyAfter": 0.09,
+      "sizeBefore": 9.08,
+      "sizeAfter": 8,
+      "sameSize": 0,
+      "sampleIds": [
+        "pack-real-adventure-08-q001",
+        "pack-real-adventure-08-q100"
+      ]
+    }
+  ]
+}
