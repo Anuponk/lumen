@@ -1,3 +1,4 @@
+import {REPLAY_FROM_REVIEW} from './cdp-client.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
@@ -35,7 +36,7 @@ try{
    await evaluate(`document.querySelector('#sectorTabs [data-content-id="${q.constellationId}"]').click()`);
    if(q.packId===packs.at(-1))assert.equal(await evaluate("document.querySelectorAll('#sectorTabs [data-content-id]').length"),entries.slice(page*CONSTELLATIONS_PER_PAGE,(page+1)*CONSTELLATIONS_PER_PAGE).length,'Final adventure paginates eight constellations');
    assert.equal(await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="${q.id}"]').disabled`),false);
-   await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="${q.id}"]').click()`);await acknowledgeLearningMilestones(evaluate);
+   await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="${q.id}"]').click();${REPLAY_FROM_REVIEW}`);await acknowledgeLearningMilestones(evaluate);
    assert.deepEqual((await evaluate('lumenDiagnostics.snapshot()')).puz.reg,q.reg);
    await evaluate("if(!document.getElementById('attemptMask').hidden)document.getElementById('attemptMask').click();document.getElementById('questStart').hidden=true");
    // Finale sizing runs through ResizeObserver + requestAnimationFrame.
@@ -53,7 +54,7 @@ try{
     await evaluate("document.getElementById('openSky').click()");
     await evaluate(`document.querySelector('#adventureRail [data-pack-id="${q.packId}"]').click()`);
     await evaluate(`document.querySelector('#sectorTabs [data-content-id="${q.constellationId}"]').click()`);
-    await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="${q.id}"]').click()`);await acknowledgeLearningMilestones(evaluate);
+    await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="${q.id}"]').click();${REPLAY_FROM_REVIEW}`);await acknowledgeLearningMilestones(evaluate);
     assert.deepEqual((await evaluate('lumenDiagnostics.snapshot()')).puz.reg,q.reg,'New adventure card and actual grid are available offline');
    }
    const logicalTouchReplay=width===390&&[500,600,700,800].includes(ordinal);

@@ -191,7 +191,7 @@ try {
     assert.notEqual(JSON.stringify((await snapshot()).state),sixthBefore,'No obsolete checkbox lesson blocks the board');
     await navigateAndWait({send,evaluate},'Page.reload',{ignoreCache:true});await ready();
     assert.equal(await evaluate('document.getElementById("autoCross").checked'),false,'Reload cannot reactivate a historical preference');
-    await evaluate('document.getElementById("openSky").click();document.querySelector("#sectorTabs .constellation-card").click();document.querySelector("#puzzleGrid .puzzle-card.done").click()');
+    await evaluate('document.getElementById("openSky").click();document.querySelector("#sectorTabs .constellation-card").click();document.querySelector("#puzzleGrid .puzzle-card.done").click();document.getElementById("skyRevealRetry").click()'); // #695: review, then Rejouer
     assert.equal(await evaluate('document.querySelectorAll("#puzzleGrid .performance-slot.locked").length'),0,'Earned and missing early badges have no locks');
     assert.equal(await evaluate('document.getElementById("replayCooldownModal").hidden'),false,'First-quest badges preserve the qualification cooldown');
     await evaluate('document.getElementById("replayCooldownPlay").click()');

@@ -1,3 +1,4 @@
+import {REPLAY_FROM_REVIEW} from './cdp-client.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {connectBrowser,acknowledgeLearningMilestones,navigateAndWait} from './cdp-client.mjs';
@@ -160,7 +161,8 @@ try{
    await openDetail();
    const selector=`#puzzleGrid [data-quest-id="${q.id}"]`;
    assert.equal(await evaluate(`document.querySelector(${JSON.stringify(selector)}).disabled`),false);
-   await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
+   // #695: a completed quest opens its review; Rejouer keeps the replay entry.
+   await evaluate(`document.querySelector(${JSON.stringify(selector)}).click();${REPLAY_FROM_REVIEW}`);
    await acknowledgeLearningMilestones(evaluate);
    await evaluate('document.getElementById("attemptMask").click()');
    await evaluate('(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');
@@ -180,7 +182,8 @@ try{
    assert.equal(restored.xp,progress.xp);assert.equal(restored.shards,progress.shards);
    await openDetail();
    assert.equal(await evaluate(`document.querySelectorAll(${JSON.stringify(selector+' .performance-slot.earned')}).length`),4,'Mon ciel shows all four badges');
-   await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
+   // #695: a completed quest opens its review; Rejouer keeps the replay entry.
+   await evaluate(`document.querySelector(${JSON.stringify(selector)}).click();${REPLAY_FROM_REVIEW}`);
    await acknowledgeLearningMilestones(evaluate);
      assert.equal(await evaluate('document.getElementById("replayCooldownModal").hidden'),false,'Canonical replay shares the fifteen-minute qualification warning');
      await evaluate('document.getElementById("replayCooldownPlay").click()');

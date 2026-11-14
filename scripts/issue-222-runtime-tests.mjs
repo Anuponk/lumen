@@ -65,7 +65,10 @@ assert.match(gameScreen,/\[\["speed","Rapidité"\]/);
 assert.match(gameScreen,/const canonicalCards=canonicalQuestList\(\)\.filter\(q=>q\.constellationId===mappedConstellation\.id\)/);
 assert.match(gameScreen,/puzzleGrid\.replaceChildren\(\)/);
 assert.match(gameScreen,/button\.disabled=!available/);
-assert.match(gameScreen,/if\(solved\)\{startReplay\(legacy\);return\}/);
+// #695 owner decision: a completed tile opens its review; the review's Rejouer
+// keeps the same replay entry (legacy startReplay, canonical startCanonicalQuest).
+assert.match(gameScreen,/if\(solved\)\{openQuestReview\(quest\);return\}/);
+assert.match(gameScreen,/if\(quest\.legacyIndex===null\)startCanonicalQuest\(quest\);else startReplay\(quest\.legacyIndex\)/);
 assert.match(gameScreen,/if\(canonicalActiveQuest\)\{await celebrateCanonicalSuccess\(\);return\}/);
 assert.match(gameScreen,/canonicalQuestAvailable\(quest\)/);
 assert.match(gameScreen,/startCanonicalQuest\(quest\)/);

@@ -49,7 +49,9 @@ export async function verifyDomainReplay({send,evaluate,navigate,url}){
   await touch('#adventureRail [data-pack-id="'+quest.packId+'"]');await touch('#sectorTabs [data-content-id="'+quest.constellationId+'"]');
   const selector='#puzzleGrid [data-quest-id="'+quest.id+'"]';await until('!!document.querySelector('+JSON.stringify(selector)+')');
   assert.equal(await evaluate('document.querySelector('+JSON.stringify(selector)+').disabled'),false,'A verified acquired replay is enabled');
-  await touch(selector);await until('document.getElementById("mapModal").hidden');
+  // #695: a completed quest opens its review; touching Rejouer starts the replay.
+  await touch(selector);await until('!document.getElementById("skyReveal").hidden');
+  await touch('#skyRevealRetry');await until('document.getElementById("mapModal").hidden');
   await acknowledgeLearningMilestones(evaluate);
   await evaluate(`if(!document.getElementById('autonomyOverlay').hidden)document.getElementById('autonomyTry').click()`);
   await evaluate(`if(!document.getElementById('questStart').hidden)document.getElementById('questGo').click();document.getElementById('attemptMask').click()`);

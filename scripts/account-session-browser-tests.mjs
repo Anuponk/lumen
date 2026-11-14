@@ -1,4 +1,5 @@
 // Isolated browser + simulated Auth/RPC. No real accounts or mail requests.
+import {REPLAY_FROM_REVIEW} from './cdp-client.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
@@ -290,7 +291,7 @@ try{
     // it must still refuse to start the quest or change the retained attempt.
     const attemptBeforeAccountRetry=await evaluate(`localStorage.getItem('lumenActiveAttemptV1')`);
     assert.equal(await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="planned-real-01-q07"]').disabled`),false);
-    await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="planned-real-01-q07"]').click()`);
+    await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="planned-real-01-q07"]').click();${REPLAY_FROM_REVIEW}`);
     assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),false,'A blocked continuation explicitly explains the account requirement');
     assert.equal(await evaluate('lumenDiagnostics.snapshot().levelIndex'),5,'The discovery guard still refuses the next quest');
     assert.equal(await evaluate(`localStorage.getItem('lumenActiveAttemptV1')`),attemptBeforeAccountRetry,'Explaining the gate cannot create or replace an attempt');
