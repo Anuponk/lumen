@@ -129,6 +129,8 @@ assertion and unrelated transport/evaluation errors. Four suites reproduced RED
 before the correction; unrelated errors and all gameplay assertions remain
 blocking. This does not retry or ignore a failed test.
 
+o2switch HTTPS deploy retry (2026-11-14): `python3 scripts/o2switch-https-tests.py` also checks that a TigerProtect refusal exits 75 while every other failure exits 1, that `o2switch-publish-attempt.sh` maps only 0/75 to `published`/`blocked`, and that `deploy-o2switch.yml` retries from at most two fresh runner jobs and fails unless one attempt published.
+
 Public-page release packaging: `python3 scripts/o2switch-deploy-tests.py` runs
 disposable Linux publisher fixtures. It checks that the three reviewed privacy
 HTML pages are published byte-for-byte with mode 644, unrelated root HTML is
