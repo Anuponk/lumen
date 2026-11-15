@@ -240,8 +240,11 @@ function uiFixture({now}={}){
   activeGameSeconds:()=>45,localCalendarDay:()=>facts.qualifiedDay,hintUsedInAttempt:()=>false,usedHintThisGame:false,questFailed:false,cloudProfileReady:true,cloudProfileDirty:false,cloudProfileTimer:null,
   canonicalOutboxRetryInFlight:false,lumenProgress:base(),legacyCommandsSupported,commitLegacyVictoryCommand,loadCommittedLegacyAttempt,structuredClone,
   flushCloudProfile:async()=>true,sameCloudProfile:(a,b)=>JSON.stringify(a)===JSON.stringify(b),saveLumenProgress:()=>{},recordCloudDiagnostic:()=>{},
-  refreshCanonicalOutboxNotice:async()=>{},canonicalRecovery:{schedule:()=>{}},scheduleCloudProfile:()=>{},msg:{textContent:'',append:()=>{}},document:{createElement:()=>({})},
-  pendingVictoryView:null,presented:[],presentPendingVictory:(...args)=>ctx.presented.push(args),syncPresentation:{failed(){},acknowledged(){},celebration(){}}};
+  refreshCanonicalOutboxNotice:async()=>{},canonicalRecovery:{schedule:()=>{}},scheduleCloudProfile:()=>{},msg:{textContent:'',append:()=>{}},
+  pendingVictoryView:null,presented:[],presentPendingVictory:(...args)=>ctx.presented.push(args),syncPresentation:{failed(){},acknowledged(){},celebration(){}},
+  // #697: controllable timers; a test fires the slow-network pending card explicitly.
+  timers:[],setTimeout:fn=>ctx.timers.push(fn),clearTimeout:id=>{if(id)ctx.timers[id-1]=null},SLOW_VICTORY_PENDING_MS:2500,pendingNavigationEntries:[],
+  document:{createElement:()=>({}),getElementById:()=>({textContent:'',hidden:true})}};
  const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');vm.createContext(ctx);vm.runInContext(functionSource(source,'capturedTiming'),ctx);vm.runInContext(functionSource(source,'captureLegacyCommandVictory'),ctx);
  return {ctx,box,state,run:()=>vm.runInContext('captureLegacyCommandVictory()',ctx)};
 }
@@ -528,4 +531,33 @@ test('a victory retry cannot resume queues or reload after its account, client o
   release();await retry;
   assert.equal(legacyResumes,0,change);assert.equal(reloads,0,change);
  }
+});
+
+// #697: a slow network shows the durable win as pending, then upgrades it in
+// place when the server confirms; nothing is credited before that confirmation.
+test('slow legacy command shows the pending card, then upgrades on confirmation',async()=>{
+ const {ctx,box,run}=uiFixture();
+ const diagnostics=[];ctx.recordCloudDiagnostic=(event,details)=>diagnostics.push([event,details]);
+ const real=ctx.commitLegacyVictoryCommand;let release;const gate=new Promise(r=>release=r);
+ ctx.commitLegacyVictoryCommand=async(...args)=>{await gate;return real(...args)};
+ const before=JSON.stringify(ctx.lumenProgress),running=run();
+ for(let i=0;i<50&&!ctx.timers.some(Boolean);i++)await new Promise(r=>setImmediate(r));
+ assert.equal(ctx.timers.filter(Boolean).length,1,'Slow timer armed only after the durable capture');
+ assert.equal((await box.pending(userId)).length,1);
+ ctx.timers.find(Boolean)();
+ assert.equal(ctx.presented.length,1,'Durable pending card shown while the command is still running');
+ assert.equal(JSON.stringify(ctx.lumenProgress),before,'No reward credited before server confirmation');
+ ctx.pendingVictoryView={operationId:ctx.presented[0][1]};ctx.pendingNavigationEntries.push({operationId:ctx.presented[0][1]});
+ release();const result=await running;
+ assert.equal(result.saved,true);assert.equal(ctx.pendingVictoryView,null);
+ assert.equal(ctx.pendingNavigationEntries.length,0,'Confirmed run leaves the pending navigation view');
+ assert(diagnostics.some(([event])=>event==='victory_pending_upgraded'));
+ assert(diagnostics.some(([event,d])=>event==='victory_sync_timing'&&d.pendingShown===true&&Number.isInteger(d.ms)));
+ assert.equal((await box.pending(userId)).length,0);
+});
+test('fast legacy command never shows the pending card',async()=>{
+ const {ctx,run}=uiFixture();
+ const result=await run();
+ assert.equal(result.saved,true);assert.equal(ctx.presented.length,0);
+ assert.equal(ctx.timers.filter(Boolean).length,0,'The slow timer is cleared once confirmed');
 });

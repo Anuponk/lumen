@@ -18,6 +18,8 @@ function prepareContext(ctx){
  ctx.captureCelestialProgress??=captureCelestialProgress;
  ctx.canonicalQuestList??=()=>[ctx.canonicalActiveQuest].filter(Boolean);
  ctx.cloudHydrationGeneration??=0;
+ // #697: slow-network pending card timers stay inert unless a test fires them.
+ ctx.setTimeout??=()=>0;ctx.clearTimeout??=()=>{};ctx.SLOW_VICTORY_PENDING_MS??=2500;ctx.pendingNavigationEntries??=[];
  ctx.pendingVictoryView??=null;
  ctx.syncPresentation??={failed(){},acknowledged(){},celebration(){},snapshot:()=>({status:'confirmed',failures:0})};
  ctx.presentPendingVictory??=()=>{};
@@ -317,4 +319,47 @@ test('a review hold remains without a receipt and session changes cannot acknowl
   const result=await replayCanonicalVictoryOutbox(box,'a',async()=>{writes++},{sessionValid:()=>valid,recoverCommitted:async()=>{if(change==='session'){valid=false;return saved('q')}return null}});
   assert.equal(result.length,0);assert.equal(writes,0);assert.equal(acks,0);
  }
+});
+
+// #697: a slow canonical command shows the durable pending card once while it
+// runs; if it then fails, the same card stays (no second card, calm copy).
+test('slow canonical command shows one pending card while the command runs',async()=>{
+ const source=readFileSync('src/ui/game-screen.js','utf8');let release,stored=null;const timers=[],presented=[],events=[];
+ const attempt={attemptId:'slow-attempt',resetCount:0};
+ const ctx={canonicalActiveQuest:{id:'q',ordinal:241},canonicalVictoryInFlight:null,celebrated:false,pendingVictoryView:null,
+  activeGameSeconds:()=>42,attemptEngine:{snapshot:()=>({...attempt})},lumenUser:{id:'a'},lumenSupabase:{},
+  performanceAttempt:()=>({speed:true}),usedHintThisGame:false,lumenProgress:{canonicalQuestState:{}},qaActive:false,
+  canonicalOutboxNotice:null,cloudProfileReady:true,cloudProfileDirty:false,canonicalRecovery:{schedule(){}},updateAuthUI(){},
+  recordCloudDiagnostic:(...e)=>events.push(e),refreshCanonicalOutboxNotice:async()=>{},msg:{textContent:''},console:{error(){}},
+  setTimeout:fn=>timers.push(fn),clearTimeout:id=>{if(id)timers[id-1]=null},
+  // Mirrors presentPendingVictory: the same operation is never presented twice.
+  presentPendingVictory:(questId,operationId)=>{if(ctx.pendingVictoryView?.operationId===operationId)return;presented.push(operationId);ctx.pendingVictoryView={questId,operationId}},
+  syncPresentation:{failed(){}},
+  loadCommittedCanonicalAttempt:async()=>null,
+  commitCanonicalVictory:async()=>{await new Promise(r=>release=r);throw Object.assign(Error('TypeError: Failed to fetch'),{status:0})},
+  canonicalVictoryOutbox:{pending:async()=>stored?[stored]:[],enqueue:async(userId,questId,reward,{operationId})=>(stored={operationId,questId,reward,createdAt:'2026-11-15T00:00:00Z'}),pause:async()=>{}}};
+ ctx.classifyCanonicalRecoveryError=classifyCanonicalRecoveryError;prepareContext(ctx);
+ Object.assign(ctx,{setTimeout:fn=>timers.push(fn),clearTimeout:id=>{if(id)timers[id-1]=null}});
+ vm.runInContext(functionSource(source,'celebrateCanonicalSuccess'),ctx);
+ const running=ctx.celebrateCanonicalSuccess();
+ for(let i=0;i<50&&!release;i++)await new Promise(r=>setImmediate(r));
+ assert(release,'Command started');assert.equal(timers.filter(Boolean).length,1);
+ const before=JSON.stringify(ctx.lumenProgress);
+ timers.find(Boolean)();
+ assert.deepEqual(presented,['slow-attempt-reset-0'],'Pending card while the command still runs');
+ assert(events.some(([event])=>event==='victory_pending_shown'));
+ assert.equal(JSON.stringify(ctx.lumenProgress),before,'No optimistic reward');
+ release();await running;
+ assert.deepEqual(presented,['slow-attempt-reset-0'],'The failure keeps the same single card');
+ assert.equal(ctx.msg.textContent,'Victoire conservée sur cet appareil, en attente de synchronisation.');
+ assert.equal(timers.filter(Boolean).length,0,'Slow timer cleared');
+});
+
+test('wiring: a confirmed canonical win upgrades an early pending card',()=>{
+ const source=readFileSync('src/ui/game-screen.js','utf8'),fn=functionSource(source,'celebrateCanonicalSuccess');
+ assert.match(fn,/if\(earlyPendingShown\)\{\s*\/\/[^\n]*\n\s*document\.getElementById\('successOverlay'\)\.classList\.remove\('show'\);/);
+ assert.match(fn,/pendingNavigationEntries=pendingNavigationEntries\.filter\(e=>e\.operationId!==durableIntent\.operationId\)/);
+ assert(fn.indexOf("recordCloudDiagnostic('victory_sync_timing'")<fn.indexOf('lumenProgress=committed.profile'),'Timing recorded at confirmation');
+ const retry=functionSource(source,'retryPresentedVictory');
+ assert.match(retry,/if\(canonicalVictoryInFlight\|\|legacyVictoryBusy\)return false;/,'A retry tap never interrupts the running command');
 });
