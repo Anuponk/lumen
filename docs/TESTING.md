@@ -338,6 +338,13 @@ read equals both independent reads, never writes, keeps the account guard
 and denies `anon`.
 Admin recent-player tests execute the actual metrics/timeline renderers.
 
+Profile size ceiling (1 MiB): `scripts/fixtures/profile-size-limit.sql` runs in
+`canonical-ledger` after applying `20261115120000_profile_size_limit_1mib.sql` twice.
+It checks that no profile function keeps the 512 KiB ceiling, that SECURITY DEFINER
+and grants are preserved, that a 700 KB profile is accepted and that 1.1 MB is refused
+unchanged; support captures keep their own limit. `local-persistence-contract-tests`
+checks the exact client boundary against `MAX_PROFILE_BYTES`.
+
 The `canonical-ledger` PostgreSQL workflow installs the convergence,
 social and analytics migrations after the existing wallet migration. Run
 `node scripts/quest-command-fixtures.mjs --check` to compare all current server
