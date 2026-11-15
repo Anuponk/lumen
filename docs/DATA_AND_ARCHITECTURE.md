@@ -152,6 +152,16 @@ No writes, restore path, new persistence or gameplay effects. Manual review and
 secure delivery are mandatory; see [procedure](ACCOUNT_RIGHTS_RUNBOOK.md).
 Production migration remains unauthorized; PR stays draft. Proposed retention
 criteria are [separate from implemented behavior](PRIVACY_RETENTION_PROPOSAL.md).
+## Google Play purchases — #729
+
+- **Edge Function `lumen-play-purchase`:**
+  - `verify` mode (player session): the player comes from verified Auth and the price from `lumen_store_price`; the body never decides either. Google's Play Developer API (`purchases.products.get`) must say `purchaseState=0`. The purchase is then recorded through `lumen_record_purchase` (#728), with `provider_ref = sha256(purchaseToken)`, and acknowledged; Google refunds unacknowledged purchases after 3 days. Pending purchases (202) and cancelled ones (409) record nothing. A token already linked to another account is refused (`purchase_owned_elsewhere`).
+  - `voided` mode (`x-lumen-cron` secret): replays `voidedpurchases` as refunds with the original identity from `lumen_purchase_by_ref`.
+  - Purchases outside region FR (distribution is France-only) grant their product with amount 0/`XXX`, so they never count towards the EUR cap.
+- **Secrets** (Edge Function secrets only): `LUMEN_PLAY_SERVICE_ACCOUNT`, `LUMEN_PLAY_PACKAGE`, `LUMEN_PLAY_CRON_SECRET`.
+- **Migration** `20261115220000_play_purchase_gateway_729.sql`: `public.lumen_store_price`, `lumen_record_purchase` and `lumen_purchase_by_ref`, executable by `service_role` only.
+- **Client** (`persistence/play-billing.js`): Digital Goods API plus Payment Request, only where `getDigitalGoodsService` answers (the Play app). After a verified hydration, `restorePlayPurchases` re-sends every owned token; the server is idempotent and retries acknowledgement. Success is shown only after the server confirmed and entitlements were reloaded.
+
 ## Purchases, store seed and mastery unlocks — #728
 
 Migration `20261115200000_purchases_mastery_store_728.sql` (idempotent; production application requires explicit owner authorization) adds:

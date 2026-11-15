@@ -63,4 +63,8 @@ android {
     }
 }
 
-dependencies { implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.3' }
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.3'
+    // #729: Google Play Billing for the TWA (Digital Goods API).
+    implementation 'com.google.androidbrowserhelper:billing:1.2.0'
+}

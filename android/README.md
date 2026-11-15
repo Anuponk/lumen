@@ -121,7 +121,7 @@ ni catalogue modifié. La seule permission plateforme déclarée est INTERNET ;
 AndroidX ajoute une permission interne par package
 `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, protégée par signature et vérifiée
 dans le manifeste compilé. Ni publicité,
-analytics natif, stockage, localisation, caméra ni paiement ajouté.
+analytics natif, stockage, localisation ni caméra ajouté. #729 ajoute le paiement Google Play (bibliothèque androidbrowserhelper billing) : elle déclare com.android.vending.BILLING et android.permission.ACCESS_NETWORK_STATE, vérifiées dans le manifeste compilé.
 
 ## Isolation et suites futures
 

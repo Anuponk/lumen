@@ -43,7 +43,7 @@ renseigner Console ; ne pas réinterpréter son état depuis une CI Android.
   activer/annoncer de comptes enfants : la décision parentale reste à valider.
 - [ ] Permission plateforme : **INTERNET**. AndroidX ajoute la permission interne
   `${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` protégée par
-  signature ; le contrat CI vérifie les deux et refuse tout ajout. Le navigateur conserve
+  signature. Depuis #729, la bibliothèque de paiement ajoute **com.android.vending.BILLING** et **ACCESS_NETWORK_STATE**. Le contrat CI vérifie cet ensemble exact et refuse tout autre ajout. Le navigateur conserve
   les permissions Web Push ; aucune permission native POST_NOTIFICATIONS ni
   service FCM ajouté. Ne pas affirmer leur fonctionnement avant la recette.
 - [ ] Inventorier les flux de la **version web servie au moment de la revue**
@@ -149,3 +149,14 @@ Consultées le 4 novembre 2026 :
 La documentation API consultée indique API 36 pour les nouvelles soumissions ;
 les échéances et rubriques Console évoluent. Ce dossier ne prétend pas avoir
 inspecté le compte développeur ni validé ses déclarations administratives.
+
+## Achats intégrés Google Play (#729) — propriétaire
+
+L'app reste « gratuite » avec achats intégrés. La bibliothèque `billing` ajoute l'autorisation `com.android.vending.BILLING` au manifeste fusionné.
+- [ ] Créer le **profil marchand** (Payments) dans la Play Console.
+- [ ] Créer 9 **produits intégrés** (achat unique, non consommables), avec exactement ces identifiants : `real-adventure-02` … `real-adventure-09` à **1,00 €** TTC, et `real-sky-all` à **5,00 €** TTC. Prix pour la France.
+- [ ] Créer un **compte de service** Google Cloud avec l'API Google Play Android Developer, puis l'inviter dans la Play Console avec le droit « Afficher les données financières et gérer les commandes ». Stocker sa clé JSON uniquement comme secret Supabase `LUMEN_PLAY_SERVICE_ACCOUNT`, avec `LUMEN_PLAY_PACKAGE=fr.nopuna.lumen` et un `LUMEN_PLAY_CRON_SECRET` aléatoire. Ne jamais la committer.
+- [ ] Déployer l'Edge Function `lumen-play-purchase` et appliquer la migration `20261115220000_play_purchase_gateway_729.sql`.
+- [ ] Planifier l'appel quotidien du mode `voided` (remboursements), avec l'en-tête `x-lumen-cron`.
+- [ ] Ajouter des **testeurs de licence**, publier un AAB sur la piste de test interne, puis faire un vrai achat de test : déblocage, restauration après réinstallation, et retrait après remboursement de test.
+- [ ] Data safety : déclarer l'historique d'achats (achats intégrés) ; voir #732 pour la confidentialité.
