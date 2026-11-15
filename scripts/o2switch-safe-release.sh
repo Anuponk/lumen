@@ -55,7 +55,7 @@ if [[ "$MODE" != "--rollback" ]]; then
     install -m 644 "$asset" "$TMP/$asset"
   done
   # Publish only reviewed public pages; older revisions can omit them.
-  for page in mentions-legales.html confidentialite.html supprimer-compte.html; do
+  for page in mentions-legales.html confidentialite.html supprimer-compte.html decouvrir.html robots.txt sitemap.xml; do
     if [[ -f "$page" ]]; then install -m 644 "$page" "$TMP/$page"; fi
   done
   for dir in src content; do

@@ -2170,3 +2170,16 @@ The full quality suite runs on pull requests. After a squash merge, the publishe
 - `android/tools/packaging.test.mjs`: billing delegation service, `PaymentActivity`/`PaymentService` and the `billing:1.2.0` dependency stay declared.
 - SQL (`ledger-sql`): `scripts/fixtures/play-purchase-gateway.sql` — service_role-only gateway, catalogue prices, lookup, voided replay, identity conflict.
 - **Not testable here:** a real Play purchase. It needs the Play Console, products, a service account and an internal test track (see `android/PLAY.md`).
+
+## Presentation page and search basics (#736)
+
+- `scripts/landing-seo-tests.mjs` (Node, quality gate) checks:
+  - description and Open Graph tags on the game and on the page, with no inline script in the game shell;
+  - the page facts (constellations, quests, Adventures, size of the free Adventure) derived from the catalogue;
+  - in-game terminology (Gardien), the adjacency rule, and the Stellarium/Hipparcos attribution;
+  - structured data, image sizes and the 1200×630 JPEG;
+  - `robots.txt` (only `/admin/` is excluded; code and styles stay crawlable) and `sitemap.xml`;
+  - the presence of the new files in both release scripts and in `o2switch-deploy-tests.py`.
+- `scripts/landing-browser.mjs`, called by `sky-navigation-browser-tests.mjs` at 360, 390 and 1440 px: images load, the « Jouer » button is reachable, nothing overflows horizontally, no executable script runs, and the structured data parses.
+- Visuals: `node scripts/landing-assets.mjs` with a served app and `LUMEN_CDP_URL` (QA mode, synthetic progress).
+- Owner after deployment: Google Search Console (sitemap), the Rich Results Test and the Open Graph preview.

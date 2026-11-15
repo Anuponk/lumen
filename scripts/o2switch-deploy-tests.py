@@ -13,7 +13,7 @@ spec = importlib.util.spec_from_file_location("ci_status", ROOT / "scripts/o2swi
 ci = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ci)
 SHA = "a" * 40
-PUBLIC_PAGES = ("mentions-legales.html", "confidentialite.html", "supprimer-compte.html")
+PUBLIC_PAGES = ("mentions-legales.html", "confidentialite.html", "supprimer-compte.html", "decouvrir.html", "robots.txt", "sitemap.xml")
 
 
 def runs():

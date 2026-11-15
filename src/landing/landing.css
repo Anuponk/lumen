@@ -1,0 +1,22 @@
+/* #736: static presentation page (decouvrir.html). No script, readable without JavaScript. */
+:root{color-scheme:dark;--bg:#07111d;--card:#0d1a29;--line:#284561;--text:#e6f2fb;--muted:#a9c0d3;--accent:#8de1ef;--gold:#f2d48a}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 50% -10%,#173352 0,var(--bg) 60%) fixed,var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--accent)}
+.hero,main,footer{width:min(960px,100%);margin:0 auto;padding:0 16px}
+.hero{text-align:center;padding-top:56px;padding-bottom:24px}
+.brand{letter-spacing:.3em;color:var(--gold);font-weight:700;margin:0 0 12px}
+h1{font-size:clamp(28px,6vw,46px);line-height:1.15;margin:0 0 16px}
+h2{font-size:clamp(21px,4vw,28px);margin:40px 0 12px}
+.lead{font-size:clamp(16px,2.4vw,19px);color:var(--muted);max-width:640px;margin:0 auto 24px}
+.cta{text-align:center;margin:24px 0 8px}
+.play{display:inline-block;padding:14px 28px;border-radius:999px;background:linear-gradient(180deg,#9be8f4,#4fb9d3);color:#05202b;font-weight:800;text-decoration:none;box-shadow:0 0 28px rgba(141,225,239,.35)}
+.play:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.cta-note{color:var(--muted);font-size:14px;margin:8px 0 0}
+.shots{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin:24px 0}
+.shots figure{margin:0;width:min(260px,44vw);min-width:200px;text-align:center}
+.shots img{width:100%;height:auto;border-radius:22px;border:1px solid var(--line);box-shadow:0 18px 50px rgba(0,0,0,.45);background:var(--card)}
+.shots figcaption{color:var(--muted);font-size:14px;margin-top:8px}
+.steps{padding-left:22px}.steps li{margin:0 0 10px}
+section p{max-width:720px}
+footer{margin-top:48px;padding-top:20px;padding-bottom:40px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
