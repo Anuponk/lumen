@@ -191,7 +191,8 @@ try{
    await until('!document.getElementById("skyReveal").hidden');
    assert.equal(await evaluate('document.querySelectorAll("#skyRevealRewards .speed.previously-earned").length'),1,'A previously held Rapidité remains visible on the victory recap');
    assert.match(await evaluate('document.querySelector("#skyRevealRewards .speed").textContent'),/déjà obtenu/);
-   assert.equal(await evaluate('document.querySelectorAll("#skyRevealRewards .star").length'),0,'Repeated replay cannot award another star');
+   assert.equal(await evaluate('document.querySelectorAll("#skyRevealRewards .star.victory-reward-new").length'),0,'Repeated replay cannot award another star');
+   assert.equal(await evaluate('document.querySelectorAll("#skyRevealRewards [data-reward=star].victory-reward-owned").length'),1,'#706: the completed quest keeps its star on a replay');
    assert.equal((await evaluate('lumenDiagnostics.snapshot().progress')).xp,progress.xp);
    results.push({viewport,questId:q.id,replayBadges:true,reload:true,noDuplicateRewards:true});
   }
