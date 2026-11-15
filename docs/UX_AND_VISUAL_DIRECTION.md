@@ -641,3 +641,5 @@ sans déplacer les commandes. Les petites hauteurs réorganisent la scène en
 colonnes ; podium, résultat et page ne défilent pas. Le choix de participation et
 le pseudo unique se gèrent depuis Compte. L'étape Découvrir Mon ciel en quête 2
 et les enseignements des badges gardent leurs destinations et conditions.
+
+Changement de compte (#711) : tant que la progression du compte qui vient de se connecter n’est pas installée, un écran plein « Changement de compte — Chargement de la progression de ce compte… » remplace l’application ; on ne voit ni ne joue jamais la progression du compte précédent. Hors ligne ou en cas d’échec, il explique la situation et propose « Réessayer » et « Se déconnecter ». Animation coupée en mouvement réduit.

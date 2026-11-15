@@ -56,6 +56,7 @@ const menuContext=vm.createContext({document:{getElementById:id=>authNodes.get(i
  syncAdministrationMenu(){},lumenUser:null,lumenSupabase:{},authSessionPending:true,canonicalOutboxNotice:null,cloudProfileReady:false,cloudProfileFailure:null,lumenNickname:'',cloudProfileBusy:false,cloudProfileDirty:false,navigator:{onLine:true}});
 vm.runInContext(functionSource(ui,'cloudReconciliationMessage'),menuContext);
 vm.runInContext(functionSource(ui,'gameplaySyncState'),menuContext);
+menuContext.updateAccountSwitchHold=()=>{};
 vm.runInContext(functionSource(ui,'syncMobileAuthUI'),menuContext);menuContext.syncMobileAuthUI();
 assert.equal(authNodes.get('mobileAuthAction').disabled,true,'No sign-in prompt while an existing session is still loading');
 assert(!authNodes.get('mobileAuthAction').textContent.includes('Se connecter'));
