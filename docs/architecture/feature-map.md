@@ -1,5 +1,11 @@
 # Feature map
 
+Analytics #708 B1: `ui/analytics-navigation.js` owns five sections and URL/history
+of the existing cockpit at `/admin/analytics`. `game-screen.js` retains guarded
+RPC readers and clears their scope on account changes. `admin/.htaccess` serves
+the root shell; the publisher stages/checks this narrow route. No new collector
+or persisted gameplay state. See PRODUCT_ANALYTICS and TESTING.
+
 Maintenance #59/#60/#62: `package.json` owns locked development commands;
 `scripts/format.mjs` checks reviewed `format-scope.json` with syntax comparison.
 `ui/app-updates.js` owns registration/controller changes and manual asset refresh,

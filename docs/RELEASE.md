@@ -1,6 +1,16 @@
 # Git, Vercel and release workflow
 
 ## Branches
+
+Analytics #708 B1 adds a scoped `admin/.htaccess` rewrite to serve the same
+application shell at `/admin/analytics` (with optional trailing slash). The
+o2switch publisher stages only that file under `admin`, preserves the root
+hosting configuration and compares the route's HTTP response with the stamped
+root HTML before success; failure uses the existing whole-release rollback.
+Direct-route checks depend on Apache rewrite support and remain an explicit
+acceptance item for the eventual authorized deployment. The B1 PR does not
+authorize deployment or imply the route is live. Other static hosts need the
+same narrow rewrite; no catch-all fallback is supplied by this change.
 As observed on 2026-10-03, `main` and `dev` had diverged. Do not assume a dev->main merge means the branches are functionally synchronized. Compare refs/commits before merging.
 
 Prefer batching coherent work instead of pushing every micro-edit, especially when hosting/deployment quotas are constrained.

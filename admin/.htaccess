@@ -1,0 +1,3 @@
+# Serve the same application shell; RPCs enforce administrative access.
+RewriteEngine On
+RewriteRule ^analytics/?$ /index.html [END]

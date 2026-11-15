@@ -49,6 +49,8 @@ try {
   const before = await evaluate(`({local:localStorage.getItem('lumenProgressV1'),writes:window.__server.accounts.admin.writes,attempt:localStorage.getItem('lumenActiveAttemptV1')})`);
   await evaluate(`document.getElementById('adminCockpitOpen').click()`);
   await until(`document.getElementById('adminCockpit').hidden===false`, 'cockpit open');
+  await evaluate(`document.querySelector('[data-analytics-section="support"]').click()`);
+  await until(`!!document.getElementById('adminPreviewMastery').getClientRects().length`, 'test tools visible in Support & administration');
   await evaluate(`document.getElementById('adminPreviewMastery').click()`);
   await until(`document.getElementById('skyReveal').dataset.celestial==='adventure-mastery'&&!document.getElementById('skyReveal').hidden`, 'preview open');
   assert.equal(await evaluate(`document.getElementById('adminCockpit').hidden`), true, 'The cockpit closes to show the preview');

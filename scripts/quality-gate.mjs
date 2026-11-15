@@ -9,7 +9,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const validationDir=path.join(root,"docs","validation");
 fs.mkdirSync(validationDir,{recursive:true});
 // A failed suite must not upload JSON left in the checkout by a previous run.
-for(const name of ['browser','ux','learning','late-game','sky-navigation','account-session','canonical-replay','campaign-resume','pwa-update','incident-investigation','ux-lot','first-welcome','personal-records','adventure-05','iau-completion','iau-completion-cloud','offline-hint','offline-hint-network','drag-cascade','adventure-mastery','cloud-reset','sky-return','quality-summary'])
+for(const name of ['browser','ux','learning','late-game','sky-navigation','account-session','canonical-replay','campaign-resume','pwa-update','incident-investigation','analytics-admin','ux-lot','first-welcome','personal-records','adventure-05','iau-completion','iau-completion-cloud','offline-hint','offline-hint-network','drag-cascade','adventure-mastery','cloud-reset','sky-return','quality-summary'])
  fs.rmSync(path.join(validationDir,`ci-${name}.json`),{force:true});
 import {nodeSuites} from "./quality-gate-suites.mjs";
 import {runPool} from "./quality-gate-pool.mjs";
@@ -37,7 +37,7 @@ function startServer(){
   const port=Number(process.env.LUMEN_TEST_PORT||8000);
   const server=http.createServer((req,res)=>{
    try{
-    const url=new URL(req.url,"http://127.0.0.1"),raw=decodeURIComponent(url.pathname),relative=raw==="/"?"index.html":raw.replace(/^\/+/, "");
+    const url=new URL(req.url,"http://127.0.0.1"),raw=decodeURIComponent(url.pathname),relative=(raw==="/"||/^\/admin\/analytics\/?$/.test(raw))?"index.html":raw.replace(/^\/+/, "");
     const file=path.resolve(root,relative),fromRoot=path.relative(root,file);
     if(fromRoot.startsWith("..")||path.isAbsolute(fromRoot)){res.writeHead(403);res.end("Forbidden");return}
     const stat=fs.existsSync(file)?fs.statSync(file):null;
@@ -132,7 +132,8 @@ try{
   ()=>runBrowser("victory-layout-browser-tests.mjs","ci-victory-layout.json",9254),
   ()=>runBrowser("victory-pending-browser-tests.mjs","ci-victory-pending.json",9257),
   ()=>runBrowser("account-switch-browser-tests.mjs","ci-account-switch.json",9258),
-  ()=>runBrowser("admin-preview-browser-tests.mjs","ci-admin-preview.json",9259),
+  ()=>runBrowser("analytics-admin-browser-tests.mjs","ci-analytics-admin.json",9259),
+  ()=>runBrowser("admin-preview-browser-tests.mjs","ci-admin-preview.json",9260),
   ()=>runBrowser("learning-coach-placement-browser-tests.mjs","ci-learning-coach.json",9255),
   ()=>runBrowser("quest-review-browser-tests.mjs","ci-quest-review.json",9256),
   ()=>runBrowser("adventure-mastery-browser-tests.mjs","ci-adventure-mastery.json",9245),

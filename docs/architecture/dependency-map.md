@@ -1,5 +1,11 @@
 # Dependencies and data flow
 
+Analytics #708 B1: Administration/direct URL → shared root shell →
+`ui/analytics-navigation.js` section/history → existing cockpit readers/RPCs.
+Capability/owner change → close and clear sensitive hosts → guarded fresh reads.
+`admin/.htaccess` → root index; publisher → HTTP parity check and existing release
+rollback. No new edge to saves, rewards or collection.
+
 Worker updates: `game-screen.js` injects browser APIs and live `appVersion` into
 `app-updates.js` → worker registration / bounded controller reload / public asset
 caches only. No edge to player storage, Auth or cloud writers. Welcome and

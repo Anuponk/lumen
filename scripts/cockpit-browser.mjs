@@ -10,6 +10,9 @@ export async function verifyCockpit({send,evaluate,url}){
   const {renderPlayerDirectory,renderPlayerSessions,registeredPlayers}=await import('/src/ui/cockpit-sessions.js');
   const markup=new DOMParser().parseFromString(await (await fetch('/index.html')).text(),'text/html');
   const host=document.importNode(markup.getElementById('adminCockpit'),true);host.id='cockpitFixture';host.hidden=false;document.body.append(host);
+  const {createAnalyticsNavigation}=await import('/src/ui/analytics-navigation.js');
+  const navigation=createAnalyticsNavigation({window,document,modal:host,allowed:()=>true,onOpen:()=>{}});
+  navigation.open();host.querySelector('[data-analytics-section="players"]').click();
   const players=host.querySelector('#adminPlayers'),sessions=host.querySelector('#adminTimeline');let allowed=true;const chosen=[];
   const data={analytics:Array.from({length:100},(_,i)=>({session_id:'00000000-0000-0000-0000-'+String(Math.floor(i/5)).padStart(12,'0'),event_name:i%2?'hint_used':'attempt_started',quest_ordinal:91,occurred_at:new Date(Date.UTC(2026,9,25,5,0,i)).toISOString(),app_version:i<50?'1.11.1+100':'1.11.1+101'})),diagnostics:[]};
   const render=scope=>renderPlayerSessions(sessions,data,{scope,authorized:()=>allowed});
@@ -20,10 +23,10 @@ export async function verifyCockpit({send,evaluate,url}){
   renderPlayerDirectory(unknown,[{player_key:'u:unknown',player_type:'authenticated'}],{}, {authorized:()=>true});
   if(!unknown.textContent.includes('Point le plus avancé : Q—'))throw Error('Missing progression must stay unknown');
   const cards=[...sessions.querySelectorAll('details[data-session-key]')];cards[0].querySelector('summary').focus();
-  window.cockpitFixture={host,players,sessions,cards,data,render,chosen,deny:()=>{allowed=false;render('admin:player')}};
+  window.cockpitFixture={host,players,sessions,cards,data,render,chosen,navigation,deny:()=>{allowed=false;render('admin:player')}};
   return {furthestLabel:players.textContent.includes('Point le plus avancé : Q91'),count:cards.length,closed:cards.every(c=>!c.open),name:document.activeElement.tagName,emailFallback:players.querySelector('button').textContent==='sans.pseudo@example.invalid',allSectionsCollapsible:[...host.querySelectorAll('h3')].every(h=>h.parentElement.tagName==='SUMMARY'&&h.closest('details.admin-section')?.open),sectionCount:host.querySelectorAll('details.admin-section').length,anonymousHidden:!players.textContent.includes('Joueur 3E8B')&&players.querySelectorAll('.admin-player').length===1,stableOrdinal:sessions.textContent.includes('Q91'),sharedDateHelp:players.querySelectorAll('details[data-date-sources]').length===1&&players.querySelectorAll('.admin-player-dates small').length===0,overflow:document.documentElement.scrollWidth>innerWidth};
  })()`,true);
- assert.equal(initial.furthestLabel,true);assert.equal(initial.emailFallback,true);assert.equal(initial.allSectionsCollapsible,true);assert.equal(initial.sectionCount,12); // +1: « Outils de test » (#705 admin preview).assert.equal(initial.anonymousHidden,true);assert.equal(initial.sharedDateHelp,true);assert.equal(initial.stableOrdinal,true);assert.equal(initial.count,20);assert.equal(initial.closed,true);assert.equal(initial.name,'SUMMARY');assert.equal(initial.overflow,false);
+ assert.equal(initial.furthestLabel,true);assert.equal(initial.emailFallback,true);assert.equal(initial.allSectionsCollapsible,true);assert.equal(initial.sectionCount,12)/* +1: « Outils de test » (#705 admin preview) */;assert.equal(initial.anonymousHidden,true);assert.equal(initial.sharedDateHelp,true);assert.equal(initial.stableOrdinal,true);assert.equal(initial.count,20);assert.equal(initial.closed,true);assert.equal(initial.name,'SUMMARY');assert.equal(initial.overflow,false);
  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',text:'\r',unmodifiedText:'\r',windowsVirtualKeyCode:13,nativeVirtualKeyCode:13});
  await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
  const state=await evaluate(`(()=>{const f=window.cockpitFixture;return {opened:f.cards[0].open,otherClosed:!f.cards[1].open}})()`);
@@ -46,7 +49,7 @@ export async function verifyCockpit({send,evaluate,url}){
  })()`);
  assert.equal(refreshed.preserved,true);assert.equal(refreshed.filtered,10);assert.equal(refreshed.stillOpen,true);
  assert.deepEqual(refreshed.chosen,['u:actor']);assert.equal(refreshed.emailSearch,true);assert.equal(refreshed.empty,true);assert.equal(refreshed.reset,true);assert.equal(refreshed.denied,true);
- await evaluate(`(()=>{const f=window.cockpitFixture;const summary=f.host.querySelector('#adminFriction').closest('details').querySelector('summary');summary.focus()})()`);
+ await evaluate(`(()=>{const f=window.cockpitFixture;f.host.querySelector('[data-analytics-section="journeys"]').click();const summary=f.host.querySelector('#adminFriction').closest('details').querySelector('summary');summary.focus()})()`);
  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',text:'\r',unmodifiedText:'\r',windowsVirtualKeyCode:13,nativeVirtualKeyCode:13});
  await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
  const sections=await evaluate(`(()=>{const f=window.cockpitFixture,friction=f.host.querySelector('#adminFriction').closest('details');

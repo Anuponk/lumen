@@ -608,6 +608,12 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 /* Admin beta cockpit (#115) */
 .admin-cockpit{position:fixed;inset:0;z-index:10050;background:rgba(2,8,16,.94);overflow:auto;padding:24px}
 .admin-cockpit-shell{max-width:1180px;margin:auto;color:#e9f8ff}
+.analytics-navigation{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
+.analytics-navigation button{min-height:44px;flex:1 1 150px}
+.analytics-navigation button[aria-current="page"]{background:#174057;border-color:#8beaff;color:#fff}
+.admin-cockpit [data-analytics-panel][hidden],.analytics-access[hidden]{display:none!important}
+.analytics-access{position:fixed;inset:auto 12px 12px;z-index:10051;padding:16px;background:#0c1a28;color:#e9f8ff;border:1px solid #8beaff;border-radius:12px;max-width:560px}
+.analytics-access a{color:#8beaff}
 .admin-cockpit-head,.admin-cockpit-filters{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
 .admin-cockpit-head span{font-size:11px;letter-spacing:.18em;color:#68e7ff}.admin-cockpit-head h2{margin:4px 0 0}
 .admin-cockpit :is(section,.admin-section){background:#0c1a28;border:1px solid #183a50;border-radius:16px;padding:16px;margin-bottom:16px}
