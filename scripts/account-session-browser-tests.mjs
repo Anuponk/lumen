@@ -93,7 +93,12 @@ window.supabase={createClient(url,key,options){
    if(window.__fixtureLegacyLost)throw Error('simulated lost response after commit');
    return {data:window.__fixtureLegacyReceipts.get(args.p_operation_id),error:null};
   }
-  if(['lumen_commit_canonical_command','lumen_get_canonical_command','lumen_commit_quest_command','lumen_get_quest_command'].includes(name)&&args.p_expected_user_id!=='fixture-player')return {data:null,error:{code:'42501'},status:403};
+  if(['lumen_commit_canonical_command','lumen_get_canonical_command','lumen_commit_quest_command','lumen_get_quest_command','lumen_get_quest_command_verified'].includes(name)&&args.p_expected_user_id!=='fixture-player')return {data:null,error:{code:'42501'},status:403};
+  if(name==='lumen_get_quest_command_verified'){
+   const receipt=window.__fixtureCommandReceipts.get(args.p_operation_id);
+   const data=receipt?.request?receipt:receipt?{request:receipt,outcome:{newlyCompleted:receipt.newlyCompleted},recordedAt:receipt.recordedAt}:null;
+   return {data:{version:1,receipt:data,profile:data?structuredClone(window.__fixtureProfile):null},error:null};
+  }
   if(name==='lumen_get_quest_command'){
    const receipt=window.__fixtureCommandReceipts.get(args.p_operation_id);
    return {data:receipt?.request?receipt:receipt?{request:receipt,outcome:{newlyCompleted:receipt.newlyCompleted},recordedAt:receipt.recordedAt}:null,error:null};

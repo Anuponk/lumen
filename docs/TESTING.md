@@ -317,6 +317,16 @@ The badge UI regression also reads the actual rules dialog: four badges from
 quest 1 and a fifteen-minute qualification cooldown, without obsolete daily locks.
 `quest-command-tests.mjs` checks exact V2 receipts, ambiguous/lost responses,
 current wallet decreases, account switching and explicit V1 compatibility.
+Since #697 it also runs the combined verified read (`lumen_get_quest_command_verified`):
+identical refusals (altered facts, solved-only projection, missing receipt or
+profile, malformed shape), a single fallback to the two separate reads only
+when the endpoint is explicitly missing (PGRST202/404), and no fallback on
+a server failure. `canonical-command-client-tests.mjs` proves that a definitive
+V2 "no receipt" skips the redundant V1 lookup, while a V1 row still uses the
+V1 adapter. In the `canonical-ledger` workflow,
+`scripts/fixtures/quest-command-verified-read.sql` checks that the combined
+read equals both independent reads, never writes, keeps the account guard
+and denies `anon`.
 Admin recent-player tests execute the actual metrics/timeline renderers.
 
 The `canonical-ledger` PostgreSQL workflow installs the convergence,
