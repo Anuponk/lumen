@@ -285,4 +285,6 @@ jobs:
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
             -f supabase/migrations/20261115200000_purchases_mastery_store_728.sql \
             -f supabase/migrations/20261115200000_purchases_mastery_store_728.sql \
+            -f supabase/migrations/20261115210000_mastery_completion_fix_728.sql \
+            -f supabase/migrations/20261115210000_mastery_completion_fix_728.sql \
             -f scripts/fixtures/purchases-mastery.sql

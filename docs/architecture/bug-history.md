@@ -295,3 +295,7 @@ Constat propriétaire (iPhone et Android, après chargement réussi de B) : B é
 ### #724 — `CONTENT_PACKS` utilisé sans import dans `game-screen.js`
 
 Depuis #405, `adventureAccessEntitlements` lisait `CONTENT_PACKS` sans l’importer : un administrateur doté de `all_adventures_access` aurait déclenché une `ReferenceError` au lieu d’ouvrir les aventures. Constaté en ajoutant le panneau #724 (`analytics-admin-browser-tests.mjs` : `ReferenceError` dans `loadAdminTimeline`). RED/GREEN : `adventure-access-tests.mjs` vérifie l’import et le comportement de la dérogation, qui n’est jamais enregistrée comme droit.
+
+### #728 — maîtrise de l'aventure 1 impossible côté serveur
+
+Vérification post-migration en production (15/11/2026) : aucun joueur n'avait « terminé » l'aventure 1 pour le serveur, alors que les plus avancés avaient ses 400 badges. Cause : 49 projections `quest_run_authority` (import historique ou ancien parcours) ont `badges` et `runPerformance` mais pas de clé `solved`. `adventure_mastery` ne lisait que `solved`. Correction (`20261115210000_mastery_completion_fix_728.sql`) : une quête canonique est terminée si `solved` est vrai **ou** si une partie gagnée est enregistrée ; la maîtrise exige toujours tous les badges, que le serveur n'accorde que sur victoire. RED/GREEN : `purchases-mastery.sql` reproduit une projection sans `solved`.

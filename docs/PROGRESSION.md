@@ -121,7 +121,7 @@ Pricing (owner decision, #725): Adventure 1 stays free; each locked Adventure co
 
 Rights come only from the server, in `lumen.entitlements`:
 - `purchase`: converged from the confirmed purchase ledger by `lumen_commands.sync_purchase_entitlements`. A refund or dispute expires the row; progress, stars and badges are never touched. An Adventure already started stays playable (acquired access).
-- `mastery`: `lumen_claim_mastery_unlock` grants Adventure N+1 when Adventure N is 100% mastered (every quest completed, every badge in `PERFORMANCE_BADGES`). The server recomputes this from its own victory projections (`legacy_authority` for legacy quests, `quest_run_authority` for canonical quests; legacy badges count only from performance version 2, as in `celestialScope`). Permanent: never expired by purchases or refunds, never counted towards the cap, one Adventure at a time.
+- `mastery`: `lumen_claim_mastery_unlock` grants Adventure N+1 when Adventure N is 100% mastered (every quest completed, every badge in `PERFORMANCE_BADGES`). The server recomputes this from its own victory projections (`legacy_authority` for legacy quests, `quest_run_authority` for canonical quests; legacy badges count only from performance version 2, as in `celestialScope`). A canonical quest counts as completed when its projection is `solved` or records a won run (`runPerformance`); some historical projections carry no `solved` key (#728 fix). Permanent: never expired by purchases or refunds, never counted towards the cap, one Adventure at a time.
 - `admin`: #724.
 
 The client only asks for a mastery unlock: after a verified hydration and when a local victory triggers an Adventure mastery. A victory still pending on the server is retried at the next launch.
