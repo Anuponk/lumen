@@ -85,6 +85,7 @@ import {captureSupportCopy} from '../persistence/support-capture.js';
 import {mountSupportPanel,mountSupportDossier} from './support-panel.js';
 import {mountAdventureAccess} from './adventure-access-panel.js';
 import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
+import {adventureOfferModel,mountAdventureOffer} from './adventure-offer.js';
 import {createSound} from "./sound.js";
 import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 
@@ -4136,6 +4137,20 @@ function renderVictoryRank(update){
  if(summary.rank&&!victoryFacts.review)victoryCelebration.amplify(celebrationLevel({...victoryFacts,rank:summary.rank}).level);
 }
 let celestialPending=null;
+// #731: offer shown on a locked Adventure. Purchases stay disabled until a payment
+// provider is connected (#729/#730); the free path claims a server-verified mastery unlock.
+function renderAdventureOffer(container,pack,{close}={}){
+ const model=mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot()});
+ const packs=model.skies.flatMap(s=>s.packs);if(!packs.some(p=>p.id===pack.id))return false;
+ const offer=adventureOfferModel({pack,packs,quests:canonicalQuestList(),progress:lumenProgress,signedIn:!!lumenUser&&!qaActive,accounts:!qaActive,purchasesAvailable:false});
+ mountAdventureOffer(container,offer,{
+  onSignIn:()=>{close?.();openEmailAccountOffer('signup')},
+  onClaim:async button=>{button.disabled=true;button.textContent='Vérification…';await maybeClaimMasteryUnlocks({retry:true});
+   const owned=adventureAccessEntitlements().some(e=>(typeof e==='string'?e:e?.entitlement)===pack.id);
+   if(owned){close?.();skyNavigation.render()}else{button.disabled=false;button.textContent='Réessayer le déblocage'}}
+ });
+ return true;
+}
 // #728: ask the server for the next Adventure once the previous one is 100% mastered.
 // The server recomputes mastery from its own records; one attempt per launch, plus one
 // per local mastery event (the victory may still be pending on the server).
@@ -4236,7 +4251,7 @@ function showCelestialVictory(){
  return shown;
 }
 let mapConstellation=0,skyTourStep=0,mapCatalogueOverride=null;
-const skyNavigation=createSkyNavigation({document,getModel:()=>mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot()}),getQuest:()=>currentQuestPosition(),
+const skyNavigation=createSkyNavigation({renderLockedOffer:renderAdventureOffer,document,getModel:()=>mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot()}),getQuest:()=>currentQuestPosition(),
  getSolved:i=>!!lumenProgress.solved[i],
  getCanonicalQuests:id=>canonicalQuestList().filter(q=>q.constellationId===id),
  getCanonicalSolved:q=>questIsCompleted(lumenProgress,q.id),

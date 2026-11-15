@@ -150,10 +150,11 @@ test('actual sky adapter counts completed canonical-only quests instead of absen
  const quests=all.filter(q=>q.constellationId===entry.id),progress=complete(quests);
  const context={...canonical,document:{},CONSTELLATIONS,lumenProgress:progress,celestialScope,takeMasteryPulse:()=>null,
   questIsCompleted,astronomicalDisplayShape:shape=>shape,constellationLitAt:()=>0,
-  createSkyNavigation:options=>options};
+  createSkyNavigation:options=>options,renderAdventureOffer:()=>false};
  vm.createContext(context);
  const start=source.indexOf('const skyNavigation=createSkyNavigation('),end=source.indexOf('const SKY_TOUR_STEPS',start);
  vm.runInContext(functionSource(source,'constellationMastery')+'\n'+source.slice(start,end)+'\nglobalThis.options=skyNavigation;',context);
+ assert.equal(context.options.renderLockedOffer,context.renderAdventureOffer,'#731: locked Adventures render the offer');
  assert.equal(context.options.getLit(entry),quests.length);
  assert.equal(context.options.getShape(entry).count,quests.length);
  assert.equal(context.options.getBadgeCounts(entry).speed,quests.length);
