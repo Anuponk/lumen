@@ -350,8 +350,11 @@ function recordCloudDiagnostic(event,details={}){
   const achievementBlocked=event==="cloud_achievements_recovery_blocked";
   if((["hydration_failed","hydration_ready","hydration_reconciliation"].includes(event)||achievementBlocked)&&
      lumenSupabase&&lumenUser&&!qaActive){
-   const reason=typeof details.reason==="string"?details.reason.slice(0,64):null;
-   const outcome=achievementBlocked?"blocked":typeof details.result==="string"?details.result.slice(0,32):null;
+   // #711: a failed hydration reports its fine detail (fixed vocabulary) and its
+   // stage (fixed list); the server maps anything else to "unknown".
+   const failed=event==="hydration_failed";
+   const reason=failed&&typeof details.detail==="string"&&details.detail!=="unknown"?details.detail.slice(0,64):typeof details.reason==="string"?details.reason.slice(0,64):null;
+   const outcome=achievementBlocked?"blocked":failed&&typeof details.stage==="string"?details.stage.slice(0,48):typeof details.result==="string"?details.result.slice(0,32):null;
    Promise.resolve(lumenSupabase.rpc("lumen_record_sync_health",{
     p_event:achievementBlocked?"hydration_reconciliation":event,p_reason:reason,p_outcome:outcome,
     p_version:String(document.getElementById("lumenAccountVersion")?.textContent||"unknown").slice(0,80)
@@ -1364,6 +1367,7 @@ function updateAccountSwitchHold(){
   :failed?'La progression de ce compte n’a pas pu être chargée. Les sauvegardes de l’autre compte restent sur cet appareil.'
   :'Chargement de la progression de ce compte…';
  document.getElementById('accountSwitchHoldRetry').hidden=!(failed||offline);
+ const diagnostic=document.getElementById('accountSwitchHoldDiagnostic');if(diagnostic)diagnostic.hidden=!(failed||offline);
 }
 
 function hasInternalCapability(name){return lumenCapabilities.some(x=>(typeof x==="string"?x:x?.capability)===name)}
@@ -1961,6 +1965,7 @@ document.getElementById('accountSwitchHoldSignout')?.addEventListener('click',as
 document.getElementById('signedOutLogin')?.addEventListener('click',()=>openEmailAccountOffer('login'));
 document.getElementById('signedOutSignup')?.addEventListener('click',()=>openEmailAccountOffer('signup'));
 document.getElementById('accountSwitchHoldRetry')?.addEventListener('click',()=>{void retryAccountCloudSync()});
+document.getElementById('accountSwitchHoldDiagnostic')?.addEventListener('click',()=>{const menu=document.getElementById('mobileAuthPopover');if(menu)menu.hidden=false;showAccountCloudDiagnostic()});
 addEventListener('online',()=>updateAccountSwitchHold());addEventListener('offline',()=>updateAccountSwitchHold());
 async function refreshRankingAccount(){
  const c=rankingContext();if(!c.owner||!c.client||c.qa){showErasedAccountNotice(false);return}
@@ -2854,6 +2859,13 @@ function setupAdminCockpit(){
  if(!open||!modal)return;
  open.onclick=()=>{if(!hasInternalCapability("analytics_cockpit"))return;modal.hidden=false;renderAdminCatalogue();loadAdminCockpit()};
  close.onclick=()=>modal.hidden=true;refresh.onclick=loadAdminCockpit;days.onchange=loadAdminCockpit;
+ const preview=document.getElementById('adminPreviewMastery');
+ if(preview)preview.onclick=()=>{
+  if(!hasInternalCapability('analytics_cockpit'))return;
+  const status=document.getElementById('adminPreviewStatus');
+  if(previewAdventureMastery()){modal.hidden=true;if(status)status.textContent=''}
+  else if(status)status.textContent='Aperçu indisponible : ouvre d’abord une quête d’aventure, hors célébration en cours.';
+ };
  modal.onclick=e=>{if(e.target===modal)modal.hidden=true};
 }
 setupAdminCockpit();
@@ -4101,6 +4113,21 @@ function startCelestialQuest(quest){
  document.getElementById('mapModal').hidden=true;
  for(const id of ['undo','hint','autoCross'])document.getElementById(id).disabled=false;
  loadPuzzle();usedHintThisGame=false;refreshJourney();return true;
+}
+// #705 test aid (admin cockpit only): open the real adventure-mastery celebration
+// for the current quest's adventure. Presentation only: no progression, badge,
+// reward, attempt or save is written; no challenge is offered.
+function previewAdventureMastery(){
+ const quest=activeQuest();
+ if(!quest?.packId||celebrated||pendingVictoryView)return false;
+ const share=document.getElementById('successShare'),shareHidden=share?.hidden;
+ celestialPending={kind:'adventure-mastery',quest,owner:lumenUser?.id??null,after:captureCelestialProgress(lumenProgress,quest,canonicalQuestList())};
+ let shown=false;
+ try{if(share)share.hidden=true;shown=showCelestialVictory()}catch(error){celestialCelebration.clear();celestialPending=null;console.warn('Mastery preview unavailable',error)}
+ finally{if(share)share.hidden=shareHidden}
+ if(!shown)return false;
+ const reveal=document.getElementById('skyReveal');reveal.hidden=false;reveal.tabIndex=-1;reveal.focus({preventScroll:true});
+ return true;
 }
 function showCelestialVictory(){
  const event=celestialPending;celestialPending=null;

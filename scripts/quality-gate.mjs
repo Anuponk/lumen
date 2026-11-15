@@ -132,6 +132,7 @@ try{
   ()=>runBrowser("victory-layout-browser-tests.mjs","ci-victory-layout.json",9254),
   ()=>runBrowser("victory-pending-browser-tests.mjs","ci-victory-pending.json",9257),
   ()=>runBrowser("account-switch-browser-tests.mjs","ci-account-switch.json",9258),
+  ()=>runBrowser("admin-preview-browser-tests.mjs","ci-admin-preview.json",9259),
   ()=>runBrowser("learning-coach-placement-browser-tests.mjs","ci-learning-coach.json",9255),
   ()=>runBrowser("quest-review-browser-tests.mjs","ci-quest-review.json",9256),
   ()=>runBrowser("adventure-mastery-browser-tests.mjs","ci-adventure-mastery.json",9245),
