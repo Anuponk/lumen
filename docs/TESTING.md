@@ -348,6 +348,13 @@ profile), then `scripts/fixtures/profile-digest-cas.sql` checks mismatch without
 write, stale digest refusal, account guard, size guard and grants.
 `victory-pending-browser-tests.mjs` asserts profile writes use the digest path.
 
+Profile size ceiling (1 MiB): `scripts/fixtures/profile-size-limit.sql` runs in
+`canonical-ledger` after applying `20261115120000_profile_size_limit_1mib.sql` twice.
+It checks that no profile function keeps the 512 KiB ceiling, that SECURITY DEFINER
+and grants are preserved, that a 700 KB profile is accepted and that 1.1 MB is refused
+unchanged; support captures keep their own limit. `local-persistence-contract-tests`
+checks the exact client boundary against `MAX_PROFILE_BYTES`.
+
 The `canonical-ledger` PostgreSQL workflow installs the convergence,
 social and analytics migrations after the existing wallet migration. Run
 `node scripts/quest-command-fixtures.mjs --check` to compare all current server

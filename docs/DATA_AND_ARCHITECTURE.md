@@ -867,9 +867,14 @@ missing endpoint or unexpected answer writes nothing and falls back to the full 
 so the outcome is always the full comparison's. A matched digest that the guarded
 CAS refuses is a conflict, never a second write.
 
-Cloud profile limits use 524288 UTF-8 bytes with JSONB structural-space and
-scientific-number expansion reserve, rather than JavaScript character count.
-Validation fails before a new RPC; server limits remain unchanged.
+Cloud profile limits use 1048576 UTF-8 bytes (1 MiB since 15 November 2026,
+migration `20261115120000_profile_size_limit_1mib.sql`; previously 524288) with
+JSONB structural-space and scientific-number expansion reserve, rather than
+JavaScript character count. The client (`MAX_PROFILE_BYTES`) and every
+profile-writing server function share this ceiling; validation fails before a
+new RPC. Measured then: the largest real profile was 322 KB at 584/880 quests,
+about 485 KB projected at 880 before replays, resets and future packs. Support
+captures (`validate_support`, `SUPPORT_MAX_BYTES`) keep their separate 512 KiB cap.
 
 Existing command envelopes retain their domain/version, captured expected owner,
 operation identity and immutable request. Durable acceptance, remote commit,

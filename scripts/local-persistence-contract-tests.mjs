@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import {functionSource} from './source-tools.mjs';
 import {createLocalPersistence} from '../src/persistence/local.js';
 import {validateCloudProfile} from '../src/persistence/cloud-profile.js';
-import {profileStorageBytes} from '../src/persistence/profile-size.js';
+import {profileStorageBytes,MAX_PROFILE_BYTES} from '../src/persistence/profile-size.js';
 const profile={solved:{5:1},badges:{},shards:3};
 function fixture(raw=null,{write=()=>{},read=()=>{}}={}){
  const values=new Map(raw===null?[]:[['lumenProgressV1',raw]]),issues=[];let saved=0;
@@ -52,10 +52,11 @@ test('a changed source during archival cancels replacement and keeps both origin
  assert([...f.values.values()].includes(old));
 });
 test('cloud limit counts UTF-8 bytes, including JSONB separator overhead',()=>{
- assert.throws(()=>validateCloudProfile({...profile,padding:'é'.repeat(270000)}),/volumineuse/);
+ assert.throws(()=>validateCloudProfile({...profile,padding:'é'.repeat(MAX_PROFILE_BYTES/2+10)}),/volumineuse/);
+ assert.equal(MAX_PROFILE_BYTES,1048576,'Client and server share the 1 MiB profile ceiling');
  const base={solved:{},badges:{}},json=JSON.stringify({...base,padding:''});
  // Three member colons and two commas add five bytes in JSONB text.
- const fits={...base,padding:'x'.repeat(524288-Buffer.byteLength(json)-5)};
+ const fits={...base,padding:'x'.repeat(MAX_PROFILE_BYTES-Buffer.byteLength(json)-5)};
  assert.deepEqual(validateCloudProfile(fits),fits);
  assert.throws(()=>validateCloudProfile({...fits,padding:fits.padding+'xxxxx'}),/volumineuse/);
 });

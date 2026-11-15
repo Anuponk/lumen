@@ -82,7 +82,7 @@ antérieures, y compris récompenses et difficultés. Aucun backfill de compte,
 réinitialisation ou renommage de clé de sauvegarde n’est prévu. Les comptes
 anciens poursuivent vers A6 selon leurs droits et prérequis existants.
 Une progression synthétique jouant les 880 quêtes occupe 394325 octets JSONB
-estimés, sous la limite existante de 524288 ; les cas de sauvegardes historiques
+estimés, sous la limite de profil (1048576 depuis le 15/11/2026, 524288 auparavant) ; les cas de sauvegardes historiques
 plus volumineuses conservent les mécanismes existants de protection/diagnostic.
 La capture facultative d’assistance peut répartir ses faits courants sur plusieurs
 blocs locaux du protocole existant, sans troncature ni hausse des limites serveur.

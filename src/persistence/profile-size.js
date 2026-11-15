@@ -1,4 +1,5 @@
-export const MAX_PROFILE_BYTES=524288;
+// 1 MiB since 15/11/2026 (largest real profile 322 KB at 584/880 quests); server functions match.
+export const MAX_PROFILE_BYTES=1048576;
 const encoder=new TextEncoder();
 // JSONB text adds a space after each structural comma/colon. Punctuation inside
 // strings must not count as structure, including escaped quotes/backslashes.
