@@ -1,5 +1,21 @@
 # UX and visual direction
 
+## Analytics dashboards — #708
+
+The unified administration is organised around two operator questions: where
+players progress less easily, and which technical problems affect them. Overview
+cards lead to quest evidence or player/session/incident detail. Journey filters
+and review signals expose sample size and historical coverage; technical cards
+separate hydration, queue age, individual observations and version/cause volumes.
+Unknown data never looks like measured zero or a confirmed healthy state.
+
+Primary analysis is visible first on an opaque, responsive desktop-first surface;
+legacy counters/retention/catalogue/raw tables remain in closed disclosures.
+Keyboard disclosure checks and existing support/preview actions remain. The
+320/390 px layout stacks cards and contains horizontal table scrolling. No game
+rule, learning step, badge eligibility, input gesture or player-facing gameplay
+navigation changes; onboarding adaptation is not required.
+
 ## Optional first welcome and story — #532
 
 A fresh local campaign opens a celestial welcome with the existing LUMEN brand,

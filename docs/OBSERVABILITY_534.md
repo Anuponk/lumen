@@ -1,5 +1,24 @@
 # Diagnostic collection — #534 phases 0 and 1
 
+## Technical triage dashboard — #708
+
+Analytics now puts affected players, unresolved hydration age, queue alerts,
+qualified individual observations, causes and version volumes before the existing
+diagnostic episodes. Actions open the shared player/session reader or existing
+version-filtered diagnostic view; no new incident writer or telemetry pipeline.
+Product friction is no longer mixed into the technical alert list. A product
+aggregate outage leaves technical evidence usable (regression reproduced before
+the fix). Missing health data does not become a healthy zero.
+
+The annuaire also uses the existing authorised Lumen-account response, so players
+without optional product events can still have their existing outbox/receipt
+observations read in the same capped batch. Activity/Auth/receipt definitions
+and stale-signal qualification remain unchanged. Queue aggregate alerts without
+account identity are not attributed to guessed players. Hydration (max 90 days),
+optional details (max seven days) and last-known queue state have distinct scopes.
+Occurrence volumes by version are not exposure-normalised regression rates.
+No change to consent, retention, diagnosis export, private support or game state.
+
 ## Unified navigation candidate — #708 B1
 
 The eleven existing cockpit disclosures now sit inside five Analytics sections.

@@ -1,4 +1,5 @@
 export const nodeSuites=[
+ 'analytics-dashboard-tests.mjs',
  'analytics-navigation-tests.mjs',
  'erasure-qa-schema.mjs',
  'self-erasure-handler-tests.mjs',

@@ -55,22 +55,25 @@
    <button type="button" data-analytics-section="sync">Synchronisation &amp; incidents</button>
    <button type="button" data-analytics-section="support">Support &amp; administration</button>
   </nav>
-  <div class="admin-cockpit-filters"><label>Période <select id="adminCockpitDays"><option value="1">Aujourd’hui</option><option value="7" selected>7 jours</option><option value="30">30 jours</option><option value="3650">Depuis le lancement</option></select></label><button id="adminCockpitRefresh" type="button">Actualiser</button></div>
+  <div class="admin-cockpit-filters"><label>Période <select id="adminCockpitDays"><option value="1">24 heures</option><option value="7" selected>7 jours</option><option value="30">30 jours</option><option value="3650">Historique</option></select></label><button id="adminCockpitRefresh" type="button">Actualiser</button></div>
   <div id="adminCockpitStatus" class="admin-cockpit-status"></div>
   <div data-analytics-panel="overview">
-  <details class="admin-section" open><summary><h3>Indicateurs clés</h3></summary><div id="adminCockpitKpis" class="admin-kpis"></div></details>
-  <div class="admin-grid"><details class="admin-section" open><summary><h3>Activité quotidienne</h3></summary><div id="adminDailyChart" class="admin-bars"></div></details><details class="admin-section" open><summary><h3>Rétention</h3></summary><div id="adminRetention" class="admin-retention"></div></details></div>
+  <div id="analyticsOverview" class="analytics-dashboard"></div>
+  <details class="admin-section"><summary><h3>Indicateurs historiques détaillés</h3></summary><div id="adminCockpitKpis" class="admin-kpis"></div></details>
+  <div class="admin-grid"><details class="admin-section"><summary><h3>Activité quotidienne détaillée</h3></summary><div id="adminDailyChart" class="admin-bars"></div></details><details class="admin-section"><summary><h3>Rétention historique non qualifiée</h3></summary><p>Calcul par navigateur, incluant des cohortes qui n’ont pas encore le recul nécessaire à J+7. Ces valeurs ne mesurent pas une rétention fiable des joueurs.</p><div id="adminRetention" class="admin-retention"></div></details></div>
   </div>
   <div data-analytics-panel="journeys" hidden>
-  <details class="admin-section" open><summary><h3>Funnel d’activation</h3></summary><div id="adminFunnel"></div></details>
-  <details class="admin-section" open><summary><h3>Catalogue des aventures</h3></summary><p class="admin-cockpit-status">Aventures, constellations, grilles, dimensions et difficulté estimée.</p><div id="adminCatalogueTree"></div></details>
-  <details class="admin-section" open><summary><h3>Friction par quête</h3></summary><div class="admin-table-wrap"><table><thead><tr><th>Quête</th><th>Joueurs</th><th>Réussite</th><th>Reset</th><th>Abandon</th><th>Indices</th><th>Vérifier</th><th>Temps médian</th></tr></thead><tbody id="adminFriction"></tbody></table></div></details>
+  <div id="analyticsJourneys" class="analytics-dashboard"></div>
+  <details class="admin-section"><summary><h3>Comptages historiques des jalons</h3></summary><div id="adminFunnel"></div></details>
+  <details class="admin-section"><summary><h3>Catalogue des aventures</h3></summary><p class="admin-cockpit-status">Aventures, constellations, grilles, dimensions et difficulté estimée.</p><div id="adminCatalogueTree"></div></details>
+  <details class="admin-section"><summary><h3>Observations brutes par quête</h3></summary><div class="admin-table-wrap"><table><thead><tr><th>Quête</th><th>Débuts · joueurs</th><th>Fins · joueurs</th><th>Reset</th><th>Abandon explicite</th><th>Indices</th><th>Vérifier</th><th>Temps actif médian</th></tr></thead><tbody id="adminFriction"></tbody></table></div></details>
   </div>
   <div data-analytics-panel="players" hidden>
-  <div class="admin-grid"><details class="admin-section" open><summary><h3>Joueurs inscrits récents · 250 maximum</h3></summary><div id="adminPlayers"></div></details><details class="admin-section" open><summary><h3>Sessions du joueur sélectionné</h3></summary><div id="adminTimeline" class="admin-timeline"><p>Sélectionne un joueur inscrit.</p></div></details></div>
-  <details class="admin-section" open><summary><h3>Comptes créés</h3></summary><p class="admin-cockpit-status">Visible uniquement par un administrateur autorisé.</p><div class="admin-table-wrap"><table><thead><tr><th>Email</th><th>Pseudo</th><th>Créé le</th><th>Dernière connexion Auth</th><th>Activité enregistrée</th><th>Quête</th></tr></thead><tbody id="adminAccounts"></tbody></table></div></details>
+  <div class="admin-grid"><details class="admin-section" open><summary><h3>Joueurs inscrits · 250 maximum</h3></summary><p>Comptes Lumen et activité connue. Une activité, une progression ou un nombre de sessions absent reste inconnu.</p><div id="adminPlayers"></div></details><details class="admin-section" open><summary><h3>Sessions du joueur sélectionné</h3></summary><div id="adminTimeline" class="admin-timeline"><p>Sélectionne un joueur inscrit.</p></div></details></div>
+  <details class="admin-section"><summary><h3>Informations des comptes · détail</h3></summary><p class="admin-cockpit-status">Visible uniquement par un administrateur autorisé.</p><div class="admin-table-wrap"><table><thead><tr><th>Email</th><th>Pseudo</th><th>Créé le</th><th>Dernière connexion Auth</th><th>Activité enregistrée</th><th>Quête</th></tr></thead><tbody id="adminAccounts"></tbody></table></div></details>
   </div>
   <div data-analytics-panel="sync" hidden>
+  <div id="analyticsTechnical" class="analytics-dashboard"></div>
   <details class="admin-section" open><summary><h3>À regarder</h3></summary><details><summary>Incidents techniques facultatifs &middot; &eacute;chantillon incomplet</summary><div id="adminDiagnosticIncidents" class="diagnostic-incidents"></div></details><div id="adminAlerts"></div></details>
   </div>
   <div data-analytics-panel="support" hidden>

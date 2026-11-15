@@ -1,5 +1,11 @@
 # Dependencies and data flow
 
+Actionable Analytics #708: existing product/quest/health/account responses →
+`analytics-dashboard.js` qualified projection → overview/journeys/technical views
+→ guarded existing navigation/player/session/diagnostic readers. Account list +
+recent registered events → one bounded directory → existing observation batch.
+Product-source failure does not gate technical evidence. No new save/collection edge.
+
 Analytics #708 B1: Administration/direct URL → shared root shell →
 `ui/analytics-navigation.js` section/history → existing cockpit readers/RPCs.
 Capability/owner change → close and clear sensitive hosts → guarded fresh reads.

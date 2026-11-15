@@ -1,5 +1,56 @@
 # Product analytics contract
 
+## Actionable journey and technical dashboards — #708
+
+`ui/analytics-dashboard.js` projects the existing authorised responses into an
+overview, a journey/quest analysis and a technical triage view. No collector,
+RPC, SQL schema, consent, save or reward writer is added. Product collection is
+still disabled: journey/activation/activity charts describe recorded history,
+not current complete player behaviour. Missing sources show unavailable, never
+manufactured zeroes; failure of the optional product aggregate no longer hides
+the independent technical response.
+
+Quest signals compare distinct players with starts/finishes and event counts
+for hints/resets. At least five observed starting players are needed for a
+signal: finishes below 60% of starts, hints at least 80% of starts, or resets
+at least as numerous as starts. These are review prompts, not causal difficulty
+scores or per-attempt success/abandon rates. A smaller sample stays visible but
+unqualified. Finishes exceeding starts are retained as different period
+populations. Explicit abandon counts stay separate from interruption/absence.
+Active median time is not the penalised official score; valid-duration sample
+size is not supplied. Stable catalogue identity owns labels/grouping; inconsistent
+IDs/ordinals and duplicate identities are excluded, not reassigned.
+
+Journey filters use current catalogue adventure metadata, quest/constellation
+search and a starting-player minimum; they survive same-owner refresh. The
+overview can open the selected quest detail. Jalon bars are independent counts,
+not an ordered conversion funnel; tutorial completion is not currently measured.
+Unqualified legacy retention remains in a labelled closed disclosure. Raw
+start/finish counts replace the misleading completion ratio in the legacy table.
+
+Technical counts retain their actual units: affected/stalled/critical **players**,
+not summed incidents or queues. Hydration uses at most 90 selected rolling days,
+optional details at most seven, and outbox observations are current-known state
+outside the period filter. Version/cause bars show occurrence volumes, not error
+rates or proof of a release regression. Queue alerts do not expose an account
+identity, so no player association is invented. Player drill-down uses only
+fresh qualified pending/failure evidence from the existing per-player batch.
+
+The single registered-player projection now reuses the already-loaded Lumen
+accounts in addition to analytics recency, capped at 250 before metadata reads.
+Account-response order selects this bounded population; matching recent event
+metadata is reused and unmatched recent registered players fill remaining slots.
+An account without optional events can therefore be investigated. Auth date is
+never copied into activity, missing sessions/progression stay unknown, anonymous
+rows stay excluded, and nickname/email join remains exact and admin-only.
+No additional profile read or second directory is introduced.
+
+Every dashboard action rechecks current scope and DOM attachment. Account/role
+changes clear all three dashboard hosts along with existing sensitive content.
+Existing sessions, private support, reviewed reports, version filters, catalogue
+and mastery preview remain accessible. Onboarding impact: none; only admin
+analysis/presentation changes, with no player rule or teaching milestone change.
+
 ## Unified administration — #708, B1 candidate
 
 The existing cockpit shell now supplies five sections at `/admin/analytics`:
@@ -18,9 +69,9 @@ the normal pause path; closing leaves it paused for explicit resume. No navigati
 state enters a game save. No new consent provider or collection is introduced.
 
 This is B1 after the [lot A audit](https://github.com/Anuponk/lumen/pull/717).
-QA/simulation controls stay in their existing Administration submenu, the private
-support dossier stays in the selected player's sessions, and #716's preview is
-not assumed merged. Their complete integration is B2. Existing KPI definitions
+QA/simulation controls stay in their existing Administration submenu and the
+private support dossier stays in the selected player's sessions. The mastery
+preview from #716 is now available in Support. Further tool integration is B2. Existing KPI definitions
 and historical limitations remain pending B3; the navigation change does not
 make legacy retention or identity mapping statistically reliable. Final parity,
 retirement of the historical entry and production activation are not claimed.

@@ -1,5 +1,29 @@
 # Testing and quality gate
 
+## Actionable Analytics dashboards — #708
+
+`analytics-dashboard-tests.mjs` joins the Node gate: missing versus measured zero,
+sample-qualified quest signals, independent period populations, catalogue identity,
+stale queue status, bounded daily series, accounts without product events and
+independent technical windows. `admin-recent-players-tests.mjs` reproduces the
+product-service outage hiding valid technical evidence before the correction,
+then verifies the independent response and separation of product/technical alerts.
+
+The existing `analytics-admin-browser-tests.mjs` now covers 320/390/1440 px with
+real app/Chrome and synthetic Auth/RPC: journey adventure/exposure filters, quest
+detail, causes/version/queue evidence, accounts without product events, links into
+the shared pending-player list and sessions, and independent source outages.
+Existing direct/reload/escape/history/guest/non-admin checks remain. Optional
+`LUMEN_DASHBOARD_SCREENSHOTS` stores desktop fixture captures outside the repo
+for visual inspection. No live accounts or player data are read by these tests.
+
+The independent cockpit browser now deliberately opens a historical disclosure
+before testing keyboard closure, because these secondary tables are closed by
+default. It retains all twelve sections (including #716 preview), filter and
+session tests. Admin scope-switch tests clear all new dashboard hosts. Physical
+mobile, real admin Auth/data, live hosting and long-term journey instrumentation
+remain separate acceptance; synthetic fixtures do not establish those results.
+
 ## Analytics administration navigation — #708 B1
 
 `analytics-navigation-tests.mjs` joins the Node gate: deferred access, section/

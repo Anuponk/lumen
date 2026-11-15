@@ -1,5 +1,12 @@
 # Existing verification map
 
+Actionable Analytics #708: `analytics-dashboard-tests.mjs` covers evidence units,
+unknowns, samples, catalogue IDs, stale status, account-only entries and windows.
+`admin-recent-players-tests.mjs` records RED/GREEN independent-source evidence.
+The existing real-app Analytics browser adds 320/390/1440 dashboard interactions,
+source outages and links to shared player diagnostics. Existing incident/support
+and administrative scope-revocation regressions remain; see TESTING for limits.
+
 Analytics #708 B1: `analytics-navigation-tests.mjs`, expanded
 `cockpit-acceptance-tests.mjs` and real-app `analytics-admin-browser-tests.mjs`
 join existing quality coverage. Independent cockpit/report/support browser keeps

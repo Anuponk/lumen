@@ -3,17 +3,21 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {connectBrowser,closeBrowser,navigateAndWait} from './cdp-client.mjs';
 import {multiAccountFixture} from './fixtures/multi-account-browser.mjs';
+import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 const {send,evaluate,errors}=await connectBrowser();
 const base=process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/';
 const profile={solved:{0:1,1:1},historyBackup:{0:1,1:1},badges:{},stars:{},performances:{},noHint:{},canonicalQuestState:{},daily:{dates:{},rewards:{}},challenges:{},xp:30,shards:3,walletRevision:1,skyHistoryVersion:4};
+const allQuests=canonicalQuestList(),first=allQuests[0],second=allQuests[1],later=allQuests.find(q=>q.packId!==first.packId);
+const questData={friction:[{stable_quest_id:first.id,quest_ordinal:first.ordinal,started:20,completed:4,hints:20,resets:22,abandons:1,verifies:6,median_seconds:48},{stable_quest_id:second.id,quest_ordinal:second.ordinal,started:1,completed:0,hints:1,resets:1},{stable_quest_id:later.id,quest_ordinal:later.ordinal,started:5,completed:8,hints:0,resets:0}],funnel:[{label:'Application lancée',players:23},{label:'Quête 1 commencée',players:20},{label:'Tutoriel terminé',players:0}],current_players:{'u:admin':first.ordinal}};
 const source=multiAccountFixture({admin:profile},'admin').replace("if(!uid())return",`window.__adminReads=window.__adminReads||[];
  if(name==='lumen_get_internal_capabilities')return {data:sessionStorage.getItem('adminDenied')?[]:[{capability:'analytics_cockpit'}]};
  if(name.startsWith('lumen_admin_')){
   window.__adminReads.push(name);
-  if(name==='lumen_admin_cockpit')return {data:{summary:{unique_players:2},daily:[],retention:{},funnel:[]}};
-  if(name==='lumen_admin_quest_metrics')return {data:{friction:[],funnel:[],current_players:{}}};
-  if(name==='lumen_admin_sync_health')return {data:{diagnostics:{timeline:[],signatures:[]}}};
-  if(name==='lumen_admin_player_observations')return {data:{players:{}}};
+  if(name==='lumen_admin_cockpit')return sessionStorage.getItem('productUnavailable')?{error:{message:'Unavailable'}}:{data:{summary:{unique_players:23},daily:[{activity_date:'2026-11-13',players:8},{activity_date:'2026-11-14',players:12}],retention:{},funnel:[]}};
+  if(name==='lumen_admin_accounts')return {data:[{user_id:'admin',nickname:'Compte de test'},{user_id:'new',nickname:'Compte sans événements'}]};
+  if(name==='lumen_admin_quest_metrics')return {data:${JSON.stringify(questData)}};
+  if(name==='lumen_admin_sync_health')return sessionStorage.getItem('healthUnavailable')?{error:{message:'Unavailable'}}:{data:{affected_players:2,failures:3,stalled_players:1,blocked:1,by_reason:[{reason:'storage_quota',count:2}],by_version:[{version:'1.11.1+615',count:3}],outbox:{pending_players:1,critical_players:1,alerts:[{state:'pending',pending:2,version:'1.11.1+615',since:new Date(Date.now()-3600000).toISOString()}]},diagnostics:{timeline:[],signatures:[{code:'runtime_exception',stage:'runtime',app_version:'1.11.1+615',platform:'desktop',browser:'chromium',occurrences:5,sessions:2}]}}};
+  if(name==='lumen_admin_player_observations')return {data:{players:{'u:admin':{state:'pending',observed_at:new Date(Date.now()-30000).toISOString()},'u:new':{state:'failure',observed_at:new Date(Date.now()-30000).toISOString()}}}};
   if(name==='lumen_admin_recent_players')return {data:[{player_key:'u:admin',player_type:'authenticated',display_name:'Compte de test',sessions:1}]};
   return {data:[]};
  }
@@ -24,7 +28,7 @@ try{
  await send('Page.enable');await send('Runtime.enable');await send('Network.enable');
  await send('Network.setBlockedURLs',{urls:['*supabase.co*']});
  await send('Page.addScriptToEvaluateOnNewDocument',{source});
- for(const viewport of [{width:390,height:844,mobile:true},{width:1440,height:900,mobile:false}]){
+ for(const viewport of [{width:320,height:640,mobile:true},{width:390,height:844,mobile:true},{width:1440,height:900,mobile:false}]){
   await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});
   await navigateAndWait({send,evaluate},'Page.navigate',{url:new URL('/admin/analytics?section=players&days=30',base).href});
   await until("!document.getElementById('adminCockpit').hidden&&document.querySelector('#adminPlayers input')",'authorised direct entry');
@@ -38,6 +42,41 @@ try{
   })()`);
   assert.equal(state.title,'Lumen Analytics');assert.equal(state.searchRetained,true);assert.equal(state.days,'30');assert.equal(state.overflow,false);
   assert.deepEqual(state.panels,[['overview'],['players'],['journeys'],['sync'],['support']]);
+  const analysis=await evaluate(`(()=>{
+   const modal=document.getElementById('adminCockpit'),nav=value=>modal.querySelector('[data-analytics-section="'+value+'"]').click();
+   nav('overview');const overview=document.getElementById('analyticsOverview');
+   const historical=overview.textContent.includes('actuellement désactivée'),noUndefined=!overview.textContent.includes('undefined'),untrackedAccount=overview.textContent.includes('Compte sans événements');
+   [...overview.querySelectorAll('button')].find(b=>b.textContent.includes('Analyser les parcours')).click();
+   const journeys=document.getElementById('analyticsJourneys'),pack=journeys.querySelector('[aria-label="Filtrer par aventure"]'),minimum=journeys.querySelector('[aria-label="Minimum de joueurs ayant commencé"]');
+   pack.value=${JSON.stringify(first.packId)};pack.dispatchEvent(new Event('change'));minimum.value='5';minimum.dispatchEvent(new Event('change'));
+   const filtered=journeys.querySelectorAll('tbody tr').length;
+   journeys.querySelector('[aria-label="Examiner la quête ${first.ordinal}"]').click();
+   const detail=journeys.querySelector('.analytics-quest-detail').textContent.includes('22 réinitialisation');
+   nav('sync');const technical=document.getElementById('analyticsTechnical');
+   const causes=technical.textContent.includes('Stockage saturé'),versions=technical.textContent.includes('1.11.1+615'),queue=technical.textContent.includes('2 opération(s)');
+   [...technical.querySelectorAll('button')].find(b=>b.textContent==='Voir les joueurs en attente').click();
+   const players=document.getElementById('adminPlayers'),pending=players.querySelector('[aria-label="Filtrer l’état observé"]').value==='pending'&&players.querySelectorAll('.admin-player').length===1;
+   players.querySelector('.admin-player button').click();
+   return {historical,noUndefined,untrackedAccount,filtered,detail,causes,versions,queue,pending,drilldown:document.getElementById('adminTimeline').cockpitPlayer==='u:admin',overflow:document.documentElement.scrollWidth>innerWidth};
+  })()`);
+  assert.deepEqual(analysis,{historical:true,noUndefined:true,untrackedAccount:true,filtered:1,detail:true,causes:true,versions:true,queue:true,pending:true,drilldown:true,overflow:false});
+  if(process.env.LUMEN_DASHBOARD_SCREENSHOTS&&viewport.width===1440){
+   fs.mkdirSync(process.env.LUMEN_DASHBOARD_SCREENSHOTS,{recursive:true});
+   for(const section of ['overview','journeys','sync']){
+    await evaluate(`document.querySelector('[data-analytics-section="${section}"]').click();document.getElementById('adminCockpit').scrollTop=0`);
+    const shot=await send('Page.captureScreenshot',{format:'png'});
+    fs.writeFileSync(process.env.LUMEN_DASHBOARD_SCREENSHOTS+'/'+section+'.png',Buffer.from(shot.data,'base64'));
+   }
+   await evaluate("document.querySelector('[data-analytics-section=players]').click()");
+  }
+  await evaluate("sessionStorage.setItem('productUnavailable','1');document.getElementById('adminCockpitRefresh').click()");
+  await until("document.getElementById('adminCockpitStatus').textContent.includes('Indisponible : activité')",'independent technical source');
+  assert.equal(await evaluate("document.getElementById('analyticsTechnical').textContent.includes('Stockage saturé')"),true);
+  assert.equal(await evaluate(`document.querySelector('#analyticsJourneys [aria-label="Filtrer par aventure"]').value===${JSON.stringify(first.packId)}&&document.querySelector('#analyticsJourneys [aria-label="Minimum de joueurs ayant commencé"]').value==='5'`),true,'same-owner refresh preserves journey filters');
+  await evaluate("sessionStorage.removeItem('productUnavailable');sessionStorage.setItem('healthUnavailable','1');document.getElementById('adminCockpitRefresh').click()");
+  await until("document.getElementById('adminCockpitStatus').textContent.includes('santé technique')",'missing health source');
+  assert.equal(await evaluate("document.getElementById('analyticsTechnical').textContent.includes('Source technique indisponible')"),true);
+  await evaluate("sessionStorage.removeItem('healthUnavailable')");
   await navigateAndWait({send,evaluate},'Page.reload');
   await until("!document.getElementById('adminCockpit').hidden&&document.querySelector('[data-analytics-panel=players]')?.hidden===false",'reload keeps the selected section');
   await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
@@ -54,7 +93,7 @@ try{
   await until("!document.getElementById('adminAnalyticsAccess').hidden",'guest route');
   assert.equal(await evaluate("document.getElementById('adminCockpit').hidden&&(window.__adminReads||[]).length===0"),true,'guest cannot initiate an admin data read');
   await evaluate("window.__server.session={user:{id:'admin'}};window.__saveServer()");
-  results.push({viewport,...state,directEntry:true,reload:true,escape:true,legacyEntry:true,denied:true,guestDenied:true});
+  results.push({viewport,...state,analysis,directEntry:true,reload:true,escape:true,legacyEntry:true,denied:true,guestDenied:true});
  }
  assert.equal(errors.length,0,JSON.stringify(errors));
  const report={results,liveRPC:false,physicalDevice:false,exceptions:errors};
