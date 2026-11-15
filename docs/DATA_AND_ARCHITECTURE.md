@@ -1,5 +1,14 @@
 # Data and architecture
 
+Analytics #708 correction (`d4d914b` baseline): the existing admin cockpit now
+also reads receipt-derived service activity, without optional collection.
+Private readers, access guards, UTC receipt semantics, qualified identity and
+duration rules, freshness, rollback and limits are specified in
+[PRODUCT_ANALYTICS](PRODUCT_ANALYTICS.md#reliable-service-activity-and-missing-coverage--708-correction).
+The repeatable migration adds functions and receipt-time indexes only; no player
+row, save, reward, receipt, entitlement, wallet or consent preference is changed.
+Cloud merge/restore and the existing regression matrix need no rule changes.
+
 ## Current architecture
 
 Lumen is a static PWA using native ES modules, with no application build step.

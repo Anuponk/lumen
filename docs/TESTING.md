@@ -1,5 +1,20 @@
 # Testing and quality gate
 
+## KPI reliability correction — #708
+
+`analytics-dashboard-tests.mjs` reproduces disabled-collection false zeroes and
+split version labels; `analytics-tests.mjs` reproduces an open-page idle session;
+`incident-investigation-tests.mjs` reproduces weekly counts above the daily budget.
+`fixtures/reliable-analytics.sql` runs the real migration twice in disposable
+PostgreSQL: receipts without events, cross-domain deduplication, shared browser
+ownership, QA exclusion, independent WAU, unknown retention, revision-qualified
+decimal medians/sample counts, stale queues, Lumen isolation and live capability
+expiry/grants. It runs at the end of the existing ledger SQL CI. An isolated
+embedded PostgreSQL run provides additional local evidence, not production proof.
+The real-app Analytics browser retains 320/390/1440 checks and asserts receipt
+cards with zero product events and unavailable retention. Production activation,
+authenticated live acceptance and physical mobile remain separate checks.
+
 ## Actionable Analytics dashboards — #708
 
 `analytics-dashboard-tests.mjs` joins the Node gate: missing versus measured zero,

@@ -1542,7 +1542,7 @@ function currentAttemptAnalytics(extra={}){
   attempt,questIndex:view.legacyIndex,gridSize:n,constellationIndex:view.constellationIndex,constellationName:view.constellationName,
   solvedCount:canonicalScopeProgress(lumenProgress).completed,questAttemptNumber:view.attemptNumber,
   guidedEnabled:guidedErrorsEnabled(),autoMarkingEnabled:!!document.getElementById("autoCross")?.checked
- },{stable_quest_id:view.id,quest_ordinal:view.ordinal,pack_id:view.packId,constellation_id:view.constellationId,...extra});
+ },{stable_quest_id:view.id,quest_ordinal:view.ordinal,pack_id:view.packId,constellation_id:view.constellationId,grid_revision:attempt?.gridRevision??quest.gridRevision??0,...extra});
 }
 function trackAttemptEvent(name,extra={}){const quest=canonicalActiveQuest??canonicalQuestForLegacy(levelIndex);return trackLumenEvent(name,quest.legacyIndex===null?null:quest.legacyIndex+1,currentAttemptAnalytics(extra))}
 
@@ -2839,24 +2839,25 @@ async function loadAdminCockpit(){
    lumenSupabase.rpc("lumen_admin_quest_metrics",{p_days:days})
  ].map(request=>Promise.resolve(request).catch(()=>({error:{message:'Service indisponible'}}))));
  if(!authorized())return;
- const players=analyticsPlayers(playerSnapshot.error?[]:playerSnapshot.data,accounts.error?[]:accounts.data).map(x=>({...x,current_quest:questMetrics.data?.current_players?.[x.player_key]??null}));
+ const receivedPlayers=new Map((cockpit.data?.service_activity?.players||[]).map(p=>[p.player_key,p]));
+ const players=analyticsPlayers(playerSnapshot.error?[]:playerSnapshot.data,accounts.error?[]:accounts.data).map(x=>({...x,current_quest:Math.max(questMetrics.data?.current_players?.[x.player_key]||0,receivedPlayers.get(x.player_key)?.furthest_confirmed_quest||0)||null}));
  const playerError=playerSnapshot.error&&accounts.error;
  let observations;try{observations=await requestClient.rpc('lumen_admin_player_observations',{p_player_keys:players.map(p=>p.player_key)})}catch(_){observations={error:true}}
  if(!authorized())return;
  const realFeedbacks=feedbacks.data||[];
  const d={...cockpit.data,friction:questMetrics.data?.friction||[],funnel:questMetrics.data?.funnel||[]},m=d.summary||{};
  document.getElementById("adminCockpitKpis").innerHTML=[
-  ["Joueurs uniques",m.unique_players],["Nouveaux",m.new_players],["Revenants",m.returning_players],["DAU",m.dau],["WAU",m.wau],["Sessions",m.sessions],["Quêtes commencées",m.quests_started],["Quêtes terminées",m.quests_completed],["Feedbacks",m.feedback_count]
+  ["Joueurs uniques",null],["Nouveaux",null],["Revenants",null],["DAU",null],["WAU",null],["Sessions",null],["Quêtes commencées",null],["Quêtes terminées",null],["Feedbacks reçus",m.feedback_count]
  ].map(x=>'<div class="admin-kpi"><strong>'+(x[1]==null?'—':adminNumber(x[1]))+'</strong><span>'+x[0]+'</span></div>').join("");
  const health=syncHealth.error?null:syncHealth.data;
  const incidentView=document.getElementById('adminDiagnosticIncidents');
  renderIncidentInvestigation(incidentView,health?.diagnostics,{authorized});
  const daily=d.daily||[],max=Math.max(1,...daily.map(x=>Number(x.players)||0));
  document.getElementById("adminDailyChart").innerHTML=daily.map(x=>'<div class="admin-bar" style="height:'+Math.max(4,Math.round(100*(Number(x.players)||0)/max))+'%" data-label="'+adminEsc(x.activity_date+" · "+x.players+" joueurs")+'"></div>').join("");
- const ret=d.retention||{};document.getElementById("adminRetention").innerHTML=["j1","j3","j7"].map(k=>'<div><strong>'+(ret[k]==null?'—':adminNumber(ret[k])+' %')+'</strong><span>'+k.toUpperCase()+'</span></div>').join("");
+ document.getElementById("adminRetention").innerHTML=["j1","j3","j7"].map(k=>'<div><strong>—</strong><span>'+k.toUpperCase()+' · collecte interrompue</span></div>').join("");
  const funnel=d.funnel||[];document.getElementById("adminFunnel").innerHTML=funnel.map(x=>'<div class="admin-funnel-row"><span>'+adminEsc(x.label)+'</span><strong>'+(x.players==null?'—':adminNumber(x.players))+' joueur(s) observé(s)</strong></div>').join("");
  document.getElementById("adminFriction").innerHTML=(d.friction||[]).map(x=>'<tr><td>Q'+x.quest_ordinal+'</td>'+[x.started,x.completed,x.resets,x.abandons,x.hints,x.verifies].map(value=>'<td>'+(value==null?'—':adminNumber(value))+'</td>').join('')+'<td>'+(x.median_seconds==null?'—':Math.round(x.median_seconds)+' s')+'</td></tr>').join('');
- const syncAlerts=health&&Number(health.stalled_players)>0?["Sauvegardes : "+health.stalled_players+" joueur(s) bloqué(s) depuis plus de 15 minutes"]:[];
+ const syncAlerts=health&&Number(health.stalled_players)>0?["Hydratation : "+health.stalled_players+" compte(s) avec un incident non résolu connu depuis plus de 15 minutes ; état actuel à vérifier"]:[];
  const outboxAlerts=health?.outbox?.alerts||[];
  const detailAlerts=incidentAlerts(buildIncidentInvestigation(health?.diagnostics));
  const alerts=[...syncAlerts,...outboxAlerts.map(a=>'Sauvegarde '+a.state+' · '+a.pending+' opération(s) · '+a.platform+' · '+a.version),...detailAlerts.map(a=>a.text)];document.getElementById("adminAlerts").innerHTML=alerts.map(x=>'<div class="admin-alert"><strong>⚠</strong><span>'+adminEsc(x)+'</span></div>').join("")||"<p>Pas d’alerte dans les sources disponibles. La couverture reste partielle.</p>";

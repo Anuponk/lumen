@@ -1,10 +1,64 @@
 # Product analytics contract
 
+## Reliable service activity and missing coverage — #708 correction
+
+Baseline `d4d914b` displayed 0 players/quests while product collection had stopped
+on 26 October. The primary cards now read `service_activity` appended to the
+existing capability-protected `lumen_admin_cockpit` response. The private
+`lumen_commands.service_activity` reader unions canonical/historical victory
+receipts, requires Lumen membership and a current catalogue quest, and deduplicates
+the same account/operation/quest across domains. It returns distinct accounts,
+distinct quests, successful operations (including replays), and distinct
+account/quest pairs marked `firstCompletion` by the server. Server receipt time
+in UTC is not play time, browser acknowledgement, an authenticated session or
+proof that every device is synchronised. Test accounts are included; no human
+filter is invented for receipts. Summaries cover the complete selected window;
+the drilldown lists at most 250 accounts and intersects the loaded directory.
+
+Receipt metrics work without optional tracking. Product collection remains off;
+the old primary player/session/DAU/WAU/start/completion cards and J1/J3/J7 display
+unavailable instead of false zeroes/percentages. Historical quest events remain
+explicitly qualified. There is no new tracking or consent purpose. Missing starts,
+aids, abandonment, offline play dates and retention cannot be reconstructed.
+Collection opt-in for future product events remains separate work.
+
+The corrected historical summary preserves explicit event ownership, links a
+guest only to one known account owner across history, deduplicates paired completion
+events by actor/quest/session/attempt/run, counts actual attempt starts rather
+than grid openings, and computes WAU independently of the selected window.
+First observation is per attributed actor, not per newly encountered browser;
+it remains different from account creation. Directory readers use the same
+qualified traffic; points are catalogue ordinals, never inferred numeric next
+quests. Recent receipt evidence can advance an observed point, never a save.
+QA events remain excluded from metrics; their ownership still prevents linking
+an ambiguous guest to the other account of a shared browser.
+
+Optional sessions renew after 30 minutes idle even in an open page. Future
+permitted attempt events include `grid_revision` from the played attempt before
+the catalogue fallback (including restored/challenge attempts). Duration medians omit unknown
+revisions and become unavailable when known revisions differ; valid samples and
+the observed revision accompany the result. This is not a claim of difficulty
+on the current grid. Tutorial completion stays unavailable.
+
+Technical last-known outbox totals remain unchanged. Separate fresh pending and
+critical counts require a signal within 15 minutes; alerts carry observation time
+and freshness and are bounded to 20. Unresolved hydration is an incident history,
+not proof of current blockage. Equivalent version spellings are aggregated.
+Safe nonnegative integer diagnostic totals are retained above the daily budget.
+
+Migration: `20261115162545_reliable_analytics_708.sql`, repeatable, functions and
+two receipt-time indexes only. No player rows, receipts, progress, rewards,
+wallets, entitlements, retention or consent preferences are written. Before
+activation, the new cards explicitly say unavailable. Rollback restores prior
+function definitions from the recorded pre-activation definitions; keep player
+records intact. The indexes can remain. No new persisted personal data exists.
+
 ## Actionable journey and technical dashboards — #708
 
 `ui/analytics-dashboard.js` projects the existing authorised responses into an
-overview, a journey/quest analysis and a technical triage view. No collector,
-RPC, SQL schema, consent, save or reward writer is added. Product collection is
+overview, a journey/quest analysis and a technical triage view. The initial
+dashboard introduced no collector or writer; the correction above extends its
+existing server reader. Product collection is
 still disabled: journey/activation/activity charts describe recorded history,
 not current complete player behaviour. Missing sources show unavailable, never
 manufactured zeroes; failure of the optional product aggregate no longer hides
@@ -17,8 +71,8 @@ at least as numerous as starts. These are review prompts, not causal difficulty
 scores or per-attempt success/abandon rates. A smaller sample stays visible but
 unqualified. Finishes exceeding starts are retained as different period
 populations. Explicit abandon counts stay separate from interruption/absence.
-Active median time is not the penalised official score; valid-duration sample
-size is not supplied. Stable catalogue identity owns labels/grouping; inconsistent
+Active median time is not the penalised official score; revision-qualified sample
+counts are supplied by the corrected reader. Stable catalogue identity owns labels/grouping; inconsistent
 IDs/ordinals and duplicate identities are excluded, not reassigned.
 
 Journey filters use current catalogue adventure metadata, quest/constellation

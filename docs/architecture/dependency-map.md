@@ -5,6 +5,11 @@ Actionable Analytics #708: existing product/quest/health/account responses →
 → guarded existing navigation/player/session/diagnostic readers. Account list +
 recent registered events → one bounded directory → existing observation batch.
 Product-source failure does not gate technical evidence. No new save/collection edge.
+KPI correction: canonical/historical receipts + Lumen membership + quest rules →
+private `service_activity` → existing guarded cockpit RPC → receipt cards,
+quest volumes and account links. The same `cockpit_events` ownership/filter feeds
+summary, quest and recent-player reads. Outbox last-known and fresh counts remain
+separate. No analytics edge enters a save, reward command or consent preference.
 
 Analytics #708 B1: Administration/direct URL → shared root shell →
 `ui/analytics-navigation.js` section/history → existing cockpit readers/RPCs.
