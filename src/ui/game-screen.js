@@ -1334,8 +1334,13 @@ function syncMobileAuthUI(){
 // #711: while a newly signed-in account is not yet the verified local owner, the
 // device still holds the previous account's progress. Never show or let anyone
 // play it: hold the screen until this account's progress is installed.
+const ACCOUNT_SWITCH_HOLD_KEY='lumenAccountSwitchHoldV1';
 function accountSwitchPending(){
- if(qaActive||!lumenUser||cloudProfileReady)return false;
+ if(qaActive||cloudProfileReady)return false;
+ // A reload during a pending switch (e.g. « Réessayer ») must not flash the
+ // previous account's grid while the session is still being restored.
+ // Kept until this account is installed or the player explicitly signs out.
+ if(!lumenUser){try{return sessionStorage.getItem(ACCOUNT_SWITCH_HOLD_KEY)==='1'}catch{return false}}
  let owner=null;try{owner=localStorage.getItem('lumenCloudOwnerId')}catch{return false}
  return !!owner&&owner!==lumenUser.id;
 }
@@ -1345,7 +1350,7 @@ function accountSwitchPending(){
 const SIGNED_OUT_NEUTRAL_KEY='lumenSignedOutNeutralV1';
 async function signOutExplicitly(){
  const result=await signOut();
- if(result?.ok!==false){try{localStorage.setItem(SIGNED_OUT_NEUTRAL_KEY,'1')}catch{}}
+ if(result?.ok!==false){try{localStorage.setItem(SIGNED_OUT_NEUTRAL_KEY,'1');sessionStorage.removeItem(ACCOUNT_SWITCH_HOLD_KEY)}catch{}}
  updateAuthUI();return result;
 }
 function updateSignedOutScreen(){
@@ -1360,6 +1365,7 @@ function updateAccountSwitchHold(){
  const hold=document.getElementById('accountSwitchHold');if(!hold)return;
  const pending=accountSwitchPending();
  hold.hidden=!pending;document.body.classList.toggle('account-switch-hold',pending);
+ try{if(pending&&lumenUser)sessionStorage.setItem(ACCOUNT_SWITCH_HOLD_KEY,'1');else if(!pending&&lumenUser)sessionStorage.removeItem(ACCOUNT_SWITCH_HOLD_KEY)}catch{}
  if(!pending)return;
  const offline=typeof navigator!=='undefined'&&navigator.onLine===false,failed=!!cloudProfileFailure&&!authSessionPending;
  document.getElementById('accountSwitchHoldText').textContent=offline
@@ -1967,6 +1973,7 @@ document.getElementById('signedOutSignup')?.addEventListener('click',()=>openEma
 document.getElementById('accountSwitchHoldRetry')?.addEventListener('click',()=>{void retryAccountCloudSync()});
 document.getElementById('accountSwitchHoldDiagnostic')?.addEventListener('click',()=>{const menu=document.getElementById('mobileAuthPopover');if(menu)menu.hidden=false;showAccountCloudDiagnostic()});
 addEventListener('online',()=>updateAccountSwitchHold());addEventListener('offline',()=>updateAccountSwitchHold());
+try{updateAccountSwitchHold()}catch{} // Before the session is restored (no flash of the previous account).
 async function refreshRankingAccount(){
  const c=rankingContext();if(!c.owner||!c.client||c.qa){showErasedAccountNotice(false);return}
  // #316: an erased account kept for another app can never write Lumen data again.
