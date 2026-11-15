@@ -549,7 +549,7 @@ sur cet appareil ». La progression affiche l'étoile attendue en « 1 en attent
 Les cinq badges sont en pointillés « en attente », sauf ceux déjà confirmés.
 La tuile de rang indique « Classement après confirmation ». L'emplacement réservé
 du podium porte le statut (« confirmation cloud en attente » ou « Hors ligne ») et
-« Réessayer la sauvegarde ». « Quête suivante » et « Mon ciel » restent actifs ;
+« Réessayer la sauvegarde ». « Réessayer la sauvegarde » renvoie la même opération figée sur place, sans recharger la page ; la confirmation met l’écran à jour. Si la session cloud ne peut pas relancer ici (non prête, profil en écriture) ou si d’autres victoires restent en file, la resynchronisation complète précédente (rechargement) s’applique ; hors ligne, rien n’est tenté et la reconnexion relance automatiquement. « Quête suivante » et « Mon ciel » restent actifs ;
 « Défier » et « Rejouer » restent à leur place mais désactivés jusqu'à la
 confirmation. Rien n'est crédité, aucun rang ni défi n'est annoncé avant
 l'accusé serveur. À la confirmation, le même écran est mis à jour sur place,
