@@ -12,13 +12,15 @@ begin
  perform set_config('request.jwt.claim.sub',uid::text,true);
  base:='{"xp":0,"shards":0,"solved":{},"badges":{},"stars":{},"challenges":{},"performances":{},"canonicalQuestState":{}}';
  insert into lumen.profile_snapshots(user_id,payload) values(uid,base);
+ -- Insert triggers may complete the stored snapshot (catalogue origin): start from it.
+ select payload into base from lumen.profile_snapshots where user_id=uid;
  big:=base||jsonb_build_object('future',repeat('x',700000));
  assert public.lumen_cas_profile(base,big),'a 700 KB profile is accepted';
  select payload into current from lumen.profile_snapshots where user_id=uid;
- assert current=big;
+ assert length(current->>'future')=700000,'the large profile is stored';
  huge:=base||jsonb_build_object('future',repeat('x',1100000));
  begin
-  perform public.lumen_cas_profile(big,huge);raise exception 'oversized profile accepted';
+  perform public.lumen_cas_profile(current,huge);raise exception 'oversized profile accepted';
  exception when raise_exception then if sqlerrm<>'invalid Lumen profile' then raise;end if;end;
- assert (select payload=big from lumen.profile_snapshots where user_id=uid),'a refused write changes nothing';
+ assert (select payload=current from lumen.profile_snapshots where user_id=uid),'a refused write changes nothing';
 end $$;
