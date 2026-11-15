@@ -919,6 +919,17 @@ legitimate decreases win over an earlier receipt balance. Ambiguous errors
 never select an older writer. V1 pending commands remain recoverable in their
 existing namespace; a V1 badge replay cannot rewrite V2 run statistics.
 An explicit missing V2 read endpoint permits V1 read recovery only.
+Since #697, the independent post-command verification uses one read-only round
+trip, `lumen_get_quest_command_verified` (migration
+`20261115090000_quest_command_verified_read_697.sql`). It is a separate request
+after the command, never the command's own response. It returns the exact
+receipt and, only if that receipt exists, the current verified profile, under
+the same account guard. All receipt, projection and official-time checks are
+unchanged. Only an explicitly missing endpoint (PGRST202/404) selects the two
+separate reads; a malformed shape is an integrity failure. V1 and V2 receipts
+share `lumen_commands.canonical_receipts`, so a definitive V2 "no receipt"
+answer skips the redundant V1 lookup. A fresh canonical victory therefore costs
+three sequential round trips instead of five: lookup, command, verification.
 
 A recreated V2 capture may be retired only after archiving its exact bytes and
 original receipt, with matching operation/account/quest, unchanged immutable

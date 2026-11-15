@@ -21,7 +21,8 @@ test('verified newer V2 replay restores across devices while preserving first-wi
  const result=await reconcileCompatibleCloudProfiles({rpc(){throw Error('Dominant server restore must not write')}},storage,remote,{userId:'owner'});
  assert.equal(result.status,'cloud_dominant');assert.deepEqual(result.profile,remote);
 });
-function fixture(){
+// combined=false models a server before #697 (explicitly missing endpoint).
+function fixture({combined=false}={}){
  let profile={xp:42,shards:7,autonomousWins:2,solved:{},badges:{},canonicalQuestState:{}},receipt=null,writes=0;
  const calls=[];
  const client={rpc:async(name,args)=>{
@@ -31,6 +32,11 @@ function fixture(){
     receipt={request:{version:2,operationId:args.p_operation_id,questId:args.p_quest_id,facts:structuredClone(args.p_facts)},outcome,recordedAt:'2026-10-22T10:01:00Z'};
    }
    throw Error('Lost response after commit');
+  }
+  if(name==='lumen_get_quest_command_verified'){
+   if(!combined)return {data:null,error:{code:'PGRST202'},status:404};
+   const own=receipt?.request.operationId===args.p_operation_id?receipt:null;
+   return {data:{version:1,receipt:structuredClone(own),profile:own?structuredClone(profile):null}};
   }
   if(name==='lumen_get_quest_command')return {data:structuredClone(receipt)};
   if(name==='lumen_restore_profile')return {data:structuredClone(profile)};
@@ -80,4 +86,44 @@ test('official timing survives lost response, read-back and receipt replay; miss
  assert.deepEqual(recovered.reward.facts,timed);assert.equal(f.writes,1);
  delete f.profile.canonicalQuestState[quest.id].runPerformance.officialTimes;
  await assert.rejects(loadCommittedQuestAttempt(f.client,quest,'official-reset-0',{userId:'owner'}),/Official time projection unconfirmed/);
+});
+
+test('#697: combined verified read replaces the receipt and profile round trips with identical checks',async()=>{
+ const f=fixture({combined:true}),options={userId:'owner'};
+ const a=await commitQuestCommand(f.client,quest,{facts},'combined-0',options);
+ assert(a.newlyCompleted);assert.equal(a.profile.xp,57);
+ assert.deepEqual(f.calls,['lumen_commit_quest_command','lumen_get_quest_command_verified']);
+ f.profile.shards=2; // A newer authoritative spend still wins over the receipt.
+ const recovered=await loadCommittedQuestAttempt(f.client,quest,'combined-0',options);
+ assert.equal(recovered.profile.shards,2);assert.deepEqual(recovered.reward.facts,facts);assert.equal(f.writes,1);
+ assert.deepEqual(f.calls.slice(-1),['lumen_get_quest_command_verified']);
+ assert.equal(await loadCommittedQuestAttempt(f.client,quest,'never-sent',options),null);
+});
+test('#697: combined read keeps every refusal (altered facts, solved-only, missing receipt, malformed shape)',async()=>{
+ for(const mode of ['missing','altered','solved-only','no-profile','profile-without-receipt','array']){
+  const f=fixture({combined:true}),rpc=f.client.rpc;
+  f.client.rpc=async(name,args)=>{
+   const result=await rpc(name,args);
+   if(name==='lumen_get_quest_command_verified'){
+    if(mode==='missing')return {data:{version:1,receipt:null,profile:null}};
+    if(mode==='altered')result.data.receipt.request.facts.seconds++;
+    if(mode==='solved-only')result.data.profile.canonicalQuestState[quest.id]={solved:true};
+    if(mode==='no-profile')result.data.profile=null;
+    if(mode==='profile-without-receipt')result.data.receipt=null;
+    if(mode==='array')return {data:[]};
+   }
+   return result;
+  };
+  await assert.rejects(commitQuestCommand(f.client,quest,{facts},'run-reset-0',{userId:'owner'}),undefined,mode);
+  assert.equal(f.writes,1,mode);
+ }
+});
+test('#697: an explicitly missing combined endpoint falls back once to the two independent reads',async()=>{
+ const f=fixture(),options={userId:'owner'};
+ await commitQuestCommand(f.client,quest,{facts},'fallback-0',options);
+ await loadCommittedQuestAttempt(f.client,quest,'fallback-0',options);
+ assert.deepEqual(f.calls,['lumen_commit_quest_command','lumen_get_quest_command_verified','lumen_get_quest_command','lumen_restore_profile',
+  'lumen_get_quest_command','lumen_restore_profile'],'the missing endpoint is not probed again on this client');
+ const failing={rpc:async name=>name==='lumen_get_quest_command_verified'?{data:null,error:{code:'57014'},status:500}:Error('must not fall back')};
+ await assert.rejects(loadCommittedQuestAttempt(failing,quest,'x',options),'A server failure never selects another read path');
 });

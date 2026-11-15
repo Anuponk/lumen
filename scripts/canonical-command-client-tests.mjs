@@ -10,7 +10,7 @@ function fixture(){
  const state={profile:base(),receipts:new Map(),calls:[],missing:false,lost:false,readLost:false,versionError:null,userId:ownerId};
  const client={rpc:async(name,args)=>{
   state.calls.push([name,args]);
-  if(name==='lumen_get_quest_command')return {data:null,error:{code:'PGRST202'},status:404}; // Explicit V1-only server fixture.
+  if(['lumen_get_quest_command','lumen_get_quest_command_verified'].includes(name))return {data:null,error:{code:'PGRST202'},status:404}; // Explicit V1-only server fixture.
   if(['lumen_commit_canonical_command','lumen_get_canonical_command'].includes(name)&&args.p_expected_user_id!==state.userId)return {data:null,error:{code:'42501'},status:403};
   if(name==='lumen_canonical_command_version')return state.versionError||{data:state.missing?null:1,error:state.missing?{code:'PGRST202'}:null,status:state.missing?404:200};
   if(name==='lumen_get_canonical_command')return {data:state.readLost?null:state.receipts.get(args.p_operation_id)??null,error:null};
@@ -135,4 +135,25 @@ test('cold resume reads an existing attempt receipt without submitting regenerat
  state.readLost=true;assert.equal(await loadCommittedCanonicalAttempt(client,quest,'restored-reset-0',{userId:ownerId}),null);
  state.readLost=false;state.profile.canonicalQuestState[quest.id].badges={};
  await assert.rejects(loadCommittedCanonicalAttempt(client,quest,'restored-reset-0',{userId:ownerId}));
+});
+
+test('#697: a definitive V2 "no receipt" skips the redundant V1 lookup; a V1 row still uses the V1 adapter',async()=>{
+ const {loadCommittedCanonicalAttempt}=await import('../src/persistence/canonical-command.js');
+ // V1 and V2 receipts share one server table: the V2 read sees V1 rows as request.version 1.
+ const rows=new Map(),calls=[];
+ const client={rpc:async(name,args)=>{
+  calls.push(name);
+  if(name==='lumen_get_quest_command_verified'){const row=rows.get(args.p_operation_id)??null;return {data:{version:1,receipt:row,profile:row?{...base(),canonicalQuestState:{[quest.id]:{solved:true,badges:{autonomy:true}}}}:null}}}
+  if(name==='lumen_canonical_command_version')return {data:1};
+  if(name==='lumen_get_canonical_command'){const row=rows.get(args.p_operation_id);return {data:row?{...row.request,newlyCompleted:true,recordedAt:row.recordedAt}:null}}
+  if(name==='lumen_restore_profile')return {data:{...base(),canonicalQuestState:{[quest.id]:{solved:true,badges:{autonomy:true}}}}};
+  throw Error('Unexpected RPC '+name);
+ }};
+ assert.equal(await loadCommittedCanonicalAttempt(client,quest,'fresh-run',{userId:ownerId}),null);
+ assert.deepEqual(calls,['lumen_get_quest_command_verified'],'no V1 version probe or V1 receipt read');
+ rows.set('old-run',{request:{version:1,operationId:'old-run',questId:quest.id,badges:reward.badges,performance:reward.performance},outcome:{},recordedAt:'2026-10-18T00:00:00Z'});
+ calls.length=0;
+ const v1=await loadCommittedCanonicalAttempt(client,quest,'old-run',{userId:ownerId});
+ assert.equal(v1.receipt.operationId,'old-run');assert.equal(v1.alreadySaved,true);
+ assert.deepEqual(calls.filter(n=>n==='lumen_get_canonical_command'),['lumen_get_canonical_command']);
 });

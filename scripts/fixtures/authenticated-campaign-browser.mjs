@@ -25,6 +25,11 @@ window.supabase={createClient(){return {auth:{getSession:async()=>{if(navigator.
   const receipt=window.__canonicalReceipts.get(args.p_operation_id);
   return {data:receipt?.request?receipt:receipt?{request:receipt,outcome:{newlyCompleted:receipt.newlyCompleted},recordedAt:receipt.recordedAt}:null,error:null};
  }
+ if(name==='lumen_get_quest_command_verified'){
+  const receipt=window.__canonicalReceipts.get(args.p_operation_id);
+  const data=receipt?.request?receipt:receipt?{request:receipt,outcome:{newlyCompleted:receipt.newlyCompleted},recordedAt:receipt.recordedAt}:null;
+  return {data:{version:1,receipt:data,profile:data?structuredClone(window.__profile):null},error:null};
+ }
  if(name==='lumen_commit_quest_command'){
   const prior=window.__canonicalReceipts.get(args.p_operation_id);
   if(prior&&!prior.request)return {data:null,error:{code:'22023'},status:400};
