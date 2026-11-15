@@ -12,12 +12,15 @@ create table if not exists lumen.profiles(user_id uuid primary key,nickname text
 alter table lumen.profiles add column if not exists nickname text;
 create table if not exists lumen.progress(user_id uuid,puzzle_id integer);
 create table if not exists lumen.feedback(created_at timestamptz not null default now());
+-- Earlier ledger fixtures intentionally create a smaller feedback table. Match
+-- the verified production column rather than changing the production reader.
+alter table lumen.feedback add column if not exists created_at timestamptz not null default now();
 \ir ../../supabase/migrations/20261115162545_reliable_analytics_708.sql
 \ir ../../supabase/migrations/20261115162545_reliable_analytics_708.sql
 begin;
 do $$
 declare admin uuid:=gen_random_uuid();a uuid:=gen_random_uuid();b uuid:=gen_random_uuid();outsider uuid:=gen_random_uuid();
- q text;ordinal integer;r jsonb;before_receipts bigint;baseline_players bigint;baseline_quests bigint;baseline_completions bigint;
+ q text;ordinal integer;r jsonb;before_receipts bigint;before_fresh bigint;baseline_players bigint;baseline_quests bigint;baseline_completions bigint;
 begin
  insert into auth.users(id) values(admin),(a),(b),(outsider);
  insert into lumen.users(user_id) values(a),(b);
@@ -74,11 +77,15 @@ begin
  assert (select last_activity<now() from public.lumen_admin_accounts(250) where user_id=b),'unqualified traffic cannot advance account activity';
  assert (select count(*) from public.lumen_admin_accounts(250) where user_id=outsider)=0,'account directory restricted to Lumen membership';
  assert (select count(*) from public.lumen_admin_recent_players(250) where player_key='u:'||a::text)=1,'shared browser retains explicit account identity';
+ select (lumen_commands.outbox_health_summary()->>'fresh_pending_players')::bigint into before_fresh;
  insert into lumen_commands.outbox_health(user_id,client_id,session_id,session_started,sequence,platform,state,pending,failures,updated_at)
  values(a,gen_random_uuid(),gen_random_uuid(),now(),1,'desktop','pending',2,0,now()-interval '1 day');
  r:=lumen_commands.outbox_health_summary();
  assert (r->>'pending_players')::integer>0,'old evidence retained';
+ assert (r->>'fresh_pending_players')::bigint=before_fresh,'stale account must not increase fresh pending total';
  assert (select count(*) from lumen_commands.outbox_health where user_id=a and pending>0 and updated_at>=now()-interval '15 minutes')=0,'old device is not fresh';
+ update lumen_commands.outbox_health set updated_at=now() where user_id=a;
+ assert (lumen_commands.outbox_health_summary()->>'fresh_pending_players')::bigint=before_fresh+1,'a fresh signal increments accounts once';
  update lumen.internal_capabilities set expires_at=now()-interval '1 second' where user_id=admin;
  begin perform public.lumen_admin_cockpit();raise exception 'expired admin read';exception when insufficient_privilege then null;end;
  assert not has_function_privilege('anon','public.lumen_admin_cockpit(integer)','EXECUTE');
