@@ -32,6 +32,7 @@ window.supabase={createClient(){return {auth:{getSession:async()=>{if(navigator.
  }
  if(name==='lumen_commit_quest_command'){
   if(window.__commitDelay)await new Promise(resolve=>setTimeout(resolve,window.__commitDelay)); // Slow 4G simulation (#682 I).
+  if(window.__commitFailOnce){window.__commitFailOnce=false;return {data:null,error:{code:'PGRST003'},status:503}} // Transient failure, nothing committed.
   const prior=window.__canonicalReceipts.get(args.p_operation_id);
   if(prior&&!prior.request)return {data:null,error:{code:'22023'},status:400};
   if(prior&&JSON.stringify(prior.request.facts)!==JSON.stringify(args.p_facts))return {data:null,error:{code:'22023'},status:400};
