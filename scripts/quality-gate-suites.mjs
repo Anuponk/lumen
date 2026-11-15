@@ -4,6 +4,7 @@ export const nodeSuites=[
  'analytics-navigation-tests.mjs',
  'landing-seo-tests.mjs',
  'ci-scope-tests.mjs',
+ 'license-tests.mjs',
  'adventure-access-tests.mjs',
  'mastery-unlock-tests.mjs',
  'adventure-offer-tests.mjs',
