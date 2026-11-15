@@ -243,7 +243,11 @@ jobs:
           PGPASSWORD: isolated-test-only
           LUMEN_SQL_FIXTURE: '1'
         run: |
-          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
-            -f supabase/migrations/20261115120000_profile_size_limit_1mib.sql \
-            -f supabase/migrations/20261115120000_profile_size_limit_1mib.sql \
-            -f scripts/fixtures/profile-size-limit.sql
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1             -f supabase/migrations/20261115120000_profile_size_limit_1mib.sql             -f supabase/migrations/20261115120000_profile_size_limit_1mib.sql             -f scripts/fixtures/profile-size-limit.sql
+      - name: Verify digest profile CAS and client jsonb serialization parity
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          node scripts/jsonb-digest-fixtures.mjs > /tmp/lumen-jsonb-digest.sql
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1             -f /tmp/lumen-jsonb-digest.sql             -f supabase/migrations/20261115140000_profile_digest_cas.sql             -f scripts/fixtures/profile-digest-cas.sql

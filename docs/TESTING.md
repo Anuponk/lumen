@@ -338,6 +338,16 @@ read equals both independent reads, never writes, keeps the account guard
 and denies `anon`.
 Admin recent-player tests execute the actual metrics/timeline renderers.
 
+Digest profile CAS: `node --test scripts/profile-digest-cas-tests.mjs` covers the
+jsonb text rules, an exact digest (single call, expected profile not uploaded), the
+fallback to the full CAS on mismatch, missing endpoint or unexpected answer, a
+matched-but-refused conflict, and the existing refusal codes. In `canonical-ledger`,
+`scripts/jsonb-digest-fixtures.mjs` generates SQL so that real PostgreSQL checks
+the client jsonb text and digest (tricky keys, escapes and numbers, full 880-quest
+profile), then `scripts/fixtures/profile-digest-cas.sql` checks mismatch without
+write, stale digest refusal, account guard, size guard and grants.
+`victory-pending-browser-tests.mjs` asserts profile writes use the digest path.
+
 Profile size ceiling (1 MiB): `scripts/fixtures/profile-size-limit.sql` runs in
 `canonical-ledger` after applying `20261115120000_profile_size_limit_1mib.sql` twice.
 It checks that no profile function keeps the 512 KiB ceiling, that SECURITY DEFINER
