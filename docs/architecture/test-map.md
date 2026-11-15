@@ -1,5 +1,12 @@
 # Existing verification map
 
+Analytics #708 B1: `analytics-navigation-tests.mjs`, expanded
+`cockpit-acceptance-tests.mjs` and real-app `analytics-admin-browser-tests.mjs`
+join existing quality coverage. Independent cockpit/report/support browser keeps
+five viewport checks. Publisher fixtures cover scoped routing and HTTP-failure
+rollback on Linux CI. Synthetic Auth/RPC does not replace real-device/live
+acceptance. See TESTING for entry points and limits.
+
 Maintenance #59/#60/#62: locked `npm run format:check` verifies the migrated
 scope and parsed syntax preservation. `app-updates-tests.mjs` checks the actual
 update module; `first-welcome-tests.mjs` retains first-controller/OAuth guards.

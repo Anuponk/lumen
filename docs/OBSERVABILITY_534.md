@@ -1,5 +1,16 @@
 # Diagnostic collection — #534 phases 0 and 1
 
+## Unified navigation candidate — #708 B1
+
+The eleven existing cockpit disclosures now sit inside five Analytics sections.
+Player/session/episode renderers, version filters, reviewed reports, feedbacks,
+private support and all RPCs remain shared. Account changes clear KPI, feedback
+and alert hosts as well as player/incident hosts before another admin can open
+them. The historical Administration button opens the same Analytics shell;
+QA tools remain available in their existing menu for B2. No observations,
+retention, support permission or repair action is added. Physical acceptance
+and final tool parity remain pending.
+
 ## Registered-player directory (25 October 2026)
 
 Player cards now show a compact visual status: green `✓ Sans attente observée`,

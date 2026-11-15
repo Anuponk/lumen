@@ -1,4 +1,4 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><base href="/">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#07111d">
 <meta name="application-name" content="LUMEN">
@@ -44,19 +44,39 @@
 <p class="lumen-version"><a href="/mentions-legales.html">Mentions légales</a> · <a href="/confidentialite.html">Confidentialité</a> · <a href="/supprimer-compte.html">Supprimer mon compte</a></p>
 <div id="adminCockpit" class="admin-cockpit" hidden role="dialog" aria-modal="true" aria-labelledby="adminCockpitTitle">
  <div class="admin-cockpit-shell">
-  <div class="admin-cockpit-head"><div><span>ADMIN · BÊTA</span><h2 id="adminCockpitTitle">Cockpit Star Puzzle</h2></div><button id="adminCockpitClose" type="button">Fermer</button></div>
+  <div class="admin-cockpit-head"><div><span>ADMINISTRATION</span><h2 id="adminCockpitTitle">Lumen Analytics</h2></div><button id="adminCockpitClose" type="button">Retour à Lumen</button></div>
+  <nav class="analytics-navigation" data-analytics-navigation aria-label="Sections de l’administration">
+   <button type="button" data-analytics-section="overview">Vue générale</button>
+   <button type="button" data-analytics-section="players">Joueurs &amp; sessions</button>
+   <button type="button" data-analytics-section="journeys">Parcours &amp; quêtes</button>
+   <button type="button" data-analytics-section="sync">Synchronisation &amp; incidents</button>
+   <button type="button" data-analytics-section="support">Support &amp; administration</button>
+  </nav>
   <div class="admin-cockpit-filters"><label>Période <select id="adminCockpitDays"><option value="1">Aujourd’hui</option><option value="7" selected>7 jours</option><option value="30">30 jours</option><option value="3650">Depuis le lancement</option></select></label><button id="adminCockpitRefresh" type="button">Actualiser</button></div>
   <div id="adminCockpitStatus" class="admin-cockpit-status"></div>
+  <div data-analytics-panel="overview">
   <details class="admin-section" open><summary><h3>Indicateurs clés</h3></summary><div id="adminCockpitKpis" class="admin-kpis"></div></details>
   <div class="admin-grid"><details class="admin-section" open><summary><h3>Activité quotidienne</h3></summary><div id="adminDailyChart" class="admin-bars"></div></details><details class="admin-section" open><summary><h3>Rétention</h3></summary><div id="adminRetention" class="admin-retention"></div></details></div>
-  <div class="admin-grid"><details class="admin-section" open><summary><h3>Funnel d’activation</h3></summary><div id="adminFunnel"></div></details><details class="admin-section" open><summary><h3>À regarder</h3></summary><details><summary>Incidents techniques facultatifs &middot; &eacute;chantillon incomplet</summary><div id="adminDiagnosticIncidents" class="diagnostic-incidents"></div></details><div id="adminAlerts"></div></details></div>
+  </div>
+  <div data-analytics-panel="journeys" hidden>
+  <details class="admin-section" open><summary><h3>Funnel d’activation</h3></summary><div id="adminFunnel"></div></details>
   <details class="admin-section" open><summary><h3>Catalogue des aventures</h3></summary><p class="admin-cockpit-status">Aventures, constellations, grilles, dimensions et difficulté estimée.</p><div id="adminCatalogueTree"></div></details>
   <details class="admin-section" open><summary><h3>Friction par quête</h3></summary><div class="admin-table-wrap"><table><thead><tr><th>Quête</th><th>Joueurs</th><th>Réussite</th><th>Reset</th><th>Abandon</th><th>Indices</th><th>Vérifier</th><th>Temps médian</th></tr></thead><tbody id="adminFriction"></tbody></table></div></details>
+  </div>
+  <div data-analytics-panel="players" hidden>
   <div class="admin-grid"><details class="admin-section" open><summary><h3>Joueurs inscrits récents · 250 maximum</h3></summary><div id="adminPlayers"></div></details><details class="admin-section" open><summary><h3>Sessions du joueur sélectionné</h3></summary><div id="adminTimeline" class="admin-timeline"><p>Sélectionne un joueur inscrit.</p></div></details></div>
   <details class="admin-section" open><summary><h3>Comptes créés</h3></summary><p class="admin-cockpit-status">Visible uniquement par un administrateur autorisé.</p><div class="admin-table-wrap"><table><thead><tr><th>Email</th><th>Pseudo</th><th>Créé le</th><th>Dernière connexion Auth</th><th>Activité enregistrée</th><th>Quête</th></tr></thead><tbody id="adminAccounts"></tbody></table></div></details>
+  </div>
+  <div data-analytics-panel="sync" hidden>
+  <details class="admin-section" open><summary><h3>À regarder</h3></summary><details><summary>Incidents techniques facultatifs &middot; &eacute;chantillon incomplet</summary><div id="adminDiagnosticIncidents" class="diagnostic-incidents"></div></details><div id="adminAlerts"></div></details>
+  </div>
+  <div data-analytics-panel="support" hidden>
+  <p>Les dossiers d’assistance sont accessibles depuis les sessions du joueur sélectionné. Les outils de simulation restent dans le menu Administration pendant leur migration.</p>
   <details class="admin-section" open><summary><h3>Feedbacks récents</h3></summary><div id="adminFeedbacks"></div></details>
+  </div>
  </div>
 </div>
+<div id="adminAnalyticsAccess" class="analytics-access" hidden role="status"><p>Une connexion avec les droits d’administration est nécessaire pour ouvrir Analytics.</p><a href="/">Retour à Lumen</a></div>
 <div id="feedbackModal" class="beta-modal" hidden role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
  <div class="beta-card">
   <h2 id="feedbackTitle">Retour bêta</h2><p>Le contexte de la quête sera joint automatiquement.</p>

@@ -1,5 +1,33 @@
 # Product analytics contract
 
+## Unified administration — #708, B1 candidate
+
+The existing cockpit shell now supplies five sections at `/admin/analytics`:
+overview, players/sessions, journeys/quests, sync/incidents and support. The
+Administration menu opens this same DOM/controller; there is no second list,
+telemetry pipeline or source of player state. Existing RPCs, live capability
+checks, consent and reader limits remain unchanged. Section and period are in
+the URL; history, direct entry and reload use the same shell. Player/session/
+incident deep-link parameters are not implemented in B1.
+
+`src/ui/analytics-navigation.js` owns presentation/history only. Reads wait for
+the existing authenticated `analytics_cockpit` capability. Account/capability
+changes close the view and clear all sensitive hosts before fresh reads; existing
+request guards reject late responses. Opening pauses the current attempt via
+the normal pause path; closing leaves it paused for explicit resume. No navigation
+state enters a game save. No new consent provider or collection is introduced.
+
+This is B1 after the [lot A audit](https://github.com/Anuponk/lumen/pull/717).
+QA/simulation controls stay in their existing Administration submenu, the private
+support dossier stays in the selected player's sessions, and #716's preview is
+not assumed merged. Their complete integration is B2. Existing KPI definitions
+and historical limitations remain pending B3; the navigation change does not
+make legacy retention or identity mapping statistically reliable. Final parity,
+retirement of the historical entry and production activation are not claimed.
+
+Onboarding impact: only the privileged administrative destination changes; no
+player rule, teaching milestone or gameplay destination changes.
+
 ## Administrative registered-player view
 
 The recent-player directory shows registered identities only, by key/type,
