@@ -63,6 +63,16 @@ console.log(JSON.stringify({baseline,fixtures:8,identityStorage:'identical',even
 }
 
 const cockpitMigration=fs.readFileSync('supabase/migrations/20261005_lumen_admin_cockpit.sql','utf8');
+// A restored/challenge attempt describes the board actually played, even when
+// the catalogue already advertises a different replacement revision.
+{
+ const ctx={attemptEngine:{snapshot:()=>({gridRevision:2})},canonicalActiveQuest:{gridRevision:3},canonicalQuestForLegacy:()=>null,
+  readQuestView:()=>({id:'q',ordinal:1}),lumenProgress:{},canonicalQuestList:()=>[],CONTENT_CONSTELLATIONS:[],
+  attemptAnalyticsProperties:(_facts,extra)=>extra,canonicalScopeProgress:()=>({completed:0}),guidedErrorsEnabled:()=>false,
+  document:{getElementById:()=>null},n:5,levelIndex:0};
+ vm.createContext(ctx);vm.runInContext(functionSource(fs.readFileSync('src/ui/game-screen.js','utf8'),'currentAttemptAnalytics'),ctx);
+ assert.equal(ctx.currentAttemptAnalytics().grid_revision,2,'played attempt revision owns analytics, not a newer catalogue grid');
+}
 // Inactivity while the page stays open starts a fresh browser session.
 {
  const values=new Map(),calls=[];let sequence=0,now=1800000000000;

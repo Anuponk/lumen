@@ -1542,7 +1542,7 @@ function currentAttemptAnalytics(extra={}){
   attempt,questIndex:view.legacyIndex,gridSize:n,constellationIndex:view.constellationIndex,constellationName:view.constellationName,
   solvedCount:canonicalScopeProgress(lumenProgress).completed,questAttemptNumber:view.attemptNumber,
   guidedEnabled:guidedErrorsEnabled(),autoMarkingEnabled:!!document.getElementById("autoCross")?.checked
- },{stable_quest_id:view.id,quest_ordinal:view.ordinal,pack_id:view.packId,constellation_id:view.constellationId,grid_revision:quest.gridRevision??0,...extra});
+ },{stable_quest_id:view.id,quest_ordinal:view.ordinal,pack_id:view.packId,constellation_id:view.constellationId,grid_revision:attempt?.gridRevision??quest.gridRevision??0,...extra});
 }
 function trackAttemptEvent(name,extra={}){const quest=canonicalActiveQuest??canonicalQuestForLegacy(levelIndex);return trackLumenEvent(name,quest.legacyIndex===null?null:quest.legacyIndex+1,currentAttemptAnalytics(extra))}
 

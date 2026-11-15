@@ -32,7 +32,8 @@ qualified traffic; points are catalogue ordinals, never inferred numeric next
 quests. Recent receipt evidence can advance an observed point, never a save.
 
 Optional sessions renew after 30 minutes idle even in an open page. Future
-permitted attempt events include `grid_revision`. Duration medians omit unknown
+permitted attempt events include `grid_revision` from the played attempt before
+the catalogue fallback (including restored/challenge attempts). Duration medians omit unknown
 revisions and become unavailable when known revisions differ; valid samples and
 the observed revision accompany the result. This is not a claim of difficulty
 on the current grid. Tutorial completion stays unavailable.
