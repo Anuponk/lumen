@@ -224,6 +224,8 @@ function presentPendingVictory(questId,operationId){
  for(const id of ['successAchievement','questResult']){const el=document.getElementById(id);if(el)el.hidden=true}
  // #682 (I): keep the five action/reward slots; a challenge waits for the server.
  const share=document.getElementById('successShare');if(share){share.hidden=false;share.disabled=true;share.title='Disponible après confirmation de la sauvegarde'}
+ // Never carry the previous victory's challenge explanation onto this pending one.
+ const reason=document.getElementById('successChallengeReason');if(reason){reason.hidden=true;reason.textContent=''}
  document.getElementById('successNew').textContent='Quête suivante';
  document.getElementById('successRetry').textContent='Réessayer la sauvegarde';
  const quest=canonicalQuestList().find(q=>q.id===questId);
@@ -248,8 +250,9 @@ function renderPendingSyncStatus(){
  const text=document.createElement('p');
  text.textContent=offline?'Hors ligne — victoire conservée sur cet appareil, synchronisation à la reconnexion.':'Victoire conservée sur cet appareil — confirmation cloud en attente.';
  const retry=document.createElement('button');retry.type='button';retry.id='skyRevealSyncRetry';retry.textContent='↻ Réessayer la sauvegarde';
- // Same handler as before #682 (I): the durable outbox stays the only retry source.
- retry.onclick=()=>document.getElementById('successRetry')?.click();
+ // The durable outbox stays the only retry source; a tap never sends twice.
+ retry.onclick=()=>{if(retry.disabled)return;retry.disabled=true;retry.textContent='Sauvegarde en cours…';
+  Promise.resolve(retryPendingVictoryInPlace()).finally(()=>{if(retry.isConnected){retry.disabled=false;retry.textContent='↻ Réessayer la sauvegarde'}})};
  box.replaceChildren(text,retry);
 }
 let pendingVictoryRetryInFlight=null;
@@ -280,6 +283,32 @@ async function retryPresentedVictory({automatic=false}={}){
   await celebrateSuccess();
   return !!pendingVictoryView&&canRetryPresentedVictory();
  }finally{if(pendingVictoryRetryInFlight===pending)pendingVictoryRetryInFlight=null}
+}
+// Manual retry of the presented pending victory, on the same screen: unpause its
+// durable intent, then resend the same frozen operation. The confirmation then
+// updates the screen in place. Only when the cloud session cannot retry here
+// (not ready, dirty baseline, offline...) does it fall back to the full
+// resynchronisation, which reloads the page as before.
+async function retryPendingVictoryInPlace(){
+ const pending=pendingVictoryView,ownerId=lumenUser?.id,client=lumenSupabase;
+ if(!pending||!ownerId||pending.userId!==ownerId||pending.client!==client){syncPresentation.celebration(false);return retryAccountCloudSync()}
+ // The original command or a retry is still running: never start a second commit.
+ if(canonicalVictoryInFlight||legacyVictoryBusy||pendingVictoryRetryInFlight)return false;
+ // Offline: keep the victory pending on screen; reconnection retries it automatically.
+ if(typeof navigator!=='undefined'&&navigator.onLine===false)return false;
+ try{await (canonicalActiveQuest?canonicalVictoryOutbox:legacyVictoryOutbox).resume(ownerId,{kind:'all'})}
+ catch{recordCloudDiagnostic('canonical_outbox_resume_pending',{reason:'storage'});return false}
+ if(pendingVictoryView!==pending||lumenUser?.id!==ownerId||lumenSupabase!==client)return false;
+ if(!canRetryPresentedVictory()){syncPresentation.celebration(false);return retryAccountCloudSync()}
+ recordCloudDiagnostic('victory_pending_manual_retry',{reason:'in_place'});
+ const stillPending=await retryPresentedVictory();
+ if(pendingVictoryView||lumenUser?.id!==ownerId||lumenSupabase!==client)return stillPending;
+ // Other victories still queued (rare): keep the previous full resynchronisation,
+ // which replays every durable intent. A single victory is confirmed in place.
+ let remaining=0;
+ try{remaining=(await canonicalVictoryOutbox.pending(ownerId)).length+(await legacyVictoryOutbox.pending(ownerId)).length}catch{remaining=1}
+ if(remaining&&lumenUser?.id===ownerId&&lumenSupabase===client)return retryAccountCloudSync();
+ return stillPending;
 }
 function leavePendingVictoryForNavigation(){
  if(!pendingVictoryView)return;
@@ -3922,7 +3951,7 @@ function advanceToNextPuzzle(){
  loadPuzzle();usedHintThisGame=false;refreshJourney();
 }
 document.getElementById("successRetry").onclick=()=>{
- if(pendingVictoryView){syncPresentation.celebration(false);void retryAccountCloudSync();return}
+ if(pendingVictoryView){void retryPendingVictoryInPlace();return}
  attemptEngine.clear();replayMode=true;
  hideSuccess();
  document.getElementById("undo").disabled=false;
