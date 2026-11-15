@@ -37,19 +37,23 @@ export const REWARD_SLOTS = Object.freeze([
 ]);
 
 // Five stable slots, always in the same order. "new" = earned by this run,
-// "owned" = already earned earlier, "missing" = not earned (dimmed).
-export function rewardSlots({ stars = 0, badges = {}, qualifying = false, prior = {} } = {}) {
+// "owned" = already earned earlier, "missing" = not earned (dimmed),
+// "pending" = local victory whose server confirmation is still awaited (#682 I).
+// #706: a completed quest always owns its star, also on a replay or a recovered
+// victory that earns no new star.
+export function rewardSlots({ stars = 0, badges = {}, qualifying = false, prior = {}, completed = false, pending = false } = {}) {
   return REWARD_SLOTS.map((slot) => {
     if (slot.key === 'star') {
       const count = Number.isInteger(stars) && stars > 0 ? stars : 0;
       return {
         ...slot,
         label: count ? '+' + count + ' étoile' + (count > 1 ? 's' : '') : slot.label,
-        state: count ? 'new' : 'missing',
+        state: count ? 'new' : completed ? 'owned' : pending ? 'pending' : 'missing',
       };
     }
     const earned = !!badges?.[slot.key],
       before = !!prior?.[slot.key];
+    if (pending) return { ...slot, state: before ? 'owned' : 'pending' };
     // Same eligibility as the historical reward list: a prior badge stays owned,
     // a badge is "new" only when this qualifying run earned it.
     const state = before ? 'owned' : earned && qualifying ? 'new' : 'missing';

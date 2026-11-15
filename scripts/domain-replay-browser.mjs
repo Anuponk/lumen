@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {QUEST_MILESTONES} from '../src/campaign/quest-rules.js';
 import {questRewardDefinition} from '../src/campaign/quest-rewards.js';
-import {acknowledgeLearningMilestones} from './cdp-client.mjs';
+import {acknowledgeLearningMilestones,PENDING_VICTORY_SHOWN} from './cdp-client.mjs';
 
 // Real DOM, storage, attempts and command capture; only Auth/RPC is synthetic.
 export async function verifyDomainReplay({send,evaluate,navigate,url}){
@@ -76,13 +76,14 @@ export async function verifyDomainReplay({send,evaluate,navigate,url}){
     assert.equal(await evaluate('__domainWrites'),0,'A held paid hint sends no mutation');
    }
    await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
-   await until(`document.getElementById('successOverlay').classList.contains('show')&&document.getElementById('successSub').textContent.includes('en attente')`);
+   await until(PENDING_VICTORY_SHOWN);
    assert.doesNotMatch(await evaluate(`document.getElementById('successRewards').textContent`),/Étoile/);
+   assert.equal(await evaluate(`document.querySelectorAll('#skyRevealRewards .victory-reward-new').length`),0,'A pending victory never shows a newly earned reward');
    assert.equal(await evaluate('lumenDiagnostics.snapshot().progress.shards'),10);
    assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().progress.badges'),before.badges);
    assert.equal(await evaluate('__domainWrites'),0,'Wallet and snapshot writes stay held while command intentions remain recoverable');
    captured.push({domain:quest===stable?'Canonical':'Legacy',questId:quest.id,operationId:identity.attemptId+'-reset-'+(identity.resetCount||0)});
-   await touch('#successSky');
+   await touch('#skyRevealSky');
   }
   const readIntents=`(async()=>{const {createIndexedOutboxStore}=await import('/src/persistence/indexed-outbox-store.js');return (await createIndexedOutboxStore(indexedDB).entries('lumen')).filter(([key])=>key.includes('VictoryOutboxV2:${owner}:')).map(([,raw])=>JSON.parse(raw))})()`;
   const first=await evaluate(readIntents,true);assert.equal(first.length,2);

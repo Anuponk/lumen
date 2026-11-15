@@ -221,12 +221,36 @@ function presentPendingVictory(questId,operationId){
  document.getElementById('successTime').textContent=document.getElementById('time').textContent;
  document.getElementById('successRewards').innerHTML=replay?'<span class="success-reward"><span>Performance en attente de confirmation</span></span>':'<span class="success-reward"><span>✦</span><span>Étoile en attente</span></span>';
  document.getElementById('successRewards').hidden=false;
- for(const id of ['successShare','successAchievement','questResult']){const el=document.getElementById(id);if(el)el.hidden=true}
- document.getElementById('successNew').textContent='Continuer';
- document.getElementById('successOverlay').classList.add('show');
+ for(const id of ['successAchievement','questResult']){const el=document.getElementById(id);if(el)el.hidden=true}
+ // #682 (I): keep the five action/reward slots; a challenge waits for the server.
+ const share=document.getElementById('successShare');if(share){share.hidden=false;share.disabled=true;share.title='Disponible après confirmation de la sauvegarde'}
+ document.getElementById('successNew').textContent='Quête suivante';
  document.getElementById('successRetry').textContent='Réessayer la sauvegarde';
+ const quest=canonicalQuestList().find(q=>q.id===questId);
+ let prior={};try{prior=quest?readQuestView(quest,lumenProgress,canonicalQuestList(),CONTENT_CONSTELLATIONS).badges||{}:{}}catch{}
+ lastRewardState={stars:0,badges:{},qualifying:false,prior:{...prior},completed:replay,pending:true};
  const animationKey=lumenUser?.id+':'+operationId;
  if(!shownPendingVictories.has(animationKey)){shownPendingVictories.add(animationKey);if(!replay)launchWinStar(1,{pending:true})}
+ // #682 (I) / #699: the pending victory uses the single result screen, never the
+ // historical successOverlay card. Nothing is credited before the server ACK.
+ if(quest)showSkyReveal(null,null,{quest,newlyCompleted:!replay,pending:true});
+}
+// True while the single result screen shows a local victory awaiting the server.
+function pendingRevealOpen(questId){
+ const o=document.getElementById('skyReveal');
+ return !!o&&!o.hidden&&o.dataset.sync==='pending'&&(!questId||o.dataset.syncQuest===questId);
+}
+function renderPendingSyncStatus(){
+ const slot=document.getElementById('skyRevealPodium');if(!slot)return;
+ let box=document.getElementById('skyRevealSync');
+ if(!box){box=document.createElement('div');box.id='skyRevealSync';box.className='victory-sync-status';box.setAttribute('role','status');slot.append(box)}
+ const offline=typeof navigator!=='undefined'&&navigator.onLine===false;
+ const text=document.createElement('p');
+ text.textContent=offline?'Hors ligne — victoire conservée sur cet appareil, synchronisation à la reconnexion.':'Victoire conservée sur cet appareil — confirmation cloud en attente.';
+ const retry=document.createElement('button');retry.type='button';retry.id='skyRevealSyncRetry';retry.textContent='↻ Réessayer la sauvegarde';
+ // Same handler as before #682 (I): the durable outbox stays the only retry source.
+ retry.onclick=()=>document.getElementById('successRetry')?.click();
+ box.replaceChildren(text,retry);
 }
 let pendingVictoryRetryInFlight=null;
 // #697: delay before a slow victory command shows its durable pending card.
@@ -264,6 +288,7 @@ function leavePendingVictoryForNavigation(){
  // The immutable outbox entry remains the sole retry source. Retire only the
  // solved board's presentation before preparing a different acquired replay.
  pendingVictoryView=null;syncPresentation.celebration(false);hideSuccess();
+ if(pendingRevealOpen())closeUnifiedSkyReveal();
 }
 // Session-scoped permission to replay ledger commands after verified hydration
 // found only a local legacy divergence. Never a second profile or reward cache.
@@ -1324,7 +1349,7 @@ function cloudReconciliationMessage(failure){
 function updateAuthUI(){
  if(syncPresentationOwner!==(lumenUser?.id??null)){
   syncPresentationOwner=lumenUser?.id??null;pendingNavigationEntries=[];pendingWalletReservations=[];syncPresentation.reset();
-  if(pendingVictoryView){pendingVictoryView=null;hideSuccess()}
+  if(pendingVictoryView){pendingVictoryView=null;hideSuccess();if(pendingRevealOpen())closeUnifiedSkyReveal()}
  }
  authSessionPending=false;
  const initialControls=document.getElementById("authSessionControls");if(initialControls)initialControls.hidden=false;
@@ -2844,7 +2869,7 @@ let lastRewardState=null;
 function renderSuccessRewards(stars,savedPerformance,priorBadges={}){
  const el=document.getElementById("successRewards");if(!el)return;
  const earned=savedPerformance.badges||{},qualifying=savedPerformance.qualifying,rewards=[];
- lastRewardState={stars,badges:{...earned},qualifying:!!qualifying,prior:{...priorBadges}};
+ lastRewardState={stars,badges:{...earned},qualifying:!!qualifying,prior:{...priorBadges},completed:true};
  if(stars>0)rewards.push({cls:"star",icon:"★",label:"+"+stars+" étoile"+(stars>1?"s":"")});
  for(const [key,cls,label] of [["autonomy","autonomy","Autonomie"],["speed","speed","Rapidité"],["noError","no-error","Sans erreur"],["mastery","mastery","Maîtrise"]]){
   if(!earned[key])continue;
@@ -3196,9 +3221,10 @@ async function celebrateCanonicalSuccess(){
  clearTimeout(slowVictoryTimer);
  // #697: privacy-safe duration from local detection to server confirmation.
  if(!qaActive)recordCloudDiagnostic('victory_sync_timing',{kind:'canonical',ms:Date.now()-victoryStartedAt,pendingShown:earlyPendingShown});
+ // #682 (I): a pending victory shown on the single result screen is confirmed in place.
+ const upgradeInPlace=pendingRevealOpen(q.id);
  if(earlyPendingShown){
-  // Upgrade the provisional pending card into the confirmed celebration.
-  document.getElementById('successOverlay').classList.remove('show');
+  // Upgrade the provisional pending view into the confirmed celebration.
   document.getElementById('successRetry').textContent='↻ Réessayer';
   if(durableIntent)pendingNavigationEntries=pendingNavigationEntries.filter(e=>e.operationId!==durableIntent.operationId);
   recordCloudDiagnostic('victory_pending_upgraded',{reason:'confirmed'});
@@ -3236,9 +3262,9 @@ async function celebrateCanonicalSuccess(){
  document.getElementById("successNew").textContent="Quête suivante";
  configureSuccessFeedback(false);
  refreshJourney();
- if(!celestialPending)launchWinStar(committed.newlyCompleted?1:0);
+ if(!celestialPending&&!upgradeInPlace)launchWinStar(committed.newlyCompleted?1:0);
  const reveal=()=>{if(canonicalActiveQuest?.id===q.id&&celebrated)showSkyReveal(null,null,{quest:q,newlyCompleted:committed.newlyCompleted})};
- if(committed.newlyCompleted&&!celestialPending)setTimeout(reveal,2250);else reveal();
+ if(committed.newlyCompleted&&!celestialPending&&!upgradeInPlace)setTimeout(reveal,2250);else reveal();
  }finally{clearTimeout(slowVictoryTimer);if(canonicalVictoryInFlight===capture)canonicalVictoryInFlight=null;if(pendingVictoryView)canonicalRecovery.schedule();}
 }
 
@@ -3384,7 +3410,9 @@ async function celebrateSuccess(){
  refreshJourney();
  pauseGameClock();
  prepareCelestialVictory(celestialBefore,celestialQuest,firstCompletion,recoveredVictory);
- if(!celestialPending)launchWinStar(earnedThisRun);
+ // #682 (I): a pending legacy victory already on screen is confirmed in place.
+ const upgradeInPlace=pendingRevealOpen(celestialQuest?.id);
+ if(!celestialPending&&!upgradeInPlace)launchWinStar(earnedThisRun);
  clearInterval(timer);
  clock();
  board.classList.add("win");
@@ -3399,7 +3427,7 @@ async function celebrateSuccess(){
  configureSuccessFeedback(questPassed);
  const skyEarnedAfter=skyStarsEarned(),crossedConstellation=firstCompletion&&(()=>{let total=0;for(const cs of CONSTELLATIONS){total+=cs.count;if(skyEarnedBefore<total&&skyEarnedAfter>=total)return true}return false})();
  const checkpoint=firstCompletion&&!crossedConstellation?constellationCheckpoint(skyEarnedBefore,skyEarnedAfter):null;
- const revealDelay=!celestialPending&&!generatedQuest&&earnedThisRun>0?2250:0;
+ const revealDelay=!celestialPending&&!generatedQuest&&earnedThisRun>0&&!upgradeInPlace?2250:0;
  const revealQuest=canonicalQuestForLegacy(levelIndex),revealCampaign=revealQuest?{quest:revealQuest,newlyCompleted:firstCompletion}:null;
  if(firstCompletion&&earnedThisRun>0&&!generatedQuest){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{showSkyReveal(skyEarnedBefore,checkpoint,revealCampaign)},revealDelay)}else if(questPassed||crossedConstellation||checkpoint){document.getElementById("successOverlay").classList.remove("show");setTimeout(()=>{showSkyReveal(skyEarnedBefore,checkpoint,revealCampaign)},revealDelay)}else setTimeout(()=>showSkyReveal(skyEarnedBefore,null,revealCampaign),revealDelay);
 
@@ -3948,11 +3976,11 @@ function renderVictoryRewards(slots){
  el.replaceChildren(...slots.map((slot,i)=>{
   const item=document.createElement('span');
   // Earned slots keep the historical success-reward classes; missing ones stay neutral.
-  item.className='victory-reward victory-reward-'+slot.state+(slot.state==='missing'?'':' success-reward '+legacy[slot.key]+(slot.state==='owned'?' previously-earned':''));
+  item.className='victory-reward victory-reward-'+slot.state+(['missing','pending'].includes(slot.state)?'':' success-reward '+legacy[slot.key]+(slot.state==='owned'?' previously-earned':''));
   item.dataset.reward=slot.key;item.setAttribute('role','listitem');item.style.setProperty('--reward-delay',(220+i*160)+'ms');
   const icon=document.createElement('span');icon.className='victory-reward-icon';icon.setAttribute('aria-hidden','true');icon.textContent=slot.icon;
   const label=document.createElement('span');label.className='victory-reward-label';label.textContent=slot.label;
-  const state=document.createElement('span');state.className='visually-hidden';state.textContent=slot.state==='new'?' · obtenu':slot.state==='owned'?' · déjà obtenu':' · non obtenu';
+  const state=document.createElement('span');state.className='visually-hidden';state.textContent=slot.state==='new'?' · obtenu':slot.state==='owned'?' · déjà obtenu':slot.state==='pending'?' · en attente de confirmation':' · non obtenu';
   item.append(icon,label,state);return item;
  }));
 }
@@ -4082,6 +4110,9 @@ function celebrateConstellationReveal(){
  setTimeout(()=>o.classList.remove("complete-celebration"),3800);
 }
 function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
+ // #682 (I): a pending local victory and its later confirmation share this one
+ // surface. The confirmation updates it in place: no intro replay, no restart.
+ const syncPending=!!canonical?.pending,upgrading=!syncPending&&!!canonical?.quest&&pendingRevealOpen(canonical.quest.id);
  closeQuestReview();
  celestialCelebration.clear();
  for(const id of ['skyRevealTime','skyRevealRewards','skyRevealFeedback'])document.getElementById(id).hidden=false;
@@ -4094,12 +4125,19 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
  const completedIndex=completed.length?completed[completed.length-1]:-1;
  const canonicalEntry=canonical?CONTENT_CONSTELLATIONS.find(entry=>entry.id===canonical.quest.constellationId):null;
  const canonicalQuests=canonical?canonicalQuestList().filter(quest=>quest.constellationId===canonical.quest.constellationId):[];
- const canonicalLit=canonicalQuests.filter(quest=>questIsCompleted(lumenProgress,quest.id)).length;
+ const canonicalCompleted=canonicalQuests.filter(quest=>questIsCompleted(lumenProgress,quest.id)).length;
+ // The awaited star is drawn but labelled as pending; nothing is credited.
+ const pendingStar=syncPending&&canonical.newlyCompleted&&canonicalCompleted<canonicalQuests.length?1:0;
+ const canonicalLit=canonicalCompleted+pendingStar;
  const p=canonical?{name:canonicalEntry?.label||canonical.quest.constellationId,lit:canonicalLit,count:canonicalQuests.length,edges:[],pts:[]}:completedIndex>=0?{index:completedIndex,...CONSTELLATIONS[completedIndex],lit:CONSTELLATIONS[completedIndex].count}:checkpoint?{index:checkpoint.index,...CONSTELLATIONS[checkpoint.index],lit:checkpoint.lit}:constellationProgress();
  const idx=Math.max(0,p.lit-1),canvas=document.getElementById("skyRevealCanvas"),o=document.getElementById("skyReveal"),k=document.getElementById("skyRevealKicker"),t=document.getElementById("skyRevealTitle");
  const newlyCompleted=canonical?canonical.newlyCompleted:crossed;
- const constellationCompleted=canonical?newlyCompleted&&p.lit===p.count:completedIndex>=0;
- if(constellationCompleted){
+ const constellationCompleted=canonical?newlyCompleted&&p.lit===p.count&&!syncPending:completedIndex>=0;
+ if(syncPending){
+   k.textContent="QUÊTE RÉSOLUE";
+   t.textContent=p.name;
+   document.getElementById("skyRevealName").textContent="Victoire conservée sur cet appareil";
+ }else if(constellationCompleted){
    k.textContent="CONSTELLATION COMPLÉTÉE";
    t.textContent="✦ "+p.name.replace(" · Grand Chariot","");
    document.getElementById("skyRevealName").textContent=completedIndex<CONSTELLATIONS.length-1?"La constellation suivante est maintenant à découvrir.":"Ton ciel est entièrement révélé.";
@@ -4119,7 +4157,7 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
  }
  let lines=p.edges.map(e=>{let on=e[0]<p.lit&&e[1]<p.lit,newLine=on&&(e[0]===idx||e[1]===idx);return '<line class="sky-line '+(on?'on ':'')+(newLine?'new-line':'')+'" x1="'+p.pts[e[0]][0]+'" y1="'+p.pts[e[0]][1]+'" x2="'+p.pts[e[1]][0]+'" y2="'+p.pts[e[1]][1]+'"/>'}).join("");
  let stars=p.pts.map((v,i)=>'<circle class="sky-star '+(i<p.lit?'on ':'')+(i===idx&&newlyCompleted?'new-star':'')+'" cx="'+v[0]+'" cy="'+v[1]+'" r="'+(i===idx?6:i<p.lit?4:3)+'"/>').join("");
- canvas.innerHTML='<svg class="sky-reveal-svg" viewBox="0 0 290 115">'+(astronomicalPrimarySvg({id:canonical?.quest.constellationId||CONTENT_CONSTELLATIONS[p.index]?.id},p.lit,p.count,newlyCompleted?Math.max(0,p.lit-(canonical?1:after-beforeEarned)):p.lit)||lines+stars)+'</svg><div class="sky-reveal-progress">◔ '+p.lit+' / '+p.count+' étoiles</div>';o.hidden=false;
+ canvas.innerHTML='<svg class="sky-reveal-svg" viewBox="0 0 290 115">'+(astronomicalPrimarySvg({id:canonical?.quest.constellationId||CONTENT_CONSTELLATIONS[p.index]?.id},p.lit,p.count,newlyCompleted&&!upgrading?Math.max(0,p.lit-(canonical?1:after-beforeEarned)):p.lit)||lines+stars)+'</svg><div class="sky-reveal-progress">◔ '+p.lit+' / '+p.count+' étoiles'+(pendingStar?' · 1 en attente':'')+'</div>';o.hidden=false;
  if(canonical?.quest.ordinal===1&&newlyCompleted)document.getElementById('skyRevealName').textContent=document.getElementById('successSub').textContent;
  const result=document.getElementById("skyRevealResults"),continueButton=document.getElementById("skyRevealContinue");
  const victory=document.getElementById("successOverlay");
@@ -4134,7 +4172,9 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
    const slots=rewardSlots(lastRewardState||{});renderVictoryRewards(slots);
    const rankingExpected=!(socialChallenge||learningReplayActive()||qaActive||!lumenUser);
    document.getElementById('skyRevealPerformance')?.classList.toggle('victory-performance-ranked',rankingExpected);
-   const rankTile=document.getElementById('skyRevealRank');if(rankTile){rankTile.hidden=!rankingExpected;rankTile.className='victory-rank victory-rank-pending';rankTile.textContent=rankingExpected?'Classement…':''}
+   const rankTile=document.getElementById('skyRevealRank');if(rankTile){rankTile.hidden=!rankingExpected;rankTile.className='victory-rank victory-rank-pending';rankTile.textContent=rankingExpected?(syncPending?'Classement après confirmation':'Classement…'):''}
+   // No rank, podium or rank reward before the server confirms the victory.
+   if(syncPending)renderPendingSyncStatus();else document.getElementById('skyRevealSync')?.remove();
    victoryFacts={questId:activeQuest().id,newRecord:!!record?.classList.contains('personal-record-new'),remarkableBadges:remarkableRewards(slots),constellationCompleted};
    const reason=document.getElementById('successChallengeReason'),revealReason=document.getElementById('skyRevealChallengeReason');
    revealReason.textContent=reason.textContent;revealReason.hidden=reason.hidden;
@@ -4153,14 +4193,19 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
     button.classList.toggle('remarkable',!!original?.classList.contains('remarkable'));
     button.onclick=()=>{if(target==="skyRevealShare"){original?.click();return}if(target==="skyRevealNext"&&adventurePending){const completed=adventurePending;adventurePending=null;closeUnifiedSkyReveal();original?.click();openJourneyMap();skyNavigation.showCompletion(completed);return}if(closeUnifiedSkyReveal())return;original?.click()};
    }
+   // Pending: the same row stays in place; replay and challenge wait for the ACK.
+   if(syncPending)for(const id of ['skyRevealShare','skyRevealRetry']){const button=document.getElementById(id);button.disabled=true;button.title='Disponible après confirmation de la sauvegarde'}
   }
  }
  if(!isNormalVictory)victoryFacts={questId:playedQuest?.id??null,newRecord:false,remarkableBadges:false,constellationCompleted};
  // Completion is presented once here, never as a second popup after Next.
  adventurePending=null;endgamePending=false;
  try{showCelestialVictory()}catch(error){celestialCelebration.clear();celestialPending=null;console.warn('Celestial presentation unavailable',error)}
- if(isNormalVictory||constellationCompleted)victoryCelebration.start(celebrationLevel(victoryFacts));
- if(isNormalVictory){
+ if(syncPending){o.dataset.sync='pending';o.dataset.syncQuest=canonical.quest.id}else{delete o.dataset.sync;delete o.dataset.syncQuest}
+ if(upgrading)victoryCelebration.amplify(celebrationLevel(victoryFacts).level);
+ else if(isNormalVictory||constellationCompleted)victoryCelebration.start(celebrationLevel(victoryFacts));
+ if(isNormalVictory&&syncPending)victoryPresentation.start(()=>{});
+ else if(isNormalVictory){
   const wonQuest=activeQuest().id,wonOwner=lumenUser?.id,wonClient=lumenSupabase,wonAttempt=attemptEngine.snapshot()?.attemptId;
   rankingView.clear();victoryPresentation.start(()=>{if(!o.hidden&&activeQuest().id===wonQuest&&lumenUser?.id===wonOwner&&lumenSupabase===wonClient&&attemptEngine.snapshot()?.attemptId===wonAttempt)showRanking()});
  }
@@ -4172,6 +4217,7 @@ function closeUnifiedSkyReveal(){
  syncPresentation.celebration(false);
  const o=document.getElementById("skyReveal");
  o.hidden=true;o.classList.remove("complete-celebration");
+ delete o.dataset.sync;delete o.dataset.syncQuest;document.getElementById('skyRevealSync')?.remove();
  o.querySelectorAll(".sky-bravo").forEach(x=>x.remove());
  document.querySelectorAll(".sky-spark").forEach(x=>x.remove());
  if(adventurePending){const completed=adventurePending;adventurePending=null;hideSuccess();openJourneyMap();skyNavigation.showCompletion(completed);return true}

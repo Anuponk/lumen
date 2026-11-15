@@ -169,3 +169,26 @@ test('the victory surface uses the shared engine with no quest-number conditions
   const ranking = fs.readFileSync('src/ui/ranking.js', 'utf8');
   assert.doesNotMatch(ranking, /realParticipants|ranking-participants|joueur/, 'No participant counter anywhere');
 });
+
+test('#706: a completed quest always owns its star slot, on first win, replay and recovered victory', () => {
+  const state = (options) => Object.fromEntries(rewardSlots(options).map((slot) => [slot.key, slot.state]));
+  assert.equal(state({ stars: 1, completed: true }).star, 'new', 'first completion: +1 star');
+  assert.equal(state({ stars: 0, completed: true }).star, 'owned', 'replay or recovered victory: star stays earned');
+  assert.equal(state({ stars: 0 }).star, 'missing', 'no completion evidence: still dimmed');
+  assert.equal(rewardSlots({ stars: 0, completed: true })[0].label, 'Étoile');
+});
+
+test('#682 (I): a pending victory keeps five stable slots and never claims an unconfirmed badge', () => {
+  const slots = rewardSlots({ pending: true, prior: { autonomy: true }, badges: { speed: true }, qualifying: true });
+  assert.deepEqual(
+    slots.map((slot) => slot.key),
+    ['star', 'autonomy', 'speed', 'noError', 'mastery'],
+  );
+  assert.deepEqual(
+    slots.map((slot) => slot.state),
+    ['pending', 'owned', 'pending', 'pending', 'pending'],
+    'only previously confirmed badges are shown as owned',
+  );
+  assert.equal(rewardSlots({ pending: true, completed: true })[0].state, 'owned', 'a pending replay keeps its earned star');
+  assert.equal(remarkableRewards(slots), false, 'pending slots never raise the celebration level');
+});

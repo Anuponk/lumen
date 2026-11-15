@@ -30,11 +30,13 @@ test('choosing another acquired replay retires only the old pending presentation
  const ctx={pendingVictoryView:pending,lumenUser:{id:'a'},lumenSupabase:client,skyTourActive:()=>false,questIsAccessible:()=>true,
   attemptEngine:{snapshot:()=>({state,attemptId:'first'}),complete:()=>{state='COMPLETED'},clear:()=>cleared++},
   syncPresentation:{celebration(){}},hideSuccess(){},canonicalActiveQuest:null,levelIndex:0,replayMode:false,
-  document:{getElementById:()=>({})},loadPuzzle(){},refreshJourney(){}};
+  pendingRevealOpen:()=>true,closeUnifiedSkyReveal:()=>{closed++},
+  document:{getElementById:()=>({})},loadPuzzle(){},refreshJourney(){}};let closed=0;
  vm.createContext(ctx);
  vm.runInContext(functionSource(source,'leavePendingVictoryForNavigation'),ctx);
  vm.runInContext(functionSource(source,'launchReplay'),ctx);ctx.launchReplay(10);
  assert.equal(ctx.pendingVictoryView,null);assert.equal(cleared,1);assert.equal(rows.get('original'),JSON.stringify(captured));
+ assert.equal(closed,1,'#682 (I): the pending single result screen closes with its presentation');
 });
 const client={},proof={userId:'a',client,generation:4,confirmedQuestIds:['confirmed']};
 const held={signedIn:true,userId:'a',client,generation:4,ready:false,failure:{reason:'partial_reconciliation',domain:'wallet',detail:'mutable_balance'},proof};
@@ -70,12 +72,23 @@ test('pending replay presentation never advertises an extra star or a confirmed 
  const source=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
  for(const replay of [false,true]){
   const nodes=new Map();const node=id=>{if(!nodes.has(id))nodes.set(id,{textContent:'',classList:{add(){}}});return nodes.get(id)};let stars=0;
+  const shown=[],overlay=[],quest={id:'confirmed'};
+  nodes.set('successOverlay',{classList:{add:c=>overlay.push(c)}});
   const ctx={pendingVictoryView:null,pendingNavigationEntries:[],lumenUser:{id:'a'},lumenSupabase:{},lumenProgress:{},questIsCompleted:()=>replay,
    attemptEngine:{snapshot:()=>({attemptId:'same-attempt'})},syncPresentation:{celebration(){},pending(){}},pauseGameClock(){},
-   board:{classList:{add(){}}},document:{getElementById:node},shownPendingVictories:new Set(),launchWinStar:()=>stars++};
+   board:{classList:{add(){}}},document:{getElementById:node},shownPendingVictories:new Set(),launchWinStar:()=>stars++,
+   canonicalQuestList:()=>[quest],CONTENT_CONSTELLATIONS:[],readQuestView:()=>({badges:replay?{autonomy:true}:{}}),lastRewardState:null,
+   showSkyReveal:(...args)=>shown.push(args)};
   vm.createContext(ctx);vm.runInContext(functionSource(source,'presentPendingVictory'),ctx);ctx.presentPendingVictory('confirmed','op');
   assert.equal(stars,replay?0:1);assert.equal(node('successRewards').innerHTML.includes('Étoile'),!replay);
   assert.match(node('successSub').textContent,/récompenses en attente/);assert.equal(node('successAchievement').hidden,true);
+  // #682 (I) / #699: same single result screen, never the historical overlay card.
+  assert.deepEqual(overlay,[],'successOverlay is never shown for a pending victory');
+  assert.equal(JSON.stringify(shown),JSON.stringify([[null,null,{quest,newlyCompleted:!replay,pending:true}]]));
+  assert.equal(JSON.stringify(ctx.lastRewardState),JSON.stringify({stars:0,badges:{},qualifying:false,prior:replay?{autonomy:true}:{},completed:replay,pending:true}));
+  assert.equal(node('successShare').hidden,false);assert.equal(node('successShare').disabled,true,'No challenge before the server ACK');
+  assert.equal(node('successNew').textContent,'Quête suivante');
+  ctx.presentPendingVictory('confirmed','op');assert.equal(shown.length,1,'The same operation is presented once');
  }
 });
 test('the confirmed cache read source preserves exact fields and rejects a superseded installation',async()=>{
