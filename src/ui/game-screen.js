@@ -1326,6 +1326,44 @@ function syncMobileAuthUI(){
  icon.setAttribute("aria-label",signedIn?"Compte connecté":"Compte invité");
  action.disabled=!signedIn&&!lumenSupabase;
  action.title=action.disabled?"Connexion momentanément indisponible":"";
+ updateAccountSwitchHold();
+}
+// #711: while a newly signed-in account is not yet the verified local owner, the
+// device still holds the previous account's progress. Never show or let anyone
+// play it: hold the screen until this account's progress is installed.
+function accountSwitchPending(){
+ if(qaActive||!lumenUser||cloudProfileReady)return false;
+ let owner=null;try{owner=localStorage.getItem('lumenCloudOwnerId')}catch{return false}
+ return !!owner&&owner!==lumenUser.id;
+}
+// #711: after an explicit sign-out, show a neutral screen instead of the last
+// account's progress (still stored on the device, never erased). A session that
+// merely expired, offline play and first-time guests are unaffected.
+const SIGNED_OUT_NEUTRAL_KEY='lumenSignedOutNeutralV1';
+async function signOutExplicitly(){
+ const result=await signOut();
+ if(result?.ok!==false){try{localStorage.setItem(SIGNED_OUT_NEUTRAL_KEY,'1')}catch{}}
+ updateAuthUI();return result;
+}
+function updateSignedOutScreen(){
+ const screen=document.getElementById('signedOutScreen');if(!screen)return;
+ let flagged=false;
+ try{if(lumenUser)localStorage.removeItem(SIGNED_OUT_NEUTRAL_KEY);flagged=localStorage.getItem(SIGNED_OUT_NEUTRAL_KEY)==='1'}catch{}
+ const show=flagged&&!lumenUser&&!authSessionPending&&!qaActive;
+ screen.hidden=!show;document.body.classList.toggle('signed-out-neutral',show);
+}
+function updateAccountSwitchHold(){
+ updateSignedOutScreen();
+ const hold=document.getElementById('accountSwitchHold');if(!hold)return;
+ const pending=accountSwitchPending();
+ hold.hidden=!pending;document.body.classList.toggle('account-switch-hold',pending);
+ if(!pending)return;
+ const offline=typeof navigator!=='undefined'&&navigator.onLine===false,failed=!!cloudProfileFailure&&!authSessionPending;
+ document.getElementById('accountSwitchHoldText').textContent=offline
+  ?'Hors ligne : la progression de ce compte sera chargée à la reconnexion. Les sauvegardes de l’autre compte restent sur cet appareil.'
+  :failed?'La progression de ce compte n’a pas pu être chargée. Les sauvegardes de l’autre compte restent sur cet appareil.'
+  :'Chargement de la progression de ce compte…';
+ document.getElementById('accountSwitchHoldRetry').hidden=!(failed||offline);
 }
 
 function hasInternalCapability(name){return lumenCapabilities.some(x=>(typeof x==="string"?x:x?.capability)===name)}
@@ -1451,7 +1489,7 @@ function setupMobileAuth(){
  action.onclick=async()=>{
    menu.hidden=true;
    if(authSessionPending||!lumenSupabase)return;
-   if(lumenUser){await signOut();return}
+   if(lumenUser){await signOutExplicitly();return}
    openEmailAccountOffer("signup");
  };
  const qaSwitch=document.getElementById("qaAccountSwitch"),qaReset=document.getElementById("qaAccountReset");
@@ -1916,9 +1954,14 @@ async function submitMandatoryNickname(){
 }
 document.getElementById('mandatoryNicknameSave')?.addEventListener('click',()=>void submitMandatoryNickname());
 document.getElementById('mandatoryNicknameInput')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();void submitMandatoryNickname()}});
-document.getElementById('mandatoryNicknameSignout')?.addEventListener('click',async()=>{await signOut();showMandatoryNickname(false)});
+document.getElementById('mandatoryNicknameSignout')?.addEventListener('click',async()=>{await signOutExplicitly();showMandatoryNickname(false)});
 function showErasedAccountNotice(show){const notice=document.getElementById('erasedAccountNotice');if(notice)notice.hidden=!show}
 document.getElementById('erasedAccountSignout')?.addEventListener('click',async()=>{await signOut();showErasedAccountNotice(false)});
+document.getElementById('accountSwitchHoldSignout')?.addEventListener('click',async()=>{await signOutExplicitly()});
+document.getElementById('signedOutLogin')?.addEventListener('click',()=>openEmailAccountOffer('login'));
+document.getElementById('signedOutSignup')?.addEventListener('click',()=>openEmailAccountOffer('signup'));
+document.getElementById('accountSwitchHoldRetry')?.addEventListener('click',()=>{void retryAccountCloudSync()});
+addEventListener('online',()=>updateAccountSwitchHold());addEventListener('offline',()=>updateAccountSwitchHold());
 async function refreshRankingAccount(){
  const c=rankingContext();if(!c.owner||!c.client||c.qa){showErasedAccountNotice(false);return}
  // #316: an erased account kept for another app can never write Lumen data again.
@@ -3020,7 +3063,11 @@ async function refreshCanonicalOutboxNotice(ownerId){
    platform,version:document.getElementById('lumenAccountVersion')?.textContent||'unknown',pending:state.pending,
    failures:view.failures,state:view.status==='critical'?'critical':canonicalOutboxNotice==='attention'?'review':state.authRequired?'auth':state.pending.length?'pending':state.complete?'confirmed':'review'});
   updateAuthUI();return (state.retryable??state.pending).length||(state.complete===false?1:0);
- }catch{if(lumenUser?.id===ownerId){canonicalOutboxNotice="storage";updateAuthUI()}return 1}
+ }catch(error){
+  // #711: an account/session change during inspection is transient, not a
+  // storage failure; the next refresh after hydration reads the right owner.
+  if(error?.code==='SESSION_CHANGED')return 0;
+  if(lumenUser?.id===ownerId){canonicalOutboxNotice="storage";updateAuthUI()}return 1}
 }
 function canReplayLegacyOutbox(){
  return canReplayCanonicalOutbox()&&!legacyCommandInFlight&&!legacyVictoryRetry&&
