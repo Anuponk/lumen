@@ -2152,3 +2152,8 @@ The full quality suite runs on pull requests. After a squash merge, the publishe
 - `scripts/adventure-access-browser.mjs` (in `incident-investigation-browser-tests.mjs`, 4 viewports): native clicks, reason required, grant/revoke, a server failure never shown as success, detached panel refused, no overflow.
 - `scripts/admin-recent-players-tests.mjs`: the panel receives the selected player and a revocable authorization.
 - SQL (`ledger-sql`): `scripts/fixtures/adventure-access-before.sql` aligns fixture tables with production, the migration is applied twice, then `scripts/fixtures/adventure-access.sql` checks refusals (player, expired capability, account mismatch, invalid Adventure/reason/player), idempotent grant/revoke, audit attribution and the erasure policy.
+
+## Purchases and mastery unlocks (#728)
+
+- `scripts/mastery-unlock-tests.mjs` (Node, quality gate): client candidates (next Adventure only, owned rows, a missing badge, legacy version < 2), server calls (only confirmed unlocks, failures never throw, an account change stops the claims), wiring guards in `game-screen.js`, and store seed drift.
+- SQL (`ledger-sql`): `adventure-store-seed.mjs --check`, the migration applied twice, then `scripts/fixtures/purchases-mastery.sql`. It covers private ledger and grants, idempotency, identity conflicts, validation, the €5 cap, refund/dispute/won dispute, whole-sky product, non-EUR purchases, preserved admin and mastery rights, real legacy and canonical mastery of Adventure 1 (a missing badge, legacy version 1), idempotent and audited claims, one Adventure at a time, and the erasure policy.

@@ -276,3 +276,13 @@ jobs:
           LUMEN_SQL_FIXTURE: '1'
         run: |
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/reliable-analytics.sql
+      - name: Verify purchases, the 5 EUR cap, refunds and mastery unlocks (#728)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          node scripts/adventure-store-seed.mjs --check
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261115200000_purchases_mastery_store_728.sql \
+            -f supabase/migrations/20261115200000_purchases_mastery_store_728.sql \
+            -f scripts/fixtures/purchases-mastery.sql

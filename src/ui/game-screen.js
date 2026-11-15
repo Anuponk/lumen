@@ -84,6 +84,7 @@ import {createTutorial} from "./tutorial.js";
 import {captureSupportCopy} from '../persistence/support-capture.js';
 import {mountSupportPanel,mountSupportDossier} from './support-panel.js';
 import {mountAdventureAccess} from './adventure-access-panel.js';
+import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
 import {createSound} from "./sound.js";
 import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 
@@ -1054,6 +1055,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   if(existing)resumeHydratedCampaignSelection({ownershipChanged:switchingOwner});
   resumeCanonicalCampaignBoundary();
    canonicalRecovery.schedule();
+  void maybeClaimMasteryUnlocks();
   // Do not claim hydration is fully synchronized until the quest mirror is
   // repaired and read back. Preserve the full profile on partial failure.
   hydrationStage="mirror_readback";
@@ -4134,6 +4136,20 @@ function renderVictoryRank(update){
  if(summary.rank&&!victoryFacts.review)victoryCelebration.amplify(celebrationLevel({...victoryFacts,rank:summary.rank}).level);
 }
 let celestialPending=null;
+// #728: ask the server for the next Adventure once the previous one is 100% mastered.
+// The server recomputes mastery from its own records; one attempt per launch, plus one
+// per local mastery event (the victory may still be pending on the server).
+const masteryClaimsTried=new Set();
+async function maybeClaimMasteryUnlocks({retry=false}={}){
+ if(!lumenUser||!lumenSupabase||qaActive||!cloudProfileReady)return;
+ const owner=lumenUser.id,client=lumenSupabase;
+ const candidates=masteryUnlockCandidates({packs:CONTENT_PACKS,quests:canonicalQuestList(),progress:lumenProgress,entitlements:lumenEntitlements})
+  .filter(id=>retry||!masteryClaimsTried.has(owner+'/'+id));
+ if(!candidates.length)return;
+ for(const id of candidates)masteryClaimsTried.add(owner+'/'+id);
+ const unlocked=await claimMasteryUnlocks({client,owner,candidates,stillCurrent:()=>lumenUser?.id===owner&&lumenSupabase===client});
+ if(unlocked.length&&lumenUser?.id===owner)await loadEntitlements();
+}
 const masteryPulses=new Map();
 function constellationMastery(entry){return celestialScope(lumenProgress,canonicalQuestList().filter(q=>q.constellationId===entry.id))}
 function takeMasteryPulse(entry){
@@ -4150,6 +4166,7 @@ function takeMasteryPulse(entry){
 function prepareCelestialVictory(before,quest,firstCompletion,recovered=false){
  const transition=celestialTransition(before,lumenProgress,quest,canonicalQuestList(),{firstCompletion,recovered});
  celestialPending=transition.kind?{...transition,quest,owner:lumenUser?.id??null}:null;
+ if(transition.kind==='adventure-mastery'||transition.kind==='campaign-mastery')void maybeClaimMasteryUnlocks({retry:true});
  if(transition.pulse)masteryPulses.set(quest.constellationId,{...transition.pulse,owner:lumenUser?.id??null});
 }
 function celestialQuestAvailable(quest){return quest.legacyIndex===null?canonicalQuestAvailable(quest):questIsAccessible(quest.legacyIndex)}

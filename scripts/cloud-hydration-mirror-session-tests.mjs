@@ -30,7 +30,7 @@ function fixture({change=null,mirrorOk=true,mirrorReject=false}={}){
  ctx=vm.createContext({cloudHydrationGeneration:0,...profiles,structuredClone,currentCatalogueOrigin,reconcileDailyIntoCloudProfile,
   qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,localStorage:storage,sessionStorage:{getItem:()=>null},
   lumenProgress:profile,cloudProfileReady:false,cloudProfileBaseline:null,cloudProfileFailure:null,
-  canonicalRecoveryContext:null,canonicalRecovery:{cancel:noop,schedule:noop},
+  canonicalRecoveryContext:null,canonicalRecovery:{cancel:noop,schedule:noop},maybeClaimMasteryUnlocks:noop,
   walletOutbox:{pending:async()=>[]},canonicalVictoryOutbox:{resume:async()=>{},pending:async()=>[]},
   legacyVictoryOutbox:{resume:async()=>{}},replayCanonicalVictoryOutbox:async()=>[],replayLegacyVictoryOutbox:async()=>[],
   attemptEngine:{snapshot:()=>null},canonicalAttemptToResume:()=>null,canonicalQuestList:()=>[],currentQuestPosition:()=>0,

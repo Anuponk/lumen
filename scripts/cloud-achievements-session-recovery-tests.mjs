@@ -189,7 +189,7 @@ async function sessionFixture({conflict=false,quota=false,deferWallet=false}={})
  assert(end>start,'Actual production hydration hook found');
  const noop=()=>{},scheduler={cancel:noop,schedule:noop};
  const ctx=vm.createContext({cloudHydrationGeneration:0,...profiles,structuredClone,currentCatalogueOrigin,qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,
-  canonicalRecoveryContext:null,canonicalRecovery:scheduler,sessionStorage:{getItem:()=>null},localStorage:storage,
+  canonicalRecoveryContext:null,canonicalRecovery:scheduler,maybeClaimMasteryUnlocks:()=>{},sessionStorage:{getItem:()=>null},localStorage:storage,
   cloudProfileReady:false,cloudProfileBaseline:null,cloudProfileFailure:null,lumenProgress:local,
   authSessionPending:false,navigator:{onLine:true},
   normalizeSequentialProgress:()=>0,sequentialSolvedCount:0,scheduleCloudProfile:()=>calls.push('schedule_flush'),

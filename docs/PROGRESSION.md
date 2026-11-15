@@ -115,6 +115,17 @@ An internal administrator (`analytics_cockpit`, checked by the server) can grant
 
 Revocation expires the entitlement (`expires_at`); it never deletes progress, stars, badges or receipts, and an Adventure already started stays playable through the acquired-access policy above. The panel lists the catalogue's locked packs (`CONTENT_PACKS`, no hardcoded count) and shows only the state returned by the server. Payment is out of scope (#725) and will reuse the same entitlement table.
 
+## Purchases and mastery unlocks (#728)
+
+Pricing (owner decision, #725): Adventure 1 stays free; each locked Adventure costs €1 incl. VAT; « Tout le vrai ciel » costs €5 incl. VAT. **€5 cap**: once an account's confirmed EUR payments reach the whole-sky price, every locked Adventure is owned. Future skies are sold separately.
+
+Rights come only from the server, in `lumen.entitlements`:
+- `purchase`: converged from the confirmed purchase ledger by `lumen_commands.sync_purchase_entitlements`. A refund or dispute expires the row; progress, stars and badges are never touched. An Adventure already started stays playable (acquired access).
+- `mastery`: `lumen_claim_mastery_unlock` grants Adventure N+1 when Adventure N is 100% mastered (every quest completed, every badge in `PERFORMANCE_BADGES`). The server recomputes this from its own victory projections (`legacy_authority` for legacy quests, `quest_run_authority` for canonical quests; legacy badges count only from performance version 2, as in `celestialScope`). Permanent: never expired by purchases or refunds, never counted towards the cap, one Adventure at a time.
+- `admin`: #724.
+
+The client only asks for a mastery unlock: after a verified hydration and when a local victory triggers an Adventure mastery. A victory still pending on the server is retried at the next launch.
+
 ## Bonus quests
 After the reviewed historical-command migration, authenticated victories apply
 the existing `legacy-victory.js` rules on the server. Guests and explicitly older
