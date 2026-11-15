@@ -68,5 +68,5 @@ export function createAnalyticsNavigation({window,document,modal,allowed,onOpen,
  });
  window.addEventListener('popstate',()=>{if(route(locationUrl().pathname))syncAccess();else {close({write:false});if(access)access.hidden=true}});
  select(section,{write:false});
- return {open,close,syncAccess,section:()=>section};
+ return {open,close,syncAccess,navigate:value=>{if(opened&&allowed())select(value,{focus:true})},section:()=>section};
 }

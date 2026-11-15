@@ -4,6 +4,7 @@ import vm from 'node:vm';
 import {functionSource} from './source-tools.mjs';
 import {buildIncidentInvestigation,incidentAlerts} from '../src/ui/incident-investigation.js';
 import {registeredPlayers} from '../src/ui/cockpit-sessions.js';
+import {analyticsPlayers} from '../src/ui/analytics-dashboard.js';
 const src=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 const start=src.indexOf('async function loadAdminCockpit(){');
 const end=src.indexOf('function setupAdminCockpit(){',start);
@@ -16,9 +17,10 @@ assert.match(body,/playerSnapshot\.error/);
 assert.match(body,/adminPlayers/);
 console.log('Admin recent players use live activity RPC and expose failures');
 
-const nodes=new Map(),calls=[];let directoryRows,timelineData,supportOptions;
+const nodes=new Map(),calls=[];let directoryRows,timelineData,supportOptions,dashboardInput;
 const document={getElementById(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',value:7,insertAdjacentHTML(){}});return nodes.get(id)},querySelectorAll(){return []}};
-const context={document,Date,Intl,Math,Number,String,adminEsc:String,adminNumber:String,registeredPlayers,
+const context={document,Date,Intl,Math,Number,String,adminEsc:String,adminNumber:String,registeredPlayers,analyticsPlayers,
+ buildAnalyticsDashboard:input=>{dashboardInput=input;return input},renderAnalyticsDashboard:()=>{},adminCanonicalCatalogueTree:()=>[],
  mountSupportDossier:(_host,options)=>{supportOptions=options},
  rememberSessionExpansion:()=>{},renderPlayerDirectory:(_host,rows)=>{directoryRows=rows},renderPlayerSessions:(_host,data)=>{timelineData=data},
  lumenUser:{id:'fixture-admin'},hasInternalCapability:()=>true,buildIncidentInvestigation,incidentAlerts,renderIncidentInvestigation:()=>{},
@@ -32,7 +34,8 @@ assert.match(nodes.get('adminFriction').innerHTML,/Q91/,'Stable quests appear by
 assert.equal(directoryRows[0].current_quest,91,'Latest stable play replaces dormant numeric position');
 assert.equal(directoryRows.length,1,'Anonymous rows never reach the directory or metadata request');
 assert.equal(directoryRows[0].display_name,'sans.pseudo@example.invalid','Directory uses the account email when nickname is blank');
-assert.match(nodes.get('adminAlerts').innerHTML,/Q91/);assert.match(nodes.get('adminAccounts').innerHTML,/>91<\/td>/);
+assert(!nodes.get('adminAlerts').innerHTML.includes('Q91'),'Product friction does not appear as a technical incident');assert.match(nodes.get('adminAccounts').innerHTML,/>91<\/td>/);
+assert.equal(dashboardInput.quests.friction[0].quest_ordinal,91,'Quest evidence reaches the dedicated dashboard');
 await context.loadAdminTimeline('u:actor');
 assert.equal(timelineData.analytics[0].quest_ordinal,91);
 assert.equal(supportOptions.owner,'fixture-admin');assert.equal(supportOptions.target,'actor');assert.equal(supportOptions.authorized(),true);
@@ -41,3 +44,15 @@ const timeline=nodes.get('adminTimeline');timeline.cockpitPlayer='a:guest';timel
 assert.equal(supportOptions.authorized(),false,'Changing the selected request revokes support actions');
 await context.loadAdminCockpit();assert.equal(timeline.cockpitPlayer,null);assert.equal(timeline.cockpitRequest,null);
 assert.match(timeline.textContent,/inscrit/,'A previously selected anonymous timeline is cleared');
+
+// Product analytics is optional. Its outage must not hide operational evidence.
+const originalRpc=context.lumenSupabase.rpc;
+let renderedHealth=null;
+context.renderIncidentInvestigation=(_host,data)=>{renderedHealth=data};
+context.lumenSupabase.rpc=async(name,args)=>name==='lumen_admin_cockpit'
+ ?{error:{message:'Product service unavailable'}}
+ :name==='lumen_admin_sync_health'
+ ?{data:{failures:3,affected_players:2,stalled_players:1,diagnostics:{sample:'technical evidence',timeline:[],signatures:[]}}}
+ :originalRpc(name,args);
+await context.loadAdminCockpit();
+assert.equal(renderedHealth?.sample,'technical evidence','Technical diagnostics remain usable when the product aggregate fails');

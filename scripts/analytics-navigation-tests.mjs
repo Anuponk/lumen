@@ -40,6 +40,7 @@ test('loss of capability closes the view and a detached navigation action cannot
  const f=fixture();f.allow(true);f.controller.syncAccess();f.allow(false);f.controller.syncAccess();
  assert.equal(f.modal.hidden,true);assert.equal(f.access.hidden,false);assert.equal(f.controller.open(),false);
  f.click('support');assert.equal(f.controller.section(),'players');assert.equal(f.loads,1);
+ f.controller.navigate('sync');assert.equal(f.controller.section(),'players','dashboard links also obey current capability');
 });
 
 test('Escape returns to the original game URL, invalid deep sections fall back safely',()=>{
