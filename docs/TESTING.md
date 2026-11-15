@@ -59,7 +59,7 @@ that a pending result shows no credit, rank or challenge, then is confirmed in
 place with no zone moving (≤ 1 px), one grant only, and the star still owned on
 a replay. The wallet, domain-replay and campaign-resume browser flows now wait
 for the shared `PENDING_VICTORY_SHOWN` condition (`cdp-client.mjs`) and use
-the visible buttons of the single screen.
+the visible buttons of the single screen. The pending retry (`retryPendingVictoryInPlace`) is unit-tested in `gameplay-domain-tests.mjs` (no double commit, offline no-op, full-resync fallback when unready or when other victories remain), and `victory-pending-browser-tests.mjs` checks a failed command retried in place without page reload, one grant and no zone movement.
 
 Quest review #695: `node --test scripts/quest-review-tests.mjs` covers the saved badge/star
 slots (never "new"), the current-revision official time, the read-only ranking
