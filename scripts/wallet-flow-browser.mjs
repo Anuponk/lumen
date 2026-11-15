@@ -91,6 +91,9 @@ export async function verifyWalletAndOfflineFlow({send,evaluate,navigate,url}){
   await click('skyRevealNext');await until('lumenDiagnostics.snapshot().levelIndex===21');
   await evaluate(`document.getElementById('attemptMask').click()`);await evaluate(solve);
   await until(PENDING_VICTORY_SHOWN);
+  // The server is reachable again: the presented victory is resent in place (#682 I),
+  // then the earlier queued victory follows the usual reconnection replay.
+  await evaluate('__offlineVictory=false');
   await click('skyRevealSyncRetry');
   await until('__walletServer.legacy.length===2');
   await until(`document.getElementById('authUser').textContent==='Progression synchronisée'`);

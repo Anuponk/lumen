@@ -117,6 +117,29 @@ try {
   assert.equal(replay.grants, 1, 'A replay never grants a second star');
   assert.equal(replay.slots[0], 'star:victory-reward-owned', '#706: the completed quest keeps its star on a replay');
   results.replayStarOwned = true;
+  // A failed command shows the pending screen; "Réessayer la sauvegarde" resends
+  // the same operation on that screen and confirms in place, without reloading.
+  await evaluate(`document.getElementById('skyRevealNext').click()`);
+  await until(`document.getElementById('skyReveal').hidden&&JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).questId!==${JSON.stringify(next.id)}`);
+  const following = await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).questId`);
+  await evaluate(`window.__sameDocument=true;window.__commitFailOnce=true`);
+  await evaluate(`(()=>{const m=document.getElementById('attemptMask');if(m&&!m.hidden)m.click();const d=lumenDiagnostics.snapshot();const s=d.puz.reg.map(row=>row.map(()=>0));d.puz.sol.forEach((col,row)=>s[row][col]=2);lumenDiagnostics.setBoard(s)})()`);
+  await until(PENDING_VICTORY_SHOWN);
+  assert.equal(await evaluate(`!!window.__profile.canonicalQuestState[${JSON.stringify(following)}]?.solved`), false, 'The failed command committed nothing');
+  await until(`(()=>{const b=document.getElementById('skyRevealSyncRetry');return !!b&&!b.disabled})()`);
+  const beforeRetry = await evaluate(ZONES);
+  await evaluate(`document.getElementById('skyRevealSyncRetry').click()`);
+  await until(`(()=>{const o=document.getElementById('skyReveal');return !o.hidden&&!o.dataset.sync&&!document.getElementById('skyRevealSync')})()`, 120);
+  const afterRetry = await evaluate(`({zones:${ZONES},sameDocument:window.__sameDocument===true,saved:!!window.__profile.canonicalQuestState[${JSON.stringify(following)}]?.solved,grants:window.__canonicalGrants,
+    star:document.querySelector('#skyRevealRewards [data-reward=star]').className,kicker:document.getElementById('skyRevealKicker').textContent,title:document.getElementById('skyRevealTitle').textContent+' | '+document.getElementById('skyRevealName').textContent})`);
+  assert.equal(afterRetry.sameDocument, true, 'Manual retry never reloads the page');
+  assert.equal(afterRetry.saved, true);
+  assert.equal(afterRetry.grants, 2, 'One grant for this quest, none duplicated by the retry');
+  assert.match(afterRetry.star, /victory-reward-new/);
+  for (const zone of Object.keys(beforeRetry))
+    assert(Math.abs(beforeRetry[zone][0] - afterRetry.zones[zone][0]) <= 1 && Math.abs(beforeRetry[zone][1] - afterRetry.zones[zone][1]) <= 1, 'Retry confirmation moved ' + zone + ' ' + JSON.stringify({ before: beforeRetry, after: afterRetry.zones, kicker: afterRetry.kicker, title: afterRetry.title }));
+  assert.equal(await evaluate('window.__overlayShown'), false);
+  results.manualRetryInPlace = true;
   assert.deepEqual(errors, []);
   if (process.argv[2]) fs.writeFileSync(process.argv[2], JSON.stringify({ results, errors }, null, 2));
   console.log(JSON.stringify(results));

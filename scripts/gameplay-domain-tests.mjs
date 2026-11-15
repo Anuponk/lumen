@@ -101,3 +101,24 @@ test('the confirmed cache read source preserves exact fields and rejects a super
  assert.deepEqual((await cache.installAndRead('a',profile)).profile,profile);supersede=true;
  await assert.rejects(cache.installAndRead('a',profile),/changed/);
 });
+test('#682 (I): the pending screen retry resends in place, never twice, and reloads only when the session cannot retry',async()=>{
+ const source=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8'),client={};
+ const run=async(overrides={})=>{
+  const calls=[];const pending={userId:'a',client};
+  const ctx={pendingVictoryView:pending,lumenUser:{id:'a'},lumenSupabase:client,canonicalActiveQuest:{id:'q'},
+   canonicalVictoryInFlight:null,legacyVictoryBusy:false,pendingVictoryRetryInFlight:null,navigator:{onLine:true},
+   canonicalVictoryOutbox:{resume:async(owner,scope)=>calls.push('resume:'+scope.kind),pending:async()=>[]},legacyVictoryOutbox:{resume:async()=>calls.push('legacy'),pending:async()=>overrides.queued??[]},
+   canRetryPresentedVictory:()=>true,retryPresentedVictory:async()=>{calls.push('resend');ctx.pendingVictoryView=null;return false},
+   retryAccountCloudSync:async()=>calls.push('reload'),syncPresentation:{celebration(){}},recordCloudDiagnostic:e=>calls.push('diag:'+e),...overrides};
+  vm.createContext(ctx);vm.runInContext(functionSource(source,'retryPendingVictoryInPlace'),ctx);
+  await ctx.retryPendingVictoryInPlace();return calls;
+ };
+ assert.deepEqual(await run(),['resume:all','diag:victory_pending_manual_retry','resend'],'Ready session: same operation resent on the same screen, no reload');
+ assert.deepEqual(await run({canonicalVictoryInFlight:{}}),[],'A running command is never doubled');
+ assert.deepEqual(await run({pendingVictoryRetryInFlight:{}}),[],'A running retry is never doubled');
+ assert.deepEqual(await run({navigator:{onLine:false}}),[],'Offline: stay pending, reconnection retries automatically');
+ assert.deepEqual(await run({canRetryPresentedVictory:()=>false}),['resume:all','reload'],'Unready session keeps the previous full resynchronisation');
+ assert.deepEqual(await run({pendingVictoryView:null}),['reload'],'Without a presented victory, the previous behaviour is kept');
+ assert.deepEqual(await run({queued:[{operationId:'earlier'}]}),['resume:all','diag:victory_pending_manual_retry','resend','reload'],'Other queued victories keep the full resynchronisation');
+ assert.deepEqual(await run({canonicalActiveQuest:null}),['legacy','diag:victory_pending_manual_retry','resend'],'Historical quests use their own outbox');
+});
