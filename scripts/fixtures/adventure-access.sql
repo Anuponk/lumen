@@ -68,7 +68,7 @@ reset role;
 
 do $$begin
  assert (select count(*) from lumen.entitlements where user_id='00000000-0000-0000-0000-000000072402' and (expires_at is null or expires_at>now()))=2,'player owns two active adventures';
- assert (select count(*) from lumen_commands.adventure_access_audit where actor='00000000-0000-0000-0000-000000072403')=4,'
+ assert (select count(*) from lumen_commands.adventure_access_audit where actor='00000000-0000-0000-0000-000000072403')=4,'every change is attributed';
  assert not exists(select 1 from lumen.entitlements where user_id='00000000-0000-0000-0000-000000072401'),'refused calls wrote nothing';
  assert exists(select 1 from lumen_privacy.policy() where ns='lumen_commands' and rel='adventure_access_audit' and action='delete'),'audit is in the erasure policy';
 end $$;
