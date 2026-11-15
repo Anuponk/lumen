@@ -132,6 +132,11 @@ if [[ ! -d "$RELEASE" ]]; then
    git archive "$SHA" "$dir" | tar -xf - -C "$TMP"
  done
  # Stamp the immutable release version in the staged HTML only.
+ # Narrow administration rewrite, independent of the root hosting configuration.
+ if git cat-file -e "$SHA:admin/.htaccess" 2>/dev/null; then
+   mkdir -p "$TMP/admin"
+   git show "$SHA:admin/.htaccess" > "$TMP/admin/.htaccess"
+ fi
  LUMEN_SHA="$SHA" LUMEN_TARGET="$TMP" python3 - <<'PY'
 import json,os,re,subprocess,pathlib
 sha=os.environ["LUMEN_SHA"]
@@ -180,6 +185,12 @@ done
 for file in index.html build-info.json sw.js manifest.webmanifest icon.svg icon-maskable.svg; do
  cp -p "$RELEASE/$file" "$TARGET/$file"
 done
+if [[ -f "$RELEASE/admin/.htaccess" ]]; then
+ [[ ! -L "$TARGET/admin" && ! -L "$TARGET/admin/.htaccess" ]] || { echo "Refusing symlinked admin route" >&2; false; }
+ mkdir -p "$TARGET/admin"
+ chmod 755 "$TARGET/admin"
+ cp -p "$RELEASE/admin/.htaccess" "$TARGET/admin/.htaccess"
+fi
 for page in "${PUBLIC_PAGES[@]}"; do
  if [[ -f "$RELEASE/$page" ]]; then
   cp -p "$RELEASE/$page" "$TARGET/$page"
@@ -207,6 +218,9 @@ printf '%s' "$BUILD_INFO" | python3 -c 'import json,sys; assert json.load(sys.st
 for asset in src/main.js src/ui/game-screen.js src/ui/styles.css; do
  curl -fsS --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/$asset?release=$SHA" | cmp -s - "$RELEASE/$asset"
 done
+if [[ -f "$RELEASE/admin/.htaccess" ]]; then
+ curl -fsS --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/admin/analytics?release=$SHA" | cmp -s - "$RELEASE/index.html"
+fi
 for page in "${PUBLIC_PAGES[@]}"; do
  if [[ -f "$RELEASE/$page" ]]; then
   curl -fsS --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/$page?release=$SHA" | cmp -s - "$RELEASE/$page"

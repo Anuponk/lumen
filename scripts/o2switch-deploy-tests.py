@@ -122,6 +122,8 @@ class Publisher(unittest.TestCase):
                            "target": {"namespace": "android_app", "package_name": "fr.nopuna.lumen.debug",
                                       "sha256_cert_fingerprints": ["AA:" * 31 + "AA"]}}]
         (self.source / ".well-known" / "assetlinks.json").write_text(json.dumps(self.debug_dal))
+        (self.source / "admin").mkdir()
+        (self.source / "admin" / ".htaccess").write_bytes((ROOT / "admin/.htaccess").read_bytes())
         (self.source / "sw.js").write_text("new version")
         self.git("add", ".")
         self.git("commit", "-am", "new release")
@@ -144,6 +146,9 @@ elif [[ "$endpoint" == *'/src/'* ]]; then
  [[ "${TEST_STATIC_FORBIDDEN:-0}" != 1 ]] || exit 22
  asset="${endpoint#https://lumen.nopuna.fr/}"
  cat "$HOME/lumen.nopuna.fr/${asset%%\\?*}"
+elif [[ "$endpoint" == *'/admin/analytics?'* ]]; then
+ [[ "${TEST_ADMIN_FORBIDDEN:-0}" != 1 ]] || exit 22
+ cat "$HOME/lumen.nopuna.fr/index.html"
 elif [[ "$endpoint" == *'.html?'* ]]; then
  [[ "${TEST_PAGE_FORBIDDEN:-0}" != 1 ]] || exit 22
  asset="${endpoint#https://lumen.nopuna.fr/}"
@@ -175,6 +180,21 @@ fi
             for path in directory.rglob("*"):
                 self.assertEqual(path.stat().st_mode & 0o777, 0o755 if path.is_dir() else 0o644)
         self.assertEqual(secret.stat().st_mode & 0o777, 0o600)
+
+    def test_analytics_route_is_published_without_overwriting_root_configuration(self):
+        (self.target / ".htaccess").write_text("existing hosting configuration")
+        result = self.publish(mask=0o077)
+        self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+        self.assertEqual((self.target / ".htaccess").read_text(), "existing hosting configuration")
+        self.assertEqual((self.target / "admin/.htaccess").read_bytes(), (ROOT / "admin/.htaccess").read_bytes())
+        self.assertEqual((self.target / "admin").stat().st_mode & 0o777, 0o755)
+
+    def test_broken_analytics_route_rolls_back_the_release(self):
+        self.env["TEST_ADMIN_FORBIDDEN"] = "1"
+        result = self.publish()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual((self.target / "index.html").read_text(), "original site")
+        self.assertFalse((self.target / "admin/.htaccess").exists())
 
     def test_reviewed_public_pages_are_published_without_other_html(self):
         result = self.publish(mask=0o077)

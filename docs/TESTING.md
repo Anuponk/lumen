@@ -1,5 +1,27 @@
 # Testing and quality gate
 
+## Analytics administration navigation — #708 B1
+
+`analytics-navigation-tests.mjs` joins the Node gate: deferred access, section/
+history/period preservation, capability loss, original game URL and unique reuse
+of cockpit hosts. `cockpit-acceptance-tests.mjs` additionally checks clearing
+feedback/KPI hosts and resetting navigation when the administrator changes.
+
+`analytics-admin-browser-tests.mjs` joins the full browser gate: real application
+and Chrome at 390/1440 px, synthetic Auth/RPC, direct nested URL, reload, five
+sections, retained search/period, Escape, historical entry and denial before any
+admin read. The independent cockpit/report/support runner retains its existing
+320/360/390/844/1440 checks after selecting the relevant section. These never
+query real users or prove physical-device/live Auth/RLS acceptance. The local
+gate server mirrors only `/admin/analytics`, not arbitrary SPA fallback.
+
+`o2switch-deploy-tests.py` verifies the scoped admin rewrite, preservation of
+the root hosting configuration and rollback on failed Analytics HTTP checks.
+Real Bash publisher fixtures require Linux CI and are skipped on Windows.
+After separate release authorization, manual acceptance must verify Apache
+rewrite support and exact deployment SHA, desktop/mobile and account changes.
+No live activation is part of the B1 implementation PR.
+
 ## Current validation entry points
 
 - `npm ci --ignore-scripts` installs development tooling; runtime has no build step.

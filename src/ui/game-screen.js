@@ -1,4 +1,5 @@
 import {setupAppUpdates} from './app-updates.js';
+import {createAnalyticsNavigation} from './analytics-navigation.js';
 import {renderPlayerDirectory,renderPlayerSessions,rememberSessionExpansion,registeredPlayers} from './cockpit-sessions.js';
 import {qualifyDifficulty} from "../campaign/difficulty.js";
 import {readQuestView} from "../campaign/quest-view.js";
@@ -87,6 +88,7 @@ import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 export function startGameScreen(){
 const firstWelcomeEligible=(()=>{try{return claimFirstWelcome(localStorage,new URL(location.href))}catch{return false}})();
 let firstWelcome=null;
+let adminAnalytics=null;
 const qaParams=new URL(location.href).searchParams;
 const qaMode=qaParams.get("qa")==="new"?"new":null;
 const qaActive=qaMode==="new";
@@ -1398,10 +1400,12 @@ function updateAdminTools(){
  if(cockpit)cockpit.hidden=!analytics;
  const adminModal=document.getElementById('adminCockpit');
  if(!analytics||(adminModal?.cockpitOwner&&adminModal.cockpitOwner!==lumenUser?.id)){
-  for(const id of ['adminDiagnosticIncidents','adminPlayers','adminTimeline','adminAccounts'])document.getElementById(id)?.replaceChildren();
+  adminAnalytics?.close({write:false});
+  for(const id of ['adminDiagnosticIncidents','adminPlayers','adminTimeline','adminAccounts','adminCockpitKpis','adminDailyChart','adminRetention','adminFunnel','adminFriction','adminAlerts','adminFeedbacks'])document.getElementById(id)?.replaceChildren();
   const timeline=document.getElementById('adminTimeline');if(timeline){timeline.cockpitRequest=null;timeline.cockpitPlayer=null}
   const modal=document.getElementById('adminCockpit');if(modal){modal.hidden=true;modal.cockpitOwner=null}
  }
+ adminAnalytics?.syncAccess();
 }
 function cloudReconciliationMessage(failure){
  if(failure?.reason==='partial_reconciliation'){
@@ -2852,9 +2856,15 @@ async function loadAdminCockpit(){
 function setupAdminCockpit(){
  const open=document.getElementById("adminCockpitOpen"),modal=document.getElementById("adminCockpit"),close=document.getElementById("adminCockpitClose"),refresh=document.getElementById("adminCockpitRefresh"),days=document.getElementById("adminCockpitDays");
  if(!open||!modal)return;
- open.onclick=()=>{if(!hasInternalCapability("analytics_cockpit"))return;modal.hidden=false;renderAdminCatalogue();loadAdminCockpit()};
- close.onclick=()=>modal.hidden=true;refresh.onclick=loadAdminCockpit;days.onchange=loadAdminCockpit;
- modal.onclick=e=>{if(e.target===modal)modal.hidden=true};
+ adminAnalytics=createAnalyticsNavigation({window,document,modal,
+  allowed:()=>!!lumenUser&&!!lumenSupabase&&hasInternalCapability('analytics_cockpit'),
+  onOpen:()=>{pauseGameClock();updateAttemptUI();renderAdminCatalogue();loadAdminCockpit()},
+  onPeriodChange:loadAdminCockpit
+ });
+ open.textContent='📊 Ouvrir Analytics';open.onclick=()=>adminAnalytics.open();
+ close.onclick=()=>adminAnalytics.close();refresh.onclick=loadAdminCockpit;days.onchange=loadAdminCockpit;
+ modal.onclick=e=>{if(e.target===modal)adminAnalytics.close()};
+ adminAnalytics.syncAccess();
 }
 setupAdminCockpit();
 
