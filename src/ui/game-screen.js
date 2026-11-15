@@ -86,6 +86,8 @@ import {mountSupportPanel,mountSupportDossier} from './support-panel.js';
 import {mountAdventureAccess} from './adventure-access-panel.js';
 import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
 import {adventureOfferModel,mountAdventureOffer} from './adventure-offer.js';
+import {getPlayBilling,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices} from '../persistence/play-billing.js';
+import {SKY_PRODUCT_ID} from '../campaign/store-catalogue.js';
 import {createSound} from "./sound.js";
 import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 
@@ -1056,7 +1058,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   if(existing)resumeHydratedCampaignSelection({ownershipChanged:switchingOwner});
   resumeCanonicalCampaignBoundary();
    canonicalRecovery.schedule();
-  void maybeClaimMasteryUnlocks();
+  void afterVerifiedHydration();
   // Do not claim hydration is fully synchronized until the quest mirror is
   // repaired and read back. Preserve the full profile on partial failure.
   hydrationStage="mirror_readback";
@@ -4137,14 +4139,51 @@ function renderVictoryRank(update){
  if(summary.rank&&!victoryFacts.review)victoryCelebration.amplify(celebrationLevel({...victoryFacts,rank:summary.rank}).level);
 }
 let celestialPending=null;
+// #729: Google Play Billing exists only inside the Play app (TWA). The server verifies
+// every token (Edge Function lumen-play-purchase) and records it (#728); the client
+// never grants and never announces a purchase the server did not confirm.
+let playBilling=null,playPriceLabels={};
+const playBillingReady=getPlayBilling().then(async service=>{
+ playBilling=service;
+ if(service)playPriceLabels=await playPrices(service,[...CONTENT_PACKS.filter(p=>p.access==='locked').map(p=>p.id),SKY_PRODUCT_ID]);
+ return service;
+}).catch(()=>null);
+async function playVerify(productId,purchaseToken){
+ const client=lumenSupabase,owner=lumenUser?.id;if(!client||!owner)return {status:'error',reason:'session'};
+ const {data}=await client.auth.getSession();
+ if(data?.session?.user?.id!==owner)return {status:'error',reason:'session'};
+ return verifyPlayPurchase({endpoint:LUMEN_SUPABASE_URL+'/functions/v1/lumen-play-purchase',apiKey:LUMEN_SUPABASE_KEY,accessToken:data.session.access_token,productId,purchaseToken});
+}
+async function purchaseAdventure(productId,{setStatus,setBusy}){
+ if(!playBilling||!lumenUser||qaActive)return;
+ const owner=lumenUser.id;setBusy(true);setStatus('Ouverture du paiement Google Play…');
+ const result=await buyWithPlay({productId,verify:playVerify});
+ if(lumenUser?.id!==owner)return;
+ if(result.status==='paid'){await loadEntitlements();setStatus('Achat confirmé ✓ Bonne exploration !');skyNavigation.render()}
+ else if(result.status==='pending')setStatus('Paiement en attente de validation par Google : l’aventure se débloquera dès sa confirmation.');
+ else if(result.status==='cancelled')setStatus('');
+ else if(result.status==='owned_elsewhere')setStatus('Cet achat est déjà associé à un autre compte Lumen.');
+ else setStatus('Achat non confirmé par le serveur. Si tu as été débité, il sera retrouvé au prochain lancement de l’app.');
+ setBusy(false);
+}
+async function maybeRestorePlayPurchases(){
+ if(!lumenUser||qaActive||!cloudProfileReady)return;
+ const owner=lumenUser.id,service=await playBillingReady;if(!service||lumenUser?.id!==owner)return;
+ const results=await restorePlayPurchases({service,verify:playVerify});
+ if(lumenUser?.id===owner&&results.some(r=>r.status==='paid'))await loadEntitlements();
+}
+// After a verified hydration: server-checked mastery unlocks (#728) and Play restore (#729).
+function afterVerifiedHydration(){void maybeClaimMasteryUnlocks();void maybeRestorePlayPurchases()}
 // #731: offer shown on a locked Adventure. Purchases stay disabled until a payment
 // provider is connected (#729/#730); the free path claims a server-verified mastery unlock.
 function renderAdventureOffer(container,pack,{close}={}){
  const model=mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot()});
  const packs=model.skies.flatMap(s=>s.packs);if(!packs.some(p=>p.id===pack.id))return false;
- const offer=adventureOfferModel({pack,packs,quests:canonicalQuestList(),progress:lumenProgress,signedIn:!!lumenUser&&!qaActive,accounts:!qaActive,purchasesAvailable:false});
+ const offer=adventureOfferModel({pack,packs,quests:canonicalQuestList(),progress:lumenProgress,signedIn:!!lumenUser&&!qaActive,accounts:!qaActive,
+  purchasesAvailable:!!playBilling&&!qaActive,boughtSingle:lumenEntitlements.some(e=>e?.source==='purchase'),prices:playPriceLabels});
  mountAdventureOffer(container,offer,{
   onSignIn:()=>{close?.();openEmailAccountOffer('signup')},
+  onBuy:purchaseAdventure,
   onClaim:async button=>{button.disabled=true;button.textContent='Vérification…';await maybeClaimMasteryUnlocks({retry:true});
    const owned=adventureAccessEntitlements().some(e=>(typeof e==='string'?e:e?.entitlement)===pack.id);
    if(owned){close?.();skyNavigation.render()}else{button.disabled=false;button.textContent='Réessayer le déblocage'}}

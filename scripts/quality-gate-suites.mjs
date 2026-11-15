@@ -4,6 +4,8 @@ export const nodeSuites=[
  'adventure-access-tests.mjs',
  'mastery-unlock-tests.mjs',
  'adventure-offer-tests.mjs',
+ 'play-billing-tests.mjs',
+ 'play-purchase-handler-tests.mjs',
  'erasure-qa-schema.mjs',
  'self-erasure-handler-tests.mjs',
  'app-updates-tests.mjs',

@@ -93,3 +93,14 @@ test('no private signing material is present in packaging sources', () => {
   }
   scan('');
 });
+
+test('#729 Play Billing: Digital Goods delegation, payment activity and service are declared', () => {
+  const manifest = read('app/src/main/AndroidManifest.xml');
+  assert.match(manifest, /android:name="\.BillingDelegationService"[\s\S]*?TRUSTED_WEB_ACTIVITY_SERVICE/);
+  assert.match(manifest, /playbilling\.provider\.PaymentActivity"[\s\S]*?org\.chromium\.intent\.action\.PAY[\s\S]*?https:\/\/play\.google\.com\/billing/);
+  assert.match(manifest, /playbilling\.provider\.PaymentService"[\s\S]*?org\.chromium\.intent\.action\.IS_READY_TO_PAY/);
+  assert.match(read('app/build.gradle'), /implementation 'com\.google\.androidbrowserhelper:billing:1\.2\.0'/);
+  const service = read('app/src/main/java/fr/nopuna/lumen/BillingDelegationService.java');
+  assert.match(service, /extends DelegationService/);
+  assert.match(service, /registerExtraCommandHandler\(new DigitalGoodsRequestHandler\(getApplicationContext\(\)\)\)/);
+});
