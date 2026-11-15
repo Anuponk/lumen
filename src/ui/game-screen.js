@@ -32,7 +32,7 @@ import {createCloudPersistence} from "../persistence/cloud.js";
 import {guestAccountSeed,preserveGuestBeforeHydration,guestNeedsReconciliation} from '../persistence/guest-account.js';
 import {storageReport,archiveRecoveryBackups} from '../persistence/storage-maintenance.js';
 import {reconcileDailyIntoCloudProfile} from "../persistence/daily-hydration.js";
-import {CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievementsDurably,achievementRecoveryDiagnostic,reconciliationFailureDiagnostic,hydrationFailureDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles,reconcilePlayerAcquisitions} from "../persistence/cloud-profile.js";
+import {preserveRecoverySnapshot,CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievementsDurably,achievementRecoveryDiagnostic,reconciliationFailureDiagnostic,hydrationFailureDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles,reconcilePlayerAcquisitions} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
@@ -890,13 +890,17 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   // then install the authenticated cloud without comparing different owners.
   const switchingOwner=currentOwner!==accountId;
   const currentLocal=localStorage.getItem("lumenProgressV1");
+  // #711: every switch used to add a full copy of the previous profile, never
+  // removed, until the localStorage quota refused all further switches. Reuse an
+  // identical verified copy, else fall back to a verified IndexedDB copy (same
+  // rule for the board archive below).
   if(switchingOwner&&currentLocal){
-   const backupKey="lumenBeforeAccountSwitch_"+Date.now();
-   localStorage.setItem(backupKey,currentLocal);
-   if(localStorage.getItem(backupKey)!==currentLocal)throw Error("Sauvegarde du profil invité non vérifiée");
+   await preserveRecoverySnapshot(localStorage,"lumenBeforeAccountSwitch_",currentLocal);
+   if(!sessionValid())return;
   }
   if(switchingOwner&&attemptEngine.snapshot()){
-   preserveAttemptSnapshot(localStorage,attemptEngine.storageKey);
+   {const attemptRaw=localStorage.getItem(attemptEngine.storageKey);if(attemptRaw!==null)await preserveRecoverySnapshot(localStorage,'lumenBeforeAccountSwitchAttempt_',attemptRaw)}
+   if(!sessionValid())return;
   }
   // Local play may advance while initialization/daily reads are in flight.
   // Recheck the latest bytes, not just the guest captured before those awaits.
@@ -905,7 +909,8 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    throw Error('Progression invitée conservée : nouveaux acquis à synchroniser');
   }
   if(switchingOwner&&canonicalResumeOwner&&canonicalResumeOwner!==accountId){
-   preserveAttemptSnapshot(localStorage,attemptEngine.storageKey);
+   {const attemptRaw=localStorage.getItem(attemptEngine.storageKey);if(attemptRaw!==null)await preserveRecoverySnapshot(localStorage,'lumenBeforeAccountSwitchAttempt_',attemptRaw)}
+   if(!sessionValid())return;
    attemptEngine.clear();canonicalActiveQuest=null;canonicalResumeOwner=null;replayMode=false;
   }
   hydrationStage="local_reconciliation";
@@ -1975,7 +1980,17 @@ document.getElementById('accountSwitchHoldSignout')?.addEventListener('click',as
 document.getElementById('signedOutLogin')?.addEventListener('click',()=>openEmailAccountOffer('login'));
 document.getElementById('signedOutSignup')?.addEventListener('click',()=>openEmailAccountOffer('signup'));
 document.getElementById('accountSwitchHoldRetry')?.addEventListener('click',()=>{void retryAccountCloudSync()});
-document.getElementById('accountSwitchHoldDiagnostic')?.addEventListener('click',()=>{const menu=document.getElementById('mobileAuthPopover');if(menu)menu.hidden=false;showAccountCloudDiagnostic()});
+// #711: the report is shown inside the hold card: the account menu sits under the hold.
+document.getElementById('accountSwitchHoldDiagnostic')?.addEventListener('click',()=>{
+ const box=document.getElementById('accountSwitchHoldReport'),text=document.getElementById('accountSwitchHoldReportText');if(!box||!text)return;
+ text.value=cloudDiagnosticReport();box.hidden=false;
+ const copy=document.getElementById('accountSwitchHoldCopy');if(copy)copy.textContent='Copier le diagnostic';
+});
+document.getElementById('accountSwitchHoldCopy')?.addEventListener('click',async()=>{
+ const text=document.getElementById('accountSwitchHoldReportText'),copy=document.getElementById('accountSwitchHoldCopy');if(!text)return;
+ try{await navigator.clipboard.writeText(text.value);if(copy)copy.textContent='Diagnostic copié ✓'}
+ catch(_){text.focus();text.select();if(copy)copy.textContent='Sélectionner puis copier'}
+});
 addEventListener('online',()=>updateAccountSwitchHold());addEventListener('offline',()=>updateAccountSwitchHold());
 try{updateAccountSwitchHold()}catch{} // Before the session is restored (no flash of the previous account).
 async function refreshRankingAccount(){

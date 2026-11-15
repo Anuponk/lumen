@@ -144,6 +144,13 @@ try {
   assert.equal(held.owner, 'a', 'The failed load leaves the previous owner in place');
   assert(held.cover, 'The hold covers the whole screen: nothing of A is visible');
   assert.match(held.text, /n’a pas pu être chargée/);
+  // #711: « Diagnostic » on the hold must show a readable report ON TOP of the
+  // hold (a tap on the phone did nothing visible), and it can be closed again.
+  await evaluate("document.getElementById('accountSwitchHoldDiagnostic').click()");
+  await until("!document.getElementById('accountSwitchHoldReport').hidden&&document.getElementById('accountSwitchHoldReportText').value.length>0", 'diagnostic report filled', 250);
+  const report = await evaluate("(()=>{const t=document.getElementById('accountSwitchHoldReportText'),r=t.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+Math.min(r.height/2,20));return {visible:r.width>0&&r.height>0&&r.top>=0&&r.bottom<=innerHeight,onTop:hit===t,hit:hit?.id||hit?.className||null}})()");
+  timeline.push({ step: 'diagnostic on hold', ...report });
+  assert(report.visible && report.onTop, 'The diagnostic report is visible above the hold: ' + JSON.stringify(report));
   // Reloading while B still fails must never flash A's grid before the hold.
   await send('Page.reload');
   const early = [];
@@ -154,6 +161,30 @@ try {
   await evaluate("sessionStorage.removeItem('failRestoreFor');document.getElementById('accountSwitchHoldRetry').click()");
   await until(`localStorage.getItem('lumenCloudOwnerId')==='b'&&document.getElementById('mobileAuthStatus').textContent.includes('Progression synchronis')&&document.getElementById('accountSwitchHold').hidden`, 'B loaded after retry', 250);
   assert.deepEqual(await evaluate(local), summary(B), 'Retry installs B only');
+  // #711 root cause (phone telemetry: storage_quota at owner_backup): every
+  // switch added a full copy of the previous profile, never removed, until the
+  // localStorage quota refused the next switch. Saturate the quota with such old
+  // copies; switching back to A must still work and keep every copy, B's profile
+  // being preserved in the verified IndexedDB recovery store instead.
+  await signOut();
+  const bRaw = await evaluate("localStorage.getItem('lumenProgressV1')");
+  const saturation = await evaluate(`(()=>{for(const k of Object.keys(localStorage))if(k.startsWith('lumenBeforeAccountSwitch_')&&!k.startsWith('lumenBeforeAccountSwitchAttempt_')&&localStorage.getItem(k)===localStorage.getItem('lumenProgressV1'))localStorage.removeItem(k);
+   const chunk='x'.repeat(256*1024);let n=0,size=chunk.length;
+   for(;;){try{localStorage.setItem('lumenBeforeAccountSwitch_1700000'+String(n).padStart(6,'0'),n+chunk.slice(0,size));n++}catch(e){if(size<=16)break;size=Math.floor(size/2)}}
+   const keys=Object.keys(localStorage).filter(k=>k.startsWith('lumenBeforeAccountSwitch_1700000')).sort();
+   return {count:keys.length,fingerprint:keys.map(k=>k+':'+localStorage.getItem(k).length).join(',')}})()`);
+  assert(saturation.count > 5, 'The local quota is saturated by old switch copies');
+  await signIn('a');
+  const afterQuota = await evaluate(`(async()=>{const keys=Object.keys(localStorage).filter(k=>k.startsWith('lumenBeforeAccountSwitch_1700000')).sort();
+   const db=await new Promise((ok,ko)=>{const r=indexedDB.open('lumenCloudRecoveryV1',1);r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error)});
+   const values=await new Promise(ok=>{const q=db.transaction('snapshots').objectStore('snapshots').getAll();q.onsuccess=()=>ok(q.result)});db.close();
+   return {fingerprint:keys.map(k=>k+':'+localStorage.getItem(k).length).join(','),bInIndexedDb:values.includes(${JSON.stringify(bRaw)})}})()`, true);
+  timeline.push({ step: 'switch with saturated quota', copies: saturation.count, kept: afterQuota.fingerprint === saturation.fingerprint, bInIndexedDb: afterQuota.bInIndexedDb, memory: await evaluate(`(()=>{const p=lumenDiagnostics.snapshot().progress;return {canonical:Object.keys(p.canonicalQuestState||{}).length,owner:localStorage.getItem('lumenCloudOwnerId')}})()`) });
+  assert.equal(afterQuota.fingerprint, saturation.fingerprint, 'No previous copy is removed or altered');
+  assert.equal(afterQuota.bInIndexedDb, true, "B's local profile is preserved in the verified IndexedDB recovery store");
+  // #391 contract: with a full quota, the verified cloud profile of A runs in memory.
+  assert.deepEqual(timeline.at(-1).memory, { canonical: summary(A).canonical + 1, owner: 'a' }, 'A is signed in and shown despite the full local quota: ' + JSON.stringify(timeline.at(-1)));
+  await evaluate("for(const k of Object.keys(localStorage))if(k.startsWith('lumenBeforeAccountSwitch_1700000'))localStorage.removeItem(k)");
   const refused = await evaluate('window.__server.refused');
   assert.deepEqual(refused, [], 'No call targeted another account than the session: ' + JSON.stringify(refused));
   assert.deepEqual(errors, []);
