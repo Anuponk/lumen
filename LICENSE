@@ -1,0 +1,43 @@
+Lumen
+Copyright (c) 2026 Nopuna — Cédric Valente EI. Tous droits réservés.
+
+Le code source, les textes, les visuels, les grilles et les autres contenus
+originaux de Lumen sont la propriété exclusive de leur auteur. Ce dépôt est
+consultable publiquement, mais AUCUNE LICENCE n'est accordée : sans
+autorisation écrite préalable, il est interdit de copier, modifier,
+redistribuer, publier, héberger, sous-licencier ou exploiter commercialement
+tout ou partie de ce contenu, y compris sous la forme d'une version modifiée
+ou renommée du jeu.
+
+La consultation du code sur GitHub et l'utilisation normale du jeu sur
+https://lumen.nopuna.fr ou depuis les boutiques officielles restent
+autorisées. Pour toute autre demande : voir les mentions légales sur
+https://lumen.nopuna.fr/mentions-legales.html
+
+-------------------------------------------------------------------------------
+Éléments tiers (non couverts par la réserve ci-dessus)
+
+Les éléments suivants restent soumis à leur propre licence, qui prévaut :
+
+- Données de constellations « Western » de Stellarium Sky Cultures
+  (© équipe Stellarium, Creative Commons Attribution-ShareAlike, CC BY-SA)
+  et coordonnées stellaires Hipparcos New Reduction (F. van Leeuwen 2007,
+  CDS VizieR I/311/hip2). Le catalogue dérivé qui en est issu reste sous
+  CC BY-SA, avec l'attribution :
+  « Données de constellations Western © équipe Stellarium, CC BY-SA ;
+  coordonnées stellaires Hipparcos II via CDS VizieR. Projection et
+  adaptation pour Lumen. »
+  Fichiers concernés : src/data/astronomy/ et scripts/fixtures/astronomy/.
+  Détails : docs/ASTRONOMY_DATA_ATTRIBUTION.md
+
+- Bibliothèques embarquées dans src/vendor/ (Supabase JS, qrcode), sous
+  leur licence respective : src/vendor/supabase-LICENSE.txt et
+  src/vendor/qrcode-LICENSE.txt
+
+-------------------------------------------------------------------------------
+English summary: Copyright (c) 2026 Nopuna — Cédric Valente EI. All rights
+reserved. This repository is publicly viewable but no licence is granted:
+copying, modifying, redistributing or commercially exploiting any part of it
+requires prior written permission. Third-party data and libraries listed above
+remain under their own licences (CC BY-SA for the Stellarium-derived
+constellation data).

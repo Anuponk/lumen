@@ -1,6 +1,7 @@
 {
   "name": "lumen",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "engines": {
     "node": ">=22"

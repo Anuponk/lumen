@@ -34,5 +34,5 @@ This repository is the shared project memory for humans, ChatGPT/Codex and other
 ## Historical version note — 3 October 2026
 At the time this documentation was introduced (2026-10-03), `main` pointed to commit `1683d1a480bccd813677a23b683bfad6919e0129`; the UI constant was `LUMEN_APP_VERSION="beta-2026.10"`. Git tags/marketing versions and this UI constant must not be assumed to be equivalent.
 
-
-
+## Licence
+Tous droits réservés — voir [LICENSE](LICENSE). Le dépôt est consultable, mais aucune réutilisation n’est autorisée sans accord écrit. Les données astronomiques dérivées de Stellarium restent sous CC BY-SA (voir [attribution](docs/ASTRONOMY_DATA_ATTRIBUTION.md)), et les bibliothèques de `src/vendor/` sous leur propre licence.
