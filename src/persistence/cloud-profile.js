@@ -6,6 +6,7 @@ import {validRecordTime,recordMinimum} from '../campaign/personal-records.js';
 import {mergeOfficialTimes} from '../campaign/official-time.js';
 function officialTimesCovered(local,remote){try{return Object.entries(mergeOfficialTimes(local)).every(([rev,time])=>Number.isSafeInteger(remote?.[rev])&&remote[rev]>=0&&remote[rev]<=time)}catch{return false}}
 import {MAX_PROFILE_BYTES,profileStorageBytes} from './profile-size.js';
+import {jsonbDigest} from './jsonb-digest.js';
 import {captureGuestClaim,claimGuestProfile} from './guest-claim.js';
 // Top-level profile contract. Policies describe existing recovery rules, not
 // permission to award a reward or bypass a transactional server projection.
@@ -592,11 +593,38 @@ export async function initializeCloudProfile(supabase,localProfile,{userId,guest
  if(!sameCloudProfile(saved,verified))throw Error("Profil cloud initial non vérifié");
  return saved;
 }
+// Clients whose server explicitly lacks the digest endpoint (PGRST202/404).
+const digestCasUnsupported=new WeakSet();
 export async function compareAndSwapCloudProfile(supabase,profile,expected,{userId}={}){
  const next=validateCloudProfile(profile),baseline=validateCloudProfile(expected);
  if(next.catalogueOrigin===undefined&&baseline.catalogueOrigin===undefined&&catalogueOrigin(baseline)===currentCatalogueOrigin)next.catalogueOrigin=currentCatalogueOrigin;
+ // #697 follow-up: send the SHA-256 of the expected profile instead of the whole
+ // profile (upload halved). Only an exact digest match lets the server run the
+ // usual CAS; any mismatch or unexpected answer falls back to the full CAS below,
+ // which keeps today's outcome. Requires the account guard (userId).
+ if(userId&&!digestCasUnsupported.has(supabase)){
+  let digest=null;try{digest=await jsonbDigest(baseline)}catch{}
+  if(digest){
+   const quick=await supabase.rpc("lumen_cas_profile_digest",{p_expected_sha256:digest,p_payload:next,p_expected_user_id:userId});
+   if(quick?.error?.code==='PGRST202'&&quick.status===404)digestCasUnsupported.add(supabase);
+   else if(quick?.error)throwCasRefusal(quick.error);
+   else if(quick?.data?.version===1&&quick.data.matched===true){
+    if(quick.data.applied===true)return next;
+    throwCasConflict();
+   }
+  }
+ }
  const {data,error}=await supabase.rpc("lumen_cas_profile",{p_expected:baseline,p_payload:next,...(userId?{p_expected_user_id:userId}:{})});
- if(error){
+ if(error)throwCasRefusal(error);
+ if(data!==true)throwCasConflict();
+ return next;
+}
+function throwCasConflict(){
+ const conflict=Error("Conflit de version cloud : sauvegarde refusée");
+ conflict.code="CLOUD_CAS_CONFLICT";throw conflict;
+}
+function throwCasRefusal(error){
+ {
   // Only fixed guard categories and bounded provider codes reach diagnostics.
   // Do not retain provider messages, details, hints or an unsanitized cause.
   const reasons=new Map([
@@ -619,11 +647,6 @@ export async function compareAndSwapCloudProfile(supabase,profile,expected,{user
   failure.code=reasons.get(error.message)||providerCode;
   throw failure;
  }
- if(data!==true){
-  const conflict=Error("Conflit de version cloud : sauvegarde refusée");
-  conflict.code="CLOUD_CAS_CONFLICT";throw conflict;
- }
- return next;
 }
 // Reuse an existing verified backup instead of multiplying full snapshots on retries.
 function preserveVerifiedSnapshot(storage,prefix,value){

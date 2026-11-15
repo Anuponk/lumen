@@ -117,6 +117,8 @@ try {
   assert.equal(replay.grants, 1, 'A replay never grants a second star');
   assert.equal(replay.slots[0], 'star:victory-reward-owned', '#706: the completed quest keeps its star on a replay');
   results.replayStarOwned = true;
+  results.digestCasWrites = await evaluate('window.__digestCasWrites||0');
+  assert(results.digestCasWrites >= 1, 'Profile writes use the digest CAS (expected profile not uploaded)');
   assert.deepEqual(errors, []);
   if (process.argv[2]) fs.writeFileSync(process.argv[2], JSON.stringify({ results, errors }, null, 2));
   console.log(JSON.stringify(results));
