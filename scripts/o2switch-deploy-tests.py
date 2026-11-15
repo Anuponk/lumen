@@ -13,7 +13,7 @@ spec = importlib.util.spec_from_file_location("ci_status", ROOT / "scripts/o2swi
 ci = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ci)
 SHA = "a" * 40
-PUBLIC_PAGES = ("mentions-legales.html", "confidentialite.html", "supprimer-compte.html")
+PUBLIC_PAGES = ("mentions-legales.html", "confidentialite.html", "supprimer-compte.html", "decouvrir.html", "robots.txt", "sitemap.xml")
 
 
 def runs():
@@ -149,7 +149,7 @@ elif [[ "$endpoint" == *'/src/'* ]]; then
 elif [[ "$endpoint" == *'/admin/analytics?'* ]]; then
  [[ "${TEST_ADMIN_FORBIDDEN:-0}" != 1 ]] || exit 22
  cat "$HOME/lumen.nopuna.fr/index.html"
-elif [[ "$endpoint" == *'.html?'* ]]; then
+elif [[ "$endpoint" == *'.html?'* || "$endpoint" == *'.txt?'* || "$endpoint" == *'.xml?'* ]]; then
  [[ "${TEST_PAGE_FORBIDDEN:-0}" != 1 ]] || exit 22
  asset="${endpoint#https://lumen.nopuna.fr/}"
  cat "$HOME/lumen.nopuna.fr/${asset%%\\?*}"
