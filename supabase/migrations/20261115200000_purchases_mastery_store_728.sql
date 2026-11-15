@@ -51,7 +51,7 @@ create table if not exists lumen_commands.purchases (
 create index if not exists purchases_user_idx on lumen_commands.purchases(user_id);
 create table if not exists lumen_commands.purchase_events (
  id bigint generated always as identity primary key,
- purchase_id bigint not null references lumen_commands.purchases(id) on delete cascade,
+ purchase_id bigint not null, -- no FK: both tables are erased by user_id (privacy dependency review)
  user_id uuid not null references auth.users(id) on delete cascade,
  status text not null check (status in ('paid','refunded','disputed')),
  recorded_at timestamptz not null default clock_timestamp()
