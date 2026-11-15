@@ -1184,6 +1184,9 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 .sky-reveal[data-celestial] .sky-reveal-card{display:flex;flex-direction:column;gap:8px;width:min(94vw,840px);max-height:calc(100dvh - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));padding:20px;overflow:auto}
 /* #705: phones (360x640 and up) show the whole celebration and its CTA without scrolling. */
 @media(max-height:700px){#skyReveal[data-celestial] .sky-reveal-card{gap:5px}#skyReveal[data-celestial] .sky-reveal-title{font-size:20px}#skyReveal[data-celestial] .celestial-summary{font-size:11px;line-height:1.35}#skyReveal[data-celestial] .celestial-panorama{max-height:34dvh;min-height:90px}}
+/* #705: with the podium mounted (signed-in final victory or admin preview) the whole
+   mastery screen still fits 360x640. The 140px compact podium rule lost to min-height:164px. */
+@media(max-height:700px){#skyReveal[data-celestial] .victory-performance-ranked .victory-podium-slot,#skyReveal[data-celestial] .victory-podium-slot .ranking{min-height:0;height:118px}#skyReveal[data-celestial] .victory-performance-title{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}#skyReveal[data-celestial] .victory-performance-row{min-height:0}#skyReveal[data-celestial] .sky-reveal-time.victory-time-note{font-size:12px}#skyReveal[data-celestial] .celestial-panorama{max-height:23dvh}#skyReveal[data-celestial] .victory-time,#skyReveal[data-celestial] .victory-rank{padding:4px 6px}#skyReveal[data-celestial] .victory-rank strong{font-size:14px}#skyReveal[data-celestial] .victory-rank small{font-size:10px}}
 .sky-reveal[data-celestial] .sky-reveal-title{font-size:clamp(20px,3.3vw,32px);line-height:1.15;margin:0}
 .sky-reveal[data-celestial] .sky-reveal-name{font-size:clamp(12px,2vw,16px);line-height:1.4;margin:0 auto;max-width:580px}
 .sky-reveal[data-celestial] #skyRevealTitle,.sky-reveal[data-celestial] #skyRevealName,.sky-reveal[data-celestial] .celestial-summary{animation:celestial-conclusion 4s both}
@@ -1457,6 +1460,7 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 .sky-reveal .victory-time,.sky-reveal .victory-rank{display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;padding:6px 8px;border:1px solid #23384d;border-radius:11px;background:#0f1d2e}
 .sky-reveal .victory-time-label{font-size:11px;color:#9fc4d8}
 .sky-reveal .victory-time .sky-reveal-time{font-size:22px;font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums}
+.sky-reveal .victory-time .sky-reveal-time.victory-time-note{font-size:13px;font-weight:700;line-height:1.25;color:#cfe9f5}
 .sky-reveal .victory-time .personal-record{margin:2px 0 0;font-size:11px;line-height:1.25;color:#cfe9f5}
 .sky-reveal .victory-time .personal-record-new{color:#ffe1a0;font-weight:800}
 .sky-reveal .victory-rank{align-items:center;text-align:center}

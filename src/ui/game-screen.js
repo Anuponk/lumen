@@ -4152,13 +4152,19 @@ function startCelestialQuest(quest){
 function previewAdventureMastery(){
  const quest=activeQuest();
  if(!quest?.packId||celebrated||pendingVictoryView)return false;
+ // #705: fill time, badges and the real board of this quest like a final
+ // victory would, instead of inheriting a previous screen (review) state.
+ victoryPresentation.clear();victoryCelebration.clear();rankingView.clear();
+ const view=readQuestView(quest,lumenProgress,canonicalQuestList(),CONTENT_CONSTELLATIONS);
+ const rankingExpected=fillSavedPerformance(quest,questReviewModel({quest,badges:view.badges,record:questPerformanceRecord(quest,lumenProgress),format:formatDuration}));
  const share=document.getElementById('successShare'),shareHidden=share?.hidden;
  celestialPending={kind:'adventure-mastery',quest,owner:lumenUser?.id??null,after:captureCelestialProgress(lumenProgress,quest,canonicalQuestList())};
  let shown=false;
  try{if(share)share.hidden=true;shown=showCelestialVictory()}catch(error){celestialCelebration.clear();celestialPending=null;console.warn('Mastery preview unavailable',error)}
  finally{if(share)share.hidden=shareHidden}
- if(!shown)return false;
+ if(!shown){victoryFacts=null;return false}
  const reveal=document.getElementById('skyReveal');reveal.hidden=false;reveal.tabIndex=-1;reveal.focus({preventScroll:true});
+ if(rankingExpected){rankingView.show(quest,null,{review:true});rankingView.mount()}
  return true;
 }
 function showCelestialVictory(){
@@ -4302,7 +4308,7 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
   result.hidden=!isNormalVictory;
   continueButton.hidden=isNormalVictory;
   if(isNormalVictory){
-   document.getElementById("skyRevealTime").textContent=document.getElementById("successTime")?.textContent||"";
+   setVictoryTime(document.getElementById("successTime")?.textContent||"");
    const record=document.getElementById('successRecord'),revealRecord=document.getElementById('skyRevealRecord');
    if(revealRecord){revealRecord.textContent=record?.textContent||'';revealRecord.hidden=record?.hidden!==false;revealRecord.classList.toggle('personal-record-new',!!record?.classList.contains('personal-record-new'))}
    const slots=rewardSlots(lastRewardState||{});renderVictoryRewards(slots);
@@ -4363,6 +4369,28 @@ function closeUnifiedSkyReveal(){
 // #695: read-only review of a completed quest on the shared victory surface.
 // Same final layout as a victory, without effects; nothing is written.
 let questReview=null;
+// Performance block of the shared victory surface filled from saved results only:
+// best time, saved badges and this quest's board (#695 review, #705 preview).
+// Every caller owns the whole block, never a previous screen's leftovers.
+function fillSavedPerformance(quest,model){
+ document.getElementById('skyRevealResults').hidden=false;document.getElementById('skyRevealContinue').hidden=true;
+ for(const id of ['skyRevealTime','skyRevealRewards'])document.getElementById(id).hidden=false;
+ setVictoryTime(model.time);
+ const record=document.getElementById('skyRevealRecord');if(record){record.textContent='';record.hidden=true;record.classList.remove('personal-record-new')}
+ renderVictoryRewards(model.slots);
+ const rankingExpected=!(qaActive||!lumenUser);
+ document.getElementById('skyRevealPerformance')?.classList.toggle('victory-performance-ranked',rankingExpected);
+ const rankTile=document.getElementById('skyRevealRank');if(rankTile){rankTile.hidden=!rankingExpected;rankTile.className='victory-rank victory-rank-pending';rankTile.textContent=rankingExpected?'Classement…':''}
+ victoryFacts={questId:quest.id,review:true,newRecord:false,remarkableBadges:false,constellationCompleted:false};
+ const reason=document.getElementById('skyRevealChallengeReason');reason.hidden=true;reason.textContent='';
+ document.getElementById('skyRevealFeedback').replaceChildren();
+ return rankingExpected;
+}
+// A sentence (no official time yet) is not a chrono: smaller, wrapped type.
+function setVictoryTime(text){
+ const time=document.getElementById('skyRevealTime');if(!time)return;
+ time.textContent=text;(time.closest('.sky-reveal-time')||time).classList.toggle('victory-time-note',!!text&&!/\d/.test(text));
+}
 function openQuestReview(quest){
  if(!quest||skyTourActive()||!questIsCompleted(lumenProgress,quest.id))return false;
  victoryPresentation.clear();victoryCelebration.clear();celestialCelebration.clear();rankingView.clear();
@@ -4376,17 +4404,7 @@ function openQuestReview(quest){
  document.getElementById('skyRevealTitle').textContent=model.title;
  document.getElementById('skyRevealName').textContent=model.subtitle;
  document.getElementById('skyRevealCanvas').innerHTML='<svg class="sky-reveal-svg" viewBox="0 0 290 115">'+(astronomicalPrimarySvg({id:quest.constellationId},model.lit,model.count,model.lit)||'')+'</svg><div class="sky-reveal-progress">◔ '+model.lit+' / '+model.count+' étoiles</div>';
- document.getElementById('skyRevealResults').hidden=false;document.getElementById('skyRevealContinue').hidden=true;
- for(const id of ['skyRevealTime','skyRevealRewards'])document.getElementById(id).hidden=false;
- document.getElementById('skyRevealTime').textContent=model.time;
- const record=document.getElementById('skyRevealRecord');if(record){record.textContent='';record.hidden=true;record.classList.remove('personal-record-new')}
- renderVictoryRewards(model.slots);
- const rankingExpected=!(qaActive||!lumenUser);
- document.getElementById('skyRevealPerformance')?.classList.toggle('victory-performance-ranked',rankingExpected);
- const rankTile=document.getElementById('skyRevealRank');if(rankTile){rankTile.hidden=!rankingExpected;rankTile.className='victory-rank victory-rank-pending';rankTile.textContent=rankingExpected?'Classement…':''}
- victoryFacts={questId:quest.id,review:true,newRecord:false,remarkableBadges:false,constellationCompleted:false};
- const reason=document.getElementById('skyRevealChallengeReason');reason.hidden=true;reason.textContent='';
- document.getElementById('skyRevealFeedback').replaceChildren();
+ const rankingExpected=fillSavedPerformance(quest,model);
  // A challenge freezes a first success, so it is only offered after a victory.
  for(const id of ['skyRevealNext','skyRevealShare'])document.getElementById(id).hidden=true;
  const sky=document.getElementById('skyRevealSky'),retry=document.getElementById('skyRevealRetry');
@@ -4404,7 +4422,7 @@ async function refreshReviewOfficialTime(quest){
  if(qaActive||!owner||!officialTimingSupported(client))return;
  try{const {data,error}=await client.rpc('lumen_get_official_records',{p_quest_id:quest.id,p_grid_revision:quest.gridRevision??0});
   if(error||questReview?.quest!==quest||lumenUser?.id!==owner||lumenSupabase!==client)return;
-  const label=recordLabel(data,formatDuration,quest.gridRevision??0);if(label)document.getElementById('skyRevealTime').textContent=label;
+  const label=recordLabel(data,formatDuration,quest.gridRevision??0);if(label)setVictoryTime(label);
  }catch{}
 }
 function closeQuestReview(){

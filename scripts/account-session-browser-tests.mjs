@@ -15,7 +15,9 @@ import {connectBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cd
 const {send,evaluate,errors}=await connectBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const navigate=(method,params)=>navigateAndWait({send,evaluate},method,params);
-async function until(expression){for(let i=0;i<100;i++){if(await evaluate(expression))return;await sleep(100)}throw Error('Timed out: '+expression+' '+JSON.stringify(await evaluate(`({calls:window.__authCalls,status:document.getElementById('mobileAuthStatus')?.textContent,emailStatus:document.getElementById('accountEmailStatus')?.textContent,diagnostics:localStorage.getItem('lumenCloudDiagnosticsV1')})`)))}
+// A sign-out or reload can swap the document between two polls: retry a transient
+// evaluation error instead of failing; the condition must still hold before the deadline.
+async function until(expression){let lastError=null;for(let i=0;i<100;i++){try{if(await evaluate(expression))return;lastError=null}catch(error){lastError=error}await sleep(100)}if(lastError)throw lastError;throw Error('Timed out: '+expression+' '+JSON.stringify(await evaluate(`({calls:window.__authCalls,status:document.getElementById('mobileAuthStatus')?.textContent,emailStatus:document.getElementById('accountEmailStatus')?.textContent,diagnostics:localStorage.getItem('lumenCloudDiagnosticsV1')})`)))}
 const url=new URL(process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/');
 const fixture=`
 localStorage.setItem('lumenSound','off');
