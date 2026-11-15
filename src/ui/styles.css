@@ -491,6 +491,8 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .account-switch-hold-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .account-switch-hold-actions button{min-height:44px;padding:0 16px;border:1px solid #35546f;border-radius:11px;background:#0f1d2e;color:#d8ecf7;font:inherit}
 @keyframes accountSwitchPulse{50%{opacity:.4}}
+.signed-out-screen{z-index:4900}.signed-out-icon{animation:none}
+body.signed-out-neutral .account-optin{z-index:4950}
 @media(prefers-reduced-motion:reduce){.account-switch-hold-icon{animation:none}}
 .attempt-mask{position:absolute;inset:0;z-index:90;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;border:1px solid #28415b;border-radius:18px;background:rgba(7,17,29,.96);color:#eefcff;text-align:center;padding:22px;backdrop-filter:blur(14px)}
 .attempt-mask[hidden]{display:none!important}

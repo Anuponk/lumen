@@ -61,7 +61,8 @@ async function signOut() {
   await until(`window.__server.session===null&&document.getElementById('mobileAuthAction').textContent!=='D'+String.fromCharCode(233)+'connexion'`, 'signed out');
 }
 async function signIn(id) {
-  await evaluate(`document.getElementById('mobileAuthAction').click();document.getElementById('accountAuthSwitch').click();document.getElementById('accountEmail').value='${id}@example.test';document.getElementById('accountPassword').value='test-password-only';document.getElementById('accountPasswordSubmit').click()`);
+  await until("document.getElementById('signedOutScreen')?.hidden===false", 'neutral screen before sign-in');
+  await evaluate(`document.getElementById('signedOutLogin').click();document.getElementById('accountEmail').value='${id}@example.test';document.getElementById('accountPassword').value='test-password-only';document.getElementById('accountPasswordSubmit').click()`);
   await until(`window.__server.session?.user?.id==='${id}'&&localStorage.getItem('lumenCloudOwnerId')==='${id}'&&document.getElementById('mobileAuthStatus').textContent.includes('Progression synchronis')`, 'signed in ' + id, 250);
 }
 const timeline = [];
@@ -87,7 +88,15 @@ try {
   const pendingQuest = all.find((q) => q.ordinal === boundary.ordinal + 1 && q.legacyIndex === null);
   await evaluate(`(async()=>{const {createDurableCanonicalVictoryOutbox}=await import('/src/persistence/durable-canonical-outbox.js');await createDurableCanonicalVictoryOutbox(localStorage).enqueue('a',${JSON.stringify(pendingQuest.id)},{facts:{seconds:61,assistanceUsed:false,mistakeCommitted:false,qualifying:true,hintUsed:false,challengeFailed:false,qualifiedDay:'2026-11-15',qualifiedAt:'2026-11-15T08:00:00.000Z'}},{operationId:'switch-a-pending-reset-0'})})()`, true);
   await signOut();
-  timeline.push({ step: 'signed out after A', local: await evaluate(local), owner: await evaluate(`localStorage.getItem('lumenCloudOwnerId')`) });
+  const neutralCheck = "(()=>{const n=document.getElementById('signedOutScreen'),r=n.getBoundingClientRect();return {visible:n.hidden===false,cover:r.width>=innerWidth&&r.height>=innerHeight,top:document.elementFromPoint(innerWidth/2,innerHeight/2)?.closest('#signedOutScreen,#accountOptin')!==null}})()";
+  timeline.push({ step: 'signed out after A', local: await evaluate(local), owner: await evaluate(`localStorage.getItem('lumenCloudOwnerId')`), neutral: await evaluate(neutralCheck) });
+  assert.deepEqual(timeline.at(-1).neutral, { visible: true, cover: true, top: true }, '#711: after sign-out a neutral screen replaces the last account progress');
+  assert.deepEqual(timeline.at(-1).local, summary(A), 'Signing out erases nothing on the device');
+  await navigateAndWait({ send, evaluate }, 'Page.reload');
+  await until("!!window.lumenDiagnostics&&document.getElementById('signedOutScreen')?.hidden===false", 'neutral screen after reload');
+  await evaluate("document.getElementById('signedOutLogin').click()");
+  assert.equal(await evaluate("(()=>{const o=document.getElementById('accountOptin');return !o.hidden&&document.elementFromPoint(innerWidth/2,innerHeight/2)?.closest('#accountOptin')!==null})()"), true, 'The sign-in dialog opens above the neutral screen');
+  await evaluate("document.getElementById('accountOptinLater')?.click()");
 
   // Sample what the app shows while B's session exists but B's profile is not installed yet.
   await evaluate(`window.__transient=[];window.__probe=setInterval(()=>{if(window.__server.session?.user?.id!=='b')return;const d=lumenDiagnostics.snapshot();window.__transient.push({owner:localStorage.getItem('lumenCloudOwnerId'),memoryXp:d.progress?.xp,status:document.getElementById('mobileAuthStatus')?.textContent,skyOpen:!document.getElementById('mapModal').hidden,hold:document.getElementById('accountSwitchHold')?.hidden===false,holdText:document.getElementById('accountSwitchHoldText')?.textContent??null})},40)`);

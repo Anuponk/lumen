@@ -1336,7 +1336,24 @@ function accountSwitchPending(){
  let owner=null;try{owner=localStorage.getItem('lumenCloudOwnerId')}catch{return false}
  return !!owner&&owner!==lumenUser.id;
 }
+// #711: after an explicit sign-out, show a neutral screen instead of the last
+// account's progress (still stored on the device, never erased). A session that
+// merely expired, offline play and first-time guests are unaffected.
+const SIGNED_OUT_NEUTRAL_KEY='lumenSignedOutNeutralV1';
+async function signOutExplicitly(){
+ const result=await signOut();
+ if(result?.ok!==false){try{localStorage.setItem(SIGNED_OUT_NEUTRAL_KEY,'1')}catch{}}
+ updateAuthUI();return result;
+}
+function updateSignedOutScreen(){
+ const screen=document.getElementById('signedOutScreen');if(!screen)return;
+ let flagged=false;
+ try{if(lumenUser)localStorage.removeItem(SIGNED_OUT_NEUTRAL_KEY);flagged=localStorage.getItem(SIGNED_OUT_NEUTRAL_KEY)==='1'}catch{}
+ const show=flagged&&!lumenUser&&!authSessionPending&&!qaActive;
+ screen.hidden=!show;document.body.classList.toggle('signed-out-neutral',show);
+}
 function updateAccountSwitchHold(){
+ updateSignedOutScreen();
  const hold=document.getElementById('accountSwitchHold');if(!hold)return;
  const pending=accountSwitchPending();
  hold.hidden=!pending;document.body.classList.toggle('account-switch-hold',pending);
@@ -1472,7 +1489,7 @@ function setupMobileAuth(){
  action.onclick=async()=>{
    menu.hidden=true;
    if(authSessionPending||!lumenSupabase)return;
-   if(lumenUser){await signOut();return}
+   if(lumenUser){await signOutExplicitly();return}
    openEmailAccountOffer("signup");
  };
  const qaSwitch=document.getElementById("qaAccountSwitch"),qaReset=document.getElementById("qaAccountReset");
@@ -1937,10 +1954,12 @@ async function submitMandatoryNickname(){
 }
 document.getElementById('mandatoryNicknameSave')?.addEventListener('click',()=>void submitMandatoryNickname());
 document.getElementById('mandatoryNicknameInput')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();void submitMandatoryNickname()}});
-document.getElementById('mandatoryNicknameSignout')?.addEventListener('click',async()=>{await signOut();showMandatoryNickname(false)});
+document.getElementById('mandatoryNicknameSignout')?.addEventListener('click',async()=>{await signOutExplicitly();showMandatoryNickname(false)});
 function showErasedAccountNotice(show){const notice=document.getElementById('erasedAccountNotice');if(notice)notice.hidden=!show}
 document.getElementById('erasedAccountSignout')?.addEventListener('click',async()=>{await signOut();showErasedAccountNotice(false)});
-document.getElementById('accountSwitchHoldSignout')?.addEventListener('click',async()=>{await signOut();updateAuthUI()});
+document.getElementById('accountSwitchHoldSignout')?.addEventListener('click',async()=>{await signOutExplicitly()});
+document.getElementById('signedOutLogin')?.addEventListener('click',()=>openEmailAccountOffer('login'));
+document.getElementById('signedOutSignup')?.addEventListener('click',()=>openEmailAccountOffer('signup'));
 document.getElementById('accountSwitchHoldRetry')?.addEventListener('click',()=>{void retryAccountCloudSync()});
 addEventListener('online',()=>updateAccountSwitchHold());addEventListener('offline',()=>updateAccountSwitchHold());
 async function refreshRankingAccount(){
