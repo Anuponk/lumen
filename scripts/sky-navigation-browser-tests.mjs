@@ -7,7 +7,6 @@ import {connectBrowser,closeBrowser,acknowledgeLearningMilestones} from './cdp-c
 import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {verifyAstronomicalRendering} from './astronomical-rendering-browser.mjs';
 import {verifySkyIssueRegressions} from './sky-issue-513-514-browser.mjs';
-import {verifyLanding} from './landing-browser.mjs';
 const {send,evaluate,errors}=await connectBrowser(),sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const url=new URL(process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/');url.searchParams.set('qa','new');
 const snapshot=()=>evaluate('lumenDiagnostics.snapshot()');
@@ -107,8 +106,7 @@ try{
   assert.doesNotMatch(await evaluate('document.getElementById("adventureNoticeTitle").textContent'),/Aventure terminée/,'An Adventure with unplayed canonical quests must not celebrate completion');
   const won=await snapshot();assert.equal(won.progress.solved[CONTENT_PACKS[0].questCount],undefined);
   await send('Page.reload',{ignoreCache:true});await sleep(500);await ready();assert.equal((await snapshot()).levelIndex,CONTENT_PACKS[0].questCount-1);assert.deepEqual((await snapshot()).progress,won.progress);
-  const landing=await verifyLanding({send,evaluate},url); // #736
-  results.push({viewport,...landing,height,pagination:[1,6,7,12,103],adventures:40,multipleSkies:true,accessPreserved:true,browsingIsolated:true,lockedAdventure:true,replay:true,completion:true,noVerticalOverflow:true,cardTextFits:true,secondaryStarsForShortfalls:true,noCrowns:true});
+  results.push({viewport,height,pagination:[1,6,7,12,103],adventures:40,multipleSkies:true,accessPreserved:true,browsingIsolated:true,lockedAdventure:true,replay:true,completion:true,noVerticalOverflow:true,cardTextFits:true,secondaryStarsForShortfalls:true,noCrowns:true});
  }
  const astronomy=await verifyAstronomicalRendering({send,evaluate},url);
  const issueRegressions=await verifySkyIssueRegressions({send,evaluate},url);

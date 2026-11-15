@@ -18,6 +18,8 @@ jobs:
     timeout-minutes: 5
     outputs:
       run_full: ${{ steps.scope.outputs.run_full }}
+      # #744: docs, landing (presentation page only) or full; empty means full.
+      scope: ${{ steps.scope.outputs.scope }}
       run_learning: ${{ steps.learning_scope.outputs.run_learning }}
     steps:
       - name: Checkout PR
@@ -30,7 +32,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Classify documentation-only pull requests
+      - name: Classify the pull request scope (documentation, presentation page or full)
         id: scope
         if: github.event_name == 'pull_request'
         env:
@@ -48,21 +50,13 @@ jobs:
             echo "Cannot classify PR diff; running full gate"
             exit 0
           fi
-          python3 - <<'PY'
-          import os
-          from pathlib import PurePosixPath
-          paths = [p for p in open('/tmp/lumen-changed-paths', encoding='utf-8').read().splitlines() if p]
-          def docs_only(path):
-              if path == 'AGENTS.md':
-                  return True
-              return path.startswith('docs/') and path.endswith('.md') and not path.startswith('docs/validation/')
-          if paths and all(docs_only(p) for p in paths):
-              with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-                  output.write('run_full=false\n')
-              print('Documentation-only PR: full runtime gate not needed; documentation CI remains separate')
-          else:
-              print('Code, workflow, generated files, or unknown scope: run full gate')
-          PY
+          # #744: classify with the BASE version of the script, so a pull request can never
+          # loosen its own scope; a base without the script keeps the full gate.
+          if git show "$BASE_SHA:scripts/ci-scope.mjs" > /tmp/ci-scope.mjs 2>/dev/null; then
+            node /tmp/ci-scope.mjs /tmp/lumen-changed-paths
+          else
+            echo "Scope classifier absent from the base; running the full gate"
+          fi
 
       - name: Select learning browser coverage
         id: learning_scope
@@ -134,20 +128,25 @@ jobs:
         run: node scripts/android-offline-preflight.mjs
 
       - name: Complete cloud profile backup regression
+        if: needs.prepare.outputs.scope != 'landing'
         run: node scripts/cloud-profile-tests.mjs
 
       - name: Cross-device cloud persistence regression matrix
+        if: needs.prepare.outputs.scope != 'landing'
         run: node scripts/cloud-regression-matrix-tests.mjs
 
       - name: Guest save migration recovery regression
+        if: needs.prepare.outputs.scope != 'landing'
         run: node scripts/guest-transfer-tests.mjs
 
       - name: OAuth redirect regression
+        if: needs.prepare.outputs.scope != 'landing'
         run: node scripts/oauth-return.test.mjs
 
       - name: Unified quality gate (Node)
         env:
           LUMEN_VALIDATION_DIR: ${{ runner.temp }}/lumen-validation
+          LUMEN_QUALITY_SCOPE: ${{ needs.prepare.outputs.scope || 'full' }}
         run: node scripts/quality-gate.mjs --node-only
       - name: Upload Node timing report
         if: always()
@@ -184,6 +183,7 @@ jobs:
           LUMEN_BROWSER_WORKERS: '2'
           LUMEN_VALIDATION_DIR: ${{ runner.temp }}/lumen-validation
           LUMEN_RUN_LEARNING_BROWSER: ${{ needs.prepare.outputs.run_learning }}
+          LUMEN_QUALITY_SCOPE: ${{ needs.prepare.outputs.scope || 'full' }}
         run: node scripts/quality-gate.mjs --browser-shard=${{ matrix.shard }}/3
       - name: Upload browser reports
         if: always()

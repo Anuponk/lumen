@@ -9,7 +9,40 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
+  # #744: a presentation-page-only pull request skips this job; a skipped required
+  # job reports success. Pushes to main and any ambiguity keep the full job.
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      scope: ${{ steps.scope.outputs.scope }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Classify the pull request scope
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          echo "scope=full" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || -z "$BASE_SHA" || -z "$HEAD_SHA" ]]; then exit 0; fi
+          git diff --name-only --no-renames "$BASE_SHA" "$HEAD_SHA" > /tmp/lumen-changed-paths || exit 0
+          # #744: classify with the BASE version of the script, so a pull request can never
+          # loosen its own scope; a base without the script keeps the full gate.
+          if git show "$BASE_SHA:scripts/ci-scope.mjs" > /tmp/ci-scope.mjs 2>/dev/null; then
+            node /tmp/ci-scope.mjs /tmp/lumen-changed-paths
+          else
+            echo "Scope classifier absent from the base; running the full gate"
+          fi
   reconciliation:
+    needs: scope
+    if: needs.scope.outputs.scope != 'landing'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

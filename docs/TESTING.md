@@ -2182,6 +2182,30 @@ The full quality suite runs on pull requests. After a squash merge, the publishe
   - structured data, image sizes and the 1200×630 JPEG;
   - `robots.txt` (only `/admin/` is excluded; code and styles stay crawlable) and `sitemap.xml`;
   - the presence of the new files in both release scripts and in `o2switch-deploy-tests.py`.
-- `scripts/landing-browser.mjs`, called by `sky-navigation-browser-tests.mjs` at 360, 390 and 1440 px: images load, the « Jouer » button is reachable, nothing overflows horizontally, no executable script runs, and the structured data parses.
+- `scripts/landing-browser-tests.mjs` (browser inventory, report `ci-landing.json`) runs `scripts/landing-browser.mjs` at 360, 390 and 1440 px: images load, the « Jouer » button is reachable, nothing overflows horizontally, no executable script runs, and the structured data parses.
 - Visuals: `node scripts/landing-assets.mjs` with a served app and `LUMEN_CDP_URL` (QA mode, synthetic progress).
 - Owner after deployment: Google Search Console (sitemap), the Rich Results Test and the Open Graph preview.
+
+## CI scope: presentation page only (#744)
+
+`scripts/ci-scope.mjs` classifies each pull-request diff.
+- **The CI always runs the copy from the base commit**, so a PR cannot loosen its own scope. If the base has no script, the full gate runs.
+- **It fails closed:** an empty or unreadable diff, or any unknown path, means `full`.
+
+| Scope | Files changed (all of them) | What runs |
+|---|---|---|
+| `docs` | `docs/**/*.md` (outside `docs/validation/`) and `AGENTS.md` | Unchanged rule: `node` and `browser` jobs skipped |
+| `landing` | `decouvrir.html`, `robots.txt`, `sitemap.xml`, `src/landing/*`, the `scripts/landing-*.mjs` files, with or without docs | Formatting and o2switch release tests; `landing-seo-tests`; `landing-browser-tests` on shard 1 |
+| `full` | Anything else, e.g. `index.html`, `sw.js`, `src/` outside `landing`, release scripts, workflows, `ci-scope.mjs` | Everything |
+
+**What `landing` skips:** the other Node suites, the cloud steps, browser shards 2 and 3, and the `ledger-sql` and `reconciliation` jobs.
+
+**Mechanics:**
+- `prepare` (`quality.yml`) exposes `scope`, and `LUMEN_QUALITY_SCOPE` reaches `quality-gate.mjs` in both the `node` and `browser` jobs.
+- `selectQualityPlan` (`quality-gate-browser-suites.mjs`) puts the page suite alone on shard 1. It rejects unknown scopes.
+- `canonical-ledger.yml` and `cloud-reconciliation-matrix.yml` each have a `scope` job. Their required job is skipped for `landing`; a skipped required job reports success.
+- Pushes to `main` always run everything.
+
+**Tests:**
+- `scripts/ci-scope-tests.mjs` (quality gate): classification, fail-closed CLI and wiring.
+- `quality-gate-shards-tests.mjs`: the landing plan.
