@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {acknowledgeLearningMilestones} from './cdp-client.mjs';
+import {acknowledgeLearningMilestones,PENDING_VICTORY_SHOWN} from './cdp-client.mjs';
 
 // Runs inside the existing isolated account browser suite. Auth/RPC are fully
 // simulated; real DOM, native modules, localStorage and IndexedDB are exercised.
@@ -85,13 +85,13 @@ export async function verifyWalletAndOfflineFlow({send,evaluate,navigate,url}){
   await evaluate('__offlineVictory=true');
   const solve=`(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`;
   await evaluate(solve);
-  await until(`document.getElementById('successOverlay').classList.contains('show')&&document.getElementById('successSub').textContent.includes('en attente')`);
+  await until(PENDING_VICTORY_SHOWN);
   assert.equal(await evaluate(`!!document.getElementById('cloudRewardPending')`),false);
   assert.equal(await evaluate('__walletServer.profile.solved[20]||false'),false,'A pending animation is not a server reward');
-  await click('successNew');await until('lumenDiagnostics.snapshot().levelIndex===21');
+  await click('skyRevealNext');await until('lumenDiagnostics.snapshot().levelIndex===21');
   await evaluate(`document.getElementById('attemptMask').click()`);await evaluate(solve);
-  await until(`document.getElementById('successOverlay').classList.contains('show')&&document.getElementById('successSub').textContent.includes('en attente')`);
-  await click('successRetry');
+  await until(PENDING_VICTORY_SHOWN);
+  await click('skyRevealSyncRetry');
   await until('__walletServer.legacy.length===2');
   await until(`document.getElementById('authUser').textContent==='Progression synchronisée'`);
   assert.equal(await evaluate(`document.getElementById('cloudSyncStatus')?.hidden!==false`),true,'Restart must not recapture an acknowledged victory as pending');

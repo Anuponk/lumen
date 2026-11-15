@@ -5,7 +5,7 @@ const offlineReadyMarker=fs.readFileSync(new URL('../sw.js',import.meta.url),'ut
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
-import {connectBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
+import {connectBrowser,navigateAndWait,acknowledgeLearningMilestones,PENDING_VICTORY_SHOWN} from './cdp-client.mjs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 const {send,evaluate,errors}=await connectBrowser();
 let offlineAssets=false;
@@ -192,10 +192,10 @@ try{
    assert.equal(await evaluate(`lumenDiagnostics.snapshot().progress.shards`),3,'Offline aid reserves funds without changing the confirmed profile');
   }
   await evaluate(`(()=>{document.getElementById('attemptMask').click();const d=lumenDiagnostics.snapshot();const solved=d.puz.reg.map(row=>row.map(()=>0));d.puz.sol.forEach((col,row)=>solved[row][col]=2);lumenDiagnostics.setBoard(solved)})()`);
-  await until(`document.getElementById('successOverlay').classList.contains('show')&&document.getElementById('successSub').textContent.includes('attente de confirmation')`);
+  await until(PENDING_VICTORY_SHOWN);
   const id=await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).questId`);offlineWins.push(id);
   assert.equal(await evaluate(`!!window.__profile.canonicalQuestState[${JSON.stringify(id)}]?.solved`),false,'Offline win cannot manufacture a cloud acknowledgement');
-  await evaluate(`document.getElementById('successNew').click()`);
+  await evaluate(`document.getElementById('skyRevealNext').click()`);
   await until(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).questId!==${JSON.stringify(id)}`);
  }
  const offlineNext=await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).questId`);

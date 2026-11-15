@@ -3,6 +3,9 @@
 // #695: touching a completed quest in Mon ciel opens its read-only review;
 // its Rejouer keeps the former replay entry. No-op for unfinished quests.
 export const REPLAY_FROM_REVIEW="(()=>{const r=document.getElementById('skyReveal');if(r&&!r.hidden&&r.classList.contains('quest-review'))document.getElementById('skyRevealRetry').click()})()";
+// #682 (I) / #699: a pending local victory uses the single result screen, never
+// the historical successOverlay card.
+export const PENDING_VICTORY_SHOWN="(()=>{const o=document.getElementById('skyReveal'),old=document.getElementById('successOverlay');return !!o&&!o.hidden&&o.dataset.sync==='pending'&&!old.classList.contains('show')&&document.getElementById('successSub').textContent.includes('en attente')&&!!document.getElementById('skyRevealSync')})()";
 export async function closeBrowser(send){
  try{await send('Browser.close')}
  catch(error){if(error?.message!=='CDP timeout after 15s: Browser.close')throw error;}

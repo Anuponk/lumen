@@ -31,6 +31,7 @@ window.supabase={createClient(){return {auth:{getSession:async()=>{if(navigator.
   return {data:{version:1,receipt:data,profile:data?structuredClone(window.__profile):null},error:null};
  }
  if(name==='lumen_commit_quest_command'){
+  if(window.__commitDelay)await new Promise(resolve=>setTimeout(resolve,window.__commitDelay)); // Slow 4G simulation (#682 I).
   const prior=window.__canonicalReceipts.get(args.p_operation_id);
   if(prior&&!prior.request)return {data:null,error:{code:'22023'},status:400};
   if(prior&&JSON.stringify(prior.request.facts)!==JSON.stringify(args.p_facts))return {data:null,error:{code:'22023'},status:400};

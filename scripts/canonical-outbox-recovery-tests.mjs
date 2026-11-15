@@ -355,9 +355,12 @@ test('slow canonical command shows one pending card while the command runs',asyn
  assert.equal(timers.filter(Boolean).length,0,'Slow timer cleared');
 });
 
-test('wiring: a confirmed canonical win upgrades an early pending card',()=>{
+test('wiring: a confirmed canonical win upgrades the pending single result screen in place (#682 I)',()=>{
  const source=readFileSync('src/ui/game-screen.js','utf8'),fn=functionSource(source,'celebrateCanonicalSuccess');
- assert.match(fn,/if\(earlyPendingShown\)\{\s*\/\/[^\n]*\n\s*document\.getElementById\('successOverlay'\)\.classList\.remove\('show'\);/);
+ assert.doesNotMatch(fn,/successOverlay/,'No historical overlay on the canonical victory path');
+ assert.match(fn,/const upgradeInPlace=pendingRevealOpen\(q\.id\);/);
+ assert.match(fn,/if\(!celestialPending&&!upgradeInPlace\)launchWinStar/,'The pending star animation is not replayed');
+ assert.match(fn,/if\(committed\.newlyCompleted&&!celestialPending&&!upgradeInPlace\)setTimeout\(reveal,2250\);else reveal\(\);/,'Confirmation updates the open screen immediately');
  assert.match(fn,/pendingNavigationEntries=pendingNavigationEntries\.filter\(e=>e\.operationId!==durableIntent\.operationId\)/);
  assert(fn.indexOf("recordCloudDiagnostic('victory_sync_timing'")<fn.indexOf('lumenProgress=committed.profile'),'Timing recorded at confirmation');
  const retry=functionSource(source,'retryPresentedVictory');

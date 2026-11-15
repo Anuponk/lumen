@@ -50,7 +50,16 @@ exact scope of both migrations. Adventure 1–4 protection tests compare these I
 
 Learning coach placement #687/#688: `learning-coach-placement-browser-tests.mjs` walks the quest-1 intro on a fresh guest at 320×568, 360×640 and 390×844 and requires zero overlap between the coach and the board, full coach text, a reachable « Suivant », a board of at least 180 px and (#690) one stable board size and coach reserve across every step; it then opens « Créer un compte » during a step and requires the account screen on top with the coach hidden, and the same step after closing. It fails on the previous centred intro panel (z-index 1500).
 
-Victory screen #682: `node --test scripts/victory-celebration-tests.mjs` covers the five stable reward slots, confirmed-only rank messages (no lead claim with Échos, no participant counter), graded levels and composition, the shared engine (amplify without restart or downgrade, reduced motion) and the absence of quest-number conditions. `victory-layout-browser-tests.mjs` checks on real portrait viewports (320×568, 360×640, 390×844) that a board arriving after 0, 1 or 5 s moves no zone, five badges fit one row, the three secondary actions share one row below the full-width next action, the podium is ordered 2–1–3 with decreasing heights and only the player highlighted, no counter or horizontal scroll, and no particles in reduced motion.
+Victory screen #682: `node --test scripts/victory-celebration-tests.mjs` covers the five stable reward slots, confirmed-only rank messages (no lead claim with Échos, no participant counter), graded levels and composition, the shared engine (amplify without restart or downgrade, reduced motion) and the absence of quest-number conditions. `victory-layout-browser-tests.mjs` checks on real portrait viewports (320×568, 360×640, 390×844) that a board arriving after 0, 1 or 5 s moves no zone, five badges fit one row, the three secondary actions share one row below the full-width next action, the podium is ordered 2–1–3 with decreasing heights and only the player highlighted, no counter or horizontal scroll, and no particles in reduced motion. Pending victory (#682 périmètre I, #699, #706):
+`victory-celebration-tests.mjs` checks the pending slots and the star owned on
+replay. `gameplay-domain-tests.mjs` checks that `presentPendingVictory` opens
+the single result screen and never `successOverlay`.
+`victory-pending-browser-tests.mjs` (360×640, synthetic 4 s command) checks
+that a pending result shows no credit, rank or challenge, then is confirmed in
+place with no zone moving (≤ 1 px), one grant only, and the star still owned on
+a replay. The wallet, domain-replay and campaign-resume browser flows now wait
+for the shared `PENDING_VICTORY_SHOWN` condition (`cdp-client.mjs`) and use
+the visible buttons of the single screen.
 
 Quest review #695: `node --test scripts/quest-review-tests.mjs` covers the saved badge/star
 slots (never "new"), the current-revision official time, the read-only ranking

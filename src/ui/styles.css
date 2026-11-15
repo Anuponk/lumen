@@ -1416,6 +1416,12 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .sky-reveal .victory-reward-label{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sky-reveal .victory-reward-missing{opacity:.38;filter:grayscale(.8)}
 .sky-reveal .victory-reward-owned{opacity:.85}
+/* #682 (I): local victory awaiting server confirmation; same slot geometry. */
+.sky-reveal .victory-reward-pending{opacity:.6;border-style:dashed}
+.sky-reveal .victory-podium-slot{position:relative}
+.sky-reveal .victory-sync-status{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:0 8px;text-align:center;color:#9fc4d8;font-size:13px;line-height:1.35}
+.sky-reveal .victory-sync-status p{margin:0;max-width:34ch}
+.sky-reveal .victory-sync-status button{min-height:44px;padding:0 14px;border:1px solid #35546f;border-radius:11px;background:#0f1d2e;color:#d8ecf7;font:inherit}
 .sky-reveal .victory-reward-new{border-color:#8de1ef;background:#14304a;animation:victoryRewardIn .45s cubic-bezier(.2,1.35,.35,1) var(--reward-delay,0ms) both}
 .sky-reveal .victory-reward-new.mastery{border-color:#ffd36b;box-shadow:0 0 12px rgba(255,211,107,.45)}
 @keyframes victoryRewardIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}

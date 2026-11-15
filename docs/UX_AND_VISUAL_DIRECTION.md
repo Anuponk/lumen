@@ -478,7 +478,7 @@ rules, without crediting the pending reward locally.
 The shown clock freezes at local victory detection on the official time
 (penalties included); network work never moves it, and editing the board again
 resumes it (#698). When a durably captured win is still unconfirmed after
-2.5 s, the same pending card is shown while the command continues, then
+2.5 s, the pending result is shown while the command continues, then
 upgraded in place to the confirmed celebration (#697). Pending copy stays calm:
 reconnection is requested only for an authentication hold. Existing hint prices,
 assistance teaching and badge qualification milestones remain unchanged.
@@ -540,6 +540,23 @@ Aucun compteur de joueurs (réels, virtuels ou total) n'est affiché. Les messag
 « 1re/2e/3e place ! » n'apparaissent que pour un rang confirmé par le serveur ;
 « Tu prends la tête du classement ! » seulement si aucun Écho n'est sur le podium.
 « Nouveau record ! » suit une amélioration confirmée.
+
+Victoire en attente (#682 périmètre I, #699) : une victoire locale durable dont
+le serveur n'a pas encore confirmé la commande utilise **le même écran unique**,
+jamais l'ancienne carte `successOverlay` « Quête résolue ! ». Même ordre et même
+géométrie. Le surtitre « QUÊTE RÉSOLUE » est accompagné de « Victoire conservée
+sur cet appareil ». La progression affiche l'étoile attendue en « 1 en attente ».
+Les cinq badges sont en pointillés « en attente », sauf ceux déjà confirmés.
+La tuile de rang indique « Classement après confirmation ». L'emplacement réservé
+du podium porte le statut (« confirmation cloud en attente » ou « Hors ligne ») et
+« Réessayer la sauvegarde ». « Quête suivante » et « Mon ciel » restent actifs ;
+« Défier » et « Rejouer » restent à leur place mais désactivés jusqu'à la
+confirmation. Rien n'est crédité, aucun rang ni défi n'est annoncé avant
+l'accusé serveur. À la confirmation, le même écran est mis à jour sur place,
+sans relancer l'intro ni l'animation d'étoile, sans déplacer de zone. La
+célébration ne fait que s'amplifier si le niveau monte.
+Badge Étoile (#706) : une quête accomplie possède toujours son étoile. Sur un
+rejeu ou une victoire récupérée, l'emplacement est « déjà obtenu », jamais grisé.
 
 Célébration graduée partagée (#682) : un seul moteur pour toutes les quêtes et
 rejeux, sans condition sur le numéro de quête. Niveau 1 victoire, 2 record ou
