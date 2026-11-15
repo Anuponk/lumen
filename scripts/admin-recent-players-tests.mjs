@@ -17,11 +17,12 @@ assert.match(body,/playerSnapshot\.error/);
 assert.match(body,/adminPlayers/);
 console.log('Admin recent players use live activity RPC and expose failures');
 
-const nodes=new Map(),calls=[];let directoryRows,timelineData,supportOptions,dashboardInput;
+const nodes=new Map(),calls=[];let directoryRows,timelineData,supportOptions,adventureOptions,dashboardInput;
 const document={getElementById(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',value:7,insertAdjacentHTML(){}});return nodes.get(id)},querySelectorAll(){return []}};
 const context={document,Date,Intl,Math,Number,String,adminEsc:String,adminNumber:String,registeredPlayers,analyticsPlayers,
  buildAnalyticsDashboard:input=>{dashboardInput=input;return input},renderAnalyticsDashboard:()=>{},adminCanonicalCatalogueTree:()=>[],
  mountSupportDossier:(_host,options)=>{supportOptions=options},
+ mountAdventureAccess:(_host,options)=>{adventureOptions=options},CONTENT_PACKS:[{id:'base-real-sky',access:'included'},{id:'real-adventure-02',access:'locked'}],
  rememberSessionExpansion:()=>{},renderPlayerDirectory:(_host,rows)=>{directoryRows=rows},renderPlayerSessions:(_host,data)=>{timelineData=data},
  lumenUser:{id:'fixture-admin'},hasInternalCapability:()=>true,buildIncidentInvestigation,incidentAlerts,renderIncidentInvestigation:()=>{},
  lumenSupabase:{async rpc(name,args){calls.push(name);if(name==='lumen_admin_quest_metrics')return {data:{friction:[{stable_quest_id:'new-grid',quest_ordinal:91,started:4,completed:1}],funnel:[],current_players:{'u:actor':91}}};if(name==='lumen_admin_accounts')return {data:[{user_id:'actor',current_quest:1,nickname:' ',email:'sans.pseudo@example.invalid'}]};if(name==='lumen_admin_recent_players')return {data:[{player_key:'a:guest',player_type:'anonymous',display_name:'Joueur 3E8B'},{player_key:'u:actor',player_type:'authenticated',current_quest:1}]};if(name==='lumen_admin_player_observations'){assert.deepEqual(Array.from(args.p_player_keys),['u:actor']);return {data:{players:{}}}}if(name==='lumen_admin_player_sessions')return {data:{analytics:[{event_name:'attempt_started',quest_ordinal:91,puzzle_id:null}],diagnostics:[]}};return {data:name==='lumen_admin_cockpit'?{}:[]}}}};
@@ -39,9 +40,12 @@ assert.equal(dashboardInput.quests.friction[0].quest_ordinal,91,'Quest evidence 
 await context.loadAdminTimeline('u:actor');
 assert.equal(timelineData.analytics[0].quest_ordinal,91);
 assert.equal(supportOptions.owner,'fixture-admin');assert.equal(supportOptions.target,'actor');assert.equal(supportOptions.authorized(),true);
+// #724: the Adventure access panel receives the same owner, player and revocable authorization, and the catalogue packs.
+assert.equal(adventureOptions.owner,'fixture-admin');assert.equal(adventureOptions.target,'actor');assert.equal(adventureOptions.authorized(),true);assert.equal(adventureOptions.packs,context.CONTENT_PACKS);
 assert(calls.includes('lumen_admin_quest_metrics')&&calls.includes('lumen_admin_player_sessions'));
 const timeline=nodes.get('adminTimeline');timeline.cockpitPlayer='a:guest';timeline.cockpitRequest={};
 assert.equal(supportOptions.authorized(),false,'Changing the selected request revokes support actions');
+assert.equal(adventureOptions.authorized(),false,'#724: changing the selected player revokes Adventure actions');
 await context.loadAdminCockpit();assert.equal(timeline.cockpitPlayer,null);assert.equal(timeline.cockpitRequest,null);
 assert.match(timeline.textContent,/inscrit/,'A previously selected anonymous timeline is cleared');
 

@@ -109,6 +109,12 @@ Browsing another Adventure never changes gameplay state. Loading/continuation mu
 
 Authenticated internal administrators with the server-provided `analytics_cockpit` or `all_adventures_access` capability may browse and enter every catalogued Adventure, including locked packs, without creating a purchase entitlement or persisting access into player progress. QA guest sessions never receive this override. Ordinary players retain the existing access policy. This exception affects pack access only: sequential quest progression and rewards remain governed by their existing rules.
 
+## Admin Adventure grants (#724)
+
+An internal administrator (`analytics_cockpit`, checked by the server) can grant or revoke a locked Adventure for one player from Analytics › player detail › « Aventures débloquées ». The server RPC `lumen_admin_adventure_access` validates the capability, the player and the Adventure id (`real-adventure-NN`, never the included first Adventure), requires a reason, and writes `lumen.entitlements` with source `admin`; each actual change is recorded in `lumen_commands.adventure_access_audit`. Retries are idempotent and not re-audited. The player reads the new state through `lumen_get_entitlements` at the next app start or sign-in.
+
+Revocation expires the entitlement (`expires_at`); it never deletes progress, stars, badges or receipts, and an Adventure already started stays playable through the acquired-access policy above. The panel lists the catalogue's locked packs (`CONTENT_PACKS`, no hardcoded count) and shows only the state returned by the server. Payment is out of scope (#725) and will reuse the same entitlement table.
+
 ## Bonus quests
 After the reviewed historical-command migration, authenticated victories apply
 the existing `legacy-victory.js` rules on the server. Guests and explicitly older
