@@ -20,6 +20,8 @@ export function createCelestialCelebration(document){
   document.getElementById('skyRevealFeedback').hidden=true;
   const bind=(id,action)=>{const b=document.getElementById(id);b.hidden=!action;b.disabled=!!action?.disabled;b.classList.toggle('remarkable',!!action?.remarkable);if(action){b.textContent=action.label;b.onclick=action.run}};
   bind('skyRevealNext',primary);bind('skyRevealSky',secondary);bind('skyRevealRetry',review);bind('skyRevealShare',share);
+  // #705: explain a challenge only where one is offered; restore() puts it back.
+  if(!share)document.getElementById('skyRevealChallengeReason').hidden=true;
   const key=e=>{if(e.key==='Tab'){const buttons=[...card.querySelectorAll('button')].filter(b=>!b.hidden&&!b.disabled&&b.getClientRects().length);const i=buttons.indexOf(document.activeElement);e.preventDefault();buttons[(i+(e.shiftKey?-1:1)+buttons.length)%buttons.length]?.focus()}};
   host.addEventListener('keydown',key);cleanup=()=>{host.removeEventListener('keydown',key);restore()};
   return true;

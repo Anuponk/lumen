@@ -626,6 +626,8 @@ tap de la surface pour accélérer et retour à Mon ciel. Aucun tutoriel ni règ
 
 Le panorama existant annonce « Une aventure pleinement maîtrisée » avec une lumière dorée discrète ; Mon ciel conserve un fond doré rempli, ✦ et le libellé visible et accessible « Maîtrisée » sur l’aventure. Le fond reste doré quand une autre aventure est sélectionnée ; un bord cyan indique la sélection, indépendamment de la maîtrise. Les aventures simplement terminées conservent leur aspect habituel. Le marqueur reste statique après rechargement. Une seule scène apparaît lorsque les seuils coïncident. Clavier, tap de la surface, mouvement réduit et retour à Mon ciel restent disponibles.
 
+Fin d’aventure (#705) : les célébrations de constellation, d’aventure et de ciel n’offrent plus « Revoir mon aventure », qui doublait la navigation vers Mon ciel. Un seul retour au ciel reste proposé (« Admirer mon ciel », ou « Mon ciel » à côté de « Découvrir l’aventure suivante »). L’explication d’indisponibilité d’un défi n’apparaît que si un défi est proposé. Sur téléphone (360×640, 390×844), tout l’écran tient sans défilement vertical : sous 700 px de hauteur, les espacements, le titre, le récapitulatif et le panorama sont resserrés. La hauteur de la carte tient compte des zones de sécurité iOS/Android.
+
 Impact onboarding #627/#629/#632 : les règles, tarifs et seuils pédagogiques restent inchangés. Le glissement devient continu ; les aides hors ligne respectent les preuves et réservations existantes. Aucun nouvel enseignement nécessaire.
 
 ## Victoire et podium compact

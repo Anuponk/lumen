@@ -1158,7 +1158,9 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
    available; narrative copy follows the storyboard without layout changes. */
 .sky-reveal[data-celestial]{z-index:2100}
 .sky-reveal[data-celestial] [hidden]{display:none!important}
-.sky-reveal[data-celestial] .sky-reveal-card{display:flex;flex-direction:column;gap:8px;width:min(94vw,840px);max-height:calc(100dvh - 24px);padding:20px;overflow:auto}
+.sky-reveal[data-celestial] .sky-reveal-card{display:flex;flex-direction:column;gap:8px;width:min(94vw,840px);max-height:calc(100dvh - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));padding:20px;overflow:auto}
+/* #705: phones (360x640 and up) show the whole celebration and its CTA without scrolling. */
+@media(max-height:700px){#skyReveal[data-celestial] .sky-reveal-card{gap:5px}#skyReveal[data-celestial] .sky-reveal-title{font-size:20px}#skyReveal[data-celestial] .celestial-summary{font-size:11px;line-height:1.35}#skyReveal[data-celestial] .celestial-panorama{max-height:34dvh;min-height:90px}}
 .sky-reveal[data-celestial] .sky-reveal-title{font-size:clamp(20px,3.3vw,32px);line-height:1.15;margin:0}
 .sky-reveal[data-celestial] .sky-reveal-name{font-size:clamp(12px,2vw,16px);line-height:1.4;margin:0 auto;max-width:580px}
 .sky-reveal[data-celestial] #skyRevealTitle,.sky-reveal[data-celestial] #skyRevealName,.sky-reveal[data-celestial] .celestial-summary{animation:celestial-conclusion 4s both}

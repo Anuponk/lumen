@@ -10,8 +10,9 @@ const url=new URL(process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/');url.sear
 async function until(expr){for(let i=0;i<160;i++){if(await evaluate(expr))return;await new Promise(r=>setTimeout(r,80))}throw Error('Timed out '+expr)}
 try{
  await send('Page.enable');await send('Runtime.enable');
- for(const width of [320,390,1440])for(const pack of [CONTENT_PACKS[0],CONTENT_PACKS.at(-1)]){
-  await send('Emulation.setDeviceMetricsOverride',{width,height:width===320?568:900,mobile:width<600,deviceScaleFactor:1});
+ // #705: target phone sizes 360x640 and 390x844 must fit without vertical scroll.
+ for(const [width,height] of [[320,568],[360,640],[390,844],[1440,900]])for(const pack of [CONTENT_PACKS[0],CONTENT_PACKS.at(-1)]){
+  await send('Emulation.setDeviceMetricsOverride',{width,height,mobile:width<600,deviceScaleFactor:1});
   const reduced=width===390;await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:reduced?'reduce':'no-preference'}]});
   const q=all.filter(q=>q.packId===pack.id).at(-1),p={catalogueOrigin:3,badges:{},stars:{},challenges:{},solved:{},performances:{},canonicalQuestState:{},shards:7,xp:123,legacyAdventureAccess:CONTENT_PACKS.map(p=>p.id),autoCrossUnlockSeen:1,fullBadgeIntroSeen:1};
   for(const x of all){const badges=x.packId===pack.id?{autonomy:true,speed:true,noError:true,mastery:true}:{};if(x.legacyIndex===null)p.canonicalQuestState[x.id]={solved:true,badges,stars:1};else{p.solved[x.legacyIndex]=1;p.performances[x.legacyIndex]={version:3,badges}}}
@@ -29,6 +30,10 @@ try{
   assert.match(await evaluate("document.getElementById('skyRevealTitle').textContent"),/aventure pleinement maîtrisée/);
   assert.equal(await evaluate("document.getElementById('skyReveal').classList.contains('celestial-still')"),reduced);
   assert.equal(await evaluate("document.documentElement.scrollWidth<=innerWidth"),true);
+  const fit=await evaluate(`(()=>{const o=document.getElementById('skyReveal'),card=o.querySelector('.sky-reveal-card'),buttons=[...card.querySelectorAll('button')].filter(b=>!b.hidden&&b.getClientRects().length);return {labels:buttons.map(b=>b.textContent.trim()),hostScroll:o.scrollHeight-o.clientHeight,cardScroll:card.scrollHeight-card.clientHeight,lowest:Math.max(...buttons.map(b=>Math.round(b.getBoundingClientRect().bottom))),height:innerHeight}})()`);
+  assert(!fit.labels.some(l=>/Revoir mon aventure/.test(l)),'#705: no redundant review CTA '+JSON.stringify(fit));
+  if(width>=360&&width<600)assert(fit.hostScroll<=1&&fit.cardScroll<=1&&fit.lowest<=height,'#705: the whole mastery screen fits without vertical scroll '+JSON.stringify({width,height,fit}));
+  results.push({width,height,fit});
   await evaluate("document.getElementById('skyRevealTitle').click()");
   if(width===390){const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(`docs/validation/adventure-mastery-${pack.id}.png`,Buffer.from(shot.data,'base64'))}
   await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});
