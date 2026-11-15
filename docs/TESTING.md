@@ -1734,7 +1734,9 @@ Attempt analytics must use the attempt engine active duration and stable `attemp
 
 
 ### Quality gate orchestration rule
-Do not duplicate browser/server setup in GitHub Actions. Add new mandatory suites to `scripts/quality-gate.mjs` so local and CI execution stay identical.
+Do not duplicate browser/server setup in GitHub Actions. Add new mandatory browser suites to `scripts/quality-gate-browser-suites.mjs`, consumed by `scripts/quality-gate.mjs`, so local and CI execution share one inventory. Node membership remains in `scripts/quality-gate-suites.mjs`.
+
+The PR workflow runs Node checks and three browser partitions concurrently, retaining two browser workers per runner and all existing assertions. The final required `quality` job rejects failed, cancelled, missing or unexpectedly skipped dependencies. Documentation-only classification and optional learning selection keep their existing rules. `node scripts/quality-gate.mjs` still runs the full local gate; `--node-only` and `--browser-shard=1/3` (also `2/3`, `3/3`) run the CI partitions. Run `node scripts/quality-gate-shards-tests.mjs` and `node scripts/quality-gate-pool-tests.mjs` after orchestration edits. See [CI efficiency](CI_EFFICIENCY.md) for reports, baseline and measurement limits. No gameplay or onboarding contract changes.
 
 
 ## Difficulty audit (#81)

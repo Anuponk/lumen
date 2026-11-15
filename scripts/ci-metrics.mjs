@@ -18,7 +18,11 @@ export function summarize(snapshot) {
  const prs={};
  for(const run of completed) {
   const name=workflow(run),jobs=run.jobs||[];
-  const reuse=jobs.some(job=>job.steps.some(step=>step.name==='Unified quality gate'&&step.conclusion==='skipped'));
+  const reuse=jobs.some(job=>job.steps.some(step=>step.name==='Unified quality gate'&&step.conclusion==='skipped'))
+   || (jobs.some(job=>job.name==='prepare'&&job.conclusion==='success')
+    && jobs.some(job=>job.name==='node'&&job.conclusion==='skipped')
+    && jobs.some(job=>job.name==='browser'&&job.conclusion==='skipped')
+    && jobs.some(job=>job.name==='quality'&&job.conclusion==='success'));
   const key=[name,run.event,reuse?'reused':'executed',run.conclusion].join('/');
   const group=groups[key]||={runs:0,attempts:0,durations:[],jobSeconds:[],jobsObserved:0};
   group.runs++;group.attempts+=run.attempt;

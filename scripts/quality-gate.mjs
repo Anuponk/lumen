@@ -6,11 +6,12 @@ import {spawn,spawnSync} from "node:child_process";
 import {fileURLToPath} from "node:url";
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
-const validationDir=path.join(root,"docs","validation");
+const validationDir=path.resolve(process.env.LUMEN_VALIDATION_DIR||path.join(root,"docs","validation"));
 fs.mkdirSync(validationDir,{recursive:true});
 // A failed suite must not upload JSON left in the checkout by a previous run.
-for(const name of ['browser','ux','learning','late-game','sky-navigation','account-session','canonical-replay','campaign-resume','pwa-update','incident-investigation','analytics-admin','ux-lot','first-welcome','personal-records','adventure-05','iau-completion','iau-completion-cloud','offline-hint','offline-hint-network','drag-cascade','adventure-mastery','cloud-reset','sky-return','quality-summary'])
- fs.rmSync(path.join(validationDir,`ci-${name}.json`),{force:true});
+for(const output of [...browserSuites.map(s=>s.output),'ci-quality-summary.json'])
+ fs.rmSync(path.join(validationDir,output),{force:true});
+import {browserSuites,selectQualityPlan} from './quality-gate-browser-suites.mjs';
 import {nodeSuites} from "./quality-gate-suites.mjs";
 import {runPool} from "./quality-gate-pool.mjs";
 
@@ -98,7 +99,7 @@ async function startChrome(port){
 async function runBrowser(script,output,port){
  const chrome=await startChrome(port);
  try{
-  await run(process.execPath,[path.join("scripts",script),path.join("docs","validation",output)],{
+  await run(process.execPath,[path.join("scripts",script),path.join(validationDir,output)],{
    env:{...process.env,LUMEN_TEST_URL:"http://127.0.0.1:"+(process.env.LUMEN_TEST_PORT||8000)+"/",LUMEN_CDP_URL:"http://127.0.0.1:"+port},
    label:script
   });
@@ -108,54 +109,24 @@ async function cleanup(){
  while(started.length){const fn=started.pop();try{await fn()}catch(_){}}
 }
 let failed=null;
+let plan=null;
 try{
+ plan=selectQualityPlan(process.argv.slice(2));
  const workers=Number(process.env.LUMEN_BROWSER_WORKERS||1);
  if(![1,2].includes(workers))throw Error("LUMEN_BROWSER_WORKERS must be 1 or 2");
  console.log("LUMEN quality gate — Node "+process.version+" — "+process.platform);
- for(const suite of nodeSuites)await run(process.execPath,[path.join("scripts",suite)],{label:suite});
- await startServer();
- // Longest-first scheduling based on successful run 43068159283 (2026-11-11).
- // All browser suites, ports and reports are retained; only order changes.
- await runPool([
-  ()=>runBrowser("sky-navigation-browser-tests.mjs","ci-sky-navigation.json",9226),
-  ...(process.env.LUMEN_RUN_LEARNING_BROWSER === "false" ? [] : [()=>runBrowser("learning-browser-tests.mjs","ci-learning.json",9224)]),
-  ()=>runBrowser("account-session-browser-tests.mjs","ci-account-session.json",9230),
-  ()=>runBrowser("browser-tests.mjs","ci-browser.json",9222),
-  ()=>runBrowser("iau-completion-browser-tests.mjs","ci-iau-completion.json",9240),
-  ()=>runBrowser("first-welcome-browser-tests.mjs","ci-first-welcome.json",9237),
-  ()=>runBrowser("canonical-replay-browser-tests.mjs","ci-canonical-replay.json",9227),
-  ()=>runBrowser("campaign-resume-browser-tests.mjs","ci-campaign-resume.json",9231),
-  ()=>runBrowser("ux-lot-browser-tests.mjs","ci-ux-lot.json",9236),
-  ()=>runBrowser("late-game-browser-tests.mjs","ci-late-game.json",9225),
-  ()=>runBrowser("ranking-browser-tests.mjs","ci-ranking.json",9252),
-  ()=>runBrowser("official-time-browser-tests.mjs","ci-official-time.json",9253),
-  ()=>runBrowser("victory-layout-browser-tests.mjs","ci-victory-layout.json",9254),
-  ()=>runBrowser("victory-pending-browser-tests.mjs","ci-victory-pending.json",9257),
-  ()=>runBrowser("account-switch-browser-tests.mjs","ci-account-switch.json",9258),
-  ()=>runBrowser("analytics-admin-browser-tests.mjs","ci-analytics-admin.json",9259),
-  ()=>runBrowser("admin-preview-browser-tests.mjs","ci-admin-preview.json",9260),
-  ()=>runBrowser("learning-coach-placement-browser-tests.mjs","ci-learning-coach.json",9255),
-  ()=>runBrowser("quest-review-browser-tests.mjs","ci-quest-review.json",9256),
-  ()=>runBrowser("adventure-mastery-browser-tests.mjs","ci-adventure-mastery.json",9245),
-  ()=>runBrowser("adventure-05-browser-tests.mjs","ci-adventure-05.json",9239),
-  ()=>runBrowser("sky-return-browser-tests.mjs","ci-sky-return.json",9251),
-  ()=>runBrowser("offline-hint-network-browser-tests.mjs","ci-offline-hint-network.json",9243),
-  ()=>runBrowser("offline-hint-purchase-browser-tests.mjs","ci-offline-hint.json",9242),
-  ()=>runBrowser("ux-cleanup-tests.mjs","ci-ux.json",9223),
-  ()=>runBrowser("drag-cascade-browser-tests.mjs","ci-drag-cascade.json",9244),
-  ()=>runBrowser("cloud-reset-browser-tests.mjs","ci-cloud-reset.json",9250),
-  ()=>runBrowser("service-worker-update-browser-tests.mjs","ci-pwa-update.json",9232),
-  ()=>runBrowser("iau-completion-cloud-browser-tests.mjs","ci-iau-completion-cloud.json",9241),
-  ()=>runBrowser("incident-investigation-browser-tests.mjs","ci-incident-investigation.json",9235),
-  ()=>runBrowser("personal-records-browser-tests.mjs","ci-personal-records.json",9238),
- ],workers);
+ if(plan.phase!=='browser')for(const suite of nodeSuites)await run(process.execPath,[path.join('scripts',suite)],{label:suite});
+ if(plan.phase!=='node'){
+  await startServer();
+  await runPool(plan.suites.map(({script,output,port})=>()=>runBrowser(script,output,port)),workers);
+ }
 }catch(error){failed=error;console.error("\nQUALITY GATE FAILED:",error.message)}
 finally{
  await cleanup();
  console.log("\nQuality summary");
  for(const item of summary)console.log((item.ok?"✓":"✗"),item.label,item.seconds+"s");
  console.log("Total",Math.round((Date.now()-startedAt)/100)/10+"s");
- const report={schema:1,kind:"quality",at:new Date().toISOString(),sha:process.env.GITHUB_SHA||null,
+ const report={schema:1,kind:"quality",phase:plan?.phase||null,shard:plan?.shard||null,at:new Date().toISOString(),sha:process.env.GITHUB_SHA||null,
   platform:process.platform,node:process.version,browserWorkers:Number(process.env.LUMEN_BROWSER_WORKERS||1),
   seconds:(Date.now()-startedAt)/1000,ok:!failed,error:failed?.message||null,suites:summary};
  fs.writeFileSync(path.join(validationDir,"ci-quality-summary.json"),JSON.stringify(report,null,2)+'\n');

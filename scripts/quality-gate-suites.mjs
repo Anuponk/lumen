@@ -1,4 +1,5 @@
 export const nodeSuites=[
+ 'quality-gate-shards-tests.mjs',
  'analytics-dashboard-tests.mjs',
  'analytics-navigation-tests.mjs',
  'landing-seo-tests.mjs',

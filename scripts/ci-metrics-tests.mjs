@@ -27,6 +27,17 @@ test('missing durations stay unavailable, not zero; multi-job wall time differs 
  assert.equal(group.jobSeconds.mean,120);
  assert.equal(summarize({runs:[run(1,'push',{jobs:[]})]}).groups['quality.yml/push/executed/success'].executionSeconds.mean,null);
 });
+
+test('documentation-only sharded quality is excluded from executed runtime timings',()=>{
+ const jobs=[['prepare','success'],['node','skipped'],['browser','skipped'],['quality','success']]
+  .map(([name,conclusion])=>({...job('2026-11-15T00:00:00Z','2026-11-15T00:00:05Z'),name,conclusion}));
+ const report=summarize({runs:[run(1,'pull_request',{jobs})]});
+ assert.equal(report.groups['quality.yml/pull_request/reused/success'].runs,1);
+ for(const conclusion of ['failure','cancelled']){
+  const failed=jobs.map(j=>j.name==='quality'?{...j,conclusion}:j);
+  assert.equal(summarize({runs:[run(1,'pull_request',{jobs:failed,conclusion})]}).groups[`quality.yml/pull_request/executed/${conclusion}`].runs,1);
+ }
+});
 test('invalid collection bounds fail before network access',async()=>{
  await assert.rejects(collect({pages:0}));
  await assert.rejects(collect({repository:'other/repo'}));
