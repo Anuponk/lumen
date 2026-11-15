@@ -30,6 +30,12 @@ QA tools remain available in their existing menu for B2. No observations,
 retention, support permission or repair action is added. Physical acceptance
 and final tool parity remain pending.
 
+The [#708 lot A audit](ANALYTICS_708.md) maps every current cockpit function to
+the proposed unified Analytics administration, including sessions, incident
+reports, private support, QA tools and the pending #716 preview. No operational
+reader, consent, retention, save contract or production state changes in this
+documentation-only proposal. Existing acceptance limits below remain applicable.
+
 ## Registered-player directory (25 October 2026)
 
 Player cards now show a compact visual status: green `✓ Sans attente observée`,
