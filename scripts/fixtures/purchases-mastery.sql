@@ -104,7 +104,10 @@ do $$declare p uuid:='00000000-0000-0000-0000-000000072801';solved jsonb;perf js
   values(p,1,jsonb_build_object('solved',solved,'performances',perf,'stars','{}'::jsonb,'noHint','{}'::jsonb,'challenges','{}'::jsonb,'autonomousWins',0))
   on conflict(user_id) do update set projection=excluded.projection;
  insert into lumen_commands.quest_run_authority(user_id,quest_id,projection)
-  select p,q.quest_id,jsonb_build_object('solved',true,'badges',all_badges) from lumen_commands.quest_packs q
+  -- Production shape (#728 fix): a won run with badges but no "solved" key still counts.
+  select p,q.quest_id,case when q.quest_id=(select min(quest_id) from lumen_commands.quest_packs where pack_id='base-real-sky' and legacy_index is null)
+   then jsonb_build_object('badges',all_badges,'runPerformance',jsonb_build_object('time',30,'badges',all_badges))
+   else jsonb_build_object('solved',true,'badges',all_badges) end from lumen_commands.quest_packs q
   where q.pack_id='base-real-sky' and q.legacy_index is null
   on conflict(user_id,quest_id) do update set projection=excluded.projection;
  update lumen_commands.quest_run_authority set projection=jsonb_set(projection,'{badges,speed}','false'::jsonb)

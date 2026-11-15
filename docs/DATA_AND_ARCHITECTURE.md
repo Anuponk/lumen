@@ -159,6 +159,7 @@ Migration `20261115200000_purchases_mastery_store_728.sql` (idempotent; producti
 - **Purchase ledger** (`purchases` unique by provider and provider reference; `purchase_events` for status history). It is written only by `lumen_commands.record_purchase`, executable by `service_role` alone: the future Play/Stripe verifiers (#729/#730). It is idempotent, rejects identity changes, and allows paid ↔ refunded/disputed transitions. Players cannot read or write it.
 - **Entitlement convergence:** `purchase` rows follow the ledger. `admin` and `mastery` rows are never expired by it. Advisory locks: 728 per player, 724 per player and Adventure, shared with #724.
 - **Privacy:** `purchases` and `purchase_events` are `delete` by `user_id` in `lumen_privacy.policy()`; the seed tables are `retain-rule`. Accounting records stay with the payment provider; confirm the retention duties in #732.
+- **Mastery completion fix** (`20261115210000_mastery_completion_fix_728.sql`): `adventure_mastery` counts a canonical quest as completed when its `quest_run_authority` projection is `solved` or records a won run (`runPerformance`). 49 production projections have no `solved` key. The function remains read-only; the badge requirement is unchanged.
 
 ## Admin Adventure grants — #724
 
