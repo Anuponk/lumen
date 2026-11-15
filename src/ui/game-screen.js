@@ -4130,7 +4130,8 @@ function showCelestialVictory(){
  const shown=celestialCelebration.show({kind:event.kind,title:mastery?(campaign?'Le ciel pleinement maîtrisé':'Une aventure pleinement maîtrisée'):campaign?'Le ciel est réuni':adventure?'Aventure accomplie':(entry?.label||q.constellationId)+' brille à nouveau !',
   copy:campaign?(pack?.narrative||'Toutes les lumières du voyage se répondent désormais.'):adventure?(pack?.narrative||'Chaque étoile retrouvée a repoussé l’obscurité. Ensemble, elles ont redonné vie à ce ciel.'):'Une nouvelle lumière a retrouvé sa place dans le ciel.',
   summary:(mastery?'Toutes les quêtes et tous les badges disponibles sont accomplis. ':campaign?'Toutes les quêtes sont terminées. Les badges restent à explorer. ':'')+count+`${summary.completed}/${summary.total} quêtes · ${summary.stars} étoiles · `+badgeText,art,primary,
-  secondary:next?{label:'✦ Mon ciel',run:leave(sky)}:null,review:adventure?{label:'Revoir mon aventure',run:leave(()=>openJourneyMap(false,{constellationId:q.constellationId,detail:false}))}:null,
+  // #705: no « Revoir mon aventure »: it duplicated the sky navigation below the fold.
+  secondary:next?{label:'✦ Mon ciel',run:leave(sky)}:null,review:null,
   share:challenge&&!challenge.hidden?{label:'➤ Défier',disabled:challenge.disabled,remarkable:challenge.classList.contains('remarkable'),run:()=>challenge.click()}:null});
  if(shown){adventurePending=null;endgamePending=false;if(event.kind==='campaign'){try{localStorage.setItem(endgameSeenKey(),'1')}catch(_){}trackLumenEvent('campaign_completed',null,{content_quests:summary.total,constellations:new Set(quests.map(x=>x.constellationId)).size,stars:summary.stars})}}
  return shown;

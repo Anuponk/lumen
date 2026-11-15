@@ -857,6 +857,18 @@ hydration invalidate the old generation. Both resolved and rejected awaits must
 verify it before installing data or publishing current-session status. Generation
 is ephemeral control state, not a persisted reward or server revision.
 
+Profile compare-and-swap by digest (#697 follow-up, migration
+`20261115140000_profile_digest_cas.sql`): with the account guard, the client sends
+the SHA-256 of PostgreSQL's jsonb text for its expected profile
+(`src/persistence/jsonb-digest.js`) instead of the whole profile, halving the
+upload. `lumen_cas_profile_digest` locks the row, compares digests and only then
+runs the unchanged `lumen_cas_profile` (same validation, triggers and guards). An
+equal digest implies byte-identical jsonb text, which is stricter than the jsonb
+equality of the full CAS. Any mismatch (real conflict or serialization difference),
+missing endpoint or unexpected answer writes nothing and falls back to the full CAS,
+so the outcome is always the full comparison's. A matched digest that the guarded
+CAS refuses is a conflict, never a second write.
+
 Cloud profile limits use 1048576 UTF-8 bytes (1 MiB since 15 November 2026,
 migration `20261115120000_profile_size_limit_1mib.sql`; previously 524288) with
 JSONB structural-space and scientific-number expansion reserve, rather than

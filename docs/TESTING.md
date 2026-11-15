@@ -338,6 +338,16 @@ read equals both independent reads, never writes, keeps the account guard
 and denies `anon`.
 Admin recent-player tests execute the actual metrics/timeline renderers.
 
+Digest profile CAS: `node --test scripts/profile-digest-cas-tests.mjs` covers the
+jsonb text rules, an exact digest (single call, expected profile not uploaded), the
+fallback to the full CAS on mismatch, missing endpoint or unexpected answer, a
+matched-but-refused conflict, and the existing refusal codes. In `canonical-ledger`,
+`scripts/jsonb-digest-fixtures.mjs` generates SQL so that real PostgreSQL checks
+the client jsonb text and digest (tricky keys, escapes and numbers, full 880-quest
+profile), then `scripts/fixtures/profile-digest-cas.sql` checks mismatch without
+write, stale digest refusal, account guard, size guard and grants.
+`victory-pending-browser-tests.mjs` asserts profile writes use the digest path.
+
 Profile size ceiling (1 MiB): `scripts/fixtures/profile-size-limit.sql` runs in
 `canonical-ledger` after applying `20261115120000_profile_size_limit_1mib.sql` twice.
 It checks that no profile function keeps the 512 KiB ceiling, that SECURITY DEFINER
@@ -2024,7 +2034,7 @@ des preuves complémentaires.
 
 La quality gate ajoute `offline-hint-purchase-browser-tests.mjs`, `offline-hint-network-browser-tests.mjs`, `drag-cascade-browser-tests.mjs`, `adventure-mastery-browser-tests.mjs`. Profils et RPC sont synthétiques ; Chromium exerce les vrais boutons, le stockage durable, la reconnexion, les gestes tactiles et les scènes mobiles/bureau. Rapports CI : `ci-offline-hint.json`, `ci-offline-hint-network.json`, `ci-drag-cascade.json`, `ci-adventure-mastery.json`.
 
-`adventure-mastery-browser-tests.mjs` vérifie aussi le libellé « Maîtrisée » visible dans la barre d’aventures et le fond rempli distinct, conservé lorsque la sélection change. La navigation et le rechargement conservent les acquis sans récompense ajoutée.
+`adventure-mastery-browser-tests.mjs` couvre aussi 360×640 et 390×844 (#705) : aucun CTA « Revoir mon aventure », aucun défilement vertical de la carte, et le dernier bouton reste dans la hauteur utile. Il vérifie aussi le libellé « Maîtrisée » visible dans la barre d’aventures et le fond rempli distinct, conservé lorsque la sélection change. La navigation et le rechargement conservent les acquis sans récompense ajoutée.
 
 Recette physique restante : indice avec 80 Éclats en mode avion puis reconnexion ; glissement pendant scintillement avec/sans marquage automatique ; dernier badge d’aventure puis réouverture de Mon ciel, avec fond doré et libellé de maîtrise lisibles. Ces tests simulés ne valent pas recette sur téléphone. Les issues restent ouvertes « To be tested » jusqu’à acceptation.
 

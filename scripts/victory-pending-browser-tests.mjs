@@ -117,6 +117,8 @@ try {
   assert.equal(replay.grants, 1, 'A replay never grants a second star');
   assert.equal(replay.slots[0], 'star:victory-reward-owned', '#706: the completed quest keeps its star on a replay');
   results.replayStarOwned = true;
+  results.digestCasWrites = await evaluate('window.__digestCasWrites||0');
+  assert(results.digestCasWrites >= 1, 'Profile writes use the digest CAS (expected profile not uploaded)');
   // A failed command shows the pending screen; "Réessayer la sauvegarde" resends
   // the same operation on that screen and confirms in place, without reloading.
   await evaluate(`document.getElementById('skyRevealNext').click()`);
