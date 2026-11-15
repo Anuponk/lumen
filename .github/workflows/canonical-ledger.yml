@@ -270,3 +270,9 @@ jobs:
             -f supabase/migrations/20261115180000_admin_adventure_access_724.sql \
             -f supabase/migrations/20261115180000_admin_adventure_access_724.sql \
             -f scripts/fixtures/adventure-access.sql
+      - name: Verify service activity, event attribution and unavailable KPI semantics (#708)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/reliable-analytics.sql

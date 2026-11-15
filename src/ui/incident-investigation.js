@@ -41,7 +41,7 @@ export function buildIncidentInvestigation(data){
   events.sort((a,b)=>a.sequence-b.sequence);
   return {events,state:observedState(events),partial:true};
  });
- const count=value=>Number.isInteger(value)&&value>=0&&value<=35000?value:0;
+ const count=value=>Number.isSafeInteger(value)&&value>=0?value:0;
  const signatures=(Array.isArray(data?.signatures)?data.signatures:[]).slice(0,30).filter(row=>row&&DIAGNOSTIC_CODES.includes(row.code)).map(row=>({
   code:row.code,stage:pick(DIAGNOSTIC_STAGES,row.stage),app_version:version(row.app_version),
   platform:pick(DIAGNOSTIC_PLATFORMS,row.platform,'other'),browser:pick(DIAGNOSTIC_BROWSERS,row.browser,'other'),occurrences:count(row.occurrences),sessions:count(row.sessions)

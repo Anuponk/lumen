@@ -4,7 +4,9 @@ Actionable Analytics #708: `ui/analytics-dashboard.js` owns read-only data-quali
 projection, account/recency directory composition, quest analysis and technical
 triage rendering. `game-screen.js` reuses existing RPCs independently and routes
 actions into shared players/sessions/diagnostics via `analytics-navigation.js`.
-No new SQL, collector, state writer or capability. See PRODUCT_ANALYTICS/TESTING.
+KPI correction: `lumen_commands.service_activity` reads existing victory receipts
+through the same cockpit RPC; `cockpit_events` unifies qualified identities.
+No new collector, player-state writer or capability. See PRODUCT_ANALYTICS/TESTING.
 
 Analytics #708 B1: `ui/analytics-navigation.js` owns five sections and URL/history
 of the existing cockpit at `/admin/analytics`. `game-screen.js` retains guarded

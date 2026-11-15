@@ -13,7 +13,7 @@ const source=multiAccountFixture({admin:profile},'admin').replace("if(!uid())ret
  if(name==='lumen_get_internal_capabilities')return {data:sessionStorage.getItem('adminDenied')?[]:[{capability:'analytics_cockpit'}]};
  if(name.startsWith('lumen_admin_')){
   window.__adminReads.push(name);
-  if(name==='lumen_admin_cockpit')return sessionStorage.getItem('productUnavailable')?{error:{message:'Unavailable'}}:{data:{summary:{unique_players:23},daily:[{activity_date:'2026-11-13',players:8},{activity_date:'2026-11-14',players:12}],retention:{},funnel:[]}};
+  if(name==='lumen_admin_cockpit')return sessionStorage.getItem('productUnavailable')?{error:{message:'Unavailable'}}:{data:{summary:{unique_players:0},collection:{enabled:false},service_activity:{summary:{players:5,quests:13,completions:25,first_completions:6},daily:[{activity_date:'2026-11-14',players:5}],quests:[{stable_quest_id:${JSON.stringify(first.id)},quest_ordinal:${first.ordinal},players:5,completions:25,first_completions:6}],players:[{player_key:'u:admin',completions:25,quests:13,furthest_confirmed_quest:${first.ordinal}}]},daily:[],retention:{j1:0,j3:0,j7:0},funnel:[]}};
   if(name==='lumen_admin_accounts')return {data:[{user_id:'admin',nickname:'Compte de test'},{user_id:'new',nickname:'Compte sans événements'}]};
   if(name==='lumen_admin_quest_metrics')return {data:${JSON.stringify(questData)}};
   if(name==='lumen_admin_sync_health')return sessionStorage.getItem('healthUnavailable')?{error:{message:'Unavailable'}}:{data:{affected_players:2,failures:3,stalled_players:1,blocked:1,by_reason:[{reason:'storage_quota',count:2}],by_version:[{version:'1.11.1+615',count:3}],outbox:{pending_players:1,critical_players:1,alerts:[{state:'pending',pending:2,version:'1.11.1+615',since:new Date(Date.now()-3600000).toISOString()}]},diagnostics:{timeline:[],signatures:[{code:'runtime_exception',stage:'runtime',app_version:'1.11.1+615',platform:'desktop',browser:'chromium',occurrences:5,sessions:2}]}}};
@@ -46,6 +46,7 @@ try{
    const modal=document.getElementById('adminCockpit'),nav=value=>modal.querySelector('[data-analytics-section="'+value+'"]').click();
    nav('overview');const overview=document.getElementById('analyticsOverview');
    const historical=overview.textContent.includes('actuellement désactivée'),noUndefined=!overview.textContent.includes('undefined'),untrackedAccount=overview.textContent.includes('Compte sans événements');
+   const received=[...overview.querySelectorAll('.analytics-metric strong')].slice(0,4).map(n=>n.textContent).join(',')==='5,13,25,6'&&document.getElementById('adminRetention').textContent.includes('collecte interrompue');
    [...overview.querySelectorAll('button')].find(b=>b.textContent.includes('Analyser les parcours')).click();
    const journeys=document.getElementById('analyticsJourneys'),pack=journeys.querySelector('[aria-label="Filtrer par aventure"]'),minimum=journeys.querySelector('[aria-label="Minimum de joueurs ayant commencé"]');
    pack.value=${JSON.stringify(first.packId)};pack.dispatchEvent(new Event('change'));minimum.value='5';minimum.dispatchEvent(new Event('change'));
@@ -57,9 +58,9 @@ try{
    [...technical.querySelectorAll('button')].find(b=>b.textContent==='Voir les joueurs en attente').click();
    const players=document.getElementById('adminPlayers'),pending=players.querySelector('[aria-label="Filtrer l’état observé"]').value==='pending'&&players.querySelectorAll('.admin-player').length===1;
    players.querySelector('.admin-player button').click();
-   return {historical,noUndefined,untrackedAccount,filtered,detail,causes,versions,queue,pending,drilldown:document.getElementById('adminTimeline').cockpitPlayer==='u:admin',overflow:document.documentElement.scrollWidth>innerWidth};
+   return {historical,noUndefined,untrackedAccount,received,filtered,detail,causes,versions,queue,pending,drilldown:document.getElementById('adminTimeline').cockpitPlayer==='u:admin',overflow:document.documentElement.scrollWidth>innerWidth};
   })()`);
-  assert.deepEqual(analysis,{historical:true,noUndefined:true,untrackedAccount:true,filtered:1,detail:true,causes:true,versions:true,queue:true,pending:true,drilldown:true,overflow:false});
+  assert.deepEqual(analysis,{historical:true,noUndefined:true,untrackedAccount:true,received:true,filtered:1,detail:true,causes:true,versions:true,queue:true,pending:true,drilldown:true,overflow:false});
   if(process.env.LUMEN_DASHBOARD_SCREENSHOTS&&viewport.width===1440){
    fs.mkdirSync(process.env.LUMEN_DASHBOARD_SCREENSHOTS,{recursive:true});
    for(const section of ['overview','journeys','sync']){

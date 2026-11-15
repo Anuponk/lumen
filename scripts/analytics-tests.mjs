@@ -63,6 +63,19 @@ console.log(JSON.stringify({baseline,fixtures:8,identityStorage:'identical',even
 }
 
 const cockpitMigration=fs.readFileSync('supabase/migrations/20261005_lumen_admin_cockpit.sql','utf8');
+// Inactivity while the page stays open starts a fresh browser session.
+{
+ const values=new Map(),calls=[];let sequence=0,now=1800000000000;
+ const original=Date.now;
+ try{
+  Date.now=()=>now;
+  const api=createAnalytics(()=>({rpc:async(name,args)=>calls.push(args)}),{analyticsAllowed:()=>true,localStorage:{getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)},crypto:{randomUUID:()=>String(++sequence)},location:{hostname:'lumen.nopuna.fr'},console});
+  await api.trackLumenEvent('session_start');const first=api.lumenSessionId;
+  now+=31*60*1000;await api.trackLumenEvent('session_start');
+  assert.notEqual(api.lumenSessionId,first,'idle open page must renew its analytics session');
+  assert.equal(calls.length,2,'new session gets its own opening event');
+ }finally{Date.now=original}
+}
 assert.match(cockpitMigration,/analytics_cockpit/,'cockpit RPCs must be capability protected');
 assert.match(cockpitMigration,/attempt_completed/,'canonical attempt completion must be accepted');
 assert.match(cockpitMigration,/p_puzzle_id between 1 and 10000/,'analytics must not retain historical 100 quest ceiling');

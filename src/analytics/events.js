@@ -37,13 +37,15 @@ function lumenId(key){
 }
 const lumenAnonymousId=lumenId("lumenAnonymousIdV1");
 const sessionKey="lumenAnalyticsSessionV2",timeoutMs=30*60*1000;
-let lumenSessionId;
+let lumenSessionId,lastSessionSeen=0;
 function ensureSession(){
- if(lumenSessionId)return;
  const now=Date.now();
+ if(lumenSessionId&&now-lastSessionSeen>=0&&now-lastSessionSeen<timeoutMs){lastSessionSeen=now;return}
+ lastSessionSeen=now;
 try{
  const previous=JSON.parse(localStorage.getItem(sessionKey)||"null");
- lumenSessionId=previous&&previous.id&&now-Number(previous.lastSeen||0)<timeoutMs?previous.id:null;
+ const age=now-Number(previous?.lastSeen||0);
+ lumenSessionId=previous&&previous.id&&age>=0&&age<timeoutMs?previous.id:null;
  if(!lumenSessionId)lumenSessionId=(crypto.randomUUID?crypto.randomUUID():now+"-"+Math.random().toString(36).slice(2));
  localStorage.setItem(sessionKey,JSON.stringify({id:lumenSessionId,lastSeen:now}));
 }catch(e){lumenSessionId=(crypto.randomUUID?crypto.randomUUID():now+"-"+Math.random().toString(36).slice(2))}

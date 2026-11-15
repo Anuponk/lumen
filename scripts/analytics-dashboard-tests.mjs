@@ -13,12 +13,12 @@ test('missing measurements never become measured zeroes',()=>{
  assert.equal(missing.productAvailable,false);assert.equal(missing.healthAvailable,false);
  assert.equal(buildAnalyticsDashboard({health:[],product:[]}).healthAvailable,false);
  const empty=buildAnalyticsDashboard({product:{summary:{unique_players:0}},health:{affected_players:0,outbox:{pending_players:0}}});
- assert.equal(empty.uniquePlayers,0);assert.equal(empty.technical.pending,0);
+ assert.equal(empty.uniquePlayers,null,'disabled collection has no measured population');assert.equal(empty.technical.pending,0);
 });
 
 test('attention is based on observed exposure, without declaring a quest abandoned or difficult',()=>{
  const model=buildAnalyticsDashboard({catalogue,quests:{friction:[
-  {stable_quest_id:'quest-a',quest_ordinal:91,started:10,completed:2,hints:9,resets:10,abandons:1,median_seconds:42},
+  {stable_quest_id:'quest-a',quest_ordinal:91,started:10,completed:2,hints:9,resets:10,abandons:1,median_seconds:42,observed_grid_revision:1,duration_samples:2},
   {stable_quest_id:'quest-b',quest_ordinal:92,started:1,completed:0,hints:8,resets:8},
  ]}});
  assert.equal(model.journey[0].pack,'Aventure réelle');
@@ -79,4 +79,20 @@ test('Lumen accounts without product events remain diagnosable without inventing
 test('technical windows remain independent from long product history',()=>{
  assert.equal(buildAnalyticsDashboard({days:3650}).healthDays,90);
  assert.equal(buildAnalyticsDashboard({days:1}).healthDays,1);
+});
+
+test('disabled product collection never reports measured zero activity; server receipts remain usable',()=>{
+ const model=buildAnalyticsDashboard({product:{summary:{unique_players:0,sessions:0},service_activity:{summary:{players:5,quests:13,completions:25},daily:[],quests:[]}},quests:{friction:[]}});
+ assert.equal(model.uniquePlayers,null);
+ assert.equal(model.sessions,null);
+ assert.equal(model.serviceAvailable,true);
+ assert.equal(model.service.summary.players,5);
+ assert.equal(model.service.summary.quests,13);
+ assert.equal(model.service.summary.completions,25);
+ assert.equal(buildAnalyticsDashboard().serviceAvailable,false);
+});
+
+test('different spellings of a build aggregate into one technical version',()=>{
+ const model=buildAnalyticsDashboard({health:{by_version:[{version:'1.11.1+618',count:2},{version:'Lumen 1.11.1+618',count:3}]}});
+ assert.deepEqual(model.technical.versions,[{label:'1.11.1+618',count:5}]);
 });

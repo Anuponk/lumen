@@ -1,5 +1,14 @@
 # Verified historical causes
 
+Analytics #708, reproduced at `d4d914b`: the collector permission defaults off
+and the UI supplies no provider, so a successful empty RPC was rendered as zero
+player activity. Receipt-only activity is independent evidence. Node regressions
+also reproduce idle sessions never renewing, valid large diagnostic totals
+becoming zero and equivalent version spellings staying split. Disposable SQL
+regressions cover explicit owners sharing a browser, paired completion events,
+WAU cut by the selected day, and missing/mixed grid revisions. See the existing
+PRODUCT_ANALYTICS and TESTING contracts for units and limits.
+
 Sky return after a canonical board, reproduced at `4657ab7`: the default map
 opener used a dormant legacy index; even explicit constellation destinations
 could lose to an earlier pack's numeric match because the renderer mixed the

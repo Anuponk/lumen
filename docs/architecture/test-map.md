@@ -1,5 +1,11 @@
 # Existing verification map
 
+KPI reliability #708: dashboard/session/incident Node regressions; synthetic
+`fixtures/reliable-analytics.sql` in ledger CI (migration x2, receipt-only activity,
+identity, deduplication, windows, durations, freshness, access/isolation). Real-app
+Analytics browser verifies receipt cards despite zero optional events. Full gate,
+production activation and physical-device acceptance remain distinct.
+
 Actionable Analytics #708: `analytics-dashboard-tests.mjs` covers evidence units,
 unknowns, samples, catalogue IDs, stale status, account-only entries and windows.
 `admin-recent-players-tests.mjs` records RED/GREEN independent-source evidence.

@@ -8,6 +8,13 @@ const session='00000000-0000-0000-0000-000000000001',trace='00000000-0000-0000-0
 const event=(code,sequence,extra={})=>({session_id:session,trace_id:trace,sequence,code,stage:'guided',kind:'unknown',app_version:'1.11.1+500',platform:'desktop',browser:'chromium',before_state:'unknown',after_state:'unknown',...extra});
 const scenario=()=>['guided_error','guided_undo','guided_input_blocked','guided_undo','guided_input_blocked','guided_undo','guided_input_released'].map((code,i)=>event(code,i+1,{after_state:code.endsWith('blocked')?'blocked':code.endsWith('released')?'ready':'unknown'}));
 
+test('weekly aggregate counts above a daily budget remain valid observations',async()=>{
+ const {buildIncidentInvestigation}=await load();
+ const model=buildIncidentInvestigation({signatures:[{code:'runtime_exception',occurrences:35001,sessions:35001}]});
+ assert.equal(model.signatures[0].occurrences,35001);
+ assert.equal(model.signatures[0].sessions,35001);
+});
+
 test('observed versions sort numerically and keep aggregate counts separate from episode counts',async()=>{
  const {buildIncidentInvestigation}=await load();
  const data={timeline:[event('guided_error',1,{app_version:'1.11.1+99'}),event('guided_input_blocked',2,{app_version:'1.11.1+100'})],
