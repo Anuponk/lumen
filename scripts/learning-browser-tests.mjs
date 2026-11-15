@@ -61,6 +61,17 @@ try {
     await input(await point(0,0),viewport.mobile);
     assert.equal(JSON.stringify((await snapshot()).state),untouched,'SEE/UNDERSTAND blocks board actions');
     assert.equal(await evaluate('JSON.parse(localStorage.getItem("lumenActiveAttemptV1")).state'),'READY','Ignored intro taps cannot start the attempt');
+    // #711: the tutorial blocks gameplay taps, never the full-screen account layers above it
+    // (signed out on a learning account, account switch failure diagnostic).
+    await evaluate('document.getElementById("signedOutScreen").hidden=false;document.body.classList.add("signed-out-neutral")');
+    await control('signedOutLogin',viewport.mobile);
+    assert.equal(await evaluate('document.getElementById("accountOptin").hidden'),false,'#711: Se connecter opens the sign-in dialog during the tutorial');
+    await control('accountOptinClose',viewport.mobile);
+    await evaluate('document.getElementById("signedOutScreen").hidden=true;document.body.classList.remove("signed-out-neutral");document.getElementById("accountSwitchHold").hidden=false;document.getElementById("accountSwitchHoldDiagnostic").hidden=false');
+    await control('accountSwitchHoldDiagnostic',viewport.mobile);
+    assert.equal(await evaluate('document.getElementById("accountSwitchHoldReport").hidden'),false,'#711: Diagnostic opens its report during the tutorial');
+    await evaluate('document.getElementById("accountSwitchHold").hidden=true;document.getElementById("accountSwitchHoldReport").hidden=true');
+    assert.equal(JSON.stringify((await snapshot()).state),untouched,'Account layers never change the learning board');
     const introTitles=[];
     for(let intro=0;intro<6;intro++){
       introTitles.push(await evaluate('document.getElementById("scriptedLearnTitle").textContent'));
