@@ -2157,3 +2157,8 @@ The full quality suite runs on pull requests. After a squash merge, the publishe
 
 - `scripts/mastery-unlock-tests.mjs` (Node, quality gate): client candidates (next Adventure only, owned rows, a missing badge, legacy version < 2), server calls (only confirmed unlocks, failures never throw, an account change stops the claims), wiring guards in `game-screen.js`, and store seed drift.
 - SQL (`ledger-sql`): `adventure-store-seed.mjs --check`, the migration and its completion fix each applied twice, then `scripts/fixtures/purchases-mastery.sql`. The fixture includes an Adventure 1 canonical quest in the production shape (a won run without `solved`). It covers private ledger and grants, idempotency, identity conflicts, validation, the €5 cap, refund/dispute/won dispute, whole-sky product, non-EUR purchases, preserved admin and mastery rights, real legacy and canonical mastery of Adventure 1 (a missing badge, legacy version 1), idempotent and audited claims, one Adventure at a time, and the erasure policy.
+
+## Locked Adventure offer (#731)
+
+- `scripts/adventure-offer-tests.mjs` (Node, quality gate): prices from `store-catalogue.js` and parity with the server seed, missing quests and badges derived from the catalogue (plural forms), mastered, guest and locked-previous wording, intention-only funding text, and removal of the placeholder.
+- `sky-navigation-browser-tests.mjs`: real tap on a locked Adventure (3 viewports). Checks that the offer replaces the lock text, purchase buttons are disabled with prices, the €5 cap text and the free mastery path (with what is left) are shown, QA sessions get no account prompt, « Pourquoi ? » expands, and there is no horizontal overflow.

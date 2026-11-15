@@ -1553,3 +1553,17 @@ body:has(#erasedAccountNotice:not([hidden])) #scriptedLearn{visibility:hidden!im
 .adventure-access-list li{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .adventure-access-list button{min-height:36px}
 .adventure-access-history{font-size:12px;opacity:.85;padding-left:18px}
+/* #731: locked Adventure offer (paid and free paths). */
+.adventure-notice>div{max-height:100%;overflow-y:auto;box-sizing:border-box}
+.adventure-offer{display:flex;flex-direction:column;gap:8px;margin:8px 0 10px}
+.adventure-offer button{min-height:44px;border-radius:12px;font:inherit;font-weight:700}
+.adventure-offer-buy{background:#1d3b5a;color:#eefaff;border:1px solid #4284bd}
+.adventure-offer-buy:disabled{opacity:.55}
+.adventure-offer-claim{background:#2a5a3a;color:#eafff0;border:1px solid #57b47a}
+.adventure-offer-signin{background:transparent;color:#cfe6f3;border:1px solid #35546f}
+.adventure-offer p{margin:0;font-size:13px;line-height:1.4}
+.adventure-offer-cap,.adventure-offer-soon{color:#9fb6c8}
+.adventure-offer-mastery{color:#e2d39a}
+.adventure-offer-support{color:#bfd1df}
+.adventure-offer-why{min-height:0!important;padding:0 4px;background:none;border:0;color:#8de1ef;text-decoration:underline;font-weight:600}
+.adventure-offer-why-text{color:#9fb6c8;font-size:12px}

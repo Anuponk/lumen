@@ -9,7 +9,8 @@ import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {PERFORMANCE_BADGES} from '../src/campaign/performance.js';
 
-export const ADVENTURE_PRICE_CENTS=100,SKY_PRICE_CENTS=500,SKY_PRODUCT_ID='real-sky-all';
+import {ADVENTURE_PRICE_CENTS,SKY_PRICE_CENTS,SKY_PRODUCT_ID} from '../src/campaign/store-catalogue.js';
+export {ADVENTURE_PRICE_CENTS,SKY_PRICE_CENTS,SKY_PRODUCT_ID};
 const START='-- BEGIN STORE SEED',END='-- END STORE SEED';
 const q=v=>"'"+String(v).replaceAll("'","''")+"'";
 
