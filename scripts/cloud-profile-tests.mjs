@@ -250,7 +250,11 @@ for(const [message,code,expected] of [
  ['Unsupported catalogue origin','22023','UNSUPPORTED_CATALOGUE_ORIGIN'],
  ['provider message containing fixture-private-data','42501','42501'],
  ['provider message containing fixture-private-data','PGRST202','PGRST202'],
- ['provider message containing fixture-private-data','token-fixture-private-data','CLOUD_WRITE_REFUSED']
+ ['provider message containing fixture-private-data','token-fixture-private-data','CLOUD_WRITE_REFUSED'],
+ // #697: lost connections on mobile are labelled as transport, not refusal.
+ ['TypeError: Failed to fetch fixture-private-data','','CLOUD_NETWORK'],
+ ['TypeError: Load failed','','CLOUD_NETWORK'],
+ ['provider message containing fixture-private-data','','CLOUD_WRITE_REFUSED']
 ]){
  let calls=0;
  const rejected={rpc:async()=>{calls++;return {data:null,error:{message,code,details:'fixture-private-data',hint:'fixture-private-data'}}}};

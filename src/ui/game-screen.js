@@ -229,6 +229,8 @@ function presentPendingVictory(questId,operationId){
  if(!shownPendingVictories.has(animationKey)){shownPendingVictories.add(animationKey);if(!replay)launchWinStar(1,{pending:true})}
 }
 let pendingVictoryRetryInFlight=null;
+// #697: delay before a slow victory command shows its durable pending card.
+const SLOW_VICTORY_PENDING_MS=2500;
 function canRetryPresentedVictory(){
  const pending=pendingVictoryView,attempt=attemptEngine.snapshot();
  if(!pending||pending.userId!==lumenUser?.id||pending.client!==lumenSupabase||pending.attemptId!==attempt?.attemptId||(pending.resetCount??0)!==(attempt?.resetCount||0))return false;
@@ -239,6 +241,8 @@ async function retryPresentedVictory({automatic=false}={}){
  const pending=pendingVictoryView;
  if(!pending||pending.userId!==lumenUser?.id||pending.client!==lumenSupabase||pending.attemptId!==attemptEngine.snapshot()?.attemptId)return;
  if(pendingVictoryRetryInFlight===pending||automatic&&!canRetryPresentedVictory())return false;
+ // The original command is still running (slow network): keep its pending card.
+ if(canonicalVictoryInFlight||legacyVictoryBusy)return false;
  pendingVictoryRetryInFlight=pending;
  try{
   if(automatic){
@@ -2444,7 +2448,7 @@ function maybeShowHintEconomyTransition(){
 }
 function prepareQuestStart(){let q=activeBonusChallenge(),o=document.getElementById("questStart");questFailed=false;if(!q||lumenProgress.stars[q.id]){questStarted=true;o.hidden=true;return}questStarted=false;pauseGameClock();document.getElementById("questStartTitle").textContent=q.title+" · Difficulté : "+(puz.difficulty?.label??qualifyDifficulty(puz).label);document.getElementById("questStartRule").textContent=q.copy.replace(/\s*· Marquage auto interdite\./g,'')+" Récompense : +25 XP et +1 ✦ éclat.";o.hidden=false}
 document.getElementById("questGo").onclick=()=>{document.getElementById("questStart").hidden=true;questStarted=true;clock();updateAttemptUI()};
-function init(){document.getElementById('successRetry').textContent='↻ Réessayer';if(!canonicalActiveQuest&&accountRequired())queueMicrotask(()=>maybeOfferAccount());setLearningReplaySuccessMode(false);document.getElementById("successNew").textContent="Quête suivante";updateLearningSuccessCTA();learningTip=null;learningTipSeen=new Set();learningStage="place";learningIntroStep=0;choose();configureLearningMode();applyQuestRestrictions();maybeShowBadgeMilestone();maybeShowAutoCrossUnlock();maybeShowAutonomy();let cl=document.getElementById("campaignMapLabel");if(cl){const quest=canonicalActiveQuest??canonicalQuestForLegacy(levelIndex),view=readQuestView(quest,lumenProgress,canonicalQuestList(),CONTENT_CONSTELLATIONS);cl.textContent=view.label+" · "+(puz.difficulty?.label??qualifyDifficulty(puz).label);cl.title="Difficulté : "+(puz.difficulty?.label??qualifyDifficulty(puz).label);}document.getElementById("difficulty").textContent=(n===7?"7 × 7":n===8?"8 × 8":n+" × "+n)+(" · Difficulté : "+(puz.difficulty?.label??qualifyDifficulty(puz).label));state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];const hintCard=document.getElementById("hintCard");if(hintCard)hintCard.hidden=true;celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;guidedDeferred=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();msg.textContent="";drawLevels();clearInterval(timer);timer=setInterval(clock,100);
+function init(){document.getElementById('successRetry').textContent='↻ Réessayer';if(!canonicalActiveQuest&&accountRequired())queueMicrotask(()=>maybeOfferAccount());setLearningReplaySuccessMode(false);document.getElementById("successNew").textContent="Quête suivante";updateLearningSuccessCTA();learningTip=null;learningTipSeen=new Set();learningStage="place";learningIntroStep=0;choose();configureLearningMode();applyQuestRestrictions();maybeShowBadgeMilestone();maybeShowAutoCrossUnlock();maybeShowAutonomy();let cl=document.getElementById("campaignMapLabel");if(cl){const quest=canonicalActiveQuest??canonicalQuestForLegacy(levelIndex),view=readQuestView(quest,lumenProgress,canonicalQuestList(),CONTENT_CONSTELLATIONS);cl.textContent=view.label+" · "+(puz.difficulty?.label??qualifyDifficulty(puz).label);cl.title="Difficulté : "+(puz.difficulty?.label??qualifyDifficulty(puz).label);}document.getElementById("difficulty").textContent=(n===7?"7 × 7":n===8?"8 × 8":n+" × "+n)+(" · Difficulté : "+(puz.difficulty?.label??qualifyDifficulty(puz).label));state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];const hintCard=document.getElementById("hintCard");if(hintCard)hintCard.hidden=true;celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;guidedDeferred=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();msg.textContent="";drawLevels();victoryClockFreeze=null;clearInterval(timer);timer=setInterval(clock,100);
  const restored=attemptEngine.restore({questId:canonicalActiveQuest?.id??levelIndex+1,mode:attemptMode(),gridRevision:activeQuest()?.gridRevision??0,questResetRevision:lumenProgress.canonicalQuestState?.[activeQuest()?.id]?.resetRevision??0});
  if(restored&&Array.isArray(restored.board)&&restored.board.length===n){state=restored.board.map(row=>row.slice());render()}else {
   const qualifying=!socialChallenge&&questBadgeQualification(activeQuest(),lumenProgress,Math.max(canonicalScopeProgress(lumenProgress).completed,activeQuestOrdinal()));
@@ -2463,7 +2467,17 @@ function updateBadgeQualificationStatus(){
  label.appendChild(status);
 }
 function drawLevels(){let e=document.getElementById("levels");e.innerHTML="";LEVELS.forEach(([name,x])=>{let b=document.createElement("button");b.className="level"+(x===n?" active":"");b.innerHTML=name+"<small>"+x+" × "+x+"</small>";b.onclick=()=>{n=x;init()};e.appendChild(b)})}
-function activeGameMs(){return attemptEngine.activeMs()}
+// #698: the shown and captured victory time freeze at local detection, never
+// after network work. Official rules (penalties, badges, ranking) are unchanged.
+let victoryClockFreeze=null;
+function freezeVictoryClock(){
+ if(victoryClockFreeze)return;
+ const ms=attemptEngine.activeMs();
+ victoryClockFreeze={ms,official:socialChallenge?Math.max(0,Math.floor(ms/1000)):attemptEngine.officialSeconds()};
+ clearInterval(timer);clock();
+}
+function thawVictoryClock(){if(!victoryClockFreeze)return;victoryClockFreeze=null;clearInterval(timer);timer=setInterval(clock,100);clock()}
+function activeGameMs(){return victoryClockFreeze?.ms??attemptEngine.activeMs()}
 function activeGameSeconds(){return Math.max(0,Math.floor(activeGameMs()/1000))}
 function clock(){
  if(!socialChallenge&&attemptEngine.snapshot()?.qualifying===false){
@@ -2471,7 +2485,7 @@ function clock(){
   if(label){const remaining=badgeCooldownRemaining(questPerformanceRecord(activeQuest(),lumenProgress));label.textContent=" · Hors qualification badges"+(remaining?" — "+badgeCooldownLabel(remaining):"")}
  }
  const ms=activeGameMs(),s=Math.max(0,Math.floor(ms/1000));
- document.getElementById("time").textContent=formatDuration(socialChallenge?s:attemptEngine.officialSeconds());
+ document.getElementById("time").textContent=formatDuration(victoryClockFreeze?victoryClockFreeze.official:socialChallenge?s:attemptEngine.officialSeconds());
  const cd=document.getElementById("speedCountdown"),fill=document.getElementById("speedCountdownFill"),targetMs=speedTargetSeconds(activeQuestOrdinal()-1)*1000,visualWindowMs=30000;
  if(cd){
   const remainingMs=targetMs-ms,show=!celebrated&&activePerformanceEligibility().speed&&remainingMs<=visualWindowMs&&remainingMs>0;
@@ -3084,7 +3098,7 @@ async function celebrateCanonicalSuccess(){
  const capture={userId:victoryOwner,client:victoryClient,questId:q.id,attemptId:attempt?.attemptId,resetCount:attempt?.resetCount||0};
  if(canonicalVictoryInFlight&&Object.keys(capture).every(key=>canonicalVictoryInFlight[key]===capture[key]))return;
  canonicalVictoryInFlight=capture;
- let victoryStage='context';
+ let victoryStage='context',slowVictoryTimer=null,earlyPendingShown=false;const victoryStartedAt=Date.now();
  try{
  const victoryGeneration=cloudHydrationGeneration;
  const sameVictoryContext=()=>cloudHydrationGeneration===victoryGeneration&&lumenUser?.id===victoryOwner&&lumenSupabase===victoryClient&&canonicalActiveQuest?.id===q.id&&attemptEngine.snapshot()?.attemptId===attempt?.attemptId&&(attemptEngine.snapshot()?.resetCount||0)===(attempt?.resetCount||0);
@@ -3120,6 +3134,13 @@ async function celebrateCanonicalSuccess(){
    canonicalOutboxNotice="pending";
    updateAuthUI();
    canonicalRecovery.schedule();
+   // #697: on a slow network the durably captured win is shown as pending while
+   // the command continues; a later server confirmation upgrades it in place.
+   slowVictoryTimer=setTimeout(()=>{
+    if(canonicalVictoryInFlight!==capture||!sameVictoryContext()||pendingVictoryView)return;
+    earlyPendingShown=true;recordCloudDiagnostic('victory_pending_shown',{reason:'slow_network',stage:victoryStage});
+    presentPendingVictory(q.id,pending.operationId);
+   },SLOW_VICTORY_PENDING_MS);
    victoryStage='readiness';
    // Never start a cloud receipt read or command while the device reports offline.
    // The immutable intent has already been durably captured for replay.
@@ -3162,7 +3183,7 @@ async function celebrateCanonicalSuccess(){
    recordCloudDiagnostic("canonical_outbox_read_failed",{reason:"integrity"});
   }
   msg.textContent=locallySaved
-   ?"Victoire conservée sur cet appareil, en attente de synchronisation. Reconnecte-toi sur cet appareil pour la récupérer."
+   ?"Victoire conservée sur cet appareil, en attente de synchronisation."+(classifyCanonicalRecoveryError(error).kind==='auth'?" Reconnecte-toi pour la synchroniser.":"")
    :"Sauvegarde de la quête impossible : la conservation locale n'est pas confirmée. Ne quitte pas cette grille et réessaie.";
   if(!qaActive&&lumenUser)await refreshCanonicalOutboxNotice(lumenUser.id);
   updateAuthUI();
@@ -3172,6 +3193,16 @@ async function celebrateCanonicalSuccess(){
  }
  // Install only the acknowledged profile; never optimistically mutate a
  // legacy quest or attempt to upload new IDs as numeric puzzle IDs.
+ clearTimeout(slowVictoryTimer);
+ // #697: privacy-safe duration from local detection to server confirmation.
+ if(!qaActive)recordCloudDiagnostic('victory_sync_timing',{kind:'canonical',ms:Date.now()-victoryStartedAt,pendingShown:earlyPendingShown});
+ if(earlyPendingShown){
+  // Upgrade the provisional pending card into the confirmed celebration.
+  document.getElementById('successOverlay').classList.remove('show');
+  document.getElementById('successRetry').textContent='↻ Réessayer';
+  if(durableIntent)pendingNavigationEntries=pendingNavigationEntries.filter(e=>e.operationId!==durableIntent.operationId);
+  recordCloudDiagnostic('victory_pending_upgraded',{reason:'confirmed'});
+ }
  lumenProgress=committed.profile;pendingVictoryView=null;syncPresentation.acknowledged();syncPresentation.celebration(true);
  prepareCelestialVictory(celestialBefore,q,committed.newlyCompleted,reusedVictory||committed.alreadySaved);
  if(!qaActive&&lumenUser)void refreshCanonicalOutboxNotice(lumenUser.id);
@@ -3208,7 +3239,7 @@ async function celebrateCanonicalSuccess(){
  if(!celestialPending)launchWinStar(committed.newlyCompleted?1:0);
  const reveal=()=>{if(canonicalActiveQuest?.id===q.id&&celebrated)showSkyReveal(null,null,{quest:q,newlyCompleted:committed.newlyCompleted})};
  if(committed.newlyCompleted&&!celestialPending)setTimeout(reveal,2250);else reveal();
- }finally{if(canonicalVictoryInFlight===capture)canonicalVictoryInFlight=null;if(pendingVictoryView)canonicalRecovery.schedule();}
+ }finally{clearTimeout(slowVictoryTimer);if(canonicalVictoryInFlight===capture)canonicalVictoryInFlight=null;if(pendingVictoryView)canonicalRecovery.schedule();}
 }
 
 const legacyVictoryOutbox=createDurableCanonicalVictoryOutbox(localStorage,{namespace:'Legacy',onIssue:issue=>recordCloudDiagnostic('legacy_outbox_storage',{reason:issue.kind})});
@@ -3217,7 +3248,7 @@ async function captureLegacyCommandVictory(){
  const ownerId=lumenUser?.id,client=lumenSupabase,index=levelIndex,attempt=attemptEngine.snapshot();
  const quest=canonicalQuestForLegacy(index),attemptId=attempt?.attemptId,resetCount=attempt?.resetCount||0,generation=cloudHydrationGeneration;
  const sameContext=()=>cloudHydrationGeneration===generation&&lumenUser?.id===ownerId&&lumenSupabase===client&&!authSessionPending&&!qaActive&&levelIndex===index&&attemptEngine.snapshot()?.attemptId===attemptId&&(attemptEngine.snapshot()?.resetCount||0)===resetCount;
- let intent=null,victoryStage='context';
+ let intent=null,victoryStage='context',slowVictoryTimer=null,earlyPendingShown=false;const victoryStartedAt=Date.now();
  legacyVictoryBusy=true;
  legacyVictoryRetry=null;
  try{
@@ -3256,6 +3287,13 @@ async function captureLegacyCommandVictory(){
   victoryStage='durable_capture';
   intent=await legacyVictoryOutbox.enqueue(ownerId,quest.id,{facts},{operationId});
   if(!sameContext())return {handled:true};
+  // #697: same slow-network pending card as canonical quests (see celebrateCanonicalSuccess).
+  const durable=intent;
+  slowVictoryTimer=setTimeout(()=>{
+   if(!legacyVictoryBusy||!sameContext()||pendingVictoryView)return;
+   earlyPendingShown=true;recordCloudDiagnostic('victory_pending_shown',{reason:'slow_network',stage:victoryStage});
+   presentPendingVictory(quest.id,durable.operationId);
+  },SLOW_VICTORY_PENDING_MS);
   if(capabilityFailure)throw capabilityFailure;
   victoryStage='baseline';
   if(!cloudProfileReady||canonicalOutboxRetryInFlight||(cloudProfileDirty&&!(await flushCloudProfile())))throw Error('Verified baseline pending');
@@ -3274,12 +3312,20 @@ async function captureLegacyCommandVictory(){
   const ready=cloudProfileReady;cloudProfileReady=false;try{saveLumenProgress()}finally{cloudProfileReady=ready}
   try{await legacyVictoryOutbox.acknowledge(ownerId,quest.id,intent.reward,intent.operationId)}catch{recordCloudDiagnostic('legacy_outbox_cleanup_pending',{reason:'storage'})}
   if(!sameContext())return {handled:true};
+  clearTimeout(slowVictoryTimer);
+  recordCloudDiagnostic('victory_sync_timing',{kind:'legacy',ms:Date.now()-victoryStartedAt,pendingShown:earlyPendingShown});
+  if(earlyPendingShown){
+   document.getElementById('successRetry').textContent='↻ Réessayer';
+   const achievement=document.getElementById('successAchievement');if(achievement)achievement.hidden=false;
+   pendingNavigationEntries=pendingNavigationEntries.filter(e=>e.operationId!==intent.operationId);
+   recordCloudDiagnostic('victory_pending_upgraded',{reason:'confirmed'});
+  }
   pendingVictoryView=null;syncPresentation.acknowledged();syncPresentation.celebration(true);
   return {handled:true,saved:true,outcome:committed.receipt.outcome,facts:intent.reward.facts,recovered:!!prior};
  }catch(error){
   if(!sameContext())return {handled:true};
   if(intent){try{await legacyVictoryOutbox.pause(ownerId,intent,error)}catch{recordCloudDiagnostic('legacy_outbox_pause_pending',{reason:'storage'})}}
-  msg.textContent=intent?'Victoire conservée sur cet appareil, en attente de synchronisation. Ne supprime pas les données de Lumen.':'Conservation locale non confirmée. Garde cette grille ouverte et réessaie.';
+  msg.textContent=intent?'Victoire conservée sur cet appareil, en attente de synchronisation.'+(classifyCanonicalRecoveryError(error).kind==='auth'?' Reconnecte-toi pour la synchroniser.':''):'Conservation locale non confirmée. Garde cette grille ouverte et réessaie.';
   const retry=document.createElement('button');retry.textContent='Réessayer la sauvegarde';
   retry.onclick=async()=>{
    if(!sameContext()||retry.disabled)return;
@@ -3295,7 +3341,7 @@ async function captureLegacyCommandVictory(){
    if(intent){presentPendingVictory(quest.id,intent.operationId);syncPresentation.failed({durable:true})}else syncPresentation.failed({durable:false});
   if(intent)legacyVictoryRetry=async()=>{if(!sameContext()){legacyVictoryRetry=null;return}const state=await legacyVictoryOutbox.inspect(ownerId);if(state.retryable.some(e=>e.operationId===intent.operationId))await celebrateSuccess()};
   return {handled:true};
- }finally{legacyCommandInFlight=false;legacyVictoryBusy=false;if(cloudProfileDirty)scheduleCloudProfile();void refreshCanonicalOutboxNotice(ownerId);canonicalRecovery.schedule()}
+ }finally{clearTimeout(slowVictoryTimer);legacyCommandInFlight=false;legacyVictoryBusy=false;if(cloudProfileDirty)scheduleCloudProfile();void refreshCanonicalOutboxNotice(ownerId);canonicalRecovery.schedule()}
 }
 
 async function celebrateSuccess(){
@@ -3583,12 +3629,15 @@ function render(){
  d.addEventListener('lumen-guardian-toggle',d.onclick);
  }
  let q=state.flat().filter(v=>v===2).length;const countEl=document.getElementById("count");countEl.textContent=q+"/"+n;rewardProgressPulse(q);updateScriptedLearning();
+ // A solved board edited again (e.g. victory not saved yet, reset) resumes its live clock.
+ if(victoryClockFreeze&&q!==n&&!celebrated&&!pendingVictoryView)thawVictoryClock();
  if(q===n&&(!scriptedLearningActive()||learningStage==="complete")){
    // Victory must validate the placed Guardians themselves.
    // Manual/automatic exclusion marks must never make a correct completed board fail.
    const {placed,rows,cols,regs,nonTouching,conflicts}=validateGuardians();
    if(placed.length===n&&rows.size===n&&cols.size===n&&regs.size===n&&nonTouching){
      msg.textContent="Constellation complète.";
+     freezeVictoryClock();
      celebrateSuccess();
    }else if(placed.length===n){
      // There is no explicit "Validate" action: reaching n guardians can be a

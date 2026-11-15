@@ -474,7 +474,13 @@ with an explicitly pending star; newly owned badges, balances and rights still
 require server confirmation. Persistent status becomes actionable after the
 actual celebration ends; failed local preservation is explicit immediately.
 The next known quest can use the durable navigation view under existing access
-rules, without crediting the pending reward locally. Existing hint prices,
+rules, without crediting the pending reward locally.
+The shown clock freezes at local victory detection on the official time
+(penalties included); network work never moves it, and editing the board again
+resumes it (#698). When a durably captured win is still unconfirmed after
+2.5 s, the same pending card is shown while the command continues, then
+upgraded in place to the confirmed celebration (#697). Pending copy stays calm:
+reconnection is requested only for an authentication hold. Existing hint prices,
 assistance teaching and badge qualification milestones remain unchanged.
 Historical and canonical campaign quests share the constellation reveal and
 confirmed star/badge panel. Only first completion announces a new star; replays

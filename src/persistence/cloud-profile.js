@@ -613,7 +613,9 @@ export async function compareAndSwapCloudProfile(supabase,profile,expected,{user
    ["Unsupported catalogue origin","UNSUPPORTED_CATALOGUE_ORIGIN"]
   ]);
   const failure=Error("Sauvegarde cloud impossible : refus du serveur");
-  const providerCode=typeof error.code==="string"&&/^(?:[0-9A-Z]{5}|PGRST[0-9]{3})$/.test(error.code)?error.code:"CLOUD_WRITE_REFUSED";
+  // #697: a transport failure (no provider code) is not a server refusal.
+  const transport=!error.code&&/(?:failed to fetch|load failed|networkerror|network request failed|aborterror|timed? ?out)/i.test(String(error.message||""));
+  const providerCode=typeof error.code==="string"&&/^(?:[0-9A-Z]{5}|PGRST[0-9]{3})$/.test(error.code)?error.code:transport?"CLOUD_NETWORK":"CLOUD_WRITE_REFUSED";
   failure.code=reasons.get(error.message)||providerCode;
   throw failure;
  }

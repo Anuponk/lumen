@@ -1221,7 +1221,7 @@ in CI. No token/credential fixture is copied from a real user.
 `cloud-profile-tests.mjs` also reproduces lost server codes during CAS wrapping.
 Known legacy/canonical/catalogue guard messages become fixed diagnostic codes;
 other SQLSTATE/PostgREST codes remain bounded, unknown shapes become
-`CLOUD_WRITE_REFUSED`, and a false CAS result becomes `CLOUD_CAS_CONFLICT`.
+`CLOUD_WRITE_REFUSED`, a codeless transport failure (`Failed to fetch`, `Load failed`, abort/timeout) becomes `CLOUD_NETWORK` (#697), and a false CAS result becomes `CLOUD_CAS_CONFLICT`.
 Fixtures assert one refused RPC, no fallback/retry and no provider message,
 details, hint or cause leaking into the diagnostic error. These tests verify
 observability only, not the cause or recovery of a particular player refusal.
@@ -2040,3 +2040,7 @@ Cette première liste volontairement restrictive est à élargir seulement aprè
 ## o2switch release authorization
 
 The full quality suite runs on pull requests. After a squash merge, the publisher verifies the exact merged commit, its PR provenance, and the successful PR quality, cloud persistence, reconciliation, SQL ledger, and documentation workflows. Cloud reconciliation and SQL ledger must also pass for the exact `main` SHA. Direct or unverified commits cannot deploy. A failed or missing check blocks publication; the deployment must never silently bypass a gate.
+
+### Victory responsiveness on slow networks (#697, #698)
+
+`victory-clock-freeze-tests.mjs` (quality gate) proves the shown official time and the captured victory seconds freeze at local detection while the engine keeps running behind them, that a re-edited board resumes the live clock, and that the freeze precedes any await. `legacy-command-client-tests.mjs` and `canonical-outbox-recovery-tests.mjs` hold a slow command open: the durable pending card appears once only after the durable capture, nothing is credited before confirmation, a later confirmation upgrades it (pending navigation entry removed, `victory_pending_upgraded`, `victory_sync_timing`), a failure keeps the same card with calm copy, and a retry tap cannot interrupt the running command. These are mocked VM checks, not real 4G measurements.
