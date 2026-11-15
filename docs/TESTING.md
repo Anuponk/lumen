@@ -287,7 +287,7 @@ pending identity, restored choice, same-owner refresh and account switches prese
 the selected run. `player-favorable-browser.mjs` uses different guest/account choices
 and asserts the real checkbox after verified Auth, token refresh and cold reload.
 
-learning-browser-tests.mjs retains the manual quest-1 gestures/intro, tests optional quest-2 drag with reload and direct
+learning-browser-tests.mjs retains the manual quest-1 gestures/intro (and, during that intro, real taps on the signed-out « Se connecter » and the account-switch « Diagnostic », #711), tests optional quest-2 drag with reload and direct
 quest-3 navigation; the general browser suites retain rewards, replays, cloud
 failure, guest claim, constellation/finale and catalogue-growth regressions.
 Changed assertions replace the obsolete mandatory quest-2 lesson/tour contract
