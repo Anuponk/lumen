@@ -21,6 +21,15 @@ else
 fi
 [[ -d "$TARGET" && ! -L "$TARGET" && -d "$SOURCE/.git" ]] || { echo "Invalid checkout or public directory"; exit 1; }
 cd "$SOURCE"
+# #742: a private repository needs an authenticated, read-only GitHub API token.
+# It lives outside the repository and the docroot; it is never printed.
+GITHUB_TOKEN_FILE="${HOME}/.config/lumen/github-token"
+if [[ -z "${GH_TOKEN:-}" && ( -e "$GITHUB_TOKEN_FILE" || -L "$GITHUB_TOKEN_FILE" ) ]]; then
+ [[ -f "$GITHUB_TOKEN_FILE" && ! -L "$GITHUB_TOKEN_FILE" && "$(stat -c %a "$GITHUB_TOKEN_FILE")" == 600 ]] || { echo "GitHub token file must be a regular file with mode 600" >&2; exit 1; }
+ GH_TOKEN="$(tr -d '[:space:]' < "$GITHUB_TOKEN_FILE")"
+ [[ -n "$GH_TOKEN" ]] || { echo "GitHub token file is empty" >&2; exit 1; }
+ export GH_TOKEN
+fi
 [[ "$(git branch --show-current)" == "main" && -z "$(git status --porcelain)" ]] || { echo "Checkout must be a clean main"; exit 1; }
 export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/lumen_github_pull -o IdentitiesOnly=yes -o BatchMode=yes"
 git fetch --quiet origin main
@@ -42,7 +51,7 @@ fi
 if [[ -f "$TARGET/.lumen-release-sha" && "$(cat "$TARGET/.lumen-release-sha")" == "$SHA" ]]; then
  echo "Already deployed $SHA"; exit 0
 fi
-# The anonymous GitHub API has a small hourly quota. On a new commit,
+# The GitHub API has an hourly quota (small when anonymous). On a new commit,
 # check CI at most every five minutes; a pending result never authorizes release.
 if [[ -n "$REQUESTED_SHA" ]]; then
  # Event-driven deployment: independently verify the exact target, with no
@@ -65,9 +74,16 @@ touch "$CI_CHECK_MARKER"
 # the newest verified ancestor; never publish a failed or unverified commit.
 # This prevents rapid successive merges from indefinitely blocking releases.
 VALIDATED_CANDIDATES="$(python3 - <<'PY'
-import json,sys,urllib.request
-url="https://api.github.com/repos/Anuponk/lumen/actions/workflows/quality.yml/runs?branch=main&per_page=100"
-request=urllib.request.Request(url,headers={"Accept":"application/vnd.github+json","User-Agent":"lumen-o2switch-publisher"})
+import json,os,re,sys,urllib.request
+api=os.environ.get("LUMEN_GITHUB_API","https://api.github.com")
+# Only the real API, or a loopback fixture in tests, may ever receive the token.
+if api!="https://api.github.com" and not re.fullmatch(r"http://127\.0\.0\.1:[0-9]+",api):
+    sys.exit("Refusing GitHub API override")
+url=api+"/repos/Anuponk/lumen/actions/workflows/quality.yml/runs?branch=main&per_page=100"
+headers={"Accept":"application/vnd.github+json","User-Agent":"lumen-o2switch-publisher"}
+if os.environ.get("GH_TOKEN"):
+    headers["Authorization"]="Bearer "+os.environ["GH_TOKEN"]
+request=urllib.request.Request(url,headers=headers)
 try:
     with urllib.request.urlopen(request,timeout=20) as response:
         runs=json.load(response)["workflow_runs"]
