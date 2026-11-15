@@ -8,7 +8,7 @@ Le dossier public `~/lumen.nopuna.fr` est actuellement un **vrai répertoire**, 
 
 - Git, OpenSSH, curl, python3, flock et utilitaires Linux GNU disponibles sur o2switch ; vérifier dans SSH.
 - Checkout propre `~/lumen-staging` sur `main`, deploy key read-only `~/.ssh/lumen_github_pull`.
-- Repo GitHub public accessible par API (ou adapter l'authentification API, sans mettre de jeton dans le dépôt).
+- API GitHub accessible. Dépôt public : accès anonyme possible. Dépôt privé (#742) : jeton en lecture seule dans `~/.config/lumen/github-token`, mode 600, jamais dans le dépôt (voir [O2SWITCH_MIGRATION](O2SWITCH_MIGRATION.md), section « Jeton GitHub pour un dépôt privé »).
 - GitHub Actions `Lumen quality gate` déclenché par **push sur main**, conclusion `success` pour le SHA complet exact.
 - Nouveau répertoire non-public `~/lumen-releases` (pas dans le docroot).
 - Ne pas changer le domaine racine `nopuna.fr`, le projet Vercel, ni Supabase.

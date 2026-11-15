@@ -1,11 +1,14 @@
 """Deployment tests; publisher fixtures run only on disposable Linux files."""
 import importlib.util
+import http.server
 import json
 import os
 from pathlib import Path
 import shutil
+import sys
 import subprocess
 import tempfile
+import threading
 import unittest
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -25,6 +28,36 @@ def runs():
 class Gates(unittest.TestCase):
     def test_all_required(self):
         self.assertEqual(ci.check_runs(runs(), SHA)[0], 0)
+
+    def test_status_check_authenticates_when_a_token_is_present(self):
+        seen = []
+        def refuse(request, timeout):
+            seen.append(request.get_header("Authorization"))
+            raise OSError("fixture stop")
+        original, ci.urllib.request.urlopen = ci.urllib.request.urlopen, refuse
+        argv, sys.argv = sys.argv, ["o2switch-ci-status.py", SHA]
+        saved = os.environ.get("GH_TOKEN")
+        try:
+            for token, expected in (("fixture-token", "Bearer fixture-token"), (None, None)):
+                os.environ.pop("GH_TOKEN", None)
+                if token:
+                    os.environ["GH_TOKEN"] = token
+                with self.assertRaises(OSError):
+                    ci.main()
+                self.assertEqual(seen.pop(), expected)
+        finally:
+            ci.urllib.request.urlopen, sys.argv = original, argv
+            os.environ.pop("GH_TOKEN", None)
+            if saved is not None:
+                os.environ["GH_TOKEN"] = saved
+
+    def test_release_scripts_load_the_private_token_file_safely(self):
+        for script in ("o2switch-cron-publish.sh", "o2switch-safe-release.sh"):
+            text = (ROOT / "scripts" / script).read_text()
+            self.assertIn('GITHUB_TOKEN_FILE="${HOME}/.config/lumen/github-token"', text)
+            self.assertIn('== 600 ]]', text)
+            self.assertIn('headers["Authorization"]="Bearer "+os.environ["GH_TOKEN"]', text)
+            self.assertNotRegex(text, r'echo[^\n]*\$GH_TOKEN')
 
     def test_missing_or_pending(self):
         self.assertEqual(ci.check_runs(runs()[:-1], SHA)[0], 75)
@@ -102,6 +135,7 @@ class Publisher(unittest.TestCase):
         self.source.mkdir()
         self.target.mkdir()
         self.env = {**os.environ, "HOME": str(self.home), "GIT_CONFIG_NOSYSTEM": "1"}
+        self.env.pop("GH_TOKEN", None)
         self.git("init", "-b", "main")
         self.git("config", "user.name", "Isolated fixture")
         self.git("config", "user.email", "fixture@example.invalid")
@@ -111,7 +145,7 @@ class Publisher(unittest.TestCase):
             (self.source / name).write_text('<meta name="lumen-build" content="fixture"><script src="src/main.js"></script>')
         (self.source / "scripts/merge-assetlinks.py").write_bytes((ROOT / "scripts/merge-assetlinks.py").read_bytes())
         # The gate selector is tested above; stub only its network boundary here.
-        (self.source / "scripts/o2switch-ci-status.py").write_text('import os,sys;sys.exit(int(os.environ.get("TEST_GATE_STATUS","0")))')
+        (self.source / "scripts/o2switch-ci-status.py").write_text('import os,sys;open(os.environ["HOME"]+"/gate-token","w").write(os.environ.get("GH_TOKEN",""));sys.exit(int(os.environ.get("TEST_GATE_STATUS","0")))')
         self.git("add", ".")
         self.git("commit", "-m", "baseline")
         self.old = self.git("rev-parse", "HEAD").strip()
@@ -279,6 +313,58 @@ fi
     def test_dry_run_changes_no_public_files(self):
         self.assertEqual(self.publish(mode="--dry-run").returncode, 0)
         self.assertEqual((self.target / "index.html").read_text(), "original site")
+
+    def install_token(self, mode=0o600):
+        folder = self.home / ".config" / "lumen"
+        folder.mkdir(parents=True)
+        (folder / "github-token").write_text("fixture-token\n")
+        (folder / "github-token").chmod(mode)
+
+    def test_private_repository_token_reaches_the_exact_gate(self):
+        self.install_token()
+        result = self.publish()
+        self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+        self.assertEqual((self.home / "gate-token").read_text(), "fixture-token")
+        self.assertNotIn("fixture-token", result.stdout + result.stderr)
+
+    def test_without_token_file_the_gate_stays_anonymous(self):
+        result = self.publish()
+        self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+        self.assertEqual((self.home / "gate-token").read_text(), "")
+
+    def test_exposed_token_file_is_refused_before_any_change(self):
+        self.install_token(0o644)
+        result = self.publish()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("mode 600", result.stderr)
+        self.assertNotIn("fixture-token", result.stdout + result.stderr)
+        self.assertEqual((self.target / "index.html").read_text(), "original site")
+
+    def test_fallback_cron_authenticates_its_github_query(self):
+        self.install_token()
+        (self.home / "lumen-private" / ("ci-check-" + self.sha)).unlink()
+        seen, sha = [], self.sha
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                seen.append(self.headers.get("Authorization"))
+                body = json.dumps({"workflow_runs": [{"head_sha": sha, "status": "completed", "conclusion": "success",
+                                                      "event": "push", "head_branch": "main"}]}).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(body)
+            def log_message(self, *args):
+                pass
+        server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        env = {**self.env, "LUMEN_GITHUB_API": "http://127.0.0.1:%d" % server.server_port, "NO_PROXY": "127.0.0.1"}
+        result = subprocess.run(["bash", str(ROOT / "scripts/o2switch-cron-publish.sh"), "--deploy"],
+                                env=env, text=True, capture_output=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+        self.assertEqual(seen, ["Bearer fixture-token"])
+        self.assertEqual((self.target / ".lumen-release-sha").read_text().strip(), self.sha)
 
     def test_fallback_cron_retains_its_cooldown(self):
         result = subprocess.run(["bash", str(ROOT / "scripts/o2switch-cron-publish.sh"), "--deploy"],

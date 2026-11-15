@@ -2209,3 +2209,13 @@ The full quality suite runs on pull requests. After a squash merge, the publishe
 **Tests:**
 - `scripts/ci-scope-tests.mjs` (quality gate): classification, fail-closed CLI and wiring.
 - `quality-gate-shards-tests.mjs`: the landing plan.
+
+## Private repository: authenticated deployment checks (#742)
+
+`python3 scripts/o2switch-deploy-tests.py` (quality gate, Linux) covers the read-only GitHub token in `~/.config/lumen/github-token`:
+- `o2switch-ci-status.py` sends `Authorization: Bearer` only when `GH_TOKEN` is set;
+- the exact-SHA path passes the token to the gate, and without a file the gate stays anonymous;
+- a file that is not mode 600 stops the publish before any change, and the token never appears in the output;
+- the fallback cron sends the token to a loopback API fixture (`LUMEN_GITHUB_API`, which only accepts `https://api.github.com` or `http://127.0.0.1:<port>`);
+- both release scripts load the file under the same rules.
+Not testable here: the real private repository. The owner checks a deployment after installing the token and switching the repository to private.

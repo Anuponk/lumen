@@ -29,6 +29,22 @@ LUMEN_VALIDATED_SHA=$(git -C ~/lumen-staging rev-parse HEAD) bash ~/lumen-stagin
 
 **Précondition :** sur o2switch, `node` est indisponible. Le contrôle qualité est exécuté par le workflow GitHub `Lumen quality gate` (Node 22). Pour le premier pilote manuel, vérifier que le workflow du SHA exact à déployer est vert puis exécuter `LUMEN_VALIDATED_SHA=$(git rev-parse HEAD) bash scripts/o2switch-pilot-publish.sh` depuis `~/lumen-staging`. Le script refuse le lancement sans le SHA explicitement validé. Ceci n'est pas une preuve automatique du statut CI : avant un déploiement automatique, il faudra vérifier le statut par API ou déployer uniquement des artefacts dont le workflow CI a attesté la réussite.
 
+## Jeton GitHub pour un dépôt privé (#742)
+
+La deploy key SSH suffit pour `git fetch`. En revanche, `o2switch-cron-publish.sh`, `o2switch-ci-status.py` (déploiement par webhook et cron de secours) et `o2switch-safe-release.sh` interrogent l'API GitHub pour vérifier la CI. Sur un dépôt privé, un appel anonyme reçoit 404 et **aucun déploiement ne passe**. Il faut donc installer le jeton **avant** de passer le dépôt en privé.
+
+1. Dans GitHub, ouvrir Settings → Developer settings → Fine-grained tokens. Créer un jeton limité au seul dépôt `Anuponk/lumen`, avec uniquement des droits **Read-only** : Actions, Contents, Metadata, Pull requests. Lui donner une date d'expiration et noter de le renouveler avant.
+2. Sur o2switch, en SSH :
+
+```bash
+mkdir -p ~/.config/lumen && chmod 700 ~/.config/lumen
+( umask 077; cat > ~/.config/lumen/github-token )   # coller le jeton, Entrée, puis Ctrl-D
+chmod 600 ~/.config/lumen/github-token
+bash ~/lumen-staging/scripts/o2switch-cron-publish.sh --dry-run
+```
+
+Les scripts lisent ce fichier s'il existe et envoient le jeton en `Authorization: Bearer` à `api.github.com`, et à aucun autre hôte. Ils refusent un fichier qui n'est pas un fichier ordinaire en mode 600, ou qui est vide, et n'affichent jamais le jeton. Sans fichier, ils gardent l'accès anonyme, qui ne fonctionne que tant que le dépôt est public. Ne jamais mettre ce jeton dans le dépôt, dans le docroot ou dans une crontab. Pour le révoquer, supprimer le jeton dans GitHub puis le fichier sur le serveur.
+
 ## Validation pilote (avant CI/CD automatique)
 
 - Vérifier le SHA publié, les ressources `src/` et `content/`, les MIME JS/manifest, l'absence de 404 et d'erreurs console.

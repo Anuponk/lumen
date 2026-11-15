@@ -16,6 +16,15 @@ mkdir -p "$RELEASES"
 exec 9>"$LOCK"
 flock -n 9 || { echo "Already running"; exit 0; }
 cd "$SOURCE"
+# #742: a private repository needs an authenticated, read-only GitHub API token.
+# It lives outside the repository and the docroot; it is never printed.
+GITHUB_TOKEN_FILE="${HOME}/.config/lumen/github-token"
+if [[ -z "${GH_TOKEN:-}" && ( -e "$GITHUB_TOKEN_FILE" || -L "$GITHUB_TOKEN_FILE" ) ]]; then
+ [[ -f "$GITHUB_TOKEN_FILE" && ! -L "$GITHUB_TOKEN_FILE" && "$(stat -c %a "$GITHUB_TOKEN_FILE")" == 600 ]] || { echo "GitHub token file must be a regular file with mode 600" >&2; exit 1; }
+ GH_TOKEN="$(tr -d '[:space:]' < "$GITHUB_TOKEN_FILE")"
+ [[ -n "$GH_TOKEN" ]] || { echo "GitHub token file is empty" >&2; exit 1; }
+ export GH_TOKEN
+fi
 [[ -d .git && "$(git branch --show-current)" == "main" ]] || { echo "Expected main checkout"; exit 1; }
 [[ -z "$(git status --porcelain)" ]] || { echo "Dirty checkout; refusing"; exit 1; }
 export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/lumen_github_pull -o IdentitiesOnly=yes -o BatchMode=yes"
@@ -28,12 +37,15 @@ else
  SHA="$(git rev-parse HEAD)"
  [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
  # A successful PR workflow is NOT a proof that the merge commit passed CI.
- # A public GitHub API request fails closed on network/rate-limit errors.
+ # The GitHub API request (authenticated when a token is installed) fails closed on network/rate-limit errors.
  LUMEN_SHA="$SHA" python3 - <<'PY'
 import json,os,sys,urllib.request
 sha=os.environ["LUMEN_SHA"]
 url="https://api.github.com/repos/Anuponk/lumen/actions/workflows/quality.yml/runs?branch=main&event=push&per_page=100"
-request=urllib.request.Request(url,headers={"Accept":"application/vnd.github+json","User-Agent":"lumen-o2switch-deployer"})
+headers={"Accept":"application/vnd.github+json","User-Agent":"lumen-o2switch-deployer"}
+if os.environ.get("GH_TOKEN"):
+    headers["Authorization"]="Bearer "+os.environ["GH_TOKEN"]
+request=urllib.request.Request(url,headers=headers)
 try:
     with urllib.request.urlopen(request,timeout=20) as response:
         data=json.load(response)
