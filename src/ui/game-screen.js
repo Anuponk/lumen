@@ -1,4 +1,5 @@
 import {setupAppUpdates} from './app-updates.js';
+import {consumeInstallRequest,isIosDevice,requestedInstallCopy} from './install-request.js';
 import {createAnalyticsNavigation} from './analytics-navigation.js';
 import {analyticsPlayers,buildAnalyticsDashboard,renderAnalyticsDashboard,revealAnalyticsQuest} from './analytics-dashboard.js';
 import {renderPlayerDirectory,renderPlayerSessions,rememberSessionExpansion} from './cockpit-sessions.js';
@@ -92,6 +93,9 @@ import {createSound} from "./sound.js";
 import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 
 export function startGameScreen(){
+// #748: the presentation page links to /?install=1. Read once and removed from the URL
+// before anything else reads it, so the first-visit welcome still plays.
+const lumenInstallRequested=consumeInstallRequest(window);
 const firstWelcomeEligible=(()=>{try{return claimFirstWelcome(localStorage,new URL(location.href))}catch{return false}})();
 let firstWelcome=null;
 let adminAnalytics=null;
@@ -1575,9 +1579,25 @@ async function lumenAlreadyInstalled(){
  }
  return false;
 }
-let lumenInstallPrompt=null;
-window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();lumenInstallPrompt=e});
+let lumenInstallPrompt=null,lumenInstallRequestShown=false;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();lumenInstallPrompt=e;if(lumenInstallRequestShown&&!document.getElementById("installOptin")?.hidden)applyRequestedInstallCopy()});
 window.addEventListener("appinstalled",()=>{localStorage.setItem(qaKey("lumenInstalled"),"1");localStorage.removeItem(qaKey("lumenInstallLater"));document.getElementById("installOptin")?.setAttribute("hidden","");trackLumenEvent("pwa_installed")});
+function applyRequestedInstallCopy(){
+ const copy=document.getElementById("installOptinCopy"),btn=document.getElementById("installEnable");
+ if(!copy||!btn)return;
+ const text=requestedInstallCopy({prompt:!!lumenInstallPrompt,ios:isIosDevice(navigator.userAgent)});
+ copy.textContent=text.copy;btn.textContent=text.button;
+}
+// #748: the visitor explicitly asked to install from the presentation page, so the
+// "after quest 12" rule does not apply; an installed app is never asked again.
+async function offerRequestedInstall(waited=0){
+ if(!lumenInstallRequested||lumenInstallRequestShown||await lumenAlreadyInstalled())return;
+ // The first-visit welcome makes the game inert: offer right after it, never under it.
+ if(firstWelcome?.active){if(waited<600)setTimeout(()=>void offerRequestedInstall(waited+1),700);return}
+ const box=document.getElementById("installOptin");if(!box)return;
+ lumenInstallRequestShown=true;applyRequestedInstallCopy();box.hidden=false;
+ trackLumenEvent("pwa_install_offer",null,{ios:isIosDevice(navigator.userAgent),qa:qaActive});
+}
 async function maybeOfferInstall(){
  // Do not disrupt the 1-11 onboarding, the account gate, or other modals.
  if(solvedCount()<12||accountRequired()||await lumenAlreadyInstalled())return;
@@ -2437,7 +2457,7 @@ function handleLearningTap(event){
  if(document.querySelector('#mapModal:not([hidden]),#rulesModal:not([hidden]),#feedbackModal:not([hidden]),#tutorialOverlay:not([hidden]),#shardRulesModal:not([hidden]),#badgeRulesModal:not([hidden])'))return;
  // Learning restrictions apply to gameplay, never to account dialogs or other controls
  // (#711: the full-screen signed-out and account-switch layers sit above the board).
- if(target.closest("#accountOptin,#signedOutScreen,#accountSwitchHold,#mandatoryNickname,#erasedAccountNotice,#mobileAuthPopover,#mobileAccount,#new,#tutorialHelp,#attemptPause,#attemptMask,#feedbackBtn,#learningCoachNext,#learningSkip"))return;
+ if(target.closest("#installOptin,#accountOptin,#signedOutScreen,#accountSwitchHold,#mandatoryNickname,#erasedAccountNotice,#mobileAuthPopover,#mobileAccount,#new,#tutorialHelp,#attemptPause,#attemptMask,#feedbackBtn,#learningCoachNext,#learningSkip"))return;
  if(target.closest("#board .cell"))return;
  event.preventDefault();event.stopImmediatePropagation();
 }
@@ -4807,7 +4827,7 @@ const setPasswordSave=document.getElementById("setPasswordSave");if(setPasswordS
 
 const recovery=document.getElementById("accountRecovery");if(recovery)recovery.onclick=recoverAccountPassword;
 
-const installEnable=document.getElementById("installEnable"),installLater=document.getElementById("installLater");if(installEnable)installEnable.onclick=installLumen;if(installLater)installLater.onclick=dismissInstallLater;const successShare=document.getElementById("successShare");if(successShare)successShare.onclick=createSocialChallengeFromSuccess;
+const installEnable=document.getElementById("installEnable"),installLater=document.getElementById("installLater");if(installEnable)installEnable.onclick=installLumen;if(installLater)installLater.onclick=dismissInstallLater;if(lumenInstallRequested)setTimeout(()=>void offerRequestedInstall(),1200);const successShare=document.getElementById("successShare");if(successShare)successShare.onclick=createSocialChallengeFromSuccess;
 const nativeChallengeShare=document.getElementById("challengeNativeShare"),copyChallengeLink=document.getElementById("challengeCopyLink"),closeChallengeShare=document.getElementById("challengeShareClose");if(nativeChallengeShare)nativeChallengeShare.onclick=sharePendingChallenge;if(copyChallengeLink)copyChallengeLink.onclick=copyPendingChallenge;if(closeChallengeShare)closeChallengeShare.onclick=()=>document.getElementById("challengeShareModal").hidden=true;
 const openChallenges=document.getElementById("openMyChallenges"),closeChallenges=document.getElementById("myChallengesClose");if(openChallenges)openChallenges.onclick=()=>openMyChallenges();if(closeChallenges)closeChallenges.onclick=()=>document.getElementById("myChallengesModal").hidden=true;
 const challengeHome=document.getElementById("challengeResultHome"),challengeReshare=document.getElementById("challengeResultReshare");if(challengeHome)challengeHome.onclick=()=>{location.href=location.pathname};if(challengeReshare)challengeReshare.onclick=()=>{document.getElementById("challengeResultModal").hidden=true;createSocialChallengeFromSuccess()};

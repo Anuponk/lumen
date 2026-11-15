@@ -2219,3 +2219,19 @@ The full quality suite runs on pull requests. After a squash merge, the publishe
 - the fallback cron sends the token to a loopback API fixture (`LUMEN_GITHUB_API`, which only accepts `https://api.github.com` or `http://127.0.0.1:<port>`);
 - both release scripts load the file under the same rules.
 Not testable here: the real private repository. The owner checks a deployment after installing the token and switching the repository to private.
+
+## Install from the presentation page (#748)
+
+- `scripts/install-request-tests.mjs` (Node, quality gate) checks:
+  - `?install=1` is read once and removed from the URL (other parameters and the hash are kept), before the first-visit welcome checks the URL;
+  - the copy: native prompt, iPhone steps or menu ⋮ steps, never a dead button;
+  - the request skips the quest-12 rule but never asks an installed app, and waits for the welcome;
+  - `#installOptin` is in the scripted-learning tap allowlist;
+  - the page link, and the QR file regenerated from the vendored encoder, with its finder patterns.
+- `scripts/install-request-browser-tests.mjs` (quality gate browser suite), for a new visitor at 390 px:
+  - the welcome still plays, then the sheet appears;
+  - a real tap on « Plus tard » closes it during the tutorial;
+  - no repeat after reload, and a plain visit is unchanged.
+- `scripts/landing-browser.mjs`: on phones the install link is shown and the QR is hidden; on computers (≥ 900 px with a fine pointer) the QR is shown and loads, and the link is hidden.
+- QR: `node scripts/landing-qr.mjs` regenerates it, and `--check` verifies it. It was decoded once with an external reader during review; the test itself has no decoder dependency.
+- Owner: scan the QR with an Android phone and an iPhone, and install from both.

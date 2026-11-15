@@ -305,7 +305,7 @@ Finishing an Adventure shows a brief summary of its constellations, stars and ea
 Victory should feel meaningful: quest accomplishment, stars and constellation reveal/milestones. The sky/constellation is the long-term progress visualization, not a collection of legacy rank names.
 
 ## PWA/share friction
-Do not ask for installation before the player has experienced value. Current threshold is after 3 solved quests. Do not re-prompt standalone installs. Share results should make the accomplishment understandable outside the app and retain referral attribution.
+Do not ask for installation before the player has experienced value. Current threshold (`maybeOfferInstall`) is after 12 solved quests, outside onboarding, the account gate and other dialogs, at most once a week after « Plus tard ». Exception (#748): a visitor who chose « Installer sur mon téléphone » or scanned the QR code on `decouvrir.html` arrives with `?install=1`. The request is removed from the URL before the first-visit welcome reads it. The sheet is offered once, right after that welcome, with the native prompt or the exact manual steps (iPhone: Partager → Sur l’écran d’accueil; otherwise menu ⋮). It stays tappable during the scripted tutorial. Do not re-prompt standalone installs. Share results should make the accomplishment understandable outside the app and retain referral attribution.
 
 ## Performance perception
 Touch interaction should feel immediate. Full board rerenders during drag are specifically prohibited because they create unnecessary mobile work and visual instability. Performance tests around cell and board painting protect this.
