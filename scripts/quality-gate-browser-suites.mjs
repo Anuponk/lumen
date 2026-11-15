@@ -159,6 +159,11 @@ export const browserSuites=[
     "script": "landing-browser-tests.mjs",
     "output": "ci-landing.json",
     "port": 9261
+  },
+  {
+    "script": "install-request-browser-tests.mjs",
+    "output": "ci-install-request.json",
+    "port": 9262
   }
 ];
 

@@ -5,6 +5,7 @@ export const nodeSuites=[
  'landing-seo-tests.mjs',
  'ci-scope-tests.mjs',
  'license-tests.mjs',
+ 'install-request-tests.mjs',
  'adventure-access-tests.mjs',
  'mastery-unlock-tests.mjs',
  'adventure-offer-tests.mjs',

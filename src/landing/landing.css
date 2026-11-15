@@ -12,6 +12,14 @@ h2{font-size:clamp(21px,4vw,28px);margin:40px 0 12px}
 .cta{text-align:center;margin:24px 0 8px}
 .play{display:inline-block;padding:14px 28px;border-radius:999px;background:linear-gradient(180deg,#9be8f4,#4fb9d3);color:#05202b;font-weight:800;text-decoration:none;box-shadow:0 0 28px rgba(141,225,239,.35)}
 .play:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+/* #748: install from a phone (link) or from a computer (QR code), chosen in CSS only. */
+.install{display:flex;justify-content:center;margin:12px 0 4px}
+.install-mobile{display:inline-block;padding:12px 22px;border-radius:999px;border:1px solid var(--accent);color:var(--accent);font-weight:700;text-decoration:none}
+.install-mobile:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.install-qr{display:none;margin:8px 0 0;align-items:center;gap:16px;text-align:left}
+.install-qr img{width:148px;height:148px;border-radius:12px;background:#fff;padding:6px;border:1px solid var(--line)}
+.install-qr figcaption{max-width:220px;color:var(--muted);font-size:14px}
+@media (min-width:900px) and (hover:hover) and (pointer:fine){.install-mobile{display:none}.install-qr{display:flex}}
 .cta-note{color:var(--muted);font-size:14px;margin:8px 0 0}
 .shots{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin:24px 0}
 .shots figure{margin:0;width:min(260px,44vw);min-width:200px;text-align:center}
