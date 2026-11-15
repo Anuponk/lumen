@@ -54,7 +54,9 @@ export async function verifyWalletAndOfflineFlow({send,evaluate,navigate,url}){
   }})};
  `;
  const {identifier}=await send('Page.addScriptToEvaluateOnNewDocument',{source});
- const until=async(expression)=>{for(let i=0;i<150;i++){if(await evaluate(expression))return;await new Promise(r=>setTimeout(r,100))}throw Error('Wallet browser timeout: '+expression)};
+ // A reload can briefly remove the observed nodes; retry transient evaluation errors and
+ // rethrow the last one on timeout, so a state that never arrives still fails.
+ const until=async(expression)=>{let last=null;for(let i=0;i<150;i++){try{if(await evaluate(expression))return;last=null}catch(error){last=error}await new Promise(r=>setTimeout(r,100))}throw last||Error('Wallet browser timeout: '+expression)};
  const click=async id=>{
   await evaluate(`document.getElementById(${JSON.stringify(id)}).scrollIntoView({block:'center',behavior:'instant'})`);
   await until(`(()=>{const e=document.getElementById(${JSON.stringify(id)}),r=e.getBoundingClientRect();for(let p=e;p;p=p.parentElement){if(p.getAnimations().some(a=>a.playState==='running'&&Number.isFinite(a.effect.getComputedTiming().endTime)))return false}return !e.disabled&&r.width>0&&r.height>0&&document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.closest('button')===e})()`);

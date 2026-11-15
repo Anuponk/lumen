@@ -30,7 +30,9 @@ def verify_manifest(xml, package, debug):
     assert sdk.attrib[ANDROID + 'targetSdkVersion'] == '36'
     permissions = {item.attrib[ANDROID + 'name'] for item in manifest.findall('uses-permission')}
     receiver_permission = package + '.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'
-    assert permissions == {'android.permission.INTERNET', receiver_permission}, permissions
+    # #729: Play Billing adds BILLING and ACCESS_NETWORK_STATE through the billing library.
+    assert permissions == {'android.permission.INTERNET', receiver_permission,
+                           'com.android.vending.BILLING', 'android.permission.ACCESS_NETWORK_STATE'}, permissions
     declared = {item.attrib[ANDROID + 'name']: item.attrib[ANDROID + 'protectionLevel']
                 for item in manifest.findall('permission')}
     assert set(declared) == {receiver_permission}, declared

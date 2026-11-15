@@ -43,7 +43,7 @@ renseigner Console ; ne pas réinterpréter son état depuis une CI Android.
   activer/annoncer de comptes enfants : la décision parentale reste à valider.
 - [ ] Permission plateforme : **INTERNET**. AndroidX ajoute la permission interne
   `${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` protégée par
-  signature ; le contrat CI vérifie les deux et refuse tout ajout. Le navigateur conserve
+  signature. Depuis #729, la bibliothèque de paiement ajoute **com.android.vending.BILLING** et **ACCESS_NETWORK_STATE**. Le contrat CI vérifie cet ensemble exact et refuse tout autre ajout. Le navigateur conserve
   les permissions Web Push ; aucune permission native POST_NOTIFICATIONS ni
   service FCM ajouté. Ne pas affirmer leur fonctionnement avant la recette.
 - [ ] Inventorier les flux de la **version web servie au moment de la revue**
