@@ -4,6 +4,7 @@ import {createDurableCanonicalVictoryOutbox} from '../src/persistence/durable-ca
 import {replayCanonicalVictoryOutbox} from '../src/persistence/canonical-outbox.js';
 import {replayLegacyVictoryOutbox} from '../src/persistence/legacy-command.js';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
+import {classifyCanonicalRecoveryError} from '../src/persistence/canonical-recovery-errors.js';
 
 function local(){const data=new Map();return {data,get length(){return data.size},key:i=>[...data.keys()][i]??null,getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,String(v)),removeItem:k=>data.delete(k)};}
 function indexed(){const data=new Map();return {data,entries:async prefix=>[...data].filter(([key])=>key.startsWith(prefix)),get:async key=>data.get(key)??null,put:async(key,raw)=>{if(data.has(key)&&data.get(key)!==raw)throw Error('immutable');data.set(key,raw)},remove:async(key,raw)=>{if(data.has(key)&&data.get(key)!==raw)throw Error('changed');data.delete(key)}};}
@@ -183,4 +184,52 @@ test('V2 recreated captures preserve the original receipt and reject changed fac
    assert.deepEqual(JSON.parse(archive[1]).receipt,receipt);assert.deepEqual(JSON.parse(archive[1]).entry,entry);
   }else{await assert.rejects(box.archiveRecreatedCapture('a',entry,committed),variant);assert.equal((await box.pending('a')).length,1);}
  }
+});
+
+// #700: since the official timer (#653) every V2 request carries facts.timing.
+// A queued victory already committed on the server must archive against that
+// receipt; otherwise it stays pending forever although the cloud saved it.
+test('V2 recreated captures accept the official timing only when it matches the receipt',async()=>{
+ const timing={version:1,gridRevision:1,helpUses:{hint:0,verify:0,guided:0}};
+ for(const variant of ['same-capture','dominated','changed-timing','missing-timing','added-timing']){
+  // A dominated (slower) recapture is only archived when made after the receipt.
+  const storage=local(),fallback=indexed(),box=createDurableCanonicalVictoryOutbox(storage,{fallback,now:()=>variant==='dominated'?'2026-11-14T22:26:00Z':'2026-11-14T22:25:00Z'});
+  const facts={seconds:42,assistanceUsed:false,mistakeCommitted:false,qualifying:true,hintUsed:false,challengeFailed:false,qualifiedDay:'2026-11-14',qualifiedAt:'2026-11-14T22:24:00Z',timing};
+  const later={badges:{speed:true},performance:{bestTime:42,assisted:false,seconds:42},stars:1,facts:{...facts}};
+  if(variant==='dominated')Object.assign(later,{performance:{bestTime:50,assisted:false,seconds:50},facts:{...facts,seconds:50}});
+  if(variant==='changed-timing')later.facts.timing={...timing,helpUses:{hint:1,verify:0,guided:0}};
+  if(variant==='missing-timing')delete later.facts.timing;
+  const requestFacts=variant==='added-timing'?(({timing:_,...rest})=>rest)(facts):facts;
+  const entry=await box.enqueue('a','q',later,{operationId:'run-reset-0'});
+  const receipt={request:{version:2,operationId:entry.operationId,questId:'q',facts:requestFacts},outcome:{firstCompletion:true,attempts:1,savedPerformance:{badges:{speed:true}}},recordedAt:'2026-11-14T22:25:01Z'};
+  const committed={userId:'a',receipt,profile:{canonicalQuestState:{q:{solved:true,badges:{speed:true},runPerformance:{attempts:1}}}}};
+  if(variant==='same-capture'||variant==='dominated'){
+   await box.archiveRecreatedCapture('a',entry,committed);
+   assert.equal((await box.pending('a')).length,0,variant);
+   const archive=[...fallback.data].find(([key])=>key.startsWith('lumenCanonicalRecreatedCaptureArchiveV1:'));
+   assert.deepEqual(JSON.parse(archive[1]).receipt,receipt);
+  }else{
+   await assert.rejects(box.archiveRecreatedCapture('a',entry,committed),error=>error.code==='CAPTURE_V2_PROOF_UNCONFIRMED',variant);
+   assert.equal((await box.pending('a')).length,1,variant);
+  }
+ }
+});
+
+test('replay of a committed timed victory acknowledges it without resending the command',async()=>{
+ const storage=local(),fallback=indexed(),box=createDurableCanonicalVictoryOutbox(storage,{fallback,now:()=> '2026-11-14T22:25:00Z'});
+ const facts={seconds:42,assistanceUsed:false,mistakeCommitted:false,qualifying:true,hintUsed:false,challengeFailed:false,qualifiedDay:'2026-11-14',qualifiedAt:'2026-11-14T22:24:00Z',timing:{version:1,gridRevision:0,helpUses:{hint:0,verify:0,guided:0}}};
+ const entry=await box.enqueue('a','q',{badges:{speed:true},performance:{bestTime:42,assisted:false,seconds:42},stars:1,facts},{operationId:'run-reset-0'});
+ const receipt={request:{version:2,operationId:entry.operationId,questId:'q',facts},outcome:{firstCompletion:true,attempts:1,savedPerformance:{badges:{speed:true}}},recordedAt:'2026-11-14T22:25:01Z'};
+ const committed={userId:'a',receipt,profile:{canonicalQuestState:{q:{solved:true,badges:{speed:true},runPerformance:{attempts:1}}}}};
+ let commits=0;
+ const confirmed=await replayCanonicalVictoryOutbox(box,'a',async()=>{commits++;throw Error('must not resend')},{recoverCommitted:async e=>{await box.archiveRecreatedCapture('a',e,committed);return committed}});
+ assert.equal(confirmed.length,1);assert.equal(commits,0);
+ assert.equal((await box.pending('a')).length,0,'A server-committed victory no longer stays pending');
+});
+
+test('archive failure codes reach diagnostics but never pause a victory',()=>{
+ for(const code of ['CAPTURE_V2_PROOF_UNCONFIRMED','CAPTURE_RECEIPT_ORDER_CONFLICT','CAPTURE_ARCHIVE_WRITE_FAILED'])
+  assert.deepEqual(classifyCanonicalRecoveryError({code}),{kind:'retry',code});
+ assert.equal(classifyCanonicalRecoveryError({code:'CAPTURE_<script>'}).code,'UNKNOWN');
+ assert.equal(classifyCanonicalRecoveryError({code:'capture_x'}).code,'UNKNOWN');
 });

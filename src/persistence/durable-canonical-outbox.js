@@ -1,5 +1,6 @@
 import {createIndexedOutboxStore} from './indexed-outbox-store.js';
 import {classifyCanonicalRecoveryError} from './canonical-recovery-errors.js';
+import {sameCloudProfile} from './cloud-profile.js';
 import {assertRecreatedLegacyCapture} from './legacy-command.js';
 import {obsoleteQuestIntent,questResetRevision,canonicalIntentVersionKey} from './quest-reset.js';
 
@@ -108,10 +109,11 @@ export function createDurableCanonicalVictoryOutbox(storage,{fallback=browserSto
   if(receipt?.request?.version===2){
    const request=receipt.request,facts=request.facts,later=reward?.facts;
    const factKeys=['seconds','assistanceUsed','mistakeCommitted','qualifying','hintUsed','challengeFailed','qualifiedDay','qualifiedAt'];
-   const validFacts=value=>keys(value,factKeys)&&Object.keys(value).length===factKeys.length&&Number.isSafeInteger(value.seconds)&&value.seconds>=0&&
+   // #700: V2 requests carry the official timing since #653; it must equal the receipt's.
+   const validFacts=value=>keys(value,[...factKeys,'timing'])&&Object.keys(value).length===factKeys.length+(Object.hasOwn(value,'timing')?1:0)&&factKeys.every(key=>Object.hasOwn(value,key))&&Number.isSafeInteger(value.seconds)&&value.seconds>=0&&
     factKeys.slice(1,6).every(key=>typeof value[key]==='boolean')&&typeof value.qualifiedDay==='string'&&Number.isFinite(Date.parse(value.qualifiedAt));
    if(!keys(reward,['facts','badges','performance','stars'])||!validFacts(facts)||!validFacts(later)||later.seconds<facts.seconds||
-    !factKeys.filter(key=>key!=='seconds').every(key=>later[key]===facts[key])||
+    !factKeys.filter(key=>key!=='seconds').every(key=>later[key]===facts[key])||!sameCloudProfile(later.timing??null,facts.timing??null)||
     !Number.isSafeInteger(receipt.outcome?.attempts)||receipt.outcome.attempts<1||!(saved?.runPerformance?.attempts>=receipt.outcome.attempts)||
     (reward.stars!==undefined&&(!Number.isSafeInteger(reward.stars)||reward.stars<1)))throw Object.assign(Error('Recreated V2 capture proof unconfirmed'),{code:'CAPTURE_V2_PROOF_UNCONFIRMED'});
    const performance={seconds:facts.seconds,bestTime:facts.seconds,assisted:facts.assistanceUsed};
