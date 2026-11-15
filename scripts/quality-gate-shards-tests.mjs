@@ -11,10 +11,10 @@ import {assertQualityResults} from './quality-gate-result.mjs';
 test('three CI shards cover the local browser inventory exactly once', () => {
  const local=selectQualityPlan([],{});
  assert.equal(local.phase,'full');
- assert.equal(local.suites.length,31);
+ assert.equal(local.suites.length,32);
  const shards=[1,2,3].map(i=>selectQualityPlan([`--browser-shard=${i}/3`],{}));
  const selected=shards.flatMap(plan=>plan.suites.map(s=>s.script));
- assert.equal(new Set(selected).size,31);
+ assert.equal(new Set(selected).size,32);
  assert.deepEqual(selected.sort(),local.suites.map(s=>s.script).sort());
  for(const field of ['script','output','port'])assert.equal(new Set(browserSuites.map(s=>s[field])).size,browserSuites.length);
  for(const shard of shards)assert.equal(shard.phase,'browser');
@@ -25,9 +25,18 @@ test('learning selection preserves exactly the same omission in local and CI mod
  const env={LUMEN_RUN_LEARNING_BROWSER:'false'};
  const local=selectQualityPlan([],env).suites.map(s=>s.script);
  const ci=[1,2,3].flatMap(i=>selectQualityPlan([`--browser-shard=${i}/3`],env).suites.map(s=>s.script));
- assert.equal(local.length,30);
+ assert.equal(local.length,31);
  assert(!ci.includes('learning-browser-tests.mjs'));
  assert.deepEqual(ci.sort(),local.sort());
+});
+
+test('#744: a presentation-page-only PR runs only the page suite, on shard 1', () => {
+ const env={LUMEN_QUALITY_SCOPE:'landing'};
+ assert.deepEqual(selectQualityPlan([],env).suites.map(s=>s.script),['landing-browser-tests.mjs']);
+ assert.deepEqual([1,2,3].map(i=>selectQualityPlan([`--browser-shard=${i}/3`],env).suites.map(s=>s.script)),[['landing-browser-tests.mjs'],[],[]]);
+ assert.equal(selectQualityPlan(['--node-only'],env).scope,'landing');
+ for(const scope of [undefined,'full','docs'])assert.equal(selectQualityPlan([],{LUMEN_QUALITY_SCOPE:scope}).suites.length,32,'Full inventory for '+scope);
+ assert.throws(()=>selectQualityPlan([],{LUMEN_QUALITY_SCOPE:'everything-skipped'}),/Unknown LUMEN_QUALITY_SCOPE/);
 });
 
 test('invalid or mixed invocations fail instead of silently reducing coverage', () => {
@@ -65,7 +74,7 @@ test('invalid CLI invocation fails and replaces stale reports in the isolated ou
  }finally{rmSync(directory,{recursive:true,force:true})}
 });
 
-test('all pre-sharding browser suites are retained',()=>{
+test('all pre-sharding browser suites are retained, plus the #744 landing suite',()=>{
  assert.deepEqual(browserSuites.map(s=>s.script).sort(),[
   "account-session-browser-tests.mjs",
   "account-switch-browser-tests.mjs",
@@ -82,6 +91,7 @@ test('all pre-sharding browser suites are retained',()=>{
   "iau-completion-browser-tests.mjs",
   "iau-completion-cloud-browser-tests.mjs",
   "incident-investigation-browser-tests.mjs",
+  "landing-browser-tests.mjs",
   "late-game-browser-tests.mjs",
   "learning-browser-tests.mjs",
   "learning-coach-placement-browser-tests.mjs",

@@ -3,6 +3,7 @@ export const nodeSuites=[
  'analytics-dashboard-tests.mjs',
  'analytics-navigation-tests.mjs',
  'landing-seo-tests.mjs',
+ 'ci-scope-tests.mjs',
  'adventure-access-tests.mjs',
  'mastery-unlock-tests.mjs',
  'adventure-offer-tests.mjs',

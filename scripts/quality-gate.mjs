@@ -115,7 +115,8 @@ try{
  const workers=Number(process.env.LUMEN_BROWSER_WORKERS||1);
  if(![1,2].includes(workers))throw Error("LUMEN_BROWSER_WORKERS must be 1 or 2");
  console.log("LUMEN quality gate — Node "+process.version+" — "+process.platform);
- if(plan.phase!=='browser')for(const suite of nodeSuites)await run(process.execPath,[path.join('scripts',suite)],{label:suite});
+ console.log("Scope: "+plan.scope);
+ if(plan.phase!=='browser')for(const suite of (plan.scope==='landing'?['landing-seo-tests.mjs']:nodeSuites))await run(process.execPath,[path.join('scripts',suite)],{label:suite});
  if(plan.phase!=='node'){
   await startServer();
   await runPool(plan.suites.map(({script,output,port})=>()=>runBrowser(script,output,port)),workers);

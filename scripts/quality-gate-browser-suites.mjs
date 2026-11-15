@@ -154,15 +154,31 @@ export const browserSuites=[
     "script": "personal-records-browser-tests.mjs",
     "output": "ci-personal-records.json",
     "port": 9238
+  },
+  {
+    "script": "landing-browser-tests.mjs",
+    "output": "ci-landing.json",
+    "port": 9261
   }
 ];
 
+// #744: a presentation-page-only pull request (scripts/ci-scope.mjs) runs only the page
+// suite, on the first shard; any other value is rejected rather than reducing coverage.
+const LANDING_SUITE='landing-browser-tests.mjs';
+function qualityScope(env){
+ const scope=env.LUMEN_QUALITY_SCOPE||'full';
+ if(!['full','docs','landing'].includes(scope))throw Error('Unknown LUMEN_QUALITY_SCOPE: '+scope);
+ return scope;
+}
+
 export function selectQualityPlan(args=[],env=process.env) {
- if(args.length===0)return {phase:'full',shard:null,suites:browserSuites.filter(s=>env.LUMEN_RUN_LEARNING_BROWSER!=='false'||s.script!=='learning-browser-tests.mjs')};
- if(args.length===1&&args[0]==='--node-only')return {phase:'node',shard:null,suites:[]};
+ const landing=qualityScope(env)==='landing';
+ if(args.length===0)return {phase:'full',shard:null,scope:landing?'landing':'full',suites:landing?browserSuites.filter(s=>s.script===LANDING_SUITE):browserSuites.filter(s=>env.LUMEN_RUN_LEARNING_BROWSER!=='false'||s.script!=='learning-browser-tests.mjs')};
+ if(args.length===1&&args[0]==='--node-only')return {phase:'node',shard:null,scope:landing?'landing':'full',suites:[]};
  const match=args.length===1&&/^--browser-shard=([1-3])\/3$/.exec(args[0]);
  if(!match)throw Error('Usage: quality-gate.mjs [--node-only | --browser-shard=1/3|2/3|3/3]');
  const index=Number(match[1])-1;
+ if(landing)return {phase:'browser',shard:match[1]+'/3',scope:'landing',suites:index===0?browserSuites.filter(s=>s.script===LANDING_SUITE):[]};
  // Assign before optional learning selection so the other shards stay stable.
  return {phase:'browser',shard:match[1]+'/3',suites:browserSuites.filter((s,i)=>i%3===index).filter(s=>env.LUMEN_RUN_LEARNING_BROWSER!=='false'||s.script!=='learning-browser-tests.mjs')};
 }

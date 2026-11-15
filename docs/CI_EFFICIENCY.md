@@ -18,6 +18,7 @@ browser results, or explicit documentation-only classification with both runtime
 jobs skipped. Matrix fail-fast is disabled so independent failures retain reports.
 Workflow identity, the final `quality` context, independent cloud/SQL checks,
 documentation classification and optional learning selection remain unchanged.
+Presentation-page scope (#744): `prepare` also exposes `scope` from the base copy of `scripts/ci-scope.mjs`. For a `landing` PR, the `node` job runs formatting, the release tests and `landing-seo-tests`. Browser shard 1 runs `landing-browser-tests` only, and shards 2 and 3 have no suite. `ledger-sql` and `reconciliation` are skipped. See [TESTING](TESTING.md#ci-scope-presentation-page-only-744).
 The old schedule/main-only steps were unreachable under the PR-only trigger and
 are removed; no current validation is removed.
 
