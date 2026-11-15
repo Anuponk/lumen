@@ -23,13 +23,15 @@ aids, abandonment, offline play dates and retention cannot be reconstructed.
 Collection opt-in for future product events remains separate work.
 
 The corrected historical summary preserves explicit event ownership, links a
-guest only to an unambiguous human/non-QA owner, deduplicates paired completion
+guest only to one known account owner across history, deduplicates paired completion
 events by actor/quest/session/attempt/run, counts actual attempt starts rather
 than grid openings, and computes WAU independently of the selected window.
 First observation is per attributed actor, not per newly encountered browser;
 it remains different from account creation. Directory readers use the same
 qualified traffic; points are catalogue ordinals, never inferred numeric next
 quests. Recent receipt evidence can advance an observed point, never a save.
+QA events remain excluded from metrics; their ownership still prevents linking
+an ambiguous guest to the other account of a shared browser.
 
 Optional sessions renew after 30 minutes idle even in an open page. Future
 permitted attempt events include `grid_revision` from the played attempt before

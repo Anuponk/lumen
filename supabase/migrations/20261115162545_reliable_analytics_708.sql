@@ -12,7 +12,7 @@ returns table(player_key text,event_name text,quest_id text,quest_ordinal intege
 language sql stable security invoker set search_path='' as $$
  with owners as (
   select anonymous_id,min(user_id::text) owner from lumen.analytics_events
-  where user_id is not null and properties->>'traffic_type'='human' and coalesce(properties->>'qa_mode','')=''
+  where user_id is not null
   group by anonymous_id having count(distinct user_id)=1
  )
  select coalesce('u:'||e.user_id::text,'u:'||o.owner,'a:'||e.anonymous_id),e.event_name::text,q.quest_id,

@@ -58,6 +58,13 @@ begin
  (b,'qa-browser-708','session_start','qa',now(),'{"traffic_type":"human","qa_mode":"new"}'),
  (null,'weekly-browser-708','session_start','weekly',now()-interval '3 days','{"traffic_type":"human"}');
  assert (select count(distinct player_key) from lumen_commands.cockpit_events(7) where session_id='s-708')=3,'explicit owners preserved and shared guest remains ambiguous';
+ -- QA is excluded from metrics, but its authenticated owner still proves this
+ -- browser was shared. Filtering QA must never invent a unique guest owner.
+ insert into lumen.analytics_events(user_id,anonymous_id,event_name,session_id,properties) values
+ (a,'mixed-owner-708','session_start','mixed-human-708','{"traffic_type":"human"}'),
+ (b,'mixed-owner-708','session_start','mixed-qa-708','{"traffic_type":"human","qa_mode":"new"}'),
+ (null,'mixed-owner-708','session_start','qa-linked-guest-708','{"traffic_type":"human"}');
+ assert (select player_key from lumen_commands.cockpit_events(7) where session_id='qa-linked-guest-708')='a:mixed-owner-708','known QA owner keeps guest attribution ambiguous';
  r:=public.lumen_admin_cockpit(1);
  assert (r->'summary'->>'wau')::bigint>(r->'summary'->>'unique_players')::bigint,'WAU includes a weekly visitor outside the selected day';
  assert (select count(*) from lumen_commands.cockpit_events(7) where session_id='qa')=0,'QA excluded';
