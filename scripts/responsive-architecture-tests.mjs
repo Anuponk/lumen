@@ -7,7 +7,7 @@ const css=fs.readFileSync('src/ui/styles.css','utf8');
 const docs=fs.readFileSync('docs/UX_AND_VISUAL_DIRECTION.md','utf8');
 const sky=fs.readFileSync('src/ui/sky-navigation.js','utf8');
 assert(!/innerWidth|matchMedia|MobileSky|DesktopSky/.test(sky),'Mon ciel must use one viewport-independent component');
-assert(css.includes('grid-template-columns:repeat(2,minmax(0,1fr))')&&css.includes('grid-template-columns:repeat(3,minmax(0,1fr))'),'Mon ciel common grid must adapt through CSS');
+assert(css.includes('grid-template-columns:repeat(2,minmax(0,1fr))'),'Mon ciel uses one 2-column grid at every width (#749)');
 
 assert(!html.includes('desktopLeftSlot'),'desktop-only progression slot remains');
 assert(!html.includes('desktopGuide'),'desktop-only guide slot remains');
@@ -15,8 +15,9 @@ assert(!html.includes('id="mobileJourney"'),'duplicate mobile journey remains');
 assert(!ui.includes('arrangeDesktopPanels'),'viewport-driven DOM reparenting remains');
 assert(!ui.includes('mobileJourneyText'),'duplicate journey synchronization remains');
 assert(ui.includes('e.pointerType==="mouse"'),'drag interaction is not capability-driven');
-assert(css.includes('@media (min-width:1100px)'),'wide responsive layout missing');
-assert(css.includes('@media (max-width:700px)'),'compact responsive layout missing');
+assert(!css.includes('@media (min-width:1100px)'),'#749: no separate wide layout');
+assert(css.includes('#749: computers and tablets use the phone layout in a centered column'),'#749 centered column missing');
+assert(css.includes('/* #749: formerly (max-width:700px); now every width */'),'#749: phone layout applies at every width');
 assert(css.includes('.journey{display:flex!important'),'canonical journey is not adapted on mobile');
 assert(docs.includes('One responsive game UI'),'responsive architecture documentation missing');
 

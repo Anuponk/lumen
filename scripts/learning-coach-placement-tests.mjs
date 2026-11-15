@@ -4,39 +4,22 @@ import vm from 'node:vm';
 import { learningCopy } from '../src/game/learning.js';
 
 const source=fs.readFileSync('src/ui/game-screen.js','utf8');
-// #687: phones (<= 700 px) lay the coach out above the board; the compact
-// fixed/absolute placement below remains for tablets (701-1100 px).
-const start=source.indexOf('const COACH_ABOVE_MAX_WIDTH=');
+// #749: every width uses the phone layout, so the coach is always laid out above the
+// board (#687 phone branch); the former tablet/desktop placement no longer exists.
+const start=source.indexOf('const COACH_MIN_BOARD=');
 const end=source.indexOf('\nwindow.addEventListener("resize"',start);
 assert(start>=0&&end>start,'use the real coach placement implementation');
-for(const levelIndex of [0,1]){
- const card={hidden:false,style:{},get offsetHeight(){return Math.min(96,parseFloat(this.style.maxHeight)||96)}};
- card.parentElement={getBoundingClientRect:()=>({top:114,left:10}),scrollTop:0,scrollLeft:0};
- const help={getBoundingClientRect:()=>({top:5,bottom:41})};
- const document={getElementById:id=>id==='scriptedLearn'?card:id==='tutorialHelp'?help:null,querySelector:selector=>{assert.equal(selector,'.actions');return {getBoundingClientRect:()=>({top:570,bottom:609})}}};
- const board={getBoundingClientRect:()=>({top:114,bottom:540,left:20,right:340})};
- vm.runInNewContext(source.slice(start,end)+'\npositionLearningCoach();',{document,board,innerWidth:800,innerHeight:640,autoMarkingLessonRequired:()=>false,activeQuestOrdinal:()=>1,QUEST_MILESTONES:{skyTourAfter:3},levelIndex});
- const top=parseFloat(card.style.top)+(card.style.position==='absolute'?card.parentElement.getBoundingClientRect().top:0),bottom=top+card.offsetHeight;
- assert(top>=help.getBoundingClientRect().bottom+8,'short-screen learning coach must leave the help button reachable, including its focus ring');
- assert(bottom<=board.getBoundingClientRect().top-8,'coach must fit before the board without covering cells');
- assert(bottom<570,'coach must leave the action row reachable');
+const stubbed='\nplaceCoachAboveBoard=c=>placed.push(c);clearCoachAboveBoard=()=>cleared.push(1);positionLearningCoach();';
+for(const innerWidth of [390,800,1440,1920]){
+ const card={hidden:false,style:{}},placed=[],cleared=[];
+ const document={getElementById:id=>id==='scriptedLearn'?card:null};
+ vm.runInNewContext(source.slice(start,end)+stubbed,{document,innerWidth,innerHeight:900,placed,cleared});
+ assert.deepEqual([placed.length,cleared.length],[1,0],'Coach above the board at '+innerWidth+' px');
+ card.hidden=true;placed.length=0;
+ vm.runInNewContext(source.slice(start,end)+stubbed,{document,innerWidth,innerHeight:900,placed,cleared});
+ assert.deepEqual([placed.length,cleared.length],[0,1],'Hidden coach releases its reserve at '+innerWidth+' px');
 }
-// Bringing an off-screen header into view moves the board by 54px. The
-// compact coach must move with it before any later frame/resize callback.
-{
- let headerBottom=-13,boardTop=118;
- const card={hidden:false,style:{},get offsetHeight(){return Math.min(96,parseFloat(this.style.maxHeight)||96)}};
- const help={getBoundingClientRect:()=>({bottom:headerBottom})};
- const board={getBoundingClientRect:()=>({top:boardTop,bottom:500,left:20,right:340})};
- card.parentElement={getBoundingClientRect:()=>({top:boardTop,left:10}),scrollTop:0,scrollLeft:0};
- const document={getElementById:id=>id==='scriptedLearn'?card:help,querySelector:()=>({getBoundingClientRect:()=>({bottom:609})})};
- vm.runInNewContext(source.slice(start,end)+'\npositionLearningCoach();',{document,board,innerWidth:800,innerHeight:640,autoMarkingLessonRequired:()=>false,activeQuestOrdinal:()=>1,QUEST_MILESTONES:{skyTourAfter:3},levelIndex:0});
- const viewportTop=()=>parseFloat(card.style.top)+(card.style.position==='absolute'?boardTop:0);
- assert(viewportTop()<41,'fixture reproduces the earlier off-screen-header placement');
- headerBottom=41;boardTop=172;
- assert(viewportTop()>=headerBottom+8,'bringing help into view must move its compact coach in the same coordinate space before the click');
- assert(viewportTop()+card.offsetHeight<=boardTop-8);
-}
+assert(!/innerWidth<=1100|COACH_ABOVE_MAX_WIDTH/.test(source),'No width-based coach branch remains');
 // #687/#690 phone branch: the coach is in flow above the board with ONE reserve
 // for the whole lesson (its longest step). The board keeps the same size on
 // every step and only gives back what the reserve pushes past the screen.
@@ -98,4 +81,4 @@ function phoneFixture({ slackBelow, longest = 'x'.repeat(120), giveBack = 1 }) {
   h.run();
   assert.equal(h.props.get('--coach-board-size'), '180px');
 }
-console.log('Learning coach: tablet short-screen controls remain reachable; phones reserve one stable coach height above the board.');
+console.log('Learning coach: above the board at every width (#749); one stable coach height reserved above the board.');

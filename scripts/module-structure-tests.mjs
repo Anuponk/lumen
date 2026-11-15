@@ -19,8 +19,11 @@ const currentStyles=fs.readFileSync('src/ui/styles.css','utf8').replace(/\r/g,''
 const primaryCTA='.success-actions #successNew.success-primary{background:linear-gradient(135deg,#68e7ff,#8b7cff);color:#07111d;border-color:transparent;box-shadow:0 0 22px rgba(104,231,255,.2)}';
 assert(currentStyles.includes(primaryCTA),'Primary CTA styling missing');
 assert(currentStyles.includes('max-height:calc(100dvh - 48px);overflow-y:auto;'),'Success card cannot scroll on small screens');
-assert(currentStyles.includes('@media (min-width:1100px)'),'Common wide responsive layout missing');
-assert(currentStyles.includes('@media (max-width:700px)'),'Common compact responsive layout missing');
+// #749: one layout. The former wide workspace (min-width:1100px) is gone; wide screens
+// only center the phone layout in a column, and the phone rules apply at every width.
+assert(!currentStyles.includes('@media (min-width:1100px)'),'Former wide workspace must not come back without a product decision');
+assert(currentStyles.includes('#749: computers and tablets use the phone layout in a centered column'),'Centered column layout missing');
+assert(currentStyles.includes('/* #749: formerly (max-width:700px); now every width */'),'Phone layout must apply at every width');
 assert(currentStyles.includes('.attempt-mask'),'Attempt lifecycle mask styling missing');
 const labels=source=>[...source.matchAll(/\btest\("([^"\n]+)"/g)].map(match=>match[1]);
 const tests=labels(fs.readFileSync('src/testing/hint-tests.js','utf8'));
