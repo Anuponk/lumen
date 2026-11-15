@@ -1,5 +1,57 @@
 # CI and Codex efficiency — phase 3
 
+## Browser sharding — November 2026 (#750)
+
+Base: `4316d09e2e542bac9f2cf079772a1eede54ce623`. Successful PR runs
+[43754677941](https://github.com/Anuponk/lumen/actions/runs/43754677941) and
+[43756662325](https://github.com/Anuponk/lumen/actions/runs/43756662325) took
+532 s and 588 s inside the quality script. In the latter, Node suites totalled
+41.3 s and 31 browser suites totalled 1027.4 s across two workers. The longest
+browser suites were sky navigation (251.5 s), learning (156.9 s), account session
+(79.8 s) and general browser (65.8 s). These are two observations, not a trend.
+
+The PR workflow now classifies scope in `prepare`, then runs `node` and three
+`browser` matrix children concurrently. Each browser runner retains two isolated
+workers. The required `quality` job runs even after dependency failure and
+accepts only a successful scope classification plus successful Node and aggregate
+browser results, or explicit documentation-only classification with both runtime
+jobs skipped. Matrix fail-fast is disabled so independent failures retain reports.
+Workflow identity, the final `quality` context, independent cloud/SQL checks,
+documentation classification and optional learning selection remain unchanged.
+The old schedule/main-only steps were unreachable under the PR-only trigger and
+are removed; no current validation is removed.
+
+`scripts/quality-gate-browser-suites.mjs` is the shared browser inventory. Suites
+are assigned by their stable inventory index modulo three before optional
+learning selection. Every existing suite runs exactly once across the three
+children; no assertion, viewport or real victory delay changes. New suites join
+the same inventory for both local and CI execution. Browser/server lifecycle
+remains in the existing quality runner, not in workflow shell scripts.
+
+Local commands: `node scripts/quality-gate.mjs` retains the full Node/browser
+run; `--node-only` runs Node suites; `--browser-shard=1/3`, `2/3` or `3/3` runs
+one browser partition. Invalid/mixed options fail. `quality-gate-shards-tests.mjs`
+covers inventory preservation, exact-once partitioning, optional learning,
+invalid invocation and final-gate failure/cancellation/missing-result handling;
+the existing pool tests still cover draining failures and worker isolation.
+
+CI sets `LUMEN_VALIDATION_DIR` to a runner temporary directory and uploads all
+current JSON reports under distinct `lumen-validation-node` and
+`lumen-validation-browser-N` artifacts, retained for 14 days. Historical tracked
+reports cannot enter these artifacts. Local default output remains
+`docs/validation/`. Timing summaries include phase and shard; the metrics
+collector distinguishes skipped documentation runs from executed runtime gates.
+
+Measure the complete workflow wall time including scope classification and final
+aggregation, and separately sum runner durations. More concurrent runners can
+increase billed work even when feedback arrives sooner. CI results and timings
+for this change belong in its PR; no gain is claimed before that execution.
+Compare the next 10 comparable PRs before declaring a durable improvement.
+
+The October report below is historical, including its then-current suite counts
+and absence of npm dependencies. The current workflow retains `npm ci` and the
+format check; it does not cache successful test results.
+
 Scope: tooling and CI only, based on `b95fce3` (merged phases 1/#466 and 2/#467).
 No player rules, runtime modules, migrations or saves change. Phase 1 maps and
 phase 2 selector/regressions were found and executed before these edits.
