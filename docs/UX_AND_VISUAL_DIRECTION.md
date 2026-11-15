@@ -243,8 +243,8 @@ around the board change size, never on a step change. On short phones
 are hidden during the guided lesson so the reserve fits (360×640: stable 219 px
 board); « Passer le tutoriel » stays in the coach. On very small screens (320×568) the action row may
 then extend below the fold; those actions are disabled during guided learning and
-the coach's own « Suivant » stays visible. Tablets and desktop keep the placement
-described below. Account screens (#688) always win: the coach stays below them,
+the coach's own « Suivant » stays visible. Since #749, tablets and desktop use the same
+placement above the board, because they use the phone layout; the wide-screen placement described below is no longer reachable. Account screens (#688) always win: the coach stays below them,
 is hidden while one is open, and resumes at the same step when it closes.
 
 On short screens, the compact coach for learning quests 1–2 reserves the
@@ -289,7 +289,7 @@ The campaign should answer “what do I play now?” without requiring the playe
 
 Use **Aventure** in player-facing text; `pack` remains the content-model term. Mon ciel has a compact Ciel selector, a horizontal Adventure rail and exactly one detailed Adventure. The selected Adventure shows its name, completed/total constellations and state. Other Adventures stay compact, including locked ones; their notice explains that the unlock method will be announced later. No store, currency price or new unlock mechanism is introduced here.
 
-Show at most six constellation cards per page: 2×3 on mobile and 3×2 on desktop, using the same DOM/component and pagination. Cards show silhouette, name, earned/total stars, progression lock/completion and an optional mastery indicator for all mastery-eligible quests in that constellation. Previous/Next and horizontal touch swipe change the page without changing progression. The final partial page contains only actual cards. The main modal height remains bounded even with dozens of Adventures and hundreds of constellations; use horizontal navigation rather than vertical stacking.
+Show at most six constellation cards per page: 2×3 at every width since #749, using the same DOM/component and pagination. Cards show silhouette, name, earned/total stars, progression lock/completion and an optional mastery indicator for all mastery-eligible quests in that constellation. Previous/Next and horizontal touch swipe change the page without changing progression. The final partial page contains only actual cards. The main modal height remains bounded even with dozens of Adventures and hundreds of constellations; use horizontal navigation rather than vertical stacking.
 
 Every constellation, including canonical-only entries such as Dauphin, uses the same quest grid, four-slot badge cards, current-quest treatment, lock icons, shared badge legend and star card. Resolve cards from the selected stable constellation ID, never a dormant numeric index. Canonical star cards use the licensed atlas and completed canonical quest count. The two rows of cards stay compact on desktop so the legend, star card and challenges action remain inside the sheet. Hidden panels stay visually hidden after refresh.
 
@@ -319,7 +319,7 @@ Detailed rules are available through “? Revoir les règles” instead of a per
 
 ## One responsive game UI
 
-Lumen uses one game DOM, one game state and one set of gameplay handlers across phones, tablets and desktop. Responsive behavior belongs primarily in CSS: the same journey component becomes compact on narrow viewports and occupies the left workspace on wide screens; the same contextual message occupies the normal flow or the wide right workspace.
+Lumen uses one game DOM, one game state and one set of gameplay handlers across phones, tablets and desktop. **Since #749 there is also one layout:** computers and tablets show the phone layout in a centered column of at most 520 px. The board grows up to the column width but leaves room for the header and actions on short screens; « Mon ciel » stays in the same column. There is no left journey workspace, no right message workspace, and no 3×2 constellation page. CSS keeps a single wide-screen block (`@media (min-width:701px)`, the #749 column). Phone width conditions apply at every width, except the rules for landscape phones. Do not reintroduce desktop-only layout rules without a product decision.
 
 JavaScript must not re-parent gameplay or progression components based on viewport width. A breakpoint may change presentation, but not which implementation is active. Interaction differences must be capability-driven: for example, drag-to-exclude is implemented with Pointer Events and ignores mouse pointers rather than assuming that a narrow viewport is touch-capable.
 

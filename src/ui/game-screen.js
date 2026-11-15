@@ -2276,7 +2276,7 @@ function advanceLearningIntro(){
 // #690: one reserve for the whole lesson (its longest step), so the board keeps
 // the same size on every "Suivant". The board only shrinks by what the reserve
 // pushes past the screen bottom: unused space below the actions is used first.
-const COACH_ABOVE_MAX_WIDTH=700,COACH_MIN_BOARD=180,COACH_GAP=8;
+const COACH_MIN_BOARD=180,COACH_GAP=8;
 let coachLayout=null;
 function clearCoachAboveBoard(){
  const wrap=document.getElementById("learningBoardWrap");if(!wrap?.classList||!wrap.style?.removeProperty)return;
@@ -2336,46 +2336,8 @@ function placeCoachAboveBoard(card){
 function positionLearningCoach(){
  const card=document.getElementById("scriptedLearn");
  if(card.hidden){clearCoachAboveBoard();return}
- if(innerWidth<=COACH_ABOVE_MAX_WIDTH){placeCoachAboveBoard(card);return}
- clearCoachAboveBoard();
- const rect=board.getBoundingClientRect(),mobile=innerWidth<=1100;
- if(mobile&&typeof learningIntroActive==="function"&&learningIntroActive()){
-  card.style.position="fixed";card.style.width=Math.min(innerWidth-20,430)+"px";
-  card.style.left=Math.max(10,(innerWidth-Math.min(innerWidth-20,430))/2)+"px";
-  card.style.top="50%";card.style.transform="translateY(-50%)";
-  card.style.maxHeight="min(70dvh, 420px)";card.style.overflowY="auto";
-  return;
- }
- card.style.transform="";
- const width=Math.min(mobile?innerWidth-20:330,innerWidth-20);
- card.style.width=width+"px";
- const actions=document.querySelector(".actions").getBoundingClientRect();
- if(mobile&&autoMarkingLessonRequired()){
-  const controlsBottom=Math.max(document.getElementById('autoCrossWrap').getBoundingClientRect().bottom,document.getElementById('guidedErrorsWrap').getBoundingClientRect().bottom);
-  const space=rect.top-controlsBottom-16;
-  if(space>=48){
-   card.style.maxHeight=Math.min(140,space)+'px';card.style.overflowY='hidden';
-   card.style.left=Math.max(10,(innerWidth-width)/2)+'px';card.style.top=(controlsBottom+8)+'px';return;
-  }
- }
- const compactLesson=mobile&&activeQuestOrdinal()<=QUEST_MILESTONES.skyTourAfter;
- const anchor=compactLesson?card.parentElement:null;
- card.style.position=anchor?'absolute':'fixed';
- const belowActions=actions.bottom+8;
- // A compact lesson must never cover the normal actions or puzzle cells.
- // The old fallback positioned the coach below actions even when the bottom
- // of the viewport had no space (e.g. 360x640: actions end at y=609).
- const safeTop=Math.max(8,(document.getElementById("tutorialHelp")?.getBoundingClientRect().bottom||0)+8);
- const aboveBoardSpace=Math.max(0,rect.top-safeTop-8);
- const compactAboveBoard=compactLesson&&aboveBoardSpace>=48;
- card.style.maxHeight=compactLesson?(compactAboveBoard?Math.min(96,aboveBoardSpace)+"px":Math.max(32,innerHeight-belowActions-8)+"px"):"";
- card.style.overflowY=compactLesson?"hidden":"";
- const aboveBoard=rect.top-card.offsetHeight-8;
- const top=mobile?(compactAboveBoard?Math.max(safeTop,aboveBoard):compactLesson?Math.min(belowActions,innerHeight-card.offsetHeight-8):aboveBoard>=48?aboveBoard:Math.max(48,Math.min(innerHeight-card.offsetHeight-8,belowActions))):Math.max(12,Math.min(rect.top,innerHeight-card.offsetHeight-12));
- const left=mobile?Math.max(10,(innerWidth-width)/2):rect.right+14+width<=innerWidth?rect.right+14:Math.max(10,rect.left-width-14);
- const origin=anchor?.getBoundingClientRect();
- card.style.left=(left-(origin?.left||0)+(anchor?.scrollLeft||0))+"px";
- card.style.top=(top-(origin?.top||0)+(anchor?.scrollTop||0))+"px";
+ // #749: every width uses the phone layout, so the coach always sits above the board.
+ placeCoachAboveBoard(card);
 }
 window.addEventListener("resize",()=>requestAnimationFrame(positionLearningCoach));
 // #690: controls around the board can appear after placement (attempt controls

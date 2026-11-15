@@ -2235,3 +2235,24 @@ Not testable here: the real private repository. The owner checks a deployment af
 - `scripts/landing-browser.mjs`: on phones the install link is shown and the QR is hidden; on computers (≥ 900 px with a fine pointer) the QR is shown and loads, and the link is hidden.
 - QR: `node scripts/landing-qr.mjs` regenerates it, and `--check` verifies it. It was decoded once with an external reader during review; the test itself has no decoder dependency.
 - Owner: scan the QR with an Android phone and an iPhone, and install from both.
+
+## One layout on every screen (#749)
+
+`scripts/desktop-layout-browser-tests.mjs` (browser inventory, report `ci-desktop-layout.json`) runs in two parts.
+
+**Static check of `styles.css`:**
+- the only wide-screen block left is the `@media (min-width:701px)` column block;
+- no phone width condition (700/900/1100 px) remains, except the rules for landscape phones.
+
+**Browser check at 390×844, 1024×768, 1440×900 and 1920×1080 (QA player past the tutorial):**
+- no horizontal overflow;
+- the phone header (account button) is present;
+- there is no fixed side panel, and the quest banner and board stay inside the column.
+
+From 701 px wide, it also checks that:
+- the column is at most 520 px wide and centered;
+- the board is larger than on a phone when the screen is at least 900 px tall, and at least 300 px otherwise;
+- the actions are visible without scrolling;
+- « Mon ciel » stays in the same 520 px column.
+
+Phones keep exactly their previous rules: the transformation only removed desktop-only blocks and widened the phone conditions. All existing browser suites passed locally with the new layout.

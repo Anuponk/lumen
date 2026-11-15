@@ -164,6 +164,11 @@ export const browserSuites=[
     "script": "install-request-browser-tests.mjs",
     "output": "ci-install-request.json",
     "port": 9262
+  },
+  {
+    "script": "desktop-layout-browser-tests.mjs",
+    "output": "ci-desktop-layout.json",
+    "port": 9263
   }
 ];
 
