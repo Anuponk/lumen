@@ -144,6 +144,13 @@ try {
   assert.equal(held.owner, 'a', 'The failed load leaves the previous owner in place');
   assert(held.cover, 'The hold covers the whole screen: nothing of A is visible');
   assert.match(held.text, /n’a pas pu être chargée/);
+  // Reloading while B still fails must never flash A's grid before the hold.
+  await send('Page.reload');
+  const early = [];
+  for (let i = 0; i < 40; i++) { const v = await evaluate("(()=>{const h=document.getElementById('accountSwitchHold');return h?{hold:h.hidden===false,mask:document.getElementById('attemptMask')?.hidden===false}:null})()").catch(() => null); if (v) early.push(v); await new Promise((r) => setTimeout(r, 25)); }
+  timeline.push({ step: 'reload while failing', samples: early.length, flashed: early.filter((v) => v.mask && !v.hold).length });
+  assert(early.some((v) => v.hold) && !early.some((v) => v.mask && !v.hold), 'No flash of the previous account after reload: ' + JSON.stringify(early.slice(0, 5)));
+  await until("!document.getElementById('accountSwitchHoldRetry').hidden", 'failed again after reload', 250);
   await evaluate("sessionStorage.removeItem('failRestoreFor');document.getElementById('accountSwitchHoldRetry').click()");
   await until(`localStorage.getItem('lumenCloudOwnerId')==='b'&&document.getElementById('mobileAuthStatus').textContent.includes('Progression synchronis')&&document.getElementById('accountSwitchHold').hidden`, 'B loaded after retry', 250);
   assert.deepEqual(await evaluate(local), summary(B), 'Retry installs B only');

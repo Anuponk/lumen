@@ -9,6 +9,7 @@ export const nodeSuites=[
  'victory-celebration-tests.mjs',
  'quest-review-tests.mjs',
  'victory-clock-freeze-tests.mjs',
+ 'test-tools-tests.mjs',
  'profile-digest-cas-tests.mjs',
  'nickname-tests.mjs',
  'ranking-client-tests.mjs',

@@ -133,6 +133,7 @@ try{
   ()=>runBrowser("victory-pending-browser-tests.mjs","ci-victory-pending.json",9257),
   ()=>runBrowser("account-switch-browser-tests.mjs","ci-account-switch.json",9258),
   ()=>runBrowser("analytics-admin-browser-tests.mjs","ci-analytics-admin.json",9259),
+  ()=>runBrowser("admin-preview-browser-tests.mjs","ci-admin-preview.json",9260),
   ()=>runBrowser("learning-coach-placement-browser-tests.mjs","ci-learning-coach.json",9255),
   ()=>runBrowser("quest-review-browser-tests.mjs","ci-quest-review.json",9256),
   ()=>runBrowser("adventure-mastery-browser-tests.mjs","ci-adventure-mastery.json",9245),

@@ -38,6 +38,7 @@ window.supabase={createClient(){return {auth:{
  if(name==='lumen_commit_quest_command'){const prior=receipts.get(args.p_operation_id);if(prior&&JSON.stringify(prior.request.facts)!==JSON.stringify(args.p_facts))return {data:null,error:{code:'22023'},status:400};
   if(!prior){const {applyQuestVictory}=await import('/src/campaign/quest-victory.js');const {canonicalQuestById}=await import('/src/campaign/canonical-quests.js');const outcome=applyQuestVictory(a.profile,canonicalQuestById(args.p_quest_id),args.p_facts);if(outcome.firstCompletion)a.grants++;receipts.set(args.p_operation_id,{request:{version:2,operationId:args.p_operation_id,questId:args.p_quest_id,facts:args.p_facts},outcome,recordedAt:new Date().toISOString()});a.receipts=[...receipts];a.writes++;window.__saveServer()}
   return {data:{profile:structuredClone(a.profile)},error:null}}
+ if(name==='lumen_get_internal_capabilities')return {data:JSON.parse(sessionStorage.getItem('fixtureCapabilities')||'[]')};
  if(name==='lumen_get_progress')return {data:Object.keys(a.profile.solved||{}).map(k=>({puzzle_id:Number(k)+1}))};
  return {data:[],error:null};
 }}}};Object.defineProperty(window,'supabase',{value:window.supabase,writable:false,configurable:true});})();`;
