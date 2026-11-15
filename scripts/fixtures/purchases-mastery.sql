@@ -95,16 +95,16 @@ end $$;
 reset role;
 
 -- Build a 100% mastered first Adventure (legacy and canonical quests), minus one badge.
-do $$declare p uuid:='00000000-0000-0000-0000-000000072801';solved jsonb;perf jsonb;full jsonb;begin
- full:=(select jsonb_object_agg(k,true) from unnest((select badge_keys from lumen_commands.store_settings)) k);
+do $$declare p uuid:='00000000-0000-0000-0000-000000072801';solved jsonb;perf jsonb;all_badges jsonb;begin
+ all_badges:=(select jsonb_object_agg(k,true) from unnest((select badge_keys from lumen_commands.store_settings)) k);
  select coalesce(jsonb_object_agg(q.legacy_index::text,1),'{}'),
-  coalesce(jsonb_object_agg(q.legacy_index::text,jsonb_build_object('version',3,'badges',full)),'{}')
+  coalesce(jsonb_object_agg(q.legacy_index::text,jsonb_build_object('version',3,'badges',all_badges)),'{}')
   into solved,perf from lumen_commands.quest_packs q where q.pack_id='base-real-sky' and q.legacy_index is not null;
  insert into lumen_commands.legacy_authority(user_id,revision,projection)
   values(p,1,jsonb_build_object('solved',solved,'performances',perf,'stars','{}'::jsonb,'noHint','{}'::jsonb,'challenges','{}'::jsonb,'autonomousWins',0))
   on conflict(user_id) do update set projection=excluded.projection;
  insert into lumen_commands.quest_run_authority(user_id,quest_id,projection)
-  select p,q.quest_id,jsonb_build_object('solved',true,'badges',full) from lumen_commands.quest_packs q
+  select p,q.quest_id,jsonb_build_object('solved',true,'badges',all_badges) from lumen_commands.quest_packs q
   where q.pack_id='base-real-sky' and q.legacy_index is null
   on conflict(user_id,quest_id) do update set projection=excluded.projection;
  update lumen_commands.quest_run_authority set projection=jsonb_set(projection,'{badges,speed}','false'::jsonb)
