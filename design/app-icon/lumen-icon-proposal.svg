@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+<title id="title">Lumen — constellation en L</title>
+<desc id="desc">Un L céleste lumineux reliant trois étoiles cyan et or sur un fond bleu nuit.</desc>
+<defs>
+<linearGradient id="bg" x2="1" y2="1"><stop stop-color="#061327"/><stop offset=".55" stop-color="#071a3a"/><stop offset="1" stop-color="#0b3270"/></linearGradient>
+<radialGradient id="nebula" cx=".88" cy=".95" r=".65"><stop stop-color="#086abd" stop-opacity=".62"/><stop offset=".4" stop-color="#0b3c88" stop-opacity=".22"/><stop offset="1" stop-color="#091a40" stop-opacity="0"/></radialGradient>
+<linearGradient id="beam" x2="1" y2="1"><stop stop-color="#b7ffff"/><stop offset=".45" stop-color="#42dafa"/><stop offset="1" stop-color="#17aee9"/></linearGradient>
+<linearGradient id="orbit" x2="1" y2="0"><stop stop-color="#a67825" stop-opacity="0"/><stop offset=".18" stop-color="#e1a53f" stop-opacity=".85"/><stop offset=".52" stop-color="#1cb0d5" stop-opacity=".45"/><stop offset=".78" stop-color="#f7ca61" stop-opacity=".9"/><stop offset="1" stop-color="#efb84c" stop-opacity=".1"/></linearGradient>
+<radialGradient id="goldHalo"><stop stop-color="#fff5cf"/><stop offset=".24" stop-color="#f9d45a" stop-opacity=".82"/><stop offset=".58" stop-color="#d88a22" stop-opacity=".32"/><stop offset="1" stop-color="#d88a22" stop-opacity="0"/></radialGradient>
+<radialGradient id="cyanHalo"><stop stop-color="#f3ffff" stop-opacity=".95"/><stop offset=".25" stop-color="#5af0ff" stop-opacity=".74"/><stop offset=".62" stop-color="#19c9f1" stop-opacity=".2"/><stop offset="1" stop-color="#19c9f1" stop-opacity="0"/></radialGradient>
+<filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="10"/></filter>
+<clipPath id="clip"><rect width="512" height="512" rx="108"/></clipPath>
+</defs>
+<g clip-path="url(#clip)">
+<rect width="512" height="512" fill="url(#bg)"/>
+<rect width="512" height="512" fill="url(#nebula)"/>
+<path d="M78 344C58 306 118 245 224 204S422 150 453 173C481 201 451 250 406 272" fill="none" stroke="url(#orbit)" stroke-width="3" stroke-linecap="round"/>
+<path d="M219 116L172 355L402 355" fill="none" stroke="#00c7fa" stroke-width="36" stroke-linejoin="round" stroke-linecap="round" opacity=".75" filter="url(#glow)"/>
+<path d="M219 116L172 355L402 355" fill="none" stroke="url(#beam)" stroke-width="23" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M219 116L172 355L402 355" fill="none" stroke="#e0ffff" stroke-width="7" stroke-linejoin="round" stroke-linecap="round" opacity=".9"/>
+<circle cx="219" cy="116" r="67" fill="url(#cyanHalo)"/>
+<circle cx="219" cy="116" r="43" fill="none" stroke="#28d9ff" stroke-opacity=".52" stroke-width="2"/>
+<path d="M219 64Q227 107 262 116Q227 125 219 167Q211 125 176 116Q211 107 219 64Z" fill="#ecffff"/>
+<circle cx="172" cy="355" r="82" fill="url(#goldHalo)"/>
+<circle cx="172" cy="355" r="55" fill="none" stroke="#f4d982" stroke-opacity=".38" stroke-width="2"/>
+<path d="M172 286Q185 341 235 355Q185 368 172 425Q160 368 109 355Q160 341 172 286Z" fill="#fff2cb"/>
+<path d="M172 305Q181 345 217 355Q181 365 172 404Q163 365 127 355Q163 345 172 305Z" fill="#fff"/>
+<circle cx="402" cy="355" r="44" fill="url(#cyanHalo)"/>
+<circle cx="402" cy="355" r="15" fill="#ebffff"/>
+<circle cx="402" cy="355" r="8" fill="#fff"/>
+<rect x="3" y="3" width="506" height="506" rx="105" fill="none" stroke="#20c9f3" stroke-opacity=".47" stroke-width="5"/>
+</g>
+</svg>
