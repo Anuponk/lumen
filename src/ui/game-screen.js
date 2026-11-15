@@ -43,7 +43,7 @@ import {generatedQuestReward,generatedAdventureRewards} from "../campaign/genera
 import {generatedQuestProgress} from "../campaign/generated-progression.js";
 import {adminCatalogueTree,adminCanonicalCatalogueTree} from "../campaign/admin-catalogue.js";
 import {mapConstellationRange,generatedMapSummary} from "../campaign/generated-map.js";
-import {CONTENT_CONSTELLATIONS,contentMapModel,packForLegacyQuest,contentAccessForLegacyQuest,preserveStartedAdventureAccess} from "../campaign/content.js";
+import {CONTENT_CONSTELLATIONS,CONTENT_PACKS,contentMapModel,packForLegacyQuest,contentAccessForLegacyQuest,preserveStartedAdventureAccess} from "../campaign/content.js";
 import {createSkyNavigation} from "./sky-navigation.js";
 import {astronomicalDisplayShape} from "./astronomical-shapes.js";
 import {verifiedAstronomicalFigure} from "./astronomical-catalogue.js";
@@ -83,6 +83,7 @@ import {createCelestialCelebration} from './celestial-celebration.js';
 import {createTutorial} from "./tutorial.js";
 import {captureSupportCopy} from '../persistence/support-capture.js';
 import {mountSupportPanel,mountSupportDossier} from './support-panel.js';
+import {mountAdventureAccess} from './adventure-access-panel.js';
 import {createSound} from "./sound.js";
 import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 
@@ -2661,6 +2662,7 @@ async function loadAdminTimeline(key){
  if(error){box.innerHTML="<p>Timeline indisponible.</p>";return}
  renderPlayerSessions(box,data,{authorized,scope:owner+':'+key});
  void mountSupportDossier(box,{client,owner,target:key.slice(2),authorized});
+ void mountAdventureAccess(box,{client,owner,target:key.slice(2),authorized,packs:CONTENT_PACKS});
 }
 function adminAlerts(rows){
  const alerts=[];

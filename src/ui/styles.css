@@ -1547,3 +1547,9 @@ body:has(#erasedAccountNotice:not([hidden])) #scriptedLearn{visibility:hidden!im
  .game-core:has(#learningBoardWrap.coach-above)>.attempt-controls,
  .game-core:has(#learningBoardWrap.coach-above)>#rewardLive{display:none!important}
 }
+/* #724: admin Adventure access panel (player detail in Analytics). */
+.adventure-access input[data-adventure-reason]{width:100%;box-sizing:border-box;margin:6px 0}
+.adventure-access-list{list-style:none;padding:0;margin:6px 0;display:grid;gap:6px}
+.adventure-access-list li{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.adventure-access-list button{min-height:36px}
+.adventure-access-history{font-size:12px;opacity:.85;padding-left:18px}

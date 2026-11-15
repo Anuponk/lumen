@@ -143,6 +143,10 @@ No writes, restore path, new persistence or gameplay effects. Manual review and
 secure delivery are mandatory; see [procedure](ACCOUNT_RIGHTS_RUNBOOK.md).
 Production migration remains unauthorized; PR stays draft. Proposed retention
 criteria are [separate from implemented behavior](PRIVACY_RETENTION_PROPOSAL.md).
+## Admin Adventure grants — #724
+
+`lumen.entitlements` now has one reviewed writer besides manual operator SQL: `lumen_commands.admin_adventure_access` (security definer, `public.lumen_admin_adventure_access` wrapper, `analytics_cockpit` capability, advisory lock per player and Adventure). Grant upserts an active row (`source='admin'`); revoke sets `expires_at`; neither touches profiles, receipts or wallets, and the client never writes entitlements. `lumen_commands.adventure_access_audit` (player, administrator, Adventure, action, reason, time) is private (RLS, no client grants), is registered in `lumen_privacy.policy()` as `delete` by `user_id` so Lumen erasure removes it, and appears in rights exports, which already require third-party review (the administrator id). Migration: `supabase/migrations/20261115180000_admin_adventure_access_724.sql`, idempotent; production application requires explicit owner authorization.
+
 ## Temporary private assistance — #574
 
 [Audit, data contract, budgets and rollout](SUPPORT_574.md). A separate explicit

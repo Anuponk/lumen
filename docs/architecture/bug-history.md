@@ -282,3 +282,7 @@ Constat propriétaire (téléphone ~412×915, aperçu admin) : défilement et «
 ### #711 (suite) — écran « Tu es déconnecté » inerte sur un compte en plein tutoriel
 
 Constat propriétaire (iPhone et Android, après chargement réussi de B) : B était dans le tutoriel de la quête 1 ; après déconnexion, « Se connecter » et « Créer un compte » ne réagissaient plus. Cause reproduite : `handleLearningTap` (écouteur `click` en capture sur `document`) bloque tout tap hors d'une liste blanche tant que l'apprentissage scénarisé est actif ; les écrans plein écran `#signedOutScreen`, `#accountSwitchHold`, `#mandatoryNickname` et `#erasedAccountNotice` n'y figuraient pas (le bouton « Diagnostic » de l'écran d'attente était donc aussi inerte). Correction : ces couches de compte rejoignent la liste blanche ; le plateau reste bloqué. RED/GREEN : `learning-browser-tests.mjs` (vrais taps pendant l'intro de la quête 1, 5 tailles).
+
+### #724 — `CONTENT_PACKS` utilisé sans import dans `game-screen.js`
+
+Depuis #405, `adventureAccessEntitlements` lisait `CONTENT_PACKS` sans l’importer : un administrateur doté de `all_adventures_access` aurait déclenché une `ReferenceError` au lieu d’ouvrir les aventures. Constaté en ajoutant le panneau #724 (`analytics-admin-browser-tests.mjs` : `ReferenceError` dans `loadAdminTimeline`). RED/GREEN : `adventure-access-tests.mjs` vérifie l’import et le comportement de la dérogation, qui n’est jamais enregistrée comme droit.

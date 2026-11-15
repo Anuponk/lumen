@@ -2130,3 +2130,10 @@ The full quality suite runs on pull requests. After a squash merge, the publishe
 ### Victory responsiveness on slow networks (#697, #698)
 
 `victory-clock-freeze-tests.mjs` (quality gate) proves the shown official time and the captured victory seconds freeze at local detection while the engine keeps running behind them, that a re-edited board resumes the live clock, and that the freeze precedes any await. `legacy-command-client-tests.mjs` and `canonical-outbox-recovery-tests.mjs` hold a slow command open: the durable pending card appears once only after the durable capture, nothing is credited before confirmation, a later confirmation upgrades it (pending navigation entry removed, `victory_pending_upgraded`, `victory_sync_timing`), a failure keeps the same card with calm copy, and a retry tap cannot interrupt the running command. These are mocked VM checks, not real 4G measurements.
+
+## Admin Adventure grants (#724)
+
+- `scripts/adventure-access-tests.mjs` (Node, quality gate): locked rows derived from `CONTENT_PACKS`, server-state mapping, reason bounds, `CONTENT_PACKS` import in `game-screen.js` and the transient `all_adventures_access` override.
+- `scripts/adventure-access-browser.mjs` (in `incident-investigation-browser-tests.mjs`, 4 viewports): native clicks, reason required, grant/revoke, a server failure never shown as success, detached panel refused, no overflow.
+- `scripts/admin-recent-players-tests.mjs`: the panel receives the selected player and a revocable authorization.
+- SQL (`ledger-sql`): `scripts/fixtures/adventure-access-before.sql` aligns fixture tables with production, the migration is applied twice, then `scripts/fixtures/adventure-access.sql` checks refusals (player, expired capability, account mismatch, invalid Adventure/reason/player), idempotent grant/revoke, audit attribution and the erasure policy.

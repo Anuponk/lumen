@@ -260,3 +260,13 @@ jobs:
             -f supabase/migrations/20261115160000_sync_health_stage_outcome.sql \
             -f supabase/migrations/20261115160000_sync_health_stage_outcome.sql \
             -f scripts/fixtures/sync-health-stage.sql
+      - name: Verify admin Adventure grants, revocations and audit (#724)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f scripts/fixtures/adventure-access-before.sql \
+            -f supabase/migrations/20261115180000_admin_adventure_access_724.sql \
+            -f supabase/migrations/20261115180000_admin_adventure_access_724.sql \
+            -f scripts/fixtures/adventure-access.sql

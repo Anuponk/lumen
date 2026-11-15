@@ -4,6 +4,7 @@ import {connectBrowser} from './cdp-client.mjs';
 import {verifyIncidentInvestigation} from './incident-investigation-browser.mjs';
 import {verifyCockpit} from './cockpit-browser.mjs';
 import {verifySupport} from './support-browser.mjs';
+import {verifyAdventureAccess} from './adventure-access-browser.mjs';
 const {send,evaluate,errors}=await connectBrowser();
 const url=new URL(process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/');
 const results=[];
@@ -22,13 +23,14 @@ try{
   cockpit.push({viewport,...await verifyCockpit({send,evaluate,url})});
  }
  assert.equal(errors.length,0,JSON.stringify(errors));
- const support=[];
+ const support=[],adventureAccess=[];
  for(const viewport of [{width:320,height:568,mobile:true},{width:360,height:640,mobile:true},{width:390,height:844,mobile:true},{width:844,height:390,mobile:true}]){
   await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});
   support.push({viewport,...await verifySupport({send,evaluate,url})});
+  adventureAccess.push({viewport,...await verifyAdventureAccess({send,evaluate,url})});
  }
  assert.equal(errors.length,0,JSON.stringify(errors));
- const report={independentBrowser:true,liveRPC:false,issueSubmitted:false,results,cockpit,support,exceptions:errors};
+ const report={independentBrowser:true,liveRPC:false,issueSubmitted:false,results,cockpit,support,adventureAccess,exceptions:errors};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));
  console.log(JSON.stringify(report));
 }finally{await send('Browser.close').catch(()=>{})}

@@ -77,6 +77,11 @@ player disclosures. `game-screen.js` wires live identity and existing incident
 signals. Private support RPC/migration reuses capability/cron, never game writers.
 See [audit and rollout](../SUPPORT_574.md).
 
+Admin Adventure grants #724: `ui/adventure-access-panel.js` (player detail, mounted by
+`game-screen.js::loadAdminTimeline`) calls `lumen_admin_adventure_access`; the server
+owns validation, `lumen.entitlements` writes and the private audit. See
+[PROGRESSION](../PROGRESSION.md#admin-adventure-grants-724).
+
 Restored board selection: `game-screen.js::resumeHydratedCampaignSelection`
 uses `playable-navigation.js::nextCanonicalQuest` after verified installation of
 an existing account with a changed owner. Original attempt archival precedes
