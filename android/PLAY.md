@@ -107,7 +107,7 @@ promesse de confidentialité ou réception push native annoncé.
 
 | Élément | Format/résolution | Contenu attendu / état |
 |---|---|---|
-| Icône fiche Play | PNG 32 bits, 512 × 512, maximum 1 Mo | Adapter le symbole existant sans badge marketing ; export Play final à fournir |
+| Icône fiche Play | PNG 32 bits, 512 × 512, maximum 1 Mo | Fourni (#755) : `android/store/play-icon-512.png`, rendu depuis `icon-maskable.svg` par `android/tools/render-icons.mjs` |
 | Feature graphic | PNG/JPEG, 1024 × 500 | Ciel nocturne et lumière progressive ; composition finale à fournir |
 | Téléphone | Au moins 2 captures réelles, JPEG/PNG 24 bits, 320–3840 px par côté, grand côté ≤ 2× petit côté | Prévoir 4–6 captures 1080 × 1920 : accueil/ciel, apprentissage, déduction, constellation révélée, progression, défi si validé |
 | Tablettes si distribuées | Captures des formats 7 et 10 pouces demandés par Console ; préparer des rendus réels | Lisibilité grands écrans et orientation ; ne pas agrandir une capture téléphone artificiellement |

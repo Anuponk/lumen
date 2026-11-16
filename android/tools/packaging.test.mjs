@@ -72,12 +72,26 @@ test('icons cover pre-adaptive and adaptive launchers plus PNG TWA splash', () =
   assert.equal(readFileSync(root + 'app/src/main/res/drawable-nodpi/splash.png').subarray(1,4).toString(), 'PNG');
 });
 
-test('native launcher and themed icon retain the approved celestial star geometry', () => {
+test('#755: launcher, themed icon and Play icon reuse the approved constellation L geometry', async () => {
+  const {iconGeometry,androidVector,SAFE_GROUP,NIGHT}=await import('./render-icons.mjs');
   const svg=readFileSync(new URL('../../icon-maskable.svg',import.meta.url),'utf8');
-  const star=[...svg.matchAll(/<path d="([^"]+)" fill="#fff3c5"/g)][0]?.[1];
-  assert(star,'Approved star shape must exist');
-  for(const name of ['ic_foreground','ic_monochrome'])assert(read(`app/src/main/res/drawable/${name}.xml`).includes(star),name+' must reuse the approved shape');
-  assert.match(read('app/src/main/res/values/colors.xml'),/#081333/);
+  const geometry=iconGeometry(svg);
+  assert.equal(geometry.l,'M219 116L172 355L402 355','The L of the approved proposal');
+  // The committed vectors are exactly what the generator produces from the SVG.
+  const unix=text=>text.split(String.fromCharCode(13)).join('');
+  assert.equal(unix(read('app/src/main/res/drawable/ic_foreground.xml')),androidVector(geometry,false));
+  assert.equal(unix(read('app/src/main/res/drawable/ic_monochrome.xml')),androidVector(geometry,true));
+  // Safe zone: every point of the L and its stars stays inside the 66 dp circle of the 108 dp canvas.
+  const [s,tx,ty]=['scaleX','translateX','translateY'].map(k=>Number(SAFE_GROUP.split('android:'+k+'="')[1].split('"')[0]));
+  const numbers=[geometry.l,...Object.values(geometry.shapes)].join(' ').match(/[0-9]+(?:[.][0-9]+)?/g).map(Number);
+  const points=[];for(let i=0;i+1<numbers.length;i+=2)points.push([numbers[i],numbers[i+1]]);
+  points.push([geometry.dot.cx+geometry.dot.r,geometry.dot.cy]);
+  const radius=256*66/108;
+  for(const [x,y] of points){const px=256+(x-256)*s+tx,py=256+(y-256)*s+ty;assert(Math.hypot(px-256,py-256)<=radius+1,'Point '+x+','+y+' leaves the adaptive safe zone')}
+  assert.match(read('app/src/main/res/values/colors.xml'),new RegExp(NIGHT));
+  const play=readFileSync(root+'store/play-icon-512.png');
+  assert.equal(play.subarray(1,4).toString(),'PNG');assert.equal(play.readUInt32BE(16),512);assert.equal(play.readUInt32BE(20),512);
+  assert(play.length<1024*1024,'Play listing icon under 1 MB');
 });
 test('no private signing material is present in packaging sources', () => {
   function scan(path) {

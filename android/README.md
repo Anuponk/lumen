@@ -9,9 +9,11 @@ Lire [signature et domaine](SIGNING.md), [recette](TESTING.md) et
 ## Icônes et splash
 
 Les PNG launcher des cinq densités et le splash 512 × 512 sont rendus depuis
-`../icon-maskable.svg`, identité céleste validée dans #625. Les vecteurs adaptatif
-et monochrome en reprennent les arcs et l'étoile ; les dégradés restent dans les
-PNG, le vecteur emploie l'or uni. Aucun nouveau dessin de constellation.
+`../icon.svg` (PNG legacy, coins arrondis transparents) et `../icon-maskable.svg`
+(splash et icône 512 px de la fiche Play `store/play-icon-512.png`) : le « L de
+constellation » validé dans #755. Les vecteurs adaptatif et monochrome reprennent
+exactement le tracé du L et les étoiles, réduits (échelle 0,72) pour tenir dans la
+zone de sécurité de 66 dp ; les dégradés et halos restent dans les PNG.
 Les PNG legacy ont des coins transparents arrondis ; le splash reste opaque,
 et Android applique lui-même le masque aux icônes adaptatives.
 
@@ -114,8 +116,8 @@ Portrait est demandé comme la PWA ; Android 16 peut ignorer ce choix sur grands
 écrans. Tester tablettes, redimensionnement, encoches et Android récent.
 
 Les icônes raster reprennent `icon.svg` (coins transparents), les icônes
-adaptatives et le splash reprennent `icon-maskable.svg`, avec une variante
-monochrome du symbole pour Android 13+. Les couleurs restent celles de la PWA.
+adaptatives, le splash et l'icône Play reprennent `icon-maskable.svg` (#755), avec
+une variante monochrome du L pour Android 13+. Les couleurs restent celles de la PWA.
 Aucun contenu astronomique
 ni catalogue modifié. La seule permission plateforme déclarée est INTERNET ;
 AndroidX ajoute une permission interne par package
