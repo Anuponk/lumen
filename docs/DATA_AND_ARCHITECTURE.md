@@ -273,6 +273,15 @@ is inferred. Existing outbox acknowledgement and 40-entry diagnostic rotation
 remain unchanged. UI-triggered export also includes guest and canonical metadata
 originals that were previously omitted from its local prefix selection.
 
+**Silent launch maintenance (#723).** Fifteen seconds after launch (outside QA,
+once the session has settled), the game runs the same archival for the
+`AccountSwitch` and `AccountSwitchAttempt` families only, without any player
+action or message. A changed session interrupts it; it retries at most twice.
+In every family, retention now keeps the two most recent **distinct** copies:
+an identical copy (same content, another timestamp) is archived once under the
+`localStorage:<key>` of its most recent twin, with the same read-back rule, so
+every removed copy remains readable in IndexedDB exactly as it was.
+
 ## Hydration refusal boundaries — #536
 
 Hydration retains a known wallet refusal (`mutable_balance`, invalid/stale wallet
