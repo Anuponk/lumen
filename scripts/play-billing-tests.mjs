@@ -44,6 +44,7 @@ assert.equal((await buyWithPlay({win:w,productId:'p',verify:async()=>({status:'e
 const restored=await restorePlayPurchases({service:{listPurchases:async()=>[{itemId:'real-adventure-02',purchaseToken:'a'},{itemId:'x'},null,{itemId:'real-sky-all',purchaseToken:'b'}]},verify:async(id)=>({status:id==='real-sky-all'?'paid':'error'})});
 assert.deepEqual(restored.map(r=>[r.itemId,r.status]),[['real-adventure-02','error'],['real-sky-all','paid']]);
 assert.deepEqual(await restorePlayPurchases({service:{listPurchases:async()=>{throw Error('x')}},verify:async()=>({})}),[]);
+assert.deepEqual(await restorePlayPurchases({service:{listPurchases:async()=>{throw Error('x')}},verify:async()=>({}),reportListFailure:true}),[{itemId:null,status:'error',reason:'list'}],'#731: the manual restore reports an unreadable list as a failure');
 
 // Localised prices and the €5 offer rule on Play.
 const prices=await playPrices({getDetails:async ids=>ids.map(id=>({itemId:id,price:{currency:'EUR',value:id===SKY_PRODUCT_ID?'5.00':'1.00'}}))},['real-adventure-02',SKY_PRODUCT_ID]);

@@ -88,7 +88,7 @@ import {captureSupportCopy} from '../persistence/support-capture.js';
 import {mountSupportPanel,mountSupportDossier} from './support-panel.js';
 import {mountAdventureAccess} from './adventure-access-panel.js';
 import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
-import {adventureOfferModel,mountAdventureOffer} from './adventure-offer.js';
+import {adventureOfferModel,mountAdventureOffer,restoreMessage} from './adventure-offer.js';
 import {getPlayBilling,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices} from '../persistence/play-billing.js';
 import {SKY_PRODUCT_ID} from '../campaign/store-catalogue.js';
 import {createSound} from "./sound.js";
@@ -4168,6 +4168,18 @@ async function purchaseAdventure(productId,{setStatus,setBusy}){
  else setStatus('Achat non confirmé par le serveur. Si tu as été débité, il sera retrouvé au prochain lancement de l’app.');
  setBusy(false);
 }
+// #731: « Restaurer mes achats » — the server verifies every Play purchase again (idempotent);
+// the message only reports what the server confirmed.
+async function restorePurchasesNow({setStatus,setBusy}){
+ if(!lumenUser||qaActive)return;
+ const owner=lumenUser.id;setBusy(true);setStatus('Recherche de tes achats Google Play…');
+ const service=await playBillingReady;
+ const results=service?await restorePlayPurchases({service,verify:playVerify,reportListFailure:true}):[{itemId:null,status:'error',reason:'service'}];
+ if(lumenUser?.id!==owner)return;
+ setStatus(restoreMessage(results));setBusy(false);
+ // A restored Adventure re-renders the sky (the offer closes), as after a purchase.
+ if(results.some(r=>r.status==='paid')){await loadEntitlements();if(lumenUser?.id===owner)skyNavigation.render()}
+}
 async function maybeRestorePlayPurchases(){
  if(!lumenUser||qaActive||!cloudProfileReady)return;
  const owner=lumenUser.id,service=await playBillingReady;if(!service||lumenUser?.id!==owner)return;
@@ -4186,6 +4198,7 @@ function renderAdventureOffer(container,pack,{close}={}){
  mountAdventureOffer(container,offer,{
   onSignIn:()=>{close?.();openEmailAccountOffer('signup')},
   onBuy:purchaseAdventure,
+  onRestore:restorePurchasesNow,
   onClaim:async button=>{button.disabled=true;button.textContent='Vérification…';await maybeClaimMasteryUnlocks({retry:true});
    const owned=adventureAccessEntitlements().some(e=>(typeof e==='string'?e:e?.entitlement)===pack.id);
    if(owned){close?.();skyNavigation.render()}else{button.disabled=false;button.textContent='Réessayer le déblocage'}}

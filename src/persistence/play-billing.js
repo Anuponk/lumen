@@ -40,9 +40,11 @@ export async function buyWithPlay({win=globalThis,productId,verify}){
 }
 
 // Restore after reinstall/new device, and retry acknowledgements: the server call is idempotent.
-export async function restorePlayPurchases({service,verify}){
+// #731: the manual « Restaurer mes achats » asks for reportListFailure so that an unreadable
+// Play purchase list is shown as a failure, never as « nothing to restore ».
+export async function restorePlayPurchases({service,verify,reportListFailure=false}){
  let items=[];
- try{items=await service.listPurchases()}catch(_){return []}
+ try{items=await service.listPurchases()}catch(_){return reportListFailure?[{itemId:null,status:'error',reason:'list'}]:[]}
  const results=[];
  for(const item of items||[]){
   if(!item?.itemId||!item?.purchaseToken)continue;
