@@ -76,3 +76,39 @@ test('wiring: completed tiles open the review; replay keeps the cooldown entry',
   const review = source.slice(source.indexOf('function openQuestReview('), source.indexOf('function closeQuestReview('));
   assert.doesNotMatch(review, /victoryCelebration\.start|celestialCelebration\.start|showCelestialVictory|saveProgress|recordVictory|rankingClient\.stage/, 'A review starts no effect and writes nothing');
 });
+
+// #761: a victory podium never presents an old board as the current result.
+test('victory podium: failed or pending sync shows a pending state, ineligible is explicit', async () => {
+  const board = { top: [{ position: 1, place: 1, nickname: 'L', score: 55 }, { position: 2, place: 2, nickname: 'A', score: 65, mine: true }], personal: { position: 2, place: 2, score: 65 }, participating: true };
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  const calls = [];
+  const failing = { flush: async () => { throw Error('Ranking unavailable'); }, board: async () => (calls.push('board'), board), entries: () => [] };
+  const v1 = createRankingView({ client: failing, getContext: () => ({ owner: 'o', client: failing }), format, document: fakeDocument() });
+  v1.show(quest, 'op-1');
+  await tick();
+  assert.equal(v1.root.dataset.state, 'pending');
+  assert.match(v1.root.children.at(-1).textContent, /synchronisation a échoué/);
+  assert.deepEqual(calls, [], 'The stale board is not read as this victory result');
+  const pending = { flush: async () => [{ status: 'pending' }], board: async () => (calls.push('board'), board), entries: () => [{ operationId: 'op-2' }] };
+  const v2 = createRankingView({ client: pending, getContext: () => ({ owner: 'o', client: pending }), format, document: fakeDocument() });
+  v2.show(quest, 'op-2');
+  await tick();
+  assert.equal(v2.root.dataset.state, 'pending');
+  assert.match(v2.root.children.at(-1).textContent, /attend la confirmation/);
+  assert.deepEqual(calls, []);
+  const refused = { flush: async () => [], board: async () => board, entries: () => [], takeResult: () => ({ status: 'ineligible', questId: quest.id, improved: false }) };
+  const v3 = createRankingView({ client: refused, getContext: () => ({ owner: 'o', client: refused }), format, document: fakeDocument() });
+  v3.show(quest, 'op-3');
+  await tick();
+  assert.equal(v3.root.dataset.state, 'ready');
+  const text = (e) => [e.textContent, ...(e.children || []).map(text)].join(' ');
+  assert.match(text(v3.root), /pas retenu au classement/);
+  assert.match(text(v3.root), /record personnel est bien enregistré/);
+});
+
+test('wiring #761: badge/ranking qualification is re-evaluated at run start and reset', () => {
+  const source = fs.readFileSync('src/ui/game-screen.js', 'utf8');
+  const start = source.slice(source.indexOf('function ensureAttemptStarted('), source.indexOf('attemptEngine.start();', source.indexOf('function ensureAttemptStarted(')));
+  assert.match(start, /!a\.qualifying&&!socialChallenge&&currentBadgeQualification\(\)\)\{a=attemptEngine\.requalify\(true\)/);
+  assert.match(source, /attemptEngine\.reset\(state,socialChallenge\?\{\}:\{qualifying:!!resetSnapshot\?\.qualifying\|\|currentBadgeQualification\(\)\}\)/);
+});

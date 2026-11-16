@@ -37,6 +37,7 @@ for(const size of [5,6,7,8]){
   Object.assign(ctx,{document:{getElementById:()=>button},confirm:()=>true,socialChallenge:null,hideSuccess(){},
    attemptEngine:{snapshot:()=>({attemptId:'same-attempt',resetCount:0}),reset(){}},trackAttemptEvent(){},
    clearHintDisplay(){},msg:{},updateHintButton(){},updateVerifyButton(){},clock(){},refreshJourney(){},
+   currentBadgeQualification:()=>false,updateBadgeQualificationStatus(){},
    render:()=>f.paint(0)});
   const start=source.indexOf('document.getElementById("new").onclick=()=>{');
   const end=source.indexOf('\ndocument.getElementById("learningCoachDismiss")',start);

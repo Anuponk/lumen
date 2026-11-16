@@ -36,6 +36,8 @@ export function createRankingView({client,getContext,format,document=globalThis.
   if(mine&&mine.position>3){card.classList.add('ranking-mine');card.dataset.position=mine.position;card.append(element('strong','',`Toi : ${mine.place}e`),element('span','ranking-time',format(mine.score)));
    const third=top.find(r=>r.position===3);if(third&&mine.score>third.score)card.append(element('small','',format(mine.score-third.score)+' du podium'));
   }else if(!mine)card.append(element('span','','Aucun temps compétitif pour cette révision.'));
+  // #761: a victory the server refused is never shown as if the podium were its result.
+  if(data.excluded)card.append(element('small','ranking-excluded','Ce temps n’est pas retenu au classement (15 min minimum entre deux essais classés). Ton record personnel est bien enregistré.'));
   if(!data.participating)card.append(element('small','',data.withdrawn?'Participation désactivée. Réinscription depuis Compte.':'Ton pseudo et les règles de participation sont disponibles dans Compte.'));
   if(card.childNodes.length)root.append(card);
   if(!animated&&!reduced()){
@@ -45,7 +47,7 @@ export function createRankingView({client,getContext,format,document=globalThis.
   }
   onUpdate({state:'ready',quest,data});
  }
- async function refresh(results=[]){const token=generation,q=quest;if(!q)return;try{const data=await client.board(q);if(token===generation&&quest===q&&getContext().owner===owner&&getContext().client===connection){const captured=operation?client.takeResult?.(operation):null;improvedForView=improvedForView||!!captured?.improved||(!operation&&results.some(r=>r?.questId===q.id&&r.improved));rows({...data,improved:improvedForView})}}catch{if(token===generation)status(globalThis.navigator?.onLine===false?(review?'Hors ligne : le classement s’affichera au retour du réseau.':'Hors ligne : le classement s’affichera au retour du réseau. Ta victoire est sauvegardée.'):(review?'Classement indisponible pour le moment.':'Classement en attente de synchronisation. Ta victoire est sauvegardée.'),globalThis.navigator?.onLine===false?'offline':review?'error':'pending')}}
+ async function refresh(results=[]){const token=generation,q=quest;if(!q)return;try{const data=await client.board(q);if(token===generation&&quest===q&&getContext().owner===owner&&getContext().client===connection){const captured=operation?client.takeResult?.(operation):null;improvedForView=improvedForView||!!captured?.improved||(!operation&&results.some(r=>r?.questId===q.id&&r.improved));rows({...data,improved:improvedForView,excluded:captured?.status==='ineligible'})}}catch{if(token===generation)status(globalThis.navigator?.onLine===false?(review?'Hors ligne : le classement s’affichera au retour du réseau.':'Hors ligne : le classement s’affichera au retour du réseau. Ta victoire est sauvegardée.'):(review?'Classement indisponible pour le moment.':'Classement en attente de synchronisation. Ta victoire est sauvegardée.'),globalThis.navigator?.onLine===false?'offline':review?'error':'pending')}}
  function show(q,operationId=null,options={}){clear();quest=q;operation=operationId;owner=getContext().owner;connection=getContext().client;root.hidden=false;const token=generation;
   // #695 review: read the board only; nothing is flushed or animated.
   if(options.review){review=true;animated=true;status('Chargement du classement…');void refresh();return}

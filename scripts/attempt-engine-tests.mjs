@@ -35,4 +35,18 @@ function harness(){
  const restored=h.make().restore({questId:6,mode:"campaign"});
  assert.equal(restored.wrongGuardianPending,"0,0");assert.equal(restored.mistakeCommitted,false);
 }
+// #761: qualification is decided when the run starts, never frozen at grid opening.
+{
+ const h=harness(),e=h.make();e.create({questId:9,mode:"campaign",qualifying:false,board:[[0]]});
+ h.tick(16*60*1000);assert.equal(e.requalify(true).qualifying,true,"A not-yet-started run is promoted once the cooldown ended");
+ e.start();assert.equal(e.requalify(false).qualifying,true,"A started run is never requalified");
+ assert.equal(h.make().restore({questId:9,mode:"campaign"}).qualifying,true,"Promotion is durable");
+ e.reset([[0]],{qualifying:true});assert.equal(e.snapshot().qualifying,true);
+ const r=h.make();r.create({questId:10,mode:"campaign",qualifying:false,board:[[0]]});r.start();h.tick(20*60*1000);
+ assert.equal(r.reset([[0]],{qualifying:true}).qualifying,true,"A reset run after the cooldown qualifies");
+ assert.equal(r.reset([[0]]).qualifying,true,"Without an explicit decision, reset keeps the flag");
+ const c=h.make();c.create({questId:11,mode:"challenge",qualifying:false,board:[[0]]});
+ assert.equal(c.requalify(true).qualifying,false,"Social challenges are never requalified");
+ assert.equal(c.reset([[0]],{qualifying:true}).qualifying,false);
+}
 console.log(JSON.stringify({attemptEngine:true,ready:true,activeTime:true,pause:true,restorePaused:true,resetFreshBadgeRun:true,challengeResetOneShot:true,errorStatePersists:true,abandon:true}));

@@ -2096,8 +2096,13 @@ function advanceCompletedQuest(){
  loadPuzzle();refreshJourney();
 }
 document.getElementById('completedQuestNext').onclick=advanceCompletedQuest;
+// #761: badge qualification (and therefore ranking facts.qualifying) is decided
+// when the run starts, like the server ranking cooldown, not when the grid opened.
+function currentBadgeQualification(){return !socialChallenge&&questBadgeQualification(activeQuest(),lumenProgress,Math.max(canonicalScopeProgress(lumenProgress).completed,activeQuestOrdinal()))}
 function ensureAttemptStarted(){
- const a=attemptEngine.snapshot();if(a?.state!==ATTEMPT_STATES.READY)return;
+ let a=attemptEngine.snapshot();if(a?.state!==ATTEMPT_STATES.READY)return;
+ // Promotion only: an already qualifying run is never demoted here.
+ if(!a.qualifying&&!socialChallenge&&currentBadgeQualification()){a=attemptEngine.requalify(true);updateBadgeQualificationStatus()}
  if(a.qualifying&&!canonicalActiveQuest){
   lumenProgress.performances=lumenProgress.performances||{};
   const old=lumenProgress.performances[levelIndex]||{};
@@ -2569,7 +2574,7 @@ document.getElementById("questGo").onclick=()=>{document.getElementById("questSt
 function init(){document.getElementById('successRetry').textContent='↻ Réessayer';if(!canonicalActiveQuest&&accountRequired())queueMicrotask(()=>maybeOfferAccount());setLearningReplaySuccessMode(false);document.getElementById("successNew").textContent="Quête suivante";updateLearningSuccessCTA();learningTip=null;learningTipSeen=new Set();learningStage="place";learningIntroStep=0;choose();configureLearningMode();applyQuestRestrictions();maybeShowBadgeMilestone();maybeShowAutoCrossUnlock();maybeShowAutonomy();let cl=document.getElementById("campaignMapLabel");if(cl){const quest=canonicalActiveQuest??canonicalQuestForLegacy(levelIndex),view=readQuestView(quest,lumenProgress,canonicalQuestList(),CONTENT_CONSTELLATIONS);cl.textContent=view.label+" · "+(puz.difficulty?.label??qualifyDifficulty(puz).label);cl.title="Difficulté : "+(puz.difficulty?.label??qualifyDifficulty(puz).label);}document.getElementById("difficulty").textContent=(n===7?"7 × 7":n===8?"8 × 8":n+" × "+n)+(" · Difficulté : "+(puz.difficulty?.label??qualifyDifficulty(puz).label));state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];const hintCard=document.getElementById("hintCard");if(hintCard)hintCard.hidden=true;celebrated=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;guidedDeferred=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();msg.textContent="";drawLevels();victoryClockFreeze=null;clearInterval(timer);timer=setInterval(clock,100);
  const restored=attemptEngine.restore({questId:canonicalActiveQuest?.id??levelIndex+1,mode:attemptMode(),gridRevision:activeQuest()?.gridRevision??0,questResetRevision:lumenProgress.canonicalQuestState?.[activeQuest()?.id]?.resetRevision??0});
  if(restored&&Array.isArray(restored.board)&&restored.board.length===n){state=restored.board.map(row=>row.slice());render()}else {
-  const qualifying=!socialChallenge&&questBadgeQualification(activeQuest(),lumenProgress,Math.max(canonicalScopeProgress(lumenProgress).completed,activeQuestOrdinal()));
+  const qualifying=currentBadgeQualification();
   attemptEngine.create({questId:canonicalActiveQuest?.id??levelIndex+1,mode:attemptMode(),qualifying,challengeId:socialChallenge?.challenge_id||null,board:state,gridRevision:activeQuest()?.gridRevision??0,questResetRevision:lumenProgress.canonicalQuestState?.[activeQuest()?.id]?.resetRevision??0});
  }
  hintUsesThisGame=attemptEngine.snapshot()?.helpUses?.hint||0;verifyUsesThisGame=attemptEngine.snapshot()?.helpUses?.verify||0;updateHintButton();updateVerifyButton();
@@ -2600,7 +2605,9 @@ function activeGameSeconds(){return Math.max(0,Math.floor(activeGameMs()/1000))}
 function clock(){
  if(!socialChallenge&&attemptEngine.snapshot()?.qualifying===false){
   const label=document.querySelector("#campaignMapLabel .badge-qualification-status");
-  if(label){const remaining=badgeCooldownRemaining(questPerformanceRecord(activeQuest(),lumenProgress));label.textContent=" · Hors qualification badges"+(remaining?" — "+badgeCooldownLabel(remaining):"")}
+  // #761: a run not yet started becomes qualifying as soon as the cooldown ends.
+  if(attemptEngine.snapshot()?.state===ATTEMPT_STATES.READY&&currentBadgeQualification()){attemptEngine.requalify(true);updateBadgeQualificationStatus()}
+  else if(label){const remaining=badgeCooldownRemaining(questPerformanceRecord(activeQuest(),lumenProgress));label.textContent=" · Hors qualification badges"+(remaining?" — "+badgeCooldownLabel(remaining):"")}
  }
  const ms=activeGameMs(),s=Math.max(0,Math.floor(ms/1000));
  document.getElementById("time").textContent=formatDuration(victoryClockFreeze?victoryClockFreeze.official:socialChallenge?s:attemptEngine.officialSeconds());
@@ -4692,7 +4699,7 @@ document.getElementById("new").onclick=()=>{
   halfRewardShown=false;lastPlacedCount=0;
   state=Array.from({length:n},()=>Array(n).fill(0));hist=[];clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";
   if(!socialChallenge){usedHintThisGame=false;hintUsesThisGame=0;hintWasGranted=false;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;questFailed=false;updateHintButton();updateVerifyButton()}
-  attemptEngine.reset(state);
+  attemptEngine.reset(state,socialChallenge?{}:{qualifying:!!resetSnapshot?.qualifying||currentBadgeQualification()});updateBadgeQualificationStatus();
   if(!socialChallenge)trackAttemptEvent("attempt_run_started",{trigger:"reset"});
   render();clock();refreshJourney();
 };
