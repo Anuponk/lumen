@@ -2183,8 +2183,10 @@ The full quality suite runs on pull requests. After a squash merge, the publishe
   - in-game terminology (Gardien), the adjacency rule, and the Stellarium/Hipparcos attribution;
   - structured data, image sizes and the 1200×630 JPEG;
   - `robots.txt` (only `/admin/` is excluded; code and styles stay crawlable) and `sitemap.xml`;
-  - the presence of the new files in both release scripts and in `o2switch-deploy-tests.py`.
-- `scripts/landing-browser-tests.mjs` (browser inventory, report `ci-landing.json`) runs `scripts/landing-browser.mjs` at 360, 390 and 1440 px: images load, the « Jouer » button is reachable, nothing overflows horizontally, no executable script runs, and the structured data parses.
+  - the presence of the new files in both release scripts and in `o2switch-deploy-tests.py`;
+  - #758 « Comment jouer » (`comment-jouer.html`): head, `HowTo` data, rules and tap cycle as in GAMEPLAY.md, and a worked example derived from the real first quest by `scripts/how-to-play.mjs` (unique solution, first two deductions, colour names, the remaining Gardiens) with up-to-date SVG illustrations.
+- `scripts/landing-browser-tests.mjs` (browser inventory, report `ci-landing.json`) runs `scripts/landing-browser.mjs` at 360, 390 and 1440 px on both pages (`/decouvrir.html` and `/comment-jouer.html`): images load, the « Jouer » button is reachable (and keyboard-focusable on the how-to page), nothing overflows horizontally, no executable script runs, and the structured data parses.
+- How-to illustrations: `node scripts/how-to-play.mjs` regenerates `src/landing/how-to-play-*.svg` from the catalogue; `--check` fails when they are stale.
 - Visuals: `node scripts/landing-assets.mjs` with a served app and `LUMEN_CDP_URL` (QA mode, synthetic progress).
 - Owner after deployment: Google Search Console (sitemap), the Rich Results Test and the Open Graph preview.
 
@@ -2197,7 +2199,7 @@ The full quality suite runs on pull requests. After a squash merge, the publishe
 | Scope | Files changed (all of them) | What runs |
 |---|---|---|
 | `docs` | `docs/**/*.md` (outside `docs/validation/`) and `AGENTS.md` | Unchanged rule: `node` and `browser` jobs skipped |
-| `landing` | `decouvrir.html`, `robots.txt`, `sitemap.xml`, `src/landing/*`, the `scripts/landing-*.mjs` files, with or without docs | Formatting and o2switch release tests; `landing-seo-tests`; `landing-browser-tests` on shard 1 |
+| `landing` | `decouvrir.html`, `comment-jouer.html`, `robots.txt`, `sitemap.xml`, `src/landing/*`, the `scripts/landing-*.mjs` files, `scripts/how-to-play.mjs`, with or without docs | Formatting and o2switch release tests; `landing-seo-tests`; `landing-browser-tests` on shard 1 |
 | `full` | Anything else, e.g. `index.html`, `sw.js`, `src/` outside `landing`, release scripts, workflows, `ci-scope.mjs` | Everything |
 
 **What `landing` skips:** the other Node suites, the cloud steps, browser shards 2 and 3, and the `ledger-sql` and `reconciliation` jobs.

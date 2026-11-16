@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="fr">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1">
+ <title>Comment jouer à Lumen — les règles en une minute</title>
+ <meta name="description" content="Les règles de Lumen en une minute : un Gardien par ligne, par colonne et par territoire, sans contact. Une vraie grille résolue pas à pas pour commencer.">
+ <link rel="canonical" href="https://lumen.nopuna.fr/comment-jouer.html">
+ <meta property="og:type" content="article">
+ <meta property="og:locale" content="fr_FR">
+ <meta property="og:site_name" content="Lumen">
+ <meta property="og:title" content="Comment jouer à Lumen">
+ <meta property="og:description" content="Un Gardien par ligne, par colonne et par territoire, sans que deux Gardiens se touchent : les règles et une vraie grille résolue pas à pas.">
+ <meta property="og:url" content="https://lumen.nopuna.fr/comment-jouer.html">
+ <meta property="og:image" content="https://lumen.nopuna.fr/src/landing/og.jpg">
+ <meta property="og:image:width" content="1200">
+ <meta property="og:image:height" content="630">
+ <meta property="og:image:alt" content="Lumen : une grille d’étoiles et une constellation rallumée">
+ <meta name="twitter:card" content="summary_large_image">
+ <meta name="theme-color" content="#07111d">
+ <link rel="icon" href="/icon.svg" type="image/svg+xml">
+ <link rel="stylesheet" href="/src/landing/landing.css">
+ <script type="application/ld+json">
+ {
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Comment jouer à Lumen",
+  "description": "Placer un Gardien par ligne, par colonne et par territoire, sans que deux Gardiens se touchent, même en diagonale.",
+  "inLanguage": "fr",
+  "step": [
+   { "@type": "HowToStep", "name": "Observer la grille", "text": "La grille est découpée en territoires de couleur." },
+   { "@type": "HowToStep", "name": "Placer un Gardien par ligne, colonne et territoire", "text": "Chaque ligne, chaque colonne et chaque territoire reçoit exactement un Gardien." },
+   { "@type": "HowToStep", "name": "Éviter tout contact", "text": "Deux Gardiens ne se touchent jamais, même en diagonale." }
+  ]
+ }
+ </script>
+</head>
+<body>
+ <header class="hero">
+  <p class="brand"><a href="/decouvrir.html">✦ LUMEN</a></p>
+  <h1>Comment jouer à Lumen</h1>
+  <p class="lead">Les règles tiennent en une phrase, et chaque grille se résout par la logique, sans hasard. Voici l’essentiel, puis une vraie grille du jeu résolue pas à pas.</p>
+  <p class="cta"><a class="play" href="/">Jouer gratuitement</a></p>
+ </header>
+
+ <main>
+  <section>
+   <h2>Les règles</h2>
+   <p>Une grille de <strong>N × N</strong> cases est découpée en <strong>N territoires de couleur</strong>. Tu dois y placer <strong>N Gardiens</strong> :</p>
+   <ol class="steps">
+    <li><strong>Un Gardien par ligne</strong> et <strong>un Gardien par colonne</strong>.</li>
+    <li><strong>Un Gardien par territoire</strong> de couleur.</li>
+    <li><strong>Aucun contact</strong> : deux Gardiens ne se touchent jamais, même en diagonale.</li>
+   </ol>
+   <p>Chaque grille a une <strong>solution unique</strong>. La grille est réussie dès que les N Gardiens sont bien placés.</p>
+  </section>
+
+  <section class="example" aria-labelledby="example-title">
+   <h2 id="example-title">Exemple : la première quête, pas à pas</h2>
+   <figure><img src="/src/landing/how-to-play-grid.svg" width="248" height="248" alt="Grille d’exemple 5 × 5 découpée en cinq territoires de couleur"><figcaption>Une grille 5 × 5 et ses cinq territoires.</figcaption></figure>
+
+   <h3>Étape 1 — le territoire d’une seule case</h3>
+   <figure><img src="/src/landing/how-to-play-step1.svg" width="248" height="248" alt="Étape 1 : le Gardien du territoire d’une seule case, et les cases qu’il élimine" loading="lazy"><figcaption>Le Gardien du territoire violet, et les cases éliminées.</figcaption></figure>
+   <p>Le <strong>territoire violet</strong> ne contient qu’une case (ligne 3, colonne 3) : son Gardien est forcément là. Tu peux alors <strong>éliminer</strong> toute la ligne 3, toute la colonne 3 et les cases qui le touchent, diagonales comprises.</p>
+
+   <h3>Étape 2 — une seule case possible</h3>
+   <figure><img src="/src/landing/how-to-play-step2.svg" width="248" height="248" alt="Étape 2 : il ne reste qu’une case possible dans un territoire, son Gardien y va" loading="lazy"><figcaption>Le territoire orange n’a plus qu’une case libre.</figcaption></figure>
+   <p>Regarde le <strong>territoire orange</strong> : après l’étape 1, il ne lui reste qu’une case libre (ligne 5, colonne 4). Son Gardien y va, et tu élimines à nouveau sa ligne, sa colonne et ses voisines.</p>
+
+   <h3>La solution</h3>
+   <figure><img src="/src/landing/how-to-play-solution.svg" width="248" height="248" alt="Solution : cinq Gardiens, un par ligne, colonne et territoire, sans contact" loading="lazy"><figcaption>Cinq Gardiens : un par ligne, par colonne et par territoire, sans contact.</figcaption></figure>
+   <p>En continuant ainsi, chaque Gardien se déduit des précédents. Les trois derniers vont en ligne 1, colonne 2 ; ligne 2, colonne 5 ; et ligne 4, colonne 1.</p>
+  </section>
+
+  <section>
+   <h2>Dans le jeu</h2>
+   <ul class="steps">
+    <li><strong>Toucher une case</strong> la marque d’une croix (case impossible) ; un deuxième toucher y place un Gardien ; un troisième la vide.</li>
+    <li><strong>Glisser le doigt</strong> sur plusieurs cases les marque d’une croix d’un seul geste.</li>
+    <li>La première quête te guide pas à pas. Ensuite, des aides restent disponibles si tu bloques, mais jouer sans aide permet de gagner des badges.</li>
+   </ul>
+  </section>
+
+  <section>
+   <h2>Rallume ton ciel</h2>
+   <p>Chaque grille résolue fait briller une étoile d’une vraie constellation. Les quêtes s’enchaînent constellation après constellation, de la première lueur jusqu’aux 88 constellations du ciel. <a href="/decouvrir.html">Découvrir Lumen</a></p>
+  </section>
+
+  <p class="cta"><a class="play" href="/">Jouer gratuitement</a></p>
+ </main>
+
+ <footer>
+  <p>Données de constellations Western © équipe Stellarium, <a href="https://github.com/Stellarium/stellarium-skycultures/blob/master/western/description.md" rel="license">CC BY-SA</a> ; coordonnées stellaires Hipparcos II (ESA) via CDS VizieR. Projection et adaptation pour Lumen.</p>
+  <p>Un jeu <a href="https://nopuna.fr/">Nopuna</a> · <a href="/decouvrir.html">Découvrir Lumen</a> · <a href="/mentions-legales.html">Mentions légales</a> · <a href="/confidentialite.html">Confidentialité</a></p>
+ </footer>
+</body>
+</html>
