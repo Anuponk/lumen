@@ -1,7 +1,7 @@
 // Measurements contain only fixed categories/counts. Never expose storage keys,
 // profile contents, account identities or token values through diagnostics.
 const backupPatterns=[
- /^lumenBefore(CloudRestore|CloudReconcile|CloudAuthority|CloudReconcileLocal|CloudReconcileRemote|AccountSwitch|CanonicalStartMetadataLocal|CanonicalStartMetadataRemote)_(\d+)$/,
+ /^lumenBefore(CloudRestore|CloudReconcile|CloudAuthority|CloudReconcileLocal|CloudReconcileRemote|AccountSwitch|AccountSwitchAttempt|CanonicalStartMetadataLocal|CanonicalStartMetadataRemote)_(\d+)$/,
  /^(lumenUnsyncedCloudBackupV2:[^:]+:)(\d+):[a-z0-9]+$/
 ];
 function backupIdentity(key){
@@ -75,17 +75,31 @@ export async function storageReport(storage,navigatorObject=globalThis.navigator
  const indexed=await measureIndexedStores(indexedDB);
  return {local,browser,indexed,deviceFreeSpaceKnown:false};
 }
-// Keep recent copies in localStorage. Older immutable snapshots move to the
-// existing exportable recovery store; no unique original expires with age.
-function archiveCandidates(storage){
- const families=new Map();
+// Keep the two most recent distinct copies of each family in localStorage. Older
+// immutable snapshots move to the existing exportable recovery store; no unique
+// original expires with age. #723: an identical copy (same content, another
+// timestamp) is archived once, under the key of its most recent twin, so every
+// removed copy stays readable in IndexedDB exactly as it was.
+function archiveCandidates(storage,families=null){
+ const groups=new Map();
  for(let i=0;i<storage.length;i++){
   const key=storage.key(i),identity=key&&backupIdentity(key);if(!identity)continue;
+  if(families&&!families.includes(identity.family))continue;
   const value=storage.getItem(key);if(value===null)continue;
-  const group=families.get(identity.family)||[];
-  group.push({key,value,time:identity.time});families.set(identity.family,group);
+  const group=groups.get(identity.family)||[];
+  group.push({key,value,time:identity.time});groups.set(identity.family,group);
  }
- return [...families.values()].flatMap(group=>group.sort((a,b)=>b.time-a.time||a.key.localeCompare(b.key)).slice(2)).slice(0,50);
+ return [...groups.values()].flatMap(group=>{
+  group.sort((a,b)=>b.time-a.time||a.key.localeCompare(b.key));
+  const twins=new Map(),out=[];
+  for(const item of group){
+   const twin=twins.get(item.value);
+   if(twin){out.push({...item,archiveKey:twin.key});continue}
+   twins.set(item.value,item);
+   if(twins.size>2)out.push({...item,archiveKey:item.key});
+  }
+  return out;
+ }).slice(0,50);
 }
 // Resolves only after both read-back and transaction completion. Reusing a key
 // with different evidence aborts; a full/blocked database leaves local intact.
@@ -128,22 +142,24 @@ function archiveOriginal(indexedDB,key,value){
   }catch{finish(Error('Archive unavailable'))}
  });
 }
-export async function archiveRecoveryBackups(storage,{indexedDB=globalThis.indexedDB,sessionValid=()=>true}={}){
- const result={archived:0,bytes:0,failed:false,interrupted:false};
+// families: optional list of backup families (e.g. ['AccountSwitch','AccountSwitchAttempt'])
+// for the silent launch maintenance of #723; the account panel archives every family.
+export async function archiveRecoveryBackups(storage,{indexedDB=globalThis.indexedDB,sessionValid=()=>true,families=null}={}){
+ const result={archived:0,deduplicated:0,bytes:0,failed:false,interrupted:false};
  try{
   const owner=storage.getItem('lumenCloudOwnerId'),profile=storage.getItem('lumenProgressV1');
   const valid=()=>sessionValid()&&storage.getItem('lumenCloudOwnerId')===owner&&storage.getItem('lumenProgressV1')===profile;
   if(!valid())return {...result,interrupted:true};
-  const candidates=archiveCandidates(storage);
-  for(const {key,value} of candidates){
+  const candidates=archiveCandidates(storage,families);
+  for(const {key,value,archiveKey} of candidates){
    if(!valid()){result.interrupted=true;break}
    if(storage.getItem(key)!==value)continue;
-   await archiveOriginal(indexedDB,key,value);
+   await archiveOriginal(indexedDB,archiveKey,value);
    if(!valid()){result.interrupted=true;break}
    if(storage.getItem(key)!==value){result.interrupted=true;break}
    storage.removeItem(key);
    if(storage.getItem(key)!==null)throw Error('Local removal refused');
-   result.archived++;result.bytes+=2*(key.length+value.length);
+   result.archived++;if(archiveKey!==key)result.deduplicated++;result.bytes+=2*(key.length+value.length);
   }
  }catch{result.failed=true}
  return result;

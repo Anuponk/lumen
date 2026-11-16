@@ -161,3 +161,46 @@ test('checkpoint retention is per owner and never consumes latest pointers or V1
  }
  assert.equal(f.values.get('lumenUnsyncedCloudBackupV1:first'),'legacy-original');
 });
+test('#723: launch maintenance frees a quota saturated by account-switch copies, verified and deduplicated',async()=>{
+ const {archiveRecoveryBackups}=await load();const f=fixture();
+ const big=label=>label+'-'+'x'.repeat(4000);
+ const copies={1000:big('A'),1100:big('A'),1200:big('B'),1300:big('C'),1400:big('C'),1500:big('D')};
+ for(const [stamp,value] of Object.entries(copies))f.values.set('lumenBeforeAccountSwitch_'+stamp,value);
+ for(const [stamp,value] of Object.entries({10:'attempt-x',20:'attempt-x',30:'attempt-y',40:'attempt-z'}))f.values.set('lumenBeforeAccountSwitchAttempt_'+stamp,value);
+ // A browser quota: writes fail while the copies fill localStorage.
+ const used=()=>[...f.values].reduce((n,[k,v])=>n+2*(k.length+v.length),0),limit=used()+1000,setItem=f.storage.setItem;
+ f.storage.setItem=(k,v)=>{if(used()+2*(k.length+String(v).length)>limit)throw Object.assign(Error('quota'),{name:'QuotaExceededError'});setItem(k,v)};
+ assert.throws(()=>f.storage.setItem('lumenProgressV1Next',big('progress')),/quota/,'Saturated before maintenance');
+ const before=new Map(f.values);
+ const result=await archiveRecoveryBackups(f.storage,{indexedDB:f.indexedDB,families:['AccountSwitch','AccountSwitchAttempt']});
+ assert.equal(result.failed,false);assert.equal(result.interrupted,false);
+ assert.equal(result.archived,6);assert.equal(result.deduplicated,3);
+ // The two most recent distinct copies of each family stay in place.
+ assert.deepEqual([...f.values.keys()].filter(k=>k.startsWith('lumenBeforeAccountSwitch_')).sort(),['lumenBeforeAccountSwitch_1400','lumenBeforeAccountSwitch_1500']);
+ assert.deepEqual([...f.values.keys()].filter(k=>k.startsWith('lumenBeforeAccountSwitchAttempt_')).sort(),['lumenBeforeAccountSwitchAttempt_30','lumenBeforeAccountSwitchAttempt_40']);
+ // Every removed copy is readable in IndexedDB exactly as it was; identical copies are stored once.
+ const archived=new Set(f.archives.values());
+ for(const [key,value] of before)if(!f.values.has(key)){assert(key.startsWith('lumenBeforeAccountSwitch'),'Only account-switch copies move: '+key);assert(archived.has(value),'Readable in IndexedDB: '+key)}
+ assert.deepEqual([...f.archives.keys()].sort(),['localStorage:lumenBeforeAccountSwitchAttempt_20','localStorage:lumenBeforeAccountSwitch_1100','localStorage:lumenBeforeAccountSwitch_1200','localStorage:lumenBeforeAccountSwitch_1400']);
+ assert.equal(f.archives.get('localStorage:lumenBeforeAccountSwitch_1400'),copies[1400],'The twin of a kept copy is archived under its key');
+ // Other families and active data are untouched by the launch maintenance.
+ assert.equal(f.values.get('lumenBeforeCloudRestore_100'),'old-original');
+ assert.equal(f.values.get('lumenProgressV1'),'private-current');assert.equal(f.values.get('lumenCanonicalOutboxV2:private'),'pending-intent');
+ // Space is back.
+ f.storage.setItem('lumenProgressV1Next',big('progress'));assert.equal(f.values.has('lumenProgressV1Next'),true);
+ assert.equal((await archiveRecoveryBackups(f.storage,{indexedDB:f.indexedDB,families:['AccountSwitch','AccountSwitchAttempt']})).archived,0,'Idempotent');
+});
+test('#723: a twin whose archive key holds different content is never removed',async()=>{
+ const {archiveRecoveryBackups}=await load();const f=fixture();
+ for(const [stamp,value] of Object.entries({1:'same',2:'same',3:'other',4:'newest'}))f.values.set('lumenBeforeAccountSwitch_'+stamp,value);
+ f.archives.set('localStorage:lumenBeforeAccountSwitch_2','conflicting');
+ const result=await archiveRecoveryBackups(f.storage,{indexedDB:f.indexedDB,families:['AccountSwitch']});
+ assert.equal(result.failed,true);assert.equal(f.values.get('lumenBeforeAccountSwitch_1'),'same');assert.equal(f.values.get('lumenBeforeAccountSwitch_2'),'same');
+});
+test('#723: the game runs the silent launch maintenance for account-switch copies only',()=>{
+ const source=ui.replace(/\r\n/g,'\n');
+ assert.match(source,/archiveRecoveryBackups\(localStorage,\{families:\['AccountSwitch','AccountSwitchAttempt'\],/);
+ assert.match(source,/sessionValid:\(\)=>lumenUser===user&&lumenSupabase===client&&!authSessionPending\}\)/);
+ assert.match(source,/\nsetTimeout\(\(\)=>void autoArchiveAccountSwitchCopies\(\),15000\);\n/);
+ assert.match(source,/if\(qaActive\|\|switchCopiesTries>=3\)return;/);
+});

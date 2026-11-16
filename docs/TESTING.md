@@ -545,6 +545,8 @@ verification. All prior cloud, wallet, canonical and SQL regressions are retaine
 
 ## Session achievement recovery — #530
 
+#723 launch maintenance: `storage-maintenance-tests.mjs` saturates a quota with account-switch copies (with identical duplicates), runs the family-scoped archival, then checks freed space, the two kept distinct copies, one IndexedDB entry per distinct content readable identically, untouched other families and active data, idempotence, a conflicting twin archive that keeps both copies, and the game wiring.
+
 Storage inventory/retention: `node scripts/storage-maintenance-tests.mjs` covers
 fixed-category privacy-safe sizes, unavailable stores, independent browser quota,
 read-only existing IndexedDB inventory, exact archival, keep-two retention,

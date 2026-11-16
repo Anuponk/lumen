@@ -4186,6 +4186,20 @@ async function maybeRestorePlayPurchases(){
  const results=await restorePlayPurchases({service,verify:playVerify});
  if(lumenUser?.id===owner&&results.some(r=>r.status==='paid'))await loadEntitlements();
 }
+// #723: once per launch, silently move old account-switch copies (and identical
+// duplicates) to the verified IndexedDB archive, with the read-back rule of
+// « Libérer l’espace ». Retried twice if the session changes during the run.
+let switchCopiesTries=0;
+async function autoArchiveAccountSwitchCopies(){
+ if(qaActive||switchCopiesTries>=3)return;
+ if(authSessionPending){setTimeout(()=>void autoArchiveAccountSwitchCopies(),30000);return}
+ switchCopiesTries++;
+ const user=lumenUser,client=lumenSupabase;
+ const result=await archiveRecoveryBackups(localStorage,{families:['AccountSwitch','AccountSwitchAttempt'],
+  sessionValid:()=>lumenUser===user&&lumenSupabase===client&&!authSessionPending}).catch(()=>({interrupted:true}));
+ if(result.interrupted)setTimeout(()=>void autoArchiveAccountSwitchCopies(),60000);
+}
+setTimeout(()=>void autoArchiveAccountSwitchCopies(),15000);
 // After a verified hydration: server-checked mastery unlocks (#728) and Play restore (#729).
 function afterVerifiedHydration(){void maybeClaimMasteryUnlocks();void maybeRestorePlayPurchases()}
 // #731: offer shown on a locked Adventure. Purchases stay disabled until a payment
