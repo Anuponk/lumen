@@ -1,23 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Lumen, étoile et constellation">
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+<title id="title">Lumen — constellation en L</title>
+<desc id="desc">Un L céleste lumineux reliant trois étoiles cyan et or sur un fond bleu nuit.</desc>
 <defs>
-<linearGradient id="sky" x1=".1" y1="0" x2=".8" y2="1"><stop stop-color="#081333"/><stop offset=".66" stop-color="#132551"/><stop offset="1" stop-color="#182e69"/></linearGradient>
-<linearGradient id="gold" x1=".15" y1=".15" x2=".85" y2=".86"><stop stop-color="#fff0b8"/><stop offset=".38" stop-color="#ffda77"/><stop offset="1" stop-color="#e89c39"/></linearGradient>
-<radialGradient id="glow"><stop stop-color="#ffefbf" stop-opacity=".52"/><stop offset="1" stop-color="#ffcc63" stop-opacity="0"/></radialGradient>
-<linearGradient id="cloud" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#49649b" stop-opacity=".5"/><stop offset="1" stop-color="#14234e" stop-opacity=".13"/></linearGradient>
+<linearGradient id="bg" x2="1" y2="1"><stop stop-color="#061327"/><stop offset=".55" stop-color="#071a3a"/><stop offset="1" stop-color="#0b3270"/></linearGradient>
+<radialGradient id="nebula" cx=".88" cy=".95" r=".65"><stop stop-color="#086abd" stop-opacity=".62"/><stop offset=".4" stop-color="#0b3c88" stop-opacity=".22"/><stop offset="1" stop-color="#091a40" stop-opacity="0"/></radialGradient>
+<linearGradient id="beam" x2="1" y2="1"><stop stop-color="#b7ffff"/><stop offset=".45" stop-color="#42dafa"/><stop offset="1" stop-color="#17aee9"/></linearGradient>
+<linearGradient id="orbit" x2="1" y2="0"><stop stop-color="#a67825" stop-opacity="0"/><stop offset=".18" stop-color="#e1a53f" stop-opacity=".85"/><stop offset=".52" stop-color="#1cb0d5" stop-opacity=".45"/><stop offset=".78" stop-color="#f7ca61" stop-opacity=".9"/><stop offset="1" stop-color="#efb84c" stop-opacity=".1"/></linearGradient>
+<radialGradient id="goldHalo"><stop stop-color="#fff5cf"/><stop offset=".24" stop-color="#f9d45a" stop-opacity=".82"/><stop offset=".58" stop-color="#d88a22" stop-opacity=".32"/><stop offset="1" stop-color="#d88a22" stop-opacity="0"/></radialGradient>
+<radialGradient id="cyanHalo"><stop stop-color="#f3ffff" stop-opacity=".95"/><stop offset=".25" stop-color="#5af0ff" stop-opacity=".74"/><stop offset=".62" stop-color="#19c9f1" stop-opacity=".2"/><stop offset="1" stop-color="#19c9f1" stop-opacity="0"/></radialGradient>
+<filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="10"/></filter>
+<clipPath id="clip"><rect width="512" height="512" rx="108"/></clipPath>
 </defs>
-<rect width="512" height="512" rx="108" fill="url(#sky)"/>
-<circle cx="252" cy="272" r="165" fill="url(#glow)"/>
-<g fill="#e1ebff"><circle cx="94" cy="143" r="1.6"/><circle cx="130" cy="85" r="1"/><circle cx="357" cy="80" r="1.5"/><circle cx="423" cy="176" r="1.4"/><circle cx="89" cy="304" r="1.2"/><circle cx="411" cy="314" r="1"/><circle cx="366" cy="405" r="1.2"/><circle cx="193" cy="399" r="1.2"/></g>
-<g fill="#fdd88b"><circle cx="152" cy="189" r="1.5"/><circle cx="388" cy="243" r="1.3"/><circle cx="118" cy="273" r="1.4"/></g>
-<path d="M306 122C235 103 161 142 133 221c-21 62-6 119 27 153C129 329 133 258 157 208c27-57 76-88 149-86Z" fill="url(#gold)"/>
-<path d="M354 209c18 34 18 85-2 121-33 62-102 86-156 61 67 16 120-18 146-71 16-32 19-73 12-111Z" fill="url(#gold)"/>
-<circle cx="248" cy="266" r="97" fill="url(#glow)"/>
-<path d="M248 170c8 66 13 80 78 96-65 11-70 29-78 96-12-67-20-84-78-96 58-14 66-30 78-96Z" fill="#fff3c5"/>
-<path d="M248 201c7 45 16 54 57 65-41 9-50 19-57 65-9-46-19-56-57-65 38-11 48-20 57-65Z" fill="#fff9e8"/>
-<g stroke="#ffc867" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
-<path d="M224 87 279 96 322 134 332 166 380 179"/>
+<g clip-path="url(#clip)">
+<rect width="512" height="512" fill="url(#bg)"/>
+<rect width="512" height="512" fill="url(#nebula)"/>
+<path d="M78 344C58 306 118 245 224 204S422 150 453 173C481 201 451 250 406 272" fill="none" stroke="url(#orbit)" stroke-width="3" stroke-linecap="round"/>
+<path d="M219 116L172 355L402 355" fill="none" stroke="#00c7fa" stroke-width="36" stroke-linejoin="round" stroke-linecap="round" opacity=".75" filter="url(#glow)"/>
+<path d="M219 116L172 355L402 355" fill="none" stroke="url(#beam)" stroke-width="23" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M219 116L172 355L402 355" fill="none" stroke="#e0ffff" stroke-width="7" stroke-linejoin="round" stroke-linecap="round" opacity=".9"/>
+<circle cx="219" cy="116" r="67" fill="url(#cyanHalo)"/>
+<circle cx="219" cy="116" r="43" fill="none" stroke="#28d9ff" stroke-opacity=".52" stroke-width="2"/>
+<path d="M219 64Q227 107 262 116Q227 125 219 167Q211 125 176 116Q211 107 219 64Z" fill="#ecffff"/>
+<circle cx="172" cy="355" r="82" fill="url(#goldHalo)"/>
+<circle cx="172" cy="355" r="55" fill="none" stroke="#f4d982" stroke-opacity=".38" stroke-width="2"/>
+<path d="M172 286Q185 341 235 355Q185 368 172 425Q160 368 109 355Q160 341 172 286Z" fill="#fff2cb"/>
+<path d="M172 305Q181 345 217 355Q181 365 172 404Q163 365 127 355Q163 345 172 305Z" fill="#fff"/>
+<circle cx="402" cy="355" r="44" fill="url(#cyanHalo)"/>
+<circle cx="402" cy="355" r="15" fill="#ebffff"/>
+<circle cx="402" cy="355" r="8" fill="#fff"/>
+<rect x="3" y="3" width="506" height="506" rx="105" fill="none" stroke="#20c9f3" stroke-opacity=".47" stroke-width="5"/>
 </g>
-<g fill="#fff1c6" stroke="#ffc768" stroke-width="2"><circle cx="224" cy="87" r="5"/><circle cx="279" cy="96" r="5"/><circle cx="322" cy="134" r="4.3"/><circle cx="332" cy="166" r="4.3"/><circle cx="380" cy="179" r="5.5"/></g>
-<path d="M408 126c4 22 8 25 26 29-18 4-22 9-26 29-4-20-8-25-26-29 18-4 22-7 26-29Z" fill="#ffde8b"/>
-<path d="M0 396c42-27 68-22 100-1 36-15 69-6 89 17 37-17 66-7 91 10 38-23 72-19 105 5 48-32 92-18 127-2v87H0Z" fill="url(#cloud)"/>
 </svg>

@@ -1,34 +1,66 @@
-// Render the approved repository SVG, never a separately drawn raster logo.
-// Start an isolated Chromium CDP session and set LUMEN_CDP_URL before running.
+// Render the approved repository SVGs (#755, constellation « L »), never a separately
+// drawn raster logo. Start an isolated Chromium CDP session and set LUMEN_CDP_URL.
+// - Android vectors (adaptive foreground + Android 13 monochrome) reuse the exact L and
+//   star geometry of icon-maskable.svg, scaled into the adaptive-icon safe zone.
+// - Legacy launcher PNGs come from icon.svg (its own rounded transparent corners).
+// - The TWA splash and the 512 px Play listing icon come from the full-bleed icon-maskable.svg.
 import fs from 'node:fs';
-import {connectBrowser} from '../../scripts/cdp-client.mjs';
+import {pathToFileURL} from 'node:url';
 const repo=new URL('../../',import.meta.url);
 const res=new URL('app/src/main/res/',new URL('../',import.meta.url));
-const svg=fs.readFileSync(new URL('icon-maskable.svg',repo),'utf8');
-const paths=[...svg.matchAll(/<path d="([^"]+)" fill="([^"]+)"\/>/g)]
- .filter(([, ,fill])=>fill!=='url(#cloud)')
- .map(([,d,fill])=>({d,fill:fill==='url(#gold)'?'#ffd77a':fill}));
-if(paths.length!==5||paths.some(p=>!/^#[a-f0-9]{6}$/i.test(p.fill)))throw Error('Review changed SVG geometry before generating Android assets');
-const header='<?xml version="1.0" encoding="utf-8"?>\n<!-- Geometry from repository icon-maskable.svg (#625). -->\n';
-const vector=monochrome=>header+'<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="512" android:viewportHeight="512">\n'+
- paths.filter((_,i)=>!monochrome||i<3).map(p=>`    <path android:fillColor="${monochrome?'#ffffff':p.fill}" android:pathData="${p.d}" />`).join('\n')+'\n</vector>\n';
-fs.writeFileSync(new URL('drawable/ic_foreground.xml',res),vector(false));
-fs.writeFileSync(new URL('drawable/ic_monochrome.xml',res),vector(true));
-fs.writeFileSync(new URL('values/colors.xml',res),header+'<resources><color name="night">#081333</color></resources>\n');
-const browser=await connectBrowser();
-try{
- await browser.send('Page.enable');await browser.send('Runtime.enable');
- await browser.send('Emulation.setDefaultBackgroundColorOverride',{color:{r:0,g:0,b:0,a:0}});
- await browser.send('Page.navigate',{url:'data:text/html;base64,'+Buffer.from('<!doctype html><style>html,body{margin:0;width:100%;height:100%;overflow:hidden}svg{display:block;width:100%;height:100%}</style>'+svg).toString('base64')});
- for(const [density,size] of [['mdpi',48],['hdpi',72],['xhdpi',96],['xxhdpi',144],['xxxhdpi',192],['splash',512]]){
-  await browser.send('Emulation.setDeviceMetricsOverride',{width:size,height:size,deviceScaleFactor:1,mobile:false});
-  // Legacy launchers need transparent rounded corners; adaptive icons own their
-  // mask and the TWA splash stays opaque. Do not suppress IconLauncherShape lint.
-  await browser.evaluate(`document.querySelector('svg').style.borderRadius=${JSON.stringify(density==='splash'?'0':'21.1%')}`);
-  await browser.evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))',true);
-  const image=await browser.send('Page.captureScreenshot',{format:'png',clip:{x:0,y:0,width:size,height:size,scale:1}});
-  const output=density==='splash'?'drawable-nodpi/splash.png':`mipmap-${density}/ic_launcher.png`;
-  fs.writeFileSync(new URL(output,res),Buffer.from(image.data,'base64'));
-  console.log(output+' '+size+'x'+size);
- }
-}finally{await browser.send('Browser.close').catch(()=>{});}
+const icon=fs.readFileSync(new URL('icon.svg',repo),'utf8');
+const maskable=fs.readFileSync(new URL('icon-maskable.svg',repo),'utf8');
+
+// Geometry contract: the L polyline, three star shapes and the right-hand star point.
+export function iconGeometry(svg){
+ const lines=[...svg.matchAll(/<path d="(M[^"]+)" fill="none" stroke="[^"]+" stroke-width="(\d+)" stroke-linejoin="round"/g)].map(m=>m[1]);
+ const l=[...new Set(lines)];
+ const star=fill=>svg.match(new RegExp('<path d="([^"]+)" fill="'+fill+'"/>'))?.[1];
+ const shapes={top:star('#ecffff'),goldOuter:star('#fff2cb'),goldInner:star('#fff')};
+ const dot=svg.match(/<circle cx="(\d+)" cy="(\d+)" r="15" fill="#ebffff"\/>/);
+ if(l.length!==1||Object.values(shapes).some(v=>!v)||!dot)throw Error('Review changed SVG geometry before generating Android assets');
+ return {l:l[0],shapes,dot:{cx:Number(dot[1]),cy:Number(dot[2]),r:15}};
+}
+// The L and its stars span roughly x 109–446 and y 64–425 of 512: scaled by 0.72 around
+// the centre and shifted, they fit the 66 dp safe zone of the 108 dp adaptive canvas.
+export const SAFE_GROUP='android:pivotX="256" android:pivotY="256" android:scaleX="0.72" android:scaleY="0.72" android:translateX="-15" android:translateY="8"';
+export const NIGHT='#071a3a';
+export function androidVector(g,monochrome){
+ const c=(color)=>monochrome?'#ffffff':color;
+ const circle=`M${g.dot.cx-g.dot.r},${g.dot.cy}a${g.dot.r},${g.dot.r} 0 1,0 ${2*g.dot.r},0a${g.dot.r},${g.dot.r} 0 1,0 ${-2*g.dot.r},0`;
+ const body=[
+  `<path android:strokeColor="${c('#22c8f2')}" android:strokeWidth="23" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="${g.l}" />`,
+  ...(monochrome?[]:[`<path android:strokeColor="#e0ffff" android:strokeWidth="7" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="${g.l}" />`]),
+  `<path android:fillColor="${c('#ecffff')}" android:pathData="${g.shapes.top}" />`,
+  `<path android:fillColor="${c('#f9d45a')}" android:pathData="${g.shapes.goldOuter}" />`,
+  ...(monochrome?[]:[`<path android:fillColor="#ffffff" android:pathData="${g.shapes.goldInner}" />`]),
+  `<path android:fillColor="${c('#ebffff')}" android:pathData="${circle}" />`
+ ];
+ return '<?xml version="1.0" encoding="utf-8"?>\n<!-- Geometry from repository icon-maskable.svg (#755). Generated by android/tools/render-icons.mjs. -->\n'+
+  '<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="512" android:viewportHeight="512">\n'+
+  `    <group ${SAFE_GROUP}>\n`+body.map(line=>'        '+line).join('\n')+'\n    </group>\n</vector>\n';
+}
+
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
+ const geometry=iconGeometry(maskable);
+ fs.writeFileSync(new URL('drawable/ic_foreground.xml',res),androidVector(geometry,false));
+ fs.writeFileSync(new URL('drawable/ic_monochrome.xml',res),androidVector(geometry,true));
+ fs.writeFileSync(new URL('values/colors.xml',res),'<?xml version="1.0" encoding="utf-8"?>\n<!-- Adaptive icon background (#755), the night blue of icon.svg. -->\n<resources><color name="night">'+NIGHT+'</color></resources>\n');
+ const {connectBrowser}=await import('../../scripts/cdp-client.mjs');
+ const browser=await connectBrowser();
+ try{
+  await browser.send('Page.enable');await browser.send('Runtime.enable');
+  await browser.send('Emulation.setDefaultBackgroundColorOverride',{color:{r:0,g:0,b:0,a:0}});
+  const outputs=[['mipmap-mdpi/ic_launcher.png',48,icon],['mipmap-hdpi/ic_launcher.png',72,icon],['mipmap-xhdpi/ic_launcher.png',96,icon],
+   ['mipmap-xxhdpi/ic_launcher.png',144,icon],['mipmap-xxxhdpi/ic_launcher.png',192,icon],['drawable-nodpi/splash.png',512,maskable],['../../../../store/play-icon-512.png',512,maskable]];
+  for(const [output,size,svg] of outputs){
+   await browser.send('Page.navigate',{url:'data:text/html;base64,'+Buffer.from('<!doctype html><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent}svg{display:block;width:100%;height:100%}</style>'+svg).toString('base64')});
+   await browser.send('Emulation.setDeviceMetricsOverride',{width:size,height:size,deviceScaleFactor:1,mobile:false});
+   await browser.evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))',true);
+   const image=await browser.send('Page.captureScreenshot',{format:'png',clip:{x:0,y:0,width:size,height:size,scale:1}});
+   const target=new URL(output,res);fs.mkdirSync(new URL('./',target),{recursive:true});
+   fs.writeFileSync(target,Buffer.from(image.data,'base64'));
+   console.log(output+' '+size+'x'+size);
+  }
+ }finally{await browser.send('Browser.close').catch(()=>{});}
+}
