@@ -5,7 +5,7 @@ import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {PERFORMANCE_BADGES} from '../src/campaign/performance.js';
 import {ADVENTURE_PRICE_CENTS,SKY_PRICE_CENTS,formatEuros} from '../src/campaign/store-catalogue.js';
-import {adventureOfferModel,masteryLine,SUPPORT_LINE,SUPPORT_TEXT} from '../src/ui/adventure-offer.js';
+import {adventureOfferModel,masteryLine,restoreMessage,SUPPORT_LINE,SUPPORT_TEXT} from '../src/ui/adventure-offer.js';
 import {storeSeed} from './adventure-store-seed.mjs';
 
 const quests=canonicalQuestList(),packs=[...CONTENT_PACKS].sort((a,b)=>a.order-b.order).map((p,i)=>({...p,accessible:i===0}));
@@ -43,4 +43,19 @@ assert(storeSeed().includes(`'adventure','${second.id}',${ADVENTURE_PRICE_CENTS}
 assert(storeSeed().includes(`'sky',null,${SKY_PRICE_CENTS},'EUR'`));
 const nav=fs.readFileSync(new URL('../src/ui/sky-navigation.js',import.meta.url),'utf8');
 assert.doesNotMatch(nav,/sera annoncé plus tard/,'The placeholder lock text is gone');
+// #731: « Restaurer mes achats » never reports a pending or unverified purchase as restored.
+assert.equal(restoreMessage([]),'Aucun achat Google Play à restaurer pour ce compte Google.');
+assert.equal(restoreMessage([{status:'paid'}]),'Achats restaurés ✓');
+assert.doesNotMatch(restoreMessage([{status:'pending'}]),/restaurés/,'Pending is not a success');
+assert.match(restoreMessage([{status:'pending'}]),/attend encore la confirmation de Google/);
+assert.match(restoreMessage([{status:'error',reason:'list'}]),/^Vérification impossible/,'An unreadable list is a failure, not « nothing to restore »');
+assert.match(restoreMessage([{status:'not_paid'}]),/^Vérification impossible/);
+assert.equal(restoreMessage([{status:'paid'},{status:'error'}]),'Achats restaurés ✓ Certains achats n’ont pas pu être vérifiés : réessaie plus tard.');
+assert.match(restoreMessage([{status:'owned_elsewhere'}]),/autre compte Lumen/);
+const offerSource=fs.readFileSync(new URL('../src/ui/adventure-offer.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+assert.ok(offerSource.includes("if(model.purchasesAvailable&&model.signedIn){const r=el('button',{type:'button',className:'adventure-offer-restore'},'Restaurer mes achats')"),'Restore only where Play purchases exist, for a signed-in player');
+const screen=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+assert.ok(screen.includes('onRestore:restorePurchasesNow,'));
+assert.ok(screen.includes('restorePlayPurchases({service,verify:playVerify,reportListFailure:true})'));
+assert.ok(screen.includes('setStatus(restoreMessage(results));setBusy(false);\n // A restored Adventure'),'The message is shown before re-rendering');
 console.log('adventure-offer-tests: prices, mastery path, wording and seed parity OK');

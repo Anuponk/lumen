@@ -1391,6 +1391,7 @@ body:has(#erasedAccountNotice:not([hidden])) #scriptedLearn{visibility:hidden!im
 .adventure-offer-buy:disabled{opacity:.55}
 .adventure-offer-claim{background:#2a5a3a;color:#eafff0;border:1px solid #57b47a}
 .adventure-offer-signin{background:transparent;color:#cfe6f3;border:1px solid #35546f}
+.adventure-offer-restore{background:transparent;color:#cfe6f3;border:1px dashed #35546f}
 .adventure-offer p{margin:0;font-size:13px;line-height:1.4}
 .adventure-offer-cap,.adventure-offer-soon{color:#9fb6c8}
 .adventure-offer-mastery{color:#e2d39a}
