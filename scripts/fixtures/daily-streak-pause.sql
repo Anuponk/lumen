@@ -6,6 +6,9 @@ do $$begin
  assert not has_table_privilege('authenticated','lumen_commands.feature_flags','SELECT'),'players cannot read flags directly';
  assert not has_table_privilege('authenticated','lumen_commands.feature_flags','UPDATE'),'players cannot reactivate rewards';
  assert not has_function_privilege('authenticated','lumen_commands.claim_quest_daily(integer,text)','EXECUTE');
+ -- The flag table holds no player data and must be classified, or account erasure refuses to run.
+ assert exists(select 1 from lumen_privacy.policy() where ns='lumen_commands' and rel='feature_flags' and action='retain-rule'),'feature_flags classified';
+ perform lumen_privacy.review_erasure('00000000-0000-0000-0000-000000000000',array[]::text[]);
 end $$;
 insert into auth.users(id) values('00000000-0000-0000-0000-000000075201'),('00000000-0000-0000-0000-000000075202') on conflict do nothing;
 -- Both players already played the two previous days: today is streak day 3 (+1 when enabled).

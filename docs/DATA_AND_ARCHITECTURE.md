@@ -154,7 +154,7 @@ Production migration remains unauthorized; PR stays draft. Proposed retention
 criteria are [separate from implemented behavior](PRIVACY_RETENTION_PROPOSAL.md).
 ## Paused Série de lumière — #752
 
-Migration `20261116090000_pause_daily_light_streak_752.sql` (idempotent; production application by the owner) adds the private table `lumen_commands.feature_flags` (no player access) with `daily_light_streak=false`, and redefines `lumen_commands.claim_quest_daily` — the single server route used by `lumen_claim_daily`, the wallet command, `commit_quest` and the legacy victory command. While the flag is off it still records the day in `lumen.daily_progress` but never credits `lumen.engagement_state`. Rule details: [PROGRESSION](PROGRESSION.md#série-de-lumière-en-pause-752). Fixture: `scripts/fixtures/daily-streak-pause.sql`.
+Migration `20261116090000_pause_daily_light_streak_752.sql` (idempotent; production application by the owner) adds the private table `lumen_commands.feature_flags` (no player access) with `daily_light_streak=false`, and redefines `lumen_commands.claim_quest_daily` — the single server route used by `lumen_claim_daily`, the wallet command, `commit_quest` and the legacy victory command. While the flag is off it still records the day in `lumen.daily_progress` but never credits `lumen.engagement_state`. Rule details: [PROGRESSION](PROGRESSION.md#série-de-lumière-en-pause-752). The flag table holds no player data and is classified `retain-rule` in `lumen_privacy.policy()` by the fix `20261116195500_feature_flags_privacy_752.sql`; without it, `review_erasure` refused every account erasure. Fixture: `scripts/fixtures/daily-streak-pause.sql`.
 
 ## Google Play purchases — #729
 
