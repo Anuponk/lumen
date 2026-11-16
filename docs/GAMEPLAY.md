@@ -29,7 +29,11 @@ four-badge system at quest 6; `questLearningRules` drives those introductions
 without delaying eligibility. Guided conflict control stays forced through 5, optional through
 10; marking is manual throughout the campaign (#647). Guided autonomy is introduced at 11. Hints remain free through 10.
 
-Qualified badge runs share a fifteen-minute cooldown. Replays preserve acquired
+Qualified badge runs share a fifteen-minute cooldown. Qualification is decided
+when a run starts (first gesture or reset), never frozen when the grid was opened:
+a grid opened during the cooldown and started after it qualifies; a qualifying
+run is never demoted (#761). The ranking requires that same flag, so a refused
+time is shown as not ranked while the personal record stays saved. Replays preserve acquired
 badges and first-win stars; Maîtrise is earned on one run, never accumulated.
 First victories earn 10 XP plus 5 XP without a hint, even if another assistance
 was used. Every third autonomous first victory earns one Éclat. Bonus quests

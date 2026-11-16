@@ -287,7 +287,9 @@ comme une vérification. Un seul classement existe par identité et révision de
 grille, avec une entrée par participant. Le début de la tentative fige son
 admission : même délai de quinze minutes que les badges, plus réservation
 serveur atomique entre appareils. Jouer pendant le délai reste possible ;
-attendre à la victoire ne rend pas l'essai admissible. Les pénalités apparaissent immédiatement au chrono. Elles ne changent
+attendre à la victoire ne rend pas l'essai admissible. La qualification
+badges (exigée aussi par `ranking_finish`) est réévaluée au démarrage et au reset,
+jamais figée à l'ouverture de la grille (#761). Les pénalités apparaissent immédiatement au chrono. Elles ne changent
 ni les badges, ni les Éclats, ni les minima bruts techniques. Rapidité conserve
 strictement sa règle de moins de 60 secondes réelles, hors pénalités. Le marquage automatique est
 retiré (#647), y compris dans le tutoriel et les anciennes préférences restaurées.

@@ -52,7 +52,13 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
  }
  function complete(){if(!attempt)return null;if(attempt.state===ATTEMPT_STATES.RUNNING){attempt.activeDuration=activeMs();attempt.lastActiveAt=now()}attempt.state=ATTEMPT_STATES.COMPLETED;activeSince=null;emit();return snapshot()}
  function abandon(){if(!attempt)return null;if(attempt.state===ATTEMPT_STATES.RUNNING)pause();attempt.state=ATTEMPT_STATES.ABANDONED;activeSince=null;emit();return snapshot()}
- function reset(board=[]){
+ // #761: the badge cooldown is evaluated when a run starts, never frozen when the
+ // grid was opened. Only a not-yet-started run can change; social challenges never.
+ function requalify(qualifying){
+  if(!attempt||attempt.mode==='challenge'||attempt.state!==ATTEMPT_STATES.READY||attempt.qualifying===!!qualifying)return snapshot();
+  attempt.qualifying=!!qualifying;emit();return snapshot()
+ }
+ function reset(board=[],{qualifying}={}){
   if(!attempt)return null;
   attempt.resetCount=(attempt.resetCount||0)+1;attempt.board=cloneBoard(board);
   attempt.wrongGuardianPending=null;
@@ -62,6 +68,8 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
    attempt.helpUses={};
    attempt.assistanceUsed=false;attempt.mistakeCommitted=false;attempt.activeDuration=0;attempt.startedAt=attempt.state===ATTEMPT_STATES.READY?null:now();attempt.lastActiveAt=attempt.state===ATTEMPT_STATES.READY?null:now();
    activeSince=attempt.state===ATTEMPT_STATES.RUNNING?perfNow():null;
+   // #761: a reset run starts now; its qualification is re-evaluated now.
+   if(typeof qualifying==='boolean')attempt.qualifying=qualifying;
   }
   emit();return snapshot()
  }
@@ -76,5 +84,5 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
  function clearWrongGuardianPending(cellKey=null){if(!attempt||!attempt.wrongGuardianPending)return;if(cellKey&&attempt.wrongGuardianPending!==cellKey)return;attempt.wrongGuardianPending=null;emit()}
  function commitMistake(){if(!attempt)return;if(attempt.mistakeCommitted&&attempt.wrongGuardianPending===null)return;attempt.mistakeCommitted=true;attempt.wrongGuardianPending=null;emit()}
  function clear(){attempt=null;activeSince=null;storage?.removeItem?.(STORAGE_KEY);onChange(null)}
- return {create,restore,start,pause,resume,complete,abandon,reset,updateBoard,markAssistance,recordAssistanceUse,setWrongGuardianPending,clearWrongGuardianPending,commitMistake,clear,snapshot,activeMs,officialSeconds,states:ATTEMPT_STATES,storageKey:STORAGE_KEY};
+ return {create,restore,requalify,start,pause,resume,complete,abandon,reset,updateBoard,markAssistance,recordAssistanceUse,setWrongGuardianPending,clearWrongGuardianPending,commitMistake,clear,snapshot,activeMs,officialSeconds,states:ATTEMPT_STATES,storageKey:STORAGE_KEY};
 }
