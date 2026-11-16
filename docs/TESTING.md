@@ -2222,6 +2222,7 @@ Not testable here: the real private repository. The owner checks a deployment af
 
 ## Install from the presentation page (#748)
 
+- `scripts/daily-streak-pause-tests.mjs` (Node, quality gate, #752) checks that the Série de lumière ships paused: every player entry point is gated, guest and QA days are recorded without reward, a day recorded during the pause is never credited after reactivation, the enabled day-3 reward is unchanged and the server migration keeps history while rewards stay behind the flag. `scripts/fixtures/daily-streak-pause.sql` (ledger-sql) replays the paused and reactivated server claims.
 - `scripts/install-request-tests.mjs` (Node, quality gate) checks:
   - `?install=1` is read once and removed from the URL (other parameters and the hash are kept), before the first-visit welcome checks the URL;
   - the copy: native prompt, iPhone steps or menu ⋮ steps, never a dead button;

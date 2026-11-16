@@ -18,6 +18,7 @@ import {createRankingView} from './ranking.js';
 import {createVictoryPresentation} from './victory-presentation.js';
 import {createCelebration,rewardSlots,remarkableRewards,rankSummary,celebrationLevel} from './victory-celebration.js';
 import {streakVisual,lostStreak} from "../campaign/streak-visual.js";
+import {DAILY_LIGHT_STREAK_ENABLED} from "../campaign/feature-flags.js";
 import {learningStep, dragLearningStep, learningAllows, learningCopy} from "../game/learning.js";
 import {createAnalytics,attemptAnalyticsProperties} from "../analytics/events.js";
 import {createHintTestSuite} from "../testing/hint-tests.js";
@@ -1680,6 +1681,7 @@ if(!lumenProgress.daily)lumenProgress.daily={dates:{},rewards:{}};if(!Number.isF
 function dailyStreak(){return streakFromDates(lumenProgress.daily.dates,localDateKey())}
 // Show the loss transition only when the account history is ready, once per lost series.
 function maybeShowStreakLoss(){
+ if(!DAILY_LIGHT_STREAK_ENABLED)return;
  if(authSessionPending||(lumenUser&&!cloudProfileReady))return;
  const loss=lostStreak(lumenProgress.daily?.dates,localDateKey());
  if(!loss)return;
@@ -1700,8 +1702,10 @@ function setupStreakLoss(){
  const qaPreview=document.getElementById("qaPreviewStreakLoss");
  if(qaPreview){
   qaPreview.hidden=!qaActive;
+  if(!DAILY_LIGHT_STREAK_ENABLED)qaPreview.hidden=true;
   qaPreview.addEventListener("click",()=>{
    if(!qaActive)return;
+   if(!DAILY_LIGHT_STREAK_ENABLED)return;
    const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=true;
    const count=document.getElementById("streakLossCount");if(count)count.textContent="4 jours de lumière · aperçu QA";
    const modal=document.getElementById("streakLossModal");if(!modal)return;
@@ -1732,6 +1736,7 @@ function setupStreakLoss(){
  }
 }
 function renderDaily(){
+ if(!DAILY_LIGHT_STREAK_ENABLED){hideDailyLightStreak();return}
  const stars=document.getElementById("dailyStars");if(!stars)return;stars.innerHTML="";
  // Never present a transient zero while authenticated daily history is hydrating.
  if(authSessionPending||(lumenUser&&!cloudProfileReady)){
@@ -1754,12 +1759,17 @@ function renderDaily(){
  const infoStars=document.getElementById("dailyInfoStars");if(infoStars){infoStars.innerHTML="";for(let i=1;i<=7;i++){let e=document.createElement("span");e.className=i<=cycle?"on":"";e.textContent="✦";infoStars.appendChild(e)}}
  const infoStatus=document.getElementById("dailyInfoStatus");if(infoStatus)infoStatus.textContent=status.done?"✓ Aujourd’hui validé · série de "+streak+" jour"+(streak>1?"s":""):status.grace?"Ta Série de lumière est protégée aujourd’hui. Joue pour la continuer.":"Aujourd’hui : réussis une nouvelle quête ou améliore un badge éligible.";
 }
+// #752: no card, compact entry, help or celebration while the Série is paused.
+function hideDailyLightStreak(){
+ for(const id of ["dailyCard","dailyCompactHelp","dailyHelpModal","dailyCelebration","streakLossModal","dailyInfoPopover","mobileStreak"]){const e=document.getElementById(id);if(e)e.hidden=true}
+}
 function maybeShowReturnWelcome(){
  const today=localDateKey(),key="lumenWelcomeDayV1",seen=localStorage.getItem(key),hasHistory=Object.keys(lumenProgress.solved||{}).length>0||Object.keys(lumenProgress.daily.dates||{}).length>0;
  if(seen===today||!hasHistory)return;
  localStorage.setItem(key,today);
  const toast=document.getElementById("returnToast"),copy=document.getElementById("returnToastCopy"),stars=document.getElementById("returnToastStars");if(!toast)return;
  const status=dailyState(lumenProgress.daily.dates,today),streak=status.streak,cycle=cycleDay(streak),next=nextReward(streak);
+ if(!DAILY_LIGHT_STREAK_ENABLED){copy.textContent="Reprends ton exploration du ciel là où tu l’as laissée.";stars.hidden=true;toast.hidden=false;const close=()=>{toast.classList.add("hide");setTimeout(()=>toast.hidden=true,260)};setTimeout(close,5200);return}
  copy.textContent=status.done?"Ta progression est bien enregistrée.":status.grace?"Ta Série de lumière est protégée aujourd’hui. Joue pour la continuer.":"Reprends ton exploration du ciel là où tu l’as laissée.";
  if(status.done)copy.textContent+=" · Prochaine récompense : +"+next.amount+" ✦ à J"+next.cycleDay+".";
  stars.textContent="✦".repeat(cycle)+"·".repeat(7-cycle);toast.hidden=false;
@@ -1768,6 +1778,7 @@ function maybeShowReturnWelcome(){
 // A single celebration per validated calendar day, even across reloads.
 function scheduleDailyCelebration(claim){
  if(!claim?.credited)return;
+ if(!DAILY_LIGHT_STREAK_ENABLED)return;
  const day=localDateKey(),key="lumenDailyCelebratedV1:"+day;
  try{if(localStorage.getItem(key)==="1")return;localStorage.setItem(key,"1")}catch(_){}
  setTimeout(()=>{if(localDateKey()===day)showDailyCelebration(claim)},1600);
@@ -1795,7 +1806,7 @@ async function completeDaily(){
    if(!wasValidated&&lumenProgress.daily?.dates?.[localDateKey()]&&claim.credited!==false){renderDaily();scheduleDailyCelebration({...claim,credited:true})}
    return claim;
  }
- const today=localDateKey(),result=grantDaily(lumenProgress,today);if(!result.credited)return result;
+ const today=localDateKey(),result=grantDaily(lumenProgress,today,{rewards:DAILY_LIGHT_STREAK_ENABLED});if(!result.credited)return result;
  saveLumenProgress();renderDaily();
  scheduleDailyCelebration(result);
  return result;
@@ -3269,7 +3280,7 @@ async function celebrateCanonicalSuccess(){
  const reward={badges,performance:{bestTime:seconds,assisted,seconds},stars:questRewardDefinition(q).stars,facts};
  let committed,durableIntent=null,confirmedBadges=badges,reusedVictory=false;
  try{
-  if(qaActive){const profile=structuredClone(lumenProgress),outcome=applyQuestVictory(profile,q,facts);if(outcome.dailyQualified)grantDaily(profile,localCalendarDay());committed={profile,outcome,newlyCompleted:outcome.firstCompletion}}
+  if(qaActive){const profile=structuredClone(lumenProgress),outcome=applyQuestVictory(profile,q,facts);if(outcome.dailyQualified)grantDaily(profile,localCalendarDay(),{rewards:DAILY_LIGHT_STREAK_ENABLED});committed={profile,outcome,newlyCompleted:outcome.firstCompletion}}
   else{
    if(!lumenUser)throw Error("Compte requis pour sauvegarder la victoire");
    // Even when cloud hydration is unavailable, capture the victory BEFORE
