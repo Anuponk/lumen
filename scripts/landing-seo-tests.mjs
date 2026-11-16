@@ -71,16 +71,34 @@ const howTo=read('comment-jouer.html');
  }
 }
 
+// #769: « Apprendre les constellations en jouant » — facts from the catalogue, honest sky notes.
+{
+ const learn=read('apprendre-constellations.html');
+ const description=meta(learn,'name','description');assert(description&&description.length>=70&&description.length<=170,'Learn description length');
+ for(const p of ['og:title','og:description','og:image','og:url'])assert(meta(learn,'property',p),'Learn Open Graph '+p);
+ assert(learn.includes('<link rel="canonical" href="https://lumen.nopuna.fr/apprendre-constellations.html">'),'Canonical');
+ assert(learn.includes('<h1>Apprendre les constellations en jouant</h1>'),'H1');
+ assert.doesNotMatch(learn,/<script/,'No script on the learn page');
+ const names=CONTENT_CONSTELLATIONS.filter(c=>c.packId===first.id).map(c=>c.label);
+ const listed=names.slice(0,-1).join(', ')+' et '+names.at(-1);
+ assert(learn.includes('<span id="first-constellations">'+listed+'</span>'),'First Adventure constellations from the catalogue: '+listed);
+ assert(learn.includes('<strong>'+quests.filter(q=>q.packId===first.id).length+' quêtes</strong> réparties sur <strong>'+names.length+' constellations</strong>'),'First Adventure size from the catalogue');
+ assert(learn.includes('<strong>'+CONTENT_CONSTELLATIONS.length+' constellations officielles</strong>'));
+ if(names.some(n=>/Croix du Sud/.test(n)))assert.match(learn,/ne se voit pas depuis la France métropolitaine/,'Honest note: the Southern Cross is not visible from France');
+ assert.match(learn,/Stellarium/);assert.match(learn,/CC BY-SA/);assert.match(learn,/Hipparcos/);
+ assert(learn.includes('href="/comment-jouer.html"')&&learn.includes('href="/decouvrir.html"')&&page.includes('href="/apprendre-constellations.html"'),'Cross-links');
+ assert(learn.includes('<a class="play" href="/">Jouer gratuitement</a>'),'Play CTA');
+}
 // robots.txt and sitemap.
 assert.match(robots,/^User-agent: \*$/m);assert.match(robots,/^Disallow: \/admin\/$/m);
 assert.doesNotMatch(robots,/Disallow: \/src\//,'Never hide the code and styles Google needs to render the game');
 assert.match(robots,/^Sitemap: https:\/\/lumen\.nopuna\.fr\/sitemap\.xml$/m);
 const locs=[...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m=>m[1]);
-assert.deepEqual(locs,['https://lumen.nopuna.fr/','https://lumen.nopuna.fr/decouvrir.html','https://lumen.nopuna.fr/comment-jouer.html']);
+assert.deepEqual(locs,['https://lumen.nopuna.fr/','https://lumen.nopuna.fr/decouvrir.html','https://lumen.nopuna.fr/comment-jouer.html','https://lumen.nopuna.fr/apprendre-constellations.html']);
 for(const l of locs){const path=new URL(l).pathname;assert(fs.existsSync(path==='/'?'index.html':path.slice(1)),'Sitemap URL exists: '+l)}
 
 // Every new public file is published and verified by both release paths.
-for(const file of ['decouvrir.html','comment-jouer.html','robots.txt','sitemap.xml']){
+for(const file of ['decouvrir.html','comment-jouer.html','apprendre-constellations.html','robots.txt','sitemap.xml']){
  assert.match(read('scripts/o2switch-cron-publish.sh'),new RegExp('PUBLIC_PAGES=\\([^)]*'+file.replace('.','\\.')),'Cron publisher: '+file);
  assert.match(read('scripts/o2switch-safe-release.sh'),new RegExp('for page in [^;]*'+file.replace('.','\\.')),'Safe release: '+file);
  assert.match(read('scripts/o2switch-deploy-tests.py'),new RegExp('PUBLIC_PAGES = \\([^)]*"'+file.replace('.','\\.')+'"'),'Deploy tests: '+file);

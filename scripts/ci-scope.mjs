@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import {pathToFileURL} from 'node:url';
 
-const LANDING_FILES=new Set(['decouvrir.html','comment-jouer.html','robots.txt','sitemap.xml','scripts/how-to-play.mjs',
+const LANDING_FILES=new Set(['decouvrir.html','comment-jouer.html','apprendre-constellations.html','robots.txt','sitemap.xml','scripts/how-to-play.mjs',
  'scripts/landing-seo-tests.mjs','scripts/landing-browser.mjs','scripts/landing-browser-tests.mjs','scripts/landing-assets.mjs']);
 
 export const isDocs=p=>p==='AGENTS.md'||(p.startsWith('docs/')&&p.endsWith('.md')&&!p.startsWith('docs/validation/'));

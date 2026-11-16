@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {connectBrowser,closeBrowser} from './cdp-client.mjs';
-import {verifyLanding,verifyHowToPlay} from './landing-browser.mjs';
+import {verifyLanding,verifyHowToPlay,verifyLearnConstellations} from './landing-browser.mjs';
 
 const url=new URL(process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/');
 const {send,evaluate,errors}=await connectBrowser();
@@ -12,7 +12,7 @@ try{
  const results=[];
  for(const viewport of [{width:360,height:640,mobile:true},{width:390,height:844,mobile:true},{width:1440,height:900,mobile:false}]){
   await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});
-  results.push({viewport,...await verifyLanding({send,evaluate},url),...await verifyHowToPlay({send,evaluate},url)});
+  results.push({viewport,...await verifyLanding({send,evaluate},url),...await verifyHowToPlay({send,evaluate},url),...await verifyLearnConstellations({send,evaluate},url)});
  }
  assert.deepEqual(errors,[]);
  const report={results,uncaughtErrors:errors};
