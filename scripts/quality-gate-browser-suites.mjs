@@ -169,6 +169,11 @@ export const browserSuites=[
     "script": "desktop-layout-browser-tests.mjs",
     "output": "ci-desktop-layout.json",
     "port": 9263
+  },
+  {
+    "script": "credits-browser-tests.mjs",
+    "output": "ci-credits.json",
+    "port": 9264
   }
 ];
 

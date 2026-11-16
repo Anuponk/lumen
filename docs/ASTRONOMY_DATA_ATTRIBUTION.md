@@ -12,6 +12,12 @@ Les étoiles allumées et les récompenses restent gouvernées par la progressio
 
 La version des fichiers astronomiques est liée au résultat validé du workflow GitHub Actions 38136873670 (691 étoiles HIP, 88 figures complètes, 40/40 identités Lumen).
 
+## Attribution visible dans l’app — #740
+
+- **Menu du compte → « Crédits et sources »** (`src/ui/credits.js`, `#creditsPanel` dans `index.html`), accessible aux invités comme aux comptes connectés, **pas dans Mon ciel** (décision du 15/11/2026). Il reprend l’attribution exacte ci-dessus, précise que les figures dérivées restent sous CC BY-SA (pas le jeu) et renvoie vers la notice Stellarium, la licence Creative Commons BY-SA, Hipparcos II et ce document. La notice Stellarium ne précise pas de version : le lien de licence pointe vers la CC BY-SA 4.0.
+- **Notice à côté des données** : `src/data/astronomy/NOTICE.md`.
+- La page `/decouvrir.html` et les mentions légales portent déjà l’attribution. Restent à faire hors code : la fiche Google Play (#676) et les pages constellations (#738).
+
 ## Audit #508 — 21 octobre 2026
 
 **Résultat : les 88 figures livrées sont identiques à leur reconstruction depuis

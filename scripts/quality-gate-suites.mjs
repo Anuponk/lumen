@@ -7,6 +7,7 @@ export const nodeSuites=[
  'license-tests.mjs',
  'install-request-tests.mjs',
  'daily-streak-pause-tests.mjs',
+ 'credits-tests.mjs',
  'adventure-access-tests.mjs',
  'mastery-unlock-tests.mjs',
  'adventure-offer-tests.mjs',
