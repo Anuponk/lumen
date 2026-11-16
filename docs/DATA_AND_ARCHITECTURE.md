@@ -165,6 +165,7 @@ Migration `20261116090000_pause_daily_light_streak_752.sql` (idempotent; product
 - **Secrets** (Edge Function secrets only): `LUMEN_PLAY_SERVICE_ACCOUNT`, `LUMEN_PLAY_PACKAGE`, `LUMEN_PLAY_CRON_SECRET`.
 - **Migration** `20261115220000_play_purchase_gateway_729.sql`: `public.lumen_store_price`, `lumen_record_purchase` and `lumen_purchase_by_ref`, executable by `service_role` only.
 - **Client** (`persistence/play-billing.js`): Digital Goods API plus Payment Request, only where `getDigitalGoodsService` answers (the Play app). After a verified hydration, `restorePlayPurchases` re-sends every owned token; the server is idempotent and retries acknowledgement. Success is shown only after the server confirmed and entitlements were reloaded.
+- **Manual restore (#731):** « Restaurer mes achats » calls `restorePlayPurchases` with `reportListFailure:true`, so an unreadable Play purchase list is a failure, never « nothing to restore ». Entitlements are reloaded only after a server-confirmed purchase; the automatic restore after hydration keeps the silent behaviour.
 
 ## Purchases, store seed and mastery unlocks — #728
 
