@@ -31,11 +31,9 @@ consommateur.
 Prix en euros, toutes taxes comprises, affichés avant l'achat. Dans l'app
 Google Play, le prix affiché par Google fait foi.
 
-**À valider :** l'éditeur a déclaré ne pas facturer de TVA
-(`content/legal/publisher.json`). Si la franchise en base s'applique, ajouter la
-mention « TVA non applicable, art. 293 B du CGI ». Vérifier le seuil, la
-facturation, les obligations comptables et l'éventuel guichet OSS avant toute
-vente hors de France (avis d'un comptable recommandé).
+**TVA non applicable, art. 293 B du CGI** (franchise en base, confirmée par le
+propriétaire le 16/11/2026). Surveiller le seuil de la franchise ; toute vente hors
+de France demandera une nouvelle revue.
 
 ## 4. Compte et accès
 
@@ -78,16 +76,18 @@ contacter l'éditeur à l'adresse des mentions légales.
 
 ## 9. Mineurs
 
-Lumen est accessible à un public mixte incluant des enfants. **À valider :** la
-règle d'achat par un mineur (autorisation parentale, contrôle parental Google
-Play) et sa formulation.
+Lumen est accessible à un public mixte incluant des enfants. Un mineur ne peut
+acheter qu'avec l'accord d'un parent ou d'un représentant légal. Sur Android, les
+parents peuvent exiger leur approbation pour chaque achat grâce au contrôle
+parental de Google Play (Family Link). Décision du propriétaire, 16/11/2026.
 
 ## 10. Médiation et litiges
 
 **À compléter :** tout vendeur à des consommateurs doit proposer un **médiateur
 de la consommation** (article L612-1 du Code de la consommation). Choisir un
-médiateur, adhérer, puis indiquer son nom et ses coordonnées ici. Droit
-applicable : droit français.
+médiateur, adhérer, puis indiquer son nom et ses coordonnées ici (options proposées
+le 16/11/2026 : CM2C, MEDICYS, CNPM Médiation Consommation ; liste officielle sur
+economie.gouv.fr). Droit applicable : droit français.
 
 ## 11. Données personnelles
 
@@ -114,7 +114,11 @@ livrer :
   rétractation (section 6).
 - [ ] Mettre à jour la politique de confidentialité publiée (achats, Google comme
   destinataire, durées de conservation des reçus).
-- [ ] Mentions légales : préciser l'activité commerciale et la mention TVA.
+- [ ] Mentions légales : préciser l'activité commerciale et la mention « TVA non
+  applicable, art. 293 B du CGI ».
+- [x] Registre comptable minimal conservé 10 ans après la suppression du compte
+  (migration `20261116200000_purchase_accounting_records_732.sql`, à appliquer
+  par le propriétaire ; purge quotidienne à programmer).
 - [ ] `content/legal/publisher.json` : changer `monetization`
   (`free-no-ads-no-purchases` aujourd'hui) puis adapter
   `scripts/play-readiness.mjs` et `scripts/privacy-readiness-tests.mjs`, qui
