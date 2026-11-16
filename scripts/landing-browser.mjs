@@ -27,3 +27,27 @@ export async function verifyLanding({send,evaluate},baseUrl){
  assert.equal(r.scripts,0,'No executable script');assert.equal(r.ld,'VideoGame','Structured data parses');
  return {landing:true};
 }
+// #758: « Comment jouer » renders without script, its four example grids load, the play
+// button is reachable and keyboard-focusable, and nothing overflows.
+export async function verifyHowToPlay({send,evaluate},baseUrl){
+ const previous=await evaluate('performance.timeOrigin');
+ await send('Page.navigate',{url:new URL('/comment-jouer.html',baseUrl).href});
+ for(let i=0;i<100;i++){
+  try{if(await evaluate(`performance.timeOrigin!==${previous}&&location.pathname==='/comment-jouer.html'&&document.readyState==='complete'`))break}
+  catch(error){if(!/Cannot find context|Execution context was destroyed|Inspected target navigated/.test(error.message))throw error}
+  await new Promise(r=>setTimeout(r,100));
+ }
+ const r=await evaluate(`(async()=>{
+  for(const img of document.images){img.loading='eager';if(!img.complete)await new Promise(res=>{img.onload=img.onerror=res})}
+  const play=document.querySelector('.hero a.play');play.scrollIntoView({block:'center'});const b=play.getBoundingClientRect(),hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);
+  const focusable=[...document.querySelectorAll('a[href]')];play.focus();
+  return {h1:document.querySelector('h1')?.textContent,images:[...document.images].map(i=>i.naturalWidth>0),overflow:document.documentElement.scrollWidth>innerWidth,
+   play:play.getAttribute('href'),reachable:hit===play||play.contains(hit),focused:document.activeElement===play,links:focusable.length,
+   scripts:[...document.scripts].filter(s=>s.type!=='application/ld+json').length,imgWidth:Math.round(document.querySelector('.example img').getBoundingClientRect().width)}
+ })()`,true);
+ assert.equal(r.h1,'Comment jouer à Lumen');assert.equal(r.images.length,4);assert.equal(r.images.every(Boolean),true,'Example grids load');
+ assert.equal(r.overflow,false,'No horizontal overflow');assert.equal(r.play,'/');assert.equal(r.reachable,true,'Play button reachable');
+ assert.equal(r.focused,true,'Play button keyboard-focusable');assert(r.imgWidth>=200,'Example grid readable: '+r.imgWidth);
+ assert.equal(r.scripts,0,'No executable script');
+ return {howToPlay:true,exampleWidth:r.imgWidth};
+}

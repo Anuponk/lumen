@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 248 248" width="248" height="248" role="img" aria-label="Grille d’exemple 5 × 5 découpée en cinq territoires de couleur">
+<rect width="248" height="248" rx="10" fill="#0b1726"/>
+<rect x="4" y="4" width="48" height="48" fill="#46c7e8" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="52" y="4" width="48" height="48" fill="#46c7e8" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="100" y="4" width="48" height="48" fill="#46c7e8" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="148" y="4" width="48" height="48" fill="#6d8fe8" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="196" y="4" width="48" height="48" fill="#6d8fe8" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="4" y="52" width="48" height="48" fill="#46c7e8" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="52" y="52" width="48" height="48" fill="#46c7e8" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="100" y="52" width="48" height="48" fill="#46c7e8" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="148" y="52" width="48" height="48" fill="#6d8fe8" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="196" y="52" width="48" height="48" fill="#6d8fe8" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="4" y="100" width="48" height="48" fill="#49b49b" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="52" y="100" width="48" height="48" fill="#49b49b" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="100" y="100" width="48" height="48" fill="#8b70d7" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="148" y="100" width="48" height="48" fill="#d38a54" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="196" y="100" width="48" height="48" fill="#6d8fe8" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="4" y="148" width="48" height="48" fill="#49b49b" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="52" y="148" width="48" height="48" fill="#49b49b" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="100" y="148" width="48" height="48" fill="#49b49b" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="148" y="148" width="48" height="48" fill="#d38a54" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="196" y="148" width="48" height="48" fill="#6d8fe8" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="4" y="196" width="48" height="48" fill="#49b49b" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="52" y="196" width="48" height="48" fill="#49b49b" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="100" y="196" width="48" height="48" fill="#d38a54" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="148" y="196" width="48" height="48" fill="#d38a54" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<rect x="196" y="196" width="48" height="48" fill="#6d8fe8" fill-opacity="0.85" stroke="#0b1726" stroke-opacity="0.5"/>
+<line x1="148" y1="4" x2="148" y2="52" stroke="#e6f2fb" stroke-width="3"/>
+<line x1="4" y1="100" x2="52" y2="100" stroke="#e6f2fb" stroke-width="3"/>
+<line x1="52" y1="100" x2="100" y2="100" stroke="#e6f2fb" stroke-width="3"/>
+<line x1="148" y1="52" x2="148" y2="100" stroke="#e6f2fb" stroke-width="3"/>
+<line x1="100" y1="100" x2="148" y2="100" stroke="#e6f2fb" stroke-width="3"/>
+<line x1="148" y1="100" x2="196" y2="100" stroke="#e6f2fb" stroke-width="3"/>
+<line x1="100" y1="100" x2="100" y2="148" stroke="#e6f2fb" stroke-width="3"/>
+<line x1="148" y1="100" x2="148" y2="148" stroke="#e6f2fb" stroke-width="3"/>
+<line x1="100" y1="148" x2="148" y2="148" stroke="#e6f2fb" stroke-width="3"/>
+<line x1="196" y1="100" x2="196" y2="148" stroke="#e6f2fb" stroke-width="3"/>
+<line x1="148" y1="148" x2="148" y2="196" stroke="#e6f2fb" stroke-width="3"/>
+<line x1="100" y1="196" x2="148" y2="196" stroke="#e6f2fb" stroke-width="3"/>
+<line x1="196" y1="148" x2="196" y2="196" stroke="#e6f2fb" stroke-width="3"/>
+<line x1="100" y1="196" x2="100" y2="244" stroke="#e6f2fb" stroke-width="3"/>
+<line x1="196" y1="196" x2="196" y2="244" stroke="#e6f2fb" stroke-width="3"/>
+<rect x="4" y="4" width="240" height="240" fill="none" stroke="#e6f2fb" stroke-width="3"/>
+</svg>
