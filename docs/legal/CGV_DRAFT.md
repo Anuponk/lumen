@@ -1,0 +1,127 @@
+# Conditions générales de vente Lumen — projet non publiable en l'état
+
+Version de travail du 16 novembre 2026 (#732). Ce texte prépare la décision du
+propriétaire ; il **n'est ni publié ni validé juridiquement**. Les rubriques
+**« À valider »** bloquent la première vente réelle. Faits produit repris du code
+au 16/11/2026 : `src/campaign/store-catalogue.js`, migrations #728/#729, offre
+#731 (`src/ui/adventure-offer.js`).
+
+## 1. Éditeur et objet
+
+Lumen est édité sous le nom commercial **Nopuna** par **Cédric Valente EI**
+(coordonnées : [projet de mentions légales](MENTIONS_DRAFT.md)). Les présentes
+conditions encadrent l'achat de contenus numériques dans Lumen par un
+consommateur.
+
+## 2. Ce qui est vendu
+
+- **La première aventure est gratuite.** Les suivantes sont des contenus
+  numériques fournis sans support matériel.
+- **« Débloquer cette aventure » : 1 €.** Accès permanent à une aventure, lié au
+  compte Lumen.
+- **« Tout le vrai ciel » : 5 €.** Accès à toutes les aventures du vrai ciel.
+- **Plafond :** les achats à l'unité comptent ; un joueur ne paie jamais plus de
+  5 € au total pour le vrai ciel. Au-delà, tout est débloqué.
+- **Accès gratuit par la maîtrise :** maîtriser une aventure à 100 % débloque
+  gratuitement la suivante. Cet accès n'est pas une vente.
+- Les Éclats de lumière et les badges ne s'achètent pas.
+
+## 3. Prix et TVA
+
+Prix en euros, toutes taxes comprises, affichés avant l'achat. Dans l'app
+Google Play, le prix affiché par Google fait foi.
+
+**À valider :** l'éditeur a déclaré ne pas facturer de TVA
+(`content/legal/publisher.json`). Si la franchise en base s'applique, ajouter la
+mention « TVA non applicable, art. 293 B du CGI ». Vérifier le seuil, la
+facturation, les obligations comptables et l'éventuel guichet OSS avant toute
+vente hors de France (avis d'un comptable recommandé).
+
+## 4. Compte et accès
+
+Un compte Lumen est nécessaire pour acheter. Le droit d'accès est enregistré par
+le serveur sur ce compte et suit le joueur sur ses appareils. Un achat en attente
+de confirmation n'ouvre aucun accès ; l'accès s'ouvre dès la confirmation par le
+serveur.
+
+## 5. Paiement
+
+- **App Android (Google Play) :** paiement par Google Play Billing. Google
+  traite le paiement ; Lumen reçoit la confirmation et un identifiant d'achat,
+  jamais les données de carte.
+- **Version web :** paiement non disponible à ce jour (Stripe envisagé, #730).
+
+## 6. Droit de rétractation
+
+Pour un contenu numérique fourni immédiatement, le droit de rétractation de
+14 jours ne s'applique pas si le consommateur a **expressément demandé l'accès
+immédiat et reconnu perdre son droit de rétractation** avant le paiement
+(article L221-28, 13° du Code de la consommation).
+
+**À valider et à implémenter avant la première vente :** l'écran d'achat (#731)
+doit recueillir ce consentement de façon expresse (case à cocher non pré-cochée
+ou bouton explicite), puis le confirmer sur un support durable (par exemple
+l'email de reçu Google Play ou un email Lumen). Sans ce recueil, le droit de
+rétractation de 14 jours s'applique.
+
+## 7. Remboursements
+
+Les demandes de remboursement Google Play suivent la politique de Google. Un
+achat remboursé ou annulé retire l'accès correspondant (traitement des achats
+annulés, #729). La progression déjà réalisée est conservée.
+
+## 8. Garantie légale de conformité
+
+Les contenus numériques bénéficient de la garantie légale de conformité
+(articles L224-25-12 et suivants du Code de la consommation). En cas de défaut,
+contacter l'éditeur à l'adresse des mentions légales.
+
+## 9. Mineurs
+
+Lumen est accessible à un public mixte incluant des enfants. **À valider :** la
+règle d'achat par un mineur (autorisation parentale, contrôle parental Google
+Play) et sa formulation.
+
+## 10. Médiation et litiges
+
+**À compléter :** tout vendeur à des consommateurs doit proposer un **médiateur
+de la consommation** (article L612-1 du Code de la consommation). Choisir un
+médiateur, adhérer, puis indiquer son nom et ses coordonnées ici. Droit
+applicable : droit français.
+
+## 11. Données personnelles
+
+Voir la [politique de confidentialité](CONFIDENTIALITE_DRAFT.md), section
+« Projet d'ajout pour les achats (#732) ».
+
+## 12. Message « Sans pub, financé par les joueurs »
+
+La formulation reste une **intention** (financer l'hébergement, les serveurs et
+le développement), jamais une promesse d'absence de profit. Vendre reste une
+activité commerciale. Le test `adventure-offer-tests.mjs` refuse les
+formulations « pas pour gagner de l'argent » ou « sans but lucratif ».
+
+## Avant la première vente réelle — liste de contrôle
+
+Chaque ligne est une décision ou une action du propriétaire, ou une évolution à
+livrer :
+
+- [ ] Valider ce texte (et la TVA), le publier en HTML (`cgv.html`) dans les deux
+  listes de publication o2switch, puis le lier depuis l'écran d'achat (#731) et
+  les mentions légales.
+- [ ] Désigner le médiateur de la consommation (section 10).
+- [ ] Implémenter et tester le consentement exprès à la renonciation au droit de
+  rétractation (section 6).
+- [ ] Mettre à jour la politique de confidentialité publiée (achats, Google comme
+  destinataire, durées de conservation des reçus).
+- [ ] Mentions légales : préciser l'activité commerciale et la mention TVA.
+- [ ] `content/legal/publisher.json` : changer `monetization`
+  (`free-no-ads-no-purchases` aujourd'hui) puis adapter
+  `scripts/play-readiness.mjs` et `scripts/privacy-readiness-tests.mjs`, qui
+  bloquent volontairement la publication Play tant que cette valeur n'est pas
+  revue.
+- [ ] Fiche Google Play : formulaire « Sécurité des données » (achats,
+  historique d'achat) et mention des achats intégrés
+  ([PLAY_STORE_LISTING_DRAFT](../PLAY_STORE_LISTING_DRAFT.md)).
+- [ ] Vérifier que « Sans pub, financé par les joueurs » et le texte « Pourquoi ? »
+  restent exacts (section 12).

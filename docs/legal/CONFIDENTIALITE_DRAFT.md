@@ -124,6 +124,29 @@ La première version prévue est gratuite, sans publicité ni achats. Ajouter un
 SDK, des annonces, un paiement ou un traitement nécessite une nouvelle revue
 du texte, des choix utilisateurs et des déclarations de la fiche Store.
 
+## Projet d'ajout pour les achats (#732)
+
+Texte à intégrer à la page publiée **avant la première vente réelle** ; il
+remplace alors la phrase « sans publicité ni achats ». Voir aussi
+[CGV_DRAFT](CGV_DRAFT.md).
+
+- **Données d'achat :** fournisseur (Google Play, plus tard Stripe), référence
+  d'achat du fournisseur, produit, montant, devise, statut (payé, remboursé,
+  contesté), dates, et historique des statuts. Tables
+  `lumen_commands.purchases` et `purchase_events` (#728). Lumen ne reçoit
+  jamais les données de carte.
+- **Finalités et base :** exécuter la vente et ouvrir l'accès acheté (exécution
+  du contrat), traiter les remboursements, respecter les obligations comptables
+  (obligation légale).
+- **Destinataires :** Google (Google Play Billing et l'API Play Developer pour
+  vérifier l'achat), Supabase (Edge Function `lumen-play-purchase` et base de
+  données).
+- **Durée — À valider :** aujourd'hui, ces lignes sont supprimées avec le compte
+  (`on delete cascade`). Les pièces comptables doivent en principe être
+  conservées 10 ans (article L123-22 du Code de commerce). Choisir avant la
+  première vente entre une conservation comptable séparée et minimale, ou une
+  autre solution validée, puis adapter l'effacement et ce texte.
+
 ## Actualisation P0 du 25 octobre 2026
 
 Voir [la consolidation et les preuves datées](../PRIVACY_P0_CONSOLIDATION.md) pour les diagnostics, le support privé, les métadonnées de production et les validations manquantes. Les durées proposées du 22 octobre restent non adoptées ; le candidat n'autorise aucune nouvelle activation.
