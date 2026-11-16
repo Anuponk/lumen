@@ -164,6 +164,13 @@ claim locks and day reward keys remain authoritative. Prices and badge rules
 are unchanged. Authenticated paid help needs a verifiable server command; free
 learning hints and the existing zero-shard safety hint remain available.
 
+### Série de lumière en pause (#752)
+Product decision of 15 November 2026: the Série de lumière is **paused**, not removed.
+- **Flags:** client `DAILY_LIGHT_STREAK_ENABLED=false` in `src/campaign/feature-flags.js`; server row `lumen_commands.feature_flags('daily_light_streak')=false` (migration `20261116090000_pause_daily_light_streak_752.sql`).
+- **Hidden while paused:** the Mon ciel card and its help, the daily celebration, the "série perdue" dialog and its QA preview. The return toast keeps a neutral welcome without cycle or reward.
+- **History is kept:** qualified days are still recorded (`progress.daily.dates`, `lumen.daily_progress`). No streak shard and no `streak:<day>` reward key is created, locally or on the server. Other shards (bonus challenges, autonomy milestones) are unchanged.
+- **Reactivation rule:** turn both flags on. A reward is only computed when a day is first recorded, so days played during the pause are never credited retroactively and nothing is double-credited. The streak length counts recorded days, including those played during the pause; the first reward can only fall on a day played after reactivation.
+
 ## Performance badges
 Per-quest performance has exactly four badges, as implemented in `src/campaign/performance.js`:
 - 🧠 **Autonomie**: solve without effective assistance.
