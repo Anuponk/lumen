@@ -1,4 +1,4 @@
-import {canonicalQuestByOrdinal,canonicalNextUnsolved,canonicalCampaignQuestDecision,canonicalQuestById} from "./canonical-quests.js";
+import {canonicalQuestByOrdinal,canonicalNextUnsolved,canonicalCampaignQuestDecision,canonicalQuestById,canonicalQuestList} from "./canonical-quests.js";
 import {originQuests} from './catalogue-origin.js';
 import {questCompleted} from './catalogue-access.js';
 import {playableQuest,playableQuestCount} from './playable-quests.js';
@@ -31,7 +31,8 @@ export function nextCanonicalQuest(solvedLegacy={},solvedIds={},entitlements=[],
  const state={...progress,solved:solvedLegacy,canonicalQuestState:Object.fromEntries(Object.entries(solvedIds).map(([id,value])=>[id,typeof value==='object'?value:{solved:!!value}]))};
  let origin;
  try{origin=originQuests(state)}catch{return {status:'catalogue-incompatible'}}
- const frontier=origin.find(q=>!questCompleted(q,state));
- const quest=(frontier&&canonicalQuestById(frontier.id))??canonicalNextUnsolved(solvedLegacy,solvedIds);
+ const owned=q=>hasPackAccess(CONTENT_PACKS.find(p=>p.id===q.packId),entitlements,state,attempt);
+ const frontier=origin.find(q=>owned(q)&&!questCompleted(q,state));
+ const quest=(frontier&&canonicalQuestById(frontier.id))??canonicalQuestList().find(q=>owned(q)&&!questCompleted(q,state)&&canonicalCampaignQuestDecision(q,state,{entitlements,attempt}).status==='ready')??canonicalNextUnsolved(solvedLegacy,solvedIds);
  return quest?resolveCanonicalQuest(quest.ordinal,entitlements,state,attempt):{status:"complete"};
 }

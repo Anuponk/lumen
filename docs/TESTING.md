@@ -867,9 +867,18 @@ the pre-fix UI: canonical-only cards reading zero historical stars, a prior
 Rapidité missing from victory rewards, Grand Chien 8/10 labelled final, and the
 numeric endpoint ending an incomplete canonical campaign. The actual adapter and
 renderers are exercised, plus empty/variable-size/growing catalogue fixtures.
-`catalogue-access-tests.mjs` distinguishes historical Antlia access from a
-current-cohort prerequisite refusal and checks repeated serialization without
+`catalogue-access-tests.mjs` checks independent entry to owned Antlia for both
+historical and current cohorts, within-Adventure prerequisites and serialization without
 reward mutation. These are synthetic tests, not affected-account evidence.
+
+Owned Adventure entry (#783): `scripts/owned-adventure-access-tests.mjs` covers
+Adventures 4/6 without earlier progress, own-Adventure sequencing, denied unowned
+direct entry, runtime bounds, delayed/error rights, account/request ordering and
+unchanged save bytes. `scripts/owned-adventure-browser-tests.mjs` uses synthetic
+authenticated RPCs on a mobile viewport: delayed-rights labels, actual map starts
+and reload restoration for each Adventure. No real purchase is made. Acceptance
+still requires a confirmed Sandbox purchase on a real device, logout/login and a
+second device with the same account; check saved progression, badges and records.
 
 `campaign-resume-browser-tests.mjs` checks zero/nonzero totals, partial versus
 completed Dauphin/Petit Cheval cards, full illumination, mobile/desktop refresh
