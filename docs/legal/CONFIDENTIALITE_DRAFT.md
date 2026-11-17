@@ -141,11 +141,13 @@ remplace alors la phrase « sans publicité ni achats ». Voir aussi
 - **Destinataires :** Google (Google Play Billing et l'API Play Developer pour
   vérifier l'achat), Supabase (Edge Function `lumen-play-purchase` et base de
   données).
-- **Durée — À valider :** aujourd'hui, ces lignes sont supprimées avec le compte
-  (`on delete cascade`). Les pièces comptables doivent en principe être
-  conservées 10 ans (article L123-22 du Code de commerce). Choisir avant la
-  première vente entre une conservation comptable séparée et minimale, ou une
-  autre solution validée, puis adapter l'effacement et ce texte.
+- **Durée :** les données d'achat liées au compte sont supprimées avec lui. Un
+  **registre comptable minimal** est alors conservé jusqu'au 1er janvier de la
+  11e année suivant l'achat (10 ans après la fin de l'année civile, article
+  L123-22 du Code de commerce) : fournisseur, référence d'achat du fournisseur,
+  produit, montant, devise, statut et dates, **sans identifiant de compte, email,
+  pseudo ni progression**. Base : obligation légale. Table
+  `lumen_commands.purchase_accounting_records` (#732).
 
 ## Actualisation P0 du 25 octobre 2026
 
