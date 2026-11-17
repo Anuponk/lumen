@@ -40,7 +40,7 @@ for(const variant of [{signedIn:false},{purchasesAvailable:false}]){
 }
 assert.match(WAIVER_TEXT,/accès immédiat/);assert.match(WAIVER_TEXT,/renonce à mon droit de rétractation/);
 const screen=read('src/ui/game-screen.js');
-assert.match(screen,/async function purchaseAdventure\(productId,\{setStatus,setBusy,waiver\}\)\{\n if\(!playBilling\|\|!lumenUser\|\|qaActive\)return;\n[^\n]*\n if\(!waiver\?\.accepted\)return;/,'The payment entry point refuses a missing waiver');
+assert.match(screen,/async function purchaseAdventure\(productId,\{setStatus,setBusy,waiver\}\)\{\n if\(!lumenUser\|\|qaActive\)return;\n[^\n]*\n if\(!waiver\?\.accepted\)return;\n if\(!playBilling&&stripeAvailable\(\)\)return purchaseWithStripe/,'The payment entry point refuses a missing waiver before any provider (Play or Stripe, #730)');
 
 // Sales terms page.
 const cgv=read('cgv.html');

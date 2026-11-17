@@ -93,6 +93,12 @@ server `record_purchase` (service_role), `sync_purchase_entitlements`,
 `claim_mastery_unlock`; store seed from `scripts/adventure-store-seed.mjs`. See
 [PROGRESSION](../PROGRESSION.md#purchases-and-mastery-unlocks-728).
 
+Payment providers: Google Play #729 `persistence/play-billing.js` → Edge
+`lumen-play-purchase`; Stripe web/PWA TEST #730 `persistence/stripe-checkout.js` →
+Edges `lumen-stripe-checkout` and `lumen-stripe-webhook` (`functions/_shared/lumen-stripe.ts`)
+→ `lumen_stripe_*` → `record_purchase`. Wired in `game-screen.js::purchaseAdventure`,
+`restorePurchasesNow`, `handleStripeReturn`. See [STRIPE_730](../STRIPE_730.md).
+
 Restored board selection: `game-screen.js::resumeHydratedCampaignSelection`
 uses `playable-navigation.js::nextCanonicalQuest` after verified installation of
 an existing account with a changed owner. Original attempt archival precedes

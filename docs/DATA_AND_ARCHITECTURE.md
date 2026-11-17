@@ -156,6 +156,15 @@ criteria are [separate from implemented behavior](PRIVACY_RETENTION_PROPOSAL.md)
 
 Migration `20261116090000_pause_daily_light_streak_752.sql` (idempotent; production application by the owner) adds the private table `lumen_commands.feature_flags` (no player access) with `daily_light_streak=false`, and redefines `lumen_commands.claim_quest_daily` — the single server route used by `lumen_claim_daily`, the wallet command, `commit_quest` and the legacy victory command. While the flag is off it still records the day in `lumen.daily_progress` but never credits `lumen.engagement_state`. Rule details: [PROGRESSION](PROGRESSION.md#série-de-lumière-en-pause-752). The flag table holds no player data and is classified `retain-rule` in `lumen_privacy.policy()` by the fix `20261116195500_feature_flags_privacy_752.sql`; without it, `review_erasure` refused every account erasure. Fixture: `scripts/fixtures/daily-streak-pause.sql`.
 
+## Stripe Checkout, web/PWA, TEST mode — #730
+
+Full runbook and owner steps: [STRIPE_730](STRIPE_730.md).
+- **Edge Function `lumen-stripe-checkout`** (player session): `checkout` reserves through `lumen_stripe_checkout_begin` (test capability `stripe_test_checkout`, active product, catalogue price/currency, ownership, sky-after-single rule, one checkout in flight per account, 10 per hour), creates a `mode=payment` Checkout Session with that price (idempotency key = reservation) and returns its URL; `status` and `restore` re-read the player's own sessions from Stripe and record them.
+- **Edge Function `lumen-stripe-webhook`** (deployed with `--no-verify-jwt`): verifies `Stripe-Signature` on the raw body (5-minute tolerance), refuses live events, then re-reads the Checkout Session (expanded payment intent and charge, disputes) instead of trusting the event. 5xx on Stripe/database failures so Stripe retries.
+- **Migration** `20261117120000_stripe_checkout_test_730.sql`: private `lumen_commands.stripe_checkout_sessions` (`livemode` constrained to false; erased with the account, `delete` by `user_id` in `lumen_privacy.policy()`), `lumen_stripe_*` service-role functions, and `stripe_record_session`, whose monotonic rank (pending < failed/expired < paid < open dispute < closed dispute < refunded) makes duplicates and reordering harmless before calling `record_purchase('stripe', <cs_test_…>, …)` (#728). TEST payments (`cs_test_%`) are never archived as accounting records (#732 trigger) and `lumen_commands.stripe_test_reset(uuid)` removes them.
+- **Secrets:** `STRIPE_SECRET_KEY` (only `sk_test_`/`rk_test_` accepted), `STRIPE_WEBHOOK_SECRET`.
+- **Client** (`persistence/stripe-checkout.js`): offered only on the web/PWA (never with Digital Goods, `LUMEN_NATIVE_APP` or an `android-app://` launch) and only to accounts holding the test capability. The return URL is consumed once; success is shown only after the server reports `paid` and entitlements are reloaded.
+
 ## Google Play purchases — #729
 
 - **Edge Function `lumen-play-purchase`:**
