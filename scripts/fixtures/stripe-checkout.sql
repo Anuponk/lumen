@@ -109,7 +109,7 @@ do $$declare a uuid:='00000000-0000-0000-0000-000000073001';r jsonb;progress jso
  assert r->>'result'='stale' and r->>'status'='refunded','a late "paid" after a refund is ignored';
  r:=lumen_commands.stripe_record_session('cs_test_730a',a,'real-adventure-02',100,'EUR',false,'disputed',false,'pi_730a',now());
  assert r->>'result'='stale','a refund is final';
- assert not exists(select 1 from lumen.entitlements where user_id=a and entitlement='real-adventure-02' and (expires_at is null or expires_at>now())),'still withdrawn';
+ assert not exists(select 1 from lumen.entitlements where user_id=a and entitlement='real-adventure-02' and (expires_at is null or expires_at>clock_timestamp())),'still withdrawn'; -- server clock, as the ledger
  assert (select status from lumen_commands.purchases where provider_ref='cs_test_730a')='refunded';
 end $$;
 
