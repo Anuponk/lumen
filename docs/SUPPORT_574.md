@@ -21,8 +21,17 @@ existing support lock, revocation, seven-day access bound and audit. A retained
 older case must not silently resolve to the account's latest case. No new table,
 public link, bearer reference, permission, telemetry queue or game writer is added.
 
-The migration is **not applied to production by this change**. Install it only
-after the exact-head SQL CI and separate production authorization. An older
+On 17 November 2026, after exact-head SQL CI and explicit owner authorization,
+the reviewed migration was applied to SoldeZen as provider version
+`20261117063736`, name `support_reference_lookup_776`. Its normalized LF source
+SHA-256 matches the repository file:
+`bfc7f113f7d8fee514ea2f5eb703fb8e8b03e2506652c5ec228c6c112d3edc99`.
+The installed function has MD5 `628d4e7f87774ca8e01b4a9c67462868`;
+public invoker/private definer boundaries, empty search path, RLS and grants
+were verified unchanged. Anonymous execution and raw authenticated content reads
+remain denied. Security Advisor findings are unchanged (excluding observation
+timestamps). No player save, receipt or support copy was modified by the migration.
+This attests database installation, not physical-phone acceptance. An older
 server rejects reference-only lookup; the UI reports an unavailable dossier and
 does not fall back to another player's/latest dossier. Client rollback restores
 the former manual UI; the additive lookup support can remain installed. The
