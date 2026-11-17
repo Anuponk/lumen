@@ -10,8 +10,10 @@ const PLAY_APP_KEY='lumenPlayAppLaunch';
 export function rememberPlayAppLaunch(win=globalThis){
  try{if(String(win.document?.referrer||'').startsWith('android-app://'))win.sessionStorage?.setItem(PLAY_APP_KEY,'1')}catch(_){}
 }
+// Chrome Android exposes getDigitalGoodsService outside the Play app too (it then rejects):
+// its presence is not a signal. A Play service that resolved is passed as playBilling.
 export function isPlayDistributedApp(win=globalThis){
- if(win.LUMEN_NATIVE_APP===true||typeof win.getDigitalGoodsService==='function')return true;
+ if(win.LUMEN_NATIVE_APP===true)return true;
  if(String(win.document?.referrer||'').startsWith('android-app://'))return true;
  try{return win.sessionStorage?.getItem(PLAY_APP_KEY)==='1'}catch(_){return false}
 }
