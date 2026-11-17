@@ -1,5 +1,7 @@
 // #730 — shared Stripe helpers for lumen-stripe-checkout and lumen-stripe-webhook.
-// TEST MODE ONLY: a live key, a live event or a live Checkout Session is refused.
+// The Stripe mode comes from the key: sk_test_/rk_test_ (test) or sk_live_/rk_live_ (live).
+// Events and Checkout Sessions must be in that same mode; real sales also require the
+// server switch lumen_commands.feature_flags 'stripe_live' (checked by the SQL gateway).
 // No Stripe SDK: plain fetch + WebCrypto, so the handlers run in synthetic tests.
 // Never log keys, signatures, tokens, card data or e-mail addresses.
 export const LUMEN_ORIGIN = 'https://lumen.nopuna.fr';
@@ -7,9 +9,13 @@ export const STRIPE_API = 'https://api.stripe.com/v1';
 export const STRIPE_VERSION = '2024-06-20';
 export const SIGNATURE_TOLERANCE_SECONDS = 300;
 
-// Only test keys (secret or restricted) are accepted during the test phase.
-export function stripeTestKey(value) {
-  return typeof value === 'string' && /^(sk|rk)_test_[A-Za-z0-9]{8,}$/.test(value) ? value : null;
+// Returns {key, live} for a Stripe secret or restricted key, or null.
+export function stripeKey(value) {
+  const m = typeof value === 'string' ? /^(sk|rk)_(test|live)_[A-Za-z0-9]{8,}$/.exec(value) : null;
+  return m ? { key: value, live: m[2] === 'live' } : null;
+}
+export function sessionIdPattern(live) {
+  return live ? /^cs_live_[A-Za-z0-9]{1,190}$/ : /^cs_test_[A-Za-z0-9]{1,190}$/;
 }
 
 export function formBody(params) {
@@ -58,15 +64,15 @@ export async function verifyStripeSignature(rawBody, header, secret, nowSeconds)
 const OPEN_DISPUTES = ['warning_needs_response', 'warning_under_review', 'needs_response', 'under_review'];
 // Current truth of one Checkout Session, read back from Stripe with the secret key.
 // Returns {kind:'retry'} on a Stripe/network failure (the caller answers 5xx),
-// {kind:'invalid', reason} when the session is not a Lumen TEST payment, or
+// {kind:'invalid', reason} when the session is not a Lumen payment of the key's mode, or
 // {kind:'state', record:{...}} ready for lumen_stripe_record_session, or {kind:'open'}.
-export async function readStripeSession(fetchImpl, key, sessionId) {
-  if (typeof sessionId !== 'string' || !/^cs_test_[A-Za-z0-9]{1,190}$/.test(sessionId)) return { kind: 'invalid', reason: 'session_id' };
+export async function readStripeSession(fetchImpl, key, sessionId, live = false) {
+  if (typeof sessionId !== 'string' || !sessionIdPattern(live).test(sessionId)) return { kind: 'invalid', reason: 'session_id' };
   const read = await stripeRequest(fetchImpl, key, 'GET', '/checkout/sessions/' + encodeURIComponent(sessionId), { 'expand[]': 'payment_intent.latest_charge' });
   if (read.status === 404) return { kind: 'invalid', reason: 'not_found' };
   if (!read.ok) return { kind: 'retry' };
   const s = read.data || {};
-  if (s.livemode !== false) return { kind: 'invalid', reason: 'livemode' };
+  if (s.livemode !== live) return { kind: 'invalid', reason: 'livemode' };
   if (s.mode !== 'payment' || s.id !== sessionId) return { kind: 'invalid', reason: 'mode' };
   const user = s.metadata?.lumen_user_id, product = s.metadata?.lumen_product_id;
   if (typeof user !== 'string' || typeof product !== 'string' || s.client_reference_id !== user) return { kind: 'invalid', reason: 'metadata' };
@@ -74,7 +80,7 @@ export async function readStripeSession(fetchImpl, key, sessionId) {
   const charge = intent?.latest_charge && typeof intent.latest_charge === 'object' ? intent.latest_charge : null;
   const base = {
     p_session_id: sessionId, p_user: user, p_product: product, p_amount_cents: s.amount_total,
-    p_currency: String(s.currency || '').toUpperCase(), p_livemode: false, p_dispute_closed: false,
+    p_currency: String(s.currency || '').toUpperCase(), p_livemode: live, p_dispute_closed: false,
     p_payment_intent: intent?.id || (typeof s.payment_intent === 'string' ? s.payment_intent : null),
     p_purchased_at: new Date(1000 * Number(charge?.created || s.created || 0)).toISOString(),
   };
@@ -99,15 +105,15 @@ export async function readStripeSession(fetchImpl, key, sessionId) {
 }
 
 // Read the truth from Stripe and record it. Returns {http, body} for the caller.
-export async function syncStripeSession({ fetchImpl, key, operator, sessionId, expectUser = null }) {
-  const truth = await readStripeSession(fetchImpl, key, sessionId);
+export async function syncStripeSession({ fetchImpl, key, operator, sessionId, expectUser = null, live = false }) {
+  const truth = await readStripeSession(fetchImpl, key, sessionId, live);
   if (truth.kind === 'retry') return { http: 503, body: { error: 'stripe_unavailable' } };
   if (truth.kind === 'invalid') return { http: truth.reason === 'livemode' ? 400 : 200, body: { status: 'ignored', reason: truth.reason } };
   if (truth.kind === 'open') return { http: 200, body: { status: 'open' } };
   if (expectUser && truth.record.p_user !== expectUser) return { http: 404, body: { error: 'unknown_session' } };
   const { data, error } = await operator.rpc('lumen_stripe_record_session', truth.record);
   if (error) {
-    if (/identity conflict|live mode/.test(error.message || '')) return { http: 409, body: { error: 'session_conflict' } };
+    if (/identity conflict|live mode|invalid mode/.test(error.message || '')) return { http: 409, body: { error: 'session_conflict' } };
     return { http: 503, body: { error: 'record_failed' } };
   }
   if (data?.result === 'unknown_session') return { http: 200, body: { status: 'ignored', reason: 'unknown_session' } };

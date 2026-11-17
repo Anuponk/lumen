@@ -368,3 +368,12 @@ jobs:
             -f supabase/migrations/20261117120000_stripe_checkout_test_730.sql \
             -f supabase/migrations/20261117120000_stripe_checkout_test_730.sql \
             -f scripts/fixtures/stripe-checkout.sql
+      - name: Verify the Stripe real-sales switch, off by default, and test/live separation (#730)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261117180000_stripe_live_switch_730.sql \
+            -f supabase/migrations/20261117180000_stripe_live_switch_730.sql \
+            -f scripts/fixtures/stripe-live-switch.sql

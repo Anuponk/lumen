@@ -26,6 +26,14 @@ assert.equal(stripeCheckoutAvailable({capabilities:caps,signedIn:true,playApp:tr
 assert.equal(stripeCheckoutAvailable({capabilities:caps,signedIn:true,playBilling:{}}),false,'Play Billing wins');
 assert.equal(stripeCheckoutAvailable({capabilities:caps,signedIn:true,qaActive:true}),false);
 assert.equal(stripeCheckoutAvailable({capabilities:caps,signedIn:false}),false,'account required');
+// Real sales: the server channel opens the web checkout to every signed-in player.
+assert.equal(stripeCheckoutAvailable({channel:'live',capabilities:[],signedIn:true}),true,'live: every signed-in player');
+assert.equal(stripeCheckoutAvailable({channel:'test',capabilities:[],signedIn:true}),true);
+assert.equal(stripeCheckoutAvailable({channel:'off',capabilities:[],signedIn:true}),false);
+assert.equal(stripeCheckoutAvailable({channel:'live',signedIn:true,playApp:true}),false,'live never in the Play app');
+assert.equal(stripeCheckoutAvailable({channel:'live',signedIn:true,playBilling:{}}),false);
+assert.equal(stripeCheckoutAvailable({channel:'live',signedIn:false}),false);
+assert.equal(stripeCheckoutAvailable({channel:'live',signedIn:true,qaActive:true}),false);
 
 // Checkout start: only the product id and the waiver are sent, never a price.
 const transport=(status,body,seen=[])=>({endpoint:'https://x/functions/v1/lumen-stripe-checkout',apiKey:'k',accessToken:'jwt',
@@ -48,6 +56,7 @@ assert.equal((await startStripeCheckout({fetchImpl:async()=>{throw Error('offlin
 const win=(href)=>{const w={location:{href},history:{replaceState:(_s,_t,u)=>{w.replaced=u}}};return w};
 let w=win('https://lumen.nopuna.fr/?lumen_checkout=success&session_id=cs_test_abc123#sky');
 assert.deepEqual(consumeCheckoutReturn(w),{kind:'success',sessionId:'cs_test_abc123'});assert.equal(w.replaced,'/#sky');
+assert.deepEqual(consumeCheckoutReturn(win('https://lumen.nopuna.fr/?lumen_checkout=success&session_id=cs_live_abc123')),{kind:'success',sessionId:'cs_live_abc123'});
 w=win('https://lumen.nopuna.fr/?lumen_checkout=success&session_id=%7BCHECKOUT_SESSION_ID%7D');assert.deepEqual(consumeCheckoutReturn(w),{kind:'success',sessionId:null});
 w=win('https://lumen.nopuna.fr/?lumen_checkout=cancel&qa=new');assert.deepEqual(consumeCheckoutReturn(w),{kind:'cancel',sessionId:null});assert.equal(w.replaced,'/?qa=new');
 assert.equal(consumeCheckoutReturn(win('https://lumen.nopuna.fr/?x=1')),null);
@@ -75,7 +84,8 @@ assert.deepEqual(await restoreStripePurchases(transport(200,{results:[{status:'p
 // Wiring in the game screen.
 const screen=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 assert.match(screen,/'\/functions\/v1\/lumen-stripe-checkout'/);
-assert.match(screen,/stripeCheckoutAvailable\(\{capabilities:lumenCapabilities,playApp:isPlayDistributedApp\(window\),playBilling,qaActive,signedIn:!!lumenUser\}\)/);
+assert.match(screen,/stripeCheckoutAvailable\(\{channel:paymentChannel\.owner===lumenUser\?\.id\?paymentChannel\.channel:'off',capabilities:lumenCapabilities,playApp:isPlayDistributedApp\(window\),playBilling,qaActive,signedIn:!!lumenUser\}\)/,'the channel is per account');
+assert.match(screen,/client\.rpc\('lumen_payment_channel'\)/);
 assert.match(screen,/if\(!playBilling&&stripeAvailable\(\)\)return purchaseWithStripe\(productId,\{setStatus,setBusy,waiver\}\);/);
 assert.match(screen,/showPurchaseStatus\(stripeMessage\(result\.status==='open'\?'pending':result\.status\)\);\r?\n *if\(result\.status==='paid'\)thankForPurchase\(result\.productId\);/,'thank-you only after server "paid"');
 assert.match(screen,/if\(!lumenUser\|\|qaActive\|\|!waiver\?\.accepted\)return;/,'#732 waiver checked before any Stripe call');
