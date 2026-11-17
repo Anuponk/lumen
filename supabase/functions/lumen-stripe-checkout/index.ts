@@ -4,7 +4,8 @@
 //   limit), creates a one-off Checkout Session with that price and returns its URL.
 // mode "status":   after the Stripe return, read the session back from Stripe and record
 //   it (same path as the webhook). The return URL itself never grants anything.
-// mode "restore":  « Restaurer mes achats » — re-read the player's recent sessions.
+// mode "restore":  automatic after sign-in — re-read the player's unsettled sessions
+//   (open, superseded, pending), in case a webhook was missed. Settled ones follow webhooks.
 // Secrets (Edge Function secrets only): STRIPE_SECRET_KEY (sk_test_/rk_test_ only).
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 import { LUMEN_ORIGIN, stripeTestKey, stripeRequest, syncStripeSession } from '../_shared/lumen-stripe.ts';
@@ -54,7 +55,8 @@ Deno.serve(async (request) => {
       if (error) throw Error('lookup_failed');
       if (mode === 'status' && !sessions?.length) return reply(404, { error: 'unknown_session' });
       const results = [];
-      for (const s of sessions || []) {
+      const toSync = mode === 'restore' ? (sessions || []).filter((s) => ['open', 'superseded', 'pending', 'creating'].includes(s.status)) : sessions || [];
+      for (const s of toSync) {
         const synced = await syncStripeSession({ fetchImpl: fetch, key, operator, sessionId: s.session_id, expectUser: user.id });
         if (synced.http >= 500) return reply(503, { error: 'unavailable' });
         results.push({ productId: s.product_id, status: synced.http === 200 ? synced.body.status : 'error', adventures: synced.body.adventures });

@@ -208,7 +208,7 @@ test('metadata must match the Stripe client reference; another account cannot cl
  assert.equal((await r.json()).status,'error');assert.deepEqual(f.records(),[],'metadata owner differs from the caller: nothing recorded');
 });
 // 15. Status after return and restore
-test('after the Stripe return and on restore, the server re-reads Stripe for the signed-in player only',async()=>{
+test('after the Stripe return and on automatic restore, the server re-reads Stripe for the signed-in player only',async()=>{
  let f=fixture();let r=await f.checkout({body:{mode:'status',sessionId:'cs_test_A1'}});
  assert.deepEqual(await r.json(),{productId:'real-adventure-02',status:'paid',adventures:['real-adventure-02']});
  assert.equal(f.calls.find(c=>c.name==='lumen_stripe_sessions_for_user').args.p_user,USER);
@@ -216,6 +216,7 @@ test('after the Stripe return and on restore, the server re-reads Stripe for the
  f=fixture({owned:[{session_id:'cs_test_A1',product_id:'real-adventure-02',status:'paid'},{session_id:'cs_test_B2',product_id:'real-adventure-03',status:'open'}],
   sessions:{cs_test_A1:paidSession(),cs_test_B2:paidSession({id:'cs_test_B2',status:'expired',payment_status:'unpaid',payment_intent:null,metadata:{lumen_user_id:USER,lumen_product_id:'real-adventure-03'}})}});
  r=await f.checkout({body:{mode:'restore'}});const body=await r.json();
- assert.deepEqual(body.results.map(x=>x.status),['paid','expired']);
+ assert.deepEqual(body.results.map(x=>x.status),['expired'],'restore re-reads unsettled sessions only');
+ assert(!f.calls.some(c=>c.kind==='stripe'&&c.path==='/v1/checkout/sessions/cs_test_A1'),'a settled (paid) session follows the webhook, not each sign-in');
  f=fixture({stripeDown:true});assert.equal((await f.checkout({body:{mode:'restore'}})).status,503);
 });

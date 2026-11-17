@@ -10,7 +10,7 @@ dédiées, ainsi que la validation juridique (#732).
 | Élément | Rôle |
 |---|---|
 | `supabase/migrations/20261117120000_stripe_checkout_test_730.sql` | Table privée `lumen_commands.stripe_checkout_sessions` (session Stripe ↔ compte, produit, prix serveur, consentement #732), fonctions `lumen_stripe_*` réservées au `service_role`, garde d'ordre des états, réservation aux comptes de test, remise à zéro des données de test, exclusion comptable des paiements de test. |
-| `supabase/functions/lumen-stripe-checkout` | Session joueur obligatoire. Modes `checkout` (création), `status` (après le retour Stripe) et `restore` (« Restaurer mes achats »). |
+| `supabase/functions/lumen-stripe-checkout` | Session joueur obligatoire. Modes `checkout` (création), `status` (après le retour Stripe) et `restore` (automatique après chaque connexion : relit les sessions non réglées). |
 | `supabase/functions/lumen-stripe-webhook` | Événements Stripe signés. Relit l'état réel auprès de Stripe puis l'enregistre. |
 | `supabase/functions/_shared/lumen-stripe.ts` | Signature HMAC, appels API Stripe, lecture de l'état réel d'une session. |
 | `src/persistence/stripe-checkout.js` | Client : disponibilité Web seulement, ouverture du Checkout, retour, attente de la confirmation serveur, messages. |
@@ -34,7 +34,9 @@ ni seconde logique de droits n'est créé.
 4. Retour vers `https://lumen.nopuna.fr/?lumen_checkout=success&session_id=…` (ou
    `?lumen_checkout=cancel`). Le client retire ces paramètres de l'adresse et **interroge le
    serveur** (`mode=status`), qui relit la session chez Stripe. « Achat confirmé ✓ » n'apparaît
-   qu'après l'état `paid` côté serveur et le rechargement des droits.
+   qu'après l'état `paid` côté serveur et le rechargement des droits, suivi de la fenêtre
+   « Merci pour ton soutien ✨ ». Aucun bouton « Restaurer mes achats » : après chaque
+   connexion, Lumen relit automatiquement les sessions non réglées (webhook manqué).
 5. Le webhook fait la même relecture à chaque événement : un événement n'est qu'un signal,
    jamais une source de vérité.
 

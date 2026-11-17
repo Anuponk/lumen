@@ -30,17 +30,8 @@ export function adventureOfferModel({pack,packs,quests,progress,signedIn=false,a
   signedIn:!!signedIn,accounts:!!accounts,purchasesAvailable:!!purchasesAvailable,mastery};
 }
 
-// #731: outcome of « Restaurer mes achats ». Only a server-confirmed purchase is called
-// restored; a pending or unverified one is never presented as a success.
-export function restoreMessage(results=[]){
- const has=status=>results.some(r=>r?.status===status);
- const parts=[];
- if(has('paid'))parts.push('Achats restaurés ✓');
- if(has('pending'))parts.push('Un paiement attend encore la confirmation de Google : l’aventure se débloquera dès qu’il sera confirmé.');
- if(has('owned_elsewhere'))parts.push('Un achat est déjà associé à un autre compte Lumen.');
- if(has('error')||has('not_paid'))parts.push(has('paid')?'Certains achats n’ont pas pu être vérifiés : réessaie plus tard.':'Vérification impossible pour le moment : réessaie plus tard. Tes achats restent enregistrés chez Google.');
- return parts.length?parts.join(' '):'Aucun achat Google Play à restaurer pour ce compte Google.';
-}
+// #730 (owner decision, 17/11/2026): no « Restaurer mes achats » button; purchases are
+// re-verified automatically after every verified hydration (game-screen.js).
 
 const plural=(n,word)=>n+' '+word+(n>1?'s':'');
 export function masteryLine(model){
@@ -53,7 +44,7 @@ export function masteryLine(model){
  return 'Gratuit : maîtrise '+name+' à 100 %'+(left?' (il te reste '+left+').':'.');
 }
 
-export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{},onClaim=()=>{},onRestore=async()=>{}}={}){
+export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{},onClaim=()=>{}}={}){
  const el=(tag,props={},text)=>{const e=document.createElement(tag);Object.assign(e,props);if(text!==undefined)e.textContent=text;return e};
  const root=el('div',{className:'adventure-offer'});
  const status=el('p',{className:'adventure-offer-status',hidden:true});status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.dataset.offerStatus='';
@@ -77,8 +68,6 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
  root.append(el('p',{className:'adventure-offer-cap'},model.showSky
   ?'Tes achats à l’unité comptent : tu ne paieras jamais plus de '+model.capPrice+' au total.'
   :'Tu continues à l’unité : dès '+model.capPrice+' payés au total, tout le vrai ciel est débloqué.'),status);
- if(model.purchasesAvailable&&model.signedIn){const r=el('button',{type:'button',className:'adventure-offer-restore'},'Restaurer mes achats');r.dataset.offer='restore';buttons.push(r);
-  r.onclick=()=>onRestore({setStatus,setBusy});root.append(r)}
  if(!model.purchasesAvailable)root.append(el('p',{className:'adventure-offer-soon'},'Paiement bientôt disponible.'));
  const terms=el('a',{className:'adventure-offer-terms',href:SALES_TERMS_URL,target:'_blank',rel:'noopener'},'Conditions générales de vente');terms.dataset.offer='terms';
  const termsLine=el('p',{className:'adventure-offer-terms-line'});termsLine.append(terms);root.append(termsLine);

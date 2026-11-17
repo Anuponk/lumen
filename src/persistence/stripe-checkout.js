@@ -48,7 +48,7 @@ export async function startStripeCheckout({productId,waiver,navigate,...transpor
 // Server status of one session (read back from Stripe by the server).
 export async function stripeSessionStatus({sessionId,...transport}){
  const {http,body}=await call({...transport,body:{mode:'status',sessionId}});
- if(http===200&&typeof body.status==='string')return {status:body.status,adventures:body.adventures||[]};
+ if(http===200&&typeof body.status==='string')return {status:body.status,productId:typeof body.productId==='string'?body.productId:null,adventures:body.adventures||[]};
  if(http===404)return {status:'unknown'};
  return {status:'error'};
 }
@@ -102,16 +102,6 @@ export const STRIPE_MESSAGES={
  rate_limited:'Trop de tentatives de paiement : réessaie dans une heure.',
  session:'Reconnecte-toi pour acheter cette aventure.',
  unknown:'Paiement introuvable pour ce compte : aucun achat n’a été enregistré.',
- error:'Confirmation impossible pour le moment. Si tu as payé, ton achat sera retrouvé : touche « Restaurer mes achats ».',
+ error:'Confirmation impossible pour le moment. Si tu as payé, ton achat sera retrouvé automatiquement à ta prochaine connexion.',
 };
 export function stripeMessage(status){return STRIPE_MESSAGES[status]||STRIPE_MESSAGES.error}
-
-// « Restaurer mes achats » on the web: only server-confirmed payments are called restored.
-export function stripeRestoreMessage(results=[]){
- const has=s=>results.some(r=>r?.status===s);
- const parts=[];
- if(has('paid'))parts.push('Achats restaurés ✓');
- if(has('pending'))parts.push(STRIPE_MESSAGES.pending);
- if(has('error'))parts.push(has('paid')?'Certains paiements n’ont pas pu être vérifiés : réessaie plus tard.':'Vérification impossible pour le moment : réessaie plus tard.');
- return parts.length?parts.join(' '):'Aucun achat à restaurer pour ce compte.';
-}
