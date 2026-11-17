@@ -276,8 +276,10 @@ account-session browser runner invokes `privacy-browser.mjs` for mobile/desktop
 request preparation without live mail/Auth. `play-readiness.mjs --enforce`
 deliberately blocks missing real evidence; it is not a passing CI certification.
 See `docs/PLAY_STORE_READINESS.md` and the account-deletion runbook.
-The same browser runner reads the two HTML legal candidates at mobile/desktop
-sizes, without scripts/Auth, preserving saves and retaining access to requests.
+The same browser runner reads the two published HTML legal pages at mobile/desktop
+sizes (dated version, no candidate banner), without scripts/Auth, preserving saves
+and retaining access to requests. `sales-terms-tests.mjs` checks the three pages
+are dated, name Stripe and carry no candidate wording.
 
 Browser libraries: `browser-dependency-tests.mjs` checks exact local assets,
 hashes/licenses and absence of CDN script tags. `privacy-browser.mjs` loads the

@@ -1,5 +1,7 @@
 # Politique de confidentialité Lumen — projet non publiable en l'état
 
+> **Remplacé le 17/11/2026 par la version publiée `/confidentialite.html`, qui fait foi** (décision du propriétaire, #732/#730). Ce brouillon est conservé pour l’historique des décisions ; ne plus le modifier.
+
 Version de travail du 22 octobre 2026. Les rubriques « à valider » sont des
 blocages de publication, pas des règles déjà exécutées. Rapprocher le texte de
 `docs/PRIVACY_AND_LEGAL_AUDIT.md` et du paquet réellement distribué.

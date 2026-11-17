@@ -56,6 +56,15 @@ const mentions=read('mentions-legales.html'),privacy=read('confidentialite.html'
 assert.match(mentions,/TVA non applicable, art\. 293 B du CGI/);assert(mentions.includes('href="/cgv.html"'));
 assert.match(privacy,/<h2>Achats<\/h2>/);assert.doesNotMatch(privacy,/sans publicité ni achats/);
 assert.match(privacy,/sans identifiant de compte, email, pseudo ni progression/);assert.match(privacy,/L123-22/);
+// Published versions (owner, 17/11/2026): no candidate banner; Stripe web payments disclosed (#730).
+for(const [name,page] of [['cgv',cgv],['mentions',mentions],['privacy',privacy]]){
+ assert.doesNotMatch(page,/Version candidate|à valider avant publication|politique de confidentialité candidate/,name+' is published, not a candidate');
+ assert.match(page,/Version du \d{1,2} \S+ \d{4}/,name+' is dated');
+ assert.match(page,/Stripe/,name+' names the web payment processor');
+}
+assert.match(cgv,/version web[^<]*Stripe/);assert.doesNotMatch(cgv,/paiement sur la version web n’est pas encore disponible/);
+assert.match(cgv,/confirmation de ta commande[^<]*accès immédiat[^<]*renonciation/,'durable confirmation of the waiver (L221-13)');
+assert.match(privacy,/Lumen ne reçoit jamais tes données de carte/);assert.match(privacy,/stripe\.com\/fr\/privacy/);
 // Published by both release paths.
 assert.match(read('scripts/o2switch-cron-publish.sh'),/PUBLIC_PAGES=\([^)]*cgv\.html/);
 assert.match(read('scripts/o2switch-safe-release.sh'),/for page in [^;]*cgv\.html/);
