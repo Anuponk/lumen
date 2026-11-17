@@ -17,7 +17,7 @@ class Node{constructor(tag){this.tagName=tag;this.children=[];this.dataset={};th
  all(){return this.children.flatMap(c=>c instanceof Node?[c,...c.all()]:[])}}
 globalThis.document={createElement:tag=>new Node(tag),createTextNode:text=>({text}),activeElement:null};
 const model={id:'real-adventure-02',title:'Aventure',unitPrice:'1 €',skyPrice:'5 €',capPrice:'5 €',unitProduct:'real-adventure-02',skyProduct:'real-sky-all',
- showSky:true,signedIn:true,accounts:true,purchasesAvailable:true,mastery:null};
+ unitCount:10,skyCount:30,unitPriceKnown:true,skyPriceKnown:true,showSky:true,signedIn:true,accounts:true,purchasesAvailable:true,mastery:null};
 const host=new Node('div'),calls=[];
 const root=mountAdventureOffer(host,model,{onBuy:async(product,ctx)=>calls.push({product,waiver:ctx.waiver})});
 const nodes=root.all(),find=kind=>nodes.find(n=>n.dataset.offer===kind);
@@ -31,6 +31,10 @@ waiver.checked=true;waiver.onchange();assert.equal(status.textContent,'','Tickin
 unit.onclick();
 assert.equal(calls.length,1);assert.equal(calls[0].product,'real-adventure-02');
 assert.equal(calls[0].waiver.accepted,true);assert.equal(calls[0].waiver.text,WAIVER_TEXT);assert(!Number.isNaN(Date.parse(calls[0].waiver.at)));
+assert.equal(unit.disabled,false,'A priced incremental offer is buyable');
+assert.equal(unit.attributes['aria-label'],'Débloquer cette aventure · 1 €');
+assert.equal(nodes.find(n=>n.dataset.offerCount==='unit').textContent,'+ 10 nouvelles quêtes à explorer');
+find('sky').onclick();assert.equal(calls[1].product,'real-sky-all','The whole-sky card keeps its exact checkout product');
 const terms=find('terms');assert.equal(terms.href,SALES_TERMS_URL);assert.equal(terms.target,'_blank');
 // No waiver box where no purchase can start; the terms link stays visible.
 for(const variant of [{signedIn:false},{purchasesAvailable:false}]){

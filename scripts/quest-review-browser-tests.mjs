@@ -32,6 +32,7 @@ try {
     [320, 568],
     [360, 640],
     [390, 844],
+    [1440, 900],
   ]) {
     await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: true });
     await send('Page.navigate', { url: process.env.LUMEN_TEST_URL || 'http://127.0.0.1:8000/' });
@@ -63,6 +64,31 @@ try {
     assert.equal(view.retry && view.sky, true, 'Rejouer and Mon ciel stay on screen at ' + width + 'x' + height);
     assert.equal(view.particles, 0, 'No celebration effect');
     assert.equal(view.onTop, true, 'The review is above Mon ciel');
+    // #784: actual surface handlers browse, never launch or write a quest.
+    const snapshot=await evaluate(`JSON.stringify(lumenDiagnostics.snapshot())`);
+    const arrow=key=>evaluate(`document.getElementById('skyReveal').dispatchEvent(new KeyboardEvent('keydown',{key:${JSON.stringify(key)},bubbles:true}))`);
+    if(width<600){
+      const y=await evaluate(`(()=>{const r=document.getElementById('skyRevealCanvas').getBoundingClientRect();return r.y+r.height/2})()`);
+      await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:width/2+65,y}]});
+      await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:width/2-65,y}]});
+      await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+      assert.match(await evaluate(`document.getElementById('skyRevealKicker').textContent`),/QUÊTE 4/,'Native touch dispatch browses the next quest');
+      await arrow('ArrowLeft');
+    }
+    await arrow('ArrowRight');
+    assert.match(await evaluate(`document.getElementById('skyRevealKicker').textContent`),/QUÊTE 4/);
+    await arrow('ArrowRight');
+    assert.equal(await evaluate(`document.getElementById('skyRevealTime').textContent`),'À jouer');
+    assert.equal(await evaluate(`document.querySelectorAll('#skyRevealRewards .victory-reward-owned').length`),0);
+    assert.equal(await evaluate(`document.getElementById('skyRevealRetry').textContent`),'Jouer →');
+    await arrow('ArrowRight');
+    assert.match(await evaluate(`document.getElementById('skyRevealKicker').textContent`),/QUÊTE 5/,'Locked immediate quest is never skipped');
+    await arrow('ArrowLeft');await arrow('ArrowLeft');
+    assert.equal(await evaluate(`JSON.stringify(lumenDiagnostics.snapshot())`),snapshot,'No board, attempt, reward or progression mutation');
+    assert.equal(await evaluate(`document.querySelectorAll('.victory-particle').length`),0);
+    const reviewGeometry=await evaluate(`(()=>{const e=document.querySelector('#skyReveal .sky-reveal-card');return {scroll:e.scrollHeight>e.clientHeight+1}})()`);
+    assert.equal(reviewGeometry.scroll,false,'Browsing adds no scroll');
+    if(process.env.LUMEN_UX_CAPTURE_DIR){const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(process.env.LUMEN_UX_CAPTURE_DIR+'/review-'+width+'.png',Buffer.from(shot.data,'base64'))}
     // Mon ciel closes the review and returns to the map, with nothing written.
     await evaluate(`document.getElementById('skyRevealSky').click()`);
     await until(`document.getElementById('skyReveal').hidden`);
@@ -81,6 +107,30 @@ try {
   await evaluate(`(()=>{document.getElementById('openSky').click();document.querySelector('#sectorTabs [data-content-id="real-01"]')?.click();document.querySelector('#puzzleGrid .puzzle-card[data-quest-id="base-q005"]')?.click()})()`);
   await sleep(300);
   assert.equal(await evaluate(`document.getElementById('skyReveal').hidden`), true, 'An unfinished quest opens no review');
+  // Browse directly from a new victory, then return to the target's sky, never
+  // a hidden historical success dialog or an automatic board launch.
+  await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
+  await until(`!document.getElementById('skyReveal').hidden`);
+  await evaluate(`document.getElementById('skyReveal').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}))`);
+  await until(`document.getElementById('skyReveal').classList.contains('quest-review')`);
+  await evaluate(`document.getElementById('skyRevealSky').click()`);
+  assert.equal(await evaluate(`document.getElementById('mapModal').hidden`),false,'Mon ciel works when browsing originated at victory');
+  // #786: real locked-Adventure surface, canonical prices and delivered counts.
+  for(const [width,height] of [[360,640],[1440,900]]){
+    await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<600});
+    await evaluate(`(()=>{document.getElementById('openSky').click();document.querySelector('#adventureRail .adventure-chip.locked').click()})()`);
+    await until(`!!document.querySelector('[data-offer="unit"]')`);
+    const offer=await evaluate(`(()=>{const e=document.querySelector('.adventure-offer');return {text:e.textContent,unit:e.querySelector('[data-offer-count="unit"]').textContent,sky:e.querySelector('[data-offer-count="sky"]').textContent,prices:[...e.querySelectorAll('.adventure-offer-price')].map(x=>x.textContent),overflow:e.scrollWidth>e.clientWidth+1}})()`);
+    assert.match(offer.unit,/\+ \d+ nouvelles quêtes/);assert.match(offer.sky,/\+ \d+ nouvelles grilles/);
+    assert.deepEqual(offer.prices,['1 €','5 €']);assert.match(offer.text,/Le savais-tu/);assert.equal(offer.overflow,false);
+    if(process.env.LUMEN_UX_CAPTURE_DIR){const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(process.env.LUMEN_UX_CAPTURE_DIR+'/store-'+width+'.png',Buffer.from(shot.data,'base64'))}
+    await evaluate(`(async()=>{const {adventureOfferModel,mountAdventureOffer}=await import('/src/ui/adventure-offer.js');const {CONTENT_PACKS,contentMapModel}=await import('/src/campaign/content.js');const {canonicalQuestList}=await import('/src/campaign/canonical-quests.js');const packs=contentMapModel([],{progress:lumenDiagnostics.snapshot().progress}).skies.flatMap(s=>s.packs);const pack=packs.find(p=>p.accessible===false);const model=adventureOfferModel({pack,packs,quests:canonicalQuestList(),progress:lumenDiagnostics.snapshot().progress,signedIn:true,purchasesAvailable:true});window.__offerCalls=[];mountAdventureOffer(document.getElementById('adventureNoticeOffer'),model,{onBuy:(id)=>window.__offerCalls.push(id)});document.querySelector('[data-offer="unit"]').click()})()`,true);
+    assert.equal(await evaluate(`window.__offerCalls.length`),0,'Consent gate preserved on the real offer DOM');
+    await evaluate(`document.querySelector('[data-offer="waiver"]').click();document.querySelector('[data-offer="unit"]').click();document.querySelector('[data-offer="sky"]').click()`);
+    assert.deepEqual(await evaluate(`window.__offerCalls`),['real-adventure-02','real-sky-all']);
+    if(process.env.LUMEN_UX_CAPTURE_DIR){const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(process.env.LUMEN_UX_CAPTURE_DIR+'/store-ready-'+width+'.png',Buffer.from(shot.data,'base64'))}
+    await evaluate(`document.getElementById('adventureNoticeClose').click()`);
+  }
   assert.deepEqual(errors, []);
   if (process.argv[2]) fs.writeFileSync(process.argv[2], JSON.stringify({ results, errors }, null, 2));
   console.log(JSON.stringify(results.map(({ width, height, time, owned }) => ({ width, height, time, owned }))));
