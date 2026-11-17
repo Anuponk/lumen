@@ -1,5 +1,10 @@
 # Dependencies and data flow
 
+Owned entry #783: account/client-scoped `lumen_get_entitlements` response →
+transient verification state + `contentMapModel` → Mon ciel rail/cards. Pack access
+→ within-pack `catalogueQuestDecision` → map/start/resume; `extendedQuestLimit`
+only bounds legacy indices. No new persisted field or server command.
+
 Actionable Analytics #708: existing product/quest/health/account responses →
 `analytics-dashboard.js` qualified projection → overview/journeys/technical views
 → guarded existing navigation/player/session/diagnostic readers. Account list +

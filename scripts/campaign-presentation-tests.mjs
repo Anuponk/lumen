@@ -46,7 +46,7 @@ function questCardFixture(progress,{signedIn=true,cloudReady=true,entryId}={}){
  modal.querySelector=selector=>selector==='#canonicalJourneyPreview'?section:null;
  const entry=CONTENT_CONSTELLATIONS.find(c=>entryId?c.id===entryId:all.some(q=>q.constellationId===c.id&&q.legacyIndex===null));
  const context={...canonical,celestialScope,milkyWaySvg,takeMasteryPulse:()=>null,leavePendingVictoryForNavigation:()=>{},confirmedReplayAllowed:()=>false,lumenProgress:progress,qaActive:false,
-  lumenUser:signedIn?{id:'synthetic-owner'}:null,cloudProfileReady:cloudReady,
+  lumenUser:signedIn?{id:'synthetic-owner'}:null,cloudProfileReady:cloudReady,lumenEntitlementsState:'ready',
   adventureAccessEntitlements:()=>[],attemptEngine:{snapshot:()=>null},campaignAccessAttempt:()=>null,
   navigationProgress:()=>progress,offlineQuestAccessContext:()=>({offline:false,verifiedSession:false}),document:{createElement:element,createElementNS:element,getElementById:id=>id==='puzzleGrid'?grid:id==='mapModal'?modal:id==='skyCard'?sky:null},
   CONTENT_CONSTELLATIONS,mapConstellation:0,
@@ -55,7 +55,7 @@ function questCardFixture(progress,{signedIn=true,cloudReady=true,entryId}={}){
   performanceBadges:()=>'<span>badge historique</span>',canonicalPerformanceBadges:()=>'<span>badge canonique</span>',
   badgeCooldownRemaining:()=>0,questPerformanceRecord,verifiedAstronomicalFigure:()=>true,questIsCompleted,astronomicalPrimarySvg:()=>''};
  vm.createContext(context);
- const names=['constellationMastery','canonicalQuestAccess','canonicalQuestAvailable','canonicalQuestLockReason','questIsAccessible','renderMap','renderCanonicalSky','renderCanonicalJourneyPreview','startCanonicalQuest'];
+ const names=['adventureEntitlementsState','constellationMastery','canonicalQuestAccess','canonicalQuestAvailable','canonicalQuestLockReason','questIsAccessible','renderMap','renderCanonicalSky','renderCanonicalJourneyPreview','startCanonicalQuest'];
  vm.runInContext(names.map(name=>functionSource(source,name)).join('\n'),context);
  return {context,grid,section,elements,entry,sky};
 }

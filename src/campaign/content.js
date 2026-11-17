@@ -136,7 +136,7 @@ export function contentRegistrySnapshot({skies=CONTENT_SKIES,packs=CONTENT_PACKS
 export function contentMapModel(entitlements=[],{
  skies=CONTENT_SKIES,
  packs=CONTENT_PACKS,
- constellations=CONTENT_CONSTELLATIONS,progress={},attempt=null
+ constellations=CONTENT_CONSTELLATIONS,progress={},attempt=null,entitlementsState='ready'
 }={}){
  const entitlementSet=normalizeEntitlements(entitlements);
  return {
@@ -148,6 +148,8 @@ export function contentMapModel(entitlements=[],{
     return {
      ...pack,
      accessible,
+     accessStatus:accessible?'ready':entitlementsState,
+     ...(!accessible&&entitlementsState==='loading'?{lockReason:'Vérification des droits en cours…'}:!accessible&&entitlementsState==='error'?{lockReason:'Droits indisponibles pour le moment. Réessaie en ligne.'}:{}),
      constellations:constellations.filter(c=>c.packId===pack.id).sort((a,b)=>(a.legacyIndex??999999)-(b.legacyIndex??999999)).map(c=>({...c,accessible}))
     };
    });

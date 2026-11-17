@@ -38,11 +38,23 @@ async function loadInternalCapabilities(){
  model.lumenCapabilities=data||[];onAccountChanged({type:"account"});return model.lumenCapabilities;
 }
 
+let entitlementScope=null,entitlementRequest=0;
 async function loadEntitlements(){
- if(!model.lumenSupabase||!model.lumenUser){model.lumenEntitlements=[];return []}
- const {data,error}=await model.lumenSupabase.rpc("lumen_get_entitlements");
- if(error){console.warn("LUMEN entitlements",error);model.lumenEntitlements=[];return []}
- model.lumenEntitlements=data||[];refreshJourney();return model.lumenEntitlements;
+ const client=model.lumenSupabase,owner=model.lumenUser?.id,request=++entitlementRequest;
+ if(!client||!owner){entitlementScope=null;model.lumenEntitlements=[];model.lumenEntitlementsState='idle';return []}
+ if(entitlementScope?.owner!==owner||entitlementScope?.client!==client)model.lumenEntitlements=[];
+ entitlementScope={owner,client};
+ const current=()=>request===entitlementRequest&&model.lumenUser?.id===owner&&model.lumenSupabase===client;
+ model.lumenEntitlementsState='loading';refreshJourney();
+ try{
+  const {data,error}=await client.rpc("lumen_get_entitlements");if(!current())return [];
+  if(error||!Array.isArray(data))throw error||Error('Invalid entitlements response');
+  model.lumenEntitlements=data;model.lumenEntitlementsState='ready';refreshJourney();return data;
+ }catch(error){
+  if(!current())return [];
+  // A failed read is not a revocation of this session's confirmed rights.
+  model.lumenEntitlementsState='error';console.warn('LUMEN entitlements',error);refreshJourney();return [];
+ }
 }
 
 async function cloudSavePuzzle(index){

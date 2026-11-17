@@ -24,7 +24,7 @@ test('each completed published quest preserves pack access and replay independen
  }
 });
 
-test('Antlia: historical frontier stays acquired while a current-cohort player cannot skip new prerequisites',()=>{
+test('Antlia: an owned Adventure opens for either cohort without prerequisites in other Adventures',()=>{
  const quests=canonicalQuestList(),antlia=quests.find(q=>q.constellationId==='iau-ant');
  const preceding=quests.filter(q=>q.ordinal<antlia.ordinal);
  const historical={solved:Object.fromEntries(preceding.filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1])),canonicalQuestState:{},xp:321,shards:7};
@@ -32,7 +32,9 @@ test('Antlia: historical frontier stays acquired while a current-cohort player c
  const original=JSON.stringify(historical);
  assert.equal(canonicalCampaignQuestDecision(antlia,historical,context).status,'ready','Existing players retain their frontier after the insertion of Dauphin and other new constellations');
  const current={...structuredClone(historical),catalogueOrigin:currentCatalogueOrigin};
- assert.equal(canonicalCampaignQuestDecision(antlia,current,context).status,'prerequisite','Ownership does not allow a new player to skip unplayed quests');
+ assert.equal(canonicalCampaignQuestDecision(antlia,current,context).status,'ready','#783: Antlia is the first quest of its owned Adventure; earlier Adventure insertions do not block it');
+ const following=quests.find(q=>q.packId===antlia.packId&&q.ordinal>antlia.ordinal);
+ assert.equal(canonicalCampaignQuestDecision(following,current,context).status,'prerequisite','Ownership still cannot skip unplayed quests inside this Adventure');
  for(const quest of preceding.filter(q=>q.legacyIndex===null))current.canonicalQuestState[quest.id]={solved:true};
  assert.equal(canonicalCampaignQuestDecision(antlia,current,context).status,'ready');
  for(let restore=0;restore<3;restore++)assert.equal(canonicalCampaignQuestDecision(antlia,JSON.parse(JSON.stringify(historical)),context).status,'ready');
@@ -161,7 +163,7 @@ test('local/cloud serialization and repeated restores retain historical access',
  let profile=structuredClone(historic);
  for(let device=0;device<4;device++){
   profile=JSON.parse(JSON.stringify(profile));
-  assert.deepEqual(insertedQuestDecision(quest,profile,quests),{status:'ready',reason:'historical-access'});
+  assert.deepEqual(insertedQuestDecision(quest,profile,quests),{status:'ready',reason:'sequential'},'#783: this is now the first unfinished quest of its own Adventure');
  }
  assert.deepEqual(profile,historic);
 });
@@ -192,11 +194,11 @@ test('the actual UI adapter and start guard share readiness without bypassing pr
  const quests=canonicalQuestList(),pack=CONTENT_PACKS.find(p=>p.id==='real-adventure-03');
  const group=quests.filter(q=>q.packId===pack.id&&q.constellationId===pack.id+'-new-01');
  const progress={solved:Object.fromEntries(quests.filter(q=>q.packId===pack.id&&q.legacyIndex!==null).map(q=>[q.legacyIndex,1]))};
- const context={leavePendingVictoryForNavigation:()=>{},confirmedReplayAllowed:()=>false,canonicalInsertedQuestDecision,canonicalQuestList,lumenProgress:progress,lumenEntitlements:[],adventureAccessEntitlements:()=>[],attemptEngine:{snapshot:()=>null},qaActive:false,lumenUser:{id:'synthetic'},cloudProfileReady:true};
+ const context={leavePendingVictoryForNavigation:()=>{},confirmedReplayAllowed:()=>false,canonicalInsertedQuestDecision,canonicalQuestList,lumenProgress:progress,lumenEntitlements:[],lumenEntitlementsState:'ready',adventureAccessEntitlements:()=>[],attemptEngine:{snapshot:()=>null},qaActive:false,lumenUser:{id:'synthetic'},cloudProfileReady:true};
  context.navigationProgress=()=>context.lumenProgress;
  context.offlineQuestAccessContext=()=>({offline:false,verifiedSession:false});
  vm.createContext(context);
- vm.runInContext(['canonicalQuestAccess','canonicalQuestAvailable','canonicalQuestLockReason','startCanonicalQuest'].map(name=>functionSource(source,name)).join('\n'),context);
+ vm.runInContext(['adventureEntitlementsState','canonicalQuestAccess','canonicalQuestAvailable','canonicalQuestLockReason','startCanonicalQuest'].map(name=>functionSource(source,name)).join('\n'),context);
  assert.equal(context.canonicalQuestAvailable(group[0]),true);
  assert.equal(context.canonicalQuestAvailable(group[1]),false);
  assert.equal(context.startCanonicalQuest(group[1]),false,'Direct start cannot bypass local order');

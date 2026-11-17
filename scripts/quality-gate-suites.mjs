@@ -103,6 +103,7 @@ export const nodeSuites=[
  'quest-secondary-stars-tests.mjs',
  'astronomical-fidelity-tests.mjs',
  'catalogue-access-tests.mjs',
+ 'owned-adventure-access-tests.mjs',
  'catalogue-compatibility-tests.mjs',
  'catalogue-origin-cloud-tests.mjs',
  'legacy-command-client-tests.mjs',

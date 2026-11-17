@@ -1,5 +1,11 @@
 # Existing verification map
 
+Owned Adventure entry #783: `owned-adventure-access-tests.mjs` covers independent
+pack entry, its own quest sequence, numeric bounds and entitlement-read isolation.
+`owned-adventure-browser-tests.mjs` verifies delayed rights, map starts and reload
+on a mobile viewport using synthetic RPCs. Physical purchase/device acceptance is
+separate; see [TESTING](../TESTING.md).
+
 KPI reliability #708: dashboard/session/incident Node regressions; synthetic
 `fixtures/reliable-analytics.sql` in ledger CI (migration x2, receipt-only activity,
 identity, deduplication, windows, durations, freshness, access/isolation). Real-app
