@@ -4156,8 +4156,10 @@ async function playVerify(productId,purchaseToken){
  if(data?.session?.user?.id!==owner)return {status:'error',reason:'session'};
  return verifyPlayPurchase({endpoint:LUMEN_SUPABASE_URL+'/functions/v1/lumen-play-purchase',apiKey:LUMEN_SUPABASE_KEY,accessToken:data.session.access_token,productId,purchaseToken});
 }
-async function purchaseAdventure(productId,{setStatus,setBusy}){
+async function purchaseAdventure(productId,{setStatus,setBusy,waiver}){
  if(!playBilling||!lumenUser||qaActive)return;
+ // #732: never open a payment without the express immediate-access request and waiver.
+ if(!waiver?.accepted)return;
  const owner=lumenUser.id;setBusy(true);setStatus('Ouverture du paiement Google Play…');
  const result=await buyWithPlay({productId,verify:playVerify});
  if(lumenUser?.id!==owner)return;

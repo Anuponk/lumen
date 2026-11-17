@@ -14,7 +14,11 @@ assert(missingCoordinates.blockers.includes('publisher.telephone'));
 assert(pending.blockers.includes('evidence.childSafety'));
 assert(pending.blockers.includes('evidence.accountDeletionEndToEnd'));
 assert(pending.blockers.includes('children.activationReview'),'child activation must remain blocked until a verified parental process exists');
-assert.equal(publisher.monetization,'free-no-ads-no-purchases');
+assert.equal(publisher.monetization,'paid-content-no-ads','#732: paid Adventures, no ads');
+assert(!pending.blockers.includes('consumer.mediator'),'#732: the mediator is tracked separately, not a publication blocker (owner decision)');
+assert.match(publisher.vatOwnerDeclaration.legalBasis,/art\. 293 B du CGI/);
+assert(evaluatePlayReadiness({...publisher,vatOwnerDeclaration:{...publisher.vatOwnerDeclaration,legalBasis:null}}).blockers.includes('vat.legalBasis'));
+
 assert.equal(publisher.audience,'mixed-including-children');
 
 const href=accountDeletionMailto('parent+account@example.test');
