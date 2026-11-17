@@ -101,6 +101,10 @@ try {
     await until(`document.getElementById('skyReveal').hidden&&document.getElementById('mapModal').hidden`);
     const replay = await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();return {replay:s.replayMode,level:s.levelIndex}})()`);
     assert.deepEqual(replay, { replay: true, level: 2 }, 'Rejouer starts the usual replay of quest 3');
+    await evaluate(`(()=>{document.getElementById('openSky').click();document.querySelector('#puzzleGrid [data-quest-id="base-q004"]').click();document.getElementById('skyReveal').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}))})()`);
+    assert.equal(await evaluate(`document.getElementById('skyRevealRetry').textContent`),'Jouer →');
+    await evaluate(`document.getElementById('skyRevealRetry').click()`);
+    assert.deepEqual(await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();return {level:s.levelIndex,replay:s.replayMode,solved:!!s.progress.solved[4],review:!document.getElementById('skyReveal').hidden}})()`),{level:4,replay:false,solved:false,review:false},'Only explicit Jouer starts the unfinished target, without completing it');
     results.push({ width, height, ...view });
   }
   // A quest that is not completed still starts directly (unchanged).
