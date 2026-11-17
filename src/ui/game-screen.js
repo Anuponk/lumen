@@ -4208,7 +4208,16 @@ setTimeout(()=>void autoArchiveAccountSwitchCopies(),15000);
 // #730: Stripe Checkout on the web/PWA only, never in the Play app. TEST phase: only
 // accounts holding the server capability « stripe_test_checkout ». The server reads every
 // payment back from Stripe and records it (#728); a Stripe return URL never grants.
-function stripeAvailable(){return stripeCheckoutAvailable({capabilities:lumenCapabilities,playApp:isPlayDistributedApp(window),playBilling,qaActive,signedIn:!!lumenUser})}
+// Server-decided web payment channel for the signed-in account ('live' | 'test' | 'off').
+let paymentChannel={owner:null,channel:'off'};
+async function refreshPaymentChannel(){
+ const client=lumenSupabase,owner=lumenUser?.id;
+ if(!client||!owner||qaActive){paymentChannel={owner:null,channel:'off'};return}
+ let channel='off';
+ try{const {data,error}=await client.rpc('lumen_payment_channel');if(!error&&['live','test','off'].includes(data))channel=data}catch(_){}
+ if(lumenUser?.id===owner)paymentChannel={owner,channel};
+}
+function stripeAvailable(){return stripeCheckoutAvailable({channel:paymentChannel.owner===lumenUser?.id?paymentChannel.channel:'off',capabilities:lumenCapabilities,playApp:isPlayDistributedApp(window),playBilling,qaActive,signedIn:!!lumenUser})}
 async function stripeTransport(){
  const client=lumenSupabase,owner=lumenUser?.id;if(!client||!owner)return null;
  const {data}=await client.auth.getSession();
@@ -4257,7 +4266,7 @@ async function handleStripeReturn(){
 }
 // After a verified hydration: server-checked mastery unlocks (#728), automatic purchase
 // restore (Play #729, Stripe #730) and the Stripe return.
-function afterVerifiedHydration(){void maybeClaimMasteryUnlocks();void maybeRestorePlayPurchases();void handleStripeReturn().finally(()=>void maybeRestoreStripePurchases())}
+function afterVerifiedHydration(){void maybeClaimMasteryUnlocks();void maybeRestorePlayPurchases();void refreshPaymentChannel().finally(()=>handleStripeReturn()).finally(()=>void maybeRestoreStripePurchases())}
 // #731: offer shown on a locked Adventure. Purchases stay disabled until a payment
 // provider is connected (#729/#730); the free path claims a server-verified mastery unlock.
 function renderAdventureOffer(container,pack,{close}={}){

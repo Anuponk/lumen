@@ -61,7 +61,8 @@ test('a valid checkout is created server-side from the catalogue reservation, fo
  const f=fixture();const r=await f.checkout({body:{productId:'real-adventure-02',waiver:true,amount:1,price_cents:1,currency:'usd',userId:'someone-else'}});
  assert.equal(r.status,200);assert.deepEqual(await r.json(),{url:'https://checkout.stripe.com/c/pay/cs_test_NEW'});
  const begin=f.calls.find(c=>c.name==='lumen_stripe_checkout_begin');
- assert.equal(begin.args.p_user,USER);assert.equal(begin.args.p_product,'real-adventure-02');assert.deepEqual(Object.keys(begin.args).sort(),['p_product','p_user','p_waiver_at']);
+ assert.equal(begin.args.p_user,USER);assert.equal(begin.args.p_product,'real-adventure-02');assert.deepEqual(Object.keys(begin.args).sort(),['p_livemode','p_product','p_user','p_waiver_at']);
+ assert.equal(begin.args.p_livemode,false,'a test key reserves a test checkout');
  const create=f.calls.find(c=>c.kind==='stripe'&&c.path==='/v1/checkout/sessions'&&c.method==='POST');const p=new URLSearchParams(create.body);
  assert.equal(p.get('mode'),'payment');assert.equal(p.get('line_items[0][price_data][unit_amount]'),'100','price from the server reservation, never the body');
  assert.equal(p.get('line_items[0][price_data][currency]'),'eur');assert.equal(p.get('line_items[0][quantity]'),'1');
@@ -70,6 +71,8 @@ test('a valid checkout is created server-side from the catalogue reservation, fo
  assert.match(p.get('cancel_url'),/^https:\/\/lumen\.nopuna\.fr\//);
  assert.equal(create.headers['idempotency-key'],'lumen-checkout-11111111-1111-1111-1111-111111111111','a retried reservation never creates a second session');
  assert.equal(create.headers.authorization,'Bearer '+KEY);
+ assert.equal(p.get('invoice_creation[enabled]'),'true','Stripe emails a durable confirmation (CGV §6)');
+ assert.match(p.get('invoice_creation[invoice_data][footer]'),/renonciation au droit de rétractation[^]*L221-28, 13°[^]*TVA non applicable, art\. 293 B du CGI/);
  const attach=f.calls.find(c=>c.name==='lumen_stripe_checkout_attach');assert.equal(attach.args.p_session_id,'cs_test_NEW');
 });
 // 2. Unauthenticated
@@ -107,13 +110,41 @@ test('a superseded unpaid session is expired at Stripe; a failed creation releas
  f=fixture({createReply:()=>new Response(JSON.stringify({id:'cs_live_X',livemode:true,url:'https://checkout.stripe.com/c/pay/cs_live_X'}),{status:200})});
  assert.equal((await f.checkout()).status,502,'a live session is never handed to the player');
 });
-test('live or missing Stripe keys disable checkout and are never logged',async()=>{
- for(const k of ['sk_live_'+'L'.repeat(24),'rk_live_'+'L'.repeat(24),'','pk_test_abc']){
+test('missing or publishable keys disable checkout; keys are never logged',async()=>{
+ for(const k of ['','pk_test_abc','pk_live_abc','sk_other_'+'L'.repeat(24)]){
   const f=fixture({env:{STRIPE_SECRET_KEY:k}});const r=await f.checkout();assert.equal(r.status,503);
   assert(!f.calls.some(c=>c.kind==='rpc'||c.kind==='stripe'));
   if(k)assert(!f.logs.join('\n').includes(k),'key never logged');
  }
  const f=fixture();assert.equal((await f.checkout({origin:'https://evil.example'})).status,403);
+});
+// Real sales: a live key asks the server for a LIVE checkout; the SQL gateway refuses it
+// until the owner switches 'stripe_live' on (not_eligible), and only cs_live_ sessions are handed out.
+const LIVE='sk_live_'+'L'.repeat(24);
+test('a live key reserves live checkouts only, refused while the server switch is off',async()=>{
+ let f=fixture({env:{STRIPE_SECRET_KEY:LIVE},begin:{result:'not_eligible'}});let r=await f.checkout();
+ assert.equal(r.status,403);assert.equal(f.calls.find(c=>c.name==='lumen_stripe_checkout_begin').args.p_livemode,true);
+ assert(!f.calls.some(c=>c.kind==='stripe'),'switch off: no Stripe session');assert(!f.logs.join('\n').includes(LIVE));
+ f=fixture({env:{STRIPE_SECRET_KEY:LIVE},createReply:()=>new Response(JSON.stringify({id:'cs_live_NEW',livemode:true,url:'https://checkout.stripe.com/c/pay/cs_live_NEW',expires_at:1763301800}),{status:200})});
+ r=await f.checkout();assert.equal(r.status,200);assert.deepEqual(await r.json(),{url:'https://checkout.stripe.com/c/pay/cs_live_NEW'});
+ assert.equal(f.calls.find(c=>c.name==='lumen_stripe_checkout_attach').args.p_session_id,'cs_live_NEW');
+ f=fixture({env:{STRIPE_SECRET_KEY:LIVE}});r=await f.checkout();
+ assert.equal(r.status,502,'a test session is never handed out with a live key');assert(f.calls.some(c=>c.name==='lumen_stripe_checkout_release'));
+});
+test('the webhook only accepts events and sessions of its key mode',async()=>{
+ const liveSession=paidSession({id:'cs_live_L1',livemode:true});
+ let f=fixture({fn:'webhook',env:{STRIPE_SECRET_KEY:LIVE},sessions:{cs_live_L1:liveSession}});
+ let r=await f.webhook(event('checkout.session.completed',{id:'cs_live_L1'},{livemode:true}));
+ assert.equal(r.status,200);assert.equal(f.records()[0].p_livemode,true);assert.equal(f.records()[0].p_session_id,'cs_live_L1');
+ f=fixture({fn:'webhook',env:{STRIPE_SECRET_KEY:LIVE}});r=await f.webhook(event('checkout.session.completed',{id:'cs_test_A1'}));
+ assert.equal(r.status,400,'a test event never reaches the live endpoint');assert.deepEqual(f.records(),[]);
+ f=fixture({fn:'webhook',env:{STRIPE_SECRET_KEY:LIVE},sessions:{cs_live_L1:paidSession({id:'cs_live_L1',livemode:false})}});
+ r=await f.webhook(event('checkout.session.completed',{id:'cs_live_L1'},{livemode:true}));
+ assert.equal(r.status,400,'the read-back session must be live too');assert.deepEqual(f.records(),[]);
+ f=fixture({fn:'webhook',env:{STRIPE_WEBHOOK_SECRET:' '+WHSEC+'\n'}});
+ assert.equal((await f.webhook(event('checkout.session.completed',{id:'cs_test_A1'}))).status,200,'spaces around the configured secret are ignored');
+ f=fixture({fn:'webhook'});await f.webhook(event('checkout.session.completed',{id:'cs_test_A1'}),{secret:'whsec_wrong'});
+ assert.match(f.logs.join('\n'),/signature refused: mismatch/,'the refusal reason is logged');assert(!f.logs.join('\n').includes(WHSEC));
 });
 
 // 5. Webhook signature
@@ -195,8 +226,8 @@ test('temporary failures answer 5xx so Stripe retries; conflicts are reported, n
  f=fixture({fn:'webhook',record:()=>({data:{result:'unknown_session'},error:null})});
  assert.deepEqual(await (await f.webhook(event('checkout.session.completed',{id:'cs_test_A1'}))).json(),{status:'ignored'});
  f=fixture({fn:'webhook'});assert.equal((await f.webhook(event('customer.created',{id:'cus_1'}))).status,200);assert.deepEqual(f.records(),[]);
- f=fixture({fn:'webhook',env:{STRIPE_SECRET_KEY:'sk_live_'+'L'.repeat(24)}});
- assert.equal((await f.webhook(event('checkout.session.completed',{id:'cs_test_A1'}))).status,503);assert(!f.logs.join().includes('sk_live_'+'L'.repeat(24)));
+ f=fixture({fn:'webhook',env:{STRIPE_SECRET_KEY:'pk_live_x'}});
+ assert.equal((await f.webhook(event('checkout.session.completed',{id:'cs_test_A1'}))).status,503,'unusable key: Stripe retries later');
  assert(!f.logs.join().includes(WHSEC));
 });
 test('metadata must match the Stripe client reference; another account cannot claim a session',async()=>{

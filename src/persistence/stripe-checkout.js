@@ -18,8 +18,11 @@ export function isPlayDistributedApp(win=globalThis){
  try{return win.sessionStorage?.getItem(PLAY_APP_KEY)==='1'}catch(_){return false}
 }
 // Test phase: only accounts holding the server capability see the Stripe button.
-export function stripeCheckoutAvailable({capabilities=[],playApp=false,playBilling=null,qaActive=false,signedIn=false}={}){
+// channel comes from the server (lumen_payment_channel): 'live' once real sales are switched
+// on, 'test' for a test account, 'off' otherwise. The test capability stays a fallback.
+export function stripeCheckoutAvailable({channel='off',capabilities=[],playApp=false,playBilling=null,qaActive=false,signedIn=false}={}){
  if(qaActive||playApp||playBilling||!signedIn)return false;
+ if(channel==='live'||channel==='test')return true;
  return capabilities.some(c=>(typeof c==='string'?c:c?.capability)===STRIPE_TEST_CAPABILITY);
 }
 
@@ -67,7 +70,7 @@ export function consumeCheckoutReturn(win=globalThis){
   const sessionId=url.searchParams.get('session_id');
   url.searchParams.delete('lumen_checkout');url.searchParams.delete('session_id');
   win.history?.replaceState?.(null,'',url.pathname+(url.search||'')+url.hash);
-  return {kind,sessionId:kind==='success'&&/^cs_test_[A-Za-z0-9]{1,190}$/.test(sessionId||'')?sessionId:null};
+  return {kind,sessionId:kind==='success'&&/^cs_(test|live)_[A-Za-z0-9]{1,190}$/.test(sessionId||'')?sessionId:null};
  }catch(_){return null}
 }
 

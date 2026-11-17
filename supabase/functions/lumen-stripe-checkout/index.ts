@@ -1,4 +1,5 @@
-// #730 — Stripe Checkout for the web/PWA (TEST MODE ONLY). Player session required.
+// #730 — Stripe Checkout for the web/PWA. Player session required. Test key: test accounts
+// only. Live key: real sales, only once lumen_commands.feature_flags 'stripe_live' is on.
 // mode "checkout": the server reserves the purchase (lumen_stripe_checkout_begin: test
 //   account, active product, catalogue price, ownership, one checkout in flight, rate
 //   limit), creates a one-off Checkout Session with that price and returns its URL.
@@ -6,9 +7,9 @@
 //   it (same path as the webhook). The return URL itself never grants anything.
 // mode "restore":  automatic after sign-in — re-read the player's unsettled sessions
 //   (open, superseded, pending), in case a webhook was missed. Settled ones follow webhooks.
-// Secrets (Edge Function secrets only): STRIPE_SECRET_KEY (sk_test_/rk_test_ only).
+// Secrets (Edge Function secrets only): STRIPE_SECRET_KEY (sk_/rk_ test or live).
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
-import { LUMEN_ORIGIN, stripeTestKey, stripeRequest, syncStripeSession } from '../_shared/lumen-stripe.ts';
+import { LUMEN_ORIGIN, stripeKey, sessionIdPattern, stripeRequest, syncStripeSession } from '../_shared/lumen-stripe.ts';
 
 function productLabel(productId, kind) {
   if (kind === 'sky') return 'Lumen · Tout le vrai ciel';
@@ -29,12 +30,9 @@ Deno.serve(async (request) => {
   if (origin && origin !== LUMEN_ORIGIN) return reply(403, { error: 'origin_not_allowed' });
   if (request.method !== 'POST') return reply(405, { error: 'method_not_allowed' });
   const url = Deno.env.get('SUPABASE_URL'), anonKey = Deno.env.get('SUPABASE_ANON_KEY'), serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  const rawKey = Deno.env.get('STRIPE_SECRET_KEY') || '';
-  const key = stripeTestKey(rawKey);
-  if (!key) {
-    if (/^(sk|rk)_live_/.test(rawKey)) console.error('Lumen Stripe: live key refused (test phase)');
-    return reply(503, { error: 'unavailable' });
-  }
+  const stripe = stripeKey(Deno.env.get('STRIPE_SECRET_KEY') || '');
+  if (!stripe) return reply(503, { error: 'unavailable' });
+  const { key, live } = stripe;
   if (!url || !anonKey || !serviceKey) return reply(503, { error: 'unavailable' });
   const token = request.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1];
   if (!token) return reply(401, { error: 'authentication_required' });
@@ -50,17 +48,19 @@ Deno.serve(async (request) => {
   try {
     if (mode === 'status' || mode === 'restore') {
       const sessionId = mode === 'status' ? body?.sessionId : null;
-      if (mode === 'status' && (typeof sessionId !== 'string' || !/^cs_test_[A-Za-z0-9]{1,190}$/.test(sessionId))) return reply(400, { error: 'invalid_request' });
+      if (mode === 'status' && (typeof sessionId !== 'string' || !sessionIdPattern(live).test(sessionId))) return reply(400, { error: 'invalid_request' });
       const { data: sessions, error } = await operator.rpc('lumen_stripe_sessions_for_user', { p_user: user.id, p_session_id: sessionId });
       if (error) throw Error('lookup_failed');
       if (mode === 'status' && !sessions?.length) return reply(404, { error: 'unknown_session' });
       const results = [];
       const toSync = mode === 'restore' ? (sessions || []).filter((s) => ['open', 'superseded', 'pending', 'creating'].includes(s.status)) : sessions || [];
       for (const s of toSync) {
-        const synced = await syncStripeSession({ fetchImpl: fetch, key, operator, sessionId: s.session_id, expectUser: user.id });
+        if (!sessionIdPattern(live).test(s.session_id || '')) continue; // the other mode's sessions cannot be read with this key
+        const synced = await syncStripeSession({ fetchImpl: fetch, key, operator, sessionId: s.session_id, expectUser: user.id, live });
         if (synced.http >= 500) return reply(503, { error: 'unavailable' });
         results.push({ productId: s.product_id, status: synced.http === 200 ? synced.body.status : 'error', adventures: synced.body.adventures });
       }
+      if (mode === 'status' && !results.length) return reply(404, { error: 'unknown_session' });
       return mode === 'status' ? reply(200, results[0]) : reply(200, { results });
     }
 
@@ -69,7 +69,7 @@ Deno.serve(async (request) => {
     // #732: express request for immediate access and waiver of the withdrawal right.
     if (body?.waiver !== true) return reply(400, { error: 'waiver_required' });
     const waiverAt = new Date().toISOString();
-    const { data: begin, error: beginError } = await operator.rpc('lumen_stripe_checkout_begin', { p_user: user.id, p_product: productId, p_waiver_at: waiverAt });
+    const { data: begin, error: beginError } = await operator.rpc('lumen_stripe_checkout_begin', { p_user: user.id, p_product: productId, p_waiver_at: waiverAt, p_livemode: live });
     if (beginError) throw Error('reservation_failed');
     const result = begin?.result;
     if (result === 'reuse') return reply(200, { url: begin.url, reused: true });
@@ -94,11 +94,15 @@ Deno.serve(async (request) => {
       cancel_url: LUMEN_ORIGIN + '/?lumen_checkout=cancel',
       expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
       'custom_text[submit][message]': 'Accès immédiat demandé : tu as renoncé à ton droit de rétractation de 14 jours pour ce contenu numérique.',
+      // Durable confirmation (CGV §6, L221-13): Stripe emails this invoice with the waiver.
+      'invoice_creation[enabled]': 'true',
+      'invoice_creation[invoice_data][description]': productLabel(begin.product_id, begin.kind) + ' — contenu numérique, accès immédiat.',
+      'invoice_creation[invoice_data][footer]': 'Accès immédiat demandé et renonciation au droit de rétractation de 14 jours acceptée le ' + waiverAt.slice(0, 10) + ' (art. L221-28, 13° du Code de la consommation). TVA non applicable, art. 293 B du CGI. Nopuna — Cédric Valente EI, SIRET 897 865 747 00025.',
     };
     for (const [k, v] of Object.entries(meta)) { params['metadata[' + k + ']'] = v; params['payment_intent_data[metadata][' + k + ']'] = v; }
     const created = await stripeRequest(fetch, key, 'POST', '/checkout/sessions', params, 'lumen-checkout-' + begin.reservation_id);
     const session = created.data || {};
-    if (!created.ok || session.livemode !== false || typeof session.id !== 'string' || !session.id.startsWith('cs_test_')
+    if (!created.ok || session.livemode !== live || typeof session.id !== 'string' || !sessionIdPattern(live).test(session.id)
       || typeof session.url !== 'string' || !session.url.startsWith('https://checkout.stripe.com/')) {
       await operator.rpc('lumen_stripe_checkout_release', { p_reservation: begin.reservation_id });
       console.error('Lumen Stripe checkout creation failed:', created.status, session?.error?.code || '');

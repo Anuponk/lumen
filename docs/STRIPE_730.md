@@ -209,8 +209,43 @@ delete from lumen.internal_capabilities where user_id='<uuid>' and capability='s
 - Si deux onglets ouvrent des sessions différentes, la précédente est expirée chez Stripe ; si
   elle a été payée malgré tout, le paiement est tout de même enregistré (aucune perte).
 
-## Passage en production (hors périmètre de #730 en test)
+## Passage en vente réelle
 
-Nouvelle migration (lever la contrainte `livemode`, retirer la condition de capacité),
-clés et secret de webhook live distincts, destination webhook live, validation #732, test
-réel de bout en bout, puis seulement activation. Ne jamais réutiliser la destination de test.
+Le code est prêt mais **verrouillé** : migration `20261117180000_stripe_live_switch_730.sql`,
+interrupteur `lumen_commands.feature_flags` `stripe_live` **désactivé par défaut**.
+
+- Le mode Stripe vient de la clé : `sk_test_`/`rk_test_` (test) ou `sk_live_`/`rk_live_` (réel).
+  Les événements et les sessions doivent être du même mode que la clé (400 `mode_mismatch` sinon).
+- Clé réelle **et** interrupteur activé : tout joueur connecté sur le Web peut acheter. Interrupteur
+  désactivé : aucune session réelle n'est créée, même avec une clé réelle (`not_eligible`).
+- Le mode fait partie de l'identité d'une session : un paiement de test ne peut jamais être
+  enregistré comme réel. Les ventes réelles sont archivées en comptabilité (#732) ;
+  `stripe_test_reset` n'y touche jamais.
+- `public.lumen_payment_channel()` indique au client `live`, `test` ou `off` pour le joueur
+  connecté ; il n'accorde jamais rien.
+- Chaque paiement crée une **facture Stripe** dont le pied de page reprend la demande d'accès
+  immédiat, la renonciation (art. L221-28, 13°) et « TVA non applicable, art. 293 B du CGI » :
+  c'est la confirmation par email promise par les CGV (§6). La facturation Stripe peut être
+  payante (voir la grille tarifaire Stripe Invoicing).
+
+### Ordre d'activation (propriétaire)
+
+1. **Médiateur** : souscrire (CM2C prévu), puis remplacer « en cours de désignation » dans
+   `cgv.html` par ses coordonnées (#773). L'information doit précéder la vente.
+2. **Compte Stripe** : activer le compte (identité, Cédric Valente EI, SIRET, IBAN). Dans
+   Paramètres → Emails clients, activer l'envoi des **paiements réussis** et des **factures**.
+3. Appliquer la migration `20261117180000_stripe_live_switch_730.sql` (éditeur SQL) ; l'interrupteur
+   reste désactivé.
+4. Stripe en mode réel → Webhooks → nouvelle destination
+   `https://tjdjlavmusmncuszhsuw.supabase.co/functions/v1/lumen-stripe-webhook`, mêmes 8 événements.
+   Révéler son secret.
+5. Supabase → Secrets : remplacer `STRIPE_SECRET_KEY` par la clé `sk_live_…` et
+   `STRIPE_WEBHOOK_SECRET` par le secret de la destination réelle (même moment ; ils vont par paire).
+6. Activer :
+   `update lumen_commands.feature_flags set enabled=true,updated_at=now() where name='stripe_live';`
+7. Achat réel de 1 € avec ton propre compte, vérification du registre (requêtes du point 7 de la
+   recette), puis remboursement depuis Stripe.
+
+**Retour arrière immédiat** : `update lumen_commands.feature_flags set enabled=false … where name='stripe_live';`
+(aucune nouvelle session réelle ; les paiements en cours restent traités par le webhook). Pour
+refaire des tests, remettre la paire clé `sk_test_` / secret de la destination de test.

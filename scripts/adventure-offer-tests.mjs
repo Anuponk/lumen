@@ -50,7 +50,7 @@ const offerSource=fs.readFileSync(new URL('../src/ui/adventure-offer.js',import.
 assert.doesNotMatch(offerSource,/'Restaurer mes achats'|adventure-offer-restore|onRestore/,'No manual restore button');
 const screen=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 assert.doesNotMatch(screen,/onRestore|restorePurchasesNow|restoreMessage/);
-assert.match(screen,/function afterVerifiedHydration\(\)\{void maybeClaimMasteryUnlocks\(\);void maybeRestorePlayPurchases\(\);void handleStripeReturn\(\)\.finally\(\(\)=>void maybeRestoreStripePurchases\(\)\)\}/,'Automatic restore after verified hydration');
+assert.match(screen,/function afterVerifiedHydration\(\)\{void maybeClaimMasteryUnlocks\(\);void maybeRestorePlayPurchases\(\);void refreshPaymentChannel\(\)\.finally\(\(\)=>handleStripeReturn\(\)\)\.finally\(\(\)=>void maybeRestoreStripePurchases\(\)\)\}/,'Automatic restore after verified hydration');
 assert.match(screen,/async function maybeRestoreStripePurchases\(\)\{\n if\(!lumenUser\|\|qaActive\|\|!cloudProfileReady\|\|!stripeAvailable\(\)\)return;/);
 assert.match(screen,/results\.some\(r=>r\.status==='paid'\)\)\{await loadEntitlements\(\)/,'Rights reloaded only after a server-confirmed purchase');
 console.log('adventure-offer-tests: prices, mastery path, wording and seed parity OK');
