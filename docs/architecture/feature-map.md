@@ -1,5 +1,12 @@
 # Feature map
 
+Owned Adventure entry #783: `catalogue-access.js` scopes quest frontiers to the
+target pack; `playable-navigation.js` selects unfinished owned content;
+`extended-boundary.js` supplies the numeric runtime bound without a contiguous
+ownership requirement. `cloud.js::loadEntitlements` owns transient verification
+state and response isolation. Mon ciel consumes that state; purchase Explore
+focuses the purchased pack's first constellation. Rules: [PROGRESSION](../PROGRESSION.md).
+
 Actionable Analytics #708: `ui/analytics-dashboard.js` owns read-only data-quality
 projection, account/recency directory composition, quest analysis and technical
 triage rendering. `game-screen.js` reuses existing RPCs independently and routes

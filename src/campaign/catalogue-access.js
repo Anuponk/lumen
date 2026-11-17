@@ -16,7 +16,7 @@ export function constellationCatchupAvailable(quest,progress={},quests,origin=qu
  // An entirely new constellation has no local legacy evidence. A completed
  // historical adventure supplies that evidence; merely starting it does not.
  // Canonical completions also preserve a constellation already being played.
- const originFrontier=origin.find(q=>!questCompleted(q,progress));
+ const originFrontier=origin.find(q=>q.packId===quest.packId&&!questCompleted(q,progress));
  const acquired=historical.some(q=>questCompleted(q,progress))||
   (originFrontier?.packId===quest.packId&&originFrontier?.constellationId===quest.constellationId)||
   (adventureHistory.length>0&&adventureHistory.every(q=>questCompleted(q,progress)))||
@@ -34,7 +34,7 @@ export function offlineVerifiedAccess(context={}){
 }
 export function catalogueQuestDecision(quest,progress={},quests=[],context={}){
  if(!quest||!quests.some(q=>q.id===quest.id))return {status:'missing-content'};
- if(context.packAllowed===false)return {status:'pack-locked'};
+ if(context.packAllowed===false)return {status:context.entitlementsState==='loading'?'entitlements-loading':context.entitlementsState==='error'?'entitlements-unavailable':'pack-locked'};
  // Only a current expected-account completion proof can isolate a replay from
  // a wallet-only hold. Pack ownership and real completion remain mandatory.
  const confirmedReplay=context.signedIn===true&&context.confirmedReplay===true&&questCompleted(quest,progress);
@@ -47,10 +47,11 @@ export function catalogueQuestDecision(quest,progress={},quests=[],context={}){
   if(context.signedIn===false)return {status:'auth-required'};
   if(context.cloudReady===false&&!offlineVerifiedAccess(context))return {status:'sync-required'};
  }
- const first=quests.find(q=>!questCompleted(q,progress));
+ // Ownership opens an Adventure independently; only its own sequence gates play.
+ const first=quests.find(q=>q.packId===quest.packId&&!questCompleted(q,progress));
  if(first?.id===quest.id)return {status:'ready',reason:'sequential'};
  const origin=context.originQuests??quests.filter(q=>q.legacyIndex!==null);
- const frontier=origin.find(q=>!questCompleted(q,progress));
+ const frontier=origin.find(q=>q.packId===quest.packId&&!questCompleted(q,progress));
  if(frontier?.id===quest.id)return {status:'ready',reason:'preserved-frontier'};
  const original=origin.find(q=>q.id===quest.id);
  if(original&&origin.some(q=>q.packId===original.packId&&q.ordinal>original.ordinal&&questCompleted(q,progress)))return {status:'ready',reason:'preserved-access'};

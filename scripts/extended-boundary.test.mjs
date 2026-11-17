@@ -22,8 +22,8 @@ test("new adventure stays locked without entitlement",()=>{
  assert.equal(boundary.index,legacyEnd);
  assert.equal(boundary.packId,generated.id);
 });
-test("generated entitlement respects earlier locked packs and restored history",()=>{
- assert.equal(extendedQuestLimit([generated.id]),included.questIndices.at(-1)+1,'ownership cannot bypass a locked gap');
+test("runtime bound includes a later owned Adventure without unlocking the gap",()=>{
+ assert.equal(extendedQuestLimit([generated.id]),playableQuestCount(),'ownership allows entering the later owned Adventure');
  assert.equal(extendedQuestLimit([generated.id],{solved:legacy}),playableQuestCount());
  assert.equal(extendedQuestLimit(CONTENT_PACKS.map(p=>p.id)),playableQuestCount());
  const boundary=nextAdventureBoundary(legacy,[generated.id]);
@@ -52,5 +52,5 @@ test("pack boundaries derive from metadata for variable contiguous lengths",()=>
  assert.equal(extendedQuestLimit(["custom-a"],{},null,packs),5);
  assert.equal(extendedQuestLimit(["custom-a","custom-b"],{},null,packs),9);
  assert.equal(extendedQuestLimit([], {solved:{3:1}},null,packs),5);
- assert.equal(extendedQuestLimit(["custom-b"],{},null,packs),3);
+ assert.equal(extendedQuestLimit(["custom-b"],{},null,packs),9);
 });

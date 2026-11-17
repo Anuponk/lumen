@@ -45,7 +45,7 @@ const entitlements=CONTENT_PACKS.map(pack=>pack.id);
 for(const [i,quest] of canonicalQuestList().entries()){
  assert.equal(canonicalCampaignQuestDecision(quest,progress,{entitlements}).status,'ready','Sequential new-player frontier');
  const next=canonicalQuestList()[i+1];
- if(next)assert.equal(canonicalCampaignQuestDecision(next,progress,{entitlements}).status,'prerequisite','Owning an adventure never skips its prerequisites');
+ if(next)assert.equal(canonicalCampaignQuestDecision(next,progress,{entitlements}).status,next.packId===quest.packId?'prerequisite':'ready','Ownership opens a different Adventure; prerequisites remain within the same Adventure (#783)');
  if(quest.legacyIndex===null){progress.canonicalQuestState??={};progress.canonicalQuestState[quest.id]={solved:true}}
  else progress.solved[quest.legacyIndex]=1;
  local.saveLumenProgress();progress=local.loadLumenProgress();

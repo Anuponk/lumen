@@ -18,11 +18,9 @@ export function nextAdventureBoundary(solved={},entitlements=[],progress={},atte
  return {status:access.status,index:next,packId:access.packId,quest:access.quest};
 }
 export function extendedQuestLimit(entitlements=[],progress={},attempt=null,packs=CONTENT_PACKS){
- const ordered=packs.flatMap(pack=>(pack.questIndices||[]).map(index=>({index,pack}))).sort((a,b)=>a.index-b.index);
- let limit=0;
- for(const {index,pack} of ordered){
-  if(index!==limit||!hasPackAccess(pack,entitlements,progress,attempt))break;
-  limit++;
- }
+ // This is a numeric runtime bound, not a progression or ownership decision.
+ // A locked earlier Adventure must not clamp a later owned quest back to it.
+ const indices=packs.filter(pack=>hasPackAccess(pack,entitlements,progress,attempt)).flatMap(pack=>pack.questIndices||[]);
+ const limit=indices.length?Math.max(...indices)+1:0;
  return Math.min(limit,playableQuestCount());
 }

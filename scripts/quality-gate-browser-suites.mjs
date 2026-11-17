@@ -174,6 +174,11 @@ export const browserSuites=[
     "script": "credits-browser-tests.mjs",
     "output": "ci-credits.json",
     "port": 9264
+  },
+  {
+    "script": "owned-adventure-browser-tests.mjs",
+    "output": "ci-owned-adventure.json",
+    "port": 9265
   }
 ];
 

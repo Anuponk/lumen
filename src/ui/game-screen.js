@@ -743,8 +743,9 @@ const {loadLumenProgress,saveLumenProgress}=createLocalPersistence(localStorage,
 const persistenceModel={
 get lumenSupabase(){return lumenSupabase},set lumenSupabase(value){if(lumenSupabase!==value){cloudHydrationGeneration++;canonicalRecoveryContext=null;canonicalRecovery.cancel()}lumenSupabase=value},
 get lumenEntitlements(){return lumenEntitlements},set lumenEntitlements(value){lumenEntitlements=Array.isArray(value)?value:[]},
+get lumenEntitlementsState(){return lumenEntitlementsState},set lumenEntitlementsState(value){lumenEntitlementsState=value},
 get lumenCapabilities(){return lumenCapabilities},set lumenCapabilities(value){lumenCapabilities=Array.isArray(value)?value:[]},
-get lumenUser(){return lumenUser},set lumenUser(value){if(lumenUser?.id!==value?.id){cloudHydrationGeneration++;canonicalRecovery.cancel();canonicalRecoveryContext=null;canonicalOutboxNotice=null;verifiedOfflineOwnerId=null;if(value===null)clearVerifiedOfflineOwner(localStorage);cloudProfileReady=false;cloudProfileBaseline=null;cloudProfileFailure=null;lumenNickname=""}lumenUser=value},
+get lumenUser(){return lumenUser},set lumenUser(value){if(lumenUser?.id!==value?.id){cloudHydrationGeneration++;canonicalRecovery.cancel();canonicalRecoveryContext=null;canonicalOutboxNotice=null;verifiedOfflineOwnerId=null;if(value===null)clearVerifiedOfflineOwner(localStorage);cloudProfileReady=false;cloudProfileBaseline=null;cloudProfileFailure=null;lumenNickname="";lumenEntitlements=[];lumenEntitlementsState=value?'loading':'idle'}lumenUser=value},
 get lumenCloudReady(){return lumenCloudReady},set lumenCloudReady(value){lumenCloudReady=value},
 get lumenNickname(){return lumenNickname},set lumenNickname(value){lumenNickname=value},
 get lumenProgress(){return lumenProgress},set lumenProgress(value){lumenProgress=value},
@@ -1203,7 +1204,7 @@ function wireLumenErasureControls(){
  refresh();
 }
 
-let lumenSupabase=null,lumenUser=qaActive?null:preparedOfflineUser(localStorage,{offline:navigator.onLine===false}),lumenCloudReady=false,lumenEntitlements=[],lumenCapabilities=[];
+let lumenSupabase=null,lumenUser=qaActive?null:preparedOfflineUser(localStorage,{offline:navigator.onLine===false}),lumenCloudReady=false,lumenEntitlements=[],lumenEntitlementsState='idle',lumenCapabilities=[];
 // Use the SDK's existing persistent store directly: its default write probe can
 // reject a full but readable store and silently hide a valid saved session.
 // Token refresh/rotation, validation and the canonical storage key stay SDK-owned.
@@ -1407,6 +1408,7 @@ function adventureAccessEntitlements(){
  if(!lumenUser||qaActive||!(hasInternalCapability("all_adventures_access")))return lumenEntitlements;
  return [...new Set([...lumenEntitlements,...CONTENT_PACKS.map(pack=>pack.id)])];
 }
+function adventureEntitlementsState(){return qaActive||!lumenUser?'ready':lumenEntitlementsState==='idle'?'loading':lumenEntitlementsState}
 function unlimitedShardsEnabled(){return hasInternalCapability("unlimited_shards")&&localStorage.getItem("lumenAdminUnlimitedShards")==="1"}
 function syncAdministrationMenu(){
  const entry=document.getElementById("administrationEntry");
@@ -2153,7 +2155,7 @@ function offlineQuestAccessContext(){
 }
 function questIsAccessible(index){
  return canonicalCampaignQuestDecision(canonicalQuestForLegacy(index),navigationProgress(),{
-  entitlements:adventureAccessEntitlements(),attempt:campaignAccessAttempt(),signedIn:qaActive||!!lumenUser,cloudReady:qaActive||cloudProfileReady,confirmedReplay:confirmedReplayAllowed(canonicalQuestForLegacy(index)),...offlineQuestAccessContext()
+  entitlements:adventureAccessEntitlements(),entitlementsState:adventureEntitlementsState(),attempt:campaignAccessAttempt(),signedIn:qaActive||!!lumenUser,cloudReady:qaActive||cloudProfileReady,confirmedReplay:confirmedReplayAllowed(canonicalQuestForLegacy(index)),...offlineQuestAccessContext()
  }).status==='ready';
 }
 function choose(){if(canonicalActiveQuest){puz={reg:canonicalActiveQuest.reg,sol:canonicalActiveQuest.sol,audit:canonicalActiveQuest.audit,difficulty:canonicalActiveQuest.difficulty};n=puz.reg.length;return}levelIndex=Math.max(0,Math.min(levelIndex,currentQuestLimit()-1));if(!socialChallenge&&!questIsAccessible(levelIndex)){while(levelIndex>0&&!questIsAccessible(levelIndex))levelIndex--;replayMode=!!lumenProgress.solved[levelIndex]}const resolved=playableQuest(levelIndex);if(!resolved)throw new Error("Missing campaign quest "+levelIndex);puz=resolved.source==="generated"?{reg:resolved.reg,sol:resolved.sol,audit:resolved.audit,difficulty:resolved.difficulty}:resolved.size===6?CAT["6"][CAMPAIGN6_ORDER[CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]]]:CAT[String(resolved.size)][CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]];
@@ -2684,7 +2686,7 @@ function adminAlerts(rows){
 }
 function canonicalQuestAccess(quest){
  return canonicalInsertedQuestDecision(quest,navigationProgress(),{
-  entitlements:adventureAccessEntitlements(),attempt:attemptEngine.snapshot(),
+  entitlements:adventureAccessEntitlements(),entitlementsState:adventureEntitlementsState(),attempt:attemptEngine.snapshot(),
   signedIn:qaActive||!!lumenUser,cloudReady:qaActive||cloudProfileReady,confirmedReplay:confirmedReplayAllowed(quest),...offlineQuestAccessContext()
  });
 }
@@ -2739,8 +2741,9 @@ function resumeCanonicalCampaignBoundary(){
  });
  return quest?startCanonicalQuest(quest):false;
 }
-function canonicalQuestLockReason(quest){
- const decision=canonicalQuestAccess(quest);
+function canonicalQuestLockReason(quest,decision=canonicalQuestAccess(quest)){
+ if(decision.status==='entitlements-loading')return 'Vérification des droits en cours…';
+ if(decision.status==='entitlements-unavailable')return 'Droits indisponibles pour le moment. Réessaie en ligne.';
  if(decision.status==='pack-locked')return 'Cette Aventure n’est pas débloquée';
  if(decision.status==='auth-required')return 'Connecte-toi pour jouer cette quête';
  if(decision.status==='sync-required')return 'Synchronisation du compte requise';
@@ -3391,7 +3394,7 @@ async function celebrateCanonicalSuccess(){
  trackAttemptEvent("attempt_completed",{outcome:"success",canonical_id:q.id,first_completion:committed.newlyCompleted});
  celebrated=true;attemptEngine.complete();clearInterval(timer);pauseGameClock();clock();
  endgamePending=committed.newlyCompleted&&canonicalCampaignComplete(lumenProgress);
- const completedPack=contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot()}).skies.flatMap(s=>s.packs).find(pack=>pack.id===q.packId);
+ const completedPack=contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot(),entitlementsState:adventureEntitlementsState()}).skies.flatMap(s=>s.packs).find(pack=>pack.id===q.packId);
  adventurePending=committed.newlyCompleted&&!endgamePending&&canonicalScopeProgress(lumenProgress,{packId:q.packId}).complete?completedPack:null;
  board.classList.add("win");
  document.getElementById("successTitle").textContent="Quête "+q.ordinal+" accomplie !";
@@ -4244,7 +4247,9 @@ async function maybeRestoreStripePurchases(){
 // Thank-you screen, only after a server-confirmed purchase and reloaded rights.
 function thankForPurchase(productId){
  if(qaActive||!productId)return;
- showPurchaseThanks(document,purchaseThanksModel({productId,packs:CONTENT_PACKS}),{onExplore:()=>openJourneyMap(true)});
+ if(lumenEntitlementsState!=='ready')return;
+ const first=canonicalQuestList().find(q=>q.packId===productId);
+ showPurchaseThanks(document,purchaseThanksModel({productId,packs:CONTENT_PACKS}),{onExplore:()=>openJourneyMap(true,first?{constellationId:first.constellationId,detail:true}:{})});
 }
 // Back from Stripe: ask the server, which reads the payment back from Stripe. « Achat
 // confirmé » only after the server confirmed and the entitlements were reloaded.
@@ -4270,7 +4275,7 @@ function afterVerifiedHydration(){void maybeClaimMasteryUnlocks();void maybeRest
 // #731: offer shown on a locked Adventure. Purchases stay disabled until a payment
 // provider is connected (#729/#730); the free path claims a server-verified mastery unlock.
 function renderAdventureOffer(container,pack,{close}={}){
- const model=mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot()});
+ const model=mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot(),entitlementsState:adventureEntitlementsState()});
  const packs=model.skies.flatMap(s=>s.packs);if(!packs.some(p=>p.id===pack.id))return false;
  const offer=adventureOfferModel({pack,packs,quests:canonicalQuestList(),progress:lumenProgress,signedIn:!!lumenUser&&!qaActive,accounts:!qaActive,
   purchasesAvailable:(!!playBilling||stripeAvailable())&&!qaActive,boughtSingle:lumenEntitlements.some(e=>e?.source==='purchase'),prices:playPriceLabels});
@@ -4352,7 +4357,7 @@ function showCelestialVictory(){
  const event=celestialPending;celestialPending=null;
  if(!event||event.owner!==(lumenUser?.id??null)||event.quest.id!==activeQuest().id)return false;
  const adventure=event.kind!=='constellation',campaign=event.kind==='campaign'||event.kind==='campaign-mastery',mastery=event.kind==='campaign-mastery'||event.kind==='adventure-mastery',q=event.quest,quests=canonicalQuestList();
- const model=contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot()});
+ const model=contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot(),entitlementsState:adventureEntitlementsState()});
  const pack=model.skies.flatMap(s=>s.packs).find(p=>p.id===q.packId);
  const entries=adventure?CONTENT_CONSTELLATIONS.filter(c=>quests.some(x=>x.constellationId===c.id&&x.packId===q.packId)):CONTENT_CONSTELLATIONS.filter(c=>c.id===q.constellationId);
  const ordered=[...entries.filter(c=>c.id===q.constellationId),...entries.filter(c=>c.id!==q.constellationId)];
@@ -4383,7 +4388,7 @@ function showCelestialVictory(){
  return shown;
 }
 let mapConstellation=0,skyTourStep=0,mapCatalogueOverride=null;
-const skyNavigation=createSkyNavigation({renderLockedOffer:renderAdventureOffer,document,getModel:()=>mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot()}),getQuest:()=>currentQuestPosition(),
+const skyNavigation=createSkyNavigation({renderLockedOffer:renderAdventureOffer,document,getModel:()=>mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot(),entitlementsState:adventureEntitlementsState()}),getQuest:()=>currentQuestPosition(),
  getSolved:i=>!!lumenProgress.solved[i],
  getCanonicalQuests:id=>canonicalQuestList().filter(q=>q.constellationId===id),
  getCanonicalSolved:q=>questIsCompleted(lumenProgress,q.id),
@@ -4686,15 +4691,16 @@ function renderMap(){
     button.type="button";
     button.className="puzzle-card"+(solved?" done":"")+(available&&!solved?" current":"")+(!available&&!solved?" locked":"")+(solved&&badgeCooldownRemaining(questPerformanceRecord(quest,lumenProgress))?" badge-on-cooldown":"");
     button.dataset.questId=quest.id;
-    const lockReason=legacy===null?canonicalQuestLockReason(quest):!qaActive&&(!lumenUser||!cloudProfileReady)?"Connecte-toi pour synchroniser ta progression":"Termine les quêtes précédentes";
+    const access=canonicalCampaignQuestDecision(quest,navigationProgress(),{
+     entitlements:adventureAccessEntitlements(),entitlementsState:adventureEntitlementsState(),attempt:campaignAccessAttempt(),signedIn:qaActive||!!lumenUser,cloudReady:qaActive||cloudProfileReady,...offlineQuestAccessContext()
+    });
+    const lockReason=canonicalQuestLockReason(quest,access);
     // Completion is preserved evidence; a temporary action hold is not a lost win.
     const status=solved?(available?'terminée, rejouable':'terminée · '+lockReason):available?'disponible':lockReason;
     button.title='Quête '+quest.ordinal+' · '+status;
      button.innerHTML=legacy!==null&&solved?performanceBadges(legacy):solved?canonicalPerformanceBadges(quest.id):available?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+quest.ordinal+'</span>' :'<span class="puzzle-lock-only" aria-hidden="true">🔒</span>';
      button.setAttribute("aria-label",`Quête ${quest.ordinal} · ${status}`);
-    const needsAccount=canonicalCampaignQuestDecision(quest,navigationProgress(),{
-     entitlements:adventureAccessEntitlements(),attempt:campaignAccessAttempt(),signedIn:qaActive||!!lumenUser,cloudReady:qaActive||cloudProfileReady
-    }).status==='auth-required';
+    const needsAccount=access.status==='auth-required';
     button.disabled=!available&&!needsAccount;
     if(needsAccount){
      button.classList.add('account-required');

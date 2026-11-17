@@ -29,7 +29,8 @@ assert.equal(canonicalNextUnsolved(Object.fromEntries(quests.filter(q=>q.legacyI
 assert.equal(canonicalNextUnsolved({"0":true},{}).ordinal,2);
 assert.equal(resolveCanonicalQuest(1).status,"ready");
 assert.equal(resolveCanonicalQuest(101).status,"locked");
-assert.equal(resolveCanonicalQuest(101,["real-adventure-02"]).status,"prerequisite","Ownership alone cannot skip campaign prerequisites");
+assert.equal(resolveCanonicalQuest(101,["real-adventure-02"]).status,"ready","Ownership opens the first quest without previous-Adventure progress (#783)");
+assert.equal(resolveCanonicalQuest(102,["real-adventure-02"]).status,"prerequisite","Ownership cannot skip the same Adventure's quest sequence");
 assert.equal(resolveCanonicalQuest(100,[],{legacyAdventureAccess:["base-real-sky"]}).status,"prerequisite");
 const completedFirst={catalogueOrigin:2,solved:Object.fromEntries(quests.slice(0,100).filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1])),canonicalQuestState:Object.fromEntries(quests.slice(0,100).filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true}]))};
 assert.equal(resolveCanonicalQuest(101,["real-adventure-02"],completedFirst).status,"ready");
