@@ -81,7 +81,8 @@ do $$declare a uuid:='00000000-0000-0000-0000-000000073001';r jsonb;progress jso
   raise exception 'bad status accepted';exception when invalid_parameter_value then null;end;
  assert lumen_commands.stripe_record_session('cs_test_unknown',a,'real-adventure-02',100,'EUR',false,'paid',false,null,now())->>'result'='unknown_session',
   'a session Lumen did not create is never recorded';
- assert not exists(select 1 from lumen_commands.purchases where provider='stripe'),'nothing recorded by refused calls';
+ -- Scoped to this fixture: the #728 fixture already recorded a synthetic 'stripe' purchase.
+ assert not exists(select 1 from lumen_commands.purchases where provider='stripe' and (provider_ref like 'cs\_test\_%' or user_id=a)),'nothing recorded by refused calls';
 
  r:=lumen_commands.stripe_record_session('cs_test_730b',a,'real-adventure-03',100,'EUR',false,'pending',false,'pi_730b',null);
  assert not (r->'adventures' ? 'real-adventure-03'),'a pending payment grants nothing';
