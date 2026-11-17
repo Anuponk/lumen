@@ -1,5 +1,7 @@
 # Conditions générales de vente Lumen — projet non publiable en l'état
 
+> **Remplacé le 17/11/2026 par la version publiée `/cgv.html`, qui fait foi** (décision du propriétaire, #732/#730). Ce brouillon est conservé pour l’historique des décisions ; ne plus le modifier.
+
 Version de travail du 16 novembre 2026 (#732). Ce texte prépare la décision du
 propriétaire ; il **n'est ni publié ni validé juridiquement**. Les rubriques
 **« À valider »** bloquent la première vente réelle. Faits produit repris du code

@@ -1,5 +1,5 @@
 {
-  "status": "preparation",
+  "status": "published",
   "application": "Lumen",
   "commercialName": "Nopuna",
   "legalName": "Cédric Valente EI",
@@ -18,7 +18,9 @@
   "audience": "mixed-including-children",
   "childrenAccountModel": "supervised-online",
   "childrenActivation": "blocked-pending-verification-method",
-  "initialPlayCountries": ["FR"],
+  "initialPlayCountries": [
+    "FR"
+  ],
   "businessActivityOwnerDeclaration": {
     "activity": "Développement ou édition de jeux, activité secondaire",
     "declared": true,
@@ -58,8 +60,16 @@
     "targetApiReviewedOn": "2026-10-22"
   },
   "evidence": {
-    "privacyPolicy": null,
-    "legalPages": null,
+    "privacyPolicy": {
+      "status": "verified",
+      "reference": "owner-publication-2026-11-17:/confidentialite.html (#732)",
+      "verifiedAt": "2026-11-17"
+    },
+    "legalPages": {
+      "status": "verified",
+      "reference": "owner-publication-2026-11-17:/mentions-legales.html,/cgv.html (#732)",
+      "verifiedAt": "2026-11-17"
+    },
     "accountDeletionEndToEnd": null,
     "childSafety": null,
     "nativeDevice": null,
@@ -68,5 +78,16 @@
     "identityIsolation": null,
     "assetLicenses": null,
     "businessActivity": null
-  }
+  },
+  "paymentProcessors": [
+    {
+      "provider": "Google Play",
+      "scope": "android-play-app"
+    },
+    {
+      "provider": "Stripe",
+      "entity": "Stripe Payments Europe, Ltd.",
+      "scope": "web-pwa"
+    }
+  ]
 }

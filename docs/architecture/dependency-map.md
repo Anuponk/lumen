@@ -60,9 +60,9 @@ Account erasure: standalone request page → operator-verified scope → private
 `lumen_privacy.review_erasure` / `erase_account` → explicit Lumen relation
 policy and write guards. Shared Auth is preserved. Procedure and limits:
 `docs/ACCOUNT_DELETION_RUNBOOK.md`; SQL/concurrency coverage: `docs/TESTING.md`.
-The HTML legal candidates and request page share only CSS/navigation; they
-load no Auth/analytics SDK, mutate no game storage and do not approve legal
-evidence. Vendor metadata/source review is in `docs/PRIVACY_PROCESSORS.md`.
+The published HTML legal pages (`cgv.html`, `mentions-legales.html`,
+`confidentialite.html`, owner publication 17/11/2026) and the request page share
+only CSS/navigation; they load no Auth/analytics SDK and mutate no game storage. Vendor metadata/source review is in `docs/PRIVACY_PROCESSORS.md`.
 Confirmed victory: before-scope projection → existing receipt/outcome → current
 scope comparison → one celestial result (global > Adventure > constellation).
 Badge additions → owner/catalogue-scoped ephemeral playhead → visible Mon ciel

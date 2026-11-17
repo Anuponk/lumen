@@ -38,11 +38,12 @@ export async function verifyPrivacyRequests({send,evaluate},baseUrl){
     catch(error){if(!/Cannot find context|Execution context was destroyed|Inspected target navigated/.test(error.message))throw error}
     await new Promise(resolve=>setTimeout(resolve,100));
    }
-   assert(loaded,'legal candidate page loads independently without Auth');
+   assert(loaded,'legal page loads independently without Auth');
    assert.equal(await evaluate(`document.documentElement.scrollWidth<=innerWidth`),true,'legal copy fits mobile and desktop');
    assert.equal(await evaluate(`document.querySelectorAll('script').length`),0,'legal pages need no SDK or script');
    assert.equal(await evaluate(`!!document.querySelector('nav a[href="/supprimer-compte.html"]')`),true,'rights request remains directly accessible');
-   assert.equal(await evaluate(`document.querySelector('aside')?.textContent.includes('Version candidate')`),true,'unapproved legal policy is not presented as published compliance');
+   // Published by the owner on 17/11/2026 (#732/#730): a dated version, no candidate banner.
+   assert.equal(await evaluate(`/Version du \\d{1,2} \\S+ \\d{4}/.test(document.querySelector('main').textContent)&&!document.body.textContent.includes('Version candidate')`),true,'legal page shows its published version date');
    assert.equal(await evaluate(`JSON.stringify(['lumenProgressV1','lumenActiveAttemptV1'].map(k=>[k,localStorage.getItem(k)]))`),before,'reading legal pages preserves save and attempt');
   }
   results.push({width,confirmationRequired:true,mailPreparedOnly:true,savePreserved:true,liveDeletion:false,legalCandidatePages:2});
