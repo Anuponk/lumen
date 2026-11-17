@@ -79,9 +79,10 @@ ni seconde logique de droits n'est créé.
 
 ### Isolation Google Play
 
-Stripe n'est jamais proposé quand Lumen tourne dans l'application Play : présence de l'API
-Digital Goods, `window.LUMEN_NATIVE_APP`, ou lancement par un référent `android-app://`
-(mémorisé pour l'onglet). Aucun lien vers le Web n'est affiché dans l'application.
+Stripe n'est jamais proposé quand Lumen tourne dans l'application Play : service Google Play
+Billing effectivement obtenu, `window.LUMEN_NATIVE_APP`, ou lancement par un référent
+`android-app://` (mémorisé pour l'onglet). La seule présence de `getDigitalGoodsService` ne
+compte pas : Chrome Android l'expose aussi hors de l'application (correctif du 17/11/2026). Aucun lien vers le Web n'est affiché dans l'application.
 
 ## Opérations du propriétaire
 
@@ -200,8 +201,8 @@ delete from lumen.internal_capabilities where user_id='<uuid>' and capability='s
 - Pages légales (`confidentialite.html`, `mentions-legales.html`) encore candidates : à valider
   avant toute vente réelle (#732, #773). Le brouillon `docs/legal/CONFIDENTIALITE_DRAFT.md`
   mentionne désormais Stripe.
-- Détection de l'application Play : si une future version de l'application ne fournit ni l'API
-  Digital Goods ni le référent `android-app://`, Stripe pourrait y apparaître pour un compte
+- Détection de l'application Play : si une future version de l'application ne fournit ni le service
+  Google Play Billing ni le référent `android-app://`, Stripe pourrait y apparaître pour un compte
   de test. Sans effet pour les joueurs réels pendant cette phase.
 - Si deux onglets ouvrent des sessions différentes, la précédente est expirée chez Stripe ; si
   elle a été payée malgré tout, le paiement est tout de même enregistré (aucune perte).

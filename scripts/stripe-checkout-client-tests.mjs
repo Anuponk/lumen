@@ -11,7 +11,12 @@ assert.equal(isPlayDistributedApp(browser),false);
 const twa={document:{referrer:'android-app://fr.nopuna.lumen/'},sessionStorage:storage()};
 rememberPlayAppLaunch(twa);assert.equal(isPlayDistributedApp(twa),true);
 twa.document.referrer='https://lumen.nopuna.fr/';assert.equal(isPlayDistributedApp(twa),true,'the Play launch is remembered after in-app navigation');
-assert.equal(isPlayDistributedApp({document:{referrer:''},sessionStorage:storage(),getDigitalGoodsService(){}}),true);
+// Regression (17/11/2026, Chrome Android, Lumen 646): Chrome exposes getDigitalGoodsService
+// outside the Play app, where it only rejects. Its presence alone is not the Play app;
+// a Play service that actually resolved is (stripeCheckoutAvailable: playBilling).
+const chromeAndroid={document:{referrer:''},sessionStorage:storage(),getDigitalGoodsService:async()=>{throw Error('unsupported context')}};
+assert.equal(isPlayDistributedApp(chromeAndroid),false,'Chrome Android outside the Play app is the web');
+assert.equal(stripeCheckoutAvailable({capabilities:[STRIPE_TEST_CAPABILITY],signedIn:true,playApp:isPlayDistributedApp(chromeAndroid),playBilling:null}),true,'Stripe offered in Chrome Android');
 assert.equal(isPlayDistributedApp({document:{referrer:''},sessionStorage:storage(),LUMEN_NATIVE_APP:true}),true);
 const caps=[{capability:STRIPE_TEST_CAPABILITY}];
 assert.equal(stripeCheckoutAvailable({capabilities:caps,signedIn:true}),true,'test account on the web');
