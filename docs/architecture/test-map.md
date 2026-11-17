@@ -514,3 +514,13 @@ Payments / #729 #730: play-purchase-handler-tests.mjs and play-billing-tests.mjs
 signatures), stripe-checkout-client-tests.mjs (web-only availability, return, no false
 success) and fixtures/stripe-checkout.sql (ranks, ledger, cap, test isolation). Shared
 ledger rules: fixtures/purchases-mastery.sql. See [TESTING](../TESTING.md#stripe-checkout-webpwa-test-mode-730).
+
+UX #784/#786: `quest-review-tests.mjs` covers canonical constellation/adventure
+boundaries, independently owned entry, immediate locks/no skipping, unfinished
+results, passive edge-safe gestures, keyboard controls and late podium replies.
+`adventure-offer-tests.mjs` covers incremental delivered content, existing rights,
+future slots/other skies, catalogue growth, unknown rights and localised prices.
+`quest-review-browser-tests.mjs` exercises actual touch/keyboard handlers and
+unchanged progress/attempt snapshots at 320/360/390/1440px, with real offer DOM
+and optional screenshots via LUMEN_UX_CAPTURE_DIR. Synthetic local browser checks
+are not physical Android TWA or live payment acceptance.

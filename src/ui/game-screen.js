@@ -10,6 +10,7 @@ import {questRewardDefinition} from "../campaign/quest-rewards.js";
 import {applyQuestVictory} from "../campaign/quest-victory.js";
 import {recordLabel,renderRecordResult} from './personal-records.js';
 import {questReviewModel} from './quest-review.js';
+import {reviewNeighbour,bindReviewNavigation} from './quest-review-navigation.js';
 import {attemptTiming,officialResult} from '../campaign/official-time.js';
 import {RANKING_PENALTIES} from '../campaign/ranking.js';
 import {officialTimingSupported,refreshOfficialTimingSupport} from '../persistence/official-time.js';
@@ -4278,7 +4279,7 @@ function renderAdventureOffer(container,pack,{close}={}){
  const model=mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot(),entitlementsState:adventureEntitlementsState()});
  const packs=model.skies.flatMap(s=>s.packs);if(!packs.some(p=>p.id===pack.id))return false;
  const offer=adventureOfferModel({pack,packs,quests:canonicalQuestList(),progress:lumenProgress,signedIn:!!lumenUser&&!qaActive,accounts:!qaActive,
-  purchasesAvailable:(!!playBilling||stripeAvailable())&&!qaActive,boughtSingle:lumenEntitlements.some(e=>e?.source==='purchase'),prices:playPriceLabels});
+  purchasesAvailable:(!!playBilling||stripeAvailable())&&!qaActive,boughtSingle:lumenEntitlements.some(e=>e?.source==='purchase'),prices:playPriceLabels,pricesRequired:!!playBilling});
  mountAdventureOffer(container,offer,{
   onSignIn:()=>{close?.();openEmailAccountOffer('signup')},
   onBuy:purchaseAdventure,
@@ -4555,6 +4556,25 @@ function closeUnifiedSkyReveal(){
 // #695: read-only review of a completed quest on the shared victory surface.
 // Same final layout as a victory, without effects; nothing is written.
 let questReview=null;
+function reviewQuestAvailable(quest){return celestialQuestAvailable(quest)}
+function navigateQuestReview(direction){
+ const host=document.getElementById('skyReveal');
+ if(host.hidden||host.dataset.sync||host.dataset.victoryPhase!=='combined'||socialChallenge)return false;
+ const current=questReview?.quest??canonicalQuestById(victoryFacts?.questId);
+ if(!current||(questReview&&questReview.owner!==(lumenUser?.id??null)))return false;
+ const target=reviewNeighbour(canonicalQuestList(),current.id,direction,reviewQuestAvailable);
+ if(!target||!openQuestReview(target))return false;
+ if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
+  const card=host.querySelector('.sky-reveal-card');
+  card.getAnimations?.().forEach(a=>a.cancel());
+  card.animate?.([{transform:'translateX('+(direction*18)+'px)',opacity:.65},{transform:'translateX(0)',opacity:1}],{duration:160,easing:'ease-out'});
+ }
+ return true;
+}
+bindReviewNavigation(document.getElementById('skyReveal'),{
+ active:()=>!document.getElementById('skyReveal').hidden,
+ navigate:navigateQuestReview
+});
 // Performance block of the shared victory surface filled from saved results only:
 // best time, saved badges and this quest's board (#695 review, #705 preview).
 // Every caller owns the whole block, never a previous screen's leftovers.
@@ -4578,15 +4598,16 @@ function setVictoryTime(text){
  time.textContent=text;(time.closest('.sky-reveal-time')||time).classList.toggle('victory-time-note',!!text&&!/\d/.test(text));
 }
 function openQuestReview(quest){
- if(!quest||skyTourActive()||!questIsCompleted(lumenProgress,quest.id))return false;
+ if(!quest||skyTourActive()||!reviewQuestAvailable(quest))return false;
  victoryPresentation.clear();victoryCelebration.clear();celestialCelebration.clear();rankingView.clear();
  const quests=canonicalQuestList().filter(q=>q.constellationId===quest.constellationId);
  const entry=CONTENT_CONSTELLATIONS.find(c=>c.id===quest.constellationId);
  const view=readQuestView(quest,lumenProgress,canonicalQuestList(),CONTENT_CONSTELLATIONS);
- const model=questReviewModel({quest,badges:view.badges,record:questPerformanceRecord(quest,lumenProgress),lit:quests.filter(q=>questIsCompleted(lumenProgress,q.id)).length,count:quests.length,constellationName:entry?.label,format:formatDuration});
+ const completed=questIsCompleted(lumenProgress,quest.id);
+ const model=questReviewModel({quest,completed,badges:view.badges,record:questPerformanceRecord(quest,lumenProgress),lit:quests.filter(q=>questIsCompleted(lumenProgress,q.id)).length,count:quests.length,constellationName:entry?.label,format:formatDuration});
  questReview={quest,model,owner:lumenUser?.id??null};
  const o=document.getElementById('skyReveal');
- document.getElementById('skyRevealKicker').textContent=model.kicker;
+ document.getElementById('skyRevealKicker').textContent=model.kicker+' · '+(CONTENT_PACKS.find(p=>p.id===quest.packId)?.displayName||'');
  document.getElementById('skyRevealTitle').textContent=model.title;
  document.getElementById('skyRevealName').textContent=model.subtitle;
  document.getElementById('skyRevealCanvas').innerHTML='<svg class="sky-reveal-svg" viewBox="0 0 290 115">'+(astronomicalPrimarySvg({id:quest.constellationId},model.lit,model.count,model.lit)||'')+'</svg><div class="sky-reveal-progress">◔ '+model.lit+' / '+model.count+' étoiles</div>';
@@ -4594,20 +4615,20 @@ function openQuestReview(quest){
  // A challenge freezes a first success, so it is only offered after a victory.
  for(const id of ['skyRevealNext','skyRevealShare'])document.getElementById(id).hidden=true;
  const sky=document.getElementById('skyRevealSky'),retry=document.getElementById('skyRevealRetry');
- sky.hidden=false;sky.disabled=false;sky.textContent='✦ Mon ciel';sky.classList.remove('remarkable');sky.onclick=()=>closeQuestReview();
- retry.hidden=false;retry.disabled=false;retry.textContent='↻ Rejouer';retry.classList.remove('remarkable');
+ sky.hidden=false;sky.disabled=false;sky.textContent='✦ Mon ciel';sky.classList.remove('remarkable');sky.onclick=()=>{closeQuestReview();hideSuccess();openJourneyMap(false,{constellationId:quest.constellationId})};
+ retry.hidden=false;retry.disabled=false;retry.textContent=completed?'↻ Rejouer':'Jouer →';retry.classList.remove('remarkable');
  // Same replay entry as before #695, including the badge cooldown dialog.
- retry.onclick=()=>{closeQuestReview();if(quest.legacyIndex===null)startCanonicalQuest(quest);else startReplay(quest.legacyIndex)};
+ retry.onclick=()=>{if(!reviewQuestAvailable(quest))return;closeQuestReview();if(quest.legacyIndex===null)startCanonicalQuest(quest);else if(completed)startReplay(quest.legacyIndex);else startCelestialQuest(quest)};
  o.classList.add('celestial-still','quest-review');o.dataset.victoryPhase='combined';o.hidden=false;o.tabIndex=-1;o.focus({preventScroll:true});
  if(rankingExpected){rankingView.show(quest,null,{review:true});rankingView.mount()}
- refreshReviewOfficialTime(quest);
+ if(completed)refreshReviewOfficialTime(quest);
  return true;
 }
 async function refreshReviewOfficialTime(quest){
- const owner=lumenUser?.id,client=lumenSupabase;
+ const owner=lumenUser?.id,client=lumenSupabase,review=questReview;
  if(qaActive||!owner||!officialTimingSupported(client))return;
  try{const {data,error}=await client.rpc('lumen_get_official_records',{p_quest_id:quest.id,p_grid_revision:quest.gridRevision??0});
-  if(error||questReview?.quest!==quest||lumenUser?.id!==owner||lumenSupabase!==client)return;
+  if(error||questReview!==review||lumenUser?.id!==owner||lumenSupabase!==client)return;
   const label=recordLabel(data,formatDuration,quest.gridRevision??0);if(label)setVictoryTime(label);
  }catch{}
 }
@@ -4767,7 +4788,7 @@ function bindOutsideDefault(id,action){
 }
 function dismissInstallLater(){const o=document.getElementById("installOptin");if(!o||o.hidden)return;o.hidden=true;try{localStorage.setItem(qaKey("lumenInstallLater"),String(Date.now()))}catch(_){}trackLumenEvent("pwa_install_later",null,{qa:qaActive})}
 function dismissPushLater(){const o=document.getElementById("pushOptin");if(!o||o.hidden)return;o.hidden=true;try{localStorage.setItem("lumenPushChoice","later")}catch(_){}}
-function continueSkyReveal(){document.getElementById("skyRevealContinue")?.click()}
+function continueSkyReveal(){if(questReview){document.getElementById('skyRevealSky').click();return}document.getElementById("skyRevealContinue")?.click()}
 function startQuestFromOverlay(){document.getElementById("questGo")?.click()}
 function closeAutonomyOverlay(){finishAutonomyChoice(false);resumeGameClock()}
 function closeMapOverlay(){const o=document.getElementById("mapModal");if(!o)return;if(!document.getElementById("skyTour").hidden&&skyTourStep<SKY_TOUR_STEPS.length-1)return;const advance=o.dataset.advanceOnClose==="1";o.hidden=true;const tour=document.getElementById("skyTour");if(tour)tour.hidden=true;o.dataset.advanceOnClose="";if(advance){advanceToNextPuzzle();return}updateAttemptUI();document.getElementById("openSky").focus()}

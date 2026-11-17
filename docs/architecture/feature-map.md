@@ -424,3 +424,9 @@ persistence/official-time.js negotiates optional receipt timing, while existing
 Legacy/Quest commands and cloud-profile own its persistence/recovery. UI record
 presentation reads official records only; victory-presentation owns the explicit
 two-second/animation gate and ranking button (#652).
+
+UX #784/#786: `ui/quest-review-navigation.js` selects only the immediate canonical
+neighbour after the existing map access guard; `game-screen.js` renders a saved or
+unfinished review without starting a board. `ui/adventure-offer.js` counts distinct
+delivered grids in inaccessible product packs, excluding other skies and future
+slots. Prices remain in `campaign/store-catalogue.js` / Play-localised labels.

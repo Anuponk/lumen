@@ -2,9 +2,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import vm from 'node:vm';
 import { questReviewModel, NO_OFFICIAL_TIME } from '../src/ui/quest-review.js';
 import { createRankingView } from '../src/ui/ranking.js';
 import { createRankingClient } from '../src/persistence/ranking.js';
+import {reviewNeighbour,bindReviewNavigation} from '../src/ui/quest-review-navigation.js';
+import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
+import {resolveCanonicalQuest} from '../src/campaign/playable-navigation.js';
 
 const format = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
 const quest = { id: 'base-q004', ordinal: 4, constellationId: 'real-01', gridRevision: 1 };
@@ -111,7 +115,7 @@ test('wiring: completed tiles open the review; replay keeps the cooldown entry',
   const source = fs.readFileSync('src/ui/game-screen.js', 'utf8');
   assert.equal(source.split('if(solved){openQuestReview(quest);return}').length - 1, 2, 'Both Mon ciel tile paths open the review');
   assert.doesNotMatch(source, /if\(solved\)\{startReplay\(legacy\);return\}/);
-  assert.match(source, /retry\.onclick=\(\)=>\{closeQuestReview\(\);if\(quest\.legacyIndex===null\)startCanonicalQuest\(quest\);else startReplay\(quest\.legacyIndex\)\}/);
+  assert.match(source, /retry\.onclick=\(\)=>\{if\(!reviewQuestAvailable\(quest\)\)return;closeQuestReview\(\);if\(quest\.legacyIndex===null\)startCanonicalQuest\(quest\);else if\(completed\)startReplay\(quest\.legacyIndex\);else startCelestialQuest\(quest\)\}/);
   assert.match(source, /if\(summary\.rank&&!victoryFacts\.review\)victoryCelebration\.amplify/);
   const review = source.slice(source.indexOf('function openQuestReview('), source.indexOf('function closeQuestReview('));
   assert.doesNotMatch(review, /victoryCelebration\.start|celestialCelebration\.start|showCelestialVictory|saveProgress|recordVictory|rankingClient\.stage/, 'A review starts no effect and writes nothing');
@@ -151,4 +155,83 @@ test('wiring #761: badge/ranking qualification is re-evaluated at run start and 
   const start = source.slice(source.indexOf('function ensureAttemptStarted('), source.indexOf('attemptEngine.start();', source.indexOf('function ensureAttemptStarted(')));
   assert.match(start, /!a\.qualifying&&!socialChallenge&&currentBadgeQualification\(\)\)\{a=attemptEngine\.requalify\(true\)/);
   assert.match(source, /attemptEngine\.reset\(state,socialChallenge\?\{\}:\{qualifying:!!resetSnapshot\?\.qualifying\|\|currentBadgeQualification\(\)\}\)/);
+});
+
+test('#784: immediate canonical neighbours cross constellations and owned adventures without writes',()=>{
+ const quests=canonicalQuestList(),progress={solved:{},canonicalQuestState:{}};
+ const complete=q=>{if(q.legacyIndex!==null)progress.solved[q.legacyIndex]=1;else progress.canonicalQuestState[q.id]={solved:true}};
+ const boundary=quests.findIndex((q,i)=>i>0&&q.packId!==quests[i-1].packId);
+ quests.slice(0,boundary).forEach(complete);
+ const prior=quests[boundary-1],next=quests[boundary],before=structuredClone(progress);
+ const available=owned=>q=>resolveCanonicalQuest(q.ordinal,owned,progress).status==='ready';
+ assert.equal(reviewNeighbour(quests,prior.id,1,available([])),null,'Unowned adventure blocks the immediate neighbour');
+ assert.equal(reviewNeighbour(quests,prior.id,1,available([next.packId])),next,'First quest of owned adventure, still unfinished');
+ assert.equal(reviewNeighbour(quests,next.id,-1,available([next.packId])),prior);
+ assert.equal(reviewNeighbour(quests,next.id,1,available([next.packId])),null,'Purchase never unlocks the second quest prematurely');
+ const constellation=quests.findIndex((q,i)=>i>0&&q.constellationId!==quests[i-1].constellationId);
+ assert.equal(reviewNeighbour(quests,quests[constellation-1].id,1,available([])),quests[constellation]);
+ assert.equal(reviewNeighbour(quests,quests[0].id,-1,available([])),null);
+ assert.equal(reviewNeighbour(quests,quests.at(-1).id,1,()=>true),null);
+ const later=quests.find(q=>q.packId!==next.packId&&q.ordinal>next.ordinal);
+ assert.equal(resolveCanonicalQuest(later.ordinal,[later.packId],{}).status,'ready','Independently purchased entry #783');
+ assert.equal(reviewNeighbour(quests,prior.id,1,available([later.packId])),null,'Never jump across a locked adventure');
+ assert.deepEqual(progress,before,'Browsing preserves the full progress object');
+});
+
+test('#784: unfinished view owns no badge, time or victory',()=>{
+ const model=questReviewModel({quest,completed:false,badges:{mastery:true},record:{officialTimes:{1:9}},format});
+ assert.equal(model.time,'À jouer');assert.match(model.subtitle,/À jouer/);
+ assert(model.slots.every(s=>s.state==='missing'));
+});
+
+test('#784: intentional swipe and keyboard preserve edges, native gestures and controls',()=>{
+ const events={},moves=[],host={addEventListener:(name,fn,options)=>{events[name]=fn;if(name.startsWith('touch'))assert.equal(options.passive,true)}};
+ bindReviewNavigation(host,{active:()=>true,navigate:d=>(moves.push(d),true),viewport:()=>390});
+ const target={closest:()=>null},touch=(x,y=100)=>({clientX:x,clientY:y});
+ const swipe=(from,to,targetOverride=target)=>{events.touchstart({target:targetOverride,touches:[touch(...from)]});events.touchend({changedTouches:[touch(...to)]})};
+ swipe([220,100],[100,110]);swipe([100,100],[230,110]);assert.deepEqual(moves,[1,-1]);
+ swipe([5,100],[160,100]);swipe([385,100],[200,100]);swipe([220,100],[210,220]);swipe([220,100],[180,105]);swipe([220,100],[100,100],{closest:()=>({})});
+ assert.deepEqual(moves,[1,-1],'Edges, vertical, short and button gestures ignored');
+ let prevented=0;const key=(key,targetOverride=target)=>events.keydown({key,target:targetOverride,preventDefault:()=>prevented++});
+ key('ArrowRight');key('ArrowLeft');key('ArrowRight',{closest:()=>({})});
+ assert.deepEqual(moves,[1,-1,1,-1]);assert.equal(prevented,2);
+});
+
+test('#784: late podium requests cannot overwrite a rapidly browsed target',async()=>{
+ const pending=[],connection={},context=()=>({owner:'o',client:connection});
+ const client={board:q=>new Promise(resolve=>pending.push({q,resolve})),flush:()=>{throw Error('No write during browsing')}};
+ const view=createRankingView({client,getContext:context,format,document:fakeDocument()});
+ const q2={...quest,id:'second'},q3={...quest,id:'third'};
+ view.show(quest,null,{review:true});view.show(q2,null,{review:true});view.show(q3,null,{review:true});
+ assert.equal(view.root.dataset.state,'pending');
+ const board=name=>({top:[{position:1,place:1,nickname:name,score:9}],participating:true});
+ pending[2].resolve(board('target'));await new Promise(r=>setTimeout(r,0));
+ pending[0].resolve(board('stale'));pending[1].resolve(board('stale'));await new Promise(r=>setTimeout(r,0));
+ const text=e=>[e.textContent,...(e.children||[]).map(text)].join(' ');
+ assert.match(text(view.root),/target/);assert.doesNotMatch(text(view.root),/stale/);
+});
+
+test('#784: returning to the same quest still rejects an earlier official-record response',async()=>{
+ const source=fs.readFileSync('src/ui/game-screen.js','utf8');
+ const fn=source.slice(source.indexOf('async function refreshReviewOfficialTime('),source.indexOf('function closeQuestReview('));
+ const pending=[],shown=[],client={rpc:()=>new Promise(resolve=>pending.push(resolve))};
+ const context=vm.createContext({lumenUser:{id:'owner'},lumenSupabase:client,qaActive:false,officialTimingSupported:()=>true,recordLabel:data=>data.label,formatDuration:format,setVictoryTime:text=>shown.push(text),questReview:{quest}});
+ vm.runInContext(fn,context);
+ const old=context.refreshReviewOfficialTime(quest);
+ context.questReview={quest:{...quest,id:'other'}};
+ context.questReview={quest};
+ const current=context.refreshReviewOfficialTime(quest);
+ pending[1]({data:{label:'Record : 0:50'}});await current;
+ pending[0]({data:{label:'Record : 9:00'}});await old;
+ assert.deepEqual(shown,['Record : 0:50']);
+});
+
+test('#784: a swipe consumes only its compatibility click, never the next tap',()=>{
+ const events={},host={addEventListener:(name,fn)=>events[name]=fn,contains:()=>true};
+ bindReviewNavigation(host,{active:()=>true,navigate:()=>true,viewport:()=>390});
+ events.touchstart({target:{closest:()=>null},touches:[{clientX:240,clientY:100}]});
+ events.touchend({changedTouches:[{clientX:100,clientY:100}]});
+ let consumed=0;const click={detail:1,target:host,preventDefault:()=>consumed++,stopImmediatePropagation:()=>consumed++};
+ events.click(click);assert.equal(consumed,2,'The swipe cannot activate the backdrop/underlying CTA');
+ events.pointerdown();events.click(click);assert.equal(consumed,2,'The next intentional tap is preserved');
 });

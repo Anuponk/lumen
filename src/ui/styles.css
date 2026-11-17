@@ -1389,6 +1389,16 @@ body:has(#erasedAccountNotice:not([hidden])) #scriptedLearn{visibility:hidden!im
 .adventure-offer button{min-height:44px;border-radius:12px;font:inherit;font-weight:700}
 .adventure-offer-buy{background:#1d3b5a;color:#eefaff;border:1px solid #4284bd}
 .adventure-offer-buy:disabled{opacity:.55}
+.adventure-offer-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.adventure-offer-cards:has(>.adventure-offer-card:only-child){grid-template-columns:1fr}
+.adventure-offer-card{display:flex;flex-direction:column;gap:5px;padding:10px;border:1px solid #4284bd;border-radius:16px;background:radial-gradient(ellipse at top,#25445b,#102336 75%);min-width:0;text-align:center}
+.adventure-offer-card h3{font-size:15px;line-height:1.2;margin:0;color:#f1e1ad}
+.adventure-offer-price{font-size:27px;color:#fff1c4}
+.adventure-offer-card .adventure-offer-buy{margin-top:auto;padding:7px;font-size:12px}
+.adventure-offer-mastery{padding:8px 10px;border:1px solid #716440;border-radius:12px;background:#272a29}
+.adventure-offer-mastery strong{display:block;margin-bottom:3px;font-size:14px}
+@media(max-height:700px){.adventure-offer{gap:5px}.adventure-offer-card{padding:7px;gap:3px}.adventure-offer-card h3{font-size:13px}.adventure-offer p,.adventure-offer-consent{font-size:12px}.adventure-offer-price{font-size:23px}.adventure-notice:has(.adventure-offer){padding:8px}.adventure-notice:has(.adventure-offer)>div{padding:10px}.adventure-notice:has(.adventure-offer) h3{margin-top:0;margin-bottom:6px}}
+.sky-reveal.quest-review #skyRevealKicker{display:block;font-size:10px;line-height:1.2}
 .adventure-offer-claim{background:#2a5a3a;color:#eafff0;border:1px solid #57b47a}
 .adventure-offer-signin{background:transparent;color:#cfe6f3;border:1px solid #35546f}
 .adventure-offer p{margin:0;font-size:13px;line-height:1.4}

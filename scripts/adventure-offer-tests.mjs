@@ -54,3 +54,30 @@ assert.match(screen,/function afterVerifiedHydration\(\)\{void maybeClaimMastery
 assert.match(screen,/async function maybeRestoreStripePurchases\(\)\{\n if\(!lumenUser\|\|qaActive\|\|!cloudProfileReady\|\|!stripeAvailable\(\)\)return;/);
 assert.match(screen,/results\.some\(r=>r\.status==='paid'\)\)\{await loadEntitlements\(\)/,'Rights reloaded only after a server-confirmed purchase');
 console.log('adventure-offer-tests: prices, mastery path, wording and seed parity OK');
+
+// #786: incremental delivered content, not advertised pack sizes or future slots.
+const syntheticPacks=[
+ {id:'free',order:0,skyId:'real-sky',access:'included',accessible:true},
+ {id:'paid',order:1,skyId:'real-sky',access:'locked',accessible:false},
+ {id:'owned',order:2,skyId:'real-sky',access:'locked',accessible:true},
+ {id:'future',order:3,skyId:'real-sky',access:'locked',accessible:false},
+ {id:'other-sky',order:4,skyId:'future-sky',access:'locked',accessible:false}
+];
+const grid=(id,packId)=>({id,packId,ordinal:1,legacyIndex:null,reg:[[0]],sol:[0]});
+const delivered=[grid('free-q','free'),grid('new-a','paid'),grid('new-b','paid'),grid('old','owned'),{id:'future-q',packId:'future'},grid('elsewhere','other-sky')];
+const options={pack:syntheticPacks[1],packs:syntheticPacks,quests:delivered,progress:{}};
+const saved=structuredClone(options);
+assert.equal(adventureOfferModel(options).unitCount,2);
+assert.equal(adventureOfferModel(options).skyCount,2,'Owned/free/future/other-sky content excluded');
+assert.equal(adventureOfferModel({...options,quests:[...delivered,delivered[1]]}).skyCount,2,'Stable IDs count once');
+const acquired=syntheticPacks.map(p=>({...p,accessible:true}));
+assert.equal(adventureOfferModel({...options,pack:acquired[1],packs:acquired}).unitCount,0);
+assert.equal(adventureOfferModel({...options,packs:acquired}).skyCount,0);
+assert.equal(adventureOfferModel({...options,quests:[...delivered,grid('new-c','paid')]}).unitCount,3,'Catalogue growth');
+assert.equal(adventureOfferModel({...options,packs:syntheticPacks.map(p=>({...p,accessStatus:'loading'}))}).skyCount,null,'Unknown rights show no invented count');
+assert.equal(adventureOfferModel({...options,prices:{paid:'1,49 €','real-sky-all':'6,49 €'}}).unitPrice,'1,49 €','Provider-localised price wins');
+assert.equal(adventureOfferModel({...options,boughtSingle:true}).showSky,false,'Existing single-purchase policy retained');
+assert.deepEqual(options,saved,'Offer projection never modifies access/progress/catalogue');
+console.log('adventure-offer-tests #786: incremental delivered counts and changing rights OK');
+const unknownPlay=adventureOfferModel({...options,pricesRequired:true,purchasesAvailable:true});
+assert.equal(unknownPlay.unitPrice,'Prix indisponible');assert.equal(unknownPlay.unitPriceKnown,false,'Play prices must be confirmed, not replaced by EUR assumptions');

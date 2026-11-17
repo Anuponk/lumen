@@ -69,7 +69,9 @@ assert.match(gameScreen,/button\.disabled=!available/);
 // #695 owner decision: a completed tile opens its review; the review's Rejouer
 // keeps the same replay entry (legacy startReplay, canonical startCanonicalQuest).
 assert.match(gameScreen,/if\(solved\)\{openQuestReview\(quest\);return\}/);
-assert.match(gameScreen,/if\(quest\.legacyIndex===null\)startCanonicalQuest\(quest\);else startReplay\(quest\.legacyIndex\)/);
+// #784: completed legacy quests keep the replay/cooldown entry; an unfinished
+// reviewed quest uses the normal campaign entry, never a fabricated replay.
+assert.match(gameScreen,/if\(quest\.legacyIndex===null\)startCanonicalQuest\(quest\);else if\(completed\)startReplay\(quest\.legacyIndex\);else startCelestialQuest\(quest\)/);
 assert.match(gameScreen,/if\(canonicalActiveQuest\)\{await celebrateCanonicalSuccess\(\);return\}/);
 assert.match(gameScreen,/canonicalQuestAvailable\(quest\)/);
 assert.match(gameScreen,/startCanonicalQuest\(quest\)/);

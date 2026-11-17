@@ -293,3 +293,9 @@ it through the existing celestial celebration. No new progression writer.
 ### #629 / #632 / #627
 
 `game-screen.js` importe `drag-grid-path.js` et projette `celestialScope` vers `sky-navigation.js`. Le repli réseau conserve les outboxes Wallet, les verrous et les reçus existants. Aucune dépendance externe ajoutée.
+
+Review/store #784/#786: canonical neighbour → existing map access guard → saved
+review model → generation-guarded ranking/record reads. The gesture never enters
+persistence or starts a board. Offer counts join delivered canonical grids with
+current pack accessibility and the real-sky product scope; entitlement loading
+keeps counts unknown. No purchase/restore or server contract changes.

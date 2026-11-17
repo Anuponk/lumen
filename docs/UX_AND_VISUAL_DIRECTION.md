@@ -678,3 +678,25 @@ Toucher une aventure verrouillée (cadenas) dans Mon ciel ouvre la même fenêtr
 - **Pas de bouton « Restaurer mes achats »** (décision du propriétaire, 17/11/2026, #730 ; remplace le bouton livré par #731). Un achat est un droit du compte : il réapparaît seul sur tout appareil connecté. Après chaque hydratation vérifiée, Lumen revérifie sans rien afficher les achats Google Play (dans l'application Play) et les paiements Stripe non encore réglés (sur le Web) ; les droits ne sont rechargés qu'après une confirmation du serveur.
 - **Remerciement après achat (#730)** : une fois l'achat confirmé par le serveur et les droits rechargés (jamais sur la seule URL de retour Stripe), une fenêtre « Merci pour ton soutien ✨ » nomme l'aventure débloquée (ou « Tout le vrai ciel »), rappelle que l'achat est lié au compte et retrouvé sur tous les appareils connectés, et explique en une phrase que les achats aident à financer l'hébergement et les prochaines aventures (une intention, jamais une promesse). Boutons « Explorer l'aventure » (ou « Explorer mon ciel ») et « Plus tard » ; Échap ou un toucher hors de la carte ferment la fenêtre.
 - **Entrée indépendante (#783)** : « Explorer l'aventure » ouvre le détail de sa première constellation. Une aventure possédée commence immédiatement ; ses propres quêtes restent séquentielles. Pendant le chargement des droits, Mon ciel indique « Vérification des droits… » ; une erreur indique des droits indisponibles, sans proposer un nouvel achat. L'apprentissage initial et les jalons existants restent inchangés.
+
+## Bilans et offres — #784 / #786
+
+Le bilan permet de consulter la quête canonique immédiatement voisine avec un
+swipe horizontal (gauche : suivante, droite : précédente) ou les flèches du clavier.
+La cible doit passer les mêmes gardes que Mon ciel ; aucun saut de quête verrouillée.
+Une quête disponible mais inachevée affiche « À jouer », sans record ni récompense.
+Seul le bouton Jouer/Rejouer lance une grille. Les réponses de classement et de
+record devenues obsolètes sont ignorées. La consultation ne relance aucune fête,
+préserve les gestes depuis les bords et respecte la réduction des mouvements.
+
+La boutique distingue l’aventure et « tout le vrai ciel » (les autres ciels ne sont
+pas inclus). Les prix viennent du catalogue partagé avec la graine serveur, ou des
+prix localisés Play lorsqu’ils sont disponibles. Les compteurs portent sur les
+quêtes publiées disposant d’une grille, dans les aventures rendues accessibles par
+l’offre, hors aventures déjà accessibles. Elles restent à parcourir dans l’ordre ;
+un achat ne termine ni ne débloque toutes leurs quêtes à la fois. Les compteurs
+attendent la vérification des droits. L’astuce gratuite indique les quêtes et
+badges encore manquants de l’aventure précédente selon les règles de maîtrise.
+
+Impact onboarding : les apprentissages et leurs destinations restent valables ;
+la consultation latérale ajoute un raccourci sans changer les jalons ni les droits.
