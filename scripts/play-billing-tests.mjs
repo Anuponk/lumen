@@ -60,7 +60,7 @@ assert.equal(model.capPrice,'5 €');
 
 // Wiring: the Play offer exists only with Play Billing, outside QA; verification goes to the Edge Function.
 const screen=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
-assert.match(screen,/purchasesAvailable:!!playBilling&&!qaActive,boughtSingle:lumenEntitlements\.some\(e=>e\?\.source==='purchase'\)/);
+assert.match(screen,/purchasesAvailable:\(!!playBilling\|\|stripeAvailable\(\)\)&&!qaActive,boughtSingle:lumenEntitlements\.some\(e=>e\?\.source==='purchase'\)/,'Play in the Play app, Stripe (#730) on the web only');
 assert.match(screen,/'\/functions\/v1\/lumen-play-purchase'/);
 assert.match(screen,/if\(result\.status==='paid'\)\{await loadEntitlements\(\);setStatus\('Achat confirmé/,'Success only after the server confirmed and entitlements reloaded');
 console.log('play-billing-tests: availability, verification, purchase, restore, prices and offer rule OK');

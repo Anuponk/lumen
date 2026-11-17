@@ -90,6 +90,7 @@ import {mountAdventureAccess} from './adventure-access-panel.js';
 import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
 import {adventureOfferModel,mountAdventureOffer,restoreMessage} from './adventure-offer.js';
 import {getPlayBilling,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices} from '../persistence/play-billing.js';
+import {rememberPlayAppLaunch,isPlayDistributedApp,stripeCheckoutAvailable,startStripeCheckout,stripeSessionStatus,restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage,stripeRestoreMessage} from '../persistence/stripe-checkout.js';
 import {SKY_PRODUCT_ID} from '../campaign/store-catalogue.js';
 import {createSound} from "./sound.js";
 import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
@@ -110,6 +111,9 @@ if(qaFresh){
  history.replaceState(null,"",location.pathname+"?"+(()=>{const p=new URLSearchParams(location.search);p.delete("qaFresh");return p.toString()})()+location.hash);
 }
 const qaKey=suffix=>qaActive?"lumenQa"+suffix:suffix;
+// #730: remember a Play app launch (no Stripe there) and take the Stripe return cue once.
+rememberPlayAppLaunch(window);
+let stripeCheckoutReturn=consumeCheckoutReturn(window);
 const {normalizeSequentialProgress,solvedCount,exactSkyScoreForSolvedPrefix,ensureSkyScore,skyStarsEarned,challengeRewardKeys,constellationProgress,constellationLitAt,awards,performanceRun,savePerformance}=createCampaign(()=>lumenProgress,()=>saveLumenProgress(),()=>({...capturedTiming(),activeGameSeconds,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted,qualifying:!!attemptEngine.snapshot()?.qualifying}),()=>canonicalQuestList());
 let verifiedOfflineOwnerId=null;
 let cloudProfileReady=false,cloudProfileTimer=null,cloudProfileBusy=false,cloudProfileDirty=false,cloudProfileBaseline=null,cloudProfileInFlight=null,cloudProfileFailure=null;
@@ -4161,9 +4165,11 @@ async function playVerify(productId,purchaseToken){
  return verifyPlayPurchase({endpoint:LUMEN_SUPABASE_URL+'/functions/v1/lumen-play-purchase',apiKey:LUMEN_SUPABASE_KEY,accessToken:data.session.access_token,productId,purchaseToken});
 }
 async function purchaseAdventure(productId,{setStatus,setBusy,waiver}){
- if(!playBilling||!lumenUser||qaActive)return;
- // #732: never open a payment without the express immediate-access request and waiver.
+ if(!lumenUser||qaActive)return;
+ // #732: never open a payment (Play or Stripe) without the express immediate-access request and waiver.
  if(!waiver?.accepted)return;
+ if(!playBilling&&stripeAvailable())return purchaseWithStripe(productId,{setStatus,setBusy,waiver});
+ if(!playBilling)return;
  const owner=lumenUser.id;setBusy(true);setStatus('Ouverture du paiement Google Play…');
  const result=await buyWithPlay({productId,verify:playVerify});
  if(lumenUser?.id!==owner)return;
@@ -4178,6 +4184,7 @@ async function purchaseAdventure(productId,{setStatus,setBusy,waiver}){
 // the message only reports what the server confirmed.
 async function restorePurchasesNow({setStatus,setBusy}){
  if(!lumenUser||qaActive)return;
+ if(!playBilling&&stripeAvailable())return restoreStripePurchasesNow({setStatus,setBusy});
  const owner=lumenUser.id;setBusy(true);setStatus('Recherche de tes achats Google Play…');
  const service=await playBillingReady;
  const results=service?await restorePlayPurchases({service,verify:playVerify,reportListFailure:true}):[{itemId:null,status:'error',reason:'service'}];
@@ -4206,15 +4213,61 @@ async function autoArchiveAccountSwitchCopies(){
  if(result.interrupted)setTimeout(()=>void autoArchiveAccountSwitchCopies(),60000);
 }
 setTimeout(()=>void autoArchiveAccountSwitchCopies(),15000);
+// #730: Stripe Checkout on the web/PWA only, never in the Play app. TEST phase: only
+// accounts holding the server capability « stripe_test_checkout ». The server reads every
+// payment back from Stripe and records it (#728); a Stripe return URL never grants.
+function stripeAvailable(){return stripeCheckoutAvailable({capabilities:lumenCapabilities,playApp:isPlayDistributedApp(window),playBilling,qaActive,signedIn:!!lumenUser})}
+async function stripeTransport(){
+ const client=lumenSupabase,owner=lumenUser?.id;if(!client||!owner)return null;
+ const {data}=await client.auth.getSession();
+ if(data?.session?.user?.id!==owner)return null;
+ return {endpoint:LUMEN_SUPABASE_URL+'/functions/v1/lumen-stripe-checkout',apiKey:LUMEN_SUPABASE_KEY,accessToken:data.session.access_token};
+}
+function showPurchaseStatus(text){const el=document.getElementById('purchaseStatus');if(!el)return;el.textContent=text||'';el.hidden=!text}
+async function purchaseWithStripe(productId,{setStatus,setBusy,waiver}){
+ // #732: never open a payment without the express immediate-access request and waiver.
+ if(!lumenUser||qaActive||!waiver?.accepted)return;
+ const owner=lumenUser.id;setBusy(true);setStatus(stripeMessage('redirecting'));
+ const transport=await stripeTransport();
+ const result=transport?await startStripeCheckout({...transport,productId,waiver,navigate:url=>location.assign(url)}):{status:'session'};
+ if(lumenUser?.id!==owner)return;
+ if(result.status==='redirecting')return; // the page leaves for Stripe; the buttons stay busy
+ setStatus(stripeMessage(result.status));setBusy(false);
+}
+async function restoreStripePurchasesNow({setStatus,setBusy}){
+ const owner=lumenUser.id;setBusy(true);setStatus('Recherche de tes achats…');
+ const transport=await stripeTransport();
+ const results=transport?await restoreStripePurchases(transport):[{status:'error'}];
+ if(lumenUser?.id!==owner)return;
+ if(results.some(r=>r.status==='paid')){await loadEntitlements();if(lumenUser?.id!==owner)return;skyNavigation.render()}
+ setStatus(stripeRestoreMessage(results));setBusy(false);
+}
+// Back from Stripe: ask the server, which reads the payment back from Stripe. « Achat
+// confirmé » only after the server confirmed and the entitlements were reloaded.
+let stripeReturnInFlight=false;
+async function handleStripeReturn(){
+ const cue=stripeCheckoutReturn;if(!cue||stripeReturnInFlight||!lumenUser||qaActive)return;
+ stripeCheckoutReturn=null;
+ if(cue.kind==='cancel'||!cue.sessionId){showPurchaseStatus(stripeMessage(cue.kind==='cancel'?'cancel':'unknown'));return}
+ stripeReturnInFlight=true;const owner=lumenUser.id;
+ try{
+  showPurchaseStatus(stripeMessage('checking'));
+  const result=await waitForStripeConfirmation({check:async()=>{const t=await stripeTransport();return t&&lumenUser?.id===owner?stripeSessionStatus({...t,sessionId:cue.sessionId}):{status:'error'}},
+   onProgress:r=>{if(lumenUser?.id===owner)showPurchaseStatus(stripeMessage(r.status==='pending'?'pending':'checking'))}});
+  if(lumenUser?.id!==owner)return;
+  if(result.status==='paid'){await loadEntitlements();if(lumenUser?.id!==owner)return;skyNavigation.render()}
+  showPurchaseStatus(stripeMessage(result.status==='open'?'pending':result.status));
+ }finally{stripeReturnInFlight=false}
+}
 // After a verified hydration: server-checked mastery unlocks (#728) and Play restore (#729).
-function afterVerifiedHydration(){void maybeClaimMasteryUnlocks();void maybeRestorePlayPurchases()}
+function afterVerifiedHydration(){void maybeClaimMasteryUnlocks();void maybeRestorePlayPurchases();void handleStripeReturn()}
 // #731: offer shown on a locked Adventure. Purchases stay disabled until a payment
 // provider is connected (#729/#730); the free path claims a server-verified mastery unlock.
 function renderAdventureOffer(container,pack,{close}={}){
  const model=mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot()});
  const packs=model.skies.flatMap(s=>s.packs);if(!packs.some(p=>p.id===pack.id))return false;
  const offer=adventureOfferModel({pack,packs,quests:canonicalQuestList(),progress:lumenProgress,signedIn:!!lumenUser&&!qaActive,accounts:!qaActive,
-  purchasesAvailable:!!playBilling&&!qaActive,boughtSingle:lumenEntitlements.some(e=>e?.source==='purchase'),prices:playPriceLabels});
+  purchasesAvailable:(!!playBilling||stripeAvailable())&&!qaActive,boughtSingle:lumenEntitlements.some(e=>e?.source==='purchase'),prices:playPriceLabels});
  mountAdventureOffer(container,offer,{
   onSignIn:()=>{close?.();openEmailAccountOffer('signup')},
   onBuy:purchaseAdventure,
