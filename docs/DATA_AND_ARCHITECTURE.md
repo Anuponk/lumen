@@ -463,6 +463,15 @@ admitted score. Nonqualifying badge runs cannot enter competition. Historical
 minima follow the separately gated, revision-safe import above. Elapsed time and aid counts remain client assertions,
 checked for bounds, consistency and wall time; this is not tamper-proof timing.
 
+Ranking queue isolation (#775): a failed capture remains byte-for-byte pending,
+but does not prevent independent later captures from reaching their own server
+receipts. A partially failed flush still reports failure and includes successful
+operation results for the current victory view. Reconnect/timer refreshes never
+show an old board while that view's capture remains pending. Version-1 attempts
+derive `hintUsed` from their own persisted hint counter, never a previous grid's
+UI flag; old unversioned attempts retain their historical fallback. Existing
+inconsistent receipts are preserved, not repaired or requalified by the client.
+
 `lumen.profiles` owns the canonical unique nickname and durable ranking opposition;
 `ranking_members` owns public participation. Automatic participation is server-gated
 by the published information boundary, never inferred from reconnect.
@@ -1561,7 +1570,8 @@ does not authorize current full-profile overwrites: owned receipts, transactiona
 commands and verified reconciliation now govern restoration under the cloud contract.
 
 ## Supabase
-The client uses a shared Supabase project. Application records live in `lumen`
+The client uses the shared Supabase project **SoldeZen** (`tjdjlavmusmncuszhsuw`).
+Lumen is not a separate project in the Supabase project list. Application records live in `lumen`
 and dedicated private schemas (including command and privacy machinery); public
 RPC wrappers expose bounded, authorized operations. Relevant responsibilities include:
 - profile/nickname;
@@ -1570,6 +1580,12 @@ RPC wrappers expose bounded, authorized operations. Relevant responsibilities in
 - daily play;
 - entitlements;
 - feedback and difficulty rating.
+
+Owner authorization recorded on 17 November 2026: read-only diagnosis may inspect
+the Anupon account's ranking attempts and victory receipts across quests to trace
+queue dependencies. This standing authorization excludes production writes and
+data from the other applications sharing SoldeZen. Keep player identifiers,
+tokens and raw save payloads out of public reports.
 
 Google OAuth is supported. When a local player signs in, local solved history must be merged to cloud rather than discarded.
 
