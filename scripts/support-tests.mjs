@@ -87,6 +87,22 @@ test('no consent means no activation/capture; guests cannot activate',async()=>{
  const f=fixture();await f.s.send();await f.s.activate(false);assert.equal(f.calls.length,0);f.switch();await f.s.send();assert.equal(f.calls.length,0);
  f.guest();await f.s.activate(true);assert.equal(f.calls.length,0);
 });
+
+test('#776 manual preview waits for confirmation even after reconnect or an incident',async()=>{
+ const f=fixture();await f.s.activate(true);await f.s.prepare();
+ assert.equal(f.s.view().state,'review');assert.ok(f.s.view().preview);
+ await f.s.refresh();f.s.incident('hydration_blocked');
+ for(const t of [...f.timers.values()])if(t.ms===0)t.fn();await tick();
+ assert.equal(f.calls.filter(c=>c.p_action==='capture').length,0);
+ await f.s.confirm();assert.equal(f.s.view().state,'confirmed');
+ assert.equal(f.calls.filter(c=>c.p_action==='capture').length,1);
+});
+
+test('#776 cancel and account switch discard only the unconfirmed preview',async()=>{
+ const f=fixture();await f.s.activate(true);await f.s.prepare();f.s.discard();
+ await f.s.confirm();assert.equal(f.calls.filter(c=>c.p_action==='capture').length,0);
+ await f.s.prepare();f.switch();await f.s.confirm();assert.equal(f.calls.filter(c=>c.p_action==='capture').length,0);
+});
 test('offline queue reconnects with immutable identity; only server ack confirms delivery',async()=>{
  const f=fixture();await f.s.activate(true);f.offline();await f.s.send();assert.equal(f.s.view().state,'offline');assert.equal(f.calls.length,1);
  f.online();let first;f.handler=async a=>{first??=a.p_capture_id;assert.equal(a.p_capture_id,first);return {error:true}};
@@ -121,6 +137,12 @@ test('five attempts are bounded, failures/storage quota never change game state'
 });
 test('unacknowledged and mismatched receipts never display sent',async()=>{
  const f=fixture();await f.s.activate(true);f.handler=()=>({data:{capture_id:'wrong',received_at:new Date().toISOString()}});await f.s.send();await tick();assert.equal(f.s.view().state,'failed');assert.equal(f.s.view().last,null);
+});
+
+test('#776 an invalid receipt date never confirms reception',async()=>{
+ const f=fixture();await f.s.activate(true);
+ f.handler=a=>({data:{capture_id:a.p_capture_id,received_at:'invalid'}});
+ await f.s.send();await tick();assert.equal(f.s.view().state,'failed');assert.equal(f.s.view().last,null);
 });
 test('incident storms deduplicate into one pending copy and respect cooldown',async()=>{
  const f=fixture();await f.s.activate(true);for(let i=0;i<20;i++)f.s.incident('hydration_blocked');for(const t of [...f.timers.values()])if(t.ms===0)t.fn();await tick();

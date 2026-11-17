@@ -32,9 +32,13 @@ Ranking/manual marking #638/#647: `ranking-tests.mjs`, `ranking-client-tests.mjs
 `fixtures/ranking.sql` and PostgreSQL `ranking-concurrency.py`. Full gate includes
 the new Node/browser suites; SQL concurrency runs in canonical-ledger CI.
 
-Support size follow-up: `support-tests.mjs` covers full catalogue copies,
-source preservation, metadata headroom, oversized optional checkpoints and
-compact-versus-jsonb/exponent limits. `fixtures/support.sql` checks the actual
+Support: `support-tests.mjs` covers full catalogue copies, source preservation,
+metadata headroom, oversized optional checkpoints, compact-versus-jsonb/exponent
+limits, manual preview confirmation and incident/reconnect isolation (#776).
+`support-browser.mjs` exercises preview/send and the existing private dossier
+reader by reference. `fixtures/support-reference.sql` verifies the exact retained
+case, live admin capability, mismatched owner, hash, revocation, expiry and audit.
+`fixtures/support.sql` checks the actual
 existing validator inside the disposable SQL workflow, never on production.
 
 `cloud-pending-victory-tests.mjs`: actual UI retry declarations + bounded
