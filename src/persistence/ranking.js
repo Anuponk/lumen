@@ -46,7 +46,17 @@ export function createRankingClient({storage,getContext,now=()=>Date.now(),curre
   capture,
   async begin(quest,attempt){const e=capture(quest,attempt);return e?send(context(),e):null},
   stage(quest,attempt){const e=capture(quest,attempt);if(!e)return null;const result={hint:attempt.helpUses?.hint??0,verify:(attempt.helpUses?.verify??0)+(attempt.helpUses?.guided??0)};rankedTime(0,result);return e.result?e:save({...e,result})},
-  async flush(){const c=context();if(!valid(c))return [];const out=[];for(const e of entries(c.owner)){if(!valid(c))break;out.push(await send(c,e))}return out},
+  async flush(){
+   const c=context();if(!valid(c))return [];const out=[];let failure=null;
+   // Each capture has its own immutable receipt. A refused older capture must
+   // remain durable without blocking unrelated wins behind it (#775).
+   for(const e of entries(c.owner)){
+    if(!valid(c))break;
+    try{out.push({...await send(c,e),operationId:e.operationId})}catch(error){failure??=error instanceof Error?error:Error('Ranking queue incomplete')}
+   }
+   if(failure)throw Object.assign(failure,{results:out});
+   return out;
+  },
   async board(quest){const c=context();return rpc(c,'lumen_ranking_board',{p_quest_id:quest.id,p_grid_revision:quest.gridRevision??0})},
   async membership(enabled,nickname){const c=context();const result=await rpc(c,'lumen_ranking_membership',{p_enabled:enabled,p_nickname:nickname||null});if(!enabled)for(const e of entries(c.owner))storage.removeItem(key(c.owner,e.operationId));return result},
   entries,

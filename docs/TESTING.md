@@ -898,6 +898,13 @@ Competition #638 / marking retirement #647: `ranking-client-tests.mjs` covers
 durable offline/reload staging, counters, account/client changes, begin/finish
 races, withdrawal and quota. `manual-marking-tests.mjs` checks stale preferences
 and the live engine injection independently of historical solver simulation.
+For #775 the client regression also exercises an older `22023` refusal before
+an independent first score and reload: only the rejected capture remains.
+`quest-review-tests.mjs` checks partial flush confirmation, reconnect while the
+current result is pending, and a non-qualification notice surviving refresh.
+`hint-assistance-badge-regression-tests.mjs` checks counted-run isolation from
+a previous UI hint flag and preservation of old unversioned hint evidence.
+These are synthetic client tests, not a live publication of a player's score.
 `ranking-browser-tests.mjs` covers 320/390/1440px, actual retired controls, the
 production list animation, top-10/centered/boundary fixtures, virtual labels,
 new-record visibility and reduced motion. Synthetic RPC fixtures are not live

@@ -20,3 +20,23 @@ assert.equal(ranking.entries('test-a').length,0);assert.equal(calls.at(-1).name,
 const denied=createRankingClient({storage:{getItem:()=>null,setItem(){throw Error('quota')}},getContext:()=>c});
 assert.throws(()=>denied.stage(q,a),/quota/);
 console.log('Ranking staging: offline, reload, exact counters, owner changes, begin/finish race, withdrawal and quota pass');
+
+// #775: an older rejected capture must not prevent a first qualifying score.
+{
+ const store=memory(),sent=[];
+ const connection={async rpc(name,args){
+  if(name==='lumen_ranking_finish'){
+   sent.push(args.p_operation_id);
+   if(args.p_operation_id==='old-reset-0')return {error:{code:'22023'}};
+   return {data:{status:'confirmed',questId:'first',improved:true}};
+  }
+  return {data:{eligible:true}};
+ }};
+ const make=()=>createRankingClient({storage:store,getContext:()=>({owner:'owner',client:connection})});
+ let queue=make();queue.stage({id:'old'}, {...a,attemptId:'old'});
+ queue.stage({id:'first'}, {...a,attemptId:'first',helpUses:{}});
+ await assert.rejects(()=>queue.flush());
+ assert.deepEqual(sent,['old-reset-0','first-reset-0'],'Every independent capture is attempted despite an earlier refusal');
+ assert.deepEqual(queue.entries('owner').map(e=>e.questId),['old'],'Only the exact rejected capture remains durable');
+ queue=make();assert.deepEqual(queue.entries('owner').map(e=>e.questId),['old'],'Reload preserves the refused evidence without resurrecting the confirmed score');
+}

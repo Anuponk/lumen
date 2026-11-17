@@ -2058,20 +2058,21 @@ async function refreshOfficialRecordLabel(){
  }catch{}
 }
 function showRanking(){if(socialChallenge||learningReplayActive()||qaActive||!lumenUser)return;const a=attemptEngine.snapshot();rankingView.show(activeQuest(),a.attemptId+'-reset-'+(a.resetCount||0));rankingView.mount()}
-addEventListener('online',()=>{void rankingClient.flush().then(r=>rankingView.refresh(r)).catch(()=>{})});
+function refreshRankingQueue(){return rankingClient.flush().then(r=>rankingView.refresh(r)).catch(error=>{if(error?.results?.length)return rankingView.refresh(error.results)})}
+addEventListener('online',()=>{void refreshRankingQueue()});
 document.getElementById('rankingWithdraw').onclick=async()=>{
  const c=rankingContext(),button=document.getElementById('rankingWithdraw');button.disabled=true;
  try{await rankingClient.membership(false);if(rankingContext().owner===c.owner){rankingView.clear();await refreshRankingAccount();document.getElementById('rankingAccountStatus').textContent='Temps retirés des classements.'}}
  catch{if(rankingContext().owner===c.owner)document.getElementById('rankingAccountStatus').textContent='Retrait non confirmé. Réessaie.'}
  finally{button.disabled=false}
 };
-setInterval(()=>{if(lumenUser&&!qaActive)void rankingClient.flush().catch(()=>{})},30000);
+setInterval(()=>{if(lumenUser&&!qaActive)void refreshRankingQueue()},30000);
 new MutationObserver(()=>rankingView.mount()).observe(document.getElementById('skyReveal'),{attributes:true,attributeFilter:['hidden']});
 function attemptMode(){return socialChallenge?"challenge":replayMode?"replay":"campaign"}
 function activeQuest(){return canonicalActiveQuest??canonicalQuestForLegacy(levelIndex)}
 function activeQuestOrdinal(){return activeQuest().ordinal}
 function activeBonusChallenge(){return socialChallenge?null:questRewardDefinition(activeQuest()).bonus}
-function hintUsedInAttempt(){return !!usedHintThisGame||(attemptEngine.snapshot()?.helpUses?.hint||0)>0}
+function hintUsedInAttempt(){const a=attemptEngine.snapshot();return a?.rankingVersion===1?(a.helpUses?.hint||0)>0:!!usedHintThisGame||(a?.helpUses?.hint||0)>0}
 function campaignAccessAttempt(){
  const live=attemptEngine.snapshot();if(live)return live;
  try{

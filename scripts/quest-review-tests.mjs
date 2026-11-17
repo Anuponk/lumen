@@ -4,9 +4,49 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { questReviewModel, NO_OFFICIAL_TIME } from '../src/ui/quest-review.js';
 import { createRankingView } from '../src/ui/ranking.js';
+import { createRankingClient } from '../src/persistence/ranking.js';
 
 const format = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
 const quest = { id: 'base-q004', ordinal: 4, constellationId: 'real-01', gridRevision: 1 };
+
+test('#775: a refused older capture cannot hide a confirmed current victory', async () => {
+  const data=new Map(),storage={get length(){return data.size},key:i=>[...data.keys()][i],getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};
+  const connection={async rpc(name,args){
+    if(name==='lumen_ranking_finish')return args.p_operation_id==='old-reset-0'?{error:{code:'22023'}}:{data:{status:'confirmed',questId:quest.id,improved:true}};
+    if(name==='lumen_ranking_board')return {data:{top:[],personal:{position:1,score:16},participating:true}};
+    return {data:{eligible:true}};
+  }};
+  const context=()=>({owner:'owner',client:connection}),client=createRankingClient({storage,getContext:context});
+  const attempt={rankingVersion:1,startedAt:1,mode:'campaign'};
+  client.stage({id:'old'},{...attempt,attemptId:'old'});client.stage(quest,{...attempt,attemptId:'current'});
+  const view=createRankingView({client,getContext:context,format,document:fakeDocument()});
+  view.show(quest,'current-reset-0');await new Promise(r=>setTimeout(r,0));
+  assert.equal(view.root.dataset.state,'ready');
+  assert.deepEqual(client.entries('owner').map(e=>e.questId),['old']);
+});
+
+test('#775: reconnect refresh waits for the current capture and then shows its receipt', async () => {
+  const data=new Map(),storage={get length(){return data.size},key:i=>[...data.keys()][i],getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};
+  let connected=false,boardReads=0;
+  const connection={async rpc(name,args){
+    if(name==='lumen_ranking_finish')return args.p_operation_id==='old-reset-0'||!connected?{error:{code:'22023'}}:{data:{status:'ineligible',questId:quest.id,improved:false}};
+    if(name==='lumen_ranking_board'){boardReads++;return {data:{top:[],participating:true}}}
+    return {data:{eligible:true}};
+  }};
+  const context=()=>({owner:'owner',client:connection}),client=createRankingClient({storage,getContext:context});
+  const attempt={rankingVersion:1,startedAt:1,mode:'campaign'};
+  client.stage({id:'old'},{...attempt,attemptId:'old'});client.stage(quest,{...attempt,attemptId:'current'});
+  const view=createRankingView({client,getContext:context,format,document:fakeDocument()});
+  view.show(quest,'current-reset-0');await new Promise(r=>setTimeout(r,0));
+  assert.equal(view.root.dataset.state,'pending');
+  await view.refresh([]);assert.equal(boardReads,0,'An online/timer wake never reads an old board while this capture remains');
+  connected=true;await client.flush().catch(error=>view.refresh(error.results));
+  assert.equal(view.root.dataset.state,'ready');
+  await view.refresh();
+  const text=e=>[e.textContent,...(e.children||[]).map(text)].join(' ');
+  assert.match(text(view.root),/pas retenu au classement/,'A later timer refresh retains the non-qualification notice');
+  assert.deepEqual(client.entries('owner').map(e=>e.questId),['old']);
+});
 
 test('review shows saved badges as owned, the star, and never a new reward', () => {
   const model = questReviewModel({ quest, badges: { autonomy: true, mastery: true }, record: {}, lit: 4, count: 6, constellationName: 'Grande Ourse', format });
