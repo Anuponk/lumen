@@ -935,6 +935,15 @@ bytes must remain unchanged. Compact-only and exponent cases cross the limit;
 the real validator is exercised independently in disposable `fixtures/support.sql`.
 No production fixture or real-account upload is implied by these tests.
 
+Support #776: the same Node suite now requires explicit confirmation of a
+manual filtered preview; reconnect and automatic incidents cannot approve it.
+`support-browser.mjs` (via `incident-investigation-browser-tests.mjs`) covers the
+native controls, server-acknowledged receipt and exact private reference lookup.
+`fixtures/support-reference.sql` runs after the new migration twice in isolated
+ledger CI: older case identity, admin/expired capability, foreign owner, unknown
+reference, hash, audit, revocation and retention. No production migration or
+physical-phone delivery is claimed. See the acceptance checklist in SUPPORT_574.
+
 `node scripts/cloud-pending-victory-tests.mjs` exercises production result
 retry functions and the bounded scheduler with real durable outboxes and
 synthetic command confirmation. Canonical and historical results recover while

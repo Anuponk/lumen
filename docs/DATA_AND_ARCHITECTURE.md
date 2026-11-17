@@ -187,6 +187,16 @@ Migration `20261115200000_purchases_mastery_store_728.sql` (idempotent; producti
 `lumen_support`. Private support metadata/content tables stay separate from
 ordinary telemetry. Existing capability/cron are reused; all operations check
 Auth/ownership, admin reads are audited, revocation deletes content atomically.
+
+Manual support sending (#776) adds an in-memory filtered preview and an explicit
+confirmation before the existing capture RPC. A reconnect or incident cannot
+approve that preview. Analytics reuses the same private dossier/hash reader to
+look up an exact retained reference after the live capability check, including
+an older dossier rather than the latest one for its owner. The prepared
+`20261117051322_support_reference_lookup_776.sql` migration changes resolution
+only, preserving ownership, locks, audit, revocation and retention; it requires
+separate production authorization. No game writer, save format or ChatGPT
+retrieval channel is added. See SUPPORT_574 for the transport and acceptance limits.
 No game writer, save mutation or reconciliation change; originals remain local.
 The migration/control are prepared and disabled pending explicit production
 authorization. A volatile one-hour queue deliberately does not survive page

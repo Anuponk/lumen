@@ -77,6 +77,9 @@ profile/checkpoint projection; `support-session.js` owns separate consent,
 volatile retries/expiry/revocation; `ui/support-panel.js` owns account and selected
 player disclosures. `game-screen.js` wires live identity and existing incident
 signals. Private support RPC/migration reuses capability/cron, never game writers.
+Manual preview/confirmation and Analytics reference lookup (#776) reuse that
+same session and dossier reader; `mountSupportLookup` resolves the exact private
+reference through `lumen_support`, without a preselected player.
 See [audit and rollout](../SUPPORT_574.md).
 
 Admin Adventure grants #724: `ui/adventure-access-panel.js` (player detail, mounted by

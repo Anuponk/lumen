@@ -74,6 +74,10 @@ projection + bounded incident codes → volatile support queue → separate priv
 RPC consent/metadata/content transaction. Selected cockpit player → existing
 capability → audited authenticated download → local hash check/Blob. Withdrawal
 and the existing cron delete only support copies. No edge to any game writer.
+Manual preparation → exact filtered preview → explicit confirmation → same
+volatile capture/receipt (#776). Analytics reference → live capability → exact
+retained case/optional owner match → same audited dossier/hash reader. References
+are identifiers, never public credentials; no ChatGPT retrieval channel is added.
 
 Existing-account ownership handoff: verified profile + archived previous attempt
 → one live progress object → `nextCanonicalQuest` (catalogue origin/access)

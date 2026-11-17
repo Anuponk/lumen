@@ -85,7 +85,7 @@ import {milkyWaySvg} from './celestial-effects.js';
 import {createCelestialCelebration} from './celestial-celebration.js';
 import {createTutorial} from "./tutorial.js";
 import {captureSupportCopy} from '../persistence/support-capture.js';
-import {mountSupportPanel,mountSupportDossier} from './support-panel.js';
+import {mountSupportPanel,mountSupportDossier,mountSupportLookup} from './support-panel.js';
 import {mountAdventureAccess} from './adventure-access-panel.js';
 import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
 import {adventureOfferModel,mountAdventureOffer,restoreMessage} from './adventure-offer.js';
@@ -1429,7 +1429,7 @@ function updateAdminTools(){
  const adminModal=document.getElementById('adminCockpit');
  if(!analytics||(adminModal?.cockpitOwner&&adminModal.cockpitOwner!==lumenUser?.id)){
   adminAnalytics?.close({write:false});
-  for(const id of ['adminDiagnosticIncidents','adminPlayers','adminTimeline','adminAccounts','adminCockpitKpis','adminDailyChart','adminRetention','adminFunnel','adminFriction','adminAlerts','adminFeedbacks','analyticsOverview','analyticsJourneys','analyticsTechnical'])document.getElementById(id)?.replaceChildren();
+  for(const id of ['adminDiagnosticIncidents','adminPlayers','adminSupportLookup','adminTimeline','adminAccounts','adminCockpitKpis','adminDailyChart','adminRetention','adminFunnel','adminFriction','adminAlerts','adminFeedbacks','analyticsOverview','analyticsJourneys','analyticsTechnical'])document.getElementById(id)?.replaceChildren();
   const timeline=document.getElementById('adminTimeline');if(timeline){timeline.cockpitRequest=null;timeline.cockpitPlayer=null}
   const modal=document.getElementById('adminCockpit');if(modal){modal.hidden=true;modal.cockpitOwner=null}
  }
@@ -2836,6 +2836,9 @@ async function loadAdminCockpit(){
  const modal=document.getElementById('adminCockpit');if(modal)modal.cockpitOwner=requestUser;
  loadAdminCockpit.request=request;
  const authorized=()=>lumenUser?.id===requestUser&&lumenSupabase===requestClient&&hasInternalCapability('analytics_cockpit')&&loadAdminCockpit.request===request;
+ let supportLookup=document.getElementById('adminSupportLookup');
+ if(!supportLookup){supportLookup=document.createElement('div');supportLookup.id='adminSupportLookup';document.getElementById('adminPlayers').after(supportLookup)}
+ mountSupportLookup(supportLookup,{client:requestClient,owner:requestUser,authorized});
  const status=document.getElementById("adminCockpitStatus"),days=Number(document.getElementById("adminCockpitDays")?.value||7);
  status.textContent="Actualisation…";
  const [cockpit,accounts,feedbacks,playerSnapshot,syncHealth,questMetrics]=await Promise.all([
