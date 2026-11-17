@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {STRIPE_TEST_CAPABILITY,rememberPlayAppLaunch,isPlayDistributedApp,stripeCheckoutAvailable,startStripeCheckout,stripeSessionStatus,
- restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage,stripeRestoreMessage,STRIPE_MESSAGES} from '../src/persistence/stripe-checkout.js';
+ restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage,STRIPE_MESSAGES} from '../src/persistence/stripe-checkout.js';
 
 // Web/PWA versus the Google Play app (TWA): Stripe is never offered in the Play app.
 const storage=()=>{const m=new Map();return {getItem:k=>m.has(k)?m.get(k):null,setItem:(k,v)=>m.set(k,String(v))}};
@@ -58,7 +58,7 @@ let final=await waitForStripeConfirmation({check:async()=>({status:answers[Math.
 assert.equal(final.status,'paid');assert.deepEqual(progress,['open','pending']);
 final=await waitForStripeConfirmation({check:async()=>({status:'pending'}),attempts:3,sleep:async()=>{}});assert.equal(final.status,'pending','still pending: never success');
 final=await waitForStripeConfirmation({check:async()=>({status:'failed'}),sleep:async()=>{throw Error('no wait expected')}});assert.equal(final.status,'failed');
-assert.deepEqual(await stripeSessionStatus({...transport(200,{status:'paid',adventures:['real-adventure-02']}),sessionId:'cs_test_1'}),{status:'paid',adventures:['real-adventure-02']});
+assert.deepEqual(await stripeSessionStatus({...transport(200,{productId:'real-adventure-02',status:'paid',adventures:['real-adventure-02']}),sessionId:'cs_test_1'}),{status:'paid',productId:'real-adventure-02',adventures:['real-adventure-02']},'the product is known for the thank-you screen');
 assert.deepEqual(await stripeSessionStatus({...transport(404,{error:'unknown_session'}),sessionId:'cs_test_1'}),{status:'unknown'});
 assert.deepEqual(await stripeSessionStatus({...transport(503,{}),sessionId:'cs_test_1'}),{status:'error'});
 
@@ -67,10 +67,8 @@ for(const s of ['checking','pending','open','cancel','failed','expired','refunde
  assert.doesNotMatch(stripeMessage(s),/confirmé ✓|restaurés/,s+' is never a success');
 assert.match(stripeMessage('paid'),/Achat confirmé ✓/);assert.equal(stripeMessage('whatever'),STRIPE_MESSAGES.error);
 assert.match(stripeMessage('refunded'),/progression est conservée/);
-assert.equal(stripeRestoreMessage([{status:'paid'},{status:'expired'}]),'Achats restaurés ✓');
-assert.doesNotMatch(stripeRestoreMessage([{status:'pending'}]),/restaurés/);
-assert.doesNotMatch(stripeRestoreMessage([{status:'error'}]),/restaurés/);
-assert.equal(stripeRestoreMessage([]),'Aucun achat à restaurer pour ce compte.');
+assert.doesNotMatch(stripeMessage('error'),/Restaurer/,'no manual restore any more: automatic at the next sign-in');
+assert.match(stripeMessage('error'),/automatiquement/);
 assert.deepEqual(await restoreStripePurchases(transport(503,{})),[{status:'error'}]);
 assert.deepEqual(await restoreStripePurchases(transport(200,{results:[{status:'paid'}]})),[{status:'paid'}]);
 
@@ -79,7 +77,7 @@ const screen=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url)
 assert.match(screen,/'\/functions\/v1\/lumen-stripe-checkout'/);
 assert.match(screen,/stripeCheckoutAvailable\(\{capabilities:lumenCapabilities,playApp:isPlayDistributedApp\(window\),playBilling,qaActive,signedIn:!!lumenUser\}\)/);
 assert.match(screen,/if\(!playBilling&&stripeAvailable\(\)\)return purchaseWithStripe\(productId,\{setStatus,setBusy,waiver\}\);/);
-assert.match(screen,/if\(!playBilling&&stripeAvailable\(\)\)return restoreStripePurchasesNow\(\{setStatus,setBusy\}\);/);
+assert.match(screen,/showPurchaseStatus\(stripeMessage\(result\.status==='open'\?'pending':result\.status\)\);\r?\n *if\(result\.status==='paid'\)thankForPurchase\(result\.productId\);/,'thank-you only after server "paid"');
 assert.match(screen,/if\(!lumenUser\|\|qaActive\|\|!waiver\?\.accepted\)return;/,'#732 waiver checked before any Stripe call');
 assert.match(screen,/if\(result\.status==='paid'\)\{await loadEntitlements\(\);if\(lumenUser\?\.id!==owner\)return;skyNavigation\.render\(\)\}\n?\r?\n? *showPurchaseStatus/,'confirmed only after server "paid" and reloaded entitlements');
 assert.match(screen,/rememberPlayAppLaunch\(window\);\r?\nlet stripeCheckoutReturn=consumeCheckoutReturn\(window\);/);

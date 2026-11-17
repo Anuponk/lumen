@@ -48,7 +48,7 @@ assert.deepEqual(await claimMasteryUnlocks({client:null,owner:'u1',candidates:[s
 // Wiring: claims after a verified hydration and on a local mastery event, never for QA or before the cloud profile.
 const screen=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 assert.match(screen,/canonicalRecovery\.schedule\(\);\s*void afterVerifiedHydration\(\);/,'Claim after verified hydration');
-assert.match(screen,/function afterVerifiedHydration\(\)\{void maybeClaimMasteryUnlocks\(\);void maybeRestorePlayPurchases\(\);void handleStripeReturn\(\)\}/,'Hydration claims mastery unlocks, restores Play purchases and checks a Stripe return (#730)');
+assert.match(screen,/function afterVerifiedHydration\(\)\{void maybeClaimMasteryUnlocks\(\);void maybeRestorePlayPurchases\(\);void handleStripeReturn\(\)\.finally\(\(\)=>void maybeRestoreStripePurchases\(\)\)\}/,'Hydration claims mastery unlocks, restores Play and Stripe purchases and checks a Stripe return (#730)');
 assert.match(screen,/transition\.kind==='adventure-mastery'\|\|transition\.kind==='campaign-mastery'\)void maybeClaimMasteryUnlocks\(\{retry:true\}\)/,'Claim on local mastery');
 assert.match(screen,/if\(!lumenUser\|\|!lumenSupabase\|\|qaActive\|\|!cloudProfileReady\)return;/,'Guarded');
 

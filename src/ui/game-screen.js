@@ -88,9 +88,10 @@ import {captureSupportCopy} from '../persistence/support-capture.js';
 import {mountSupportPanel,mountSupportDossier,mountSupportLookup} from './support-panel.js';
 import {mountAdventureAccess} from './adventure-access-panel.js';
 import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
-import {adventureOfferModel,mountAdventureOffer,restoreMessage} from './adventure-offer.js';
+import {adventureOfferModel,mountAdventureOffer} from './adventure-offer.js';
+import {purchaseThanksModel,showPurchaseThanks} from './purchase-thanks.js';
 import {getPlayBilling,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices} from '../persistence/play-billing.js';
-import {rememberPlayAppLaunch,isPlayDistributedApp,stripeCheckoutAvailable,startStripeCheckout,stripeSessionStatus,restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage,stripeRestoreMessage} from '../persistence/stripe-checkout.js';
+import {rememberPlayAppLaunch,isPlayDistributedApp,stripeCheckoutAvailable,startStripeCheckout,stripeSessionStatus,restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage} from '../persistence/stripe-checkout.js';
 import {SKY_PRODUCT_ID} from '../campaign/store-catalogue.js';
 import {createSound} from "./sound.js";
 import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
@@ -4173,26 +4174,17 @@ async function purchaseAdventure(productId,{setStatus,setBusy,waiver}){
  const owner=lumenUser.id;setBusy(true);setStatus('Ouverture du paiement Google Play…');
  const result=await buyWithPlay({productId,verify:playVerify});
  if(lumenUser?.id!==owner)return;
- if(result.status==='paid'){await loadEntitlements();setStatus('Achat confirmé ✓ Bonne exploration !');skyNavigation.render()}
+ if(result.status==='paid'){await loadEntitlements();if(lumenUser?.id!==owner)return;setStatus('Achat confirmé ✓ Bonne exploration !');skyNavigation.render();thankForPurchase(productId)}
  else if(result.status==='pending')setStatus('Paiement en attente de validation par Google : l’aventure se débloquera dès sa confirmation.');
  else if(result.status==='cancelled')setStatus('');
  else if(result.status==='owned_elsewhere')setStatus('Cet achat est déjà associé à un autre compte Lumen.');
  else setStatus('Achat non confirmé par le serveur. Si tu as été débité, il sera retrouvé au prochain lancement de l’app.');
  setBusy(false);
 }
-// #731: « Restaurer mes achats » — the server verifies every Play purchase again (idempotent);
-// the message only reports what the server confirmed.
-async function restorePurchasesNow({setStatus,setBusy}){
- if(!lumenUser||qaActive)return;
- if(!playBilling&&stripeAvailable())return restoreStripePurchasesNow({setStatus,setBusy});
- const owner=lumenUser.id;setBusy(true);setStatus('Recherche de tes achats Google Play…');
- const service=await playBillingReady;
- const results=service?await restorePlayPurchases({service,verify:playVerify,reportListFailure:true}):[{itemId:null,status:'error',reason:'service'}];
- if(lumenUser?.id!==owner)return;
- setStatus(restoreMessage(results));setBusy(false);
- // A restored Adventure re-renders the sky (the offer closes), as after a purchase.
- if(results.some(r=>r.status==='paid')){await loadEntitlements();if(lumenUser?.id===owner)skyNavigation.render()}
-}
+// #730 (owner decision, 17/11/2026): no « Restaurer mes achats » button. Purchases are
+// account rights (lumen_get_entitlements) and are re-verified automatically after every
+// verified hydration: Play tokens in the Play app, recent Stripe sessions on the web.
+// Silent: only a server-confirmed purchase reloads the rights.
 async function maybeRestorePlayPurchases(){
  if(!lumenUser||qaActive||!cloudProfileReady)return;
  const owner=lumenUser.id,service=await playBillingReady;if(!service||lumenUser?.id!==owner)return;
@@ -4234,13 +4226,16 @@ async function purchaseWithStripe(productId,{setStatus,setBusy,waiver}){
  if(result.status==='redirecting')return; // the page leaves for Stripe; the buttons stay busy
  setStatus(stripeMessage(result.status));setBusy(false);
 }
-async function restoreStripePurchasesNow({setStatus,setBusy}){
- const owner=lumenUser.id;setBusy(true);setStatus('Recherche de tes achats…');
- const transport=await stripeTransport();
- const results=transport?await restoreStripePurchases(transport):[{status:'error'}];
- if(lumenUser?.id!==owner)return;
- if(results.some(r=>r.status==='paid')){await loadEntitlements();if(lumenUser?.id!==owner)return;skyNavigation.render()}
- setStatus(stripeRestoreMessage(results));setBusy(false);
+async function maybeRestoreStripePurchases(){
+ if(!lumenUser||qaActive||!cloudProfileReady||!stripeAvailable())return;
+ const owner=lumenUser.id,transport=await stripeTransport();if(!transport||lumenUser?.id!==owner)return;
+ const results=await restoreStripePurchases(transport);
+ if(lumenUser?.id===owner&&results.some(r=>r.status==='paid')){await loadEntitlements();if(lumenUser?.id===owner)skyNavigation.render()}
+}
+// Thank-you screen, only after a server-confirmed purchase and reloaded rights.
+function thankForPurchase(productId){
+ if(qaActive||!productId)return;
+ showPurchaseThanks(document,purchaseThanksModel({productId,packs:CONTENT_PACKS}),{onExplore:()=>openJourneyMap(true)});
 }
 // Back from Stripe: ask the server, which reads the payment back from Stripe. « Achat
 // confirmé » only after the server confirmed and the entitlements were reloaded.
@@ -4257,10 +4252,12 @@ async function handleStripeReturn(){
   if(lumenUser?.id!==owner)return;
   if(result.status==='paid'){await loadEntitlements();if(lumenUser?.id!==owner)return;skyNavigation.render()}
   showPurchaseStatus(stripeMessage(result.status==='open'?'pending':result.status));
+  if(result.status==='paid')thankForPurchase(result.productId);
  }finally{stripeReturnInFlight=false}
 }
-// After a verified hydration: server-checked mastery unlocks (#728) and Play restore (#729).
-function afterVerifiedHydration(){void maybeClaimMasteryUnlocks();void maybeRestorePlayPurchases();void handleStripeReturn()}
+// After a verified hydration: server-checked mastery unlocks (#728), automatic purchase
+// restore (Play #729, Stripe #730) and the Stripe return.
+function afterVerifiedHydration(){void maybeClaimMasteryUnlocks();void maybeRestorePlayPurchases();void handleStripeReturn().finally(()=>void maybeRestoreStripePurchases())}
 // #731: offer shown on a locked Adventure. Purchases stay disabled until a payment
 // provider is connected (#729/#730); the free path claims a server-verified mastery unlock.
 function renderAdventureOffer(container,pack,{close}={}){
@@ -4271,7 +4268,6 @@ function renderAdventureOffer(container,pack,{close}={}){
  mountAdventureOffer(container,offer,{
   onSignIn:()=>{close?.();openEmailAccountOffer('signup')},
   onBuy:purchaseAdventure,
-  onRestore:restorePurchasesNow,
   onClaim:async button=>{button.disabled=true;button.textContent='Vérification…';await maybeClaimMasteryUnlocks({retry:true});
    const owned=adventureAccessEntitlements().some(e=>(typeof e==='string'?e:e?.entitlement)===pack.id);
    if(owned){close?.();skyNavigation.render()}else{button.disabled=false;button.textContent='Réessayer le déblocage'}}
