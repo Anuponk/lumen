@@ -2312,5 +2312,7 @@ progress/attempt changes at 320/360/390/1440px and the actual store at 360/1440p
 Set `LUMEN_UX_CAPTURE_DIR` to an existing temporary directory to retain screenshots.
 The existing sales-terms regression keeps consent before payment and checks both
 checkout product IDs. No rules, server RPCs, save schemas or prices change.
+An offer with no delivered additions is disabled and never claims ownership of
+future or unavailable content.
 Physical PWA/TWA native back gestures and live provider purchases remain separate
 acceptance checks; browser fixtures do not demonstrate a real transaction.

@@ -35,6 +35,10 @@ assert.equal(unit.disabled,false,'A priced incremental offer is buyable');
 assert.equal(unit.attributes['aria-label'],'Débloquer cette aventure · 1 €');
 assert.equal(nodes.find(n=>n.dataset.offerCount==='unit').textContent,'+ 10 nouvelles quêtes à explorer');
 find('sky').onclick();assert.equal(calls[1].product,'real-sky-all','The whole-sky card keeps its exact checkout product');
+// #786: zero delivered additions can mean future/unavailable content, not ownership.
+const emptyOffer=mountAdventureOffer(new Node('div'),{...model,unitCount:0,skyCount:0}).all();
+assert.equal(emptyOffer.find(n=>n.dataset.offer==='unit').disabled,true);
+assert.equal(emptyOffer.find(n=>n.dataset.offerCount==='unit').textContent,'Aucun nouveau contenu disponible');
 const terms=find('terms');assert.equal(terms.href,SALES_TERMS_URL);assert.equal(terms.target,'_blank');
 // No waiver box where no purchase can start; the terms link stays visible.
 for(const variant of [{signedIn:false},{purchasesAvailable:false}]){

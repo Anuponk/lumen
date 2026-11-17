@@ -34,7 +34,7 @@ try {
     [390, 844],
     [1440, 900],
   ]) {
-    await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: true });
+    await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 600 });
     await send('Page.navigate', { url: process.env.LUMEN_TEST_URL || 'http://127.0.0.1:8000/' });
     await until('!!window.lumenDiagnostics&&document.readyState==="complete"');
     await sleep(600);

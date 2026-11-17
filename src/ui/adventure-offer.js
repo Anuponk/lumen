@@ -74,7 +74,7 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
  const offerCard=(kind,title,price,count,product)=>{
   const card=el('section',{className:'adventure-offer-card'});
   const heading=el('h3',{},title),amount=el('strong',{className:'adventure-offer-price'},price);
-  const detail=el('p',{},count===null?'Vérification du contenu accessible…':count===0?'Déjà accessible':`+ ${count} nouvelles ${kind==='unit'?'quêtes à explorer':'grilles à découvrir'}`);
+  const detail=el('p',{},count===null?'Vérification du contenu accessible…':count===0?'Aucun nouveau contenu disponible':`+ ${count} nouvelles ${kind==='unit'?'quêtes à explorer':'grilles à découvrir'}`);
   detail.dataset.offerCount=kind;
   const button=buy(kind,title+' · '+price,product);
   button.setAttribute('aria-label',title+' · '+price);
