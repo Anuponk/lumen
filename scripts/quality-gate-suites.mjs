@@ -6,6 +6,7 @@ export const nodeSuites=[
  'ci-scope-tests.mjs',
  'license-tests.mjs',
  'install-request-tests.mjs',
+ 'sales-terms-tests.mjs',
  'daily-streak-pause-tests.mjs',
  'credits-tests.mjs',
  'adventure-access-tests.mjs',

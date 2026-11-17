@@ -6,6 +6,11 @@ import {celestialScope,celestialMastered} from './celestial-progress.js';
 import {ADVENTURE_PRICE_CENTS,SKY_PRICE_CENTS,SKY_PRODUCT_ID,formatEuros} from '../campaign/store-catalogue.js';
 
 export const SUPPORT_LINE='Sans pub, financé par les joueurs ✨';
+// #732: express request for immediate access and waiver of the 14-day withdrawal right
+// (art. L221-28 13° Code de la consommation), never pre-ticked, required before paying.
+export const WAIVER_TEXT='Je demande l’accès immédiat à mon achat et je renonce à mon droit de rétractation de 14 jours.';
+export const WAIVER_REQUIRED='Coche la case ci-dessus pour confirmer l’accès immédiat avant de payer.';
+export const SALES_TERMS_URL='/cgv.html';
 export const SUPPORT_TEXT='Lumen est développé par un petit studio indépendant. Pas de publicité, pas de collecte de données pour du ciblage : les achats servent à financer l’hébergement, les serveurs et le développement de nouvelles aventures.';
 
 // #729: on Google Play a product has a fixed price, so once a single Adventure has been
@@ -56,7 +61,17 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
  const setStatus=text=>{status.textContent=text||'';status.hidden=!text};
  const setBusy=busy=>{for(const b of buttons)b.disabled=busy||!model.purchasesAvailable};
  const buy=(kind,label,product)=>{const b=el('button',{type:'button',className:'adventure-offer-buy',disabled:!model.purchasesAvailable},label);b.dataset.offer=kind;buttons.push(b);
-  b.onclick=()=>{if(!model.signedIn){onSignIn();return}onBuy(product,{setStatus,setBusy})};return b};
+  b.onclick=()=>{if(!model.signedIn){onSignIn();return}
+  if(!waiver?.checked){setStatus(WAIVER_REQUIRED);waiver?.focus();return}
+  onBuy(product,{setStatus,setBusy,waiver:{accepted:true,text:WAIVER_TEXT,at:new Date().toISOString()}})};return b};
+ // The consent box is shown only where a purchase can actually start (signed in, provider available).
+ let waiver=null;
+ if(model.purchasesAvailable&&model.signedIn){
+  const label=el('label',{className:'adventure-offer-consent'});
+  waiver=el('input',{type:'checkbox',checked:false});waiver.dataset.offer='waiver';
+  waiver.onchange=()=>{if(waiver.checked&&status.textContent===WAIVER_REQUIRED)setStatus('')};
+  label.append(waiver,document.createTextNode(' '+WAIVER_TEXT));root.append(label);
+ }
  root.append(buy('unit','Débloquer cette aventure · '+model.unitPrice,model.unitProduct));
  if(model.showSky)root.append(buy('sky','Tout le vrai ciel · '+model.skyPrice,model.skyProduct));
  root.append(el('p',{className:'adventure-offer-cap'},model.showSky
@@ -65,6 +80,8 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
  if(model.purchasesAvailable&&model.signedIn){const r=el('button',{type:'button',className:'adventure-offer-restore'},'Restaurer mes achats');r.dataset.offer='restore';buttons.push(r);
   r.onclick=()=>onRestore({setStatus,setBusy});root.append(r)}
  if(!model.purchasesAvailable)root.append(el('p',{className:'adventure-offer-soon'},'Paiement bientôt disponible.'));
+ const terms=el('a',{className:'adventure-offer-terms',href:SALES_TERMS_URL,target:'_blank',rel:'noopener'},'Conditions générales de vente');terms.dataset.offer='terms';
+ const termsLine=el('p',{className:'adventure-offer-terms-line'});termsLine.append(terms);root.append(termsLine);
  const line=masteryLine(model);
  if(line){const p=el('p',{className:'adventure-offer-mastery'},line);p.dataset.offerMastery='';root.append(p);
   if(model.mastery.mastered&&model.signedIn){const claim=el('button',{type:'button',className:'adventure-offer-claim'},'Débloquer gratuitement');claim.dataset.offer='claim';claim.onclick=()=>onClaim(claim);root.append(claim)}}

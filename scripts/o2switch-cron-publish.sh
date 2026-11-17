@@ -9,7 +9,7 @@ LOCK="${HOME}/.lumen-cron-publish.lock"
 MODE="${1:---deploy}"
 REQUESTED_SHA="${2:-}"
 # Closed list: historical revisions may predate these public pages.
-PUBLIC_PAGES=(mentions-legales.html confidentialite.html supprimer-compte.html decouvrir.html comment-jouer.html apprendre-constellations.html robots.txt sitemap.xml)
+PUBLIC_PAGES=(mentions-legales.html confidentialite.html cgv.html supprimer-compte.html decouvrir.html comment-jouer.html apprendre-constellations.html robots.txt sitemap.xml)
 [[ $# -le 2 && ( "$MODE" == "--deploy" || "$MODE" == "--dry-run" ) ]] || { echo "Usage: $0 [--deploy|--dry-run] [SHA]"; exit 2; }
 [[ -z "$REQUESTED_SHA" || "$REQUESTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid requested SHA" >&2; exit 2; }
 for cmd in git python3 flock cp tar mktemp curl cmp; do command -v "$cmd" >/dev/null || { echo "Missing $cmd" >&2; exit 1; }; done

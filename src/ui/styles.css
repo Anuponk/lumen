@@ -1398,6 +1398,9 @@ body:has(#erasedAccountNotice:not([hidden])) #scriptedLearn{visibility:hidden!im
 .adventure-offer-support{color:#bfd1df}
 .adventure-offer-why{min-height:0!important;padding:0 4px;background:none;border:0;color:#8de1ef;text-decoration:underline;font-weight:600}
 .adventure-offer-why-text{color:#9fb6c8;font-size:12px}
+.adventure-offer-consent{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.4;color:#dce9f3}
+.adventure-offer-consent input{width:20px;height:20px;margin:1px 0 0;flex:none}
+.adventure-offer-terms{color:#8de1ef;font-size:12px}
 
 /* #749: computers and tablets use the phone layout in a centered column (one design
    to maintain). The board grows with the column but always leaves room for the header

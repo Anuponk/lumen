@@ -13,7 +13,7 @@
     "chargesVat": false,
     "confirmedOn": "2026-10-22",
     "source": "owner-confirmation",
-    "legalBasis": null
+    "legalBasis": "TVA non applicable, art. 293 B du CGI (franchise en base, confirmée le 2026-11-16)"
   },
   "audience": "mixed-including-children",
   "childrenAccountModel": "supervised-online",
@@ -25,7 +25,14 @@
     "confirmedOn": "2026-10-22",
     "source": "owner-confirmation"
   },
-  "monetization": "free-no-ads-no-purchases",
+  "monetization": "paid-content-no-ads",
+  "consumerMediator": null,
+  "consumerMediatorOwnerDeclaration": {
+    "plannedProvider": "CM2C",
+    "subscribeBefore": "owner-later-not-a-publication-blocker",
+    "confirmedOn": "2026-11-17",
+    "source": "owner-confirmation"
+  },
   "hosting": {
     "provider": "o2switch",
     "offerOwnerDeclaration": {
