@@ -135,7 +135,7 @@ better/changed claims. `legacy-command-client-tests.mjs` exercises the real
 UI reconnect helper; `cloud-unsynced-recovery-tests.mjs` verifies local archive
 export alongside both IndexedDB stores. These fixtures do not prove phone recovery.
 
-Player ergonomics (#555/#552/#566): `ux-lot-tests.mjs` (catalogue successor,
+Player ergonomics (#791/#552/#566): `ux-lot-tests.mjs` (catalogue successor,
 live guards, unchanged rewards, replay ready/running states) and
 `ux-lot-browser-tests.mjs` (hint geometry/touch, guest account explanation and
 retry, historical/inserted/constellation navigation by keyboard/mouse/touch).

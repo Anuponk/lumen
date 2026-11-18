@@ -541,6 +541,15 @@ milestones and assistance effects on badges are unchanged; no extra blocking
 tutorial is introduced.
 ## Records personnels (#600)
 
+### Aides sur la grille (#791)
+
+Contrôle guidé, Indice et Vérifier affichent leur texte dans un panneau
+superposé au plateau. La grille et les commandes gardent leur place et leur
+taille. Le panneau peut passer en haut pour dégager la case expliquée.
+Le texte défile à l’intérieur du panneau et les cases couvertes ne reçoivent
+aucun geste. Fermer l’explication du Contrôle guidé laisse la correction
+du Gardien à effectuer.
+
 ### Classement (#638)
 
 Écran unique de victoire (#682), dans un ordre constant : constellation et
@@ -550,8 +559,10 @@ bloc « Ta performance et ton classement » (temps final, record, rang, podium),
 puis « Quête suivante » pleine largeur et une rangée Mon ciel | Défier | Rejouer.
 Chaque zone a sa place dès la première image : le podium arrive dans un
 emplacement réservé (squelette de même gabarit), sans déplacer les autres zones.
-La célébration dure au moins deux secondes et attend la fin des animations
-finies ; le podium apparaît ensuite dans le même bloc, sans bouton ni second écran.
+Le podium apparaît dès que les badges ont fini leur animation et que les deux
+secondes minimales de célébration sont écoulées (#794). Les animations du ciel
+continuent dans le même écran. La lecture du classement peut commencer en
+parallèle. Si elle est encore en cours, l’emplacement indique son chargement.
 Podium à trois marches 2–1–3 de hauteurs décroissantes 1 > 2 > 3 ; seule la
 marche du joueur est mise en évidence. Hors podium : « Classement : Ne place ».
 Aucun compteur de joueurs (réels, virtuels ou total) n'est affiché. Les messages

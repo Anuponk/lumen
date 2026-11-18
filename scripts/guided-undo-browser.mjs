@@ -22,7 +22,10 @@ export async function verifyGuidedUndo({send,evaluate}){
   await tap(cell(0,first));await tap(cell(0,first));
   await tap(cell(0,wrong));await tap(cell(0,wrong));
   // A different logical move commits the deferred guided intervention.
+  const boardLayout=()=>evaluate("JSON.stringify(document.getElementById('board').getBoundingClientRect())");
+  const initial=await boardLayout();
   await tap(cell(1,0));
+  assert.equal(await boardLayout(),initial,"The guided explanation preserves the board geometry");
   assert.equal(await evaluate(`document.getElementById('guidedCard').hidden`),false,'Actual touch produces the guided conflict: '+JSON.stringify(await evaluate(`({n:lumenDiagnostics.snapshot().n,row:lumenDiagnostics.snapshot().state[0],guided:document.getElementById('guidedErrors').checked,mask:document.getElementById('attemptMask').hidden,msg:document.getElementById('msg')?.textContent})`)));
   const before=await evaluate('lumenDiagnostics.snapshot().state');
   assert.equal(await guidedUses(),usesBefore+1,'One guided intervention adds one five-second penalty');

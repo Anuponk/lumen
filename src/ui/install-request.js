@@ -19,6 +19,6 @@ export function isIosDevice(userAgent){return /iphone|ipad|ipod/i.test(String(us
 // otherwise the exact manual steps for the device.
 export function requestedInstallCopy({prompt,ios}){
  if(prompt)return {copy:'Ajoute LUMEN à ton écran d’accueil pour retrouver ton ciel en un geste.',button:'Installer LUMEN'};
- if(ios)return {copy:'Sur iPhone : touche Partager, puis « Sur l’écran d’accueil ».',button:'J’ai compris'};
+ if(ios)return {copy:'Si le QR code ou une autre app a ouvert LUMEN dans son navigateur, choisis « Ouvrir dans Safari ». Dans Safari, touche Partager (au besoin dans le menu ⋯), puis « Sur l’écran d’accueil » et « Ajouter ».',button:'J’ai compris'};
  return {copy:'Ouvre le menu ⋮ de ton navigateur, puis « Installer l’application » ou « Ajouter à l’écran d’accueil ».',button:'J’ai compris'};
 }

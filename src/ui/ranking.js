@@ -66,7 +66,7 @@ export function createRankingView({client,getContext,format,document=globalThis.
  function show(q,operationId=null,options={}){clear();quest=q;operation=operationId;owner=getContext().owner;connection=getContext().client;root.hidden=false;const token=generation;
   // #695 review: read the board only; nothing is flushed or animated.
   if(options.review){review=true;animated=true;status('Chargement du classement…');void refresh();return}
-  status('Classement en attente de synchronisation. Ta victoire est sauvegardée.');
+  status('Chargement du classement…');
   // Do not silently show an old confirmed podium when this victory failed to sync.
   void client.flush().then(async results=>{
    if(operation&&typeof client.entries==='function'&&client.entries(owner).some(e=>e.operationId===operation)){

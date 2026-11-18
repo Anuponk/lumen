@@ -51,6 +51,24 @@ try{
  await until('document.querySelectorAll("#board .cell").length>0','plain visit');await sleep(2000);
  assert.equal(await evaluate(shown),false,'Plain visit unchanged');
  results.push('plain visit unchanged');
+ const iphone=await send('Page.addScriptToEvaluateOnNewDocument',{source:`
+  Object.defineProperty(navigator,'userAgent',{get:()=> 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148'});
+  Object.defineProperty(navigator,'standalone',{get:()=> localStorage.getItem('fixtureInstalled')==='1'});
+  window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();event.stopImmediatePropagation()},true);
+  delete Object.getPrototypeOf(navigator).serviceWorker;
+ `});
+ await navigateAndWait({send,evaluate},'Page.navigate',{url:url.href});
+ await evaluate("document.querySelector('.first-welcome:not([hidden]) .intro-play')?.click()");
+ await until(shown,'iPhone opens the manual Safari steps');
+ assert.match(await evaluate("document.getElementById('installOptinCopy').textContent"),/Ouvrir dans Safari.*Partager.*Sur l’écran d’accueil.*Ajouter/);
+ await click('#installEnable');
+ assert.equal(await evaluate(shown),false,'Acknowledging the Safari directions closes the sheet');
+ await evaluate("localStorage.setItem('fixtureInstalled','1')");
+ await navigateAndWait({send,evaluate},'Page.navigate',{url:url.href});
+ await sleep(1800);
+ assert.equal(await evaluate(shown),false,'Installed iPhone shell suppresses an explicit install request');
+ await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:iphone.identifier});
+ results.push('iPhone Safari instructions and installed state');
  assert.deepEqual(errors,[]);
  const report={results,uncaughtErrors:errors};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));

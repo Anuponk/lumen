@@ -24,16 +24,26 @@ async function fixture(width,height,{qa=true,solved=12}={}){
 }
 async function check(name,fn){try{await fn();results.push({name,ok:true});console.log('PASS',name)}catch(e){results.push({name,ok:false,error:e.message});console.log('FAIL',name,e.message)}}
 try{
- for(const [w,h] of [[320,568],[360,640],[390,844],[667,375],[844,390],[1440,900]])await check(`555 hint last row ${w}x${h}`,async()=>{
+ for(const [w,h] of [[320,568],[360,640],[390,844],[667,375],[844,390],[1440,900]])await check(`791 hint overlay ${w}x${h}`,async()=>{
   await fixture(w,h,{qa:false,solved:2});
-  await evaluate(`lumenDiagnostics.setupQuest(2);document.getElementById('questStart').hidden=true;document.getElementById('attemptMask').click();document.getElementById('hint').click()`);
-  const geometry=await evaluate(`(()=>{const b=document.getElementById('board'),c=document.getElementById('hintCard'),r=b.getBoundingClientRect(),s=c.getBoundingClientRect();return {open:!c.hidden,board:{top:r.top,bottom:r.bottom,width:r.width},card:{top:s.top,bottom:s.bottom},last:[...b.querySelectorAll('.cell')].slice(-lumenDiagnostics.snapshot().n).every(el=>{const t=el.getBoundingClientRect();return document.elementFromPoint(t.x+t.width/2,t.y+t.height/2)?.closest('.cell')===el})}})()`);
+  await evaluate(`lumenDiagnostics.setupQuest(2);document.getElementById('questStart').hidden=true;document.getElementById('attemptMask').click()`);
+  const layout=`JSON.stringify({board:document.getElementById('board').getBoundingClientRect(),actions:document.querySelector('.actions').getBoundingClientRect(),scrollY,scrollHeight:document.querySelector('.app').scrollHeight})`;
+  const before=await evaluate(layout);
+  await evaluate(`document.getElementById('hint').click()`);
+  assert.equal(await evaluate(layout),before,'Assistance does not resize the board, move the controls, or add page scroll');
+  const point=await evaluate(`(()=>{const card=document.getElementById('hintCard'),r=card.getBoundingClientRect(),close=document.getElementById('hintClose').getBoundingClientRect();const cells=[...document.querySelectorAll('#board .cell')];const cell=cells.find(el=>{const p=el.getBoundingClientRect(),x=p.x+p.width/2,y=p.y+p.height/2;return x>r.left&&x<r.right&&y>r.top&&y<r.bottom&&document.elementFromPoint(x,y)?.closest('#hintCard')});if(!cell)return null;const p=cell.getBoundingClientRect();return {x:p.x+p.width/2,y:p.y+p.height/2,closeVisible:close.top>=0&&close.bottom<=innerHeight}})()`);
+  assert(point?.closeVisible,'The overlay covers at least one cell and has a reachable close button');
   if(w===360){const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(os.tmpdir(),`lumen-ux-hint-${w}x${h}.png`),Buffer.from(shot.data,'base64'))}
-  assert(geometry.open,'Hint must be open');assert(geometry.last,JSON.stringify(geometry));assert(geometry.board.bottom<=h,JSON.stringify(geometry));
-  const before=await evaluate('lumenDiagnostics.snapshot().state.at(-1)[0]');
-  const pos=await evaluate(`(()=>{const r=document.querySelector('.cell[data-row="'+(lumenDiagnostics.snapshot().n-1)+'"][data-col="0"]').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
-  if(w<900){await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[pos]});await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]})}else{await send('Input.dispatchMouseEvent',{type:'mousePressed',...pos,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',...pos,button:'left',clickCount:1})}
-  assert.notEqual(await evaluate('lumenDiagnostics.snapshot().state.at(-1)[0]'),before,'Last row receives actual input');
+  const state=await evaluate('JSON.stringify(lumenDiagnostics.snapshot().state)');
+  const {x,y}=point;
+  const tap=async()=>{if(w<900){await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]})}else{await send('Input.dispatchMouseEvent',{type:'mousePressed',x,y,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',x,y,button:'left',clickCount:1})}};
+  await tap();
+  assert.equal(await evaluate('JSON.stringify(lumenDiagnostics.snapshot().state)'),state,'A tap over the panel never reaches a cell');
+  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+  assert.equal(await evaluate("document.getElementById('hintCard').hidden"),true,'Escape closes the hint');
+  assert.equal(await evaluate(layout),before,'Closing assistance preserves the original layout');
+  await tap();
+  assert.notEqual(await evaluate('JSON.stringify(lumenDiagnostics.snapshot().state)'),state,'The same point plays immediately after closing');
  });
  for(const [w,h] of [[360,640],[1440,900]])await check(`552 explicit guest gate ${w}`,async()=>{
   await fixture(w,h,{qa:false,solved:6});
