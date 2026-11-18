@@ -88,7 +88,7 @@ import {captureSupportCopy} from '../persistence/support-capture.js';
 import {mountSupportPanel,mountSupportDossier,mountSupportLookup} from './support-panel.js';
 import {mountAdventureAccess} from './adventure-access-panel.js';
 import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
-import {adventureOfferModel,mountAdventureOffer} from './adventure-offer.js';
+import {adventureOfferModel,mountAdventureOffer,updateAdventureOfferMastery} from './adventure-offer.js';
 import {purchaseThanksModel,showPurchaseThanks} from './purchase-thanks.js';
 import {createPlayPriceLoader,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,toPlayProductId} from '../persistence/play-billing.js';
 import {rememberPlayAppLaunch,isPlayDistributedApp,stripeCheckoutAvailable,startStripeCheckout,stripeSessionStatus,restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage} from '../persistence/stripe-checkout.js';
@@ -117,6 +117,7 @@ rememberPlayAppLaunch(window);
 let stripeCheckoutReturn=consumeCheckoutReturn(window);
 const {normalizeSequentialProgress,solvedCount,exactSkyScoreForSolvedPrefix,ensureSkyScore,skyStarsEarned,challengeRewardKeys,constellationProgress,constellationLitAt,awards,performanceRun,savePerformance}=createCampaign(()=>lumenProgress,()=>saveLumenProgress(),()=>({...capturedTiming(),activeGameSeconds,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted,qualifying:!!attemptEngine.snapshot()?.qualifying}),()=>canonicalQuestList());
 let verifiedOfflineOwnerId=null;
+let refreshAdventureOffer=null;
 let cloudProfileReady=false,cloudProfileTimer=null,cloudProfileBusy=false,cloudProfileDirty=false,cloudProfileBaseline=null,cloudProfileInFlight=null,cloudProfileFailure=null;
 let cloudHydrationGeneration=0;
 configureCommandSession(()=>({userId:lumenUser?.id,client:lumenSupabase,generation:cloudHydrationGeneration}),{onIssue:issue=>recordCloudDiagnostic('command_cache_storage',{reason:issue.kind})});
@@ -738,11 +739,11 @@ function reportLocalPersistence(result){
   :'La sauvegarde sur cet appareil n’est pas confirmée. Garde Lumen ouvert et réessaie ; tes copies précédentes sont conservées.';}
  if(!result.ok)recordCloudDiagnostic('local_preservation_failed',{reason:result.code});
 }
-const {loadLumenProgress,saveLumenProgress}=createLocalPersistence(localStorage,()=>lumenProgress,{progressKey:qaActive?"lumenQaProgressV1":"lumenProgressV1",onSave:result=>{reportLocalPersistence(result);scheduleCloudProfile()},onIssue:reportLocalPersistence});
+const {loadLumenProgress,saveLumenProgress}=createLocalPersistence(localStorage,()=>lumenProgress,{progressKey:qaActive?"lumenQaProgressV1":"lumenProgressV1",onSave:result=>{reportLocalPersistence(result);scheduleCloudProfile();if(refreshAdventureOffer)queueMicrotask(()=>refreshAdventureOffer?.('mastery'))},onIssue:reportLocalPersistence});
 const persistenceModel={
 get lumenSupabase(){return lumenSupabase},set lumenSupabase(value){if(lumenSupabase!==value){cloudHydrationGeneration++;canonicalRecoveryContext=null;canonicalRecovery.cancel()}lumenSupabase=value},
 get lumenEntitlements(){return lumenEntitlements},set lumenEntitlements(value){lumenEntitlements=Array.isArray(value)?value:[]},
-get lumenEntitlementsState(){return lumenEntitlementsState},set lumenEntitlementsState(value){lumenEntitlementsState=value},
+get lumenEntitlementsState(){return lumenEntitlementsState},set lumenEntitlementsState(value){lumenEntitlementsState=value;if(refreshAdventureOffer)queueMicrotask(()=>refreshAdventureOffer?.('mastery'))},
 get lumenCapabilities(){return lumenCapabilities},set lumenCapabilities(value){lumenCapabilities=Array.isArray(value)?value:[]},
 get lumenUser(){return lumenUser},set lumenUser(value){if(lumenUser?.id!==value?.id){cloudHydrationGeneration++;canonicalRecovery.cancel();canonicalRecoveryContext=null;canonicalOutboxNotice=null;verifiedOfflineOwnerId=null;if(value===null)clearVerifiedOfflineOwner(localStorage);cloudProfileReady=false;cloudProfileBaseline=null;cloudProfileFailure=null;lumenNickname="";lumenEntitlements=[];lumenEntitlementsState=value?'loading':'idle'}lumenUser=value},
 get lumenCloudReady(){return lumenCloudReady},set lumenCloudReady(value){lumenCloudReady=value},
@@ -1408,6 +1409,7 @@ function updateSignedOutScreen(){
  screen.hidden=!show;document.body.classList.toggle('signed-out-neutral',show);
 }
 function updateAccountSwitchHold(){
+ refreshAdventureOffer?.('mastery');
  updateSignedOutScreen();
  const hold=document.getElementById('accountSwitchHold');if(!hold)return;
  const pending=accountSwitchPending();
@@ -4163,10 +4165,10 @@ let celestialPending=null;
 // #729: Google Play Billing exists only inside the Play app (TWA). The server verifies
 // every token (Edge Function lumen-play-purchase) and records it (#728); the client
 // never grants and never announces a purchase the server did not confirm.
-let playBilling=null,playPriceLabels={},refreshPlayOffer=null;
+let playBilling=null,playPriceLabels={};
 const playPriceLoader=createPlayPriceLoader({win:window,playApp:isPlayDistributedApp(window),
  ids:[...CONTENT_PACKS.filter(p=>p.access==='locked').map(p=>p.id),SKY_PRODUCT_ID],
- onChange:state=>{playBilling=state.status==='loading'?null:state.service;playPriceLabels=state.prices;refreshPlayOffer?.()},
+ onChange:state=>{playBilling=state.status==='loading'?null:state.service;playPriceLabels=state.prices;refreshAdventureOffer?.()},
  onDiagnostic:event=>{if(isPlayDistributedApp(window)||playPriceLoader.snapshot().playApp)console.info('[Lumen Play billing]',event)}
 });
 let playBillingReady=playPriceLoader.load();
@@ -4280,24 +4282,47 @@ async function handleStripeReturn(){
 }
 // After a verified hydration: server-checked mastery unlocks (#728), automatic purchase
 // restore (Play #729, Stripe #730) and the Stripe return.
-function afterVerifiedHydration(){void maybeClaimMasteryUnlocks();void maybeRestorePlayPurchases();void refreshPaymentChannel().finally(()=>handleStripeReturn()).finally(()=>void maybeRestoreStripePurchases())}
+function afterVerifiedHydration(){refreshAdventureOffer?.('mastery');void maybeClaimMasteryUnlocks();void maybeRestorePlayPurchases();void refreshPaymentChannel().finally(()=>handleStripeReturn()).finally(()=>void maybeRestoreStripePurchases())}
 // #731: offer shown on a locked Adventure. Purchases stay disabled until a payment
 // provider is connected (#729/#730); the free path claims a server-verified mastery unlock.
 function renderAdventureOffer(container,pack,{close}={}){
- const model=mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot(),entitlementsState:adventureEntitlementsState()});
- const packs=model.skies.flatMap(s=>s.packs);if(!packs.some(p=>p.id===pack.id))return false;
- const offer=adventureOfferModel({pack,packs,quests:canonicalQuestList(),progress:lumenProgress,signedIn:!!lumenUser&&!qaActive,accounts:!qaActive,
-  purchasesAvailable:(!!playBilling||stripeAvailable())&&!qaActive,boughtSingle:lumenEntitlements.some(e=>e?.source==='purchase'),prices:playPriceLabels,
-  pricesRequired:isPlayDistributedApp(window)||playPriceLoader.snapshot().playApp,priceStatus:playPriceLoader.snapshot().status,priceErrors:playPriceLoader.snapshot().errors});
+ const readOffer=()=>{
+  const model=mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot(),entitlementsState:adventureEntitlementsState()});
+  const packs=model.skies.flatMap(s=>s.packs);
+  if(!packs.some(p=>p.id===pack.id))return null;
+  let cachedAccount=false;
+  if(!qaActive&&!lumenUser){try{cachedAccount=!!localStorage.getItem('lumenCloudOwnerId')}catch{}}
+  const masteryPending=!qaActive&&(authSessionPending||!!lumenUser&&!cloudProfileReady);
+  const masteryStatus=masteryPending?(cloudProfileFailure||navigator.onLine===false?'unavailable':'loading'):cachedAccount?'unavailable':'ready';
+  const masteryConfirmed=lumenEntitlementsState==='ready'&&lumenEntitlements.some(e=>e?.entitlement===pack.id&&e.source==='mastery');
+  return adventureOfferModel({pack,packs,quests:canonicalQuestList(),progress:lumenProgress,signedIn:!!lumenUser&&!qaActive,accounts:!qaActive,masteryStatus,masteryConfirmed,
+   purchasesAvailable:(!!playBilling||stripeAvailable())&&!qaActive,boughtSingle:lumenEntitlements.some(e=>e?.source==='purchase'),prices:playPriceLabels,
+   pricesRequired:isPlayDistributedApp(window)||playPriceLoader.snapshot().playApp,priceStatus:playPriceLoader.snapshot().status,priceErrors:playPriceLoader.snapshot().errors});
+ };
+ const offer=readOffer();if(!offer)return false;
+ const onContinue=()=>{close?.();skyNavigation.render()};
+ const onClaim=async button=>{
+  const owner=lumenUser?.id;
+  if(!owner||!cloudProfileReady)return;
+  button.disabled=true;button.textContent='Vérification…';
+  await maybeClaimMasteryUnlocks({retry:true});
+  if(lumenUser?.id!==owner||!cloudProfileReady||!button.isConnected)return;
+  const owned=lumenEntitlementsState==='ready'&&lumenEntitlements.some(e=>e?.entitlement===pack.id&&e.source==='mastery');
+  if(owned)onContinue();
+  else{button.disabled=false;button.textContent='Réessayer la vérification'}
+ };
  const mounted=mountAdventureOffer(container,offer,{
   onRetry:()=>{playBillingReady=playPriceLoader.load()},
   onSignIn:()=>{close?.();openEmailAccountOffer('signup')},
-  onBuy:purchaseAdventure,
-  onClaim:async button=>{button.disabled=true;button.textContent='Vérification…';await maybeClaimMasteryUnlocks({retry:true});
-   const owned=adventureAccessEntitlements().some(e=>(typeof e==='string'?e:e?.entitlement)===pack.id);
-   if(owned){close?.();skyNavigation.render()}else{button.disabled=false;button.textContent='Réessayer le déblocage'}}
+  onBuy:purchaseAdventure,onClaim,onContinue
  });
- refreshPlayOffer=()=>{if(container.isConnected&&container.firstElementChild===mounted)renderAdventureOffer(container,pack,{close})};
+ refreshAdventureOffer=mode=>{
+  if(!container.isConnected||container.firstElementChild!==mounted||container.closest('[hidden]'))return;
+  if(mode==='mastery'){
+   const current=readOffer();
+   if(current)updateAdventureOfferMastery(mounted.querySelector('[data-offer-mastery]'),current,{onClaim,onContinue});
+  }else renderAdventureOffer(container,pack,{close});
+ };
  return true;
 }
 // #728: ask the server for the next Adventure once the previous one is 100% mastered.
