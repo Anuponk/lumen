@@ -1233,14 +1233,19 @@ let accountOfferSignInPending=false;
 let accountEmailMode="signup";
 let accountSignupSubmitting=false;
 let accountSignupConfirmedPending=false;
-function setSignupConfirmation(pending,email=""){
+let accountOfferRevision=0;
+const accountRequestPendingCopy="Une demande est déjà en cours…";
+function setSignupConfirmation(pending){
  accountSignupConfirmedPending=pending;
  const panel=document.getElementById("accountSignupConfirmation"),fields=document.getElementById("accountEmailAuth"),submit=document.getElementById("accountPasswordSubmit");
  if(panel)panel.hidden=!pending;
  if(fields)for(const el of fields.querySelectorAll("label,input,.account-password-wrap,#accountPasswordSubmit"))el.hidden=pending;
  if(submit)submit.disabled=pending||accountSignupSubmitting;
- const destination=document.getElementById("accountSignupDestination");if(destination)destination.textContent=email;
- const status=document.getElementById("accountEmailStatus");if(status&&pending)status.textContent="";
+ if(pending){
+  const password=document.getElementById("accountPassword");if(password)password.value="";
+  const status=document.getElementById("accountEmailStatus");if(status)status.textContent="";
+  document.getElementById("accountSignupConfirmationTitle")?.focus();
+ }
 }
 
 let accountOfferResumeNext=false;
@@ -1265,13 +1270,15 @@ function maybeOfferAccount(){
 function dismissAccountOffer(){
  const box=document.getElementById("accountOptin");if(!box)return;
  box.hidden=true;
+ accountOfferRevision++;
  trackLumenEvent("account_offer_dismissed",null,{milestone:solvedCount(),source:"quest_milestone",qa:qaActive});
  if(accountOfferResumeNext){accountOfferResumeNext=false;openJourneyMap()}
 }
-async function acceptAccountOffer(){const box=document.getElementById("accountOptin");if(box)box.hidden=true;const milestone=accountOfferMilestone();trackLumenEvent("account_offer_accept",null,{milestone,source:"constellation_complete",qa:qaActive});if(!lumenSupabase){trackLumenEvent("account_signin_failure",null,{milestone,reason:"cloud_unavailable",qa:qaActive});return}accountOfferSignInPending=true;try{sessionStorage.setItem("lumenAccountOfferSignInPending","1")}catch(_){}const result=await signIn(new URL("/", location.origin).toString());if(!result.ok){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_failure",null,{milestone,reason:result.reason||"oauth",qa:qaActive})}}
+async function acceptAccountOffer(){const box=document.getElementById("accountOptin");if(box)box.hidden=true;accountOfferRevision++;const milestone=accountOfferMilestone();trackLumenEvent("account_offer_accept",null,{milestone,source:"constellation_complete",qa:qaActive});if(!lumenSupabase){trackLumenEvent("account_signin_failure",null,{milestone,reason:"cloud_unavailable",qa:qaActive});return}accountOfferSignInPending=true;try{sessionStorage.setItem("lumenAccountOfferSignInPending","1")}catch(_){}const result=await signIn(new URL("/", location.origin).toString());if(!result.ok){accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}trackLumenEvent("account_signin_failure",null,{milestone,reason:result.reason||"oauth",qa:qaActive})}}
 function openEmailAccountOffer(mode="signup",userSelection=true){
+ accountOfferRevision++;
  accountEmailMode=mode==="login"?"login":"signup";
- accountSignupSubmitting=false;setSignupConfirmation(false);
+ setSignupConfirmation(false);
  const login=accountEmailMode==="login";
  const offer=document.getElementById("accountOptin");if(offer)offer.hidden=false;
  const title=document.getElementById("accountOptinTitle");if(title)title.textContent=login?"Retrouve ton aventure":"Garde tes étoiles avec toi ✨";
@@ -1284,7 +1291,7 @@ function openEmailAccountOffer(mode="signup",userSelection=true){
  const signup=document.getElementById("accountSignupTab"),switcher=document.getElementById("accountAuthSwitch");
  if(signup)signup.setAttribute("aria-pressed",String(!login));
  if(switcher)switcher.setAttribute("aria-pressed",String(login));
- const status=document.getElementById("accountEmailStatus");if(status)status.textContent="";
+ const status=document.getElementById("accountEmailStatus");if(status)status.textContent=accountSignupSubmitting?accountRequestPendingCopy:"";
  const send=document.getElementById("accountEmailSend");if(send)send.hidden=true;
  const otp=document.getElementById("accountOtpStep");if(otp)otp.hidden=true;
  if(userSelection)document.getElementById("accountEmail")?.focus();
@@ -1295,23 +1302,31 @@ async function submitAccountPassword(){
  const email=document.getElementById("accountEmail")?.value?.trim();
  const password=document.getElementById("accountPassword")?.value;
  const status=document.getElementById("accountEmailStatus"),submit=document.getElementById("accountPasswordSubmit");
+ const revision=accountOfferRevision,createUser=accountEmailMode==="signup";
  accountSignupSubmitting=true;if(submit)submit.disabled=true;
- if(status)status.textContent=accountEmailMode==="signup"?"Envoi de la demande d’inscription…":"Connexion en cours…";
- accountOfferSignInPending=accountEmailMode==="login";
+ if(status)status.textContent=createUser?"Envoi de la demande d’inscription…":"Connexion en cours…";
+ accountOfferSignInPending=!createUser;
  try{if(accountOfferSignInPending)sessionStorage.setItem("lumenAccountOfferSignInPending","1")}catch(_){}
  try{
-  const result=await emailPasswordAuth(email,password,new URL("/",location.origin).toString(),{createUser:accountEmailMode==="signup"});
+  const result=await emailPasswordAuth(email,password,new URL("/",location.origin).toString(),{createUser});
   if(!result.ok){
    accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}
-   if(status)status.textContent=result.reason==="email"?"Entre une adresse email valide.":result.reason==="password"?"Utilise un mot de passe d'au moins 12 caractères.":accountEmailMode==="login"?"Connexion impossible. Vérifie le mot de passe, ou crée un compte si cette adresse est nouvelle.":"Inscription impossible. Vérifie cette adresse ou essaie de te connecter.";
+   if(status&&revision===accountOfferRevision)status.textContent=result.reason==="email"?"Entre une adresse email valide."
+    :result.reason==="password"?"Utilise un mot de passe d'au moins 12 caractères."
+    :result.reason==="signup_rate_limited"?"Trop de demandes d’inscription. Attends un peu avant de réessayer."
+    :result.reason==="signup_unavailable"?"La demande d’inscription n’a pas pu être confirmée. Réessaie plus tard."
+    :!createUser?"Connexion impossible. Vérifie le mot de passe, ou crée un compte si cette adresse est nouvelle."
+    :"Inscription impossible. Vérifie cette adresse ou essaie de te connecter.";
    return;
   }
-  if(result.pendingConfirmation){setSignupConfirmation(true,email);}
+  if(revision!==accountOfferRevision)return;
+  if(result.pendingConfirmation)setSignupConfirmation(true);
   else if(status)status.textContent="Compte connecté ✓";
- }catch(error){
-  if(status)status.textContent="Impossible de joindre le service d’authentification. Réessaie.";
+ }catch{
+  if(status&&revision===accountOfferRevision)status.textContent="Impossible de joindre le service d’authentification. Réessaie.";
  }finally{
   accountSignupSubmitting=false;if(submit)submit.disabled=accountSignupConfirmedPending;
+  if(status?.textContent===accountRequestPendingCopy)status.textContent="";
  }
 }
 document.getElementById("accountSignupBack")?.addEventListener("click",()=>{

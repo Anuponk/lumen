@@ -349,6 +349,66 @@ try{
   assert.equal(await evaluate(`!!document.getElementById('accountOtp')`),false);
   await evaluate(`document.getElementById('accountOptinLater').click()`);
   assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),true);
+
+  // #814: issue only mocked mail requests. The player remains a guest.
+  const beforeSignup=await guestProgress();
+  await evaluate(`(() => {
+    const original=window.fetch;
+    window.__signupCalls=0;
+    window.__restoreSignupFetch=()=>{window.fetch=original};
+    window.fetch=(url,init)=>!String(url).endsWith('/functions/v1/lumen-auth-mail')?original(url,init):
+      new Promise((resolve,reject)=>{
+        window.__signupCalls++;
+        window.__finishSignup=(status,ok=true)=>status
+          ?resolve(new Response(JSON.stringify({ok,reason:'private@invalid.test'}),{status}))
+          :reject(new TypeError('private@invalid.test'));
+      });
+    document.getElementById('mobileAuthAction').click();
+    document.getElementById('accountEmail').value='fixture@example.test';
+    document.getElementById('accountPassword').value='test-password-only';
+  })()`);
+  const submitSignup="document.getElementById('accountPasswordSubmit').click()";
+  const signupPanel="document.getElementById('accountSignupConfirmation')";
+  const signupButton="document.getElementById('accountPasswordSubmit')";
+  const signupStatus="document.getElementById('accountEmailStatus').textContent";
+  for(const [status,ok,message] of [
+    [502,false,'n’a pas pu être confirmée'],[0,false,'n’a pas pu être confirmée'],
+    [429,false,'Trop de demandes'],[200,false,'n’a pas pu être confirmée'],
+  ]){
+   const calls=await evaluate('window.__signupCalls');
+   await evaluate(submitSignup+';'+submitSignup);
+   assert.equal(await evaluate('window.__signupCalls'),calls+1,'A double click cannot send a second mail');
+   assert.equal(await evaluate(signupButton+'.disabled'),true);
+   assert.match(await evaluate(signupStatus),/Envoi de la demande/);
+   await evaluate(`window.__finishSignup(${status},${ok})`);
+   await until(signupStatus+'.includes('+JSON.stringify(message)+')');
+   assert.equal(await evaluate(signupPanel+'.hidden'),true);
+   assert.doesNotMatch(await evaluate(signupStatus),/@|envoyé/,'The error exposes no provider detail or delivery claim');
+  }
+  await evaluate(submitSignup);
+  const switchingCalls=await evaluate('window.__signupCalls');
+  await evaluate("document.getElementById('accountAuthSwitch').click();document.getElementById('accountSignupTab').click();"+submitSignup);
+  assert.equal(await evaluate('window.__signupCalls'),switchingCalls,'Changing tabs cannot restart a pending submission');
+  await evaluate('window.__finishSignup(200)');
+  await until('!'+signupButton+'.disabled');
+  assert.equal(await evaluate(signupPanel+'.hidden'),true,'A response from the old view cannot replace the active form');
+  await evaluate(submitSignup);
+  await evaluate('window.__finishSignup(200)');
+  await until('!'+signupPanel+'.hidden');
+  const confirmation=await evaluate(`(()=>{
+    const panel=${signupPanel},card=panel.closest('.account-optin-card'),r=panel.getBoundingClientRect();
+    return {text:panel.textContent,focused:document.activeElement.id,password:document.getElementById('accountPassword').value,
+      fits:r.left>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1&&card.scrollHeight<=card.clientHeight+1,
+      pageStill:document.documentElement.scrollTop===0};
+  })()`);
+  assert.match(confirmation.text,/demande de confirmation a été prise en compte/);
+  assert.match(confirmation.text,/spams ou courriers indésirables/);
+  assert.doesNotMatch(confirmation.text,/@|avons envoyé/);
+  assert.equal(confirmation.focused,'accountSignupConfirmationTitle');
+  assert.equal(confirmation.password,'');
+  assert.equal(confirmation.fits&&confirmation.pageStill,true,'Confirmation fits without extra scrolling');
+  assert.equal(await guestProgress(),beforeSignup,'Confirmation is not an Auth session or cloud save');
+  await evaluate("window.__restoreSignupFetch();document.getElementById('accountOptinClose').click()");
   await evaluate(`document.getElementById('mobileAuthAction').click();document.getElementById('accountAuthSwitch').click();document.getElementById('accountEmail').value='fixture@example.test';document.getElementById('accountPassword').value='test-password-only';document.getElementById('accountPasswordSubmit').click()`);
   await until(`document.getElementById('mobileAuthStatus').textContent.includes('sauvegarde à resynchroniser')`);
   assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),true);

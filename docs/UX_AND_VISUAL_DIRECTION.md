@@ -400,6 +400,10 @@ available content, with catalogue-derived quests, constellations, stars and all
 four badge counts. Post-game actions retain access to Mon ciel and missing
 badges. No second finale opens after the player chooses an action.
 
+### Sign-up confirmation (#814)
+
+After the mail service accepts sign-up, focus the confirmation heading and tell the player to check their inbox and spam folder. A pending or rejected request keeps the form visible with its own feedback. Keep one submission in flight when the player changes tabs or closes the dialog. Confirmation does not imply mail delivery or a cloud save. A separate resend would need a dedicated provider operation under the existing server limits.
+
 ### Adventure offer and progress (#811)
 
 Inside « Le savais-tu ? », give the 100% mastery rule and the remaining work on separate lines. Show only the measures that remain. If the profile is loading or unavailable, explain the status without showing counts. Once both measures reach zero, offer the existing sign-in or server verification action. A verified mastery entitlement confirms that free access is available. Keep the paid options separate and retain the existing height limit of the mobile notice.
