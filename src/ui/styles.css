@@ -1007,7 +1007,7 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 @media(max-height:700px){#skyReveal[data-celestial] .sky-reveal-card{gap:5px}#skyReveal[data-celestial] .sky-reveal-title{font-size:20px}#skyReveal[data-celestial] .celestial-summary{font-size:11px;line-height:1.35}#skyReveal[data-celestial] .celestial-panorama{max-height:34dvh;min-height:90px}}
 /* #705: with the podium mounted (signed-in final victory or admin preview) the whole
    mastery screen still fits 360x640. The 140px compact podium rule lost to min-height:164px. */
-@media(max-height:700px){#skyReveal[data-celestial] .victory-performance-ranked .victory-podium-slot,#skyReveal[data-celestial] .victory-podium-slot .ranking{min-height:0;height:118px}#skyReveal[data-celestial] .victory-performance-title{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}#skyReveal[data-celestial] .victory-performance-row{min-height:0}#skyReveal[data-celestial] .sky-reveal-time.victory-time-note{font-size:12px}#skyReveal[data-celestial] .celestial-panorama{max-height:23dvh}#skyReveal[data-celestial] .victory-time,#skyReveal[data-celestial] .victory-rank{padding:4px 6px}#skyReveal[data-celestial] .victory-rank strong{font-size:14px}#skyReveal[data-celestial] .victory-rank small{font-size:10px}}
+@media(max-height:700px){#skyReveal[data-celestial] .victory-performance-ranked .victory-podium-slot,#skyReveal[data-celestial] .victory-podium-slot .ranking{min-height:118px}#skyReveal[data-celestial] .victory-performance-title{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}#skyReveal[data-celestial] .victory-performance-row{min-height:0}#skyReveal[data-celestial] .sky-reveal-time.victory-time-note{font-size:12px}#skyReveal[data-celestial] .celestial-panorama{max-height:23dvh}#skyReveal[data-celestial] .victory-time,#skyReveal[data-celestial] .victory-rank{padding:4px 6px}#skyReveal[data-celestial] .victory-rank strong{font-size:14px}#skyReveal[data-celestial] .victory-rank small{font-size:10px}}
 .sky-reveal[data-celestial] .sky-reveal-title{font-size:clamp(20px,3.3vw,32px);line-height:1.15;margin:0}
 .sky-reveal[data-celestial] .sky-reveal-name{font-size:clamp(12px,2vw,16px);line-height:1.4;margin:0 auto;max-width:580px}
 .sky-reveal[data-celestial] #skyRevealTitle,.sky-reveal[data-celestial] #skyRevealName,.sky-reveal[data-celestial] .celestial-summary{animation:celestial-conclusion 4s both}
@@ -1317,7 +1317,7 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 /* The podium slot is reserved whenever a ranking is expected, before and after it arrives. */
 .sky-reveal .victory-podium-slot{min-height:0}
 .sky-reveal .victory-performance-ranked .victory-podium-slot{min-height:164px}
-.sky-reveal .victory-podium-slot .ranking{margin:0;padding:0;border:0;background:none;height:164px;min-height:0;position:relative;display:flex;flex-direction:column;justify-content:flex-end}
+.sky-reveal .victory-podium-slot .ranking{margin:0;padding:0;border:0;background:none;min-height:164px;position:relative;display:flex;flex-direction:column;gap:4px}
 .sky-reveal .ranking-podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:6px;margin:0;padding:0 0 10px;list-style:none;min-height:132px}
 .sky-reveal .ranking .ranking-row,.sky-reveal .ranking-step-skeleton{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:1px;min-width:0;padding:5px 3px;overflow:hidden;border:1px solid #36526b;border-radius:10px 10px 6px 6px;background:#14253b;box-shadow:none}
 .sky-reveal .ranking .ranking-step-1,.sky-reveal .ranking-step-skeleton.ranking-step-1{grid-column:2;grid-row:1;min-height:112px!important;border-color:#c9a24a!important;background:linear-gradient(180deg,#3a3220,#1c1a14)!important}
@@ -1335,7 +1335,7 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 .sky-reveal .ranking .ranking-mine{outline:2px solid #ffe1a0;outline-offset:1px;box-shadow:0 0 14px rgba(255,225,160,.55)}
 .sky-reveal .ranking-personal{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 8px;margin:4px 0 0;padding:4px 6px;font-size:12px;border-radius:8px;background:#0f1d2e;min-height:0}
 .sky-reveal .ranking-status{margin:2px 0 0;font-size:12px;color:#9fc4d8;text-align:center}
-.sky-reveal .victory-podium-slot .ranking-status{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);margin:0;padding:0 8px}
+.sky-reveal .ranking-excluded,.sky-reveal .ranking-note,.sky-reveal .challenge-unavailable{margin:0;font-size:.75rem;line-height:1.35;overflow-wrap:anywhere}
 .sky-reveal .sky-reveal-results .sky-reveal-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0}
 .sky-reveal .sky-reveal-results .sky-reveal-actions .sky-reveal-primary{grid-column:1/-1;width:100%;max-width:none;justify-self:stretch;margin:0;min-height:48px;font-size:16px;padding:8px 12px}
 .sky-reveal .sky-reveal-results .sky-reveal-actions .sky-reveal-secondary{min-height:44px;font-size:12px;padding:6px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1345,7 +1345,7 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 .victory-particle{position:absolute;top:-16px;width:8px;height:12px;border-radius:2px;opacity:.95;animation:victoryParticleFall var(--dur,3s) ease-in forwards}
 .victory-particle.round{width:7px;height:7px;border-radius:50%}
 @keyframes victoryParticleFall{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(110vh) rotate(var(--rot,360deg));opacity:.85}}
-@media(max-height:700px){.sky-reveal .victory-performance-ranked .victory-podium-slot,.sky-reveal .victory-podium-slot .ranking{height:140px}.sky-reveal .ranking-podium{min-height:112px}.sky-reveal .ranking .ranking-step-1,.sky-reveal .ranking-step-skeleton.ranking-step-1{min-height:100px!important}.sky-reveal .ranking .ranking-step-2,.sky-reveal .ranking-step-skeleton.ranking-step-2{min-height:88px!important}.sky-reveal .ranking .ranking-step-3,.sky-reveal .ranking-step-skeleton.ranking-step-3{min-height:78px!important}.sky-reveal .victory-performance-row{min-height:54px}}
+@media(max-height:700px){.sky-reveal .victory-performance-ranked .victory-podium-slot,.sky-reveal .victory-podium-slot .ranking{min-height:140px}.sky-reveal .ranking-podium{min-height:112px}.sky-reveal .ranking .ranking-step-1,.sky-reveal .ranking-step-skeleton.ranking-step-1{min-height:100px!important}.sky-reveal .ranking .ranking-step-2,.sky-reveal .ranking-step-skeleton.ranking-step-2{min-height:88px!important}.sky-reveal .ranking .ranking-step-3,.sky-reveal .ranking-step-skeleton.ranking-step-3{min-height:78px!important}.sky-reveal .victory-performance-row{min-height:54px}}
 @media(max-width:360px){.sky-reveal .victory-reward{font-size:9px}.sky-reveal .victory-reward-icon{font-size:14px}.sky-reveal .sky-reveal-results .sky-reveal-actions .sky-reveal-secondary{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.victory-particle,.sky-reveal .victory-reward-new{animation:none!important}.victory-celebration-layer{display:none}}
 

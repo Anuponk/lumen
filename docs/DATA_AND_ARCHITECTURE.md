@@ -474,11 +474,28 @@ CAS for an active Wallet. The legacy daily write remains available before
 activation.
 
 An unresolved Wallet hold leaves the guest snapshot and account-scoped outboxes
-intact and shows « Portefeuille à vérifier » in the account loading screen.
+intact and shows « Historique à vérifier » in the account loading screen.
 The exact Wallet command refusal (SQLSTATE `22023`) has a fixed diagnostic
 distinct from stale CAS. Recovery of an owned cache still uses the existing
 operation ID, exact receipt and current-profile read-back rules. Account
 ownership and readiness require the existing verified installation.
+
+### Retirement of player currency (#803, #806)
+
+New hint and verification actions record assistance on the existing attempt
+and use its official-time score. They create no Wallet reservation, receipt
+or RPC. Historical pending requests still replay under their original owner,
+operation ID and receipt rules. Stored `shards`, `walletRevision` and `daily`
+remain intact, including for guest migration, wallet activation on old saves,
+snapshot comparison and command recovery. The #801 guard still compares the
+verified projection in full.
+
+Older clients and existing SQL victory writers still update the hidden
+compatibility ledger. The current client exposes no balance or currency reward,
+and its local victory projection keeps the historical balance. Removing those
+server writers or dropping their schema would require a separately validated
+cutover preserving old receipts and in-flight clients. This release has no
+Supabase migration or activation step.
 
 ### Competition (#638/#647)
 

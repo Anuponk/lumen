@@ -37,9 +37,9 @@ export function createRankingView({client,getContext,format,document=globalThis.
    const third=top.find(r=>r.position===3);if(third&&mine.score>third.score)card.append(element('small','',format(mine.score-third.score)+' du podium'));
   }else if(!mine)card.append(element('span','','Aucun temps compétitif pour cette révision.'));
   // #761: a victory the server refused is never shown as if the podium were its result.
-  if(data.excluded)card.append(element('small','ranking-excluded','Ce temps n’est pas retenu au classement (15 min minimum entre deux essais classés). Ton record personnel est bien enregistré.'));
-  if(!data.participating)card.append(element('small','',data.withdrawn?'Participation désactivée. Réinscription depuis Compte.':'Ton pseudo et les règles de participation sont disponibles dans Compte.'));
   if(card.childNodes.length)root.append(card);
+  if(data.excluded)root.append(element('p','ranking-excluded','Ce temps n’est pas retenu au classement (15 min minimum entre deux essais classés). Ton record personnel est bien enregistré.'));
+  if(!data.participating)root.append(element('p','ranking-note',data.withdrawn?'Participation désactivée. Réinscription depuis Compte.':'Ton pseudo et les règles de participation sont disponibles dans Compte.'));
   if(!animated&&!reduced()){
    [...list.children].forEach((e,i)=>e.animate?.([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],{duration:450,delay:i*300,easing:'ease-out',fill:'backwards'}));
    list.querySelector('.ranking-mine')?.animate?.([{boxShadow:'0 0 0 0 rgba(255,225,160,0)'},{boxShadow:'0 0 22px 4px rgba(255,225,160,.75)'},{boxShadow:'0 0 12px 2px rgba(255,225,160,.45)'}],{duration:1400,delay:900,fill:'forwards'});

@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
-import {QUEST_MILESTONES} from '../src/campaign/quest-rules.js';
 import {questRewardDefinition} from '../src/campaign/quest-rewards.js';
 import {acknowledgeLearningMilestones,PENDING_VICTORY_SHOWN} from './cdp-client.mjs';
 
@@ -9,8 +8,8 @@ export async function verifyDomainReplay({send,evaluate,navigate,url}){
  await send('Page.enable');await send('Runtime.enable');
  const quests=canonicalQuestList(),stable=quests.find(q=>q.legacyIndex===null),
   // Esprit clair forbids hints independently of Wallet readiness. Exercise a
-  // replay where normal rules actually permit free and then paid help.
-  historical=quests.find(q=>q.packId===stable.packId&&q.legacyIndex!==null&&q.ordinal>QUEST_MILESTONES.freeHintsThrough&&questRewardDefinition(q).bonus?.type!==2);
+  // replay where normal rules permit repeated hints.
+  historical=quests.find(q=>q.packId===stable.packId&&q.legacyIndex!==null&&q.ordinal>10&&questRewardDefinition(q).bonus?.type!==2);
  const owner='00000000-0000-0000-0000-000000000563';
  const solved=Object.fromEntries(quests.filter(q=>q.packId===stable.packId&&q.legacyIndex!==null).map(q=>[q.legacyIndex,1]));
  const profile={solved,historyBackup:{...solved},badges:{},stars:{},performances:{},noHint:{},xp:100,
@@ -61,9 +60,9 @@ export async function verifyDomainReplay({send,evaluate,navigate,url}){
   await evaluate(`sessionStorage.removeItem('domainFixtureStarted')`);
   await send('Network.enable');await send('Network.setBlockedURLs',{urls:['*supabase*']});
   await navigate('Page.navigate',{url:url.href});
-  await until(`window.lumenDiagnostics&&document.getElementById('mobileAuthStatus').textContent.includes('Éclats à vérifier')`);
+  await until(`window.lumenDiagnostics&&document.getElementById('mobileAuthStatus').textContent.includes('historique à vérifier')`);
   await until('!!navigator.serviceWorker.controller');await navigate('Page.reload');
-  await until(`window.lumenDiagnostics&&document.getElementById('mobileAuthStatus').textContent.includes('Éclats à vérifier')`);
+  await until(`window.lumenDiagnostics&&document.getElementById('mobileAuthStatus').textContent.includes('historique à vérifier')`);
   assert.equal(await evaluate('__domainWrites'),0);
   const before=await evaluate('lumenDiagnostics.snapshot().progress');
   const captured=[];
@@ -72,8 +71,8 @@ export async function verifyDomainReplay({send,evaluate,navigate,url}){
    const identity=await evaluate(`(()=>{const a=JSON.parse(localStorage.getItem('lumenActiveAttemptV1'));return {attemptId:a.attemptId,resetCount:a.resetCount}})()`);
    if(quest===historical){
     await touch('#hint');await until(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).helpUses.hint===1`);
-    await touch('#hint');await until(`document.getElementById('msg').textContent.includes('Dépense non confirmée')`);
-    assert.equal(await evaluate('__domainWrites'),0,'A held paid hint sends no mutation');
+    await touch('#hint');await until(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).helpUses.hint===2`);
+    assert.equal(await evaluate('__domainWrites'),0,'Repeated hints on a verified replay send no wallet mutation');
    }
    await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
    await until(PENDING_VICTORY_SHOWN);
@@ -93,6 +92,6 @@ export async function verifyDomainReplay({send,evaluate,navigate,url}){
   assert.deepEqual(await evaluate(readIntents,true),first,'Restart retains the exact operation identity and captured run facts');
   assert.equal(await evaluate('lumenDiagnostics.snapshot().progress.shards'),10);
   assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().progress.futureFixture'),{preserve:true});
-  return {confirmedStableReplay:true,confirmedLegacyReplay:true,freeHelp:true,paidHelpHeld:true,noOptimisticRewards:true,immutableIntentsAfterRestart:true};
+  return {confirmedStableReplay:true,confirmedLegacyReplay:true,repeatedHelp:true,noOptimisticRewards:true,immutableIntentsAfterRestart:true};
  }finally{await send('Page.removeScriptToEvaluateOnNewDocument',{identifier})}
 }

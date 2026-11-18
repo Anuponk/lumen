@@ -58,8 +58,8 @@ the original document. Its text, timing and player data remain unchanged.
 
 Domain readiness (persistence lot 3): a current verified acquired replay may be
 available during Wallet review. Account status distinguishes « Quêtes confirmées ·
-Éclats à vérifier »; the shard meter does not label an ambiguous balance available.
-Free-help explanations stay unchanged. A pending replay shows performance awaiting
+historique à vérifier ». Assistance on that replay uses the official-time rules.
+A pending replay shows performance awaiting
 confirmation, never an extra star or earned badge. Initial hydration and other
 domain holds retain their visible completion/disabled-replay explanation.
 Onboarding impact: discovery, help milestones and badge rules are unchanged;
@@ -531,23 +531,21 @@ immediate catalogue successor is accessible. Starting the replay hides this
 shortcut. Navigation rechecks live access and grants no completion or reward.
 Challenge and learning-only replays retain their existing navigation; notably,
 the quest-2 victory still introduces Mon ciel.
-## Offline aids — approved 4 November 2026 (#597)
+## Aides hors ligne (#803)
 
-Paid Hint and Verify may reserve the last verified device balance while offline.
-Show the remaining available Éclats and the amount pending synchronization;
-do not describe a reservation as a confirmed debit. A server refusal remains
-reviewable without withdrawing earned progression. Existing free aids, teaching
-milestones and assistance effects on badges are unchanged; no extra blocking
-tutorial is introduced.
+Indice et Vérifier restent accessibles sur une quête ouverte hors ligne.
+Le chrono officiel affiche la pénalité aussitôt et la tentative conserve le
+compte d’aides. La récupération de l’historique de synchronisation reste visible
+dans le diagnostic du compte.
 ## Records personnels (#600)
 
 ### Aides sur la grille (#791)
 
 Contrôle guidé, Indice et Vérifier affichent leur texte dans un panneau
-superposé au plateau. La grille et les commandes gardent leur place et leur
-taille. Le panneau peut passer en haut pour dégager la case expliquée.
-Le texte défile à l’intérieur du panneau et les cases couvertes ne reçoivent
-aucun geste. Fermer l’explication du Contrôle guidé laisse la correction
+ancré en bas du plateau, au-dessus des commandes. La grille et les commandes
+gardent leur place et leur taille. Le texte seul défile à l’intérieur du
+panneau. Le joueur ferme l’indice ou l’explication avant de toucher la grille.
+Fermer l’explication du Contrôle guidé laisse la correction
 du Gardien à effectuer.
 
 ### Classement (#638)
@@ -559,10 +557,12 @@ bloc « Ta performance et ton classement » (temps final, record, rang, podium),
 puis « Quête suivante » pleine largeur et une rangée Mon ciel | Défier | Rejouer.
 Chaque zone a sa place dès la première image : le podium arrive dans un
 emplacement réservé (squelette de même gabarit), sans déplacer les autres zones.
-Le podium apparaît dès que les badges ont fini leur animation et que les deux
-secondes minimales de célébration sont écoulées (#794). Les animations du ciel
+Le podium apparaît dès la fin de l’animation des badges (#794). Le toucher
+et le clavier peuvent accélérer cette transition. Les animations du ciel
 continuent dans le même écran. La lecture du classement peut commencer en
 parallèle. Si elle est encore en cours, l’emplacement indique son chargement.
+Le rang personnel, le motif de non-classement et l’explication du défi suivent
+le podium dans le flux. La hauteur s’adapte aux textes longs et au zoom.
 Podium à trois marches 2–1–3 de hauteurs décroissantes 1 > 2 > 3 ; seule la
 marche du joueur est mise en évidence. Hors podium : « Classement : Ne place ».
 Aucun compteur de joueurs (réels, virtuels ou total) n'est affiché. Les messages

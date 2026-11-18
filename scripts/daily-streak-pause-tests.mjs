@@ -32,9 +32,9 @@ assert.match(fn('maybeShowStreakLoss'),/^function maybeShowStreakLoss\(\)\{\n if
 assert.match(fn('scheduleDailyCelebration'),/if\(!DAILY_LIGHT_STREAK_ENABLED\)return;/);
 assert.match(fn('maybeShowReturnWelcome'),/if\(!DAILY_LIGHT_STREAK_ENABLED\)\{copy\.textContent="Reprends ton exploration du ciel là où tu l’as laissée\.";stars\.hidden=true;/);
 assert.match(fn('setupStreakLoss'),/if\(!DAILY_LIGHT_STREAK_ENABLED\)qaPreview\.hidden=true;/);
-// Local (guest) and QA rewards follow the flag; the code is kept, not deleted.
-assert.match(src,/grantDaily\(lumenProgress,today,\{rewards:DAILY_LIGHT_STREAK_ENABLED\}\)/);
-assert.match(src,/grantDaily\(profile,localCalendarDay\(\),\{rewards:DAILY_LIGHT_STREAK_ENABLED\}\)/);
+// The player client always records history without adding a currency reward.
+assert.match(src,/grantDaily\(lumenProgress,today,\{rewards:false\}\)/);
+assert.match(src,/grantDaily\(profile,localCalendarDay\(\),\{rewards:false\}\)/);
 for(const kept of ['function dailyStreak(','function renderDaily(','async function completeDaily(','function showDailyCelebration('])assert.ok(src.includes(kept),kept+' is preserved');
 
 // Server: one choke point, history kept, rewards behind the flag, shipped off.

@@ -6,7 +6,8 @@ const js=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'ut
 const card=html.slice(html.indexOf('id="dailyCard"'),html.indexOf('id="dailyCompactHelp"'));
 assert.ok(card.indexOf('daily-card-heading')<card.indexOf('daily-card-middle'));
 assert.ok(card.indexOf('id="dailyMeta"')<card.indexOf('id="dailyStars"'));
-assert.ok(card.indexOf('id="dailyStars"')<card.indexOf('id="dailyReward"'));
+assert.ok(card.indexOf('id="dailyStars"')<card.indexOf('id="dailyProtection"'));
+assert.doesNotMatch(card,/id="dailyReward"/,'The daily card displays activity without a currency reward');
 assert.match(css,/#dailyCard \.daily-card-middle\{display:flex;flex-direction:row/);
 assert.match(css,/#dailyCard \.daily-star\.lit\.today\{color:#ffe0a0/);
 assert.match(js,/status\.done\?visual\.slots\.findLastIndex\(slot=>slot\.kind==="lit"\):visual\.focus/);

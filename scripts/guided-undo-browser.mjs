@@ -44,6 +44,9 @@ export async function verifyGuidedUndo({send,evaluate}){
   assert.equal(await evaluate(`document.getElementById('guidedCard').hidden`),false);
   assert.equal(await guidedUses(),usesBefore+2,'A second intervention adds another penalty');
   await tap(cell(0,wrong));
+   assert.equal(await evaluate(`lumenDiagnostics.snapshot().state[0][${wrong}]`),2,'The open explanation blocks board input');
+   await tap('#guidedAck');
+   await tap(cell(0,wrong));
   assert.equal(await evaluate(`lumenDiagnostics.snapshot().state[0][${wrong}]`),1,'Touching the incorrect Guardian corrects it once');
   await tap(cell(3,0));
   assert.equal(await evaluate('lumenDiagnostics.snapshot().state[3][0]'),1,'A fresh touch after guided correction must work immediately, without a global cooldown');

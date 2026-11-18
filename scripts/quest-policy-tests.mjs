@@ -66,13 +66,14 @@ test('authenticated replay and started access beyond discovery cannot bypass an 
  }
 });
 
-test('hint discovery pricing follows the active visible quest, independent of dormant legacy position',()=>{
+test('the same official-time hint penalty applies at each quest milestone',()=>{
  const source=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
  for(const ordinal of [6,7,10,11,80]){
-  const ctx={QUEST_MILESTONES,socialChallenge:null,canonicalActiveQuest:{id:'active',ordinal},levelIndex:0,activeQuestOrdinal:()=>ordinal};
-  vm.createContext(ctx);vm.runInContext(functionSource(source,'learningHintsAreFree'),ctx);
-  assert.equal(ctx.learningHintsAreFree(),ordinal<=10);
-  ctx.levelIndex=70;assert.equal(ctx.learningHintsAreFree(),ordinal<=10);
+   const button={};
+   const ctx={canonicalActiveQuest:{id:'active',ordinal},levelIndex:0,document:{getElementById:()=>button}};
+   vm.createContext(ctx);vm.runInContext(functionSource(source,'updateHintButton'),ctx);
+   ctx.updateHintButton();assert.equal(button.textContent,'Indice · +15 s');
+   ctx.levelIndex=70;ctx.updateHintButton();assert.equal(button.textContent,'Indice · +15 s');
  }
 });
 test('a reloaded paid/free hint remains a hint in victory facts after the volatile flag resets',()=>{

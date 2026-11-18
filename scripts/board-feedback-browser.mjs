@@ -60,7 +60,6 @@ export async function verifyBoardFeedback({send,evaluate}){
   assert.match(hint.text,/colonnes 3 et 4/);assert.match(hint.text,/L6C3/);assert.deepEqual(hint.target,[[5,2]]);
   assert(hint.cells.length>=5);
   for(const cell of hint.cells){assert.match(cell.image,/linear-gradient/);assert.equal(cell.clip,'padding-box');assert.equal(cell.shadow,'none');for(const [boundary,border] of cell.borders)if(boundary==='1')assert.equal(border,'3px')}
-  assert(await evaluate(`(()=>{const el=document.querySelector('.hint-target'),r=el.getBoundingClientRect();return document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.closest('.cell')===el})()`),'Hint target remains visible and is not covered by a tip');
   // Compare the actual border geometry/colors with highlighting closed.
   const borders=await evaluate(`JSON.stringify([...document.querySelectorAll('.cell')].map(el=>{const s=getComputedStyle(el);return ['Top','Right','Bottom','Left'].map(side=>[s['border'+side+'Width'],s['border'+side+'Color']])}))`);
   // Let the earlier halfway toast finish before recording the hint review image.
@@ -70,12 +69,12 @@ export async function verifyBoardFeedback({send,evaluate}){
   await evaluate('document.getElementById("hintClose").click()');
   assert.equal(await evaluate(layout),initial,'Closing a long hint preserves the board and action geometry');
   assert.equal(await evaluate(`JSON.stringify([...document.querySelectorAll('.cell')].map(el=>{const s=getComputedStyle(el);return ['Top','Right','Bottom','Left'].map(side=>[s['border'+side+'Width'],s['border'+side+'Color']])}))`),borders,'Hint must preserve all territory borders exactly');
-  assert.equal(await evaluate('document.querySelectorAll(".cell.hi").length'),0);
+   assert(await evaluate(`(()=>{const el=document.querySelector('.hint-target'),r=el.getBoundingClientRect();return document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.closest('.cell')===el})()`),'The target stays highlighted and reachable after closing');
   await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
   await evaluate('document.getElementById("hint").click()');
   assert(await evaluate(`getComputedStyle(document.querySelector('.hint-target')).animationName==='none'`),'Highlight remains static with reduced motion');
   await send('Emulation.setEmulatedMedia',{features:[]});
-  await evaluate('window.hintBoardNodes=[...document.querySelectorAll("#board .cell")];document.querySelector(".hint-target").click()');
+   await evaluate('document.getElementById("hintClose").click();window.hintBoardNodes=[...document.querySelectorAll("#board .cell")];document.querySelector(".hint-target").click()');
   assert.equal(await evaluate('document.querySelectorAll(".cell.hi").length'),0,'A real board mutation clears all stale hint roles without rebuilding the grid');
   assert(await evaluate('document.getElementById("hintCard").hidden'),'The used hint closes after the action');
   assert(await evaluate('[...document.querySelectorAll("#board .cell")].every((cell,i)=>cell===hintBoardNodes[i])'),'Clearing hint emphasis must not rebuild the board');

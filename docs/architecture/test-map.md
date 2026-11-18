@@ -497,7 +497,7 @@ vide/invalide ou deux serveurs injoignables → échec maintenu.
 
 ### #629 / #632 / #627
 
-`offline-wallet-ui-tests.mjs` et `offline-wallet-tests.mjs` couvrent aides et réservations. `drag-grid-path-tests.mjs` couvre le gestionnaire réel. `celestial-ux-tests.mjs` couvre maîtrise et priorités. Les quatre nouvelles suites navigateur sont obligatoires dans `quality-gate.mjs` ; détails et limites dans TESTING.
+`offline-wallet-ui-tests.mjs` vérifie les pénalités et l’absence de nouvelles réservations, `offline-wallet-tests.mjs` les réservations historiques. `drag-grid-path-tests.mjs` couvre le marquage et l’effacement. `celestial-ux-tests.mjs` couvre maîtrise et priorités. Les suites navigateur restent obligatoires dans `quality-gate.mjs` ; détails et limites dans TESTING.
 
 Highscore follow-up: victory-presentation-tests.mjs, ranking-browser-tests.mjs,
 fixtures/highscore-before.sql and fixtures/highscore.sql; full gate and SQL

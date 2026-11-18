@@ -6,7 +6,7 @@ const TUTORIAL_STEPS=[
  {title:"Les Gardiens gardent leurs distances",copy:"Deux Gardiens ne peuvent jamais être voisins, même en diagonale. Chaque Gardien doit avoir de l’espace autour de lui.",visual:'<div class="tutorial-mini-grid"><span class="orb guardian-mini"></span><span></span><span></span><span></span><span>↘</span><span class="orb guardian-mini"></span><span></span><span></span><span></span></div>'},
  {title:"Observe les emplacements impossibles",copy:"Une croix écarte une case. Touche une fois pour la marquer ; maintiens et glisse pour écarter plusieurs cases.",visual:'<div class="tutorial-mini-grid"><span></span><span class="dim">○</span><span></span><span></span><span class="orb guardian-mini"></span><span></span><span></span><span></span><span></span></div>'},
  {title:"LUMEN t’aide au début",copy:"Tu marques toi-même les cases impossibles. Le Contrôle guidé peut bloquer un choix incorrect : chaque intervention ajoute 5 secondes au chrono. Le laisser activé sans intervention ne change pas ton temps.",visual:"<span>1–5 ✦ → 6–10 ◐ → 11+ ✧</span>"},
- {title:"Bloqué ? Utilise Indice",copy:"LUMEN ne révèle pas simplement la solution : il te guide vers la prochaine déduction logique. Chaque indice ajoute 15 secondes au chrono, même lorsqu’il est offert en Éclats. Tu peux demander davantage de précision si nécessaire.",visual:"<span>💡 &nbsp; Indice logique</span>"}
+ {title:"Bloqué ? Utilise Indice",copy:"LUMEN te guide vers la prochaine déduction logique. Chaque indice ajoute 15 secondes au chrono officiel. Tu peux demander davantage de précision si nécessaire.",visual:"<span>💡 &nbsp; Indice logique</span>"}
 ];
 let tutorialStep=0;
 function renderTutorial(){

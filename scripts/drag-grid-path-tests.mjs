@@ -15,4 +15,13 @@ for(const end of [55,25,45]){
  context.moveDragCross({pointerId:1,clientX:end,clientY:15,preventDefault(){}});
  assert.deepEqual(state[1].slice(0,Math.floor(end/10)+1),Array(Math.floor(end/10)+1).fill(1),'Fast moves must mark every traversed cell, even during a visual cascade');
 }
-console.log('PASS grid paths and actual pointermove sampling: horizontal, diagonal, outside and rapid moves');
+{
+ const state=[[1,2,0,1,0,3]],covered=new Set();
+ const context={state,dragCross:{mode:'erase',visited:new Set()},document:{getElementById:()=>({hidden:true})},
+  attemptEngine:{snapshot:()=>({})},paintCell:(r,c)=>covered.add(c)};
+ vm.createContext(context);vm.runInContext(functionSource(source,'markDragCross'),context);
+ for(let c=0;c<state[0].length;c++)context.markDragCross(0,c);
+ assert.deepEqual(state[0],[0,2,0,0,0,3],'An erase sweep changes only the editable red marks');
+ assert.deepEqual([...covered],[0,3]);
+}
+console.log('PASS grid paths, dense sampling and mixed red-mark erasure');
