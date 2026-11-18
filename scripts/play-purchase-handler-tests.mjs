@@ -42,14 +42,14 @@ function fixture({user={id:'verified-player'},product={product_id:'real-adventur
   LUMEN_PLAY_SERVICE_ACCOUNT:secretsMissing?'':JSON.stringify(account),LUMEN_PLAY_CRON_SECRET:'cron-secret',...env};
  vm.runInNewContext(source,{Request,Response,URLSearchParams,TextEncoder,crypto:globalThis.crypto,atob,btoa,Uint8Array,JSON,Number,String,Date,Math,Error,
   createClient,fetch,console:{error(){}},Deno:{serve:fn=>{handler=fn},env:{get:k=>values[k]}}});
- const request=({body={mode:'verify',productId:'real-adventure-02',purchaseToken:'play-token-1'},token='player-token',origin='https://lumen.nopuna.fr',method='POST',headers={}}={})=>
+ const request=({body={mode:'verify',productId:'real_adventure_02',purchaseToken:'play-token-1'},token='player-token',origin='https://lumen.nopuna.fr',method='POST',headers={}}={})=>
   handler(new Request('https://synthetic.invalid/play',{method,headers:{'content-type':'application/json',...(token?{authorization:'Bearer '+token}:{}),...(origin?{origin}:{}),...headers},...(method==='POST'?{body:JSON.stringify(body)}:{})}));
  return {calls,request};
 }
 const records=calls=>JSON.parse(JSON.stringify(calls.filter(c=>c.kind==='rpc'&&c.name==='lumen_record_purchase').map(c=>c.args))); // vm realm
 
 test('a paid Play purchase is verified with Google, recorded for the verified player, then acknowledged',async()=>{
- const f=fixture();const r=await f.request({body:{mode:'verify',productId:'real-adventure-02',purchaseToken:'play-token-1',userId:'someone-else'}});
+ const f=fixture();const r=await f.request({body:{mode:'verify',productId:'real_adventure_02',purchaseToken:'play-token-1',userId:'someone-else'}});
  assert.equal(r.status,200);assert.deepEqual(await r.json(),{status:'paid',acknowledged:true,adventures:['real-adventure-02']});
  assert.deepEqual(records(f.calls),[{p_provider:'play',p_provider_ref:sha('play-token-1'),p_user_id:'verified-player',p_product_id:'real-adventure-02',
   p_amount_cents:100,p_currency:'EUR',p_status:'paid',p_purchased_at:new Date(1763200000000).toISOString()}],'Identity from Auth, price from the catalogue, never from the body');
@@ -84,7 +84,7 @@ test('boundary refusals: method, origin, session, request shape, product and mis
  assert.equal((await f.request({origin:'https://evil.example'})).status,403);
  assert.equal((await f.request({token:null})).status,401);
  f=fixture({user:null});assert.equal((await f.request()).status,401);
- for(const body of [{mode:'verify',productId:'Real Adventure',purchaseToken:'t'},{mode:'verify',productId:'real-adventure-02',purchaseToken:''},{mode:'verify',productId:'real-adventure-02'}]){
+ for(const body of [{mode:'verify',productId:'Real Adventure',purchaseToken:'t'},{mode:'verify',productId:'real_adventure_02',purchaseToken:''},{mode:'verify',productId:'real_adventure_02'}]){
   f=fixture();assert.equal((await f.request({body})).status,400);assert.deepEqual(records(f.calls),[]);
  }
  f=fixture({product:null});assert.deepEqual(await (await f.request()).json(),{error:'unknown_product'});
