@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-package="fr.nopuna.lumen.debug"
+package="com.nopuna.lumen.debug"
 activity="com.google.androidbrowserhelper.trusted.LauncherActivity"
 logfile="android-startup-logcat.txt"
 
@@ -11,9 +11,9 @@ adb shell am start -W -n "${package}/${activity}"
 sleep 12
 adb logcat -d -v time > "$logfile"
 
-if grep -E -q 'FATAL EXCEPTION|Process: fr\.nopuna\.lumen\.debug' "$logfile"; then
+if grep -E -q 'FATAL EXCEPTION|Process: com\.nopuna\.lumen\.debug' "$logfile"; then
   echo 'Potential Android runtime exception detected. Relevant Logcat:'
-  grep -E -A 35 'FATAL EXCEPTION|Process: fr\.nopuna\.lumen\.debug' "$logfile" | head -100 || true
+  grep -E -A 35 'FATAL EXCEPTION|Process: com\.nopuna\.lumen\.debug' "$logfile" | head -100 || true
   exit 1
 fi
 
