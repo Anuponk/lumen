@@ -58,7 +58,7 @@ try{
   const offer=await evaluate(`(()=>{const o=document.getElementById('adventureNoticeOffer'),q=s=>o.querySelector(s);return {visible:!o.hidden,copyHidden:document.getElementById('adventureNoticeCopy').hidden,unit:q('[data-offer=unit]')?.getAttribute('aria-label'),unitDisabled:q('[data-offer=unit]')?.disabled,sky:q('[data-offer=sky]')?.getAttribute('aria-label'),skyDisabled:q('[data-offer=sky]')?.disabled,soon:!!q('.adventure-offer-soon'),cap:q('.adventure-offer-cap')?.textContent,mastery:q('[data-offer-mastery]')?.textContent,signin:!!q('[data-offer=signin]'),whyHidden:q('.adventure-offer-why-text').hidden}})()`);
   assert.equal(offer.visible&&offer.copyHidden,true,'The offer replaces the generic lock text');
   assert.match(offer.unit,/1 €/);assert.match(offer.sky,/5 €/);assert.equal(offer.unitDisabled&&offer.skyDisabled,true,'No purchase before a payment provider is connected');
-  assert.equal(offer.soon,true);assert.match(offer.cap,/jamais plus de 5 €/);
+  assert.equal(offer.soon,true);assert.match(offer.cap,/Sur le web, .*plafond de 5 €/);
   assert.match(offer.mastery,/maîtrise « .+ » à 100 % \(il te reste \d+ quêtes? et \d+ badges?\)/,'The free path shows what is left');
   assert.equal(offer.signin,false,'QA sessions never offer account creation');assert.equal(offer.whyHidden,true);
   await evaluate(`document.querySelector('#adventureNoticeOffer [data-offer=why]').scrollIntoView({block:'center'})`);await click('#adventureNoticeOffer [data-offer=why]');

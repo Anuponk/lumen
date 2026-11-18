@@ -10,7 +10,21 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 const ORIGIN = 'https://lumen.nopuna.fr';
 const API = 'https://androidpublisher.googleapis.com/androidpublisher/v3/applications/';
-const PLAY_REGION_EUR = 'FR'; // Distribution is France-only (android/PLAY.md); other regions never count towards the EUR cap.
+const PLAY_CAP_REGION = 'FR';
+
+function readSettlement(order, orderId, purchaseToken, productId) {
+  if (order.orderId !== orderId || order.purchaseToken !== purchaseToken
+    || !Array.isArray(order.lineItems) || order.lineItems.length !== 1) return null;
+  const item = order.lineItems[0];
+  const money = item?.total;
+  if (item?.productId !== productId || typeof money?.currencyCode !== 'string'
+    || !/^[A-Z]{3}$/.test(money.currencyCode)) return null;
+  const units = money.units ?? '0';
+  const nanos = money.nanos ?? 0;
+  if (typeof units !== 'string' || !/^(0|[1-9][0-9]{0,18})$/.test(units)
+    || !Number.isInteger(nanos) || nanos < 0 || nanos >= 1_000_000_000) return null;
+  return { amount: units + '.' + String(nanos).padStart(9, '0'), currency: money.currencyCode };
+}
 
 function b64url(bytes) {
   let s = ''; for (const b of new Uint8Array(bytes)) s += String.fromCharCode(b);
@@ -60,11 +74,16 @@ Deno.serve(async (request) => {
   let body;
   try { body = await request.json(); } catch { return reply(400, { error: 'invalid_request' }); }
   const operator = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  let accessToken;
   const play = async (path, init = {}) => {
-    const access = await googleAccessToken(account, fetch);
+    const access = await (accessToken ??= googleAccessToken(account, fetch));
     const response = await fetch(API + encodeURIComponent(packageName) + path, { ...init, headers: { authorization: 'Bearer ' + access, 'content-type': 'application/json' } });
     const text = await response.text();
-    return { ok: response.ok, status: response.status, data: text ? JSON.parse(text) : {} };
+    let data = {};
+    if (text) {
+      try { data = JSON.parse(text); } catch { throw Error('google_invalid_response'); }
+    }
+    return { ok: response.ok, status: response.status, data };
   };
   try {
     if (body?.mode === 'voided') {
@@ -105,10 +124,6 @@ Deno.serve(async (request) => {
     const internalProductId = /^real_adventure_0[2-9]$/.test(productId) || productId === 'real_sky_all'
       ? productId.replaceAll('_', '-') : null;
     if (!internalProductId) return reply(400, { error: 'unknown_product' });
-    const { data: product, error: productError } = await operator.rpc('lumen_store_price', { p_product_id: internalProductId });
-    if (productError) throw Error('catalogue_unavailable');
-    if (!product?.active) return reply(400, { error: 'unknown_product' });
-
     const path = '/purchases/products/' + encodeURIComponent(productId) + '/tokens/' + encodeURIComponent(purchaseToken);
     const checked = await play(path);
     if (checked.status === 404 || checked.status === 400) return reply(400, { error: 'invalid_purchase' });
@@ -117,16 +132,39 @@ Deno.serve(async (request) => {
     if (purchase.purchaseState === 2) return reply(202, { status: 'pending' });
     if (purchase.purchaseState !== 0) return reply(409, { status: 'not_paid' });
     const ref = await sha256hex(purchaseToken);
-    const eur = !purchase.regionCode || purchase.regionCode === PLAY_REGION_EUR;
-    const { data: recorded, error: recordError } = await operator.rpc('lumen_record_purchase', {
-      p_provider: 'play', p_provider_ref: ref, p_user_id: user.id, p_product_id: internalProductId,
-      p_amount_cents: eur ? product.price_cents : 0, p_currency: eur ? product.currency : 'XXX', p_status: 'paid',
+    const { data: original, error: lookupError } = await operator.rpc('lumen_purchase_by_ref', {
+      p_provider: 'play', p_provider_ref: ref,
+    });
+    if (lookupError) throw Error('lookup_failed');
+    if (original && (original.user_id !== user.id || original.product_id !== internalProductId)) {
+      return reply(409, { error: 'purchase_owned_elsewhere' });
+    }
+    const testPurchase = purchase.purchaseType === 0;
+    let settlement = null;
+    if (!original && !testPurchase) {
+      if (purchase.quantity != null && purchase.quantity !== 1) return reply(409, { error: 'unsupported_quantity' });
+      if (typeof purchase.orderId !== 'string' || !purchase.orderId) return reply(202, { status: 'pending' });
+      const order = await play('/orders/' + encodeURIComponent(purchase.orderId));
+      if (order.status === 404 || order.data?.state === 'PENDING') return reply(202, { status: 'pending' });
+      if (!order.ok) return reply(502, { error: 'google_unavailable' });
+      if (order.data.state !== 'PROCESSED') return reply(409, { status: 'not_paid' });
+      settlement = readSettlement(order.data, purchase.orderId, purchaseToken, productId);
+      if (!settlement) return reply(502, { error: 'unverified_order_total' });
+    }
+    const { data: recorded, error: recordError } = await operator.rpc('lumen_record_play_purchase', {
+      p_provider_ref: ref, p_user_id: user.id, p_product_id: internalProductId,
+      p_settled_amount: settlement?.amount ?? null, p_settled_currency: settlement?.currency ?? null,
+      p_counts_toward_cap: testPurchase ? !purchase.regionCode || purchase.regionCode === PLAY_CAP_REGION
+        : settlement?.currency === 'EUR' && (!purchase.regionCode || purchase.regionCode === PLAY_CAP_REGION),
+      p_test_purchase: testPurchase,
       p_purchased_at: purchase.purchaseTimeMillis ? new Date(Number(purchase.purchaseTimeMillis)).toISOString() : null,
     });
     if (recordError) {
       if (/identity conflict/.test(recordError.message || '')) return reply(409, { error: 'purchase_owned_elsewhere' });
+      if (/unknown product/.test(recordError.message || '')) return reply(400, { error: 'unknown_product' });
       throw Error('record_failed');
     }
+    if (recorded?.status !== 'paid') return reply(409, { status: 'not_paid' });
     let acknowledged = purchase.acknowledgementState === 1;
     if (!acknowledged) {
       const ack = await play(path + ':acknowledge', { method: 'POST', body: '{}' });

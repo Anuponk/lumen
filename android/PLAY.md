@@ -92,10 +92,10 @@ Description longue (maximum Console 4 000 caractères) :
 > Découvre gratuitement les 100 premières quêtes de Lumen, sans publicité.
 
 La dernière phrase reprend les 100 quêtes gratuites de l'Aventure 1 décidées
-le 4 novembre (#170). Le modèle actuel (#725) propose les aventures 2 à 9 à
-1,00 € TTC chacune et « Tout le vrai ciel » à 5,00 € TTC, prix cibles France.
-Après un achat unitaire, l'offre globale est masquée ; le plafond serveur de
-5 € reste applicable. Les tarifs affichés dans la TWA proviennent de Google Play.
+le 4 novembre (#170). La TWA affiche les tarifs localisés de Google Play
+pour les aventures 2 à 9 et « Tout le vrai ciel ». Après un achat unitaire,
+l’offre globale est masquée. Le seuil historique de déblocage côté serveur
+est indépendant du montant facturé par Play.
 Les droits acquis des joueurs restent protégés.
 Avant soumission, accorder la fiche aux fonctions réellement actives et au prix
 localisé fourni par le canal de paiement. Play Billing, droits serveur et
@@ -154,9 +154,9 @@ inspecté le compte développeur ni validé ses déclarations administratives.
 
 L'app reste « gratuite » avec achats intégrés. La bibliothèque `billing` ajoute l'autorisation `com.android.vending.BILLING` au manifeste fusionné.
 - [ ] Créer le **profil marchand** (Payments) dans la Play Console.
-- [ ] Créer 9 **produits intégrés** (achat unique, non consommables), avec exactement ces identifiants Google Play (les IDs internes du catalogue restent avec des tirets) : `real_adventure_02` … `real_adventure_09` à **1,00 €** TTC, et `real_sky_all` à **5,00 €** TTC. Prix pour la France.
+- [ ] Créer 9 **produits intégrés** (achat unique, non consommables), avec exactement ces identifiants Google Play (les IDs internes du catalogue restent avec des tirets) : `real_adventure_02` … `real_adventure_09` et `real_sky_all`. Les prix et les options d’achat sont gérés dans Play Console par pays et devise. L’application affiche les montants retournés par Play.
 - [ ] Créer un **compte de service** Google Cloud avec l'API Google Play Android Developer, puis l'inviter dans la Play Console avec le droit « Afficher les données financières et gérer les commandes ». Stocker sa clé JSON uniquement comme secret Supabase `LUMEN_PLAY_SERVICE_ACCOUNT`, avec `LUMEN_PLAY_PACKAGE=com.nopuna.lumen` et un `LUMEN_PLAY_CRON_SECRET` aléatoire. Ne jamais la committer.
-- [ ] Déployer l'Edge Function `lumen-play-purchase` et appliquer la migration `20261115220000_play_purchase_gateway_729.sql`.
+- [ ] Appliquer les migrations `20261115220000_play_purchase_gateway_729.sql` et `20261118212000_play_regional_receipts_729.sql` avec leurs prérequis, puis déployer `lumen-play-purchase`. Vérifier l’accès du compte de service à `orders.get` avant la recette. Le serveur enregistre le total exact de la ligne Google et sa devise pour chaque nouveau paiement réel.
 - [ ] Planifier l'appel quotidien du mode `voided` (remboursements), avec l'en-tête `x-lumen-cron`.
 - [ ] Ajouter des **testeurs de licence**, publier un AAB sur la piste de test interne, puis faire un vrai achat de test : déblocage, restauration après réinstallation, et retrait après remboursement de test.
 - [ ] Data safety : déclarer l'historique d'achats (achats intégrés) ; voir #732 pour la confidentialité.
@@ -247,10 +247,11 @@ Lors de cette recette, Play renvoyait `real_adventure_02` à 1,19 EUR et
 `real_adventure_09`, même demandés séparément. La fiche d’une aventure
 omise affichait donc « Prix indisponible ». Vérifier les références, les
 options d’achat, l’activation, la disponibilité régionale et les tarifs dans
-la Play Console avant toute recette d’achat. La décision pour Play en France
-est de retenir 1,19 EUR par aventure et 5,99 EUR pour le ciel complet.
-Le registre serveur lit encore les anciens montants dans le catalogue commun.
-Une recette d’achat devra vérifier le montant enregistré et la règle de plafond.
+la Play Console avant toute recette d’achat. La liste des produits ponctuels
+ouverte sur le Pixel montrait uniquement ces deux références, chacune avec
+une option active. Les prix constatés décrivent cette réponse Play à cette
+date. Aucun montant Play ne doit être répliqué dans le catalogue web.
+Une recette d’achat devra vérifier le montant enregistré et la règle de déblocage.
 
 
 ### Checklist propriétaire — éléments externes non vérifiés
@@ -270,8 +271,8 @@ Une recette d’achat devra vérifier le montant enregistré et la règle de pla
   `real_sky_all`. Achat définitif, non consommable ; aucun abonnement.
 - [ ] **Activation et France** : ouvrir chaque produit et son option d'achat « Buy » ;
   vérifier état actif et disponibilité France du produit, de l'option ET de l'app.
-  Dans Disponibilité et prix, relever **1,00 EUR TTC** par aventure et **5,00 EUR TTC**
-  pour le ciel. Enregistrer/publier les changements. Si l'interface propose plusieurs
+  Dans Disponibilité et prix, relever le tarif et la devise configurés pour le pays
+  testé. Si l’interface propose plusieurs
   options, vérifier une option d'achat compatible avec les anciens clients Billing
   (« backwards compatible »), sans supposer qu'une offre récente est visible du pont TWA.
 - [ ] **Piste** : Tester et publier → Tests → Test interne (ou piste fermée retenue).
@@ -322,7 +323,7 @@ l'installation ne sont pas établis par les seuls fichiers du dépôt.
 1. Installer depuis la piste retenue, ouvrir depuis l'icône et se connecter avec un
    compte de recette. Relever versionCode, navigateur hôte et SHA Web déployé.
 2. Ouvrir une aventure verrouillée pendant le chargement : prix en cours, CTA
-   désactivé ; attendre les prix réels (France : 1,00 € / 5,00 € attendus). Vérifier
+   désactivé ; attendre les prix renvoyés par Play pour le compte de test. Vérifier
    les huit aventures, puis l'absence d'offre globale sur un compte déjà acheteur unitaire.
 3. Couper le réseau, provoquer un échec puis le rétablir et toucher « Réessayer » :
    la même carte doit recevoir le prix et activer seulement les produits disponibles.

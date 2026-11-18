@@ -18,6 +18,10 @@ const offer=(pack,progress,extra={})=>adventureOfferModel({pack,packs,quests,pro
 assert.equal(formatEuros(100),'1 €');assert.equal(formatEuros(500),'5 €');assert.equal(formatEuros(250),'2,50 €');
 const empty=offer(second,{});
 assert.equal(empty.unitPrice,formatEuros(ADVENTURE_PRICE_CENTS));assert.equal(empty.skyPrice,formatEuros(SKY_PRICE_CENTS));
+const play=offer(second,{}, {pricesRequired:true,prices:{[second.id]:'¥180','real-sky-all':'¥910'}});
+assert.equal(play.unitPrice,'¥180'); assert.equal(play.skyPrice,'¥910');
+assert.doesNotMatch(play.capMessage,/5 €|¥910/,'Play never promises a checkout cap from a fixed or current price');
+assert.match(empty.capMessage,/5 €/,'Web retains its documented cap');
 assert.equal(empty.purchasesAvailable,false,'Purchases are disabled by default');
 assert.equal(empty.mastery.missingQuests,firstQuests.length,'Missing quests are derived from the catalogue');
 assert.equal(empty.mastery.missingBadges,firstQuests.length*PERFORMANCE_BADGES.length);

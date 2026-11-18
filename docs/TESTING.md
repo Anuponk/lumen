@@ -2263,14 +2263,14 @@ The full quality suite runs on pull requests. After a squash merge, the publishe
 ## Locked Adventure offer (#731)
 
 - `scripts/adventure-offer-tests.mjs` (Node, quality gate): prices from `store-catalogue.js` and parity with the server seed, missing quests and badges derived from the catalogue (plural forms), mastered, guest and locked-previous wording, intention-only funding text, and removal of the placeholder.
-- `sky-navigation-browser-tests.mjs`: real tap on a locked Adventure (3 viewports). Checks that the offer replaces the lock text, purchase buttons are disabled with prices, the €5 cap text and the free mastery path (with what is left) are shown, QA sessions get no account prompt, « Pourquoi ? » expands, and there is no horizontal overflow.
+- `sky-navigation-browser-tests.mjs`: real tap on a locked Adventure (3 viewports). Checks that the offer replaces the lock text, purchase buttons are disabled with prices, the web-only €5 cap text and the free mastery path (with what is left) are shown, QA sessions get no account prompt, « Pourquoi ? » expands, and there is no horizontal overflow.
 
 ## Google Play purchases (#729)
 
-- `scripts/play-purchase-handler-tests.mjs` (quality gate) runs the real Edge handler with synthetic Auth, RPC and Google boundaries, and an RS256 assertion verified with a generated key. It covers: identity from Auth, price from the catalogue, acknowledgement after recording, pending/cancelled/invalid/unavailable recording nothing, a token owned by another account, a non-EUR region, boundary refusals, and voided refunds with pagination behind the operator secret.
-- `scripts/play-billing-tests.mjs` (quality gate): availability only with the Digital Goods API, mapping of server answers (never success on error), Payment Request method and sku, sheet completion, restore, localised prices, the €5 offer rule after a single purchase, and wiring.
+- `scripts/play-purchase-handler-tests.mjs` (quality gate) runs the real Edge handler with synthetic Auth, RPC and Google boundaries, and an RS256 assertion verified with a generated key. It covers: identity from Auth, amount and currency from the verified Google order, acknowledgement after recording, pending/cancelled/invalid/unavailable recording nothing, a token owned by another account, a non-EUR region, boundary refusals, and voided refunds with pagination behind the operator secret.
+- `scripts/play-billing-tests.mjs` (quality gate): availability only with the Digital Goods API, mapping of server answers (never success on error), Payment Request method and sku, sheet completion, restore, localised prices, hiding the whole-sky offer after a unit purchase without any fixed Play price claim, and wiring.
 - `android/tools/packaging.test.mjs`: billing delegation service, `PaymentActivity`/`PaymentService` and the `billing:1.2.0` dependency stay declared.
-- SQL (`ledger-sql`): `scripts/fixtures/play-purchase-gateway.sql` — service_role-only gateway, catalogue prices, lookup, voided replay, identity conflict.
+- SQL (`ledger-sql`): `scripts/fixtures/play-purchase-gateway.sql` covers the original server-only gateway and refund lookup. `scripts/fixtures/play-regional-receipts.sql` covers restricted writes, the exact provider amount, EUR credit isolation, replay at a changed price, cross-account refusal, refund protection and receipt retention. The migrations run twice on disposable PostgreSQL. For Play acceptance use test and real-order provider evidence separately. Verify the Orders API permission, missing products and localization without submitting payment unless explicitly authorized.
 
 ## Stripe Checkout, web/PWA TEST mode (#730)
 

@@ -19,19 +19,21 @@ consommateur.
 
 - **La première aventure est gratuite.** Les suivantes sont des contenus
   numériques fournis sans support matériel.
-- **« Débloquer cette aventure » : 1 €.** Accès permanent à une aventure, lié au
+- **« Débloquer cette aventure »** donne un accès permanent à une aventure, lié au
   compte Lumen.
-- **« Tout le vrai ciel » : 5 €.** Accès à toutes les aventures du vrai ciel.
-- **Plafond :** les achats à l'unité comptent ; un joueur ne paie jamais plus de
-  5 € au total pour le vrai ciel. Au-delà, tout est débloqué.
+- **« Tout le vrai ciel »** donne accès à toutes les aventures du vrai ciel.
 - **Accès gratuit par la maîtrise :** maîtriser une aventure à 100 % débloque
   gratuitement la suivante. Cet accès n'est pas une vente.
 - Les Éclats de lumière et les badges ne s'achètent pas.
 
 ## 3. Prix et TVA
 
-Prix en euros, toutes taxes comprises, affichés avant l'achat. Dans l'app
-Google Play, le prix affiché par Google fait foi.
+Sur la version web, une aventure coûte 1 € et le vrai ciel coûte 5 €. Les
+achats web à l’unité comptent dans le plafond web de 5 € pour le vrai ciel.
+Le montant affiché sur la page de paiement Stripe fait foi.
+
+Dans l’app Google Play, le prix affiché par Google fait foi. Il peut varier
+selon le pays et la devise du compte Play.
 
 **TVA non applicable, art. 293 B du CGI** (franchise en base, confirmée par le
 propriétaire le 16/11/2026). Surveiller le seuil de la franchise ; toute vente hors
