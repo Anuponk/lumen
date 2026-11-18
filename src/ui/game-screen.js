@@ -4226,7 +4226,11 @@ let celestialPending=null;
 let playBilling=null,playPriceLabels={};
 const playBillingReady=getPlayBilling().then(async service=>{
  playBilling=service;
- if(service)playPriceLabels=await playPrices(service,[...CONTENT_PACKS.filter(p=>p.access==='locked').map(p=>toPlayProductId(p.id)),toPlayProductId(SKY_PRODUCT_ID)]);
+ if(service){
+  const ids=[...CONTENT_PACKS.filter(p=>p.access==='locked').map(p=>p.id),SKY_PRODUCT_ID];
+  const prices=await playPrices(service,ids.map(toPlayProductId));
+  playPriceLabels=Object.fromEntries(ids.map(id=>[id,prices[toPlayProductId(id)]]).filter(([,price])=>price));
+ }
  return service;
 }).catch(()=>null);
 async function playVerify(productId,purchaseToken){
