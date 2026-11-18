@@ -225,6 +225,34 @@ du fournisseur, compte joueur ou secret n'est journalisé.
 | `product_not_available` | Le fournisseur marque explicitement le produit indisponible ; vérifier disponibilité Console (l'API peut aussi simplement omettre un produit) |
 | `price_parse_failed` | Montant/devise invalide ou lignes dupliquées ; relever seulement le SKU et la raison, puis contrôler les données fournisseur |
 
+### Récupération après `clientAppUnavailable` (#729)
+
+Le 18 novembre 2026, sur un Pixel 6 avec Chrome 157.0.8103.78 et Lumen
+1.0.0 (code 1) installé depuis Play, `getDigitalGoodsService()` renvoyait un
+service, puis chaque appel `getDetails()` échouait avec `clientAppUnavailable`.
+Le domaine était vérifié et Android résolvait le service de délégation de
+Lumen. L’échec persistait après relance de Lumen seul, y compris avec
+l’ancien APK de test désactivé temporairement.
+
+Sur cet appareil, le redémarrage complet de Chrome a rétabli la lecture des
+prix. Ouvrir Chrome une fois après son arrêt forcé, puis relancer Lumen depuis
+son icône Play. Conserver les données des deux applications et terminer toute
+session Chrome à préserver avant l’arrêt. Revenir à l’offre et vérifier les
+tarifs des deux produits renvoyés par Play. Cette récupération est constatée
+sur une installation et ne valide ni un autre appareil ni une transaction.
+[Version web de référence](https://github.com/Anuponk/lumen/commit/35aaabad3f9d04fbd468d917586ac5cf0a528a41).
+
+Lors de cette recette, Play renvoyait `real_adventure_02` à 1,19 EUR et
+`real_sky_all` à 5,99 EUR. Il omettait `real_adventure_03` à
+`real_adventure_09`, même demandés séparément. La fiche d’une aventure
+omise affichait donc « Prix indisponible ». Vérifier les références, les
+options d’achat, l’activation, la disponibilité régionale et les tarifs dans
+la Play Console avant toute recette d’achat. La décision pour Play en France
+est de retenir 1,19 EUR par aventure et 5,99 EUR pour le ciel complet.
+Le registre serveur lit encore les anciens montants dans le catalogue commun.
+Une recette d’achat devra vérifier le montant enregistré et la règle de plafond.
+
+
 ### Checklist propriétaire — éléments externes non vérifiés
 
 - [ ] **Compte marchand** : au niveau développeur, Paramètres → Profil de paiement
