@@ -32,11 +32,11 @@ def check_runs(runs, sha):
 
 
 def validated_merged_pr(sha, fetch):
-    """Only reuse PR checks for a squash merge directly onto its reviewed base."""
+    """Reuse successful PR checks only for a verified squash or regular merge."""
     commit = fetch(f"/repos/{REPOSITORY}/commits/{sha}")
     parents = commit.get("parents", [])
-    if len(parents) != 1:
-        return 1, "Expected a squash commit with exactly one parent"
+    if len(parents) not in (1, 2):
+        return 1, "Expected a squash commit (one parent) or merge commit (two parents)"
     candidates = fetch(f"/repos/{REPOSITORY}/commits/{sha}/pulls")
     for pr in candidates:
         if not pr.get("merged_at") or pr.get("base", {}).get("ref") != "main":
@@ -44,7 +44,13 @@ def validated_merged_pr(sha, fetch):
         if pr.get("merge_commit_sha") != sha:
             continue
         head = pr["head"].get("sha")
+        base = pr.get("base", {}).get("sha")
         if not head or pr["head"].get("repo", {}).get("full_name") != REPOSITORY:
+            continue
+        # A regular merge must connect the reviewed base and exact PR head.
+        # For a squash merge the only parent must be the reviewed base.
+        parent_shas = [parent.get("sha") for parent in parents]
+        if not base or parent_shas != ([base] if len(parents) == 1 else [base, head]):
             continue
         runs = fetch(f"/repos/{REPOSITORY}/actions/runs?head_sha={head}&per_page=100").get("workflow_runs", [])
         latest = {}
@@ -68,7 +74,7 @@ def validated_merged_pr(sha, fetch):
             if run.get("conclusion") != "success":
                 return 1, "PR release gate failed: " + name
         return 0, "Merged PR quality verified: #" + str(pr["number"])
-    return 1, "No verified squash-merged PR matching the exact main commit and parent"
+    return 1, "No verified squash/merge PR matching the exact main commit and parents"
 
 
 def main():

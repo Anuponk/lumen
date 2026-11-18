@@ -107,6 +107,37 @@ class Gates(unittest.TestCase):
         pr["merge_commit_sha"] = "d" * 40
         self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 1)
 
+    def test_verified_regular_merge_reuses_green_pr_checks(self):
+        base, head, merged = "c" * 40, "b" * 40, SHA
+        pr = {"number": 808, "merged_at": "2026-11-18T20:08:07Z",
+              "merge_commit_sha": merged, "base": {"ref": "main", "sha": base},
+              "head": {"sha": head, "repo": {"full_name": ci.REPOSITORY}}}
+        outcome = {"conclusion": "success"}
+        parents = [base, head]
+        def fetch(path):
+            if path.endswith("/commits/" + merged):
+                return {"parents": [{"sha": value} for value in parents]}
+            if path.endswith("/commits/" + merged + "/pulls"):
+                return [pr]
+            if "actions/runs?" in path:
+                return {"workflow_runs": [
+                    {"id": i, "path": ".github/workflows/" + name,
+                     "status": "completed", "conclusion": outcome["conclusion"],
+                     "head_sha": head, "event": "pull_request",
+                     "head_repository": {"full_name": ci.REPOSITORY}}
+                    for i, name in enumerate(sorted(ci.PR_REQUIRED), 1)]}
+            raise AssertionError(path)
+        self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 0)
+        for bad_parents in ([head, base], [base, "d" * 40], [base, head, "e" * 40]):
+            parents[:] = bad_parents
+            self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 1)
+        parents[:] = [base, head]
+        outcome["conclusion"] = "failure"
+        self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 1)
+        outcome["conclusion"] = "success"
+        pr["head"]["sha"] = "d" * 40
+        self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 1)
+
     def test_reject_unreviewed_commit(self):
         def fetch(path):
             if path.endswith("/pulls"):
