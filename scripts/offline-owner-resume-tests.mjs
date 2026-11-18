@@ -17,14 +17,30 @@ test('verified owner resumes offline only for the matching account and bounded a
 
 test('a prepared offline cold start does not wait for an expired-token network refresh',async()=>{
  const s=storage();s.setItem('lumenCloudOwnerId','alice');rememberVerifiedOfflineOwner(s,'alice');
- const source=fs.readFileSync('src/ui/game-screen.js','utf8'),events=[];let reconnect;
- const ctx={qaActive:false,localStorage:s,navigator:{onLine:false},preparedOfflineUser,persistenceModel:{},lumenSupabase:{},
+ const profile=JSON.stringify({solved:{0:1},badges:{}});s.setItem('lumenProgressV1',profile);
+ const source=fs.readFileSync('src/ui/game-screen.js','utf8'),events=[],hold={dataset:{}};let reconnect;
+ const ctx={qaActive:false,localStorage:s,sessionStorage:storage(),navigator:{onLine:false},preparedOfflineUser,isVerifiedOfflineOwner,
+  document:{getElementById:id=>{assert.equal(id,'accountSwitchHold');return hold}},persistenceModel:{},lumenSupabase:{},
+  bootProfileHold:true,authSessionPending:true,cloudProfileReady:false,cloudProfileFailure:null,lumenUser:null,
+  ACCOUNT_SWITCH_HOLD_KEY:'lumenAccountSwitchHoldV1',
   initLumenCloud:async()=>{events.push('auth')},updateAuthUI:()=>events.push('ui'),resumeOfflineAfterAuth:async id=>events.push('resume:'+id),
   window:{addEventListener:(event,fn,options)=>{assert.equal(event,'online');assert.equal(options.once,true);reconnect=fn}},recordCloudDiagnostic(){},console};
- vm.createContext(ctx);vm.runInContext(functionSource(source,'initializeAccountSession'),ctx);
+ vm.createContext(ctx);
+ for(const name of ['initializeAccountSession','offlineStartupUser','hasLocalProfile','accountSwitchPending'])vm.runInContext(functionSource(source,name),ctx);
  await ctx.initializeAccountSession();assert.deepEqual(events,['ui','resume:alice']);assert.equal(ctx.persistenceModel.lumenUser.id,'alice');
  ctx.navigator.onLine=true;await reconnect();assert.equal(events.at(-1),'auth');
- ctx.navigator.onLine=false;ctx.qaActive=true;events.length=0;await ctx.initializeAccountSession();assert.deepEqual(events,['auth'],'QA cannot inherit an actual cached account');
+ ctx.navigator.onLine=false;
+ for(const [label,bytes,unverifiedOwner] of [['missing cache',null,undefined],['another stored session',profile,'true']]){
+  if(bytes===null)s.removeItem('lumenProgressV1');else s.setItem('lumenProgressV1',bytes);
+  hold.dataset.unverifiedOwner=unverifiedOwner;
+  events.length=0;reconnect=null;ctx.persistenceModel.lumenUser=null;
+  await ctx.initializeAccountSession();
+  assert.deepEqual(events,[],label+' waits for connectivity without resuming the previous profile');
+  assert.equal(ctx.persistenceModel.lumenUser,null);
+  assert.equal(typeof reconnect,'function');
+ }
+ s.setItem('lumenProgressV1',profile);delete hold.dataset.unverifiedOwner;
+ ctx.qaActive=true;events.length=0;await ctx.initializeAccountSession();assert.deepEqual(events,['auth'],'QA cannot inherit an actual cached account');
  s.setItem('lumenCloudOwnerId','bob');assert.equal(preparedOfflineUser(s,{offline:true}),null);
  assert.equal(preparedOfflineUser(s,{offline:false}),null);
 });
