@@ -91,7 +91,7 @@ import {mountAdventureAccess} from './adventure-access-panel.js';
 import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
 import {adventureOfferModel,mountAdventureOffer} from './adventure-offer.js';
 import {purchaseThanksModel,showPurchaseThanks} from './purchase-thanks.js';
-import {getPlayBilling,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices} from '../persistence/play-billing.js';
+import {getPlayBilling,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices,toPlayProductId} from '../persistence/play-billing.js';
 import {rememberPlayAppLaunch,isPlayDistributedApp,stripeCheckoutAvailable,startStripeCheckout,stripeSessionStatus,restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage} from '../persistence/stripe-checkout.js';
 import {SKY_PRODUCT_ID} from '../campaign/store-catalogue.js';
 import {createSound} from "./sound.js";
@@ -4226,7 +4226,11 @@ let celestialPending=null;
 let playBilling=null,playPriceLabels={};
 const playBillingReady=getPlayBilling().then(async service=>{
  playBilling=service;
- if(service)playPriceLabels=await playPrices(service,[...CONTENT_PACKS.filter(p=>p.access==='locked').map(p=>p.id),SKY_PRODUCT_ID]);
+ if(service){
+  const ids=[...CONTENT_PACKS.filter(p=>p.access==='locked').map(p=>p.id),SKY_PRODUCT_ID];
+  const prices=await playPrices(service,ids.map(toPlayProductId));
+  playPriceLabels=Object.fromEntries(ids.map(id=>[id,prices[toPlayProductId(id)]]).filter(([,price])=>price));
+ }
  return service;
 }).catch(()=>null);
 async function playVerify(productId,purchaseToken){
@@ -4242,7 +4246,7 @@ async function purchaseAdventure(productId,{setStatus,setBusy,waiver}){
  if(!playBilling&&stripeAvailable())return purchaseWithStripe(productId,{setStatus,setBusy,waiver});
  if(!playBilling)return;
  const owner=lumenUser.id;setBusy(true);setStatus('Ouverture du paiement Google Play…');
- const result=await buyWithPlay({productId,verify:playVerify});
+ const result=await buyWithPlay({productId:toPlayProductId(productId),verify:playVerify});
  if(lumenUser?.id!==owner)return;
  if(result.status==='paid'){await loadEntitlements();if(lumenUser?.id!==owner)return;setStatus('Achat confirmé ✓ Bonne exploration !');skyNavigation.render();thankForPurchase(productId)}
  else if(result.status==='pending')setStatus('Paiement en attente de validation par Google : l’aventure se débloquera dès sa confirmation.');

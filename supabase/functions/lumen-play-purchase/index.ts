@@ -5,7 +5,7 @@
 // mode "voided" (operator secret): replay Google's voided purchases as refunds.
 // Secrets (Edge Function secrets, never in the client):
 //   LUMEN_PLAY_SERVICE_ACCOUNT  service-account JSON with androidpublisher access
-//   LUMEN_PLAY_PACKAGE          defaults to fr.nopuna.lumen
+//   LUMEN_PLAY_PACKAGE          defaults to com.nopuna.lumen
 //   LUMEN_PLAY_CRON_SECRET      shared secret for the "voided" mode
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 const ORIGIN = 'https://lumen.nopuna.fr';
@@ -53,7 +53,7 @@ Deno.serve(async (request) => {
   if (origin && origin !== ORIGIN) return reply(403, { error: 'origin_not_allowed' });
   if (request.method !== 'POST') return reply(405, { error: 'method_not_allowed' });
   const url = Deno.env.get('SUPABASE_URL'), key = Deno.env.get('SUPABASE_ANON_KEY'), serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  const packageName = Deno.env.get('LUMEN_PLAY_PACKAGE') || 'fr.nopuna.lumen';
+  const packageName = Deno.env.get('LUMEN_PLAY_PACKAGE') || 'com.nopuna.lumen';
   let account = null;
   try { account = JSON.parse(Deno.env.get('LUMEN_PLAY_SERVICE_ACCOUNT') || 'null'); } catch { account = null; }
   if (!url || !key || !serviceKey || !account?.client_email || !account?.private_key) return reply(503, { error: 'unavailable' });
@@ -96,12 +96,16 @@ Deno.serve(async (request) => {
     const token = request.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1];
     if (!token) return reply(401, { error: 'authentication_required' });
     const productId = body?.productId, purchaseToken = body?.purchaseToken;
-    if (typeof productId !== 'string' || !/^[a-z0-9-]{1,64}$/.test(productId) || typeof purchaseToken !== 'string' || purchaseToken.length < 1 || purchaseToken.length > 4096)
+    if (typeof productId !== 'string' || !/^[a-z0-9_]{1,64}$/.test(productId) || typeof purchaseToken !== 'string' || purchaseToken.length < 1 || purchaseToken.length > 4096)
       return reply(400, { error: 'invalid_request' });
     const client = createClient(url, key, { global: { headers: { Authorization: 'Bearer ' + token } }, auth: { persistSession: false, autoRefreshToken: false } });
     const { data: { user }, error: authError } = await client.auth.getUser(token);
     if (authError || !user) return reply(401, { error: 'invalid_session' });
-    const { data: product, error: productError } = await operator.rpc('lumen_store_price', { p_product_id: productId });
+    // Keep canonical internal IDs in the purchase ledger; Google uses underscore SKUs.
+    const internalProductId = /^real_adventure_0[2-9]$/.test(productId) || productId === 'real_sky_all'
+      ? productId.replaceAll('_', '-') : null;
+    if (!internalProductId) return reply(400, { error: 'unknown_product' });
+    const { data: product, error: productError } = await operator.rpc('lumen_store_price', { p_product_id: internalProductId });
     if (productError) throw Error('catalogue_unavailable');
     if (!product?.active) return reply(400, { error: 'unknown_product' });
 
@@ -115,7 +119,7 @@ Deno.serve(async (request) => {
     const ref = await sha256hex(purchaseToken);
     const eur = !purchase.regionCode || purchase.regionCode === PLAY_REGION_EUR;
     const { data: recorded, error: recordError } = await operator.rpc('lumen_record_purchase', {
-      p_provider: 'play', p_provider_ref: ref, p_user_id: user.id, p_product_id: productId,
+      p_provider: 'play', p_provider_ref: ref, p_user_id: user.id, p_product_id: internalProductId,
       p_amount_cents: eur ? product.price_cents : 0, p_currency: eur ? product.currency : 'XXX', p_status: 'paid',
       p_purchased_at: purchase.purchaseTimeMillis ? new Date(Number(purchase.purchaseTimeMillis)).toISOString() : null,
     });

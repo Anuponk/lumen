@@ -154,8 +154,8 @@ inspecté le compte développeur ni validé ses déclarations administratives.
 
 L'app reste « gratuite » avec achats intégrés. La bibliothèque `billing` ajoute l'autorisation `com.android.vending.BILLING` au manifeste fusionné.
 - [ ] Créer le **profil marchand** (Payments) dans la Play Console.
-- [ ] Créer 9 **produits intégrés** (achat unique, non consommables), avec exactement ces identifiants : `real-adventure-02` … `real-adventure-09` à **1,00 €** TTC, et `real-sky-all` à **5,00 €** TTC. Prix pour la France.
-- [ ] Créer un **compte de service** Google Cloud avec l'API Google Play Android Developer, puis l'inviter dans la Play Console avec le droit « Afficher les données financières et gérer les commandes ». Stocker sa clé JSON uniquement comme secret Supabase `LUMEN_PLAY_SERVICE_ACCOUNT`, avec `LUMEN_PLAY_PACKAGE=fr.nopuna.lumen` et un `LUMEN_PLAY_CRON_SECRET` aléatoire. Ne jamais la committer.
+- [ ] Créer 9 **produits intégrés** (achat unique, non consommables), avec exactement ces identifiants Google Play (les IDs internes du catalogue restent avec des tirets) : `real_adventure_02` … `real_adventure_09` à **1,00 €** TTC, et `real_sky_all` à **5,00 €** TTC. Prix pour la France.
+- [ ] Créer un **compte de service** Google Cloud avec l'API Google Play Android Developer, puis l'inviter dans la Play Console avec le droit « Afficher les données financières et gérer les commandes ». Stocker sa clé JSON uniquement comme secret Supabase `LUMEN_PLAY_SERVICE_ACCOUNT`, avec `LUMEN_PLAY_PACKAGE=com.nopuna.lumen` et un `LUMEN_PLAY_CRON_SECRET` aléatoire. Ne jamais la committer.
 - [ ] Déployer l'Edge Function `lumen-play-purchase` et appliquer la migration `20261115220000_play_purchase_gateway_729.sql`.
 - [ ] Planifier l'appel quotidien du mode `voided` (remboursements), avec l'en-tête `x-lumen-cron`.
 - [ ] Ajouter des **testeurs de licence**, publier un AAB sur la piste de test interne, puis faire un vrai achat de test : déblocage, restauration après réinstallation, et retrait après remboursement de test.

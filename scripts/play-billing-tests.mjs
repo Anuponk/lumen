@@ -1,12 +1,15 @@
 // #729: client Play Billing module with synthetic Digital Goods and Payment Request.
 import assert from 'node:assert/strict';
-import {getPlayBilling,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices,PLAY_BILLING_METHOD} from '../src/persistence/play-billing.js';
+import {getPlayBilling,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices,toPlayProductId,PLAY_BILLING_METHOD} from '../src/persistence/play-billing.js';
 import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {adventureOfferModel} from '../src/ui/adventure-offer.js';
 import {SKY_PRODUCT_ID} from '../src/campaign/store-catalogue.js';
 import fs from 'node:fs';
 
+assert.equal(toPlayProductId('real-adventure-02'),'real_adventure_02');
+assert.equal(toPlayProductId('real-sky-all'),'real_sky_all');
+assert.equal(toPlayProductId('base-real-sky'),'base-real-sky');
 // Availability: only where the Digital Goods API answers (the Play app).
 assert.equal(await getPlayBilling({}),null,'Browsers and iPhone have no Play offer');
 assert.equal(await getPlayBilling({getDigitalGoodsService:async()=>{throw Error('unsupported')},PaymentRequest:function(){}}),null);

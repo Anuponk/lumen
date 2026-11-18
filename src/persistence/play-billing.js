@@ -3,6 +3,9 @@
 // by the server (Edge Function lumen-play-purchase → #728); this module never grants.
 // Outside the Play app (browser, iPhone) getDigitalGoodsService is absent: no Play offer.
 export const PLAY_BILLING_METHOD='https://play.google.com/billing';
+// Play Console disallows hyphens in product IDs. Internal pack IDs remain unchanged.
+export function toPlayProductId(id){return /^real-adventure-0[2-9]$/.test(id)||id==='real-sky-all'?id.replaceAll('-','_'):id}
+
 
 export async function getPlayBilling(win=globalThis){
  if(typeof win?.getDigitalGoodsService!=='function'||typeof win?.PaymentRequest!=='function')return null;
