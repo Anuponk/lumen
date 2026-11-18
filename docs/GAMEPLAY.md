@@ -3,19 +3,19 @@
 ## Official attempt time and victory (#638, #652)
 
 The visible campaign clock is real elapsed time plus 5 seconds per Verify,
-15 per Hint and 5 per effective guided intervention. Free assistance has the
-same time cost. Each action updates the clock immediately with a brief penalty
+15 per Hint and 5 per effective guided intervention. Each action updates
+the clock immediately with a brief penalty
 label; restoration derives the sum from durable counters and does not replay
 the label or add another penalty. Technical elapsed time remains available for
-the unchanged Rapidité rule (strictly below 60 real seconds), bonus conditions,
-free-hint research period and cooldowns.
+the unchanged Rapidité rule (strictly below 60 real seconds), bonus conditions
+and cooldowns.
 
 Victory and comparable personal records use official time for the same grid
 revision. Only a strict confirmed improvement announces one new record; equality
-and a better raw time alone do not. After the two-second minimum and the end of
-the badge reveal, the podium appears in the same performance block (#682, #794).
-Constellation and particle animations may continue alongside it. Reduced motion
-uses a static scene immediately while retaining the minimum. The ranking area
+and a better raw time alone do not. When the badges finish appearing, the podium
+appears in the same performance block (#682, #794). Constellation and particle
+animations may continue alongside it. Reduced motion shows results immediately.
+The ranking area
 shows a loading state until verified results arrive. Progress and badges are
 already durable before the player leaves the victory screen. The unversioned social
 challenge protocol retains real elapsed references until a compatible versioned
@@ -28,7 +28,7 @@ independently of its saved numeric key. All four badges are eligible from quest 
 `PERFORMANCE_UNLOCKS` owns the explanations of Rapidité at quest 3 and the
 four-badge system at quest 6; `questLearningRules` drives those introductions
 without delaying eligibility. Guided conflict control stays forced through 5, optional through
-10; marking is manual throughout the campaign (#647). Guided autonomy is introduced at 11. Hints remain free through 10.
+10; marking is manual throughout the campaign (#647). Guided autonomy is introduced at 11. Hints have the same time penalty throughout.
 
 Qualified badge runs share a fifteen-minute cooldown. Qualification is decided
 when a run starts (first gesture or reset), never frozen when the grid was opened:
@@ -37,8 +37,7 @@ run is never demoted (#761). The ranking requires that same flag, so a refused
 time is shown as not ranked while the personal record stays saved. Replays preserve acquired
 badges and first-win stars; Maîtrise is earned on one run, never accumulated.
 First victories earn 10 XP plus 5 XP without a hint, even if another assistance
-was used. Every third autonomous first victory earns one Éclat. Bonus quests
-retain their 25 XP / one Éclat one-time award; a previously unclaimed bonus may
+was used. Bonus quests retain their 25 XP one-time award; a previously unclaimed bonus may
 be earned by an actual successful replay. Stable-only bonus identities derive
 from the quest ID, with cadence based on visible order. Historical bonus IDs
 and star allocations stay frozen. New constellation allocations derive from
@@ -133,7 +132,11 @@ once per board run, before the terminal state. Rendering, hints, undo and
 restoration never trigger it. Restore at/past halfway consumes the crossing
 silently; reset/replay starts a fresh run (#515).
 
-Shard economy: start with 3, **no wallet cap** (see `PROGRESSION.md`); hints are free during quests 1–10. Otherwise the first hint in an attempt is free, the second costs 1 shard, and later hints cost 2; a player at zero shards can receive a free hint after 90 seconds. First Verify use is free; subsequent uses cost 1 shard. No automatic timed shard regeneration. An authorized admin-only unlimited-shards test toggle bypasses spending.
+The only cost for an available aid is official time. Each hint adds 15 seconds,
+each verification adds 5 seconds and each guided intervention adds 5 seconds.
+The existing assistance qualification rules continue to apply.
+Historical saves retain their stored balance with no wallet cap imposed by the
+game. See [the compatibility contract](PROGRESSION.md#aides-et-historique-du-portefeuille-803).
 
 Hint and Verify use counts are retained in the active attempt across restart, so
 reopening a board neither resets its paid-help sequence nor spends twice for an
@@ -173,4 +176,8 @@ The sender's time and badges stay hidden before the recipient finishes, so the r
 
 ## Continuité des glissements (#632)
 
-Chaque segment de pointeur assombrit toutes les cases traversées, même lorsque le navigateur regroupe les déplacements pendant les effets. Le seuil de 8 px distingue tap et glissement ; la capture commence au seuil. Les Gardiens, les contraintes pédagogiques et les cellules DOM restent préservés. Annuler restaure tout le geste.
+Un glissé depuis une case vide pose des marques. Depuis un rond rouge ou un
+Gardien, le glissé efface uniquement les ronds rouges traversés. Retouche un
+Gardien pour le retirer. Le seuil de 8 px sépare le toucher du glissé. La capture
+du pointeur traite les cases traversées même lorsque les déplacements sont
+groupés. Les contraintes pédagogiques s’appliquent et Annuler restaure le geste.

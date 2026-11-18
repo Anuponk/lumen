@@ -62,7 +62,7 @@ try {
       const {createRankingView}=await import('./src/ui/ranking.js');
       window.layoutBoard={participating:true,realParticipants:6,top:[1,2,3].map(p=>({place:p,position:p,nickname:p===2?'Anupon':'Écho '+p,score:p*40,mine:p===2,virtual:p!==2})),personal:{place:2,position:2,nickname:'Anupon',score:80,mine:true}};
       window.layoutDelay=0;
-      window.layoutView=createRankingView({client:{flush:async()=>[],board:()=>new Promise(r=>setTimeout(()=>r(window.layoutBoard),window.layoutDelay))},getContext:()=>({owner:'synthetic',client:null}),format:s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0')});
+      window.layoutView=createRankingView({client:{flush:async()=>[],takeResult:()=>({status:'ineligible'}),board:()=>new Promise(r=>setTimeout(()=>r(window.layoutBoard),window.layoutDelay))},getContext:()=>({owner:'synthetic',client:null}),format:s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0')});
     })()`);
     for (const delay of [0, 1000, 5000]) {
       await evaluate(`window.layoutView.clear();window.layoutDelay=${delay};window.layoutView.show({id:'layout'});window.layoutView.mount()`);
@@ -80,6 +80,16 @@ try {
       `(()=>{const step=p=>document.querySelector('#skyRevealPodium .ranking-step-'+p).getBoundingClientRect();const s=[1,2,3].map(step);return {order:s[1].left<s[0].left&&s[0].left<s[2].left,heights:s[0].height>s[1].height&&s[1].height>s[2].height,mine:[...document.querySelectorAll('#skyRevealPodium .ranking-mine')].map(e=>Number(e.dataset.position))}})()`,
     );
     assert.deepEqual(podium, { order: true, heights: true, mine: [2] }, JSON.stringify({ width, height, podium }));
+    await evaluate(`window.layoutDelay=0;window.layoutBoard.personal={place:9,position:9,nickname:'Joueur',score:130,mine:true};
+      document.getElementById('skyReveal').dataset.celestial='constellation';
+      window.layoutView.show({id:'layout'},'excluded-attempt');window.layoutView.mount();
+      const unavailable=document.querySelector('#skyReveal .challenge-unavailable');
+      unavailable.hidden=false;unavailable.textContent='Un défi se crée uniquement après une première réussite, sans rejeu.';`);
+    await until('!!document.querySelector("#skyReveal .ranking-excluded")');
+    const readable = await evaluate(`(()=>{const elements=['.ranking-personal','.ranking-excluded','.challenge-unavailable'].map(s=>document.querySelector('#skyReveal '+s));
+      const boxes=elements.map(e=>e.getBoundingClientRect());
+      return elements.every(e=>e.scrollHeight<=e.clientHeight+1)&&boxes.every((r,i)=>i===0||r.top>=boxes[i-1].bottom-1)})()`);
+    assert.equal(readable, true, 'Personal rank, exclusion and challenge explanations are fully readable in order');
     const text = await evaluate(`document.getElementById('skyReveal').innerText`);
     assert.doesNotMatch(text, /\d+\s+joueurs?\b|joueurs? réels?|\d+\s+virtuels?\b/i, 'No participant counter on the victory screen');
     assert.equal(

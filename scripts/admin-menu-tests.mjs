@@ -6,7 +6,8 @@ const styles=readFileSync(new URL('../src/ui/styles.css',import.meta.url),'utf8'
 const start=html.indexOf('id="administrationEntry"'),end=html.indexOf('id="guestSaveExplainer"',start);
 assert(start>0&&end>start);
 const panel=html.slice(start,end);
-for(const id of ['administrationToggle','administrationPanel','qaAccountTools','qaAccountSwitch','qaAccountReset','qaPreviewStreakLoss','adminTools','adminUnlimitedShards','adminCockpitOpen'])assert(panel.includes('id="'+id+'"'),id+' must be in Administration');
+for(const id of ['administrationToggle','administrationPanel','qaAccountTools','qaAccountSwitch','qaAccountReset','qaPreviewStreakLoss','adminTools','adminCockpitOpen'])assert(panel.includes('id="'+id+'"'),id+' must be in Administration');
+assert.doesNotMatch(panel,/adminUnlimitedShards/);
 assert.match(panel,/aria-expanded="false"/);
 assert.match(src,/function syncAdministrationMenu\(\)/);
 assert.match(src,/const visible=qaActive\|\|authorized/);

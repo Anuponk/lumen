@@ -15,7 +15,7 @@ export function legacyVictoryRules(){
 }
 // Existing guest/old-server victory semantics; network commands use immutable
 // facts and apply these same effects on the locked SERVER profile instead.
-export function applyLegacyVictory(progress,index,facts){
+export function applyLegacyVictory(progress,index,facts,{grantShards=true}={}){
  const campaign=createCampaign(()=>progress,()=>{},()=>({activeGameSeconds:()=>facts.seconds,...facts}));
  const generated=index>=campaignQuestCount(),firstCompletion=!progress.solved[index],skyEarnedBefore=campaign.skyStarsEarned();
  const priorPerformance=structuredClone(progress.performances[index]||{}),priorBadges=priorPerformance.version>=2?{...(priorPerformance.badges||{})}:{};
@@ -26,11 +26,11 @@ export function applyLegacyVictory(progress,index,facts){
  let questPassed=false;
  if(ch&&!progress.stars[ch.id]){
   questPassed=!facts.challengeFailed&&(ch.seconds!==null?facts.seconds<=ch.seconds:ch.type===2?!facts.hintUsed:true);
-  if(questPassed){progress.stars[ch.id]=1;progress.challenges[ch.id]=1;progress.xp+=25;progress.shards=(progress.shards||0)+1}
+  if(questPassed){progress.stars[ch.id]=1;progress.challenges[ch.id]=1;progress.xp+=25;if(grantShards)progress.shards=(progress.shards||0)+1}
  }
  const stars=firstCompletion?(generated?generatedQuestReward(index).stars:skyStarsForGrid(index)):0;
  const savedPerformance=campaign.savePerformance(index,stars,{day:facts.qualifiedDay,at:facts.qualifiedAt});
- const autonomyShard=grantAutonomyMilestone(progress,{firstCompletion,autonomy:!!savedPerformance.run.autonomy});
+ const autonomyShard=grantAutonomyMilestone(progress,{firstCompletion,autonomy:!!savedPerformance.run.autonomy,grantShards});
  const dailyQualified=qualifiesDailyActivity({firstCompletion,performanceQualifying:savedPerformance.qualifying,priorBadges,earnedBadges:savedPerformance.badges});
  if(!facts.hintUsed){progress.noHint=progress.noHint||{};progress.noHint[index]=1}
  return {firstCompletion,questPassed,stars,skyEarnedBefore,priorPerformance,priorBadges,savedPerformance,autonomyShard,dailyQualified,attempts:progress.performances[index].attempts};

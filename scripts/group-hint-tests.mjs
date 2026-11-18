@@ -10,7 +10,7 @@ const handler=source.slice(source.indexOf('document.getElementById("hint").oncli
 function present(h,lesson=false,engine=null){
  const button={},messages=[],grants=[];
  const context={document:{getElementById:()=>button},scriptedLearningActive:()=>lesson,activeQuestOrdinal:()=>91,levelIndex:70,
-  consumeHintCost:()=>{grants.push(true);return true},playerError:()=>engine?.playerError()??null,directMissingCross:()=>engine?.directMissingCross()??null,
+  celebrated:false,guidedPending:null,verifyPending:null,recordHintUse:()=>grants.push(true),playerError:()=>engine?.playerError()??null,directMissingCross:()=>engine?.directMissingCross()??null,
   simpleForcedPlacement:()=>engine?.simpleForcedPlacement()??null,proofEngine:()=>h,proofs:{},hi:null,hiCells:[],hintStage:0,hintFocus:null,
   showHintMessage:t=>messages.push(t),render(){}};
  vm.createContext(context);vm.runInContext(handler,context);

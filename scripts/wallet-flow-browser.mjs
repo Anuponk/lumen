@@ -73,17 +73,26 @@ export async function verifyWalletAndOfflineFlow({send,evaluate,navigate,url}){
   await acknowledgeLearningMilestones(evaluate);
   assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).state`),'RUNNING','Wallet fixture must begin a real attempt');
   await click('hint');assert.equal(await evaluate('__walletServer.debits'),0);
-  await evaluate('__walletLoseReply=true');await click('hint');
-  await until('__walletServer.debits===1 && lumenDiagnostics.snapshot().progress.shards===9');
-  await evaluate('__walletLoseReply=false;__walletHideReceipt=true');await click('hint');
-  await until('__walletServer.debits===2');
+  await evaluate(`(async()=>{
+   const {walletSpendIdentity}=await import('/src/persistence/wallet-command.js');
+   const {createDurableCanonicalVictoryOutbox}=await import('/src/persistence/durable-canonical-outbox.js');
+   const box=createDurableCanonicalVictoryOutbox(localStorage,{namespace:'Wallet'});
+   const attempt=JSON.parse(localStorage.getItem('lumenActiveAttemptV1'));
+   const {operationId,request}=walletSpendIdentity('hint',attempt,1);
+   const owner=${JSON.stringify(owner)};
+   __walletServer.profile=JSON.parse(localStorage.getItem('lumenProgressV1'));
+   await box.enqueue(owner,'wallet',{request},{operationId});
+   __walletLoseReply=true;
+   await window.supabase.createClient().rpc('lumen_commit_wallet_command',{p_expected_user_id:owner,p_operation_id:operationId,p_request:request}).catch(()=>{});
+  })()`,true);
+  await until('__walletServer.debits===1');
   assert.equal(await evaluate(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).state`),'RUNNING','An interrupted debit must not recreate a READY attempt');
   await navigate('Page.reload');
-  await until(`window.lumenDiagnostics&&lumenDiagnostics.snapshot().progress.shards===7`);
+  await until(`window.lumenDiagnostics&&lumenDiagnostics.snapshot().progress.shards===9`);
   await until(`document.getElementById('authUser').textContent==='Progression synchronisée'`);
   await evaluate(`document.getElementById('attemptMask').click()`);await click('hint');
-  await until(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).helpUses.hint===3`);
-  assert.equal(await evaluate('__walletServer.debits'),2,'The interrupted hint reuses its receipt after restart');
+  await until(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).helpUses.hint===2`);
+  assert.equal(await evaluate('__walletServer.debits'),1,'The historic debit is recovered once and new hints leave the wallet alone');
   await evaluate('__offlineVictory=true');
   const solve=`(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`;
   await evaluate(solve);
@@ -100,7 +109,7 @@ export async function verifyWalletAndOfflineFlow({send,evaluate,navigate,url}){
   await until('__walletServer.legacy.length===2');
   await until(`document.getElementById('authUser').textContent==='Progression synchronisée'`);
   assert.equal(await evaluate(`document.getElementById('cloudSyncStatus')?.hidden!==false`),true,'Restart must not recapture an acknowledged victory as pending');
-  assert.equal(await evaluate('__walletServer.debits'),2);
+  assert.equal(await evaluate('__walletServer.debits'),1);
   assert.equal(await evaluate('!!__walletServer.profile.solved[20]&&!!__walletServer.profile.solved[21]'),true);
   return {lostSpendResponse:true,restartReceiptRecovery:true,twoOfflineVictories:true,nonBlockingCelebration:true,simulatedRpc:true};
  }catch(error){

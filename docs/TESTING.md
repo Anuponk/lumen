@@ -903,6 +903,38 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+### Chantier #806
+
+Les suites `offline-wallet-ui-tests.mjs`, `hint-assistance-badge-regression-tests.mjs`
+et `official-time-browser-tests.mjs` vérifient le compte des aides, le chrono
+officiel, les records à la reprise et les badges. Les scénarios navigateur
+hors ligne vérifient l’absence de nouvelles dépenses à la reconnexion.
+Le scénario Wallet d’`account-session-browser-tests.mjs` vérifie qu’une demande
+historique reste récupérable par son reçu après redémarrage. Conserver la
+matrice #801 et les suites Wallet/SQL.
+
+Sur Android (Chrome et application installée), iOS (Safari et écran d’accueil)
+et ordinateur (souris et clavier), effectuer les vérifications suivantes.
+
+1. Ouvrir une quête existante, effectuer deux indices et deux vérifications,
+   puis répéter hors ligne. Chaque action ajoute sa pénalité une fois.
+   Recharger, reprendre et résoudre. Comparer le temps et les badges après
+   connexion sur un deuxième appareil. Garder intactes les données du Chrome
+   historique de #801 et vérifier les reçus en attente avec le diagnostic.
+2. Glisser à partir d’un rond rouge en traversant d’autres ronds, un Gardien
+   et des cases vides. Seuls les ronds disparaissent. Annuler restaure tout
+   le glissé. Retoucher un Gardien le retire. Vérifier aussi le marquage depuis
+   une case vide et la leçon de glissé en quête 2.
+3. Ouvrir un indice long et un message du Contrôle guidé, y compris en
+   paysage et avec la taille de police agrandie. La grille et les commandes
+   gardent exactement leur position. Le texte du panneau peut défiler. Fermer
+   le panneau au toucher et au clavier avant de reprendre la grille.
+4. Terminer une quête avec de nouveaux badges, puis la rejouer pendant le
+   délai de qualification. Vérifier le rang, le record et la raison du refus
+   du classement, avec et sans podium. Refaire avec le réseau lent et la
+   réduction des mouvements. Vérifier la lisibilité des textes et l’accès
+   aux boutons à 320 px et avec le zoom.
+
 ### Historical Chrome hydration (#801)
 
 `guest-account-hydration-tests.mjs` runs the actual hydration hook with a

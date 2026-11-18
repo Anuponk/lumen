@@ -33,7 +33,7 @@ export async function verifyQuestPolicy(browser,baseUrl){
   assert.equal(state.autoChecked,false);assert.equal(state.guidedDisabled,ordinal<6);assert.equal(state.guidedChecked,ordinal<11);
   assert.equal(state.badge,null);
   assert.equal(state.autonomy,ordinal===11);
-  assert.equal(state.hint.includes('OFFERT'),ordinal<=10);
+   assert.equal(state.hint,'Indice · +15 s','Hint shows the same time penalty at every milestone');
   await acknowledgeLearningMilestones(evaluate);
   await evaluate(`if(!document.getElementById('autonomyOverlay').hidden)document.getElementById('autonomyTry').click()`);
   const toggles=await evaluate(`(()=>{
