@@ -58,7 +58,7 @@ try{
   const hint=await evaluate(`({hidden:document.getElementById('hintCard').hidden,title:document.getElementById('hintTitle').textContent,copy:document.getElementById('hintCopy').textContent,highlighted:document.querySelectorAll('#board .cell.hi').length})`);
   check(!hint.hidden&&hint.title==='Marquage à compléter'&&hint.copy.includes('écarter')&&!hint.copy.includes('Eau manquante')&&hint.highlighted>0,viewport.width+' guided hint: '+JSON.stringify(hint));
   await click('#hintClose');
-  check(await evaluate(`document.getElementById('hintCard').hidden&&document.querySelectorAll('#board .cell.hi').length===0`),viewport.width+' hint close clears visuals');
+  check(await evaluate(`document.getElementById('hintCard').hidden&&document.querySelectorAll('#board .cell.hint-target').length>0`),viewport.width+' closing keeps the board deduction reachable');
   await evaluate(`(()=>{lumenDiagnostics.setupQuest(2);document.getElementById('questStart').hidden=true;const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
   await acknowledgeLearningMilestones(evaluate);
   await sleep(500);

@@ -3683,6 +3683,7 @@ function markDragCross(r,c){
 }
 board.addEventListener("pointerdown",e=>{
  if(guardianLongPress.multiTouch()){dragCross=null;return}
+ dragCrossSuppressClick=false;
  if(celebrated||guidedPending||verifyPending||!document.getElementById('hintCard').hidden)return;
  if(!learningDragAllowed())return;
  const cell=e.target.closest(".cell");if(!cell)return;

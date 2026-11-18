@@ -57,8 +57,10 @@ try{
   }
   await sweep();
   assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().state[0].slice(0,4)'),[0,2,0,0]);
+  await evaluate('new Promise(resolve=>requestAnimationFrame(resolve))',true);
   await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[await point(1)]});
   await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await new Promise(resolve=>setTimeout(resolve,60));
   assert.equal(await evaluate('lumenDiagnostics.snapshot().state[0][1]'),0);
   await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();s.state[0].splice(0,4,1,2,0,1);lumenDiagnostics.setBoard(s.state)})()`);
   await sweep();
