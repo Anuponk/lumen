@@ -2,7 +2,7 @@
 // needs restoring. Storage and URL hints only affect presentation.
 try{
  const query=new URLSearchParams(location.search),fragment=new URLSearchParams(location.hash.slice(1));
- const authReturn=query.has('code')||query.has('token_hash')||fragment.has('access_token');
+ const authReturn=query.has('lumen_confirm')||query.has('code')||query.has('token_hash')||fragment.has('access_token');
  const storedSession=localStorage.getItem('sb-tjdjlavmusmncuszhsuw-auth-token');
  if(query.get('qa')!=='new'&&(authReturn||storedSession||sessionStorage.getItem('lumenAccountSwitchHoldV1')==='1')){
   const hold=document.getElementById('accountSwitchHold');

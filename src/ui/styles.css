@@ -1082,7 +1082,7 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 /* #791: position assistance over the board without changing game layout. */
 :is(#guidedCard,#hintCard,#verifyCard):not([hidden]){
  position:fixed;
- z-index:84;
+ z-index:100;
  inset:auto;
  top:var(--assist-top);
  left:var(--assist-left);
