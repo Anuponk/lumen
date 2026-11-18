@@ -84,7 +84,7 @@ assert.deepEqual(await restoreStripePurchases(transport(200,{results:[{status:'p
 // Wiring in the game screen.
 const screen=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 assert.match(screen,/'\/functions\/v1\/lumen-stripe-checkout'/);
-assert.match(screen,/stripeCheckoutAvailable\(\{channel:paymentChannel\.owner===lumenUser\?\.id\?paymentChannel\.channel:'off',capabilities:lumenCapabilities,playApp:isPlayDistributedApp\(window\),playBilling,qaActive,signedIn:!!lumenUser\}\)/,'the channel is per account');
+assert.match(screen,/stripeCheckoutAvailable\(\{channel:paymentChannel\.owner===lumenUser\?\.id\?paymentChannel\.channel:'off',capabilities:lumenCapabilities,playApp:isPlayDistributedApp\(window\)\|\|playPriceLoader\.snapshot\(\)\.playApp,playBilling,qaActive,signedIn:!!lumenUser\}\)/,'the channel is per account; a resolved Play context stays excluded during retries');
 assert.match(screen,/client\.rpc\('lumen_payment_channel'\)/);
 assert.match(screen,/if\(!playBilling&&stripeAvailable\(\)\)return purchaseWithStripe\(productId,\{setStatus,setBusy,waiver\}\);/);
 assert.match(screen,/showPurchaseStatus\(stripeMessage\(result\.status==='open'\?'pending':result\.status\)\);\r?\n *if\(result\.status==='paid'\)thankForPurchase\(result\.productId\);/,'thank-you only after server "paid"');

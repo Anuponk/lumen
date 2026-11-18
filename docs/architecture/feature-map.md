@@ -429,4 +429,7 @@ UX #784/#786: `ui/quest-review-navigation.js` selects only the immediate canonic
 neighbour after the existing map access guard; `game-screen.js` renders a saved or
 unfinished review without starting a board. `ui/adventure-offer.js` counts distinct
 delivered grids in inaccessible product packs, excluding other skies and future
-slots. Prices remain in `campaign/store-catalogue.js` / Play-localised labels.
+slots. Web prices remain in `campaign/store-catalogue.js`; Play labels and safe
+diagnostics come from `persistence/play-billing.js::createPlayPriceLoader`.
+`game-screen.js::renderAdventureOffer` refreshes the active card on loading/retry;
+Play never substitutes a catalogue price when the provider is unavailable.

@@ -903,6 +903,21 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Play prices P1 (#729/#731/#786): `node scripts/play-billing-tests.mjs` mocks Digital
+Goods and Payment Request for nine SKUs, reordering, missing/empty/failed details,
+invalid amounts/currencies, unavailable service, delayed loading, successful retry,
+payment support and timeout. It executes the production screen's price wiring and
+offer DOM to verify refresh/CTA states, hidden sky offer after a unit purchase,
+unchanged progress and no purchase on price loading. Chrome outside the TWA and
+Stripe exclusion remain covered. `adventure-offer-tests.mjs`,
+`stripe-checkout-client-tests.mjs`, `sales-terms-tests.mjs` and
+`android/tools/packaging.test.mjs` retain adjacent contracts. These are mocks/source
+checks, not Play Console or physical-device evidence. The no-transaction manual
+recipe and native/Web delivery distinction are in [android/PLAY.md](../android/PLAY.md).
+`quest-review-browser-tests.mjs` additionally exercises the real offer DOM with
+synthetic Play loading, failure, retry and enabled prices at 360×640 and 1440×900,
+without opening a payment sheet. Its existing review checks also cover 320/390px.
+
 Competition #638 / marking retirement #647: `ranking-client-tests.mjs` covers
 durable offline/reload staging, counters, account/client changes, begin/finish
 races, withdrawal and quota. `manual-marking-tests.mjs` checks stale preferences

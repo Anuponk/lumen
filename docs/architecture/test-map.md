@@ -514,6 +514,9 @@ Payments / #729 #730: play-purchase-handler-tests.mjs and play-billing-tests.mjs
 signatures), stripe-checkout-client-tests.mjs (web-only availability, return, no false
 success) and fixtures/stripe-checkout.sql (ranks, ledger, cap, test isolation). Shared
 ledger rules: fixtures/purchases-mastery.sql. See [TESTING](../TESTING.md#stripe-checkout-webpwa-test-mode-730).
+Play P1 price states/retry, nine SKUs, partial/error details and actual screen/CTA
+wiring are covered by `play-billing-tests.mjs`; `quest-review-browser-tests.mjs`
+adds Play mocks on real offer DOM at mobile/desktop sizes. Neither performs a payment.
 
 UX #784/#786: `quest-review-tests.mjs` covers canonical constellation/adventure
 boundaries, independently owned entry, immediate locks/no skipping, unfinished
