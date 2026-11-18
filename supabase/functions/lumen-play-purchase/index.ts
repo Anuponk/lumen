@@ -74,11 +74,16 @@ Deno.serve(async (request) => {
   let body;
   try { body = await request.json(); } catch { return reply(400, { error: 'invalid_request' }); }
   const operator = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  let accessToken;
   const play = async (path, init = {}) => {
-    const access = await googleAccessToken(account, fetch);
+    const access = await (accessToken ??= googleAccessToken(account, fetch));
     const response = await fetch(API + encodeURIComponent(packageName) + path, { ...init, headers: { authorization: 'Bearer ' + access, 'content-type': 'application/json' } });
     const text = await response.text();
-    return { ok: response.ok, status: response.status, data: text ? JSON.parse(text) : {} };
+    let data = {};
+    if (text) {
+      try { data = JSON.parse(text); } catch { throw Error('google_invalid_response'); }
+    }
+    return { ok: response.ok, status: response.status, data };
   };
   try {
     if (body?.mode === 'voided') {

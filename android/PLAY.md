@@ -92,10 +92,10 @@ Description longue (maximum Console 4 000 caractères) :
 > Découvre gratuitement les 100 premières quêtes de Lumen, sans publicité.
 
 La dernière phrase reprend les 100 quêtes gratuites de l'Aventure 1 décidées
-le 4 novembre (#170). Le modèle actuel (#725) propose les aventures 2 à 9 à
-1,00 € TTC chacune et « Tout le vrai ciel » à 5,00 € TTC, prix cibles France.
-Après un achat unitaire, l'offre globale est masquée ; le plafond serveur de
-5 € reste applicable. Les tarifs affichés dans la TWA proviennent de Google Play.
+le 4 novembre (#170). La TWA affiche les tarifs localisés de Google Play
+pour les aventures 2 à 9 et « Tout le vrai ciel ». Après un achat unitaire,
+l’offre globale est masquée. Le seuil historique de déblocage côté serveur
+est indépendant du montant facturé par Play.
 Les droits acquis des joueurs restent protégés.
 Avant soumission, accorder la fiche aux fonctions réellement actives et au prix
 localisé fourni par le canal de paiement. Play Billing, droits serveur et

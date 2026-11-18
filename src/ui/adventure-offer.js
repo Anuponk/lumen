@@ -1,5 +1,4 @@
-// #731: what a player sees when touching a locked Adventure: the paid offers (€1 / €5,
-// €5 cap), the free path through 100% mastery of the previous Adventure, and why
+// #731: paid offers, the free path through 100% mastery of the previous Adventure, and why
 // Lumen is paid. Purchases stay disabled until a payment provider is connected
 // (#729/#730); the server always decides what is granted (#728).
 import {celestialScope,celestialMastered} from './celestial-progress.js';
