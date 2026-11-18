@@ -70,8 +70,12 @@ export async function verifyDomainReplay({send,evaluate,navigate,url}){
    await start(quest);
    const identity=await evaluate(`(()=>{const a=JSON.parse(localStorage.getItem('lumenActiveAttemptV1'));return {attemptId:a.attemptId,resetCount:a.resetCount}})()`);
    if(quest===historical){
-    await touch('#hint');await until(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).helpUses.hint===1`);
-    await touch('#hint');await until(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).helpUses.hint===2`);
+    for(const count of [1,2]){
+     await touch('#hint');
+     await until(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).helpUses.hint===${count}`);
+     await touch('#hintClose');
+     await until("document.getElementById('hintCard').hidden");
+    }
     assert.equal(await evaluate('__domainWrites'),0,'Repeated hints on a verified replay send no wallet mutation');
    }
    await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
