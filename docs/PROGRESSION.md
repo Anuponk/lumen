@@ -117,7 +117,7 @@ Revocation expires the entitlement (`expires_at`); it never deletes progress, st
 
 ## Purchases and mastery unlocks (#728)
 
-Pricing (owner decision, #725): Adventure 1 stays free; each locked Adventure costs €1 incl. VAT; « Tout le vrai ciel » costs €5 incl. VAT. **€5 cap**: once an account's confirmed EUR payments reach the whole-sky price, every locked Adventure is owned. Future skies are sold separately.
+Adventure 1 stays free. The web catalogue offers each locked Adventure at €1 and « Tout le vrai ciel » at €5. Future skies are sold separately. The server grants all locked Adventures when the account reaches the existing 500-credit threshold. Web EUR purchases contribute their catalogue amounts. Eligible Google Play purchases in France keep their original credit per Adventure regardless of what Google charged. A verified whole-sky purchase grants the corresponding sky directly in any currency.
 
 Rights come only from the server, in `lumen.entitlements`:
 - `purchase`: converged from the confirmed purchase ledger by `lumen_commands.sync_purchase_entitlements`. A refund or dispute expires the row; progress, stars and badges are never touched. An Adventure already started stays playable (acquired access).
@@ -130,7 +130,7 @@ ownership never completes a quest or awards progress. Historical acquired access
 and preserved attempts retain their existing exceptions. Mastery is a way to earn
 ownership of the next Adventure, not a prerequisite for playing a purchased one.
 
-The locked-Adventure offer (#731, `ui/adventure-offer.js`) shows both paths. Prices come from `src/campaign/store-catalogue.js`, shared with the server seed; purchases stay disabled until a provider is connected. On Google Play (#729) a product has a fixed price: once a single Adventure has been bought, the €5 offer is hidden and the player continues at €1 until the €5 cap unlocks the whole real sky. On the web/PWA, Stripe Checkout (#730, TEST phase, test accounts only, see [STRIPE_730](STRIPE_730.md)) applies the same catalogue prices and the same rule; it is never offered in the Play app. A Stripe return never unlocks by itself: the server reads the payment back from Stripe, and a full refund or a lost dispute expires the `purchase` right without touching progress. The client only asks for a mastery unlock: after a verified hydration and when a local victory triggers an Adventure mastery. A victory still pending on the server is retried at the next launch.
+The locked-Adventure offer (#731, `ui/adventure-offer.js`) shows both paths. Purchases stay disabled until a provider is connected. Google Play supplies its localized prices (#729). The whole-sky purchase option is still hidden after the first unit purchase. The Play offer shows the provider’s prices and makes no promise about a fixed total. Stripe uses the web catalogue and is available only on the web/PWA. [STRIPE_730](STRIPE_730.md) A Stripe return never unlocks by itself: the server reads the payment back from Stripe, and a full refund or a lost dispute expires the `purchase` right without touching progress. The client only asks for a mastery unlock: after a verified hydration and when a local victory triggers an Adventure mastery. A victory still pending on the server is retried at the next launch.
 
 ## Bonus quests
 After the reviewed historical-command migration, authenticated victories apply

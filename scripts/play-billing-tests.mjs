@@ -60,9 +60,9 @@ const packs=[...CONTENT_PACKS].sort((a,b)=>a.order-b.order).map((p,i)=>({...p,ac
 const base={pack,packs,quests:canonicalQuestList(),progress:{},signedIn:true,purchasesAvailable:true};
 let model=adventureOfferModel({...base,prices});
 assert.equal(model.showSky,true);assert.match(model.unitPrice,/1,00\s€/);assert.equal(model.unitProduct,pack.id);assert.equal(model.skyProduct,SKY_PRODUCT_ID);
-model=adventureOfferModel({...base,boughtSingle:true});
-assert.equal(model.showSky,false,'After a single purchase the €5 offer is hidden; the €5 cap completes the sky');
-assert.equal(model.capPrice,'5 €');
+model=adventureOfferModel({...base,boughtSingle:true,pricesRequired:true,prices});
+assert.equal(model.showSky,false,'After a single purchase the existing eligibility rule still hides the whole-sky offer');
+assert.doesNotMatch(model.capMessage,/5 €|5,00\s€/,'A Play offer must not advertise a fixed local or catalogue ceiling');
 
 // Wiring: the Play offer exists only with Play Billing, outside QA; verification goes to the Edge Function.
 const screen=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');

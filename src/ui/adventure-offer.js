@@ -13,9 +13,8 @@ export const WAIVER_REQUIRED='Coche la case ci-dessus pour confirmer l’accès 
 export const SALES_TERMS_URL='/cgv.html';
 export const SUPPORT_TEXT='Lumen est développé par un petit studio indépendant. Pas de publicité, pas de collecte de données pour du ciblage : les achats servent à financer l’hébergement, les serveurs et le développement de nouvelles aventures.';
 
-// #729: on Google Play a product has a fixed price, so once a single Adventure has been
-// bought the €5 offer is hidden and the player continues at €1 until the €5 cap
-// unlocks everything (owner decision, 15/11/2026). Play's localised prices win when known.
+// Play decides the regional price. After a unit purchase, keep the existing
+// eligibility rule for the whole-sky offer independent of the provider's price.
 export function adventureOfferModel({pack,packs,quests,progress,signedIn=false,accounts=true,purchasesAvailable=false,boughtSingle=false,prices={},pricesRequired=false,priceStatus='idle',priceErrors=[]}){
  const ordered=[...(packs||[])].sort((a,b)=>a.order-b.order);
  const index=ordered.findIndex(p=>p.id===pack.id),previous=index>0?ordered[index-1]:null;
@@ -34,8 +33,14 @@ export function adventureOfferModel({pack,packs,quests,progress,signedIn=false,a
  const skyIds=new Set(ordered.filter(p=>p.skyId==='real-sky'&&newlyAvailable(p)).map(p=>p.id));
  const skyCount=ready?delivered.filter(q=>skyIds.has(q.packId)).length:null;
  const missingPrice=priceStatus==='loading'?'Chargement du prix…':'Prix indisponible';
+ const capPrice=formatEuros(SKY_PRICE_CENTS);
+ const capMessage=pricesRequired
+  ? 'Les tarifs Google Play varient selon le pays. Chaque achat confirmé débloque le contenu correspondant.'
+  : boughtSingle
+   ? 'Le plafond des achats web est de '+capPrice+' pour tout le vrai ciel.'
+   : 'Sur le web, tes achats à l’unité comptent dans le plafond de '+capPrice+'.';
  return {id:pack.id,title:pack.displayName||'Aventure',unitCount,skyCount,pricesRequired,priceStatus,priceErrors,unitPriceKnown:!pricesRequired||!!prices[pack.id],skyPriceKnown:!pricesRequired||!!prices[SKY_PRODUCT_ID],unitPrice:prices[pack.id]||(pricesRequired?missingPrice:formatEuros(ADVENTURE_PRICE_CENTS)),skyPrice:prices[SKY_PRODUCT_ID]||(pricesRequired?missingPrice:formatEuros(SKY_PRICE_CENTS)),
-  capPrice:formatEuros(SKY_PRICE_CENTS),unitProduct:pack.id,skyProduct:SKY_PRODUCT_ID,showSky:!boughtSingle,
+  capMessage,unitProduct:pack.id,skyProduct:SKY_PRODUCT_ID,showSky:!boughtSingle,
   signedIn:!!signedIn,accounts:!!accounts,purchasesAvailable:!!purchasesAvailable,mastery};
 }
 
@@ -89,9 +94,7 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
  offers.append(offerCard('unit','Débloquer cette aventure',model.unitPrice,model.unitCount,model.unitProduct));
  if(model.showSky)offers.append(offerCard('sky','Débloquer tout le vrai ciel',model.skyPrice,model.skyCount,model.skyProduct));
  root.append(offers);
- root.append(el('p',{className:'adventure-offer-cap'},model.showSky
-  ?'Tes achats à l’unité comptent : tu ne paieras jamais plus de '+model.capPrice+' au total.'
-  :'Tu continues à l’unité : dès '+model.capPrice+' payés au total, tout le vrai ciel est débloqué.'),status);
+ root.append(el('p',{className:'adventure-offer-cap'},model.capMessage),status);
  if(model.pricesRequired){
   const message=el('p',{className:'adventure-offer-soon'},model.priceStatus==='loading'?'Chargement des tarifs Google Play…':
    !model.purchasesAvailable||!model.unitPriceKnown||(model.showSky&&!model.skyPriceKnown)?'Google Play ne permet pas cet achat pour le moment. Vérifie ta connexion et réessaie.':'');

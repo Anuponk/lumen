@@ -514,7 +514,7 @@ Payments / #729 #730: play-purchase-handler-tests.mjs and play-billing-tests.mjs
 (Play); stripe-handler-tests.mjs (real Stripe Edge handlers, synthetic Stripe API and
 signatures), stripe-checkout-client-tests.mjs (web-only availability, return, no false
 success) and fixtures/stripe-checkout.sql (ranks, ledger, cap, test isolation). Shared
-ledger rules: fixtures/purchases-mastery.sql. See [TESTING](../TESTING.md#stripe-checkout-webpwa-test-mode-730).
+ledger rules: fixtures/purchases-mastery.sql and fixtures/play-regional-receipts.sql. See [TESTING](../TESTING.md#stripe-checkout-webpwa-test-mode-730).
 Play P1 price states/retry, nine SKUs, partial/error details and actual screen/CTA
 wiring are covered by `play-billing-tests.mjs`; `quest-review-browser-tests.mjs`
 adds Play mocks on real offer DOM at mobile/desktop sizes. Neither performs a payment.
