@@ -314,8 +314,6 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 
 
 /* Issue #27 — play-first viewport and unified Lumen assistance */
-.hint-guided-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.hint-guided-head strong{margin:0}
 .hint-guided-close{width:30px!important;height:30px;padding:0!important;border-radius:50%;font-size:20px;line-height:1;background:transparent!important;color:#5b3b00!important;border-color:rgba(91,59,0,.3)!important}
 .hint-guided-card{border-color:#f2b84b}
 .help-card h3{margin:16px 0 6px;color:#eafaff;font-size:15px}
@@ -949,7 +947,7 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 /* Finale copy consumes real vertical space; keep action labels on a full row. */
 .app:has(#challengeBanner:not([hidden])) .game-core .actions{width:min(100%,max(240px,calc(100dvh - 420px)))!important}
 
-.app:has(#challengeBanner:not([hidden])) #board{width:var(--finale-board-size)!important}
+.app.game-board-fitted .game-core #board[data-size]{width:var(--fitted-board-size)!important}
 
 .challenge-unavailable{font-size:12px;line-height:1.35;color:#b9d8e8;margin:4px 0}
 
@@ -1079,7 +1077,9 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 .ranking-row:first-child{position:sticky;top:0;z-index:2;background:#14202e}
 .ranking-list{position:relative}
 .ranking{background:#0c1826;padding:10px;border:1px solid #273c50;border-radius:12px}
-/* #791: position assistance over the board without changing game layout. */
+/* #791: use the space below the board, including the command row. */
+.app{--assist-min-height:48px}
+.game-core:has(> :is(#guidedCard,#hintCard,#verifyCard):not([hidden])) .actions{visibility:hidden}
 :is(#guidedCard,#hintCard,#verifyCard):not([hidden]){
  position:fixed;
  z-index:100;
@@ -1087,25 +1087,29 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
  top:var(--assist-top);
  left:var(--assist-left);
  width:var(--assist-width);
- max-height:var(--assist-height);
+ max-height:clamp(0px,calc(var(--assist-space) - env(safe-area-inset-bottom,0px)),12rem);
  box-sizing:border-box;
  display:flex;
- flex-direction:column;
- gap:4px;
+ align-items:center;
+ gap:8px;
  margin:0;
- padding:6px 10px;
+ padding:0 8px;
  overflow:hidden;
- box-shadow:0 12px 32px rgba(0,0,0,.36)
+ box-shadow:none
 }
-:is(#guidedCard,#hintCard,#verifyCard)>p{
- margin:0;
+:is(#guidedCard,#hintCard,#verifyCard) .assist-copy{
+ flex:1 1 auto;
+ align-self:stretch;
+ min-width:0;
  min-height:0;
+ padding-block:4px;
  overflow:auto;
  overscroll-behavior:contain;
  white-space:normal;
  overflow-wrap:anywhere
 }
-:is(#guidedCard,#hintCard,#verifyCard) button{flex-shrink:0;min-height:44px;padding-block:3px}
+:is(#guidedCard,#hintCard,#verifyCard) .assist-copy>p{margin:0}
+:is(#guidedCard,#hintCard,#verifyCard) button{flex-shrink:0;width:auto;max-width:48%;min-height:44px;padding:3px 8px}
 #hintCard #hintClose{min-width:44px}
 
 /* Victory phases share the same surface and navigation geometry. */

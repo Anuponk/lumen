@@ -23,29 +23,29 @@ async function fixture(width,height,{qa=true,solved=12}={}){
  await acknowledgeLearningMilestones(evaluate);
 }
 async function check(name,fn){try{await fn();results.push({name,ok:true});console.log('PASS',name)}catch(e){results.push({name,ok:false,error:e.message});console.log('FAIL',name,e.message)}}
+const layout=`JSON.stringify({board:document.getElementById('board').getBoundingClientRect(),actions:document.querySelector('.actions').getBoundingClientRect(),scrollY,scrollHeight:document.querySelector('.app').scrollHeight})`;
+const settleLayout=()=>evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))',true);
+async function assertHelpPlacement(cardId,buttonId,safeBottom=0){
+ const placement=await evaluate(`(()=>{
+  const card=document.getElementById(${JSON.stringify(cardId)}).getBoundingClientRect(),board=document.getElementById('board').getBoundingClientRect();
+  const button=document.getElementById(${JSON.stringify(buttonId)}),close=button.getBoundingClientRect();
+  const actions=document.querySelector('.actions').getBoundingClientRect(),viewportBottom=(visualViewport?.offsetTop??0)+(visualViewport?.height??innerHeight);
+  return {boardBottom:board.bottom,cardTop:card.top,cardBottom:card.bottom,viewportBottom,closeHeight:close.height,
+   closeHit:button.contains(document.elementFromPoint((close.left+close.right)/2,(close.top+close.bottom)/2)),
+   closeBottom:close.bottom,overlapsCommands:card.top<actions.bottom&&card.bottom>actions.top&&card.left<actions.right&&card.right>actions.left};
+ })()`);
+ assert(placement.cardTop>=placement.boardBottom-0.1,'Assistance must start below every cell: '+JSON.stringify(placement));
+ assert(placement.cardBottom<=placement.viewportBottom-safeBottom+0.1,'Assistance fits inside the safe viewport: '+JSON.stringify(placement));
+ assert(placement.closeBottom<=placement.cardBottom+0.1&&placement.closeHeight>=44&&placement.closeHit,'Dismiss control is visible and operable: '+JSON.stringify(placement));
+ assert(placement.overlapsCommands,'Assistance can use the space occupied by commands: '+JSON.stringify(placement));
+}
+async function tap(selector){
+ const point=await evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:(r.left+r.right)/2,y:(r.top+r.bottom)/2}})()`);
+ await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});
+ await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ await new Promise(resolve=>setTimeout(resolve,60));
+}
 try{
- for(const [w,h] of [[320,568],[360,640],[390,844],[667,375],[844,390],[1440,900]])await check(`791 hint overlay ${w}x${h}`,async()=>{
-  await fixture(w,h,{qa:false,solved:2});
-  await evaluate(`lumenDiagnostics.setupQuest(2);document.getElementById('questStart').hidden=true;document.getElementById('attemptMask').click()`);
-  const layout=`JSON.stringify({board:document.getElementById('board').getBoundingClientRect(),actions:document.querySelector('.actions').getBoundingClientRect(),scrollY,scrollHeight:document.querySelector('.app').scrollHeight})`;
-  const before=await evaluate(layout);
-  await evaluate(`document.getElementById('hint').click()`);
-  assert.equal(await evaluate(layout),before,'Assistance does not resize the board, move the controls, or add page scroll');
-  assert(await evaluate(`(()=>{const card=document.getElementById('hintCard').getBoundingClientRect(),board=document.getElementById('board').getBoundingClientRect(),actions=document.querySelector('.actions').getBoundingClientRect();return Math.abs(card.bottom-Math.min(board.bottom,actions.top,innerHeight))<2})()`),'Assistance stays at the bottom of the visible grid');
-  const point=await evaluate(`(()=>{const card=document.getElementById('hintCard'),r=card.getBoundingClientRect(),close=document.getElementById('hintClose').getBoundingClientRect();const cells=[...document.querySelectorAll('#board .cell')];const cell=cells.find(el=>{const p=el.getBoundingClientRect(),x=p.x+p.width/2,y=p.y+p.height/2;return x>r.left&&x<r.right&&y>r.top&&y<r.bottom&&document.elementFromPoint(x,y)?.closest('#hintCard')});if(!cell)return null;const p=cell.getBoundingClientRect();return {x:p.x+p.width/2,y:p.y+p.height/2,closeVisible:close.top>=0&&close.bottom<=innerHeight}})()`);
-  assert(point?.closeVisible,'The overlay covers at least one cell and has a reachable close button');
-  if(w===360){const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(os.tmpdir(),`lumen-ux-hint-${w}x${h}.png`),Buffer.from(shot.data,'base64'))}
-  const state=await evaluate('JSON.stringify(lumenDiagnostics.snapshot().state)');
-  const {x,y}=point;
-  const tap=async()=>{if(w<900){await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]})}else{await send('Input.dispatchMouseEvent',{type:'mousePressed',x,y,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',x,y,button:'left',clickCount:1})}};
-  await tap();
-  assert.equal(await evaluate('JSON.stringify(lumenDiagnostics.snapshot().state)'),state,'A tap over the panel never reaches a cell');
-  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
-  assert.equal(await evaluate("document.getElementById('hintCard').hidden"),true,'Escape closes the hint');
-  assert.equal(await evaluate(layout),before,'Closing assistance preserves the original layout');
-  await tap();
-  assert.notEqual(await evaluate('JSON.stringify(lumenDiagnostics.snapshot().state)'),state,'The same point plays immediately after closing');
- });
  await check('805 touch erases red marks only and the next tap removes a Guardian',async()=>{
   await fixture(390,844);
   await evaluate(`lumenDiagnostics.setupQuest(20);document.getElementById('questStart').hidden=true;document.getElementById('attemptMask').click();const s=lumenDiagnostics.snapshot();s.state[0].splice(0,4,1,2,0,1);lumenDiagnostics.setBoard(s.state);`);
@@ -57,15 +57,83 @@ try{
   }
   await sweep();
   assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().state[0].slice(0,4)'),[0,2,0,0]);
-  await evaluate('new Promise(resolve=>requestAnimationFrame(resolve))',true);
-  await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[await point(1)]});
-  await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
-  await new Promise(resolve=>setTimeout(resolve,60));
-  assert.equal(await evaluate('lumenDiagnostics.snapshot().state[0][1]'),0);
+  // Let Chrome finish the synthesized swipe before beginning a new gesture.
+  await new Promise(resolve=>setTimeout(resolve,250));
+  await tap('#board [data-row="0"][data-col="1"]');
+  const guardian=await evaluate(`new Promise(resolve=>{
+   const deadline=performance.now()+1000;
+   function checkTap(){
+    const mark=lumenDiagnostics.snapshot().state[0][1];
+    if(mark===0||performance.now()>=deadline)resolve(mark);
+    else requestAnimationFrame(checkTap);
+   }
+   checkTap();
+  })`,true);
+  assert.equal(guardian,0,'Chrome delivers the synthesized click after the touch ends');
   await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();s.state[0].splice(0,4,1,2,0,1);lumenDiagnostics.setBoard(s.state)})()`);
   await sweep();
   await evaluate("document.getElementById('undo').click()");
   assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().state[0].slice(0,4)'),[1,2,0,1],'One Undo restores the whole swipe');
+ });
+ for(const [w,h] of [[320,568],[360,740],[375,667],[390,844],[667,375],[844,390],[1440,900]])await check(`791 hint below board ${w}x${h}`,async()=>{
+  await fixture(w,h,{qa:false,solved:2});
+  await evaluate(`lumenDiagnostics.setupQuest(2);document.getElementById('questStart').hidden=true;document.getElementById('attemptMask').click()`);
+  await settleLayout();
+  const before=await evaluate(layout);
+  await evaluate(`document.getElementById('hint').click()`);
+  assert.equal(await evaluate(layout),before,'Assistance does not resize the board, move the controls, or add page scroll');
+  await assertHelpPlacement('hintCard','hintClose');
+  assert.equal(await evaluate("document.getElementById('timePenalty').textContent"),'+15 s');
+  if(w===360){const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(os.tmpdir(),`lumen-ux-hint-${w}x${h}.png`),Buffer.from(shot.data,'base64'))}
+  const state=await evaluate('JSON.stringify(lumenDiagnostics.snapshot().state)');
+  assert(await evaluate("document.querySelector('#hintCard').contains(document.activeElement)"),'Keyboard focus reaches dismissal');
+  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+  assert.equal(await evaluate("document.getElementById('hintCard').hidden"),true,'Escape closes the hint');
+  assert.equal(await evaluate(layout),before,'Closing assistance preserves the original layout');
+  assert.equal(await evaluate('JSON.stringify(lumenDiagnostics.snapshot().state)'),state,'Closing assistance leaves the board intact');
+  assert(await evaluate(`(()=>{const button=document.getElementById('verify'),r=button.getBoundingClientRect();return button.contains(document.elementFromPoint((r.left+r.right)/2,(r.top+r.bottom)/2))})()`),'Commands become reachable again');
+ });
+ const guidedQuest=quests.find(quest=>quest.size===8&&quest.legacyIndex!==null&&quest.ordinal>12);
+ const protocol=await(await fetch((process.env.LUMEN_CDP_URL||'http://127.0.0.1:9222')+'/json/protocol')).json();
+ const safeAreaSupported=protocol.domains.find(domain=>domain.domain==='Emulation')?.commands.some(command=>command.name==='setSafeAreaInsetsOverride');
+ const guidedViewports=[[390,844,0],[360,740,0],[375,667,0]];
+ if(safeAreaSupported)guidedViewports.push([375,667,24]);
+ for(const [w,h,inset] of guidedViewports)await check(`791 guided 8x8 below board ${w}x${h}, bottom inset ${inset}`,async()=>{
+  if(inset)await send('Emulation.setSafeAreaInsetsOverride',{insets:{bottom:inset}});
+  try{
+   await fixture(w,h,{solved:guidedQuest.ordinal-1});
+   await evaluate(`lumenDiagnostics.setupQuest(${guidedQuest.legacyIndex});document.getElementById('questStart').hidden=true;document.getElementById('guidedErrors').checked=true;document.getElementById('attemptMask').click()`);
+   assert.equal(await evaluate('lumenDiagnostics.snapshot().n'),8);
+   const correct=await evaluate('lumenDiagnostics.snapshot().puz.sol[0]'),wrong=(correct+1)%8;
+   for(let i=0;i<2;i++)await tap(`#board [data-row="0"][data-col="${wrong}"]`);
+   const before=await evaluate(layout);
+   await tap('#board [data-row="1"][data-col="0"]');
+   assert.equal(await evaluate("document.getElementById('guidedCard').hidden"),false);
+   assert.match(await evaluate("document.getElementById('guidedTitle').textContent"),/mène à une impasse/);
+   assert.equal(await evaluate(layout),before,'Guided assistance leaves every board dimension unchanged');
+   await assertHelpPlacement('guidedCard','guidedAck',inset);
+   if(w===375){
+    const scroll=await evaluate(`(()=>{const copy=document.querySelector('#guidedCard .assist-copy'),paragraph=copy.querySelector('p');paragraph.textContent=(paragraph.textContent+' ').repeat(12);copy.scrollTop=copy.scrollHeight;return {offset:copy.scrollTop,scrollY}})()`);
+    assert(scroll.offset>0,'Long help text scrolls in the panel');
+    assert.equal(scroll.scrollY,0,'Scrolling long help text leaves the page fixed');
+    await assertHelpPlacement('guidedCard','guidedAck',inset);
+   }
+   assert.equal(await evaluate("document.getElementById('timePenalty').textContent"),'+5 s');
+   await tap('#guidedAck');
+   assert.equal(await evaluate("document.getElementById('guidedCard').hidden"),true);
+   assert.equal(await evaluate(layout),before);
+   await tap('#undo');
+   assert.equal(await evaluate(`lumenDiagnostics.snapshot().state[0][${wrong}]`),1,'The undo command works after guided dismissal');
+   if(w===390){
+    await evaluate(`(()=>{const {state}=lumenDiagnostics.snapshot();state[0][${correct}]=1;lumenDiagnostics.setBoard(state)})()`);
+    await tap('#verify');
+    await assertHelpPlacement('verifyCard','verifyFix');
+    assert.equal(await evaluate("document.getElementById('timePenalty').textContent"),'+5 s');
+    await tap('#verifyFix');
+    assert.equal(await evaluate(`lumenDiagnostics.snapshot().state[0][${correct}]`),0);
+    assert.equal(await evaluate(layout),before);
+   }
+  }finally{if(inset)await send('Emulation.setSafeAreaInsetsOverride',{insets:{}})}
  });
  for(const [w,h] of [[360,640],[1440,900]])await check(`552 explicit guest gate ${w}`,async()=>{
   await fixture(w,h,{qa:false,solved:6});

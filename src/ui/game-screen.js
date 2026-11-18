@@ -2382,33 +2382,40 @@ if(typeof ResizeObserver==="function"){
  const coachSurroundings=new ResizeObserver(()=>{if(document.getElementById("learningBoardWrap")?.classList.contains("coach-above"))requestAnimationFrame(positionLearningCoach)});
  for(const element of [document.querySelector(".app"),...(document.querySelector(".game-core")?.children??[])])if(element&&element.id!=="learningBoardWrap")coachSurroundings.observe(element);
 }
-// Measure finale copy and the complete game stack, including wrapped action labels.
+// Fit the game stack before assistance opens, including room for dismissal.
 // The ordinary quest budget remains the upper bound for the square board.
 const challengeBanner=document.getElementById("challengeBanner");
-function fitFinaleBoard(){
+function fitGameBoard(){
  const app=document.querySelector(".app"),grid=document.getElementById("board");
- app.style.removeProperty("--finale-board-size");
+ app.classList.remove('game-board-fitted');
+ app.style.removeProperty("--fitted-board-size");
  const style=getComputedStyle(challengeBanner);
  const space=challengeBanner.hidden?0:challengeBanner.getBoundingClientRect().height+parseFloat(style.marginTop)+parseFloat(style.marginBottom);
  app.style.setProperty("--challenge-banner-space",`${space}px`);
- if(challengeBanner.hidden)return;
- const available=Math.min(innerHeight,app.getBoundingClientRect().bottom)-parseFloat(getComputedStyle(app).paddingBottom);
+ // The scripted coach reserves space for its longest step and owns its board size.
+ if(grid.closest("#learningBoardWrap.coach-above"))return;
+ const appStyle=getComputedStyle(app);
+ const available=Math.min(innerHeight,app.getBoundingClientRect().bottom)-parseFloat(appStyle.paddingBottom);
+ const helpMinimum=parseFloat(appStyle.getPropertyValue('--assist-min-height'));
  const core=document.querySelector('.game-core'),actions=core.querySelector('.actions');
+ const overflow=()=>Math.max(core.getBoundingClientRect().bottom,actions.getBoundingClientRect().bottom,grid.getBoundingClientRect().bottom+helpMinimum)-available;
+ if(overflow()<=0)return;
  let size=Math.floor(grid.getBoundingClientRect().width);
+ app.classList.add('game-board-fitted');
  for(let i=0;i<6;i++){
-  app.style.setProperty('--finale-board-size',size+'px');
-  const bottom=Math.max(core.getBoundingClientRect().bottom,actions.getBoundingClientRect().bottom);
-  const next=Math.max(1,Math.floor(size-Math.max(0,bottom-available)));
+  app.style.setProperty('--fitted-board-size',size+'px');
+  const next=Math.max(1,Math.floor(size-Math.max(0,overflow())));
   if(next===size)break;
   size=next;
  }
- app.style.setProperty('--finale-board-size',size+'px');
+ app.style.setProperty('--fitted-board-size',size+'px');
 }
-const finaleLayoutObserver=new ResizeObserver(()=>requestAnimationFrame(fitFinaleBoard));
-finaleLayoutObserver.observe(challengeBanner);
-finaleLayoutObserver.observe(document.querySelector(".app"));
-finaleLayoutObserver.observe(document.querySelector(".actions"));
-window.addEventListener("resize",()=>requestAnimationFrame(fitFinaleBoard));
+const gameLayoutObserver=new ResizeObserver(()=>requestAnimationFrame(fitGameBoard));
+gameLayoutObserver.observe(challengeBanner);
+gameLayoutObserver.observe(document.querySelector(".app"));
+gameLayoutObserver.observe(document.querySelector(".actions"));
+gameLayoutObserver.observe(document.querySelector(".game-core"));
+window.addEventListener("resize",()=>requestAnimationFrame(fitGameBoard));
 function showLearningTip(id,title,copy){
  if(socialChallenge||!((activeQuestOrdinal()===1&&learningQuestActive())||(activeQuestOrdinal()===2&&!replayMode))||learningTipSeen.has(id)||onboardingPreferences.seen('context:'+id))return;
  onboardingPreferences.markSeen('context:'+id);
@@ -2478,18 +2485,16 @@ let guidedPending=null,guidedDeferred=null;
 function guidedCell(r,c){return board.querySelector('.cell[data-row="'+r+'"][data-col="'+c+'"]')}
 const assistCards=['guidedCard','hintCard','verifyCard'].map(id=>document.getElementById(id));
 function positionAssistCard(card){
- const bounds=board.getBoundingClientRect(),viewport=window.visualViewport;
- const top=Math.max(bounds.top,viewport?.offsetTop??0);
- const controlsTop=document.querySelector('.actions')?.getBoundingClientRect().top??Infinity;
- const bottom=Math.min(bounds.bottom,controlsTop,(viewport?.offsetTop??0)+(viewport?.height??innerHeight));
- const left=Math.max(bounds.left,viewport?.offsetLeft??0);
- const right=Math.min(bounds.right,(viewport?.offsetLeft??0)+(viewport?.width??innerWidth));
- const height=Math.max(0,bottom-top);
+ const viewport=window.visualViewport,visibleTop=viewport?.offsetTop??0,visibleLeft=viewport?.offsetLeft??0;
+ const top=Math.max(board.getBoundingClientRect().bottom,visibleTop);
+ const bottom=visibleTop+(viewport?.height??innerHeight);
+ const bounds=board.closest('.game-core').getBoundingClientRect();
+ const left=Math.max(bounds.left,visibleLeft);
+ const right=Math.min(bounds.right,visibleLeft+(viewport?.width??innerWidth));
  card.style.setProperty('--assist-left',left+'px');
  card.style.setProperty('--assist-width',Math.max(0,right-left)+'px');
- card.style.setProperty('--assist-height',Math.min(height,Math.max(105,height*.48),220)+'px');
- const cardHeight=card.getBoundingClientRect().height;
- card.style.setProperty('--assist-top',(bottom-cardHeight)+'px');
+ card.style.setProperty('--assist-top',top+'px');
+ card.style.setProperty('--assist-space',Math.max(0,bottom-top)+'px');
 }
 function showAssistCard(id){
  const card=document.getElementById(id);
@@ -2498,6 +2503,9 @@ function showAssistCard(id){
  card.querySelector('button').focus({preventScroll:true});
 }
 function repositionAssistCards(){for(const card of assistCards)if(!card.hidden)positionAssistCard(card)}
+const assistLayoutObserver=new ResizeObserver(repositionAssistCards);
+assistLayoutObserver.observe(board);
+assistLayoutObserver.observe(board.closest('.game-core'));
 window.addEventListener('resize',repositionAssistCards);
 window.addEventListener('scroll',repositionAssistCards,{passive:true});
 window.visualViewport?.addEventListener('resize',repositionAssistCards);

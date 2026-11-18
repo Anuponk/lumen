@@ -541,12 +541,13 @@ dans le diagnostic du compte.
 
 ### Aides sur la grille (#791)
 
-Contrôle guidé, Indice et Vérifier affichent leur texte dans un panneau
-ancré en bas du plateau, au-dessus des commandes. La grille et les commandes
-gardent leur place et leur taille. Le texte seul défile à l’intérieur du
-panneau. Le joueur ferme l’indice ou l’explication avant de toucher la grille.
-Fermer l’explication du Contrôle guidé laisse la correction
-du Gardien à effectuer.
+Contrôle guidé, Indice et Vérifier affichent leur texte sous la grille, à
+partir de son bord inférieur. La taille et la position de la grille restent
+stables pendant l’ouverture et la fermeture. Le panneau occupe
+temporairement la zone des commandes et respecte la zone de sécurité
+inférieure. Le texte défile dans le panneau et le bouton reste accessible.
+Fermer l’explication du Contrôle guidé rend les commandes accessibles et
+laisse la correction du Gardien à effectuer.
 
 ### Classement (#638)
 
@@ -623,8 +624,8 @@ et Contrôle guidé +5 s par intervention. Le chrono augmente aussitôt, avec un
 bref +5 s / +15 s sans déplacement de grille ; il continue à compter normalement.
 La durée réelle reste une donnée technique ; les anciennes préférences de
 marquage automatique restent inertes.
-Sur mobile, le retour du Contrôle guidé participe à la mise en page, comme
-l'indice : il ne doit recouvrir ni Annuler ni le Gardien à corriger.
+Sur mobile, le Contrôle guidé et l’indice utilisent le même panneau sous
+la grille. Le Gardien à corriger reste visible pendant la lecture.
 
 Afficher un seul meilleur record officiel comparable à la révision de grille
 dans le masque de départ d’une quête déjà réussie. À la victoire confirmée,

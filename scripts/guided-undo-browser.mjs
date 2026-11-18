@@ -30,6 +30,7 @@ export async function verifyGuidedUndo({send,evaluate}){
   const before=await evaluate('lumenDiagnostics.snapshot().state');
   assert.equal(await guidedUses(),usesBefore+1,'One guided intervention adds one five-second penalty');
   assert.equal(before[0][wrong],2);
+   await tap('#guidedAck');
   await tap('#undo');
   assert.equal(await evaluate(`document.getElementById('guidedCard').hidden`),true);
   assert.equal(await guidedUses(),usesBefore+1,'Undo never refunds an already revealed guided check');

@@ -925,10 +925,14 @@ et ordinateur (souris et clavier), effectuer les vérifications suivantes.
    et des cases vides. Seuls les ronds disparaissent. Annuler restaure tout
    le glissé. Retoucher un Gardien le retire. Vérifier aussi le marquage depuis
    une case vide et la leçon de glissé en quête 2.
-3. Ouvrir un indice long et un message du Contrôle guidé, y compris en
-   paysage et avec la taille de police agrandie. La grille et les commandes
-   gardent exactement leur position. Le texte du panneau peut défiler. Fermer
-   le panneau au toucher et au clavier avant de reprendre la grille.
+3. Rejouer le scénario Android 806-4A sur Toucan, quête 641 (8 × 8), avec
+   Contrôle guidé activé. Provoquer une impasse, puis tester aussi un indice
+   long. Le panneau commence au bord inférieur de la grille. Les cases
+   restent visibles et la grille garde sa taille et sa position. Les
+   commandes sont masquées pendant la lecture et utilisables après
+   « J’ai compris ». Tester aussi en paysage et avec la police agrandie.
+   Seul le texte du panneau défile. Vérifier la fermeture au toucher et au
+   clavier, puis les pénalités +5 s et +15 s.
 4. Terminer une quête avec de nouveaux badges, puis la rejouer pendant le
    délai de qualification. Vérifier le rang, le record et la raison du refus
    du classement, avec et sans podium. Refaire avec le réseau lent et la

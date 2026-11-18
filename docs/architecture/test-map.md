@@ -137,7 +137,8 @@ export alongside both IndexedDB stores. These fixtures do not prove phone recove
 
 Player ergonomics (#791/#552/#566): `ux-lot-tests.mjs` (catalogue successor,
 live guards, unchanged rewards, replay ready/running states) and
-`ux-lot-browser-tests.mjs` (hint geometry/touch, guest account explanation and
+`ux-lot-browser-tests.mjs` (hint and 8×8 guided geometry, stable layout, dismissal
+and restored touch commands, guest account explanation and
 retry, historical/inserted/constellation navigation by keyboard/mouse/touch).
 Both are mandatory quality-gate suites; browser evidence is emulation with
 synthetic saves, separate from physical mobile and live Auth/cloud acceptance.
