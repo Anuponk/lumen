@@ -55,7 +55,7 @@ test('a paid Play purchase is verified with Google, recorded for the verified pl
   p_amount_cents:100,p_currency:'EUR',p_status:'paid',p_purchased_at:new Date(1763200000000).toISOString()}],'Identity from Auth, price from the catalogue, never from the body');
  const oauth=f.calls.find(c=>c.kind==='oauth');assert.equal(oauth.ok,true,'Assertion is RS256-signed with the service account');assert.match(oauth.scope,/androidpublisher/);
  const google=f.calls.filter(c=>c.kind==='google');
- assert.match(google[0].url,/applications\/fr\.nopuna\.lumen\/purchases\/products\/real-adventure-02\/tokens\/play-token-1$/);assert.equal(google[0].auth,'Bearer google-access');
+ assert.match(google[0].url,/applications\/com\.nopuna\.lumen\/purchases\/products\/real_adventure_02\/tokens\/play-token-1$/);assert.equal(google[0].auth,'Bearer google-access');
  assert(google.some(c=>c.url.endsWith(':acknowledge')&&c.method==='POST'),'Acknowledged after recording');
 });
 test('already acknowledged purchases are not acknowledged twice; failed acknowledgement is reported, not hidden',async()=>{
