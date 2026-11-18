@@ -2259,6 +2259,21 @@ The full quality suite runs on pull requests. After a squash merge, the publishe
 - both release scripts load the file under the same rules.
 Not testable here: the real private repository. The owner checks a deployment after installing the token and switching the repository to private.
 
+## Mobile UX stabilization (#793)
+
+- `account-switch-browser-tests.mjs` covers startup with a stored session and no
+  local profile, delayed hydration, A → B → A isolation, verified offline use,
+  reconnect after an offline account switch, and recovery after an injected
+  failure. These are synthetic accounts.
+- `ux-lot-browser-tests.mjs`, `board-feedback-browser.mjs` and
+  `guided-undo-browser.mjs` check stable board geometry, real pointer input and
+  the highlighted cell when an assistance card is open.
+- `victory-presentation-tests.mjs` keeps the two-second minimum, verifies that
+  the podium can appear while longer effects are running, and checks reduced
+  motion and cancellation when leaving the victory screen.
+- Physical acceptance covers slow mobile data, airplane mode and reconnect,
+  Safari and installed PWA, and Android Chrome. See #793 for the issue checklist.
+
 ## Install from the presentation page (#748)
 
 - `scripts/daily-streak-pause-tests.mjs` (Node, quality gate, #752) checks that the Série de lumière ships paused: every player entry point is gated, guest and QA days are recorded without reward, a day recorded during the pause is never credited after reactivation, the enabled day-3 reward is unchanged and the server migration keeps history while rewards stay behind the flag. `scripts/fixtures/daily-streak-pause.sql` (ledger-sql) replays the paused and reactivated server claims, and checks that `feature_flags` is classified so that `review_erasure` still passes (fix `20261116195500_feature_flags_privacy_752.sql`).
@@ -2269,7 +2284,7 @@ Not testable here: the real private repository. The owner checks a deployment af
 - `scripts/purchase-thanks-tests.mjs` (quality gate, #730): thank-you model (catalogue name, whole sky, unknown product, no absolute promise), dialog semantics, focus, explore/later/Escape/backdrop each close it once without a leaked listener, one dialog at a time, and wiring after a server-confirmed Play or Stripe purchase only.
 - `scripts/install-request-tests.mjs` (Node, quality gate) checks:
   - `?install=1` is read once and removed from the URL (other parameters and the hash are kept), before the first-visit welcome checks the URL;
-  - the copy: native prompt, iPhone steps or menu ⋮ steps, never a dead button;
+  - the copy: native prompt, iPhone steps (including opening the QR arrival in Safari) or menu ⋮ steps, never a dead button;
   - the request skips the quest-12 rule but never asks an installed app, and waits for the welcome;
   - `#installOptin` is in the scripted-learning tap allowlist;
   - the page link, and the QR file regenerated from the vendored encoder, with its finder patterns.

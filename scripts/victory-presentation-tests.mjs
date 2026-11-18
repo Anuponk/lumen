@@ -5,12 +5,12 @@ function fixture(reduced=false){
  const host=new EventTarget();host.dataset={};host.classList={add(){},remove(){}};host.focus=()=>{};
  const button=new EventTarget();button.hidden=true;host.querySelector=()=>button;
  let frame,resolve,elapsed;const finished=new Promise(r=>resolve=r);
- host.getAnimations=()=>[{finished,effect:{getComputedTiming:()=>({endTime:7000})}},{finished:new Promise(()=>{}),effect:{getComputedTiming:()=>({endTime:Infinity})}}];
+ host.getAnimations=()=>[{animationName:'victoryRewardIn',finished,effect:{getComputedTiming:()=>({endTime:1600})}},{animationName:'celestial-conclusion',finished:new Promise(()=>{}),effect:{getComputedTiming:()=>({endTime:7000})}},{finished:new Promise(()=>{}),effect:{getComputedTiming:()=>({endTime:Infinity})}}];
  const view=createVictoryPresentation(host,{frame:f=>frame=f,reducedMotion:()=>reduced,delay:ms=>{assert.ok(ms>=2000);return new Promise(r=>elapsed=r)}});let completions=0;
  return {host,button,view,start(){view.start(()=>completions++)},frame:()=>frame(),resolve,elapsed:()=>elapsed(),get completions(){return completions}};
 }
 const settle=()=>new Promise(r=>setImmediate(r));
-test('reveals ranking automatically on the same screen only after minimum and finite animations',async()=>{
+test('reveals ranking automatically on the same screen after the minimum and badges, even while the constellation is still animating',async()=>{
  const f=fixture();f.start();assert.equal(f.host.dataset.victoryPhase,'combined','Unified layout must exist before animation finishes');f.frame();f.elapsed();await settle();
  assert.equal(f.completions,0);assert.equal(f.button.hidden,true);
  f.resolve();await settle();

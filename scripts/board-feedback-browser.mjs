@@ -6,7 +6,7 @@ import os from 'node:os';
 // Imported by the existing browser gate: no separate server/browser lifecycle.
 export async function verifyBoardFeedback({send,evaluate}){
  const results=[];
- for(const [width,height,mobile] of [[390,844,true],[1440,900,false]]){
+ for(const [width,height,mobile] of [[360,640,true],[390,844,true],[1440,900,false]]){
   await send('Emulation.setDeviceMetricsOverride',{width,height,mobile,deviceScaleFactor:1});
   await evaluate(`(()=>{
    const p=lumenDiagnostics.snapshot().progress;p.catalogueOrigin=1;
@@ -46,7 +46,11 @@ export async function verifyBoardFeedback({send,evaluate}){
   await evaluate('document.getElementById("undo").click()');
   await evaluate(`(()=>{const s=lumenDiagnostics.snapshot(),cell=document.querySelector('.cell[data-row="2"][data-col="'+s.puz.sol[2]+'"]');cell.click()})()`);
   assert.equal(await evaluate('halfwayMessages.length'),1,'Undo/repose cannot repeat halfway');
-  await evaluate(`lumenDiagnostics.setBoard([[1,1,0,0,1,1],[2,1,1,1,1,1],[1,1,0,0,1,1],[1,1,1,0,0,0],[1,0,1,0,0,0],[1,0,0,0,1,0]]);document.getElementById('hint').click()`);
+  await evaluate(`lumenDiagnostics.setBoard([[1,1,0,0,1,1],[2,1,1,1,1,1],[1,1,0,0,1,1],[1,1,1,0,0,0],[1,0,1,0,0,0],[1,0,0,0,1,0]])`);
+  const layout=`JSON.stringify(['board','hint','undo','verify'].map(id=>document.getElementById(id).getBoundingClientRect()))`;
+  const initial=await evaluate(layout);
+  await evaluate("document.getElementById('hint').click()");
+  assert.equal(await evaluate(layout),initial,'Opening a long hint preserves the board and action geometry');
   const hint=await evaluate(`(()=>{
    const sides=['Top','Right','Bottom','Left'];
    return {text:document.getElementById('hintCopy').textContent,
@@ -64,6 +68,7 @@ export async function verifyBoardFeedback({send,evaluate}){
   const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
   const imagePath=path.join(os.tmpdir(),`lumen-chantier-hint-${width}.png`);fs.writeFileSync(imagePath,Buffer.from(screenshot.data,'base64'));
   await evaluate('document.getElementById("hintClose").click()');
+  assert.equal(await evaluate(layout),initial,'Closing a long hint preserves the board and action geometry');
   assert.equal(await evaluate(`JSON.stringify([...document.querySelectorAll('.cell')].map(el=>{const s=getComputedStyle(el);return ['Top','Right','Bottom','Left'].map(side=>[s['border'+side+'Width'],s['border'+side+'Color']])}))`),borders,'Hint must preserve all territory borders exactly');
   assert.equal(await evaluate('document.querySelectorAll(".cell.hi").length'),0);
   await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});

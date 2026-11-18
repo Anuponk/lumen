@@ -346,17 +346,6 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .actions button{min-width:0;padding:7px 4px;font-size:11px;line-height:1.15}
  .hint-wallet{margin:4px 0 0}
  .reward-live{min-height:22px;margin:2px 0 4px}
- #guidedCard,#hintCard{
-   position:fixed;
-   left:10px;
-   right:10px;
-   bottom:max(10px,env(safe-area-inset-bottom));
-   z-index:1200;
-   margin:0;
-   max-height:min(42dvh,300px);
-   overflow:auto;
-   box-shadow:0 18px 50px rgba(0,0,0,.42);
- }
 
 
 /* Attempt lifecycle (#36) */
@@ -376,6 +365,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 @keyframes accountSwitchPulse{50%{opacity:.4}}
 .signed-out-screen{z-index:4900}.signed-out-icon{animation:none}
 body.signed-out-neutral .account-optin{z-index:4950}
+body.account-switch-hold .app{visibility:hidden}
 body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 @media(prefers-reduced-motion:reduce){.account-switch-hold-icon{animation:none}}
 .attempt-mask{position:absolute;inset:0;z-index:90;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;border:1px solid #28415b;border-radius:18px;background:rgba(7,17,29,.96);color:#eefcff;text-align:center;padding:22px;backdrop-filter:blur(14px)}
@@ -972,22 +962,8 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 .status{position:relative;padding-bottom:18px}
 .speed-countdown{position:absolute;left:50%;bottom:0;margin-left:0;transform:translateX(-50%);height:16px}
 
-/* #555: the hint participates in layout; the remaining space owns the board. */
 #completedQuestNext{min-height:44px;min-width:44px;font-size:13px}
 .puzzle-card.account-required{opacity:.85;cursor:pointer}
-/* #749: formerly (max-width:900px); now every width */
- .app:has(#hintCard:not([hidden])){display:flex;flex-direction:column}
- .game-core:has(#hintCard:not([hidden])){display:flex;flex-direction:column;flex:1;min-height:0}
- .game-core:has(#hintCard:not([hidden]))>*{flex-shrink:0}
- .game-core:has(#hintCard:not([hidden])) .learning-board-wrap{flex:1;min-height:0;container-type:size;display:grid;place-items:center;padding:0}
- .game-core:has(#hintCard:not([hidden])) #board{width:min(100%,100cqh)!important;max-width:100%!important}
- #hintCard{position:static;max-height:min(26dvh,180px);min-height:60px;overflow:auto;margin:4px 0;box-shadow:none}
-
-@media(max-width:900px) and (orientation:landscape){
- .game-core:has(#hintCard:not([hidden])){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:repeat(14,auto);column-gap:12px}
- .game-core:has(#hintCard:not([hidden]))>*{grid-column:2;min-height:0}
- .game-core:has(#hintCard:not([hidden])) .learning-board-wrap{grid-column:1;grid-row:1 / -1;height:100%;width:100%}
-}
 
 /* #534: bounded, keyboard-operable administrative directory and sessions. */
 .admin-player-controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -1103,16 +1079,34 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 .ranking-row:first-child{position:sticky;top:0;z-index:2;background:#14202e}
 .ranking-list{position:relative}
 .ranking{background:#0c1826;padding:10px;border:1px solid #273c50;border-radius:12px}
-/* Retired controls free space; guided feedback must still leave Undo reachable. */
-/* #749: formerly (max-width:900px); now every width */
- body:has(#guidedCard:not([hidden])){display:flex;flex-direction:column;height:100dvh;min-height:0}
- body:has(#guidedCard:not([hidden]))>.qa-banner{flex-shrink:0}
- .app:has(#guidedCard:not([hidden])){display:flex;flex-direction:column;flex:1;width:100%;height:auto!important;min-height:0}
- .game-core:has(#guidedCard:not([hidden])){display:flex;flex-direction:column;flex:1;min-height:0}
- .game-core:has(#guidedCard:not([hidden]))>*{flex-shrink:0}
- .game-core:has(#guidedCard:not([hidden])) .learning-board-wrap{flex:1;min-height:0;container-type:size;display:grid;place-items:center;padding:0}
- .game-core:has(#guidedCard:not([hidden])) #board{width:min(100%,100cqh)!important;max-width:100%!important}
- #guidedCard{position:static;max-height:min(26dvh,180px);min-height:60px;overflow:auto;margin:4px 0;box-shadow:none}
+/* #791: position assistance over the board without changing game layout. */
+:is(#guidedCard,#hintCard,#verifyCard):not([hidden]){
+ position:fixed;
+ z-index:84;
+ inset:auto;
+ top:var(--assist-top);
+ left:var(--assist-left);
+ width:var(--assist-width);
+ max-height:var(--assist-height);
+ box-sizing:border-box;
+ display:flex;
+ flex-direction:column;
+ gap:4px;
+ margin:0;
+ padding:6px 10px;
+ overflow:hidden;
+ box-shadow:0 12px 32px rgba(0,0,0,.36)
+}
+:is(#guidedCard,#hintCard,#verifyCard)>p{
+ margin:0;
+ min-height:0;
+ overflow:auto;
+ overscroll-behavior:contain;
+ white-space:normal;
+ overflow-wrap:anywhere
+}
+:is(#guidedCard,#hintCard,#verifyCard) button{flex-shrink:0;min-height:44px;padding-block:3px}
+#hintCard #hintClose{min-width:44px}
 
 /* Victory phases share the same surface and navigation geometry. */
 .sky-reveal{padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));overflow:hidden}
@@ -1312,6 +1306,7 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 .sky-reveal .victory-rank[hidden]{display:none}
 .sky-reveal .victory-rank strong{font-size:16px;line-height:1.2;color:#e8f6ff}
 .sky-reveal .victory-rank small{font-size:11px;line-height:1.25;color:#cfe9f5}
+#skyReveal.victory-ranking-reveal :is(#skyRevealPodium,#skyRevealRank){visibility:hidden}
 .sky-reveal .victory-rank-pending{color:#9fc4d8;font-size:13px}
 .sky-reveal .victory-rank-1{border-color:#c9a24a;background:radial-gradient(circle at 50% 30%,rgba(255,211,107,.22),#0f1d2e 70%)}
 .sky-reveal .victory-rank-1 strong{color:#ffe1a0}
@@ -1361,7 +1356,6 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
  #learningBoardWrap.coach-above{position:relative;padding-top:calc(var(--coach-height,0px) + 8px)!important}
  #learningBoardWrap.coach-above .scripted-learn{position:absolute!important;top:0!important;left:0!important;right:0!important;bottom:auto!important;width:auto!important;max-width:none!important;max-height:none!important;min-height:var(--coach-height,0px)!important;margin:0!important;overflow:visible!important;transform:none!important;z-index:20!important;box-shadow:0 8px 24px rgba(0,0,0,.35)}
  #learningBoardWrap.coach-above #scriptedLearnCopy{max-height:none!important;overflow:visible!important}
- /* Must outrank .game-core:has(#guidedCard/#hintCard:not([hidden])) #board (2,2,0). */
  .app .game-core #learningBoardWrap.coach-above.coach-above #board{width:min(100%,var(--coach-board-size,100%))!important;max-width:100%!important;margin-inline:auto!important}
 
 /* #688: one modal at a time. The learning coach stays below account screens and
