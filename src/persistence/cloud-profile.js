@@ -271,7 +271,7 @@ export function achievementRecoveryDiagnostic(error){
 export function reconciliationFailureDiagnostic(reason,fields=[]){
  if(reason==='invalid_balance'&&fields.some(field=>['xp','skyScore'].includes(field))&&!fields.includes('shards'))return {domain:'reward',reason};
  const domains={
-  wallet:['invalid_wallet_revision','stale_wallet_revision','invalid_balance','mutable_balance'],
+  wallet:['invalid_wallet_revision','stale_wallet_revision','invalid_balance','mutable_balance','wallet_daily_divergence','wallet_command_required'],
   reward:['reward_conflict','canonical_reward_conflict','achievement_conflict','mutable_ledger','legacy_command_required','invalid_legacy_revision','stale_legacy_revision','autonomous_wins_conflict','legacy_adventure_access_conflict','missing_cloud_achievements'],
   storage:['storage_quota','storage_unavailable','storage_failed','backup_unverified','local_install_unverified','invalid_local_profile','invalid_local','missing_local'],
   profile:['unclassified_field','catalogue_origin_conflict','invalid_intro_flag','cloud_local_divergence','achievement_recovery_failed']
@@ -284,6 +284,8 @@ export function hydrationFailureDiagnostic(error,stage){
  const storage=['storage_quota','storage_unavailable','storage_failed','backup_unverified','local_install_unverified'].includes(detail);
  const stages=['start','local_read','cloud_restore','cloud_initialize','guest_reconciliation','guest_changed_during_hydration','wallet_establish','wallet_pending_read','wallet_receipt_read','wallet_profile_read','wallet_cache_restore','wallet_acknowledge','canonical_start_recovery','canonical_replay','legacy_replay','daily_rpc','daily_reconcile','daily_cloud_commit','owner_backup','local_reconciliation','bidirectional_reconciliation','achievement_recovery','achievement_local_read','achievement_backup','achievement_install','achievement_rollback','local_install','mirror_readback'];
  const knownStage=stages.includes(error?.stage)?error.stage:stages.includes(stage)?stage:'start';
+ if(error?.code==='WALLET_COMMAND_REQUIRED')return {stage:knownStage,domain:'wallet',detail:'wallet_command_required',errorCode:error.code,errorName:'Error'};
+ if(error?.code==='CLOUD_CAS_CONFLICT')return {stage:knownStage,domain:'cloud',detail:'cloud_local_divergence',errorCode:error.code,errorName:'Error'};
  return {stage:knownStage,domain:storage?'storage':detail==='canonical_reward_conflict'?'reward':'cloud',detail,
   errorCode:['28000','42501','PGRST301','PGRST302','LOCAL_STORAGE_QUOTA','CANONICAL_REWARD_CONFLICT','ACHIEVEMENT_STORAGE_FAILED','ACHIEVEMENT_BACKUP_UNVERIFIED','ACHIEVEMENT_INSTALL_UNVERIFIED','ACHIEVEMENT_LOCAL_INVALID'].includes(error?.code)?error.code:'unknown',
   errorName:['Error','TypeError','SyntaxError','QuotaExceededError','SecurityError','AbortError'].includes(error?.name)?error.name:'Error'};
@@ -313,6 +315,19 @@ function walletConflict(local,cloud){
  if(left!==right&&!(local.walletRevision&&cloud.walletRevision>local.walletRevision))
   return {status:'blocked',reason:'mutable_balance',fields:['shards']};
  return null;
+}
+function ledgerCovers(local,cloud){
+ return local&&typeof local==='object'&&!Array.isArray(local)
+  ?!!cloud&&typeof cloud==='object'&&!Array.isArray(cloud)&&Object.entries(local).every(([key,value])=>Object.hasOwn(cloud,key)&&ledgerCovers(value,cloud[key]))
+  :sameCloudProfile(local,cloud);
+}
+function walletDailyCovers(local,cloud){
+ if(local==null)return true;
+ if(typeof local!=='object'||Array.isArray(local))return sameCloudProfile(local,cloud);
+ return Object.entries(local).every(([key,value])=>{
+  if(Object.hasOwn(cloud??{},key))return ledgerCovers(value,cloud[key]);
+  return ['dates','rewards'].includes(key)&&value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).length===0;
+ });
 }
 // Read-only coverage of server-protected V2 quest summaries. Never synthesize a
 // run or merge first-completion/unknown evidence; only adopt a newer verified
@@ -406,10 +421,13 @@ export function cloudSafelyCoversLocal(local,remote){
   // unionable. Require equivalent values to avoid silent drops.
   for(const field of ["daily","challenges"]){
     const current=local[field];
+     if(field==='daily'&&cloud.walletRevision>0){
+      if(!walletDailyCovers(current,cloud.daily))return false;
+      continue;
+     }
     // Verified command profiles may add server-owned daily/challenge receipts.
     // A superset covers old facts; conflicting/missing amounts still refuse.
-    const covers=(a,b)=>a&&typeof a==='object'&&!Array.isArray(a)?b&&typeof b==='object'&&!Array.isArray(b)&&Object.entries(a).every(([k,v])=>Object.hasOwn(b,k)&&covers(v,b[k])):sameCloudProfile(a,b);
-    if(current && Object.keys(current).length && !((cloud.legacyVictoryRevision>0||cloud.walletRevision>0)?covers(current,cloud[field]||{}):sameCloudProfile(current,cloud[field]||{})))return false;
+    if(current && Object.keys(current).length && !((cloud.legacyVictoryRevision>0||cloud.walletRevision>0)?ledgerCovers(current,cloud[field]||{}):sameCloudProfile(current,cloud[field]||{})))return false;
   }
   return true;
 }
@@ -799,6 +817,8 @@ export async function reconcileDominantLocalProfile(supabase,storage,remote,{use
  for(const field of ["daily","challenges"]){
   if(!sameCloudProfile(local[field]||{},cloud[field]||{}))return {status:"blocked",reason:"mutable_ledger"};
  }
+ if(['shards','walletRevision',...(cloud.walletRevision>0?['daily']:[])].some(field=>!sameCloudProfile(local[field],cloud[field])))
+  return {status:'blocked',reason:'missing_cloud_achievements'};
  // Unknown fields can contain non-repeatable transactions. Require equality
  // instead of silently selecting one profile's value.
  const monotonic=new Set(fieldsWithPolicy("achievement","catalogue"));
@@ -819,6 +839,7 @@ export async function reconcileDominantLocalProfile(supabase,storage,remote,{use
   // A verified snapshot exists and both originals have been preserved. This
   // authority refusal holds reconciliation, not independent command recovery.
   if(error.code==='LEGACY_COMMAND_REQUIRED')return {status:'blocked',reason:'legacy_command_required',...legacyAuthorityConflictDetails(local,cloud)};
+   if(error.code==='WALLET_COMMAND_REQUIRED')return {status:'blocked',reason:'wallet_command_required'};
   throw error;
  }
  const verified=await loadVerifiedProfile(supabase,{userId});
@@ -834,7 +855,8 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote,{
  try{local=validateCloudProfile(JSON.parse(raw))}catch{return {status:"blocked",reason:"invalid_local"}}
  const revisionConflict=legacyRevisionConflict(local,cloud);
  if(revisionConflict)return revisionConflict;
- const walletHold=walletConflict(local,cloud);
+ const walletHold=walletConflict(local,cloud)||(cloud.walletRevision>0&&!walletDailyCovers(local.daily,cloud.daily)
+  ?{status:'blocked',reason:'wallet_daily_divergence',fields:['daily']}:null);
  if(walletHold){
   await preserveRecoverySnapshot(storage,"lumenBeforeCloudReconcileLocal_",raw);
   await preserveRecoverySnapshot(storage,"lumenBeforeCloudReconcileRemote_",JSON.stringify(cloud));
@@ -849,11 +871,12 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote,{
   if(!Number.isFinite(left)||!Number.isFinite(right)||left<0||right<0)
    return {status:"blocked",reason:"invalid_balance",fields:[field]};
   if(left!==right)differingBalances.push(field);
-   merged[field]=field==='shards'?right:Math.max(left,right);
+   if(field!=='shards')merged[field]=Math.max(left,right);
  }
  // Daily engagement and challenge ledgers can grant rewards: never sum them
  // or claim to reconstruct their history.
  for(const field of ["daily","challenges"]){
+   if(field==='daily'&&cloud.walletRevision>0)continue;
   // Merge independent entries by stable keys, without summing currency or
   // replaying rewards. A conflicting value for the same key is not guessed.
   const join=(left,right)=>{
@@ -989,6 +1012,7 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote,{
  let updated;
  try{updated=await compareAndSwapCloudProfile(supabase,validateCloudProfile(merged),cloud,{userId})}catch(error){
   if(error.code==='LEGACY_COMMAND_REQUIRED')return {status:'blocked',reason:'legacy_command_required',...legacyAuthorityConflictDetails(merged,cloud)};
+   if(error.code==='WALLET_COMMAND_REQUIRED')return {status:'blocked',reason:'wallet_command_required'};
   throw error;
  }
  const verified=await loadVerifiedProfile(supabase,{userId});

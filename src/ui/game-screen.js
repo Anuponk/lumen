@@ -796,14 +796,21 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   // ambiguous balance/receipt stays pending instead of silently resetting play.
   if(!currentOwner&&guestNeedsReconciliation(incoming,cloud)){
    hydrationStage='guest_reconciliation';
-   const resolution=await reconcileCompatibleCloudProfiles(hydrationClient,localStorage,cloud,{userId:accountId});
+   let resolution;
+   try{resolution=await reconcileCompatibleCloudProfiles(hydrationClient,localStorage,cloud,{userId:accountId})}
+   catch(error){
+    if(error?.code!=='CLOUD_CAS_CONFLICT')throw error;
+    resolution={status:'blocked',reason:'cloud_cas_conflict'};
+   }
    if(!sessionValid())return;
    if(resolution.status==='reconciled'||resolution.status==='cloud_dominant')cloud=resolution.profile;
    if(guestNeedsReconciliation(incoming,cloud)){
     const fields=Array.isArray(resolution.fields)?[...new Set(resolution.fields.map(key=>Object.hasOwn(CLOUD_PROFILE_FIELDS,key)?key:'unknown_field'))].slice(0,8):[];
     const refusal=reconciliationFailureDiagnostic(resolution.reason,fields);
     recordCloudDiagnostic('hydration_reconciliation',{result:'blocked',reason:resolution.reason||'cloud_local_divergence',domain:refusal.domain,stage:hydrationStage,fields});
-    throw Error('Progression invitée conservée : fusion cloud en attente');
+    cloudProfileFailure={reason:'partial_reconciliation',domain:refusal.domain,detail:refusal.reason};
+    updateAuthUI();
+    return;
    }
   }
   // Resume verified canonical victory intents before installing the cloud profile.
@@ -898,7 +905,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   if(engagementError)throw Error("Daily rewards unavailable: "+engagementError.message);
   hydrationStage="daily_reconcile";
   const reconciled=reconcileDailyIntoCloudProfile(cloud,dailyRows,engagementRows);
-  if(reconciled.changed){
+   if(reconciled.changed&&!cloud.walletRevision){
    hydrationStage="daily_cloud_commit";
    cloud=await compareAndSwapCloudProfile(hydrationClient,reconciled.profile,cloud,{userId:accountId});
    if(!sessionValid())return;
@@ -1419,9 +1426,11 @@ function updateAccountSwitchHold(){
   profileHoldTimedOut=true;updateAccountSwitchHold();
  },15000);
  const offline=navigator.onLine===false,failed=!!cloudProfileFailure||profileHoldTimedOut;
- document.getElementById('accountSwitchHoldTitle').textContent=offline?'Vous êtes hors ligne':failed?'Progression indisponible':'Chargement de votre ciel…';
+ const walletReview=cloudProfileFailure?.reason==='partial_reconciliation'&&cloudProfileFailure.domain==='wallet';
+ document.getElementById('accountSwitchHoldTitle').textContent=offline?'Vous êtes hors ligne':walletReview?'Portefeuille à vérifier':failed?'Progression indisponible':'Chargement de votre ciel…';
  document.getElementById('accountSwitchHoldText').textContent=offline
   ?'Reconnectez-vous pour retrouver votre progression.'
+  :walletReview?'Les données de cet appareil sont conservées. Ouvrez le diagnostic avant de réessayer.'
   :failed?'La progression de ce compte n’a pas pu être chargée. Vous pouvez réessayer.'
   :'Récupération de votre progression.';
  document.getElementById('accountSwitchHoldRetry').hidden=!(failed||offline);
@@ -1472,7 +1481,7 @@ function cloudReconciliationMessage(failure){
  if(failure?.reason==='partial_reconciliation'){
   if(failure.detail==='storage_quota')return 'Espace de stockage de LUMEN insuffisant · données en attente conservées';
   if(['storage_unavailable','storage_failed','backup_unverified','local_install_unverified'].includes(failure.detail))return 'Sauvegarde locale à vérifier · données en attente conservées';
-  if(failure.domain!=='reward'&&['mutable_balance','invalid_balance','invalid_wallet_revision','stale_wallet_revision'].includes(failure.detail))return 'Portefeuille à vérifier · données en attente conservées';
+  if(failure.domain==='wallet')return 'Portefeuille à vérifier · données en attente conservées';
   if(failure.detail==='canonical_reward_conflict')return 'Récompenses à vérifier · données locales conservées';
   return 'Compte connecté · sauvegarde à resynchroniser · données locales conservées';
  }

@@ -461,6 +461,25 @@ Profile loading and account switch on one device (#711, #789): `updateAccountSwi
 
 ## Cloud persistence contract
 
+### Historical guest hydration and Wallet authority (#801)
+
+After Wallet activation, the profile CAS retains the verified cloud projection
+of `shards`, `walletRevision` and `daily` exactly. The SQL snapshot trigger
+checks all three fields, including when the request uses the digest CAS. The
+guest merge may still recover compatible achievements with verified read-back.
+Missing empty `daily.dates` and `daily.rewards` containers carry no history.
+A local date or reward that the cloud cannot cover keeps the original
+snapshots pending. Hydration reads daily history without projecting it through
+CAS for an active Wallet. The legacy daily write remains available before
+activation.
+
+An unresolved Wallet hold leaves the guest snapshot and account-scoped outboxes
+intact and shows « Portefeuille à vérifier » in the account loading screen.
+The exact Wallet command refusal (SQLSTATE `22023`) has a fixed diagnostic
+distinct from stale CAS. Recovery of an owned cache still uses the existing
+operation ID, exact receipt and current-profile read-back rules. Account
+ownership and readiness require the existing verified installation.
+
 ### Competition (#638/#647)
 
 The follow-up `20261111060216_highscore_victory.sql` returns Top 3, personal position

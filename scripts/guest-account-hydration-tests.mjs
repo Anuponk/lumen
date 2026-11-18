@@ -12,7 +12,7 @@ import {ATTEMPT_STATES} from '../src/game/attempt-engine.js';
 const source=process.argv.includes('--baseline')?execFileSync('../.tools/mingit/cmd/git.exe',['show','HEAD:src/ui/game-screen.js'],{encoding:'utf8'}):readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 const start=source.indexOf('afterAuthCloudSync:async()=>{')+'afterAuthCloudSync:async()=>{'.length,end=source.indexOf('},holdLegacyMergeForFullRestore',start);
 const guest={solved:{0:1,1:1},historyBackup:{0:1,1:1},badges:{first:1},stars:{},performances:{0:{version:3,badges:{speed:true},bestTime:45}},noHint:{0:1},daily:{dates:{},rewards:{}},challenges:{},shards:2,xp:30,skyScore:2,skyHistoryVersion:4,catalogueOrigin:currentCatalogueOrigin};
-function fixture({cloud=null,owner=null,offline=false,failVerification=false,switchDuringRead=false,advanceDuringHydration=false,modernClaim=false,local=guest}={}){
+function fixture({cloud=null,owner=null,offline=false,failVerification=false,switchDuringRead=false,advanceDuringHydration=false,modernClaim=false,local=guest,digestCas=false,walletRefusal=false,concurrentSpend=false,dailyRows=[]}={}){
  const data=new Map([['lumenProgressV1',JSON.stringify(local)]]);
  if(owner)data.set('lumenCloudOwnerId',owner);
  const storage={getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k),key:i=>[...data.keys()][i]??null,get length(){return data.size}};
@@ -35,10 +35,25 @@ function fixture({cloud=null,owner=null,offline=false,failVerification=false,swi
    return {data:structuredClone(remote)};
   }
   if(name==='lumen_initialize_profile'){initialized++;remote??=structuredClone(args.p_payload);return {data:structuredClone(remote)}}
-  if(name==='lumen_cas_profile'){assert.deepEqual(args.p_expected,remote);remote=structuredClone(args.p_payload);return {data:true}}
+  if(name==='lumen_cas_profile_digest'&&digestCas){
+   assert.equal(args.p_expected_user_id,'a');
+   if(concurrentSpend){
+    concurrentSpend=false;remote.shards--;remote.walletRevision++;
+    return {data:{version:1,matched:false,applied:false}};
+   }
+   const next=args.p_payload;
+   if(walletRefusal||['shards','walletRevision','daily'].some(key=>!profiles.sameCloudProfile(next[key],remote[key]))){
+    return {error:{code:'22023',message:'wallet command required; preserve pending data and update client'},status:400};
+   }
+   remote=structuredClone(next);return {data:{version:1,matched:true,applied:true}};
+  }
+  if(name==='lumen_cas_profile'){
+   if(!profiles.sameCloudProfile(args.p_expected,remote))return {data:false};
+   remote=structuredClone(args.p_payload);return {data:true};
+  }
   if(name==='lumen_get_daily'||name==='lumen_get_engagement'){
    if(advanceDuringHydration){const next=structuredClone(guest);next.solved[2]=1;next.historyBackup[2]=1;next.xp=45;storage.setItem('lumenProgressV1',JSON.stringify(next));}
-   return {data:[]};
+   return {data:name==='lumen_get_daily'?dailyRows:[]};
   }
   throw Error('Unexpected RPC '+name);
  }};
@@ -58,6 +73,58 @@ function fixture({cloud=null,owner=null,offline=false,failVerification=false,swi
   document:{getElementById:()=>null},location:{reload:()=>reloads++},console:{warn:noop}
  });
  return {ctx,storage,data,calls,events,hook:vm.runInContext('(async()=>{'+source.slice(start,end)+'})',ctx),get remote(){return remote},get initialized(){return initialized},get reloads(){return reloads},get handoffs(){return handoffs}};
+}
+{
+ const cloud={...structuredClone(guest),solved:{},historyBackup:{},badges:{},performances:{},noHint:{},daily:{},walletRevision:4,xp:0,skyScore:0};
+ const f=fixture({cloud,digestCas:true}),raw=f.storage.getItem('lumenProgressV1');
+ await f.hook();
+ assert.equal(f.ctx.cloudProfileReady,true,'Historical guest achievements hydrate without rewriting protected daily scaffolding');
+ assert.equal(f.calls.filter(name=>name==='lumen_cas_profile_digest').length,1);
+ assert.deepEqual(f.remote,{...guest,daily:{},walletRevision:4,canonicalQuestState:{}},'The verified server wallet stays exact and guest achievements survive');
+ assert([...f.data].some(([key,value])=>key.startsWith('lumenGuestBeforeAccount_')&&value===raw));
+ await f.hook();
+ assert.equal(f.calls.filter(name=>name==='lumen_cas_profile_digest').length,1,'Repeated hydration does not write again');
+}
+{
+ const local={...guest,daily:{dates:{'2026-11-17':1},rewards:{'streak:2026-11-17':1}}};
+ const cloud={...guest,daily:{dates:{},rewards:{}},walletRevision:4};
+ const f=fixture({cloud,local,digestCas:true}),raw=f.storage.getItem('lumenProgressV1');
+ await f.hook();
+ assert.equal(f.ctx.cloudProfileReady,false);
+ assert.equal(f.ctx.cloudProfileFailure.detail,'wallet_daily_divergence');
+ assert(!f.calls.some(name=>name.startsWith('lumen_cas_profile')),'A historical date or reward does not enter CAS');
+ assert.deepEqual(f.remote,cloud);
+ assert.equal(f.storage.getItem('lumenProgressV1'),raw);
+ assert([...f.data].some(([key,value])=>key.startsWith('lumenBeforeCloudReconcileRemote_')&&value===JSON.stringify(cloud)));
+}
+for(const scenario of [
+ {options:{walletRefusal:true},reason:'wallet_command_required',domain:'wallet',fallbacks:0},
+ {options:{concurrentSpend:true},reason:'cloud_cas_conflict',domain:'profile',fallbacks:1}
+]){
+ const cloud={...guest,solved:{},walletRevision:4};
+ const f=fixture({cloud,digestCas:true,...scenario.options}),raw=f.storage.getItem('lumenProgressV1');
+ await f.hook();
+ assert.equal(f.ctx.cloudProfileReady,false);
+ assert.equal(f.storage.getItem('lumenCloudOwnerId'),null);
+ assert.equal(f.storage.getItem('lumenProgressV1'),raw);
+ assert.equal(f.calls.filter(name=>name==='lumen_cas_profile_digest').length,1);
+ assert.equal(f.calls.filter(name=>name==='lumen_cas_profile').length,scenario.fallbacks);
+ const report=f.events.find(event=>event.event==='hydration_reconciliation').details;
+ assert.equal(report.reason,scenario.reason);
+ assert.equal(report.domain,scenario.domain);
+ assert.deepEqual(f.remote,scenario.options.concurrentSpend?{...cloud,shards:1,walletRevision:5}:cloud);
+ const restarted=fixture({cloud:f.remote,local:JSON.parse(raw),digestCas:true,...(scenario.options.walletRefusal?scenario.options:{})});
+ await restarted.hook();
+ assert.equal(restarted.storage.getItem('lumenProgressV1'),raw);
+ assert.equal(restarted.ctx.cloudProfileReady,false);
+ assert.deepEqual(restarted.remote,f.remote);
+}
+{
+ const cloud={...guest,walletRevision:4},f=fixture({cloud,digestCas:true,dailyRows:[{play_date:'2026-11-17'}]});
+ await f.hook();
+ assert.equal(f.ctx.cloudProfileReady,true,'The read-only daily history does not require a protected wallet write');
+ assert(!f.calls.some(name=>name.startsWith('lumen_cas_profile')));
+ assert.deepEqual(f.remote,cloud);
 }
 {
  const f=fixture();await f.hook();

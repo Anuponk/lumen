@@ -220,6 +220,34 @@ Object.defineProperty(navigator,'onLine',{get:()=>!window.__offline});
   // #391 contract: with a full quota, the verified cloud profile of A runs in memory.
   assert.deepEqual(timeline.at(-1).memory, { canonical: summary(A).canonical + 1, owner: 'a' }, 'A is signed in and shown despite the full local quota: ' + JSON.stringify(timeline.at(-1)));
   await evaluate("for(const k of Object.keys(localStorage))if(k.startsWith('lumenBeforeAccountSwitch_1700000'))localStorage.removeItem(k)");
+  // Simulate an old ownerless Chrome profile and check the original bytes
+  // entering hydration after the app's ordinary startup normalization.
+  await evaluate(`(()=>{
+   const account=window.__server.accounts.a;
+   account.profile.daily={dates:{}};
+   const historical=structuredClone(account.profile);
+   historical.daily.rewards={};
+   historical.xp++;
+   const raw=JSON.stringify(historical);
+   sessionStorage.setItem('fixtureWalletAuthority','1');
+   sessionStorage.setItem('fixtureHistoricalWallet',JSON.stringify({raw,shards:account.profile.shards,revision:account.profile.walletRevision,writes:account.writes}));
+   localStorage.removeItem('lumenCloudOwnerId');
+   localStorage.setItem('lumenProgressV1',raw);
+   window.__saveServer();
+  })()`);
+  await navigateAndWait({send,evaluate},'Page.reload');
+  await until("localStorage.getItem('lumenCloudOwnerId')==='a'&&document.getElementById('accountSwitchHold').hidden&&document.getElementById('mobileAuthStatus').textContent.includes('Progression synchronis')",'historical wallet hydration',250);
+  const historical = await evaluate(`(()=>{
+   const {raw,shards,revision,writes}=JSON.parse(sessionStorage.getItem('fixtureHistoricalWallet'));
+   const account=window.__server.accounts.a;
+   const hydrationInput=sessionStorage.getItem('fixtureWalletHydrationInput');
+   const archived=Object.keys(localStorage).some(key=>/^lumenGuestBeforeAccount_a(?:_[0-9]+)?$/.test(key)&&localStorage.getItem(key)===hydrationInput);
+   return {archived,keptXp:account.profile.xp===JSON.parse(raw).xp,
+    walletExact:account.profile.shards===shards&&account.profile.walletRevision===revision&&JSON.stringify(account.profile.daily)==='{"dates":{}}',
+    writes:account.writes-writes};
+  })()`);
+  assert.deepEqual(historical,{archived:true,keptXp:true,walletExact:true,writes:1});
+  timeline.push({step:'historical profile',...historical});
   const refused = await evaluate('window.__server.refused');
   assert.deepEqual(refused, [], 'No call targeted another account than the session: ' + JSON.stringify(refused));
   assert.deepEqual(errors, []);

@@ -903,6 +903,28 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+### Historical Chrome hydration (#801)
+
+`guest-account-hydration-tests.mjs` runs the actual hydration hook with a
+synthetic digest CAS enforcing Wallet authority. It checks an ownerless
+historical save, exact archived bytes, compatible signed-in recovery, daily
+history refusal, a Wallet command refusal without full-CAS fallback, a competing
+debit, restart and repeated hydration. `account-switch-browser-tests.mjs`
+opens the real UI in Chrome with synthetic Auth and RPCs and covers both a
+fresh storage profile and a historical profile against the Wallet guard.
+Wallet command and outbox suites retain their existing receipt and replay
+checks. Production data and migrations are outside these tests.
+
+After the approved web release, confirm the deployed version in the account
+menu on the original Chrome profile. Keep localStorage and IndexedDB intact.
+Sign in to the same account and verify that the game opens with its existing
+quests, badges, XP, records, rewards, wallet and purchased access. Compare on
+a second device, then reload and sign out/in on the original profile. Confirm
+that the wallet and unlocked content stay consistent, including after any
+already queued command is resolved. For a hold, open « Diagnostic » and record
+only the app version, stage, fixed reason and result. Keep the original storage
+and use the existing recovery procedure for any unverified historical data.
+
 Play prices P1 (#729/#731/#786): `node scripts/play-billing-tests.mjs` mocks Digital
 Goods and Payment Request for nine SKUs, reordering, missing/empty/failed details,
 invalid amounts/currencies, unavailable service, delayed loading, successful retry,

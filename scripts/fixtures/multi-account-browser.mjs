@@ -26,8 +26,22 @@ window.supabase={createClient(){return {auth:{
  if(Object.hasOwn(args,'p_expected_user_id')&&args.p_expected_user_id!==uid())return refuse(name,args);
  const a=account();
  if(name==='lumen_restore_profile'&&sessionStorage.getItem('failRestoreFor')===uid())return {data:null,error:{code:'PGRST003',message:'Service unavailable'},status:503};
- if(name==='lumen_restore_profile')return {data:structuredClone(a.profile)};
- if(name==='lumen_cas_profile'){if(JSON.stringify(stable(args.p_expected))!==JSON.stringify(stable(a.profile)))return {data:false};a.profile=structuredClone(args.p_payload);a.writes++;window.__saveServer();return {data:true}}
+  const guardedCas=sessionStorage.getItem('fixtureWalletAuthority')==='1';
+  if(name==='lumen_restore_profile'){
+   if(guardedCas&&!sessionStorage.getItem('fixtureWalletHydrationInput'))
+    sessionStorage.setItem('fixtureWalletHydrationInput',localStorage.getItem('lumenProgressV1'));
+   return {data:structuredClone(a.profile)};
+  }
+  if(name==='lumen_cas_profile'||(name==='lumen_cas_profile_digest'&&guardedCas)){
+   const digest=name==='lumen_cas_profile_digest';
+   const matches=digest?args.p_expected_sha256===await (await import('/src/persistence/jsonb-digest.js')).jsonbDigest(a.profile)
+    :JSON.stringify(stable(args.p_expected))===JSON.stringify(stable(a.profile));
+   if(!matches)return {data:digest?{version:1,matched:false,applied:false}:false};
+   if(guardedCas&&['shards','walletRevision','daily'].some(key=>JSON.stringify(stable(args.p_payload[key]))!==JSON.stringify(stable(a.profile[key]))))
+    return {error:{code:'22023',message:'wallet command required; preserve pending data and update client'},status:400};
+   a.profile=structuredClone(args.p_payload);a.writes++;window.__saveServer();
+   return {data:digest?{version:1,matched:true,applied:true}:true};
+  }
  if(name==='lumen_wallet_command_version'||name==='lumen_canonical_command_version')return {data:1};
  if(name==='lumen_get_wallet_command')return {data:a.wallet[args.p_operation_id]??null};
  if(name==='lumen_commit_wallet_command'){let r=a.wallet[args.p_operation_id];if(!r){const cost=args.p_request.kind==='hint'&&args.p_request.sequence>1?2:1;if((a.profile.shards||0)<cost)return {error:{code:'P0001',message:'insufficient wallet balance'}};a.profile.shards-=cost;a.profile.walletRevision=(a.profile.walletRevision||0)+1;r={version:1,operationId:args.p_operation_id,request:args.p_request,revision:a.profile.walletRevision,balance:a.profile.shards,balanceDelta:-cost};a.wallet[args.p_operation_id]=r;a.writes++;window.__saveServer()}return {data:r}}
