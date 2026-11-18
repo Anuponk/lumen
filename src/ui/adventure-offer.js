@@ -16,7 +16,7 @@ export const SUPPORT_TEXT='Lumen est développé par un petit studio indépendan
 // #729: on Google Play a product has a fixed price, so once a single Adventure has been
 // bought the €5 offer is hidden and the player continues at €1 until the €5 cap
 // unlocks everything (owner decision, 15/11/2026). Play's localised prices win when known.
-export function adventureOfferModel({pack,packs,quests,progress,signedIn=false,accounts=true,purchasesAvailable=false,boughtSingle=false,prices={},pricesRequired=false}){
+export function adventureOfferModel({pack,packs,quests,progress,signedIn=false,accounts=true,purchasesAvailable=false,boughtSingle=false,prices={},pricesRequired=false,priceStatus='idle',priceErrors=[]}){
  const ordered=[...(packs||[])].sort((a,b)=>a.order-b.order);
  const index=ordered.findIndex(p=>p.id===pack.id),previous=index>0?ordered[index-1]:null;
  let mastery=null;
@@ -33,7 +33,8 @@ export function adventureOfferModel({pack,packs,quests,progress,signedIn=false,a
  const unitCount=ready?delivered.filter(q=>q.packId===pack.id&&newlyAvailable(ordered.find(p=>p.id===q.packId)||pack)).length:null;
  const skyIds=new Set(ordered.filter(p=>p.skyId==='real-sky'&&newlyAvailable(p)).map(p=>p.id));
  const skyCount=ready?delivered.filter(q=>skyIds.has(q.packId)).length:null;
- return {id:pack.id,title:pack.displayName||'Aventure',unitCount,skyCount,unitPriceKnown:!pricesRequired||!!prices[pack.id],skyPriceKnown:!pricesRequired||!!prices[SKY_PRODUCT_ID],unitPrice:prices[pack.id]||(pricesRequired?'Prix indisponible':formatEuros(ADVENTURE_PRICE_CENTS)),skyPrice:prices[SKY_PRODUCT_ID]||(pricesRequired?'Prix indisponible':formatEuros(SKY_PRICE_CENTS)),
+ const missingPrice=priceStatus==='loading'?'Chargement du prix…':'Prix indisponible';
+ return {id:pack.id,title:pack.displayName||'Aventure',unitCount,skyCount,pricesRequired,priceStatus,priceErrors,unitPriceKnown:!pricesRequired||!!prices[pack.id],skyPriceKnown:!pricesRequired||!!prices[SKY_PRODUCT_ID],unitPrice:prices[pack.id]||(pricesRequired?missingPrice:formatEuros(ADVENTURE_PRICE_CENTS)),skyPrice:prices[SKY_PRODUCT_ID]||(pricesRequired?missingPrice:formatEuros(SKY_PRICE_CENTS)),
   capPrice:formatEuros(SKY_PRICE_CENTS),unitProduct:pack.id,skyProduct:SKY_PRODUCT_ID,showSky:!boughtSingle,
   signedIn:!!signedIn,accounts:!!accounts,purchasesAvailable:!!purchasesAvailable,mastery};
 }
@@ -52,13 +53,13 @@ export function masteryLine(model){
  return 'Gratuit : maîtrise '+name+' à 100 %'+(left?' (il te reste '+left+').':'.');
 }
 
-export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{},onClaim=()=>{}}={}){
+export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{},onClaim=()=>{},onRetry=()=>{}}={}){
  const el=(tag,props={},text)=>{const e=document.createElement(tag);Object.assign(e,props);if(text!==undefined)e.textContent=text;return e};
  const root=el('div',{className:'adventure-offer'});
  const status=el('p',{className:'adventure-offer-status',hidden:true});status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.dataset.offerStatus='';
- const buttons=[];
+ const buttons=[];let retryButton=null;
  const setStatus=text=>{status.textContent=text||'';status.hidden=!text};
- const setBusy=busy=>{for(const b of buttons)b.disabled=busy||!model.purchasesAvailable};
+ const setBusy=busy=>{for(const b of buttons)b.disabled=busy||!model.purchasesAvailable;if(retryButton)retryButton.disabled=busy};
  const buy=(kind,label,product)=>{const b=el('button',{type:'button',className:'adventure-offer-buy',disabled:!model.purchasesAvailable},label);b.dataset.offer=kind;buttons.push(b);
   b.onclick=()=>{if(!model.signedIn){onSignIn();return}
   if(!waiver?.checked){setStatus(WAIVER_REQUIRED);waiver?.focus();return}
@@ -91,7 +92,14 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
  root.append(el('p',{className:'adventure-offer-cap'},model.showSky
   ?'Tes achats à l’unité comptent : tu ne paieras jamais plus de '+model.capPrice+' au total.'
   :'Tu continues à l’unité : dès '+model.capPrice+' payés au total, tout le vrai ciel est débloqué.'),status);
- if(!model.purchasesAvailable)root.append(el('p',{className:'adventure-offer-soon'},'Paiement bientôt disponible.'));
+ if(model.pricesRequired){
+  const message=el('p',{className:'adventure-offer-soon'},model.priceStatus==='loading'?'Chargement des tarifs Google Play…':
+   !model.purchasesAvailable||!model.unitPriceKnown||(model.showSky&&!model.skyPriceKnown)?'Google Play ne permet pas cet achat pour le moment. Vérifie ta connexion et réessaie.':'');
+  message.setAttribute('role','status');message.setAttribute('aria-live','polite');
+  message.dataset.playPriceReason=(model.priceErrors||[]).map(e=>e.reason).join(',');
+  if(message.textContent)root.append(message);
+  if(model.priceStatus!=='loading'&&message.textContent){retryButton=el('button',{type:'button'},'Réessayer');retryButton.dataset.offer='retry';retryButton.onclick=()=>onRetry();root.append(retryButton)}
+ }else if(!model.purchasesAvailable)root.append(el('p',{className:'adventure-offer-soon'},'Paiement bientôt disponible.'));
  const terms=el('a',{className:'adventure-offer-terms',href:SALES_TERMS_URL,target:'_blank',rel:'noopener'},'Conditions générales de vente');terms.dataset.offer='terms';
  const termsLine=el('p',{className:'adventure-offer-terms-line'});termsLine.append(terms);root.append(termsLine);
  const line=masteryLine(model);

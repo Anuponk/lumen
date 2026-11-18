@@ -133,6 +133,30 @@ try {
     await evaluate(`document.querySelector('[data-offer="waiver"]').click();document.querySelector('[data-offer="unit"]').click();document.querySelector('[data-offer="sky"]').click()`);
     assert.deepEqual(await evaluate(`window.__offerCalls`),['real-adventure-02','real-sky-all']);
     if(process.env.LUMEN_UX_CAPTURE_DIR){const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(process.env.LUMEN_UX_CAPTURE_DIR+'/store-ready-'+width+'.png',Buffer.from(shot.data,'base64'))}
+    // P1: real browser DOM with synthetic Play only; no PaymentRequest.show or server purchase.
+    await evaluate(`(async()=>{
+      const {createPlayPriceLoader}=await import('/src/persistence/play-billing.js');
+      const {adventureOfferModel,mountAdventureOffer}=await import('/src/ui/adventure-offer.js');
+      const {contentMapModel}=await import('/src/campaign/content.js');
+      const {canonicalQuestList}=await import('/src/campaign/canonical-quests.js');
+      const packs=contentMapModel([],{progress:lumenDiagnostics.snapshot().progress}).skies.flatMap(s=>s.packs),pack=packs.find(p=>p.accessible===false);
+      window.__playShows=0;window.__playFail=true;
+      const win={navigator:{language:'fr-FR'},PaymentRequest:function(){this.canMakePayment=async()=>true;this.show=()=>{window.__playShows++}},getDigitalGoodsService:async()=>({getDetails:()=>new Promise((resolve,reject)=>{window.__playResolve=()=>window.__playFail?reject(Error('offline')):resolve([{itemId:'real_adventure_02',price:{currency:'EUR',value:'1.00'}},{itemId:'real_sky_all',price:{currency:'EUR',value:'5.00'}}])})})};
+      window.__playLoader=createPlayPriceLoader({win,ids:[pack.id,'real-sky-all'],playApp:true,onChange:s=>mountAdventureOffer(document.getElementById('adventureNoticeOffer'),adventureOfferModel({pack,packs,quests:canonicalQuestList(),progress:lumenDiagnostics.snapshot().progress,signedIn:true,purchasesAvailable:s.status!=='loading'&&!!s.service,pricesRequired:true,prices:s.prices,priceStatus:s.status,priceErrors:s.errors}),{onRetry:()=>window.__playLoader.load()})});
+      window.__playLoad=window.__playLoader.load();
+    })()`,true);
+    assert.equal(await evaluate(`document.querySelector('[data-offer="unit"]').disabled`),true);
+    assert.match(await evaluate(`document.querySelector('.adventure-offer').textContent`),/Chargement du prix/);
+    await evaluate(`window.__playResolve();window.__playLoad`,true);
+    assert.equal(await evaluate(`document.querySelector('[data-offer="unit"]').disabled`),true);
+    assert.match(await evaluate(`document.querySelector('[data-play-price-reason]').dataset.playPriceReason`),/details_request_failed/);
+    await evaluate(`window.__playFail=false;document.querySelector('[data-offer="retry"]').click()`);
+    await until(`typeof window.__playResolve==='function'&&window.__playLoader.snapshot().status==='loading'`);
+    await evaluate(`window.__playResolve();window.__playLoader.load()`,true);
+    assert.equal(await evaluate(`document.querySelector('[data-offer="unit"]').disabled`),false);
+    assert.match(await evaluate(`document.querySelector('.adventure-offer-price').textContent`),/1,00\s€/);
+    assert.equal(await evaluate(`window.__playShows`),0);
+    assert.equal(await evaluate(`(()=>{const e=document.querySelector('.adventure-offer');return e.scrollWidth>e.clientWidth+1})()`),false);
     await evaluate(`document.getElementById('adventureNoticeClose').click()`);
   }
   assert.deepEqual(errors, []);

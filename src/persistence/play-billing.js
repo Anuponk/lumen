@@ -7,9 +7,14 @@ export const PLAY_BILLING_METHOD='https://play.google.com/billing';
 export function toPlayProductId(id){return /^real-adventure-0[2-9]$/.test(id)||id==='real-sky-all'?id.replaceAll('-','_'):id}
 
 
-export async function getPlayBilling(win=globalThis){
- if(typeof win?.getDigitalGoodsService!=='function'||typeof win?.PaymentRequest!=='function')return null;
- try{return await win.getDigitalGoodsService(PLAY_BILLING_METHOD)||null}catch(_){return null}
+export async function getPlayBilling(win=globalThis,onDiagnostic=()=>{}){
+ if(typeof win?.PaymentRequest!=='function'){onDiagnostic({reason:'payment_unsupported'});return null}
+ if(typeof win?.getDigitalGoodsService!=='function'){onDiagnostic({reason:'service_unavailable'});return null}
+ try{
+  const service=await win.getDigitalGoodsService(PLAY_BILLING_METHOD)||null;
+  if(!service)onDiagnostic({reason:'service_unavailable'});
+  return service;
+ }catch(_){onDiagnostic({reason:'service_unavailable'});return null}
 }
 
 // Server verification. Returns {status:'paid'|'pending'|'not_paid'|'owned_elsewhere'|'error', adventures?, acknowledged?}.
@@ -34,7 +39,7 @@ export async function buyWithPlay({win=globalThis,productId,verify}){
   const request=new win.PaymentRequest([{supportedMethods:PLAY_BILLING_METHOD,data:{sku:productId}}],
    {total:{label:'Lumen',amount:{currency:'EUR',value:'0'}}}); // Play shows its own price; total is required by the API.
   response=await request.show();
- }catch(_){return {status:'cancelled'}}
+ }catch(error){return error?.name==='AbortError'?{status:'cancelled'}:{status:'error',reason:'payment_unsupported'}}
  const token=response?.details?.purchaseToken;
  if(!token){try{await response.complete('fail')}catch(_){}return {status:'error',reason:'token'}}
  const result=await verify(productId,token);
@@ -56,14 +61,63 @@ export async function restorePlayPurchases({service,verify,reportListFailure=fal
  return results;
 }
 
-// Localised Play prices for display (falls back to catalogue prices when unavailable).
-export async function playPrices(service,ids){
+// Only validated provider prices. Never substitute catalogue prices in the Play app.
+export async function playPrices(service,ids,{onDiagnostic=()=>{},locale='fr-FR'}={}){
  try{
   const details=await service.getDetails(ids);
-  return Object.fromEntries((details||[]).map(d=>{
-   const v=d?.price;let label=null;
-   try{label=new Intl.NumberFormat('fr-FR',{style:'currency',currency:v.currency}).format(Number(v.value))}catch(_){}
-   return [d.itemId,label];
-  }).filter(([,label])=>label));
- }catch(_){return {}}
+  if(!Array.isArray(details))throw Error('Invalid details response');
+  const prices={};
+  for(const id of ids){
+   const matches=details.filter(d=>d?.itemId===id),d=matches[0],v=d?.price;
+   let reason=!d?'product_not_found':d.available===false?'product_not_available':null;
+   if(!reason){
+    try{
+     if(matches.length!==1||typeof v?.currency!=='string'||!/^[A-Z]{3}$/.test(v.currency)||
+      !Intl.supportedValuesOf('currency').includes(v.currency)||typeof v.value!=='string'||
+      !/^\d+(?:\.\d+)?$/.test(v.value)||!Number.isFinite(Number(v.value))||Number(v.value)<=0)throw Error('Invalid price');
+     prices[id]=new Intl.NumberFormat(locale,{style:'currency',currency:v.currency}).format(Number(v.value));
+    }catch(_){reason='price_parse_failed'}
+   }
+   if(reason)onDiagnostic({reason,productId:id});
+  }
+  return prices;
+ }catch(_){onDiagnostic({reason:'details_request_failed'});return {}}
+}
+
+// Ephemeral price lifecycle: no tokens, user data, purchases or entitlements.
+// Coalesce retries, time out stalled providers, and notify an already-open offer.
+export function createPlayPriceLoader({win=globalThis,ids,playApp=false,onChange=()=>{},onDiagnostic=()=>{},timeoutMs=12000}={}){
+ let state={status:'idle',playApp,service:null,prices:{},errors:[]},pending=null;
+ const publish=next=>{state={...state,...next};onChange(state)};
+ const deadline=promise=>new Promise((resolve,reject)=>{
+  const timer=setTimeout(()=>reject(Error('timeout')),timeoutMs);
+  Promise.resolve(promise).then(resolve,reject).finally(()=>clearTimeout(timer));
+ });
+ function load(){
+  if(pending)return pending;
+  publish({status:'loading',prices:{},errors:[]});
+  pending=(async()=>{
+   const errors=[],diagnostic=event=>errors.push(event);
+   let service=null,prices={},stage='service_unavailable';
+   try{
+    service=await deadline(getPlayBilling(win,diagnostic));
+    if(service){
+     publish({playApp:true});
+     stage='details_request_failed';
+     const labels=await deadline(playPrices(service,ids.map(toPlayProductId),{onDiagnostic:diagnostic,locale:win.navigator?.language||'fr-FR'}));
+     prices=Object.fromEntries(ids.filter(id=>labels[toPlayProductId(id)]).map(id=>[id,labels[toPlayProductId(id)]]));
+     if(Object.keys(prices).length){
+      stage='payment_unsupported';
+      const request=new win.PaymentRequest([{supportedMethods:PLAY_BILLING_METHOD,data:{sku:toPlayProductId(Object.keys(prices)[0])}}],{total:{label:'Lumen',amount:{currency:'EUR',value:'0'}}});
+      if(typeof request.canMakePayment==='function'&&!await deadline(request.canMakePayment()))throw Error('unsupported');
+     }
+    }
+   }catch(_){diagnostic({reason:stage});if(stage==='payment_unsupported')service=null}
+   for(const event of errors)onDiagnostic(event);
+   publish({status:Object.keys(prices).length&&service?(errors.length?'partial':'ready'):'error',service,prices,errors:[...errors]});
+   return service;
+  })().finally(()=>{pending=null});
+  return pending;
+ }
+ return {load,snapshot:()=>state};
 }

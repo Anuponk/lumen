@@ -1416,6 +1416,14 @@ Deployment compatibility: an explicit `PGRST202` + HTTP 404 from the read-only v
 **Protected product invariant (#248):** anything earned or purchased by an authenticated player must be durably retrievable after another-device sign-in, PWA reinstall, local cache loss, reconnect or migration. Never replace a nonempty cloud record with an empty or stale local snapshot.
 
 ### Data ownership and invariants
+
+Play price loading (#729/#731): `createPlayPriceLoader` in `persistence/play-billing.js`
+owns ephemeral provider availability, validated labels and safe diagnostic reasons.
+`game-screen.js::renderAdventureOffer` refreshes the currently mounted offer after
+loading/retry; these labels never persist, write purchases or grant entitlements.
+The Play context requires provider prices even when its service fails, and stays
+excluded from Stripe during retries. Existing server verification and hydration
+remain authoritative. See [Play diagnostic and owner checklist](../android/PLAY.md).
 | Data | Canonical source | Restore / merge rule |
 |---|---|---|
 | Quest completion, constellation unlocks, stars and badges | Authenticated cloud player record | Preserve earned achievements; deduplicate by stable quest/attempt identity; merge by documented progression semantics, never blind whole-profile replacement |

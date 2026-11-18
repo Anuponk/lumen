@@ -680,6 +680,13 @@ Outil de test admin (#705) : le cockpit admin (« Outils de test ») propose « 
 
 ## Offre d'une aventure verrouillée (#731)
 
+Dans la TWA Play, les prix viennent exclusivement de Google : « Chargement du
+prix… » pendant la requête, puis montant et devise localisés. Une erreur ou un
+produit absent affiche « Prix indisponible », une explication et « Réessayer ».
+La carte ouverte se rafraîchit à réception ; un CTA sans prix, canal ou contenu
+valide reste désactivé, y compris après le paiement d'une autre carte. Aucune
+redirection Stripe en cas d'échec Play. Voir le diagnostic dans `android/PLAY.md`.
+
 Toucher une aventure verrouillée (cadenas) dans Mon ciel ouvre la même fenêtre qu'avant, qui présente désormais l'offre au lieu de « déverrouillage annoncé plus tard » :
 - « Débloquer cette aventure · 1 € » et « Tout le vrai ciel · 5 € », avec « Tes achats à l'unité comptent : tu ne paieras jamais plus de 5 € au total ». Les boutons d'achat restent désactivés, avec la mention « Paiement bientôt disponible », jusqu'au branchement d'un fournisseur (#729, #730).
 - Le chemin gratuit : « Gratuit : maîtrise « X » à 100 % (il te reste N quêtes et M badges) ». Ces chiffres viennent du catalogue et de `celestialScope`. Quand la maîtrise est atteinte, un bouton « Débloquer gratuitement » demande au serveur de vérifier (#728). Un invité est invité à se connecter.
