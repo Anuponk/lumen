@@ -271,8 +271,8 @@ Une recette d’achat devra vérifier le montant enregistré et la règle de dé
   `real_sky_all`. Achat définitif, non consommable ; aucun abonnement.
 - [ ] **Activation et France** : ouvrir chaque produit et son option d'achat « Buy » ;
   vérifier état actif et disponibilité France du produit, de l'option ET de l'app.
-  Dans Disponibilité et prix, relever **1,00 EUR TTC** par aventure et **5,00 EUR TTC**
-  pour le ciel. Enregistrer/publier les changements. Si l'interface propose plusieurs
+  Dans Disponibilité et prix, relever le tarif et la devise configurés pour le pays
+  testé. Si l’interface propose plusieurs
   options, vérifier une option d'achat compatible avec les anciens clients Billing
   (« backwards compatible »), sans supposer qu'une offre récente est visible du pont TWA.
 - [ ] **Piste** : Tester et publier → Tests → Test interne (ou piste fermée retenue).
@@ -323,7 +323,7 @@ l'installation ne sont pas établis par les seuls fichiers du dépôt.
 1. Installer depuis la piste retenue, ouvrir depuis l'icône et se connecter avec un
    compte de recette. Relever versionCode, navigateur hôte et SHA Web déployé.
 2. Ouvrir une aventure verrouillée pendant le chargement : prix en cours, CTA
-   désactivé ; attendre les prix réels (France : 1,00 € / 5,00 € attendus). Vérifier
+   désactivé ; attendre les prix renvoyés par Play pour le compte de test. Vérifier
    les huit aventures, puis l'absence d'offre globale sur un compte déjà acheteur unitaire.
 3. Couper le réseau, provoquer un échec puis le rétablir et toucher « Réessayer » :
    la même carte doit recevoir le prix et activer seulement les produits disponibles.

@@ -2263,7 +2263,7 @@ The full quality suite runs on pull requests. After a squash merge, the publishe
 ## Locked Adventure offer (#731)
 
 - `scripts/adventure-offer-tests.mjs` (Node, quality gate): prices from `store-catalogue.js` and parity with the server seed, missing quests and badges derived from the catalogue (plural forms), mastered, guest and locked-previous wording, intention-only funding text, and removal of the placeholder.
-- `sky-navigation-browser-tests.mjs`: real tap on a locked Adventure (3 viewports). Checks that the offer replaces the lock text, purchase buttons are disabled with prices, the €5 cap text and the free mastery path (with what is left) are shown, QA sessions get no account prompt, « Pourquoi ? » expands, and there is no horizontal overflow.
+- `sky-navigation-browser-tests.mjs`: real tap on a locked Adventure (3 viewports). Checks that the offer replaces the lock text, purchase buttons are disabled with prices, the web-only €5 cap text and the free mastery path (with what is left) are shown, QA sessions get no account prompt, « Pourquoi ? » expands, and there is no horizontal overflow.
 
 ## Google Play purchases (#729)
 

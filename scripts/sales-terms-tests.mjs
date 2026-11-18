@@ -16,7 +16,7 @@ class Node{constructor(tag){this.tagName=tag;this.children=[];this.dataset={};th
  focus(){globalThis.document.activeElement=this}
  all(){return this.children.flatMap(c=>c instanceof Node?[c,...c.all()]:[])}}
 globalThis.document={createElement:tag=>new Node(tag),createTextNode:text=>({text}),activeElement:null};
-const model={id:'real-adventure-02',title:'Aventure',unitPrice:'1 €',skyPrice:'5 €',capPrice:'5 €',unitProduct:'real-adventure-02',skyProduct:'real-sky-all',
+const model={id:'real-adventure-02',title:'Aventure',unitPrice:'1 €',skyPrice:'5 €',capMessage:'Sur le web, tes achats à l’unité comptent dans le plafond de 5 €.',unitProduct:'real-adventure-02',skyProduct:'real-sky-all',
  unitCount:10,skyCount:30,unitPriceKnown:true,skyPriceKnown:true,showSky:true,signedIn:true,accounts:true,purchasesAvailable:true,mastery:null};
 const host=new Node('div'),calls=[];
 const root=mountAdventureOffer(host,model,{onBuy:async(product,ctx)=>calls.push({product,waiver:ctx.waiver})});
@@ -53,7 +53,11 @@ assert.match(screen,/async function purchaseAdventure\(productId,\{setStatus,set
 // Sales terms page.
 const cgv=read('cgv.html');
 assert.match(cgv,/<h1>Conditions générales de vente<\/h1>/);
-assert(cgv.includes(formatEuros(ADVENTURE_PRICE_CENTS))&&cgv.includes(formatEuros(SKY_PRICE_CENTS)),'Prices from the store catalogue');
+const webTerms=cgv.match(/<p>Sur la version web, une aventure coûte[^<]+/)?.[0]||'';
+assert(webTerms.includes(formatEuros(ADVENTURE_PRICE_CENTS))&&webTerms.includes(formatEuros(SKY_PRICE_CENTS)),'The catalogue only states web prices');
+const playTerms=cgv.match(/<p>Dans l’app Google Play, le prix[^<]+/)?.[0]||'';
+assert.match(playTerms,/varier selon le pays et la devise/);
+assert.doesNotMatch(playTerms,/€|plafond/,'The Play terms do not promise a fixed euro price or ceiling');
 assert.match(cgv,/TVA non applicable, art\. 293 B du CGI/);
 assert.match(cgv,/L221-28, 13°/);assert.match(cgv,/Sans cette case cochée, le paiement ne s’ouvre pas/);
 assert.match(cgv,/Family Link/);assert.match(cgv,/médiateur de la consommation/);
