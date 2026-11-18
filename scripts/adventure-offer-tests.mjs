@@ -25,17 +25,36 @@ assert.match(empty.capMessage,/5 €/,'Web retains its documented cap');
 assert.equal(empty.purchasesAvailable,false,'Purchases are disabled by default');
 assert.equal(empty.mastery.missingQuests,firstQuests.length,'Missing quests are derived from the catalogue');
 assert.equal(empty.mastery.missingBadges,firstQuests.length*PERFORMANCE_BADGES.length);
-assert.match(masteryLine(empty),new RegExp('il te reste '+firstQuests.length+' quêtes et '+firstQuests.length*PERFORMANCE_BADGES.length+' badges'));
+assert.equal(masteryLine(empty),
+ 'Il te reste '+firstQuests.length+' quêtes et '+firstQuests.length*PERFORMANCE_BADGES.length+' badges à acquérir pour la débloquer gratuitement.');
+const loading=offer(second,progressFor(firstQuests),{signedIn:true,masteryStatus:'loading'});
+assert.equal(loading.mastery.missingQuests,null,'An unverified session must not show the previous account’s counts');
+assert.equal(loading.mastery.mastered,false,'A provisional profile must not give a claim action');
+assert.match(masteryLine(loading),/Chargement de ta progression/);
 
 const almost=offer(second,progressFor(firstQuests.slice(0,-1)));
-assert.equal(almost.mastery.missingQuests,1);assert.match(masteryLine(almost),/il te reste 1 quête et 4 badges/,'Singular forms');
+assert.equal(almost.mastery.missingQuests,1);assert.match(masteryLine(almost),/Il te reste 1 quête et 4 badges/,'Singular forms');
 const noBadges=offer(second,progressFor(firstQuests,{badges:{}}));
-assert.equal(noBadges.mastery.missingQuests,0);assert.match(masteryLine(noBadges),/il te reste \d+ badges\)/,'Only badges left');
+assert.equal(noBadges.mastery.missingQuests,0);assert.match(masteryLine(noBadges),/^Il te reste \d+ badges à acquérir/,'Only badges left');
 
 const mastered=offer(second,progressFor(firstQuests),{signedIn:true});
-assert.equal(mastered.mastery.mastered,true);assert.match(masteryLine(mastered),/atteinte ✓ : cette aventure se débloque gratuitement/);
-assert.match(masteryLine(offer(second,progressFor(firstQuests))),/connecte-toi pour débloquer/,'Guests are told to sign in');
-assert.match(masteryLine(offer(third,{})),/une fois débloquée/,'A locked previous Adventure is explained');
+assert.equal(mastered.mastery.mastered,true);assert.match(masteryLine(mastered),/100 %.*vérifier ton déblocage gratuit/);
+assert.match(masteryLine(offer(second,progressFor(firstQuests))),/Connecte-toi pour débloquer/,'Guests are told to sign in');
+assert.equal(offer(third,{}).mastery.previousName,second.displayName,'The previous Adventure follows catalogue order');
+const firstOnly=firstQuests[0];
+const questsOnly=progressFor(firstQuests);
+delete questsOnly.solved[firstOnly.legacyIndex];
+assert.equal(masteryLine(offer(second,questsOnly)),'Il te reste 1 quête à terminer pour la débloquer gratuitement.');
+const unavailable=offer(second,questsOnly,{signedIn:true,masteryStatus:'unavailable'});
+assert.equal(unavailable.mastery.missingBadges,null);
+assert.match(masteryLine(unavailable),/indisponible/);
+assert.match(masteryLine(offer(second,progressFor(firstQuests),{signedIn:true,masteryConfirmed:true})),/Déblocage gratuit confirmé/);
+const oldQuest={id:'historical-run-only',legacyIndex:null,packId:first.id};
+const historical={canonicalQuestState:{[oldQuest.id]:{runPerformance:{},badges:{...all}}}};
+const historicalOffer=adventureOfferModel({pack:second,packs,quests:[oldQuest],progress:historical});
+assert.equal(historicalOffer.mastery.mastered,true,'Historical wins and all server-counted badges complete the predecessor');
+historical.canonicalQuestState[oldQuest.id].badges.speed=1;
+assert.equal(adventureOfferModel({pack:second,packs,quests:[oldQuest],progress:historical}).mastery.missingBadges,1,'Badge values use the server’s strict boolean rule');
 assert.equal(adventureOfferModel({pack:first,packs,quests,progress:{}}).mastery,null,'The first Adventure has no previous one');
 
 assert.match(SUPPORT_LINE,/Sans pub/);
@@ -54,7 +73,7 @@ const offerSource=fs.readFileSync(new URL('../src/ui/adventure-offer.js',import.
 assert.doesNotMatch(offerSource,/'Restaurer mes achats'|adventure-offer-restore|onRestore/,'No manual restore button');
 const screen=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 assert.doesNotMatch(screen,/onRestore|restorePurchasesNow|restoreMessage/);
-assert.match(screen,/function afterVerifiedHydration\(\)\{void maybeClaimMasteryUnlocks\(\);void maybeRestorePlayPurchases\(\);void refreshPaymentChannel\(\)\.finally\(\(\)=>handleStripeReturn\(\)\)\.finally\(\(\)=>void maybeRestoreStripePurchases\(\)\)\}/,'Automatic restore after verified hydration');
+assert.match(screen,/function afterVerifiedHydration\(\)\{refreshAdventureOffer\?\.\('mastery'\);void maybeClaimMasteryUnlocks\(\);void maybeRestorePlayPurchases\(\);void refreshPaymentChannel\(\)\.finally\(\(\)=>handleStripeReturn\(\)\)\.finally\(\(\)=>void maybeRestoreStripePurchases\(\)\)\}/,'Automatic restore after verified hydration');
 assert.match(screen,/async function maybeRestoreStripePurchases\(\)\{\n if\(!lumenUser\|\|qaActive\|\|!cloudProfileReady\|\|!stripeAvailable\(\)\)return;/);
 assert.match(screen,/results\.some\(r=>r\.status==='paid'\)\)\{await loadEntitlements\(\)/,'Rights reloaded only after a server-confirmed purchase');
 console.log('adventure-offer-tests: prices, mastery path, wording and seed parity OK');

@@ -59,7 +59,9 @@ try{
   assert.equal(offer.visible&&offer.copyHidden,true,'The offer replaces the generic lock text');
   assert.match(offer.unit,/1 €/);assert.match(offer.sky,/5 €/);assert.equal(offer.unitDisabled&&offer.skyDisabled,true,'No purchase before a payment provider is connected');
   assert.equal(offer.soon,true);assert.match(offer.cap,/Sur le web, .*plafond de 5 €/);
-  assert.match(offer.mastery,/maîtrise « .+ » à 100 % \(il te reste \d+ quêtes? et \d+ badges?\)/,'The free path shows what is left');
+  assert.match(offer.mastery,/en maîtrisant à 100 % l’aventure précédente/);
+  assert.match(offer.mastery,/Il te reste \d+ quêtes? et \d+ badges? à acquérir pour la débloquer gratuitement/);
+  assert.equal(await evaluate('document.documentElement.scrollTop'),0,'The offer keeps the page stationary');
   assert.equal(offer.signin,false,'QA sessions never offer account creation');assert.equal(offer.whyHidden,true);
   await evaluate(`document.querySelector('#adventureNoticeOffer [data-offer=why]').scrollIntoView({block:'center'})`);await click('#adventureNoticeOffer [data-offer=why]');
   assert.equal(await evaluate(`!document.querySelector('#adventureNoticeOffer .adventure-offer-why-text').hidden&&document.querySelector('#adventureNoticeOffer [data-offer=why]').getAttribute('aria-expanded')==='true'`),true,'Pourquoi reveals the funding text');

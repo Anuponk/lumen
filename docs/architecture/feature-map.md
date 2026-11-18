@@ -94,7 +94,7 @@ Admin Adventure grants #724: `ui/adventure-access-panel.js` (player detail, moun
 owns validation, `lumen.entitlements` writes and the private audit. See
 [PROGRESSION](../PROGRESSION.md#admin-adventure-grants-724).
 
-Purchases and mastery unlocks #728: `ui/mastery-unlock.js` (client request after
+Purchases and mastery unlocks #728/#811: `ui/mastery-unlock.js` projects the previous Adventure’s server mastery criteria for the shop, and requests a grant after
 hydration or a local Adventure mastery, wired in `game-screen.js::maybeClaimMasteryUnlocks`);
 server `record_purchase` (service_role), `sync_purchase_entitlements`,
 `claim_mastery_unlock`; store seed from `scripts/adventure-store-seed.mjs`. See

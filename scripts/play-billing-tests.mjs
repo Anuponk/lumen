@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createPlayPriceLoader,getPlayBilling,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices,toPlayProductId,PLAY_BILLING_METHOD} from '../src/persistence/play-billing.js';
 import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
-import {adventureOfferModel,mountAdventureOffer} from '../src/ui/adventure-offer.js';
+import {adventureOfferModel,mountAdventureOffer,updateAdventureOfferMastery} from '../src/ui/adventure-offer.js';
 import {SKY_PRODUCT_ID} from '../src/campaign/store-catalogue.js';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -127,7 +127,8 @@ completeDetails(rows);await detection;
 class Node{
  constructor(tag){this.tagName=tag;this.children=[];this.dataset={};this.attributes={};this.textContent='';this.isConnected=true}
  append(...nodes){this.children.push(...nodes)} replaceChildren(...nodes){this.children=nodes}
- get firstElementChild(){return this.children[0]} setAttribute(k,v){this.attributes[k]=v} focus(){}
+ get firstElementChild(){return this.children[0]} setAttribute(k,v){this.attributes[k]=v} focus(){} closest(){return null}
+ querySelector(selector){const key=selector==='[data-offer-mastery]'?'offerMastery':null;return this.all().find(node=>key&&Object.hasOwn(node.dataset,key))}
  all(){return this.children.flatMap(c=>c instanceof Node?[c,...c.all()]:[])}
 }
 globalThis.document={createElement:tag=>new Node(tag),createTextNode:text=>({text})};
@@ -135,8 +136,9 @@ let resolveDetails,failDetails=true,verifications=0;
 const delayedWin={...win,document:{referrer:'android-app://com.nopuna.lumen'},getDigitalGoodsService:async()=>({getDetails:()=>new Promise((resolve,reject)=>{resolveDetails=()=>failDetails?reject(Error('offline')):resolve(rows)})})};
 const host=new Node('div'),savedProgress={solved:{0:1}},saved=structuredClone(savedProgress);
 const context=vm.createContext({window:delayedWin,console,createPlayPriceLoader,isPlayDistributedApp,CONTENT_PACKS,SKY_PRODUCT_ID,
- adventureOfferModel,mountAdventureOffer,canonicalQuestList,contentMapModel:()=>({skies:[{packs}]}),adventureAccessEntitlements:()=>[],adventureEntitlementsState:()=> 'ready',
- attemptEngine:{snapshot:()=>({})},lumenProgress:savedProgress,lumenUser:{id:'synthetic'},lumenEntitlements:[],qaActive:false,mapCatalogueOverride:null,
+ adventureOfferModel,mountAdventureOffer,updateAdventureOfferMastery,canonicalQuestList,contentMapModel:()=>({skies:[{packs}]}),adventureAccessEntitlements:()=>[],adventureEntitlementsState:()=> 'ready',
+ attemptEngine:{snapshot:()=>({})},lumenProgress:savedProgress,lumenUser:{id:'synthetic'},lumenEntitlements:[],qaActive:false,mapCatalogueOverride:null,refreshAdventureOffer:null,authSessionPending:false,cloudProfileReady:true,cloudProfileFailure:null,lumenEntitlementsState:'ready',navigator:{onLine:true},
+ localStorage:{getItem:key=>key==='lumenCloudOwnerId'?'synthetic':null},
  stripeAvailable:()=>false,purchaseAdventure:()=>{verifications++},host,pack});
 const normalized=screen.replace(/\r\n/g,'\n');
 vm.runInContext(normalized.slice(normalized.indexOf('let playBilling=null'),normalized.indexOf('async function playVerify')),context);
@@ -156,6 +158,27 @@ assert.equal(verifications,0);assert.equal(shows,0);assert.deepEqual(savedProgre
 vm.runInContext("lumenEntitlements=[{source:'purchase'}];renderAdventureOffer(host,pack)",context);
 assert.equal(find('sky'),undefined,'Single purchase still hides the whole-sky offer');
 assert.equal(find('unit').disabled,false);
+// During account handoff only the mastery section updates, even with active pricing.
+const unitBeforeHydration=find('unit'),waiverBeforeHydration=find('waiver');
+waiverBeforeHydration.checked=true;
+const masteryStatus=()=>host.all().find(n=>Object.hasOwn(n.dataset,'offerMasteryStatus')).textContent;
+vm.runInContext("authSessionPending=true;cloudProfileReady=false;refreshAdventureOffer('mastery')",context);
+assert.match(masteryStatus(),/Chargement de ta progression/);
+assert.equal(find('mastery-claim'),undefined);
+vm.runInContext("authSessionPending=false;cloudProfileFailure={};refreshAdventureOffer('mastery')",context);
+assert.match(masteryStatus(),/indisponible/);
+vm.runInContext("cloudProfileFailure=null;lumenProgress={solved:{0:1,1:1}};cloudProfileReady=true;refreshAdventureOffer('mastery')",context);
+const precedingQuests=canonicalQuestList().filter(q=>q.packId===packs[0].id);
+assert(masteryStatus().includes('Il te reste '+(precedingQuests.length-2)+' quêtes et '));
+assert.equal(find('unit'),unitBeforeHydration);
+assert.equal(find('waiver'),waiverBeforeHydration);
+assert.equal(find('waiver').checked,true,'Synchronization does not reset purchase controls');
+vm.runInContext("lumenEntitlements=[{source:'mastery',entitlement:pack.id}];refreshAdventureOffer('mastery')",context);
+assert.match(masteryStatus(),/Déblocage gratuit confirmé/);
+assert(find('mastery-continue'));
+vm.runInContext("lumenUser=null;cloudProfileReady=false;refreshAdventureOffer('mastery')",context);
+assert.match(masteryStatus(),/indisponible/,'The previous profile cannot supply counters after logout');
+assert.equal(find('mastery-continue'),undefined);
 // Partial prices remain disabled even after a sibling purchase's busy callback.
 let controls;
 mountAdventureOffer(host,adventureOfferModel({...base,pricesRequired:true,priceStatus:'partial',prices:{[SKY_PRODUCT_ID]:'5,00 €'}}),{onBuy:(_id,ctx)=>{controls=ctx}});
