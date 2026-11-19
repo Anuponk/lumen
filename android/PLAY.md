@@ -241,6 +241,15 @@ sert de filet de sécurité pour RTDN.
 
 ### Recette du wrapper 1.0.1 (2) et réactivation (#833, PR #837)
 
+Le 19 novembre 2026, le propriétaire a autorisé l'ouverture Web après la
+recette USB positive de 1.0.1 (2), avant la fin de la recette serveur en
+conditions réelles. Le premier passage du cron de remboursements et la
+recette d'un achat de licence sans débit, avec liaison, acknowledgement et
+RTDN, restent à documenter. Aucun AAB ni paiement réel dans ce déploiement.
+Pour suspendre les nouveaux achats, republier le Web avec
+`PLAY_CHECKOUT_AVAILABLE=false`. La restauration reste disponible.
+
+
 Le code 2 inclut le module natif #837. Le site reconnaît la TWA via le
 referrer Android, son marqueur de session ou le marqueur natif, puis accepte
 aussi un service Digital Goods résolu comme preuve de contexte Play. La carte
