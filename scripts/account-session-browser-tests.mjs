@@ -141,7 +141,10 @@ window.supabase={createClient(url,key,options){
   return {data:{session}};
  },onAuthStateChange(fn){callback=fn},
  signInWithPassword:async()=>{window.__authCalls.push('password');set('SIGNED_IN',{user:{id:'fixture-player'}});return {data:{session},error:null}},
- verifyOtp:async()=>{window.__authCalls.push('recovery');set('PASSWORD_RECOVERY',{user:{id:'fixture-player'}});return {error:null}},
+ verifyOtp:async(args)=>{
+  if(sessionStorage.getItem('fixtureVerifyExpired')==='1'){window.__authCalls.push('expired');return {error:{code:'otp_expired',message:'Email link is invalid or has expired',status:403}}}
+  if(args?.type==='signup'){window.__authCalls.push('signup');set('SIGNED_IN',{user:{id:'fixture-player'}});return {error:null}}
+  window.__authCalls.push('recovery');set('PASSWORD_RECOVERY',{user:{id:'fixture-player'}});return {error:null}},
  updateUser:async(value)=>{window.__authCalls.push('password_update');return {error:null}},
  signOut:async(options)=>{window.__authCalls.push(options.scope);set('SIGNED_OUT',null);return {error:null}}
  }};
@@ -483,10 +486,35 @@ try{
   await evaluate(`document.getElementById('setPasswordValue').value='new-test-password';document.getElementById('setPasswordSave').click()`);
   await until(`sessionStorage.getItem('lumenPasswordRecoveryPending')===null`);
   await until(`document.getElementById('mobileAuthAction').textContent==='Déconnexion'`);
+  // #820: a confirmed sign-up link states its real verdict once, then follows the session.
+  const signupLink=new URL(url);signupLink.searchParams.set('lumen_confirm','b'.repeat(64));signupLink.searchParams.set('type','signup');
+  await navigate('Page.navigate',{url:signupLink.href});await until(`window.__authCalls?.includes('signup')`);
+  await until(`document.getElementById('authLinkResult').hidden===false`);
+  assert.equal(await evaluate(`document.getElementById('authLinkResultTitle').textContent`),'Adresse e-mail confirmée !');
+  assert.equal(await evaluate(`document.getElementById('authLinkResultText').textContent`),'Ton compte Lumen est prêt.');
+  assert.equal(await evaluate(`document.getElementById('authLinkResultAction').textContent`),'Continuer mon aventure');
+  assert.equal(await evaluate(`location.search.includes('lumen_confirm')`),false,'The token hash leaves the address bar');
+  await evaluate(`document.getElementById('authLinkResultAction').click()`);
+  assert.equal(await evaluate(`document.getElementById('authLinkResult').hidden`),true);
+  // An expired or reused link never claims success.
+  await evaluate(`sessionStorage.setItem('fixtureVerifyExpired','1')`);
+  await navigate('Page.navigate',{url:signupLink.href});await until(`window.__authCalls?.includes('expired')`);
+  await until(`document.getElementById('authLinkResult').hidden===false`);
+  assert.equal(await evaluate(`document.getElementById('authLinkResultTitle').textContent`),'Ce lien n’est plus valide');
+  assert.equal(await evaluate(`document.getElementById('authLinkResult').textContent.includes('confirmée')`),false);
+  await evaluate(`sessionStorage.removeItem('fixtureVerifyExpired');document.getElementById('authLinkResultAction').click()`);
+  // Supabase's native redirect error: same verdict, error parameters removed.
+  const nativeExpired=new URL(url);nativeExpired.searchParams.set('from','mail');nativeExpired.hash='error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired';
+  await navigate('Page.navigate',{url:nativeExpired.href});
+  await until(`document.getElementById('authLinkResult').hidden===false`);
+  assert.equal(await evaluate(`document.getElementById('authLinkResultTitle').textContent`),'Ce lien n’est plus valide');
+  assert.equal(await evaluate(`location.hash.includes('error')`),false,'The provider error leaves the address bar');
+  await evaluate(`document.getElementById('authLinkResultAction').click()`);
+  await until(`document.getElementById('mobileAuthAction').textContent==='Déconnexion'`);
   await evaluate(`document.getElementById('mobileAuthAction').click()`);
   await until(`document.getElementById('mobileAuthAction').textContent.includes('Se connecter')`);
   const isolatedCanonicalRecovery=await verifyIsolatedRecovery();
-  results.push({viewport,guestDismiss:true,automaticOfferDismiss:true,repeatedSignupLoginDismiss:true,passwordLogin:true,reload:true,readableSessionWithQuota:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,restoreFailureVisible:true,isolatedCanonicalRecovery,isolatedLegacyRecovery:true,optionalDiagnostics:{defaultOff:true,sanitised:true,offlineRestartReconnect:true,withdrawalErases:true,profilePreserved:true}});
+  results.push({viewport,guestDismiss:true,automaticOfferDismiss:true,repeatedSignupLoginDismiss:true,passwordLogin:true,reload:true,readableSessionWithQuota:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,signupLinkVerdict:true,expiredLinkVerdict:true,nativeErrorVerdict:true,restoreFailureVisible:true,isolatedCanonicalRecovery,isolatedLegacyRecovery:true,optionalDiagnostics:{defaultOff:true,sanitised:true,offlineRestartReconnect:true,withdrawalErases:true,profilePreserved:true}});
  }
  await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:authFixtureId});
  const walletFlow=await verifyWalletAndOfflineFlow({send,evaluate,navigate,url});

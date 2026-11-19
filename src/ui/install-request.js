@@ -17,6 +17,10 @@ export function isIosDevice(userAgent){return /iphone|ipad|ipod/i.test(String(us
 
 // What the install sheet says: the native prompt when the browser offers one,
 // otherwise the exact manual steps for the device.
+// #832: iOS gives the home-screen app its own storage. A guest is told, without
+// blocking the install, to save the sky in an account first.
+export const IOS_GUEST_INSTALL_WARNING='Pour retrouver ta progression dans l’application installée, crée un compte et synchronise ton ciel avant de l’ajouter à ton écran d’accueil.';
+export function installGuestWarning({ios,guest}){return ios&&guest?IOS_GUEST_INSTALL_WARNING:null}
 export function requestedInstallCopy({prompt,ios}){
  if(prompt)return {copy:'Ajoute LUMEN à ton écran d’accueil pour retrouver ton ciel en un geste.',button:'Installer LUMEN'};
  if(ios)return {copy:'Si le QR code ou une autre app a ouvert LUMEN dans son navigateur, choisis « Ouvrir dans Safari ». Dans Safari, touche Partager (au besoin dans le menu ⋯), puis « Sur l’écran d’accueil » et « Ajouter ».',button:'J’ai compris'};
