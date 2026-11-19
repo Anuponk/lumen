@@ -3,7 +3,7 @@
 // by the server (Edge Function lumen-play-purchase → #728); this module never grants.
 // Outside the Play app (browser, iPhone) getDigitalGoodsService is absent: no Play offer.
 // Release switch. See android/PLAY.md for the server and Android acceptance checks.
-export const PLAY_CHECKOUT_AVAILABLE=false;
+export const PLAY_CHECKOUT_AVAILABLE=true;
 export const PLAY_BILLING_METHOD='https://play.google.com/billing';
 export const PLAY_BINDING_PROBE='lumen_internal_bound_checkout_v1';
 // Play Console disallows hyphens in product IDs. Internal pack IDs remain unchanged.

@@ -1659,7 +1659,7 @@ catalogue size, sequentially and awaiting victory/reveal behavior. Coverage incl
 - cell cycle;
 - guided conflicts and solver use;
 - N x N board rendering;
-- mobile drag exclusions;
+- mobile drag exclusions, including the #805 real Chrome swipe, a stationary tap whose pointer release remains uncancelled, and one-step undo in `ux-lot-browser-tests.mjs`;
 - Guardian terminology;
 - constellation/reward celebrations;
 - replay and reset/navigation;

@@ -162,7 +162,7 @@ let resolveDetails,failDetails=true,verifications=0,marker=probeMarker;
 const delayedWin={...win,document:{referrer:'android-app://com.nopuna.lumen'},getDigitalGoodsService:async()=>({getDetails:requested=>requested[0]===PLAY_BINDING_PROBE
  ?Promise.resolve(marker):new Promise((resolve,reject)=>{resolveDetails=()=>failDetails?reject(Error('offline')):resolve(rows)})})};
 const host=new Node('div'),savedProgress={solved:{0:1}},saved=structuredClone(savedProgress);
-const context=vm.createContext({PLAY_CHECKOUT_AVAILABLE:true,window:delayedWin,console,createPlayPriceLoader,isPlayDistributedApp,CONTENT_PACKS,SKY_PRODUCT_ID,
+const context=vm.createContext({PLAY_CHECKOUT_AVAILABLE,window:delayedWin,console,createPlayPriceLoader,isPlayDistributedApp,CONTENT_PACKS,SKY_PRODUCT_ID,
  adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery,canonicalQuestList,contentMapModel:()=>({skies:[{packs}]}),adventureAccessEntitlements:()=>[],adventureEntitlementsState:()=> 'ready',
  attemptEngine:{snapshot:()=>({})},lumenProgress:savedProgress,lumenUser:{id:'synthetic'},lumenEntitlements:[],qaActive:false,mapCatalogueOverride:null,refreshAdventureOffer:null,authSessionPending:false,cloudProfileReady:true,cloudProfileFailure:null,lumenEntitlementsState:'ready',navigator:{onLine:true},
  localStorage:{getItem:key=>key==='lumenCloudOwnerId'?'synthetic':null},
@@ -253,7 +253,7 @@ loader=createPlayPriceLoader({win:{...win,getDigitalGoodsService:()=>new Promise
 await loader.load();assert.equal(loader.snapshot().status,'error');assert.equal(loader.snapshot().errors[0].reason,'service_unavailable');
 console.log('play-billing-tests P1: nine SKUs, validation, delayed DOM refresh, retry, CTA, channel isolation and no grants OK');
 
-assert.equal(PLAY_CHECKOUT_AVAILABLE,false,'Production acceptance is required before opening sales');
+assert.equal(PLAY_CHECKOUT_AVAILABLE,true,'The approved web release opens Play sales for eligible builds');
 const purchaseState={status:503,body:{error:'unavailable'}};
 let listings=0,reads=0,renders=0,playAttempts=0,changeDuringList=false,authChecks=0,paymentChecks=0;
 const verifyTokens=[],restoreNotices=[];
@@ -272,7 +272,7 @@ const recoveryWin={
 };
 const restoreHost=new Node('div');
 let scheduledRecovery=null;
-const recovery=vm.createContext({...context,PLAY_CHECKOUT_AVAILABLE,window:recoveryWin,
+const recovery=vm.createContext({...context,PLAY_CHECKOUT_AVAILABLE:false,window:recoveryWin,
  setTimeout:(callback,delay)=>{scheduledRecovery={callback,delay};return scheduledRecovery},
  clearTimeout:()=>{scheduledRecovery=null},
  getPlayPurchaseService,restorePlayPurchases,verifyPlayPurchase:args=>verifyPlayPurchase({...args,fetchImpl:async(_url,init)=>{
@@ -377,7 +377,7 @@ authClient.rpc=async(name,args)=>{
  return {data:binding};
 };
 Object.assign(recovery,{
- PLAY_CHECKOUT_AVAILABLE:true,lumenUser:{id:'owner'},cloudProfileReady:false,checkoutCtx,toPlayProductId,
+ PLAY_CHECKOUT_AVAILABLE,lumenUser:{id:'owner'},cloudProfileReady:false,checkoutCtx,toPlayProductId,
  thankForPurchase:()=>thanks++,
  buyWithPlay:args=>buyWithPlay({...args,win:recoveryWin}),
  loadEntitlements:async()=>{recovery.lumenEntitlementsState='error'}

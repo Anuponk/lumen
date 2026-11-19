@@ -3726,12 +3726,13 @@ board.addEventListener("pointerdown",e=>{
 },{passive:false});
 function moveDragCross(e){
  if(!dragCross||dragCross.id!==e.pointerId)return;
- e.preventDefault();
  if(!dragCross.dragging&&Math.hypot(e.clientX-dragCross.startX,e.clientY-dragCross.startY)>8){
    dragCross.dragging=true;dragCrossSuppressClick=true;
    try{board.setPointerCapture?.(e.pointerId)}catch{}
  }
  if(!dragCross.dragging)return;
+ // Preserve the native click for a stationary tap.
+ e.preventDefault();
  const from=[dragCross.lastX??dragCross.startX,dragCross.lastY??dragCross.startY],to=[e.clientX,e.clientY];
  for(const [r,c] of gridCellsAlongSegment(from,to,board.getBoundingClientRect(),n))markDragCross(r,c);
  dragCross.lastX=e.clientX;dragCross.lastY=e.clientY;
