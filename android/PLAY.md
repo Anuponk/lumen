@@ -17,14 +17,24 @@ renseigner Console ; ne pas réinterpréter son état depuis une CI Android.
   les demandes Console. Valider les accords et la situation du compte.
 - [ ] Créer **Lumen**, langue française, type jeu, gratuit ; distribution initiale
   **France**, conformément au choix déjà documenté. Ne pas ouvrir d'autre pays.
-- [ ] Vérifier l'ID publié **com.nopuna.lumen** (`release.properties`) ; premier
-  versionCode **1**, versionName **1.0.0** (indépendants de la version PWA).
+- [ ] Avant de lancer le build d'un nouvel AAB destiné à Google Play, relever le
+  plus grand `versionCode` déjà importé pour **com.nopuna.lumen** dans
+  l'Explorateur d'app bundles de Play Console, toutes pistes comprises, même
+  pour un bundle jamais publié. Si l'historique est inaccessible, demander ce
+  numéro au propriétaire avant de lancer le build.
+- [ ] Inscrire dans [`release.properties`](release.properties) un `versionCode`
+  supérieur à ce maximum et le `versionName` prévu, en gardant
+  `applicationId=com.nopuna.lumen`. Google Play a refusé de réutiliser le code
+  `1` pour le wrapper #837. Le build corrigé dans #838 porte le code `2` et la
+  version `1.0.1`. La version Android est indépendante de la version PWA.
 - [ ] Activer Play App Signing, protéger/sauvegarder la clé d'upload et relever
   le certificat de signature **de l'app** ; voir [SIGNING](SIGNING.md).
 - [ ] Faire publier et vérifier DAL pour ce package/certificat, puis valider
   App Links et affichage TWA avec une installation issue de Play.
 - [ ] Compiler un AAB release signé avec la vraie clé d'upload, contrôler
   signature/empreinte, package, version, SDK et bundletool ; conserver son SHA-256.
+  Relire le package, le `versionCode` et le `versionName` du manifeste compilé de
+  l'AAB destiné à l'import et les comparer à `release.properties`.
 - [ ] Examiner App Bundle Explorer, rapport pré-lancement et appareils exclus.
   API cible **36**, minimum **24** dans ce projet. Pas de bibliothèque native
   `.so` dans le contrat CI ; refaire le contrôle 16 Ko si une dépendance native

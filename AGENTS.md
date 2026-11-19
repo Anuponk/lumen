@@ -41,6 +41,7 @@
 - Complete the PR template's cloud-impact section; include Onboarding impact, actual validation and outstanding limits. Keep summaries short and evidence-based.
 - User requests to implement, fix or update this repository implicitly authorize creating the PR and merging it once the work is complete and all applicable required checks pass. Proceed without asking for a separate merge confirmation unless the user explicitly requests review first, a draft or no merge. Existing test, data-preservation and branch-protection requirements still apply; do not bypass failed checks.
 - A push or merge is not proof of production release; follow [RELEASE](docs/RELEASE.md), report the SHA and verify the intended deployment when releasing.
+- Before building a new AAB for Google Play, follow the [Android version checklist](android/PLAY.md#compte-et-configuration--propriétaire). Confirm the highest version code already uploaded before choosing the next one.
 
 ## Documentation maintenance for future changes
 - Treat code and the owning documentation as one change. When modifying badges, shards, progression, onboarding, cloud persistence, catalogue or test commands, review and update the relevant existing document in the same PR; state explicitly when no text change is needed.

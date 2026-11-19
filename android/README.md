@@ -70,14 +70,11 @@ pour les essais TWA sans barre d'adresse ; ne jamais conserver la clé CI.
 
 Preuves locales et limites de la première livraison : [EVIDENCE.md](EVIDENCE.md).
 
-`release.properties` est la source des coordonnées publiques candidates :
-`fr.nopuna.lumen`, versionCode `1`, versionName `1.0.0`. Le propriétaire doit
-confirmer l'ID **avant** le premier upload ; après publication il est immuable.
-Chaque upload ultérieur augmente versionCode (maximum Play : 2100000000).
-La version Android est indépendante de la version web `1.11.1+<commit-count>`.
-Des variantes sont possibles avec `-PlumenApplicationId=fr.nopuna.lumen`
-`-PlumenVersionCode=2 -PlumenVersionName=1.0.1` ; enregistrer les valeurs finales
-dans le fichier suivi avant livraison. La validation CI utilise ce fichier.
+[`release.properties`](release.properties) fixe l'identifiant Google Play
+`com.nopuna.lumen` et les valeurs `versionCode` et `versionName` utilisées par
+la CI. La version Android est indépendante de la version web. Pour préparer un
+nouvel AAB destiné à Google Play, suivre la
+[checklist de version](PLAY.md#compte-et-configuration--propriétaire).
 
 ## Décision technique et compatibilité
 
