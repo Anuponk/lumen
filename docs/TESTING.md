@@ -903,6 +903,14 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Signup confirmation (#814) is exercised by `account-email-login-tests.mjs`
+and the account-session browser suite on mobile and desktop. Mail responses are
+synthetic. The suite covers delayed acceptance, duplicate clicks and mode changes,
+provider and network failures, HTTP 429, and the successful notice with spam
+guidance. It verifies unchanged guest progress and checks that the screen fits
+without adding scroll. The auth-mail endpoint tests retain their rate-limit and
+provider rejection cases. No live e-mail is sent by these checks.
+
 ### Chantier #806
 
 Les suites `offline-wallet-ui-tests.mjs`, `hint-assistance-badge-regression-tests.mjs`

@@ -240,16 +240,15 @@ async function signIn(redirectTo){
  return error?{ok:false,reason:"oauth",error}:{ok:true};
 }
 async function requestLumenAuthMail(type,email,password){
- const response=await fetch(LUMEN_SUPABASE_URL+"/functions/v1/lumen-auth-mail",{
+ return fetch(LUMEN_SUPABASE_URL+"/functions/v1/lumen-auth-mail",{
   method:"POST",headers:{"content-type":"application/json","apikey":LUMEN_SUPABASE_KEY},
   body:JSON.stringify({type,email,...(type==="signup"?{password}:{})})
  });
- return response.ok;
 }
 async function requestPasswordRecovery(email){
  const normalized=String(email||"").trim().toLowerCase();
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized))return {ok:false,reason:"email"};
- try{return {ok:await requestLumenAuthMail("recovery",normalized)}}catch{return {ok:false,reason:"unavailable"}}
+ try{return {ok:(await requestLumenAuthMail("recovery",normalized)).ok}}catch{return {ok:false,reason:"unavailable"}}
 }
 async function emailPasswordAuth(email,password,redirectTo,{createUser=false}={}){
  if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};
@@ -259,7 +258,12 @@ async function emailPasswordAuth(email,password,redirectTo,{createUser=false}={}
  const callback=String(redirectTo||environment.lumenAuthReturnUrl||"").trim();
  if(!callback)return {ok:false,reason:"redirect"};
  if(createUser){
-  try{const sent=await requestLumenAuthMail("signup",normalized,password);return sent?{ok:true,pendingConfirmation:true}:{ok:false,reason:"signup"}}catch{return {ok:false,reason:"signup"}}
+  try{
+   const response=await requestLumenAuthMail("signup",normalized,password);
+   if(response.status===429)return {ok:false,reason:"signup_rate_limited"};
+   if(!response.ok)return {ok:false,reason:response.status>=500?"signup_unavailable":"signup"};
+   return (await response.json())?.ok===true?{ok:true,pendingConfirmation:true}:{ok:false,reason:"signup_unavailable"};
+  }catch{return {ok:false,reason:"signup_unavailable"}}
  }
  const response=await model.lumenSupabase.auth.signInWithPassword({email:normalized,password});
  if(response.error)return {ok:false,reason:createUser?"signup":"signin",error:response.error};

@@ -1226,6 +1226,7 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 
 /* #668: compact, self-contained authentication and prominent sent-email state. */
 .account-optin #accountSignupConfirmation[hidden],.account-optin #accountEmailAuth [hidden]{display:none!important}
+.account-optin #accountEmailAuth:has(#accountSignupConfirmation:not([hidden])) #accountEmailStatus{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .account-optin .account-signup-confirmation{margin:12px 0 0;padding:16px;border:1px solid #62d9fc;border-radius:16px;background:#102c42;color:#e7f7ff;text-align:center}
 .account-optin .account-signup-confirmation h3{font-size:19px;margin:0 0 8px;color:#fff}
 .account-optin .account-signup-confirmation p{font-size:14px;line-height:1.4;margin:0 0 12px;overflow-wrap:anywhere}
