@@ -3,7 +3,6 @@
 // privacy page state the owner decisions; Play publication stays blocked without a mediator.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {ADVENTURE_PRICE_CENTS,SKY_PRICE_CENTS,formatEuros} from '../src/campaign/store-catalogue.js';
 import {mountAdventureOffer,WAIVER_TEXT,WAIVER_REQUIRED,SALES_TERMS_URL} from '../src/ui/adventure-offer.js';
 import {evaluatePlayReadiness} from './play-readiness.mjs';
 const read=p=>fs.readFileSync(p,'utf8').replace(/\r\n/g,'\n');
@@ -16,7 +15,7 @@ class Node{constructor(tag){this.tagName=tag;this.children=[];this.dataset={};th
  focus(){globalThis.document.activeElement=this}
  all(){return this.children.flatMap(c=>c instanceof Node?[c,...c.all()]:[])}}
 globalThis.document={createElement:tag=>new Node(tag),createTextNode:text=>({text}),activeElement:null};
-const model={id:'real-adventure-02',title:'Aventure',unitPrice:'1 €',skyPrice:'5 €',capMessage:'Sur le web, tes achats à l’unité comptent dans le plafond de 5 €.',unitProduct:'real-adventure-02',skyProduct:'real-sky-all',
+const model={id:'real-adventure-02',title:'Aventure',unitPrice:'1 €',skyPrice:'5 €',unitProduct:'real-adventure-02',skyProduct:'real-sky-all',
  unitCount:10,skyCount:30,unitPriceKnown:true,skyPriceKnown:true,showSky:true,signedIn:true,accounts:true,purchasesAvailable:true,mastery:null};
 const host=new Node('div'),calls=[];
 const root=mountAdventureOffer(host,model,{onBuy:async(product,ctx)=>calls.push({product,waiver:ctx.waiver})});
@@ -53,11 +52,11 @@ assert.match(screen,/async function purchaseAdventure\(productId,\{setStatus,set
 // Sales terms page.
 const cgv=read('cgv.html');
 assert.match(cgv,/<h1>Conditions générales de vente<\/h1>/);
-const webTerms=cgv.match(/<p>Sur la version web, une aventure coûte[^<]+/)?.[0]||'';
-assert(webTerms.includes(formatEuros(ADVENTURE_PRICE_CENTS))&&webTerms.includes(formatEuros(SKY_PRICE_CENTS)),'The catalogue only states web prices');
-const playTerms=cgv.match(/<p>Dans l’app Google Play, le prix[^<]+/)?.[0]||'';
-assert.match(playTerms,/varier selon le pays et la devise/);
-assert.doesNotMatch(playTerms,/€|plafond/,'The Play terms do not promise a fixed euro price or ceiling');
+assert.match(cgv,/prix total applicable, taxes comprises.*avant la confirmation/);
+assert.match(cgv,/varier selon le pays, la devise/);
+assert.match(cgv,/traité via Stripe/);
+assert.match(cgv,/Lorsque les achats intégrés sont disponibles, le paiement est traité via Google Play Billing/);
+assert.doesNotMatch(cgv,/\d\s*€|plafond/,'Sales terms leave exact pricing to checkout');
 assert.match(cgv,/TVA non applicable, art\. 293 B du CGI/);
 assert.match(cgv,/L221-28, 13°/);assert.match(cgv,/Sans cette case cochée, le paiement ne s’ouvre pas/);
 assert.match(cgv,/Family Link/);assert.match(cgv,/médiateur de la consommation/);
@@ -74,7 +73,7 @@ for(const [name,page] of [['cgv',cgv],['mentions',mentions],['privacy',privacy]]
  assert.match(page,/Version du \d{1,2} \S+ \d{4}/,name+' is dated');
  assert.match(page,/Stripe/,name+' names the web payment processor');
 }
-assert.match(cgv,/version web[^<]*Stripe/);assert.doesNotMatch(cgv,/paiement sur la version web n’est pas encore disponible/);
+assert.match(cgv,/Web et application installée depuis le site/);assert.doesNotMatch(cgv,/paiement sur la version web n’est pas encore disponible/);
 assert.match(cgv,/confirmation de ta commande[^<]*accès immédiat[^<]*renonciation/,'durable confirmation of the waiver (L221-13)');
 assert.match(privacy,/Lumen ne reçoit jamais tes données de carte/);assert.match(privacy,/stripe\.com\/fr\/privacy/);
 // Published by both release paths.

@@ -136,6 +136,18 @@ try {
     assert.equal(await evaluate(`window.__offerCalls.length`),0,'Consent gate preserved on the real offer DOM');
     await evaluate(`document.querySelector('[data-offer="waiver"]').click();document.querySelector('[data-offer="unit"]').click();document.querySelector('[data-offer="sky"]').click()`);
     assert.deepEqual(await evaluate(`window.__offerCalls`),['real-adventure-02','real-sky-all']);
+    await evaluate(`(async()=>{
+      const {purchaseProgressMessage}=await import('/src/ui/adventure-offer.js');
+      const progress=document.querySelector('[data-offer-purchase-progress]');
+      progress.hidden=false;
+      progress.textContent=purchaseProgressMessage({remaining:1,unlocked:false});
+    })()`,true);
+    const purchaseProgress=await evaluate(`(()=>{
+      const line=document.querySelector('[data-offer-purchase-progress]'),offer=line.closest('.adventure-offer');
+      return {text:line.textContent,visible:line.getBoundingClientRect().height>0,fits:offer.scrollWidth<=offer.clientWidth+1};
+    })()`);
+    assert.match(purchaseProgress.text,/Plus qu’une aventure/);
+    assert.equal(purchaseProgress.visible&&purchaseProgress.fits,true);
     if(process.env.LUMEN_UX_CAPTURE_DIR){const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(process.env.LUMEN_UX_CAPTURE_DIR+'/store-ready-'+width+'.png',Buffer.from(shot.data,'base64'))}
     // P1: real browser DOM with synthetic Play only; no PaymentRequest.show or server purchase.
     await evaluate(`(async()=>{

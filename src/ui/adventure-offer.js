@@ -35,18 +35,20 @@ export function adventureOfferModel({pack,packs,quests,progress,signedIn=false,a
  const skyIds=new Set(ordered.filter(p=>p.skyId==='real-sky'&&newlyAvailable(p)).map(p=>p.id));
  const skyCount=ready?delivered.filter(q=>skyIds.has(q.packId)).length:null;
  const missingPrice=priceStatus==='loading'?'Chargement du prix…':'Prix indisponible';
- const capPrice=formatEuros(SKY_PRICE_CENTS);
- const capMessage=pricesRequired
-  ? 'Les tarifs Google Play varient selon le pays. Chaque achat confirmé débloque le contenu correspondant.'
-  : boughtSingle
-   ? 'Le plafond des achats web est de '+capPrice+' pour tout le vrai ciel.'
-   : 'Sur le web, tes achats à l’unité comptent dans le plafond de '+capPrice+'.';
  return {id:pack.id,title:pack.displayName||'Aventure',unitCount,skyCount,pricesRequired,priceStatus,priceErrors,unitPriceKnown:!pricesRequired||!!prices[pack.id],skyPriceKnown:!pricesRequired||!!prices[SKY_PRODUCT_ID],unitPrice:prices[pack.id]||(pricesRequired?missingPrice:formatEuros(ADVENTURE_PRICE_CENTS)),skyPrice:prices[SKY_PRODUCT_ID]||(pricesRequired?missingPrice:formatEuros(SKY_PRICE_CENTS)),
-  capMessage,unitProduct:pack.id,skyProduct:SKY_PRODUCT_ID,showSky:!boughtSingle,
+  unitProduct:pack.id,skyProduct:SKY_PRODUCT_ID,showSky:!boughtSingle,
   signedIn:!!signedIn,accounts:!!accounts,purchasesAvailable:!!purchasesAvailable,mastery};
 }
 
 const plural=(n,word)=>n+' '+word+(n>1?'s':'');
+export function purchaseProgressMessage(progress){
+ if(typeof progress?.unlocked!=='boolean'||!Number.isInteger(progress.remaining)||progress.remaining<0||progress.remaining>5)return '';
+ if(progress.unlocked)return 'Tout le ciel principal est débloqué !';
+ if(progress.remaining===0)return '';
+ if(progress.remaining===5)return 'Achète 5 aventures à l’unité et débloque automatiquement toutes les autres aventures du ciel principal.';
+ if(progress.remaining===1)return 'Plus qu’une aventure à acheter pour débloquer tout le ciel principal !';
+ return 'Encore '+plural(progress.remaining,'aventure')+' à acheter pour débloquer tout le ciel principal !';
+}
 export function masteryLine(model){
  const m=model.mastery;if(!m)return '';
  if(m.status==='loading')return 'Chargement de ta progression…';
@@ -118,10 +120,14 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
  const offers=el('div',{className:'adventure-offer-cards'});
  offers.append(offerCard('unit','Débloquer cette aventure',model.unitPrice,model.unitCount,model.unitProduct));
  if(model.showSky)offers.append(offerCard('sky','Débloquer tout le vrai ciel',model.skyPrice,model.skyCount,model.skyProduct));
+ offers.dataset.offerCards='';
  root.append(offers);
- root.append(el('p',{className:'adventure-offer-cap'},model.capMessage),status);
+ const purchaseProgress=el('p',{className:'adventure-offer-cap',hidden:true});
+ purchaseProgress.dataset.offerPurchaseProgress='';
+ purchaseProgress.setAttribute('aria-live','polite');
+ root.append(purchaseProgress,status);
  if(onRestorePlay){
-  restoreButton=el('button',{type:'button',className:'adventure-offer-claim'},'Restaurer mes achats');
+  restoreButton=el('button',{type:'button',className:'adventure-offer-claim'},'Vérifier mes achats Google Play');
   restoreButton.dataset.offer='restore-play';
   restoreButton.onclick=async()=>{
    setBusy(true);setStatus('Vérification des achats Google Play…');

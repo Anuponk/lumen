@@ -117,7 +117,7 @@ Revocation expires the entitlement (`expires_at`); it never deletes progress, st
 
 ## Purchases and mastery unlocks (#728)
 
-Adventure 1 stays free. The web catalogue offers each locked Adventure at €1 and « Tout le vrai ciel » at €5. Future skies are sold separately. The server grants all locked Adventures when the account reaches the existing 500-credit threshold. Web EUR purchases contribute their catalogue amounts. Eligible Google Play purchases in France keep their original credit per Adventure regardless of what Google charged. A verified whole-sky purchase grants the corresponding sky directly in any currency.
+Adventure 1 stays free. After the #728 migration, the server grants the rest of the main sky when the account has five distinct, confirmed unit Adventure purchases across Stripe and Google Play. Purchase amounts and currencies do not enter the count. A verified whole-sky purchase grants it directly. The signed-in offer reads the remaining count from `lumen_get_main_sky_purchase_progress` after entitlement hydration and displays it only after a successful read for the active account. The #819 migration depends on #728. Future skies are separate.
 
 Rights come only from the server, in `lumen.entitlements`:
 - `purchase`: converged from the confirmed purchase ledger by `lumen_commands.sync_purchase_entitlements`. A refund or dispute expires the row; progress, stars and badges are never touched. An Adventure already started stays playable (acquired access).

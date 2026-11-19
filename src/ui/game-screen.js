@@ -88,7 +88,7 @@ import {captureSupportCopy} from '../persistence/support-capture.js';
 import {mountSupportPanel,mountSupportDossier,mountSupportLookup} from './support-panel.js';
 import {mountAdventureAccess} from './adventure-access-panel.js';
 import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
-import {adventureOfferModel,mountAdventureOffer,updateAdventureOfferMastery} from './adventure-offer.js';
+import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery} from './adventure-offer.js';
 import {purchaseThanksModel,showPurchaseThanks} from './purchase-thanks.js';
 import {PLAY_CHECKOUT_AVAILABLE,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,toPlayProductId} from '../persistence/play-billing.js';
 import {rememberPlayAppLaunch,isPlayDistributedApp,stripeCheckoutAvailable,startStripeCheckout,stripeSessionStatus,restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage} from '../persistence/stripe-checkout.js';
@@ -745,7 +745,7 @@ get lumenSupabase(){return lumenSupabase},set lumenSupabase(value){if(lumenSupab
 get lumenEntitlements(){return lumenEntitlements},set lumenEntitlements(value){lumenEntitlements=Array.isArray(value)?value:[]},
 get lumenEntitlementsState(){return lumenEntitlementsState},set lumenEntitlementsState(value){lumenEntitlementsState=value;if(refreshAdventureOffer)queueMicrotask(()=>refreshAdventureOffer?.('mastery'))},
 get lumenCapabilities(){return lumenCapabilities},set lumenCapabilities(value){lumenCapabilities=Array.isArray(value)?value:[]},
-get lumenUser(){return lumenUser},set lumenUser(value){if(lumenUser?.id!==value?.id){cloudHydrationGeneration++;canonicalRecovery.cancel();canonicalRecoveryContext=null;canonicalOutboxNotice=null;verifiedOfflineOwnerId=null;if(value===null)clearVerifiedOfflineOwner(localStorage);cloudProfileReady=false;cloudProfileBaseline=null;cloudProfileFailure=null;lumenNickname="";lumenEntitlements=[];lumenEntitlementsState=value?'loading':'idle'}lumenUser=value},
+get lumenUser(){return lumenUser},set lumenUser(value){if(lumenUser?.id!==value?.id){cloudHydrationGeneration++;canonicalRecovery.cancel();canonicalRecoveryContext=null;canonicalOutboxNotice=null;verifiedOfflineOwnerId=null;if(value===null)clearVerifiedOfflineOwner(localStorage);cloudProfileReady=false;cloudProfileBaseline=null;cloudProfileFailure=null;lumenNickname="";lumenEntitlements=[];lumenEntitlementsState=value?'loading':'idle';if(refreshAdventureOffer)queueMicrotask(()=>refreshAdventureOffer?.('mastery'))}lumenUser=value},
 get lumenCloudReady(){return lumenCloudReady},set lumenCloudReady(value){lumenCloudReady=value},
 get lumenNickname(){return lumenNickname},set lumenNickname(value){lumenNickname=value},
 get lumenProgress(){return lumenProgress},set lumenProgress(value){lumenProgress=value},
@@ -4214,14 +4214,19 @@ async function purchaseAdventure(productId,{setStatus,setBusy,waiver}){
  if(result.status==='paid'){
   await loadEntitlements();
   if(lumenUser?.id!==owner||lumenSupabase!==client)return;
-  if(lumenEntitlementsState==='ready'){setStatus('Achat confirmé ✓ Bonne exploration !');skyNavigation.render();thankForPurchase(productId)}
-  else setStatus('Paiement confirmé. Restaure tes achats pour actualiser tes droits.');
+  const expected=productId===SKY_PRODUCT_ID
+   ?CONTENT_PACKS.filter(pack=>pack.skyId==='real-sky'&&pack.access==='locked').map(pack=>pack.id)
+   :[productId];
+  const confirmed=lumenEntitlementsState==='ready'&&expected.every(id=>lumenEntitlements.some(row=>row.entitlement===id));
+  if(confirmed){setStatus('Achat confirmé ✓ Bonne exploration !');skyNavigation.render();thankForPurchase(productId)}
+  else {setStatus('Google Play a confirmé le paiement. Tes droits sont en cours de synchronisation.');void maybeRestorePlayPurchases()}
  }
- else if(result.status==='pending')setStatus('Paiement en attente de validation par Google : l’aventure se débloquera dès sa confirmation.');
+ else if(result.status==='pending'){setStatus('Google Play traite ton paiement. Tes droits seront actualisés après confirmation.');void maybeRestorePlayPurchases()}
  else if(result.status==='cancelled')setStatus('');
  else if(result.reason==='payment_unsupported'){console.info('[Lumen Play billing]',{reason:'payment_unsupported'});setStatus('Le paiement Google Play est indisponible sur cet appareil.');}
  else if(result.status==='owned_elsewhere')setStatus('Cet achat est déjà associé à un autre compte Lumen.');
- else setStatus('Vérification indisponible. Utilise « Restaurer mes achats » pour réessayer sans nouveau paiement.');
+ else if(result.status==='not_paid'){setStatus('Google Play indique que ce paiement a été annulé.');void maybeRestorePlayPurchases()}
+ else {setStatus('La vérification est en cours. Tu peux vérifier tes achats Google Play sans repayer.');void maybeRestorePlayPurchases()}
  setBusy(false);
 }
 // Play recovery is independent of the price loader and never opens Payment Request.
@@ -4253,26 +4258,35 @@ function playRestoreMessage(outcome,{manual=false}={}){
  if(!outcome)return '';
  const {results,unavailable,rightsUnavailable}=outcome;
  const paid=results.some(r=>r.status==='paid');
- if(rightsUnavailable)return 'Google Play a répondu. Tes droits n’ont pas pu être actualisés. Réessaie la restauration.';
+ if(rightsUnavailable)return 'Google Play a répondu. Tes droits sont en cours de synchronisation.';
  if(results.some(r=>r.status==='account_unverified'))return 'Un achat doit être rapproché de ton compte Lumen. Contacte le support avec le numéro de commande Google Play.';
  if(results.some(r=>r.status==='owned_elsewhere'))return 'Un achat Google Play est associé à un autre compte Lumen.';
  if(unavailable||results.some(r=>r.status==='error'||(r.status==='paid'&&!r.acknowledged))){
   if(!manual&&!isPlayDistributedApp(window)&&!playPriceLoader.snapshot().playApp)return '';
-  return paid?'Tes droits ont été actualisés. Réessaie la restauration pour terminer la vérification Google Play.'
-   :'Vérification Google Play indisponible. Réessaie avec « Restaurer mes achats », sans nouveau paiement.';
+  return paid?'Tes droits sont à jour. L’accusé de réception Google Play sera repris automatiquement.'
+   :'Vérification Google Play indisponible. Tu peux réessayer sans nouveau paiement.';
  }
  if(paid)return 'Achats Google Play vérifiés. Tes droits sont à jour.';
- if(results.some(r=>r.status==='pending'))return 'Google Play traite encore un paiement. Tu peux réessayer la restauration.';
+ if(results.some(r=>r.status==='pending'))return 'Google Play traite encore un paiement. Nous vérifierons à nouveau son état.';
  if(results.some(r=>r.status==='not_paid'))return 'Google Play ne confirme aucun droit pour cet achat.';
  return manual?'Aucun achat Google Play à restaurer.':'';
 }
-async function maybeRestorePlayPurchases(){
+let playRecoveryTimer=null;
+async function maybeRestorePlayPurchases(attempt=0){
+ clearTimeout(playRecoveryTimer);
  if(!lumenUser||qaActive||!cloudProfileReady)return;
  const owner=lumenUser.id,client=lumenSupabase;
  const outcome=await restorePlayForCurrentAccount();
  if(lumenUser?.id!==owner||lumenSupabase!==client)return;
  const message=playRestoreMessage(outcome);
  if(message)showPurchaseStatus(message,owner);
+ if(attempt<3&&outcome&&(outcome.rightsUnavailable||
+   outcome.results.some(result=>result.status==='pending'||result.status==='error'))){
+  clearTimeout(playRecoveryTimer);
+  playRecoveryTimer=setTimeout(()=>{
+   if(lumenUser?.id===owner&&lumenSupabase===client)void maybeRestorePlayPurchases(attempt+1);
+  },15000*(attempt+1));
+ }
 }
 // #723: once per launch, silently move old account-switch copies (and identical
 // duplicates) to the verified IndexedDB archive, with the read-back rule of
@@ -4356,6 +4370,9 @@ async function handleStripeReturn(){
 // After a verified hydration: server-checked mastery unlocks (#728), automatic purchase
 // restore (Play #729, Stripe #730) and the Stripe return.
 function afterVerifiedHydration(){refreshAdventureOffer?.('mastery');void maybeClaimMasteryUnlocks();void maybeRestorePlayPurchases();void refreshPaymentChannel().finally(()=>handleStripeReturn()).finally(()=>void maybeRestoreStripePurchases())}
+window.addEventListener('online',()=>{
+ if(isPlayDistributedApp(window)||playPriceLoader.snapshot().playApp)void maybeRestorePlayPurchases();
+});
 // #731: offer shown on a locked Adventure. Purchases stay disabled until a payment
 // provider is connected (#729/#730); the free path claims a server-verified mastery unlock.
 function renderAdventureOffer(container,pack,{close}={}){
@@ -4397,11 +4414,34 @@ function renderAdventureOffer(container,pack,{close}={}){
   }:null,
   onBuy:purchaseAdventure,onClaim,onContinue
  });
+ const progressLine=mounted.querySelector('[data-offer-purchase-progress]');
+ const offerCards=mounted.querySelector('[data-offer-cards]');
+ let progressRequest=0;
+ const refreshPurchaseProgress=async()=>{
+  const request=++progressRequest;
+  const owner=lumenUser?.id,client=lumenSupabase;
+  progressLine.textContent='';progressLine.hidden=true;offerCards.hidden=false;
+  const waiver=mounted.querySelector('[data-offer="waiver"]');
+  if(waiver?.parentElement)waiver.parentElement.hidden=false;
+  if(!owner||!client||qaActive||lumenEntitlementsState!=='ready')return;
+  try{
+   const {data,error}=await client.rpc('lumen_get_main_sky_purchase_progress',{p_expected_user_id:owner});
+   if(error||request!==progressRequest||lumenUser?.id!==owner||lumenSupabase!==client||container.firstElementChild!==mounted)return;
+   const message=purchaseProgressMessage(data);
+   progressLine.textContent=message;progressLine.hidden=!message;
+   if(message&&data.unlocked){
+    offerCards.hidden=true;
+    if(waiver?.parentElement)waiver.parentElement.hidden=true;
+   }
+  }catch{/* The server has not confirmed a count. */}
+ };
+ void refreshPurchaseProgress();
  refreshAdventureOffer=mode=>{
   if(!container.isConnected||container.firstElementChild!==mounted||container.closest('[hidden]'))return;
   if(mode==='mastery'){
    const current=readOffer();
    if(current)updateAdventureOfferMastery(mounted.querySelector('[data-offer-mastery]'),current,{onClaim,onContinue});
+   void refreshPurchaseProgress();
   }else renderAdventureOffer(container,pack,{close});
  };
  return true;

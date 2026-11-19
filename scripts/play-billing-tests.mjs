@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {PLAY_CHECKOUT_AVAILABLE,createPlayPriceLoader,getPlayBilling,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices,toPlayProductId,PLAY_BILLING_METHOD} from '../src/persistence/play-billing.js';
 import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
-import {adventureOfferModel,mountAdventureOffer,updateAdventureOfferMastery} from '../src/ui/adventure-offer.js';
+import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery} from '../src/ui/adventure-offer.js';
 import {SKY_PRODUCT_ID} from '../src/campaign/store-catalogue.js';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -62,7 +62,7 @@ let model=adventureOfferModel({...base,prices});
 assert.equal(model.showSky,true);assert.match(model.unitPrice,/1,00\s€/);assert.equal(model.unitProduct,pack.id);assert.equal(model.skyProduct,SKY_PRODUCT_ID);
 model=adventureOfferModel({...base,boughtSingle:true,pricesRequired:true,prices});
 assert.equal(model.showSky,false,'After a single purchase the existing eligibility rule still hides the whole-sky offer');
-assert.doesNotMatch(model.capMessage,/5 €|5,00\s€/,'A Play offer must not advertise a fixed local or catalogue ceiling');
+assert.equal(purchaseProgressMessage(null),'','Neither provider price supplies a purchase count');
 
 // Wiring: the Play offer exists only with Play Billing, outside QA; verification goes to the Edge Function.
 const screen=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
@@ -125,9 +125,13 @@ completeDetails(rows);await detection;
 // Exercise the production screen wiring + real offer DOM with a delayed provider.
 class Node{
  constructor(tag){this.tagName=tag;this.children=[];this.dataset={};this.attributes={};this.textContent='';this.isConnected=true}
- append(...nodes){this.children.push(...nodes)} replaceChildren(...nodes){this.children=nodes}
+ append(...nodes){for(const node of nodes)if(node instanceof Node)node.parentElement=this;this.children.push(...nodes)}
+ replaceChildren(...nodes){this.children=[];this.append(...nodes)}
  get firstElementChild(){return this.children[0]} setAttribute(k,v){this.attributes[k]=v} focus(){} closest(){return null}
- querySelector(selector){const key=selector==='[data-offer-mastery]'?'offerMastery':null;return this.all().find(node=>key&&Object.hasOwn(node.dataset,key))}
+ querySelector(selector){
+  const keys={'[data-offer-mastery]':'offerMastery','[data-offer-purchase-progress]':'offerPurchaseProgress','[data-offer-cards]':'offerCards'};
+  return this.all().find(node=>selector==='[data-offer="waiver"]'?node.dataset.offer==='waiver':Object.hasOwn(node.dataset,keys[selector]));
+ }
  all(){return this.children.flatMap(c=>c instanceof Node?[c,...c.all()]:[])}
 }
 globalThis.document={createElement:tag=>new Node(tag),createTextNode:text=>({text})};
@@ -135,9 +139,10 @@ let resolveDetails,failDetails=true,verifications=0;
 const delayedWin={...win,document:{referrer:'android-app://com.nopuna.lumen'},getDigitalGoodsService:async()=>({getDetails:()=>new Promise((resolve,reject)=>{resolveDetails=()=>failDetails?reject(Error('offline')):resolve(rows)})})};
 const host=new Node('div'),savedProgress={solved:{0:1}},saved=structuredClone(savedProgress);
 const context=vm.createContext({PLAY_CHECKOUT_AVAILABLE:true,window:delayedWin,console,createPlayPriceLoader,isPlayDistributedApp,CONTENT_PACKS,SKY_PRODUCT_ID,
- adventureOfferModel,mountAdventureOffer,updateAdventureOfferMastery,canonicalQuestList,contentMapModel:()=>({skies:[{packs}]}),adventureAccessEntitlements:()=>[],adventureEntitlementsState:()=> 'ready',
+ adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery,canonicalQuestList,contentMapModel:()=>({skies:[{packs}]}),adventureAccessEntitlements:()=>[],adventureEntitlementsState:()=> 'ready',
  attemptEngine:{snapshot:()=>({})},lumenProgress:savedProgress,lumenUser:{id:'synthetic'},lumenEntitlements:[],qaActive:false,mapCatalogueOverride:null,refreshAdventureOffer:null,authSessionPending:false,cloudProfileReady:true,cloudProfileFailure:null,lumenEntitlementsState:'ready',navigator:{onLine:true},
  localStorage:{getItem:key=>key==='lumenCloudOwnerId'?'synthetic':null},
+ lumenSupabase:null,
  stripeAvailable:()=>false,purchaseAdventure:()=>{verifications++},host,pack});
 const normalized=screen.replace(/\r\n/g,'\n');
 vm.runInContext(normalized.slice(normalized.indexOf('let playBilling=null'),normalized.indexOf('async function playVerify')),context);
@@ -178,6 +183,25 @@ assert(find('mastery-continue'));
 vm.runInContext("lumenUser=null;cloudProfileReady=false;refreshAdventureOffer('mastery')",context);
 assert.match(masteryStatus(),/indisponible/,'The previous profile cannot supply counters after logout');
 assert.equal(find('mastery-continue'),undefined);
+// Read the server count for the owner, even when a previous offer is still on screen.
+let progressReply;
+context.lumenUser={id:'synthetic'};
+context.lumenSupabase={rpc:(name,args)=>{
+ assert.equal(name,'lumen_get_main_sky_purchase_progress');
+ assert.equal(args.p_expected_user_id,'synthetic');
+ return new Promise(resolve=>{progressReply=resolve});
+}};
+vm.runInContext('renderAdventureOffer(host,pack)',context);
+const count=()=>host.firstElementChild.querySelector('[data-offer-purchase-progress]');
+assert.equal(count().hidden,true);
+progressReply({data:{remaining:1,unlocked:false}});
+await new Promise(resolve=>setImmediate(resolve));
+assert.match(count().textContent,/Plus qu’une aventure/);
+vm.runInContext("refreshAdventureOffer('mastery')",context);
+context.lumenUser={id:'other'};
+progressReply({data:{remaining:0,unlocked:true}});
+await new Promise(resolve=>setImmediate(resolve));
+assert.equal(count().hidden,true,'The prior owner cannot publish a later reply');
 // Partial prices remain disabled even after a sibling purchase's busy callback.
 let controls;
 mountAdventureOffer(host,adventureOfferModel({...base,pricesRequired:true,priceStatus:'partial',prices:{[SKY_PRODUCT_ID]:'5,00 €'}}),{onBuy:(_id,ctx)=>{controls=ctx}});
@@ -204,7 +228,10 @@ const recoveryWin={
  }})
 };
 const restoreHost=new Node('div');
+let scheduledRecovery=null;
 const recovery=vm.createContext({...context,PLAY_CHECKOUT_AVAILABLE,window:recoveryWin,
+ setTimeout:(callback,delay)=>{scheduledRecovery={callback,delay};return scheduledRecovery},
+ clearTimeout:()=>{scheduledRecovery=null},
  getPlayPurchaseService,restorePlayPurchases,verifyPlayPurchase:args=>verifyPlayPurchase({...args,fetchImpl:async(_url,init)=>{
   verifyTokens.push([init.headers.authorization,JSON.parse(init.body).purchaseToken]);
   return new Response(JSON.stringify(purchaseState.body),{status:purchaseState.status});
@@ -226,7 +253,7 @@ vm.runInContext('renderAdventureOffer(restoreHost,pack)',recovery);
 const restore=()=>restoreHost.all().find(n=>n.dataset.offer==='restore-play');
 const status=()=>restoreHost.all().find(n=>Object.hasOwn(n.dataset,'offerStatus')).textContent;
 assert.equal(restoreHost.all().find(n=>n.dataset.offer==='unit').disabled,true);
-assert.equal(restore().textContent,'Restaurer mes achats');
+assert.equal(restore().textContent,'Vérifier mes achats Google Play');
 const firstRestore=restore().onclick();
 assert.match(status(),/Vérification des achats/);
 await firstRestore;
@@ -248,11 +275,25 @@ await restore().onclick();
 assert.equal(authChecks,2,'A token read before switching accounts is never verified for the new account');
 assert.equal(reads,1);
 
+changeDuringList=false;
+recovery.lumenUser={id:'owner'};
+recovery.cloudProfileReady=true;
+purchaseState.status=202;
+purchaseState.body={status:'pending'};
+await vm.runInContext('maybeRestorePlayPurchases()',recovery);
+assert.equal(scheduledRecovery.delay,15000);
+const listingsBeforeRetry=listings;
+recovery.lumenUser={id:'other'};
+scheduledRecovery.callback();
+assert.equal(listings,listingsBeforeRetry,'A pending retry is scoped to the original account');
+purchaseState.status=200;
+purchaseState.body={status:'paid',acknowledged:true,adventures:['real-adventure-02']};
+
 const checkoutStatuses=[];
 const checkoutCtx={setBusy:()=>{},setStatus:message=>checkoutStatuses.push(message),waiver:{accepted:true}};
 let thanks=0;
 Object.assign(recovery,{
- PLAY_CHECKOUT_AVAILABLE:true,lumenUser:{id:'owner'},checkoutCtx,toPlayProductId,
+ PLAY_CHECKOUT_AVAILABLE:true,lumenUser:{id:'owner'},cloudProfileReady:false,checkoutCtx,toPlayProductId,
  thankForPurchase:()=>thanks++,
  buyWithPlay:async({verify})=>verify('real_adventure_02','existing-purchase'),
  loadEntitlements:async()=>{recovery.lumenEntitlementsState='error'}
@@ -263,6 +304,11 @@ await checkout();
 assert(checkoutStatuses.some(message=>message.startsWith('Vérification de l’achat')));
 assert(!checkoutStatuses.some(message=>message.startsWith('Achat confirmé')));
 assert.equal(thanks,0);
+recovery.loadEntitlements=async()=>{recovery.lumenEntitlementsState='ready';recovery.lumenEntitlements=[]};
+await checkout();
+assert(!checkoutStatuses.some(message=>message.startsWith('Achat confirmé')),'A successful empty read cannot confirm the requested right');
+assert.equal(thanks,0);
+recovery.lumenEntitlements=[{entitlement:'real-adventure-02',source:'purchase'}];
 recovery.loadEntitlements=async()=>{recovery.lumenEntitlementsState='ready'};
 await checkout();
 assert.match(checkoutStatuses.at(-1),/^Achat confirmé/);
