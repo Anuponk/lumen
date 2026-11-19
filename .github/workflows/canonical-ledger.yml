@@ -386,3 +386,15 @@ jobs:
             -f supabase/migrations/20261118212000_play_regional_receipts_729.sql \
             -f supabase/migrations/20261118212000_play_regional_receipts_729.sql \
             -f scripts/fixtures/play-regional-receipts.sql
+      - name: Verify durable Play acknowledgement and five distinct paid Adventures
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261119092413_play_acknowledgement_833.sql \
+            -f supabase/migrations/20261119092413_play_acknowledgement_833.sql \
+            -f scripts/fixtures/play-acknowledgement.sql \
+            -f supabase/migrations/20261119092419_distinct_adventures_728.sql \
+            -f supabase/migrations/20261119092419_distinct_adventures_728.sql \
+            -f scripts/fixtures/distinct-adventures.sql
