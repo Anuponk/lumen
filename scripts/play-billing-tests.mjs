@@ -256,7 +256,8 @@ console.log('play-billing-tests P1: nine SKUs, validation, delayed DOM refresh, 
 assert.equal(PLAY_CHECKOUT_AVAILABLE,false,'Production acceptance is required before opening sales');
 const purchaseState={status:503,body:{error:'unavailable'}};
 let listings=0,reads=0,renders=0,playAttempts=0,changeDuringList=false,authChecks=0,paymentChecks=0;
-const verifyTokens=[];
+const verifyTokens=[],restoreNotices=[];
+let storeTokens=['existing-purchase'];
 const authClient={auth:{getSession:async()=>{authChecks++;return {data:{session:{user:{id:'owner'},access_token:'synthetic-jwt'}}}}}};
 const originalProgress={solved:{0:1},stars:7,performances:{0:{badges:['speed']}},shards:50};
 const expectedProgress=structuredClone(originalProgress);
@@ -266,7 +267,7 @@ const recoveryWin={
  getDigitalGoodsService:async()=>({getDetails:async requested=>requested[0]===PLAY_BINDING_PROBE?probeMarker:rows,listPurchases:async()=>{
   listings++;
   if(changeDuringList)recovery.lumenUser={id:'other'};
-  return [{itemId:'real_adventure_02',purchaseToken:'existing-purchase'}];
+  return storeTokens.map(purchaseToken=>({itemId:'real_adventure_02',purchaseToken}));
  }})
 };
 const restoreHost=new Node('div');
@@ -275,10 +276,12 @@ const recovery=vm.createContext({...context,PLAY_CHECKOUT_AVAILABLE,window:recov
  setTimeout:(callback,delay)=>{scheduledRecovery={callback,delay};return scheduledRecovery},
  clearTimeout:()=>{scheduledRecovery=null},
  getPlayPurchaseService,restorePlayPurchases,verifyPlayPurchase:args=>verifyPlayPurchase({...args,fetchImpl:async(_url,init)=>{
-  verifyTokens.push([init.headers.authorization,JSON.parse(init.body).purchaseToken]);
+  const {purchaseToken}=JSON.parse(init.body);
+  verifyTokens.push([init.headers.authorization,purchaseToken]);
+  if(purchaseToken==='another-purchase')return new Response(JSON.stringify({error:'purchase_owned_elsewhere'}),{status:409});
   return new Response(JSON.stringify(purchaseState.body),{status:purchaseState.status});
  }}),buyWithPlay:async()=>{playAttempts++;throw Error('A restoration opened checkout')},
- showPurchaseStatus:()=>{},lumenUser:{id:'owner'},lumenSupabase:authClient,lumenProgress:originalProgress,
+ showPurchaseStatus:message=>restoreNotices.push(message),lumenUser:{id:'owner'},lumenSupabase:authClient,lumenProgress:originalProgress,
  LUMEN_SUPABASE_URL:'https://synthetic.invalid',LUMEN_SUPABASE_KEY:'synthetic',
  loadEntitlements:async()=>{
   reads++;
@@ -335,6 +338,29 @@ scheduledRecovery.callback();
 assert.equal(listings,listingsBeforeRetry,'A pending retry is scoped to the original account');
 purchaseState.status=200;
 purchaseState.body={status:'paid',acknowledged:true,adventures:['real-adventure-02']};
+
+recovery.lumenUser={id:'owner'};
+const readsBeforeUnmatched=reads;
+for(const error of ['purchase_account_unverified','purchase_owned_elsewhere']){
+ purchaseState.status=409;
+ purchaseState.body={error};
+ restoreNotices.length=0;
+ await vm.runInContext('maybeRestorePlayPurchases()',recovery);
+ assert.deepEqual(restoreNotices,[],'Automatic recovery must not suggest that a store purchase belongs to this Lumen account');
+ await restore().onclick();
+ assert.match(status(),/Aucun achat Google Play/);
+ assert.deepEqual(restoreNotices,[],'A manual result stays inside the offer');
+}
+assert.equal(reads,readsBeforeUnmatched,'Unmatched purchases never read back a newly granted right');
+assert.equal(scheduledRecovery,null,'Unmatched purchases do not schedule a retry');
+assert.deepEqual(originalProgress,expectedProgress);
+storeTokens.push('another-purchase');
+purchaseState.status=200;
+purchaseState.body={status:'paid',acknowledged:true,adventures:['real-adventure-02']};
+await restore().onclick();
+assert.match(status(),/droits sont .* jour/,'A separate purchase must not hide a verified right for the current account');
+assert.equal(reads,readsBeforeUnmatched+1);
+storeTokens.pop();
 
 const checkoutStatuses=[];
 const checkoutCtx={setBusy:()=>{},setStatus:message=>checkoutStatuses.push(message),waiver:{accepted:true}};

@@ -2296,7 +2296,9 @@ the mounted Play offer with the release switch off and on. It covers native
 marker validation, absent/rejected marker, Payment Request readiness,
 validated prices, restoration without Payment Request, unchecked consent
 before an eligible purchase, and confirmation only after entitlement
-read-back. The Play Console, authenticated RTDN delivery, both cron HTTP
+read-back. Automatic Play restoration stays silent for unverified purchases
+and purchases owned by another account. A manual check shows an account-specific
+result in the offer, and a separate unverified purchase cannot hide a confirmed right. The Play Console, authenticated RTDN delivery, both cron HTTP
 responses and the real installed wrapper remain in the
 [Android acceptance checklist](../android/PLAY.md#recette-du-wrapper-101-2-et-réactivation-833-pr-837).
 
