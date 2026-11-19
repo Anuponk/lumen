@@ -59,6 +59,22 @@ try{
   assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().state[0].slice(0,4)'),[0,2,0,0]);
   // Let Chrome finish the synthesized swipe before beginning a new gesture.
   await new Promise(resolve=>setTimeout(resolve,250));
+  await evaluate(`(()=>{
+   const events=[];
+   const record=event=>{
+    const cell=event.target.closest('[data-row][data-col]');
+    events.push({type:event.type,tag:event.target.tagName,
+     cell:cell?[cell.dataset.row,cell.dataset.col]:null,
+     trusted:event.isTrusted,prevented:event.defaultPrevented});
+   };
+   const types=['pointerdown','pointerup','pointercancel','touchstart','touchend','touchcancel','click'];
+   for(const type of types)document.addEventListener(type,record,true);
+   window.finishTouch805Trace=()=>{
+    for(const type of types)document.removeEventListener(type,record,true);
+    delete window.finishTouch805Trace;
+    return {events,visibility:document.visibilityState,browser:navigator.userAgent};
+   };
+  })()`);
   await tap('#board [data-row="0"][data-col="1"]');
   const guardian=await evaluate(`new Promise(resolve=>{
    const deadline=performance.now()+1000;
@@ -69,7 +85,8 @@ try{
    }
    checkTap();
   })`,true);
-  assert.equal(guardian,0,'Chrome delivers the synthesized click after the touch ends');
+  const touchTrace=await evaluate('window.finishTouch805Trace()');
+  assert.equal(guardian,0,'Chrome delivers the synthesized click after the touch ends: '+JSON.stringify(touchTrace));
   await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();s.state[0].splice(0,4,1,2,0,1);lumenDiagnostics.setBoard(s.state)})()`);
   await sweep();
   await evaluate("document.getElementById('undo').click()");
