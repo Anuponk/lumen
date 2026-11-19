@@ -2,7 +2,7 @@
 begin;
 
 create table if not exists lumen_commands.play_acknowledgements (
-  purchase_id bigint primary key references lumen_commands.purchases(id) on delete cascade,
+  purchase_id bigint primary key,
   purchase_token text check (char_length(purchase_token) between 1 and 4096),
   created_at timestamptz not null default clock_timestamp(),
   retry_at timestamptz not null default statement_timestamp(),
@@ -87,6 +87,10 @@ $$;
 create or replace function lumen_commands.clear_play_acknowledgement_token()
 returns trigger language plpgsql security definer set search_path='' as $$
 begin
+  if tg_op='DELETE' then
+    delete from lumen_commands.play_acknowledgements where purchase_id=old.id;
+    return old;
+  end if;
   update lumen_commands.play_acknowledgements set purchase_token=null where purchase_id=new.id;
   return new;
 end $$;
@@ -95,6 +99,9 @@ drop trigger if exists clear_play_acknowledgement_token on lumen_commands.purcha
 create trigger clear_play_acknowledgement_token after update of status on lumen_commands.purchases
 for each row when (new.provider='play' and new.status <> 'paid' and old.status <> new.status)
 execute function lumen_commands.clear_play_acknowledgement_token();
+drop trigger if exists delete_play_acknowledgement on lumen_commands.purchases;
+create trigger delete_play_acknowledgement after delete on lumen_commands.purchases
+for each row when (old.provider='play') execute function lumen_commands.clear_play_acknowledgement_token();
 
 revoke all on function
   public.lumen_record_play_purchase_with_ack(text,uuid,text,numeric,text,boolean,boolean,timestamptz,text,boolean),
@@ -106,7 +113,7 @@ grant execute on function
   public.lumen_claim_play_acknowledgements(bigint), public.lumen_complete_play_acknowledgement(bigint,integer),
   public.lumen_prune_play_acknowledgements()
   to service_role;
--- The purchase is the erasure root. The dependent queue is removed by its FK;
+-- The purchase is the erasure root. Its delete trigger removes the queue row;
 -- never export the transient provider credential as part of player data.
 do $do$begin
   if to_regprocedure('lumen_privacy.policy()') is not null
