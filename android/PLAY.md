@@ -281,8 +281,10 @@ sa propre éligibilité.
    second appareil, puis vérifier le remboursement de test et le retrait du
    droit sans perte de progression. Attendre un seul reçu et aucune attribution
    en double.
-   **Activation réservée au testeur (#833).** Le commutateur public reste
-   fermé. Accorder la capacité `play_test_checkout` au seul compte Lumen de
+   **Activation réservée au testeur (#833).** Les ventes publiques ont été
+   ouvertes le 19/11/2026 (#843). Si `PLAY_CHECKOUT_AVAILABLE` est refermé
+   (incident, nouvelle version), la recette reste possible sans rouvrir les
+   ventes : accorder la capacité `play_test_checkout` au seul compte Lumen de
    recette, de préférence avec une expiration :
 
    ```sql
