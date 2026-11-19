@@ -1404,6 +1404,8 @@ body:has(#erasedAccountNotice:not([hidden])) #scriptedLearn{visibility:hidden!im
 .adventure-offer-mastery{min-width:0;overflow-wrap:anywhere}
 @media(max-height:700px){.adventure-offer{gap:5px}.adventure-offer-card{padding:7px;gap:3px}.adventure-offer-card h3{font-size:13px}.adventure-offer p,.adventure-offer-consent{font-size:12px}.adventure-offer-price{font-size:23px}.adventure-notice:has(.adventure-offer){padding:8px}.adventure-notice:has(.adventure-offer)>div{padding:10px}.adventure-notice:has(.adventure-offer) h3{margin-top:0;margin-bottom:6px}}
 .sky-reveal.quest-review #skyRevealKicker{display:block;font-size:10px;line-height:1.2}
+/* Leave room for one personal line below the compact podium, even while loading. */
+@media(max-height:700px){.sky-reveal.quest-review .victory-performance-ranked .victory-podium-slot,.sky-reveal.quest-review .victory-podium-slot .ranking{min-height:144px}}
 .adventure-offer-claim{background:#2a5a3a;color:#eafff0;border:1px solid #57b47a}
 .adventure-offer-signin{background:transparent;color:#cfe6f3;border:1px solid #35546f}
 .adventure-offer p{margin:0;font-size:13px;line-height:1.4}

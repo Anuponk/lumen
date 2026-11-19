@@ -303,3 +303,11 @@ Vérification post-migration en production (15/11/2026) : aucun joueur n'avait �
 ### #817 — swipe interrompu sur le classement
 
 Reproduit sur main `ecb277f` en Chromium tactile à 360×640. Un swipe commencé sur une marche de chargement laisse le bilan sur la quête 3 si la réponse de classement rend le podium avant le relâchement. La trace montre que `touchend` arrive sur la marche détachée et ne remonte plus à `#skyReveal`. Cette écoute par délégation date de `39968b0` (#790). La CI de #790 et #807 exécutait bien le test de swipe, qui partait du dessin de la constellation en invité. Le test du podium vérifiait son rendu séparément. Le test de requêtes tardives pilotait directement le rendu sans événement tactile. La suite navigateur combine désormais le compte simulé, le podium réel et la réponse pendant le swipe. Le bilan capture le pointeur sur le dialogue après un mouvement horizontal, en laissant au navigateur le défilement vertical et le zoom.
+
+Sur `cde111c`, le geste aboutissait mais l’écran tremblait. Le test Chromium
+image par image (360×640) a mesuré 18 px de translation latérale et une opacité
+minimale de 65 % pour toute la carte, dues à l’animation de navigation de
+`39968b0`. Un rang hors podium agrandissait aussi la zone compacte au chargement
+(réserve de 140 px pour 143 px de contenu). Le bilan change sur place et réserve
+une ligne de rang personnel dès le chargement. Le test vérifie l’ancrage et
+l’opacité à 360×640 et 390×844.
