@@ -2291,6 +2291,15 @@ The #728 SQL fixture remains the grant and persistence contract.
 
 For #823, the handler fixtures cover an absent RPC, lost acknowledgement, unbound and mismatched accounts, a privately reconciled legacy order, pending and cancelled purchases, and verified refund replay. The client fixture exercises the real restore action with a synthetic Play list on a second device, an unavailable verifier then a successful retry, immediate entitlement read-back, account handoff, and unchanged progress, stars, badges and currency. The Play restore fixture has no Payment Request API. The PostgreSQL ledger fixtures cover service-only grants, duplicate and refund replay, and exact regional settlement. See the [Android recovery checklist](../android/PLAY.md#récupération-et-déploiement-google-play-823) for live acceptance.
 
+The #833 wrapper 1.0.1 (2) regression in `play-billing-tests.mjs` exercises
+the mounted Play offer with the release switch off and on. It covers native
+marker validation, absent/rejected marker, Payment Request readiness,
+validated prices, restoration without Payment Request, unchecked consent
+before an eligible purchase, and confirmation only after entitlement
+read-back. The Play Console, authenticated RTDN delivery, both cron HTTP
+responses and the real installed wrapper remain in the
+[Android acceptance checklist](../android/PLAY.md#recette-du-wrapper-101-2-et-réactivation-833-pr-837).
+
 For #833, the same handler mocks verify scheduling before acknowledgement and
 retry without a live client. The canonical ledger gate replays both migrations
 and verifies retry leases, account erasure, mixed-provider distinct Adventure

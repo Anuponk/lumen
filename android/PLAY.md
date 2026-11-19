@@ -239,6 +239,56 @@ migration et organiser le traitement des tâches restantes avant de réactiver
 le parcours. Le polling couvre les remboursements connus du registre et
 sert de filet de sécurité pour RTDN.
 
+### Recette du wrapper 1.0.1 (2) et réactivation (#833, PR #837)
+
+Le code 2 inclut le module natif #837. Le site reconnaît la TWA via le
+referrer Android, son marqueur de session ou le marqueur natif, puis accepte
+aussi un service Digital Goods résolu comme preuve de contexte Play. La carte
+ne bascule jamais sur Stripe dans ce contexte. Sur Chrome Android hors TWA,
+la présence de `getDigitalGoodsService` sans service résolu laisse Stripe suivre
+sa propre éligibilité.
+
+1. Depuis la piste interne, ouvrir Lumen 1.0.1 (2) sur un vrai appareil, relever
+   la version Android, le navigateur hôte et le SHA web. Sans payer, ouvrir une
+   aventure et vérifier la restauration, puis lire `checkout_readiness` dans
+   la console Chrome distante (filtre `[Lumen Play billing]`). Pendant la
+   suspension, attendre `salesEnabled: false`, un service résolu et une
+   réponse exacte à `lumen_internal_bound_checkout_v1`. Vérifier les prix de
+   chaque référence utilisée ainsi que `paymentSupported: true`. Avec zéro
+   prix valide, le contrôle Payment Request pour un produit ne s'exécute pas.
+2. Avant d'ouvrir les ventes publiques, vérifier l'Edge déployée, les RPC et la
+   configuration Google décrites dans ce runbook. Contrôler les réponses
+   HTTP des deux modes cron et la livraison authentifiée RTDN (test Pub/Sub).
+   Une exécution réussie par pg_cron peut seulement confirmer l'envoi du POST.
+3. En environnement de recette Play isolé, avec l'activation réservée à cet
+   environnement, utiliser le wrapper installé et les moyens de test de
+   licence Google. Avant tout paiement, le consentement est visible et
+   décoché. Sans consentement, aucune feuille ne s'ouvre. Avec consentement,
+   vérifier le produit et le prix dans la feuille, puis annuler. Pour valider
+   la chaîne serveur par la suite, utiliser uniquement le moyen de test Google
+   sans débit. Contrôler la vérification du token auprès de Google, la liaison
+   au compte signé, le refus sur un autre compte, l'accusé de réception et le
+   droit relu par le client. Rejouer la notification et la restauration sur un
+   second appareil, puis vérifier le remboursement de test et le retrait du
+   droit sans perte de progression. Attendre un seul reçu et aucune attribution
+   en double.
+4. Une fois ces contrôles validés, ouvrir les ventes dans
+   `src/persistence/play-billing.js` via `PLAY_CHECKOUT_AVAILABLE` et publier
+   le Web. L'AAB 1.0.1 (2) suffit si l'installation renvoie le marqueur attendu
+   et accepte Payment Request. Si le binaire installé ne contient pas le pont
+   natif #837, il faut installer une version qui le contient ou publier un AAB
+   corrigé avec un nouveau code. Une sonde en échec ou un prix manquant appelle
+   d'abord un diagnostic du service, de Chrome et du catalogue Play.
+
+Pendant la suspension, « Vérifier mes achats Google Play » reste disponible
+pour les joueurs connectés. Le message de suspension désigne le commutateur
+de vente. `binding_probe_unsupported` désigne un marqueur absent ou inattendu,
+`binding_probe_failed` un rejet ou délai dépassé de la requête de sonde,
+`payment_unsupported` l'impossibilité de confirmer Payment Request et
+`account_binding_unavailable` une préparation de compte refusée ou indisponible.
+Les états de diagnostic sont éphémères et ne contiennent ni compte, ni jeton,
+ni détail brut du fournisseur.
+
 ### Notifications Google Play (RTDN)
 
 Appliquer `20261119095750_play_account_bindings_729.sql` après les migrations

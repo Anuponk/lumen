@@ -2,18 +2,13 @@
 // Digital Goods API and Payment Request. The purchase token is verified and recorded
 // by the server (Edge Function lumen-play-purchase → #728); this module never grants.
 // Outside the Play app (browser, iPhone) getDigitalGoodsService is absent: no Play offer.
-// Release switch. Compatible native builds must also answer the binding probe.
+// Release switch. See android/PLAY.md for the server and Android acceptance checks.
 export const PLAY_CHECKOUT_AVAILABLE=false;
 export const PLAY_BILLING_METHOD='https://play.google.com/billing';
 export const PLAY_BINDING_PROBE='lumen_internal_bound_checkout_v1';
 // Play Console disallows hyphens in product IDs. Internal pack IDs remain unchanged.
 export function toPlayProductId(id){return /^real-adventure-0[2-9]$/.test(id)||id==='real-sky-all'?id.replaceAll('-','_'):id}
 
-
-export async function getPlayBilling(win=globalThis,onDiagnostic=()=>{}){
- if(typeof win?.PaymentRequest!=='function'){onDiagnostic({reason:'payment_unsupported'});return null}
- return getPlayPurchaseService(win,onDiagnostic);
-}
 
 export async function getPlayPurchaseService(win=globalThis,onDiagnostic=()=>{}){
  if(typeof win?.getDigitalGoodsService!=='function'){onDiagnostic({reason:'service_unavailable'});return null}
@@ -96,8 +91,8 @@ export async function playPrices(service,ids,{onDiagnostic=()=>{},locale='fr-FR'
 
 // Ephemeral price lifecycle: no tokens, user data, purchases or entitlements.
 // Coalesce retries, time out stalled providers, and notify an already-open offer.
-export function createPlayPriceLoader({win=globalThis,ids,playApp=false,checkPayment=true,probeBinding=false,onChange=()=>{},onDiagnostic=()=>{},timeoutMs=12000}={}){
- let state={status:'idle',playApp,service:null,prices:{},errors:[],supportsBinding:false},pending=null;
+export function createPlayPriceLoader({win=globalThis,ids,playApp=false,probeBinding=false,onChange=()=>{},onDiagnostic=()=>{},timeoutMs=12000}={}){
+ let state={status:'idle',playApp,service:null,prices:{},errors:[],supportsBinding:false,paymentSupported:false},pending=null;
  const publish=next=>{state={...state,...next};onChange(state)};
  const deadline=promise=>new Promise((resolve,reject)=>{
   const timer=setTimeout(()=>reject(Error('timeout')),timeoutMs);
@@ -105,33 +100,37 @@ export function createPlayPriceLoader({win=globalThis,ids,playApp=false,checkPay
  });
  function load(){
   if(pending)return pending;
-  publish({status:'loading',prices:{},errors:[],supportsBinding:false});
+  publish({status:'loading',prices:{},errors:[],supportsBinding:false,paymentSupported:false});
   pending=(async()=>{
    const errors=[],diagnostic=event=>errors.push(event);
-   let service=null,prices={},stage='service_unavailable',supportsBinding=false;
-   try{
-    service=await deadline((checkPayment?getPlayBilling:getPlayPurchaseService)(win,diagnostic));
-    if(service){
-     publish({playApp:true});
-     stage='details_request_failed';
+   let service=null,prices={},supportsBinding=false,paymentSupported=false;
+   try{service=await deadline(getPlayPurchaseService(win,diagnostic))}
+   catch{diagnostic({reason:'service_unavailable'})}
+   if(service){
+    publish({playApp:true});
+    try{
      const labels=await deadline(playPrices(service,ids.map(toPlayProductId),{onDiagnostic:diagnostic,locale:win.navigator?.language||'fr-FR'}));
      prices=Object.fromEntries(ids.filter(id=>labels[toPlayProductId(id)]).map(id=>[id,labels[toPlayProductId(id)]]));
-     if(checkPayment&&Object.keys(prices).length){
-      stage='payment_unsupported';
-      const request=new win.PaymentRequest([{supportedMethods:PLAY_BILLING_METHOD,data:{sku:toPlayProductId(Object.keys(prices)[0])}}],{total:{label:'Lumen',amount:{currency:'EUR',value:'0'}}});
-      if(typeof request.canMakePayment==='function'&&!await deadline(request.canMakePayment()))throw Error('unsupported');
-     }
-     if(probeBinding&&typeof win.PaymentRequest==='function'){
-      try{
-       const marker=await deadline(service.getDetails([PLAY_BINDING_PROBE]));
-       supportsBinding=Array.isArray(marker)&&marker.length===1
-        &&marker[0]?.itemId===PLAY_BINDING_PROBE&&marker[0].title===PLAY_BINDING_PROBE;
-      }catch{/* Older wrappers may reject the probe. Real prices remain usable for display. */}
-     }
+    }catch{diagnostic({reason:'details_request_failed'})}
+    if(probeBinding){
+     try{
+      const marker=await deadline(service.getDetails([PLAY_BINDING_PROBE]));
+      supportsBinding=Array.isArray(marker)&&marker.length===1
+       &&marker[0]?.itemId===PLAY_BINDING_PROBE&&marker[0].title===PLAY_BINDING_PROBE;
+      if(!supportsBinding)diagnostic({reason:'binding_probe_unsupported'});
+     }catch{diagnostic({reason:'binding_probe_failed'})}
     }
-   }catch(_){diagnostic({reason:stage});if(stage==='payment_unsupported')service=null}
+    if(typeof win.PaymentRequest!=='function')diagnostic({reason:'payment_unsupported'});
+    else if(Object.keys(prices).length){
+     try{
+      const request=new win.PaymentRequest([{supportedMethods:PLAY_BILLING_METHOD,data:{sku:toPlayProductId(Object.keys(prices)[0])}}],{total:{label:'Lumen',amount:{currency:'EUR',value:'0'}}});
+      paymentSupported=typeof request.canMakePayment==='function'&&await deadline(request.canMakePayment())===true;
+     }catch{/* The provider could not establish payment readiness. */}
+     if(!paymentSupported)diagnostic({reason:'payment_unsupported'});
+    }
+   }
    for(const event of errors)onDiagnostic(event);
-   publish({status:Object.keys(prices).length&&service?(errors.length?'partial':'ready'):'error',service,prices,errors:[...errors],supportsBinding});
+   publish({status:Object.keys(prices).length&&service?(errors.length?'partial':'ready'):'error',service,prices,errors:[...errors],supportsBinding,paymentSupported});
    return service;
   })().finally(()=>{pending=null});
   return pending;
