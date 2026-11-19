@@ -4299,8 +4299,6 @@ function playRestoreMessage(outcome,{manual=false}={}){
  const {results,unavailable,rightsUnavailable}=outcome;
  const paid=results.some(r=>r.status==='paid');
  if(rightsUnavailable)return 'Google Play a répondu. Tes droits sont en cours de synchronisation.';
- if(results.some(r=>r.status==='account_unverified'))return 'Un achat doit être rapproché de ton compte Lumen. Contacte le support avec le numéro de commande Google Play.';
- if(results.some(r=>r.status==='owned_elsewhere'))return 'Un achat Google Play est associé à un autre compte Lumen.';
  if(unavailable||results.some(r=>r.status==='error'||(r.status==='paid'&&!r.acknowledged))){
   if(!manual&&!isPlayDistributedApp(window)&&!playPriceLoader.snapshot().playApp)return '';
   return paid?'Tes droits sont à jour. L’accusé de réception Google Play sera repris automatiquement.'
@@ -4308,6 +4306,9 @@ function playRestoreMessage(outcome,{manual=false}={}){
  }
  if(paid)return 'Achats Google Play vérifiés. Tes droits sont à jour.';
  if(results.some(r=>r.status==='pending'))return 'Google Play traite encore un paiement. Nous vérifierons à nouveau son état.';
+ if(manual&&results.some(r=>r.status==='account_unverified'||r.status==='owned_elsewhere')){
+  return 'Aucun achat Google Play n’a pu être associé à ce compte Lumen. Si tu attends un achat, vérifie le compte utilisé dans le Play Store.';
+ }
  if(results.some(r=>r.status==='not_paid'))return 'Google Play ne confirme aucun droit pour cet achat.';
  return manual?'Aucun achat Google Play à restaurer.':'';
 }
@@ -4448,9 +4449,10 @@ function renderAdventureOffer(container,pack,{close}={}){
   playCheckoutPaused:offer.pricesRequired&&!PLAY_CHECKOUT_AVAILABLE,
   onRestorePlay:offer.pricesRequired&&offer.signedIn?async()=>{
    const owner=lumenUser?.id;
-   const message=playRestoreMessage(await restorePlayForCurrentAccount(),{manual:true});
-   if(message)showPurchaseStatus(message,owner);
-   return message;
+   const outcome=await restorePlayForCurrentAccount();
+   const notice=playRestoreMessage(outcome);
+   if(notice)showPurchaseStatus(notice,owner);
+   return playRestoreMessage(outcome,{manual:true});
   }:null,
   onBuy:purchaseAdventure,onClaim,onContinue
  });
