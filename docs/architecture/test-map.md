@@ -510,6 +510,12 @@ cover timing, strict records, restoration, read-back, receipt idempotence and
 revision minima. ranking-browser-tests.mjs covers explicit pointer/keyboard entry,
 seven viewports and reduced motion. The full gate includes the new suites.
 
+Android closed-test delivery: the Android packaging workflow runs
+`android/tools/test-play-closed-release.py` against a fake Play service and
+`android/tools/test-aab-signing.sh` against a compiled AAB with a disposable
+key. Real delivery requires the Play track and credential setup in
+[Android signing](../../android/SIGNING.md#générer-et-envoyer-un-aab-en-test-fermé-depuis-github).
+
 Payments / #729 #730 #823: play-purchase-handler-tests.mjs and play-billing-tests.mjs
 (Play verification, account binding, refunds, restore without Payment Request, #833 readiness probe, duplicate deliveries, licence-test capability and foreground recovery); stripe-handler-tests.mjs (real Stripe Edge handlers, synthetic Stripe API and
 signatures), stripe-checkout-client-tests.mjs (web-only availability, return, no false
