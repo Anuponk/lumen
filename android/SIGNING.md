@@ -116,3 +116,61 @@ cette voie est choisie, distincte des pistes de test Play.
 Références : [Play App Signing](https://developer.android.com/studio/publish/app-signing),
 [DAL](https://developers.google.com/digital-asset-links/v1/getting-started),
 [vérification App Links](https://developer.android.com/training/app-links/verify-android-applinks).
+
+## Générer et envoyer un AAB en test fermé depuis GitHub
+
+Le workflow [Android closed testing](../.github/workflows/android-signed-aab.yml)
+se lance manuellement sur `main`. Une fois lancé, il calcule le prochain
+`versionCode` à partir des versions visibles dans Play, compile le wrapper,
+vérifie le manifeste, signe l’AAB et l’envoie sur la piste fermée configurée.
+L’artefact signé et son SHA-256 sont disponibles dans GitHub Actions pour 14 jours.
+
+### Configuration unique du propriétaire
+
+1. Créer un environnement GitHub nommé exactement **Android closed testing**,
+   autoriser la branche `main` et activer la protection de cette branche.
+   Renseigner ces secrets d’environnement avec le keystore d’upload existant
+   et ses paramètres. La clé privée et les mots de passe restent dans les
+   secrets d’environnement, hors Git et messageries.
+
+   - `LUMEN_UPLOAD_STORE_BASE64`, le keystore encodé en Base64 sur une ligne.
+   - `LUMEN_UPLOAD_STORE_PASSWORD`, le mot de passe du keystore.
+   - `LUMEN_UPLOAD_KEY_ALIAS`, l’alias de la clé d’upload.
+   - `LUMEN_UPLOAD_KEY_PASSWORD`, le mot de passe de la clé.
+
+2. Renseigner les variables d’environnement.
+
+   - `LUMEN_UPLOAD_CERT_SHA256`, l’empreinte SHA-256 du **certificat d’upload**
+     affichée dans Play Console → Intégrité de l’application.
+   - `PLAY_CLOSED_TRACK`, l’identifiant API exact de la piste fermée existante
+     du téléphone, souvent `alpha` pour la piste fermée par défaut.
+   - `PLAY_WIF_PROVIDER`, le nom complet du fournisseur GitHub de Workload
+     Identity Federation (`projects/.../locations/global/workloadIdentityPools/.../providers/...`).
+   - `PLAY_PUBLISHER_SERVICE_ACCOUNT`, l’adresse du compte de service de publication.
+
+3. Activer l’API Android Publisher dans Google Cloud. Configurer la fédération
+   GitHub et limiter sa condition au dépôt `Anuponk/lumen`, à
+   `refs/heads/main` et au workflow
+   `Anuponk/lumen/.github/workflows/android-signed-aab.yml@refs/heads/main`.
+   Autoriser cette identité fédérée à endosser le compte de service.
+   Inviter ce compte dans Play Console avec accès à **Lumen uniquement** et
+   les droits de lecture de l’application et de publication en test, hors
+   production. Le workflow utilise un jeton court obtenu via OIDC.
+   Voir [l’action Google Auth](https://github.com/google-github-actions/auth)
+   et [les prérequis Android Publisher](https://developers.google.com/android-publisher/getting_started).
+
+### Lancer une livraison
+
+Pour recetter #845, vérifier d’abord que `main` contient le wrapper de la
+PR #846. Dans GitHub, lancer **Actions → Android closed testing → Run workflow**,
+indiquer la version affichée (par exemple `1.0.2`) et confirmer que Play Console
+ne contient aucun autre changement prêt à soumettre à examen. Éviter les
+modifications Play Console pendant l’exécution. Google peut soumettre les
+changements déjà en attente de l’application quand une édition API est
+validée. [Règles de concurrence Google Play](https://developers.google.com/android-publisher/concurrency-considerations)
+
+Le résumé indique le commit, la version et la piste acceptés par l’API. La
+disponibilité pour les testeurs dépend de l’examen et de la propagation Play.
+En cas d’interruption pendant la validation finale de l’édition, vérifier
+l’état dans Play Console avant de relancer. Un code devenu indisponible pendant
+la compilation bloque l’envoi et demande une nouvelle exécution.
