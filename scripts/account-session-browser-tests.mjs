@@ -395,6 +395,7 @@ try{
   await evaluate(submitSignup);
   await evaluate('window.__finishSignup(200)');
   await until('!'+signupPanel+'.hidden');
+  await until("document.activeElement.id==='accountSignupConfirmationTitle'");
   const confirmation=await evaluate(`(()=>{
     const panel=${signupPanel},card=panel.closest('.account-optin-card'),r=panel.getBoundingClientRect();
     return {text:panel.textContent,focused:document.activeElement.id,password:document.getElementById('accountPassword').value,

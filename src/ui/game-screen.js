@@ -1244,7 +1244,10 @@ function setSignupConfirmation(pending){
  if(pending){
   const password=document.getElementById("accountPassword");if(password)password.value="";
   const status=document.getElementById("accountEmailStatus");if(status)status.textContent="";
-  document.getElementById("accountSignupConfirmationTitle")?.focus();
+  requestAnimationFrame(()=>{
+   if(!panel?.hidden&&!document.getElementById("accountOptin")?.hidden)
+    document.getElementById("accountSignupConfirmationTitle")?.focus({preventScroll:true});
+  });
  }
 }
 

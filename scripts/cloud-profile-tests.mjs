@@ -102,9 +102,9 @@ assert.match(uiSrc,/function accountRequired\(\)\s*\{[\s\S]*?authSessionPending\
 const {functionSource}=await import('./source-tools.mjs');
 const vm=await import('node:vm');
 const copy=JSON.stringify(source),box={hidden:false};
-const ctx={accountOfferResumeNext:true,lumenProgress:source,document:{getElementById:()=>box},trackLumenEvent(){},solvedCount:()=>6,qaActive:false,openJourneyMap(){ctx.opened=true}};
+const ctx={accountOfferResumeNext:true,accountOfferRevision:0,lumenProgress:source,document:{getElementById:()=>box},trackLumenEvent(){},solvedCount:()=>6,qaActive:false,openJourneyMap(){ctx.opened=true}};
 vm.createContext(ctx);vm.runInContext(functionSource(uiSrc,'dismissAccountOffer'),ctx);ctx.dismissAccountOffer();
-assert.equal(JSON.stringify(source),copy,'Dismissal preserves progression');assert.equal(ctx.opened,true);assert.equal(box.hidden,true);assert.equal(ctx.accountOfferResumeNext,false);
+assert.equal(JSON.stringify(source),copy,'Dismissal preserves progression');assert.equal(ctx.opened,true);assert.equal(box.hidden,true);assert.equal(ctx.accountOfferResumeNext,false);assert.equal(ctx.accountOfferRevision,1,'Dismissal invalidates the pending Auth form view');
 assert.ok(uiSrc.includes('following?.ordinal>QUEST_MILESTONES.discovery&&accountRequired()&&maybeOfferAccount()'),'Only continuation beyond discovery triggers the account gate');
 assert.ok(uiSrc.includes('if(!canonicalActiveQuest&&accountRequired())queueMicrotask(()=>maybeOfferAccount())'),'Account gate survives reload');
 assert.ok(uiSrc.includes('const accountLater=document.getElementById("accountOptinLater")'),'Continue without account is wired');
