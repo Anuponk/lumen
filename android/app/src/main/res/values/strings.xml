@@ -2,4 +2,16 @@
 <resources>
     <string name="app_name" translatable="false">Lumen</string>
     <string name="asset_statements" translatable="false">[{\"relation\":[\"delegate_permission/common.handle_all_urls\"],\"target\":{\"namespace\":\"web\",\"site\":\"https://lumen.nopuna.fr\"}}]</string>
+    <string name="update_title">Mise à jour Android</string>
+    <string name="update_required_title">Mise à jour Android nécessaire</string>
+    <string name="update_recommended">Une nouvelle version Android de Lumen est disponible sur Google Play. Tu peux la télécharger maintenant ou continuer à jouer.</string>
+    <string name="update_required">Cette version Android de Lumen doit être mise à jour pour continuer. Installe la nouvelle version proposée par Google Play sans désinstaller Lumen.</string>
+    <string name="update_ready">La mise à jour est téléchargée. Tu peux maintenant l’installer, puis rouvrir Lumen.</string>
+    <string name="update_store_advisory">Cette version Android est ancienne et Lumen ne peut pas vérifier la mise à jour. Tu peux consulter sa fiche Google Play ou continuer pour le moment.</string>
+    <string name="update_store_unavailable">Impossible d’ouvrir la fiche Google Play de Lumen pour le moment.</string>
+    <string name="update_action">Mettre à jour</string>
+    <string name="update_restart">Installer</string>
+    <string name="update_later">Plus tard</string>
+    <string name="update_store">Ouvrir Google Play</string>
+    <string name="update_exit">Quitter</string>
 </resources>

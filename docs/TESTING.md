@@ -2111,7 +2111,7 @@ progress. Do not cache OAuth callbacks, private responses or cloud APIs.
 
 ## Android APK startup smoke (#170 / PR #621)
 
-The Android packaging workflow now builds a debug APK, installs it on a Google APIs Android 35 emulator and launches `com.google.androidbrowserhelper.trusted.LauncherActivity`. It collects `android-startup-logcat.txt` as a downloadable artifact on success or failure, and fails when a fatal startup exception is detected. Consult `android/TESTING.md` for the physical-device matrix. This automated smoke is **not** proof of TWA rendering, Digital Asset Links verification, OAuth, real-phone functionality or production readiness; inspect Logcat before attributing any crash to missing asset links.
+The Android packaging workflow builds a debug APK, installs it on a Google APIs Android 35 emulator and launches the existing `com.google.androidbrowserhelper.trusted.LauncherActivity` component. Since #845, that component is an alias for Lumen’s native launcher. It collects `android-startup-logcat.txt` as a downloadable artifact on success or failure, and fails when a fatal startup exception is detected. Consult `android/TESTING.md` for the physical-device matrix. This automated smoke is **not** proof of TWA rendering, Digital Asset Links verification, OAuth, real-phone functionality or production readiness; inspect Logcat before attributing any crash to missing asset links.
 
 ## Offline full catalogue foundation (#597)
 
@@ -2509,3 +2509,12 @@ An offer with no delivered additions is disabled and never claims ownership of
 future or unavailable content.
 Physical PWA/TWA native back gestures and live provider purchases remain separate
 acceptance checks; browser fixtures do not demonstrate a real transaction.
+
+## Android native update acceptance (#845)
+
+See [the physical Play update matrix](../android/TESTING.md#recette-google-play-845)
+for Play eligibility, the required and flexible flows and preserving session,
+attempt and pending commands across an in-place update. The native JVM policy
+tests and debug launcher smoke run in Android packaging CI. Web updates remain
+covered by `scripts/app-updates-tests.mjs`. Android launcher copy is displayed
+before the TWA and has no impact on onboarding steps or gameplay.

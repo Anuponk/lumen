@@ -626,3 +626,68 @@ Références officielles consultées le 18/11/2026 :
 [TWA Billing et vérification serveur](https://developer.chrome.com/docs/android/trusted-web-activity/receive-payments-play-billing),
 [produits, options, activation et régions](https://support.google.com/googleplay/android-developer/answer/16430488),
 [testeurs de licence](https://support.google.com/googleplay/android-developer/answer/6062777).
+
+## Mises à jour natives Android (#845)
+
+La TWA affiche le site dans le navigateur. Le service worker gère la version
+web. Le lanceur Android utilise [Play In-App Updates](https://developer.android.com/guide/playcore/in-app-updates/kotlin-java)
+2.1.0 pour interroger Google Play pour le paquet installé, le compte Play et
+l’appareil concernés. Le composant public du lanceur et ses App Links sont
+conservés par un alias Android. La délégation Digital Goods reste dans le
+service Billing existant.
+
+Depuis l’icône Lumen, la vérification se fait avant l’ouverture du navigateur,
+sur une tâche Android neuve et uniquement si Google Play est l’installateur.
+Les reprises, les autres tâches Lumen actives et les liens profonds, notamment
+les retours OAuth, passent par le parcours habituel d’Android Browser Helper.
+Cette limite préserve une partie ou un paiement déjà en cours. Le lanceur
+impose un délai maximum de deux secondes à la vérification. Sans réseau
+validé, il laisse démarrer la TWA immédiatement.
+
+- **Recommandée.** Si Play propose un versionCode supérieur, « Mettre à jour »
+  ouvre le parcours flexible. Le téléchargement peut continuer pendant le jeu.
+  « Installer » est proposé au prochain démarrage à froid où Play confirme le
+  téléchargement. « Plus tard » reporte l’invitation de 24 h pour cette version.
+  Un refus dans la feuille Google Play masque l’offre pour ce versionCode.
+- **Obligatoire.** La politique publique [android-update-policy.json](../src/android-update-policy.json)
+  fixe le `minimumVersionCode` Android, initialement **2**. Seul un démarrage
+  à froid avec un code installé inférieur et une version admissible confirmée
+  par Play qui atteint ce minimum est bloqué. L’utilisateur peut lancer le
+  parcours immédiat ou quitter. Après annulation, il peut ouvrir la fiche Play
+  sans relance automatique de la feuille. Un flux immédiat déjà engagé peut
+  reprendre au prochain démarrage sûr si la version reste incompatible.
+- **Repli.** Si Play confirme l’offre mais que le flux intégré est indisponible,
+  le bouton ouvre la fiche du paquet dans Google Play, avec lien HTTPS de
+  secours. Si la politique confirme l’incompatibilité mais que Play ne répond
+  pas, l’accès reste possible et la fiche peut être proposée sans promesse de
+  disponibilité. Si la piste n’a pas encore reçu de version compatible, le
+  lanceur laisse ouvrir Lumen. Sans politique valide, le minimum embarqué 2
+  s’applique, sans réutiliser une ancienne politique distante.
+
+### Préparer et recetter la diffusion
+
+1. Le code **2 / 1.0.1** ne contient pas cette fonctionnalité. Construire un
+   **nouvel AAB signé**, avec un `versionCode` strictement supérieur au dernier
+   code utilisé dans Play Console, puis le publier sur la piste retenue. Le
+   passage initial depuis le code 2 se fait via Google Play. Pour la recette,
+   installer un **premier** code qui contient #845, puis proposer un
+   **second** code supérieur sur Play. Vérifier la signature de l’application
+   et le paquet `com.nopuna.lumen` sur les deux versions. Voir
+   [les prérequis de test Google Play](https://developer.android.com/guide/playcore/in-app-updates/test).
+2. Répéter sur un compte de piste **interne** et un compte de piste **fermée**,
+   avec leurs inscriptions réelles et un compte témoin non éligible à la
+   nouvelle offre. Vérifier sur le téléphone que Play la propose avant de
+   conclure sur le wrapper. Le partage interne peut accélérer un essai du
+   flux, mais la recette des pistes utilise leurs inscriptions réelles.
+3. N’augmenter le minimum qu’après avoir confirmé que toutes les pistes et
+   populations visées disposent d’un paquet compatible. Déployer uniquement
+   le changement de politique web et vérifier sa valeur via HTTPS sur
+   `/src/android-update-policy.json` avec le SHA de publication. Restaurer le
+   minimum précédent pour lever le blocage lors du prochain démarrage connecté.
+   Les déploiements web ordinaires ne changent ni ce seuil ni le code Android.
+4. Exécuter [la matrice Android](TESTING.md#recette-google-play-845). Pour le
+   support, relever le tag Logcat `LumenPlayUpdate` avec
+   `adb logcat -d -s LumenPlayUpdate:I`. Les lignes contiennent l’événement,
+   les codes installé/minimal/proposé et des états structurels pour Play et
+   la politique. Ce journal local exclut identifiants, jetons, URLs de session,
+   données de jeu et achats. Le code proposé vaut 0 en l’absence d’offre.
