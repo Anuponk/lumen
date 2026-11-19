@@ -48,7 +48,7 @@ assert.equal(showPurchaseThanks(null,m),null);
 
 // Wiring: shown only after a server-confirmed purchase and reloaded rights (Play and Stripe).
 const screen=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
-assert.match(screen,/if\(result\.status==='paid'\)\{\n  await loadEntitlements\(\);\n  if\(lumenUser\?\.id!==owner\|\|lumenSupabase!==client\)return;\n  if\(lumenEntitlementsState==='ready'\)\{[^\n]+thankForPurchase\(productId\)\}/,'Play confirms only after the active account’s rights are ready');
+assert.match(screen,/if\(result\.status==='paid'\)\{\n  await loadEntitlements\(\);\n  if\(lumenUser\?\.id!==owner\|\|lumenSupabase!==client\)return;[\s\S]*?const confirmed=lumenEntitlementsState==='ready'&&expected\.every[^\n]+\n  if\(confirmed\)\{[^\n]+thankForPurchase\(productId\)\}/,'Play confirms only after the active account’s expected rights are present');
 assert.match(screen,/if\(result\.status==='paid'\)thankForPurchase\(result\.productId\);/,'Stripe');
 assert.match(screen,/function thankForPurchase\(productId\)\{\n if\(qaActive\|\|!productId\)return;/);
 assert.ok(fs.readFileSync(new URL('../src/ui/styles.css',import.meta.url),'utf8').includes('.purchase-thanks-card{'));

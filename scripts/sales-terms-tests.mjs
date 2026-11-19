@@ -15,7 +15,7 @@ class Node{constructor(tag){this.tagName=tag;this.children=[];this.dataset={};th
  focus(){globalThis.document.activeElement=this}
  all(){return this.children.flatMap(c=>c instanceof Node?[c,...c.all()]:[])}}
 globalThis.document={createElement:tag=>new Node(tag),createTextNode:text=>({text}),activeElement:null};
-const model={id:'real-adventure-02',title:'Aventure',unitPrice:'1 €',skyPrice:'5 €',capMessage:'Sur le web, tes achats à l’unité comptent dans le plafond de 5 €.',unitProduct:'real-adventure-02',skyProduct:'real-sky-all',
+const model={id:'real-adventure-02',title:'Aventure',unitPrice:'1 €',skyPrice:'5 €',unitProduct:'real-adventure-02',skyProduct:'real-sky-all',
  unitCount:10,skyCount:30,unitPriceKnown:true,skyPriceKnown:true,showSky:true,signedIn:true,accounts:true,purchasesAvailable:true,mastery:null};
 const host=new Node('div'),calls=[];
 const root=mountAdventureOffer(host,model,{onBuy:async(product,ctx)=>calls.push({product,waiver:ctx.waiver})});
