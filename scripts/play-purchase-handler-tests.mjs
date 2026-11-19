@@ -297,3 +297,41 @@ test('an already recorded order refunded by Google expires its purchase right on
  assert.equal((await mismatched.request()).status,502);
  assert.deepEqual(records(mismatched.calls,'lumen_record_purchase'),[]);
 });
+
+// #833 finalisation: operator readiness probe and remaining replay/identity cases.
+test('the readiness probe checks Google access and permissions without buying, writing or leaking',async()=>{
+ const cron={token:null,headers:{'x-lumen-cron':'cron-secret'},body:{mode:'readiness'}};
+ assert.equal((await fixture({env:rtdnConfig}).request({...cron,headers:{'x-lumen-cron':'wrong'}})).status,401,'Operator secret required');
+ const ready=fixture({env:rtdnConfig,googleStatus:404,orderStatus:404});
+ const r=await ready.request(cron);const body=await r.json();
+ assert.equal(r.status,200);
+ assert.deepEqual(body,{status:'readiness',googleAuth:true,products:404,orders:404,voided:200,ledger:true,rtdnConfigured:true,packageName:'com.nopuna.lumen',ready:true});
+ assert.deepEqual(records(ready.calls),[]);assert.deepEqual(records(ready.calls,'lumen_record_purchase'),[]);
+ assert(!ready.calls.some(c=>c.url?.endsWith(':acknowledge')),'Never acknowledges');
+ const text=JSON.stringify(body);for(const secret of ['cron-secret','PRIVATE KEY','google-access','play-token'])assert(!text.includes(secret),secret);
+ const noOrders=await (await fixture({env:rtdnConfig,googleStatus:404,orderStatus:403}).request(cron)).json();
+ assert.equal(noOrders.orders,403);assert.equal(noOrders.ready,false,'A missing financial permission blocks real sales');
+ const noRtdn=await (await fixture({googleStatus:404,orderStatus:404}).request(cron)).json();
+ assert.equal(noRtdn.rtdnConfigured,false);assert.equal(noRtdn.ready,false);
+ const wrongPackage=await (await fixture({env:rtdnConfig,googleStatus:403,orderStatus:404}).request(cron)).json();
+ assert.equal(wrongPackage.products,403);assert.equal(wrongPackage.ready,false);
+});
+test('two deliveries of the same Play purchase record one identity and never revoke it',async()=>{
+ const owner={[sha('lumen-play:verified-player')]:'verified-player'};
+ const f=fixture({env:rtdnConfig,bindings:owner});
+ assert.equal((await push(f)).status,204);
+ const replay=fixture({env:rtdnConfig,bindings:owner,purchase:{purchaseState:0,acknowledgementState:1,purchaseTimeMillis:'1763200000000',regionCode:'FR',orderId:'GPA.1'},
+  known:{[sha('play-token-1')]:{user_id:'verified-player',product_id:'real-adventure-02',amount_cents:100,currency:'EUR',status:'paid',purchased_at:'2026-11-19T07:47:07Z'}}});
+ assert.equal((await push(replay)).status,204);assert.equal((await push(replay)).status,204);
+ const all=[...records(f.calls),...records(replay.calls)];
+ assert.equal(all.length,3);assert.deepEqual([...new Set(all.map(a=>a.p_provider_ref+'|'+a.p_user_id+'|'+a.p_product_id))],[sha('play-token-1')+'|verified-player|real-adventure-02']);
+ assert(records(replay.calls).every(a=>a.p_settled_amount===null&&a.p_acknowledged===true),'A replay never re-prices nor re-queues an acknowledged purchase');
+ assert.deepEqual(records(replay.calls,'lumen_record_purchase'),[],'No refund from a duplicate');
+ assert(!replay.calls.some(c=>c.url?.endsWith(':acknowledge')),'Already acknowledged: no second acknowledgement');
+});
+test('a recorded token presented for another product is refused without granting',async()=>{
+ const f=fixture({known:{[sha('play-token-1')]:{user_id:'verified-player',product_id:'real-adventure-02',amount_cents:100,currency:'EUR',status:'paid',purchased_at:'2026-11-19T07:47:07Z'}}});
+ const r=await f.request({body:{mode:'verify',productId:'real_adventure_03',purchaseToken:'play-token-1'}});
+ assert.equal(r.status,409);assert.deepEqual(await r.json(),{error:'purchase_owned_elsewhere'});
+ assert.deepEqual(records(f.calls),[]);assert(!f.calls.some(c=>c.url?.endsWith(':acknowledge')));
+});
