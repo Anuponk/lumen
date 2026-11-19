@@ -1,6 +1,6 @@
 // #729: client Play Billing module with synthetic Digital Goods and Payment Request.
 import assert from 'node:assert/strict';
-import {createPlayPriceLoader,getPlayBilling,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices,toPlayProductId,PLAY_BILLING_METHOD} from '../src/persistence/play-billing.js';
+import {PLAY_CHECKOUT_AVAILABLE,createPlayPriceLoader,getPlayBilling,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices,toPlayProductId,PLAY_BILLING_METHOD} from '../src/persistence/play-billing.js';
 import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {adventureOfferModel,mountAdventureOffer,updateAdventureOfferMastery} from '../src/ui/adventure-offer.js';
@@ -66,9 +66,8 @@ assert.doesNotMatch(model.capMessage,/5 €|5,00\s€/,'A Play offer must not ad
 
 // Wiring: the Play offer exists only with Play Billing, outside QA; verification goes to the Edge Function.
 const screen=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
-assert.match(screen,/purchasesAvailable:\(!!playBilling\|\|stripeAvailable\(\)\)&&!qaActive,boughtSingle:lumenEntitlements\.some\(e=>e\?\.source==='purchase'\)/,'Play in the Play app, Stripe (#730) on the web only');
+assert.match(screen,/purchasesAvailable:\(inPlay\?PLAY_CHECKOUT_AVAILABLE&&!!playBilling:stripeAvailable\(\)\)&&!qaActive,boughtSingle:lumenEntitlements\.some\(e=>e\?\.source==='purchase'\)/,'Play in the Play app, Stripe (#730) on the web only');
 assert.match(screen,/'\/functions\/v1\/lumen-play-purchase'/);
-assert.match(screen,/if\(result\.status==='paid'\)\{await loadEntitlements\(\);if\(lumenUser\?\.id!==owner\)return;setStatus\('Achat confirmé/,'Success only after the server confirmed and entitlements reloaded');
 console.log('play-billing-tests: availability, verification, purchase, restore, prices and offer rule OK');
 
 // P1: all nine provider IDs, unordered/partial/empty/malformed responses.
@@ -135,7 +134,7 @@ globalThis.document={createElement:tag=>new Node(tag),createTextNode:text=>({tex
 let resolveDetails,failDetails=true,verifications=0;
 const delayedWin={...win,document:{referrer:'android-app://com.nopuna.lumen'},getDigitalGoodsService:async()=>({getDetails:()=>new Promise((resolve,reject)=>{resolveDetails=()=>failDetails?reject(Error('offline')):resolve(rows)})})};
 const host=new Node('div'),savedProgress={solved:{0:1}},saved=structuredClone(savedProgress);
-const context=vm.createContext({window:delayedWin,console,createPlayPriceLoader,isPlayDistributedApp,CONTENT_PACKS,SKY_PRODUCT_ID,
+const context=vm.createContext({PLAY_CHECKOUT_AVAILABLE:true,window:delayedWin,console,createPlayPriceLoader,isPlayDistributedApp,CONTENT_PACKS,SKY_PRODUCT_ID,
  adventureOfferModel,mountAdventureOffer,updateAdventureOfferMastery,canonicalQuestList,contentMapModel:()=>({skies:[{packs}]}),adventureAccessEntitlements:()=>[],adventureEntitlementsState:()=> 'ready',
  attemptEngine:{snapshot:()=>({})},lumenProgress:savedProgress,lumenUser:{id:'synthetic'},lumenEntitlements:[],qaActive:false,mapCatalogueOverride:null,refreshAdventureOffer:null,authSessionPending:false,cloudProfileReady:true,cloudProfileFailure:null,lumenEntitlementsState:'ready',navigator:{onLine:true},
  localStorage:{getItem:key=>key==='lumenCloudOwnerId'?'synthetic':null},
@@ -188,3 +187,83 @@ assert.equal(find('unit').disabled,true);assert.equal(find('sky').disabled,false
 loader=createPlayPriceLoader({win:{...win,getDigitalGoodsService:()=>new Promise(()=>{})},ids,playApp:true,timeoutMs:5});
 await loader.load();assert.equal(loader.snapshot().status,'error');assert.equal(loader.snapshot().errors[0].reason,'service_unavailable');
 console.log('play-billing-tests P1: nine SKUs, validation, delayed DOM refresh, retry, CTA, channel isolation and no grants OK');
+
+assert.equal(PLAY_CHECKOUT_AVAILABLE,false,'The shipped TWA cannot securely bind new purchases');
+const purchaseState={status:503,body:{error:'unavailable'}};
+let listings=0,reads=0,renders=0,playAttempts=0,changeDuringList=false,authChecks=0;
+const verifyTokens=[];
+const authClient={auth:{getSession:async()=>{authChecks++;return {data:{session:{user:{id:'owner'},access_token:'synthetic-jwt'}}}}}};
+const originalProgress={solved:{0:1},stars:7,performances:{0:{badges:['speed']}},shards:50};
+const expectedProgress=structuredClone(originalProgress);
+const recoveryWin={
+ document:{referrer:'android-app://com.nopuna.lumen'},
+ getDigitalGoodsService:async()=>({listPurchases:async()=>{
+  listings++;
+  if(changeDuringList)recovery.lumenUser={id:'other'};
+  return [{itemId:'real_adventure_02',purchaseToken:'existing-purchase'}];
+ }})
+};
+const restoreHost=new Node('div');
+const recovery=vm.createContext({...context,PLAY_CHECKOUT_AVAILABLE,window:recoveryWin,
+ getPlayPurchaseService,restorePlayPurchases,verifyPlayPurchase:args=>verifyPlayPurchase({...args,fetchImpl:async(_url,init)=>{
+  verifyTokens.push([init.headers.authorization,JSON.parse(init.body).purchaseToken]);
+  return new Response(JSON.stringify(purchaseState.body),{status:purchaseState.status});
+ }}),buyWithPlay:async()=>{playAttempts++;throw Error('A restoration opened checkout')},
+ showPurchaseStatus:()=>{},lumenUser:{id:'owner'},lumenSupabase:authClient,lumenProgress:originalProgress,
+ LUMEN_SUPABASE_URL:'https://synthetic.invalid',LUMEN_SUPABASE_KEY:'synthetic',
+ loadEntitlements:async()=>{
+  reads++;
+  recovery.lumenEntitlementsState='ready';
+  recovery.lumenEntitlements=[{entitlement:'real-adventure-02',source:'purchase'}];
+ },
+ refreshAdventureOffer:null,lumenEntitlements:[],lumenEntitlementsState:'ready',
+ skyNavigation:{render:()=>renders++},restoreHost,pack
+});
+vm.runInContext(normalized.slice(normalized.indexOf('let playBilling=null'),normalized.indexOf('// #723: once per launch')),recovery);
+vm.runInContext(normalized.slice(normalized.indexOf('function renderAdventureOffer('),normalized.indexOf('// #728: ask the server')),recovery);
+await vm.runInContext('playBillingReady',recovery);
+vm.runInContext('renderAdventureOffer(restoreHost,pack)',recovery);
+const restore=()=>restoreHost.all().find(n=>n.dataset.offer==='restore-play');
+const status=()=>restoreHost.all().find(n=>Object.hasOwn(n.dataset,'offerStatus')).textContent;
+assert.equal(restoreHost.all().find(n=>n.dataset.offer==='unit').disabled,true);
+assert.equal(restore().textContent,'Restaurer mes achats');
+const firstRestore=restore().onclick();
+assert.match(status(),/Vérification des achats/);
+await firstRestore;
+assert.match(status(),/sans nouveau paiement/);
+assert.equal(reads,0,'An unavailable RPC must not be presented as confirmed access');
+purchaseState.status=200;
+purchaseState.body={status:'paid',acknowledged:true,adventures:['real-adventure-02']};
+await Promise.all([restore().onclick(),vm.runInContext('restorePlayForCurrentAccount()',recovery)]);
+assert.match(status(),/droits sont à jour/);
+assert.equal(listings,2,'Automatic and manual calls share the same verification in flight');
+assert.equal(reads,1);
+assert.equal(renders,1);
+assert.equal(recovery.lumenEntitlements[0].entitlement,'real-adventure-02');
+assert.deepEqual(originalProgress,expectedProgress);
+assert.equal(playAttempts,0,'A second device with no PaymentRequest can restore without initiating payment');
+assert.deepEqual(verifyTokens,[['Bearer synthetic-jwt','existing-purchase'],['Bearer synthetic-jwt','existing-purchase']]);
+changeDuringList=true;
+await restore().onclick();
+assert.equal(authChecks,2,'A token read before switching accounts is never verified for the new account');
+assert.equal(reads,1);
+
+const checkoutStatuses=[];
+const checkoutCtx={setBusy:()=>{},setStatus:message=>checkoutStatuses.push(message),waiver:{accepted:true}};
+let thanks=0;
+Object.assign(recovery,{
+ PLAY_CHECKOUT_AVAILABLE:true,lumenUser:{id:'owner'},checkoutCtx,toPlayProductId,
+ thankForPurchase:()=>thanks++,
+ buyWithPlay:async({verify})=>verify('real_adventure_02','existing-purchase'),
+ loadEntitlements:async()=>{recovery.lumenEntitlementsState='error'}
+});
+vm.runInContext("playBilling={};playPriceLabels={'real-adventure-02':'1,00 €'}",recovery);
+const checkout=()=>vm.runInContext("purchaseAdventure('real-adventure-02',checkoutCtx)",recovery);
+await checkout();
+assert(checkoutStatuses.some(message=>message.startsWith('Vérification de l’achat')));
+assert(!checkoutStatuses.some(message=>message.startsWith('Achat confirmé')));
+assert.equal(thanks,0);
+recovery.loadEntitlements=async()=>{recovery.lumenEntitlementsState='ready'};
+await checkout();
+assert.match(checkoutStatuses.at(-1),/^Achat confirmé/);
+assert.equal(thanks,1);

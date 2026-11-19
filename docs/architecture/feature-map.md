@@ -104,7 +104,7 @@ Payment providers: Google Play #729 `persistence/play-billing.js` → Edge
 `lumen-play-purchase` → Google Orders API → `lumen_record_play_purchase`; Stripe web/PWA TEST #730 `persistence/stripe-checkout.js` →
 Edges `lumen-stripe-checkout` and `lumen-stripe-webhook` (`functions/_shared/lumen-stripe.ts`)
 → `lumen_stripe_*` → `record_purchase`. Wired in `game-screen.js::purchaseAdventure`,
-`restorePurchasesNow`, `handleStripeReturn`. See [STRIPE_730](../STRIPE_730.md).
+`restorePlayForCurrentAccount`, `handleStripeReturn`. See [STRIPE_730](../STRIPE_730.md).
 
 Restored board selection: `game-screen.js::resumeHydratedCampaignSelection`
 uses `playable-navigation.js::nextCanonicalQuest` after verified installation of
