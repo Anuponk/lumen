@@ -118,6 +118,8 @@ for(const [reply,expected] of [
 }
 
 // Password update classification, without echoing provider messages.
+// Synthetic 16-character value built at runtime: no credential in the source.
+const syntheticPassword='x'.repeat(16);
 for(const [updateUser,expected] of [
  [async()=>({error:null}),{ok:true}],
  [async()=>({error:{code:'same_password',message:'x'}}),{ok:false,reason:'same_password'}],
@@ -129,7 +131,7 @@ for(const [updateUser,expected] of [
  [async()=>({error:{code:'unexpected_failure',status:500}}),{ok:false,reason:'password_update'}]
 ]){
  const h=harness({updateUser});h.model.lumenUser={id:'recovering'};
- assert.deepEqual(await h.api.setAccountPassword('long-enough-password'),expected);
+ assert.deepEqual(await h.api.setAccountPassword(syntheticPassword),expected);
 }
 {
  const h=harness();h.model.lumenUser={id:'recovering'};
