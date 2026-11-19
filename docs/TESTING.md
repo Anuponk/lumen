@@ -959,6 +959,50 @@ fresh storage profile and a historical profile against the Wallet guard.
 Wallet command and outbox suites retain their existing receipt and replay
 checks. Production data and migrations are outside these tests.
 
+The same suite simulates the `lumen_reconcile_acquisitions` server contract
+for the +665 diagnostic: divergent `shards` and `daily`, empty outboxes,
+achievements recovered, wallet and daily unchanged, no client CAS, reload
+without a second recovery. It also covers a concurrent spend (one controlled
+retry), a refused (`22023`) or unavailable recovery (everything preserved) and
+an ownerless cache with an account cursor (never merged).
+
+### E-mail links, recovery and installed app (#820, #832)
+
+`auth-link-recovery-tests.mjs` covers native and branded link verdicts, expired,
+reused, malformed and network failures, the recovery request contract (200 with
+and without `{ok:true}`, 429, 5xx, network, invalid address) and password
+update classification. `pwa-first-open-tests.mjs` covers eligibility, the
+existing-data guard, the confirmed new adventure and the iOS guest warning.
+In Chrome, `account-session-browser-tests.mjs` checks the sign-up verdict,
+an expired branded link and a native error redirect.
+`install-request-browser-tests.mjs` checks the iPhone guest warning and the
+installed app's first opening, with an emulated iPhone user agent. WebKit and
+a real home-screen app are not exercised: Chrome cannot reproduce iOS storage
+separation, and no live e-mail is sent.
+
+Manual acceptance (dedicated QA account, no personal data in reports):
+
+1. PC Chrome, historical #801 profile, storage intact: sign in. The game opens
+   with its quests, badges, XP and records, without « Historique à vérifier ».
+   Reload, sign out/in, compare on a second device. Diagnostics show
+   `guest_acquisitions_recovered` once.
+2. iPhone Safari, guest with a few quests: open the install sheet. The
+   warning appears and installing stays possible. Install, open the app:
+   the « J’ai déjà joué » screen appears instead of quest 1.
+3. Same iPhone: create an account in Safari, wait for « Progression
+   synchronisée », open the app, choose « J’ai déjà joué », sign in. Progress
+   matches Safari. Reopen the app: no repeat of the choice.
+4. Android Chrome and installed app: same as 2–3. The storage is normally
+   shared, so the choice may not appear when progress exists.
+5. Sign-up link (branded and native): « Adresse e-mail confirmée ! Ton compte
+   Lumen est prêt. », action matching the session. Reopen the same link:
+   « Ce lien n’est plus valide », never a success.
+6. Forgotten password: request, receive the e-mail (inbox/spam), open the link
+   on PC and Android, set a 12+ character password. The new password signs in,
+   the old one is refused, progress and purchases are unchanged. Repeat with
+   an unknown address (same message), five quick requests (rate-limit
+   message) and an older link (expired message).
+
 After the approved web release, confirm the deployed version in the account
 menu on the original Chrome profile. Keep localStorage and IndexedDB intact.
 Sign in to the same account and verify that the game opens with its existing

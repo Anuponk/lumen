@@ -311,3 +311,19 @@ minimale de 65 % pour toute la carte, dues à l’animation de navigation de
 (réserve de 140 px pour 143 px de contenu). Le bilan change sur place et réserve
 une ligne de rang personnel dès le chargement. Le test vérifie l’ancrage et
 l’opacité à 360×640 et 390×844.
+
+### #801 — profil Chrome historique bloqué après #802
+
+Diagnostic +665 : `guest_reconciliation` refusait à chaque connexion un profil
+invité sans propriétaire dont `shards` et `daily` divergeaient du Wallet vérifié.
+Contrairement à la branche propriétaire, cette branche n’essayait jamais
+`lumen_reconcile_acquisitions`. Régression reproduite par
+`guest-account-hydration-tests.mjs` (rouge sur `208cb61`). La branche invitée
+utilise désormais cette RPC serveur, qui conserve le Wallet. Leçon : un garde
+de sécurité sans voie de reprise devient un blocage permanent.
+
+### #820 — boutons d’un nouveau calque bloqués pendant l’apprentissage
+
+Le test Chrome du verdict de lien a montré que `handleLearningTap` (capture)
+bloque les clics hors de sa liste blanche pendant la quête 1. Tout nouveau
+calque plein écran doit y être ajouté (`#authLinkResult`, `#pwaWelcome`).
