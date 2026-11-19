@@ -41,10 +41,14 @@ def verify_manifest(xml, package, debug):
     app = manifest.find('application')
     assert app.attrib[ANDROID + 'usesCleartextTraffic'] == 'false'
     assert (app.attrib.get(ANDROID + 'debuggable') == 'true') == debug
-    activity = next(item for item in app.findall('activity')
-                    if item.attrib[ANDROID + 'name'].endswith('.LauncherActivity'))
-    assert activity.attrib[ANDROID + 'exported'] == 'true'
-    links = next(item for item in activity.findall('intent-filter')
+    launcher = 'fr.nopuna.lumen.LauncherActivity'
+    activity = next(item for item in app.findall('activity') if item.attrib[ANDROID + 'name'] == launcher)
+    assert activity.attrib[ANDROID + 'exported'] == 'false'
+    alias = next(item for item in app.findall('activity-alias')
+                 if item.attrib[ANDROID + 'name'] == 'com.google.androidbrowserhelper.trusted.LauncherActivity')
+    assert alias.attrib[ANDROID + 'exported'] == 'true'
+    assert alias.attrib[ANDROID + 'targetActivity'] == launcher
+    links = next(item for item in alias.findall('intent-filter')
                  if item.attrib.get(ANDROID + 'autoVerify') == 'true')
     assert {(item.attrib[ANDROID + 'scheme'], item.attrib[ANDROID + 'host'])
             for item in links.findall('data')} == {('https', 'lumen.nopuna.fr')}

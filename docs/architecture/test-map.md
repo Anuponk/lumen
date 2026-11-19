@@ -539,3 +539,11 @@ verdicts, the recovery request contract and password errors.
 `pwa-first-open-tests.mjs` covers the installed-app first choice and the iOS guest
 warning; `install-request-browser-tests.mjs` and `account-session-browser-tests.mjs`
 exercise them in Chrome. Real iPhone storage separation and live e-mail stay manual.
+
+### Mises à jour du wrapper Android (#845)
+
+`android/app/src/test/java/fr/nopuna/lumen/UpdatePolicyTest.java`,
+`android/tools/packaging.test.mjs` et la CI Android couvrent le choix du flux,
+l’alias du lanceur et le paquet. Suivre la
+[recette Play interne et fermée](../../android/TESTING.md#recette-google-play-845)
+pour l’éligibilité réelle, les reprises et la conservation des données.

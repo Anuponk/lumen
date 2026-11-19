@@ -47,6 +47,19 @@ test('launcher opens only HTTPS Lumen links and grants only Internet permission'
   assert.match(read('app/build.gradle'), /lumenHost: 'lumen\.nopuna\.fr'/);
   assert.match(read('app/src/main/res/values/strings.xml'), /https:\/\/lumen\.nopuna\.fr/);
 });
+test('Play updates retain the public launcher component and use a separate native policy', () => {
+  const manifest = read('app/src/main/AndroidManifest.xml');
+  assert.match(manifest, /<activity android:name="\.LauncherActivity"\s+android:exported="false">/);
+  assert.match(manifest, /<activity-alias android:name="com\.google\.androidbrowserhelper\.trusted\.LauncherActivity"\s+android:targetActivity="\.LauncherActivity"\s+android:exported="true">/);
+  assert.match(read('app/build.gradle'), /com\.google\.android\.play:app-update:2\.1\.0/);
+  const policy = JSON.parse(read('../src/android-update-policy.json'));
+  assert.deepEqual(Object.keys(policy), ['minimumVersionCode']);
+  assert.ok(Number.isInteger(policy.minimumVersionCode));
+  assert.ok(policy.minimumVersionCode >= 1 && policy.minimumVersionCode <= 2_100_000_000);
+  assert.match(read('app/src/main/java/fr/nopuna/lumen/MinimumAndroidVersion.java'),
+    /https:\/\/lumen\.nopuna\.fr\/src\/android-update-policy\.json/);
+});
+
 test('ABH ManageDataLauncherActivity is declared so the launcher cannot crash at startup', () => {
   const manifest = read('app/src/main/AndroidManifest.xml');
   assert.match(manifest, /android:name="com\.google\.androidbrowserhelper\.trusted\.ManageDataLauncherActivity"/);

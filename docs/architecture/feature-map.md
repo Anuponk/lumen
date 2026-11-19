@@ -433,3 +433,10 @@ slots. Web prices remain in `campaign/store-catalogue.js`; Play labels and safe
 diagnostics come from `persistence/play-billing.js::createPlayPriceLoader`.
 `game-screen.js::renderAdventureOffer` refreshes the active card on loading/retry;
 Play never substitutes a catalogue price when the provider is unavailable.
+
+### Mises à jour du wrapper Android (#845)
+
+`android/app/src/main/java/fr/nopuna/lumen/LauncherActivity.java` vérifie
+l’éligibilité Play au démarrage à froid avant la TWA. La politique
+`src/android-update-policy.json` fixe le minimum Android indépendamment du
+service worker. Voir [publication Android](../../android/PLAY.md#mises-à-jour-natives-android-845).

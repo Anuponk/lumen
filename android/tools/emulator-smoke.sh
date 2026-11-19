@@ -7,7 +7,7 @@ logfile="android-startup-logcat.txt"
 
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb logcat -c
-adb shell am start -W -n "${package}/${activity}"
+adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n "${package}/${activity}"
 sleep 12
 adb logcat -d -v time > "$logfile"
 

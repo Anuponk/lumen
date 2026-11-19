@@ -41,7 +41,7 @@ jobs:
       - name: Build without any release credentials
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon --console=plain :app:lint :app:assembleDebug :app:bundleDebug :app:bundleRelease
+          ./gradlew --no-daemon --console=plain :app:lint :app:testDebugUnitTest :app:assembleDebug :app:bundleDebug :app:bundleRelease
       - name: Validate compiled APK and AAB
         run: |
           curl --fail --location --retry 3 --output "$RUNNER_TEMP/bundletool.jar" https://github.com/google/bundletool/releases/download/1.18.2/bundletool-all-1.18.2.jar
