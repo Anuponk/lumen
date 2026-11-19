@@ -325,6 +325,14 @@ Browser emulation does not establish physical-device, live Auth or cross-device
 transfer validation. The existing account, touch/drag, cloud, embedded hint and
 strict catalogue suites remain required.
 
+For #821, the same Chromium suite opens the 8×8 Grande Ourse finale via Mon
+ciel with simulated progress and Guided Check enabled. It uses 20 native
+horizontal or diagonal swipes per portrait size (320×568, 360×640, 390×844).
+The board, timer, controls and visual viewport must stay anchored both during
+and after the gesture. The test keeps a Guardian on the board and checks for
+horizontal clipping. Physical browser edge gestures and OS/WebView navigation
+remain a separate acceptance check.
+
 ## Optional first welcome/story — #532
 
 `node scripts/first-welcome-tests.mjs` covers fresh/returning/owned contexts,

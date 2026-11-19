@@ -12,10 +12,10 @@ await send('Page.enable');await send('Runtime.enable');
 // UI layout fixtures do not test service-worker installation. Its first-install
 // controllerchange reload is covered by the separate mandatory PWA suite.
 await send('Page.addScriptToEvaluateOnNewDocument',{source:`delete Object.getPrototypeOf(navigator).serviceWorker`});
-async function fixture(width,height,{qa=true,solved=12}={}){
+async function fixture(width,height,{qa=true,solved=12,prior=quests.slice(0,solved)}={}){
  await send('Emulation.setDeviceMetricsOverride',{width,height,mobile:width<900,deviceScaleFactor:1});
  await send('Emulation.setTouchEmulationEnabled',{enabled:width<900,maxTouchPoints:1});
- const prior=quests.slice(0,solved),p={catalogueOrigin:currentCatalogueOrigin,solved:Object.fromEntries(prior.filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1])),canonicalQuestState:Object.fromEntries(prior.filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true,badges:{}}])),badges:{},performances:{},shards:100,speedBadgeIntroSeen:1,fullBadgeIntroSeen:1,autonomySeen:1};
+ const p={catalogueOrigin:currentCatalogueOrigin,solved:Object.fromEntries(prior.filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1])),canonicalQuestState:Object.fromEntries(prior.filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true,badges:{}}])),badges:{},performances:{},shards:100,speedBadgeIntroSeen:1,fullBadgeIntroSeen:1,autonomySeen:1};
  const hook=await send('Page.addScriptToEvaluateOnNewDocument',{source:`localStorage.clear();sessionStorage.clear();localStorage.setItem('${qa?'lumenQaProgressV1':'lumenProgressV1'}',${JSON.stringify(JSON.stringify(p))});localStorage.setItem('lumenSound','off');localStorage.setItem('lumenSkyTourSeen','1');localStorage.setItem('lumenAutoCross','0');localStorage.setItem('lumenGuidedErrors','off');localStorage.setItem('lumenInstallLater',String(Date.now()));localStorage.setItem('lumenPushChoice','later');`});
  await navigateAndWait(browser,'Page.navigate',{url:url+(qa?'?qa=new':'')});
  await new Promise(resolve=>setTimeout(resolve,1500));
@@ -75,6 +75,56 @@ try{
   await evaluate("document.getElementById('undo').click()");
   assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().state[0].slice(0,4)'),[1,2,0,1],'One Undo restores the whole swipe');
  });
+ const finalChariot=quests.find(q=>q.id==='planned-real-01-q10');
+ assert.equal(finalChariot.size,8,'The reported Grande Ourse finale is the 8×8 layout');
+ const chariotPrior=quests.filter(q=>q.constellationId===finalChariot.constellationId&&q.ordinal<finalChariot.ordinal);
+ for(const [width,height] of [[320,568],[360,640],[390,844]])await check('821 board stays anchored through 20 swipes at '+width+'px',async()=>{
+  await fixture(width,height,{prior:chariotPrior});
+  await evaluate(`(()=>{
+   document.getElementById('openSky').click();
+   document.querySelector('#adventureRail [data-pack-id="base-real-sky"]').click();
+   for(let page=0;!document.querySelector('#sectorTabs [data-content-id="real-01"]')&&page<12;page++)document.getElementById('constellationPrevious').click();
+   document.querySelector('#sectorTabs [data-content-id="real-01"]').click();
+   document.querySelector('#puzzleGrid [data-quest-id="planned-real-01-q10"]').click();
+   for(const id of ['questGo','attemptMask','manualCrossTipOk','autonomyKeep']){
+    const button=document.getElementById(id);if(button.getClientRects().length)button.click();
+   }
+   document.getElementById('guidedErrors').checked=true;
+   const state=Array.from({length:8},()=>Array(8).fill(1));state[3][4]=2;lumenDiagnostics.setBoard(state);
+  })()`);
+  assert.equal(await evaluate('lumenDiagnostics.snapshot().n'),8);
+  await settleLayout();
+  const geometry=`(()=>{
+   const rect=selector=>{const {x,y,width,height}=document.querySelector(selector).getBoundingClientRect();return {x,y,width,height}};
+   return {board:rect('#board'),actions:rect('.actions'),timer:rect('#time'),sky:rect('#openSky'),
+    scroll:[scrollX,scrollY,visualViewport.offsetLeft,visualViewport.offsetTop,visualViewport.scale],
+    overflow:document.documentElement.scrollWidth>innerWidth};
+  })()`;
+  const before=await evaluate(geometry);
+  assert(!before.overflow&&before.board.x>=0&&before.board.x+before.board.width<=width+1,'No horizontal clipping before swiping');
+  for(let index=0;index<20;index++){
+   const row=index%4,reverse=index%2===1,endRow=index%3===0?row:row+3;
+   const cells=[[row,reverse?7:0],[endRow,reverse?0:7]];
+   const [start,end]=await evaluate(`${JSON.stringify(cells)}.map(([row,col])=>{
+    const r=document.querySelector('#board [data-row="'+row+'"][data-col="'+col+'"]').getBoundingClientRect();
+    return {x:r.left+r.width/2,y:r.top+r.height/2};
+   })`);
+   assert.equal(await evaluate(`document.elementFromPoint(${start.x},${start.y})?.closest('.cell')?.closest('#board')?.id`),'board','Gesture starts on a visible cell');
+   assert(end.y>=0&&end.y<height,'Gesture ends within the portrait viewport');
+   const touch=(type,...points)=>send('Input.dispatchTouchEvent',{
+    type,touchPoints:points.map(point=>({...point,id:index+1})),timestamp:Date.now()/1000,
+   });
+   await touch('touchStart',start);
+   for(const ratio of [.35,1]){
+    await touch('touchMove',{x:start.x+(end.x-start.x)*ratio,y:start.y+(end.y-start.y)*ratio});
+    assert.deepEqual(await evaluate(geometry),before,'The viewport and controls stay anchored while the finger is down');
+   }
+   await touch('touchEnd');
+   assert.deepEqual(await evaluate(geometry),before,'The viewport and controls stay anchored after release');
+  }
+  assert.equal(await evaluate('lumenDiagnostics.snapshot().state[3][4]'),2,'Swiping never removes the Guardian');
+ });
+
  for(const [w,h] of [[320,568],[360,740],[375,667],[390,844],[667,375],[844,390],[1440,900]])await check(`791 hint below board ${w}x${h}`,async()=>{
   await fixture(w,h,{qa:false,solved:2});
   await evaluate(`lumenDiagnostics.setupQuest(2);document.getElementById('questStart').hidden=true;document.getElementById('attemptMask').click()`);
