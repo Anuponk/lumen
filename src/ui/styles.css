@@ -358,6 +358,16 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .account-switch-hold-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .account-switch-hold-report{display:flex;flex-direction:column;gap:8px;width:min(340px,calc(100vw - 32px))}
 .account-switch-hold-report[hidden]{display:none}
+/* #820 e-mail link verdict and #832 installed-app first opening */
+.auth-link-result-icon,.pwa-welcome-icon{animation:none}
+.pwa-welcome-actions{flex-direction:column;align-items:stretch;width:min(340px,calc(100vw - 32px))}
+.pwa-welcome-confirm{font-size:14px}
+.pwa-welcome-confirm[hidden]{display:none}
+.pwa-welcome-help{width:min(340px,calc(100vw - 32px));text-align:left;color:#9fc4d8;font-size:14px}
+.pwa-welcome-help summary{cursor:pointer;color:#d8ecf7;text-align:center}
+.pwa-welcome-help ol{margin:8px 0;padding-left:22px;line-height:1.5}
+.install-optin-warning{color:#ffe3a1;line-height:1.4}
+.install-optin-warning[hidden]{display:none}
 .account-switch-hold-report textarea{width:100%;max-height:40dvh;font:11px/1.35 ui-monospace,monospace;color:#cfe6f3;background:#0b1624;border:1px solid #273c50;border-radius:10px;padding:8px;resize:vertical}
 .account-switch-hold-actions button{min-height:44px;padding:0 16px;border:1px solid #35546f;border-radius:11px;background:#0f1d2e;color:#d8ecf7;font:inherit}
 @keyframes accountSwitchPulse{50%{opacity:.4}}

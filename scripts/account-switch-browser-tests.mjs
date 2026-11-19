@@ -194,7 +194,7 @@ Object.defineProperty(navigator,'onLine',{get:()=>!window.__offline});
   assert.deepEqual(await evaluate(local),summary(B),'Offline uses B’s known profile');
   await evaluate("window.__server.session={user:{id:'a'}};window.__saveServer();localStorage.setItem('sb-tjdjlavmusmncuszhsuw-auth-token',JSON.stringify(window.__server.session))");
   await navigateAndWait({send,evaluate},'Page.reload');
-  assert.equal(await evaluate("document.getElementById('accountSwitchHoldTitle').textContent"),'Vous êtes hors ligne','A different stored session must not display B’s offline cache');
+  assert.equal(await evaluate("document.getElementById('accountSwitchHoldTitle').textContent"),'Tu es hors ligne','A different stored session must not display B’s offline cache');
   assert.deepEqual(await evaluate(local),summary(B),'The previous cache is preserved while unavailable');
   await evaluate("window.__offline=false;window.dispatchEvent(new Event('online'))");
   await until("localStorage.getItem('lumenCloudOwnerId')==='a'&&document.getElementById('accountSwitchHold').hidden",'A restores automatically after reconnect',250);

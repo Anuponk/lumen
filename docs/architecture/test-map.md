@@ -531,3 +531,11 @@ are not physical Android TWA or live payment acceptance.
 For #817, the review browser suite also covers a signed-in podium: the response
 replaces the touched step during the swipe, then the test exercises both
 directions, vertical/edge/button gestures and ordinary taps with native CDP input.
+
+Account continuity (#801, #820, #832): `guest-account-hydration-tests.mjs` covers
+the guest acquisition recovery (wallet/daily divergence, concurrent spend, refused
+recovery, identity guard). `auth-link-recovery-tests.mjs` covers e-mail link
+verdicts, the recovery request contract and password errors.
+`pwa-first-open-tests.mjs` covers the installed-app first choice and the iOS guest
+warning; `install-request-browser-tests.mjs` and `account-session-browser-tests.mjs`
+exercise them in Chrome. Real iPhone storage separation and live e-mail stay manual.

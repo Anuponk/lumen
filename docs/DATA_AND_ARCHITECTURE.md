@@ -468,7 +468,7 @@ known field names (otherwise `unknown_field`), without profile contents.
 
 `guest-account.js` distinguishes an unowned guest from a signed-out account cache. Before first authenticated I/O, preserve and read back the exact guest snapshot under `lumenGuestBeforeAccount_<accountId>` (additional versions retain subsequent offline play). Initialize a missing cloud profile from the whole validated guest snapshot, including net currency, earned badges and compatibility access; use a fresh seed only for another account’s cache. Existing cloud achievements must cover the guest, or the existing conservative reconciler must succeed before installation. Recheck the latest local bytes immediately before installation: achievements earned during initialization/daily I/O must also be covered, or remain pending with the live attempt preserved. Conflicting receipts/balances stay pending with both originals preserved; never infer money, copy another account, or erase guest achievements. Initial creation remains atomic and read-back verified; no duplicate victory commands are emitted. Failed backup, offline initialization, read-back or account switch cannot install an empty profile.
 
-Profile loading and account switch on one device (#711, #789): `updateAccountSwitchHold` covers the game with « Chargement de votre ciel… » until the current account’s profile is installed. This covers both a different local owner and a missing cache on a fresh device. Once Auth resolves to the stored owner, a valid cache can remain visible while normal synchronization continues. Offline, continuation additionally requires the existing verified offline owner record. Without that cache, the hold displays the offline state. After a failure or a 15-second wait, the hold offers « Réessayer » through the existing retry path and « Diagnostic ». The timeout changes the display while the current hydration may still finish. After an explicit sign-out (`signOutExplicitly`, flag `lumenSignedOutNeutralV1`, cleared at the next sign-in), a neutral « Tu es déconnecté » screen replaces the last account's cache view, which stays stored and is never erased. Expired sessions, offline play and first-time guests are not flagged. A failed hydration now reports to `lumen_record_sync_health` its fine reason (fixed vocabulary, e.g. `storage_quota`, `backup_unverified`) and its stage in `outcome` (fixed stage list, migration `20261115160000_sync_health_stage_outcome.sql`); anything else is stored as `unknown`, never free text. The account switch hold offers « Diagnostic » after a failure, opening the existing local diagnostic above it. While a switch is pending, `lumenAccountSwitchHoldV1` (sessionStorage) keeps the hold up across a reload (« Réessayer »): the external `account-switch-boot.js` at the top of `<body>` shows it from the first paint for a pending switch, stored session or recognized auth return, so the previous account's grid never flashes. The mark is cleared when the account is installed or on explicit sign-out. A guest becoming an account (no previous owner) keeps its existing claim and backup flow behind the loading screen. An outbox inspection interrupted by the session change (`SESSION_CHANGED`) is transient and no longer reported as a local storage failure. Reproduction (synthetic multi-account server, 800 ms per RPC): before the fix, B saw A's progress for about 5 s, and indefinitely if B's load failed; data never crossed accounts and A's pending victory stayed durable and was credited to A only. Before installing the new owner, the previous local profile (`lumenBeforeAccountSwitch_<time>`) and board (`lumenBeforeAccountSwitchAttempt_<time>`) are preserved through `preserveRecoverySnapshot`: an identical verified copy is reused, and when the localStorage quota is full the copy is written and read back in the IndexedDB store `lumenCloudRecoveryV1` instead; if neither can be verified the switch stays held. Older copies are never deleted automatically (player-controlled archiving only). The hold's « Diagnostic » shows the copyable report inside the hold card.
+Profile loading and account switch on one device (#711, #789): `updateAccountSwitchHold` covers the game with « Chargement de ton ciel… » until the current account’s profile is installed. This covers both a different local owner and a missing cache on a fresh device. Once Auth resolves to the stored owner, a valid cache can remain visible while normal synchronization continues. Offline, continuation additionally requires the existing verified offline owner record. Without that cache, the hold displays the offline state. After a failure or a 15-second wait, the hold offers « Réessayer » through the existing retry path and « Diagnostic ». The timeout changes the display while the current hydration may still finish. After an explicit sign-out (`signOutExplicitly`, flag `lumenSignedOutNeutralV1`, cleared at the next sign-in), a neutral « Tu es déconnecté » screen replaces the last account's cache view, which stays stored and is never erased. Expired sessions, offline play and first-time guests are not flagged. A failed hydration now reports to `lumen_record_sync_health` its fine reason (fixed vocabulary, e.g. `storage_quota`, `backup_unverified`) and its stage in `outcome` (fixed stage list, migration `20261115160000_sync_health_stage_outcome.sql`); anything else is stored as `unknown`, never free text. The account switch hold offers « Diagnostic » after a failure, opening the existing local diagnostic above it. While a switch is pending, `lumenAccountSwitchHoldV1` (sessionStorage) keeps the hold up across a reload (« Réessayer »): the external `account-switch-boot.js` at the top of `<body>` shows it from the first paint for a pending switch, stored session or recognized auth return, so the previous account's grid never flashes. The mark is cleared when the account is installed or on explicit sign-out. A guest becoming an account (no previous owner) keeps its existing claim and backup flow behind the loading screen. An outbox inspection interrupted by the session change (`SESSION_CHANGED`) is transient and no longer reported as a local storage failure. Reproduction (synthetic multi-account server, 800 ms per RPC): before the fix, B saw A's progress for about 5 s, and indefinitely if B's load failed; data never crossed accounts and A's pending victory stayed durable and was credited to A only. Before installing the new owner, the previous local profile (`lumenBeforeAccountSwitch_<time>`) and board (`lumenBeforeAccountSwitchAttempt_<time>`) are preserved through `preserveRecoverySnapshot`: an identical verified copy is reused, and when the localStorage quota is full the copy is written and read back in the IndexedDB store `lumenCloudRecoveryV1` instead; if neither can be verified the switch stays held. Older copies are never deleted automatically (player-controlled archiving only). The hold's « Diagnostic » shows the copyable report inside the hold card.
 
 ### Signup confirmation and the mail service (#814)
 
@@ -501,6 +501,45 @@ The exact Wallet command refusal (SQLSTATE `22023`) has a fixed diagnostic
 distinct from stale CAS. Recovery of an owned cache still uses the existing
 operation ID, exact receipt and current-profile read-back rules. Account
 ownership and readiness require the existing verified installation.
+
+Guest acquisition recovery (#801, diagnostic +665). When the conservative
+guest merge is held (`mutable_balance`, `wallet_daily_divergence`,
+`wallet_command_required`, CAS conflict, reward conflict), hydration hands the
+unchanged guest bytes to the existing `lumen_reconcile_acquisitions` RPC
+(`positive-acquisitions-v1`). The server unions badges, stars, completed quests
+and records, keeps the XP maximum, and leaves `shards`, `walletRevision`,
+`daily`, receipts and command cursors exactly as stored. It archives both
+sources by digest. The client sends no balance and no CAS on this path. It
+installs only the re-read server profile, then takes ownership. Local balances
+and daily dates the server does not adopt stay in `lumenGuestBeforeAccount_*`,
+`lumenBeforeCloudReconcileLocal_*` and the server source archive. An ownerless
+cache that carries `walletRevision` or `legacyVictoryRevision` belonged to an
+account and is never merged into another one; it stays held. A refused or
+unavailable recovery keeps every copy, records `acquisition_recovery_pending`
+and keeps « Historique à vérifier ». No migration is involved.
+
+### E-mail links and password recovery (#820)
+
+A native Supabase redirect (`#access_token…&type=…` or `#error…`) is read
+before the Auth SDK starts; its error parameters are removed from the address.
+A branded `lumen_confirm` link is removed before `verifyOtp`. One verdict is
+emitted after the session restore: success only after verification, and the
+action follows the real session. A verified recovery link marks the recovery
+pending, which keeps hydration paused until the new password is saved. The
+recovery request counts as sent only on the endpoint's `{ok:true}` contract;
+429, 5xx, invalid JSON and network failures have their own copy, identical for
+known and unknown addresses. Password update errors map to bounded reasons and
+never show the provider message. Tokens and addresses never enter diagnostics.
+
+### Installed app first opening (#832)
+
+iOS can give the home-screen app storage separate from Safari. When an installed
+app opens on storage with no progress, owner, session or recovery copy (the
+first-visit claim), it first offers « J’ai déjà joué — Retrouver ma progression »
+(sign-in) and « Commencer une nouvelle aventure » (confirmed, then the usual
+welcome). No anonymous Safari data is imported or promised. An iOS guest sees a
+non-blocking warning before installing. Progress ownership and hydration rules
+are unchanged.
 
 ### Retirement of player currency (#803, #806)
 

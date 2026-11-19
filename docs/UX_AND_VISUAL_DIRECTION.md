@@ -404,6 +404,25 @@ badges. No second finale opens after the player chooses an action.
 
 After the mail service accepts sign-up, announce the confirmation in the live status and tell the player to check their inbox and spam folder. A pending or rejected request keeps the form visible with its own feedback. Keep one submission in flight when the player changes tabs or closes the dialog. Confirmation does not imply mail delivery or a cloud save. A separate resend would need a dedicated provider operation under the existing server limits.
 
+### E-mail link verdict (#820)
+
+After an e-mail link, show one full-screen verdict. Success says « Adresse
+e-mail confirmée ! Ton compte Lumen est prêt. » with « Continuer mon aventure »
+when signed in, otherwise « Se connecter ». An expired, reused or invalid link
+says « Ce lien n’est plus valide » and offers sign-in or a new recovery link;
+it never mentions success. Recovery failures name the cause (rate limit,
+network, unconfirmed sending) with the same copy for unknown addresses.
+
+### Installed app first opening (#832)
+
+An installed app opened on empty storage asks first: « J’ai déjà joué —
+Retrouver ma progression » (primary, sign-in) or « Commencer une nouvelle
+aventure » (secondary, confirmed by a second tap). A folded help explains the
+five steps for a Safari guest without promising automatic recovery. An iOS
+guest's install sheet warns to create an account and sync first, with « Créer
+un compte d’abord », never blocking the install. Loading copy is « Chargement
+de ton ciel… ».
+
 ### Adventure offer and progress (#811)
 
 Inside « Le savais-tu ? », give the 100% mastery rule and the remaining work on separate lines. Show only the measures that remain. If the profile is loading or unavailable, explain the status without showing counts. Once both measures reach zero, offer the existing sign-in or server verification action. A verified mastery entitlement confirms that free access is available. Keep the paid options separate and retain the existing height limit of the mobile notice.
