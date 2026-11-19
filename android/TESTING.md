@@ -20,6 +20,11 @@ Le workflow dédié vérifie les artefacts compilés avec
 `python3 tools/verify-artifacts.py <bundletool.jar>` (JDK/SDK installés).
 Le SHA-256 de bundletool est vérifié avant exécution. Le rapport décrit
 explicitement `physicalDeviceTested: false` et `productionSigned: false`.
+La CI vérifie aussi la signature avec une clé jetable et une transaction Play
+simulée. Les tests refusent un AAB déjà signé, une empreinte incorrecte, une
+piste interdite, une version dépassée et un commit après échec de validation.
+La connexion réelle à Google et la piste fermée nécessitent la
+[configuration de signature](SIGNING.md#générer-et-envoyer-un-aab-en-test-fermé-depuis-github).
 Le contrôle des permissions du manifeste fusionné échoue si une dépendance
 ajoute une permission : la déclarer et l'évaluer avant d'actualiser ce contrat.
 

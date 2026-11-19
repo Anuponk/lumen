@@ -1,0 +1,180 @@
+name: Android closed testing
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version affichée, par exemple 1.0.2'
+        required: true
+        type: string
+      console_ready:
+        description: 'Je confirme que Play Console est libre de changements à soumettre à examen.'
+        required: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-closed-testing
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    environment:
+      name: Android closed testing
+    outputs:
+      code: ${{ steps.version.outputs.code }}
+      baseline: ${{ steps.version.outputs.baseline }}
+      track: ${{ steps.version.outputs.track }}
+    steps:
+      - name: Vérifier le lancement et la configuration
+        env:
+          CONSOLE_READY: ${{ inputs.console_ready }}
+          VERSION_NAME: ${{ inputs.version_name }}
+          PLAY_CLOSED_TRACK: ${{ vars.PLAY_CLOSED_TRACK }}
+        run: |
+          if [[ "$CONSOLE_READY" != true ]]; then
+            echo 'Confirmer l’état de Play Console avant le lancement.' >&2
+            exit 1
+          fi
+          if [[ ! $VERSION_NAME =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][a-zA-Z0-9]+)*$ || -z $PLAY_CLOSED_TRACK ]]; then
+            echo 'Renseigner une version Android valide et la piste fermée.' >&2
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: play
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.PLAY_WIF_PROVIDER }}
+          service_account: ${{ vars.PLAY_PUBLISHER_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/androidpublisher
+          create_credentials_file: false
+          export_environment_variables: false
+      - name: Choisir le prochain versionCode
+        id: version
+        env:
+          PLAY_ACCESS_TOKEN: ${{ steps.play.outputs.access_token }}
+          PLAY_CLOSED_TRACK: ${{ vars.PLAY_CLOSED_TRACK }}
+        run: |
+          baseline=$(sed -n 's/^versionCode=//p' android/release.properties)
+          code=$(python3 android/tools/play-closed-release.py --track "$PLAY_CLOSED_TRACK" --baseline "$baseline" next-code)
+          printf 'code=%s\nbaseline=%s\ntrack=%s\n' "$code" "$baseline" "$PLAY_CLOSED_TRACK" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Compiler et vérifier l’AAB release
+        env:
+          ORG_GRADLE_PROJECT_lumenVersionCode: ${{ needs.prepare.outputs.code }}
+          ORG_GRADLE_PROJECT_lumenVersionName: ${{ inputs.version_name }}
+        run: |
+          sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+          bash ./gradlew --no-daemon --console=plain :app:lintRelease :app:bundleRelease
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/bundletool.jar" https://github.com/google/bundletool/releases/download/1.18.2/bundletool-all-1.18.2.jar
+          echo "378b5434cd1378bef6b2bc527b8c7f0ff2584b273830335bce54d6d0813c8584  $RUNNER_TEMP/bundletool.jar" | sha256sum --check
+          bundle=app/build/outputs/bundle/release/app-release.aab
+          java -jar "$RUNNER_TEMP/bundletool.jar" validate "--bundle=$bundle" > /dev/null
+          java -jar "$RUNNER_TEMP/bundletool.jar" dump manifest "--bundle=$bundle" > "$RUNNER_TEMP/aab-manifest.xml"
+          python3 - "$RUNNER_TEMP/aab-manifest.xml" <<'PY'
+          import os
+          import sys
+          import xml.etree.ElementTree as ET
+
+          manifest = ET.parse(sys.argv[1]).getroot()
+          android = "{http://schemas.android.com/apk/res/android}"
+          if (manifest.get("package") != "com.nopuna.lumen"
+              or manifest.get(android + "versionCode") != os.environ["ORG_GRADLE_PROJECT_lumenVersionCode"]
+              or manifest.get(android + "versionName") != os.environ["ORG_GRADLE_PROJECT_lumenVersionName"]
+              or manifest.find("application").get(android + "debuggable") == "true"):
+              raise SystemExit("Identité ou version inattendue dans le manifeste AAB")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-closed-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
+
+  publish:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    environment:
+      name: Android closed testing
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/download-artifact@v4
+        with:
+          name: unsigned-closed-aab
+          path: ${{ runner.temp }}/lumen-unsigned-aab
+      - name: Signer et vérifier le certificat d’upload
+        env:
+          LUMEN_UPLOAD_STORE_BASE64: ${{ secrets.LUMEN_UPLOAD_STORE_BASE64 }}
+          LUMEN_UPLOAD_STORE_PASSWORD: ${{ secrets.LUMEN_UPLOAD_STORE_PASSWORD }}
+          LUMEN_UPLOAD_KEY_ALIAS: ${{ secrets.LUMEN_UPLOAD_KEY_ALIAS }}
+          LUMEN_UPLOAD_KEY_PASSWORD: ${{ secrets.LUMEN_UPLOAD_KEY_PASSWORD }}
+          LUMEN_UPLOAD_CERT_SHA256: ${{ vars.LUMEN_UPLOAD_CERT_SHA256 }}
+        run: |
+          mkdir "$RUNNER_TEMP/lumen-signed-aab"
+          bash android/tools/sign-aab.sh "$RUNNER_TEMP/lumen-unsigned-aab/app-release.aab" "$RUNNER_TEMP/lumen-signed-aab/lumen.aab"
+          cd "$RUNNER_TEMP/lumen-signed-aab"
+          sha256sum lumen.aab > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lumen-signed-aab-${{ needs.prepare.outputs.code }}-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/lumen-signed-aab/
+          if-no-files-found: error
+          retention-days: 14
+      - id: play
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.PLAY_WIF_PROVIDER }}
+          service_account: ${{ vars.PLAY_PUBLISHER_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/androidpublisher
+          create_credentials_file: false
+          export_environment_variables: false
+      - name: Envoyer sur la piste fermée
+        env:
+          PLAY_ACCESS_TOKEN: ${{ steps.play.outputs.access_token }}
+          PLAY_CLOSED_TRACK: ${{ needs.prepare.outputs.track }}
+          VERSION_CODE: ${{ needs.prepare.outputs.code }}
+          BASELINE_CODE: ${{ needs.prepare.outputs.baseline }}
+          VERSION_NAME: ${{ inputs.version_name }}
+        run: |
+          python3 android/tools/play-closed-release.py --track "$PLAY_CLOSED_TRACK" --baseline "$BASELINE_CODE" \
+            publish --bundle "$RUNNER_TEMP/lumen-signed-aab/lumen.aab" --version "$VERSION_CODE" --name "$VERSION_NAME"
+          printf '### Envoi Google Play accepté\n\n- Piste %s\n- Version %s (%s)\n- Commit %s\n' \
+            "$PLAY_CLOSED_TRACK" "$VERSION_NAME" "$VERSION_CODE" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
