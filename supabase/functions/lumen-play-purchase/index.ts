@@ -7,17 +7,14 @@
 //   LUMEN_PLAY_SERVICE_ACCOUNT  service-account JSON with androidpublisher access
 //   LUMEN_PLAY_PACKAGE          defaults to com.nopuna.lumen
 //   LUMEN_PLAY_CRON_SECRET      shared secret for the "voided" mode
+//   LUMEN_PLAY_RECOVERY_ORDERS  optional JSON map of independently reconciled order IDs to Auth UUIDs
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 const ORIGIN = 'https://lumen.nopuna.fr';
 const API = 'https://androidpublisher.googleapis.com/androidpublisher/v3/applications/';
 const PLAY_CAP_REGION = 'FR';
 
-function readSettlement(order, orderId, purchaseToken, productId) {
-  if (order.orderId !== orderId || order.purchaseToken !== purchaseToken
-    || !Array.isArray(order.lineItems) || order.lineItems.length !== 1) return null;
-  const item = order.lineItems[0];
-  const money = item?.total;
-  if (item?.productId !== productId || typeof money?.currencyCode !== 'string'
+function readSettlement(money) {
+  if (typeof money?.currencyCode !== 'string'
     || !/^[A-Z]{3}$/.test(money.currencyCode)) return null;
   const units = money.units ?? '0';
   const nanos = money.nanos ?? 0;
@@ -85,6 +82,13 @@ Deno.serve(async (request) => {
     }
     return { ok: response.ok, status: response.status, data };
   };
+  const refund = async (ref, original) => {
+    const { error } = await operator.rpc('lumen_record_purchase', {
+      p_provider: 'play', p_provider_ref: ref, p_user_id: original.user_id, p_product_id: original.product_id,
+      p_amount_cents: original.amount_cents, p_currency: original.currency, p_status: 'refunded', p_purchased_at: original.purchased_at,
+    });
+    if (error) throw Error('refund_failed');
+  };
   try {
     if (body?.mode === 'voided') {
       const secret = Deno.env.get('LUMEN_PLAY_CRON_SECRET');
@@ -100,11 +104,7 @@ Deno.serve(async (request) => {
           if (error) throw Error('lookup_failed');
           if (!original) { unknown++; continue; }
           if (original.status === 'refunded') continue;
-          const { error: recordError } = await operator.rpc('lumen_record_purchase', {
-            p_provider: 'play', p_provider_ref: ref, p_user_id: original.user_id, p_product_id: original.product_id,
-            p_amount_cents: original.amount_cents, p_currency: original.currency, p_status: 'refunded', p_purchased_at: original.purchased_at,
-          });
-          if (recordError) throw Error('record_failed');
+          await refund(ref, original);
           refunded++;
         }
         pageToken = listed.data.tokenPagination?.nextPageToken || '';
@@ -112,6 +112,7 @@ Deno.serve(async (request) => {
       return reply(200, { status: 'synced', seen, refunded, unknown });
     }
 
+    if (body?.mode !== 'verify') return reply(400, { error: 'invalid_request' });
     const token = request.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1];
     if (!token) return reply(401, { error: 'authentication_required' });
     const productId = body?.productId, purchaseToken = body?.purchaseToken;
@@ -130,7 +131,7 @@ Deno.serve(async (request) => {
     if (!checked.ok) return reply(502, { error: 'google_unavailable' });
     const purchase = checked.data;
     if (purchase.purchaseState === 2) return reply(202, { status: 'pending' });
-    if (purchase.purchaseState !== 0) return reply(409, { status: 'not_paid' });
+    if (purchase.purchaseState !== 0 && purchase.purchaseState !== 1) return reply(502, { error: 'google_invalid_response' });
     const ref = await sha256hex(purchaseToken);
     const { data: original, error: lookupError } = await operator.rpc('lumen_purchase_by_ref', {
       p_provider: 'play', p_provider_ref: ref,
@@ -139,21 +140,49 @@ Deno.serve(async (request) => {
     if (original && (original.user_id !== user.id || original.product_id !== internalProductId)) {
       return reply(409, { error: 'purchase_owned_elsewhere' });
     }
+    const denyUnpaid = async () => {
+      if (original && original.status !== 'refunded') await refund(ref, original);
+      return reply(409, original ? { status: 'not_paid', revoked: true } : { status: 'not_paid' });
+    };
+    if (purchase.purchaseState === 1) return await denyUnpaid();
+    if (original?.status === 'refunded') return await denyUnpaid();
+
     const testPurchase = purchase.purchaseType === 0;
+    const accountBinding = purchase.obfuscatedExternalAccountId;
+    if (accountBinding != null && accountBinding !== await sha256hex('lumen-play:' + user.id)) {
+      return reply(409, { error: 'purchase_owned_elsewhere' });
+    }
     let settlement = null;
-    if (!original && !testPurchase) {
+    // Check real orders on replay too, when Google supplied an order ID.
+    if (!testPurchase && (!original || purchase.orderId)) {
       if (purchase.quantity != null && purchase.quantity !== 1) return reply(409, { error: 'unsupported_quantity' });
       if (typeof purchase.orderId !== 'string' || !purchase.orderId) return reply(202, { status: 'pending' });
       const order = await play('/orders/' + encodeURIComponent(purchase.orderId));
-      if (order.status === 404 || order.data?.state === 'PENDING') return reply(202, { status: 'pending' });
+      if (order.status === 404) return reply(202, { status: 'pending' });
       if (!order.ok) return reply(502, { error: 'google_unavailable' });
+      const { orderId, purchaseToken: orderToken, lineItems } = order.data;
+      if (orderId !== purchase.orderId || orderToken !== purchaseToken
+        || !Array.isArray(lineItems) || lineItems.length !== 1 || lineItems[0]?.productId !== productId) {
+        return reply(502, { error: 'unverified_order_identity' });
+      }
+      if (order.data.state === 'REFUNDED' || order.data.state === 'CANCELED') return await denyUnpaid();
+      if (['PENDING', 'PENDING_REFUND'].includes(order.data.state)) return reply(202, { status: 'pending' });
       if (order.data.state !== 'PROCESSED') return reply(409, { status: 'not_paid' });
-      settlement = readSettlement(order.data, purchase.orderId, purchaseToken, productId);
+      settlement = readSettlement(lineItems[0].total);
       if (!settlement) return reply(502, { error: 'unverified_order_total' });
+    }
+    if (!original && accountBinding == null) {
+      // The current TWA does not pass an account binding. Allow only orders the
+      // operator has independently reconciled, after reading the real settlement.
+      const recovery = JSON.parse(Deno.env.get('LUMEN_PLAY_RECOVERY_ORDERS') || '{}');
+      const owner = settlement && Object.hasOwn(recovery, purchase.orderId) && recovery[purchase.orderId];
+      if (!owner) return reply(409, { error: 'purchase_account_unverified' });
+      if (owner !== user.id) return reply(409, { error: 'purchase_owned_elsewhere' });
     }
     const { data: recorded, error: recordError } = await operator.rpc('lumen_record_play_purchase', {
       p_provider_ref: ref, p_user_id: user.id, p_product_id: internalProductId,
-      p_settled_amount: settlement?.amount ?? null, p_settled_currency: settlement?.currency ?? null,
+      p_settled_amount: original ? null : settlement?.amount ?? null,
+      p_settled_currency: original ? null : settlement?.currency ?? null,
       p_counts_toward_cap: testPurchase ? !purchase.regionCode || purchase.regionCode === PLAY_CAP_REGION
         : settlement?.currency === 'EUR' && (!purchase.regionCode || purchase.regionCode === PLAY_CAP_REGION),
       p_test_purchase: testPurchase,
@@ -167,13 +196,17 @@ Deno.serve(async (request) => {
     if (recorded?.status !== 'paid') return reply(409, { status: 'not_paid' });
     let acknowledged = purchase.acknowledgementState === 1;
     if (!acknowledged) {
-      const ack = await play(path + ':acknowledge', { method: 'POST', body: '{}' });
-      acknowledged = ack.ok;
-      if (!ack.ok) console.error('Lumen Play acknowledge failed:', ack.status);
+      try {
+        const ack = await play(path + ':acknowledge', { method: 'POST', body: '{}' });
+        acknowledged = ack.ok;
+        if (!ack.ok) console.error('Lumen Play acknowledge failed:', ack.status);
+      } catch {
+        console.error('Lumen Play acknowledge unavailable');
+      }
     }
     return reply(200, { status: 'paid', acknowledged, adventures: recorded?.adventures || [] });
-  } catch (error) {
-    console.error('Lumen Play purchase failed:', error?.message || 'unknown');
+  } catch {
+    console.error('Lumen Play verification unavailable');
     return reply(503, { error: 'unavailable' });
   }
 });

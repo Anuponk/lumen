@@ -13,7 +13,7 @@ const account={client_email:'verifier@synthetic.iam.gserviceaccount.com',private
 const sha=t=>createHash('sha256').update(t).digest('hex');
 
 function fixture({user={id:'verified-player'},product={product_id:'real-adventure-02',kind:'adventure',price_cents:100,currency:'EUR',active:true},
- purchase={purchaseState:0,acknowledgementState:0,purchaseTimeMillis:'1763200000000',regionCode:'FR',orderId:'GPA.1'},googleStatus=200,
+ purchase={purchaseState:0,acknowledgementState:0,purchaseTimeMillis:'1763200000000',regionCode:'FR',orderId:'GPA.1'},googleStatus=200,bound=true,
  order={orderId:'GPA.1',purchaseToken:'play-token-1',state:'PROCESSED',lineItems:[{productId:'real_adventure_02',total:{currencyCode:'EUR',units:'1',nanos:190000000}}]},orderStatus=200,
  recordError=null,ackOk=true,voided=[[]],known={},env={},secretsMissing=false}={}){
  let handler;const calls=[];
@@ -43,7 +43,7 @@ function fixture({user={id:'verified-player'},product={product_id:'real-adventur
   if(url.includes(':acknowledge'))return new Response('{}',{status:ackOk?200:500});
   if(url.includes('/voidedpurchases')){const body=voided[page]||[];const next=page+1<voided.length?String(page+1):'';page++;
    return new Response(JSON.stringify({voidedPurchases:body,...(next?{tokenPagination:{nextPageToken:next}}:{})}),{status:200})}
-  return new Response(JSON.stringify(purchase),{status:googleStatus});
+  return new Response(JSON.stringify(bound?{obfuscatedExternalAccountId:sha('lumen-play:verified-player'),...purchase}:purchase),{status:googleStatus});
  };
  const values={SUPABASE_URL:'https://synthetic.invalid',SUPABASE_ANON_KEY:'synthetic-public',SUPABASE_SERVICE_ROLE_KEY:'synthetic-service',
   LUMEN_PLAY_SERVICE_ACCOUNT:secretsMissing?'':JSON.stringify(account),LUMEN_PLAY_CRON_SECRET:'cron-secret',...env};
@@ -115,7 +115,7 @@ test('boundary refusals: method, origin, session, request shape, product and mis
 });
 test('missing or unverified order data never grants or acknowledges a real purchase',async()=>{
  for(const [options,status] of [[{orderStatus:404},202],[{orderStatus:403},502],
-   [{order:{state:'REFUNDED'}},409],[{order:{state:'PROCESSED',orderId:'GPA.1',purchaseToken:'other',lineItems:[]}},502],
+   [{order:{state:'REFUNDED',orderId:'GPA.1',purchaseToken:'play-token-1',lineItems:[{productId:'real_adventure_02',total:{currencyCode:'EUR',units:'1'}}]}},409],[{order:{state:'PROCESSED',orderId:'GPA.1',purchaseToken:'other',lineItems:[]}},502],
    [{purchase:{purchaseState:0,quantity:2,orderId:'GPA.1'}},409]]){
   const f=fixture(options);
   assert.equal((await f.request()).status,status);
@@ -125,7 +125,7 @@ test('missing or unverified order data never grants or acknowledges a real purch
 });
 test('historical and license-test purchases do not invent a settlement',async()=>{
  const known={[sha('play-token-1')]:{user_id:'verified-player',product_id:'real-adventure-02',status:'paid'}};
- for(const options of [{known,orderStatus:403},{purchase:{purchaseState:0,purchaseType:0}}]){
+ for(const options of [{known,purchase:{purchaseState:0},orderStatus:403},{purchase:{purchaseState:0,purchaseType:0}}]){
   const f=fixture(options);
   assert.equal((await f.request()).status,200);
   assert.equal(records(f.calls)[0].p_settled_amount,null);
@@ -145,4 +145,54 @@ test('voided purchases are replayed as refunds with their original identity, beh
  const r=await f.request({body:{mode:'voided'},token:null,headers:{'x-lumen-cron':'cron-secret'}});
  assert.deepEqual(await r.json(),{status:'synced',seen:3,refunded:1,unknown:1},'Pagination followed; unknown and already refunded skipped');
  assert.deepEqual(records(f.calls,'lumen_record_purchase'),[{p_provider:'play',p_provider_ref:sha(refT),p_user_id:'u1',p_product_id:'real-adventure-03',p_amount_cents:100,p_currency:'EUR',p_status:'refunded',p_purchased_at:'2026-11-15T10:00:00Z'}]);
+});
+
+test('an unbound Play token cannot create an entitlement for the first caller',async()=>{
+ const f=fixture({bound:false,purchase:{purchaseState:0,orderId:'GPA.1'}});
+ const r=await f.request();
+ assert.equal(r.status,409);
+ assert.deepEqual(await r.json(),{error:'purchase_account_unverified'});
+ assert.deepEqual(records(f.calls),[]);
+ assert(!f.calls.some(c=>c.url?.endsWith(':acknowledge')));
+});
+
+test('an already recorded Play purchase cancelled by Google expires its purchase right',async()=>{
+ const known={[sha('play-token-1')]:{user_id:'verified-player',product_id:'real-adventure-02',amount_cents:100,currency:'EUR',status:'paid'}};
+ const f=fixture({known,purchase:{purchaseState:1}});
+ const r=await f.request();
+ assert.equal(r.status,409);
+ assert.deepEqual(await r.json(),{status:'not_paid',revoked:true});
+ assert.equal(records(f.calls,'lumen_record_purchase')[0]?.p_status,'refunded');
+});
+
+test('only the independently reconciled account can restore a legacy order',async()=>{
+ const env={LUMEN_PLAY_RECOVERY_ORDERS:JSON.stringify({'GPA.1':'verified-player'})};
+ const f=fixture({bound:false,env});
+ assert.equal((await f.request()).status,200);
+ assert.equal(records(f.calls)[0].p_user_id,'verified-player');
+ for(const bound of [true,false]){
+  const other=fixture({bound,env,user:{id:'other-player'}});
+  assert.deepEqual(await (await other.request()).json(),{error:'purchase_owned_elsewhere'});
+  assert.deepEqual(records(other.calls),[]);
+  assert(!other.calls.some(c=>c.url?.endsWith(':acknowledge')));
+ }
+});
+
+test('a missing Play RPC never acknowledges or confirms and the owned order can be retried',async()=>{
+ const failed=fixture({recordError:{code:'PGRST202',message:'synthetic missing RPC'}});
+ assert.deepEqual(await (await failed.request()).json(),{error:'unavailable'});
+ assert(!failed.calls.some(c=>c.url?.endsWith(':acknowledge')));
+ assert.equal((await fixture().request()).status,200);
+});
+
+test('an already recorded order refunded by Google expires its purchase right on restore',async()=>{
+ const known={[sha('play-token-1')]:{user_id:'verified-player',product_id:'real-adventure-02',amount_cents:100,currency:'EUR',status:'paid'}};
+ const order={state:'REFUNDED',orderId:'GPA.1',purchaseToken:'play-token-1',lineItems:[{productId:'real_adventure_02'}]};
+ const f=fixture({known,order});
+ assert.deepEqual(await (await f.request()).json(),{status:'not_paid',revoked:true});
+ assert.equal(records(f.calls,'lumen_record_purchase')[0]?.p_status,'refunded');
+ assert.deepEqual(records(f.calls),[]);
+ const mismatched=fixture({known,order:{...order,purchaseToken:'another'}});
+ assert.equal((await mismatched.request()).status,502);
+ assert.deepEqual(records(mismatched.calls,'lumen_record_purchase'),[]);
 });

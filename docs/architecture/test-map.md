@@ -510,8 +510,8 @@ cover timing, strict records, restoration, read-back, receipt idempotence and
 revision minima. ranking-browser-tests.mjs covers explicit pointer/keyboard entry,
 seven viewports and reduced motion. The full gate includes the new suites.
 
-Payments / #729 #730: play-purchase-handler-tests.mjs and play-billing-tests.mjs
-(Play); stripe-handler-tests.mjs (real Stripe Edge handlers, synthetic Stripe API and
+Payments / #729 #730 #823: play-purchase-handler-tests.mjs and play-billing-tests.mjs
+(Play verification, account binding, refunds, and restore without Payment Request); stripe-handler-tests.mjs (real Stripe Edge handlers, synthetic Stripe API and
 signatures), stripe-checkout-client-tests.mjs (web-only availability, return, no false
 success) and fixtures/stripe-checkout.sql (ranks, ledger, cap, test isolation). Shared
 ledger rules: fixtures/purchases-mastery.sql and fixtures/play-regional-receipts.sql. See [TESTING](../TESTING.md#stripe-checkout-webpwa-test-mode-730).
