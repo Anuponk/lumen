@@ -62,15 +62,15 @@ try{
   await evaluate(`(()=>{
    const events=[];
    const record=event=>{
-    const cell=event.target.closest('[data-row][data-col]');
+    const cell=event.target.closest?.('[data-row][data-col]');
     events.push({type:event.type,tag:event.target.tagName,
      cell:cell?[cell.dataset.row,cell.dataset.col]:null,
      trusted:event.isTrusted,prevented:event.defaultPrevented});
    };
    const types=['pointerdown','pointerup','pointercancel','touchstart','touchend','touchcancel','click'];
-   for(const type of types)document.addEventListener(type,record,true);
+   for(const type of types)document.addEventListener(type,record);
    window.finishTouch805Trace=()=>{
-    for(const type of types)document.removeEventListener(type,record,true);
+    for(const type of types)document.removeEventListener(type,record);
     delete window.finishTouch805Trace;
     return {events,visibility:document.visibilityState,browser:navigator.userAgent};
    };
@@ -86,6 +86,8 @@ try{
    checkTap();
   })`,true);
   const touchTrace=await evaluate('window.finishTouch805Trace()');
+  assert(touchTrace.events.some(event=>event.type==='pointerup'&&event.trusted&&event.cell?.join(',')==='0,1'&&!event.prevented),
+   'The board leaves the native release of a stationary tap uncancelled: '+JSON.stringify(touchTrace));
   assert.equal(guardian,0,'Chrome delivers the synthesized click after the touch ends: '+JSON.stringify(touchTrace));
   await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();s.state[0].splice(0,4,1,2,0,1);lumenDiagnostics.setBoard(s.state)})()`);
   await sweep();
