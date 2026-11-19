@@ -96,9 +96,10 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
   b.onclick=()=>{if(!model.signedIn){onSignIn();return}
   if(!waiver?.checked){setStatus(WAIVER_REQUIRED);waiver?.focus();return}
   onBuy(product,{setStatus,setBusy,waiver:{accepted:true,text:WAIVER_TEXT,at:new Date().toISOString()}})};return b};
- // The consent box is shown only where a purchase can actually start (signed in, provider available).
+ const unitAvailable=model.purchasesAvailable&&model.unitCount>0&&model.unitPriceKnown;
+ const skyAvailable=model.purchasesAvailable&&model.showSky&&model.skyCount>0&&model.skyPriceKnown;
  let waiver=null;
- if(model.purchasesAvailable&&model.signedIn){
+ if(model.signedIn&&(unitAvailable||skyAvailable)){
   const label=el('label',{className:'adventure-offer-consent'});
   waiver=el('input',{type:'checkbox',checked:false});waiver.dataset.offer='waiver';
   waiver.onchange=()=>{if(waiver.checked&&status.textContent===WAIVER_REQUIRED)setStatus('')};
@@ -113,7 +114,7 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
   button.setAttribute('aria-label',title+' · '+price);
   button.textContent=kind==='unit'?'Choisir':'Tout débloquer';
   // Also retain the disabled state through the provider's busy callback.
-  const allowed=model.purchasesAvailable&&count!==null&&count>0&&(kind==='unit'?model.unitPriceKnown:model.skyPriceKnown);
+  const allowed=kind==='unit'?unitAvailable:skyAvailable;
   if(!allowed){buttons.splice(buttons.indexOf(button),1);button.disabled=true}
   card.append(heading,amount,detail,button);return card;
  };
@@ -135,15 +136,15 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
   };
   root.append(restoreButton);
  }
- if(playCheckoutPaused){
-  root.append(el('p',{className:'adventure-offer-soon'},'Les nouveaux achats Google Play sont temporairement suspendus.'));
- }else if(model.pricesRequired){
-  const message=el('p',{className:'adventure-offer-soon'},model.priceStatus==='loading'?'Chargement des tarifs Google Play…':
-   !model.purchasesAvailable||!model.unitPriceKnown||(model.showSky&&!model.skyPriceKnown)?'Google Play ne permet pas cet achat pour le moment. Vérifie ta connexion et réessaie.':'');
+ if(model.pricesRequired){
+  const unavailable=!model.purchasesAvailable||!model.unitPriceKnown||(model.showSky&&!model.skyPriceKnown);
+  const message=el('p',{className:'adventure-offer-soon'},playCheckoutPaused?'Les nouveaux achats Google Play sont temporairement suspendus.':
+   model.priceStatus==='loading'?'Chargement des tarifs Google Play…':
+   unavailable?'Google Play ne permet pas cet achat pour le moment. Vérifie ta connexion et réessaie.':'');
   message.setAttribute('role','status');message.setAttribute('aria-live','polite');
   message.dataset.playPriceReason=(model.priceErrors||[]).map(e=>e.reason).join(',');
   if(message.textContent)root.append(message);
-  if(model.priceStatus!=='loading'&&message.textContent){retryButton=el('button',{type:'button'},'Réessayer');retryButton.dataset.offer='retry';retryButton.onclick=()=>onRetry();root.append(retryButton)}
+  if(model.priceStatus!=='loading'&&(playCheckoutPaused?model.priceErrors?.length:unavailable)){retryButton=el('button',{type:'button'},'Réessayer');retryButton.dataset.offer='retry';retryButton.onclick=()=>onRetry();root.append(retryButton)}
  }else if(!model.purchasesAvailable)root.append(el('p',{className:'adventure-offer-soon'},'Paiement bientôt disponible.'));
  const terms=el('a',{className:'adventure-offer-terms',href:SALES_TERMS_URL,target:'_blank',rel:'noopener'},'Conditions générales de vente');terms.dataset.offer='terms';
  const termsLine=el('p',{className:'adventure-offer-terms-line'});termsLine.append(terms);root.append(termsLine);

@@ -1,6 +1,6 @@
 // #729: client Play Billing module with synthetic Digital Goods and Payment Request.
 import assert from 'node:assert/strict';
-import {PLAY_CHECKOUT_AVAILABLE,PLAY_BINDING_PROBE,createPlayPriceLoader,getPlayBilling,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices,toPlayProductId,PLAY_BILLING_METHOD} from '../src/persistence/play-billing.js';
+import {PLAY_CHECKOUT_AVAILABLE,PLAY_BINDING_PROBE,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices,toPlayProductId,PLAY_BILLING_METHOD} from '../src/persistence/play-billing.js';
 import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery} from '../src/ui/adventure-offer.js';
@@ -13,10 +13,10 @@ assert.equal(toPlayProductId('real-adventure-02'),'real_adventure_02');
 assert.equal(toPlayProductId('real-sky-all'),'real_sky_all');
 assert.equal(toPlayProductId('base-real-sky'),'base-real-sky');
 // Availability: only where the Digital Goods API answers (the Play app).
-assert.equal(await getPlayBilling({}),null,'Browsers and iPhone have no Play offer');
-assert.equal(await getPlayBilling({getDigitalGoodsService:async()=>{throw Error('unsupported')},PaymentRequest:function(){}}),null);
+assert.equal(await getPlayPurchaseService({}),null,'Browsers and iPhone have no Play offer');
+assert.equal(await getPlayPurchaseService({getDigitalGoodsService:async()=>{throw Error('unsupported')},PaymentRequest:function(){}}),null);
 const service={id:'svc'};
-assert.equal(await getPlayBilling({getDigitalGoodsService:async m=>m===PLAY_BILLING_METHOD?service:null,PaymentRequest:function(){}}),service);
+assert.equal(await getPlayPurchaseService({getDigitalGoodsService:async m=>m===PLAY_BILLING_METHOD?service:null,PaymentRequest:function(){}}),service);
 
 // Server verification mapping.
 const reply=(status,body)=>async()=>({status,json:async()=>body});
@@ -105,7 +105,9 @@ assert.equal(loader.snapshot().prices[ids[0]],full[toPlayProductId(ids[0])]);
 assert.deepEqual(await buyWithPlay({win:{PaymentRequest:function(){throw Error('unsupported')}},productId:ids[0],obfuscatedAccountId:binding,verify:()=>{throw Error('must not verify')}}),{status:'error',reason:'payment_unsupported'});
 for(const override of [{PaymentRequest:undefined},{PaymentRequest:function(){this.canMakePayment=async()=>false}}]){
  loader=createPlayPriceLoader({win:{...win,...override},ids,playApp:true});await loader.load();
- assert.equal(loader.snapshot().service,null);assert.equal(loader.snapshot().errors[0].reason,'payment_unsupported');
+ assert(loader.snapshot().service,'Digital Goods remains available for recovery');
+ assert.equal(loader.snapshot().paymentSupported,false);
+ assert.equal(loader.snapshot().errors[0].reason,'payment_unsupported');
 }
 // Initially missing service, then successful retry. A TWA never falls back to Stripe.
 let available=false;
@@ -126,12 +128,20 @@ const detection=loader.load();await new Promise(resolve=>setImmediate(resolve));
 assert.deepEqual(detected.at(-1),{playApp:true,status:'loading'});
 completeDetails(rows);await detection;
 const probeMarker=[{itemId:PLAY_BINDING_PROBE,title:PLAY_BINDING_PROBE,price:{currency:'EUR',value:'0'}}];
-for(const [probe,supported] of [[[],false],[probeMarker,true]]){
+for(const [probe,supported,reason] of [
+ [[],false,'binding_probe_unsupported'],
+ [[{...probeMarker[0],title:'unexpected'}],false,'binding_probe_unsupported'],
+ [[...probeMarker,...probeMarker],false,'binding_probe_unsupported'],
+ [null,false,'binding_probe_failed'],
+ [probeMarker,true,undefined]
+]){
  const compatible=createPlayPriceLoader({win:{...win,getDigitalGoodsService:async()=>({
-  getDetails:async requested=>requested[0]===PLAY_BINDING_PROBE?probe:rows
- })},ids,probeBinding:true,checkPayment:false});
+  getDetails:async requested=>requested[0]===PLAY_BINDING_PROBE?(probe??Promise.reject(Error('raw provider error'))):rows
+ })},ids,probeBinding:true});
  await compatible.load();
  assert.equal(compatible.snapshot().supportsBinding,supported);
+ assert.equal(compatible.snapshot().errors[0]?.reason,reason);
+ assert.equal(compatible.snapshot().paymentSupported,true);
  assert.equal(Object.keys(compatible.snapshot().prices).length,ids.length);
 }
 
@@ -148,9 +158,9 @@ class Node{
  all(){return this.children.flatMap(c=>c instanceof Node?[c,...c.all()]:[])}
 }
 globalThis.document={createElement:tag=>new Node(tag),createTextNode:text=>({text})};
-let resolveDetails,failDetails=true,verifications=0;
+let resolveDetails,failDetails=true,verifications=0,marker=probeMarker;
 const delayedWin={...win,document:{referrer:'android-app://com.nopuna.lumen'},getDigitalGoodsService:async()=>({getDetails:requested=>requested[0]===PLAY_BINDING_PROBE
- ?Promise.resolve(probeMarker):new Promise((resolve,reject)=>{resolveDetails=()=>failDetails?reject(Error('offline')):resolve(rows)})})};
+ ?Promise.resolve(marker):new Promise((resolve,reject)=>{resolveDetails=()=>failDetails?reject(Error('offline')):resolve(rows)})})};
 const host=new Node('div'),savedProgress={solved:{0:1}},saved=structuredClone(savedProgress);
 const context=vm.createContext({PLAY_CHECKOUT_AVAILABLE:true,window:delayedWin,console,createPlayPriceLoader,isPlayDistributedApp,CONTENT_PACKS,SKY_PRODUCT_ID,
  adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery,canonicalQuestList,contentMapModel:()=>({skies:[{packs}]}),adventureAccessEntitlements:()=>[],adventureEntitlementsState:()=> 'ready',
@@ -172,6 +182,9 @@ failDetails=false;find('retry').onclick();
 const retry=vm.runInContext('playPriceLoader.load()',context);
 await new Promise(resolve=>setImmediate(resolve));resolveDetails();await retry;
 assert.equal(find('unit').disabled,false,'An already-open offer updates after retry');
+assert.equal(find('waiver').checked,false);
+find('unit').onclick();
+assert.equal(verifications,0,'No purchase callback before express consent');
 assert.match(find('unit').attributes['aria-label'],/1,00\s€/);
 assert.equal(verifications,0);assert.equal(shows,0);assert.deepEqual(savedProgress,saved,'Prices cannot grant rights or change progress');
 vm.runInContext("lumenEntitlements=[{source:'purchase'}];renderAdventureOffer(host,pack)",context);
@@ -217,6 +230,19 @@ context.lumenUser={id:'other'};
 progressReply({data:{remaining:0,unlocked:true}});
 await new Promise(resolve=>setImmediate(resolve));
 assert.equal(count().hidden,true,'The prior owner cannot publish a later reply');
+// A bad probe or unavailable Payment Request must block the real checkout UI.
+const supportedPayment=delayedWin.PaymentRequest;
+for(const unavailable of ['binding_probe_unsupported','payment_unsupported']){
+ marker=unavailable==='binding_probe_unsupported'?[]:probeMarker;
+ delayedWin.PaymentRequest=unavailable==='payment_unsupported'?function(){this.canMakePayment=async()=>false}:supportedPayment;
+ const reload=vm.runInContext('playPriceLoader.load()',context);
+ await new Promise(resolve=>setImmediate(resolve));resolveDetails();await reload;
+ assert.equal(find('unit').disabled,true);
+ assert.equal(find('waiver'),undefined);
+ assert(host.all().some(n=>n.dataset.playPriceReason===unavailable));
+ assert.equal(vm.runInContext('playBoundCheckoutAvailable()',context),false);
+}
+assert.equal(shows,0);
 // Partial prices remain disabled even after a sibling purchase's busy callback.
 let controls;
 mountAdventureOffer(host,adventureOfferModel({...base,pricesRequired:true,priceStatus:'partial',prices:{[SKY_PRODUCT_ID]:'5,00 €'}}),{onBuy:(_id,ctx)=>{controls=ctx}});
@@ -227,16 +253,16 @@ loader=createPlayPriceLoader({win:{...win,getDigitalGoodsService:()=>new Promise
 await loader.load();assert.equal(loader.snapshot().status,'error');assert.equal(loader.snapshot().errors[0].reason,'service_unavailable');
 console.log('play-billing-tests P1: nine SKUs, validation, delayed DOM refresh, retry, CTA, channel isolation and no grants OK');
 
-assert.equal(PLAY_CHECKOUT_AVAILABLE,false,'The shipped TWA cannot securely bind new purchases');
+assert.equal(PLAY_CHECKOUT_AVAILABLE,false,'Production acceptance is required before opening sales');
 const purchaseState={status:503,body:{error:'unavailable'}};
-let listings=0,reads=0,renders=0,playAttempts=0,changeDuringList=false,authChecks=0;
+let listings=0,reads=0,renders=0,playAttempts=0,changeDuringList=false,authChecks=0,paymentChecks=0;
 const verifyTokens=[];
 const authClient={auth:{getSession:async()=>{authChecks++;return {data:{session:{user:{id:'owner'},access_token:'synthetic-jwt'}}}}}};
 const originalProgress={solved:{0:1},stars:7,performances:{0:{badges:['speed']}},shards:50};
 const expectedProgress=structuredClone(originalProgress);
 const recoveryWin={
  document:{referrer:'android-app://com.nopuna.lumen'},
- PaymentRequest:function(){},
+ PaymentRequest:function(){this.canMakePayment=async()=>{paymentChecks++;return true}},
  getDigitalGoodsService:async()=>({getDetails:async requested=>requested[0]===PLAY_BINDING_PROBE?probeMarker:rows,listPurchases:async()=>{
   listings++;
   if(changeDuringList)recovery.lumenUser={id:'other'};
@@ -266,10 +292,15 @@ vm.runInContext(normalized.slice(normalized.indexOf('let playBilling=null'),norm
 vm.runInContext(normalized.slice(normalized.indexOf('function renderAdventureOffer('),normalized.indexOf('// #728: ask the server')),recovery);
 await vm.runInContext('playBillingReady',recovery);
 vm.runInContext('renderAdventureOffer(restoreHost,pack)',recovery);
+assert.equal(paymentChecks,1,'The sale switch must not mask Payment Request readiness');
+assert.equal(restoreHost.all().find(n=>n.dataset.offer==='waiver'),undefined,'A paused checkout has no consent control');
+assert.match(restoreHost.all().map(n=>n.textContent).join(' '),/temporairement suspendus/);
+assert.equal(vm.runInContext('playBoundCheckoutAvailable()',recovery),false,'Both device checks can pass during the operational pause');
 const restore=()=>restoreHost.all().find(n=>n.dataset.offer==='restore-play');
 const status=()=>restoreHost.all().find(n=>Object.hasOwn(n.dataset,'offerStatus')).textContent;
 assert.equal(restoreHost.all().find(n=>n.dataset.offer==='unit').disabled,true);
 assert.equal(restore().textContent,'Vérifier mes achats Google Play');
+delete recoveryWin.PaymentRequest;
 const firstRestore=restore().onclick();
 assert.match(status(),/Vérification des achats/);
 await firstRestore;
@@ -309,6 +340,10 @@ const checkoutStatuses=[];
 const checkoutCtx={setBusy:()=>{},setStatus:message=>checkoutStatuses.push(message),waiver:{accepted:true}};
 let thanks=0;
 let sheets=0,bindingRequests=0;
+recoveryWin.PaymentRequest=function(methods){
+ assert.deepEqual(methods,[{supportedMethods:PLAY_BILLING_METHOD,data:{sku:toPlayProductId(pack.id),obfuscatedAccountId:binding}}]);
+ this.show=async()=>{sheets++;return response('new-purchase')};
+};
 authClient.rpc=async(name,args)=>{
  assert.equal(name,'lumen_prepare_play_purchase');
  assert.equal(args.p_expected_user_id,recovery.lumenUser.id);
@@ -318,15 +353,16 @@ authClient.rpc=async(name,args)=>{
 Object.assign(recovery,{
  PLAY_CHECKOUT_AVAILABLE:true,lumenUser:{id:'owner'},cloudProfileReady:false,checkoutCtx,toPlayProductId,
  thankForPurchase:()=>thanks++,
- buyWithPlay:async({verify,obfuscatedAccountId})=>{
-  assert.equal(obfuscatedAccountId,binding);
-  sheets++;
-  return verify('real_adventure_02','existing-purchase');
- },
+ buyWithPlay:args=>buyWithPlay({...args,win:recoveryWin}),
  loadEntitlements:async()=>{recovery.lumenEntitlementsState='error'}
 });
-vm.runInContext("playBilling={};playPriceLabels={'real-adventure-02':'1,00 €'}",recovery);
 const checkout=()=>vm.runInContext("purchaseAdventure('real-adventure-02',checkoutCtx)",recovery);
+assert.equal(vm.runInContext('playBoundCheckoutAvailable()',recovery),true);
+checkoutCtx.waiver.accepted=false;
+await checkout();
+assert.equal(sheets,0);
+assert.equal(bindingRequests,0);
+checkoutCtx.waiver.accepted=true;
 await checkout();
 assert.equal(sheets,0,'Never open Play until the preparation is registered');
 assert.equal(bindingRequests,1);
@@ -347,3 +383,4 @@ recovery.lumenUser={id:'other'};
 const sheetsBeforeSwitch=sheets;
 await checkout();
 assert.equal(sheets,sheetsBeforeSwitch,'The previous account binding cannot open a payment');
+assert.deepEqual(verifyTokens.slice(-3),Array.from({length:3},()=>['Bearer synthetic-jwt','new-purchase']));

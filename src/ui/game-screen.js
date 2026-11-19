@@ -4184,13 +4184,23 @@ let celestialPending=null;
 // every token (Edge Function lumen-play-purchase) and records it (#728); the client
 // never grants and never announces a purchase the server did not confirm.
 let playBilling=null,playPriceLabels={};
-const playPriceLoader=createPlayPriceLoader({win:window,playApp:isPlayDistributedApp(window),checkPayment:PLAY_CHECKOUT_AVAILABLE,probeBinding:true,
+const playPriceLoader=createPlayPriceLoader({win:window,playApp:isPlayDistributedApp(window),probeBinding:true,
  ids:[...CONTENT_PACKS.filter(p=>p.access==='locked').map(p=>p.id),SKY_PRODUCT_ID],
- onChange:state=>{playBilling=state.status==='loading'?null:state.service;playPriceLabels=state.prices;if(state.supportsBinding)void preparePlayPurchaseAccount();refreshAdventureOffer?.()},
+ onChange:state=>{
+  playBilling=state.status==='loading'?null:state.service;
+  playPriceLabels=state.prices;
+  if(state.playApp&&state.status!=='loading'){
+   console.info('[Lumen Play billing]',{reason:'checkout_readiness',salesEnabled:PLAY_CHECKOUT_AVAILABLE,
+    serviceAvailable:!!state.service,supportsBinding:state.supportsBinding,paymentSupported:state.paymentSupported,pricedProducts:Object.keys(state.prices).length});
+   if(playBoundCheckoutAvailable())void preparePlayPurchaseAccount();
+  }
+  refreshAdventureOffer?.();
+ },
  onDiagnostic:event=>{if(isPlayDistributedApp(window)||playPriceLoader.snapshot().playApp)console.info('[Lumen Play billing]',event)}
 });
 function playBoundCheckoutAvailable(){
- return PLAY_CHECKOUT_AVAILABLE&&playPriceLoader.snapshot().supportsBinding;
+ const {supportsBinding,paymentSupported}=playPriceLoader.snapshot();
+ return PLAY_CHECKOUT_AVAILABLE&&supportsBinding&&paymentSupported;
 }
 let playBillingReady=playPriceLoader.load();
 async function playVerify(productId,purchaseToken,client,owner){
@@ -4215,7 +4225,12 @@ async function preparePlayPurchaseAccount(){
   if(!error&&playPurchaseAccount===account&&lumenUser?.id===owner&&lumenSupabase===client
     &&typeof data==='string'&&/^[0-9a-f]{64}$/.test(data))account.binding=data;
  }catch{/* The checkout stays unavailable until preparation succeeds. */}
- finally{if(!account.binding&&playPurchaseAccount===account)playPurchaseAccount=null}
+ finally{
+  if(!account.binding&&playPurchaseAccount===account){
+   playPurchaseAccount=null;
+   if(lumenUser?.id===owner&&lumenSupabase===client)console.info('[Lumen Play billing]',{reason:'account_binding_unavailable'});
+  }
+ }
 }
 async function purchaseAdventure(productId,{setStatus,setBusy,waiver}){
  if(!lumenUser||qaActive)return;
@@ -4430,7 +4445,7 @@ function renderAdventureOffer(container,pack,{close}={}){
  const mounted=mountAdventureOffer(container,offer,{
   onRetry:()=>{playBillingReady=playPriceLoader.load()},
   onSignIn:()=>{close?.();openEmailAccountOffer('signup')},
-  playCheckoutPaused:offer.pricesRequired&&!playBoundCheckoutAvailable(),
+  playCheckoutPaused:offer.pricesRequired&&!PLAY_CHECKOUT_AVAILABLE,
   onRestorePlay:offer.pricesRequired&&offer.signedIn?async()=>{
    const owner=lumenUser?.id;
    const message=playRestoreMessage(await restorePlayForCurrentAccount(),{manual:true});
