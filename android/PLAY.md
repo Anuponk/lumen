@@ -169,6 +169,9 @@ avec le même fichier que `main` à `1271184`. La RPC
 `lumen_record_play_purchase` était présente. Aucun job Play n'a été identifié
 dans `cron.job`. Le rapprochement de la commande signalée reste à effectuer
 en privé. Google a indiqué une annulation du test faute d'acknowledgement.
+Le contrôle HTTP public du même jour a retrouvé la version web
+`1.11.1+668` au SHA `1271184`, avec l'ouverture d'un nouveau paiement Play
+désactivée. Cette vérification ne détermine pas le SHA servi lors de l'achat.
 
 Android Browser Helper `billing:1.2.0` transmet le SKU, sans l’identifiant de
 compte obfusqué. Le [support amont](https://github.com/GoogleChrome/android-browser-helper/pull/622)
@@ -247,6 +250,13 @@ retrait du seul droit d'achat devenu caduc, progression comprise dans la
 comparaison avant/après. Cinq aventures distinctes valides donnent le ciel
 principal, indépendamment de la devise et du canal. Consigner les états et
 les horaires sans identifiant de commande ni jeton.
+
+Déployer la RPC de lecture de la boutique (#819) après la nouvelle règle
+serveur (#728). Vérifier les libellés de 0 à 5 achats, l'absence de compteur
+avant connexion et la disparition de l'offre lorsque tout le ciel principal
+est déjà acquis. Faire relire les CGV (#818) avant diffusion. Pour la revue
+Play, suivre la [checklist du compte de revue](TESTING.md#recette-du-compte-de-revue-play-796)
+après livraison de sa capacité de navigation dédiée.
 
 Le fichier d’environnement privé définit `LUMEN_PLAY_SERVICE_ACCOUNT`,
 `LUMEN_PLAY_PACKAGE=com.nopuna.lumen` et `LUMEN_PLAY_CRON_SECRET`. Les
