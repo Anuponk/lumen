@@ -53,3 +53,11 @@ export function guestNeedsReconciliation(guest,cloud){
  }
  return !cloudSafelyCoversLocal(guest,cloud);
 }
+
+// #801: only a real guest may hand its positive achievements to the account
+// that signs in. A cache carrying an account wallet/legacy cursor without an
+// owner belonged to some account: merging it elsewhere would mix identities.
+export function guestAcquisitionRecoveryEligible(guest){
+ return !!guest&&typeof guest==='object'&&!Array.isArray(guest)&&
+  guest.walletRevision===undefined&&guest.legacyVictoryRevision===undefined;
+}

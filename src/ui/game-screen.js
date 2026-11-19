@@ -34,7 +34,7 @@ import {currentCatalogueOrigin} from '../campaign/catalogue-origin.js';
 import {canonicalAttemptToResume,nextCanonicalAtLegacyBoundary,preserveAttemptSnapshot} from '../campaign/campaign-resume.js';
 import {installVerifiedQuestResets} from '../persistence/quest-reset-install.js';
 import {createCloudPersistence} from "../persistence/cloud.js";
-import {guestAccountSeed,preserveGuestBeforeHydration,guestNeedsReconciliation} from '../persistence/guest-account.js';
+import {guestAccountSeed,preserveGuestBeforeHydration,guestNeedsReconciliation,guestAcquisitionRecoveryEligible} from '../persistence/guest-account.js';
 import {storageReport,archiveRecoveryBackups} from '../persistence/storage-maintenance.js';
 import {reconcileDailyIntoCloudProfile} from "../persistence/daily-hydration.js";
 import {preserveRecoverySnapshot,CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievementsDurably,achievementRecoveryDiagnostic,reconciliationFailureDiagnostic,hydrationFailureDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles,reconcilePlayerAcquisitions} from "../persistence/cloud-profile.js";
@@ -766,7 +766,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
  const hydrationGeneration=++cloudHydrationGeneration;
  const sessionValid=()=>lumenUser?.id===accountId&&lumenSupabase===hydrationClient&&!qaActive&&cloudHydrationGeneration===hydrationGeneration;
  cloudProfileReady=false;cloudProfileBaseline=null;
- let hydrationStage="start";
+ let hydrationStage="start",guestRecovered=false;
  try{
   hydrationStage="local_read";
   const original=localStorage.getItem("lumenProgressV1");
@@ -803,7 +803,27 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
    }
    if(!sessionValid())return;
    if(resolution.status==='reconciled'||resolution.status==='cloud_dominant')cloud=resolution.profile;
-   if(guestNeedsReconciliation(incoming,cloud)){
+   // #801: a historical guest whose shards/daily diverge from the verified
+   // wallet can never be written by the client. Hand the exact bytes to the
+   // server acquisition recovery, which unions positive achievements and keeps
+   // shards, walletRevision, daily and receipts. A cache that carries an
+   // account cursor without an owner is not a guest and stays held.
+   if(resolution.status==='blocked'&&guestNeedsReconciliation(incoming,cloud)&&guestAcquisitionRecoveryEligible(incoming)&&localStorage.getItem('lumenProgressV1')===original){
+    hydrationStage='guest_acquisition_recovery';
+    try{
+     const recovery=await reconcilePlayerAcquisitions(hydrationClient,localStorage,cloud,{userId:accountId,sessionValid});
+     if(!sessionValid()||recovery.interrupted)return;
+     if(recovery.status==='reconciled'){
+      cloud=recovery.profile;guestRecovered=true;
+      recordCloudDiagnostic('guest_acquisitions_recovered',{from:String(resolution.reason||'unknown').slice(0,48),domain:reconciliationFailureDiagnostic(resolution.reason).domain,memoryOnly:!!recovery.memoryOnly});
+     }
+    }catch(error){
+     if(!sessionValid())return;
+     recordCloudDiagnostic('acquisition_recovery_pending',hydrationFailureDiagnostic(error,hydrationStage));
+    }
+    hydrationStage='guest_reconciliation';
+   }
+   if(!guestRecovered&&guestNeedsReconciliation(incoming,cloud)){
     const fields=Array.isArray(resolution.fields)?[...new Set(resolution.fields.map(key=>Object.hasOwn(CLOUD_PROFILE_FIELDS,key)?key:'unknown_field'))].slice(0,8):[];
     const refusal=reconciliationFailureDiagnostic(resolution.reason,fields);
     recordCloudDiagnostic('hydration_reconciliation',{result:'blocked',reason:resolution.reason||'cloud_local_divergence',domain:refusal.domain,stage:hydrationStage,fields});
@@ -929,7 +949,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   }
   // Local play may advance while initialization/daily reads are in flight.
   // Recheck the latest bytes, not just the guest captured before those awaits.
-  if(switchingOwner&&!currentOwner&&currentLocal&&guestNeedsReconciliation(JSON.parse(currentLocal),cloud)){
+  if(switchingOwner&&!currentOwner&&currentLocal&&!(guestRecovered&&currentLocal===original)&&guestNeedsReconciliation(JSON.parse(currentLocal),cloud)){
    hydrationStage='guest_changed_during_hydration';
    throw Error('Progression invitée conservée : nouveaux acquis à synchroniser');
   }
