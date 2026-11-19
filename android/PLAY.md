@@ -175,13 +175,19 @@ désactivée. Cette vérification ne détermine pas le SHA servi lors de l'achat
 
 Android Browser Helper `billing:1.2.0` transmet le SKU, sans l’identifiant de
 compte obfusqué. Le [support amont](https://github.com/GoogleChrome/android-browser-helper/pull/622)
-est en revue. La version web de ce correctif suspend les nouveaux achats Play et
-garde la restauration des achats existants. Le propriétaire peut suspendre les
-produits intégrés dans Play Console pendant la préparation de la publication si
-des clients servent encore l’ancien code. Pour réactiver les ventes, publier un
-client Android qui passe à Google le SHA-256 de `lumen-play:` suivi de l’UUID Auth.
-Valider sur une installation Play que Google renvoie cette valeur, que les anciens
-clients restent protégés et qu’un autre compte est refusé.
+est en revue. Le [module Billing adapté](billing/README.md) passe à Google le
+SHA-256 de `lumen-play:` suivi de l’UUID Auth. Le Web exige que le module
+réponde à la sonde de compatibilité. Les anciens APK gardent les prix et la
+vérification des achats existants. Le commutateur Web garde les nouveaux
+achats fermés tant que le déploiement complet reste à vérifier.
+
+Pour préparer le candidat Play, construire un AAB signé avec la clé d'upload
+et le prochain code de version libre dans Play Console. Suivre [SIGNING](SIGNING.md).
+La CI construit un AAB sans signature d'upload. Sur une installation de piste
+interne, vérifier la sonde, le retour de la liaison par Google, le refus d’un
+autre compte et les notifications de test Pub/Sub. Vérifier aussi le premier
+traitement par l’ordonnanceur. La remise en service du commutateur Web s'applique
+aux seuls wrappers compatibles.
 
 **Avant toute activation, avec accord du propriétaire :**
 

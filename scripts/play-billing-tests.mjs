@@ -1,6 +1,6 @@
 // #729: client Play Billing module with synthetic Digital Goods and Payment Request.
 import assert from 'node:assert/strict';
-import {PLAY_CHECKOUT_AVAILABLE,createPlayPriceLoader,getPlayBilling,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices,toPlayProductId,PLAY_BILLING_METHOD} from '../src/persistence/play-billing.js';
+import {PLAY_CHECKOUT_AVAILABLE,PLAY_BINDING_PROBE,createPlayPriceLoader,getPlayBilling,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices,toPlayProductId,PLAY_BILLING_METHOD} from '../src/persistence/play-billing.js';
 import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery} from '../src/ui/adventure-offer.js';
@@ -70,7 +70,7 @@ assert.equal(purchaseProgressMessage(null),'','Neither provider price supplies a
 
 // Wiring: the Play offer exists only with Play Billing, outside QA; verification goes to the Edge Function.
 const screen=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
-assert.match(screen,/purchasesAvailable:\(inPlay\?PLAY_CHECKOUT_AVAILABLE&&!!playBilling:stripeAvailable\(\)\)&&!qaActive,boughtSingle:lumenEntitlements\.some\(e=>e\?\.source==='purchase'\)/,'Play in the Play app, Stripe (#730) on the web only');
+assert.match(screen,/purchasesAvailable:\(inPlay\?playBoundCheckoutAvailable\(\)&&!!playBilling:stripeAvailable\(\)\)&&!qaActive,boughtSingle:lumenEntitlements\.some\(e=>e\?\.source==='purchase'\)/,'Play in the Play app, Stripe (#730) on the web only');
 assert.match(screen,/'\/functions\/v1\/lumen-play-purchase'/);
 console.log('play-billing-tests: availability, verification, purchase, restore, prices and offer rule OK');
 
@@ -125,6 +125,15 @@ loader=createPlayPriceLoader({win:{...win,getDigitalGoodsService:async()=>({getD
 const detection=loader.load();await new Promise(resolve=>setImmediate(resolve));
 assert.deepEqual(detected.at(-1),{playApp:true,status:'loading'});
 completeDetails(rows);await detection;
+const probeMarker=[{itemId:PLAY_BINDING_PROBE,title:PLAY_BINDING_PROBE,price:{currency:'EUR',value:'0'}}];
+for(const [probe,supported] of [[[],false],[probeMarker,true]]){
+ const compatible=createPlayPriceLoader({win:{...win,getDigitalGoodsService:async()=>({
+  getDetails:async requested=>requested[0]===PLAY_BINDING_PROBE?probe:rows
+ })},ids,probeBinding:true,checkPayment:false});
+ await compatible.load();
+ assert.equal(compatible.snapshot().supportsBinding,supported);
+ assert.equal(Object.keys(compatible.snapshot().prices).length,ids.length);
+}
 
 // Exercise the production screen wiring + real offer DOM with a delayed provider.
 class Node{
@@ -140,13 +149,15 @@ class Node{
 }
 globalThis.document={createElement:tag=>new Node(tag),createTextNode:text=>({text})};
 let resolveDetails,failDetails=true,verifications=0;
-const delayedWin={...win,document:{referrer:'android-app://com.nopuna.lumen'},getDigitalGoodsService:async()=>({getDetails:()=>new Promise((resolve,reject)=>{resolveDetails=()=>failDetails?reject(Error('offline')):resolve(rows)})})};
+const delayedWin={...win,document:{referrer:'android-app://com.nopuna.lumen'},getDigitalGoodsService:async()=>({getDetails:requested=>requested[0]===PLAY_BINDING_PROBE
+ ?Promise.resolve(probeMarker):new Promise((resolve,reject)=>{resolveDetails=()=>failDetails?reject(Error('offline')):resolve(rows)})})};
 const host=new Node('div'),savedProgress={solved:{0:1}},saved=structuredClone(savedProgress);
 const context=vm.createContext({PLAY_CHECKOUT_AVAILABLE:true,window:delayedWin,console,createPlayPriceLoader,isPlayDistributedApp,CONTENT_PACKS,SKY_PRODUCT_ID,
  adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery,canonicalQuestList,contentMapModel:()=>({skies:[{packs}]}),adventureAccessEntitlements:()=>[],adventureEntitlementsState:()=> 'ready',
  attemptEngine:{snapshot:()=>({})},lumenProgress:savedProgress,lumenUser:{id:'synthetic'},lumenEntitlements:[],qaActive:false,mapCatalogueOverride:null,refreshAdventureOffer:null,authSessionPending:false,cloudProfileReady:true,cloudProfileFailure:null,lumenEntitlementsState:'ready',navigator:{onLine:true},
  localStorage:{getItem:key=>key==='lumenCloudOwnerId'?'synthetic':null},
  lumenSupabase:null,
+ preparePlayPurchaseAccount:async()=>{},
  stripeAvailable:()=>false,purchaseAdventure:()=>{verifications++},host,pack});
 const normalized=screen.replace(/\r\n/g,'\n');
 vm.runInContext(normalized.slice(normalized.indexOf('let playBilling=null'),normalized.indexOf('async function playVerify')),context);
@@ -225,7 +236,8 @@ const originalProgress={solved:{0:1},stars:7,performances:{0:{badges:['speed']}}
 const expectedProgress=structuredClone(originalProgress);
 const recoveryWin={
  document:{referrer:'android-app://com.nopuna.lumen'},
- getDigitalGoodsService:async()=>({listPurchases:async()=>{
+ PaymentRequest:function(){},
+ getDigitalGoodsService:async()=>({getDetails:async requested=>requested[0]===PLAY_BINDING_PROBE?probeMarker:rows,listPurchases:async()=>{
   listings++;
   if(changeDuringList)recovery.lumenUser={id:'other'};
   return [{itemId:'real_adventure_02',purchaseToken:'existing-purchase'}];
