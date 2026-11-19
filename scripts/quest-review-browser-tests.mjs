@@ -26,6 +26,9 @@ const progress = {
 const results = [];
 try {
   await send('Page.enable');
+  // Worker takeover reloads the document independently of review navigation.
+  // That browser lifecycle is exercised in service-worker-update-browser-tests.
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: 'delete Object.getPrototypeOf(navigator).serviceWorker' });
   const guestFixture = await send('Page.addScriptToEvaluateOnNewDocument', {
     source: `localStorage.setItem('lumenProgressV1',${JSON.stringify(JSON.stringify(progress))});localStorage.setItem('lumenSound','off');localStorage.setItem('lumenTutorialSeen','1');localStorage.setItem('lumenInstallLater',String(Date.now()));localStorage.setItem('lumenPushChoice','later');`,
   });
@@ -225,7 +228,7 @@ window.__fixtureRankingBoard=id=>{
       await touch('touchEnd');
     };
     const podiumReady = quest => until(`document.querySelector('#skyRevealPodium .ranking-name')?.textContent.startsWith(${JSON.stringify(quest)})`);
-    const kicker = () => evaluate("document.getElementById('skyRevealKicker').textContent");
+    const kicker = () => evaluate("document.getElementById('skyRevealKicker')?.textContent ?? 'Review document left at ' + location.href");
     const crown = '#skyRevealPodium .ranking-row.ranking-step-1';
     const reply = async () => {
       await evaluate('window.__rankingReply()');
@@ -244,13 +247,16 @@ window.__fixtureRankingBoard=id=>{
     await podiumReady('base-q003');
     assert.equal(await evaluate("document.querySelector('#skyReveal .sky-reveal-card').scrollTop"), 0, 'Horizontal swipes do not scroll the review');
     await drag(await hitPoint(crown), -15, -70);
-    // A native Back gesture is allowed from the edge. Keep that history entry
-    // in this document so browser Back cannot replace the test fixture.
-    await evaluate("history.pushState(null, '', '#ranked-review-edge')");
+    assert.match(await kicker(), /QUÊTE 3/, 'A vertical drag cannot browse');
+    // Browser history gestures are native at the edge. Give both directions
+    // same-document entries so browser navigation cannot unload the fixture.
+    await evaluate("for(let n=0;n<7;n++)history.pushState(null,'','#ranked-review-edge-'+n);history.go(-3)");
+    await until("location.hash === '#ranked-review-edge-3'");
     await drag({ x: 5, y: Math.round(height / 2) }, 105, 0);
+    assert.match(await kicker(), /QUÊTE 3/, 'A drag beginning at the browser edge cannot browse');
     const replayButton = await hitPoint('#skyRevealRetry');
     await drag(replayButton, replayButton.x < width / 2 ? 105 : -105, 0);
-    assert.match(await kicker(), /QUÊTE 3/, 'Vertical, edge and button gestures leave the review on the same quest');
+    assert.match(await kicker(), /QUÊTE 3/, 'A button-origin drag cannot browse or start a quest');
     assert.equal(await evaluate('window.__podiumTaps'), 1, 'A drag cannot click a podium row');
     assert.equal(await evaluate("localStorage.getItem('lumenProgressV1')"), profileBefore, 'Ranked browsing does not write a save');
     assert.equal(await evaluate("JSON.stringify(lumenDiagnostics.snapshot())"), attemptBefore, 'Ranked browsing never launches a quest');
