@@ -4198,6 +4198,23 @@ async function playVerify(productId,purchaseToken,client,owner){
  if(!current()||data?.session?.user?.id!==owner)return {status:'error',reason:'session'};
  return verifyPlayPurchase({endpoint:LUMEN_SUPABASE_URL+'/functions/v1/lumen-play-purchase',apiKey:LUMEN_SUPABASE_KEY,accessToken:data.session.access_token,productId,purchaseToken});
 }
+// Register before Payment Request so a push arriving before the browser result
+// can find the player, and so the payment sheet keeps the original user gesture.
+let playPurchaseAccount=null;
+async function preparePlayPurchaseAccount(){
+ const owner=lumenUser?.id,client=lumenSupabase;
+ if(!PLAY_CHECKOUT_AVAILABLE||!owner||!client||qaActive)return;
+ if(!isPlayDistributedApp(window)&&!playPriceLoader.snapshot().playApp)return;
+ if(playPurchaseAccount?.owner===owner&&playPurchaseAccount.client===client)return;
+ const account={owner,client,binding:null};
+ playPurchaseAccount=account;
+ try{
+  const {data,error}=await client.rpc('lumen_prepare_play_purchase',{p_expected_user_id:owner});
+  if(!error&&playPurchaseAccount===account&&lumenUser?.id===owner&&lumenSupabase===client
+    &&typeof data==='string'&&/^[0-9a-f]{64}$/.test(data))account.binding=data;
+ }catch{/* The checkout stays unavailable until preparation succeeds. */}
+ finally{if(!account.binding&&playPurchaseAccount===account)playPurchaseAccount=null}
+}
 async function purchaseAdventure(productId,{setStatus,setBusy,waiver}){
  if(!lumenUser||qaActive)return;
  // #732: never open a payment (Play or Stripe) without the express immediate-access request and waiver.
@@ -4205,8 +4222,14 @@ async function purchaseAdventure(productId,{setStatus,setBusy,waiver}){
  if(!playBilling&&stripeAvailable())return purchaseWithStripe(productId,{setStatus,setBusy,waiver});
  if(!PLAY_CHECKOUT_AVAILABLE)return;
  if(!playBilling||!playPriceLabels[productId]){setStatus('Prix Google Play indisponible. Réessaie depuis l’offre.');return}
- const owner=lumenUser.id,client=lumenSupabase;setBusy(true);setStatus('Ouverture du paiement Google Play…');
- const result=await buyWithPlay({productId:toPlayProductId(productId),verify:(sku,token)=>{
+ const owner=lumenUser.id,client=lumenSupabase,account=playPurchaseAccount;
+ if(!account?.binding||account.owner!==owner||account.client!==client){
+  setStatus('Google Play prépare le paiement pour ton compte. Réessaie dans un instant.');
+  void preparePlayPurchaseAccount();
+  return;
+ }
+ setBusy(true);setStatus('Ouverture du paiement Google Play…');
+ const result=await buyWithPlay({productId:toPlayProductId(productId),obfuscatedAccountId:account.binding,verify:(sku,token)=>{
   setStatus('Vérification de l’achat Google Play…');
   return playVerify(sku,token,client,owner);
  }});
@@ -4369,7 +4392,7 @@ async function handleStripeReturn(){
 }
 // After a verified hydration: server-checked mastery unlocks (#728), automatic purchase
 // restore (Play #729, Stripe #730) and the Stripe return.
-function afterVerifiedHydration(){refreshAdventureOffer?.('mastery');void maybeClaimMasteryUnlocks();void maybeRestorePlayPurchases();void refreshPaymentChannel().finally(()=>handleStripeReturn()).finally(()=>void maybeRestoreStripePurchases())}
+function afterVerifiedHydration(){refreshAdventureOffer?.('mastery');void maybeClaimMasteryUnlocks();void maybeRestorePlayPurchases();void preparePlayPurchaseAccount();void refreshPaymentChannel().finally(()=>handleStripeReturn()).finally(()=>void maybeRestoreStripePurchases())}
 window.addEventListener('online',()=>{
  if(isPlayDistributedApp(window)||playPriceLoader.snapshot().playApp)void maybeRestorePlayPurchases();
 });

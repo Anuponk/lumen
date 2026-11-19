@@ -40,10 +40,11 @@ export async function verifyPlayPurchase({fetchImpl=fetch,endpoint,apiKey,access
 }
 
 // One purchase. The Play sheet collects payment; the server decides what it grants.
-export async function buyWithPlay({win=globalThis,productId,verify}){
+export async function buyWithPlay({win=globalThis,productId,obfuscatedAccountId,verify}){
+ if(typeof obfuscatedAccountId!=='string'||!/^[0-9a-f]{64}$/.test(obfuscatedAccountId))return {status:'error',reason:'account_binding'};
  let response;
  try{
-  const request=new win.PaymentRequest([{supportedMethods:PLAY_BILLING_METHOD,data:{sku:productId}}],
+  const request=new win.PaymentRequest([{supportedMethods:PLAY_BILLING_METHOD,data:{sku:productId,obfuscatedAccountId}}],
    {total:{label:'Lumen',amount:{currency:'EUR',value:'0'}}}); // Play shows its own price; total is required by the API.
   response=await request.show();
  }catch(error){return error?.name==='AbortError'?{status:'cancelled'}:{status:'error',reason:'payment_unsupported'}}

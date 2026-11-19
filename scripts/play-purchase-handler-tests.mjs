@@ -7,7 +7,7 @@ import {generateKeyPairSync,createHash,createVerify} from 'node:crypto';
 // #729: execute the real Edge handler with synthetic Auth, RPC and Google boundaries.
 // No network, no real credentials, no SQL. A generated RSA key proves the Google
 // service-account assertion is really signed.
-const source=fs.readFileSync('supabase/functions/lumen-play-purchase/index.ts','utf8').replace(/^import .* from .*;\r?\n/m,'');
+const source=fs.readFileSync('supabase/functions/lumen-play-purchase/index.ts','utf8').replace(/^import .* from .*;\r?\n/gm,'');
 const {privateKey,publicKey}=generateKeyPairSync('rsa',{modulusLength:2048});
 const account={client_email:'verifier@synthetic.iam.gserviceaccount.com',private_key:privateKey.export({type:'pkcs8',format:'pem'})};
 const sha=t=>createHash('sha256').update(t).digest('hex');
@@ -15,7 +15,7 @@ const sha=t=>createHash('sha256').update(t).digest('hex');
 function fixture({user={id:'verified-player'},product={product_id:'real-adventure-02',kind:'adventure',price_cents:100,currency:'EUR',active:true},
  purchase={purchaseState:0,acknowledgementState:0,purchaseTimeMillis:'1763200000000',regionCode:'FR',orderId:'GPA.1'},googleStatus=200,bound=true,
  order={orderId:'GPA.1',purchaseToken:'play-token-1',state:'PROCESSED',lineItems:[{productId:'real_adventure_02',total:{currencyCode:'EUR',units:'1',nanos:190000000}}]},orderStatus=200,
- recordError=null,ackOk=true,ackJobs=[],voided=[[]],known={},env={},secretsMissing=false}={}){
+ recordError=null,ackOk=true,ackJobs=[],voided=[[]],known={},bindings={},claims={},env={},secretsMissing=false}={}){
  let handler;const calls=[];
  const createClient=(_url,key)=>key==='synthetic-public'
   ?{auth:{getUser:async token=>{calls.push({kind:'auth',token});return {data:{user},error:user?null:{message:'invalid'}}}}}
@@ -30,6 +30,7 @@ function fixture({user={id:'verified-player'},product={product_id:'real-adventur
       [{purchase_id:args.p_purchase_id,product_id:'real-adventure-02',purchase_token:'play-token-1',attempt:1}]:ackJobs,error:null};
     if(name==='lumen_complete_play_acknowledgement' || name==='lumen_prune_play_acknowledgements')return {data:null,error:null};
     if(name==='lumen_purchase_by_ref')return {data:known[args.p_provider_ref]||null,error:null};
+    if(name==='lumen_play_account_by_binding')return {data:bindings[args.p_account_binding]??null,error:null};
     if(name==='lumen_record_purchase')return recordError?{data:null,error:recordError}:{data:{adventures:['real-adventure-02']},error:null};
     throw Error('unexpected rpc '+name)}};
  let page=0;
@@ -50,14 +51,90 @@ function fixture({user={id:'verified-player'},product={product_id:'real-adventur
  };
  const values={SUPABASE_URL:'https://synthetic.invalid',SUPABASE_ANON_KEY:'synthetic-public',SUPABASE_SERVICE_ROLE_KEY:'synthetic-service',
   LUMEN_PLAY_SERVICE_ACCOUNT:secretsMissing?'':JSON.stringify(account),LUMEN_PLAY_CRON_SECRET:'cron-secret',...env};
- vm.runInNewContext(source,{Request,Response,AbortSignal,URLSearchParams,TextEncoder,crypto:globalThis.crypto,atob,btoa,Uint8Array,JSON,Number,String,Date,Math,Error,
-  createClient,fetch,console:{error(){}},Deno:{serve:fn=>{handler=fn},env:{get:k=>values[k]}}});
- const request=({body={mode:'verify',productId:'real_adventure_02',purchaseToken:'play-token-1'},token='player-token',origin='https://lumen.nopuna.fr',method='POST',headers={}}={})=>
-  handler(new Request('https://synthetic.invalid/play',{method,headers:{'content-type':'application/json',...(token?{authorization:'Bearer '+token}:{}),...(origin?{origin}:{}),...headers},...(method==='POST'?{body:JSON.stringify(body)}:{})}));
+ vm.runInNewContext(source,{Request,Response,AbortSignal,URL,URLSearchParams,TextDecoder,TextEncoder,crypto:globalThis.crypto,atob,btoa,Uint8Array,JSON,Number,String,Date,Math,Error,
+  createRemoteJWKSet:()=>({}),jwtVerify:async(token,keys,options)=>{
+   if(token!=='provider-token')throw Error('invalid signature');
+   calls.push({kind:'oidc',options});
+   return {payload:{email:'play-push@synthetic.iam.gserviceaccount.com',email_verified:true,...claims}};
+  },createClient,fetch,console:{error(){},warn(){},info(){}},Deno:{serve:fn=>{handler=fn},env:{get:k=>values[k]}}});
+ const request=({body={mode:'verify',productId:'real_adventure_02',purchaseToken:'play-token-1'},token='player-token',origin='https://lumen.nopuna.fr',method='POST',headers={},path='/play'}={})=>
+  handler(new Request('https://synthetic.invalid'+path,{method,headers:{'content-type':'application/json',...(token?{authorization:'Bearer '+token}:{}),...(origin?{origin}:{}),...headers},...(method==='POST'?{body:JSON.stringify(body)}:{})}));
  return {calls,request};
 }
 const receiptRpc='lumen_record_play_purchase_with_ack';
 const records=(calls,name=receiptRpc)=>JSON.parse(JSON.stringify(calls.filter(c=>c.kind==='rpc'&&c.name===name).map(c=>c.args))); // vm realm
+
+const rtdnConfig={
+ LUMEN_PLAY_RTDN_AUDIENCE:'https://synthetic.invalid/lumen-play-purchase/rtdn',
+ LUMEN_PLAY_RTDN_EMAIL:'play-push@synthetic.iam.gserviceaccount.com',
+ LUMEN_PLAY_RTDN_SUBSCRIPTION:'projects/synthetic/subscriptions/lumen-play'
+};
+const event={packageName:'com.nopuna.lumen',oneTimeProductNotification:{notificationType:1,sku:'real_adventure_02',purchaseToken:'play-token-1'}};
+const push=(f,notification=event,overrides={})=>f.request({
+ path:'/functions/v1/lumen-play-purchase/rtdn',origin:null,token:'provider-token',
+ body:{subscription:rtdnConfig.LUMEN_PLAY_RTDN_SUBSCRIPTION,message:{messageId:'42',data:Buffer.from(JSON.stringify(notification)).toString('base64')}},
+ ...overrides
+});
+test('an authenticated Play notification verifies and records a bound purchase without a client session',async()=>{
+ const opts={env:rtdnConfig,bindings:{[sha('lumen-play:verified-player')]:'verified-player'}};
+ const f=fixture(opts);
+ assert.equal((await push(f)).status,204);
+ assert.equal(records(f.calls)[0]?.p_user_id,'verified-player');
+ assert(!f.calls.some(c=>c.kind==='auth'));
+ const options=f.calls.find(c=>c.kind==='oidc')?.options;
+ assert.equal(options.audience,rtdnConfig.LUMEN_PLAY_RTDN_AUDIENCE);
+ assert.equal(options.algorithms[0],'RS256');
+ assert.equal((await push(f,event,{token:'attacker'})).status,401);
+ const wrongEmail=fixture({...opts,claims:{email:'other@synthetic.iam.gserviceaccount.com'}});
+ assert.equal((await push(wrongEmail)).status,403);
+ assert.deepEqual(records(wrongEmail.calls),[]);
+});
+test('unowned Play purchases never create rights; temporary Google errors leave RTDN retryable',async()=>{
+ const denied=fixture({env:rtdnConfig,bound:false});
+ assert.equal((await push(denied)).status,204);
+ assert.deepEqual(records(denied.calls),[]);
+ const failed=fixture({env:rtdnConfig,googleStatus:500});
+ assert.equal((await push(failed)).status,503);
+ assert.deepEqual(records(failed.calls),[]);
+});
+test('RTDN refunds reread the current order and never acknowledge a stale or mismatched notification',async()=>{
+ const original={user_id:'verified-player',product_id:'real-adventure-02',amount_cents:100,currency:'EUR',status:'paid'};
+ const known={[sha('play-token-1')]:original};
+ const notification={packageName:event.packageName,
+  voidedPurchaseNotification:{productType:2,refundType:1,orderId:'GPA.1',purchaseToken:'play-token-1'}};
+ const order={state:'REFUNDED',orderId:'GPA.1',purchaseToken:'play-token-1',lineItems:[{productId:'real_adventure_02'}]};
+ const paid=fixture({env:rtdnConfig,known});
+ assert.equal((await push(paid,notification)).status,503);
+ assert.deepEqual(records(paid.calls,'lumen_record_purchase'),[]);
+ assert.deepEqual(records(paid.calls),[]);
+ assert(!paid.calls.some(c=>c.url?.endsWith(':acknowledge')));
+ const refunded=fixture({env:rtdnConfig,known,order});
+ assert.equal((await push(refunded,notification)).status,204);
+ assert.equal(records(refunded.calls,'lumen_record_purchase')[0]?.p_status,'refunded');
+ const replay=fixture({env:rtdnConfig,known:{[sha('play-token-1')]:{...original,status:'refunded'}},order});
+ assert.equal((await push(replay,notification)).status,204);
+ assert.deepEqual(records(replay.calls,'lumen_record_purchase'),[]);
+ const unmatched=fixture({env:rtdnConfig});
+ assert.equal((await push(unmatched,notification)).status,503,'a refund can be delivered before the receipt');
+ const mismatch=fixture({env:rtdnConfig,known,order:{...order,purchaseToken:'other'}});
+ assert.equal((await push(mismatch,notification)).status,503);
+ assert.deepEqual(records(mismatch.calls,'lumen_record_purchase'),[]);
+});
+test('pending, cancelled, test and foreign RTDN messages cannot create rights',async()=>{
+ const pending=fixture({env:rtdnConfig,purchase:{purchaseState:2}});
+ assert.equal((await push(pending)).status,503);
+ assert.deepEqual(records(pending.calls),[]);
+ const cancelled=fixture({env:rtdnConfig,purchase:{purchaseState:1}});
+ const cancellation={...event,oneTimeProductNotification:{...event.oneTimeProductNotification,notificationType:2}};
+ assert.equal((await push(cancelled,cancellation)).status,204);
+ assert.deepEqual(records(cancelled.calls),[]);
+ const neutral=fixture({env:rtdnConfig});
+ assert.equal((await push(neutral,{packageName:event.packageName,testNotification:{version:'1.0'}})).status,204);
+ assert.equal((await push(neutral,{...event,packageName:'com.example.other'})).status,204);
+ assert.equal((await push(neutral,event,{body:{subscription:'projects/other/subscriptions/other'}})).status,403);
+ assert.equal((await push(neutral,event,{token:null})).status,401);
+ assert(!neutral.calls.some(c=>c.kind==='rpc'||c.kind==='google'));
+});
 
 test('a paid Play purchase is verified with Google, recorded for the verified player, then acknowledged',async()=>{
  const f=fixture();const r=await f.request({body:{mode:'verify',productId:'real_adventure_02',purchaseToken:'play-token-1',userId:'someone-else'}});
