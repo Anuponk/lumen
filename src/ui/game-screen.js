@@ -4610,9 +4610,12 @@ function closeUnifiedSkyReveal(){
 // Same final layout as a victory, without effects; nothing is written.
 let questReview=null;
 function reviewQuestAvailable(quest){return celestialQuestAvailable(quest)}
+function canBrowseQuestReview(host){
+ return !host.hidden&&!host.dataset.sync&&host.dataset.victoryPhase==='combined'&&!socialChallenge;
+}
 function navigateQuestReview(direction){
  const host=document.getElementById('skyReveal');
- if(host.hidden||host.dataset.sync||host.dataset.victoryPhase!=='combined'||socialChallenge)return false;
+ if(!canBrowseQuestReview(host))return false;
  const current=questReview?.quest??canonicalQuestById(victoryFacts?.questId);
  if(!current||(questReview&&questReview.owner!==(lumenUser?.id??null)))return false;
  const target=reviewNeighbour(canonicalQuestList(),current.id,direction,reviewQuestAvailable);
@@ -4625,7 +4628,7 @@ function navigateQuestReview(direction){
  return true;
 }
 bindReviewNavigation(document.getElementById('skyReveal'),{
- active:()=>!document.getElementById('skyReveal').hidden,
+ active:()=>canBrowseQuestReview(document.getElementById('skyReveal')),
  navigate:navigateQuestReview
 });
 // Performance block of the shared victory surface filled from saved results only:

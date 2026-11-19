@@ -2412,6 +2412,12 @@ Phones keep exactly their previous rules: the transformation only removed deskto
 `quest-review-tests.mjs` and `adventure-offer-tests.mjs` extend the existing quality
 gate: immediate accessible neighbours, unfinished views, stale ranking replies,
 edge-safe gestures, incremental delivered content and provider prices.
+For #817, the same mandatory browser suite also signs in with a simulated
+profile and starts native Chromium touches on the real review podium, at
+360×640 and 390×844. The board response replaces the touched skeleton during
+the gesture. Both directions, ordinary taps, vertical and edge drags, and
+button-origin gestures are checked along with unchanged progress. The unit
+suite checks horizontal intent, pointer capture, cancellation and touch identity.
 `quest-review-browser-tests.mjs` exercises touch and keyboard browsing without
 progress/attempt changes at 320/360/390/1440px and the actual store at 360/1440px.
 Set `LUMEN_UX_CAPTURE_DIR` to an existing temporary directory to retain screenshots.

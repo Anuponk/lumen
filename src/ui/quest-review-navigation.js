@@ -10,28 +10,35 @@ export function reviewNeighbour(quests, currentId, direction, available) {
 export function bindReviewNavigation(host,{active,navigate,viewport=()=>globalThis.innerWidth}) {
  let start=null;
  const clicks=createGestureClickSuppression();
- host.addEventListener('pointerdown',()=>clicks.clear());
- host.addEventListener('click',event=>{if(clicks.consume(event)){event.preventDefault();event.stopImmediatePropagation()}},true);
  const interactive=target=>!!target?.closest?.('button,a,input,textarea,select,[contenteditable="true"],[role="button"]');
- host.addEventListener('touchstart',event=>{
-  start=null;
+ const horizontal=(dx,dy,min)=>Math.abs(dx)>=min&&Math.abs(dx)>Math.abs(dy)*1.6;
+ host.addEventListener('pointerdown',event=>{
   clicks.clear();
-  if(!active()||event.touches.length!==1||interactive(event.target))return;
-  const t=event.touches[0];
+  start=null;
+  if(event.pointerType!=='touch'||!event.isPrimary||!active()||interactive(event.target))return;
   // Leave the browser/Android edge-back gesture entirely native.
-  if(t.clientX<28||t.clientX>viewport()-28)return;
-  start={x:t.clientX,y:t.clientY};
- },{passive:true});
- host.addEventListener('touchcancel',()=>{start=null},{passive:true});
- host.addEventListener('touchend',event=>{
-  const origin=start;start=null;
-  if(!origin||!active()||event.changedTouches.length!==1)return;
-  const t=event.changedTouches[0],dx=t.clientX-origin.x,dy=t.clientY-origin.y;
-  if(Math.abs(dx)>=60&&Math.abs(dx)>Math.abs(dy)*1.6){
-   clicks.suppress({pointerType:'touch'},host,host);
-   navigate(dx<0?1:-1);
-  }
- },{passive:true});
+  if(event.clientX<28||event.clientX>viewport()-28)return;
+  start={id:event.pointerId,x:event.clientX,y:event.clientY,captured:false};
+ });
+ host.addEventListener('pointermove',event=>{
+  if(!start||start.id!==event.pointerId||start.captured||!active())return;
+  if(!horizontal(event.clientX-start.x,event.clientY-start.y,12))return;
+  // Capture on the stable dialog only after horizontal intent. The podium may
+  // replace the original target mid-swipe, while ordinary taps keep their target.
+  host.setPointerCapture(event.pointerId);
+  start.captured=true;
+ });
+ host.addEventListener('pointercancel',event=>{if(start?.id===event.pointerId)start=null});
+ host.addEventListener('pointerup',event=>{
+  if(start?.id!==event.pointerId)return;
+  const origin=start;
+  start=null;
+  const dx=event.clientX-origin.x,dy=event.clientY-origin.y;
+  const turnsPage=active()&&horizontal(dx,dy,60);
+  if(origin.captured||turnsPage)clicks.suppress(event,host,host);
+  if(turnsPage)navigate(dx<0?1:-1);
+ });
+ host.addEventListener('click',event=>{if(clicks.consume(event)){event.preventDefault();event.stopImmediatePropagation()}},true);
  host.addEventListener('keydown',event=>{
   if(!active()||event.altKey||event.ctrlKey||event.metaKey||event.shiftKey||interactive(event.target))return;
   if(event.key==='ArrowLeft'||event.key==='ArrowRight'){

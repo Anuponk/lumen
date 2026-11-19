@@ -715,6 +715,10 @@ Une quête disponible mais inachevée affiche « À jouer », sans record ni ré
 Seul le bouton Jouer/Rejouer lance une grille. Les réponses de classement et de
 record devenues obsolètes sont ignorées. La consultation ne relance aucune fête,
 préserve les gestes depuis les bords et respecte la réduction des mouvements.
+Le swipe peut partir du podium, pendant ou après son chargement. Un appui simple
+garde sa cible, les boutons gardent leur propre geste et le défilement vertical
+reste possible si le bilan dépasse la hauteur disponible. Le classement est
+consultable au swipe dès le bilan combiné affiché.
 
 La boutique distingue l’aventure et « tout le vrai ciel » (les autres ciels ne sont
 pas inclus). Les prix viennent du catalogue partagé avec la graine serveur, ou des
