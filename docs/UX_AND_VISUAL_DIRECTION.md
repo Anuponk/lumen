@@ -402,7 +402,7 @@ badges. No second finale opens after the player chooses an action.
 
 ### Sign-up confirmation (#814)
 
-After the mail service accepts sign-up, focus the confirmation heading and tell the player to check their inbox and spam folder. A pending or rejected request keeps the form visible with its own feedback. Keep one submission in flight when the player changes tabs or closes the dialog. Confirmation does not imply mail delivery or a cloud save. A separate resend would need a dedicated provider operation under the existing server limits.
+After the mail service accepts sign-up, announce the confirmation in the live status and tell the player to check their inbox and spam folder. A pending or rejected request keeps the form visible with its own feedback. Keep one submission in flight when the player changes tabs or closes the dialog. Confirmation does not imply mail delivery or a cloud save. A separate resend would need a dedicated provider operation under the existing server limits.
 
 ### Adventure offer and progress (#811)
 

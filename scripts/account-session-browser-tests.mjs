@@ -395,17 +395,18 @@ try{
   await evaluate(submitSignup);
   await evaluate('window.__finishSignup(200)');
   await until('!'+signupPanel+'.hidden');
-  await until("document.activeElement.id==='accountSignupConfirmationTitle'");
   const confirmation=await evaluate(`(()=>{
     const panel=${signupPanel},card=panel.closest('.account-optin-card'),r=panel.getBoundingClientRect();
-    return {text:panel.textContent,focused:document.activeElement.id,password:document.getElementById('accountPassword').value,
-      fits:r.left>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1&&card.scrollHeight<=card.clientHeight+1,
+    const announcement=document.getElementById('accountEmailStatus');
+    return {text:panel.textContent,announced:announcement.getAttribute('role')==='status'&&announcement.textContent.includes('courriers indésirables'),
+      password:document.getElementById('accountPassword').value,
+      fits:r.width>0&&r.height>0&&r.left>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1&&card.scrollHeight<=card.clientHeight+1,
       pageStill:document.documentElement.scrollTop===0};
   })()`);
   assert.match(confirmation.text,/demande de confirmation a été prise en compte/);
   assert.match(confirmation.text,/spams ou courriers indésirables/);
   assert.doesNotMatch(confirmation.text,/@|avons envoyé/);
-  assert.equal(confirmation.focused,'accountSignupConfirmationTitle');
+  assert.equal(confirmation.announced,true,'The live status announces the successful confirmation');
   assert.equal(confirmation.password,'');
   assert.equal(confirmation.fits&&confirmation.pageStill,true,'Confirmation fits without extra scrolling');
   assert.equal(await guestProgress(),beforeSignup,'Confirmation is not an Auth session or cloud save');

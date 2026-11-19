@@ -1243,11 +1243,8 @@ function setSignupConfirmation(pending){
  if(submit)submit.disabled=pending||accountSignupSubmitting;
  if(pending){
   const password=document.getElementById("accountPassword");if(password)password.value="";
-  const status=document.getElementById("accountEmailStatus");if(status)status.textContent="";
-  requestAnimationFrame(()=>{
-   if(!panel?.hidden&&!document.getElementById("accountOptin")?.hidden)
-    document.getElementById("accountSignupConfirmationTitle")?.focus({preventScroll:true});
-  });
+  const status=document.getElementById("accountEmailStatus");
+  if(status)status.textContent="Demande de confirmation prise en compte. Vérifie ta boîte e-mail et les courriers indésirables.";
  }
 }
 
