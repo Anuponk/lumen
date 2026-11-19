@@ -46,9 +46,6 @@ export function adventureOfferModel({pack,packs,quests,progress,signedIn=false,a
   signedIn:!!signedIn,accounts:!!accounts,purchasesAvailable:!!purchasesAvailable,mastery};
 }
 
-// #730 (owner decision, 17/11/2026): no « Restaurer mes achats » button; purchases are
-// re-verified automatically after every verified hydration (game-screen.js).
-
 const plural=(n,word)=>n+' '+word+(n>1?'s':'');
 export function masteryLine(model){
  const m=model.mastery;if(!m)return '';
@@ -86,13 +83,13 @@ export function updateAdventureOfferMastery(section,model,{onClaim=()=>{},onCont
  }
 }
 
-export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{},onClaim=()=>{},onContinue=()=>{},onRetry=()=>{}}={}){
+export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{},onClaim=()=>{},onContinue=()=>{},onRetry=()=>{},onRestorePlay=null,playCheckoutPaused=false}={}){
  const el=(tag,props={},text)=>{const e=document.createElement(tag);Object.assign(e,props);if(text!==undefined)e.textContent=text;return e};
  const root=el('div',{className:'adventure-offer'});
  const status=el('p',{className:'adventure-offer-status',hidden:true});status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.dataset.offerStatus='';
- const buttons=[];let retryButton=null;
+ const buttons=[];let retryButton=null,restoreButton=null;
  const setStatus=text=>{status.textContent=text||'';status.hidden=!text};
- const setBusy=busy=>{for(const b of buttons)b.disabled=busy||!model.purchasesAvailable;if(retryButton)retryButton.disabled=busy};
+ const setBusy=busy=>{for(const b of buttons)b.disabled=busy||!model.purchasesAvailable;if(retryButton)retryButton.disabled=busy;if(restoreButton)restoreButton.disabled=busy};
  const buy=(kind,label,product)=>{const b=el('button',{type:'button',className:'adventure-offer-buy',disabled:!model.purchasesAvailable},label);b.dataset.offer=kind;buttons.push(b);
   b.onclick=()=>{if(!model.signedIn){onSignIn();return}
   if(!waiver?.checked){setStatus(WAIVER_REQUIRED);waiver?.focus();return}
@@ -123,7 +120,18 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
  if(model.showSky)offers.append(offerCard('sky','Débloquer tout le vrai ciel',model.skyPrice,model.skyCount,model.skyProduct));
  root.append(offers);
  root.append(el('p',{className:'adventure-offer-cap'},model.capMessage),status);
- if(model.pricesRequired){
+ if(onRestorePlay){
+  restoreButton=el('button',{type:'button',className:'adventure-offer-claim'},'Restaurer mes achats');
+  restoreButton.dataset.offer='restore-play';
+  restoreButton.onclick=async()=>{
+   setBusy(true);setStatus('Vérification des achats Google Play…');
+   try{setStatus(await onRestorePlay())}finally{setBusy(false)}
+  };
+  root.append(restoreButton);
+ }
+ if(playCheckoutPaused){
+  root.append(el('p',{className:'adventure-offer-soon'},'Les nouveaux achats Google Play sont temporairement suspendus.'));
+ }else if(model.pricesRequired){
   const message=el('p',{className:'adventure-offer-soon'},model.priceStatus==='loading'?'Chargement des tarifs Google Play…':
    !model.purchasesAvailable||!model.unitPriceKnown||(model.showSky&&!model.skyPriceKnown)?'Google Play ne permet pas cet achat pour le moment. Vérifie ta connexion et réessaie.':'');
   message.setAttribute('role','status');message.setAttribute('aria-live','polite');

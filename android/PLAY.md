@@ -161,6 +161,97 @@ L'app reste « gratuite » avec achats intégrés. La bibliothèque `billing` aj
 - [ ] Ajouter des **testeurs de licence**, publier un AAB sur la piste de test interne, puis faire un vrai achat de test : déblocage, restauration après réinstallation, et retrait après remboursement de test.
 - [ ] Data safety : déclarer l'historique d'achats (achats intégrés) ; voir #732 pour la confidentialité.
 
+### Récupération et déploiement Google Play (#823)
+
+La lecture seule du 19 novembre a confirmé que SoldeZen possède le registre, les
+passerelles génériques et l’archive comptable. La fonction Edge
+`lumen-play-purchase`, la RPC `lumen_record_play_purchase` et les colonnes de
+règlement Play étaient absentes. Le registre ne contenait aucun achat Play. Ces
+constats expliquent le défaut du flux Play et laissent le statut de la commande
+signalée à confirmer auprès du fournisseur.
+
+Android Browser Helper `billing:1.2.0` transmet le SKU, sans l’identifiant de
+compte obfusqué. Le [support amont](https://github.com/GoogleChrome/android-browser-helper/pull/622)
+est en revue. La version web de ce correctif suspend les nouveaux achats Play et
+garde la restauration des achats existants. Le propriétaire peut suspendre les
+produits intégrés dans Play Console pendant la préparation de la publication si
+des clients servent encore l’ancien code. Pour réactiver les ventes, publier un
+client Android qui passe à Google le SHA-256 de `lumen-play:` suivi de l’UUID Auth.
+Valider sur une installation Play que Google renvoie cette valeur, que les anciens
+clients restent protégés et qu’un autre compte est refusé.
+
+**Avant toute activation, avec accord du propriétaire :**
+
+1. En privé, rapprocher le compte authentifié du joueur, l’heure, la commande
+   Google Play et son SKU dans Play Console. Confirmer que la commande est
+   traitée et toujours valide. Si elle a été annulée ou remboursée, vérifier
+   son état avec le joueur et suivre la procédure Google existante. Si Play ne
+   renvoie plus l’achat, instruire le dossier via le fournisseur avant toute
+   décision. Garder les identifiants hors de GitHub et des journaux.
+2. Vérifier le package `com.nopuna.lumen` et les neuf SKU ci-dessus dans Play
+   Console. Activer l’API Android Publisher et donner au compte de service accès
+   à l’application et aux données financières/commandes. Valider en lecture
+   `purchases.products.get` et `orders.get` par un canal privé. Le même compte
+   doit pouvoir appeler `purchases.products.acknowledge` et
+   `purchases.voidedpurchases.list`. L’acknowledgment vient après l’écriture du
+   reçu, avec nouvelle tentative via la restauration.
+3. Sur un clone de la révision approuvée, vérifier l’environnement cible,
+   les RPC génériques, l’archive comptable et les règles de restauration.
+   Le journal Supabase consulté pendant l’incident ne listait pas les versions
+   historiques contrôlées malgré la présence de leurs objets. Appliquer
+   uniquement le fichier vérifié ci-dessous selon le journal d’exploitation.
+   La migration régionale #729 existe déjà dans le dépôt et est rejouable.
+
+```bash
+# Depuis la révision revue. Le service psql lumen-prod désigne SoldeZen.
+psql "service=lumen-prod" -X -v ON_ERROR_STOP=1 \
+  -f supabase/migrations/20261118212000_play_regional_receipts_729.sql
+
+# Fichier privé hors dépôt, protégé par les permissions du système.
+supabase secrets set --project-ref tjdjlavmusmncuszhsuw --env-file "$LUMEN_PLAY_ENV_FILE"
+supabase functions deploy lumen-play-purchase --project-ref tjdjlavmusmncuszhsuw --no-verify-jwt
+```
+
+Le fichier d’environnement privé définit `LUMEN_PLAY_SERVICE_ACCOUNT`,
+`LUMEN_PLAY_PACKAGE=com.nopuna.lumen` et `LUMEN_PLAY_CRON_SECRET`. Les
+clés `SUPABASE_URL`, `SUPABASE_ANON_KEY` et `SUPABASE_SERVICE_ROLE_KEY` sont
+fournies par Supabase. Pour une commande ancienne sans identifiant de compte
+Google, ajouter temporairement `LUMEN_PLAY_RECOVERY_ORDERS`, un objet JSON
+qui associe une référence de commande vérifiée à l’UUID Auth confirmé. Ce
+rapprochement permet au joueur de présenter son achat. Le serveur compare
+alors la commande, le jeton et le SKU auprès de Google et passe par le registre
+normal pour créer le droit. Retirer l’entrée du secret après lecture du reçu
+confirmé. La clé de service reste côté fonction.
+
+Le mode de déploiement permet au planificateur d’appeler la fonction sans JWT.
+La fonction vérifie la session Supabase en mode `verify` et `x-lumen-cron` en
+mode `voided`. Vérifier après déploiement que la RPC régionale est exécutable par
+`service_role` et refusée à `anon` et `authenticated`. Un appel `verify`
+sans session et un appel `voided` sans secret doivent chacun retourner 401.
+Après autorisation, planifier quotidiennement un POST avec le corps
+`{"mode":"voided"}` vers `/functions/v1/lumen-play-purchase`. Injecter
+`x-lumen-cron` depuis le coffre du planificateur et surveiller les exécutions
+manquées. Google limite la fenêtre de lecture des annulations.
+
+**Première recette après fusion et mise en service :**
+
+| Appareil | Action | Résultat attendu |
+| --- | --- | --- |
+| Android installé depuis Play | Avec le compte Play acheteur et le compte Lumen rapproché, ouvrir une offre verrouillée et choisir « Restaurer mes achats » | Aucun écran de paiement, statut de vérification, droit visible immédiatement et reçu Google vérifié puis acknowledged |
+| Même appareil puis second Android Play | Rejouer la restauration avec les mêmes comptes et relire le reçu côté serveur | Une seule ligne d’achat, mêmes droits et progression, aucun paiement |
+| Android Play, autre compte Lumen | Présenter le même achat via la restauration | Refus, sans nouvel enregistrement ni droit |
+| Piste interne / environnement de recette | Simuler une indisponibilité, puis réessayer. Traiter ensuite une annulation ou un remboursement de test | Pas de fausse confirmation. Le réessai restaure et l’annulation expire le droit d’achat selon les règles de progression |
+
+Conserver une preuve expurgée du statut de commande et d’acknowledgment, du SHA
+web déployé et du build Android. Aucun achat réel supplémentaire n’est requis.
+
+**Retour arrière :** garder les ventes Play suspendues. Retirer le secret de
+rapprochement et désactiver le planificateur si nécessaire. Redéployer une
+révision Edge déjà validée avec la même vérification de compte, ou désactiver
+la fonction si aucune n’existe. Conserver la migration additive, le registre,
+les reçus et les droits déjà confirmés. Une indisponibilité de la vérification
+laisse la récupération possible après rétablissement du service.
+
 ## Diagnostic « Prix indisponible » — P1 #729 / #731 / #786 (18/11/2026)
 
 Base inspectée : `5c6e076b3d10a6771b5bb94cd5d59df0309ba0c0` (clone neuf).

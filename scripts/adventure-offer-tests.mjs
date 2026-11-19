@@ -66,13 +66,11 @@ assert(storeSeed().includes(`'adventure','${second.id}',${ADVENTURE_PRICE_CENTS}
 assert(storeSeed().includes(`'sky',null,${SKY_PRICE_CENTS},'EUR'`));
 const nav=fs.readFileSync(new URL('../src/ui/sky-navigation.js',import.meta.url),'utf8');
 assert.doesNotMatch(nav,/sera annoncé plus tard/,'The placeholder lock text is gone');
-// #730 (owner decision, 17/11/2026, replaces the #731 manual button): no « Restaurer mes
-// achats ». Purchases are account rights, re-verified automatically and silently after
-// every verified hydration (Play tokens in the Play app, unsettled Stripe sessions on the web).
+// #823: Play-only manual recovery alongside the original hydration path.
 const offerSource=fs.readFileSync(new URL('../src/ui/adventure-offer.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
-assert.doesNotMatch(offerSource,/'Restaurer mes achats'|adventure-offer-restore|onRestore/,'No manual restore button');
+assert.match(offerSource,/'Restaurer mes achats'/);
 const screen=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
-assert.doesNotMatch(screen,/onRestore|restorePurchasesNow|restoreMessage/);
+assert.match(screen,/onRestorePlay:offer\.pricesRequired&&offer\.signedIn/);
 assert.match(screen,/function afterVerifiedHydration\(\)\{refreshAdventureOffer\?\.\('mastery'\);void maybeClaimMasteryUnlocks\(\);void maybeRestorePlayPurchases\(\);void refreshPaymentChannel\(\)\.finally\(\(\)=>handleStripeReturn\(\)\)\.finally\(\(\)=>void maybeRestoreStripePurchases\(\)\)\}/,'Automatic restore after verified hydration');
 assert.match(screen,/async function maybeRestoreStripePurchases\(\)\{\n if\(!lumenUser\|\|qaActive\|\|!cloudProfileReady\|\|!stripeAvailable\(\)\)return;/);
 assert.match(screen,/results\.some\(r=>r\.status==='paid'\)\)\{await loadEntitlements\(\)/,'Rights reloaded only after a server-confirmed purchase');

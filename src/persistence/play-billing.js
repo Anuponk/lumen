@@ -2,6 +2,8 @@
 // Digital Goods API and Payment Request. The purchase token is verified and recorded
 // by the server (Edge Function lumen-play-purchase → #728); this module never grants.
 // Outside the Play app (browser, iPhone) getDigitalGoodsService is absent: no Play offer.
+// The shipped Android Browser Helper does not forward a Play account binding.
+export const PLAY_CHECKOUT_AVAILABLE=false;
 export const PLAY_BILLING_METHOD='https://play.google.com/billing';
 // Play Console disallows hyphens in product IDs. Internal pack IDs remain unchanged.
 export function toPlayProductId(id){return /^real-adventure-0[2-9]$/.test(id)||id==='real-sky-all'?id.replaceAll('-','_'):id}
@@ -9,6 +11,10 @@ export function toPlayProductId(id){return /^real-adventure-0[2-9]$/.test(id)||i
 
 export async function getPlayBilling(win=globalThis,onDiagnostic=()=>{}){
  if(typeof win?.PaymentRequest!=='function'){onDiagnostic({reason:'payment_unsupported'});return null}
+ return getPlayPurchaseService(win,onDiagnostic);
+}
+
+export async function getPlayPurchaseService(win=globalThis,onDiagnostic=()=>{}){
  if(typeof win?.getDigitalGoodsService!=='function'){onDiagnostic({reason:'service_unavailable'});return null}
  try{
   const service=await win.getDigitalGoodsService(PLAY_BILLING_METHOD)||null;
@@ -27,7 +33,8 @@ export async function verifyPlayPurchase({fetchImpl=fetch,endpoint,apiKey,access
   if(response.status===200&&body.status==='paid')return {status:'paid',adventures:body.adventures||[],acknowledged:!!body.acknowledged};
   if(response.status===202)return {status:'pending'};
   if(response.status===409&&body.error==='purchase_owned_elsewhere')return {status:'owned_elsewhere'};
-  if(response.status===409)return {status:'not_paid'};
+  if(response.status===409&&body.error==='purchase_account_unverified')return {status:'account_unverified'};
+  if(response.status===409&&body.status==='not_paid')return body.revoked===true?{status:'not_paid',revoked:true}:{status:'not_paid'};
   return {status:'error',reason:body.error||String(response.status)};
  }catch(_){return {status:'error',reason:'network'}}
 }
@@ -48,13 +55,14 @@ export async function buyWithPlay({win=globalThis,productId,verify}){
 }
 
 // Restore after reinstall/new device, and retry acknowledgements: the server call is idempotent.
-// #731: the manual « Restaurer mes achats » asks for reportListFailure so that an unreadable
+// #823: manual recovery asks for reportListFailure so that an unreadable
 // Play purchase list is shown as a failure, never as « nothing to restore ».
 export async function restorePlayPurchases({service,verify,reportListFailure=false}){
- let items=[];
- try{items=await service.listPurchases()}catch(_){return reportListFailure?[{itemId:null,status:'error',reason:'list'}]:[]}
+ let items;
+ try{items=await service.listPurchases()}catch(_){/* An unavailable list cannot establish ownership. */}
+ if(!Array.isArray(items))return reportListFailure?[{itemId:null,status:'error',reason:'list'}]:[];
  const results=[];
- for(const item of items||[]){
+ for(const item of items){
   if(!item?.itemId||!item?.purchaseToken)continue;
   results.push({itemId:item.itemId,...await verify(item.itemId,item.purchaseToken)});
  }
@@ -86,7 +94,7 @@ export async function playPrices(service,ids,{onDiagnostic=()=>{},locale='fr-FR'
 
 // Ephemeral price lifecycle: no tokens, user data, purchases or entitlements.
 // Coalesce retries, time out stalled providers, and notify an already-open offer.
-export function createPlayPriceLoader({win=globalThis,ids,playApp=false,onChange=()=>{},onDiagnostic=()=>{},timeoutMs=12000}={}){
+export function createPlayPriceLoader({win=globalThis,ids,playApp=false,checkPayment=true,onChange=()=>{},onDiagnostic=()=>{},timeoutMs=12000}={}){
  let state={status:'idle',playApp,service:null,prices:{},errors:[]},pending=null;
  const publish=next=>{state={...state,...next};onChange(state)};
  const deadline=promise=>new Promise((resolve,reject)=>{
@@ -100,13 +108,13 @@ export function createPlayPriceLoader({win=globalThis,ids,playApp=false,onChange
    const errors=[],diagnostic=event=>errors.push(event);
    let service=null,prices={},stage='service_unavailable';
    try{
-    service=await deadline(getPlayBilling(win,diagnostic));
+    service=await deadline((checkPayment?getPlayBilling:getPlayPurchaseService)(win,diagnostic));
     if(service){
      publish({playApp:true});
      stage='details_request_failed';
      const labels=await deadline(playPrices(service,ids.map(toPlayProductId),{onDiagnostic:diagnostic,locale:win.navigator?.language||'fr-FR'}));
      prices=Object.fromEntries(ids.filter(id=>labels[toPlayProductId(id)]).map(id=>[id,labels[toPlayProductId(id)]]));
-     if(Object.keys(prices).length){
+     if(checkPayment&&Object.keys(prices).length){
       stage='payment_unsupported';
       const request=new win.PaymentRequest([{supportedMethods:PLAY_BILLING_METHOD,data:{sku:toPlayProductId(Object.keys(prices)[0])}}],{total:{label:'Lumen',amount:{currency:'EUR',value:'0'}}});
       if(typeof request.canMakePayment==='function'&&!await deadline(request.canMakePayment()))throw Error('unsupported');
