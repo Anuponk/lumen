@@ -719,6 +719,9 @@ Le swipe peut partir du podium, pendant ou après son chargement. Un appui simpl
 garde sa cible, les boutons gardent leur propre geste et le défilement vertical
 reste possible si le bilan dépasse la hauteur disponible. Le classement est
 consultable au swipe dès le bilan combiné affiché.
+Le bilan change sur place, avec une carte qui reste fixe et opaque au
+relâchement. En mode compact, le podium réserve dès le chargement la place d’une
+ligne de rang personnel hors podium, pour éviter un saut des boutons.
 
 La boutique distingue l’aventure et « tout le vrai ciel » (les autres ciels ne sont
 pas inclus). Les prix viennent du catalogue partagé avec la graine serveur, ou des

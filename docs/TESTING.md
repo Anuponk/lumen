@@ -2420,6 +2420,10 @@ profile and starts native Chromium touches on the real review podium, at
 the gesture. Both directions, ordinary taps, vertical and edge drags, and
 button-origin gestures are checked along with unchanged progress. The unit
 suite checks horizontal intent, pointer capture, cancellation and touch identity.
+The same browser scenario samples rendered frames throughout the swipe and
+the next ranking's delayed arrival. At 360×640 and 390×844 it checks the
+dialog's horizontal position, opacity and scroll, and checks that a one-line
+off-podium rank does not move the dialog or its actions when loaded.
 `quest-review-browser-tests.mjs` exercises touch and keyboard browsing without
 progress/attempt changes at 320/360/390/1440px and the actual store at 360/1440px.
 Set `LUMEN_UX_CAPTURE_DIR` to an existing temporary directory to retain screenshots.

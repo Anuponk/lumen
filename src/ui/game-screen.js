@@ -4685,13 +4685,7 @@ function navigateQuestReview(direction){
  const current=questReview?.quest??canonicalQuestById(victoryFacts?.questId);
  if(!current||(questReview&&questReview.owner!==(lumenUser?.id??null)))return false;
  const target=reviewNeighbour(canonicalQuestList(),current.id,direction,reviewQuestAvailable);
- if(!target||!openQuestReview(target))return false;
- if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
-  const card=host.querySelector('.sky-reveal-card');
-  card.getAnimations?.().forEach(a=>a.cancel());
-  card.animate?.([{transform:'translateX('+(direction*18)+'px)',opacity:.65},{transform:'translateX(0)',opacity:1}],{duration:160,easing:'ease-out'});
- }
- return true;
+ return !!target&&openQuestReview(target);
 }
 bindReviewNavigation(document.getElementById('skyReveal'),{
  active:()=>canBrowseQuestReview(document.getElementById('skyReveal')),

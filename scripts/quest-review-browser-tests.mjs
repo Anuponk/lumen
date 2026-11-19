@@ -175,9 +175,13 @@ try {
   );
   const rankedSource = "localStorage.clear();sessionStorage.clear();localStorage.setItem('lumenInstallLater',String(Date.now()));localStorage.setItem('lumenPushChoice','later');" + rankedFixture + String.raw`
 window.__rankingReply=null;
+window.__nextRankingReply=null;
 window.__fixtureRankingBoard=id=>{
-  const board={data:{participating:true,realParticipants:6,top:[1,2,3].map(position=>({position,place:position,nickname:id+' / '+position,score:position*30,mine:position===2})),personal:{position:2,place:2,score:60}}};
-  return id==='base-q003'&&!window.__rankingReply?new Promise(resolve=>window.__rankingReply=()=>resolve(board)):Promise.resolve(board);
+  const position=id==='base-q004'?7:2;
+  const board={data:{participating:true,realParticipants:8,top:[1,2,3].map(place=>({position:place,place,nickname:id+' / '+place,score:place*30,mine:place===position})),personal:{position,place:position,score:position*30}}};
+  if(id==='base-q003'&&!window.__rankingReply)return new Promise(resolve=>window.__rankingReply=()=>resolve(board));
+  if(id==='base-q004'&&!window.__nextRankingReply)return new Promise(resolve=>window.__nextRankingReply=()=>resolve(board));
+  return Promise.resolve(board);
 };`;
   await send('Page.addScriptToEvaluateOnNewDocument', { source: rankedSource });
   for (const [width, height] of [[360, 640], [390, 844]]) {
@@ -239,9 +243,30 @@ window.__fixtureRankingBoard=id=>{
     await tap(skeleton);
     await until('window.__podiumTaps===1');
     assert.match(await kicker(), /QUÊTE 3/, 'A normal touch still reaches the original podium');
+    const startMotion = () => evaluate(`(()=>{
+      const host=document.getElementById('skyReveal'),card=host.querySelector('.sky-reveal-card'),control=document.getElementById('skyRevealSky');
+      window.__reviewFrames=[];
+      window.__reviewGeometry=()=>{
+        const r=card.getBoundingClientRect(),b=control.getBoundingClientRect();
+        return {left:r.left,top:r.top,buttonTop:b.top,opacity:Number(getComputedStyle(card).opacity),scrollX:scrollX+card.scrollLeft+(visualViewport?.offsetLeft||0)};
+      };
+      const sample=()=>{window.__reviewFrames.push(window.__reviewGeometry());window.__reviewFrame=requestAnimationFrame(sample)};
+      sample();
+    })()`);
+    const endMotion = () => evaluate(`(()=>{cancelAnimationFrame(window.__reviewFrame);return window.__reviewFrames})()`);
+    await startMotion();
     await drag(await hitPoint(skeleton), -102, 18, reply, height === 844);
     assert.match(await kicker(), /QUÊTE 4/, 'A board reply during a swipe on the podium cannot swallow the gesture at ' + width + '×' + height);
+    await until("!!window.__nextRankingReply&&document.querySelector('#skyRevealPodium .ranking').dataset.state==='pending'");
+    const pendingFrame=await evaluate('window.__reviewGeometry()');
+    await evaluate('window.__nextRankingReply()');
     await podiumReady('base-q004');
+    await sleep(200);
+    const frames=await endMotion(),rest=frames.at(-1);
+    const motion={horizontal:Math.max(...frames.map(f=>Math.abs(f.left-rest.left))),darkest:Math.min(...frames.map(f=>f.opacity)),
+      layoutJump:Math.abs(pendingFrame.top-rest.top),actionJump:Math.abs(pendingFrame.buttonTop-rest.buttonTop),scroll:Math.max(...frames.map(f=>Math.abs(f.scrollX)))};
+    assert(motion.horizontal<=1&&motion.darkest>=.99&&motion.layoutJump<=1&&motion.actionJump<=1&&motion.scroll<=1,
+      'A ranked swipe keeps the dialog and controls visually anchored at '+width+'×'+height+': '+JSON.stringify(motion));
     await drag(await hitPoint(crown), 102, -18);
     assert.match(await kicker(), /QUÊTE 3/, 'A swipe in the other direction starts directly on a ranked row');
     await podiumReady('base-q003');
@@ -262,12 +287,12 @@ window.__fixtureRankingBoard=id=>{
     assert.equal(await evaluate("JSON.stringify(lumenDiagnostics.snapshot())"), attemptBefore, 'Ranked browsing never launches a quest');
     await tap('#skyRevealSky');
     await until("document.getElementById('skyReveal').hidden&&!document.getElementById('mapModal').hidden");
-    results.push({ width, height, rankedTouch: true });
+    results.push({ width, height, rankedTouch: true, motion });
   }
 
   assert.deepEqual(errors, []);
   if (process.argv[2]) fs.writeFileSync(process.argv[2], JSON.stringify({ results, errors }, null, 2));
-  console.log(JSON.stringify(results.map(({ width, height, time, owned, rankedTouch }) => ({ width, height, time, owned, rankedTouch }))));
+  console.log(JSON.stringify(results.map(({ width, height, time, owned, rankedTouch, motion }) => ({ width, height, time, owned, rankedTouch, motion }))));
 } finally {
   await closeBrowser(send);
 }
