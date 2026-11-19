@@ -3,6 +3,7 @@
 // mode "verify" (player session): check the token with Google, record it (#728), then
 // acknowledge it (an unacknowledged purchase is refunded by Google after 3 days).
 // modes "acknowledge" and "voided" (operator secret): retry acknowledgements and reconcile refunds.
+// mode "readiness" (operator secret): read-only check of Google access, permissions, ledger and RTDN setup.
 // POST /rtdn: authenticated Google Pub/Sub push, using the same purchase verifier.
 // Secrets (Edge Function secrets, never in the client):
 //   LUMEN_PLAY_SERVICE_ACCOUNT  service-account JSON with androidpublisher access
@@ -208,9 +209,36 @@ Deno.serve(async (request) => {
       }
       return delivered;
     }
-    if (body?.mode === 'voided' || body?.mode === 'acknowledge') {
+    if (body?.mode === 'voided' || body?.mode === 'acknowledge' || body?.mode === 'readiness') {
       const secret = Deno.env.get('LUMEN_PLAY_CRON_SECRET');
       if (!secret || request.headers.get('x-lumen-cron') !== secret) return reply(401, { error: 'unauthorized' });
+      if (body.mode === 'readiness') {
+        // #833: operator pre-activation probe. No purchase, no write, no token or secret
+        // in the reply. Licence-test purchases never call orders.get, so this is the only
+        // check of that permission before a real sale. 400/404 on synthetic identifiers
+        // prove the API answered for this package; 401/403 point to a missing permission.
+        const status = async (path) => { try { return (await play(path)).status; } catch { return 'error'; } };
+        let googleAuth = true;
+        try { await (accessToken ??= googleAccessToken(account, fetch)); } catch { googleAuth = false; }
+        const checks = { googleAuth, products: null, orders: null, voided: null };
+        if (googleAuth) {
+          checks.products = await status(purchasePath('real_adventure_02', 'lumen-readiness-probe'));
+          checks.orders = await status('/orders/' + encodeURIComponent('GPA.0000-0000-0000-00000'));
+          checks.voided = await status('/purchases/voidedpurchases?maxResults=1');
+        }
+        const { error: ledgerError } = await operator.rpc('lumen_purchase_by_ref', { p_provider: 'play', p_provider_ref: '0'.repeat(64) });
+        const reachable = (value) => value === 400 || value === 404;
+        const result = {
+          ...checks, ledger: !ledgerError,
+          rtdnConfigured: !!(subscription && Deno.env.get('LUMEN_PLAY_RTDN_AUDIENCE') && Deno.env.get('LUMEN_PLAY_RTDN_EMAIL')),
+          packageName,
+        };
+        return reply(200, {
+          status: 'readiness', ...result,
+          ready: googleAuth && reachable(checks.products) && reachable(checks.orders) && checks.voided === 200
+            && result.ledger && result.rtdnConfigured,
+        });
+      }
       if (body.mode === 'acknowledge') {
         const { error } = await operator.rpc('lumen_prune_play_acknowledgements');
         if (error) throw Error('ack_prune_failed');

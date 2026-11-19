@@ -1,6 +1,6 @@
 // #729: client Play Billing module with synthetic Digital Goods and Payment Request.
 import assert from 'node:assert/strict';
-import {PLAY_CHECKOUT_AVAILABLE,PLAY_BINDING_PROBE,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices,toPlayProductId,PLAY_BILLING_METHOD} from '../src/persistence/play-billing.js';
+import {PLAY_CHECKOUT_AVAILABLE,PLAY_TEST_CAPABILITY,playCheckoutOpen,createForegroundRecovery,PLAY_BINDING_PROBE,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices,toPlayProductId,PLAY_BILLING_METHOD} from '../src/persistence/play-billing.js';
 import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery} from '../src/ui/adventure-offer.js';
@@ -162,7 +162,7 @@ let resolveDetails,failDetails=true,verifications=0,marker=probeMarker;
 const delayedWin={...win,document:{referrer:'android-app://com.nopuna.lumen'},getDigitalGoodsService:async()=>({getDetails:requested=>requested[0]===PLAY_BINDING_PROBE
  ?Promise.resolve(marker):new Promise((resolve,reject)=>{resolveDetails=()=>failDetails?reject(Error('offline')):resolve(rows)})})};
 const host=new Node('div'),savedProgress={solved:{0:1}},saved=structuredClone(savedProgress);
-const context=vm.createContext({PLAY_CHECKOUT_AVAILABLE,window:delayedWin,console,createPlayPriceLoader,isPlayDistributedApp,CONTENT_PACKS,SKY_PRODUCT_ID,
+const context=vm.createContext({PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,lumenCapabilities:[],window:delayedWin,console,createPlayPriceLoader,isPlayDistributedApp,CONTENT_PACKS,SKY_PRODUCT_ID,
  adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery,canonicalQuestList,contentMapModel:()=>({skies:[{packs}]}),adventureAccessEntitlements:()=>[],adventureEntitlementsState:()=> 'ready',
  attemptEngine:{snapshot:()=>({})},lumenProgress:savedProgress,lumenUser:{id:'synthetic'},lumenEntitlements:[],qaActive:false,mapCatalogueOverride:null,refreshAdventureOffer:null,authSessionPending:false,cloudProfileReady:true,cloudProfileFailure:null,lumenEntitlementsState:'ready',navigator:{onLine:true},
  localStorage:{getItem:key=>key==='lumenCloudOwnerId'?'synthetic':null},
@@ -410,3 +410,36 @@ const sheetsBeforeSwitch=sheets;
 await checkout();
 assert.equal(sheets,sheetsBeforeSwitch,'The previous account binding cannot open a payment');
 assert.deepEqual(verifyTokens.slice(-3),Array.from({length:3},()=>['Bearer synthetic-jwt','new-purchase']));
+
+// #833: licence-tester checkout while public sales stay closed. The capability only opens
+// the consented Play sheet for that account; the server still verifies every token.
+assert.equal(PLAY_TEST_CAPABILITY,'play_test_checkout');
+assert.equal(playCheckoutOpen(),PLAY_CHECKOUT_AVAILABLE,'Without a capability the public switch decides');
+for(const capabilities of [[],null,['stripe_test_checkout'],[{capability:'all_adventures_access'}],[{capability:'play_test_checkout_extra'}]])
+ assert.equal(playCheckoutOpen({released:false,capabilities}),false,JSON.stringify(capabilities));
+assert.equal(playCheckoutOpen({released:false,capabilities:[{capability:'play_test_checkout',source:'manual',expires_at:null}]}),true);
+assert.equal(playCheckoutOpen({released:false,capabilities:['play_test_checkout']}),true);
+assert.equal(playCheckoutOpen({released:true,capabilities:[]}),true);
+Object.assign(recovery,{PLAY_CHECKOUT_AVAILABLE:false,lumenUser:{id:'owner'},lumenCapabilities:[{capability:'stripe_test_checkout'}]});
+assert.equal(vm.runInContext('playBoundCheckoutAvailable()',recovery),false,'Another capability never opens Play sales');
+recovery.lumenCapabilities=[{capability:'play_test_checkout',source:'manual',expires_at:null}];
+assert.equal(vm.runInContext('playBoundCheckoutAvailable()',recovery),true,'The licence tester can reach the bound checkout');
+const testerHost=new Node('div');recovery.testerHost=testerHost;
+vm.runInContext('renderAdventureOffer(testerHost,pack)',recovery);
+const testerText=testerHost.all().map(n=>n.textContent).join(' ');
+assert.doesNotMatch(testerText,/temporairement suspendus/,'No pause notice for the tester');
+const testerWaiver=testerHost.all().find(n=>n.dataset.offer==='waiver');
+assert(testerWaiver,'The withdrawal waiver is shown before any Play sheet');assert.equal(testerWaiver.checked,false,'Never pre-ticked');
+recovery.lumenCapabilities=[];
+assert.equal(vm.runInContext('playBoundCheckoutAvailable()',recovery),false,'Revoking the capability closes the checkout again');
+
+// #823/#833: purchases finished in the background are checked again on return, throttled.
+{
+ let runs=0,clock=1000;
+ const onVisible=createForegroundRecovery({run:()=>runs++,now:()=>clock,minIntervalMs:60000});
+ assert.equal(onVisible(),true);clock+=59999;assert.equal(onVisible(),false);clock+=1;assert.equal(onVisible(),true);
+ assert.equal(runs,2,'At most one Google check per minute on foreground');
+ assert.match(normalized,/const playForegroundRecovery=createForegroundRecovery\(\{run:\(\)=>void maybeRestorePlayPurchases\(\)\}\);\ndocument\.addEventListener\('visibilitychange',\(\)=>\{\n if\(document\.visibilityState==='visible'&&lumenUser&&!qaActive&&\(isPlayDistributedApp\(window\)\|\|playPriceLoader\.snapshot\(\)\.playApp\)\)playForegroundRecovery\(\);/);
+ assert.match(normalized,/playCheckoutPaused:offer\.pricesRequired&&!playCheckoutOpen\(\{released:PLAY_CHECKOUT_AVAILABLE,capabilities:lumenCapabilities\}\)/);
+}
+console.log('play-billing-tests #833: licence-test capability gate and foreground recovery OK');

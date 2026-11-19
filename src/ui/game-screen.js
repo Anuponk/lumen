@@ -90,7 +90,7 @@ import {mountAdventureAccess} from './adventure-access-panel.js';
 import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
 import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery} from './adventure-offer.js';
 import {purchaseThanksModel,showPurchaseThanks} from './purchase-thanks.js';
-import {PLAY_CHECKOUT_AVAILABLE,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,toPlayProductId} from '../persistence/play-billing.js';
+import {PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,createForegroundRecovery,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,toPlayProductId} from '../persistence/play-billing.js';
 import {rememberPlayAppLaunch,isPlayDistributedApp,stripeCheckoutAvailable,startStripeCheckout,stripeSessionStatus,restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage} from '../persistence/stripe-checkout.js';
 import {SKY_PRODUCT_ID} from '../campaign/store-catalogue.js';
 import {createSound} from "./sound.js";
@@ -4191,7 +4191,7 @@ const playPriceLoader=createPlayPriceLoader({win:window,playApp:isPlayDistribute
   playBilling=state.status==='loading'?null:state.service;
   playPriceLabels=state.prices;
   if(state.playApp&&state.status!=='loading'){
-   console.info('[Lumen Play billing]',{reason:'checkout_readiness',salesEnabled:PLAY_CHECKOUT_AVAILABLE,
+   console.info('[Lumen Play billing]',{reason:'checkout_readiness',salesEnabled:PLAY_CHECKOUT_AVAILABLE,testCheckout:!PLAY_CHECKOUT_AVAILABLE&&playCheckoutOpen({released:PLAY_CHECKOUT_AVAILABLE,capabilities:lumenCapabilities}),
     serviceAvailable:!!state.service,supportsBinding:state.supportsBinding,paymentSupported:state.paymentSupported,pricedProducts:Object.keys(state.prices).length});
    if(playBoundCheckoutAvailable())void preparePlayPurchaseAccount();
   }
@@ -4201,7 +4201,8 @@ const playPriceLoader=createPlayPriceLoader({win:window,playApp:isPlayDistribute
 });
 function playBoundCheckoutAvailable(){
  const {supportsBinding,paymentSupported}=playPriceLoader.snapshot();
- return PLAY_CHECKOUT_AVAILABLE&&supportsBinding&&paymentSupported;
+ // #833: public release switch, or the owner-granted licence-test capability of this account.
+ return playCheckoutOpen({released:PLAY_CHECKOUT_AVAILABLE,capabilities:lumenCapabilities})&&supportsBinding&&paymentSupported;
 }
 let playBillingReady=playPriceLoader.load();
 async function playVerify(productId,purchaseToken,client,owner){
@@ -4415,6 +4416,12 @@ function afterVerifiedHydration(){refreshAdventureOffer?.('mastery');void maybeC
 window.addEventListener('online',()=>{
  if(isPlayDistributedApp(window)||playPriceLoader.snapshot().playApp)void maybeRestorePlayPurchases();
 });
+// #823/#833: a purchase finished while Lumen was in the background (pending payment,
+// network lost after the Play sheet) is checked again on return, at most once a minute.
+const playForegroundRecovery=createForegroundRecovery({run:()=>void maybeRestorePlayPurchases()});
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState==='visible'&&lumenUser&&!qaActive&&(isPlayDistributedApp(window)||playPriceLoader.snapshot().playApp))playForegroundRecovery();
+});
 // #731: offer shown on a locked Adventure. Purchases stay disabled until a payment
 // provider is connected (#729/#730); the free path claims a server-verified mastery unlock.
 function renderAdventureOffer(container,pack,{close}={}){
@@ -4447,7 +4454,7 @@ function renderAdventureOffer(container,pack,{close}={}){
  const mounted=mountAdventureOffer(container,offer,{
   onRetry:()=>{playBillingReady=playPriceLoader.load()},
   onSignIn:()=>{close?.();openEmailAccountOffer('signup')},
-  playCheckoutPaused:offer.pricesRequired&&!PLAY_CHECKOUT_AVAILABLE,
+  playCheckoutPaused:offer.pricesRequired&&!playCheckoutOpen({released:PLAY_CHECKOUT_AVAILABLE,capabilities:lumenCapabilities}),
   onRestorePlay:offer.pricesRequired&&offer.signedIn?async()=>{
    const owner=lumenUser?.id;
    const outcome=await restorePlayForCurrentAccount();

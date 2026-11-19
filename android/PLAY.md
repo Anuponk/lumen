@@ -281,6 +281,42 @@ sa propre éligibilité.
    second appareil, puis vérifier le remboursement de test et le retrait du
    droit sans perte de progression. Attendre un seul reçu et aucune attribution
    en double.
+   **Activation réservée au testeur (#833).** Les ventes publiques ont été
+   ouvertes le 19/11/2026 (#843). Si `PLAY_CHECKOUT_AVAILABLE` est refermé
+   (incident, nouvelle version), la recette reste possible sans rouvrir les
+   ventes : accorder la capacité `play_test_checkout` au seul compte Lumen de
+   recette, de préférence avec une expiration :
+
+   ```sql
+   insert into lumen.internal_capabilities(user_id,capability,source,expires_at)
+   values ('<uuid-du-compte-de-recette>','play_test_checkout','manual',now()+interval '2 days')
+   on conflict (user_id,capability) do update set expires_at=excluded.expires_at;
+   -- Retrait après la recette :
+   delete from lumen.internal_capabilities where user_id='<uuid>' and capability='play_test_checkout';
+   ```
+
+   Recharger Lumen après l'octroi. La console `checkout_readiness` affiche
+   alors `testCheckout: true`. Les autres comptes voient toujours la suspension.
+   La capacité n'accorde aucun droit : chaque jeton suit la même vérification.
+   Le compte Google de l'appareil doit être déclaré testeur de licence pour
+   obtenir un achat de test sans débit. Sinon, la feuille Play facture réellement.
+
+   **Sonde avant activation (#833).** Un achat de test de licence n'appelle
+   jamais `orders.get`. Avant la première vente réelle, appeler la sonde en
+   lecture seule (aucun achat, aucune écriture, aucun jeton renvoyé) :
+
+   ```sh
+   curl -s -X POST "$SUPABASE_URL/functions/v1/lumen-play-purchase" \
+     -H 'content-type: application/json' -H "x-lumen-cron: $LUMEN_PLAY_CRON_SECRET" \
+     -d '{"mode":"readiness"}'
+   ```
+
+   La réponse attendue est `ready: true`, avec `googleAuth: true`, `products`
+   et `orders` à 400 ou 404, `voided: 200`, `ledger: true` et
+   `rtdnConfigured: true`. Une valeur 401 ou 403 signale une permission Play
+   Console manquante : « Afficher les données financières » pour `orders`,
+   accès à l'application pour `products`. La sonde nécessite le déploiement de
+   l'Edge Function de cette PR.
 4. Une fois ces contrôles validés, ouvrir les ventes dans
    `src/persistence/play-billing.js` via `PLAY_CHECKOUT_AVAILABLE` et publier
    le Web. L'AAB 1.0.1 (2) suffit si l'installation renvoie le marqueur attendu
