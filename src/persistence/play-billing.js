@@ -6,6 +6,25 @@
 export const PLAY_CHECKOUT_AVAILABLE=true;
 export const PLAY_BILLING_METHOD='https://play.google.com/billing';
 export const PLAY_BINDING_PROBE='lumen_internal_bound_checkout_v1';
+// #833: the licence-tester acceptance needs a real Play sheet while public sales stay
+// closed. Only accounts holding this server capability (lumen.internal_capabilities,
+// granted by the owner, optionally with an expiry) see the checkout. It never grants a
+// right: the server still verifies and records every token like any other purchase.
+export const PLAY_TEST_CAPABILITY='play_test_checkout';
+export function playCheckoutOpen({released=PLAY_CHECKOUT_AVAILABLE,capabilities=[]}={}){
+ if(released===true)return true;
+ return Array.isArray(capabilities)&&capabilities.some(c=>(typeof c==='string'?c:c?.capability)===PLAY_TEST_CAPABILITY);
+}
+// #823/#833: check Play purchases again when the app returns to the foreground,
+// at most once per interval (each check reads Google through the server).
+export function createForegroundRecovery({run,now=()=>Date.now(),minIntervalMs=60000}={}){
+ let last=-Infinity;
+ return function onVisible(){
+  const t=now();
+  if(t-last<minIntervalMs)return false;
+  last=t;run();return true;
+ };
+}
 // Play Console disallows hyphens in product IDs. Internal pack IDs remain unchanged.
 export function toPlayProductId(id){return /^real-adventure-0[2-9]$/.test(id)||id==='real-sky-all'?id.replaceAll('-','_'):id}
 
