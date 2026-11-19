@@ -230,8 +230,51 @@ sélectionner ces champs explicitement. Les jetons sont effacés après
 confirmation, remboursement, effacement du compte ou au bout de quatre jours
 par l'ordonnanceur. En cas de retour à la version Edge précédente, garder la
 migration et organiser le traitement des tâches restantes avant de réactiver
-le parcours. Le polling couvre les remboursements connus du registre. RTDN
-reste à intégrer pour les événements indépendants de la reprise client.
+le parcours. Le polling couvre les remboursements connus du registre et
+sert de filet de sécurité pour RTDN.
+
+### Notifications Google Play (RTDN)
+
+Appliquer `20261119095750_play_account_bindings_729.sql` après les migrations
+de reçus et d'acknowledgement. La préparation authentifiée inscrit la liaison
+avant la fiche de paiement Play. Le wrapper doit transmettre
+`obfuscatedAccountId` sans modification. Vérifier ce retour dans l'API Play
+sur une installation de test avant d'activer de nouveaux achats.
+
+1. Dans un projet GCP contrôlé, activer Pub/Sub et créer un topic dédié à
+   Lumen. Donner le droit Publisher sur ce topic au compte système Google
+   Play `google-play-developer-notifications@system.gserviceaccount.com`.
+   Renseigner le topic dans Play Console et activer les notifications de
+   produits ponctuels. Restreindre les autres droits de publication.
+2. Créer un abonnement push enveloppé et authentifié avec un compte de service
+   dédié. Utiliser une URL HTTPS de la fonction contenant
+   `/functions/v1/lumen-play-purchase/rtdn`. Autoriser l'agent de service
+   Pub/Sub à émettre le jeton de ce compte et réserver son utilisation à
+   l'abonnement. Choisir une durée d'acknowledgement de livraison compatible
+   avec les lectures Google et DB, par exemple 60 secondes.
+3. Renseigner `LUMEN_PLAY_RTDN_EMAIL` avec ce compte de service push,
+   `LUMEN_PLAY_RTDN_AUDIENCE` avec l'audience configurée exactement et
+   `LUMEN_PLAY_RTDN_SUBSCRIPTION` avec
+   `projects/<projet>/subscriptions/<abonnement>`. Ce compte ne doit pas
+   détenir les droits du compte de service Android Publisher. Déployer avec
+   la vérification du JWT à la passerelle désactivée, car l'Edge Function
+   vérifie elle-même la signature Google, l'émetteur, l'audience et le compte.
+4. Depuis Play Console, envoyer un événement de test. Vérifier la réponse 204
+   et le journal agrégé. Rejouer la recette ci-dessous avec l'app fermée
+   après confirmation. Observer la redélivrance après une panne dans
+   l'environnement de test. Surveiller l'âge et le volume de la file et
+   configurer une file d'échec à accès restreint. Les payloads peuvent
+   contenir des jetons, donc garder leur contenu hors des journaux publics.
+
+Une réponse 204 confirme la livraison Pub/Sub. L'acknowledgement d'achat
+Google Play suit son propre traitement durable. Les événements dans un
+état transitoire répondent 503 pour permettre une nouvelle livraison. Un
+remboursement reçu avant son reçu sera réessayé. Un achat dépourvu de
+liaison vérifiée peut nécessiter un rapprochement privé. Le registre
+rejette une réactivation après remboursement.
+
+[Configurer RTDN](https://developer.android.com/google/play/billing/getting-ready#configure-rtdn).
+[Authentifier l'abonnement push](https://docs.cloud.google.com/pubsub/docs/authenticate-push-subscriptions).
 
 **Recette préalable en piste de test interne.** Utiliser uniquement un
 testeur de licence et un moyen de paiement de test. Confirmer le prix local,

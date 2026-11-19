@@ -35,15 +35,19 @@ assert.equal(sent.init.headers.authorization,'Bearer J');assert.deepEqual(JSON.p
 function paymentWindow({show}){const made=[];return {made,PaymentRequest:function(methods,details){made.push({methods,details});this.show=show}}}
 let completed=[];const response=token=>({details:token?{purchaseToken:token}:{},complete:async r=>{completed.push(r)}});
 let w=paymentWindow({show:async()=>{throw Object.assign(Error('cancel'),{name:'AbortError'})}});
-assert.deepEqual(await buyWithPlay({win:w,productId:'real-adventure-02',verify:async()=>{throw Error('must not verify')}}),{status:'cancelled'});
-assert.deepEqual(w.made[0].methods,[{supportedMethods:PLAY_BILLING_METHOD,data:{sku:'real-adventure-02'}}]);
+const binding='a'.repeat(64);
+assert.deepEqual(await buyWithPlay({win:w,productId:'p'}),{status:'error',reason:'account_binding'});
+assert.deepEqual(await buyWithPlay({win:w,productId:'p',obfuscatedAccountId:'wrong'}),{status:'error',reason:'account_binding'});
+assert.equal(w.made.length,0);
+assert.deepEqual(await buyWithPlay({win:w,productId:'real-adventure-02',obfuscatedAccountId:binding,verify:async()=>{throw Error('must not verify')}}),{status:'cancelled'});
+assert.deepEqual(w.made[0].methods,[{supportedMethods:PLAY_BILLING_METHOD,data:{sku:'real-adventure-02',obfuscatedAccountId:binding}}]);
 completed=[];w=paymentWindow({show:async()=>response(null)});
-assert.equal((await buyWithPlay({win:w,productId:'p',verify:async()=>({status:'paid'})})).status,'error');assert.deepEqual(completed,['fail']);
+assert.equal((await buyWithPlay({win:w,productId:'p',obfuscatedAccountId:binding,verify:async()=>({status:'paid'})})).status,'error');assert.deepEqual(completed,['fail']);
 completed=[];let verified=null;w=paymentWindow({show:async()=>response('tok-1')});
-assert.equal((await buyWithPlay({win:w,productId:'p',verify:async(id,t)=>{verified=[id,t];return {status:'paid'}}})).status,'paid');
+assert.equal((await buyWithPlay({win:w,productId:'p',obfuscatedAccountId:binding,verify:async(id,t)=>{verified=[id,t];return {status:'paid'}}})).status,'paid');
 assert.deepEqual(verified,['p','tok-1']);assert.deepEqual(completed,['success']);
 completed=[];w=paymentWindow({show:async()=>response('tok-2')});
-assert.equal((await buyWithPlay({win:w,productId:'p',verify:async()=>({status:'error'})})).status,'error');assert.deepEqual(completed,['fail'],'Unverified purchase closes the sheet as failed');
+assert.equal((await buyWithPlay({win:w,productId:'p',obfuscatedAccountId:binding,verify:async()=>({status:'error'})})).status,'error');assert.deepEqual(completed,['fail'],'Unverified purchase closes the sheet as failed');
 
 // Restore and retried acknowledgement.
 const restored=await restorePlayPurchases({service:{listPurchases:async()=>[{itemId:'real-adventure-02',purchaseToken:'a'},{itemId:'x'},null,{itemId:'real-sky-all',purchaseToken:'b'}]},verify:async(id)=>({status:id==='real-sky-all'?'paid':'error'})});
@@ -98,7 +102,7 @@ const win={navigator:{language:'fr-FR'},PaymentRequest:function(){this.canMakePa
 let loader=createPlayPriceLoader({win,ids,playApp:true});
 await loader.load();assert.equal(loader.snapshot().status,'ready');assert.equal(shows,0);
 assert.equal(loader.snapshot().prices[ids[0]],full[toPlayProductId(ids[0])]);
-assert.deepEqual(await buyWithPlay({win:{PaymentRequest:function(){throw Error('unsupported')}},productId:ids[0],verify:()=>{throw Error('must not verify')}}),{status:'error',reason:'payment_unsupported'});
+assert.deepEqual(await buyWithPlay({win:{PaymentRequest:function(){throw Error('unsupported')}},productId:ids[0],obfuscatedAccountId:binding,verify:()=>{throw Error('must not verify')}}),{status:'error',reason:'payment_unsupported'});
 for(const override of [{PaymentRequest:undefined},{PaymentRequest:function(){this.canMakePayment=async()=>false}}]){
  loader=createPlayPriceLoader({win:{...win,...override},ids,playApp:true});await loader.load();
  assert.equal(loader.snapshot().service,null);assert.equal(loader.snapshot().errors[0].reason,'payment_unsupported');
@@ -292,14 +296,28 @@ purchaseState.body={status:'paid',acknowledged:true,adventures:['real-adventure-
 const checkoutStatuses=[];
 const checkoutCtx={setBusy:()=>{},setStatus:message=>checkoutStatuses.push(message),waiver:{accepted:true}};
 let thanks=0;
+let sheets=0,bindingRequests=0;
+authClient.rpc=async(name,args)=>{
+ assert.equal(name,'lumen_prepare_play_purchase');
+ assert.equal(args.p_expected_user_id,recovery.lumenUser.id);
+ bindingRequests++;
+ return {data:binding};
+};
 Object.assign(recovery,{
  PLAY_CHECKOUT_AVAILABLE:true,lumenUser:{id:'owner'},cloudProfileReady:false,checkoutCtx,toPlayProductId,
  thankForPurchase:()=>thanks++,
- buyWithPlay:async({verify})=>verify('real_adventure_02','existing-purchase'),
+ buyWithPlay:async({verify,obfuscatedAccountId})=>{
+  assert.equal(obfuscatedAccountId,binding);
+  sheets++;
+  return verify('real_adventure_02','existing-purchase');
+ },
  loadEntitlements:async()=>{recovery.lumenEntitlementsState='error'}
 });
 vm.runInContext("playBilling={};playPriceLabels={'real-adventure-02':'1,00 €'}",recovery);
 const checkout=()=>vm.runInContext("purchaseAdventure('real-adventure-02',checkoutCtx)",recovery);
+await checkout();
+assert.equal(sheets,0,'Never open Play until the preparation is registered');
+assert.equal(bindingRequests,1);
 await checkout();
 assert(checkoutStatuses.some(message=>message.startsWith('Vérification de l’achat')));
 assert(!checkoutStatuses.some(message=>message.startsWith('Achat confirmé')));
@@ -313,3 +331,7 @@ recovery.loadEntitlements=async()=>{recovery.lumenEntitlementsState='ready'};
 await checkout();
 assert.match(checkoutStatuses.at(-1),/^Achat confirmé/);
 assert.equal(thanks,1);
+recovery.lumenUser={id:'other'};
+const sheetsBeforeSwitch=sheets;
+await checkout();
+assert.equal(sheets,sheetsBeforeSwitch,'The previous account binding cannot open a payment');

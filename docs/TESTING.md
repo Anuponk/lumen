@@ -2296,6 +2296,12 @@ retry without a live client. The canonical ledger gate replays both migrations
 and verifies retry leases, account erasure, mixed-provider distinct Adventure
 counting, refunds, and preservation of mastery and admin rights.
 
+For #729 RTDN, the handler mocks prove the expected Google identity checks,
+bound registration without a browser session, pending redelivery, and verified
+refunds and duplicates. The SQL fixture covers binding preparation, lookup
+permissions, account-switch denial and erasure. The browser fixture verifies
+that Payment Request receives the binding prepared for the active account.
+
 For #819/#818, the store tests cover its server count at zero through five,
 the full-sky bundle, delayed replies, account handoff, and price and consent
 copy. The ledger fixture checks the authenticated read and cross-account
