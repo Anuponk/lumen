@@ -521,10 +521,13 @@ adds Play mocks on real offer DOM at mobile/desktop sizes. Neither performs a pa
 
 UX #784/#786: `quest-review-tests.mjs` covers canonical constellation/adventure
 boundaries, independently owned entry, immediate locks/no skipping, unfinished
-results, passive edge-safe gestures, keyboard controls and late podium replies.
+results, edge-safe pointer gestures, keyboard controls and late podium replies.
 `adventure-offer-tests.mjs` covers incremental delivered content, existing rights,
 future slots/other skies, catalogue growth, unknown rights and localised prices.
 `quest-review-browser-tests.mjs` exercises actual touch/keyboard handlers and
 unchanged progress/attempt snapshots at 320/360/390/1440px, with real offer DOM
 and optional screenshots via LUMEN_UX_CAPTURE_DIR. Synthetic local browser checks
 are not physical Android TWA or live payment acceptance.
+For #817, the review browser suite also covers a signed-in podium: the response
+replaces the touched step during the swipe, then the test exercises both
+directions, vertical/edge/button gestures and ordinary taps with native CDP input.

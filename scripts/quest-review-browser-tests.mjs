@@ -2,7 +2,8 @@
 // the shared victory surface, from the real Mon ciel tiles, at portrait sizes.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { connectBrowser, closeBrowser } from './cdp-client.mjs';
+import { connectBrowser, closeBrowser, navigateAndWait, acknowledgeLearningMilestones } from './cdp-client.mjs';
+import { multiAccountFixture } from './fixtures/multi-account-browser.mjs';
 const { send, evaluate, errors } = await connectBrowser();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function until(expr) {
@@ -25,7 +26,10 @@ const progress = {
 const results = [];
 try {
   await send('Page.enable');
-  await send('Page.addScriptToEvaluateOnNewDocument', {
+  // Worker takeover reloads the document independently of review navigation.
+  // That browser lifecycle is exercised in service-worker-update-browser-tests.
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: 'delete Object.getPrototypeOf(navigator).serviceWorker' });
+  const guestFixture = await send('Page.addScriptToEvaluateOnNewDocument', {
     source: `localStorage.setItem('lumenProgressV1',${JSON.stringify(JSON.stringify(progress))});localStorage.setItem('lumenSound','off');localStorage.setItem('lumenTutorialSeen','1');localStorage.setItem('lumenInstallLater',String(Date.now()));localStorage.setItem('lumenPushChoice','later');`,
   });
   for (const [width, height] of [
@@ -159,9 +163,111 @@ try {
     assert.equal(await evaluate(`(()=>{const e=document.querySelector('.adventure-offer');return e.scrollWidth>e.clientWidth+1})()`),false);
     await evaluate(`document.getElementById('adventureNoticeClose').click()`);
   }
+  // #817: use the actual signed-in review and its RPC-driven podium. A board
+  // reply can replace the exact step a finger is resting on before release.
+  await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: guestFixture.identifier });
+  await send('Network.enable');
+  await send('Network.setBlockedURLs', { urls: ['*supabase.co*'] });
+  const rankedProfile = { ...progress, historyBackup: progress.solved, canonicalQuestState: {}, daily: { dates: {}, rewards: {} }, challenges: {}, stars: {}, noHint: {}, xp: 1000, shards: 7, walletRevision: 1, skyHistoryVersion: 4 };
+  const rankedFixture = multiAccountFixture({ 'ranking-fixture': rankedProfile }, 'ranking-fixture').replace(
+    'const a=account();',
+    "if(name==='lumen_ranking_board')return window.__fixtureRankingBoard(args.p_quest_id);if(name==='lumen_get_profile')return {data:[{nickname:'Fixture'}]};if(name==='lumen_ranking_account')return {data:{participating:true,nicknameRequired:false}};const a=account();",
+  );
+  const rankedSource = "localStorage.clear();sessionStorage.clear();localStorage.setItem('lumenInstallLater',String(Date.now()));localStorage.setItem('lumenPushChoice','later');" + rankedFixture + String.raw`
+window.__rankingReply=null;
+window.__fixtureRankingBoard=id=>{
+  const board={data:{participating:true,realParticipants:6,top:[1,2,3].map(position=>({position,place:position,nickname:id+' / '+position,score:position*30,mine:position===2})),personal:{position:2,place:2,score:60}}};
+  return id==='base-q003'&&!window.__rankingReply?new Promise(resolve=>window.__rankingReply=()=>resolve(board)):Promise.resolve(board);
+};`;
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: rankedSource });
+  for (const [width, height] of [[360, 640], [390, 844]]) {
+    await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: true });
+    await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+    await navigateAndWait({ send, evaluate }, 'Page.navigate', { url: process.env.LUMEN_TEST_URL || 'http://127.0.0.1:8000/' });
+    await until("!!window.lumenDiagnostics&&document.getElementById('mobileAuthStatus').textContent.includes('Progression synchronis')");
+    await acknowledgeLearningMilestones(evaluate);
+    await evaluate(`(()=>{document.getElementById('openSky').click();
+      document.querySelector('#adventureRail [data-pack-id="base-real-sky"]').click();
+      for(let page=0;!document.querySelector('#sectorTabs [data-content-id="real-01"]')&&page<12;page++)document.getElementById('constellationPrevious').click();
+      document.querySelector('#sectorTabs [data-content-id="real-01"]').click();
+      document.querySelector('#puzzleGrid [data-quest-id="base-q003"]').click();
+    })()`);
+    await until("!!window.__rankingReply&&!!document.querySelector('#skyRevealPodium .ranking-step-skeleton.ranking-step-1')");
+    const profileBefore = await evaluate("localStorage.getItem('lumenProgressV1')");
+    const attemptBefore = await evaluate("JSON.stringify(lumenDiagnostics.snapshot())");
+    const point = selector => evaluate(`(()=>{const el=document.querySelector(${JSON.stringify(selector)}),r=el.getBoundingClientRect();
+      const x=Math.round(r.left+r.width/2),y=Math.round(r.top+r.height/2),hit=document.elementFromPoint(x,y);
+      return {x,y,hits:hit===el||el.contains(hit)};})()`);
+    let touchId = 0;
+    const touch = (kind, ...points) => {
+      if (kind === 'touchStart') touchId++;
+      return send('Input.dispatchTouchEvent', {
+        type: kind,
+        touchPoints: points.map(point => ({ ...point, id: touchId })),
+        timestamp: Date.now() / 1000,
+      });
+    };
+    const tap = async selector => {
+      const { x, y } = await hitPoint(selector);
+      await touch('touchStart', { x, y });
+      await touch('touchMove', { x: x + 1, y });
+      await sleep(60);
+      await touch('touchEnd');
+    };
+    const hitPoint = async selector => {
+      const { x, y, hits } = await point(selector);
+      assert.equal(hits, true, 'The gesture starts on ' + selector);
+      return { x, y };
+    };
+    const drag = async ({ x, y }, dx, dy, duringTouch, beforeFirstMove = false) => {
+      await touch('touchStart', { x, y });
+      if (beforeFirstMove) await duringTouch();
+      await touch('touchMove', { x: x + dx / 3, y: y + dy / 3 });
+      if (duringTouch && !beforeFirstMove) await duringTouch();
+      await touch('touchMove', { x: x + dx, y: y + dy });
+      await touch('touchEnd');
+    };
+    const podiumReady = quest => until(`document.querySelector('#skyRevealPodium .ranking-name')?.textContent.startsWith(${JSON.stringify(quest)})`);
+    const kicker = () => evaluate("document.getElementById('skyRevealKicker')?.textContent ?? 'Review document left at ' + location.href");
+    const crown = '#skyRevealPodium .ranking-row.ranking-step-1';
+    const reply = async () => {
+      await evaluate('window.__rankingReply()');
+      await podiumReady('base-q003');
+    };
+    const skeleton = '#skyRevealPodium .ranking-step-skeleton.ranking-step-1';
+    await evaluate("document.getElementById('skyRevealPodium').addEventListener('click',event=>{if(event.isTrusted)window.__podiumTaps=(window.__podiumTaps||0)+1})");
+    await tap(skeleton);
+    await until('window.__podiumTaps===1');
+    assert.match(await kicker(), /QUÊTE 3/, 'A normal touch still reaches the original podium');
+    await drag(await hitPoint(skeleton), -102, 18, reply, height === 844);
+    assert.match(await kicker(), /QUÊTE 4/, 'A board reply during a swipe on the podium cannot swallow the gesture at ' + width + '×' + height);
+    await podiumReady('base-q004');
+    await drag(await hitPoint(crown), 102, -18);
+    assert.match(await kicker(), /QUÊTE 3/, 'A swipe in the other direction starts directly on a ranked row');
+    await podiumReady('base-q003');
+    assert.equal(await evaluate("document.querySelector('#skyReveal .sky-reveal-card').scrollTop"), 0, 'Horizontal swipes do not scroll the review');
+    await drag(await hitPoint(crown), -15, -70);
+    assert.match(await kicker(), /QUÊTE 3/, 'A vertical drag cannot browse');
+    // Browser history gestures are native at the edge. Give both directions
+    // same-document entries so browser navigation cannot unload the fixture.
+    await evaluate("for(let n=0;n<7;n++)history.pushState(null,'','#ranked-review-edge-'+n);history.go(-3)");
+    await until("location.hash === '#ranked-review-edge-3'");
+    await drag({ x: 5, y: Math.round(height / 2) }, 105, 0);
+    assert.match(await kicker(), /QUÊTE 3/, 'A drag beginning at the browser edge cannot browse');
+    const replayButton = await hitPoint('#skyRevealRetry');
+    await drag(replayButton, replayButton.x < width / 2 ? 105 : -105, 0);
+    assert.match(await kicker(), /QUÊTE 3/, 'A button-origin drag cannot browse or start a quest');
+    assert.equal(await evaluate('window.__podiumTaps'), 1, 'A drag cannot click a podium row');
+    assert.equal(await evaluate("localStorage.getItem('lumenProgressV1')"), profileBefore, 'Ranked browsing does not write a save');
+    assert.equal(await evaluate("JSON.stringify(lumenDiagnostics.snapshot())"), attemptBefore, 'Ranked browsing never launches a quest');
+    await tap('#skyRevealSky');
+    await until("document.getElementById('skyReveal').hidden&&!document.getElementById('mapModal').hidden");
+    results.push({ width, height, rankedTouch: true });
+  }
+
   assert.deepEqual(errors, []);
   if (process.argv[2]) fs.writeFileSync(process.argv[2], JSON.stringify({ results, errors }, null, 2));
-  console.log(JSON.stringify(results.map(({ width, height, time, owned }) => ({ width, height, time, owned }))));
+  console.log(JSON.stringify(results.map(({ width, height, time, owned, rankedTouch }) => ({ width, height, time, owned, rankedTouch }))));
 } finally {
   await closeBrowser(send);
 }

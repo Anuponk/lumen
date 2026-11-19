@@ -1215,6 +1215,8 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
    Zones keep their own reserved footprint; no display:contents reordering and
    no hidden ranking reserving extra space. */
 .sky-reveal[data-victory-phase="combined"] .sky-reveal-card{width:min(520px,96vw);max-height:94dvh;overflow-y:auto;overscroll-behavior:contain;position:relative;isolation:isolate}
+.sky-reveal[data-victory-phase="combined"]:not([data-sync]) :is(.sky-reveal-card > :not(.sky-reveal-results),.sky-reveal-results > :not(.sky-reveal-actions)){touch-action:pan-y pinch-zoom}
+.sky-reveal[data-victory-phase="combined"] .sky-reveal-actions button{touch-action:manipulation}
 .sky-reveal[data-victory-phase="combined"] #skyRevealCanvas,
 .sky-reveal[data-victory-phase="combined"] #skyRevealName{display:block}
 .sky-reveal[data-victory-phase="combined"] #skyRevealCanvas{position:relative;min-width:0}

@@ -184,17 +184,45 @@ test('#784: unfinished view owns no badge, time or victory',()=>{
  assert(model.slots.every(s=>s.state==='missing'));
 });
 
+function reviewGestureFixture() {
+ const events={},moves=[],captures=[];
+ const host={addEventListener:(name,fn)=>events[name]=fn,setPointerCapture:id=>captures.push(id),contains:()=>true};
+ const target={closest:()=>null},button={closest:()=>({})};
+ let active=true;
+ bindReviewNavigation(host,{active:()=>active,navigate:d=>(moves.push(d),true),viewport:()=>390});
+ const pointer=(name,x,y,overrides={})=>events[name]({target,clientX:x,clientY:y,pointerType:'touch',pointerId:1,isPrimary:true,...overrides});
+ return {events,host,target,button,moves,captures,pointer,setActive:value=>{active=value}};
+}
+
 test('#784: intentional swipe and keyboard preserve edges, native gestures and controls',()=>{
- const events={},moves=[],host={addEventListener:(name,fn,options)=>{events[name]=fn;if(name.startsWith('touch'))assert.equal(options.passive,true)}};
- bindReviewNavigation(host,{active:()=>true,navigate:d=>(moves.push(d),true),viewport:()=>390});
- const target={closest:()=>null},touch=(x,y=100)=>({clientX:x,clientY:y});
- const swipe=(from,to,targetOverride=target)=>{events.touchstart({target:targetOverride,touches:[touch(...from)]});events.touchend({changedTouches:[touch(...to)]})};
- swipe([220,100],[100,110]);swipe([100,100],[230,110]);assert.deepEqual(moves,[1,-1]);
- swipe([5,100],[160,100]);swipe([385,100],[200,100]);swipe([220,100],[210,220]);swipe([220,100],[180,105]);swipe([220,100],[100,100],{closest:()=>({})});
- assert.deepEqual(moves,[1,-1],'Edges, vertical, short and button gestures ignored');
- let prevented=0;const key=(key,targetOverride=target)=>events.keydown({key,target:targetOverride,preventDefault:()=>prevented++});
- key('ArrowRight');key('ArrowLeft');key('ArrowRight',{closest:()=>({})});
+ const {events,moves,captures,pointer,target,button}=reviewGestureFixture();
+ const swipe=(from,to,overrides)=>{pointer('pointerdown',...from,overrides);pointer('pointermove',...to,overrides);pointer('pointerup',...to,overrides)};
+ swipe([220,100],[100,120]);swipe([100,100],[230,110]);assert.deepEqual(moves,[1,-1]);assert.deepEqual(captures,[1,1]);
+ swipe([5,100],[160,100]);swipe([385,100],[200,100]);swipe([220,100],[210,220]);swipe([220,100],[180,105]);swipe([220,100],[100,100],{target:button});swipe([220,100],[100,100],{pointerType:'mouse'});
+ assert.deepEqual(moves,[1,-1],'Edges, vertical, short, button and mouse gestures are ignored');
+ let prevented=0;const key=(key,target)=>events.keydown({key,target,preventDefault:()=>prevented++});
+ key('ArrowRight',target);key('ArrowLeft',target);key('ArrowRight',button);
  assert.deepEqual(moves,[1,-1,1,-1]);assert.equal(prevented,2);
+});
+
+test('#817: capture starts after horizontal intent and cancelled or inactive gestures stay cancelled',()=>{
+ const {captures,moves,pointer,setActive}=reviewGestureFixture();
+ pointer('pointerdown',240,100);
+ pointer('pointermove',236,102);
+ assert.deepEqual(captures,[],'An ordinary tap stays on its original element');
+ pointer('pointermove',210,105);
+ assert.deepEqual(captures,[1],'Horizontal intent captures on the stable review');
+ pointer('pointercancel',210,105);
+ pointer('pointerup',90,110);
+ assert.deepEqual(moves,[]);
+ pointer('pointerdown',240,100);
+ pointer('pointerdown',235,110,{pointerId:2,isPrimary:false});
+ pointer('pointerup',90,110);
+ assert.deepEqual(moves,[],'A second touch cancels single-finger navigation');
+ pointer('pointerdown',240,100);
+ setActive(false);
+ pointer('pointerup',90,110);
+ assert.deepEqual(moves,[],'A layout leaving the results phase cannot navigate');
 });
 
 test('#784: late podium requests cannot overwrite a rapidly browsed target',async()=>{
@@ -227,11 +255,15 @@ test('#784: returning to the same quest still rejects an earlier official-record
 });
 
 test('#784: a swipe consumes only its compatibility click, never the next tap',()=>{
- const events={},host={addEventListener:(name,fn)=>events[name]=fn,contains:()=>true};
- bindReviewNavigation(host,{active:()=>true,navigate:()=>true,viewport:()=>390});
- events.touchstart({target:{closest:()=>null},touches:[{clientX:240,clientY:100}]});
- events.touchend({changedTouches:[{clientX:100,clientY:100}]});
+ const {events,host,pointer}=reviewGestureFixture();
+ pointer('pointerdown',240,100);
+ pointer('pointermove',190,100);
+ pointer('pointerup',100,100);
  let consumed=0;const click={detail:1,target:host,preventDefault:()=>consumed++,stopImmediatePropagation:()=>consumed++};
- events.click(click);assert.equal(consumed,2,'The swipe cannot activate the backdrop/underlying CTA');
- events.pointerdown();events.click(click);assert.equal(consumed,2,'The next intentional tap is preserved');
+ events.click(click);assert.equal(consumed,2,'The swipe cannot activate the backdrop or a CTA');
+ pointer('pointerdown',100,100);events.click(click);assert.equal(consumed,2,'The next intentional tap is preserved');
+ pointer('pointerdown',240,100);
+ pointer('pointermove',220,100);
+ pointer('pointerup',215,100);
+ events.click(click);assert.equal(consumed,4,'A captured drag under the navigation threshold cannot click the backdrop');
 });
