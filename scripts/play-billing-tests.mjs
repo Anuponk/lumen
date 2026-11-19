@@ -247,3 +247,23 @@ changeDuringList=true;
 await restore().onclick();
 assert.equal(authChecks,2,'A token read before switching accounts is never verified for the new account');
 assert.equal(reads,1);
+
+const checkoutStatuses=[];
+const checkoutCtx={setBusy:()=>{},setStatus:message=>checkoutStatuses.push(message),waiver:{accepted:true}};
+let thanks=0;
+Object.assign(recovery,{
+ PLAY_CHECKOUT_AVAILABLE:true,lumenUser:{id:'owner'},checkoutCtx,toPlayProductId,
+ thankForPurchase:()=>thanks++,
+ buyWithPlay:async({verify})=>verify('real_adventure_02','existing-purchase'),
+ loadEntitlements:async()=>{recovery.lumenEntitlementsState='error'}
+});
+vm.runInContext("playBilling={};playPriceLabels={'real-adventure-02':'1,00 €'}",recovery);
+const checkout=()=>vm.runInContext("purchaseAdventure('real-adventure-02',checkoutCtx)",recovery);
+await checkout();
+assert(checkoutStatuses.some(message=>message.startsWith('Vérification de l’achat')));
+assert(!checkoutStatuses.some(message=>message.startsWith('Achat confirmé')));
+assert.equal(thanks,0);
+recovery.loadEntitlements=async()=>{recovery.lumenEntitlementsState='ready'};
+await checkout();
+assert.match(checkoutStatuses.at(-1),/^Achat confirmé/);
+assert.equal(thanks,1);
