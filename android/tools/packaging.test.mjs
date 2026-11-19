@@ -113,7 +113,16 @@ test('#729 Play Billing: Digital Goods delegation, payment activity and service 
   assert.match(manifest, /android:name="\.BillingDelegationService"[\s\S]*?TRUSTED_WEB_ACTIVITY_SERVICE/);
   assert.match(manifest, /playbilling\.provider\.PaymentActivity"[\s\S]*?org\.chromium\.intent\.action\.PAY[\s\S]*?https:\/\/play\.google\.com\/billing/);
   assert.match(manifest, /playbilling\.provider\.PaymentService"[\s\S]*?org\.chromium\.intent\.action\.IS_READY_TO_PAY/);
-  assert.match(read('app/build.gradle'), /implementation 'com\.google\.androidbrowserhelper:billing:1\.2\.0'/);
+  assert.match(read('app/build.gradle'), /implementation project\(':billing'\)/);
+  assert.match(read('billing/build.gradle'), /com\.android\.billingclient:billing:8\.3\.0/);
+  const billingSource = 'billing/src/main/java/';
+  const activity = read(billingSource + 'PaymentActivity.java');
+  assert.match(activity, /PaymentVerifier\.shouldAllowPayments[\s\S]*obfuscatedAccountId\.matches\("\[0-9a-f\]\{64\}"\)[\s\S]*mWrapper = BillingWrapperFactory/);
+  assert.match(activity, /queryProductDetails\(BillingClient\.ProductType\.INAPP/);
+  assert.doesNotMatch(activity, /queryProductDetails\(BillingClient\.ProductType\.SUBS/);
+  assert.match(read(billingSource + 'PlayBillingWrapper.java'), /setObfuscatedAccountId\(methodData\.obfuscatedAccountId\)/);
+  assert.match(read(billingSource + 'GetDetailsCall.java'), /lumen_internal_bound_checkout_v1/);
+  assert.doesNotMatch(read(billingSource + 'digitalgoods/Logging.java'), /Log\.[a-z]+\([^\n]+\+ token/);
   const service = read('app/src/main/java/fr/nopuna/lumen/BillingDelegationService.java');
   assert.match(service, /extends DelegationService/);
   assert.match(service, /registerExtraCommandHandler\(new DigitalGoodsRequestHandler\(getApplicationContext\(\)\)\)/);

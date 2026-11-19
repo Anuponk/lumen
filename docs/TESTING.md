@@ -2301,6 +2301,9 @@ bound registration without a browser session, pending redelivery, and verified
 refunds and duplicates. The SQL fixture covers binding preparation, lookup
 permissions, account-switch denial and erasure. The browser fixture verifies
 that Payment Request receives the binding prepared for the active account.
+Wrapper compatibility tests cover the reserved native probe, the old wrapper
+response and the release switch. Android packaging builds the patched adapter.
+Signing and purchase acknowledgement still require installation from a Play track.
 
 For #819/#818, the store tests cover its server count at zero through five,
 the full-sky bundle, delayed replies, account handoff, and price and consent

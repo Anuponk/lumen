@@ -4184,11 +4184,14 @@ let celestialPending=null;
 // every token (Edge Function lumen-play-purchase) and records it (#728); the client
 // never grants and never announces a purchase the server did not confirm.
 let playBilling=null,playPriceLabels={};
-const playPriceLoader=createPlayPriceLoader({win:window,playApp:isPlayDistributedApp(window),checkPayment:PLAY_CHECKOUT_AVAILABLE,
+const playPriceLoader=createPlayPriceLoader({win:window,playApp:isPlayDistributedApp(window),checkPayment:PLAY_CHECKOUT_AVAILABLE,probeBinding:true,
  ids:[...CONTENT_PACKS.filter(p=>p.access==='locked').map(p=>p.id),SKY_PRODUCT_ID],
- onChange:state=>{playBilling=state.status==='loading'?null:state.service;playPriceLabels=state.prices;refreshAdventureOffer?.()},
+ onChange:state=>{playBilling=state.status==='loading'?null:state.service;playPriceLabels=state.prices;if(state.supportsBinding)void preparePlayPurchaseAccount();refreshAdventureOffer?.()},
  onDiagnostic:event=>{if(isPlayDistributedApp(window)||playPriceLoader.snapshot().playApp)console.info('[Lumen Play billing]',event)}
 });
+function playBoundCheckoutAvailable(){
+ return PLAY_CHECKOUT_AVAILABLE&&playPriceLoader.snapshot().supportsBinding;
+}
 let playBillingReady=playPriceLoader.load();
 async function playVerify(productId,purchaseToken,client,owner){
  const current=()=>lumenSupabase===client&&lumenUser?.id===owner;
@@ -4203,8 +4206,7 @@ async function playVerify(productId,purchaseToken,client,owner){
 let playPurchaseAccount=null;
 async function preparePlayPurchaseAccount(){
  const owner=lumenUser?.id,client=lumenSupabase;
- if(!PLAY_CHECKOUT_AVAILABLE||!owner||!client||qaActive)return;
- if(!isPlayDistributedApp(window)&&!playPriceLoader.snapshot().playApp)return;
+ if(!playBoundCheckoutAvailable()||!owner||!client||qaActive)return;
  if(playPurchaseAccount?.owner===owner&&playPurchaseAccount.client===client)return;
  const account={owner,client,binding:null};
  playPurchaseAccount=account;
@@ -4220,7 +4222,7 @@ async function purchaseAdventure(productId,{setStatus,setBusy,waiver}){
  // #732: never open a payment (Play or Stripe) without the express immediate-access request and waiver.
  if(!waiver?.accepted)return;
  if(!playBilling&&stripeAvailable())return purchaseWithStripe(productId,{setStatus,setBusy,waiver});
- if(!PLAY_CHECKOUT_AVAILABLE)return;
+ if(!playBoundCheckoutAvailable())return;
  if(!playBilling||!playPriceLabels[productId]){setStatus('Prix Google Play indisponible. Réessaie depuis l’offre.');return}
  const owner=lumenUser.id,client=lumenSupabase,account=playPurchaseAccount;
  if(!account?.binding||account.owner!==owner||account.client!==client){
@@ -4410,7 +4412,7 @@ function renderAdventureOffer(container,pack,{close}={}){
   const inPlay=isPlayDistributedApp(window)||playPriceLoader.snapshot().playApp;
   const masteryConfirmed=lumenEntitlementsState==='ready'&&lumenEntitlements.some(e=>e?.entitlement===pack.id&&e.source==='mastery');
   return adventureOfferModel({pack,packs,quests:canonicalQuestList(),progress:lumenProgress,signedIn:!!lumenUser&&!qaActive,accounts:!qaActive,masteryStatus,masteryConfirmed,
-   purchasesAvailable:(inPlay?PLAY_CHECKOUT_AVAILABLE&&!!playBilling:stripeAvailable())&&!qaActive,boughtSingle:lumenEntitlements.some(e=>e?.source==='purchase'),prices:playPriceLabels,
+   purchasesAvailable:(inPlay?playBoundCheckoutAvailable()&&!!playBilling:stripeAvailable())&&!qaActive,boughtSingle:lumenEntitlements.some(e=>e?.source==='purchase'),prices:playPriceLabels,
    pricesRequired:inPlay,priceStatus:playPriceLoader.snapshot().status,priceErrors:playPriceLoader.snapshot().errors});
  };
  const offer=readOffer();if(!offer)return false;
@@ -4428,7 +4430,7 @@ function renderAdventureOffer(container,pack,{close}={}){
  const mounted=mountAdventureOffer(container,offer,{
   onRetry:()=>{playBillingReady=playPriceLoader.load()},
   onSignIn:()=>{close?.();openEmailAccountOffer('signup')},
-  playCheckoutPaused:offer.pricesRequired&&!PLAY_CHECKOUT_AVAILABLE,
+  playCheckoutPaused:offer.pricesRequired&&!playBoundCheckoutAvailable(),
   onRestorePlay:offer.pricesRequired&&offer.signedIn?async()=>{
    const owner=lumenUser?.id;
    const message=playRestoreMessage(await restorePlayForCurrentAccount(),{manual:true});
