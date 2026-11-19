@@ -157,18 +157,18 @@ L'app reste « gratuite » avec achats intégrés. La bibliothèque `billing` aj
 - [ ] Créer 9 **produits intégrés** (achat unique, non consommables), avec exactement ces identifiants Google Play (les IDs internes du catalogue restent avec des tirets) : `real_adventure_02` … `real_adventure_09` et `real_sky_all`. Les prix et les options d’achat sont gérés dans Play Console par pays et devise. L’application affiche les montants retournés par Play.
 - [ ] Créer un **compte de service** Google Cloud avec l'API Google Play Android Developer, puis l'inviter dans la Play Console avec le droit « Afficher les données financières et gérer les commandes ». Stocker sa clé JSON uniquement comme secret Supabase `LUMEN_PLAY_SERVICE_ACCOUNT`, avec `LUMEN_PLAY_PACKAGE=com.nopuna.lumen` et un `LUMEN_PLAY_CRON_SECRET` aléatoire. Ne jamais la committer.
 - [ ] Appliquer les migrations `20261115220000_play_purchase_gateway_729.sql` et `20261118212000_play_regional_receipts_729.sql` avec leurs prérequis, puis déployer `lumen-play-purchase`. Vérifier l’accès du compte de service à `orders.get` avant la recette. Le serveur enregistre le total exact de la ligne Google et sa devise pour chaque nouveau paiement réel.
-- [ ] Planifier l'appel quotidien du mode `voided` (remboursements), avec l'en-tête `x-lumen-cron`.
+- [ ] Après intégration du lot #833, activer et surveiller les deux appels serveur `acknowledge` et `voided` décrits ci-dessous.
 - [ ] Ajouter des **testeurs de licence**, publier un AAB sur la piste de test interne, puis faire un vrai achat de test : déblocage, restauration après réinstallation, et retrait après remboursement de test.
 - [ ] Data safety : déclarer l'historique d'achats (achats intégrés) ; voir #732 pour la confidentialité.
 
 ### Récupération et déploiement Google Play (#823)
 
-La lecture seule du 19 novembre a confirmé que SoldeZen possède le registre, les
-passerelles génériques et l’archive comptable. La fonction Edge
-`lumen-play-purchase`, la RPC `lumen_record_play_purchase` et les colonnes de
-règlement Play étaient absentes. Le registre ne contenait aucun achat Play. Ces
-constats expliquent le défaut du flux Play et laissent le statut de la commande
-signalée à confirmer auprès du fournisseur.
+L'audit initial du 19 novembre a observé l'absence de la fonction Edge. Lors du
+contrôle #833, SoldeZen déclarait `lumen-play-purchase` **ACTIVE**, version 1,
+avec le même fichier que `main` à `1271184`. La RPC
+`lumen_record_play_purchase` était présente. Aucun job Play n'a été identifié
+dans `cron.job`. Le rapprochement de la commande signalée reste à effectuer
+en privé. Google a indiqué une annulation du test faute d'acknowledgement.
 
 Android Browser Helper `billing:1.2.0` transmet le SKU, sans l’identifiant de
 compte obfusqué. Le [support amont](https://github.com/GoogleChrome/android-browser-helper/pull/622)
@@ -193,8 +193,8 @@ clients restent protégés et qu’un autre compte est refusé.
    à l’application et aux données financières/commandes. Valider en lecture
    `purchases.products.get` et `orders.get` par un canal privé. Le même compte
    doit pouvoir appeler `purchases.products.acknowledge` et
-   `purchases.voidedpurchases.list`. L’acknowledgment vient après l’écriture du
-   reçu, avec nouvelle tentative via la restauration.
+   `purchases.voidedpurchases.list`. L'acknowledgement suit l'écriture atomique
+   du reçu, du droit et de la tâche de reprise.
 3. Sur un clone de la révision approuvée, vérifier l’environnement cible,
    les RPC génériques, l’archive comptable et les règles de restauration.
    Le journal Supabase consulté pendant l’incident ne listait pas les versions
@@ -206,11 +206,47 @@ clients restent protégés et qu’un autre compte est refusé.
 # Depuis la révision revue. Le service psql lumen-prod désigne SoldeZen.
 psql "service=lumen-prod" -X -v ON_ERROR_STOP=1 \
   -f supabase/migrations/20261118212000_play_regional_receipts_729.sql
+psql "service=lumen-prod" -X -v ON_ERROR_STOP=1 \
+  -f supabase/migrations/20261119092413_play_acknowledgement_833.sql \
+  -f supabase/migrations/20261119092419_distinct_adventures_728.sql
 
 # Fichier privé hors dépôt, protégé par les permissions du système.
 supabase secrets set --project-ref tjdjlavmusmncuszhsuw --env-file "$LUMEN_PLAY_ENV_FILE"
 supabase functions deploy lumen-play-purchase --project-ref tjdjlavmusmncuszhsuw --no-verify-jwt
 ```
+
+Configurer deux requêtes POST vers `/functions/v1/lumen-play-purchase` depuis
+un ordonnanceur serveur, avec `Content-Type: application/json` et le secret
+`x-lumen-cron` stocké dans Vault ou dans le gestionnaire de secrets de
+l'ordonnanceur. Envoyer `{"mode":"acknowledge"}` toutes les 30 secondes et
+`{"mode":"voided"}` au moins quotidiennement. Vérifier leurs réponses HTTP et
+surveiller les tentatives qui vieillissent via `created_at`, `retry_at`,
+`attempts` et `acknowledged_at` dans la table privée
+`lumen_commands.play_acknowledgements`. Les contrôles d'exploitation doivent
+sélectionner ces champs explicitement. Les jetons sont effacés après
+confirmation, remboursement, effacement du compte ou au bout de quatre jours
+par l'ordonnanceur. En cas de retour à la version Edge précédente, garder la
+migration et organiser le traitement des tâches restantes avant de réactiver
+le parcours. Le polling couvre les remboursements connus du registre. RTDN
+reste à intégrer pour les événements indépendants de la reprise client.
+
+**Recette préalable en piste de test interne.** Utiliser uniquement un
+testeur de licence et un moyen de paiement de test. Confirmer le prix local,
+le SKU et l'ouverture de l'interface native, puis vérifier le déblocage et
+l'acknowledgement attesté par Google avant le délai de test de trois minutes.
+Pour les ventes ordinaires, Google applique un délai de trois jours à compter
+de la confirmation du paiement. [Protocole officiel de test](https://developer.android.com/google/play/billing/test)
+et [cycle de vie d'un achat](https://developer.android.com/google/play/billing/lifecycle/one-time).
+Refaire le flux
+avec annulation et paiement différé. Couper le réseau après le paiement et
+relancer, puis répéter avec une indisponibilité temporaire de l'acknowledgement
+sur l'environnement de test et vérifier la reprise serveur application fermée.
+Réinstaller et se connecter depuis un second appareil. Vérifier qu'un autre
+compte ne reçoit pas le droit. Rembourser la commande de test et vérifier le
+retrait du seul droit d'achat devenu caduc, progression comprise dans la
+comparaison avant/après. Cinq aventures distinctes valides donnent le ciel
+principal, indépendamment de la devise et du canal. Consigner les états et
+les horaires sans identifiant de commande ni jeton.
 
 Le fichier d’environnement privé définit `LUMEN_PLAY_SERVICE_ACCOUNT`,
 `LUMEN_PLAY_PACKAGE=com.nopuna.lumen` et `LUMEN_PLAY_CRON_SECRET`. Les

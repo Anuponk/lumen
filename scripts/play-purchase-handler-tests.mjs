@@ -15,17 +15,20 @@ const sha=t=>createHash('sha256').update(t).digest('hex');
 function fixture({user={id:'verified-player'},product={product_id:'real-adventure-02',kind:'adventure',price_cents:100,currency:'EUR',active:true},
  purchase={purchaseState:0,acknowledgementState:0,purchaseTimeMillis:'1763200000000',regionCode:'FR',orderId:'GPA.1'},googleStatus=200,bound=true,
  order={orderId:'GPA.1',purchaseToken:'play-token-1',state:'PROCESSED',lineItems:[{productId:'real_adventure_02',total:{currencyCode:'EUR',units:'1',nanos:190000000}}]},orderStatus=200,
- recordError=null,ackOk=true,voided=[[]],known={},env={},secretsMissing=false}={}){
+ recordError=null,ackOk=true,ackJobs=[],voided=[[]],known={},env={},secretsMissing=false}={}){
  let handler;const calls=[];
  const createClient=(_url,key)=>key==='synthetic-public'
   ?{auth:{getUser:async token=>{calls.push({kind:'auth',token});return {data:{user},error:user?null:{message:'invalid'}}}}}
   :{rpc:async(name,args)=>{calls.push({kind:'rpc',name,args});
-    if(name==='lumen_record_play_purchase'){
+    if(name==='lumen_record_play_purchase' || name==='lumen_record_play_purchase_with_ack'){
      const original=known[args.p_provider_ref];
      if(recordError)return {data:null,error:recordError};
      if(!original&&!product?.active)return {data:null,error:{message:'unknown product'}};
-     return {data:{status:original?.status??'paid',adventures:['real-adventure-02']},error:null};
+     return {data:{status:original?.status??'paid',adventures:['real-adventure-02'],purchase_id:'synthetic-purchase'},error:null};
     }
+    if(name==='lumen_claim_play_acknowledgements')return {data:args.p_purchase_id?
+      [{purchase_id:args.p_purchase_id,product_id:'real-adventure-02',purchase_token:'play-token-1',attempt:1}]:ackJobs,error:null};
+    if(name==='lumen_complete_play_acknowledgement' || name==='lumen_prune_play_acknowledgements')return {data:null,error:null};
     if(name==='lumen_purchase_by_ref')return {data:known[args.p_provider_ref]||null,error:null};
     if(name==='lumen_record_purchase')return recordError?{data:null,error:recordError}:{data:{adventures:['real-adventure-02']},error:null};
     throw Error('unexpected rpc '+name)}};
@@ -47,32 +50,33 @@ function fixture({user={id:'verified-player'},product={product_id:'real-adventur
  };
  const values={SUPABASE_URL:'https://synthetic.invalid',SUPABASE_ANON_KEY:'synthetic-public',SUPABASE_SERVICE_ROLE_KEY:'synthetic-service',
   LUMEN_PLAY_SERVICE_ACCOUNT:secretsMissing?'':JSON.stringify(account),LUMEN_PLAY_CRON_SECRET:'cron-secret',...env};
- vm.runInNewContext(source,{Request,Response,URLSearchParams,TextEncoder,crypto:globalThis.crypto,atob,btoa,Uint8Array,JSON,Number,String,Date,Math,Error,
+ vm.runInNewContext(source,{Request,Response,AbortSignal,URLSearchParams,TextEncoder,crypto:globalThis.crypto,atob,btoa,Uint8Array,JSON,Number,String,Date,Math,Error,
   createClient,fetch,console:{error(){}},Deno:{serve:fn=>{handler=fn},env:{get:k=>values[k]}}});
  const request=({body={mode:'verify',productId:'real_adventure_02',purchaseToken:'play-token-1'},token='player-token',origin='https://lumen.nopuna.fr',method='POST',headers={}}={})=>
   handler(new Request('https://synthetic.invalid/play',{method,headers:{'content-type':'application/json',...(token?{authorization:'Bearer '+token}:{}),...(origin?{origin}:{}),...headers},...(method==='POST'?{body:JSON.stringify(body)}:{})}));
  return {calls,request};
 }
-const records=(calls,name='lumen_record_play_purchase')=>JSON.parse(JSON.stringify(calls.filter(c=>c.kind==='rpc'&&c.name===name).map(c=>c.args))); // vm realm
+const receiptRpc='lumen_record_play_purchase_with_ack';
+const records=(calls,name=receiptRpc)=>JSON.parse(JSON.stringify(calls.filter(c=>c.kind==='rpc'&&c.name===name).map(c=>c.args))); // vm realm
 
 test('a paid Play purchase is verified with Google, recorded for the verified player, then acknowledged',async()=>{
  const f=fixture();const r=await f.request({body:{mode:'verify',productId:'real_adventure_02',purchaseToken:'play-token-1',userId:'someone-else'}});
  assert.equal(r.status,200);assert.deepEqual(await r.json(),{status:'paid',acknowledged:true,adventures:['real-adventure-02']});
  assert.deepEqual(records(f.calls),[{p_provider_ref:sha('play-token-1'),p_user_id:'verified-player',p_product_id:'real-adventure-02',
   p_settled_amount:'1.190000000',p_settled_currency:'EUR',p_counts_toward_cap:true,p_test_purchase:false,
-  p_purchased_at:new Date(1763200000000).toISOString()}],'Identity from Auth and settlement from Google');
+  p_purchased_at:new Date(1763200000000).toISOString(),p_purchase_token:'play-token-1',p_acknowledged:false}],'Identity from Auth and settlement from Google');
  const oauth=f.calls.find(c=>c.kind==='oauth');assert.equal(oauth.ok,true,'Assertion is RS256-signed with the service account');assert.match(oauth.scope,/androidpublisher/);
  const google=f.calls.filter(c=>c.kind==='google');
  assert.match(google[0].url,/applications\/com\.nopuna\.lumen\/purchases\/products\/real_adventure_02\/tokens\/play-token-1$/);assert.equal(google[0].auth,'Bearer google-access');
  assert.match(google[1].url,/\/orders\/GPA\.1$/);
- assert(f.calls.indexOf(google[1])<f.calls.findIndex(c=>c.name==='lumen_record_play_purchase'));
- assert(f.calls.findIndex(c=>c.name==='lumen_record_play_purchase')<f.calls.findIndex(c=>c.url?.endsWith(':acknowledge')));
+ assert(f.calls.indexOf(google[1])<f.calls.findIndex(c=>c.name===receiptRpc));
+ assert(f.calls.findIndex(c=>c.name===receiptRpc)<f.calls.findIndex(c=>c.url?.endsWith(':acknowledge')));
 });
 test('the Play receipt owns its currency and exact amount, independently of the web price',async()=>{
  for(const [money,amount] of [[{currencyCode:'JPY',units:'180'},'180.000000000'],[{currencyCode:'KWD',units:'2',nanos:125000000},'2.125000000']]){
   const f=fixture({product:{active:true,price_cents:999,currency:'EUR'},order:{orderId:'GPA.1',purchaseToken:'play-token-1',state:'PROCESSED',lineItems:[{productId:'real_adventure_02',total:money}]}});
   assert.equal((await f.request()).status,200);
-  const receipt=f.calls.find(c=>c.name==='lumen_record_play_purchase');
+  const receipt=f.calls.find(c=>c.name===receiptRpc);
   assert.equal(receipt?.args.p_settled_amount,amount);
   assert.equal(receipt?.args.p_settled_currency,money.currencyCode);
  }
@@ -81,6 +85,26 @@ test('already acknowledged purchases are not acknowledged twice; failed acknowle
  let f=fixture({purchase:{purchaseState:0,acknowledgementState:1,orderId:'GPA.1'}});assert.equal((await f.request()).status,200);
  assert(!f.calls.some(c=>c.kind==='google'&&c.url.endsWith(':acknowledge')));
  f=fixture({ackOk:false});const r=await f.request();assert.equal((await r.json()).acknowledged,false);
+});
+test('an unacknowledged payment is recorded with a durable retry before contacting acknowledge',async()=>{
+ const f=fixture({ackOk:false});
+ assert.equal((await (await f.request()).json()).acknowledged,false);
+ const record=f.calls.find(c=>c.name==='lumen_record_play_purchase_with_ack');
+ assert.equal(record?.args.p_purchase_token,'play-token-1');
+ assert.equal(record?.args.p_acknowledged,false);
+ assert(f.calls.indexOf(record)<f.calls.findIndex(c=>c.url?.endsWith(':acknowledge')));
+ assert.deepEqual(records(f.calls,'lumen_complete_play_acknowledgement'),[]);
+});
+test('the scheduler can acknowledge after a restart and does not do so for pending purchases',async()=>{
+ const job={purchase_id:'synthetic-purchase',product_id:'real-adventure-02',purchase_token:'play-token-1',attempt:2};
+ const request={body:{mode:'acknowledge'},token:null,headers:{'x-lumen-cron':'cron-secret'}};
+ const f=fixture({ackJobs:[job]});
+ assert.equal((await f.request({...request,headers:{'x-lumen-cron':'wrong'}})).status,401);
+ assert.deepEqual(await (await f.request(request)).json(),{status:'synced',acknowledged:1,retry:0});
+ assert.deepEqual(records(f.calls,'lumen_complete_play_acknowledgement'),[{p_purchase_id:job.purchase_id,p_attempt:2}]);
+ const pending=fixture({ackJobs:[job],purchase:{purchaseState:2}});
+ assert.deepEqual(await (await pending.request(request)).json(),{status:'synced',acknowledged:0,retry:1});
+ assert(!pending.calls.some(c=>c.url?.endsWith(':acknowledge')));
 });
 test('pending, cancelled, unknown and unavailable purchases record nothing',async()=>{
  for(const [opts,status,body] of [[{purchase:{purchaseState:2}},202,{status:'pending'}],[{purchase:{purchaseState:1}},409,{status:'not_paid'}],

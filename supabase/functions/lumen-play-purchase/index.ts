@@ -2,7 +2,7 @@
 // purchase from Google's Play Developer API; the browser never decides what is paid.
 // mode "verify" (player session): check the token with Google, record it (#728), then
 // acknowledge it (an unacknowledged purchase is refunded by Google after 3 days).
-// mode "voided" (operator secret): replay Google's voided purchases as refunds.
+// modes "acknowledge" and "voided" (operator secret): retry acknowledgements and reconcile refunds.
 // Secrets (Edge Function secrets, never in the client):
 //   LUMEN_PLAY_SERVICE_ACCOUNT  service-account JSON with androidpublisher access
 //   LUMEN_PLAY_PACKAGE          defaults to com.nopuna.lumen
@@ -31,6 +31,9 @@ async function sha256hex(text) {
   const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
+function purchasePath(productId, token) {
+  return '/purchases/products/' + encodeURIComponent(productId) + '/tokens/' + encodeURIComponent(token);
+}
 async function googleAccessToken(account, fetchImpl) {
   const now = Math.floor(Date.now() / 1000);
   const enc = (o) => b64url(new TextEncoder().encode(JSON.stringify(o)));
@@ -43,7 +46,7 @@ async function googleAccessToken(account, fetchImpl) {
   const key = await crypto.subtle.importKey('pkcs8', der, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
   const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(unsigned));
   const response = await fetchImpl('https://oauth2.googleapis.com/token', {
-    method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, signal: AbortSignal.timeout(8000),
     body: 'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=' + unsigned + '.' + b64url(signature),
   });
   const body = await response.json();
@@ -74,7 +77,7 @@ Deno.serve(async (request) => {
   let accessToken;
   const play = async (path, init = {}) => {
     const access = await (accessToken ??= googleAccessToken(account, fetch));
-    const response = await fetch(API + encodeURIComponent(packageName) + path, { ...init, headers: { authorization: 'Bearer ' + access, 'content-type': 'application/json' } });
+    const response = await fetch(API + encodeURIComponent(packageName) + path, { ...init, signal: AbortSignal.timeout(8000), headers: { authorization: 'Bearer ' + access, 'content-type': 'application/json' } });
     const text = await response.text();
     let data = {};
     if (text) {
@@ -89,10 +92,61 @@ Deno.serve(async (request) => {
     });
     if (error) throw Error('refund_failed');
   };
+  const claimAcknowledgements = async (purchaseId = null) => {
+    const { data, error } = await operator.rpc('lumen_claim_play_acknowledgements', { p_purchase_id: purchaseId });
+    if (error || !Array.isArray(data)) throw Error('ack_claim_failed');
+    return data;
+  };
+  const acknowledge = async (job, verifiedPurchase) => {
+    try {
+      const path = purchasePath(job.product_id.replaceAll('-', '_'), job.purchase_token);
+      if (!verifiedPurchase) {
+        const checked = await play(path);
+        if (!checked.ok) {
+          console.error('Lumen Play ack verification failed:', checked.status);
+          return false;
+        }
+        verifiedPurchase = checked.data;
+        if (verifiedPurchase.purchaseState === 1) {
+          const ref = await sha256hex(job.purchase_token);
+          const { data: original, error } = await operator.rpc('lumen_purchase_by_ref', {
+            p_provider: 'play', p_provider_ref: ref,
+          });
+          if (error) throw Error('lookup_failed');
+          if (original?.status === 'paid') await refund(ref, original);
+          return false;
+        }
+      }
+      if (verifiedPurchase.purchaseState !== 0) return false;
+      if (verifiedPurchase.acknowledgementState !== 1) {
+        const ack = await play(path + ':acknowledge', { method: 'POST', body: '{}' });
+        if (!ack.ok) {
+          console.error('Lumen Play acknowledge failed:', ack.status);
+          return false;
+        }
+      }
+      const { error } = await operator.rpc('lumen_complete_play_acknowledgement', {
+        p_purchase_id: job.purchase_id, p_attempt: job.attempt,
+      });
+      if (error) throw Error('ack_completion_failed');
+      return true;
+    } catch {
+      console.error('Lumen Play acknowledgement retry required');
+      return false;
+    }
+  };
   try {
-    if (body?.mode === 'voided') {
+    if (body?.mode === 'voided' || body?.mode === 'acknowledge') {
       const secret = Deno.env.get('LUMEN_PLAY_CRON_SECRET');
       if (!secret || request.headers.get('x-lumen-cron') !== secret) return reply(401, { error: 'unauthorized' });
+      if (body.mode === 'acknowledge') {
+        const { error } = await operator.rpc('lumen_prune_play_acknowledgements');
+        if (error) throw Error('ack_prune_failed');
+        const jobs = await claimAcknowledgements();
+        const results = await Promise.all(jobs.map(job => acknowledge(job)));
+        const acknowledged = results.filter(Boolean).length;
+        return reply(200, { status: 'synced', acknowledged, retry: results.length - acknowledged });
+      }
       let pageToken = '', refunded = 0, unknown = 0, seen = 0;
       do {
         const listed = await play('/purchases/voidedpurchases?maxResults=1000' + (pageToken ? '&token=' + encodeURIComponent(pageToken) : ''));
@@ -125,7 +179,7 @@ Deno.serve(async (request) => {
     const internalProductId = /^real_adventure_0[2-9]$/.test(productId) || productId === 'real_sky_all'
       ? productId.replaceAll('_', '-') : null;
     if (!internalProductId) return reply(400, { error: 'unknown_product' });
-    const path = '/purchases/products/' + encodeURIComponent(productId) + '/tokens/' + encodeURIComponent(purchaseToken);
+    const path = purchasePath(productId, purchaseToken);
     const checked = await play(path);
     if (checked.status === 404 || checked.status === 400) return reply(400, { error: 'invalid_purchase' });
     if (!checked.ok) return reply(502, { error: 'google_unavailable' });
@@ -179,7 +233,7 @@ Deno.serve(async (request) => {
       if (!owner) return reply(409, { error: 'purchase_account_unverified' });
       if (owner !== user.id) return reply(409, { error: 'purchase_owned_elsewhere' });
     }
-    const { data: recorded, error: recordError } = await operator.rpc('lumen_record_play_purchase', {
+    const { data: recorded, error: recordError } = await operator.rpc('lumen_record_play_purchase_with_ack', {
       p_provider_ref: ref, p_user_id: user.id, p_product_id: internalProductId,
       p_settled_amount: original ? null : settlement?.amount ?? null,
       p_settled_currency: original ? null : settlement?.currency ?? null,
@@ -187,6 +241,8 @@ Deno.serve(async (request) => {
         : settlement?.currency === 'EUR' && (!purchase.regionCode || purchase.regionCode === PLAY_CAP_REGION),
       p_test_purchase: testPurchase,
       p_purchased_at: purchase.purchaseTimeMillis ? new Date(Number(purchase.purchaseTimeMillis)).toISOString() : null,
+      p_purchase_token: purchase.acknowledgementState === 1 ? null : purchaseToken,
+      p_acknowledged: purchase.acknowledgementState === 1,
     });
     if (recordError) {
       if (/identity conflict/.test(recordError.message || '')) return reply(409, { error: 'purchase_owned_elsewhere' });
@@ -194,14 +250,13 @@ Deno.serve(async (request) => {
       throw Error('record_failed');
     }
     if (recorded?.status !== 'paid') return reply(409, { status: 'not_paid' });
-    let acknowledged = purchase.acknowledgementState === 1;
+    let acknowledged = purchase.acknowledgementState === 1 || recorded.acknowledged === true;
     if (!acknowledged) {
       try {
-        const ack = await play(path + ':acknowledge', { method: 'POST', body: '{}' });
-        acknowledged = ack.ok;
-        if (!ack.ok) console.error('Lumen Play acknowledge failed:', ack.status);
+        const [job] = await claimAcknowledgements(recorded.purchase_id);
+        if (job) acknowledged = await acknowledge(job, purchase);
       } catch {
-        console.error('Lumen Play acknowledge unavailable');
+        console.error('Lumen Play acknowledgement claim failed');
       }
     }
     return reply(200, { status: 'paid', acknowledged, adventures: recorded?.adventures || [] });
