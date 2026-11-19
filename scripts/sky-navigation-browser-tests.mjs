@@ -54,11 +54,11 @@ try{
   assert.equal(await evaluate('lumenDiagnostics.skySnapshot().pages'),2);
   await click('#constellationNext');assert.equal(await evaluate('document.querySelectorAll("#sectorTabs .constellation-card").length'),4);await fit();
   await click('#adventureRail .locked');assert.equal(await evaluate('document.getElementById("adventureNotice").hidden'),false);
-  // #731: the locked Adventure shows its offer: disabled paid buttons (no provider yet), the €5 cap, the free mastery path and why Lumen is paid.
+  // #731/#819: guest pricing, hidden server purchase count and the free mastery path.
   const offer=await evaluate(`(()=>{const o=document.getElementById('adventureNoticeOffer'),q=s=>o.querySelector(s);return {visible:!o.hidden,copyHidden:document.getElementById('adventureNoticeCopy').hidden,unit:q('[data-offer=unit]')?.getAttribute('aria-label'),unitDisabled:q('[data-offer=unit]')?.disabled,sky:q('[data-offer=sky]')?.getAttribute('aria-label'),skyDisabled:q('[data-offer=sky]')?.disabled,soon:!!q('.adventure-offer-soon'),cap:q('.adventure-offer-cap')?.textContent,mastery:q('[data-offer-mastery]')?.textContent,signin:!!q('[data-offer=signin]'),whyHidden:q('.adventure-offer-why-text').hidden}})()`);
   assert.equal(offer.visible&&offer.copyHidden,true,'The offer replaces the generic lock text');
   assert.match(offer.unit,/1 €/);assert.match(offer.sky,/5 €/);assert.equal(offer.unitDisabled&&offer.skyDisabled,true,'No purchase before a payment provider is connected');
-  assert.equal(offer.soon,true);assert.match(offer.cap,/Sur le web, .*plafond de 5 €/);
+  assert.equal(offer.soon,true);assert.equal(offer.cap,'','Guest QA cannot show a confirmed purchase count');
   assert.match(offer.mastery,/en maîtrisant à 100 % l’aventure précédente/);
   assert.match(offer.mastery,/Il te reste \d+ quêtes? et \d+ badges? à acquérir pour la débloquer gratuitement/);
   assert.equal(await evaluate('document.documentElement.scrollTop'),0,'The offer keeps the page stationary');

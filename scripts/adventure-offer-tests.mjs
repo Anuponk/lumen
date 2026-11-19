@@ -5,7 +5,7 @@ import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {PERFORMANCE_BADGES} from '../src/campaign/performance.js';
 import {ADVENTURE_PRICE_CENTS,SKY_PRICE_CENTS,formatEuros} from '../src/campaign/store-catalogue.js';
-import {adventureOfferModel,masteryLine,SUPPORT_LINE,SUPPORT_TEXT} from '../src/ui/adventure-offer.js';
+import {adventureOfferModel,masteryLine,purchaseProgressMessage,SUPPORT_LINE,SUPPORT_TEXT} from '../src/ui/adventure-offer.js';
 import {storeSeed} from './adventure-store-seed.mjs';
 
 const quests=canonicalQuestList(),packs=[...CONTENT_PACKS].sort((a,b)=>a.order-b.order).map((p,i)=>({...p,accessible:i===0}));
@@ -20,8 +20,13 @@ const empty=offer(second,{});
 assert.equal(empty.unitPrice,formatEuros(ADVENTURE_PRICE_CENTS));assert.equal(empty.skyPrice,formatEuros(SKY_PRICE_CENTS));
 const play=offer(second,{}, {pricesRequired:true,prices:{[second.id]:'¥180','real-sky-all':'¥910'}});
 assert.equal(play.unitPrice,'¥180'); assert.equal(play.skyPrice,'¥910');
-assert.doesNotMatch(play.capMessage,/5 €|¥910/,'Play never promises a checkout cap from a fixed or current price');
-assert.match(empty.capMessage,/5 €/,'Web retains its documented cap');
+assert.equal(purchaseProgressMessage(null),'','An unverified purchase count remains hidden');
+assert.match(purchaseProgressMessage({remaining:5,unlocked:false}),/Achète 5 aventures/);
+for(const remaining of [4,3,2])assert.match(purchaseProgressMessage({remaining,unlocked:false}),new RegExp('Encore '+remaining+' aventures'));
+assert.match(purchaseProgressMessage({remaining:1,unlocked:false}),/Plus qu’une aventure/);
+assert.match(purchaseProgressMessage({remaining:0,unlocked:true}),/Tout le ciel principal est débloqué/);
+assert.match(purchaseProgressMessage({remaining:4,unlocked:true}),/Tout le ciel principal est débloqué/,'The bundle unlocks directly');
+assert.equal(purchaseProgressMessage({remaining:0,unlocked:false}),'','Reject an inconsistent response');
 assert.equal(empty.purchasesAvailable,false,'Purchases are disabled by default');
 assert.equal(empty.mastery.missingQuests,firstQuests.length,'Missing quests are derived from the catalogue');
 assert.equal(empty.mastery.missingBadges,firstQuests.length*PERFORMANCE_BADGES.length);
@@ -68,7 +73,7 @@ const nav=fs.readFileSync(new URL('../src/ui/sky-navigation.js',import.meta.url)
 assert.doesNotMatch(nav,/sera annoncé plus tard/,'The placeholder lock text is gone');
 // #823: Play-only manual recovery alongside the original hydration path.
 const offerSource=fs.readFileSync(new URL('../src/ui/adventure-offer.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
-assert.match(offerSource,/'Restaurer mes achats'/);
+assert.match(offerSource,/'Vérifier mes achats Google Play'/);
 const screen=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 assert.match(screen,/onRestorePlay:offer\.pricesRequired&&offer\.signedIn/);
 assert.match(screen,/function afterVerifiedHydration\(\)\{refreshAdventureOffer\?\.\('mastery'\);void maybeClaimMasteryUnlocks\(\);void maybeRestorePlayPurchases\(\);void refreshPaymentChannel\(\)\.finally\(\(\)=>handleStripeReturn\(\)\)\.finally\(\(\)=>void maybeRestoreStripePurchases\(\)\)\}/,'Automatic restore after verified hydration');

@@ -1393,6 +1393,7 @@ body:has(#erasedAccountNotice:not([hidden])) #scriptedLearn{visibility:hidden!im
 .adventure-offer-buy{background:#1d3b5a;color:#eefaff;border:1px solid #4284bd}
 .adventure-offer-buy:disabled{opacity:.55}
 .adventure-offer-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.adventure-offer [hidden]{display:none}
 .adventure-offer-cards:has(>.adventure-offer-card:only-child){grid-template-columns:1fr}
 .adventure-offer-card{display:flex;flex-direction:column;gap:5px;padding:10px;border:1px solid #4284bd;border-radius:16px;background:radial-gradient(ellipse at top,#25445b,#102336 75%);min-width:0;text-align:center}
 .adventure-offer-card h3{font-size:15px;line-height:1.2;margin:0;color:#f1e1ad}

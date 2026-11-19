@@ -2296,6 +2296,11 @@ retry without a live client. The canonical ledger gate replays both migrations
 and verifies retry leases, account erasure, mixed-provider distinct Adventure
 counting, refunds, and preservation of mastery and admin rights.
 
+For #819/#818, the store tests cover its server count at zero through five,
+the full-sky bundle, delayed replies, account handoff, and price and consent
+copy. The ledger fixture checks the authenticated read and cross-account
+denial. The shop displays no count while the server response is unavailable.
+
 ## Stripe Checkout, web/PWA TEST mode (#730)
 
 - `scripts/stripe-handler-tests.mjs` (quality gate) runs the real `lumen-stripe-checkout` and `lumen-stripe-webhook` handlers with `_shared/lumen-stripe.ts`, synthetic Auth, RPC and Stripe API boundaries, and HMAC signatures computed by Node. It covers: session created from the server reservation (price, currency, metadata, controlled return URLs, idempotency key); unauthenticated, unknown product, missing waiver and forged body prices refused; ownership, eligibility, double click, rate limit; superseded session expired and failed creation released; live keys, live events and live sessions refused and never logged; missing, wrong, expired or tampered signatures; paid read back from Stripe regardless of the event payload; pending, failed, expired and open sessions; duplicate webhooks; a stale event after a refund; full/partial refunds; open, won and lost disputes; payment-intent lookup; 5xx on temporary failures and 409 on identity conflicts; status and restore limited to the signed-in player.

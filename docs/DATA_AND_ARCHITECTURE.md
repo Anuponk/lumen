@@ -175,10 +175,17 @@ Full runbook and owner steps: [STRIPE_730](STRIPE_730.md).
   - Migration `20261119092413_play_acknowledgement_833.sql` records the verified purchase, purchase entitlement and acknowledgement task atomically. The service-only worker leases due tasks, confirms the state with Google, and retries with a capped delay. The private queue retains its temporary token only until acknowledgement, cancellation, erasure or expiry. See the [operations and test checklist](../android/PLAY.md#récupération-et-déploiement-google-play-823).
 - **Secrets** (Edge Function secrets only): `LUMEN_PLAY_SERVICE_ACCOUNT`, `LUMEN_PLAY_PACKAGE`, `LUMEN_PLAY_CRON_SECRET`, optional `LUMEN_PLAY_RECOVERY_ORDERS`. The recovery map contains independently verified order-to-Auth-UUID associations. It cannot grant an entitlement without the server verifying the Google purchase. See [Android release and recovery](../android/PLAY.md#récupération-et-déploiement-google-play-823).
 - **Migration** `20261115220000_play_purchase_gateway_729.sql`: `public.lumen_store_price`, `lumen_record_purchase` and `lumen_purchase_by_ref`, executable by `service_role` only. Migration `20261118212000_play_regional_receipts_729.sql` adds the Play-only gateway and nullable settled amount and currency on the private ledger and accounting archive. Apply the migration before deploying the Edge Function. Old rows keep their original values.
-- **Client** (`persistence/play-billing.js`): after verified hydration or « Restaurer mes achats » in the Play offer, Digital Goods lists existing purchases with no payment sheet, independent of price lookup. Verification is scoped to the active account and client. Paid or revoked receipts trigger a read-back of server entitlements and a refresh of Mon ciel. Stripe retains its automatic web restore.
+- **Client** (`persistence/play-billing.js`): after verified hydration, on reconnect or via « Vérifier mes achats Google Play » in the Play offer, Digital Goods lists existing purchases without opening payment. Unresolved payments or entitlement reads retry with bounded delays scoped to that account and client. Paid or revoked receipts trigger a read of server entitlements and a refresh of Mon ciel. Stripe retains its automatic web restore.
 - **New Play purchases paused (#823):** the Android Browser Helper currently shipped cannot pass an obfuscated Lumen account to Google. Checkout stays paused until a supported Android wrapper is validated on a Play installation.
 
 ## Purchases, store seed and mastery unlocks — #728
+
+For #819, apply `20261119093249_main_sky_purchase_progress_819.sql` after
+`20261119092419_distinct_adventures_728.sql`. The signed-in RPC checks the
+expected owner against Auth and returns only the verified purchase count,
+the remaining count and the full-sky status. The client uses it for display
+and keeps entitlement checks authoritative for access. Deploy the CGV and
+store copy after the new ledger rule is active and the terms are reviewed.
 
 Adventure entry (#783) separates server ownership from within-Adventure quest
 progression (see [PROGRESSION](PROGRESSION.md#purchases-and-mastery-unlocks-728)).
