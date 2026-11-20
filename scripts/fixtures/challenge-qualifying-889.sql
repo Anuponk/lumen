@@ -21,7 +21,10 @@ begin
  assert (select grid_revision from lumen.social_challenges where id=revised_link)=revised_rev,'revised board pinned';
  assert (select source_assistance_used from lumen.social_challenges where id=replay_link),'assisted qualifying run is accepted and recorded';
  -- Passing on an old revision-0 link keeps the original board, as the v1 writer did.
- assert (select grid_revision from lumen.social_challenges where id=(select challenge_id from public.lumen_create_qualifying_challenge('q889-sender','Sender',null,revised,0,90,true,false,false,false,true,true)))=0,'original board stays challengeable';
+ -- (Two statements: a row inserted by a function is not visible to the same query's snapshot.)
+ select challenge_id into link from public.lumen_create_qualifying_challenge('q889-sender','Sender',null,revised,0,90,true,false,false,false,true,true);
+ assert (select grid_revision from lumen.social_challenges where id=link)=0,'original board stays challengeable';
+ select challenge_id into link from public.lumen_create_qualifying_challenge('q889-sender','Sender',legacy_number,null,0,70,true,false,false,false,true,true);
 
  -- Refusals: non-qualifying run, wrong board revision, unknown quest, legacy revision.
  begin perform public.lumen_create_qualifying_challenge('q889-sender','Sender',null,stable_zero,0,10,true,true,true,false,false,false);raise exception 'non-qualifying accepted';
