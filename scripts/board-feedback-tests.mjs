@@ -1,3 +1,4 @@
+import {createTranslator} from '../src/ui/i18n.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -34,7 +35,7 @@ for(const size of [5,6,7,8]){
  });
  test(`halfway ${size}: fresh reset and replay have their own crossing`,()=>{
   const f=feedback(size),ctx=f.context,button={};f.move(Math.ceil(size/2));assert.equal(f.half().length,1);
-  Object.assign(ctx,{document:{getElementById:()=>button},confirm:()=>true,socialChallenge:null,hideSuccess(){},
+  Object.assign(ctx,{t:createTranslator().t,document:{getElementById:()=>button},confirm:()=>true,socialChallenge:null,hideSuccess(){},
    attemptEngine:{snapshot:()=>({attemptId:'same-attempt',resetCount:0}),reset(){}},trackAttemptEvent(){},
    clearHintDisplay(){},msg:{},updateHintButton(){},updateVerifyButton(){},clock(){},refreshJourney(){},
    currentBadgeQualification:()=>false,updateBadgeQualificationStatus(){},

@@ -83,6 +83,20 @@ try {
   ]) {
     await freshGuest(width, height, locale);
     const before = await evaluate(snapshot);
+    const help = locale === 'en' ? 'Help and rules' : 'Aide et règles';
+    const menuTitle = locale === 'en' ? 'LUMEN help' : 'Aide LUMEN';
+    assert.equal(await evaluate("document.getElementById('tutorialHelp').getAttribute('aria-label')"), help);
+    assert.equal(await evaluate("document.getElementById('undo').textContent"), locale === 'en' ? 'Undo' : 'Annuler');
+    assert.equal(await evaluate("document.getElementById('hint').textContent"), locale === 'en' ? 'Hint · +15 s' : 'Indice · +15 s');
+    assert.equal(await evaluate("document.getElementById('verify').textContent"), locale === 'en' ? '✓ Check · +5 s' : '✓ Vérifier · +5 s');
+    assert.equal(await evaluate("document.querySelector('.learning-territory-number').getAttribute('aria-label').split(' ')[0]"), locale === 'en' ? 'Territory' : 'Territoire');
+    await evaluate("document.getElementById('tutorialHelp').click()");
+    await until("!document.getElementById('rulesModal').hidden");
+    assert.equal(await evaluate("document.getElementById('rulesModalTitle').textContent"), menuTitle);
+    assert.equal(await evaluate("document.activeElement.id"), 'closeRulesModal');
+    await evaluate("document.getElementById('closeRulesModal').click()");
+    await until("document.getElementById('rulesModal').hidden");
+    assert.equal(await evaluate(snapshot), before, 'Reading localized rules leaves the board and attempt intact');
     const steps = [];
     for (let i = 0; i < 8; i++) {
       await sleep(250);

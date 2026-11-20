@@ -69,8 +69,17 @@ async function runHintTests(){
  test("Rendu : le plateau contient n × n cellules après render",()=>{render();return board.children.length===model.n*model.n});
  test("Mobile : glisser assombrit plusieurs cases",()=>document.querySelector("#board")&&getComputedStyle(board).touchAction==="none"&&typeof moveDragCross==="function");
  test("Narratif : les pièces placées sont des Gardiens",()=>{
-   const src=render.toString(),rules=document.getElementById("rulesModal")?.textContent||"";
-   return src.includes('aria-label="Gardien positionné"')&&paintCell.toString().includes('aria-label="Gardien positionné"')&&document.getElementById("count").textContent.endsWith("/"+model.n)&&document.querySelectorAll("#count").length===1&&rules.includes("un Gardien par ligne")&&!rules.includes("source de lumière");
+   const rules=document.getElementById("rulesModal")?.textContent||"",saved=model.state;
+   const guardianLabel=()=>board.firstElementChild.querySelector(".lumen-orb")?.getAttribute("aria-label");
+   try{
+    model.state=Array.from({length:model.n},()=>Array(model.n).fill(0));
+    model.state[0][0]=2;render();
+    const labelAfterRender=guardianLabel();
+    model.state[0][0]=1;paintCell(0,0);
+    const labelAfterExclusion=board.firstElementChild.querySelector(".lumen-dim")?.getAttribute("aria-label");
+    model.state[0][0]=2;paintCell(0,0);
+    return labelAfterRender==="Gardien positionné"&&guardianLabel()===labelAfterRender&&labelAfterExclusion==="Emplacement assombri"&&document.getElementById("count").textContent.endsWith("/"+model.n)&&document.querySelectorAll("#count").length===1&&rules.includes("un Gardien par ligne")&&!rules.includes("source de lumière");
+   }finally{model.state=saved;render()}
  });
  test("Récompense : une constellation terminée déclenche une célébration dédiée",()=>{
    return showSkyReveal.toString().includes("showCelestialVictory()")&&!showSkyReveal.toString().includes("celebrateConstellationReveal()");
