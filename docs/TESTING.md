@@ -1896,6 +1896,8 @@ Any change to challenge behavior must additionally verify:
 - a finished link reopens on its result (lowercase server status), never on a second attempt;
 - “Mes défis” shows canonical visible quest numbers for historical, stable and revised challenges.
 
+#882 (Lot 3, PR A): see [DAILY_CHALLENGE.md §7](DAILY_CHALLENGE.md#7-tests-et-retour-arrière) — `daily-challenge-tests.mjs`, `fixtures/daily-challenge-882.sql`, `daily-concurrency.py` and the rollback rehearsal run in canonical-ledger CI.
+
 #35 (Lot 2): `social-friends-tests.mjs` (client RPC names/arguments, French
 errors, statuses, escaped renderers without technical IDs), `friends-browser.mjs`
 (imported by the canonical replay suite: guest explanation without calls,
