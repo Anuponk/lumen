@@ -1,4 +1,6 @@
 
+import frBoard from './locales/fr/board.js';
+import enBoard from './locales/en/board.js';
 import frWelcome from './locales/fr/welcome.js';
 import enWelcome from './locales/en/welcome.js';
 import frLearning from './locales/fr/learning.js';
@@ -10,8 +12,8 @@ const DEFAULT_LOCALE = 'fr';
 const PREFERENCE_KEY = 'lumen.locale';
 
 export const locales = Object.freeze({
-  fr: Object.freeze({ nativeName: 'Français', enabled: true, fallback: null, messages: Object.freeze({ ...frWelcome, ...frLearning, ...frPwaWelcome }) }),
-  en: Object.freeze({ nativeName: 'English', enabled: true, fallback: 'fr', messages: Object.freeze({ ...enWelcome, ...enLearning, ...enPwaWelcome }) }),
+  fr: Object.freeze({ nativeName: 'Français', enabled: true, fallback: null, messages: Object.freeze({ ...frBoard, ...frWelcome, ...frLearning, ...frPwaWelcome }) }),
+  en: Object.freeze({ nativeName: 'English', enabled: true, fallback: 'fr', messages: Object.freeze({ ...enBoard, ...enWelcome, ...enLearning, ...enPwaWelcome }) }),
 });
 
 function lookup(registry, locale) {

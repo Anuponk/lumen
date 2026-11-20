@@ -1,3 +1,4 @@
+import {createTranslator} from '../src/ui/i18n.js';
 // #695: read-only review of a completed quest (model + ranking review mode).
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -155,7 +156,8 @@ test('wiring #761/#851: qualification is decided at run start; a reset keeps the
   const start = source.slice(source.indexOf('function ensureAttemptStarted('), source.indexOf('attemptEngine.start();', source.indexOf('function ensureAttemptStarted(')));
   assert.match(start, /!a\.qualifying&&!socialChallenge&&currentBadgeQualification\(\)\)\{a=attemptEngine\.requalify\(true\)/);
   assert.match(source, /attemptEngine\.reset\(state\);/);
-  assert.match(source, /Réinitialiser la grille \? Tes placements seront effacés, mais le chrono, les aides et les erreurs resteront comptabilisés\./);
+  assert.match(source, /confirm\(t\("board\.resetConfirm"\)\)/);
+  assert.match(createTranslator().t("board.resetConfirm"), /Réinitialiser la grille \? Tes placements seront effacés, mais le chrono, les aides et les erreurs resteront comptabilisés\./);
   assert.doesNotMatch(source, /hintUsesThisGame=0;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;questFailed=false;updateHintButton/);
 });
 

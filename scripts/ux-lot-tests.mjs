@@ -1,3 +1,4 @@
+import {createTranslator} from '../src/ui/i18n.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -41,10 +42,17 @@ test('click rechecks live access rather than a rendered stale decision',()=>{
 });
 test('completed shortcut disappears once replay starts, pauses or celebrates',()=>{
  const {c}=context(),elements=new Map();let attempt={state:'READY'};
- Object.assign(c,{attemptEngine:{snapshot:()=>attempt},ATTEMPT_STATES:{READY:'READY',RUNNING:'RUNNING',PAUSED:'PAUSED'},celebrated:false,
+ Object.assign(c,{t:createTranslator().t,attemptEngine:{snapshot:()=>attempt},ATTEMPT_STATES:{READY:'READY',RUNNING:'RUNNING',PAUSED:'PAUSED'},celebrated:false,
   learningQuestActive:()=>false,attemptMode:()=> 'replay',document:{getElementById(id){if(!elements.has(id))elements.set(id,{});return elements.get(id)}}});
  vm.runInContext(functionSource(source,'updateAttemptUI'),c);
  c.updateAttemptUI();assert.equal(elements.get('completedQuestNext').hidden,false);
  for(const state of ['RUNNING','PAUSED','COMPLETED']){attempt={state};c.updateAttemptUI();assert.equal(elements.get('completedQuestNext').hidden,true)}
+ attempt={state:'PAUSED'};
+ for(const [locale,title,action] of [['fr','Tentative en pause','Reprendre'],['en','Attempt paused','Resume']]){
+  c.t=createTranslator({locale}).t;c.updateAttemptUI();
+  assert.equal(elements.get('attemptMaskTitle').textContent,title);
+  assert.equal(elements.get('attemptPause').textContent,action);
+  assert.equal(attempt.state,'PAUSED');
+ }
  attempt={state:'READY'};c.celebrated=true;c.updateAttemptUI();assert.equal(elements.get('completedQuestNext').hidden,true);
 });

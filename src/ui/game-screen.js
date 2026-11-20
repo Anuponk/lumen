@@ -107,6 +107,9 @@ import {createTranslator} from './i18n.js';
 import {learningCopy,learningIntro,lessonText} from './learning-copy.js';
 
 export function startGameScreen({t=createTranslator().t}={}){
+for(const node of document.querySelectorAll("[data-game-text]"))node.textContent=t(node.dataset.gameText);
+for(const node of document.querySelectorAll("[data-game-label]"))node.setAttribute("aria-label",t(node.dataset.gameLabel));
+for(const node of document.querySelectorAll("[data-game-title]"))node.title=t(node.dataset.gameTitle);
 // #748: the presentation page links to /?install=1. Read once and removed from the URL
 // before anything else reads it, so the first-visit welcome still plays.
 const lumenInstallRequested=consumeInstallRequest(window);
@@ -2385,11 +2388,11 @@ function updateAttemptUI(){
  if(!mask)return;
  const ready=a?.state===ATTEMPT_STATES.READY,paused=a?.state===ATTEMPT_STATES.PAUSED;
  mask.hidden=!(ready||paused)||(ready&&learningQuestActive());
- document.getElementById("attemptMaskTitle").textContent=paused?"Tentative en pause":"Touchez la grille pour commencer";
- document.getElementById("attemptMaskCopy").textContent=paused?"Reprendre pour continuer la même tentative.":"Le chrono démarrera au premier geste.";
+ document.getElementById("attemptMaskTitle").textContent=t(paused?"board.paused":"board.ready");
+ document.getElementById("attemptMaskCopy").textContent=t(paused?"board.pausedCopy":"board.readyCopy");
  const record=document.getElementById('personalRecord'),quest=activeQuest();
  if(record){record.textContent=!socialChallenge&&questIsCompleted(lumenProgress,quest.id)?recordLabel(questPerformanceRecord(quest,lumenProgress),formatDuration,quest.gridRevision??0):'';record.hidden=!record.textContent}
- if(pause){pause.hidden=!a||![ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(a.state);pause.textContent=paused?"Reprendre":"Pause"}
+ if(pause){pause.hidden=!a||![ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(a.state);pause.textContent=t(paused?"board.resume":"board.pause")}
  if(abandon)abandon.hidden=!a||attemptMode()==="campaign"||![ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(a.state);
  const next=document.getElementById('completedQuestNext');
  if(next)next.hidden=!!socialChallenge||learningReplayActive()||celebrated||!!a&&a.state!==ATTEMPT_STATES.READY||!completedQuestSuccessor();
@@ -2487,8 +2490,8 @@ function finishLearningReplay(){
  refreshJourney();
 }
 
-function updateHintButton(){const button=document.getElementById("hint");if(button){button.textContent="Indice · +15 s";button.title="Explique la prochaine déduction. Ajoute 15 secondes au chrono officiel."}}
-function updateVerifyButton(){const button=document.getElementById("verify");if(button){button.textContent="✓ Vérifier · +5 s";button.title="Vérifie les choix déjà marqués. Ajoute 5 secondes au chrono officiel."}}
+function updateHintButton(){const button=document.getElementById("hint");if(button){button.textContent=t("board.hint");button.title=t("board.hintTitle")}}
+function updateVerifyButton(){const button=document.getElementById("verify");if(button){button.textContent=t("board.verify");button.title=t("board.verifyTitle")}}
 
 function verificationHappyCopy(){
  const q=state.flat().filter(v=>v===2).length;
@@ -3878,7 +3881,7 @@ function updateLiveReward(q){
  const eligibility=activePerformanceEligibility(),assisted=!!attemptEngine.snapshot()?.assistanceUsed,within=activeGameSeconds()<speedTargetSeconds(activeQuestOrdinal()-1),masteryVisible=eligibility.mastery&&!assisted&&within;
  // Never expose the hidden Sans erreur state during play: a committed mistake
  // must not change this live indicator before the result screen.
- m.textContent=!Object.values(eligibility).some(Boolean)?"Performances bientôt":eligibility.mastery?(masteryVisible?"✦ Maîtrise en cours":"○ Maîtrise à retenter"):"⚡ Rapidité disponible";m.classList.toggle("lost",eligibility.mastery&&!masteryVisible);
+ m.textContent=!Object.values(eligibility).some(Boolean)?t("board.performanceSoon"):eligibility.mastery?t(masteryVisible?"board.masteryActive":"board.masteryRetry"):t("board.speedAvailable");m.classList.toggle("lost",eligibility.mastery&&!masteryVisible);
  p.textContent="";
 }
 function showRewardToast(text){
@@ -3928,12 +3931,19 @@ function dragCrossCellAt(x,y){
  if(!el||!board.contains(el))return null;
  return [Number(el.dataset.row),Number(el.dataset.col)];
 }
+function appendCellMark(cell,shown){
+ if(shown!==1&&shown!==2&&shown!==3)return;
+ const mark=document.createElement("span");
+ mark.className=shown===2?"lumen-orb":"lumen-dim";
+ mark.setAttribute("aria-label",t(shown===2?"board.placed":"board.excluded"));
+ cell.append(mark);
+}
 function paintCell(r,c){
  const d=board.querySelector('.cell[data-row="'+r+'"][data-col="'+c+'"]');if(!d)return;
  const shown=displayedCellState(r,c);
  if(d.dataset.shown===String(shown))return;
  d.dataset.shown=String(shown);
- d.innerHTML=shown===1||shown===3?'<span class="lumen-dim" aria-label="Emplacement assombri"></span>':shown===2?'<span class="lumen-orb" aria-label="Gardien positionné"></span>':"";
+ d.replaceChildren();appendCellMark(d,shown);
  d.classList.toggle("auto-x",shown===3);
 }
 function paintBoardState(){
@@ -4033,12 +4043,16 @@ function render(){
   d.dataset.r=(c===n-1||puz.reg[r][c+1]!==g)?"1":"0";
   let shown=displayedCellState(r,c);
   d.dataset.shown=String(shown);
-  if(shown===1||shown===3)d.innerHTML='<span class="lumen-dim" aria-label="Emplacement assombri"></span>';
-  else if(shown===2)d.innerHTML='<span class="lumen-orb" aria-label="Gardien positionné"></span>';
-  else d.innerHTML="";
+  appendCellMark(d,shown);
   if(levelIndex===0&&shown===0&&showTerritoryNumbers){
    const flatIndex=r*n+c,firstIndex=puz.reg.flat().findIndex(region=>region===g);
-   if(flatIndex===firstIndex)d.innerHTML='<span class="learning-territory-number" aria-label="Territoire '+(g+1)+'">'+(g+1)+'</span>';
+   if(flatIndex===firstIndex){
+    const number=document.createElement("span");
+    number.className="learning-territory-number";
+    number.textContent=String(g+1);
+    number.setAttribute("aria-label",t("board.territory",{number:g+1}));
+    d.append(number);
+   }
   }
   if(shown===3)d.classList.add("auto-x");
   d.dataset.row=r;d.dataset.col=c;
@@ -4423,7 +4437,7 @@ if(attemptMask)attemptMask.onclick=()=>{const a=attemptEngine.snapshot();if(a?.s
 const attemptPause=document.getElementById("attemptPause");
 if(attemptPause)attemptPause.onclick=()=>{const a=attemptEngine.snapshot();if(a?.state===ATTEMPT_STATES.RUNNING)pauseGameClock();else if(a?.state===ATTEMPT_STATES.PAUSED)resumeGameClock()};
 const attemptAbandon=document.getElementById("attemptAbandon");
-if(attemptAbandon)attemptAbandon.onclick=async()=>{const a=attemptEngine.snapshot();if(!a)return;if(!confirm("Abandonner cette tentative ?"))return;trackAttemptEvent("attempt_abandoned",{reason:"explicit"});attemptEngine.abandon();if(socialChallenge){trackAttemptEvent("challenge_abandoned",{reason:"explicit"});await finishSocialChallenge("abandoned");return}attemptEngine.clear();init()};
+if(attemptAbandon)attemptAbandon.onclick=async()=>{const a=attemptEngine.snapshot();if(!a)return;if(!confirm(t("board.abandonConfirm")))return;trackAttemptEvent("attempt_abandoned",{reason:"explicit"});attemptEngine.abandon();if(socialChallenge){trackAttemptEvent("challenge_abandoned",{reason:"explicit"});await finishSocialChallenge("abandoned");return}attemptEngine.clear();init()};
 
 
 const celestialCelebration=createCelestialCelebration(document);
@@ -5460,7 +5474,7 @@ if(autonomyKeep)autonomyKeep.onclick=()=>{finishAutonomyChoice(true);resumeGameC
 document.getElementById("new").onclick=()=>{
   if(celebrated)return;
   // #851 / #36: one rule in every mode. A new run is "Rejouer la quête".
-  if(!confirm("Réinitialiser la grille ? Tes placements seront effacés, mais le chrono, les aides et les erreurs resteront comptabilisés."))return;
+  if(!confirm(t("board.resetConfirm")))return;
   hideSuccess();
   const resetSnapshot=attemptEngine.snapshot();trackAttemptEvent("attempt_reset",{reason:"manual",reset_index:(Number(resetSnapshot?.resetCount)||0)+1});
   halfRewardShown=false;lastPlacedCount=0;

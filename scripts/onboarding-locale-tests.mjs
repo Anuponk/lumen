@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -53,4 +54,22 @@ test('onboarding domains have French and English parity', () => {
     assert(locales.fr.messages[key].trim() && locales.en.messages[key].trim(), key);
     assert.deepEqual(tokens(locales.fr.messages[key]), tokens(locales.en.messages[key]), key);
   }
+});
+
+test('board controls and help share French fallback text and English coverage', () => {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../src/ui/game-screen.js', import.meta.url), 'utf8');
+  const keys = catalog => Object.keys(catalog).filter(key => /^(board|rules)\./.test(key)).sort();
+  const renderedKeys = new Set([...html.matchAll(/data-game-(?:text|label|title)="([^"]+)"/g),
+    ...source.matchAll(/"(board\.[\w]+)"/g)].map(match => match[1]));
+  assert.deepEqual(keys(locales.fr.messages), [...renderedKeys].sort());
+  assert.deepEqual(keys(locales.en.messages), keys(locales.fr.messages));
+  const tokens = text => (text.match(/\{\w+\}/g) ?? []).sort();
+  for (const key of renderedKeys) {
+    assert(locales.fr.messages[key].trim() && locales.en.messages[key].trim(), key);
+    assert.deepEqual(tokens(locales.fr.messages[key]), tokens(locales.en.messages[key]), key);
+  }
+  assert.equal(t('board.territory', { number: 3 }), 'Territory 3');
+  assert.match(t('rules.time'), /15 seconds per hint and 5 seconds per check/);
+  assert.deepEqual(englishMissing, []);
 });

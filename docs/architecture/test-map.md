@@ -373,8 +373,7 @@ Locale foundation (#754) uses `locale-tests.mjs` for browser preference resoluti
 storage isolation, catalogue parity and formatting. The welcome browser suite
 mounts an English fixture. `onboarding-locale-tests.mjs` covers the first two quests’
 translated coach steps against the existing learning logic. The coach-placement browser
-suite covers English installed first-open and tutorial layout. The service worker suite
-covers the catalogue imports.
+suite covers English installed first-open, tutorial layout and the localized board controls and help dialog in FR and EN. The Node locale test verifies the rules and board keys against their render sites. The service worker suite covers the catalogue imports.
 
 PWA update freshness: `service-worker-cache-tests.mjs` exercises actual worker
 handlers; `service-worker-update-browser-tests.mjs` reproduces warm v9-to-v10
