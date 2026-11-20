@@ -349,14 +349,19 @@ Do not introduce parallel `MobileX` / `DesktopX` gameplay components. If a compa
 
 Keep the challenge loop celestial and performance-led, not leaderboard-heavy. Before play, show who sent the challenge and the one-attempt rule, but hide the sender's time/badges. After play, reveal both performances side by side and describe differences factually.
 
-A remarkable first-play Mastery deserves stronger visual emphasis around “Défier”, while “Quête suivante” remains the primary campaign continuation for an ordinary first completion. Do not turn replay Mastery into a challenge CTA.
+A remarkable Mastery on a qualifying run deserves stronger visual emphasis around “Défier”, while “Quête suivante” remains the primary campaign continuation. Since #889 a qualifying replay may challenge; its wording never claims a first try (« Maîtrise en rejeu qualifiant ») and the reference shows « Rejeu qualifiant ».
 
 The current social RPC protocol supports historical numeric quest identities.
 For a first victory on a canonical-only quest, show the challenge action disabled
 with “Les défis sont disponibles uniquement sur les quêtes historiques.” This
 existing limit is explicit, not a Mastery requirement. Do not substitute the new
-visible ordinal for a historical grid identity. Replays hide the action and explain
-the first-success rule, including old saves without performance metadata.
+visible ordinal for a historical grid identity. A replay inside the qualification
+cooldown hides the action and explains it (« Défier demande une tentative
+qualifiante… Réessaie dans N min »); a qualifying replay, including an old save
+without performance metadata, may challenge (#889). On a constellation/Adventure scene at
+heights up to 700 px, « Partager ma réussite » shares the 38 px height of the other
+celestial actions and the card spacing tightens, so « Défier » + « Partager » still
+fit without scrolling at 360×640 (#705).
 Repeated activation while creating a link sends one request; reopening that
 victory's sharing flow reuses its link and never awards campaign rewards again.
 Sharing leaves the victory behind the dialog, including at an Adventure boundary;
@@ -663,7 +668,7 @@ sa composition finale, mais en **lecture seule** et **sans aucun effet** :
 
 Seuls « ↻ Rejouer » (entrée de rejeu existante, délai des badges compris) et
 « ✦ Mon ciel » (refermer) sont proposés : ni « Quête suivante » ni « Défier »,
-puisqu'un défi fige une première réussite. Rien n'est écrit (`src/ui/quest-review.js`). Les égalités et l'ordre déterministe restent calculés sur tous
+puisqu'un défi naît d'une tentative qualifiante jouée, pas d'une consultation. Rien n'est écrit (`src/ui/quest-review.js`). Les égalités et l'ordre déterministe restent calculés sur tous
 les scores côté serveur. Aucun défilement de liste ou de page.
 
 Les profils « Écho … » portent toujours une mention « Écho virtuel » pour les lecteurs d’écran. Leurs temps fixes sont

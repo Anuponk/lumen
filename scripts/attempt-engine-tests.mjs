@@ -78,4 +78,20 @@ function harness(){
  assert.equal(c.requalify(true).qualifying,false,"Social challenges are never requalified");
  assert.equal(c.reset([[0]],{qualifying:true}).qualifying,false);
 }
+// #888: a challenge attempt resumes only for its own challenge, and a resume on
+// another device starts from the server-measured elapsed time, never from zero.
+{
+ const h=harness(),engine=h.make();
+ engine.create({questId:16,mode:'challenge',challengeId:'challenge-a',board:[[0]]});engine.start();h.tick(42_000);engine.pause();
+ const other=h.make();
+ assert.equal(other.restore({questId:16,mode:'challenge',challengeId:'challenge-b'}),null,'another challenge on the same quest never inherits the clock');
+ assert.equal(other.peek().challengeId,'challenge-a','the untouched attempt stays readable');
+ const same=h.make().restore({questId:16,mode:'challenge',challengeId:'challenge-a'});
+ assert.equal(same.challengeId,'challenge-a');assert.equal(same.activeDuration,42_000,'same browser keeps its accumulated time');
+ const device=h.make();
+ const seeded=device.create({questId:16,mode:'challenge',challengeId:'challenge-c',board:[[0]],activeDuration:450_000});
+ assert.equal(seeded.activeDuration,450_000);device.start();h.tick(5_000);
+ assert.equal(device.activeMs(),455_000,'the resumed clock continues from the elapsed time');
+ assert.equal(h.make().create({questId:16,mode:'campaign',board:[[0]],activeDuration:450_000}).activeDuration,0,'campaign runs can never be seeded');
+}
 console.log(JSON.stringify({attemptEngine:true,ready:true,activeTime:true,pause:true,restorePaused:true,resetKeepsRun:true,legacyRunIdentity:true,challengeResetOneShot:true,errorStatePersists:true,abandon:true}));

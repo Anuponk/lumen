@@ -18,7 +18,9 @@ const stableRevised=quests.find(q=>q.legacyIndex===null&&q.gridRevision>1&&q.pac
 function identity(quest){return {puzzle_id:quest.legacyIndex===null?null:quest.legacyIndex+1,stable_quest_id:quest.id,grid_revision:quest.legacyIndex===null?quest.gridRevision??0:0}}
 const CHALLENGE_ID='00000000-0000-4000-8000-000000000883';
 
-function serverModel({quest,participant=null,inbox=[]}){
+// startedAgoMs: the caller's participation start as the #888 server reports it
+// (null = older server without that fact). sourceFirstPlay: #889 provenance.
+function serverModel({quest,participant=null,inbox=[],startedAgoMs=null,sourceFirstPlay=true}){
  return `
   window.__challengeCalls=[];
   const challenge=${JSON.stringify({challenge_id:CHALLENGE_ID,sender_display_name:'Source',created_at:'2026-11-20T10:00:00Z',...identity(quest)})};
@@ -26,7 +28,8 @@ function serverModel({quest,participant=null,inbox=[]}){
   let participant=${JSON.stringify(participant)};
   const view=()=>({...challenge,participant_status:participant?.status??null,participant_display_name:participant?'Fixture':null,previously_played:false,
    ...(participant&&participant.status!=='started'?source:Object.fromEntries(Object.keys(source).map(k=>[k,null]))),
-   participant_duration_seconds:participant?.duration??null,participant_autonomy:participant?.autonomy??null,participant_speed:null,participant_mastery:participant?.mastery??null,participant_assistance_used:participant?.assisted??null});
+   participant_duration_seconds:participant?.duration??null,participant_autonomy:participant?.autonomy??null,participant_speed:null,participant_mastery:participant?.mastery??null,participant_assistance_used:participant?.assisted??null,
+   source_first_play:${JSON.stringify(sourceFirstPlay)},server_now:new Date().toISOString(),participant_started_at:participant&&${JSON.stringify(startedAgoMs)}!==null?new Date(Date.now()-${JSON.stringify(startedAgoMs)}).toISOString():null});
   window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:null}}),onAuthStateChange(){}},rpc:async(name,args)=>{
    window.__challengeCalls.push({name,args});
    if(name==='lumen_get_quest_challenge_v2')return {data:args.p_challenge_id===challenge.challenge_id?view():null,error:null};
@@ -37,14 +40,14 @@ function serverModel({quest,participant=null,inbox=[]}){
   }})};`;
 }
 
-async function open({send,evaluate},url,model,{width=390,challenge=true,newcomer=false}={}){
+async function open({send,evaluate},url,model,{width=390,challenge=true,newcomer=false,keepAttempt=false}={}){
  await send('Emulation.setDeviceMetricsOverride',{width,height:900,mobile:width<700,deviceScaleFactor:1});
  // A guest who has only played the first free quests and owns no Adventure.
  // newcomer: a first visit through the link, before any tutorial (#881 Lot 1).
  const progress=newcomer?{solved:{},performances:{},xp:0,shards:0,badges:{}}:{solved:Object.fromEntries(Array.from({length:10},(_,i)=>[i,1])),performances:{},xp:40,shards:2,badges:{}};
  const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:`
   localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(progress))});
-  localStorage.removeItem('lumenQaActiveAttemptV1');localStorage.removeItem('lumenActiveAttemptV1');
+  ${keepAttempt?'':"localStorage.removeItem('lumenQaActiveAttemptV1');localStorage.removeItem('lumenActiveAttemptV1');"}
   localStorage.setItem('lumenGuestName','Fixture');localStorage.setItem('lumenPushChoice','off');
   for(const k of ['lumenQaTutorialSeen','lumenQaTutorialCompletedV1','lumenSkyTourSeen'])${newcomer?'localStorage.removeItem(k)':"localStorage.setItem(k,'1')"};
   ${model}`});
@@ -131,6 +134,57 @@ export async function verifyChallengeRecipient({send,evaluate},url){
  assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().puz.reg'),legacyPremium.reg,'Learning replay cannot replace the challenged grid');
  await evaluate(`document.getElementById('closeRulesModal').click()`);
  results.push({kind:'learning-replay-blocked',sameGrid:true});
+
+ // #889: a reference from a qualifying replay is announced before the attempt.
+ await open({send,evaluate},url,serverModel({quest:legacyPremium,sourceFirstPlay:false}));
+ await until(evaluate,`!document.getElementById('challengeIntro').hidden`,'replay provenance intro');
+ assert.match(await evaluate(`document.getElementById('challengeIntroCopy').textContent`),/rejeu qualifiant/,'Replay provenance is honest');
+ results.push({kind:'replay-provenance'});
+
+ // #888: started on another device (no local attempt): the clock resumes at the
+ // server-measured elapsed time, never from zero; the same participation is reused.
+ const clockSeconds=async()=>{const parts=(await evaluate(`document.getElementById('time').textContent`)).trim().split(':').map(Number);return parts.reduce((t,p)=>t*60+p,0)};
+ await open({send,evaluate},url,serverModel({quest:legacyPremium,participant:{status:'started'},startedAgoMs:450_000}));
+ await until(evaluate,`!document.getElementById('challengeIntro').hidden`,'cross-device intro');
+ assert.equal(await evaluate(`document.getElementById('challengeStart').textContent`),'Reprendre le défi');
+ assert.match(await evaluate(`document.getElementById('challengeIntroCopy').textContent`),/autre appareil.*7:30/s,'The resume explains the counted time');
+ await evaluate(`document.getElementById('challengeStart').click()`);
+ await until(evaluate,`document.getElementById('challengeIntro').hidden`,'cross-device resume');
+ await acknowledgeLearningMilestones(evaluate);
+ assert((await clockSeconds())>=450,'Resumed clock is never blank: '+(await clockSeconds()));
+ await evaluate(`document.getElementById('attemptMask')?.click()`);
+ await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
+ await until(evaluate,`!document.getElementById('challengeResultModal').hidden`,'cross-device result');
+ const resumedFinish=(await evaluate('window.__challengeCalls')).filter(c=>/^lumen_finish_/.test(c.name));
+ assert.equal(resumedFinish.length,1);assert(resumedFinish[0].args.p_duration_seconds>=450,'Finished time includes the elapsed time: '+resumedFinish[0].args.p_duration_seconds);
+ results.push({kind:'resume-other-device',seconds:resumedFinish[0].args.p_duration_seconds});
+
+ // #888 without server proof (older server): the resume is refused, not restarted.
+ await open({send,evaluate},url,serverModel({quest:legacyPremium,participant:{status:'started'},startedAgoMs:null}));
+ await until(evaluate,`!document.getElementById('challengeIntro').hidden`,'blocked intro');
+ assert.equal(await evaluate(`document.getElementById('challengeStart').hidden`),true,'No blank clock without proof');
+ assert.match(await evaluate(`document.getElementById('challengeIntroCopy').textContent`),/Termine-le là-bas/);
+ results.push({kind:'resume-blocked'});
+
+ // #888 same browser: the local attempt and its own time win over the server
+ // elapsed time (here one hour, which would be visible if wrongly used).
+ await open({send,evaluate},url,serverModel({quest:legacyPremium}));
+ await until(evaluate,`!document.getElementById('challengeIntro').hidden`,'same-browser first intro');
+ await evaluate(`document.getElementById('challengeStart').click()`);
+ await until(evaluate,`document.getElementById('challengeIntro').hidden`,'same-browser start');
+ await acknowledgeLearningMilestones(evaluate);
+ await evaluate(`document.getElementById('attemptMask')?.click()`);
+ await sleep(2_500);
+ const before=await clockSeconds();
+ await open({send,evaluate},url,serverModel({quest:legacyPremium,participant:{status:'started'},startedAgoMs:3_600_000}),{keepAttempt:true});
+ await until(evaluate,`!document.getElementById('challengeIntro').hidden`,'same-browser resume intro');
+ assert.equal(await evaluate(`document.getElementById('challengeStart').textContent`),'Reprendre le défi');
+ assert.doesNotMatch(await evaluate(`document.getElementById('challengeIntroCopy').textContent`),/autre appareil/);
+ await evaluate(`document.getElementById('challengeStart').click()`);
+ await until(evaluate,`document.getElementById('challengeIntro').hidden`,'same-browser resume');
+ const after=await clockSeconds();
+ assert(after>=before&&after<600,'Same browser keeps its own clock: '+before+' -> '+after);
+ results.push({kind:'resume-same-browser',before,after});
 
  // "Mes défis" shows the visible quest number for all kinds, never "null" or a legacy index.
  const inbox=[legacyPremium,stableZero,stableRevised].map((quest,i)=>({challenge_id:'00000000-0000-4000-8000-00000000088'+i,created_at:'2026-11-20T10:00:00Z',

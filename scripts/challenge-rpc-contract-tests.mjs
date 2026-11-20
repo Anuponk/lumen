@@ -36,20 +36,24 @@ const kinds={
  'stable-revised':quests.find(q=>q.legacyIndex===null&&q.gridRevision>0)
 };
 const expected={
- legacy:['lumen_create_social_challenge','lumen_start_social_challenge','lumen_finish_social_challenge'],
- 'legacy-soft-revision':['lumen_create_social_challenge','lumen_start_social_challenge','lumen_finish_social_challenge'],
- 'stable-zero':['lumen_create_quest_challenge','lumen_start_social_challenge','lumen_finish_social_challenge'],
- 'stable-revised':['lumen_create_quest_challenge_v2','lumen_start_quest_challenge_v2','lumen_finish_quest_challenge_v2']
+ // #889: one versioned writer for every kind; start/finish routes unchanged.
+ legacy:['lumen_create_qualifying_challenge','lumen_start_social_challenge','lumen_finish_social_challenge'],
+ 'legacy-soft-revision':['lumen_create_qualifying_challenge','lumen_start_social_challenge','lumen_finish_social_challenge'],
+ 'stable-zero':['lumen_create_qualifying_challenge','lumen_start_social_challenge','lumen_finish_social_challenge'],
+ 'stable-revised':['lumen_create_qualifying_challenge','lumen_start_quest_challenge_v2','lumen_finish_quest_challenge_v2']
 };
 const matrix=[];
 for(const [kind,quest] of Object.entries(kinds)){
  assert(quest,'fixture quest for '+kind);
  const {calls,client}=recorder();
- const snapshot=challengeSnapshot({quest,seconds:61,run:{autonomy:true,speed:true,mastery:true}});
+ const snapshot=challengeSnapshot({quest,seconds:61,run:{autonomy:true,speed:true,mastery:true,qualifying:true},firstPlay:kind!=='stable-zero'});
  await client.create(snapshot);
  // The recipient resolves the server row shape returned by lumen_get_quest_challenge_v2.
  const row={challenge_id:'fixture',puzzle_id:quest.legacyIndex===null?null:quest.legacyIndex+1,stable_quest_id:quest.id,
-  grid_revision:calls[0].name==='lumen_create_quest_challenge_v2'?calls[0].args.p_grid_revision:0};
+  grid_revision:calls[0].args.p_grid_revision};
+ assert.equal(calls[0].args.p_qualifying,true,kind+': only qualifying runs are declared');
+ assert.equal(calls[0].args.p_first_play,kind!=='stable-zero',kind+': provenance is never forced to first play');
+ assert.equal(calls[0].args.p_quest_id===null,quest.legacyIndex!==null,kind+': historical numbers keep their numeric identity');
  await client.get('fixture');
  await client.start('fixture',false,row.grid_revision);
  await client.finish('fixture',{status:'completed',durationSeconds:58,gridRevision:row.grid_revision});
@@ -69,6 +73,17 @@ for(const [kind,quest] of Object.entries(kinds)){
  if(quest.legacyIndex===null)assert.deepEqual(resolved.reg,quest.reg,kind+': same revision board');
  assert.equal(challengeQuestLabel(row),'Quête '+quest.ordinal,kind+': inbox shows the visible quest number');
  matrix.push({kind,quest:quest.id,revision:row.grid_revision,rpc:calls.map(c=>c.name)});
+}
+
+// Older server without the #889 writer: first wins use the first-play writers,
+// a replay is refused instead of being declared as a first play.
+{
+ const seen=[];const old=createChallengeClient({rpc:async(name,args)=>{seen.push({name,args});return name==='lumen_create_qualifying_challenge'?{status:404,error:{code:'PGRST202'}}:{data:[{challenge_id:'old-server'}],error:null}}},{getAnonymousId:()=>'guest-contract-883',getDisplayName:()=>'Contract'});
+ const first=challengeSnapshot({quest:kinds['stable-zero'],seconds:61,run:{qualifying:true},firstPlay:true});
+ assert.equal((await old.create(first)).challenge_id,'old-server');
+ assert.deepEqual(seen.map(c=>c.name),['lumen_create_qualifying_challenge','lumen_create_quest_challenge']);assert.equal(seen[1].args.p_first_play,true);
+ await assert.rejects(()=>old.create({...first,firstPlay:false}),/challenge_replay_unavailable/);
+ assert.equal(seen.filter(c=>c.name==='lumen_create_quest_challenge').length,1,'no replay reaches a first-play writer');
 }
 
 // gridRevision=0 (#883 hypothesis 4): the public start/finish wrappers only

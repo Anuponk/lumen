@@ -58,7 +58,7 @@ import {verifiedAstronomicalFigure} from "./astronomical-catalogue.js";
 import {astronomicalReferenceSvg,astronomicalPrimarySvg} from "./astronomical-reference-svg.js";
 import {LUMEN_META,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,badgeDefs} from "../campaign/data.js";
 import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt,badgeCooldownRemaining,badgeCooldownLabel} from "../campaign/performance.js";
-import {challengeAttemptClosed,challengeEligibility,challengeSnapshot,compareChallenge,createChallengeClient,normalizeChallengeName,validChallengeName} from "../campaign/social-challenge.js";
+import {challengeAttemptClosed,challengeEligibility,challengeResumePlan,challengeSnapshot,compareChallenge,createChallengeClient,normalizeChallengeName,validChallengeName} from "../campaign/social-challenge.js";
 import {challengeQuestLabel,resolveChallengeQuest} from "../campaign/canonical-challenges.js";
 import {canonicalDisplayForLegacy,canonicalScopeProgress,canonicalCampaignComplete,canonicalQuestMilestone,canonicalQuestList,canonicalAdventureSummary,canonicalQuestByOrdinal,canonicalQuestById,canonicalQuestForLegacy,canonicalNextUnsolved,canonicalCampaignQuestDecision,canonicalInsertedQuestDecision,unlockedAdventureProgress} from "../campaign/canonical-quests.js";
 import {acknowledgeCanonicalVictory,questIsCompleted} from "../persistence/canonical-progress.js";
@@ -2082,13 +2082,15 @@ function askChallengeName(){
  });
 }
 function socialChallengeUrl(id){const u=new URL(location.origin+location.pathname);u.searchParams.set("challenge",id);return u.toString()}
-function configureVictoryChallenge({priorPerformance,run,snapshot,firstCompletion,supported=true}){
+// #889: Défier follows the confirmed qualification of this run (first win or
+// replay); the snapshot records its provenance and never claims a first play.
+function configureVictoryChallenge({priorPerformance,run,snapshot,firstCompletion,supported=true,cooldownMs=0}){
  const socialEligibility=challengeEligibility({priorPerformance,run,firstCompletion});
- lastChallengeOffer=supported&&socialEligibility.canChallenge?{eligibility:socialEligibility,snapshot}:null;
+ lastChallengeOffer=supported&&socialEligibility.canChallenge?{eligibility:socialEligibility,snapshot:{...snapshot,firstPlay:socialEligibility.firstPlay,qualifying:true}}:null;
  const shareBtn=document.getElementById('successShare'),remarkable=document.getElementById('remarkableChallenge'),reason=document.getElementById('successChallengeReason');
- const explanation=!supported?'Les défis ne sont pas disponibles dans cette version.':!socialEligibility.canChallenge?'Un défi se crée uniquement après une première réussite, sans rejeu.':'';
+ const explanation=!supported?'Les défis ne sont pas disponibles dans cette version.':!socialEligibility.canChallenge?'Défier demande une tentative qualifiante, comme les badges (15 min après la précédente).'+(cooldownMs>0?' '+badgeCooldownLabel(cooldownMs)+'.':''):'';
  if(shareBtn){shareBtn.hidden=!socialEligibility.canChallenge;shareBtn.disabled=!supported;shareBtn.classList.toggle('remarkable',supported&&socialEligibility.remarkable);shareBtn.title=explanation}
- if(remarkable)remarkable.hidden=!supported||!socialEligibility.remarkable;
+ if(remarkable){remarkable.hidden=!supported||!socialEligibility.remarkable;const title=remarkable.querySelector?.('strong');if(title)title.textContent=socialEligibility.firstPlay?'✦ MAÎTRISE DU PREMIER COUP !':'✦ MAÎTRISE EN REJEU QUALIFIANT'}
  if(reason){reason.hidden=!explanation;reason.textContent=explanation}
 }
 let challengeCreationPending=false;
@@ -2099,15 +2101,15 @@ async function createSocialChallengeFromSuccess(){
   const name=await askChallengeName();if(!name||lastChallengeOffer!==offer)return;
   if(!offer.url){
    const created=await challengeClient.create(offer.snapshot),id=created?.challenge_id;if(!id)throw new Error("missing_challenge_id");
-   offer.url=socialChallengeUrl(id);trackLumenEvent("challenge_created",offer.snapshot.questId,{remarkable:!!offer.eligibility.remarkable,stable_quest_id:offer.snapshot.stableQuestId??null,quest_ordinal:offer.snapshot.questOrdinal??null,grid_revision:offer.snapshot.gridRevision??0});
+   offer.url=socialChallengeUrl(id);trackLumenEvent("challenge_created",offer.snapshot.questId,{remarkable:!!offer.eligibility.remarkable,run_kind:offer.snapshot.firstPlay===false?'replay':'first',stable_quest_id:offer.snapshot.stableQuestId??null,quest_ordinal:offer.snapshot.questOrdinal??null,grid_revision:offer.snapshot.gridRevision??0});
   }
   if(lastChallengeOffer!==offer)return;
   pendingChallengeUrl=offer.url;
-  const copy=document.getElementById("challengeShareCopy");copy.textContent=offer.eligibility.remarkable?"✦ Maîtrise du premier coup. À ton ami de relever le défi !":"Ta première performance est figée. À ton ami de faire mieux en une tentative.";
+  const copy=document.getElementById("challengeShareCopy");const firstPlay=offer.snapshot.firstPlay!==false;copy.textContent=offer.eligibility.remarkable?(firstPlay?"✦ Maîtrise du premier coup. À ton ami de relever le défi !":"✦ Maîtrise sur un rejeu qualifiant. À ton ami de relever le défi !"):(firstPlay?"Ta première performance est figée. À ton ami de faire mieux en une tentative.":"Ta performance de rejeu qualifiant est figée. À ton ami de faire mieux en une tentative.");
   const modal=document.getElementById("challengeShareModal");modal.hidden=false;
   const qr=document.getElementById("challengeQr");if(qr){qr.replaceChildren();if(typeof window.QRCode==="function")new window.QRCode(qr,{text:pendingChallengeUrl,width:220,height:220,correctLevel:window.QRCode.CorrectLevel.M});else qr.textContent="QR code indisponible : utilise Copier le lien.";}
   maybeOfferSocialPush();
- }catch(e){console.warn("challenge create",e);showRewardToast("Impossible de créer le défi pour le moment")}
+ }catch(e){console.warn("challenge create",e);showRewardToast(e?.message==='challenge_replay_unavailable'?"Défier depuis un rejeu sera possible après la mise à jour du serveur":"Impossible de créer le défi pour le moment")}
  finally{challengeCreationPending=false}
 }
 async function sharePendingChallenge(){
@@ -2119,19 +2121,21 @@ function maybeOfferSocialPush(){
  if(localStorage.getItem("lumenPushChoice")==="enabled"||!("Notification"in window)||Notification.permission==="denied")return;
  const box=document.getElementById("pushOptin");if(!box)return;box.querySelector("h2").textContent="Préviens-moi quand mon défi est relevé";box.querySelector("p").textContent="Active les notifications pour découvrir quand quelqu’un termine ton défi.";box.hidden=false;
 }
-function challengePerformanceHtml(name,duration,autonomy,mastery){
- const badge=mastery?"✦ Maîtrise":autonomy?"🧠 Autonome":"Avec aide";return '<div class="challenge-result-player"><strong>'+escapeHtml(name)+'</strong><span>'+badge+' · '+formatDuration(Number(duration)||0)+'</span></div>';
+function challengePerformanceHtml(name,duration,autonomy,mastery,note=''){
+ const badge=mastery?"✦ Maîtrise":autonomy?"🧠 Autonome":"Avec aide";return '<div class="challenge-result-player"><strong>'+escapeHtml(name)+'</strong><span>'+badge+' · '+formatDuration(Number(duration)||0)+'</span>'+(note?'<small>'+escapeHtml(note)+'</small>':'')+'</div>';
 }
+// #889: honest provenance of a reference (older servers report none).
+function challengeProvenance(firstPlay){return firstPlay===false?'Rejeu qualifiant':firstPlay===true?'Première résolution':''}
 function escapeHtml(v){const d=document.createElement("div");d.textContent=String(v??"");return d.innerHTML}
 async function showSocialChallengeResult(data){
  if(!data)return;const modal=document.getElementById("challengeResultModal"),title=document.getElementById("challengeResultTitle"),body=document.getElementById("challengeResultBody");
  const participant={status:data.participant_status,duration_seconds:data.participant_duration_seconds,autonomy:data.participant_autonomy,speed:data.participant_speed,mastery:data.participant_mastery,assistance_used:data.participant_assistance_used};
  const source={duration_seconds:data.source_duration_seconds,autonomy:data.source_autonomy,speed:data.source_speed,mastery:data.source_mastery,assistance_used:data.source_assistance_used};
  const cmp=compareChallenge(source,participant);title.textContent=cmp?.headline||"Défi terminé";
- body.innerHTML='<div class="challenge-result-versus">'+challengePerformanceHtml(data.sender_display_name,source.duration_seconds,source.autonomy,source.mastery)+challengePerformanceHtml(data.participant_display_name||challengeDisplayName(),participant.duration_seconds,participant.autonomy,participant.mastery)+'</div><div class="challenge-result-detail">'+escapeHtml(cmp?.detail||"")+'</div>';
+ body.innerHTML='<div class="challenge-result-versus">'+challengePerformanceHtml(data.sender_display_name,source.duration_seconds,source.autonomy,source.mastery,challengeProvenance(data.source_first_play))+challengePerformanceHtml(data.participant_display_name||challengeDisplayName(),participant.duration_seconds,participant.autonomy,participant.mastery)+'</div><div class="challenge-result-detail">'+escapeHtml(cmp?.detail||"")+'</div>';
  const reshare=document.getElementById("challengeResultReshare"),canPass=data.participant_status==="completed"&&!data.previously_played;
  if(reshare){reshare.hidden=!canPass;if(canPass)reshare.classList.toggle("remarkable",!!data.participant_mastery)}
- if(canPass)lastChallengeOffer={eligibility:{firstPlay:true,remarkable:!!data.participant_mastery,canChallenge:true},snapshot:challengeSnapshot({quest:resolveChallengeQuest(data),seconds:data.participant_duration_seconds,run:{autonomy:data.participant_autonomy,speed:data.participant_speed,mastery:data.participant_mastery},assistanceUsed:data.participant_assistance_used})};
+ if(canPass)lastChallengeOffer={eligibility:{firstPlay:true,remarkable:!!data.participant_mastery,canChallenge:true},snapshot:challengeSnapshot({quest:resolveChallengeQuest(data),seconds:data.participant_duration_seconds,run:{autonomy:data.participant_autonomy,speed:data.participant_speed,mastery:data.participant_mastery,qualifying:true},assistanceUsed:data.participant_assistance_used,firstPlay:true})};
  modal.hidden=false;trackLumenEvent("challenge_result_viewed",data.puzzle_id??null,{status:data.participant_status,stable_quest_id:data.stable_quest_id??null,grid_revision:data.grid_revision??0});
 }
 async function finishSocialChallenge(status){
@@ -2144,7 +2148,7 @@ function celebrateSocialChallengeSuccess(){
 async function loadMyChallenges(){
  try{
   const rows=await challengeClient.sent(),list=document.getElementById("myChallengesList"),badge=document.getElementById("challengeUnreadBadge");let unread=0;
-  list.innerHTML=(rows||[]).length?(rows||[]).map(row=>{unread+=Number(row.unread_count)||0;const parts=Array.isArray(row.participants)?row.participants:[];const source={duration_seconds:row.source_duration_seconds,autonomy:row.source_autonomy,mastery:row.source_mastery};return '<div class="challenge-list-item" data-challenge-id="'+row.challenge_id+'"><div class="challenge-list-head"><strong>'+escapeHtml(challengeQuestLabel(row))+'</strong><span>'+parts.length+' participant'+(parts.length>1?"s":"")+'</span></div><small>Ta référence · '+formatDuration(row.source_duration_seconds)+(row.source_mastery?" · ✦ Maîtrise":row.source_autonomy?" · 🧠 Autonomie":"")+'</small>'+parts.map(p=>{const cmp=compareChallenge(source,{status:p.status,duration_seconds:p.duration_seconds,autonomy:p.autonomy,mastery:p.mastery});const ownerOutcome=cmp?.winner==="source"?"🏆 Victoire":cmp?.winner==="participant"?"Défaite":"Égalité";return '<div class="challenge-participant"><span>'+escapeHtml(p.name)+'</span><span><strong>'+ownerOutcome+'</strong> · '+(p.status==="abandoned"?"abandon":formatDuration(p.duration_seconds)+(p.mastery?" · ✦":p.autonomy?" · 🧠":" · aide"))+'</span></div>'}).join("")+'</div>'}).join(""):'<p>Aucun défi envoyé pour le moment.</p>';
+  list.innerHTML=(rows||[]).length?(rows||[]).map(row=>{unread+=Number(row.unread_count)||0;const parts=Array.isArray(row.participants)?row.participants:[];const source={duration_seconds:row.source_duration_seconds,autonomy:row.source_autonomy,mastery:row.source_mastery};return '<div class="challenge-list-item" data-challenge-id="'+row.challenge_id+'"><div class="challenge-list-head"><strong>'+escapeHtml(challengeQuestLabel(row))+'</strong><span>'+parts.length+' participant'+(parts.length>1?"s":"")+'</span></div><small>Ta référence · '+formatDuration(row.source_duration_seconds)+(row.source_first_play===false?' · Rejeu qualifiant':'')+(row.source_mastery?" · ✦ Maîtrise":row.source_autonomy?" · 🧠 Autonomie":"")+'</small>'+parts.map(p=>{const cmp=compareChallenge(source,{status:p.status,duration_seconds:p.duration_seconds,autonomy:p.autonomy,mastery:p.mastery});const ownerOutcome=cmp?.winner==="source"?"🏆 Victoire":cmp?.winner==="participant"?"Défaite":"Égalité";return '<div class="challenge-participant"><span>'+escapeHtml(p.name)+'</span><span><strong>'+ownerOutcome+'</strong> · '+(p.status==="abandoned"?"abandon":formatDuration(p.duration_seconds)+(p.mastery?" · ✦":p.autonomy?" · 🧠":" · aide"))+'</span></div>'}).join("")+'</div>'}).join(""):'<p>Aucun défi envoyé pour le moment.</p>';
   if(badge){badge.hidden=!unread;badge.textContent=unread||""}
   return rows||[];
  }catch(e){console.warn("challenge inbox",e);return []}
@@ -2162,17 +2166,26 @@ async function bootstrapSocialChallenge(){
   const quest=resolveChallengeQuest(socialChallenge);canonicalActiveQuest=quest.legacyIndex===null?quest:null;
   levelIndex=legacyIndexForActiveChallenge(socialChallenge);replayMode=false;
   if(challengeAttemptClosed(socialChallenge.participant_status)){init();showSocialChallengeResult(socialChallenge);return false}
-  const intro=document.getElementById("challengeIntro"),copy=document.getElementById("challengeIntroCopy");copy.textContent=socialChallenge.sender_display_name+" te défie sur la quête "+quest.ordinal+". Sa performance sera révélée après ta tentative.";intro.hidden=false;
+  const intro=document.getElementById("challengeIntro"),copy=document.getElementById("challengeIntroCopy"),startButton=document.getElementById("challengeStart");
+  // #888: an attempt already started never restarts from a blank clock.
+  const loadedAt=Date.now(),local=attemptEngine.peek();
+  const plan=challengeResumePlan({participantStatus:socialChallenge.participant_status,participantStartedAt:socialChallenge.participant_started_at,serverNow:socialChallenge.server_now,localAttempt:local?.mode==='challenge'&&local.challengeId===id});
+  let text=socialChallenge.sender_display_name+" te défie sur la quête "+quest.ordinal+". Sa performance sera révélée après ta tentative.";
+  if(socialChallenge.source_first_play===false)text+=" Sa référence vient d’un rejeu qualifiant : il connaissait déjà cette grille.";
+  startButton.hidden=false;startButton.textContent=plan.kind==='fresh'?"Relever le défi":"Reprendre le défi";
+  if(plan.kind==='elapsed')text+=" Tu l’as déjà commencé sur un autre appareil ou navigateur : pour rester équitable, ton chrono reprend à "+formatDuration(Math.floor(plan.elapsedMs/1000))+", le temps écoulé depuis ce début.";
+  if(plan.kind==='blocked'){text+=" Tu l’as déjà commencé sur un autre appareil ou navigateur. Termine-le là-bas : ici, il repartirait d’un chrono vierge.";startButton.hidden=true}
+  copy.textContent=text;intro.hidden=false;
   // A first visit through a challenge link explains the rules before the one-shot starts.
   const rules=document.getElementById("challengeRules");if(rules){rules.hidden=tutorialCompletedProof();document.getElementById("challengeRulesOpen").onclick=()=>document.getElementById("tutorialHelp")?.click()}
-  return await new Promise(resolve=>{document.getElementById("challengeStart").onclick=async()=>{const name=await askChallengeName();if(!name)return;try{const previouslyPlayed=questIsCompleted(lumenProgress,quest.id);await challengeClient.start(id,previouslyPlayed,socialChallenge.grid_revision??0);intro.hidden=true;trackAttemptEvent("challenge_started",{previously_played:previouslyPlayed});resolve(true)}catch(e){console.warn("challenge start",e);showRewardToast("Impossible de démarrer le défi")}};document.getElementById("challengeLeave").onclick=()=>{location.href=location.pathname}});
+  return await new Promise(resolve=>{document.getElementById("challengeStart").onclick=async()=>{const name=await askChallengeName();if(!name)return;try{if(plan.kind==='elapsed')challengeResumeElapsedMs=plan.elapsedMs+Math.max(0,Date.now()-loadedAt);const previouslyPlayed=questIsCompleted(lumenProgress,quest.id);await challengeClient.start(id,previouslyPlayed,socialChallenge.grid_revision??0);intro.hidden=true;trackAttemptEvent("challenge_started",{previously_played:previouslyPlayed});resolve(true)}catch(e){console.warn("challenge start",e);showRewardToast("Impossible de démarrer le défi")}};document.getElementById("challengeLeave").onclick=()=>{location.href=location.pathname}});
  }catch(e){console.warn("challenge load",e);showRewardToast("Ce défi n’est plus disponible");socialChallenge=null;return true}
 }
 
 const COLORS=["#efb37e","#91b5ed","#b4a0db","#a9d692","#ff8267","#ddd9d2","#e5ef83","#bdb6a0","#a9d7d3"];
 const TERRITORY_COLORS=["#46c7e8","#6d8fe8","#8b70d7","#49b49b","#d38a54","#b55f86","#67a6bf","#7e9c69","#a8875b"];
 let n=6,puz,state,hist=[],start,timer,last={},hi=null,proofs={},hintStage=0,hintFocus=null,celebrated=false,hintUsesThisGame=0,mistakesThisGame=0,verifyUsesThisGame=0,verifyPending=null,autoUsedThisGame=false,replayMode=false,levelIndex=Math.min(sequentialSolvedCount,campaignQuestCount()-1),learningReplayReturn=null,endgamePending=false,adventurePending=null;
-let socialChallenge=null,lastChallengeOffer=null,pendingChallengeUrl="";
+let socialChallenge=null,lastChallengeOffer=null,pendingChallengeUrl="",challengeResumeElapsedMs=0;
 let penaltySurface=null;
 function clearPenaltyIndicator(){const label=document.getElementById('timePenalty');if(label){clearTimeout(label.dismiss);label.getAnimations?.().forEach(a=>a.cancel());label.hidden=true}}
 function showPenaltyIndicator({kind,delta}){
@@ -2849,10 +2862,10 @@ function maybeShowAutonomy(){
 function prepareQuestStart(){let q=activeBonusChallenge(),o=document.getElementById("questStart");questFailed=false;if(!q||lumenProgress.stars[q.id]){questStarted=true;o.hidden=true;return}questStarted=false;pauseGameClock();document.getElementById("questStartTitle").textContent=q.title+" · Difficulté : "+(puz.difficulty?.label??qualifyDifficulty(puz).label);document.getElementById("questStartRule").textContent=q.copy.replace(/\s*· Marquage auto interdite\./g,'')+" Récompense : +25 XP.";o.hidden=false}
 document.getElementById("questGo").onclick=()=>{document.getElementById("questStart").hidden=true;questStarted=true;clock();updateAttemptUI()};
 function init(playReviewQuestId=null){document.getElementById('successRetry').textContent='↻ Réessayer';if(!canonicalActiveQuest&&accountRequired())queueMicrotask(()=>maybeOfferAccount());setLearningReplaySuccessMode(false);document.getElementById("successNew").textContent="Quête suivante";updateLearningSuccessCTA();learningTip=null;learningTipSeen=new Set();learningStage="place";learningIntroStep=0;choose(playReviewQuestId);configureLearningMode();applyQuestRestrictions();maybeShowBadgeMilestone();maybeShowAutoCrossUnlock();maybeShowAutonomy();let cl=document.getElementById("campaignMapLabel");if(cl){const quest=canonicalActiveQuest??canonicalQuestForLegacy(levelIndex),view=readQuestView(quest,lumenProgress,canonicalQuestList(),CONTENT_CONSTELLATIONS);cl.textContent=view.label+" · "+(puz.difficulty?.label??qualifyDifficulty(puz).label);cl.title="Difficulté : "+(puz.difficulty?.label??qualifyDifficulty(puz).label);}document.getElementById("difficulty").textContent=(n===7?"7 × 7":n===8?"8 × 8":n+" × "+n)+(" · Difficulté : "+(puz.difficulty?.label??qualifyDifficulty(puz).label));state=Array.from({length:n},()=>Array(n).fill(0));hist=[];hi=null;proofs={};halfRewardShown=false;lastPlacedCount=0;hintStage=0;hintFocus=null;hiCells=[];const hintCard=document.getElementById("hintCard");if(hintCard)hintCard.hidden=true;celebrated=false;hintUsesThisGame=0;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;guidedDeferred=null;autoUsedThisGame=!!document.getElementById("autoCross")?.checked;render();if(board.children.length!==n*n){console.error("LUMEN board render invariant failed",{n,cells:board.children.length});render()}updateHintButton();updateVerifyButton();document.getElementById("verifyCard").hidden=true;hideSuccess();start=Date.now();msg.textContent="";drawLevels();victoryClockFreeze=null;clearInterval(timer);timer=setInterval(clock,100);
- const restored=attemptEngine.restore({questId:canonicalActiveQuest?.id??levelIndex+1,mode:attemptMode(),gridRevision:activeQuest()?.gridRevision??0,questResetRevision:lumenProgress.canonicalQuestState?.[activeQuest()?.id]?.resetRevision??0});
+ const restored=attemptEngine.restore({...(socialChallenge?{challengeId:socialChallenge.challenge_id}:{}),questId:canonicalActiveQuest?.id??levelIndex+1,mode:attemptMode(),gridRevision:activeQuest()?.gridRevision??0,questResetRevision:lumenProgress.canonicalQuestState?.[activeQuest()?.id]?.resetRevision??0});
  if(restored&&Array.isArray(restored.board)&&restored.board.length===n){state=restored.board.map(row=>row.slice());render()}else {
   const qualifying=currentBadgeQualification();
-  attemptEngine.create({questId:canonicalActiveQuest?.id??levelIndex+1,mode:attemptMode(),qualifying,challengeId:socialChallenge?.challenge_id||null,board:state,gridRevision:activeQuest()?.gridRevision??0,questResetRevision:lumenProgress.canonicalQuestState?.[activeQuest()?.id]?.resetRevision??0,persistBeforeStart:playReviewQuestId===null});
+  attemptEngine.create({...(socialChallenge&&challengeResumeElapsedMs?{activeDuration:challengeResumeElapsedMs}:{}),questId:canonicalActiveQuest?.id??levelIndex+1,mode:attemptMode(),qualifying,challengeId:socialChallenge?.challenge_id||null,board:state,gridRevision:activeQuest()?.gridRevision??0,questResetRevision:lumenProgress.canonicalQuestState?.[activeQuest()?.id]?.resetRevision??0,persistBeforeStart:playReviewQuestId===null});
  }
  hintUsesThisGame=attemptEngine.snapshot()?.helpUses?.hint||0;verifyUsesThisGame=attemptEngine.snapshot()?.helpUses?.verify||0;updateHintButton();updateVerifyButton();
  trackCurrentPuzzleStart();clock();prepareQuestStart();updateAttemptUI();void refreshOfficialRecordLabel();updateScriptedLearning();maybeShowContextualLesson();updateBadgeQualificationStatus()}
@@ -3610,7 +3623,7 @@ async function celebrateCanonicalSuccess(){
  const referenceFacts=committed.receipt?.request?.facts??facts;
  document.getElementById("successTime").textContent=formatDuration(officialResult({...referenceFacts,...(!referenceFacts.timing&&!reusedVictory?{timing:attemptTiming(attempt)}:{})}).score);
  renderRecordResult(document.getElementById('successRecord'),committed.outcome?.priorPerformance??priorRecords,questPerformanceRecord(q,lumenProgress),referenceFacts,formatDuration,{reused:reusedVictory});
- configureVictoryChallenge({priorPerformance:committed.outcome?.priorPerformance,run:confirmedRun,firstCompletion:committed.newlyCompleted,
+ configureVictoryChallenge({priorPerformance:committed.outcome?.priorPerformance,run:confirmedRun,firstCompletion:committed.newlyCompleted,cooldownMs:badgeCooldownRemaining(questPerformanceRecord(q,lumenProgress)),
   snapshot:challengeSnapshot({quest:q,seconds:referenceSeconds,run:confirmedRun,assistanceUsed:referenceAssisted})});
  const achievements=document.getElementById("successAchievement");if(achievements){achievements.hidden=false;renderSuccessAchievement()}
  const verifiedBadges=Object.fromEntries(['autonomy','speed','noError','mastery'].map(key=>[key,!!committed.profile.canonicalQuestState[q.id].badges?.[key]]));
@@ -3755,7 +3768,7 @@ async function celebrateSuccess(){
  const playedPack=packForLegacyQuest(levelIndex),adventureQuests=playedPack?canonicalQuestList().filter(q=>q.packId===playedPack.id):[];
  adventurePending=firstCompletion&&playedPack&&!canonicalCampaignComplete(lumenProgress)&&adventureQuests.length>0&&adventureQuests.every(q=>questIsCompleted(lumenProgress,q.id))?playedPack:null;
  endgamePending=firstCompletion&&canonicalCampaignComplete(lumenProgress);
- configureVictoryChallenge({priorPerformance,run:savedPerformance.run,firstCompletion,snapshot:challengeSnapshot({questIndex:levelIndex,seconds:facts.seconds,run:savedPerformance.run,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed})});
+ configureVictoryChallenge({priorPerformance,run:savedPerformance.run,firstCompletion,cooldownMs:badgeCooldownRemaining(questPerformanceRecord(canonicalQuestForLegacy(levelIndex),lumenProgress)),snapshot:challengeSnapshot({questIndex:levelIndex,seconds:facts.seconds,run:savedPerformance.run,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed})});
  if(dailyQualified&&!commanded)completeDaily();
  renderSuccessRewards(earnedThisRun,savedPerformance,priorBadges);renderSuccessAchievement();
  renderRecordResult(document.getElementById('successRecord'),priorPerformance,lumenProgress.performances[levelIndex],facts,formatDuration);

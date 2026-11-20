@@ -168,15 +168,17 @@ unchanged; paid help is refused until the Wallet is ready.
 
 Informational overlays should have sensible outside-tap behavior. Corrective overlays (guided conflict and verification correction) deliberately require explicit acknowledgement/action so a correction is not dismissed accidentally.
 
-## Social challenges — first-performance contract
+## Social challenges — qualifying-run contract
 
-A social challenge is a competition around a **first play**, not a replay leaderboard. A fixed LUMEN grid becomes easier once its solution has been seen or memorized, so a challenge may be created only from the sender's first play on that quest. The recipient gets one challenge attempt. Mistakes do not end that attempt: the player may correct marks and Guardians until the grid is solved or the attempt is explicitly abandoned.
+**#889 (owner decision 2026-11-20) supersedes the 2026-10-04 first-play-only rule.** A challenge may be created from any **qualifying** run of the sender: a first win or a replay played outside the shared 15-minute qualification cooldown, exactly as for badges and ranking (`attempt.qualifying`). A replay inside the cooldown cannot create a challenge and the victory explains the remaining wait. Help or an error does not remove qualification (it affects badges and the comparison); a grid reset keeps the run's qualification. Because a fixed grid is easier once seen, the reference always shows its provenance — « Première résolution » or « Rejeu qualifiant » — before the attempt, in the result and in « Mes défis ». A new qualifying run creates a new, independent challenge; it never modifies an earlier one. The recipient gets one challenge attempt. Mistakes do not end that attempt: the player may correct marks and Guardians until the grid is solved or the attempt is explicitly abandoned.
 
-LUMEN guarantees the sender-side condition (the shared snapshot comes from the sender's first play). It deliberately does **not** claim that the recipient has never seen the grid. A recipient may already have passed that quest in campaign; blocking such players would make challenges unusable between players at different progression points. The backend records `previously_played` for analysis, not as a V1 eligibility gate.
+LUMEN states the sender-side provenance honestly (first play or qualifying replay). It deliberately does **not** claim that the recipient has never seen the grid. A recipient may already have passed that quest in campaign; blocking such players would make challenges unusable between players at different progression points. The backend records `previously_played` for analysis, not as a V1 eligibility gate.
 
 The sender's time and badges stay hidden before the recipient finishes, so the reference does not become a target during solving. At the end, comparison is factual across time, Autonomy and Mastery; there is no composite score that pretends an assisted faster run is objectively better than an autonomous slower run.
 
-**Remarkable performance** has one exact social definition: **Mastery earned on the sender's first play of that quest**. Every first play may be challenged, but this case receives stronger celebration and a more prominent “Défier un ami” CTA. Mastery earned on replay is never a remarkable social performance and cannot create a challenge.
+**Remarkable performance** means **Mastery on a qualifying run**. It receives stronger emphasis on “Défier”; the wording is « Maîtrise du premier coup » only for a first play and « Maîtrise en rejeu qualifiant » otherwise.
+
+**Resuming a started challenge (#888).** The same browser restores the same attempt and its accumulated time. On another device or browser, the clock resumes at the time elapsed since the server recorded the participation start (pauses included), and the intro says so; if the server cannot provide that start, the resume is refused (« Termine-le là-bas ») rather than restarted from zero. The participation stays unique and the first terminal result is kept.
 
 
 ## Continuité des glissements (#632)

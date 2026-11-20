@@ -108,7 +108,11 @@ Browser validation exposed two integration problems in the UX cleanup: scripted 
 
 Four remaining hint instructions still said “éteindre”; these now say “écarter”, with no proof or deduction change. The original narrative test read the retired permanent rules paragraph; it now asserts Guardian vocabulary in the rules modal. The structural freeze test now explicitly permits the approved CTA/scroll CSS and requires all original test labels plus the three new UX cases. A browser regression script covers twelve modal scenarios and vocabulary/CTA behavior on three screen sizes. PR #38 remains unmerged during this validation.
 
-## Why social challenges use first plays — 2026-10-04
+## Social challenges from qualifying runs — 2026-11-20 (#889)
+
+The owner replaced the first-play-only rule below: any qualifying run (the badge/ranking cooldown rule) may create a challenge, so players do not have to learn two qualification rules. Honesty moves from eligibility to disclosure: every reference states « Première résolution » or « Rejeu qualifiant », and Mastery on a replay is never presented as a first-try feat. The recipient's one-shot attempt is unchanged.
+
+## Why social challenges use first plays — 2026-10-04 (superseded by #889)
 
 The initial #18 concept was a strict one-shot recipient challenge against any shared performance. This was rejected as unfair: the sender may have replayed a fixed grid many times and memorized its solution before sharing a very fast run. Giving the recipient the same number of retries was also rejected because repeated exposure rapidly turns a logic puzzle into memory.
 

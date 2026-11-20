@@ -1825,7 +1825,7 @@ Reset clears the board while retaining attempt identity, elapsed active time and
 Social challenges use the existing static/PWA client plus Supabase RPCs. `src/campaign/social-challenge.js` owns the domain rules and RPC adapter; `game-screen.js` only orchestrates UI/gameplay. The normal board, rule engine and attempt engine are reused: there is no duplicate challenge gameplay implementation.
 
 Backend objects:
-- `lumen.social_challenges`: immutable sender snapshot (quest, first-play performance, sender identity/display name);
+- `lumen.social_challenges`: immutable sender snapshot (quest, qualifying-run performance and its `source_first_play` provenance, sender identity/display name);
 - `lumen.social_challenge_participations`: one row per challenge + participant identity, with started/completed/abandoned state, performance and sender read/push state;
 - `public.lumen_push_subscriptions`: existing PWA subscription store, extended with authenticated/anonymous ownership and a social-notification preference.
 
@@ -1879,9 +1879,25 @@ Recipient invariants (`challenge-recipient-browser.mjs`,
   `startLearningReplay` / the introduction replay refuse to run: both would
   have replaced the challenged grid by quest 1 and restarted its clock.
 
-Known limits: a recipient who reloads a started (not finished) challenge on
-another browser/device restarts the clock locally; the server keeps one
-participation and the first terminal result. Old cached clients without these
+#889 / #888 (migration `20261121090000_qualifying_challenges_889_888.sql`,
+additive): the `check(source_first_play)` constraint is dropped and the
+versioned writer `lumen_create_qualifying_challenge` serves every kind
+(historical number, stable revision 0 or registered revision). It refuses
+`p_qualifying=false` and stores `p_first_play` as declared; the older writers keep
+their first-play contract for older clients. The client falls back to them only
+for a first win when the new writer is missing (PGRST202) and refuses a replay
+rather than mislabel it. `lumen_get_quest_challenge_v2` / `lumen_list_quest_challenges_v2`
+add `source_first_play`; the get also returns the caller's own
+`participant_started_at` and `server_now` (never another participant's). The
+client derives the resume plan with `challengeResumePlan`; a challenge attempt is
+restored only for its own `challengeId` and a cross-device resume seeds
+`activeDuration` with the server-measured elapsed time. Qualification itself is
+declared by the client as for victory commands (the server echoes
+`facts.qualifying`); the server cannot prove a guest's cooldown, exactly as it
+could not prove a first play before.
+
+Known limits: durations stay client-declared; a cross-device resume counts the
+wall-clock time since the server start, pauses included. Old cached clients without these
 fixes still show the previous behaviour until they update.
 
 ### Security-advisor note
