@@ -56,7 +56,7 @@ try{
   const g=await page.evaluate(()=>{const b=document.getElementById('board').getBoundingClientRect();const buttons=[...document.querySelectorAll('.actions button')].filter(e=>e.offsetParent).map(e=>e.getBoundingClientRect());
    return {vh:innerHeight,vw:innerWidth,sw:document.documentElement.scrollWidth,board:{y:b.y,b:b.bottom,w:b.width},buttons:buttons.map(r=>({y:r.y,b:r.bottom}))}});
   assert(g.board.y>=0&&g.board.b<=g.vh+0.5&&g.board.w>=200,`${width}×${height}: grid visible (${JSON.stringify(g.board)})`);
-  assert(g.buttons.length===3&&g.buttons.every(r=>r.y>=0&&r.b<=g.vh+0.5),`${width}×${height}: controls visible`);
+  assert(g.buttons.length===4&&g.buttons.every(r=>r.y>=0&&r.b<=g.vh+0.5),`${width}×${height}: controls visible`);
   assert.equal(g.sw,g.vw,`${width}×${height}: no horizontal scroll`);
   results.push(`landscape ${width}×${height}: grid ${Math.round(g.board.w)} px`);
   await context.close();

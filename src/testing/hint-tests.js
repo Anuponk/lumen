@@ -99,7 +99,7 @@ async function runHintTests(){
  });
 
  test("Campagne : Réinitialiser conserve la même quête",()=>{
-   return document.getElementById("new").textContent.trim()==="Réinitialiser";
+   const reset=document.getElementById("new");return reset?.getAttribute("aria-label")==="Réinitialiser la grille"&&!!reset.closest(".actions");
  });
  test("Campagne : seule une victoire permet d'avancer",()=>{
    return document.getElementById("successNew").textContent.trim()==="Quête suivante";
