@@ -23,7 +23,7 @@ import {createVictoryPresentation} from './victory-presentation.js';
 import {createCelebration,rewardSlots,remarkableRewards,rankSummary,celebrationLevel} from './victory-celebration.js';
 import {streakVisual,lostStreak} from "../campaign/streak-visual.js";
 import {DAILY_LIGHT_STREAK_ENABLED} from "../campaign/feature-flags.js";
-import {learningStep, dragLearningStep, learningAllows, learningCopy} from "../game/learning.js";
+import {learningStep, dragLearningStep, learningAllows, learningCopy, territoryNumbersVisible} from "../game/learning.js";
 import {createAnalytics,attemptAnalyticsProperties} from "../analytics/events.js";
 import {setupCredits} from "./credits.js";
 import {createHintTestSuite} from "../testing/hint-tests.js";
@@ -2495,6 +2495,10 @@ function maybeShowContextualLesson(){
 }
 function activePerformanceEligibility(){return performanceEligibility(activeQuestOrdinal()-1,Math.max(canonicalScopeProgress(lumenProgress).completed,activeQuestOrdinal()))}
 function learningQuestActive(){return (questLearningRules(activeQuestOrdinal()).scripted||learningReplayActive()&&activeQuestOrdinal()===2)&&!socialChallenge&&(!replayMode||learningReplayActive())}
+// #862: computed once per render; hidden after the tutorial was skipped or done.
+function territoryNumbersShown(){
+ return territoryNumbersVisible({introActive:learningIntroActive(),scriptedActive:scriptedLearningActive()});
+}
 function learningIntroActive(){return activeQuestOrdinal()===1&&learningQuestActive()&&state&&state.flat().every(v=>v===0)&&learningIntroStep<LEARNING_INTRO.length}
 function currentLearningStep(){if(learningIntroActive())return {phase:"intro",introStep:learningIntroStep,cells:[],number:0};return activeQuestOrdinal()===2?dragLearningStep(puz,state):learningStep(puz,state)}
 function scriptedLearningActive(){return !(skipFirstGridTutorial&&!learningReplayActive())&&learningQuestActive()&&!!state&&currentLearningStep().phase!=="complete"}
@@ -3939,6 +3943,7 @@ function render(){
  board.dataset.size=String(n);
  board.classList.remove("scripted-board");
  board.style.gridTemplateColumns=`repeat(${n},minmax(0,1fr))`;board.style.gridTemplateRows=`repeat(${n},minmax(0,1fr))`;board.innerHTML="";
+ const showTerritoryNumbers=territoryNumbersShown();
  for(let r=0;r<n;r++)for(let c=0;c<n;c++){
   let d=document.createElement("div");
   let highlighted=(hi&&hi[0]===r&&hi[1]===c)||hiCells.some(q=>q[0]===r&&q[1]===c);
@@ -3955,7 +3960,7 @@ function render(){
   if(shown===1||shown===3)d.innerHTML='<span class="lumen-dim" aria-label="Emplacement assombri"></span>';
   else if(shown===2)d.innerHTML='<span class="lumen-orb" aria-label="Gardien positionné"></span>';
   else d.innerHTML="";
-  if(levelIndex===0&&learningIntroActive()&&shown===0){
+  if(levelIndex===0&&shown===0&&showTerritoryNumbers){
    const flatIndex=r*n+c,firstIndex=puz.reg.flat().findIndex(region=>region===g);
    if(flatIndex===firstIndex)d.innerHTML='<span class="learning-territory-number" aria-label="Territoire '+(g+1)+'">'+(g+1)+'</span>';
   }
