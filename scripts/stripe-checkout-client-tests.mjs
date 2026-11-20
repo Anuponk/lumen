@@ -47,7 +47,7 @@ navigated=null;
 r=await startStripeCheckout({...transport(200,{url:'https://evil.example/pay'}),productId:'real-adventure-02',waiver,navigate:u=>{navigated=u}});
 assert.equal(r.status,'error');assert.equal(navigated,null,'only a Stripe Checkout URL is opened');
 assert.equal((await startStripeCheckout({...transport(200,{}),productId:'p',waiver:{accepted:false},navigate(){}})).status,'waiver','#732 waiver required');
-for(const [status,body,expected] of [[409,{error:'checkout_in_progress'},'busy'],[409,{error:'already_owned'},'already_owned'],[409,{error:'sky_after_single'},'sky_after_single'],
+for(const [status,body,expected] of [[409,{error:'checkout_in_progress'},'busy'],[409,{error:'already_owned'},'already_owned'],[409,{error:'sky_after_single'},'sky_after_single'],[409,{error:'offer_changed'},'offer_changed'],
  [403,{error:'not_eligible'},'not_eligible'],[429,{},'rate_limited'],[401,{},'session'],[503,{},'error'],[502,{},'error']])
  assert.equal((await startStripeCheckout({...transport(status,body),productId:'p',waiver,navigate(){}})).status,expected);
 assert.equal((await startStripeCheckout({fetchImpl:async()=>{throw Error('offline')},endpoint:'e',apiKey:'k',accessToken:'jwt',productId:'p',waiver,navigate(){}})).status,'error');

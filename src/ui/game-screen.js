@@ -91,11 +91,11 @@ import {captureSupportCopy} from '../persistence/support-capture.js';
 import {mountSupportPanel,mountSupportDossier,mountSupportLookup} from './support-panel.js';
 import {mountAdventureAccess} from './adventure-access-panel.js';
 import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
-import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery} from './adventure-offer.js';
+import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery,mainSkyOffer} from './adventure-offer.js';
 import {purchaseThanksModel,showPurchaseThanks} from './purchase-thanks.js';
 import {PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,createForegroundRecovery,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,toPlayProductId,findOwnedPlayPurchase,playOwnershipMessage} from '../persistence/play-billing.js';
 import {rememberPlayAppLaunch,isPlayDistributedApp,stripeCheckoutAvailable,startStripeCheckout,stripeSessionStatus,restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage} from '../persistence/stripe-checkout.js';
-import {SKY_PRODUCT_ID} from '../campaign/store-catalogue.js';
+import {SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS,isMainSkyProduct} from '../campaign/store-catalogue.js';
 import {createSound} from "./sound.js";
 import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 
@@ -148,6 +148,8 @@ function setNetworkUnavailable(value){
  }catch{}
 }
 let refreshAdventureOffer=null;
+// #865: last server whole-sky progress/offer, scoped to its account.
+let mainSkyProgress={owner:null,data:null};
 let cloudProfileReady=false,cloudProfileTimer=null,cloudProfileBusy=false,cloudProfileDirty=false,cloudProfileBaseline=null,cloudProfileInFlight=null,cloudProfileFailure=null;
 let cloudHydrationGeneration=0;
 configureCommandSession(()=>({userId:lumenUser?.id,client:lumenSupabase,generation:cloudHydrationGeneration}),{onIssue:issue=>recordCloudDiagnostic('command_cache_storage',{reason:issue.kind})});
@@ -4319,7 +4321,7 @@ let celestialPending=null;
 // never grants and never announces a purchase the server did not confirm.
 let playBilling=null,playPriceLabels={};
 const playPriceLoader=createPlayPriceLoader({win:window,playApp:isPlayDistributedApp(window),probeBinding:true,
- ids:[...CONTENT_PACKS.filter(p=>p.access==='locked').map(p=>p.id),SKY_PRODUCT_ID],
+ ids:[...CONTENT_PACKS.filter(p=>p.access==='locked').map(p=>p.id),SKY_PRODUCT_ID],optionalIds:SKY_UPGRADE_PRODUCT_IDS,
  onChange:state=>{
   playBilling=state.status==='loading'?null:state.service;
   playPriceLabels=state.prices;
@@ -4405,12 +4407,13 @@ async function purchaseAdventure(productId,{setStatus,setBusy,waiver}){
  else if(result.status==='cancelled')setStatus('');
  else if(result.reason==='payment_unsupported'){console.info('[Lumen Play billing]',{reason:'payment_unsupported'});setStatus('Le paiement Google Play est indisponible sur cet appareil.');}
  else if(result.status==='owned_elsewhere'||result.status==='account_unverified')setStatus(playOwnershipMessage(result.status,playProductTitle(productId)));
+ else if(result.status==='offer_not_eligible'){setStatus(playOwnershipMessage(result.status));void refreshAdventureOffer?.('mastery')} // #865: Google refunds it
  else if(result.status==='not_paid'){setStatus('Google Play indique que ce paiement a été annulé.');void maybeRestorePlayPurchases()}
  else {setStatus('La vérification est en cours. Tu peux restaurer tes achats Google Play sans repayer.');void maybeRestorePlayPurchases()}
  setBusy(false);
 }
 function playProductTitle(productId){
- if(productId===SKY_PRODUCT_ID)return 'Tout le vrai ciel';
+ if(isMainSkyProduct(productId))return 'Tout le vrai ciel';
  return CONTENT_PACKS.find(pack=>pack.id===productId)?.displayName||'';
 }
 function playProductFromSku(sku){return typeof sku==='string'?sku.replaceAll('_','-'):''}
@@ -4418,7 +4421,7 @@ function playProductFromSku(sku){return typeof sku==='string'?sku.replaceAll('_'
 async function confirmPlayPurchase(productId,{setStatus,owner,client}){
  await loadEntitlements();
  if(lumenUser?.id!==owner||lumenSupabase!==client)return;
- const expected=productId===SKY_PRODUCT_ID
+ const expected=isMainSkyProduct(productId)
   ?CONTENT_PACKS.filter(pack=>pack.skyId==='real-sky'&&pack.access==='locked').map(pack=>pack.id)
   :[productId];
  const confirmed=lumenEntitlementsState==='ready'&&expected.every(id=>lumenEntitlements.some(row=>row.entitlement===id));
@@ -4478,6 +4481,7 @@ function playRestoreMessage(outcome,{manual=false}={}){
   return results.filter(r=>r.status==='account_unverified'||r.status==='owned_elsewhere')
    .map(r=>playOwnershipMessage(r.status,playProductTitle(playProductFromSku(r.itemId)))).join(' ');
  }
+ if(manual&&results.some(r=>r.status==='offer_not_eligible'))return playOwnershipMessage('offer_not_eligible');
  if(results.some(r=>r.status==='not_paid'))return 'Google Play ne confirme aucun droit pour cet achat.';
  return manual?'Aucun achat Google Play à restaurer.':'';
 }
@@ -4604,6 +4608,7 @@ function renderAdventureOffer(container,pack,{close}={}){
   const masteryConfirmed=lumenEntitlementsState==='ready'&&lumenEntitlements.some(e=>e?.entitlement===pack.id&&e.source==='mastery');
   return adventureOfferModel({pack,packs,quests:canonicalQuestList(),progress:lumenProgress,signedIn:!!lumenUser&&!qaActive,accounts:!qaActive,masteryStatus,masteryConfirmed,
    purchasesAvailable:(inPlay?playBoundCheckoutAvailable()&&!!playBilling:stripeAvailable())&&!qaActive,boughtSingle:lumenEntitlements.some(e=>e?.source==='purchase'),prices:playPriceLabels,
+   skyProgress:mainSkyProgress.owner&&mainSkyProgress.owner===lumenUser?.id?mainSkyProgress.data:null,
    pricesRequired:inPlay,priceStatus:playPriceLoader.snapshot().status,priceErrors:playPriceLoader.snapshot().errors});
  };
  const offer=readOffer();if(!offer)return false;
@@ -4644,6 +4649,11 @@ function renderAdventureOffer(container,pack,{close}={}){
   try{
    const {data,error}=await client.rpc('lumen_get_main_sky_purchase_progress',{p_expected_user_id:owner});
    if(error||request!==progressRequest||lumenUser?.id!==owner||lumenSupabase!==client||container.firstElementChild!==mounted)return;
+   // #865: the server decides the whole-sky offer. Re-render once if it changes it.
+   const before=readOffer();
+   mainSkyProgress={owner,data};
+   const after=readOffer();
+   if(before&&after&&(before.showSky!==after.showSky||before.skyProduct!==after.skyProduct||before.skyPrice!==after.skyPrice)){renderAdventureOffer(container,pack,{close});return}
    const message=purchaseProgressMessage(data);
    progressLine.textContent=message;progressLine.hidden=!message;
    if(message&&data.unlocked){

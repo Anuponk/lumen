@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {PLAY_CHECKOUT_AVAILABLE,PLAY_TEST_CAPABILITY,playCheckoutOpen,createForegroundRecovery,PLAY_BINDING_PROBE,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices,toPlayProductId,PLAY_BILLING_METHOD,findOwnedPlayPurchase,playOwnershipMessage} from '../src/persistence/play-billing.js';
 import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
-import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery} from '../src/ui/adventure-offer.js';
-import {SKY_PRODUCT_ID} from '../src/campaign/store-catalogue.js';
+import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery,mainSkyOffer} from '../src/ui/adventure-offer.js';
+import {SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS,isMainSkyProduct} from '../src/campaign/store-catalogue.js';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {stripeCheckoutAvailable,isPlayDistributedApp} from '../src/persistence/stripe-checkout.js';
@@ -35,6 +35,9 @@ assert.deepEqual(await findOwnedPlayPurchase(null,'real_adventure_03'),{status:'
 assert.match(playOwnershipMessage('owned_elsewhere','Horizon lointain'),/« Horizon lointain ».*autre compte Lumen.*Reconnecte-toi.*sans nouveau paiement/);
 assert.match(playOwnershipMessage('account_unverified','Horizon lointain'),/aucun compte Lumen vérifiable.*assistance/);
 assert.doesNotMatch(playOwnershipMessage('owned_elsewhere','X')+playOwnershipMessage('account_unverified','X'),/transf/i,'Never promise a transfer between Lumen accounts');
+assert.deepEqual(await v(reply(409,{error:'offer_not_eligible'})),{status:'offer_not_eligible'});
+assert.match(playOwnershipMessage('offer_not_eligible'),/rembourse automatiquement/,'#865: an outdated tier is explained, never granted');
+assert.equal(toPlayProductId('real-sky-upgrade-3'),'real_sky_upgrade_3');assert.equal(toPlayProductId('real-sky-upgrade-5'),'real-sky-upgrade-5');
 assert.equal((await v(reply(503,{error:'unavailable'}))).status,'error');
 assert.equal((await v(async()=>{throw Error('offline')})).status,'error','Network failure is never a success');
 assert.equal((await verifyPlayPurchase({fetchImpl:reply(200,{status:'paid'}),endpoint:'e',accessToken:null})).status,'error','No session, no call');
@@ -172,7 +175,7 @@ let resolveDetails,failDetails=true,verifications=0,marker=probeMarker;
 const delayedWin={...win,document:{referrer:'android-app://com.nopuna.lumen'},getDigitalGoodsService:async()=>({getDetails:requested=>requested[0]===PLAY_BINDING_PROBE
  ?Promise.resolve(marker):new Promise((resolve,reject)=>{resolveDetails=()=>failDetails?reject(Error('offline')):resolve(rows)})})};
 const host=new Node('div'),savedProgress={solved:{0:1}},saved=structuredClone(savedProgress);
-const context=vm.createContext({PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,lumenCapabilities:[],window:delayedWin,console,createPlayPriceLoader,isPlayDistributedApp,CONTENT_PACKS,SKY_PRODUCT_ID,
+const context=vm.createContext({PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,lumenCapabilities:[],window:delayedWin,console,createPlayPriceLoader,isPlayDistributedApp,CONTENT_PACKS,SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS,isMainSkyProduct,mainSkyOffer,mainSkyProgress:{owner:null,data:null},
  adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery,canonicalQuestList,contentMapModel:()=>({skies:[{packs}]}),adventureAccessEntitlements:()=>[],adventureEntitlementsState:()=> 'ready',
  attemptEngine:{snapshot:()=>({})},lumenProgress:savedProgress,lumenUser:{id:'synthetic'},lumenEntitlements:[],qaActive:false,mapCatalogueOverride:null,refreshAdventureOffer:null,authSessionPending:false,cloudProfileReady:true,cloudProfileFailure:null,lumenEntitlementsState:'ready',navigator:{onLine:true},
  localStorage:{getItem:key=>key==='lumenCloudOwnerId'?'synthetic':null},

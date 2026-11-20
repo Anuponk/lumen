@@ -1,12 +1,12 @@
 // #730: thank-you screen after a purchase CONFIRMED by the server (Stripe read-back or
 // Google Play verification), never on a payment provider's return URL alone.
 // Wording states an intention, never an absolute promise (#731/#732).
-import {SKY_PRODUCT_ID} from '../campaign/store-catalogue.js';
+import {isMainSkyProduct} from '../campaign/store-catalogue.js';
 
 export const THANKS_SUPPORT='Lumen est développé par un petit studio indépendant, sans publicité : ton achat aide à financer l’hébergement et les prochaines aventures.';
 
 export function purchaseThanksModel({productId,packs=[]}){
- const sky=productId===SKY_PRODUCT_ID;
+ const sky=isMainSkyProduct(productId);
  const pack=sky?null:packs.find(p=>p.id===productId);
  const name=sky?'Tout le vrai ciel':(pack?.displayName||'Ta nouvelle aventure');
  return {

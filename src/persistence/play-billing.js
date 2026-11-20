@@ -26,7 +26,7 @@ export function createForegroundRecovery({run,now=()=>Date.now(),minIntervalMs=6
  };
 }
 // Play Console disallows hyphens in product IDs. Internal pack IDs remain unchanged.
-export function toPlayProductId(id){return /^real-adventure-0[2-9]$/.test(id)||id==='real-sky-all'?id.replaceAll('-','_'):id}
+export function toPlayProductId(id){return /^(real-adventure-0[2-9]|real-sky-all|real-sky-upgrade-[1-4])$/.test(id)?id.replaceAll('-','_'):id}
 
 
 export async function getPlayPurchaseService(win=globalThis,onDiagnostic=()=>{}){
@@ -49,6 +49,7 @@ export async function verifyPlayPurchase({fetchImpl=fetch,endpoint,apiKey,access
   if(response.status===202)return {status:'pending'};
   if(response.status===409&&body.error==='purchase_owned_elsewhere')return {status:'owned_elsewhere'};
   if(response.status===409&&body.error==='purchase_account_unverified')return {status:'account_unverified'};
+  if(response.status===409&&body.error==='offer_not_eligible')return {status:'offer_not_eligible'}; // #865
   if(response.status===409&&body.status==='not_paid')return body.revoked===true?{status:'not_paid',revoked:true}:{status:'not_paid'};
   if(response.status===400&&body.error==='invalid_purchase')return {status:'not_paid'}; // #864: Google no longer knows this token.
   return {status:'error',reason:body.error||String(response.status)};
@@ -106,6 +107,7 @@ export function playOwnershipMessage(status,title){
  if(status==='account_unverified')return 'Ton compte Google Play possède déjà '+name+', mais cet achat n’est rattaché à aucun compte Lumen vérifiable. Contacte l’assistance : il sera rattaché après vérification, sans nouveau paiement.';
  if(status==='not_paid')return 'Google Play indique que l’achat de '+name+' a été annulé ou remboursé. Réessaie dans quelques minutes, le temps que Google Play le libère.';
  if(status==='pending')return 'Google Play traite encore le paiement de '+name+'. Tes droits seront actualisés après confirmation.';
+ if(status==='offer_not_eligible')return 'Ton offre « Tout débloquer » a changé pendant le paiement. Cet achat n’est pas validé : Google Play le rembourse automatiquement sous 3 jours. Rouvre la boutique pour voir le prix à jour.';
  return 'Ton compte Google Play possède déjà '+name+', mais sa vérification est indisponible. Réessaie « Restaurer mes achats », sans nouveau paiement.';
 }
 
@@ -134,7 +136,9 @@ export async function playPrices(service,ids,{onDiagnostic=()=>{},locale='fr-FR'
 
 // Ephemeral price lifecycle: no tokens, user data, purchases or entitlements.
 // Coalesce retries, time out stalled providers, and notify an already-open offer.
-export function createPlayPriceLoader({win=globalThis,ids,playApp=false,probeBinding=false,onChange=()=>{},onDiagnostic=()=>{},timeoutMs=12000}={}){
+// #865: optionalIds (upgrade SKUs) are priced when Play Console offers them; their absence
+// is expected before activation and is never a checkout error.
+export function createPlayPriceLoader({win=globalThis,ids,optionalIds=[],playApp=false,probeBinding=false,onChange=()=>{},onDiagnostic=()=>{},timeoutMs=12000}={}){
  let state={status:'idle',playApp,service:null,prices:{},errors:[],supportsBinding:false,paymentSupported:false},pending=null;
  const publish=next=>{state={...state,...next};onChange(state)};
  const deadline=promise=>new Promise((resolve,reject)=>{
@@ -152,8 +156,9 @@ export function createPlayPriceLoader({win=globalThis,ids,playApp=false,probeBin
    if(service){
     publish({playApp:true});
     try{
-     const labels=await deadline(playPrices(service,ids.map(toPlayProductId),{onDiagnostic:diagnostic,locale:win.navigator?.language||'fr-FR'}));
-     prices=Object.fromEntries(ids.filter(id=>labels[toPlayProductId(id)]).map(id=>[id,labels[toPlayProductId(id)]]));
+     const optional=new Set(optionalIds.map(toPlayProductId)),all=[...ids,...optionalIds];
+     const labels=await deadline(playPrices(service,all.map(toPlayProductId),{onDiagnostic:event=>{if(!optional.has(event?.productId))diagnostic(event)},locale:win.navigator?.language||'fr-FR'}));
+     prices=Object.fromEntries(all.filter(id=>labels[toPlayProductId(id)]).map(id=>[id,labels[toPlayProductId(id)]]));
     }catch{diagnostic({reason:'details_request_failed'})}
     if(probeBinding){
      try{

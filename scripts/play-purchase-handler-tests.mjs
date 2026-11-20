@@ -15,7 +15,7 @@ const sha=t=>createHash('sha256').update(t).digest('hex');
 function fixture({user={id:'verified-player'},product={product_id:'real-adventure-02',kind:'adventure',price_cents:100,currency:'EUR',active:true},
  purchase={purchaseState:0,acknowledgementState:0,purchaseTimeMillis:'1763200000000',regionCode:'FR',orderId:'GPA.1'},googleStatus=200,bound=true,
  order={orderId:'GPA.1',purchaseToken:'play-token-1',state:'PROCESSED',lineItems:[{productId:'real_adventure_02',total:{currencyCode:'EUR',units:'1',nanos:190000000}}]},orderStatus=200,
- recordError=null,ackOk=true,ackJobs=[],voided=[[]],known={},bindings={},claims={},env={},secretsMissing=false}={}){
+ recordError=null,ackOk=true,ackJobs=[],voided=[[]],known={},bindings={},claims={},env={},secretsMissing=false,eligible=true}={}){
  let handler;const calls=[];
  const createClient=(_url,key)=>key==='synthetic-public'
   ?{auth:{getUser:async token=>{calls.push({kind:'auth',token});return {data:{user},error:user?null:{message:'invalid'}}}}}
@@ -30,6 +30,7 @@ function fixture({user={id:'verified-player'},product={product_id:'real-adventur
       [{purchase_id:args.p_purchase_id,product_id:'real-adventure-02',purchase_token:'play-token-1',attempt:1}]:ackJobs,error:null};
     if(name==='lumen_complete_play_acknowledgement' || name==='lumen_prune_play_acknowledgements')return {data:null,error:null};
     if(name==='lumen_purchase_by_ref')return {data:known[args.p_provider_ref]||null,error:null};
+    if(name==='lumen_sky_upgrade_eligible')return {data:eligible,error:null};
     if(name==='lumen_play_account_by_binding')return {data:bindings[args.p_account_binding]??null,error:null};
     if(name==='lumen_record_purchase')return recordError?{data:null,error:recordError}:{data:{adventures:['real-adventure-02']},error:null};
     throw Error('unexpected rpc '+name)}};
@@ -334,4 +335,39 @@ test('a recorded token presented for another product is refused without granting
  const r=await f.request({body:{mode:'verify',productId:'real_adventure_03',purchaseToken:'play-token-1'}});
  assert.equal(r.status,409);assert.deepEqual(await r.json(),{error:'purchase_owned_elsewhere'});
  assert.deepEqual(records(f.calls),[]);assert(!f.calls.some(c=>c.url?.endsWith(':acknowledge')));
+});
+
+// #865: whole-sky upgrades. The tier is rechecked once paid; an outdated tier is neither
+// recorded nor acknowledged (Google refunds it), and never feeds the historical € credit.
+const upgrade=n=>({body:{mode:'verify',productId:'real_sky_upgrade_'+n,purchaseToken:'play-token-1'}});
+const testPurchase={purchaseState:0,acknowledgementState:0,purchaseTimeMillis:'1763200000000',regionCode:'FR',purchaseType:0};
+test('an eligible whole-sky upgrade is recorded as the main sky, without € credit',async()=>{
+ const f=fixture({purchase:testPurchase,eligible:true});
+ const response=await f.request(upgrade(2));
+ assert.equal(response.status,200);
+ const eligibility=f.calls.filter(c=>c.kind==='rpc'&&c.name==='lumen_sky_upgrade_eligible').map(c=>JSON.parse(JSON.stringify(c.args)));
+ assert.deepEqual(eligibility,[{p_user:'verified-player',p_product:'real-sky-upgrade-2'}]);
+ const [recorded]=records(f.calls);
+ assert.equal(recorded.p_product_id,'real-sky-upgrade-2');
+ assert.equal(recorded.p_counts_toward_cap,false);
+});
+test('an upgrade bought for an outdated tier is refused, not recorded and not acknowledged',async()=>{
+ const f=fixture({purchase:testPurchase,eligible:false});
+ const response=await f.request(upgrade(4));
+ assert.equal(response.status,409);
+ assert.deepEqual(await response.json(),{error:'offer_not_eligible'});
+ assert.equal(records(f.calls).length,0);
+ assert(!f.calls.some(c=>c.kind==='google'&&c.url.includes(':acknowledge')),'Google refunds it automatically');
+});
+test('an already recorded upgrade replays without a new eligibility check',async()=>{
+ const f=fixture({purchase:testPurchase,eligible:false,known:{[sha('play-token-1')]:{user_id:'verified-player',product_id:'real-sky-upgrade-3',status:'paid'}}});
+ const response=await f.request(upgrade(3));
+ assert.equal(response.status,200);
+ assert(!f.calls.some(c=>c.kind==='rpc'&&c.name==='lumen_sky_upgrade_eligible'));
+});
+test('unknown upgrade tiers are rejected before Google',async()=>{
+ const f=fixture({purchase:testPurchase});
+ const response=await f.request({body:{mode:'verify',productId:'real_sky_upgrade_5',purchaseToken:'play-token-1'}});
+ assert.equal(response.status,400);
+ assert(!f.calls.some(c=>c.kind==='google'));
 });

@@ -533,6 +533,7 @@ ledger rules: fixtures/purchases-mastery.sql and fixtures/play-regional-receipts
 Play P1 price states/retry, nine SKUs, partial/error details and actual screen/CTA
 wiring are covered by `play-billing-tests.mjs`; `quest-review-browser-tests.mjs`
 adds Play mocks on real offer DOM at mobile/desktop sizes. Neither performs a payment.
+Play-held SKUs #864: `play-billing-tests.mjs` replays Lumen account A buying then account B on the same Google Play account (no sheet, explicit owned_elsewhere/account_unverified, no transfer, stale-cache sheet). Whole-sky upgrades #865: `fixtures/sky-upgrade-offers.sql` (five commercial states, inactive seed, Stripe tier, Play eligibility, direct grant, refunds), `play-purchase-handler-tests.mjs` (outdated tier neither recorded nor acknowledged) and `adventure-offer-tests.mjs` (single personalised offer, SKU parity Edge/Android).
 
 UX #784/#786: `quest-review-tests.mjs` covers canonical constellation/adventure
 boundaries, independently owned entry, immediate locks/no skipping, unfinished

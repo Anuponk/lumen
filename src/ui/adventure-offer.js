@@ -2,7 +2,7 @@
 // Lumen is paid. Purchases stay disabled until a payment provider is connected
 // (#729/#730); the server always decides what is granted (#728).
 import {adventureMastery} from './mastery-unlock.js';
-import {ADVENTURE_PRICE_CENTS,SKY_PRICE_CENTS,SKY_PRODUCT_ID,formatEuros} from '../campaign/store-catalogue.js';
+import {ADVENTURE_PRICE_CENTS,SKY_PRICE_CENTS,SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS,formatEuros} from '../campaign/store-catalogue.js';
 
 export const SUPPORT_LINE='🚀 Tu peux aussi soutenir Lumen en achetant une aventure. Grâce à toi, les étoiles brillent… Sans pub !';
 // #732: express request for immediate access and waiver of the 14-day withdrawal right
@@ -14,7 +14,16 @@ export const SUPPORT_TEXT='Lumen est développé par un petit studio indépendan
 
 // Play decides the regional price. After a unit purchase, keep the existing
 // eligibility rule for the whole-sky offer independent of the provider's price.
-export function adventureOfferModel({pack,packs,quests,progress,signedIn=false,accounts=true,purchasesAvailable=false,boughtSingle=false,prices={},pricesRequired=false,priceStatus='idle',priceErrors=[],masteryStatus='ready',masteryConfirmed=false}){
+// #865: the whole-sky product is the server's sky_offer once its progress is known:
+// real-sky-all (N=0), real-sky-upgrade-N (N=1..4, if active) or none (unlocked/inactive).
+export function mainSkyOffer(skyProgress,{boughtSingle=false}={}){
+ const known=typeof skyProgress?.unlocked==='boolean'&&Number.isInteger(skyProgress?.purchased);
+ if(!known)return {known:false,product:boughtSingle?null:SKY_PRODUCT_ID,priceCents:null,purchased:null};
+ const product=!skyProgress.unlocked&&(skyProgress.sky_offer===SKY_PRODUCT_ID||SKY_UPGRADE_PRODUCT_IDS.includes(skyProgress.sky_offer))?skyProgress.sky_offer:null;
+ const priceCents=product&&skyProgress.sky_offer_currency==='EUR'&&Number.isInteger(skyProgress.sky_offer_price_cents)&&skyProgress.sky_offer_price_cents>0?skyProgress.sky_offer_price_cents:null;
+ return {known:true,product,priceCents,purchased:skyProgress.purchased};
+}
+export function adventureOfferModel({pack,packs,quests,progress,signedIn=false,accounts=true,purchasesAvailable=false,boughtSingle=false,skyProgress=null,prices={},pricesRequired=false,priceStatus='idle',priceErrors=[],masteryStatus='ready',masteryConfirmed=false}){
  const ordered=[...(packs||[])].sort((a,b)=>a.order-b.order);
  const index=ordered.findIndex(p=>p.id===pack.id),previous=index>0?ordered[index-1]:null;
  const previousQuests=previous?(quests||[]).filter(q=>q.packId===previous.id):[];
@@ -35,8 +44,12 @@ export function adventureOfferModel({pack,packs,quests,progress,signedIn=false,a
  const skyIds=new Set(ordered.filter(p=>p.skyId==='real-sky'&&newlyAvailable(p)).map(p=>p.id));
  const skyCount=ready?delivered.filter(q=>skyIds.has(q.packId)).length:null;
  const missingPrice=priceStatus==='loading'?'Chargement du prix…':'Prix indisponible';
- return {id:pack.id,title:pack.displayName||'Aventure',unitCount,skyCount,pricesRequired,priceStatus,priceErrors,unitPriceKnown:!pricesRequired||!!prices[pack.id],skyPriceKnown:!pricesRequired||!!prices[SKY_PRODUCT_ID],unitPrice:prices[pack.id]||(pricesRequired?missingPrice:formatEuros(ADVENTURE_PRICE_CENTS)),skyPrice:prices[SKY_PRODUCT_ID]||(pricesRequired?missingPrice:formatEuros(SKY_PRICE_CENTS)),
-  unitProduct:pack.id,skyProduct:SKY_PRODUCT_ID,showSky:!boughtSingle,
+ const sky=mainSkyOffer(skyProgress,{boughtSingle});
+ const skyProduct=sky.product||SKY_PRODUCT_ID,skyUpgrade=SKY_UPGRADE_PRODUCT_IDS.includes(sky.product);
+ // Web price: the server catalogue price of this exact offer (what Stripe will charge).
+ const webSkyPrice=sky.known?(sky.priceCents?formatEuros(sky.priceCents):null):formatEuros(SKY_PRICE_CENTS);
+ return {id:pack.id,title:pack.displayName||'Aventure',unitCount,skyCount,pricesRequired,priceStatus,priceErrors,unitPriceKnown:!pricesRequired||!!prices[pack.id],skyPriceKnown:pricesRequired?!!prices[skyProduct]:!!webSkyPrice,unitPrice:prices[pack.id]||(pricesRequired?missingPrice:formatEuros(ADVENTURE_PRICE_CENTS)),skyPrice:prices[skyProduct]||(pricesRequired?missingPrice:webSkyPrice||'Prix indisponible'),
+  unitProduct:pack.id,skyProduct,showSky:!!sky.product,skyUpgrade,skyPurchased:sky.purchased,
   signedIn:!!signedIn,accounts:!!accounts,purchasesAvailable:!!purchasesAvailable,mastery};
 }
 
@@ -105,7 +118,7 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
   waiver.onchange=()=>{if(waiver.checked&&status.textContent===WAIVER_REQUIRED)setStatus('')};
   label.append(waiver,document.createTextNode(' '+WAIVER_TEXT));root.append(label);
  }
- const offerCard=(kind,title,price,count,product)=>{
+ const offerCard=(kind,title,price,count,product,note=null)=>{
   const card=el('section',{className:'adventure-offer-card'});
   const heading=el('h3',{},title),amount=el('strong',{className:'adventure-offer-price'},price);
   const detail=el('p',{},count===null?'Vérification du contenu accessible…':count===0?'Aucun nouveau contenu disponible':`+ ${count} nouvelles ${kind==='unit'?'quêtes à explorer':'grilles à découvrir'}`);
@@ -116,11 +129,20 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
   // Also retain the disabled state through the provider's busy callback.
   const allowed=kind==='unit'?unitAvailable:skyAvailable;
   if(!allowed){buttons.splice(buttons.indexOf(button),1);button.disabled=true}
-  card.append(heading,amount,detail,button);return card;
+  card.append(heading,amount,detail,...(note?[note]:[]),button);return card;
  };
  const offers=el('div',{className:'adventure-offer-cards'});
  offers.append(offerCard('unit','Débloquer cette aventure',model.unitPrice,model.unitCount,model.unitProduct));
- if(model.showSky)offers.append(offerCard('sky','Débloquer tout le vrai ciel',model.skyPrice,model.skyCount,model.skyProduct));
+ if(model.showSky){
+  // #865: one personalised offer only, never the list of tiers.
+  let note=null;
+  if(model.skyUpgrade){
+   const n=model.skyPurchased;
+   note=el('p',{className:'adventure-offer-upgrade'},'Prix ajusté : '+(n>1?'tes '+n+' aventures achetées sont prises':'ton aventure achetée est prise')+' en compte.');
+   note.dataset.offerUpgrade='';
+  }
+  offers.append(offerCard('sky','Débloquer tout le vrai ciel',model.skyPrice,model.skyCount,model.skyProduct,note));
+ }
  offers.dataset.offerCards='';
  root.append(offers);
  const purchaseProgress=el('p',{className:'adventure-offer-cap',hidden:true});

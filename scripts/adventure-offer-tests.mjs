@@ -5,7 +5,10 @@ import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {PERFORMANCE_BADGES} from '../src/campaign/performance.js';
 import {ADVENTURE_PRICE_CENTS,SKY_PRICE_CENTS,formatEuros} from '../src/campaign/store-catalogue.js';
-import {adventureOfferModel,masteryLine,purchaseProgressMessage,SUPPORT_LINE,SUPPORT_TEXT} from '../src/ui/adventure-offer.js';
+import {adventureOfferModel,mainSkyOffer,masteryLine,purchaseProgressMessage,SUPPORT_LINE,SUPPORT_TEXT} from '../src/ui/adventure-offer.js';
+import {SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS} from '../src/campaign/store-catalogue.js';
+import {toPlayProductId} from '../src/persistence/play-billing.js';
+import {purchaseThanksModel} from '../src/ui/purchase-thanks.js';
 import {storeSeed} from './adventure-store-seed.mjs';
 
 const quests=canonicalQuestList(),packs=[...CONTENT_PACKS].sort((a,b)=>a.order-b.order).map((p,i)=>({...p,accessible:i===0}));
@@ -107,3 +110,44 @@ assert.deepEqual(options,saved,'Offer projection never modifies access/progress/
 console.log('adventure-offer-tests #786: incremental delivered counts and changing rights OK');
 const unknownPlay=adventureOfferModel({...options,pricesRequired:true,purchasesAvailable:true});
 assert.equal(unknownPlay.unitPrice,'Prix indisponible');assert.equal(unknownPlay.unitPriceKnown,false,'Play prices must be confirmed, not replaced by EUR assumptions');
+
+// #865: the five commercial states. The server picks one offer; the client never lists tiers.
+{
+ const state=(purchased,extra={})=>({purchased,remaining:Math.max(0,5-purchased),unlocked:purchased>=5,sky_offer:null,sky_offer_price_cents:null,sky_offer_currency:null,...extra});
+ const zero=offer(second,{},{skyProgress:state(0,{sky_offer:SKY_PRODUCT_ID,sky_offer_price_cents:500,sky_offer_currency:'EUR'})});
+ assert.equal(zero.showSky,true);assert.equal(zero.skyProduct,SKY_PRODUCT_ID);assert.equal(zero.skyUpgrade,false);assert.equal(zero.skyPrice,'5 €');
+ for(const n of [1,2,3,4]){
+  const id='real-sky-upgrade-'+n;
+  const m=offer(second,{},{boughtSingle:true,skyProgress:state(n,{sky_offer:id,sky_offer_price_cents:100*(5-n),sky_offer_currency:'EUR'})});
+  assert.equal(m.showSky,true,'Tout débloquer stays available after '+n+' unit purchase(s)');
+  assert.equal(m.skyProduct,id);assert.equal(m.skyUpgrade,true);assert.equal(m.skyPurchased,n);
+  assert.equal(m.skyPrice,formatEuros(100*(5-n)),'web price = server catalogue price of this tier');
+  assert.equal(toPlayProductId(id),'real_sky_upgrade_'+n);
+  // In the Play app only Google's price for that exact SKU is shown.
+  const play=offer(second,{},{skyProgress:state(n,{sky_offer:id,sky_offer_price_cents:100,sky_offer_currency:'EUR'}),pricesRequired:true,prices:{[id]:'2,49 €',[SKY_PRODUCT_ID]:'5,99 €'}});
+  assert.equal(play.skyPrice,'2,49 €');assert.equal(play.skyPriceKnown,true);
+  const missing=offer(second,{},{skyProgress:state(n,{sky_offer:id}),pricesRequired:true,prices:{[SKY_PRODUCT_ID]:'5,99 €'}});
+  assert.equal(missing.skyPriceKnown,false,'Never fall back to the full-sky price for an upgrade');
+  assert.equal(purchaseThanksModel({productId:id,packs:CONTENT_PACKS}).sky,true,'An upgrade thanks for the whole sky');
+ }
+ // Upgrade product inactive (before owner activation): no whole-sky option after a unit purchase.
+ assert.equal(offer(second,{},{skyProgress:state(2)}).showSky,false);
+ // N>=5 or main sky owned: no paid option, even if a stale offer id came back.
+ assert.equal(offer(second,{},{skyProgress:state(5,{sky_offer:SKY_PRODUCT_ID})}).showSky,false);
+ assert.equal(offer(second,{},{skyProgress:{...state(2),unlocked:true}}).showSky,false);
+ // Unknown progress keeps the previous behaviour (signed out, loading).
+ assert.equal(offer(second,{}).skyProduct,SKY_PRODUCT_ID);assert.equal(offer(second,{},{boughtSingle:true}).showSky,false);
+ assert.equal(mainSkyOffer({purchased:1,unlocked:false,sky_offer:'real-sky-upgrade-9'}).product,null,'Only known products');
+ assert.equal(mainSkyOffer({purchased:1,unlocked:false,sky_offer:'real-sky-upgrade-1',sky_offer_price_cents:100,sky_offer_currency:'USD'}).priceCents,null,'Web catalogue is EUR only');
+ assert.deepEqual(SKY_UPGRADE_PRODUCT_IDS,['real-sky-upgrade-1','real-sky-upgrade-2','real-sky-upgrade-3','real-sky-upgrade-4']);
+ // Migration seeds them inactive, with tiers 1..4, and never overwrites owner prices.
+ const sql=fs.readFileSync('supabase/migrations/20261120120000_sky_upgrade_offers_865.sql','utf8');
+ for(const n of [1,2,3,4])assert(new RegExp("'real-sky-upgrade-"+n+"','sky_upgrade',null,[0-9]+,'EUR',false,"+n+"[)]").test(sql),'tier '+n+' seeded inactive');
+ assert(sql.includes('on conflict (product_id) do nothing;'),'owner prices are never overwritten');
+ // Edge and Android wrapper accept exactly the same SKUs.
+ const edge=fs.readFileSync('supabase/functions/lumen-play-purchase/index.ts','utf8');
+ assert(edge.includes('const playSkuPattern = /^(real_adventure_0[2-9]|real_sky_all|real_sky_upgrade_[1-4])$/;'));
+ assert.match(edge,/lumen_sky_upgrade_eligible/);
+ assert(fs.readFileSync('android/billing/src/main/java/PaymentActivity.java','utf8').includes('"real_adventure_0[2-9]|real_sky_all|real_sky_upgrade_[1-4]"'));
+ console.log('adventure-offer-tests #865: five commercial states, single personalised offer, SKU parity OK');
+}
