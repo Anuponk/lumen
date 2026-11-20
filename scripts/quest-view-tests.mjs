@@ -76,7 +76,7 @@ test('inserted quest telemetry belongs to its stable identity, independently of 
   canonicalActiveQuest:quest,levelIndex:0,n:quest.size,lumenProgress:progress,
   attemptEngine:{snapshot:()=>({attemptId:'one-run',resetCount:0})},solvedCount:()=>1,
   guidedErrorsEnabled:()=>false,document:{getElementById:()=>({checked:false})},
-  trackLumenEvent:(name,id,props)=>payloads.push({name,id,props})};
+  socialChallenge:null,trackLumenEvent:(name,id,props)=>payloads.push({name,id,props})};
  vm.createContext(ctx);vm.runInContext(functionSource(source,'currentAttemptAnalytics')+'\n'+functionSource(source,'trackAttemptEvent'),ctx);
  const first=ctx.currentAttemptAnalytics();
  assert.equal(first.stable_quest_id,quest.id);assert.equal(first.quest_ordinal,quest.ordinal);
