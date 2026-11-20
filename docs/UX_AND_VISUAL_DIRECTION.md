@@ -18,11 +18,11 @@ navigation changes; onboarding adaptation is not required.
 
 ## Localisation #754
 
-The optional introduction reads its copy from `src/ui/locales/{fr,en}/welcome.js`. It renders each label, caption and transcript entry at the component. The main game currently uses the French translator. The English introduction is exercised in an isolated browser fixture. Language detection and preference storage are covered in isolation while the French interface remains active in the game.
+The optional introduction, installed-app welcome and coach for the first two quests read from `src/ui/locales/{fr,en}/`. The learning engine supplies steps and allowed cells, and `src/ui/learning-copy.js` supplies their text. Chrome fixtures exercise the English onboarding through the ordinary game entry point. The game currently uses the French translator. The installed-app welcome keeps matching French text in the HTML shell so its actions retain labels if HTML and JavaScript load from different releases. Language detection and preference storage are covered in isolation.
 
 To prepare an additional locale, use the French domain catalogue as a template, keep the same semantic keys and placeholder names, then register the canonical BCP 47 code, native name, availability, fallback and statically imported messages in `src/ui/i18n.js`. Use `t(key, params)` for complete messages and plural forms keyed by `Intl.PluralRules` categories with an `other` form. Use the translator’s number and date formatters for display. The French catalogue provides missing copy. Diagnostics report the key and locale. Player names and other user-provided values remain intact when inserted as parameters.
 
-The service worker follows the static imports to cache both catalogues. The French introduction keeps its existing timing, entry choices and accessibility. Guarded teaching steps begin in the game after the introduction.
+The service worker follows the static imports to cache the French and English catalogues. The French introduction keeps its existing timing, entry choices and accessibility. Guarded teaching steps begin in the game after the introduction.
 
 Before exposing English across the game, finish the remaining screen and content translations, connect the hot language selector and test it during an active attempt. The cross-device preference policy, installed Android locale, public pages and metadata, transactional copy, notifications and Play listing are part of the remaining FR/EN rollout.
 

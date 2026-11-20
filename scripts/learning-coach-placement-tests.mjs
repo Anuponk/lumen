@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import { learningCopy } from '../src/game/learning.js';
+import { learningCopy } from '../src/ui/learning-copy.js';
+import { createTranslator } from '../src/ui/i18n.js';
+const { t } = createTranslator();
 
 const source=fs.readFileSync('src/ui/game-screen.js','utf8');
 // #749: every width uses the phone layout, so the coach is always laid out above the
@@ -35,7 +37,7 @@ function phoneFixture({ slackBelow, longest = 'x'.repeat(120), giveBack = 1 }) {
   const bottom = () => before + (classes.has('coach-above') ? parseFloat(props.get('--coach-height') || 0) + 8 - giveBack * (natural - parseFloat(props.get('--coach-board-size') || natural)) : 0);
   const document = { getElementById: (id) => ({ scriptedLearn: card, learningBoardWrap: wrap, scriptedLearnTitle: title, scriptedLearnCopy: copy, learningCoachNext: next })[id] ?? null, querySelector: () => ({ getBoundingClientRect: () => ({ bottom: bottom() }) }) };
   const intro = [{ title: 'Observe le plateau', copy: 'court' }, { title: 'Ton objectif', copy: longest }];
-  const context = vm.createContext({ document, board, innerWidth: 390, innerHeight, scrollY: 0, matchMedia: () => ({ matches: true }), learningCopy, LEARNING_INTRO: intro, autoMarkingLessonRequired: () => false, activeQuestOrdinal: () => 1, QUEST_MILESTONES: { skyTourAfter: 3 }, levelIndex: 0 });
+  const context = vm.createContext({ document, board, innerWidth: 390, innerHeight, scrollY: 0, matchMedia: () => ({ matches: true }), learningCopy, t, LEARNING_INTRO: intro, autoMarkingLessonRequired: () => false, activeQuestOrdinal: () => 1, QUEST_MILESTONES: { skyTourAfter: 3 }, levelIndex: 0 });
   vm.runInContext(source.slice(start, end), context);
   return { context, props, classes, card, title, copy, next, bottom, run: () => vm.runInContext('positionLearningCoach()', context) };
 }

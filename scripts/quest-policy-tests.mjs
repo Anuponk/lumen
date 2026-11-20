@@ -123,9 +123,10 @@ test('contextual learning tips follow the visible lesson, never a dormant numeri
  for(const ordinal of [2,7])for(const levelIndex of [1,70]){
   const viewed=new Set();
   const ctx={onboardingPreferences:{seen:id=>viewed.has(id),markSeen:id=>viewed.add(id)},activeQuestOrdinal:()=>ordinal,learningQuestActive:()=>ordinal<=2,socialChallenge:null,replayMode:false,levelIndex,learningTipSeen:new Set(),updates:0,updateScriptedLearning(){ctx.updates++}};
-  vm.createContext(ctx);vm.runInContext(functionSource(source,'showLearningTip'),ctx);ctx.showLearningTip('tools','Fixture','Fixture');
+  ctx.t=()=>'';ctx.lessonText=()=>({title:'Fixture',copy:'Fixture'});
+  vm.createContext(ctx);vm.runInContext(functionSource(source,'showLearningTip'),ctx);ctx.showLearningTip('tools','tipTools');
   assert.equal(ctx.updates,ordinal===2?1:0,ordinal+' at '+levelIndex);
-  ctx.learningTipSeen.clear();ctx.showLearningTip('tools','Fixture','Fixture');
+  ctx.learningTipSeen.clear();ctx.showLearningTip('tools','tipTools');
   assert.equal(ctx.updates,ordinal===2?1:0,'A remembered optional explanation is not repeated');
  }
 });

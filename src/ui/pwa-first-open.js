@@ -1,3 +1,5 @@
+import { createTranslator } from './i18n.js';
+
 // #832: an installed app (iOS home screen PWA) may not share Safari's storage.
 // Its first opening without a session or local progress must not look like a
 // silent reset: offer "J'ai déjà joué" (sign in) before a new adventure.
@@ -9,7 +11,7 @@ export function pwaFirstOpenEligible({standalone,firstVisit,signedIn,socialChall
  return !!standalone&&!!firstVisit&&!signedIn&&!socialChallenge;
 }
 
-export function createPwaFirstOpen({document,onRecover,onNewAdventure}){
+export function createPwaFirstOpen({document,onRecover,onNewAdventure,t=createTranslator().t}){
  const root=document.getElementById('pwaWelcome');
  const recover=document.getElementById('pwaWelcomeRecover');
  const fresh=document.getElementById('pwaWelcomeNew');
@@ -27,7 +29,7 @@ export function createPwaFirstOpen({document,onRecover,onNewAdventure}){
   // Second tap confirms: a new local adventure is an explicit choice.
   if(!confirming){
    confirming=true;confirm.hidden=false;
-   fresh.textContent='Oui, commencer une nouvelle aventure';fresh.focus();return;
+   fresh.textContent=t('pwaWelcome.confirmAction');fresh.focus();return;
   }
   close();onNewAdventure();
  });
@@ -36,7 +38,8 @@ export function createPwaFirstOpen({document,onRecover,onNewAdventure}){
   show(){
    if(active)return;
    active=true;confirming=false;confirm.hidden=true;
-   fresh.textContent='Commencer une nouvelle aventure';
+   for(const element of root.querySelectorAll('[data-pwa-copy]'))element.textContent=t(element.dataset.pwaCopy);
+   fresh.textContent=t('pwaWelcome.new');
    appWasInert=!!app?.inert;if(app)app.inert=true;
    root.hidden=false;recover.focus();
   },

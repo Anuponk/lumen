@@ -1,7 +1,8 @@
 import {readFileSync} from "node:fs";
 import assert from 'node:assert/strict';
 import { CAT } from '../src/campaign/catalogue.js';
-import { learningStep, dragLearningStep, learningAllows, learningCopy, territoryNumbersVisible } from '../src/game/learning.js';
+import { learningStep, dragLearningStep, learningAllows, territoryNumbersVisible } from '../src/game/learning.js';
+import { learningCopy } from '../src/ui/learning-copy.js';
 import { createGameEngine } from '../src/game/engine.js';
 
 const puzzle = CAT['5'][0];

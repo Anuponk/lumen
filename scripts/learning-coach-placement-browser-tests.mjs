@@ -2,13 +2,17 @@
 // screens always win over it (one modal at a time, same step after closing).
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { connectBrowser, closeBrowser } from './cdp-client.mjs';
+import { connectBrowser, closeBrowser, navigateAndWait } from './cdp-client.mjs';
 const { send, evaluate, errors } = await connectBrowser(),
   results = [];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function until(expr) {
   for (let i = 0; i < 160; i++) {
-    if (await evaluate(expr)) return;
+    try {
+      if (await evaluate(expr)) return;
+    } catch (error) {
+      if (!/Cannot find context|Execution context was destroyed|Inspected target navigated/.test(error.message)) throw error;
+    }
     await sleep(80);
   }
   throw Error('Timed out: ' + expr);
@@ -16,28 +20,69 @@ async function until(expr) {
 const MEASURE = `(()=>{const c=document.getElementById('scriptedLearn'),b=document.getElementById('board');if(!c||c.hidden)return null;const r=c.getBoundingClientRect(),g=b.getBoundingClientRect();
  const ox=Math.max(0,Math.min(r.right,g.right)-Math.max(r.left,g.left)),oy=Math.max(0,Math.min(r.bottom,g.bottom)-Math.max(r.top,g.top));
  return {title:document.getElementById('scriptedLearnTitle').textContent.trim(),covered:ox*oy,boardWidth:Math.round(g.width),gapBelow:Math.round(innerHeight-Math.max(document.querySelector('.game-core').getBoundingClientRect().bottom,document.querySelector('.actions').getBoundingClientRect().bottom)),coachHeight:Math.round(r.height),fullText:document.getElementById('scriptedLearnCopy').scrollHeight<=document.getElementById('scriptedLearnCopy').clientHeight+1,helpReachable:(()=>{const h=document.getElementById('tutorialHelp').getBoundingClientRect();return r.top>=h.bottom+8})(),nextVisible:(()=>{const n=document.getElementById('learningCoachNext');if(n.hidden)return true;const q=n.getBoundingClientRect();return q.bottom<=innerHeight&&q.top>=0})()}})()`;
-async function freshGuest(width, height) {
+async function freshGuest(width, height, locale = 'fr') {
   await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: true });
   const fixture = await send('Page.addScriptToEvaluateOnNewDocument', {
-    source: `if(!sessionStorage.getItem('coachTest')){localStorage.clear();sessionStorage.setItem('coachTest','1')}localStorage.setItem('lumenSound','off');`,
+    source: `if(!sessionStorage.getItem('coachTest')){localStorage.clear();sessionStorage.setItem('coachTest','1')}localStorage.setItem('lumenSound','off');${locale === 'en' ? "Object.defineProperty(navigator,'standalone',{value:true});" : ''}`,
   });
-  await send('Page.navigate', { url: process.env.LUMEN_TEST_URL || 'http://127.0.0.1:8000/' });
-  await until('!!document.getElementById("board")&&document.readyState==="complete"');
-  await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: fixture.identifier });
-  await until(`!![...document.querySelectorAll('button')].find(b=>b.offsetParent&&/directement/i.test(b.textContent))||!document.getElementById('scriptedLearn').hidden`);
-  await evaluate(`[...document.querySelectorAll('button')].find(b=>b.offsetParent&&/directement/i.test(b.textContent))?.click()`);
+  const isEnglish = locale === 'en';
+  // Start the ordinary entry point with an injected translator on this fixture only.
+  if (isEnglish) {
+    await send('Network.setBypassServiceWorker', { bypass: true });
+    await send('Network.setBlockedURLs', { urls: ['*/src/main.js'] });
+  }
+  try {
+    const params = { url: process.env.LUMEN_TEST_URL || 'http://127.0.0.1:8000/' };
+    if (isEnglish) {
+      const previous = await evaluate('performance.timeOrigin');
+      await send('Page.navigate', params);
+      await until(`performance.timeOrigin !== ${previous} && document.readyState === 'complete'`);
+      assert.equal(await evaluate('!!window.lumenDiagnostics'), false, 'Default entry point stays blocked in the fixture');
+    } else {
+      await navigateAndWait({ send, evaluate }, 'Page.navigate', params);
+    }
+  } finally {
+    await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: fixture.identifier });
+    if (isEnglish) {
+      await send('Network.setBlockedURLs', { urls: [] });
+      await send('Network.setBypassServiceWorker', { bypass: false });
+    }
+  }
+  if (isEnglish) {
+    await evaluate(`(async()=>{
+      const {startGameScreen}=await import('/src/ui/game-screen.js');
+      const {createTranslator}=await import('/src/ui/i18n.js');
+      document.documentElement.lang='en';
+      startGameScreen({t:createTranslator({locale:'en'}).t});
+    })()`, true);
+    await until("!document.getElementById('pwaWelcome').hidden");
+    assert.equal(await evaluate("document.activeElement.textContent"), 'I’ve played before — Find my progress');
+    await evaluate("document.getElementById('pwaWelcomeNew').click()");
+    assert.equal(await evaluate("document.activeElement.textContent"), 'Yes, start a new adventure');
+    await evaluate("document.getElementById('pwaWelcomeNew').click()");
+    await until("!!document.querySelector('.first-welcome:not([hidden]) .intro-play')");
+    assert.equal(await evaluate("document.activeElement.textContent"), 'Watch the intro');
+  } else {
+    await until(`!!document.querySelector('.first-welcome:not([hidden])')||!document.getElementById('scriptedLearn').hidden`);
+  }
+  await evaluate(`document.querySelector('.first-welcome:not([hidden]) .intro-play')?.click()`);
   await until(`!document.getElementById('scriptedLearn').hidden&&document.getElementById('scriptedLearn').contains(document.elementFromPoint(innerWidth/2,document.getElementById('scriptedLearn').getBoundingClientRect().top+20))`);
   await evaluate(`sessionStorage.removeItem('coachTest')`);
 }
 try {
   await send('Page.enable');
   await send('Runtime.enable');
-  for (const [width, height] of [
-    [320, 568],
-    [360, 640],
-    [390, 844],
+  await send('Network.enable');
+  const snapshot = 'JSON.stringify({board:lumenDiagnostics.snapshot().state,progress:lumenDiagnostics.snapshot().progress,attempt:localStorage.getItem("lumenActiveAttemptV1")})';
+  for (const [width, height, locale] of [
+    [320, 568, 'fr'],
+    [360, 640, 'fr'],
+    [390, 844, 'fr'],
+    [320, 568, 'en'],
+    [360, 640, 'en'],
   ]) {
-    await freshGuest(width, height);
+    await freshGuest(width, height, locale);
+    const before = await evaluate(snapshot);
     const steps = [];
     for (let i = 0; i < 8; i++) {
       await sleep(250);
@@ -58,7 +103,14 @@ try {
       if (!moved) break;
     }
     assert(steps.length >= 4, 'The intro steps were measured at ' + width + 'x' + height);
-    results.push({ width, height, steps: steps.length, covered: 0, board: steps[0].boardWidth, coach: steps[0].coachHeight, gapBelow: steps[0].gapBelow });
+    if (locale === 'en') {
+      assert.deepEqual(steps.slice(0, 6).map(step => step.title), [
+        'Look at the board', 'Your goal', 'One per territory', 'One per row and per column', 'Keep them apart', 'How to play',
+      ]);
+      assert.equal(await evaluate(snapshot), before, 'Teaching steps leave the board, progress and attempt unchanged');
+      assert.equal(await evaluate("document.getElementById('board').dataset.learningStage"), 'place');
+    }
+    results.push({ width, height, locale, steps: steps.length, covered: 0, board: steps[0].boardWidth, coach: steps[0].coachHeight, gapBelow: steps[0].gapBelow });
   }
   // #688: opening the sign-up screen during a learning step.
   await freshGuest(390, 844);
