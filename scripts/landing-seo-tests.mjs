@@ -69,7 +69,7 @@ for(const [lang,html,canonical,alternateLocale] of [['fr',page,frenchUrl,'en_US'
 }
 assert.match(page,/<a href="\/discover\.html" lang="en" hreflang="en">English<\/a>/);
 assert.match(english,/<a href="\/decouvrir\.html" lang="fr" hreflang="fr">Français<\/a>/);
-assert.match(english,/<a class="play" href="\/" hreflang="fr">Play in French<\/a>/);
+assert.match(english,/<a class="play" href="\/">Play Lumen<\/a>/);
 assert.match(english,/never touch, even diagonally/);
 assert.match(english,/Stellarium.*CC BY-SA.*Hipparcos/);
 assert(english.includes(CONTENT_CONSTELLATIONS.length+' official constellations'));
@@ -81,7 +81,7 @@ for(const field of ['title','description','image','image:alt'])
 assert.doesNotMatch(english,/<script\b(?![^>]*application\/ld\+json)/);
 const englishLd=JSON.parse(english.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
 assert.equal(englishLd['@type'],'VideoGame');
-assert.equal(englishLd.inLanguage,'fr','Structured game language matches the destination');
+assert.equal(englishLd.inLanguage,'fr','Structured data declares the primary game language');
 assert.equal(englishLd.mainEntityOfPage.inLanguage,'en');
 assert.equal(englishLd.mainEntityOfPage['@id'],englishUrl);
 for(const [,target] of english.matchAll(/<a [^>]*href="(\/[^"]*)"/g)){
@@ -195,7 +195,7 @@ for(const [frPath,enPath] of [['comment-jouer.html','how-to-play.html'],['appren
  }
  const englishGuide=read(enPath);
  assert(english.includes('href="/'+enPath+'"'),'English discovery leads to the English guide');
- assert.match(englishGuide,/<a class="play" href="\/" hreflang="fr">Play in French<\/a>/);
+ assert.match(englishGuide,/<a class="play" href="\/">Play Lumen<\/a>/);
  assert.match(englishGuide,/Stellarium.*CC BY-SA.*Hipparcos/);
  assert.doesNotMatch(englishGuide,/<script\b(?![^>]*application\/ld\+json)/);
 }

@@ -77,6 +77,10 @@ async function startChrome(port){
  let lastError="";
  for(let attempt=1;attempt<=3;attempt++){
   const profile=fs.mkdtempSync(path.join(os.tmpdir(),"lumen-quality-"));
+  // Keep French regression expectations independent of the runner's language.
+  const settings=path.join(profile,"Default");
+  fs.mkdirSync(settings);
+  fs.writeFileSync(path.join(settings,"Preferences"),JSON.stringify({intl:{accept_languages:"fr-FR,fr"}}));
   const args=["--headless=new","--remote-debugging-port="+port,"--remote-debugging-address=127.0.0.1","--user-data-dir="+profile,"--no-first-run","--no-default-browser-check","--disable-dev-shm-usage","--disable-background-networking","--disable-component-update","--no-sandbox","about:blank"];
   const child=spawn(executable,args,{cwd:root,stdio:["ignore","ignore","pipe"],shell:false});
   let chromeStderr="";child.stderr?.on("data",chunk=>{chromeStderr=(chromeStderr+chunk.toString()).slice(-8000)});
