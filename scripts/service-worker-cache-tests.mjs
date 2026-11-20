@@ -211,6 +211,8 @@ test('the actual worker installs the complete repository graph including dynamic
  let install;f.handlers.install({waitUntil:p=>install=p});await install;
  assert.equal(f.lifecycle.skipWaiting,1);
  assert(f.stores.get(currentCache).has('https://lumen.test/src/persistence/offline-verified-owner.js'));
+ assert(f.stores.get(currentCache).has('https://lumen.test/src/campaign/constellation-facts.js'));
+ assert(f.stores.get(currentCache).has('https://lumen.test/src/ui/constellation-fact-dialog.js'));
 });
 
 test('cache quota refusal cannot activate a partial worker or erase the previous shell',async()=>{

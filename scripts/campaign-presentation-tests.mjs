@@ -50,7 +50,7 @@ function questCardFixture(progress,{signedIn=true,cloudReady=true,entryId}={}){
   adventureAccessEntitlements:()=>[],attemptEngine:{snapshot:()=>null},campaignAccessAttempt:()=>null,
   navigationProgress:()=>progress,offlineQuestAccessContext:()=>({offline:false,verifiedSession:false}),document:{createElement:element,createElementNS:element,getElementById:id=>id==='puzzleGrid'?grid:id==='mapModal'?modal:id==='skyCard'?sky:null},
   CONTENT_CONSTELLATIONS,mapConstellation:0,
-  skyNavigation:{render(){},selectedConstellation:()=>entry},
+  skyNavigation:{render(){},selectedConstellation:()=>entry,createFactButton:()=>null},
   mapConstellationRange:()=>({quests:[]}),maybeShowStreakLoss(){},renderDaily(){},
   performanceBadges:()=>'<span>badge historique</span>',canonicalPerformanceBadges:()=>'<span>badge canonique</span>',
   badgeCooldownRemaining:()=>0,questPerformanceRecord,verifiedAstronomicalFigure:()=>true,questIsCompleted,astronomicalPrimarySvg:()=>''};

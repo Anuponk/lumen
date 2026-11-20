@@ -3,6 +3,7 @@ src/vendor/*.js -text whitespace=-blank-at-eol,-blank-at-eof
 
 # Formatting rollout: retain LF in migrated files on Windows and Linux alike.
 src/ui/app-updates.js text eol=lf
+src/ui/constellation-fact-dialog.js text eol=lf
 src/ui/format.js text eol=lf
 src/ui/drag-grid-path.js text eol=lf
 src/ui/gesture-click-suppression.js text eol=lf

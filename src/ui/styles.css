@@ -443,6 +443,28 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 #sectorTabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:8px;flex:1;min-height:0;margin:0;overflow:hidden}
 #sectorTabs .constellation-card{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) repeat(3,max-content);justify-content:stretch;justify-items:center;align-content:stretch;gap:3px;min-width:0;min-height:0;padding:4px 6px!important;border-radius:14px;overflow:hidden;background:#0e2133}
 .constellation-card svg{width:100%;height:clamp(30px,7vh,64px);flex:0 1 auto}.constellation-card strong{max-width:100%;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.constellation-card small{font-size:11px;color:#b9d8e8}.constellation-card.locked{opacity:.55}
+/* The info control is a sibling of the card and retains its own hit target. */
+.constellation-card-slot{display:grid;position:relative;min-width:0;min-height:0}
+#mapModal .constellation-fact-button{display:inline-grid;place-items:center;width:32px;height:32px;min-width:32px;min-height:32px;padding:0;border:1px solid transparent;border-radius:50%;background:transparent;color:#a9e8f6;font-size:19px;line-height:1}
+.constellation-card-slot .constellation-fact-button{position:absolute;inset-block-start:1px;inset-inline-end:1px}
+@media(max-width:500px){.constellation-card-slot .constellation-fact-button{inset-inline-start:1px;inset-inline-end:auto}}
+#mapModal .constellation-fact-button:hover{background:#1b3a50}
+#mapModal .constellation-fact-button:focus-visible{outline:2px solid #a9e8f6;outline-offset:-2px}
+.sky-fact-label{display:flex;align-items:center;gap:4px;min-width:0}
+.sky-fact-label .sky-name{overflow-wrap:anywhere}
+#mapModal:has(#skyTour:not([hidden])) .constellation-fact-button{display:none}
+.constellation-fact{box-sizing:border-box;width:min(440px,calc(100% - 24px));max-height:calc(100dvh - 24px);padding:18px 20px;border:1px solid #34516b;border-radius:18px;background:#0d2030;color:#e8f7ff;overflow:auto;overscroll-behavior:contain;text-align:left}
+.constellation-fact::backdrop{background:rgba(3,7,13,.76)}
+.constellation-fact-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.constellation-fact h2{margin:0;font-size:22px}
+.constellation-fact h3{margin:16px 0 4px;font-size:14px;color:#a9e8f6}
+.constellation-fact p{margin:0;font-size:14px;line-height:1.5}
+.constellation-fact dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 8px}
+.constellation-fact dl div{padding:8px;border-radius:8px;background:#172e42}
+.constellation-fact dt,.constellation-fact .constellation-fact-note{font-size:12px;color:#b8ccdd}
+.constellation-fact dd{margin:3px 0 0;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.constellation-fact label{display:grid;gap:5px;margin-top:14px;font-size:13px}
+.constellation-fact select{width:100%;min-height:40px;padding:6px 8px;border:1px solid #34516b;border-radius:8px;background:#10283b;color:inherit;font:inherit}
 .constellation-pages{display:flex;align-items:center;justify-content:center;gap:18px;flex:0 0 auto;font-size:12px}.constellation-pages button{padding:5px 16px}.constellation-pages button:disabled{opacity:.3}
 .map-detail{display:flex;flex-direction:column;gap:8px;min-height:0;flex:1}.constellation-back{align-self:flex-start;padding:6px 10px;font-size:12px;flex:0 0 auto}
 #mapDetail .puzzle-grid{margin:0;grid-template-columns:repeat(auto-fit,minmax(46px,1fr));gap:6px;flex:0 0 auto;max-height:150px;overflow:hidden}#mapDetail .puzzle-card{min-width:0;min-height:42px;padding:6px}

@@ -4758,7 +4758,10 @@ function renderCanonicalSky(entry){
  const head=document.createElement("div");head.className="sky-head";
  const name=document.createElement("span");name.className="sky-name";name.textContent=entry.label;
  const count=document.createElement("span");count.textContent=lit+" / "+total+" \u00e9toiles";
- head.append(name,count);el.appendChild(head);
+ const label=document.createElement("div");label.className="sky-fact-label";label.append(name);
+ const factButton=skyNavigation.createFactButton(entry);
+ if(factButton)label.append(factButton);
+ head.append(label,count);el.appendChild(head);
  const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
  svg.classList.add("sky-svg");svg.setAttribute("viewBox","0 0 290 115");
  svg.innerHTML=milkyWaySvg(entry.id,constellationMastery(entry).ratio,[0,0,290,115],takeMasteryPulse(entry))+astronomicalPrimarySvg(entry,lit,total);el.appendChild(svg);

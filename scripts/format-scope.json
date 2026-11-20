@@ -1,5 +1,6 @@
 [
   "src/ui/app-updates.js",
+  "src/ui/constellation-fact-dialog.js",
   "src/ui/format.js",
   "src/ui/drag-grid-path.js",
   "src/ui/gesture-click-suppression.js",
