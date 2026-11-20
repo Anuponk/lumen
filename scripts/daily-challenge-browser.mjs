@@ -18,7 +18,7 @@ const board=(me)=>({day:DAY,final:false,closes_at:'2026-11-23T23:00:00Z',my_run:
  general:{participants:12,top:[{nickname:'Ana',score:95,rank:1,mine:false},{nickname:'Bo',score:95,rank:1,mine:false},{nickname:'Cy',score:120,rank:3,mine:false}],me:me?.status==='completed'?{rank:5,score:me.score}:null},
  friends:{participants:1,top:me?.status==='completed'?[{nickname:'Moi',score:me.score,rank:1,mine:true}]:[],me:me?.status==='completed'?{rank:1,score:me.score}:null}});
 
-function fixture({signedIn,enabled=true,run=null,beginResume=false,finishFails=false}){
+function fixture({signedIn,enabled=true,run=null,beginResume=false,finishFails=false,beginDay=DAY}){
  return `
   localStorage.clear();
   localStorage.setItem('lumenProgressV1',${JSON.stringify(JSON.stringify(profile))});
@@ -40,7 +40,7 @@ function fixture({signedIn,enabled=true,run=null,beginResume=false,finishFails=f
     if(name==='lumen_daily_week'){const mine=run?.status==='completed';
      return {data:{monday:DAY,days:Array.from({length:7},(_,i)=>i===0?(mine?{day:DAY,state:'completed',final:false,run,general_rank:5,general_total:12,friends_rank:1,friends_total:1}:{day:DAY,state:run?.status||'missed',final:false}):{day:'2026-11-'+(23+i),state:'future'})}}}
     if(name==='lumen_daily_board'){const b=boardOf(run);b.closes_at=closes;return {data:b}}
-    if(name==='lumen_daily_begin'){if(!run)run={status:'started',operation_id:args.p_operation_id,started_at:now()};
+    if(name==='lumen_daily_begin'){if(!run)run={day:${JSON.stringify(beginDay)},status:'started',operation_id:args.p_operation_id,started_at:now()};
      return {data:{...run,server_now:now(),resumed:${beginResume}||run.operation_id!==args.p_operation_id}}}
     if(name==='lumen_daily_finish'){if(finishFails)return {data:null,error:{message:'Failed to fetch'}};
      if(run.status==='started')run={...run,status:args.p_status,seconds:args.p_seconds,score:args.p_seconds+args.p_hint*15+(args.p_verify+args.p_guided)*5};return {data:run}}
@@ -180,6 +180,15 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
  await until(evaluate,`!document.getElementById('dailyResultModal').hidden`,'resume result');
  assert.equal((await calls(evaluate,'lumen_daily_finish'))[0].args.p_operation_id,'daily-elsewhere','finish the same official attempt');
  results.push({kind:'resume'});
+
+ // Intro left open across midnight Paris: the server begins the NEW day. The
+ // client must never play yesterday's grid against that attempt; it reloads.
+ await open({send,evaluate},url,{signedIn:true,beginDay:'2026-11-24'});
+ await until(evaluate,`!document.getElementById('dailyIntro').hidden`,'midnight intro');
+ await evaluate(`window.__beforeMidnight=1;document.getElementById('dailyStart').click()`);
+ await until(evaluate,`window.__beforeMidnight===undefined&&!!window.lumenDiagnostics`,'reload on the server day');
+ assert.equal(new URL(await evaluate('location.href')).searchParams.get('daily'),'1','reopens the daily mode');
+ results.push({kind:'midnight-begin'});
 
  // Already played: frozen result, then explicit unranked training.
  await open({send,evaluate},url,{signedIn:true,run:{status:'completed',operation_id:'done',score:150,seconds:150}});
