@@ -2359,11 +2359,11 @@ function offlineQuestAccessContext(){
  return {offline:navigator.onLine===false,verifiedSession:!!lumenUser&&(verifiedOfflineOwnerId===lumenUser.id||isVerifiedOfflineOwner(localStorage,lumenUser.id,{offline:navigator.onLine===false}))};
 }
 function questIsAccessible(index){
- return campaignQuestAccess(canonicalQuestForLegacy(index)).status==='ready';
+ return legacyQuestAccess(index).status==='ready';
 }
-function campaignQuestAccess(quest){
- return canonicalCampaignQuestDecision(quest,navigationProgress(),{
-  entitlements:adventureAccessEntitlements(),entitlementsState:adventureEntitlementsState(),attempt:campaignAccessAttempt(),signedIn:qaActive||!!lumenUser,cloudReady:qaActive||cloudProfileReady,confirmedReplay:confirmedReplayAllowed(quest),...offlineQuestAccessContext()
+function legacyQuestAccess(index){
+ return canonicalCampaignQuestDecision(canonicalQuestForLegacy(index),navigationProgress(),{
+  entitlements:adventureAccessEntitlements(),entitlementsState:adventureEntitlementsState(),attempt:campaignAccessAttempt(),signedIn:qaActive||!!lumenUser,cloudReady:qaActive||cloudProfileReady,confirmedReplay:confirmedReplayAllowed(canonicalQuestForLegacy(index)),...offlineQuestAccessContext()
  });
 }
 function choose(playReviewQuestId=null){if(canonicalActiveQuest){puz={reg:canonicalActiveQuest.reg,sol:canonicalActiveQuest.sol,audit:canonicalActiveQuest.audit,difficulty:canonicalActiveQuest.difficulty};n=puz.reg.length;return}levelIndex=Math.max(0,Math.min(levelIndex,currentQuestLimit()-1));if(!socialChallenge&&canonicalQuestForLegacy(levelIndex)?.id!==playReviewQuestId&&!questIsAccessible(levelIndex)){while(levelIndex>0&&!questIsAccessible(levelIndex))levelIndex--;replayMode=!!lumenProgress.solved[levelIndex]}const resolved=playableQuest(levelIndex);if(!resolved)throw new Error("Missing campaign quest "+levelIndex);puz=resolved.source==="generated"?{reg:resolved.reg,sol:resolved.sol,audit:resolved.audit,difficulty:resolved.difficulty}:resolved.size===6?CAT["6"][CAMPAIGN6_ORDER[CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]]]:CAT[String(resolved.size)][CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]];
@@ -4843,7 +4843,7 @@ const playReviewNavigation=createPlayReviewNavigation(()=>{
 });
 function playReviewAttemptId(quest){return quest.legacyIndex===null?quest.id:quest.legacyIndex+1}
 function mapQuestAccess(quest){
- const access=quest.legacyIndex===null?canonicalQuestAccess(quest):campaignQuestAccess(quest);
+ const access=quest.legacyIndex===null?canonicalQuestAccess(quest):legacyQuestAccess(quest.legacyIndex);
  if(access.status!=='prerequisite'||!playReviewNavigation.available())return access;
  const pack=CONTENT_PACKS.find(p=>p.id===quest.packId);
  return playReviewQuestDecision(access,hasPackAccess(pack,adventureAccessEntitlements(),lumenProgress,campaignAccessAttempt()));
