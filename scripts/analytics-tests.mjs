@@ -69,9 +69,14 @@ const cockpitMigration=fs.readFileSync('supabase/migrations/20261005_lumen_admin
  const ctx={attemptEngine:{snapshot:()=>({gridRevision:2})},canonicalActiveQuest:{gridRevision:3},canonicalQuestForLegacy:()=>null,
   readQuestView:()=>({id:'q',ordinal:1}),lumenProgress:{},canonicalQuestList:()=>[],CONTENT_CONSTELLATIONS:[],
   attemptAnalyticsProperties:(_facts,extra)=>extra,canonicalScopeProgress:()=>({completed:0}),guidedErrorsEnabled:()=>false,
-  document:{getElementById:()=>null},n:5,levelIndex:0};
+  document:{getElementById:()=>null},n:5,levelIndex:0,socialChallenge:null};
  vm.createContext(ctx);vm.runInContext(functionSource(fs.readFileSync('src/ui/game-screen.js','utf8'),'currentAttemptAnalytics'),ctx);
  assert.equal(ctx.currentAttemptAnalytics().grid_revision,2,'played attempt revision owns analytics, not a newer catalogue grid');
+ assert.equal('daily_day' in ctx.currentAttemptAnalytics(),false,'campaign attempts carry no daily field');
+ // #882: a daily attempt stays attempt_mode=challenge and is told apart by daily fields.
+ ctx.socialChallenge={daily:true,training:false,day:'2026-11-23'};
+ assert.deepEqual([ctx.currentAttemptAnalytics().daily_day,ctx.currentAttemptAnalytics().daily_training],['2026-11-23',false]);
+ ctx.socialChallenge={daily:true,training:true,day:'2026-11-23'};assert.equal(ctx.currentAttemptAnalytics().daily_training,true);
 }
 // Inactivity while the page stays open starts a fresh browser session.
 {

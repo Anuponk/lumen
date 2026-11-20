@@ -17,8 +17,9 @@ import {questReviewModel} from './quest-review.js';
 import {reviewNeighbour,bindReviewNavigation} from './quest-review-navigation.js';
 import {attemptTiming,officialResult} from '../campaign/official-time.js';
 import {RANKING_PENALTIES,rankedTime} from '../campaign/ranking.js';
-import {createDailyClient,dailyQuest} from '../campaign/daily-challenge.js';
-import {dailyErrorMessage,formatDailyDate,formatRemaining,formatRank,renderDailyBoard} from './daily-view.js';
+import {addDays,createDailyClient,dailyQuest} from '../campaign/daily-challenge.js';
+import {dailyErrorMessage,formatDailyDate,formatRemaining,formatRank,renderDailyBoard,renderDailyWeek,formatWeekRange} from './daily-view.js';
+import {summarizeWeek,weekMonday,weekNavigation,weekShareText} from '../campaign/daily-week.js';
 import {officialTimingSupported,refreshOfficialTimingSupport} from '../persistence/official-time.js';
 import {createRankingClient} from '../persistence/ranking.js';
 import {createRankingView} from './ranking.js';
@@ -1827,7 +1828,7 @@ function currentAttemptAnalytics(extra={}){
   attempt,questIndex:view.legacyIndex,gridSize:n,constellationIndex:view.constellationIndex,constellationName:view.constellationName,
   solvedCount:canonicalScopeProgress(lumenProgress).completed,questAttemptNumber:view.attemptNumber,
   guidedEnabled:guidedErrorsEnabled(),autoMarkingEnabled:!!document.getElementById("autoCross")?.checked
- },{stable_quest_id:view.id,quest_ordinal:view.ordinal,pack_id:view.packId,constellation_id:view.constellationId,grid_revision:attempt?.gridRevision??quest.gridRevision??0,...extra});
+ },{stable_quest_id:view.id,quest_ordinal:view.ordinal,pack_id:view.packId,constellation_id:view.constellationId,grid_revision:attempt?.gridRevision??quest.gridRevision??0,...(socialChallenge?.daily?{daily_day:socialChallenge.day,daily_training:!!socialChallenge.training}:{}),...extra});
 }
 function trackAttemptEvent(name,extra={}){const quest=canonicalActiveQuest??canonicalQuestForLegacy(levelIndex);return trackLumenEvent(name,quest.legacyIndex===null?null:quest.legacyIndex+1,currentAttemptAnalytics(extra))}
 
@@ -2237,11 +2238,15 @@ let socialChallenge=null,lastChallengeOffer=null,pendingChallengeUrl="",pendingC
 // Only the intro, the server submission and the official clock differ.
 const dailyClient=createDailyClient(lumenSupabase),DAILY_PENDING_KEY='lumenDailyPendingV1';
 let dailyBannerTimer=null;
+// Measurement reuses the existing app_opened envelope (no new event name, no
+// new collection): surface=daily + daily_action. Disabled collection stays off.
+function trackDaily(action,extra={}){return trackLumenEvent('app_opened',null,{surface:'daily',daily_action:action,...extra})}
 function dailyUrl(training=false){const u=new URL(location.origin+location.pathname);u.searchParams.set('daily','1');if(training)u.searchParams.set('training','1');return u.toString()}
 async function refreshDailyEntry(){
- const entry=document.getElementById('openDaily');if(!entry||socialChallenge)return;entry.onclick=()=>{location.href=dailyUrl()};
- try{const today=await dailyClient.today();entry.hidden=!today?.enabled;if(today?.enabled)document.getElementById('dailyEntryState').textContent=formatDailyDate(today.day)+' · fin dans '+formatRemaining(Date.parse(today.closes_at)-Date.parse(today.server_now))}
- catch{entry.hidden=true}
+ const entry=document.getElementById('openDaily'),week=document.getElementById('openDailyWeek');if(!entry||socialChallenge)return;entry.onclick=()=>{location.href=dailyUrl()};
+ try{const today=await dailyClient.today();entry.hidden=!today?.enabled;if(today?.enabled)document.getElementById('dailyEntryState').textContent=formatDailyDate(today.day)+' · fin dans '+formatRemaining(Date.parse(today.closes_at)-Date.parse(today.server_now));
+  if(week){week.hidden=!today?.enabled||!lumenUser;week.onclick=()=>openDailyWeek(today.day,'quests')}}
+ catch{entry.hidden=true;if(week)week.hidden=true}
 }
 function renderDailyBanner(){
  const banner=document.getElementById('dailyBanner');if(!banner||!socialChallenge?.daily)return;
@@ -2249,7 +2254,8 @@ function renderDailyBanner(){
  const left=Date.parse(socialChallenge.closes_at)-Date.now()-(socialChallenge.clockSkewMs||0);
  document.getElementById('dailyBannerMeta').textContent=socialChallenge.training?'Entraînement non classé':'1 tentative officielle · fin dans '+formatRemaining(left);
 }
-function showDailyBoardTab(board,scope){
+function showDailyBoardTab(board,scope,track=true){
+ if(track)trackDaily('board_viewed',{daily_day:board?.day||socialChallenge?.day||null,board_scope:scope,board_final:!!board?.final});
  for(const [id,tab] of [['dailyTabGeneral','general'],['dailyTabFriends','friends']]){const b=document.getElementById(id);b.setAttribute('aria-selected',String(tab===scope))}
  document.getElementById('dailyBoardPanel').innerHTML=renderDailyBoard(board?.[scope],{scope,formatDuration});
 }
@@ -2260,7 +2266,7 @@ function showDailyResult({run=null,board=null,training=false,pending=false,offic
  document.getElementById('dailyResultTime').textContent=status==='abandoned'?'Non classée':score!=null?formatDuration(score):'';
  note.textContent=training?'Ce temps n’est pas classé : ta tentative officielle reste inchangée.':pending?'Résultat enregistré sur cet appareil, envoi en attente de connexion.':status==='completed'?'Temps officiel, pénalités d’aide incluses.':'';
  const boards=document.getElementById('dailyBoards');boards.hidden=!board;
- if(board){showDailyBoardTab(board,'general');document.getElementById('dailyTabGeneral').onclick=()=>showDailyBoardTab(board,'general');document.getElementById('dailyTabFriends').onclick=()=>showDailyBoardTab(board,'friends')}
+ if(board){showDailyBoardTab(board,'general',false);document.getElementById('dailyTabGeneral').onclick=()=>showDailyBoardTab(board,'general');document.getElementById('dailyTabFriends').onclick=()=>showDailyBoardTab(board,'friends')}
  const closes=Date.parse(board?.closes_at||socialChallenge?.closes_at||'');
  document.getElementById('dailyNext').textContent=Number.isFinite(closes)?'Prochain défi dans '+formatRemaining(closes-Date.now()):'';
  document.getElementById('dailyRetrySubmit').hidden=!pending;
@@ -2270,7 +2276,34 @@ function showDailyResult({run=null,board=null,training=false,pending=false,offic
  document.getElementById('dailyTrainAgain').onclick=()=>{location.href=dailyUrl(true)};
  document.getElementById('dailyContinue').onclick=()=>{location.href=location.pathname};
  document.getElementById('dailyRetrySubmit').onclick=()=>retryPendingDaily(true);
+ const weekButton=document.getElementById('dailyWeekFromResult');weekButton.hidden=training||pending||!lumenUser;weekButton.onclick=()=>openDailyWeek(socialChallenge?.day||board?.day,'result');
+ if(board)trackDaily('board_viewed',{daily_day:board.day||socialChallenge?.day||null,board_scope:'general',board_final:!!board.final});
  modal.hidden=false;document.getElementById('dailyContinue').focus({preventScroll:true});
+}
+// « Ta semaine dans les étoiles »: own days only, past weeks navigable.
+let dailyWeekRequest=0;
+async function openDailyWeek(today,source='result'){
+ const modal=document.getElementById('dailyWeekModal');if(!modal||!today)return;
+ const current=weekMonday(today),close=document.getElementById('dailyWeekClose'),share=document.getElementById('dailyWeekShare');
+ const opener=document.activeElement;
+ close.onclick=()=>{modal.hidden=true;opener?.focus?.({preventScroll:true})};
+ const load=async monday=>{
+  const request=++dailyWeekRequest,status=document.getElementById('dailyWeekStatus'),body=document.getElementById('dailyWeekBody');
+  const nav=weekNavigation(monday,today),prev=document.getElementById('dailyWeekPrev'),next=document.getElementById('dailyWeekNext');
+  prev.disabled=!nav.previous;next.disabled=!nav.next;prev.onclick=()=>nav.previous&&load(nav.previous);next.onclick=()=>nav.next&&load(nav.next);
+  document.getElementById('dailyWeekRange').textContent=formatWeekRange(monday,addDays(monday,6));
+  status.textContent='Chargement…';share.hidden=true;
+  try{
+   const week=await dailyClient.week(monday);if(request!==dailyWeekRequest)return;
+   const summary=summarizeWeek(week);
+   body.innerHTML=renderDailyWeek(summary,{formatDuration});status.textContent='';
+   share.hidden=!summary.participations;
+   share.onclick=()=>lumenShare.text({title:'Ma semaine Lumen',text:weekShareText(summary,{formatRank}),url:discoveryUrl},share);
+   trackDaily('week_viewed',{week_monday:monday,week_offset:Math.round((Date.parse(monday)-Date.parse(current))/604800000),week_participations:summary.participations,week_frozen:summary.frozen,source});
+  }catch(e){if(request!==dailyWeekRequest)return;body.innerHTML='';status.textContent=dailyErrorMessage(e)}
+ };
+ modal.hidden=false;close.focus({preventScroll:true});
+ await load(current);
 }
 function readPendingDaily(){try{return JSON.parse(localStorage.getItem(DAILY_PENDING_KEY)||'null')}catch{return null}}
 async function retryPendingDaily(show=false){
@@ -2298,6 +2331,7 @@ async function bootstrapDailyChallenge(){
  let quest;try{quest=dailyQuest({questId:today.quest_id,gridRevision:today.grid_revision})}catch{showRewardToast(dailyErrorMessage('daily_unavailable'));return false}
  socialChallenge={daily:true,training:true,challenge_id:'daily-'+today.day+'-training',day:today.day,grid_revision:today.grid_revision,closes_at:today.closes_at,clockSkewMs:Date.now()-Date.parse(today.server_now)};
  canonicalActiveQuest=quest;levelIndex=quest.legacyIndex??0;replayMode=false;
+ trackDaily('opened',{daily_day:today.day,daily_training:params.has('training')});
  document.body.classList.add('daily-mode');renderDailyBanner();clearInterval(dailyBannerTimer);dailyBannerTimer=setInterval(renderDailyBanner,60000);
  let signedIn=false;try{signedIn=!!(await lumenSupabase?.auth?.getSession?.())?.data?.session?.user}catch{}
  let board=null,blocked=null;
@@ -2890,7 +2924,7 @@ function handleLearningTap(event){
  if(document.querySelector('#mapModal:not([hidden]),#rulesModal:not([hidden]),#feedbackModal:not([hidden]),#tutorialOverlay:not([hidden]),#badgeRulesModal:not([hidden])'))return;
  // Learning restrictions apply to gameplay, never to account dialogs or other controls
  // (#711: the full-screen signed-out and account-switch layers sit above the board).
- if(target.closest("#installOptin,#accountOptin,#signedOutScreen,#accountSwitchHold,#authLinkResult,#passwordRecovery,#pwaWelcome,#mandatoryNickname,#erasedAccountNotice,#mobileAuthPopover,#mobileAccount,#lumenShareDialog,#skyRevealShareResult,#dailyIntro,#dailyResultModal,#friendsModal,#friendPickerModal,#new,#tutorialHelp,#attemptPause,#attemptMask,#feedbackBtn,#learningCoachNext,#learningSkip"))return;
+ if(target.closest("#installOptin,#accountOptin,#signedOutScreen,#accountSwitchHold,#authLinkResult,#passwordRecovery,#pwaWelcome,#mandatoryNickname,#erasedAccountNotice,#mobileAuthPopover,#mobileAccount,#lumenShareDialog,#skyRevealShareResult,#dailyIntro,#dailyResultModal,#dailyWeekModal,#friendsModal,#friendPickerModal,#new,#tutorialHelp,#attemptPause,#attemptMask,#feedbackBtn,#learningCoachNext,#learningSkip"))return;
  if(target.closest("#board .cell"))return;
  if(target.closest('#openSky')&&lumenUser&&!qaActive)void openPlayReviewMapFromLearning();
  event.preventDefault();event.stopImmediatePropagation();
