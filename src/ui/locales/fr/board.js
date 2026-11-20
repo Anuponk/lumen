@@ -1,4 +1,7 @@
 export default Object.freeze({
+  'board.language': "Langue",
+  'board.languageAuto': "Automatique",
+  'board.languageUnavailable': "Langue indisponible · français utilisé",
   'board.reset': "Réinitialiser la grille",
   'board.undo': "Annuler",
   'board.resetConfirm': "Réinitialiser la grille ? Tes placements seront effacés, mais le chrono, les aides et les erreurs resteront comptabilisés.",

@@ -109,10 +109,16 @@ import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 import {createTranslator} from './i18n.js';
 import {learningCopy,learningIntro,lessonText} from './learning-copy.js';
 
-export function startGameScreen({t=createTranslator().t}={}){
-for(const node of document.querySelectorAll("[data-game-text]"))node.textContent=t(node.dataset.gameText);
-for(const node of document.querySelectorAll("[data-game-label]"))node.setAttribute("aria-label",t(node.dataset.gameLabel));
-for(const node of document.querySelectorAll("[data-game-title]"))node.title=t(node.dataset.gameTitle);
+export function startGameScreen({localePreference,t:initialTranslation=localePreference?.translator().t??createTranslator().t}={}){
+let translate=initialTranslation;
+const t=(key,params)=>translate(key,params);
+function translateGameCopy(){
+ if(localePreference)document.documentElement.lang=localePreference.locale;
+ for(const node of document.querySelectorAll("[data-game-text]"))node.textContent=t(node.dataset.gameText);
+ for(const node of document.querySelectorAll("[data-game-label]"))node.setAttribute("aria-label",t(node.dataset.gameLabel));
+ for(const node of document.querySelectorAll("[data-game-title]"))node.title=t(node.dataset.gameTitle);
+}
+translateGameCopy();
 // #748: the presentation page links to /?install=1. Read once and removed from the URL
 // before anything else reads it, so the first-visit welcome still plays.
 const lumenInstallRequested=consumeInstallRequest(window);
@@ -1716,6 +1722,32 @@ function setupQaMode(){
    const url=new URL(location.href);url.searchParams.delete("qa");location.href=url.pathname+url.search+url.hash;
  };
 }
+function setupGameLocaleSetting(){
+ if(!localePreference)return;
+ const select=document.getElementById("gameLocaleMode");
+ for(const {code,nativeName} of localePreference.options){
+  const option=document.createElement("option");
+  option.value=code;option.lang=code;option.textContent=nativeName;select.append(option);
+ }
+ select.value=localePreference.mode;
+ if(select.selectedIndex<0)select.value="";
+ document.getElementById("gameLocaleSetting").hidden=false;
+ select.addEventListener("change",()=>{
+  if(!localePreference.setMode(select.value))return;
+  translate=localePreference.translator().t;
+  translateGameCopy();
+  LEARNING_INTRO=learningIntro(t);
+  updateHintButton();updateVerifyButton();
+  if(!state)return;
+  updateAttemptUI();updateLiveReward();
+  for(const label of board.querySelectorAll(".learning-territory-number"))
+   label.setAttribute("aria-label",t("board.territory",{number:Number(label.textContent)}));
+  if(!document.getElementById("scriptedLearn").hidden){
+   coachLayout=null;
+   renderLearningCopy(scriptedLearningActive()?currentLearningStep():null);
+  }
+ });
+}
 function setupRulesHelp(){
  const open=document.getElementById("tutorialHelp"),modal=document.getElementById("rulesModal"),close=document.getElementById("closeRulesModal"),replay=document.getElementById("replayLearning");
  if(!open||!modal||!close)return;
@@ -2666,7 +2698,7 @@ function fixVerificationErrors(){
  document.getElementById("verifyCard").hidden=true;document.getElementById("verify").focus({preventScroll:true});board.removeAttribute("aria-disabled");msg.textContent="Les choix incorrects ont été effacés.";render();
 }
 let learningStage="place",learningTip=null,learningTipSeen=new Set(),learningIntroStep=0;
-const LEARNING_INTRO=learningIntro(t);
+let LEARNING_INTRO=learningIntro(t);
 const onboardingPreferences=createOnboardingPreferences({storage:localStorage,getOwner:()=>lumenUser?.id,prefix:qaKey('lumenOnboardingV1')});
 let onboardingPreferenceOwner=null;
 function refreshOnboardingPreferenceOwner(){
@@ -2690,7 +2722,7 @@ function maybeShowContextualLesson(){
  if(socialChallenge||replayMode||learningReplayActive())return;
  if(autoMarkingLessonRequired()){
   if(!document.getElementById('autoCross').checked){finishAutoMarkingLesson();return}
-  learningTip=lessonText(t,'manual');
+  learningTip='manual';
   document.getElementById('autoCrossWrap').classList.add('onboarding-control-focus');
   document.getElementById('autoCross').setAttribute('aria-describedby','scriptedLearnCopy');
   document.getElementById('board').setAttribute('aria-disabled','true');
@@ -2703,7 +2735,7 @@ function maybeShowContextualLesson(){
  };
  const lesson=lessons[activeQuestOrdinal()];
  if(lesson&&!onboardingPreferences.seen(lesson[0])){
-  onboardingPreferences.markSeen(lesson[0]);learningTip=lessonText(t,lesson[1]);updateScriptedLearning();
+  onboardingPreferences.markSeen(lesson[0]);learningTip=lesson[1];updateScriptedLearning();
  }
 }
 function activePerformanceEligibility(){return performanceEligibility(activeQuestOrdinal()-1,Math.max(canonicalScopeProgress(lumenProgress).completed,activeQuestOrdinal()))}
@@ -2835,7 +2867,7 @@ window.addEventListener("resize",()=>requestAnimationFrame(fitGameBoard));
 function showLearningTip(id,lesson){
  if(socialChallenge||!((activeQuestOrdinal()===1&&learningQuestActive())||(activeQuestOrdinal()===2&&!replayMode))||learningTipSeen.has(id)||onboardingPreferences.seen('context:'+id))return;
  onboardingPreferences.markSeen('context:'+id);
- learningTipSeen.add(id);learningTip=lessonText(t,lesson);updateScriptedLearning();
+ learningTipSeen.add(id);learningTip=lesson;updateScriptedLearning();
 }
 function updateScriptedLearning(){
  const card=document.getElementById("scriptedLearn"),wrap=document.getElementById("learningBoardWrap");if(!card)return;
@@ -2864,15 +2896,21 @@ function updateScriptedLearning(){
  const blocked=celebrated||!!guidedPending||!!verifyPending;
  card.hidden=blocked||(!guided&&!learningTip);
  card.classList.toggle("learning-intro-panel",guided&&step?.phase==="intro");
- const dismiss=document.getElementById("learningCoachDismiss");
- dismiss.hidden=guided||autoMarkingLessonRequired();dismiss.setAttribute("aria-label",t('learning.dismiss'));
+ document.getElementById("learningCoachDismiss").hidden=guided||autoMarkingLessonRequired();
  const next=document.getElementById("learningCoachNext");
- if(next){next.hidden=!(guided&&step?.phase==="intro");next.textContent=step?.introStep===LEARNING_INTRO.length-1?t('learning.play'):t('learning.next')}
- if(skip){skip.hidden=!((activeQuestOrdinal()===1&&!skipFirstGridTutorial&&!socialChallenge)||(learningReplayActive()&&tutorialCompletedProof()));skip.textContent=activeQuestOrdinal()===1&&!skipFirstGridTutorial?t('learning.skip'):t('learning.exit');}
+ if(next)next.hidden=!(guided&&step?.phase==="intro");
+ if(skip)skip.hidden=!((activeQuestOrdinal()===1&&!skipFirstGridTutorial&&!socialChallenge)||(learningReplayActive()&&tutorialCompletedProof()));
  if(activeQuestOrdinal()<=QUEST_MILESTONES.skyTourAfter&&!socialChallenge)for(const id of ["undo","hint","verify"])document.getElementById(id).disabled=guided;
 
  if(card.hidden){clearCoachAboveBoard();return}
- const text=step?.phase==="intro"?LEARNING_INTRO[step.introStep]:step?learningCopy(step,state,matchMedia("(pointer:coarse)").matches,t):learningTip;
+ renderLearningCopy(step);
+}
+function renderLearningCopy(step){
+ document.getElementById("learningCoachDismiss").setAttribute("aria-label",t('learning.dismiss'));
+ const next=document.getElementById("learningCoachNext"),skip=document.getElementById("learningSkip");
+ if(next)next.textContent=step?.introStep===LEARNING_INTRO.length-1?t('learning.play'):t('learning.next');
+ if(skip)skip.textContent=activeQuestOrdinal()===1&&!skipFirstGridTutorial?t('learning.skip'):t('learning.exit');
+ const text=step?.phase==="intro"?LEARNING_INTRO[step.introStep]:step?learningCopy(step,state,matchMedia("(pointer:coarse)").matches,t):lessonText(t,learningTip);
  document.getElementById("scriptedLearnTitle").textContent=text.title;
  document.getElementById("scriptedLearnCopy").textContent=text.copy;
  requestAnimationFrame(positionLearningCoach);
@@ -4071,7 +4109,9 @@ function appendCellMark(cell,shown){
  if(shown!==1&&shown!==2&&shown!==3)return;
  const mark=document.createElement("span");
  mark.className=shown===2?"lumen-orb":"lumen-dim";
- mark.setAttribute("aria-label",t(shown===2?"board.placed":"board.excluded"));
+ const key=shown===2?"board.placed":"board.excluded";
+ mark.dataset.gameLabel=key;
+ mark.setAttribute("aria-label",t(key));
  cell.append(mark);
 }
 function paintCell(r,c){
@@ -5625,7 +5665,7 @@ document.getElementById("learningCoachNext").onclick=advanceLearningIntro;
 document.addEventListener("click",handleLearningTap,true);
 // Start after campaign data are initialized. A deep-linked social challenge resolves its
 // server snapshot before the board is created so campaign progression is never mutated.
-setupMobileAuth();setupTutorial();setupOutsideDefaults();setupQaMode();
+setupMobileAuth();setupTutorial();setupOutsideDefaults();setupQaMode();setupGameLocaleSetting();
 async function bootGame(){
  if(!(await bootstrapDailyChallenge()))await bootstrapSocialChallenge();restoreCanonicalCampaignAttempt();init();void refreshDailyEntry();void retryPendingDaily();refreshJourney();
  try{

@@ -51,9 +51,8 @@ async function freshGuest(width, height, locale = 'fr') {
   if (isEnglish) {
     await evaluate(`(async()=>{
       const {startGameScreen}=await import('/src/ui/game-screen.js');
-      const {createTranslator}=await import('/src/ui/i18n.js');
-      document.documentElement.lang='en';
-      startGameScreen({t:createTranslator({locale:'en'}).t});
+      const {createLocalePreference}=await import('/src/ui/i18n.js');
+      startGameScreen({localePreference:createLocalePreference({storage:localStorage,languages:['de-DE','en-GB']})});
     })()`, true);
     await until("!document.getElementById('pwaWelcome').hidden");
     assert.equal(await evaluate("document.activeElement.textContent"), 'I’ve played before — Find my progress');
@@ -126,6 +125,43 @@ try {
     }
     results.push({ width, height, locale, steps: steps.length, covered: 0, board: steps[0].boardWidth, coach: steps[0].coachHeight, gapBelow: steps[0].gapBelow });
   }
+  // #754: change language with an active lesson, using the actual rules control.
+  await freshGuest(360, 640, 'en');
+  for (let step = 0; step < 6; step++) await evaluate("document.getElementById('learningCoachNext').click()");
+  await until("document.getElementById('board').dataset.learningStage==='place'");
+  await evaluate("document.querySelector('#board .coach-target').click()");
+  await until("document.querySelector('#board .coach-target .lumen-dim')?.getAttribute('aria-label')==='Excluded cell'");
+  const active = await evaluate(snapshot);
+  assert.equal(JSON.parse(JSON.parse(active).attempt).state, 'RUNNING');
+  const epoch = await evaluate('performance.timeOrigin');
+  await evaluate("window.i18nBoardCell=document.querySelector('#board .coach-target');document.getElementById('tutorialHelp').click()");
+  await until("!document.getElementById('rulesModal').hidden");
+  const selectMode = mode => evaluate("(() => {const select=document.getElementById('gameLocaleMode');select.value="+JSON.stringify(mode)+";select.dispatchEvent(new Event('change',{bubbles:true}));})()");
+  assert.equal(await evaluate("document.getElementById('gameLocaleMode').value"), 'auto');
+  await send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
+  await selectMode('fr');
+  assert.equal(await evaluate("document.getElementById('rulesModalTitle').textContent"), 'Aide LUMEN');
+  assert.equal(await evaluate("document.getElementById('undo').textContent"), 'Annuler');
+  assert.equal(await evaluate("i18nBoardCell.querySelector('.lumen-dim').getAttribute('aria-label')"), 'Emplacement assombri');
+  assert.equal(await evaluate("localStorage.getItem('lumen.locale')"), 'fr');
+  assert.equal(await evaluate("document.documentElement.lang"), 'fr');
+  assert.equal(await evaluate("document.getElementById('scriptedLearnTitle').textContent"), 'Encore une fois…');
+  await selectMode('auto');
+  assert.equal(await evaluate("document.getElementById('rulesModalTitle').textContent"), 'LUMEN help');
+  assert.equal(await evaluate("document.documentElement.lang"), 'en');
+  assert.equal(await evaluate("localStorage.getItem('lumen.locale')"), 'auto');
+  assert.equal(await evaluate("i18nBoardCell===document.querySelector('#board .coach-target')"), true);
+  assert.equal(await evaluate(snapshot), active);
+  assert.equal(await evaluate('performance.timeOrigin'), epoch);
+  assert.equal(await evaluate("document.getElementById('scriptedLearnTitle').textContent"), 'One more tap…');
+  await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
+  await evaluate("document.getElementById('closeRulesModal').click()");
+  await until("document.getElementById('rulesModal').hidden");
+  await evaluate("document.getElementById('tutorialHelp').click()");
+  await selectMode('fr');
+  await evaluate("document.getElementById('replayIntroduction').click()");
+  await until("!!document.querySelector('.first-welcome:not([hidden]) .intro-caption:not([hidden])')");
+  assert.equal(await evaluate("document.querySelector('.first-welcome').getAttribute('aria-label')"), 'Lumen — Le réveil du ciel');
   // #688: opening the sign-up screen during a learning step.
   await freshGuest(390, 844);
   const title = await evaluate(`document.getElementById('scriptedLearnTitle').textContent.trim()`);
