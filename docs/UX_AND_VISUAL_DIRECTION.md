@@ -349,6 +349,14 @@ Do not introduce parallel `MobileX` / `DesktopX` gameplay components. If a compa
 
 ## Social challenge UX
 
+« Amis et défis » (#35) is one optional entry next to « Mes défis », never on the
+game screen and never inside a grid. Guests see why friends need an account and
+keep playing link challenges. Friends are added by exact nickname; « Envoyer à un
+ami » appears in the challenge share dialog and on each « Mes défis » row. Statuses
+read « En attente / Commencé / Terminé / Abandonné ». The four intents stay
+distinct: Partager (show an achievement), Défier (play this grid), Inviter
+(discover Lumen), Ajouter un ami (persistent relation).
+
 Keep the challenge loop celestial and performance-led, not leaderboard-heavy. Before play, show who sent the challenge and the one-attempt rule, but hide the sender's time/badges. After play, reveal both performances side by side and describe differences factually.
 
 A remarkable Mastery on a qualifying run deserves stronger visual emphasis around “Défier”, while “Quête suivante” remains the primary campaign continuation. Since #889 a qualifying replay may challenge; its wording never claims a first try (« Maîtrise en rejeu qualifiant ») and the reference shows « Rejeu qualifiant ».

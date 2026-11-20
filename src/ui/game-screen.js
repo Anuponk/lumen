@@ -60,6 +60,7 @@ import {LUMEN_META,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATI
 import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt,badgeCooldownRemaining,badgeCooldownLabel} from "../campaign/performance.js";
 import {challengeAttemptClosed,challengeEligibility,challengeResumePlan,challengeSnapshot,compareChallenge,createChallengeClient,normalizeChallengeName,validChallengeName} from "../campaign/social-challenge.js";
 import {challengeQuestLabel,resolveChallengeQuest} from "../campaign/canonical-challenges.js";
+import {createFriendsClient,friendErrorMessage,friendsOnly,renderFriendRows,renderReceivedChallenges,renderSentChallenges,validNickname} from "../campaign/social-friends.js";
 import {canonicalDisplayForLegacy,canonicalScopeProgress,canonicalCampaignComplete,canonicalQuestMilestone,canonicalQuestList,canonicalAdventureSummary,canonicalQuestByOrdinal,canonicalQuestById,canonicalQuestForLegacy,canonicalNextUnsolved,canonicalCampaignQuestDecision,canonicalInsertedQuestDecision,unlockedAdventureProgress} from "../campaign/canonical-quests.js";
 import {acknowledgeCanonicalVictory,questIsCompleted} from "../persistence/canonical-progress.js";
 import {loadCommittedCanonicalAttempt} from '../persistence/canonical-command.js';
@@ -2104,10 +2105,11 @@ async function createSocialChallengeFromSuccess(){
   const name=await askChallengeName();if(!name||lastChallengeOffer!==offer)return;
   if(!offer.url){
    const created=await challengeClient.create(offer.snapshot),id=created?.challenge_id;if(!id)throw new Error("missing_challenge_id");
-   offer.url=socialChallengeUrl(id);trackLumenEvent("challenge_created",offer.snapshot.questId,{remarkable:!!offer.eligibility.remarkable,run_kind:offer.snapshot.firstPlay===false?'replay':'first',stable_quest_id:offer.snapshot.stableQuestId??null,quest_ordinal:offer.snapshot.questOrdinal??null,grid_revision:offer.snapshot.gridRevision??0});
+   offer.url=socialChallengeUrl(id);offer.challengeId=id;trackLumenEvent("challenge_created",offer.snapshot.questId,{remarkable:!!offer.eligibility.remarkable,run_kind:offer.snapshot.firstPlay===false?'replay':'first',stable_quest_id:offer.snapshot.stableQuestId??null,quest_ordinal:offer.snapshot.questOrdinal??null,grid_revision:offer.snapshot.gridRevision??0});
   }
   if(lastChallengeOffer!==offer)return;
-  pendingChallengeUrl=offer.url;
+  pendingChallengeUrl=offer.url;pendingChallengeId=offer.challengeId||null;
+  const sendFriend=document.getElementById("challengeSendFriend");if(sendFriend)sendFriend.hidden=!lumenUser||!pendingChallengeId;
   const copy=document.getElementById("challengeShareCopy");const firstPlay=offer.snapshot.firstPlay!==false;copy.textContent=offer.eligibility.remarkable?(firstPlay?"✦ Maîtrise du premier coup. À ton ami de relever le défi !":"✦ Maîtrise sur un rejeu qualifiant. À ton ami de relever le défi !"):(firstPlay?"Ta première performance est figée. À ton ami de faire mieux en une tentative.":"Ta performance de rejeu qualifiant est figée. À ton ami de faire mieux en une tentative.");
   const modal=document.getElementById("challengeShareModal");modal.hidden=false;
   const qr=document.getElementById("challengeQr");if(qr){qr.replaceChildren();if(typeof window.QRCode==="function")new window.QRCode(qr,{text:pendingChallengeUrl,width:220,height:220,correctLevel:window.QRCode.CorrectLevel.M});else qr.textContent="QR code indisponible : utilise Copier le lien.";}
@@ -2151,8 +2153,9 @@ function celebrateSocialChallengeSuccess(){
 async function loadMyChallenges(){
  try{
   const rows=await challengeClient.sent(),list=document.getElementById("myChallengesList"),badge=document.getElementById("challengeUnreadBadge");let unread=0;
-  list.innerHTML=(rows||[]).length?(rows||[]).map(row=>{unread+=Number(row.unread_count)||0;const parts=Array.isArray(row.participants)?row.participants:[];const source={duration_seconds:row.source_duration_seconds,autonomy:row.source_autonomy,mastery:row.source_mastery};return '<div class="challenge-list-item" data-challenge-id="'+row.challenge_id+'"><div class="challenge-list-head"><strong>'+escapeHtml(challengeQuestLabel(row))+'</strong><span>'+parts.length+' participant'+(parts.length>1?"s":"")+'</span></div><small>Ta référence · '+formatDuration(row.source_duration_seconds)+(row.source_first_play===false?' · Rejeu qualifiant':'')+(row.source_mastery?" · ✦ Maîtrise":row.source_autonomy?" · 🧠 Autonomie":"")+'</small>'+parts.map(p=>{const cmp=compareChallenge(source,{status:p.status,duration_seconds:p.duration_seconds,autonomy:p.autonomy,mastery:p.mastery});const ownerOutcome=cmp?.winner==="source"?"🏆 Victoire":cmp?.winner==="participant"?"Défaite":"Égalité";return '<div class="challenge-participant"><span>'+escapeHtml(p.name)+'</span><span><strong>'+ownerOutcome+'</strong> · '+(p.status==="abandoned"?"abandon":formatDuration(p.duration_seconds)+(p.mastery?" · ✦":p.autonomy?" · 🧠":" · aide"))+'</span></div>'}).join("")+'</div>'}).join(""):'<p>Aucun défi envoyé pour le moment.</p>';
+  list.innerHTML=(rows||[]).length?(rows||[]).map(row=>{unread+=Number(row.unread_count)||0;const parts=Array.isArray(row.participants)?row.participants:[];const source={duration_seconds:row.source_duration_seconds,autonomy:row.source_autonomy,mastery:row.source_mastery};return '<div class="challenge-list-item" data-challenge-id="'+row.challenge_id+'"><div class="challenge-list-head"><strong>'+escapeHtml(challengeQuestLabel(row))+'</strong><span>'+parts.length+' participant'+(parts.length>1?"s":"")+'</span></div><small>Ta référence · '+formatDuration(row.source_duration_seconds)+(row.source_first_play===false?' · Rejeu qualifiant':'')+(row.source_mastery?" · ✦ Maîtrise":row.source_autonomy?" · 🧠 Autonomie":"")+'</small>'+parts.map(p=>{const cmp=compareChallenge(source,{status:p.status,duration_seconds:p.duration_seconds,autonomy:p.autonomy,mastery:p.mastery});const ownerOutcome=cmp?.winner==="source"?"🏆 Victoire":cmp?.winner==="participant"?"Défaite":"Égalité";return '<div class="challenge-participant"><span>'+escapeHtml(p.name)+'</span><span><strong>'+ownerOutcome+'</strong> · '+(p.status==="abandoned"?"abandon":formatDuration(p.duration_seconds)+(p.mastery?" · ✦":p.autonomy?" · 🧠":" · aide"))+'</span></div>'}).join("")+(lumenUser?'<button type="button" class="challenge-send-friend" data-send-friend="'+escapeHtml(row.challenge_id)+'">Envoyer à un ami</button>':'')+'</div>'}).join(""):'<p>Aucun défi envoyé pour le moment.</p>';
   if(badge){badge.hidden=!unread;badge.textContent=unread||""}
+  void refreshFriendsBadge();
   return rows||[];
  }catch(e){console.warn("challenge inbox",e);return []}
 }
@@ -2188,7 +2191,71 @@ async function bootstrapSocialChallenge(){
 const COLORS=["#efb37e","#91b5ed","#b4a0db","#a9d692","#ff8267","#ddd9d2","#e5ef83","#bdb6a0","#a9d7d3"];
 const TERRITORY_COLORS=["#46c7e8","#6d8fe8","#8b70d7","#49b49b","#d38a54","#b55f86","#67a6bf","#7e9c69","#a8875b"];
 let n=6,puz,state,hist=[],start,timer,last={},hi=null,proofs={},hintStage=0,hintFocus=null,celebrated=false,hintUsesThisGame=0,mistakesThisGame=0,verifyUsesThisGame=0,verifyPending=null,autoUsedThisGame=false,replayMode=false,levelIndex=Math.min(sequentialSolvedCount,campaignQuestCount()-1),learningReplayReturn=null,endgamePending=false,adventurePending=null;
-let socialChallenge=null,lastChallengeOffer=null,pendingChallengeUrl="",challengeResumeElapsedMs=0;
+let socialChallenge=null,lastChallengeOffer=null,pendingChallengeUrl="",pendingChallengeId=null,challengeResumeElapsedMs=0;
+
+// #35 (EPIC #881 Lot 2): optional friends and direct challenges, accounts only.
+// Direct challenges reuse existing challenges (same engine, same #889 rule).
+const friendsClient=createFriendsClient(lumenSupabase);
+let friendsBadgeLoading=false;
+async function refreshFriendsBadge(){
+ const badge=document.getElementById("friendsBadge");if(!badge)return;
+ if(!lumenUser||friendsBadgeLoading){if(!lumenUser)badge.hidden=true;return}
+ friendsBadgeLoading=true;
+ try{const [list,inbox]=await Promise.all([friendsClient.list(),friendsClient.inbox()]);const count=list.filter(r=>r.state==='incoming').length+inbox.received.filter(r=>r.status==='pending').length;badge.hidden=!count;badge.textContent=count||""}
+ catch{badge.hidden=true}finally{friendsBadgeLoading=false}
+}
+async function refreshFriends(){
+ const guest=!lumenUser;
+ document.getElementById("friendsAccountRequired").hidden=!guest;document.getElementById("friendsBody").hidden=guest;
+ if(guest)return;
+ try{
+  const [list,inbox]=await Promise.all([friendsClient.list(),friendsClient.inbox()]);
+  document.getElementById("friendsList").innerHTML=renderFriendRows(list);
+  document.getElementById("friendChallengesReceived").innerHTML=renderReceivedChallenges(inbox.received,row=>challengeQuestLabel(row));
+  document.getElementById("friendChallengesSent").innerHTML=renderSentChallenges(inbox.sent,row=>challengeQuestLabel(row),formatDuration);
+ }catch(e){document.getElementById("friendStatus").textContent=friendErrorMessage(e)}
+ void refreshFriendsBadge();
+}
+function openFriends(){document.getElementById("friendStatus").textContent="";document.getElementById("friendsModal").hidden=false;void refreshFriends()}
+async function openFriendPicker(challengeId){
+ const modal=document.getElementById("friendPickerModal"),list=document.getElementById("friendPickerList"),status=document.getElementById("friendPickerStatus");
+ status.textContent="";list.innerHTML="";modal.hidden=false;modal.dataset.challengeId=challengeId;
+ try{
+  const friends=friendsOnly(await friendsClient.list());
+  list.innerHTML=friends.length?friends.map(f=>'<button type="button" data-pick-friend="'+escapeHtml(f.nickname)+'">'+escapeHtml(f.nickname)+'</button>').join(''):'<p class="social-note">Ajoute d’abord des amis dans « Amis et défis ».</p>';
+ }catch(e){status.textContent=friendErrorMessage(e)}
+}
+function setupFriends(){
+ const open=document.getElementById("openFriends");if(!open)return;
+ open.onclick=openFriends;
+ document.getElementById("friendsClose").onclick=()=>document.getElementById("friendsModal").hidden=true;
+ document.getElementById("friendsOpenMyChallenges").onclick=()=>{document.getElementById("friendsModal").hidden=true;openMyChallenges()};
+ document.getElementById("friendAddForm").onsubmit=async event=>{
+  event.preventDefault();const input=document.getElementById("friendNicknameInput"),status=document.getElementById("friendStatus"),nickname=input.value;
+  if(!validNickname(nickname)){status.textContent="Entre le pseudonyme exact (3 à 20 caractères).";return}
+  try{const state=await friendsClient.request(nickname);status.textContent=state==='friends'?"Vous êtes maintenant amis.":"Demande envoyée.";input.value="";void refreshFriends()}
+  catch(e){status.textContent=friendErrorMessage(e)}
+ };
+ document.getElementById("friendsModal").addEventListener("click",async event=>{
+  const friendAction=event.target.closest("[data-friend-action]"),challengeAction=event.target.closest("[data-challenge-action]");
+  if(friendAction){
+   const nickname=friendAction.closest("[data-nickname]")?.dataset.nickname,action=friendAction.dataset.friendAction,status=document.getElementById("friendStatus");
+   if(action==='remove'&&!confirm("Retirer "+nickname+" ?"))return;
+   try{if(action==='accept')await friendsClient.respond(nickname,true);else if(action==='decline')await friendsClient.respond(nickname,false);else await friendsClient.remove(nickname);status.textContent="";void refreshFriends()}
+   catch(e){status.textContent=friendErrorMessage(e)}
+  }
+  if(challengeAction){const id=challengeAction.closest("[data-challenge-id]")?.dataset.challengeId;if(id)location.href=socialChallengeUrl(id)}
+ });
+ document.getElementById("myChallengesList")?.addEventListener("click",event=>{const send=event.target.closest("[data-send-friend]");if(send)openFriendPicker(send.dataset.sendFriend)});
+ const sendFriend=document.getElementById("challengeSendFriend");if(sendFriend)sendFriend.onclick=()=>{if(pendingChallengeId)openFriendPicker(pendingChallengeId)};
+ document.getElementById("friendPickerClose").onclick=()=>document.getElementById("friendPickerModal").hidden=true;
+ document.getElementById("friendPickerList").addEventListener("click",async event=>{
+  const pick=event.target.closest("[data-pick-friend]");if(!pick)return;
+  const modal=document.getElementById("friendPickerModal"),status=document.getElementById("friendPickerStatus");
+  try{const result=await friendsClient.sendChallenge(modal.dataset.challengeId,pick.dataset.pickFriend);status.textContent=result==='already_sent'?"Déjà envoyé à "+pick.dataset.pickFriend+".":"Défi envoyé à "+pick.dataset.pickFriend+" !";trackLumenEvent("challenge_sent_to_friend",null,{})}
+  catch(e){status.textContent=friendErrorMessage(e)}
+ });
+}
 let penaltySurface=null;
 function clearPenaltyIndicator(){const label=document.getElementById('timePenalty');if(label){clearTimeout(label.dismiss);label.getAnimations?.().forEach(a=>a.cancel());label.hidden=true}}
 function showPenaltyIndicator({kind,delta}){
@@ -2680,7 +2747,7 @@ function handleLearningTap(event){
  if(document.querySelector('#mapModal:not([hidden]),#rulesModal:not([hidden]),#feedbackModal:not([hidden]),#tutorialOverlay:not([hidden]),#badgeRulesModal:not([hidden])'))return;
  // Learning restrictions apply to gameplay, never to account dialogs or other controls
  // (#711: the full-screen signed-out and account-switch layers sit above the board).
- if(target.closest("#installOptin,#accountOptin,#signedOutScreen,#accountSwitchHold,#authLinkResult,#passwordRecovery,#pwaWelcome,#mandatoryNickname,#erasedAccountNotice,#mobileAuthPopover,#mobileAccount,#lumenShareDialog,#skyRevealShareResult,#new,#tutorialHelp,#attemptPause,#attemptMask,#feedbackBtn,#learningCoachNext,#learningSkip"))return;
+ if(target.closest("#installOptin,#accountOptin,#signedOutScreen,#accountSwitchHold,#authLinkResult,#passwordRecovery,#pwaWelcome,#mandatoryNickname,#erasedAccountNotice,#mobileAuthPopover,#mobileAccount,#lumenShareDialog,#skyRevealShareResult,#friendsModal,#friendPickerModal,#new,#tutorialHelp,#attemptPause,#attemptMask,#feedbackBtn,#learningCoachNext,#learningSkip"))return;
  if(target.closest("#board .cell"))return;
  if(target.closest('#openSky')&&lumenUser&&!qaActive)void openPlayReviewMapFromLearning();
  event.preventDefault();event.stopImmediatePropagation();
@@ -5506,6 +5573,7 @@ const authLinkResultAction=document.getElementById("authLinkResultAction");if(au
 const installEnable=document.getElementById("installEnable"),installLater=document.getElementById("installLater");if(installEnable)installEnable.onclick=installLumen;{const createFirst=document.getElementById("installCreateAccount");if(createFirst)createFirst.onclick=installCreateAccountFirst}if(installLater)installLater.onclick=dismissInstallLater;if(lumenInstallRequested)setTimeout(()=>void offerRequestedInstall(),1200);const successShare=document.getElementById("successShare");if(successShare)successShare.onclick=createSocialChallengeFromSuccess;
 const nativeChallengeShare=document.getElementById("challengeNativeShare"),copyChallengeLink=document.getElementById("challengeCopyLink"),closeChallengeShare=document.getElementById("challengeShareClose");if(nativeChallengeShare)nativeChallengeShare.onclick=sharePendingChallenge;if(copyChallengeLink)copyChallengeLink.onclick=copyPendingChallenge;if(closeChallengeShare)closeChallengeShare.onclick=()=>document.getElementById("challengeShareModal").hidden=true;
 const openChallenges=document.getElementById("openMyChallenges"),closeChallenges=document.getElementById("myChallengesClose");if(openChallenges)openChallenges.onclick=()=>openMyChallenges();if(closeChallenges)closeChallenges.onclick=()=>document.getElementById("myChallengesModal").hidden=true;
+setupFriends();
 const challengeHome=document.getElementById("challengeResultHome"),challengeReshare=document.getElementById("challengeResultReshare");if(challengeHome)challengeHome.onclick=()=>{location.href=location.pathname};if(challengeReshare)challengeReshare.onclick=()=>{document.getElementById("challengeResultModal").hidden=true;createSocialChallengeFromSuccess()};
 const pushEnable=document.getElementById("pushEnable"),pushLater=document.getElementById("pushLater");
 if(pushEnable)pushEnable.onclick=enableLumenPush;
