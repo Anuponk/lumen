@@ -90,7 +90,8 @@ achievement is removed. Authenticated recovery resumes the retained solved board
 
 The approved convergence contract extends the existing numeric-quest rules to
 all quests: fifteen-minute badge qualification cooldown, the same first-win,
-autonomy/bonus and daily activity rules, and first-play social challenges.
+autonomy/bonus and daily activity rules, and social challenges from qualifying
+runs (#889, same cooldown as badges).
 Existing acquired rewards and Mastery remain preserved without retroactive
 credits. Persistence formats and historical URLs remain compatibility adapters.
 The owner authorised the server migrations on 23 October 2026; their schema and

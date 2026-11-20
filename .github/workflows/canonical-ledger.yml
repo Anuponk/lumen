@@ -188,6 +188,9 @@ jobs:
             -f /tmp/lumen-mixed-grid-activation.sql \
             -f scripts/fixtures/mixed-grid-revision.sql \
             -f /tmp/lumen-mixed-quest-parity.sql \
+            -f scripts/fixtures/challenge-rpc-matrix.sql \
+            -f supabase/migrations/20261121090000_qualifying_challenges_889_888.sql \
+            -f scripts/fixtures/challenge-qualifying-889.sql \
             -f scripts/fixtures/challenge-rpc-matrix.sql
 
       - name: Verify Lumen-only erasure, private access and concurrent stale writers

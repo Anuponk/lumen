@@ -1867,7 +1867,9 @@ Never claim “all tests pass” if only static/source inspection was performed.
 Run `node scripts/social-challenge-tests.mjs` for the pure challenge contract. It must remain in the CI static/data gate.
 
 Any change to challenge behavior must additionally verify:
-- first play can challenge; replay cannot;
+- any qualifying run (first win or replay outside the 15-minute cooldown) can challenge; a run inside the cooldown cannot and explains the wait (#889);
+- the reference states « Première résolution » / « Rejeu qualifiant »; a replay is never sent as `p_first_play=true`;
+- a started challenge resumes with its own time in the same browser, at the server-measured elapsed time elsewhere, or is refused without proof (#888);
 - first play + Mastery is the only “remarkable performance” condition;
 - recipient prior campaign exposure does not block participation;
 - source performance is hidden until terminal result;

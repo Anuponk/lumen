@@ -30,14 +30,17 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
   const copy={...attempt,board:cloneBoard(attempt.board),activeDuration:activeMs(),updatedAt:now()};
   storage?.setItem?.(STORAGE_KEY,JSON.stringify(copy));
  }
- function create({questId,mode="campaign",qualifying=false,challengeId=null,board=[],gridRevision=0,questResetRevision=0,persistBeforeStart=true}){
+ function create({questId,mode="campaign",qualifying=false,challengeId=null,board=[],gridRevision=0,questResetRevision=0,persistBeforeStart=true,activeDuration=0}){
   if(mode==='challenge')questResetRevision=0;
   persistReady=persistBeforeStart;
   // #851: one run identity per attempt; a grid reset never opens a new run.
-  attempt={attemptId:(questResetRevision?'qr'+questResetRevision+'.':'')+(gridRevision>1?'gv'+gridRevision+'.':'')+newId(),questId,mode,rankingVersion:1,...(gridRevision?{gridRevision}:{}),...(questResetRevision?{questResetRevision}:{}),...(mode==='challenge'?{}:{runSegment:0}),state:ATTEMPT_STATES.READY,startedAt:null,activeDuration:0,lastActiveAt:null,assistanceUsed:false,mistakeCommitted:false,wrongGuardianPending:null,resetCount:0,qualifying:!!qualifying,challengeId,board:cloneBoard(board),createdAt:now(),updatedAt:now()};activeSince=null;emit();return snapshot()
+  attempt={attemptId:(questResetRevision?'qr'+questResetRevision+'.':'')+(gridRevision>1?'gv'+gridRevision+'.':'')+newId(),questId,mode,rankingVersion:1,...(gridRevision?{gridRevision}:{}),...(questResetRevision?{questResetRevision}:{}),...(mode==='challenge'?{}:{runSegment:0}),state:ATTEMPT_STATES.READY,startedAt:null,activeDuration:mode==='challenge'?Math.max(0,Number(activeDuration)||0):0,lastActiveAt:null,assistanceUsed:false,mistakeCommitted:false,wrongGuardianPending:null,resetCount:0,qualifying:!!qualifying,challengeId,board:cloneBoard(board),createdAt:now(),updatedAt:now()};activeSince=null;emit();return snapshot()
  }
- function restore({questId,mode,gridRevision,questResetRevision}={}){
+ // #888: a challenge attempt belongs to exactly one challenge; another one on the
+ // same quest never inherits its board or clock.
+ function restore({questId,mode,gridRevision,questResetRevision,challengeId}={}){
   const saved=safeParse(storage?.getItem?.(STORAGE_KEY));if(!saved||!saved.attemptId)return null;
+  if(challengeId!==undefined&&saved.mode==='challenge'&&saved.challengeId!==challengeId)return null;
   if(questId!=null&&saved.questId!==questId)return null;if(mode&&saved.mode!==mode)return null;
   if((gridRevision!==undefined&&(saved.gridRevision??0)!==gridRevision)||(saved.mode!=='challenge'&&questResetRevision!==undefined&&(saved.questResetRevision??0)!==questResetRevision)){
    // Preserve the exact old attempt before a new grid can overwrite this slot.
@@ -99,6 +102,7 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
  function setWrongGuardianPending(cellKey){if(!attempt||attempt.mistakeCommitted)return;attempt.wrongGuardianPending=cellKey||null;emit()}
  function clearWrongGuardianPending(cellKey=null){if(!attempt||!attempt.wrongGuardianPending)return;if(cellKey&&attempt.wrongGuardianPending!==cellKey)return;attempt.wrongGuardianPending=null;emit()}
  function commitMistake(){if(!attempt)return;if(attempt.mistakeCommitted&&attempt.wrongGuardianPending===null)return;attempt.mistakeCommitted=true;attempt.wrongGuardianPending=null;emit()}
+ function peek(){return safeParse(storage?.getItem?.(STORAGE_KEY))}
  function clear(){attempt=null;activeSince=null;storage?.removeItem?.(STORAGE_KEY);onChange(null)}
- return {create,restore,requalify,start,pause,resume,complete,abandon,reset,updateBoard,markAssistance,recordAssistanceUse,setWrongGuardianPending,clearWrongGuardianPending,commitMistake,clear,snapshot,activeMs,officialSeconds,states:ATTEMPT_STATES,storageKey:STORAGE_KEY};
+ return {create,restore,peek,requalify,start,pause,resume,complete,abandon,reset,updateBoard,markAssistance,recordAssistanceUse,setWrongGuardianPending,clearWrongGuardianPending,commitMistake,clear,snapshot,activeMs,officialSeconds,states:ATTEMPT_STATES,storageKey:STORAGE_KEY};
 }

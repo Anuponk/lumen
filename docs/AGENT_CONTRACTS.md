@@ -70,8 +70,9 @@ Browser automation exists under `scripts/`, alongside strict catalogue and diffe
 When a product rule, reward, progression rule, data contract, UX invariant, analytics contract or release procedure changes, update the matching document in the same PR/commit. Durable decisions made in chat must be transferred to the repository; chat history is not the project source of truth. Prefer enriching an existing document over creating a competing source. If code and docs disagree, investigate rather than silently choosing one.
 
 ## Social challenge invariants
-- A social challenge may be created only from the sender's **first play** of that quest. Never allow replay performance to become a challenge reference.
-- Social “performance remarquable” means exactly **Mastery on that first play**. It changes CTA emphasis, not challenge eligibility.
+- (Owner decision 2026-11-20, #889, superseding the first-play-only rule.) A social challenge may be created from any **qualifying run** of the sender — first win or replay — using the attempt engine's own qualification (`attempt.qualifying`: badge/ranking 15-minute cooldown, confirmed by the victory receipt). Never add a second social qualification rule, and never declare a replay as a first play: the snapshot records `source_first_play` honestly and the UI shows « Première résolution » / « Rejeu qualifiant ». Help or an error does not remove qualification; a grid reset keeps it.
+- Social “performance remarquable” means **Mastery on a qualifying run**. It changes CTA emphasis, not eligibility; « Maîtrise du premier coup » is reserved to a first play, a replay says « Maîtrise en rejeu qualifiant ».
+- (#888) A started participation never restarts from a blank clock: the same browser restores its own attempt; another device resumes at the server-measured elapsed time since the participation start; without that proof the resume is refused.
 - The recipient has one challenge attempt, but may correct mistakes until solve or explicit abandon. Reload/background must restore the same attempt.
 - Do not claim the recipient is seeing the grid for the first time; prior campaign exposure is allowed and recorded only for analytics.
 - Hide the sender's reference performance until the recipient's attempt is terminal.
