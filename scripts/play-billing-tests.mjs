@@ -315,7 +315,7 @@ assert.equal(vm.runInContext('playBoundCheckoutAvailable()',recovery),false,'Bot
 const restore=()=>restoreHost.all().find(n=>n.dataset.offer==='restore-play');
 const status=()=>restoreHost.all().find(n=>Object.hasOwn(n.dataset,'offerStatus')).textContent;
 assert.equal(restoreHost.all().find(n=>n.dataset.offer==='unit').disabled,true);
-assert.equal(restore().textContent,'Vérifier mes achats Google Play');
+assert.equal(restore().textContent,'Restaurer mes achats');
 delete recoveryWin.PaymentRequest;
 const firstRestore=restore().onclick();
 assert.match(status(),/Vérification des achats/);
@@ -467,6 +467,56 @@ assert.deepEqual(verifyTokens.slice(-3),Array.from({length:3},()=>['Bearer synth
  assert.deepEqual(originalProgress,expectedProgress,'Ownership checks never change progress');
 }
 console.log('play-billing-tests #864: Play-held SKU explained per Lumen account, no sheet, no transfer OK');
+
+// #863: no permanent « Achats Google Play vérifiés » banner over the game.
+{
+ recovery.lumenUser={id:'owner'};recovery.cloudProfileReady=true;
+ recovery.loadEntitlements=async()=>{recovery.lumenEntitlementsState='ready';recovery.lumenEntitlements=[{entitlement:'real-adventure-02',source:'purchase'}]};
+ storeTokens=['existing-purchase'];
+ purchaseState.status=200;purchaseState.body={status:'paid',acknowledged:true,adventures:['real-adventure-02']};
+ restoreNotices.length=0;
+ await vm.runInContext('maybeRestorePlayPurchases()',recovery);
+ assert.deepEqual(restoreNotices.filter(Boolean),[],'Automatic restore with rights up to date shows no banner');
+ // Unacknowledged but paid: rights are up to date, the retry is automatic: still silent.
+ purchaseState.body={status:'paid',acknowledged:false,adventures:['real-adventure-02']};
+ restoreNotices.length=0;
+ await vm.runInContext('maybeRestorePlayPurchases()',recovery);
+ assert.deepEqual(restoreNotices.filter(Boolean),[]);
+ // An actionable failure stays visible.
+ purchaseState.status=503;purchaseState.body={error:'unavailable'};
+ restoreNotices.length=0;
+ await vm.runInContext('maybeRestorePlayPurchases()',recovery);
+ assert.match(restoreNotices.join(' '),/indisponible/,'An automatic failure is still explained');
+ // Manual restore: in-shop confirmation only, cleared after about 3 s; no global banner.
+ purchaseState.status=200;purchaseState.body={status:'paid',acknowledged:true,adventures:['real-adventure-02']};
+ restoreNotices.length=0;
+ await restore().onclick();
+ assert.match(status(),/droits sont à jour/);
+ assert.deepEqual(restoreNotices.filter(Boolean),[],'The manual result stays inside the shop');
+ await new Promise(resolve=>setTimeout(resolve,3100));
+ assert.equal(status(),'','The manual success disappears by itself');
+ // A manual problem is not transient.
+ purchaseState.status=409;purchaseState.body={error:'purchase_owned_elsewhere'};
+ await restore().onclick();
+ await new Promise(resolve=>setTimeout(resolve,3100));
+ assert.match(status(),/autre compte Lumen/,'An actionable message stays');
+ storeTokens=[];
+}
+// The real global notice: an automatic Play success may only clear its own notice.
+{
+ const start=normalized.indexOf('function showPurchaseStatus(');
+ const source=normalized.slice(start,normalized.indexOf('\n}\n',start)+3);
+ const notice={dataset:{},hidden:true,textContent:''};
+ const ctx=vm.createContext({document:{getElementById:id=>id==='purchaseStatus'?notice:null}});
+ vm.runInContext(source,ctx);
+ ctx.showPurchaseStatus('Paiement refusé.','owner');
+ ctx.showPurchaseStatus('','owner','play-restore');
+ assert.equal(notice.textContent,'Paiement refusé.','An automatic success never hides another alert');
+ ctx.showPurchaseStatus('Vérification Google Play indisponible.','owner','play-restore');
+ ctx.showPurchaseStatus('','owner','play-restore');
+ assert.equal(notice.hidden,true,'Its own stale notice is retired');
+}
+console.log('play-billing-tests #863: silent automatic success, brief manual confirmation, persistent errors OK');
 
 // #833: licence-tester checkout while public sales stay closed. The capability only opens
 // the consented Play sheet for that account; the server still verifies every token.

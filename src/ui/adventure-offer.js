@@ -8,7 +8,11 @@ export const SUPPORT_LINE='🚀 Tu peux aussi soutenir Lumen en achetant une ave
 // #732: express request for immediate access and waiver of the 14-day withdrawal right
 // (art. L221-28 13° Code de la consommation), never pre-ticked, required before paying.
 export const WAIVER_TEXT='Je demande l’accès immédiat à mon achat et je renonce à mon droit de rétractation de 14 jours.';
-export const WAIVER_REQUIRED='Coche la case ci-dessus pour confirmer l’accès immédiat avant de payer.';
+// #863: shown in red under the box when « Choisir » / « Tout débloquer » is pressed unticked.
+export const WAIVER_REQUIRED='Cochez cette case pour poursuivre votre achat.';
+export const RESTORE_LABEL='Restaurer mes achats';
+export const RESTORE_HINT='Un achat n’apparaît pas ?';
+let waiverIds=0;
 export const SALES_TERMS_URL='/cgv.html';
 export const SUPPORT_TEXT='Lumen est développé par un petit studio indépendant. Pas de publicité, pas de collecte de données pour du ciblage : les achats servent à financer l’hébergement, les serveurs et le développement de nouvelles aventures.';
 
@@ -102,21 +106,37 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
  const el=(tag,props={},text)=>{const e=document.createElement(tag);Object.assign(e,props);if(text!==undefined)e.textContent=text;return e};
  const root=el('div',{className:'adventure-offer'});
  const status=el('p',{className:'adventure-offer-status',hidden:true});status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.dataset.offerStatus='';
- const buttons=[];let retryButton=null,restoreButton=null;
- const setStatus=text=>{status.textContent=text||'';status.hidden=!text};
+ const buttons=[];let retryButton=null,restoreButton=null,statusTimer=null;
+ const setStatus=(text,{transient=false}={})=>{
+  clearTimeout(statusTimer);status.textContent=text||'';status.hidden=!text;
+  // #863: a successful manual restore is confirmed briefly, inside the shop only.
+  if(text&&transient){statusTimer=setTimeout(()=>{if(status.textContent===text)setStatus('')},3000);statusTimer?.unref?.()}
+ };
  const setBusy=busy=>{for(const b of buttons)b.disabled=busy||!model.purchasesAvailable;if(retryButton)retryButton.disabled=busy;if(restoreButton)restoreButton.disabled=busy};
  const buy=(kind,label,product)=>{const b=el('button',{type:'button',className:'adventure-offer-buy',disabled:!model.purchasesAvailable},label);b.dataset.offer=kind;buttons.push(b);
   b.onclick=()=>{if(!model.signedIn){onSignIn();return}
-  if(!waiver?.checked){setStatus(WAIVER_REQUIRED);waiver?.focus();return}
+  if(!waiver?.checked){showWaiverError();return}
   onBuy(product,{setStatus,setBusy,waiver:{accepted:true,text:WAIVER_TEXT,at:new Date().toISOString()}})};return b};
  const unitAvailable=model.purchasesAvailable&&model.unitCount>0&&model.unitPriceKnown;
  const skyAvailable=model.purchasesAvailable&&model.showSky&&model.skyCount>0&&model.skyPriceKnown;
- let waiver=null;
+ let waiver=null,waiverLabel=null,waiverError=null;
+ // #863: no payment, a visible red message under the box, focus on it; cleared once ticked.
+ const showWaiverError=()=>{
+  if(!waiver)return;
+  waiverError.textContent=WAIVER_REQUIRED;waiverError.hidden=false;
+  waiver.setAttribute('aria-invalid','true');waiverLabel.className='adventure-offer-consent is-invalid';
+  waiver.focus();waiverLabel.scrollIntoView?.({block:'nearest'});
+ };
  if(model.signedIn&&(unitAvailable||skyAvailable)){
-  const label=el('label',{className:'adventure-offer-consent'});
+  // Consent stays before the purchase buttons (express request before ordering).
+  waiverLabel=el('label',{className:'adventure-offer-consent'});
   waiver=el('input',{type:'checkbox',checked:false});waiver.dataset.offer='waiver';
-  waiver.onchange=()=>{if(waiver.checked&&status.textContent===WAIVER_REQUIRED)setStatus('')};
-  label.append(waiver,document.createTextNode(' '+WAIVER_TEXT));root.append(label);
+  const errorId='offerWaiverError'+(++waiverIds);
+  waiverError=el('p',{className:'adventure-offer-waiver-error',id:errorId,hidden:true});waiverError.dataset.offerWaiverError='';
+  waiverError.setAttribute('role','alert');
+  waiver.setAttribute('aria-describedby',errorId);
+  waiver.onchange=()=>{if(waiver.checked){waiverError.textContent='';waiverError.hidden=true;waiver.setAttribute('aria-invalid','false');waiverLabel.className='adventure-offer-consent'}};
+  waiverLabel.append(waiver,document.createTextNode(' '+WAIVER_TEXT));root.append(waiverLabel,waiverError);
  }
  const offerCard=(kind,title,price,count,product,note=null)=>{
   const card=el('section',{className:'adventure-offer-card'});
@@ -148,15 +168,18 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
  const purchaseProgress=el('p',{className:'adventure-offer-cap',hidden:true});
  purchaseProgress.dataset.offerPurchaseProgress='';
  purchaseProgress.setAttribute('aria-live','polite');
- root.append(purchaseProgress,status);
+ root.append(status,purchaseProgress);
+ // #863: restoring is troubleshooting, not an offer: a discreet action in the footer.
  if(onRestorePlay){
-  restoreButton=el('button',{type:'button',className:'adventure-offer-claim'},'Vérifier mes achats Google Play');
+  restoreButton=el('button',{type:'button',className:'adventure-offer-restore'},RESTORE_LABEL);
   restoreButton.dataset.offer='restore-play';
   restoreButton.onclick=async()=>{
    setBusy(true);setStatus('Vérification des achats Google Play…');
-   try{setStatus(await onRestorePlay())}finally{setBusy(false)}
+   try{
+    const result=await onRestorePlay();
+    if(typeof result==='string')setStatus(result);else setStatus(result?.text||'',{transient:!!result?.transient});
+   }finally{setBusy(false)}
   };
-  root.append(restoreButton);
  }
  if(model.pricesRequired){
   const unavailable=!model.purchasesAvailable||!model.unitPriceKnown||(model.showSky&&!model.skyPriceKnown);
@@ -168,14 +191,16 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
   if(message.textContent)root.append(message);
   if(model.priceStatus!=='loading'&&(playCheckoutPaused?model.priceErrors?.length:unavailable)){retryButton=el('button',{type:'button'},'Réessayer');retryButton.dataset.offer='retry';retryButton.onclick=()=>onRetry();root.append(retryButton)}
  }else if(!model.purchasesAvailable)root.append(el('p',{className:'adventure-offer-soon'},'Paiement bientôt disponible.'));
- const terms=el('a',{className:'adventure-offer-terms',href:SALES_TERMS_URL,target:'_blank',rel:'noopener'},'Conditions générales de vente');terms.dataset.offer='terms';
- const termsLine=el('p',{className:'adventure-offer-terms-line'});termsLine.append(terms);root.append(termsLine);
  if(model.mastery){
   const section=el('aside',{className:'adventure-offer-mastery'});
   section.dataset.offerMastery='';
   updateAdventureOfferMastery(section,model,{onClaim,onContinue});
   root.append(section);
  }
+ const terms=el('a',{className:'adventure-offer-terms',href:SALES_TERMS_URL,target:'_blank',rel:'noopener'},'Conditions générales de vente');terms.dataset.offer='terms';
+ const termsLine=el('p',{className:'adventure-offer-terms-line'});termsLine.append(terms);
+ if(restoreButton)termsLine.append(document.createTextNode(' · '+RESTORE_HINT+' '),restoreButton);
+ root.append(termsLine);
  if(!model.signedIn&&model.accounts){const s=el('button',{type:'button',className:'adventure-offer-signin'},'Créer un compte ou se connecter');s.dataset.offer='signin';s.onclick=()=>onSignIn();root.append(s)}
  const support=el('p',{className:'adventure-offer-support'},SUPPORT_LINE+' ');
  const why=el('button',{type:'button',className:'adventure-offer-why'},'Pourquoi ?');why.dataset.offer='why';why.setAttribute('aria-expanded','false');

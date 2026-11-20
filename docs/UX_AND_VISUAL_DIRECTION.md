@@ -763,3 +763,16 @@ badges encore manquants de l’aventure précédente selon les règles de maîtr
 
 Impact onboarding : les apprentissages et leurs destinations restent valables ;
 la consultation latérale ajoute un raccourci sans changer les jalons ni les droits.
+
+## Boutique d'aventure (#863)
+
+Ordre : case d'accès immédiat / renonciation (avant les boutons, jamais pré-cochée),
+offres « Choisir » (aventure sélectionnée et son prix) puis « Tout débloquer » (une seule
+offre, celle du joueur, #865), état de l'achat, progression vers les 5 aventures, encart
+de déblocage gratuit, puis un pied compact : CGV et « Un achat n'apparaît pas ?
+Restaurer mes achats » (action secondaire, Google Play uniquement). Un clic sur un achat
+sans la case cochée n'ouvre aucun paiement : message rouge « Cochez cette case pour
+poursuivre votre achat. » sous la case (`role="alert"`, `aria-describedby`,
+`aria-invalid`, bordure en plus de la couleur), focus sur la case ; le message
+disparaît dès qu'elle est cochée. Aucun bandeau permanent de succès de restauration
+pendant le jeu.

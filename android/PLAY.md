@@ -325,7 +325,7 @@ sa propre éligibilité.
    corrigé avec un nouveau code. Une sonde en échec ou un prix manquant appelle
    d'abord un diagnostic du service, de Chrome et du catalogue Play.
 
-Pendant la suspension, « Vérifier mes achats Google Play » reste disponible
+Pendant la suspension, « Restaurer mes achats » (pied de la boutique, #863) reste disponible
 pour les joueurs connectés. Le message de suspension désigne le commutateur
 de vente. `binding_probe_unsupported` désigne un marqueur absent ou inattendu,
 `binding_probe_failed` un rejet ou délai dépassé de la requête de sonde,

@@ -4469,6 +4469,8 @@ function playRestoreMessage(outcome,{manual=false}={}){
  const {results,unavailable,rightsUnavailable}=outcome;
  const paid=results.some(r=>r.status==='paid');
  if(rightsUnavailable)return 'Google Play a répondu. Tes droits sont en cours de synchronisation.';
+ // #863: an automatic restore that found the rights up to date stays silent.
+ if(!manual&&paid&&!unavailable&&!results.some(r=>r.status==='error'||r.status==='pending'))return '';
  if(unavailable||results.some(r=>r.status==='error'||(r.status==='paid'&&!r.acknowledged))){
   if(!manual&&!isPlayDistributedApp(window)&&!playPriceLoader.snapshot().playApp)return '';
   return paid?'Tes droits sont à jour. L’accusé de réception Google Play sera repris automatiquement.'
@@ -4493,7 +4495,9 @@ async function maybeRestorePlayPurchases(attempt=0){
  const outcome=await restorePlayForCurrentAccount();
  if(lumenUser?.id!==owner||lumenSupabase!==client)return;
  const message=playRestoreMessage(outcome);
- if(message)showPurchaseStatus(message,owner);
+ if(message)showPurchaseStatus(message,owner,'play-restore');
+ // #863: rights now verified: retire an older automatic Play notice, never another alert.
+ else if(outcome?.results?.some(r=>r.status==='paid'))showPurchaseStatus('',owner,'play-restore');
  if(attempt<3&&outcome&&(outcome.rightsUnavailable||
    outcome.results.some(result=>result.status==='pending'||result.status==='error'))){
   clearTimeout(playRecoveryTimer);
@@ -4535,8 +4539,11 @@ async function stripeTransport(){
  if(data?.session?.user?.id!==owner)return null;
  return {endpoint:LUMEN_SUPABASE_URL+'/functions/v1/lumen-stripe-checkout',apiKey:LUMEN_SUPABASE_KEY,accessToken:data.session.access_token};
 }
-function showPurchaseStatus(text,owner){
+function showPurchaseStatus(text,owner,source=''){
  const el=document.getElementById('purchaseStatus');if(!el)return;
+ // #863: a source may only clear its own notice (an automatic success never hides an error).
+ if(!text&&source&&!el.hidden&&el.dataset.purchaseSource!==source)return;
+ if(source)el.dataset.purchaseSource=source;else delete el.dataset.purchaseSource;
  if(owner)el.dataset.purchaseOwner=owner;else delete el.dataset.purchaseOwner;
  el.textContent=text||'';el.hidden=!text;
 }
@@ -4627,12 +4634,15 @@ function renderAdventureOffer(container,pack,{close}={}){
   onRetry:()=>{playBillingReady=playPriceLoader.load()},
   onSignIn:()=>{close?.();openEmailAccountOffer('signup')},
   playCheckoutPaused:offer.pricesRequired&&!playCheckoutOpen({released:PLAY_CHECKOUT_AVAILABLE,capabilities:lumenCapabilities}),
+  // #863: the manual result stays inside the shop; a clean success is shown briefly.
   onRestorePlay:offer.pricesRequired&&offer.signedIn?async()=>{
    const owner=lumenUser?.id;
    const outcome=await restorePlayForCurrentAccount();
-   const notice=playRestoreMessage(outcome);
-   if(notice)showPurchaseStatus(notice,owner);
-   return playRestoreMessage(outcome,{manual:true});
+   if(lumenUser?.id!==owner)return '';
+   const text=playRestoreMessage(outcome,{manual:true});
+   const clean=!!outcome&&!outcome.unavailable&&!outcome.rightsUnavailable&&outcome.results.some(r=>r.status==='paid')
+    &&!outcome.results.some(r=>['error','pending','owned_elsewhere','account_unverified','offer_not_eligible'].includes(r.status)||(r.status==='paid'&&!r.acknowledged));
+   return {text,transient:clean};
   }:null,
   onBuy:purchaseAdventure,onClaim,onContinue
  });
