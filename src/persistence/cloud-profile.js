@@ -66,11 +66,20 @@ export async function backupIfUnchanged(supabase,profile,expectedRemote){
   return validateCloudProfile(profile);
 }
 
+// #847: true only for a failed transport (no HTTP answer), never for a refusal.
+export function isNetworkFailure(error,status){
+ if(!error)return false;
+ if(error.network===true||status===0||error.status===0)return true;
+ if(/AuthRetryableFetchError/.test(String(error.name||'')))return true;
+ return /failed to fetch|networkerror|network request failed|load failed|fetch failed|timed? ?out/i.test(String(error.message||''));
+}
 export async function loadVerifiedProfile(supabase,{userId}={}){
-  const {data,error}=await supabase.rpc("lumen_restore_profile",userId?{p_expected_user_id:userId}:undefined);
+  const {data,error,status}=await supabase.rpc("lumen_restore_profile",userId?{p_expected_user_id:userId}:undefined);
   if(error){
     const failure=Error("Impossible de restaurer le profil");
     if(typeof error.code==='string'&&/^[A-Z0-9]{5,12}$/.test(error.code))failure.code=error.code;
+    // #847: a transport failure (no HTTP answer) is not a server refusal.
+    if(isNetworkFailure(error,status))failure.network=true;
     throw failure;
   }
   return data==null?null:validateCloudProfile(data);

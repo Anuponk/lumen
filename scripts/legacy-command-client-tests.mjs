@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {networkContext,withNetworkContext} from './fixtures/network-context.mjs';
 import assert from 'node:assert/strict';
 import {officialTimingSupported,refreshOfficialTimingSupport} from '../src/persistence/official-time.js';
 import {attemptTiming} from '../src/campaign/official-time.js';
@@ -245,7 +246,7 @@ function uiFixture({now}={}){
   // #697: controllable timers; a test fires the slow-network pending card explicitly.
   timers:[],setTimeout:fn=>ctx.timers.push(fn),clearTimeout:id=>{if(id)ctx.timers[id-1]=null},SLOW_VICTORY_PENDING_MS:2500,pendingNavigationEntries:[],
   document:{createElement:()=>({}),getElementById:()=>({textContent:'',hidden:true})}};
- const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');vm.createContext(ctx);vm.runInContext(functionSource(source,'capturedTiming'),ctx);vm.runInContext(functionSource(source,'captureLegacyCommandVictory'),ctx);
+ const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');vm.createContext(withNetworkContext(ctx));vm.runInContext(functionSource(source,'capturedTiming'),ctx);vm.runInContext(functionSource(source,'captureLegacyCommandVictory'),ctx);
  return {ctx,box,state,run:()=>vm.runInContext('captureLegacyCommandVictory()',ctx)};
 }
 test('real UI coordinator persists pending victory before readiness without optimistic rewards',async()=>{
@@ -347,7 +348,7 @@ test('legacy auth pause resumes only after verified same-account profile read',a
    legacyVictoryOutbox:{inspect:async()=>({authRequired:true}),resume:async(uid,opts)=>{assert.equal(uid,userId);assert.equal(opts.kind,'auth');resumed++}},
    loadVerifiedProfile:async()=>{if(mode==='read-fails')throw Error('offline');if(mode==='account-switch')ctx.lumenUser={id:'other'};return base()},
    refreshCanonicalOutboxNotice:async()=>{},canonicalRecovery:{schedule:()=>{scheduled++}},recordCloudDiagnostic:()=>{}};
-  vm.createContext(ctx);vm.runInContext(functionSource(source,'resumeLegacyAfterAuthRefresh'),ctx);
+  vm.createContext(withNetworkContext(ctx));vm.runInContext(functionSource(source,'resumeLegacyAfterAuthRefresh'),ctx);
   await vm.runInContext(`resumeLegacyAfterAuthRefresh('${userId}',lumenSupabase)`,ctx);
   assert.equal(resumed,mode==='valid'?1:0);assert.equal(scheduled,resumed);
  }

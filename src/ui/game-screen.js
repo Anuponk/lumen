@@ -39,7 +39,7 @@ import {createCloudPersistence} from "../persistence/cloud.js";
 import {guestAccountSeed,preserveGuestBeforeHydration,guestNeedsReconciliation,guestAcquisitionRecoveryEligible} from '../persistence/guest-account.js';
 import {storageReport,archiveRecoveryBackups} from '../persistence/storage-maintenance.js';
 import {reconcileDailyIntoCloudProfile} from "../persistence/daily-hydration.js";
-import {preserveRecoverySnapshot,CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievementsDurably,achievementRecoveryDiagnostic,reconciliationFailureDiagnostic,hydrationFailureDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles,reconcilePlayerAcquisitions} from "../persistence/cloud-profile.js";
+import {isNetworkFailure,preserveRecoverySnapshot,CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievementsDurably,achievementRecoveryDiagnostic,reconciliationFailureDiagnostic,hydrationFailureDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles,reconcilePlayerAcquisitions} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
@@ -129,6 +129,24 @@ let stripeCheckoutReturn=consumeCheckoutReturn(window);
 const {normalizeSequentialProgress,solvedCount,exactSkyScoreForSolvedPrefix,ensureSkyScore,skyStarsEarned,challengeRewardKeys,constellationProgress,constellationLitAt,awards,performanceRun,savePerformance}=createCampaign(()=>lumenProgress,()=>saveLumenProgress(),()=>({...capturedTiming(),activeGameSeconds,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted,qualifying:!!attemptEngine.snapshot()?.qualifying}),()=>canonicalQuestList());
 let verifiedOfflineOwnerId=null;
 let refreshAdventureOffer=null;
+// #847: the backend can be unreachable while navigator.onLine stays true (Wi-Fi
+// without Internet, data without signal, TWA). Such a verified transport failure
+// counts as offline; it never authenticates anyone or bypasses the owner proof.
+let networkUnavailable=false,networkProbeTimer=null,networkReloadPending=false;
+// While set, this page reads navigator.onLine as false (instance property), so
+// every module applies its existing offline rules. The real browser value stays
+// readable through the prototype getter for the reconnection probe.
+function browserOnline(){
+ try{const getter=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(navigator),'onLine')?.get;return getter?getter.call(navigator)!==false:true}catch{return true}
+}
+const unreachableOnLine=()=>false;
+function setNetworkUnavailable(value){
+ networkUnavailable=!!value;
+ try{
+  if(networkUnavailable)Object.defineProperty(navigator,'onLine',{configurable:true,get:unreachableOnLine});
+  else if(Object.getOwnPropertyDescriptor(navigator,'onLine')?.get===unreachableOnLine)delete navigator.onLine;
+ }catch{}
+}
 let cloudProfileReady=false,cloudProfileTimer=null,cloudProfileBusy=false,cloudProfileDirty=false,cloudProfileBaseline=null,cloudProfileInFlight=null,cloudProfileFailure=null;
 let cloudHydrationGeneration=0;
 configureCommandSession(()=>({userId:lumenUser?.id,client:lumenSupabase,generation:cloudHydrationGeneration}),{onIssue:issue=>recordCloudDiagnostic('command_cache_storage',{reason:issue.kind})});
@@ -765,7 +783,7 @@ get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get navigationLocked(){return !!socialChallenge},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
-const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut,hydrateCloudProfile}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{queueMicrotask(()=>rankingView.mount());queueDiagnosticPreferenceRefresh();if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(["SIGNED_IN","TOKEN_REFRESHED"].includes(event?.authEvent)){const ownerId=lumenUser?.id,client=lumenSupabase;setTimeout(()=>{void resumeCanonicalAfterAuthRefresh(ownerId,client);void resumeLegacyAfterAuthRefresh(ownerId,client);acquisitionRecoveryAttempts=0;void acquisitionRecovery.wake()},0)}if(event?.type==="restore_failed")cloudProfileFailure={reason:"restore_failed"};if(event?.type==="profile"){queueMicrotask(()=>void refreshRankingAccount());const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}if(event?.type==="password_recovery")sessionStorage.setItem("lumenPasswordRecoveryPending","1");updateAuthUI();if(event?.type==="auth_link")showAuthLinkResult(event.result);if(event?.type==="account"&&lumenUser)void refreshCanonicalOutboxNotice(lumenUser.id);if(event?.type==="account"&&navigator.onLine===false&&offlineQuestAccessContext().verifiedSession)void resumeOfflineAfterAuth(lumenUser?.id,lumenSupabase);if(event?.type==="password_recovery"){const editor=document.getElementById("accountProfileEditor");if(editor){editor.dataset.open="true";editor.hidden=false}const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=false;const password=document.getElementById("setPasswordPanel");if(password)password.hidden=false;document.getElementById("setPasswordValue")?.focus()}},renderDaily:(...args)=>renderDaily(...args),claimWalletDaily:(date,index)=>claimWalletDaily(date,index),afterAuthCloudSync:async()=>{
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut,hydrateCloudProfile}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{queueMicrotask(()=>rankingView.mount());queueDiagnosticPreferenceRefresh();if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(["SIGNED_IN","TOKEN_REFRESHED"].includes(event?.authEvent)){const ownerId=lumenUser?.id,client=lumenSupabase;setTimeout(()=>{void resumeCanonicalAfterAuthRefresh(ownerId,client);void resumeLegacyAfterAuthRefresh(ownerId,client);acquisitionRecoveryAttempts=0;void acquisitionRecovery.wake()},0)}if(event?.type==="restore_failed"){cloudProfileFailure={reason:"restore_failed"};if(event.network)queueMicrotask(()=>enterNetworkUnavailable('auth'))}if(event?.type==="profile"){queueMicrotask(()=>void refreshRankingAccount());const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}if(event?.type==="password_recovery")sessionStorage.setItem("lumenPasswordRecoveryPending","1");updateAuthUI();if(event?.type==="auth_link")showAuthLinkResult(event.result);if(event?.type==="account"&&lumenUser)void refreshCanonicalOutboxNotice(lumenUser.id);if(event?.type==="account"&&navigator.onLine===false&&offlineQuestAccessContext().verifiedSession)void resumeOfflineAfterAuth(lumenUser?.id,lumenSupabase);if(event?.type==="password_recovery"){const editor=document.getElementById("accountProfileEditor");if(editor){editor.dataset.open="true";editor.hidden=false}const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=false;const password=document.getElementById("setPasswordPanel");if(password)password.hidden=false;document.getElementById("setPasswordValue")?.focus()}},renderDaily:(...args)=>renderDaily(...args),claimWalletDaily:(date,index)=>claimWalletDaily(date,index),afterAuthCloudSync:async()=>{
  if(qaActive||!lumenUser||!lumenSupabase)return;
  const priorAcquisitionRecovery=canonicalRecoveryContext;
  canonicalRecoveryContext=null;canonicalRecovery.cancel();
@@ -1103,6 +1121,8 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   cloudProfileReady=true;
   verifiedOfflineOwnerId=lumenUser?.id??null;
   acquisitionRecoveryAttempts=0;
+  if(networkUnavailable)setNetworkUnavailable(false);
+  if(navigator.onLine!==false)rememberVerifiedOfflineOwner(localStorage,verifiedOfflineOwnerId,Date.now(),cloud);
   // Resume the verified catalogue frontier after ownership handoff or from an
   // idle campaign selection. Started runs and replays retain their identity.
   if(existing)resumeHydratedCampaignSelection({ownershipChanged:switchingOwner});
@@ -1136,7 +1156,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   if(favourableRecovery||acquisitionRetryContinuation)scheduleCloudProfile();
   maybeShowStreakLoss();
   const gate=document.getElementById("accountOptin");if(gate){const wasVisible=!gate.hidden;gate.hidden=true;if(wasVisible)showAccountSavedConfirmation()}
- }catch(e){if(!sessionValid())return;recordCloudDiagnostic("hydration_failed",{errorCode:String(e?.code||e?.status||"unknown").slice(0,48),errorName:String(e?.name||"unknown").slice(0,48),stage:String(e?.stage||hydrationStage).slice(0,48),reason:e?.message?.startsWith("Profil local divergent")?"local_divergence":e?.message?.startsWith("Daily history unavailable")?"daily_history":e?.message?.startsWith("Daily rewards unavailable")?"daily_rewards":e?.message?.startsWith("Impossible de restaurer le profil")?"cloud_restore":e?.message?.startsWith("Sauvegarde cloud impossible")?"cloud_cas":"other",kind:e?.code==="LOCAL_STORAGE_QUOTA"||e?.name==="QuotaExceededError"||e?.code===22?"local_quota":"other",...hydrationFailureDiagnostic(e,hydrationStage)});cloudProfileFailure={reason:"restore_failed"};updateAuthUI();console.warn("Lumen cloud-first auth synchronization failed; progress locked",e)}
+ }catch(e){if(!sessionValid())return;recordCloudDiagnostic("hydration_failed",{errorCode:String(e?.code||e?.status||"unknown").slice(0,48),errorName:String(e?.name||"unknown").slice(0,48),stage:String(e?.stage||hydrationStage).slice(0,48),reason:e?.message?.startsWith("Profil local divergent")?"local_divergence":e?.message?.startsWith("Daily history unavailable")?"daily_history":e?.message?.startsWith("Daily rewards unavailable")?"daily_rewards":e?.message?.startsWith("Impossible de restaurer le profil")?"cloud_restore":e?.message?.startsWith("Sauvegarde cloud impossible")?"cloud_cas":"other",kind:e?.code==="LOCAL_STORAGE_QUOTA"||e?.name==="QuotaExceededError"||e?.code===22?"local_quota":"other",...hydrationFailureDiagnostic(e,hydrationStage)});cloudProfileFailure={reason:"restore_failed"};updateAuthUI();console.warn("Lumen cloud-first auth synchronization failed; progress locked",e);if(e?.network||isNetworkFailure(e))enterNetworkUnavailable('hydration')}
 },holdLegacyMergeForFullRestore:async()=>true},{setTimeout,console,qaMode,bootAuthLink});
 let skipFirstGridTutorial=false;
 try{skipFirstGridTutorial=localStorage.getItem(qaKey('lumenSkipFirstGridTutorial'))==='1'}catch(_){}
@@ -5237,7 +5257,7 @@ if(pushLater)pushLater.onclick=dismissPushLater;
 markLumenSeen();
 if(!qaActive)void cloudMergeHistoricalPerformance(lumenAnonymousId).catch(()=>recordCloudDiagnostic('historical_merge_pending',{reason:'network_or_storage'}));
 function initializeAccountSession(){
- const connect=()=>initLumenCloud().catch(error=>{recordCloudDiagnostic('auth_initialization_failed',{errorCode:String(error?.code||'unknown').slice(0,48)});cloudProfileFailure={reason:'restore_failed'};updateAuthUI();console.warn('Lumen session initialization failed',error)});
+ const connect=()=>initLumenCloud().catch(error=>{recordCloudDiagnostic('auth_initialization_failed',{errorCode:String(error?.code||'unknown').slice(0,48)});cloudProfileFailure={reason:'restore_failed'};updateAuthUI();if(isNetworkFailure(error))enterNetworkUnavailable('auth');console.warn('Lumen session initialization failed',error)});
  const offline=offlineStartupUser();
  if(navigator.onLine===false&&(offline||accountSwitchPending())){
   if(offline){
@@ -5260,3 +5280,57 @@ window.runHintTests=runHintTests;
 window.lumenDiagnostics=createDiagnostics(testModel,{init,runHintTests,setSoundEnabled,closeTutorial,hideSuccess,render});
 Object.assign(window.lumenDiagnostics,{skySnapshot:()=>skyNavigation.snapshot(),setSkyCatalogue:(model,{reset=true}={})=>{mapCatalogueOverride=model;if(reset)skyNavigation.open();else skyNavigation.render()},refreshSky:()=>skyNavigation.render()});
 }
+ // #847: a hanging backend must not hold a verified owner on the neutral screen.
+ setTimeout(()=>void networkWatchdog(),15000);
+async function backendReachable(timeout=8000){
+ if(!lumenSupabase)return false;
+ try{
+  const reply=await Promise.race([lumenSupabase.rpc('lumen_get_profile'),new Promise(resolve=>setTimeout(()=>resolve({timedOut:true}),timeout))]);
+  return !reply?.timedOut&&!isNetworkFailure(reply?.error,reply?.status);
+ }catch{return false}
+}
+function enterNetworkUnavailable(reason){
+ if(qaActive||cloudProfileReady)return false;
+ let owner=null;try{owner=localStorage.getItem('lumenCloudOwnerId')}catch{}
+ // Guests are never held; another identity never borrows this cache.
+ if(!owner||lumenUser&&lumenUser.id!==owner)return false;
+ if(!networkUnavailable)recordCloudDiagnostic('network_unavailable',{reason:String(reason||'unknown').slice(0,24)});
+ setNetworkUnavailable(true);
+ const verified=!document.getElementById('accountSwitchHold')?.dataset.unverifiedOwner&&hasLocalProfile()?preparedOfflineUser(localStorage,{offline:true}):null;
+ if(verified){
+  if(!lumenUser)persistenceModel.lumenUser=verified;
+  cloudProfileFailure=null;
+  void resumeOfflineAfterAuth(verified.id,lumenSupabase);
+ }
+ scheduleNetworkProbe();updateAuthUI();refreshJourney();
+ return !!verified;
+}
+async function networkWatchdog(){
+ if(qaActive||cloudProfileReady||networkUnavailable||navigator.onLine===false)return;
+ let owner=null;try{owner=localStorage.getItem('lumenCloudOwnerId')}catch{}
+ if(!owner||!(lumenUser||authSessionPending||accountSwitchPending()))return;
+ // A slow but reachable server keeps the ordinary neutral screen and retry.
+ if(await backendReachable()||cloudProfileReady)return;
+ enterNetworkUnavailable('timeout');
+}
+function scheduleNetworkProbe(delay=30000){
+ if(networkProbeTimer||!networkUnavailable)return;
+ networkProbeTimer=setTimeout(async()=>{
+  networkProbeTimer=null;
+  if(!networkUnavailable)return;
+  if(browserOnline()&&await backendReachable()){
+   setNetworkUnavailable(false);recordCloudDiagnostic('network_restored',{});
+   reloadWhenSafe();return;
+  }
+  scheduleNetworkProbe(Math.min(delay*2,300000));
+ },delay);
+}
+// Restore the verified cloud path by the ordinary startup, never mid-move:
+// a running attempt is persisted and resumes after the reload.
+function reloadWhenSafe(){
+ if(attemptEngine.snapshot()?.state!==ATTEMPT_STATES.RUNNING||document.visibilityState==='hidden'){location.reload();return}
+ if(networkReloadPending)return;networkReloadPending=true;
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')location.reload()});
+ updateAuthUI();
+}
+window.addEventListener('online',()=>{if(!networkUnavailable)return;clearTimeout(networkProbeTimer);networkProbeTimer=null;scheduleNetworkProbe(1000)});

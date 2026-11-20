@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {networkContext,withNetworkContext} from './fixtures/network-context.mjs';
 import test from 'node:test';
 import * as profiles from '../src/persistence/cloud-profile.js';
 import {readFileSync} from 'node:fs';
@@ -125,7 +126,7 @@ test('quota and unverified backup block partial installation without acknowledgi
 });
 
 test('account status explains a held reconciliation while preserving a generic retry for other failures',()=>{
- const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8'),ctx=vm.createContext({cloudHydrationGeneration:0,});
+ const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8'),ctx=vm.createContext({...networkContext(),cloudHydrationGeneration:0,});
  vm.runInContext(functionSource(source,'cloudReconciliationMessage'),ctx);
  for(const detail of ['storage_quota','canonical_reward_conflict','backup_unverified']){
   const message=ctx.cloudReconciliationMessage({reason:'partial_reconciliation',detail});
@@ -188,7 +189,7 @@ async function sessionFixture({conflict=false,quota=false,deferWallet=false}={})
  const end=source.indexOf('},holdLegacyMergeForFullRestore',start);
  assert(end>start,'Actual production hydration hook found');
  const noop=()=>{},scheduler={cancel:noop,schedule:noop};
- const ctx=vm.createContext({cloudHydrationGeneration:0,...profiles,structuredClone,currentCatalogueOrigin,qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,
+ const ctx=vm.createContext({...networkContext(),cloudHydrationGeneration:0,...profiles,structuredClone,currentCatalogueOrigin,qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,
   canonicalRecoveryContext:null,canonicalRecovery:scheduler,maybeClaimMasteryUnlocks:()=>{},afterVerifiedHydration:()=>{},sessionStorage:{getItem:()=>null},localStorage:storage,
   cloudProfileReady:false,cloudProfileBaseline:null,cloudProfileFailure:null,lumenProgress:local,
   authSessionPending:false,navigator:{onLine:true},

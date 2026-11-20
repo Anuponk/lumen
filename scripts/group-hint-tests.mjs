@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {withNetworkContext} from './fixtures/network-context.mjs';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
@@ -13,7 +14,7 @@ function present(h,lesson=false,engine=null){
   celebrated:false,guidedPending:null,verifyPending:null,recordHintUse:()=>grants.push(true),playerError:()=>engine?.playerError()??null,directMissingCross:()=>engine?.directMissingCross()??null,
   simpleForcedPlacement:()=>engine?.simpleForcedPlacement()??null,proofEngine:()=>h,proofs:{},hi:null,hiCells:[],hintStage:0,hintFocus:null,
   showHintMessage:t=>messages.push(t),render(){}};
- vm.createContext(context);vm.runInContext(handler,context);
+ vm.createContext(withNetworkContext(context));vm.runInContext(handler,context);
  return {context,messages,grants,click:()=>button.onclick()};
 }
 test('forced onboarding still gates hints before spending or displaying a deduction',()=>{
