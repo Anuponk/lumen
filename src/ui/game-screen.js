@@ -1604,7 +1604,10 @@ function updateAuthUI(){
   syncPresentationOwner=lumenUser?.id??null;pendingNavigationEntries=[];syncPresentation.reset();
   if(pendingVictoryView){pendingVictoryView=null;hideSuccess();if(pendingRevealOpen())closeUnifiedSkyReveal()}
  }
+ const authWasPending=authSessionPending;
  authSessionPending=false;
+ // #828: a valid grid completed while the account was restoring is validated now.
+ if(authWasPending&&!celebrated&&!pendingVictoryView&&!socialChallenge&&guardiansCompleteAndValid())queueMicrotask(()=>{if(!celebrated&&!pendingVictoryView&&guardiansCompleteAndValid())render()});
  const initialControls=document.getElementById("authSessionControls");if(initialControls)initialControls.hidden=false;
  const wasOfferPending=accountOfferSignInPending||(()=>{try{return sessionStorage.getItem("lumenAccountOfferSignInPending")==="1"}catch(_){return false}})();
  const u=document.getElementById("authUser"),login=document.getElementById("authLogin"),logout=document.getElementById("authLogout");
@@ -3997,8 +4000,19 @@ function recordHintUse(){
  attemptEngine.markAssistance();usedHintThisGame=true;
  trackAttemptEvent('hint_used',{hint_number:hintUsesThisGame});
 }
+// #828: a completed, valid constellation whose celebration was deferred (Auth
+// restoring) is a victory to validate, never a hint request or a solver failure.
+function guardiansCompleteAndValid(){
+ try{const {placed,rows,cols,regs,nonTouching}=validateGuardians();return placed.length===n&&rows.size===n&&cols.size===n&&regs.size===n&&nonTouching}catch{return false}
+}
 document.getElementById("hint").onclick=()=>{
  if(celebrated||guidedPending||verifyPending||scriptedLearningActive())return;
+ if(guardiansCompleteAndValid()){
+  // No hint is counted: nothing remains to deduce.
+  render();
+  if(!celebrated&&!pendingVictoryView)showHintMessage(authSessionPending?"Ta constellation est complète. La victoire sera validée dès que ton compte sera restauré.":"Ta constellation est complète.");
+  return;
+ }
  if(activeQuestOrdinal()===2&&hintUsesThisGame===0)showLearningTip("hint-learning","Apprends avec les indices","Un indice t’explique une déduction logique plutôt que de jouer à ta place. Chaque indice ajoute 15 secondes au chrono officiel.");
  recordHintUse();
  hi=null; hiCells=[];
@@ -4126,7 +4140,10 @@ document.getElementById("hint").onclick=()=>{
  }
 
  hintStage=0;hintFocus=null;
- showHintMessage("Cette quête a échoué au solveur explicable. Elle ne devrait pas être dans le catalogue.");
+ // #828: never expose an internal solver verdict to the player. The published
+ // catalogue is audited (hint-catalogue-audit-tests.mjs); keep a bounded trace.
+ recordCloudDiagnostic('hint_unavailable',{questId:String(activeQuest()?.id||'unknown').slice(0,64),placed:state.flat().filter(v=>v===2).length,size:n});
+ showHintMessage("Aucun indice disponible pour cette position. Vérifie tes Gardiens avec « Vérifier », ou continue ta déduction.");
 };
 
 const testModel={

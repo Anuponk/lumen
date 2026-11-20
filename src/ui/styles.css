@@ -1440,3 +1440,19 @@ body:has(#erasedAccountNotice:not([hidden])) #scriptedLearn{visibility:hidden!im
  /* Full-screen phone sheets stay in the same column. */
  #mapModal .map-sheet{max-width:520px;margin-left:auto;margin-right:auto}
 }
+/* #851 private record versus best ranked time */
+.ranking-compare{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:center;margin:6px 0 0;font-size:13px;color:#cfe6f3}
+/* #830: short landscape (iPhone Safari with its bars, small landscape phones).
+   Stacking header, journey, options, status and actions above the grid left it
+   a few dozen pixels and pushed the controls below the viewport. Two columns:
+   information and controls on the left, the grid sized to the real height. */
+@media (orientation:landscape) and (max-height:500px){
+ html body{--landscape-board:min(calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--challenge-banner-space,0px)),56vw)}
+ html body .app{max-width:none!important;width:100%!important;overflow:hidden!important;box-sizing:border-box;padding:max(4px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(4px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))!important}
+ html body .game-core{display:grid!important;grid-template-columns:minmax(0,1fr) var(--landscape-board);grid-auto-rows:auto;column-gap:14px;row-gap:4px;align-content:start;
+  max-width:none!important;width:100%!important;height:calc(100dvh - 8px - env(safe-area-inset-top) - env(safe-area-inset-bottom));box-sizing:border-box}
+ html body .game-core>*{grid-column:1;min-width:0}
+ html body .game-core>#learningBoardWrap{grid-column:2;grid-row:1/span 20;align-self:center;width:var(--landscape-board);padding-top:0}
+ html body .game-core>.actions,html body .game-core:has(#board) .actions{grid-column:1;width:100%!important;max-width:none!important;margin:6px 0 0!important}
+ html body #board,html body #board[data-size]{width:100%!important;height:auto!important;max-height:none!important;margin:0!important}
+}
