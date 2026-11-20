@@ -330,7 +330,7 @@ strict catalogue suites remain required.
 Discovery (#754) uses `landing-seo-tests.mjs` for reciprocal language metadata,
 local links, catalogue counts, social images and the publication lists.
 `landing-browser-tests.mjs` checks mobile and desktop layout, language link
-focus and campaign attribution from both localized pages. `acquisition-tests.mjs`
+focus and campaign attribution from both localized pages. The same browser suite covers the rules and constellation learning guides in both languages at 360, 390 and 1440 px, including their shared artwork and keyboard-focusable language links. `acquisition-tests.mjs`
 keeps the existing origin, consent and UTM restrictions.
 
 `node scripts/locale-tests.mjs` covers ordered device languages, explicit and
