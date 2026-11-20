@@ -83,3 +83,20 @@ export function dailyQuest(entry){
  if(!quest)throw Error('Unresolvable daily grid '+entry.questId+'@'+entry.gridRevision);
  return quest;
 }
+
+// Thin client over the server contracts (docs/DAILY_CHALLENGE.md §3).
+export function createDailyClient(supabase){
+ async function rpc(name,args={}){
+  if(!supabase)throw new Error('cloud_unavailable');
+  const {data,error}=await supabase.rpc(name,args);
+  if(error)throw new Error(error.message||'unavailable');
+  return data;
+ }
+ return {
+  today:()=>rpc('lumen_daily_today'),
+  begin:operationId=>rpc('lumen_daily_begin',{p_operation_id:operationId}),
+  finish:({day,operationId,status,seconds,hint=0,verify=0,guided=0})=>rpc('lumen_daily_finish',{p_day:day,p_operation_id:operationId,p_status:status,p_seconds:seconds,p_hint:hint,p_verify:verify,p_guided:guided}),
+  board:day=>rpc('lumen_daily_board',{p_day:day??null}),
+  week:day=>rpc('lumen_daily_week',{p_day:day??null})
+ };
+}

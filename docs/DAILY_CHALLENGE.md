@@ -107,8 +107,42 @@ calendrier dans `daily_puzzles`.
 4. **Bande de difficulté** : « Intermédiaire + Avancé » proposée.
 5. **Date de première ouverture** (le calendrier commence au 23/11/2026).
 
+## 6 bis. Parcours joueur et thème (PR B)
+
+- **Entrée** : « 🏆 Défi du jour » dans « Mes quêtes » (Mon ciel), visible
+  seulement si `lumen_daily_today` répond `enabled` ; date et temps restant.
+  Le lien `/?daily=1` ouvre le mode (rechargement, comme les liens de défi).
+- **Isolation** : une partie quotidienne est une partie de défi isolée
+  (`socialChallenge` avec `daily:true`) et hérite de tous les garde-fous de
+  #18 : aucune écriture de campagne, aucun classement #638, aucun badge, aucun
+  apprentissage, aucune requalification. Seuls l'introduction, la soumission
+  (`lumen_daily_*`) et l'horloge (temps officiel avec pénalités) diffèrent.
+  La grille est la révision figée du jour, jouable gratuitement même si elle
+  vient d'une aventure non achetée.
+- **Introduction** : date, temps restant, « 1 tentative officielle », règles.
+  Invité ou joueur sans pseudonyme : explication et entraînement non classé
+  uniquement. Compte : « Relever le défi » (ou « Reprendre ma tentative » ;
+  autre appareil = chrono au temps serveur écoulé). Pas d'entraînement avant la
+  tentative officielle pour un compte (la grille ne doit pas être révélée).
+- **Résultat** : temps officiel, onglets « Général / Mes amis » (top 3, égalités,
+  ma position, participants réels, états vides), zone de hauteur réservée,
+  « Continuer » action principale, « Partager ma performance » secondaire,
+  « S'entraîner (non classé) », prochain défi annoncé. Déjà joué : résultat
+  figé, jamais de seconde tentative.
+- **Hors ligne** : une tentative classée commence en ligne ; si l'envoi final
+  échoue, le résultat est conservé sur l'appareil (`lumenDailyPendingV1`) et
+  renvoyé au retour de la connexion ou par « Réessayer l'envoi » (même
+  opération, résultat serveur immuable, jamais doublé).
+- **Thème** : fond nocturne bleu/violet avec étoiles statiques, bandeau or
+  « Défi du jour · date · 1 tentative officielle · fin dans … », cadre doré de la
+  grille, accent or ; cases, Gardiens, territoires, marques et aides inchangés
+  (vérifié par les styles calculés). Aucune animation ; l'indicateur de Maîtrise
+  est masqué (aucun badge dans ce mode).
+- **Captures** : `docs/validation/daily-compare-{campaign,daily,result}-{390,1440}.png`.
+
 ## 7. Tests et retour arrière
 
+- Navigateur : `daily-challenge-browser.mjs` (dans la suite de rejeu canonique) : mode désactivé, entrée Mon ciel, invité en entraînement, tentative officielle à 360/390/1440 px, grille figée et cases inchangées, cadre et bandeau visibles, deux classements, reprise sur autre appareil, résultat figé puis entraînement, envoi différé hors ligne. `daily-view-tests.mjs` (rendu et client).
 - Node : `daily-challenge-tests.mjs` (jour Paris et changements d'heure, semaine,
   pool, calendrier append-only et reproductible, grille figée, contrat de la
   migration) ; `node scripts/daily-schedule.mjs --check`.
