@@ -486,6 +486,27 @@ progression writes. The existing server limiter governs mail requests.
 
 ## Cloud persistence contract
 
+### Google Play review navigation (#796)
+
+`lumen_commands.play_review_access_events` is private. A database operator
+appends a grant with an expiry or a revocation for an Auth user. The latest
+event is authoritative. Each event records the database role and time.
+Lumen account erasure removes the event history for that user and prevents a
+later grant from resurrecting it. See [Play operations](../android/PLAY.md#accès-à-la-revue-google-play-796).
+
+`lumen_can_use_play_review` compares the expected account with `auth.uid()`
+and returns one boolean. The map reads it online, after profile and entitlement
+verification, and again on selection. It discards responses from an earlier
+account, client or hydration generation. The grant stays in memory and affects
+only quest prerequisites in the map. It never participates in a profile
+snapshot, entitlement, command receipt or merge.
+
+Locally suspended review attempts retain the existing attempt envelope in
+account- and quest-scoped storage. They carry game state only and use the
+normal grid and reset-revision checks on resume. Local Lumen erasure removes
+those attempts. Navigation-only boards stay in memory until a real attempt
+starts. Victory and ranking use the existing paths.
+
 ### Historical guest hydration and Wallet authority (#801)
 
 After Wallet activation, the profile CAS retains the verified cloud projection

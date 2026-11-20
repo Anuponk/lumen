@@ -79,10 +79,10 @@ Tester aussi sans package explicite pour vérifier le routage Android réel.
 
 ## Recette du compte de revue Play (#796)
 
-Cette recette attend une capacité serveur de navigation propre au compte de
-revue. Les droits d'aventure actuels permettent d'ouvrir une aventure et
-laissent ses quêtes soumises aux prérequis habituels. Le compte de revue doit
-rester un compte joueur.
+Utiliser un compte joueur dédié auquel l’opérateur a accordé le
+[droit de revue](PLAY.md#accès-à-la-revue-google-play-796). Vérifier que les
+droits d’Aventure nécessaires sont présents et que le compte ouvre seulement
+les menus joueur habituels. La recette physique reste à effectuer.
 
 - Depuis l'AAB de piste interne, ouvrir avec le compte de revue une première
   quête, une intermédiaire et une dernière dans chaque aventure autorisée.
@@ -90,9 +90,13 @@ rester un compte joueur.
 - Comparer avant/après l'ouverture seule. Les victoires, records, badges,
   étoiles, achats et classements doivent rester identiques. Résoudre ensuite
   une quête de test et vérifier les récompenses normales de cette seule quête.
-- Refaire avec un compte ordinaire, après reconnexion hors ligne et après
-  révocation du droit de revue. Les prérequis habituels doivent s'appliquer
-  et les droits d'aventure préexistants doivent être conservés.
+- Passer du compte revue au compte ordinaire puis revenir. Vérifier la
+  séparation des tentatives et l’absence d’accès direct sur le compte ordinaire.
+- Passer en mode avion depuis Mon ciel puis se reconnecter. Les nouveaux
+  accès directs exigent une réponse du serveur, y compris sur un appareil
+  neuf. Révoquer le droit côté serveur avec Mon ciel ouvert. La prochaine
+  sélection exceptionnelle doit être refusée et les droits d’Aventure
+  préexistants doivent être conservés.
 - Transmettre dans Play Console les instructions et le compte via le champ
   privé prévu pour l'accès au contenu. La preuve publique ne contient que
   les révisions testées et le résultat par scénario.

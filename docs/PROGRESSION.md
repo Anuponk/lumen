@@ -109,6 +109,23 @@ Browsing another Adventure never changes gameplay state. Loading/continuation mu
 
 Authenticated internal administrators with the server-provided `analytics_cockpit` or `all_adventures_access` capability may browse and enter every catalogued Adventure, including locked packs, without creating a purchase entitlement or persisting access into player progress. QA guest sessions never receive this override. Ordinary players retain the existing access policy. This exception affects pack access only: sequential quest progression and rewards remain governed by their existing rules.
 
+### Google Play review navigation (#796)
+
+A specifically authorised review account can select any quest in an Adventure
+it can already access through **Mon ciel**. The server verifies the account's
+review grant on entry to the map and again on selection. An unavailable,
+expired or revoked grant leaves ordinary progression and replays in effect.
+The grant is independent of Adventure entitlements and internal capabilities.
+The first guided quest allows the same verified Mon ciel entry. Its guided
+board interactions and learning milestones follow the ordinary rules.
+
+Selection creates no completion, stars, badges, record, ranking or reward.
+The board uses the ordinary campaign or replay rules. An actual win is
+processed for the quest played, and skipped quests retain their existing
+completion state. A started attempt set aside through the review map stays
+available to the same account on the same device. An unstarted selection
+that required the grant does not become a resumable attempt.
+
 ## Admin Adventure grants (#724)
 
 An internal administrator (`analytics_cockpit`, checked by the server) can grant or revoke a locked Adventure for one player from Analytics › player detail › « Aventures débloquées ». The server RPC `lumen_admin_adventure_access` validates the capability, the player and the Adventure id (`real-adventure-NN`, never the included first Adventure), requires a reason, and writes `lumen.entitlements` with source `admin`; each actual change is recorded in `lumen_commands.adventure_access_audit`. Retries are idempotent and not re-audited. The player reads the new state through `lumen_get_entitlements` at the next app start or sign-in.

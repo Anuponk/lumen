@@ -1,5 +1,12 @@
 # Existing verification map
 
+Play review #796: `play-review-navigation-tests.mjs` for catalogue, stale
+proof and attempt storage, `play-review-navigation-browser-tests.mjs` for
+the real map and a synthetic account switch/victory, and
+`fixtures/play-review-navigation.sql` in ledger CI for Auth scope,
+permissions, audit, revocation and expiry. Physical acceptance uses the
+[Android checklist](../../android/TESTING.md#recette-du-compte-de-revue-play-796).
+
 Owned Adventure entry #783: `owned-adventure-access-tests.mjs` covers independent
 pack entry, its own quest sequence, numeric bounds and entitlement-read isolation.
 `owned-adventure-browser-tests.mjs` verifies delayed rights, map starts and reload

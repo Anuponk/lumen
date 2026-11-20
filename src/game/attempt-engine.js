@@ -18,14 +18,21 @@ export function attemptOperationId(attempt){
  return attempt.attemptId+'-reset-'+segment;
 }
 export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Date.now(),perfNow=()=>globalThis.performance?.now?.()??Date.now(),onChange=()=>{},onAssistanceUse=()=>{}}={}){
- let attempt=null,activeSince=null;
+ let attempt=null,activeSince=null,persistReady=true;
  const emit=()=>{persist();onChange(snapshot())};
  const snapshot=()=>attempt?{...attempt,...(attempt.helpUses?{helpUses:{...attempt.helpUses}}:{}),board:cloneBoard(attempt.board),activeDuration:activeMs()}:null;
  function activeMs(){return attempt?attempt.activeDuration+(attempt.state===ATTEMPT_STATES.RUNNING&&activeSince!==null?Math.max(0,perfNow()-activeSince):0):0}
  function officialSeconds(){return rankedTime(Math.max(0,Math.floor(activeMs()/1000)),attempt?.helpUses).score}
- function persist(){if(!attempt)return storage?.removeItem?.(STORAGE_KEY);const copy={...attempt,board:cloneBoard(attempt.board),activeDuration:activeMs(),updatedAt:now()};storage?.setItem?.(STORAGE_KEY,JSON.stringify(copy))}
- function create({questId,mode="campaign",qualifying=false,challengeId=null,board=[],gridRevision=0,questResetRevision=0}){
+ function persist(){
+  if(!attempt)return storage?.removeItem?.(STORAGE_KEY);
+  // A review selection becomes a resumable attempt after the first real action.
+  if(!persistReady&&!attempt.startedAt)return;
+  const copy={...attempt,board:cloneBoard(attempt.board),activeDuration:activeMs(),updatedAt:now()};
+  storage?.setItem?.(STORAGE_KEY,JSON.stringify(copy));
+ }
+ function create({questId,mode="campaign",qualifying=false,challengeId=null,board=[],gridRevision=0,questResetRevision=0,persistBeforeStart=true}){
   if(mode==='challenge')questResetRevision=0;
+  persistReady=persistBeforeStart;
   // #851: one run identity per attempt; a grid reset never opens a new run.
   attempt={attemptId:(questResetRevision?'qr'+questResetRevision+'.':'')+(gridRevision>1?'gv'+gridRevision+'.':'')+newId(),questId,mode,rankingVersion:1,...(gridRevision?{gridRevision}:{}),...(questResetRevision?{questResetRevision}:{}),...(mode==='challenge'?{}:{runSegment:0}),state:ATTEMPT_STATES.READY,startedAt:null,activeDuration:0,lastActiveAt:null,assistanceUsed:false,mistakeCommitted:false,wrongGuardianPending:null,resetCount:0,qualifying:!!qualifying,challengeId,board:cloneBoard(board),createdAt:now(),updatedAt:now()};activeSince=null;emit();return snapshot()
  }
@@ -42,6 +49,7 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
    if(storage.getItem(key)!==raw)throw Error('Grid attempt archive unverified');
    return null;
   }
+  persistReady=true;
   attempt={...saved,board:cloneBoard(saved.board),activeDuration:Number(saved.activeDuration)||0,assistanceUsed:!!saved.assistanceUsed,mistakeCommitted:!!saved.mistakeCommitted,wrongGuardianPending:saved.wrongGuardianPending||null};
   // #851: an attempt persisted by an older release keeps the run identity it
   // may already have begun on the server (victory receipt and ranking).

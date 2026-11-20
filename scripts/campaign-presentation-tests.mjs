@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import * as canonical from '../src/campaign/canonical-quests.js';
-import {CONTENT_CONSTELLATIONS} from '../src/campaign/content.js';
+import {CONTENT_CONSTELLATIONS,CONTENT_PACKS,hasPackAccess} from '../src/campaign/content.js';
 import {CONSTELLATIONS} from '../src/campaign/data.js';
 import {createCampaign,milestoneFor,isCampaignFinalQuest,isCampaignComplete,campaignQuestCount} from '../src/campaign/progression.js';
 import {questIsCompleted} from '../src/persistence/canonical-progress.js';
+import {hasPlayReviewAttempt,playReviewQuestDecision} from '../src/persistence/play-review-navigation.js';
 import {questPerformanceRecord} from '../src/campaign/quest-rules.js';
 import {functionSource} from './source-tools.mjs';
 import {celestialScope} from '../src/ui/celestial-progress.js';
@@ -32,7 +33,7 @@ test('actual campaign UI awards count canonical quests and bonuses, with grandfa
 });
 
 // Minimal DOM for the actual two quest-card renderers, not a copy of their logic.
-function questCardFixture(progress,{signedIn=true,cloudReady=true,entryId}={}){
+function questCardFixture(progress,{signedIn=true,cloudReady=true,entryId,reviewEnabled=false}={}){
  const elements=[];
  function element(){
   const e={children:[],dataset:{},attributes:{},className:'',innerHTML:'',textContent:'',
@@ -42,20 +43,21 @@ function questCardFixture(progress,{signedIn=true,cloudReady=true,entryId}={}){
    setAttribute(key,value){this.attributes[key]=String(value)}};
   e.classList={add(name){e.className+=' '+name}};elements.push(e);return e;
  }
- const grid=element(),section=element(),modal=element(),sky=element();
+ const grid=element(),section=element(),modal=element(),sky=element(),reviewStatus=element();
  modal.querySelector=selector=>selector==='#canonicalJourneyPreview'?section:null;
  const entry=CONTENT_CONSTELLATIONS.find(c=>entryId?c.id===entryId:all.some(q=>q.constellationId===c.id&&q.legacyIndex===null));
  const context={...canonical,celestialScope,milkyWaySvg,takeMasteryPulse:()=>null,leavePendingVictoryForNavigation:()=>{},confirmedReplayAllowed:()=>false,lumenProgress:progress,qaActive:false,
   lumenUser:signedIn?{id:'synthetic-owner'}:null,cloudProfileReady:cloudReady,lumenEntitlementsState:'ready',
-  adventureAccessEntitlements:()=>[],attemptEngine:{snapshot:()=>null},campaignAccessAttempt:()=>null,
-  navigationProgress:()=>progress,offlineQuestAccessContext:()=>({offline:false,verifiedSession:false}),document:{createElement:element,createElementNS:element,getElementById:id=>id==='puzzleGrid'?grid:id==='mapModal'?modal:id==='skyCard'?sky:null},
-  CONTENT_CONSTELLATIONS,mapConstellation:0,
+  adventureAccessEntitlements:()=>[],attemptEngine:{snapshot:()=>null,storageKey:'fixture-attempt'},campaignAccessAttempt:()=>null,
+  localStorage:{getItem:()=>null},playReviewNavigation:{available:()=>reviewEnabled},hasPlayReviewAttempt,playReviewQuestDecision,hasPackAccess,
+  navigationProgress:()=>progress,offlineQuestAccessContext:()=>({offline:false,verifiedSession:false}),document:{createElement:element,createElementNS:element,getElementById:id=>({puzzleGrid:grid,mapModal:modal,skyCard:sky,playReviewStatus:reviewStatus})[id]??null},
+  CONTENT_CONSTELLATIONS,CONTENT_PACKS,mapConstellation:0,
   skyNavigation:{render(){},selectedConstellation:()=>entry,createFactButton:()=>null},
   mapConstellationRange:()=>({quests:[]}),maybeShowStreakLoss(){},renderDaily(){},
   performanceBadges:()=>'<span>badge historique</span>',canonicalPerformanceBadges:()=>'<span>badge canonique</span>',
   badgeCooldownRemaining:()=>0,questPerformanceRecord,verifiedAstronomicalFigure:()=>true,questIsCompleted,astronomicalPrimarySvg:()=>''};
  vm.createContext(context);
- const names=['adventureEntitlementsState','constellationMastery','canonicalQuestAccess','canonicalQuestAvailable','canonicalQuestLockReason','questIsAccessible','renderMap','renderCanonicalSky','renderCanonicalJourneyPreview','startCanonicalQuest'];
+ const names=['adventureEntitlementsState','constellationMastery','canonicalQuestAccess','canonicalQuestAvailable','canonicalQuestLockReason','legacyQuestAccess','questIsAccessible','playReviewAttemptId','mapQuestAccess','renderPlayReviewStatus','renderMap','renderCanonicalSky','renderCanonicalJourneyPreview','startCanonicalQuest'];
  vm.runInContext(names.map(name=>functionSource(source,name)).join('\n'),context);
  return {context,grid,section,elements,entry,sky};
 }
@@ -128,6 +130,19 @@ test('unfinished quests retain prerequisite, ownership and sync locks without ac
   assert.equal(card.disabled,true);assert.equal(card.onclick,undefined);
   assert.equal(context.startCanonicalQuest(quest),false);assert.equal(JSON.stringify(progress),before);
  }
+});
+
+test('verified review cards open prerequisites while a locked Adventure stays locked',()=>{
+ const progress={},before=JSON.stringify(progress);
+ for(const [status,disabled] of [['prerequisite',false],['pack-locked',true]]){
+  const quest=all.find(q=>q.legacyIndex===null&&canonical.canonicalCampaignQuestDecision(q,progress,{signedIn:true}).status===status);
+  const {context,grid}=questCardFixture(progress,{entryId:quest.constellationId,reviewEnabled:true});
+  context.renderMap();
+  const card=grid.children.find(e=>e.dataset.questId===quest.id);
+  assert.equal(card.disabled,disabled);
+  assert.doesNotMatch(card.className,/\bdone\b/);
+ }
+ assert.equal(JSON.stringify(progress),before);
 });
 
 test('catalogue history distinguishes a completed sync-held quest from a missing prerequisite',()=>{

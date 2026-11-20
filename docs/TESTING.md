@@ -906,6 +906,15 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Review navigation (#796) uses `play-review-navigation-tests.mjs` for catalogue,
+normal guard preservation, stale account responses and attempt backup.
+`play-review-navigation-browser-tests.mjs` exercises Mon ciel on a mobile
+viewport with synthetic Auth, entitlements and victory receipts.
+`scripts/fixtures/play-review-navigation.sql` checks the real RPC, table
+privileges, audit history, expiry, revocation and the account erasure policy
+in disposable PostgreSQL. The [Android checklist](../android/TESTING.md#recette-du-compte-de-revue-play-796)
+covers acceptance on a Play-installed build.
+
 Signup confirmation (#814) is exercised by `account-email-login-tests.mjs`
 and the account-session browser suite on mobile and desktop. Mail responses are
 synthetic. The suite covers delayed acceptance, duplicate clicks and mode changes,

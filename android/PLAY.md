@@ -656,6 +656,48 @@ Références officielles consultées le 18/11/2026 :
 [produits, options, activation et régions](https://support.google.com/googleplay/android-developer/answer/16430488),
 [testeurs de licence](https://support.google.com/googleplay/android-developer/answer/6062777).
 
+## Accès à la revue Google Play (#796)
+
+Après application autorisée de la migration, préparer un compte joueur dédié
+avec ses droits d’Aventure habituels. Vérifier qu’il se connecte avec une
+adresse et un mot de passe réutilisables. Un opérateur PostgreSQL ajoute un
+événement dans le schéma privé, avec l’UUID Auth vérifié dans l’environnement
+cible et une échéance couvrant la période de revue.
+
+```sql
+insert into lumen_commands.play_review_access_events(user_id, action, expires_at)
+values ('<AUTH_USER_UUID>'::uuid, 'grant', '<EXPIRY_UTC>'::timestamptz);
+```
+
+Après la revue, l’opérateur ajoute un événement de révocation. Les droits
+d’Aventure et les parties légitimes restent disponibles selon les règles
+habituelles. Garder les valeurs réelles et l’historique dans l’environnement
+privé.
+
+```sql
+insert into lumen_commands.play_review_access_events(user_id, action)
+values ('<AUTH_USER_UUID>'::uuid, 'revoke');
+```
+
+Dans Play Console, ouvrir **App content → Sign-in details** et remplir les
+champs privés avec le compte vérifié. Les consignes sont à fournir en anglais.
+Voir [les exigences Google Play pour les comptes de revue](https://support.google.com/googleplay/android-developer/answer/15748846?hl=en)
+et [les étapes Play Console](https://support.google.com/googleplay/android-developer/answer/9859455?hl=en).
+
+> Open LUMEN while connected to the internet. On the welcome screen select
+> “J’ai déjà joué — Retrouver ma progression” to sign in, or use the account menu. Sign in with the
+> email and password supplied in this form. Open “Mon ciel”, choose an
+> Adventure, then a constellation and a quest. “Mode revue Play” confirms
+> that direct quest selection is available for this review account. Return
+> to “Mon ciel” to choose another quest or select “Reprendre” to continue
+> an attempt you started on this device. Play the first quest for the
+> tutorial, or choose a later quest to inspect its board, help and results.
+> The account already has Adventure access. No purchase is needed for
+> the review. In ordinary play, quests unlock through progression.
+
+Vérifier ces étapes sur une installation Play avec la
+[checklist Android](TESTING.md#recette-du-compte-de-revue-play-796).
+
 ## Mises à jour natives Android (#845)
 
 La TWA affiche le site dans le navigateur. Le service worker gère la version

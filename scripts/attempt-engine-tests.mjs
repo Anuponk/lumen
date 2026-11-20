@@ -8,6 +8,17 @@ function harness(){
  return {storage,make,tick(ms){wall+=ms;mono+=ms}};
 }
 {
+ const h=harness(),engine=h.make();
+ const ready=engine.create({questId:'review-quest',board:[[0]],persistBeforeStart:false});
+ engine.requalify(true);
+ assert.equal(h.storage.getItem(engine.storageKey),null,'An idle review selection never becomes a restored board');
+ engine.start();
+ const resumed=h.make().restore({questId:'review-quest'});
+ assert.equal(attemptOperationId(resumed),attemptOperationId(ready));
+ assert.equal(resumed.qualifying,true);
+ assert.equal(resumed.state,ATTEMPT_STATES.PAUSED);
+}
+{
  const h=harness(),e=h.make(),a=e.create({questId:27,mode:"campaign",board:[[0,0],[0,0]]});
  assert.equal(a.state,ATTEMPT_STATES.READY);h.tick(5000);assert.equal(e.activeMs(),0);
  const id=a.attemptId;e.start();h.tick(1250);assert.equal(e.activeMs(),1250);

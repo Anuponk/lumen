@@ -22,10 +22,18 @@ const nodes=new Map();const element=id=>{if(!nodes.has(id))nodes.set(id,{hidden:
 for(const played of quests.filter(q=>q.position===1)){
  let opened;
  const context={firstLearningSkyVisit:()=>false,activeQuest:()=>played,levelIndex:0,CONTENT_CONSTELLATIONS,mapConstellation:0,
+ playReviewReturn:null,cloudHydrationGeneration:2,playReviewNavigation:{clear(){}},refreshPlayReviewMap(){},
  chapterForGrid:()=>0,document:{getElementById:element},skyNavigation:{open:options=>{opened=options}},renderMap(){},startBadgeCooldownRefresh(){},clearSkyTourFocus(){},lumenProgress:{solved:{}},requestAnimationFrame(){},renderSkyTourStep(){}};
  vm.createContext(context);vm.runInContext(functionSource(source,'openJourneyMap'),context);context.openJourneyMap();
  assert.equal(opened.constellationId,played.constellationId,'Default map return follows played stable identity '+played.id);
+ assert.equal(opened.detail,false,'Ordinary entry stays in overview');
  context.openJourneyMap(false,{questIndex:1});assert.equal(opened.constellationId,null,'Explicit numeric teaching destination overrides the current board');
  context.openJourneyMap(false,{constellationId:target.constellationId,questIndex:0});assert.equal(opened.constellationId,target.constellationId);
+ context.playReviewReturn={questId:played.id,generation:2};
+ context.openJourneyMap(true);
+ assert.equal(opened.detail,true,'Review return reopens the played constellation');
+ context.cloudHydrationGeneration++;
+ context.openJourneyMap(true);
+ assert.equal(opened.detail,false,'A previous account generation cannot change the map destination');
 }
 console.log('PASS canonical sky-return identity and explicit destination priority');

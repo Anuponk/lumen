@@ -17,6 +17,7 @@ export const nodeSuites=[
  'mastery-unlock-tests.mjs',
  'adventure-offer-tests.mjs',
  'play-billing-tests.mjs',
+ 'play-review-navigation-tests.mjs',
  'play-purchase-handler-tests.mjs',
  'stripe-handler-tests.mjs',
  'stripe-checkout-client-tests.mjs',
