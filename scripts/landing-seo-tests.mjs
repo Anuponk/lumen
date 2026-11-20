@@ -167,13 +167,55 @@ assert.match(robots,/^User-agent: \*$/m);assert.match(robots,/^Disallow: \/admin
 assert.doesNotMatch(robots,/Disallow: \/src\//,'Never hide the code and styles Google needs to render the game');
 assert.match(robots,/^Sitemap: https:\/\/lumen\.nopuna\.fr\/sitemap\.xml$/m);
 const locs=[...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m=>m[1]);
-assert.deepEqual(locs,['https://lumen.nopuna.fr/','https://lumen.nopuna.fr/decouvrir.html','https://lumen.nopuna.fr/discover.html','https://lumen.nopuna.fr/comment-jouer.html','https://lumen.nopuna.fr/apprendre-constellations.html','https://lumen.nopuna.fr/constellations/']);
+assert.deepEqual(locs,['https://lumen.nopuna.fr/','https://lumen.nopuna.fr/decouvrir.html','https://lumen.nopuna.fr/discover.html','https://lumen.nopuna.fr/comment-jouer.html','https://lumen.nopuna.fr/how-to-play.html','https://lumen.nopuna.fr/apprendre-constellations.html','https://lumen.nopuna.fr/learn-constellations.html','https://lumen.nopuna.fr/constellations/']);
 for(const l of locs){const path=new URL(l).pathname;assert(fs.existsSync(path.endsWith('/')?path.slice(1)+'index.html':path.slice(1)),'Sitemap URL exists: '+l)}
 
 // Every new public file is published and verified by both release paths.
-for(const file of ['decouvrir.html','discover.html','comment-jouer.html','apprendre-constellations.html','constellations/index.html','robots.txt','sitemap.xml']){
+for(const file of ['decouvrir.html','discover.html','comment-jouer.html','how-to-play.html','apprendre-constellations.html','learn-constellations.html','constellations/index.html','robots.txt','sitemap.xml']){
  assert.match(read('scripts/o2switch-cron-publish.sh'),new RegExp('PUBLIC_PAGES=\\([^)]*'+file.replace('.','\\.')),'Cron publisher: '+file);
  assert.match(read('scripts/o2switch-safe-release.sh'),new RegExp('for page in [^;]*'+file.replace('.','\\.')),'Safe release: '+file);
  assert.match(read('scripts/o2switch-deploy-tests.py'),new RegExp('PUBLIC_PAGES = \\([^)]*"'+file.replace('.','\\.')+'"'),'Deploy tests: '+file);
 }
 console.log('landing-seo-tests: head, page facts, structured data, images, robots, sitemap and release lists OK');
+
+for(const [frPath,enPath] of [['comment-jouer.html','how-to-play.html'],['apprendre-constellations.html','learn-constellations.html']]){
+ const paths={fr:frPath,en:enPath,'x-default':frPath};
+ for(const lang of ['fr','en']){
+  const document=read(paths[lang]),counterpart=lang==='fr'?'en':'fr';
+  const base='https://lumen.nopuna.fr/';
+  assert(document.includes('<html lang="'+lang+'">'));
+  assert(document.includes('<link rel="canonical" href="'+base+paths[lang]+'">'));
+  assert.equal(meta(document,'property','og:url'),base+paths[lang]);
+  assert.equal(meta(document,'property','og:locale'),lang==='fr'?'fr_FR':'en_US');
+  assert.equal(meta(document,'property','og:locale:alternate'),lang==='fr'?'en_US':'fr_FR');
+  assert.equal(meta(document,'property','og:image'),base+'src/landing/'+(lang==='fr'?'og.jpg':'og-en.jpg'));
+  for(const [locale,route] of Object.entries(paths))assert(document.includes('<link rel="alternate" hreflang="'+locale+'" href="'+base+route+'">'));
+  assert(document.includes('href="/'+paths[counterpart]+'" lang="'+counterpart+'" hreflang="'+counterpart+'"'));
+  assert(sitemap.includes('<loc>'+base+paths[lang]+'</loc>'));
+ }
+ const englishGuide=read(enPath);
+ assert(english.includes('href="/'+enPath+'"'),'English discovery leads to the English guide');
+ assert.match(englishGuide,/<a class="play" href="\/" hreflang="fr">Play in French<\/a>/);
+ assert.match(englishGuide,/Stellarium.*CC BY-SA.*Hipparcos/);
+ assert.doesNotMatch(englishGuide,/<script\b(?![^>]*application\/ld\+json)/);
+}
+
+const englishRules=read('how-to-play.html'),englishLearn=read('learn-constellations.html');
+const howToData=JSON.parse(englishRules.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
+assert.equal(howToData['@type'],'HowTo');
+assert.equal(howToData.inLanguage,'en');
+assert.equal(howToData.step.length,3);
+assert.match(englishRules,/one Guardian in each row.*one in each column/);
+assert.match(englishRules,/one Guardian in each colored territory/);
+assert.match(englishRules,/never touch, even diagonally/);
+const {exampleModel,SVG_FILES}=await import('./how-to-play.mjs');
+const example=exampleModel();
+const coordinates=([row,col])=>'row '+(row+1)+', column '+(col+1);
+for(const [row,col] of example.sol.map((col,row)=>[row,col]))assert(englishRules.includes(coordinates([row,col])));
+for(const asset of Object.values(SVG_FILES))assert(englishRules.includes('src="/'+asset+'"'));
+assert(englishLearn.includes('<strong>'+quests.filter(q=>q.packId===first.id).length+' quests</strong>'));
+assert(englishLearn.includes('<strong>'+CONTENT_CONSTELLATIONS.filter(c=>c.packId===first.id).length+' constellations</strong>'));
+assert(englishLearn.includes('<strong>'+CONTENT_CONSTELLATIONS.length+' official constellations</strong>'));
+assert.match(englishLearn,/Southern Cross.+below the horizon from mainland France/);
+assert(englishRules.includes('href="/learn-constellations.html"')&&englishLearn.includes('href="/how-to-play.html"'));
+console.log('English guides: language metadata, puzzle solution, catalogue facts, links and release packaging OK');

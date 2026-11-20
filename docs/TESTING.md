@@ -330,7 +330,7 @@ strict catalogue suites remain required.
 Discovery (#754) uses `landing-seo-tests.mjs` for reciprocal language metadata,
 local links, catalogue counts, social images and the publication lists.
 `landing-browser-tests.mjs` checks mobile and desktop layout, language link
-focus and campaign attribution from both localized pages. `acquisition-tests.mjs`
+focus and campaign attribution from both localized pages. The same browser suite covers the rules and constellation learning guides in both languages at 360, 390 and 1440 px, including their shared artwork and keyboard-focusable language links. `acquisition-tests.mjs`
 keeps the existing origin, consent and UTM restrictions.
 
 `node scripts/locale-tests.mjs` covers ordered device languages, explicit and
@@ -1895,6 +1895,8 @@ Any change to challenge behavior must additionally verify:
 - the recipient plays the exact challenged grid, including a locked Adventure, without gaining access to it;
 - a finished link reopens on its result (lowercase server status), never on a second attempt;
 - “Mes défis” shows canonical visible quest numbers for historical, stable and revised challenges.
+
+#882 (Lot 3, PR A): see [DAILY_CHALLENGE.md §7](DAILY_CHALLENGE.md#7-tests-et-retour-arrière) — `daily-challenge-tests.mjs`, `fixtures/daily-challenge-882.sql`, `daily-concurrency.py` and the rollback rehearsal run in canonical-ledger CI.
 
 #35 (Lot 2): `social-friends-tests.mjs` (client RPC names/arguments, French
 errors, statuses, escaped renderers without technical IDs), `friends-browser.mjs`

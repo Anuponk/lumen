@@ -1900,6 +1900,16 @@ Known limits: durations stay client-declared; a cross-device resume counts the
 wall-clock time since the server start, pauses included. Old cached clients without these
 fixes still show the previous behaviour until they update.
 
+### Daily challenge (#882, EPIC #881 Lot 3)
+
+Server contracts, data model, rules, anti-cheat limits and rollback are owned by
+[DAILY_CHALLENGE.md](DAILY_CHALLENGE.md). Summary: one official ranked attempt per
+account and Europe/Paris day (`lumen_commands.daily_runs`, primary key
+`(user_id, day)`), pinned grid per day (`daily_puzzles`, seeded from
+`content/generated/daily-schedule.json`), general and friends rankings computed
+from the same rows, ranks frozen in `daily_standings` after close + 6 h, disabled
+by the `daily_challenge` feature flag until the gates of #882 are validated.
+
 ### Friends and direct challenges (#35, EPIC #881 Lot 2)
 
 Optional, accounts only; a guest still plays any challenge link without an

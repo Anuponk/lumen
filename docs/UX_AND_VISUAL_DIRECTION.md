@@ -24,7 +24,7 @@ To prepare an additional locale, use the French domain catalogue as a template, 
 
 The service worker follows the static imports to cache the French and English catalogues. The French introduction keeps its existing timing, entry choices and accessibility. Guarded teaching steps begin in the game after the introduction.
 
-The public discovery page is available in French at `/decouvrir.html` and in English at `/discover.html`. Both pages have a language link, reciprocal `hreflang` and localized social previews. French is the discovery fallback. The English page labels its links to the current French game, installation and guides. It uses the existing captures from the French edition.
+The public discovery page is available in French at `/decouvrir.html` and in English at `/discover.html`. Both pages have a language link, reciprocal `hreflang` and localized social previews. French is the discovery fallback. The English discovery page links to the English rules and constellation learning guides at `/how-to-play.html` and `/learn-constellations.html`. Both guides link to their French counterpart and use reciprocal `hreflang`. The game, installation, constellation directory and legal links identify their French destinations. The pages use the existing captures from the French edition.
 
 Before exposing English across the game, finish the remaining screen and content translations, connect the hot language selector and test it during an active attempt. The cross-device preference policy, installed Android locale, public pages and metadata, transactional copy, notifications and Play listing are part of the remaining FR/EN rollout.
 
