@@ -96,6 +96,7 @@ export const nodeSuites=[
  'quest-view-tests.mjs',
  'quest-policy-tests.mjs',
  'quest-victory-parity-tests.mjs',
+ 'quest-parity-matrix-tests.mjs',
  'quest-command-tests.mjs',
  'service-worker-cache-tests.mjs',
  'offline-verified-access-tests.mjs',

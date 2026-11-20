@@ -199,7 +199,7 @@ changed local bytes, account/session switch and failed archival. The existing
 `quota-recovery-browser.mjs` also executes native storage/Web Crypto/backup
 installation with simulated RPC. Physical-device confirmation remains separate.
 
-Quest convergence (#522): `quest-policy-tests`, `quest-victory-parity-tests`,
+Quest convergence (#522): `quest-policy-tests`, `quest-victory-parity-tests`, `quest-parity-matrix-tests` (historical/recent/artificial quest matrix, docs/validation/2026-11-20-quest-parity-residual-522.md),
 `quest-command-tests` and `admin-recent-players-tests` cover visible rules,
 same-run rewards, receipt/current-profile/account guards and stable analytics.
 `quest-policy-browser` joins the standard browser runner; learning/account/
