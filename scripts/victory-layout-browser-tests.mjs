@@ -105,9 +105,10 @@ try {
       await evaluate('document.getElementById("lumenShareNative").click()');
       await until('!!window.sharedVictory');
       const shared = await evaluate(`(()=>{const {title,text,url,files}=window.sharedVictory;return {title,text,url,files:files?.map(f=>({name:f.name,type:f.type,size:f.size})),time:document.getElementById('skyRevealTime').textContent}})()`);
-      assert.equal(shared.title, 'Ma réussite dans Lumen');
+      // The scene above is marked as a completed constellation: Partager names it (#881 Lot 1).
+      assert.equal(shared.title, 'Constellation rallumée dans Lumen');
       assert.equal(shared.url, 'https://lumen.nopuna.fr/decouvrir.html?utm_source=player_share&utm_medium=referral');
-      assert.match(shared.text, /^✦ Quête .+ réussie dans Lumen · /);
+      assert.match(shared.text, /^✦ J’ai rallumé .+ dans Lumen \(quête \d+\)/);
       assert(shared.text.includes('Temps final ' + shared.time));
       assert.doesNotMatch(shared.text, /ref=|challenge=|quêtes accomplies/);
       assert.equal(shared.files?.[0]?.type, 'image/png');
