@@ -95,7 +95,7 @@ import {mountAdventureAccess} from './adventure-access-panel.js';
 import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
 import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery,mainSkyOffer} from './adventure-offer.js';
 import {purchaseThanksModel,showPurchaseThanks} from './purchase-thanks.js';
-import {PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,createForegroundRecovery,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,toPlayProductId,findOwnedPlayPurchase,playOwnershipMessage} from '../persistence/play-billing.js';
+import {PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,createForegroundRecovery,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,toPlayProductId,findOwnedPlayPurchase,playOwnershipMessage,playOwnershipSummary} from '../persistence/play-billing.js';
 import {rememberPlayAppLaunch,isPlayDistributedApp,stripeCheckoutAvailable,startStripeCheckout,stripeSessionStatus,restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage} from '../persistence/stripe-checkout.js';
 import {SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS,isMainSkyProduct} from '../campaign/store-catalogue.js';
 import {createSound} from "./sound.js";
@@ -4509,7 +4509,7 @@ function restorePlayForCurrentAccount(){
  playRestoreInFlight=operation;
  return operation.promise;
 }
-function playRestoreMessage(outcome,{manual=false}={}){
+function playRestoreMessage(outcome,{manual=false,focus=null}={}){
  if(!outcome)return '';
  const {results,unavailable,rightsUnavailable}=outcome;
  const paid=results.some(r=>r.status==='paid');
@@ -4524,9 +4524,9 @@ function playRestoreMessage(outcome,{manual=false}={}){
  if(paid)return 'Achats Google Play vérifiés. Tes droits sont à jour.';
  if(results.some(r=>r.status==='pending'))return 'Google Play traite encore un paiement. Nous vérifierons à nouveau son état.';
  if(manual&&results.some(r=>r.status==='account_unverified'||r.status==='owned_elsewhere')){
-  // #864: name each purchase and say why it stays on its original Lumen account.
-  return results.filter(r=>r.status==='account_unverified'||r.status==='owned_elsewhere')
-   .map(r=>playOwnershipMessage(r.status,playProductTitle(playProductFromSku(r.itemId)))).join(' ');
+  // #864/#878: name each purchase and why it stays on its original Lumen account,
+  // grouped per state so that the instruction is given once.
+  return playOwnershipSummary(results,sku=>playProductTitle(playProductFromSku(sku)),{focus});
  }
  if(manual&&results.some(r=>r.status==='offer_not_eligible'))return playOwnershipMessage('offer_not_eligible');
  if(results.some(r=>r.status==='not_paid'))return 'Google Play ne confirme aucun droit pour cet achat.';
@@ -4684,7 +4684,7 @@ function renderAdventureOffer(container,pack,{close}={}){
    const owner=lumenUser?.id;
    const outcome=await restorePlayForCurrentAccount();
    if(lumenUser?.id!==owner)return '';
-   const text=playRestoreMessage(outcome,{manual:true});
+   const text=playRestoreMessage(outcome,{manual:true,focus:toPlayProductId(pack.id)});
    const clean=!!outcome&&!outcome.unavailable&&!outcome.rightsUnavailable&&outcome.results.some(r=>r.status==='paid')
     &&!outcome.results.some(r=>['error','pending','owned_elsewhere','account_unverified','offer_not_eligible'].includes(r.status)||(r.status==='paid'&&!r.acknowledged));
    return {text,transient:clean};

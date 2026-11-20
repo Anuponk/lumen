@@ -375,3 +375,11 @@ ne devine jamais son propriétaire. Le client ouvrait pourtant la feuille Play
 message vague. Correctif : `findOwnedPlayPurchase` lit `listPurchases()` avant et
 après la feuille, fait vérifier le jeton pour le seul compte Lumen connecté et
 `playOwnershipMessage` explique chaque cas. Aucun transfert entre comptes Lumen.
+
+**Suite #878 (recette 20/11/2026)** : avec quatre achats détenus par le même
+compte Google Play, la restauration manuelle concaténait quatre longues phrases
+(`.join(' ')`), et `real_sky_all`, remboursé sans révocation, était présenté
+comme « rattaché à un autre compte » parce que `verify()` testait le
+propriétaire avant l'état `refunded`. Correctif : `playOwnershipSummary` groupe
+par état ; l'Edge répond `not_paid` pour un jeton remboursé d'un autre compte,
+sans écriture ni accusé de réception.
