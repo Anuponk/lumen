@@ -381,6 +381,9 @@ reload. Resuming an ordinary restored board requires the real attempt-mask gestu
 same-run Maîtrise, cooldown, grandfathered rewards and variable future groups.
 It also covers durable partial recovery of a protected V2 replay summary while
 preserving first-win performance and rejecting unknown badge-field changes.
+`quest-parity-matrix-tests.mjs` (#522) compares a historical quest, the latest canonical
+quest and an artificial quest appended in a fixture: rewards equal published data for
+all quests, same badges/XP/replay/access rules, storage keys only via the adapter.
 Authenticated acquired/started replay access remains held beyond discovery
 while cloud restoration is incomplete; guests retain their acquired access.
 The badge UI regression also reads the actual rules dialog: four badges from
