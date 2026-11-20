@@ -1727,9 +1727,9 @@ function setupMobileAuth(){
  if(!menu||!account||!action)return;
  account.onclick=(e)=>{e.stopPropagation();const d=document.getElementById("dailyInfoPopover");if(d)d.hidden=true;menu.hidden=!menu.hidden};
  menu.onclick=(e)=>e.stopPropagation();
+ setupCredits(document);
  const invite=document.getElementById("inviteLumenFriends");
  if(invite)invite.onclick=()=>lumenShare.invite(invite);
- setupCredits(document);
  const editor=document.getElementById("accountProfileEditor");
  const edit=document.getElementById("editAccountProfile");if(edit)edit.onclick=()=>{if(!lumenUser||!editor)return;editor.dataset.open="true";syncMobileAuthUI();document.getElementById("nicknameInput")?.focus()};
  const closeProfile=document.getElementById("closeAccountProfile");if(closeProfile)closeProfile.onclick=()=>{if(!editor)return;editor.dataset.open="false";syncMobileAuthUI()};
