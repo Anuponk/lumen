@@ -2621,9 +2621,13 @@ function guidedCell(r,c){return board.querySelector('.cell[data-row="'+r+'"][dat
 const assistCards=['guidedCard','hintCard','verifyCard'].map(id=>document.getElementById(id));
 function positionAssistCard(card){
  const viewport=window.visualViewport,visibleTop=viewport?.offsetTop??0,visibleLeft=viewport?.offsetLeft??0;
- const top=Math.max(board.getBoundingClientRect().bottom,visibleTop);
+ // #830: in the short-landscape two-column layout the grid fills the height;
+ // the card takes the command row's place (hidden meanwhile, #791) instead.
+ const commands=window.matchMedia?.('(orientation:landscape) and (max-height:500px)').matches?board.closest('.game-core')?.querySelector(':scope>.actions'):null;
+ const anchor=commands?.getBoundingClientRect();
+ const top=Math.max(anchor?anchor.top:board.getBoundingClientRect().bottom,visibleTop);
  const bottom=visibleTop+(viewport?.height??innerHeight);
- const bounds=board.closest('.game-core').getBoundingClientRect();
+ const bounds=anchor||board.closest('.game-core').getBoundingClientRect();
  const left=Math.max(bounds.left,visibleLeft);
  const right=Math.min(bounds.right,visibleLeft+(viewport?.width??innerWidth));
  card.style.setProperty('--assist-left',left+'px');
