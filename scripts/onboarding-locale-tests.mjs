@@ -1,0 +1,56 @@
+
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { createTranslator, locales } from '../src/ui/i18n.js';
+import { learningStep, learningAllows, dragLearningStep } from '../src/game/learning.js';
+import { learningIntro, learningCopy } from '../src/ui/learning-copy.js';
+
+const englishMissing = [];
+const { t } = createTranslator({ locale: 'en', onMissing: (_, key) => englishMissing.push(key) });
+
+test('English pre-action lessons preserve the teaching sequence and four rules', () => {
+  const steps = learningIntro(t);
+  assert.deepEqual(steps.map(step => step.title), [
+    'Look at the board', 'Your goal', 'One per territory', 'One per row and per column',
+    'Keep them apart', 'How to play',
+  ]);
+  assert.match(steps[2].copy, /exactly one Guardian/);
+  assert.match(steps[3].copy, /each row.+each column/i);
+  assert.match(steps[4].copy, /even diagonally/);
+  assert.match(steps[5].copy, /first tap.+second tap/i);
+  assert.deepEqual(englishMissing, []);
+});
+
+test('English coach describes the actual allowed Guardian and drag targets', () => {
+  const puzzle = { learnOrder: [[1, 1]], reg: [[0, 0], [0, 1]] };
+  const board = [[0, 0], [0, 0]];
+  let step = learningStep(puzzle, board);
+  assert.equal(learningAllows(step, 1, 1), true);
+  assert.equal(learningAllows(step, 0, 0), false);
+  assert.match(learningCopy(step, board, true, t).copy, /tap it twice/i);
+  board[1][1] = 1;
+  assert.match(learningCopy(step, board, true, t).copy, /tap it again/i);
+  board[1][1] = 2;
+  step = learningStep(puzzle, board);
+  assert.equal(step.phase, 'row');
+  assert.match(learningCopy(step, board, true, t).title, /per row/);
+  const dragBoard = [[2, 0], [0, 0]];
+  const drag = dragLearningStep(puzzle, dragBoard);
+  assert.deepEqual(drag.cells, [[0, 1]]);
+  assert.match(learningCopy(drag, dragBoard, true, t).copy, /finger/i);
+  assert.match(learningCopy(drag, dragBoard, false, t).copy, /mouse button/i);
+  assert.deepEqual(board, [[0, 0], [0, 2]]);
+  assert.deepEqual(englishMissing, []);
+});
+
+test('onboarding domains have French and English parity', () => {
+  const keys = catalog => Object.keys(catalog).filter(key => /^(learning|pwaWelcome)\./.test(key)).sort();
+  const fr = keys(locales.fr.messages), en = keys(locales.en.messages);
+  assert(fr.length > 0);
+  assert.deepEqual(fr, en);
+  const tokens = text => (text.match(/\{\w+\}/g) ?? []).sort();
+  for (const key of fr) {
+    assert(locales.fr.messages[key].trim() && locales.en.messages[key].trim(), key);
+    assert.deepEqual(tokens(locales.fr.messages[key]), tokens(locales.en.messages[key]), key);
+  }
+});

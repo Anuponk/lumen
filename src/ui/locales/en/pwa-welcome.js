@@ -1,0 +1,15 @@
+export default Object.freeze({
+  'pwaWelcome.title': "Welcome to the LUMEN app",
+  'pwaWelcome.copy': "Played before in your browser or on another device? Sign in to your LUMEN account to find your progress.",
+  'pwaWelcome.recover': "I’ve played before — Find my progress",
+  'pwaWelcome.new': "Start a new adventure",
+  'pwaWelcome.confirmAction': "Yes, start a new adventure",
+  'pwaWelcome.confirm': "This starts a new adventure on this device. You can still sign in later from the account menu.",
+  'pwaWelcome.safari': "I played in Safari without an account",
+  'pwaWelcome.safariOpen': "Open LUMEN in Safari again.",
+  'pwaWelcome.safariAccount': "Create an account from the account menu.",
+  'pwaWelcome.safariSync': "Wait for “Progress synced” to appear.",
+  'pwaWelcome.safariReturn': "Return to the installed app.",
+  'pwaWelcome.safariSignIn': "Tap “I’ve played before” and sign in.",
+  'pwaWelcome.safariLocal': "Without an account, a game played in Safari stays in Safari. The installed app cannot read it.",
+});

@@ -330,9 +330,14 @@ strict catalogue suites remain required.
 `node scripts/locale-tests.mjs` covers ordered device languages, explicit and
 automatic preferences, restricted storage, missing keys and placeholders, and
 number, currency, date and plural formatting, including a partial German fixture.
+`node scripts/onboarding-locale-tests.mjs` checks French and English catalogue parity
+and the English copy for the actual pre-action, placement and drag steps. The
+coach-placement browser suite runs the English first-open-to-tutorial path in
+an installed-app fixture at 320px and 360px, checking complete text, stable board
+geometry, and preserved progress and attempt state.
 The welcome browser suite exercises English controls, accessibility and copy at
 360px while checking the live board, progress and attempt. The service worker
-suite checks that the production module graph includes both welcome catalogues.
+suite checks that the production module graph includes the welcome and learning catalogues in both languages.
 
 `node scripts/first-welcome-tests.mjs` covers fresh/returning/owned contexts,
 deep links, denied/unverified presentation storage, exact texts, scene boundaries,

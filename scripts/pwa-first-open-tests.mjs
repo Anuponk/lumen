@@ -3,6 +3,7 @@
 // is warned (never blocked) before installing. Node only, DOM stubbed.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {createTranslator} from '../src/ui/i18n.js';
 import {pwaFirstOpenEligible,createPwaFirstOpen} from '../src/ui/pwa-first-open.js';
 import {installGuestWarning,IOS_GUEST_INSTALL_WARNING,requestedInstallCopy} from '../src/ui/install-request.js';
 import {claimFirstWelcome} from '../src/ui/first-welcome.js';
@@ -25,9 +26,11 @@ for(const entry of [['lumenProgressV1','{}'],['lumenCloudOwnerId','a'],['sb-proj
 function dom(){
  const listeners=new Map(),node=(id,extra={})=>{const el={id,hidden:true,textContent:'',focused:false,addEventListener:(type,fn)=>listeners.set(id+':'+type,fn),focus(){focusId=id},...extra};return el};
  let focusId=null;
- const els={pwaWelcome:node('pwaWelcome'),pwaWelcomeRecover:node('pwaWelcomeRecover'),pwaWelcomeNew:node('pwaWelcomeNew'),pwaWelcomeConfirm:node('pwaWelcomeConfirm')};
+ const els={pwaWelcome:node('pwaWelcome',{querySelectorAll:()=>localized}),pwaWelcomeRecover:node('pwaWelcomeRecover'),pwaWelcomeNew:node('pwaWelcomeNew'),pwaWelcomeConfirm:node('pwaWelcomeConfirm')};
+ const localized=['title','copy','recover','confirm','safari','safariOpen','safariAccount','safariSync','safariReturn','safariSignIn','safariLocal']
+  .map(key=>Object.assign(key==='recover'?els.pwaWelcomeRecover:key==='confirm'?els.pwaWelcomeConfirm:node(key),{dataset:{pwaCopy:'pwaWelcome.'+key}}));
  const main={inert:false};
- return {els,main,click:id=>listeners.get(id+':click')(),get focus(){return focusId},document:{getElementById:id=>els[id]??null,querySelector:selector=>selector==='main.app'?main:null}};
+ return {els,localized,main,click:id=>listeners.get(id+':click')(),get focus(){return focusId},document:{getElementById:id=>els[id]??null,querySelector:selector=>selector==='main.app'?main:null}};
 }
 {
  const d=dom(),choices=[];
@@ -47,6 +50,20 @@ function dom(){
  d.click('pwaWelcomeNew');
  assert.deepEqual(choices,['new']);assert.equal(d.els.pwaWelcome.hidden,true);assert.equal(d.main.inert,false);
 }
+{
+ const d=dom(),choices=[];
+ const welcome=createPwaFirstOpen({document:d.document,t:createTranslator({locale:'en'}).t,onRecover:()=>choices.push('recover'),onNewAdventure:()=>choices.push('new')});
+ welcome.show();
+ assert.equal(d.focus,'pwaWelcomeRecover');
+ assert.match(d.els.pwaWelcomeRecover.textContent,/I’ve played before/);
+ assert(d.localized.every(element=>element.textContent),'All first-open strings render');
+ assert.match(d.localized.find(element=>element.id==='safariSync').textContent,/Progress synced/);
+ d.click('pwaWelcomeNew');
+ assert.deepEqual(choices,[]);
+ assert.equal(d.els.pwaWelcomeNew.textContent,'Yes, start a new adventure');
+ d.click('pwaWelcomeNew');
+ assert.deepEqual(choices,['new']);
+}
 assert.equal(createPwaFirstOpen({document:{getElementById:()=>null,querySelector:()=>null},onRecover(){},onNewAdventure(){}}),null,'Missing markup never blocks startup');
 
 // Pre-install warning: iOS guests only, the install itself is still offered.
@@ -61,6 +78,8 @@ const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 assert.match(html,/id="pwaWelcomeRecover"[^>]*>J’ai déjà joué — Retrouver ma progression</);
 assert.match(html,/id="pwaWelcomeNew"[^>]*>Commencer une nouvelle aventure</);
 for(const step of ['Rouvre LUMEN dans Safari','Crée un compte','Progression synchronisée','Reviens dans l’application installée','connecte-toi'])assert(html.includes(step),step);
+const {t}=createTranslator();
+for(const [,key,copy] of html.matchAll(/data-pwa-copy="([^"]+)">([^<]*)</g))assert.equal(copy,t(key),'Static French shell fallback matches the catalogue for '+key);
 assert.doesNotMatch(html,/récupér\w+ automatiquement/i,'Never promise automatic recovery of anonymous Safari data');
 assert.match(html,/id="installOptinWarning"[^>]*hidden/);assert.match(html,/id="installCreateAccount"[^>]*hidden/);
 assert.match(ui,/pwaFirstOpenEligible\(\{standalone:lumenIsStandalone\(\),firstVisit:true,signedIn:!!lumenUser/);
