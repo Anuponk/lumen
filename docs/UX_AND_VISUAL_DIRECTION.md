@@ -358,7 +358,10 @@ existing limit is explicit, not a Mastery requirement. Do not substitute the new
 visible ordinal for a historical grid identity. A replay inside the qualification
 cooldown hides the action and explains it (« Défier demande une tentative
 qualifiante… Réessaie dans N min »); a qualifying replay, including an old save
-without performance metadata, may challenge (#889).
+without performance metadata, may challenge (#889). On a constellation/Adventure scene at
+heights up to 700 px, « Partager ma réussite » shares the 38 px height of the other
+celestial actions and the card spacing tightens, so « Défier » + « Partager » still
+fit without scrolling at 360×640 (#705).
 Repeated activation while creating a link sends one request; reopening that
 victory's sharing flow reuses its link and never awards campaign rewards again.
 Sharing leaves the victory behind the dialog, including at an Adventure boundary;
