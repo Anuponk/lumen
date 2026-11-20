@@ -54,6 +54,12 @@ export function compareChallenge(source,participant){
  return {kind,winner,reason,deltaSeconds:delta,headline,detail};
 }
 
+// Server contract: participations store lowercase 'started'|'completed'|'abandoned'.
+// A terminal participation is shown as a result and never offered a new attempt.
+export function challengeAttemptClosed(status){
+ return ["completed","abandoned"].includes(String(status||"").toLowerCase());
+}
+
 export function challengeParticipantKey({userId,anonymousId}={}){
  if(userId)return "u:"+userId;
  if(anonymousId)return "a:"+anonymousId;

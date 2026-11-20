@@ -38,3 +38,8 @@ export function challengeIdentityForQuest(stableQuestId){
 export function canonicalOrdinalForChallenge(challenge){
  return resolveChallengeQuest(challenge).ordinal;
 }
+// #883: inbox label. puzzle_id is the frozen legacy index (null for stable-only
+// quests), never the visible number; an unknown row stays readable.
+export function challengeQuestLabel(challenge){
+ try{return "Quête "+canonicalOrdinalForChallenge(challenge)}catch{return "Quête inconnue"}
+}
