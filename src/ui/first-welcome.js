@@ -51,7 +51,7 @@ export function createIntroTimeline({now,onFrame,onFinish}){
 export function createFirstWelcome({document,window,figureSvg,contextKey,onReplayStart=()=>{},onReturn=()=>{},t=createTranslator().t}){
  const root=document.createElement('section');
  root.className='first-welcome';root.hidden=true;
- root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-label',t('welcome.dialog'));
+ root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');
  root.innerHTML=`<div class="intro-veil" aria-hidden="true"></div>
   <div class="intro-art" aria-hidden="true"><svg viewBox="0 0 290 115" preserveAspectRatio="xMidYMid meet">${figureSvg}</svg></div>
   <button type="button" class="intro-skip" hidden></button>
@@ -63,18 +63,23 @@ export function createFirstWelcome({document,window,figureSvg,contextKey,onRepla
   <p class="intro-caption" aria-hidden="true" hidden></p>
   <details class="intro-transcript" hidden><summary></summary><div></div></details>`;
  const transcript=root.querySelector('.intro-transcript div');
- for(const scene of INTRO_SCENES){const p=document.createElement('p');p.textContent=t(scene.key);transcript.append(p)}
+ for(const scene of INTRO_SCENES){const p=document.createElement('p');p.dataset.sceneKey=scene.key;transcript.append(p)}
  document.body.append(root);
  const app=document.querySelector('main.app'),welcome=root.querySelector('.intro-welcome'),caption=root.querySelector('.intro-caption'),
   skip=root.querySelector('.intro-skip'),story=root.querySelector('.intro-story'),play=root.querySelector('.intro-play'),
   reading=root.querySelector('.intro-transcript'),motion=window.matchMedia('(prefers-reduced-motion: reduce)');
- skip.setAttribute('aria-label',t('welcome.skipLabel'));
- skip.textContent=t('welcome.skip');
- story.textContent=t('welcome.watch');
- play.textContent=t('welcome.play');
- root.querySelector('.intro-heading').textContent=t('welcome.heading');
- root.querySelector('.intro-subtitle').textContent=t('welcome.subtitle');
- reading.querySelector('summary').textContent=t('welcome.transcript');
+ function translateWelcome(){
+  root.setAttribute('aria-label',t('welcome.dialog'));
+  for(const line of transcript.children)line.textContent=t(line.dataset.sceneKey);
+  skip.setAttribute('aria-label',t('welcome.skipLabel'));
+  skip.textContent=t('welcome.skip');
+  story.textContent=t('welcome.watch');
+  play.textContent=t('welcome.play');
+  root.querySelector('.intro-heading').textContent=t('welcome.heading');
+  root.querySelector('.intro-subtitle').textContent=t('welcome.subtitle');
+  reading.querySelector('summary').textContent=t('welcome.transcript');
+  caption.setAttribute('aria-label',t('welcome.nextLine'));
+ }
  let active=false,mode=null,origin=null,captured=null,raf=null,timeline=null,appWasInert=false,lastScene=-1;
  const musicButton=root.querySelector('.intro-music');
  const music=createIntroMusic({window,onChange:updateMusic});
@@ -99,6 +104,7 @@ export function createFirstWelcome({document,window,figureSvg,contextKey,onRepla
  }
  function open(replay=false){
   if(active)return;
+  translateWelcome();
   if(replay)onReplayStart();
   origin=document.activeElement;captured=contextKey();mode=replay?'replay':'first';lastScene=-1;
   music.resetPreference();
@@ -130,7 +136,7 @@ export function createFirstWelcome({document,window,figureSvg,contextKey,onRepla
   if(advanced&&music.enabled)music.start(timeline.elapsed);
  }
  root.addEventListener('click',advanceStory);
- caption.tabIndex=0;caption.setAttribute('role','button');caption.setAttribute('aria-label',t('welcome.nextLine'));
+ caption.tabIndex=0;caption.setAttribute('role','button');
  caption.addEventListener('keydown',advanceStory);
  play.onclick=()=>close();story.onclick=startStory;skip.onclick=()=>close();
  musicButton.onclick=()=>{music.setEnabled(!music.enabled);if(music.enabled&&active&&timeline&&!document.hidden&&!reading.open)music.start(timeline.elapsed)};

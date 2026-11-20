@@ -43,12 +43,19 @@ export function createLocalePreference({
   const automatic = [appLanguage, ...(languages.length ? languages : [language])]
     .map(candidate => matchLanguage(registry, candidate)).find(Boolean) ?? DEFAULT_LOCALE;
 
+  function currentLocale() {
+    if (mode === 'auto') return automatic;
+    return lookup(registry, mode)?.enabled ? mode : DEFAULT_LOCALE;
+  }
+
   return {
     get mode() { return mode; },
-    get locale() {
-      if (mode === 'auto') return automatic;
-      return lookup(registry, mode)?.enabled ? mode : DEFAULT_LOCALE;
+    get locale() { return currentLocale(); },
+    get options() {
+      return Object.entries(registry).filter(([, entry]) => entry.enabled)
+        .map(([code, { nativeName }]) => ({ code, nativeName }));
     },
+    translator: () => createTranslator({ registry, locale: currentLocale() }),
     setMode(next) {
       if (next !== 'auto' && !lookup(registry, next)?.enabled) return false;
       mode = next;

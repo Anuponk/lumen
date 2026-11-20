@@ -33,7 +33,12 @@ test('automatic locale follows ordered preferences, exact tags, base languages a
   assert.equal(preference(['en-US'], 'en-US', 'fr-CA'), 'fr');
   assert.equal(preference(['en-US'], 'en-US', 'de-DE'), 'en');
   assert.equal(preference(['bad_tag']), 'fr');
-  assert.equal(createLocalePreference({ registry, languages: ['DE-de'] }).locale, 'de-DE');
+  const thirdLocale = createLocalePreference({ registry, languages: ['DE-de'] });
+  assert.equal(thirdLocale.locale, 'de-DE');
+  assert.deepEqual(thirdLocale.options.at(-1), { code: 'de-DE', nativeName: 'Deutsch' });
+  assert.equal(thirdLocale.translator().t('welcome.skip'), 'Überspringen');
+  thirdLocale.setMode('en');
+  assert.equal(thirdLocale.translator().t('welcome.skip'), en['welcome.skip']);
   assert.equal(createLocalePreference({ registry: { ...registry, 'de-DE': { ...de, enabled: false } }, languages: ['de-DE'] }).locale, 'fr');
 });
 

@@ -343,7 +343,7 @@ an installed-app fixture at 320px and 360px, checking complete text, stable boar
 geometry, and preserved progress and attempt state.
 The welcome browser suite exercises English controls, accessibility and copy at
 360px while checking the live board, progress and attempt. The service worker
-suite checks that the production module graph includes the welcome, learning and board catalogues in both languages. The locale suite verifies board and rules keys and placeholders against their render sites. The coach-placement browser suite checks localized controls and territory labels, opening and closing help, and preservation of the board, progress and attempt.
+suite checks that the production module graph includes the welcome, learning and board catalogues in both languages. The locale suite verifies board and rules keys and placeholders against their render sites. The coach-placement browser suite checks localized controls and territory labels, opening and closing help, and preservation of the board, progress and attempt. It also changes the language in both directions during an active lesson while offline, with assertions for DOM identity, saved board and attempt, and the localized lesson and cell label.
 
 `node scripts/first-welcome-tests.mjs` covers fresh/returning/owned contexts,
 deep links, denied/unverified presentation storage, exact texts, scene boundaries,

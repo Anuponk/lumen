@@ -1,4 +1,7 @@
 export default Object.freeze({
+  'board.language': "Language",
+  'board.languageAuto': "Automatic",
+  'board.languageUnavailable': "Language unavailable · using French",
   'board.reset': "Reset the board",
   'board.undo': "Undo",
   'board.resetConfirm': "Reset the board? Your marks will be cleared, but the timer, assistance and mistakes will still count.",
