@@ -76,7 +76,9 @@ const nav=fs.readFileSync(new URL('../src/ui/sky-navigation.js',import.meta.url)
 assert.doesNotMatch(nav,/sera annoncé plus tard/,'The placeholder lock text is gone');
 // #823: Play-only manual recovery alongside the original hydration path.
 const offerSource=fs.readFileSync(new URL('../src/ui/adventure-offer.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
-assert.match(offerSource,/'Vérifier mes achats Google Play'/);
+// #863: restoring stays available, as a secondary footer action.
+assert.match(offerSource,/RESTORE_LABEL='Restaurer mes achats'/);
+assert.match(offerSource,/restoreButton=el\('button',\{type:'button',className:'adventure-offer-restore'\},RESTORE_LABEL\)/);
 const screen=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 assert.match(screen,/onRestorePlay:offer\.pricesRequired&&offer\.signedIn/);
 assert.match(screen,/function afterVerifiedHydration\(\)\{refreshAdventureOffer\?\.\('mastery'\);void maybeClaimMasteryUnlocks\(\);void maybeRestorePlayPurchases\(\);void preparePlayPurchaseAccount\(\);void refreshPaymentChannel\(\)\.finally\(\(\)=>handleStripeReturn\(\)\)\.finally\(\(\)=>void maybeRestoreStripePurchases\(\)\)\}/,'Automatic restore and checkout preparation after verified hydration');

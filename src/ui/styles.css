@@ -1447,6 +1447,14 @@ body:has(#erasedAccountNotice:not([hidden])) #scriptedLearn{visibility:hidden!im
 .purchase-thanks{position:fixed;inset:0;z-index:1950;display:grid;place-items:center;padding:16px;background:rgba(3,9,19,.85);backdrop-filter:blur(7px)}.purchase-thanks-card{width:min(420px,100%);box-sizing:border-box;max-height:calc(100dvh - 32px);overflow-y:auto;border:1px solid #4a6681;border-radius:24px;padding:26px 20px;background:linear-gradient(160deg,#1a2c46,#0c1629);color:#edf7ff;text-align:center;box-shadow:0 24px 90px #000a;overflow-wrap:anywhere}.purchase-thanks-card h2{font-size:clamp(22px,6vw,28px);margin:8px 0}.purchase-thanks-card p{margin:8px 0;line-height:1.5}.purchase-thanks-glow{font-size:52px;color:#ffe6a2;text-shadow:0 0 28px #ffd36a99}.purchase-thanks-lead{font-weight:700;color:#ffe6a2}.purchase-thanks-support{font-size:13px;color:#bfd1df}.purchase-thanks-card button{display:block;width:100%;min-height:44px;margin-top:10px;border-radius:12px;font:inherit;font-weight:700}.purchase-thanks-explore{background:#1d3b5a;color:#eefaff;border:1px solid #4284bd}.purchase-thanks-later{background:transparent;color:#cfe6f3;border:1px solid #35546f}
 .adventure-offer-consent{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.4;color:#dce9f3}
 .adventure-offer-consent input{width:20px;height:20px;margin:1px 0 0;flex:none}
+/* #863: unticked waiver feedback (text + border, not colour alone) and secondary restore. */
+.adventure-offer-consent.is-invalid{padding:6px 8px;border:2px solid #ff7b7b;border-radius:10px;background:#3a1c22}
+.adventure-offer-consent.is-invalid input{outline:2px solid #ff7b7b;outline-offset:2px}
+.adventure-offer .adventure-offer-waiver-error{color:#ff9b9b;font-weight:700}
+.adventure-offer-waiver-error::before{content:"⚠ "}
+.adventure-offer .adventure-offer-restore{min-height:0;padding:0 2px;background:none;border:0;color:#8de1ef;text-decoration:underline;font-size:12px;font-weight:600}
+.adventure-offer .adventure-offer-terms-line{color:#9fb6c8;font-size:12px}
+.adventure-offer .adventure-offer-upgrade{color:#bfe8c8;font-size:12px}
 .adventure-offer-terms{color:#8de1ef;font-size:12px}
 
 /* #749: computers and tablets use the phone layout in a centered column (one design

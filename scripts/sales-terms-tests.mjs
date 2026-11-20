@@ -25,8 +25,19 @@ assert(waiver&&waiver.type==='checkbox'&&waiver.checked===false,'The waiver box 
 assert(nodes.indexOf(waiver)<nodes.indexOf(unit),'The waiver comes before the purchase buttons');
 assert(nodes.some(n=>n.tagName==='label'&&n.children.some(c=>c.text===' '+WAIVER_TEXT)),'The waiver text is shown with the box');
 unit.onclick();
-assert.equal(calls.length,0,'No payment without the waiver');assert.equal(status.textContent,WAIVER_REQUIRED);assert.equal(document.activeElement,waiver);
-waiver.checked=true;waiver.onchange();assert.equal(status.textContent,'','Ticking clears the reminder');
+// #863: a visible, accessible red message under the box; no payment; focus on the box.
+const waiverError=nodes.find(n=>n.dataset.offerWaiverError!==undefined);
+assert.equal(calls.length,0,'No payment without the waiver');
+assert.equal(WAIVER_REQUIRED,'Cochez cette case pour poursuivre votre achat.');
+assert.equal(waiverError.textContent,WAIVER_REQUIRED);assert.equal(waiverError.hidden,false);
+assert.equal(waiverError.attributes.role,'alert','announced to assistive technologies');
+assert.equal(waiver.attributes['aria-describedby'],waiverError.id);assert.equal(waiver.attributes['aria-invalid'],'true');
+assert.match(nodes.find(n=>n.tagName==='label').className,/is-invalid/,'the box is visually identified');
+assert.equal(document.activeElement,waiver);
+assert(nodes.indexOf(waiverError)<nodes.indexOf(unit),'the message sits under the box, before the buttons');
+find('sky').onclick();assert.equal(calls.length,0,'Tout débloquer is guarded too');
+waiver.checked=true;waiver.onchange();assert.equal(waiverError.textContent,'','Ticking clears the reminder');
+assert.equal(waiverError.hidden,true);assert.equal(waiver.attributes['aria-invalid'],'false');
 unit.onclick();
 assert.equal(calls.length,1);assert.equal(calls[0].product,'real-adventure-02');
 assert.equal(calls[0].waiver.accepted,true);assert.equal(calls[0].waiver.text,WAIVER_TEXT);assert(!Number.isNaN(Date.parse(calls[0].waiver.at)));
