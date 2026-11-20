@@ -26,7 +26,7 @@ export function readDiscoveryCampaign(location, referrer) {
     const source = new URL(referrer);
     if (source.origin !== location.origin) return null;
     if (challengeReferrer(location, source)) return 'challenge_link';
-    if (source.pathname !== '/decouvrir.html') return null;
+    if (source.pathname !== '/decouvrir.html' && source.pathname !== '/discover.html') return null;
     const [channel, ...otherChannels] = source.searchParams.getAll('utm_source');
     const [medium, ...otherMedia] = source.searchParams.getAll('utm_medium');
     if (!campaignMedia.has(channel) || campaignMedia.get(channel) !== medium) return null;
