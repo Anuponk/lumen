@@ -1,11 +1,20 @@
 // One compact podium travels with the existing victory surface (#682).
 // Its slot is reserved from the first frame: loading, empty, offline and ready
 // states share one geometry, so the late board never moves other zones.
+// #851: the status of the current run, with its proven cause only.
+export function rankingVerdict(reason,excluded){
+ if(reason==='cooldown')return 'Ce temps n’est pas classé : 15 min minimum entre deux essais classés sur cette grille. Ton record personnel est bien enregistré.';
+ if(reason==='not_qualifying')return 'Ce temps n’est pas classé : cet essai n’était pas qualifiant (délai entre deux essais qualifiants). Ton record personnel est bien enregistré.';
+ if(reason==='not_better')return 'Temps classé et confirmé, mais il ne bat pas ton meilleur temps classé (pénalités d’aide incluses).';
+ if(reason==='improved')return 'Temps classé et confirmé.';
+ if(excluded||reason==='unknown')return 'Ce temps n’est pas retenu au classement. Ton record personnel est bien enregistré.';
+ return null;
+}
 export function createRankingView({client,getContext,format,document=globalThis.document,onUpdate=()=>{}}={}){
  const root=document.createElement('section');root.className='ranking';root.hidden=true;root.setAttribute('aria-label','Classement de la grille');
- let generation=0,quest=null,owner=null,connection=null,operation=null,improvedForView=false,excludedForView=false,animated=false,review=false;
+ let generation=0,quest=null,owner=null,connection=null,operation=null,improvedForView=false,excludedForView=false,reasonForView=null,personalBest=null,animated=false,review=false;
  const reduced=()=>!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
- function clear(){generation++;root.hidden=true;root.replaceChildren();delete root.dataset.state;quest=null;improvedForView=false;excludedForView=false;animated=false;review=false}
+ function clear(){generation++;root.hidden=true;root.replaceChildren();delete root.dataset.state;quest=null;improvedForView=false;excludedForView=false;reasonForView=null;personalBest=null;animated=false;review=false}
  function element(tag,className,text){const e=document.createElement(tag);e.className=className;e.textContent=text;return e}
  function skeleton(){
   const list=element('ol','ranking-podium ranking-podium-skeleton','');list.setAttribute('aria-hidden','true');
@@ -38,7 +47,14 @@ export function createRankingView({client,getContext,format,document=globalThis.
   }else if(!mine)card.append(element('span','','Aucun temps compétitif pour cette révision.'));
   // #761: a victory the server refused is never shown as if the podium were its result.
   if(card.childNodes.length)root.append(card);
-  if(data.excluded)root.append(element('p','ranking-excluded','Ce temps n’est pas retenu au classement (15 min minimum entre deux essais classés). Ton record personnel est bien enregistré.'));
+  // #851: the private record and the best ranked time are different facts.
+  if(Number.isSafeInteger(personalBest)&&mine&&Number.isSafeInteger(mine.score)&&personalBest!==mine.score){
+   const compare=element('p','ranking-compare','');compare.dataset.personal=String(personalBest);compare.dataset.ranked=String(mine.score);
+   compare.append(element('span','','Record personnel : '+format(personalBest)),element('span','','Meilleur temps classé : '+format(mine.score)));
+   root.append(compare);
+  }
+  const verdict=rankingVerdict(data.reason,data.excluded);
+  if(verdict){const p=element('p','ranking-excluded',verdict);p.dataset.reason=data.reason||'excluded';root.append(p)}
   if(!data.participating)root.append(element('p','ranking-note',data.withdrawn?'Participation désactivée. Réinscription depuis Compte.':'Ton pseudo et les règles de participation sont disponibles dans Compte.'));
   if(!animated&&!reduced()){
    [...list.children].forEach((e,i)=>e.animate?.([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],{duration:450,delay:i*300,easing:'ease-out',fill:'backwards'}));
@@ -59,11 +75,12 @@ export function createRankingView({client,getContext,format,document=globalThis.
     const captured=operation?client.takeResult?.(operation):null;
     improvedForView=improvedForView||!!captured?.improved||(!operation&&results.some(r=>r?.questId===q.id&&r.improved));
     excludedForView=excludedForView||captured?.status==='ineligible';
-    rows({...data,improved:improvedForView,excluded:excludedForView});
+    reasonForView=captured?.reason??reasonForView;
+    rows({...data,improved:improvedForView,excluded:excludedForView,reason:reasonForView});
    }
   }catch{if(token===generation)status(globalThis.navigator?.onLine===false?(review?'Hors ligne : le classement s’affichera au retour du réseau.':'Hors ligne : le classement s’affichera au retour du réseau. Ta victoire est sauvegardée.'):(review?'Classement indisponible pour le moment.':'Classement en attente de synchronisation. Ta victoire est sauvegardée.'),globalThis.navigator?.onLine===false?'offline':review?'error':'pending')}
  }
- function show(q,operationId=null,options={}){clear();quest=q;operation=operationId;owner=getContext().owner;connection=getContext().client;root.hidden=false;const token=generation;
+ function show(q,operationId=null,options={}){clear();quest=q;operation=operationId;personalBest=Number.isSafeInteger(options.personalBest)?options.personalBest:null;owner=getContext().owner;connection=getContext().client;root.hidden=false;const token=generation;
   // #695 review: read the board only; nothing is flushed or animated.
   if(options.review){review=true;animated=true;status('Chargement du classement…');void refresh();return}
   status('Chargement du classement…');

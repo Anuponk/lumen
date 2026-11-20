@@ -45,7 +45,7 @@ additionalTests.push(
  "Onboarding : les jalons de badges suivent l’éligibilité réelle",
  "Badges : Sans erreur exige zéro assistance et zéro erreur confirmée",
  "Badges : Maîtrise exige les trois badges sur le même essai",
- "Tentative : reset campagne garde attemptId mais réinitialise chrono, aide et erreur",
+ "Tentative : reset campagne garde la tentative, le chrono, les aides et les erreurs (#36, #851)",
  "Tentative : reset défi reste one-shot",
  "UI badges : Mon ciel et les règles affichent Sans erreur",
  "Sans erreur : l’état d’erreur reste invisible pendant la partie",

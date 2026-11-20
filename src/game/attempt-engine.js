@@ -9,6 +9,14 @@ function newId(){
 function cloneBoard(board){return Array.isArray(board)?board.map(row=>Array.isArray(row)?row.slice():[]):[]}
 function safeParse(raw){try{return raw?JSON.parse(raw):null}catch(_){return null}}
 
+// #851: server identity of a run, shared by the victory receipt and the ranking
+// capture (ranking_finish reads the receipt by this exact id). Challenges keep
+// their historical per-reset identity.
+export function attemptOperationId(attempt){
+ if(!attempt?.attemptId)return undefined;
+ const segment=attempt.mode!=='challenge'&&Number.isSafeInteger(attempt.runSegment)?attempt.runSegment:(attempt.resetCount||0);
+ return attempt.attemptId+'-reset-'+segment;
+}
 export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Date.now(),perfNow=()=>globalThis.performance?.now?.()??Date.now(),onChange=()=>{},onAssistanceUse=()=>{}}={}){
  let attempt=null,activeSince=null;
  const emit=()=>{persist();onChange(snapshot())};
@@ -18,7 +26,8 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
  function persist(){if(!attempt)return storage?.removeItem?.(STORAGE_KEY);const copy={...attempt,board:cloneBoard(attempt.board),activeDuration:activeMs(),updatedAt:now()};storage?.setItem?.(STORAGE_KEY,JSON.stringify(copy))}
  function create({questId,mode="campaign",qualifying=false,challengeId=null,board=[],gridRevision=0,questResetRevision=0}){
   if(mode==='challenge')questResetRevision=0;
-  attempt={attemptId:(questResetRevision?'qr'+questResetRevision+'.':'')+(gridRevision>1?'gv'+gridRevision+'.':'')+newId(),questId,mode,rankingVersion:1,...(gridRevision?{gridRevision}:{}),...(questResetRevision?{questResetRevision}:{}),state:ATTEMPT_STATES.READY,startedAt:null,activeDuration:0,lastActiveAt:null,assistanceUsed:false,mistakeCommitted:false,wrongGuardianPending:null,resetCount:0,qualifying:!!qualifying,challengeId,board:cloneBoard(board),createdAt:now(),updatedAt:now()};activeSince=null;emit();return snapshot()
+  // #851: one run identity per attempt; a grid reset never opens a new run.
+  attempt={attemptId:(questResetRevision?'qr'+questResetRevision+'.':'')+(gridRevision>1?'gv'+gridRevision+'.':'')+newId(),questId,mode,rankingVersion:1,...(gridRevision?{gridRevision}:{}),...(questResetRevision?{questResetRevision}:{}),...(mode==='challenge'?{}:{runSegment:0}),state:ATTEMPT_STATES.READY,startedAt:null,activeDuration:0,lastActiveAt:null,assistanceUsed:false,mistakeCommitted:false,wrongGuardianPending:null,resetCount:0,qualifying:!!qualifying,challengeId,board:cloneBoard(board),createdAt:now(),updatedAt:now()};activeSince=null;emit();return snapshot()
  }
  function restore({questId,mode,gridRevision,questResetRevision}={}){
   const saved=safeParse(storage?.getItem?.(STORAGE_KEY));if(!saved||!saved.attemptId)return null;
@@ -34,6 +43,9 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
    return null;
   }
   attempt={...saved,board:cloneBoard(saved.board),activeDuration:Number(saved.activeDuration)||0,assistanceUsed:!!saved.assistanceUsed,mistakeCommitted:!!saved.mistakeCommitted,wrongGuardianPending:saved.wrongGuardianPending||null};
+  // #851: an attempt persisted by an older release keeps the run identity it
+  // may already have begun on the server (victory receipt and ranking).
+  if(attempt.mode!=='challenge'&&!Number.isSafeInteger(attempt.runSegment))attempt.runSegment=Number.isSafeInteger(attempt.resetCount)?attempt.resetCount:0;
   activeSince=null;
   if(attempt.state===ATTEMPT_STATES.RUNNING)attempt.state=ATTEMPT_STATES.PAUSED;
   emit();return snapshot()
@@ -62,15 +74,11 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
   if(!attempt)return null;
   attempt.resetCount=(attempt.resetCount||0)+1;attempt.board=cloneBoard(board);
   attempt.wrongGuardianPending=null;
-  // Campaign/replay reset starts a fresh badge run without changing attemptId.
-  // Social challenge remains one-shot: elapsed time, assistance and mistakes persist.
-  if(attempt.mode!=="challenge"){
-   attempt.helpUses={};
-   attempt.assistanceUsed=false;attempt.mistakeCommitted=false;attempt.activeDuration=0;attempt.startedAt=attempt.state===ATTEMPT_STATES.READY?null:now();attempt.lastActiveAt=attempt.state===ATTEMPT_STATES.READY?null:now();
-   activeSince=attempt.state===ATTEMPT_STATES.RUNNING?perfNow():null;
-   // #761: a reset run starts now; its qualification is re-evaluated now.
-   if(typeof qualifying==='boolean')attempt.qualifying=qualifying;
-  }
+  // #851 / #36: "Réinitialiser la grille" only clears the placements, in every
+  // mode. The attempt, its elapsed time, assistance, committed errors, badge
+  // qualification and run identity continue: a reset can never restart the
+  // official time, clear an aid or bypass the badge/ranking cooldown.
+  // A fresh run is only "Rejouer la quête" (a new attempt).
   emit();return snapshot()
  }
  function updateBoard(board){if(!attempt)return;attempt.board=cloneBoard(board);emit()}

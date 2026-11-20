@@ -78,7 +78,8 @@ import {walletCommandsSupported,recoverWalletCacheDurably} from "../persistence/
 import {applyLegacyVictory} from "../campaign/legacy-victory.js";
 import {createCampaign,sequentialCount,campaignQuestCount,isCampaignFinalQuest,isCampaignComplete,constellationQuestIndices,constellationGridRange,chapterForGrid,milestoneFor,skyStarsForGrid,bonusChallengeFor,challengeFor,constellationCheckpoint,constellationStateForEarned,starsAwardedForGrid} from "../campaign/progression.js";
 import {createGameEngine} from "../game/engine.js";
-import {createAttemptEngine,ATTEMPT_STATES} from "../game/attempt-engine.js";
+import {createAttemptEngine,ATTEMPT_STATES,attemptOperationId} from "../game/attempt-engine.js";
+import {officialRecordTime} from '../campaign/official-time.js';
 import {localDateKey,dateOffsetKey,formatDuration} from "../ui/format.js";
 import {streakFromDates,dailyState,cycleDay,qualifiesDailyActivity,grantDaily} from "../campaign/daily-engagement.js";
 import {createOnboardingPreferences} from "./onboarding-preferences.js";
@@ -2218,7 +2219,9 @@ async function refreshOfficialRecordLabel(){
   const label=document.getElementById('personalRecord');label.textContent=recordLabel(data,formatDuration,quest.gridRevision??0);label.hidden=!label.textContent;
  }catch{}
 }
-function showRanking(){if(socialChallenge||learningReplayActive()||qaActive||!lumenUser)return;const a=attemptEngine.snapshot();rankingView.show(activeQuest(),a.attemptId+'-reset-'+(a.resetCount||0));rankingView.mount()}
+// #851: the private record shown beside the best officially ranked time.
+function personalBestSeconds(quest){try{const best=officialRecordTime(questPerformanceRecord(quest,lumenProgress),quest?.gridRevision??0);return Number.isSafeInteger(best)?best:null}catch{return null}}
+function showRanking(){if(socialChallenge||learningReplayActive()||qaActive||!lumenUser)return;const a=attemptEngine.snapshot();rankingView.show(activeQuest(),attemptOperationId(a),{personalBest:personalBestSeconds(activeQuest())});rankingView.mount()}
 function refreshRankingQueue(){return rankingClient.flush().then(r=>rankingView.refresh(r)).catch(error=>{if(error?.results?.length)return rankingView.refresh(error.results)})}
 addEventListener('online',()=>{void refreshRankingQueue()});
 document.getElementById('rankingWithdraw').onclick=async()=>{
@@ -3428,7 +3431,7 @@ async function celebrateCanonicalSuccess(){
    // awaiting readiness. Closing an offline PWA must not lose its sole intent.
    const ownerId=lumenUser.id;
    const ownerClient=lumenSupabase;
-   const operationId=attempt?.attemptId?attempt.attemptId+"-reset-"+(attempt.resetCount||0):undefined;
+   const operationId=attemptOperationId(attempt);
    victoryStage='pending_read';
    const existing=operationId?(await canonicalVictoryOutbox.pending(ownerId)).find(entry=>entry.operationId===operationId&&entry.questId===q.id):null;
    reusedVictory=!!existing;
@@ -3561,7 +3564,7 @@ async function captureLegacyCommandVictory(){
  legacyVictoryRetry=null;
  try{
   if(!quest||!attempt?.attemptId||!client)throw Error('Victory context unavailable');
-  const operationId=attemptId+'-reset-'+resetCount;
+  const operationId=attemptOperationId(attempt);
   const prior=(await legacyVictoryOutbox.pending(ownerId)).find(e=>e.operationId===operationId);
   if(!sameContext())return {handled:true};
   const facts=prior?.reward.facts||{seconds:activeGameSeconds(),assistanceUsed:!!attempt.assistanceUsed,mistakeCommitted:!!attempt.mistakeCommitted,qualifying:!!attempt.qualifying,hintUsed:hintUsedInAttempt(),challengeFailed:!!questFailed,qualifiedDay:localCalendarDay(),qualifiedAt:new Date(attempt.startedAt||Date.now()).toISOString(),...capturedTiming()};
@@ -5138,14 +5141,14 @@ if(autonomyTry)autonomyTry.onclick=()=>{finishAutonomyChoice(false);resumeGameCl
 if(autonomyKeep)autonomyKeep.onclick=()=>{finishAutonomyChoice(true);resumeGameClock()};
 document.getElementById("new").onclick=()=>{
   if(celebrated)return;
-  if(!confirm(socialChallenge?"Réinitialiser la grille ? Dans un défi, le chrono, les aides et les erreurs restent comptabilisés.":"Réinitialiser la grille ? Tu repars sur un nouvel essai pour les badges : chrono, aides et erreurs sont remis à zéro."))return;
+  // #851 / #36: one rule in every mode. A new run is "Rejouer la quête".
+  if(!confirm("Réinitialiser la grille ? Tes placements seront effacés, mais le chrono, les aides et les erreurs resteront comptabilisés."))return;
   hideSuccess();
-  const resetSnapshot=attemptEngine.snapshot();trackAttemptEvent("attempt_reset",{reason:"manual",next_run_index:(Number(resetSnapshot?.resetCount)||0)+2});
+  const resetSnapshot=attemptEngine.snapshot();trackAttemptEvent("attempt_reset",{reason:"manual",reset_index:(Number(resetSnapshot?.resetCount)||0)+1});
   halfRewardShown=false;lastPlacedCount=0;
   state=Array.from({length:n},()=>Array(n).fill(0));hist=[];clearHintDisplay();hintStage=0;hintFocus=null;msg.textContent="";
-  if(!socialChallenge){usedHintThisGame=false;hintUsesThisGame=0;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;questFailed=false;updateHintButton();updateVerifyButton()}
-  attemptEngine.reset(state,socialChallenge?{}:{qualifying:!!resetSnapshot?.qualifying||currentBadgeQualification()});updateBadgeQualificationStatus();
-  if(!socialChallenge)trackAttemptEvent("attempt_run_started",{trigger:"reset"});
+  if(!socialChallenge){verifyPending=null;updateHintButton();updateVerifyButton()}
+  attemptEngine.reset(state);updateBadgeQualificationStatus();
   render();clock();refreshJourney();
 };
 document.getElementById("learningCoachDismiss").onclick=()=>{learningTip=null;updateScriptedLearning()};
