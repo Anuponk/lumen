@@ -300,6 +300,11 @@ Deno.serve(async (request) => {
       p_provider: 'play', p_provider_ref: ref,
     });
     if (lookupError) throw Error('lookup_failed');
+    // #878: a refunded purchase grants nothing on any account. Say so instead of asking
+    // to reconnect to the account that held it; nothing is recorded or acknowledged.
+    if (original?.status === 'refunded' && original.product_id === internalProductId && userId && original.user_id !== userId) {
+      return reply(409, { status: 'not_paid' });
+    }
     if (original && ((userId && original.user_id !== userId) || original.product_id !== internalProductId)) {
       return reply(409, { error: 'purchase_owned_elsewhere' });
     }

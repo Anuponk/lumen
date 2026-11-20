@@ -1871,7 +1871,24 @@ Any change to challenge behavior must additionally verify:
 - guest display name validation and no PII in deep links;
 - QR/native/copy share all point to the same opaque challenge;
 - push refusal never blocks gameplay, push result deep-links correctly, and repeated results are grouped;
-- RPC idempotency/concurrency and RLS/direct-write boundaries.
+- RPC idempotency/concurrency and RLS/direct-write boundaries;
+- the recipient plays the exact challenged grid, including a locked Adventure, without gaining access to it;
+- a finished link reopens on its result (lowercase server status), never on a second attempt;
+- “Mes défis” shows canonical visible quest numbers for historical, stable and revised challenges.
+
+#883 (Lot 0): `challenge-rpc-contract-tests.mjs` checks, for historical, #650
+soft-revision, stable revision-0 and revised challenges, that each create/get/
+start/finish/list RPC chosen by the client exists in the migrations with
+compatible parameters and guest grants, and that the start/finish wrappers only
+refuse revised rows. `scripts/fixtures/challenge-rpc-matrix.sql` runs the same
+matrix on the real migrated schema in canonical-ledger CI (create, hidden
+reference, one participation across reloads, wrong-route refusal, immutable
+terminal result, second signed-in profile abandoning, sender inbox/read,
+privacy, no campaign write). `challenge-recipient-browser.mjs`, imported by
+`canonical-replay-browser-tests.mjs`, opens real `?challenge=` links as a guest
+without Adventures at 390/1440 px against an in-page model of that contract. The
+RPC transport is simulated there: real-device and live-backend acceptance stay
+manual.
 
 Challenge changes are gameplay-adjacent and therefore still require the complete browser `runHintTests()` suite and strict all-grid catalogue audit before delivery.
 

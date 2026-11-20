@@ -187,7 +187,8 @@ jobs:
             -f scripts/fixtures/mixed-grid-before-activation.sql \
             -f /tmp/lumen-mixed-grid-activation.sql \
             -f scripts/fixtures/mixed-grid-revision.sql \
-            -f /tmp/lumen-mixed-quest-parity.sql
+            -f /tmp/lumen-mixed-quest-parity.sql \
+            -f scripts/fixtures/challenge-rpc-matrix.sql
 
       - name: Verify Lumen-only erasure, private access and concurrent stale writers
         env:

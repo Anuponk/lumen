@@ -58,8 +58,8 @@ import {verifiedAstronomicalFigure} from "./astronomical-catalogue.js";
 import {astronomicalReferenceSvg,astronomicalPrimarySvg} from "./astronomical-reference-svg.js";
 import {LUMEN_META,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,badgeDefs} from "../campaign/data.js";
 import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt,badgeCooldownRemaining,badgeCooldownLabel} from "../campaign/performance.js";
-import {challengeEligibility,challengeSnapshot,compareChallenge,createChallengeClient,normalizeChallengeName,validChallengeName} from "../campaign/social-challenge.js";
-import {resolveChallengeQuest} from "../campaign/canonical-challenges.js";
+import {challengeAttemptClosed,challengeEligibility,challengeSnapshot,compareChallenge,createChallengeClient,normalizeChallengeName,validChallengeName} from "../campaign/social-challenge.js";
+import {challengeQuestLabel,resolveChallengeQuest} from "../campaign/canonical-challenges.js";
 import {canonicalDisplayForLegacy,canonicalScopeProgress,canonicalCampaignComplete,canonicalQuestMilestone,canonicalQuestList,canonicalAdventureSummary,canonicalQuestByOrdinal,canonicalQuestById,canonicalQuestForLegacy,canonicalNextUnsolved,canonicalCampaignQuestDecision,canonicalInsertedQuestDecision,unlockedAdventureProgress} from "../campaign/canonical-quests.js";
 import {acknowledgeCanonicalVictory,questIsCompleted} from "../persistence/canonical-progress.js";
 import {loadCommittedCanonicalAttempt} from '../persistence/canonical-command.js';
@@ -96,7 +96,7 @@ import {mountAdventureAccess} from './adventure-access-panel.js';
 import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
 import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery,mainSkyOffer} from './adventure-offer.js';
 import {purchaseThanksModel,showPurchaseThanks} from './purchase-thanks.js';
-import {PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,createForegroundRecovery,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,toPlayProductId,findOwnedPlayPurchase,playOwnershipMessage} from '../persistence/play-billing.js';
+import {PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,createForegroundRecovery,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,toPlayProductId,findOwnedPlayPurchase,playOwnershipMessage,playOwnershipSummary} from '../persistence/play-billing.js';
 import {rememberPlayAppLaunch,isPlayDistributedApp,stripeCheckoutAvailable,startStripeCheckout,stripeSessionStatus,restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage} from '../persistence/stripe-checkout.js';
 import {SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS,isMainSkyProduct} from '../campaign/store-catalogue.js';
 import {createSound} from "./sound.js";
@@ -2097,7 +2097,7 @@ async function createSocialChallengeFromSuccess(){
   const name=await askChallengeName();if(!name||lastChallengeOffer!==offer)return;
   if(!offer.url){
    const created=await challengeClient.create(offer.snapshot),id=created?.challenge_id;if(!id)throw new Error("missing_challenge_id");
-   offer.url=socialChallengeUrl(id);trackLumenEvent("challenge_created",offer.snapshot.questId,{remarkable:!!offer.eligibility.remarkable});
+   offer.url=socialChallengeUrl(id);trackLumenEvent("challenge_created",offer.snapshot.questId,{remarkable:!!offer.eligibility.remarkable,stable_quest_id:offer.snapshot.stableQuestId??null,quest_ordinal:offer.snapshot.questOrdinal??null,grid_revision:offer.snapshot.gridRevision??0});
   }
   if(lastChallengeOffer!==offer)return;
   pendingChallengeUrl=offer.url;
@@ -2130,7 +2130,7 @@ async function showSocialChallengeResult(data){
  const reshare=document.getElementById("challengeResultReshare"),canPass=data.participant_status==="completed"&&!data.previously_played;
  if(reshare){reshare.hidden=!canPass;if(canPass)reshare.classList.toggle("remarkable",!!data.participant_mastery)}
  if(canPass)lastChallengeOffer={eligibility:{firstPlay:true,remarkable:!!data.participant_mastery,canChallenge:true},snapshot:challengeSnapshot({quest:resolveChallengeQuest(data),seconds:data.participant_duration_seconds,run:{autonomy:data.participant_autonomy,speed:data.participant_speed,mastery:data.participant_mastery},assistanceUsed:data.participant_assistance_used})};
- modal.hidden=false;trackLumenEvent("challenge_result_viewed",data.puzzle_id,{status:data.participant_status});
+ modal.hidden=false;trackLumenEvent("challenge_result_viewed",data.puzzle_id??null,{status:data.participant_status,stable_quest_id:data.stable_quest_id??null,grid_revision:data.grid_revision??0});
 }
 async function finishSocialChallenge(status){
  const seconds=activeGameSeconds(),assisted=!!attemptEngine.snapshot()?.assistanceUsed,run=performanceAttempt({questIndex:activeQuestOrdinal()-1,seconds,assistanceUsed:assisted,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted});
@@ -2142,7 +2142,7 @@ function celebrateSocialChallengeSuccess(){
 async function loadMyChallenges(){
  try{
   const rows=await challengeClient.sent(),list=document.getElementById("myChallengesList"),badge=document.getElementById("challengeUnreadBadge");let unread=0;
-  list.innerHTML=(rows||[]).length?(rows||[]).map(row=>{unread+=Number(row.unread_count)||0;const parts=Array.isArray(row.participants)?row.participants:[];const source={duration_seconds:row.source_duration_seconds,autonomy:row.source_autonomy,mastery:row.source_mastery};return '<div class="challenge-list-item" data-challenge-id="'+row.challenge_id+'"><div class="challenge-list-head"><strong>Quête '+row.puzzle_id+'</strong><span>'+parts.length+' participant'+(parts.length>1?"s":"")+'</span></div><small>Ta référence · '+formatDuration(row.source_duration_seconds)+(row.source_mastery?" · ✦ Maîtrise":row.source_autonomy?" · 🧠 Autonomie":"")+'</small>'+parts.map(p=>{const cmp=compareChallenge(source,{status:p.status,duration_seconds:p.duration_seconds,autonomy:p.autonomy,mastery:p.mastery});const ownerOutcome=cmp?.winner==="source"?"🏆 Victoire":cmp?.winner==="participant"?"Défaite":"Égalité";return '<div class="challenge-participant"><span>'+escapeHtml(p.name)+'</span><span><strong>'+ownerOutcome+'</strong> · '+(p.status==="abandoned"?"abandon":formatDuration(p.duration_seconds)+(p.mastery?" · ✦":p.autonomy?" · 🧠":" · aide"))+'</span></div>'}).join("")+'</div>'}).join(""):'<p>Aucun défi envoyé pour le moment.</p>';
+  list.innerHTML=(rows||[]).length?(rows||[]).map(row=>{unread+=Number(row.unread_count)||0;const parts=Array.isArray(row.participants)?row.participants:[];const source={duration_seconds:row.source_duration_seconds,autonomy:row.source_autonomy,mastery:row.source_mastery};return '<div class="challenge-list-item" data-challenge-id="'+row.challenge_id+'"><div class="challenge-list-head"><strong>'+escapeHtml(challengeQuestLabel(row))+'</strong><span>'+parts.length+' participant'+(parts.length>1?"s":"")+'</span></div><small>Ta référence · '+formatDuration(row.source_duration_seconds)+(row.source_mastery?" · ✦ Maîtrise":row.source_autonomy?" · 🧠 Autonomie":"")+'</small>'+parts.map(p=>{const cmp=compareChallenge(source,{status:p.status,duration_seconds:p.duration_seconds,autonomy:p.autonomy,mastery:p.mastery});const ownerOutcome=cmp?.winner==="source"?"🏆 Victoire":cmp?.winner==="participant"?"Défaite":"Égalité";return '<div class="challenge-participant"><span>'+escapeHtml(p.name)+'</span><span><strong>'+ownerOutcome+'</strong> · '+(p.status==="abandoned"?"abandon":formatDuration(p.duration_seconds)+(p.mastery?" · ✦":p.autonomy?" · 🧠":" · aide"))+'</span></div>'}).join("")+'</div>'}).join(""):'<p>Aucun défi envoyé pour le moment.</p>';
   if(badge){badge.hidden=!unread;badge.textContent=unread||""}
   return rows||[];
  }catch(e){console.warn("challenge inbox",e);return []}
@@ -2159,7 +2159,7 @@ async function bootstrapSocialChallenge(){
   socialChallenge=await challengeClient.get(id);if(!socialChallenge)throw new Error("not_found");
   const quest=resolveChallengeQuest(socialChallenge);canonicalActiveQuest=quest.legacyIndex===null?quest:null;
   levelIndex=legacyIndexForActiveChallenge(socialChallenge);replayMode=false;
-  if(["COMPLETED","ABANDONED"].includes(socialChallenge.participant_status)){init();showSocialChallengeResult(socialChallenge);return false}
+  if(challengeAttemptClosed(socialChallenge.participant_status)){init();showSocialChallengeResult(socialChallenge);return false}
   const intro=document.getElementById("challengeIntro"),copy=document.getElementById("challengeIntroCopy");copy.textContent=socialChallenge.sender_display_name+" te défie sur la quête "+quest.ordinal+". Sa performance sera révélée après ta tentative.";intro.hidden=false;
   return await new Promise(resolve=>{document.getElementById("challengeStart").onclick=async()=>{const name=await askChallengeName();if(!name)return;try{const previouslyPlayed=questIsCompleted(lumenProgress,quest.id);await challengeClient.start(id,previouslyPlayed,socialChallenge.grid_revision??0);intro.hidden=true;trackAttemptEvent("challenge_started",{previously_played:previouslyPlayed});resolve(true)}catch(e){console.warn("challenge start",e);showRewardToast("Impossible de démarrer le défi")}};document.getElementById("challengeLeave").onclick=()=>{location.href=location.pathname}});
  }catch(e){console.warn("challenge load",e);showRewardToast("Ce défi n’est plus disponible");socialChallenge=null;return true}
@@ -2366,7 +2366,16 @@ function legacyQuestAccess(index){
   entitlements:adventureAccessEntitlements(),entitlementsState:adventureEntitlementsState(),attempt:campaignAccessAttempt(),signedIn:qaActive||!!lumenUser,cloudReady:qaActive||cloudProfileReady,confirmedReplay:confirmedReplayAllowed(canonicalQuestForLegacy(index)),...offlineQuestAccessContext()
  });
 }
-function choose(playReviewQuestId=null){if(canonicalActiveQuest){puz={reg:canonicalActiveQuest.reg,sol:canonicalActiveQuest.sol,audit:canonicalActiveQuest.audit,difficulty:canonicalActiveQuest.difficulty};n=puz.reg.length;return}levelIndex=Math.max(0,Math.min(levelIndex,currentQuestLimit()-1));if(!socialChallenge&&canonicalQuestForLegacy(levelIndex)?.id!==playReviewQuestId&&!questIsAccessible(levelIndex)){while(levelIndex>0&&!questIsAccessible(levelIndex))levelIndex--;replayMode=!!lumenProgress.solved[levelIndex]}const resolved=playableQuest(levelIndex);if(!resolved)throw new Error("Missing campaign quest "+levelIndex);puz=resolved.source==="generated"?{reg:resolved.reg,sol:resolved.sol,audit:resolved.audit,difficulty:resolved.difficulty}:resolved.size===6?CAT["6"][CAMPAIGN6_ORDER[CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]]]:CAT[String(resolved.size)][CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]];
+function choose(playReviewQuestId=null){if(canonicalActiveQuest){puz={reg:canonicalActiveQuest.reg,sol:canonicalActiveQuest.sol,audit:canonicalActiveQuest.audit,difficulty:canonicalActiveQuest.difficulty};n=puz.reg.length;return}
+ // #883: a challenge pins one exact grid. The campaign bound would silently swap
+ // a locked Adventure's challenged quest for another one; access stays isolated
+ // because challenge attempts never open an Adventure (hasPackAccess).
+ levelIndex=socialChallenge?Math.max(0,levelIndex):Math.max(0,Math.min(levelIndex,currentQuestLimit()-1));
+ if(!socialChallenge&&canonicalQuestForLegacy(levelIndex)?.id!==playReviewQuestId&&!questIsAccessible(levelIndex)){
+  while(levelIndex>0&&!questIsAccessible(levelIndex))levelIndex--;
+  replayMode=!!lumenProgress.solved[levelIndex];
+ }
+ const resolved=playableQuest(levelIndex);if(!resolved)throw new Error("Missing campaign quest "+levelIndex);puz=resolved.source==="generated"?{reg:resolved.reg,sol:resolved.sol,audit:resolved.audit,difficulty:resolved.difficulty}:resolved.size===6?CAT["6"][CAMPAIGN6_ORDER[CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]]]:CAT[String(resolved.size)][CAMPAIGN_SIZE_SCHEDULE[levelIndex][1]];
  // #650: an explicit legacy grid revision replaces the historical CAT board.
  const revised=canonicalQuestForLegacy(levelIndex);if(revised?.gridRevision&&revised.legacyIndex===levelIndex)puz={...puz,reg:revised.reg,sol:revised.sol};
  n=puz.reg.length;last[n]=levelIndex}
@@ -4516,7 +4525,7 @@ function restorePlayForCurrentAccount(){
  playRestoreInFlight=operation;
  return operation.promise;
 }
-function playRestoreMessage(outcome,{manual=false}={}){
+function playRestoreMessage(outcome,{manual=false,focus=null}={}){
  if(!outcome)return '';
  const {results,unavailable,rightsUnavailable}=outcome;
  const paid=results.some(r=>r.status==='paid');
@@ -4531,9 +4540,9 @@ function playRestoreMessage(outcome,{manual=false}={}){
  if(paid)return 'Achats Google Play vérifiés. Tes droits sont à jour.';
  if(results.some(r=>r.status==='pending'))return 'Google Play traite encore un paiement. Nous vérifierons à nouveau son état.';
  if(manual&&results.some(r=>r.status==='account_unverified'||r.status==='owned_elsewhere')){
-  // #864: name each purchase and say why it stays on its original Lumen account.
-  return results.filter(r=>r.status==='account_unverified'||r.status==='owned_elsewhere')
-   .map(r=>playOwnershipMessage(r.status,playProductTitle(playProductFromSku(r.itemId)))).join(' ');
+  // #864/#878: name each purchase and why it stays on its original Lumen account,
+  // grouped per state so that the instruction is given once.
+  return playOwnershipSummary(results,sku=>playProductTitle(playProductFromSku(sku)),{focus});
  }
  if(manual&&results.some(r=>r.status==='offer_not_eligible'))return playOwnershipMessage('offer_not_eligible');
  if(results.some(r=>r.status==='not_paid'))return 'Google Play ne confirme aucun droit pour cet achat.';
@@ -4691,7 +4700,7 @@ function renderAdventureOffer(container,pack,{close}={}){
    const owner=lumenUser?.id;
    const outcome=await restorePlayForCurrentAccount();
    if(lumenUser?.id!==owner)return '';
-   const text=playRestoreMessage(outcome,{manual:true});
+   const text=playRestoreMessage(outcome,{manual:true,focus:toPlayProductId(pack.id)});
    const clean=!!outcome&&!outcome.unavailable&&!outcome.rightsUnavailable&&outcome.results.some(r=>r.status==='paid')
     &&!outcome.results.some(r=>['error','pending','owned_elsewhere','account_unverified','offer_not_eligible'].includes(r.status)||(r.status==='paid'&&!r.acknowledged));
    return {text,transient:clean};

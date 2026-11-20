@@ -177,7 +177,7 @@ Full runbook and owner steps: [STRIPE_730](STRIPE_730.md).
   - Client gate (#833): the Play checkout opens when `PLAY_CHECKOUT_AVAILABLE` is true, or for an account holding the server capability `play_test_checkout` (`lumen.internal_capabilities`, read through `lumen_get_internal_capabilities`). This lets a licence tester run the end-to-end acceptance while public sales stay closed. It grants nothing; every token follows the same verification. Signed-in Play apps also recheck purchases on return to the foreground (throttled to once a minute), in addition to hydration, `online` and after a purchase.
   - Migration `20261119092413_play_acknowledgement_833.sql` records the verified purchase, purchase entitlement and acknowledgement task atomically. The service-only worker leases due tasks, confirms the state with Google, and retries with a capped delay. The private queue retains its temporary token only until acknowledgement, cancellation, erasure or expiry. See the [operations and test checklist](../android/PLAY.md#récupération-et-déploiement-google-play-823).
   - Whole-sky upgrades (#865): Play SKUs `real_sky_upgrade_1..4` ↔ ledger `real-sky-upgrade-1..4` (`kind='sky_upgrade'`, tier = confirmed unit purchases). `verify` calls the service-only `lumen_sky_upgrade_eligible` before recording a new upgrade token; an outdated tier answers 409 `offer_not_eligible` without recording or acknowledging. Upgrades never feed the historical € credit. The Android wrapper (`PaymentActivity`) accepts the same SKU list. See [SHOP_865](SHOP_865.md).
-  - Already-owned items (#864): Google Play owns a non-consumable per **Google account**, not per Lumen account. Before opening the Play sheet, and again after a sheet that failed or was cancelled, the client reads `listPurchases()` for that SKU (`findOwnedPlayPurchase`). A held token is sent to `verify` for the signed-in Lumen account only; no sheet opens. `paid` rereads entitlements; `owned_elsewhere` asks the player to sign in to the original Lumen account; `account_unverified` (purchase without account binding, e.g. before 19/11/2026 10:41 UTC) points to support; `not_paid` explains a cancellation. Nothing is ever transferred between Lumen accounts.
+  - Already-owned items (#864): Google Play owns a non-consumable per **Google account**, not per Lumen account. Before opening the Play sheet, and again after a sheet that failed or was cancelled, the client reads `listPurchases()` for that SKU (`findOwnedPlayPurchase`). A held token is sent to `verify` for the signed-in Lumen account only; no sheet opens. `paid` rereads entitlements; `owned_elsewhere` asks the player to sign in to the original Lumen account; `account_unverified` (purchase without account binding, e.g. before 19/11/2026 10:41 UTC) points to support; `not_paid` explains a cancellation. A token already **refunded** in the ledger answers `not_paid` for every account, even when another account held it (#878), never `owned_elsewhere`. A manual restore that finds several such purchases shows one sentence per state, naming the items, with the open offer's adventure first (`playOwnershipSummary`, #878). Nothing is ever transferred between Lumen accounts.
 - **Secrets** (Edge Function secrets only): `LUMEN_PLAY_SERVICE_ACCOUNT`, `LUMEN_PLAY_PACKAGE`, `LUMEN_PLAY_CRON_SECRET`, optional `LUMEN_PLAY_RECOVERY_ORDERS`. The recovery map contains independently verified order-to-Auth-UUID associations. It cannot grant an entitlement without the server verifying the Google purchase. See [Android release and recovery](../android/PLAY.md#récupération-et-déploiement-google-play-823).
 - **Migration** `20261115220000_play_purchase_gateway_729.sql`: `public.lumen_store_price`, `lumen_record_purchase` and `lumen_purchase_by_ref`, executable by `service_role` only. Migration `20261118212000_play_regional_receipts_729.sql` adds the Play-only gateway and nullable settled amount and currency on the private ledger and accounting archive. Apply the migration before deploying the Edge Function. Old rows keep their original values.
 - Notices (#863): an automatic restore that finds the rights up to date is silent (no global `#purchaseStatus` banner over the game); errors, pending payments and rights still syncing stay visible. A source may only clear its own notice. A manual restore answers inside the shop; a clean success clears itself after about 3 s, actionable messages stay.
@@ -1838,6 +1838,45 @@ Challenge writes go through SECURITY DEFINER RPCs while both social tables keep 
 The existing `lumen-push` Edge Function also owns challenge-result delivery. A completed participation triggers a server-verified challenge-result notification to subscriptions owned by the sender. Push payloads reveal only that a result exists, not the result itself, and deep-link to `?myChallenges=<challenge-id>`. Notification tags are challenge-scoped so repeated results for the same shared link collapse instead of flooding the device.
 
 One challenge link may have many independent participants. “Mes défis” is therefore sender-centric and shows participant count, unread results and each terminal result. This data model intentionally leaves sender/recipient account links compatible with the later Social V2 issue without requiring an internal friends/inbox system now.
+
+### RPC routing matrix and recipient invariants (#883, audited 2026-11-20)
+
+The client routes on the challenge's **stored grid revision**, not on whether a
+numeric ID exists. Public `lumen_start_social_challenge` /
+`lumen_finish_social_challenge` are wrappers (20261108061843) that only refuse
+`grid_revision<>0`, then delegate to the private one-shot implementations in
+schema `lumen`; a stable revision-0 challenge is therefore valid on them.
+
+| Challenge kind | Snapshot identity | create | get / Mes défis | start / finish |
+|---|---|---|---|---|
+| Historical number (legacy index, incl. #650 soft revision 1 of quests 3–6) | `questId`=legacy+1 | `lumen_create_social_challenge` (rev 0) | `lumen_get_quest_challenge_v2` / `lumen_list_quest_challenges_v2` | `lumen_start/finish_social_challenge` |
+| Stable ID, grid revision 0 | `stableQuestId`, `puzzle_id` null | `lumen_create_quest_challenge` (rev 0) | same v2 reads | `lumen_start/finish_social_challenge` |
+| Stable ID, grid revision > 0 | `stableQuestId` + `gridRevision` | `lumen_create_quest_challenge_v2` | same v2 reads | `lumen_start/finish_quest_challenge_v2` |
+
+Reads fall back to `lumen_get_quest_challenge` then `lumen_get_social_challenge`
+only on `PGRST202` (older server). Historical numbers follow the live legacy
+board (`docs/GRID_CATALOG.md`, #650), so links created before 2026-11-14 for
+quests 3–6 are compared on the current onboarding board.
+
+Recipient invariants (`challenge-recipient-browser.mjs`,
+`fixtures/challenge-rpc-matrix.sql`):
+- the challenged grid is played even from a locked Adventure: `choose()` does not
+  apply the campaign quest bound while `socialChallenge` is active, and challenge
+  attempts never open an Adventure (`hasPackAccess` ignores `mode: challenge`);
+- a challenge victory branches before every campaign mutation (no progress,
+  reward, badge or entitlement);
+- the server stores lowercase `started|completed|abandoned`;
+  `challengeAttemptClosed` shows the result of a finished link instead of a new
+  attempt, and the server never rewrites a terminal result;
+- “Mes défis” labels rows with `challengeQuestLabel` (canonical visible ordinal),
+  because `puzzle_id` is a frozen legacy index and is null for stable-only quests;
+- `challenge_created` / `challenge_result_viewed` carry `stable_quest_id` and
+  `grid_revision` so stable-only challenges stay measurable (#708).
+
+Known limits: a recipient who reloads a started (not finished) challenge on
+another browser/device restarts the clock locally; the server keeps one
+participation and the first terminal result. Old cached clients without these
+fixes still show the previous behaviour until they update.
 
 ### Security-advisor note
 Supabase reports the two social tables as `rls_enabled_no_policy` and the anonymous social RPCs as callable SECURITY DEFINER functions. For #18 this is intentional: guests are a product requirement, direct table access is denied by RLS, and the narrow RPCs enforce the ownership/one-attempt contract. These warnings are not a claim that the whole project is security-clean; unrelated existing advisor warnings remain and must be reviewed separately.

@@ -347,7 +347,10 @@ Play (et après une feuille fermée en erreur ou annulée), Lumen lit
 | `paid` | « Achat confirmé » après relecture des droits | aucune |
 | `owned_elsewhere` | achat rattaché à un autre compte Lumen | se reconnecter au compte Lumen d'origine |
 | `account_unverified` | achat Play non rattaché à un compte vérifiable (achats antérieurs à la liaison du 19/11/2026) | contacter l'assistance |
-| `not_paid` | achat annulé ou remboursé | réessayer après libération par Google |
+| `not_paid` | achat annulé ou remboursé, y compris quand un autre compte Lumen le détenait (#878) | aucune : il ne donne plus accès |
+
+La restauration manuelle regroupe les achats par état, une seule consigne par
+état, en commençant par l'aventure de l'offre ouverte (#878).
 
 Jamais de nouvelle feuille de paiement pour un SKU détenu, jamais de transfert
 entre comptes Lumen. Rattachement d'un achat **réel** non lié : vérifier la
@@ -355,7 +358,9 @@ commande dans Play Console puis l'ajouter à `LUMEN_PLAY_RECOVERY_ORDERS`
 (commande → UUID Auth) ; ce secours ne s'applique pas aux achats de test.
 **Campagnes de recette multi-comptes** : utiliser un compte Google Play testeur
 par compte Lumen, ou rembourser **et révoquer** la commande de test dans Play
-Console (Gestion des commandes) avant de rejouer un SKU. Ne jamais révoquer une
+Console (Gestion des commandes) avant de rejouer un SKU. Rembourser **sans**
+révoquer laisse le SKU détenu par le compte Google Play (cas de `real_sky_all`
+le 19/11/2026). Ne jamais révoquer une
 commande réelle ni modifier un droit pour débloquer un test.
 
 ### Notifications Google Play (RTDN)
