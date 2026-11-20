@@ -280,6 +280,20 @@ test('only the independently reconciled account can restore a legacy order',asyn
  }
 });
 
+test('#878: a refunded purchase of another account is reported as refunded, never as « reconnect »',async()=>{
+ const known={[sha('play-token-1')]:{user_id:'other-player',product_id:'real-adventure-02',amount_cents:100,currency:'EUR',status:'refunded',purchased_at:'2026-11-15T10:00:00Z'}};
+ const f=fixture({known});
+ const r=await f.request();
+ assert.equal(r.status,409);assert.deepEqual(await r.json(),{status:'not_paid'},'No revoked flag: nothing changes for this account');
+ assert.deepEqual(records(f.calls),[]);assert.deepEqual(records(f.calls,'lumen_record_purchase'),[]);
+ assert(!f.calls.some(c=>c.url?.endsWith(':acknowledge')));
+ // A paid purchase of another account stays protected, and a product mismatch is never softened.
+ const paid=fixture({known:{[sha('play-token-1')]:{...known[sha('play-token-1')],status:'paid'}}});
+ assert.deepEqual(await (await paid.request()).json(),{error:'purchase_owned_elsewhere'});
+ const mismatch=fixture({known:{[sha('play-token-1')]:{...known[sha('play-token-1')],product_id:'real-adventure-03'}}});
+ assert.deepEqual(await (await mismatch.request()).json(),{error:'purchase_owned_elsewhere'});
+});
+
 test('a missing Play RPC never acknowledges or confirms and the owned order can be retried',async()=>{
  const failed=fixture({recordError:{code:'PGRST202',message:'synthetic missing RPC'}});
  assert.deepEqual(await (await failed.request()).json(),{error:'unavailable'});

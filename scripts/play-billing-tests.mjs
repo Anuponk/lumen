@@ -1,6 +1,6 @@
 // #729: client Play Billing module with synthetic Digital Goods and Payment Request.
 import assert from 'node:assert/strict';
-import {PLAY_CHECKOUT_AVAILABLE,PLAY_TEST_CAPABILITY,playCheckoutOpen,createForegroundRecovery,PLAY_BINDING_PROBE,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices,toPlayProductId,PLAY_BILLING_METHOD,findOwnedPlayPurchase,playOwnershipMessage} from '../src/persistence/play-billing.js';
+import {PLAY_CHECKOUT_AVAILABLE,PLAY_TEST_CAPABILITY,playCheckoutOpen,createForegroundRecovery,PLAY_BINDING_PROBE,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices,toPlayProductId,PLAY_BILLING_METHOD,findOwnedPlayPurchase,playOwnershipMessage,playOwnershipSummary} from '../src/persistence/play-billing.js';
 import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery,mainSkyOffer} from '../src/ui/adventure-offer.js';
@@ -35,6 +35,29 @@ assert.deepEqual(await findOwnedPlayPurchase(null,'real_adventure_03'),{status:'
 assert.match(playOwnershipMessage('owned_elsewhere','Horizon lointain'),/« Horizon lointain ».*autre compte Lumen.*Reconnecte-toi.*sans nouveau paiement/);
 assert.match(playOwnershipMessage('account_unverified','Horizon lointain'),/aucun compte Lumen vérifiable.*assistance/);
 assert.doesNotMatch(playOwnershipMessage('owned_elsewhere','X')+playOwnershipMessage('account_unverified','X'),/transf/i,'Never promise a transfer between Lumen accounts');
+// #878: several Play-held purchases give one short line per state, each instruction once.
+{
+ const titles={real_adventure_03:'Au-delà de l’horizon',real_adventure_05:'Les chemins du firmament',real_adventure_02:'Horizons lointains',real_sky_all:'Tout le vrai ciel'};
+ const titleOf=sku=>titles[sku]||'';
+ const results=[{itemId:'real_adventure_03',status:'owned_elsewhere'},{itemId:'real_adventure_05',status:'owned_elsewhere'},
+  {itemId:'real_adventure_02',status:'account_unverified'},{itemId:'real_sky_all',status:'not_paid'},{itemId:'real_adventure_06',status:'paid'}];
+ const text=playOwnershipSummary(results,titleOf);
+ for(const title of Object.values(titles))assert.equal(text.split('« '+title+' »').length,2,'Each purchase is named once: '+title);
+ for(const instruction of [/Reconnecte-toi/gi,/assistance/g,/autre compte Lumen/g,/aucun compte Lumen vérifiable/g,/rembours/g])
+  assert.equal(text.match(instruction)?.length,1,'One instruction per state: '+instruction);
+ assert.match(text,/« Au-delà de l’horizon » et « Les chemins du firmament » sont rattachés à un autre compte Lumen/);
+ assert.match(text,/« Tout le vrai ciel » a été annulé ou remboursé/,'A refunded purchase never asks to reconnect');
+ assert.ok(text.length<=420,'Readable on a phone: '+text.length);
+ assert.doesNotMatch(text,/transf/i);
+ // The adventure of the open offer comes first.
+ const focused=playOwnershipSummary(results,titleOf,{focus:'real_adventure_02'});
+ assert.match(focused,/^[^.]*« Horizons lointains »/,'The open offer states its own adventure first');
+ assert.ok(focused.indexOf('Horizons lointains')<focused.indexOf('Au-delà'));
+ // A single purchase keeps the detailed sentence; nothing to explain stays empty.
+ assert.equal(playOwnershipSummary([{itemId:'real_adventure_02',status:'account_unverified'}],titleOf),playOwnershipMessage('account_unverified','Horizons lointains'));
+ assert.equal(playOwnershipSummary([{itemId:'real_adventure_06',status:'paid'},{itemId:'real_sky_all',status:'not_paid'}],titleOf),'');
+ assert.equal(playOwnershipSummary([{itemId:'real_adventure_03',status:'owned_elsewhere'},{itemId:'real_adventure_03',status:'owned_elsewhere'}],titleOf),playOwnershipMessage('owned_elsewhere','Au-delà de l’horizon'),'Duplicates are merged');
+}
 assert.deepEqual(await v(reply(409,{error:'offer_not_eligible'})),{status:'offer_not_eligible'});
 assert.match(playOwnershipMessage('offer_not_eligible'),/rembourse automatiquement/,'#865: an outdated tier is explained, never granted');
 assert.equal(toPlayProductId('real-sky-upgrade-3'),'real_sky_upgrade_3');assert.equal(toPlayProductId('real-sky-upgrade-5'),'real-sky-upgrade-5');
@@ -285,7 +308,7 @@ const recoveryWin={
 };
 const restoreHost=new Node('div');
 let scheduledRecovery=null;
-const recovery=vm.createContext({...context,PLAY_CHECKOUT_AVAILABLE:false,window:recoveryWin,findOwnedPlayPurchase,playOwnershipMessage,
+const recovery=vm.createContext({...context,PLAY_CHECKOUT_AVAILABLE:false,window:recoveryWin,findOwnedPlayPurchase,playOwnershipMessage,playOwnershipSummary,toPlayProductId,
  setTimeout:(callback,delay)=>{scheduledRecovery={callback,delay};return scheduledRecovery},
  clearTimeout:()=>{scheduledRecovery=null},
  getPlayPurchaseService,restorePlayPurchases,verifyPlayPurchase:args=>verifyPlayPurchase({...args,fetchImpl:async(_url,init)=>{

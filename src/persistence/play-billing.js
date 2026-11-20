@@ -111,6 +111,43 @@ export function playOwnershipMessage(status,title){
  return 'Ton compte Google Play possède déjà '+name+', mais sa vérification est indisponible. Réessaie « Restaurer mes achats », sans nouveau paiement.';
 }
 
+// #878: a restore that finds several Play-held purchases gives one short sentence per
+// state, naming the items, each instruction once. `focus` (an SKU) puts the adventure
+// of the open offer first. A single purchase keeps its detailed sentence.
+const SUMMARY_STATES=['owned_elsewhere','account_unverified','not_paid'];
+export function playOwnershipSummary(results,titleOf=()=>'',{focus=null}={}){
+ const groups=new Map(SUMMARY_STATES.map(state=>[state,[]]));
+ const ordered=[...(Array.isArray(results)?results:[])].sort((a,b)=>(b?.itemId===focus)-(a?.itemId===focus));
+ for(const r of ordered){
+  const group=groups.get(r?.status);
+  if(!group)continue;
+  const title=titleOf(r.itemId)||'';
+  if(!group.includes(title))group.push(title);
+ }
+ if(!groups.get('owned_elsewhere').length&&!groups.get('account_unverified').length)return '';
+ const total=[...groups.values()].reduce((n,g)=>n+g.length,0);
+ if(total===1){const [state,[title]]=[...groups].find(([,g])=>g.length);return playOwnershipMessage(state,title)}
+ const names=titles=>{
+  const quoted=titles.map(t=>t?'« '+t+' »':'un article');
+  return quoted.length>1?quoted.slice(0,-1).join(', ')+' et '+quoted.at(-1):quoted[0];
+ };
+ const sentences={
+  owned_elsewhere:g=>g.length>1
+   ?names(g)+' sont rattachés à un autre compte Lumen : reconnecte-toi au compte utilisé lors de leur achat pour y accéder.'
+   :names(g)+' est rattaché à un autre compte Lumen : reconnecte-toi au compte utilisé lors de son achat pour y accéder.',
+  account_unverified:g=>g.length>1
+   ?names(g)+' ne sont rattachés à aucun compte Lumen vérifiable : contacte l’assistance pour les rattacher.'
+   :names(g)+' n’est rattaché à aucun compte Lumen vérifiable : contacte l’assistance pour le rattacher.',
+  not_paid:g=>g.length>1?names(g)+' ont été annulés ou remboursés et ne donnent plus accès.'
+   :names(g)+' a été annulé ou remboursé et ne donne plus accès.',
+ };
+ // The open offer's adventure leads; otherwise the stable order of SUMMARY_STATES.
+ const focusTitle=focus?titleOf(focus)||null:null,leads=state=>focusTitle!==null&&groups.get(state).includes(focusTitle);
+ const states=SUMMARY_STATES.filter(state=>groups.get(state).length).sort((a,b)=>leads(b)-leads(a));
+ return 'Déjà sur ton compte Google Play, sans nouveau paiement : '
+  +states.map(state=>sentences[state](groups.get(state))).join(' ');
+}
+
 // Only validated provider prices. Never substitute catalogue prices in the Play app.
 export async function playPrices(service,ids,{onDiagnostic=()=>{},locale='fr-FR'}={}){
  try{
