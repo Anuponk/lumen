@@ -513,7 +513,9 @@ seven viewports and reduced motion. The full gate includes the new suites.
 Android closed-test delivery: the Android packaging workflow runs
 `android/tools/test-play-closed-release.py` against a fake Play service and
 `android/tools/test-aab-signing.sh` against a compiled AAB with a disposable
-key. Real delivery requires the Play track and credential setup in
+key. The Android packaging contract also checks that the closed-test build
+installs the Android command-line tools before invoking sdkmanager. Real
+delivery requires the Play track and credential setup in
 [Android signing](../../android/SIGNING.md#générer-et-envoyer-un-aab-en-test-fermé-depuis-github).
 
 Payments / #729 #730 #823: play-purchase-handler-tests.mjs and play-billing-tests.mjs

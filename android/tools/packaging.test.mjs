@@ -67,6 +67,12 @@ test('ABH ManageDataLauncherActivity is declared so the launcher cannot crash at
   assert.match(manifest, /android:value="https:\/\/\$\{lumenHost\}\/"/);
 });
 
+test('closed-test release provisions the Android SDK before invoking sdkmanager', () => {
+  const workflow = read('../.github/workflows/android-signed-aab.yml');
+  const buildJob = workflow.split(/\r?\n  build:\r?\n/)[1]?.split(/\r?\n  publish:\r?\n/)[0] ?? '';
+  assert.match(buildJob, /uses: android-actions\/setup-android@v3[\s\S]*?sdkmanager 'platforms;android-36' 'build-tools;35\.0\.0'/);
+});
+
 test('Android dependencies, SDK and toolchain are explicit; release never uses debug signer', () => {
   const build = read('app/build.gradle');
   for (const expression of [/compileSdk 36/, /targetSdk 36/, /minSdk 24/, /VERSION_17/, /androidbrowserhelper:2\.7\.3/]) assert.match(build, expression);

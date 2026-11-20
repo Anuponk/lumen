@@ -85,6 +85,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
       - name: Compiler et vérifier l’AAB release
         env:
           ORG_GRADLE_PROJECT_lumenVersionCode: ${{ needs.prepare.outputs.code }}
