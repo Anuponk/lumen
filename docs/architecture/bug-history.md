@@ -331,6 +331,14 @@ Récidive le 20/11/2026 avec l'écran `#passwordRecovery` : même un bouton neuf
 n'y recevait aucun clic. Ajouté à la liste ; garde statique dans
 `auth-link-recovery-tests.mjs`.
 
+### #820 — lien natif reçu par une fenêtre Lumen déjà ouverte
+
+Recette du 20/11 après #869 : le lien de réinitialisation menait à l'écran
+habituel. Reproduit avec le vrai SDK (réseau Supabase simulé) : un passage de
+`/` à `/#access_token=…&type=recovery` dans le même document n'est lu ni par
+`bootAuthLink` ni par le SDK. Un chargement complet fonctionnait. Correctif :
+rechargement sur `hashchange` portant un résultat d'authentification.
+
 ### #847 — joueur connecté bloqué hors ligne
 
 Reproduit sur `0516c42` (`offline-network-browser-tests.mjs`, rouge) : après une

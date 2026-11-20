@@ -114,6 +114,11 @@ const bootAuthLink=(()=>{try{
  if(result?.status==='verified'&&result.kind==='recovery')sessionStorage.setItem('lumenPasswordRecoveryPending','1');
  return result;
 }catch{return null}})();
+// #820 (field test 20/11): a native link opened in an already open Lumen window
+// (installed app or PWA link capturing) only changes the fragment, so the page
+// is not reloaded and neither Lumen nor the Auth SDK reads #access_token. Reload
+// once: the link is then handled exactly like a fresh opening.
+window.addEventListener('hashchange',()=>{try{if(readNativeAuthLinkResult(location.href))location.reload()}catch{}});
 // #820: a branded link (?lumen_confirm=…) is verified by cloud.js later; remember
 // its kind so a neutral « vérification » state is shown instead of the game.
 // Declared early: auth UI sync may run before the recovery helpers below.

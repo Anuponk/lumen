@@ -549,6 +549,11 @@ Submission is single-flight. « Mot de passe modifié ! » appears only after
 recovery sessions in three minutes, then a password sign-in) matched the former
 immediate `location.reload()` that hid the success.
 
+A native link captured by an already open Lumen window (installed app, PWA link
+capturing) changes only the fragment: no navigation happens, so neither the boot
+reader nor the SDK sees `#access_token`. A `hashchange` carrying an auth result
+reloads the page once, which then follows the normal native-link path.
+
 ### Installed app first opening (#832)
 
 iOS can give the home-screen app storage separate from Safari. When an installed
