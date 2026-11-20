@@ -23,7 +23,7 @@ for(const played of quests.filter(q=>q.position===1)){
  let opened;
  const context={firstLearningSkyVisit:()=>false,activeQuest:()=>played,levelIndex:0,CONTENT_CONSTELLATIONS,mapConstellation:0,
  playReviewReturn:null,cloudHydrationGeneration:2,playReviewNavigation:{clear(){}},refreshPlayReviewMap(){},
- chapterForGrid:()=>0,document:{getElementById:element},skyNavigation:{open:options=>{opened=options}},renderMap(){},startBadgeCooldownRefresh(){},clearSkyTourFocus(){},lumenProgress:{solved:{}},requestAnimationFrame(){},renderSkyTourStep(){}};
+ chapterForGrid:()=>0,document:{getElementById:element},skyNavigation:{open:options=>{opened=options}},renderMap(){},startBadgeCooldownRefresh(){},clearSkyTourFocus(){},lumenProgress:{solved:{}},requestAnimationFrame(){},renderSkyTourStep(){},refreshDailyEntry(){}};
  vm.createContext(context);vm.runInContext(functionSource(source,'openJourneyMap'),context);context.openJourneyMap();
  assert.equal(opened.constellationId,played.constellationId,'Default map return follows played stable identity '+played.id);
  assert.equal(opened.detail,false,'Ordinary entry stays in overview');

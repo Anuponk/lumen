@@ -1909,6 +1909,8 @@ account and Europe/Paris day (`lumen_commands.daily_runs`, primary key
 `content/generated/daily-schedule.json`), general and friends rankings computed
 from the same rows, ranks frozen in `daily_standings` after close + 6 h, disabled
 by the `daily_challenge` feature flag until the gates of #882 are validated.
+Client (PR B): a daily run is an isolated challenge run in `game-screen.js`
+(`socialChallenge.daily`), started from `/?daily=1`; see DAILY_CHALLENGE.md §6 bis.
 
 ### Friends and direct challenges (#35, EPIC #881 Lot 2)
 

@@ -119,6 +119,10 @@ export function createShareDialog(document, navigator) {
   });
 
   return {
+    // #882: any prepared share payload (daily performance), same dialog.
+    text(data, origin) {
+      open(data, { origin });
+    },
     async invite(origin) {
       const outcome = await tryNativeShare(navigator, { ...inviteShareData, url: inviteShareUrl });
       if (outcome === 'unavailable' && origin.getClientRects().length) {
