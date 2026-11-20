@@ -18,6 +18,8 @@ const API = 'https://androidpublisher.googleapis.com/androidpublisher/v3/applica
 const PLAY_CAP_REGION = 'FR';
 const googleKeys = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
 const bindingPattern = /^[0-9a-f]{64}$/;
+// #865: Play SKUs sold by Lumen (Play Console forbids hyphens; the ledger keeps hyphens).
+const playSkuPattern = /^(real_adventure_0[2-9]|real_sky_all|real_sky_upgrade_[1-4])$/;
 
 function parseNotification(data) {
   if (typeof data !== 'string' || data.length > 16384) return null;
@@ -182,7 +184,7 @@ Deno.serve(async (request) => {
       const voided = notification.voidedPurchaseNotification;
       let result;
       if (oneTime && [1, 2].includes(oneTime.notificationType)
-        && typeof oneTime.sku === 'string' && /^(real_adventure_0[2-9]|real_sky_all)$/.test(oneTime.sku)) {
+        && typeof oneTime.sku === 'string' && playSkuPattern.test(oneTime.sku)) {
         result = await verify(oneTime.sku, oneTime.purchaseToken, null, oneTime.notificationType === 2);
       } else if (voided?.productType === 2 && voided.refundType === 1
         && typeof voided.purchaseToken === 'string' && voided.purchaseToken.length >= 1
@@ -283,8 +285,8 @@ Deno.serve(async (request) => {
       return reply(400, { error: 'invalid_request' });
     }
     // Keep canonical internal IDs in the purchase ledger; Google uses underscore SKUs.
-    const internalProductId = /^real_adventure_0[2-9]$/.test(productId) || productId === 'real_sky_all'
-      ? productId.replaceAll('_', '-') : null;
+    const internalProductId = playSkuPattern.test(productId) ? productId.replaceAll('_', '-') : null;
+    const skyUpgrade = internalProductId?.startsWith('real-sky-upgrade-') === true;
     if (!internalProductId) return reply(400, { error: 'unknown_product' });
     const path = purchasePath(productId, purchaseToken);
     const checked = await play(path);
@@ -347,6 +349,13 @@ Deno.serve(async (request) => {
       if (!settlement) return reply(502, { error: 'unverified_order_total' });
     }
     if (refundOnly) return reply(202, { status: 'pending' });
+    if (!original && skyUpgrade) {
+      // #865: the tier is checked again once paid. An outdated tier is neither recorded
+      // nor acknowledged, so Google refunds it automatically (never a silent grant).
+      const { data: eligible, error } = await operator.rpc('lumen_sky_upgrade_eligible', { p_user: userId, p_product: internalProductId });
+      if (error) throw Error('eligibility_failed');
+      if (eligible !== true) return reply(409, { error: 'offer_not_eligible' });
+    }
     if (!original && accountBinding == null) {
       // The current TWA does not pass an account binding. Allow only orders the
       // operator has independently reconciled, after reading the real settlement.
@@ -359,7 +368,8 @@ Deno.serve(async (request) => {
       p_provider_ref: ref, p_user_id: userId, p_product_id: internalProductId,
       p_settled_amount: original ? null : settlement?.amount ?? null,
       p_settled_currency: original ? null : settlement?.currency ?? null,
-      p_counts_toward_cap: testPurchase ? !purchase.regionCode || purchase.regionCode === PLAY_CAP_REGION
+      // #865: an upgrade never feeds the historical € credit; the rule counts distinct adventures.
+      p_counts_toward_cap: skyUpgrade ? false : testPurchase ? !purchase.regionCode || purchase.regionCode === PLAY_CAP_REGION
         : settlement?.currency === 'EUR' && (!purchase.regionCode || purchase.regionCode === PLAY_CAP_REGION),
       p_test_purchase: testPurchase,
       p_purchased_at: purchase.purchaseTimeMillis ? new Date(Number(purchase.purchaseTimeMillis)).toISOString() : null,

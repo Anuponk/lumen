@@ -132,6 +132,22 @@ ownership of the next Adventure, not a prerequisite for playing a purchased one.
 
 The locked-Adventure offer (#731, `ui/adventure-offer.js`) shows both paths. The « Le savais-tu ? » section (#811) counts the previous Adventure’s remaining quests and badges using the same criteria as the server claim. Counts refresh with the live profile and stay hidden while account ownership or hydration is unresolved. At 100%, the action checks the server. The offer confirms the free unlock only after a refreshed mastery entitlement. Purchases stay disabled until a provider is connected. Google Play supplies its localized prices (#729). During #823, new Play purchases are paused until Android can bind purchases to the Lumen account. Signed-in Play players can restore existing purchases from the offer or through automatic recovery after hydration. Rights update after server verification and entitlement read-back. The whole-sky purchase option is still hidden after the first unit purchase. The Play offer shows the provider’s prices and makes no promise about a fixed total. Stripe uses the web catalogue and is available only on the web/PWA. [STRIPE_730](STRIPE_730.md) A Stripe return never unlocks by itself: the server reads the payment back from Stripe, and a full refund or a lost dispute expires the `purchase` right without touching progress. The client only asks for a mastery unlock: after a verified hydration and when a local victory triggers an Adventure mastery. A victory still pending on the server is retried at the next launch.
 
+### Tout débloquer at an adjusted price (#865)
+
+While the main sky is not unlocked, the offer keeps two choices: **Choisir** (this
+Adventure) and **Tout débloquer**. The server picks the single whole-sky product from
+N = distinct confirmed unit purchases (`lumen_get_main_sky_purchase_progress.sky_offer`):
+N=0 `real-sky-all`; N=1..4 `real-sky-upgrade-N`; N≥5 or main sky owned: none. Only
+active catalogue products are offered; upgrades ship inactive until the owner validates
+prices and Play products. A confirmed upgrade grants the main sky directly
+(`store_products.kind='sky_upgrade'`), never synthetic unit purchases, and does not change
+N. Refunding it expires the extra rights and offers the same tier again; a unit refund
+lowers the tier. Free, mastery, admin, pending, refunded or duplicate rights never count.
+The player sees only the offer that applies, with the provider's price (Google Play) or
+the server catalogue price charged by Stripe. Stripe refuses another tier
+(`offer_changed`); on Play, an upgrade paid for an outdated tier is neither recorded nor
+acknowledged, so Google refunds it automatically. Runbook: [SHOP_865](SHOP_865.md).
+
 ## Bonus quests
 After the reviewed historical-command migration, authenticated victories apply
 the existing `legacy-victory.js` rules on the server. Guests and explicitly older

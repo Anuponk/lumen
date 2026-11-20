@@ -35,13 +35,13 @@ async function call({fetchImpl=fetch,endpoint,apiKey,accessToken,body}){
 }
 
 // Start a checkout. Only the product id and the waiver go to the server: never a price.
-// Returns {status:'redirecting'|'busy'|'already_owned'|'sky_after_single'|'not_eligible'|'rate_limited'|'session'|'error'}.
+// Returns {status:'redirecting'|'busy'|'already_owned'|'sky_after_single'|'offer_changed'|'not_eligible'|'rate_limited'|'session'|'error'}.
 export async function startStripeCheckout({productId,waiver,navigate,...transport}){
  if(waiver?.accepted!==true)return {status:'waiver'};
  const {http,body}=await call({...transport,body:{mode:'checkout',productId,waiver:true}});
  if(http===200&&typeof body.url==='string'&&body.url.startsWith('https://checkout.stripe.com/')){navigate(body.url);return {status:'redirecting'}}
  if(http===409&&body.error==='checkout_in_progress')return {status:'busy'};
- if(http===409&&(body.error==='already_owned'||body.error==='sky_after_single'))return {status:body.error};
+ if(http===409&&(body.error==='already_owned'||body.error==='sky_after_single'||body.error==='offer_changed'))return {status:body.error};
  if(http===403)return {status:'not_eligible'};
  if(http===429)return {status:'rate_limited'};
  if(http===401)return {status:'session'};
@@ -100,7 +100,8 @@ export const STRIPE_MESSAGES={
  disputed:'Ce paiement fait l’objet d’une contestation : l’accès qu’il donnait est suspendu pendant son examen.',
  busy:'Un paiement est déjà en cours d’ouverture : patiente quelques secondes.',
  already_owned:'Tu possèdes déjà cette aventure.',
- sky_after_single:'Tu as déjà acheté une aventure : continue à l’unité, tout le vrai ciel se débloque dès 5 € payés au total.',
+ sky_after_single:'Tu as déjà acheté une aventure : l’offre « Tout débloquer » est désormais ajustée à tes achats. Rouvre la boutique pour la voir.',
+ offer_changed:'Ton offre « Tout débloquer » a changé (nouvel achat ou remboursement). Rouvre la boutique pour voir le prix à jour.',
  not_eligible:'Le paiement par carte n’est pas encore ouvert pour ce compte.',
  rate_limited:'Trop de tentatives de paiement : réessaie dans une heure.',
  session:'Reconnecte-toi pour acheter cette aventure.',

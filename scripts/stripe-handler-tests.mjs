@@ -93,7 +93,7 @@ test('unknown products, a missing waiver and malformed ids are refused; the body
  r=await f.checkout();assert.equal(r.status,503,'a non-positive server price is never sent to Stripe');assert(!f.calls.some(c=>c.kind==='stripe'));
 });
 test('ownership, eligibility, double clicks and abuse map to explicit refusals without a new Stripe session',async()=>{
- for(const [begin,status,body] of [[{result:'already_owned'},409,{error:'already_owned'}],[{result:'sky_after_single'},409,{error:'sky_after_single'}],
+ for(const [begin,status,body] of [[{result:'already_owned'},409,{error:'already_owned'}],[{result:'sky_after_single'},409,{error:'sky_after_single'}],[{result:'offer_changed'},409,{error:'offer_changed'}],
   [{result:'not_eligible'},403,{error:'not_eligible'}],[{result:'busy'},409,{error:'checkout_in_progress'}],[{result:'rate_limited'},429,{error:'rate_limited'}],
   [{result:'reuse',url:'https://checkout.stripe.com/c/pay/cs_test_OLD'},200,{url:'https://checkout.stripe.com/c/pay/cs_test_OLD',reused:true}]]){
   const f=fixture({begin});const r=await f.checkout();assert.equal(r.status,status);assert.deepEqual(await r.json(),body);

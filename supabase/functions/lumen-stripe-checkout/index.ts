@@ -13,6 +13,7 @@ import { LUMEN_ORIGIN, stripeKey, sessionIdPattern, stripeRequest, syncStripeSes
 
 function productLabel(productId, kind) {
   if (kind === 'sky') return 'Lumen · Tout le vrai ciel';
+  if (kind === 'sky_upgrade') return 'Lumen · Tout le vrai ciel (prix ajusté)';
   const n = /^real-adventure-(\d{1,3})$/.exec(productId);
   return 'Lumen · Aventure ' + (n ? Number(n[1]) : productId);
 }
@@ -77,7 +78,7 @@ Deno.serve(async (request) => {
     if (result === 'rate_limited') return reply(429, { error: 'rate_limited' });
     if (result === 'not_eligible') return reply(403, { error: 'not_eligible' });
     if (result === 'unknown_product') return reply(400, { error: 'unknown_product' });
-    if (result === 'already_owned' || result === 'sky_after_single') return reply(409, { error: result });
+    if (result === 'already_owned' || result === 'sky_after_single' || result === 'offer_changed') return reply(409, { error: result });
     if (result !== 'reserved' || !Number.isInteger(begin.amount_cents) || begin.amount_cents <= 0 || !/^[A-Z]{3}$/.test(begin.currency || '')) throw Error('reservation_invalid');
 
     // Best effort: the previous unpaid session of this account can no longer be paid.
