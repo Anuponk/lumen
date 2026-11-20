@@ -368,6 +368,10 @@ probe behavior simulated. Explicit logout/password recovery/account switching
 remain covered. Real SDK 2.118.0 was additionally checked locally with blocked
 provider requests; that check is distinct from the required fixture transport.
 
+Locale foundation (#754) uses `locale-tests.mjs` for browser preference resolution,
+storage isolation, catalogue parity and formatting. The welcome browser suite
+mounts an English fixture, and the service worker suite covers the catalogue imports.
+
 PWA update freshness: `service-worker-cache-tests.mjs` exercises actual worker
 handlers; `service-worker-update-browser-tests.mjs` reproduces warm v9-to-v10
 upgrade, stale HTTP module imports, a subsequent release with unchanged worker,

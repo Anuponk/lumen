@@ -64,6 +64,7 @@ export const nodeSuites=[
  'cockpit-dates-tests.mjs',
  'ux-lot-tests.mjs',
  'first-welcome-tests.mjs',
+ 'locale-tests.mjs',
  'recette-schema-tests.mjs',
  'historical-rollout-tests.mjs',
  'gameplay-domain-tests.mjs',

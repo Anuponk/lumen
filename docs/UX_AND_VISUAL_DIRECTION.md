@@ -16,6 +16,16 @@ Keyboard disclosure checks and existing support/preview actions remain. The
 rule, learning step, badge eligibility, input gesture or player-facing gameplay
 navigation changes; onboarding adaptation is not required.
 
+## Localisation #754
+
+The optional introduction reads its copy from `src/ui/locales/{fr,en}/welcome.js`. It renders each label, caption and transcript entry at the component. The main game currently uses the French translator. The English introduction is exercised in an isolated browser fixture. Language detection and preference storage are covered in isolation while the French interface remains active in the game.
+
+To prepare an additional locale, use the French domain catalogue as a template, keep the same semantic keys and placeholder names, then register the canonical BCP 47 code, native name, availability, fallback and statically imported messages in `src/ui/i18n.js`. Use `t(key, params)` for complete messages and plural forms keyed by `Intl.PluralRules` categories with an `other` form. Use the translator’s number and date formatters for display. The French catalogue provides missing copy. Diagnostics report the key and locale. Player names and other user-provided values remain intact when inserted as parameters.
+
+The service worker follows the static imports to cache both catalogues. The French introduction keeps its existing timing, entry choices and accessibility. Guarded teaching steps begin in the game after the introduction.
+
+Before exposing English across the game, finish the remaining screen and content translations, connect the hot language selector and test it during an active attempt. The cross-device preference policy, installed Android locale, public pages and metadata, transactional copy, notifications and Play listing are part of the remaining FR/EN rollout.
+
 ## Optional first welcome and story — #532
 
 A fresh local campaign opens a celestial welcome with the existing LUMEN brand,

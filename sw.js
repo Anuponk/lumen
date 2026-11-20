@@ -1,5 +1,5 @@
-const CACHE="lumen-assets-v20";
-const OFFLINE_READY_MARKER="/__lumen_offline_ready_v20__";
+const CACHE="lumen-assets-v21";
+const OFFLINE_READY_MARKER="/__lumen_offline_ready_v21__";
 const SHELL=["/manifest.webmanifest","/icon.svg","/icon-maskable.svg","/","/src/main.js","/src/ui/game-screen.js","/src/ui/styles.css","/src/ui/first-welcome.css","/src/ui/build-version.js","/src/ui/account-switch-boot.js","/src/vendor/supabase-2.118.0.js","/src/vendor/qrcode-1.0.0.js"];
 // Crawl the static ES-module graph before activation, including JSON imports.
 // Only same-origin public application resources are eligible for this cache.

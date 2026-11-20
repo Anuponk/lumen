@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import {setupAppUpdates} from '../src/ui/app-updates.js';
 import {claimFirstWelcome,INTRO_SEEN_KEY,INTRO_SCENES,INTRO_DURATION,createIntroTimeline} from '../src/ui/first-welcome.js';
 import {createIntroMusic} from '../src/ui/intro-music.js';
+import {createTranslator} from '../src/ui/i18n.js';
 
 // Audio lifecycle uses fake nodes here; native synthesis is covered in Chromium.
 const contexts=[];
@@ -48,7 +49,8 @@ now=19000;timeline.pause();const paused=timeline.elapsed;now+=60000;timeline.fra
 timeline.resume();now+=1000;timeline.frame();assert.equal(timeline.elapsed,20000);
 assert.ok(frames.at(-1).passage>0&&frames.at(-1).passage<1);
 now+=4000;timeline.frame();timeline.frame();timeline.start();assert.equal(finishes,1,'One completion only');
-assert.equal(INTRO_DURATION,24000);assert.deepEqual(INTRO_SCENES.map(s=>s.text),[
+const {t}=createTranslator();
+assert.equal(INTRO_DURATION,24000);assert.deepEqual(INTRO_SCENES.map(s=>t(s.key)),[
  "Le ciel s'est assombri.","Les constellations sommeillent dans l'ombre.",'Une dernière lueur peut encore les éveiller.','Chaque énigme résolue rendra une étoile au ciel.','À toi de réveiller les étoiles.'
 ]);
 assert.deepEqual(INTRO_SCENES.map(scene=>scene.start),[0,4000,8000,13000,18000]);

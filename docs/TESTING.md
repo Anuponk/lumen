@@ -327,6 +327,13 @@ strict catalogue suites remain required.
 
 ## Optional first welcome/story — #532
 
+`node scripts/locale-tests.mjs` covers ordered device languages, explicit and
+automatic preferences, restricted storage, missing keys and placeholders, and
+number, currency, date and plural formatting, including a partial German fixture.
+The welcome browser suite exercises English controls, accessibility and copy at
+360px while checking the live board, progress and attempt. The service worker
+suite checks that the production module graph includes both welcome catalogues.
+
 `node scripts/first-welcome-tests.mjs` covers fresh/returning/owned contexts,
 deep links, denied/unverified presentation storage, exact texts, scene boundaries,
 30-second completion, excluded background time and cancellation. It is mandatory
