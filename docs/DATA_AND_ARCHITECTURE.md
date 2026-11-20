@@ -1900,6 +1900,46 @@ Known limits: durations stay client-declared; a cross-device resume counts the
 wall-clock time since the server start, pauses included. Old cached clients without these
 fixes still show the previous behaviour until they update.
 
+### Friends and direct challenges (#35, EPIC #881 Lot 2)
+
+Optional, accounts only; a guest still plays any challenge link without an
+account. The public identity is the existing unique nickname
+(`lumen.profiles.nickname`, `nickname_ready`); RPCs take and return
+nicknames only, never an email or a user ID. Migration
+`20261121100000_friends_direct_challenges_35.sql` (additive, idempotent):
+
+- `lumen.social_friend_edges`: one directed edge per player
+  (`outgoing` / `incoming` / `friends` / `declined`), so each row has one
+  owner and Lumen erasure never touches another player's row. A trigger on
+  `lumen.profiles` deletion removes the other players' edges towards an erased
+  profile; account deletion cascades through `auth.users`.
+- `lumen.social_challenge_invites`: owned by the recipient, keyed by an existing
+  challenge ID **without** a foreign key or a new column on
+  `lumen.social_challenges` (the erasure review only accepts the participation
+  FK and a fixed anonymizable column list). The sender is the challenge's own,
+  anonymizable `sender_user_id`; it is never copied.
+- RPCs (`authenticated` only, SECURITY DEFINER, RLS on, no table grant):
+  `lumen_friend_search` (exact case-insensitive nickname, no enumeration),
+  `lumen_friend_request` (idempotent; crossing requests accept; limits: 30
+  pending, 10 per day, 30-day wait after a quiet decline), `lumen_friend_respond`,
+  `lumen_friend_remove`, `lumen_friend_list`,
+  `lumen_challenge_send_to_friend` (own challenge, accepted friend, one invite per
+  challenge and friend, 30 per day), `lumen_challenge_inbox` (received with the
+  caller's own status, reference hidden; sent with each friend's status and the
+  finished time).
+- Both tables are registered in `lumen_privacy.policy()` with
+  `lumen_erasure_guard` (same pattern as #729/#796). The rights export lists the
+  rows, including the friend's technical ID, under its existing
+  `thirdPartyReviewRequired` operator review.
+
+A direct challenge is an existing challenge (created by the #889 qualifying-run
+writer) delivered to a friend; the one-shot participation, resume (#888),
+comparison and campaign isolation are those of the link challenge. The client
+module is `src/campaign/social-friends.js`; the screen is « Amis et défis »
+(`#friendsModal`), with « Envoyer à un ami » from the challenge share dialog and
+from « Mes défis ». No push or in-app notification beyond a small counter of
+pending requests and received challenges on the entry button.
+
 ### Security-advisor note
 Supabase reports the two social tables as `rls_enabled_no_policy` and the anonymous social RPCs as callable SECURITY DEFINER functions. For #18 this is intentional: guests are a product requirement, direct table access is denied by RLS, and the narrow RPCs enforce the ownership/one-attempt contract. These warnings are not a claim that the whole project is security-clean; unrelated existing advisor warnings remain and must be reviewed separately.
 

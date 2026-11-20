@@ -436,3 +436,11 @@ jobs:
           psql -h localhost -U postgres -d lumen_privacy_test -v ON_ERROR_STOP=1 \
             -f supabase/migrations/20261120135416_play_review_navigation_796.sql \
             -f scripts/fixtures/play-review-navigation.sql
+      - name: Verify friends, direct challenges, privacy and erasure (#35)
+        env:
+          PGPASSWORD: isolated-test-only
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261121100000_friends_direct_challenges_35.sql \
+            -f supabase/migrations/20261121100000_friends_direct_challenges_35.sql \
+            -f scripts/fixtures/friends-direct-challenges-35.sql

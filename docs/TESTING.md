@@ -1885,6 +1885,16 @@ Any change to challenge behavior must additionally verify:
 - a finished link reopens on its result (lowercase server status), never on a second attempt;
 - “Mes défis” shows canonical visible quest numbers for historical, stable and revised challenges.
 
+#35 (Lot 2): `social-friends-tests.mjs` (client RPC names/arguments, French
+errors, statuses, escaped renderers without technical IDs), `friends-browser.mjs`
+(imported by the canonical replay suite: guest explanation without calls,
+account add/refuse/accept, received challenge with provenance, send to a friend
+from « Mes défis », link opening, 390/1440 px) and
+`fixtures/friends-direct-challenges-35.sql` in canonical-ledger CI (account and
+nickname required, exact search, idempotent request, quiet decline + cooldown,
+crossing requests, daily limit, direct challenge ownership/friendship, one
+participation, inbox privacy, removal, privileges, Lumen erasure of both sides).
+
 #883 (Lot 0): `challenge-rpc-contract-tests.mjs` checks, for historical, #650
 soft-revision, stable revision-0 and revised challenges, that each create/get/
 start/finish/list RPC chosen by the client exists in the migrations with
