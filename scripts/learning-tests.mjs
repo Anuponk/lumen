@@ -1,7 +1,7 @@
 import {readFileSync} from "node:fs";
 import assert from 'node:assert/strict';
 import { CAT } from '../src/campaign/catalogue.js';
-import { learningStep, dragLearningStep, learningAllows, learningCopy } from '../src/game/learning.js';
+import { learningStep, dragLearningStep, learningAllows, learningCopy, territoryNumbersVisible } from '../src/game/learning.js';
 import { createGameEngine } from '../src/game/engine.js';
 
 const puzzle = CAT['5'][0];
@@ -114,3 +114,16 @@ assert.match(installUi,/accountRequired\(\)/,"Do not offer install at account ga
 assert.match(installUi,/if\(!ios&&!lumenInstallPrompt\)return/,"Do not show unusable Android install CTA");
 assert.match(onboardingUi,/lumenProgress\.autoCrossUnlockSeen=1/,"Quest-six unlock tracked together with badge intro");
 assert.match(onboardingUi,/function autoMarkingLessonRequired\(\)\{return false\}/,"Retired marking never gates quest six");
+
+// #862: territory numbers only while the quest-1 introduction is really taught.
+{
+  const intro = { introActive: true, scriptedActive: true };
+  assert.equal(territoryNumbersVisible(intro), true, 'first-time introduction shows the numbers');
+  assert.equal(territoryNumbersVisible({ ...intro, tutorialSkipped: true }), false, 'skipped tutorial hides them');
+  assert.equal(territoryNumbersVisible({ ...intro, firstQuestSolved: true }), false, 'returning to a solved quest 1 hides them');
+  assert.equal(territoryNumbersVisible({ ...intro, tutorialCompleted: true }), false, 'completed tutorial hides them');
+  assert.equal(territoryNumbersVisible({ ...intro, tutorialCompleted: true, tutorialSkipped: true, learningReplay: true }), true, 'explicit tutorial replay teaches again');
+  assert.equal(territoryNumbersVisible({ ...intro, introActive: false }), false, 'outside the introduction steps');
+  assert.equal(territoryNumbersVisible({ ...intro, scriptedActive: false }), false, 'outside scripted learning');
+  assert.equal(territoryNumbersVisible(), false);
+}

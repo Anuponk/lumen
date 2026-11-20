@@ -98,7 +98,7 @@ the explicit directory label and unknown state in the native UI.
 
 Fluid onboarding (#569/#576): onboarding-fluid-tests.mjs executes direct ordinary
 victory navigation, the real quest-6 lesson and account-scoped local preferences.
-learning-browser-tests.mjs covers manual quest 1, free 2–5, voluntary sky, reload,
+learning-browser-tests.mjs covers manual quest 1 (and no territory numbers after a skipped tutorial, also after reload, #862), free 2–5, voluntary sky, reload,
 the actual sixth-quest checkbox and immediate re-enable at 320/360/390 and desktop.
 Existing policy/account/cloud suites preserve six-quest signup, rewards and holds.
 

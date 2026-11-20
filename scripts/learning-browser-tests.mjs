@@ -223,7 +223,18 @@ try {
     if(returnQuest<=1)assert.equal(afterSkip.replayMode,true,'Completed learning quests return as ordinary replays');
     assert.equal(await evaluate('document.getElementById("scriptedLearn").hidden'),true,'Skip exits the learning UI');
     assert.equal(await evaluate('JSON.stringify((()=>{const p=lumenDiagnostics.snapshot().progress;return {solved:p.solved,badges:p.badges,shards:p.shards}})())'),beforeSkip,'Skip must not award progress, badges or shards');
-    results.push({viewport,stages,realDrag:true,reload:true,reset:true,optionalQuest2Drag:true,partialQuest2Reload:true,freeQuest2:true,directQuest3:true,freeReplay:true,firstTimerNoSkip:true,completedReplaySkip:true});
+    // #862: once the first-grid tutorial is skipped, the teaching numbers never
+    // come back on quest 1, including after a reload.
+    const skipped=await send('Page.addScriptToEvaluateOnNewDocument',{source:'localStorage.clear();localStorage.setItem("lumenSound","off");localStorage.setItem("lumenTutorialSeen","1");localStorage.setItem("lumenPushChoice","later");localStorage.setItem("lumenInstallLater",String(Date.now()));localStorage.setItem("lumenSkipFirstGridTutorial","1");'});
+    await navigateAndWait({send,evaluate},'Page.navigate',{url});await sleep(800);await ready();
+    await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:skipped.identifier}).catch(error=>{if(!String(error).includes('Script not found'))throw error});
+    const skippedBoard=await snapshot();
+    assert.equal(skippedBoard.levelIndex,0);assert.equal(skippedBoard.state.flat().every(value=>value===0),true);
+    assert.equal(await evaluate('document.querySelectorAll(".learning-territory-number").length'),0,'Skipped tutorial: no territory numbers');
+    await navigateAndWait({send,evaluate},'Page.reload',{ignoreCache:true});await sleep(300);await ready();
+    assert.equal(await evaluate('document.querySelectorAll(".learning-territory-number").length'),0,'Reload does not bring the numbers back');
+    assert.equal(await evaluate('document.querySelectorAll("#board .cell").length'),skippedBoard.state.flat().length,'Grid unchanged apart from the numbers');
+    results.push({viewport,stages,realDrag:true,reload:true,reset:true,optionalQuest2Drag:true,partialQuest2Reload:true,freeQuest2:true,directQuest3:true,freeReplay:true,firstTimerNoSkip:true,completedReplaySkip:true,skippedTutorialNoNumbers:true});
 
   }
   assert.deepEqual(errors,[]);
