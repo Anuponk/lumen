@@ -6,6 +6,15 @@ const location = new URL('/', discoveryUrl);
 assert.equal(readDiscoveryCampaign(location, playerShareUrl), 'player_share');
 assert.equal(readDiscoveryCampaign(location, discoveryUrl + '?utm_source=tiktok&utm_medium=social&arbitrary=secret'), 'tiktok');
 assert.equal(readDiscoveryCampaign(location, inviteShareUrl), 'player_invite');
+const englishDiscovery = new URL('/discover.html', discoveryUrl);
+assert.equal(readDiscoveryCampaign(location, englishDiscovery.href), null, 'Plain English discovery has no campaign');
+for (const [source, medium] of [['player_share', 'referral'], ['player_invite', 'referral'], ['tiktok', 'social']]) {
+  const referrer = new URL(englishDiscovery);
+  referrer.search = new URLSearchParams({utm_source: source, utm_medium: medium, unrelated: 'PRIVATE'});
+  assert.equal(readDiscoveryCampaign(location, referrer.href), source);
+  referrer.searchParams.append('utm_source', source);
+  assert.equal(readDiscoveryCampaign(location, referrer.href), null, 'Duplicate campaign fields remain invalid');
+}
 // #881 Lot 1: leaving a challenge link ("Continuer sur Lumen" / "Retour à Lumen") opens the game
 // with that same-origin link as referrer; only the channel name is kept, never the challenge ID.
 assert.equal(readDiscoveryCampaign(location, new URL('/?challenge=00000000-0000-4000-8000-000000000001', location).href), 'challenge_link');
@@ -15,6 +24,8 @@ assert.equal(readDiscoveryCampaign(location, new URL('/', location).href), null,
 for (const referrer of [
   '', 'malformed', discoveryUrl, playerShareUrl.replace('lumen.nopuna.fr', 'example.org'),
   playerShareUrl.replace('decouvrir.html', 'comment-jouer.html'),
+  'https://example.org/discover.html?utm_source=player_share&utm_medium=referral',
+  new URL('/discover.html/?utm_source=player_share&utm_medium=referral', discoveryUrl).href,
   playerShareUrl + '&utm_source=tiktok', playerShareUrl + '&utm_medium=referral',
   discoveryUrl + '?utm_source=private&' + 'utm_medium=referral',
   discoveryUrl + '?utm_source=player_share&utm_medium=social',
@@ -26,7 +37,7 @@ const sent = [];
 let allowed = false;
 const environment = {
   location,
-  referrer: playerShareUrl + '&attacker_value=PRIVATE',
+  referrer: new URL('/discover.html?utm_source=player_share&utm_medium=referral&attacker_value=PRIVATE', discoveryUrl).href,
   analyticsAllowed: () => allowed,
   localStorage: {getItem: key => memory.get(key), setItem: (key, value) => memory.set(key, value)},
   crypto,
