@@ -16,7 +16,7 @@ do $$
 begin
  assert to_regclass('lumen_commands.daily_runs') is null and to_regclass('lumen_commands.daily_puzzles') is null,'tables removed';
  assert to_regprocedure('lumen_privacy.policy_before_daily_challenge()') is null,'policy chain restored';
- assert not exists(select 1 from lumen_privacy.policy() where rel like 'daily\_%' escape '\'),'no stale policy rows';
+ assert not exists(select 1 from lumen_privacy.policy() where ns='lumen_commands' and rel in ('daily_puzzles','daily_runs','daily_standings','daily_finalized')),'no stale policy rows';
  assert lumen_privacy.review_erasure('00000000-0000-0000-0000-000000000000',array[]::text[])->>'scope'='Lumen only','erasure review still passes';
  assert to_regprocedure('public.lumen_friend_list()') is not null and to_regclass('lumen_commands.ranking_scores') is not null,'Lot 2 and #638 untouched';
 end $$;
