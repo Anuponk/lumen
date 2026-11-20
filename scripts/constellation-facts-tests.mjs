@@ -40,7 +40,7 @@ test("all facts have distinct, short editorial content and documentary reference
     assert.ok(Object.isFrozen(fact) && Object.isFrozen(fact.sources), fact.id);
     assert.ok(!Object.keys(fact).some((key) => /distance|starcount|numberofstars/i.test(key)), fact.id);
     for (const field of ["nameOrigin", "funFact"]) {
-      assert.doesNotMatch(fact[field], /\d+\s+(?:étoiles?|années-lumière)/u, fact.id);
+      assert.doesNotMatch(fact[field], /\b(?:\d+|deux|trois|quatre|cinq|six|sept|huit|neuf|dix)\s+(?:(?:de ses|principales|petites)\s+)?(?:étoiles?|années-lumière)/iu, fact.id);
     }
   }
 });
