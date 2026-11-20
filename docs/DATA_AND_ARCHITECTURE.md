@@ -1818,6 +1818,45 @@ The existing `lumen-push` Edge Function also owns challenge-result delivery. A c
 
 One challenge link may have many independent participants. “Mes défis” is therefore sender-centric and shows participant count, unread results and each terminal result. This data model intentionally leaves sender/recipient account links compatible with the later Social V2 issue without requiring an internal friends/inbox system now.
 
+### RPC routing matrix and recipient invariants (#883, audited 2026-11-20)
+
+The client routes on the challenge's **stored grid revision**, not on whether a
+numeric ID exists. Public `lumen_start_social_challenge` /
+`lumen_finish_social_challenge` are wrappers (20261108061843) that only refuse
+`grid_revision<>0`, then delegate to the private one-shot implementations in
+schema `lumen`; a stable revision-0 challenge is therefore valid on them.
+
+| Challenge kind | Snapshot identity | create | get / Mes défis | start / finish |
+|---|---|---|---|---|
+| Historical number (legacy index, incl. #650 soft revision 1 of quests 3–6) | `questId`=legacy+1 | `lumen_create_social_challenge` (rev 0) | `lumen_get_quest_challenge_v2` / `lumen_list_quest_challenges_v2` | `lumen_start/finish_social_challenge` |
+| Stable ID, grid revision 0 | `stableQuestId`, `puzzle_id` null | `lumen_create_quest_challenge` (rev 0) | same v2 reads | `lumen_start/finish_social_challenge` |
+| Stable ID, grid revision > 0 | `stableQuestId` + `gridRevision` | `lumen_create_quest_challenge_v2` | same v2 reads | `lumen_start/finish_quest_challenge_v2` |
+
+Reads fall back to `lumen_get_quest_challenge` then `lumen_get_social_challenge`
+only on `PGRST202` (older server). Historical numbers follow the live legacy
+board (`docs/GRID_CATALOG.md`, #650), so links created before 2026-11-14 for
+quests 3–6 are compared on the current onboarding board.
+
+Recipient invariants (`challenge-recipient-browser.mjs`,
+`fixtures/challenge-rpc-matrix.sql`):
+- the challenged grid is played even from a locked Adventure: `choose()` does not
+  apply the campaign quest bound while `socialChallenge` is active, and challenge
+  attempts never open an Adventure (`hasPackAccess` ignores `mode: challenge`);
+- a challenge victory branches before every campaign mutation (no progress,
+  reward, badge or entitlement);
+- the server stores lowercase `started|completed|abandoned`;
+  `challengeAttemptClosed` shows the result of a finished link instead of a new
+  attempt, and the server never rewrites a terminal result;
+- “Mes défis” labels rows with `challengeQuestLabel` (canonical visible ordinal),
+  because `puzzle_id` is a frozen legacy index and is null for stable-only quests;
+- `challenge_created` / `challenge_result_viewed` carry `stable_quest_id` and
+  `grid_revision` so stable-only challenges stay measurable (#708).
+
+Known limits: a recipient who reloads a started (not finished) challenge on
+another browser/device restarts the clock locally; the server keeps one
+participation and the first terminal result. Old cached clients without these
+fixes still show the previous behaviour until they update.
+
 ### Security-advisor note
 Supabase reports the two social tables as `rls_enabled_no_policy` and the anonymous social RPCs as callable SECURITY DEFINER functions. For #18 this is intentional: guests are a product requirement, direct table access is denied by RLS, and the narrow RPCs enforce the ownership/one-attempt contract. These warnings are not a claim that the whole project is security-clean; unrelated existing advisor warnings remain and must be reviewed separately.
 
