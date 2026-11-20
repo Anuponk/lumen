@@ -116,7 +116,7 @@ Dragging a finger over cells marks exclusions. It must:
 - avoid full `render()` calls during pointermove.
 
 ## Reset/navigation
-The main reset action is **Réinitialiser**, not “Nouvelle grille”. It clears the placements of the current quest only and asks for confirmation: « Réinitialiser la grille ? Tes placements seront effacés, mais le chrono, les aides et les erreurs resteront comptabilisés. » The attempt, its official time, aids, errors and qualification continue (#851, #36); only « Rejouer » starts a new attempt. The player cannot choose another unsolved quest. “Quête suivante” is available after victory. Solved quests may be reopened from the campaign map.
+The main reset action is **Réinitialiser** (the small ↺ button first in the command row under the grid, labelled « Réinitialiser la grille » for assistive technologies), not “Nouvelle grille”. It clears the placements of the current quest only and asks for confirmation: « Réinitialiser la grille ? Tes placements seront effacés, mais le chrono, les aides et les erreurs resteront comptabilisés. » The attempt, its official time, aids, errors and qualification continue (#851, #36); only « Rejouer » starts a new attempt. The player cannot choose another unsolved quest. “Quête suivante” is available after victory. Solved quests may be reopened from the campaign map.
 
 ## Hints and verification
 Hints are pedagogical: first draw attention, then explain the rule, then reveal the forced action as last resort. A placement hint must have a structured explainable proof; an opaque brute-force answer is not acceptable.

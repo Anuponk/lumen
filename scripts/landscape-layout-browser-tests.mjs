@@ -29,7 +29,7 @@ try{
   assert.equal(g.scrollH,g.vh,label+': no vertical page scroll');
   assert(g.board.y>=0&&g.board.b<=g.vh+0.5&&g.board.x>=0&&g.board.r<=g.vw+0.5,label+': the whole grid is visible '+JSON.stringify(g.board));
   assert(g.board.w>=(landscape?200:280),label+': the grid is not crushed ('+Math.round(g.board.w)+' px)');
-  assert.equal(g.buttons.length,3,label+': Annuler, Vérifier and Indice are shown');
+  assert.deepEqual(g.buttons.map(b=>b.id),['new','undo','verify','hint'],label+': Réinitialiser, Annuler, Vérifier and Indice are shown under the grid (#858)');
   for(const b of g.buttons)assert(b.y>=0&&b.b<=g.vh+0.5,label+': '+b.id+' is inside the viewport');
   assert.deepEqual(g.overlaps,[],label+': controls never overlap');
   assert.deepEqual(g.buttonOnBoard,[],label+': controls never cover the grid');
