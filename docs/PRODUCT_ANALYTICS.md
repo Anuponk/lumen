@@ -183,9 +183,15 @@ identité, durée de conservation ou interface d’administration.
 | Ouverture du jeu | `app_opened` avec `acquisition_channel` uniquement quand le navigateur transmet le référent de découverte de la même origine, UTM permis inclus. Unité du rapport : session de navigateur pseudonyme et canal. |
 | Début et réussite de la quête 1 | `attempt_started` et `attempt_completed` du catalogue en mode campagne, dans la session et le canal de l’ouverture observée et dans les 30 minutes suivantes. Une réussite n’est comptée qu’après un début observé et avec `first_completion=true`. |
 
-Paires permises : `player_share/referral`, `youtube_shorts/social`,
-`instagram_reels/social` et `tiktok/social`. Le partage natif utilise la
-première paire. La copie simple garde l’URL canonique sans paramètre. Seul le
+Paires permises : `player_share/referral` (Partager un résultat),
+`player_invite/referral` (Inviter des amis), `youtube_shorts/social`,
+`instagram_reels/social` et `tiktok/social`. Le partage natif d’un résultat
+utilise la première paire, l’invitation native la deuxième (#881 Lot 1), pour
+ne pas mélanger Partager et Inviter dans le tunnel. Défier n’ajoute aucun UTM :
+quand un destinataire quitte un lien de défi (« Continuer sur Lumen » ou
+« Retour à Lumen »), le jeu reçoit ce lien de même origine en référent et
+l’ouverture porte le canal `challenge_link`, jamais l’identifiant opaque du
+défi. La tentative de défi elle-même reste hors tunnel. La copie simple garde l’URL canonique sans paramètre. Seul le
 nom de canal issu de la liste est transmis. Le référent, ses autres paramètres
 et les URLs complètes ne partent jamais dans les événements d’acquisition.
 L’attribution reste dans le document du jeu qui reçoit le référent, sans

@@ -1886,7 +1886,10 @@ reference, one participation across reloads, wrong-route refusal, immutable
 terminal result, second signed-in profile abandoning, sender inbox/read,
 privacy, no campaign write). `challenge-recipient-browser.mjs`, imported by
 `canonical-replay-browser-tests.mjs`, opens real `?challenge=` links as a guest
-without Adventures at 390/1440 px against an in-page model of that contract. The
+without Adventures at 390/1440 px against an in-page model of that contract (#881
+Lot 1 adds: a newcomer sees the rules summary and opens the rules without
+starting the attempt, with « Relever le défi » visible without scrolling; the
+help never offers a learning replay and a forced one cannot swap the grid). The
 RPC transport is simulated there: real-device and live-backend acceptance stay
 manual.
 
@@ -2512,8 +2515,8 @@ Not testable here: the real private repository. The owner checks a deployment af
   - a real tap on « Plus tard » closes it during the tutorial;
   - no repeat after reload, and a plain visit is unchanged.
 - `scripts/landing-browser.mjs`: on phones the install link is shown and the QR is hidden; on computers (≥ 900 px with a fine pointer) the QR is shown and loads, and the link is hidden.
-- Acquisition (#708) : `node scripts/acquisition-tests.mjs` vérifie la liste UTM, le référent de même origine, l’absence de collecte sans autorisation, les seules transitions de campagne en quête 1 et la tolérance aux échecs du transport. La suite Chromium de la page publique clique sur « Jouer » depuis un lien UTM et vérifie le référent reçu dans le jeu. Voir le [contrat de mesure](PRODUCT_ANALYTICS.md#mesure-dacquisition-708).
-- Partage (#779/#759) : `node scripts/lumen-share-tests.mjs` couvre le contenu des payloads publics, l’annulation native et Clipboard. `credits-browser-tests.mjs` vérifie le menu invité au clavier en portrait, la copie desktop, la sélection manuelle et la conservation de la grille. `victory-layout-browser-tests.mjs` vérifie le partage du texte et du PNG après une vraie victoire QA. `quest-view-tests.mjs` et `late-game-tests.mjs` conservent la parité du contenu exporté après croissance du catalogue. `victory-pending-browser-tests.mjs` vérifie que l’action reste inaccessible jusqu’à confirmation et que la révélation garde ses dimensions. [Recette de publication](marketing/PARTAGE_LUMEN.md#recette-après-publication).
+- Acquisition (#708) : `node scripts/acquisition-tests.mjs` vérifie la liste UTM, le référent de même origine, l’absence de collecte sans autorisation, les seules transitions de campagne en quête 1 et la tolérance aux échecs du transport ; #881 Lot 1 y ajoute la paire `player_invite` (Inviter distinct de Partager) et le canal `challenge_link` d’un document ouvert depuis un lien de défi, jamais sur la tentative elle-même. La suite Chromium de la page publique clique sur « Jouer » depuis un lien UTM et vérifie le référent reçu dans le jeu. Voir le [contrat de mesure](PRODUCT_ANALYTICS.md#mesure-dacquisition-708).
+- Partage (#779/#759) : `node scripts/lumen-share-tests.mjs` couvre le contenu des payloads publics (dont les libellés « Constellation rallumée » / « Aventure accomplie » de #881 Lot 1 et les URL de campagne distinctes Inviter/Partager), l’annulation native et Clipboard. `victory-challenge-browser.mjs` vérifie en fin d’aventure le titre et le texte du partage, sans lien de défi. `credits-browser-tests.mjs` vérifie le menu invité au clavier en portrait, la copie desktop, la sélection manuelle et la conservation de la grille. `victory-layout-browser-tests.mjs` vérifie le partage du texte et du PNG après une vraie victoire QA. `quest-view-tests.mjs` et `late-game-tests.mjs` conservent la parité du contenu exporté après croissance du catalogue. `victory-pending-browser-tests.mjs` vérifie que l’action reste inaccessible jusqu’à confirmation et que la révélation garde ses dimensions. [Recette de publication](marketing/PARTAGE_LUMEN.md#recette-après-publication).
 - QR: `node scripts/landing-qr.mjs` regenerates it, and `--check` verifies it. It was decoded once with an external reader during review; the test itself has no decoder dependency.
 - Owner: scan the QR with an Android phone and an iPhone, and install from both.
 

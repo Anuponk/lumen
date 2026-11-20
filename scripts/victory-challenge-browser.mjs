@@ -62,6 +62,13 @@ export async function verifyVictoryChallenge({send,evaluate},url){
     assert.equal(await evaluate(`document.getElementById('skyReveal').hidden`),false,'Closing share retains the single Adventure scene until explicit navigation');
     assert.equal(await evaluate(`document.getElementById('skyReveal').dataset.celestial`),'adventure');
     assert.match(await evaluate(`document.getElementById('skyRevealTitle').textContent`),/Aventure accomplie/);
+    // #881 Lot 1: Partager names the Adventure accomplishment, distinct from Défier.
+    await evaluate(`document.getElementById('skyRevealShareResult').click()`);
+    for(let i=0;i<50;i++){if(await evaluate(`document.getElementById('lumenShareDialog').open`))break;await new Promise(r=>setTimeout(r,50));}
+    assert.equal(await evaluate(`document.getElementById('lumenShareTitle').textContent`),'Aventure accomplie dans Lumen');
+    assert.match(await evaluate(`document.getElementById('lumenSharePreview').textContent`),/^✦ Aventure « .+ » accomplie dans Lumen · /);
+    assert.doesNotMatch(await evaluate(`document.getElementById('lumenShareSelection').value`),/challenge=/,'A result share never carries a challenge link');
+    await evaluate(`document.getElementById('lumenShareDialog').close()`);
     await evaluate(`document.getElementById('skyRevealNext').click()`);
     assert.equal(await evaluate(`document.getElementById('adventureNotice').hidden`),true,'No second Adventure popup after the already presented scene');
     assert.equal(await evaluate(`document.getElementById('mapModal').hidden`),false);

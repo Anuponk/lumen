@@ -1871,7 +1871,13 @@ Recipient invariants (`challenge-recipient-browser.mjs`,
 - “Mes défis” labels rows with `challengeQuestLabel` (canonical visible ordinal),
   because `puzzle_id` is a frozen legacy index and is null for stable-only quests;
 - `challenge_created` / `challenge_result_viewed` carry `stable_quest_id` and
-  `grid_revision` so stable-only challenges stay measurable (#708).
+  `grid_revision` so stable-only challenges stay measurable (#708);
+- (#881 Lot 1) a recipient who has not completed the tutorial
+  (`tutorialCompletedProof`) sees a rules summary and « Voir les règles » in the
+  intro; reading them starts no attempt. During a challenge the rules help hides
+  « Rejouer l'apprentissage » / « Revoir l'introduction », and
+  `startLearningReplay` / the introduction replay refuse to run: both would
+  have replaced the challenged grid by quest 1 and restarted its clock.
 
 Known limits: a recipient who reloads a started (not finished) challenge on
 another browser/device restarts the clock locally; the server keeps one
