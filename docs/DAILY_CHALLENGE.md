@@ -140,9 +140,40 @@ calendrier dans `daily_puzzles`.
   est masqué (aucun badge dans ce mode).
 - **Captures** : `docs/validation/daily-compare-{campaign,daily,result}-{390,1440}.png`.
 
+## 6 ter. Bilan de la semaine et mesure (PR C)
+
+- **« Ta semaine dans les étoiles »** : modale ouverte depuis le résultat
+  (« Ma semaine ») ou depuis « Ma semaine ✦ » sous l'entrée *Mes quêtes*
+  (comptes connectés uniquement). Source unique : `lumen_daily_week`, résumée
+  par la fonction pure `summarizeWeek` (`src/campaign/daily-week.js`).
+- **Contenu** : calendrier L M M J V S D (réussi ✓, podium ★, abandonné ✕, en
+  cours …, non joué ·, à venir vide ; jour encore provisoire en pointillé),
+  participations X/7 (réussis, abandonnés et en cours), meilleur rang général
+  (avec total), meilleur rang entre amis (seulement si au moins 2 classés),
+  podiums (rang général ≤ 3), premières places entre amis (`friends_total ≥ 2`),
+  meilleur temps officiel, faits marquants par jour. Un jour sans rang général
+  (désinscription #638) n'invente aucun rang.
+- **Provisoire / figé** : « Classements provisoires » tant qu'un jour joué
+  n'est pas finalisé (fin du jour + 6 h) ; « Semaine terminée : classements
+  figés » quand les 7 jours sont finalisés.
+- **Navigation** : semaines passées jusqu'à la première semaine du calendrier
+  (`DAILY_SCHEDULE_START`), jamais au-delà de la semaine courante.
+- **Partage optionnel** : texte avec ses seuls chiffres (participations,
+  podiums, meilleur rang), sans pseudonyme ni donnée d'un autre joueur.
+- **Mesure** : aucun nouvel événement ni nouvelle collecte. La collecte reste
+  soumise à `analyticsAllowed()` (désactivée au lancement familial). Les
+  tentatives réutilisent `attempt_started` / `attempt_completed` /
+  `attempt_abandoned` (`attempt_mode=challenge`) avec `daily_day` et
+  `daily_training`. Les vues réutilisent l'enveloppe existante `app_opened`
+  avec `surface=daily` et `daily_action` ∈ `opened`, `board_viewed`
+  (`board_scope` général/amis, `board_final`) et `week_viewed`
+  (`week_offset`, `week_participations`, `week_frozen`, `source`), sans
+  `acquisition_channel`, donc hors tunnel d'acquisition.
+- **Captures** : `docs/validation/daily-week-{390,1440}.png`.
+
 ## 7. Tests et retour arrière
 
-- Navigateur : `daily-challenge-browser.mjs` (dans la suite de rejeu canonique) : mode désactivé, entrée Mon ciel, invité en entraînement, tentative officielle à 360/390/1440 px, grille figée et cases inchangées, cadre et bandeau visibles, deux classements, reprise sur autre appareil, résultat figé puis entraînement, envoi différé hors ligne. `daily-view-tests.mjs` (rendu et client).
+- Navigateur : `daily-challenge-browser.mjs` (dans la suite de rejeu canonique) : mode désactivé, entrée Mon ciel, invité en entraînement, tentative officielle à 360/390/1440 px, grille figée et cases inchangées, cadre et bandeau visibles, deux classements, reprise sur autre appareil, résultat figé puis entraînement, envoi différé hors ligne, bilan de la semaine (7 jours, provisoire, aucune donnée d'un autre joueur, aucune collecte `lumen_track_event`). `daily-view-tests.mjs` (rendu et client), `daily-week-tests.mjs` (résumé, navigation, partage, rendu).
 - Node : `daily-challenge-tests.mjs` (jour Paris et changements d'heure, semaine,
   pool, calendrier append-only et reproductible, grille figée, contrat de la
   migration) ; `node scripts/daily-schedule.mjs --check`.

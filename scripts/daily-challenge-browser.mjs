@@ -34,8 +34,11 @@ function fixture({signedIn,enabled=true,run=null,beginResume=false,finishFails=f
    getUser:async()=>(${signedIn}?{data:{user:{id:${JSON.stringify(OWNER)}}}}:{data:{user:null}}),
    onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})},
    rpc:async(name,args={})=>{
+    window.__allRpc=(window.__allRpc||[]).concat(name);
     if(/^lumen_daily_/.test(name))window.__dailyCalls.push({name,args});
     if(name==='lumen_daily_today')return {data:${enabled}?{enabled:true,day:${JSON.stringify(DAY)},quest_id:${JSON.stringify(quest.id)},grid_revision:${quest.gridRevision},closes_at:closes,server_now:now()}:{enabled:false,day:${JSON.stringify(DAY)},server_now:now()}};
+    if(name==='lumen_daily_week'){const mine=run?.status==='completed';
+     return {data:{monday:DAY,days:Array.from({length:7},(_,i)=>i===0?(mine?{day:DAY,state:'completed',final:false,run,general_rank:5,general_total:12,friends_rank:1,friends_total:1}:{day:DAY,state:run?.status||'missed',final:false}):{day:'2026-11-'+(23+i),state:'future'})}}}
     if(name==='lumen_daily_board'){const b=boardOf(run);b.closes_at=closes;return {data:b}}
     if(name==='lumen_daily_begin'){if(!run)run={status:'started',operation_id:args.p_operation_id,started_at:now()};
      return {data:{...run,server_now:now(),resumed:${beginResume}||run.operation_id!==args.p_operation_id}}}
@@ -145,6 +148,22 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
   const layout=await evaluate(`(()=>{const c=document.getElementById('dailyContinue').getBoundingClientRect(),card=document.querySelector('#dailyResultModal .social-card');return {inside:c.top>=0&&c.bottom<=innerHeight,primary:document.getElementById('dailyContinue').classList.contains('primary'),cardScroll:card.scrollHeight-card.clientHeight}})()`);
   assert.equal(layout.inside&&layout.primary,true,'« Continuer » is the visible primary action at '+width+'x'+height);
   if(captureDir&&width!==360)fs.writeFileSync(captureDir+'/daily-compare-result-'+width+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png'})).data,'base64'));
+  // « Ta semaine dans les étoiles » from the result (own days only).
+  assert.equal(await evaluate(`document.getElementById('dailyWeekFromResult').hidden`),false,'week entry after the official result');
+  await evaluate(`document.getElementById('dailyWeekFromResult').click()`);
+  await until(evaluate,`!document.getElementById('dailyWeekModal').hidden&&document.querySelectorAll('#dailyWeekBody .daily-week-day').length===7`,'week summary');
+  assert.equal(await evaluate(`document.querySelector('#dailyWeekBody .daily-week-day').className`),'daily-week-day completed provisional','today played, ranking still provisional');
+  assert.match(await evaluate(`document.getElementById('dailyWeekBody').textContent`),/Participations1\/7.*Meilleur rang général5e sur 12.*Classements provisoires/s);
+  assert.doesNotMatch(await evaluate(`document.getElementById('dailyWeekBody').textContent`),/Ana|Cy/,'no other player in the weekly summary');
+  assert.equal(await evaluate(`document.getElementById('dailyWeekPrev').disabled&&document.getElementById('dailyWeekNext').disabled`),true,'first week: no past, no future');
+  assert.equal(await evaluate(`document.getElementById('dailyWeekShare').hidden`),false,'optional share once played');
+  assert.equal((await calls(evaluate,'lumen_daily_week'))[0].args.p_day,DAY);
+  const weekLayout=await evaluate(`(()=>{const c=document.getElementById('dailyWeekClose').getBoundingClientRect();return c.top>=0&&c.bottom<=innerHeight&&document.documentElement.scrollWidth<=innerWidth})()`);
+  assert.equal(weekLayout,true,'week summary fits at '+width+'x'+height);
+  if(captureDir&&width!==360)fs.writeFileSync(captureDir+'/daily-week-'+width+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png'})).data,'base64'));
+  await evaluate(`document.getElementById('dailyWeekClose').click()`);
+  assert.equal(await evaluate(`document.getElementById('dailyWeekModal').hidden`),true);
+  assert.equal((await evaluate('window.__allRpc')).includes('lumen_track_event'),false,'daily measurement never enables disabled collection');
   results.push({kind:'official',width,height,cardScroll:layout.cardScroll});
  }
 
