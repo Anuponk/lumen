@@ -9,6 +9,7 @@ import {campaignQuestCount} from '../src/campaign/progression.js';
 import {createCloudPersistence} from '../src/persistence/cloud.js';
 import {QUEST_MILESTONES} from '../src/campaign/quest-rules.js';
 import {pendingNavigationProfile} from '../src/persistence/pending-navigation.js';
+import {discoveryUrl,resultShareData} from '../src/ui/lumen-share.js';
 
 const total=campaignQuestCount();
 assert(total>100,'The extension must have playable quests after quest 100');
@@ -47,16 +48,20 @@ assert.equal(context.levelIndex,101,'A durable own pending win permits offline c
 assert.equal(context.lumenProgress.solved[100],undefined,'Navigation never confirms a pending win in the saved profile');
 pending.length=0;
 
+const shareSource=fs.readFileSync('src/ui/lumen-share.js','utf8');
 const drawn=[];
-context.document.createElement=()=>({getContext:()=>({createLinearGradient:()=>({addColorStop(){}}),fillRect(){},beginPath(){},arc(){},fill(){},strokeRect(){},fillText:text=>drawn.push(text)})});
-context.wrapCanvasText=()=>{};context.formatDuration=()=>"0:00";context.location={host:"fixture"};
-vm.runInContext(functionSource(source,'shareCardCanvas'),context);
+const document={createElement:()=>({
+ getContext:()=>({fillRect(){},beginPath(){},arc(){},fill(){},fillText:text=>drawn.push(text)}),
+ toBlob:callback=>callback(null),
+})};
+vm.runInContext(functionSource(shareSource,'shareCardCanvas'),context);
 for(const size of [total,total+7]){
- context.campaignQuestCount=()=>size;context.levelIndex=size-1;drawn.length=0;
- context.shareCardCanvas({kicker:"Fixture",main:"Win",detail:"",pos:1,total:1,secs:0,run:{noHint:true}});
- assert(drawn.includes(`Quête ${size} / ${size}`),'Shared results use the dynamic campaign total');
+ drawn.length=0;
+ const model={ordinal:size,catalogueTotal:size,constellation:'Fixture',time:'0:20',badges:[]};
+ await context.shareCardCanvas(document,model,discoveryUrl);
+ assert(drawn.includes(`QUÊTE ${size} / ${size} RÉUSSIE`),'Shared card uses the dynamic campaign total');
+ assert.match(resultShareData(model).text,new RegExp('Quête '+size+' réussie'),'Text-only shares retain the extended quest ordinal');
 }
-context.campaignQuestCount=campaignQuestCount;
 
 for(const count of [0,99,100,101,total,total+2]){
  const calls=[],badges={historical:1},rows=Array.from({length:count},(_,i)=>({puzzle_id:i+1}));

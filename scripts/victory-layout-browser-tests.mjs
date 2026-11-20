@@ -97,6 +97,23 @@ try {
       false,
       'No horizontal scrolling at ' + width + 'x' + height,
     );
+    if (width === 390) {
+      await evaluate(`Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.sharedVictory=data}});Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>true});document.getElementById('skyRevealShareResult').click()`);
+      await until('document.getElementById("lumenShareDialog").open');
+      // The card is rendered on opening the dialog. Wait for the real PNG encoder before clicking Share.
+      await evaluate('new Promise(resolve=>setTimeout(resolve,350))', true);
+      await evaluate('document.getElementById("lumenShareNative").click()');
+      await until('!!window.sharedVictory');
+      const shared = await evaluate(`(()=>{const {title,text,url,files}=window.sharedVictory;return {title,text,url,files:files?.map(f=>({name:f.name,type:f.type,size:f.size})),time:document.getElementById('skyRevealTime').textContent}})()`);
+      assert.equal(shared.title, 'Ma réussite dans Lumen');
+      assert.equal(shared.url, 'https://lumen.nopuna.fr/decouvrir.html');
+      assert.match(shared.text, /^✦ Quête .+ réussie dans Lumen · /);
+      assert(shared.text.includes('Temps final ' + shared.time));
+      assert.doesNotMatch(shared.text, /ref=|challenge=|quêtes accomplies/);
+      assert.equal(shared.files?.[0]?.type, 'image/png');
+      assert(shared.files[0].size > 0 && shared.files[0].size < 100_000, 'Share PNG bytes: ' + shared.files[0].size);
+      await until('!document.getElementById("lumenShareDialog").open');
+    }
     results.push({ width, height, rewards: rewards.count, actions: true, lateBoard: [0, 1000, 5000], podium: true });
   }
   // Reduced motion: the shared celebration renders no particles.

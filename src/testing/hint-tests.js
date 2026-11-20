@@ -15,7 +15,7 @@ const gridsForSize=size=>CAT[size]??canonicalBySize.get(Number(size))??[];
 export function createHintTestSuite(model,api){
 const {handleSuccessAdvance,getSkyTourSteps,maybeShowAutoCrossUnlock,maybeShowBadgeMilestone}=api;
 const hintImplementation=()=>api.getHintImplementation?.()??document.getElementById("hint").onclick;
-const {saveLumenNickname,maybeOfferInstall,lumenShareUrl,successAchievement,shareLumenResult,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,simpleForcedPlacement,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,updateLiveReward,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults,openJourneyMap,closeMapOverlay,renderMap,advanceToNextPuzzle,startReplay}=api;
+const {saveLumenNickname,maybeOfferInstall,discoveryUrl,successAchievement,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,simpleForcedPlacement,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,updateLiveReward,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults,openJourneyMap,closeMapOverlay,renderMap,advanceToNextPuzzle,startReplay}=api;
 function learningControlsAt(ordinal){
  const saved={levelIndex:model.levelIndex,replayMode:model.replayMode,canonicalActiveQuest:model.canonicalActiveQuest};
  const auto=document.getElementById('autoCross'),guided=document.getElementById('guidedErrors');
@@ -32,9 +32,9 @@ async function runHintTests(){
  test("PWA : proposition différée après le parcours d'accueil",()=>maybeOfferInstall.toString().includes("solvedCount()<12")&&document.getElementById("installEnable"));
  test("PWA : une installation existante bloque la proposition",()=>{const src=maybeOfferInstall.toString();return src.includes("lumenAlreadyInstalled()")&&!src.includes("!qaActive&&lumenIsStandalone()")});
  test("PWA : compte et préférences QA préservés",()=>{const src=maybeOfferInstall.toString();return src.includes("accountRequired()")&&src.includes('qaKey("lumenInstallLater")')});
- test("Partage : le résultat contient un lien de parrainage traçable",()=>lumenShareUrl().includes("ref=")&&shareLumenResult.toString().includes("result_shared"));
+ test("Partage : le lien public mène à la découverte de Lumen",()=>discoveryUrl==="https://lumen.nopuna.fr/decouvrir.html");
  test("Partage : la réussite met en avant quête et constellation",()=>typeof successAchievement==="function"&&document.getElementById("successAchievement")&&successAchievement.toString().includes("Quête "));
- test("Partage : une carte image est générée quand le téléphone le permet",()=>shareLumenResult.toString().includes("shareCardCanvas")&&shareLumenResult.toString().includes("canShare"));
+ test("Partage : victoire et défi ont des actions distinctes",()=>!!document.getElementById("skyRevealShareResult")&&!!document.getElementById("skyRevealShare"));
  test("Referral : le paramètre ref est nettoyé avant analytics",()=>captureReferral.toString().includes("replace(/[^a-zA-Z0-9_-]/g"));
  test("Compte : le pseudo est stocké côté profil utilisateur",()=>typeof saveLumenNickname==="function"&&saveLumenNickname.toString().includes("lumen_set_nickname"));
  test("Rappel : la popup LUMEN disparaît avant la demande Android",()=>{

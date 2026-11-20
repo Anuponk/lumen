@@ -11,8 +11,10 @@ import {attemptAnalyticsProperties} from '../src/analytics/events.js';
 import {readQuestView} from '../src/campaign/quest-view.js';
 import {performanceAttempt,badgeCooldownRemaining} from '../src/campaign/performance.js';
 import {questPerformanceRecord} from '../src/campaign/quest-rules.js';
+import {discoveryUrl,resultShareData} from '../src/ui/lumen-share.js';
 
 const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+const shareSource=readFileSync(new URL('../src/ui/lumen-share.js',import.meta.url),'utf8');
 test('actual victory/share recap uses active stable performance and membership at any numeric frontier',()=>{
  const quest=canonical.canonicalQuestList().find(q=>q.legacyIndex===null),progress={solved:{0:1},canonicalQuestState:{}};
  const ctx={...canonical,CONTENT_CONSTELLATIONS,readQuestView,performanceAttempt,activeQuest:()=>quest,levelIndex:0,lumenProgress:progress,
@@ -22,12 +24,19 @@ test('actual victory/share recap uses active stable performance and membership a
  assert.deepEqual(a,b);assert.equal(a.canonicalNumber,quest.ordinal);assert(a.run.mastery&&a.run.qualifying);
  assert.equal(a.total,canonical.canonicalQuestList().filter(q=>q.constellationId===quest.constellationId).length);
  assert.equal(a.canonicalTotal,canonical.canonicalQuestList().length,'Sharing uses the current campaign, not the numeric namespace total');
+ const model={ordinal:quest.ordinal,catalogueTotal:a.canonicalTotal,constellation:a.ch.name,time:'0:20',badges:['Maîtrise']};
+ assert.match(resultShareData(model).text,new RegExp('Quête '+quest.ordinal+' réussie'));
+ assert(resultShareData(model).text.includes(a.ch.name));
  const drawn=[];
- ctx.document={createElement:()=>({getContext:()=>({createLinearGradient:()=>({addColorStop(){}}),fillRect(){},beginPath(){},arc(){},fill(){},strokeRect(){},fillText:text=>drawn.push(text)})})};
- ctx.wrapCanvasText=()=>{};ctx.location={host:'fixture'};ctx.campaignQuestCount=()=>196;
- vm.runInContext(functionSource(source,'shareCardCanvas'),ctx);
- ctx.shareCardCanvas({...a,canonicalNumber:401,canonicalTotal:407});
- assert(drawn.includes('Quête 401 / 407'),'Exported bitmap follows supplied catalogue growth');
+ const document={createElement:()=>({
+  getContext:()=>({fillRect(){},beginPath(){},arc(){},fill(){},fillText:text=>drawn.push(text)}),
+  toBlob:callback=>callback(null),
+ })};
+ vm.runInContext(functionSource(shareSource,'shareCardCanvas'),ctx);
+ ctx.shareCardCanvas(document,{...model,ordinal:401,catalogueTotal:407},discoveryUrl);
+ assert(drawn.includes('QUÊTE 401 / 407 RÉUSSIE'),'Exported bitmap follows supplied catalogue growth');
+ assert(drawn.includes(a.ch.name),'Exported bitmap carries the stable quest constellation');
+ assert(drawn.includes('Temps final 0:20'),'Exported bitmap displays the confirmed time');
  assert.equal(JSON.stringify(progress),before);
 });
 test('live sky badge refresh follows stable card IDs after insertion, reorder and progress replacement',()=>{

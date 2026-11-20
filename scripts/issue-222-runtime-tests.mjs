@@ -4,6 +4,7 @@ import {canonicalQuestCount,canonicalQuestByOrdinal,canonicalQuestById,canonical
 import {playableQuest} from "../src/campaign/playable-quests.js";
 import {adminCanonicalCatalogueTree} from "../src/campaign/admin-catalogue.js";
 import {resolveCanonicalQuest,nextCanonicalQuest} from "../src/campaign/playable-navigation.js";
+import {resultShareData} from "../src/ui/lumen-share.js";
 // A PR verification must not rewrite the registry behind the immutable
 // catalogue contract. Generation remains an audited, downloadable artifact.
 const generationWorkflow=fs.readFileSync(new URL('../.github/workflows/issue-222-generate.yml',import.meta.url),'utf8');
@@ -49,7 +50,11 @@ assert.match(gameScreen,/const canonicalQuest=activeQuest\(\)/);
 assert.match(gameScreen,/const canonicalNumber=view\.ordinal,ch=\{name:view\.constellationName\},range=\{count:view\.total\},pos=view\.position/);
 assert.match(gameScreen,/const canonicalQuest=activeQuest\(\),view=readQuestView\(canonicalQuest,lumenProgress,canonicalQuestList\(\),CONTENT_CONSTELLATIONS\)/);
 assert.match(gameScreen,/for\(const adventure of adminCanonicalCatalogueTree\(\)\)/);
-assert.match(gameScreen,/x\.fillText\("Quête "\+\(a\.canonicalNumber\?\?levelIndex\+1\)/);
+assert.match(gameScreen,/ordinal:playedQuest\.ordinal,catalogueTotal:canonicalQuestList\(\)\.length/);
+for(const quest of [canonicalQuestForLegacy(295),quests.find(q=>q.legacyIndex===null)]){
+ const shared=resultShareData({ordinal:quest.ordinal,constellation:quest.constellationId,time:'0:20',badges:[]});
+ assert.match(shared.text,new RegExp('Quête '+quest.ordinal+' réussie'),'The public card uses the played quest’s displayed ordinal');
+}
 assert.match(gameScreen,/return \{kicker,main,detail,ch,pos,total:range\.count,solved,run,secs,canonicalNumber,canonicalTotal:canonicalQuestList\(\)\.length\}/);
 const admin=adminCanonicalCatalogueTree();
 assert.equal(admin.length,9);

@@ -1,4 +1,5 @@
 import {setupAppUpdates} from './app-updates.js';
+import {createShareDialog,discoveryUrl} from './lumen-share.js';
 import {consumeInstallRequest,isIosDevice,requestedInstallCopy,installGuestWarning} from './install-request.js';
 import {pwaFirstOpenEligible,createPwaFirstOpen} from './pwa-first-open.js';
 import {readNativeAuthLinkResult,scrubNativeAuthLinkError,authLinkMessage} from '../persistence/auth-link-result.js';
@@ -1732,6 +1733,8 @@ function setupMobileAuth(){
  account.onclick=(e)=>{e.stopPropagation();const d=document.getElementById("dailyInfoPopover");if(d)d.hidden=true;menu.hidden=!menu.hidden};
  menu.onclick=(e)=>e.stopPropagation();
  setupCredits(document);
+ const invite=document.getElementById("inviteLumenFriends");
+ if(invite)invite.onclick=()=>lumenShare.invite(invite);
  const editor=document.getElementById("accountProfileEditor");
  const edit=document.getElementById("editAccountProfile");if(edit)edit.onclick=()=>{if(!lumenUser||!editor)return;editor.dataset.open="true";syncMobileAuthUI();document.getElementById("nicknameInput")?.focus()};
  const closeProfile=document.getElementById("closeAccountProfile");if(closeProfile)closeProfile.onclick=()=>{if(!editor)return;editor.dataset.open="false";syncMobileAuthUI()};
@@ -1856,8 +1859,7 @@ async function maybeOfferInstall(){
 }
 
 async function installLumen(){const box=document.getElementById("installOptin"),ios=/iphone|ipad|ipod/i.test(navigator.userAgent);if(ios&&!lumenInstallPrompt){box.hidden=true;localStorage.setItem(qaKey("lumenInstallLater"),String(Date.now()));return}if(!lumenInstallPrompt){box.hidden=true;return}const p=lumenInstallPrompt;lumenInstallPrompt=null;await p.prompt();const choice=await p.userChoice;trackLumenEvent("pwa_install_choice",null,{outcome:choice.outcome,qa:qaActive});box.hidden=true;if(choice.outcome==="dismissed")localStorage.setItem(qaKey("lumenInstallLater"),String(Date.now()))}
-function lumenReferralCode(){return lumenUser?.id?("u"+lumenUser.id.replace(/-/g,"").slice(0,12)):("a"+lumenAnonymousId.replace(/-/g,"").slice(0,12))}
-function lumenShareUrl(){const u=new URL(location.origin+location.pathname);u.searchParams.set("ref",lumenReferralCode());return u.toString()}
+const lumenShare=createShareDialog(document,navigator);
 function showShareToast(t){let e=document.createElement("div");e.className="share-toast";e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),1800)}
 function successAchievement(){
  const canonicalQuest=activeQuest(),view=readQuestView(canonicalQuest,lumenProgress,canonicalQuestList(),CONTENT_CONSTELLATIONS);
@@ -1880,36 +1882,6 @@ function renderSuccessAchievement(){
  if(k)k.textContent=a.kicker;if(m)m.textContent=a.main;if(d)d.textContent=a.detail;
 }
 
-function shareCardCanvas(a){
- const canvas=document.createElement("canvas");canvas.width=1080;canvas.height=1350;const x=canvas.getContext("2d"),cx=540;
- const bg=x.createLinearGradient(0,0,0,1350);bg.addColorStop(0,"#07111d");bg.addColorStop(1,"#10233a");x.fillStyle=bg;x.fillRect(0,0,1080,1350);
- // deterministic star field
- x.fillStyle="#dffaff";for(let i=0;i<70;i++){const sx=(i*173+71)%1040+20,sy=(i*257+53)%1280+20,r=i%9===0?3:1.5;x.globalAlpha=.25+(i%5)*.12;x.beginPath();x.arc(sx,sy,r,0,Math.PI*2);x.fill()}x.globalAlpha=1;
- x.textAlign="center";x.fillStyle="#68e7ff";x.font="900 52px Arial";x.fillText("L U M E N",cx,125);
- x.fillStyle="#ffe3a1";x.shadowColor="rgba(255,210,100,.8)";x.shadowBlur=25;x.font="900 120px Arial";x.fillText("★",cx,300);x.shadowBlur=0;
- x.fillStyle="#68e7ff";x.font="900 30px Arial";x.fillText(a.kicker,cx,410);
- x.fillStyle="#f2fbff";x.font="900 58px Arial";wrapCanvasText(x,a.main,cx,495,900,70);
- x.fillStyle="#a9bfd0";x.font="700 30px Arial";wrapCanvasText(x,a.detail,cx,660,900,42);
- x.strokeStyle="rgba(104,231,255,.35)";x.lineWidth=2;x.strokeRect(105,790,870,210);
- x.fillStyle="#f2fbff";x.font="900 44px Arial";x.fillText("Quête "+(a.canonicalNumber??levelIndex+1)+" / "+(a.canonicalTotal??campaignQuestCount()),cx,860);
- x.fillStyle="#68e7ff";x.font="800 32px Arial";x.fillText((a.ch?.name||"Constellation")+" · "+a.pos+"/"+a.total,cx,920);
- x.fillStyle="#a9bfd0";x.font="700 28px Arial";x.fillText("◷ "+formatDuration(a.secs)+(a.run.noHint?"   ·   Sans indice":""),cx,970);
- x.fillStyle="#eefaff";x.font="800 32px Arial";x.fillText("Peux-tu rallumer le ciel ?",cx,1120);
- x.fillStyle="#7891a5";x.font="700 24px Arial";x.fillText(location.host,cx,1190);
- return canvas;
-}
-function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight){const words=String(text).split(" ");let line="",yy=y;for(const w of words){const test=line?line+" "+w:w;if(ctx.measureText(test).width>maxWidth&&line){ctx.fillText(line,x,yy);line=w;yy+=lineHeight}else line=test}if(line)ctx.fillText(line,x,yy)}
-async function shareLumenResult(){
- const a=successAchievement(),url=lumenShareUrl(),text="✦ LUMEN · "+a.kicker+"\n"+a.main+"\n"+a.detail+"\n\nPeux-tu rallumer le ciel ?";
- let method="copy";
- try{
-  const canvas=shareCardCanvas(a),blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png")),file=blob?new File([blob],"lumen-quete-"+(a.canonicalNumber??levelIndex+1)+".png",{type:"image/png"}):null;
-  if(navigator.share&&file&&navigator.canShare?.({files:[file]})){await navigator.share({title:"Ma réussite LUMEN",text,url,files:[file]});method="native_image"}
-  else if(navigator.share){await navigator.share({title:"Ma réussite LUMEN",text,url});method="native"}
-  else{await navigator.clipboard.writeText(text+"\n"+url);showShareToast("Résultat copié — prêt à partager")}
- }catch(err){if(err?.name==="AbortError")return;try{await navigator.clipboard.writeText(text+"\n"+url);showShareToast("Résultat copié — prêt à partager")}catch(_){}}
- trackAttemptEvent("result_shared",{method,ref:lumenReferralCode(),achievement:a.kicker});
-}
 captureReferral();
 
 let lumenProgress=loadLumenProgress(),usedHintThisGame=false,questStarted=true,questFailed=false;
@@ -2677,7 +2649,7 @@ function handleLearningTap(event){
  if(document.querySelector('#mapModal:not([hidden]),#rulesModal:not([hidden]),#feedbackModal:not([hidden]),#tutorialOverlay:not([hidden]),#badgeRulesModal:not([hidden])'))return;
  // Learning restrictions apply to gameplay, never to account dialogs or other controls
  // (#711: the full-screen signed-out and account-switch layers sit above the board).
- if(target.closest("#installOptin,#accountOptin,#signedOutScreen,#accountSwitchHold,#authLinkResult,#passwordRecovery,#pwaWelcome,#mandatoryNickname,#erasedAccountNotice,#mobileAuthPopover,#mobileAccount,#new,#tutorialHelp,#attemptPause,#attemptMask,#feedbackBtn,#learningCoachNext,#learningSkip"))return;
+ if(target.closest("#installOptin,#accountOptin,#signedOutScreen,#accountSwitchHold,#authLinkResult,#passwordRecovery,#pwaWelcome,#mandatoryNickname,#erasedAccountNotice,#mobileAuthPopover,#mobileAccount,#lumenShareDialog,#skyRevealShareResult,#new,#tutorialHelp,#attemptPause,#attemptMask,#feedbackBtn,#learningCoachNext,#learningSkip"))return;
  if(target.closest("#board .cell"))return;
  event.preventDefault();event.stopImmediatePropagation();
 }
@@ -4236,7 +4208,7 @@ get replayMode(){return replayMode},set replayMode(value){replayMode=value},
 get canonicalActiveQuest(){return canonicalActiveQuest},set canonicalActiveQuest(value){canonicalActiveQuest=value},
 get learningIntroStep(){return learningIntroStep},set learningIntroStep(value){learningIntroStep=value}
 };
-const runHintTests=createHintTestSuite(testModel,{getHintImplementation:()=>originalHintHandler,handleSuccessAdvance,getSkyTourSteps:()=>SKY_TOUR_STEPS,maybeShowAutoCrossUnlock,maybeShowBadgeMilestone,saveLumenNickname,maybeOfferInstall,lumenShareUrl,successAchievement,shareLumenResult,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,simpleForcedPlacement,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,updateLiveReward,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults,openJourneyMap:()=>openJourneyMap,closeMapOverlay:()=>closeMapOverlay,renderMap:()=>renderMap,advanceToNextPuzzle,startReplay});
+const runHintTests=createHintTestSuite(testModel,{getHintImplementation:()=>originalHintHandler,handleSuccessAdvance,getSkyTourSteps:()=>SKY_TOUR_STEPS,maybeShowAutoCrossUnlock,maybeShowBadgeMilestone,saveLumenNickname,maybeOfferInstall,discoveryUrl,successAchievement,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,simpleForcedPlacement,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,updateLiveReward,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults,openJourneyMap:()=>openJourneyMap,closeMapOverlay:()=>closeMapOverlay,renderMap:()=>renderMap,advanceToNextPuzzle,startReplay});
 let runTestsButton=document.getElementById("runTests");
 if(runTestsButton)runTestsButton.onclick=runHintTests;
 
@@ -4913,6 +4885,8 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
  const syncPending=!!canonical?.pending,upgrading=!syncPending&&!!canonical?.quest&&pendingRevealOpen(canonical.quest.id);
  closeQuestReview();
  celestialCelebration.clear();
+ const shareResult=document.getElementById("skyRevealShareResult");
+ shareResult.hidden=true;shareResult.onclick=null;
  for(const id of ['skyRevealTime','skyRevealRewards','skyRevealFeedback'])document.getElementById(id).hidden=false;
  document.getElementById('skyRevealNext').textContent='Quête suivante →';document.getElementById('skyRevealSky').textContent='✦ Mon ciel';document.getElementById('skyRevealRetry').textContent='↻ Rejouer';document.getElementById('skyRevealShare').textContent='➤ Défier';
  const after=skyStarsEarned(),crossed=beforeEarned!==null&&after>beforeEarned;
@@ -4968,6 +4942,15 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
    const record=document.getElementById('successRecord'),revealRecord=document.getElementById('skyRevealRecord');
    if(revealRecord){revealRecord.textContent=record?.textContent||'';revealRecord.hidden=record?.hidden!==false;revealRecord.classList.toggle('personal-record-new',!!record?.classList.contains('personal-record-new'))}
    const slots=rewardSlots(lastRewardState||{});renderVictoryRewards(slots);
+   if(!syncPending&&playedQuest&&canonicalEntry&&!socialChallenge&&!learningReplayActive()){
+    const sharedVictory={
+     ordinal:playedQuest.ordinal,catalogueTotal:canonicalQuestList().length,constellation:canonicalEntry.label,
+     time:document.getElementById("successTime").textContent,
+     badges:slots.filter(slot=>slot.key!=="star"&&slot.state==="new").map(slot=>slot.label)
+    };
+    shareResult.hidden=false;
+    shareResult.onclick=()=>lumenShare.result(sharedVictory,shareResult);
+   }
    const rankingExpected=!(socialChallenge||learningReplayActive()||qaActive||!lumenUser);
    document.getElementById('skyRevealPerformance')?.classList.toggle('victory-performance-ranked',rankingExpected);
    const rankTile=document.getElementById('skyRevealRank');if(rankTile){rankTile.hidden=!rankingExpected;rankTile.className='victory-rank victory-rank-pending';rankTile.textContent=rankingExpected?(syncPending?'Classement après confirmation':'Classement…'):''}
@@ -5047,6 +5030,8 @@ bindReviewNavigation(document.getElementById('skyReveal'),{
 // best time, saved badges and this quest's board (#695 review, #705 preview).
 // Every caller owns the whole block, never a previous screen's leftovers.
 function fillSavedPerformance(quest,model){
+ const shareResult=document.getElementById('skyRevealShareResult');
+ shareResult.hidden=true;shareResult.onclick=null;
  document.getElementById('skyRevealResults').hidden=false;document.getElementById('skyRevealContinue').hidden=true;
  for(const id of ['skyRevealTime','skyRevealRewards'])document.getElementById(id).hidden=false;
  setVictoryTime(model.time);

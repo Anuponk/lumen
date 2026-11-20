@@ -50,6 +50,17 @@ button{font:inherit;font-weight:700;background:#fff;border:1.8px solid #555;bord
 .success-time{font-size:24px;font-weight:900;margin:10px 0 22px}
 .success-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .success-actions button{border-radius:16px}
+.lumen-share-dialog{width:min(440px,calc(100% - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:20px;border:1px solid #28415b;border-radius:18px;background:#101d2e;color:#eefaff}
+.lumen-share-dialog::backdrop{background:#07111dbb}
+.lumen-share-dialog h2{margin:0 0 12px;font-size:1.25rem}
+.lumen-share-dialog button{min-height:44px;margin:0 8px 8px 0}
+.lumen-share-dialog textarea{display:block;box-sizing:border-box;width:100%;margin:6px 0;color:inherit;background:#07111d}
+.lumen-share-dialog p:empty,.lumen-share-dialog [hidden]{display:none}
+#lumenSharePreview{white-space:pre-line}
+.victory-share-result{width:100%;margin-top:6px;font-size:13px;min-height:44px}
+.victory-share-result[hidden]{display:none}
+/* Reserve the confirmed action’s space while the same screen waits for the ACK. */
+.sky-reveal[data-sync="pending"] .victory-share-result[hidden]{display:block;visibility:hidden}
 #board.win{animation:boardWin .8s ease-in-out}
 #board.win{animation:boardWin .55s ease-out both}\n#board.win .lumen-orb{animation-play-state:paused}
 .confetti{position:fixed;z-index:1001;top:-24px;width:12px;height:18px;border-radius:3px;pointer-events:none;
