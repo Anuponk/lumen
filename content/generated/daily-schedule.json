@@ -1,0 +1,2241 @@
+{
+ "schema": "lumen-daily-schedule-v1",
+ "start": "2026-11-23",
+ "timeZone": "Europe/Paris",
+ "pool": {
+  "labels": [
+   "Intermédiaire",
+   "Avancé"
+  ],
+  "minOrdinal": 12,
+  "size": 294
+ },
+ "days": [
+  {
+   "day": "2026-11-23",
+   "questId": "pack-real-adventure-06-q033",
+   "gridRevision": 1,
+   "constellationId": "iau-pic"
+  },
+  {
+   "day": "2026-11-24",
+   "questId": "base-q185",
+   "gridRevision": 0,
+   "constellationId": "real-23"
+  },
+  {
+   "day": "2026-11-25",
+   "questId": "pack-real-adventure-05-q098",
+   "gridRevision": 1,
+   "constellationId": "iau-lup"
+  },
+  {
+   "day": "2026-11-26",
+   "questId": "base-q012",
+   "gridRevision": 0,
+   "constellationId": "real-02"
+  },
+  {
+   "day": "2026-11-27",
+   "questId": "pack-real-adventure-05-q096",
+   "gridRevision": 1,
+   "constellationId": "iau-lup"
+  },
+  {
+   "day": "2026-11-28",
+   "questId": "base-q073",
+   "gridRevision": 0,
+   "constellationId": "real-10"
+  },
+  {
+   "day": "2026-11-29",
+   "questId": "pack-real-adventure-05-q092",
+   "gridRevision": 1,
+   "constellationId": "iau-lup"
+  },
+  {
+   "day": "2026-11-30",
+   "questId": "base-q186",
+   "gridRevision": 0,
+   "constellationId": "real-23"
+  },
+  {
+   "day": "2026-12-01",
+   "questId": "pack-real-adventure-05-q093",
+   "gridRevision": 1,
+   "constellationId": "iau-lup"
+  },
+  {
+   "day": "2026-12-02",
+   "questId": "pack-real-adventure-05-q020",
+   "gridRevision": 2,
+   "constellationId": "iau-col"
+  },
+  {
+   "day": "2026-12-03",
+   "questId": "base-q191",
+   "gridRevision": 0,
+   "constellationId": "real-24"
+  },
+  {
+   "day": "2026-12-04",
+   "questId": "pack-real-adventure-06-q053",
+   "gridRevision": 1,
+   "constellationId": "iau-mic"
+  },
+  {
+   "day": "2026-12-05",
+   "questId": "pack-real-adventure-05-q056",
+   "gridRevision": 1,
+   "constellationId": "iau-eri"
+  },
+  {
+   "day": "2026-12-06",
+   "questId": "pack-real-adventure-06-q089",
+   "gridRevision": 1,
+   "constellationId": "iau-nor"
+  },
+  {
+   "day": "2026-12-07",
+   "questId": "pack-real-adventure-06-q012",
+   "gridRevision": 1,
+   "constellationId": "iau-hor"
+  },
+  {
+   "day": "2026-12-08",
+   "questId": "pack-real-adventure-06-q071",
+   "gridRevision": 2,
+   "constellationId": "iau-cir"
+  },
+  {
+   "day": "2026-12-09",
+   "questId": "pack-real-adventure-06-q065",
+   "gridRevision": 1,
+   "constellationId": "iau-tel"
+  },
+  {
+   "day": "2026-12-10",
+   "questId": "pack-real-adventure-06-q041",
+   "gridRevision": 2,
+   "constellationId": "iau-scl"
+  },
+  {
+   "day": "2026-12-11",
+   "questId": "base-q129",
+   "gridRevision": 0,
+   "constellationId": "real-16"
+  },
+  {
+   "day": "2026-12-12",
+   "questId": "pack-real-adventure-06-q095",
+   "gridRevision": 1,
+   "constellationId": "iau-sex"
+  },
+  {
+   "day": "2026-12-13",
+   "questId": "pack-real-adventure-05-q099",
+   "gridRevision": 1,
+   "constellationId": "iau-lup"
+  },
+  {
+   "day": "2026-12-14",
+   "questId": "pack-real-adventure-05-q077",
+   "gridRevision": 1,
+   "constellationId": "iau-hyi"
+  },
+  {
+   "day": "2026-12-15",
+   "questId": "base-q085",
+   "gridRevision": 0,
+   "constellationId": "real-11"
+  },
+  {
+   "day": "2026-12-16",
+   "questId": "pack-real-adventure-06-q038",
+   "gridRevision": 1,
+   "constellationId": "iau-pic"
+  },
+  {
+   "day": "2026-12-17",
+   "questId": "base-q095",
+   "gridRevision": 0,
+   "constellationId": "real-12"
+  },
+  {
+   "day": "2026-12-18",
+   "questId": "base-q121",
+   "gridRevision": 0,
+   "constellationId": "real-15"
+  },
+  {
+   "day": "2026-12-19",
+   "questId": "base-q097",
+   "gridRevision": 0,
+   "constellationId": "real-12"
+  },
+  {
+   "day": "2026-12-20",
+   "questId": "pack-real-adventure-06-q006",
+   "gridRevision": 2,
+   "constellationId": "iau-for"
+  },
+  {
+   "day": "2026-12-21",
+   "questId": "base-q112",
+   "gridRevision": 0,
+   "constellationId": "real-14"
+  },
+  {
+   "day": "2026-12-22",
+   "questId": "base-q154",
+   "gridRevision": 0,
+   "constellationId": "real-19"
+  },
+  {
+   "day": "2026-12-23",
+   "questId": "pack-real-adventure-05-q007",
+   "gridRevision": 1,
+   "constellationId": "iau-cet"
+  },
+  {
+   "day": "2026-12-24",
+   "questId": "base-q168",
+   "gridRevision": 0,
+   "constellationId": "real-21"
+  },
+  {
+   "day": "2026-12-25",
+   "questId": "pack-real-adventure-05-q043",
+   "gridRevision": 1,
+   "constellationId": "iau-dor"
+  },
+  {
+   "day": "2026-12-26",
+   "questId": "pack-real-adventure-06-q075",
+   "gridRevision": 1,
+   "constellationId": "iau-cir"
+  },
+  {
+   "day": "2026-12-27",
+   "questId": "pack-real-adventure-07-q086",
+   "gridRevision": 2,
+   "constellationId": "iau-pup"
+  },
+  {
+   "day": "2026-12-28",
+   "questId": "pack-real-adventure-05-q067",
+   "gridRevision": 1,
+   "constellationId": "iau-gru"
+  },
+  {
+   "day": "2026-12-29",
+   "questId": "pack-real-adventure-06-q047",
+   "gridRevision": 1,
+   "constellationId": "iau-scl"
+  },
+  {
+   "day": "2026-12-30",
+   "questId": "base-q031",
+   "gridRevision": 0,
+   "constellationId": "real-05"
+  },
+  {
+   "day": "2026-12-31",
+   "questId": "pack-real-adventure-06-q063",
+   "gridRevision": 1,
+   "constellationId": "iau-tel"
+  },
+  {
+   "day": "2027-01-01",
+   "questId": "pack-real-adventure-05-q015",
+   "gridRevision": 1,
+   "constellationId": "iau-col"
+  },
+  {
+   "day": "2027-01-02",
+   "questId": "pack-real-adventure-05-q009",
+   "gridRevision": 1,
+   "constellationId": "iau-cet"
+  },
+  {
+   "day": "2027-01-03",
+   "questId": "pack-real-adventure-05-q030",
+   "gridRevision": 2,
+   "constellationId": "iau-crv"
+  },
+  {
+   "day": "2027-01-04",
+   "questId": "pack-real-adventure-06-q057",
+   "gridRevision": 1,
+   "constellationId": "iau-mic"
+  },
+  {
+   "day": "2027-01-05",
+   "questId": "base-q068",
+   "gridRevision": 0,
+   "constellationId": "real-09"
+  },
+  {
+   "day": "2027-01-06",
+   "questId": "pack-real-adventure-06-q059",
+   "gridRevision": 1,
+   "constellationId": "iau-mic"
+  },
+  {
+   "day": "2027-01-07",
+   "questId": "pack-real-adventure-06-q035",
+   "gridRevision": 1,
+   "constellationId": "iau-pic"
+  },
+  {
+   "day": "2027-01-08",
+   "questId": "base-q172",
+   "gridRevision": 0,
+   "constellationId": "real-21"
+  },
+  {
+   "day": "2027-01-09",
+   "questId": "pack-real-adventure-07-q001",
+   "gridRevision": 2,
+   "constellationId": "iau-pyx"
+  },
+  {
+   "day": "2027-01-10",
+   "questId": "base-q183",
+   "gridRevision": 0,
+   "constellationId": "real-23"
+  },
+  {
+   "day": "2027-01-11",
+   "questId": "pack-real-adventure-06-q013",
+   "gridRevision": 1,
+   "constellationId": "iau-hor"
+  },
+  {
+   "day": "2027-01-12",
+   "questId": "pack-real-adventure-06-q061",
+   "gridRevision": 2,
+   "constellationId": "iau-tel"
+  },
+  {
+   "day": "2027-01-13",
+   "questId": "pack-real-adventure-06-q019",
+   "gridRevision": 1,
+   "constellationId": "iau-hor"
+  },
+  {
+   "day": "2027-01-14",
+   "questId": "pack-real-adventure-06-q031",
+   "gridRevision": 2,
+   "constellationId": "iau-pic"
+  },
+  {
+   "day": "2027-01-15",
+   "questId": "pack-real-adventure-06-q083",
+   "gridRevision": 1,
+   "constellationId": "iau-nor"
+  },
+  {
+   "day": "2027-01-16",
+   "questId": "base-q184",
+   "gridRevision": 0,
+   "constellationId": "real-23"
+  },
+  {
+   "day": "2027-01-17",
+   "questId": "base-q018",
+   "gridRevision": 0,
+   "constellationId": "real-03"
+  },
+  {
+   "day": "2027-01-18",
+   "questId": "pack-real-adventure-05-q083",
+   "gridRevision": 1,
+   "constellationId": "iau-lac"
+  },
+  {
+   "day": "2027-01-19",
+   "questId": "pack-real-adventure-05-q014",
+   "gridRevision": 2,
+   "constellationId": "iau-col"
+  },
+  {
+   "day": "2027-01-20",
+   "questId": "pack-real-adventure-05-q046",
+   "gridRevision": 1,
+   "constellationId": "iau-dor"
+  },
+  {
+   "day": "2027-01-21",
+   "questId": "pack-real-adventure-06-q039",
+   "gridRevision": 1,
+   "constellationId": "iau-pic"
+  },
+  {
+   "day": "2027-01-22",
+   "questId": "pack-real-adventure-06-q058",
+   "gridRevision": 1,
+   "constellationId": "iau-mic"
+  },
+  {
+   "day": "2027-01-23",
+   "questId": "pack-real-adventure-05-q018",
+   "gridRevision": 1,
+   "constellationId": "iau-col"
+  },
+  {
+   "day": "2027-01-24",
+   "questId": "pack-real-adventure-07-q026",
+   "gridRevision": 2,
+   "constellationId": "iau-mus"
+  },
+  {
+   "day": "2027-01-25",
+   "questId": "base-q195",
+   "gridRevision": 0,
+   "constellationId": "real-24"
+  },
+  {
+   "day": "2027-01-26",
+   "questId": "pack-real-adventure-05-q063",
+   "gridRevision": 1,
+   "constellationId": "iau-gru"
+  },
+  {
+   "day": "2027-01-27",
+   "questId": "pack-real-adventure-06-q062",
+   "gridRevision": 1,
+   "constellationId": "iau-tel"
+  },
+  {
+   "day": "2027-01-28",
+   "questId": "pack-real-adventure-06-q098",
+   "gridRevision": 1,
+   "constellationId": "iau-sex"
+  },
+  {
+   "day": "2027-01-29",
+   "questId": "pack-real-adventure-05-q016",
+   "gridRevision": 1,
+   "constellationId": "iau-col"
+  },
+  {
+   "day": "2027-01-30",
+   "questId": "pack-real-adventure-07-q056",
+   "gridRevision": 2,
+   "constellationId": "iau-pav"
+  },
+  {
+   "day": "2027-01-31",
+   "questId": "pack-real-adventure-05-q029",
+   "gridRevision": 1,
+   "constellationId": "iau-crv"
+  },
+  {
+   "day": "2027-02-01",
+   "questId": "base-q064",
+   "gridRevision": 0,
+   "constellationId": "real-09"
+  },
+  {
+   "day": "2027-02-02",
+   "questId": "pack-real-adventure-06-q009",
+   "gridRevision": 1,
+   "constellationId": "iau-for"
+  },
+  {
+   "day": "2027-02-03",
+   "questId": "pack-real-adventure-06-q045",
+   "gridRevision": 1,
+   "constellationId": "iau-scl"
+  },
+  {
+   "day": "2027-02-04",
+   "questId": "pack-real-adventure-05-q081",
+   "gridRevision": 1,
+   "constellationId": "iau-lac"
+  },
+  {
+   "day": "2027-02-05",
+   "questId": "base-q140",
+   "gridRevision": 0,
+   "constellationId": "real-17"
+  },
+  {
+   "day": "2027-02-06",
+   "questId": "pack-real-adventure-07-q096",
+   "gridRevision": 2,
+   "constellationId": "iau-vel"
+  },
+  {
+   "day": "2027-02-07",
+   "questId": "pack-real-adventure-06-q092",
+   "gridRevision": 1,
+   "constellationId": "iau-sex"
+  },
+  {
+   "day": "2027-02-08",
+   "questId": "base-q114",
+   "gridRevision": 0,
+   "constellationId": "real-14"
+  },
+  {
+   "day": "2027-02-09",
+   "questId": "pack-real-adventure-05-q035",
+   "gridRevision": 1,
+   "constellationId": "iau-crt"
+  },
+  {
+   "day": "2027-02-10",
+   "questId": "pack-real-adventure-05-q017",
+   "gridRevision": 1,
+   "constellationId": "iau-col"
+  },
+  {
+   "day": "2027-02-11",
+   "questId": "pack-real-adventure-06-q003",
+   "gridRevision": 1,
+   "constellationId": "iau-for"
+  },
+  {
+   "day": "2027-02-12",
+   "questId": "base-q131",
+   "gridRevision": 0,
+   "constellationId": "real-16"
+  },
+  {
+   "day": "2027-02-13",
+   "questId": "pack-real-adventure-06-q008",
+   "gridRevision": 1,
+   "constellationId": "iau-for"
+  },
+  {
+   "day": "2027-02-14",
+   "questId": "base-q100",
+   "gridRevision": 0,
+   "constellationId": "real-13"
+  },
+  {
+   "day": "2027-02-15",
+   "questId": "pack-real-adventure-05-q068",
+   "gridRevision": 1,
+   "constellationId": "iau-gru"
+  },
+  {
+   "day": "2027-02-16",
+   "questId": "base-q136",
+   "gridRevision": 0,
+   "constellationId": "real-17"
+  },
+  {
+   "day": "2027-02-17",
+   "questId": "base-q106",
+   "gridRevision": 0,
+   "constellationId": "real-13"
+  },
+  {
+   "day": "2027-02-18",
+   "questId": "base-q048",
+   "gridRevision": 0,
+   "constellationId": "real-07"
+  },
+  {
+   "day": "2027-02-19",
+   "questId": "pack-real-adventure-05-q097",
+   "gridRevision": 1,
+   "constellationId": "iau-lup"
+  },
+  {
+   "day": "2027-02-20",
+   "questId": "pack-real-adventure-06-q027",
+   "gridRevision": 1,
+   "constellationId": "iau-ret"
+  },
+  {
+   "day": "2027-02-21",
+   "questId": "pack-real-adventure-05-q082",
+   "gridRevision": 1,
+   "constellationId": "iau-lac"
+  },
+  {
+   "day": "2027-02-22",
+   "questId": "base-q108",
+   "gridRevision": 0,
+   "constellationId": "real-13"
+  },
+  {
+   "day": "2027-02-23",
+   "questId": "pack-real-adventure-05-q041",
+   "gridRevision": 1,
+   "constellationId": "iau-dor"
+  },
+  {
+   "day": "2027-02-24",
+   "questId": "pack-real-adventure-06-q068",
+   "gridRevision": 1,
+   "constellationId": "iau-tel"
+  },
+  {
+   "day": "2027-02-25",
+   "questId": "pack-real-adventure-06-q002",
+   "gridRevision": 1,
+   "constellationId": "iau-for"
+  },
+  {
+   "day": "2027-02-26",
+   "questId": "pack-real-adventure-05-q075",
+   "gridRevision": 1,
+   "constellationId": "iau-hyi"
+  },
+  {
+   "day": "2027-02-27",
+   "questId": "pack-real-adventure-05-q011",
+   "gridRevision": 1,
+   "constellationId": "iau-col"
+  },
+  {
+   "day": "2027-02-28",
+   "questId": "base-q044",
+   "gridRevision": 0,
+   "constellationId": "real-07"
+  },
+  {
+   "day": "2027-03-01",
+   "questId": "pack-real-adventure-05-q008",
+   "gridRevision": 1,
+   "constellationId": "iau-cet"
+  },
+  {
+   "day": "2027-03-02",
+   "questId": "base-q188",
+   "gridRevision": 0,
+   "constellationId": "real-23"
+  },
+  {
+   "day": "2027-03-03",
+   "questId": "pack-real-adventure-05-q085",
+   "gridRevision": 1,
+   "constellationId": "iau-lac"
+  },
+  {
+   "day": "2027-03-04",
+   "questId": "base-q082",
+   "gridRevision": 0,
+   "constellationId": "real-11"
+  },
+  {
+   "day": "2027-03-05",
+   "questId": "pack-real-adventure-05-q026",
+   "gridRevision": 1,
+   "constellationId": "iau-crv"
+  },
+  {
+   "day": "2027-03-06",
+   "questId": "base-q170",
+   "gridRevision": 0,
+   "constellationId": "real-21"
+  },
+  {
+   "day": "2027-03-07",
+   "questId": "pack-real-adventure-05-q087",
+   "gridRevision": 1,
+   "constellationId": "iau-lac"
+  },
+  {
+   "day": "2027-03-08",
+   "questId": "pack-real-adventure-06-q022",
+   "gridRevision": 1,
+   "constellationId": "iau-ret"
+  },
+  {
+   "day": "2027-03-09",
+   "questId": "pack-real-adventure-06-q055",
+   "gridRevision": 1,
+   "constellationId": "iau-mic"
+  },
+  {
+   "day": "2027-03-10",
+   "questId": "base-q187",
+   "gridRevision": 0,
+   "constellationId": "real-23"
+  },
+  {
+   "day": "2027-03-11",
+   "questId": "base-q086",
+   "gridRevision": 0,
+   "constellationId": "real-11"
+  },
+  {
+   "day": "2027-03-12",
+   "questId": "pack-real-adventure-05-q051",
+   "gridRevision": 1,
+   "constellationId": "iau-eri"
+  },
+  {
+   "day": "2027-03-13",
+   "questId": "pack-real-adventure-06-q048",
+   "gridRevision": 1,
+   "constellationId": "iau-scl"
+  },
+  {
+   "day": "2027-03-14",
+   "questId": "pack-real-adventure-05-q062",
+   "gridRevision": 1,
+   "constellationId": "iau-gru"
+  },
+  {
+   "day": "2027-03-15",
+   "questId": "pack-real-adventure-06-q085",
+   "gridRevision": 1,
+   "constellationId": "iau-nor"
+  },
+  {
+   "day": "2027-03-16",
+   "questId": "pack-real-adventure-06-q037",
+   "gridRevision": 1,
+   "constellationId": "iau-pic"
+  },
+  {
+   "day": "2027-03-17",
+   "questId": "pack-real-adventure-07-q006",
+   "gridRevision": 2,
+   "constellationId": "iau-pyx"
+  },
+  {
+   "day": "2027-03-18",
+   "questId": "pack-real-adventure-06-q021",
+   "gridRevision": 2,
+   "constellationId": "iau-ret"
+  },
+  {
+   "day": "2027-03-19",
+   "questId": "pack-real-adventure-06-q086",
+   "gridRevision": 2,
+   "constellationId": "iau-nor"
+  },
+  {
+   "day": "2027-03-20",
+   "questId": "base-q088",
+   "gridRevision": 0,
+   "constellationId": "real-11"
+  },
+  {
+   "day": "2027-03-21",
+   "questId": "pack-real-adventure-06-q051",
+   "gridRevision": 2,
+   "constellationId": "iau-mic"
+  },
+  {
+   "day": "2027-03-22",
+   "questId": "pack-real-adventure-05-q025",
+   "gridRevision": 1,
+   "constellationId": "iau-crv"
+  },
+  {
+   "day": "2027-03-23",
+   "questId": "base-q161",
+   "gridRevision": 0,
+   "constellationId": "real-20"
+  },
+  {
+   "day": "2027-03-24",
+   "questId": "pack-real-adventure-06-q088",
+   "gridRevision": 1,
+   "constellationId": "iau-nor"
+  },
+  {
+   "day": "2027-03-25",
+   "questId": "pack-real-adventure-06-q093",
+   "gridRevision": 1,
+   "constellationId": "iau-sex"
+  },
+  {
+   "day": "2027-03-26",
+   "questId": "pack-real-adventure-05-q053",
+   "gridRevision": 1,
+   "constellationId": "iau-eri"
+  },
+  {
+   "day": "2027-03-27",
+   "questId": "pack-real-adventure-05-q073",
+   "gridRevision": 1,
+   "constellationId": "iau-hyi"
+  },
+  {
+   "day": "2027-03-28",
+   "questId": "pack-real-adventure-05-q054",
+   "gridRevision": 2,
+   "constellationId": "iau-eri"
+  },
+  {
+   "day": "2027-03-29",
+   "questId": "pack-real-adventure-07-q051",
+   "gridRevision": 2,
+   "constellationId": "iau-pav"
+  },
+  {
+   "day": "2027-03-30",
+   "questId": "base-q146",
+   "gridRevision": 0,
+   "constellationId": "real-18"
+  },
+  {
+   "day": "2027-03-31",
+   "questId": "pack-real-adventure-06-q016",
+   "gridRevision": 2,
+   "constellationId": "iau-hor"
+  },
+  {
+   "day": "2027-04-01",
+   "questId": "pack-real-adventure-06-q007",
+   "gridRevision": 1,
+   "constellationId": "iau-for"
+  },
+  {
+   "day": "2027-04-02",
+   "questId": "pack-real-adventure-05-q036",
+   "gridRevision": 1,
+   "constellationId": "iau-crt"
+  },
+  {
+   "day": "2027-04-03",
+   "questId": "base-q075",
+   "gridRevision": 0,
+   "constellationId": "real-10"
+  },
+  {
+   "day": "2027-04-04",
+   "questId": "pack-real-adventure-06-q018",
+   "gridRevision": 1,
+   "constellationId": "iau-hor"
+  },
+  {
+   "day": "2027-04-05",
+   "questId": "pack-real-adventure-06-q046",
+   "gridRevision": 2,
+   "constellationId": "iau-scl"
+  },
+  {
+   "day": "2027-04-06",
+   "questId": "pack-real-adventure-07-q016",
+   "gridRevision": 2,
+   "constellationId": "iau-vol"
+  },
+  {
+   "day": "2027-04-07",
+   "questId": "base-q057",
+   "gridRevision": 0,
+   "constellationId": "real-08"
+  },
+  {
+   "day": "2027-04-08",
+   "questId": "base-q148",
+   "gridRevision": 0,
+   "constellationId": "real-18"
+  },
+  {
+   "day": "2027-04-09",
+   "questId": "pack-real-adventure-05-q072",
+   "gridRevision": 1,
+   "constellationId": "iau-hyi"
+  },
+  {
+   "day": "2027-04-10",
+   "questId": "pack-real-adventure-05-q002",
+   "gridRevision": 1,
+   "constellationId": "iau-cet"
+  },
+  {
+   "day": "2027-04-11",
+   "questId": "pack-real-adventure-07-q046",
+   "gridRevision": 2,
+   "constellationId": "iau-tuc"
+  },
+  {
+   "day": "2027-04-12",
+   "questId": "pack-real-adventure-06-q069",
+   "gridRevision": 1,
+   "constellationId": "iau-tel"
+  },
+  {
+   "day": "2027-04-13",
+   "questId": "base-q083",
+   "gridRevision": 0,
+   "constellationId": "real-11"
+  },
+  {
+   "day": "2027-04-14",
+   "questId": "pack-real-adventure-06-q091",
+   "gridRevision": 2,
+   "constellationId": "iau-sex"
+  },
+  {
+   "day": "2027-04-15",
+   "questId": "pack-real-adventure-06-q025",
+   "gridRevision": 1,
+   "constellationId": "iau-ret"
+  },
+  {
+   "day": "2027-04-16",
+   "questId": "pack-real-adventure-05-q061",
+   "gridRevision": 1,
+   "constellationId": "iau-gru"
+  },
+  {
+   "day": "2027-04-17",
+   "questId": "pack-real-adventure-05-q038",
+   "gridRevision": 1,
+   "constellationId": "iau-crt"
+  },
+  {
+   "day": "2027-04-18",
+   "questId": "pack-real-adventure-05-q064",
+   "gridRevision": 2,
+   "constellationId": "iau-gru"
+  },
+  {
+   "day": "2027-04-19",
+   "questId": "base-q122",
+   "gridRevision": 0,
+   "constellationId": "real-15"
+  },
+  {
+   "day": "2027-04-20",
+   "questId": "pack-real-adventure-05-q044",
+   "gridRevision": 2,
+   "constellationId": "iau-dor"
+  },
+  {
+   "day": "2027-04-21",
+   "questId": "pack-real-adventure-05-q094",
+   "gridRevision": 2,
+   "constellationId": "iau-lup"
+  },
+  {
+   "day": "2027-04-22",
+   "questId": "base-q120",
+   "gridRevision": 0,
+   "constellationId": "real-15"
+  },
+  {
+   "day": "2027-04-23",
+   "questId": "pack-real-adventure-06-q087",
+   "gridRevision": 1,
+   "constellationId": "iau-nor"
+  },
+  {
+   "day": "2027-04-24",
+   "questId": "pack-real-adventure-06-q036",
+   "gridRevision": 2,
+   "constellationId": "iau-pic"
+  },
+  {
+   "day": "2027-04-25",
+   "questId": "pack-real-adventure-06-q082",
+   "gridRevision": 1,
+   "constellationId": "iau-nor"
+  },
+  {
+   "day": "2027-04-26",
+   "questId": "pack-real-adventure-06-q097",
+   "gridRevision": 1,
+   "constellationId": "iau-sex"
+  },
+  {
+   "day": "2027-04-27",
+   "questId": "pack-real-adventure-06-q078",
+   "gridRevision": 1,
+   "constellationId": "iau-cir"
+  },
+  {
+   "day": "2027-04-28",
+   "questId": "pack-real-adventure-05-q060",
+   "gridRevision": 2,
+   "constellationId": "iau-eri"
+  },
+  {
+   "day": "2027-04-29",
+   "questId": "base-q094",
+   "gridRevision": 0,
+   "constellationId": "real-12"
+  },
+  {
+   "day": "2027-04-30",
+   "questId": "pack-real-adventure-05-q091",
+   "gridRevision": 1,
+   "constellationId": "iau-lup"
+  },
+  {
+   "day": "2027-05-01",
+   "questId": "pack-real-adventure-05-q032",
+   "gridRevision": 1,
+   "constellationId": "iau-crt"
+  },
+  {
+   "day": "2027-05-02",
+   "questId": "pack-real-adventure-05-q066",
+   "gridRevision": 1,
+   "constellationId": "iau-gru"
+  },
+  {
+   "day": "2027-05-03",
+   "questId": "pack-real-adventure-05-q084",
+   "gridRevision": 2,
+   "constellationId": "iau-lac"
+  },
+  {
+   "day": "2027-05-04",
+   "questId": "pack-real-adventure-05-q047",
+   "gridRevision": 1,
+   "constellationId": "iau-dor"
+  },
+  {
+   "day": "2027-05-05",
+   "questId": "pack-real-adventure-07-q091",
+   "gridRevision": 2,
+   "constellationId": "iau-vel"
+  },
+  {
+   "day": "2027-05-06",
+   "questId": "pack-real-adventure-05-q088",
+   "gridRevision": 1,
+   "constellationId": "iau-lac"
+  },
+  {
+   "day": "2027-05-07",
+   "questId": "pack-real-adventure-07-q071",
+   "gridRevision": 2,
+   "constellationId": "iau-car"
+  },
+  {
+   "day": "2027-05-08",
+   "questId": "base-q145",
+   "gridRevision": 0,
+   "constellationId": "real-18"
+  },
+  {
+   "day": "2027-05-09",
+   "questId": "pack-real-adventure-06-q099",
+   "gridRevision": 1,
+   "constellationId": "iau-sex"
+  },
+  {
+   "day": "2027-05-10",
+   "questId": "base-q130",
+   "gridRevision": 0,
+   "constellationId": "real-16"
+  },
+  {
+   "day": "2027-05-11",
+   "questId": "pack-real-adventure-05-q071",
+   "gridRevision": 1,
+   "constellationId": "iau-hyi"
+  },
+  {
+   "day": "2027-05-12",
+   "questId": "pack-real-adventure-06-q066",
+   "gridRevision": 2,
+   "constellationId": "iau-tel"
+  },
+  {
+   "day": "2027-05-13",
+   "questId": "base-q137",
+   "gridRevision": 0,
+   "constellationId": "real-17"
+  },
+  {
+   "day": "2027-05-14",
+   "questId": "pack-real-adventure-06-q072",
+   "gridRevision": 1,
+   "constellationId": "iau-cir"
+  },
+  {
+   "day": "2027-05-15",
+   "questId": "base-q169",
+   "gridRevision": 0,
+   "constellationId": "real-21"
+  },
+  {
+   "day": "2027-05-16",
+   "questId": "pack-real-adventure-06-q076",
+   "gridRevision": 2,
+   "constellationId": "iau-cir"
+  },
+  {
+   "day": "2027-05-17",
+   "questId": "pack-real-adventure-05-q027",
+   "gridRevision": 1,
+   "constellationId": "iau-crv"
+  },
+  {
+   "day": "2027-05-18",
+   "questId": "pack-real-adventure-06-q052",
+   "gridRevision": 1,
+   "constellationId": "iau-mic"
+  },
+  {
+   "day": "2027-05-19",
+   "questId": "pack-real-adventure-06-q015",
+   "gridRevision": 1,
+   "constellationId": "iau-hor"
+  },
+  {
+   "day": "2027-05-20",
+   "questId": "pack-real-adventure-05-q019",
+   "gridRevision": 1,
+   "constellationId": "iau-col"
+  },
+  {
+   "day": "2027-05-21",
+   "questId": "base-q179",
+   "gridRevision": 0,
+   "constellationId": "real-22"
+  },
+  {
+   "day": "2027-05-22",
+   "questId": "pack-real-adventure-05-q069",
+   "gridRevision": 1,
+   "constellationId": "iau-gru"
+  },
+  {
+   "day": "2027-05-23",
+   "questId": "pack-real-adventure-05-q078",
+   "gridRevision": 1,
+   "constellationId": "iau-hyi"
+  },
+  {
+   "day": "2027-05-24",
+   "questId": "base-q107",
+   "gridRevision": 0,
+   "constellationId": "real-13"
+  },
+  {
+   "day": "2027-05-25",
+   "questId": "pack-real-adventure-07-q066",
+   "gridRevision": 2,
+   "constellationId": "iau-phe"
+  },
+  {
+   "day": "2027-05-26",
+   "questId": "base-q104",
+   "gridRevision": 0,
+   "constellationId": "real-13"
+  },
+  {
+   "day": "2027-05-27",
+   "questId": "pack-real-adventure-06-q096",
+   "gridRevision": 2,
+   "constellationId": "iau-sex"
+  },
+  {
+   "day": "2027-05-28",
+   "questId": "pack-real-adventure-07-q081",
+   "gridRevision": 2,
+   "constellationId": "iau-pup"
+  },
+  {
+   "day": "2027-05-29",
+   "questId": "base-q123",
+   "gridRevision": 0,
+   "constellationId": "real-15"
+  },
+  {
+   "day": "2027-05-30",
+   "questId": "base-q144",
+   "gridRevision": 0,
+   "constellationId": "real-18"
+  },
+  {
+   "day": "2027-05-31",
+   "questId": "pack-real-adventure-05-q004",
+   "gridRevision": 2,
+   "constellationId": "iau-cet"
+  },
+  {
+   "day": "2027-06-01",
+   "questId": "pack-real-adventure-05-q065",
+   "gridRevision": 1,
+   "constellationId": "iau-gru"
+  },
+  {
+   "day": "2027-06-02",
+   "questId": "pack-real-adventure-05-q021",
+   "gridRevision": 1,
+   "constellationId": "iau-crv"
+  },
+  {
+   "day": "2027-06-03",
+   "questId": "pack-real-adventure-07-q021",
+   "gridRevision": 2,
+   "constellationId": "iau-mus"
+  },
+  {
+   "day": "2027-06-04",
+   "questId": "base-q132",
+   "gridRevision": 0,
+   "constellationId": "real-16"
+  },
+  {
+   "day": "2027-06-05",
+   "questId": "pack-real-adventure-06-q017",
+   "gridRevision": 1,
+   "constellationId": "iau-hor"
+  },
+  {
+   "day": "2027-06-06",
+   "questId": "pack-real-adventure-05-q048",
+   "gridRevision": 1,
+   "constellationId": "iau-dor"
+  },
+  {
+   "day": "2027-06-07",
+   "questId": "pack-real-adventure-06-q043",
+   "gridRevision": 1,
+   "constellationId": "iau-scl"
+  },
+  {
+   "day": "2027-06-08",
+   "questId": "base-q153",
+   "gridRevision": 0,
+   "constellationId": "real-19"
+  },
+  {
+   "day": "2027-06-09",
+   "questId": "pack-real-adventure-06-q073",
+   "gridRevision": 1,
+   "constellationId": "iau-cir"
+  },
+  {
+   "day": "2027-06-10",
+   "questId": "pack-real-adventure-05-q012",
+   "gridRevision": 1,
+   "constellationId": "iau-col"
+  },
+  {
+   "day": "2027-06-11",
+   "questId": "pack-real-adventure-05-q079",
+   "gridRevision": 1,
+   "constellationId": "iau-hyi"
+  },
+  {
+   "day": "2027-06-12",
+   "questId": "pack-real-adventure-06-q032",
+   "gridRevision": 1,
+   "constellationId": "iau-pic"
+  },
+  {
+   "day": "2027-06-13",
+   "questId": "pack-real-adventure-06-q001",
+   "gridRevision": 2,
+   "constellationId": "iau-for"
+  },
+  {
+   "day": "2027-06-14",
+   "questId": "pack-real-adventure-06-q028",
+   "gridRevision": 1,
+   "constellationId": "iau-ret"
+  },
+  {
+   "day": "2027-06-15",
+   "questId": "pack-real-adventure-06-q077",
+   "gridRevision": 1,
+   "constellationId": "iau-cir"
+  },
+  {
+   "day": "2027-06-16",
+   "questId": "pack-real-adventure-05-q086",
+   "gridRevision": 1,
+   "constellationId": "iau-lac"
+  },
+  {
+   "day": "2027-06-17",
+   "questId": "pack-real-adventure-05-q059",
+   "gridRevision": 1,
+   "constellationId": "iau-eri"
+  },
+  {
+   "day": "2027-06-18",
+   "questId": "base-q180",
+   "gridRevision": 0,
+   "constellationId": "real-22"
+  },
+  {
+   "day": "2027-06-19",
+   "questId": "pack-real-adventure-05-q037",
+   "gridRevision": 1,
+   "constellationId": "iau-crt"
+  },
+  {
+   "day": "2027-06-20",
+   "questId": "pack-real-adventure-06-q081",
+   "gridRevision": 2,
+   "constellationId": "iau-nor"
+  },
+  {
+   "day": "2027-06-21",
+   "questId": "pack-real-adventure-05-q024",
+   "gridRevision": 2,
+   "constellationId": "iau-crv"
+  },
+  {
+   "day": "2027-06-22",
+   "questId": "base-q061",
+   "gridRevision": 0,
+   "constellationId": "real-08"
+  },
+  {
+   "day": "2027-06-23",
+   "questId": "base-q105",
+   "gridRevision": 0,
+   "constellationId": "real-13"
+  },
+  {
+   "day": "2027-06-24",
+   "questId": "pack-real-adventure-07-q061",
+   "gridRevision": 2,
+   "constellationId": "iau-phe"
+  },
+  {
+   "day": "2027-06-25",
+   "questId": "base-q079",
+   "gridRevision": 0,
+   "constellationId": "real-10"
+  },
+  {
+   "day": "2027-06-26",
+   "questId": "base-q178",
+   "gridRevision": 0,
+   "constellationId": "real-22"
+  },
+  {
+   "day": "2027-06-27",
+   "questId": "base-q076",
+   "gridRevision": 0,
+   "constellationId": "real-10"
+  },
+  {
+   "day": "2027-06-28",
+   "questId": "base-q176",
+   "gridRevision": 0,
+   "constellationId": "real-22"
+  },
+  {
+   "day": "2027-06-29",
+   "questId": "base-q147",
+   "gridRevision": 0,
+   "constellationId": "real-18"
+  },
+  {
+   "day": "2027-06-30",
+   "questId": "pack-real-adventure-06-q011",
+   "gridRevision": 2,
+   "constellationId": "iau-hor"
+  },
+  {
+   "day": "2027-07-01",
+   "questId": "pack-real-adventure-05-q057",
+   "gridRevision": 1,
+   "constellationId": "iau-eri"
+  },
+  {
+   "day": "2027-07-02",
+   "questId": "base-q162",
+   "gridRevision": 0,
+   "constellationId": "real-20"
+  },
+  {
+   "day": "2027-07-03",
+   "questId": "pack-real-adventure-05-q089",
+   "gridRevision": 1,
+   "constellationId": "iau-lac"
+  },
+  {
+   "day": "2027-07-04",
+   "questId": "pack-real-adventure-07-q076",
+   "gridRevision": 2,
+   "constellationId": "iau-car"
+  },
+  {
+   "day": "2027-07-05",
+   "questId": "base-q113",
+   "gridRevision": 0,
+   "constellationId": "real-14"
+  },
+  {
+   "day": "2027-07-06",
+   "questId": "pack-real-adventure-06-q042",
+   "gridRevision": 1,
+   "constellationId": "iau-scl"
+  },
+  {
+   "day": "2027-07-07",
+   "questId": "base-q098",
+   "gridRevision": 0,
+   "constellationId": "real-12"
+  },
+  {
+   "day": "2027-07-08",
+   "questId": "base-q139",
+   "gridRevision": 0,
+   "constellationId": "real-17"
+  },
+  {
+   "day": "2027-07-09",
+   "questId": "base-q099",
+   "gridRevision": 0,
+   "constellationId": "real-12"
+  },
+  {
+   "day": "2027-07-10",
+   "questId": "pack-real-adventure-05-q006",
+   "gridRevision": 1,
+   "constellationId": "iau-cet"
+  },
+  {
+   "day": "2027-07-11",
+   "questId": "pack-real-adventure-05-q050",
+   "gridRevision": 2,
+   "constellationId": "iau-dor"
+  },
+  {
+   "day": "2027-07-12",
+   "questId": "base-q116",
+   "gridRevision": 0,
+   "constellationId": "real-14"
+  },
+  {
+   "day": "2027-07-13",
+   "questId": "base-q072",
+   "gridRevision": 0,
+   "constellationId": "real-10"
+  },
+  {
+   "day": "2027-07-14",
+   "questId": "pack-real-adventure-05-q028",
+   "gridRevision": 1,
+   "constellationId": "iau-crv"
+  },
+  {
+   "day": "2027-07-15",
+   "questId": "pack-real-adventure-05-q076",
+   "gridRevision": 1,
+   "constellationId": "iau-hyi"
+  },
+  {
+   "day": "2027-07-16",
+   "questId": "pack-real-adventure-07-q036",
+   "gridRevision": 2,
+   "constellationId": "iau-ind"
+  },
+  {
+   "day": "2027-07-17",
+   "questId": "base-q193",
+   "gridRevision": 0,
+   "constellationId": "real-24"
+  },
+  {
+   "day": "2027-07-18",
+   "questId": "base-q066",
+   "gridRevision": 0,
+   "constellationId": "real-09"
+  },
+  {
+   "day": "2027-07-19",
+   "questId": "pack-real-adventure-05-q100",
+   "gridRevision": 2,
+   "constellationId": "iau-lup"
+  },
+  {
+   "day": "2027-07-20",
+   "questId": "base-q163",
+   "gridRevision": 0,
+   "constellationId": "real-20"
+  },
+  {
+   "day": "2027-07-21",
+   "questId": "base-q171",
+   "gridRevision": 0,
+   "constellationId": "real-21"
+  },
+  {
+   "day": "2027-07-22",
+   "questId": "pack-real-adventure-07-q011",
+   "gridRevision": 2,
+   "constellationId": "iau-vol"
+  },
+  {
+   "day": "2027-07-23",
+   "questId": "pack-real-adventure-06-q023",
+   "gridRevision": 1,
+   "constellationId": "iau-ret"
+  },
+  {
+   "day": "2027-07-24",
+   "questId": "pack-real-adventure-06-q005",
+   "gridRevision": 1,
+   "constellationId": "iau-for"
+  },
+  {
+   "day": "2027-07-25",
+   "questId": "pack-real-adventure-06-q079",
+   "gridRevision": 1,
+   "constellationId": "iau-cir"
+  },
+  {
+   "day": "2027-07-26",
+   "questId": "base-q025",
+   "gridRevision": 0,
+   "constellationId": "real-04"
+  },
+  {
+   "day": "2027-07-27",
+   "questId": "pack-real-adventure-05-q034",
+   "gridRevision": 2,
+   "constellationId": "iau-crt"
+  },
+  {
+   "day": "2027-07-28",
+   "questId": "pack-real-adventure-05-q070",
+   "gridRevision": 2,
+   "constellationId": "iau-gru"
+  },
+  {
+   "day": "2027-07-29",
+   "questId": "base-q078",
+   "gridRevision": 0,
+   "constellationId": "real-10"
+  },
+  {
+   "day": "2027-07-30",
+   "questId": "pack-real-adventure-05-q042",
+   "gridRevision": 1,
+   "constellationId": "iau-dor"
+  },
+  {
+   "day": "2027-07-31",
+   "questId": "pack-real-adventure-05-q040",
+   "gridRevision": 2,
+   "constellationId": "iau-crt"
+  },
+  {
+   "day": "2027-08-01",
+   "questId": "pack-real-adventure-05-q090",
+   "gridRevision": 2,
+   "constellationId": "iau-lac"
+  },
+  {
+   "day": "2027-08-02",
+   "questId": "pack-real-adventure-05-q022",
+   "gridRevision": 1,
+   "constellationId": "iau-crv"
+  },
+  {
+   "day": "2027-08-03",
+   "questId": "pack-real-adventure-05-q080",
+   "gridRevision": 2,
+   "constellationId": "iau-hyi"
+  },
+  {
+   "day": "2027-08-04",
+   "questId": "pack-real-adventure-06-q056",
+   "gridRevision": 2,
+   "constellationId": "iau-mic"
+  },
+  {
+   "day": "2027-08-05",
+   "questId": "pack-real-adventure-05-q023",
+   "gridRevision": 1,
+   "constellationId": "iau-crv"
+  },
+  {
+   "day": "2027-08-06",
+   "questId": "pack-real-adventure-07-q031",
+   "gridRevision": 2,
+   "constellationId": "iau-ind"
+  },
+  {
+   "day": "2027-08-07",
+   "questId": "pack-real-adventure-05-q010",
+   "gridRevision": 2,
+   "constellationId": "iau-cet"
+  },
+  {
+   "day": "2027-08-08",
+   "questId": "pack-real-adventure-06-q026",
+   "gridRevision": 2,
+   "constellationId": "iau-ret"
+  },
+  {
+   "day": "2027-08-09",
+   "questId": "base-q156",
+   "gridRevision": 0,
+   "constellationId": "real-19"
+  },
+  {
+   "day": "2027-08-10",
+   "questId": "base-q196",
+   "gridRevision": 0,
+   "constellationId": "real-24"
+  },
+  {
+   "day": "2027-08-11",
+   "questId": "base-q138",
+   "gridRevision": 0,
+   "constellationId": "real-17"
+  },
+  {
+   "day": "2027-08-12",
+   "questId": "pack-real-adventure-05-q095",
+   "gridRevision": 1,
+   "constellationId": "iau-lup"
+  },
+  {
+   "day": "2027-08-13",
+   "questId": "base-q177",
+   "gridRevision": 0,
+   "constellationId": "real-22"
+  },
+  {
+   "day": "2027-08-14",
+   "questId": "base-q164",
+   "gridRevision": 0,
+   "constellationId": "real-20"
+  },
+  {
+   "day": "2027-08-15",
+   "questId": "base-q192",
+   "gridRevision": 0,
+   "constellationId": "real-24"
+  },
+  {
+   "day": "2027-08-16",
+   "questId": "pack-real-adventure-05-q058",
+   "gridRevision": 1,
+   "constellationId": "iau-eri"
+  },
+  {
+   "day": "2027-08-17",
+   "questId": "pack-real-adventure-05-q045",
+   "gridRevision": 1,
+   "constellationId": "iau-dor"
+  },
+  {
+   "day": "2027-08-18",
+   "questId": "base-q152",
+   "gridRevision": 0,
+   "constellationId": "real-19"
+  },
+  {
+   "day": "2027-08-19",
+   "questId": "pack-real-adventure-05-q055",
+   "gridRevision": 1,
+   "constellationId": "iau-eri"
+  },
+  {
+   "day": "2027-08-20",
+   "questId": "base-q155",
+   "gridRevision": 0,
+   "constellationId": "real-19"
+  },
+  {
+   "day": "2027-08-21",
+   "questId": "base-q128",
+   "gridRevision": 0,
+   "constellationId": "real-16"
+  },
+  {
+   "day": "2027-08-22",
+   "questId": "pack-real-adventure-05-q052",
+   "gridRevision": 1,
+   "constellationId": "iau-eri"
+  },
+  {
+   "day": "2027-08-23",
+   "questId": "base-q038",
+   "gridRevision": 0,
+   "constellationId": "real-06"
+  },
+  {
+   "day": "2027-08-24",
+   "questId": "pack-real-adventure-05-q033",
+   "gridRevision": 1,
+   "constellationId": "iau-crt"
+  },
+  {
+   "day": "2027-08-25",
+   "questId": "pack-real-adventure-07-q041",
+   "gridRevision": 2,
+   "constellationId": "iau-tuc"
+  },
+  {
+   "day": "2027-08-26",
+   "questId": "base-q070",
+   "gridRevision": 0,
+   "constellationId": "real-09"
+  },
+  {
+   "day": "2027-08-27",
+   "questId": "pack-real-adventure-06-q049",
+   "gridRevision": 1,
+   "constellationId": "iau-scl"
+  },
+  {
+   "day": "2027-08-28",
+   "questId": "pack-real-adventure-05-q013",
+   "gridRevision": 1,
+   "constellationId": "iau-col"
+  },
+  {
+   "day": "2027-08-29",
+   "questId": "base-q090",
+   "gridRevision": 0,
+   "constellationId": "real-12"
+  },
+  {
+   "day": "2027-08-30",
+   "questId": "pack-real-adventure-05-q003",
+   "gridRevision": 1,
+   "constellationId": "iau-cet"
+  },
+  {
+   "day": "2027-08-31",
+   "questId": "base-q115",
+   "gridRevision": 0,
+   "constellationId": "real-14"
+  },
+  {
+   "day": "2027-09-01",
+   "questId": "pack-real-adventure-05-q049",
+   "gridRevision": 1,
+   "constellationId": "iau-dor"
+  },
+  {
+   "day": "2027-09-02",
+   "questId": "pack-real-adventure-05-q001",
+   "gridRevision": 1,
+   "constellationId": "iau-cet"
+  },
+  {
+   "day": "2027-09-03",
+   "questId": "base-q160",
+   "gridRevision": 0,
+   "constellationId": "real-20"
+  },
+  {
+   "day": "2027-09-04",
+   "questId": "pack-real-adventure-06-q029",
+   "gridRevision": 1,
+   "constellationId": "iau-ret"
+  },
+  {
+   "day": "2027-09-05",
+   "questId": "pack-real-adventure-05-q039",
+   "gridRevision": 1,
+   "constellationId": "iau-crt"
+  },
+  {
+   "day": "2027-09-06",
+   "questId": "pack-real-adventure-05-q005",
+   "gridRevision": 1,
+   "constellationId": "iau-cet"
+  },
+  {
+   "day": "2027-09-07",
+   "questId": "pack-real-adventure-05-q031",
+   "gridRevision": 1,
+   "constellationId": "iau-crt"
+  },
+  {
+   "day": "2027-09-08",
+   "questId": "base-q194",
+   "gridRevision": 0,
+   "constellationId": "real-24"
+  },
+  {
+   "day": "2027-09-09",
+   "questId": "pack-real-adventure-05-q074",
+   "gridRevision": 2,
+   "constellationId": "iau-hyi"
+  },
+  {
+   "day": "2027-09-10",
+   "questId": "pack-real-adventure-06-q067",
+   "gridRevision": 1,
+   "constellationId": "iau-tel"
+  },
+  {
+   "day": "2027-09-11",
+   "questId": "base-q124",
+   "gridRevision": 0,
+   "constellationId": "real-15"
+  },
+  {
+   "day": "2027-09-12",
+   "questId": "base-q051",
+   "gridRevision": 0,
+   "constellationId": "real-07"
+  },
+  {
+   "day": "2027-09-13",
+   "questId": "base-q018",
+   "gridRevision": 0,
+   "constellationId": "real-03"
+  },
+  {
+   "day": "2027-09-14",
+   "questId": "pack-real-adventure-05-q048",
+   "gridRevision": 1,
+   "constellationId": "iau-dor"
+  },
+  {
+   "day": "2027-09-15",
+   "questId": "pack-real-adventure-06-q071",
+   "gridRevision": 2,
+   "constellationId": "iau-cir"
+  },
+  {
+   "day": "2027-09-16",
+   "questId": "pack-real-adventure-06-q053",
+   "gridRevision": 1,
+   "constellationId": "iau-mic"
+  },
+  {
+   "day": "2027-09-17",
+   "questId": "pack-real-adventure-05-q071",
+   "gridRevision": 1,
+   "constellationId": "iau-hyi"
+  },
+  {
+   "day": "2027-09-18",
+   "questId": "pack-real-adventure-05-q057",
+   "gridRevision": 1,
+   "constellationId": "iau-eri"
+  },
+  {
+   "day": "2027-09-19",
+   "questId": "pack-real-adventure-06-q035",
+   "gridRevision": 1,
+   "constellationId": "iau-pic"
+  },
+  {
+   "day": "2027-09-20",
+   "questId": "pack-real-adventure-05-q011",
+   "gridRevision": 1,
+   "constellationId": "iau-col"
+  },
+  {
+   "day": "2027-09-21",
+   "questId": "pack-real-adventure-06-q027",
+   "gridRevision": 1,
+   "constellationId": "iau-ret"
+  },
+  {
+   "day": "2027-09-22",
+   "questId": "pack-real-adventure-05-q020",
+   "gridRevision": 2,
+   "constellationId": "iau-col"
+  },
+  {
+   "day": "2027-09-23",
+   "questId": "base-q090",
+   "gridRevision": 0,
+   "constellationId": "real-12"
+  },
+  {
+   "day": "2027-09-24",
+   "questId": "base-q176",
+   "gridRevision": 0,
+   "constellationId": "real-22"
+  },
+  {
+   "day": "2027-09-25",
+   "questId": "pack-real-adventure-05-q085",
+   "gridRevision": 1,
+   "constellationId": "iau-lac"
+  },
+  {
+   "day": "2027-09-26",
+   "questId": "pack-real-adventure-05-q012",
+   "gridRevision": 1,
+   "constellationId": "iau-col"
+  },
+  {
+   "day": "2027-09-27",
+   "questId": "pack-real-adventure-05-q023",
+   "gridRevision": 1,
+   "constellationId": "iau-crv"
+  },
+  {
+   "day": "2027-09-28",
+   "questId": "pack-real-adventure-06-q087",
+   "gridRevision": 1,
+   "constellationId": "iau-nor"
+  },
+  {
+   "day": "2027-09-29",
+   "questId": "pack-real-adventure-05-q098",
+   "gridRevision": 1,
+   "constellationId": "iau-lup"
+  },
+  {
+   "day": "2027-09-30",
+   "questId": "base-q185",
+   "gridRevision": 0,
+   "constellationId": "real-23"
+  },
+  {
+   "day": "2027-10-01",
+   "questId": "pack-real-adventure-05-q049",
+   "gridRevision": 1,
+   "constellationId": "iau-dor"
+  },
+  {
+   "day": "2027-10-02",
+   "questId": "pack-real-adventure-05-q067",
+   "gridRevision": 1,
+   "constellationId": "iau-gru"
+  },
+  {
+   "day": "2027-10-03",
+   "questId": "base-q085",
+   "gridRevision": 0,
+   "constellationId": "real-11"
+  },
+  {
+   "day": "2027-10-04",
+   "questId": "pack-real-adventure-05-q084",
+   "gridRevision": 2,
+   "constellationId": "iau-lac"
+  },
+  {
+   "day": "2027-10-05",
+   "questId": "pack-real-adventure-07-q026",
+   "gridRevision": 2,
+   "constellationId": "iau-mus"
+  },
+  {
+   "day": "2027-10-06",
+   "questId": "pack-real-adventure-06-q057",
+   "gridRevision": 1,
+   "constellationId": "iau-mic"
+  },
+  {
+   "day": "2027-10-07",
+   "questId": "pack-real-adventure-05-q016",
+   "gridRevision": 1,
+   "constellationId": "iau-col"
+  },
+  {
+   "day": "2027-10-08",
+   "questId": "base-q146",
+   "gridRevision": 0,
+   "constellationId": "real-18"
+  },
+  {
+   "day": "2027-10-09",
+   "questId": "pack-real-adventure-06-q098",
+   "gridRevision": 1,
+   "constellationId": "iau-sex"
+  },
+  {
+   "day": "2027-10-10",
+   "questId": "pack-real-adventure-05-q063",
+   "gridRevision": 1,
+   "constellationId": "iau-gru"
+  },
+  {
+   "day": "2027-10-11",
+   "questId": "pack-real-adventure-07-q021",
+   "gridRevision": 2,
+   "constellationId": "iau-mus"
+  },
+  {
+   "day": "2027-10-12",
+   "questId": "pack-real-adventure-05-q026",
+   "gridRevision": 1,
+   "constellationId": "iau-crv"
+  },
+  {
+   "day": "2027-10-13",
+   "questId": "base-q025",
+   "gridRevision": 0,
+   "constellationId": "real-04"
+  },
+  {
+   "day": "2027-10-14",
+   "questId": "pack-real-adventure-06-q045",
+   "gridRevision": 1,
+   "constellationId": "iau-scl"
+  },
+  {
+   "day": "2027-10-15",
+   "questId": "pack-real-adventure-05-q042",
+   "gridRevision": 1,
+   "constellationId": "iau-dor"
+  },
+  {
+   "day": "2027-10-16",
+   "questId": "pack-real-adventure-05-q090",
+   "gridRevision": 2,
+   "constellationId": "iau-lac"
+  },
+  {
+   "day": "2027-10-17",
+   "questId": "pack-real-adventure-06-q023",
+   "gridRevision": 1,
+   "constellationId": "iau-ret"
+  },
+  {
+   "day": "2027-10-18",
+   "questId": "base-q122",
+   "gridRevision": 0,
+   "constellationId": "real-15"
+  },
+  {
+   "day": "2027-10-19",
+   "questId": "pack-real-adventure-06-q041",
+   "gridRevision": 2,
+   "constellationId": "iau-scl"
+  },
+  {
+   "day": "2027-10-20",
+   "questId": "base-q051",
+   "gridRevision": 0,
+   "constellationId": "real-07"
+  },
+  {
+   "day": "2027-10-21",
+   "questId": "pack-real-adventure-07-q031",
+   "gridRevision": 2,
+   "constellationId": "iau-ind"
+  },
+  {
+   "day": "2027-10-22",
+   "questId": "pack-real-adventure-06-q085",
+   "gridRevision": 1,
+   "constellationId": "iau-nor"
+  },
+  {
+   "day": "2027-10-23",
+   "questId": "pack-real-adventure-05-q082",
+   "gridRevision": 1,
+   "constellationId": "iau-lac"
+  },
+  {
+   "day": "2027-10-24",
+   "questId": "pack-real-adventure-05-q010",
+   "gridRevision": 2,
+   "constellationId": "iau-cet"
+  },
+  {
+   "day": "2027-10-25",
+   "questId": "pack-real-adventure-06-q052",
+   "gridRevision": 1,
+   "constellationId": "iau-mic"
+  },
+  {
+   "day": "2027-10-26",
+   "questId": "pack-real-adventure-06-q042",
+   "gridRevision": 1,
+   "constellationId": "iau-scl"
+  },
+  {
+   "day": "2027-10-27",
+   "questId": "pack-real-adventure-06-q065",
+   "gridRevision": 1,
+   "constellationId": "iau-tel"
+  },
+  {
+   "day": "2027-10-28",
+   "questId": "pack-real-adventure-05-q068",
+   "gridRevision": 1,
+   "constellationId": "iau-gru"
+  },
+  {
+   "day": "2027-10-29",
+   "questId": "base-q038",
+   "gridRevision": 0,
+   "constellationId": "real-06"
+  },
+  {
+   "day": "2027-10-30",
+   "questId": "base-q064",
+   "gridRevision": 0,
+   "constellationId": "real-09"
+  },
+  {
+   "day": "2027-10-31",
+   "questId": "pack-real-adventure-05-q051",
+   "gridRevision": 1,
+   "constellationId": "iau-eri"
+  },
+  {
+   "day": "2027-11-01",
+   "questId": "pack-real-adventure-06-q011",
+   "gridRevision": 2,
+   "constellationId": "iau-hor"
+  },
+  {
+   "day": "2027-11-02",
+   "questId": "pack-real-adventure-06-q047",
+   "gridRevision": 1,
+   "constellationId": "iau-scl"
+  },
+  {
+   "day": "2027-11-03",
+   "questId": "pack-real-adventure-06-q095",
+   "gridRevision": 1,
+   "constellationId": "iau-sex"
+  },
+  {
+   "day": "2027-11-04",
+   "questId": "pack-real-adventure-06-q061",
+   "gridRevision": 2,
+   "constellationId": "iau-tel"
+  },
+  {
+   "day": "2027-11-05",
+   "questId": "base-q095",
+   "gridRevision": 0,
+   "constellationId": "real-12"
+  },
+  {
+   "day": "2027-11-06",
+   "questId": "pack-real-adventure-06-q001",
+   "gridRevision": 2,
+   "constellationId": "iau-for"
+  },
+  {
+   "day": "2027-11-07",
+   "questId": "pack-real-adventure-06-q012",
+   "gridRevision": 1,
+   "constellationId": "iau-hor"
+  },
+  {
+   "day": "2027-11-08",
+   "questId": "base-q128",
+   "gridRevision": 0,
+   "constellationId": "real-16"
+  },
+  {
+   "day": "2027-11-09",
+   "questId": "base-q086",
+   "gridRevision": 0,
+   "constellationId": "real-11"
+  },
+  {
+   "day": "2027-11-10",
+   "questId": "pack-real-adventure-06-q033",
+   "gridRevision": 1,
+   "constellationId": "iau-pic"
+  },
+  {
+   "day": "2027-11-11",
+   "questId": "pack-real-adventure-05-q076",
+   "gridRevision": 1,
+   "constellationId": "iau-hyi"
+  },
+  {
+   "day": "2027-11-12",
+   "questId": "pack-real-adventure-05-q043",
+   "gridRevision": 1,
+   "constellationId": "iau-dor"
+  },
+  {
+   "day": "2027-11-13",
+   "questId": "pack-real-adventure-07-q086",
+   "gridRevision": 2,
+   "constellationId": "iau-pup"
+  },
+  {
+   "day": "2027-11-14",
+   "questId": "pack-real-adventure-05-q047",
+   "gridRevision": 1,
+   "constellationId": "iau-dor"
+  },
+  {
+   "day": "2027-11-15",
+   "questId": "base-q183",
+   "gridRevision": 0,
+   "constellationId": "real-23"
+  },
+  {
+   "day": "2027-11-16",
+   "questId": "pack-real-adventure-05-q046",
+   "gridRevision": 1,
+   "constellationId": "iau-dor"
+  },
+  {
+   "day": "2027-11-17",
+   "questId": "pack-real-adventure-06-q088",
+   "gridRevision": 1,
+   "constellationId": "iau-nor"
+  },
+  {
+   "day": "2027-11-18",
+   "questId": "base-q138",
+   "gridRevision": 0,
+   "constellationId": "real-17"
+  },
+  {
+   "day": "2027-11-19",
+   "questId": "pack-real-adventure-05-q060",
+   "gridRevision": 2,
+   "constellationId": "iau-eri"
+  },
+  {
+   "day": "2027-11-20",
+   "questId": "pack-real-adventure-06-q089",
+   "gridRevision": 1,
+   "constellationId": "iau-nor"
+  },
+  {
+   "day": "2027-11-21",
+   "questId": "pack-real-adventure-05-q064",
+   "gridRevision": 2,
+   "constellationId": "iau-gru"
+  },
+  {
+   "day": "2027-11-22",
+   "questId": "base-q108",
+   "gridRevision": 0,
+   "constellationId": "real-13"
+  },
+  {
+   "day": "2027-11-23",
+   "questId": "pack-real-adventure-06-q046",
+   "gridRevision": 2,
+   "constellationId": "iau-scl"
+  },
+  {
+   "day": "2027-11-24",
+   "questId": "pack-real-adventure-07-q071",
+   "gridRevision": 2,
+   "constellationId": "iau-car"
+  },
+  {
+   "day": "2027-11-25",
+   "questId": "base-q076",
+   "gridRevision": 0,
+   "constellationId": "real-10"
+  },
+  {
+   "day": "2027-11-26",
+   "questId": "pack-real-adventure-06-q082",
+   "gridRevision": 1,
+   "constellationId": "iau-nor"
+  },
+  {
+   "day": "2027-11-27",
+   "questId": "pack-real-adventure-07-q006",
+   "gridRevision": 2,
+   "constellationId": "iau-pyx"
+  },
+  {
+   "day": "2027-11-28",
+   "questId": "pack-real-adventure-06-q069",
+   "gridRevision": 1,
+   "constellationId": "iau-tel"
+  }
+ ]
+}
