@@ -179,8 +179,8 @@ identité, durée de conservation ou interface d’administration.
 | Indicateur | Signal et unité |
 | --- | --- |
 | Clics « Inviter des amis » | Événement existant `share_result` avec `share_action=invite_clicked`. Compte des clics observés, annulations comprises. Ce sous-type conserve la règle de purge à 90 jours des interactions de partage. |
-| Découverte | La page conserve son HTML statique sans télémétrie. Si les logs o2switch existants conservent la query string, compter les requêtes GET 200/304 vers `/decouvrir.html` avec une paire UTM permise. Ce volume inclut potentiellement des aperçus de robots et des rechargements. En l’absence de ces logs, la mesure est indisponible. |
-| Ouverture du jeu | `app_opened` avec `acquisition_channel` uniquement quand le navigateur transmet le référent de découverte de la même origine, UTM permis inclus. Unité du rapport : session de navigateur pseudonyme et canal. |
+| Découverte | La page conserve son HTML statique sans télémétrie. Si les logs o2switch existants conservent la query string, compter les requêtes GET 200/304 vers `/decouvrir.html` ou `/discover.html` avec une paire UTM permise. Ce volume inclut potentiellement des aperçus de robots et des rechargements. En l’absence de ces logs, la mesure est indisponible. |
+| Ouverture du jeu | `app_opened` avec `acquisition_channel` uniquement quand le navigateur transmet le référent de découverte FR ou EN de la même origine, UTM permis inclus. Unité du rapport : session de navigateur pseudonyme et canal. |
 | Début et réussite de la quête 1 | `attempt_started` et `attempt_completed` du catalogue en mode campagne, dans la session et le canal de l’ouverture observée et dans les 30 minutes suivantes. Une réussite n’est comptée qu’après un début observé et avec `first_completion=true`. |
 
 Paires permises : `player_share/referral` (Partager un résultat),
@@ -194,6 +194,7 @@ l’ouverture porte le canal `challenge_link`, jamais l’identifiant opaque du
 défi. La tentative de défi elle-même reste hors tunnel. La copie simple garde l’URL canonique sans paramètre. Seul le
 nom de canal issu de la liste est transmis. Le référent, ses autres paramètres
 et les URLs complètes ne partent jamais dans les événements d’acquisition.
+Les liens statiques de changement de langue mènent aux URL canoniques. Une campagne arrivée sur une page puis passée par ce lien ne garde pas ses paramètres.
 L’attribution reste dans le document du jeu qui reçoit le référent, sans
 identifiant de campagne persistant, rapprochement par compte ni suivi entre
 appareils. Les débuts de défi, rejeux, autres quêtes et affichages de grille

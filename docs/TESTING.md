@@ -327,6 +327,12 @@ strict catalogue suites remain required.
 
 ## Optional first welcome/story — #532
 
+Discovery (#754) uses `landing-seo-tests.mjs` for reciprocal language metadata,
+local links, catalogue counts, social images and the publication lists.
+`landing-browser-tests.mjs` checks mobile and desktop layout, language link
+focus and campaign attribution from both localized pages. `acquisition-tests.mjs`
+keeps the existing origin, consent and UTM restrictions.
+
 `node scripts/locale-tests.mjs` covers ordered device languages, explicit and
 automatic preferences, restricted storage, missing keys and placeholders, and
 number, currency, date and plural formatting, including a partial German fixture.
