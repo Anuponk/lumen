@@ -9,7 +9,7 @@ RELEASES="${HOME}/lumen-releases"
 LOCK="${HOME}/.lumen-auto-release.lock"
 LOG_PREFIX="[lumen-release]"
 case "$MODE" in --prepare|--activate|--rollback) ;; *) echo "Usage: $0 --prepare|--activate|--rollback SHA" >&2; exit 2;; esac
-for cmd in git curl python3 flock mktemp install readlink; do
+for cmd in git curl python3 flock mktemp install readlink cmp; do
  command -v "$cmd" >/dev/null || { echo "Missing dependency: $cmd" >&2; exit 1; }
 done
 mkdir -p "$RELEASES"
@@ -67,8 +67,8 @@ if [[ "$MODE" != "--rollback" ]]; then
     install -m 644 "$asset" "$TMP/$asset"
   done
   # Publish only reviewed public pages; older revisions can omit them.
-  for page in mentions-legales.html confidentialite.html cgv.html supprimer-compte.html decouvrir.html comment-jouer.html apprendre-constellations.html robots.txt sitemap.xml; do
-    if [[ -f "$page" ]]; then install -m 644 "$page" "$TMP/$page"; fi
+  for page in mentions-legales.html confidentialite.html cgv.html supprimer-compte.html decouvrir.html comment-jouer.html apprendre-constellations.html constellations/index.html robots.txt sitemap.xml; do
+    if [[ -f "$page" ]]; then install -D -m 644 "$page" "$TMP/$page"; fi
   done
   for dir in src content; do
     [[ -d "$dir" ]] || { echo "Missing $dir"; exit 1; }
@@ -96,7 +96,11 @@ fi
 ln -s "$RELEASES/$SHA" "$TARGET.next.$$"
 mv -Tf "$TARGET.next.$$" "$TARGET"
 # Lightweight post-activation smoke test. Revert symlink on an HTTP failure.
-if ! curl -fsS --retry 2 --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/?release=$SHA" | grep -q 'src/'; then
+if ! curl -fsS --retry 2 --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/?release=$SHA" | grep -q 'src/' || {
+  [[ -f "$RELEASES/$SHA/constellations/index.html" ]] &&
+  ! curl -fsSL --max-redirs 2 --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/constellations?release=$SHA" |
+    cmp -s - "$RELEASES/$SHA/constellations/index.html"
+}; then
   echo "HTTP smoke test failed. Restoring previous release $CURRENT" >&2
   ln -s "$CURRENT" "$TARGET.rollback.$"
   mv -Tf "$TARGET.rollback.$" "$TARGET"

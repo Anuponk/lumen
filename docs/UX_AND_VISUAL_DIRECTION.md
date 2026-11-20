@@ -297,6 +297,14 @@ Every constellation, including canonical-only entries such as Dauphin, uses the 
 
 Selecting an unlocked constellation opens its detail in the same sheet: quests, performance badges and stars, with a **Toutes les constellations** back button. Touching a completed quest opens its **bilan** (#695): the read-only review described under the victory screen. Its « ↻ Rejouer » keeps the previous replay behavior, including the badge cooldown dialog. Mes défis stays reachable from the main sheet. Keyboard navigation is contained in the modal, Escape closes the appropriate notice/sheet, and notices restore focus. Long current-quest labels truncate on mobile so Mon ciel remains reachable.
 
+Fiches des constellations (#853). An independent information button on each
+overview card and beside the constellation name in its detail opens the same
+modal. Closing with the explicit button or Escape returns keyboard focus to the
+trigger. The selector inside the modal gives offline access to all educational
+entries, including those in locked Adventures. Reading a fiche does not open a
+constellation or grant access to its quests. The information controls stay hidden
+during the existing introductory sky tour.
+
 Browsing and progression are separate: opening Mon ciel from a board or its victory returns to that played quest's Adventure, constellation and page. Its stable constellation identity takes priority over a dormant legacy index or an earlier browsing choice. Explicit teaching destinations remain supported. Consulting a previous Adventure does not change the board, current attempt, unlocked quest or rewards. A refreshed access model must invalidate an inaccessible viewed Adventure and return to an accessible view. Browsing preference is intentionally not persisted across reloads.
 
 The first guided visit after quest 2 now teaches five real zones in order: Ciels/Aventures, constellations, quests, performances, constellation drawing. Each step reveals the corresponding overview/detail pane. The first tour cannot be skipped by closing the sheet or touching the backdrop; only its final step offers **Jouer la quête 3**.

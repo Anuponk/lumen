@@ -9,10 +9,10 @@ LOCK="${HOME}/.lumen-cron-publish.lock"
 MODE="${1:---deploy}"
 REQUESTED_SHA="${2:-}"
 # Closed list: historical revisions may predate these public pages.
-PUBLIC_PAGES=(mentions-legales.html confidentialite.html cgv.html supprimer-compte.html decouvrir.html comment-jouer.html apprendre-constellations.html robots.txt sitemap.xml)
+PUBLIC_PAGES=(mentions-legales.html confidentialite.html cgv.html supprimer-compte.html decouvrir.html comment-jouer.html apprendre-constellations.html constellations/index.html robots.txt sitemap.xml)
 [[ $# -le 2 && ( "$MODE" == "--deploy" || "$MODE" == "--dry-run" ) ]] || { echo "Usage: $0 [--deploy|--dry-run] [SHA]"; exit 2; }
 [[ -z "$REQUESTED_SHA" || "$REQUESTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid requested SHA" >&2; exit 2; }
-for cmd in git python3 flock cp tar mktemp curl cmp; do command -v "$cmd" >/dev/null || { echo "Missing $cmd" >&2; exit 1; }; done
+for cmd in git python3 flock cp tar mktemp curl cmp install; do command -v "$cmd" >/dev/null || { echo "Missing $cmd" >&2; exit 1; }; done
 exec 9>"$LOCK"
 if [[ -n "$REQUESTED_SHA" ]]; then
  flock -w 120 9 || { echo "Publish lock timed out" >&2; exit 1; }
@@ -135,6 +135,7 @@ if [[ ! -d "$RELEASE" ]]; then
  done
  for page in "${PUBLIC_PAGES[@]}"; do
    if git cat-file -e "$SHA:$page" 2>/dev/null; then
+     mkdir -p -- "$(dirname "$TMP/$page")"
      git show "$SHA:$page" > "$TMP/$page"
    fi
  done
@@ -208,10 +209,16 @@ if [[ -f "$RELEASE/admin/.htaccess" ]]; then
  cp -p "$RELEASE/admin/.htaccess" "$TARGET/admin/.htaccess"
 fi
 for page in "${PUBLIC_PAGES[@]}"; do
+ if [[ "$page" == */* ]]; then
+  page_dir="${page%/*}"
+  [[ ! -L "$TARGET/$page_dir" && ! -L "$TARGET/$page" ]] || { echo "Refusing symlinked public page $page" >&2; false; }
+ fi
  if [[ -f "$RELEASE/$page" ]]; then
+  if [[ "$page" == */* ]]; then install -d -m 755 "$TARGET/$page_dir"; fi
   cp -p "$RELEASE/$page" "$TARGET/$page"
  else
   rm -f -- "$TARGET/$page"
+  if [[ "$page" == */* && -d "$TARGET/$page_dir" ]]; then rmdir -- "$TARGET/$page_dir" 2>/dev/null || true; fi
  fi
 done
 # Publish DAL without deleting other applications' existing associations.
@@ -239,7 +246,12 @@ if [[ -f "$RELEASE/admin/.htaccess" ]]; then
 fi
 for page in "${PUBLIC_PAGES[@]}"; do
  if [[ -f "$RELEASE/$page" ]]; then
-  curl -fsS --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/$page?release=$SHA" | cmp -s - "$RELEASE/$page"
+  if [[ "$page" == */index.html ]]; then
+   public_url="${page%/index.html}"
+   curl -fsSL --max-redirs 2 --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/$public_url?release=$SHA" | cmp -s - "$RELEASE/$page"
+  else
+   curl -fsS --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/$page?release=$SHA" | cmp -s - "$RELEASE/$page"
+  fi
  fi
 done
 # A broken/forbidden DAL must roll back the publication, not strand a CCT fallback.

@@ -2,6 +2,9 @@
 // the catalogue so that a content change cannot silently make them false.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { gzipSync } from 'node:zlib';
+import { CONSTELLATION_FACTS } from '../src/campaign/constellation-facts.js';
+import { renderConstellations } from './render-constellations.mjs';
 import {CONTENT_PACKS,CONTENT_CONSTELLATIONS} from '../src/campaign/content.js';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 
@@ -89,16 +92,41 @@ const howTo=read('comment-jouer.html');
  assert(learn.includes('href="/comment-jouer.html"')&&learn.includes('href="/decouvrir.html"')&&page.includes('href="/apprendre-constellations.html"'),'Cross-links');
  assert(learn.includes('<a class="play" href="/">Jouer gratuitement</a>'),'Play CTA');
 }
+// #855: the public directory is generated from the offline data without runtime fetching.
+const publicDirectory=read('constellations/index.html').replace(/\r\n/g,'\n');
+assert.equal(publicDirectory,renderConstellations(),'Regenerate via node scripts/render-constellations.mjs');
+assert.equal((publicDirectory.match(/<h1>/g)||[]).length,1);
+assert.match(publicDirectory,/<h1>Les 88 constellations du ciel<\/h1>/);
+assert.match(publicDirectory,/<title>Les 88 constellations du ciel — Lumen<\/title>/);
+const directoryDescription=meta(publicDirectory,'name','description');
+assert(directoryDescription&&directoryDescription.length>=70&&directoryDescription.length<=170);
+assert.match(publicDirectory,/<link rel="canonical" href="https:\/\/lumen\.nopuna\.fr\/constellations\/">/);
+assert.equal(meta(publicDirectory,'property','og:url'),'https://lumen.nopuna.fr/constellations/');
+assert.doesNotMatch(publicDirectory,/noindex/i);
+const ids=[...publicDirectory.matchAll(/<article class="constellation-entry" id="([^"]+)">/g)].map(m=>m[1]);
+assert.deepEqual(ids,[...CONSTELLATION_FACTS].sort((a,b)=>a.name.localeCompare(b.name,'fr',{sensitivity:'base'})).map(f=>f.id));
+assert.equal(ids.length,88);
+assert.equal(new Set(ids).size,88);
+for(const field of ['Pourquoi ce nom','Le savais-tu','Surface apparente','Rang par taille']) {
+ assert.equal(publicDirectory.split('<dt>'+field).length-1,88,field+' is in the initial HTML');
+}
+assert.doesNotMatch(publicDirectory,/<img\b|<iframe\b/);
+assert.match(publicDirectory,/<a class="play" href="\/">Découvrir les constellations en jouant à Lumen<\/a>/);
+assert(page.includes('href="/constellations/"')&&read('apprendre-constellations.html').includes('href="/constellations/"'));
+assert.deepEqual([...publicDirectory.matchAll(/<script\b[^>]*>/g)].map(m=>m[0]),['<script src="/src/landing/constellations.js" type="module">']);
+assert(gzipSync(publicDirectory).length<48*1024,'Compressed HTML is under 48 KiB');
+assert(read('src/landing/constellations.css').length+read('src/landing/constellations.js').length<8*1024,'Search JS and directory-specific CSS stay lightweight');
+
 // robots.txt and sitemap.
 assert.match(robots,/^User-agent: \*$/m);assert.match(robots,/^Disallow: \/admin\/$/m);
 assert.doesNotMatch(robots,/Disallow: \/src\//,'Never hide the code and styles Google needs to render the game');
 assert.match(robots,/^Sitemap: https:\/\/lumen\.nopuna\.fr\/sitemap\.xml$/m);
 const locs=[...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m=>m[1]);
-assert.deepEqual(locs,['https://lumen.nopuna.fr/','https://lumen.nopuna.fr/decouvrir.html','https://lumen.nopuna.fr/comment-jouer.html','https://lumen.nopuna.fr/apprendre-constellations.html']);
-for(const l of locs){const path=new URL(l).pathname;assert(fs.existsSync(path==='/'?'index.html':path.slice(1)),'Sitemap URL exists: '+l)}
+assert.deepEqual(locs,['https://lumen.nopuna.fr/','https://lumen.nopuna.fr/decouvrir.html','https://lumen.nopuna.fr/comment-jouer.html','https://lumen.nopuna.fr/apprendre-constellations.html','https://lumen.nopuna.fr/constellations/']);
+for(const l of locs){const path=new URL(l).pathname;assert(fs.existsSync(path.endsWith('/')?path.slice(1)+'index.html':path.slice(1)),'Sitemap URL exists: '+l)}
 
 // Every new public file is published and verified by both release paths.
-for(const file of ['decouvrir.html','comment-jouer.html','apprendre-constellations.html','robots.txt','sitemap.xml']){
+for(const file of ['decouvrir.html','comment-jouer.html','apprendre-constellations.html','constellations/index.html','robots.txt','sitemap.xml']){
  assert.match(read('scripts/o2switch-cron-publish.sh'),new RegExp('PUBLIC_PAGES=\\([^)]*'+file.replace('.','\\.')),'Cron publisher: '+file);
  assert.match(read('scripts/o2switch-safe-release.sh'),new RegExp('for page in [^;]*'+file.replace('.','\\.')),'Safe release: '+file);
  assert.match(read('scripts/o2switch-deploy-tests.py'),new RegExp('PUBLIC_PAGES = \\([^)]*"'+file.replace('.','\\.')+'"'),'Deploy tests: '+file);
