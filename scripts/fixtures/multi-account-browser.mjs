@@ -15,13 +15,16 @@ const setSession=(event,session)=>{window.__server.session=session;window.__save
 const refuse=(name,args)=>{window.__server.refused.push({name,expected:args?.p_expected_user_id??null,session:uid()});window.__saveServer();return {data:null,error:{code:'42501',message:'account changed'},status:403}};
 const stable=value=>value&&typeof value==='object'&&!Array.isArray(value)?Object.fromEntries(Object.keys(value).sort().map(key=>[key,stable(value[key])])):Array.isArray(value)?value.map(stable):value;
 window.supabase={createClient(){return {auth:{
- getSession:async()=>{await new Promise(r=>setTimeout(r,150));return {data:{session:window.__server.session}}},
+ // #847: fixtureNetworkDown simulates an unreachable backend while navigator.onLine stays true:
+ // '1' = expired token refresh and RPCs fail, 'rpc' = valid token but RPCs fail, 'hang' = RPCs never answer.
+ getSession:async()=>{await new Promise(r=>setTimeout(r,150));if(sessionStorage.getItem('fixtureNetworkDown')==='1')return {data:{session:null},error:{name:'AuthRetryableFetchError',message:'Failed to fetch',status:0}};return {data:{session:window.__server.session}}},
  onAuthStateChange(fn){callback=fn},
  signInWithPassword:async({email})=>{const id=String(email).split('@')[0];if(!window.__server.accounts[id])return {data:null,error:{message:'Invalid login credentials'}};const session={user:{id}};setSession('SIGNED_IN',session);return {data:{session},error:null}},
  signOut:async()=>{setSession('SIGNED_OUT',null);return {error:null}},
  updateUser:async()=>({error:null}),verifyOtp:async()=>({error:null})
 },rpc:async(name,args={})=>{
  if(window.__rpcDelay)await new Promise(r=>setTimeout(r,window.__rpcDelay)); // 4G-like latency.
+ {const down=sessionStorage.getItem('fixtureNetworkDown');window.__networkCalls=(window.__networkCalls||0)+(down?1:0);if(down==='hang')return new Promise(()=>{});if(down)return {data:null,error:{message:'TypeError: Failed to fetch',details:'',hint:'',code:''},status:0};}
  if(!uid())return {data:null,error:{code:'PGRST301',message:'JWT required'},status:401};
  if(Object.hasOwn(args,'p_expected_user_id')&&args.p_expected_user_id!==uid())return refuse(name,args);
  const a=account();

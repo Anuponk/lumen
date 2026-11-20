@@ -1,6 +1,7 @@
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "./config.js";
 import {baseCampaignQuestCount} from "../campaign/content.js";
 import {classifyAuthLinkError} from "./auth-link-result.js";
+import {isNetworkFailure} from "./cloud-profile.js";
 export function createCloudPersistence(model,hooks,environment){
 const {activeGameSeconds,exactSkyScoreForSolvedPrefix,saveLumenProgress,refreshJourney,init,onAccountChanged=()=>{},renderDaily}=hooks;
 const campaignQuestCount=()=>Math.max(0,Number(hooks.campaignQuestCount?.()??baseCampaignQuestCount()));
@@ -170,7 +171,7 @@ async function initLumenCloud(){
  if(snapshotRevision===revision&&!error){model.lumenUser=data.session?.user||null;onAccountChanged({type:"account"})}
  // One verdict per opened link, once the real session is known.
  if(linkResult)onAccountChanged({type:"auth_link",result:linkResult});
- if(error){console.warn("LUMEN session restore",error);onAccountChanged({type:"restore_failed"});return}
+ if(error){console.warn("LUMEN session restore",error);onAccountChanged({type:"restore_failed",network:isNetworkFailure(error,error?.status)});return}
  const accountId=model.lumenUser?.id;
  if(model.lumenUser){await registerLumenUser();await loadLumenProfile();await loadEntitlements();await loadInternalCapabilities();if(model.lumenUser?.id!==accountId)return;if(!cloudWritesDisabled() && !(await hooks.holdLegacyMergeForFullRestore?.())){await cloudMergeProgress();await cloudMergeDaily();}await hooks.afterAuthCloudSync?.();}else {model.lumenEntitlements=[];model.lumenCapabilities=[];}
 }

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {networkContext,withNetworkContext} from './fixtures/network-context.mjs';
 import test from 'node:test';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -8,7 +9,7 @@ const marker='afterAuthCloudSync:async()=>{',start=source.indexOf(marker)+marker
 for(const change of ['account','client','generation','logout','none'])test('late rejected restore with '+change+' preserves the current session',async()=>{
  const events=[],calls=[],raw=JSON.stringify({solved:{},badges:{},shards:3});let ctx;
  const replacement={reason:'replacement'};
- ctx=vm.createContext({qaActive:false,lumenUser:{id:'a'},lumenSupabase:{},cloudHydrationGeneration:0,
+ ctx=vm.createContext({...networkContext(),qaActive:false,lumenUser:{id:'a'},lumenSupabase:{},cloudHydrationGeneration:0,
   canonicalRecoveryContext:null,canonicalRecovery:{cancel(){}},cloudProfileReady:true,cloudProfileBaseline:{},cloudProfileFailure:null,
   sessionStorage:{getItem:()=>null},localStorage:{getItem:key=>key==='lumenProgressV1'?raw:key==='lumenCloudOwnerId'?'a':null},
   recordCloudDiagnostic:event=>events.push(event),hydrationFailureDiagnostic,updateAuthUI:()=>calls.push('auth'),console:{warn(){}},

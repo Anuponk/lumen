@@ -30,11 +30,12 @@ async function assertHelpPlacement(cardId,buttonId,safeBottom=0){
   const card=document.getElementById(${JSON.stringify(cardId)}).getBoundingClientRect(),board=document.getElementById('board').getBoundingClientRect();
   const button=document.getElementById(${JSON.stringify(buttonId)}),close=button.getBoundingClientRect();
   const actions=document.querySelector('.actions').getBoundingClientRect(),viewportBottom=(visualViewport?.offsetTop??0)+(visualViewport?.height??innerHeight);
-  return {boardBottom:board.bottom,cardTop:card.top,cardBottom:card.bottom,viewportBottom,closeHeight:close.height,
+  return {boardBottom:board.bottom,boardLeft:board.left,boardRight:board.right,cardLeft:card.left,cardRight:card.right,cardTop:card.top,cardBottom:card.bottom,viewportBottom,closeHeight:close.height,
    closeHit:button.contains(document.elementFromPoint((close.left+close.right)/2,(close.top+close.bottom)/2)),
    closeBottom:close.bottom,overlapsCommands:card.top<actions.bottom&&card.bottom>actions.top&&card.left<actions.right&&card.right>actions.left};
  })()`);
- assert(placement.cardTop>=placement.boardBottom-0.1,'Assistance must start below every cell: '+JSON.stringify(placement));
+ // Below the grid in portrait; beside it in the short-landscape two-column layout (#830).
+ assert(placement.cardTop>=placement.boardBottom-0.1||placement.cardRight<=placement.boardLeft+0.1||placement.cardLeft>=placement.boardRight-0.1,'Assistance never covers a cell: '+JSON.stringify(placement));
  assert(placement.cardBottom<=placement.viewportBottom-safeBottom+0.1,'Assistance fits inside the safe viewport: '+JSON.stringify(placement));
  assert(placement.closeBottom<=placement.cardBottom+0.1&&placement.closeHeight>=44&&placement.closeHit,'Dismiss control is visible and operable: '+JSON.stringify(placement));
  assert(placement.overlapsCommands,'Assistance can use the space occupied by commands: '+JSON.stringify(placement));

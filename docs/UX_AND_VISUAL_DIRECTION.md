@@ -389,7 +389,9 @@ Milestone dialogs must respect `hidden` even when their visible layout uses `dis
 ### Sans erreur feedback rule
 Sans erreur must never become an implicit correctness assistant. A wrong Guardian may be tracked internally as pending, but the UI must not change its color, sound, message, haptics or badge-state indicator. If the player removes or immediately undoes that Guardian before another logical board mutation, the pending error disappears. Otherwise it becomes a committed error for that badge run.
 
-Campaign/replay Reset deliberately gives the player a fresh badge run and restarts its timer/assistance/error state. Social challenge Reset is different: the challenge remains the same one-shot attempt and keeps elapsed time, assistance and committed errors.
+Reset only clears the placements, in every mode (#851): elapsed time, assistance and committed errors stay counted, as stated by its confirmation. « Rejouer » is the only fresh run. On the result screen, the private record and the best ranked time are shown side by side when they differ (« Record personnel : 0:54 · Meilleur temps classé : 1:11 »), with the current run's proven status: confirmed, not better than the ranked best, outside the 15-minute window, not qualifying, or pending. No cause is invented.
+
+On a short landscape screen (height ≤ 500 px, e.g. iPhone Safari with its bars) the game uses two columns: information and controls on the left, the grid on the right, sized to the real height (#830).
 
 
 ## End-of-campaign celebration

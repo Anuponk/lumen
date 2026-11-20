@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {networkContext,withNetworkContext} from './fixtures/network-context.mjs';
 import assert from 'node:assert/strict';
 import {createCanonicalVictoryOutbox,replayCanonicalVictoryOutbox} from '../src/persistence/canonical-outbox.js';
 import {readFileSync} from 'node:fs';
@@ -27,7 +28,7 @@ function prepareContext(ctx){
  ctx.localCalendarDay??=()=> '2026-10-22';
  ctx.questFailed??=false;
  ctx.hintUsedInAttempt??=()=>!!ctx.usedHintThisGame||(ctx.attemptEngine?.snapshot()?.helpUses?.hint||0)>0;
- vm.createContext(ctx);
+ vm.createContext(withNetworkContext(ctx));
  vm.runInContext(functionSource(readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8'),'capturedTiming'),ctx);
  return ctx;
 }

@@ -150,11 +150,13 @@ test('victory podium: failed or pending sync shows a pending state, ineligible i
   assert.match(text(v3.root), /record personnel est bien enregistré/);
 });
 
-test('wiring #761: badge/ranking qualification is re-evaluated at run start and reset', () => {
+test('wiring #761/#851: qualification is decided at run start; a reset keeps the run', () => {
   const source = fs.readFileSync('src/ui/game-screen.js', 'utf8');
   const start = source.slice(source.indexOf('function ensureAttemptStarted('), source.indexOf('attemptEngine.start();', source.indexOf('function ensureAttemptStarted(')));
   assert.match(start, /!a\.qualifying&&!socialChallenge&&currentBadgeQualification\(\)\)\{a=attemptEngine\.requalify\(true\)/);
-  assert.match(source, /attemptEngine\.reset\(state,socialChallenge\?\{\}:\{qualifying:!!resetSnapshot\?\.qualifying\|\|currentBadgeQualification\(\)\}\)/);
+  assert.match(source, /attemptEngine\.reset\(state\);/);
+  assert.match(source, /Réinitialiser la grille \? Tes placements seront effacés, mais le chrono, les aides et les erreurs resteront comptabilisés\./);
+  assert.doesNotMatch(source, /hintUsesThisGame=0;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;questFailed=false;updateHintButton/);
 });
 
 test('#784: immediate canonical neighbours cross constellations and owned adventures without writes',()=>{
@@ -266,4 +268,44 @@ test('#784: a swipe consumes only its compatibility click, never the next tap',(
  pointer('pointermove',220,100);
  pointer('pointerup',215,100);
  events.click(click);assert.equal(consumed,4,'A captured drag under the navigation threshold cannot click the backdrop');
+});
+
+// #851: record personnel 0:54, podium 1:11. The current run's refusal is
+// explained by its proven cause, and the two times are shown side by side.
+async function rankedOutcome({begin,finish,qualifying=true}){
+  const data=new Map(),storage={get length(){return data.size},key:i=>[...data.keys()][i],getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};
+  const connection={async rpc(name){
+    if(name==='lumen_ranking_begin')return {data:begin};
+    if(name==='lumen_ranking_finish')return {data:{questId:quest.id,...finish}};
+    if(name==='lumen_ranking_board')return {data:{top:[{position:1,place:1,nickname:'Anupon',score:58},{position:2,place:2,nickname:'Loutre',score:71,mine:true}],personal:{position:2,place:2,score:71,mine:true},participating:true}};
+    return {data:null};
+  }};
+  const context=()=>({owner:'owner',client:connection}),client=createRankingClient({storage,getContext:context});
+  client.stage(quest,{rankingVersion:1,startedAt:1,mode:'campaign',attemptId:'run',runSegment:0,resetCount:3,qualifying});
+  const view=createRankingView({client,getContext:context,format,document:fakeDocument()});
+  view.show(quest,'run-reset-0',{personalBest:54});await new Promise(r=>setTimeout(r,0));
+  const text=e=>[e.textContent,...(e.children||[]).map(text)].join(' ');
+  return text(view.root);
+}
+test('#851: a run begun inside the 15-minute window is explained, never shown as the podium result', async () => {
+  const shown=await rankedOutcome({begin:{eligible:false},finish:{status:'ineligible',improved:false}});
+  assert.match(shown,/Record personnel : 0:54/);
+  assert.match(shown,/Meilleur temps classé : 1:11/);
+  assert.match(shown,/15 min minimum entre deux essais classés/);
+});
+test('#851: a non-qualifying run names that cause, not the ranking window', async () => {
+  const shown=await rankedOutcome({begin:{eligible:true},finish:{status:'ineligible',improved:false},qualifying:false});
+  assert.match(shown,/n’était pas qualifiant/);
+  assert.doesNotMatch(shown,/15 min minimum entre deux essais classés/);
+});
+test('#851: a confirmed run that does not beat the ranked best says so', async () => {
+  const shown=await rankedOutcome({begin:{eligible:true},finish:{status:'confirmed',improved:false}});
+  assert.match(shown,/ne bat pas ton meilleur temps classé/);
+});
+test('#851: the client never invents a cause the server did not prove', async () => {
+  const {rankingReason}=await import('../src/persistence/ranking.js');
+  assert.equal(rankingReason({status:'ineligible'},{eligible:true},{qualifying:true}),'unknown');
+  assert.equal(rankingReason({status:'ineligible'},{eligible:false},{qualifying:false}),'cooldown');
+  assert.equal(rankingReason({status:'confirmed',improved:true},{eligible:true},{}),'improved');
+  assert.equal(rankingReason({status:'pending'},{eligible:true},{}),null);
 });

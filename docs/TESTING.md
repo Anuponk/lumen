@@ -2518,3 +2518,43 @@ attempt and pending commands across an in-place update. The native JVM policy
 tests and debug launcher smoke run in Android packaging CI. Web updates remain
 covered by `scripts/app-updates-tests.mjs`. Android launcher copy is displayed
 before the TWA and has no impact on onboarding steps or gameplay.
+
+### Chantier 3 — offline, performances, mobile (#847, #851, #828, #830, #829)
+
+- `offline-network-browser-tests.mjs` (Chrome, synthetic accounts): verified
+  hydration writes the offline proof; airplane cold start and second restart;
+  Auth refresh, RPC failure and silent backend while `navigator.onLine` is true;
+  reconnection; another stored identity and a missing proof stay on the explicit
+  offline screen with data untouched; no server write while unreachable.
+- `attempt-engine-tests.mjs`, `official-time-tests.mjs`, `quest-review-tests.mjs`
+  and the in-app `runHintTests()` case: reset keeps time, aids, errors,
+  qualification and run identity; legacy attempts keep their begun id; refusal
+  causes and the record/ranked comparison on the result screen.
+- `hint-catalogue-audit-tests.mjs`: all published quests solved by the hint
+  engine from empty, with and without automatic marking; quest 23 completed
+  grid; no internal solver message.
+- `landscape-layout-browser-tests.mjs`: 844×340, 844×390, 667×320, 932×430
+  landscape, plus portrait and desktop: whole grid and controls visible, no
+  overlap, no page scroll.
+- `webkit-smoke-tests.mjs` (Playwright WebKit, non-blocking workflow
+  `webkit-smoke.yml`, manual + nightly, about 4 s of tests locally): portrait
+  quest, tap, hint, both landscapes, offline guest reload when a service worker
+  is available. Not a substitute for Safari on a real iPhone.
+
+Manual acceptance:
+1. Android (Chrome or Play app), signed in: play online until « Progression
+   synchronisée », airplane mode, close and reopen: the game opens (« hors
+   connexion »), play and win a quest, reopen still offline, reconnect: the
+   victory syncs once. Diagnostic: account menu → Diagnostic de synchronisation.
+2. Wi-Fi without Internet (router unplugged): same as 1, the screen must not stay
+   on « Chargement de ton ciel… » beyond about 25 s.
+3. Reset: start a quest, use a hint, reset (read the confirmation), finish: the
+   time and the +15 s remain; the result shows the ranked verdict. Replay after
+   15 min: new run, ranked if better.
+4. Quest 23 on iPhone: finish the grid while the account restores, then press
+   Indice: the victory is validated, never a technical message.
+5. iPhone Safari portrait then landscape (bars visible), quest 36: grid and the
+   three buttons visible, no overlap; rotate twice.
+6. Android edge gesture (#821): swipe from each screen edge on a running quest,
+   inside the grid, on the ranking podium and between results. Record whether
+   the system Back preview appears (Android setting « Navigation par gestes »).

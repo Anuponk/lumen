@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {networkContext,withNetworkContext} from './fixtures/network-context.mjs';
 import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import vm from 'node:vm';
@@ -76,7 +77,7 @@ function fixture({cloud=null,owner=null,offline=false,failVerification=false,swi
   }
   throw Error('Unexpected RPC '+name);
  }};
- const ctx=vm.createContext({cloudHydrationGeneration:0,...profiles,...guestAccount,structuredClone,currentCatalogueOrigin,
+ const ctx=vm.createContext({...networkContext(),cloudHydrationGeneration:0,...profiles,...guestAccount,structuredClone,currentCatalogueOrigin,
   qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,lumenProgress:structuredClone(local),localStorage:storage,
   sequentialSolvedCount:0,normalizeSequentialProgress:()=>Object.keys(remote?.solved||{}).length,
   sessionStorage:{getItem:()=>null},canonicalRecoveryContext:null,canonicalRecovery:{cancel:noop,schedule:noop},

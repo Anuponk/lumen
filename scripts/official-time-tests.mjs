@@ -20,7 +20,8 @@ now=60000;a.recordAssistanceUse('verify',1);a.recordAssistanceUse('guided',1);as
 a.recordAssistanceUse('hint',1);assert.equal(a.officialSeconds(),85,'duplicate cumulative assistance is idempotent');
 const b=createAttemptEngine(options);b.restore();assert.equal(b.officialSeconds(),85);b.resume();now+=2000;assert.equal(b.officialSeconds(),87);
 assert.equal(aidEvents.length,3,'Restore and duplicate count must never replay a penalty animation');
-b.reset();assert.equal(b.officialSeconds(),0);assert.equal(b.activeMs(),0);
+// #851 / #36: a grid reset keeps the official time and every aid penalty.
+b.reset();assert.equal(b.officialSeconds(),87,'Reset keeps time and penalties');now+=1000;assert.equal(b.officialSeconds(),88);
 const f={seconds:60,timing:{version:1,gridRevision:0,helpUses:{hint:5}}};
 const element={hidden:true,classList:{toggle(){}},textContent:''};
 for(const [prior,improved] of [[110,false],[150,true],[135,false]]){

@@ -1,5 +1,17 @@
 import {rankedTime} from '../campaign/ranking.js';
+import {attemptOperationId} from '../game/attempt-engine.js';
 // Separate, per-owner durable staging. Never writes the progression or wallet.
+// #851: only causes the client can prove. lumen_ranking_begin refuses solely on
+// the 15-minute window; finish also refuses a run not qualifying for badges.
+export function rankingReason(result,begin,staged){
+ if(result?.status==='ineligible'){
+  if(begin?.eligible===false)return 'cooldown';
+  if(staged?.qualifying===false)return 'not_qualifying';
+  return 'unknown';
+ }
+ if(result?.status==='confirmed')return result.improved?'improved':'not_better';
+ return null;
+}
 export function createRankingClient({storage,getContext,now=()=>Date.now(),currentGridRevision=null}={}){
  const prefix='lumenRankingPendingV1:',obsoletePrefix='lumenRankingObsoleteV1:',flights=new Map(),recent=new Map();
  // A run captured on a replaced board can never be accepted by the server.
@@ -27,7 +39,8 @@ export function createRankingClient({storage,getContext,now=()=>Date.now(),curre
   const promise=(async()=>{
    const begin=await rpc(c,'lumen_ranking_begin',{p_operation_id:entry.operationId,p_quest_id:entry.questId,p_grid_revision:entry.gridRevision,p_started_at:entry.startedAt});
    if(!entry.result){if(JSON.stringify(read(id))===JSON.stringify(entry))storage.removeItem(id);return begin}
-   const result=await rpc(c,'lumen_ranking_finish',{p_operation_id:entry.operationId,p_hint_uses:entry.result.hint,p_verify_uses:entry.result.verify});
+   const finished=await rpc(c,'lumen_ranking_finish',{p_operation_id:entry.operationId,p_hint_uses:entry.result.hint,p_verify_uses:entry.result.verify});
+   const result=finished&&typeof finished==='object'?{...finished,reason:rankingReason(finished,begin,entry.result)}:finished;
    // Terminal receipt only; pending/missing victory receipts stay durable.
    if(result?.status==='confirmed'||result?.status==='ineligible'){
     recent.set(id,result);if(recent.size>32)recent.delete(recent.keys().next().value);
@@ -38,14 +51,14 @@ export function createRankingClient({storage,getContext,now=()=>Date.now(),curre
  }
  function capture(quest,attempt){
   const c=context();if(!c.owner||!c.client||c.qa||attempt?.rankingVersion!==1||attempt.mode==='challenge'||!attempt.startedAt)return null;
-  const operationId=attempt.attemptId+'-reset-'+(attempt.resetCount||0),k=key(c.owner,operationId),existing=read(k);
+  const operationId=attemptOperationId(attempt),k=key(c.owner,operationId),existing=read(k);
   if(existing)return existing;
   return save({owner:c.owner,operationId,questId:quest.id,gridRevision:quest.gridRevision??0,startedAt:new Date(attempt.startedAt).toISOString(),createdAt:now()});
  }
  return {
   capture,
   async begin(quest,attempt){const e=capture(quest,attempt);return e?send(context(),e):null},
-  stage(quest,attempt){const e=capture(quest,attempt);if(!e)return null;const result={hint:attempt.helpUses?.hint??0,verify:(attempt.helpUses?.verify??0)+(attempt.helpUses?.guided??0)};rankedTime(0,result);return e.result?e:save({...e,result})},
+  stage(quest,attempt){const e=capture(quest,attempt);if(!e)return null;const result={hint:attempt.helpUses?.hint??0,verify:(attempt.helpUses?.verify??0)+(attempt.helpUses?.guided??0),qualifying:attempt.qualifying!==false};rankedTime(0,result);return e.result?e:save({...e,result})},
   async flush(){
    const c=context();if(!valid(c))return [];const out=[];let failure=null;
    // Each capture has its own immutable receipt. A refused older capture must

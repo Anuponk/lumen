@@ -8,6 +8,7 @@ export const nodeSuites=[
  'install-request-tests.mjs',
  'pwa-first-open-tests.mjs',
  'auth-link-recovery-tests.mjs',
+ 'hint-catalogue-audit-tests.mjs',
  'sales-terms-tests.mjs',
  'daily-streak-pause-tests.mjs',
  'credits-tests.mjs',

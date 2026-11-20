@@ -1,0 +1,48 @@
+name: WebKit smoke (non-blocking)
+
+# #829: critical iPhone paths on Playwright WebKit. Deliberately outside the
+# required pull-request gate until its duration and stability are measured.
+# A real iPhone (Safari and home-screen app) remains part of the acceptance.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 3 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  webkit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies and Playwright WebKit (pinned)
+        run: |
+          npm ci
+          npm install --no-save playwright-core@1.65.1
+          npx playwright-core install --with-deps webkit
+
+      - name: WebKit smoke tests
+        env:
+          LUMEN_WEBKIT_REQUIRED: '1'
+        run: node scripts/webkit-smoke-tests.mjs webkit-smoke.json
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: webkit-smoke
+          path: webkit-smoke.json
+          if-no-files-found: ignore

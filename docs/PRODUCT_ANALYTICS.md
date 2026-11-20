@@ -211,8 +211,8 @@ Active duration comes from the attempt engine, not wall-clock tab time.
 
 ## Events
 - `attempt_started`: first real board action.
-- `attempt_run_started`: fresh campaign/replay run after Reset.
-- `attempt_reset`: closes the current run and gives `next_run_index`.
+- `attempt_run_started`: emitted by releases before #851 for the fresh run after a Reset. Since #851 (20/11/2026) a Reset continues the same run, so this event is no longer emitted; historical rows remain.
+- `attempt_reset`: the player cleared the placements; since #851 the run continues and the event carries `reset_index` (formerly `next_run_index`).
 - `attempt_completed`: successful solve.
 - `attempt_abandoned`: explicit abandon.
 - `hint_used`, `verify_used`, `guided_intervention`, `auto_marking_enabled`: assistance detail.
