@@ -106,7 +106,9 @@ import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 import {createTranslator} from './i18n.js';
 import {learningCopy,learningIntro,lessonText} from './learning-copy.js';
 
-export function startGameScreen({localePreference,t=localePreference?.translator().t??createTranslator().t}={}){
+export function startGameScreen({localePreference,t:initialTranslation=localePreference?.translator().t??createTranslator().t}={}){
+let translate=initialTranslation;
+const t=(key,params)=>translate(key,params);
 function translateGameCopy(){
  if(localePreference)document.documentElement.lang=localePreference.locale;
  for(const node of document.querySelectorAll("[data-game-text]"))node.textContent=t(node.dataset.gameText);
@@ -1716,6 +1718,32 @@ function setupQaMode(){
  if(exit)exit.onclick=()=>{
    const url=new URL(location.href);url.searchParams.delete("qa");location.href=url.pathname+url.search+url.hash;
  };
+}
+function setupGameLocaleSetting(){
+ if(!localePreference)return;
+ const select=document.getElementById("gameLocaleMode");
+ for(const {code,nativeName} of localePreference.options){
+  const option=document.createElement("option");
+  option.value=code;option.lang=code;option.textContent=nativeName;select.append(option);
+ }
+ select.value=localePreference.mode;
+ if(select.selectedIndex<0)select.value="";
+ document.getElementById("gameLocaleSetting").hidden=false;
+ select.addEventListener("change",()=>{
+  if(!localePreference.setMode(select.value))return;
+  translate=localePreference.translator().t;
+  translateGameCopy();
+  LEARNING_INTRO=learningIntro(t);
+  updateHintButton();updateVerifyButton();
+  if(!state)return;
+  updateAttemptUI();updateLiveReward();
+  for(const label of board.querySelectorAll(".learning-territory-number"))
+   label.setAttribute("aria-label",t("board.territory",{number:Number(label.textContent)}));
+  if(!document.getElementById("scriptedLearn").hidden){
+   coachLayout=null;
+   renderLearningCopy(scriptedLearningActive()?currentLearningStep():null);
+  }
+ });
 }
 function setupRulesHelp(){
  const open=document.getElementById("tutorialHelp"),modal=document.getElementById("rulesModal"),close=document.getElementById("closeRulesModal"),replay=document.getElementById("replayLearning");
@@ -3940,32 +3968,6 @@ function dragCrossCellAt(x,y){
  const el=document.elementFromPoint(x,y)?.closest?.(".cell");
  if(!el||!board.contains(el))return null;
  return [Number(el.dataset.row),Number(el.dataset.col)];
-}
-function setupGameLocaleSetting(){
- if(!localePreference)return;
- const select=document.getElementById("gameLocaleMode");
- for(const {code,nativeName} of localePreference.options){
-  const option=document.createElement("option");
-  option.value=code;option.lang=code;option.textContent=nativeName;select.append(option);
- }
- select.value=localePreference.mode;
- if(select.selectedIndex<0)select.value="";
- document.getElementById("gameLocaleSetting").hidden=false;
- select.addEventListener("change",()=>{
-  if(!localePreference.setMode(select.value))return;
-  t=localePreference.translator().t;
-  translateGameCopy();
-  LEARNING_INTRO=learningIntro(t);
-  updateHintButton();updateVerifyButton();
-  if(!state)return;
-  updateAttemptUI();updateLiveReward();
-  for(const label of board.querySelectorAll(".learning-territory-number"))
-   label.setAttribute("aria-label",t("board.territory",{number:Number(label.textContent)}));
-  if(!document.getElementById("scriptedLearn").hidden){
-   coachLayout=null;
-   renderLearningCopy(scriptedLearningActive()?currentLearningStep():null);
-  }
- });
 }
 function appendCellMark(cell,shown){
  if(shown!==1&&shown!==2&&shown!==3)return;

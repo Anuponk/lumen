@@ -157,6 +157,11 @@ try {
   await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
   await evaluate("document.getElementById('closeRulesModal').click()");
   await until("document.getElementById('rulesModal').hidden");
+  await evaluate("document.getElementById('tutorialHelp').click()");
+  await selectMode('fr');
+  await evaluate("document.getElementById('replayIntroduction').click()");
+  await until("!!document.querySelector('.first-welcome:not([hidden]) .intro-caption:not([hidden])')");
+  assert.equal(await evaluate("document.querySelector('.first-welcome').getAttribute('aria-label')"), 'Lumen — Le réveil du ciel');
   // #688: opening the sign-up screen during a learning step.
   await freshGuest(390, 844);
   const title = await evaluate(`document.getElementById('scriptedLearnTitle').textContent.trim()`);
