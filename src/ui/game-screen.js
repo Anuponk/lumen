@@ -129,7 +129,6 @@ rememberPlayAppLaunch(window);
 let stripeCheckoutReturn=consumeCheckoutReturn(window);
 const {normalizeSequentialProgress,solvedCount,exactSkyScoreForSolvedPrefix,ensureSkyScore,skyStarsEarned,challengeRewardKeys,constellationProgress,constellationLitAt,awards,performanceRun,savePerformance}=createCampaign(()=>lumenProgress,()=>saveLumenProgress(),()=>({...capturedTiming(),activeGameSeconds,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted,qualifying:!!attemptEngine.snapshot()?.qualifying}),()=>canonicalQuestList());
 let verifiedOfflineOwnerId=null;
-let refreshAdventureOffer=null;
 // #847: the backend can be unreachable while navigator.onLine stays true (Wi-Fi
 // without Internet, data without signal, TWA). Such a verified transport failure
 // counts as offline; it never authenticates anyone or bypasses the owner proof.
@@ -148,6 +147,7 @@ function setNetworkUnavailable(value){
   else if(Object.getOwnPropertyDescriptor(navigator,'onLine')?.get===unreachableOnLine)delete navigator.onLine;
  }catch{}
 }
+let refreshAdventureOffer=null;
 let cloudProfileReady=false,cloudProfileTimer=null,cloudProfileBusy=false,cloudProfileDirty=false,cloudProfileBaseline=null,cloudProfileInFlight=null,cloudProfileFailure=null;
 let cloudHydrationGeneration=0;
 configureCommandSession(()=>({userId:lumenUser?.id,client:lumenSupabase,generation:cloudHydrationGeneration}),{onIssue:issue=>recordCloudDiagnostic('command_cache_storage',{reason:issue.kind})});
@@ -1121,9 +1121,9 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   cloudProfileFailure=null;
   cloudProfileReady=true;
   verifiedOfflineOwnerId=lumenUser?.id??null;
-  acquisitionRecoveryAttempts=0;
   if(networkUnavailable)setNetworkUnavailable(false);
   if(navigator.onLine!==false)rememberVerifiedOfflineOwner(localStorage,verifiedOfflineOwnerId,Date.now(),cloud);
+  acquisitionRecoveryAttempts=0;
   // Resume the verified catalogue frontier after ownership handoff or from an
   // idle campaign selection. Started runs and replays retain their identity.
   if(existing)resumeHydratedCampaignSelection({ownershipChanged:switchingOwner});
@@ -5288,20 +5288,10 @@ function initializeAccountSession(){
   window.addEventListener('online',()=>void connect(),{once:true});
   return Promise.resolve();
  }
- return connect();
-}
-void initializeAccountSession();
-
-setupAppUpdates({window,document,navigator,location,caches:window.caches,console,appVersion});
-
-// Preserve the public browser testing entry points.
-wireLumenErasureControls();
-window.runHintTests=runHintTests;
-window.lumenDiagnostics=createDiagnostics(testModel,{init,runHintTests,setSoundEnabled,closeTutorial,hideSuccess,render});
-Object.assign(window.lumenDiagnostics,{skySnapshot:()=>skyNavigation.snapshot(),setSkyCatalogue:(model,{reset=true}={})=>{mapCatalogueOverride=model;if(reset)skyNavigation.open();else skyNavigation.render()},refreshSky:()=>skyNavigation.render()});
-}
  // #847: a hanging backend must not hold a verified owner on the neutral screen.
  setTimeout(()=>void networkWatchdog(),15000);
+ return connect();
+}
 async function backendReachable(timeout=8000){
  if(!lumenSupabase)return false;
  try{
@@ -5354,3 +5344,13 @@ function reloadWhenSafe(){
  updateAuthUI();
 }
 window.addEventListener('online',()=>{if(!networkUnavailable)return;clearTimeout(networkProbeTimer);networkProbeTimer=null;scheduleNetworkProbe(1000)});
+void initializeAccountSession();
+
+setupAppUpdates({window,document,navigator,location,caches:window.caches,console,appVersion});
+
+// Preserve the public browser testing entry points.
+wireLumenErasureControls();
+window.runHintTests=runHintTests;
+window.lumenDiagnostics=createDiagnostics(testModel,{init,runHintTests,setSoundEnabled,closeTutorial,hideSuccess,render});
+Object.assign(window.lumenDiagnostics,{skySnapshot:()=>skyNavigation.snapshot(),setSkyCatalogue:(model,{reset=true}={})=>{mapCatalogueOverride=model;if(reset)skyNavigation.open();else skyNavigation.render()},refreshSky:()=>skyNavigation.render()});
+}

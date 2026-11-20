@@ -116,7 +116,7 @@ Dragging a finger over cells marks exclusions. It must:
 - avoid full `render()` calls during pointermove.
 
 ## Reset/navigation
-The main reset action is **Réinitialiser**, not “Nouvelle grille”. It resets the current quest only. The player cannot choose another unsolved quest. “Quête suivante” is available after victory. Solved quests may be reopened from the campaign map.
+The main reset action is **Réinitialiser**, not “Nouvelle grille”. It clears the placements of the current quest only and asks for confirmation: « Réinitialiser la grille ? Tes placements seront effacés, mais le chrono, les aides et les erreurs resteront comptabilisés. » The attempt, its official time, aids, errors and qualification continue (#851, #36); only « Rejouer » starts a new attempt. The player cannot choose another unsolved quest. “Quête suivante” is available after victory. Solved quests may be reopened from the campaign map.
 
 ## Hints and verification
 Hints are pedagogical: first draw attention, then explain the rule, then reveal the forced action as last resort. A placement hint must have a structured explainable proof; an opaque brute-force answer is not acceptable.
@@ -130,7 +130,8 @@ Halfway encouragement measures placed Guardians / board size without checking
 hidden correctness. It fires on a real placement crossing `ceil(size / 2)`,
 once per board run, before the terminal state. Rendering, hints, undo and
 restoration never trigger it. Restore at/past halfway consumes the crossing
-silently; reset/replay starts a fresh run (#515).
+silently; a reset clears the board (the encouragement may fire again), and
+only a replay starts a fresh run (#851).
 
 The only cost for an available aid is official time. Each hint adds 15 seconds,
 each verification adds 5 seconds and each guided intervention adds 5 seconds.

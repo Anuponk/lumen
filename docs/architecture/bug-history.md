@@ -327,3 +327,26 @@ de sécurité sans voie de reprise devient un blocage permanent.
 Le test Chrome du verdict de lien a montré que `handleLearningTap` (capture)
 bloque les clics hors de sa liste blanche pendant la quête 1. Tout nouveau
 calque plein écran doit y être ajouté (`#authLinkResult`, `#pwaWelcome`).
+
+### #847 — joueur connecté bloqué hors ligne
+
+Reproduit sur `0516c42` (`offline-network-browser-tests.mjs`, rouge) : après une
+hydratation vérifiée, la preuve hors ligne n'était jamais écrite ; elle l'était
+avant #807 par le chemin de dépense d'indice. Mode avion → « Tu es hors ligne »
+indéfiniment. Corrigé à l'hydratation, plus le cas d'un serveur injoignable
+alors que `navigator.onLine` reste vrai.
+
+### #851 — record personnel hors podium
+
+`ranking_begin` refuse un essai commencé moins de 15 min après le précédent
+essai éligible. L'ancien reset ouvrait un nouvel essai (`-reset-N`) avec un
+chrono neuf : le 0:54 après reset était légitimement non classé. Le bilan
+l'attribuait toujours au délai, même pour un essai non qualifiant. Décision du
+20/11/2026 : le reset conserve l'essai (#36).
+
+### #828 — message « solveur explicable » sur la quête 23
+
+Le catalogue est valide (audit : 880 quêtes résolues par les indices). Une
+grille complète dont la victoire était différée pendant la restauration Auth
+partait au solveur, qui n'a plus rien à déduire. L'indice valide désormais la
+victoire et la fin de la restauration la relance.

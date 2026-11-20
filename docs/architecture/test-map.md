@@ -555,3 +555,11 @@ exercise them in Chrome. Real iPhone storage separation and live e-mail stay man
 l’alias du lanceur et le paquet. Suivre la
 [recette Play interne et fermée](../../android/TESTING.md#recette-google-play-845)
 pour l’éligibilité réelle, les reprises et la conservation des données.
+
+Chantier 3 (#847, #851, #828, #830, #829): `offline-network-browser-tests.mjs`
+(offline proof, unreachable backend, identity guard), `hint-catalogue-audit-tests.mjs`
+(catalogue explainability), `landscape-layout-browser-tests.mjs` (short landscape),
+`webkit-smoke-tests.mjs` (non-blocking WebKit workflow); reset and ranking verdict in
+`attempt-engine-tests.mjs`, `official-time-tests.mjs`, `quest-review-tests.mjs`.
+Harnesses running game-screen excerpts get new dependencies from
+`scripts/fixtures/network-context.mjs`.

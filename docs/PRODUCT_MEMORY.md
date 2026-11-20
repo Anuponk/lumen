@@ -164,7 +164,7 @@ Real touch tests then exposed two player-facing defects: badge/auto-marking dial
 - Tracking is completely silent during play.
 - Any effective assistance (Indice, Vérifier, Marquage auto, guided intervention) makes Sans erreur ineligible for the current badge run.
 - **Maîtrise = Autonomie + Rapidité + Sans erreur on the same badge run.**
-- Campaign/replay Reset starts a fresh badge run, including timer/assistance/error state, while preserving the technical attempt identity.
+- Campaign/replay Reset started a fresh badge run until 20/11/2026; since #851 it only clears placements and the attempt keeps its time, aids, errors and qualification (#36). A fresh run is « Rejouer ».
 - Social challenge Reset never grants a fresh one-shot attempt: elapsed time, assistance and committed errors remain.
 - Existing saved Maîtrise badges are grandfathered and are never removed retroactively.
 - Onboarding introduces Sans erreur at quest 6 in the same milestone that introduces the full badge system.

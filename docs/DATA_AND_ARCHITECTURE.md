@@ -2100,3 +2100,30 @@ Cause confirmée de l'incident : depuis le chrono officiel (#653), les faits V2 
 Une écriture CAS du profil qui échoue sans code fournisseur avec un message de transport (`Failed to fetch`, `Load failed`, abandon/délai) est étiquetée `CLOUD_NETWORK` au lieu de `CLOUD_WRITE_REFUSED`. Le traitement ne change pas : la progression non synchronisée est préservée et la lecture de vérification existante s'applique. Côté victoire, le chrono affiché et les secondes capturées sont figés à la détection locale ; si la commande d'une victoire déjà capturée durablement dépasse 2,5 s, la carte « victoire en attente » s'affiche pendant que la commande continue, sans aucun crédit local, puis devient la célébration confirmée après l'accusé serveur. Les événements `victory_pending_shown`, `victory_pending_upgraded` et `victory_sync_timing` (durée en ms, sans identifiant) alimentent les mesures avant/après.
 
 **Play Console product identifiers (2026-11):** Google Play requires underscores in the external SKU (`real_adventure_02` … `real_adventure_09`, `real_sky_all`). The application converts canonical internal pack/catalogue IDs (`real-adventure-02` … `real-adventure-09`, `real-sky-all`) only at the Play API boundary. The Edge Function validates the external SKU and maps it back to the internal catalogue ID before granting any rights; no existing purchase or entitlement IDs are renamed. The Play package is `com.nopuna.lumen`.
+
+### Offline start and unreachable backend (#847)
+
+The owner-bound offline proof (`lumenOfflineVerifiedOwnerV1`) is written as soon
+as an online hydration is verified. Before #847 it was written only as a side
+effect of an access decision; #807 removed the hint-spend path that triggered it,
+so a signed-in player could stay on « Tu es hors ligne » in airplane mode.
+A transport failure while `navigator.onLine` is still true (Auth refresh or RPC
+without HTTP answer, or a backend silent for 15 s plus an 8 s probe) is treated
+as offline: the page reads `navigator.onLine` as false through an instance
+property, so every existing offline rule applies unchanged. Only the stored
+owner, with a valid proof and no pending identity change, plays its local cache;
+otherwise the explicit offline screen stays. A probe every 30 s (backoff to
+5 min, immediate on `online`) reloads once the backend answers, deferred while
+an attempt is running. No data is deleted and no write is sent while unreachable.
+
+### Attempt run identity and ranking verdict (#851)
+
+`attemptOperationId(attempt)` (`attemptId-reset-<runSegment>`) identifies a run
+for the victory receipt and the ranking capture, which `ranking_finish` matches
+by this exact id. New attempts start at `runSegment: 0` and keep it across
+resets; an attempt restored from an older release takes `runSegment = resetCount`;
+challenges keep their historical per-reset id. The client keeps the
+`ranking_begin` verdict and the run's qualification to state a refusal:
+`cooldown` (begin refused, the only begin refusal), `not_qualifying`,
+`not_better` (confirmed, ranked best unchanged), `unknown` otherwise. No SQL
+change and no historical ranking modification.
