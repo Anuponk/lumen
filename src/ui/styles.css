@@ -155,8 +155,6 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 
 /* Mobile play-first layout: metadata is compact and the board appears immediately. */
 .mobile-streak,.mobile-account,.mobile-auth-popover,.daily-info-popover{display:none}
-.mobile-auth-popover.password-recovery:not([hidden]){display:block;position:fixed;z-index:180;top:70px;right:16px;width:min(340px,calc(100vw - 32px));max-height:calc(100dvh - 100px);overflow:auto;padding:16px;background:#101d2e;border:1px solid #28415b;border-radius:15px;box-shadow:0 16px 40px rgba(0,0,0,.35);color:#c4d6e8}
-.password-recovery input,.password-recovery button{box-sizing:border-box;width:100%;margin-top:9px;padding:10px}
 /* #749: formerly (max-width:700px); now every width */
  .app{padding:8px 10px 28px}
  .head{margin:0 0 5px;align-items:center}
@@ -358,6 +356,20 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .account-switch-hold-report[hidden]{display:none}
 /* #820 e-mail link verdict and #832 installed-app first opening */
 .auth-link-result-icon,.pwa-welcome-icon{animation:none}
+/* #820: dedicated password-recovery screen, above the profile hold. */
+.password-recovery-screen{z-index:5200;overflow:auto}
+.password-recovery-form{display:flex;flex-direction:column;gap:6px;width:min(320px,calc(100vw - 32px));text-align:left}
+.password-recovery-form[hidden]{display:none}
+.password-recovery-form label{color:#d8ecf7;font-size:14px;margin-top:4px}
+.password-recovery-form input{box-sizing:border-box;width:100%;min-height:44px;padding:10px;border:1px solid #35546f;border-radius:10px;background:#0b1624;color:#e6f4fb;font:inherit}
+.password-recovery-form small{color:#9fc4d8}
+.password-recovery-error{color:#ffb4a8!important;font-size:14px}
+.password-recovery-error[hidden]{display:none}
+.password-recovery-form button{box-sizing:border-box;width:100%;min-height:44px;margin-top:6px;border:1px solid #35546f;border-radius:11px;background:#0f1d2e;color:#d8ecf7;font:inherit}
+.password-recovery-form button.primary{background:#1d6f86;border-color:#3aa7c0;color:#fff;font-weight:600}
+.password-recovery-form button:disabled{opacity:.6}
+.password-recovery-form .password-recovery-later{background:transparent;border-color:transparent;color:#9fc4d8}
+body.password-recovery-open .app{visibility:hidden}
 .pwa-welcome-actions{flex-direction:column;align-items:stretch;width:min(340px,calc(100vw - 32px))}
 .pwa-welcome-confirm{font-size:14px}
 .pwa-welcome-confirm[hidden]{display:none}

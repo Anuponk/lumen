@@ -534,6 +534,21 @@ recovery request counts as sent only on the endpoint's `{ok:true}` contract;
 known and unknown addresses. Password update errors map to bounded reasons and
 never show the provider message. Tokens and addresses never enter diagnostics.
 
+A recovery link opens a dedicated screen (`ui/password-recovery.js`, dialog
+`#passwordRecovery`), never the sign-in form or the account menu. While the
+link is checked it shows a neutral « Vérification de ton lien… » state (20 s
+watchdog, then « Vérification impossible »). The form is bound to the account
+whose recovery session opened it: no session, an account change or an expired
+session (`session_expired`, 401/403) ends on « Ce lien n’est plus actif » with a
+new-link action, and `updateUser` is not called for another account. Mismatched
+entries and provider rules (weak/same password, network) keep the form.
+Submission is single-flight. « Mot de passe modifié ! » appears only after
+`updateUser` succeeded; the page does not reload until the player chooses
+« Continuer mon aventure » (reload resumes the hydration held by recovery) or
+« Se connecter » when no session remains. The 20/11/2026 field test (three
+recovery sessions in three minutes, then a password sign-in) matched the former
+immediate `location.reload()` that hid the success.
+
 ### Installed app first opening (#832)
 
 iOS can give the home-screen app storage separate from Safari. When an installed
