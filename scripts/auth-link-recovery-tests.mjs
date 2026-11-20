@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {readNativeAuthLinkResult,classifyAuthLinkError,scrubNativeAuthLinkError,authLinkMessage} from '../src/persistence/auth-link-result.js';
 import {createCloudPersistence} from '../src/persistence/cloud.js';
+import {createPasswordRecoveryFlow,passwordRecoveryView,validateNewPassword,passwordRecoveryErrorCopy} from '../src/ui/password-recovery.js';
 
 // Native Supabase redirects.
 const host='https://lumen.nopuna.fr/';
@@ -147,7 +148,70 @@ const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 assert.match(html,/id="authLinkResult"[^>]*role="alertdialog"[^>]*hidden/);
 assert.match(ui,/if\(event\?\.type==="auth_link"\)showAuthLinkResult\(event\.result\)/);
 assert.match(ui,/if\(passwordRecoveryRequestPending\)return;/);
-assert.match(ui,/if\(accountPasswordSavePending\)return;/);
+assert.match(html,/id="passwordRecovery"[^>]*role="dialog"[^>]*hidden/);
+assert.match(ui,/#authLinkResult,#passwordRecovery,/,'Tutorial tap filtering never blocks the recovery screen');
+assert.match(html,/id="passwordRecoveryNew"[^>]*autocomplete="new-password"/);
+assert.match(html,/id="passwordRecoveryConfirm"[^>]*autocomplete="new-password"/);
+assert.doesNotMatch(html,/id="setPasswordPanel"/,'Recovery no longer reuses the account editor');
+assert.doesNotMatch(ui,/lumenPasswordRecoveryPending"\);location\.reload\(\)/,'No reload hides the success verdict');
+assert.match(ui,/if\(event\?\.type==="password_recovery"\)openPasswordRecovery\(\)/);
 assert.match(ui,/result\?\.status==='verified'&&result\.kind==='recovery'\)sessionStorage\.setItem\('lumenPasswordRecoveryPending','1'\)/);
 assert(ui.indexOf('const bootAuthLink=')<ui.indexOf('window.supabase.createClient('),'The boot URL is read before the Auth SDK can consume it');
-console.log('Auth link and recovery (#820): native/branded verdicts, no false success, expired/network links, recovery request contract, password update classification and UI wiring passed');
+// #820 (20/11 field test): dedicated recovery screen state machine.
+assert.equal(validateNewPassword('x'.repeat(11),'x'.repeat(11)),'password');
+assert.equal(validateNewPassword('x'.repeat(12),'y'.repeat(12)),'mismatch');
+assert.equal(validateNewPassword('x'.repeat(12),'x'.repeat(12)),null);
+{
+ const secret='s'.repeat(14);
+ const make=({user={id:'owner',email:'qa@example.test'},replies=[{ok:true}]}={})=>{
+  const calls=[],renders=[];let current=user;
+  const flow=createPasswordRecoveryFlow({updatePassword:async value=>{calls.push(value);const reply=replies.shift();if(reply instanceof Error)throw reply;return reply},
+   currentUser:()=>current,render:(state,view)=>renders.push(view)});
+  return {flow,calls,renders,setUser:u=>{current=u}};
+ };
+ // Neutral state while the link is verified; never the sign-in form.
+ {const h=make();h.flow.verifying();const v=passwordRecoveryView(h.flow.state);
+  assert.equal(v.title,'Vérification de ton lien…');assert.equal(v.form,false);
+  h.flow.open();const f=passwordRecoveryView(h.flow.state);
+  assert.equal(f.title,'Choisis ton nouveau mot de passe');assert.match(f.text,/Ton lien de réinitialisation a été vérifié/);
+  assert.equal(f.form,true);assert.equal(f.submitLabel,'Enregistrer mon nouveau mot de passe');}
+ // Mismatch keeps the form, no provider call; corrected entry succeeds first time.
+ {const h=make();h.flow.open();
+  assert.deepEqual(await h.flow.submit(secret,secret+'!'),{ok:false,reason:'mismatch'});
+  assert.equal(h.calls.length,0);assert.equal(h.flow.state.phase,'form');
+  assert.match(passwordRecoveryView(h.flow.state).error,/ne correspondent pas/);
+  assert.deepEqual(await h.flow.submit(secret,secret),{ok:true});
+  assert.equal(h.calls.length,1);const done=passwordRecoveryView(h.flow.state);
+  assert.equal(done.title,'Mot de passe modifié !');assert.equal(done.action,'continue');assert.equal(done.label,'Continuer mon aventure');}
+ // Double submission: one provider call only.
+ {let release;const calls=[];const flow=createPasswordRecoveryFlow({updatePassword:v=>{calls.push(v);return new Promise(r=>{release=r})},currentUser:()=>({id:'owner'})});
+  flow.open();const first=flow.submit(secret,secret);
+  assert.equal(passwordRecoveryView(flow.state).busy,true);
+  assert.deepEqual(await flow.submit(secret,secret),{ok:false,reason:'busy'});
+  release({ok:true});assert.deepEqual(await first,{ok:true});assert.equal(calls.length,1);}
+ // First attempt fails on the network, the form survives, the retry succeeds.
+ {const h=make({replies:[new TypeError('Failed to fetch'),{ok:true}]});h.flow.open();
+  assert.deepEqual(await h.flow.submit(secret,secret),{ok:false,reason:'network'});
+  assert.equal(h.flow.state.phase,'form');assert.match(passwordRecoveryView(h.flow.state).error,/n’a pas été modifié/);
+  assert.deepEqual(await h.flow.submit(secret,secret),{ok:true});assert.equal(h.calls.length,2);}
+ // Provider rules keep the form with a precise message.
+ for(const reason of ['weak_password','same_password','password_update']){const h=make({replies:[{ok:false,reason}]});h.flow.open();
+  await h.flow.submit(secret,secret);assert.equal(h.flow.state.phase,'form',reason);assert.equal(passwordRecoveryView(h.flow.state).error,passwordRecoveryErrorCopy(reason));}
+ // Expired session: no success, new link proposed.
+ {const h=make({replies:[{ok:false,reason:'session_expired'}]});h.flow.open();await h.flow.submit(secret,secret);
+  const v=passwordRecoveryView(h.flow.state);assert.equal(v.action,'recover');assert.equal(v.label,'Demander un nouveau lien');assert.doesNotMatch(v.title+v.text,/modifié !/);}
+ // Account changed after the link opened: never update another account.
+ {const h=make();h.flow.open();h.setUser({id:'someone-else'});
+  assert.deepEqual(await h.flow.submit(secret,secret),{ok:false,reason:'session_changed'});assert.equal(h.calls.length,0);}
+ // No session at all: invalid, never a form.
+ {const h=make({user:null});h.flow.verifying();h.flow.open();assert.equal(h.flow.state.phase,'invalid');
+  const h2=make();h2.flow.verifying();h2.flow.sessionMissing();assert.equal(passwordRecoveryView(h2.flow.state).action,'recover');
+  const h3=make();h3.flow.verifying();h3.flow.unreachable();assert.equal(passwordRecoveryView(h3.flow.state).title,'Vérification impossible pour le moment');}
+ // Success without a remaining session proposes sign-in instead of continuing.
+ {const h=make();h.flow.open();const pending=h.flow.submit(secret,secret);h.setUser(null);await pending;
+  assert.equal(passwordRecoveryView(h.flow.state).action,'signin');}
+ // The password never reaches state or rendered text.
+ {const h=make({replies:[{ok:false,reason:'network'},{ok:true}]});h.flow.open();await h.flow.submit(secret,secret);await h.flow.submit(secret,secret);
+  assert.equal(JSON.stringify(h.renders).includes(secret),false);assert.equal(JSON.stringify(h.flow.state).includes(secret),false);}
+}
+console.log('Auth link and recovery (#820): native/branded verdicts, no false success, expired/network links, recovery request contract, password update classification, dedicated recovery screen and UI wiring passed');

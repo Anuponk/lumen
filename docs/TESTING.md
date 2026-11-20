@@ -973,8 +973,13 @@ reused, malformed and network failures, the recovery request contract (200 with
 and without `{ok:true}`, 429, 5xx, network, invalid address) and password
 update classification. `pwa-first-open-tests.mjs` covers eligibility, the
 existing-data guard, the confirmed new adventure and the iOS guest warning.
+The same suite covers the recovery screen state machine (`ui/password-recovery.js`):
+mismatch, double submission, network failure then retry, provider rules,
+expired session, account change, missing session and no password in state.
 In Chrome, `account-session-browser-tests.mjs` checks the sign-up verdict,
-an expired branded link and a native error redirect.
+an expired branded link, a native error redirect and the recovery screen
+(dedicated dialog, reload, mismatch, first network failure then success,
+readable verdict without reload).
 `install-request-browser-tests.mjs` checks the iPhone guest warning and the
 installed app's first opening, with an emulated iPhone user agent. WebKit and
 a real home-screen app are not exercised: Chrome cannot reproduce iOS storage

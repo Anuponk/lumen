@@ -551,7 +551,8 @@ directions, vertical/edge/button gestures and ordinary taps with native CDP inpu
 Account continuity (#801, #820, #832): `guest-account-hydration-tests.mjs` covers
 the guest acquisition recovery (wallet/daily divergence, concurrent spend, refused
 recovery, identity guard). `auth-link-recovery-tests.mjs` covers e-mail link
-verdicts, the recovery request contract and password errors.
+verdicts, the recovery request contract, password errors and the recovery screen
+state machine (`ui/password-recovery.js`).
 `pwa-first-open-tests.mjs` covers the installed-app first choice and the iOS guest
 warning; `install-request-browser-tests.mjs` and `account-session-browser-tests.mjs`
 exercise them in Chrome. Real iPhone storage separation and live e-mail stay manual.

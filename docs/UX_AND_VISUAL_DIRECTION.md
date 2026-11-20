@@ -423,6 +423,13 @@ says « Ce lien n’est plus valide » and offers sign-in or a new recovery link
 it never mentions success. Recovery failures name the cause (rate limit,
 network, unconfirmed sending) with the same copy for unknown addresses.
 
+A recovery link opens its own full-screen step: « Choisis ton nouveau mot de
+passe », « Ton lien de réinitialisation a été vérifié », fields « Nouveau mot de
+passe » and « Confirmer le mot de passe », button « Enregistrer mon nouveau mot de
+passe » and a quiet « Plus tard ». Errors appear under the fields without
+clearing them. Success reads « Mot de passe modifié ! » and stays on screen until
+the player continues or signs in.
+
 ### Installed app first opening (#832)
 
 An installed app opened on empty storage asks first: « J’ai déjà joué —

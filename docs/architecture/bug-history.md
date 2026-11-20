@@ -327,6 +327,9 @@ de sécurité sans voie de reprise devient un blocage permanent.
 Le test Chrome du verdict de lien a montré que `handleLearningTap` (capture)
 bloque les clics hors de sa liste blanche pendant la quête 1. Tout nouveau
 calque plein écran doit y être ajouté (`#authLinkResult`, `#pwaWelcome`).
+Récidive le 20/11/2026 avec l'écran `#passwordRecovery` : même un bouton neuf
+n'y recevait aucun clic. Ajouté à la liste ; garde statique dans
+`auth-link-recovery-tests.mjs`.
 
 ### #847 — joueur connecté bloqué hors ligne
 
