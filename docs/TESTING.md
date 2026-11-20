@@ -2393,6 +2393,23 @@ denial. The shop displays no count while the server response is unavailable.
 - Visuals: `node scripts/landing-assets.mjs` with a served app and `LUMEN_CDP_URL` (QA mode, synthetic progress).
 - Owner after deployment: Google Search Console (sitemap), the Rich Results Test and the Open Graph preview.
 
+## Fiches des 88 constellations (#856)
+
+- `node scripts/constellation-facts-tests.mjs` vérifie la couverture, les
+  identifiants IAU et catalogue, les sources et les surfaces et rangs.
+- `node scripts/render-constellations.mjs --check` vérifie que le HTML statique
+  correspond à la source commune. Les suites landing vérifient le SEO, le
+  parcours sans JavaScript, la recherche et les formats mobile et ordinateur.
+- La suite navigateur Mon ciel vérifie l’indépendance des boutons, le contenu
+  identique depuis les deux vues, le focus, Échap et une consultation sans
+  réseau avec le cache du service worker. Les captures de revue se trouvent
+  dans l’artefact navigateur quand `LUMEN_FACT_SCREENSHOTS` est défini.
+- Recette physique avant publication. Ouvrir une même fiche depuis les deux
+  vues, consulter plusieurs fiches en mode avion, vérifier Safari iPhone et la
+  PWA installée, puis essayer la recherche publique et le lien vers le jeu.
+  Relire en priorité la Grande Ourse, la Croix du Sud, Orion, le Réticule et le
+  Peintre.
+
 ## CI scope: presentation page only (#744)
 
 `scripts/ci-scope.mjs` classifies each pull-request diff.

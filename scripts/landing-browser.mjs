@@ -73,3 +73,80 @@ export async function verifyLearnConstellations({send,evaluate},baseUrl){
  assert.equal(r.scripts,0,'No script');assert.match(r.constellations,/Cassiopée/);
  return {learnConstellations:true};
 }
+
+// #855: verify the exact route, responsive layout and local search.
+export async function verifyConstellationDirectory({send,evaluate},baseUrl,{slowMobile}={}){
+ if(slowMobile){
+  await send('Network.enable');
+  await send('Network.setCacheDisabled',{cacheDisabled:true});
+  await send('Network.emulateNetworkConditions',{
+   offline:false,latency:400,downloadThroughput:64*1024,uploadThroughput:32*1024,connectionType:'cellular3g'
+  });
+ }
+ try{
+  const previous=await evaluate('performance.timeOrigin');
+  await send('Page.navigate',{url:new URL('/constellations',baseUrl).href});
+  let ready=false;
+  for(let attempt=0;attempt<150;attempt++){
+   try{
+    ready=await evaluate('performance.timeOrigin!=='+previous+'&&document.readyState==="complete"&&document.getElementById("constellation-search")?.hidden===false');
+    if(ready)break;
+   }catch(error){
+    if(!/Cannot find context|Execution context was destroyed|Inspected target navigated/.test(error.message))throw error;
+   }
+   await new Promise(resolve=>setTimeout(resolve,100));
+  }
+  assert.equal(ready,true,'Public directory opens at /constellations');
+  const report=await evaluate('('+readConstellationDirectory.toString()+')()');
+  assert.equal(report.title,'Les 88 constellations du ciel');
+  assert.equal(report.count,88);
+  assert.equal(report.initialStatus,'88 constellations');
+  assert.equal(report.overflow,false,'Directory has no horizontal overflow');
+  assert.equal(report.playPath,'/','The CTA leads to the game');
+  assert.equal(report.playReachable,true,'The play link is reachable');
+  assert.equal(report.focused,true,'Search is keyboard-focusable');
+  assert.deepEqual(report.accentSearch,['Cassiopée']);
+  assert.deepEqual(report.spaceSearch,['Grande Ourse']);
+  assert.equal(report.noMatches,0);
+  assert.equal(report.emptyStatus,'Aucune constellation trouvée');
+  assert.equal(report.resetCount,88);
+  return {constellationDirectory:true,slowMobile:!!slowMobile,loadMs:report.loadMs};
+ }finally{
+  if(slowMobile){
+   await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
+   await send('Network.setCacheDisabled',{cacheDisabled:false});
+  }
+ }
+}
+
+function readConstellationDirectory(){
+ const cards=[...document.querySelectorAll('.constellation-entry')];
+ const title=document.querySelector('h1').textContent;
+ const input=document.getElementById('constellation-name');
+ const status=document.getElementById('constellation-results');
+ const play=document.querySelector('a.play');
+ const playBox=play.getBoundingClientRect();
+ const hit=document.elementFromPoint(playBox.x+playBox.width/2,playBox.y+playBox.height/2);
+ const playReachable=hit===play||play.contains(hit);
+ const initialStatus=status.textContent;
+ const visibleCards=()=>cards.filter(card=>!card.hidden&&getComputedStyle(card).display!=='none');
+ const search=(value)=>{
+  input.value=value;
+  input.dispatchEvent(new Event('input',{bubbles:true}));
+  return visibleCards().map(card=>card.querySelector('h3').textContent);
+ };
+ input.focus();
+ const focused=document.activeElement===input;
+ const accentSearch=search('CASSIOPEE');
+ const spaceSearch=search('  grande ourse ');
+ const noMatches=search('sanscorrespondance').length;
+ const emptyStatus=status.textContent;
+ const resetCount=search('').length;
+ input.blur();
+ window.scrollTo(0,0);
+ return {
+  title,count:cards.length,initialStatus,overflow:document.documentElement.scrollWidth>innerWidth,
+  playPath:new URL(play.href).pathname,playReachable,focused,accentSearch,spaceSearch,noMatches,emptyStatus,resetCount,
+  loadMs:Math.round(performance.getEntriesByType('navigation')[0].domComplete)
+ };
+}

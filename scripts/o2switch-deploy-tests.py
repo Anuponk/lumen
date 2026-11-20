@@ -16,7 +16,7 @@ spec = importlib.util.spec_from_file_location("ci_status", ROOT / "scripts/o2swi
 ci = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ci)
 SHA = "a" * 40
-PUBLIC_PAGES = ("mentions-legales.html", "confidentialite.html", "cgv.html", "supprimer-compte.html", "decouvrir.html", "comment-jouer.html", "apprendre-constellations.html", "robots.txt", "sitemap.xml")
+PUBLIC_PAGES = ("mentions-legales.html", "confidentialite.html", "cgv.html", "supprimer-compte.html", "decouvrir.html", "comment-jouer.html", "apprendre-constellations.html", "constellations/index.html", "robots.txt", "sitemap.xml")
 
 
 def runs():
@@ -181,7 +181,9 @@ class Publisher(unittest.TestCase):
         self.git("commit", "-m", "baseline")
         self.old = self.git("rev-parse", "HEAD").strip()
         for name in PUBLIC_PAGES + ("internal-preview.html",):
-            (self.source / name).write_text("Reviewed page: " + name)
+            page = self.source / name
+            page.parent.mkdir(parents=True, exist_ok=True)
+            page.write_text("Reviewed page: " + name)
         (self.source / ".well-known").mkdir()
         self.debug_dal = [{"relation": ["delegate_permission/common.handle_all_urls"],
                            "target": {"namespace": "android_app", "package_name": "fr.nopuna.lumen.debug",
@@ -214,6 +216,9 @@ elif [[ "$endpoint" == *'/src/'* ]]; then
 elif [[ "$endpoint" == *'/admin/analytics?'* ]]; then
  [[ "${TEST_ADMIN_FORBIDDEN:-0}" != 1 ]] || exit 22
  cat "$HOME/lumen.nopuna.fr/index.html"
+elif [[ "$endpoint" == *'/constellations?'* ]]; then
+ [[ "${TEST_CONSTELLATIONS_FORBIDDEN:-0}" != 1 ]] || exit 22
+ cat "$HOME/lumen.nopuna.fr/constellations/index.html"
 elif [[ "$endpoint" == *'.html?'* || "$endpoint" == *'.txt?'* || "$endpoint" == *'.xml?'* ]]; then
  [[ "${TEST_PAGE_FORBIDDEN:-0}" != 1 ]] || exit 22
  asset="${endpoint#https://lumen.nopuna.fr/}"
@@ -270,6 +275,13 @@ fi
             self.assertEqual((self.target / name).stat().st_mode & 0o777, 0o644)
         self.assertFalse((self.target / "internal-preview.html").exists())
 
+    def test_directory_index_unavailable_at_public_route_rolls_back(self):
+        self.env["TEST_CONSTELLATIONS_FORBIDDEN"] = "1"
+        result = self.publish()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual((self.target / "index.html").read_text(), "original site")
+        self.assertFalse((self.target / "constellations").exists())
+
     def test_dal_published_with_correct_certificate_and_other_app_preserved(self):
         existing = [{"relation": ["delegate_permission/common.handle_all_urls"],
                      "target": {"namespace": "android_app", "package_name": "org.example.another",
@@ -301,7 +313,9 @@ fi
         # Unversioned static site: exercise activation, not the same-SHA no-op.
         (self.target / ".lumen-release-sha").unlink()
         for name in PUBLIC_PAGES:
-            (self.target / name).write_text("stale candidate")
+            page = self.target / name
+            page.parent.mkdir(parents=True, exist_ok=True)
+            page.write_text("stale candidate")
         self.env["TEST_HTTP_SHA"] = self.old
         result = self.publish(self.old)
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)

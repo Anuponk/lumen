@@ -334,6 +334,13 @@ matrix; `victory-challenge-browser.mjs` is imported by canonical replay tests.
 geometry/focus/touch and empty/partial/complete astronomical drawing checks.
 See TESTING for synthetic transport and affected-device limits.
 
+Constellation facts (#856): `constellation-facts-tests.mjs` checks the IAU/ID
+mapping, distinct entries, fields, surfaces, and ranks. The sky browser suite
+checks both entry points, focus/keyboard, layout, and a second fact offline.
+The landing suites check the generated guide, SEO, search without accent
+sensitivity, and responsive display. Browser validation can emit review
+captures into the CI report artifact.
+
 Astronomy source fidelity: `astronomical-fidelity-tests.mjs` (mandatory Node)
 and CLI `audit-astronomical-figures.mjs`. Real overview/detail SVG fidelity and
 clipping: `astronomical-rendering-browser.mjs`, invoked by the existing sky
