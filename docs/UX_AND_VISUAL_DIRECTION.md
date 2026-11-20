@@ -357,6 +357,14 @@ read « En attente / Commencé / Terminé / Abandonné ». The four intents stay
 distinct: Partager (show an achievement), Défier (play this grid), Inviter
 (discover Lumen), Ajouter un ami (persistent relation).
 
+The « Défi du jour » (#882) has its own recognisable skin — deep night-sky
+blue/violet background with static stars, a gold « Défi du jour · date ·
+1 tentative officielle » banner above the grid and a gold frame around it — while
+the grid itself (cells, Guardians, territories, marks, hints, errors) keeps the
+campaign look and meaning. No permanent animation, no badge promise in this mode,
+« Continuer » stays the primary action of its result. Details and captures:
+[DAILY_CHALLENGE.md](DAILY_CHALLENGE.md).
+
 Keep the challenge loop celestial and performance-led, not leaderboard-heavy. Before play, show who sent the challenge and the one-attempt rule, but hide the sender's time/badges. After play, reveal both performances side by side and describe differences factually.
 
 A remarkable Mastery on a qualifying run deserves stronger visual emphasis around “Défier”, while “Quête suivante” remains the primary campaign continuation. Since #889 a qualifying replay may challenge; its wording never claims a first try (« Maîtrise en rejeu qualifiant ») and the reference shows « Rejeu qualifiant ».

@@ -16,7 +16,9 @@ import {recordLabel,renderRecordResult} from './personal-records.js';
 import {questReviewModel} from './quest-review.js';
 import {reviewNeighbour,bindReviewNavigation} from './quest-review-navigation.js';
 import {attemptTiming,officialResult} from '../campaign/official-time.js';
-import {RANKING_PENALTIES} from '../campaign/ranking.js';
+import {RANKING_PENALTIES,rankedTime} from '../campaign/ranking.js';
+import {createDailyClient,dailyQuest} from '../campaign/daily-challenge.js';
+import {dailyErrorMessage,formatDailyDate,formatRemaining,formatRank,renderDailyBoard} from './daily-view.js';
 import {officialTimingSupported,refreshOfficialTimingSupport} from '../persistence/official-time.js';
 import {createRankingClient} from '../persistence/ranking.js';
 import {createRankingView} from './ranking.js';
@@ -2147,11 +2149,13 @@ async function showSocialChallengeResult(data){
  modal.hidden=false;trackLumenEvent("challenge_result_viewed",data.puzzle_id??null,{status:data.participant_status,stable_quest_id:data.stable_quest_id??null,grid_revision:data.grid_revision??0});
 }
 async function finishSocialChallenge(status){
+ if(socialChallenge?.daily)return finishDaily(status);
  const seconds=activeGameSeconds(),assisted=!!attemptEngine.snapshot()?.assistanceUsed,run=performanceAttempt({questIndex:activeQuestOrdinal()-1,seconds,assistanceUsed:assisted,mistakeCommitted:!!attemptEngine.snapshot()?.mistakeCommitted});
  try{await challengeClient.finish(socialChallenge.challenge_id,{status,durationSeconds:seconds,autonomy:run.autonomy,speed:run.speed,mastery:run.mastery,assistanceUsed:assisted,gridRevision:socialChallenge.grid_revision??0});await pushApi("challenge_result",{challenge_id:socialChallenge.challenge_id});socialChallenge=await challengeClient.get(socialChallenge.challenge_id);await showSocialChallengeResult(socialChallenge)}catch(e){console.warn("challenge finish",e);showRewardToast("Résultat enregistré localement ; synchronisation à réessayer")}
 }
 function celebrateSocialChallengeSuccess(){
- if(celebrated)return;trackAttemptEvent("attempt_completed",{outcome:"success",social_challenge:true,hint_uses:hintUsesThisGame,verify_uses:verifyUsesThisGame,auto_marking_used:!!autoUsedThisGame});celebrated=true;attemptEngine.complete();clearInterval(timer);clock();board.classList.add("win");trackAttemptEvent("challenge_completed",{duration_seconds:activeGameSeconds(),assisted:!!attemptEngine.snapshot()?.assistanceUsed});finishSocialChallenge("completed");
+ if(celebrated)return;
+ if(socialChallenge?.daily){celebrated=true;attemptEngine.complete();clearInterval(timer);clock();board.classList.add("win");finishSocialChallenge("completed");return}trackAttemptEvent("attempt_completed",{outcome:"success",social_challenge:true,hint_uses:hintUsesThisGame,verify_uses:verifyUsesThisGame,auto_marking_used:!!autoUsedThisGame});celebrated=true;attemptEngine.complete();clearInterval(timer);clock();board.classList.add("win");trackAttemptEvent("challenge_completed",{duration_seconds:activeGameSeconds(),assisted:!!attemptEngine.snapshot()?.assistanceUsed});finishSocialChallenge("completed");
 }
 async function loadMyChallenges(){
  try{
@@ -2195,6 +2199,104 @@ const COLORS=["#efb37e","#91b5ed","#b4a0db","#a9d692","#ff8267","#ddd9d2","#e5ef
 const TERRITORY_COLORS=["#46c7e8","#6d8fe8","#8b70d7","#49b49b","#d38a54","#b55f86","#67a6bf","#7e9c69","#a8875b"];
 let n=6,puz,state,hist=[],start,timer,last={},hi=null,proofs={},hintStage=0,hintFocus=null,celebrated=false,hintUsesThisGame=0,mistakesThisGame=0,verifyUsesThisGame=0,verifyPending=null,autoUsedThisGame=false,replayMode=false,levelIndex=Math.min(sequentialSolvedCount,campaignQuestCount()-1),learningReplayReturn=null,endgamePending=false,adventurePending=null;
 let socialChallenge=null,lastChallengeOffer=null,pendingChallengeUrl="",pendingChallengeId=null,challengeResumeElapsedMs=0;
+
+// #882 Défi du jour. A daily run is an isolated challenge run (socialChallenge
+// with daily:true): it inherits every campaign/ranking/learning guard of #18.
+// Only the intro, the server submission and the official clock differ.
+const dailyClient=createDailyClient(lumenSupabase),DAILY_PENDING_KEY='lumenDailyPendingV1';
+let dailyBannerTimer=null;
+function dailyUrl(training=false){const u=new URL(location.origin+location.pathname);u.searchParams.set('daily','1');if(training)u.searchParams.set('training','1');return u.toString()}
+async function refreshDailyEntry(){
+ const entry=document.getElementById('openDaily');if(!entry||socialChallenge)return;entry.onclick=()=>{location.href=dailyUrl()};
+ try{const today=await dailyClient.today();entry.hidden=!today?.enabled;if(today?.enabled)document.getElementById('dailyEntryState').textContent=formatDailyDate(today.day)+' · fin dans '+formatRemaining(Date.parse(today.closes_at)-Date.parse(today.server_now))}
+ catch{entry.hidden=true}
+}
+function renderDailyBanner(){
+ const banner=document.getElementById('dailyBanner');if(!banner||!socialChallenge?.daily)return;
+ banner.hidden=false;document.getElementById('dailyBannerDate').textContent=formatDailyDate(socialChallenge.day);
+ const left=Date.parse(socialChallenge.closes_at)-Date.now()-(socialChallenge.clockSkewMs||0);
+ document.getElementById('dailyBannerMeta').textContent=socialChallenge.training?'Entraînement non classé':'1 tentative officielle · fin dans '+formatRemaining(left);
+}
+function showDailyBoardTab(board,scope){
+ for(const [id,tab] of [['dailyTabGeneral','general'],['dailyTabFriends','friends']]){const b=document.getElementById(id);b.setAttribute('aria-selected',String(tab===scope))}
+ document.getElementById('dailyBoardPanel').innerHTML=renderDailyBoard(board?.[scope],{scope,formatDuration});
+}
+function showDailyResult({run=null,board=null,training=false,pending=false,official=null}={}){
+ const modal=document.getElementById('dailyResultModal'),note=document.getElementById('dailyResultNote');
+ const status=run?.status,score=run?.score??official;
+ document.getElementById('dailyResultTitle').textContent=training?'Entraînement terminé':status==='abandoned'?'Tentative abandonnée':'Défi du jour réussi !';
+ document.getElementById('dailyResultTime').textContent=status==='abandoned'?'Non classée':score!=null?formatDuration(score):'';
+ note.textContent=training?'Ce temps n’est pas classé : ta tentative officielle reste inchangée.':pending?'Résultat enregistré sur cet appareil, envoi en attente de connexion.':status==='completed'?'Temps officiel, pénalités d’aide incluses.':'';
+ const boards=document.getElementById('dailyBoards');boards.hidden=!board;
+ if(board){showDailyBoardTab(board,'general');document.getElementById('dailyTabGeneral').onclick=()=>showDailyBoardTab(board,'general');document.getElementById('dailyTabFriends').onclick=()=>showDailyBoardTab(board,'friends')}
+ const closes=Date.parse(board?.closes_at||socialChallenge?.closes_at||'');
+ document.getElementById('dailyNext').textContent=Number.isFinite(closes)?'Prochain défi dans '+formatRemaining(closes-Date.now()):'';
+ document.getElementById('dailyRetrySubmit').hidden=!pending;
+ const share=document.getElementById('dailyShare');share.hidden=training||status!=='completed';
+ share.onclick=()=>{const g=board?.general?.me;lumenShare.text({title:'Défi du jour Lumen',text:['✦ Défi du jour Lumen du '+formatDailyDate(socialChallenge.day)+' : '+formatDuration(score),g?.rank?formatRank(g.rank)+' sur '+board.general.participants:null,'À toi de jouer !'].filter(Boolean).join('\n'),url:discoveryUrl},share)};
+ document.getElementById('dailyTrainAgain').hidden=pending||(!training&&!['completed','abandoned'].includes(status));
+ document.getElementById('dailyTrainAgain').onclick=()=>{location.href=dailyUrl(true)};
+ document.getElementById('dailyContinue').onclick=()=>{location.href=location.pathname};
+ document.getElementById('dailyRetrySubmit').onclick=()=>retryPendingDaily(true);
+ modal.hidden=false;document.getElementById('dailyContinue').focus({preventScroll:true});
+}
+function readPendingDaily(){try{return JSON.parse(localStorage.getItem(DAILY_PENDING_KEY)||'null')}catch{return null}}
+async function retryPendingDaily(show=false){
+ const pending=readPendingDaily();if(!pending)return;
+ try{const run=await dailyClient.finish(pending);localStorage.removeItem(DAILY_PENDING_KEY);if(show){const board=await dailyClient.board(pending.day).catch(()=>null);showDailyResult({run,board})}}
+ catch(e){if(/run_not_found|operation_mismatch|invalid_/.test(e?.message||''))localStorage.removeItem(DAILY_PENDING_KEY);if(show)showRewardToast('Envoi impossible pour le moment')}
+}
+window.addEventListener('online',()=>{void retryPendingDaily()});
+async function finishDaily(status){
+ const snap=attemptEngine.snapshot(),uses=snap?.helpUses||{},seconds=Math.max(0,Math.floor(attemptEngine.activeMs()/1000));
+ const official=rankedTime(seconds,{hint:uses.hint||0,verify:uses.verify||0,guided:uses.guided||0}).score;
+ if(socialChallenge.training){showDailyResult({training:true,official});return}
+ const payload={day:socialChallenge.day,operationId:socialChallenge.operation_id,status,seconds,hint:uses.hint||0,verify:uses.verify||0,guided:uses.guided||0};
+ try{const run=await dailyClient.finish(payload);localStorage.removeItem(DAILY_PENDING_KEY);const board=await dailyClient.board(socialChallenge.day).catch(()=>null);showDailyResult({run,board})}
+ catch(e){
+  if(/invalid_|operation_mismatch|run_not_found/.test(e?.message||'')){showRewardToast(dailyErrorMessage(e));showDailyResult({run:null,board:null,official,training:false});return}
+  try{localStorage.setItem(DAILY_PENDING_KEY,JSON.stringify(payload))}catch{}
+  showDailyResult({pending:true,official});
+ }
+}
+async function bootstrapDailyChallenge(){
+ const params=new URL(location.href).searchParams;if(!params.has('daily'))return false;
+ let today=null;try{today=await dailyClient.today()}catch{today=null}
+ if(!today?.enabled||!today.quest_id){showRewardToast(dailyErrorMessage('daily_unavailable'));return false}
+ let quest;try{quest=dailyQuest({questId:today.quest_id,gridRevision:today.grid_revision})}catch{showRewardToast(dailyErrorMessage('daily_unavailable'));return false}
+ socialChallenge={daily:true,training:true,challenge_id:'daily-'+today.day+'-training',day:today.day,grid_revision:today.grid_revision,closes_at:today.closes_at,clockSkewMs:Date.now()-Date.parse(today.server_now)};
+ canonicalActiveQuest=quest;levelIndex=quest.legacyIndex??0;replayMode=false;
+ document.body.classList.add('daily-mode');renderDailyBanner();clearInterval(dailyBannerTimer);dailyBannerTimer=setInterval(renderDailyBanner,60000);
+ let signedIn=false;try{signedIn=!!(await lumenSupabase?.auth?.getSession?.())?.data?.session?.user}catch{}
+ let board=null,blocked=null;
+ if(signedIn){try{board=await dailyClient.board(today.day)}catch(e){blocked=e}}else blocked='account_required';
+ const run=board?.my_run||null,done=['completed','abandoned'].includes(run?.status);
+ // Training is offered to guests, players without nickname and after the official attempt only.
+ if(params.has('training')&&(blocked||done)){renderDailyBanner();return true}
+ if(done){renderDailyBanner();showDailyResult({run,board});return true}
+ const intro=document.getElementById('dailyIntro'),status=document.getElementById('dailyIntroStatus'),start=document.getElementById('dailyStart'),training=document.getElementById('dailyTraining');
+ document.getElementById('dailyIntroDate').textContent=formatDailyDate(today.day);
+ document.getElementById('dailyIntroRemaining').textContent='Fin dans '+formatRemaining(Date.parse(today.closes_at)-Date.parse(today.server_now));
+ status.textContent=blocked?dailyErrorMessage(blocked):run?.status==='started'?'Ta tentative officielle est en cours : elle reprend sans nouveau chrono.':'';
+ start.hidden=!!blocked;start.textContent=run?.status==='started'?'Reprendre ma tentative':'Relever le défi';
+ training.hidden=!blocked;document.getElementById('dailyShowResult').hidden=true;
+ intro.hidden=false;(blocked?training:start).focus({preventScroll:true});
+ return await new Promise(resolve=>{
+  document.getElementById('dailyLeave').onclick=()=>{location.href=location.pathname};
+  training.onclick=()=>{intro.hidden=true;renderDailyBanner();resolve(true)};
+  start.onclick=async()=>{
+   start.disabled=true;
+   try{
+    const res=await dailyClient.begin('daily-'+today.day+'-'+(globalThis.crypto?.randomUUID?.()||Date.now().toString(36)).replace(/[^A-Za-z0-9._-]/g,''));
+    if(res.status!=='started'){intro.hidden=true;showDailyResult({run:res,board:await dailyClient.board(today.day).catch(()=>null)});resolve(true);return}
+    Object.assign(socialChallenge,{training:false,challenge_id:'daily-'+today.day,operation_id:res.operation_id,started_at:res.started_at});
+    const local=attemptEngine.peek(),hasLocal=local?.mode==='challenge'&&local.challengeId===socialChallenge.challenge_id;
+    if(!hasLocal&&res.resumed)challengeResumeElapsedMs=Math.max(0,Date.parse(res.server_now)-Date.parse(res.started_at));
+    intro.hidden=true;renderDailyBanner();resolve(true);
+   }catch(e){status.textContent=dailyErrorMessage(e);start.disabled=false}
+  };
+ });
+}
 
 // #35 (EPIC #881 Lot 2): optional friends and direct challenges, accounts only.
 // Direct challenges reuse existing challenges (same engine, same #889 rule).
@@ -2750,7 +2852,7 @@ function handleLearningTap(event){
  if(document.querySelector('#mapModal:not([hidden]),#rulesModal:not([hidden]),#feedbackModal:not([hidden]),#tutorialOverlay:not([hidden]),#badgeRulesModal:not([hidden])'))return;
  // Learning restrictions apply to gameplay, never to account dialogs or other controls
  // (#711: the full-screen signed-out and account-switch layers sit above the board).
- if(target.closest("#installOptin,#accountOptin,#signedOutScreen,#accountSwitchHold,#authLinkResult,#passwordRecovery,#pwaWelcome,#mandatoryNickname,#erasedAccountNotice,#mobileAuthPopover,#mobileAccount,#lumenShareDialog,#skyRevealShareResult,#friendsModal,#friendPickerModal,#new,#tutorialHelp,#attemptPause,#attemptMask,#feedbackBtn,#learningCoachNext,#learningSkip"))return;
+ if(target.closest("#installOptin,#accountOptin,#signedOutScreen,#accountSwitchHold,#authLinkResult,#passwordRecovery,#pwaWelcome,#mandatoryNickname,#erasedAccountNotice,#mobileAuthPopover,#mobileAccount,#lumenShareDialog,#skyRevealShareResult,#dailyIntro,#dailyResultModal,#friendsModal,#friendPickerModal,#new,#tutorialHelp,#attemptPause,#attemptMask,#feedbackBtn,#learningCoachNext,#learningSkip"))return;
  if(target.closest("#board .cell"))return;
  if(target.closest('#openSky')&&lumenUser&&!qaActive)void openPlayReviewMapFromLearning();
  event.preventDefault();event.stopImmediatePropagation();
@@ -2953,7 +3055,7 @@ let victoryClockFreeze=null;
 function freezeVictoryClock(){
  if(victoryClockFreeze)return;
  const ms=attemptEngine.activeMs();
- victoryClockFreeze={ms,official:socialChallenge?Math.max(0,Math.floor(ms/1000)):attemptEngine.officialSeconds()};
+ victoryClockFreeze={ms,official:socialChallenge&&!socialChallenge.daily?Math.max(0,Math.floor(ms/1000)):attemptEngine.officialSeconds()};
  clearInterval(timer);clock();
 }
 function thawVictoryClock(){if(!victoryClockFreeze)return;victoryClockFreeze=null;clearInterval(timer);timer=setInterval(clock,100);clock()}
@@ -2967,7 +3069,7 @@ function clock(){
   else if(label){const remaining=badgeCooldownRemaining(questPerformanceRecord(activeQuest(),lumenProgress));label.textContent=" · Hors qualification badges"+(remaining?" — "+badgeCooldownLabel(remaining):"")}
  }
  const ms=activeGameMs(),s=Math.max(0,Math.floor(ms/1000));
- document.getElementById("time").textContent=formatDuration(victoryClockFreeze?victoryClockFreeze.official:socialChallenge?s:attemptEngine.officialSeconds());
+ document.getElementById("time").textContent=formatDuration(victoryClockFreeze?victoryClockFreeze.official:socialChallenge&&!socialChallenge.daily?s:attemptEngine.officialSeconds());
  const cd=document.getElementById("speedCountdown"),fill=document.getElementById("speedCountdownFill"),targetMs=speedTargetSeconds(activeQuestOrdinal()-1)*1000,visualWindowMs=30000;
  if(cd){
   const remainingMs=targetMs-ms,show=!celebrated&&activePerformanceEligibility().speed&&remainingMs<=visualWindowMs&&remainingMs>0;
@@ -5407,7 +5509,7 @@ function startBadgeCooldownRefresh(){
   });
  },15000);
 }
-function openJourneyMap(focusSky=false,{detail=false,advanceOnClose=false,learningTour=false,questIndex=null,constellationId=null}={}){
+function openJourneyMap(focusSky=false,{detail=false,advanceOnClose=false,learningTour=false,questIndex=null,constellationId=null}={}){void refreshDailyEntry();
  learningTour=learningTour||firstLearningSkyVisit();
  const explicitIndex=Number.isInteger(questIndex);
  if(playReviewReturn&&!learningTour&&!explicitIndex&&playReviewReturn.questId===activeQuest()?.id&&
@@ -5491,7 +5593,7 @@ document.addEventListener("click",handleLearningTap,true);
 // server snapshot before the board is created so campaign progression is never mutated.
 setupMobileAuth();setupTutorial();setupOutsideDefaults();setupQaMode();
 async function bootGame(){
- await bootstrapSocialChallenge();restoreCanonicalCampaignAttempt();init();refreshJourney();
+ if(!(await bootstrapDailyChallenge()))await bootstrapSocialChallenge();restoreCanonicalCampaignAttempt();init();void refreshDailyEntry();void retryPendingDaily();refreshJourney();
  try{
   const first=canonicalQuestList()[0],entry=CONTENT_CONSTELLATIONS.find(c=>c.id===first.constellationId);
   const figureSvg=astronomicalReferenceSvg(entry);
