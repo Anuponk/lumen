@@ -23,6 +23,11 @@ for(const html of [index,page]){
 assert.doesNotMatch(index,/application\/ld\+json/,'The game shell keeps no inline script (module-structure contract)');
 
 // Presentation page: readable without JavaScript, structured data, real facts.
+ for(const field of ['title','description','image','image:alt']){
+  assert.equal(meta(page,'name','twitter:'+field),meta(page,'property','og:'+field));
+ }
+ assert.equal(meta(page,'property','og:image:width'),'1200');
+ assert.equal(meta(page,'property','og:image:height'),'630');
 assert.match(page,/<h1>[^<]{10,}<\/h1>/);
 assert.doesNotMatch(page,/<script\b(?![^>]*application\/ld\+json)/,'No executable script on the presentation page');
 const ld=JSON.parse(page.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);

@@ -171,6 +171,7 @@ export const nodeSuites=[
  "auth-email-ledger-contract-tests.mjs",
  "auth-email-hook-integration-tests.mjs",
  "analytics-tests.mjs",
+ "lumen-share-tests.mjs",
  "module-structure-tests.mjs",
  "responsive-architecture-tests.mjs",
  "locked-quest-icon-tests.mjs",

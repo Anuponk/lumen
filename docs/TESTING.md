@@ -2483,6 +2483,7 @@ Not testable here: the real private repository. The owner checks a deployment af
   - a real tap on « Plus tard » closes it during the tutorial;
   - no repeat after reload, and a plain visit is unchanged.
 - `scripts/landing-browser.mjs`: on phones the install link is shown and the QR is hidden; on computers (≥ 900 px with a fine pointer) the QR is shown and loads, and the link is hidden.
+- Partage (#779/#759) : `node scripts/lumen-share-tests.mjs` couvre le contenu des payloads publics, l’annulation native et Clipboard. `credits-browser-tests.mjs` vérifie le menu invité au clavier en portrait, la copie desktop, la sélection manuelle et la conservation de la grille. `victory-layout-browser-tests.mjs` vérifie le partage du texte et du PNG après une vraie victoire QA. [Recette de publication](marketing/PARTAGE_LUMEN.md#recette-après-publication).
 - QR: `node scripts/landing-qr.mjs` regenerates it, and `--check` verifies it. It was decoded once with an external reader during review; the test itself has no decoder dependency.
 - Owner: scan the QR with an Android phone and an iPhone, and install from both.
 
