@@ -22,38 +22,21 @@ const MEASURE = `(()=>{const c=document.getElementById('scriptedLearn'),b=docume
  return {title:document.getElementById('scriptedLearnTitle').textContent.trim(),covered:ox*oy,boardWidth:Math.round(g.width),gapBelow:Math.round(innerHeight-Math.max(document.querySelector('.game-core').getBoundingClientRect().bottom,document.querySelector('.actions').getBoundingClientRect().bottom)),coachHeight:Math.round(r.height),fullText:document.getElementById('scriptedLearnCopy').scrollHeight<=document.getElementById('scriptedLearnCopy').clientHeight+1,helpReachable:(()=>{const h=document.getElementById('tutorialHelp').getBoundingClientRect();return r.top>=h.bottom+8})(),nextVisible:(()=>{const n=document.getElementById('learningCoachNext');if(n.hidden)return true;const q=n.getBoundingClientRect();return q.bottom<=innerHeight&&q.top>=0})()}})()`;
 async function freshGuest(width, height, locale = 'fr') {
   await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: true });
-  const fixture = await send('Page.addScriptToEvaluateOnNewDocument', {
-    source: `if(!sessionStorage.getItem('coachTest')){localStorage.clear();sessionStorage.setItem('coachTest','1')}localStorage.setItem('lumenSound','off');${locale === 'en' ? "Object.defineProperty(navigator,'standalone',{value:true});" : ''}`,
-  });
   const isEnglish = locale === 'en';
-  // Start the ordinary entry point with an injected translator on this fixture only.
-  if (isEnglish) {
-    await send('Network.setBypassServiceWorker', { bypass: true });
-    await send('Network.setBlockedURLs', { urls: ['*/src/main.js'] });
-  }
+  const languages = isEnglish ? ['de-DE', 'en-GB'] : ['fr-FR'];
+  const fixture = await send('Page.addScriptToEvaluateOnNewDocument', {
+    source: `if(!sessionStorage.getItem('coachTest')){localStorage.clear();sessionStorage.setItem('coachTest','1')}localStorage.setItem('lumenSound','off');
+      Object.defineProperty(navigator,'languages',{value:${JSON.stringify(languages)}});
+      ${isEnglish ? "Object.defineProperty(navigator,'standalone',{value:true});" : ''}`,
+  });
   try {
-    const params = { url: process.env.LUMEN_TEST_URL || 'http://127.0.0.1:8000/' };
-    if (isEnglish) {
-      const previous = await evaluate('performance.timeOrigin');
-      await send('Page.navigate', params);
-      await until(`performance.timeOrigin !== ${previous} && document.readyState === 'complete'`);
-      assert.equal(await evaluate('!!window.lumenDiagnostics'), false, 'Default entry point stays blocked in the fixture');
-    } else {
-      await navigateAndWait({ send, evaluate }, 'Page.navigate', params);
-    }
+    await navigateAndWait({ send, evaluate }, 'Page.navigate', { url: process.env.LUMEN_TEST_URL || 'http://127.0.0.1:8000/' });
   } finally {
     await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: fixture.identifier });
-    if (isEnglish) {
-      await send('Network.setBlockedURLs', { urls: [] });
-      await send('Network.setBypassServiceWorker', { bypass: false });
-    }
   }
+  assert.equal(await evaluate("document.getElementById('gameLocaleSetting').hidden"), false, 'The normal game entry point exposes the language selector');
+  assert.equal(await evaluate("document.documentElement.lang"), locale);
   if (isEnglish) {
-    await evaluate(`(async()=>{
-      const {startGameScreen}=await import('/src/ui/game-screen.js');
-      const {createLocalePreference}=await import('/src/ui/i18n.js');
-      startGameScreen({localePreference:createLocalePreference({storage:localStorage,languages:['de-DE','en-GB']})});
-    })()`, true);
     await until("!document.getElementById('pwaWelcome').hidden");
     assert.equal(await evaluate("document.activeElement.textContent"), 'I’ve played before — Find my progress');
     await evaluate("document.getElementById('pwaWelcomeNew').click()");
@@ -162,6 +145,16 @@ try {
   await evaluate("document.getElementById('replayIntroduction').click()");
   await until("!!document.querySelector('.first-welcome:not([hidden]) .intro-caption:not([hidden])')");
   assert.equal(await evaluate("document.querySelector('.first-welcome').getAttribute('aria-label')"), 'Lumen — Le réveil du ciel');
+  const reloadFixture = await send('Page.addScriptToEvaluateOnNewDocument', {
+    source: "Object.defineProperty(navigator,'languages',{value:['en-US']})",
+  });
+  try {
+    await navigateAndWait({ send, evaluate }, 'Page.reload');
+    assert.equal(await evaluate("document.getElementById('gameLocaleMode').value"), 'fr');
+    assert.equal(await evaluate("document.documentElement.lang"), 'fr', 'A saved explicit choice wins over the browser language after reload');
+  } finally {
+    await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: reloadFixture.identifier });
+  }
   // #688: opening the sign-up screen during a learning step.
   await freshGuest(390, 844);
   const title = await evaluate(`document.getElementById('scriptedLearnTitle').textContent.trim()`);

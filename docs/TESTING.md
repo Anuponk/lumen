@@ -338,12 +338,12 @@ automatic preferences, restricted storage, missing keys and placeholders, and
 number, currency, date and plural formatting, including a partial German fixture.
 `node scripts/onboarding-locale-tests.mjs` checks French and English catalogue parity
 and the English copy for the actual pre-action, placement and drag steps. The
-coach-placement browser suite runs the English first-open-to-tutorial path in
+coach-placement browser suite runs the English first-open-to-tutorial path from the public game entry point in
 an installed-app fixture at 320px and 360px, checking complete text, stable board
 geometry, and preserved progress and attempt state.
 The welcome browser suite exercises English controls, accessibility and copy at
 360px while checking the live board, progress and attempt. The service worker
-suite checks that the production module graph includes the welcome, learning and board catalogues in both languages. The locale suite verifies board and rules keys and placeholders against their render sites. The coach-placement browser suite checks localized controls and territory labels, opening and closing help, and preservation of the board, progress and attempt. It also changes the language in both directions during an active lesson while offline, with assertions for DOM identity, saved board and attempt, and the localized lesson and cell label.
+suite checks that the production module graph includes the welcome, learning and board catalogues in both languages. The locale suite verifies board and rules keys and placeholders against their render sites. The coach-placement browser suite checks localized controls and territory labels, opening and closing help, and preservation of the board, progress and attempt. It also changes the language in both directions during an active lesson while offline, with assertions for DOM identity, saved board and attempt, and the localized lesson and cell label. It then reloads with an English browser preference and verifies that the explicitly selected French mode stays active. The general browser gate uses a French Chrome profile for French wording assertions.
 
 `node scripts/first-welcome-tests.mjs` covers fresh/returning/owned contexts,
 deep links, denied/unverified presentation storage, exact texts, scene boundaries,
