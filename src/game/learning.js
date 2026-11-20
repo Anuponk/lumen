@@ -105,18 +105,10 @@ export function learningCopy(step, state, coarse = false) {
 }
 
 // #862: the territory numbers are a teaching aid of the quest-1 introduction.
-// They appear only while that introduction is really taught: first time (not
-// skipped, quest 1 not yet solved) or an explicit tutorial replay. Gameplay,
-// regions and constraints are unaffected.
-export function territoryNumbersVisible({
-  introActive = false,
-  scriptedActive = false,
-  learningReplay = false,
-  tutorialSkipped = false,
-  firstQuestSolved = false,
-  tutorialCompleted = false,
-} = {}) {
-  if (!introActive || !scriptedActive) return false;
-  if (learningReplay) return true;
-  return !tutorialSkipped && !firstQuestSolved && !tutorialCompleted;
+// They appear only while that introduction is really on screen: an intro step
+// of an active scripted lesson. A skipped tutorial (persisted flag) is not an
+// active lesson, even though the in-memory intro cursor resets on reload; an
+// explicit tutorial replay is. Gameplay, regions and constraints are unaffected.
+export function territoryNumbersVisible({ introActive = false, scriptedActive = false } = {}) {
+  return introActive === true && scriptedActive === true;
 }

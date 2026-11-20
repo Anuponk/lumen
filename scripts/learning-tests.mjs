@@ -117,13 +117,11 @@ assert.match(onboardingUi,/function autoMarkingLessonRequired\(\)\{return false\
 
 // #862: territory numbers only while the quest-1 introduction is really taught.
 {
-  const intro = { introActive: true, scriptedActive: true };
-  assert.equal(territoryNumbersVisible(intro), true, 'first-time introduction shows the numbers');
-  assert.equal(territoryNumbersVisible({ ...intro, tutorialSkipped: true }), false, 'skipped tutorial hides them');
-  assert.equal(territoryNumbersVisible({ ...intro, firstQuestSolved: true }), false, 'returning to a solved quest 1 hides them');
-  assert.equal(territoryNumbersVisible({ ...intro, tutorialCompleted: true }), false, 'completed tutorial hides them');
-  assert.equal(territoryNumbersVisible({ ...intro, tutorialCompleted: true, tutorialSkipped: true, learningReplay: true }), true, 'explicit tutorial replay teaches again');
-  assert.equal(territoryNumbersVisible({ ...intro, introActive: false }), false, 'outside the introduction steps');
-  assert.equal(territoryNumbersVisible({ ...intro, scriptedActive: false }), false, 'outside scripted learning');
+  assert.equal(territoryNumbersVisible({ introActive: true, scriptedActive: true }), true, 'intro step of an active lesson');
+  assert.equal(territoryNumbersVisible({ introActive: true, scriptedActive: false }), false, 'skipped tutorial or ordinary replay: empty quest-1 board without numbers');
+  assert.equal(territoryNumbersVisible({ introActive: false, scriptedActive: true }), false, 'after the introduction steps (ACT)');
   assert.equal(territoryNumbersVisible(), false);
+  const ui = onboardingUi;
+  assert.match(ui, /territoryNumbersVisible\(\{introActive:learningIntroActive\(\),scriptedActive:scriptedLearningActive\(\)\}\)/, 'numbers follow the scripted lesson, which honours lumenSkipFirstGridTutorial');
+  assert.doesNotMatch(ui, /learningIntroActive\(\)&&shown===0/, 'no number drawn from the intro cursor alone');
 }

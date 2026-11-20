@@ -2435,8 +2435,7 @@ function activePerformanceEligibility(){return performanceEligibility(activeQues
 function learningQuestActive(){return (questLearningRules(activeQuestOrdinal()).scripted||learningReplayActive()&&activeQuestOrdinal()===2)&&!socialChallenge&&(!replayMode||learningReplayActive())}
 // #862: computed once per render; hidden after the tutorial was skipped or done.
 function territoryNumbersShown(){
- return territoryNumbersVisible({introActive:learningIntroActive(),scriptedActive:scriptedLearningActive(),learningReplay:learningReplayActive(),
-  tutorialSkipped:skipFirstGridTutorial,firstQuestSolved:!!lumenProgress?.solved?.[0],tutorialCompleted:tutorialCompletedProof()});
+ return territoryNumbersVisible({introActive:learningIntroActive(),scriptedActive:scriptedLearningActive()});
 }
 function learningIntroActive(){return activeQuestOrdinal()===1&&learningQuestActive()&&state&&state.flat().every(v=>v===0)&&learningIntroStep<LEARNING_INTRO.length}
 function currentLearningStep(){if(learningIntroActive())return {phase:"intro",introStep:learningIntroStep,cells:[],number:0};return activeQuestOrdinal()===2?dragLearningStep(puz,state):learningStep(puz,state)}
