@@ -334,6 +334,30 @@ de vente. `binding_probe_unsupported` désigne un marqueur absent ou inattendu,
 Les états de diagnostic sont éphémères et ne contiennent ni compte, ni jeton,
 ni détail brut du fournisseur.
 
+### Article déjà possédé et comptes Lumen multiples (#864)
+
+Un achat Google Play non consommable reste détenu par le **compte Google Play**
+du téléphone, quel que soit le compte Lumen connecté. Avant d'ouvrir la feuille
+Play (et après une feuille fermée en erreur ou annulée), Lumen lit
+`listPurchases()` pour le SKU choisi et fait vérifier ce jeton par
+`lumen-play-purchase` **pour le compte Lumen connecté seulement** :
+
+| Réponse serveur | Affichage | Action du joueur |
+|---|---|---|
+| `paid` | « Achat confirmé » après relecture des droits | aucune |
+| `owned_elsewhere` | achat rattaché à un autre compte Lumen | se reconnecter au compte Lumen d'origine |
+| `account_unverified` | achat Play non rattaché à un compte vérifiable (achats antérieurs à la liaison du 19/11/2026) | contacter l'assistance |
+| `not_paid` | achat annulé ou remboursé | réessayer après libération par Google |
+
+Jamais de nouvelle feuille de paiement pour un SKU détenu, jamais de transfert
+entre comptes Lumen. Rattachement d'un achat **réel** non lié : vérifier la
+commande dans Play Console puis l'ajouter à `LUMEN_PLAY_RECOVERY_ORDERS`
+(commande → UUID Auth) ; ce secours ne s'applique pas aux achats de test.
+**Campagnes de recette multi-comptes** : utiliser un compte Google Play testeur
+par compte Lumen, ou rembourser **et révoquer** la commande de test dans Play
+Console (Gestion des commandes) avant de rejouer un SKU. Ne jamais révoquer une
+commande réelle ni modifier un droit pour débloquer un test.
+
 ### Notifications Google Play (RTDN)
 
 Appliquer `20261119095750_play_account_bindings_729.sql` après les migrations
