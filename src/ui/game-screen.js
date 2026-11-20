@@ -2,6 +2,7 @@ import {setupAppUpdates} from './app-updates.js';
 import {consumeInstallRequest,isIosDevice,requestedInstallCopy,installGuestWarning} from './install-request.js';
 import {pwaFirstOpenEligible,createPwaFirstOpen} from './pwa-first-open.js';
 import {readNativeAuthLinkResult,scrubNativeAuthLinkError,authLinkMessage} from '../persistence/auth-link-result.js';
+import {createPasswordRecoveryFlow,passwordRecoveryView} from './password-recovery.js';
 import {createAnalyticsNavigation} from './analytics-navigation.js';
 import {analyticsPlayers,buildAnalyticsDashboard,renderAnalyticsDashboard,revealAnalyticsQuest} from './analytics-dashboard.js';
 import {renderPlayerDirectory,renderPlayerSessions,rememberSessionExpansion} from './cockpit-sessions.js';
@@ -112,6 +113,11 @@ const bootAuthLink=(()=>{try{
  if(result?.status==='verified'&&result.kind==='recovery')sessionStorage.setItem('lumenPasswordRecoveryPending','1');
  return result;
 }catch{return null}})();
+// #820: a branded link (?lumen_confirm=…) is verified by cloud.js later; remember
+// its kind so a neutral « vérification » state is shown instead of the game.
+// Declared early: auth UI sync may run before the recovery helpers below.
+let authLinkWatchdog=null,passwordRecoveryFlowInstance=null;
+const bootBrandedLinkKind=(()=>{try{const params=new URL(location.href).searchParams;return params.get('lumen_confirm')?(params.get('type')==='recovery'?'recovery':'signup'):null}catch{return null}})();
 const firstWelcomeEligible=(()=>{try{return claimFirstWelcome(localStorage,new URL(location.href))}catch{return false}})();
 let firstWelcome=null;
 let adminAnalytics=null;
@@ -786,7 +792,7 @@ get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get navigationLocked(){return !!socialChallenge},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
-const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut,hydrateCloudProfile}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{queueMicrotask(()=>rankingView.mount());queueDiagnosticPreferenceRefresh();if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(["SIGNED_IN","TOKEN_REFRESHED"].includes(event?.authEvent)){const ownerId=lumenUser?.id,client=lumenSupabase;setTimeout(()=>{void resumeCanonicalAfterAuthRefresh(ownerId,client);void resumeLegacyAfterAuthRefresh(ownerId,client);acquisitionRecoveryAttempts=0;void acquisitionRecovery.wake()},0)}if(event?.type==="restore_failed"){cloudProfileFailure={reason:"restore_failed"};if(event.network)queueMicrotask(()=>enterNetworkUnavailable('auth'))}if(event?.type==="profile"){queueMicrotask(()=>void refreshRankingAccount());const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}if(event?.type==="password_recovery")sessionStorage.setItem("lumenPasswordRecoveryPending","1");updateAuthUI();if(event?.type==="auth_link")showAuthLinkResult(event.result);if(event?.type==="account"&&lumenUser)void refreshCanonicalOutboxNotice(lumenUser.id);if(event?.type==="account"&&navigator.onLine===false&&offlineQuestAccessContext().verifiedSession)void resumeOfflineAfterAuth(lumenUser?.id,lumenSupabase);if(event?.type==="password_recovery"){const editor=document.getElementById("accountProfileEditor");if(editor){editor.dataset.open="true";editor.hidden=false}const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=false;const password=document.getElementById("setPasswordPanel");if(password)password.hidden=false;document.getElementById("setPasswordValue")?.focus()}},renderDaily:(...args)=>renderDaily(...args),claimWalletDaily:(date,index)=>claimWalletDaily(date,index),afterAuthCloudSync:async()=>{
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut,hydrateCloudProfile}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{queueMicrotask(()=>rankingView.mount());queueDiagnosticPreferenceRefresh();if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(["SIGNED_IN","TOKEN_REFRESHED"].includes(event?.authEvent)){const ownerId=lumenUser?.id,client=lumenSupabase;setTimeout(()=>{void resumeCanonicalAfterAuthRefresh(ownerId,client);void resumeLegacyAfterAuthRefresh(ownerId,client);acquisitionRecoveryAttempts=0;void acquisitionRecovery.wake()},0)}if(event?.type==="restore_failed"){cloudProfileFailure={reason:"restore_failed"};if(event.network)queueMicrotask(()=>enterNetworkUnavailable('auth'))}if(event?.type==="profile"){queueMicrotask(()=>void refreshRankingAccount());const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}if(event?.type==="password_recovery")sessionStorage.setItem("lumenPasswordRecoveryPending","1");updateAuthUI();if(event?.type==="auth_link")showAuthLinkResult(event.result);if(event?.type==="account"&&lumenUser)void refreshCanonicalOutboxNotice(lumenUser.id);if(event?.type==="account"&&navigator.onLine===false&&offlineQuestAccessContext().verifiedSession)void resumeOfflineAfterAuth(lumenUser?.id,lumenSupabase);if(event?.type==="password_recovery")openPasswordRecovery()},renderDaily:(...args)=>renderDaily(...args),claimWalletDaily:(date,index)=>claimWalletDaily(date,index),afterAuthCloudSync:async()=>{
  if(qaActive||!lumenUser||!lumenSupabase)return;
  const priorAcquisitionRecovery=canonicalRecoveryContext;
  canonicalRecoveryContext=null;canonicalRecovery.cancel();
@@ -1410,13 +1416,21 @@ function passwordRecoveryCopy(result){
 // #820: one explicit verdict after an e-mail link, matched to the real session.
 let authLinkAction=null;
 function showAuthLinkResult(result){
+ clearTimeout(authLinkWatchdog);authLinkWatchdog=null;
  const message=authLinkMessage(result,{signedIn:!!lumenUser});
  const box=document.getElementById("authLinkResult");
  trackLumenEvent("auth_link_result",null,{status:result?.status==='verified'?'verified':'error',kind:result?.kind||'unknown',reason:result?.reason||null,signedIn:!!lumenUser,qa:qaActive});
- if(!message||!box)return;
+ // A verified recovery link opens the password form only with its real session.
+ if(result?.status==='verified'&&result.kind==='recovery'){
+  if(lumenUser&&passwordRecoveryPending())openPasswordRecovery();else passwordRecoveryFlow().sessionMissing();
+  return;
+ }
+ if(result?.status==='error'&&passwordRecoveryFlow().state.phase==='verifying')passwordRecoveryFlow().close();
+ if(!box)return;
+ if(!message){box.hidden=true;return}
  document.getElementById("authLinkResultTitle").textContent=message.title;
  document.getElementById("authLinkResultText").textContent=message.text;
- const action=document.getElementById("authLinkResultAction");action.textContent=message.label;
+ const action=document.getElementById("authLinkResultAction");action.textContent=message.label;action.hidden=false;
  authLinkAction=message.action;box.hidden=false;action.focus();
 }
 function completeAuthLinkResult(){
@@ -1433,23 +1447,72 @@ function setupAccountOfferDismiss(){
  for(const button of [close,later])if(button)button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();dismissAccountOffer()},{capture:true});
 }
 setupAccountOfferDismiss();
+showPendingAuthLink();
 function openAccountFromMenu(){const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=true;openEmailAccountOffer("signup")} 
-let accountPasswordSavePending=false;
-async function saveExistingAccountPassword(){
- if(accountPasswordSavePending)return;
- const password=document.getElementById("setPasswordValue")?.value;
- const status=document.getElementById("setPasswordStatus"),button=document.getElementById("setPasswordSave");
- accountPasswordSavePending=true;if(button)button.disabled=true;
- if(status)status.textContent="Enregistrement du mot de passe…";
- let result;
- try{result=await setAccountPassword(password)}finally{accountPasswordSavePending=false;if(button)button.disabled=false}
- if(status)status.textContent=result.ok?"Mot de passe défini ✓":result.reason==="password"?"Utilise au moins 12 caractères."
-  :result.reason==="same_password"?"Choisis un mot de passe différent de l’ancien."
-  :result.reason==="weak_password"?"Ce mot de passe est trop faible. Choisis-en un plus long ou plus varié."
-  :result.reason==="session_expired"?"Ce lien a expiré. Demande un nouveau lien de réinitialisation depuis « Se connecter »."
-  :result.reason==="network"?"Connexion impossible. Vérifie ton réseau, puis réessaie."
-  :"Impossible de modifier le mot de passe. Une réauthentification peut être nécessaire.";
- if(result.ok){const input=document.getElementById("setPasswordValue");if(input)input.value="";sessionStorage.removeItem("lumenPasswordRecoveryPending");location.reload();}
+// #820: dedicated recovery screen. The form is bound to the account whose
+// recovery session opened it; success is shown only after Supabase confirmed
+// the update, and the page never reloads before the player reads it.
+function passwordRecoveryPending(){try{return sessionStorage.getItem('lumenPasswordRecoveryPending')==='1'}catch{return false}}
+function clearPasswordRecoveryPending(){try{sessionStorage.removeItem('lumenPasswordRecoveryPending')}catch{}}
+function passwordRecoveryFlow(){
+ return passwordRecoveryFlowInstance||=createPasswordRecoveryFlow({updatePassword:password=>setAccountPassword(password),currentUser:()=>lumenUser,render:renderPasswordRecovery});
+}
+function renderPasswordRecovery(state,view){
+ const box=document.getElementById('passwordRecovery');if(!box)return;
+ box.hidden=!view;document.body.classList.toggle('password-recovery-open',!!view);
+ if(!view)return;
+ document.getElementById('passwordRecoveryTitle').textContent=view.title;
+ document.getElementById('passwordRecoveryText').textContent=view.text;
+ const form=document.getElementById('passwordRecoveryForm');if(form)form.hidden=!view.form;
+ const error=document.getElementById('passwordRecoveryError');if(error){error.textContent=view.error||'';error.hidden=!view.error}
+ const save=document.getElementById('passwordRecoverySave');if(save){save.disabled=!!view.busy;save.textContent=view.submitLabel||''}
+ for(const id of ['passwordRecoveryNew','passwordRecoveryConfirm','passwordRecoveryLater']){const input=document.getElementById(id);if(input)input.disabled=!!view.busy}
+ const account=document.getElementById('passwordRecoveryAccount');if(account)account.value=state.email||'';
+ const action=document.getElementById('passwordRecoveryAction');
+ if(action){action.hidden=!view.action;action.textContent=view.label||'';if(view.action)action.focus()}
+}
+function openPasswordRecovery(){
+ const before=passwordRecoveryFlow().state.phase;
+ passwordRecoveryFlow().open();
+ if(before!=='form'&&passwordRecoveryFlow().state.phase==='form')document.getElementById('passwordRecoveryNew')?.focus();
+}
+async function submitPasswordRecovery(event){
+ event?.preventDefault?.();
+ const fresh=document.getElementById('passwordRecoveryNew'),confirmation=document.getElementById('passwordRecoveryConfirm');
+ const result=await passwordRecoveryFlow().submit(fresh?.value,confirmation?.value);
+ if(result.reason==='busy')return;
+ trackLumenEvent('password_recovery_result',null,{ok:result.ok,reason:result.ok?null:result.reason,qa:qaActive});
+ if(result.ok){if(fresh)fresh.value='';if(confirmation)confirmation.value='';clearPasswordRecoveryPending();return}
+ if(result.reason==='mismatch')confirmation?.focus();
+ else if(passwordRecoveryFlow().state.phase==='form')fresh?.focus();
+}
+function completePasswordRecovery(){
+ const action=passwordRecoveryView(passwordRecoveryFlow().state)?.action;
+ passwordRecoveryFlow().close();clearPasswordRecoveryPending();
+ // The recovery hold skipped profile hydration: a reload resumes it normally.
+ if(action==='continue'){location.reload();return}
+ if(action==='signin'||action==='recover'){
+  openEmailAccountOffer('login');
+  if(action==='recover'){const status=document.getElementById('accountEmailStatus');if(status)status.textContent='Entre ton adresse, puis touche « Créer ou réinitialiser mon mot de passe ».'}
+ }
+}
+function postponePasswordRecovery(){passwordRecoveryFlow().close();clearPasswordRecoveryPending();location.reload()}
+// A link being verified shows a neutral state, never the game or a sign-in form.
+function showPendingAuthLink(){
+ const recovery=bootBrandedLinkKind==='recovery'||(bootAuthLink?.status==='verified'&&bootAuthLink.kind==='recovery');
+ const signup=bootBrandedLinkKind==='signup'||(bootAuthLink?.status==='verified'&&bootAuthLink.kind==='signup');
+ if(!recovery&&!signup)return;
+ if(recovery)passwordRecoveryFlow().verifying();
+ else{
+  const box=document.getElementById('authLinkResult'),action=document.getElementById('authLinkResultAction');
+  if(box&&action){document.getElementById('authLinkResultTitle').textContent='Vérification de ton adresse…';document.getElementById('authLinkResultText').textContent='Un instant, nous confirmons ton adresse e-mail.';action.hidden=true;box.hidden=false}
+ }
+ // Never leave the neutral state forever when Auth cannot answer.
+ authLinkWatchdog=setTimeout(()=>{
+  authLinkWatchdog=null;
+  if(recovery&&passwordRecoveryFlow().state.phase==='verifying')passwordRecoveryFlow().unreachable();
+  if(signup&&document.getElementById('authLinkResultAction')?.hidden)showAuthLinkResult({status:'error',kind:'signup',reason:'network'});
+ },20000);
 }
 function syncMobileAuthUI(){
  syncAdministrationMenu();
@@ -1467,9 +1530,8 @@ function syncMobileAuthUI(){
  }
  const signedIn=Boolean(lumenUser);
  const recovering=signedIn&&sessionStorage.getItem("lumenPasswordRecoveryPending")==="1";
- document.getElementById("mobileAuthPopover")?.classList.toggle("password-recovery",recovering);
- if(recovering){const editor=document.getElementById("accountProfileEditor");if(editor)editor.dataset.open="true";const password=document.getElementById("setPasswordPanel");if(password)password.hidden=false;const menu=document.getElementById("mobileAuthPopover");if(menu)menu.hidden=false}
- if(!signedIn)sessionStorage.removeItem("lumenPasswordRecoveryPending");
+ if(recovering)openPasswordRecovery();
+ if(!signedIn){sessionStorage.removeItem("lumenPasswordRecoveryPending");if(["form","saving"].includes(passwordRecoveryFlow().state.phase))passwordRecoveryFlow().sessionMissing()}
  const show=(id,visible)=>{const el=document.getElementById(id);if(el)el.hidden=!visible};
  if(!signedIn){const editor=document.getElementById("accountProfileEditor");if(editor)editor.dataset.open="false"}
  show("editAccountProfile",signedIn);
@@ -2606,7 +2668,7 @@ function handleLearningTap(event){
  if(document.querySelector('#mapModal:not([hidden]),#rulesModal:not([hidden]),#feedbackModal:not([hidden]),#tutorialOverlay:not([hidden]),#badgeRulesModal:not([hidden])'))return;
  // Learning restrictions apply to gameplay, never to account dialogs or other controls
  // (#711: the full-screen signed-out and account-switch layers sit above the board).
- if(target.closest("#installOptin,#accountOptin,#signedOutScreen,#accountSwitchHold,#authLinkResult,#pwaWelcome,#mandatoryNickname,#erasedAccountNotice,#mobileAuthPopover,#mobileAccount,#new,#tutorialHelp,#attemptPause,#attemptMask,#feedbackBtn,#learningCoachNext,#learningSkip"))return;
+ if(target.closest("#installOptin,#accountOptin,#signedOutScreen,#accountSwitchHold,#authLinkResult,#passwordRecovery,#pwaWelcome,#mandatoryNickname,#erasedAccountNotice,#mobileAuthPopover,#mobileAccount,#new,#tutorialHelp,#attemptPause,#attemptMask,#feedbackBtn,#learningCoachNext,#learningSkip"))return;
  if(target.closest("#board .cell"))return;
  event.preventDefault();event.stopImmediatePropagation();
 }
@@ -5323,7 +5385,9 @@ if(exportAccountStorage){
 }
 const copyAccountSyncDiagnostic=document.getElementById("copyAccountSyncDiagnostic");if(copyAccountSyncDiagnostic)copyAccountSyncDiagnostic.onclick=copyAccountCloudDiagnostic;
 const closeAccountSyncDiagnostic=document.getElementById("closeAccountSyncDiagnostic");if(closeAccountSyncDiagnostic)closeAccountSyncDiagnostic.onclick=()=>{document.getElementById("accountSyncDiagnosticPanel").hidden=true};
-const setPasswordSave=document.getElementById("setPasswordSave");if(setPasswordSave)setPasswordSave.onclick=saveExistingAccountPassword;
+const passwordRecoveryForm=document.getElementById("passwordRecoveryForm");if(passwordRecoveryForm)passwordRecoveryForm.addEventListener("submit",submitPasswordRecovery);
+const passwordRecoveryAction=document.getElementById("passwordRecoveryAction");if(passwordRecoveryAction)passwordRecoveryAction.onclick=completePasswordRecovery;
+const passwordRecoveryLater=document.getElementById("passwordRecoveryLater");if(passwordRecoveryLater)passwordRecoveryLater.onclick=postponePasswordRecovery;
 
 const recovery=document.getElementById("accountRecovery");if(recovery)recovery.onclick=recoverAccountPassword;
 const authLinkResultAction=document.getElementById("authLinkResultAction");if(authLinkResultAction)authLinkResultAction.onclick=completeAuthLinkResult;
