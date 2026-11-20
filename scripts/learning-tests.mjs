@@ -1,7 +1,7 @@
 import {readFileSync} from "node:fs";
 import assert from 'node:assert/strict';
 import { CAT } from '../src/campaign/catalogue.js';
-import { learningStep, dragLearningStep, learningAllows, learningCopy } from '../src/game/learning.js';
+import { learningStep, dragLearningStep, learningAllows, learningCopy, territoryNumbersVisible } from '../src/game/learning.js';
 import { createGameEngine } from '../src/game/engine.js';
 
 const puzzle = CAT['5'][0];
@@ -114,3 +114,14 @@ assert.match(installUi,/accountRequired\(\)/,"Do not offer install at account ga
 assert.match(installUi,/if\(!ios&&!lumenInstallPrompt\)return/,"Do not show unusable Android install CTA");
 assert.match(onboardingUi,/lumenProgress\.autoCrossUnlockSeen=1/,"Quest-six unlock tracked together with badge intro");
 assert.match(onboardingUi,/function autoMarkingLessonRequired\(\)\{return false\}/,"Retired marking never gates quest six");
+
+// #862: territory numbers only while the quest-1 introduction is really taught.
+{
+  assert.equal(territoryNumbersVisible({ introActive: true, scriptedActive: true }), true, 'intro step of an active lesson');
+  assert.equal(territoryNumbersVisible({ introActive: true, scriptedActive: false }), false, 'skipped tutorial or ordinary replay: empty quest-1 board without numbers');
+  assert.equal(territoryNumbersVisible({ introActive: false, scriptedActive: true }), false, 'after the introduction steps (ACT)');
+  assert.equal(territoryNumbersVisible(), false);
+  const ui = onboardingUi;
+  assert.match(ui, /territoryNumbersVisible\(\{introActive:learningIntroActive\(\),scriptedActive:scriptedLearningActive\(\)\}\)/, 'numbers follow the scripted lesson, which honours lumenSkipFirstGridTutorial');
+  assert.doesNotMatch(ui, /learningIntroActive\(\)&&shown===0/, 'no number drawn from the intro cursor alone');
+}
