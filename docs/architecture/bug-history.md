@@ -350,3 +350,17 @@ Le catalogue est valide (audit : 880 quêtes résolues par les indices). Une
 grille complète dont la victoire était différée pendant la restauration Auth
 partait au solveur, qui n'a plus rien à déduire. L'indice valide désormais la
 victoire et la fin de la restauration la relance.
+
+### #864 — « Article déjà possédé » sur un compte Lumen neuf
+
+Un produit non consommable Google Play appartient au **compte Google Play** de
+l'appareil, pas au compte Lumen. Constat en lecture seule (20/11/2026) :
+`real-adventure-03` est enregistré au registre pour un compte Lumen antérieur
+(`owned_elsewhere` pour tout autre compte) ; `real-adventure-02` a été payé le
+19/11 à 05:04 UTC, avant la liaison `obfuscatedExternalAccountId` (migration
+appliquée à 10:41 UTC), et reste donc `purchase_account_unverified` : le serveur
+ne devine jamais son propriétaire. Le client ouvrait pourtant la feuille Play
+(refus `ITEM_ALREADY_OWNED`) et la restauration résumait les deux refus en un
+message vague. Correctif : `findOwnedPlayPurchase` lit `listPurchases()` avant et
+après la feuille, fait vérifier le jeton pour le seul compte Lumen connecté et
+`playOwnershipMessage` explique chaque cas. Aucun transfert entre comptes Lumen.

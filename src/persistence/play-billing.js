@@ -50,6 +50,7 @@ export async function verifyPlayPurchase({fetchImpl=fetch,endpoint,apiKey,access
   if(response.status===409&&body.error==='purchase_owned_elsewhere')return {status:'owned_elsewhere'};
   if(response.status===409&&body.error==='purchase_account_unverified')return {status:'account_unverified'};
   if(response.status===409&&body.status==='not_paid')return body.revoked===true?{status:'not_paid',revoked:true}:{status:'not_paid'};
+  if(response.status===400&&body.error==='invalid_purchase')return {status:'not_paid'}; // #864: Google no longer knows this token.
   return {status:'error',reason:body.error||String(response.status)};
  }catch(_){return {status:'error',reason:'network'}}
 }
@@ -83,6 +84,29 @@ export async function restorePlayPurchases({service,verify,reportListFailure=fal
   results.push({itemId:item.itemId,...await verify(item.itemId,item.purchaseToken)});
  }
  return results;
+}
+
+// #864: a non-consumable belongs to the device's Google Play account, not to the
+// signed-in Lumen account. Before opening (and after a failed) Play sheet, read Play's
+// local list for this SKU so that ITEM_ALREADY_OWNED becomes an explained state.
+// 'unknown' never proves absence: the caller may still let Play decide (no double charge).
+export async function findOwnedPlayPurchase(service,sku){
+ let items;
+ try{items=await service?.listPurchases?.()}catch(_){/* An unreadable list proves nothing. */}
+ if(!Array.isArray(items))return {status:'unknown'};
+ const item=items.find(i=>i?.itemId===sku&&typeof i.purchaseToken==='string'&&i.purchaseToken);
+ return item?{status:'owned',purchase:{itemId:item.itemId,purchaseToken:item.purchaseToken}}:{status:'not_owned'};
+}
+
+// #864: what a server verification of a purchase already held by Google Play means for
+// the signed-in Lumen account. Never suggests a transfer between Lumen accounts.
+export function playOwnershipMessage(status,title){
+ const name=title?'« '+title+' »':'cet article';
+ if(status==='owned_elsewhere')return 'Ton compte Google Play possède déjà '+name+', mais cet achat est rattaché à un autre compte Lumen. Reconnecte-toi au compte Lumen utilisé lors de l’achat pour y accéder, sans nouveau paiement.';
+ if(status==='account_unverified')return 'Ton compte Google Play possède déjà '+name+', mais cet achat n’est rattaché à aucun compte Lumen vérifiable. Contacte l’assistance : il sera rattaché après vérification, sans nouveau paiement.';
+ if(status==='not_paid')return 'Google Play indique que l’achat de '+name+' a été annulé ou remboursé. Réessaie dans quelques minutes, le temps que Google Play le libère.';
+ if(status==='pending')return 'Google Play traite encore le paiement de '+name+'. Tes droits seront actualisés après confirmation.';
+ return 'Ton compte Google Play possède déjà '+name+', mais sa vérification est indisponible. Réessaie « Restaurer mes achats », sans nouveau paiement.';
 }
 
 // Only validated provider prices. Never substitute catalogue prices in the Play app.

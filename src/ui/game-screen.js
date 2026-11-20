@@ -93,7 +93,7 @@ import {mountAdventureAccess} from './adventure-access-panel.js';
 import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
 import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery} from './adventure-offer.js';
 import {purchaseThanksModel,showPurchaseThanks} from './purchase-thanks.js';
-import {PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,createForegroundRecovery,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,toPlayProductId} from '../persistence/play-billing.js';
+import {PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,createForegroundRecovery,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,toPlayProductId,findOwnedPlayPurchase,playOwnershipMessage} from '../persistence/play-billing.js';
 import {rememberPlayAppLaunch,isPlayDistributedApp,stripeCheckoutAvailable,startStripeCheckout,stripeSessionStatus,restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage} from '../persistence/stripe-checkout.js';
 import {SKY_PRODUCT_ID} from '../campaign/store-catalogue.js';
 import {createSound} from "./sound.js";
@@ -4380,29 +4380,61 @@ async function purchaseAdventure(productId,{setStatus,setBusy,waiver}){
   void preparePlayPurchaseAccount();
   return;
  }
- setBusy(true);setStatus('Ouverture du paiement Google Play…');
- const result=await buyWithPlay({productId:toPlayProductId(productId),obfuscatedAccountId:account.binding,verify:(sku,token)=>{
+ setBusy(true);
+ // #864: Google Play owns non-consumables per Google account. If this SKU is already
+ // held, verify that purchase for the signed-in Lumen account instead of opening a sheet
+ // that Google refuses (ITEM_ALREADY_OWNED). An unreadable list lets Play decide.
+ const sku=toPlayProductId(productId);
+ const before=await findOwnedPlayPurchase(playBilling,sku);
+ if(lumenUser?.id!==owner||lumenSupabase!==client)return;
+ if(before.status==='owned'){await settleOwnedPlayPurchase(productId,before.purchase,{setStatus,owner,client});setBusy(false);return}
+ setStatus('Ouverture du paiement Google Play…');
+ const result=await buyWithPlay({productId:sku,obfuscatedAccountId:account.binding,verify:(sku,token)=>{
   setStatus('Vérification de l’achat Google Play…');
   return playVerify(sku,token,client,owner);
  }});
  if(lumenUser?.id!==owner||lumenSupabase!==client)return;
- if(result.status==='paid'){
-  await loadEntitlements();
+ if(result.status==='cancelled'||result.reason==='payment_unsupported'){
+  // The sheet may have closed on ITEM_ALREADY_OWNED (stale Play cache, other device).
+  const after=await findOwnedPlayPurchase(playBilling,sku);
   if(lumenUser?.id!==owner||lumenSupabase!==client)return;
-  const expected=productId===SKY_PRODUCT_ID
-   ?CONTENT_PACKS.filter(pack=>pack.skyId==='real-sky'&&pack.access==='locked').map(pack=>pack.id)
-   :[productId];
-  const confirmed=lumenEntitlementsState==='ready'&&expected.every(id=>lumenEntitlements.some(row=>row.entitlement===id));
-  if(confirmed){setStatus('Achat confirmé ✓ Bonne exploration !');skyNavigation.render();thankForPurchase(productId)}
-  else {setStatus('Google Play a confirmé le paiement. Tes droits sont en cours de synchronisation.');void maybeRestorePlayPurchases()}
+  if(after.status==='owned'){await settleOwnedPlayPurchase(productId,after.purchase,{setStatus,owner,client});setBusy(false);return}
  }
+ if(result.status==='paid')await confirmPlayPurchase(productId,{setStatus,owner,client});
  else if(result.status==='pending'){setStatus('Google Play traite ton paiement. Tes droits seront actualisés après confirmation.');void maybeRestorePlayPurchases()}
  else if(result.status==='cancelled')setStatus('');
  else if(result.reason==='payment_unsupported'){console.info('[Lumen Play billing]',{reason:'payment_unsupported'});setStatus('Le paiement Google Play est indisponible sur cet appareil.');}
- else if(result.status==='owned_elsewhere')setStatus('Cet achat est déjà associé à un autre compte Lumen.');
+ else if(result.status==='owned_elsewhere'||result.status==='account_unverified')setStatus(playOwnershipMessage(result.status,playProductTitle(productId)));
  else if(result.status==='not_paid'){setStatus('Google Play indique que ce paiement a été annulé.');void maybeRestorePlayPurchases()}
- else {setStatus('La vérification est en cours. Tu peux vérifier tes achats Google Play sans repayer.');void maybeRestorePlayPurchases()}
+ else {setStatus('La vérification est en cours. Tu peux restaurer tes achats Google Play sans repayer.');void maybeRestorePlayPurchases()}
  setBusy(false);
+}
+function playProductTitle(productId){
+ if(productId===SKY_PRODUCT_ID)return 'Tout le vrai ciel';
+ return CONTENT_PACKS.find(pack=>pack.id===productId)?.displayName||'';
+}
+function playProductFromSku(sku){return typeof sku==='string'?sku.replaceAll('_','-'):''}
+// Rights are announced only after the server confirmed and the entitlements were reread.
+async function confirmPlayPurchase(productId,{setStatus,owner,client}){
+ await loadEntitlements();
+ if(lumenUser?.id!==owner||lumenSupabase!==client)return;
+ const expected=productId===SKY_PRODUCT_ID
+  ?CONTENT_PACKS.filter(pack=>pack.skyId==='real-sky'&&pack.access==='locked').map(pack=>pack.id)
+  :[productId];
+ const confirmed=lumenEntitlementsState==='ready'&&expected.every(id=>lumenEntitlements.some(row=>row.entitlement===id));
+ if(confirmed){setStatus('Achat confirmé ✓ Bonne exploration !');skyNavigation.render();thankForPurchase(productId)}
+ else {setStatus('Google Play a confirmé le paiement. Tes droits sont en cours de synchronisation.');void maybeRestorePlayPurchases()}
+}
+// #864: a purchase already held by Google Play is verified for this Lumen account only.
+// The server refuses a token bound to another account; nothing is ever transferred.
+async function settleOwnedPlayPurchase(productId,purchase,{setStatus,owner,client}){
+ setStatus('Google Play indique que tu possèdes déjà cet article. Vérification pour ce compte Lumen…');
+ const result=await playVerify(purchase.itemId,purchase.purchaseToken,client,owner);
+ // Non-sensitive diagnostic: product and server state only, never a token or an account.
+ console.info('[Lumen Play billing]',{reason:'already_owned',productId,status:result.status});
+ if(lumenUser?.id!==owner||lumenSupabase!==client)return;
+ if(result.status==='paid'){await confirmPlayPurchase(productId,{setStatus,owner,client});return}
+ setStatus(playOwnershipMessage(result.status,playProductTitle(productId)));
 }
 // Play recovery is independent of the price loader and never opens Payment Request.
 let playRestoreInFlight=null;
@@ -4442,7 +4474,9 @@ function playRestoreMessage(outcome,{manual=false}={}){
  if(paid)return 'Achats Google Play vérifiés. Tes droits sont à jour.';
  if(results.some(r=>r.status==='pending'))return 'Google Play traite encore un paiement. Nous vérifierons à nouveau son état.';
  if(manual&&results.some(r=>r.status==='account_unverified'||r.status==='owned_elsewhere')){
-  return 'Aucun achat Google Play n’a pu être associé à ce compte Lumen. Si tu attends un achat, vérifie le compte utilisé dans le Play Store.';
+  // #864: name each purchase and say why it stays on its original Lumen account.
+  return results.filter(r=>r.status==='account_unverified'||r.status==='owned_elsewhere')
+   .map(r=>playOwnershipMessage(r.status,playProductTitle(playProductFromSku(r.itemId)))).join(' ');
  }
  if(results.some(r=>r.status==='not_paid'))return 'Google Play ne confirme aucun droit pour cet achat.';
  return manual?'Aucun achat Google Play à restaurer.':'';
