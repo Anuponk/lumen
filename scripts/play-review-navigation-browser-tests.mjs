@@ -85,6 +85,7 @@ try{
  const before=await evaluate(activeAttempt);
  assert.equal(before.state,'RUNNING');
  await click('#openSky');await until(visibleStatus);
+ assert.equal(await evaluate("document.getElementById('mapDetail').hidden"),false,'Review returns to the quest selection');
  await selectQuest(lateCanonical);
  await click('#openSky');await until(visibleStatus);
  await selectQuest(lateLegacy);

@@ -5231,7 +5231,8 @@ function renderMap(){
  // Refresh the streak from the same live daily state used by its help dialog.
  // Previously this card retained the initial 0 until another daily event fired.
  renderDaily();
- renderPlayReviewStatus();skyNavigation.render();const puzzleGrid=document.getElementById("puzzleGrid");
+ renderPlayReviewStatus();
+ skyNavigation.render();const puzzleGrid=document.getElementById("puzzleGrid");
  puzzleGrid.innerHTML="";let range=mapConstellationRange(mapConstellation)||constellationGridRange(mapConstellation);for(const [offset,i] of range.quests.entries()){let solved=!!lumenProgress.solved[i],current=i===currentQuestPosition()&&questIsAccessible(i),b=document.createElement("button"),pos=offset+1,meta=performanceBadges(i);b.className="puzzle-card"+(solved?" done":"")+(current?" current":"")+(!solved&&!current?" locked":"")+(solved&&badgeCooldownRemaining(lumenProgress.performances?.[i])?" badge-on-cooldown":"");b.innerHTML=solved?meta:(current?'<span class="puzzle-new-icon">✦</span><span class="puzzle-new-label">Nouvelle</span><span class="puzzle-new-number">Quête '+pos+'</span>':'<span class="puzzle-lock-only" aria-hidden="true">🔒</span>');b.title=solved?"Rejouer la quête "+pos+" pour améliorer ta performance":current?"Nouvelle quête disponible · quête "+pos:"Quête "+pos+" · verrouillée";b.onclick=()=>{if(solved&&questIsAccessible(i)){startReplay(i);return}if(!current)return;canonicalActiveQuest=null;levelIndex=i;replayMode=false;document.getElementById("mapModal").hidden=true;loadPuzzle();refreshJourney()};puzzleGrid.appendChild(b)}
  // Use the same canonical quest collection as the cockpit. Historic range.quests
  // omits inserted grids, which previously left Grande Ourse at only six cards.
@@ -5301,6 +5302,8 @@ function startBadgeCooldownRefresh(){
 function openJourneyMap(focusSky=false,{detail=false,advanceOnClose=false,learningTour=false,questIndex=null,constellationId=null}={}){
  learningTour=learningTour||firstLearningSkyVisit();
  const explicitIndex=Number.isInteger(questIndex);
+ if(playReviewReturn&&!learningTour&&!explicitIndex&&playReviewReturn.questId===activeQuest()?.id&&
+    playReviewReturn.generation===cloudHydrationGeneration)detail=true;
  if(!constellationId&&!explicitIndex)constellationId=activeQuest()?.constellationId??null;
  const skyQuestIndex=explicitIndex?questIndex:levelIndex;
  mapConstellation=constellationId?CONTENT_CONSTELLATIONS.findIndex(c=>c.id===constellationId):-1;
@@ -5352,7 +5355,7 @@ if(endgameSky)endgameSky.onclick=()=>closeEndgameToSky(true);
 const endgameOverlay=document.getElementById("endgameOverlay");if(endgameOverlay)endgameOverlay.addEventListener("click",e=>{if(e.target===endgameOverlay)closeEndgameToSky(true)});
 
 
-const openSky=document.getElementById("openSky");if(openSky)openSky.onclick=()=>openJourneyMap(true,{detail:playReviewReturn?.questId===activeQuest().id&&playReviewReturn.generation===cloudHydrationGeneration});
+const openSky=document.getElementById("openSky");if(openSky)openSky.onclick=()=>openJourneyMap(true);
 document.getElementById("closeMap").onclick=closeMapOverlay;
 
 const autoCrossUnlockOk=document.getElementById("autoCrossUnlockOk");if(autoCrossUnlockOk)autoCrossUnlockOk.onclick=closeAutoCrossUnlock;
