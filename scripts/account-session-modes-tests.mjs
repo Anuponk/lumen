@@ -40,7 +40,8 @@ assert.doesNotMatch(cloud,/sendEmailOtp|verifyEmailOtp|requestLumenAuthMail\("ma
 assert.doesNotMatch(html,/id="account(?:LegacyOtp|Otp|EmailSend)/);
 assert.match(html,/id="accountOptinLater"[^>]*>Retour au jeu/);assert.match(html,/Continuer avec Google/);
 assert.match(cloud,/signInWithPassword/);assert.match(ui,/requestPasswordRecovery\(email\)/);
-assert.match(ui,/editor\.dataset\.open="true";editor\.hidden=false/);
+// #820: recovery opens the dedicated password screen (no longer the account editor).
+assert.match(ui,/if\(event\?\.type==="password_recovery"\)openPasswordRecovery\(\)/);
 assert.match(ui,/renderDaily\(\);\s*refreshJourney\(\);updateAuthUI\(\)/);
 console.log('Account session regressions passed: startup race, sign-out before deferred restore, recovery, failed-link preservation, local-only logout and two public modes.');
 
@@ -57,14 +58,20 @@ const menuContext=vm.createContext({document:{getElementById:id=>authNodes.get(i
 vm.runInContext(functionSource(ui,'cloudReconciliationMessage'),menuContext);
 vm.runInContext(functionSource(ui,'gameplaySyncState'),menuContext);
 menuContext.updateAccountSwitchHold=()=>{};
+const recoveryScreen={opened:0,missing:0,phase:'idle'};
+menuContext.openPasswordRecovery=()=>{recoveryScreen.opened++};
+menuContext.passwordRecoveryFlow=()=>({state:{phase:recoveryScreen.phase},sessionMissing(){recoveryScreen.missing++}});
 vm.runInContext(functionSource(ui,'syncMobileAuthUI'),menuContext);menuContext.syncMobileAuthUI();
 assert.equal(authNodes.get('mobileAuthAction').disabled,true,'No sign-in prompt while an existing session is still loading');
 assert(!authNodes.get('mobileAuthAction').textContent.includes('Se connecter'));
 assert.equal(authNodes.get('guestSaveExplainer').hidden,true);
 assert.equal(recoveryState.get('lumenPasswordRecoveryPending'),'1','Pending restore must not clear password-recovery state');
+assert.equal(recoveryScreen.opened,0,'No recovery screen before the session is known');
 menuContext.authSessionPending=false;menuContext.lumenUser={id:'restored-player'};menuContext.syncMobileAuthUI();
+assert.equal(recoveryScreen.opened,1,'A restored recovery session reopens the dedicated screen');
 assert.equal(authNodes.get('mobileAuthAction').disabled,false);assert(!authNodes.get('mobileAuthAction').textContent.includes('Se connecter'));
-menuContext.lumenUser=null;menuContext.syncMobileAuthUI();
+recoveryScreen.phase='form';menuContext.lumenUser=null;menuContext.syncMobileAuthUI();
+assert.equal(recoveryScreen.missing,1,'Losing the session ends an open recovery form');recoveryScreen.phase='idle';
 assert.equal(authNodes.get('mobileAuthAction').disabled,false);assert(authNodes.get('mobileAuthAction').textContent.includes('Se connecter'));
 console.log('The mobile account menu distinguishes pending restoration, a restored account and a confirmed guest');
 
