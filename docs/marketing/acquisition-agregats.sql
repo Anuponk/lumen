@@ -28,7 +28,7 @@ with events as (
   where event_name in ('app_opened', 'attempt_started', 'attempt_completed')
     and occurred_at >= statement_timestamp() - interval '7 days'
     and occurred_at <= statement_timestamp()
-    and properties->>'acquisition_channel' in ('player_share', 'youtube_shorts', 'instagram_reels', 'tiktok')
+    and properties->>'acquisition_channel' in ('player_share', 'player_invite', 'challenge_link', 'youtube_shorts', 'instagram_reels', 'tiktok')
     and properties->>'traffic_type' = 'human'
     and coalesce(properties->>'qa_mode', '') = ''
     and not exists (

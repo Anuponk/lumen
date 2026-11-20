@@ -1,10 +1,17 @@
 import assert from 'node:assert/strict';
 import {createAnalytics} from '../src/analytics/events.js';
-import {discoveryUrl, playerShareUrl, readDiscoveryCampaign} from '../src/analytics/acquisition.js';
+import {discoveryUrl, inviteShareUrl, playerShareUrl, readDiscoveryCampaign} from '../src/analytics/acquisition.js';
 
 const location = new URL('/', discoveryUrl);
 assert.equal(readDiscoveryCampaign(location, playerShareUrl), 'player_share');
 assert.equal(readDiscoveryCampaign(location, discoveryUrl + '?utm_source=tiktok&utm_medium=social&arbitrary=secret'), 'tiktok');
+assert.equal(readDiscoveryCampaign(location, inviteShareUrl), 'player_invite');
+// #881 Lot 1: leaving a challenge link ("Continuer sur Lumen" / "Retour à Lumen") opens the game
+// with that same-origin link as referrer; only the channel name is kept, never the challenge ID.
+assert.equal(readDiscoveryCampaign(location, new URL('/?challenge=00000000-0000-4000-8000-000000000001', location).href), 'challenge_link');
+assert.equal(readDiscoveryCampaign(new URL('/?challenge=00000000-0000-4000-8000-000000000001', location), new URL('/?challenge=00000000-0000-4000-8000-000000000001', location).href), null, 'The challenge attempt itself is not an acquisition opening');
+assert.equal(readDiscoveryCampaign(location, 'https://example.org/?challenge=x'), null, 'Foreign challenge-like referrer');
+assert.equal(readDiscoveryCampaign(location, new URL('/', location).href), null, 'Plain same-origin reload');
 for (const referrer of [
   '', 'malformed', discoveryUrl, playerShareUrl.replace('lumen.nopuna.fr', 'example.org'),
   playerShareUrl.replace('decouvrir.html', 'comment-jouer.html'),

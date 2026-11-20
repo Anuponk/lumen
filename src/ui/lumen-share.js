@@ -1,6 +1,9 @@
-import {discoveryUrl, playerShareUrl} from '../analytics/acquisition.js';
+import {discoveryUrl, inviteShareUrl, playerShareUrl} from '../analytics/acquisition.js';
+import {astronomicalIllumination} from './astronomical-reference-svg.js';
 
-export {discoveryUrl};
+export {discoveryUrl, inviteShareUrl};
+// Native result shares carry the Partager campaign; Inviter has its own code.
+export const resultShareUrl = playerShareUrl;
 
 export const inviteShareData = Object.freeze({
   title: 'Découvrir Lumen',
@@ -8,11 +11,26 @@ export const inviteShareData = Object.freeze({
   url: discoveryUrl,
 });
 
-export function resultShareData({ ordinal, constellation, time, badges }) {
+// #881 Lot 1: the wording follows the accomplishment the victory scene celebrated
+// (quest, completed constellation or completed Adventure). Never a ranking.
+const MILESTONES = {
+  constellation: ({ ordinal, constellation }) => ({
+    title: 'Constellation rallumée dans Lumen',
+    headline: '✦ J’ai rallumé ' + constellation + ' dans Lumen (quête ' + ordinal + ')',
+  }),
+  adventure: ({ constellation, adventure }) => ({
+    title: 'Aventure accomplie dans Lumen',
+    headline: '✦ Aventure ' + (adventure ? '« ' + adventure + ' » ' : '') + 'accomplie dans Lumen · ' + constellation,
+  }),
+};
+
+export function resultShareData({ ordinal, constellation, time, badges, milestone, adventure }) {
+  const wording = MILESTONES[milestone]?.({ ordinal, constellation, adventure }) ??
+    { title: 'Ma réussite dans Lumen', headline: '✦ Quête ' + ordinal + ' réussie dans Lumen · ' + constellation };
   return {
-    title: 'Ma réussite dans Lumen',
+    title: wording.title,
     text: [
-      '✦ Quête ' + ordinal + ' réussie dans Lumen · ' + constellation,
+      wording.headline,
       time && 'Temps final ' + time,
       badges.join(' · '),
       'À toi de jouer !',
@@ -85,7 +103,7 @@ export function createShareDialog(document, navigator) {
   };
   native.onclick = async () => {
     const state = current;
-    const outcome = await tryNativeShare(navigator, { ...state.data, url: playerShareUrl }, state.image);
+    const outcome = await tryNativeShare(navigator, { ...state.data, url: resultShareUrl }, state.image);
     if (current !== state || !dialog.open) return;
     if (outcome === 'shared') dialog.close();
     if (outcome === 'unavailable') {
@@ -102,7 +120,7 @@ export function createShareDialog(document, navigator) {
 
   return {
     async invite(origin) {
-      const outcome = await tryNativeShare(navigator, { ...inviteShareData, url: playerShareUrl });
+      const outcome = await tryNativeShare(navigator, { ...inviteShareData, url: inviteShareUrl });
       if (outcome === 'unavailable' && origin.getClientRects().length) {
         open(inviteShareData, { invitation: true, origin });
       }
@@ -114,31 +132,64 @@ export function createShareDialog(document, navigator) {
   };
 }
 
-function shareCardCanvas(document, { ordinal, catalogueTotal, constellation, time, badges }, url) {
+const CARD_KICKERS = { constellation: 'CONSTELLATION RALLUMÉE', adventure: 'AVENTURE ACCOMPLIE' };
+
+// Real constellation figure (licensed astronomical source, #GRID_CATALOG), lit
+// with the same rule as the victory scene. No figure: the previous star mark.
+function drawConstellation(context, { constellationId, lit, count }) {
+  const data = constellationId ? astronomicalIllumination({ id: constellationId }, lit, count) : null;
+  if (!data) return false;
+  const { figure, litIndices } = data;
+  const scale = Math.min(510 / 290, 210 / 115);
+  const point = ([x, y]) => [45 + x * scale, 108 + y * scale];
+  context.lineWidth = 3;
+  for (const [a, b] of figure.edges) {
+    const on = litIndices.has(a) && litIndices.has(b);
+    context.strokeStyle = on ? 'rgba(104,231,255,.85)' : 'rgba(169,191,208,.28)';
+    context.beginPath();
+    context.moveTo(...point(figure.pts[a]));
+    context.lineTo(...point(figure.pts[b]));
+    context.stroke();
+  }
+  figure.pts.forEach((pt, i) => {
+    const on = litIndices.has(i);
+    context.fillStyle = on ? '#ffe3a1' : '#4c6680';
+    context.beginPath();
+    context.arc(...point(pt), on ? 7 : 4.5, 0, 2 * Math.PI);
+    context.fill();
+  });
+  return true;
+}
+
+function shareCardCanvas(document, model, url) {
+  const { ordinal, catalogueTotal, constellation, time, badges, milestone, adventure } = model;
   const canvas = document.createElement('canvas');
   canvas.width = 600;
   canvas.height = 750;
   const context = canvas.getContext('2d');
   context.fillStyle = '#101d2e';
   context.fillRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = '#182e4a';
-  context.beginPath();
-  context.arc(300, 206, 85, 0, 2 * Math.PI);
-  context.fill();
   context.textAlign = 'center';
   const line = (text, y, font, color) => {
     context.fillStyle = color;
     context.font = font;
     context.fillText(text, canvas.width / 2, y, 510);
   };
-  line('L U M E N', 100, 'bold 26px sans-serif', '#68e7ff');
-  line('✦', 238, '96px sans-serif', '#ffe3a1');
-  line('QUÊTE ' + ordinal + ' / ' + catalogueTotal + ' RÉUSSIE', 315, 'bold 26px sans-serif', '#68e7ff');
-  line(constellation, 384, 'bold 48px sans-serif', '#f2fbff');
-  if (time) line('Temps final ' + time, 454, 'bold 28px sans-serif', '#f2fbff');
-  if (badges.length) line(badges.join(' · '), 512, 'bold 23px sans-serif', '#ffe3a1');
-  line('À toi de jouer !', 638, 'bold 32px sans-serif', '#f2fbff');
-  line(url.replace('https://', ''), 684, '22px sans-serif', '#a9bfd0');
+  line('L U M E N', 76, 'bold 26px sans-serif', '#68e7ff');
+  if (!drawConstellation(context, model)) {
+    context.fillStyle = '#182e4a';
+    context.beginPath();
+    context.arc(300, 214, 85, 0, 2 * Math.PI);
+    context.fill();
+    line('✦', 246, '96px sans-serif', '#ffe3a1');
+  }
+  line(CARD_KICKERS[milestone] ?? 'QUÊTE ' + ordinal + ' / ' + catalogueTotal + ' RÉUSSIE', 372, 'bold 26px sans-serif', '#68e7ff');
+  line(milestone === 'adventure' && adventure ? adventure : constellation, 436, 'bold 46px sans-serif', '#f2fbff');
+  if (milestone === 'adventure' && adventure) line(constellation, 482, 'bold 26px sans-serif', '#a9bfd0');
+  if (time) line('Temps final ' + time, 532, 'bold 28px sans-serif', '#f2fbff');
+  if (badges.length) line(badges.join(' · '), 580, 'bold 23px sans-serif', '#ffe3a1');
+  line('À toi de jouer !', 650, 'bold 32px sans-serif', '#f2fbff');
+  line(url.replace('https://', ''), 694, '22px sans-serif', '#a9bfd0');
   return new Promise(resolve => canvas.toBlob(blob => {
     resolve(blob && new File([blob], 'lumen-quete-' + ordinal + '.png', { type: 'image/png' }));
   }, 'image/png'));

@@ -37,15 +37,16 @@ function serverModel({quest,participant=null,inbox=[]}){
   }})};`;
 }
 
-async function open({send,evaluate},url,model,{width=390,challenge=true}={}){
+async function open({send,evaluate},url,model,{width=390,challenge=true,newcomer=false}={}){
  await send('Emulation.setDeviceMetricsOverride',{width,height:900,mobile:width<700,deviceScaleFactor:1});
  // A guest who has only played the first free quests and owns no Adventure.
- const progress={solved:Object.fromEntries(Array.from({length:10},(_,i)=>[i,1])),performances:{},xp:40,shards:2,badges:{}};
+ // newcomer: a first visit through the link, before any tutorial (#881 Lot 1).
+ const progress=newcomer?{solved:{},performances:{},xp:0,shards:0,badges:{}}:{solved:Object.fromEntries(Array.from({length:10},(_,i)=>[i,1])),performances:{},xp:40,shards:2,badges:{}};
  const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:`
   localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(progress))});
   localStorage.removeItem('lumenQaActiveAttemptV1');localStorage.removeItem('lumenActiveAttemptV1');
   localStorage.setItem('lumenGuestName','Fixture');localStorage.setItem('lumenPushChoice','off');
-  for(const k of ['lumenQaTutorialSeen','lumenQaTutorialCompletedV1','lumenSkyTourSeen'])localStorage.setItem(k,'1');
+  for(const k of ['lumenQaTutorialSeen','lumenQaTutorialCompletedV1','lumenSkyTourSeen'])${newcomer?'localStorage.removeItem(k)':"localStorage.setItem(k,'1')"};
   ${model}`});
  const target=new URL(url);if(challenge)target.searchParams.set('challenge',CHALLENGE_ID);else target.searchParams.delete('challenge');
  await navigateAndWait({send,evaluate},'Page.navigate',{url:String(target)});
@@ -97,6 +98,39 @@ export async function verifyChallengeRecipient({send,evaluate},url){
  assert.equal(await evaluate(`document.getElementById('challengeIntro').hidden`),true,'No intro for a finished challenge');
  assert.equal((await evaluate('window.__challengeCalls')).filter(c=>/^lumen_start_/.test(c.name)).length,0,'No second start');
  results.push({kind:'terminal-reopen',secondAttempt:false});
+
+ // A player who never saw the tutorial learns the rules before starting; reading
+ // them consumes no attempt (#881 Lot 1, acquisition through Défier).
+ await open({send,evaluate},url,serverModel({quest:legacyPremium}),{newcomer:true});
+ await until(evaluate,`!document.getElementById('challengeIntro').hidden`,'newcomer intro');
+ assert.equal(await evaluate(`document.getElementById('challengeRules').hidden`),false,'Newcomer sees the rules summary');
+ assert.match(await evaluate(`document.getElementById('challengeRules').textContent`),/ligne.*colonne.*territoire/s);
+ assert.equal(await evaluate(`(()=>{const b=document.getElementById('challengeStart').getBoundingClientRect();return b.top>=0&&b.bottom<=innerHeight})()`),true,'"Relever le défi" stays visible without scrolling');
+ await evaluate(`document.getElementById('challengeRulesOpen').click()`);
+ const rulesOnTop=await evaluate(`(()=>{const m=document.getElementById('rulesModal');if(m.hidden)return false;const c=document.getElementById('closeRulesModal').getBoundingClientRect();return m.contains(document.elementFromPoint(c.left+c.width/2,c.top+c.height/2))})()`);
+ assert.equal(rulesOnTop,true,'Rules open above the challenge intro');
+ assert.equal(await evaluate(`['replayLearning','replayIntroduction'].every(id=>{const e=document.getElementById(id);return !e||e.hidden})`),true,'No learning replay offered inside a challenge');
+ await evaluate(`document.getElementById('closeRulesModal').click()`);
+ assert.equal(await evaluate(`!document.getElementById('challengeIntro').hidden`),true,'Closing the rules returns to the challenge intro');
+ assert.equal((await evaluate('window.__challengeCalls')).filter(c=>/^lumen_start_/.test(c.name)).length,0,'Reading the rules does not start the one-shot attempt');
+ results.push({kind:'newcomer-rules',attemptConsumed:false});
+
+ // A returning player is not slowed down by the summary. During the attempt the
+ // help stays available, but learning replays can never swap the challenged grid.
+ await open({send,evaluate},url,serverModel({quest:legacyPremium}));
+ await until(evaluate,`!document.getElementById('challengeIntro').hidden`,'returning intro');
+ assert.equal(await evaluate(`document.getElementById('challengeRules').hidden`),true,'Returning player: no rules summary');
+ await evaluate(`document.getElementById('challengeStart').click()`);
+ await until(evaluate,`document.getElementById('challengeIntro').hidden`,'returning start');
+ await acknowledgeLearningMilestones(evaluate);
+ await evaluate(`document.getElementById('tutorialHelp').click()`);
+ assert.equal(await evaluate(`['replayLearning','replayIntroduction'].every(id=>{const e=document.getElementById(id);return !e||e.hidden})`),true,'Help hides learning replays during a challenge');
+ // Even a forced activation of the hidden control keeps the challenged grid.
+ await evaluate(`document.getElementById('replayLearning')?.click()`);
+ await sleep(400);
+ assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().puz.reg'),legacyPremium.reg,'Learning replay cannot replace the challenged grid');
+ await evaluate(`document.getElementById('closeRulesModal').click()`);
+ results.push({kind:'learning-replay-blocked',sameGrid:true});
 
  // "Mes défis" shows the visible quest number for all kinds, never "null" or a legacy index.
  const inbox=[legacyPremium,stableZero,stableRevised].map((quest,i)=>({challenge_id:'00000000-0000-4000-8000-00000000088'+i,created_at:'2026-11-20T10:00:00Z',

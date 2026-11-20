@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {discoveryUrl, inviteShareData, resultShareData, tryNativeShare, tryCopyShare} from '../src/ui/lumen-share.js';
+import {discoveryUrl, inviteShareData, inviteShareUrl, resultShareData, resultShareUrl, tryNativeShare, tryCopyShare} from '../src/ui/lumen-share.js';
 
 assert.equal(discoveryUrl, 'https://lumen.nopuna.fr/decouvrir.html');
 assert.deepEqual(inviteShareData, {
@@ -13,6 +13,22 @@ assert.deepEqual(result, {
   text: '✦ Quête 3 réussie dans Lumen · Grande Ourse\nTemps final 1:02\nAutonomie\nÀ toi de jouer !',
   url: discoveryUrl,
 });
+// #881 Lot 1: the shared text names the accomplishment actually celebrated.
+assert.deepEqual(resultShareData({ordinal: 5, constellation: 'Grande Ourse', time: '2:10', badges: [], milestone: 'constellation'}), {
+  title: 'Constellation rallumée dans Lumen',
+  text: '✦ J’ai rallumé Grande Ourse dans Lumen (quête 5)\nTemps final 2:10\nÀ toi de jouer !',
+  url: discoveryUrl,
+});
+assert.deepEqual(resultShareData({ordinal: 101, constellation: 'Orion', time: '', badges: ['Maîtrise'], milestone: 'adventure', adventure: 'Le Ciel boréal'}), {
+  title: 'Aventure accomplie dans Lumen',
+  text: '✦ Aventure « Le Ciel boréal » accomplie dans Lumen · Orion\nMaîtrise\nÀ toi de jouer !',
+  url: discoveryUrl,
+});
+assert.equal(resultShareData({ordinal: 5, constellation: 'Lyre', time: '', badges: [], milestone: 'unknown'}).title, 'Ma réussite dans Lumen', 'Unknown milestones keep the quest wording');
+assert.equal(resultShareData({ordinal: 5, constellation: 'Lyre', time: '', badges: [], milestone: 'adventure'}).text.split('\n')[0], '✦ Aventure accomplie dans Lumen · Lyre', 'Missing adventure name stays readable');
+// Inviter and Partager stay distinguishable in the acquisition funnel.
+assert.equal(inviteShareUrl, discoveryUrl + '?utm_source=player_invite&utm_medium=referral');
+assert.equal(resultShareUrl, discoveryUrl + '?utm_source=player_share&utm_medium=referral');
 let sent;
 assert.equal(await tryNativeShare({share: async data => { sent = data; }}, inviteShareData), 'shared');
 assert.deepEqual(sent, inviteShareData);

@@ -22,6 +22,13 @@ assert.match(ui,/data\.participant_status==="completed"&&!data\.previously_playe
 assert.match(domain,/p_previously_played/,"recipient prior exposure must be recorded");
 assert.match(sw,/d\.tag\|\|"lumen-return"/,"push tags must allow per-challenge grouping");
 assert.doesNotMatch(html,/challenge=.*duration|duration=.*challenge/,"challenge URL markup must not embed performance");
+// #881 Lot 1 onboarding impact: the newcomer summary in the challenge intro restates
+// the rules modal (source of truth) and never replaces it; learning replays are
+// unavailable while a challenge pins its grid.
+const introRules=html.match(/<div id="challengeRules"[\s\S]*?<\/div>/)?.[0]||'',rulesModal=html.match(/<div id="rulesModal"[\s\S]*?id="replayLearning"/)?.[0]||'';
+for(const concept of [/par ligne, par colonne et par territoire/,/même en diagonale/])assert.match(introRules,concept,'intro summary: '+concept),assert.match(rulesModal,concept,'rules modal: '+concept);
+assert.match(introRules,/id="challengeRulesOpen"/,'the summary links to the full rules');
+assert.match(ui,/function startLearningReplay\(\)\{\r?\n if\(socialChallenge\)return;/,'learning replay is refused during a challenge');
 console.log("social challenge UI contract tests: ok");
 
 // Execute the real renderer: old canonical hiding and stale legacy offers must

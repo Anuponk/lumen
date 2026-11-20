@@ -1710,14 +1710,16 @@ function setupRulesHelp(){
  const open=document.getElementById("tutorialHelp"),modal=document.getElementById("rulesModal"),close=document.getElementById("closeRulesModal"),replay=document.getElementById("replayLearning");
  if(!open||!modal||!close)return;
  const hide=(restoreFocus=true)=>{modal.hidden=true;if(restoreFocus)open.focus()};
- open.onclick=()=>{modal.hidden=false;close.focus()};
+ // #881 Lot 1: help stays readable during a challenge, but learning replays would
+ // swap the challenged grid and restart its clock, so they are not offered there.
+ open.onclick=()=>{for(const id of ['replayLearning','replayIntroduction']){const control=document.getElementById(id);if(control)control.hidden=!!socialChallenge}modal.hidden=false;close.focus()};
  close.onclick=()=>hide();
  modal.onclick=e=>{if(e.target===modal)hide()};
  modal.addEventListener("keydown",e=>{if(e.key==="Escape")hide()});
  if(replay)replay.onclick=()=>{hide(false);startLearningReplay()};
  const story=document.getElementById('replayIntroduction');
  if(story)story.onclick=()=>{
-  if(!firstWelcome)return;
+  if(!firstWelcome||socialChallenge)return;
   hide(false);
   try{firstWelcome.replay()}catch{firstWelcome.cancel();open.focus()}
  };
@@ -2161,6 +2163,8 @@ async function bootstrapSocialChallenge(){
   levelIndex=legacyIndexForActiveChallenge(socialChallenge);replayMode=false;
   if(challengeAttemptClosed(socialChallenge.participant_status)){init();showSocialChallengeResult(socialChallenge);return false}
   const intro=document.getElementById("challengeIntro"),copy=document.getElementById("challengeIntroCopy");copy.textContent=socialChallenge.sender_display_name+" te défie sur la quête "+quest.ordinal+". Sa performance sera révélée après ta tentative.";intro.hidden=false;
+  // A first visit through a challenge link explains the rules before the one-shot starts.
+  const rules=document.getElementById("challengeRules");if(rules){rules.hidden=tutorialCompletedProof();document.getElementById("challengeRulesOpen").onclick=()=>document.getElementById("tutorialHelp")?.click()}
   return await new Promise(resolve=>{document.getElementById("challengeStart").onclick=async()=>{const name=await askChallengeName();if(!name)return;try{const previouslyPlayed=questIsCompleted(lumenProgress,quest.id);await challengeClient.start(id,previouslyPlayed,socialChallenge.grid_revision??0);intro.hidden=true;trackAttemptEvent("challenge_started",{previously_played:previouslyPlayed});resolve(true)}catch(e){console.warn("challenge start",e);showRewardToast("Impossible de démarrer le défi")}};document.getElementById("challengeLeave").onclick=()=>{location.href=location.pathname}});
  }catch(e){console.warn("challenge load",e);showRewardToast("Ce défi n’est plus disponible");socialChallenge=null;return true}
 }
@@ -2381,6 +2385,7 @@ function choose(playReviewQuestId=null){if(canonicalActiveQuest){puz={reg:canoni
  n=puz.reg.length;last[n]=levelIndex}
 function loadPuzzle(playReviewQuestId=null){init(playReviewQuestId);}
 function startLearningReplay(){
+ if(socialChallenge)return;
  if(learningReplayReturn===null)learningReplayReturn={levelIndex,replayMode,canonicalQuest:canonicalActiveQuest};
  learningReplayReturn.active=true;canonicalActiveQuest=null;levelIndex=0;replayMode=true;loadPuzzle();
 }
@@ -5033,11 +5038,13 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
    if(!syncPending&&playedQuest&&canonicalEntry&&!socialChallenge&&!learningReplayActive()){
     const sharedVictory={
      ordinal:playedQuest.ordinal,catalogueTotal:canonicalQuestList().length,constellation:canonicalEntry.label,
+     constellationId:canonicalEntry.id,lit:p.lit,count:p.count,adventure:CONTENT_PACKS.find(pack=>pack.id===playedQuest.packId)?.displayName||'',
      time:document.getElementById("successTime").textContent,
      badges:slots.filter(slot=>slot.key!=="star"&&slot.state==="new").map(slot=>slot.label)
     };
     shareResult.hidden=false;
-    shareResult.onclick=()=>lumenShare.result(sharedVictory,shareResult);
+    // #881 Lot 1: share the accomplishment the scene actually shows when clicked.
+    shareResult.onclick=()=>lumenShare.result({...sharedVictory,milestone:shareMilestone(document.getElementById('skyReveal').dataset.celestial)},shareResult);
    }
    const rankingExpected=!(socialChallenge||learningReplayActive()||qaActive||!lumenUser);
    document.getElementById('skyRevealPerformance')?.classList.toggle('victory-performance-ranked',rankingExpected);
@@ -5117,6 +5124,7 @@ bindReviewNavigation(document.getElementById('skyReveal'),{
 // Performance block of the shared victory surface filled from saved results only:
 // best time, saved badges and this quest's board (#695 review, #705 preview).
 // Every caller owns the whole block, never a previous screen's leftovers.
+function shareMilestone(celestial){return celestial==='constellation'?'constellation':/^(adventure|campaign)/.test(celestial||'')?'adventure':null}
 function fillSavedPerformance(quest,model){
  const shareResult=document.getElementById('skyRevealShareResult');
  shareResult.hidden=true;shareResult.onclick=null;
