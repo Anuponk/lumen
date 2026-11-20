@@ -10,7 +10,7 @@ Audit de la base `a2804ae8fd38e6f0becfc3b49cf54f0df3c99328` pour [#779](https://
 | Destination publique | [Page de découverte](https://lumen.nopuna.fr/decouvrir.html) vérifiée par requête HTTPS directe, HTTP 200 à l’URL canonique. « Jouer » ouvre `/`, l’action d’installation ouvre `/?install=1`, tous deux vérifiés par HTTP 200. Le parcours d’installation réel reste à vérifier sur Android. |
 | Aperçu social | Le HTML servi contient titre, description, canonique, Open Graph et `twitter:card`. Le JPEG public répond en 200, mesure 1 200 × 630 et est déclaré en absolu. La PR ajoute des champs Twitter explicites avec les mêmes valeurs que les balises Open Graph. Les robots reçoivent toutes les métadonnées dans le HTML statique. L’affichage réel dépend du cache et du client social. |
 
-Les liens de partage général et de résultat contiennent uniquement l’URL publique. Les liens opaques de défi restent réservés à « Défier ». Le partage n’ouvre aucun contact et le jeu garde sa grille en cours.
+Les liens de partage général et de résultat ouvrent l’URL publique. Le partage natif peut y joindre le code de campagne public `player_share/referral` de la [mesure d’acquisition](../PRODUCT_ANALYTICS.md#mesure-dacquisition-708). La copie conserve l’URL canonique. Les liens opaques de défi restent réservés à « Défier ». Le partage n’ouvre aucun contact et le jeu garde sa grille en cours.
 
 ## Recette après publication
 

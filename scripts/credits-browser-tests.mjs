@@ -49,7 +49,7 @@ try{
  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',text:'\r',unmodifiedText:'\r',windowsVirtualKeyCode:13,nativeVirtualKeyCode:13});
  await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
  await until('!!window.sharedInvitation','native invitation');
- assert.deepEqual(await evaluate('window.sharedInvitation'),{title:'Découvrir Lumen',text:'✨ J’ai découvert Lumen, un jeu de logique où tu rallumes les constellations. Tu veux essayer ?',url:discovery});
+ assert.deepEqual(await evaluate('window.sharedInvitation'),{title:'Découvrir Lumen',text:'✨ J’ai découvert Lumen, un jeu de logique où tu rallumes les constellations. Tu veux essayer ?',url:discovery+'?utm_source=player_share&utm_medium=referral'});
  assert.equal(await evaluate(dialog+'.open'),false,'Cancellation stays quiet');
  await send('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});
  await evaluate(`Object.defineProperty(navigator,'share',{value:undefined});Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>window.copiedLink=value}});${invite}.click()`);

@@ -1,4 +1,6 @@
-export const discoveryUrl = 'https://lumen.nopuna.fr/decouvrir.html';
+import {discoveryUrl, playerShareUrl} from '../analytics/acquisition.js';
+
+export {discoveryUrl};
 
 export const inviteShareData = Object.freeze({
   title: 'Découvrir Lumen',
@@ -83,7 +85,7 @@ export function createShareDialog(document, navigator) {
   };
   native.onclick = async () => {
     const state = current;
-    const outcome = await tryNativeShare(navigator, state.data, state.image);
+    const outcome = await tryNativeShare(navigator, { ...state.data, url: playerShareUrl }, state.image);
     if (current !== state || !dialog.open) return;
     if (outcome === 'shared') dialog.close();
     if (outcome === 'unavailable') {
@@ -100,7 +102,7 @@ export function createShareDialog(document, navigator) {
 
   return {
     async invite(origin) {
-      const outcome = await tryNativeShare(navigator, inviteShareData);
+      const outcome = await tryNativeShare(navigator, { ...inviteShareData, url: playerShareUrl });
       if (outcome === 'unavailable' && origin.getClientRects().length) {
         open(inviteShareData, { invitation: true, origin });
       }
