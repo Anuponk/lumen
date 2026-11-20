@@ -511,6 +511,16 @@ try{
   await evaluate(`document.getElementById('passwordRecoveryAction').click()`);
   await until(`document.getElementById('mobileAuthAction').textContent==='Déconnexion'`);
   assert.equal(await evaluate(`document.getElementById('passwordRecovery').hidden`),true);
+  // #820: a native link captured by the already open window changes only the
+  // fragment; the page reloads so the recovery is handled like a fresh opening.
+  const openedAt=await evaluate('performance.timeOrigin');
+  await evaluate(`location.hash='access_token=t&refresh_token=r&type=recovery'`);
+  await until(`performance.timeOrigin!==${openedAt}&&document.readyState==='complete'`);
+  await until(`sessionStorage.getItem('lumenPasswordRecoveryPending')==='1'`);
+  await until(`document.getElementById('passwordRecovery').hidden===false`);
+  await evaluate(`sessionStorage.removeItem('lumenPasswordRecoveryPending')`);
+  await navigate('Page.navigate',{url:url.href});
+  await until(`document.getElementById('mobileAuthAction').textContent==='Déconnexion'`);
   // #820: a confirmed sign-up link states its real verdict once, then follows the session.
   const signupLink=new URL(url);signupLink.searchParams.set('lumen_confirm','b'.repeat(64));signupLink.searchParams.set('type','signup');
   await navigate('Page.navigate',{url:signupLink.href});await until(`window.__authCalls?.includes('signup')`);

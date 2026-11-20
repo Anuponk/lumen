@@ -157,6 +157,7 @@ assert.doesNotMatch(ui,/lumenPasswordRecoveryPending"\);location\.reload\(\)/,'N
 assert.match(ui,/if\(event\?\.type==="password_recovery"\)openPasswordRecovery\(\)/);
 assert.match(ui,/result\?\.status==='verified'&&result\.kind==='recovery'\)sessionStorage\.setItem\('lumenPasswordRecoveryPending','1'\)/);
 assert(ui.indexOf('const bootAuthLink=')<ui.indexOf('window.supabase.createClient('),'The boot URL is read before the Auth SDK can consume it');
+assert.match(ui,/addEventListener\('hashchange',\(\)=>\{try\{if\(readNativeAuthLinkResult\(location\.href\)\)location\.reload\(\)\}catch\{\}\}\)/,'A same-document auth fragment is handled after a reload');
 // #820 (20/11 field test): dedicated recovery screen state machine.
 assert.equal(validateNewPassword('x'.repeat(11),'x'.repeat(11)),'password');
 assert.equal(validateNewPassword('x'.repeat(12),'y'.repeat(12)),'mismatch');
