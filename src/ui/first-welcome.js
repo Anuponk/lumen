@@ -1,12 +1,13 @@
 // Presentation only: no campaign, attempt, reward or cloud writer belongs here.
 import {createIntroMusic} from './intro-music.js';
+import {createTranslator} from './i18n.js';
 export const INTRO_SEEN_KEY='lumenIntroPresentedV1';
 export const INTRO_SCENES=Object.freeze([
- {start:0,text:"Le ciel s'est assombri."},
- {start:4000,text:"Les constellations sommeillent dans l'ombre."},
- {start:8000,text:'Une dernière lueur peut encore les éveiller.'},
- {start:13000,text:'Chaque énigme résolue rendra une étoile au ciel.'},
- {start:18000,text:'À toi de réveiller les étoiles.'}
+ {start:0,key:'welcome.skyDarkened'},
+ {start:4000,key:'welcome.constellationsAsleep'},
+ {start:8000,key:'welcome.lastGlimmer'},
+ {start:13000,key:'welcome.restoreAStar'},
+ {start:18000,key:'welcome.wakeTheStars'}
 ]);
 export const INTRO_DURATION=24000;
 
@@ -47,30 +48,37 @@ export function createIntroTimeline({now,onFrame,onFinish}){
  };
 }
 
-export function createFirstWelcome({document,window,figureSvg,contextKey,onReplayStart=()=>{},onReturn=()=>{}}){
+export function createFirstWelcome({document,window,figureSvg,contextKey,onReplayStart=()=>{},onReturn=()=>{},t=createTranslator().t}){
  const root=document.createElement('section');
  root.className='first-welcome';root.hidden=true;
- root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-label','Lumen — Le réveil du ciel');
+ root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-label',t('welcome.dialog'));
  root.innerHTML=`<div class="intro-veil" aria-hidden="true"></div>
   <div class="intro-art" aria-hidden="true"><svg viewBox="0 0 290 115" preserveAspectRatio="xMidYMid meet">${figureSvg}</svg></div>
-  <button type="button" class="intro-skip" aria-label="Passer l’introduction" hidden>Passer</button>
-  <button type="button" class="intro-music" aria-pressed="false" hidden>Musique coupée</button>
+  <button type="button" class="intro-skip" hidden></button>
+  <button type="button" class="intro-music" aria-pressed="false" hidden></button>
   <div class="intro-welcome"><h2 class="lumen-brand">LUMEN</h2>
-   <p>Le ciel a perdu ses étoiles.<br>À toi de les réveiller.</p>
-   <div class="intro-actions"><button type="button" class="intro-story">Regarder la cinématique</button>
-   <button type="button" class="intro-play">Aller directement à l’aventure</button></div></div>
+   <p><span class="intro-heading"></span><br><span class="intro-subtitle"></span></p>
+   <div class="intro-actions"><button type="button" class="intro-story"></button>
+   <button type="button" class="intro-play"></button></div></div>
   <p class="intro-caption" aria-hidden="true" hidden></p>
-  <details class="intro-transcript" hidden><summary>Lire le récit</summary><div></div></details>`;
+  <details class="intro-transcript" hidden><summary></summary><div></div></details>`;
  const transcript=root.querySelector('.intro-transcript div');
- for(const scene of INTRO_SCENES){const p=document.createElement('p');p.textContent=scene.text;transcript.append(p)}
+ for(const scene of INTRO_SCENES){const p=document.createElement('p');p.textContent=t(scene.key);transcript.append(p)}
  document.body.append(root);
  const app=document.querySelector('main.app'),welcome=root.querySelector('.intro-welcome'),caption=root.querySelector('.intro-caption'),
   skip=root.querySelector('.intro-skip'),story=root.querySelector('.intro-story'),play=root.querySelector('.intro-play'),
   reading=root.querySelector('.intro-transcript'),motion=window.matchMedia('(prefers-reduced-motion: reduce)');
+ skip.setAttribute('aria-label',t('welcome.skipLabel'));
+ skip.textContent=t('welcome.skip');
+ story.textContent=t('welcome.watch');
+ play.textContent=t('welcome.play');
+ root.querySelector('.intro-heading').textContent=t('welcome.heading');
+ root.querySelector('.intro-subtitle').textContent=t('welcome.subtitle');
+ reading.querySelector('summary').textContent=t('welcome.transcript');
  let active=false,mode=null,origin=null,captured=null,raf=null,timeline=null,appWasInert=false,lastScene=-1;
  const musicButton=root.querySelector('.intro-music');
  const music=createIntroMusic({window,onChange:updateMusic});
- function updateMusic(){musicButton.textContent=music.enabled?'Musique activée':'Musique coupée';musicButton.setAttribute('aria-pressed',String(music.enabled))}
+ function updateMusic(){musicButton.textContent=t(music.enabled?'welcome.musicOn':'welcome.musicOff');musicButton.setAttribute('aria-pressed',String(music.enabled))}
  updateMusic();
  const reduced=()=>root.classList.toggle('intro-reduced',motion.matches);
  function close(restoreFocus=true){
@@ -106,7 +114,7 @@ export function createFirstWelcome({document,window,figureSvg,contextKey,onRepla
   welcome.hidden=true;skip.hidden=false;musicButton.hidden=false;caption.hidden=false;reading.hidden=false;
   root.classList.add('intro-playing');
   timeline=createIntroTimeline({now:()=>window.performance.now(),onFinish:()=>close(),onFrame:({scene,passage})=>{
-   if(scene!==lastScene){lastScene=scene;root.dataset.scene=String(scene);caption.textContent=INTRO_SCENES[scene].text}
+   if(scene!==lastScene){lastScene=scene;root.dataset.scene=String(scene);caption.textContent=t(INTRO_SCENES[scene].key)}
    root.style.setProperty('--intro-passage',String(passage));
   }});
   timeline.start();if(!document.hidden&&!reading.open)music.start(timeline.elapsed);skip.focus();
@@ -122,7 +130,7 @@ export function createFirstWelcome({document,window,figureSvg,contextKey,onRepla
   if(advanced&&music.enabled)music.start(timeline.elapsed);
  }
  root.addEventListener('click',advanceStory);
- caption.tabIndex=0;caption.setAttribute('role','button');caption.setAttribute('aria-label','Afficher la phrase suivante du récit');
+ caption.tabIndex=0;caption.setAttribute('role','button');caption.setAttribute('aria-label',t('welcome.nextLine'));
  caption.addEventListener('keydown',advanceStory);
  play.onclick=()=>close();story.onclick=startStory;skip.onclick=()=>close();
  musicButton.onclick=()=>{music.setEnabled(!music.enabled);if(music.enabled&&active&&timeline&&!document.hidden&&!reading.open)music.start(timeline.elapsed)};

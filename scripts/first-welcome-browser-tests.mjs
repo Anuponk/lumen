@@ -37,6 +37,30 @@ try{
  results.push('fresh welcome → direct real learning board; unchanged gameplay');
  await navigateAndWait({send,evaluate},'Page.reload');assert.equal(await visible(),false);results.push('reload does not repeat');
 
+ const englishBefore=await state();
+ const english=await evaluate(`(async()=>{
+  const {createFirstWelcome}=await import('/src/ui/first-welcome.js');
+  const {createTranslator}=await import('/src/ui/i18n.js');
+  const intro=createFirstWelcome({document,window,figureSvg:'',contextKey:()=>'',t:createTranslator({locale:'en'}).t});
+  try{
+   intro.show();
+   const root=document.querySelector('.first-welcome:not([hidden])');
+   const watch=root.querySelector('.intro-story');
+   const play=root.querySelector('.intro-play');
+   const labels=[root.getAttribute('aria-label'),watch.textContent,play.textContent];
+   const fits=[watch,play].every(button=>button.scrollWidth<=button.clientWidth);
+   intro.cancel();
+   intro.replay();
+   return {labels,fits,caption:root.querySelector('.intro-caption').textContent,
+    transcript:root.querySelector('.intro-transcript summary').textContent,
+    skip:root.querySelector('.intro-skip').getAttribute('aria-label')};
+  }finally{intro.destroy()}
+ })()`,true);
+ assert.deepEqual(english,{labels:['Lumen — The sky awakens','Watch the intro','Go straight to the adventure'],
+  fits:true,caption:'The sky has grown dark.',transcript:'Read the story',skip:'Skip the introduction'});
+ assert.equal(await state(),englishBefore,'Localized introduction preserves board, progress and attempt');
+ results.push('English welcome fixture at 360px: controls, caption, transcript and unchanged game state');
+
  await fresh(audioProbe+"localStorage.setItem('lumenSound','on');");const narrativeBefore=await state();
  assert.equal(await evaluate('window.__introAudio.length'),0,'No audio before explicit story action');
  await evaluate('window.__introBoard=document.getElementById("board")');await click('.intro-story');
