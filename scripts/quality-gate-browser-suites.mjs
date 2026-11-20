@@ -189,6 +189,11 @@ export const browserSuites=[
     "script": "owned-adventure-browser-tests.mjs",
     "output": "ci-owned-adventure.json",
     "port": 9265
+  },
+  {
+    "script": "play-review-navigation-browser-tests.mjs",
+    "output": "ci-play-review-navigation.json",
+    "port": 9268
   }
 ];
 

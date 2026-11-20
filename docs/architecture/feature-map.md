@@ -1,5 +1,11 @@
 # Feature map
 
+Google Play review #796: `game-screen.js` uses the standard catalogue
+decisions in Mon ciel and rechecks `play-review-navigation.js` before direct
+selection. The private review events and account-scoped RPC own the right.
+The attempt engine restores actual runs and keeps unstarted direct selections
+out of storage.
+
 Owned Adventure entry #783: `catalogue-access.js` scopes quest frontiers to the
 target pack; `playable-navigation.js` selects unfinished owned content;
 `extended-boundary.js` supplies the numeric runtime bound without a contiguous

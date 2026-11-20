@@ -1,5 +1,11 @@
 # Dependencies and data flow
 
+Google Play review #796: private grant/revoke events → account-bound
+`lumen_can_use_play_review` → `play-review-navigation.js` → Mon ciel quest
+selection. The catalogue and existing entitlement access remain required.
+Suspended attempts are local to the account and restore through the normal
+attempt engine.
+
 Owned entry #783: account/client-scoped `lumen_get_entitlements` response →
 transient verification state + `contentMapModel` → Mon ciel rail/cards. Pack access
 → within-pack `catalogueQuestDecision` → map/start/resume; `extendedQuestLimit`
