@@ -167,6 +167,57 @@ in metadata and never substitutes a dormant quest's numeric ID.
 
 Issue #65 measures campaign lifetime and friction without logging cell-by-cell play.
 
+## Mesure d’acquisition #708
+
+L’administration existante présente déjà les parcours, la difficulté, l’activité
+issue des reçus et la santé de synchronisation. Pour l’acquisition, les reçus
+prouvent l’enregistrement d’une victoire mais ne connaissent ni sa campagne ni
+les visiteurs de la page de découverte. Le module d’acquisition réutilise la
+table privée `lumen.analytics_events`, sans nouvelle politique, RPC, vue,
+identité, durée de conservation ou interface d’administration.
+
+| Indicateur | Signal et unité |
+| --- | --- |
+| Clics « Inviter des amis » | Événement existant `share_result` avec `share_action=invite_clicked`. Compte des clics observés, annulations comprises. Ce sous-type conserve la règle de purge à 90 jours des interactions de partage. |
+| Découverte | La page conserve son HTML statique sans télémétrie. Si les logs o2switch existants conservent la query string, compter les requêtes GET 200/304 vers `/decouvrir.html` avec une paire UTM permise. Ce volume inclut potentiellement des aperçus de robots et des rechargements. En l’absence de ces logs, la mesure est indisponible. |
+| Ouverture du jeu | `app_opened` avec `acquisition_channel` uniquement quand le navigateur transmet le référent de découverte de la même origine, UTM permis inclus. Unité du rapport : session de navigateur pseudonyme et canal. |
+| Début et réussite de la quête 1 | `attempt_started` et `attempt_completed` du catalogue en mode campagne, dans la session et le canal de l’ouverture observée et dans les 30 minutes suivantes. Une réussite n’est comptée qu’après un début observé et avec `first_completion=true`. |
+
+Paires permises : `player_share/referral`, `youtube_shorts/social`,
+`instagram_reels/social` et `tiktok/social`. Le partage natif utilise la
+première paire. La copie simple garde l’URL canonique sans paramètre. Seul le
+nom de canal issu de la liste est transmis. Le référent, ses autres paramètres
+et les URLs complètes ne partent jamais dans les événements d’acquisition.
+L’attribution reste dans le document du jeu qui reçoit le référent, sans
+identifiant de campagne persistant, rapprochement par compte ni suivi entre
+appareils. Les débuts de défi, rejeux, autres quêtes et affichages de grille
+n’entrent pas dans le tunnel.
+
+[Requêtes d’agrégation en lecture seule](marketing/acquisition-agregats.sql)
+pour une connexion d’administration autorisée, sur sept jours glissants. Elles
+n’affichent aucun identifiant. Elles exigent le marquage `human`, écartent le
+trafic inconnu et excluent tout identifiant de navigateur observé aussi en QA
+ou automatisation pendant la même période. Les propriétés des événements de quête suivent la durée de conservation
+existante des événements de quête. Les clics et les ouvertures suivent la purge
+à 90 jours. Elles fournissent des volumes observés et gardent une période
+sans signal distincte d’une mesure complète à zéro. Les clics envoyés, les
+visiteurs uniques, l’ouverture depuis une installation Google Play ou le
+passage Web vers Play ne peuvent pas être déduits de ces sources. Un référent
+absent, une copie canonique, le blocage de télémétrie, un passage dans une autre
+application, un transport en échec ou un événement livré hors ordre peuvent
+faire manquer une étape. Les visites Apache et les sessions Analytics ont des
+unités différentes et ne forment pas un taux de conversion fiable.
+
+La collecte produit est toujours désactivée dans l’interface publique. Les
+indicateurs Analytics de ce lot restent indisponibles jusqu’à validation et
+fourniture explicite de l’autorisation existante. Pour la recette, utiliser
+les événements de test injectés et une connexion SQL de test, ou activer la
+collecte sur un environnement approuvé. Vérifier T1–T4 de l’[audit partage](marketing/PARTAGE_LUMEN.md#recette-après-publication),
+puis ouvrir un lien UTM en Chromium, lancer la quête 1 et la terminer dans la
+même session. Attendre un clic facultatif côté émetteur et, côté destinataire,
+une ouverture, un début et une réussite. Refaire en refusant la télémétrie et
+vérifier l’absence d’événement et le jeu toujours disponible.
+
 ## Identity and privacy
 - #316/#170 preparation: optional product analytics defaults to disabled. Every
   event/referral requires `environment.analyticsAllowed() === true`; a missing,

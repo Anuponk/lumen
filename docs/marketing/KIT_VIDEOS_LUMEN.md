@@ -9,6 +9,11 @@ Six scripts pour YouTube Shorts, Instagram Reels et TikTok. Capture sur un profi
 - Pour A, préparer la vraie grille avec les autres Gardiens déjà placés, puis lancer la capture. Pour B, ajouter des croix par les commandes du jeu ou poser les repères en surimpression sur les cellules exactes. Pour C, capturer la dernière pose et la victoire dans une seule prise. Accélérer ou couper les temps d’attente au montage, sans changer le score ni le chrono affiché.
 - Exporter une version maîtresse sans filigrane. Vérifier le cadrage et la lisibilité sur Android. Les descriptions pointent vers la page de découverte. Si la plateforme rend les liens non cliquables, utiliser le lien de profil. Faire valider chaque export et sa description par le propriétaire avant toute diffusion.
 
+Pour comparer les canaux autorisés, ajouter `?utm_source=youtube_shorts&utm_medium=social`,
+`?utm_source=instagram_reels&utm_medium=social` ou `?utm_source=tiktok&utm_medium=social`
+à l’URL de découverte du lien publié ou du profil correspondant. Garder l’URL
+courte à l’écran. Consulter les [limites de mesure](../PRODUCT_ANALYTICS.md#mesure-dacquisition-708).
+
 ## A1 · Le dernier Gardien sur la quête 1 · 18 s
 
 - **Concept et grille**. `base-q001`, Grande Ourse · Grand Chariot, 5 × 5. Laisser vide L5C4. La cinquième ligne et la quatrième colonne sont les seules libres. Le territoire restant contient cette intersection.

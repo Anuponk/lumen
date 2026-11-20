@@ -106,7 +106,7 @@ try {
       await until('!!window.sharedVictory');
       const shared = await evaluate(`(()=>{const {title,text,url,files}=window.sharedVictory;return {title,text,url,files:files?.map(f=>({name:f.name,type:f.type,size:f.size})),time:document.getElementById('skyRevealTime').textContent}})()`);
       assert.equal(shared.title, 'Ma réussite dans Lumen');
-      assert.equal(shared.url, 'https://lumen.nopuna.fr/decouvrir.html');
+      assert.equal(shared.url, 'https://lumen.nopuna.fr/decouvrir.html?utm_source=player_share&utm_medium=referral');
       assert.match(shared.text, /^✦ Quête .+ réussie dans Lumen · /);
       assert(shared.text.includes('Temps final ' + shared.time));
       assert.doesNotMatch(shared.text, /ref=|challenge=|quêtes accomplies/);

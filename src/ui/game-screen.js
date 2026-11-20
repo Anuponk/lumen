@@ -1734,7 +1734,7 @@ function setupMobileAuth(){
  menu.onclick=(e)=>e.stopPropagation();
  setupCredits(document);
  const invite=document.getElementById("inviteLumenFriends");
- if(invite)invite.onclick=()=>lumenShare.invite(invite);
+ if(invite)invite.onclick=()=>{void trackInviteClick();void lumenShare.invite(invite)};
  const editor=document.getElementById("accountProfileEditor");
  const edit=document.getElementById("editAccountProfile");if(edit)edit.onclick=()=>{if(!lumenUser||!editor)return;editor.dataset.open="true";syncMobileAuthUI();document.getElementById("nicknameInput")?.focus()};
  const closeProfile=document.getElementById("closeAccountProfile");if(closeProfile)closeProfile.onclick=()=>{if(!editor)return;editor.dataset.open="false";syncMobileAuthUI()};
@@ -1773,7 +1773,7 @@ function setupMobileAuth(){
  }
 }
 
-const {lumenAnonymousId,lumenSessionId,trackLumenEvent,captureReferral}=createAnalytics(()=>lumenSupabase,{localStorage,crypto,location,console,qaMode});
+const {lumenAnonymousId,lumenSessionId,trackLumenEvent,captureReferral,trackDiscoveryOpen,trackInviteClick}=createAnalytics(()=>lumenSupabase,{localStorage,crypto,location,console,qaMode,referrer:document.referrer});
 function currentAttemptAnalytics(extra={}){
  const attempt=attemptEngine.snapshot(),quest=canonicalActiveQuest??canonicalQuestForLegacy(levelIndex);
  const view=readQuestView(quest,lumenProgress,canonicalQuestList(),CONTENT_CONSTELLATIONS);
@@ -1796,6 +1796,7 @@ function trackCurrentPuzzleStart(){
 const appVersion=()=>document.querySelector('meta[name="lumen-build"]')?.content||document.getElementById("lumenVersion")?.textContent||"unknown";
 const analyticsContext=()=>({app_version:appVersion(),device:innerWidth<=760?"mobile":"desktop",standalone:!!(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)});
 trackLumenEvent("session_start",null,analyticsContext());
+void trackDiscoveryOpen(analyticsContext());
 function lumenIsStandalone(){
  const display=window.matchMedia&&["standalone","fullscreen","minimal-ui"].some(mode=>window.matchMedia("(display-mode: "+mode+")").matches);
  return !!(display||navigator.standalone||document.referrer.startsWith("android-app://")||window.LUMEN_NATIVE_APP===true);

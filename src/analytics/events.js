@@ -1,3 +1,5 @@
+import {isAcquisitionQuestEvent,readDiscoveryCampaign} from './acquisition.js';
+
 export function attemptAnalyticsProperties({
  attempt=null,questIndex=0,gridSize=null,constellationIndex=null,constellationName=null,
  solvedCount=0,questAttemptNumber=1,guidedEnabled=false,autoMarkingEnabled=false
@@ -66,10 +68,21 @@ async function trackLumenEvent(name,puzzleId=null,properties={}){
  ensureSession();touchSession();
  if(name==="session_start"&&!shouldTrackSessionStart())return;
  properties={...properties,traffic_type:trafficType};
+ if(isAcquisitionQuestEvent(name,properties)){
+  const channel=readDiscoveryCampaign(location,environment.referrer);
+  if(channel)properties.acquisition_channel=channel;
+ }
  if(testRunId)properties.test_run_id=testRunId;
  if(environment.qaMode)properties={...properties,qa_mode:environment.qaMode};
  try{await lumenSupabase.rpc("lumen_track_event",{p_anonymous_id:lumenAnonymousId,p_event_name:name,p_session_id:lumenSessionId,p_puzzle_id:puzzleId,p_properties:properties})}catch(e){console.warn("LUMEN analytics",e)}
 }
 function captureReferral(){if(!analyticsAllowed())return;const ref=new URLSearchParams(location.search).get("ref");if(!ref)return;const clean=ref.replace(/[^a-zA-Z0-9_-]/g,"").slice(0,64);if(!clean)return;try{localStorage.setItem("lumenReferral",clean)}catch(e){}trackLumenEvent("referral_visit",null,{ref:clean})}
-return {lumenAnonymousId,get lumenSessionId(){return lumenSessionId||null},trackLumenEvent,captureReferral};
+function trackDiscoveryOpen(properties={}){
+ if(!analyticsAllowed())return;
+ const channel=readDiscoveryCampaign(location,environment.referrer);
+ if(channel)return trackLumenEvent('app_opened',null,{...properties,acquisition_channel:channel});
+}
+// Use the existing share envelope and retention. This subtype records intent.
+function trackInviteClick(){return trackLumenEvent('share_result',null,{share_action:'invite_clicked'})}
+return {lumenAnonymousId,get lumenSessionId(){return lumenSessionId||null},trackLumenEvent,captureReferral,trackDiscoveryOpen,trackInviteClick};
 }
