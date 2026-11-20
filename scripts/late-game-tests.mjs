@@ -54,8 +54,7 @@ const document={createElement:()=>({
  getContext:()=>({fillRect(){},beginPath(){},arc(){},fill(){},fillText:text=>drawn.push(text)}),
  toBlob:callback=>callback(null),
 })};
-// #881 Lot 1: the card also needs its milestone kickers and constellation drawer.
-vm.runInContext(shareSource.match(/const CARD_KICKERS = [^;]+;/)[0].replace('const ','var ')+'\n'+functionSource(shareSource,'drawConstellation')+'\n'+functionSource(shareSource,'shareCardCanvas'),context);
+vm.runInContext(functionSource(shareSource,'shareCardCanvas'),context);
 for(const size of [total,total+7]){
  drawn.length=0;
  const model={ordinal:size,catalogueTotal:size,constellation:'Fixture',time:'0:20',badges:[]};

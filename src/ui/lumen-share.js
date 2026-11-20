@@ -132,36 +132,37 @@ export function createShareDialog(document, navigator) {
   };
 }
 
-const CARD_KICKERS = { constellation: 'CONSTELLATION RALLUMÉE', adventure: 'AVENTURE ACCOMPLIE' };
-
-// Real constellation figure (licensed astronomical source, #GRID_CATALOG), lit
-// with the same rule as the victory scene. No figure: the previous star mark.
-function drawConstellation(context, { constellationId, lit, count }) {
-  const data = constellationId ? astronomicalIllumination({ id: constellationId }, lit, count) : null;
-  if (!data) return false;
-  const { figure, litIndices } = data;
-  const scale = Math.min(510 / 290, 210 / 115);
-  const point = ([x, y]) => [45 + x * scale, 108 + y * scale];
-  context.lineWidth = 3;
-  for (const [a, b] of figure.edges) {
-    const on = litIndices.has(a) && litIndices.has(b);
-    context.strokeStyle = on ? 'rgba(104,231,255,.85)' : 'rgba(169,191,208,.28)';
-    context.beginPath();
-    context.moveTo(...point(figure.pts[a]));
-    context.lineTo(...point(figure.pts[b]));
-    context.stroke();
-  }
-  figure.pts.forEach((pt, i) => {
-    const on = litIndices.has(i);
-    context.fillStyle = on ? '#ffe3a1' : '#4c6680';
-    context.beginPath();
-    context.arc(...point(pt), on ? 7 : 4.5, 0, 2 * Math.PI);
-    context.fill();
-  });
-  return true;
-}
-
+// Self-contained (helpers nested): tests evaluate this function on its own.
 function shareCardCanvas(document, model, url) {
+  const CARD_KICKERS = { constellation: 'CONSTELLATION RALLUMÉE', adventure: 'AVENTURE ACCOMPLIE' };
+
+  // Real constellation figure (licensed astronomical source, #GRID_CATALOG), lit
+  // with the same rule as the victory scene. No figure: the previous star mark.
+  function drawConstellation(context, { constellationId, lit, count }) {
+    const data = constellationId ? astronomicalIllumination({ id: constellationId }, lit, count) : null;
+    if (!data) return false;
+    const { figure, litIndices } = data;
+    const scale = Math.min(510 / 290, 210 / 115);
+    const point = ([x, y]) => [45 + x * scale, 108 + y * scale];
+    context.lineWidth = 3;
+    for (const [a, b] of figure.edges) {
+      const on = litIndices.has(a) && litIndices.has(b);
+      context.strokeStyle = on ? 'rgba(104,231,255,.85)' : 'rgba(169,191,208,.28)';
+      context.beginPath();
+      context.moveTo(...point(figure.pts[a]));
+      context.lineTo(...point(figure.pts[b]));
+      context.stroke();
+    }
+    figure.pts.forEach((pt, i) => {
+      const on = litIndices.has(i);
+      context.fillStyle = on ? '#ffe3a1' : '#4c6680';
+      context.beginPath();
+      context.arc(...point(pt), on ? 7 : 4.5, 0, 2 * Math.PI);
+      context.fill();
+    });
+    return true;
+  }
+
   const { ordinal, catalogueTotal, constellation, time, badges, milestone, adventure } = model;
   const canvas = document.createElement('canvas');
   canvas.width = 600;
