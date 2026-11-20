@@ -443,4 +443,5 @@ jobs:
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
             -f supabase/migrations/20261121100000_friends_direct_challenges_35.sql \
             -f supabase/migrations/20261121100000_friends_direct_challenges_35.sql \
-            -f scripts/fixtures/friends-direct-challenges-35.sql
+            -f scripts/fixtures/friends-direct-challenges-35.sql \
+            -f scripts/fixtures/friends-rollback-35.sql

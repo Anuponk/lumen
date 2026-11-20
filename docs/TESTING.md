@@ -1894,6 +1894,9 @@ from « Mes défis », link opening, 390/1440 px) and
 nickname required, exact search, idempotent request, quiet decline + cooldown,
 crossing requests, daily limit, direct challenge ownership/friendship, one
 participation, inbox privacy, removal, privileges, Lumen erasure of both sides).
+`fixtures/friends-rollback-35.sql` rehearses the documented production rollback of
+PR #893 in a rolled-back transaction (tables and RPCs removed, erasure policy chain
+restored, erasure review still passing, #892 writer untouched).
 
 #883 (Lot 0): `challenge-rpc-contract-tests.mjs` checks, for historical, #650
 soft-revision, stable revision-0 and revised challenges, that each create/get/
