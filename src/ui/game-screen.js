@@ -4939,7 +4939,7 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
    const slots=rewardSlots(lastRewardState||{});renderVictoryRewards(slots);
    if(!syncPending&&playedQuest&&canonicalEntry&&!socialChallenge&&!learningReplayActive()){
     const sharedVictory={
-     ordinal:playedQuest.ordinal,constellation:canonicalEntry.label,
+     ordinal:playedQuest.ordinal,catalogueTotal:canonicalQuestList().length,constellation:canonicalEntry.label,
      time:document.getElementById("successTime").textContent,
      badges:slots.filter(slot=>slot.key!=="star"&&slot.state==="new").map(slot=>slot.label)
     };

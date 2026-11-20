@@ -112,7 +112,7 @@ export function createShareDialog(document, navigator) {
   };
 }
 
-function shareCardCanvas(document, { ordinal, constellation, time, badges }, url) {
+function shareCardCanvas(document, { ordinal, catalogueTotal, constellation, time, badges }, url) {
   const canvas = document.createElement('canvas');
   canvas.width = 600;
   canvas.height = 750;
@@ -131,7 +131,7 @@ function shareCardCanvas(document, { ordinal, constellation, time, badges }, url
   };
   line('L U M E N', 100, 'bold 26px sans-serif', '#68e7ff');
   line('✦', 238, '96px sans-serif', '#ffe3a1');
-  line('QUÊTE ' + ordinal + ' RÉUSSIE', 315, 'bold 26px sans-serif', '#68e7ff');
+  line('QUÊTE ' + ordinal + ' / ' + catalogueTotal + ' RÉUSSIE', 315, 'bold 26px sans-serif', '#68e7ff');
   line(constellation, 384, 'bold 48px sans-serif', '#f2fbff');
   if (time) line('Temps final ' + time, 454, 'bold 28px sans-serif', '#f2fbff');
   if (badges.length) line(badges.join(' · '), 512, 'bold 23px sans-serif', '#ffe3a1');

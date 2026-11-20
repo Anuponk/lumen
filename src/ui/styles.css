@@ -59,6 +59,8 @@ button{font:inherit;font-weight:700;background:#fff;border:1.8px solid #555;bord
 #lumenSharePreview{white-space:pre-line}
 .victory-share-result{width:100%;margin-top:6px;font-size:13px;min-height:44px}
 .victory-share-result[hidden]{display:none}
+/* Reserve the confirmed action’s space while the same screen waits for the ACK. */
+.sky-reveal[data-sync="pending"] .victory-share-result[hidden]{display:block;visibility:hidden}
 #board.win{animation:boardWin .8s ease-in-out}
 #board.win{animation:boardWin .55s ease-out both}\n#board.win .lumen-orb{animation-play-state:paused}
 .confetti{position:fixed;z-index:1001;top:-24px;width:12px;height:18px;border-radius:3px;pointer-events:none;
