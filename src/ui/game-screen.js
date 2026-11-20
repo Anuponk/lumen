@@ -24,7 +24,7 @@ import {createVictoryPresentation} from './victory-presentation.js';
 import {createCelebration,rewardSlots,remarkableRewards,rankSummary,celebrationLevel} from './victory-celebration.js';
 import {streakVisual,lostStreak} from "../campaign/streak-visual.js";
 import {DAILY_LIGHT_STREAK_ENABLED} from "../campaign/feature-flags.js";
-import {learningStep, dragLearningStep, learningAllows, learningCopy, territoryNumbersVisible} from "../game/learning.js";
+import {learningStep, dragLearningStep, learningAllows, territoryNumbersVisible} from "../game/learning.js";
 import {createAnalytics,attemptAnalyticsProperties} from "../analytics/events.js";
 import {setupCredits} from "./credits.js";
 import {createHintTestSuite} from "../testing/hint-tests.js";
@@ -103,7 +103,10 @@ import {SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS,isMainSkyProduct} from '../campai
 import {createSound} from "./sound.js";
 import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 
-export function startGameScreen(){
+import {createTranslator} from './i18n.js';
+import {learningCopy,learningIntro,lessonText} from './learning-copy.js';
+
+export function startGameScreen({t=createTranslator().t}={}){
 // #748: the presentation page links to /?install=1. Read once and removed from the URL
 // before anything else reads it, so the first-visit welcome still plays.
 const lumenInstallRequested=consumeInstallRequest(window);
@@ -2509,7 +2512,7 @@ function showVerificationErrors(errors){
 function runVerification(){
  if(celebrated||guidedPending||verifyPending||scriptedLearningActive())return;
  clearHintDisplay();
- showLearningTip("verify","Vérifier tes choix","Vérifier examine les cases que tu as déjà marquées. Elle compte comme une aide et ajoute immédiatement 5 secondes au chrono.");
+ showLearningTip("verify",'tipVerify');
  verifyUsesThisGame++;
  attemptEngine.recordAssistanceUse('verify',verifyUsesThisGame);
  attemptEngine.markAssistance();
@@ -2524,14 +2527,7 @@ function fixVerificationErrors(){
  document.getElementById("verifyCard").hidden=true;document.getElementById("verify").focus({preventScroll:true});board.removeAttribute("aria-disabled");msg.textContent="Les choix incorrects ont été effacés.";render();
 }
 let learningStage="place",learningTip=null,learningTipSeen=new Set(),learningIntroStep=0;
-const LEARNING_INTRO=[
- {title:"Observe le plateau",copy:"La grille est découpée en plusieurs territoires colorés. Les numéros 1 à 5 t’aident à les distinguer : chaque couleur forme un territoire."},
- {title:"Ton objectif",copy:"Tu vas placer des Gardiens sur la grille. Pour réussir, tous les Gardiens doivent respecter les mêmes quatre règles. Dès cette quête, tu peux aussi gagner des badges de performance : Rapidité, Autonomie, Sans erreur et Maîtrise, selon ton essai."},
- {title:"Un par territoire",copy:"Chaque territoire coloré doit contenir exactement un Gardien."},
- {title:"Un par ligne et par colonne",copy:"Chaque ligne contient exactement un Gardien, et chaque colonne aussi."},
- {title:"Ils gardent leurs distances",copy:"Deux Gardiens ne peuvent jamais se toucher, même en diagonale."},
- {title:"Comment jouer",copy:"Un premier toucher marque la case d’un cercle. Un deuxième toucher sur la même case y pose un Gardien. Maintenant, essaie-le toi-même."}
-];
+const LEARNING_INTRO=learningIntro(t);
 const onboardingPreferences=createOnboardingPreferences({storage:localStorage,getOwner:()=>lumenUser?.id,prefix:qaKey('lumenOnboardingV1')});
 let onboardingPreferenceOwner=null;
 function refreshOnboardingPreferenceOwner(){
@@ -2555,7 +2551,7 @@ function maybeShowContextualLesson(){
  if(socialChallenge||replayMode||learningReplayActive())return;
  if(autoMarkingLessonRequired()){
   if(!document.getElementById('autoCross').checked){finishAutoMarkingLesson();return}
-  learningTip={title:'Essaie le marquage manuel',copy:'Décoche Marquage auto : sans aide, vise Autonomie, Sans erreur et Maîtrise. Tu peux le recocher aussitôt ; Rapidité reste possible.'};
+  learningTip=lessonText(t,'manual');
   document.getElementById('autoCrossWrap').classList.add('onboarding-control-focus');
   document.getElementById('autoCross').setAttribute('aria-describedby','scriptedLearnCopy');
   document.getElementById('board').setAttribute('aria-disabled','true');
@@ -2563,12 +2559,12 @@ function maybeShowContextualLesson(){
   updateScriptedLearning();return;
  }
  const lessons={
-  2:['drag','Va plus vite avec le glissé','Maintiens le doigt ou le clic et glisse sur les cases pour les écarter. Tu peux aussi les toucher une par une. Les marques restent entièrement manuelles.'],
-  4:['hold','Un raccourci facultatif','Un appui long pose un Gardien ; un nouvel appui long le retire. Tu peux garder le cycle habituel : cercle, Gardien, vide.']
+  2:['drag','tipDrag'],
+  4:['hold','tipHold']
  };
  const lesson=lessons[activeQuestOrdinal()];
  if(lesson&&!onboardingPreferences.seen(lesson[0])){
-  onboardingPreferences.markSeen(lesson[0]);learningTip={title:lesson[1],copy:lesson[2]};updateScriptedLearning();
+  onboardingPreferences.markSeen(lesson[0]);learningTip=lessonText(t,lesson[1]);updateScriptedLearning();
  }
 }
 function activePerformanceEligibility(){return performanceEligibility(activeQuestOrdinal()-1,Math.max(canonicalScopeProgress(lumenProgress).completed,activeQuestOrdinal()))}
@@ -2601,10 +2597,10 @@ function clearCoachAboveBoard(){
 function coachBoardSize(natural,overflow){return Math.floor(Math.min(natural,Math.max(COACH_MIN_BOARD,natural-Math.max(0,overflow))))}
 function coachLessonTexts(){
  const coarse=typeof matchMedia==="function"&&matchMedia("(pointer:coarse)").matches;
- if(activeQuestOrdinal()===2)return [[0],[1]].flatMap(v=>[learningCopy({dragLesson:true,phase:"place"},[v],coarse),learningCopy({dragLesson:true,phase:"drag"},[v],coarse)]).map(t=>({...t,next:false}));
+ if(activeQuestOrdinal()===2)return [[0],[1]].flatMap(v=>[learningCopy({dragLesson:true,phase:"place"},[v],coarse,t),learningCopy({dragLesson:true,phase:"drag"},[v],coarse,t)]).map(t=>({...t,next:false}));
  const texts=LEARNING_INTRO.map(t=>({...t,next:true}));
- for(const number of [1,2,3,4])for(const v of [0,1])texts.push({...learningCopy({phase:"place",number,target:[0,0]},[[v]],coarse),next:false});
- for(const phase of ["row","column","neighbors","territory","reuse","drag","practice"])texts.push({...learningCopy({phase},[[0]],coarse),next:false});
+ for(const number of [1,2,3,4])for(const v of [0,1])texts.push({...learningCopy({phase:"place",number,target:[0,0]},[[v]],coarse,t),next:false});
+ for(const phase of ["row","column","neighbors","territory","reuse","drag","practice"])texts.push({...learningCopy({phase},[[0]],coarse,t),next:false});
  return texts;
 }
 function measureCoachReserve(card){
@@ -2612,7 +2608,7 @@ function measureCoachReserve(card){
  const saved=[title.textContent,copy.textContent,next.hidden,next.textContent];
  let reserve=Math.ceil(card.getBoundingClientRect().height);
  for(const text of coachLessonTexts()){
-  title.textContent=text.title;copy.textContent=text.copy;next.hidden=!text.next;next.textContent="À moi de jouer";
+  title.textContent=text.title;copy.textContent=text.copy;next.hidden=!text.next;next.textContent=t('learning.play');
   reserve=Math.max(reserve,Math.ceil(card.getBoundingClientRect().height));
  }
  [title.textContent,copy.textContent,next.hidden,next.textContent]=saved;
@@ -2697,10 +2693,10 @@ gameLayoutObserver.observe(document.querySelector(".app"));
 gameLayoutObserver.observe(document.querySelector(".actions"));
 gameLayoutObserver.observe(document.querySelector(".game-core"));
 window.addEventListener("resize",()=>requestAnimationFrame(fitGameBoard));
-function showLearningTip(id,title,copy){
+function showLearningTip(id,lesson){
  if(socialChallenge||!((activeQuestOrdinal()===1&&learningQuestActive())||(activeQuestOrdinal()===2&&!replayMode))||learningTipSeen.has(id)||onboardingPreferences.seen('context:'+id))return;
  onboardingPreferences.markSeen('context:'+id);
- learningTipSeen.add(id);learningTip={title,copy};updateScriptedLearning();
+ learningTipSeen.add(id);learningTip=lessonText(t,lesson);updateScriptedLearning();
 }
 function updateScriptedLearning(){
  const card=document.getElementById("scriptedLearn"),wrap=document.getElementById("learningBoardWrap");if(!card)return;
@@ -2729,14 +2725,15 @@ function updateScriptedLearning(){
  const blocked=celebrated||!!guidedPending||!!verifyPending;
  card.hidden=blocked||(!guided&&!learningTip);
  card.classList.toggle("learning-intro-panel",guided&&step?.phase==="intro");
- document.getElementById("learningCoachDismiss").hidden=guided||autoMarkingLessonRequired();
+ const dismiss=document.getElementById("learningCoachDismiss");
+ dismiss.hidden=guided||autoMarkingLessonRequired();dismiss.setAttribute("aria-label",t('learning.dismiss'));
  const next=document.getElementById("learningCoachNext");
- if(next){next.hidden=!(guided&&step?.phase==="intro");next.textContent=step?.introStep===LEARNING_INTRO.length-1?"À moi de jouer":"Suivant"}
- if(skip){skip.hidden=!((activeQuestOrdinal()===1&&!skipFirstGridTutorial&&!socialChallenge)||(learningReplayActive()&&tutorialCompletedProof()));skip.textContent=activeQuestOrdinal()===1&&!skipFirstGridTutorial?"Passer le tutoriel":"Quitter le tutoriel";}
+ if(next){next.hidden=!(guided&&step?.phase==="intro");next.textContent=step?.introStep===LEARNING_INTRO.length-1?t('learning.play'):t('learning.next')}
+ if(skip){skip.hidden=!((activeQuestOrdinal()===1&&!skipFirstGridTutorial&&!socialChallenge)||(learningReplayActive()&&tutorialCompletedProof()));skip.textContent=activeQuestOrdinal()===1&&!skipFirstGridTutorial?t('learning.skip'):t('learning.exit');}
  if(activeQuestOrdinal()<=QUEST_MILESTONES.skyTourAfter&&!socialChallenge)for(const id of ["undo","hint","verify"])document.getElementById(id).disabled=guided;
 
  if(card.hidden){clearCoachAboveBoard();return}
- const text=step?.phase==="intro"?LEARNING_INTRO[step.introStep]:step?learningCopy(step,state,matchMedia("(pointer:coarse)").matches):learningTip;
+ const text=step?.phase==="intro"?LEARNING_INTRO[step.introStep]:step?learningCopy(step,state,matchMedia("(pointer:coarse)").matches,t):learningTip;
  document.getElementById("scriptedLearnTitle").textContent=text.title;
  document.getElementById("scriptedLearnCopy").textContent=text.copy;
  requestAnimationFrame(positionLearningCoach);
@@ -4012,7 +4009,7 @@ function endDragCross(e){
  if(wasDragging){
    if(changed){hist.push(snapshot);persistAttemptBoard()}
    clearHintDisplay();msg.textContent="";
-   paintBoardState();updateScriptedLearning();if(scriptedLearningActive())finishManualLearningMarks();else if(levelIndex===1)showLearningTip("tools","Effacer les marques","Pars d’un rond rouge et glisse pour effacer les ronds traversés. Touche à nouveau un Gardien pour le retirer.");setTimeout(()=>{dragCrossSuppressClick=false},0);
+   paintBoardState();updateScriptedLearning();if(scriptedLearningActive())finishManualLearningMarks();else if(levelIndex===1)showLearningTip("tools",'tipTools');setTimeout(()=>{dragCrossSuppressClick=false},0);
  }
 }
 board.addEventListener("pointerup",endDragCross);
@@ -4165,7 +4162,7 @@ document.getElementById("hint").onclick=()=>{
   if(!celebrated&&!pendingVictoryView)showHintMessage(authSessionPending?"Ta constellation est complète. La victoire sera validée dès que ton compte sera restauré.":"Ta constellation est complète.");
   return;
  }
- if(activeQuestOrdinal()===2&&hintUsesThisGame===0)showLearningTip("hint-learning","Apprends avec les indices","Un indice t’explique une déduction logique plutôt que de jouer à ta place. Chaque indice ajoute 15 secondes au chrono officiel.");
+ if(activeQuestOrdinal()===2&&hintUsesThisGame===0)showLearningTip("hint-learning",'tipHint');
  recordHintUse();
  hi=null; hiCells=[];
 
@@ -5485,7 +5482,7 @@ async function bootGame(){
   const first=canonicalQuestList()[0],entry=CONTENT_CONSTELLATIONS.find(c=>c.id===first.constellationId);
   const figureSvg=astronomicalReferenceSvg(entry);
   if(figureSvg){
-   firstWelcome=createFirstWelcome({document,window,figureSvg,
+   firstWelcome=createFirstWelcome({document,window,figureSvg,t,
     contextKey:()=>JSON.stringify([lumenUser?.id??null,activeQuest().id,attemptEngine.snapshot()?.attemptId]),
     onReplayStart:()=>pauseGameClock(),
     onReturn:({replay,origin})=>{
@@ -5498,7 +5495,7 @@ async function bootGame(){
     // #832: an installed app opened on empty storage first asks whether the
     // player already has a sky elsewhere, instead of a silent quest 1.
     const pwaWelcome=pwaFirstOpenEligible({standalone:lumenIsStandalone(),firstVisit:true,signedIn:!!lumenUser,socialChallenge:!!socialChallenge})
-     ?createPwaFirstOpen({document,
+     ?createPwaFirstOpen({document,t,
       onRecover:()=>{trackLumenEvent("pwa_first_open_choice",null,{choice:"recover",qa:qaActive});openEmailAccountOffer("login")},
       onNewAdventure:()=>{trackLumenEvent("pwa_first_open_choice",null,{choice:"new",qa:qaActive});firstWelcome.show()}}):null;
     if(pwaWelcome){pwaWelcome.show();trackLumenEvent("pwa_first_open_shown",null,{qa:qaActive})}
