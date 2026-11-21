@@ -1,3 +1,4 @@
+import {createTranslator} from '../src/ui/i18n.js';
 import test from 'node:test';
 import {networkContext,withNetworkContext} from './fixtures/network-context.mjs';
 import assert from 'node:assert/strict';
@@ -14,6 +15,7 @@ import {officialTimingSupported} from '../src/persistence/official-time.js';
 
 function prepareContext(ctx){
  Object.assign(ctx,{attemptTiming,officialResult,officialTimingSupported});
+ ctx.t??=createTranslator().t;
  ctx.updateHintButton??=()=>{};ctx.updateVerifyButton??=()=>{};
  ctx.structuredClone??=structuredClone;ctx.questPerformanceRecord??=questPerformanceRecord;ctx.renderRecordResult??=renderRecordResult;
  ctx.captureCelestialProgress??=captureCelestialProgress;
