@@ -30,6 +30,33 @@ Les constats suivants sont devenus **obsolètes** ou ont évolué, après vérif
 4. **Répartition du trafic** (humains / QA / CI / non déterminés) non affichée.
 5. **Libellés historiques** : « Tableau de bord », « Ouvrir le cockpit ».
 
+**PR D (21/11) : consolidation.**
+- **Comparaison des versions avec exposition** : `lumen_admin_version_health(p_days)` (migration `20261121170000_admin_version_health_708.sql`, mêmes garanties que le Lot C). Par version : joueurs, hydratations (prêtes + échouées, la base d'exposition), échecs, réconciliations bloquées, appareils en attente.
+  - Affichage dans *Synchronisation & incidents*, avec un taux accompagné de n.
+  - « à examiner » seulement avec au moins 20 hydratations et un taux au moins double du taux global (et 5 points au-dessus) ; sinon « échantillon faible ». Une attente n'est jamais présentée comme une perte.
+- **Recommandation sur la collecte publique** : [ANALYTICS_COLLECTE_RECOMMANDATION.md](ANALYTICS_COLLECTE_RECOMMANDATION.md), à arbitrer, rien n'est activé.
+
+### Parité finale F01–F24 (21/11/2026)
+
+| ID | Fonction | Où dans Analytics | Statut |
+|---|---|---|---|
+| F01 | Ouvrir/fermer, période, actualiser | En-tête de l'espace, route `/admin/analytics?section=&days=` | ✅ migré (#718) |
+| F02 | Sections repliables | Six sections internes + blocs repliables | ✅ migré |
+| F03–F05 | KPI, activité quotidienne, rétention J1/J3/J7 | Vue générale | ✅ migré (#721/#727), inconnus explicites |
+| F06–F07 | Tunnel, friction par quête | Parcours & quêtes | ✅ migré |
+| F08 | Catalogue | Parcours & quêtes | ✅ migré |
+| F09 | Alertes | Vue générale → Sync / Parcours | ✅ migré |
+| F10–F13, F17 | Joueurs, tri, dates, sessions, épisodes, comptes | Joueurs & sessions | ✅ migré |
+| F14–F16 | Incidents, versions, rapports | Synchronisation & incidents (+ comparaison par version avec exposition, Lot D) | ✅ migré et étendu |
+| F18 | Feedbacks | Support & administration | ✅ migré |
+| F19–F20 | Dossier d'assistance, téléchargement, purge | Fiche joueur (Joueurs & sessions) | ✅ migré |
+| F21–F22 | Outils QA, série perdue | Support & administration (Lot B) | ✅ migré (repli menu pour un profil QA sans droits) |
+| F23 | Éclats illimités | — | ⛔ fonction retirée du code, rien à migrer |
+| F24 | Aperçu aventure maîtrisée | Support & administration | ✅ migré |
+| Nouveau | Acquisition & engagement | Section dédiée (Lot C) | ✅ ajouté |
+
+**Ancien écran** : il n'en existe plus. Le cockpit historique **est** devenu l'espace Analytics, et l'entrée de menu comme la route ouvrent la même interface. Aucun favori n'est cassé : `/admin/analytics` et `/admin/analytics/` sont servis par o2switch (#718).
+
 **PR C (21/11)** : écarts 3 et 4 résolus.
 - Nouvelle section **Acquisition & engagement**, alimentée par `public.lumen_admin_engagement(p_days)` (migration `20261121160000_admin_engagement_708.sql`). Le RPC est en lecture seule, réservé à `analytics_cockpit`, révoque `anon` et ne renvoie que des agrégats.
 - Contenu : trafic par type (humains / QA / tests automatisés / non déterminés, avec la priorité du 18/11), tunnel par canal (même contrat que `acquisition-agregats.sql`), défis créés, envoyés, acceptés, terminés et abandonnés (tables serveur #18/#35), Défi du jour (tentatives officielles #882), rétention par canal marquée **Non mesurable**.

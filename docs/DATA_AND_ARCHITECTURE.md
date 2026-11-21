@@ -15,6 +15,8 @@ aggregate reader. It reads `analytics_events`, the #18/#35 challenge tables and 
 #882 `daily_runs`, and returns counts only (no identifier, nickname or URL). It
 writes nothing and needs no cloud merge, restore or consent change. Contract:
 [PRODUCT_ANALYTICS](PRODUCT_ANALYTICS.md#mesure-dacquisition-708).
+Lot D adds `lumen_admin_version_health(p_days)` (`20261121170000_admin_version_health_708.sql`),
+the same kind of read-only admin aggregate over `lumen_sync_health` and `outbox_health`, per app version.
 
 ## Current architecture
 

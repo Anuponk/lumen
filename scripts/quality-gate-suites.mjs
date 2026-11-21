@@ -226,6 +226,7 @@ export const nodeSuites=[
  "daily-week-tests.mjs",
  "social-hub-tests.mjs",
  "analytics-engagement-tests.mjs",
+ "analytics-versions-tests.mjs",
  "social-notifications-tests.mjs",
  "duel-view-tests.mjs",
  "video-kit-tests.mjs",
