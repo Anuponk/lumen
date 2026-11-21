@@ -10,10 +10,12 @@
     "test:affected": "node scripts/test-affected.mjs",
     "test:full": "node scripts/test-affected.mjs --full",
     "format": "node scripts/format.mjs --write",
-    "format:check": "node scripts/format.mjs --check"
+    "format:check": "node scripts/format.mjs --check",
+    "i18n:check": "node scripts/i18n-audit.mjs"
   },
   "devDependencies": {
     "acorn": "8.15.0",
+    "parse5": "7.3.0",
     "prettier": "3.6.2"
   }
 }

@@ -373,7 +373,7 @@ Locale foundation (#754) uses `locale-tests.mjs` for browser preference resoluti
 storage isolation, catalogue parity and formatting. The welcome browser suite
 mounts an English fixture. `onboarding-locale-tests.mjs` covers the first two quests’
 translated coach steps against the existing learning logic. The coach-placement browser
-suite exercises the public entry point in French and English, including installed first-open, tutorial layout, the live rules selector and restoration of the explicit choice after reload. The Node locale test verifies the rules and board keys against their render sites. The service worker suite covers the catalogue imports.
+suite exercises the public entry point in French and English, including installed first-open, tutorial layout, the live rules selector and restoration of the explicit choice after reload. The Node locale test verifies the rules and board keys against their render sites. The service worker suite covers the catalogue imports. The results coverage adds English leaderboard and record tests in the quest-review and ranking suites. The Node gate runs `i18n-audit.mjs` for FR/EN parity, source review and new unkeyed copy in the scanned files.
 
 PWA update freshness: `service-worker-cache-tests.mjs` exercises actual worker
 handlers; `service-worker-update-browser-tests.mjs` reproduces warm v9-to-v10

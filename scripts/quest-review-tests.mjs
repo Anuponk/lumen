@@ -76,6 +76,7 @@ test('time is the official record of the current grid revision only', () => {
 function fakeDocument() {
   const make = (tag) => {
     const e = { tag, children: [], dataset: {}, hidden: false, className: '', textContent: '', attributes: {} };
+    e.classList = { add() {} };
     e.setAttribute = (k, v) => (e.attributes[k] = v);
     e.append = (...c) => e.children.push(...c);
     e.replaceChildren = (...c) => (e.children = [...c]);
@@ -247,7 +248,7 @@ test('#784: returning to the same quest still rejects an earlier official-record
  const source=fs.readFileSync('src/ui/game-screen.js','utf8');
  const fn=source.slice(source.indexOf('async function refreshReviewOfficialTime('),source.indexOf('function closeQuestReview('));
  const pending=[],shown=[],client={rpc:()=>new Promise(resolve=>pending.push(resolve))};
- const context=vm.createContext({lumenUser:{id:'owner'},lumenSupabase:client,qaActive:false,officialTimingSupported:()=>true,recordLabel:data=>data.label,formatDuration:format,setVictoryTime:text=>shown.push(text),questReview:{quest}});
+ const context=vm.createContext({lumenUser:{id:'owner'},lumenSupabase:client,qaActive:false,officialTimingSupported:()=>true,recordLabel:data=>data.label,t:createTranslator().t,formatDuration:format,setVictoryTime:text=>shown.push(text),questReview:{quest}});
  vm.runInContext(fn,context);
  const old=context.refreshReviewOfficialTime(quest);
  context.questReview={quest:{...quest,id:'other'}};
@@ -310,4 +311,24 @@ test('#851: the client never invents a cause the server did not prove', async ()
   assert.equal(rankingReason({status:'ineligible'},{eligible:false},{qualifying:false}),'cooldown');
   assert.equal(rankingReason({status:'confirmed',improved:true},{eligible:true},{}),'improved');
   assert.equal(rankingReason({status:'pending'},{eligible:true},{}),null);
+});
+
+test('#754 ranking and official records use English without changing player nicknames or results', async () => {
+  const t = createTranslator({ locale: 'en' }).t;
+  const nickname = 'Étoile du matin';
+  const personal = { position: 4, place: 4, score: 83, nickname, mine: true };
+  const client = { board: async () => ({ top: [{ position: 1, place: 1, score: 60, nickname, virtual: true }], personal, participating: true }) };
+  const view = createRankingView({ client, getContext: () => ({owner: 'o', client}), format, document: fakeDocument(), t });
+  view.show(quest, null, { review: true, personalBest: 78 });
+  assert.equal(view.root.children.at(-1).textContent, 'Loading leaderboard…');
+  await new Promise(resolve => setTimeout(resolve, 0));
+  const readText = element => [element.textContent, ...element.children.map(readText)].join(' ');
+  assert.equal(view.root.attributes['aria-label'], 'Puzzle leaderboard');
+  assert.match(readText(view.root), /Étoile du matin/);
+  assert.match(readText(view.root), /You: 4th/);
+  assert.match(readText(view.root), /Personal record: 1:18/);
+  const model = questReviewModel({ quest, record: { officialTimes: { 0: 200, 1: 83 } }, format, t });
+  assert.equal(model.time, 'Record: 1:23');
+  assert.equal(model.kicker, 'YOUR RESULTS · QUEST 4');
+  assert.deepEqual(model.slots.map(s => s.label), ['Star', 'Independence', 'Speed', 'Flawless', 'Mastery']);
 });

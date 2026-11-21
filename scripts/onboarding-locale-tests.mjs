@@ -1,3 +1,5 @@
+import vm from 'node:vm';
+import {functionSource} from './source-tools.mjs';
 import { readFileSync } from 'node:fs';
 
 import assert from 'node:assert/strict';
@@ -66,10 +68,26 @@ test('board controls and help share French fallback text and English coverage', 
   assert.deepEqual(keys(locales.en.messages), keys(locales.fr.messages));
   const tokens = text => (text.match(/\{\w+\}/g) ?? []).sort();
   for (const key of renderedKeys) {
-    assert(locales.fr.messages[key].trim() && locales.en.messages[key].trim(), key);
-    assert.deepEqual(tokens(locales.fr.messages[key]), tokens(locales.en.messages[key]), key);
+    const fr = locales.fr.messages[key], en = locales.en.messages[key];
+    const reference = typeof fr === 'string' ? fr : fr.other;
+    for (const entry of [fr, en]) {
+      for (const copy of typeof entry === 'string' ? [entry] : Object.values(entry)) {
+        assert(copy.trim(), key);
+        assert.deepEqual(tokens(copy), tokens(reference), key);
+      }
+    }
   }
   assert.equal(t('board.territory', { number: 3 }), 'Territory 3');
   assert.match(t('rules.time'), /15 seconds per hint and 5 seconds per check/);
   assert.deepEqual(englishMissing, []);
+});
+
+test('verification explains a mixed set of mistakes with locale-aware plurals', () => {
+  const source = readFileSync(new URL('../src/ui/game-screen.js', import.meta.url), 'utf8');
+  const check = functionSource(source, 'verificationErrorCopy');
+  const errors = [{kind:'guardian'}, {kind:'exclusion'}, {kind:'exclusion'}];
+  const english = vm.runInNewContext(check + '\nverificationErrorCopy(errors)', {t, errors});
+  const french = vm.runInNewContext(check + '\nverificationErrorCopy(errors)', {t:createTranslator().t, errors});
+  assert.equal(english, '3 incorrect marks found. 1 misplaced Guardian. 2 cells incorrectly ruled out.');
+  assert.equal(french, '3 choix incorrects détectés. 1 Gardien mal placé. 2 cases écartées à tort.');
 });

@@ -26,7 +26,17 @@ The service worker follows the static imports to cache the French and English ca
 
 The public discovery page is available in French at `/decouvrir.html` and in English at `/discover.html`. Both pages have a language link, reciprocal `hreflang` and localized social previews. French is the discovery fallback. The English discovery page links to the English rules and constellation learning guides at `/how-to-play.html` and `/learn-constellations.html`. Both guides link to their French counterpart and use reciprocal `hreflang`. The game and installation links honor the app’s language preference. The constellation directory and legal links identify their French destinations. The pages use the existing captures from the French edition.
 
-The public game exposes a language selector in the rules dialog. The player can choose Automatic, Français or English. Automatic selects the first supported browser language and falls back to French. The explicit choice is stored on the device. Switching updates the translated text and accessibility labels without rebuilding the board or restarting the attempt. The initial English rollout covers onboarding, board controls and help. Other screens can still display French. The remaining translations, cross-device preference, native Android app language, transactional copy, notifications and Play listing are tracked in #754.
+The public game exposes a language selector in the rules dialog. The player can choose Automatic, Français or English. Automatic selects the first supported browser language and falls back to French. The explicit choice is stored on the device. Switching updates the translated text and accessibility labels without rebuilding the board or restarting the attempt. English covers onboarding, board controls, help, verification feedback, the puzzle leaderboard, personal records and the quest review’s performance copy. Other screens can still display French. The remaining translations, cross-device preference, native Android app language, transactional copy, notifications and Play listing are tracked in #754.
+
+### Maintaining the translations
+
+Add or edit the French and English entries in the same PR. Keep messages complete and preserve the named variables in each plural form. Format the data at render time. Player nicknames, quest IDs, scores and reward state keep their existing meaning and ownership.
+
+Run `node scripts/i18n-audit.mjs --review <key>` after checking the pair in context. The record binds the review to both texts. Editing either catalogue invalidates the record for that key. Run `npm run i18n:check` before committing. The CI rejects missing keys, invalid plurals, inconsistent variables and visible copy newly detected outside a catalogue.
+
+Run `node scripts/i18n-audit.mjs --list` for the current migration inventory. The inventory scans the game HTML shell and JavaScript in the UI, game, campaign, privacy and landing modules. Migrate confirmed player copy to a semantic key and run `node scripts/i18n-audit.mjs --prune` to remove cleared entries. CI compares the historical inventory with the target branch to prevent it from growing.
+
+The scan follows common text destinations and can flag technical strings or miss text assembled at runtime. Exercise player journeys in both languages, including smaller screens. Static public pages, native resources, Play copy and server-generated e-mails and notifications need checks in their own release paths.
 
 ## Optional first welcome and story — #532
 

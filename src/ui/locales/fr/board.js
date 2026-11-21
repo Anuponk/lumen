@@ -1,4 +1,11 @@
 export default Object.freeze({
+  'board.checkStart': "Bien parti ! Tous tes choix sont corrects. Continue comme ça.",
+  'board.checkAlmost': "Presque là ! Aucune erreur détectée. La constellation est presque complète.",
+  'board.checkCorrect': "Excellent ! Tout est juste jusqu’ici. Ton raisonnement tient bon.",
+  'board.checkErrors': {"one":"{count} choix incorrect détecté.","other":"{count} choix incorrects détectés."},
+  'board.checkGuardians': {"one":"{count} Gardien mal placé.","other":"{count} Gardiens mal placés."},
+  'board.checkExclusions': {"one":"{count} case écartée à tort.","other":"{count} cases écartées à tort."},
+  'board.checkCleared': "Les choix incorrects ont été effacés.",
   'board.language': "Langue",
   'board.languageAuto': "Automatique",
   'board.languageUnavailable': "Langue indisponible · français utilisé",

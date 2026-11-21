@@ -1,4 +1,11 @@
 export default Object.freeze({
+  'board.checkStart': "Good start! All your marks are correct. Keep going.",
+  'board.checkAlmost': "Almost there! All your marks are correct. The constellation is nearly complete.",
+  'board.checkCorrect': "Well done! Everything is correct so far.",
+  'board.checkErrors': {"one":"{count} incorrect mark found.","other":"{count} incorrect marks found."},
+  'board.checkGuardians': {"one":"{count} misplaced Guardian.","other":"{count} misplaced Guardians."},
+  'board.checkExclusions': {"one":"{count} cell incorrectly ruled out.","other":"{count} cells incorrectly ruled out."},
+  'board.checkCleared': "The incorrect marks have been cleared.",
   'board.language': "Language",
   'board.languageAuto': "Automatic",
   'board.languageUnavailable': "Language unavailable · using French",

@@ -5,9 +5,9 @@ const {send,evaluate,errors}=await connectBrowser(),results=[];
 async function until(expr){for(let i=0;i<120;i++){if(await evaluate(expr))return;await new Promise(r=>setTimeout(r,80))}throw Error('Timed out: '+expr)}
 try{
  await send('Page.enable');await send('Runtime.enable');
- for(const [width,height] of [[320,568],[390,844],[768,1024],[1440,900],[568,320],[320,480],[390,360]]){
+ for(const [width,height,locale='fr'] of [[320,568],[360,640,'en'],[390,844],[768,1024],[1440,900],[568,320],[320,480],[390,360]]){
   await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<600});
-  const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:`localStorage.clear();localStorage.setItem('lumenOnboardingV1:guest','{"auto":true}');localStorage.setItem('lumenSound','off');`});
+  const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:`localStorage.clear();localStorage.setItem('lumenOnboardingV1:guest','{"auto":true}');localStorage.setItem('lumenSound','off');localStorage.setItem('lumen.locale',${JSON.stringify(locale)});`});
   const url=new URL(process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/');url.searchParams.set('qa','new');await send('Page.navigate',{url:url.href});await until('!!window.lumenDiagnostics');
   await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});
   await evaluate(`lumenDiagnostics.setupQuest(20);(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
@@ -18,9 +18,10 @@ try{
   assert.equal(await evaluate('getComputedStyle(document.getElementById("autoCrossWrap")).display'),'none');
   await evaluate(`(async()=>{
    const {createRankingView}=await import('./src/ui/ranking.js');
+   const {createTranslator}=await import('./src/ui/i18n.js');
    const {createVictoryPresentation}=await import('./src/ui/victory-presentation.js');
    window.rankFixture={rows:[],participating:true};window.rankImproved=true;
-   window.rankView=createRankingView({client:{flush:async()=>[{questId:'test',improved:rankImproved}],board:async()=>rankFixture},getContext:()=>({owner:'synthetic',client:null}),format:s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0')});
+   window.rankView=createRankingView({client:{flush:async()=>[{questId:'test',improved:rankImproved}],board:async()=>rankFixture},getContext:()=>({owner:'synthetic',client:null}),format:s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0'),t:createTranslator({locale:${JSON.stringify(locale)}}).t});
    window.surface=document.getElementById('skyReveal');window.presentation=createVictoryPresentation(surface);window.activations=0;
    document.getElementById('skyRevealNext').onclick=()=>activations++;
   })()`,true);
@@ -29,14 +30,15 @@ try{
    await until('document.querySelectorAll(".ranking-row").length===3');
    assert.equal(await evaluate('document.querySelectorAll(".ranking-row").length'),3);
    if(position){assert.equal(await evaluate('Number(document.querySelector(".ranking-mine").dataset.position)'),position);assert.doesNotMatch(await evaluate('document.querySelector(".ranking").textContent'),/Nouveau record/,'Personal record has one confirmed announcement owner')}
-   else assert.match(await evaluate('document.querySelector(".ranking-personal").textContent'),/Aucun temps/);
+   else assert.match(await evaluate('document.querySelector(".ranking-personal").textContent'),locale==='en'?/No competitive time/:/Aucun temps/);
    assert.equal(await evaluate('document.querySelectorAll(".ranking-virtual").length'),position===7?3:0);
+   if(locale==='en'&&position===7) assert.match(await evaluate('document.querySelector(".ranking").textContent'),/Écho Alcyone 1.*Virtual echo.*You: 7th/s);
    assert.equal(await evaluate('document.querySelectorAll(".ranking button").length'),0,'No registration/skip popup');
    const geometry=await evaluate(`(()=>{const el=document.querySelector('.ranking'),podium=document.querySelector('.ranking-podium'),next=document.getElementById('skyRevealNext'),r=el.getBoundingClientRect(),b=next.getBoundingClientRect();return {fits:r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight,controls:[...document.querySelectorAll('#skyReveal .sky-reveal-actions button')].filter(e=>!e.hidden).every(e=>{const a=e.getBoundingClientRect();return a.top>=0&&a.bottom<=innerHeight&&a.left>=0&&a.right<=innerWidth}),scroll:podium.scrollHeight>podium.clientHeight,body:document.documentElement.scrollWidth>innerWidth||document.documentElement.scrollHeight>innerHeight,rank:{top:r.top,bottom:r.bottom},button:{top:b.top,bottom:b.bottom},details:[...document.querySelectorAll('#skyRevealResults > *, #skyRevealTitle, .sky-reveal-card')].map(e=>({id:e.id,cls:e.className,hidden:e.hidden,top:e.getBoundingClientRect().top,height:e.getBoundingClientRect().height,width:e.getBoundingClientRect().width,font:getComputedStyle(e).fontSize,text:e.textContent.slice(0,160)}))}})()`);
    if(!geometry.controls){const shot=await send('Page.captureScreenshot');fs.writeFileSync(new URL('../docs/validation/highscore-overflow.png',import.meta.url),Buffer.from(shot.data,'base64'))}
    assert.equal((geometry.fits || height<650)&&!geometry.scroll&&!geometry.body,true,JSON.stringify({width,height,position,geometry}));
   }
-  await evaluate(`window.rankView.clear();surface.animate([{opacity:1},{opacity:1}],{duration:3000});presentation.start(()=>{window.rankView.show({id:'test'});window.rankView.mount()})`);
+  await evaluate(`window.rankView.clear();const marker=document.createElement('span');marker.style.animation='victoryRewardIn 800ms both';surface.append(marker);presentation.start(()=>{marker.remove();window.rankView.show({id:'test'});window.rankView.mount()})`);
   assert.equal(await evaluate('document.querySelector(".ranking").hidden'),true,'No ranking during celebration');
   await until('surface.dataset.victoryPhase==="combined"');
   await until('!document.querySelector(".ranking").hidden');
