@@ -76,6 +76,7 @@ begin
  assert not exists(select 1 from jsonb_array_elements(public.lumen_list_quest_challenges_v2(null,'Castor927')) i where (i->>'challenge_id')::uuid=link),'no foreign listing';
 
  -- Erased account: the anonymized snapshot is shown, never the old nickname.
+ perform set_config('request.jwt.claim.sub','',true); -- operator session
  perform lumen_privacy.erase_account(erased,array[]::text[],'ERASE LUMEN '||erased::text);
  perform set_config('request.jwt.claim.sub',blaireau::text,true);
  assert public.lumen_get_quest_challenge_v2(gone_link,null,'Castor927')->>'sender_display_name'='Compte supprimé','erased sender stays anonymous';
