@@ -9,6 +9,9 @@
   "src/ui/celestial-progress.js",
   "scripts/format.mjs",
   "scripts/app-updates-tests.mjs",
+  "src/ui/lumen-dialog.js",
+  "scripts/lumen-dialog-tests.mjs",
+  "scripts/lumen-dialog-browser-tests.mjs",
   "src/ui/menu-pause.js",
   "scripts/menu-pause-tests.mjs",
   "scripts/menu-pause-browser-tests.mjs"

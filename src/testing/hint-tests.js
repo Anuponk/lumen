@@ -68,7 +68,7 @@ async function runHintTests(){
    model.puz=p;model.state=Array.from({length:model.n},()=>Array(model.n).fill(0));
    const r=0,c=p.sol[0],conflict=guidedConflictForAction(r,c,1);
    model.puz=oldP;model.state=oldS;
-   return conflict?.type==="deadend"&&conflict.title.includes("exclusion");
+   return conflict?.type==="deadend"&&conflict.excluded===true;
  });
  test("Guidage : feedback visuel distingue ligne, colonne, territoire et contact",()=>["row","col","region","touch","deadend"].every(k=>guidedConflictForAction.toString().includes('"'+k+'"')));
  test("Rendu : le plateau contient n × n cellules après render",()=>{render();return board.children.length===model.n*model.n});

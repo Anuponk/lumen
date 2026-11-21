@@ -12,7 +12,7 @@ export async function verifyGuidedUndo({send,evaluate}){
   await evaluate(`lumenDiagnostics.setupQuest(${index})`);await acknowledgeLearningMilestones(evaluate);
   // Convergence restores an existing run. This scenario explicitly starts a
   // fresh board through the real reset instead of assuming entry erases it.
-  await evaluate(`window.confirm=()=>true;document.getElementById('new').click()`);await acknowledgeLearningMilestones(evaluate);
+  await evaluate(`document.getElementById('new').click();document.getElementById('lumenConfirmYes').click()`);await acknowledgeLearningMilestones(evaluate);
   await evaluate(`document.getElementById('questGo').click();document.getElementById('manualCrossTipOk').click();if(!document.getElementById('autonomyOverlay').hidden)document.getElementById('autonomyKeep').click();if(!document.getElementById('attemptMask').hidden)document.getElementById('attemptMask').click()`);
   await evaluate(`document.getElementById('guidedErrors').checked=true;document.getElementById('autoCross').checked=false`);
   assert.equal(await evaluate('lumenDiagnostics.snapshot().state.flat().every(v=>v===0)'),true,'Guided conflict fixture starts from the explicitly reset board');
@@ -27,6 +27,20 @@ export async function verifyGuidedUndo({send,evaluate}){
   await tap(cell(1,0));
   assert.equal(await boardLayout(),initial,"The guided explanation preserves the board geometry");
   assert.equal(await evaluate(`document.getElementById('guidedCard').hidden`),false,'Actual touch produces the guided conflict: '+JSON.stringify(await evaluate(`({n:lumenDiagnostics.snapshot().n,row:lumenDiagnostics.snapshot().state[0],guided:document.getElementById('guidedErrors').checked,mask:document.getElementById('attemptMask').hidden,msg:document.getElementById('msg')?.textContent})`)));
+  const copy=()=>evaluate("['guidedTitle','guidedCopy','guidedAck'].map(id=>document.getElementById(id).textContent)");
+  const language=code=>evaluate(`(()=>{const select=document.getElementById('gameLocaleMode');select.value=${JSON.stringify(code)};select.dispatchEvent(new Event('change',{bubbles:true}))})()`);
+  const beforeLanguage=await evaluate("JSON.stringify(lumenDiagnostics.snapshot().state)");
+  const french=await copy();
+  assert.match(french[0],/même ligne/);
+  await language('en');
+  assert.deepEqual(await copy(),['Two Guardians in the same row','A row can contain only one Guardian.','Got it']);
+  assert.equal(await evaluate("document.getElementById('autonomyKeep').textContent"),'Keep Guided checks on');
+  assert.equal(await evaluate("document.querySelector('.guided-attempt .lumen-orb').getAttribute('aria-label')"),'Attempted Guardian');
+  assert.equal(await evaluate("JSON.stringify(lumenDiagnostics.snapshot().state)"),beforeLanguage);
+  assert.equal(await evaluate("document.getElementById('board').getAttribute('aria-disabled')"),'true');
+  assert.equal(await guidedUses(),usesBefore+1,'Translating the card does not add an intervention');
+  await language('fr');
+  assert.deepEqual(await copy(),french);
   const before=await evaluate('lumenDiagnostics.snapshot().state');
   assert.equal(await guidedUses(),usesBefore+1,'One guided intervention adds one five-second penalty');
   assert.equal(before[0][wrong],2);

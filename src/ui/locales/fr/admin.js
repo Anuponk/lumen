@@ -74,4 +74,8 @@ export default Object.freeze({
   'admin.versions.none': "Aucune version observée dans la période.",
   'admin.versions.definition': "taux = échecs d’hydratation ÷ hydratations (prêtes + échouées) de la version ; « à examiner » si au moins {count} hydratations et un taux au moins double du taux global (et 5 points au-dessus) ; une attente n’est pas une perte de progression.",
   'admin.versions.source': "santé de synchronisation et outbox des appareils (lumen_sync_health, outbox_health)",
+  'admin.qaResetTitle': "Réinitialiser la progression de test QA ?",
+  'admin.qaResetCopy': "Toute la progression de test QA de cet appareil sera effacée et tu recommenceras comme un nouveau joueur.",
+  'admin.qaResetKeep': "Garder ma progression",
+  'admin.qaResetYes': "Réinitialiser",
 });

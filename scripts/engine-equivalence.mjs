@@ -35,7 +35,8 @@ for(const puzzles of Object.values(catalogue))for(const p of puzzles){
   Object.assign(context,board);
   for(const name of ['solutions','verificationErrors','directMissingCross','playerError'])assert.deepEqual(plain(engine[name]()),plain(context[name]()),name+' changed');
   for(let r=0;r<board.n;r++)for(let c=0;c<board.n;c++){
-   assert.deepEqual(plain(engine.guidedConflictForAction(r,c,2)),plain(context.guidedConflictForAction(r,c,2)),'Guided conflict changed');guidedActions++;
+   const before=context.guidedConflictForAction(r,c,2),expected=before&&{type:before.type,cause:before.cause};
+   assert.deepEqual(plain(engine.guidedConflictForAction(r,c,2)),plain(expected),'Guided conflict changed');guidedActions++;
    assert.equal(engine.isAutoCross(r,c),context.isAutoCross(r,c));
   }
   const before=context.guardianConflicts(),after=engine.guardianConflicts();

@@ -12,7 +12,7 @@ try{
   await send('Emulation.setDeviceMetricsOverride',{width,height:width===320?568:900,mobile:width<600,deviceScaleFactor:1});
   await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
   await evaluate('lumenDiagnostics.setupQuest(70)');await acknowledgeLearningMilestones(evaluate);
-  await evaluate(`window.confirm=()=>true;document.getElementById('new').click();for(const id of ['questStart','manualCrossTip','autonomyOverlay'])document.getElementById(id).hidden=true;if(!document.getElementById('attemptMask').hidden)document.getElementById('attemptMask').click();document.getElementById('guidedErrors').checked=false;document.getElementById('autoCross').checked=${auto};document.getElementById('board').scrollIntoView({block:'center'});window.dragNodes=[...document.querySelectorAll('#board .cell')];`);
+  await evaluate(`document.getElementById('new').click();document.getElementById('lumenConfirmYes').click();for(const id of ['questStart','manualCrossTip','autonomyOverlay'])document.getElementById(id).hidden=true;if(!document.getElementById('attemptMask').hidden)document.getElementById('attemptMask').click();document.getElementById('guidedErrors').checked=false;document.getElementById('autoCross').checked=${auto};document.getElementById('board').scrollIntoView({block:'center'});window.dragNodes=[...document.querySelectorAll('#board .cell')];`);
   for(const speed of ['fast','slow','repeated']){
   // Let the previous gesture's intentional synthetic-click suppression end.
   await evaluate('new Promise(resolve=>setTimeout(resolve,20))',true);
