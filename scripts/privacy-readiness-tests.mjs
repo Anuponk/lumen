@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {createHash} from 'node:crypto';
 import {accountDeletionMailto} from '../src/privacy/account-deletion.js';
 import {evaluatePlayReadiness} from './play-readiness.mjs';
 
@@ -30,6 +31,37 @@ assert.match(url.searchParams.get('subject'),/Lumen/);
 assert.match(url.searchParams.get('body'),/parent\+account@example\.test/);
 assert(!url.searchParams.get('body').includes('access_token'));
 for(const input of ['', 'not-an-address','a@example.test\r\nBcc:someone@example.test','a@example.test?subject=other'])assert.throws(()=>accountDeletionMailto(input));
+const englishMail=new URL(accountDeletionMailto('parent+account@example.test','en'));
+assert.equal(englishMail.pathname,url.pathname);
+assert.equal(englishMail.searchParams.get('subject'),'Lumen account deletion request');
+assert.match(englishMail.searchParams.get('body'),/Account email: parent\+account@example\.test/);
+const legalPairs=[
+ ['mentions-legales.html','legal-notice.html'],
+ ['confidentialite.html','privacy-policy.html'],
+ ['cgv.html','terms-of-sale.html'],
+ ['supprimer-compte.html','delete-account.html']
+];
+const reviewFile='content/legal/translation-review.json';
+const current=Object.fromEntries(legalPairs.map(([fr,en])=>[
+ en, Object.fromEntries([fr,en].map(file=>[file,createHash('sha256')
+   .update(fs.readFileSync(file,'utf8').replace(/\r\n/g,'\n')).digest('hex')]))
+]));
+if(process.argv[2]==='--review-legal-translations')fs.writeFileSync(reviewFile,JSON.stringify(current,null,2)+'\n');
+assert.deepEqual(current,JSON.parse(fs.readFileSync(reviewFile,'utf8')),'Review the updated French and English documents in context');
+for(const [fr,en] of legalPairs){
+ const original=fs.readFileSync(fr,'utf8'),translation=fs.readFileSync(en,'utf8');
+ assert(original.includes('href="/'+en+'" hreflang="en"'));
+ assert(translation.includes('<html lang="en">')&&translation.includes('href="/'+fr+'" lang="fr"'));
+ assert.equal(translation.includes('content="noindex"'),original.includes('content="noindex"'));
+ assert.equal(translation.includes('content="no-referrer"'),original.includes('content="no-referrer"'));
+ for(const shipper of ['scripts/o2switch-cron-publish.sh','scripts/o2switch-safe-release.sh','scripts/o2switch-deploy-tests.py']){
+  assert(fs.readFileSync(shipper,'utf8').includes(en),en+' is included in '+shipper);
+ }
+}
+const englishPage=fs.readFileSync('delete-account.html','utf8');
+assert.match(englishPage,/type="checkbox"[^>]*required/);
+assert.match(englishPage,/id="accountDeletionRequest"/);
+assert.doesNotMatch(englishPage,/supabase-js|service_role|analytics\/events|lumen_track_event/);
 const page=fs.readFileSync('supprimer-compte.html','utf8');
 assert.match(page,/sans.*réinstaller/i);
 assert.match(page,/uniquement les données associées à Lumen/i);

@@ -104,7 +104,7 @@ ${entries}
   </section>
  </main>
  <footer>
-  <p><a href="/${fr?"decouvrir.html":"discover.html"}">${html(t("fact.directoryExplore"))}</a> · <a href="/${fr?"apprendre-constellations.html":"learn-constellations.html"}">${html(t("fact.directoryGuide"))}</a> · <a href="/mentions-legales.html">${html(t("app.legal"))}</a> · <a href="/confidentialite.html">${html(t("app.privacy"))}</a></p>
+  <p><a href="/${fr?"decouvrir.html":"discover.html"}">${html(t("fact.directoryExplore"))}</a> · <a href="/${fr?"apprendre-constellations.html":"learn-constellations.html"}">${html(t("fact.directoryGuide"))}</a> · <a href="/${fr?"mentions-legales.html":"legal-notice.html"}">${html(t("app.legal"))}</a> · <a href="/${fr?"confidentialite.html":"privacy-policy.html"}">${html(t("app.privacy"))}</a></p>
  </footer>
 </body>
 </html>

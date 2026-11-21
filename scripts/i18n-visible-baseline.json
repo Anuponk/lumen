@@ -135,9 +135,6 @@
   "src/game/logical-difficulty.js": [
     "d7102642feac1b869c8bf762"
   ],
-  "src/privacy/account-deletion.js": [
-    "1da5b46f3506950806bba93f", "78e7e3ca6794c057f543dcac", "7e659177f668c17bf3454e98", "88c8fff6436b5e46417e53d6", "8ff773edbb6194143addd7e0", "f848a967873a45118d48f972"
-  ],
   "src/ui/adventure-access-panel.js": [
     "00d2e887ba92dfe9faa0ee28", "08fc81a91e3133113b2d52bd", "41e22ed93372748ec6f28cb0", "44e11aa14cdbf92bee932fb0", "517632354f4fd6e2fd68cd73", "559a05e1a103a140b3b64566",
     "589a43e3fff3f785c4a04ec9", "5ab73467fec026aa22eabc33", "5cea3490a36410b3ad67771a", "61c5d6d15327d922eddc610c", "66474911d95325c8efa1d226", "67cde8c42ec64977a1c1e440",

@@ -106,7 +106,7 @@ export function updateAdventureOfferMastery(section,model,{onClaim=()=>{},onCont
  }
 }
 
-export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{},onClaim=()=>{},onContinue=()=>{},onRetry=()=>{},onRestorePlay=null,playCheckoutPaused=false,t=french}={}){
+export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{},onClaim=()=>{},onContinue=()=>{},onRetry=()=>{},onRestorePlay=null,playCheckoutPaused=false,locale="fr",t=french}={}){
  const el=(tag,props={},text)=>{const e=document.createElement(tag);Object.assign(e,props);if(text!==undefined)e.textContent=text;return e};
  const root=el('div',{className:'adventure-offer'});
  const status=el('p',{className:'adventure-offer-status',hidden:true});status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.dataset.offerStatus='';
@@ -202,7 +202,7 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
   updateAdventureOfferMastery(section,model,{onClaim,onContinue,t});
   root.append(section);
  }
- const terms=el('a',{className:'adventure-offer-terms',href:SALES_TERMS_URL,target:'_blank',rel:'noopener'},t('store.terms'));terms.dataset.offer='terms';
+ const terms=el('a',{className:'adventure-offer-terms',href:locale==='en'?'/terms-of-sale.html':SALES_TERMS_URL,target:'_blank',rel:'noopener'},t('store.terms'));terms.dataset.offer='terms';
  const termsLine=el('p',{className:'adventure-offer-terms-line'});termsLine.append(terms);
  if(restoreButton)termsLine.append(document.createTextNode(' · '+t('store.restoreHint')+' '),restoreButton);
  root.append(termsLine);

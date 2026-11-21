@@ -125,6 +125,10 @@ function translateGameCopy(){
  for(const node of document.querySelectorAll("[data-game-label]"))node.setAttribute("aria-label",t(node.dataset.gameLabel));
  for(const node of document.querySelectorAll("[data-game-title]"))node.title=t(node.dataset.gameTitle);
  for(const node of document.querySelectorAll("[data-game-placeholder]"))node.placeholder=t(node.dataset.gamePlaceholder);
+ for(const link of document.querySelectorAll("[data-game-href-en]")){
+  link.dataset.gameHrefFr??=link.getAttribute('href');
+  link.href=localePreference?.locale==='en'?link.dataset.gameHrefEn:link.dataset.gameHrefFr;
+ }
 }
 translateGameCopy();
 // #748: the presentation page links to /?install=1. Read once and removed from the URL
@@ -5122,7 +5126,7 @@ function renderAdventureOffer(container,pack,{close}={}){
   if(owned)onContinue();
   else{button.disabled=false;button.textContent='Réessayer la vérification'}
  };
- const mounted=mountAdventureOffer(container,offer,{t,
+ const mounted=mountAdventureOffer(container,offer,{t,locale:localePreference?.locale,
   onRetry:()=>{playBillingReady=playPriceLoader.load()},
   onSignIn:()=>{close?.();openEmailAccountOffer('signup')},
   playCheckoutPaused:offer.pricesRequired&&!playCheckoutOpen({released:PLAY_CHECKOUT_AVAILABLE,capabilities:lumenCapabilities}),
