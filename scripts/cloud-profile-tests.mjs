@@ -1,3 +1,4 @@
+import {createTranslator} from '../src/ui/i18n.js';
 import assert from 'node:assert/strict';
 import {backupAndVerifyProfile,backupIfUnchanged,loadVerifiedProfile,sameCloudProfile,validateCloudProfile,restoreIntoEmptyGuestStorage,cloudSafelyCoversLocal,restoreRicherCloudProfile,reconcileCloudAchievements,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally} from '../src/persistence/cloud-profile.js';
 const source={solved:{0:1,1:1},historyBackup:{0:1,1:1},badges:{0:{speed:true}},stars:{0:3},shards:7,daily:{dates:{"2026-10-09":1}},performances:{1:{bestTime:44}},xp:13};
@@ -145,7 +146,9 @@ assert.ok(uiSrc.includes('await verifyLegacyProgressMirror()'),'Cloud save must 
 assert.ok(uiSrc.includes('preserveUnsyncedCloudProgress("legacy-mirror-failed")'),'Failed mirror must retain local recovery data');
 assert.ok(uiSrc.includes('async function celebrateSuccess()'),'Victory completion may await durable cloud acknowledgement');
 assert.ok(uiSrc.includes('if(!(await confirmCloudReward()))return;'),'Authenticated victory waits for committed cloud snapshot');
-assert.ok(uiSrc.includes("textContent='Réessayer'"),'Persistent cloud failure retains an actionable retry');
+assert.match(uiSrc,/retry\.textContent=t\('app\.retry'\);retry\.onclick=\(\)=>retryAccountCloudSync\(\)/,'Persistent cloud failure retains an actionable retry');
+assert.equal(createTranslator().t('app.retry'),'Réessayer');
+assert.equal(createTranslator({locale:'en'}).t('app.retry'),'Try again');
 assert.ok(uiSrc.includes("retryable:cloudProfileFailure?.reason!=='conflict'"),'A cloud conflict must be distinguished from a transient failure');
 assert.ok(uiSrc.includes('const syncPresentation=createSyncPresentation'),'Transient and critical presentation follow explicit state');
 assert.ok(uiSrc.includes('if(box)box.hidden=true'),'Successful Google login must not reopen the account offer');

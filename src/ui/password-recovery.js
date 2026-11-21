@@ -1,3 +1,7 @@
+import {createTranslator} from './i18n.js';
+
+const french=createTranslator().t;
+
 // #820: dedicated password-recovery screen, distinct from sign-in and from the
 // account editor. Pure state machine: the DOM, Auth and storage are injected.
 // No password, token or provider message ever leaves this module.
@@ -13,16 +17,16 @@ export function validateNewPassword(password,confirmation){
 }
 
 // Bounded, human messages. The form stays visible for every recoverable error.
-export function passwordRecoveryErrorCopy(reason){
+export function passwordRecoveryErrorCopy(reason,t=french){
  switch(reason){
-  case 'password':return 'Utilise au moins 12 caractères.';
-  case 'mismatch':return 'Les deux mots de passe ne correspondent pas. Corrige la confirmation.';
-  case 'same_password':return 'Choisis un mot de passe différent de l’ancien.';
-  case 'weak_password':return 'Ce mot de passe est trop faible. Choisis-en un plus long ou plus varié.';
-  case 'network':return 'Connexion impossible. Ton mot de passe n’a pas été modifié. Vérifie ton réseau, puis réessaie.';
+  case 'password':return t('account.passwordTooShort');
+  case 'mismatch':return t('account.passwordMismatch');
+  case 'same_password':return t('account.passwordSame');
+  case 'weak_password':return t('account.passwordWeak');
+  case 'network':return t('account.passwordNetwork');
   case 'session_expired':case 'signed_out':case 'session_changed':
-   return 'Ce lien de réinitialisation n’est plus actif. Demande un nouveau lien : ton mot de passe n’a pas été modifié.';
-  default:return 'Le mot de passe n’a pas pu être modifié. Réessaie dans un instant.';
+   return t('account.passwordExpired');
+  default:return t('account.passwordUpdateFailed');
  }
 }
 
@@ -31,27 +35,27 @@ const SESSION_LOST=new Set(['session_expired','signed_out','session_changed']);
 
 // What the screen shows for each phase. `action` drives the single main button
 // outside the form; `form` says whether the two password fields are shown.
-export function passwordRecoveryView(state){
+export function passwordRecoveryView(state,t=french){
  switch(state.phase){
-  case 'verifying':return {title:'Vérification de ton lien…',text:'Un instant, nous vérifions ton lien de réinitialisation.',form:false,action:null};
-  case 'form':case 'saving':return {title:'Choisis ton nouveau mot de passe',
-   text:'Ton lien de réinitialisation a été vérifié.'+(state.email?' Compte : '+state.email+'.':''),
-   form:true,busy:state.phase==='saving',error:state.error?passwordRecoveryErrorCopy(state.error):'',
-   submitLabel:state.phase==='saving'?'Enregistrement…':'Enregistrer mon nouveau mot de passe',action:null};
+  case 'verifying':return {title:t('account.verifyingLink'),text:t('account.passwordChecking'),form:false,action:null};
+  case 'form':case 'saving':return {title:t('account.passwordChoose'),
+   text:state.email?t('account.passwordVerifiedEmail',{email:state.email}):t('account.passwordVerified'),
+   form:true,busy:state.phase==='saving',error:state.error?passwordRecoveryErrorCopy(state.error,t):'',
+   submitLabel:state.phase==='saving'?t('account.passwordSaving'):t('account.savePassword'),action:null};
   case 'success':return state.signedIn
-   ?{title:'Mot de passe modifié !',text:'Ton nouveau mot de passe est enregistré. Utilise-le lors de ta prochaine connexion.',form:false,action:'continue',label:'Continuer mon aventure'}
-   :{title:'Mot de passe modifié !',text:'Ton nouveau mot de passe est enregistré. Connecte-toi avec lui pour retrouver ton aventure.',form:false,action:'signin',label:'Se connecter'};
-  case 'unreachable':return {title:'Vérification impossible pour le moment',text:'Ton lien n’a pas pu être vérifié. Vérifie ta connexion, puis rouvre le lien depuis l’e-mail.',form:false,action:'close',label:'Fermer'};
-  case 'invalid':return {title:'Ce lien n’est plus actif',text:passwordRecoveryErrorCopy(state.error||'session_expired'),form:false,action:'recover',label:'Demander un nouveau lien'};
+   ?{title:t('account.passwordChanged'),text:t('account.passwordChangedCopy'),form:false,action:'continue',label:t('account.continue')}
+   :{title:t('account.passwordChanged'),text:t('account.passwordChangedSignIn'),form:false,action:'signin',label:t('account.signIn')};
+  case 'unreachable':return {title:t('account.passwordLinkUnreachable'),text:t('account.passwordLinkUnreachableCopy'),form:false,action:'close',label:t('app.close')};
+  case 'invalid':return {title:t('account.passwordLinkInvalid'),text:passwordRecoveryErrorCopy(state.error||'session_expired',t),form:false,action:'recover',label:t('account.passwordLinkNew')};
   default:return null;
  }
 }
 
 // One recovery attempt bound to the account whose recovery session opened it.
 // updatePassword(password) -> {ok, reason}; currentUser() -> {id,email}|null.
-export function createPasswordRecoveryFlow({updatePassword,currentUser,render=()=>{}}){
+export function createPasswordRecoveryFlow({updatePassword,currentUser,render=()=>{},t=french}){
  let state={phase:'idle'};
- const set=next=>{state=next;render(state,passwordRecoveryView(state));return state};
+ const set=next=>{state=next;render(state,passwordRecoveryView(state,t));return state};
  const owner=()=>{const user=currentUser();return user?.id?user:null};
  return {
   get state(){return state},

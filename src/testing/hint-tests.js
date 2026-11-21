@@ -1,3 +1,4 @@
+import {createTranslator} from '../ui/i18n.js';
 import {CAT} from "../campaign/catalogue.js";
 import {CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATIONS,CONSTELLATION_GRID_COUNTS} from "../campaign/data.js";
 import {chapterForGrid,campaignQuestCount,constellationGridRange,skyStarsForGrid} from "../campaign/progression.js";
@@ -96,7 +97,7 @@ async function runHintTests(){
  });
  test("UX : Quête suivante est le CTA principal après réussite",()=>document.getElementById("successNew")?.classList.contains("success-primary")&&!document.getElementById("successShare")?.classList.contains("share-primary"));
  test("UX : fermer Mon ciel après réussite enchaîne sur la quête suivante",()=>openJourneyMap().toString().includes("advanceOnClose")&&closeMapOverlay().toString().includes("advanceToNextPuzzle"));
- test("UX : la prochaine quête débloquée est visible comme Nouvelle dans Mon ciel",()=>renderMap().toString().includes("puzzle-new-label")&&renderMap().toString().includes("Nouvelle quête disponible"));
+ test("UX : la prochaine quête débloquée est visible comme Nouvelle dans Mon ciel",()=>renderMap().toString().includes("puzzle-new-label")&&renderMap().toString().includes("map.newQuest"));
  test("UX : Mon ciel reste au-dessus du masque de tentative",()=>Number.parseInt(getComputedStyle(document.getElementById("mapModal")).zIndex,10)>Number.parseInt(getComputedStyle(document.getElementById("attemptMask")).zIndex,10));
  test("UX mobile : les contrôles de tentative ne recouvrent pas le raccourci Mon ciel",()=>{const controls=document.getElementById("attemptPause")?.parentElement,pause=document.getElementById("attemptPause"),abandon=document.getElementById("attemptAbandon");if(innerWidth>700||!controls)return true;const c=getComputedStyle(controls);return c.position!=="absolute"&&!!pause&&!!abandon});
  test("Navigation : Quête suivante après rejeu reste relative à la quête jouée",()=>advanceToNextPuzzle.toString().includes("const next=levelIndex+1")&&!advanceToNextPuzzle.toString().includes("replayMode?Math.min(sequentialSolvedCount"));
@@ -239,8 +240,10 @@ async function runHintTests(){
    return hintSrc.includes("simpleForcedPlacement()||proofEngine()")&&simpleSrc.includes('axis:"region"')&&simpleSrc.includes("Il ne reste qu’une seule case possible dans ce territoire");
  });
  test("Indice : les formulations générées restent grammaticalement correctes",()=>{
-   const src=proofEngine.toString()+hintImplementation().toString();
-   return !src.includes("cette territoire")&&!src.includes("territoires surlignées")&&src.includes("ce territoire");
+   const {t}=createTranslator();
+   const locked=t("hint.lockedExplain",{axis:t("hint.row"),index:2});
+   const group=t("hint.groupClue",{count:2,axes:t("hint.columns"),indices:"3 et 4",action:""});
+   return locked.includes("ce territoire")&&!locked.includes("cette territoire")&&group.includes("territoires surlignés")&&!group.includes("territoires surlignées");
  });
  test("Aucun indice 'place' sans preuve structurée",()=>{
   return gridsForSize(model.n).every(p=>{

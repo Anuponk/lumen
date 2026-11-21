@@ -1,4 +1,4 @@
-export function createGameEngine(getBoard,getAutoCrossEnabled){
+export function createGameEngine(getBoard,getAutoCrossEnabled,hintCopy=(_key,_params,french)=>french){
 function key(r,c){return r+","+c}
 
 function solutions(board=getBoard()){
@@ -86,15 +86,15 @@ function simpleForcedPlacement(){
  const regPlaced=g=>{for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(state[r][c]===2&&puz.reg[r][c]===g)return true;return false};
  for(let g=0;g<n;g++)if(!regPlaced(g)){
   const cells=[];for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(puz.reg[r][c]===g&&candidate(r,c))cells.push([r,c]);
-  if(cells.length===1)return {kind:"place",cell:cells[0],text:"Il ne reste qu’une seule case possible dans ce territoire : place le Gardien ici.",detail:{rule:"single",axis:"region",index:g,source:cells.slice()}};
+  if(cells.length===1)return {kind:"place",cell:cells[0],text:hintCopy("hint.singleTerritory",{},"Il ne reste qu’une seule case possible dans ce territoire : place le Gardien ici."),detail:{rule:"single",axis:"region",index:g,source:cells.slice()}};
  }
  for(let r=0;r<n;r++)if(!state[r].includes(2)){
   const cells=[];for(let c=0;c<n;c++)if(candidate(r,c))cells.push([r,c]);
-  if(cells.length===1)return {kind:"place",cell:cells[0],text:`Il ne reste qu’une seule case possible sur la ligne ${r+1} : place le Gardien ici.`,detail:{rule:"single",axis:"row",index:r,source:cells.slice()}};
+  if(cells.length===1)return {kind:"place",cell:cells[0],text:hintCopy("hint.singleRow",{index:r+1},`Il ne reste qu’une seule case possible sur la ligne ${r+1} : place le Gardien ici.`),detail:{rule:"single",axis:"row",index:r,source:cells.slice()}};
  }
  for(let c=0;c<n;c++)if(!state.some(row=>row[c]===2)){
   const cells=[];for(let r=0;r<n;r++)if(candidate(r,c))cells.push([r,c]);
-  if(cells.length===1)return {kind:"place",cell:cells[0],text:`Il ne reste qu’une seule case possible dans la colonne ${c+1} : place le Gardien ici.`,detail:{rule:"single",axis:"col",index:c,source:cells.slice()}};
+  if(cells.length===1)return {kind:"place",cell:cells[0],text:hintCopy("hint.singleColumn",{index:c+1},`Il ne reste qu’une seule case possible dans la colonne ${c+1} : place le Gardien ici.`),detail:{rule:"single",axis:"col",index:c,source:cells.slice()}};
  }
  return null;
 }
@@ -122,9 +122,9 @@ function proofEngine(){
   let a=rc(g);if(a.length>=2){
    let rows=[...new Set(a.map(q=>q[0]))],cols=[...new Set(a.map(q=>q[1]))];
    if(rows.length===1){let r=rows[0];for(let c=0;c<n;c++)if(puz.reg[r][c]!==g&&state[r][c]===0&&!isAutoCross(r,c))
-    return {kind:"elim",cell:[r,c],text:`Ce territoire réserve la ligne ${r+1}.`,detail:{rule:"locked",region:g,axis:"row",index:r,source:a},elim,why,meta};}
+    return {kind:"elim",cell:[r,c],text:hintCopy("hint.reservedRow",{index:r+1},`Ce territoire réserve la ligne ${r+1}.`),detail:{rule:"locked",region:g,axis:"row",index:r,source:a},elim,why,meta};}
    if(cols.length===1){let c=cols[0];for(let r=0;r<n;r++)if(puz.reg[r][c]!==g&&state[r][c]===0&&!isAutoCross(r,c))
-    return {kind:"elim",cell:[r,c],text:`Ce territoire réserve la colonne ${c+1}.`,detail:{rule:"locked",region:g,axis:"col",index:c,source:a},elim,why,meta};}
+    return {kind:"elim",cell:[r,c],text:hintCopy("hint.reservedColumn",{index:c+1},`Ce territoire réserve la colonne ${c+1}.`),detail:{rule:"locked",region:g,axis:"col",index:c,source:a},elim,why,meta};}
   }
  }
  let gs=[];for(let g=0;g<n;g++)if(!regPlaced(g))gs.push(g);
@@ -133,18 +133,18 @@ function proofEngine(){
   let cells=[];group.forEach(g=>cells.push(...rc(g)));
   let cols=[...new Set(cells.map(q=>q[1]))],rows=[...new Set(cells.map(q=>q[0]))];
   if(cols.length===k)for(let c of cols)for(let r=0;r<n;r++)if(!group.includes(puz.reg[r][c])&&state[r][c]===0&&!isAutoCross(r,c))
-   return {kind:"elim",cell:[r,c],text:`${k} territoires réservent exactement ${k} colonnes.`,detail:{rule:"group",axis:"col",indices:cols,regions:group,source:cells},elim,why,meta};
+   return {kind:"elim",cell:[r,c],text:hintCopy("hint.reservedColumns",{count:k},`${k} territoires réservent exactement ${k} colonnes.`),detail:{rule:"group",axis:"col",indices:cols,regions:group,source:cells},elim,why,meta};
   if(rows.length===k)for(let r of rows)for(let c=0;c<n;c++)if(!group.includes(puz.reg[r][c])&&state[r][c]===0&&!isAutoCross(r,c))
-   return {kind:"elim",cell:[r,c],text:`${k} territoires réservent exactement ${k} lignes.`,detail:{rule:"group",axis:"row",indices:rows,regions:group,source:cells},elim,why,meta};
+   return {kind:"elim",cell:[r,c],text:hintCopy("hint.reservedRows",{count:k},`${k} territoires réservent exactement ${k} lignes.`),detail:{rule:"group",axis:"row",indices:rows,regions:group,source:cells},elim,why,meta};
  }
 
  // Only after every prerequisite elimination is actually on the board may a single be hinted.
  for(let r=0;r<n;r++)if(!state[r].includes(2)){let a=[];for(let c=0;c<n;c++)if(candidate(r,c))a.push([r,c]);
-  if(a.length===1)return {kind:"place",cell:a[0],text:`La ligne ${r+1} n'a plus qu'une possibilité.`,detail:{rule:"single",axis:"row",index:r},elim,why,meta};}
+  if(a.length===1)return {kind:"place",cell:a[0],text:hintCopy("hint.oneLeftRow",{index:r+1},`La ligne ${r+1} n'a plus qu'une possibilité.`),detail:{rule:"single",axis:"row",index:r},elim,why,meta};}
  for(let c=0;c<n;c++)if(!state.some(q=>q[c]===2)){let a=[];for(let r=0;r<n;r++)if(candidate(r,c))a.push([r,c]);
-  if(a.length===1)return {kind:"place",cell:a[0],text:`La colonne ${c+1} n'a plus qu'une possibilité.`,detail:{rule:"single",axis:"col",index:c},elim,why,meta};}
+  if(a.length===1)return {kind:"place",cell:a[0],text:hintCopy("hint.oneLeftColumn",{index:c+1},`La colonne ${c+1} n'a plus qu'une possibilité.`),detail:{rule:"single",axis:"col",index:c},elim,why,meta};}
  for(let g=0;g<n;g++)if(!regPlaced(g)){let a=rc(g);
-  if(a.length===1)return {kind:"place",cell:a[0],text:`Ce territoire n'a plus qu'une possibilité.`,detail:{rule:"single",axis:"region",index:g},elim,why,meta};}
+  if(a.length===1)return {kind:"place",cell:a[0],text:hintCopy("hint.oneLeftTerritory",{},`Ce territoire n'a plus qu'une possibilité.`),detail:{rule:"single",axis:"region",index:g},elim,why,meta};}
  return {kind:"none",reason:"strict",elim,why,meta};
 }
 
@@ -152,11 +152,11 @@ function directMissingCross(){
  const {n,puz,state}=getBoard();
  for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(state[r][c]===2){
   let g=puz.reg[r][c], candidates=[];
-  for(let x=0;x<n;x++)if(x!==c&&state[r][x]===0&&!isAutoCross(r,x))candidates.push([r,x,`Même ligne que le Gardien L${r+1}C${c+1}.`]);
-  for(let y=0;y<n;y++)if(y!==r&&state[y][c]===0&&!isAutoCross(y,c))candidates.push([y,c,`Même colonne que le Gardien L${r+1}C${c+1}.`]);
-  for(let y=0;y<n;y++)for(let x=0;x<n;x++)if((y!==r||x!==c)&&state[y][x]===0&&!isAutoCross(y,x)&&puz.reg[y][x]===g)candidates.push([y,x,`Même territoire que le Gardien L${r+1}C${c+1}.`]);
+  for(let x=0;x<n;x++)if(x!==c&&state[r][x]===0&&!isAutoCross(r,x))candidates.push([r,x,hintCopy("hint.sameRow",{row:r+1,column:c+1},`Même ligne que le Gardien L${r+1}C${c+1}.`)]);
+  for(let y=0;y<n;y++)if(y!==r&&state[y][c]===0&&!isAutoCross(y,c))candidates.push([y,c,hintCopy("hint.sameColumn",{row:r+1,column:c+1},`Même colonne que le Gardien L${r+1}C${c+1}.`)]);
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++)if((y!==r||x!==c)&&state[y][x]===0&&!isAutoCross(y,x)&&puz.reg[y][x]===g)candidates.push([y,x,hintCopy("hint.sameTerritory",{row:r+1,column:c+1},`Même territoire que le Gardien L${r+1}C${c+1}.`)]);
   for(let y=Math.max(0,r-1);y<=Math.min(n-1,r+1);y++)for(let x=Math.max(0,c-1);x<=Math.min(n-1,c+1);x++)
-   if((y!==r||x!==c)&&state[y][x]===0&&!isAutoCross(y,x))candidates.push([y,x,`Cette case touche le Gardien L${r+1}C${c+1}.`]);
+   if((y!==r||x!==c)&&state[y][x]===0&&!isAutoCross(y,x))candidates.push([y,x,hintCopy("hint.touchesGuardian",{row:r+1,column:c+1},`Cette case touche le Gardien L${r+1}C${c+1}.`)]);
   if(candidates.length)return candidates[0];
  }
  return null;
@@ -168,9 +168,9 @@ function playerError(){
  // It is never used to manufacture a normal logical hint.
  for(let r=0;r<n;r++)for(let c=0;c<n;c++){
   if(state[r][c]===2 && puz.sol[r]!==c)
-   return {cell:[r,c],kind:"diamond",text:`Ce Gardien ne peut pas être correct. Reprends les contraintes autour de L${r+1}C${c+1}.`};
+   return {cell:[r,c],kind:"diamond",text:hintCopy("hint.invalidGuardian",{row:r+1,column:c+1},`Ce Gardien ne peut pas être correct. Reprends les contraintes autour de L${r+1}C${c+1}.`)};
   if(state[r][c]===1 && puz.sol[r]===c)
-   return {cell:[r,c],kind:"cross",text:`Cette croix élimine une case nécessaire. Vérifie L${r+1}C${c+1}.`};
+   return {cell:[r,c],kind:"cross",text:hintCopy("hint.invalidCross",{row:r+1,column:c+1},`Cette croix élimine une case nécessaire. Vérifie L${r+1}C${c+1}.`)};
  }
  return null;
 }

@@ -1,3 +1,4 @@
+import {locales} from '../src/ui/i18n.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {CONTENT_CONSTELLATIONS} from '../src/campaign/content.js';
@@ -51,7 +52,9 @@ test('secondary lights are deterministic, scattered and separate from genuine st
 test('onboarding and motion/accessibility explain the accepted sky presentation',()=>{
  const screen=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
  const styles=readFileSync(new URL('../src/ui/styles.css',import.meta.url),'utf8');
- assert.match(screen,/target:"skyCard"[^\n]+étoiles réelles[^\n]+étoiles de lumière/);
+ assert.match(screen,/target:"skyCard"[^\n]+map\.tourStarsCopy/);
+ assert.match(locales.fr.messages['map.tourStarsCopy'],/étoiles réelles[^\n]+étoiles de lumière/);
+ assert.match(locales.en.messages['map.tourStarsCopy'],/Real stars[^\n]+faint extra stars/);
  assert.doesNotMatch(screen,/Chaque réussite allume un repère doré/);
  assert.match(styles,/\.quest-secondary-star\{opacity:0/);
  assert.match(styles,/\.quest-secondary-star\.on\{opacity:1/);

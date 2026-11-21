@@ -1,22 +1,23 @@
+import {createTranslator} from './i18n.js';
 // #730: thank-you screen after a purchase CONFIRMED by the server (Stripe read-back or
 // Google Play verification), never on a payment provider's return URL alone.
 // Wording states an intention, never an absolute promise (#731/#732).
 import {isMainSkyProduct} from '../campaign/store-catalogue.js';
 
-export const THANKS_SUPPORT='Lumen est développé par un petit studio indépendant, sans publicité : ton achat aide à financer l’hébergement et les prochaines aventures.';
+const french=createTranslator().t;
+export const THANKS_SUPPORT=french('purchase.support');
 
-export function purchaseThanksModel({productId,packs=[]}){
+export function purchaseThanksModel({productId,packs=[],t=french}){
  const sky=isMainSkyProduct(productId);
  const pack=sky?null:packs.find(p=>p.id===productId);
- const name=sky?'Tout le vrai ciel':(pack?.displayName||'Ta nouvelle aventure');
  return {
   sky,productId,
-  title:'Merci pour ton soutien ✨',
-  lead:sky?'Tout le vrai ciel est débloqué.':'« '+name+' » est débloquée.',
-  account:'Ton achat est lié à ton compte : tu le retrouves automatiquement sur tous tes appareils connectés.',
-  support:THANKS_SUPPORT,
-  explore:sky?'Explorer mon ciel':'Explorer l’aventure',
-  later:'Plus tard',
+  title:t('purchase.thanks'),
+  lead:sky?t('purchase.skyUnlocked'):t('purchase.adventureUnlocked',{name:pack?.displayName||t('purchase.newAdventure')}),
+  account:t('purchase.account'),
+  support:t('purchase.support'),
+  explore:sky?t('purchase.exploreSky'):t('purchase.exploreAdventure'),
+  later:t('app.later'),
  };
 }
 

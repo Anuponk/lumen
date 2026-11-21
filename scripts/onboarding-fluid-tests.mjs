@@ -1,3 +1,4 @@
+import {createTranslator} from '../src/ui/i18n.js';
 import test from 'node:test';
 import {withNetworkContext} from './fixtures/network-context.mjs';
 import assert from 'node:assert/strict';
@@ -53,7 +54,7 @@ test('quest 2 is free play; the sixth teaching quest and six-quest guest boundar
 test('verified account restoration applies its own auto choice without restarting the selected run',()=>{
  const nodes=new Map(),node=id=>{if(!nodes.has(id))nodes.set(id,{checked:true,classList:{add(){},remove(){}}});return nodes.get(id)};
  const attempt={attemptId:'preserved',board:[[1,0],[0,0]]},before=JSON.stringify(attempt);
- const ctx={QUEST_MILESTONES,questLearningRules,activeQuestOrdinal:()=>3,replayMode:false,scriptedLearningActive:()=>false,
+ const ctx={t:createTranslator().t,QUEST_MILESTONES,questLearningRules,activeQuestOrdinal:()=>3,replayMode:false,scriptedLearningActive:()=>false,
   onboardingPreferences:{auto:()=>ctx.lumenUser?.id==='b'},onboardingPreferenceOwner:null,socialChallenge:null,learningReplayActive:()=>false,
   verifiedOwner:'a',localStorage:{getItem:key=>key==='lumenCloudOwnerId'?ctx.verifiedOwner:null},sessionStorage:{getItem:()=>null},document:{getElementById:node},
   activeBonusChallenge:()=>null,lumenProgress:{stars:{}},lumenUser:{id:'a'},cloudProfileReady:false,state:null,puz:null,
@@ -62,7 +63,7 @@ test('verified account restoration applies its own auto choice without restartin
   syncMobileAuthUI(){},updateAdminTools(){},accountRequired:()=>false,render(){},maybeShowContextualLesson(){},
   init(){throw Error('Preference restore must not restart the board')},saveLumenProgress(){throw Error('Preference restore must not save rewards')}
  };
- vm.createContext(withNetworkContext(ctx));for(const fn of ['configureLearningMode','applyQuestRestrictions','updateAuthUI'])vm.runInContext(functionSource(source,fn),ctx);
+ vm.createContext(withNetworkContext(ctx));for(const fn of ['configureLearningMode','applyQuestRestrictions','renderAuthUserCopy','updateAuthUI'])vm.runInContext(functionSource(source,fn),ctx);
  if(source.includes('function refreshOnboardingPreferenceOwner('))vm.runInContext(functionSource(source,'refreshOnboardingPreferenceOwner'),ctx);
  ctx.updateAuthUI();assert.equal(node('autoCross').checked,true,'Pending account cannot apply an unverified profile');
  ctx.cloudProfileReady=true;ctx.updateAuthUI();assert.equal(node('autoCross').checked,true,'Auth cannot render a board still loading');
