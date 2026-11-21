@@ -1898,6 +1898,8 @@ Any change to challenge behavior must additionally verify:
 - a finished link reopens on its result (lowercase server status), never on a second attempt;
 - “Mes défis” shows canonical visible quest numbers for historical, stable and revised challenges.
 
+#759 kit: `video-kit-tests.mjs` checks the six video scenes against the catalogue solutions (no invented Guardian, no cross on a solution cell, A/C scenes complete the grid, 15–30 s, CTA, FR/EN SRT); `scripts/marketing/record-video-kit.mjs` (not in CI) records them from the real game.
+
 #759: `lumen-share-tests.mjs` also checks the English invitation, result text and card copy (`inviteShare`, `resultShareData(model,t)`, `shareCardCopy`), that private fields never leak, and that the dialog’s native share keeps a specific link (challenge) while generic discovery shares get `player_share`.
 
 #896: `duel-view-tests.mjs` covers verdicts from both roles, the autonomy rule, every non-comparable state (pending, playing, abandoned either side, missing time), gap wording, notes (#887/#889), escaping, contract builders, recipient matching and the three lists; `duel-browser.mjs` (canonical replay suite) checks « Mes défis » at 360/1440 (won/lost/tied/playing/abandoned), the detail card (verdict and both times on screen, one winner, Escape and focus return, copy link), « Amis et défis » received/sent, the result notification opening the duel and English copy, and writes `docs/validation/duel-*.png` when `LUMEN_DUEL_CAPTURES` is set.

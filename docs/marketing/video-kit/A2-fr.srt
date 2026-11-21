@@ -1,0 +1,19 @@
+1
+00:00:00,000 --> 00:00:03,000
+Un territoire attend son Gardien.
+
+2
+00:00:03,000 --> 00:00:07,000
+Les quatre autres colonnes sont prises.
+
+3
+00:00:07,000 --> 00:00:11,000
+Quelle colonne reste libre ?
+
+4
+00:00:11,000 --> 00:00:15,000
+La deuxième. Il ne touche aucun Gardien.
+
+5
+00:00:15,000 --> 00:00:19,000
+À toi de jouer dans Lumen · lumen.nopuna.fr/decouvrir.html

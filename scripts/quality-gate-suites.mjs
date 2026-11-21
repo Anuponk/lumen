@@ -227,6 +227,7 @@ export const nodeSuites=[
  "social-hub-tests.mjs",
  "social-notifications-tests.mjs",
  "duel-view-tests.mjs",
+ "video-kit-tests.mjs",
  // Solver equivalence is the slowest Node suite; reject cheap regressions first.
  "engine-equivalence.mjs"
 ];

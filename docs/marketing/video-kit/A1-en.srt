@@ -1,0 +1,23 @@
+1
+00:00:00,000 --> 00:00:03,000
+Where does the last Guardian go?
+
+2
+00:00:03,000 --> 00:00:07,000
+Only one free row.
+
+3
+00:00:07,000 --> 00:00:10,000
+Only one free column.
+
+4
+00:00:10,000 --> 00:00:13,000
+Their crossing sits in the right territory.
+
+5
+00:00:13,000 --> 00:00:15,000
+Grid solved ✦
+
+6
+00:00:15,000 --> 00:00:18,000
+Try Lumen · lumen.nopuna.fr/decouvrir.html

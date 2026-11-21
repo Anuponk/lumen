@@ -200,6 +200,14 @@ identifiant de campagne persistant, rapprochement par compte ni suivi entre
 appareils. Les débuts de défi, rejeux, autres quêtes et affichages de grille
 n’entrent pas dans le tunnel.
 
+**Lacunes et compléments #759 (21/11/2026)** :
+- défis acceptés et joués : comptés en agrégats serveur à partir des tables #18/#35 existantes (dernière requête du fichier), sans canal ni identifiant ;
+- rétention J+7 par canal : non mesurable, faute d'identifiant de campagne persistant (choix de confidentialité maintenu) ;
+- Reddit, Show HN, Mastodon : pas de paire UTM ajoutée sans décision #708, donc bilan qualitatif et logs o2switch agrégés ;
+- toutes les mesures d'événements restent soumises à l'activation de la collecte publique par le propriétaire.
+
+Plan de diffusion : [COMMUNAUTES_LUMEN.md](marketing/COMMUNAUTES_LUMEN.md).
+
 [Requêtes d’agrégation en lecture seule](marketing/acquisition-agregats.sql)
 pour une connexion d’administration autorisée, sur sept jours glissants. Elles
 n’affichent aucun identifiant. Elles exigent le marquage `human`, écartent le
