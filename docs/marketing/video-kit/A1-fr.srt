@@ -1,0 +1,23 @@
+1
+00:00:00,000 --> 00:00:03,000
+Où placer le dernier Gardien ?
+
+2
+00:00:03,000 --> 00:00:07,000
+Une seule ligne libre.
+
+3
+00:00:07,000 --> 00:00:10,000
+Une seule colonne libre.
+
+4
+00:00:10,000 --> 00:00:13,000
+Leur intersection est dans le bon territoire.
+
+5
+00:00:13,000 --> 00:00:15,000
+Grille résolue ✦
+
+6
+00:00:15,000 --> 00:00:18,000
+Essaie Lumen · lumen.nopuna.fr/decouvrir.html

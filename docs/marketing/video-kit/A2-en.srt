@@ -1,0 +1,19 @@
+1
+00:00:00,000 --> 00:00:03,000
+One territory still needs its Guardian.
+
+2
+00:00:03,000 --> 00:00:07,000
+The other four columns are taken.
+
+3
+00:00:07,000 --> 00:00:11,000
+Which column is still free?
+
+4
+00:00:11,000 --> 00:00:15,000
+The second one. It touches no Guardian.
+
+5
+00:00:15,000 --> 00:00:19,000
+Your turn in Lumen · lumen.nopuna.fr/decouvrir.html

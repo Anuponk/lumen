@@ -74,3 +74,22 @@ group by channel
 order by channel;
 
 rollback;
+
+-- #759 · Défis réellement acceptés et joués (7 jours glissants), agrégats seuls.
+-- Source serveur existante (#18/#35) : aucune collecte nouvelle, aucun identifiant,
+-- aucun nom affiché. Indépendant de la collecte produit (#708 désactivée en public).
+begin transaction read only;
+select
+  (select count(*) from lumen.social_challenges c
+    where c.created_at >= statement_timestamp() - interval '7 days') as defis_crees,
+  (select count(*) from lumen.social_challenge_invites i
+    where i.created_at >= statement_timestamp() - interval '7 days') as defis_envoyes_a_des_amis,
+  (select count(*) from lumen.social_challenge_participations p
+    where p.started_at >= statement_timestamp() - interval '7 days') as defis_acceptes,
+  (select count(*) from lumen.social_challenge_participations p
+    where p.started_at >= statement_timestamp() - interval '7 days' and p.status = 'completed') as defis_termines,
+  (select count(*) from lumen.social_challenge_participations p
+    where p.started_at >= statement_timestamp() - interval '7 days' and p.status = 'abandoned') as defis_abandonnes,
+  (select count(*) from lumen.social_challenge_participations p
+    where p.started_at >= statement_timestamp() - interval '7 days' and p.participant_user_id is null) as participations_sans_compte;
+rollback;

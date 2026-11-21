@@ -14,6 +14,21 @@ Pour comparer les canaux autorisés, ajouter `?utm_source=youtube_shorts&utm_med
 à l’URL de découverte du lien publié ou du profil correspondant. Garder l’URL
 courte à l’écran. Consulter les [limites de mesure](../PRODUCT_ANALYTICS.md#mesure-dacquisition-708).
 
+## Production reproductible (#759, 21/11/2026)
+
+Les six vidéos sont **enregistrées à partir du vrai jeu** : vraies grilles du catalogue, Gardiens et croix posés par de vrais touchers, vraie scène de victoire. Aucun montage ne modifie le chrono ni la solution.
+
+- **Scènes** : `scripts/marketing/video-kit-scenes.mjs` décrit, pour chaque scène, la quête, les Gardiens déjà posés, les actions minutées et les sous-titres FR/EN. `video-kit-tests.mjs` (CI) refuse un Gardien hors solution, une croix posée sur une case de la solution, ou une scène A/C qui ne termine pas la grille.
+- **Enregistrement** : `node scripts/marketing/record-video-kit.mjs --out <dossier>`, avec `LUMEN_FFMPEG` (ffmpeg avec libx264 et libass) et, si besoin, `LUMEN_CHROME_BIN`.
+  - **Rendu** : Chrome headless en 9:16 (405 × 720 px CSS à ×8/3, donc 1 080 × 1 920), sous-titres incrustés en haut, sous le logo, sans couvrir la grille.
+  - **Hygiène** : bandeau QA, toasts et invites de compte masqués ; seules les quêtes précédant la scène sont marquées résolues.
+  - **Langues** : chaque langue est enregistrée avec le jeu dans cette langue.
+  - **Contrôle** : l'enregistrement échoue si un Gardien prévu n'est pas réellement sur le plateau ou si une grille A/C n'est pas résolue.
+- **Sans ffmpeg** : le script conserve les images et produit les SRT. `--check` régénère seulement les SRT de [`video-kit/`](video-kit/), à téléverser comme sous-titres sur YouTube.
+- **Rendus du 21/11/2026** : 12 MP4 (A1–C2 × FR/EN, 18–24 s, 1080 × 1920, H.264, 1,3–2,2 Mo), conservés **hors dépôt** sur le poste du propriétaire.
+  - **Limites** : montage simple, sans musique ni zoom ; dans les versions EN, quelques textes de la scène de victoire restent en français (couverture i18n #754).
+  - **Statut** : validation du propriétaire requise avant toute publication.
+
 ## A1 · Le dernier Gardien sur la quête 1 · 18 s
 
 - **Concept et grille**. `base-q001`, Grande Ourse · Grand Chariot, 5 × 5. Laisser vide L5C4. La cinquième ligne et la quatrième colonne sont les seules libres. Le territoire restant contient cette intersection.
