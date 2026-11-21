@@ -28,8 +28,8 @@ test('a French edit requires review and each plural preserves its parameters', (
 test('message references can be verified independently of the language of fallback copy', () => {
   const references = [];
   for (const [file, source] of [
-    ['index.html', '<p data-game-text="board.start" title="Play" data-game-title="board.play">Jouer</p>'],
+    ['index.html', '<p data-game-text="board.start" title="Play" data-game-title="board.play">Jouer</p><input placeholder="Ton pseudo" data-game-placeholder="account.nickname">'],
     ['test.js', 'el.textContent = t("board.start");'],
   ]) assert.deepEqual(visibleCandidates(source, file, key => references.push(key)), []);
-  assert.deepEqual(references, ['board.start', 'board.play', 'board.start']);
+  assert.deepEqual(references, ['board.start', 'board.play', 'account.nickname', 'board.start']);
 });

@@ -1,3 +1,4 @@
+import {createTranslator} from '../src/ui/i18n.js';
 // #820: e-mail confirmation verdicts, password recovery request contract and
 // password update classification. Node only, no network: Auth/Edge mocked.
 import assert from 'node:assert/strict';
@@ -216,3 +217,14 @@ assert.equal(validateNewPassword('x'.repeat(12),'x'.repeat(12)),null);
   assert.equal(JSON.stringify(h.renders).includes(secret),false);assert.equal(JSON.stringify(h.flow.state).includes(secret),false);}
 }
 console.log('Auth link and recovery (#820): native/branded verdicts, no false success, expired/network links, recovery request contract, password update classification, dedicated recovery screen and UI wiring passed');
+
+{
+ const t=createTranslator({locale:'en'}).t;
+ const form=passwordRecoveryView({phase:'form',email:'player@example.test',error:'mismatch'},t);
+ assert.match(form.text,/Account: player@example\.test/);
+ assert.equal(form.submitLabel,'Save my new password');
+ assert.match(form.error,/passwords don’t match/);
+ const invalid=passwordRecoveryView({phase:'invalid'},t);
+ assert.equal(invalid.action,'recover');
+ assert.equal(invalid.label,'Request a new link');
+}

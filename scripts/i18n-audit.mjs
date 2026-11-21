@@ -22,12 +22,12 @@ function markupCopy(source, record, reference) {
     if (['script', 'style'].includes(node.tagName)) return;
     const attributes = Object.fromEntries((node.attrs ?? []).map(({ name, value }) => [name, value]));
     if (node.nodeName === '#text') record(node.value, true);
-    for (const marker of ['data-game-text', 'data-game-label', 'data-game-title', 'data-pwa-copy']) {
+    for (const marker of ['data-game-text', 'data-game-label', 'data-game-title', 'data-game-placeholder', 'data-pwa-copy']) {
       if (attributes[marker]) reference(attributes[marker]);
     }
     for (const [name, value] of Object.entries(attributes)) {
       if (!textAttributes.has(name)) continue;
-      const marker = { 'aria-label': 'data-game-label', title: 'data-game-title' }[name];
+      const marker = { 'aria-label': 'data-game-label', title: 'data-game-title', placeholder: 'data-game-placeholder' }[name];
       if (!(marker && attributes[marker])) record(value, true);
     }
     if (attributes['data-game-text'] || attributes['data-pwa-copy']) return;

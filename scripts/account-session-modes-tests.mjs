@@ -1,3 +1,4 @@
+import {createTranslator} from '../src/ui/i18n.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createCloudPersistence} from '../src/persistence/cloud.js';
@@ -52,7 +53,7 @@ const {gameplayDomainState}=await import('../src/persistence/gameplay-sync.js');
 const authNodes=new Map();
 for(const id of ['mobileAuthStatus','mobileAuthAction','mobileAccount','mobileAuthPopover','guestSaveExplainer','accountProfileEditor','editAccountProfile','retryAccountSync'])authNodes.set(id,{textContent:'',disabled:false,hidden:false,dataset:{},classList:{toggle(){}},setAttribute(){}});
 const recoveryState=new Map([['lumenPasswordRecoveryPending','1']]);
-const menuContext=vm.createContext({document:{getElementById:id=>authNodes.get(id)},sessionStorage:{getItem:k=>recoveryState.get(k)??null,removeItem:k=>recoveryState.delete(k)},
+const menuContext=vm.createContext({t:createTranslator().t,document:{getElementById:id=>authNodes.get(id)},sessionStorage:{getItem:k=>recoveryState.get(k)??null,removeItem:k=>recoveryState.delete(k)},
  gameplayDomainState,qaActive:false,cloudHydrationGeneration:0,canonicalRecoveryContext:null,
  syncAdministrationMenu(){},lumenUser:null,lumenSupabase:{},authSessionPending:true,canonicalOutboxNotice:null,cloudProfileReady:false,cloudProfileFailure:null,lumenNickname:'',cloudProfileBusy:false,cloudProfileDirty:false,navigator:{onLine:true}});
 vm.runInContext(functionSource(ui,'cloudReconciliationMessage'),menuContext);
@@ -61,7 +62,7 @@ menuContext.updateAccountSwitchHold=()=>{};
 const recoveryScreen={opened:0,missing:0,phase:'idle'};
 menuContext.openPasswordRecovery=()=>{recoveryScreen.opened++};
 menuContext.passwordRecoveryFlow=()=>({state:{phase:recoveryScreen.phase},sessionMissing(){recoveryScreen.missing++}});
-vm.runInContext(functionSource(ui,'syncMobileAuthUI'),menuContext);menuContext.syncMobileAuthUI();
+for(const name of ['passwordRecoveryPending','renderMobileAuthCopy','syncMobileAuthUI'])vm.runInContext(functionSource(ui,name),menuContext);menuContext.syncMobileAuthUI();
 assert.equal(authNodes.get('mobileAuthAction').disabled,true,'No sign-in prompt while an existing session is still loading');
 assert(!authNodes.get('mobileAuthAction').textContent.includes('Se connecter'));
 assert.equal(authNodes.get('guestSaveExplainer').hidden,true);

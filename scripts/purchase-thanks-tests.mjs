@@ -1,3 +1,4 @@
+import {createTranslator} from '../src/ui/i18n.js';
 // #730: thank-you screen after a server-confirmed purchase (synthetic DOM, no browser).
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -55,3 +56,10 @@ assert.match(screen,/if\(result\.status==='paid'\)thankForPurchase\(result\.prod
 assert.match(screen,/function thankForPurchase\(productId\)\{\n if\(qaActive\|\|!productId\)return;/);
 assert.ok(fs.readFileSync(new URL('../src/ui/styles.css',import.meta.url),'utf8').includes('.purchase-thanks-card{'));
 console.log('purchase-thanks-tests: model, dialog behaviour and server-confirmed wiring OK');
+
+{
+ const t=createTranslator({locale:'en'}).t;
+ const model=purchaseThanksModel({productId:locked.id,packs:CONTENT_PACKS,t});
+ assert.equal(model.lead,'“'+locked.displayName+'” is now unlocked.');
+ assert.equal(model.explore,'Explore the adventure');
+}

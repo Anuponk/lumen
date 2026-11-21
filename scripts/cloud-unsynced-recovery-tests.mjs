@@ -1,3 +1,4 @@
+import {createTranslator} from '../src/ui/i18n.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const src=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
@@ -20,7 +21,9 @@ assert.match(src,/read\.result===payload/);
 assert.match(src,/store:"indexeddb"/);
 assert.match(src,/async function exportLumenRecoveryBundle\(\)/);
 assert.match(src,/format:"recovery-export-v1"/);
-assert.match(src,/Exporter ma sauvegarde/);
+assert.match(src,/exportButton\.textContent=t\('sync\.exportSave'\);exportButton\.onclick=\(\)=>exportLumenRecoveryBundle\(\)/);
+assert.equal(createTranslator().t('sync.exportSave'),'Exporter ma sauvegarde');
+assert.equal(createTranslator({locale:'en'}).t('sync.exportSave'),'Export my save');
 assert.match(src,/indexedDB:indexed/);
 assert.match(src,/\["lumenCloudRecoveryV1",cloudRecoveryIndexedDB\]/,'Recovery export includes the original archived after localStorage quota');
 console.log('Cloud save failure keeps a recoverable local backup; no unsafe reload CTA');
