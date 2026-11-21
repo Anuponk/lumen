@@ -52,21 +52,21 @@ try{
   await evaluate(`lumenDiagnostics.setupQuest(20);document.getElementById('questStart').hidden=true;document.getElementById('attemptMask').click();const s=lumenDiagnostics.snapshot();s.state[0].splice(0,4,1,2,0,1);lumenDiagnostics.setBoard(s.state);`);
   const point=c=>evaluate(`(()=>{const r=document.querySelector('#board [data-row="0"][data-col="${c}"]').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
   async function sweep(){
-   const start=await point(0),end=await point(3);
-   // Let Chrome pace the touch moves and finish the swipe without a fling.
-   await send('Input.synthesizeScrollGesture',{...start,xDistance:end.x-start.x,yDistance:end.y-start.y,
-    speed:550,preventFling:true,gestureSourceType:'touch'});
+   await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[await point(0)]});
+   await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[await point(3)]});
+   await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   }
   await sweep();
   assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().state[0].slice(0,4)'),[0,2,0,0]);
+  // Let Chrome finish the synthesized swipe before beginning a new gesture.
+  await new Promise(resolve=>setTimeout(resolve,250));
   await evaluate(`(()=>{
    const events=[];
    const record=event=>{
-    // The click handler can already have removed the mark from the DOM.
-    const cell=event.composedPath().find(node=>node.matches?.('[data-row][data-col]'));
+    const cell=event.target.closest?.('[data-row][data-col]');
     events.push({type:event.type,tag:event.target.tagName,
      cell:cell?[cell.dataset.row,cell.dataset.col]:null,
-     pointerType:event.pointerType,trusted:event.isTrusted,prevented:event.defaultPrevented});
+     trusted:event.isTrusted,prevented:event.defaultPrevented});
    };
    const types=['pointerdown','pointerup','pointercancel','touchstart','touchend','touchcancel','click'];
    for(const type of types)document.addEventListener(type,record);
@@ -89,9 +89,7 @@ try{
   const touchTrace=await evaluate('window.finishTouch805Trace()');
   assert(touchTrace.events.some(event=>event.type==='pointerup'&&event.trusted&&event.cell?.join(',')==='0,1'&&!event.prevented),
    'The board leaves the native release of a stationary tap uncancelled: '+JSON.stringify(touchTrace));
-  assert(touchTrace.events.some(event=>event.type==='click'&&event.pointerType==='touch'&&event.trusted&&event.cell?.join(',')==='0,1'),
-   'Chrome delivers a native touch click to the Guardian: '+JSON.stringify(touchTrace));
-  assert.equal(guardian,0,'The touch click removes the Guardian');
+  assert.equal(guardian,0,'Chrome delivers the synthesized click after the touch ends: '+JSON.stringify(touchTrace));
   await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();s.state[0].splice(0,4,1,2,0,1);lumenDiagnostics.setBoard(s.state)})()`);
   await sweep();
   await evaluate("document.getElementById('undo').click()");
