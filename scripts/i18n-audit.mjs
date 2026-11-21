@@ -10,6 +10,11 @@ import { locales } from '../src/ui/i18n.js';
 const sourceRoots = ['src/ui', 'src/game', 'src/campaign', 'src/privacy', 'src/landing'];
 const debtPath = 'scripts/i18n-visible-baseline.json';
 const reviewPath = 'scripts/i18n-catalogue-review.json';
+const translatedScopes = {
+  'src/game/engine.js': ['guidedConflictForAction'],
+  'src/ui/game-screen.js': ['showGuidedConflict', 'renderGuidedConflictCopy'],
+  'src/ui/guided-conflict-copy.js': ['guidedConflictCopy'],
+};
 const textAttributes = new Set(['aria-label', 'aria-description', 'alt', 'placeholder', 'title']);
 const textProperties = new Set([...textAttributes, 'textContent', 'innerText']);
 const humanWord = /\p{L}{2,}/u;
@@ -49,14 +54,15 @@ function isTextSink(node, ancestors) {
     (parent.type === 'Property' && parent.value === node && ['title', 'label', 'copy', 'message'].includes(parent.key.name)));
 }
 
-export function visibleCandidates(source, path, reference = () => {}) {
+export function visibleCandidates(source, path, reference = () => {}, onCandidate = () => {}) {
   const results = [];
-  function record(raw, direct = false) {
+  function record(raw, direct = false, scope) {
     const copy = normalize(raw);
     if (!humanWord.test(copy)) return;
     if (!direct && !/\p{L}{2,}[ \t’']+\p{L}{2,}|[àâçèéêëîïôùûüœÀÂÇÈÉÊËÎÏÔÙÛÜŒ]/u.test(copy)) return;
     if (/^(?:https?:|[/.#]|[a-z]+\/[a-z]+$)/i.test(copy)) return;
     results.push(copy);
+    onCandidate(copy, scope);
   }
   if (path.endsWith('.html')) {
     markupCopy(source, record, reference);
@@ -79,8 +85,10 @@ export function visibleCandidates(source, path, reference = () => {}) {
             parent?.type === 'CallExpression' && parent.arguments[0] === node &&
               ['setAttribute', 'getElementById', 'querySelector', 'querySelectorAll', 'closest', 'matches'].includes(propertyName(parent.callee));
           if (!isReference) {
-            if (markup.test(candidate)) markupCopy(candidate, record, reference);
-            else record(candidate, direct);
+            const scope = ancestors.findLast(ancestor => ancestor.type === 'FunctionDeclaration')?.id?.name;
+            const recordCandidate = (raw, fromMarkup) => record(raw, direct || fromMarkup, scope);
+            if (markup.test(candidate)) markupCopy(candidate, recordCandidate, reference);
+            else recordCandidate(candidate, false);
           }
         }
       }
@@ -99,8 +107,13 @@ function sourceFiles() {
     .filter(file => file.endsWith('.js') && !file.startsWith('src/ui/locales/'));
   return ['index.html', ...javascript].sort();
 }
-export function inventory(reference = () => {}) {
-  return Object.fromEntries(sourceFiles().map(file => [file, visibleCandidates(readFileSync(file, 'utf8'), file, key => reference(key, file))]).filter(([, list]) => list.length));
+export function inventory(reference = () => {}, onProtectedCopy = () => {}) {
+  return Object.fromEntries(sourceFiles().map(file => [
+    file, visibleCandidates(readFileSync(file, 'utf8'), file, key => reference(key, file),
+      (copy, scope) => {
+        if (translatedScopes[file]?.includes(scope)) onProtectedCopy(file, scope, copy);
+      }),
+  ]).filter(([, list]) => list.length));
 }
 export function inventoryHashes(entries) {
   return Object.fromEntries(Object.entries(entries).map(([file, list]) => [file, list.map(hash).sort()]));
@@ -180,15 +193,16 @@ async function main(args) {
   }
 
   const missingKeys = new Set();
+  const protectedCopy = new Set();
   const current = inventory((key, file) => {
     if (!Object.hasOwn(fr, key) || !Object.hasOwn(en, key)) missingKeys.add(file + ' · clé inconnue : ' + key);
-  });
+  }, (file, scope, copy) => protectedCopy.add(file + ' · ' + scope + ' · texte hors catalogue : ' + copy.slice(0, 160)));
   const added = newlyVisible(current, baseline);
   if (args[0] === '--list' && args.length === 1) {
     for (const [file, candidates] of Object.entries(current)) for (const copy of candidates) console.log(file + ' · ' + copy);
     return;
   }
-  if (args[0] === '--prune' && args.length === 1 && !added.length) {
+  if (args[0] === '--prune' && args.length === 1 && !added.length && !protectedCopy.size) {
     const lines = Object.entries(inventoryHashes(current)).map(([file, ids]) => {
       const rows = [];
       for (let i = 0; i < ids.length; i += 6) rows.push('    ' + ids.slice(i, i + 6).map(id => JSON.stringify(id)).join(', '));
@@ -199,7 +213,7 @@ async function main(args) {
   }
   if (args.length && (args.length !== 1 || args[0] !== '--prune')) throw Error('Usage: i18n-audit.mjs [--list | --prune | --review KEY...]');
 
-  const issues = [...catalogueIssues(fr, en, reviewed), ...await domainIssues(fr, en), ...missingKeys];
+  const issues = [...catalogueIssues(fr, en, reviewed), ...await domainIssues(fr, en), ...missingKeys, ...protectedCopy];
   const base = process.env.LUMEN_I18N_BASE;
   if (base) {
     if (!/^[a-f0-9]{40}$/.test(base)) throw Error('Invalid i18n comparison SHA');
