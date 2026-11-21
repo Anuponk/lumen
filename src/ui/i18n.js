@@ -13,13 +13,25 @@ import frPwaWelcome from './locales/fr/pwa-welcome.js';
 import enPwaWelcome from './locales/en/pwa-welcome.js';
 import frSocial from './locales/fr/social.js';
 import enSocial from './locales/en/social.js';
+import frShell from './locales/fr/shell.js';
+import enShell from './locales/en/shell.js';
+import frSky from './locales/fr/sky.js';
+import enSky from './locales/en/sky.js';
+import frAccountFlow from './locales/fr/account-flow.js';
+import enAccountFlow from './locales/en/account-flow.js';
+import frStatus from './locales/fr/status.js';
+import enStatus from './locales/en/status.js';
+import frStore from './locales/fr/store.js';
+import enStore from './locales/en/store.js';
+import frMap from './locales/fr/map.js';
+import enMap from './locales/en/map.js';
 
 const DEFAULT_LOCALE = 'fr';
 const PREFERENCE_KEY = 'lumen.locale';
 
 export const locales = Object.freeze({
-  fr: Object.freeze({ nativeName: 'Français', enabled: true, fallback: null, messages: Object.freeze({ ...frDaily, ...frResults, ...frBoard, ...frWelcome, ...frLearning, ...frPwaWelcome, ...frSocial }) }),
-  en: Object.freeze({ nativeName: 'English', enabled: true, fallback: 'fr', messages: Object.freeze({ ...enDaily, ...enResults, ...enBoard, ...enWelcome, ...enLearning, ...enPwaWelcome, ...enSocial }) }),
+  fr: Object.freeze({ nativeName: 'Français', enabled: true, fallback: null, messages: Object.freeze({ ...frDaily, ...frResults, ...frBoard, ...frWelcome, ...frLearning, ...frPwaWelcome, ...frSocial, ...frMap, ...frStore, ...frStatus, ...frAccountFlow, ...frSky, ...frShell }) }),
+  en: Object.freeze({ nativeName: 'English', enabled: true, fallback: 'fr', messages: Object.freeze({ ...enDaily, ...enResults, ...enBoard, ...enWelcome, ...enLearning, ...enPwaWelcome, ...enSocial, ...enMap, ...enStore, ...enStatus, ...enAccountFlow, ...enSky, ...enShell }) }),
 });
 
 function lookup(registry, locale) {

@@ -1,3 +1,4 @@
+import {createTranslator} from '../src/ui/i18n.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -46,7 +47,7 @@ function questCardFixture(progress,{signedIn=true,cloudReady=true,entryId,review
  const grid=element(),section=element(),modal=element(),sky=element(),reviewStatus=element();
  modal.querySelector=selector=>selector==='#canonicalJourneyPreview'?section:null;
  const entry=CONTENT_CONSTELLATIONS.find(c=>entryId?c.id===entryId:all.some(q=>q.constellationId===c.id&&q.legacyIndex===null));
- const context={...canonical,celestialScope,milkyWaySvg,takeMasteryPulse:()=>null,leavePendingVictoryForNavigation:()=>{},confirmedReplayAllowed:()=>false,lumenProgress:progress,qaActive:false,
+ const context={t:createTranslator().t,...canonical,celestialScope,milkyWaySvg,takeMasteryPulse:()=>null,leavePendingVictoryForNavigation:()=>{},confirmedReplayAllowed:()=>false,lumenProgress:progress,qaActive:false,
   lumenUser:signedIn?{id:'synthetic-owner'}:null,cloudProfileReady:cloudReady,lumenEntitlementsState:'ready',
   adventureAccessEntitlements:()=>[],attemptEngine:{snapshot:()=>null,storageKey:'fixture-attempt'},campaignAccessAttempt:()=>null,
   localStorage:{getItem:()=>null},playReviewNavigation:{available:()=>reviewEnabled},hasPlayReviewAttempt,playReviewQuestDecision,hasPackAccess,
@@ -163,7 +164,7 @@ test('catalogue history distinguishes a completed sync-held quest from a missing
 test('actual sky adapter counts completed canonical-only quests instead of absent legacy shape slots',()=>{
  const entry=CONTENT_CONSTELLATIONS.find(c=>c.canonicalOnly);
  const quests=all.filter(q=>q.constellationId===entry.id),progress=complete(quests);
- const context={...canonical,document:{},CONSTELLATIONS,lumenProgress:progress,celestialScope,takeMasteryPulse:()=>null,
+ const context={t:createTranslator().t,...canonical,document:{},CONSTELLATIONS,lumenProgress:progress,celestialScope,takeMasteryPulse:()=>null,
   questIsCompleted,astronomicalDisplayShape:shape=>shape,constellationLitAt:()=>0,
   createSkyNavigation:options=>options,renderAdventureOffer:()=>false};
  vm.createContext(context);

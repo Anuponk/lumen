@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import {connectBrowser,navigateAndWait} from './cdp-client.mjs';
+import {connectBrowser,navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
 const {send,evaluate,errors}=await connectBrowser();
 const url=process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/';
 const output=process.argv[2],results=[];
@@ -60,6 +60,23 @@ try{
   fits:true,caption:'The sky has grown dark.',transcript:'Read the story',skip:'Skip the introduction'});
  assert.equal(await state(),englishBefore,'Localized introduction preserves board, progress and attempt');
  results.push('English welcome fixture at 360px: controls, caption, transcript and unchanged game state');
+
+ await fresh("localStorage.setItem('lumenSkyTourSeen','1');localStorage.setItem('lumenTutorialCompletedV1','1');localStorage.setItem('lumenProgressV1',JSON.stringify({solved:{0:1,1:1},badges:{}}));");
+ await acknowledgeLearningMilestones(evaluate);
+ await evaluate("document.getElementById('tutorialHelp').click()");
+ const beforeLanguageSwitch=await state();
+ await evaluate("(()=>{const select=document.getElementById('gameLocaleMode');select.value='en';select.dispatchEvent(new Event('change',{bubbles:true}));})()");
+ assert.equal(await state(),beforeLanguageSwitch,'Changing language preserves the current attempt and progress');
+ assert.equal(await evaluate("document.getElementById('accountEmail').placeholder"),'you@example.com');
+ assert.equal(await evaluate("document.getElementById('mobileAuthAction').textContent"),'Sign in / Create an account');
+ await evaluate("document.getElementById('closeRulesModal').click();document.getElementById('openSky').click()");
+ assert.equal(await evaluate("document.getElementById('mapModal').hidden"),false,'The real My Sky control opens the map');
+ assert.equal(await evaluate("document.getElementById('monCielTitle').textContent"),'My Sky');
+ assert.equal(await evaluate("document.getElementById('constellationPrevious').getAttribute('aria-label')"),'Previous constellations');
+ assert.match(await evaluate("document.getElementById('adventureSummary').textContent"),/constellations · In progress/);
+ await evaluate("document.getElementById('closeMap').click();document.getElementById('accountAuthSwitch').click()");
+ assert.equal(await evaluate("document.getElementById('accountPasswordSubmit').textContent"),'Sign in');
+ results.push('English account shell, real My Sky overview and sign-in after switching languages during the game');
 
  await fresh(audioProbe+"localStorage.setItem('lumenSound','on');");const narrativeBefore=await state();
  assert.equal(await evaluate('window.__introAudio.length'),0,'No audio before explicit story action');
