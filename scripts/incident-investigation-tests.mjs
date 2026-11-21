@@ -1,3 +1,4 @@
+import {renderCriticalIncidents} from '../src/ui/critical-incidents.js';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {readFileSync} from 'node:fs';
@@ -76,8 +77,27 @@ test('cockpit refuses non-admin requests and ignores an in-flight result after a
   document:{getElementById:()=>({textContent:'',value:'7'})},mountSupportLookup:(_host,options)=>{lookupOptions=options}});
  vm.runInContext(functionSource(source,'loadAdminCockpit')+';globalThis.load=loadAdminCockpit',context);
  await context.load();assert.equal(calls,0);assert.equal(lookupOptions,undefined,'Non-admins cannot mount a reference lookup');
- context.hasInternalCapability=()=>true;const pending=context.load();assert.equal(calls,8,'The quest metrics, engagement and release comparison RPCs share the existing guarded cockpit load');
+ context.hasInternalCapability=()=>true;const pending=context.load();assert.equal(calls,9,'The version metrics and critical incidents share the guarded cockpit load');
  context.lumenUser={id:'different-account'};context.document.getElementById=()=>{throw Error('stale result reached DOM')};
  assert.equal(lookupOptions.authorized(),false,'Reference lookup shares the live account guard');
  release({data:{},error:null});await pending;
+});
+
+test('the existing cockpit renders aggregate incidents, alerts on stale data and acknowledges the current episode only', async () => {
+ function node(tag){return {tag,children:[],append(...children){this.children.push(...children)},replaceChildren(...children){this.children=children}}}
+ const host=node('section');host.ownerDocument={createElement:node};
+ const calls=[];
+ const options={t:key=>key,now:Date.parse('2026-11-21T13:00:00Z'),
+  acknowledge:async (...args)=>{calls.push(args);return calls.length===2}};
+ renderCriticalIncidents(host,null,options);
+ assert.equal(host.children[1].textContent,'admin.critical.unavailable');
+ renderCriticalIncidents(host,[{signature:'outbox',episode:4,severity:'P1',affected:1,
+  sampled_at:'2026-11-21T12:00:00Z',opened_at:'2026-11-21T12:00:00Z'}],options);
+ const line=host.children[1],action=line.children.at(-1);
+ assert(line.children.includes('admin.critical.stale'));
+ await action.onclick();assert.equal(action.disabled,false);
+ assert.equal(action.textContent,'admin.critical.ackFailed');
+ await action.onclick();assert.equal(action.disabled,true);
+ assert.equal(action.textContent,'admin.critical.acknowledged');
+ assert.deepEqual(calls,[['outbox',4],['outbox',4]]);
 });

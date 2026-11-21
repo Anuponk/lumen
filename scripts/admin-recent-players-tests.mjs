@@ -19,7 +19,7 @@ console.log('Admin recent players use live activity RPC and expose failures');
 
 const nodes=new Map(),calls=[];let directoryRows,timelineData,supportOptions,lookupOptions,adventureOptions,dashboardInput;
 const document={getElementById(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',value:7,insertAdjacentHTML(){}});return nodes.get(id)},querySelectorAll(){return []}};
-const context={document,Date,Intl,Math,Number,String,adminEsc:String,adminNumber:String,registeredPlayers,analyticsPlayers,
+const context={document,t:key=>key,renderAnalyticsEngagement:()=>{},renderVersionHealth:()=>{},renderCriticalIncidents:()=>{},Date,Intl,Math,Number,String,adminEsc:String,adminNumber:String,registeredPlayers,analyticsPlayers,
  buildAnalyticsDashboard:input=>{dashboardInput=input;return input},renderAnalyticsDashboard:()=>{},adminCanonicalCatalogueTree:()=>[],
  mountSupportDossier:(_host,options)=>{supportOptions=options},
  mountSupportLookup:(_host,options)=>{lookupOptions=options},
