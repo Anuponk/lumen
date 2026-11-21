@@ -81,6 +81,13 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
   if(!attempt||attempt.mode==='challenge'||attempt.state!==ATTEMPT_STATES.READY||attempt.qualifying===!!qualifying)return snapshot();
   attempt.qualifying=!!qualifying;emit();return snapshot()
  }
+ // #908: the server ranking window (another device, a reconnection) can only
+ // demote a live run, never promote one; challenges keep their own rules.
+ function disqualify(attemptId){
+  if(!attempt||attempt.mode==='challenge'||!attempt.qualifying||(attemptId&&attempt.attemptId!==attemptId)||
+   ![ATTEMPT_STATES.READY,ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(attempt.state))return snapshot();
+  attempt.qualifying=false;emit();return snapshot()
+ }
  function reset(board=[],{qualifying}={}){
   if(!attempt)return null;
   attempt.resetCount=(attempt.resetCount||0)+1;attempt.board=cloneBoard(board);
@@ -104,5 +111,5 @@ export function createAttemptEngine({storage=globalThis.localStorage,now=()=>Dat
  function commitMistake(){if(!attempt)return;if(attempt.mistakeCommitted&&attempt.wrongGuardianPending===null)return;attempt.mistakeCommitted=true;attempt.wrongGuardianPending=null;emit()}
  function peek(){return safeParse(storage?.getItem?.(STORAGE_KEY))}
  function clear(){attempt=null;activeSince=null;storage?.removeItem?.(STORAGE_KEY);onChange(null)}
- return {create,restore,peek,requalify,start,pause,resume,complete,abandon,reset,updateBoard,markAssistance,recordAssistanceUse,setWrongGuardianPending,clearWrongGuardianPending,commitMistake,clear,snapshot,activeMs,officialSeconds,states:ATTEMPT_STATES,storageKey:STORAGE_KEY};
+ return {create,restore,peek,requalify,disqualify,start,pause,resume,complete,abandon,reset,updateBoard,markAssistance,recordAssistanceUse,setWrongGuardianPending,clearWrongGuardianPending,commitMistake,clear,snapshot,activeMs,officialSeconds,states:ATTEMPT_STATES,storageKey:STORAGE_KEY};
 }

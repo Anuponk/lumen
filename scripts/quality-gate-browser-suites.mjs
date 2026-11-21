@@ -194,6 +194,11 @@ export const browserSuites=[
     "script": "play-review-navigation-browser-tests.mjs",
     "output": "ci-play-review-navigation.json",
     "port": 9268
+  },
+  {
+    "script": "abandon-attempt-browser-tests.mjs",
+    "output": "ci-abandon-attempt.json",
+    "port": 9269
   }
 ];
 

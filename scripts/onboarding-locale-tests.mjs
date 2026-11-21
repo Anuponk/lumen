@@ -60,7 +60,8 @@ test('onboarding domains have French and English parity', () => {
 
 test('board controls and help share French fallback text and English coverage', () => {
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  const source = readFileSync(new URL('../src/ui/game-screen.js', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../src/ui/game-screen.js', import.meta.url), 'utf8')
+    + readFileSync(new URL('../src/campaign/qualification-window.js', import.meta.url), 'utf8'); // #908 abandon copy
   const keys = catalog => Object.keys(catalog).filter(key => /^(board|rules)\./.test(key)).sort();
   const renderedKeys = new Set([...html.matchAll(/data-game-(?:text|label|title)="((?:board|rules).[^"]+)"/g),
     ...source.matchAll(/"(board\.[\w]+)"/g)].map(match => match[1]));
