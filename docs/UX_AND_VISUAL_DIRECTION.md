@@ -560,6 +560,23 @@ de ton ciel… ».
 
 Inside « Le savais-tu ? », give the 100% mastery rule and the remaining work on separate lines. Show only the measures that remain. If the profile is loading or unavailable, explain the status without showing counts. Once both measures reach zero, offer the existing sign-in or server verification action. A verified mastery entitlement confirms that free access is available. Keep the paid options separate and retain the existing height limit of the mobile notice.
 
+### Full adventure mastery celebration (#886)
+
+Only the first real crossing to full mastery (`adventure-mastery`,
+`campaign-mastery`; an adventure end reached at the same time is merged into it)
+plays the golden variant; refresh, review, sync and later visits never replay it.
+The admin preview uses the same scene. Sequence (≈ 6–8 s for ten constellations):
+each constellation of the adventure appears large and alone, its lines drawn in
+gold (step 260–700 ms, adapted to the count); the parade fades into the existing
+mosaic, which gathers with a golden wave and a few discrete sparks; title,
+valorising message (« Chaque étoile brille : tu as maîtrisé chaque quête, jusqu’au dernier badge. »),
+statistics, badges and podium are revealed in place, without layout jump. The
+recap keeps golden lines and labels (Mon ciel keeps its cyan lines, #519).
+A first tap/click accelerates; a second tap, « Passer », Escape or Enter skips.
+Reduced motion: no parade, final golden mosaic at once. Transform/opacity only,
+a single filtered SVG at a time for Android. No score, badge, record, ranking or
+synchronised data changes.
+
 ### Celestial milestones and progressive mastery (#575 / #519)
 
 Audit: `showSkyReveal` owns the shared quest result, licensed astronomy and
