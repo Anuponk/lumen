@@ -38,7 +38,18 @@ Hors périmètre : amis, classement hebdomadaire, parrainage, publication de cam
 | Ouverture des liens | `decouvrir.html` / `discover.html`, `/?challenge=` | OG/Twitter FR et EN, hreflang, image 1200×630 (HTTP 200) ; défi isolé, one-shot (#18/#888) | `landing-seo-tests`, `challenge-recipient-browser` | — | Aperçu réel en messagerie à tester |
 | Confidentialité | Tous | Pseudonymes et chiffres du joueur seulement ; aucun email, UUID ni jeton ; solution jamais montrée | `lumen-share-tests` (champs privés ignorés), `duel-view-tests` | — | — |
 
-Liens de découverte générale : toujours `https://lumen.nopuna.fr/decouvrir.html` (paramètres UTM uniquement sur le partage natif, jamais dupliqués) ; les joueurs anglophones y trouvent le lien `discover.html` via hreflang.
+**Liens de découverte générale (#933, 21/11/2026)** : la page suit la langue d'affichage de Lumen, c'est-à-dire le choix manuel du joueur ou, à défaut, la résolution automatique de l'application (jamais la langue brute du navigateur).
+
+| Langue de Lumen | Destination |
+|---|---|
+| Anglais (`en`, `en-GB`…) | `https://lumen.nopuna.fr/discover.html` |
+| Français et toute autre langue ou langue indéterminée | `https://lumen.nopuna.fr/decouvrir.html` (le français est la langue par défaut de l'application) |
+
+- Une seule fonction, `discoveryUrlFor(locale)` (`src/analytics/acquisition.js`), sert à l'invitation générale, au partage de réussite et aux partages du Défi du jour.
+- Campagnes inchangées : `utm_source=player_invite` (Inviter) et `utm_source=player_share` (Partager), toujours avec `utm_medium=referral`. Elles ne figurent que sur le **partage natif** ; `campaignUrl` remplace toute requête existante, donc jamais de doublon UTM.
+- « Copier le lien » garde l'URL canonique **de la même langue**, sans UTM.
+- Les liens de défi `/?challenge=…` ne sont jamais remplacés par une page de découverte (opaques, one-shot, référence non révélée).
+- Aperçus : `decouvrir.html` porte l'OG/Twitter français (`og.jpg`, `fr_FR`), `discover.html` l'OG/Twitter anglais (`og-en.jpg`, `en_US`).
 
 ## Recette après publication
 

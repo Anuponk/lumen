@@ -1947,7 +1947,7 @@ async function maybeOfferInstall(){
 }
 
 async function installLumen(){const box=document.getElementById("installOptin"),ios=/iphone|ipad|ipod/i.test(navigator.userAgent);if(ios&&!lumenInstallPrompt){box.hidden=true;localStorage.setItem(qaKey("lumenInstallLater"),String(Date.now()));return}if(!lumenInstallPrompt){box.hidden=true;return}const p=lumenInstallPrompt;lumenInstallPrompt=null;await p.prompt();const choice=await p.userChoice;trackLumenEvent("pwa_install_choice",null,{outcome:choice.outcome,qa:qaActive});box.hidden=true;if(choice.outcome==="dismissed")localStorage.setItem(qaKey("lumenInstallLater"),String(Date.now()))}
-const lumenShare=createShareDialog(document,navigator,t);
+const lumenShare=createShareDialog(document,navigator,t,{locale:()=>localePreference?.locale??'fr'});
 function showShareToast(t){let e=document.createElement("div");e.className="share-toast";e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),1800)}
 function successAchievement(){
  const canonicalQuest=activeQuest(),view=readQuestView(canonicalQuest,lumenProgress,canonicalQuestList(),CONTENT_CONSTELLATIONS);
@@ -2345,7 +2345,7 @@ function showDailyResult({run=null,board=null,training=false,pending=false,offic
  document.getElementById('dailyNext').textContent=Number.isFinite(closes)?t('daily.nextChallenge',{duration:dailyDuration(closes-Date.now())}):'';
  document.getElementById('dailyRetrySubmit').hidden=!pending;
  const share=document.getElementById('dailyShare');share.hidden=training||status!=='completed';
- share.onclick=()=>{const g=board?.general?.me;lumenShare.text({title:t('daily.shareTitle'),text:[t('daily.shareTime',{date:dailyDate(socialChallenge.day),time:formatDuration(score)}),g?.rank?t('daily.rankOutOf',{rank:formatRank(g.rank,t),total:board.general.participants}):null,t('daily.shareInvite')].filter(Boolean).join('\n'),url:discoveryUrl},share)};
+ share.onclick=()=>{const g=board?.general?.me;lumenShare.text({title:t('daily.shareTitle'),text:[t('daily.shareTime',{date:dailyDate(socialChallenge.day),time:formatDuration(score)}),g?.rank?t('daily.rankOutOf',{rank:formatRank(g.rank,t),total:board.general.participants}):null,t('daily.shareInvite')].filter(Boolean).join('\n'),url:lumenShare.discoveryUrl()},share)};
  document.getElementById('dailyTrainAgain').hidden=pending||(!training&&!['completed','abandoned'].includes(status));
  document.getElementById('dailyTrainAgain').onclick=()=>{location.href=dailyUrl(true)};
  document.getElementById('dailyContinue').onclick=()=>{location.href=location.pathname};
@@ -2372,7 +2372,7 @@ async function openDailyWeek(today,source='result'){
    const summary=summarizeWeek(week);
    body.innerHTML=renderDailyWeek(summary,{formatDuration,t,locale:dailyLocale()});status.textContent='';
    share.hidden=!summary.participations;
-   share.onclick=()=>lumenShare.text({title:t('daily.weekShareTitle'),text:weekShareText(summary,{t}),url:discoveryUrl},share);
+   share.onclick=()=>lumenShare.text({title:t('daily.weekShareTitle'),text:weekShareText(summary,{t}),url:lumenShare.discoveryUrl()},share);
    trackDaily('week_viewed',{week_monday:monday,week_offset:Math.round((Date.parse(monday)-Date.parse(current))/604800000),week_participations:summary.participations,week_frozen:summary.frozen,source});
   }catch(e){if(request!==dailyWeekRequest)return;body.innerHTML='';status.textContent=dailyErrorMessage(e,t)}
  };
