@@ -1,4 +1,6 @@
 
+import frPrivacy from './locales/fr/privacy.js';
+import enPrivacy from './locales/en/privacy.js';
 import frDaily from './locales/fr/daily.js';
 import enDaily from './locales/en/daily.js';
 import frResults from './locales/fr/results.js';
@@ -39,8 +41,8 @@ const DEFAULT_LOCALE = 'fr';
 const PREFERENCE_KEY = 'lumen.locale';
 
 export const locales = Object.freeze({
-  fr: Object.freeze({ nativeName: 'Français', enabled: true, fallback: null, messages: Object.freeze({ ...frDaily, ...frResults, ...frBoard, ...frWelcome, ...frLearning, ...frPwaWelcome, ...frSocial, ...frDuel, ...frAdmin, ...frHints, ...frConstellations, ...frMap, ...frStore, ...frStatus, ...frAccountFlow, ...frSky, ...frShell }) }),
-  en: Object.freeze({ nativeName: 'English', enabled: true, fallback: 'fr', messages: Object.freeze({ ...enDaily, ...enResults, ...enBoard, ...enWelcome, ...enLearning, ...enPwaWelcome, ...enSocial, ...enDuel, ...enAdmin, ...enHints, ...enConstellations, ...enMap, ...enStore, ...enStatus, ...enAccountFlow, ...enSky, ...enShell }) }),
+  fr: Object.freeze({ nativeName: 'Français', enabled: true, fallback: null, messages: Object.freeze({ ...frPrivacy, ...frDaily, ...frResults, ...frBoard, ...frWelcome, ...frLearning, ...frPwaWelcome, ...frSocial, ...frDuel, ...frAdmin, ...frHints, ...frConstellations, ...frMap, ...frStore, ...frStatus, ...frAccountFlow, ...frSky, ...frShell }) }),
+  en: Object.freeze({ nativeName: 'English', enabled: true, fallback: 'fr', messages: Object.freeze({ ...enPrivacy, ...enDaily, ...enResults, ...enBoard, ...enWelcome, ...enLearning, ...enPwaWelcome, ...enSocial, ...enDuel, ...enAdmin, ...enHints, ...enConstellations, ...enMap, ...enStore, ...enStatus, ...enAccountFlow, ...enSky, ...enShell }) }),
 });
 
 function lookup(registry, locale) {

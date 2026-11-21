@@ -69,6 +69,7 @@ try{
  assert.equal(await state(),beforeLanguageSwitch,'Changing language preserves the current attempt and progress');
  assert.match(await evaluate("document.getElementById('campaignMapLabel').textContent"),/^Quest 3 - Ursa Major/);
  assert.match(await evaluate("document.getElementById('difficulty').textContent"),/Difficulty: (Easy|Intermediate|Hard|Advanced|Expert|Master)$/);
+ assert.equal(await evaluate("document.getElementById('accountDeletionRequestLink').getAttribute('href')"),'/delete-account.html');
  assert.equal(await evaluate("document.getElementById('accountEmail').placeholder"),'you@example.com');
  assert.equal(await evaluate("document.getElementById('mobileAuthAction').textContent"),'Sign in / Create an account');
  await evaluate("document.getElementById('closeRulesModal').click();document.getElementById('openSky').click()");
