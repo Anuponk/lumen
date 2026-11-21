@@ -133,6 +133,14 @@ retirement of the historical entry and production activation are not claimed.
 Onboarding impact: only the privileged administrative destination changes; no
 player rule, teaching milestone or gameplay destination changes.
 
+## Analytics unification design (#708, lot A)
+
+The [read-only cockpit audit and migration proposal](ANALYTICS_708.md) inventories
+existing tools, data sources, KPI limitations and the proposed single admin entry
+at `/admin/analytics`. It is a design proposal only: collection stays disabled
+without the existing permission provider, and no route, schema or save contract
+changes in lot A. Implementation of later lots requires separate approval.
+
 ## Administrative registered-player view
 
 The recent-player directory shows registered identities only, by key/type,
