@@ -16,7 +16,7 @@ spec = importlib.util.spec_from_file_location("ci_status", ROOT / "scripts/o2swi
 ci = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ci)
 SHA = "a" * 40
-PUBLIC_PAGES = ("mentions-legales.html", "confidentialite.html", "cgv.html", "supprimer-compte.html", "decouvrir.html", "discover.html", "comment-jouer.html", "how-to-play.html", "apprendre-constellations.html", "learn-constellations.html", "constellations/index.html", "robots.txt", "sitemap.xml")
+PUBLIC_PAGES = ("mentions-legales.html", "confidentialite.html", "cgv.html", "supprimer-compte.html", "decouvrir.html", "discover.html", "comment-jouer.html", "how-to-play.html", "apprendre-constellations.html", "learn-constellations.html", "constellations/index.html", "constellations/en.html", "robots.txt", "sitemap.xml")
 
 
 def runs():

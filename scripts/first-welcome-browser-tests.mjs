@@ -74,6 +74,13 @@ try{
  assert.equal(await evaluate("document.getElementById('monCielTitle').textContent"),'My Sky');
  assert.equal(await evaluate("document.getElementById('constellationPrevious').getAttribute('aria-label')"),'Previous constellations');
  assert.match(await evaluate("document.getElementById('adventureSummary').textContent"),/constellations · In progress/);
+ await evaluate('document.querySelector(\'.constellation-fact-button[data-fact-id="real-01"]\').click()');
+ assert.equal(await evaluate("document.getElementById('constellationFact').open"),true);
+ assert.equal(await evaluate("document.getElementById('constellationFactTitle').textContent"),'Ursa Major');
+ assert.match(await evaluate("document.querySelector('[data-fact-origin]').textContent"),/Callisto/);
+ assert.match(await evaluate("document.querySelector('[data-fact-anecdote]').textContent"),/Polaris/);
+ assert.equal(await evaluate("document.querySelector('[data-fact-rank]').textContent"),'3rd of 88');
+ await evaluate("document.querySelector('#constellationFact button').click()");
  await evaluate("document.getElementById('closeMap').click();document.getElementById('accountAuthSwitch').click()");
  assert.equal(await evaluate("document.getElementById('accountPasswordSubmit').textContent"),'Sign in');
  results.push('English account shell, real My Sky overview and sign-in after switching languages during the game');

@@ -1,8 +1,15 @@
-import { CONSTELLATION_FACTS, constellationFactForId } from '../campaign/constellation-facts.js';
+import {
+  CONSTELLATION_FACTS,
+  constellationFactForId,
+  localizedConstellationFact,
+} from '../campaign/constellation-facts.js';
+import { createTranslator } from './i18n.js';
 
-const surface = new Intl.NumberFormat('fr-FR');
-
-export function createConstellationFactDialog(document, map) {
+export function createConstellationFactDialog(
+  document,
+  map,
+  { t = createTranslator().t, locale = () => 'fr' } = {},
+) {
   const dialog = document.createElement('dialog');
   dialog.className = 'constellation-fact';
   dialog.id = 'constellationFact';
@@ -10,25 +17,25 @@ export function createConstellationFactDialog(document, map) {
   dialog.innerHTML = `
     <header class="constellation-fact-heading">
       <h2 id="constellationFactTitle" aria-live="polite"></h2>
-      <button type="button" autofocus>Fermer</button>
+      <button type="button" autofocus data-game-text="fact.close">Fermer</button>
     </header>
     <section>
-      <h3>Pourquoi ce nom ?</h3>
+      <h3 data-game-text="fact.origin">Pourquoi ce nom ?</h3>
       <p data-fact-origin></p>
     </section>
     <section>
-      <h3>Le savais-tu ?</h3>
+      <h3 data-game-text="fact.anecdote">Le savais-tu ?</h3>
       <p data-fact-anecdote></p>
     </section>
     <section>
-      <h3>Dans le ciel</h3>
+      <h3 data-game-text="fact.inSky">Dans le ciel</h3>
       <dl>
-        <div><dt>Surface apparente</dt><dd data-fact-area></dd></div>
-        <div><dt>Rang par surface</dt><dd data-fact-rank></dd></div>
+        <div><dt data-game-text="fact.area">Surface apparente</dt><dd data-fact-area></dd></div>
+        <div><dt data-game-text="fact.rank">Rang par surface</dt><dd data-fact-rank></dd></div>
       </dl>
-      <p class="constellation-fact-note">Une constellation est une région du ciel vue depuis la Terre. Ses étoiles peuvent se trouver à des distances très différentes.</p>
+      <p class="constellation-fact-note" data-game-text="fact.note">Une constellation est une région du ciel vue depuis la Terre. Ses étoiles peuvent se trouver à des distances très différentes.</p>
     </section>
-    <label>Explorer les constellations <select></select></label>
+    <label><span data-game-text="fact.pick">Explorer les constellations</span> <select></select></label>
   `;
 
   const close = dialog.querySelector('button');
@@ -40,19 +47,35 @@ export function createConstellationFactDialog(document, map) {
   const rank = dialog.querySelector('[data-fact-rank]');
   let opener;
 
-  for (const fact of [...CONSTELLATION_FACTS].sort((a, b) => a.name.localeCompare(b.name, 'fr'))) {
-    const option = document.createElement('option');
-    option.value = fact.id;
-    option.textContent = fact.name;
-    picker.append(option);
+  let pickerLocale;
+  function populatePicker() {
+    const language = locale();
+    if (pickerLocale === language) return;
+    pickerLocale = language;
+    for (const node of dialog.querySelectorAll('[data-game-text]'))
+      node.textContent = t(node.dataset.gameText);
+    const order = new Intl.Collator(language, { sensitivity: 'base' });
+    const facts = CONSTELLATION_FACTS.map((fact) => localizedConstellationFact(fact, t));
+    facts.sort((a, b) => order.compare(a.name, b.name));
+    picker.replaceChildren(
+      ...facts.map((fact) => {
+        const option = document.createElement('option');
+        option.value = fact.id;
+        option.textContent = fact.name;
+        return option;
+      }),
+    );
   }
 
   function render(fact) {
-    title.textContent = fact.name;
-    origin.textContent = fact.nameOrigin;
-    anecdote.textContent = fact.funFact;
-    area.textContent = `${surface.format(fact.areaSqDeg)} °²`;
-    rank.textContent = `${fact.areaRank}${fact.areaRank === 1 ? 'er' : 'e'} sur ${CONSTELLATION_FACTS.length}`;
+    if (!fact) return;
+    const translated = localizedConstellationFact(fact, t);
+    title.textContent = translated.name;
+    origin.textContent = translated.nameOrigin;
+    anecdote.textContent = translated.funFact;
+    area.textContent = t('fact.areaValue', { area: fact.areaSqDeg });
+    const place = t('fact.ordinal', { count: fact.areaRank }, { type: 'ordinal' });
+    rank.textContent = t('fact.rankValue', { rank: place, total: CONSTELLATION_FACTS.length });
     picker.value = fact.id;
   }
 
@@ -100,7 +123,10 @@ export function createConstellationFactDialog(document, map) {
     button.type = 'button';
     button.className = 'constellation-fact-button';
     button.dataset.factId = fact.id;
-    button.setAttribute('aria-label', `Découvrir ${fact.name}`);
+    button.setAttribute(
+      'aria-label',
+      t('fact.discover', { name: localizedConstellationFact(fact, t).name }),
+    );
     button.setAttribute('aria-haspopup', 'dialog');
     button.setAttribute('aria-controls', dialog.id);
     button.textContent = 'ⓘ';
@@ -108,6 +134,7 @@ export function createConstellationFactDialog(document, map) {
       if (map.querySelector('#skyTour:not([hidden])') || dialog.open) return;
 
       opener = button;
+      populatePicker();
       render(fact);
       dialog.showModal();
       close.focus({ preventScroll: true });
