@@ -83,6 +83,12 @@ try{
  assert.match(await evaluate("document.querySelector('[data-fact-anecdote]').textContent"),/Polaris/);
  assert.equal(await evaluate("document.querySelector('[data-fact-rank]').textContent"),'3rd of 88');
  await evaluate("document.querySelector('#constellationFact button').click()");
+ assert.equal(await evaluate("document.getElementById('performanceLegend').getAttribute('aria-label')"),'Read the detailed badge rules');
+ await evaluate("document.getElementById('performanceLegend').click()");
+ assert.equal(await evaluate("document.getElementById('badgeRulesModal').hidden"),false);
+ assert.equal(await evaluate("document.getElementById('badgeRulesTitle').textContent"),'How do I earn badges?');
+ assert.match(await evaluate("document.querySelector('.badge-rule.mastery p').textContent"),/same qualifying attempt/);
+ await evaluate("document.getElementById('closeBadgeRules').click()");
  await evaluate("document.getElementById('closeMap').click();document.getElementById('accountAuthSwitch').click()");
  assert.equal(await evaluate("document.getElementById('accountPasswordSubmit').textContent"),'Sign in');
  results.push('English account shell, real My Sky overview and sign-in after switching languages during the game');
