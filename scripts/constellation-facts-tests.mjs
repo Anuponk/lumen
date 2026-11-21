@@ -1,6 +1,7 @@
+import {createTranslator} from '../src/ui/i18n.js';
 import assert from "node:assert/strict";
 import test from "node:test";
-import { CONSTELLATION_FACTS, constellationFactForId } from "../src/campaign/constellation-facts.js";
+import { CONSTELLATION_FACTS, constellationFactForId, localizedConstellationFact } from "../src/campaign/constellation-facts.js";
 import { CONTENT_CONSTELLATIONS } from "../src/campaign/content.js";
 import { iauForConstellation } from "../src/ui/astronomical-catalogue.js";
 
@@ -61,5 +62,20 @@ test("ranking uses unrounded Levin areas with Serpens counted as one constellati
   for (const [rank, surface, iau] of checkpoints) {
     assert.equal(ranked[rank - 1].iau, iau);
     assert.equal(ranked[rank - 1].areaSqDeg, surface);
+  }
+});
+
+test("each IAU ID has reviewed French and English names and fact copy", () => {
+  const t=createTranslator({locale:"en",onMissing:(_,key)=>assert.fail(key)}).t;
+  for(const fact of CONSTELLATION_FACTS){
+    const translated=localizedConstellationFact(fact,t);
+    assert.equal(translated.id,fact.id);
+    assert.equal(translated.sources,fact.sources);
+    assert.equal(translated.areaRank,fact.areaRank);
+    for(const field of ["name","nameOrigin","funFact"]){
+      assert.ok(translated[field].trim().length>0&&translated[field].length<=240,fact.id+" "+field);
+    }
+    assert.notEqual(translated.funFact,fact.funFact);
+    assert.notEqual(translated.nameOrigin,fact.nameOrigin);
   }
 });

@@ -22,6 +22,7 @@ try{
  for(const viewport of [{width:360,height:640,mobile:true},{width:390,height:844,mobile:true},{width:1440,height:900,mobile:false}]){
   await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});
   results.push({viewport,...await verifyLanding({send,evaluate},url),...await verifyLanding({send,evaluate},url,'en'),...await verifyHowToPlay({send,evaluate},url),...await verifyHowToPlay({send,evaluate},url,'en'),...await verifyLearnConstellations({send,evaluate},url),...await verifyLearnConstellations({send,evaluate},url,'en'),...await verifyConstellationDirectory({send,evaluate},url,{slowMobile:viewport.width===360})});
+  const viewportResult=results.at(-1);
   const screenshotDir=process.env.LUMEN_FACT_SCREENSHOTS;
   if(screenshotDir&&viewport.width!==360){
    fs.mkdirSync(screenshotDir,{recursive:true});
@@ -29,6 +30,7 @@ try{
    const filename=viewport.mobile?'ci-constellations-public-mobile.png':'ci-constellations-public-desktop.png';
    fs.writeFileSync(path.join(screenshotDir,filename),Buffer.from(data,'base64'));
   }
+  Object.assign(viewportResult,await verifyConstellationDirectory({send,evaluate},url,{locale:'en'}));
  }
  await send('Page.navigate',{url:new URL('/decouvrir.html',url).href});
  await waitForDiscovery('/decouvrir.html');

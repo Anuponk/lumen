@@ -5302,7 +5302,7 @@ window.addEventListener('offline',()=>{
 window.addEventListener('online',()=>{
  if(!document.getElementById('mapModal').hidden)void refreshPlayReviewMap();
 });
-const skyNavigation=createSkyNavigation({renderLockedOffer:renderAdventureOffer,t,document,getModel:()=>mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot(),entitlementsState:adventureEntitlementsState()}),getQuest:()=>currentQuestPosition(),
+const skyNavigation=createSkyNavigation({renderLockedOffer:renderAdventureOffer,t,locale:()=>localePreference?.locale??"fr",document,getModel:()=>mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot(),entitlementsState:adventureEntitlementsState()}),getQuest:()=>currentQuestPosition(),
  getSolved:i=>!!lumenProgress.solved[i],
  getCanonicalQuests:id=>canonicalQuestList().filter(q=>q.constellationId===id),
  getCanonicalSolved:q=>questIsCompleted(lumenProgress,q.id),
@@ -5329,7 +5329,7 @@ function renderCanonicalSky(entry){
  const lit=quests.filter(q=>questIsCompleted(lumenProgress,q.id)).length,total=quests.length;
  el.replaceChildren();
  const head=document.createElement("div");head.className="sky-head";
- const name=document.createElement("span");name.className="sky-name";name.textContent=entry.label;
+ const name=document.createElement("span");name.className="sky-name";name.textContent=skyNavigation.displayName?.(entry)??entry.label;
  const count=document.createElement("span");count.textContent=t('map.starCount',{lit,total});
  const label=document.createElement("div");label.className="sky-fact-label";label.append(name);
  const factButton=skyNavigation.createFactButton(entry);

@@ -90,7 +90,8 @@ export async function verifyLearnConstellations({send,evaluate},baseUrl,language
 }
 
 // #855: verify the exact route, responsive layout and local search.
-export async function verifyConstellationDirectory({send,evaluate},baseUrl,{slowMobile}={}){
+export async function verifyConstellationDirectory({send,evaluate},baseUrl,{slowMobile,locale="fr"}={}){
+ const english=locale==="en";
  if(slowMobile){
   await send('Network.enable');
   await send('Network.setCacheDisabled',{cacheDisabled:true});
@@ -100,7 +101,7 @@ export async function verifyConstellationDirectory({send,evaluate},baseUrl,{slow
  }
  try{
   const previous=await evaluate('performance.timeOrigin');
-  await send('Page.navigate',{url:new URL('/constellations',baseUrl).href});
+  await send('Page.navigate',{url:new URL(english?'/constellations/en.html':'/constellations',baseUrl).href});
   let ready=false;
   for(let attempt=0;attempt<150;attempt++){
    try{
@@ -113,19 +114,21 @@ export async function verifyConstellationDirectory({send,evaluate},baseUrl,{slow
   }
   assert.equal(ready,true,'Public directory opens at /constellations');
   const report=await evaluate('('+readConstellationDirectory.toString()+')()');
-  assert.equal(report.title,'Les 88 constellations du ciel');
+  assert.equal(report.language,locale);
+  assert.equal(report.title,english?'The 88 constellations of the sky':'Les 88 constellations du ciel');
   assert.equal(report.count,88);
   assert.equal(report.initialStatus,'88 constellations');
   assert.equal(report.overflow,false,'Directory has no horizontal overflow');
   assert.equal(report.playPath,'/','The CTA leads to the game');
   assert.equal(report.playReachable,true,'The play link is reachable');
   assert.equal(report.focused,true,'Search is keyboard-focusable');
-  assert.deepEqual(report.accentSearch,['Cassiopée']);
-  assert.deepEqual(report.spaceSearch,['Grande Ourse']);
+  assert.deepEqual(report.accentSearch,[english?'Cassiopeia':'Cassiopée']);
+  assert.deepEqual(report.spaceSearch,[english?'Ursa Major':'Grande Ourse']);
+  assert.equal(report.singleStatus,'1 constellation');
   assert.equal(report.noMatches,0);
-  assert.equal(report.emptyStatus,'Aucune constellation trouvée');
+  assert.equal(report.emptyStatus,english?'No constellations found':'Aucune constellation trouvée');
   assert.equal(report.resetCount,88);
-  return {constellationDirectory:true,slowMobile:!!slowMobile,loadMs:report.loadMs};
+  return english?{englishConstellationDirectory:true,englishDirectoryLoadMs:report.loadMs}:{constellationDirectory:true,slowMobile:!!slowMobile,loadMs:report.loadMs};
  }finally{
   if(slowMobile){
    await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
@@ -152,15 +155,18 @@ function readConstellationDirectory(){
  };
  input.focus();
  const focused=document.activeElement===input;
- const accentSearch=search('CASSIOPEE');
- const spaceSearch=search('  grande ourse ');
+ const language=document.documentElement.lang;
+ const english=language==='en';
+ const accentSearch=search(english?'CASSIOPEIA':'CASSIOPEE');
+ const spaceSearch=search(english?'  ursa major ':'  grande ourse ');
+ const singleStatus=status.textContent;
  const noMatches=search('sanscorrespondance').length;
  const emptyStatus=status.textContent;
  const resetCount=search('').length;
  input.blur();
  window.scrollTo(0,0);
  return {
-  title,count:cards.length,initialStatus,overflow:document.documentElement.scrollWidth>innerWidth,
+  title,language,count:cards.length,initialStatus,singleStatus,overflow:document.documentElement.scrollWidth>innerWidth,
   playPath:new URL(play.href).pathname,playReachable,focused,accentSearch,spaceSearch,noMatches,emptyStatus,resetCount,
   loadMs:Math.round(performance.getEntriesByType('navigation')[0].domComplete)
  };

@@ -67,7 +67,7 @@ if [[ "$MODE" != "--rollback" ]]; then
     install -m 644 "$asset" "$TMP/$asset"
   done
   # Publish only reviewed public pages; older revisions can omit them.
-  for page in mentions-legales.html confidentialite.html cgv.html supprimer-compte.html decouvrir.html discover.html comment-jouer.html how-to-play.html apprendre-constellations.html learn-constellations.html constellations/index.html robots.txt sitemap.xml; do
+  for page in mentions-legales.html confidentialite.html cgv.html supprimer-compte.html decouvrir.html discover.html comment-jouer.html how-to-play.html apprendre-constellations.html learn-constellations.html constellations/index.html constellations/en.html robots.txt sitemap.xml; do
     if [[ -f "$page" ]]; then install -D -m 644 "$page" "$TMP/$page"; fi
   done
   for dir in src content; do
@@ -100,6 +100,10 @@ if ! curl -fsS --retry 2 --connect-timeout 5 --max-time 20 "https://lumen.nopuna
   [[ -f "$RELEASES/$SHA/constellations/index.html" ]] &&
   ! curl -fsSL --max-redirs 2 --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/constellations?release=$SHA" |
     cmp -s - "$RELEASES/$SHA/constellations/index.html"
+} || {
+  [[ -f "$RELEASES/$SHA/constellations/en.html" ]] &&
+  ! curl -fsS --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/constellations/en.html?release=$SHA" |
+    cmp -s - "$RELEASES/$SHA/constellations/en.html"
 }; then
   echo "HTTP smoke test failed. Restoring previous release $CURRENT" >&2
   ln -s "$CURRENT" "$TARGET.rollback.$"
