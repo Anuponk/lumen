@@ -15,7 +15,7 @@ export async function verifyCompletedQuestHold({send,evaluate,navigate,url}){
  const fixture=`
  const owner=${JSON.stringify(owner)},profile=${JSON.stringify(profile)};
  localStorage.setItem('lumenCloudOwnerId',owner);localStorage.setItem('lumenProgressV1',JSON.stringify(profile));
- localStorage.removeItem('lumenActiveAttemptV1');
+ localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQualifyingStartsV1');
  for(const key of ['lumenTutorialSeen','lumenTutorialCompletedV1','lumenSkyTourSeen','lumenSound'])localStorage.setItem(key,key==='lumenSound'?'off':'1');
  window.__questProfile=structuredClone(profile);window.__questHold=true;window.__questWaiting=false;window.__questWrites=0;
  window.supabase={createClient:()=>({auth:{

@@ -284,7 +284,7 @@ try{
     // Seed after the outgoing document's pagehide has persisted its live attempt.
     // Cold resume now correctly preserves that attempt; it must not replace this
     // independent six-quest discovery fixture.
-    const discoveryFixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:`localStorage.setItem('lumenProgressV1',JSON.stringify({solved:{0:1,1:1,2:1,3:1,4:1},badges:{historical:1}}));localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenAccountOfferNextMilestone');localStorage.setItem('lumenTutorialSeen','1');localStorage.setItem('lumenTutorialCompletedV1','1')`});
+    const discoveryFixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:`localStorage.setItem('lumenProgressV1',JSON.stringify({solved:{0:1,1:1,2:1,3:1,4:1},badges:{historical:1}}));localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQualifyingStartsV1');localStorage.removeItem('lumenAccountOfferNextMilestone');localStorage.setItem('lumenTutorialSeen','1');localStorage.setItem('lumenTutorialCompletedV1','1')`});
    await navigate('Page.reload');
    await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:discoveryFixture.identifier});
    await acknowledgeLearningMilestones(evaluate);
@@ -334,7 +334,7 @@ try{
    assert.deepEqual(await evaluate(`lumenDiagnostics.snapshot().state`),solved);
    assert.deepEqual(await evaluate('window.__authCalls'),[]);
   }
-  await evaluate(`localStorage.setItem('lumenProgressV1',${JSON.stringify(originalGuest)});${guestOwner===null?"localStorage.removeItem('lumenCloudOwnerId')":`localStorage.setItem('lumenCloudOwnerId',${JSON.stringify(guestOwner)})`};localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenAccountOfferNextMilestone')`);
+  await evaluate(`localStorage.setItem('lumenProgressV1',${JSON.stringify(originalGuest)});${guestOwner===null?"localStorage.removeItem('lumenCloudOwnerId')":`localStorage.setItem('lumenCloudOwnerId',${JSON.stringify(guestOwner)})`};localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQualifyingStartsV1');localStorage.removeItem('lumenAccountOfferNextMilestone')`);
   await navigate('Page.reload');
   // #356: both dismissal actions work repeatedly from signup and login,
   // preserving guest achievements and avoiding any Auth call.

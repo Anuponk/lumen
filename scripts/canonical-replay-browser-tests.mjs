@@ -203,7 +203,9 @@ try{
   }
   // First completion must reveal its actual constellation and one confirmed star.
   const first=targets[0];
-  await evaluate(`(()=>{const progress=JSON.parse(localStorage.getItem('lumenQaProgressV1'));delete progress.canonicalQuestState[${JSON.stringify(first.id)}];localStorage.setItem('lumenQaProgressV1',JSON.stringify(progress))})()`);
+  await evaluate(`(()=>{const progress=JSON.parse(localStorage.getItem('lumenQaProgressV1'));delete progress.canonicalQuestState[${JSON.stringify(first.id)}];localStorage.setItem('lumenQaProgressV1',JSON.stringify(progress));
+   // #908: a never-played quest also has no qualifying start inside the 15-minute window.
+   localStorage.removeItem('lumenQualifyingStartsV1')})()`);
   await navigateAndWait({send,evaluate},'Page.reload');await until('!!window.lumenDiagnostics');await sleep(500);
   await openDetail();
   await evaluate(`document.querySelector('#puzzleGrid [data-quest-id="${first.id}"]').click()`);

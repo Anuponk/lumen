@@ -16,7 +16,7 @@ export async function verifyQuestPolicy(browser,baseUrl){
    speedBadgeIntroSeen:ordinal>3?1:0,fullBadgeIntroSeen:ordinal>6?1:0,autonomySeen:0};
   const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:`
    localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(progress))});
-   localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQaActiveAttemptV1');
+   localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQualifyingStartsV1');localStorage.removeItem('lumenQaActiveAttemptV1');
    localStorage.setItem('lumenSound','off');localStorage.setItem('lumenSkyTourSeen','1');localStorage.removeItem('lumenGuidedErrors');localStorage.removeItem('lumenQalumenOnboardingV1:guest');
   `});
   await navigateAndWait(browser,'Page.navigate',{url:String(url)});

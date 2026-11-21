@@ -1233,5 +1233,13 @@
   "welcome.subtitle": "d2153b0ae68f65cf45381ac6",
   "welcome.transcript": "49e21da437bf58139053d438",
   "welcome.wakeTheStars": "5a35d01ec73807b192b56308",
-  "welcome.watch": "a896739bb7d6615cd0f87538"
+  "welcome.watch": "a896739bb7d6615cd0f87538",
+  "board.abandonChallengeCopy": "8aad0713048fc3521cccb69b",
+  "board.abandonConfirmChallenge": "9b83801cd4905873289f2f9b",
+  "board.abandonConfirmDaily": "26b0f89f748e845ea4db7025",
+  "board.abandonConfirmSky": "65f7965aaf9e268208a4f789",
+  "board.abandonContinue": "4c269a2323a71582069cf3e4",
+  "board.abandonCooldownCopy": "7b66673fe05b5a47c37f5013",
+  "board.abandonDailyCopy": "911e241219b004d7202b5804",
+  "board.abandonFreeCopy": "aa6295bc607171032705a643"
 }

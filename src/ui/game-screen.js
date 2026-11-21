@@ -66,6 +66,7 @@ import {verifiedAstronomicalFigure} from "./astronomical-catalogue.js";
 import {astronomicalReferenceSvg,astronomicalPrimarySvg} from "./astronomical-reference-svg.js";
 import {LUMEN_META,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,badgeDefs} from "../campaign/data.js";
 import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt,badgeCooldownRemaining,badgeCooldownLabel} from "../campaign/performance.js";
+import {qualifyingStartedAt,recordQualifyingStart,withQualifyingStart,abandonConfirmModel} from "../campaign/qualification-window.js";
 import {challengeAttemptClosed,challengeEligibility,challengeResumePlan,challengeSnapshot,createChallengeClient,normalizeChallengeName,validChallengeName} from "../campaign/social-challenge.js";
 import {challengeQuestLabel,resolveChallengeQuest} from "../campaign/canonical-challenges.js";
 import {createFriendsClient,friendErrorMessage,friendsOnly,renderFriendRows,validNickname} from "../campaign/social-friends.js";
@@ -2651,7 +2652,8 @@ function updateAttemptUI(){
  const record=document.getElementById('personalRecord'),quest=activeQuest();
  if(record){record.textContent=!socialChallenge&&questIsCompleted(lumenProgress,quest.id)?recordLabel(questPerformanceRecord(quest,lumenProgress),formatDuration,quest.gridRevision??0,t):'';record.hidden=!record.textContent}
  if(pause){pause.hidden=!a||![ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(a.state);pause.textContent=t(paused?"board.resume":"board.pause")}
- if(abandon)abandon.hidden=!a||attemptMode()==="campaign"||![ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(a.state);
+ // #908: after the first move every mode can abandon (except the scripted lesson).
+ if(abandon)abandon.hidden=!a||learningQuestActive()||![ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(a.state);
  const next=document.getElementById('completedQuestNext');
  if(next)next.hidden=!!socialChallenge||learningReplayActive()||celebrated||!!a&&a.state!==ATTEMPT_STATES.READY||!completedQuestSuccessor();
 }
@@ -2672,7 +2674,14 @@ function advanceCompletedQuest(){
 document.getElementById('completedQuestNext').onclick=advanceCompletedQuest;
 // #761: badge qualification (and therefore ranking facts.qualifying) is decided
 // when the run starts, like the server ranking cooldown, not when the grid opened.
-function currentBadgeQualification(){return !socialChallenge&&questBadgeQualification(activeQuest(),lumenProgress,Math.max(canonicalScopeProgress(lumenProgress).completed,activeQuestOrdinal()))}
+function currentBadgeQualification(){return !socialChallenge&&questBadgeQualification(activeQuest(),lumenProgress,Math.max(canonicalScopeProgress(lumenProgress).completed,activeQuestOrdinal()))&&questCooldownRemaining(activeQuest())===0}
+// #908: the 15-minute window runs from the start of the last qualifying run
+// (victory, abandon or not), per player; never from an abandon or a reload.
+function qualificationOwner(){return qaActive?'qa':lumenUser?.id||'guest'}
+function questCooldownRecord(quest){let started=null;try{started=qualifyingStartedAt(localStorage,qualificationOwner(),quest?.id)}catch{}return withQualifyingStart(questPerformanceRecord(quest,lumenProgress),started)}
+function questCooldownRemaining(quest){return badgeCooldownRemaining(questCooldownRecord(quest))}
+// Another device or a reconnection: the server ranking window only demotes.
+function demoteForServerWindow(attemptId){const before=attemptEngine.snapshot();if(!before?.qualifying)return;const after=attemptEngine.disqualify(attemptId);if(after&&!after.qualifying)updateBadgeQualificationStatus()}
 function ensureAttemptStarted(){
  let a=attemptEngine.snapshot();if(a?.state!==ATTEMPT_STATES.READY)return;
  // Promotion only: an already qualifying run is never demoted here.
@@ -2684,7 +2693,9 @@ function ensureAttemptStarted(){
   saveLumenProgress();
  }
  attemptEngine.start();
- if(attemptEngine.snapshot()?.rankingVersion===1&&!socialChallenge&&!learningReplayActive())void rankingClient.begin(activeQuest(),attemptEngine.snapshot()).catch(()=>{});
+ const started=attemptEngine.snapshot();
+ if(started?.qualifying&&!socialChallenge)recordQualifyingStart(localStorage,qualificationOwner(),activeQuest().id,started.startedAt);
+ if(started?.rankingVersion===1&&!socialChallenge&&!learningReplayActive())void rankingClient.begin(activeQuest(),started).then(result=>{if(result?.eligible===false)demoteForServerWindow(started.attemptId)}).catch(()=>{});
  trackAttemptEvent("attempt_started",{entry_point:attemptMode()});
 }
 function persistAttemptBoard(){attemptEngine.updateBoard(state)}
@@ -3238,11 +3249,10 @@ function unqualifiedAttemptCopy(remaining){
 function updateBadgeQualificationStatus(){
  const a=attemptEngine.snapshot(),label=document.getElementById('campaignMapLabel');
  if(!label||socialChallenge||!a)return;
- const remaining=badgeCooldownRemaining(questPerformanceRecord(activeQuest(),lumenProgress));
  const old=label.querySelector('.badge-qualification-status');if(old)old.remove();
  const status=document.createElement('span');status.className='badge-qualification-status';
  status.style.cssText='display:block;font-size:0.75em;line-height:1.3;white-space:normal';
- status.textContent=a.qualifying?t('badges.qualifying'):unqualifiedAttemptCopy(remaining);
+ status.textContent=a.qualifying?t('badges.qualifying'):unqualifiedAttemptCopy(questCooldownRemaining(activeQuest()));
  label.appendChild(status);
 }
 function drawLevels(){let e=document.getElementById("levels");e.innerHTML="";LEVELS.forEach(([name,x])=>{let b=document.createElement("button");b.className="level"+(x===n?" active":"");b.innerHTML=name+"<small>"+x+" × "+x+"</small>";b.onclick=()=>{n=x;init()};e.appendChild(b)})}
@@ -3263,7 +3273,7 @@ function clock(){
   const label=document.querySelector("#campaignMapLabel .badge-qualification-status");
   // #761: a run not yet started becomes qualifying as soon as the cooldown ends.
   if(attemptEngine.snapshot()?.state===ATTEMPT_STATES.READY&&currentBadgeQualification()){attemptEngine.requalify(true);updateBadgeQualificationStatus()}
-  else if(label){const remaining=badgeCooldownRemaining(questPerformanceRecord(activeQuest(),lumenProgress));label.textContent=unqualifiedAttemptCopy(remaining)}
+  else if(label)label.textContent=unqualifiedAttemptCopy(questCooldownRemaining(activeQuest()));
  }
  const ms=activeGameMs(),s=Math.max(0,Math.floor(ms/1000));
  document.getElementById("time").textContent=formatDuration(victoryClockFreeze?victoryClockFreeze.official:socialChallenge&&!socialChallenge.daily?s:attemptEngine.officialSeconds());
@@ -3391,7 +3401,7 @@ function startCanonicalQuest(quest,{confirmedCooldown=false}={}){
  if(!canonicalQuestAvailable(quest))return false;
  if(skyTourActive())return false;
  const replay=questIsCompleted(lumenProgress,quest.id);
- if(replay&&!confirmedCooldown&&badgeCooldownRemaining(questPerformanceRecord(quest,lumenProgress))){
+ if(replay&&!confirmedCooldown&&questCooldownRemaining(quest)){
   showReplayCooldown(quest,()=>startCanonicalQuest(quest,{confirmedCooldown:true}));return true;
  }
  leavePendingVictoryForNavigation();
@@ -4001,7 +4011,7 @@ async function celebrateCanonicalSuccess(){
  const referenceFacts=committed.receipt?.request?.facts??facts;
  document.getElementById("successTime").textContent=formatDuration(officialResult({...referenceFacts,...(!referenceFacts.timing&&!reusedVictory?{timing:attemptTiming(attempt)}:{})}).score);
  renderRecordResult(document.getElementById('successRecord'),committed.outcome?.priorPerformance??priorRecords,questPerformanceRecord(q,lumenProgress),referenceFacts,formatDuration,{reused:reusedVictory,t});
- configureVictoryChallenge({priorPerformance:committed.outcome?.priorPerformance,run:confirmedRun,firstCompletion:committed.newlyCompleted,cooldownMs:badgeCooldownRemaining(questPerformanceRecord(q,lumenProgress)),
+ configureVictoryChallenge({priorPerformance:committed.outcome?.priorPerformance,run:confirmedRun,firstCompletion:committed.newlyCompleted,cooldownMs:questCooldownRemaining(q),
   snapshot:challengeSnapshot({quest:q,seconds:referenceSeconds,run:confirmedRun,assistanceUsed:referenceAssisted})});
  const achievements=document.getElementById("successAchievement");if(achievements){achievements.hidden=false;renderSuccessAchievement()}
  const verifiedBadges=Object.fromEntries(['autonomy','speed','noError','mastery'].map(key=>[key,!!committed.profile.canonicalQuestState[q.id].badges?.[key]]));
@@ -4146,7 +4156,7 @@ async function celebrateSuccess(){
  const playedPack=packForLegacyQuest(levelIndex),adventureQuests=playedPack?canonicalQuestList().filter(q=>q.packId===playedPack.id):[];
  adventurePending=firstCompletion&&playedPack&&!canonicalCampaignComplete(lumenProgress)&&adventureQuests.length>0&&adventureQuests.every(q=>questIsCompleted(lumenProgress,q.id))?playedPack:null;
  endgamePending=firstCompletion&&canonicalCampaignComplete(lumenProgress);
- configureVictoryChallenge({priorPerformance,run:savedPerformance.run,firstCompletion,cooldownMs:badgeCooldownRemaining(questPerformanceRecord(canonicalQuestForLegacy(levelIndex),lumenProgress)),snapshot:challengeSnapshot({questIndex:levelIndex,seconds:facts.seconds,run:savedPerformance.run,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed})});
+ configureVictoryChallenge({priorPerformance,run:savedPerformance.run,firstCompletion,cooldownMs:questCooldownRemaining(canonicalQuestForLegacy(levelIndex)),snapshot:challengeSnapshot({questIndex:levelIndex,seconds:facts.seconds,run:savedPerformance.run,assistanceUsed:!!attemptEngine.snapshot()?.assistanceUsed})});
  if(dailyQualified&&!commanded)completeDaily();
  renderSuccessRewards(earnedThisRun,savedPerformance,priorBadges);renderSuccessAchievement();
  renderRecordResult(document.getElementById('successRecord'),priorPerformance,lumenProgress.performances[levelIndex],facts,formatDuration,{t});
@@ -4761,7 +4771,29 @@ if(attemptMask)attemptMask.onclick=()=>{const a=attemptEngine.snapshot();if(a?.s
 const attemptPause=document.getElementById("attemptPause");
 if(attemptPause)attemptPause.onclick=()=>{const a=attemptEngine.snapshot();if(a?.state===ATTEMPT_STATES.RUNNING)pauseGameClock();else if(a?.state===ATTEMPT_STATES.PAUSED)resumeGameClock()};
 const attemptAbandon=document.getElementById("attemptAbandon");
-if(attemptAbandon)attemptAbandon.onclick=async()=>{const a=attemptEngine.snapshot();if(!a)return;if(!confirm(t("board.abandonConfirm")))return;trackAttemptEvent("attempt_abandoned",{reason:"explicit"});attemptEngine.abandon();if(socialChallenge){trackAttemptEvent("challenge_abandoned",{reason:"explicit"});await finishSocialChallenge("abandoned");return}attemptEngine.clear();init()};
+// #908: explicit confirmation; cancelling leaves the attempt untouched.
+function liveAbandonableAttempt(){const a=attemptEngine.snapshot();return a&&[ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(a.state)?a:null}
+function openAbandonConfirm(){
+ const a=liveAbandonableAttempt(),dialog=document.getElementById('abandonConfirm');if(!a||!dialog)return;
+ const model=abandonConfirmModel({mode:attemptMode(),daily:!!socialChallenge?.daily,qualifying:a.qualifying,startedAt:a.startedAt,cooldownMs:socialChallenge?0:questCooldownRemaining(activeQuest())},t);
+ document.getElementById('abandonConfirmTitle').textContent=model.title;document.getElementById('abandonConfirmCopy').textContent=model.copy;
+ document.getElementById('abandonConfirmYes').textContent=model.confirm;document.getElementById('abandonContinue').textContent=model.cancel;
+ dialog.dataset.attemptId=a.attemptId;dialog.hidden=false;document.getElementById('abandonContinue').focus();
+}
+function closeAbandonConfirm(){const dialog=document.getElementById('abandonConfirm');if(!dialog)return;dialog.hidden=true;delete dialog.dataset.attemptId;attemptAbandon?.focus?.()}
+async function confirmAbandon(){
+ const dialog=document.getElementById('abandonConfirm'),expected=dialog?.dataset.attemptId;if(dialog){dialog.hidden=true;delete dialog.dataset.attemptId}
+ const a=liveAbandonableAttempt();if(!a||a.attemptId!==expected)return;
+ trackAttemptEvent("attempt_abandoned",{reason:"explicit"});attemptEngine.abandon();
+ if(socialChallenge){trackAttemptEvent("challenge_abandoned",{reason:"explicit"});await finishSocialChallenge("abandoned");return}
+ // Campaign and replay: no resumable abandoned attempt, then Mon Ciel on its constellation.
+ const quest=activeQuest();attemptEngine.clear();init();
+ openJourneyMap(false,{constellationId:quest?.constellationId??null});
+}
+if(attemptAbandon)attemptAbandon.onclick=openAbandonConfirm;
+{const yes=document.getElementById('abandonConfirmYes'),no=document.getElementById('abandonContinue'),dialog=document.getElementById('abandonConfirm');
+ if(yes)yes.onclick=()=>{void confirmAbandon()};if(no)no.onclick=closeAbandonConfirm;
+ if(dialog)dialog.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();closeAbandonConfirm()}})}
 
 
 const celestialCelebration=createCelestialCelebration(document);
@@ -5328,7 +5360,7 @@ async function openPlayReviewQuest(quest,{resume=false,replay=false,confirmedCoo
  }
  const completed=questIsCompleted(lumenProgress,quest.id);
  if(!resume&&!replay&&completed){openQuestReview(quest,{playReview:true});return}
- if(replay&&completed&&!confirmedCooldown&&badgeCooldownRemaining(questPerformanceRecord(quest,lumenProgress))){
+ if(replay&&completed&&!confirmedCooldown&&questCooldownRemaining(quest)){
   showReplayCooldown(quest,()=>void openPlayReviewQuest(quest,{replay:true,confirmedCooldown:true}));return;
  }
  leavePendingVictoryForNavigation();
@@ -5658,12 +5690,12 @@ function canonicalPerformanceBadges(questId){
 function launchReplay(i){if(skyTourActive()||!questIsAccessible(i))return;leavePendingVictoryForNavigation();if(["COMPLETED","ABANDONED"].includes(attemptEngine.snapshot()?.state))attemptEngine.clear();canonicalActiveQuest=null;levelIndex=i;replayMode=true;document.getElementById("mapModal").hidden=true;document.getElementById("undo").disabled=false;document.getElementById("hint").disabled=false;document.getElementById("autoCross").disabled=false;loadPuzzle();usedHintThisGame=false;refreshJourney()}
 function startReplay(i){
  if(!lumenProgress.solved[i])return;
- const remaining=badgeCooldownRemaining(questPerformanceRecord(canonicalQuestForLegacy(i),lumenProgress));
+ const remaining=questCooldownRemaining(canonicalQuestForLegacy(i));
  if(!remaining){launchReplay(i);return}
  showReplayCooldown(canonicalQuestForLegacy(i),()=>launchReplay(i));
 }
 function showReplayCooldown(quest,launch){
- const remaining=badgeCooldownRemaining(questPerformanceRecord(quest,lumenProgress));
+ const remaining=questCooldownRemaining(quest);
  const modal=document.getElementById("replayCooldownModal");
  if(!modal)return;
  const cancel=document.getElementById("replayCooldownCancel"),play=document.getElementById("replayCooldownPlay");
@@ -5699,7 +5731,7 @@ function renderMap(){
     const resume=review&&hasPlayReviewAttempt(localStorage,attemptEngine.storageKey,lumenUser.id,playReviewAttemptId(quest));
     const button=document.createElement("button");
     button.type="button";
-    button.className="puzzle-card"+(solved?" done":"")+(available&&!solved?" current":"")+(!available&&!solved?" locked":"")+(solved&&badgeCooldownRemaining(questPerformanceRecord(quest,lumenProgress))?" badge-on-cooldown":"");
+    button.className="puzzle-card"+(solved?" done":"")+(available&&!solved?" current":"")+(!available&&!solved?" locked":"")+(solved&&questCooldownRemaining(quest)?" badge-on-cooldown":"");
     button.dataset.questId=quest.id;
     const lockReason=canonicalQuestLockReason(quest,access);
     // Completion is preserved evidence; a temporary action hold is not a lost win.
@@ -5743,7 +5775,7 @@ function startBadgeCooldownRefresh(){
    if(!quest)return;
    const view=readQuestView(quest,lumenProgress,quests,CONTENT_CONSTELLATIONS);
    if(!view.solved)return;
-   card.classList.toggle('badge-on-cooldown',badgeCooldownRemaining(questPerformanceRecord(quest,lumenProgress))>0);
+   card.classList.toggle('badge-on-cooldown',questCooldownRemaining(quest)>0);
    const html=view.legacyIndex===null?canonicalPerformanceBadges(view.id):performanceBadges(view.legacyIndex);
    if(card.innerHTML!==html)card.innerHTML=html;
   });

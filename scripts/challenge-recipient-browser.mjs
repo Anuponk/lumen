@@ -47,7 +47,7 @@ async function open({send,evaluate},url,model,{width=390,challenge=true,newcomer
  const progress=newcomer?{solved:{},performances:{},xp:0,shards:0,badges:{}}:{solved:Object.fromEntries(Array.from({length:10},(_,i)=>[i,1])),performances:{},xp:40,shards:2,badges:{}};
  const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:`
   localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(progress))});
-  ${keepAttempt?'':"localStorage.removeItem('lumenQaActiveAttemptV1');localStorage.removeItem('lumenActiveAttemptV1');"}
+  ${keepAttempt?'':"localStorage.removeItem('lumenQaActiveAttemptV1');localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQualifyingStartsV1');"}
   localStorage.setItem('lumenGuestName','Fixture');localStorage.setItem('lumenPushChoice','off');
   for(const k of ['lumenQaTutorialSeen','lumenQaTutorialCompletedV1','lumenSkyTourSeen'])${newcomer?'localStorage.removeItem(k)':"localStorage.setItem(k,'1')"};
   ${model}`});

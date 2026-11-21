@@ -70,7 +70,7 @@ try{
   // endpoint, retaining real click/solve/CTA coverage on mobile and desktop.
   const all=canonicalQuestList(),final=all.at(-1),done=all.slice(0,-1);
   const completed={solved:Object.fromEntries(done.filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1])),canonicalQuestState:Object.fromEntries(done.filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true,stars:1,badges:{}}])),badges:{historical:1},performances:{},xp:123,shards:7};
-  await evaluate(`localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(completed))});localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQaActiveAttemptV1')`);
+  await evaluate(`localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(completed))});localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQualifyingStartsV1');localStorage.removeItem('lumenQaActiveAttemptV1')`);
   await navigateAndWait({send,evaluate},'Page.reload');await acknowledgeLearningMilestones(evaluate);
   await evaluate(`document.getElementById('openSky').click();document.querySelector('#adventureRail [data-pack-id="${final.packId}"]').click();while(!document.querySelector('#sectorTabs [data-content-id="${final.constellationId}"]'))document.getElementById('constellationNext').click();document.querySelector('#sectorTabs [data-content-id="${final.constellationId}"]').click();document.querySelector('#puzzleGrid [data-quest-id="${final.id}"]').click()`);
   await acknowledgeLearningMilestones(evaluate);
