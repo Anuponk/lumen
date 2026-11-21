@@ -66,7 +66,7 @@ The stored board uses three user-visible states: empty, excluded, Guardian. Inte
 Correcting the offending Guardian in guided mode consumes only that correction
 gesture. The next separate tap is immediately available, without a global delay.
 
-A wrong intermediate Guardian is allowed to exist long enough for the player to reason/correct it. Guided assistance may explain a direct row/column/territory/touch conflict or a dead end, but the first tap is an exclusion and must not be treated as an attempted Guardian.
+A wrong intermediate Guardian is allowed to exist long enough for the player to reason/correct it. Guided assistance may explain a direct row/column/territory/touch conflict or a dead end, but the first tap is an exclusion and must not be treated as an attempted Guardian. The explanation and the attempted Guardian’s accessible label follow the selected language. Changing language during an intervention keeps the same correction and penalty.
 
 The tap handler checks guided Guardian conflicts on the second tap, when the next state is Guardian. Rejecting the intermediate exclusion on a required solution cell would make the two-tap placement cycle impossible. The engine can still diagnose an exclusion dead end, and Verify/hints can explain an incorrect exclusion; that diagnostic must not block the first half of a tap placement.
 

@@ -114,6 +114,7 @@ import {createSound} from "./sound.js";
 import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 
 import {createTranslator} from './i18n.js';
+import {guidedConflictCopy} from './guided-conflict-copy.js';
 import {adventureDisplayName} from './adventure-copy.js';
 import {constellationDisplayName} from '../campaign/constellation-facts.js';
 import {learningCopy,learningIntro,lessonText} from './learning-copy.js';
@@ -1774,6 +1775,7 @@ function setupGameLocaleSetting(){
   LEARNING_INTRO=learningIntro(t);
   updateHintButton();updateVerifyButton();
   if(!document.getElementById("hintCard")?.hidden)renderCurrentHint?.();
+  if(!document.getElementById("guidedCard").hidden)renderGuidedConflictCopy();
   const syncStatus=document.getElementById('cloudSyncStatus');
   if(syncStatus&&!syncStatus.hidden)renderSyncStatus({...syncPresentation.snapshot(),alert:syncStatus.getAttribute('role')==='alert'},{announce:false});
   if(!state)return;
@@ -3104,13 +3106,21 @@ function drawGuidedLink(a,b){
  const x1=ra.left-br.left+ra.width/2,y1=ra.top-br.top+ra.height/2,x2=rb.left-br.left+rb.width/2,y2=rb.top-br.top+rb.height/2;
  const line=document.createElement("div");line.className="guided-link";line.style.left=x1+"px";line.style.top=y1+"px";line.style.width=Math.hypot(x2-x1,y2-y1)+"px";line.style.transform="rotate("+Math.atan2(y2-y1,x2-x1)+"rad)";board.appendChild(line);
 }
+function renderGuidedConflictCopy(){
+ if(!guidedPending)return;
+ const {r,c,info,introduceAssist}=guidedPending;
+ const {title,explanation}=guidedConflictCopy(info,t);
+ guidedCell(r,c)?.querySelector('.lumen-orb')?.setAttribute('aria-label',t('guided.attempt'));
+ document.getElementById('guidedTitle').textContent=title;
+ document.getElementById('guidedCopy').textContent=introduceAssist?t('guided.introduction',{explanation}):explanation;
+}
 function showGuidedConflict(r,c,info){
  attemptEngine.markAssistance();
  attemptEngine.recordAssistanceUse('guided',(attemptEngine.snapshot()?.helpUses?.guided||0)+1);
  learningTip=null;document.getElementById("scriptedLearn").hidden=true;
  guidedPending={r,c,info};
  const attempt=guidedCell(r,c);if(!attempt)return;
- attempt.innerHTML='<span class="lumen-orb" aria-label="Gardien tenté"></span>';attempt.classList.add("guided-attempt");
+ attempt.innerHTML='<span class="lumen-orb"></span>';attempt.classList.add("guided-attempt");
  if(info.cause){
   const cause=guidedCell(info.cause[0],info.cause[1]);if(cause)cause.classList.add("guided-cause");
   if(info.type==="row"){for(let x=Math.min(c,info.cause[1]);x<=Math.max(c,info.cause[1]);x++)guidedCell(r,x)?.classList.add("guided-path")}
@@ -3118,10 +3128,9 @@ function showGuidedConflict(r,c,info){
   if(info.type==="region"){const g=puz.reg[r][c];for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(puz.reg[y][x]===g)guidedCell(y,x)?.classList.add("guided-region")}
   if(info.type==="touch")drawGuidedLink([r,c],info.cause);
  }
- document.getElementById("guidedTitle").textContent=info.title;
- const introduceAssist=activeQuestOrdinal()<=QUEST_MILESTONES.skyTourAfter&&!learningTipSeen.has("assist");
- if(introduceAssist)learningTipSeen.add("assist");
- document.getElementById("guidedCopy").textContent=info.copy+(introduceAssist?" Assist te prévient quand une action enfreint une règle. Corrige ton choix, puis continue.":"");
+ guidedPending.introduceAssist=activeQuestOrdinal()<=QUEST_MILESTONES.skyTourAfter&&!learningTipSeen.has("assist");
+ if(guidedPending.introduceAssist)learningTipSeen.add("assist");
+ renderGuidedConflictCopy();
  showAssistCard("guidedCard");
  board.setAttribute("aria-disabled","true");
  try{recordGuidedDiagnostic('guided_error','ready','blocked')}catch{}
