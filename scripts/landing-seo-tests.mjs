@@ -10,6 +10,11 @@ import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 
 const read=p=>fs.readFileSync(p,'utf8');
 const index=read('index.html'),page=read('decouvrir.html'),english=read('discover.html'),robots=read('robots.txt'),sitemap=read('sitemap.xml');
+// #932: acquisition copy explicitly promises the free first 100 puzzles, without ads.
+const promoSource=read('scripts/promo-og-assets.mjs');
+for(const phrase of ['Un jeu de logique dans les étoiles','100 puzzles gratuits et sans pub','A logic puzzle among the stars','100 free puzzles · No ads'])
+ assert(promoSource.includes(phrase), 'FR/EN OG promotional copy: '+phrase);
+
 const meta=(html,attr,name)=>html.match(new RegExp('<meta '+attr+'="'+name+'" content="([^"]*)"'))?.[1];
 
 // Game page head: description and social preview, still without inline logic.
