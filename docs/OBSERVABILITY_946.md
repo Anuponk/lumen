@@ -1,0 +1,35 @@
+# Supervision proactive de Lumen (#946)
+
+Audit initial sur `c9eb841b5a00ec28509f660d673d5843c69821e3`. Le 21 novembre 2026, le point public `/build-info.json` répondait HTTP 200 pour ce SHA (`1.11.1+738`). Cela confirme la publication web. L’audit n’a pas interrogé Auth, les achats ni le journal de messagerie en production.
+
+| Source existante | Réutilisation | Limite vérifiée dans le dépôt |
+|---|---|---|
+| #398, RPC de santé de synchronisation et observations d’outbox | Brancher #947 sur les premiers échecs après le dernier succès, sur les outboxes durables et sur la résolution | Le cron de rétention ne constitue pas un transport d’alerte. Une perte réseau courte ne prouve pas un blocage. |
+| #534, diagnostics limités et cockpit administrateur | Réutiliser les signatures, preuves et capacités serveur pour #947 et #949 | Les diagnostics facultatifs dépendent du consentement et ne représentent pas tous les joueurs. |
+| #708, `/admin/analytics`, agrégats par version et échantillons | Étendre la même interface pour #948 et #949 | Les statistiques de réactivité et de fluidité terrain n’existent pas toutes. Le dénominateur doit rester explicite. |
+| Supabase Auth partagé et `lumen.users` | Relier création Auth et première adhésion Lumen pour #950 | Une connexion Auth isolée peut concerner un autre produit. |
+| Ledger serveur Stripe et Play et droits `lumen.entitlements` | Vérifier les confirmations, le montant réellement facturé et les droits pour #950 | Une confirmation fournisseur qui n’atteint pas le ledger reste hors de portée. #947 doit traiter cette réconciliation externe. |
+| Brevo et cron cPanel documentés dans [le runbook o2switch](O2SWITCH_SIMPLE_CRON.md) | Même fournisseur transactionnel et même hôte de planification. Le cron applicatif et celui du déploiement ont des responsabilités différentes. | Le cron qui surveille le déploiement tourne chez l’hébergeur. #947 doit sonder depuis l’extérieur. |
+
+Les PR ouvertes lors de l’audit portaient sur le défi, les gestes et le versionnage Play. Le lot #950 se limite à la source serveur et à l’envoi asynchrone. Les autres lots gardent leurs PR indépendantes.
+
+## Notifications d’activité (#950)
+
+Le worker lit les sources autoritatives et alimente `lumen_commands.activity_mail`. Le code joueur, la création de compte, les webhooks et le calcul des droits n'appellent jamais le worker ni Brevo. Les deux RPC d'exploitation sont réservées à `service_role`. Le rôle de transport ne lit pas directement la table. La politique d’effacement Lumen couvre les lignes rattachées au joueur, même si son compte Auth partagé subsiste.
+
+- **Création.** `auth.users.created_at` et première adhésion `lumen.users.first_seen_at` dans la fenêtre. L’email doit être confirmé avant l’annonce. La date reste celle de création. Google est annoncé au premier rattachement authentifié. Les reconnexions, confirmations rejouées et changements de mot de passe ne génèrent pas d'autre notification.
+- **QA.** CI et recettes automatisées utilisent des bases isolées. Pour un compte de test créé dans le projet partagé, l’opérateur définit `app_metadata.lumen_qa=true` avant le premier accès Lumen. Ce statut est contrôlé côté serveur. Un compte historique créé avant l’activation est écarté.
+- **Achats.** Pour Stripe, une session concordante en mode live et un état payé dans le ledger. Pour Play, une ligne payée avec le règlement réel renseigné par la vérification Google. Les achats de licence Play et les sessions Stripe test sont exclus. Une restauration d’un ancien achat garde sa date d’origine. La vérification compare les droits actifs du produit acheté. Un droit manquant donne une notification critique distincte. Remboursements et contestations utilisent les changements d’état du ledger, avec le montant d’origine clairement libellé.
+- **Minimisation.** Date, méthode et confirmation pour le compte. Produit, canal, montant, devise, date et état du droit pour l'achat. Aucun email de joueur, pseudo, pays, langue, token ni identifiant fournisseur dans le message. Le total des comptes n’est pas calculé, car les identités internes historiques ne sont pas toutes classées.
+- **Envoi.** Une clé unique par compte ou achat, et une clé d’événement par changement d’état. L'état `accepted` annonce l’acceptation de l’API, pas l’arrivée dans la boîte. Une limitation HTTP 429 est réessayée avec délai, au maximum cinq tentatives. Un timeout, un 5xx ou un envoi interrompu expire en `unknown` pour vérification humaine. Cette décision privilégie l’absence de doublon dans les résultats ambigus.
+- **Bornes.** Fenêtre maximale de collecte de sept jours, historique de quatorze jours purgé par le worker actif, lots de 10 par défaut et 20 au maximum. Le plafond quotidien compte les lignes qui ont fait l’objet d’une tentative depuis minuit UTC et vaut 100 par défaut. À cinq minutes par exécution, environ 288 lectures/claims par jour et un acquittement par tentative. Les délais, le plafond et le quota partagé peuvent différer la notification. Avec une indisponibilité de plus de sept jours, la recette doit vérifier la période manquante avant reprise.
+
+### Configuration et recette opérateur
+
+Après validation de la migration sur la base cible, installer le script Python existant dans l’espace privé de staging et faire charger à cPanel un fichier d’environnement hors docroot. Conserver un verrou `flock` pour éviter deux exécutions de la même tâche. Configurer `LUMEN_ACTIVITY_ENABLED=1` au moment de l’activation, `LUMEN_ACTIVITY_START` avec une date ISO et un fuseau, `LUMEN_ACTIVITY_KINDS` avec les catégories souhaitées, puis `LUMEN_ACTIVITY_SUPABASE_URL`, `LUMEN_ACTIVITY_SENDER`, `LUMEN_ACTIVITY_RECIPIENT`, `LUMEN_ACTIVITY_SUPABASE_KEY_FILE` et `LUMEN_ACTIVITY_BREVO_KEY_FILE`. Les deux derniers pointent vers des fichiers privés. Le fournisseur et le domaine d’envoi doivent être vérifiés dans Brevo. Les journaux ne contiennent que des compteurs et des statuts.
+
+Le plan gratuit Brevo affiche 300 envois par jour pour l’ensemble du compte. Le plafond de Lumen laisse de la marge à l’activité normale et doit être réglé en tenant compte des autres envois. [Offres Brevo](https://help.brevo.com/hc/en-us/articles/208589409-About-Brevo-s-pricing-plans). [Statuts API transactionnelle](https://developers.brevo.com/reference/send-transac-email).
+
+Sur une base de recette isolée, exécuter la fixture SQL ou créer un compte de test via les vrais flux email et Google. Renseigner un destinataire de recette dédié, créer une confirmation d’achat Play et Stripe avec les montants de la fixture et prévoir séparément l’achat confirmé sans droit. Après un cycle cron, compter dans la boîte un avis par événement. Rejouer les callbacks et vérifier que le compte reste identique. Le scénario d’incident de recette ne doit jamais révoquer un droit de joueur réel. La CI utilise PostgreSQL jetable et une boîte simulée. Vérifier la réception réelle dans la boîte configurée avant de valider.
+
+Poursuite dans l’ordre #947, #948, #949. Aucun réglage de production ni traitement de données de joueurs n’est effectué par la CI.
