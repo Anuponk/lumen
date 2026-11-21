@@ -104,7 +104,9 @@ async function fetchPromoImage(path) {
   const response = await fetch(path, { cache: 'force-cache' });
   if (!response.ok) return null;
   const blob = await response.blob();
-  return new File([blob], path.endsWith('og-en.jpg') ? 'lumen-en.jpg' : 'lumen.jpg', { type: blob.type || 'image/jpeg' });
+  // Both pictures are JPEG: never inherit a server's generic content type,
+  // which would make channels refuse the file (navigator.canShare).
+  return new File([blob], path.endsWith('og-en.jpg') ? 'lumen-en.jpg' : 'lumen.jpg', { type: 'image/jpeg' });
 }
 
 // `locale` returns the language Lumen is displayed in (it can change at runtime).

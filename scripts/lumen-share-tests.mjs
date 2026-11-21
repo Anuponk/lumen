@@ -213,3 +213,18 @@ console.log('Adventure share moments passed');
   assert.equal(cancelledDoc.getElementById('lumenShareDialog').open, false);
 }
 console.log('Promotional picture share passed');
+
+// The attached file is always typed image/jpeg, whatever the server's content type.
+{
+  const {createShareDialog: make} = await import('../src/ui/lumen-share.js');
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({ok: true, blob: async () => new Blob(['jpg'], {type: 'application/octet-stream'})});
+  try {
+    const sent = [];
+    const dialog = make(fakeDocument(), {share: async data => { sent.push(data); }, canShare: ({files}) => files.every(f => f.type === 'image/jpeg')}, en, {locale: () => 'en'});
+    await dialog.warmPromo();
+    await dialog.invite({getClientRects: () => [1], focus() {}});
+    assert.equal(sent.at(-1).files?.[0]?.type, 'image/jpeg', 'generic server content type does not block the picture');
+  } finally { globalThis.fetch = realFetch; }
+}
+console.log('Promotional picture type passed');
