@@ -12,7 +12,7 @@ export async function verifyGuidedUndo({send,evaluate}){
   await evaluate(`lumenDiagnostics.setupQuest(${index})`);await acknowledgeLearningMilestones(evaluate);
   // Convergence restores an existing run. This scenario explicitly starts a
   // fresh board through the real reset instead of assuming entry erases it.
-  await evaluate(`window.confirm=()=>true;document.getElementById('new').click()`);await acknowledgeLearningMilestones(evaluate);
+  await evaluate(`document.getElementById('new').click();document.getElementById('lumenConfirmYes').click()`);await acknowledgeLearningMilestones(evaluate);
   await evaluate(`document.getElementById('questGo').click();document.getElementById('manualCrossTipOk').click();if(!document.getElementById('autonomyOverlay').hidden)document.getElementById('autonomyKeep').click();if(!document.getElementById('attemptMask').hidden)document.getElementById('attemptMask').click()`);
   await evaluate(`document.getElementById('guidedErrors').checked=true;document.getElementById('autoCross').checked=false`);
   assert.equal(await evaluate('lumenDiagnostics.snapshot().state.flat().every(v=>v===0)'),true,'Guided conflict fixture starts from the explicitly reset board');

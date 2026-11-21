@@ -45,4 +45,8 @@ export default Object.freeze({
   'social.time.days': "{count} days ago",
   'social.stale': "Connection lost: showing the latest known updates.",
   'social.error': "Notifications are unavailable for now. Try again once you are online.",
+  'social.removeFriendTitle': "Remove {name} from your friends?",
+  'social.removeFriendCopy': "{name} will no longer be on your Lumen friends list.",
+  'social.removeFriendKeep': "Keep as a friend",
+  'social.removeFriendYes': "Remove",
 });

@@ -5,7 +5,7 @@ export async function verifyLongPressGuardian({send,evaluate}){
  const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
  await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
  await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
- await evaluate(`lumenDiagnostics.setupQuest(2);window.confirm=()=>true;document.getElementById('new').click()`);
+ await evaluate(`lumenDiagnostics.setupQuest(2);document.getElementById('new').click();document.getElementById('lumenConfirmYes').click()`);
  await acknowledgeLearningMilestones(evaluate);
  await evaluate(`document.getElementById('autoCross').checked=false;document.getElementById('autoCross').dispatchEvent(new Event('change'));document.getElementById('attemptMask').click()`);
  const col=await evaluate('lumenDiagnostics.snapshot().puz.sol[0]');
