@@ -1,3 +1,4 @@
+import {adventureDisplayName} from './adventure-copy.js';
 import {createTranslator} from './i18n.js';
 // #731: paid offers, the free path through 100% mastery of the previous Adventure, and why
 // Lumen is paid. Purchases stay disabled until a payment provider is connected
@@ -35,7 +36,7 @@ export function adventureOfferModel({pack,packs,quests,progress,signedIn=false,a
  const index=ordered.findIndex(p=>p.id===pack.id),previous=index>0?ordered[index-1]:null;
  const previousQuests=previous?(quests||[]).filter(q=>q.packId===previous.id):[];
  const mastery=previous?{
-  previousName:previous.displayName||'',
+  previousName:adventureDisplayName(previous,t)||'',
   status:masteryStatus==='ready'&&!previousQuests.length?'unavailable':masteryStatus,
   confirmed:masteryStatus==='ready'&&masteryConfirmed,
   ...(masteryStatus==='ready'&&previousQuests.length
@@ -55,7 +56,7 @@ export function adventureOfferModel({pack,packs,quests,progress,signedIn=false,a
  const skyProduct=sky.product||SKY_PRODUCT_ID,skyUpgrade=SKY_UPGRADE_PRODUCT_IDS.includes(sky.product);
  // Web price: the server catalogue price of this exact offer (what Stripe will charge).
  const webSkyPrice=sky.known?(sky.priceCents?formatEuros(sky.priceCents):null):formatEuros(SKY_PRICE_CENTS);
- return {id:pack.id,title:pack.displayName||t('sky.adventure'),unitCount,skyCount,pricesRequired,priceStatus,priceErrors,unitPriceKnown:!pricesRequired||!!prices[pack.id],skyPriceKnown:pricesRequired?!!prices[skyProduct]:!!webSkyPrice,unitPrice:prices[pack.id]||(pricesRequired?missingPrice:formatEuros(ADVENTURE_PRICE_CENTS)),skyPrice:prices[skyProduct]||(pricesRequired?missingPrice:webSkyPrice||t('store.priceUnavailable')),
+ return {id:pack.id,title:adventureDisplayName(pack,t)||t('sky.adventure'),unitCount,skyCount,pricesRequired,priceStatus,priceErrors,unitPriceKnown:!pricesRequired||!!prices[pack.id],skyPriceKnown:pricesRequired?!!prices[skyProduct]:!!webSkyPrice,unitPrice:prices[pack.id]||(pricesRequired?missingPrice:formatEuros(ADVENTURE_PRICE_CENTS)),skyPrice:prices[skyProduct]||(pricesRequired?missingPrice:webSkyPrice||t('store.priceUnavailable')),
   unitProduct:pack.id,skyProduct,showSky:!!sky.product,skyUpgrade,skyPurchased:sky.purchased,
   signedIn:!!signedIn,accounts:!!accounts,purchasesAvailable:!!purchasesAvailable,mastery};
 }
@@ -105,7 +106,7 @@ export function updateAdventureOfferMastery(section,model,{onClaim=()=>{},onCont
  }
 }
 
-export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{},onClaim=()=>{},onContinue=()=>{},onRetry=()=>{},onRestorePlay=null,playCheckoutPaused=false,t=french}={}){
+export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{},onClaim=()=>{},onContinue=()=>{},onRetry=()=>{},onRestorePlay=null,playCheckoutPaused=false,locale="fr",t=french}={}){
  const el=(tag,props={},text)=>{const e=document.createElement(tag);Object.assign(e,props);if(text!==undefined)e.textContent=text;return e};
  const root=el('div',{className:'adventure-offer'});
  const status=el('p',{className:'adventure-offer-status',hidden:true});status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.dataset.offerStatus='';
@@ -201,7 +202,7 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
   updateAdventureOfferMastery(section,model,{onClaim,onContinue,t});
   root.append(section);
  }
- const terms=el('a',{className:'adventure-offer-terms',href:SALES_TERMS_URL,target:'_blank',rel:'noopener'},t('store.terms'));terms.dataset.offer='terms';
+ const terms=el('a',{className:'adventure-offer-terms',href:locale==='en'?'/terms-of-sale.html':SALES_TERMS_URL,target:'_blank',rel:'noopener'},t('store.terms'));terms.dataset.offer='terms';
  const termsLine=el('p',{className:'adventure-offer-terms-line'});termsLine.append(terms);
  if(restoreButton)termsLine.append(document.createTextNode(' · '+t('store.restoreHint')+' '),restoreButton);
  root.append(termsLine);

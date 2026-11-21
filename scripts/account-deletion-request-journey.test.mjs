@@ -32,31 +32,33 @@ test('invalid and injected addresses are rejected', () => {
   }
 });
 
-test('form prepares but does not send, and accurately reports manual action', () => {
-  const status = { textContent: '' };
-  const form = { reportValidity: () => true, onsubmit: null };
-  const elements = {
-    accountDeletionRequest: form,
-    deletionRequestStatus: status,
-    deletionAccountAddress: { value: 'joueur@example.org' }
-  };
-  const opened = [];
-  wireAccountDeletionForm({ getElementById: id => elements[id] }, url => opened.push(url));
-  let prevented = false;
-  form.onsubmit({ preventDefault: () => { prevented = true; } });
-  assert.equal(prevented, true);
-  assert.equal(opened.length, 1);
-  assert.match(opened[0], /^mailto:/);
-  assert.match(status.textContent, /Envoie ce message/);
-  assert.match(status.textContent, /aucune suppression ni aucun envoi automatique/);
-});
+for (const lang of ['fr', 'en']) {
+  test('form prepares a '+lang+' draft and accurately reports manual sending', () => {
+    const status = { textContent: '' };
+    const form = { reportValidity: () => true, onsubmit: null };
+    const elements = {
+      accountDeletionRequest: form,
+      deletionRequestStatus: status,
+      deletionAccountAddress: { value: 'joueur@example.org' }
+    };
+    const opened = [];
+    wireAccountDeletionForm({ documentElement: { lang }, getElementById: id => elements[id] }, url => opened.push(url));
+    let prevented = false;
+    form.onsubmit({ preventDefault: () => { prevented = true; } });
+    assert.equal(prevented, true);
+    assert.equal(opened.length, 1);
+    assert.match(opened[0], /^mailto:/);
+    assert.match(status.textContent, lang === 'en' ? /Send the message/ : /Envoie ce message/);
+    assert.match(status.textContent, lang === 'en' ? /has not deleted anything or sent an email/ : /aucune suppression ni aucun envoi automatique/);
+  });
+}
 
 test('invalid form never opens messaging client', () => {
   const status = { textContent: '' };
   const form = { reportValidity: () => false, onsubmit: null };
   const elements = { accountDeletionRequest: form, deletionRequestStatus: status, deletionAccountAddress: { value: 'invalid' } };
   const opened = [];
-  wireAccountDeletionForm({ getElementById: id => elements[id] }, url => opened.push(url));
+  wireAccountDeletionForm({ documentElement: { lang: 'fr' }, getElementById: id => elements[id] }, url => opened.push(url));
   form.onsubmit({ preventDefault() {} });
   assert.equal(opened.length, 0);
 });

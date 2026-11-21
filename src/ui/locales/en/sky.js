@@ -31,4 +31,13 @@ export default Object.freeze({
   'sky.badgeProgress': "Badges {percentage}%",
   'sky.badgeProgressLabel': "{earned} of {possible} badges earned",
   'sky.constellationLocked': "Complete the previous quests to unlock this constellation.",
+  'adventure.base-real-sky': "First Light",
+  'adventure.real-adventure-02': "Distant Horizons",
+  'adventure.real-adventure-03': "Beyond the Horizon",
+  'adventure.real-adventure-04': "Uncharted Horizons",
+  'adventure.real-adventure-05': "Paths Across the Sky",
+  'adventure.real-adventure-06': "The Makers of Light",
+  'adventure.real-adventure-07': "Voyagers of the Dawn",
+  'adventure.real-adventure-08': "Guardians of the Vast Sky",
+  'adventure.real-adventure-09': "The Sky Reunited",
 });

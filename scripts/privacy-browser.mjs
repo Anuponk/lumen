@@ -6,10 +6,11 @@ export async function verifyPrivacyRequests({send,evaluate},baseUrl){
  await send('Network.enable');
  await send('Network.setBlockedURLs',{urls:['*supabase.co/*']});
  const before=await evaluate(`JSON.stringify(['lumenProgressV1','lumenActiveAttemptV1'].map(k=>[k,localStorage.getItem(k)]))`);
- for(const width of [320,360,390,1440]){
+ for(const locale of ['fr','en']) for(const width of [320,360,390,1440]){
+  const english=locale==='en';
   await send('Emulation.setDeviceMetricsOverride',{width,height:844,deviceScaleFactor:1,mobile:width<700});
   const previous=await evaluate('performance.timeOrigin');
-  await send('Page.navigate',{url:new URL('/supprimer-compte.html',baseUrl).href});
+  await send('Page.navigate',{url:new URL(english?'/delete-account.html':'/supprimer-compte.html',baseUrl).href});
   let ready=false;
   for(let i=0;i<100;i++){
    try{if(await evaluate(`performance.timeOrigin!==${JSON.stringify(previous)}&&document.readyState==='complete'&&!!document.getElementById('accountDeletionRequest')`)){ready=true;break}}
@@ -26,10 +27,14 @@ export async function verifyPrivacyRequests({send,evaluate},baseUrl){
   const result=await evaluate(`({count:__preparedDeletionMail.length,href:__preparedDeletionMail[0],status:document.getElementById('deletionRequestStatus').textContent,hasSdk:!!window.supabase})`);
   assert.equal(result.count,1);
   assert.equal(new URL(result.href).searchParams.get('body').includes('parent+fixture@example.test'),true);
-  assert(result.status.includes('aucune suppression'));
+  assert(result.status.includes(english?'has not deleted anything or sent an email':'aucune suppression'));
+  assert.equal(await evaluate('document.documentElement.lang'),locale);
+  assert.match(new URL(result.href).searchParams.get('subject'),english?/account deletion request/:/suppression/);
   assert.equal(result.hasSdk,false);
   assert.equal(await evaluate(`JSON.stringify(['lumenProgressV1','lumenActiveAttemptV1'].map(k=>[k,localStorage.getItem(k)]))`),before,'preparing deletion does not clear or alter the save/attempt');
-  for(const [path,title] of [['/mentions-legales.html','Mentions légales'],['/confidentialite.html','Confidentialité']]){
+  const pages=english?[['/legal-notice.html','Legal notice'],['/privacy-policy.html','Privacy policy'],['/terms-of-sale.html','Terms of sale']]:
+   [['/mentions-legales.html','Mentions légales'],['/confidentialite.html','Confidentialité']];
+  for(const [path,title] of pages){
    const origin=await evaluate('performance.timeOrigin');
    await send('Page.navigate',{url:new URL(path,baseUrl).href});
    let loaded=false;
@@ -41,12 +46,17 @@ export async function verifyPrivacyRequests({send,evaluate},baseUrl){
    assert(loaded,'legal page loads independently without Auth');
    assert.equal(await evaluate(`document.documentElement.scrollWidth<=innerWidth`),true,'legal copy fits mobile and desktop');
    assert.equal(await evaluate(`document.querySelectorAll('script').length`),0,'legal pages need no SDK or script');
-   assert.equal(await evaluate(`!!document.querySelector('nav a[href="/supprimer-compte.html"]')`),true,'rights request remains directly accessible');
+   if(path!=='/terms-of-sale.html'){
+    const deletionPath=english?'/delete-account.html':'/supprimer-compte.html';
+    assert.equal(await evaluate('!!document.querySelector('+JSON.stringify('nav a[href="'+deletionPath+'"]')+')'),true,'rights request remains directly accessible');
+   }
    // Published by the owner on 17/11/2026 (#732/#730): a dated version, no candidate banner.
-   assert.equal(await evaluate(`/Version du \\d{1,2} \\S+ \\d{4}/.test(document.querySelector('main').textContent)&&!document.body.textContent.includes('Version candidate')`),true,'legal page shows its published version date');
+   const copy=await evaluate('document.querySelector("main").textContent');
+   assert.match(copy,english?/Version dated \d{1,2} \S+ \d{4}/:/Version du \d{1,2} \S+ \d{4}/);
+   assert.doesNotMatch(copy,/Version candidate/);
    assert.equal(await evaluate(`JSON.stringify(['lumenProgressV1','lumenActiveAttemptV1'].map(k=>[k,localStorage.getItem(k)]))`),before,'reading legal pages preserves save and attempt');
   }
-  results.push({width,confirmationRequired:true,mailPreparedOnly:true,savePreserved:true,liveDeletion:false,legalCandidatePages:2});
+  results.push({width,locale,confirmationRequired:true,mailPreparedOnly:true,savePreserved:true,liveDeletion:false,legalPages:pages.length});
  }
  return results;
 }

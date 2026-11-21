@@ -61,6 +61,6 @@ console.log('purchase-thanks-tests: model, dialog behaviour and server-confirmed
 {
  const t=createTranslator({locale:'en'}).t;
  const model=purchaseThanksModel({productId:locked.id,packs:CONTENT_PACKS,t});
- assert.equal(model.lead,'“'+locked.displayName+'” is now unlocked.');
+ assert.equal(model.lead,'“Distant Horizons” is now unlocked.');
  assert.equal(model.explore,'Explore the adventure');
 }

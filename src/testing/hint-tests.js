@@ -34,7 +34,11 @@ async function runHintTests(){
  test("PWA : une installation existante bloque la proposition",()=>{const src=maybeOfferInstall.toString();return src.includes("lumenAlreadyInstalled()")&&!src.includes("!qaActive&&lumenIsStandalone()")});
  test("PWA : compte et préférences QA préservés",()=>{const src=maybeOfferInstall.toString();return src.includes("accountRequired()")&&src.includes('qaKey("lumenInstallLater")')});
  test("Partage : le lien public mène à la découverte de Lumen",()=>discoveryUrl==="https://lumen.nopuna.fr/decouvrir.html");
- test("Partage : la réussite met en avant quête et constellation",()=>typeof successAchievement==="function"&&document.getElementById("successAchievement")&&successAchievement.toString().includes("Quête "));
+ test("Partage : la réussite met en avant quête et constellation",()=>{
+  const result=successAchievement();
+  return document.getElementById("successAchievement")&&Number.isSafeInteger(result.canonicalNumber)&&result.canonicalNumber>0
+   &&!!result.ch.name&&[result.main,result.detail].some(copy=>copy.includes(result.ch.name));
+ });
  test("Partage : victoire et défi ont des actions distinctes",()=>!!document.getElementById("skyRevealShareResult")&&!!document.getElementById("skyRevealShare"));
  test("Referral : le paramètre ref est nettoyé avant analytics",()=>captureReferral.toString().includes("replace(/[^a-zA-Z0-9_-]/g"));
  test("Compte : le pseudo est stocké côté profil utilisateur",()=>typeof saveLumenNickname==="function"&&saveLumenNickname.toString().includes("lumen_set_nickname"));

@@ -22,10 +22,11 @@ La version des fichiers astronomiques est liée au résultat validé du workflow
 
 Les fiches #856 associent chacune des 88 abréviations officielles à l’identifiant
 stable de Lumen. Le [référentiel éditorial](../src/campaign/constellation-facts.js)
-sert à Mon ciel et génère la [page publique](../constellations/index.html).
+alimente Mon ciel et le répertoire public en [français](../constellations/index.html)
+et en [anglais](../constellations/en.html).
 Chaque fiche conserve les liens documentaires qui étayent son origine et son
-anecdote. Les textes français sont des formulations originales à relire avant
-publication. Les tracés, illustrations et coordonnées stellaires existants
+anecdote. Les [textes français](../src/ui/locales/fr/constellations.js) et les
+[textes anglais](../src/ui/locales/en/constellations.js) utilisent les mêmes identifiants. Les tracés, illustrations et coordonnées stellaires existants
 restent soumis à leur attribution ci-dessus.
 
 - [Union astronomique internationale](https://www.iau.org/IAU/Astronomy-FAQs/Constellations.aspx)
@@ -37,7 +38,7 @@ restent soumis à leur attribution ci-dessus.
   pour les surfaces angulaires. Le classement utilise les valeurs avant arrondi,
   ce qui donne Dorade 72e, Couronne boréale 73e, Triangle 78e et Caméléon 79e.
 
-Pour modifier une fiche, éditer le référentiel, exécuter
+Pour modifier le texte d’une fiche, mettre à jour les deux catalogues, exécuter
 `node scripts/render-constellations.mjs`, puis relancer les tests des fiches et
 de la page statique. Consulter la [recette](TESTING.md#fiches-des-88-constellations-856)
 avant publication.

@@ -6,6 +6,9 @@ on:
       - 'scripts/account-deletion-request-journey.test.mjs'
       - 'src/privacy/account-deletion.js'
       - 'supprimer-compte.html'
+      - 'delete-account.html'
+      - 'src/ui/locales/fr/privacy.js'
+      - 'src/ui/locales/en/privacy.js'
       - '.github/workflows/account-deletion-request-journey.yml'
   workflow_dispatch:
 permissions:

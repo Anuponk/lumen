@@ -11,6 +11,8 @@ const entries = [...document.querySelectorAll('.constellation-entry')].map((card
   name: normalizeName(card.querySelector('h3').textContent),
 }));
 
+const countFormatter = new Intl.NumberFormat(document.documentElement.lang);
+
 function filterByName() {
   const query = normalizeName(input.value);
   let count = 0;
@@ -20,7 +22,8 @@ function filterByName() {
     if (!card.hidden) count++;
   }
 
-  status.textContent = count === 0 ? 'Aucune constellation trouvée' : `${count} constellation${count === 1 ? '' : 's'}`;
+  status.textContent = count === 0 ? status.dataset.empty : count === 1 ? status.dataset.single :
+    status.dataset.many.replace('%s', countFormatter.format(count));
 }
 
 input.addEventListener('input', filterByName);

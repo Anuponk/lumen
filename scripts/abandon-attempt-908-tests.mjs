@@ -101,9 +101,7 @@ const quest='planned-real-01-q07';
  assert.equal(challenge.sky,false);assert.match(challenge.copy,/seconde tentative officielle/);
  const daily=abandonConfirmModel({mode:'challenge',daily:true},en);
  assert.equal(daily.sky,false);assert.match(daily.copy,/Daily Challenge/);
- for(const t of [fr,en])for(const key of ['board.qualifying','board.notQualifying','board.cooldownRetry','board.abandonContinue','board.abandonConfirmSky'])assert.notEqual(t(key),key,key+' is translated');
- assert.equal(en('board.cooldownRetry',{minutes:4}),'try again in 4 min');
- assert.equal(fr('board.cooldownRetry',{minutes:4}),'Réessaie dans 4 min');
+ for(const t of [fr,en])for(const key of ['board.abandonContinue','board.abandonConfirmSky','board.abandonCooldownCopy','board.abandonFreeCopy'])assert.notEqual(t(key),key,key+' is translated');
 }
 
 // Wiring contract in the game screen.

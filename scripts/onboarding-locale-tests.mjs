@@ -64,7 +64,7 @@ test('board controls and help share French fallback text and English coverage', 
     + readFileSync(new URL('../src/campaign/qualification-window.js', import.meta.url), 'utf8'); // #908 abandon copy
   const keys = catalog => Object.keys(catalog).filter(key => /^(board|rules)\./.test(key)).sort();
   const renderedKeys = new Set([...html.matchAll(/data-game-(?:text|label|title)="((?:board|rules).[^"]+)"/g),
-    ...source.matchAll(/"(board\.[\w]+)"/g)].map(match => match[1]));
+    ...source.matchAll(/["'](board\.[\w]+)["']/g)].map(match => match[1]));
   assert.deepEqual(keys(locales.fr.messages), [...renderedKeys].sort());
   assert.deepEqual(keys(locales.en.messages), keys(locales.fr.messages));
   const tokens = text => (text.match(/\{\w+\}/g) ?? []).sort();

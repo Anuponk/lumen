@@ -120,6 +120,8 @@ Dragging a finger over cells marks exclusions. It must:
 ## Reset/navigation
 The main reset action is **Réinitialiser** (the small ↺ button first in the command row under the grid, labelled « Réinitialiser la grille » for assistive technologies), not “Nouvelle grille”. It clears the placements of the current quest only and asks for confirmation: « Réinitialiser la grille ? Tes placements seront effacés, mais le chrono, les aides et les erreurs resteront comptabilisés. » The attempt, its official time, aids, errors and qualification continue (#851, #36); only « Rejouer » starts a new attempt. The campaign map applies the [progression and Adventure access rules](PROGRESSION.md#adventures-and-access-96). “Quête suivante” is available after victory. Solved quests may be reopened from the campaign map.
 
+**Abandonner (#908).** After the first move, « Abandonner » asks for confirmation (« Continuer la partie » / « Abandonner et revenir au ciel ») and states the remaining qualification window. Confirming closes the attempt (`ABANDONED`, no resumable attempt) and opens Mon Ciel on the quest's constellation. The 15-minute badge/record window keeps running from the start of that attempt, so a replay within it is non-qualifying. Leaving before the first move consumes nothing. Challenges and the Défi du jour keep their one-shot abandon. Details: [PROGRESSION](PROGRESSION.md#performance-badges).
+
 The [Google Play review grant](PROGRESSION.md#google-play-review-navigation-796)
 opens direct selection in Mon ciel for the authorised account. The ordinary
 board, tutorial, attempt and victory rules apply to every quest played.

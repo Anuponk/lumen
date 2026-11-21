@@ -50,6 +50,8 @@ const emptyOffer=mountAdventureOffer(new Node('div'),{...model,unitCount:0,skyCo
 assert.equal(emptyOffer.find(n=>n.dataset.offer==='unit').disabled,true);
 assert.equal(emptyOffer.find(n=>n.dataset.offerCount==='unit').textContent,'Aucun nouveau contenu disponible');
 const terms=find('terms');assert.equal(terms.href,SALES_TERMS_URL);assert.equal(terms.target,'_blank');
+const english=mountAdventureOffer(new Node('div'),model,{locale:'en'}).all();
+assert.equal(english.find(n=>n.dataset.offer==='terms').href,'/terms-of-sale.html');
 // No waiver box where no purchase can start; the terms link stays visible.
 for(const variant of [{signedIn:false},{purchasesAvailable:false}]){
  const other=mountAdventureOffer(new Node('div'),{...model,...variant}).all();

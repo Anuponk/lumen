@@ -31,4 +31,13 @@ export default Object.freeze({
   'sky.badgeProgress': "Badges {percentage}%",
   'sky.badgeProgressLabel': "{earned} badges obtenus sur {possible} possibles",
   'sky.constellationLocked': "Termine les quêtes précédentes pour débloquer cette constellation.",
+  'adventure.base-real-sky': "Premières lueurs",
+  'adventure.real-adventure-02': "Horizons lointains",
+  'adventure.real-adventure-03': "Au-delà de l’horizon",
+  'adventure.real-adventure-04': "Horizons inconnus",
+  'adventure.real-adventure-05': "Les chemins du firmament",
+  'adventure.real-adventure-06': "Les artisans de la lumière",
+  'adventure.real-adventure-07': "Les voyageurs de l’aube",
+  'adventure.real-adventure-08': "Les gardiens de l’immensité",
+  'adventure.real-adventure-09': "Le ciel réuni",
 });

@@ -179,7 +179,7 @@ test('actual sky adapter counts completed canonical-only quests instead of absen
 
 test('victory recap retains a previously earned Rapidité alongside newly acquired badges',()=>{
  const element={innerHTML:'',classList:{toggle(){}}};
- const context={document:{getElementById:()=>element},performanceIcon:key=>key};vm.createContext(context);
+ const context={t:createTranslator().t,document:{getElementById:()=>element},performanceIcon:key=>key};vm.createContext(context);
  vm.runInContext(functionSource(source,'renderSuccessRewards'),context);
  context.renderSuccessRewards(0,{run:{autonomy:true,speed:false},badges:{autonomy:true,speed:true},qualifying:true},{speed:true});
  assert.match(element.innerHTML,/Rapidité/);
