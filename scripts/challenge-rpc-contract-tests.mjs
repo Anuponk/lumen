@@ -113,4 +113,19 @@ assert.doesNotMatch(challengeQuestLabel({puzzle_id:null,stable_quest_id:kinds['s
 const ui=fs.readFileSync('src/ui/game-screen.js','utf8');
 assert.doesNotMatch(ui,/Quête '\+row\.puzzle_id/,'Mes défis never prints the raw legacy number');
 assert.match(ui,/challengeAttemptClosed\(socialChallenge\.participant_status\)/,'reopened finished links show their result');
+// #927: every challenge reader resolves an account's current nickname by its
+// account ID (stored name only as fallback); never by matching names.
+{
+ const get=lastPublicDefinition('lumen_get_social_challenge').body;
+ assert.match(get,/lumen\.public_nickname\(sender_user_id,sender_display_name\)/,'sender name resolved by account');
+ assert.match(get,/lumen\.public_nickname\(p\.participant_user_id,p\.participant_display_name\)/,'caller name resolved by account');
+ for(const name of ['lumen_list_social_challenges','lumen_list_quest_challenges_v2']){
+  const body=lastPublicDefinition(name).body;
+  assert.match(body,/'name',lumen\.public_nickname\(p\.participant_user_id,p\.participant_display_name\)/,name+': participants resolved by account');
+  assert.doesNotMatch(body,/'name',p\.participant_display_name/,name+': no frozen participant name');
+ }
+ const resolver=migrations.find(sql=>/create or replace function lumen\.public_nickname/.test(sql))||'';
+ assert.match(resolver,/p\.user_id=p_user and p\.nickname_ready/,'resolution by account ID and ready nickname only');
+ assert.match(resolver,/revoke all on function lumen\.public_nickname\(uuid,text\) from public,anon,authenticated/,'resolver stays private');
+}
 console.log('challenge RPC contract: '+JSON.stringify(matrix));
