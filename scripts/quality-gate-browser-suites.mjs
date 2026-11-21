@@ -199,6 +199,11 @@ export const browserSuites=[
     "script": "abandon-attempt-browser-tests.mjs",
     "output": "ci-abandon-attempt.json",
     "port": 9269
+  },
+  {
+    "script": "lumen-dialog-browser-tests.mjs",
+    "output": "ci-lumen-dialog.json",
+    "port": 9270
   }
 ];
 

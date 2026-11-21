@@ -74,4 +74,8 @@ export default Object.freeze({
   'admin.versions.none': "No version observed in the period.",
   'admin.versions.definition': "rate = hydration failures ÷ hydrations (ready + failed) of the version; « to examine » with at least {count} hydrations and a rate at least twice the overall rate (and 5 points above); waiting is not progress loss.",
   'admin.versions.source': "sync health and device outboxes (lumen_sync_health, outbox_health)",
+  'admin.qaResetTitle': "Reset the QA test progress?",
+  'admin.qaResetCopy': "All QA test progress on this device will be erased and you will start again as a new player.",
+  'admin.qaResetKeep': "Keep my progress",
+  'admin.qaResetYes': "Reset",
 });

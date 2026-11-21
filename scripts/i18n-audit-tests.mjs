@@ -14,6 +14,22 @@ test('new text and repeated debt both require migration', () => {
   assert.deepEqual(newlyVisible({ 'src/ui/test.js': visibleCandidates(after, 'test.js') }, baseline).map(x => x.copy), ['Fermer', 'Close help', 'Close']);
 });
 
+test('text candidates keep their owning function even inside an HTML assignment', () => {
+  const source = `function migrated() {
+    const result = { title: "Même ligne" };
+    element.innerHTML = '<span aria-label="Gardien tenté"></span>';
+    element.textContent = t("guided.rowCopy");
+  }
+  function legacy() { element.textContent = "Même ligne"; }`;
+  const located = [];
+  const references = [];
+  visibleCandidates(source, 'test.js', key => references.push(key), (copy, scope) => located.push([scope, copy]));
+  assert.deepEqual(located, [
+    ['migrated', 'Même ligne'], ['migrated', 'Gardien tenté'], ['legacy', 'Même ligne'],
+  ]);
+  assert.deepEqual(references, ['guided.rowCopy']);
+});
+
 test('a French edit requires review and each plural preserves its parameters', () => {
   const fr = { reward: { one: '{count} étoile', other: '{count} étoiles' } };
   const en = { reward: { one: '{count} star', other: '{count} stars' } };
