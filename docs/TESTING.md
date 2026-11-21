@@ -926,6 +926,8 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Critical alert tests run the production migration against disposable PostgreSQL and simulate interrupted transport, replayed observations, one affected account and unauthorized acknowledgements. The public probe test also rejects maintenance HTML with HTTP 200.
+
 The [admin activity mail tests](OBSERVABILITY_946.md#configuration-et-recette-opérateur) cover deduplication and role grants in disposable PostgreSQL and capture mail with a simulated provider.
 
 Review navigation (#796) uses `play-review-navigation-tests.mjs` for catalogue,

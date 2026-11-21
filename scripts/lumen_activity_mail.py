@@ -17,6 +17,8 @@ SUBJECTS = {
     "purchase_missing_access": "P0 · Achat confirmé sans accès",
     "refund": "Achat remboursé",
     "revocation": "Achat contesté · vérifier le droit d’accès",
+    "incident_open": "Incident ouvert",
+    "incident_resolved": "Retour à la normale",
 }
 COCKPIT_URL = "https://lumen.nopuna.fr/admin/analytics"
 
@@ -49,6 +51,17 @@ def timestamp(value):
 
 def format_notice(kind, payload):
     subject = "[Lumen] " + SUBJECTS[kind]
+    if kind in ("incident_open", "incident_resolved"):
+        label = {"availability": "Disponibilité du jeu", "hydration": "Restauration du compte",
+                 "outbox": "Sauvegarde cloud", "backlog": "File de sauvegardes"}[payload["signature"]]
+        severity = {"P0": "P0", "P1": "P1", "P2": "P2"}[payload["severity"]]
+        affected = payload["affected"]
+        if type(affected) is not int or affected < 0:
+            raise ValueError("invalid incident count")
+        lines = [f"{label} · {severity}", f"Date : {timestamp(payload['event_at'])}"]
+        if payload["signature"] != "availability":
+            lines.append(f"Joueurs affectés : {affected}")
+        return subject + " · " + severity, "\n".join([*lines, "", COCKPIT_URL + "?section=sync"])
     if kind == "signup":
         method = {"email": "Email", "google": "Google"}[payload["method"]]
         lines = [f"Compte créé le {timestamp(payload['created_at'])}",
@@ -125,18 +138,14 @@ def configuration(env):
     }
 
 
-def main(env):
-    if env.get("LUMEN_ACTIVITY_ENABLED") != "1":
-        return 0
-    try:
-        config = configuration(env)
-        role = Path(env["LUMEN_ACTIVITY_SUPABASE_KEY_FILE"]).read_text().strip()
-        brevo = Path(env["LUMEN_ACTIVITY_BREVO_KEY_FILE"]).read_text().strip()
-        if not role or not brevo:
-            raise ValueError("empty credentials")
-    except (KeyError, ValueError, OSError):
-        print("Lumen activity mail: configuration invalid", file=sys.stderr)
-        return 1
+def clients(config, env):
+    def secret(name):
+        return (env.get(name) or Path(env[name + "_FILE"]).read_text()).strip()
+
+    role = secret("LUMEN_ACTIVITY_SUPABASE_KEY")
+    brevo = secret("LUMEN_ACTIVITY_BREVO_KEY")
+    if not role or not brevo:
+        raise ValueError("empty credentials")
 
     def rpc(name, payload):
         status, value = post(config["origin"] + "/rest/v1/rpc/" + name,
@@ -145,11 +154,27 @@ def main(env):
             raise RuntimeError("activity database unavailable")
         return value
 
+    def send(payload):
+        return post("https://api.brevo.com/v3/smtp/email", {"api-key": brevo}, payload)
+
+    return rpc, send
+
+
+def main(env):
+    if env.get("LUMEN_ACTIVITY_ENABLED") != "1":
+        return 0
+    try:
+        config = configuration(env)
+        rpc, send = clients(config, env)
+    except (KeyError, ValueError, OSError):
+        print("Lumen activity mail: configuration invalid", file=sys.stderr)
+        return 1
+
     try:
         results = drain(
             lambda payload: rpc("lumen_claim_activity_mail", payload),
             lambda payload: rpc("lumen_finish_activity_mail", payload),
-            lambda payload: post("https://api.brevo.com/v3/smtp/email", {"api-key": brevo}, payload),
+            send,
             config,
         )
     except (RuntimeError, KeyError, TypeError):

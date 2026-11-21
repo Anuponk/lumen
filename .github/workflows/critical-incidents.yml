@@ -1,0 +1,42 @@
+name: Critical incident tests
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/lumen_critical_monitor*.py'
+      - 'scripts/lumen_activity_mail.py'
+      - 'scripts/fixtures/*critical-incidents*.sql'
+      - 'supabase/migrations/*critical_incidents_947.sql'
+      - '.github/workflows/critical-incidents.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  critical-incidents:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -B scripts/lumen_critical_monitor_tests.py
+      - name: Verify PostgreSQL decisions and notification privileges
+        env:
+          PG_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          cat scripts/fixtures/admin-activity-mail-bootstrap.sql \
+            supabase/migrations/20261122200000_admin_activity_mail_950.sql \
+            scripts/fixtures/critical-incidents-bootstrap.sql \
+            supabase/migrations/20261122210000_critical_incidents_947.sql \
+            supabase/migrations/20261122210000_critical_incidents_947.sql \
+            scripts/fixtures/critical-incidents.sql |
+            docker exec -i --user postgres "$PG_CONTAINER" psql -X -v ON_ERROR_STOP=1
