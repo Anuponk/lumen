@@ -25,7 +25,7 @@ export async function verifyBoardFeedback({send,evaluate}){
    if(!quest||quest.disabled)throw Error('Reported quest is not available in fixture');
    quest.click();
    // Use the real reset: setupQuest may correctly restore the preceding viewport's attempt.
-   window.confirm=()=>true;document.getElementById('new').click();
+   document.getElementById('new').click();document.getElementById('lumenConfirmYes').click();
    for(const id of ['manualCrossTip','questStart','autonomyOverlay','badgeUnlockOverlay','autoCrossUnlockOverlay'])document.getElementById(id).hidden=true;
    const ac=document.getElementById('autoCross');ac.checked=false;ac.dispatchEvent(new Event('change'));
    document.getElementById('manualCrossTipOk').click();

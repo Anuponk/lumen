@@ -45,4 +45,8 @@ export default Object.freeze({
   'social.time.days': "il y a {count} j",
   'social.stale': "Connexion interrompue : affichage des dernières nouveautés connues.",
   'social.error': "Notifications indisponibles pour le moment. Réessaie une fois connecté·e.",
+  'social.removeFriendTitle': "Retirer {name} de tes amis ?",
+  'social.removeFriendCopy': "{name} ne fera plus partie de ta liste d’amis Lumen.",
+  'social.removeFriendKeep': "Garder dans mes amis",
+  'social.removeFriendYes': "Retirer",
 });

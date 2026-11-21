@@ -106,6 +106,7 @@ import {mountAdventureAccess} from './adventure-access-panel.js';
 import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
 import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery,mainSkyOffer} from './adventure-offer.js';
 import {purchaseThanksModel,showPurchaseThanks} from './purchase-thanks.js';
+import {createLumenDialog} from './lumen-dialog.js';
 import {PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,createForegroundRecovery,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,toPlayProductId,findOwnedPlayPurchase,playOwnershipMessage,playOwnershipSummary} from '../persistence/play-billing.js';
 import {rememberPlayAppLaunch,isPlayDistributedApp,stripeCheckoutAvailable,startStripeCheckout,stripeSessionStatus,restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage} from '../persistence/stripe-checkout.js';
 import {SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS,isMainSkyProduct} from '../campaign/store-catalogue.js';
@@ -1856,11 +1857,10 @@ function setupMobileAuth(){
  }
  if(qaReset){
    qaReset.hidden=!qaActive;
-   qaReset.onclick=()=>{
-     if(!confirm("Réinitialiser toute la progression de test QA et recommencer comme un nouveau joueur ?"))return;
+   qaReset.onclick=()=>lumenConfirm().open({title:t("admin.qaResetTitle"),copy:t("admin.qaResetCopy"),cancel:t("admin.qaResetKeep"),confirm:t("admin.qaResetYes"),tone:"danger",returnFocus:qaReset,onConfirm:()=>{
      Object.keys(localStorage).filter(key=>key.startsWith("lumenQa")).forEach(key=>localStorage.removeItem(key));
      const url=new URL(location.href);url.searchParams.set("qa","new");location.href=url.pathname+url.search+url.hash;
-   };
+   }});
  }
 }
 
@@ -2511,7 +2511,9 @@ function setupFriends(){
   const friendAction=event.target.closest("[data-friend-action]"),challengeAction=event.target.closest("[data-challenge-action]");
   if(friendAction){
    const nickname=friendAction.closest("[data-nickname]")?.dataset.nickname,action=friendAction.dataset.friendAction,status=document.getElementById("friendStatus");
-   if(action==='remove'&&!confirm("Retirer "+nickname+" ?"))return;
+   // #921: in-game confirmation; nothing is removed unless the player confirms.
+   if(action==='remove'){lumenConfirm().open({title:t('social.removeFriendTitle',{name:nickname}),copy:t('social.removeFriendCopy',{name:nickname}),cancel:t('social.removeFriendKeep'),confirm:t('social.removeFriendYes'),tone:'danger',returnFocus:friendAction,
+    onConfirm:async()=>{try{await friendsClient.remove(nickname);status.textContent="";void refreshFriends()}catch(e){status.textContent=friendErrorMessage(e)}}});return}
    try{if(action==='accept')await friendsClient.respond(nickname,true);else if(action==='decline')await friendsClient.respond(nickname,false);else await friendsClient.remove(nickname);status.textContent="";void refreshFriends()}
    catch(e){status.textContent=friendErrorMessage(e)}
   }
@@ -3046,7 +3048,7 @@ function handleLearningTap(event){
  if(document.querySelector('#mapModal:not([hidden]),#rulesModal:not([hidden]),#feedbackModal:not([hidden]),#tutorialOverlay:not([hidden]),#badgeRulesModal:not([hidden])'))return;
  // Learning restrictions apply to gameplay, never to account dialogs or other controls
  // (#711: the full-screen signed-out and account-switch layers sit above the board).
- if(target.closest("#installOptin,#accountOptin,#signedOutScreen,#accountSwitchHold,#authLinkResult,#passwordRecovery,#pwaWelcome,#mandatoryNickname,#erasedAccountNotice,#mobileAuthPopover,#mobileAccount,#lumenShareDialog,#skyRevealShareResult,#dailyIntro,#dailyResultModal,#dailyWeekModal,#friendsModal,#friendPickerModal,#openSocial,#socialHub,#myChallengesModal,#new,#tutorialHelp,#attemptPause,#attemptMask,#feedbackBtn,#learningCoachNext,#learningSkip"))return;
+ if(target.closest("#installOptin,#accountOptin,#signedOutScreen,#accountSwitchHold,#authLinkResult,#passwordRecovery,#pwaWelcome,#mandatoryNickname,#erasedAccountNotice,#mobileAuthPopover,#mobileAccount,#lumenShareDialog,#skyRevealShareResult,#dailyIntro,#dailyResultModal,#dailyWeekModal,#friendsModal,#friendPickerModal,#openSocial,#socialHub,#myChallengesModal,#new,#tutorialHelp,#attemptPause,#attemptMask,#feedbackBtn,#learningCoachNext,#learningSkip,#lumenConfirm,#abandonConfirm"))return;
  if(target.closest("#board .cell"))return;
  if(target.closest('#openSky')&&lumenUser&&!qaActive)void openPlayReviewMapFromLearning();
  event.preventDefault();event.stopImmediatePropagation();
@@ -4792,16 +4794,15 @@ if(attemptPause)attemptPause.onclick=()=>{const a=attemptEngine.snapshot();if(a?
 const attemptAbandon=document.getElementById("attemptAbandon");
 // #908: explicit confirmation; cancelling leaves the attempt untouched.
 function liveAbandonableAttempt(){const a=attemptEngine.snapshot();return a&&[ATTEMPT_STATES.RUNNING,ATTEMPT_STATES.PAUSED].includes(a.state)?a:null}
+let abandonDialog=null;
 function openAbandonConfirm(){
  const a=liveAbandonableAttempt(),dialog=document.getElementById('abandonConfirm');if(!a||!dialog)return;
  const model=abandonConfirmModel({mode:attemptMode(),daily:!!socialChallenge?.daily,qualifying:a.qualifying,startedAt:a.startedAt,cooldownMs:socialChallenge?0:questCooldownRemaining(activeQuest())},t);
- document.getElementById('abandonConfirmTitle').textContent=model.title;document.getElementById('abandonConfirmCopy').textContent=model.copy;
- document.getElementById('abandonConfirmYes').textContent=model.confirm;document.getElementById('abandonContinue').textContent=model.cancel;
- dialog.dataset.attemptId=a.attemptId;dialog.hidden=false;document.getElementById('abandonContinue').focus();
+ // #921: shared Lumen dialog (focus, Escape, backdrop and Back cancel); same copy and rule.
+ abandonDialog??=createLumenDialog(dialog);
+ abandonDialog.open({title:model.title,copy:model.copy,confirm:model.confirm,cancel:model.cancel,tone:'danger',returnFocus:attemptAbandon,onConfirm:()=>void confirmAbandon(a.attemptId)});
 }
-function closeAbandonConfirm(){const dialog=document.getElementById('abandonConfirm');if(!dialog)return;dialog.hidden=true;delete dialog.dataset.attemptId;attemptAbandon?.focus?.()}
-async function confirmAbandon(){
- const dialog=document.getElementById('abandonConfirm'),expected=dialog?.dataset.attemptId;if(dialog){dialog.hidden=true;delete dialog.dataset.attemptId}
+async function confirmAbandon(expected){
  const a=liveAbandonableAttempt();if(!a||a.attemptId!==expected)return;
  trackAttemptEvent("attempt_abandoned",{reason:"explicit"});attemptEngine.abandon();
  if(socialChallenge){trackAttemptEvent("challenge_abandoned",{reason:"explicit"});await finishSocialChallenge("abandoned");return}
@@ -4810,9 +4811,6 @@ async function confirmAbandon(){
  openJourneyMap(false,{constellationId:quest?.constellationId??null});
 }
 if(attemptAbandon)attemptAbandon.onclick=openAbandonConfirm;
-{const yes=document.getElementById('abandonConfirmYes'),no=document.getElementById('abandonContinue'),dialog=document.getElementById('abandonConfirm');
- if(yes)yes.onclick=()=>{void confirmAbandon()};if(no)no.onclick=closeAbandonConfirm;
- if(dialog)dialog.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();closeAbandonConfirm()}})}
 
 
 const celestialCelebration=createCelestialCelebration(document);
@@ -5876,10 +5874,19 @@ const badgeUnlockOk=document.getElementById("badgeUnlockOk");if(badgeUnlockOk)ba
 const autonomyTry=document.getElementById("autonomyTry"),autonomyKeep=document.getElementById("autonomyKeep");
 if(autonomyTry)autonomyTry.onclick=()=>{finishAutonomyChoice(false);resumeGameClock()};
 if(autonomyKeep)autonomyKeep.onclick=()=>{finishAutonomyChoice(true);resumeGameClock()};
+// #921: one shared Lumen confirmation for player decisions (created on first use).
+let lumenConfirmDialog=null;
+function lumenConfirm(){return lumenConfirmDialog??=createLumenDialog(document.getElementById("lumenConfirm"))}
 document.getElementById("new").onclick=()=>{
   if(celebrated)return;
-  // #851 / #36: one rule in every mode. A new run is "Rejouer la quête".
-  if(!confirm(t("board.resetConfirm")))return;
+  // #921: in-game confirmation instead of the native « lumen.nopuna.fr indique » box.
+  // Cancelling keeps the board untouched; the reset applies to the attempt shown now.
+  const shownQuest=activeQuest()?.id,shownAttempt=attemptEngine.snapshot()?.attemptId;
+  lumenConfirm().open({title:t("board.resetTitle"),copy:t("board.resetCopy"),cancel:t("board.resetKeep"),confirm:t("board.resetYes"),returnFocus:document.getElementById("new"),
+   onConfirm:()=>{if(celebrated||activeQuest()?.id!==shownQuest||attemptEngine.snapshot()?.attemptId!==shownAttempt)return;resetBoardMarks()}});
+};
+// #851 / #36: one rule in every mode. A new run is "Rejouer la quête".
+function resetBoardMarks(){
   hideSuccess();
   const resetSnapshot=attemptEngine.snapshot();trackAttemptEvent("attempt_reset",{reason:"manual",reset_index:(Number(resetSnapshot?.resetCount)||0)+1});
   halfRewardShown=false;lastPlacedCount=0;
@@ -5887,7 +5894,7 @@ document.getElementById("new").onclick=()=>{
   if(!socialChallenge){verifyPending=null;updateHintButton();updateVerifyButton()}
   attemptEngine.reset(state);updateBadgeQualificationStatus();
   render();clock();refreshJourney();
-};
+}
 document.getElementById("learningCoachDismiss").onclick=()=>{learningTip=null;updateScriptedLearning()};
 document.getElementById("learningCoachNext").onclick=advanceLearningIntro;
  const learningSkip=document.getElementById("learningSkip");if(learningSkip)learningSkip.onclick=()=>{if(learningReplayActive()&&tutorialCompletedProof())finishLearningReplay();else skipFirstGridGuidance()};

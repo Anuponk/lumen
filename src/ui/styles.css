@@ -1647,3 +1647,9 @@ html body .game-core .actions>#new.action-reset:hover,html body .game-core .acti
 /* #932 « Partager Lumen »: compact icon entry (header and Mon Ciel). */
 .share-lumen-entry svg{display:block}
 .map-head-actions{display:flex;align-items:center;gap:8px;flex:none}
+/* #921: in-game confirmations (never the browser's native confirm). Above every game layer. */
+.lumen-dialog{z-index:2300}.lumen-dialog .social-card{width:min(400px,100%)}.lumen-dialog h2{font-size:20px;line-height:1.25}.lumen-dialog p{margin:0;font-size:15px}
+.lumen-dialog-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:18px}.lumen-dialog-actions button{flex:1 1 150px;min-height:44px;margin:0}
+.lumen-dialog[data-tone="danger"] [data-dialog-confirm]{border-color:rgba(255,160,140,.55);color:#ffd9d0}
+@media(prefers-reduced-motion:no-preference){.lumen-dialog:not([hidden]) .social-card{animation:lumen-dialog-in .18s ease-out both}}
+@keyframes lumen-dialog-in{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}

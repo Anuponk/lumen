@@ -89,7 +89,7 @@ try {
     assert.equal((await snapshot()).state[2][2],1,'Half of the real cell cycle survives reload');
     await evaluate('document.getElementById("attemptMask").click()');
     const attemptId=await evaluate('JSON.parse(localStorage.getItem("lumenActiveAttemptV1")).attemptId');
-    await evaluate('window.confirm=()=>true;document.getElementById("new").click()');
+    await evaluate('document.getElementById("new").click();document.getElementById("lumenConfirmYes").click()');
     assert.equal((await snapshot()).state.flat().every(value=>value===0),true,'Reset restores the first lesson step');
     assert.equal(await evaluate('JSON.parse(localStorage.getItem("lumenActiveAttemptV1")).attemptId'),attemptId,'Reset preserves the same attempt');
     assert.equal(await evaluate('document.querySelectorAll(".learning-territory-number").length'),5,'Reset restores the SEE introduction');

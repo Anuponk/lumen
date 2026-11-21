@@ -157,8 +157,10 @@ test('wiring #761/#851: qualification is decided at run start; a reset keeps the
   const start = source.slice(source.indexOf('function ensureAttemptStarted('), source.indexOf('attemptEngine.start();', source.indexOf('function ensureAttemptStarted(')));
   assert.match(start, /!a\.qualifying&&!socialChallenge&&currentBadgeQualification\(\)\)\{a=attemptEngine\.requalify\(true\)/);
   assert.match(source, /attemptEngine\.reset\(state\);/);
-  assert.match(source, /confirm\(t\("board\.resetConfirm"\)\)/);
-  assert.match(createTranslator().t("board.resetConfirm"), /Réinitialiser la grille \? Tes placements seront effacés, mais le chrono, les aides et les erreurs resteront comptabilisés\./);
+  // #921: the reset is still always confirmed, now by the in-game Lumen dialog.
+  assert.match(source, /lumenConfirm\(\)\.open\(\{title:t\("board\.resetTitle"\),copy:t\("board\.resetCopy"\)/);
+  assert.doesNotMatch(source, /[^.\w]confirm\(t\(/);
+  assert.match(createTranslator().t("board.resetCopy"), /Tes marques seront effacées, mais le chrono continuera et les aides ou erreurs déjà comptées resteront prises en compte\./);
   assert.doesNotMatch(source, /hintUsesThisGame=0;mistakesThisGame=0;verifyUsesThisGame=0;verifyPending=null;questFailed=false;updateHintButton/);
 });
 

@@ -303,6 +303,22 @@ Quest 1 uses the same board, cell marks, controls and input handlers as ordinary
 
 The player marks exclusions manually. Row, column and diagonal neighbors are taught separately; introduce the real touch/mouse drag only after the second Guardian. There are no tutorial Next/Previous buttons or automated marking animations. Quest 2 guides a first singleton placement, then requires practicing the real mouse/touch drag across its first row before free play with dismissible advice at the first actual need and a short Mon ciel tour. The shared responsive board sizing on short mobile screens reserves room for advice while retaining visible controls and avoiding scroll. Reduced-motion preferences suppress coach transitions.
 
+## In-game confirmations — #921
+Player decisions never use the browser's native `alert`/`confirm`/`prompt` (on
+Android they read « lumen.nopuna.fr indique », often in the wrong language). They
+use the shared Lumen dialog (`src/ui/lumen-dialog.js`): a title asking the
+question, one sentence stating the consequence, a safe action that has focus
+(« Continuer à jouer », « Garder dans mes amis ») and an explicit action named
+after what happens (« Recommencer », « Retirer »). Escape, the backdrop and the
+system Back gesture cancel; Tab stays in the dialog; focus returns to the button
+that opened it. Copy speaks with « tu », never blames, and never hides a
+consequence (the grid reset still states that time, hints and mistakes count).
+
+Inventory (2026-11-21): grid reset, friend removal, QA progress reset (internal)
+and Abandonner (#908, same component, unchanged copy). No `alert`, `prompt` or
+`beforeunload` prompt exists. Information and real errors keep their inline
+status lines; Google Play « aucun droit pour cet achat » is a separate issue.
+
 ## Error UX
 No lives system. When guidance is active, illegal/conflicting Guardian reasoning should identify the relevant rule and source cells. A correction should be persistent enough to be understood rather than disappearing on an accidental outside tap.
 

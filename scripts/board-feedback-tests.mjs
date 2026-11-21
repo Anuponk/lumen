@@ -35,7 +35,9 @@ for(const size of [5,6,7,8]){
  });
  test(`halfway ${size}: fresh reset and replay have their own crossing`,()=>{
   const f=feedback(size),ctx=f.context,button={};f.move(Math.ceil(size/2));assert.equal(f.half().length,1);
-  Object.assign(ctx,{t:createTranslator().t,document:{getElementById:()=>button},confirm:()=>true,socialChallenge:null,hideSuccess(){},
+  Object.assign(ctx,{t:createTranslator().t,document:{getElementById:()=>button},activeQuest:()=>({id:'quest'}),socialChallenge:null,
+   // #921: the reset is confirmed in the Lumen dialog; confirming runs the real reset.
+   lumenConfirm:()=>({open:options=>options.onConfirm()}),hideSuccess(){},
    attemptEngine:{snapshot:()=>({attemptId:'same-attempt',resetCount:0}),reset(){}},trackAttemptEvent(){},
    clearHintDisplay(){},msg:{},updateHintButton(){},updateVerifyButton(){},clock(){},refreshJourney(){},
    currentBadgeQualification:()=>false,updateBadgeQualificationStatus(){},
