@@ -54,19 +54,20 @@ try{
   async function sweep(){
    await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[await point(0)]});
    await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[await point(3)]});
+   // Let Chrome process the move on a frame before releasing the finger.
+   await settleLayout();
    await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   }
   await sweep();
   assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().state[0].slice(0,4)'),[0,2,0,0]);
-  // Let Chrome finish the synthesized swipe before beginning a new gesture.
-  await new Promise(resolve=>setTimeout(resolve,250));
   await evaluate(`(()=>{
    const events=[];
    const record=event=>{
-    const cell=event.target.closest?.('[data-row][data-col]');
+    // The click handler can already have removed the mark from the DOM.
+    const cell=event.composedPath().find(node=>node.matches?.('[data-row][data-col]'));
     events.push({type:event.type,tag:event.target.tagName,
      cell:cell?[cell.dataset.row,cell.dataset.col]:null,
-     trusted:event.isTrusted,prevented:event.defaultPrevented});
+     pointerType:event.pointerType,trusted:event.isTrusted,prevented:event.defaultPrevented});
    };
    const types=['pointerdown','pointerup','pointercancel','touchstart','touchend','touchcancel','click'];
    for(const type of types)document.addEventListener(type,record);
@@ -89,7 +90,9 @@ try{
   const touchTrace=await evaluate('window.finishTouch805Trace()');
   assert(touchTrace.events.some(event=>event.type==='pointerup'&&event.trusted&&event.cell?.join(',')==='0,1'&&!event.prevented),
    'The board leaves the native release of a stationary tap uncancelled: '+JSON.stringify(touchTrace));
-  assert.equal(guardian,0,'Chrome delivers the synthesized click after the touch ends: '+JSON.stringify(touchTrace));
+  assert(touchTrace.events.some(event=>event.type==='click'&&event.pointerType==='touch'&&event.trusted&&event.cell?.join(',')==='0,1'),
+   'Chrome delivers a native touch click to the Guardian: '+JSON.stringify(touchTrace));
+  assert.equal(guardian,0,'The touch click removes the Guardian');
   await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();s.state[0].splice(0,4,1,2,0,1);lumenDiagnostics.setBoard(s.state)})()`);
   await sweep();
   await evaluate("document.getElementById('undo').click()");
