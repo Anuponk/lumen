@@ -384,6 +384,22 @@ action is pending. The global badge stays the #35 counters plus only the
 acceptances not seen yet, so nothing is counted twice. Offline, the last known
 list stays visible with a short notice; reconnection refreshes it.
 
+**Readable duels (#896).** Every finished duel shows, right in the list, « Défi
+contre {pseudo} », « Mon temps » and the opponent's time, then one verdict: « Tu
+as gagné ! », « {pseudo} a gagné » or « Égalité », with the gap (« 14 secondes
+d’avance / de retard ») or the autonomy reason. The verdict is the existing
+#18/#35 rule (autonomy first, then time) and is computed **only when both
+performances are terminal**; otherwise the row states « En attente de… », « …
+relève le défi », « À toi de jouer », « … a abandonné » or « Comparaison
+indisponible », never a winner. « Voir le duel » opens one card (verdict and both
+times first, two balanced players, a small crown on the winner, no animation)
+with « Fermer » and, for my own challenge, « Copier le lien ». Participation
+actions read « Relever le défi » / « Reprendre »; « Voir tous mes défis »
+replaces « Mes défis par lien ». Notes stay honest: qualifying-replay reference
+(#889), an opponent who already knew the grid, original grid version (#887).
+Copy: `duel.*` (FR/EN). Captures: `docs/validation/duel-*.png` (before:
+`duel-before-*`).
+
 « Amis et défis » (#35, row « Mes amis » of the panel) stays an optional screen,
 never on the game screen and never inside a grid. Guests see why friends need an account and
 keep playing link challenges. Friends are added by exact nickname; « Envoyer à un
