@@ -1952,7 +1952,12 @@ async function installLumen(){const box=document.getElementById("installOptin"),
 const lumenShare=createShareDialog(document,navigator,t,{locale:()=>localePreference?.locale??'fr'});
 function shareLumen(origin){void trackInviteClick();void lumenShare.invite(origin)}
 // Bound once for every mode (guest, signed in, QA); the social entry reuses it.
-for(const id of ["shareLumen","mapShareLumen"]){const button=document.getElementById(id);if(button)button.onclick=()=>shareLumen(button)}
+for(const id of ["shareLumen","mapShareLumen","inviteLumenFriends"]){const button=document.getElementById(id);if(!button)continue;if(id!=="inviteLumenFriends")button.onclick=()=>shareLumen(button);
+ // #932 Lot C: fetch the promotional picture ahead of the click, never on load.
+ for(const event of ["pointerenter","focus","touchstart"])button.addEventListener(event,()=>void lumenShare.warmPromo(),{passive:true,once:true})}
+// One background fetch (~90 KB, current language) so the first Android tap can
+// already attach the picture; it never touches the game.
+setTimeout(()=>void lumenShare.warmPromo(),8000);
 function showShareToast(t){let e=document.createElement("div");e.className="share-toast";e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),1800)}
 function successAchievement(){
  const canonicalQuest=activeQuest(),view=readQuestView(canonicalQuest,lumenProgress,canonicalQuestList(),CONTENT_CONSTELLATIONS);

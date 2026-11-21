@@ -67,6 +67,27 @@ Hors périmètre : amis, classement hebdomadaire, parrainage, publication de cam
 - Une quête ordinaire, même si elle rallume une constellation, propose **Défier** et non « Partager ma réussite ». La place du bouton n'est plus réservée pendant la confirmation.
 - La carte (PNG 600 × 750) est jointe au partage natif quand `navigator.canShare({files})` l'accepte. Sinon, texte et lien seuls. Une annulation n'affiche ni succès ni erreur.
 
+## Visuel promotionnel (#932 lot C, 21/11/2026) — à valider par le propriétaire
+
+| FR (`og.jpg`) | EN (`og-en.jpg`) |
+|---|---|
+| « Peux-tu rallumer les constellations ? » · « Un jeu de logique · 88 vraies constellations » · « Gratuit pour commencer » | « Can you relight the constellations? » · « A logic puzzle · 88 real constellations » · « Free to start » |
+
+- **Composition** : ciel étoilé de Lumen plus lumineux qu'avant, accroche en 62 px (lisible dans un aperçu de 400 px), **vraie grille du jeu** (capture `board.webp` de l'application), **Grande Ourse** dessinée avec la figure astronomique officielle (`astronomicalIllumination`, 4 quêtes sur 6, même règle que la scène de victoire).
+- Aucun pseudonyme, score ou identifiant. JPEG 1200 × 630 de moins de 100 Ko. Les URL HTTPS absolues et les métadonnées OG/Twitter localisées sont inchangées ; seuls les textes alternatifs décrivent le nouveau visuel.
+- **Reproductible** : `scripts/promo-og-assets.mjs`. `landing-assets.mjs` ne régénère plus ces deux fichiers.
+- Aperçus réduits (carte large de messagerie et vignette carrée) : `docs/validation/og-promo-fr-small.png`, `og-promo-en-small.png`.
+- **« Partager Lumen » joint ce visuel** (même langue que le lien) au partage natif quand le canal accepte les fichiers (`navigator.canShare({files})`), avec le texte et le lien.
+  - Le fichier est préchargé (survol, focus ou toucher du bouton, et une fois 8 s après l'ouverture, environ 90 Ko), jamais téléchargé pendant le clic : `navigator.share()` exige un geste récent de l'utilisateur.
+  - Image pas prête, canal sans fichier, téléchargement en échec : texte et lien seuls. Pas de partage natif : dialogue « Copier le lien ». Annulation : aucun effet.
+
+**Limites réelles des aperçus.** Un lien collé ne produit une carte riche (titre, description, image) que si la messagerie lit l'Open Graph :
+- **WhatsApp** : en général, mais une vignette **carrée** recadre le centre de l'image ; l'accroche reste partiellement visible.
+- **Messenger, Telegram, Slack, Discord** : en général.
+- **SMS et iMessage** : variable.
+- **E-mails** : la plupart des clients n'affichent **aucun aperçu OG** ; seule l'image **jointe** par le partage natif garantit le visuel, et l'appli de messagerie choisie peut ignorer le texte ou l'image.
+- Les caches d'aperçus des messageries peuvent garder l'ancienne image plusieurs jours.
+
 ## Recette après publication
 
 | Scénario | Appareil | Attendu | État |

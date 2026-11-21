@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import {pathToFileURL} from 'node:url';
 
 const LANDING_FILES=new Set(['decouvrir.html','discover.html','comment-jouer.html','how-to-play.html','apprendre-constellations.html','learn-constellations.html','robots.txt','sitemap.xml','scripts/how-to-play.mjs',
- 'scripts/landing-seo-tests.mjs','scripts/landing-browser.mjs','scripts/landing-browser-tests.mjs','scripts/landing-assets.mjs']);
+ 'scripts/landing-seo-tests.mjs','scripts/landing-browser.mjs','scripts/landing-browser-tests.mjs','scripts/landing-assets.mjs','scripts/promo-og-assets.mjs']);
 
 export const isDocs=p=>p==='AGENTS.md'||(p.startsWith('docs/')&&p.endsWith('.md')&&!p.startsWith('docs/validation/'));
 export const isLanding=p=>LANDING_FILES.has(p)||(/^src\/landing\/[^/]+$/.test(p)&&!p.includes('..'));
