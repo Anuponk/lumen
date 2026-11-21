@@ -136,7 +136,7 @@ test('real published game module graph includes catalogue data and translations 
   }
   assert(visited.size<2000,'Unexpectedly large or cyclic dependency graph');
  }
- for(const required of ['/src/campaign/catalogue.js','/content/generated/first-adventure.json','/content/generated/diverse-adventures-3-4.json','/content/catalogue/access-origins.json','/content/catalogue/remaining-adventures.json','/content/generated/remaining-adventures.json','/content/generated/logical-grids-v1.json','/src/ui/i18n.js','/src/ui/locales/fr/results.js','/src/ui/locales/en/results.js','/src/ui/locales/fr/board.js','/src/ui/locales/en/board.js','/src/ui/locales/fr/welcome.js','/src/ui/locales/en/welcome.js','/src/ui/locales/fr/learning.js','/src/ui/locales/en/learning.js','/src/ui/locales/fr/pwa-welcome.js','/src/ui/locales/en/pwa-welcome.js'])
+ for(const required of ['/src/campaign/catalogue.js','/content/generated/first-adventure.json','/content/generated/diverse-adventures-3-4.json','/content/catalogue/access-origins.json','/content/catalogue/remaining-adventures.json','/content/generated/remaining-adventures.json','/content/generated/logical-grids-v1.json','/src/ui/i18n.js','/src/ui/locales/fr/daily.js','/src/ui/locales/en/daily.js','/src/ui/locales/fr/results.js','/src/ui/locales/en/results.js','/src/ui/locales/fr/board.js','/src/ui/locales/en/board.js','/src/ui/locales/fr/welcome.js','/src/ui/locales/en/welcome.js','/src/ui/locales/fr/learning.js','/src/ui/locales/en/learning.js','/src/ui/locales/fr/pwa-welcome.js','/src/ui/locales/en/pwa-welcome.js'])
   assert(visited.has(required),'Offline module graph omitted required asset: '+required);
 });
 function fsForOfflineGraph(){return {existsSync:importedExistsSync};}

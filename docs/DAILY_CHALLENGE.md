@@ -201,3 +201,9 @@ calendrier dans `daily_puzzles`.
   reste désactivé jusqu'à la validation des gates (§6 et #882). Recette manuelle,
   activation progressive, surveillance et critères de retour arrière :
   [DAILY_CHALLENGE_ROLLOUT.md](DAILY_CHALLENGE_ROLLOUT.md).
+
+## Langue et affichage
+
+L’entrée, l’introduction, le bandeau, le résultat, les deux classements, le bilan hebdomadaire et les textes de partage lisent les catalogues FR/EN. Les dates, rangs et pluriels sont formatés dans la langue de l’application. Les pseudonymes et les classements restent ceux renvoyés par le serveur.
+
+Le jour et la semaine suivent toujours le calendrier de Paris. Le changement de langue pendant la grille actualise le bandeau et conserve la tentative et son chrono. Les aides partagées avec la campagne suivent la couverture du [chantier multilingue](https://github.com/Anuponk/lumen/issues/754).

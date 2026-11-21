@@ -1,4 +1,13 @@
 export default Object.freeze({
+  'share.native': "Share",
+  'share.copyLink': "Copy link",
+  'share.copyResult': "Copy result",
+  'share.manual': "Select and copy this text",
+  'share.close': "Close",
+  'share.invite': "Invite friends",
+  'share.linkCopied': "Link copied!",
+  'share.resultCopied': "Result copied!",
+  'share.unavailable': "Sharing is unavailable. You can copy the result.",
   'ranking.afterConfirmation': "Leaderboard after confirmation",
   'ranking.board': "Puzzle leaderboard",
   'ranking.top': "Top three times",

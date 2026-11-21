@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {formatDailyDate,formatRemaining,formatRank,dailyErrorMessage,renderDailyBoard} from '../src/ui/daily-view.js';
+import {createTranslator} from '../src/ui/i18n.js';
 import {createDailyClient} from '../src/campaign/daily-challenge.js';
 
 // #882 Lot 3 PR B: daily presentation and client contract.
@@ -33,3 +34,9 @@ assert.deepEqual(calls[4].args,{p_day:null});
 await assert.rejects(()=>createDailyClient({rpc:async()=>({data:null,error:{message:'daily_disabled'}})}).today(),/daily_disabled/);
 await assert.rejects(()=>createDailyClient(null).today(),/cloud_unavailable/);
 console.log('daily view and client: ok');
+
+const english = {t:createTranslator({locale:'en'}).t,locale:'en'};
+assert.match(formatDailyDate('2026-11-23',english.locale),/Monday.*November/);
+assert.equal(formatRank(11,english.t),'11th');
+assert.match(dailyErrorMessage('account_required',english.t),/Sign in/);
+assert.match(renderDailyBoard(general,{...english,formatDuration:fmt}),/Bo&lt;b&gt;.*Your rank: <strong>5th<\/strong> · 2:30.*12 participants/s);
