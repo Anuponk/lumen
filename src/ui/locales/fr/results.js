@@ -138,4 +138,7 @@ export default Object.freeze({
   'results.victory.bonusWon': "✦ Défi réussi ! +25 XP.",
   'results.victory.bonusOwned': "✦ Défi déjà accompli",
   'results.victory.bonusLost': "Défi échoué — la quête est tout de même accomplie.",
+  'results.masteryAdventureCopy': "Chaque étoile brille : tu as maîtrisé chaque quête, jusqu’au dernier badge.",
+  'results.masteryCampaignCopy': "Tout le ciel brille : tu as maîtrisé chaque quête, jusqu’au dernier badge.",
+  'results.masterySkip': "Passer",
 });

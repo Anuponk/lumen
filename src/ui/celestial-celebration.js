@@ -1,7 +1,7 @@
 // Presentation only: no timers/callbacks may validate a win or grant anything.
 export function createCelestialCelebration(document){
  let cleanup=()=>{};
- function clear(){cleanup();cleanup=()=>{};const host=document.getElementById('skyReveal');if(!host)return;delete host.dataset.celestial;host.removeAttribute('aria-describedby');host.classList.remove('celestial-still');host.querySelectorAll('[data-celestial-extra]').forEach(e=>e.remove())}
+ function clear(){cleanup();cleanup=()=>{};const host=document.getElementById('skyReveal');if(!host)return;delete host.dataset.celestial;host.removeAttribute('aria-describedby');host.classList.remove('celestial-still','mastery-prelude-playing');host.querySelectorAll('[data-celestial-extra]').forEach(e=>e.remove())}
  function show({kind,title,copy,summary,art,primary,secondary,review,share}){
   clear();const host=document.getElementById('skyReveal'),card=host?.querySelector('.sky-reveal-card');
   if(!card)return false;
