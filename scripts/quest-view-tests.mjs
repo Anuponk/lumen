@@ -8,6 +8,8 @@ import {CONTENT_CONSTELLATIONS} from '../src/campaign/content.js';
 import {CONSTELLATIONS} from '../src/campaign/data.js';
 import {chapterForGrid} from '../src/campaign/progression.js';
 import {attemptAnalyticsProperties} from '../src/analytics/events.js';
+import {createTranslator} from '../src/ui/i18n.js';
+import {constellationDisplayName} from '../src/campaign/constellation-facts.js';
 import {readQuestView} from '../src/campaign/quest-view.js';
 import {performanceAttempt,badgeCooldownRemaining} from '../src/campaign/performance.js';
 import {questPerformanceRecord} from '../src/campaign/quest-rules.js';
@@ -17,7 +19,7 @@ const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'u
 const shareSource=readFileSync(new URL('../src/ui/lumen-share.js',import.meta.url),'utf8');
 test('actual victory/share recap uses active stable performance and membership at any numeric frontier',()=>{
  const quest=canonical.canonicalQuestList().find(q=>q.legacyIndex===null),progress={solved:{0:1},canonicalQuestState:{}};
- const ctx={...canonical,CONTENT_CONSTELLATIONS,readQuestView,performanceAttempt,activeQuest:()=>quest,levelIndex:0,lumenProgress:progress,
+ const ctx={...canonical,t:createTranslator().t,localePreference:{locale:'fr'},constellationDisplayName,CONTENT_CONSTELLATIONS,readQuestView,performanceAttempt,activeQuest:()=>quest,levelIndex:0,lumenProgress:progress,
   lumenEntitlements:[],activeGameSeconds:()=>20,formatDuration:s=>s+'s',attemptEngine:{snapshot:()=>({qualifying:true})}};
  vm.createContext(ctx);vm.runInContext(functionSource(source,'successAchievement'),ctx);
  const before=JSON.stringify(progress),a=ctx.successAchievement();ctx.levelIndex=70;const b=ctx.successAchievement();
@@ -37,6 +39,13 @@ test('actual victory/share recap uses active stable performance and membership a
  assert(drawn.includes('QUÊTE 401 / 407 RÉUSSIE'),'Exported bitmap follows supplied catalogue growth');
  assert(drawn.includes(a.ch.name),'Exported bitmap carries the stable quest constellation');
  assert(drawn.includes('Temps final 0:20'),'Exported bitmap displays the confirmed time');
+ ctx.t=createTranslator({locale:'en'}).t;ctx.localePreference.locale='en';
+ const english=ctx.successAchievement();
+ assert.equal(english.kicker,'MASTERY');
+ assert.equal(english.main,'Fast, unaided and error-free');
+ assert.match(english.detail,new RegExp(' · Quest '+quest.ordinal+' · 20s$'));
+ assert.equal(english.ch.name,constellationDisplayName(quest.constellationId,ctx.t));
+ assert.deepEqual(english.run,a.run);
  assert.equal(JSON.stringify(progress),before);
 });
 test('live sky badge refresh follows stable card IDs after insertion, reorder and progress replacement',()=>{

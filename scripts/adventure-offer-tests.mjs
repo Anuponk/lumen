@@ -1,4 +1,4 @@
-import {createTranslator} from '../src/ui/i18n.js';
+import {createTranslator,locales} from '../src/ui/i18n.js';
 // #731: locked Adventure offer model and copy, against the real catalogue.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -20,6 +20,15 @@ function progressFor(list,{badges=all}={}){const p={solved:{},performances:{},ca
 const offer=(pack,progress,extra={})=>adventureOfferModel({pack,packs,quests,progress,...extra});
 
 assert.equal(formatEuros(100),'1 €');assert.equal(formatEuros(500),'5 €');assert.equal(formatEuros(250),'2,50 €');
+for(const pack of CONTENT_PACKS){
+ const key='adventure.'+pack.id;
+ assert.equal(locales.fr.messages[key],pack.displayName,'French title matches the catalogue: '+pack.id);
+ assert.equal(typeof locales.en.messages[key],'string','English title exists for '+pack.id);
+}
+const englishOffer=offer(second,{}, {t:createTranslator({locale:'en'}).t});
+assert.equal(englishOffer.title,'Distant Horizons');
+assert.equal(englishOffer.mastery.previousName,'First Light');
+assert.equal(englishOffer.unitProduct,second.id);
 const empty=offer(second,{});
 assert.equal(empty.unitPrice,formatEuros(ADVENTURE_PRICE_CENTS));assert.equal(empty.skyPrice,formatEuros(SKY_PRICE_CENTS));
 const play=offer(second,{}, {pricesRequired:true,prices:{[second.id]:'¥180','real-sky-all':'¥910'}});

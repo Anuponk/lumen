@@ -1,3 +1,4 @@
+import {adventureDisplayName} from './adventure-copy.js';
 import {createTranslator} from './i18n.js';
 // #730: thank-you screen after a purchase CONFIRMED by the server (Stripe read-back or
 // Google Play verification), never on a payment provider's return URL alone.
@@ -13,7 +14,7 @@ export function purchaseThanksModel({productId,packs=[],t=french}){
  return {
   sky,productId,
   title:t('purchase.thanks'),
-  lead:sky?t('purchase.skyUnlocked'):t('purchase.adventureUnlocked',{name:pack?.displayName||t('purchase.newAdventure')}),
+  lead:sky?t('purchase.skyUnlocked'):t('purchase.adventureUnlocked',{name:adventureDisplayName(pack,t)||t('purchase.newAdventure')}),
   account:t('purchase.account'),
   support:t('purchase.support'),
   explore:sky?t('purchase.exploreSky'):t('purchase.exploreAdventure'),

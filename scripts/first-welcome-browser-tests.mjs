@@ -67,13 +67,15 @@ try{
  const beforeLanguageSwitch=await state();
  await evaluate("(()=>{const select=document.getElementById('gameLocaleMode');select.value='en';select.dispatchEvent(new Event('change',{bubbles:true}));})()");
  assert.equal(await state(),beforeLanguageSwitch,'Changing language preserves the current attempt and progress');
+ assert.match(await evaluate("document.getElementById('campaignMapLabel').textContent"),/^Quest 3 - Ursa Major/);
+ assert.match(await evaluate("document.getElementById('difficulty').textContent"),/Difficulty: (Easy|Intermediate|Hard|Advanced|Expert|Master)$/);
  assert.equal(await evaluate("document.getElementById('accountEmail').placeholder"),'you@example.com');
  assert.equal(await evaluate("document.getElementById('mobileAuthAction').textContent"),'Sign in / Create an account');
  await evaluate("document.getElementById('closeRulesModal').click();document.getElementById('openSky').click()");
  assert.equal(await evaluate("document.getElementById('mapModal').hidden"),false,'The real My Sky control opens the map');
  assert.equal(await evaluate("document.getElementById('monCielTitle').textContent"),'My Sky');
  assert.equal(await evaluate("document.getElementById('constellationPrevious').getAttribute('aria-label')"),'Previous constellations');
- assert.match(await evaluate("document.getElementById('adventureSummary').textContent"),/constellations · In progress/);
+ assert.match(await evaluate("document.getElementById('adventureSummary').textContent"),/First Light.*constellations · In progress/);
  await evaluate('document.querySelector(\'.constellation-fact-button[data-fact-id="real-01"]\').click()');
  assert.equal(await evaluate("document.getElementById('constellationFact').open"),true);
  assert.equal(await evaluate("document.getElementById('constellationFactTitle').textContent"),'Ursa Major');
