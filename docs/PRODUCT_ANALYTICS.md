@@ -216,6 +216,16 @@ n’entrent pas dans le tunnel.
 
 Plan de diffusion : [COMMUNAUTES_LUMEN.md](marketing/COMMUNAUTES_LUMEN.md).
 
+**Vue Analytics (#708, Lot C)** : la section *Acquisition & engagement* d'Analytics affiche ces agrégats via `lumen_admin_engagement(p_days)`.
+
+| KPI | Définition | Source | Unité / dénominateur | Limite |
+|---|---|---|---|---|
+| Trafic par type | Identifiants vus dans la période, priorité tests automatisés > QA > humain > non déterminé | `analytics_events` | identifiants (≠ personnes) | collecte publique désactivée : trafic consenti ou de test seulement |
+| Ouvertures / quête 1 / première réussite par canal | Même contrat que la requête manuelle ci-dessous (même session, 30 min, QA et tests exclus) | `analytics_events` | sessions avec ouverture attribuée ; activation = réussites / ouvertures, avec n | « Non mesurable » tant que la collecte est désactivée |
+| Défis créés, envoyés, acceptés, terminés, abandonnés | Défis et participations commencées dans la période | tables serveur #18/#35 | défis ; participations (taux de défis terminés) | aucune |
+| Défi du jour | Tentatives officielles commencées (une par compte et par jour), état du drapeau | `lumen_commands.daily_runs` | tentatives (taux de tentatives terminées) | masqué au public : données de recette |
+| Rétention J+1 / J+7 par canal | — | — | — | **Non mesurable** : aucun identifiant de campagne persistant |
+
 [Requêtes d’agrégation en lecture seule](marketing/acquisition-agregats.sql)
 pour une connexion d’administration autorisée, sur sept jours glissants. Elles
 n’affichent aucun identifiant. Elles exigent le marquage `human`, écartent le

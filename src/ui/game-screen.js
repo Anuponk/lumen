@@ -23,6 +23,7 @@ import {summarizeWeek,weekMonday,weekNavigation} from '../campaign/daily-week.js
 import {officialTimingSupported,refreshOfficialTimingSupport} from '../persistence/official-time.js';
 import {createRankingClient} from '../persistence/ranking.js';
 import {setupSocialHub} from './social-hub.js';
+import {renderAnalyticsEngagement} from './analytics-engagement.js';
 import {duelFromChallenge,duelFromSentRow,renderDuelCard,renderMyChallenges,renderFriendReceived,renderFriendSent} from '../campaign/duel-view.js';
 import {createSocialNotifications} from './social-notifications.js';
 import {createRankingView} from './ranking.js';
@@ -1675,7 +1676,7 @@ function updateAdminTools(){
  const adminModal=document.getElementById('adminCockpit');
  if(!analytics||(adminModal?.cockpitOwner&&adminModal.cockpitOwner!==lumenUser?.id)){
   adminAnalytics?.close({write:false});
-  for(const id of ['adminDiagnosticIncidents','adminPlayers','adminSupportLookup','adminTimeline','adminAccounts','adminCockpitKpis','adminDailyChart','adminRetention','adminFunnel','adminFriction','adminAlerts','adminFeedbacks','analyticsOverview','analyticsJourneys','analyticsTechnical'])document.getElementById(id)?.replaceChildren();
+  for(const id of ['adminDiagnosticIncidents','adminPlayers','adminSupportLookup','adminTimeline','adminAccounts','adminCockpitKpis','adminDailyChart','adminRetention','adminFunnel','adminFriction','adminAlerts','adminFeedbacks','analyticsOverview','analyticsJourneys','analyticsTechnical','analyticsEngagement'])document.getElementById(id)?.replaceChildren();
   const timeline=document.getElementById('adminTimeline');if(timeline){timeline.cockpitRequest=null;timeline.cockpitPlayer=null}
   const modal=document.getElementById('adminCockpit');if(modal){modal.hidden=true;modal.cockpitOwner=null}
  }
@@ -3415,15 +3416,18 @@ async function loadAdminCockpit(){
  mountSupportLookup(supportLookup,{client:requestClient,owner:requestUser,authorized});
  const status=document.getElementById("adminCockpitStatus"),days=Number(document.getElementById("adminCockpitDays")?.value||7);
  status.textContent="Actualisation…";
- const [cockpit,accounts,feedbacks,playerSnapshot,syncHealth,questMetrics]=await Promise.all([
+ const [cockpit,accounts,feedbacks,playerSnapshot,syncHealth,questMetrics,engagement]=await Promise.all([
    lumenSupabase.rpc("lumen_admin_cockpit",{p_days:days}),
    lumenSupabase.rpc("lumen_admin_accounts",{p_limit:250}),
    lumenSupabase.rpc("lumen_admin_feedback",{p_days:days}),
    lumenSupabase.rpc("lumen_admin_recent_players",{p_limit:250}),
    lumenSupabase.rpc("lumen_admin_sync_health",{p_days:days}),
-   lumenSupabase.rpc("lumen_admin_quest_metrics",{p_days:days})
+   lumenSupabase.rpc("lumen_admin_quest_metrics",{p_days:days}),
+   lumenSupabase.rpc("lumen_admin_engagement",{p_days:days})
  ].map(request=>Promise.resolve(request).catch(()=>({error:{message:'Service indisponible'}}))));
  if(!authorized())return;
+ // #708 Lot C: Acquisition & engagement (aggregates; a failed source is shown as unavailable).
+ renderAnalyticsEngagement(document.getElementById('analyticsEngagement'),engagement.error?null:engagement.data,{collectionEnabled:cockpit.data?.collection?.enabled===true,t});
  const receivedPlayers=new Map((cockpit.data?.service_activity?.players||[]).map(p=>[p.player_key,p]));
  const players=analyticsPlayers(playerSnapshot.error?[]:playerSnapshot.data,accounts.error?[]:accounts.data).map(x=>({...x,current_quest:Math.max(questMetrics.data?.current_players?.[x.player_key]||0,receivedPlayers.get(x.player_key)?.furthest_confirmed_quest||0)||null}));
  const playerError=playerSnapshot.error&&accounts.error;
