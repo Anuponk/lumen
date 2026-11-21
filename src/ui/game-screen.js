@@ -27,6 +27,7 @@ import {setupSocialHub} from './social-hub.js';
 import {renderAnalyticsEngagement} from './analytics-engagement.js';
 import {renderVersionHealth} from './analytics-versions.js';
 import {renderCriticalIncidents} from './critical-incidents.js';
+import {createPerformanceSampler} from '../analytics/performance-sampler.js';
 import {duelFromChallenge,duelFromSentRow,renderDuelCard,renderMyChallenges,renderFriendReceived,renderFriendSent} from '../campaign/duel-view.js';
 import {createSocialNotifications} from './social-notifications.js';
 import {createRankingView} from './ranking.js';
@@ -216,6 +217,34 @@ function diagnosticContext(){
   platform:/Android/i.test(ua)?(window.matchMedia?.('(display-mode: standalone)').matches?'android-pwa':'android-web'):/Windows|Macintosh|Linux/i.test(ua)?'desktop':'other',
   browser:/Firefox\//i.test(ua)?'firefox':/Chrome|Chromium|Edg\//i.test(ua)?'chromium':/Safari\//i.test(ua)?'safari':'other'};
 }
+const performanceChoiceKey='lumenPerformanceChoiceV1';
+function performanceChoice(userId){
+ try{return typeof userId==='string'&&localStorage.getItem(performanceChoiceKey)===userId}catch{return false}
+}
+function performanceContext(){
+ const base=diagnosticContext();
+ return {...base,enabled:base.enabled&&performanceChoice(base.userId)&&!['127.0.0.1','localhost','::1'].includes(location.hostname),
+  platform:base.platform==='android-web'&&document.referrer.startsWith('android-app://')?'android-twa':base.platform,
+  network:navigator.connection?.effectiveType||'unknown',version:appVersion()};
+}
+const performanceSampler=createPerformanceSampler({env:window,context:performanceContext,origin:LUMEN_SUPABASE_URL,
+ send:(owner,version,metrics)=>owner.client.rpc('lumen_record_performance_sample',{
+  p_version:version,p_platform:owner.platform,p_browser:owner.browser,p_network:owner.network,p_metrics:metrics
+ })});
+function renderPerformanceChoice(){
+ const input=document.getElementById('performanceConsent'),owner=diagnosticContext();
+ if(input){input.checked=owner.enabled&&performanceChoice(owner.userId);input.disabled=!owner.enabled;}
+ performanceSampler.refresh();
+}
+const performanceConsent=document.getElementById('performanceConsent');
+if(performanceConsent)performanceConsent.onchange=()=>{
+ const owner=diagnosticContext();
+ try{
+  if(performanceConsent.checked&&owner.enabled)localStorage.setItem(performanceChoiceKey,owner.userId);
+  else localStorage.removeItem(performanceChoiceKey);
+ }catch{}
+ renderPerformanceChoice();
+};
 const incidentReporter=createDiagnosticReporter({storage:localStorage,context:diagnosticContext,send:async(ctx,payload,signal)=>{
  let request=ctx.client.rpc('lumen_record_diagnostics',payload);
  if(typeof request.abortSignal==='function')request=request.abortSignal(signal);
@@ -225,6 +254,7 @@ installDiagnosticListeners(window,incidentReporter);
 function diagnosticChoice(){try{return JSON.parse(localStorage.getItem(diagnosticChoiceKey)||'null')}catch{return null}}
 function saveDiagnosticChoice(owner,enabled,pending=false){try{localStorage.setItem(diagnosticChoiceKey,JSON.stringify({owner,enabled,pending}))}catch{}}
 function renderDiagnosticPreference(message=''){
+ if(typeof renderPerformanceChoice==='function')renderPerformanceChoice();
  const input=document.getElementById('diagnosticConsent'),status=document.getElementById('diagnosticConsentStatus');
  if(input){input.checked=diagnosticEnabled;input.disabled=!lumenUser||qaActive||diagnosticPending}
  if(status)status.textContent=message||(!lumenUser?'Connecte-toi pour gérer ce choix.':diagnosticEnabled?'Partage des diagnostics détaillés activé.':'Partage des diagnostics détaillés désactivé.');
@@ -4395,6 +4425,7 @@ board.addEventListener("pointerup",endDragCross);
 board.addEventListener("pointercancel",endDragCross);
 
 function render(){
+ const perfMark=typeof performanceSampler==='undefined'?null:performanceSampler.start();
  board.dataset.size=String(n);
  board.classList.remove("scripted-board");
  board.style.gridTemplateColumns=`repeat(${n},minmax(0,1fr))`;board.style.gridTemplateRows=`repeat(${n},minmax(0,1fr))`;board.innerHTML="";
@@ -4481,6 +4512,7 @@ function render(){
 };board.appendChild(d)
  d.addEventListener('lumen-guardian-toggle',d.onclick);
  }
+ if(perfMark)performanceSampler.end(perfMark,'grid_render');
  let q=state.flat().filter(v=>v===2).length;const countEl=document.getElementById("count");countEl.textContent=q+"/"+n;rewardProgressPulse(q);updateScriptedLearning();
  // A solved board edited again (e.g. victory not saved yet, reset) resumes its live clock.
  if(victoryClockFreeze&&q!==n&&!celebrated&&!pendingVictoryView)thawVictoryClock();
@@ -5486,6 +5518,7 @@ function celebrateConstellationReveal(){
  setTimeout(()=>o.classList.remove("complete-celebration"),3800);
 }
 function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
+ if(typeof performanceSampler!=='undefined'&&!canonical?.pending)performanceSampler.victory();
  // #682 (I): a pending local victory and its later confirmation share this one
  // surface. The confirmation updates it in place: no intro replay, no restart.
  const syncPending=!!canonical?.pending,upgrading=!syncPending&&!!canonical?.quest&&pendingRevealOpen(canonical.quest.id);

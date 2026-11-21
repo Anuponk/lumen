@@ -73,11 +73,20 @@ def tick(rpc, send, config, result):
         "p_recoveries": config["recoveries"], "p_backlog": config["backlog"],
     }) is not True:
         raise RuntimeError("incident observation busy or unavailable")
-    return drain(
+    performance_unavailable = False
+    if config.get("performance"):
+        try:
+            rpc("lumen_observe_performance", {})
+        except RuntimeError:
+            performance_unavailable = True
+    outcome = drain(
         lambda payload: rpc("lumen_claim_activity_mail", payload),
         lambda payload: rpc("lumen_finish_activity_mail", payload),
         send, config,
     )
+    if performance_unavailable:
+        outcome['performance_unavailable'] = 1
+    return outcome
 
 
 def main(env):
@@ -86,8 +95,11 @@ def main(env):
     if env.get("LUMEN_CRITICAL_MONITOR_ENABLED") != "1":
         return int(result != "healthy")
     try:
-        config = configuration({**env, "LUMEN_ACTIVITY_KINDS": ",".join(KINDS)})
+        performance = env.get("LUMEN_PERFORMANCE_MONITOR_ENABLED") == "1"
+        kinds = [*KINDS, "performance_regression"] if performance else KINDS
+        config = configuration({**env, "LUMEN_ACTIVITY_KINDS": ",".join(kinds)})
         config.update(
+            performance=performance,
             sample=int(env["LUMEN_PROBE_SAMPLE"]),
             stall_minutes=int(env.get("LUMEN_CRITICAL_STALL_MINUTES", "15")),
             failures=int(env.get("LUMEN_CRITICAL_FAILURES", "3")),
@@ -101,7 +113,7 @@ def main(env):
         return 1
     if outcome:
         print(json.dumps(outcome, sort_keys=True))
-    return int(any(outcome.get(key) for key in ("rejected", "unknown")))
+    return int(any(outcome.get(key) for key in ("rejected", "unknown", "performance_unavailable")))
 
 
 if __name__ == "__main__":

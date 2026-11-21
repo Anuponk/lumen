@@ -35,4 +35,6 @@ export default Object.freeze({
   'purchase.account': "Your purchase is linked to your account and will be available on every device where you’re signed in.",
   'purchase.exploreSky': "Explore My Sky",
   'purchase.exploreAdventure': "Explore the adventure",
+  'account.performanceConsent': "Share performance measurements",
+  'account.performanceConsentCopy': "This optional setting measures durations on this device. It is off by default. Measurements are kept for up to 14 days.",
 });

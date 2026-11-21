@@ -28,6 +28,19 @@ class ActivityMailTest(unittest.TestCase):
         self.assertIn("Droit d’accès : Manquant", content)
         self.assertNotIn("secret", content)
 
+    def test_formats_performance_units(self):
+        common = {"version": "1.11.1+743", "reference": "1.11.1+742", "samples": 20,
+                  "reference_samples": 22, "url": "private"}
+        _, content = format_notice("performance_regression", {
+            **common, "metric": "load", "p90": 1800, "reference_p90": 900,
+        })
+        self.assertIn("1800 ms contre 900 ms", content)
+        self.assertNotIn("private", content)
+        _, content = format_notice("performance_regression", {
+            **common, "metric": "hydration_error_rate", "rate": 2500, "reference_rate": 0,
+        })
+        self.assertIn("25.00 % contre 0.00 %", content)
+
     def test_reports_acceptance_retry_and_ambiguous_result(self):
         self.assertEqual(brevo_outcome(201, {"messageId": "fake"}), "accepted")
         for status, result in [(201, "unknown"), (429, "retry"), (403, "rejected"),

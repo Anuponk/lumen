@@ -1,0 +1,52 @@
+name: Performance monitoring tests
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/analytics/performance-sampler.js'
+      - 'scripts/performance-sampler-tests.mjs'
+      - 'scripts/lumen_critical_monitor*.py'
+      - 'scripts/lumen_activity_mail*.py'
+      - 'scripts/fixtures/*performance-monitor*.sql'
+      - 'supabase/migrations/*performance_monitor_948.sql'
+      - '.github/workflows/performance-monitor.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  performance-monitor:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/performance-sampler-tests.mjs
+      - run: python3 -B scripts/lumen_activity_mail_tests.py
+      - run: python3 -B scripts/lumen_critical_monitor_tests.py
+      - name: Verify thresholds, privacy and delivery deduplication
+        env:
+          PG_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          cat scripts/fixtures/admin-activity-mail-bootstrap.sql \
+            supabase/migrations/20261122200000_admin_activity_mail_950.sql \
+            scripts/fixtures/critical-incidents-bootstrap.sql \
+            supabase/migrations/20261122210000_critical_incidents_947.sql \
+            supabase/migrations/20261122210000_critical_incidents_947.sql \
+            scripts/fixtures/performance-monitor-bootstrap.sql \
+            supabase/migrations/20261122220000_performance_monitor_948.sql \
+            supabase/migrations/20261122220000_performance_monitor_948.sql \
+            scripts/fixtures/performance-monitor.sql |
+            docker exec -i --user postgres "$PG_CONTAINER" psql -X -v ON_ERROR_STOP=1

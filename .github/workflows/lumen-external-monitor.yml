@@ -30,6 +30,7 @@ jobs:
       - name: Observe public availability and drain critical notices
         env:
           LUMEN_CRITICAL_MONITOR_ENABLED: '1'
+          LUMEN_PERFORMANCE_MONITOR_ENABLED: ${{ vars.LUMEN_PERFORMANCE_MONITOR_ENABLED || '0' }}
           LUMEN_PROBE_SAMPLE: ${{ github.run_id }}
           LUMEN_ACTIVITY_START: ${{ vars.LUMEN_ACTIVITY_START }}
           LUMEN_ACTIVITY_SUPABASE_URL: ${{ vars.LUMEN_ACTIVITY_SUPABASE_URL }}
