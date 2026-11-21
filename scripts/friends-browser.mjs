@@ -70,7 +70,7 @@ export async function verifyFriends({send,evaluate},url){
   await until(evaluate,`!!document.getElementById('openFriends')`,'hub entry');
   await evaluate(`document.getElementById('openFriends').click()`);
   await until(evaluate,`!document.getElementById('friendsModal').hidden&&!document.getElementById('friendsBody').hidden&&document.querySelectorAll('#friendsList .friend-row').length===1`,'signed-in hub '+width);
-  assert.match(await evaluate(`document.getElementById('friendChallengesReceived').textContent`),/Ana35.*Quête \d+ · rejeu qualifiant · En attente.*Jouer/s,'Received challenge with provenance and status');
+  assert.match(await evaluate(`document.getElementById('friendChallengesReceived').textContent`),/Défi contre Ana35.*Quête \d+.*À toi de jouer.*La référence de Ana35 vient d’un rejeu qualifiant.*Relever le défi/s,'Received challenge with provenance and status');
   assert.equal(await evaluate(`document.documentElement.scrollWidth<=innerWidth`),true,'No horizontal scroll at '+width);
   // Refused nickname, then a valid request.
   await evaluate(`document.getElementById('friendNicknameInput').value='Nobody35';document.getElementById('friendAddButton').click()`);

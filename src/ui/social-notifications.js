@@ -58,9 +58,10 @@ export function deriveSocialEvents({friends=[],received=[],sent=[],accepted=[],q
   const unread=Number(s?.unread_count)||0;
   if(!s?.challenge_id||unread<=0)continue;
   const done=(Array.isArray(s.participants)?s.participants:[]).filter(p=>['completed','abandoned'].includes(p?.status));
-  const who=done.length===1&&done[0].display_name?t('social.event.resultBy',{name:done[0].display_name}):t('social.event.results',{count:unread});
+  // #18 list contract: participants carry `name` and `completed_at`.
+  const who=done.length===1&&done[0].name?t('social.event.resultBy',{name:done[0].name}):t('social.event.results',{count:unread});
   events.push({id:'challenge-result:'+s.challenge_id+':'+unread,kind:'challenge-result',actionable:true,
-   at:Math.max(0,...done.map(p=>Date.parse(p.finished_at||p.updated_at)||0),Date.parse(s.created_at)||0),
+   at:Math.max(0,...done.map(p=>Date.parse(p.completed_at)||0),Date.parse(s.created_at)||0),
    text:who+(questLabel(s)?' · '+questLabel(s):''),target:{type:'my-challenges',id:s.challenge_id}});
  }
  for(const a of accepted)if(now-a.at<ACCEPTED_TTL_MS)events.push({

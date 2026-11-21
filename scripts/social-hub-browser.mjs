@@ -23,7 +23,7 @@ function fixture({signedIn,daily}){
   window.__socialCalls=[];window.__failSocial=false;
   const friends=[{nickname:'Ana898',state:'incoming',since:'2026-11-20T10:00:00Z'},{nickname:'Cy898',state:'friends',since:new Date(Date.now()-3600000).toISOString()}];
   const inbox={received:[{challenge_id:'00000000-0000-4000-8000-000000089802',sender:'Ana898',puzzle_id:12,stable_quest_id:'base-q012',grid_revision:0,source_first_play:true,created_at:'2026-11-20T10:00:00Z',status:'pending'}],sent:[]};
-  const mine=[{challenge_id:'00000000-0000-4000-8000-000000089803',puzzle_id:12,stable_quest_id:'base-q012',grid_revision:0,source_first_play:true,created_at:'2026-11-20T10:00:00Z',source_duration_seconds:60,source_autonomy:true,source_mastery:false,participant_count:1,unread_count:1,participants:[{display_name:'Bo898',status:'completed',duration_seconds:70}]}];
+  const mine=[{challenge_id:'00000000-0000-4000-8000-000000089803',puzzle_id:12,stable_quest_id:'base-q012',grid_revision:0,source_first_play:true,created_at:'2026-11-20T10:00:00Z',source_duration_seconds:60,source_autonomy:true,source_mastery:false,participant_count:1,unread_count:1,participants:[{name:'Bo898',status:'completed',duration_seconds:70}]}];
   const closes=new Date(Date.now()+5*3600000).toISOString();
   window.supabase={createClient:()=>({auth:{
    getSession:async()=>(${signedIn}?{data:{session:{user:{id:${JSON.stringify(OWNER)}}}}}:{data:{session:null}}),
@@ -166,6 +166,8 @@ export async function verifySocialHub({send,evaluate},url,{captureDir=process.en
  await until(evaluate,`!!document.querySelector('#socialNotificationsList [data-kind="challenge-received"]')`,'received challenge row');
  await evaluate(`document.querySelector('#socialNotificationsList [data-kind="challenge-received"]').click()`);
  await until(evaluate,`new URL(location.href).searchParams.get('challenge')==='00000000-0000-4000-8000-000000089802'`,'challenge link opened');
+ // Leave the page settled for the next suite of the canonical replay.
+ for(let i=0;i<150;i++){try{if(await evaluate("document.readyState==='complete'&&!!window.lumenDiagnostics"))break}catch{}await sleep(100)}
  results.push({kind:'challenge-link'});
  return results;
 }
