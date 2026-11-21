@@ -73,8 +73,26 @@ try {
   await send('Network.enable');
   await send('Network.setBlockedURLs', { urls: ['*supabase.co*'] });
   await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
-  await send('Page.addScriptToEvaluateOnNewDocument', { source: multiAccountFixture({ a: A, b: B }, 'a') });
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: multiAccountFixture({ a: A, b: B }, 'a') + `
+if (!sessionStorage.getItem('coldAccountTest')) {
+  sessionStorage.setItem('coldAccountTest','1');
+  localStorage.removeItem('lumenCloudOwnerId');
+  localStorage.removeItem('lumenProgressV1');
+  localStorage.setItem('sb-tjdjlavmusmncuszhsuw-auth-token', JSON.stringify(window.__server.session));
+  window.__rpcDelay=800;
+}
+window.__bootHold = new Promise(resolve => {
+  const observer = new MutationObserver(() => {
+   const marker=document.querySelector('#accountSwitchHold + script');
+   if(marker&&!document.querySelector('#board')){
+    marker.addEventListener('load',()=>{resolve(!document.getElementById('accountSwitchHold').hidden);observer.disconnect()},{once:true});
+   }
+  });
+  observer.observe(document,{childList:true,subtree:true});
+  document.addEventListener('DOMContentLoaded',()=>{resolve(!document.getElementById('accountSwitchHold').hidden);observer.disconnect()},{once:true});
+});` });
   await navigateAndWait({ send, evaluate }, 'Page.navigate', { url: 'http://127.0.0.1:' + appServer.address().port + '/' });
+  assert.equal(await evaluate('window.__bootHold',true),true,'A stored session without a local profile gets the neutral screen at startup');
   await until(`!!window.lumenDiagnostics&&document.getElementById('mobileAuthStatus').textContent.includes('Progression synchronis')`, 'A hydrated');
   await acknowledgeLearningMilestones(evaluate);
   timeline.push({ step: 'A', local: await evaluate(local), server: await evaluate(server) });
@@ -166,6 +184,23 @@ try {
   // localStorage quota refused the next switch. Saturate the quota with such old
   // copies; switching back to A must still work and keep every copy, B's profile
   // being preserved in the verified IndexedDB recovery store instead.
+  const offline = await send('Page.addScriptToEvaluateOnNewDocument',{source:`
+window.__offline=true;
+Object.defineProperty(navigator,'onLine',{get:()=>!window.__offline});
+`});
+  await evaluate("localStorage.setItem('sb-tjdjlavmusmncuszhsuw-auth-token',JSON.stringify(window.__server.session))");
+  await navigateAndWait({send,evaluate},'Page.reload');
+  assert.equal(await evaluate("document.getElementById('accountSwitchHold').hidden"),true,'A verified offline cache opens for its own account');
+  assert.deepEqual(await evaluate(local),summary(B),'Offline uses B’s known profile');
+  await evaluate("window.__server.session={user:{id:'a'}};window.__saveServer();localStorage.setItem('sb-tjdjlavmusmncuszhsuw-auth-token',JSON.stringify(window.__server.session))");
+  await navigateAndWait({send,evaluate},'Page.reload');
+  assert.equal(await evaluate("document.getElementById('accountSwitchHoldTitle').textContent"),'Tu es hors ligne','A different stored session must not display B’s offline cache');
+  assert.deepEqual(await evaluate(local),summary(B),'The previous cache is preserved while unavailable');
+  await evaluate("window.__offline=false;window.dispatchEvent(new Event('online'))");
+  await until("localStorage.getItem('lumenCloudOwnerId')==='a'&&document.getElementById('accountSwitchHold').hidden",'A restores automatically after reconnect',250);
+  await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:offline.identifier});
+  await signOut();
+  await signIn('b');
   await signOut();
   const bRaw = await evaluate("localStorage.getItem('lumenProgressV1')");
   const saturation = await evaluate(`(()=>{for(const k of Object.keys(localStorage))if(k.startsWith('lumenBeforeAccountSwitch_')&&!k.startsWith('lumenBeforeAccountSwitchAttempt_')&&localStorage.getItem(k)===localStorage.getItem('lumenProgressV1'))localStorage.removeItem(k);
@@ -185,6 +220,34 @@ try {
   // #391 contract: with a full quota, the verified cloud profile of A runs in memory.
   assert.deepEqual(timeline.at(-1).memory, { canonical: summary(A).canonical + 1, owner: 'a' }, 'A is signed in and shown despite the full local quota: ' + JSON.stringify(timeline.at(-1)));
   await evaluate("for(const k of Object.keys(localStorage))if(k.startsWith('lumenBeforeAccountSwitch_1700000'))localStorage.removeItem(k)");
+  // Simulate an old ownerless Chrome profile and check the original bytes
+  // entering hydration after the app's ordinary startup normalization.
+  await evaluate(`(()=>{
+   const account=window.__server.accounts.a;
+   account.profile.daily={dates:{}};
+   const historical=structuredClone(account.profile);
+   historical.daily.rewards={};
+   historical.xp++;
+   const raw=JSON.stringify(historical);
+   sessionStorage.setItem('fixtureWalletAuthority','1');
+   sessionStorage.setItem('fixtureHistoricalWallet',JSON.stringify({raw,shards:account.profile.shards,revision:account.profile.walletRevision,writes:account.writes}));
+   localStorage.removeItem('lumenCloudOwnerId');
+   localStorage.setItem('lumenProgressV1',raw);
+   window.__saveServer();
+  })()`);
+  await navigateAndWait({send,evaluate},'Page.reload');
+  await until("localStorage.getItem('lumenCloudOwnerId')==='a'&&document.getElementById('accountSwitchHold').hidden&&document.getElementById('mobileAuthStatus').textContent.includes('Progression synchronis')",'historical wallet hydration',250);
+  const historical = await evaluate(`(()=>{
+   const {raw,shards,revision,writes}=JSON.parse(sessionStorage.getItem('fixtureHistoricalWallet'));
+   const account=window.__server.accounts.a;
+   const hydrationInput=sessionStorage.getItem('fixtureWalletHydrationInput');
+   const archived=Object.keys(localStorage).some(key=>/^lumenGuestBeforeAccount_a(?:_[0-9]+)?$/.test(key)&&localStorage.getItem(key)===hydrationInput);
+   return {archived,keptXp:account.profile.xp===JSON.parse(raw).xp,
+    walletExact:account.profile.shards===shards&&account.profile.walletRevision===revision&&JSON.stringify(account.profile.daily)==='{"dates":{}}',
+    writes:account.writes-writes};
+  })()`);
+  assert.deepEqual(historical,{archived:true,keptXp:true,walletExact:true,writes:1});
+  timeline.push({step:'historical profile',...historical});
   const refused = await evaluate('window.__server.refused');
   assert.deepEqual(refused, [], 'No call targeted another account than the session: ' + JSON.stringify(refused));
   assert.deepEqual(errors, []);

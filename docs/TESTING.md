@@ -327,6 +327,26 @@ strict catalogue suites remain required.
 
 ## Optional first welcome/story — #532
 
+Discovery (#754) uses `landing-seo-tests.mjs` for reciprocal language metadata,
+local links, catalogue counts, social images and the publication lists.
+`landing-browser-tests.mjs` checks mobile and desktop layout, language link
+focus and campaign attribution from both localized pages. The same browser suite covers the rules and constellation learning guides in both languages at 360, 390 and 1440 px, including their shared artwork and keyboard-focusable language links. `acquisition-tests.mjs`
+keeps the existing origin, consent and UTM restrictions.
+
+`node scripts/locale-tests.mjs` covers ordered device languages, explicit and
+automatic preferences, restricted storage, missing keys and placeholders, and
+number, currency, date and plural formatting, including a partial German fixture.
+`node scripts/onboarding-locale-tests.mjs` checks French and English catalogue parity
+and the English copy for the actual pre-action, placement and drag steps. The
+coach-placement browser suite runs the English first-open-to-tutorial path from the public game entry point in
+an installed-app fixture at 320px and 360px, checking complete text, stable board
+geometry, and preserved progress and attempt state.
+The welcome browser suite exercises English controls, accessibility and copy at
+360px while checking the live board, progress and attempt. The service worker
+suite checks that the production module graph includes the welcome, learning and board catalogues in both languages. The locale suite verifies board and rules keys and placeholders against their render sites. The coach-placement browser suite checks localized controls and territory labels, opening and closing help, and preservation of the board, progress and attempt. It also changes the language in both directions during an active lesson while offline, with assertions for DOM identity, saved board and attempt, and the localized lesson and cell label. It then reloads with an English browser preference and verifies that the explicitly selected French mode stays active. The general browser gate uses a French Chrome profile for French wording assertions. The Daily Challenge browser scenario also drives the public game in English at 360 px, covering the dated intro, both boards, weekly recap, share preview and the unchanged official attempt. The ranking browser suite also exercises the English podium and personal row at 360 px while preserving nicknames and the rank supplied by the fixture. Verification wording tests cover mixed singular and plural mistakes in both languages.
+
+The Node quality gate runs `npm run i18n:check` to check the FR/EN catalogue, text review records and newly detected hardcoded copy. `i18n-audit-tests.mjs` verifies that changing French copy makes a review stale, placeholder drift is rejected, and extra occurrences of unkeyed copy fail the comparison. The [maintenance guide](UX_AND_VISUAL_DIRECTION.md#maintaining-the-translations) describes the review and inventory commands.
+
 `node scripts/first-welcome-tests.mjs` covers fresh/returning/owned contexts,
 deep links, denied/unverified presentation storage, exact texts, scene boundaries,
 30-second completion, excluded background time and cancellation. It is mandatory
@@ -381,6 +401,9 @@ reload. Resuming an ordinary restored board requires the real attempt-mask gestu
 same-run Maîtrise, cooldown, grandfathered rewards and variable future groups.
 It also covers durable partial recovery of a protected V2 replay summary while
 preserving first-win performance and rejecting unknown badge-field changes.
+`quest-parity-matrix-tests.mjs` (#522) compares a historical quest, the latest canonical
+quest and an artificial quest appended in a fixture: rewards equal published data for
+all quests, same badges/XP/replay/access rules, storage keys only via the adapter.
 Authenticated acquired/started replay access remains held beyond discovery
 while cloud restoration is incomplete; guests retain their acquired access.
 The badge UI regression also reads the actual rules dialog: four badges from
@@ -867,9 +890,18 @@ the pre-fix UI: canonical-only cards reading zero historical stars, a prior
 Rapidité missing from victory rewards, Grand Chien 8/10 labelled final, and the
 numeric endpoint ending an incomplete canonical campaign. The actual adapter and
 renderers are exercised, plus empty/variable-size/growing catalogue fixtures.
-`catalogue-access-tests.mjs` distinguishes historical Antlia access from a
-current-cohort prerequisite refusal and checks repeated serialization without
+`catalogue-access-tests.mjs` checks independent entry to owned Antlia for both
+historical and current cohorts, within-Adventure prerequisites and serialization without
 reward mutation. These are synthetic tests, not affected-account evidence.
+
+Owned Adventure entry (#783): `scripts/owned-adventure-access-tests.mjs` covers
+Adventures 4/6 without earlier progress, own-Adventure sequencing, denied unowned
+direct entry, runtime bounds, delayed/error rights, account/request ordering and
+unchanged save bytes. `scripts/owned-adventure-browser-tests.mjs` uses synthetic
+authenticated RPCs on a mobile viewport: delayed-rights labels, actual map starts
+and reload restoration for each Adventure. No real purchase is made. Acceptance
+still requires a confirmed Sandbox purchase on a real device, logout/login and a
+second device with the same account; check saved progression, badges and records.
 
 `campaign-resume-browser-tests.mjs` checks zero/nonzero totals, partial versus
 completed Dauphin/Petit Cheval cards, full illumination, mobile/desktop refresh
@@ -894,10 +926,156 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+Review navigation (#796) uses `play-review-navigation-tests.mjs` for catalogue,
+normal guard preservation, stale account responses and attempt backup.
+`play-review-navigation-browser-tests.mjs` exercises Mon ciel on a mobile
+viewport with synthetic Auth, entitlements and victory receipts.
+`scripts/fixtures/play-review-navigation.sql` checks the real RPC, table
+privileges, audit history, expiry, revocation and the account erasure policy
+in disposable PostgreSQL. The [Android checklist](../android/TESTING.md#recette-du-compte-de-revue-play-796)
+covers acceptance on a Play-installed build.
+
+Signup confirmation (#814) is exercised by `account-email-login-tests.mjs`
+and the account-session browser suite on mobile and desktop. Mail responses are
+synthetic. The suite covers delayed acceptance, duplicate clicks and mode changes,
+provider and network failures, HTTP 429, and the successful notice with spam
+guidance. It verifies unchanged guest progress and checks that the screen fits
+without adding scroll. The auth-mail endpoint tests retain their rate-limit and
+provider rejection cases. No live e-mail is sent by these checks.
+
+### Chantier #806
+
+Les suites `offline-wallet-ui-tests.mjs`, `hint-assistance-badge-regression-tests.mjs`
+et `official-time-browser-tests.mjs` vérifient le compte des aides, le chrono
+officiel, les records à la reprise et les badges. Les scénarios navigateur
+hors ligne vérifient l’absence de nouvelles dépenses à la reconnexion.
+Le scénario Wallet d’`account-session-browser-tests.mjs` vérifie qu’une demande
+historique reste récupérable par son reçu après redémarrage. Conserver la
+matrice #801 et les suites Wallet/SQL.
+
+Sur Android (Chrome et application installée), iOS (Safari et écran d’accueil)
+et ordinateur (souris et clavier), effectuer les vérifications suivantes.
+
+1. Ouvrir une quête existante, effectuer deux indices et deux vérifications,
+   puis répéter hors ligne. Chaque action ajoute sa pénalité une fois.
+   Recharger, reprendre et résoudre. Comparer le temps et les badges après
+   connexion sur un deuxième appareil. Garder intactes les données du Chrome
+   historique de #801 et vérifier les reçus en attente avec le diagnostic.
+2. Glisser à partir d’un rond rouge en traversant d’autres ronds, un Gardien
+   et des cases vides. Seuls les ronds disparaissent. Annuler restaure tout
+   le glissé. Retoucher un Gardien le retire. Vérifier aussi le marquage depuis
+   une case vide et la leçon de glissé en quête 2.
+3. Rejouer le scénario Android 806-4A sur Toucan, quête 641 (8 × 8), avec
+   Contrôle guidé activé. Provoquer une impasse, puis tester aussi un indice
+   long. Le panneau commence au bord inférieur de la grille. Les cases
+   restent visibles et la grille garde sa taille et sa position. Les
+   commandes sont masquées pendant la lecture et utilisables après
+   « J’ai compris ». Tester aussi en paysage et avec la police agrandie.
+   Seul le texte du panneau défile. Vérifier la fermeture au toucher et au
+   clavier, puis les pénalités +5 s et +15 s.
+4. Terminer une quête avec de nouveaux badges, puis la rejouer pendant le
+   délai de qualification. Vérifier le rang, le record et la raison du refus
+   du classement, avec et sans podium. Refaire avec le réseau lent et la
+   réduction des mouvements. Vérifier la lisibilité des textes et l’accès
+   aux boutons à 320 px et avec le zoom.
+
+### Historical Chrome hydration (#801)
+
+`guest-account-hydration-tests.mjs` runs the actual hydration hook with a
+synthetic digest CAS enforcing Wallet authority. It checks an ownerless
+historical save, exact archived bytes, compatible signed-in recovery, daily
+history refusal, a Wallet command refusal without full-CAS fallback, a competing
+debit, restart and repeated hydration. `account-switch-browser-tests.mjs`
+opens the real UI in Chrome with synthetic Auth and RPCs and covers both a
+fresh storage profile and a historical profile against the Wallet guard.
+Wallet command and outbox suites retain their existing receipt and replay
+checks. Production data and migrations are outside these tests.
+
+The same suite simulates the `lumen_reconcile_acquisitions` server contract
+for the +665 diagnostic: divergent `shards` and `daily`, empty outboxes,
+achievements recovered, wallet and daily unchanged, no client CAS, reload
+without a second recovery. It also covers a concurrent spend (one controlled
+retry), a refused (`22023`) or unavailable recovery (everything preserved) and
+an ownerless cache with an account cursor (never merged).
+
+### E-mail links, recovery and installed app (#820, #832)
+
+`auth-link-recovery-tests.mjs` covers native and branded link verdicts, expired,
+reused, malformed and network failures, the recovery request contract (200 with
+and without `{ok:true}`, 429, 5xx, network, invalid address) and password
+update classification. `pwa-first-open-tests.mjs` covers eligibility, the
+existing-data guard, the confirmed new adventure and the iOS guest warning.
+The same suite covers the recovery screen state machine (`ui/password-recovery.js`):
+mismatch, double submission, network failure then retry, provider rules,
+expired session, account change, missing session and no password in state.
+In Chrome, `account-session-browser-tests.mjs` checks the sign-up verdict,
+an expired branded link, a native error redirect and the recovery screen
+(dedicated dialog, reload, mismatch, first network failure then success,
+readable verdict without reload).
+`install-request-browser-tests.mjs` checks the iPhone guest warning and the
+installed app's first opening, with an emulated iPhone user agent. WebKit and
+a real home-screen app are not exercised: Chrome cannot reproduce iOS storage
+separation, and no live e-mail is sent.
+
+Manual acceptance (dedicated QA account, no personal data in reports):
+
+1. PC Chrome, historical #801 profile, storage intact: sign in. The game opens
+   with its quests, badges, XP and records, without « Historique à vérifier ».
+   Reload, sign out/in, compare on a second device. Diagnostics show
+   `guest_acquisitions_recovered` once.
+2. iPhone Safari, guest with a few quests: open the install sheet. The
+   warning appears and installing stays possible. Install, open the app:
+   the « J’ai déjà joué » screen appears instead of quest 1.
+3. Same iPhone: create an account in Safari, wait for « Progression
+   synchronisée », open the app, choose « J’ai déjà joué », sign in. Progress
+   matches Safari. Reopen the app: no repeat of the choice.
+4. Android Chrome and installed app: same as 2–3. The storage is normally
+   shared, so the choice may not appear when progress exists.
+5. Sign-up link (branded and native): « Adresse e-mail confirmée ! Ton compte
+   Lumen est prêt. », action matching the session. Reopen the same link:
+   « Ce lien n’est plus valide », never a success.
+6. Forgotten password: request, receive the e-mail (inbox/spam), open the link
+   on PC and Android, set a 12+ character password. The new password signs in,
+   the old one is refused, progress and purchases are unchanged. Repeat with
+   an unknown address (same message), five quick requests (rate-limit
+   message) and an older link (expired message).
+
+After the approved web release, confirm the deployed version in the account
+menu on the original Chrome profile. Keep localStorage and IndexedDB intact.
+Sign in to the same account and verify that the game opens with its existing
+quests, badges, XP, records, rewards, wallet and purchased access. Compare on
+a second device, then reload and sign out/in on the original profile. Confirm
+that the wallet and unlocked content stay consistent, including after any
+already queued command is resolved. For a hold, open « Diagnostic » and record
+only the app version, stage, fixed reason and result. Keep the original storage
+and use the existing recovery procedure for any unverified historical data.
+
+Play prices P1 (#729/#731/#786): `node scripts/play-billing-tests.mjs` mocks Digital
+Goods and Payment Request for nine SKUs, reordering, missing/empty/failed details,
+invalid amounts/currencies, unavailable service, delayed loading, successful retry,
+payment support and timeout. It executes the production screen's price wiring and
+offer DOM to verify refresh/CTA states, hidden sky offer after a unit purchase,
+unchanged progress and no purchase on price loading. Chrome outside the TWA and
+Stripe exclusion remain covered. `adventure-offer-tests.mjs`,
+`stripe-checkout-client-tests.mjs`, `sales-terms-tests.mjs` and
+`android/tools/packaging.test.mjs` retain adjacent contracts. These are mocks/source
+checks, not Play Console or physical-device evidence. The no-transaction manual
+recipe and native/Web delivery distinction are in [android/PLAY.md](../android/PLAY.md).
+`quest-review-browser-tests.mjs` additionally exercises the real offer DOM with
+synthetic Play loading, failure, retry and enabled prices at 360×640 and 1440×900,
+without opening a payment sheet. Its existing review checks also cover 320/390px.
+
 Competition #638 / marking retirement #647: `ranking-client-tests.mjs` covers
 durable offline/reload staging, counters, account/client changes, begin/finish
 races, withdrawal and quota. `manual-marking-tests.mjs` checks stale preferences
 and the live engine injection independently of historical solver simulation.
+For #775 the client regression also exercises an older `22023` refusal before
+an independent first score and reload: only the rejected capture remains.
+`quest-review-tests.mjs` checks partial flush confirmation, reconnect while the
+current result is pending, and a non-qualification notice surviving refresh.
+`hint-assistance-badge-regression-tests.mjs` checks counted-run isolation from
+a previous UI hint flag and preservation of old unversioned hint evidence.
+These are synthetic client tests, not a live publication of a player's score.
 `ranking-browser-tests.mjs` covers 320/390/1440px, actual retired controls, the
 production list animation, top-10/centered/boundary fixtures, virtual labels,
 new-record visibility and reduced motion. Synthetic RPC fixtures are not live
@@ -927,6 +1105,15 @@ must remain complete, optional copies must fit the server's spaced/decimal
 bytes must remain unchanged. Compact-only and exponent cases cross the limit;
 the real validator is exercised independently in disposable `fixtures/support.sql`.
 No production fixture or real-account upload is implied by these tests.
+
+Support #776: the same Node suite now requires explicit confirmation of a
+manual filtered preview; reconnect and automatic incidents cannot approve it.
+`support-browser.mjs` (via `incident-investigation-browser-tests.mjs`) covers the
+native controls, server-acknowledged receipt and exact private reference lookup.
+`fixtures/support-reference.sql` runs after the new migration twice in isolated
+ledger CI: older case identity, admin/expired capability, foreign owner, unknown
+reference, hash, audit, revocation and retention. No production migration or
+physical-phone delivery is claimed. See the acceptance checklist in SUPPORT_574.
 
 `node scripts/cloud-pending-victory-tests.mjs` exercises production result
 retry functions and the bounded scheduler with real durable outboxes and
@@ -1553,7 +1740,7 @@ catalogue size, sequentially and awaiting victory/reveal behavior. Coverage incl
 - cell cycle;
 - guided conflicts and solver use;
 - N x N board rendering;
-- mobile drag exclusions;
+- mobile drag exclusions, including the #805 real Chrome swipe, a stationary tap whose pointer release remains uncancelled, and one-step undo in `ux-lot-browser-tests.mjs` (since HeadlessChrome 157 a synthesized CDP drag loses its page `touchend`, so one neutral tap outside the board resets the synthetic gesture before the asserted tap; real-device Android check: tap a Guardian right after a swipe);
 - Guardian terminology;
 - constellation/reward celebrations;
 - replay and reset/navigation;
@@ -1693,7 +1880,9 @@ Never claim “all tests pass” if only static/source inspection was performed.
 Run `node scripts/social-challenge-tests.mjs` for the pure challenge contract. It must remain in the CI static/data gate.
 
 Any change to challenge behavior must additionally verify:
-- first play can challenge; replay cannot;
+- any qualifying run (first win or replay outside the 15-minute cooldown) can challenge; a run inside the cooldown cannot and explains the wait (#889);
+- the reference states « Première résolution » / « Rejeu qualifiant »; a replay is never sent as `p_first_play=true`;
+- a started challenge resumes with its own time in the same browser, at the server-measured elapsed time elsewhere, or is refused without proof (#888);
 - first play + Mastery is the only “remarkable performance” condition;
 - recipient prior campaign exposure does not block participation;
 - source performance is hidden until terminal result;
@@ -1704,7 +1893,50 @@ Any change to challenge behavior must additionally verify:
 - guest display name validation and no PII in deep links;
 - QR/native/copy share all point to the same opaque challenge;
 - push refusal never blocks gameplay, push result deep-links correctly, and repeated results are grouped;
-- RPC idempotency/concurrency and RLS/direct-write boundaries.
+- RPC idempotency/concurrency and RLS/direct-write boundaries;
+- the recipient plays the exact challenged grid, including a locked Adventure, without gaining access to it;
+- a finished link reopens on its result (lowercase server status), never on a second attempt;
+- “Mes défis” shows canonical visible quest numbers for historical, stable and revised challenges.
+
+#759 kit: `video-kit-tests.mjs` checks the six video scenes against the catalogue solutions (no invented Guardian, no cross on a solution cell, A/C scenes complete the grid, 15–30 s, CTA, FR/EN SRT); `scripts/marketing/record-video-kit.mjs` (not in CI) records them from the real game.
+
+#759: `lumen-share-tests.mjs` also checks the English invitation, result text and card copy (`inviteShare`, `resultShareData(model,t)`, `shareCardCopy`), that private fields never leak, and that the dialog’s native share keeps a specific link (challenge) while generic discovery shares get `player_share`.
+
+#896: `duel-view-tests.mjs` covers verdicts from both roles, the autonomy rule, every non-comparable state (pending, playing, abandoned either side, missing time), gap wording, notes (#887/#889), escaping, contract builders, recipient matching and the three lists; `duel-browser.mjs` (canonical replay suite) checks « Mes défis » at 360/1440 (won/lost/tied/playing/abandoned), the detail card (verdict and both times on screen, one winner, Escape and focus return, copy link), « Amis et défis » received/sent, the result notification opening the duel and English copy, and writes `docs/validation/duel-*.png` when `LUMEN_DUEL_CAPTURES` is set.
+
+#898 (Lot 4, PR A): `social-hub-tests.mjs` checks the global badge sum, that each moved entry/counter id exists once inside the panel and the section order; `social-hub-browser.mjs` (canonical replay suite) covers the guest at 360×640, signed-in 390/1440, keyboard opening, focus trap, Escape with focus restoration, #35 counters feeding the badge, the rankings split, the daily route and writes `docs/validation/social-hub-*.png` when `LUMEN_SOCIAL_CAPTURES` is set. `credits-browser-tests.mjs` opens the panel before focusing the invitation. PR B: `social-notifications-tests.mjs` covers storage per account and corruption, silent baseline, acceptance detection, 30-day expiry, removed friend, deduplication, ordering, read state, extra badge units, French/English copy, guest, throttling, offline (last list kept) and account switch; `social-hub-browser.mjs` checks the feed (4 events, « Nouveau », nicknames only), reading on viewing (badge 4 → 3), opening Mes défis (badge → 2), no ghost after reading, offline notice, `online` refresh and the received challenge link.
+
+#882 (Lot 3, PR A): see [DAILY_CHALLENGE.md §7](DAILY_CHALLENGE.md#7-tests-et-retour-arrière) — `daily-challenge-tests.mjs`, `fixtures/daily-challenge-882.sql`, `daily-concurrency.py` and the rollback rehearsal run in canonical-ledger CI. `fixtures/supabase-default-anon-grants.sql` reproduces Supabase's default `anon` grants before `20261122100000_daily_anon_revoke_882.sql`; `fixtures/daily-anon-revoke-882.sql` then asserts only `lumen_daily_today` stays guest-callable (also covers #889 `lumen_create_qualifying_challenge`).
+
+#35 (Lot 2): `social-friends-tests.mjs` (client RPC names/arguments, French
+errors, statuses, escaped renderers without technical IDs), `friends-browser.mjs`
+(imported by the canonical replay suite: guest explanation without calls,
+account add/refuse/accept, received challenge with provenance, send to a friend
+from « Mes défis », link opening, 390/1440 px) and
+`fixtures/friends-direct-challenges-35.sql` in canonical-ledger CI (account and
+nickname required, exact search, idempotent request, quiet decline + cooldown,
+crossing requests, daily limit, direct challenge ownership/friendship, one
+participation, inbox privacy, removal, privileges, Lumen erasure of both sides).
+`fixtures/friends-rollback-35.sql` rehearses the documented production rollback of
+PR #893 in a rolled-back transaction (tables and RPCs removed, erasure policy chain
+restored, erasure review still passing, #892 writer untouched).
+
+#883 (Lot 0): `challenge-rpc-contract-tests.mjs` checks, for historical, #650
+soft-revision, stable revision-0 and revised challenges, that each create/get/
+start/finish/list RPC chosen by the client exists in the migrations with
+compatible parameters and guest grants, and that the start/finish wrappers only
+refuse revised rows. `scripts/fixtures/challenge-rpc-matrix.sql` runs the same
+matrix on the real migrated schema in canonical-ledger CI (create, hidden
+reference, one participation across reloads, wrong-route refusal, immutable
+terminal result, second signed-in profile abandoning, sender inbox/read,
+privacy, no campaign write). `challenge-recipient-browser.mjs`, imported by
+`canonical-replay-browser-tests.mjs`, opens real `?challenge=` links as a guest
+without Adventures at 390/1440 px against an in-page model of that contract (#881
+Lot 1 adds: a newcomer sees the rules summary and opens the rules without
+starting the attempt, with « Relever le défi » visible without scrolling; the
+help never offers a learning replay and a forced one cannot swap the grid). The
+RPC transport is simulated there: real-device and live-backend acceptance stay
+manual.
 
 Challenge changes are gameplay-adjacent and therefore still require the complete browser `runHintTests()` suite and strict all-grid catalogue audit before delivery.
 
@@ -1961,7 +2193,7 @@ progress. Do not cache OAuth callbacks, private responses or cloud APIs.
 
 ## Android APK startup smoke (#170 / PR #621)
 
-The Android packaging workflow now builds a debug APK, installs it on a Google APIs Android 35 emulator and launches `com.google.androidbrowserhelper.trusted.LauncherActivity`. It collects `android-startup-logcat.txt` as a downloadable artifact on success or failure, and fails when a fatal startup exception is detected. Consult `android/TESTING.md` for the physical-device matrix. This automated smoke is **not** proof of TWA rendering, Digital Asset Links verification, OAuth, real-phone functionality or production readiness; inspect Logcat before attributing any crash to missing asset links.
+The Android packaging workflow builds a debug APK, installs it on a Google APIs Android 35 emulator and launches the existing `com.google.androidbrowserhelper.trusted.LauncherActivity` component. Since #845, that component is an alias for Lumen’s native launcher. It collects `android-startup-logcat.txt` as a downloadable artifact on success or failure, and fails when a fatal startup exception is detected. Consult `android/TESTING.md` for the physical-device matrix. This automated smoke is **not** proof of TWA rendering, Digital Asset Links verification, OAuth, real-phone functionality or production readiness; inspect Logcat before attributing any crash to missing asset links.
 
 ## Offline full catalogue foundation (#597)
 
@@ -2162,17 +2394,69 @@ The full quality suite runs on pull requests. After a squash merge, the publishe
 - `scripts/mastery-unlock-tests.mjs` (Node, quality gate): client candidates (next Adventure only, owned rows, a missing badge, legacy version < 2), server calls (only confirmed unlocks, failures never throw, an account change stops the claims), wiring guards in `game-screen.js`, and store seed drift.
 - SQL (`ledger-sql`): `adventure-store-seed.mjs --check`, the migration and its completion fix each applied twice, then `scripts/fixtures/purchases-mastery.sql`. The fixture includes an Adventure 1 canonical quest in the production shape (a won run without `solved`). It covers private ledger and grants, idempotency, identity conflicts, validation, the €5 cap, refund/dispute/won dispute, whole-sky product, non-EUR purchases, preserved admin and mastery rights, real legacy and canonical mastery of Adventure 1 (a missing badge, legacy version 1), idempotent and audited claims, one Adventure at a time, and the erasure policy.
 
-## Locked Adventure offer (#731)
+## Locked Adventure offer (#731, #811)
+
+For #811, `adventure-offer-tests.mjs` covers both counters, each zero case,
+historical canonical wins and strict badge evidence. The synthetic screen
+wiring in `play-billing-tests.mjs` holds hydration, changes profiles, then
+installs verified progression and a mastery entitlement while the offer
+stays open. It checks that counts and action update independently of the
+paid controls. `sky-navigation-browser-tests.mjs` opens the real notice at
+mobile and desktop widths and verifies the rule, counters and no page scroll.
+The #728 SQL fixture remains the grant and persistence contract.
 
 - `scripts/adventure-offer-tests.mjs` (Node, quality gate): prices from `store-catalogue.js` and parity with the server seed, missing quests and badges derived from the catalogue (plural forms), mastered, guest and locked-previous wording, intention-only funding text, and removal of the placeholder.
-- `sky-navigation-browser-tests.mjs`: real tap on a locked Adventure (3 viewports). Checks that the offer replaces the lock text, purchase buttons are disabled with prices, the €5 cap text and the free mastery path (with what is left) are shown, QA sessions get no account prompt, « Pourquoi ? » expands, and there is no horizontal overflow.
+- `sky-navigation-browser-tests.mjs`: real tap on a locked Adventure (3 viewports). Checks that the offer replaces the lock text, purchase buttons are disabled with prices, the web-only €5 cap text and the free mastery path (with what is left) are shown, QA sessions get no account prompt, « Pourquoi ? » expands, and there is no horizontal overflow.
 
 ## Google Play purchases (#729)
 
-- `scripts/play-purchase-handler-tests.mjs` (quality gate) runs the real Edge handler with synthetic Auth, RPC and Google boundaries, and an RS256 assertion verified with a generated key. It covers: identity from Auth, price from the catalogue, acknowledgement after recording, pending/cancelled/invalid/unavailable recording nothing, a token owned by another account, a non-EUR region, boundary refusals, and voided refunds with pagination behind the operator secret.
-- `scripts/play-billing-tests.mjs` (quality gate): availability only with the Digital Goods API, mapping of server answers (never success on error), Payment Request method and sku, sheet completion, restore, localised prices, the €5 offer rule after a single purchase, and wiring.
+- `scripts/play-purchase-handler-tests.mjs` (quality gate) runs the real Edge handler with synthetic Auth, RPC and Google boundaries, and an RS256 assertion verified with a generated key. It covers: identity from Auth, amount and currency from the verified Google order, acknowledgement after recording, pending/cancelled/invalid/unavailable recording nothing, a token owned by another account, a non-EUR region, boundary refusals, and voided refunds with pagination behind the operator secret.
+- `scripts/play-billing-tests.mjs` (quality gate): availability only with the Digital Goods API, mapping of server answers (never success on error), Payment Request method and sku, sheet completion, restore, localised prices, hiding the whole-sky offer after a unit purchase without any fixed Play price claim, and wiring.
 - `android/tools/packaging.test.mjs`: billing delegation service, `PaymentActivity`/`PaymentService` and the `billing:1.2.0` dependency stay declared.
-- SQL (`ledger-sql`): `scripts/fixtures/play-purchase-gateway.sql` — service_role-only gateway, catalogue prices, lookup, voided replay, identity conflict.
+- SQL (`ledger-sql`): `scripts/fixtures/play-purchase-gateway.sql` covers the original server-only gateway and refund lookup. `scripts/fixtures/play-regional-receipts.sql` covers restricted writes, the exact provider amount, EUR credit isolation, replay at a changed price, cross-account refusal, refund protection and receipt retention. The migrations run twice on disposable PostgreSQL. For Play acceptance use test and real-order provider evidence separately. Verify the Orders API permission, missing products and localization without submitting payment unless explicitly authorized.
+
+For #823, the handler fixtures cover an absent RPC, lost acknowledgement, unbound and mismatched accounts, a privately reconciled legacy order, pending and cancelled purchases, and verified refund replay. The client fixture exercises the real restore action with a synthetic Play list on a second device, an unavailable verifier then a successful retry, immediate entitlement read-back, account handoff, and unchanged progress, stars, badges and currency. The Play restore fixture has no Payment Request API. The PostgreSQL ledger fixtures cover service-only grants, duplicate and refund replay, and exact regional settlement. See the [Android recovery checklist](../android/PLAY.md#récupération-et-déploiement-google-play-823) for live acceptance.
+
+#833 finalisation: `play-billing-tests.mjs` checks the `play_test_checkout` gate (only that capability opens the bound checkout while `PLAY_CHECKOUT_AVAILABLE` is false; the tester sees the unticked waiver and no pause notice; revocation closes it again; other capabilities never open Play) and the throttled foreground recovery and its wiring. `play-purchase-handler-tests.mjs` adds the operator `readiness` probe (secret required, no record, acknowledgement, token or secret in the reply; 403 on `orders` or `products` and missing RTDN configuration make it not ready), two deliveries of the same purchase (one identity, no repricing, no refund, no second acknowledgement) and a recorded token presented for another product (refused, nothing recorded). These are synthetic boundaries: they do not simulate a real Google Play purchase.
+
+The #833 wrapper 1.0.1 (2) regression in `play-billing-tests.mjs` exercises
+the mounted Play offer with the release switch off and on. It covers native
+marker validation, absent/rejected marker, Payment Request readiness,
+validated prices, restoration without Payment Request, unchecked consent
+before an eligible purchase, and confirmation only after entitlement
+read-back. Automatic Play restoration stays silent for unverified purchases
+and purchases owned by another account. A manual check shows an account-specific
+result in the offer, and a separate unverified purchase cannot hide a confirmed right. The Play Console, authenticated RTDN delivery, both cron HTTP
+responses and the real installed wrapper remain in the
+[Android acceptance checklist](../android/PLAY.md#recette-du-wrapper-101-2-et-réactivation-833-pr-837).
+
+For #833, the same handler mocks verify scheduling before acknowledgement and
+retry without a live client. The canonical ledger gate replays both migrations
+and verifies retry leases, account erasure, mixed-provider distinct Adventure
+counting, refunds, and preservation of mastery and admin rights.
+
+For #729 RTDN, the handler mocks prove the expected Google identity checks,
+bound registration without a browser session, pending redelivery, and verified
+refunds and duplicates. The SQL fixture covers binding preparation, lookup
+permissions, account-switch denial and erasure. The browser fixture verifies
+that Payment Request receives the binding prepared for the active account.
+Wrapper compatibility tests cover the reserved native probe, the old wrapper
+response and the release switch. Android packaging builds the patched adapter.
+Signing and purchase acknowledgement still require installation from a Play track.
+
+For #819/#818, the store tests cover its server count at zero through five,
+the full-sky bundle, delayed replies, account handoff, and price and consent
+copy. The ledger fixture checks the authenticated read and cross-account
+denial. The shop displays no count while the server response is unavailable.
+
+## Stripe Checkout, web/PWA TEST mode (#730)
+
+- `scripts/stripe-handler-tests.mjs` (quality gate) runs the real `lumen-stripe-checkout` and `lumen-stripe-webhook` handlers with `_shared/lumen-stripe.ts`, synthetic Auth, RPC and Stripe API boundaries, and HMAC signatures computed by Node. It covers: session created from the server reservation (price, currency, metadata, controlled return URLs, idempotency key); unauthenticated, unknown product, missing waiver and forged body prices refused; ownership, eligibility, double click, rate limit; superseded session expired and failed creation released; live keys, live events and live sessions refused and never logged; missing, wrong, expired or tampered signatures; paid read back from Stripe regardless of the event payload; pending, failed, expired and open sessions; duplicate webhooks; a stale event after a refund; full/partial refunds; open, won and lost disputes; payment-intent lookup; 5xx on temporary failures and 409 on identity conflicts; status and restore limited to the signed-in player.
+- `scripts/stripe-checkout-client-tests.mjs` (quality gate): web-only availability (test capability, never with a resolved Play Billing service, `LUMEN_NATIVE_APP` or a remembered `android-app://` launch; regression: Chrome Android exposing a rejecting `getDigitalGoodsService` still gets Stripe), only the product id and waiver sent, only a Stripe Checkout URL opened, return parameters consumed once, polling never reports success before server `paid`, one message per state, and wiring.
+- SQL (`ledger-sql`): the migration applied twice, then `scripts/fixtures/stripe-checkout.sql` — service-role-only functions and private table, erasure policy, test-account isolation (real player and expired capability refused), catalogue price, inactive/free/unknown products, admin and mastery rights not resold, waiver, busy/reuse/supersede, one checkout in flight, live rows refused, forged amount/currency/product/account, unknown sessions, pending/failed granting nothing, paid, duplicate (one purchase, one event), full refund with progress untouched, late `paid` after refund ignored, disputes in any order, €5 cap through Stripe singles, sky after single, rate limit, own sessions only, test reset keeping real purchases, and no accounting record for TEST payments.
+- Updated wiring contracts: `play-billing-tests.mjs` (offer available with Play Billing or the web Stripe checkout), `mastery-unlock-tests.mjs` (verified hydration also checks a Stripe return), `sales-terms-tests.mjs` (the waiver is checked before any provider).
+- Manual Sandbox acceptance: [STRIPE_730](STRIPE_730.md), steps 6 to 10.
+- Real-sales switch: `stripe-handler-tests.mjs` (live key reserves live checkouts, refused while the switch is off, only `cs_live_` sessions handed out, webhook accepts only events and read-backs of its key mode, trimmed secret, logged refusal reason, invoice footer); `stripe-checkout-client-tests.mjs` (`live` channel opens the web checkout to every signed-in player, never in the Play app); SQL `scripts/fixtures/stripe-live-switch.sql` after the migration applied twice (off by default, channel per account, live reservation and reuse, mode/prefix constraint, mode mismatch refused, idempotent replay, refund, test reset never touches real sales, accounting archive of real sales).
 - **Not testable here:** a real Play purchase. It needs the Play Console, products, a service account and an internal test track (see `android/PLAY.md`).
 
 ## Presentation page and search basics (#736)
@@ -2190,6 +2474,23 @@ The full quality suite runs on pull requests. After a squash merge, the publishe
 - How-to illustrations: `node scripts/how-to-play.mjs` regenerates `src/landing/how-to-play-*.svg` from the catalogue; `--check` fails when they are stale.
 - Visuals: `node scripts/landing-assets.mjs` with a served app and `LUMEN_CDP_URL` (QA mode, synthetic progress).
 - Owner after deployment: Google Search Console (sitemap), the Rich Results Test and the Open Graph preview.
+
+## Fiches des 88 constellations (#856)
+
+- `node scripts/constellation-facts-tests.mjs` vérifie la couverture, les
+  identifiants IAU et catalogue, les sources et les surfaces et rangs.
+- `node scripts/render-constellations.mjs --check` vérifie que le HTML statique
+  correspond à la source commune. Les suites landing vérifient le SEO, le
+  parcours sans JavaScript, la recherche et les formats mobile et ordinateur.
+- La suite navigateur Mon ciel vérifie l’indépendance des boutons, le contenu
+  identique depuis les deux vues, le focus, Échap et une consultation sans
+  réseau avec le cache du service worker. Les captures de revue se trouvent
+  dans l’artefact navigateur quand `LUMEN_FACT_SCREENSHOTS` est défini.
+- Recette physique avant publication. Ouvrir une même fiche depuis les deux
+  vues, consulter plusieurs fiches en mode avion, vérifier Safari iPhone et la
+  PWA installée, puis essayer la recherche publique et le lien vers le jeu.
+  Relire en priorité la Grande Ourse, la Croix du Sud, Orion, le Réticule et le
+  Peintre.
 
 ## CI scope: presentation page only (#744)
 
@@ -2225,15 +2526,32 @@ The full quality suite runs on pull requests. After a squash merge, the publishe
 - both release scripts load the file under the same rules.
 Not testable here: the real private repository. The owner checks a deployment after installing the token and switching the repository to private.
 
+## Mobile UX stabilization (#793)
+
+- `account-switch-browser-tests.mjs` covers startup with a stored session and no
+  local profile, delayed hydration, A → B → A isolation, verified offline use,
+  reconnect after an offline account switch, and recovery after an injected
+  failure. These are synthetic accounts.
+- `ux-lot-browser-tests.mjs`, `board-feedback-browser.mjs` and
+  `guided-undo-browser.mjs` check stable board geometry, real pointer input and
+  the highlighted cell when an assistance card is open.
+- `victory-presentation-tests.mjs` keeps the two-second minimum, verifies that
+  the podium can appear while longer effects are running, and checks reduced
+  motion and cancellation when leaving the victory screen.
+- Physical acceptance covers slow mobile data, airplane mode and reconnect,
+  Safari and installed PWA, and Android Chrome. See #793 for the issue checklist.
+
 ## Install from the presentation page (#748)
 
 - `scripts/daily-streak-pause-tests.mjs` (Node, quality gate, #752) checks that the Série de lumière ships paused: every player entry point is gated, guest and QA days are recorded without reward, a day recorded during the pause is never credited after reactivation, the enabled day-3 reward is unchanged and the server migration keeps history while rewards stay behind the flag. `scripts/fixtures/daily-streak-pause.sql` (ledger-sql) replays the paused and reactivated server claims, and checks that `feature_flags` is classified so that `review_erasure` still passes (fix `20261116195500_feature_flags_privacy_752.sql`).
 - `scripts/fixtures/purchase-accounting-records.sql` (ledger-sql, #732) checks the minimal accounting record kept after a purchase deletion: no player access or identity column, `retain-rule` classification with a passing erasure review, nothing archived while the account exists, exact records with the final status, the Paris calendar-year retention boundary, other players untouched, and a purge of expired records only.
 - `scripts/credits-tests.mjs` (Node, quality gate, #740) checks that the CC BY-SA attribution, its four links and the ShareAlike scope sit in the account menu (not in Mon ciel), and that `src/data/astronomy/NOTICE.md` exists. `scripts/credits-browser-tests.mjs` (browser, port 9264, `ci-credits.json`) opens the account menu as a guest at 360×640, expands « Crédits et sources », checks the links, readable text, no horizontal overflow, and focus return on close.
-- #731 restore: `scripts/adventure-offer-tests.mjs` checks every « Restaurer mes achats » outcome (confirmed, pending, unreadable list, unverified, other account, nothing to restore) and the wiring; `scripts/play-billing-tests.mjs` checks that the manual restore reports an unreadable Play list as a failure.
+- #732 ready to sell: `scripts/sales-terms-tests.mjs` (Node, quality gate) mounts the offer in a minimal DOM: the never pre-ticked waiver box precedes the buy buttons, a click without it opens no payment and shows the reminder, a click with it passes `waiver.accepted` to `purchaseAdventure` (which refuses a missing waiver); no box where no purchase can start; the terms link. It also checks `cgv.html` (catalogue prices, TVA 293 B, L221-28 13°, minors, honest mediator status), the legal notice, the privacy « Achats » section, both release lists, and that `play-readiness` accepts `paid-content-no-ads` without a mediator blocker.
+- Purchase restore (#823 / #730): `scripts/adventure-offer-tests.mjs` checks Play-only manual recovery alongside automatic hydration, and `scripts/play-billing-tests.mjs` checks the visible retry, confirmed rights refresh and account isolation. `scripts/stripe-handler-tests.mjs` checks automatic web restore of unsettled Stripe sessions.
+- `scripts/purchase-thanks-tests.mjs` (quality gate, #730): thank-you model (catalogue name, whole sky, unknown product, no absolute promise), dialog semantics, focus, explore/later/Escape/backdrop each close it once without a leaked listener, one dialog at a time, and wiring after a server-confirmed Play or Stripe purchase only.
 - `scripts/install-request-tests.mjs` (Node, quality gate) checks:
   - `?install=1` is read once and removed from the URL (other parameters and the hash are kept), before the first-visit welcome checks the URL;
-  - the copy: native prompt, iPhone steps or menu ⋮ steps, never a dead button;
+  - the copy: native prompt, iPhone steps (including opening the QR arrival in Safari) or menu ⋮ steps, never a dead button;
   - the request skips the quest-12 rule but never asks an installed app, and waits for the welcome;
   - `#installOptin` is in the scripted-learning tap allowlist;
   - the page link, and the QR file regenerated from the vendored encoder, with its finder patterns.
@@ -2242,6 +2560,8 @@ Not testable here: the real private repository. The owner checks a deployment af
   - a real tap on « Plus tard » closes it during the tutorial;
   - no repeat after reload, and a plain visit is unchanged.
 - `scripts/landing-browser.mjs`: on phones the install link is shown and the QR is hidden; on computers (≥ 900 px with a fine pointer) the QR is shown and loads, and the link is hidden.
+- Acquisition (#708) : `node scripts/acquisition-tests.mjs` vérifie la liste UTM, le référent de même origine, l’absence de collecte sans autorisation, les seules transitions de campagne en quête 1 et la tolérance aux échecs du transport ; #881 Lot 1 y ajoute la paire `player_invite` (Inviter distinct de Partager) et le canal `challenge_link` d’un document ouvert depuis un lien de défi, jamais sur la tentative elle-même. La suite Chromium de la page publique clique sur « Jouer » depuis un lien UTM et vérifie le référent reçu dans le jeu. Voir le [contrat de mesure](PRODUCT_ANALYTICS.md#mesure-dacquisition-708).
+- Partage (#779/#759) : `node scripts/lumen-share-tests.mjs` couvre le contenu des payloads publics (dont les libellés « Constellation rallumée » / « Aventure accomplie » de #881 Lot 1 et les URL de campagne distinctes Inviter/Partager), l’annulation native et Clipboard. `victory-challenge-browser.mjs` vérifie en fin d’aventure le titre et le texte du partage, sans lien de défi. `credits-browser-tests.mjs` vérifie le menu invité au clavier en portrait, la copie desktop, la sélection manuelle et la conservation de la grille. `victory-layout-browser-tests.mjs` vérifie le partage du texte et du PNG après une vraie victoire QA. `quest-view-tests.mjs` et `late-game-tests.mjs` conservent la parité du contenu exporté après croissance du catalogue. `victory-pending-browser-tests.mjs` vérifie que l’action reste inaccessible jusqu’à confirmation et que la révélation garde ses dimensions. [Recette de publication](marketing/PARTAGE_LUMEN.md#recette-après-publication).
 - QR: `node scripts/landing-qr.mjs` regenerates it, and `--check` verifies it. It was decoded once with an external reader during review; the test itself has no decoder dependency.
 - Owner: scan the QR with an Android phone and an iPhone, and install from both.
 
@@ -2265,3 +2585,77 @@ From 701 px wide, it also checks that:
 - « Mon ciel » stays in the same 520 px column.
 
 Phones keep exactly their previous rules: the transformation only removed desktop-only blocks and widened the phone conditions. All existing browser suites passed locally with the new layout.
+
+## UX navigation / store #784 / #786
+
+`quest-review-tests.mjs` and `adventure-offer-tests.mjs` extend the existing quality
+gate: immediate accessible neighbours, unfinished views, stale ranking replies,
+edge-safe gestures, incremental delivered content and provider prices.
+For #817, the same mandatory browser suite also signs in with a simulated
+profile and starts native Chromium touches on the real review podium, at
+360×640 and 390×844. The board response replaces the touched skeleton during
+the gesture. Both directions, ordinary taps, vertical and edge drags, and
+button-origin gestures are checked along with unchanged progress. The unit
+suite checks horizontal intent, pointer capture, cancellation and touch identity.
+The same browser scenario samples rendered frames throughout the swipe and
+the next ranking's delayed arrival. At 360×640 and 390×844 it checks the
+dialog's horizontal position, opacity and scroll, and checks that a one-line
+off-podium rank does not move the dialog or its actions when loaded.
+`quest-review-browser-tests.mjs` exercises touch and keyboard browsing without
+progress/attempt changes at 320/360/390/1440px and the actual store at 360/1440px.
+Set `LUMEN_UX_CAPTURE_DIR` to an existing temporary directory to retain screenshots.
+The existing sales-terms regression keeps consent before payment and checks both
+checkout product IDs. No rules, server RPCs, save schemas or prices change.
+An offer with no delivered additions is disabled and never claims ownership of
+future or unavailable content.
+Physical PWA/TWA native back gestures and live provider purchases remain separate
+acceptance checks; browser fixtures do not demonstrate a real transaction.
+
+## Android native update acceptance (#845)
+
+See [the physical Play update matrix](../android/TESTING.md#recette-google-play-845)
+for Play eligibility, the required and flexible flows and preserving session,
+attempt and pending commands across an in-place update. The native JVM policy
+tests and debug launcher smoke run in Android packaging CI. Web updates remain
+covered by `scripts/app-updates-tests.mjs`. Android launcher copy is displayed
+before the TWA and has no impact on onboarding steps or gameplay.
+
+### Chantier 3 — offline, performances, mobile (#847, #851, #828, #830, #829)
+
+- `offline-network-browser-tests.mjs` (Chrome, synthetic accounts): verified
+  hydration writes the offline proof; airplane cold start and second restart;
+  Auth refresh, RPC failure and silent backend while `navigator.onLine` is true;
+  reconnection; another stored identity and a missing proof stay on the explicit
+  offline screen with data untouched; no server write while unreachable.
+- `attempt-engine-tests.mjs`, `official-time-tests.mjs`, `quest-review-tests.mjs`
+  and the in-app `runHintTests()` case: reset keeps time, aids, errors,
+  qualification and run identity; legacy attempts keep their begun id; refusal
+  causes and the record/ranked comparison on the result screen.
+- `hint-catalogue-audit-tests.mjs`: all published quests solved by the hint
+  engine from empty, with and without automatic marking; quest 23 completed
+  grid; no internal solver message.
+- `landscape-layout-browser-tests.mjs`: 844×340, 844×390, 667×320, 932×430
+  landscape, plus portrait and desktop: whole grid and controls visible, no
+  overlap, no page scroll.
+- `webkit-smoke-tests.mjs` (Playwright WebKit, non-blocking workflow
+  `webkit-smoke.yml`, manual + nightly, about 4 s of tests locally): portrait
+  quest, tap, hint, both landscapes, offline guest reload when a service worker
+  is available. Not a substitute for Safari on a real iPhone.
+
+Manual acceptance:
+1. Android (Chrome or Play app), signed in: play online until « Progression
+   synchronisée », airplane mode, close and reopen: the game opens (« hors
+   connexion »), play and win a quest, reopen still offline, reconnect: the
+   victory syncs once. Diagnostic: account menu → Diagnostic de synchronisation.
+2. Wi-Fi without Internet (router unplugged): same as 1, the screen must not stay
+   on « Chargement de ton ciel… » beyond about 25 s.
+3. Reset: start a quest, use a hint, reset (read the confirmation), finish: the
+   time and the +15 s remain; the result shows the ranked verdict. Replay after
+   15 min: new run, ranked if better.
+4. Quest 23 on iPhone: finish the grid while the account restores, then press
+   Indice: the victory is validated, never a technical message.
+5. iPhone Safari portrait then landscape (bars visible), quest 36: grid and the
+   three buttons visible, no overlap; rotate twice.
+6. Android edge gesture (#821): swipe from each screen edge on a running quest,
+   inside the grid, on the ranking podium and between results. Record whether
+   the system Back preview appears (Android setting « Navigation par gestes »).

@@ -1,0 +1,15 @@
+export default Object.freeze({
+  'pwaWelcome.title': "Bienvenue dans l’application LUMEN",
+  'pwaWelcome.copy': "Tu as déjà joué dans ton navigateur ou sur un autre appareil ? Connecte-toi à ton compte LUMEN pour retrouver ta progression.",
+  'pwaWelcome.recover': "J’ai déjà joué — Retrouver ma progression",
+  'pwaWelcome.new': "Commencer une nouvelle aventure",
+  'pwaWelcome.confirmAction': "Oui, commencer une nouvelle aventure",
+  'pwaWelcome.confirm': "Une nouvelle aventure commence sur cet appareil. Tu pourras toujours te connecter plus tard depuis le menu du compte.",
+  'pwaWelcome.safari': "Je jouais sans compte dans Safari",
+  'pwaWelcome.safariOpen': "Rouvre LUMEN dans Safari.",
+  'pwaWelcome.safariAccount': "Crée un compte depuis le menu du compte.",
+  'pwaWelcome.safariSync': "Attends l’indication « Progression synchronisée ».",
+  'pwaWelcome.safariReturn': "Reviens dans l’application installée.",
+  'pwaWelcome.safariSignIn': "Touche « J’ai déjà joué » et connecte-toi.",
+  'pwaWelcome.safariLocal': "Sans compte, une partie jouée dans Safari reste dans Safari : l’application installée ne peut pas la lire.",
+});

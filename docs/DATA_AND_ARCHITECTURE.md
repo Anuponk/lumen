@@ -156,18 +156,52 @@ criteria are [separate from implemented behavior](PRIVACY_RETENTION_PROPOSAL.md)
 
 Migration `20261116090000_pause_daily_light_streak_752.sql` (idempotent; production application by the owner) adds the private table `lumen_commands.feature_flags` (no player access) with `daily_light_streak=false`, and redefines `lumen_commands.claim_quest_daily` — the single server route used by `lumen_claim_daily`, the wallet command, `commit_quest` and the legacy victory command. While the flag is off it still records the day in `lumen.daily_progress` but never credits `lumen.engagement_state`. Rule details: [PROGRESSION](PROGRESSION.md#série-de-lumière-en-pause-752). The flag table holds no player data and is classified `retain-rule` in `lumen_privacy.policy()` by the fix `20261116195500_feature_flags_privacy_752.sql`; without it, `review_erasure` refused every account erasure. Fixture: `scripts/fixtures/daily-streak-pause.sql`.
 
+## Stripe Checkout, web/PWA, TEST mode — #730
+
+Full runbook and owner steps: [STRIPE_730](STRIPE_730.md).
+- **Edge Function `lumen-stripe-checkout`** (player session): `checkout` reserves through `lumen_stripe_checkout_begin` (test capability `stripe_test_checkout`, active product, catalogue price/currency, ownership, sky-after-single rule, one checkout in flight per account, 10 per hour), creates a `mode=payment` Checkout Session with that price (idempotency key = reservation) and returns its URL; `status` and `restore` re-read the player's own sessions from Stripe and record them.
+- **Edge Function `lumen-stripe-webhook`** (deployed with `--no-verify-jwt`): verifies `Stripe-Signature` on the raw body (5-minute tolerance), refuses live events, then re-reads the Checkout Session (expanded payment intent and charge, disputes) instead of trusting the event. 5xx on Stripe/database failures so Stripe retries.
+- **Migration** `20261117120000_stripe_checkout_test_730.sql`: private `lumen_commands.stripe_checkout_sessions` (`livemode` constrained to false; erased with the account, `delete` by `user_id` in `lumen_privacy.policy()`), `lumen_stripe_*` service-role functions, and `stripe_record_session`, whose monotonic rank (pending < failed/expired < paid < open dispute < closed dispute < refunded) makes duplicates and reordering harmless before calling `record_purchase('stripe', <cs_test_…>, …)` (#728). TEST payments (`cs_test_%`) are never archived as accounting records (#732 trigger) and `lumen_commands.stripe_test_reset(uuid)` removes them.
+- **Secrets:** `STRIPE_SECRET_KEY` (`sk_`/`rk_`, test or live: the key decides the mode), `STRIPE_WEBHOOK_SECRET` (destination of the same mode; surrounding spaces ignored).
+- **Real-sales switch** (migration `20261117180000_stripe_live_switch_730.sql`): `lumen_commands.feature_flags` `stripe_live`, off by default. Live checkouts are reserved only when it is on; test checkouts stay reserved to `stripe_test_checkout` accounts. `stripe_checkout_sessions.livemode` must match the session id prefix and is part of the identity checked by `stripe_record_session`. `public.lumen_payment_channel()` (authenticated) returns `live`, `test` or `off` for the client. Each checkout creates a Stripe invoice whose footer carries the waiver and the VAT exemption (CGV §6).
+- **Client** (`persistence/stripe-checkout.js`): offered only on the web/PWA (never with a resolved Play Billing service, `LUMEN_NATIVE_APP` or an `android-app://` launch; the mere presence of `getDigitalGoodsService` is not a signal, Chrome Android exposes it outside the Play app) and only to accounts holding the test capability. The return URL is consumed once; success is shown only after the server reports `paid` and entitlements are reloaded, followed by the thank-you dialog (`ui/purchase-thanks.js`). The `restore` mode re-reads only unsettled sessions (open, superseded, pending); settled ones follow the webhook.
+
 ## Google Play purchases — #729
 
 - **Edge Function `lumen-play-purchase`:**
-  - `verify` mode (player session): the player comes from verified Auth and the price from `lumen_store_price`; the body never decides either. Google's Play Developer API (`purchases.products.get`) must say `purchaseState=0`. The purchase is then recorded through `lumen_record_purchase` (#728), with `provider_ref = sha256(purchaseToken)`, and acknowledged; Google refunds unacknowledged purchases after 3 days. Pending purchases (202) and cancelled ones (409) record nothing. A token already linked to another account is refused (`purchase_owned_elsewhere`).
-  - `voided` mode (`x-lumen-cron` secret): replays `voidedpurchases` as refunds with the original identity from `lumen_purchase_by_ref`.
-  - Purchases outside region FR (distribution is France-only) grant their product with amount 0/`XXX`, so they never count towards the EUR cap.
-- **Secrets** (Edge Function secrets only): `LUMEN_PLAY_SERVICE_ACCOUNT`, `LUMEN_PLAY_PACKAGE`, `LUMEN_PLAY_CRON_SECRET`.
-- **Migration** `20261115220000_play_purchase_gateway_729.sql`: `public.lumen_store_price`, `lumen_record_purchase` and `lumen_purchase_by_ref`, executable by `service_role` only.
-- **Client** (`persistence/play-billing.js`): Digital Goods API plus Payment Request, only where `getDigitalGoodsService` answers (the Play app). After a verified hydration, `restorePlayPurchases` re-sends every owned token; the server is idempotent and retries acknowledgement. Success is shown only after the server confirmed and entitlements were reloaded.
-- **Manual restore (#731):** « Restaurer mes achats » calls `restorePlayPurchases` with `reportListFailure:true`, so an unreadable Play purchase list is a failure, never « nothing to restore ». Entitlements are reloaded only after a server-confirmed purchase; the automatic restore after hydration keeps the silent behaviour.
+  - `verify` authenticates the Lumen account and checks `purchases.products.get`. A new real purchase must also match the `PROCESSED` Google order, token, single SKU, exact line total and currency. The owner must match the existing receipt, Google’s obfuscated account identifier (SHA-256 of `lumen-play:` followed by the Auth UUID), or the operator’s privately reconciled legacy order. License-test purchases require a Google account identifier or an existing receipt, and carry no real settlement. Pending purchases record nothing. The server records idempotently using SHA-256 of the token, then acknowledges with Google. Failed acknowledgement remains retryable.
+  - `voided` mode (`x-lumen-cron` secret): replays `voidedpurchases` as refunds with the original identity from `lumen_purchase_by_ref`. A restore can also expire a recorded right when Google reports cancellation or a matching order reports a full refund. Started Adventure access and original progress follow the existing rules.
+  - `POST /rtdn` verifies the Google OIDC signature and the configured subscription before processing one-time events. It rereads the Developer API and uses the same purchase and refund paths. A new paid token uses the binding that the Auth-scoped `lumen_prepare_play_purchase` registered before checkout. Only the service can resolve an identifier back to an account. Account erasure deletes the binding. A transient failure or a refund arriving before its receipt is deferred for redelivery. Pub/Sub receives 204 once processing is complete or the purchase acknowledgement job is durable. See the [Android setup](../android/PLAY.md#notifications-google-play-rtdn).
+  - The settled amount and currency are archived with the receipt. The legacy credit is kept for receipt compatibility. After migration `20261119092419_distinct_adventures_728.sql`, the server counts five distinct confirmed unit purchases, across Stripe and Play, for the main-sky unlock. An active full-sky receipt grants it directly. Refunds recalculate the count without changing progression, mastery or manual entitlements.
+  - `readiness` mode (`x-lumen-cron` secret, #833): read-only pre-activation probe. It mints a Google token, calls `purchases.products.get` and `orders.get` with synthetic identifiers (400/404 = reachable, 401/403 = missing permission), lists one voided purchase, reads the ledger RPC and reports whether RTDN is configured. It records, acknowledges and returns no purchase data, token or secret. Licence-test purchases skip `orders.get`, so this probe is the only check of that permission before a real sale.
+  - Client gate (#833): the Play checkout opens when `PLAY_CHECKOUT_AVAILABLE` is true, or for an account holding the server capability `play_test_checkout` (`lumen.internal_capabilities`, read through `lumen_get_internal_capabilities`). This lets a licence tester run the end-to-end acceptance while public sales stay closed. It grants nothing; every token follows the same verification. Signed-in Play apps also recheck purchases on return to the foreground (throttled to once a minute), in addition to hydration, `online` and after a purchase.
+  - Migration `20261119092413_play_acknowledgement_833.sql` records the verified purchase, purchase entitlement and acknowledgement task atomically. The service-only worker leases due tasks, confirms the state with Google, and retries with a capped delay. The private queue retains its temporary token only until acknowledgement, cancellation, erasure or expiry. See the [operations and test checklist](../android/PLAY.md#récupération-et-déploiement-google-play-823).
+  - Whole-sky upgrades (#865): Play SKUs `real_sky_upgrade_1..4` ↔ ledger `real-sky-upgrade-1..4` (`kind='sky_upgrade'`, tier = confirmed unit purchases). `verify` calls the service-only `lumen_sky_upgrade_eligible` before recording a new upgrade token; an outdated tier answers 409 `offer_not_eligible` without recording or acknowledging. Upgrades never feed the historical € credit. The Android wrapper (`PaymentActivity`) accepts the same SKU list. See [SHOP_865](SHOP_865.md).
+  - Already-owned items (#864): Google Play owns a non-consumable per **Google account**, not per Lumen account. Before opening the Play sheet, and again after a sheet that failed or was cancelled, the client reads `listPurchases()` for that SKU (`findOwnedPlayPurchase`). A held token is sent to `verify` for the signed-in Lumen account only; no sheet opens. `paid` rereads entitlements; `owned_elsewhere` asks the player to sign in to the original Lumen account; `account_unverified` (purchase without account binding, e.g. before 19/11/2026 10:41 UTC) points to support; `not_paid` explains a cancellation. A token already **refunded** in the ledger answers `not_paid` for every account, even when another account held it (#878), never `owned_elsewhere`. A manual restore that finds several such purchases shows one sentence per state, naming the items, with the open offer's adventure first (`playOwnershipSummary`, #878). Nothing is ever transferred between Lumen accounts.
+- **Secrets** (Edge Function secrets only): `LUMEN_PLAY_SERVICE_ACCOUNT`, `LUMEN_PLAY_PACKAGE`, `LUMEN_PLAY_CRON_SECRET`, optional `LUMEN_PLAY_RECOVERY_ORDERS`. The recovery map contains independently verified order-to-Auth-UUID associations. It cannot grant an entitlement without the server verifying the Google purchase. See [Android release and recovery](../android/PLAY.md#récupération-et-déploiement-google-play-823).
+- **Migration** `20261115220000_play_purchase_gateway_729.sql`: `public.lumen_store_price`, `lumen_record_purchase` and `lumen_purchase_by_ref`, executable by `service_role` only. Migration `20261118212000_play_regional_receipts_729.sql` adds the Play-only gateway and nullable settled amount and currency on the private ledger and accounting archive. Apply the migration before deploying the Edge Function. Old rows keep their original values.
+- Notices (#863): an automatic restore that finds the rights up to date is silent (no global `#purchaseStatus` banner over the game); errors, pending payments and rights still syncing stay visible. A source may only clear its own notice. A manual restore answers inside the shop; a clean success clears itself after about 3 s, actionable messages stay.
+- **Client** (`persistence/play-billing.js`): after verified hydration, on reconnect or via the secondary « Restaurer mes achats » action in the Play offer footer (#863), Digital Goods lists existing purchases without opening payment. Unresolved payments or entitlement reads retry with bounded delays scoped to that account and client. Paid or revoked receipts trigger a read of server entitlements and a refresh of Mon ciel. Digital Goods enumerates Play purchases independently of the signed-in Lumen account. The server verifies ownership against the Auth UUID. An unverified or foreign receipt alone produces no automatic notice, and a manual check explains that no purchase could be associated with the current account. Stripe retains its automatic web restore.
+- **Play checkout release switch (#833):** checkout requires the release switch, the exact capability response from the installed Android wrapper, a validated price for the product, positive Payment Request readiness and a current account binding registered before opening the sheet. Price, binding probe and Payment Request diagnostics run during the pause, independently of purchase restoration. The vendored Billing adapter forwards the binding for supported single purchases. Follow the [server and installed-wrapper acceptance checklist](../android/PLAY.md#recette-du-wrapper-101-2-et-réactivation-833-pr-837) for rollout and functional acceptance.
 
 ## Purchases, store seed and mastery unlocks — #728
+
+For #819, apply `20261119093249_main_sky_purchase_progress_819.sql` after
+`20261119092419_distinct_adventures_728.sql`. The signed-in RPC checks the
+expected owner against Auth and returns only the verified purchase count,
+the remaining count and the full-sky status. The client uses it for display
+and keeps entitlement checks authoritative for access. Deploy the CGV and
+store copy after the new ledger rule is active and the terms are reviewed.
+
+Adventure entry (#783) separates server ownership from within-Adventure quest
+progression (see [PROGRESSION](PROGRESSION.md#purchases-and-mastery-unlocks-728)).
+`cloud.js::loadEntitlements` keeps a transient `idle/loading/ready/error` state,
+isolates responses by account, client and request generation, and retains only
+same-account rights already confirmed in this client when a refresh fails. An
+initial cache or another account cannot grant rights; a successful empty response
+can revoke them. This state is never serialized to Supabase or IndexedDB. The
+runtime index bound includes later owned Adventures; each quest still checks the
+shared access policy. No migration, entitlement writer or reward command changes.
 
 Migration `20261115200000_purchases_mastery_store_728.sql` (idempotent; production application requires explicit owner authorization) adds:
 - **Store seed** (`adventure_packs`, `quest_packs`, `store_products`, `store_settings`): a server copy of the catalogue, generated by `scripts/adventure-store-seed.mjs`. `--check` (CI and `mastery-unlock-tests.mjs`) fails when the latest seed drifts from `CONTENT_PACKS`, `canonicalQuestList` or `PERFORMANCE_BADGES`; a catalogue change needs a new migration re-running `--write-seed`.
@@ -187,6 +221,16 @@ Migration `20261115200000_purchases_mastery_store_728.sql` (idempotent; producti
 `lumen_support`. Private support metadata/content tables stay separate from
 ordinary telemetry. Existing capability/cron are reused; all operations check
 Auth/ownership, admin reads are audited, revocation deletes content atomically.
+
+Manual support sending (#776) adds an in-memory filtered preview and an explicit
+confirmation before the existing capture RPC. A reconnect or incident cannot
+approve that preview. Analytics reuses the same private dossier/hash reader to
+look up an exact retained reference after the live capability check, including
+an older dossier rather than the latest one for its owner. The prepared
+`20261117051322_support_reference_lookup_776.sql` migration changes resolution
+only, preserving ownership, locks, audit, revocation and retention; it requires
+separate production authorization. No game writer, save format or ChatGPT
+retrieval channel is added. See SUPPORT_574 for the transport and acceptance limits.
 No game writer, save mutation or reconciliation change; originals remain local.
 The migration/control are prepared and disabled pending explicit production
 authorization. A volatile one-hour queue deliberately does not survive page
@@ -427,9 +471,136 @@ known field names (otherwise `unknown_field`), without profile contents.
 
 `guest-account.js` distinguishes an unowned guest from a signed-out account cache. Before first authenticated I/O, preserve and read back the exact guest snapshot under `lumenGuestBeforeAccount_<accountId>` (additional versions retain subsequent offline play). Initialize a missing cloud profile from the whole validated guest snapshot, including net currency, earned badges and compatibility access; use a fresh seed only for another account’s cache. Existing cloud achievements must cover the guest, or the existing conservative reconciler must succeed before installation. Recheck the latest local bytes immediately before installation: achievements earned during initialization/daily I/O must also be covered, or remain pending with the live attempt preserved. Conflicting receipts/balances stay pending with both originals preserved; never infer money, copy another account, or erase guest achievements. Initial creation remains atomic and read-back verified; no duplicate victory commands are emitted. Failed backup, offline initialization, read-back or account switch cannot install an empty profile.
 
-Account switch on one device (#711): while a signed-in account is not yet the verified local owner (`lumenCloudOwnerId` names another account and `cloudProfileReady` is false), the device still holds the previous account's cache. `updateAccountSwitchHold` then covers the whole app with « Changement de compte » until this account's verified profile is installed, so the previous account's sky, grid, balances or run are never shown or playable. Offline or after a failed load, the hold offers « Réessayer » (existing `retryAccountCloudSync`) and « Se déconnecter »; nothing of the previous account is erased. After an explicit sign-out (`signOutExplicitly`, flag `lumenSignedOutNeutralV1`, cleared at the next sign-in), a neutral « Tu es déconnecté » screen replaces the last account's cache view, which stays stored and is never erased. Expired sessions, offline play and first-time guests are not flagged. A failed hydration now reports to `lumen_record_sync_health` its fine reason (fixed vocabulary, e.g. `storage_quota`, `backup_unverified`) and its stage in `outcome` (fixed stage list, migration `20261115160000_sync_health_stage_outcome.sql`); anything else is stored as `unknown`, never free text. The account switch hold offers « Diagnostic » after a failure, opening the existing local diagnostic above it. While a switch is pending, `lumenAccountSwitchHoldV1` (sessionStorage) keeps the hold up across a reload (« Réessayer »): a tiny inline script at the top of `<body>` shows it from the first paint, before the module and the session are restored, so the previous account's grid never flashes. The mark is cleared when the account is installed or on explicit sign-out. A guest becoming an account (no previous owner) keeps its existing claim flow. An outbox inspection interrupted by the session change (`SESSION_CHANGED`) is transient and no longer reported as a local storage failure. Reproduction (synthetic multi-account server, 800 ms per RPC): before the fix, B saw A's progress for about 5 s, and indefinitely if B's load failed; data never crossed accounts and A's pending victory stayed durable and was credited to A only. Before installing the new owner, the previous local profile (`lumenBeforeAccountSwitch_<time>`) and board (`lumenBeforeAccountSwitchAttempt_<time>`) are preserved through `preserveRecoverySnapshot`: an identical verified copy is reused, and when the localStorage quota is full the copy is written and read back in the IndexedDB store `lumenCloudRecoveryV1` instead; if neither can be verified the switch stays held. Older copies are never deleted automatically (player-controlled archiving only). The hold's « Diagnostic » shows the copyable report inside the hold card.
+Profile loading and account switch on one device (#711, #789): `updateAccountSwitchHold` covers the game with « Chargement de ton ciel… » until the current account’s profile is installed. This covers both a different local owner and a missing cache on a fresh device. Once Auth resolves to the stored owner, a valid cache can remain visible while normal synchronization continues. Offline, continuation additionally requires the existing verified offline owner record. Without that cache, the hold displays the offline state. After a failure or a 15-second wait, the hold offers « Réessayer » through the existing retry path and « Diagnostic ». The timeout changes the display while the current hydration may still finish. After an explicit sign-out (`signOutExplicitly`, flag `lumenSignedOutNeutralV1`, cleared at the next sign-in), a neutral « Tu es déconnecté » screen replaces the last account's cache view, which stays stored and is never erased. Expired sessions, offline play and first-time guests are not flagged. A failed hydration now reports to `lumen_record_sync_health` its fine reason (fixed vocabulary, e.g. `storage_quota`, `backup_unverified`) and its stage in `outcome` (fixed stage list, migration `20261115160000_sync_health_stage_outcome.sql`); anything else is stored as `unknown`, never free text. The account switch hold offers « Diagnostic » after a failure, opening the existing local diagnostic above it. While a switch is pending, `lumenAccountSwitchHoldV1` (sessionStorage) keeps the hold up across a reload (« Réessayer »): the external `account-switch-boot.js` at the top of `<body>` shows it from the first paint for a pending switch, stored session or recognized auth return, so the previous account's grid never flashes. The mark is cleared when the account is installed or on explicit sign-out. A guest becoming an account (no previous owner) keeps its existing claim and backup flow behind the loading screen. An outbox inspection interrupted by the session change (`SESSION_CHANGED`) is transient and no longer reported as a local storage failure. Reproduction (synthetic multi-account server, 800 ms per RPC): before the fix, B saw A's progress for about 5 s, and indefinitely if B's load failed; data never crossed accounts and A's pending victory stayed durable and was credited to A only. Before installing the new owner, the previous local profile (`lumenBeforeAccountSwitch_<time>`) and board (`lumenBeforeAccountSwitchAttempt_<time>`) are preserved through `preserveRecoverySnapshot`: an identical verified copy is reused, and when the localStorage quota is full the copy is written and read back in the IndexedDB store `lumenCloudRecoveryV1` instead; if neither can be verified the switch stays held. Older copies are never deleted automatically (player-controlled archiving only). The hold's « Diagnostic » shows the copyable report inside the hold card.
+
+### Signup confirmation and the mail service (#814)
+
+Email/password signup uses the Lumen-only `lumen-auth-mail` function. The
+client shows the confirmation panel after HTTP success with an explicit
+acceptance response. HTTP 429 keeps the form available with rate-limit
+feedback. Network and provider failures use generic copy without the address
+or the provider response. The pending submission stays single-flight through
+view changes. Acceptance creates no client session and does not authorize
+progression writes. The existing server limiter governs mail requests.
+
 
 ## Cloud persistence contract
+
+### Google Play review navigation (#796)
+
+`lumen_commands.play_review_access_events` is private. A database operator
+appends a grant with an expiry or a revocation for an Auth user. The latest
+event is authoritative. Each event records the database role and time.
+Lumen account erasure removes the event history for that user and prevents a
+later grant from resurrecting it. See [Play operations](../android/PLAY.md#accès-à-la-revue-google-play-796).
+
+`lumen_can_use_play_review` compares the expected account with `auth.uid()`
+and returns one boolean. The map reads it online, after profile and entitlement
+verification, and again on selection. It discards responses from an earlier
+account, client or hydration generation. The grant stays in memory and affects
+only quest prerequisites in the map. It never participates in a profile
+snapshot, entitlement, command receipt or merge.
+
+Locally suspended review attempts retain the existing attempt envelope in
+account- and quest-scoped storage. They carry game state only and use the
+normal grid and reset-revision checks on resume. Local Lumen erasure removes
+those attempts. Navigation-only boards stay in memory until a real attempt
+starts. Victory and ranking use the existing paths.
+
+### Historical guest hydration and Wallet authority (#801)
+
+After Wallet activation, the profile CAS retains the verified cloud projection
+of `shards`, `walletRevision` and `daily` exactly. The SQL snapshot trigger
+checks all three fields, including when the request uses the digest CAS. The
+guest merge may still recover compatible achievements with verified read-back.
+Missing empty `daily.dates` and `daily.rewards` containers carry no history.
+A local date or reward that the cloud cannot cover keeps the original
+snapshots pending. Hydration reads daily history without projecting it through
+CAS for an active Wallet. The legacy daily write remains available before
+activation.
+
+An unresolved Wallet hold leaves the guest snapshot and account-scoped outboxes
+intact and shows « Historique à vérifier » in the account loading screen.
+The exact Wallet command refusal (SQLSTATE `22023`) has a fixed diagnostic
+distinct from stale CAS. Recovery of an owned cache still uses the existing
+operation ID, exact receipt and current-profile read-back rules. Account
+ownership and readiness require the existing verified installation.
+
+Guest acquisition recovery (#801, diagnostic +665). When the conservative
+guest merge is held (`mutable_balance`, `wallet_daily_divergence`,
+`wallet_command_required`, CAS conflict, reward conflict), hydration hands the
+unchanged guest bytes to the existing `lumen_reconcile_acquisitions` RPC
+(`positive-acquisitions-v1`). The server unions badges, stars, completed quests
+and records, keeps the XP maximum, and leaves `shards`, `walletRevision`,
+`daily`, receipts and command cursors exactly as stored. It archives both
+sources by digest. The client sends no balance and no CAS on this path. It
+installs only the re-read server profile, then takes ownership. Local balances
+and daily dates the server does not adopt stay in `lumenGuestBeforeAccount_*`,
+`lumenBeforeCloudReconcileLocal_*` and the server source archive. An ownerless
+cache that carries `walletRevision` or `legacyVictoryRevision` belonged to an
+account and is never merged into another one; it stays held. A refused or
+unavailable recovery keeps every copy, records `acquisition_recovery_pending`
+and keeps « Historique à vérifier ». No migration is involved.
+
+### E-mail links and password recovery (#820)
+
+A native Supabase redirect (`#access_token…&type=…` or `#error…`) is read
+before the Auth SDK starts; its error parameters are removed from the address.
+A branded `lumen_confirm` link is removed before `verifyOtp`. One verdict is
+emitted after the session restore: success only after verification, and the
+action follows the real session. A verified recovery link marks the recovery
+pending, which keeps hydration paused until the new password is saved. The
+recovery request counts as sent only on the endpoint's `{ok:true}` contract;
+429, 5xx, invalid JSON and network failures have their own copy, identical for
+known and unknown addresses. Password update errors map to bounded reasons and
+never show the provider message. Tokens and addresses never enter diagnostics.
+
+A recovery link opens a dedicated screen (`ui/password-recovery.js`, dialog
+`#passwordRecovery`), never the sign-in form or the account menu. While the
+link is checked it shows a neutral « Vérification de ton lien… » state (20 s
+watchdog, then « Vérification impossible »). The form is bound to the account
+whose recovery session opened it: no session, an account change or an expired
+session (`session_expired`, 401/403) ends on « Ce lien n’est plus actif » with a
+new-link action, and `updateUser` is not called for another account. Mismatched
+entries and provider rules (weak/same password, network) keep the form.
+Submission is single-flight. « Mot de passe modifié ! » appears only after
+`updateUser` succeeded; the page does not reload until the player chooses
+« Continuer mon aventure » (reload resumes the hydration held by recovery) or
+« Se connecter » when no session remains. The 20/11/2026 field test (three
+recovery sessions in three minutes, then a password sign-in) matched the former
+immediate `location.reload()` that hid the success.
+
+A native link captured by an already open Lumen window (installed app, PWA link
+capturing) changes only the fragment: no navigation happens, so neither the boot
+reader nor the SDK sees `#access_token`. A `hashchange` carrying an auth result
+reloads the page once, which then follows the normal native-link path.
+
+### Installed app first opening (#832)
+
+iOS can give the home-screen app storage separate from Safari. When an installed
+app opens on storage with no progress, owner, session or recovery copy (the
+first-visit claim), it first offers « J’ai déjà joué — Retrouver ma progression »
+(sign-in) and « Commencer une nouvelle aventure » (confirmed, then the usual
+welcome). No anonymous Safari data is imported or promised. An iOS guest sees a
+non-blocking warning before installing. Progress ownership and hydration rules
+are unchanged.
+
+### Retirement of player currency (#803, #806)
+
+New hint and verification actions record assistance on the existing attempt
+and use its official-time score. They create no Wallet reservation, receipt
+or RPC. Historical pending requests still replay under their original owner,
+operation ID and receipt rules. Stored `shards`, `walletRevision` and `daily`
+remain intact, including for guest migration, wallet activation on old saves,
+snapshot comparison and command recovery. The #801 guard still compares the
+verified projection in full.
+
+Older clients and existing SQL victory writers still update the hidden
+compatibility ledger. The current client exposes no balance or currency reward,
+and its local victory projection keeps the historical balance. Removing those
+server writers or dropping their schema would require a separately validated
+cutover preserving old receipts and in-flight clients. This release has no
+Supabase migration or activation step.
 
 ### Competition (#638/#647)
 
@@ -462,6 +633,15 @@ matching quest/start/hint facts. It computes penalties and retains the lower
 admitted score. Nonqualifying badge runs cannot enter competition. Historical
 minima follow the separately gated, revision-safe import above. Elapsed time and aid counts remain client assertions,
 checked for bounds, consistency and wall time; this is not tamper-proof timing.
+
+Ranking queue isolation (#775): a failed capture remains byte-for-byte pending,
+but does not prevent independent later captures from reaching their own server
+receipts. A partially failed flush still reports failure and includes successful
+operation results for the current victory view. Reconnect/timer refreshes never
+show an old board while that view's capture remains pending. Version-1 attempts
+derive `hintUsed` from their own persisted hint counter, never a previous grid's
+UI flag; old unversioned attempts retain their historical fallback. Existing
+inconsistent receipts are preserved, not repaired or requalified by the client.
 
 `lumen.profiles` owns the canonical unique nickname and durable ranking opposition;
 `ranking_members` owns public participation. Automatic participation is server-gated
@@ -1377,6 +1557,14 @@ Deployment compatibility: an explicit `PGRST202` + HTTP 404 from the read-only v
 **Protected product invariant (#248):** anything earned or purchased by an authenticated player must be durably retrievable after another-device sign-in, PWA reinstall, local cache loss, reconnect or migration. Never replace a nonempty cloud record with an empty or stale local snapshot.
 
 ### Data ownership and invariants
+
+Play price loading (#729/#731): `createPlayPriceLoader` in `persistence/play-billing.js`
+owns ephemeral provider availability, validated labels and safe diagnostic reasons.
+`game-screen.js::renderAdventureOffer` refreshes the currently mounted offer after
+loading/retry; these labels never persist, write purchases or grant entitlements.
+The Play context requires provider prices even when its service fails, and stays
+excluded from Stripe during retries. Existing server verification and hydration
+remain authoritative. See [Play diagnostic and owner checklist](../android/PLAY.md).
 | Data | Canonical source | Restore / merge rule |
 |---|---|---|
 | Quest completion, constellation unlocks, stars and badges | Authenticated cloud player record | Preserve earned achievements; deduplicate by stable quest/attempt identity; merge by documented progression semantics, never blind whole-profile replacement |
@@ -1561,7 +1749,8 @@ does not authorize current full-profile overwrites: owned receipts, transactiona
 commands and verified reconciliation now govern restoration under the cloud contract.
 
 ## Supabase
-The client uses a shared Supabase project. Application records live in `lumen`
+The client uses the shared Supabase project **SoldeZen** (`tjdjlavmusmncuszhsuw`).
+Lumen is not a separate project in the Supabase project list. Application records live in `lumen`
 and dedicated private schemas (including command and privacy machinery); public
 RPC wrappers expose bounded, authorized operations. Relevant responsibilities include:
 - profile/nickname;
@@ -1570,6 +1759,12 @@ RPC wrappers expose bounded, authorized operations. Relevant responsibilities in
 - daily play;
 - entitlements;
 - feedback and difficulty rating.
+
+Owner authorization recorded on 17 November 2026: read-only diagnosis may inspect
+the Anupon account's ranking attempts and victory receipts across quests to trace
+queue dependencies. This standing authorization excludes production writes and
+data from the other applications sharing SoldeZen. Keep player identifiers,
+tokens and raw save payloads out of public reports.
 
 Google OAuth is supported. When a local player signs in, local solved history must be merged to cloud rather than discarded.
 
@@ -1630,7 +1825,7 @@ Reset clears the board while retaining attempt identity, elapsed active time and
 Social challenges use the existing static/PWA client plus Supabase RPCs. `src/campaign/social-challenge.js` owns the domain rules and RPC adapter; `game-screen.js` only orchestrates UI/gameplay. The normal board, rule engine and attempt engine are reused: there is no duplicate challenge gameplay implementation.
 
 Backend objects:
-- `lumen.social_challenges`: immutable sender snapshot (quest, first-play performance, sender identity/display name);
+- `lumen.social_challenges`: immutable sender snapshot (quest, qualifying-run performance and its `source_first_play` provenance, sender identity/display name);
 - `lumen.social_challenge_participations`: one row per challenge + participant identity, with started/completed/abandoned state, performance and sender read/push state;
 - `public.lumen_push_subscriptions`: existing PWA subscription store, extended with authenticated/anonymous ownership and a social-notification preference.
 
@@ -1643,6 +1838,140 @@ Challenge writes go through SECURITY DEFINER RPCs while both social tables keep 
 The existing `lumen-push` Edge Function also owns challenge-result delivery. A completed participation triggers a server-verified challenge-result notification to subscriptions owned by the sender. Push payloads reveal only that a result exists, not the result itself, and deep-link to `?myChallenges=<challenge-id>`. Notification tags are challenge-scoped so repeated results for the same shared link collapse instead of flooding the device.
 
 One challenge link may have many independent participants. “Mes défis” is therefore sender-centric and shows participant count, unread results and each terminal result. This data model intentionally leaves sender/recipient account links compatible with the later Social V2 issue without requiring an internal friends/inbox system now.
+
+### RPC routing matrix and recipient invariants (#883, audited 2026-11-20)
+
+The client routes on the challenge's **stored grid revision**, not on whether a
+numeric ID exists. Public `lumen_start_social_challenge` /
+`lumen_finish_social_challenge` are wrappers (20261108061843) that only refuse
+`grid_revision<>0`, then delegate to the private one-shot implementations in
+schema `lumen`; a stable revision-0 challenge is therefore valid on them.
+
+| Challenge kind | Snapshot identity | create | get / Mes défis | start / finish |
+|---|---|---|---|---|
+| Historical number (legacy index, incl. #650 soft revision 1 of quests 3–6) | `questId`=legacy+1 | `lumen_create_social_challenge` (rev 0) | `lumen_get_quest_challenge_v2` / `lumen_list_quest_challenges_v2` | `lumen_start/finish_social_challenge` |
+| Stable ID, grid revision 0 | `stableQuestId`, `puzzle_id` null | `lumen_create_quest_challenge` (rev 0) | same v2 reads | `lumen_start/finish_social_challenge` |
+| Stable ID, grid revision > 0 | `stableQuestId` + `gridRevision` | `lumen_create_quest_challenge_v2` | same v2 reads | `lumen_start/finish_quest_challenge_v2` |
+
+Reads fall back to `lumen_get_quest_challenge` then `lumen_get_social_challenge`
+only on `PGRST202` (older server). Historical numbers follow the live legacy
+board (`docs/GRID_CATALOG.md`, #650), so links created before 2026-11-14 for
+quests 3–6 are compared on the current onboarding board.
+
+Recipient invariants (`challenge-recipient-browser.mjs`,
+`fixtures/challenge-rpc-matrix.sql`):
+- the challenged grid is played even from a locked Adventure: `choose()` does not
+  apply the campaign quest bound while `socialChallenge` is active, and challenge
+  attempts never open an Adventure (`hasPackAccess` ignores `mode: challenge`);
+- a challenge victory branches before every campaign mutation (no progress,
+  reward, badge or entitlement);
+- the server stores lowercase `started|completed|abandoned`;
+  `challengeAttemptClosed` shows the result of a finished link instead of a new
+  attempt, and the server never rewrites a terminal result;
+- “Mes défis” labels rows with `challengeQuestLabel` (canonical visible ordinal),
+  because `puzzle_id` is a frozen legacy index and is null for stable-only quests;
+- `challenge_created` / `challenge_result_viewed` carry `stable_quest_id` and
+  `grid_revision` so stable-only challenges stay measurable (#708);
+- (#881 Lot 1) a recipient who has not completed the tutorial
+  (`tutorialCompletedProof`) sees a rules summary and « Voir les règles » in the
+  intro; reading them starts no attempt. During a challenge the rules help hides
+  « Rejouer l'apprentissage » / « Revoir l'introduction », and
+  `startLearningReplay` / the introduction replay refuse to run: both would
+  have replaced the challenged grid by quest 1 and restarted its clock.
+
+#889 / #888 (migration `20261121090000_qualifying_challenges_889_888.sql`,
+additive): the `check(source_first_play)` constraint is dropped and the
+versioned writer `lumen_create_qualifying_challenge` serves every kind
+(historical number, stable revision 0 or registered revision). It refuses
+`p_qualifying=false` and stores `p_first_play` as declared; the older writers keep
+their first-play contract for older clients. The client falls back to them only
+for a first win when the new writer is missing (PGRST202) and refuses a replay
+rather than mislabel it. `lumen_get_quest_challenge_v2` / `lumen_list_quest_challenges_v2`
+add `source_first_play`; the get also returns the caller's own
+`participant_started_at` and `server_now` (never another participant's). The
+client derives the resume plan with `challengeResumePlan`; a challenge attempt is
+restored only for its own `challengeId` and a cross-device resume seeds
+`activeDuration` with the server-measured elapsed time. Qualification itself is
+declared by the client as for victory commands (the server echoes
+`facts.qualifying`); the server cannot prove a guest's cooldown, exactly as it
+could not prove a first play before.
+
+Known limits: durations stay client-declared; a cross-device resume counts the
+wall-clock time since the server start, pauses included. Old cached clients without these
+fixes still show the previous behaviour until they update.
+
+### Daily challenge (#882, EPIC #881 Lot 3)
+
+Server contracts, data model, rules, anti-cheat limits and rollback are owned by
+[DAILY_CHALLENGE.md](DAILY_CHALLENGE.md). Summary: one official ranked attempt per
+account and Europe/Paris day (`lumen_commands.daily_runs`, primary key
+`(user_id, day)`), pinned grid per day (`daily_puzzles`, seeded from
+`content/generated/daily-schedule.json`), general and friends rankings computed
+from the same rows, ranks frozen in `daily_standings` after close + 6 h, disabled
+by the `daily_challenge` feature flag until the gates of #882 are validated.
+Client (PR B): a daily run is an isolated challenge run in `game-screen.js`
+(`socialChallenge.daily`), started from `/?daily=1`; see DAILY_CHALLENGE.md §6 bis.
+Privileges: hosted Supabase grants `EXECUTE` to `anon` on every new `public`
+function, so revoking `PUBLIC` is not enough. `20261122100000_daily_anon_revoke_882.sql`
+revokes `anon` explicitly; only `lumen_daily_today` stays guest-callable. New
+account-only RPCs must revoke `anon` explicitly too.
+
+### Friends and direct challenges (#35, EPIC #881 Lot 2)
+
+Optional, accounts only; a guest still plays any challenge link without an
+account. The public identity is the existing unique nickname
+(`lumen.profiles.nickname`, `nickname_ready`); RPCs take and return
+nicknames only, never an email or a user ID. Migration
+`20261121100000_friends_direct_challenges_35.sql` (additive, idempotent):
+
+- `lumen.social_friend_edges`: one directed edge per player
+  (`outgoing` / `incoming` / `friends` / `declined`), so each row has one
+  owner and Lumen erasure never touches another player's row. A trigger on
+  `lumen.profiles` deletion removes the other players' edges towards an erased
+  profile; account deletion cascades through `auth.users`.
+- `lumen.social_challenge_invites`: owned by the recipient, keyed by an existing
+  challenge ID **without** a foreign key or a new column on
+  `lumen.social_challenges` (the erasure review only accepts the participation
+  FK and a fixed anonymizable column list). The sender is the challenge's own,
+  anonymizable `sender_user_id`; it is never copied.
+- RPCs (`authenticated` only, SECURITY DEFINER, RLS on, no table grant):
+  `lumen_friend_search` (exact case-insensitive nickname, no enumeration),
+  `lumen_friend_request` (idempotent; crossing requests accept; limits: 30
+  pending, 10 per day, 30-day wait after a quiet decline), `lumen_friend_respond`,
+  `lumen_friend_remove`, `lumen_friend_list`,
+  `lumen_challenge_send_to_friend` (own challenge, accepted friend, one invite per
+  challenge and friend, 30 per day), `lumen_challenge_inbox` (received with the
+  caller's own status, reference hidden; sent with each friend's status and the
+  finished time).
+- Both tables are registered in `lumen_privacy.policy()` with
+  `lumen_erasure_guard` (same pattern as #729/#796). The rights export lists the
+  rows, including the friend's technical ID, under its existing
+  `thirdPartyReviewRequired` operator review.
+
+A direct challenge is an existing challenge (created by the #889 qualifying-run
+writer) delivered to a friend; the one-shot participation, resume (#888),
+comparison and campaign isolation are those of the link challenge. The client
+module is `src/campaign/social-friends.js`; the screen is « Amis et défis »
+(`#friendsModal`), with « Envoyer à un ami » from the challenge share dialog and
+from « Mes défis ». Duel presentation (#896, `src/campaign/duel-view.js`) reads the
+same contracts: « Mes défis » rows (`source_*`, `participants[].name/status/
+duration_seconds/autonomy/mastery/previously_played/completed_at`), the friend
+inbox joined to them by `challenge_id` (participant matched by name, else by a
+unique identical time), and, for a finished received challenge, the read-only
+`lumen_get_quest_challenge_v2` (cached per session). No migration. No push or in-app notification beyond a small counter of
+pending requests and received challenges on the entry button. Since #898 the
+entry buttons (`#openFriends`, `#openMyChallenges`, `#inviteLumenFriends`) and
+their counters live in the Espace social panel (`src/ui/social-hub.js`), keeping
+their ids so the #35 code binds them unchanged. In-app notifications
+(`src/ui/social-notifications.js`, PR B) are derived from the same reads
+(`lumen_friend_list`, `lumen_challenge_inbox`, `lumen_list_quest_challenges_v2`);
+no table, RPC or migration is added and nothing is pushed. The only state is
+local, per account and device: `localStorage['lumenSocialNotificationsV1:<user id>']`
+= `{version, baseline, outgoing[], accepted[], seen[]}` (lower-case nicknames of
+pending outgoing requests to notice an acceptance, acceptances kept 30 days
+while the friendship exists, ids already read; bounded, ids of vanished items
+forgotten). The first observation on a device is a silent baseline (no flood of
+old acceptances). Guests store nothing.
 
 ### Security-advisor note
 Supabase reports the two social tables as `rls_enabled_no_policy` and the anonymous social RPCs as callable SECURITY DEFINER functions. For #18 this is intentional: guests are a product requirement, direct table access is denied by RLS, and the narrow RPCs enforce the ownership/one-attempt contract. These warnings are not a claim that the whole project is security-clean; unrelated existing advisor warnings remain and must be reviewed separately.
@@ -1668,6 +1997,8 @@ No new profile field, RPC, table, outbox or cloud reconciliation rule is added.
 ## Current learning controller (#57)
 
 `src/game/learning.js` is a pure, read-only lesson planner over the canonical board. It produces the expected cell actions and context-specific copy, using the audited opening grid and its `learnOrder`. `game-screen.js` enforces the interaction gate and presents the coach. It does not keep a second teaching board or persist a parallel lesson cursor; refresh resumes by deriving the step from the restored attempt board. Later placements spotlight the territory instead of the solution cell. Quest 2 is free play with optional drag advice. Explicit learning replay can still derive the historical gesture lesson from the same board using `dragLearningStep`. The transient pointer gesture freezes its permitted cells until release so completing the row mid-drag cannot mark unrelated cells. The older stage #25 descriptions above record the historical extraction, not the current learning behavior.
+
+The temporary territory numbers of the quest-1 introduction are decided by the pure `territoryNumbersVisible` (#862), computed once per render: an intro step (`learningIntroActive`) of an active scripted lesson (`scriptedLearningActive`, which honours `lumenSkipFirstGridTutorial` and explicit replays). The in-memory intro cursor resets on reload, so it alone could not hide them after a skipped tutorial.
 
 Validation: `scripts/learning-tests.mjs` proves the five forced deductions and requested exclusions; `scripts/learning-browser-tests.mjs` exercises real touch/mouse actions, ignored taps, reload, drag, complete quest 1, free quest 2, direct ordinary continuation and optional Mon ciel navigation on 320x568, 360x640, 390x844, 768x1024 and 1440x900 viewports. Both are part of the CI gate.
 ### Server incident age and alert scope (#398)
@@ -1947,3 +2278,32 @@ Cause confirmée de l'incident : depuis le chrono officiel (#653), les faits V2 
 ### Erreurs de transport et victoires lentes (#697, #698)
 
 Une écriture CAS du profil qui échoue sans code fournisseur avec un message de transport (`Failed to fetch`, `Load failed`, abandon/délai) est étiquetée `CLOUD_NETWORK` au lieu de `CLOUD_WRITE_REFUSED`. Le traitement ne change pas : la progression non synchronisée est préservée et la lecture de vérification existante s'applique. Côté victoire, le chrono affiché et les secondes capturées sont figés à la détection locale ; si la commande d'une victoire déjà capturée durablement dépasse 2,5 s, la carte « victoire en attente » s'affiche pendant que la commande continue, sans aucun crédit local, puis devient la célébration confirmée après l'accusé serveur. Les événements `victory_pending_shown`, `victory_pending_upgraded` et `victory_sync_timing` (durée en ms, sans identifiant) alimentent les mesures avant/après.
+
+**Play Console product identifiers (2026-11):** Google Play requires underscores in the external SKU (`real_adventure_02` … `real_adventure_09`, `real_sky_all`). The application converts canonical internal pack/catalogue IDs (`real-adventure-02` … `real-adventure-09`, `real-sky-all`) only at the Play API boundary. The Edge Function validates the external SKU and maps it back to the internal catalogue ID before granting any rights; no existing purchase or entitlement IDs are renamed. The Play package is `com.nopuna.lumen`.
+
+### Offline start and unreachable backend (#847)
+
+The owner-bound offline proof (`lumenOfflineVerifiedOwnerV1`) is written as soon
+as an online hydration is verified. Before #847 it was written only as a side
+effect of an access decision; #807 removed the hint-spend path that triggered it,
+so a signed-in player could stay on « Tu es hors ligne » in airplane mode.
+A transport failure while `navigator.onLine` is still true (Auth refresh or RPC
+without HTTP answer, or a backend silent for 15 s plus an 8 s probe) is treated
+as offline: the page reads `navigator.onLine` as false through an instance
+property, so every existing offline rule applies unchanged. Only the stored
+owner, with a valid proof and no pending identity change, plays its local cache;
+otherwise the explicit offline screen stays. A probe every 30 s (backoff to
+5 min, immediate on `online`) reloads once the backend answers, deferred while
+an attempt is running. No data is deleted and no write is sent while unreachable.
+
+### Attempt run identity and ranking verdict (#851)
+
+`attemptOperationId(attempt)` (`attemptId-reset-<runSegment>`) identifies a run
+for the victory receipt and the ranking capture, which `ranking_finish` matches
+by this exact id. New attempts start at `runSegment: 0` and keep it across
+resets; an attempt restored from an older release takes `runSegment = resetCount`;
+challenges keep their historical per-reset id. The client keeps the
+`ranking_begin` verdict and the run's qualification to state a refusal:
+`cooldown` (begin refused, the only begin refusal), `not_qualifying`,
+`not_better` (confirmed, ranked best unchanged), `unknown` otherwise. No SQL
+change and no historical ranking modification.

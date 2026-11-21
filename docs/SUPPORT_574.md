@@ -1,5 +1,53 @@
 # Temporary assistance — #574
 
+## Explicit sending and reference lookup (#776)
+
+The local diagnostic copy button only writes to the clipboard. Sharing that text
+through another application does not confirm receipt by Lumen. The existing
+Assistance panel now names the support destination and separates manual
+preparation, an exact filtered preview, confirmation and the server receipt.
+An unconfirmed preview never uploads on reconnect or on an automatic incident;
+cancel, identity change and page closure discard only that volatile copy.
+Previously consented automatic incident captures retain their existing policy.
+Failed approved uploads reuse their immutable capture identity and payload.
+
+The dossier reference and last confirmed receipt remain visible in Assistance.
+Authorized support can enter that reference in Analytics → Joueurs without
+first guessing/selecting an account. This reuses `lumen_support` and the existing
+dossier/hash reader. The prepared migration
+`20261117051322_support_reference_lookup_776.sql` resolves the exact case after
+checking the live capability, verifies an optional supplied owner, and keeps the
+existing support lock, revocation, seven-day access bound and audit. A retained
+older case must not silently resolve to the account's latest case. No new table,
+public link, bearer reference, permission, telemetry queue or game writer is added.
+
+On 17 November 2026, after exact-head SQL CI and explicit owner authorization,
+the reviewed migration was applied to SoldeZen as provider version
+`20261117063736`, name `support_reference_lookup_776`. Its normalized LF source
+SHA-256 matches the repository file:
+`bfc7f113f7d8fee514ea2f5eb703fb8e8b03e2506652c5ec228c6c112d3edc99`.
+The installed function has MD5 `628d4e7f87774ca8e01b4a9c67462868`;
+public invoker/private definer boundaries, empty search path, RLS and grants
+were verified unchanged. Anonymous execution and raw authenticated content reads
+remain denied. Security Advisor findings are unchanged (excluding observation
+timestamps). No player save, receipt or support copy was modified by the migration.
+This attests database installation, not physical-phone acceptance. An older
+server rejects reference-only lookup; the UI reports an unavailable dossier and
+does not fall back to another player's/latest dossier. Client rollback restores
+the former manual UI; the additive lookup support can remain installed. The
+previous support activation and consent are unchanged.
+
+No dedicated Lumen connector for ChatGPT is configured by this feature. The
+reference lets an authorized operator retrieve the private report; it grants
+neither public access nor automatic email/ChatGPT access.
+
+Tests: manual preview/confirmation and incident/reconnect isolation in
+`support-tests.mjs`; native-browser preview, confirmed send and exact-reference
+lookup in `support-browser.mjs`; real API/capability/old-reference/hash/revocation/
+expiry/audit checks in disposable `fixtures/support-reference.sql`, applied after
+the migration twice in ledger CI. Physical iOS/Android/PWA reception, authorized
+retrieval, offline return, withdrawal and purge remain separate acceptance.
+
 ## Capture size follow-up (6 November 2026)
 
 An advanced catalogue profile plus two recovery copies can exceed the existing

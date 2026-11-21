@@ -50,6 +50,17 @@ button{font:inherit;font-weight:700;background:#fff;border:1.8px solid #555;bord
 .success-time{font-size:24px;font-weight:900;margin:10px 0 22px}
 .success-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .success-actions button{border-radius:16px}
+.lumen-share-dialog{width:min(440px,calc(100% - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:20px;border:1px solid #28415b;border-radius:18px;background:#101d2e;color:#eefaff}
+.lumen-share-dialog::backdrop{background:#07111dbb}
+.lumen-share-dialog h2{margin:0 0 12px;font-size:1.25rem}
+.lumen-share-dialog button{min-height:44px;margin:0 8px 8px 0}
+.lumen-share-dialog textarea{display:block;box-sizing:border-box;width:100%;margin:6px 0;color:inherit;background:#07111d}
+.lumen-share-dialog p:empty,.lumen-share-dialog [hidden]{display:none}
+#lumenSharePreview{white-space:pre-line}
+.victory-share-result{width:100%;margin-top:6px;font-size:13px;min-height:44px}
+.victory-share-result[hidden]{display:none}
+/* Reserve the confirmed action’s space while the same screen waits for the ACK. */
+.sky-reveal[data-sync="pending"] .victory-share-result[hidden]{display:block;visibility:hidden}
 #board.win{animation:boardWin .8s ease-in-out}
 #board.win{animation:boardWin .55s ease-out both}\n#board.win .lumen-orb{animation-play-state:paused}
 .confetti{position:fixed;z-index:1001;top:-24px;width:12px;height:18px;border-radius:3px;pointer-events:none;
@@ -155,8 +166,6 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 
 /* Mobile play-first layout: metadata is compact and the board appears immediately. */
 .mobile-streak,.mobile-account,.mobile-auth-popover,.daily-info-popover{display:none}
-.mobile-auth-popover.password-recovery:not([hidden]){display:block;position:fixed;z-index:180;top:70px;right:16px;width:min(340px,calc(100vw - 32px));max-height:calc(100dvh - 100px);overflow:auto;padding:16px;background:#101d2e;border:1px solid #28415b;border-radius:15px;box-shadow:0 16px 40px rgba(0,0,0,.35);color:#c4d6e8}
-.password-recovery input,.password-recovery button{box-sizing:border-box;width:100%;margin-top:9px;padding:10px}
 /* #749: formerly (max-width:700px); now every width */
  .app{padding:8px 10px 28px}
  .head{margin:0 0 5px;align-items:center}
@@ -182,8 +191,6 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .credits-panel ul{margin:6px 0 0;padding-left:18px}
  .credits-panel a{color:#bcd7ff}
  .game-core{position:relative}
- .head #new{font-size:0;width:38px;height:38px;padding:0;border-radius:50%}
- .head #new::after{content:"↻";font-size:21px}
  .mobile-journey{display:flex;align-items:center;gap:7px;border:1px solid #28415b;background:#101d2e;padding:5px 8px;border-radius:13px;color:#a9bdd0;font-size:11px;text-align:left;box-shadow:0 0 12px rgba(63,203,255,.07)}
  .mobile-journey-sky{color:#68e7ff;font-weight:900;white-space:nowrap}
  .mobile-journey:active{transform:scale(.98)}
@@ -314,8 +321,6 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 
 
 /* Issue #27 — play-first viewport and unified Lumen assistance */
-.hint-guided-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.hint-guided-head strong{margin:0}
 .hint-guided-close{width:30px!important;height:30px;padding:0!important;border-radius:50%;font-size:20px;line-height:1;background:transparent!important;color:#5b3b00!important;border-color:rgba(91,59,0,.3)!important}
 .hint-guided-card{border-color:#f2b84b}
 .help-card h3{margin:16px 0 6px;color:#eafaff;font-size:15px}
@@ -346,17 +351,6 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
  .actions button{min-width:0;padding:7px 4px;font-size:11px;line-height:1.15}
  .hint-wallet{margin:4px 0 0}
  .reward-live{min-height:22px;margin:2px 0 4px}
- #guidedCard,#hintCard{
-   position:fixed;
-   left:10px;
-   right:10px;
-   bottom:max(10px,env(safe-area-inset-bottom));
-   z-index:1200;
-   margin:0;
-   max-height:min(42dvh,300px);
-   overflow:auto;
-   box-shadow:0 18px 50px rgba(0,0,0,.42);
- }
 
 
 /* Attempt lifecycle (#36) */
@@ -371,11 +365,36 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 .account-switch-hold-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .account-switch-hold-report{display:flex;flex-direction:column;gap:8px;width:min(340px,calc(100vw - 32px))}
 .account-switch-hold-report[hidden]{display:none}
+/* #820 e-mail link verdict and #832 installed-app first opening */
+.auth-link-result-icon,.pwa-welcome-icon{animation:none}
+/* #820: dedicated password-recovery screen, above the profile hold. */
+.password-recovery-screen{z-index:5200;overflow:auto}
+.password-recovery-form{display:flex;flex-direction:column;gap:6px;width:min(320px,calc(100vw - 32px));text-align:left}
+.password-recovery-form[hidden]{display:none}
+.password-recovery-form label{color:#d8ecf7;font-size:14px;margin-top:4px}
+.password-recovery-form input{box-sizing:border-box;width:100%;min-height:44px;padding:10px;border:1px solid #35546f;border-radius:10px;background:#0b1624;color:#e6f4fb;font:inherit}
+.password-recovery-form small{color:#9fc4d8}
+.password-recovery-error{color:#ffb4a8!important;font-size:14px}
+.password-recovery-error[hidden]{display:none}
+.password-recovery-form button{box-sizing:border-box;width:100%;min-height:44px;margin-top:6px;border:1px solid #35546f;border-radius:11px;background:#0f1d2e;color:#d8ecf7;font:inherit}
+.password-recovery-form button.primary{background:#1d6f86;border-color:#3aa7c0;color:#fff;font-weight:600}
+.password-recovery-form button:disabled{opacity:.6}
+.password-recovery-form .password-recovery-later{background:transparent;border-color:transparent;color:#9fc4d8}
+body.password-recovery-open .app{visibility:hidden}
+.pwa-welcome-actions{flex-direction:column;align-items:stretch;width:min(340px,calc(100vw - 32px))}
+.pwa-welcome-confirm{font-size:14px}
+.pwa-welcome-confirm[hidden]{display:none}
+.pwa-welcome-help{width:min(340px,calc(100vw - 32px));text-align:left;color:#9fc4d8;font-size:14px}
+.pwa-welcome-help summary{cursor:pointer;color:#d8ecf7;text-align:center}
+.pwa-welcome-help ol{margin:8px 0;padding-left:22px;line-height:1.5}
+.install-optin-warning{color:#ffe3a1;line-height:1.4}
+.install-optin-warning[hidden]{display:none}
 .account-switch-hold-report textarea{width:100%;max-height:40dvh;font:11px/1.35 ui-monospace,monospace;color:#cfe6f3;background:#0b1624;border:1px solid #273c50;border-radius:10px;padding:8px;resize:vertical}
 .account-switch-hold-actions button{min-height:44px;padding:0 16px;border:1px solid #35546f;border-radius:11px;background:#0f1d2e;color:#d8ecf7;font:inherit}
 @keyframes accountSwitchPulse{50%{opacity:.4}}
 .signed-out-screen{z-index:4900}.signed-out-icon{animation:none}
 body.signed-out-neutral .account-optin{z-index:4950}
+body.account-switch-hold .app{visibility:hidden}
 body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 @media(prefers-reduced-motion:reduce){.account-switch-hold-icon{animation:none}}
 .attempt-mask{position:absolute;inset:0;z-index:90;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;border:1px solid #28415b;border-radius:18px;background:rgba(7,17,29,.96);color:#eefcff;text-align:center;padding:22px;backdrop-filter:blur(14px)}
@@ -396,7 +415,25 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 /* Social challenges (#18) */
 .remarkable-challenge{margin:10px 0;padding:12px;border:1px solid rgba(255,222,126,.45);border-radius:14px;background:rgba(255,214,96,.08);display:grid;gap:3px;text-align:center}.remarkable-challenge[hidden]{display:none}.remarkable-challenge strong{color:#ffe39a;font-size:13px;letter-spacing:.08em}.remarkable-challenge span{color:#dcecff;font-size:12px}
 #successShare.remarkable{box-shadow:0 0 0 1px rgba(255,220,115,.65),0 0 24px rgba(255,203,76,.2);font-weight:900}
-.social-overlay{position:fixed;inset:0;z-index:1400;background:rgba(2,7,14,.88);display:flex;align-items:center;justify-content:center;padding:18px}.social-overlay[hidden]{display:none}.social-card{width:min(430px,100%);max-height:min(760px,90dvh);overflow:auto;background:linear-gradient(180deg,#10243a,#081522);border:1px solid rgba(104,231,255,.28);border-radius:22px;padding:22px;box-shadow:0 24px 80px rgba(0,0,0,.55);color:#edfaff;text-align:center}.social-card-wide{width:min(620px,100%);text-align:left}.social-icon{font-size:40px;color:#ffe39a;text-shadow:0 0 24px rgba(255,220,120,.65)}.social-card h2{margin:8px 0 10px}.social-card p{color:#b9ccda;line-height:1.45}.social-note{font-size:13px}.social-card input{box-sizing:border-box;width:100%;padding:12px;border-radius:12px;border:1px solid rgba(104,231,255,.3);background:#07131f;color:#fff;font-size:16px;margin:8px 0}.social-error{min-height:18px;color:#ff9c9c;font-size:12px}.social-actions{display:grid;gap:8px;margin-top:14px}.social-card button.primary,.social-actions .primary{background:#68e7ff;color:#06131e;font-weight:900}.social-card canvas{display:block;max-width:220px;width:70%;height:auto;margin:16px auto;background:white;padding:8px;border-radius:12px}.social-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.my-challenges-entry{width:100%;margin:12px 0;padding:11px;border-radius:12px}#challengeUnreadBadge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 4px;border-radius:10px;background:#ffcc63;color:#07111d;font-size:11px;font-weight:900}#challengeUnreadBadge[hidden]{display:none}.challenge-list-item{padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}.challenge-list-item:last-child{border-bottom:0}.challenge-list-head{display:flex;justify-content:space-between;gap:10px}.challenge-participant{display:flex;justify-content:space-between;gap:10px;padding:6px 0;color:#c9dce8;font-size:13px}.challenge-result-versus{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}.challenge-result-player{padding:12px;border-radius:12px;background:rgba(255,255,255,.05)}.challenge-result-player strong{display:block;margin-bottom:5px}.challenge-result-detail{color:#68e7ff;font-weight:800;margin:12px 0}
+.social-overlay{position:fixed;inset:0;z-index:1400;background:rgba(2,7,14,.88);display:flex;align-items:center;justify-content:center;padding:18px}.social-overlay[hidden]{display:none}.social-card{width:min(430px,100%);max-height:min(760px,90dvh);overflow:auto;background:linear-gradient(180deg,#10243a,#081522);border:1px solid rgba(104,231,255,.28);border-radius:22px;padding:22px;box-shadow:0 24px 80px rgba(0,0,0,.55);color:#edfaff;text-align:center}.social-card-wide{width:min(620px,100%);text-align:left}.social-icon{font-size:40px;color:#ffe39a;text-shadow:0 0 24px rgba(255,220,120,.65)}.social-card h2{margin:8px 0 10px}.social-card p{color:#b9ccda;line-height:1.45}.social-note{font-size:13px}
+/* #882 Défi du jour: distinct night-sky skin; the grid's own colours and meanings are untouched. */
+:root{--daily-accent:#f2c96b;--daily-accent-soft:rgba(242,201,107,.16);--daily-night:#0b0f2b;--daily-violet:#1d1546}
+body.daily-mode{background:radial-gradient(1.2px 1.2px at 12% 18%,rgba(255,255,255,.55),transparent 60%),radial-gradient(1px 1px at 78% 9%,rgba(255,255,255,.45),transparent 60%),radial-gradient(1.4px 1.4px at 64% 32%,rgba(255,236,190,.45),transparent 60%),radial-gradient(1px 1px at 30% 72%,rgba(255,255,255,.35),transparent 60%),radial-gradient(1.2px 1.2px at 90% 64%,rgba(255,255,255,.4),transparent 60%),linear-gradient(170deg,var(--daily-night),var(--daily-violet) 55%,#090d16)}
+body.daily-mode #masteryLive{display:none}/* no badge is earned in the daily mode */
+body.daily-mode #board{box-shadow:0 0 0 3px var(--daily-accent),0 0 28px rgba(242,201,107,.22),0 24px 70px rgba(0,0,0,.45)!important}
+.daily-banner{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:0 0 10px;padding:8px 12px;border-radius:14px;border:1px solid rgba(242,201,107,.45);background:var(--daily-accent-soft);color:#fdf1d3;font-size:13px}.daily-banner[hidden]{display:none}.daily-banner strong{color:var(--daily-accent)}.daily-banner-meta{margin-left:auto;font-weight:700}
+.daily-entry{display:flex;align-items:center;gap:10px;width:100%;margin:8px 0 12px;padding:10px 14px;border-radius:14px;border:1px solid rgba(242,201,107,.55);background:linear-gradient(120deg,#1d1546,#0b0f2b);color:#fdf1d3;text-align:left}.daily-entry[hidden]{display:none}.daily-entry-icon{font-size:24px}.daily-entry strong{display:block;color:var(--daily-accent)}.daily-entry small{color:#d8cdb2;font-size:12px}
+.daily-theme .daily-card-theme{background:linear-gradient(180deg,#1d1546,#0b0f2b);border-color:rgba(242,201,107,.5)}.daily-trophy{font-size:38px}.daily-theme h2{color:var(--daily-accent)}.daily-date{font-weight:800;color:#fdf1d3;text-transform:capitalize;margin:0}.daily-remaining,.daily-next{font-size:13px;color:#d8cdb2;margin:4px 0}.daily-rules{text-align:left;font-size:13px;color:#d6e1ee;padding-left:18px;margin:10px 0}.daily-status{font-size:13px;color:#fdf1d3;min-height:18px}
+.daily-result-time{font-size:30px;font-weight:900;color:#fdf1d3;margin:4px 0}.daily-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}.daily-tabs [role=tab]{border-radius:10px;padding:8px;border:1px solid rgba(242,201,107,.35);background:transparent;color:#fdf1d3}.daily-tabs [aria-selected=true]{background:var(--daily-accent);color:#1b1404;font-weight:900}
+.daily-board-panel{min-height:150px;text-align:left}.daily-board-list{list-style:none;margin:0;padding:0}.daily-board-row{display:grid;grid-template-columns:44px 1fr auto;gap:8px;padding:6px 8px;border-radius:10px}.daily-board-row.mine{background:var(--daily-accent-soft);outline:1px solid rgba(242,201,107,.6)}.daily-board-rank{font-weight:900;color:var(--daily-accent)}.daily-board-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.daily-board-me,.daily-board-count,.daily-board-empty{font-size:12px;color:#d8cdb2;margin:6px 8px}
+.daily-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.daily-week-link{display:block;margin:-6px 0 12px auto;padding:4px 10px;border-radius:10px;border:1px solid rgba(242,201,107,.35);background:transparent;color:var(--daily-accent);font-size:13px}.daily-week-link[hidden]{display:none}
+.daily-week-nav{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;gap:6px;margin:4px 0 8px}.daily-week-nav button{border-radius:10px;padding:6px;border:1px solid rgba(242,201,107,.35);background:transparent;color:#fdf1d3}.daily-week-nav button:disabled{opacity:.35}.daily-week-range{font-weight:700;color:#fdf1d3;font-size:14px}
+.daily-week-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;list-style:none;margin:0 0 8px;padding:0}.daily-week-day{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border-radius:10px;border:1px solid rgba(242,201,107,.2);color:#d8cdb2}.daily-week-day.completed{border-color:rgba(242,201,107,.6);color:#fdf1d3}.daily-week-day.podium{background:rgba(242,201,107,.18)}.daily-week-day.provisional{border-style:dashed}.daily-week-day.future{opacity:.45}.daily-week-letter{font-size:12px;font-weight:700}.daily-week-mark{min-height:18px;font-size:16px;color:var(--daily-accent)}
+.daily-week-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 6px;text-align:left}.daily-week-stat{padding:6px 8px;border-radius:10px;background:rgba(255,255,255,.05)}.daily-week-stat dt{font-size:11px;color:#d8cdb2}.daily-week-stat dd{margin:0;color:#fdf1d3;font-size:13px}.daily-week-highlights{margin:0 0 6px;padding-left:18px;text-align:left;font-size:13px;color:#fdf1d3}.daily-week-state{font-size:12px;color:#d8cdb2;margin:4px 0}#dailyWeekStatus:empty{display:none}
+@media(max-height:700px){.daily-trophy{font-size:28px}.daily-rules{margin:6px 0}.daily-result-time{font-size:24px}.daily-board-panel{min-height:120px}}.challenge-rules{margin:10px 0 12px;padding:10px 12px;border-radius:12px;background:rgba(104,231,255,.07);text-align:left}.challenge-rules[hidden]{display:none}.challenge-rules p{margin:0 0 8px;font-size:14px;color:#d6e6f0}.challenge-rules button{width:100%}.social-card input{box-sizing:border-box;width:100%;padding:12px;border-radius:12px;border:1px solid rgba(104,231,255,.3);background:#07131f;color:#fff;font-size:16px;margin:8px 0}.social-error{min-height:18px;color:#ff9c9c;font-size:12px}.social-actions{display:grid;gap:8px;margin-top:14px}.social-card button.primary,.social-actions .primary{background:#68e7ff;color:#06131e;font-weight:900}.social-card canvas{display:block;max-width:220px;width:70%;height:auto;margin:16px auto;background:white;padding:8px;border-radius:12px}.social-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.my-challenges-entry{width:100%;margin:12px 0;padding:11px;border-radius:12px}
+.friend-add label{display:block;font-size:13px;color:#b9ccda;margin-bottom:4px}.friend-add-row{display:flex;gap:8px;align-items:center}.friend-add-row input{flex:1;margin:0}.social-card h3{font-size:14px;margin:14px 0 4px;color:#9fdcf0}
+.friend-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08)}.friend-row:last-child{border-bottom:0}.friend-name{font-weight:800;color:#edfaff;min-width:0;overflow-wrap:anywhere}.friend-state{flex:1;font-size:12px;color:#b9ccda}.friend-actions{display:flex;gap:6px}.friend-actions button,#friendPickerList button{min-height:36px;padding:6px 10px;border-radius:10px}
+#friendsBadge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 4px;border-radius:10px;background:#ffcc63;color:#07111d;font-size:11px;font-weight:900}#friendsBadge[hidden]{display:none}#friendPickerList{display:grid;gap:6px;margin:10px 0}#challengeUnreadBadge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 4px;border-radius:10px;background:#ffcc63;color:#07111d;font-size:11px;font-weight:900}#challengeUnreadBadge[hidden]{display:none}.challenge-list-item{padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}.challenge-list-item:last-child{border-bottom:0}.challenge-list-head{display:flex;justify-content:space-between;gap:10px}.challenge-participant{display:flex;justify-content:space-between;gap:10px;padding:6px 0;color:#c9dce8;font-size:13px}.challenge-result-versus{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}.challenge-result-player{padding:12px;border-radius:12px;background:rgba(255,255,255,.05)}.challenge-result-player strong{display:block;margin-bottom:5px}.challenge-result-detail{color:#68e7ff;font-weight:800;margin:12px 0}
 @media(max-width:520px){.social-overlay{padding:10px}.social-card{padding:18px;border-radius:18px}.challenge-result-versus{grid-template-columns:1fr}}
 
 /* Learning uses the ordinary board and marks; only this coach layer differs. */
@@ -447,6 +484,28 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 #sectorTabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:8px;flex:1;min-height:0;margin:0;overflow:hidden}
 #sectorTabs .constellation-card{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) repeat(3,max-content);justify-content:stretch;justify-items:center;align-content:stretch;gap:3px;min-width:0;min-height:0;padding:4px 6px!important;border-radius:14px;overflow:hidden;background:#0e2133}
 .constellation-card svg{width:100%;height:clamp(30px,7vh,64px);flex:0 1 auto}.constellation-card strong{max-width:100%;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.constellation-card small{font-size:11px;color:#b9d8e8}.constellation-card.locked{opacity:.55}
+/* The info control is a sibling of the card and retains its own hit target. */
+.constellation-card-slot{display:grid;position:relative;min-width:0;min-height:0}
+#mapModal .constellation-fact-button{display:inline-grid;place-items:center;width:32px;height:32px;min-width:32px;min-height:32px;padding:0;border:1px solid transparent;border-radius:50%;background:transparent;color:#a9e8f6;font-size:19px;line-height:1}
+.constellation-card-slot .constellation-fact-button{position:absolute;inset-block-start:1px;inset-inline-end:1px}
+@media(max-width:500px){.constellation-card-slot .constellation-fact-button{inset-inline-start:1px;inset-inline-end:auto}}
+#mapModal .constellation-fact-button:hover{background:#1b3a50}
+#mapModal .constellation-fact-button:focus-visible{outline:2px solid #a9e8f6;outline-offset:-2px}
+.sky-fact-label{display:flex;align-items:center;gap:4px;min-width:0}
+.sky-fact-label .sky-name{overflow-wrap:anywhere}
+#mapModal:has(#skyTour:not([hidden])) .constellation-fact-button{display:none}
+.constellation-fact{box-sizing:border-box;width:min(440px,calc(100% - 24px));max-height:calc(100dvh - 24px);padding:18px 20px;border:1px solid #34516b;border-radius:18px;background:#0d2030;color:#e8f7ff;overflow:auto;overscroll-behavior:contain;text-align:left}
+.constellation-fact::backdrop{background:rgba(3,7,13,.76)}
+.constellation-fact-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.constellation-fact h2{margin:0;font-size:22px}
+.constellation-fact h3{margin:16px 0 4px;font-size:14px;color:#a9e8f6}
+.constellation-fact p{margin:0;font-size:14px;line-height:1.5}
+.constellation-fact dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 8px}
+.constellation-fact dl div{padding:8px;border-radius:8px;background:#172e42}
+.constellation-fact dt,.constellation-fact .constellation-fact-note{font-size:12px;color:#b8ccdd}
+.constellation-fact dd{margin:3px 0 0;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.constellation-fact label{display:grid;gap:5px;margin-top:14px;font-size:13px}
+.constellation-fact select{width:100%;min-height:40px;padding:6px 8px;border:1px solid #34516b;border-radius:8px;background:#10283b;color:inherit;font:inherit}
 .constellation-pages{display:flex;align-items:center;justify-content:center;gap:18px;flex:0 0 auto;font-size:12px}.constellation-pages button{padding:5px 16px}.constellation-pages button:disabled{opacity:.3}
 .map-detail{display:flex;flex-direction:column;gap:8px;min-height:0;flex:1}.constellation-back{align-self:flex-start;padding:6px 10px;font-size:12px;flex:0 0 auto}
 #mapDetail .puzzle-grid{margin:0;grid-template-columns:repeat(auto-fit,minmax(46px,1fr));gap:6px;flex:0 0 auto;max-height:150px;overflow:hidden}#mapDetail .puzzle-card{min-width:0;min-height:42px;padding:6px}
@@ -455,6 +514,7 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 #mapModal:has(.sky-tour:not([hidden])):not([data-tour-target="skyNavigation"]) .sky-navigation{display:none}
 .adventure-notice{position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;background:rgba(2,8,18,.85);padding:20px;border-radius:20px}.adventure-notice>div{padding:20px;max-width:380px;border:1px solid #31506e;border-radius:18px;background:#102235}.adventure-notice p{font-size:14px;line-height:1.5;color:#bfd1df}
 #mapDetail[hidden],#sectorTabs[hidden],#constellationPages[hidden],#adventureNotice[hidden]{display:none}
+#playReviewStatus{margin:0;color:#b9d8e8;font-size:.8rem}
 /* A canonical detail replaces the legacy quests, badge legend and star card. */
 #mapDetail > [hidden]{display:none!important}
 /* #749: formerly (max-width:700px); now every width */
@@ -611,7 +671,7 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
  .journey-top>div{min-width:0}
  .actions{display:flex;flex-wrap:wrap}
  .actions button{min-height:40px}
- .mobile-account,.tutorial-help,.head #new{min-width:40px;min-height:40px}
+ .mobile-account,.tutorial-help{min-width:40px;min-height:40px}
  .msg,.rules{overflow-wrap:anywhere}
  .tutorial-overlay,.account-optin{padding:max(10px,env(safe-area-inset-top)) 12px max(10px,env(safe-area-inset-bottom))}
  .tutorial-card,.account-optin .account-optin-card{max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain}
@@ -713,8 +773,6 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
  .head-actions{flex:0 0 auto;gap:3px!important}
  .head-actions button{box-sizing:border-box;flex:0 0 36px;min-width:36px!important;
    width:36px!important;height:36px!important;min-height:36px!important;padding:0!important}
- .head #new{overflow:visible;position:relative}
- .head #new::after{display:block;line-height:36px}
  .lumen-brand{font-size:clamp(22px,6vw,27px)!important}
  .journey{padding:3px 6px!important;margin-bottom:3px!important}
  .status,.auto-cross,.learning-note,.hint-wallet,.reward-live{margin-block:2px!important}
@@ -959,7 +1017,7 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 /* Finale copy consumes real vertical space; keep action labels on a full row. */
 .app:has(#challengeBanner:not([hidden])) .game-core .actions{width:min(100%,max(240px,calc(100dvh - 420px)))!important}
 
-.app:has(#challengeBanner:not([hidden])) #board{width:var(--finale-board-size)!important}
+.app.game-board-fitted .game-core #board[data-size]{width:var(--fitted-board-size)!important}
 
 .challenge-unavailable{font-size:12px;line-height:1.35;color:#b9d8e8;margin:4px 0}
 
@@ -972,22 +1030,8 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 .status{position:relative;padding-bottom:18px}
 .speed-countdown{position:absolute;left:50%;bottom:0;margin-left:0;transform:translateX(-50%);height:16px}
 
-/* #555: the hint participates in layout; the remaining space owns the board. */
 #completedQuestNext{min-height:44px;min-width:44px;font-size:13px}
 .puzzle-card.account-required{opacity:.85;cursor:pointer}
-/* #749: formerly (max-width:900px); now every width */
- .app:has(#hintCard:not([hidden])){display:flex;flex-direction:column}
- .game-core:has(#hintCard:not([hidden])){display:flex;flex-direction:column;flex:1;min-height:0}
- .game-core:has(#hintCard:not([hidden]))>*{flex-shrink:0}
- .game-core:has(#hintCard:not([hidden])) .learning-board-wrap{flex:1;min-height:0;container-type:size;display:grid;place-items:center;padding:0}
- .game-core:has(#hintCard:not([hidden])) #board{width:min(100%,100cqh)!important;max-width:100%!important}
- #hintCard{position:static;max-height:min(26dvh,180px);min-height:60px;overflow:auto;margin:4px 0;box-shadow:none}
-
-@media(max-width:900px) and (orientation:landscape){
- .game-core:has(#hintCard:not([hidden])){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:repeat(14,auto);column-gap:12px}
- .game-core:has(#hintCard:not([hidden]))>*{grid-column:2;min-height:0}
- .game-core:has(#hintCard:not([hidden])) .learning-board-wrap{grid-column:1;grid-row:1 / -1;height:100%;width:100%}
-}
 
 /* #534: bounded, keyboard-operable administrative directory and sessions. */
 .admin-player-controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -1028,10 +1072,10 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 .sky-reveal[data-celestial] [hidden]{display:none!important}
 .sky-reveal[data-celestial] .sky-reveal-card{display:flex;flex-direction:column;gap:8px;width:min(94vw,840px);max-height:calc(100dvh - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));padding:20px;overflow:auto}
 /* #705: phones (360x640 and up) show the whole celebration and its CTA without scrolling. */
-@media(max-height:700px){#skyReveal[data-celestial] .sky-reveal-card{gap:5px}#skyReveal[data-celestial] .sky-reveal-title{font-size:20px}#skyReveal[data-celestial] .celestial-summary{font-size:11px;line-height:1.35}#skyReveal[data-celestial] .celestial-panorama{max-height:34dvh;min-height:90px}}
+@media(max-height:700px){#skyReveal[data-celestial] .victory-share-result{margin-top:0;min-height:38px}#skyReveal[data-celestial]:has(.victory-share-result:not([hidden])) .sky-reveal-card{gap:3px}#skyReveal[data-celestial] .sky-reveal-card{gap:5px}#skyReveal[data-celestial] .sky-reveal-title{font-size:20px}#skyReveal[data-celestial] .celestial-summary{font-size:11px;line-height:1.35}#skyReveal[data-celestial] .celestial-panorama{max-height:34dvh;min-height:90px}}
 /* #705: with the podium mounted (signed-in final victory or admin preview) the whole
    mastery screen still fits 360x640. The 140px compact podium rule lost to min-height:164px. */
-@media(max-height:700px){#skyReveal[data-celestial] .victory-performance-ranked .victory-podium-slot,#skyReveal[data-celestial] .victory-podium-slot .ranking{min-height:0;height:118px}#skyReveal[data-celestial] .victory-performance-title{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}#skyReveal[data-celestial] .victory-performance-row{min-height:0}#skyReveal[data-celestial] .sky-reveal-time.victory-time-note{font-size:12px}#skyReveal[data-celestial] .celestial-panorama{max-height:23dvh}#skyReveal[data-celestial] .victory-time,#skyReveal[data-celestial] .victory-rank{padding:4px 6px}#skyReveal[data-celestial] .victory-rank strong{font-size:14px}#skyReveal[data-celestial] .victory-rank small{font-size:10px}}
+@media(max-height:700px){#skyReveal[data-celestial] .victory-performance-ranked .victory-podium-slot,#skyReveal[data-celestial] .victory-podium-slot .ranking{min-height:118px}#skyReveal[data-celestial] .victory-performance-title{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}#skyReveal[data-celestial] .victory-performance-row{min-height:0}#skyReveal[data-celestial] .sky-reveal-time.victory-time-note{font-size:12px}#skyReveal[data-celestial] .celestial-panorama{max-height:23dvh}#skyReveal[data-celestial] .victory-time,#skyReveal[data-celestial] .victory-rank{padding:4px 6px}#skyReveal[data-celestial] .victory-rank strong{font-size:14px}#skyReveal[data-celestial] .victory-rank small{font-size:10px}}
 .sky-reveal[data-celestial] .sky-reveal-title{font-size:clamp(20px,3.3vw,32px);line-height:1.15;margin:0}
 .sky-reveal[data-celestial] .sky-reveal-name{font-size:clamp(12px,2vw,16px);line-height:1.4;margin:0 auto;max-width:580px}
 .sky-reveal[data-celestial] #skyRevealTitle,.sky-reveal[data-celestial] #skyRevealName,.sky-reveal[data-celestial] .celestial-summary{animation:celestial-conclusion 4s both}
@@ -1103,16 +1147,40 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 .ranking-row:first-child{position:sticky;top:0;z-index:2;background:#14202e}
 .ranking-list{position:relative}
 .ranking{background:#0c1826;padding:10px;border:1px solid #273c50;border-radius:12px}
-/* Retired controls free space; guided feedback must still leave Undo reachable. */
-/* #749: formerly (max-width:900px); now every width */
- body:has(#guidedCard:not([hidden])){display:flex;flex-direction:column;height:100dvh;min-height:0}
- body:has(#guidedCard:not([hidden]))>.qa-banner{flex-shrink:0}
- .app:has(#guidedCard:not([hidden])){display:flex;flex-direction:column;flex:1;width:100%;height:auto!important;min-height:0}
- .game-core:has(#guidedCard:not([hidden])){display:flex;flex-direction:column;flex:1;min-height:0}
- .game-core:has(#guidedCard:not([hidden]))>*{flex-shrink:0}
- .game-core:has(#guidedCard:not([hidden])) .learning-board-wrap{flex:1;min-height:0;container-type:size;display:grid;place-items:center;padding:0}
- .game-core:has(#guidedCard:not([hidden])) #board{width:min(100%,100cqh)!important;max-width:100%!important}
- #guidedCard{position:static;max-height:min(26dvh,180px);min-height:60px;overflow:auto;margin:4px 0;box-shadow:none}
+/* #791: use the space below the board, including the command row. */
+.app{--assist-min-height:48px}
+.game-core:has(> :is(#guidedCard,#hintCard,#verifyCard):not([hidden])) .actions{visibility:hidden}
+:is(#guidedCard,#hintCard,#verifyCard):not([hidden]){
+ position:fixed;
+ z-index:100;
+ inset:auto;
+ top:var(--assist-top);
+ left:var(--assist-left);
+ width:var(--assist-width);
+ max-height:clamp(0px,calc(var(--assist-space) - env(safe-area-inset-bottom,0px)),12rem);
+ box-sizing:border-box;
+ display:flex;
+ align-items:center;
+ gap:8px;
+ margin:0;
+ padding:0 8px;
+ overflow:hidden;
+ box-shadow:none
+}
+:is(#guidedCard,#hintCard,#verifyCard) .assist-copy{
+ flex:1 1 auto;
+ align-self:stretch;
+ min-width:0;
+ min-height:0;
+ padding-block:4px;
+ overflow:auto;
+ overscroll-behavior:contain;
+ white-space:normal;
+ overflow-wrap:anywhere
+}
+:is(#guidedCard,#hintCard,#verifyCard) .assist-copy>p{margin:0}
+:is(#guidedCard,#hintCard,#verifyCard) button{flex-shrink:0;width:auto;max-width:48%;min-height:44px;padding:3px 8px}
+#hintCard #hintClose{min-width:44px}
 
 /* Victory phases share the same surface and navigation geometry. */
 .sky-reveal{padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));overflow:hidden}
@@ -1217,6 +1285,8 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
    Zones keep their own reserved footprint; no display:contents reordering and
    no hidden ranking reserving extra space. */
 .sky-reveal[data-victory-phase="combined"] .sky-reveal-card{width:min(520px,96vw);max-height:94dvh;overflow-y:auto;overscroll-behavior:contain;position:relative;isolation:isolate}
+.sky-reveal[data-victory-phase="combined"]:not([data-sync]) :is(.sky-reveal-card > :not(.sky-reveal-results),.sky-reveal-results > :not(.sky-reveal-actions)){touch-action:pan-y pinch-zoom}
+.sky-reveal[data-victory-phase="combined"] .sky-reveal-actions button{touch-action:manipulation}
 .sky-reveal[data-victory-phase="combined"] #skyRevealCanvas,
 .sky-reveal[data-victory-phase="combined"] #skyRevealName{display:block}
 .sky-reveal[data-victory-phase="combined"] #skyRevealCanvas{position:relative;min-width:0}
@@ -1228,6 +1298,7 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 
 /* #668: compact, self-contained authentication and prominent sent-email state. */
 .account-optin #accountSignupConfirmation[hidden],.account-optin #accountEmailAuth [hidden]{display:none!important}
+.account-optin #accountEmailAuth:has(#accountSignupConfirmation:not([hidden])) #accountEmailStatus{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .account-optin .account-signup-confirmation{margin:12px 0 0;padding:16px;border:1px solid #62d9fc;border-radius:16px;background:#102c42;color:#e7f7ff;text-align:center}
 .account-optin .account-signup-confirmation h3{font-size:19px;margin:0 0 8px;color:#fff}
 .account-optin .account-signup-confirmation p{font-size:14px;line-height:1.4;margin:0 0 12px;overflow-wrap:anywhere}
@@ -1312,6 +1383,7 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 .sky-reveal .victory-rank[hidden]{display:none}
 .sky-reveal .victory-rank strong{font-size:16px;line-height:1.2;color:#e8f6ff}
 .sky-reveal .victory-rank small{font-size:11px;line-height:1.25;color:#cfe9f5}
+#skyReveal.victory-ranking-reveal :is(#skyRevealPodium,#skyRevealRank){visibility:hidden}
 .sky-reveal .victory-rank-pending{color:#9fc4d8;font-size:13px}
 .sky-reveal .victory-rank-1{border-color:#c9a24a;background:radial-gradient(circle at 50% 30%,rgba(255,211,107,.22),#0f1d2e 70%)}
 .sky-reveal .victory-rank-1 strong{color:#ffe1a0}
@@ -1322,7 +1394,7 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 /* The podium slot is reserved whenever a ranking is expected, before and after it arrives. */
 .sky-reveal .victory-podium-slot{min-height:0}
 .sky-reveal .victory-performance-ranked .victory-podium-slot{min-height:164px}
-.sky-reveal .victory-podium-slot .ranking{margin:0;padding:0;border:0;background:none;height:164px;min-height:0;position:relative;display:flex;flex-direction:column;justify-content:flex-end}
+.sky-reveal .victory-podium-slot .ranking{margin:0;padding:0;border:0;background:none;min-height:164px;position:relative;display:flex;flex-direction:column;gap:4px}
 .sky-reveal .ranking-podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:6px;margin:0;padding:0 0 10px;list-style:none;min-height:132px}
 .sky-reveal .ranking .ranking-row,.sky-reveal .ranking-step-skeleton{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:1px;min-width:0;padding:5px 3px;overflow:hidden;border:1px solid #36526b;border-radius:10px 10px 6px 6px;background:#14253b;box-shadow:none}
 .sky-reveal .ranking .ranking-step-1,.sky-reveal .ranking-step-skeleton.ranking-step-1{grid-column:2;grid-row:1;min-height:112px!important;border-color:#c9a24a!important;background:linear-gradient(180deg,#3a3220,#1c1a14)!important}
@@ -1340,7 +1412,9 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 .sky-reveal .ranking .ranking-mine{outline:2px solid #ffe1a0;outline-offset:1px;box-shadow:0 0 14px rgba(255,225,160,.55)}
 .sky-reveal .ranking-personal{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 8px;margin:4px 0 0;padding:4px 6px;font-size:12px;border-radius:8px;background:#0f1d2e;min-height:0}
 .sky-reveal .ranking-status{margin:2px 0 0;font-size:12px;color:#9fc4d8;text-align:center}
-.sky-reveal .victory-podium-slot .ranking-status{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);margin:0;padding:0 8px}
+/* Only the loading skeleton has this status. Real rows and explanations stay in flow. */
+.sky-reveal .victory-podium-slot .ranking-status{position:absolute;inset-inline:0;top:50%;transform:translateY(-50%);margin:0;padding:0 8px}
+.sky-reveal .ranking-excluded,.sky-reveal .ranking-note,.sky-reveal .challenge-unavailable{margin:0;font-size:.75rem;line-height:1.35;overflow-wrap:anywhere}
 .sky-reveal .sky-reveal-results .sky-reveal-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0}
 .sky-reveal .sky-reveal-results .sky-reveal-actions .sky-reveal-primary{grid-column:1/-1;width:100%;max-width:none;justify-self:stretch;margin:0;min-height:48px;font-size:16px;padding:8px 12px}
 .sky-reveal .sky-reveal-results .sky-reveal-actions .sky-reveal-secondary{min-height:44px;font-size:12px;padding:6px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1350,7 +1424,7 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
 .victory-particle{position:absolute;top:-16px;width:8px;height:12px;border-radius:2px;opacity:.95;animation:victoryParticleFall var(--dur,3s) ease-in forwards}
 .victory-particle.round{width:7px;height:7px;border-radius:50%}
 @keyframes victoryParticleFall{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(110vh) rotate(var(--rot,360deg));opacity:.85}}
-@media(max-height:700px){.sky-reveal .victory-performance-ranked .victory-podium-slot,.sky-reveal .victory-podium-slot .ranking{height:140px}.sky-reveal .ranking-podium{min-height:112px}.sky-reveal .ranking .ranking-step-1,.sky-reveal .ranking-step-skeleton.ranking-step-1{min-height:100px!important}.sky-reveal .ranking .ranking-step-2,.sky-reveal .ranking-step-skeleton.ranking-step-2{min-height:88px!important}.sky-reveal .ranking .ranking-step-3,.sky-reveal .ranking-step-skeleton.ranking-step-3{min-height:78px!important}.sky-reveal .victory-performance-row{min-height:54px}}
+@media(max-height:700px){.sky-reveal .victory-performance-ranked .victory-podium-slot,.sky-reveal .victory-podium-slot .ranking{min-height:140px}.sky-reveal .ranking-podium{min-height:112px}.sky-reveal .ranking .ranking-step-1,.sky-reveal .ranking-step-skeleton.ranking-step-1{min-height:100px!important}.sky-reveal .ranking .ranking-step-2,.sky-reveal .ranking-step-skeleton.ranking-step-2{min-height:88px!important}.sky-reveal .ranking .ranking-step-3,.sky-reveal .ranking-step-skeleton.ranking-step-3{min-height:78px!important}.sky-reveal .victory-performance-row{min-height:54px}}
 @media(max-width:360px){.sky-reveal .victory-reward{font-size:9px}.sky-reveal .victory-reward-icon{font-size:14px}.sky-reveal .sky-reveal-results .sky-reveal-actions .sky-reveal-secondary{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.victory-particle,.sky-reveal .victory-reward-new{animation:none!important}.victory-celebration-layer{display:none}}
 
@@ -1361,7 +1435,6 @@ body.account-switch-hold .mobile-auth-popover:not([hidden]){z-index:5100}
  #learningBoardWrap.coach-above{position:relative;padding-top:calc(var(--coach-height,0px) + 8px)!important}
  #learningBoardWrap.coach-above .scripted-learn{position:absolute!important;top:0!important;left:0!important;right:0!important;bottom:auto!important;width:auto!important;max-width:none!important;max-height:none!important;min-height:var(--coach-height,0px)!important;margin:0!important;overflow:visible!important;transform:none!important;z-index:20!important;box-shadow:0 8px 24px rgba(0,0,0,.35)}
  #learningBoardWrap.coach-above #scriptedLearnCopy{max-height:none!important;overflow:visible!important}
- /* Must outrank .game-core:has(#guidedCard/#hintCard:not([hidden])) #board (2,2,0). */
  .app .game-core #learningBoardWrap.coach-above.coach-above #board{width:min(100%,var(--coach-board-size,100%))!important;max-width:100%!important;margin-inline:auto!important}
 
 /* #688: one modal at a time. The learning coach stays below account screens and
@@ -1389,15 +1462,42 @@ body:has(#erasedAccountNotice:not([hidden])) #scriptedLearn{visibility:hidden!im
 .adventure-offer button{min-height:44px;border-radius:12px;font:inherit;font-weight:700}
 .adventure-offer-buy{background:#1d3b5a;color:#eefaff;border:1px solid #4284bd}
 .adventure-offer-buy:disabled{opacity:.55}
+.adventure-offer-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.adventure-offer [hidden]{display:none}
+.adventure-offer-cards:has(>.adventure-offer-card:only-child){grid-template-columns:1fr}
+.adventure-offer-card{display:flex;flex-direction:column;gap:5px;padding:10px;border:1px solid #4284bd;border-radius:16px;background:radial-gradient(ellipse at top,#25445b,#102336 75%);min-width:0;text-align:center}
+.adventure-offer-card h3{font-size:15px;line-height:1.2;margin:0;color:#f1e1ad}
+.adventure-offer-price{font-size:27px;color:#fff1c4}
+.adventure-offer-card .adventure-offer-buy{margin-top:auto;padding:7px;font-size:12px}
+.adventure-offer-mastery{padding:8px 10px;border:1px solid #716440;border-radius:12px;background:#272a29}
+.adventure-offer-mastery>strong{display:block;margin-bottom:3px;font-size:14px}
+.adventure-offer-mastery p+p,.adventure-offer-mastery>.adventure-offer-claim{margin-top:5px}
+.adventure-offer-mastery{min-width:0;overflow-wrap:anywhere}
+@media(max-height:700px){.adventure-offer{gap:5px}.adventure-offer-card{padding:7px;gap:3px}.adventure-offer-card h3{font-size:13px}.adventure-offer p,.adventure-offer-consent{font-size:12px}.adventure-offer-price{font-size:23px}.adventure-notice:has(.adventure-offer){padding:8px}.adventure-notice:has(.adventure-offer)>div{padding:10px}.adventure-notice:has(.adventure-offer) h3{margin-top:0;margin-bottom:6px}}
+.sky-reveal.quest-review #skyRevealKicker{display:block;font-size:10px;line-height:1.2}
+/* Leave room for one personal line below the compact podium, even while loading. */
+@media(max-height:700px){.sky-reveal.quest-review .victory-performance-ranked .victory-podium-slot,.sky-reveal.quest-review .victory-podium-slot .ranking{min-height:144px}}
 .adventure-offer-claim{background:#2a5a3a;color:#eafff0;border:1px solid #57b47a}
 .adventure-offer-signin{background:transparent;color:#cfe6f3;border:1px solid #35546f}
-.adventure-offer-restore{background:transparent;color:#cfe6f3;border:1px dashed #35546f}
 .adventure-offer p{margin:0;font-size:13px;line-height:1.4}
 .adventure-offer-cap,.adventure-offer-soon{color:#9fb6c8}
 .adventure-offer-mastery{color:#e2d39a}
 .adventure-offer-support{color:#bfd1df}
 .adventure-offer-why{min-height:0!important;padding:0 4px;background:none;border:0;color:#8de1ef;text-decoration:underline;font-weight:600}
 .adventure-offer-why-text{color:#9fb6c8;font-size:12px}
+.purchase-status{margin:8px auto;max-width:560px;padding:10px 14px;border:1px solid #35546f;border-radius:12px;background:#10233a;color:#e6f3ff;font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+.purchase-thanks{position:fixed;inset:0;z-index:1950;display:grid;place-items:center;padding:16px;background:rgba(3,9,19,.85);backdrop-filter:blur(7px)}.purchase-thanks-card{width:min(420px,100%);box-sizing:border-box;max-height:calc(100dvh - 32px);overflow-y:auto;border:1px solid #4a6681;border-radius:24px;padding:26px 20px;background:linear-gradient(160deg,#1a2c46,#0c1629);color:#edf7ff;text-align:center;box-shadow:0 24px 90px #000a;overflow-wrap:anywhere}.purchase-thanks-card h2{font-size:clamp(22px,6vw,28px);margin:8px 0}.purchase-thanks-card p{margin:8px 0;line-height:1.5}.purchase-thanks-glow{font-size:52px;color:#ffe6a2;text-shadow:0 0 28px #ffd36a99}.purchase-thanks-lead{font-weight:700;color:#ffe6a2}.purchase-thanks-support{font-size:13px;color:#bfd1df}.purchase-thanks-card button{display:block;width:100%;min-height:44px;margin-top:10px;border-radius:12px;font:inherit;font-weight:700}.purchase-thanks-explore{background:#1d3b5a;color:#eefaff;border:1px solid #4284bd}.purchase-thanks-later{background:transparent;color:#cfe6f3;border:1px solid #35546f}
+.adventure-offer-consent{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.4;color:#dce9f3}
+.adventure-offer-consent input{width:20px;height:20px;margin:1px 0 0;flex:none}
+/* #863: unticked waiver feedback (text + border, not colour alone) and secondary restore. */
+.adventure-offer-consent.is-invalid{padding:6px 8px;border:2px solid #ff7b7b;border-radius:10px;background:#3a1c22}
+.adventure-offer-consent.is-invalid input{outline:2px solid #ff7b7b;outline-offset:2px}
+.adventure-offer .adventure-offer-waiver-error{color:#ff9b9b;font-weight:700}
+.adventure-offer-waiver-error::before{content:"⚠ "}
+.adventure-offer .adventure-offer-restore{min-height:0;padding:0 2px;background:none;border:0;color:#8de1ef;text-decoration:underline;font-size:12px;font-weight:600}
+.adventure-offer .adventure-offer-terms-line{color:#9fb6c8;font-size:12px}
+.adventure-offer .adventure-offer-upgrade{color:#bfe8c8;font-size:12px}
+.adventure-offer-terms{color:#8de1ef;font-size:12px}
 
 /* #749: computers and tablets use the phone layout in a centered column (one design
    to maintain). The board grows with the column but always leaves room for the header
@@ -1408,3 +1508,100 @@ body:has(#erasedAccountNotice:not([hidden])) #scriptedLearn{visibility:hidden!im
  /* Full-screen phone sheets stay in the same column. */
  #mapModal .map-sheet{max-width:520px;margin-left:auto;margin-right:auto}
 }
+/* #851 private record versus best ranked time */
+.ranking-compare{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:center;margin:6px 0 0;font-size:13px;color:#cfe6f3}
+/* #830: short landscape (iPhone Safari with its bars, small landscape phones).
+   Stacking header, journey, options, status and actions above the grid left it
+   a few dozen pixels and pushed the controls below the viewport. Two columns:
+   information and controls on the left, the grid sized to the real height. */
+@media (orientation:landscape) and (max-height:500px){
+ html body{--landscape-board:min(calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--challenge-banner-space,0px)),56vw)}
+ html body .app{max-width:none!important;width:100%!important;overflow:hidden!important;box-sizing:border-box;padding:max(4px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(4px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))!important}
+ html body .game-core{display:grid!important;grid-template-columns:minmax(0,1fr) var(--landscape-board);grid-auto-rows:auto;column-gap:14px;row-gap:4px;align-content:start;
+  max-width:none!important;width:100%!important;height:calc(100dvh - 8px - env(safe-area-inset-top) - env(safe-area-inset-bottom));box-sizing:border-box}
+ html body .game-core>*{grid-column:1;min-width:0}
+ html body .game-core>#learningBoardWrap{grid-column:2;grid-row:1/span 20;align-self:center;width:var(--landscape-board);padding-top:0}
+ html body .game-core>.actions,html body .game-core:has(#board) .actions{grid-column:1;width:100%!important;max-width:none!important;margin:6px 0 0!important}
+ html body #board,html body #board[data-size]{width:100%!important;height:auto!important;max-height:none!important;margin:0!important}
+}
+/* Reset is a game action: a small icon button opening the command row under the
+   grid, with a narrower Annuler; Vérifier and Indice keep the most room. */
+html body .game-core .actions{display:grid!important;grid-template-columns:44px minmax(0,.8fr) minmax(0,1.1fr) minmax(0,1.1fr)!important;gap:6px!important}
+html body .game-core .actions>button{min-width:0}
+html body .game-core .actions>#new.action-reset{width:44px;min-width:44px;padding:0!important;font-size:20px!important;line-height:1;opacity:.85}
+html body .game-core .actions>#new.action-reset:hover,html body .game-core .actions>#new.action-reset:focus-visible{opacity:1}
+
+/* #898 Lot 4 · Espace social: one entry point, existing screens, no animation. */
+.social-entry{position:relative;font-size:16px;line-height:1}
+.social-badge{position:absolute;top:-4px;right:-4px;display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 3px;box-sizing:border-box;border-radius:9px;background:#ffcc63;color:#07111d;font-size:10px;font-weight:900;line-height:1;pointer-events:none;box-shadow:0 0 0 2px #07131f}
+.social-badge[hidden]{display:none}
+.social-hub-card{display:flex;flex-direction:column;gap:10px}
+.social-hub .social-head h2{flex:1;margin:0;font-size:20px}
+.social-hub-back,.social-hub-close{flex:0 0 auto;width:44px;height:44px;padding:0;border-radius:50%;font-size:20px;line-height:1}
+.social-hub-back[hidden]{display:none}
+.social-hub-menu,.social-hub-list{display:grid;gap:8px}
+.social-hub-menu[hidden],.social-hub-view[hidden]{display:none}
+.social-hub-item{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:10px 12px;border-radius:14px;text-align:left;background:rgba(104,231,255,.06);border:1px solid rgba(104,231,255,.18);color:#edfaff}
+.social-hub-item[hidden]{display:none}
+.social-hub-item:hover,.social-hub-item:focus-visible{background:rgba(104,231,255,.13);border-color:rgba(104,231,255,.45)}
+.social-hub-item:focus-visible,.social-hub-back:focus-visible,.social-hub-close:focus-visible,.social-entry:focus-visible{outline:3px solid #68e7ff;outline-offset:2px}
+.social-hub-icon{flex:0 0 28px;font-size:20px;text-align:center}
+.social-hub-label{flex:1 1 auto;display:grid;gap:2px;min-width:0}
+.social-hub-label strong{font-size:15px}
+.social-hub-label small{font-size:12px;color:#9fb8c9;overflow-wrap:anywhere}
+#socialDaily{border-color:rgba(242,201,107,.5);background:linear-gradient(90deg,rgba(242,201,107,.12),rgba(104,231,255,.05))}
+.social-count{flex:0 0 auto;display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;border-radius:11px;background:#ffcc63;color:#07111d;font-size:12px;font-weight:900}
+.social-count[hidden]{display:none}
+.social-hub-section{padding:12px;border-radius:14px;background:rgba(104,231,255,.05);border:1px solid rgba(104,231,255,.14);display:grid;gap:8px}
+.social-hub-section h3{margin:0}
+.social-hub-section p{margin:0}
+.social-hub-section button{width:100%;min-height:44px;border-radius:12px}
+.social-hub-section button[hidden]{display:none}
+.social-hub-guest{margin:0}
+.social-hub-signin{width:100%;min-height:44px;border-radius:12px}
+.social-hub-signin[hidden]{display:none}
+@media(max-width:520px){.social-hub .social-card{max-height:calc(100dvh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}.social-hub-item{min-height:48px;padding:8px 10px}}
+@media(prefers-reduced-motion:reduce){.social-hub *{transition:none!important;animation:none!important}}
+.social-notification.unread{border-color:rgba(255,204,99,.55)}
+.social-new{flex:0 0 auto;padding:2px 8px;border-radius:10px;background:rgba(255,204,99,.16);color:#ffcc63;font-size:11px;font-weight:800}
+
+/* #896 Readable friend duels: verdict and both times first, no animation. */
+#challengeResultModal.duel-modal{z-index:1450}
+.duel-modal .social-card{display:flex;flex-direction:column;gap:12px}
+.duel-modal h2{margin:0;font-size:18px;color:#9fdcf0}
+.duel-card{display:grid;gap:12px;text-align:center}
+.duel-quest{margin:0;font-size:13px;color:#b9ccda}
+.duel-verdict{display:grid;gap:2px;justify-items:center;padding:10px 12px;border-radius:16px;background:rgba(104,231,255,.07);border:1px solid rgba(104,231,255,.2)}
+.duel-verdict strong{font-size:22px;line-height:1.2;color:#edfaff}
+.duel-verdict small{font-size:14px;color:#cfe3ee}
+.duel-verdict-icon{font-size:28px;line-height:1}
+.duel-won .duel-verdict{background:linear-gradient(180deg,rgba(255,214,120,.18),rgba(255,214,120,.06));border-color:rgba(255,214,120,.55)}
+.duel-won .duel-verdict strong{color:#ffe39a}
+.duel-tied .duel-verdict{border-color:rgba(159,220,240,.5)}
+.duel-players{display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;gap:8px}
+.duel-player{position:relative;display:grid;gap:2px;justify-items:center;align-content:start;min-width:0;padding:12px 8px 10px;border-radius:16px;background:rgba(7,19,31,.7);border:1px solid rgba(104,231,255,.18)}
+.duel-player.duel-winner{border-color:rgba(255,214,120,.7);box-shadow:0 0 0 1px rgba(255,214,120,.25) inset}
+.duel-crown{min-height:18px;font-size:16px;line-height:1}
+.duel-name{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800;color:#edfaff}
+.duel-me .duel-name{color:#9fdcf0}
+.duel-time{font-size:28px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:.02em;color:#ffffff}
+.duel-aid{min-height:16px;font-size:12px;color:#b9ccda}
+.duel-vs{align-self:center;font-size:12px;font-weight:900;color:#6f8aa0}
+.duel-notes{margin:0;font-size:12px;color:#9fb8c9;line-height:1.4}
+.duel-row{display:grid;gap:6px;padding:10px 12px;margin:8px 0;border-radius:14px;background:rgba(104,231,255,.05);border:1px solid rgba(104,231,255,.15);text-align:left}
+.duel-row-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.duel-row-head span{font-size:12px;color:#9fb8c9}
+.duel-row-times{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.duel-row-times span{display:grid;gap:1px;min-width:0}
+.duel-row-times small{font-size:11px;color:#9fb8c9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.duel-row-times b{font-size:18px;font-variant-numeric:tabular-nums;color:#ffffff}
+.duel-row-verdict{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.duel-row-verdict small{color:#cfe3ee}
+.duel-row.duel-won{border-color:rgba(255,214,120,.5)}
+.duel-row.duel-won .duel-row-verdict strong{color:#ffe39a}
+.duel-row-actions{display:flex;gap:8px;flex-wrap:wrap}
+.duel-row-actions button{flex:1 1 auto;min-height:44px;border-radius:12px}
+.duel-loading{min-height:120px}
+.friend-challenge>.duel-row{margin:6px 0}
+@media(max-width:380px){.duel-time{font-size:24px}.duel-verdict strong{font-size:19px}.duel-player{padding:10px 4px 8px}}
+@media(prefers-reduced-motion:reduce){.duel-card *,.duel-row *{transition:none!important;animation:none!important}}

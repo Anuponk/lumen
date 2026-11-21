@@ -1,5 +1,7 @@
 # Politique de confidentialité Lumen — projet non publiable en l'état
 
+> **Remplacé le 17/11/2026 par la version publiée `/confidentialite.html`, qui fait foi** (décision du propriétaire, #732/#730). Ce brouillon est conservé pour l’historique des décisions ; ne plus le modifier.
+
 Version de travail du 22 octobre 2026. Les rubriques « à valider » sont des
 blocages de publication, pas des règles déjà exécutées. Rapprocher le texte de
 `docs/PRIVACY_AND_LEGAL_AUDIT.md` et du paquet réellement distribué.
@@ -130,17 +132,22 @@ Texte à intégrer à la page publiée **avant la première vente réelle** ; il
 remplace alors la phrase « sans publicité ni achats ». Voir aussi
 [CGV_DRAFT](CGV_DRAFT.md).
 
-- **Données d'achat :** fournisseur (Google Play, plus tard Stripe), référence
-  d'achat du fournisseur, produit, montant, devise, statut (payé, remboursé,
-  contesté), dates, et historique des statuts. Tables
-  `lumen_commands.purchases` et `purchase_events` (#728). Lumen ne reçoit
-  jamais les données de carte.
+- **Données d'achat :** fournisseur (Google Play, ou Stripe sur la version Web —
+  phase de test #730, réservée à des comptes de test), référence d'achat du
+  fournisseur, produit, montant, devise, statut (payé, remboursé, contesté),
+  dates, et historique des statuts. Tables `lumen_commands.purchases` et
+  `purchase_events` (#728). Pour Stripe, la session de paiement (identifiant,
+  produit, prix, état, horodatage de la renonciation au droit de rétractation)
+  est conservée dans `lumen_commands.stripe_checkout_sessions` et supprimée avec
+  le compte. Lumen ne reçoit jamais les données de carte : elles sont saisies
+  sur la page Stripe.
 - **Finalités et base :** exécuter la vente et ouvrir l'accès acheté (exécution
   du contrat), traiter les remboursements, respecter les obligations comptables
   (obligation légale).
 - **Destinataires :** Google (Google Play Billing et l'API Play Developer pour
-  vérifier l'achat), Supabase (Edge Function `lumen-play-purchase` et base de
-  données).
+  vérifier l'achat), Stripe (paiement Web : Stripe Checkout, remboursements et
+  litiges), Supabase (Edge Functions `lumen-play-purchase`,
+  `lumen-stripe-checkout`, `lumen-stripe-webhook` et base de données).
 - **Durée :** les données d'achat liées au compte sont supprimées avec lui. Un
   **registre comptable minimal** est alors conservé jusqu'au 1er janvier de la
   11e année suivant l'achat (10 ans après la fin de l'année civile, article

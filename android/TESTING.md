@@ -15,11 +15,16 @@ locale du splash et des sources ne remplace pas le rendu du lanceur sur appareil
 ## Automatisation dédiée
 
 Depuis `android/` : `node --test tools/packaging.test.mjs`, puis
-`./gradlew :app:lint :app:assembleDebug :app:bundleDebug :app:bundleRelease`.
+`./gradlew :app:lint :app:testDebugUnitTest :app:assembleDebug :app:bundleDebug :app:bundleRelease`.
 Le workflow dédié vérifie les artefacts compilés avec
 `python3 tools/verify-artifacts.py <bundletool.jar>` (JDK/SDK installés).
 Le SHA-256 de bundletool est vérifié avant exécution. Le rapport décrit
 explicitement `physicalDeviceTested: false` et `productionSigned: false`.
+La CI vérifie aussi la signature avec une clé jetable et une transaction Play
+simulée. Les tests refusent un AAB déjà signé, une empreinte incorrecte, une
+piste interdite, une version dépassée et un commit après échec de validation.
+La connexion réelle à Google et la piste fermée nécessitent la
+[configuration de signature](SIGNING.md#générer-et-envoyer-un-aab-en-test-fermé-depuis-github).
 Le contrôle des permissions du manifeste fusionné échoue si une dépendance
 ajoute une permission : la déclarer et l'évaluer avant d'actualiser ce contrat.
 
@@ -72,7 +77,51 @@ Pour les deep links :
 Choisir un défi de test existant ; ne pas inventer de paramètre d'URL.
 Tester aussi sans package explicite pour vérifier le routage Android réel.
 
+## Recette du compte de revue Play (#796)
+
+Utiliser un compte joueur dédié auquel l’opérateur a accordé le
+[droit de revue](PLAY.md#accès-à-la-revue-google-play-796). Vérifier que les
+droits d’Aventure nécessaires sont présents et que le compte ouvre seulement
+les menus joueur habituels. La recette physique reste à effectuer.
+
+- Depuis l'AAB de piste interne, ouvrir avec le compte de revue une première
+  quête, une intermédiaire et une dernière dans chaque aventure autorisée.
+  Vérifier l'aller-retour depuis Mon ciel et la reprise d'une vraie tentative.
+- Comparer avant/après l'ouverture seule. Les victoires, records, badges,
+  étoiles, achats et classements doivent rester identiques. Résoudre ensuite
+  une quête de test et vérifier les récompenses normales de cette seule quête.
+- Passer du compte revue au compte ordinaire puis revenir. Vérifier la
+  séparation des tentatives et l’absence d’accès direct sur le compte ordinaire.
+- Passer en mode avion depuis Mon ciel puis se reconnecter. Les nouveaux
+  accès directs exigent une réponse du serveur, y compris sur un appareil
+  neuf. Révoquer le droit côté serveur avec Mon ciel ouvert. La prochaine
+  sélection exceptionnelle doit être refusée et les droits d’Aventure
+  préexistants doivent être conservés.
+- Transmettre dans Play Console les instructions et le compte via le champ
+  privé prévu pour l'accès au contenu. La preuve publique ne contient que
+  les révisions testées et le résultat par scénario.
+
 En cas d'anomalie jeu, créer une issue liée à #170 et au chantier propriétaire
 avec version et reproduction minimale. Pour hors ligne, ne pas modifier le
 service worker ici. Aucun défaut runtime Android n'a encore été confirmé par
 ce lot ; ne pas créer de faux tickets de bug à partir d'une simple hypothèse.
+
+## Recette Google Play #845
+
+`UpdatePolicyTest` couvre l’éligibilité de l’offre, le minimum explicite,
+l’absence de blocage sans cible, la reprise immédiate, le téléchargement prêt
+et les reports/refus par version. Le smoke de la CI lance l’alias historique
+sur la variante debug. Exécuter la matrice sur téléphone, avec une installation
+Play conforme au [plan de publication](PLAY.md#mises-à-jour-natives-android-845).
+
+| Cas | Action et résultat attendu | Résultat physique |
+|---|---|---|
+| À jour et éligibilité | Démarrer à froid à jour, puis avec un compte Play sans accès au code supérieur. Aucune invitation dans les deux cas. | Non testé |
+| Offre interne et fermée | Sur chaque piste, démarrer une installation #845 à froid avec un second code réellement proposé. La boîte française mène à la feuille Google Play. | Non testé |
+| Reporter et refuser | Choisir « Plus tard », rouvrir avant/après 24 h. Annuler ensuite la feuille Play et rouvrir plusieurs fois. Le même code ne repropose rien après refus, un nouveau code peut être proposé. | Non testé |
+| Téléchargement et reprise | Accepter le mode flexible, lancer une quête pendant le téléchargement, revenir via Récents. Pas de redémarrage. À la prochaine ouverture à froid après le téléchargement, toucher « Installer » et rouvrir. Même compte et même tentative. | Non testé |
+| Version incompatible | Sur une piste de recette, rendre le code installé inférieur au minimum et proposer une cible compatible. Vérifier la feuille immédiate, annuler puis contrôler le repli fiche et l’absence de relance. Refaire en réussissant, puis vérifier le code installé et l’absence de blocage. | Non testé |
+| Transition de piste et réseau | Tester mode avion, réseau absent, Play désactivé ou indisponible, puis une piste proposant un code inférieur au minimum. Aucun blocage sans offre compatible. Vérifier le lien de secours quand Play ne peut pas ouvrir le parcours intégré. | Non testé |
+| Quête, paiement, synchronisation | Avec une offre disponible, reprendre via Récents et via l’icône pendant une quête, au retour de la feuille Billing et pendant la réconciliation. Vérifier qu’aucune feuille de mise à jour ne s’ouvre. Tester aussi un lien profond et un retour OAuth. | Non testé |
+| Persistance et commerce | Créer une tentative invitée puis refaire avec un compte de recette et une commande durable hors ligne. Mettre à jour sur place sans effacer les données. Relancer et reconnecter, vérifier compte, progression et accusé de réception unique de la commande. Vérifier prix, achat de licence, liaison `obfuscatedAccountId` via le résultat vérifié côté serveur et restauration des droits, sans consigner l’identifiant. | Non testé |
+| Web et autres canaux | Ouvrir le site dans Safari, Chrome Android et en PWA installée. Aucune invitation native. Vérifier une mise à jour web ordinaire sans changement de versionCode Android. | Non testé |

@@ -57,16 +57,13 @@ test('the actual access helper expires its replay permission on account/client/g
  ctx.cloudHydrationGeneration++;assert.equal(ctx.confirmedReplayAllowed({id:'confirmed'}),false);ctx.cloudHydrationGeneration--;
  ctx.sessionStorage.getItem=()=> '1';assert.equal(ctx.confirmedReplayAllowed({id:'confirmed'}),false);
 });
-test('paid help stays refused during a hold while free help needs no Wallet RPC',async()=>{
- const source=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');let calls=0,cost=1;
- const ctx={hintCost:()=>cost,verifyCost:()=>cost,lumenUser:{id:'a'},qaActive:false,unlimitedShardsEnabled:()=>false,
-  walletSpendInFlight:false,legacyCommandInFlight:false,legacyVictoryBusy:false,canonicalOutboxRetryInFlight:false,lumenSupabase:{},
-  attemptEngine:{snapshot:()=>({attemptId:'same-attempt'})},hintUsesThisGame:2,verifyUsesThisGame:2,authSessionPending:false,
-  cloudProfileReady:false,cloudProfileFailure:held.failure,walletCommandsSupported:async()=>{calls++;return true},msg:{textContent:''},recordCloudDiagnostic(){},refreshCanonicalOutboxNotice(){}};
- vm.createContext(ctx);vm.runInContext(functionSource(source,'authorizeWalletSpend'),ctx);
- assert.equal(await ctx.authorizeWalletSpend('hint'),false);assert.equal(calls,0);
- assert.match(ctx.msg.textContent,/Dépense non confirmée/,'A held balance explains why the paid aid is refused');
- cost=0;assert.equal(await ctx.authorizeWalletSpend('hint'),true);assert.equal(calls,0);
+test('help on a verified replay while historical wallet recovery is pending records its time penalty',()=>{
+ const source=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8'),uses=[];
+ const ctx={cloudProfileReady:false,cloudProfileFailure:held.failure,hintUsesThisGame:2,usedHintThisGame:false,
+  attemptEngine:{recordAssistanceUse:(...args)=>uses.push(args),markAssistance(){}},trackAttemptEvent(){}};
+ vm.createContext(ctx);vm.runInContext(functionSource(source,'recordHintUse'),ctx);
+ ctx.recordHintUse();assert.deepEqual(uses,[['hint',3]]);assert.equal(ctx.usedHintThisGame,true);
+ assert.equal(ctx.cloudProfileFailure,held.failure);
 });
 test('pending replay presentation never advertises an extra star or a confirmed badge',()=>{
  const source=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');

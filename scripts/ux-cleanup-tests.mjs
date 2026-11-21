@@ -37,7 +37,8 @@ try{
    check(await evaluate(`(()=>{const r=document.querySelector('#rulesModal .shard-rules-card').getBoundingClientRect(),b=document.getElementById('board').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1&&b.width<=innerWidth&&!!document.getElementById('replayLearning')})()`),label+' help layout');
    check(await evaluate(`(()=>{const card=document.querySelector('#rulesModal .help-card');card.scrollTop=card.scrollHeight;const buttons=['closeRulesModal','replayLearning'].map(id=>{const el=document.getElementById(id),r=el.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight&&document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.closest('button')?.id===id});card.scrollTop=0;return buttons.every(Boolean)})()`),label+' help actions remain reachable after scrolling');
    if(viewport.mobile){const fit=await evaluate(`(()=>{const b=document.getElementById('board').getBoundingClientRect(),a=document.querySelector('.actions').getBoundingClientRect(),w=document.getElementById('learningBoardWrap')?.getBoundingClientRect();return {ok:document.documentElement.scrollHeight<=innerHeight+1&&b.top>=0&&b.bottom<=innerHeight&&a.bottom<=innerHeight,scrollHeight:document.documentElement.scrollHeight,innerHeight,board:[b.top,b.bottom,b.height],actions:[a.top,a.bottom,a.height],wrap:w?[w.top,w.bottom,w.height]:null,bodyScroll:document.body.scrollHeight}})()`);if(!fit.ok)console.log('ux-fit:',label,JSON.stringify(fit));check(fit.ok,label+' play viewport fits without vertical scroll');}
-   await click('#rulesModal p');
+   await click('#rulesModal [data-game-text="rules.summary"]');
+   check(await evaluate("!document.getElementById('rulesModal').hidden"),label+' content click keeps help open');
    check(await snapshot()===before,label+' modal content changed quest/teaching state');
    await click('#closeRulesModal');
    check(await evaluate(`document.getElementById('rulesModal').hidden&&document.activeElement.id==='tutorialHelp'`),label+' close/focus');
@@ -58,7 +59,7 @@ try{
   const hint=await evaluate(`({hidden:document.getElementById('hintCard').hidden,title:document.getElementById('hintTitle').textContent,copy:document.getElementById('hintCopy').textContent,highlighted:document.querySelectorAll('#board .cell.hi').length})`);
   check(!hint.hidden&&hint.title==='Marquage à compléter'&&hint.copy.includes('écarter')&&!hint.copy.includes('Eau manquante')&&hint.highlighted>0,viewport.width+' guided hint: '+JSON.stringify(hint));
   await click('#hintClose');
-  check(await evaluate(`document.getElementById('hintCard').hidden&&document.querySelectorAll('#board .cell.hi').length===0`),viewport.width+' hint close clears visuals');
+  check(await evaluate(`document.getElementById('hintCard').hidden&&document.querySelectorAll('#board .cell.hint-target').length>0`),viewport.width+' closing keeps the board deduction reachable');
   await evaluate(`(()=>{lumenDiagnostics.setupQuest(2);document.getElementById('questStart').hidden=true;const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
   await acknowledgeLearningMilestones(evaluate);
   await sleep(500);

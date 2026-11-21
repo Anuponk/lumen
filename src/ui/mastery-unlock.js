@@ -1,7 +1,22 @@
 // #728: the client only *asks* the server to unlock the next Adventure once the previous
 // one looks 100% mastered locally. The server recomputes mastery from its own records
 // and is the only one that grants (source "mastery"). Pure helpers, no I/O here.
-import {celestialScope,celestialMastered} from './celestial-progress.js';
+import {questCompleted} from '../campaign/catalogue-access.js';
+import {PERFORMANCE_BADGES} from '../campaign/performance.js';
+
+// Match the server's Adventure mastery projection, including older canonical
+// victories recorded only as runPerformance and legacy badges from version 2.
+export function adventureMastery(quests, progress={}) {
+ let missingQuests=0,missingBadges=0;
+ for(const quest of quests){
+  const legacy=quest.legacyIndex!==null;
+  const record=legacy?progress.performances?.[quest.legacyIndex]:progress.canonicalQuestState?.[quest.id];
+  if(!questCompleted(quest,progress)&&(legacy||!Object.hasOwn(record??{},'runPerformance')))missingQuests++;
+  const badges=legacy&&!(typeof record?.version==='number'&&record.version>=2)?null:record?.badges;
+  missingBadges+=PERFORMANCE_BADGES.filter(key=>badges?.[key]!==true).length;
+ }
+ return {missingQuests,missingBadges,mastered:quests.length>0&&missingQuests===0&&missingBadges===0};
+}
 
 const entitlementId=e=>typeof e==='string'?e:e?.entitlement;
 
@@ -14,8 +29,7 @@ export function masteryUnlockCandidates({packs,quests,progress,entitlements}){
  for(let i=1;i<ordered.length;i++){
   const pack=ordered[i],previous=ordered[i-1];
   if(pack.access!=='locked'||owned.has(pack.id))continue;
-  const scope=celestialScope(progress||{},(quests||[]).filter(q=>q.packId===previous.id));
-  if(celestialMastered(scope))out.push(pack.id);
+  if(adventureMastery((quests||[]).filter(q=>q.packId===previous.id),progress||{}).mastered)out.push(pack.id);
  }
  return out;
 }

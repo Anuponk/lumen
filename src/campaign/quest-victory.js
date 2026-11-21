@@ -7,8 +7,8 @@ import {qualifiesDailyActivity,grantAutonomyMilestone} from './daily-engagement.
 
 // Pure projection for isolated fixtures/guest play. Authenticated grants must
 // be confirmed by the transaction adapter; no caller may install this optimistically.
-export function applyQuestVictory(progress,quest,facts){
- if(quest.legacyIndex!==null)return applyLegacyVictory(progress,quest.legacyIndex,facts);
+export function applyQuestVictory(progress,quest,facts,{grantShards=true}={}){
+ if(quest.legacyIndex!==null)return applyLegacyVictory(progress,quest.legacyIndex,facts,{grantShards});
  const definition=questRewardDefinition(quest),state=progress.canonicalQuestState??{},old=state[quest.id]??{};
  const firstCompletion=!old.solved,priorPerformance=structuredClone(questPerformanceRecord(quest,progress));
  const priorBadges={...old.badges},qualifying=!!facts.qualifying;
@@ -29,9 +29,9 @@ export function applyQuestVictory(progress,quest,facts){
  let questPassed=false;
  if(bonus&&!progress.stars[bonus.id]){
   questPassed=!facts.challengeFailed&&(bonus.seconds!==null?facts.seconds<=bonus.seconds:bonus.type===2?!facts.hintUsed:true);
-  if(questPassed){progress.stars[bonus.id]=1;progress.challenges[bonus.id]=1;progress.xp=(progress.xp||0)+25;progress.shards=(progress.shards||0)+1}
+  if(questPassed){progress.stars[bonus.id]=1;progress.challenges[bonus.id]=1;progress.xp=(progress.xp||0)+25;if(grantShards)progress.shards=(progress.shards||0)+1}
  }
- const autonomyShard=grantAutonomyMilestone(progress,{firstCompletion:firstEconomicCompletion,autonomy:run.autonomy});
+ const autonomyShard=grantAutonomyMilestone(progress,{firstCompletion:firstEconomicCompletion,autonomy:run.autonomy,grantShards});
  return {firstCompletion,questPassed,stars,priorPerformance,priorBadges,savedPerformance:{run,qualifying,badges},autonomyShard,
   dailyQualified:qualifiesDailyActivity({firstCompletion,performanceQualifying:qualifying,priorBadges,earnedBadges:badges}),attempts:performance.attempts};
 }

@@ -1,73 +1,206 @@
-// #731: what a player sees when touching a locked Adventure: the paid offers (€1 / €5,
-// €5 cap), the free path through 100% mastery of the previous Adventure, and why
+// #731: paid offers, the free path through 100% mastery of the previous Adventure, and why
 // Lumen is paid. Purchases stay disabled until a payment provider is connected
 // (#729/#730); the server always decides what is granted (#728).
-import {celestialScope,celestialMastered} from './celestial-progress.js';
-import {ADVENTURE_PRICE_CENTS,SKY_PRICE_CENTS,SKY_PRODUCT_ID,formatEuros} from '../campaign/store-catalogue.js';
+import {adventureMastery} from './mastery-unlock.js';
+import {ADVENTURE_PRICE_CENTS,SKY_PRICE_CENTS,SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS,formatEuros} from '../campaign/store-catalogue.js';
 
-export const SUPPORT_LINE='Sans pub, financé par les joueurs ✨';
+export const SUPPORT_LINE='🚀 Tu peux aussi soutenir Lumen en achetant une aventure. Grâce à toi, les étoiles brillent… Sans pub !';
+// #732: express request for immediate access and waiver of the 14-day withdrawal right
+// (art. L221-28 13° Code de la consommation), never pre-ticked, required before paying.
+export const WAIVER_TEXT='Je demande l’accès immédiat à mon achat et je renonce à mon droit de rétractation de 14 jours.';
+// #863: shown in red under the box when « Choisir » / « Tout débloquer » is pressed unticked.
+export const WAIVER_REQUIRED='Cochez cette case pour poursuivre votre achat.';
+export const RESTORE_LABEL='Restaurer mes achats';
+export const RESTORE_HINT='Un achat n’apparaît pas ?';
+let waiverIds=0;
+export const SALES_TERMS_URL='/cgv.html';
 export const SUPPORT_TEXT='Lumen est développé par un petit studio indépendant. Pas de publicité, pas de collecte de données pour du ciblage : les achats servent à financer l’hébergement, les serveurs et le développement de nouvelles aventures.';
 
-// #729: on Google Play a product has a fixed price, so once a single Adventure has been
-// bought the €5 offer is hidden and the player continues at €1 until the €5 cap
-// unlocks everything (owner decision, 15/11/2026). Play's localised prices win when known.
-export function adventureOfferModel({pack,packs,quests,progress,signedIn=false,accounts=true,purchasesAvailable=false,boughtSingle=false,prices={}}){
+// Play decides the regional price. After a unit purchase, keep the existing
+// eligibility rule for the whole-sky offer independent of the provider's price.
+// #865: the whole-sky product is the server's sky_offer once its progress is known:
+// real-sky-all (N=0), real-sky-upgrade-N (N=1..4, if active) or none (unlocked/inactive).
+export function mainSkyOffer(skyProgress,{boughtSingle=false}={}){
+ const known=typeof skyProgress?.unlocked==='boolean'&&Number.isInteger(skyProgress?.purchased);
+ if(!known)return {known:false,product:boughtSingle?null:SKY_PRODUCT_ID,priceCents:null,purchased:null};
+ const product=!skyProgress.unlocked&&(skyProgress.sky_offer===SKY_PRODUCT_ID||SKY_UPGRADE_PRODUCT_IDS.includes(skyProgress.sky_offer))?skyProgress.sky_offer:null;
+ const priceCents=product&&skyProgress.sky_offer_currency==='EUR'&&Number.isInteger(skyProgress.sky_offer_price_cents)&&skyProgress.sky_offer_price_cents>0?skyProgress.sky_offer_price_cents:null;
+ return {known:true,product,priceCents,purchased:skyProgress.purchased};
+}
+export function adventureOfferModel({pack,packs,quests,progress,signedIn=false,accounts=true,purchasesAvailable=false,boughtSingle=false,skyProgress=null,prices={},pricesRequired=false,priceStatus='idle',priceErrors=[],masteryStatus='ready',masteryConfirmed=false}){
  const ordered=[...(packs||[])].sort((a,b)=>a.order-b.order);
  const index=ordered.findIndex(p=>p.id===pack.id),previous=index>0?ordered[index-1]:null;
- let mastery=null;
- if(previous){
-  const scope=celestialScope(progress||{},(quests||[]).filter(q=>q.packId===previous.id));
-  mastery={previousName:previous.displayName||'l’aventure précédente',previousAccessible:previous.accessible!==false,
-   mastered:celestialMastered(scope),missingQuests:Math.max(0,scope.total-scope.completed),missingBadges:Math.max(0,scope.possible-scope.earned)};
- }
- return {id:pack.id,title:pack.displayName||'Aventure',unitPrice:prices[pack.id]||formatEuros(ADVENTURE_PRICE_CENTS),skyPrice:prices[SKY_PRODUCT_ID]||formatEuros(SKY_PRICE_CENTS),
-  capPrice:formatEuros(SKY_PRICE_CENTS),unitProduct:pack.id,skyProduct:SKY_PRODUCT_ID,showSky:!boughtSingle,
+ const previousQuests=previous?(quests||[]).filter(q=>q.packId===previous.id):[];
+ const mastery=previous?{
+  previousName:previous.displayName||'',
+  status:masteryStatus==='ready'&&!previousQuests.length?'unavailable':masteryStatus,
+  confirmed:masteryStatus==='ready'&&masteryConfirmed,
+  ...(masteryStatus==='ready'&&previousQuests.length
+   ?adventureMastery(previousQuests,progress||{})
+   :{mastered:false,missingQuests:null,missingBadges:null})
+ }:null;
+ // Only delivered grids in the real-sky product; ownership opens a sequence,
+ // not every quest at once. Already accessible packs add no new content.
+ const delivered=[...new Map((quests||[]).filter(q=>q.reg?.length&&q.sol?.length).map(q=>[q.id,q])).values()];
+ const ready=ordered.every(p=>!p.accessStatus||p.accessStatus==='ready');
+ const newlyAvailable=p=>p.accessible!==true&&p.access!=='included';
+ const unitCount=ready?delivered.filter(q=>q.packId===pack.id&&newlyAvailable(ordered.find(p=>p.id===q.packId)||pack)).length:null;
+ const skyIds=new Set(ordered.filter(p=>p.skyId==='real-sky'&&newlyAvailable(p)).map(p=>p.id));
+ const skyCount=ready?delivered.filter(q=>skyIds.has(q.packId)).length:null;
+ const missingPrice=priceStatus==='loading'?'Chargement du prix…':'Prix indisponible';
+ const sky=mainSkyOffer(skyProgress,{boughtSingle});
+ const skyProduct=sky.product||SKY_PRODUCT_ID,skyUpgrade=SKY_UPGRADE_PRODUCT_IDS.includes(sky.product);
+ // Web price: the server catalogue price of this exact offer (what Stripe will charge).
+ const webSkyPrice=sky.known?(sky.priceCents?formatEuros(sky.priceCents):null):formatEuros(SKY_PRICE_CENTS);
+ return {id:pack.id,title:pack.displayName||'Aventure',unitCount,skyCount,pricesRequired,priceStatus,priceErrors,unitPriceKnown:!pricesRequired||!!prices[pack.id],skyPriceKnown:pricesRequired?!!prices[skyProduct]:!!webSkyPrice,unitPrice:prices[pack.id]||(pricesRequired?missingPrice:formatEuros(ADVENTURE_PRICE_CENTS)),skyPrice:prices[skyProduct]||(pricesRequired?missingPrice:webSkyPrice||'Prix indisponible'),
+  unitProduct:pack.id,skyProduct,showSky:!!sky.product,skyUpgrade,skyPurchased:sky.purchased,
   signedIn:!!signedIn,accounts:!!accounts,purchasesAvailable:!!purchasesAvailable,mastery};
 }
 
-// #731: outcome of « Restaurer mes achats ». Only a server-confirmed purchase is called
-// restored; a pending or unverified one is never presented as a success.
-export function restoreMessage(results=[]){
- const has=status=>results.some(r=>r?.status===status);
- const parts=[];
- if(has('paid'))parts.push('Achats restaurés ✓');
- if(has('pending'))parts.push('Un paiement attend encore la confirmation de Google : l’aventure se débloquera dès qu’il sera confirmé.');
- if(has('owned_elsewhere'))parts.push('Un achat est déjà associé à un autre compte Lumen.');
- if(has('error')||has('not_paid'))parts.push(has('paid')?'Certains achats n’ont pas pu être vérifiés : réessaie plus tard.':'Vérification impossible pour le moment : réessaie plus tard. Tes achats restent enregistrés chez Google.');
- return parts.length?parts.join(' '):'Aucun achat Google Play à restaurer pour ce compte Google.';
-}
-
 const plural=(n,word)=>n+' '+word+(n>1?'s':'');
+export function purchaseProgressMessage(progress){
+ if(typeof progress?.unlocked!=='boolean'||!Number.isInteger(progress.remaining)||progress.remaining<0||progress.remaining>5)return '';
+ if(progress.unlocked)return 'Tout le ciel principal est débloqué !';
+ if(progress.remaining===0)return '';
+ if(progress.remaining===5)return 'Achète 5 aventures à l’unité et débloque automatiquement toutes les autres aventures du ciel principal.';
+ if(progress.remaining===1)return 'Plus qu’une aventure à acheter pour débloquer tout le ciel principal !';
+ return 'Encore '+plural(progress.remaining,'aventure')+' à acheter pour débloquer tout le ciel principal !';
+}
 export function masteryLine(model){
  const m=model.mastery;if(!m)return '';
- const name='« '+m.previousName+' »';
- if(m.mastered)return model.signedIn?'Maîtrise de '+name+' atteinte ✓ : cette aventure se débloque gratuitement.'
-  :'Maîtrise de '+name+' atteinte ✓ : connecte-toi pour débloquer cette aventure gratuitement.';
- if(!m.previousAccessible)return 'Gratuit aussi : maîtrise à 100 % l’aventure précédente '+name+', une fois débloquée.';
- const left=[m.missingQuests?plural(m.missingQuests,'quête'):'',m.missingBadges?plural(m.missingBadges,'badge'):''].filter(Boolean).join(' et ');
- return 'Gratuit : maîtrise '+name+' à 100 %'+(left?' (il te reste '+left+').':'.');
+ if(m.status==='loading')return 'Chargement de ta progression…';
+ if(m.status!=='ready')return 'Ta progression est indisponible pour le moment.';
+ if(m.confirmed)return 'Déblocage gratuit confirmé.';
+ if(m.mastered)return model.signedIn?'Tu as atteint les 100 %. Fais vérifier ton déblocage gratuit.'
+  :'Tu as atteint les 100 %. Connecte-toi pour débloquer cette aventure gratuitement.';
+ if(!m.missingBadges)return 'Il te reste '+plural(m.missingQuests,'quête')+' à terminer pour la débloquer gratuitement.';
+ const quests=m.missingQuests?plural(m.missingQuests,'quête')+' et ':'';
+ return 'Il te reste '+quests+plural(m.missingBadges,'badge')+' à acquérir pour la débloquer gratuitement.';
 }
 
-export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{},onClaim=()=>{},onRestore=async()=>{}}={}){
+export function updateAdventureOfferMastery(section,model,{onClaim=()=>{},onContinue=()=>{}}={}){
+ if(!section||!model.mastery)return;
+ const {previousName,confirmed,mastered}=model.mastery;
+ const previous=previousName?' (« '+previousName+' »).':'.';
+ const line=masteryLine(model);
+ const action=confirmed?'Retour à Mon ciel':mastered&&model.signedIn?'Vérifier le déblocage gratuit':'';
+ const view=JSON.stringify([previous,line,action]);
+ if(section.dataset.masteryView===view)return;
+ section.dataset.masteryView=view;
+ const title=document.createElement('strong');title.textContent='💡 Le savais-tu ?';
+ const condition=document.createElement('p');
+ const requirement=document.createElement('b');requirement.textContent='100 % l’aventure précédente';
+ condition.append(document.createTextNode('Tu peux débloquer gratuitement cette aventure en maîtrisant à '),requirement,document.createTextNode(previous));
+ const status=document.createElement('p');status.textContent=line;
+ status.dataset.offerMasteryStatus='';status.setAttribute('role','status');
+ section.replaceChildren(title,condition,status);
+ if(action){
+  const button=document.createElement('button');button.type='button';button.className='adventure-offer-claim';
+  button.dataset.offer=confirmed?'mastery-continue':'mastery-claim';button.textContent=action;
+  button.onclick=()=>confirmed?onContinue():onClaim(button);
+  section.append(button);
+ }
+}
+
+export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{},onClaim=()=>{},onContinue=()=>{},onRetry=()=>{},onRestorePlay=null,playCheckoutPaused=false}={}){
  const el=(tag,props={},text)=>{const e=document.createElement(tag);Object.assign(e,props);if(text!==undefined)e.textContent=text;return e};
  const root=el('div',{className:'adventure-offer'});
  const status=el('p',{className:'adventure-offer-status',hidden:true});status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.dataset.offerStatus='';
- const buttons=[];
- const setStatus=text=>{status.textContent=text||'';status.hidden=!text};
- const setBusy=busy=>{for(const b of buttons)b.disabled=busy||!model.purchasesAvailable};
+ const buttons=[];let retryButton=null,restoreButton=null,statusTimer=null;
+ const setStatus=(text,{transient=false}={})=>{
+  clearTimeout(statusTimer);status.textContent=text||'';status.hidden=!text;
+  // #863: a successful manual restore is confirmed briefly, inside the shop only.
+  if(text&&transient){statusTimer=setTimeout(()=>{if(status.textContent===text)setStatus('')},3000);statusTimer?.unref?.()}
+ };
+ const setBusy=busy=>{for(const b of buttons)b.disabled=busy||!model.purchasesAvailable;if(retryButton)retryButton.disabled=busy;if(restoreButton)restoreButton.disabled=busy};
  const buy=(kind,label,product)=>{const b=el('button',{type:'button',className:'adventure-offer-buy',disabled:!model.purchasesAvailable},label);b.dataset.offer=kind;buttons.push(b);
-  b.onclick=()=>{if(!model.signedIn){onSignIn();return}onBuy(product,{setStatus,setBusy})};return b};
- root.append(buy('unit','Débloquer cette aventure · '+model.unitPrice,model.unitProduct));
- if(model.showSky)root.append(buy('sky','Tout le vrai ciel · '+model.skyPrice,model.skyProduct));
- root.append(el('p',{className:'adventure-offer-cap'},model.showSky
-  ?'Tes achats à l’unité comptent : tu ne paieras jamais plus de '+model.capPrice+' au total.'
-  :'Tu continues à l’unité : dès '+model.capPrice+' payés au total, tout le vrai ciel est débloqué.'),status);
- if(model.purchasesAvailable&&model.signedIn){const r=el('button',{type:'button',className:'adventure-offer-restore'},'Restaurer mes achats');r.dataset.offer='restore';buttons.push(r);
-  r.onclick=()=>onRestore({setStatus,setBusy});root.append(r)}
- if(!model.purchasesAvailable)root.append(el('p',{className:'adventure-offer-soon'},'Paiement bientôt disponible.'));
- const line=masteryLine(model);
- if(line){const p=el('p',{className:'adventure-offer-mastery'},line);p.dataset.offerMastery='';root.append(p);
-  if(model.mastery.mastered&&model.signedIn){const claim=el('button',{type:'button',className:'adventure-offer-claim'},'Débloquer gratuitement');claim.dataset.offer='claim';claim.onclick=()=>onClaim(claim);root.append(claim)}}
+  b.onclick=()=>{if(!model.signedIn){onSignIn();return}
+  if(!waiver?.checked){showWaiverError();return}
+  onBuy(product,{setStatus,setBusy,waiver:{accepted:true,text:WAIVER_TEXT,at:new Date().toISOString()}})};return b};
+ const unitAvailable=model.purchasesAvailable&&model.unitCount>0&&model.unitPriceKnown;
+ const skyAvailable=model.purchasesAvailable&&model.showSky&&model.skyCount>0&&model.skyPriceKnown;
+ let waiver=null,waiverLabel=null,waiverError=null;
+ // #863: no payment, a visible red message under the box, focus on it; cleared once ticked.
+ const showWaiverError=()=>{
+  if(!waiver)return;
+  waiverError.textContent=WAIVER_REQUIRED;waiverError.hidden=false;
+  waiver.setAttribute('aria-invalid','true');waiverLabel.className='adventure-offer-consent is-invalid';
+  waiver.focus();waiverLabel.scrollIntoView?.({block:'nearest'});
+ };
+ if(model.signedIn&&(unitAvailable||skyAvailable)){
+  // Consent stays before the purchase buttons (express request before ordering).
+  waiverLabel=el('label',{className:'adventure-offer-consent'});
+  waiver=el('input',{type:'checkbox',checked:false});waiver.dataset.offer='waiver';
+  const errorId='offerWaiverError'+(++waiverIds);
+  waiverError=el('p',{className:'adventure-offer-waiver-error',id:errorId,hidden:true});waiverError.dataset.offerWaiverError='';
+  waiverError.setAttribute('role','alert');
+  waiver.setAttribute('aria-describedby',errorId);
+  waiver.onchange=()=>{if(waiver.checked){waiverError.textContent='';waiverError.hidden=true;waiver.setAttribute('aria-invalid','false');waiverLabel.className='adventure-offer-consent'}};
+  waiverLabel.append(waiver,document.createTextNode(' '+WAIVER_TEXT));root.append(waiverLabel,waiverError);
+ }
+ const offerCard=(kind,title,price,count,product,note=null)=>{
+  const card=el('section',{className:'adventure-offer-card'});
+  const heading=el('h3',{},title),amount=el('strong',{className:'adventure-offer-price'},price);
+  const detail=el('p',{},count===null?'Vérification du contenu accessible…':count===0?'Aucun nouveau contenu disponible':`+ ${count} nouvelles ${kind==='unit'?'quêtes à explorer':'grilles à découvrir'}`);
+  detail.dataset.offerCount=kind;
+  const button=buy(kind,title+' · '+price,product);
+  button.setAttribute('aria-label',title+' · '+price);
+  button.textContent=kind==='unit'?'Choisir':'Tout débloquer';
+  // Also retain the disabled state through the provider's busy callback.
+  const allowed=kind==='unit'?unitAvailable:skyAvailable;
+  if(!allowed){buttons.splice(buttons.indexOf(button),1);button.disabled=true}
+  card.append(heading,amount,detail,...(note?[note]:[]),button);return card;
+ };
+ const offers=el('div',{className:'adventure-offer-cards'});
+ offers.append(offerCard('unit','Débloquer cette aventure',model.unitPrice,model.unitCount,model.unitProduct));
+ if(model.showSky){
+  // #865: one personalised offer only, never the list of tiers.
+  let note=null;
+  if(model.skyUpgrade){
+   const n=model.skyPurchased;
+   note=el('p',{className:'adventure-offer-upgrade'},'Prix ajusté : '+(n>1?'tes '+n+' aventures achetées sont prises':'ton aventure achetée est prise')+' en compte.');
+   note.dataset.offerUpgrade='';
+  }
+  offers.append(offerCard('sky','Débloquer tout le vrai ciel',model.skyPrice,model.skyCount,model.skyProduct,note));
+ }
+ offers.dataset.offerCards='';
+ root.append(offers);
+ const purchaseProgress=el('p',{className:'adventure-offer-cap',hidden:true});
+ purchaseProgress.dataset.offerPurchaseProgress='';
+ purchaseProgress.setAttribute('aria-live','polite');
+ root.append(status,purchaseProgress);
+ // #863: restoring is troubleshooting, not an offer: a discreet action in the footer.
+ if(onRestorePlay){
+  restoreButton=el('button',{type:'button',className:'adventure-offer-restore'},RESTORE_LABEL);
+  restoreButton.dataset.offer='restore-play';
+  restoreButton.onclick=async()=>{
+   setBusy(true);setStatus('Vérification des achats Google Play…');
+   try{
+    const result=await onRestorePlay();
+    if(typeof result==='string')setStatus(result);else setStatus(result?.text||'',{transient:!!result?.transient});
+   }finally{setBusy(false)}
+  };
+ }
+ if(model.pricesRequired){
+  const unavailable=!model.purchasesAvailable||!model.unitPriceKnown||(model.showSky&&!model.skyPriceKnown);
+  const message=el('p',{className:'adventure-offer-soon'},playCheckoutPaused?'Les nouveaux achats Google Play sont temporairement suspendus.':
+   model.priceStatus==='loading'?'Chargement des tarifs Google Play…':
+   unavailable?'Google Play ne permet pas cet achat pour le moment. Vérifie ta connexion et réessaie.':'');
+  message.setAttribute('role','status');message.setAttribute('aria-live','polite');
+  message.dataset.playPriceReason=(model.priceErrors||[]).map(e=>e.reason).join(',');
+  if(message.textContent)root.append(message);
+  if(model.priceStatus!=='loading'&&(playCheckoutPaused?model.priceErrors?.length:unavailable)){retryButton=el('button',{type:'button'},'Réessayer');retryButton.dataset.offer='retry';retryButton.onclick=()=>onRetry();root.append(retryButton)}
+ }else if(!model.purchasesAvailable)root.append(el('p',{className:'adventure-offer-soon'},'Paiement bientôt disponible.'));
+ if(model.mastery){
+  const section=el('aside',{className:'adventure-offer-mastery'});
+  section.dataset.offerMastery='';
+  updateAdventureOfferMastery(section,model,{onClaim,onContinue});
+  root.append(section);
+ }
+ const terms=el('a',{className:'adventure-offer-terms',href:SALES_TERMS_URL,target:'_blank',rel:'noopener'},'Conditions générales de vente');terms.dataset.offer='terms';
+ const termsLine=el('p',{className:'adventure-offer-terms-line'});termsLine.append(terms);
+ if(restoreButton)termsLine.append(document.createTextNode(' · '+RESTORE_HINT+' '),restoreButton);
+ root.append(termsLine);
  if(!model.signedIn&&model.accounts){const s=el('button',{type:'button',className:'adventure-offer-signin'},'Créer un compte ou se connecter');s.dataset.offer='signin';s.onclick=()=>onSignIn();root.append(s)}
  const support=el('p',{className:'adventure-offer-support'},SUPPORT_LINE+' ');
  const why=el('button',{type:'button',className:'adventure-offer-why'},'Pourquoi ?');why.dataset.offer='why';why.setAttribute('aria-expanded','false');

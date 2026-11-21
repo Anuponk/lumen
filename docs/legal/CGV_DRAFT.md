@@ -1,5 +1,7 @@
 # Conditions générales de vente Lumen — projet non publiable en l'état
 
+> **Remplacé le 17/11/2026 par la version publiée `/cgv.html`, qui fait foi** (décision du propriétaire, #732/#730). Ce brouillon est conservé pour l’historique des décisions ; ne plus le modifier.
+
 Version de travail du 16 novembre 2026 (#732). Ce texte prépare la décision du
 propriétaire ; il **n'est ni publié ni validé juridiquement**. Les rubriques
 **« À valider »** bloquent la première vente réelle. Faits produit repris du code
@@ -17,19 +19,21 @@ consommateur.
 
 - **La première aventure est gratuite.** Les suivantes sont des contenus
   numériques fournis sans support matériel.
-- **« Débloquer cette aventure » : 1 €.** Accès permanent à une aventure, lié au
+- **« Débloquer cette aventure »** donne un accès permanent à une aventure, lié au
   compte Lumen.
-- **« Tout le vrai ciel » : 5 €.** Accès à toutes les aventures du vrai ciel.
-- **Plafond :** les achats à l'unité comptent ; un joueur ne paie jamais plus de
-  5 € au total pour le vrai ciel. Au-delà, tout est débloqué.
+- **« Tout le vrai ciel »** donne accès à toutes les aventures du vrai ciel.
 - **Accès gratuit par la maîtrise :** maîtriser une aventure à 100 % débloque
   gratuitement la suivante. Cet accès n'est pas une vente.
 - Les Éclats de lumière et les badges ne s'achètent pas.
 
 ## 3. Prix et TVA
 
-Prix en euros, toutes taxes comprises, affichés avant l'achat. Dans l'app
-Google Play, le prix affiché par Google fait foi.
+Sur la version web, une aventure coûte 1 € et le vrai ciel coûte 5 €. Les
+achats web à l’unité comptent dans le plafond web de 5 € pour le vrai ciel.
+Le montant affiché sur la page de paiement Stripe fait foi.
+
+Dans l’app Google Play, le prix affiché par Google fait foi. Il peut varier
+selon le pays et la devise du compte Play.
 
 **TVA non applicable, art. 293 B du CGI** (franchise en base, confirmée par le
 propriétaire le 16/11/2026). Surveiller le seuil de la franchise ; toute vente hors
@@ -106,20 +110,22 @@ formulations « pas pour gagner de l'argent » ou « sans but lucratif ».
 Chaque ligne est une décision ou une action du propriétaire, ou une évolution à
 livrer :
 
-- [ ] Valider ce texte (et la TVA), le publier en HTML (`cgv.html`) dans les deux
+- [x] Valider ce texte (et la TVA), le publier en HTML (`cgv.html`) dans les deux
+  Fait (#732, 17/11/2026) : `cgv.html`, lien « Conditions générales de vente » sous l'offre.
   listes de publication o2switch, puis le lier depuis l'écran d'achat (#731) et
   les mentions légales.
-- [ ] Désigner le médiateur de la consommation (section 10).
-- [ ] Implémenter et tester le consentement exprès à la renonciation au droit de
+- [ ] Désigner le médiateur de la consommation (section 10) : suivi dans #773. Décision du propriétaire (17/11/2026) : publier sans attendre, ce n'est pas un blocage de `play-readiness`.
+- [x] Implémenter et tester le consentement exprès à la renonciation au droit de
   rétractation (section 6).
-- [ ] Mettre à jour la politique de confidentialité publiée (achats, Google comme
+- [x] Mettre à jour la politique de confidentialité publiée (achats, Google comme
   destinataire, durées de conservation des reçus).
-- [ ] Mentions légales : préciser l'activité commerciale et la mention « TVA non
+- [x] Mentions légales : préciser l'activité commerciale et la mention « TVA non
   applicable, art. 293 B du CGI ».
 - [x] Registre comptable minimal conservé 10 ans après la suppression du compte
   (migration `20261116200000_purchase_accounting_records_732.sql`, à appliquer
   par le propriétaire ; purge quotidienne à programmer).
-- [ ] `content/legal/publisher.json` : changer `monetization`
+- [x] `content/legal/publisher.json` : changer `monetization`
+  Fait : `paid-content-no-ads`, mention TVA 293 B exigée par `play-readiness`.
   (`free-no-ads-no-purchases` aujourd'hui) puis adapter
   `scripts/play-readiness.mjs` et `scripts/privacy-readiness-tests.mjs`, qui
   bloquent volontairement la publication Play tant que cette valeur n'est pas

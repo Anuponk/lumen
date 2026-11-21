@@ -70,36 +70,11 @@ export function dragLearningStep(puzzle, state) {
   return { phase: 'complete', cells: [], number: 1 };
 }
 
-export function learningCopy(step, state, coarse = false) {
-  if (step.dragLesson) {
-    if (step.phase === 'place') return {
-      title: state[0][0] === 1 ? 'Encore une fois…' : 'À toi de commencer',
-      copy: state[0][0] === 1 ? 'Touche encore cette case pour poser son Gardien.' : 'Ce petit territoire n’a qu’une case. Touche-la deux fois pour y poser son Gardien, puis entraînons-nous au glissé.'
-    };
-    return {
-      title: coarse ? 'Essaie le glissé' : 'Essaie le clic-glissé',
-      copy: (coarse ? 'Maintiens ton doigt et glisse' : 'Garde le bouton enfoncé et glisse') + ' sur les cases éclairées, puis relâche. Ces cases sont impossibles : un seul geste les écarte. Ensuite, à toi de poursuivre !'
-    };
-  }
-  if (step.phase === 'place') {
-    const marked = state[step.target[0]][step.target[1]] === 1;
-    if (step.number === 1) return {
-      title: marked ? 'Encore une fois…' : 'Un territoire, un Gardien',
-      copy: marked ? 'La croix écarte une case. Touche-la encore pour y poser ton premier Gardien.' : 'Chaque territoire doit contenir un Gardien. Celui du centre n’a qu’une case : touche-la deux fois. La première pose une croix, la seconde un Gardien.'
-    };
-    return {
-      title: marked ? 'Pose son Gardien' : step.number === 2 ? 'À toi de déduire' : 'Observe ce territoire',
-      copy: marked ? 'Encore un toucher pour passer de la croix au Gardien.' : step.number === 2 ? 'Regarde ce territoire : toutes ses cases sauf une sont impossibles. Où doit aller son Gardien ?' : step.number === 3 ? 'Une seule case reste possible dans ce territoire. À toi de la trouver et de poser son Gardien.' : 'Quel emplacement reste possible dans ce territoire ? Applique ce que tu viens d’apprendre.'
-    };
-  }
-  const text = {
-    row: ['Un seul Gardien par ligne', 'La croix signifie « impossible ». Touche une fois chacune des autres cases de cette ligne pour les écarter.'],
-    column: ['Même règle pour la colonne', 'Un seul Gardien par colonne. Écarte ses autres cases, une par une.'],
-    neighbors: ['Même en diagonale', 'Deux Gardiens ne peuvent pas se toucher. Écarte les cases voisines encore libres, diagonales comprises.'],
-    territory: ['Ce territoire a son Gardien', 'Écarte les autres cases de ce territoire.'],
-    reuse: ['Bien déduit ! À toi de réutiliser les règles', 'Ce deuxième Gardien élimine de nouvelles cases : ligne, colonne, voisins et territoire. Marque les cases éclairées.'],
-    drag: ['Va plus vite avec le glissé', (coarse ? 'Maintiens le doigt et glisse' : 'Maintiens le clic et glisse') + ' sur les deux cases éclairées. C’est le même geste dans toutes les quêtes. Tu peux aussi les toucher une par une.'],
-    practice: ['À toi de poursuivre', 'Écarte les cases devenues impossibles grâce à ce Gardien, puis cherche la prochaine déduction.']
-  }[step.phase];
-  return text ? { title: text[0], copy: text[1] } : { title: '', copy: '' };
+// #862: the territory numbers are a teaching aid of the quest-1 introduction.
+// They appear only while that introduction is really on screen: an intro step
+// of an active scripted lesson. A skipped tutorial (persisted flag) is not an
+// active lesson, even though the in-memory intro cursor resets on reload; an
+// explicit tutorial replay is. Gameplay, regions and constraints are unaffected.
+export function territoryNumbersVisible({ introActive = false, scriptedActive = false } = {}) {
+  return introActive === true && scriptedActive === true;
 }

@@ -55,7 +55,7 @@ try{
  const dauphinLayouts=[];
  for(const viewport of [{width:390,height:844},{width:1440,height:900}]){
   await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1,mobile:viewport.width<700});
-  const layout=await evaluate(`(()=>{const grid=document.getElementById('puzzleGrid'),cards=[...grid.querySelectorAll('.puzzle-card')];return {display:getComputedStyle(grid).display,cards:cards.map(b=>{const r=b.getBoundingClientRect();return {aspect:getComputedStyle(b).aspectRatio,width:r.width,height:r.height,inside:r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight}}),stars:document.querySelector('#skyCard .sky-name').textContent,diagram:document.querySelectorAll('#skyCard .sky-star').length,diagramHeight:document.querySelector('#skyCard .sky-svg').getBoundingClientRect().height,locked:cards.slice(1).every(b=>b.disabled&&!!b.querySelector('.puzzle-lock-only')),current:!!cards[0].querySelector('.puzzle-new-icon'),panels:['performanceLegend','skyCard','openMyChallenges'].map(id=>{const r=document.getElementById(id).getBoundingClientRect(),sheet=document.querySelector('#mapModal .map-sheet').getBoundingClientRect();return {id,height:r.height,inside:r.top>=sheet.top&&r.bottom<=sheet.bottom&&r.bottom<=innerHeight}})}})()`);
+  const layout=await evaluate(`(()=>{const grid=document.getElementById('puzzleGrid'),cards=[...grid.querySelectorAll('.puzzle-card')];return {display:getComputedStyle(grid).display,cards:cards.map(b=>{const r=b.getBoundingClientRect();return {aspect:getComputedStyle(b).aspectRatio,width:r.width,height:r.height,inside:r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight}}),stars:document.querySelector('#skyCard .sky-name').textContent,diagram:document.querySelectorAll('#skyCard .sky-star').length,diagramHeight:document.querySelector('#skyCard .sky-svg').getBoundingClientRect().height,locked:cards.slice(1).every(b=>b.disabled&&!!b.querySelector('.puzzle-lock-only')),current:!!cards[0].querySelector('.puzzle-new-icon'),panels:['performanceLegend','skyCard'].map(id=>{const r=document.getElementById(id).getBoundingClientRect(),sheet=document.querySelector('#mapModal .map-sheet').getBoundingClientRect();return {id,height:r.height,inside:r.top>=sheet.top&&r.bottom<=sheet.bottom&&r.bottom<=innerHeight}})}})()`);
   assert.equal(layout.display,'grid');assert(layout.cards.every(c=>c.inside),'Quest cards retain the standard layout inside the viewport: '+JSON.stringify(layout));
   dauphinLayouts.push({viewport,layout});
   assert(layout.panels.every(p=>p.inside&&p.height>20),'Standard detail panels fit inside the sheet: '+JSON.stringify(layout.panels));
@@ -187,9 +187,19 @@ try{
   await acknowledgeLearningMilestones(evaluate);
   if(i===0){
    await until(`!document.getElementById('authLogout').hidden`);
-   await evaluate(`document.getElementById('verify').click();document.getElementById('verify').click()`);
+   await evaluate(`document.getElementById('attemptMask').click();document.getElementById('verify').click();document.getElementById('verify').click()`);
+   await until(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).helpUses.verify===2`);
+   await evaluate(`(async()=>{
+    const {createDurableCanonicalVictoryOutbox}=await import('/src/persistence/durable-canonical-outbox.js');
+    const {walletSpendIdentity}=await import('/src/persistence/wallet-command.js');
+    const box=createDurableCanonicalVictoryOutbox(localStorage,{namespace:'Wallet'});
+    if((await box.pending('other-synthetic')).length)throw Error('New verification created a wallet reservation');
+    const attempt=JSON.parse(localStorage.getItem('lumenActiveAttemptV1'));
+    const {operationId,request}=walletSpendIdentity('verify',attempt,1);
+    await box.enqueue('other-synthetic','wallet',{request},{operationId});
+   })()`,true);
    await until(`(async()=>{const {createDurableCanonicalVictoryOutbox}=await import('/src/persistence/durable-canonical-outbox.js');return (await createDurableCanonicalVictoryOutbox(localStorage,{namespace:'Wallet'}).pending('other-synthetic')).length===1})()`);
-   assert.equal(await evaluate(`lumenDiagnostics.snapshot().progress.shards`),3,'Offline aid reserves funds without changing the confirmed profile');
+    assert.equal(await evaluate(`lumenDiagnostics.snapshot().progress.shards`),3,'The historical request remains pending before any confirmed debit');
   }
   await evaluate(`(()=>{document.getElementById('attemptMask').click();const d=lumenDiagnostics.snapshot();const solved=d.puz.reg.map(row=>row.map(()=>0));d.puz.sol.forEach((col,row)=>solved[row][col]=2);lumenDiagnostics.setBoard(solved)})()`);
   await until(PENDING_VICTORY_SHOWN);
@@ -218,7 +228,7 @@ try{
  await navigateAndWait({send,evaluate},'Page.reload');
  await until(`document.getElementById('retryAccountSync').hidden`);
  assert.equal(await evaluate(`window.__canonicalGrants`),4,'Reload does not replay rewards');
- assert.equal(await evaluate(`Number(sessionStorage.getItem('walletDebits'))`),1,'The offline paid aid is debited exactly once after reconnect');
+  assert.equal(await evaluate(`Number(sessionStorage.getItem('walletDebits'))`),1,'Only the historical request is debited after reconnect');
  // Completed/partial canonical-only constellations use actual quest membership,
  // even when a historical numeric slot/drawing is absent. Read-only browsing
  // and refresh must preserve the running attempt and all reward balances.
@@ -240,7 +250,7 @@ try{
  }
  assert.equal(await evaluate(`JSON.stringify({progress:lumenDiagnostics.snapshot().progress,attempt:localStorage.getItem('lumenActiveAttemptV1')})`),preserved,'Rendering cannot rewrite rewards or attempt data');
  assert.deepEqual(errors,[]);
- const report={authenticatedMobile:true,grandChienToDauphin:true,canonicalReload:true,attemptIdentityPreserved:true,accountSwitchIsolated:true,canonicalBannerIsolated:true,canonicalStartMetadataArchived:true,canonicalVictoryConfirmed:true,oneGrant:true,quest:next.ordinal,solvedBoardResumedAfterAuth:true,committedReceiptResumed:true,recreatedCaptureArchived:true,oldQuestRecoveryPreservesActiveBoard:true,canonicalRewardCelebration:true,offlineWins:3,offlineReload:true,offlinePaidAid:true,offlineWalletDebitOnce:true,assetServerDisconnected:true,cacheEvictionFeedback:true,checkpointsPreserved:true};
+  const report={authenticatedMobile:true,grandChienToDauphin:true,canonicalReload:true,attemptIdentityPreserved:true,accountSwitchIsolated:true,canonicalBannerIsolated:true,canonicalStartMetadataArchived:true,canonicalVictoryConfirmed:true,oneGrant:true,quest:next.ordinal,solvedBoardResumedAfterAuth:true,committedReceiptResumed:true,recreatedCaptureArchived:true,oldQuestRecoveryPreservesActiveBoard:true,canonicalRewardCelebration:true,offlineWins:3,offlineReload:true,offlineVerification:true,legacyWalletDebitOnce:true,assetServerDisconnected:true,cacheEvictionFeedback:true,checkpointsPreserved:true};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));
  console.log(JSON.stringify(report));
 }finally{appServer.closeAllConnections();await new Promise(resolve=>appServer.close(resolve));await send('Browser.close').catch(()=>{})}

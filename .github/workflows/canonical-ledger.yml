@@ -187,7 +187,11 @@ jobs:
             -f scripts/fixtures/mixed-grid-before-activation.sql \
             -f /tmp/lumen-mixed-grid-activation.sql \
             -f scripts/fixtures/mixed-grid-revision.sql \
-            -f /tmp/lumen-mixed-quest-parity.sql
+            -f /tmp/lumen-mixed-quest-parity.sql \
+            -f scripts/fixtures/challenge-rpc-matrix.sql \
+            -f supabase/migrations/20261121090000_qualifying_challenges_889_888.sql \
+            -f scripts/fixtures/challenge-qualifying-889.sql \
+            -f scripts/fixtures/challenge-rpc-matrix.sql
 
       - name: Verify Lumen-only erasure, private access and concurrent stale writers
         env:
@@ -350,3 +354,111 @@ jobs:
             -f supabase/migrations/20261116200000_purchase_accounting_records_732.sql \
             -f supabase/migrations/20261116200000_purchase_accounting_records_732.sql \
             -f scripts/fixtures/purchase-accounting-records.sql
+      - name: Verify private support lookup by exact reference (#776)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261117051322_support_reference_lookup_776.sql \
+            -f supabase/migrations/20261117051322_support_reference_lookup_776.sql \
+            -f scripts/fixtures/support-reference.sql
+      - name: Verify Stripe TEST checkout sessions, monotonic webhook states and test isolation (#730)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261117120000_stripe_checkout_test_730.sql \
+            -f supabase/migrations/20261117120000_stripe_checkout_test_730.sql \
+            -f scripts/fixtures/stripe-checkout.sql
+      - name: Verify the Stripe real-sales switch, off by default, and test/live separation (#730)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261117180000_stripe_live_switch_730.sql \
+            -f supabase/migrations/20261117180000_stripe_live_switch_730.sql \
+            -f scripts/fixtures/stripe-live-switch.sql
+      - name: Verify regional Play receipts, restore and accounting archive (#729)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261118212000_play_regional_receipts_729.sql \
+            -f supabase/migrations/20261118212000_play_regional_receipts_729.sql \
+            -f scripts/fixtures/play-regional-receipts.sql
+      - name: Verify durable Play acknowledgement and five distinct paid Adventures
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261119092413_play_acknowledgement_833.sql \
+            -f supabase/migrations/20261119092413_play_acknowledgement_833.sql \
+            -f scripts/fixtures/play-acknowledgement.sql \
+            -f supabase/migrations/20261119092419_distinct_adventures_728.sql \
+            -f supabase/migrations/20261119092419_distinct_adventures_728.sql \
+            -f scripts/fixtures/distinct-adventures.sql
+      - name: Verify the account-scoped store progress read
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261119093249_main_sky_purchase_progress_819.sql \
+            -f supabase/migrations/20261119093249_main_sky_purchase_progress_819.sql \
+            -f scripts/fixtures/main-sky-purchase-progress.sql
+      - name: Verify private Play checkout bindings and account erasure
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261119095750_play_account_bindings_729.sql \
+            -f supabase/migrations/20261119095750_play_account_bindings_729.sql \
+            -f scripts/fixtures/play-account-bindings.sql
+      - name: Verify the adjusted whole-sky offers (#865)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261120120000_sky_upgrade_offers_865.sql \
+            -f supabase/migrations/20261120120000_sky_upgrade_offers_865.sql \
+            -f scripts/fixtures/sky-upgrade-offers.sql
+      - name: Verify Play review grants, expiry, revocation and account isolation (#796)
+        env:
+          PGPASSWORD: isolated-test-only
+        run: |
+          psql -h localhost -U postgres -d lumen_privacy_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261120135416_play_review_navigation_796.sql \
+            -f scripts/fixtures/play-review-navigation.sql
+      - name: Verify friends, direct challenges, privacy and erasure (#35)
+        env:
+          PGPASSWORD: isolated-test-only
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261121100000_friends_direct_challenges_35.sql \
+            -f supabase/migrations/20261121100000_friends_direct_challenges_35.sql \
+            -f scripts/fixtures/friends-direct-challenges-35.sql \
+            -f scripts/fixtures/friends-rollback-35.sql
+      - name: Verify the daily challenge, one official attempt, both rankings and erasure (#882)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261122090000_daily_challenge_882.sql \
+            -f supabase/migrations/20261122090000_daily_challenge_882.sql \
+            -f scripts/fixtures/daily-challenge-882.sql
+          python3 scripts/daily-concurrency.py
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/daily-rollback-882.sql
+          # Supabase grants anon EXECUTE on new public functions by default.
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f scripts/fixtures/supabase-default-anon-grants.sql \
+            -f supabase/migrations/20261122100000_daily_anon_revoke_882.sql \
+            -f supabase/migrations/20261122100000_daily_anon_revoke_882.sql \
+            -f scripts/fixtures/daily-anon-revoke-882.sql

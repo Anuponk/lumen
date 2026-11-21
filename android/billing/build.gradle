@@ -1,0 +1,18 @@
+plugins { id 'com.android.library' }
+
+android {
+    namespace 'com.google.androidbrowserhelper.playbilling'
+    compileSdk 36
+    defaultConfig { minSdk 24 }
+    buildFeatures { aidl = true }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    api 'androidx.browser:browser:1.9.0'
+    implementation 'com.android.billingclient:billing:8.3.0'
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.3'
+}

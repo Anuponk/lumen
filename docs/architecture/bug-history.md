@@ -299,3 +299,87 @@ Depuis #405, `adventureAccessEntitlements` lisait `CONTENT_PACKS` sans l’impor
 ### #728 — maîtrise de l'aventure 1 impossible côté serveur
 
 Vérification post-migration en production (15/11/2026) : aucun joueur n'avait « terminé » l'aventure 1 pour le serveur, alors que les plus avancés avaient ses 400 badges. Cause : 49 projections `quest_run_authority` (import historique ou ancien parcours) ont `badges` et `runPerformance` mais pas de clé `solved`. `adventure_mastery` ne lisait que `solved`. Correction (`20261115210000_mastery_completion_fix_728.sql`) : une quête canonique est terminée si `solved` est vrai **ou** si une partie gagnée est enregistrée ; la maîtrise exige toujours tous les badges, que le serveur n'accorde que sur victoire. RED/GREEN : `purchases-mastery.sql` reproduit une projection sans `solved`.
+
+### #817 — swipe interrompu sur le classement
+
+Reproduit sur main `ecb277f` en Chromium tactile à 360×640. Un swipe commencé sur une marche de chargement laisse le bilan sur la quête 3 si la réponse de classement rend le podium avant le relâchement. La trace montre que `touchend` arrive sur la marche détachée et ne remonte plus à `#skyReveal`. Cette écoute par délégation date de `39968b0` (#790). La CI de #790 et #807 exécutait bien le test de swipe, qui partait du dessin de la constellation en invité. Le test du podium vérifiait son rendu séparément. Le test de requêtes tardives pilotait directement le rendu sans événement tactile. La suite navigateur combine désormais le compte simulé, le podium réel et la réponse pendant le swipe. Le bilan capture le pointeur sur le dialogue après un mouvement horizontal, en laissant au navigateur le défilement vertical et le zoom.
+
+Sur `cde111c`, le geste aboutissait mais l’écran tremblait. Le test Chromium
+image par image (360×640) a mesuré 18 px de translation latérale et une opacité
+minimale de 65 % pour toute la carte, dues à l’animation de navigation de
+`39968b0`. Un rang hors podium agrandissait aussi la zone compacte au chargement
+(réserve de 140 px pour 143 px de contenu). Le bilan change sur place et réserve
+une ligne de rang personnel dès le chargement. Le test vérifie l’ancrage et
+l’opacité à 360×640 et 390×844.
+
+### #801 — profil Chrome historique bloqué après #802
+
+Diagnostic +665 : `guest_reconciliation` refusait à chaque connexion un profil
+invité sans propriétaire dont `shards` et `daily` divergeaient du Wallet vérifié.
+Contrairement à la branche propriétaire, cette branche n’essayait jamais
+`lumen_reconcile_acquisitions`. Régression reproduite par
+`guest-account-hydration-tests.mjs` (rouge sur `208cb61`). La branche invitée
+utilise désormais cette RPC serveur, qui conserve le Wallet. Leçon : un garde
+de sécurité sans voie de reprise devient un blocage permanent.
+
+### #820 — boutons d’un nouveau calque bloqués pendant l’apprentissage
+
+Le test Chrome du verdict de lien a montré que `handleLearningTap` (capture)
+bloque les clics hors de sa liste blanche pendant la quête 1. Tout nouveau
+calque plein écran doit y être ajouté (`#authLinkResult`, `#pwaWelcome`).
+Récidive le 20/11/2026 avec l'écran `#passwordRecovery` : même un bouton neuf
+n'y recevait aucun clic. Ajouté à la liste ; garde statique dans
+`auth-link-recovery-tests.mjs`.
+
+### #820 — lien natif reçu par une fenêtre Lumen déjà ouverte
+
+Recette du 20/11 après #869 : le lien de réinitialisation menait à l'écran
+habituel. Reproduit avec le vrai SDK (réseau Supabase simulé) : un passage de
+`/` à `/#access_token=…&type=recovery` dans le même document n'est lu ni par
+`bootAuthLink` ni par le SDK. Un chargement complet fonctionnait. Correctif :
+rechargement sur `hashchange` portant un résultat d'authentification.
+
+### #847 — joueur connecté bloqué hors ligne
+
+Reproduit sur `0516c42` (`offline-network-browser-tests.mjs`, rouge) : après une
+hydratation vérifiée, la preuve hors ligne n'était jamais écrite ; elle l'était
+avant #807 par le chemin de dépense d'indice. Mode avion → « Tu es hors ligne »
+indéfiniment. Corrigé à l'hydratation, plus le cas d'un serveur injoignable
+alors que `navigator.onLine` reste vrai.
+
+### #851 — record personnel hors podium
+
+`ranking_begin` refuse un essai commencé moins de 15 min après le précédent
+essai éligible. L'ancien reset ouvrait un nouvel essai (`-reset-N`) avec un
+chrono neuf : le 0:54 après reset était légitimement non classé. Le bilan
+l'attribuait toujours au délai, même pour un essai non qualifiant. Décision du
+20/11/2026 : le reset conserve l'essai (#36).
+
+### #828 — message « solveur explicable » sur la quête 23
+
+Le catalogue est valide (audit : 880 quêtes résolues par les indices). Une
+grille complète dont la victoire était différée pendant la restauration Auth
+partait au solveur, qui n'a plus rien à déduire. L'indice valide désormais la
+victoire et la fin de la restauration la relance.
+
+### #864 — « Article déjà possédé » sur un compte Lumen neuf
+
+Un produit non consommable Google Play appartient au **compte Google Play** de
+l'appareil, pas au compte Lumen. Constat en lecture seule (20/11/2026) :
+`real-adventure-03` est enregistré au registre pour un compte Lumen antérieur
+(`owned_elsewhere` pour tout autre compte) ; `real-adventure-02` a été payé le
+19/11 à 05:04 UTC, avant la liaison `obfuscatedExternalAccountId` (migration
+appliquée à 10:41 UTC), et reste donc `purchase_account_unverified` : le serveur
+ne devine jamais son propriétaire. Le client ouvrait pourtant la feuille Play
+(refus `ITEM_ALREADY_OWNED`) et la restauration résumait les deux refus en un
+message vague. Correctif : `findOwnedPlayPurchase` lit `listPurchases()` avant et
+après la feuille, fait vérifier le jeton pour le seul compte Lumen connecté et
+`playOwnershipMessage` explique chaque cas. Aucun transfert entre comptes Lumen.
+
+**Suite #878 (recette 20/11/2026)** : avec quatre achats détenus par le même
+compte Google Play, la restauration manuelle concaténait quatre longues phrases
+(`.join(' ')`), et `real_sky_all`, remboursé sans révocation, était présenté
+comme « rattaché à un autre compte » parce que `verify()` testait le
+propriétaire avant l'état `refunded`. Correctif : `playOwnershipSummary` groupe
+par état ; l'Edge répond `not_paid` pour un jeton remboursé d'un autre compte,
+sans écriture ni accusé de réception.

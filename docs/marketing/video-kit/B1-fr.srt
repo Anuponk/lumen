@@ -1,0 +1,19 @@
+1
+00:00:00,000 --> 00:00:03,000
+Une déduction en 20 secondes.
+
+2
+00:00:03,000 --> 00:00:07,000
+Ce territoire n’a qu’une case.
+
+3
+00:00:07,000 --> 00:00:12,000
+Retire la ligne, la colonne et les cases qui touchent.
+
+4
+00:00:12,000 --> 00:00:16,000
+Dans ce territoire, il reste une seule case.
+
+5
+00:00:16,000 --> 00:00:20,000
+Essaie la suite dans Lumen · lumen.nopuna.fr/decouvrir.html

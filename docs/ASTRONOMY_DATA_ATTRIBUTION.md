@@ -18,6 +18,30 @@ La version des fichiers astronomiques est liée au résultat validé du workflow
 - **Notice à côté des données** : `src/data/astronomy/NOTICE.md`.
 - La page `/decouvrir.html` et les mentions légales portent déjà l’attribution. Restent à faire hors code : la fiche Google Play (#676) et les pages constellations (#738).
 
+## Fiches culturelles des constellations
+
+Les fiches #856 associent chacune des 88 abréviations officielles à l’identifiant
+stable de Lumen. Le [référentiel éditorial](../src/campaign/constellation-facts.js)
+sert à Mon ciel et génère la [page publique](../constellations/index.html).
+Chaque fiche conserve les liens documentaires qui étayent son origine et son
+anecdote. Les textes français sont des formulations originales à relire avant
+publication. Les tracés, illustrations et coordonnées stellaires existants
+restent soumis à leur attribution ci-dessus.
+
+- [Union astronomique internationale](https://www.iau.org/IAU/Astronomy-FAQs/Constellations.aspx)
+  pour les identités et la définition des régions du ciel.
+- [All Skies Encyclopaedia](https://ase.exopla.net/index.php/Category:88_IAU-Constellations)
+  pour l’histoire des constellations et la bibliographie.
+- [A. E. Levin, _Areas of the Constellations_ (1934)](https://webspace.science.uu.nl/~gent0113/downloads/wgsn/levin_1934.pdf)
+  et [Space Centre](https://www.spacecentre.nz/resources/faq/constellations/sizes.html)
+  pour les surfaces angulaires. Le classement utilise les valeurs avant arrondi,
+  ce qui donne Dorade 72e, Couronne boréale 73e, Triangle 78e et Caméléon 79e.
+
+Pour modifier une fiche, éditer le référentiel, exécuter
+`node scripts/render-constellations.mjs`, puis relancer les tests des fiches et
+de la page statique. Consulter la [recette](TESTING.md#fiches-des-88-constellations-856)
+avant publication.
+
 ## Audit #508 — 21 octobre 2026
 
 **Résultat : les 88 figures livrées sont identiques à leur reconstruction depuis

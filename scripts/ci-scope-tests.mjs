@@ -11,6 +11,8 @@ assert.equal(classifyScope(['docs/TESTING.md','AGENTS.md']),'docs');
 assert.equal(classifyScope(['docs/validation/ci-browser.json']),'full','Validation artefacts are not documentation');
 // Presentation page only, alone or with docs.
 assert.equal(classifyScope(['decouvrir.html']),'landing');
+assert.equal(classifyScope(['discover.html','src/landing/og-en.jpg']),'landing');
+assert.equal(classifyScope(['how-to-play.html','learn-constellations.html']),'landing','#754 English guides');
 assert.equal(classifyScope(['apprendre-constellations.html']),'landing','#769 page');
 assert.equal(classifyScope(['comment-jouer.html','scripts/how-to-play.mjs','src/landing/how-to-play-grid.svg']),'landing','#758 page and its generator');
 assert.equal(classifyScope(['src/landing/landing.css','src/landing/og.jpg','robots.txt','sitemap.xml','docs/TESTING.md']),'landing');

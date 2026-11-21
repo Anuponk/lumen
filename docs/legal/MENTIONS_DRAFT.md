@@ -1,5 +1,7 @@
 # Mentions légales Lumen — projet à compléter avant publication
 
+> **Remplacé le 17/11/2026 par la version publiée `/mentions-legales.html`, qui fait foi** (décision du propriétaire, #732/#730). Ce brouillon est conservé pour l’historique des décisions ; ne plus le modifier.
+
 Ce document accompagne la page candidate `/mentions-legales.html`, consultable
 dans la branche depuis la PWA et la demande de suppression. Elle est signalée
 comme non validée et n'est pas déployée. Les rubriques à confirmer empêchent

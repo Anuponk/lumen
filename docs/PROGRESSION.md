@@ -90,7 +90,8 @@ achievement is removed. Authenticated recovery resumes the retained solved board
 
 The approved convergence contract extends the existing numeric-quest rules to
 all quests: fifteen-minute badge qualification cooldown, the same first-win,
-autonomy/bonus and daily activity rules, and first-play social challenges.
+autonomy/bonus and daily activity rules, and social challenges from qualifying
+runs (#889, same cooldown as badges).
 Existing acquired rewards and Mastery remain preserved without retroactive
 credits. Persistence formats and historical URLs remain compatibility adapters.
 The owner authorised the server migrations on 23 October 2026; their schema and
@@ -109,6 +110,23 @@ Browsing another Adventure never changes gameplay state. Loading/continuation mu
 
 Authenticated internal administrators with the server-provided `analytics_cockpit` or `all_adventures_access` capability may browse and enter every catalogued Adventure, including locked packs, without creating a purchase entitlement or persisting access into player progress. QA guest sessions never receive this override. Ordinary players retain the existing access policy. This exception affects pack access only: sequential quest progression and rewards remain governed by their existing rules.
 
+### Google Play review navigation (#796)
+
+A specifically authorised review account can select any quest in an Adventure
+it can already access through **Mon ciel**. The server verifies the account's
+review grant on entry to the map and again on selection. An unavailable,
+expired or revoked grant leaves ordinary progression and replays in effect.
+The grant is independent of Adventure entitlements and internal capabilities.
+The first guided quest allows the same verified Mon ciel entry. Its guided
+board interactions and learning milestones follow the ordinary rules.
+
+Selection creates no completion, stars, badges, record, ranking or reward.
+The board uses the ordinary campaign or replay rules. An actual win is
+processed for the quest played, and skipped quests retain their existing
+completion state. A started attempt set aside through the review map stays
+available to the same account on the same device. An unstarted selection
+that required the grant does not become a resumable attempt.
+
 ## Admin Adventure grants (#724)
 
 An internal administrator (`analytics_cockpit`, checked by the server) can grant or revoke a locked Adventure for one player from Analytics › player detail › « Aventures débloquées ». The server RPC `lumen_admin_adventure_access` validates the capability, the player and the Adventure id (`real-adventure-NN`, never the included first Adventure), requires a reason, and writes `lumen.entitlements` with source `admin`; each actual change is recorded in `lumen_commands.adventure_access_audit`. Retries are idempotent and not re-audited. The player reads the new state through `lumen_get_entitlements` at the next app start or sign-in.
@@ -117,14 +135,36 @@ Revocation expires the entitlement (`expires_at`); it never deletes progress, st
 
 ## Purchases and mastery unlocks (#728)
 
-Pricing (owner decision, #725): Adventure 1 stays free; each locked Adventure costs €1 incl. VAT; « Tout le vrai ciel » costs €5 incl. VAT. **€5 cap**: once an account's confirmed EUR payments reach the whole-sky price, every locked Adventure is owned. Future skies are sold separately.
+Adventure 1 stays free. After the #728 migration, the server grants the rest of the main sky when the account has five distinct, confirmed unit Adventure purchases across Stripe and Google Play. Purchase amounts and currencies do not enter the count. A verified whole-sky purchase grants it directly. The signed-in offer reads the remaining count from `lumen_get_main_sky_purchase_progress` after entitlement hydration and displays it only after a successful read for the active account. The #819 migration depends on #728. Future skies are separate.
 
 Rights come only from the server, in `lumen.entitlements`:
 - `purchase`: converged from the confirmed purchase ledger by `lumen_commands.sync_purchase_entitlements`. A refund or dispute expires the row; progress, stars and badges are never touched. An Adventure already started stays playable (acquired access).
 - `mastery`: `lumen_claim_mastery_unlock` grants Adventure N+1 when Adventure N is 100% mastered (every quest completed, every badge in `PERFORMANCE_BADGES`). The server recomputes this from its own victory projections (`legacy_authority` for legacy quests, `quest_run_authority` for canonical quests; legacy badges count only from performance version 2, as in `celestialScope`). A canonical quest counts as completed when its projection is `solved` or records a won run (`runPerformance`); some historical projections carry no `solved` key (#728 fix). Permanent: never expired by purchases or refunds, never counted towards the cap, one Adventure at a time.
 - `admin`: #724.
 
-The locked-Adventure offer (#731, `ui/adventure-offer.js`) shows both paths. Prices come from `src/campaign/store-catalogue.js`, shared with the server seed; purchases stay disabled until a provider is connected. On Google Play (#729) a product has a fixed price: once a single Adventure has been bought, the €5 offer is hidden and the player continues at €1 until the €5 cap unlocks the whole real sky. The client only asks for a mastery unlock: after a verified hydration and when a local victory triggers an Adventure mastery. A victory still pending on the server is retried at the next launch.
+An owned Adventure opens its first quest immediately, independently of completion
+in every other Adventure (#783). Quest prerequisites apply within that Adventure;
+ownership never completes a quest or awards progress. Historical acquired access
+and preserved attempts retain their existing exceptions. Mastery is a way to earn
+ownership of the next Adventure, not a prerequisite for playing a purchased one.
+
+The locked-Adventure offer (#731, `ui/adventure-offer.js`) shows both paths. The « Le savais-tu ? » section (#811) counts the previous Adventure’s remaining quests and badges using the same criteria as the server claim. Counts refresh with the live profile and stay hidden while account ownership or hydration is unresolved. At 100%, the action checks the server. The offer confirms the free unlock only after a refreshed mastery entitlement. Purchases stay disabled until a provider is connected. Google Play supplies its localized prices (#729). During #823, new Play purchases are paused until Android can bind purchases to the Lumen account. Signed-in Play players can restore existing purchases from the offer or through automatic recovery after hydration. Rights update after server verification and entitlement read-back. The whole-sky purchase option is still hidden after the first unit purchase. The Play offer shows the provider’s prices and makes no promise about a fixed total. Stripe uses the web catalogue and is available only on the web/PWA. [STRIPE_730](STRIPE_730.md) A Stripe return never unlocks by itself: the server reads the payment back from Stripe, and a full refund or a lost dispute expires the `purchase` right without touching progress. The client only asks for a mastery unlock: after a verified hydration and when a local victory triggers an Adventure mastery. A victory still pending on the server is retried at the next launch.
+
+### Tout débloquer at an adjusted price (#865)
+
+While the main sky is not unlocked, the offer keeps two choices: **Choisir** (this
+Adventure) and **Tout débloquer**. The server picks the single whole-sky product from
+N = distinct confirmed unit purchases (`lumen_get_main_sky_purchase_progress.sky_offer`):
+N=0 `real-sky-all`; N=1..4 `real-sky-upgrade-N`; N≥5 or main sky owned: none. Only
+active catalogue products are offered; upgrades ship inactive until the owner validates
+prices and Play products. A confirmed upgrade grants the main sky directly
+(`store_products.kind='sky_upgrade'`), never synthetic unit purchases, and does not change
+N. Refunding it expires the extra rights and offers the same tier again; a unit refund
+lowers the tier. Free, mastery, admin, pending, refunded or duplicate rights never count.
+The player sees only the offer that applies, with the provider's price (Google Play) or
+the server catalogue price charged by Stripe. Stripe refuses another tier
+(`offer_changed`); on Play, an upgrade paid for an outdated tier is neither recorded nor
+acknowledged, so Google refunds it automatically. Runbook: [SHOP_865](SHOP_865.md).
 
 ## Bonus quests
 After the reviewed historical-command migration, authenticated victories apply
@@ -132,26 +172,25 @@ the existing `legacy-victory.js` rules on the server. Guests and explicitly olde
 servers retain local rules. No-hint XP remains distinct from effective assistance;
 same-run mastery, qualification cooldown, one-time challenges and first-win
 rewards are preserved. Pending victories keep immutable attempt/reset facts.
-Every sixth quest is a bonus challenge, rotating challenge types. Current challenge rewards are **+25 XP and +1 shard**. Challenge rewards do not replace the campaign's sky-star accounting.
+Every sixth quest is a bonus challenge, rotating challenge types. A successful
+bonus awards **+25 XP** independently of the campaign's sky-star accounting.
 
-## Shards
-Designed economy:
-- initial balance: 3;
-- no wallet cap: every earned shard is retained;
-- first hint in an attempt: free;
-- second: 1 shard;
-- subsequent: 2 shards;
-- zero-shard safety valve: free hint after 90 seconds;
-- no passive timed refill;
-- successful bonus challenges grant +1 shard;
-- every 3 new quests completed in Autonomy grant +1 shard, using the same assistance definition as performance badges.
+## Aides et historique du portefeuille (#803)
 
-An internal, capability-gated `unlimited_shards` toggle is implemented in `src/ui/game-screen.js`; it bypasses spending for authorized testing only, without changing the stored product balance.
+Les aides disponibles ajoutent leur pénalité au chrono officiel sur tous les
+appareils. Une utilisation hors ligne est comptée dans la même tentative locale.
+Les badges, les records, les étoiles et les bonus XP conservent leurs règles.
+Le compteur de victoires autonomes reste une donnée de progression, sans gain
+de monnaie dans le client actuel. Les anciens soldes et reçus sont conservés
+pour la synchronisation et les clients historiques. The compatibility
+projection retains the previous no wallet cap rule.
 
 ## Série de lumière
 A meaningful activity validates at most one calendar day: either a first campaign completion, or a qualifying replay that actually improves an eligible performance badge. Merely opening or starting a quest does not count.
 
-The streak is continuous and is not reset every seven days. One missed calendar day is tolerated as a grace day and does not increment the streak. A second missed day breaks it. Rewards repeat independently of the global streak count: +1 shard on day 3 of each seven-day cycle and +2 on day 7. Reward records are keyed by calendar day so a reload cannot credit the same local daily reward twice.
+The streak is continuous. One missed calendar day is tolerated as a grace day
+and does not increment the streak. A second missed day breaks it. Historical
+reward records are keyed by calendar day and remain available for old receipts.
 
 Guest state is persisted locally. Authenticated daily claims already use
 `lumen_claim_daily` with the server Europe/Paris calendar and idempotent daily
@@ -161,15 +200,15 @@ project each unprojected daily reward once. The P0 wallet cutover adds durable
 hint/verify debit commands and an atomic standalone daily projection. After
 activation, legacy daily and snapshot wallet mutations are refused; existing
 claim locks and day reward keys remain authoritative. Prices and badge rules
-are unchanged. Authenticated paid help needs a verifiable server command; free
-learning hints and the existing zero-shard safety hint remain available.
+are unchanged. The retired paid-help path is retained as a compatibility protocol
+for exact requests from older clients and existing outboxes.
 
 ### Série de lumière en pause (#752)
 Product decision of 15 November 2026: the Série de lumière is **paused**, not removed.
 - **Flags:** client `DAILY_LIGHT_STREAK_ENABLED=false` in `src/campaign/feature-flags.js`; server row `lumen_commands.feature_flags('daily_light_streak')=false` (migration `20261116090000_pause_daily_light_streak_752.sql`).
 - **Hidden while paused:** the Mon ciel card and its help, the daily celebration, the "série perdue" dialog and its QA preview. The return toast keeps a neutral welcome without cycle or reward.
-- **History is kept:** qualified days are still recorded (`progress.daily.dates`, `lumen.daily_progress`). No streak shard and no `streak:<day>` reward key is created, locally or on the server. Other shards (bonus challenges, autonomy milestones) are unchanged.
-- **Reactivation rule:** turn both flags on. A reward is only computed when a day is first recorded, so days played during the pause are never credited retroactively and nothing is double-credited. The streak length counts recorded days, including those played during the pause; the first reward can only fall on a day played after reactivation.
+- **History is kept:** qualified days are still recorded (`progress.daily.dates`, `lumen.daily_progress`). The current client records days without granting currency.
+- **Future reactivation:** the UI and the compatibility reward flag require separate review. A visual streak can use the existing qualified dates.
 
 ## Performance badges
 Per-quest performance has exactly four badges, as implemented in `src/campaign/performance.js`:

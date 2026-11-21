@@ -2,7 +2,8 @@
 // the shared victory surface, from the real Mon ciel tiles, at portrait sizes.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { connectBrowser, closeBrowser } from './cdp-client.mjs';
+import { connectBrowser, closeBrowser, navigateAndWait, acknowledgeLearningMilestones } from './cdp-client.mjs';
+import { multiAccountFixture } from './fixtures/multi-account-browser.mjs';
 const { send, evaluate, errors } = await connectBrowser();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function until(expr) {
@@ -25,15 +26,19 @@ const progress = {
 const results = [];
 try {
   await send('Page.enable');
-  await send('Page.addScriptToEvaluateOnNewDocument', {
+  // Worker takeover reloads the document independently of review navigation.
+  // That browser lifecycle is exercised in service-worker-update-browser-tests.
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: 'delete Object.getPrototypeOf(navigator).serviceWorker' });
+  const guestFixture = await send('Page.addScriptToEvaluateOnNewDocument', {
     source: `localStorage.setItem('lumenProgressV1',${JSON.stringify(JSON.stringify(progress))});localStorage.setItem('lumenSound','off');localStorage.setItem('lumenTutorialSeen','1');localStorage.setItem('lumenInstallLater',String(Date.now()));localStorage.setItem('lumenPushChoice','later');`,
   });
   for (const [width, height] of [
     [320, 568],
     [360, 640],
     [390, 844],
+    [1440, 900],
   ]) {
-    await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: true });
+    await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 600 });
     await send('Page.navigate', { url: process.env.LUMEN_TEST_URL || 'http://127.0.0.1:8000/' });
     await until('!!window.lumenDiagnostics&&document.readyState==="complete"');
     await sleep(600);
@@ -63,6 +68,31 @@ try {
     assert.equal(view.retry && view.sky, true, 'Rejouer and Mon ciel stay on screen at ' + width + 'x' + height);
     assert.equal(view.particles, 0, 'No celebration effect');
     assert.equal(view.onTop, true, 'The review is above Mon ciel');
+    // #784: actual surface handlers browse, never launch or write a quest.
+    const snapshot=await evaluate(`JSON.stringify(lumenDiagnostics.snapshot())`);
+    const arrow=key=>evaluate(`document.getElementById('skyReveal').dispatchEvent(new KeyboardEvent('keydown',{key:${JSON.stringify(key)},bubbles:true}))`);
+    if(width<600){
+      const y=await evaluate(`(()=>{const r=document.getElementById('skyRevealCanvas').getBoundingClientRect();return r.y+r.height/2})()`);
+      await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:width/2+65,y}]});
+      await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:width/2-65,y}]});
+      await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+      assert.match(await evaluate(`document.getElementById('skyRevealKicker').textContent`),/QUÊTE 4/,'Native touch dispatch browses the next quest');
+      await arrow('ArrowLeft');
+    }
+    await arrow('ArrowRight');
+    assert.match(await evaluate(`document.getElementById('skyRevealKicker').textContent`),/QUÊTE 4/);
+    await arrow('ArrowRight');
+    assert.equal(await evaluate(`document.getElementById('skyRevealTime').textContent`),'À jouer');
+    assert.equal(await evaluate(`document.querySelectorAll('#skyRevealRewards .victory-reward-owned').length`),0);
+    assert.equal(await evaluate(`document.getElementById('skyRevealRetry').textContent`),'Jouer →');
+    await arrow('ArrowRight');
+    assert.match(await evaluate(`document.getElementById('skyRevealKicker').textContent`),/QUÊTE 5/,'Locked immediate quest is never skipped');
+    await arrow('ArrowLeft');await arrow('ArrowLeft');
+    assert.equal(await evaluate(`JSON.stringify(lumenDiagnostics.snapshot())`),snapshot,'No board, attempt, reward or progression mutation');
+    assert.equal(await evaluate(`document.querySelectorAll('.victory-particle').length`),0);
+    const reviewGeometry=await evaluate(`(()=>{const e=document.querySelector('#skyReveal .sky-reveal-card');return {scroll:e.scrollHeight>e.clientHeight+1}})()`);
+    assert.equal(reviewGeometry.scroll,false,'Browsing adds no scroll');
+    if(process.env.LUMEN_UX_CAPTURE_DIR){const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(process.env.LUMEN_UX_CAPTURE_DIR+'/review-'+width+'.png',Buffer.from(shot.data,'base64'))}
     // Mon ciel closes the review and returns to the map, with nothing written.
     await evaluate(`document.getElementById('skyRevealSky').click()`);
     await until(`document.getElementById('skyReveal').hidden`);
@@ -75,15 +105,206 @@ try {
     await until(`document.getElementById('skyReveal').hidden&&document.getElementById('mapModal').hidden`);
     const replay = await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();return {replay:s.replayMode,level:s.levelIndex}})()`);
     assert.deepEqual(replay, { replay: true, level: 2 }, 'Rejouer starts the usual replay of quest 3');
+    await evaluate(`(()=>{document.getElementById('openSky').click();document.querySelector('#puzzleGrid [data-quest-id="base-q004"]').click();document.getElementById('skyReveal').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}))})()`);
+    assert.equal(await evaluate(`document.getElementById('skyRevealRetry').textContent`),'Jouer →');
+    await evaluate(`document.getElementById('skyRevealRetry').click()`);
+    assert.deepEqual(await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();return {level:s.levelIndex,replay:s.replayMode,solved:!!s.progress.solved[4],review:!document.getElementById('skyReveal').hidden}})()`),{level:4,replay:false,solved:false,review:false},'Only explicit Jouer starts the unfinished target, without completing it');
     results.push({ width, height, ...view });
   }
   // A quest that is not completed still starts directly (unchanged).
   await evaluate(`(()=>{document.getElementById('openSky').click();document.querySelector('#sectorTabs [data-content-id="real-01"]')?.click();document.querySelector('#puzzleGrid .puzzle-card[data-quest-id="base-q005"]')?.click()})()`);
   await sleep(300);
   assert.equal(await evaluate(`document.getElementById('skyReveal').hidden`), true, 'An unfinished quest opens no review');
+  // Browse directly from a new victory, then return to the target's sky, never
+  // a hidden historical success dialog or an automatic board launch.
+  await evaluate(`(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`);
+  await until(`!document.getElementById('skyReveal').hidden`);
+  await evaluate(`document.getElementById('skyReveal').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}))`);
+  await until(`document.getElementById('skyReveal').classList.contains('quest-review')`);
+  await evaluate(`document.getElementById('skyRevealSky').click()`);
+  assert.equal(await evaluate(`document.getElementById('mapModal').hidden`),false,'Mon ciel works when browsing originated at victory');
+  // #786: real locked-Adventure surface, canonical prices and delivered counts.
+  for(const [width,height] of [[360,640],[1440,900]]){
+    await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<600});
+    await evaluate(`(()=>{document.getElementById('openSky').click();document.querySelector('#adventureRail .adventure-chip.locked').click()})()`);
+    await until(`!!document.querySelector('[data-offer="unit"]')`);
+    const offer=await evaluate(`(()=>{const e=document.querySelector('.adventure-offer');return {text:e.textContent,unit:e.querySelector('[data-offer-count="unit"]').textContent,sky:e.querySelector('[data-offer-count="sky"]').textContent,prices:[...e.querySelectorAll('.adventure-offer-price')].map(x=>x.textContent),overflow:e.scrollWidth>e.clientWidth+1}})()`);
+    assert.match(offer.unit,/\+ \d+ nouvelles quêtes/);assert.match(offer.sky,/\+ \d+ nouvelles grilles/);
+    assert.deepEqual(offer.prices,['1 €','5 €']);assert.match(offer.text,/Le savais-tu/);assert.equal(offer.overflow,false);
+    if(process.env.LUMEN_UX_CAPTURE_DIR){const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(process.env.LUMEN_UX_CAPTURE_DIR+'/store-'+width+'.png',Buffer.from(shot.data,'base64'))}
+    await evaluate(`(async()=>{const {adventureOfferModel,mountAdventureOffer}=await import('/src/ui/adventure-offer.js');const {CONTENT_PACKS,contentMapModel}=await import('/src/campaign/content.js');const {canonicalQuestList}=await import('/src/campaign/canonical-quests.js');const packs=contentMapModel([],{progress:lumenDiagnostics.snapshot().progress}).skies.flatMap(s=>s.packs);const pack=packs.find(p=>p.accessible===false);const model=adventureOfferModel({pack,packs,quests:canonicalQuestList(),progress:lumenDiagnostics.snapshot().progress,signedIn:true,purchasesAvailable:true});window.__offerCalls=[];mountAdventureOffer(document.getElementById('adventureNoticeOffer'),model,{onBuy:(id)=>window.__offerCalls.push(id)});document.querySelector('[data-offer="unit"]').click()})()`,true);
+    assert.equal(await evaluate(`window.__offerCalls.length`),0,'Consent gate preserved on the real offer DOM');
+    await evaluate(`document.querySelector('[data-offer="waiver"]').click();document.querySelector('[data-offer="unit"]').click();document.querySelector('[data-offer="sky"]').click()`);
+    assert.deepEqual(await evaluate(`window.__offerCalls`),['real-adventure-02','real-sky-all']);
+    await evaluate(`(async()=>{
+      const {purchaseProgressMessage}=await import('/src/ui/adventure-offer.js');
+      const progress=document.querySelector('[data-offer-purchase-progress]');
+      progress.hidden=false;
+      progress.textContent=purchaseProgressMessage({remaining:1,unlocked:false});
+    })()`,true);
+    const purchaseProgress=await evaluate(`(()=>{
+      const line=document.querySelector('[data-offer-purchase-progress]'),offer=line.closest('.adventure-offer');
+      return {text:line.textContent,visible:line.getBoundingClientRect().height>0,fits:offer.scrollWidth<=offer.clientWidth+1};
+    })()`);
+    assert.match(purchaseProgress.text,/Plus qu’une aventure/);
+    assert.equal(purchaseProgress.visible&&purchaseProgress.fits,true);
+    if(process.env.LUMEN_UX_CAPTURE_DIR){const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(process.env.LUMEN_UX_CAPTURE_DIR+'/store-ready-'+width+'.png',Buffer.from(shot.data,'base64'))}
+    // P1: real browser DOM with synthetic Play only; no PaymentRequest.show or server purchase.
+    await evaluate(`(async()=>{
+      const {createPlayPriceLoader}=await import('/src/persistence/play-billing.js');
+      const {adventureOfferModel,mountAdventureOffer}=await import('/src/ui/adventure-offer.js');
+      const {contentMapModel}=await import('/src/campaign/content.js');
+      const {canonicalQuestList}=await import('/src/campaign/canonical-quests.js');
+      const packs=contentMapModel([],{progress:lumenDiagnostics.snapshot().progress}).skies.flatMap(s=>s.packs),pack=packs.find(p=>p.accessible===false);
+      window.__playShows=0;window.__playFail=true;
+      const win={navigator:{language:'fr-FR'},PaymentRequest:function(){this.canMakePayment=async()=>true;this.show=()=>{window.__playShows++}},getDigitalGoodsService:async()=>({getDetails:()=>new Promise((resolve,reject)=>{window.__playResolve=()=>window.__playFail?reject(Error('offline')):resolve([{itemId:'real_adventure_02',price:{currency:'EUR',value:'1.00'}},{itemId:'real_sky_all',price:{currency:'EUR',value:'5.00'}}])})})};
+      window.__playLoader=createPlayPriceLoader({win,ids:[pack.id,'real-sky-all'],playApp:true,onChange:s=>mountAdventureOffer(document.getElementById('adventureNoticeOffer'),adventureOfferModel({pack,packs,quests:canonicalQuestList(),progress:lumenDiagnostics.snapshot().progress,signedIn:true,purchasesAvailable:s.status!=='loading'&&!!s.service,pricesRequired:true,prices:s.prices,priceStatus:s.status,priceErrors:s.errors}),{onRetry:()=>window.__playLoader.load()})});
+      window.__playLoad=window.__playLoader.load();
+    })()`,true);
+    assert.equal(await evaluate(`document.querySelector('[data-offer="unit"]').disabled`),true);
+    assert.match(await evaluate(`document.querySelector('.adventure-offer').textContent`),/Chargement du prix/);
+    await evaluate(`window.__playResolve();window.__playLoad`,true);
+    assert.equal(await evaluate(`document.querySelector('[data-offer="unit"]').disabled`),true);
+    assert.match(await evaluate(`document.querySelector('[data-play-price-reason]').dataset.playPriceReason`),/details_request_failed/);
+    await evaluate(`window.__playFail=false;document.querySelector('[data-offer="retry"]').click()`);
+    await until(`typeof window.__playResolve==='function'&&window.__playLoader.snapshot().status==='loading'`);
+    await evaluate(`window.__playResolve();window.__playLoader.load()`,true);
+    assert.equal(await evaluate(`document.querySelector('[data-offer="unit"]').disabled`),false);
+    assert.match(await evaluate(`document.querySelector('.adventure-offer-price').textContent`),/1,00\s€/);
+    assert.equal(await evaluate(`window.__playShows`),0);
+    assert.equal(await evaluate(`(()=>{const e=document.querySelector('.adventure-offer');return e.scrollWidth>e.clientWidth+1})()`),false);
+    await evaluate(`document.getElementById('adventureNoticeClose').click()`);
+  }
+  // #817: use the actual signed-in review and its RPC-driven podium. A board
+  // reply can replace the exact step a finger is resting on before release.
+  await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: guestFixture.identifier });
+  await send('Network.enable');
+  await send('Network.setBlockedURLs', { urls: ['*supabase.co*'] });
+  const rankedProfile = { ...progress, historyBackup: progress.solved, canonicalQuestState: {}, daily: { dates: {}, rewards: {} }, challenges: {}, stars: {}, noHint: {}, xp: 1000, shards: 7, walletRevision: 1, skyHistoryVersion: 4 };
+  const rankedFixture = multiAccountFixture({ 'ranking-fixture': rankedProfile }, 'ranking-fixture').replace(
+    'const a=account();',
+    "if(name==='lumen_ranking_board')return window.__fixtureRankingBoard(args.p_quest_id);if(name==='lumen_get_profile')return {data:[{nickname:'Fixture'}]};if(name==='lumen_ranking_account')return {data:{participating:true,nicknameRequired:false}};const a=account();",
+  );
+  const rankedSource = "localStorage.clear();sessionStorage.clear();localStorage.setItem('lumenInstallLater',String(Date.now()));localStorage.setItem('lumenPushChoice','later');" + rankedFixture + String.raw`
+window.__rankingReply=null;
+window.__nextRankingReply=null;
+window.__fixtureRankingBoard=id=>{
+  const position=id==='base-q004'?7:2;
+  const board={data:{participating:true,realParticipants:8,top:[1,2,3].map(place=>({position:place,place,nickname:id+' / '+place,score:place*30,mine:place===position})),personal:{position,place:position,score:position*30}}};
+  if(id==='base-q003'&&!window.__rankingReply)return new Promise(resolve=>window.__rankingReply=()=>resolve(board));
+  if(id==='base-q004'&&!window.__nextRankingReply)return new Promise(resolve=>window.__nextRankingReply=()=>resolve(board));
+  return Promise.resolve(board);
+};`;
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: rankedSource });
+  for (const [width, height] of [[360, 640], [390, 844]]) {
+    await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: true });
+    await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+    await navigateAndWait({ send, evaluate }, 'Page.navigate', { url: process.env.LUMEN_TEST_URL || 'http://127.0.0.1:8000/' });
+    await until("!!window.lumenDiagnostics&&document.getElementById('mobileAuthStatus').textContent.includes('Progression synchronis')");
+    await acknowledgeLearningMilestones(evaluate);
+    await evaluate(`(()=>{document.getElementById('openSky').click();
+      document.querySelector('#adventureRail [data-pack-id="base-real-sky"]').click();
+      for(let page=0;!document.querySelector('#sectorTabs [data-content-id="real-01"]')&&page<12;page++)document.getElementById('constellationPrevious').click();
+      document.querySelector('#sectorTabs [data-content-id="real-01"]').click();
+      document.querySelector('#puzzleGrid [data-quest-id="base-q003"]').click();
+    })()`);
+    await until("!!window.__rankingReply&&!!document.querySelector('#skyRevealPodium .ranking-step-skeleton.ranking-step-1')");
+    const profileBefore = await evaluate("localStorage.getItem('lumenProgressV1')");
+    const attemptBefore = await evaluate("JSON.stringify(lumenDiagnostics.snapshot())");
+    const point = selector => evaluate(`(()=>{const el=document.querySelector(${JSON.stringify(selector)}),r=el.getBoundingClientRect();
+      const x=Math.round(r.left+r.width/2),y=Math.round(r.top+r.height/2),hit=document.elementFromPoint(x,y);
+      return {x,y,hits:hit===el||el.contains(hit)};})()`);
+    let touchId = 0;
+    const touch = (kind, ...points) => {
+      if (kind === 'touchStart') touchId++;
+      return send('Input.dispatchTouchEvent', {
+        type: kind,
+        touchPoints: points.map(point => ({ ...point, id: touchId })),
+        timestamp: Date.now() / 1000,
+      });
+    };
+    const tap = async selector => {
+      const { x, y } = await hitPoint(selector);
+      await touch('touchStart', { x, y });
+      await touch('touchMove', { x: x + 1, y });
+      await sleep(60);
+      await touch('touchEnd');
+    };
+    const hitPoint = async selector => {
+      const { x, y, hits } = await point(selector);
+      assert.equal(hits, true, 'The gesture starts on ' + selector);
+      return { x, y };
+    };
+    const drag = async ({ x, y }, dx, dy, duringTouch, beforeFirstMove = false) => {
+      await touch('touchStart', { x, y });
+      if (beforeFirstMove) await duringTouch();
+      await touch('touchMove', { x: x + dx / 3, y: y + dy / 3 });
+      if (duringTouch && !beforeFirstMove) await duringTouch();
+      await touch('touchMove', { x: x + dx, y: y + dy });
+      await touch('touchEnd');
+    };
+    const podiumReady = quest => until(`document.querySelector('#skyRevealPodium .ranking-name')?.textContent.startsWith(${JSON.stringify(quest)})`);
+    const kicker = () => evaluate("document.getElementById('skyRevealKicker')?.textContent ?? 'Review document left at ' + location.href");
+    const crown = '#skyRevealPodium .ranking-row.ranking-step-1';
+    const reply = async () => {
+      await evaluate('window.__rankingReply()');
+      await podiumReady('base-q003');
+    };
+    const skeleton = '#skyRevealPodium .ranking-step-skeleton.ranking-step-1';
+    await evaluate("document.getElementById('skyRevealPodium').addEventListener('click',event=>{if(event.isTrusted)window.__podiumTaps=(window.__podiumTaps||0)+1})");
+    await tap(skeleton);
+    await until('window.__podiumTaps===1');
+    assert.match(await kicker(), /QUÊTE 3/, 'A normal touch still reaches the original podium');
+    const startMotion = () => evaluate(`(()=>{
+      const host=document.getElementById('skyReveal'),card=host.querySelector('.sky-reveal-card'),control=document.getElementById('skyRevealSky');
+      window.__reviewFrames=[];
+      window.__reviewGeometry=()=>{
+        const r=card.getBoundingClientRect(),b=control.getBoundingClientRect();
+        return {left:r.left,top:r.top,buttonTop:b.top,opacity:Number(getComputedStyle(card).opacity),scrollX:scrollX+card.scrollLeft+(visualViewport?.offsetLeft||0)};
+      };
+      const sample=()=>{window.__reviewFrames.push(window.__reviewGeometry());window.__reviewFrame=requestAnimationFrame(sample)};
+      sample();
+    })()`);
+    const endMotion = () => evaluate(`(()=>{cancelAnimationFrame(window.__reviewFrame);return window.__reviewFrames})()`);
+    await startMotion();
+    await drag(await hitPoint(skeleton), -102, 18, reply, height === 844);
+    assert.match(await kicker(), /QUÊTE 4/, 'A board reply during a swipe on the podium cannot swallow the gesture at ' + width + '×' + height);
+    await until("!!window.__nextRankingReply&&document.querySelector('#skyRevealPodium .ranking').dataset.state==='pending'");
+    const pendingFrame=await evaluate('window.__reviewGeometry()');
+    await evaluate('window.__nextRankingReply()');
+    await podiumReady('base-q004');
+    await sleep(200);
+    const frames=await endMotion(),rest=frames.at(-1);
+    const motion={horizontal:Math.max(...frames.map(f=>Math.abs(f.left-rest.left))),darkest:Math.min(...frames.map(f=>f.opacity)),
+      layoutJump:Math.abs(pendingFrame.top-rest.top),actionJump:Math.abs(pendingFrame.buttonTop-rest.buttonTop),scroll:Math.max(...frames.map(f=>Math.abs(f.scrollX)))};
+    assert(motion.horizontal<=1&&motion.darkest>=.99&&motion.layoutJump<=1&&motion.actionJump<=1&&motion.scroll<=1,
+      'A ranked swipe keeps the dialog and controls visually anchored at '+width+'×'+height+': '+JSON.stringify(motion));
+    await drag(await hitPoint(crown), 102, -18);
+    assert.match(await kicker(), /QUÊTE 3/, 'A swipe in the other direction starts directly on a ranked row');
+    await podiumReady('base-q003');
+    assert.equal(await evaluate("document.querySelector('#skyReveal .sky-reveal-card').scrollTop"), 0, 'Horizontal swipes do not scroll the review');
+    await drag(await hitPoint(crown), -15, -70);
+    assert.match(await kicker(), /QUÊTE 3/, 'A vertical drag cannot browse');
+    // Browser history gestures are native at the edge. Give both directions
+    // same-document entries so browser navigation cannot unload the fixture.
+    await evaluate("for(let n=0;n<7;n++)history.pushState(null,'','#ranked-review-edge-'+n);history.go(-3)");
+    await until("location.hash === '#ranked-review-edge-3'");
+    await drag({ x: 5, y: Math.round(height / 2) }, 105, 0);
+    assert.match(await kicker(), /QUÊTE 3/, 'A drag beginning at the browser edge cannot browse');
+    const replayButton = await hitPoint('#skyRevealRetry');
+    await drag(replayButton, replayButton.x < width / 2 ? 105 : -105, 0);
+    assert.match(await kicker(), /QUÊTE 3/, 'A button-origin drag cannot browse or start a quest');
+    assert.equal(await evaluate('window.__podiumTaps'), 1, 'A drag cannot click a podium row');
+    assert.equal(await evaluate("localStorage.getItem('lumenProgressV1')"), profileBefore, 'Ranked browsing does not write a save');
+    assert.equal(await evaluate("JSON.stringify(lumenDiagnostics.snapshot())"), attemptBefore, 'Ranked browsing never launches a quest');
+    await tap('#skyRevealSky');
+    await until("document.getElementById('skyReveal').hidden&&!document.getElementById('mapModal').hidden");
+    results.push({ width, height, rankedTouch: true, motion });
+  }
+
   assert.deepEqual(errors, []);
   if (process.argv[2]) fs.writeFileSync(process.argv[2], JSON.stringify({ results, errors }, null, 2));
-  console.log(JSON.stringify(results.map(({ width, height, time, owned }) => ({ width, height, time, owned }))));
+  console.log(JSON.stringify(results.map(({ width, height, time, owned, rankedTouch, motion }) => ({ width, height, time, owned, rankedTouch, motion }))));
 } finally {
   await closeBrowser(send);
 }

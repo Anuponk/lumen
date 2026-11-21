@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {networkContext,withNetworkContext} from './fixtures/network-context.mjs';
 import test from 'node:test';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
@@ -27,7 +28,7 @@ function fixture({change=null,mirrorOk=true,mirrorReject=false}={}){
   storage.setItem('lumenProgressV1',JSON.stringify(otherProfile));
   ctx.cloudProfileReady=false;ctx.cloudProfileBaseline=null;ctx.cloudProfileFailure=otherFailure;
  };
- ctx=vm.createContext({cloudHydrationGeneration:0,...profiles,structuredClone,currentCatalogueOrigin,reconcileDailyIntoCloudProfile,
+ ctx=vm.createContext({...networkContext(),cloudHydrationGeneration:0,...profiles,structuredClone,currentCatalogueOrigin,reconcileDailyIntoCloudProfile,
   qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,localStorage:storage,sessionStorage:{getItem:()=>null},
   lumenProgress:profile,cloudProfileReady:false,cloudProfileBaseline:null,cloudProfileFailure:null,
   canonicalRecoveryContext:null,canonicalRecovery:{cancel:noop,schedule:noop},maybeClaimMasteryUnlocks:noop,afterVerifiedHydration:noop,

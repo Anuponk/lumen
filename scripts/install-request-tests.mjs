@@ -17,7 +17,7 @@ assert.equal(consumeInstallRequest({location:{href:'::bad'}}),false,'A broken UR
 // Copy: the native prompt when available, otherwise the exact manual steps.
 assert.equal(isIosDevice('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)'),true);assert.equal(isIosDevice('Mozilla/5.0 (Linux; Android 14)'),false);
 assert.equal(requestedInstallCopy({prompt:true,ios:true}).button,'Installer LUMEN');
-assert.match(requestedInstallCopy({prompt:false,ios:true}).copy,/Partager, puis « Sur l’écran d’accueil »/);
+assert.match(requestedInstallCopy({prompt:false,ios:true}).copy,/Ouvrir dans Safari.*Partager.*Sur l’écran d’accueil.*Ajouter/);
 assert.match(requestedInstallCopy({prompt:false,ios:false}).copy,/menu ⋮/);
 for(const v of [{prompt:false,ios:true},{prompt:false,ios:false}])assert.equal(requestedInstallCopy(v).button,'J’ai compris','No dead install button without a prompt');
 

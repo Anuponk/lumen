@@ -15,7 +15,7 @@ const gridsForSize=size=>CAT[size]??canonicalBySize.get(Number(size))??[];
 export function createHintTestSuite(model,api){
 const {handleSuccessAdvance,getSkyTourSteps,maybeShowAutoCrossUnlock,maybeShowBadgeMilestone}=api;
 const hintImplementation=()=>api.getHintImplementation?.()??document.getElementById("hint").onclick;
-const {saveLumenNickname,maybeOfferInstall,lumenShareUrl,successAchievement,shareLumenResult,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,simpleForcedPlacement,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,updateLiveReward,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults,openJourneyMap,closeMapOverlay,renderMap,advanceToNextPuzzle,startReplay}=api;
+const {saveLumenNickname,maybeOfferInstall,discoveryUrl,successAchievement,captureReferral,enableLumenPush,markLumenSeen,maybeOfferPush,board,key,simpleForcedPlacement,proofEngine,playerError,guidedConflictForAction,scriptedLearningActive,maybeShowManualCrossTip,showGuidedConflict,configureLearningMode,maybeShowAutonomy,hideSuccess,celebrateSuccess,paintCell,paintBoardState,moveDragCross,updateLiveReward,render,celebrateConstellationReveal,showSkyReveal,closeAutonomyOverlay,setupOutsideDefaults,openJourneyMap,closeMapOverlay,renderMap,advanceToNextPuzzle,startReplay}=api;
 function learningControlsAt(ordinal){
  const saved={levelIndex:model.levelIndex,replayMode:model.replayMode,canonicalActiveQuest:model.canonicalActiveQuest};
  const auto=document.getElementById('autoCross'),guided=document.getElementById('guidedErrors');
@@ -32,9 +32,9 @@ async function runHintTests(){
  test("PWA : proposition différée après le parcours d'accueil",()=>maybeOfferInstall.toString().includes("solvedCount()<12")&&document.getElementById("installEnable"));
  test("PWA : une installation existante bloque la proposition",()=>{const src=maybeOfferInstall.toString();return src.includes("lumenAlreadyInstalled()")&&!src.includes("!qaActive&&lumenIsStandalone()")});
  test("PWA : compte et préférences QA préservés",()=>{const src=maybeOfferInstall.toString();return src.includes("accountRequired()")&&src.includes('qaKey("lumenInstallLater")')});
- test("Partage : le résultat contient un lien de parrainage traçable",()=>lumenShareUrl().includes("ref=")&&shareLumenResult.toString().includes("result_shared"));
+ test("Partage : le lien public mène à la découverte de Lumen",()=>discoveryUrl==="https://lumen.nopuna.fr/decouvrir.html");
  test("Partage : la réussite met en avant quête et constellation",()=>typeof successAchievement==="function"&&document.getElementById("successAchievement")&&successAchievement.toString().includes("Quête "));
- test("Partage : une carte image est générée quand le téléphone le permet",()=>shareLumenResult.toString().includes("shareCardCanvas")&&shareLumenResult.toString().includes("canShare"));
+ test("Partage : victoire et défi ont des actions distinctes",()=>!!document.getElementById("skyRevealShareResult")&&!!document.getElementById("skyRevealShare"));
  test("Referral : le paramètre ref est nettoyé avant analytics",()=>captureReferral.toString().includes("replace(/[^a-zA-Z0-9_-]/g"));
  test("Compte : le pseudo est stocké côté profil utilisateur",()=>typeof saveLumenNickname==="function"&&saveLumenNickname.toString().includes("lumen_set_nickname"));
  test("Rappel : la popup LUMEN disparaît avant la demande Android",()=>{
@@ -69,8 +69,17 @@ async function runHintTests(){
  test("Rendu : le plateau contient n × n cellules après render",()=>{render();return board.children.length===model.n*model.n});
  test("Mobile : glisser assombrit plusieurs cases",()=>document.querySelector("#board")&&getComputedStyle(board).touchAction==="none"&&typeof moveDragCross==="function");
  test("Narratif : les pièces placées sont des Gardiens",()=>{
-   const src=render.toString(),rules=document.getElementById("rulesModal")?.textContent||"";
-   return src.includes('aria-label="Gardien positionné"')&&paintCell.toString().includes('aria-label="Gardien positionné"')&&document.getElementById("count").textContent.endsWith("/"+model.n)&&document.querySelectorAll("#count").length===1&&rules.includes("un Gardien par ligne")&&!rules.includes("source de lumière");
+   const rules=document.getElementById("rulesModal")?.textContent||"",saved=model.state;
+   const guardianLabel=()=>board.firstElementChild.querySelector(".lumen-orb")?.getAttribute("aria-label");
+   try{
+    model.state=Array.from({length:model.n},()=>Array(model.n).fill(0));
+    model.state[0][0]=2;render();
+    const labelAfterRender=guardianLabel();
+    model.state[0][0]=1;paintCell(0,0);
+    const labelAfterExclusion=board.firstElementChild.querySelector(".lumen-dim")?.getAttribute("aria-label");
+    model.state[0][0]=2;paintCell(0,0);
+    return labelAfterRender==="Gardien positionné"&&guardianLabel()===labelAfterRender&&labelAfterExclusion==="Emplacement assombri"&&document.getElementById("count").textContent.endsWith("/"+model.n)&&document.querySelectorAll("#count").length===1&&rules.includes("un Gardien par ligne")&&!rules.includes("source de lumière");
+   }finally{model.state=saved;render()}
  });
  test("Récompense : une constellation terminée déclenche une célébration dédiée",()=>{
    return showSkyReveal.toString().includes("showCelestialVictory()")&&!showSkyReveal.toString().includes("celebrateConstellationReveal()");
@@ -99,7 +108,7 @@ async function runHintTests(){
  });
 
  test("Campagne : Réinitialiser conserve la même quête",()=>{
-   return document.getElementById("new").textContent.trim()==="Réinitialiser";
+   const reset=document.getElementById("new");return reset?.getAttribute("aria-label")==="Réinitialiser la grille"&&!!reset.closest(".actions");
  });
  test("Campagne : seule une victoire permet d'avancer",()=>{
    return document.getElementById("successNew").textContent.trim()==="Quête suivante";
@@ -295,7 +304,7 @@ async function runHintTests(){
  test("Onboarding : les jalons de badges suivent l’éligibilité réelle",()=>{const firstEligible=badge=>{for(let i=0;i<100;i++)if(performanceEligibility(i)[badge])return i;return -1};return firstEligible("speed")===0&&firstEligible("autonomy")===0&&firstEligible("noError")===0&&firstEligible("mastery")===0});
  test("Badges : Sans erreur exige zéro assistance et zéro erreur confirmée",()=>{const clean=performanceAttempt({questIndex:5,seconds:59}),wrong=performanceAttempt({questIndex:5,seconds:59,mistakeCommitted:true}),assisted=performanceAttempt({questIndex:5,seconds:59,assistanceUsed:true});return clean.noError&&clean.mastery&&!wrong.noError&&!wrong.mastery&&!assisted.autonomy&&!assisted.noError&&!assisted.mastery});
  test("Badges : Maîtrise exige les trois badges sur le même essai",()=>{const fastClean=performanceAttempt({questIndex:5,seconds:59}),slowClean=performanceAttempt({questIndex:5,seconds:999}),fastWrong=performanceAttempt({questIndex:5,seconds:59,mistakeCommitted:true});return fastClean.autonomy&&fastClean.speed&&fastClean.noError&&fastClean.mastery&&slowClean.autonomy&&slowClean.noError&&!slowClean.speed&&!slowClean.mastery&&fastWrong.autonomy&&fastWrong.speed&&!fastWrong.noError&&!fastWrong.mastery});
- test("Tentative : reset campagne garde attemptId mais réinitialise chrono, aide et erreur",()=>{const mem=new Map(),storage={getItem:k=>mem.get(k)||null,setItem:(k,v)=>mem.set(k,v),removeItem:k=>mem.delete(k)};let t=0;const e=createAttemptEngine({storage,now:()=>1000+t,perfNow:()=>t});e.create({questId:6,mode:"campaign",board:[[0]]});const id=e.snapshot().attemptId;e.start();t=5000;e.markAssistance();e.setWrongGuardianPending("0,0");e.commitMistake();e.reset([[0]]);const a=e.snapshot();return a.attemptId===id&&a.resetCount===1&&a.activeDuration===0&&!a.assistanceUsed&&!a.mistakeCommitted&&!a.wrongGuardianPending});
+ test("Tentative : reset campagne garde la tentative, le chrono, les aides et les erreurs (#36, #851)",()=>{const mem=new Map(),storage={getItem:k=>mem.get(k)||null,setItem:(k,v)=>mem.set(k,v),removeItem:k=>mem.delete(k)};let t=0;const e=createAttemptEngine({storage,now:()=>1000+t,perfNow:()=>t});e.create({questId:6,mode:"campaign",board:[[0]]});const id=e.snapshot().attemptId;e.start();t=5000;e.markAssistance();e.setWrongGuardianPending("0,0");e.commitMistake();e.reset([[0]]);const a=e.snapshot();return a.attemptId===id&&a.resetCount===1&&a.activeDuration===5000&&a.assistanceUsed&&a.mistakeCommitted&&!a.wrongGuardianPending&&a.runSegment===0});
  test("Tentative : reset défi reste one-shot",()=>{const mem=new Map(),storage={getItem:k=>mem.get(k)||null,setItem:(k,v)=>mem.set(k,v),removeItem:k=>mem.delete(k)};let t=0;const e=createAttemptEngine({storage,now:()=>1000+t,perfNow:()=>t});e.create({questId:6,mode:"challenge",board:[[0]]});const id=e.snapshot().attemptId;e.start();t=5000;e.markAssistance();e.setWrongGuardianPending("0,0");e.commitMistake();e.reset([[0]]);const a=e.snapshot();return a.attemptId===id&&a.activeDuration>=5000&&a.assistanceUsed&&a.mistakeCommitted});
  test("UI badges : Mon ciel et les règles affichent Sans erreur",()=>{const legend=document.getElementById("performanceLegend"),rules=document.getElementById("badgeRulesModal");return legend?.textContent.includes("Sans erreur")&&rules?.textContent.includes("Sans erreur")&&rules?.textContent.includes("Autonomie, Rapidité et Sans erreur")});
  test("Sans erreur : l’état d’erreur reste invisible pendant la partie",()=>!updateLiveReward.toString().includes("mistakeCommitted")&&!updateLiveReward.toString().includes("noError"));

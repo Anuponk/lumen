@@ -1,3 +1,4 @@
+import {createTranslator} from '../src/ui/i18n.js';
 // Test aids and diagnostics: #705 admin mastery preview, #711 hydration telemetry.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -13,7 +14,7 @@ function previewContext(overrides = {}) {
     activeQuest: () => ({ id: 'q-last', packId: 'pack-1' }), celebrated: false, pendingVictoryView: null, lumenUser: { id: 'u' }, lumenProgress: { xp: 1 },
     celestialPending: null, captureCelestialProgress: () => ({ adventure: { completed: 10, total: 10 } }), canonicalQuestList: () => [],
     showCelestialVictory: () => { seen.push({ pending: ctx.celestialPending, shareHidden: node('successShare').hidden }); return true; },
-    celestialCelebration: { clear() {} }, console, document: { getElementById: node },
+    celestialCelebration: { clear() {} }, t:createTranslator().t, console, document: { getElementById: node },
     // #705: the preview owns its performance block and mounts this quest's real board.
     victoryPresentation: { clear() {} }, victoryCelebration: { clear() {} }, victoryFacts: null,
     rankingView: { clear() {}, show: (quest, operation, options) => boards.push({ quest: quest.id, options }), mount() {} },

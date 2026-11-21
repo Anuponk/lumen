@@ -145,6 +145,7 @@ jobs:
 
       - name: Unified quality gate (Node)
         env:
+          LUMEN_I18N_BASE: ${{ github.event.pull_request.base.sha }}
           LUMEN_VALIDATION_DIR: ${{ runner.temp }}/lumen-validation
           LUMEN_QUALITY_SCOPE: ${{ needs.prepare.outputs.scope || 'full' }}
         run: node scripts/quality-gate.mjs --node-only
@@ -182,6 +183,7 @@ jobs:
         env:
           LUMEN_BROWSER_WORKERS: '2'
           LUMEN_VALIDATION_DIR: ${{ runner.temp }}/lumen-validation
+          LUMEN_FACT_SCREENSHOTS: ${{ runner.temp }}/lumen-validation
           LUMEN_RUN_LEARNING_BROWSER: ${{ needs.prepare.outputs.run_learning }}
           LUMEN_QUALITY_SCOPE: ${{ needs.prepare.outputs.scope || 'full' }}
         run: node scripts/quality-gate.mjs --browser-shard=${{ matrix.shard }}/3
@@ -190,7 +192,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: lumen-validation-browser-${{ matrix.shard }}
-          path: ${{ runner.temp }}/lumen-validation/ci-*.json
+          path: |
+            ${{ runner.temp }}/lumen-validation/ci-*.json
+            ${{ runner.temp }}/lumen-validation/ci-constellations-*.png
           retention-days: 14
           if-no-files-found: error
 

@@ -76,6 +76,7 @@ try {
   await until(PENDING_VICTORY_SHOWN);
   const pending = await evaluate(`({zones:${ZONES},slots:${SLOTS},rank:document.getElementById('skyRevealRank').textContent,status:document.getElementById('skyRevealSync').textContent,
     kicker:document.getElementById('skyRevealKicker').textContent,progress:document.querySelector('.sky-reveal-progress').textContent,
+    publicShareHidden:document.getElementById('skyRevealShareResult').hidden&&getComputedStyle(document.getElementById('skyRevealShareResult')).visibility==='hidden',
     disabled:['skyRevealShare','skyRevealRetry'].map(id=>document.getElementById(id).disabled),nextEnabled:!document.getElementById('skyRevealNext').disabled,
     saved:!!window.__profile.canonicalQuestState[${JSON.stringify(next.id)}]?.solved,grants:window.__canonicalGrants})`);
   assert.equal(pending.saved, false, 'The pending screen appears before any server acknowledgement');
@@ -87,6 +88,7 @@ try {
   assert.deepEqual(pending.slots, ['star:victory-reward-pending', 'autonomy:victory-reward-pending', 'speed:victory-reward-pending', 'noError:victory-reward-pending', 'mastery:victory-reward-pending']);
   assert.deepEqual(pending.disabled, [true, true], 'Challenge and replay wait for the server');
   assert.equal(pending.nextEnabled, true, 'The player can keep playing');
+  assert.equal(pending.publicShareHidden,true,'A pending result reserves space with no public share action');
   // The server confirms: the same screen is updated in place.
   await until(`(()=>{const o=document.getElementById('skyReveal');return !o.hidden&&!o.dataset.sync&&!document.getElementById('skyRevealSync')})()`, 120);
   const confirmed = await evaluate(`({zones:${ZONES},slots:${SLOTS},saved:!!window.__profile.canonicalQuestState[${JSON.stringify(next.id)}]?.solved,grants:window.__canonicalGrants,
@@ -97,6 +99,7 @@ try {
   assert.equal(confirmed.slots[0], 'star:victory-reward-new', 'The confirmed first win earns its star');
   assert.notEqual(confirmed.rank, 'Classement après confirmation');
   assert.equal(confirmed.retry, false, 'Replay becomes available after confirmation');
+  assert.equal(await evaluate("document.getElementById('skyRevealShareResult').hidden"),false,'Public share becomes available after confirmation');
   assert(confirmed.diagnostics.includes('victory_pending_shown') && confirmed.diagnostics.includes('victory_pending_upgraded'));
   for (const zone of Object.keys(pending.zones))
     assert(

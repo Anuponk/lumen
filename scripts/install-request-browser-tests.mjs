@@ -51,6 +51,55 @@ try{
  await until('document.querySelectorAll("#board .cell").length>0','plain visit');await sleep(2000);
  assert.equal(await evaluate(shown),false,'Plain visit unchanged');
  results.push('plain visit unchanged');
+ const iphone=await send('Page.addScriptToEvaluateOnNewDocument',{source:`
+  Object.defineProperty(navigator,'userAgent',{get:()=> 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148'});
+  Object.defineProperty(navigator,'standalone',{get:()=> localStorage.getItem('fixtureInstalled')==='1'||sessionStorage.getItem('fixtureInstalled')==='1'});
+  window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();event.stopImmediatePropagation()},true);
+  delete Object.getPrototypeOf(navigator).serviceWorker;
+ `});
+ await navigateAndWait({send,evaluate},'Page.navigate',{url:url.href});
+ await evaluate("document.querySelector('.first-welcome:not([hidden]) .intro-play')?.click()");
+ await until(shown,'iPhone opens the manual Safari steps');
+ assert.match(await evaluate("document.getElementById('installOptinCopy').textContent"),/Ouvrir dans Safari.*Partager.*Sur l’écran d’accueil.*Ajouter/);
+ // #832: an iPhone guest is told to save the sky in an account first, never blocked.
+ assert.equal(await evaluate("document.getElementById('installOptinWarning').hidden"),false);
+ assert.match(await evaluate("document.getElementById('installOptinWarning').textContent"),/crée un compte et synchronise ton ciel avant de l’ajouter à ton écran d’accueil/);
+ assert.equal(await evaluate("document.getElementById('installCreateAccount').hidden||document.getElementById('installEnable').hidden"),false,'Both choices stay available');
+ results.push('iPhone guest warned before installing');
+ await click('#installEnable');
+ assert.equal(await evaluate(shown),false,'Acknowledging the Safari directions closes the sheet');
+ await evaluate("localStorage.setItem('fixtureInstalled','1')");
+ await navigateAndWait({send,evaluate},'Page.navigate',{url:url.href});
+ await sleep(1800);
+ assert.equal(await evaluate(shown),false,'Installed iPhone shell suppresses an explicit install request');
+ // #832: the installed app opens on its own empty storage (Safari's is not shared).
+ const openInstalledApp=async()=>{
+  await evaluate("localStorage.clear();sessionStorage.setItem('fixtureInstalled','1')");
+  await navigateAndWait({send,evaluate},'Page.navigate',{url:base.href});
+  await until('!document.getElementById("pwaWelcome").hidden','installed app first opening');
+ };
+ await openInstalledApp();
+ assert.equal(await evaluate('!!document.querySelector(".first-welcome:not([hidden])")'),false,'No silent quest 1 or story behind the choice');
+ assert.equal(await evaluate('document.activeElement?.id'),'pwaWelcomeRecover','“J’ai déjà joué” is the primary action');
+ await click('#pwaWelcomeNew');
+ assert.equal(await evaluate('document.getElementById("pwaWelcomeConfirm").hidden'),false,'A new adventure asks for confirmation');
+ await click('#pwaWelcomeNew');
+ await until('!!document.querySelector(".first-welcome:not([hidden])")','new adventure continues to the welcome');
+ assert.equal(await evaluate('document.getElementById("pwaWelcome").hidden'),true);
+ results.push('installed app: confirmed new adventure');
+ await openInstalledApp();
+ await click('#pwaWelcomeRecover');
+ await until('!document.getElementById("accountOptin").hidden','sign-in opens');
+ assert.equal(await evaluate('document.getElementById("accountOptinTitle").textContent'),'Retrouve ton aventure');
+ assert.equal(await evaluate('document.getElementById("accountAuthSwitch").getAttribute("aria-pressed")'),'true','Sign-in mode, not sign-up');
+ results.push('installed app: recover progress opens sign-in');
+ // Existing data on this storage: no needless repeat of the choice.
+ await navigateAndWait({send,evaluate},'Page.reload');
+ await until('document.querySelectorAll("#board .cell").length>0','installed app reload');await sleep(1200);
+ assert.equal(await evaluate('document.getElementById("pwaWelcome").hidden'),true,'Shown once per storage');
+ await evaluate("sessionStorage.removeItem('fixtureInstalled')");
+ await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:iphone.identifier});
+ results.push('iPhone Safari instructions and installed state');
  assert.deepEqual(errors,[]);
  const report={results,uncaughtErrors:errors};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2));

@@ -117,7 +117,7 @@ test('cyclic module imports are only fetched once during installation',async()=>
  assert.equal(f.calls.filter(([path])=>new URL(path,'https://lumen.test').pathname==='/src/campaign/a.js').length,1);
 });
 
-test('real published game module graph includes catalogue data before offline activation',()=>{
+test('real published game module graph includes catalogue data and translations before offline activation',()=>{
  const {existsSync}=fsForOfflineGraph();
  const root=new URL('../',import.meta.url);
  const visited=new Set(),pending=['/src/main.js','/src/ui/game-screen.js'];
@@ -136,8 +136,8 @@ test('real published game module graph includes catalogue data before offline ac
   }
   assert(visited.size<2000,'Unexpectedly large or cyclic dependency graph');
  }
- for(const required of ['/src/campaign/catalogue.js','/content/generated/first-adventure.json','/content/generated/diverse-adventures-3-4.json','/content/catalogue/access-origins.json','/content/catalogue/remaining-adventures.json','/content/generated/remaining-adventures.json','/content/generated/logical-grids-v1.json'])
-  assert(visited.has(required),'Offline module graph omitted required catalogue asset: '+required);
+ for(const required of ['/src/campaign/catalogue.js','/content/generated/first-adventure.json','/content/generated/diverse-adventures-3-4.json','/content/catalogue/access-origins.json','/content/catalogue/remaining-adventures.json','/content/generated/remaining-adventures.json','/content/generated/logical-grids-v1.json','/src/ui/i18n.js','/src/ui/locales/fr/daily.js','/src/ui/locales/en/daily.js','/src/ui/locales/fr/results.js','/src/ui/locales/en/results.js','/src/ui/locales/fr/board.js','/src/ui/locales/en/board.js','/src/ui/locales/fr/welcome.js','/src/ui/locales/en/welcome.js','/src/ui/locales/fr/learning.js','/src/ui/locales/en/learning.js','/src/ui/locales/fr/pwa-welcome.js','/src/ui/locales/en/pwa-welcome.js'])
+  assert(visited.has(required),'Offline module graph omitted required asset: '+required);
 });
 function fsForOfflineGraph(){return {existsSync:importedExistsSync};}
 
@@ -211,6 +211,8 @@ test('the actual worker installs the complete repository graph including dynamic
  let install;f.handlers.install({waitUntil:p=>install=p});await install;
  assert.equal(f.lifecycle.skipWaiting,1);
  assert(f.stores.get(currentCache).has('https://lumen.test/src/persistence/offline-verified-owner.js'));
+ assert(f.stores.get(currentCache).has('https://lumen.test/src/campaign/constellation-facts.js'));
+ assert(f.stores.get(currentCache).has('https://lumen.test/src/ui/constellation-fact-dialog.js'));
 });
 
 test('cache quota refusal cannot activate a partial worker or erase the previous shell',async()=>{

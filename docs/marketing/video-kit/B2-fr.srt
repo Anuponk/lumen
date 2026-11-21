@@ -1,0 +1,19 @@
+1
+00:00:00,000 --> 00:00:03,000
+Une case suffit à débloquer la suite.
+
+2
+00:00:03,000 --> 00:00:06,000
+Ce territoire impose le coin.
+
+3
+00:00:06,000 --> 00:00:11,000
+Même ligne et cases voisines interdites.
+
+4
+00:00:11,000 --> 00:00:17,000
+Il reste cette case.
+
+5
+00:00:17,000 --> 00:00:21,000
+Résous la suite dans Lumen · lumen.nopuna.fr/decouvrir.html

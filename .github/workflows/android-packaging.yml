@@ -3,7 +3,7 @@ name: Android packaging
 on:
   pull_request:
     branches: [main]
-    paths: ['android/**', '.github/workflows/android-packaging.yml']
+    paths: ['android/**', '.github/workflows/android-packaging.yml', '.github/workflows/android-signed-aab.yml']
   workflow_dispatch:
 
 permissions:
@@ -41,12 +41,16 @@ jobs:
       - name: Build without any release credentials
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon --console=plain :app:lint :app:assembleDebug :app:bundleDebug :app:bundleRelease
+          ./gradlew --no-daemon --console=plain :app:lint :app:testDebugUnitTest :app:assembleDebug :app:bundleDebug :app:bundleRelease
       - name: Validate compiled APK and AAB
         run: |
           curl --fail --location --retry 3 --output "$RUNNER_TEMP/bundletool.jar" https://github.com/google/bundletool/releases/download/1.18.2/bundletool-all-1.18.2.jar
           echo "378b5434cd1378bef6b2bc527b8c7f0ff2584b273830335bce54d6d0813c8584  $RUNNER_TEMP/bundletool.jar" | sha256sum --check
           python3 tools/verify-artifacts.py "$RUNNER_TEMP/bundletool.jar"
+      - name: Test the closed testing Play transaction
+        run: python3 tools/test-play-closed-release.py
+      - name: Test release signing with a disposable key
+        run: bash tools/test-aab-signing.sh app/build/outputs/bundle/release/app-release.aab
       - uses: actions/upload-artifact@v4
         if: success()
         with:

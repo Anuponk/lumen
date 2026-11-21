@@ -47,11 +47,30 @@ test('launcher opens only HTTPS Lumen links and grants only Internet permission'
   assert.match(read('app/build.gradle'), /lumenHost: 'lumen\.nopuna\.fr'/);
   assert.match(read('app/src/main/res/values/strings.xml'), /https:\/\/lumen\.nopuna\.fr/);
 });
+test('Play updates retain the public launcher component and use a separate native policy', () => {
+  const manifest = read('app/src/main/AndroidManifest.xml');
+  assert.match(manifest, /<activity android:name="\.LauncherActivity"\s+android:exported="false">/);
+  assert.match(manifest, /<activity-alias android:name="com\.google\.androidbrowserhelper\.trusted\.LauncherActivity"\s+android:targetActivity="\.LauncherActivity"\s+android:exported="true">/);
+  assert.match(read('app/build.gradle'), /com\.google\.android\.play:app-update:2\.1\.0/);
+  const policy = JSON.parse(read('../src/android-update-policy.json'));
+  assert.deepEqual(Object.keys(policy), ['minimumVersionCode']);
+  assert.ok(Number.isInteger(policy.minimumVersionCode));
+  assert.ok(policy.minimumVersionCode >= 1 && policy.minimumVersionCode <= 2_100_000_000);
+  assert.match(read('app/src/main/java/fr/nopuna/lumen/MinimumAndroidVersion.java'),
+    /https:\/\/lumen\.nopuna\.fr\/src\/android-update-policy\.json/);
+});
+
 test('ABH ManageDataLauncherActivity is declared so the launcher cannot crash at startup', () => {
   const manifest = read('app/src/main/AndroidManifest.xml');
   assert.match(manifest, /android:name="com\.google\.androidbrowserhelper\.trusted\.ManageDataLauncherActivity"/);
   assert.match(manifest, /android:name="android\.support\.customtabs\.trusted\.MANAGE_SPACE_URL"/);
   assert.match(manifest, /android:value="https:\/\/\$\{lumenHost\}\/"/);
+});
+
+test('closed-test release provisions the Android SDK before invoking sdkmanager', () => {
+  const workflow = read('../.github/workflows/android-signed-aab.yml');
+  const buildJob = workflow.split(/\r?\n  build:\r?\n/)[1]?.split(/\r?\n  publish:\r?\n/)[0] ?? '';
+  assert.match(buildJob, /uses: android-actions\/setup-android@v3[\s\S]*?sdkmanager 'platforms;android-36' 'build-tools;35\.0\.0'/);
 });
 
 test('Android dependencies, SDK and toolchain are explicit; release never uses debug signer', () => {
@@ -113,7 +132,16 @@ test('#729 Play Billing: Digital Goods delegation, payment activity and service 
   assert.match(manifest, /android:name="\.BillingDelegationService"[\s\S]*?TRUSTED_WEB_ACTIVITY_SERVICE/);
   assert.match(manifest, /playbilling\.provider\.PaymentActivity"[\s\S]*?org\.chromium\.intent\.action\.PAY[\s\S]*?https:\/\/play\.google\.com\/billing/);
   assert.match(manifest, /playbilling\.provider\.PaymentService"[\s\S]*?org\.chromium\.intent\.action\.IS_READY_TO_PAY/);
-  assert.match(read('app/build.gradle'), /implementation 'com\.google\.androidbrowserhelper:billing:1\.2\.0'/);
+  assert.match(read('app/build.gradle'), /implementation project\(':billing'\)/);
+  assert.match(read('billing/build.gradle'), /com\.android\.billingclient:billing:8\.3\.0/);
+  const billingSource = 'billing/src/main/java/';
+  const activity = read(billingSource + 'PaymentActivity.java');
+  assert.match(activity, /PaymentVerifier\.shouldAllowPayments[\s\S]*obfuscatedAccountId\.matches\("\[0-9a-f\]\{64\}"\)[\s\S]*mWrapper = BillingWrapperFactory/);
+  assert.match(activity, /queryProductDetails\(BillingClient\.ProductType\.INAPP/);
+  assert.doesNotMatch(activity, /queryProductDetails\(BillingClient\.ProductType\.SUBS/);
+  assert.match(read(billingSource + 'PlayBillingWrapper.java'), /setObfuscatedAccountId\(methodData\.obfuscatedAccountId\)/);
+  assert.match(read(billingSource + 'GetDetailsCall.java'), /lumen_internal_bound_checkout_v1/);
+  assert.doesNotMatch(read(billingSource + 'digitalgoods/Logging.java'), /Log\.[a-z]+\([^\n]+\+ token/);
   const service = read('app/src/main/java/fr/nopuna/lumen/BillingDelegationService.java');
   assert.match(service, /extends DelegationService/);
   assert.match(service, /registerExtraCommandHandler\(new DigitalGoodsRequestHandler\(getApplicationContext\(\)\)\)/);

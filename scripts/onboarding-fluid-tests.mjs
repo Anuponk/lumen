@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {withNetworkContext} from './fixtures/network-context.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -13,7 +14,7 @@ test('fresh ordinary victories let the player continue without a required sky to
   const ctx={QUEST_MILESTONES,activeQuestOrdinal:()=>ordinal,replayMode:false,socialChallenge:null,
    syncPresentation:{celebration(){}},pendingVictoryView:null,learningReplayActive:()=>false,
    advanceToNextPuzzle(){advanced++},hideSuccess(){},openJourneyMap(){sky++}};
-  vm.createContext(ctx);
+  vm.createContext(withNetworkContext(ctx));
   for(const fn of ['learningSkyDiscoveryRequired','handleSuccessAdvance'])vm.runInContext(functionSource(source,fn),ctx);
   ctx.handleSuccessAdvance();assert.equal(advanced,1,`quest ${ordinal} advances directly`);assert.equal(sky,0);
  }
@@ -37,7 +38,7 @@ test('quest-six no longer gates on the retired checkbox or writes an unlock',()=
   const progress={};
   const ctx={QUEST_MILESTONES,activeQuestOrdinal:()=>6,socialChallenge:null,replayMode:false,learningReplayActive:()=>false,lumenProgress:progress,
    document:{getElementById:node},saveLumenProgress(){saved++},configureLearningMode(){},applyQuestRestrictions(){},updateScriptedLearning(){},learningTip:null};
-  vm.createContext(ctx);for(const fn of ['autoMarkingLessonRequired','finishAutoMarkingLesson','maybeShowContextualLesson'])vm.runInContext(functionSource(source,fn),ctx);
+  vm.createContext(withNetworkContext(ctx));for(const fn of ['autoMarkingLessonRequired','finishAutoMarkingLesson','maybeShowContextualLesson'])vm.runInContext(functionSource(source,fn),ctx);
   ctx.maybeShowContextualLesson();assert.equal(node('autoCross').checked,checked);
   assert.equal(saved,0);assert.equal(!!progress.autoCrossUnlockSeen,false);
 
@@ -61,7 +62,7 @@ test('verified account restoration applies its own auto choice without restartin
   syncMobileAuthUI(){},updateAdminTools(){},accountRequired:()=>false,render(){},maybeShowContextualLesson(){},
   init(){throw Error('Preference restore must not restart the board')},saveLumenProgress(){throw Error('Preference restore must not save rewards')}
  };
- vm.createContext(ctx);for(const fn of ['configureLearningMode','applyQuestRestrictions','updateAuthUI'])vm.runInContext(functionSource(source,fn),ctx);
+ vm.createContext(withNetworkContext(ctx));for(const fn of ['configureLearningMode','applyQuestRestrictions','updateAuthUI'])vm.runInContext(functionSource(source,fn),ctx);
  if(source.includes('function refreshOnboardingPreferenceOwner('))vm.runInContext(functionSource(source,'refreshOnboardingPreferenceOwner'),ctx);
  ctx.updateAuthUI();assert.equal(node('autoCross').checked,true,'Pending account cannot apply an unverified profile');
  ctx.cloudProfileReady=true;ctx.updateAuthUI();assert.equal(node('autoCross').checked,true,'Auth cannot render a board still loading');
@@ -81,7 +82,7 @@ test('temporary manual lesson and challenge restrictions never overwrite the vol
   const ctx={QUEST_MILESTONES,questLearningRules,activeQuestOrdinal:()=>ordinal,replayMode:false,lumenUser:null,
    scriptedLearningActive:()=>ordinal===1,onboardingPreferences:{auto:()=>preference,setAuto(){writes++}},
    localStorage:{getItem:()=>null},document:{getElementById:node},activeBonusChallenge:()=>({id:'challenge',noAuto:true}),lumenProgress:{stars:{}}};
-  vm.createContext(ctx);for(const fn of ['configureLearningMode','applyQuestRestrictions'])vm.runInContext(functionSource(source,fn),ctx);
+  vm.createContext(withNetworkContext(ctx));for(const fn of ['configureLearningMode','applyQuestRestrictions'])vm.runInContext(functionSource(source,fn),ctx);
   ctx.configureLearningMode();assert.equal(node('autoCross').checked,false);
   ordinal=2;ctx.configureLearningMode();assert.equal(node('autoCross').checked,false);
   ctx.applyQuestRestrictions();assert.equal(node('autoCross').checked,false);

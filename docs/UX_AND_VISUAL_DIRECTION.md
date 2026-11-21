@@ -16,6 +16,28 @@ Keyboard disclosure checks and existing support/preview actions remain. The
 rule, learning step, badge eligibility, input gesture or player-facing gameplay
 navigation changes; onboarding adaptation is not required.
 
+## Localisation #754
+
+The optional introduction, installed-app welcome and coach for the first two quests read from `src/ui/locales/{fr,en}/`. The learning engine supplies steps and allowed cells, and `src/ui/learning-copy.js` supplies their text. Chrome fixtures exercise the English onboarding through the public game entry point. The installed-app welcome keeps matching French text in the HTML shell so its actions retain labels if HTML and JavaScript load from different releases. Board controls, attempt prompts, cell labels and the rules dialog also read from the FR/EN board catalogues. The rules dialog retains its French labels in the HTML shell. Its teaching sequence, gestures and assistance penalties are identical in both languages.
+
+To prepare an additional locale, use the French domain catalogue as a template, keep the same semantic keys and placeholder names, then register the canonical BCP 47 code, native name, availability, fallback and statically imported messages in `src/ui/i18n.js`. Use `t(key, params)` for complete messages and plural forms keyed by `Intl.PluralRules` categories with an `other` form. Use the translator’s number and date formatters for display. The French catalogue provides missing copy. Diagnostics report the key and locale. Player names and other user-provided values remain intact when inserted as parameters.
+
+The service worker follows the static imports to cache the French and English catalogues. The French introduction keeps its existing timing, entry choices and accessibility. Guarded teaching steps begin in the game after the introduction.
+
+The public discovery page is available in French at `/decouvrir.html` and in English at `/discover.html`. Both pages have a language link, reciprocal `hreflang` and localized social previews. French is the discovery fallback. The English discovery page links to the English rules and constellation learning guides at `/how-to-play.html` and `/learn-constellations.html`. Both guides link to their French counterpart and use reciprocal `hreflang`. The game and installation links honor the app’s language preference. The constellation directory and legal links identify their French destinations. The pages use the existing captures from the French edition.
+
+The public game exposes a language selector in the rules dialog. The player can choose Automatic, Français or English. Automatic selects the first supported browser language and falls back to French. The explicit choice is stored on the device. Switching updates the translated text and accessibility labels without rebuilding the board or restarting the attempt. English covers onboarding, board controls, help, verification feedback, the puzzle leaderboard, personal records and the quest review’s performance copy. The Daily Challenge surfaces also use FR/EN, including both leaderboards, the weekly recap and its share text. Other screens can still display French. The remaining translations, cross-device preference, native Android app language, transactional copy, notifications and Play listing are tracked in #754.
+
+### Maintaining the translations
+
+Add or edit the French and English entries in the same PR. Keep messages complete and preserve the named variables in each plural form. Format the data at render time. Player nicknames, quest IDs, scores and reward state keep their existing meaning and ownership.
+
+Run `node scripts/i18n-audit.mjs --review <key>` after checking the pair in context. The record binds the review to both texts. Editing either catalogue invalidates the record for that key. Run `npm run i18n:check` before committing. The CI rejects missing keys, invalid plurals, inconsistent variables and visible copy newly detected outside a catalogue.
+
+Run `node scripts/i18n-audit.mjs --list` for the current migration inventory. The inventory scans the game HTML shell and JavaScript in the UI, game, campaign, privacy and landing modules. Migrate confirmed player copy to a semantic key and run `node scripts/i18n-audit.mjs --prune` to remove cleared entries. CI compares the historical inventory with the target branch to prevent it from growing.
+
+The scan follows common text destinations and can flag technical strings or miss text assembled at runtime. Exercise player journeys in both languages, including smaller screens. Static public pages, native resources, Play copy and server-generated e-mails and notifications need checks in their own release paths.
+
 ## Optional first welcome and story — #532
 
 A fresh local campaign opens a celestial welcome with the existing LUMEN brand,
@@ -58,8 +80,8 @@ the original document. Its text, timing and player data remain unchanged.
 
 Domain readiness (persistence lot 3): a current verified acquired replay may be
 available during Wallet review. Account status distinguishes « Quêtes confirmées ·
-Éclats à vérifier »; the shard meter does not label an ambiguous balance available.
-Free-help explanations stay unchanged. A pending replay shows performance awaiting
+historique à vérifier ». Assistance on that replay uses the official-time rules.
+A pending replay shows performance awaiting
 confirmation, never an extra star or earned badge. Initial hydration and other
 domain holds retain their visible completion/disabled-replay explanation.
 Onboarding impact: discovery, help milestones and badge rules are unchanged;
@@ -297,6 +319,14 @@ Every constellation, including canonical-only entries such as Dauphin, uses the 
 
 Selecting an unlocked constellation opens its detail in the same sheet: quests, performance badges and stars, with a **Toutes les constellations** back button. Touching a completed quest opens its **bilan** (#695): the read-only review described under the victory screen. Its « ↻ Rejouer » keeps the previous replay behavior, including the badge cooldown dialog. Mes défis stays reachable from the main sheet. Keyboard navigation is contained in the modal, Escape closes the appropriate notice/sheet, and notices restore focus. Long current-quest labels truncate on mobile so Mon ciel remains reachable.
 
+Fiches des constellations (#853). An independent information button on each
+overview card and beside the constellation name in its detail opens the same
+modal. Closing with the explicit button or Escape returns keyboard focus to the
+trigger. The selector inside the modal gives offline access to all educational
+entries, including those in locked Adventures. Reading a fiche does not open a
+constellation or grant access to its quests. The information controls stay hidden
+during the existing introductory sky tour.
+
 Browsing and progression are separate: opening Mon ciel from a board or its victory returns to that played quest's Adventure, constellation and page. Its stable constellation identity takes priority over a dormant legacy index or an earlier browsing choice. Explicit teaching destinations remain supported. Consulting a previous Adventure does not change the board, current attempt, unlocked quest or rewards. A refreshed access model must invalidate an inaccessible viewed Adventure and return to an accessible view. Browsing preference is intentionally not persisted across reloads.
 
 The first guided visit after quest 2 now teaches five real zones in order: Ciels/Aventures, constellations, quests, performances, constellation drawing. Each step reveals the corresponding overview/detail pane. The first tour cannot be skipped by closing the sheet or touching the backdrop; only its final step offers **Jouer la quête 3**.
@@ -307,7 +337,7 @@ Finishing an Adventure shows a brief summary of its constellations, stars and ea
 Victory should feel meaningful: quest accomplishment, stars and constellation reveal/milestones. The sky/constellation is the long-term progress visualization, not a collection of legacy rank names.
 
 ## PWA/share friction
-Do not ask for installation before the player has experienced value. Current threshold (`maybeOfferInstall`) is after 12 solved quests, outside onboarding, the account gate and other dialogs, at most once a week after « Plus tard ». Exception (#748): a visitor who chose « Installer sur mon téléphone » or scanned the QR code on `decouvrir.html` arrives with `?install=1`. The request is removed from the URL before the first-visit welcome reads it. The sheet is offered once, right after that welcome, with the native prompt or the exact manual steps (iPhone: Partager → Sur l’écran d’accueil; otherwise menu ⋮). It stays tappable during the scripted tutorial. Do not re-prompt standalone installs. Share results should make the accomplishment understandable outside the app and retain referral attribution.
+Do not ask for installation before the player has experienced value. Current threshold (`maybeOfferInstall`) is after 12 solved quests, outside onboarding, the account gate and other dialogs, at most once a week after « Plus tard ». Exception (#748): a visitor who chose « Installer sur mon téléphone » or scanned the QR code on `decouvrir.html` arrives with `?install=1`. The request is removed from the URL before the first-visit welcome reads it. The sheet is offered once, right after that welcome, with the native prompt or the exact manual steps (iPhone: Partager → Sur l’écran d’accueil; otherwise menu ⋮). It stays tappable during the scripted tutorial. Do not re-prompt standalone installs. The account menu offers « Inviter des amis » to guests and signed-in players. « Partager ma réussite » is available on the confirmed victory screen alongside the separate challenge action. Both share the public discovery page, with a copy and manual selection fallback. They are optional and do not introduce a learning milestone. See the [sharing audit and release checks](marketing/PARTAGE_LUMEN.md).
 
 ## Performance perception
 Touch interaction should feel immediate. Full board rerenders during drag are specifically prohibited because they create unnecessary mobile work and visual instability. Performance tests around cell and board painting protect this.
@@ -329,16 +359,78 @@ Do not introduce parallel `MobileX` / `DesktopX` gameplay components. If a compa
 
 ## Social challenge UX
 
+**Espace social (#898, Lot 4).** One 👥 icon at the top right of the game header
+(`#openSocial`, accessible name « Espace social », `aria-expanded`) opens a single
+panel with, in order: Défi du jour (only when #882 reports it available), Mes
+défis, Classements, Mes amis, Notifications, Inviter des amis. The panel only
+routes to existing screens; it never opens by itself and nothing animates. One
+global badge adds the two validated #35 counters (pending friend requests and
+received friend challenges; unread link-challenge results), which now sit inside
+the panel rows, so nothing is counted twice. « Classements » keeps the quest
+rankings (#638, opened from a completed quest in Mon ciel) apart from the Défi du
+jour rankings (général / mes amis). The Défi du jour keeps its direct entry in
+« Mes quêtes ». Guests keep link challenges and the invitation and read why
+friends and notifications need an account. Copy lives in the `social.*` domain
+(`src/ui/locales/{fr,en}/social.js`, reviewed by `i18n-audit.mjs`). Captures:
+`docs/validation/social-hub-*.png`.
+
+**Notifications (#898 PR B).** In-app only, no push, no toast, never during a
+grid: the « Notifications » row lists, newest first, a friend request received,
+a friend challenge received, a result available on one of my challenges and a
+friend request accepted. Each row opens its screen directly (Mes amis, the
+challenge link, or Mes défis focused on that challenge). Rows carry « Nouveau »
+until viewed (kept highlighted during that viewing) and « À traiter » while an
+action is pending. The global badge stays the #35 counters plus only the
+acceptances not seen yet, so nothing is counted twice. Offline, the last known
+list stays visible with a short notice; reconnection refreshes it.
+
+**Readable duels (#896).** Every finished duel shows, right in the list, « Défi
+contre {pseudo} », « Mon temps » and the opponent's time, then one verdict: « Tu
+as gagné ! », « {pseudo} a gagné » or « Égalité », with the gap (« 14 secondes
+d’avance / de retard ») or the autonomy reason. The verdict is the existing
+#18/#35 rule (autonomy first, then time) and is computed **only when both
+performances are terminal**; otherwise the row states « En attente de… », « …
+relève le défi », « À toi de jouer », « … a abandonné » or « Comparaison
+indisponible », never a winner. « Voir le duel » opens one card (verdict and both
+times first, two balanced players, a small crown on the winner, no animation)
+with « Fermer » and, for my own challenge, « Copier le lien ». Participation
+actions read « Relever le défi » / « Reprendre »; « Voir tous mes défis »
+replaces « Mes défis par lien ». Notes stay honest: qualifying-replay reference
+(#889), an opponent who already knew the grid, original grid version (#887).
+Copy: `duel.*` (FR/EN). Captures: `docs/validation/duel-*.png` (before:
+`duel-before-*`).
+
+« Amis et défis » (#35, row « Mes amis » of the panel) stays an optional screen,
+never on the game screen and never inside a grid. Guests see why friends need an account and
+keep playing link challenges. Friends are added by exact nickname; « Envoyer à un
+ami » appears in the challenge share dialog and on each « Mes défis » row. Statuses
+read « En attente / Commencé / Terminé / Abandonné ». The four intents stay
+distinct: Partager (show an achievement), Défier (play this grid), Inviter
+(discover Lumen), Ajouter un ami (persistent relation).
+
+The « Défi du jour » (#882) has its own recognisable skin — deep night-sky
+blue/violet background with static stars, a gold « Défi du jour · date ·
+1 tentative officielle » banner above the grid and a gold frame around it — while
+the grid itself (cells, Guardians, territories, marks, hints, errors) keeps the
+campaign look and meaning. No permanent animation, no badge promise in this mode,
+« Continuer » stays the primary action of its result. Details and captures:
+[DAILY_CHALLENGE.md](DAILY_CHALLENGE.md).
+
 Keep the challenge loop celestial and performance-led, not leaderboard-heavy. Before play, show who sent the challenge and the one-attempt rule, but hide the sender's time/badges. After play, reveal both performances side by side and describe differences factually.
 
-A remarkable first-play Mastery deserves stronger visual emphasis around “Défier”, while “Quête suivante” remains the primary campaign continuation for an ordinary first completion. Do not turn replay Mastery into a challenge CTA.
+A remarkable Mastery on a qualifying run deserves stronger visual emphasis around “Défier”, while “Quête suivante” remains the primary campaign continuation. Since #889 a qualifying replay may challenge; its wording never claims a first try (« Maîtrise en rejeu qualifiant ») and the reference shows « Rejeu qualifiant ».
 
 The current social RPC protocol supports historical numeric quest identities.
 For a first victory on a canonical-only quest, show the challenge action disabled
 with “Les défis sont disponibles uniquement sur les quêtes historiques.” This
 existing limit is explicit, not a Mastery requirement. Do not substitute the new
-visible ordinal for a historical grid identity. Replays hide the action and explain
-the first-success rule, including old saves without performance metadata.
+visible ordinal for a historical grid identity. A replay inside the qualification
+cooldown hides the action and explains it (« Défier demande une tentative
+qualifiante… Réessaie dans N min »); a qualifying replay, including an old save
+without performance metadata, may challenge (#889). On a constellation/Adventure scene at
+heights up to 700 px, « Partager ma réussite » shares the 38 px height of the other
+celestial actions and the card spacing tightens, so « Défier » + « Partager » still
+fit without scrolling at 360×640 (#705).
 Repeated activation while creating a link sends one request; reopening that
 victory's sharing flow reuses its link and never awards campaign rewards again.
 Sharing leaves the victory behind the dialog, including at an Adventure boundary;
@@ -351,7 +443,7 @@ Enter/Space retain native button activation. Long future labels wrap inside the
 rail rather than requiring smaller fonts. Opening Mon ciel keeps its existing
 destination based on the active quest.
 
-“Mes défis” belongs under Mon ciel. New results use a small unread indicator. Push permission must be requested contextually (“Préviens-moi quand quelqu'un relève mes défis”), never as an unexplained first-launch permission prompt.
+“Mes défis” belongs to the Espace social panel (#898). New results use a small unread indicator. Push permission must be requested contextually (“Préviens-moi quand quelqu'un relève mes défis”), never as an unexplained first-launch permission prompt.
 
 
 ### Fluid onboarding (#569 / #576, product decision 25 October 2026)
@@ -389,7 +481,9 @@ Milestone dialogs must respect `hidden` even when their visible layout uses `dis
 ### Sans erreur feedback rule
 Sans erreur must never become an implicit correctness assistant. A wrong Guardian may be tracked internally as pending, but the UI must not change its color, sound, message, haptics or badge-state indicator. If the player removes or immediately undoes that Guardian before another logical board mutation, the pending error disappears. Otherwise it becomes a committed error for that badge run.
 
-Campaign/replay Reset deliberately gives the player a fresh badge run and restarts its timer/assistance/error state. Social challenge Reset is different: the challenge remains the same one-shot attempt and keeps elapsed time, assistance and committed errors.
+Reset is a game action: a small ↺ icon button first in the command row under the grid (#858), narrower than Annuler, Vérifier and Indice, with the accessible name « Réinitialiser la grille »; the header keeps only technical controls. It only clears the placements, in every mode (#851): elapsed time, assistance and committed errors stay counted, as stated by its confirmation. « Rejouer » is the only fresh run. On the result screen, the private record and the best ranked time are shown side by side when they differ (« Record personnel : 0:54 · Meilleur temps classé : 1:11 »), with the current run's proven status: confirmed, not better than the ranked best, outside the 15-minute window, not qualifying, or pending. No cause is invented.
+
+On a short landscape screen (height ≤ 500 px, e.g. iPhone Safari with its bars) the game uses two columns: information and controls on the left, the grid on the right, sized to the real height (#830).
 
 
 ## End-of-campaign celebration
@@ -399,6 +493,40 @@ same single celestial scene. Explicit copy confirms completion of all currently
 available content, with catalogue-derived quests, constellations, stars and all
 four badge counts. Post-game actions retain access to Mon ciel and missing
 badges. No second finale opens after the player chooses an action.
+
+### Sign-up confirmation (#814)
+
+After the mail service accepts sign-up, announce the confirmation in the live status and tell the player to check their inbox and spam folder. A pending or rejected request keeps the form visible with its own feedback. Keep one submission in flight when the player changes tabs or closes the dialog. Confirmation does not imply mail delivery or a cloud save. A separate resend would need a dedicated provider operation under the existing server limits.
+
+### E-mail link verdict (#820)
+
+After an e-mail link, show one full-screen verdict. Success says « Adresse
+e-mail confirmée ! Ton compte Lumen est prêt. » with « Continuer mon aventure »
+when signed in, otherwise « Se connecter ». An expired, reused or invalid link
+says « Ce lien n’est plus valide » and offers sign-in or a new recovery link;
+it never mentions success. Recovery failures name the cause (rate limit,
+network, unconfirmed sending) with the same copy for unknown addresses.
+
+A recovery link opens its own full-screen step: « Choisis ton nouveau mot de
+passe », « Ton lien de réinitialisation a été vérifié », fields « Nouveau mot de
+passe » and « Confirmer le mot de passe », button « Enregistrer mon nouveau mot de
+passe » and a quiet « Plus tard ». Errors appear under the fields without
+clearing them. Success reads « Mot de passe modifié ! » and stays on screen until
+the player continues or signs in.
+
+### Installed app first opening (#832)
+
+An installed app opened on empty storage asks first: « J’ai déjà joué —
+Retrouver ma progression » (primary, sign-in) or « Commencer une nouvelle
+aventure » (secondary, confirmed by a second tap). A folded help explains the
+five steps for a Safari guest without promising automatic recovery. An iOS
+guest's install sheet warns to create an account and sync first, with « Créer
+un compte d’abord », never blocking the install. Loading copy is « Chargement
+de ton ciel… ».
+
+### Adventure offer and progress (#811)
+
+Inside « Le savais-tu ? », give the 100% mastery rule and the remaining work on separate lines. Show only the measures that remain. If the profile is loading or unavailable, explain the status without showing counts. Once both measures reach zero, offer the existing sign-in or server verification action. A verified mastery entitlement confirms that free access is available. Keep the paid options separate and retain the existing height limit of the mobile notice.
 
 ### Celestial milestones and progressive mastery (#575 / #519)
 
@@ -531,15 +659,23 @@ immediate catalogue successor is accessible. Starting the replay hides this
 shortcut. Navigation rechecks live access and grants no completion or reward.
 Challenge and learning-only replays retain their existing navigation; notably,
 the quest-2 victory still introduces Mon ciel.
-## Offline aids — approved 4 November 2026 (#597)
+## Aides hors ligne (#803)
 
-Paid Hint and Verify may reserve the last verified device balance while offline.
-Show the remaining available Éclats and the amount pending synchronization;
-do not describe a reservation as a confirmed debit. A server refusal remains
-reviewable without withdrawing earned progression. Existing free aids, teaching
-milestones and assistance effects on badges are unchanged; no extra blocking
-tutorial is introduced.
+Indice et Vérifier restent accessibles sur une quête ouverte hors ligne.
+Le chrono officiel affiche la pénalité aussitôt et la tentative conserve le
+compte d’aides. La récupération de l’historique de synchronisation reste visible
+dans le diagnostic du compte.
 ## Records personnels (#600)
+
+### Aides sur la grille (#791)
+
+Contrôle guidé, Indice et Vérifier affichent leur texte sous la grille, à
+partir de son bord inférieur. La taille et la position de la grille restent
+stables pendant l’ouverture et la fermeture. Le panneau occupe
+temporairement la zone des commandes et respecte la zone de sécurité
+inférieure. Le texte défile dans le panneau et le bouton reste accessible.
+Fermer l’explication du Contrôle guidé rend les commandes accessibles et
+laisse la correction du Gardien à effectuer.
 
 ### Classement (#638)
 
@@ -550,8 +686,12 @@ bloc « Ta performance et ton classement » (temps final, record, rang, podium),
 puis « Quête suivante » pleine largeur et une rangée Mon ciel | Défier | Rejouer.
 Chaque zone a sa place dès la première image : le podium arrive dans un
 emplacement réservé (squelette de même gabarit), sans déplacer les autres zones.
-La célébration dure au moins deux secondes et attend la fin des animations
-finies ; le podium apparaît ensuite dans le même bloc, sans bouton ni second écran.
+Le podium apparaît dès la fin de l’animation des badges (#794). Le toucher
+et le clavier peuvent accélérer cette transition. Les animations du ciel
+continuent dans le même écran. La lecture du classement peut commencer en
+parallèle. Si elle est encore en cours, l’emplacement indique son chargement.
+Le rang personnel, le motif de non-classement et l’explication du défi suivent
+le podium dans le flux. La hauteur s’adapte aux textes longs et au zoom.
 Podium à trois marches 2–1–3 de hauteurs décroissantes 1 > 2 > 3 ; seule la
 marche du joueur est mise en évidence. Hors podium : « Classement : Ne place ».
 Aucun compteur de joueurs (réels, virtuels ou total) n'est affiché. Les messages
@@ -597,7 +737,7 @@ sa composition finale, mais en **lecture seule** et **sans aucun effet** :
 
 Seuls « ↻ Rejouer » (entrée de rejeu existante, délai des badges compris) et
 « ✦ Mon ciel » (refermer) sont proposés : ni « Quête suivante » ni « Défier »,
-puisqu'un défi fige une première réussite. Rien n'est écrit (`src/ui/quest-review.js`). Les égalités et l'ordre déterministe restent calculés sur tous
+puisqu'un défi naît d'une tentative qualifiante jouée, pas d'une consultation. Rien n'est écrit (`src/ui/quest-review.js`). Les égalités et l'ordre déterministe restent calculés sur tous
 les scores côté serveur. Aucun défilement de liste ou de page.
 
 Les profils « Écho … » portent toujours une mention « Écho virtuel » pour les lecteurs d’écran. Leurs temps fixes sont
@@ -612,8 +752,8 @@ et Contrôle guidé +5 s par intervention. Le chrono augmente aussitôt, avec un
 bref +5 s / +15 s sans déplacement de grille ; il continue à compter normalement.
 La durée réelle reste une donnée technique ; les anciennes préférences de
 marquage automatique restent inertes.
-Sur mobile, le retour du Contrôle guidé participe à la mise en page, comme
-l'indice : il ne doit recouvrir ni Annuler ni le Gardien à corriger.
+Sur mobile, le Contrôle guidé et l’indice utilisent le même panneau sous
+la grille. Le Gardien à corriger reste visible pendant la lecture.
 
 Afficher un seul meilleur record officiel comparable à la révision de grille
 dans le masque de départ d’une quête déjà réussie. À la victoire confirmée,
@@ -669,9 +809,61 @@ Outil de test admin (#705) : le cockpit admin (« Outils de test ») propose « 
 
 ## Offre d'une aventure verrouillée (#731)
 
+Dans la TWA Play, les prix viennent exclusivement de Google : « Chargement du
+prix… » pendant la requête, puis montant et devise localisés. Une erreur ou un
+produit absent affiche « Prix indisponible », une explication et « Réessayer ».
+La carte ouverte se rafraîchit à réception ; un CTA sans prix, canal ou contenu
+valide reste désactivé, y compris après le paiement d'une autre carte. Aucune
+redirection Stripe en cas d'échec Play. Voir le diagnostic dans `android/PLAY.md`.
+
 Toucher une aventure verrouillée (cadenas) dans Mon ciel ouvre la même fenêtre qu'avant, qui présente désormais l'offre au lieu de « déverrouillage annoncé plus tard » :
 - « Débloquer cette aventure · 1 € » et « Tout le vrai ciel · 5 € », avec « Tes achats à l'unité comptent : tu ne paieras jamais plus de 5 € au total ». Les boutons d'achat restent désactivés, avec la mention « Paiement bientôt disponible », jusqu'au branchement d'un fournisseur (#729, #730).
 - Le chemin gratuit : « Gratuit : maîtrise « X » à 100 % (il te reste N quêtes et M badges) ». Ces chiffres viennent du catalogue et de `celestialScope`. Quand la maîtrise est atteinte, un bouton « Débloquer gratuitement » demande au serveur de vérifier (#728). Un invité est invité à se connecter.
 - « Sans pub, financé par les joueurs ✨ », avec « Pourquoi ? » qui déplie le texte du petit studio indépendant. La formulation exprime une intention, jamais une promesse d'absence de profit (#732).
 - Un verrou de constellation garde sa raison (quêtes précédentes) ; les sessions QA ne proposent jamais de créer un compte.
-- « Restaurer mes achats » (joueur connecté, uniquement là où les achats Google Play existent) fait revérifier par le serveur chaque achat Google Play. Le message ne dit « Achats restaurés ✓ » que pour un achat confirmé par le serveur ; un paiement en attente, une liste illisible ou une vérification impossible sont annoncés comme tels, jamais comme un succès. Une liste vide donne « Aucun achat Google Play à restaurer ». La restauration automatique après chaque hydratation vérifiée reste en place.
+- **Accord exprès avant de payer (#732)** : là où un achat peut démarrer (joueur connecté, paiement disponible), une case **jamais pré-cochée** « Je demande l’accès immédiat à mon achat et je renonce à mon droit de rétractation de 14 jours. » précède les boutons. Sans elle, toucher un bouton d’achat n’ouvre pas le paiement : un message invite à cocher la case et le focus y est placé. Un lien « Conditions générales de vente » (`/cgv.html`) reste visible sous l’offre dans tous les cas.
+- **Pas de bouton « Restaurer mes achats »** (décision du propriétaire, 17/11/2026, #730 ; remplace le bouton livré par #731). Un achat est un droit du compte : il réapparaît seul sur tout appareil connecté. Après chaque hydratation vérifiée, Lumen revérifie sans rien afficher les achats Google Play (dans l'application Play) et les paiements Stripe non encore réglés (sur le Web) ; les droits ne sont rechargés qu'après une confirmation du serveur.
+- **Remerciement après achat (#730)** : une fois l'achat confirmé par le serveur et les droits rechargés (jamais sur la seule URL de retour Stripe), une fenêtre « Merci pour ton soutien ✨ » nomme l'aventure débloquée (ou « Tout le vrai ciel »), rappelle que l'achat est lié au compte et retrouvé sur tous les appareils connectés, et explique en une phrase que les achats aident à financer l'hébergement et les prochaines aventures (une intention, jamais une promesse). Boutons « Explorer l'aventure » (ou « Explorer mon ciel ») et « Plus tard » ; Échap ou un toucher hors de la carte ferment la fenêtre.
+- **Entrée indépendante (#783)** : « Explorer l'aventure » ouvre le détail de sa première constellation. Une aventure possédée commence immédiatement ; ses propres quêtes restent séquentielles. Pendant le chargement des droits, Mon ciel indique « Vérification des droits… » ; une erreur indique des droits indisponibles, sans proposer un nouvel achat. L'apprentissage initial et les jalons existants restent inchangés.
+
+## Bilans et offres — #784 / #786
+
+Le bilan permet de consulter la quête canonique immédiatement voisine avec un
+swipe horizontal (gauche : suivante, droite : précédente) ou les flèches du clavier.
+La cible doit passer les mêmes gardes que Mon ciel ; aucun saut de quête verrouillée.
+Une quête disponible mais inachevée affiche « À jouer », sans record ni récompense.
+Seul le bouton Jouer/Rejouer lance une grille. Les réponses de classement et de
+record devenues obsolètes sont ignorées. La consultation ne relance aucune fête,
+préserve les gestes depuis les bords et respecte la réduction des mouvements.
+Le swipe peut partir du podium, pendant ou après son chargement. Un appui simple
+garde sa cible, les boutons gardent leur propre geste et le défilement vertical
+reste possible si le bilan dépasse la hauteur disponible. Le classement est
+consultable au swipe dès le bilan combiné affiché.
+Le bilan change sur place, avec une carte qui reste fixe et opaque au
+relâchement. En mode compact, le podium réserve dès le chargement la place d’une
+ligne de rang personnel hors podium, pour éviter un saut des boutons.
+
+La boutique distingue l’aventure et « tout le vrai ciel » (les autres ciels ne sont
+pas inclus). Les prix viennent du catalogue partagé avec la graine serveur, ou des
+prix localisés Play lorsqu’ils sont disponibles. Les compteurs portent sur les
+quêtes publiées disposant d’une grille, dans les aventures rendues accessibles par
+l’offre, hors aventures déjà accessibles. Elles restent à parcourir dans l’ordre ;
+un achat ne termine ni ne débloque toutes leurs quêtes à la fois. Les compteurs
+attendent la vérification des droits. L’astuce gratuite indique les quêtes et
+badges encore manquants de l’aventure précédente selon les règles de maîtrise.
+
+Impact onboarding : les apprentissages et leurs destinations restent valables ;
+la consultation latérale ajoute un raccourci sans changer les jalons ni les droits.
+
+## Boutique d'aventure (#863)
+
+Ordre : case d'accès immédiat / renonciation (avant les boutons, jamais pré-cochée),
+offres « Choisir » (aventure sélectionnée et son prix) puis « Tout débloquer » (une seule
+offre, celle du joueur, #865), état de l'achat, progression vers les 5 aventures, encart
+de déblocage gratuit, puis un pied compact : CGV et « Un achat n'apparaît pas ?
+Restaurer mes achats » (action secondaire, Google Play uniquement). Un clic sur un achat
+sans la case cochée n'ouvre aucun paiement : message rouge « Cochez cette case pour
+poursuivre votre achat. » sous la case (`role="alert"`, `aria-describedby`,
+`aria-invalid`, bordure en plus de la couleur), focus sur la case ; le message
+disparaît dès qu'elle est cochée. Aucun bandeau permanent de succès de restauration
+pendant le jeu.

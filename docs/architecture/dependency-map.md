@@ -1,5 +1,16 @@
 # Dependencies and data flow
 
+Google Play review #796: private grant/revoke events → account-bound
+`lumen_can_use_play_review` → `play-review-navigation.js` → Mon ciel quest
+selection. The catalogue and existing entitlement access remain required.
+Suspended attempts are local to the account and restore through the normal
+attempt engine.
+
+Owned entry #783: account/client-scoped `lumen_get_entitlements` response →
+transient verification state + `contentMapModel` → Mon ciel rail/cards. Pack access
+→ within-pack `catalogueQuestDecision` → map/start/resume; `extendedQuestLimit`
+only bounds legacy indices. No new persisted field or server command.
+
 Actionable Analytics #708: existing product/quest/health/account responses →
 `analytics-dashboard.js` qualified projection → overview/journeys/technical views
 → guarded existing navigation/player/session/diagnostic readers. Account list +
@@ -60,9 +71,9 @@ Account erasure: standalone request page → operator-verified scope → private
 `lumen_privacy.review_erasure` / `erase_account` → explicit Lumen relation
 policy and write guards. Shared Auth is preserved. Procedure and limits:
 `docs/ACCOUNT_DELETION_RUNBOOK.md`; SQL/concurrency coverage: `docs/TESTING.md`.
-The HTML legal candidates and request page share only CSS/navigation; they
-load no Auth/analytics SDK, mutate no game storage and do not approve legal
-evidence. Vendor metadata/source review is in `docs/PRIVACY_PROCESSORS.md`.
+The published HTML legal pages (`cgv.html`, `mentions-legales.html`,
+`confidentialite.html`, owner publication 17/11/2026) and the request page share
+only CSS/navigation; they load no Auth/analytics SDK and mutate no game storage. Vendor metadata/source review is in `docs/PRIVACY_PROCESSORS.md`.
 Confirmed victory: before-scope projection → existing receipt/outcome → current
 scope comparison → one celestial result (global > Adventure > constellation).
 Badge additions → owner/catalogue-scoped ephemeral playhead → visible Mon ciel
@@ -74,6 +85,10 @@ projection + bounded incident codes → volatile support queue → separate priv
 RPC consent/metadata/content transaction. Selected cockpit player → existing
 capability → audited authenticated download → local hash check/Blob. Withdrawal
 and the existing cron delete only support copies. No edge to any game writer.
+Manual preparation → exact filtered preview → explicit confirmation → same
+volatile capture/receipt (#776). Analytics reference → live capability → exact
+retained case/optional owner match → same audited dossier/hash reader. References
+are identifiers, never public credentials; no ChatGPT retrieval channel is added.
 
 Existing-account ownership handoff: verified profile + archived previous attempt
 → one live progress object → `nextCanonicalQuest` (catalogue origin/access)
@@ -238,16 +253,18 @@ grant access nor migrate saved rewards; old writers remain in their own domains.
 | P0 commands / presentation | Wallet durable intent → expected-account RPC → immutable receipt → account-bound current profile → verified cache → acknowledgement; victory intents → ephemeral `pending-navigation.js` view | Wallet, Canonical and Legacy namespaces remain isolated. Snapshot guards preserve server currency authority; pending navigation cannot serialize rewards. `sync-presentation.js` defers recoverable warnings during celebration; `outbox-health.js` emits bounded private counts, never save payloads |
 | Catalogue origin / acquired access | Immutable `content/catalogue/access-origins.json` → `catalogue-origin.js` / `catalogue-access.js` → canonical adapter → map/start/navigation; local creation + guarded profile JSON | Pack ownership remains independent. Server cohort cannot be deleted/relabelled; explicit conflicts hold. Origin metadata never awards completion, changes attempts or invokes reward RPCs |
 | Historical command | UI `captureLegacyCommandVictory` → Legacy durable outbox → `legacy-command.js` → locked profile, private rules/receipt/authority and existing daily/mirror RPCs | First accepted command protects legacy reward projection/revision against old snapshots. Guests/explicitly older unmigrated servers use `legacy-victory.js`; no ambiguous fallback |
+| Android native updates | Launcher icon → Android task and Play install check → Play Core + `src/android-update-policy.json` → TWA | Play owns track eligibility. The launcher applies the minimum before browser startup. App Links and existing tasks retain the Android Browser Helper flow. |
 | Bootstrap | `index.html` → `src/main.js` → `src/ui/game-screen.js` → injected factories | UI owns live progress/board; async callbacks must read current account/model |
 | Auth | `src/persistence/cloud.js` → `src/persistence/config.js` + CDN Supabase client; `initLumenCloud` subscribes before confirmation / `getSession` | User, entitlements and capabilities change; deferred restore checks identity. Logout uses local scope. Mail functions are separate from progression RPCs |
 | Catalogue | `src/campaign/data.js` / `src/campaign/catalogue.js` + generated JSON → `src/campaign/playable-quests.js` → `src/campaign/canonical-quests.js`; `src/campaign/content.js` supplies packs/access | Distinguish zero-based legacy index, one-based ordinal/RPC puzzle ID and stable canonical ID. `legacyIndex === null` identifies new canonical content |
+| Constellation facts | Catalogue ID → shared facts → Mon ciel dialog and generated public guide | Read-only and independent of Adventure access; no player state or remote data required |
 | Campaign presentation | Canonical membership + existing legacy/canonical completion and badge records → `canonicalScopeProgress`, `canonicalCampaignComplete`, `canonicalQuestMilestone` → sky cards, banners and victory/endgame UI | Read-only projection; astronomical geometry never supplies a quest total. Historical reward calculations and saved balances remain unchanged |
 | Access/UI | `src/campaign/content.js`: `hasPackAccess` → `contentMapModel`; `src/campaign/canonical-quests.js`: `unlockedAdventureProgress`; `src/campaign/playable-navigation.js` → UI / `src/ui/sky-navigation.js` | Entitlements, solved membership, started non-challenge attempt and `legacyAdventureAccess` affect access. `sky-navigation.selectedConstellation()` supplies the stable viewed ID to the shared game-screen quest-card renderer. Browsing cannot mutate progress; visible totals include accessible adventures |
 | Legacy win | `src/game/engine.js` + `src/game/attempt-engine.js` → UI `celebrateSuccess` → `src/campaign/progression.js` / `src/campaign/performance.js` → local save + scheduled snapshot flush/mirror | Completion, performance, currency and daily effects share orchestration. `cloudSavePuzzle` / `verifyLegacyProgressMirror` in `src/persistence/cloud.js` use numeric legacy RPCs |
 | Canonical win | `canonical-command.js`: `loadCommittedCanonicalAttempt` reads an exact receipt/current projection; durable outbox `archiveRecreatedCapture` preserves recognized regenerated evidence before retirement. Verified hydration wakes the same-owner/run validator via UI `resumeCanonicalVictoryAfterHydration`; UI `celebrateCanonicalSuccess` → `src/persistence/canonical-outbox.js` → `commitCanonicalVictoryViaLedger` in `src/persistence/canonical-progress.js` → `lumen_commit_canonical_victory` → `loadVerifiedProfile` | Intent before network; requested badges must be present on read-back before acknowledgement. Retain intent on ambiguous failure; install acknowledged profile, never send canonical IDs as legacy puzzle numbers |
 | Ledger | `supabase/migrations/20261015_canonical_reward_ledger.sql` + `supabase/migrations/20261017033619_canonical_replay_badges.sql` | Allowlist and `lumen.canonical_reward_events` govern canonical grants; replay upgrades badges without duplicate first rewards. Migration presence does not prove live deployment |
 | Command receipts | V2 outbox/gameplay ID → `canonical-progress.js` → `canonical-command.js` → read-only capability → `lumen_commit_canonical_command` → private `lumen_commands` receipt + existing ledger → receipt lookup and current profile read-back | Same account/profile lock; exact evidence required for reused ID; no fallback after ambiguous command; auth/attempt rechecked after capability await. V1/verified old-server compatibility retained, production migration is separate |
-| Full profile | UI `afterAuthCloudSync` / `flushCloudProfile` → `src/persistence/cloud-profile.js` → restore, backup, CAS, read-back | Baseline/dirty/ready flags gate writes; preserve both sides before installation. `reconcileCompatibleCloudProfiles` uses a legacy player-favourable max for `shards`, `xp`, `skyScore`: an approximation, not a transaction ledger or purchase rule |
+| Full profile | UI `afterAuthCloudSync` / `flushCloudProfile` → `src/persistence/cloud-profile.js` → restore, backup, CAS, read-back | Baseline/dirty/ready flags gate writes; preserve both sides before installation. `reconcileCompatibleCloudProfiles` keeps the verified Wallet projection and uses the legacy cumulative maximum for `xp` and `skyScore`. Divergent historical Wallet evidence stays in recovery. |
 | Snapshot protection | `supabase/migrations/20261010_lumen_cloud_first_cas.sql`, `supabase/migrations/20261017180841_protect_canonical_snapshot.sql` → `lumen.profile_snapshots` | CAS rejects changed baseline; trigger rejects destructive canonical replacement via backup/CAS. Spends/revocations are distinct from monotonic achievements |
 | Local recovery | `src/persistence/local.js`, `src/persistence/cloud-profile.js`, UI `preserveUnsyncedCloudProgress` / `exportLumenRecoveryBundle` | `lumenProgressV1`, recovery keys, `lumenUnsyncedCloudBackupV1:` / `lumenUnsyncedCloudBackupV2:`; quota fallback to IndexedDB `lumen-unsynced-checkpoints`. Exports contain sensitive saves: keep out of chat/logs |
 | Reconnect/resume | UI `retryPendingCloudWriteOnReconnect`, `retryPendingCanonicalOutboxOnReconnect`; online/focus/visible-page handlers | Snapshot retry and account-scoped replay are separate. `lumenCanonicalVictoryOutboxV1:` intents persist until acknowledgement; never replay another account's intent |
@@ -284,3 +301,9 @@ it through the existing celestial celebration. No new progression writer.
 ### #629 / #632 / #627
 
 `game-screen.js` importe `drag-grid-path.js` et projette `celestialScope` vers `sky-navigation.js`. Le repli réseau conserve les outboxes Wallet, les verrous et les reçus existants. Aucune dépendance externe ajoutée.
+
+Review/store #784/#786: canonical neighbour → existing map access guard → saved
+review model → generation-guarded ranking/record reads. The gesture never enters
+persistence or starts a board. Offer counts join delivered canonical grids with
+current pack accessibility and the real-sky product scope; entitlement loading
+keeps counts unknown. No purchase/restore or server contract changes.

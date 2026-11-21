@@ -37,4 +37,7 @@ assert.match(css,/\.app\{overflow:hidden!important\}/);
 assert.match(css,/safe-area-inset-bottom/);
 assert.match(css,/#board,\.game-core:has\(#board\) \.actions/);
 assert.match(css,/\.actions button\{min-width:0;min-height:40px!important/);
-assert.match(css,/\.head #new\{overflow:visible;position:relative\}/);
+// #858: Réinitialiser is a narrow game action under the grid, never a header icon.
+assert.match(css,/\.actions\{display:grid!important;grid-template-columns:44px minmax\(0,\.8fr\) minmax\(0,1\.1fr\) minmax\(0,1\.1fr\)!important/);
+assert.doesNotMatch(css,/\.head #new/);
+assert.match(fs.readFileSync('index.html','utf8'),/<div class="actions"><button id="new"[^>]*aria-label="Réinitialiser la grille"/);

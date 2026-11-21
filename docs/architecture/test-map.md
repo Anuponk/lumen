@@ -1,5 +1,18 @@
 # Existing verification map
 
+Play review #796: `play-review-navigation-tests.mjs` for catalogue, stale
+proof and attempt storage, `play-review-navigation-browser-tests.mjs` for
+the real map and a synthetic account switch/victory, and
+`fixtures/play-review-navigation.sql` in ledger CI for Auth scope,
+permissions, audit, revocation and expiry. Physical acceptance uses the
+[Android checklist](../../android/TESTING.md#recette-du-compte-de-revue-play-796).
+
+Owned Adventure entry #783: `owned-adventure-access-tests.mjs` covers independent
+pack entry, its own quest sequence, numeric bounds and entitlement-read isolation.
+`owned-adventure-browser-tests.mjs` verifies delayed rights, map starts and reload
+on a mobile viewport using synthetic RPCs. Physical purchase/device acceptance is
+separate; see [TESTING](../TESTING.md).
+
 KPI reliability #708: dashboard/session/incident Node regressions; synthetic
 `fixtures/reliable-analytics.sql` in ledger CI (migration x2, receipt-only activity,
 identity, deduplication, windows, durations, freshness, access/isolation). Real-app
@@ -32,9 +45,13 @@ Ranking/manual marking #638/#647: `ranking-tests.mjs`, `ranking-client-tests.mjs
 `fixtures/ranking.sql` and PostgreSQL `ranking-concurrency.py`. Full gate includes
 the new Node/browser suites; SQL concurrency runs in canonical-ledger CI.
 
-Support size follow-up: `support-tests.mjs` covers full catalogue copies,
-source preservation, metadata headroom, oversized optional checkpoints and
-compact-versus-jsonb/exponent limits. `fixtures/support.sql` checks the actual
+Support: `support-tests.mjs` covers full catalogue copies, source preservation,
+metadata headroom, oversized optional checkpoints, compact-versus-jsonb/exponent
+limits, manual preview confirmation and incident/reconnect isolation (#776).
+`support-browser.mjs` exercises preview/send and the existing private dossier
+reader by reference. `fixtures/support-reference.sql` verifies the exact retained
+case, live admin capability, mismatched owner, hash, revocation, expiry and audit.
+`fixtures/support.sql` checks the actual
 existing validator inside the disposable SQL workflow, never on production.
 
 `cloud-pending-victory-tests.mjs`: actual UI retry declarations + bounded
@@ -88,7 +105,7 @@ the explicit directory label and unknown state in the native UI.
 
 Fluid onboarding (#569/#576): onboarding-fluid-tests.mjs executes direct ordinary
 victory navigation, the real quest-6 lesson and account-scoped local preferences.
-learning-browser-tests.mjs covers manual quest 1, free 2–5, voluntary sky, reload,
+learning-browser-tests.mjs covers manual quest 1 (and no territory numbers after a skipped tutorial, also after reload, #862), free 2–5, voluntary sky, reload,
 the actual sixth-quest checkbox and immediate re-enable at 320/360/390 and desktop.
 Existing policy/account/cloud suites preserve six-quest signup, rewards and holds.
 
@@ -125,9 +142,10 @@ better/changed claims. `legacy-command-client-tests.mjs` exercises the real
 UI reconnect helper; `cloud-unsynced-recovery-tests.mjs` verifies local archive
 export alongside both IndexedDB stores. These fixtures do not prove phone recovery.
 
-Player ergonomics (#555/#552/#566): `ux-lot-tests.mjs` (catalogue successor,
+Player ergonomics (#791/#552/#566): `ux-lot-tests.mjs` (catalogue successor,
 live guards, unchanged rewards, replay ready/running states) and
-`ux-lot-browser-tests.mjs` (hint geometry/touch, guest account explanation and
+`ux-lot-browser-tests.mjs` (hint and 8×8 guided geometry, stable layout, dismissal
+and restored touch commands, guest account explanation and
 retry, historical/inserted/constellation navigation by keyboard/mouse/touch).
 Both are mandatory quality-gate suites; browser evidence is emulation with
 synthetic saves, separate from physical mobile and live Auth/cloud acceptance.
@@ -188,7 +206,7 @@ changed local bytes, account/session switch and failed archival. The existing
 `quota-recovery-browser.mjs` also executes native storage/Web Crypto/backup
 installation with simulated RPC. Physical-device confirmation remains separate.
 
-Quest convergence (#522): `quest-policy-tests`, `quest-victory-parity-tests`,
+Quest convergence (#522): `quest-policy-tests`, `quest-victory-parity-tests`, `quest-parity-matrix-tests` (historical/recent/artificial quest matrix, docs/validation/2026-11-20-quest-parity-residual-522.md),
 `quest-command-tests` and `admin-recent-players-tests` cover visible rules,
 same-run rewards, receipt/current-profile/account guards and stable analytics.
 `quest-policy-browser` joins the standard browser runner; learning/account/
@@ -272,8 +290,10 @@ account-session browser runner invokes `privacy-browser.mjs` for mobile/desktop
 request preparation without live mail/Auth. `play-readiness.mjs --enforce`
 deliberately blocks missing real evidence; it is not a passing CI certification.
 See `docs/PLAY_STORE_READINESS.md` and the account-deletion runbook.
-The same browser runner reads the two HTML legal candidates at mobile/desktop
-sizes, without scripts/Auth, preserving saves and retaining access to requests.
+The same browser runner reads the two published HTML legal pages at mobile/desktop
+sizes (dated version, no candidate banner), without scripts/Auth, preserving saves
+and retaining access to requests. `sales-terms-tests.mjs` checks the three pages
+are dated, name Stripe and carry no candidate wording.
 
 Browser libraries: `browser-dependency-tests.mjs` checks exact local assets,
 hashes/licenses and absence of CDN script tags. `privacy-browser.mjs` loads the
@@ -321,6 +341,14 @@ matrix; `victory-challenge-browser.mjs` is imported by canonical replay tests.
 geometry/focus/touch and empty/partial/complete astronomical drawing checks.
 See TESTING for synthetic transport and affected-device limits.
 
+Constellation facts (#856): `constellation-facts-tests.mjs` checks the IAU/ID
+mapping, distinct entries, fields, surfaces, and ranks. The sky browser suite
+checks both entry points, focus/keyboard, layout, and a second fact offline.
+The landing suites check FR/EN discovery links, localized previews,
+campaign attribution from both routes, the generated guide, SEO, search without accent
+sensitivity, and responsive display. Browser validation can emit review
+captures into the CI report artifact.
+
 Astronomy source fidelity: `astronomical-fidelity-tests.mjs` (mandatory Node)
 and CLI `audit-astronomical-figures.mjs`. Real overview/detail SVG fidelity and
 clipping: `astronomical-rendering-browser.mjs`, invoked by the existing sky
@@ -340,6 +368,12 @@ runner, mobile/desktop reload with synthetic session in localStorage and SDK
 probe behavior simulated. Explicit logout/password recovery/account switching
 remain covered. Real SDK 2.118.0 was additionally checked locally with blocked
 provider requests; that check is distinct from the required fixture transport.
+
+Locale foundation (#754) uses `locale-tests.mjs` for browser preference resolution,
+storage isolation, catalogue parity and formatting. The welcome browser suite
+mounts an English fixture. `onboarding-locale-tests.mjs` covers the first two quests’
+translated coach steps against the existing learning logic. The coach-placement browser
+suite exercises the public entry point in French and English, including installed first-open, tutorial layout, the live rules selector and restoration of the explicit choice after reload. The Node locale test verifies the rules and board keys against their render sites. The service worker suite covers the catalogue imports. The results coverage adds English leaderboard and record tests in the quest-review and ranking suites. The Node gate runs `i18n-audit.mjs` for FR/EN parity, source review and new unkeyed copy in the scanned files.
 
 PWA update freshness: `service-worker-cache-tests.mjs` exercises actual worker
 handlers; `service-worker-update-browser-tests.mjs` reproduces warm v9-to-v10
@@ -377,7 +411,10 @@ Phase 2: `npm run test:affected` / `node scripts/test-affected.mjs` selects the 
 | Adventure access / navigation (content, canonical/playable navigation, sky) | `content-architecture-tests.mjs`, `unlocked-adventure-progress.test.mjs`, `playable-navigation.test.mjs`, `canonical-constellation-catchup-tests.mjs`, `sky-navigation-tests.mjs`, `locked-quest-icon-tests.mjs` | Pack access, preserved started access, accessible totals, catch-up, locks. Icon test inspects source/CSS; it is not visual browser proof |
 | Auth / sessions (`src/persistence/cloud.js`, UI) | `account-email-login-tests.mjs`, `account-session-modes-tests.mjs`, `cloud-client-session-tests.mjs`, `cloud-session-guard-tests.mjs`, `oauth-return.test.mjs`, `persistence-tests.mjs` | Google/password/guest/recovery contracts, startup/event ordering and session guards; isolated simulations/source assertions |
 | Auth mail (`src/auth/`, dedicated mail functions) | `auth-mail-otp-tests.mjs`, `auth-email-brand-routing-tests.mjs`, `auth-email-delivery-plan-tests.mjs`, `auth-email-hook-integration-tests.mjs`, `auth-email-ledger-contract-tests.mjs` | Historical filename `auth-mail-otp-tests.mjs` now includes rejection of retired OTP/magic-link login; recovery/confirmation and routing remain relevant |
-| Social challenges (social/canonical challenge modules, UI, attempts) | `social-challenge-tests.mjs`, `social-challenge-ui-tests.mjs`, `issue-222-challenge-tests.mjs` | First-play eligibility, quest identity, terminal comparison and campaign isolation |
+| Daily challenge (#882) | `daily-challenge-tests.mjs`, `daily-view-tests.mjs`, `daily-week-tests.mjs`, `daily-challenge-browser.mjs` (via canonical replay browser suite), `daily-schedule.mjs --check`, SQL `fixtures/daily-challenge-882.sql`, `daily-concurrency.py`, `fixtures/daily-rollback-882.sql` (canonical-ledger CI) | Paris day/DST, pinned grid, one official attempt, both rankings from one row, frozen weekly ranks, English/French presentation and share, erasure |
+| Friend duels (#896) | `duel-view-tests.mjs`, `duel-browser.mjs` in the canonical replay suite | Full gate |
+| Espace social (#898) | `social-hub-tests.mjs` (badge sum, ids kept once, order), `social-notifications-tests.mjs` (derivation, read state, baseline, expiry, offline), `social-hub-browser.mjs` in the canonical replay suite (guest 360×640, signed-in 390/1440, keyboard, focus trap, Escape, counters, rankings split, daily route, captures) | Full gate |
+| Social challenges (social/canonical challenge modules, UI, attempts) | `social-challenge-tests.mjs`, `social-challenge-ui-tests.mjs`, `issue-222-challenge-tests.mjs`, `challenge-rpc-contract-tests.mjs` (#883 RPC routing vs migrations), `challenge-recipient-browser.mjs` and `friends-browser.mjs` (via canonical replay browser suite), `social-friends-tests.mjs` (#35), SQL `fixtures/friends-direct-challenges-35.sql` and its rollback rehearsal `fixtures/friends-rollback-35.sql`, SQL `fixtures/challenge-rpc-matrix.sql` and `fixtures/challenge-qualifying-889.sql` (#889 qualifying-run writer, #888 resume facts; canonical-ledger CI) | First-play eligibility, quest identity, terminal comparison and campaign isolation |
 | Progression/daily (campaign modules, daily hydration) | `campaign-tests.mjs`, `late-game-tests.mjs`, `generated-progression.test.mjs`, `generated-rewards.test.mjs`, `daily-engagement-tests.mjs`, `daily-hydration-tests.mjs` | Legacy compatibility, catalogue boundaries, generated rewards and daily projection |
 | Grids / astronomy | `audit-catalogue.mjs`, `difficulty-audit.mjs`, `validate-playable-astronomy-tests.mjs`, `astronomical-projection-tests.mjs`, `astronomical-catalogue-tests.mjs`, `content-architecture-tests.mjs` | Strict grid validity/uniqueness/proof replay; reference geometry/content contracts. See `docs/GRID_CATALOG.md` for full audits |
 
@@ -485,7 +522,7 @@ vide/invalide ou deux serveurs injoignables → échec maintenu.
 
 ### #629 / #632 / #627
 
-`offline-wallet-ui-tests.mjs` et `offline-wallet-tests.mjs` couvrent aides et réservations. `drag-grid-path-tests.mjs` couvre le gestionnaire réel. `celestial-ux-tests.mjs` couvre maîtrise et priorités. Les quatre nouvelles suites navigateur sont obligatoires dans `quality-gate.mjs` ; détails et limites dans TESTING.
+`offline-wallet-ui-tests.mjs` vérifie les pénalités et l’absence de nouvelles réservations, `offline-wallet-tests.mjs` les réservations historiques. `drag-grid-path-tests.mjs` couvre le marquage et l’effacement. `celestial-ux-tests.mjs` couvre maîtrise et priorités. Les suites navigateur restent obligatoires dans `quality-gate.mjs` ; détails et limites dans TESTING.
 
 Highscore follow-up: victory-presentation-tests.mjs, ranking-browser-tests.mjs,
 fixtures/highscore-before.sql and fixtures/highscore.sql; full gate and SQL
@@ -496,3 +533,59 @@ victory-presentation-tests.mjs, quest-command-tests.mjs and fixtures/official-ti
 cover timing, strict records, restoration, read-back, receipt idempotence and
 revision minima. ranking-browser-tests.mjs covers explicit pointer/keyboard entry,
 seven viewports and reduced motion. The full gate includes the new suites.
+
+Android closed-test delivery: the Android packaging workflow runs
+`android/tools/test-play-closed-release.py` against a fake Play service and
+`android/tools/test-aab-signing.sh` against a compiled AAB with a disposable
+key. The Android packaging contract also checks that the closed-test build
+installs the Android command-line tools before invoking sdkmanager. Real
+delivery requires the Play track and credential setup in
+[Android signing](../../android/SIGNING.md#générer-et-envoyer-un-aab-en-test-fermé-depuis-github).
+
+Payments / #729 #730 #823: play-purchase-handler-tests.mjs and play-billing-tests.mjs
+(Play verification, account binding, refunds, restore without Payment Request, #833 readiness probe, duplicate deliveries, licence-test capability and foreground recovery); stripe-handler-tests.mjs (real Stripe Edge handlers, synthetic Stripe API and
+signatures), stripe-checkout-client-tests.mjs (web-only availability, return, no false
+success) and fixtures/stripe-checkout.sql (ranks, ledger, cap, test isolation). Shared
+ledger rules: fixtures/purchases-mastery.sql and fixtures/play-regional-receipts.sql. See [TESTING](../TESTING.md#stripe-checkout-webpwa-test-mode-730).
+Play P1 price states/retry, nine SKUs, partial/error details and actual screen/CTA
+wiring are covered by `play-billing-tests.mjs`; `quest-review-browser-tests.mjs`
+adds Play mocks on real offer DOM at mobile/desktop sizes. Neither performs a payment.
+Play-held SKUs #864: `play-billing-tests.mjs` replays Lumen account A buying then account B on the same Google Play account (no sheet, explicit owned_elsewhere/account_unverified, no transfer, stale-cache sheet); #878 grouped restore summary (one instruction per state, focus first, length bound) and `play-purchase-handler-tests.mjs` refunded token of another account → `not_paid`. Whole-sky upgrades #865: `fixtures/sky-upgrade-offers.sql` (five commercial states, inactive seed, Stripe tier, Play eligibility, direct grant, refunds), `play-purchase-handler-tests.mjs` (outdated tier neither recorded nor acknowledged) and `adventure-offer-tests.mjs` (single personalised offer, SKU parity Edge/Android).
+
+UX #784/#786: `quest-review-tests.mjs` covers canonical constellation/adventure
+boundaries, independently owned entry, immediate locks/no skipping, unfinished
+results, edge-safe pointer gestures, keyboard controls and late podium replies.
+`adventure-offer-tests.mjs` covers incremental delivered content, existing rights,
+future slots/other skies, catalogue growth, unknown rights and localised prices.
+`quest-review-browser-tests.mjs` exercises actual touch/keyboard handlers and
+unchanged progress/attempt snapshots at 320/360/390/1440px, with real offer DOM
+and optional screenshots via LUMEN_UX_CAPTURE_DIR. Synthetic local browser checks
+are not physical Android TWA or live payment acceptance.
+For #817, the review browser suite also covers a signed-in podium: the response
+replaces the touched step during the swipe, then the test exercises both
+directions, vertical/edge/button gestures and ordinary taps with native CDP input.
+
+Account continuity (#801, #820, #832): `guest-account-hydration-tests.mjs` covers
+the guest acquisition recovery (wallet/daily divergence, concurrent spend, refused
+recovery, identity guard). `auth-link-recovery-tests.mjs` covers e-mail link
+verdicts, the recovery request contract, password errors and the recovery screen
+state machine (`ui/password-recovery.js`).
+`pwa-first-open-tests.mjs` covers the installed-app first choice and the iOS guest
+warning; `install-request-browser-tests.mjs` and `account-session-browser-tests.mjs`
+exercise them in Chrome. Real iPhone storage separation and live e-mail stay manual.
+
+### Mises à jour du wrapper Android (#845)
+
+`android/app/src/test/java/fr/nopuna/lumen/UpdatePolicyTest.java`,
+`android/tools/packaging.test.mjs` et la CI Android couvrent le choix du flux,
+l’alias du lanceur et le paquet. Suivre la
+[recette Play interne et fermée](../../android/TESTING.md#recette-google-play-845)
+pour l’éligibilité réelle, les reprises et la conservation des données.
+
+Chantier 3 (#847, #851, #828, #830, #829): `offline-network-browser-tests.mjs`
+(offline proof, unreachable backend, identity guard), `hint-catalogue-audit-tests.mjs`
+(catalogue explainability), `landscape-layout-browser-tests.mjs` (short landscape),
+`webkit-smoke-tests.mjs` (non-blocking WebKit workflow); reset and ranking verdict in
+`attempt-engine-tests.mjs`, `official-time-tests.mjs`, `quest-review-tests.mjs`.
+Harnesses running game-screen excerpts get new dependencies from
+`scripts/fixtures/network-context.mjs`.

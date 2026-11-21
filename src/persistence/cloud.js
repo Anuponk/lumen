@@ -1,5 +1,7 @@
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "./config.js";
 import {baseCampaignQuestCount} from "../campaign/content.js";
+import {classifyAuthLinkError} from "./auth-link-result.js";
+import {isNetworkFailure} from "./cloud-profile.js";
 export function createCloudPersistence(model,hooks,environment){
 const {activeGameSeconds,exactSkyScoreForSolvedPrefix,saveLumenProgress,refreshJourney,init,onAccountChanged=()=>{},renderDaily}=hooks;
 const campaignQuestCount=()=>Math.max(0,Number(hooks.campaignQuestCount?.()??baseCampaignQuestCount()));
@@ -38,11 +40,23 @@ async function loadInternalCapabilities(){
  model.lumenCapabilities=data||[];onAccountChanged({type:"account"});return model.lumenCapabilities;
 }
 
+let entitlementScope=null,entitlementRequest=0;
 async function loadEntitlements(){
- if(!model.lumenSupabase||!model.lumenUser){model.lumenEntitlements=[];return []}
- const {data,error}=await model.lumenSupabase.rpc("lumen_get_entitlements");
- if(error){console.warn("LUMEN entitlements",error);model.lumenEntitlements=[];return []}
- model.lumenEntitlements=data||[];refreshJourney();return model.lumenEntitlements;
+ const client=model.lumenSupabase,owner=model.lumenUser?.id,request=++entitlementRequest;
+ if(!client||!owner){entitlementScope=null;model.lumenEntitlements=[];model.lumenEntitlementsState='idle';return []}
+ if(entitlementScope?.owner!==owner||entitlementScope?.client!==client)model.lumenEntitlements=[];
+ entitlementScope={owner,client};
+ const current=()=>request===entitlementRequest&&model.lumenUser?.id===owner&&model.lumenSupabase===client;
+ model.lumenEntitlementsState='loading';refreshJourney();
+ try{
+  const {data,error}=await client.rpc("lumen_get_entitlements");if(!current())return [];
+  if(error||!Array.isArray(data))throw error||Error('Invalid entitlements response');
+  model.lumenEntitlements=data;model.lumenEntitlementsState='ready';refreshJourney();return data;
+ }catch(error){
+  if(!current())return [];
+  // A failed read is not a revocation of this session's confirmed rights.
+  model.lumenEntitlementsState='error';console.warn('LUMEN entitlements',error);refreshJourney();return [];
+ }
 }
 
 async function cloudSavePuzzle(index){
@@ -118,16 +132,18 @@ async function confirmBrandedAuthLink(){
  url.searchParams.delete("lumen_confirm");
  url.searchParams.delete("type");
  window.history.replaceState(window.history.state,"",url.pathname+url.search+url.hash);
- if(!/^[a-f0-9]{64}$/i.test(hash)||!["signup","recovery"].includes(type||""))return;
- const {error}=await model.lumenSupabase.auth.verifyOtp({
-  token_hash:hash,type
- });
+ const kind=type==="recovery"?"recovery":"signup";
+ if(!/^[a-f0-9]{64}$/i.test(hash)||!["signup","recovery"].includes(type||""))return {status:"error",kind,reason:"invalid"};
+ // #820: report the real verdict. An expired/reused link never revokes an
+ // otherwise valid session, and success is only stated after verifyOtp.
+ let error;
+ try{({error}=await model.lumenSupabase.auth.verifyOtp({token_hash:hash,type}))}catch(thrown){error=thrown}
  if(error){
-  console.warn("LUMEN confirmation link could not be validated",error.message);
-  // An expired/reused link must not revoke an otherwise valid session.
-  onAccountChanged({type:"confirmation_failed"});
-  return;
+  const reason=classifyAuthLinkError(error.code||error.status,error.message);
+  console.warn("LUMEN confirmation link could not be validated",reason);
+  return {status:"error",kind,reason};
  }
+ return {status:"verified",kind};
 }
 async function initLumenCloud(){
  if(!model.lumenSupabase){onAccountChanged({type:"account"});return}
@@ -147,13 +163,15 @@ async function initLumenCloud(){
     setTimeout(()=>loadInternalCapabilities().catch(error=>console.warn("LUMEN capabilities refresh",error)),0);
    }else if(!model.lumenUser){model.lumenEntitlements=[];model.lumenCapabilities=[];refreshJourney();onAccountChanged({type:"account"})}
  });
- await confirmBrandedAuthLink();
+ const linkResult=await confirmBrandedAuthLink()||environment.bootAuthLink||null;
  const snapshotRevision=revision;
  const {data,error}=await model.lumenSupabase.auth.getSession();
  // A late startup snapshot must never undo a more recent auth event.
  booting=false;
  if(snapshotRevision===revision&&!error){model.lumenUser=data.session?.user||null;onAccountChanged({type:"account"})}
- if(error){console.warn("LUMEN session restore",error);onAccountChanged({type:"restore_failed"});return}
+ // One verdict per opened link, once the real session is known.
+ if(linkResult)onAccountChanged({type:"auth_link",result:linkResult});
+ if(error){console.warn("LUMEN session restore",error);onAccountChanged({type:"restore_failed",network:isNetworkFailure(error,error?.status)});return}
  const accountId=model.lumenUser?.id;
  if(model.lumenUser){await registerLumenUser();await loadLumenProfile();await loadEntitlements();await loadInternalCapabilities();if(model.lumenUser?.id!==accountId)return;if(!cloudWritesDisabled() && !(await hooks.holdLegacyMergeForFullRestore?.())){await cloudMergeProgress();await cloudMergeDaily();}await hooks.afterAuthCloudSync?.();}else {model.lumenEntitlements=[];model.lumenCapabilities=[];}
 }
@@ -228,16 +246,21 @@ async function signIn(redirectTo){
  return error?{ok:false,reason:"oauth",error}:{ok:true};
 }
 async function requestLumenAuthMail(type,email,password){
- const response=await fetch(LUMEN_SUPABASE_URL+"/functions/v1/lumen-auth-mail",{
+ return fetch(LUMEN_SUPABASE_URL+"/functions/v1/lumen-auth-mail",{
   method:"POST",headers:{"content-type":"application/json","apikey":LUMEN_SUPABASE_KEY},
   body:JSON.stringify({type,email,...(type==="signup"?{password}:{})})
  });
- return response.ok;
 }
 async function requestPasswordRecovery(email){
  const normalized=String(email||"").trim().toLowerCase();
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized))return {ok:false,reason:"email"};
- try{return {ok:await requestLumenAuthMail("recovery",normalized)}}catch{return {ok:false,reason:"unavailable"}}
+ // #820: HTTP 200 alone is not proof. Only the endpoint's {ok:true} contract
+ // counts; its reply stays identical for unknown addresses (no enumeration).
+ let response;
+ try{response=await requestLumenAuthMail("recovery",normalized)}catch{return {ok:false,reason:"network"}}
+ if(response.status===429)return {ok:false,reason:"rate_limited"};
+ if(!response.ok)return {ok:false,reason:"unavailable"};
+ try{return (await response.json())?.ok===true?{ok:true}:{ok:false,reason:"unavailable"}}catch{return {ok:false,reason:"unavailable"}}
 }
 async function emailPasswordAuth(email,password,redirectTo,{createUser=false}={}){
  if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};
@@ -247,7 +270,12 @@ async function emailPasswordAuth(email,password,redirectTo,{createUser=false}={}
  const callback=String(redirectTo||environment.lumenAuthReturnUrl||"").trim();
  if(!callback)return {ok:false,reason:"redirect"};
  if(createUser){
-  try{const sent=await requestLumenAuthMail("signup",normalized,password);return sent?{ok:true,pendingConfirmation:true}:{ok:false,reason:"signup"}}catch{return {ok:false,reason:"signup"}}
+  try{
+   const response=await requestLumenAuthMail("signup",normalized,password);
+   if(response.status===429)return {ok:false,reason:"signup_rate_limited"};
+   if(!response.ok)return {ok:false,reason:response.status>=500?"signup_unavailable":"signup"};
+   return (await response.json())?.ok===true?{ok:true,pendingConfirmation:true}:{ok:false,reason:"signup_unavailable"};
+  }catch{return {ok:false,reason:"signup_unavailable"}}
  }
  const response=await model.lumenSupabase.auth.signInWithPassword({email:normalized,password});
  if(response.error)return {ok:false,reason:createUser?"signup":"signin",error:response.error};
@@ -256,8 +284,16 @@ async function emailPasswordAuth(email,password,redirectTo,{createUser=false}={}
 async function setAccountPassword(password){
  if(!model.lumenSupabase||!model.lumenUser)return {ok:false,reason:"signed_out"};
  if(typeof password!=="string"||password.length<12)return {ok:false,reason:"password"};
- const {error}=await model.lumenSupabase.auth.updateUser({password});
- return error?{ok:false,reason:"password_update",error}:{ok:true};
+ let error;
+ try{({error}=await model.lumenSupabase.auth.updateUser({password}))}catch{return {ok:false,reason:"network"}}
+ if(!error)return {ok:true};
+ // Bounded reasons only: the provider message is never shown or logged.
+ const code=String(error.code||"");
+ if(code==="same_password")return {ok:false,reason:"same_password"};
+ if(code==="weak_password")return {ok:false,reason:"weak_password"};
+ if([401,403].includes(error.status)||/session|jwt|reauthentication/i.test(code))return {ok:false,reason:"session_expired"};
+ if(error.name==="AuthRetryableFetchError")return {ok:false,reason:"network"};
+ return {ok:false,reason:"password_update"};
 }
 async function signOut(){
  if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};

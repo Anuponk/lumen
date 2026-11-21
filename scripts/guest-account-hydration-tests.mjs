@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {networkContext,withNetworkContext} from './fixtures/network-context.mjs';
 import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import vm from 'node:vm';
@@ -12,7 +13,18 @@ import {ATTEMPT_STATES} from '../src/game/attempt-engine.js';
 const source=process.argv.includes('--baseline')?execFileSync('../.tools/mingit/cmd/git.exe',['show','HEAD:src/ui/game-screen.js'],{encoding:'utf8'}):readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 const start=source.indexOf('afterAuthCloudSync:async()=>{')+'afterAuthCloudSync:async()=>{'.length,end=source.indexOf('},holdLegacyMergeForFullRestore',start);
 const guest={solved:{0:1,1:1},historyBackup:{0:1,1:1},badges:{first:1},stars:{},performances:{0:{version:3,badges:{speed:true},bestTime:45}},noHint:{0:1},daily:{dates:{},rewards:{}},challenges:{},shards:2,xp:30,skyScore:2,skyHistoryVersion:4,catalogueOrigin:currentCatalogueOrigin};
-function fixture({cloud=null,owner=null,offline=false,failVerification=false,switchDuringRead=false,advanceDuringHydration=false,modernClaim=false,local=guest}={}){
+// Server contract of lumen_reconcile_acquisitions (migration 20261025145734):
+// positive flags and quest completions are unioned, xp/skyScore keep max, and
+// shards, walletRevision, daily and receipts stay exactly the server's.
+function serverAcquisitions(remote,local){
+ const p=structuredClone(remote);
+ for(const key of ['badges','stars','noHint','historyBackup','challenges','solved'])
+  for(const [id,value] of Object.entries(local[key]||{}))if(value===true||value===1)(p[key]??={})[id]=1;
+ for(const [id,record] of Object.entries(local.performances||{}))(p.performances??={})[id]??=structuredClone(record);
+ for(const key of ['xp','skyScore'])if(Number.isSafeInteger(local[key]))p[key]=Math.max(local[key],Number(p[key]||0));
+ return p;
+}
+function fixture({cloud=null,owner=null,offline=false,failVerification=false,switchDuringRead=false,advanceDuringHydration=false,modernClaim=false,local=guest,digestCas=false,walletRefusal=false,concurrentSpend=false,dailyRows=[],acquisitions=false,acquisitionsError=null,acquisitionsConcurrentSpend=false}={}){
  const data=new Map([['lumenProgressV1',JSON.stringify(local)]]);
  if(owner)data.set('lumenCloudOwnerId',owner);
  const storage={getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k),key:i=>[...data.keys()][i]??null,get length(){return data.size}};
@@ -35,14 +47,37 @@ function fixture({cloud=null,owner=null,offline=false,failVerification=false,swi
    return {data:structuredClone(remote)};
   }
   if(name==='lumen_initialize_profile'){initialized++;remote??=structuredClone(args.p_payload);return {data:structuredClone(remote)}}
-  if(name==='lumen_cas_profile'){assert.deepEqual(args.p_expected,remote);remote=structuredClone(args.p_payload);return {data:true}}
+  if(name==='lumen_cas_profile_digest'&&digestCas){
+   assert.equal(args.p_expected_user_id,'a');
+   if(concurrentSpend){
+    concurrentSpend=false;remote.shards--;remote.walletRevision++;
+    return {data:{version:1,matched:false,applied:false}};
+   }
+   const next=args.p_payload;
+   if(walletRefusal||['shards','walletRevision','daily'].some(key=>!profiles.sameCloudProfile(next[key],remote[key]))){
+    return {error:{code:'22023',message:'wallet command required; preserve pending data and update client'},status:400};
+   }
+   remote=structuredClone(next);return {data:{version:1,matched:true,applied:true}};
+  }
+  if(name==='lumen_reconcile_acquisitions'&&acquisitions){
+   assert.equal(args.p_expected_user_id,'a');
+   if(acquisitionsError)return {error:{code:acquisitionsError}};
+   if(acquisitionsConcurrentSpend){acquisitionsConcurrentSpend=false;remote.shards--;remote.walletRevision++;}
+   if(!profiles.sameCloudProfile(args.p_expected,remote))return {data:null};
+   remote=serverAcquisitions(remote,args.p_local);
+   return {data:{policy:'positive-acquisitions-v1',userId:'a',profile:structuredClone(remote)}};
+  }
+  if(name==='lumen_cas_profile'){
+   if(!profiles.sameCloudProfile(args.p_expected,remote))return {data:false};
+   remote=structuredClone(args.p_payload);return {data:true};
+  }
   if(name==='lumen_get_daily'||name==='lumen_get_engagement'){
    if(advanceDuringHydration){const next=structuredClone(guest);next.solved[2]=1;next.historyBackup[2]=1;next.xp=45;storage.setItem('lumenProgressV1',JSON.stringify(next));}
-   return {data:[]};
+   return {data:name==='lumen_get_daily'?dailyRows:[]};
   }
   throw Error('Unexpected RPC '+name);
  }};
- const ctx=vm.createContext({cloudHydrationGeneration:0,...profiles,...guestAccount,structuredClone,currentCatalogueOrigin,
+ const ctx=vm.createContext({...networkContext(),cloudHydrationGeneration:0,...profiles,...guestAccount,structuredClone,currentCatalogueOrigin,
   qaActive:false,lumenUser:{id:'a'},lumenSupabase:client,lumenProgress:structuredClone(local),localStorage:storage,
   sequentialSolvedCount:0,normalizeSequentialProgress:()=>Object.keys(remote?.solved||{}).length,
   sessionStorage:{getItem:()=>null},canonicalRecoveryContext:null,canonicalRecovery:{cancel:noop,schedule:noop},
@@ -54,10 +89,62 @@ function fixture({cloud=null,owner=null,offline=false,failVerification=false,swi
   attemptEngine:{snapshot:()=>null},canonicalAttemptToResume:()=>null,canonicalQuestList:()=>[],
   reconcileDailyIntoCloudProfile,recordCloudDiagnostic:(event,details)=>events.push({event,details}),
   updateShardMeter:()=>{},renderDaily:noop,updateAuthUI:noop,refreshJourney:noop,resumeCanonicalCampaignBoundary:noop,resumeHydratedCampaignSelection:({ownershipChanged})=>{if(ownershipChanged)handoffs++},
-  resumeCanonicalVictoryAfterHydration:noop,maybeShowStreakLoss:noop,verifyLegacyProgressMirror:async()=>({ok:true,count:2}),
+  resumeCanonicalVictoryAfterHydration:noop,maybeShowStreakLoss:noop,afterVerifiedHydration:async()=>{},verifyLegacyProgressMirror:async()=>({ok:true,count:2}),
   document:{getElementById:()=>null},location:{reload:()=>reloads++},console:{warn:noop}
  });
  return {ctx,storage,data,calls,events,hook:vm.runInContext('(async()=>{'+source.slice(start,end)+'})',ctx),get remote(){return remote},get initialized(){return initialized},get reloads(){return reloads},get handoffs(){return handoffs}};
+}
+{
+ const cloud={...structuredClone(guest),solved:{},historyBackup:{},badges:{},performances:{},noHint:{},daily:{},walletRevision:4,xp:0,skyScore:0};
+ const f=fixture({cloud,digestCas:true}),raw=f.storage.getItem('lumenProgressV1');
+ await f.hook();
+ assert.equal(f.ctx.cloudProfileReady,true,'Historical guest achievements hydrate without rewriting protected daily scaffolding');
+ assert.equal(f.calls.filter(name=>name==='lumen_cas_profile_digest').length,1);
+ assert.deepEqual(f.remote,{...guest,daily:{},walletRevision:4,canonicalQuestState:{}},'The verified server wallet stays exact and guest achievements survive');
+ assert([...f.data].some(([key,value])=>key.startsWith('lumenGuestBeforeAccount_')&&value===raw));
+ await f.hook();
+ assert.equal(f.calls.filter(name=>name==='lumen_cas_profile_digest').length,1,'Repeated hydration does not write again');
+}
+{
+ const local={...guest,daily:{dates:{'2026-11-17':1},rewards:{'streak:2026-11-17':1}}};
+ const cloud={...guest,daily:{dates:{},rewards:{}},walletRevision:4};
+ const f=fixture({cloud,local,digestCas:true}),raw=f.storage.getItem('lumenProgressV1');
+ await f.hook();
+ assert.equal(f.ctx.cloudProfileReady,false);
+ assert.equal(f.ctx.cloudProfileFailure.detail,'wallet_daily_divergence');
+ assert(!f.calls.some(name=>name.startsWith('lumen_cas_profile')),'A historical date or reward does not enter CAS');
+ assert.deepEqual(f.remote,cloud);
+ assert.equal(f.storage.getItem('lumenProgressV1'),raw);
+ assert([...f.data].some(([key,value])=>key.startsWith('lumenBeforeCloudReconcileRemote_')&&value===JSON.stringify(cloud)));
+}
+for(const scenario of [
+ {options:{walletRefusal:true},reason:'wallet_command_required',domain:'wallet',fallbacks:0},
+ {options:{concurrentSpend:true},reason:'cloud_cas_conflict',domain:'profile',fallbacks:1}
+]){
+ const cloud={...guest,solved:{},walletRevision:4};
+ const f=fixture({cloud,digestCas:true,...scenario.options}),raw=f.storage.getItem('lumenProgressV1');
+ await f.hook();
+ assert.equal(f.ctx.cloudProfileReady,false);
+ assert.equal(f.storage.getItem('lumenCloudOwnerId'),null);
+ assert.equal(f.storage.getItem('lumenProgressV1'),raw);
+ assert.equal(f.calls.filter(name=>name==='lumen_cas_profile_digest').length,1);
+ assert.equal(f.calls.filter(name=>name==='lumen_cas_profile').length,scenario.fallbacks);
+ const report=f.events.find(event=>event.event==='hydration_reconciliation').details;
+ assert.equal(report.reason,scenario.reason);
+ assert.equal(report.domain,scenario.domain);
+ assert.deepEqual(f.remote,scenario.options.concurrentSpend?{...cloud,shards:1,walletRevision:5}:cloud);
+ const restarted=fixture({cloud:f.remote,local:JSON.parse(raw),digestCas:true,...(scenario.options.walletRefusal?scenario.options:{})});
+ await restarted.hook();
+ assert.equal(restarted.storage.getItem('lumenProgressV1'),raw);
+ assert.equal(restarted.ctx.cloudProfileReady,false);
+ assert.deepEqual(restarted.remote,f.remote);
+}
+{
+ const cloud={...guest,walletRevision:4},f=fixture({cloud,digestCas:true,dailyRows:[{play_date:'2026-11-17'}]});
+ await f.hook();
+ assert.equal(f.ctx.cloudProfileReady,true,'The read-only daily history does not require a protected wallet write');
+ assert(!f.calls.some(name=>name.startsWith('lumen_cas_profile')));
+ assert.deepEqual(f.remote,cloud);
 }
 {
  const f=fixture();await f.hook();
@@ -86,6 +173,79 @@ for(const options of [{offline:true},{failVerification:true},{switchDuringRead:t
  assert(f.events.some(e=>e.event==='hydration_reconciliation'&&e.details.stage==='guest_reconciliation'&&e.details.result==='blocked'&&e.details.reason==='mutable_balance'),'An actual guest conflict reports its bounded cause, not only a generic hydration failure');
 }
 console.log('Actual hydration: guest registration, second device, retry, offline, interrupted readback, account switch and existing cloud passed');
+// #801 (+665 diagnostic): an ownerless historical Chrome profile whose shards
+// AND daily ledger diverge from the verified wallet, with all outboxes empty.
+// The client must never write the balance; the server acquisition recovery
+// merges positive achievements and keeps the wallet authority exactly.
+{
+ const local={...structuredClone(guest),shards:11,xp:80,solved:{0:1,1:1,2:1},historyBackup:{0:1,1:1,2:1},badges:{first:1,night:1},
+  daily:{dates:{'2026-10-02':1},rewards:{'streak:2026-10-02':2}}};
+ const cloud={...structuredClone(guest),solved:{0:1},historyBackup:{0:1},badges:{},xp:10,shards:4,walletRevision:6,daily:{dates:{'2026-11-18':1},rewards:{}}};
+ const f=fixture({cloud,local,digestCas:true,acquisitions:true}),raw=f.storage.getItem('lumenProgressV1');
+ await f.hook();
+ assert.equal(f.ctx.cloudProfileReady,true,'#801: the historical profile reaches a ready account without storage erasure');
+ assert.equal(f.ctx.cloudProfileFailure,null);
+ assert(!f.calls.some(name=>name.startsWith('lumen_cas_profile')),'#801: no client CAS can carry a wallet balance or daily ledger');
+ assert.equal(f.calls.filter(name=>name==='lumen_reconcile_acquisitions').length,1);
+ assert.equal(f.remote.shards,4,'Wallet balance stays the server value (no credit from the local 11)');
+ assert.equal(f.remote.walletRevision,6,'Wallet cursor is untouched');
+ assert.deepEqual(f.remote.daily,cloud.daily,'Daily ledger keeps server authority (no replayed streak reward)');
+ assert.equal(f.remote.solved[2],1,'Local quest completion is recovered');
+ assert.equal(f.remote.badges.night,1,'Local badge is recovered');
+ assert.equal(f.remote.xp,80,'Cumulative XP keeps its max policy');
+ assert.deepEqual(JSON.parse(f.storage.getItem('lumenProgressV1')),f.remote,'The verified server result is installed locally');
+ assert.equal(f.storage.getItem('lumenCloudOwnerId'),'a');
+ assert([...f.data].some(([key,value])=>key.startsWith('lumenGuestBeforeAccount_')&&value===raw),'Exact historical bytes stay archived');
+ assert([...f.data].some(([key,value])=>key.startsWith('lumenBeforeCloudReconcileLocal_')&&value===raw));
+ const recovered=f.events.find(e=>e.event==='guest_acquisitions_recovered');
+ assert(recovered,'Recovery is diagnosed');
+ assert.equal(recovered.details.from,'mutable_balance');
+ assert(!JSON.stringify(f.events).match(/"(?:11|80)"|2026-10-02/),'Diagnostics never echo balances or dates');
+ const before=structuredClone(f.remote);
+ await f.hook();
+ assert.equal(f.calls.filter(name=>name==='lumen_reconcile_acquisitions').length,1,'Reload/reconnect does not repeat the recovery');
+ assert.deepEqual(f.remote,before,'Second login neither credits nor debits anything');
+ assert.equal(f.ctx.cloudProfileReady,true,'The same blocker does not return after a reload');
+}
+// A concurrent spend on another device between read and recovery: the server
+// refuses the stale expectation and the client re-reads, never forcing a write.
+{
+ const local={...structuredClone(guest),shards:9};
+ const cloud={...structuredClone(guest),solved:{0:1},historyBackup:{0:1},shards:4,walletRevision:6};
+ const f=fixture({cloud,local,digestCas:true,acquisitions:true,acquisitionsConcurrentSpend:true});
+ await f.hook();
+ assert.equal(f.ctx.cloudProfileReady,true);
+ assert.equal(f.calls.filter(name=>name==='lumen_reconcile_acquisitions').length,2,'One controlled retry after the CAS expectation changed');
+ assert.equal(f.remote.shards,3,'The other device spend is kept, never overwritten');
+ assert.equal(f.remote.walletRevision,7);
+ assert.equal(f.remote.solved[1],1);
+}
+// A refused or unavailable recovery keeps every copy, the guest owner state and
+// the explicit wallet review; it is classified, not reported as a sync success.
+for(const acquisitionsError of ['22023','503']){
+ const local={...structuredClone(guest),shards:9};
+ const cloud={...structuredClone(guest),solved:{0:1},historyBackup:{0:1},shards:4,walletRevision:6};
+ const f=fixture({cloud,local,digestCas:true,acquisitions:true,acquisitionsError}),raw=f.storage.getItem('lumenProgressV1');
+ await f.hook();
+ assert.equal(f.ctx.cloudProfileReady,false);
+ assert.equal(f.ctx.cloudProfileFailure.domain,'wallet');
+ assert.equal(f.storage.getItem('lumenProgressV1'),raw,'Local bytes are never deleted to unblock login');
+ assert.equal(f.storage.getItem('lumenCloudOwnerId'),null);
+ assert.deepEqual(f.remote,cloud,'No server write on a refused recovery');
+ assert(f.events.some(e=>e.event==='acquisition_recovery_pending'),'The refused recovery is diagnosed');
+}
+// A cache carrying an account authority cursor without an owner is not a guest:
+// merging it into whichever account signs in could mix two identities.
+{
+ const local={...structuredClone(guest),shards:9,walletRevision:6};
+ const cloud={...structuredClone(guest),solved:{0:1},historyBackup:{0:1},shards:4,walletRevision:6};
+ const f=fixture({cloud,local,digestCas:true,acquisitions:true});
+ await f.hook();
+ assert(!f.calls.includes('lumen_reconcile_acquisitions'),'An ownerless account cache is never merged into another account');
+ assert.equal(f.ctx.cloudProfileReady,false);
+ assert.deepEqual(f.remote,cloud);
+}
+console.log('Actual hydration #801: historical wallet/daily divergence recovery, concurrent spend, refused recovery and identity guard passed');
 {
  const local={...structuredClone(guest),'private-field':'private-fixture@example.test'},f=fixture({cloud:guest,local});
  const raw=f.storage.getItem('lumenProgressV1');await f.hook();

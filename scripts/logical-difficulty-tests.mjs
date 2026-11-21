@@ -58,16 +58,20 @@ assert.notDeepEqual(resolveChallengeQuest({stable_quest_id:revised.id}).reg,revi
 assert.deepEqual(resolveChallengeQuest({stable_quest_id:revised.id,grid_revision:1}).reg,revised.reg,'New links resolve exact harder puzzle');
 assert.throws(()=>resolveChallengeQuest({stable_quest_id:revised.id,grid_revision:2}),/revision/);
 const calls=[],client=createChallengeClient({rpc:async(name,args)=>{calls.push({name,args});return {data:[{challenge_id:'fixture'}]}}});
-await client.create(challengeSnapshot({quest:revised,seconds:40,run:{}}));
-assert.equal(calls[0].name,'lumen_create_quest_challenge_v2');assert.equal(calls[0].args.p_grid_revision,1);
+// #889: one versioned writer pins the exact revision for every kind.
+await client.create(challengeSnapshot({quest:revised,seconds:40,run:{qualifying:true}}));
+assert.equal(calls[0].name,'lumen_create_qualifying_challenge');assert.equal(calls[0].args.p_grid_revision,1);assert.equal(calls[0].args.p_quest_id,revised.id);
 const oldQuest=resolveChallengeQuest({stable_quest_id:revised.id});
-await client.create(challengeSnapshot({quest:oldQuest,seconds:40,run:{}}));assert.equal(calls[1].name,'lumen_create_quest_challenge');
+await client.create(challengeSnapshot({quest:oldQuest,seconds:40,run:{qualifying:true}}));assert.equal(calls[1].name,'lumen_create_qualifying_challenge');assert.equal(calls[1].args.p_grid_revision,0,'An old-board reference keeps revision 0');
 await client.get('fixture');assert.equal(calls[2].name,'lumen_get_quest_challenge_v2');
 await client.start('fixture',false,1);assert.equal(calls[3].name,'lumen_start_quest_challenge_v2');assert.equal(calls[3].args.p_grid_revision,1);
 await client.finish('fixture',{status:'completed',durationSeconds:40,gridRevision:1});assert.equal(calls[4].name,'lumen_finish_quest_challenge_v2');assert.equal(calls[4].args.p_grid_revision,1);
 const reads=[],oldServer=createChallengeClient({rpc:async name=>{reads.push(name);return name==='lumen_get_social_challenge'?{data:{challenge_id:'old'}}:{status:404,error:{code:'PGRST202'}}}});
 assert.equal((await oldServer.get('old')).challenge_id,'old');assert.deepEqual(reads,['lumen_get_quest_challenge_v2','lumen_get_quest_challenge','lumen_get_social_challenge']);
-let legacyCalls=0;
-const unavailable=createChallengeClient({rpc:async name=>{legacyCalls++;assert.equal(name,'lumen_create_quest_challenge_v2');return {error:{code:'PGRST202'}}}});
-await assert.rejects(()=>unavailable.create(challengeSnapshot({quest:revised,seconds:40,run:{}})));assert.equal(legacyCalls,1,'No unsafe fallback to an old-grid challenge');
+// Older server without the #889 writer: a first win falls back to the
+// versioned first-play writer; if that is missing too, never an old-grid one.
+const fallbackCalls=[];
+const unavailable=createChallengeClient({rpc:async name=>{fallbackCalls.push(name);return {status:404,error:{code:'PGRST202'}}}});
+await assert.rejects(()=>unavailable.create(challengeSnapshot({quest:revised,seconds:40,run:{qualifying:true}})));
+assert.deepEqual(fallbackCalls,['lumen_create_qualifying_challenge','lumen_create_quest_challenge_v2'],'No unsafe fallback to an old-grid challenge');
 console.log('PASS deterministic, solution-blind proofs/dependencies and versioned offline/restore/rollback archives');

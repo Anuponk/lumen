@@ -45,7 +45,7 @@ additionalTests.push(
  "Onboarding : les jalons de badges suivent l’éligibilité réelle",
  "Badges : Sans erreur exige zéro assistance et zéro erreur confirmée",
  "Badges : Maîtrise exige les trois badges sur le même essai",
- "Tentative : reset campagne garde attemptId mais réinitialise chrono, aide et erreur",
+ "Tentative : reset campagne garde la tentative, le chrono, les aides et les erreurs (#36, #851)",
  "Tentative : reset défi reste one-shot",
  "UI badges : Mon ciel et les règles affichent Sans erreur",
  "Sans erreur : l’état d’erreur reste invisible pendant la partie",
@@ -69,6 +69,9 @@ intentionalRenames.set("Campagne : 100 quêtes réparties sur 12 constellations"
 intentionalRenames.set("Campagne : le ciel contient exactement 150 étoiles","Campagne : les récompenses couvrent toutes les étoiles du catalogue");
 intentionalRenames.set("Tutoriel joué : Marquage auto verrouillée sur les deux premières quêtes","Tutoriel joué : le marquage reste manuel à toutes les étapes");
 intentionalRenames.set("Tip exclusions : apparaît au premier arrêt de le Marquage auto","Marquage retiré : une ancienne commande ne peut pas le réactiver");
+// #779/#759 replaces the old player-derived URL and restores a real result action.
+intentionalRenames.set("Partage : le résultat contient un lien de parrainage traçable","Partage : le lien public mène à la découverte de Lumen");
+intentionalRenames.set("Partage : une carte image est générée quand le téléphone le permet","Partage : victoire et défi ont des actions distinctes");
 const normalizedTests=tests.filter(label=>!additionalTests.includes(label)).map(label=>[...intentionalRenames].find(([,next])=>next===label)?.[0]||label);
 assert.deepEqual(normalizedTests,originalTests,'Regression cases removed or renamed');
 assert.deepEqual(tests.filter(label=>additionalTests.includes(label)).sort(),[...additionalTests].sort(),'UX regression cases missing');

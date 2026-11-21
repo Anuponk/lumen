@@ -3,6 +3,7 @@ import {revealVictoryResults} from './cdp-client.mjs';
 import assert from 'node:assert/strict';
 import {verifyCelestialUX} from './celestial-ux-browser.mjs';
 import fs from 'node:fs';
+import path from 'node:path';
 import {connectBrowser,closeBrowser,acknowledgeLearningMilestones} from './cdp-client.mjs';
 import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {verifyAstronomicalRendering} from './astronomical-rendering-browser.mjs';
@@ -13,7 +14,7 @@ const snapshot=()=>evaluate('lumenDiagnostics.snapshot()');
 async function ready(controlled=false){for(let i=0;i<150;i++){if(await evaluate(`!!window.lumenDiagnostics && (!${controlled} || !!navigator.serviceWorker.controller)`))return;await sleep(100)}throw Error('Application did not start: '+JSON.stringify(errors))}
 async function click(selector){if(/^#skyReveal/.test(selector))await revealVictoryResults(evaluate);const p=await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)}),r=e.getBoundingClientRect();if(!r.width||!r.height)throw Error('Hidden target '+${JSON.stringify(selector)});return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...p});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...p})}
 async function fit(){const result=await evaluate(`(()=>{const sheet=document.querySelector('#mapModal .map-sheet'),modal=document.getElementById('mapModal'),r=sheet.getBoundingClientRect(),selectors=['#closeMap','#adventureRail','#sectorTabs','#constellationPages','#openMyChallenges'];return {height:r.height,overflow:Math.max(sheet.scrollHeight-sheet.clientHeight,modal.scrollHeight-modal.clientHeight),targets:selectors.map(s=>{const e=document.querySelector(s),q=e.getBoundingClientRect();return {s,visible:!e.hidden&&!!q.height,inside:q.top>=0&&q.bottom<=innerHeight&&q.left>=0&&q.right<=innerWidth}})}})()`);assert(result.overflow<=2,'Vertical overflow: '+JSON.stringify(result));assert(result.targets.every(t=>!t.visible||t.inside),'Controls outside viewport: '+JSON.stringify(result));return result.height}
-async function until(expression){for(let i=0;i<100;i++){if(await evaluate(expression))return;await sleep(100)}throw Error('Timed out: '+expression)}
+async function until(expression){for(let i=0;i<100;i++){if(await evaluate(expression,true))return;await sleep(100)}throw Error('Timed out: '+expression)}
 async function cardTextFits(){
  const failures=await evaluate(`(()=>{
   const failures=[];
@@ -26,6 +27,17 @@ async function cardTextFits(){
   return failures;
  })()`);
  assert.deepEqual(failures,[],'Every constellation label, status and badge percentage must fit completely without overlapping');
+}
+
+async function press(key) {
+ await send('Input.dispatchKeyEvent',{type:'keyDown',key,code:key});
+ await send('Input.dispatchKeyEvent',{type:'keyUp',key,code:key});
+}
+async function captureFact(view, viewport) {
+ const destination=process.env.LUMEN_FACT_SCREENSHOTS;
+ if(!destination||viewport.width!==390)return;
+ const shot=await send('Page.captureScreenshot',{format:'png'});
+ fs.writeFileSync(path.join(destination,'ci-constellations-'+view+'.png'),Buffer.from(shot.data,'base64'));
 }
 
 const results=[];
@@ -52,14 +64,44 @@ try{
   assert.equal(await evaluate('document.querySelectorAll(".sky-navigation").length'),1);assert.equal(await evaluate('document.querySelectorAll("#sectorTabs").length'),1);assert.equal(await evaluate('document.querySelectorAll("#mapDetail").length'),1);
   assert.equal(await evaluate('document.querySelectorAll("#sectorTabs .constellation-card").length'),6,JSON.stringify(await evaluate('({rect:document.getElementById("openSky").getBoundingClientRect().toJSON(),viewport:[innerWidth,innerHeight],mapHidden:document.getElementById("mapModal").hidden,sky:lumenDiagnostics.skySnapshot(),overlays:[...document.querySelectorAll("[id$=Overlay]")].filter(e=>!e.hidden).map(e=>e.id),hit:(()=>{const r=document.getElementById("openSky").getBoundingClientRect();return document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)?.outerHTML})()})')));
   assert.equal(await evaluate('lumenDiagnostics.skySnapshot().pages'),2);
+  await until('document.querySelectorAll("#sectorTabs .constellation-fact-button").length===6');
+  const overviewButton = '#sectorTabs .constellation-card-slot:first-child .constellation-fact-button';
+  const factDialog = '#constellationFact';
+  const factRead = 'document.querySelector("#constellationFact").textContent';
+  const beforeFact = await snapshot();
+  const beforeFactView = await evaluate('lumenDiagnostics.skySnapshot()');
+  const beforeFactLayout = await evaluate('document.getElementById("sectorTabs").getBoundingClientRect().toJSON()');
+  await captureFact('mon-ciel-apercu', viewport);
+  await click(overviewButton);
+  assert.equal(await evaluate('document.getElementById("constellationFact").open'), true);
+  assert.equal(await evaluate('lumenDiagnostics.skySnapshot().view'), 'overview');
+  assert.equal(await evaluate('document.activeElement.textContent'), 'Fermer');
+  const overviewFact = await evaluate(factRead);
+  assert.match(overviewFact, /Grande Ourse/);
+  assert.match(overviewFact, /1[\s\u202f]280\s*°²/);
+  assert.match(overviewFact, /3e sur 88/);
+  assert.equal(await evaluate('document.querySelector("#constellationFact select").options.length'), 88);
+  await captureFact('mon-ciel-fiche', viewport);
+  await press('Tab');
+  assert.equal(await evaluate('document.activeElement.tagName'), 'SELECT');
+  await press('Tab');
+  assert.equal(await evaluate('document.activeElement.textContent'), 'Fermer');
+  await press('Escape');
+  await until('!document.getElementById("constellationFact").open');
+  await until(`document.activeElement.matches(${JSON.stringify(overviewButton)})`);
+  assert.deepEqual(await evaluate('lumenDiagnostics.skySnapshot()'), beforeFactView);
+  assert.deepEqual(await evaluate('document.getElementById("sectorTabs").getBoundingClientRect().toJSON()'), beforeFactLayout);
+  assert.deepEqual((await snapshot()).progress, beforeFact.progress);
   await click('#constellationNext');assert.equal(await evaluate('document.querySelectorAll("#sectorTabs .constellation-card").length'),4);await fit();
   await click('#adventureRail .locked');assert.equal(await evaluate('document.getElementById("adventureNotice").hidden'),false);
-  // #731: the locked Adventure shows its offer: disabled paid buttons (no provider yet), the €5 cap, the free mastery path and why Lumen is paid.
-  const offer=await evaluate(`(()=>{const o=document.getElementById('adventureNoticeOffer'),q=s=>o.querySelector(s);return {visible:!o.hidden,copyHidden:document.getElementById('adventureNoticeCopy').hidden,unit:q('[data-offer=unit]')?.textContent,unitDisabled:q('[data-offer=unit]')?.disabled,sky:q('[data-offer=sky]')?.textContent,skyDisabled:q('[data-offer=sky]')?.disabled,soon:!!q('.adventure-offer-soon'),cap:q('.adventure-offer-cap')?.textContent,mastery:q('[data-offer-mastery]')?.textContent,signin:!!q('[data-offer=signin]'),whyHidden:q('.adventure-offer-why-text').hidden}})()`);
+  // #731/#819: guest pricing, hidden server purchase count and the free mastery path.
+  const offer=await evaluate(`(()=>{const o=document.getElementById('adventureNoticeOffer'),q=s=>o.querySelector(s);return {visible:!o.hidden,copyHidden:document.getElementById('adventureNoticeCopy').hidden,unit:q('[data-offer=unit]')?.getAttribute('aria-label'),unitDisabled:q('[data-offer=unit]')?.disabled,sky:q('[data-offer=sky]')?.getAttribute('aria-label'),skyDisabled:q('[data-offer=sky]')?.disabled,soon:!!q('.adventure-offer-soon'),cap:q('.adventure-offer-cap')?.textContent,mastery:q('[data-offer-mastery]')?.textContent,signin:!!q('[data-offer=signin]'),whyHidden:q('.adventure-offer-why-text').hidden}})()`);
   assert.equal(offer.visible&&offer.copyHidden,true,'The offer replaces the generic lock text');
   assert.match(offer.unit,/1 €/);assert.match(offer.sky,/5 €/);assert.equal(offer.unitDisabled&&offer.skyDisabled,true,'No purchase before a payment provider is connected');
-  assert.equal(offer.soon,true);assert.match(offer.cap,/jamais plus de 5 €/);
-  assert.match(offer.mastery,/maîtrise « .+ » à 100 % \(il te reste \d+ quêtes? et \d+ badges?\)/,'The free path shows what is left');
+  assert.equal(offer.soon,true);assert.equal(offer.cap,'','Guest QA cannot show a confirmed purchase count');
+  assert.match(offer.mastery,/en maîtrisant à 100 % l’aventure précédente/);
+  assert.match(offer.mastery,/Il te reste \d+ quêtes? et \d+ badges? à acquérir pour la débloquer gratuitement/);
+  assert.equal(await evaluate('document.documentElement.scrollTop'),0,'The offer keeps the page stationary');
   assert.equal(offer.signin,false,'QA sessions never offer account creation');assert.equal(offer.whyHidden,true);
   await evaluate(`document.querySelector('#adventureNoticeOffer [data-offer=why]').scrollIntoView({block:'center'})`);await click('#adventureNoticeOffer [data-offer=why]');
   assert.equal(await evaluate(`!document.querySelector('#adventureNoticeOffer .adventure-offer-why-text').hidden&&document.querySelector('#adventureNoticeOffer [data-offer=why]').getAttribute('aria-expanded')==='true'`),true,'Pourquoi reveals the funding text');
@@ -67,6 +109,29 @@ try{
   await evaluate(`document.getElementById('adventureNoticeClose').scrollIntoView({block:'center'})`);assert.equal(await evaluate('lumenDiagnostics.skySnapshot().viewedAdventure'),CONTENT_PACKS[0].id);await click('#adventureNoticeClose');
   await click('#adventureRail .locked');await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape'});await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape'});assert.equal(await evaluate('document.getElementById("adventureNotice").hidden'),true);assert.equal(await evaluate('document.getElementById("mapModal").hidden'),false);assert.equal(await evaluate('document.activeElement.dataset.packId'),CONTENT_PACKS[1].id,'Locked notice restores focus without closing Mon ciel');
   await click('#constellationPrevious');await click('#sectorTabs .constellation-card');assert.equal(await evaluate('lumenDiagnostics.skySnapshot().view'),'detail');
+  const detailButton = '#skyCard .constellation-fact-button';
+  await captureFact('mon-ciel-detail', viewport);
+  await click(detailButton);
+  assert.equal(await evaluate(factRead), overviewFact, 'Both entry points show the same content');
+  await click(factDialog + ' button');
+  await until(`document.activeElement.matches(${JSON.stringify(detailButton)})`);
+  if (viewport.width === 390) {
+   await send('Network.enable');
+   await until(`caches.match('/src/campaign/constellation-facts.js').then(Boolean)`);
+   await send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
+   try {
+    await click(detailButton);
+    await evaluate(`(()=>{const select=document.querySelector('#constellationFact select');select.selectedIndex=0;select.dispatchEvent(new Event('change'))})()`);
+    assert.notEqual(await evaluate(factRead), overviewFact, 'A second constellation is readable without network');
+    assert.equal(await evaluate('navigator.onLine'),false);
+    assert.equal(await evaluate(`fetch('/src/campaign/constellation-facts.js',{cache:'reload'}).then(response=>response.ok)`,true),true,'Worker serves the editorial module offline');
+    await click(factDialog + ' button');
+    await until(`document.activeElement.matches(${JSON.stringify(detailButton)})`);
+   } finally {
+    await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
+   }
+  }
+  assert.deepEqual((await snapshot()).progress, beforeFact.progress, 'Reading facts cannot edit player progress or badges');
   const overviewRewardCount=rewardCounts[0];
   assert.equal(await evaluate('document.querySelectorAll("#skyCard .quest-secondary-star").length'),overviewRewardCount.total,'Detail and overview share actual reward totals');
   assert.equal(await evaluate('document.querySelectorAll("#skyCard .quest-secondary-star.on").length'),overviewRewardCount.earned);

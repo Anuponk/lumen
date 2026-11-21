@@ -71,6 +71,16 @@ export const browserSuites=[
     "port": 9257
   },
   {
+    "script": "landscape-layout-browser-tests.mjs",
+    "output": "ci-landscape-layout.json",
+    "port": 9267
+  },
+  {
+    "script": "offline-network-browser-tests.mjs",
+    "output": "ci-offline-network.json",
+    "port": 9266
+  },
+  {
     "script": "account-switch-browser-tests.mjs",
     "output": "ci-account-switch.json",
     "port": 9258
@@ -174,6 +184,16 @@ export const browserSuites=[
     "script": "credits-browser-tests.mjs",
     "output": "ci-credits.json",
     "port": 9264
+  },
+  {
+    "script": "owned-adventure-browser-tests.mjs",
+    "output": "ci-owned-adventure.json",
+    "port": 9265
+  },
+  {
+    "script": "play-review-navigation-browser-tests.mjs",
+    "output": "ci-play-review-navigation.json",
+    "port": 9268
   }
 ];
 

@@ -141,8 +141,13 @@ window.supabase={createClient(url,key,options){
   return {data:{session}};
  },onAuthStateChange(fn){callback=fn},
  signInWithPassword:async()=>{window.__authCalls.push('password');set('SIGNED_IN',{user:{id:'fixture-player'}});return {data:{session},error:null}},
- verifyOtp:async()=>{window.__authCalls.push('recovery');set('PASSWORD_RECOVERY',{user:{id:'fixture-player'}});return {error:null}},
- updateUser:async(value)=>{window.__authCalls.push('password_update');return {error:null}},
+ verifyOtp:async(args)=>{
+  if(sessionStorage.getItem('fixtureVerifyExpired')==='1'){window.__authCalls.push('expired');return {error:{code:'otp_expired',message:'Email link is invalid or has expired',status:403}}}
+  if(args?.type==='signup'){window.__authCalls.push('signup');set('SIGNED_IN',{user:{id:'fixture-player'}});return {error:null}}
+  window.__authCalls.push('recovery');set('PASSWORD_RECOVERY',{user:{id:'fixture-player'}});return {error:null}},
+ updateUser:async(value)=>{
+  if(sessionStorage.getItem('fixtureUpdateFailOnce')==='1'){sessionStorage.removeItem('fixtureUpdateFailOnce');window.__authCalls.push('password_update_failed');return {error:{name:'AuthRetryableFetchError',status:0}}}
+  window.__authCalls.push('password_update');return {error:null}},
  signOut:async(options)=>{window.__authCalls.push(options.scope);set('SIGNED_OUT',null);return {error:null}}
  }};
 }};
@@ -349,6 +354,68 @@ try{
   assert.equal(await evaluate(`!!document.getElementById('accountOtp')`),false);
   await evaluate(`document.getElementById('accountOptinLater').click()`);
   assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),true);
+
+  // #814: issue only mocked mail requests. The player remains a guest.
+  const beforeSignup=await guestProgress();
+  await evaluate(`(() => {
+    const original=window.fetch;
+    window.__signupCalls=0;
+    window.__restoreSignupFetch=()=>{window.fetch=original};
+    window.fetch=(url,init)=>!String(url).endsWith('/functions/v1/lumen-auth-mail')?original(url,init):
+      new Promise((resolve,reject)=>{
+        window.__signupCalls++;
+        window.__finishSignup=(status,ok=true)=>status
+          ?resolve(new Response(JSON.stringify({ok,reason:'private@invalid.test'}),{status}))
+          :reject(new TypeError('private@invalid.test'));
+      });
+    document.getElementById('mobileAuthAction').click();
+    document.getElementById('accountEmail').value='fixture@example.test';
+    document.getElementById('accountPassword').value='test-password-only';
+  })()`);
+  const submitSignup="document.getElementById('accountPasswordSubmit').click()";
+  const signupPanel="document.getElementById('accountSignupConfirmation')";
+  const signupButton="document.getElementById('accountPasswordSubmit')";
+  const signupStatus="document.getElementById('accountEmailStatus').textContent";
+  for(const [status,ok,message] of [
+    [502,false,'n’a pas pu être confirmée'],[0,false,'n’a pas pu être confirmée'],
+    [429,false,'Trop de demandes'],[200,false,'n’a pas pu être confirmée'],
+  ]){
+   const calls=await evaluate('window.__signupCalls');
+   await evaluate(submitSignup+';'+submitSignup);
+   assert.equal(await evaluate('window.__signupCalls'),calls+1,'A double click cannot send a second mail');
+   assert.equal(await evaluate(signupButton+'.disabled'),true);
+   assert.match(await evaluate(signupStatus),/Envoi de la demande/);
+   await evaluate(`window.__finishSignup(${status},${ok})`);
+   await until(signupStatus+'.includes('+JSON.stringify(message)+')');
+   assert.equal(await evaluate(signupPanel+'.hidden'),true);
+   assert.doesNotMatch(await evaluate(signupStatus),/@|envoyé/,'The error exposes no provider detail or delivery claim');
+  }
+  await evaluate(submitSignup);
+  const switchingCalls=await evaluate('window.__signupCalls');
+  await evaluate("document.getElementById('accountAuthSwitch').click();document.getElementById('accountSignupTab').click();"+submitSignup);
+  assert.equal(await evaluate('window.__signupCalls'),switchingCalls,'Changing tabs cannot restart a pending submission');
+  await evaluate('window.__finishSignup(200)');
+  await until('!'+signupButton+'.disabled');
+  assert.equal(await evaluate(signupPanel+'.hidden'),true,'A response from the old view cannot replace the active form');
+  await evaluate(submitSignup);
+  await evaluate('window.__finishSignup(200)');
+  await until('!'+signupPanel+'.hidden');
+  const confirmation=await evaluate(`(()=>{
+    const panel=${signupPanel},card=panel.closest('.account-optin-card'),r=panel.getBoundingClientRect();
+    const announcement=document.getElementById('accountEmailStatus');
+    return {text:panel.textContent,announced:announcement.getAttribute('role')==='status'&&announcement.textContent.includes('courriers indésirables'),
+      password:document.getElementById('accountPassword').value,
+      fits:r.width>0&&r.height>0&&r.left>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1&&card.scrollHeight<=card.clientHeight+1,
+      pageStill:document.documentElement.scrollTop===0};
+  })()`);
+  assert.match(confirmation.text,/demande de confirmation a été prise en compte/);
+  assert.match(confirmation.text,/spams ou courriers indésirables/);
+  assert.doesNotMatch(confirmation.text,/@|avons envoyé/);
+  assert.equal(confirmation.announced,true,'The live status announces the successful confirmation');
+  assert.equal(confirmation.password,'');
+  assert.equal(confirmation.fits&&confirmation.pageStill,true,'Confirmation fits without extra scrolling');
+  assert.equal(await guestProgress(),beforeSignup,'Confirmation is not an Auth session or cloud save');
+  await evaluate("window.__restoreSignupFetch();document.getElementById('accountOptinClose').click()");
   await evaluate(`document.getElementById('mobileAuthAction').click();document.getElementById('accountAuthSwitch').click();document.getElementById('accountEmail').value='fixture@example.test';document.getElementById('accountPassword').value='test-password-only';document.getElementById('accountPasswordSubmit').click()`);
   await until(`document.getElementById('mobileAuthStatus').textContent.includes('sauvegarde à resynchroniser')`);
   assert.equal(await evaluate(`document.getElementById('accountOptin').hidden`),true);
@@ -413,18 +480,76 @@ try{
   await evaluate(`sessionStorage.removeItem('fixtureAuthQuota')`);
   const recovery=new URL(url);recovery.searchParams.set('lumen_confirm','a'.repeat(64));recovery.searchParams.set('type','recovery');
   await navigate('Page.navigate',{url:recovery.href});await until(`window.__authCalls?.includes('recovery')`);
-  await until(`document.getElementById('accountProfileEditor').hidden===false`);
-  await until(`document.getElementById('setPasswordValue').getClientRects().length>0`);
+  // #820 (20/11 field test): a dedicated screen, not the sign-in form nor the account menu.
+  await until(`document.getElementById('passwordRecoveryNew').getClientRects().length>0`);
+  assert.equal(await evaluate(`document.getElementById('passwordRecoveryTitle').textContent`),'Choisis ton nouveau mot de passe');
+  assert.match(await evaluate(`document.getElementById('passwordRecoveryText').textContent`),/Ton lien de réinitialisation a été vérifié/);
+  assert.equal(await evaluate(`document.getElementById('passwordRecoveryConfirm').getClientRects().length>0`),true);
+  assert.equal(await evaluate(`document.getElementById('accountOptin').hidden&&document.getElementById('mobileAuthPopover').hidden`),true,'Neither sign-in nor the account menu is shown');
   assert.equal(await evaluate(`location.search.includes('lumen_confirm')`),false);
   await navigate('Page.reload');
-  assert.equal(await evaluate(`document.getElementById('setPasswordValue').getClientRects().length>0`),true);
-  await evaluate(`document.getElementById('setPasswordValue').value='new-test-password';document.getElementById('setPasswordSave').click()`);
-  await until(`sessionStorage.getItem('lumenPasswordRecoveryPending')===null`);
+  await until(`document.getElementById('passwordRecoveryNew').getClientRects().length>0`);
+  const fill=(a,b)=>evaluate(`document.getElementById('passwordRecoveryNew').value='${a}';document.getElementById('passwordRecoveryConfirm').value='${b}';document.getElementById('passwordRecoverySave').click()`);
+  // Different entries: clear error, form kept, provider untouched.
+  await fill('new-test-password','other-test-password');
+  await until(`document.getElementById('passwordRecoveryError').hidden===false`);
+  assert.match(await evaluate(`document.getElementById('passwordRecoveryError').textContent`),/ne correspondent pas/);
+  assert.equal(await evaluate(`window.__authCalls.some(c=>c.startsWith('password_update'))`),false);
+  // A first network failure keeps the form; the retry succeeds and the verdict stays readable.
+  await evaluate(`sessionStorage.setItem('fixtureUpdateFailOnce','1');window.__recoveryNoReload=true`);
+  await fill('new-test-password','new-test-password');
+  await until(`window.__authCalls.includes('password_update_failed')&&document.getElementById('passwordRecoverySave').disabled===false`);
+  assert.match(await evaluate(`document.getElementById('passwordRecoveryError').textContent`),/n’a pas été modifié/);
+  assert.equal(await evaluate(`sessionStorage.getItem('lumenPasswordRecoveryPending')`),'1');
+  await fill('new-test-password','new-test-password');
+  await until(`document.getElementById('passwordRecoveryTitle').textContent==='Mot de passe modifié !'`);
+  await new Promise(resolve=>setTimeout(resolve,400));
+  assert.equal(await evaluate(`window.__recoveryNoReload===true&&document.getElementById('passwordRecovery').hidden===false`),true,'No reload hides the success');
+  assert.equal(await evaluate(`window.__authCalls.filter(c=>c==='password_update').length`),1);
+  assert.equal(await evaluate(`document.getElementById('passwordRecoveryAction').textContent`),'Continuer mon aventure');
+  assert.equal(await evaluate(`sessionStorage.getItem('lumenPasswordRecoveryPending')`),null);
+  await evaluate(`document.getElementById('passwordRecoveryAction').click()`);
+  await until(`document.getElementById('mobileAuthAction').textContent==='Déconnexion'`);
+  assert.equal(await evaluate(`document.getElementById('passwordRecovery').hidden`),true);
+  // #820: a native link captured by the already open window changes only the
+  // fragment; the page reloads so the recovery is handled like a fresh opening.
+  const openedAt=await evaluate('performance.timeOrigin');
+  await evaluate(`location.hash='access_token=t&refresh_token=r&type=recovery'`);
+  await until(`performance.timeOrigin!==${openedAt}&&document.readyState==='complete'`);
+  await until(`sessionStorage.getItem('lumenPasswordRecoveryPending')==='1'`);
+  await until(`document.getElementById('passwordRecovery').hidden===false`);
+  await evaluate(`sessionStorage.removeItem('lumenPasswordRecoveryPending')`);
+  await navigate('Page.navigate',{url:url.href});
+  await until(`document.getElementById('mobileAuthAction').textContent==='Déconnexion'`);
+  // #820: a confirmed sign-up link states its real verdict once, then follows the session.
+  const signupLink=new URL(url);signupLink.searchParams.set('lumen_confirm','b'.repeat(64));signupLink.searchParams.set('type','signup');
+  await navigate('Page.navigate',{url:signupLink.href});await until(`window.__authCalls?.includes('signup')`);
+  await until(`document.getElementById('authLinkResult').hidden===false`);
+  assert.equal(await evaluate(`document.getElementById('authLinkResultTitle').textContent`),'Adresse e-mail confirmée !');
+  assert.equal(await evaluate(`document.getElementById('authLinkResultText').textContent`),'Ton compte Lumen est prêt.');
+  assert.equal(await evaluate(`document.getElementById('authLinkResultAction').textContent`),'Continuer mon aventure');
+  assert.equal(await evaluate(`location.search.includes('lumen_confirm')`),false,'The token hash leaves the address bar');
+  await evaluate(`document.getElementById('authLinkResultAction').click()`);
+  assert.equal(await evaluate(`document.getElementById('authLinkResult').hidden`),true);
+  // An expired or reused link never claims success.
+  await evaluate(`sessionStorage.setItem('fixtureVerifyExpired','1')`);
+  await navigate('Page.navigate',{url:signupLink.href});await until(`window.__authCalls?.includes('expired')`);
+  await until(`document.getElementById('authLinkResult').hidden===false`);
+  assert.equal(await evaluate(`document.getElementById('authLinkResultTitle').textContent`),'Ce lien n’est plus valide');
+  assert.equal(await evaluate(`document.getElementById('authLinkResult').textContent.includes('confirmée')`),false);
+  await evaluate(`sessionStorage.removeItem('fixtureVerifyExpired');document.getElementById('authLinkResultAction').click()`);
+  // Supabase's native redirect error: same verdict, error parameters removed.
+  const nativeExpired=new URL(url);nativeExpired.searchParams.set('from','mail');nativeExpired.hash='error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired';
+  await navigate('Page.navigate',{url:nativeExpired.href});
+  await until(`document.getElementById('authLinkResult').hidden===false`);
+  assert.equal(await evaluate(`document.getElementById('authLinkResultTitle').textContent`),'Ce lien n’est plus valide');
+  assert.equal(await evaluate(`location.hash.includes('error')`),false,'The provider error leaves the address bar');
+  await evaluate(`document.getElementById('authLinkResultAction').click()`);
   await until(`document.getElementById('mobileAuthAction').textContent==='Déconnexion'`);
   await evaluate(`document.getElementById('mobileAuthAction').click()`);
   await until(`document.getElementById('mobileAuthAction').textContent.includes('Se connecter')`);
   const isolatedCanonicalRecovery=await verifyIsolatedRecovery();
-  results.push({viewport,guestDismiss:true,automaticOfferDismiss:true,repeatedSignupLoginDismiss:true,passwordLogin:true,reload:true,readableSessionWithQuota:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,restoreFailureVisible:true,isolatedCanonicalRecovery,isolatedLegacyRecovery:true,optionalDiagnostics:{defaultOff:true,sanitised:true,offlineRestartReconnect:true,withdrawalErases:true,profilePreserved:true}});
+  results.push({viewport,guestDismiss:true,automaticOfferDismiss:true,repeatedSignupLoginDismiss:true,passwordLogin:true,reload:true,readableSessionWithQuota:true,recoveryVisible:true,recoveryReload:true,passwordSet:true,recoveryMismatch:true,recoveryRetry:true,recoveryVerdictReadable:true,signupLinkVerdict:true,expiredLinkVerdict:true,nativeErrorVerdict:true,restoreFailureVisible:true,isolatedCanonicalRecovery,isolatedLegacyRecovery:true,optionalDiagnostics:{defaultOff:true,sanitised:true,offlineRestartReconnect:true,withdrawalErases:true,profilePreserved:true}});
  }
  await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:authFixtureId});
  const walletFlow=await verifyWalletAndOfflineFlow({send,evaluate,navigate,url});

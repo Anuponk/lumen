@@ -1,0 +1,150 @@
+.constellation-hero {
+  padding-block: 38px 12px;
+}
+
+.constellation-hero h1 {
+  text-wrap: balance;
+}
+
+.constellation-hero .lead {
+  margin-bottom: 18px;
+}
+
+.constellation-hero .cta {
+  margin: 16px 0 4px;
+}
+
+#constellation-list-title {
+  margin-top: 22px;
+}
+
+.constellation-intro {
+  color: var(--muted);
+  margin: 0 0 20px;
+}
+
+.constellation-search {
+  margin-bottom: 20px;
+}
+
+.constellation-search label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 650;
+}
+
+.constellation-search input {
+  width: min(100%, 28rem);
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+}
+
+.constellation-search input::placeholder,
+.constellation-search [role="status"] {
+  color: var(--muted);
+}
+
+.constellation-search [role="status"] {
+  margin: 8px 0 0;
+}
+
+.constellation-directory {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.constellation-entry {
+  min-width: 0;
+  padding: clamp(14px, 3vw, 24px);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  overflow-wrap: anywhere;
+}
+
+.constellation-entry h3 {
+  margin: 0;
+  color: var(--gold);
+}
+
+.constellation-entry dt {
+  font-weight: 650;
+}
+
+.constellation-entry dd {
+  margin: 0;
+  color: var(--muted);
+}
+
+.constellation-story dd + dt {
+  margin-top: 10px;
+}
+
+.constellation-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.constellation-metrics dt {
+  font-size: 14px;
+}
+
+.constellation-metrics dd {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.constellation-sources {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.constellation-sources summary {
+  width: fit-content;
+  cursor: pointer;
+}
+
+.constellation-sources ul {
+  margin: 6px 0 0;
+  padding-inline-start: 20px;
+}
+
+.constellation-search input:focus-visible,
+.constellation-sources :is(summary, a):focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.constellation-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .constellation-hero {
+    padding-top: 28px;
+  }
+
+  .constellation-hero .play {
+    font-size: 15px;
+    padding: 10px 16px;
+  }
+
+  .constellation-directory {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

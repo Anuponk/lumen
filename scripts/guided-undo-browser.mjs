@@ -22,11 +22,15 @@ export async function verifyGuidedUndo({send,evaluate}){
   await tap(cell(0,first));await tap(cell(0,first));
   await tap(cell(0,wrong));await tap(cell(0,wrong));
   // A different logical move commits the deferred guided intervention.
+  const boardLayout=()=>evaluate("JSON.stringify(document.getElementById('board').getBoundingClientRect())");
+  const initial=await boardLayout();
   await tap(cell(1,0));
+  assert.equal(await boardLayout(),initial,"The guided explanation preserves the board geometry");
   assert.equal(await evaluate(`document.getElementById('guidedCard').hidden`),false,'Actual touch produces the guided conflict: '+JSON.stringify(await evaluate(`({n:lumenDiagnostics.snapshot().n,row:lumenDiagnostics.snapshot().state[0],guided:document.getElementById('guidedErrors').checked,mask:document.getElementById('attemptMask').hidden,msg:document.getElementById('msg')?.textContent})`)));
   const before=await evaluate('lumenDiagnostics.snapshot().state');
   assert.equal(await guidedUses(),usesBefore+1,'One guided intervention adds one five-second penalty');
   assert.equal(before[0][wrong],2);
+   await tap('#guidedAck');
   await tap('#undo');
   assert.equal(await evaluate(`document.getElementById('guidedCard').hidden`),true);
   assert.equal(await guidedUses(),usesBefore+1,'Undo never refunds an already revealed guided check');
@@ -41,6 +45,9 @@ export async function verifyGuidedUndo({send,evaluate}){
   assert.equal(await evaluate(`document.getElementById('guidedCard').hidden`),false);
   assert.equal(await guidedUses(),usesBefore+2,'A second intervention adds another penalty');
   await tap(cell(0,wrong));
+   assert.equal(await evaluate(`lumenDiagnostics.snapshot().state[0][${wrong}]`),2,'The open explanation blocks board input');
+   await tap('#guidedAck');
+   await tap(cell(0,wrong));
   assert.equal(await evaluate(`lumenDiagnostics.snapshot().state[0][${wrong}]`),1,'Touching the incorrect Guardian corrects it once');
   await tap(cell(3,0));
   assert.equal(await evaluate('lumenDiagnostics.snapshot().state[3][0]'),1,'A fresh touch after guided correction must work immediately, without a global cooldown');

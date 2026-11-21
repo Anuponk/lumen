@@ -10,6 +10,21 @@ import {cloudSafelyCoversLocal,reconcileCloudAchievementsDurably} from '../src/p
 const quest=canonicalQuestList().find(q=>q.legacyIndex===null);
 const facts={seconds:45,assistanceUsed:false,mistakeCommitted:false,qualifying:true,hintUsed:false,challengeFailed:false,qualifiedDay:'2026-10-22',qualifiedAt:'2026-10-22T10:00:00.000Z'};
 
+test('the current local client keeps bonus XP and badges without changing the historical balance',()=>{
+ for(const legacy of [true,false]){
+  const bonus=canonicalQuestList().find(q=>(q.legacyIndex!==null)===legacy&&questRewardDefinition(q).bonus?.seconds===null);
+  assert(bonus);
+  const profile={solved:{},historyBackup:{},performances:{},badges:{},stars:{},challenges:{},xp:10,shards:4,autonomousWins:2};
+  const outcome=applyQuestVictory(profile,bonus,facts,{grantShards:false});
+  assert.equal(outcome.questPassed,true);
+  assert.equal(outcome.savedPerformance.badges.autonomy,true);
+  assert.equal(profile.xp,50);
+  assert.equal(profile.autonomousWins,3);
+  assert.equal(profile.shards,4);
+  assert.equal(outcome.autonomyShard,0);
+ }
+});
+
 test('historical first-performance copies added by acquisition recovery restore without a new run or reward',async()=>{
  const first={solved:true,stars:1,badges:{autonomy:true,speed:true,noError:true,mastery:true},
   performance:{seconds:48,assisted:false,bestTime:48}};

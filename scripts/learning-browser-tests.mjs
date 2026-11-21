@@ -146,13 +146,13 @@ try {
     await input(await point(2,4),viewport.mobile);
     assert.equal((await snapshot()).state[2][4],2,'Quest 2 free placement: '+JSON.stringify({viewport,board:await snapshot(),layout:await geometry()}));
     assert.equal(await evaluate('document.getElementById("verify").disabled'),false);
-    assert.equal(await evaluate('document.getElementById("hint").textContent'),'Indice · OFFERT · +15 s','Quest 2 offers the hint and announces its competition penalty');
+    assert.equal(await evaluate('document.getElementById("hint").textContent'),'Indice · +15 s','Quest 2 announces the only penalty');
     const shardsBeforeHint=await evaluate('lumenDiagnostics.snapshot().progress.shards||0');
     await evaluate('document.getElementById("hint").click()');await sleep(40);
     assert.equal(await evaluate('lumenDiagnostics.snapshot().progress.shards||0'),shardsBeforeHint,'Quest 2 hint never spends a shard');
-    assert.match(await evaluate('document.getElementById("hintCopy").textContent'),/offert|déduction|logique/i);
+    assert.match(await evaluate('document.getElementById("hintCopy").textContent'),/écarter la case surlignée.*explication plus précise/i);
     await evaluate('document.getElementById("learningCoachDismiss").click();document.getElementById("verify").click()');
-    assert.match(await evaluate('document.getElementById("scriptedLearnCopy").textContent'),/première vérification/);
+    assert.match(await evaluate('document.getElementById("scriptedLearnCopy").textContent'),/5 secondes au chrono/);
     await evaluate('document.getElementById("learningCoachDismiss").click()');
     // Dismissing the verification coach after a hint changes the mobile board
     // layout. Let ResizeObserver and its following paint settle before measuring
@@ -223,7 +223,18 @@ try {
     if(returnQuest<=1)assert.equal(afterSkip.replayMode,true,'Completed learning quests return as ordinary replays');
     assert.equal(await evaluate('document.getElementById("scriptedLearn").hidden'),true,'Skip exits the learning UI');
     assert.equal(await evaluate('JSON.stringify((()=>{const p=lumenDiagnostics.snapshot().progress;return {solved:p.solved,badges:p.badges,shards:p.shards}})())'),beforeSkip,'Skip must not award progress, badges or shards');
-    results.push({viewport,stages,realDrag:true,reload:true,reset:true,optionalQuest2Drag:true,partialQuest2Reload:true,freeQuest2:true,directQuest3:true,freeReplay:true,firstTimerNoSkip:true,completedReplaySkip:true});
+    // #862: once the first-grid tutorial is skipped, the teaching numbers never
+    // come back on quest 1, including after a reload.
+    const skipped=await send('Page.addScriptToEvaluateOnNewDocument',{source:'localStorage.clear();localStorage.setItem("lumenSound","off");localStorage.setItem("lumenTutorialSeen","1");localStorage.setItem("lumenPushChoice","later");localStorage.setItem("lumenInstallLater",String(Date.now()));localStorage.setItem("lumenSkipFirstGridTutorial","1");'});
+    await navigateAndWait({send,evaluate},'Page.navigate',{url});await sleep(800);await ready();
+    await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:skipped.identifier}).catch(error=>{if(!String(error).includes('Script not found'))throw error});
+    const skippedBoard=await snapshot();
+    assert.equal(skippedBoard.levelIndex,0);assert.equal(skippedBoard.state.flat().every(value=>value===0),true);
+    assert.equal(await evaluate('document.querySelectorAll(".learning-territory-number").length'),0,'Skipped tutorial: no territory numbers');
+    await navigateAndWait({send,evaluate},'Page.reload',{ignoreCache:true});await sleep(300);await ready();
+    assert.equal(await evaluate('document.querySelectorAll(".learning-territory-number").length'),0,'Reload does not bring the numbers back');
+    assert.equal(await evaluate('document.querySelectorAll("#board .cell").length'),skippedBoard.state.flat().length,'Grid unchanged apart from the numbers');
+    results.push({viewport,stages,realDrag:true,reload:true,reset:true,optionalQuest2Drag:true,partialQuest2Reload:true,freeQuest2:true,directQuest3:true,freeReplay:true,firstTimerNoSkip:true,completedReplaySkip:true,skippedTutorialNoNumbers:true});
 
   }
   assert.deepEqual(errors,[]);

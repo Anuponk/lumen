@@ -12,7 +12,7 @@ try{
   const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:`localStorage.clear();localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(p))});for(const k of ['lumenTutorialSeen','lumenQaTutorialSeen','lumenQaTutorialCompletedV1','lumenSkyTourSeen'])localStorage.setItem(k,'1');localStorage.setItem('lumenSound','off');`});
   const url=new URL(process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/');url.searchParams.set('qa','new');await send('Page.navigate',{url:url.href});await until('!!window.lumenDiagnostics');await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});
   await evaluate('lumenDiagnostics.setupQuest(20)');await acknowledgeLearningMilestones(evaluate);
-  await evaluate('document.getElementById("attemptMask").click()');
+  await evaluate(`window.fixtureNow=Date.now;const frozen=Date.now();Date.now=()=>frozen;document.getElementById("attemptMask").click()`);
   // Layout geometry excludes the existing successful-verification pulse transform.
   const geometry="(()=>{const b=document.getElementById('board');return {left:b.offsetLeft,top:b.offsetTop,width:b.offsetWidth,height:b.offsetHeight}})()";
   const rect=await evaluate(geometry);
@@ -21,6 +21,7 @@ try{
   assert.equal(await evaluate('document.getElementById("timePenalty").textContent'),'+5 s');
   assert.equal(await evaluate('document.getElementById("time").textContent'),'0:05');
   const after=await evaluate(geometry);assert.deepEqual(after,rect,'Penalty cannot move the grid layout');
+  await evaluate('Date.now=window.fixtureNow');
   // Frozen restored attempt: reload/init reads real duration plus cumulative counts.
   await evaluate(`(()=>{const a=JSON.parse(localStorage.getItem('lumenActiveAttemptV1'));a.activeDuration=60000;a.state='PAUSED';a.helpUses={hint:5,verify:0,guided:0};a.assistanceUsed=true;localStorage.setItem('lumenActiveAttemptV1',JSON.stringify(a));lumenDiagnostics.setupQuest(20)})()`);
   assert.equal(await evaluate('document.getElementById("time").textContent'),'2:15');

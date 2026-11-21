@@ -1,3 +1,4 @@
+import {createTranslator} from '../src/ui/i18n.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -66,13 +67,14 @@ test('authenticated replay and started access beyond discovery cannot bypass an 
  }
 });
 
-test('hint discovery pricing follows the active visible quest, independent of dormant legacy position',()=>{
+test('the same official-time hint penalty applies at each quest milestone',()=>{
  const source=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
  for(const ordinal of [6,7,10,11,80]){
-  const ctx={QUEST_MILESTONES,socialChallenge:null,canonicalActiveQuest:{id:'active',ordinal},levelIndex:0,activeQuestOrdinal:()=>ordinal};
-  vm.createContext(ctx);vm.runInContext(functionSource(source,'learningHintsAreFree'),ctx);
-  assert.equal(ctx.learningHintsAreFree(),ordinal<=10);
-  ctx.levelIndex=70;assert.equal(ctx.learningHintsAreFree(),ordinal<=10);
+   const button={};
+   const ctx={t:createTranslator().t,canonicalActiveQuest:{id:'active',ordinal},levelIndex:0,document:{getElementById:()=>button}};
+   vm.createContext(ctx);vm.runInContext(functionSource(source,'updateHintButton'),ctx);
+   ctx.updateHintButton();assert.equal(button.textContent,'Indice · +15 s');
+   ctx.levelIndex=70;ctx.updateHintButton();assert.equal(button.textContent,'Indice · +15 s');
  }
 });
 test('a reloaded paid/free hint remains a hint in victory facts after the volatile flag resets',()=>{
@@ -122,9 +124,10 @@ test('contextual learning tips follow the visible lesson, never a dormant numeri
  for(const ordinal of [2,7])for(const levelIndex of [1,70]){
   const viewed=new Set();
   const ctx={onboardingPreferences:{seen:id=>viewed.has(id),markSeen:id=>viewed.add(id)},activeQuestOrdinal:()=>ordinal,learningQuestActive:()=>ordinal<=2,socialChallenge:null,replayMode:false,levelIndex,learningTipSeen:new Set(),updates:0,updateScriptedLearning(){ctx.updates++}};
-  vm.createContext(ctx);vm.runInContext(functionSource(source,'showLearningTip'),ctx);ctx.showLearningTip('tools','Fixture','Fixture');
+  ctx.t=()=>'';ctx.lessonText=()=>({title:'Fixture',copy:'Fixture'});
+  vm.createContext(ctx);vm.runInContext(functionSource(source,'showLearningTip'),ctx);ctx.showLearningTip('tools','tipTools');
   assert.equal(ctx.updates,ordinal===2?1:0,ordinal+' at '+levelIndex);
-  ctx.learningTipSeen.clear();ctx.showLearningTip('tools','Fixture','Fixture');
+  ctx.learningTipSeen.clear();ctx.showLearningTip('tools','tipTools');
   assert.equal(ctx.updates,ordinal===2?1:0,'A remembered optional explanation is not repeated');
  }
 });

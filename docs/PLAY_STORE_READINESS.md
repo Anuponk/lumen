@@ -119,6 +119,8 @@ node scripts/play-readiness.mjs
 node scripts/play-readiness.mjs --enforce
 ```
 
+#732 (17/11/2026) : `monetization` vaut `paid-content-no-ads` (aventures payantes, sans publicité) ; le contrôle exige alors la mention « TVA non applicable, art. 293 B du CGI » quand la TVA n'est pas facturée. Le médiateur de la consommation n'est **pas** un blocage (décision du propriétaire) ; il est suivi dans #773.
+
 Le premier affiche les blocages. Le second termine avec un code non nul tant
 qu'ils existent. Il doit devenir un prérequis de tout futur job de packaging/
 publication Play ; aucun tel job n'est créé par ce chantier. Ce contrôle local

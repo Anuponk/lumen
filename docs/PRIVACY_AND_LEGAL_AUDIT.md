@@ -138,6 +138,15 @@ un canal de demande, pas une politique complète ni une preuve d'effacement.
 
 ## Droits et suppression
 
+Amis et défis directs (#35, préparé le 21/11/2026) : facultatif, réservé aux
+comptes, identité publique limitée au pseudonyme unique choisi (jamais l'email ni
+un identifiant). Recherche par pseudonyme exact uniquement (pas d'annuaire), refus
+silencieux avec délai de 30 jours, plafonds de demandes et d'envois. Les relations
+et invitations sont effacées avec le compte (politique d'effacement Lumen et
+cascade `auth.users`) ; l'export d'accès les inclut sous la revue « tiers »
+existante. Point à valider par le propriétaire : âge minimal / joueurs mineurs
+avant d'ouvrir les amis à tous les comptes.
+
 Contact utilisateur : accès, rectification, effacement, opposition et portabilité
 selon leur applicabilité. Préparer le traitement et la réponse dans les délais
 applicables, avec vérification proportionnée de l'identité et du représentant
