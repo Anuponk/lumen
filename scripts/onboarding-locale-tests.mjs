@@ -1,3 +1,4 @@
+import { guidedConflictCopy } from '../src/ui/guided-conflict-copy.js';
 import vm from 'node:vm';
 import {functionSource} from './source-tools.mjs';
 import { readFileSync } from 'node:fs';
@@ -91,4 +92,26 @@ test('verification explains a mixed set of mistakes with locale-aware plurals', 
   const french = vm.runInNewContext(check + '\nverificationErrorCopy(errors)', {t:createTranslator().t, errors});
   assert.equal(english, '3 incorrect marks found. 1 misplaced Guardian. 2 cells incorrectly ruled out.');
   assert.equal(french, '3 choix incorrects détectés. 1 Gardien mal placé. 2 cases écartées à tort.');
+});
+
+test('all guided explanations have French and English copy without fallback', () => {
+  const missing = [];
+  const french = createTranslator({ locale: 'fr', onMissing: (...args) => missing.push(args) }).t;
+  const english = createTranslator({ locale: 'en', onMissing: (...args) => missing.push(args) }).t;
+  const cases = [
+    [{ type: 'row' }, 'Two Guardians in the same row'],
+    [{ type: 'col' }, 'Two Guardians in the same column'],
+    [{ type: 'region' }, 'Two Guardians in the same territory'],
+    [{ type: 'touch' }, 'These two Guardians touch'],
+    [{ type: 'deadend' }, 'This placement leads to a dead end'],
+    [{ type: 'deadend', excluded: true }, 'This exclusion blocks the constellation'],
+  ];
+  for (const [info, title] of cases) {
+    const fr = guidedConflictCopy(info, french), en = guidedConflictCopy(info, english);
+    assert.equal(en.title, title);
+    assert(fr.explanation && en.explanation);
+    assert.notEqual(en.explanation, fr.explanation);
+    assert(english('guided.introduction', { explanation: en.explanation }).includes(en.explanation));
+  }
+  assert.deepEqual(missing, []);
 });

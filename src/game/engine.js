@@ -186,16 +186,16 @@ function guidedConflictForAction(r,c,next){
   const candidate=state.map(row=>row.slice());candidate[r][c]=1;
   let possible=false;
   try{possible=solutions({n,puz,state:candidate}).length>0}catch(_){possible=puz.sol[r]!==c}
-  if(!possible)return {type:"deadend",cause:null,title:"Cette exclusion bloque la constellation",copy:"En écartant cette case, il ne reste plus de solution possible. Au moins une ligne, une colonne ou un territoire ne pourrait plus recevoir son Gardien."};
+  if(!possible)return {type:"deadend",cause:null,excluded:true};
   return null;
  }
  if(next!==2)return null;
  let direct=null;
  for(let rr=0;rr<n;rr++)for(let cc=0;cc<n;cc++)if(state[rr][cc]===2&&!(rr===r&&cc===c)){
-  if(rr===r){direct={type:"row",cause:[rr,cc],title:"Deux Gardiens sur la même ligne",copy:"Une ligne ne peut contenir qu’un seul Gardien."};break}
-  if(cc===c){direct={type:"col",cause:[rr,cc],title:"Deux Gardiens dans la même colonne",copy:"Une colonne ne peut contenir qu’un seul Gardien."};break}
-  if(puz.reg[rr][cc]===puz.reg[r][c]){direct={type:"region",cause:[rr,cc],title:"Deux Gardiens dans le même territoire",copy:"Chaque territoire ne peut contenir qu’un seul Gardien."};break}
-  if(Math.abs(rr-r)<=1&&Math.abs(cc-c)<=1){direct={type:"touch",cause:[rr,cc],title:"Ces deux Gardiens se touchent",copy:"Deux Gardiens ne peuvent jamais être voisins, même en diagonale."};break}
+  if(rr===r){direct={type:"row",cause:[rr,cc]};break}
+  if(cc===c){direct={type:"col",cause:[rr,cc]};break}
+  if(puz.reg[rr][cc]===puz.reg[r][c]){direct={type:"region",cause:[rr,cc]};break}
+  if(Math.abs(rr-r)<=1&&Math.abs(cc-c)<=1){direct={type:"touch",cause:[rr,cc]};break}
  }
  if(direct)return direct;
  const saved=state;
@@ -203,7 +203,7 @@ function guidedConflictForAction(r,c,next){
  let possible=false;
  try{possible=solutions({n,puz,state}).length>0}catch(_){possible=puz.sol[r]===c}
  state=saved;
- if(!possible)return {type:"deadend",cause:null,title:"Ce placement mène à une impasse",copy:"Avec ce Gardien ici, il devient impossible de compléter toute la constellation sans violer une règle."};
+ if(!possible)return {type:"deadend",cause:null};
  return null;
 }
 
