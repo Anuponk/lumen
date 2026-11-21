@@ -1,3 +1,4 @@
+import {createTranslator} from '../src/ui/i18n.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {canonicalConstellationCatchupAvailable,canonicalQuestList,canonicalInsertedQuestDecision,canonicalCampaignQuestDecision} from '../src/campaign/canonical-quests.js';
@@ -198,6 +199,7 @@ test('the actual UI adapter and start guard share readiness without bypassing pr
  context.navigationProgress=()=>context.lumenProgress;
  context.offlineQuestAccessContext=()=>({offline:false,verifiedSession:false});
  vm.createContext(context);
+ context.t=createTranslator().t;
  vm.runInContext(['adventureEntitlementsState','canonicalQuestAccess','canonicalQuestAvailable','canonicalQuestLockReason','startCanonicalQuest'].map(name=>functionSource(source,name)).join('\n'),context);
  assert.equal(context.canonicalQuestAvailable(group[0]),true);
  assert.equal(context.canonicalQuestAvailable(group[1]),false);
