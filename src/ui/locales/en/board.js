@@ -1,4 +1,5 @@
 export default Object.freeze({
+  'board.dailyRollover': "A new Daily Challenge has just started. Loading its puzzle…",
   'board.checkStart': "Good start! All your marks are correct. Keep going.",
   'board.checkAlmost': "Almost there! All your marks are correct. The constellation is nearly complete.",
   'board.checkCorrect': "Well done! Everything is correct so far.",

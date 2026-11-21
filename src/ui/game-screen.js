@@ -2358,7 +2358,7 @@ async function bootstrapDailyChallenge(){
     // The server day decides. An intro left open across midnight Paris must
     // not play yesterday's grid against today's official attempt: reload on
     // the server day (the attempt then resumes at its server elapsed time).
-    if(res.day&&res.day!==today.day){status.textContent='Un nouveau Défi du jour vient de commencer : chargement de sa grille…';location.replace(dailyUrl());return}
+    if(res.day&&res.day!==today.day){status.textContent=t("board.dailyRollover");location.replace(dailyUrl());return}
     if(res.status!=='started'){intro.hidden=true;showDailyResult({run:res,board:await dailyClient.board(today.day).catch(()=>null)});resolve(true);return}
     Object.assign(socialChallenge,{training:false,challenge_id:'daily-'+today.day,operation_id:res.operation_id,started_at:res.started_at});
     const local=attemptEngine.peek(),hasLocal=local?.mode==='challenge'&&local.challengeId===socialChallenge.challenge_id;

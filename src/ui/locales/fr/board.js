@@ -1,4 +1,5 @@
 export default Object.freeze({
+  'board.dailyRollover': "Un nouveau Défi du jour vient de commencer : chargement de sa grille…",
   'board.checkStart': "Bien parti ! Tous tes choix sont corrects. Continue comme ça.",
   'board.checkAlmost': "Presque là ! Aucune erreur détectée. La constellation est presque complète.",
   'board.checkCorrect': "Excellent ! Tout est juste jusqu’ici. Ton raisonnement tient bon.",
