@@ -55,7 +55,7 @@ try {
   await send('Page.enable');
   await send('Runtime.enable');
   await send('Network.enable');
-  const snapshot = 'JSON.stringify({board:lumenDiagnostics.snapshot().state,progress:lumenDiagnostics.snapshot().progress,attempt:localStorage.getItem("lumenActiveAttemptV1")})';
+  const snapshot = 'JSON.stringify({board:lumenDiagnostics.snapshot().state,progress:lumenDiagnostics.snapshot().progress,attempt:(a=>a&&(({state,activeDuration,lastActiveAt,updatedAt,...rest})=>rest)(a))(JSON.parse(localStorage.getItem("lumenActiveAttemptV1")))})'; // #925: Help pauses; only pause bookkeeping may change
   for (const [width, height, locale] of [
     [320, 568, 'fr'],
     [360, 640, 'fr'],
@@ -115,7 +115,8 @@ try {
   await evaluate("document.querySelector('#board .coach-target').click()");
   await until("document.querySelector('#board .coach-target .lumen-dim')?.getAttribute('aria-label')==='Excluded cell'");
   const active = await evaluate(snapshot);
-  assert.equal(JSON.parse(JSON.parse(active).attempt).state, 'RUNNING');
+  const runState = () => evaluate('JSON.parse(localStorage.getItem("lumenActiveAttemptV1")).state');
+  assert.equal(await runState(), 'RUNNING');
   const epoch = await evaluate('performance.timeOrigin');
   await evaluate("window.i18nBoardCell=document.querySelector('#board .coach-target');document.getElementById('tutorialHelp').click()");
   await until("!document.getElementById('rulesModal').hidden");
@@ -135,6 +136,7 @@ try {
   assert.equal(await evaluate("localStorage.getItem('lumen.locale')"), 'auto');
   assert.equal(await evaluate("i18nBoardCell===document.querySelector('#board .coach-target')"), true);
   assert.equal(await evaluate(snapshot), active);
+  assert.equal(await runState(), 'PAUSED', '#925: the open Help menu pauses the same run');
   assert.equal(await evaluate('performance.timeOrigin'), epoch);
   assert.equal(await evaluate("document.getElementById('scriptedLearnTitle').textContent"), 'One more tap…');
   await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
