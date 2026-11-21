@@ -22,6 +22,7 @@ import {dailyErrorMessage,formatDailyDate,formatRemaining,formatRank,renderDaily
 import {summarizeWeek,weekMonday,weekNavigation,weekShareText} from '../campaign/daily-week.js';
 import {officialTimingSupported,refreshOfficialTimingSupport} from '../persistence/official-time.js';
 import {createRankingClient} from '../persistence/ranking.js';
+import {setupSocialHub} from './social-hub.js';
 import {createRankingView} from './ranking.js';
 import {createVictoryPresentation} from './victory-presentation.js';
 import {createCelebration,rewardSlots,remarkableRewards,rankSummary,celebrationLevel} from './victory-celebration.js';
@@ -2935,7 +2936,7 @@ function handleLearningTap(event){
  if(document.querySelector('#mapModal:not([hidden]),#rulesModal:not([hidden]),#feedbackModal:not([hidden]),#tutorialOverlay:not([hidden]),#badgeRulesModal:not([hidden])'))return;
  // Learning restrictions apply to gameplay, never to account dialogs or other controls
  // (#711: the full-screen signed-out and account-switch layers sit above the board).
- if(target.closest("#installOptin,#accountOptin,#signedOutScreen,#accountSwitchHold,#authLinkResult,#passwordRecovery,#pwaWelcome,#mandatoryNickname,#erasedAccountNotice,#mobileAuthPopover,#mobileAccount,#lumenShareDialog,#skyRevealShareResult,#dailyIntro,#dailyResultModal,#dailyWeekModal,#friendsModal,#friendPickerModal,#new,#tutorialHelp,#attemptPause,#attemptMask,#feedbackBtn,#learningCoachNext,#learningSkip"))return;
+ if(target.closest("#installOptin,#accountOptin,#signedOutScreen,#accountSwitchHold,#authLinkResult,#passwordRecovery,#pwaWelcome,#mandatoryNickname,#erasedAccountNotice,#mobileAuthPopover,#mobileAccount,#lumenShareDialog,#skyRevealShareResult,#dailyIntro,#dailyResultModal,#dailyWeekModal,#friendsModal,#friendPickerModal,#openSocial,#socialHub,#myChallengesModal,#new,#tutorialHelp,#attemptPause,#attemptMask,#feedbackBtn,#learningCoachNext,#learningSkip"))return;
  if(target.closest("#board .cell"))return;
  if(target.closest('#openSky')&&lumenUser&&!qaActive)void openPlayReviewMapFromLearning();
  event.preventDefault();event.stopImmediatePropagation();
@@ -5776,6 +5777,8 @@ const installEnable=document.getElementById("installEnable"),installLater=docume
 const nativeChallengeShare=document.getElementById("challengeNativeShare"),copyChallengeLink=document.getElementById("challengeCopyLink"),closeChallengeShare=document.getElementById("challengeShareClose");if(nativeChallengeShare)nativeChallengeShare.onclick=sharePendingChallenge;if(copyChallengeLink)copyChallengeLink.onclick=copyPendingChallenge;if(closeChallengeShare)closeChallengeShare.onclick=()=>document.getElementById("challengeShareModal").hidden=true;
 const openChallenges=document.getElementById("openMyChallenges"),closeChallenges=document.getElementById("myChallengesClose");if(openChallenges)openChallenges.onclick=()=>openMyChallenges();if(closeChallenges)closeChallenges.onclick=()=>document.getElementById("myChallengesModal").hidden=true;
 setupFriends();
+// #898 Lot 4: single social entry point over the existing screens and counters.
+const socialHub=setupSocialHub({isSignedIn:()=>!!lumenUser,onSignIn:()=>openEmailAccountOffer("signup"),onOpen:()=>{void refreshFriendsBadge();void loadMyChallenges()}});
 const challengeHome=document.getElementById("challengeResultHome"),challengeReshare=document.getElementById("challengeResultReshare");if(challengeHome)challengeHome.onclick=()=>{location.href=location.pathname};if(challengeReshare)challengeReshare.onclick=()=>{document.getElementById("challengeResultModal").hidden=true;createSocialChallengeFromSuccess()};
 const pushEnable=document.getElementById("pushEnable"),pushLater=document.getElementById("pushLater");
 if(pushEnable)pushEnable.onclick=enableLumenPush;

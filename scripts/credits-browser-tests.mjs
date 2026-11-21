@@ -44,7 +44,7 @@ try{
  const invite='document.getElementById("inviteLumenFriends")';
  const copy='document.getElementById("lumenShareCopy")';
  const dialog='document.getElementById("lumenShareDialog")';
- await evaluate(`Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.sharedInvitation=data;throw new DOMException('Cancelled','AbortError')}}); ${invite}.focus()`);
+ await evaluate(`Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.sharedInvitation=data;throw new DOMException('Cancelled','AbortError')}}); document.getElementById('mobileAuthPopover').hidden=true;document.getElementById('openSocial').click();${invite}.focus()`);
  assert.equal(await evaluate('document.activeElement.id'),'inviteLumenFriends');
  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',text:'\r',unmodifiedText:'\r',windowsVirtualKeyCode:13,nativeVirtualKeyCode:13});
  await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});

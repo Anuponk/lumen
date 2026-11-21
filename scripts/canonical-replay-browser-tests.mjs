@@ -7,6 +7,7 @@ import {verifyVictoryChallenge} from './victory-challenge-browser.mjs';
 import {verifyChallengeRecipient} from './challenge-recipient-browser.mjs';
 import {verifyFriends} from './friends-browser.mjs';
 import {verifyDailyChallenge} from './daily-challenge-browser.mjs';
+import {verifySocialHub} from './social-hub-browser.mjs';
 const {send,evaluate,errors}=await connectBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function until(expression){for(let i=0;i<150;i++){if(await evaluate(expression))return;await sleep(100)}throw Error('Timed out: '+expression)}
@@ -223,6 +224,7 @@ try{
  results.push({challengeRecipients:await verifyChallengeRecipient({send,evaluate},url)});
  results.push({friends:await verifyFriends({send,evaluate},url)});
  results.push({dailyChallenge:await verifyDailyChallenge({send,evaluate},url)});
+ results.push({socialHub:await verifySocialHub({send,evaluate},url)});
  assert.deepEqual(errors,[]);
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify({results,uncaughtErrors:errors},null,2));
  console.log(JSON.stringify(results));

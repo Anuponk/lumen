@@ -1,0 +1,143 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
+
+// #898 (EPIC #881 Lot 4, PR A): « Espace social » through the real page. The
+// panel only routes to existing screens (#18/#35/#779/#882) and sums the two
+// #35 counters; RPCs are the same in-page models as friends-browser.mjs.
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function until(evaluate,expression,label=expression){for(let i=0;i<150;i++){if(await evaluate(expression))return;await sleep(100)}throw Error('Timed out: '+label)}
+const OWNER='00000000-0000-4000-8000-000000089801';
+const solved=Object.fromEntries(Array.from({length:10},(_,i)=>[i,1]));
+const profile={solved,historyBackup:{...solved},badges:{},stars:{},performances:{},noHint:{},canonicalQuestState:{},
+ xp:100,shards:10,skyScore:10,skyHistoryVersion:4,walletRevision:1,daily:{dates:{},rewards:{}},challenges:{}};
+function fixture({signedIn,daily}){
+ return `
+  localStorage.clear();
+  localStorage.setItem('lumenProgressV1',${JSON.stringify(JSON.stringify(profile))});
+  for(const k of ['lumenTutorialSeen','lumenTutorialCompletedV1','lumenSkyTourSeen','lumenQaTutorialSeen','lumenQaTutorialCompletedV1'])localStorage.setItem(k,'1');
+  localStorage.setItem('lumenPushChoice','off');localStorage.setItem('lumenGuestName','Moi898');
+  ${signedIn?`localStorage.setItem('lumenCloudOwnerId',${JSON.stringify(OWNER)});`:''}
+  window.__socialCalls=[];
+  const friends=[{nickname:'Ana898',state:'incoming',since:'2026-11-20T10:00:00Z'}];
+  const inbox={received:[{challenge_id:'00000000-0000-4000-8000-000000089802',sender:'Ana898',puzzle_id:12,stable_quest_id:'base-q012',grid_revision:0,source_first_play:true,created_at:'2026-11-20T10:00:00Z',status:'pending'}],sent:[]};
+  const mine=[{challenge_id:'00000000-0000-4000-8000-000000089803',puzzle_id:12,stable_quest_id:'base-q012',grid_revision:0,source_first_play:true,created_at:'2026-11-20T10:00:00Z',source_duration_seconds:60,source_autonomy:true,source_mastery:false,participant_count:1,unread_count:1,participants:[{display_name:'Bo898',status:'completed',duration_seconds:70}]}];
+  const closes=new Date(Date.now()+5*3600000).toISOString();
+  window.supabase={createClient:()=>({auth:{
+   getSession:async()=>(${signedIn}?{data:{session:{user:{id:${JSON.stringify(OWNER)}}}}}:{data:{session:null}}),
+   getUser:async()=>(${signedIn}?{data:{user:{id:${JSON.stringify(OWNER)}}}}:{data:{user:null}}),
+   onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})},
+   rpc:async(name,args={})=>{
+    window.__socialCalls.push(name);
+    if(name==='lumen_daily_today')return {data:${daily}?{enabled:true,day:'2026-11-23',quest_id:'base-q012',grid_revision:0,closes_at:closes,server_now:new Date().toISOString()}:{enabled:false,day:'2026-11-23',server_now:new Date().toISOString()}};
+    if(name==='lumen_ranking_account')return {data:{nicknameRequired:false,withdrawn:false,participating:false}};
+    if(name==='lumen_restore_profile')return {data:${JSON.stringify(profile)}};
+    if(name==='lumen_get_progress')return {data:Array.from({length:10},(_,i)=>({puzzle_id:i+1}))};
+    if(name==='lumen_get_engagement')return {data:[{rewarded_days:{}}]};
+    if(name==='lumen_cas_profile')return {data:true};
+    if(name==='lumen_friend_list')return {data:friends.map(f=>({...f}))};
+    if(name==='lumen_challenge_inbox')return {data:JSON.parse(JSON.stringify(inbox))};
+    if(name==='lumen_list_quest_challenges_v2')return {data:JSON.parse(JSON.stringify(mine))};
+    if(name==='lumen_mark_social_challenge_read'){mine[0].unread_count=0;return {data:true}}
+    if(name==='lumen_canonical_command_version'||name==='lumen_legacy_command_version')return {error:{code:'PGRST202'},status:404};
+    return {data:[]};
+   }})};`;
+}
+async function open({send,evaluate},url,{signedIn,daily=false,width=390,height=null}){
+ await send('Emulation.setDeviceMetricsOverride',{width,height:height||(width<700?844:900),mobile:width<700,deviceScaleFactor:1});
+ const {identifier}=await send('Page.addScriptToEvaluateOnNewDocument',{source:fixture({signedIn,daily})});
+ const target=new URL(url);for(const k of ['qa','challenge','daily','training'])target.searchParams.delete(k);
+ await navigateAndWait({send,evaluate},'Page.navigate',{url:String(target)});
+ await send('Page.removeScriptToEvaluateOnNewDocument',{identifier});
+ await acknowledgeLearningMilestones(evaluate);
+}
+const key=async(send,k,code,vk,shift=false)=>{const modifiers=shift?8:0,text=k==='Enter'?{text:String.fromCharCode(13),unmodifiedText:String.fromCharCode(13)}:{};await send('Input.dispatchKeyEvent',{type:'keyDown',key:k,code,windowsVirtualKeyCode:vk,modifiers,...text});await send('Input.dispatchKeyEvent',{type:'keyUp',key:k,code,windowsVirtualKeyCode:vk,modifiers})};
+const visibleItems=`[...document.querySelectorAll('#socialHubMenu .social-hub-item')].filter(b=>!b.hidden).map(b=>b.querySelector('strong').textContent)`;
+const capture=async(send,dir,name)=>{if(dir)fs.writeFileSync(dir+'/'+name+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png'})).data,'base64'))};
+
+export async function verifySocialHub({send,evaluate},url,{captureDir=process.env.LUMEN_SOCIAL_CAPTURES||null}={}){
+ await send('Network.enable');await send('Network.setBlockedURLs',{urls:['*supabase*']});
+ const results=[];
+
+ // Guest on a small phone: entry top right, public parts usable, account parts explained.
+ await open({send,evaluate},url,{signedIn:false,width:360,height:640});
+ // A guest past the free quests first sees the existing account offer; dismiss it.
+ await evaluate(`(()=>{const o=document.getElementById('accountOptin');if(o&&!o.hidden)document.getElementById('accountOptinClose')?.click()})()`);
+ const entry=await evaluate(`(()=>{const b=document.getElementById('openSocial'),r=b.getBoundingClientRect(),h=document.querySelector('.head').getBoundingClientRect();return {visible:r.width>0&&r.height>0,right:r.right>h.left+h.width*.6,top:r.top<h.bottom,label:b.getAttribute('aria-label'),expanded:b.getAttribute('aria-expanded'),haspopup:b.getAttribute('aria-haspopup')}})()`);
+ assert.match(entry.label,/^Espace social(, 1 nouveauté)?$/,'Accessible name (a guest link challenge result counts too, #18)');delete entry.label;
+ assert.deepEqual(entry,{visible:true,right:true,top:true,expanded:'false',haspopup:'dialog'},'Social icon top right');
+ const board=await evaluate('JSON.stringify(lumenDiagnostics.snapshot().state)');
+ await evaluate(`document.getElementById('openSocial').focus()`);
+ await key(send,'Enter','Enter',13);
+ await until(evaluate,`!document.getElementById('socialHub').hidden`,'keyboard opens the panel');
+ assert.equal(await evaluate(`document.getElementById('openSocial').getAttribute('aria-expanded')`),'true');
+ assert.equal(await evaluate(`document.getElementById('socialHub').contains(document.activeElement)`),true,'Focus moves into the panel');
+ assert.deepEqual(await evaluate(visibleItems),['Mes défis','Classements','Mes amis','Notifications','Inviter des amis'],'Daily row hidden while the daily challenge is unavailable');
+ assert.equal(await evaluate(`!document.getElementById('socialGuestNote').hidden&&!document.getElementById('socialSignIn').hidden`),true,'Guests learn what needs an account');
+ const fit=await evaluate(`(()=>{const c=document.querySelector('#socialHub .social-card').getBoundingClientRect();return {inside:c.top>=0&&c.bottom<=innerHeight&&c.left>=0&&c.right<=innerWidth,noHScroll:document.documentElement.scrollWidth<=innerWidth}})()`);
+ assert.deepEqual(fit,{inside:true,noHScroll:true},'Panel fits a 360×640 screen');
+ await capture(send,captureDir,'social-hub-guest-360');
+ await evaluate(`document.getElementById('socialNotifications').click()`);
+ assert.equal(await evaluate(`!document.getElementById('socialNotificationsGuest').hidden&&document.getElementById('socialNotificationsEmpty').hidden`),true,'Guest notifications explain the account requirement');
+ await evaluate(`document.getElementById('socialHubBack').click()`);
+ assert.equal(await evaluate(`!document.getElementById('socialHubMenu').hidden`),true,'Back returns to the menu');
+ await key(send,'Escape','Escape',27);
+ await until(evaluate,`document.getElementById('socialHub').hidden&&document.activeElement.id==='openSocial'`,'Escape closes and restores focus');
+ assert.equal(await evaluate(`document.getElementById('openSocial').getAttribute('aria-expanded')`),'false');
+ // Guests still reach friends (explanation) and the invitation.
+ await evaluate(`document.getElementById('openSocial').click()`);
+ await evaluate(`document.getElementById('openFriends').click()`);
+ await until(evaluate,`!document.getElementById('friendsModal').hidden&&document.getElementById('socialHub').hidden`,'Mes amis from the panel');
+ assert.equal(await evaluate(`!document.getElementById('friendsAccountRequired').hidden`),true);
+ await evaluate(`document.getElementById('friendsClose').click()`);
+ await evaluate(`Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.__shared=data}});document.getElementById('openSocial').click();document.getElementById('inviteLumenFriends').click()`);
+ await until(evaluate,`!!window.__shared`,'invitation from the panel');
+ assert.equal(await evaluate(`!document.getElementById('socialHub').hidden`),true,'The panel stays behind the share sheet');
+ await key(send,'Escape','Escape',27);
+ assert.match(await evaluate('window.__shared.url'),/utm_source=player_invite/);
+ assert.equal(await evaluate('JSON.stringify(lumenDiagnostics.snapshot().state)'),board,'The panel never touches the active grid');
+ assert.equal((await evaluate('window.__socialCalls')).some(n=>/^lumen_friend/.test(n)),false,'No friend RPC for guests');
+ results.push({kind:'guest',width:360});
+
+ for(const [width,height] of [[390,844],[1440,900]]){
+  await open({send,evaluate},url,{signedIn:true,daily:true,width,height});
+  // #35 counters feed the global badge: 1 friend request + 1 friend challenge + 1 unread result.
+  await evaluate(`document.getElementById('openSocial').click()`);
+  await until(evaluate,`document.getElementById('socialBadge').textContent==='3'&&!document.getElementById('socialBadge').hidden`,'global badge '+width);
+  assert.equal(await evaluate(`document.getElementById('friendsBadge').textContent+'/'+document.getElementById('challengeUnreadBadge').textContent`),'2/1','#35 counters unchanged');
+  assert.equal(await evaluate(`document.getElementById('openSocial').getAttribute('aria-label')`),'Espace social, 3 nouveautés');
+  assert.deepEqual(await evaluate(visibleItems),['Défi du jour','Mes défis','Classements','Mes amis','Notifications','Inviter des amis'],'Six sections in the agreed order');
+  assert.match(await evaluate(`document.getElementById('socialDailyState').textContent`),/fin dans/,'Daily state mirrors « Mes quêtes »');
+  assert.equal(await evaluate(`document.getElementById('socialGuestNote').hidden`),true);
+  assert.equal(await evaluate(`document.documentElement.scrollWidth<=innerWidth`),true,'No horizontal scroll at '+width);
+  await capture(send,captureDir,'social-hub-menu-'+width);
+  // Tab stays inside the dialog.
+  const before=await evaluate('document.activeElement.id');
+  for(let i=0;i<12;i++)await key(send,'Tab','Tab',9);
+  assert.equal(await evaluate(`document.getElementById('socialHub').contains(document.activeElement)`),true,'Focus trapped in the panel (from '+before+')');
+  // Rankings: campaign and daily kept apart.
+  await evaluate(`document.getElementById('socialRankings').click()`);
+  assert.equal(await evaluate(`document.getElementById('socialHubTitle').textContent`),'Classements');
+  assert.match(await evaluate(`document.getElementById('socialRankingsView').textContent`),/Classements des quêtes.*Défi du jour · Général et Mes amis/s);
+  assert.equal(await evaluate(`!document.getElementById('socialDailyRanking').hidden`),true);
+  await capture(send,captureDir,'social-hub-rankings-'+width);
+  // Notifications (PR A): existing counters, each opening its screen.
+  await evaluate(`document.getElementById('socialHubBack').click();document.getElementById('socialNotifications').click()`);
+  assert.match(await evaluate(`document.getElementById('socialNotificationsList').textContent`),/2 demandes d’ami ou défis reçus.*1 nouveau résultat/s);
+  await capture(send,captureDir,'social-hub-notifications-'+width);
+  await evaluate(`document.querySelector('#socialNotificationsList [data-social-target="openMyChallenges"]').click()`);
+  await until(evaluate,`!document.getElementById('myChallengesModal').hidden&&document.getElementById('socialHub').hidden`,'result opens Mes défis');
+  await until(evaluate,`document.getElementById('challengeUnreadBadge').hidden&&document.getElementById('socialBadge').textContent==='2'`,'read result leaves the global badge consistent');
+  await evaluate(`document.getElementById('myChallengesClose').click()`);
+  // Mes amis keeps the #35 screen.
+  await evaluate(`document.getElementById('openSocial').click();document.getElementById('openFriends').click()`);
+  await until(evaluate,`!document.getElementById('friendsModal').hidden&&!document.getElementById('friendsBody').hidden`,'Mes amis signed in');
+  await evaluate(`document.getElementById('friendsClose').click()`);
+  // Défi du jour keeps its own entry and route (#882).
+  assert.equal(await evaluate(`!!document.getElementById('openDaily')`),true,'Direct daily entry kept in « Mes quêtes »');
+  await evaluate(`document.getElementById('openSocial').click();document.getElementById('socialDaily').click()`);
+  await until(evaluate,`new URL(location.href).searchParams.get('daily')==='1'`,'daily route');
+  results.push({kind:'signed-in',width});
+ }
+ return results;
+}

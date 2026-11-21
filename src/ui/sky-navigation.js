@@ -74,7 +74,8 @@ export function createSkyNavigation({renderLockedOffer=null,document,getModel,ge
  detail.innerHTML='<button id="constellationBack" class="constellation-back">‹ Toutes les constellations</button>';
  pages.after(detail);
  for(const id of ['puzzleGrid','performanceLegend','skyCard'])detail.appendChild(document.getElementById(id));
- detail.after(document.getElementById('openMyChallenges'));
+ // #898: « Mes défis » now lives in the single social panel; never pull it back.
+ const myChallenges=document.getElementById('openMyChallenges');if(myChallenges&&!myChallenges.closest('#socialHub'))detail.after(myChallenges);
  const oldHeading=sheet.querySelector('h3');if(oldHeading)oldHeading.remove();
  const notice=document.createElement('div');notice.id='adventureNotice';notice.className='adventure-notice';notice.hidden=true;notice.setAttribute('role','dialog');notice.setAttribute('aria-modal','true');notice.setAttribute('aria-label','Aventure verrouillée');
  notice.innerHTML='<div><strong id="adventureNoticeTitle"></strong><p id="adventureNoticeCopy"></p><div id="adventureNoticeOffer" hidden></div><button id="adventureNext" hidden>Découvrir l’Aventure suivante</button><button id="adventureNoticeClose">Compris</button></div>';sheet.appendChild(notice);
