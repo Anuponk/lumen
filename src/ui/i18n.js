@@ -1,4 +1,6 @@
 
+import frResults from './locales/fr/results.js';
+import enResults from './locales/en/results.js';
 import frBoard from './locales/fr/board.js';
 import enBoard from './locales/en/board.js';
 import frWelcome from './locales/fr/welcome.js';
@@ -12,8 +14,8 @@ const DEFAULT_LOCALE = 'fr';
 const PREFERENCE_KEY = 'lumen.locale';
 
 export const locales = Object.freeze({
-  fr: Object.freeze({ nativeName: 'Français', enabled: true, fallback: null, messages: Object.freeze({ ...frBoard, ...frWelcome, ...frLearning, ...frPwaWelcome }) }),
-  en: Object.freeze({ nativeName: 'English', enabled: true, fallback: 'fr', messages: Object.freeze({ ...enBoard, ...enWelcome, ...enLearning, ...enPwaWelcome }) }),
+  fr: Object.freeze({ nativeName: 'Français', enabled: true, fallback: null, messages: Object.freeze({ ...frResults, ...frBoard, ...frWelcome, ...frLearning, ...frPwaWelcome }) }),
+  en: Object.freeze({ nativeName: 'English', enabled: true, fallback: 'fr', messages: Object.freeze({ ...enResults, ...enBoard, ...enWelcome, ...enLearning, ...enPwaWelcome }) }),
 });
 
 function lookup(registry, locale) {
@@ -81,13 +83,13 @@ export function createTranslator({
   }
   fallbackChain.add(DEFAULT_LOCALE);
 
-  function t(key, params = {}) {
+  function t(key, params = {}, { type = "cardinal" } = {}) {
     for (const code of fallbackChain) {
       const messages = lookup(registry, code)?.messages;
       if (!messages || !Object.hasOwn(messages, key)) continue;
       const entry = messages[key];
       const pattern = typeof entry === 'string' ? entry :
-        (entry[new Intl.PluralRules(code).select(params.count)] ?? entry.other);
+        (entry[new Intl.PluralRules(code, { type }).select(params.count)] ?? entry.other);
       if (!pattern) continue;
       if (code !== selected) onMissing(selected, key);
       return pattern.replace(/\{(\w+)\}/g, (_, name) => {

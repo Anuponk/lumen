@@ -1,3 +1,7 @@
+import { createTranslator } from './i18n.js';
+
+const fr = createTranslator().t;
+
 // #682: one shared victory celebration for every quest (first quests, advanced
 // quests, replays, future adventures). Presentation only: nothing here validates
 // a victory, a record, a rank or a reward. Callers pass already-confirmed facts.
@@ -29,11 +33,11 @@ export const CELEBRATION_CONFIG = Object.freeze({
 });
 
 export const REWARD_SLOTS = Object.freeze([
-  Object.freeze({ key: 'star', icon: '✦', label: 'Étoile' }),
-  Object.freeze({ key: 'autonomy', icon: '🧠', label: 'Autonomie' }),
-  Object.freeze({ key: 'speed', icon: '⚡', label: 'Rapidité' }),
-  Object.freeze({ key: 'noError', icon: '✓', label: 'Sans erreur' }),
-  Object.freeze({ key: 'mastery', icon: '✧', label: 'Maîtrise' }),
+  Object.freeze({ key: 'star', icon: '✦' }),
+  Object.freeze({ key: 'autonomy', icon: '🧠' }),
+  Object.freeze({ key: 'speed', icon: '⚡' }),
+  Object.freeze({ key: 'noError', icon: '✓' }),
+  Object.freeze({ key: 'mastery', icon: '✧' }),
 ]);
 
 // Five stable slots, always in the same order. "new" = earned by this run,
@@ -41,23 +45,24 @@ export const REWARD_SLOTS = Object.freeze([
 // "pending" = local victory whose server confirmation is still awaited (#682 I).
 // #706: a completed quest always owns its star, also on a replay or a recovered
 // victory that earns no new star.
-export function rewardSlots({ stars = 0, badges = {}, qualifying = false, prior = {}, completed = false, pending = false } = {}) {
+export function rewardSlots({ stars = 0, badges = {}, qualifying = false, prior = {}, completed = false, pending = false } = {}, t = fr) {
   return REWARD_SLOTS.map((slot) => {
+    const label = t('results.' + slot.key);
     if (slot.key === 'star') {
       const count = Number.isInteger(stars) && stars > 0 ? stars : 0;
       return {
         ...slot,
-        label: count ? '+' + count + ' étoile' + (count > 1 ? 's' : '') : slot.label,
+        label: count ? t('results.starsEarned', { count }) : label,
         state: count ? 'new' : completed ? 'owned' : pending ? 'pending' : 'missing',
       };
     }
     const earned = !!badges?.[slot.key],
       before = !!prior?.[slot.key];
-    if (pending) return { ...slot, state: before ? 'owned' : 'pending' };
+    if (pending) return { ...slot, label, state: before ? 'owned' : 'pending' };
     // Same eligibility as the historical reward list: a prior badge stays owned,
     // a badge is "new" only when this qualifying run earned it.
     const state = before ? 'owned' : earned && qualifying ? 'new' : 'missing';
-    return { ...slot, state };
+    return { ...slot, label, state };
   });
 }
 
@@ -67,15 +72,14 @@ export function remarkableRewards(slots) {
   return fresh.some((slot) => slot.key === 'mastery') || fresh.length >= 2;
 }
 
-const ORDINAL = { 1: '1re', 2: '2e', 3: '3e' };
-export function ordinal(place) {
-  return ORDINAL[place] || place + 'e';
+export function ordinal(place, t = fr) {
+  return t('ranking.ordinal', { count: place }, { type: 'ordinal' });
 }
 
 // `ranking` is the confirmed server board (null while loading/unavailable).
 // Rank messages are emitted only for a confirmed personal position. A podium
 // that includes virtual "Échos" never claims the lead of a real ranking.
-export function rankSummary(ranking) {
+export function rankSummary(ranking, t = fr) {
   if (!ranking || ranking.state !== 'ready') return { rank: null, label: '', lead: '' };
   const personal = ranking.personal;
   if (!personal || !Number.isInteger(personal.position)) return { rank: null, label: '', lead: '' };
@@ -87,11 +91,11 @@ export function rankSummary(ranking) {
       personal.position === 1
         ? withEchoes
           ? ''
-          : 'Tu prends la tête du classement !'
-        : 'Bravo, tu montes sur le podium !';
-    return { rank, label: ordinal(rank.place) + ' place !', lead };
+          : t('ranking.lead')
+        : t('ranking.podium');
+    return { rank, label: t('ranking.podiumPlace', { place: ordinal(rank.place, t) }), lead };
   }
-  return { rank, label: 'Classement : ' + ordinal(rank.place) + ' place', lead: '' };
+  return { rank, label: t('ranking.place', { place: ordinal(rank.place, t) }), lead: '' };
 }
 
 export function celebrationLevel({

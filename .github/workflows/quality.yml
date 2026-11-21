@@ -145,6 +145,7 @@ jobs:
 
       - name: Unified quality gate (Node)
         env:
+          LUMEN_I18N_BASE: ${{ github.event.pull_request.base.sha }}
           LUMEN_VALIDATION_DIR: ${{ runner.temp }}/lumen-validation
           LUMEN_QUALITY_SCOPE: ${{ needs.prepare.outputs.scope || 'full' }}
         run: node scripts/quality-gate.mjs --node-only
