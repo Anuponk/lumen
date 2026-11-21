@@ -6,37 +6,48 @@ export {discoveryUrl, inviteShareUrl};
 // Native result shares carry the Partager campaign; Inviter has its own code.
 export const resultShareUrl = playerShareUrl;
 
-export const inviteShareData = Object.freeze({
-  title: 'Découvrir Lumen',
-  text: "✨ J’ai découvert Lumen, un jeu de logique où tu rallumes les constellations. Tu veux essayer ?",
-  url: discoveryUrl,
-});
+const french = createTranslator().t;
+// #759: shared copy follows the player's language (#754); French stays the default.
+export function inviteShare(t = french) {
+  return { title: t('share.inviteTitle'), text: t('share.inviteText'), url: discoveryUrl };
+}
+export const inviteShareData = Object.freeze(inviteShare());
 
 // #881 Lot 1: the wording follows the accomplishment the victory scene celebrated
 // (quest, completed constellation or completed Adventure). Never a ranking.
 const MILESTONES = {
-  constellation: ({ ordinal, constellation }) => ({
-    title: 'Constellation rallumée dans Lumen',
-    headline: '✦ J’ai rallumé ' + constellation + ' dans Lumen (quête ' + ordinal + ')',
+  constellation: ({ ordinal, constellation }, t) => ({
+    title: t('share.constellationTitle'),
+    headline: t('share.constellationHeadline', { constellation, ordinal }),
   }),
-  adventure: ({ constellation, adventure }) => ({
-    title: 'Aventure accomplie dans Lumen',
-    headline: '✦ Aventure ' + (adventure ? '« ' + adventure + ' » ' : '') + 'accomplie dans Lumen · ' + constellation,
+  adventure: ({ constellation, adventure }, t) => ({
+    title: t('share.adventureTitle'),
+    headline: adventure ? t('share.adventureHeadline', { adventure, constellation }) : t('share.adventureHeadlinePlain', { constellation }),
   }),
 };
 
-export function resultShareData({ ordinal, constellation, time, badges, milestone, adventure }) {
-  const wording = MILESTONES[milestone]?.({ ordinal, constellation, adventure }) ??
-    { title: 'Ma réussite dans Lumen', headline: '✦ Quête ' + ordinal + ' réussie dans Lumen · ' + constellation };
+export function resultShareData({ ordinal, constellation, time, badges, milestone, adventure }, t = french) {
+  const wording = MILESTONES[milestone]?.({ ordinal, constellation, adventure }, t) ??
+    { title: t('share.resultTitle'), headline: t('share.resultHeadline', { ordinal, constellation }) };
   return {
     title: wording.title,
     text: [
       wording.headline,
-      time && 'Temps final ' + time,
+      time && t('share.finalTime', { time }),
       badges.join(' · '),
-      'À toi de jouer !',
+      t('share.yourTurn'),
     ].filter(Boolean).join('\n'),
     url: discoveryUrl,
+  };
+}
+
+// Card copy (the canvas helper stays self-contained for its tests).
+export function shareCardCopy(model, t = french) {
+  return {
+    kicker: model.milestone === 'constellation' ? t('share.cardConstellation') : model.milestone === 'adventure' ? t('share.cardAdventure')
+      : t('share.cardQuest', { ordinal: model.ordinal, total: model.catalogueTotal }),
+    time: model.time ? t('share.finalTime', { time: model.time }) : '',
+    cta: t('share.yourTurn'),
   };
 }
 
@@ -74,7 +85,7 @@ export function createShareDialog(document, navigator, t = createTranslator().t)
 
   function open(data, { invitation = false, origin, makeImage } = {}) {
     if (dialog.open) return;
-    const state = { data, origin, image: null };
+    const state = { data, origin, image: null, invitation };
     current = state;
     title.textContent = invitation ? t('share.invite') : data.title;
     preview.textContent = invitation ? '' : data.text;
@@ -95,7 +106,7 @@ export function createShareDialog(document, navigator, t = createTranslator().t)
     const copied = await tryCopyShare(navigator, selection.value);
     if (current !== state || !dialog.open) return;
     if (copied) {
-      status.textContent = state.data === inviteShareData ? t('share.linkCopied') : t('share.resultCopied');
+      status.textContent = state.invitation ? t('share.linkCopied') : t('share.resultCopied');
       return;
     }
     manual.hidden = false;
@@ -104,7 +115,10 @@ export function createShareDialog(document, navigator, t = createTranslator().t)
   };
   native.onclick = async () => {
     const state = current;
-    const outcome = await tryNativeShare(navigator, { ...state.data, url: resultShareUrl }, state.image);
+    // Only generic discovery links get the Partager campaign; a challenge or other
+    // specific link keeps its own destination (#759).
+    const url = state.data.url === discoveryUrl ? resultShareUrl : state.data.url;
+    const outcome = await tryNativeShare(navigator, { ...state.data, url }, state.image);
     if (current !== state || !dialog.open) return;
     if (outcome === 'shared') dialog.close();
     if (outcome === 'unavailable') {
@@ -125,20 +139,21 @@ export function createShareDialog(document, navigator, t = createTranslator().t)
       open(data, { origin });
     },
     async invite(origin) {
-      const outcome = await tryNativeShare(navigator, { ...inviteShareData, url: inviteShareUrl });
+      const data = inviteShare(t);
+      const outcome = await tryNativeShare(navigator, { ...data, url: inviteShareUrl });
       if (outcome === 'unavailable' && origin.getClientRects().length) {
-        open(inviteShareData, { invitation: true, origin });
+        open(data, { invitation: true, origin });
       }
     },
     result(model, origin) {
-      const data = resultShareData(model);
-      open(data, { origin, makeImage: () => shareCardCanvas(document, model, data.url) });
+      const data = resultShareData(model, t);
+      open(data, { origin, makeImage: () => shareCardCanvas(document, model, data.url, shareCardCopy(model, t)) });
     },
   };
 }
 
 // Self-contained (helpers nested): tests evaluate this function on its own.
-function shareCardCanvas(document, model, url) {
+function shareCardCanvas(document, model, url, copy = null) {
   const CARD_KICKERS = { constellation: 'CONSTELLATION RALLUMÉE', adventure: 'AVENTURE ACCOMPLIE' };
 
   // Real constellation figure (licensed astronomical source, #GRID_CATALOG), lit
@@ -189,12 +204,12 @@ function shareCardCanvas(document, model, url) {
     context.fill();
     line('✦', 246, '96px sans-serif', '#ffe3a1');
   }
-  line(CARD_KICKERS[milestone] ?? 'QUÊTE ' + ordinal + ' / ' + catalogueTotal + ' RÉUSSIE', 372, 'bold 26px sans-serif', '#68e7ff');
+  line(copy?.kicker || (CARD_KICKERS[milestone] ?? 'QUÊTE ' + ordinal + ' / ' + catalogueTotal + ' RÉUSSIE'), 372, 'bold 26px sans-serif', '#68e7ff');
   line(milestone === 'adventure' && adventure ? adventure : constellation, 436, 'bold 46px sans-serif', '#f2fbff');
   if (milestone === 'adventure' && adventure) line(constellation, 482, 'bold 26px sans-serif', '#a9bfd0');
-  if (time) line('Temps final ' + time, 532, 'bold 28px sans-serif', '#f2fbff');
+  if (time) line(copy?.time || 'Temps final ' + time, 532, 'bold 28px sans-serif', '#f2fbff');
   if (badges.length) line(badges.join(' · '), 580, 'bold 23px sans-serif', '#ffe3a1');
-  line('À toi de jouer !', 650, 'bold 32px sans-serif', '#f2fbff');
+  line(copy?.cta || 'À toi de jouer !', 650, 'bold 32px sans-serif', '#f2fbff');
   line(url.replace('https://', ''), 694, '22px sans-serif', '#a9bfd0');
   return new Promise(resolve => canvas.toBlob(blob => {
     resolve(blob && new File([blob], 'lumen-quete-' + ordinal + '.png', { type: 'image/png' }));
