@@ -1686,3 +1686,19 @@ html body .game-core .actions>#new.action-reset:hover,html body .game-core .acti
 @media(prefers-reduced-motion:reduce){.mastery-prelude{display:none}.mastery-spark{display:none}#skyReveal[data-celestial$="mastery"] .celestial-panorama::after{content:none}}
 @media(max-height:700px){#skyReveal[data-celestial$="mastery"] #skyRevealName{font-size:13px;line-height:1.3}}
 .celestial-still .mastery-spark,.celestial-still .celestial-panorama::after{display:none}
+/* #929: private circles (EPIC #928 V1). Reuses the social card; compact and readable on phones. */
+.circles-card{text-align:left}.circles-status{min-height:1.2em;margin:4px 0 8px;font-size:13px;color:#ffd9a0}.circles-status:empty{margin:0;min-height:0}
+.circles-section{margin:14px 0;padding-top:12px;border-top:1px solid rgba(104,231,255,.16)}.circles-section:first-child{border-top:0;padding-top:0}.circles-section h3{margin:0 0 8px;font-size:15px}
+.circles-list,.circles-members,.circles-links,.circles-board{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:6px}
+.circles-list li,.circles-members li,.circles-links li{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:space-between;padding:8px 10px;border-radius:12px;background:rgba(104,231,255,.06)}
+.circles-list li span{display:grid;gap:2px;flex:1 1 160px}.circles-list small,.circles-members small,.circles-links small{color:#9fb3c8;font-size:12px}
+.circles-open{flex:1 1 auto;text-align:left;min-height:44px}.circles-body button{min-height:44px}
+.circles-owner{color:#f4cf78!important}
+.circles-form{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:8px}.circles-form label{flex:1 1 100%;font-size:13px;color:#b9ccda}
+.circles-form input,.circles-form select,#circleQuest{flex:1 1 180px;min-height:44px;padding:8px 10px;border-radius:10px;border:1px solid rgba(104,231,255,.3);background:#081522;color:#edfaff;font:inherit;max-width:100%}
+#circleQuest{width:100%;margin:4px 0 10px}
+.circles-rank{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;background:rgba(104,231,255,.06)}
+.circles-mine{outline:2px solid rgba(244,207,120,.6)}.circles-place{font-weight:700;color:#f4cf78}.circles-time{font-variant-numeric:tabular-nums}
+.circles-empty{color:#b9ccda}.circles-note,.circles-personal{font-size:13px;color:#9fb3c8;margin:6px 0}
+.circles-danger{display:flex;flex-wrap:wrap;gap:8px}.circles-danger button{border-color:rgba(255,160,140,.5);color:#ffd9d0}
+@media(max-width:420px){.circles-form button{flex:1 1 100%}.circles-rank{gap:6px;padding:8px}}

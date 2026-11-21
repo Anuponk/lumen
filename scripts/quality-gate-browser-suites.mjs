@@ -209,6 +209,11 @@ export const browserSuites=[
     "script": "menu-pause-browser-tests.mjs",
     "output": "ci-menu-pause.json",
     "port": 9271
+  },
+  {
+    "script": "circles-browser-tests.mjs",
+    "output": "ci-circles.json",
+    "port": 9272
   }
 ];
 

@@ -1,5 +1,6 @@
 import {setupAppUpdates} from './app-updates.js';
-import {createShareDialog,discoveryUrl,adventureShareMilestone} from './lumen-share.js';
+import {createShareDialog,discoveryUrl,adventureShareMilestone,tryNativeShare,tryCopyShare} from './lumen-share.js';
+import {createCircleClient,setupCircles,readCircleToken} from './circles.js';
 import {consumeInstallRequest,isIosDevice,requestedInstallCopy,installGuestWarning} from './install-request.js';
 import {pwaFirstOpenEligible,createPwaFirstOpen} from './pwa-first-open.js';
 import {readNativeAuthLinkResult,scrubNativeAuthLinkError,authLinkMessage} from '../persistence/auth-link-result.js';
@@ -3054,7 +3055,7 @@ function handleLearningTap(event){
  if(document.querySelector('#mapModal:not([hidden]),#rulesModal:not([hidden]),#feedbackModal:not([hidden]),#tutorialOverlay:not([hidden]),#badgeRulesModal:not([hidden])'))return;
  // Learning restrictions apply to gameplay, never to account dialogs or other controls
  // (#711: the full-screen signed-out and account-switch layers sit above the board).
- if(target.closest("#installOptin,#accountOptin,#signedOutScreen,#accountSwitchHold,#authLinkResult,#passwordRecovery,#pwaWelcome,#mandatoryNickname,#erasedAccountNotice,#mobileAuthPopover,#mobileAccount,#lumenShareDialog,#skyRevealShareResult,#dailyIntro,#dailyResultModal,#dailyWeekModal,#friendsModal,#friendPickerModal,#openSocial,#socialHub,#myChallengesModal,#new,#tutorialHelp,#attemptPause,#attemptMask,#feedbackBtn,#learningCoachNext,#learningSkip,#lumenConfirm,#abandonConfirm"))return;
+ if(target.closest("#installOptin,#accountOptin,#signedOutScreen,#accountSwitchHold,#authLinkResult,#passwordRecovery,#pwaWelcome,#mandatoryNickname,#erasedAccountNotice,#mobileAuthPopover,#mobileAccount,#lumenShareDialog,#skyRevealShareResult,#dailyIntro,#dailyResultModal,#dailyWeekModal,#friendsModal,#friendPickerModal,#openSocial,#socialHub,#myChallengesModal,#new,#tutorialHelp,#attemptPause,#attemptMask,#feedbackBtn,#learningCoachNext,#learningSkip,#lumenConfirm,#abandonConfirm,#circlesModal,#openCircles"))return;
  if(target.closest("#board .cell"))return;
  if(target.closest('#openSky')&&lumenUser&&!qaActive)void openPlayReviewMapFromLearning();
  event.preventDefault();event.stopImmediatePropagation();
@@ -3322,7 +3323,7 @@ function resumeGameClock(){attemptEngine.resume();clock()}
 // #925: top menus and in-game dialogs reuse this same pause while they are open.
 // Mon ciel is a navigation destination, not a menu: its behaviour is unchanged.
 const menuPause=createMenuPause({document,
- ids:['socialHub','friendsModal','friendPickerModal','myChallengesModal','mobileAuthPopover','dailyInfoPopover','rulesModal','feedbackModal','lumenShareDialog','lumenConfirm','abandonConfirm'],
+ ids:['socialHub','friendsModal','friendPickerModal','myChallengesModal','circlesModal','mobileAuthPopover','dailyInfoPopover','rulesModal','feedbackModal','lumenShareDialog','lumenConfirm','abandonConfirm'],
  running:()=>attemptEngine.snapshot()?.state===ATTEMPT_STATES.RUNNING,
  paused:()=>attemptEngine.snapshot()?.state===ATTEMPT_STATES.PAUSED,
  attemptId:()=>attemptEngine.snapshot()?.attemptId??null,
@@ -6029,8 +6030,20 @@ const socialNotifications=createSocialNotifications({t,getOwner:()=>lumenUser?.i
  fetchFriends:()=>friendsClient.list(),fetchInbox:()=>friendsClient.inbox(),fetchSent:()=>challengeClient.sent(),
  questLabel:row=>challengeQuestLabel(row),onChange:()=>socialHub?.refresh(),
  open:event=>{if(event.target.type==='challenge')location.href=socialChallengeUrl(event.target.id);else if(event.target.type==='my-challenges')openMyChallenges(event.target.id,{duel:true});else document.getElementById("openFriends")?.click()}});
-socialHub=setupSocialHub({t,isSignedIn:()=>!!lumenUser,onSignIn:()=>openEmailAccountOffer("signup"),notifications:socialNotifications,onOpen:()=>{void refreshFriendsBadge();void loadMyChallenges()}});
+socialHub=setupSocialHub({t,isSignedIn:()=>!!lumenUser,onSignIn:()=>openEmailAccountOffer("signup"),notifications:socialNotifications,onOpen:()=>{void refreshFriendsBadge();void loadMyChallenges();void circles?.refreshBadge()}});
 document.getElementById("openFriends")?.addEventListener("click",()=>socialNotifications.markKindSeen("friend-accepted"));
+// #929 (EPIC #928 V1): private circles behind « Mes cercles ». The server owns
+// every rule; a ?circle= link stays in the URL until it is used or declined.
+const circleClient=createCircleClient({rpc:(name,args)=>lumenSupabase?lumenSupabase.rpc(name,args):Promise.resolve({data:null,error:new Error('cloud_unavailable')})});
+function forgetCircleLink(){try{const url=new URL(location.href);if(url.searchParams.has('circle')){url.searchParams.delete('circle');history.replaceState(history.state,'',url.pathname+url.search+url.hash)}}catch{}}
+const circles=setupCircles({t,client:circleClient,isSignedIn:()=>!!lumenUser,formatDuration,
+ questLabel:(id,revision)=>challengeQuestLabel({stable_quest_id:id,grid_revision:revision}),
+ friends:async()=>friendsOnly(await friendsClient.list()).map(friend=>friend.nickname),
+ share:async(url,name)=>{const data={title:t('circles.shareTitle',{name:name||''}),text:t('circles.shareTitle',{name:name||''}),url};
+  if(await tryNativeShare(navigator,data)==='shared')return true;return await tryCopyShare(navigator,url)},
+ confirm:options=>lumenConfirm().open(options),onSignIn:()=>openEmailAccountOffer("signup"),onLinkDone:forgetCircleLink});
+document.getElementById("openCircles")?.addEventListener("click",()=>void circles?.open());
+{const link=readCircleToken(location.href);if(link)void circles?.open({link})}
 window.addEventListener("online",()=>{void socialNotifications.refresh({force:true})});
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)void socialNotifications.refresh()});
 void socialNotifications.refresh();

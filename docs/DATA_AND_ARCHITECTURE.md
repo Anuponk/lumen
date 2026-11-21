@@ -1901,6 +1901,44 @@ Snapshots stay in the database. No time, rank, badge, status, link or owner
 changes; no client cache holds names (notifications are rebuilt from current
 lists, an « accepted » notice keyed by an old name simply expires).
 
+### Private circles (#929, EPIC #928 V1)
+
+Migration `20261122130000_private_circles_929.sql` (additive, idempotent).
+Accounts with a ready nickname only (`lumen.social_caller`). Privacy model as
+#35: every row has exactly one owner and there is no foreign key between Lumen
+tables, so Lumen erasure (`lumen_privacy.policy()`, registered here) removes a
+player's rows only; triggers keep circles consistent.
+
+| Table | Owner (erasure) | Notes |
+|---|---|---|
+| `lumen.circles` | `owner_user_id` | name 2–30 chars, nickname character rule + apostrophes |
+| `lumen.circle_members` | `user_id` | role `owner`/`member`, one owner per circle |
+| `lumen.circle_invites` | `recipient_user_id` | friend invitations; `declined_at` drives the 24 h cooldown |
+| `lumen.circle_links` | `created_by` | only `sha256(token)`; 7-day expiry; revocable |
+
+Triggers: a member leaving (or erased) makes the oldest remaining member owner;
+the last member leaving deletes the circle; deleting a circle deletes its
+members, invitations and links. Tables have RLS and no direct grant; the
+`public.lumen_circle_*` RPCs (`list`, `create`, `rename`, `delete`, `leave`,
+`remove_member`, `detail`, `invite_friend`, `respond`, `link_create`,
+`link_revoke`, `link_preview`, `link_join`, `board`) are `SECURITY DEFINER`,
+granted to `authenticated` only (anon revoked explicitly, since hosted
+Supabase grants it by default). Owner-only: rename, delete, invitations, links,
+removal. A non-member gets the same `circle_not_found` as for an unknown circle;
+an unknown, expired or revoked link the same `circle_link_invalid`. A valid
+link preview shows only the circle name, its owner's nickname and its size.
+Owner decision (2026-11-21): 20 members per circle, 10 circles per player
+(owned or joined), 3 active links per circle, 20 pending friend invitations per
+circle, 24 h before re-inviting after a refusal.
+
+Private ranking (`lumen_circle_board`): the official ranked score
+(`lumen_commands.ranking_scores`, seconds + penalties) of members for one quest
+and grid revision, the public tie rule (`rank() over(order by score)`), no
+virtual players, public filters (participating, ready nickname, not opted out of
+the ranking); members without a time are only counted. The public board is
+unchanged. Out of scope (#930/#931): collective challenges, seasons, points,
+notifications, rewards.
+
 Recipient invariants (`challenge-recipient-browser.mjs`,
 `fixtures/challenge-rpc-matrix.sql`):
 - the challenged grid is played even from a locked Adventure: `choose()` does not

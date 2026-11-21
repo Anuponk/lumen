@@ -193,6 +193,7 @@ export const nodeSuites=[
  "lumen-dialog-tests.mjs",
  "mastery-prelude-tests.mjs",
  "menu-pause-tests.mjs",
+ "circles-tests.mjs",
  "performance-badge-tests.mjs",
  "unlocked-adventure-progress.test.mjs",
  "test-affected-tests.mjs",
