@@ -374,6 +374,16 @@ friends and notifications need an account. Copy lives in the `social.*` domain
 (`src/ui/locales/{fr,en}/social.js`, reviewed by `i18n-audit.mjs`). Captures:
 `docs/validation/social-hub-*.png`.
 
+**Notifications (#898 PR B).** In-app only, no push, no toast, never during a
+grid: the « Notifications » row lists, newest first, a friend request received,
+a friend challenge received, a result available on one of my challenges and a
+friend request accepted. Each row opens its screen directly (Mes amis, the
+challenge link, or Mes défis focused on that challenge). Rows carry « Nouveau »
+until viewed (kept highlighted during that viewing) and « À traiter » while an
+action is pending. The global badge stays the #35 counters plus only the
+acceptances not seen yet, so nothing is counted twice. Offline, the last known
+list stays visible with a short notice; reconnection refreshes it.
+
 « Amis et défis » (#35, row « Mes amis » of the panel) stays an optional screen,
 never on the game screen and never inside a grid. Guests see why friends need an account and
 keep playing link challenges. Friends are added by exact nickname; « Envoyer à un

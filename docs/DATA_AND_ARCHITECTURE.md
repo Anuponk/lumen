@@ -1957,7 +1957,16 @@ from « Mes défis ». No push or in-app notification beyond a small counter of
 pending requests and received challenges on the entry button. Since #898 the
 entry buttons (`#openFriends`, `#openMyChallenges`, `#inviteLumenFriends`) and
 their counters live in the Espace social panel (`src/ui/social-hub.js`), keeping
-their ids so the #35 code binds them unchanged.
+their ids so the #35 code binds them unchanged. In-app notifications
+(`src/ui/social-notifications.js`, PR B) are derived from the same reads
+(`lumen_friend_list`, `lumen_challenge_inbox`, `lumen_list_quest_challenges_v2`);
+no table, RPC or migration is added and nothing is pushed. The only state is
+local, per account and device: `localStorage['lumenSocialNotificationsV1:<user id>']`
+= `{version, baseline, outgoing[], accepted[], seen[]}` (lower-case nicknames of
+pending outgoing requests to notice an acceptance, acceptances kept 30 days
+while the friendship exists, ids already read; bounded, ids of vanished items
+forgotten). The first observation on a device is a silent baseline (no flood of
+old acceptances). Guests store nothing.
 
 ### Security-advisor note
 Supabase reports the two social tables as `rls_enabled_no_policy` and the anonymous social RPCs as callable SECURITY DEFINER functions. For #18 this is intentional: guests are a product requirement, direct table access is denied by RLS, and the narrow RPCs enforce the ownership/one-attempt contract. These warnings are not a claim that the whole project is security-clean; unrelated existing advisor warnings remain and must be reviewed separately.
