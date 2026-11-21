@@ -204,6 +204,11 @@ export const browserSuites=[
     "script": "lumen-dialog-browser-tests.mjs",
     "output": "ci-lumen-dialog.json",
     "port": 9270
+  },
+  {
+    "script": "menu-pause-browser-tests.mjs",
+    "output": "ci-menu-pause.json",
+    "port": 9271
   }
 ];
 

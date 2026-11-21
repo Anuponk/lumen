@@ -62,12 +62,14 @@ try{
   if(viewport.mobile)fs.writeFileSync(new URL('../docs/validation/abandon-confirm-390.png',import.meta.url),Buffer.from((await send('Page.captureScreenshot',{format:'png'})).data,'base64'));
   await evaluate('document.getElementById("abandonContinue").click()');
   assert.equal(await evaluate(visible('abandonConfirm')),false);
+  // #925: the dialog paused the run; closing it resumes the same run once.
+  await until(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).state==='RUNNING'`);
   const kept=await attempt();
   assert.equal(kept.attemptId,live.attemptId);assert.equal(kept.state,'RUNNING');assert.equal(kept.qualifying,true);
   assert.deepEqual(kept.board,live.board,'cancelling keeps the board');
   await evaluate('document.getElementById("attemptAbandon").click()');
   await evaluate(`document.getElementById('abandonConfirm').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`);
-  assert.equal(await evaluate(visible('abandonConfirm')),false,'Escape cancels');assert.equal((await attempt()).state,'RUNNING');
+  assert.equal(await evaluate(visible('abandonConfirm')),false,'Escape cancels');await until(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')).state==='RUNNING'`,'Escape resumes the run');
 
   // 4. Confirm: closed, no resumable run, Mon Ciel on its constellation.
   await evaluate('document.getElementById("attemptAbandon").click()');

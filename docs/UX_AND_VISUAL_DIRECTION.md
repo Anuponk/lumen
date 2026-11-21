@@ -318,6 +318,14 @@ Inventory (2026-11-21): grid reset, friend removal, QA progress reset (internal)
 and Abandonner (#908, same component, unchanged copy). No `alert`, `prompt` or
 `beforeunload` prompt exists. Information and real errors keep their inline
 status lines; Google Play « aucun droit pour cet achat » is a separate issue.
+## Menus pause the quest — #925
+Opening a top menu (Social, Account, Help, Report, Share, their sub-panels) or an
+in-game confirmation during a quest uses the Pause button's own mechanism: the
+grid disappears behind the opaque attempt mask and is inert, the official clock
+stops. Closing the last menu brings the grid back and restarts the clock once.
+A grid the player had paused stays paused; after leaving the app it waits for an
+explicit resume. One-shot challenges and the Défi du jour already allow the pause
+button, so no exception applies. Mon ciel is a navigation, not a menu: unchanged.
 
 ## Error UX
 No lives system. When guidance is active, illegal/conflicting Guardian reasoning should identify the relevant rule and source cells. A correction should be persistent enough to be understood rather than disappearing on an accidental outside tap.

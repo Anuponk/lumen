@@ -416,6 +416,7 @@ Phase 2: `npm run test:affected` / `node scripts/test-affected.mjs` selects the 
 | Abandon and qualification window (#908) | `abandon-attempt-908-tests.mjs`, `abandon-attempt-browser-tests.mjs`, `attempt-engine-tests.mjs` | Full gate |
 | In-game confirmations (#921) | `lumen-dialog-tests.mjs`, `lumen-dialog-browser-tests.mjs`, `quest-review-tests.mjs`, `abandon-attempt-browser-tests.mjs` | Full gate |
 | Mastery celebration (#886) | `mastery-prelude-tests.mjs`, `adventure-mastery-browser-tests.mjs`, `admin-preview-browser-tests.mjs`, `celestial-ux-tests.mjs` | Full gate |
+| Menu pause (#925) | `menu-pause-tests.mjs`, `menu-pause-browser-tests.mjs`, `abandon-attempt-browser-tests.mjs`, `attempt-engine-tests.mjs` | Full gate |
 | Analytics release comparison (#708 D) | `analytics-versions-tests.mjs`, `fixtures/admin-version-health-708.sql` (ledger CI), `analytics-admin-browser-tests.mjs` | Full gate |
 | Analytics acquisition & engagement (#708 C) | `analytics-engagement-tests.mjs`, `fixtures/admin-engagement-708.sql` (ledger CI), `analytics-admin-browser-tests.mjs` | Full gate |
 | Friend duels (#896) | `duel-view-tests.mjs`, `duel-browser.mjs` in the canonical replay suite | Full gate |
