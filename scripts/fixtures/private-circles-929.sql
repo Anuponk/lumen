@@ -81,7 +81,7 @@ begin
  perform set_config('request.jwt.claim.sub',ben::text,true);
  assert public.lumen_circle_respond(inv,true)->>'state'='joined','friend joins';
  x:=public.lumen_circle_detail(circle);
- assert x->>'role'='member' and x->'pending' is null and x->'links' is null,'members do not see owner tools';
+ assert x->>'role'='member' and jsonb_typeof(x->'pending')='null' and jsonb_typeof(x->'links')='null','members do not see owner tools';
  -- Member permissions: no rename, delete, invite, link, removal.
  begin perform public.lumen_circle_rename(circle,'Ben');raise exception 'member renamed';
  exception when insufficient_privilege then if sqlerrm<>'circle_owner_required' then raise;end if;end;
