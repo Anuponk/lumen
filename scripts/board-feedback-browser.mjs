@@ -59,13 +59,14 @@ export async function verifyBoardFeedback({send,evaluate}){
   })()`);
   assert.match(hint.text,/colonnes 3 et 4/);assert.match(hint.text,/L6C3/);assert.deepEqual(hint.target,[[5,2]]);
   if(width===360){
-   const beforeSwitch=await evaluate('JSON.stringify({state:lumenDiagnostics.snapshot().state,attempt:JSON.parse(localStorage.getItem(\"lumenActiveAttemptV1\"))})');
+   const beforeSwitch=await evaluate('JSON.stringify({state:lumenDiagnostics.snapshot().state,attempt:(({state,activeDuration,lastActiveAt,updatedAt,...rest})=>rest)(JSON.parse(localStorage.getItem(\"lumenActiveAttemptV1\")))})');
    assert(JSON.parse(beforeSwitch).attempt?.helpUses?.hint>0,'Use count is persisted before the locale switch');
    await evaluate(`document.getElementById('tutorialHelp').click();window.setHintTestLanguage=mode=>{const picker=document.getElementById('gameLocaleMode');picker.value=mode;picker.dispatchEvent(new Event('change',{bubbles:true}));};window.setHintTestLanguage('en');`);
    assert.equal(await evaluate("document.getElementById('hintTitle').textContent"),'Hint');
    assert.match(await evaluate("document.getElementById('hintCopy').textContent"),/columns 3 and 4.*R6C3/);
    assert.deepEqual(await evaluate("Array.from(document.querySelectorAll('.hint-target'),node=>[Number(node.dataset.row),Number(node.dataset.col)])"),hint.target);
-   assert.equal(await evaluate('JSON.stringify({state:lumenDiagnostics.snapshot().state,attempt:JSON.parse(localStorage.getItem(\"lumenActiveAttemptV1\"))})'),beforeSwitch,'Locale switching cannot use a second hint or change the board');
+   assert.equal(await evaluate('JSON.stringify({state:lumenDiagnostics.snapshot().state,attempt:(({state,activeDuration,lastActiveAt,updatedAt,...rest})=>rest)(JSON.parse(localStorage.getItem(\"lumenActiveAttemptV1\")))})'),beforeSwitch,'Locale switching cannot use a second hint or change the board');
+   assert.equal(await evaluate('JSON.parse(localStorage.getItem("lumenActiveAttemptV1")).state'),'PAUSED','#925: Help pauses the run');
    await evaluate("window.setHintTestLanguage('fr');delete window.setHintTestLanguage;document.getElementById('closeRulesModal').click()");
    assert.equal(await evaluate("document.getElementById('hintCopy').textContent"),hint.text);
   }
