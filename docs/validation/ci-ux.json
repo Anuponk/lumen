@@ -1,0 +1,115 @@
+{
+  "modalScenarios": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "quest": 1,
+      "failures": []
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "quest": 2,
+      "failures": []
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "quest": 6,
+      "failures": []
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "quest": 11,
+      "failures": []
+    },
+    {
+      "viewport": {
+        "width": 360,
+        "height": 640,
+        "mobile": true
+      },
+      "quest": 1,
+      "failures": []
+    },
+    {
+      "viewport": {
+        "width": 360,
+        "height": 640,
+        "mobile": true
+      },
+      "quest": 2,
+      "failures": []
+    },
+    {
+      "viewport": {
+        "width": 360,
+        "height": 640,
+        "mobile": true
+      },
+      "quest": 6,
+      "failures": []
+    },
+    {
+      "viewport": {
+        "width": 360,
+        "height": 640,
+        "mobile": true
+      },
+      "quest": 11,
+      "failures": []
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "mobile": false
+      },
+      "quest": 1,
+      "failures": []
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "mobile": false
+      },
+      "quest": 2,
+      "failures": []
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "mobile": false
+      },
+      "quest": 6,
+      "failures": []
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "mobile": false
+      },
+      "quest": 11,
+      "failures": []
+    }
+  ],
+  "vocabularyAndCTAViewports": 3,
+  "failures": [],
+  "uncaughtErrors": []
+}

@@ -1,0 +1,35 @@
+{
+  "simulatedAuth": true,
+  "liveCloudWrites": false,
+  "results": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "guestDismiss": true,
+      "passwordLogin": true,
+      "reload": true,
+      "recoveryVisible": true,
+      "recoveryReload": true,
+      "passwordSet": true,
+      "restoreFailureVisible": true
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "mobile": false
+      },
+      "guestDismiss": true,
+      "passwordLogin": true,
+      "reload": true,
+      "recoveryVisible": true,
+      "recoveryReload": true,
+      "passwordSet": true,
+      "restoreFailureVisible": true
+    }
+  ],
+  "exceptions": []
+}
