@@ -1827,6 +1827,8 @@ Timed play is owned by `src/game/attempt-engine.js`, not by screen-open time. A 
 
 A newly displayed board starts in READY behind a protective mask. The first intentional board gesture starts the attempt. Backgrounding pauses a running attempt; returning never silently resumes it. Reload restoration also returns a previously running attempt as PAUSED. Board state, accumulated duration, assistance and reset count are persisted with the attempt.
 
+Menus and in-game dialogs (#925: Social, Account, Help, Report, Share, friends/challenges panels, confirmations) use this same pause through `src/ui/menu-pause.js`: a RUNNING attempt is paused when the first opens (opaque mask, inert board) and resumed once when the last closes, after a 150 ms grace period that covers chained menus. An attempt already paused stays paused; backgrounding while a menu is open releases the pending resume. Mon ciel is a navigation destination and keeps its prior behaviour. The badge/ranking cooldown is wall-clock time from the qualifying start and is not affected by any pause.
+
 Reset clears the board while retaining attempt identity, elapsed active time and assistance history. Campaign, replay and challenge share this lifecycle; badge eligibility (#30) and challenge one-shot business rules (#18) remain owned by their respective features rather than duplicated in the engine.
 
 ## Social challenge architecture (#18)

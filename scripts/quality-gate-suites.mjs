@@ -190,6 +190,7 @@ export const nodeSuites=[
  "canonical-ledger-client-tests.mjs",
  "attempt-engine-tests.mjs",
  "abandon-attempt-908-tests.mjs",
+ "menu-pause-tests.mjs",
  "performance-badge-tests.mjs",
  "unlocked-adventure-progress.test.mjs",
  "test-affected-tests.mjs",

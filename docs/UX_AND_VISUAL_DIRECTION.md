@@ -303,6 +303,15 @@ Quest 1 uses the same board, cell marks, controls and input handlers as ordinary
 
 The player marks exclusions manually. Row, column and diagonal neighbors are taught separately; introduce the real touch/mouse drag only after the second Guardian. There are no tutorial Next/Previous buttons or automated marking animations. Quest 2 guides a first singleton placement, then requires practicing the real mouse/touch drag across its first row before free play with dismissible advice at the first actual need and a short Mon ciel tour. The shared responsive board sizing on short mobile screens reserves room for advice while retaining visible controls and avoiding scroll. Reduced-motion preferences suppress coach transitions.
 
+## Menus pause the quest — #925
+Opening a top menu (Social, Account, Help, Report, Share, their sub-panels) or an
+in-game confirmation during a quest uses the Pause button's own mechanism: the
+grid disappears behind the opaque attempt mask and is inert, the official clock
+stops. Closing the last menu brings the grid back and restarts the clock once.
+A grid the player had paused stays paused; after leaving the app it waits for an
+explicit resume. One-shot challenges and the Défi du jour already allow the pause
+button, so no exception applies. Mon ciel is a navigation, not a menu: unchanged.
+
 ## Error UX
 No lives system. When guidance is active, illegal/conflicting Guardian reasoning should identify the relevant rule and source cells. A correction should be persistent enough to be understood rather than disappearing on an accidental outside tap.
 

@@ -199,6 +199,11 @@ export const browserSuites=[
     "script": "abandon-attempt-browser-tests.mjs",
     "output": "ci-abandon-attempt.json",
     "port": 9269
+  },
+  {
+    "script": "menu-pause-browser-tests.mjs",
+    "output": "ci-menu-pause.json",
+    "port": 9271
   }
 ];
 

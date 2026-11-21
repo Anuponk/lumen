@@ -106,6 +106,7 @@ import {mountAdventureAccess} from './adventure-access-panel.js';
 import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
 import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery,mainSkyOffer} from './adventure-offer.js';
 import {purchaseThanksModel,showPurchaseThanks} from './purchase-thanks.js';
+import {createMenuPause} from './menu-pause.js';
 import {PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,createForegroundRecovery,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,toPlayProductId,findOwnedPlayPurchase,playOwnershipMessage,playOwnershipSummary} from '../persistence/play-billing.js';
 import {rememberPlayAppLaunch,isPlayDistributedApp,stripeCheckoutAvailable,startStripeCheckout,stripeSessionStatus,restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage} from '../persistence/stripe-checkout.js';
 import {SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS,isMainSkyProduct} from '../campaign/store-catalogue.js';
@@ -2279,7 +2280,9 @@ async function loadMyChallenges(){
  }catch(e){console.warn("challenge inbox",e);return []}
 }
 async function openMyChallenges(focusId=null,{duel=false}={}){
- const rows=await loadMyChallenges();document.getElementById("myChallengesModal").hidden=false;
+ // #925: the pause holds while the list loads, after the previous menu stepped aside.
+ const loaded=menuPause.hold();let rows;
+ try{rows=await loadMyChallenges();document.getElementById("myChallengesModal").hidden=false}finally{loaded()}
  if(focusId)document.querySelector('#myChallengesList [data-challenge-id="'+CSS.escape(focusId)+'"]')?.scrollIntoView({block:"center"});
  // #896: a result notification opens the latest finished duel of that challenge.
  if(duel&&focusId){const row=(rows||[]).find(r=>r.challenge_id===focusId),index=(row?.participants||[]).findIndex(p=>["completed","abandoned"].includes(p?.status));if(index>=0)showDuelCard(duelFromSentRow(row,row.participants[index]))}
@@ -2657,6 +2660,8 @@ function updateAttemptUI(){
  if(!mask)return;
  const ready=a?.state===ATTEMPT_STATES.READY,paused=a?.state===ATTEMPT_STATES.PAUSED;
  mask.hidden=!(ready||paused)||(ready&&learningQuestActive());
+ // #925: a paused grid is out of reach for touch, keyboard and screen readers.
+ const grid=document.getElementById("board");if(grid)grid.inert=paused;
  document.getElementById("attemptMaskTitle").textContent=t(paused?"board.paused":"board.ready");
  document.getElementById("attemptMaskCopy").textContent=t(paused?"board.pausedCopy":"board.readyCopy");
  const record=document.getElementById('personalRecord'),quest=activeQuest();
@@ -3302,8 +3307,17 @@ function clock(){
 }
 function pauseGameClock(){attemptEngine.pause();clock()}
 function resumeGameClock(){attemptEngine.resume();clock()}
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")pauseGameClock();else loadMyChallenges()});
-window.addEventListener("pagehide",pauseGameClock);
+// #925: top menus and in-game dialogs reuse this same pause while they are open.
+// Mon ciel is a navigation destination, not a menu: its behaviour is unchanged.
+const menuPause=createMenuPause({document,
+ ids:['socialHub','friendsModal','friendPickerModal','myChallengesModal','mobileAuthPopover','dailyInfoPopover','rulesModal','feedbackModal','lumenShareDialog','lumenConfirm','abandonConfirm'],
+ running:()=>attemptEngine.snapshot()?.state===ATTEMPT_STATES.RUNNING,
+ paused:()=>attemptEngine.snapshot()?.state===ATTEMPT_STATES.PAUSED,
+ attemptId:()=>attemptEngine.snapshot()?.attemptId??null,
+ pause:pauseGameClock,resume:resumeGameClock});
+// Backgrounding pauses; returning never silently resumes, even when a menu closes later.
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){pauseGameClock();menuPause.release()}else loadMyChallenges()});
+window.addEventListener("pagehide",()=>{pauseGameClock();menuPause.release()});
 
 function displayedCellState(r,c){
  // 0 empty, 1 manual X, 2 diamond, 3 derived automatic X
