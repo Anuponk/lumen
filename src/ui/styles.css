@@ -1603,6 +1603,33 @@ html body .game-core .actions>#new.action-reset:hover,html body .game-core .acti
 .duel-row-actions button{flex:1 1 auto;min-height:44px;border-radius:12px}
 .duel-loading{min-height:120px}
 .friend-challenge>.duel-row{margin:6px 0}
+/* #896 recette 21/11: compact « Mes défis » list. Scoped to .challenge-compact;
+   the detail card (.duel-card) and the shared .duel-row are unchanged. */
+.challenge-list-item.challenge-compact{padding:6px 0 8px}
+.challenge-compact-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.challenge-compact-quest{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px}
+.challenge-share{position:relative;flex:none}
+.challenge-share>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:4px;min-height:44px;min-width:44px;margin:-4px -6px -4px 0;padding:0 10px;border-radius:12px;font-size:13px;color:#9fdcf0}
+.challenge-share>summary::-webkit-details-marker{display:none}
+.challenge-share>summary::after{content:"▾";font-size:11px}
+.challenge-share[open]>summary::after{content:"▴"}
+.challenge-share>summary:focus-visible{outline:2px solid #68e7ff;outline-offset:2px}
+.challenge-share-actions{position:absolute;right:0;top:100%;z-index:3;display:grid;gap:6px;min-width:190px;padding:8px;border-radius:14px;background:#0d1b2a;border:1px solid rgba(104,231,255,.25);box-shadow:0 8px 24px rgba(0,0,0,.45)}
+.challenge-share-actions button{min-height:44px;border-radius:12px;font-size:14px;white-space:nowrap}
+.challenge-duels{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:4px}
+.challenge-duel{display:grid;gap:0;padding:2px 4px 4px 10px;border-radius:12px;background:rgba(104,231,255,.05);border:1px solid rgba(104,231,255,.12)}
+.challenge-duel-main{display:flex;align-items:center;gap:8px;min-height:44px}
+.challenge-duel-icon{flex:none;width:1.2em;text-align:center}
+.challenge-duel-verdict{flex:1 1 auto;min-width:0;font-size:15px;line-height:1.25;overflow-wrap:anywhere}
+.challenge-duel-open{flex:none;min-height:44px;padding:0 14px;border-radius:12px;font-size:14px}
+.challenge-duel-times{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;margin:-4px 0 6px;font-size:13px;color:#cfe3ee}
+.challenge-duel-time{min-width:0}
+.challenge-duel-time small{display:inline-block;max-width:11em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;font-size:12px;color:#9fb8c9}
+.challenge-duel-time b{font-size:15px;font-variant-numeric:tabular-nums;color:#ffffff}
+.challenge-duel-sep{color:#6f8aa0}
+.challenge-duel.duel-won{border-color:rgba(255,214,120,.5)}
+.challenge-duel.duel-won .challenge-duel-verdict{color:#ffe39a}
+.challenge-duel-empty{margin:6px 0 0;font-size:13px;color:#9fb8c9}
 @media(max-width:380px){.duel-time{font-size:24px}.duel-verdict strong{font-size:19px}.duel-player{padding:10px 4px 8px}}
 @media(prefers-reduced-motion:reduce){.duel-card *,.duel-row *{transition:none!important;animation:none!important}}
 

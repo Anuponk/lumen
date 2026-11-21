@@ -193,7 +193,7 @@ export async function verifyChallengeRecipient({send,evaluate},url){
  await open({send,evaluate},url,serverModel({quest:legacyPremium,inbox}),{width:1440,challenge:false});
  await evaluate(`document.getElementById('openMyChallenges').click()`);
  await until(evaluate,`document.querySelectorAll('#myChallengesList .challenge-list-item').length===3`,'Mes défis rows');
- const labels=await evaluate(`[...document.querySelectorAll('#myChallengesList .challenge-list-head strong')].map(x=>x.textContent)`);
+ const labels=await evaluate(`[...document.querySelectorAll('#myChallengesList .challenge-compact-quest')].map(x=>x.textContent)`);
  assert.deepEqual(labels,[legacyPremium,stableZero,stableRevised].map(q=>'Quête '+q.ordinal),'Mes défis uses canonical visible numbers');
  results.push({kind:'my-challenges',labels});
  return results;
