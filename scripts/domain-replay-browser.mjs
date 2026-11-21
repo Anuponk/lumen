@@ -19,7 +19,7 @@ export async function verifyDomainReplay({send,evaluate,navigate,url}){
   const owner=${JSON.stringify(owner)},profile=${JSON.stringify(profile)};
   if(!sessionStorage.getItem('domainFixtureStarted')){
    localStorage.setItem('lumenCloudOwnerId',owner);localStorage.setItem('lumenProgressV1',JSON.stringify(profile));
-   localStorage.removeItem('lumenActiveAttemptV1');sessionStorage.setItem('domainFixtureStarted','1');
+   localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQualifyingStartsV1');sessionStorage.setItem('domainFixtureStarted','1');
   }
   for(const key of ['lumenTutorialSeen','lumenTutorialCompletedV1','lumenSkyTourSeen','lumenSound'])localStorage.setItem(key,key==='lumenSound'?'off':'1');
   window.__domainWrites=0;window.__domainCommandAttempts=0;window.__domainProfile={...structuredClone(profile),shards:7};

@@ -7,7 +7,7 @@ export async function verifyFinaleResponsive({send,evaluate},baseUrl){
  const quests=canonicalQuestList(),target=quests.filter(q=>q.constellationId==='real-17').at(-1);
  const prior=quests.filter(q=>q.ordinal<target.ordinal);
  const profile={solved:Object.fromEntries(prior.filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1])),canonicalQuestState:Object.fromEntries(prior.filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true,badges:{}}])),performances:{},badges:{},xp:123,shards:7};
- const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:`localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(profile))});localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQaActiveAttemptV1');for(const k of ['lumenQaTutorialSeen','lumenQaTutorialCompletedV1','lumenSkyTourSeen'])localStorage.setItem(k,'1');localStorage.setItem('lumenSound','off');`});
+ const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:`localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(profile))});localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQualifyingStartsV1');localStorage.removeItem('lumenQaActiveAttemptV1');for(const k of ['lumenQaTutorialSeen','lumenQaTutorialCompletedV1','lumenSkyTourSeen'])localStorage.setItem(k,'1');localStorage.setItem('lumenSound','off');`});
  const url=new URL(baseUrl);url.searchParams.set('qa','new');
  await navigateAndWait({send,evaluate},'Page.navigate',{url:url.href});
  await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});

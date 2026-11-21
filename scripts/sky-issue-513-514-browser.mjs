@@ -9,7 +9,7 @@ export async function verifySkyIssueRegressions({send,evaluate},url){
  const quests=canonicalQuestList(),results=[];
  await send('Network.enable');await send('Network.setBlockedURLs',{urls:['*supabase.co/*']});
  async function load(progress){
-  await evaluate(`localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(progress))});localStorage.removeItem('lumenQaActiveAttemptV1');localStorage.removeItem('lumenActiveAttemptV1');for(const k of ['lumenQaTutorialSeen','lumenQaTutorialCompletedV1','lumenSkyTourSeen'])localStorage.setItem(k,'1')`);
+  await evaluate(`localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(progress))});localStorage.removeItem('lumenQaActiveAttemptV1');localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQualifyingStartsV1');for(const k of ['lumenQaTutorialSeen','lumenQaTutorialCompletedV1','lumenSkyTourSeen'])localStorage.setItem(k,'1')`);
   await navigateAndWait({send,evaluate},'Page.navigate',{url:String(url)});
   await acknowledgeLearningMilestones(evaluate);
   await evaluate(`document.getElementById('openSky').click()`);
