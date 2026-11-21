@@ -30,6 +30,12 @@ Les constats suivants sont devenus **obsolètes** ou ont évolué, après vérif
 4. **Répartition du trafic** (humains / QA / CI / non déterminés) non affichée.
 5. **Libellés historiques** : « Tableau de bord », « Ouvrir le cockpit ».
 
+**PR B (21/11)** : écarts 1 et 5 résolus.
+- Pour un administrateur, `#qaAccountTools` (F21/F22) est déplacé à l'exécution dans Analytics › Support (`#analyticsSupportTools`), avec ses identifiants et gestionnaires d'origine.
+- Un profil QA sans capacité garde le repli dans le menu ; la sortie reste aussi possible par « Quitter » du bandeau QA.
+- Le menu ne porte plus que « 📊 Ouvrir Analytics ».
+- Test : `analytics-admin-browser-tests.mjs`.
+
 ## 1. Périmètre, preuves et limites
 
 Classification : **light, documentaire** ; les futurs lots touchant collecte,

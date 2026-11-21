@@ -1666,6 +1666,11 @@ function updateAdminTools(){
  const analytics=hasInternalCapability("analytics_cockpit");
  box.hidden=!(analytics||qaActive);
  if(qaTools)qaTools.hidden=!(analytics||qaActive);
+ // #708: Analytics is the single administration. For an administrator the test
+ // tools live in Support (same element and handlers); a QA profile without the
+ // capability keeps them in the menu so it can always return to the real profile.
+ const supportTools=document.getElementById("analyticsSupportTools"),toolsHome=analytics&&supportTools?supportTools:box;
+ if(qaTools&&toolsHome?.append&&qaTools.parentElement!==toolsHome)toolsHome.append(qaTools);
  if(cockpit)cockpit.hidden=!analytics;
  const adminModal=document.getElementById('adminCockpit');
  if(!analytics||(adminModal?.cockpitOwner&&adminModal.cockpitOwner!==lumenUser?.id)){
