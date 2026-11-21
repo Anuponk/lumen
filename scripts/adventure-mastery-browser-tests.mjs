@@ -29,6 +29,29 @@ try{
   assert.equal(await evaluate("document.querySelectorAll('.celestial-figure').length"),entries.length);
   assert.match(await evaluate("document.getElementById('skyRevealTitle').textContent"),/aventure pleinement maîtrisée/);
   assert.equal(await evaluate("document.getElementById('skyReveal').classList.contains('celestial-still')"),reduced);
+  // #886: large golden parade of every constellation, then the gathered mosaic.
+  const prelude=await evaluate(`(()=>{const o=document.getElementById('skyReveal'),p=o.querySelector('.mastery-prelude'),solo=p?.querySelector('.mastery-solo svg')?.getBoundingClientRect(),tile=o.querySelector('.celestial-figure svg').getBoundingClientRect();return {present:!!p,solos:p?p.querySelectorAll('.mastery-solo').length:0,playing:o.classList.contains('mastery-prelude-playing'),resultsHidden:getComputedStyle(document.getElementById('skyRevealResults')).opacity==='0',larger:solo?solo.width>tile.width*1.5:false,skip:p?.querySelector('.mastery-skip')?.textContent,gold:getComputedStyle(o.querySelector('.celestial-figure .sky-line.on')).stroke,copy:document.getElementById('skyRevealName').textContent,summary:document.getElementById('celestialSummary').textContent}})()`);
+  assert.equal(prelude.gold,'rgb(244, 207, 120)','golden signature on the recap mosaic');
+  assert.match(prelude.copy,/maîtrisé chaque quête, jusqu’au dernier badge/,'valorising main message');
+  assert.match(prelude.summary,new RegExp(entries.length+' constellations · [0-9]+/[0-9]+ quêtes'),'detailed statistics kept');
+  if(reduced)assert.deepEqual([prelude.present,prelude.playing],[false,false],'reduced motion: no parade, final mosaic at once');
+  else{
+   assert.equal(prelude.present,true);assert.equal(prelude.solos,entries.length,'every constellation is paraded');
+   assert.equal(prelude.playing,true);assert.equal(prelude.resultsHidden,true,'badges and podium wait in place');
+   assert.equal(prelude.larger,true,'the parade is large format');assert.equal(prelude.skip,'Passer');
+   if(width===1440&&pack===CONTENT_PACKS[0]){
+    const started=Date.now();
+    await until("!document.querySelector('#skyReveal .mastery-prelude')");
+    const elapsed=Date.now()-started;assert(elapsed<8000,'the parade ends by itself within 8 s: '+elapsed);
+   }else{
+    await evaluate("document.querySelector('#skyReveal .mastery-prelude-stage').click()");
+    assert.equal(await evaluate("document.getElementById('skyReveal').classList.contains('mastery-prelude-playing')"),true,'a first tap accelerates');
+    await evaluate("document.querySelector('#skyReveal .mastery-skip').click()");
+    await until("!document.querySelector('#skyReveal .mastery-prelude')");
+   }
+   assert.equal(await evaluate("document.getElementById('skyReveal').classList.contains('mastery-prelude-playing')"),false);
+   await until("getComputedStyle(document.getElementById('skyRevealResults')).opacity==='1'");
+  }
   assert.equal(await evaluate("document.documentElement.scrollWidth<=innerWidth"),true);
   const fit=await evaluate(`(()=>{const o=document.getElementById('skyReveal'),card=o.querySelector('.sky-reveal-card'),buttons=[...card.querySelectorAll('button')].filter(b=>!b.hidden&&b.getClientRects().length);return {labels:buttons.map(b=>b.textContent.trim()),hostScroll:o.scrollHeight-o.clientHeight,cardScroll:card.scrollHeight-card.clientHeight,lowest:Math.max(...buttons.map(b=>Math.round(b.getBoundingClientRect().bottom))),height:innerHeight}})()`);
   assert(!fit.labels.some(l=>/Revoir mon aventure/.test(l)),'#705: no redundant review CTA '+JSON.stringify(fit));

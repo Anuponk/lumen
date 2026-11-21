@@ -415,6 +415,7 @@ Phase 2: `npm run test:affected` / `node scripts/test-affected.mjs` selects the 
 | Daily challenge (#882) | `daily-challenge-tests.mjs`, `daily-view-tests.mjs`, `daily-week-tests.mjs`, `daily-challenge-browser.mjs` (via canonical replay browser suite), `daily-schedule.mjs --check`, SQL `fixtures/daily-challenge-882.sql`, `daily-concurrency.py`, `fixtures/daily-rollback-882.sql` (canonical-ledger CI) | Paris day/DST, pinned grid, one official attempt, both rankings from one row, frozen weekly ranks, English/French presentation and share, erasure |
 | Abandon and qualification window (#908) | `abandon-attempt-908-tests.mjs`, `abandon-attempt-browser-tests.mjs`, `attempt-engine-tests.mjs` | Full gate |
 | In-game confirmations (#921) | `lumen-dialog-tests.mjs`, `lumen-dialog-browser-tests.mjs`, `quest-review-tests.mjs`, `abandon-attempt-browser-tests.mjs` | Full gate |
+| Mastery celebration (#886) | `mastery-prelude-tests.mjs`, `adventure-mastery-browser-tests.mjs`, `admin-preview-browser-tests.mjs`, `celestial-ux-tests.mjs` | Full gate |
 | Analytics release comparison (#708 D) | `analytics-versions-tests.mjs`, `fixtures/admin-version-health-708.sql` (ledger CI), `analytics-admin-browser-tests.mjs` | Full gate |
 | Analytics acquisition & engagement (#708 C) | `analytics-engagement-tests.mjs`, `fixtures/admin-engagement-708.sql` (ledger CI), `analytics-admin-browser-tests.mjs` | Full gate |
 | Friend duels (#896) | `duel-view-tests.mjs`, `duel-browser.mjs` in the canonical replay suite | Full gate |

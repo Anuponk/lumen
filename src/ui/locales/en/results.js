@@ -138,4 +138,7 @@ export default Object.freeze({
   'results.victory.bonusWon': "✦ Challenge complete! +25 XP.",
   'results.victory.bonusOwned': "✦ Challenge already completed",
   'results.victory.bonusLost': "Challenge failed. The quest is still complete.",
+  'results.masteryAdventureCopy': "Every star shines: you mastered every quest, down to the last badge.",
+  'results.masteryCampaignCopy': "The whole sky shines: you mastered every quest, down to the last badge.",
+  'results.masterySkip': "Skip",
 });

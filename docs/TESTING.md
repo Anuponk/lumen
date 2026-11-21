@@ -2345,6 +2345,8 @@ La quality gate ajoute `offline-hint-purchase-browser-tests.mjs`, `offline-hint-
 
 `adventure-mastery-browser-tests.mjs` couvre aussi 360×640 et 390×844 (#705) : aucun CTA « Revoir mon aventure », aucun défilement vertical de la carte, et le dernier bouton reste dans la hauteur utile. Il vérifie aussi le libellé « Maîtrisée » visible dans la barre d’aventures et le fond rempli distinct, conservé lorsque la sélection change. La navigation et le rechargement conservent les acquis sans récompense ajoutée.
 
+#886 : `adventure-mastery-browser-tests.mjs` vérifie aussi le défilé grand format (une figure par constellation, plus grande que la tuile de mosaïque), les résultats masqués sur place pendant le défilé, l’accélération au premier tap puis « Passer », la fin naturelle en moins de 8 s (1440×900), l’absence de défilé en mouvement réduit (390×844), le tracé doré du récapitulatif, le message valorisant et les statistiques conservées ; le rechargement ne rejoue rien. `mastery-prelude-tests.mjs` borne la durée pour 1 à 20 constellations et vérifie le câblage (événement consommé une fois, aucune persistance). Recette Android/iOS physique : manuelle.
+
 Recette physique restante : indice avec 80 Éclats en mode avion puis reconnexion ; glissement pendant scintillement avec/sans marquage automatique ; dernier badge d’aventure puis réouverture de Mon ciel, avec fond doré et libellé de maîtrise lisibles. Ces tests simulés ne valent pas recette sur téléphone. Les issues restent ouvertes « To be tested » jusqu’à acceptation.
 
 ## Highscore et séquence de victoire

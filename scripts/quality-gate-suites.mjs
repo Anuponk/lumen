@@ -191,6 +191,7 @@ export const nodeSuites=[
  "attempt-engine-tests.mjs",
  "abandon-attempt-908-tests.mjs",
  "lumen-dialog-tests.mjs",
+ "mastery-prelude-tests.mjs",
  "performance-badge-tests.mjs",
  "unlocked-adventure-progress.test.mjs",
  "test-affected-tests.mjs",

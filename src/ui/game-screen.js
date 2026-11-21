@@ -107,6 +107,7 @@ import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
 import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery,mainSkyOffer} from './adventure-offer.js';
 import {purchaseThanksModel,showPurchaseThanks} from './purchase-thanks.js';
 import {createLumenDialog} from './lumen-dialog.js';
+import {playMasteryPrelude} from './mastery-prelude.js';
 import {PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,createForegroundRecovery,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,toPlayProductId,findOwnedPlayPurchase,playOwnershipMessage,playOwnershipSummary} from '../persistence/play-billing.js';
 import {rememberPlayAppLaunch,isPlayDistributedApp,stripeCheckoutAvailable,startStripeCheckout,stripeSessionStatus,restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage} from '../persistence/stripe-checkout.js';
 import {SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS,isMainSkyProduct} from '../campaign/store-catalogue.js';
@@ -5311,7 +5312,7 @@ function showCelestialVictory(){
  const art='<div class="celestial-scene'+(adventure?' celestial-panorama':'')+'" style="--celestial-columns:'+columns+';--celestial-shift-x:'+((columns-1)*50)+'%;--celestial-shift-y:'+((rows-1)*50)+'%">'+vault+ordered.map((entry,i)=>{
   const scope=celestialScope(lumenProgress,quests.filter(x=>x.constellationId===entry.id));
   return '<figure class="celestial-figure" style="--celestial-order:'+i+';--celestial-cascade:'+(i/Math.max(1,ordered.length-1)*1)+'s"><svg viewBox="0 0 290 115" aria-hidden="true">'+milkyWaySvg(entry.id,.4)+astronomicalPrimarySvg(entry,scope.completed,scope.total,i===0?Math.max(0,scope.completed-1):scope.completed)+'</svg><figcaption>'+adminEsc(entry.label)+'</figcaption></figure>';
- }).join('')+'</div>';
+ }).join('')+(mastery?Array.from({length:10},(_,i)=>'<i class="mastery-spark" aria-hidden="true" style="--spark-x:'+((i*37)%100)+'%;--spark-y:'+((i*61+17)%100)+'%;--spark-order:'+i+'"></i>').join(''):'')+'</div>';
  const leave=action=>()=>{closeUnifiedSkyReveal();hideSuccess();action()};
  const sky=()=>openJourneyMap(false,{constellationId:q.constellationId});
  const nextPack=pack&&model.skies.find(s=>s.id===pack.skyId)?.packs.find((p,i,list)=>list[i-1]?.id===pack.id);
@@ -5321,11 +5322,18 @@ function showCelestialVictory(){
  const entry=entries.find(c=>c.id===q.constellationId);
  const challenge=document.getElementById('successShare');
  const shown=celestialCelebration.show({kind:event.kind,title:mastery?(campaign?'Le ciel pleinement maîtrisé':'Une aventure pleinement maîtrisée'):campaign?'Le ciel est réuni':adventure?'Aventure accomplie':(entry?.label||q.constellationId)+' brille à nouveau !',
-  copy:campaign?(pack?.narrative||'Toutes les lumières du voyage se répondent désormais.'):adventure?(pack?.narrative||'Chaque étoile retrouvée a repoussé l’obscurité. Ensemble, elles ont redonné vie à ce ciel.'):'Une nouvelle lumière a retrouvé sa place dans le ciel.',
-  summary:(mastery?'Toutes les quêtes et tous les badges disponibles sont accomplis. ':campaign?'Toutes les quêtes sont terminées. Les badges restent à explorer. ':'')+count+`${summary.completed}/${summary.total} quêtes · ${summary.stars} étoiles · `+badgeText,art,primary,
+  // #886: mastery gets its own valorising message; detailed statistics stay below.
+  copy:mastery?t(campaign?'results.masteryCampaignCopy':'results.masteryAdventureCopy'):campaign?(pack?.narrative||'Toutes les lumières du voyage se répondent désormais.'):adventure?(pack?.narrative||'Chaque étoile retrouvée a repoussé l’obscurité. Ensemble, elles ont redonné vie à ce ciel.'):'Une nouvelle lumière a retrouvé sa place dans le ciel.',
+  summary:(mastery?'':campaign?'Toutes les quêtes sont terminées. Les badges restent à explorer. ':'')+count+`${summary.completed}/${summary.total} quêtes · ${summary.stars} étoiles · `+badgeText,art,primary,
   // #705: no « Revoir mon aventure »: it duplicated the sky navigation below the fold.
   secondary:next?{label:'✦ Mon ciel',run:leave(sky)}:null,review:null,
   share:challenge&&!challenge.hidden?{label:'➤ Défier',disabled:challenge.disabled,remarkable:challenge.classList.contains('remarkable'),run:()=>challenge.click()}:null});
+ // #886: first real mastery only (this event), never on refresh or consultation.
+ if(shown&&mastery){
+  const host=document.getElementById('skyReveal'),parade=entries.map(entry=>{const scope=celestialScope(lumenProgress,quests.filter(x=>x.constellationId===entry.id));
+   return {svg:'<svg viewBox="0 0 290 115" aria-hidden="true">'+astronomicalPrimarySvg(entry,scope.total,scope.total,scope.total)+'</svg>',label:adminEsc(entry.label)}});
+  playMasteryPrelude(host,{figures:parade,skipLabel:t('results.masterySkip'),reducedMotion:!!matchMedia('(prefers-reduced-motion: reduce)').matches});
+ }
  if(shown){adventurePending=null;endgamePending=false;if(event.kind==='campaign'){try{localStorage.setItem(endgameSeenKey(),'1')}catch(_){}trackLumenEvent('campaign_completed',null,{content_quests:summary.total,constellations:new Set(quests.map(x=>x.constellationId)).size,stars:summary.stars})}}
  return shown;
 }
