@@ -46,7 +46,12 @@ RLS active partout, aucun droit direct ; accès uniquement par RPC
   un second appel (rechargement, autre appareil, requête simultanée) renvoie **la
   même ligne** et le même `started_at`. Le client reprend au temps serveur écoulé
   si sa tentative locale n'existe pas (#888). Hors ligne : aucune tentative
-  classée ne peut commencer ; l'entraînement reste possible.
+  classée ne peut commencer ; l'entraînement reste possible. Le jour de la
+  tentative est celui du serveur **au moment de l'appel** : si la réponse
+  porte un autre `day` que la grille chargée (introduction restée ouverte
+  pendant le passage de minuit Paris), le client recharge le mode sur le jour
+  serveur et reprend cette tentative au temps serveur écoulé ; il ne joue
+  jamais la grille de la veille contre la tentative du jour.
 - **Terminer** (`lumen_daily_finish`) : une seule fois, même identifiant
   d'opération. Le temps déclaré est borné par le temps serveur écoulé depuis
   `started_at` (+5 s). Le score est calculé par `official_time`. Une deuxième
@@ -122,7 +127,8 @@ calendrier dans `daily_puzzles`.
 - **Introduction** : date, temps restant, « 1 tentative officielle », règles.
   Invité ou joueur sans pseudonyme : explication et entraînement non classé
   uniquement. Compte : « Relever le défi » (ou « Reprendre ma tentative » ;
-  autre appareil = chrono au temps serveur écoulé). Pas d'entraînement avant la
+  autre appareil = chrono au temps serveur écoulé ; minuit franchi pendant
+  l'introduction = rechargement sur la grille du nouveau jour). Pas d'entraînement avant la
   tentative officielle pour un compte (la grille ne doit pas être révélée).
 - **Résultat** : temps officiel, onglets « Général / Mes amis » (top 3, égalités,
   ma position, participants réels, états vides), zone de hauteur réservée,
@@ -173,7 +179,7 @@ calendrier dans `daily_puzzles`.
 
 ## 7. Tests et retour arrière
 
-- Navigateur : `daily-challenge-browser.mjs` (dans la suite de rejeu canonique) : mode désactivé, entrée Mon ciel, invité en entraînement, tentative officielle à 360/390/1440 px, grille figée et cases inchangées, cadre et bandeau visibles, deux classements, reprise sur autre appareil, résultat figé puis entraînement, envoi différé hors ligne, bilan de la semaine (7 jours, provisoire, aucune donnée d'un autre joueur, aucune collecte `lumen_track_event`). `daily-view-tests.mjs` (rendu et client), `daily-week-tests.mjs` (résumé, navigation, partage, rendu).
+- Navigateur : `daily-challenge-browser.mjs` (dans la suite de rejeu canonique) : mode désactivé, entrée Mon ciel, invité en entraînement, tentative officielle à 360/390/1440 px, grille figée et cases inchangées, cadre et bandeau visibles, deux classements, reprise sur autre appareil, introduction ouverte pendant le passage de minuit (rechargement sur le jour serveur), résultat figé puis entraînement, envoi différé hors ligne, bilan de la semaine (7 jours, provisoire, aucune donnée d'un autre joueur, aucune collecte `lumen_track_event`). `daily-view-tests.mjs` (rendu et client), `daily-week-tests.mjs` (résumé, navigation, partage, rendu).
 - Node : `daily-challenge-tests.mjs` (jour Paris et changements d'heure, semaine,
   pool, calendrier append-only et reproductible, grille figée, contrat de la
   migration) ; `node scripts/daily-schedule.mjs --check`.
@@ -192,4 +198,6 @@ calendrier dans `daily_puzzles`.
   `lumen_privacy.review_erasure`. Le SQL exact est celui de
   `scripts/fixtures/daily-rollback-882.sql` (sans le `rollback` final).
 - **Production** : aucune migration appliquée sans accord explicite ; le drapeau
-  reste désactivé jusqu'à la validation des gates (§6 et #882).
+  reste désactivé jusqu'à la validation des gates (§6 et #882). Recette manuelle,
+  activation progressive, surveillance et critères de retour arrière :
+  [DAILY_CHALLENGE_ROLLOUT.md](DAILY_CHALLENGE_ROLLOUT.md).
