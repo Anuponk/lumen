@@ -76,7 +76,7 @@ test('cockpit refuses non-admin requests and ignores an in-flight result after a
   document:{getElementById:()=>({textContent:'',value:'7'})},mountSupportLookup:(_host,options)=>{lookupOptions=options}});
  vm.runInContext(functionSource(source,'loadAdminCockpit')+';globalThis.load=loadAdminCockpit',context);
  await context.load();assert.equal(calls,0);assert.equal(lookupOptions,undefined,'Non-admins cannot mount a reference lookup');
- context.hasInternalCapability=()=>true;const pending=context.load();assert.equal(calls,7,'The quest metrics and engagement RPCs share the existing guarded cockpit load');
+ context.hasInternalCapability=()=>true;const pending=context.load();assert.equal(calls,8,'The quest metrics, engagement and release comparison RPCs share the existing guarded cockpit load');
  context.lumenUser={id:'different-account'};context.document.getElementById=()=>{throw Error('stale result reached DOM')};
  assert.equal(lookupOptions.authorized(),false,'Reference lookup shares the live account guard');
  release({data:{},error:null});await pending;

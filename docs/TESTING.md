@@ -1898,6 +1898,8 @@ Any change to challenge behavior must additionally verify:
 - a finished link reopens on its result (lowercase server status), never on a second attempt;
 - “Mes défis” shows canonical visible quest numbers for historical, stable and revised challenges.
 
+#708 Lot D: `analytics-versions-tests.mjs` (rates with exposure, small samples never flagged, unknown version, unavailable source, escaping); `scripts/fixtures/admin-version-health-708.sql` in canonical-ledger CI (access, per-version hydrations/failures/blocked/players/waiting devices, period window, ordering, no identifier, bounds); `analytics-admin-browser-tests.mjs` checks the release comparison in Synchronisation & incidents.
+
 #708 Lot C: `analytics-engagement-tests.mjs` (missing data never shown as 0, rates only with a denominator and n, « Non mesurable » while public collection is disabled, unavailable source, escaping, EN copy); `scripts/fixtures/admin-engagement-708.sql` in canonical-ledger CI (guest/player/anon refused, traffic classes by priority, QA and CI excluded from the funnel, challenge and daily counters, no identifier, period bounds); `analytics-admin-browser-tests.mjs` opens the sixth section at 320/390/1440 and writes `docs/validation/analytics-acquisition-*.png` with `LUMEN_ANALYTICS_CAPTURES`.
 
 #759 kit: `video-kit-tests.mjs` checks the six video scenes against the catalogue solutions (no invented Guardian, no cross on a solution cell, A/C scenes complete the grid, 15–30 s, CTA, FR/EN SRT); `scripts/marketing/record-video-kit.mjs` (not in CI) records them from the real game.

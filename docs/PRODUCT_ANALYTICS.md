@@ -226,6 +226,12 @@ Plan de diffusion : [COMMUNAUTES_LUMEN.md](marketing/COMMUNAUTES_LUMEN.md).
 | Défi du jour | Tentatives officielles commencées (une par compte et par jour), état du drapeau | `lumen_commands.daily_runs` | tentatives (taux de tentatives terminées) | masqué au public : données de recette |
 | Rétention J+1 / J+7 par canal | — | — | — | **Non mesurable** : aucun identifiant de campagne persistant |
 
+**Comparaison des versions (#708, Lot D)** : `lumen_admin_version_health(p_days)` dans *Synchronisation & incidents*.
+- Taux d'échec par version = `hydration_failed` ÷ (`hydration_ready` + `hydration_failed`) de cette version (`lumen_sync_health`), affiché avec n.
+- Le tableau indique aussi les réconciliations bloquées et les appareils dont l'outbox attend (`outbox_health`).
+- « à examiner » seulement si n ≥ 20 et taux ≥ max(2 × global, global + 5 points).
+- Version absente = « version inconnue ». Une attente n'est pas une perte. Recommandation sur la collecte publique : [ANALYTICS_COLLECTE_RECOMMANDATION](ANALYTICS_COLLECTE_RECOMMANDATION.md).
+
 [Requêtes d’agrégation en lecture seule](marketing/acquisition-agregats.sql)
 pour une connexion d’administration autorisée, sur sept jours glissants. Elles
 n’affichent aucun identifiant. Elles exigent le marquage `human`, écartent le
