@@ -82,6 +82,9 @@ try{
   await until("!document.getElementById('adminCockpit').hidden&&document.querySelector('[data-analytics-panel=players]')?.hidden===false",'reload keeps the selected section');
   await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
   assert.equal(await evaluate("document.getElementById('adminCockpit').hidden&&location.pathname==='/'"),true);
+  assert.equal(await evaluate("document.getElementById('adminCockpitOpen').textContent"),'📊 Ouvrir Analytics','single administration entry');
+  assert.equal(await evaluate("!!document.querySelector('[data-analytics-panel=support] #qaAccountTools')&&!document.querySelector('#adminTools #qaAccountTools')"),true,'test tools moved into Analytics › Support');
+  assert.equal(await evaluate("['qaAccountSwitch','qaAccountReset','qaPreviewStreakLoss'].every(id=>!!document.querySelector('[data-analytics-panel=support] #'+id))"),true,'every test tool kept with its id');
   await evaluate("document.getElementById('adminCockpitOpen').click()");
   assert.equal(await evaluate("!document.getElementById('adminCockpit').hidden&&location.pathname==='/admin/analytics'"),true,'legacy menu entry opens the same interface');
   await evaluate("sessionStorage.setItem('adminDenied','1')");
