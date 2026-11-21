@@ -6,7 +6,7 @@ const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'u
 const extract=(name,next)=>source.slice(source.indexOf('function '+name+'('),source.indexOf('\nfunction '+next,source.indexOf('function '+name+'(')));
 test('switching between authorised administrators clears the previous scope immediately',()=>{
  const nodes={adminTools:{},adminUnlimitedShards:{parentElement:{}},adminCockpitOpen:{},qaAccountTools:{},adminCockpit:{hidden:false,cockpitOwner:'admin-a'},adminTimeline:{cockpitPlayer:'u:old',replaceChildren(){this.cleared=true}}};
- for(const id of ['adminDiagnosticIncidents','adminPlayers','adminAccounts','adminCockpitKpis','adminDailyChart','adminRetention','adminFunnel','adminFriction','adminAlerts','adminFeedbacks','analyticsOverview','analyticsJourneys','analyticsTechnical'])nodes[id]={replaceChildren(){this.cleared=true}};
+ for(const id of ['adminDiagnosticIncidents','adminPlayers','adminAccounts','adminCockpitKpis','adminDailyChart','adminRetention','adminFunnel','adminFriction','adminAlerts','adminFeedbacks','analyticsOverview','analyticsJourneys','analyticsTechnical','analyticsEngagement'])nodes[id]={replaceChildren(){this.cleared=true}};
  const navigation=[];
  const context=vm.createContext({syncAdministrationMenu:()=>{},hasInternalCapability:()=>true,unlimitedShardsEnabled:()=>false,
   qaActive:false,adminAnalytics:{close:()=>navigation.push('close'),syncAccess:()=>navigation.push('sync')},lumenUser:{id:'admin-b'},document:{getElementById:id=>nodes[id]}});
@@ -14,7 +14,7 @@ test('switching between authorised administrators clears the previous scope imme
  assert.equal(nodes.adminCockpit.hidden,true);assert.equal(nodes.adminTimeline.cleared,true);
  assert.equal(nodes.adminTimeline.cockpitPlayer,null);assert.equal(nodes.adminAccounts.cleared,true);
  assert.equal(nodes.adminFeedbacks.cleared,true);assert.equal(nodes.adminCockpitKpis.cleared,true);
- for(const id of ['analyticsOverview','analyticsJourneys','analyticsTechnical'])assert.equal(nodes[id].cleared,true,id+' is cleared before the next administrator');
+ for(const id of ['analyticsOverview','analyticsJourneys','analyticsTechnical','analyticsEngagement'])assert.equal(nodes[id].cleared,true,id+' is cleared before the next administrator');
  assert.deepEqual(navigation,['close','sync'],'the next authorised owner reopens with a fresh scope');
 });
 test('timeline refusals are visible, and stale refusals never replace the next selection',async()=>{

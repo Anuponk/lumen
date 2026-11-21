@@ -462,3 +462,9 @@ jobs:
             -f supabase/migrations/20261122100000_daily_anon_revoke_882.sql \
             -f supabase/migrations/20261122100000_daily_anon_revoke_882.sql \
             -f scripts/fixtures/daily-anon-revoke-882.sql
+      - name: Verify Analytics acquisition & engagement aggregates and their access (#708)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/admin-engagement-708.sql

@@ -1605,3 +1605,14 @@ html body .game-core .actions>#new.action-reset:hover,html body .game-core .acti
 .friend-challenge>.duel-row{margin:6px 0}
 @media(max-width:380px){.duel-time{font-size:24px}.duel-verdict strong{font-size:19px}.duel-player{padding:10px 4px 8px}}
 @media(prefers-reduced-motion:reduce){.duel-card *,.duel-row *{transition:none!important;animation:none!important}}
+
+/* #708 Lot C · Acquisition & engagement: every figure carries its contract. */
+.analytics-engagement{display:grid;gap:14px}
+.analytics-engagement .admin-kpi small{display:block;font-size:11px;color:#9fb8c9}
+.analytics-contract{margin:6px 0 0;font-size:12px;line-height:1.45;color:#9fb8c9}
+.analytics-warning{margin:6px 0;padding:8px 10px;border-radius:10px;background:rgba(255,204,99,.1);border:1px solid rgba(255,204,99,.35);color:#ffe3a1;font-size:13px}
+.analytics-unavailable{padding:10px;border-radius:10px;border:1px dashed rgba(159,184,201,.5);color:#cfe3ee}
+.analytics-table-wrap{max-width:100%;overflow-x:auto}
+.analytics-table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.analytics-table th,.analytics-table td{padding:6px 8px;border-bottom:1px solid rgba(104,231,255,.14);text-align:right;white-space:nowrap}
+.analytics-table th[scope=row],.analytics-table thead th:first-child{text-align:left}
