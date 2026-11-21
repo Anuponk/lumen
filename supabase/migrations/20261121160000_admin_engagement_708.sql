@@ -18,11 +18,12 @@ begin
 
  -- Identifiers by traffic class, priority automated_test > qa > human > undetermined
  -- (#708, 18/11): an identifier seen as QA once is never counted as a player.
+ -- coalesce: bool_or over only-missing traffic_type is NULL, which must stay « undetermined ».
  with ids as (
   select e.anonymous_id,
-   bool_or(e.properties->>'traffic_type'='automated_test') as automated,
-   bool_or(e.properties->>'traffic_type'='qa' or coalesce(e.properties->>'qa_mode','')<>'') as qa,
-   bool_or(e.properties->>'traffic_type'='human') as human
+   coalesce(bool_or(e.properties->>'traffic_type'='automated_test'),false) as automated,
+   coalesce(bool_or(e.properties->>'traffic_type'='qa' or coalesce(e.properties->>'qa_mode','')<>''),false) as qa,
+   coalesce(bool_or(e.properties->>'traffic_type'='human'),false) as human
   from lumen.analytics_events e
   where e.occurred_at>=since and e.anonymous_id is not null
   group by e.anonymous_id)
