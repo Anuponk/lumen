@@ -9,13 +9,15 @@ import frLearning from './locales/fr/learning.js';
 import enLearning from './locales/en/learning.js';
 import frPwaWelcome from './locales/fr/pwa-welcome.js';
 import enPwaWelcome from './locales/en/pwa-welcome.js';
+import frSocial from './locales/fr/social.js';
+import enSocial from './locales/en/social.js';
 
 const DEFAULT_LOCALE = 'fr';
 const PREFERENCE_KEY = 'lumen.locale';
 
 export const locales = Object.freeze({
-  fr: Object.freeze({ nativeName: 'Français', enabled: true, fallback: null, messages: Object.freeze({ ...frResults, ...frBoard, ...frWelcome, ...frLearning, ...frPwaWelcome }) }),
-  en: Object.freeze({ nativeName: 'English', enabled: true, fallback: 'fr', messages: Object.freeze({ ...enResults, ...enBoard, ...enWelcome, ...enLearning, ...enPwaWelcome }) }),
+  fr: Object.freeze({ nativeName: 'Français', enabled: true, fallback: null, messages: Object.freeze({ ...frResults, ...frBoard, ...frWelcome, ...frLearning, ...frPwaWelcome, ...frSocial }) }),
+  en: Object.freeze({ nativeName: 'English', enabled: true, fallback: 'fr', messages: Object.freeze({ ...enResults, ...enBoard, ...enWelcome, ...enLearning, ...enPwaWelcome, ...enSocial }) }),
 });
 
 function lookup(registry, locale) {

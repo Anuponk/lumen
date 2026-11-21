@@ -5778,7 +5778,7 @@ const nativeChallengeShare=document.getElementById("challengeNativeShare"),copyC
 const openChallenges=document.getElementById("openMyChallenges"),closeChallenges=document.getElementById("myChallengesClose");if(openChallenges)openChallenges.onclick=()=>openMyChallenges();if(closeChallenges)closeChallenges.onclick=()=>document.getElementById("myChallengesModal").hidden=true;
 setupFriends();
 // #898 Lot 4: single social entry point over the existing screens and counters.
-const socialHub=setupSocialHub({isSignedIn:()=>!!lumenUser,onSignIn:()=>openEmailAccountOffer("signup"),onOpen:()=>{void refreshFriendsBadge();void loadMyChallenges()}});
+const socialHub=setupSocialHub({t,isSignedIn:()=>!!lumenUser,onSignIn:()=>openEmailAccountOffer("signup"),onOpen:()=>{void refreshFriendsBadge();void loadMyChallenges()}});
 const challengeHome=document.getElementById("challengeResultHome"),challengeReshare=document.getElementById("challengeResultReshare");if(challengeHome)challengeHome.onclick=()=>{location.href=location.pathname};if(challengeReshare)challengeReshare.onclick=()=>{document.getElementById("challengeResultModal").hidden=true;createSocialChallengeFromSuccess()};
 const pushEnable=document.getElementById("pushEnable"),pushLater=document.getElementById("pushLater");
 if(pushEnable)pushEnable.onclick=enableLumenPush;

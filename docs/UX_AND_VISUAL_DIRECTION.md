@@ -370,7 +370,8 @@ the panel rows, so nothing is counted twice. « Classements » keeps the quest
 rankings (#638, opened from a completed quest in Mon ciel) apart from the Défi du
 jour rankings (général / mes amis). The Défi du jour keeps its direct entry in
 « Mes quêtes ». Guests keep link challenges and the invitation and read why
-friends and notifications need an account. Captures:
+friends and notifications need an account. Copy lives in the `social.*` domain
+(`src/ui/locales/{fr,en}/social.js`, reviewed by `i18n-audit.mjs`). Captures:
 `docs/validation/social-hub-*.png`.
 
 « Amis et défis » (#35, row « Mes amis » of the panel) stays an optional screen,

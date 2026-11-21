@@ -19,7 +19,7 @@ export function socialBadgeText(total){
  return n?n>99?'99+':String(n):'';
 }
 
-export function setupSocialHub({doc=document,isSignedIn=()=>false,extraCount=()=>0,onOpen=()=>{},onSignIn=null}={}){
+export function setupSocialHub({doc=document,t=key=>key,isSignedIn=()=>false,extraCount=()=>0,onOpen=()=>{},onSignIn=null}={}){
  const $=id=>doc.getElementById(id);
  const trigger=$('openSocial'),hub=$('socialHub');
  if(!trigger||!hub)return null;
@@ -32,7 +32,7 @@ export function setupSocialHub({doc=document,isSignedIn=()=>false,extraCount=()=
  function refreshBadge(){
   const n=total(),text=socialBadgeText(n);
   if(badge){badge.hidden=!n;badge.textContent=text}
-  trigger.setAttribute('aria-label',n?'Espace social, '+n+(n>1?' nouveautés':' nouveauté'):'Espace social');
+  trigger.setAttribute('aria-label',n?t('social.openWithCount',{count:n}):t('social.open'));
   const notif=$('socialNotificationsCount');if(notif){notif.hidden=!n;notif.textContent=text}
  }
  // Mirror the Défi du jour entry of « Mes quêtes » (#882 owns availability).
@@ -54,8 +54,8 @@ export function setupSocialHub({doc=document,isSignedIn=()=>false,extraCount=()=
   const list=$('socialNotificationsList');if(!list)return;
   const friends=badgeCount(counters[0]),results=badgeCount(counters[1]);
   const rows=[];
-  if(friends)rows.push({target:'openFriends',icon:'👥',text:friends>1?friends+' demandes d’ami ou défis reçus à traiter':'1 demande d’ami ou défi reçu à traiter'});
-  if(results)rows.push({target:'openMyChallenges',icon:'⚔',text:results>1?results+' nouveaux résultats sur tes défis':'1 nouveau résultat sur tes défis'});
+  if(friends)rows.push({target:'openFriends',icon:'👥',text:t('social.summaryFriends',{count:friends})});
+  if(results)rows.push({target:'openMyChallenges',icon:'⚔',text:t('social.summaryResults',{count:results})});
   list.replaceChildren(...rows.map(row=>{
    const b=doc.createElement('button');b.type='button';b.className='social-hub-item';b.dataset.socialTarget=row.target;
    const icon=doc.createElement('span');icon.className='social-hub-icon';icon.setAttribute('aria-hidden','true');icon.textContent=row.icon;
@@ -68,7 +68,7 @@ export function setupSocialHub({doc=document,isSignedIn=()=>false,extraCount=()=
   for(const [key,view] of Object.entries(views))if(view)view.hidden=key!==name;
   if(name==='notifications')renderNotifications();
   const back=$('socialHubBack');if(back)back.hidden=name==='menu';
-  const title=$('socialHubTitle');if(title)title.textContent=name==='rankings'?'Classements':name==='notifications'?'Notifications':'Espace social';
+  const title=$('socialHubTitle');if(title)title.textContent=t(name==='rankings'?'social.rankings':name==='notifications'?'social.notifications':'social.title');
   const first=(views[name]||menu)?.querySelector('button:not([hidden])');
   first?.focus({preventScroll:true});
  }
