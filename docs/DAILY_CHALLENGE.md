@@ -190,7 +190,10 @@ calendrier dans `daily_puzzles`.
   campagne, jours de 23/25 h, finalisation stable, semaine, administration,
   droits, effacement) ; `daily-concurrency.py` (6 appareils simultanés, une
   tentative et un résultat) ; `fixtures/daily-rollback-882.sql` (répétition du
-  retour arrière).
+  retour arrière) ; `fixtures/supabase-default-anon-grants.sql` puis
+  `20261122100000_daily_anon_revoke_882.sql` et `fixtures/daily-anon-revoke-882.sql`
+  (privilèges par défaut de Supabase reproduits : seul `lumen_daily_today` reste
+  appelable par un invité).
 - **Retour arrière** (après retrait du client, et seulement si aucune migration
   ultérieure n'a renommé `lumen_privacy.policy()`) : supprimer les RPC et
   fonctions `daily_*`, restaurer `policy_before_daily_challenge` en `policy`,
