@@ -9,6 +9,13 @@ The repeatable migration adds functions and receipt-time indexes only; no player
 row, save, reward, receipt, entitlement, wallet or consent preference is changed.
 Cloud merge/restore and the existing regression matrix need no rule changes.
 
+Analytics #708 Lot C: `lumen_admin_engagement(p_days)`
+(`20261121160000_admin_engagement_708.sql`) is a read-only, `analytics_cockpit`-only
+aggregate reader. It reads `analytics_events`, the #18/#35 challenge tables and the
+#882 `daily_runs`, and returns counts only (no identifier, nickname or URL). It
+writes nothing and needs no cloud merge, restore or consent change. Contract:
+[PRODUCT_ANALYTICS](PRODUCT_ANALYTICS.md#mesure-dacquisition-708).
+
 ## Current architecture
 
 Lumen is a static PWA using native ES modules, with no application build step.

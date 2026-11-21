@@ -1,5 +1,5 @@
 // Presentation/navigation only. The existing RPCs remain the data/access boundary.
-export const ANALYTICS_SECTIONS=Object.freeze(['overview','players','journeys','sync','support']);
+export const ANALYTICS_SECTIONS=Object.freeze(['overview','players','acquisition','journeys','sync','support']);
 const route=pathname=>/^\/admin\/analytics\/?$/.test(pathname);
 export function analyticsSection(value){return ANALYTICS_SECTIONS.includes(value)?value:'overview'}
 

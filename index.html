@@ -63,6 +63,7 @@
   <nav class="analytics-navigation" data-analytics-navigation aria-label="Sections de l’administration">
    <button type="button" data-analytics-section="overview">Vue générale</button>
    <button type="button" data-analytics-section="players">Joueurs &amp; sessions</button>
+   <button type="button" data-analytics-section="acquisition" data-game-text="admin.sectionAcquisition">Acquisition &amp; engagement</button>
    <button type="button" data-analytics-section="journeys">Parcours &amp; quêtes</button>
    <button type="button" data-analytics-section="sync">Synchronisation &amp; incidents</button>
    <button type="button" data-analytics-section="support">Support &amp; administration</button>
@@ -74,6 +75,7 @@
   <details class="admin-section"><summary><h3>Indicateurs historiques détaillés</h3></summary><div id="adminCockpitKpis" class="admin-kpis"></div></details>
   <div class="admin-grid"><details class="admin-section"><summary><h3>Activité quotidienne détaillée</h3></summary><div id="adminDailyChart" class="admin-bars"></div></details><details class="admin-section"><summary><h3>Rétention historique non qualifiée</h3></summary><p>Calcul par navigateur, incluant des cohortes qui n’ont pas encore le recul nécessaire à J+7. Ces valeurs ne mesurent pas une rétention fiable des joueurs.</p><div id="adminRetention" class="admin-retention"></div></details></div>
   </div>
+  <div data-analytics-panel="acquisition" hidden><div id="analyticsEngagement" class="analytics-engagement" aria-live="polite"></div></div>
   <div data-analytics-panel="journeys" hidden>
   <div id="analyticsJourneys" class="analytics-dashboard"></div>
   <details class="admin-section"><summary><h3>Comptages historiques des jalons</h3></summary><div id="adminFunnel"></div></details>

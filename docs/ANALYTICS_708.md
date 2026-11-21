@@ -30,6 +30,12 @@ Les constats suivants sont devenus **obsolètes** ou ont évolué, après vérif
 4. **Répartition du trafic** (humains / QA / CI / non déterminés) non affichée.
 5. **Libellés historiques** : « Tableau de bord », « Ouvrir le cockpit ».
 
+**PR C (21/11)** : écarts 3 et 4 résolus.
+- Nouvelle section **Acquisition & engagement**, alimentée par `public.lumen_admin_engagement(p_days)` (migration `20261121160000_admin_engagement_708.sql`). Le RPC est en lecture seule, réservé à `analytics_cockpit`, révoque `anon` et ne renvoie que des agrégats.
+- Contenu : trafic par type (humains / QA / tests automatisés / non déterminés, avec la priorité du 18/11), tunnel par canal (même contrat que `acquisition-agregats.sql`), défis créés, envoyés, acceptés, terminés et abandonnés (tables serveur #18/#35), Défi du jour (tentatives officielles #882), rétention par canal marquée **Non mesurable**.
+- Affichage : chaque bloc précise définition, source, dénominateur et période. Une source en panne s'affiche « indisponible », pas 0, et l'acquisition est un « échantillon partiel » tant que la collecte publique est désactivée.
+- Tests : `admin-engagement-708.sql` (CI ledger), `analytics-engagement-tests.mjs`, `analytics-admin-browser-tests.mjs`. Captures : `docs/validation/analytics-acquisition-{390,1440}.png`.
+
 **PR B (21/11)** : écarts 1 et 5 résolus.
 - Pour un administrateur, `#qaAccountTools` (F21/F22) est déplacé à l'exécution dans Analytics › Support (`#analyticsSupportTools`), avec ses identifiants et gestionnaires d'origine.
 - Un profil QA sans capacité garde le repli dans le menu ; la sortie reste aussi possible par « Quitter » du bandeau QA.

@@ -18,6 +18,7 @@ const source=multiAccountFixture({admin:profile},'admin').replace("if(!uid())ret
   if(name==='lumen_admin_quest_metrics')return {data:${JSON.stringify(questData)}};
   if(name==='lumen_admin_sync_health')return sessionStorage.getItem('healthUnavailable')?{error:{message:'Unavailable'}}:{data:{affected_players:2,failures:3,stalled_players:1,blocked:1,by_reason:[{reason:'storage_quota',count:2}],by_version:[{version:'1.11.1+615',count:3}],outbox:{pending_players:1,critical_players:1,alerts:[{state:'pending',pending:2,version:'1.11.1+615',since:new Date(Date.now()-3600000).toISOString()}]},diagnostics:{timeline:[],signatures:[{code:'runtime_exception',stage:'runtime',app_version:'1.11.1+615',platform:'desktop',browser:'chromium',occurrences:5,sessions:2}]}}};
   if(name==='lumen_admin_player_observations')return {data:{players:{'u:admin':{state:'pending',observed_at:new Date(Date.now()-30000).toISOString()},'u:new':{state:'failure',observed_at:new Date(Date.now()-30000).toISOString()}}}};
+  if(name==='lumen_admin_engagement')return sessionStorage.getItem('engagementUnavailable')?{error:{message:'Unavailable'}}:{data:{days:args?.p_days??7,traffic:{identifiers:10,human:2,qa:3,automated_test:4,undetermined:1},acquisition:[{channel:'player_share',opened:4,q1_started:2,q1_completed:1}],challenges:{created:13,senders:4,sent_to_friends:5,accepted:5,completed:5,abandoned:0,in_progress:0,guest_participations:0},daily:{flag_enabled:false,players:2,days:1,runs:2,completed:1,abandoned:0,in_progress:1},retention_by_channel:{measurable:false,reason:'no_persistent_campaign_identifier'}}};
   if(name==='lumen_admin_recent_players')return {data:[{player_key:'u:admin',player_type:'authenticated',display_name:'Compte de test',sessions:1}]};
   return {data:[]};
  }
@@ -41,7 +42,14 @@ try{
    return {title:document.getElementById('adminCockpitTitle').textContent,panels,searchRetained:search.value==='Compte',days:document.getElementById('adminCockpitDays').value,overflow:document.documentElement.scrollWidth>innerWidth,reads:window.__adminReads.length};
   })()`);
   assert.equal(state.title,'Lumen Analytics');assert.equal(state.searchRetained,true);assert.equal(state.days,'30');assert.equal(state.overflow,false);
-  assert.deepEqual(state.panels,[['overview'],['players'],['journeys'],['sync'],['support']]);
+  assert.deepEqual(state.panels,[['overview'],['players'],['acquisition'],['journeys'],['sync'],['support']]);
+  // #708 Lot C: Acquisition & engagement, with contracts and honest « Non mesurable ».
+  await evaluate("document.querySelector('[data-analytics-section=acquisition]').click();document.getElementById('adminCockpit').scrollTop=0");
+  await until("document.getElementById('analyticsEngagement').textContent.includes('Défis entre joueurs')",'engagement section');
+  const engagement=await evaluate(`(()=>{const h=document.getElementById('analyticsEngagement'),txt=h.textContent;return {traffic:/Joueurs humains/.test(txt)&&/Tests automatisés/.test(txt),notMeasurable:txt.includes('Non mesurable.')&&txt.includes('échantillon partiel'),rate:/25 %/.test(txt),challenges:/13/.test(txt)&&/Envoyés à des amis/.test(txt),daily:/Masqué au public/.test(txt),retention:txt.includes('Rétention J+1 / J+7 par canal'),contracts:h.querySelectorAll('.analytics-contract').length,overflow:document.documentElement.scrollWidth>innerWidth,read:window.__adminReads.includes('lumen_admin_engagement')}})()`);
+  assert.deepEqual(engagement,{traffic:true,notMeasurable:true,rate:true,challenges:true,daily:true,retention:true,contracts:4,overflow:false,read:true},'engagement at '+viewport.width);
+  if(process.env.LUMEN_ANALYTICS_CAPTURES&&viewport.width!==320)fs.writeFileSync(process.env.LUMEN_ANALYTICS_CAPTURES+'/analytics-acquisition-'+viewport.width+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png'})).data,'base64'));
+  await evaluate("document.querySelector('[data-analytics-section=players]').click()");
   const analysis=await evaluate(`(()=>{
    const modal=document.getElementById('adminCockpit'),nav=value=>modal.querySelector('[data-analytics-section="'+value+'"]').click();
    nav('overview');const overview=document.getElementById('analyticsOverview');
